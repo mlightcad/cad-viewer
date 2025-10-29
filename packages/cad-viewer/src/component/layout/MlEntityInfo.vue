@@ -1,10 +1,10 @@
 <template>
-  <el-card v-if="visible" class="ml-entity-info">
+  <el-card v-if="visible" ref="cardRef" class="ml-entity-info">
     <el-row class="ml-entity-info-text">
       <el-col :span="24">
-        <el-text size="small" class="ml-entity-info-title">{{
-          info.type
-        }}</el-text>
+        <el-text size="small" class="ml-entity-info-title">
+          {{ info.type }}
+        </el-text>
       </el-col>
     </el-row>
     <el-row class="ml-entity-info-text">
@@ -40,7 +40,14 @@ import {
   AcEdViewHoverEventArgs
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbObjectId } from '@mlightcad/data-model'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import {
+  ComponentPublicInstance,
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { colorName, entityName } from '../../locale'
@@ -53,18 +60,17 @@ interface EntityInfo {
 }
 
 const { t } = useI18n()
-const hovered = ref<boolean>(false)
-const x = ref<number>(-1)
-const y = ref<number>(-1)
+const hovered = ref(false)
+const x = ref(-1)
+const y = ref(-1)
 const id = ref<AcDbObjectId | null>(null)
+const cardRef = ref<ComponentPublicInstance<{}, HTMLElement> | null>(null)
 
-const left = computed(() => {
-  return x.value + 'px'
-})
+const cardWidth = ref(180)
+const cardHeight = ref(120)
 
-const top = computed(() => {
-  return y.value + 'px'
-})
+const left = computed(() => `${x.value}px`)
+const top = computed(() => `${y.value}px`)
 
 const info = computed<EntityInfo>(() => {
   const db = AcApDocManager.instance.curDocument.database
@@ -79,23 +85,32 @@ const info = computed<EntityInfo>(() => {
       }
     }
   }
-  return {
-    type: '',
-    color: '',
-    layer: '',
-    lineType: ''
-  }
+  return { type: '', color: '', layer: '', lineType: '' }
 })
 
-const visible = computed(() => {
-  return hovered.value && info.value.type != ''
-})
+const visible = computed(() => hovered.value && info.value.type !== '')
 
-const updateHoverInfo = (args: AcEdViewHoverEventArgs) => {
+const updateHoverInfo = async (args: AcEdViewHoverEventArgs) => {
   id.value = args.id
-  x.value = args.x
-  y.value = args.y
   hovered.value = true
+
+  await nextTick()
+
+  // ✅ Element Plus component instance → get DOM element via $el
+  const el = cardRef.value?.$el as HTMLElement | undefined
+  if (el) {
+    cardWidth.value = el.offsetWidth
+    cardHeight.value = el.offsetHeight
+  }
+
+  const margin = 8
+  const maxX = window.innerWidth - cardWidth.value - margin
+  const maxY = window.innerHeight - cardHeight.value - margin
+  const minX = margin
+  const minY = margin
+
+  x.value = Math.min(Math.max(args.x, minX), maxX)
+  y.value = Math.min(Math.max(args.y, minY), maxY)
 }
 
 const hideHoverInfo = () => {
@@ -107,6 +122,7 @@ onMounted(() => {
   events.hover.addEventListener(updateHoverInfo)
   events.unhover.addEventListener(hideHoverInfo)
 })
+
 onUnmounted(() => {
   const events = AcApDocManager.instance.curView.events
   events.hover.removeEventListener(updateHoverInfo)
@@ -117,16 +133,15 @@ onUnmounted(() => {
 <style scoped>
 .ml-entity-info {
   position: fixed;
-  width: 180px;
   left: v-bind(left);
   top: v-bind(top);
-  margin: 0px;
+  width: 180px;
+  margin: 0;
+  transition: none !important;
 }
-
 .ml-entity-info-title {
   font-weight: bold;
 }
-
 .ml-entity-info-text {
   margin-bottom: 6px;
   margin-top: 6px;

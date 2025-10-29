@@ -31,8 +31,6 @@ import { AcEdFontNotLoadedInfo, eventBus } from '../editor'
 export class AcApFontLoader implements AcDbFontLoader {
   /** Font loader in mtext-render */
   private _loader: AcTrFontLoader
-  /** Cache of available fonts fetched from the CDN */
-  private _avaiableFonts: AcDbFontInfo[]
 
   /**
    * Creates a new font loader instance.
@@ -41,7 +39,6 @@ export class AcApFontLoader implements AcDbFontLoader {
    */
   constructor() {
     this._loader = new AcTrFontLoader()
-    this._avaiableFonts = []
   }
 
   /**
@@ -57,18 +54,15 @@ export class AcApFontLoader implements AcDbFontLoader {
   /**
    * Avaiable fonts to load.
    */
-  get avaiableFonts() {
-    return this._avaiableFonts
+  get avaiableFonts(): AcDbFontInfo[] {
+    return this._loader.avaiableFonts
   }
 
   /**
    * @inheritdoc
    */
   async getAvaiableFonts(): Promise<AcDbFontInfo[]> {
-    if (this._avaiableFonts.length == 0) {
-      this._avaiableFonts = await this._loader.getAvaiableFonts()
-    }
-    return this._avaiableFonts
+    return await this._loader.getAvaiableFonts()
   }
 
   /**

@@ -4,6 +4,7 @@
     v-model="dialogVisible"
     name="ReplacementDlg"
     @ok="handleConfirm"
+    @open="loadAvailableFonts"
   >
     <el-tabs type="card" v-model="activeName">
       <el-tab-pane
@@ -114,12 +115,14 @@ const activeName = computed(() => {
   return fontMapping.size > 0 ? 'font' : 'image'
 })
 const fileInput = ref<HTMLInputElement | null>(null)
-const availableFonts = computed(() => {
+
+// Move availableFonts to a ref and populate it in onMounted
+const availableFonts = ref<string[]>([])
+
+const loadAvailableFonts = () => {
   const fonts = AcApDocManager.instance.avaiableFonts
-  return fonts.map(font => {
-    return font.name[0]
-  })
-})
+  availableFonts.value = fonts.map(f => f.name[0])
+}
 
 const handleConfirm = () => {
   const db = AcApDocManager.instance.curDocument.database

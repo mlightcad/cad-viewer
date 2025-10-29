@@ -8,6 +8,7 @@ export default {
     pan: 'Shifts the view without changing the viewing direction or magnification',
     pttype: 'Specifies the display style and size of point objects',
     qnew: 'Starts a new drawing',
+    regen: 'Redraw the current drawing',
     select: 'Selects entities',
     zoom: 'Zooms to display the maximum extents of all entities',
     zoomw: 'Zooms to display an area specified by a rectangular window'
