@@ -114,7 +114,7 @@ const handleAction = (action: NotificationAction) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 5px 5px;
   height: 30px; /* fixed header height for consistency */
   border-bottom: 1px solid var(--el-border-color);
   background: var(--el-fill-color-light);

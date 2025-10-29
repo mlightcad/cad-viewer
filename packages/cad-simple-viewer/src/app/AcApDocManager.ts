@@ -10,6 +10,7 @@ import {
   AcApOpenCmd,
   AcApPanCmd,
   AcApQNewCmd,
+  AcApRegenCmd,
   AcApSelectCmd,
   AcApZoomCmd,
   AcApZoomToBoxCmd,
@@ -319,6 +320,15 @@ export class AcApDocManager {
   }
 
   /**
+   * Redraws the current view. Currently it is used once you modified font mapping
+   * for missed fonts so that the drawing can apply new fonts.
+   */
+  regen() {
+    this.curView.clear()
+    this.context.doc.database.regen()
+  }
+
+  /**
    * Registers all default commands available in the CAD viewer.
    *
    * This method sets up the command system by registering built-in commands including:
@@ -339,6 +349,12 @@ export class AcApDocManager {
       'pan',
       'pan',
       new AcApPanCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'regen',
+      'regen',
+      new AcApRegenCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

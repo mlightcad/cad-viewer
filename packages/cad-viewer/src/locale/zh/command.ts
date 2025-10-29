@@ -8,6 +8,7 @@ export default {
     pan: '平移视图',
     pttype: '设置点的显示样式和尺寸',
     qnew: '创建新图纸',
+    regen: '重绘图纸',
     select: '选择图元',
     zoom: '缩放以显示所有对象',
     zoomw: '缩放以显示矩形窗口内的对象'

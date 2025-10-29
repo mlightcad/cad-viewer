@@ -1,6 +1,7 @@
 export { default as fullScreen } from './fullScreen.svg'
 export { default as language } from './language.svg'
 export { default as layer } from './layer.svg'
+export { default as mlightcad } from './mlightcad.svg'
 export { default as move } from './move.svg'
 export { default as select } from './select.svg'
 export { default as setting } from './setting.svg'

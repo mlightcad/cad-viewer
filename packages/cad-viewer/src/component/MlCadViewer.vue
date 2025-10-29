@@ -157,10 +157,7 @@ const showNotificationCenter = ref(false)
  * @param fileName - Name of the uploaded file
  * @param fileContent - File content as string (DXF) or ArrayBuffer (DWG)
  */
-const handleFileRead = async (
-  fileName: string,
-  fileContent: ArrayBuffer
-) => {
+const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
   const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
   await AcApDocManager.instance.openDocument(fileName, fileContent, options)
   store.fileName = fileName
@@ -203,19 +200,17 @@ const openLocalFile = async (file: File) => {
     reader.readAsArrayBuffer(file)
 
     // Wait for file reading to complete
-    const fileContent = await new Promise<ArrayBuffer>(
-      (resolve, reject) => {
-        reader.onload = event => {
-          const result = event.target?.result
-          if (result) {
-            resolve(result as ArrayBuffer)
-          } else {
-            reject(new Error('Failed to read file content'))
-          }
+    const fileContent = await new Promise<ArrayBuffer>((resolve, reject) => {
+      reader.onload = event => {
+        const result = event.target?.result
+        if (result) {
+          resolve(result as ArrayBuffer)
+        } else {
+          reject(new Error('Failed to read file content'))
         }
-        reader.onerror = () => reject(new Error('Failed to read file'))
       }
-    )
+      reader.onerror = () => reject(new Error('Failed to read file'))
+    })
 
     // Open the file using the document manager
     const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
