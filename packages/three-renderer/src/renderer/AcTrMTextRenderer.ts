@@ -12,6 +12,7 @@ import {
 export class AcTrMTextRenderer {
   private static _instance: AcTrMTextRenderer | null = null
   private _renderer?: UnifiedRenderer
+  private _fontUrl?: string
 
   private constructor() {
     // Do nothing for now
@@ -25,6 +26,18 @@ export class AcTrMTextRenderer {
       AcTrMTextRenderer._instance = new AcTrMTextRenderer()
     }
     return AcTrMTextRenderer._instance
+  }
+
+  /**
+   * Set URL to load fonts
+   * @param value - URL to load fonts
+   */
+  setFontUrl(value: string) {
+    if (this._renderer) {
+      this._renderer.setFontUrl(value)
+    } else {
+      this._fontUrl = value
+    }
   }
 
   /**
@@ -77,7 +90,10 @@ export class AcTrMTextRenderer {
    * @param workerUrl - URL to the worker script
    */
   public initialize(workerUrl: string): void {
-    this._renderer = new UnifiedRenderer('main', { workerUrl })
+    this._renderer = new UnifiedRenderer('worker', { workerUrl })
+    if (this._fontUrl) {
+      this._renderer.setFontUrl(this._fontUrl)
+    }
   }
 
   /**

@@ -22,12 +22,28 @@ import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
 
+const DEFAULT_BASE_URL = 'https://mlightcad.gitlab.io/cad-data/'
+
 /**
  * Event arguments for document-related events.
  */
 export interface AcDbDocumentEventArgs {
   /** The document involved in the event */
   doc: AcApDocument
+}
+
+/**
+ * Options for creating AcApDocManager instance
+ */
+export interface AcApDocManagerOptions {
+  /**
+   * Optional HTML canvas element for rendering. If not provided, a new canvas will be created
+   */
+  canvas?: HTMLCanvasElement
+  /**
+   * Base URL to load resources (such as fonts annd drawing templates) needed
+   */
+  baseUrl?: string
 }
 
 /**
@@ -66,11 +82,11 @@ export class AcApDocManager {
    * Creates an empty document with a 2D view and sets up the application context.
    * Registers default commands and creates an example document.
    *
-   * @param canvas - Optional HTML canvas element for rendering. If not provided, a new canvas will be created
+   * @param options -Options for creating AcApDocManager instance
    * @private
    */
-  private constructor(canvas?: HTMLCanvasElement) {
-    this._baseUrl = 'https://mlightcad.gitlab.io/cad-data/'
+  private constructor(options: AcApDocManagerOptions = {}) {
+    this._baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
     // Create one empty drawing
     const doc = new AcApDocument()
     doc.database.events.openProgress.addEventListener(args => {
@@ -89,7 +105,10 @@ export class AcApDocManager {
         height: window.innerHeight - 30
       }
     }
-    const view = new AcTrView2d({ canvas, calculateSizeCallback: callback })
+    const view = new AcTrView2d({
+      canvas: options.canvas,
+      calculateSizeCallback: callback
+    })
     this._context = new AcApContext(view, doc)
     this._fontLoader = new AcApFontLoader()
     this._fontLoader.baseUrl = this._baseUrl + 'fonts/'
@@ -103,18 +122,12 @@ export class AcApDocManager {
    * This method should be called before accessing the `instance` property
    * if you want to provide a specific canvas element.
    *
-   * @param canvas - Optional HTML canvas element for rendering
+   * @param options -Options for creating AcApDocManager instance
    * @returns The singleton instance
-   *
-   * @example
-   * ```typescript
-   * const canvas = document.getElementById('my-canvas') as HTMLCanvasElement;
-   * const docManager = AcApDocManager.createInstance(canvas);
-   * ```
    */
-  static createInstance(canvas?: HTMLCanvasElement) {
+  static createInstance(options: AcApDocManagerOptions = {}) {
     if (AcApDocManager._instance == null) {
-      AcApDocManager._instance = new AcApDocManager(canvas)
+      AcApDocManager._instance = new AcApDocManager(options)
     }
     return this._instance
   }
@@ -188,10 +201,6 @@ export class AcApDocManager {
    */
   get baseUrl() {
     return this._baseUrl
-  }
-  set baseUrl(value: string) {
-    this._baseUrl = value
-    this._fontLoader.baseUrl = value + 'fonts/'
   }
 
   /**

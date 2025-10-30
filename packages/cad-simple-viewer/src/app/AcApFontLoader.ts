@@ -62,7 +62,7 @@ export class AcApFontLoader implements AcDbFontLoader {
    * @inheritdoc
    */
   async getAvaiableFonts(): Promise<AcDbFontInfo[]> {
-    return await this._loader.getAvaiableFonts()
+    return await this._loader.getAvailableFonts()
   }
 
   /**

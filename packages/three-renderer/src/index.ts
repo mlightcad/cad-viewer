@@ -1,4 +1,3 @@
-export { DefaultFontLoader as AcTrFontLoader } from '@mlightcad/mtext-renderer'
 export * from './batch/AcTrBatchedGroup'
 export * from './object/AcTrObject'
 export * from './object/AcTrEntity'
