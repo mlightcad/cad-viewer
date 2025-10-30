@@ -7,7 +7,11 @@
 
     <!-- CAD viewer when file is selected -->
     <div v-else>
-      <MlCadViewer locale="en" :local-file="selectedFile" />
+      <MlCadViewer
+        locale="en"
+        :local-file="selectedFile"
+        base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
+      />
     </div>
   </div>
 </template>

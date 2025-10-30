@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-simple-viewer",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -39,7 +39,7 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/mtext-renderer": "0.6.5",
+    "@mlightcad/mtext-renderer": "^0.7.0",
     "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",

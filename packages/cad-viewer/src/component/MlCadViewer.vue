@@ -259,21 +259,14 @@ watch(
   }
 )
 
-// Watch for baseUrl changes and apply to the document manager
-watch(
-  () => props.baseUrl,
-  newBaseUrl => {
-    if (newBaseUrl) {
-      AcApDocManager.instance.baseUrl = newBaseUrl
-    }
-  }
-)
-
 // Component lifecycle: Initialize and load initial file if URL or localFile is provided
 onMounted(async () => {
   // Initialize the CAD viewer with the internal canvas
   if (canvasRef.value) {
-    initializeCadViewer(canvasRef.value)
+    initializeCadViewer({
+      canvas: canvasRef.value,
+      baseUrl: props.baseUrl
+    })
     registerDialogs()
     // Set the editor reference after initialization
     editorRef.value = AcApDocManager.instance
@@ -291,11 +284,6 @@ onMounted(async () => {
   // Apply initial background color if provided
   if (props.background != null) {
     AcApDocManager.instance.curView.backgroundColor = props.background
-  }
-
-  // Apply initial baseUrl if provided
-  if (props.baseUrl) {
-    AcApDocManager.instance.baseUrl = props.baseUrl
   }
 })
 

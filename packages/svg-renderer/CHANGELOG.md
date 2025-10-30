@@ -1,5 +1,11 @@
 # @mlightcad/svg-renderer
 
+## 1.2.1
+
+### Patch Changes
+
+- fix: fix bug on baseUrl
+
 ## 1.2.0
 
 ### Minor Changes

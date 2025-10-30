@@ -1,5 +1,13 @@
 # @mlightcad/cad-simple-viewer-example
 
+## 1.2.1
+
+### Patch Changes
+
+- fix: fix bug on baseUrl
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.2.1
+
 ## 1.2.0
 
 ### Minor Changes

@@ -21,8 +21,13 @@ class CadViewerApp {
 
   private async initializeViewer() {
     try {
-      // Initialize the document manager with the canvas
-      AcApDocManager.createInstance(this.canvas)
+      // Initialize the document manager with the canvas and baseUrl.
+      // Actually 'baseUrl' here isn't required. Override default 'baseUrl'
+      // value is just for demostration.
+      AcApDocManager.createInstance({
+        canvas: this.canvas,
+        baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
+      })
       // Load default fonts
       await AcApDocManager.instance.loadDefaultFonts()
     } catch (error) {
