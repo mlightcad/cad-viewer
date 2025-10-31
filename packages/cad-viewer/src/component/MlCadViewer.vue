@@ -82,8 +82,8 @@
  * @version 1.0.0
  * @author MLight Lee (mlight.lee@outlook.com)
  *
- * @see {@link https://github.com/mlight-lee/cad-viewer | Project Repository}
- * @see {@link https://github.com/mlight-lee/cad-viewer/blob/main/packages/cad-viewer/src/component/MlCadViewer.vue | Source Code}
+ * @see {@link https://github.com/mlightcad/cad-viewer | Project Repository}
+ * @see {@link https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/MlCadViewer.vue | Source Code}
  */
 
 import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
@@ -119,6 +119,12 @@ interface Props {
   background?: number
   /** Base URL for loading fonts, templates, and example files (e.g., 'https://example.com/cad-data/') */
   baseUrl?: string
+  /**
+   * The flag whether to use main thread or webwork to render drawing.
+   * - true: use main thread
+   * - false: use web worker
+   */
+   useMainThreadDraw?: boolean  
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -126,7 +132,8 @@ const props = withDefaults(defineProps<Props>(), {
   url: undefined,
   localFile: undefined,
   background: undefined,
-  baseUrl: undefined
+  baseUrl: undefined,
+  useMainThreadDraw: false,
 })
 
 const { t } = useI18n()
@@ -265,7 +272,8 @@ onMounted(async () => {
   if (canvasRef.value) {
     initializeCadViewer({
       canvas: canvasRef.value,
-      baseUrl: props.baseUrl
+      baseUrl: props.baseUrl,
+      useMainThreadDraw: props.useMainThreadDraw
     })
     registerDialogs()
     // Set the editor reference after initialization
