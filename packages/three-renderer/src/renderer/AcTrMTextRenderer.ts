@@ -2,6 +2,7 @@ import {
   ColorSettings,
   MTextData,
   MTextObject,
+  RenderMode,
   TextStyle,
   UnifiedRenderer
 } from '@mlightcad/mtext-renderer'
@@ -11,8 +12,10 @@ import {
  */
 export class AcTrMTextRenderer {
   private static _instance: AcTrMTextRenderer | null = null
+  private _workerUrl?: string
   private _renderer?: UnifiedRenderer
   private _fontUrl?: string
+  private _renderMode?: RenderMode
 
   private constructor() {
     // Do nothing for now
@@ -35,9 +38,19 @@ export class AcTrMTextRenderer {
   setFontUrl(value: string) {
     if (this._renderer) {
       this._renderer.setFontUrl(value)
-    } else {
-      this._fontUrl = value
     }
+    this._fontUrl = value
+  }
+
+  /**
+   * Set render mode to use by mtext renderer
+   * @param mode - Render mode
+   */
+  setRenderMode(mode: RenderMode) {
+    if (this._renderer) {
+      this._renderer.setDefaultMode(mode)
+    }
+    this._renderMode = mode
   }
 
   /**
@@ -57,8 +70,7 @@ export class AcTrMTextRenderer {
     const mtext = await this._renderer!.asyncRenderMText(
       mtextContent,
       textStyle,
-      colorSettings,
-      'worker'
+      colorSettings
     )
     return mtext
   }
@@ -74,6 +86,7 @@ export class AcTrMTextRenderer {
       byBlockColor: 0xffffff
     }
   ): MTextObject {
+    this.ensureRendererCreated()
     if (!this._renderer) {
       throw new Error('AcTrMTextRenderer not initialized!')
     }
@@ -89,21 +102,35 @@ export class AcTrMTextRenderer {
    * Initialize the renderer with worker URL
    * @param workerUrl - URL to the worker script
    */
-  public initialize(workerUrl: string): void {
+  initialize(workerUrl: string): void {
+    this._workerUrl = workerUrl
+    // Notes: 
+    // Please don't modify the default rendering mode from 'worker' to 'main'.
+    // Otherwise, web worker renderer will not get 'setFontUrl' message. Call
+    // to 'setFontUrl' in the following code will not take effect. 
     this._renderer = new UnifiedRenderer('worker', { workerUrl })
     if (this._fontUrl) {
       this._renderer.setFontUrl(this._fontUrl)
+    }
+    if (this._renderMode) {
+      this._renderer.setDefaultMode(this._renderMode)
     }
   }
 
   /**
    * Dispose of the renderer and reset the singleton
    */
-  public dispose(): void {
+  dispose(): void {
     if (this._renderer) {
       this._renderer.destroy()
       this._renderer = undefined
     }
-    AcTrMTextRenderer._instance = null
+    // AcTrMTextRenderer._instance = null
+  }
+
+  private ensureRendererCreated() {
+    if (!this._renderer && this._workerUrl) {
+      this.initialize(this._workerUrl)
+    }
   }
 }

@@ -4,6 +4,7 @@ import {
   AcDbOpenDatabaseOptions,
   AcGeBox2d
 } from '@mlightcad/data-model'
+import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 import {
   AcApConvertToSvgCmd,
@@ -44,6 +45,14 @@ export interface AcApDocManagerOptions {
    * Base URL to load resources (such as fonts annd drawing templates) needed
    */
   baseUrl?: string
+  /**
+   * The flag whether to use main thread or webwork to render drawing.
+   * - true: use main thread to render drawing. This approach take less memory and take longer time to show
+   *         rendering results.
+   * - false: use web worker to render drawing. This approach take more memory and take shorter time to show
+   *         rendering results.
+   */
+  useMainThreadDraw?: boolean
 }
 
 /**
@@ -87,6 +96,12 @@ export class AcApDocManager {
    */
   private constructor(options: AcApDocManagerOptions = {}) {
     this._baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
+    if (options.useMainThreadDraw) {
+      AcTrMTextRenderer.getInstance().setRenderMode('main')
+    } else {
+      AcTrMTextRenderer.getInstance().setRenderMode('worker')
+    }
+    
     // Create one empty drawing
     const doc = new AcApDocument()
     doc.database.events.openProgress.addEventListener(args => {
@@ -110,6 +125,7 @@ export class AcApDocManager {
       calculateSizeCallback: callback
     })
     this._context = new AcApContext(view, doc)
+
     this._fontLoader = new AcApFontLoader()
     this._fontLoader.baseUrl = this._baseUrl + 'fonts/'
     acdbHostApplicationServices().workingDatabase = doc.database

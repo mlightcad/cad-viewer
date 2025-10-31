@@ -122,8 +122,8 @@ importers:
         version: 0.172.0
     devDependencies:
       '@mlightcad/mtext-renderer':
-        specifier: ^0.7.0
-        version: 0.7.0(three@0.172.0)
+        specifier: ^0.7.1
+        version: 0.7.1(three@0.172.0)
       '@mlightcad/svg-renderer':
         specifier: workspace:*
         version: link:../svg-renderer
@@ -310,8 +310,8 @@ importers:
         specifier: 1.3.4
         version: 1.3.4
       '@mlightcad/mtext-renderer':
-        specifier: ^0.7.0
-        version: 0.7.0(three@0.172.0)
+        specifier: ^0.7.1
+        version: 0.7.1(three@0.172.0)
       '@velipso/polybool':
         specifier: ^1.1.1
         version: 1.1.1
@@ -1580,8 +1580,8 @@ packages:
   '@mlightcad/mtext-parser@1.2.0':
     resolution: {integrity: sha512-ecAJZWIgxeCHMbf8r5bYVos0k9/6whQy2Y6v1y1Ku7RAOrP+vxN/BJF+88u4k3+2cGGn6/xRasCpK7B+hvYsgw==}
 
-  '@mlightcad/mtext-renderer@0.7.0':
-    resolution: {integrity: sha512-ztqcRJbiR3mWywPJ3LlUiJ4k+gX8gD8UecMhp9e3DkVRfweIVWkySAAT0J3ZNzQkLciDcYvr+1RlMmgz75djlg==}
+  '@mlightcad/mtext-renderer@0.7.1':
+    resolution: {integrity: sha512-LTjNcrGczM6TualOhDd+G4iUJyTKiccl//Nk9AG2yjBmC9k6FEaKbVN1UygBDAuXGYHI2L03MYpcqILlncskBg==}
     peerDependencies:
       three: ^0.172.0
 
@@ -6640,7 +6640,7 @@ snapshots:
 
   '@mlightcad/mtext-parser@1.2.0': {}
 
-  '@mlightcad/mtext-renderer@0.7.0(three@0.172.0)':
+  '@mlightcad/mtext-renderer@0.7.1(three@0.172.0)':
     dependencies:
       '@mlightcad/mtext-parser': 1.2.0
       '@mlightcad/shx-parser': 1.3.0
