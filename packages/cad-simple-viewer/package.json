@@ -39,7 +39,7 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/mtext-renderer": "^0.7.3",
+    "@mlightcad/mtext-renderer": "^0.7.4",
     "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",
