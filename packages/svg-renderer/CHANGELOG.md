@@ -1,5 +1,11 @@
 # @mlightcad/svg-renderer
 
+## 1.2.4
+
+### Patch Changes
+
+- fix: fix bundle size issue in lastest version of cad-simple-viewer
+
 ## 1.2.3
 
 ### Patch Changes
