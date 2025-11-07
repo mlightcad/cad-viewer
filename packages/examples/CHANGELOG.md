@@ -1,5 +1,17 @@
 # @mlightcad/cad-viewer-examples
 
+## 1.2.3
+
+### Patch Changes
+
+- fix: fix bugs on rendering polyline2d and polyline3d
+
+## 1.2.2
+
+### Patch Changes
+
+- fix: fix bugs on rendering polyline2d, polyline3d, and linear dimension
+
 ## 1.2.1
 
 ### Patch Changes
