@@ -167,7 +167,7 @@ const showNotificationCenter = ref(false)
 const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
   const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
   await AcApDocManager.instance.openDocument(fileName, fileContent, options)
-  store.fileName = fileName
+  store.fileName = AcApDocManager.instance.curDocument.docTitle
 }
 
 /**
@@ -180,10 +180,7 @@ const openFileFromUrl = async (url: string) => {
   try {
     const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
     await AcApDocManager.instance.openUrl(url, options)
-
-    // Extract filename from URL for display
-    const fileName = url.split('/').pop()
-    store.fileName = fileName ?? ''
+    store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch (error) {
     console.error('Failed to open file from URL:', error)
     ElMessage({
@@ -222,7 +219,7 @@ const openLocalFile = async (file: File) => {
     // Open the file using the document manager
     const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
     await AcApDocManager.instance.openDocument(file.name, fileContent, options)
-    store.fileName = file.name
+    store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch (error) {
     console.error('Failed to open local file:', error)
     ElMessage({
