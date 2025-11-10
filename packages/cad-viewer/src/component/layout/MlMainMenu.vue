@@ -1,5 +1,6 @@
 <template>
   <el-dropdown
+    v-if="features.isShowMainMenu"
     aria-hidden="false"
     class="ml-main-menu-container"
     @command="handleCommand"
@@ -33,7 +34,10 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { useI18n } from 'vue-i18n'
 
+import { useSettings } from '../../composable'
+
 const { t } = useI18n()
+const features = useSettings()
 
 const handleCommand = (command: string) => {
   if (command === 'Convert') {

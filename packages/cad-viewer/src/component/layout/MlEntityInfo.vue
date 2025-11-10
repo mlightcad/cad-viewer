@@ -35,98 +35,54 @@
 </template>
 
 <script setup lang="ts">
-import {
-  AcApDocManager,
-  AcEdViewHoverEventArgs
-} from '@mlightcad/cad-simple-viewer'
-import { AcDbObjectId } from '@mlightcad/data-model'
-import {
-  ComponentPublicInstance,
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref
-} from 'vue'
+import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
+import { AcDbEntity } from '@mlightcad/data-model'
+import { ComponentPublicInstance, computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useHover } from '../../composable'
 import { colorName, entityName } from '../../locale'
 
-interface EntityInfo {
-  type: string
-  color: string
-  layer: string
-  lineType: string
-}
-
 const { t } = useI18n()
-const hovered = ref(false)
-const x = ref(-1)
-const y = ref(-1)
-const id = ref<AcDbObjectId | null>(null)
 const cardRef = ref<ComponentPublicInstance<{}, HTMLElement> | null>(null)
+const { hovered, entity, mouse } = useHover()
 
 const cardWidth = ref(180)
 const cardHeight = ref(120)
+const margin = 8
 
-const left = computed(() => `${x.value}px`)
-const top = computed(() => `${y.value}px`)
+const left = computed(() =>
+  `${Math.min(Math.max(mouse.value.x, margin), window.innerWidth - cardWidth.value - margin)}px`
+)
+const top = computed(() =>
+  `${Math.min(Math.max(mouse.value.y, margin), window.innerHeight - cardHeight.value - margin)}px`
+)
 
-const info = computed<EntityInfo>(() => {
-  const db = AcApDocManager.instance.curDocument.database
-  if (id.value) {
-    const entity = db.tables.blockTable.modelSpace.getIdAt(id.value)
-    if (entity) {
-      return {
-        type: entityName(entity),
-        color: colorName(entity.color.toString()),
-        layer: entity.layer,
-        lineType: entity.lineType
-      }
+const info = computed(() => {
+  const ent = entity.value as unknown as AcDbEntity | null
+  if (!ent) return { type: '', color: '', layer: '', lineType: '' }
+
+  return {
+    type: entityName(ent),
+    color: colorName(ent.color.toString()),
+    layer: ent.layer,
+    lineType: ent.lineType
+  }
+})
+
+const visible = computed(() =>
+  hovered.value && info.value.type !== '' && AcApSettingManager.instance.isShowEntityInfo
+)
+
+watch(visible, async (val) => {
+  if (val) {
+    await nextTick()
+    const el = cardRef.value?.$el as HTMLElement | undefined
+    if (el) {
+      cardWidth.value = el.offsetWidth
+      cardHeight.value = el.offsetHeight
     }
   }
-  return { type: '', color: '', layer: '', lineType: '' }
-})
-
-const visible = computed(() => hovered.value && info.value.type !== '')
-
-const updateHoverInfo = async (args: AcEdViewHoverEventArgs) => {
-  id.value = args.id
-  hovered.value = true
-
-  await nextTick()
-
-  // ✅ Element Plus component instance → get DOM element via $el
-  const el = cardRef.value?.$el as HTMLElement | undefined
-  if (el) {
-    cardWidth.value = el.offsetWidth
-    cardHeight.value = el.offsetHeight
-  }
-
-  const margin = 8
-  const maxX = window.innerWidth - cardWidth.value - margin
-  const maxY = window.innerHeight - cardHeight.value - margin
-  const minX = margin
-  const minY = margin
-
-  x.value = Math.min(Math.max(args.x, minX), maxX)
-  y.value = Math.min(Math.max(args.y, minY), maxY)
-}
-
-const hideHoverInfo = () => {
-  hovered.value = false
-}
-
-onMounted(() => {
-  const events = AcApDocManager.instance.curView.events
-  events.hover.addEventListener(updateHoverInfo)
-  events.unhover.addEventListener(hideHoverInfo)
-})
-
-onUnmounted(() => {
-  const events = AcApDocManager.instance.curView.events
-  events.hover.removeEventListener(updateHoverInfo)
-  events.unhover.removeEventListener(hideHoverInfo)
 })
 </script>
 

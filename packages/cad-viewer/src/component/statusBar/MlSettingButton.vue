@@ -17,6 +17,24 @@
             {{ t('main.statusBar.setting.commandLine') }}
           </el-dropdown-item>
           <el-dropdown-item
+            :icon="features.isShowEntityInfo ? Check : ''"
+            command="isShowEntityInfo"
+          >
+            {{ t('main.statusBar.setting.entityInfo') }}
+          </el-dropdown-item>
+          <el-dropdown-item
+            :icon="features.isShowMainMenu ? Check : ''"
+            command="isShowMainMenu"
+          >
+            {{ t('main.statusBar.setting.mainMenu') }}
+          </el-dropdown-item>
+          <el-dropdown-item
+            :icon="features.isShowLanguageSelector ? Check : ''"
+            command="isShowLanguageSelector"
+          >
+            {{ t('main.statusBar.setting.languageSelector') }}
+          </el-dropdown-item>
+          <el-dropdown-item
             :icon="features.isShowCoordinate ? Check : ''"
             command="isShowCoordinate"
           >
@@ -51,6 +69,15 @@ const handleCommand = (command: keyof AcApSettings) => {
   } else if (command == 'isShowCommandLine') {
     features.isShowCommandLine = !features.isShowCommandLine
     AcApSettingManager.instance.isShowCommandLine = features.isShowCommandLine
+  } else if (command == 'isShowEntityInfo') {
+    features.isShowEntityInfo = !features.isShowEntityInfo
+    AcApSettingManager.instance.isShowEntityInfo = features.isShowEntityInfo
+  } else if (command == 'isShowMainMenu') {
+    features.isShowMainMenu = !features.isShowMainMenu
+    AcApSettingManager.instance.isShowMainMenu = features.isShowMainMenu
+  } else if (command == 'isShowLanguageSelector') {
+    features.isShowLanguageSelector = !features.isShowLanguageSelector
+    AcApSettingManager.instance.isShowLanguageSelector = features.isShowLanguageSelector
   } else if (command == 'isShowToolbar') {
     features.isShowToolbar = !features.isShowToolbar
     AcApSettingManager.instance.isShowToolbar = features.isShowToolbar

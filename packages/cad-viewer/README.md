@@ -199,6 +199,9 @@ The `MlCadViewer` reads its UI visibility from the global `AcApSettingManager` (
 | `isShowToolbar` | `boolean` | `true` | Controls toolbar visibility |
 | `isShowCommandLine` | `boolean` | `true` | Controls command line visibility |
 | `isShowCoordinate` | `boolean` | `true` | Controls coordinate display visibility |
+| `isShowEntityInfo` | `boolean` | `false` | Controls entity info card visibility |
+| `isShowLanguageSelector` | `boolean` | `true` | Controls language selector visibility |
+| `isShowMainMenu` | `boolean` | `true` | Controls main menu visibility |
 | `isShowStats` | `boolean` | `false` | Controls performance statistics display |
 
 #### Example (recommended)
@@ -236,6 +239,7 @@ AcApSettingManager.instance.isShowCommandLine = false
 // AcApSettingManager.instance.isShowToolbar = false
 // AcApSettingManager.instance.isShowStats = true
 // AcApSettingManager.instance.isShowCoordinate = false
+// AcApSettingManager.instance.isShowEntityInfo = false
 </script>
 ```
 

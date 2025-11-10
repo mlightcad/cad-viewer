@@ -30,6 +30,12 @@ export interface AcApSettings {
   isShowCommandLine: boolean
   /** Whether coordinate display is visible */
   isShowCoordinate: boolean
+  /** Whether entity info card is visible */
+  isShowEntityInfo: boolean
+  /** Whether language selector is visible */
+  isShowLanguageSelector: boolean
+  /** Whether main menu is visible */
+  isShowMainMenu: boolean
   /** Whether the toolbar is visible */
   isShowToolbar: boolean
   /** Whether performance statistics are displayed */
@@ -43,6 +49,9 @@ const DEFAULT_VALUES: AcApSettings = {
   isDebug: false,
   isShowCommandLine: true,
   isShowCoordinate: true,
+  isShowEntityInfo: false,
+  isShowLanguageSelector: true,
+  isShowMainMenu: true,
   isShowToolbar: true,
   isShowStats: false,
   fontMapping: {}
@@ -238,6 +247,60 @@ export class AcApSettingManager<T extends AcApSettings = AcApSettings> {
    */
   set isShowCoordinate(value: boolean) {
     this.set('isShowCoordinate', value)
+  }
+
+  /**
+   * Gets whether entity info card is visible.
+   *
+   * @returns True if entity info card should be displayed
+   */
+  get isShowEntityInfo() {
+    return this.get('isShowEntityInfo')
+  }
+
+  /**
+   * Sets whether entity info card is visible.
+   *
+   * @param value - True to show entity info card
+   */
+  set isShowEntityInfo(value: boolean) {
+    this.set('isShowEntityInfo', value)
+  }
+
+  /**
+   * Gets whether language selector is visible.
+   *
+   * @returns True if language selector should be displayed
+   */
+  get isShowLanguageSelector() {
+    return this.get('isShowLanguageSelector')
+  }
+
+  /**
+   * Sets whether language selector is visible.
+   *
+   * @param value - True to show language selector
+   */
+  set isShowLanguageSelector(value: boolean) {
+    this.set('isShowLanguageSelector', value)
+  }
+
+  /**
+   * Gets whether the main menu is visible.
+   *
+   * @returns True if the main menu should be displayed
+   */
+  get isShowMainMenu() {
+    return this.get('isShowMainMenu')
+  }
+
+  /**
+   * Sets whether the main menu is visible.
+   *
+   * @param value - True to show the main menu
+   */
+  set isShowMainMenu(value: boolean) {
+    this.set('isShowMainMenu', value)
   }
 
   /**

@@ -1,6 +1,6 @@
 export * from './common'
 export * from './dialog'
-export * from './layerManager'
+export * from './palette'
 export * from './layout'
 export * from './notification'
 export * from './statusBar'

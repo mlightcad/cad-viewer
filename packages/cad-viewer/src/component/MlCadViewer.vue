@@ -96,7 +96,6 @@ import { initializeCadViewer, registerDialogs, store } from '../app'
 import { useLocale, useNotificationCenter } from '../composable'
 import { LocaleProp } from '../locale'
 import { MlDialogManager, MlFileReader } from './common'
-import { MlLayerManager } from './layerManager'
 import {
   MlCommandLine,
   MlEntityInfo,
@@ -105,6 +104,7 @@ import {
   MlToolBars
 } from './layout'
 import { MlNotificationCenter } from './notification'
+import { MlPaletteManager } from './palette'
 import { MlStatusBar } from './statusBar'
 
 // Define component props with their purposes
@@ -124,7 +124,7 @@ interface Props {
    * - true: use main thread
    * - false: use web worker
    */
-   useMainThreadDraw?: boolean  
+  useMainThreadDraw?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -133,7 +133,7 @@ const props = withDefaults(defineProps<Props>(), {
   localFile: undefined,
   background: undefined,
   baseUrl: undefined,
-  useMainThreadDraw: false,
+  useMainThreadDraw: false
 })
 
 const { t } = useI18n()
@@ -397,8 +397,8 @@ const closeNotificationCenter = () => {
         <!-- Toolbar with common CAD operations (zoom, pan, select, etc.) -->
         <ml-tool-bars />
 
-        <!-- Layer manager for controlling entity visibility and properties -->
-        <ml-layer-manager :editor="editor" />
+        <!-- Layer manager palette and entity properties palette for controlling entity visibility and properties -->
+        <ml-palette-manager :editor="editor" />
 
         <!-- Dialog manager for modal dialogs and settings -->
         <ml-dialog-manager />

@@ -48,9 +48,12 @@ export default {
   },
   statusBar: {
     setting: {
-      tooltip: 'Display settings',
-      commandLine: 'Command line',
+      tooltip: 'Display Settings',
+      commandLine: 'Command Line',
       coordinate: 'Coordinate',
+      entityInfo: 'Entity Info',
+      languageSelector: 'Language Selector',
+      mainMenu: 'Main Menu',
       toolbar: 'Toolbar',
       stats: 'Statistics'
     },
@@ -73,7 +76,16 @@ export default {
     }
   },
   toolPalette: {
+    entityProperties: {
+      tab: 'Properties',
+      title: 'Entity Properties',
+      propertyPanel: {
+        noEntitySelected: 'No entity selected!',
+        multipleEntitySelected: '{count} entities selected'
+      }
+    },
     layerManager: {
+      tab: 'Layers',
       title: 'Layer Manager',
       layerList: {
         name: 'Name',

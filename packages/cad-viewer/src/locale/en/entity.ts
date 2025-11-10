@@ -1,5 +1,7 @@
 export default {
   entityName: {
+    '2dPolyline': '2D Polyline',
+    '3dPolyline': '3D Polyline',
     '3PointAngularDimension': 'Three Point Angular Dimension',
     AlignedDimension: 'Aligned Dimension',
     Arc: 'Arc',
@@ -171,5 +173,25 @@ export default {
     whitesmoke: 'White Smoke',
     yellow: 'Yellow',
     yellowgreen: 'Yellow Green'
+  },
+  property: {
+    general: 'General',
+    handle: 'Handle',
+    color: 'Color',
+    layer: 'Layer',
+    linetype: 'Linetype',
+    linetypeScale: 'Linetype Scale',
+    lineWeight: 'Lineweight',
+    thickness: 'Thickness',
+    geometry: 'Geometry',
+    startX: 'Start X',
+    startY: 'Start Y',
+    startZ: 'Start Z',
+    endX: 'End X',
+    endY: 'End Y',
+    endZ: 'End Z',
+    x: 'X',
+    y: 'Y',
+    z: 'Z'
   }
 }
