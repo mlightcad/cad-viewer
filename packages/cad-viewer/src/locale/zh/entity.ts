@@ -1,5 +1,7 @@
 export default {
   entityName: {
+    '2dPolyline': '二维多段线',
+    '3dPolyline': '三维多段线',
     '3PointAngularDimension': '三点角度标注',
     AlignedDimension: '线性标注',
     Arc: '圆弧',
@@ -171,5 +173,25 @@ export default {
     whitesmoke: '白烟色',
     yellow: '黄色',
     yellowgreen: '黄绿色'
+  },
+  property: {
+    general: '常用',
+    handle: '句柄',
+    color: '颜色',
+    layer: '图层',
+    linetype: '线型',
+    linetypeScale: '线型比例',
+    lineWeight: '线宽',
+    thickness: '厚度',
+    geometry: '几何',
+    startX: '起点 X',
+    startY: '起点 Y',
+    startZ: '起点 Z',
+    endX: '终点 X',
+    endY: '终点 Y',
+    endZ: '终点 Z',
+    x: 'X',
+    y: 'Y',
+    z: 'Z'
   }
 }

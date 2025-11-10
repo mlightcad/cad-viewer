@@ -1,6 +1,7 @@
 <template>
   <ml-language
     class="ml-language-selector"
+    v-if="features.isShowLanguageSelector"
     :languages="languages"
     :current="effectiveLocale"
     @click="handleClick"
@@ -11,8 +12,10 @@
 import { MlDropdownMenuItem, MlLanguage } from '@mlightcad/ui-components'
 import { reactive } from 'vue'
 
-import { useLocale } from '../../composable'
+import { useLocale, useSettings } from '../../composable'
 import { LocaleProp, LocaleValue } from '../../locale'
+
+const features = useSettings()
 
 // Define props
 interface Props {

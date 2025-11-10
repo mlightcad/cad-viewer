@@ -65,6 +65,12 @@ export const entityName = (entity: AcDbEntity) => {
   return t(key, entity.type, { missingWarn: false })
 }
 
+export const entityProp = (name: string) => {
+  const t = i18n.global.t
+  const key = 'entity.property.' + name
+  return t(key, name, { missingWarn: false })
+}
+
 export const colorName = (colorKeyName: string) => {
   if (colorKeyName == 'ByLayer' || colorKeyName == 'ByBlock') {
     return colorKeyName
@@ -79,6 +85,18 @@ export const conversionSubStageName = (stage: AcDbConversionStage) => {
   const t = i18n.global.t
   const key = 'main.progress.' + stage.replace(/_/g, '').toLowerCase()
   return t(key, stage)
+}
+
+export const toolPaletteTitle = (name: string) => {
+  const t = i18n.global.t
+  const key = `main.toolPalette.${name}.title`
+  return t(key, name, { missingWarn: false })
+}
+
+export const toolPaletteTabName = (name: string) => {
+  const t = i18n.global.t
+  const key = `main.toolPalette.${name}.tab`
+  return t(key, name, { missingWarn: false })
 }
 
 export default i18n

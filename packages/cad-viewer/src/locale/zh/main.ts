@@ -50,6 +50,9 @@ export default {
       tooltip: '显示设置',
       commandLine: '命令行',
       coordinate: '坐标',
+      entityInfo: '图元信息',
+      languageSelector: '语言菜单',
+      mainMenu: '主菜单',
       toolbar: '工具栏',
       stats: '性能面板'
     },
@@ -72,7 +75,16 @@ export default {
     }
   },
   toolPalette: {
+    entityProperties: {
+      tab: '属性',
+      title: '图元属性',
+      propertyPanel: {
+        noEntitySelected: '未选择任何图元！',
+        multipleEntitySelected: '{count}个图元'
+      }
+    },
     layerManager: {
+      tab: '图层',
       title: '图层管理器',
       layerList: {
         name: '名称',
