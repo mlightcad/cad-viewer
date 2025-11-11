@@ -12,7 +12,12 @@
         style="width: 100%; margin-bottom: 0.5rem"
       >
         <el-option
-          :label="t('main.toolPalette.entityProperties.propertyPanel.multipleEntitySelected', { count: entityPropsList.length})"
+          :label="
+            t(
+              'main.toolPalette.entityProperties.propertyPanel.multipleEntitySelected',
+              { count: entityPropsList.length }
+            )
+          "
           :value="-1"
         />
         <el-option
@@ -38,12 +43,12 @@
       class="ml-entity-properties-table"
     >
       <!-- Label / Group -->
-      <el-table-column prop="label" width="100">
+      <el-table-column prop="name" min-width="auto">
         <template #default="{ row }">
           <div class="ml-cell-container">
             <div :class="['ml-cell-label', { 'ml-group-row': row.isGroup }]">
-              <strong v-if="row.isGroup">{{ entityProp(row.label) }}</strong>
-              <span v-else>{{ entityProp(row.label) }}</span>
+              <strong v-if="row.isGroup">{{ entityPropName(row.name) }}</strong>
+              <span v-else>{{ entityPropName(row.name) }}</span>
             </div>
           </div>
         </template>
@@ -53,77 +58,92 @@
       <el-table-column>
         <template #default="{ row }">
           <div class="ml-cell-value" v-if="!row.isGroup">
-            <!-- Enum -->
-            <el-select
-              v-if="row.type === 'enum'"
-              :model-value="row.accessor.get()"
-              :disabled="!row.editable || !editable"
-              size="small"
-              style="width: 100%"
-              @change="(v: unknown) => onPropertyChange(row, v)"
+            <!-- Readonly Mode -->
+            <span
+              v-if="!editable || !row.editable"
+              :title="formatDisplayValue(row)"
+              class="ml-readonly-value"
+              @dblclick="copyReadonlyValue(row)"
             >
-              <el-option
-                v-for="opt in row.options || []"
-                :key="opt.value"
-                :label="opt.label"
-                :value="opt.value"
+              {{ formatDisplayValue(row) }}
+            </span>
+
+            <!-- Editable Mode -->
+            <template v-else>
+              <!-- Enum -->
+              <el-select
+                v-if="row.type === 'enum'"
+                :model-value="row.accessor.get()"
+                :disabled="!row.editable || !editable"
+                size="small"
+                style="width: 100%"
+                @change="(v: unknown) => onPropertyChange(row, v)"
+              >
+                <el-option
+                  v-for="opt in row.options || []"
+                  :key="opt.value"
+                  :label="entityPropEnum(opt.label)"
+                  :value="opt.value"
+                />
+              </el-select>
+
+              <!-- Color -->
+              <el-color-picker
+                v-else-if="row.type === 'color'"
+                :model-value="row.accessor.get()"
+                :disabled="!row.editable || !editable"
+                size="small"
+                @change="(v: unknown) => onPropertyChange(row, v)"
               />
-            </el-select>
 
-            <!-- Color -->
-            <el-color-picker
-              v-else-if="row.type === 'color'"
-              :model-value="row.accessor.get()"
-              :disabled="!row.editable || !editable"
-              size="small"
-              @change="(v: unknown) => onPropertyChange(row, v)"
-            />
+              <!-- Boolean -->
+              <el-switch
+                v-else-if="row.type === 'boolean'"
+                :model-value="row.accessor.get()"
+                :disabled="!row.editable || !editable"
+                @change="(v: boolean) => onPropertyChange(row, v)"
+              />
 
-            <!-- Boolean -->
-            <el-switch
-              v-else-if="row.type === 'boolean'"
-              :model-value="row.accessor.get()"
-              :disabled="!row.editable || !editable"
-              @change="(v: boolean) => onPropertyChange(row, v)"
-            />
+              <!-- Int -->
+              <el-input-number
+                v-else-if="row.type === 'int'"
+                :model-value="row.accessor.get()"
+                :disabled="!row.editable || !editable"
+                size="small"
+                :step="1"
+                :precision="0"
+                @change="(v: number) => onPropertyChange(row, v)"
+              />
 
-            <!-- Int -->
-            <el-input-number
-              v-else-if="row.type === 'int'"
-              :model-value="row.accessor.get()"
-              :disabled="!row.editable || !editable"
-              size="small"
-              :step="1"
-              :precision="0"
-              @change="(v: number) => onPropertyChange(row, v)"
-            />
+              <!-- Float -->
+              <el-input-number
+                v-else-if="row.type === 'float'"
+                :model-value="row.accessor.get()"
+                :disabled="!row.editable || !editable"
+                size="small"
+                :step="0.1"
+                :precision="3"
+                @change="(v: number) => onPropertyChange(row, v)"
+              />
 
-            <!-- Float -->
-            <el-input-number
-              v-else-if="row.type === 'float'"
-              :model-value="row.accessor.get()"
-              :disabled="!row.editable || !editable"
-              size="small"
-              :step="0.1"
-              :precision="3"
-              @change="(v: number) => onPropertyChange(row, v)"
-            />
-
-            <!-- String -->
-            <el-input
-              v-else
-              :model-value="row.accessor.get()"
-              :disabled="!row.editable || !editable"
-              size="small"
-              @input="(v: string) => onPropertyChange(row, v)"
-            />
+              <!-- String -->
+              <el-input
+                v-else
+                :model-value="row.accessor.get()"
+                :disabled="!row.editable || !editable"
+                size="small"
+                @input="(v: string) => onPropertyChange(row, v)"
+              />
+            </template>
           </div>
         </template>
       </el-table-column>
     </el-table>
 
     <div v-else class="ml-no-entity-selected">
-      {{ t('main.toolPalette.entityProperties.propertyPanel.noEntitySelected') }}
+      {{
+        t('main.toolPalette.entityProperties.propertyPanel.noEntitySelected')
+      }}
     </div>
   </div>
 </template>
@@ -134,10 +154,11 @@ import type {
   AcDbEntityPropertyGroup,
   AcDbEntityRuntimeProperty
 } from '@mlightcad/data-model'
+import { ElMessage } from 'element-plus'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { entityProp } from '../../locale'
+import { entityPropEnum, entityPropName } from '../../locale'
 
 const { t } = useI18n()
 
@@ -176,7 +197,7 @@ const selectedIndex = ref(-1)
 interface MlDisplayRowBase {
   id: string
   isGroup: boolean
-  label: string
+  name: string
 }
 
 type MlDisplayPropertyRow = MlDisplayRowBase & AcDbEntityRuntimeProperty
@@ -185,6 +206,46 @@ type MlDisplayGroupRow = MlDisplayRowBase & {
   children: MlDisplayPropertyRow[]
 }
 type MlDisplayRow = MlDisplayGroupRow | MlDisplayPropertyRow
+
+function formatDisplayValue(row: MlDisplayPropertyRow): string {
+  const v = row.accessor.get()
+
+  switch (row.type) {
+    case 'boolean':
+      return v ? 'True' : 'False'
+
+    case 'enum': {
+      const opt = row.options?.find(o => o.value === v)
+      return (opt && opt.label) ? entityPropEnum(opt.label) : ''
+    }
+
+    case 'color':
+      return String(v)
+
+    default:
+      return v != null ? String(v) : ''
+  }
+}
+
+async function copyReadonlyValue(row: MlDisplayPropertyRow) {
+  const value = formatDisplayValue(row)
+
+  try {
+    await navigator.clipboard.writeText(value)
+    ElMessage({
+      message: t('main.toolPalette.entityProperties.propertyPanel.propValCopied'),
+      grouping: true,
+      type: 'success',
+    })
+  } catch (e) {
+    console.error(e)
+    ElMessage({
+      message: t('main.toolPalette.entityProperties.propertyPanel.failedToCopyPropVal'),
+      grouping: true,
+      type: 'error',
+    })
+  }
+}
 
 /**
  * Compute table rows
@@ -214,7 +275,7 @@ const tableRows = computed<MlDisplayRow[]>(() => {
 function toRows(entityProps: AcDbEntityProperties): MlDisplayRow[] {
   return entityProps.groups.map((group, gi) => ({
     id: `group-${gi}`,
-    label: group.groupName,
+    name: group.groupName,
     isGroup: true,
     children: group.properties.map((p, pi) => ({
       ...p,
@@ -227,7 +288,9 @@ function toRows(entityProps: AcDbEntityProperties): MlDisplayRow[] {
 /**
  * Find properties that have identical values across all entities
  */
- function findCommonProperties(list: AcDbEntityProperties[]): AcDbEntityProperties {
+function findCommonProperties(
+  list: AcDbEntityProperties[]
+): AcDbEntityProperties {
   if (!list.length) return { type: '', groups: [] }
 
   // Start from the first entity's groups
@@ -297,7 +360,7 @@ function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
 
   emit('update-property', {
     groupName: group.groupName,
-    propertyName: row.label,
+    propertyName: row.name,
     newValue
   })
 }
@@ -320,7 +383,6 @@ function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
   width: 100%;
 }
 
-
 .ml-cell-container {
   display: flex;
   align-items: center;
@@ -329,6 +391,9 @@ function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
 
 .ml-cell-label {
   font-weight: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ml-group-row {
@@ -337,6 +402,15 @@ function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
 
 .ml-cell-value {
   width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ml-readonly-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ml-no-entity-selected {

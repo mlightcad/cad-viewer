@@ -51,11 +51,13 @@ const cardWidth = ref(180)
 const cardHeight = ref(120)
 const margin = 8
 
-const left = computed(() =>
-  `${Math.min(Math.max(mouse.value.x, margin), window.innerWidth - cardWidth.value - margin)}px`
+const left = computed(
+  () =>
+    `${Math.min(Math.max(mouse.value.x, margin), window.innerWidth - cardWidth.value - margin)}px`
 )
-const top = computed(() =>
-  `${Math.min(Math.max(mouse.value.y, margin), window.innerHeight - cardHeight.value - margin)}px`
+const top = computed(
+  () =>
+    `${Math.min(Math.max(mouse.value.y, margin), window.innerHeight - cardHeight.value - margin)}px`
 )
 
 const info = computed(() => {
@@ -70,11 +72,14 @@ const info = computed(() => {
   }
 })
 
-const visible = computed(() =>
-  hovered.value && info.value.type !== '' && AcApSettingManager.instance.isShowEntityInfo
+const visible = computed(
+  () =>
+    hovered.value &&
+    info.value.type !== '' &&
+    AcApSettingManager.instance.isShowEntityInfo
 )
 
-watch(visible, async (val) => {
+watch(visible, async val => {
   if (val) {
     await nextTick()
     const el = cardRef.value?.$el as HTMLElement | undefined

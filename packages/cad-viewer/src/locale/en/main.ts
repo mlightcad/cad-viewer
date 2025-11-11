@@ -81,7 +81,9 @@ export default {
       title: 'Entity Properties',
       propertyPanel: {
         noEntitySelected: 'No entity selected!',
-        multipleEntitySelected: '{count} entities selected'
+        multipleEntitySelected: '{count} entities selected',
+        propValCopied: 'Property value copied',
+        failedToCopyPropVal: 'Failed to copy property value!'
       }
     },
     layerManager: {

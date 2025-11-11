@@ -80,7 +80,9 @@ export default {
       title: '图元属性',
       propertyPanel: {
         noEntitySelected: '未选择任何图元！',
-        multipleEntitySelected: '{count}个图元'
+        multipleEntitySelected: '{count}个图元',
+        propValCopied: '属性值已复制',
+        failedToCopyPropVal: '复制属性值失败！'
       }
     },
     layerManager: {

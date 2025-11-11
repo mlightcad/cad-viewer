@@ -101,7 +101,7 @@ export class AcApDocManager {
     } else {
       AcTrMTextRenderer.getInstance().setRenderMode('worker')
     }
-    
+
     // Create one empty drawing
     const doc = new AcApDocument()
     doc.database.events.openProgress.addEventListener(args => {

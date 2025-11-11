@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { ElInput, ElOption,ElSelect } from 'element-plus'
+import { ElInput, ElOption, ElSelect } from 'element-plus'
 import type { Ref } from 'vue'
 import { ref, watch } from 'vue'
 
