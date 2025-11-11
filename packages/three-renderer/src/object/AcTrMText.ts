@@ -43,6 +43,7 @@ export class AcTrMText extends AcTrEntity {
         // Add the flag to check intersection using bounding box of the mesh
         object.userData.bboxIntersectionCheck = true
       })
+      this.box = this._mtext.box
     } catch (error) {
       console.log(
         `Failed to render mtext '${this._text.text}' with the following error:\n`,
@@ -71,6 +72,7 @@ export class AcTrMText extends AcTrEntity {
             // Add the flag to check intersection using bounding box of the mesh
             object.userData.bboxIntersectionCheck = true
           })
+          this.box = this._mtext.box
         })
     } catch (error) {
       console.log(
@@ -86,18 +88,5 @@ export class AcTrMText extends AcTrEntity {
    */
   raycast(raycaster: THREE.Raycaster, intersects: THREE.Intersection[]) {
     this._mtext?.raycast(raycaster, intersects)
-  }
-
-  protected getTextEncoding(style: AcGiTextStyle) {
-    const bigFontFile = style?.bigFont
-    if (!bigFontFile) {
-      return 'utf8'
-    }
-    if (style.bigFont.toUpperCase().startsWith('GB')) {
-      return 'gbk'
-    } else {
-      //TODO:
-      return 'utf8'
-    }
   }
 }

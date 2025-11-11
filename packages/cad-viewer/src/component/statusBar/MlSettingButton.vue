@@ -77,7 +77,8 @@ const handleCommand = (command: keyof AcApSettings) => {
     AcApSettingManager.instance.isShowMainMenu = features.isShowMainMenu
   } else if (command == 'isShowLanguageSelector') {
     features.isShowLanguageSelector = !features.isShowLanguageSelector
-    AcApSettingManager.instance.isShowLanguageSelector = features.isShowLanguageSelector
+    AcApSettingManager.instance.isShowLanguageSelector =
+      features.isShowLanguageSelector
   } else if (command == 'isShowToolbar') {
     features.isShowToolbar = !features.isShowToolbar
     AcApSettingManager.instance.isShowToolbar = features.isShowToolbar

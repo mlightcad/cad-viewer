@@ -3,36 +3,36 @@ import {
   AcEdViewHoverEventArgs
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntity, AcDbObjectId } from '@mlightcad/data-model'
-import { onMounted, onUnmounted,ref } from 'vue'
-  
+import { onMounted, onUnmounted, ref } from 'vue'
+
 /**
  * Composable: useHover
- * 
+ *
  * Tracks which CAD entity is currently hovered in the active view.
- * 
+ *
  * This composable automatically listens to `hover` and `unhover` events
  * from the `AcApDocManager.instance.curView.events` system in the CAD viewer.
  * It exposes reactive state containing:
- * 
+ *
  * - The currently hovered entity (`entity`)
  * - The hovered entity’s object ID (`id`)
  * - The mouse position when hovering (`mouse`)
  * - A boolean indicating if an entity is hovered (`hovered`)
- * 
+ *
  * When the component using this composable unmounts,
  * all event listeners are automatically cleaned up.
- * 
+ *
  * ---
  * @example
  * ```ts
  * import { useHover } from '@/composables/useHover'
  * import { computed } from 'vue'
  * import { colorName, entityName } from '@/locale'
- * 
+ *
  * export default {
  *   setup() {
  *     const { hovered, entity, mouse } = useHover()
- * 
+ *
  *     // Example: compute entity info for display
  *     const info = computed(() => {
  *       if (!entity.value) return null
@@ -43,18 +43,18 @@ import { onMounted, onUnmounted,ref } from 'vue'
  *         lineType: entity.value.lineType
  *       }
  *     })
- * 
+ *
  *     // Example: compute tooltip position
  *     const tooltipStyle = computed(() => ({
  *       left: `${mouse.value.x + 10}px`,
  *       top: `${mouse.value.y + 10}px`
  *     }))
- * 
+ *
  *     return { hovered, info, tooltipStyle }
  *   }
  * }
  * ```
- * 
+ *
  * ---
  * @returns {{
  *   hovered: import('vue').Ref<boolean>;
@@ -114,7 +114,6 @@ export function useHover() {
     hovered,
     entity,
     id,
-    mouse,
+    mouse
   }
 }
-  

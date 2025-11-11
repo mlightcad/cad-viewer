@@ -65,10 +65,16 @@ export const entityName = (entity: AcDbEntity) => {
   return t(key, entity.type, { missingWarn: false })
 }
 
-export const entityProp = (name: string) => {
+export const entityPropName = (name: string) => {
   const t = i18n.global.t
   const key = 'entity.property.' + name
   return t(key, name, { missingWarn: false })
+}
+
+export const entityPropEnum = (name: string) => {
+  const t = i18n.global.t
+  const key = 'entity.enum.' + name
+  return t(key, name, { missingWarn: true })
 }
 
 export const colorName = (colorKeyName: string) => {

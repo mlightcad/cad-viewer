@@ -104,10 +104,10 @@ export class AcTrMTextRenderer {
    */
   initialize(workerUrl: string): void {
     this._workerUrl = workerUrl
-    // Notes: 
+    // Notes:
     // Please don't modify the default rendering mode from 'worker' to 'main'.
     // Otherwise, web worker renderer will not get 'setFontUrl' message. Call
-    // to 'setFontUrl' in the following code will not take effect. 
+    // to 'setFontUrl' in the following code will not take effect.
     this._renderer = new UnifiedRenderer('worker', { workerUrl })
     if (this._fontUrl) {
       this._renderer.setFontUrl(this._fontUrl)
