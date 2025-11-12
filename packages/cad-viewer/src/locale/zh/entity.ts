@@ -262,6 +262,8 @@ export default {
     locationX: '位置 X',
     locationY: '位置 Y',
     locationZ: '位置 Z',
+    oblique: '倾斜',
+    widthFactor: '宽度因子',
     x: 'X',
     y: 'Y',
     z: 'Z',

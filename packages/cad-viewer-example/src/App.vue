@@ -10,7 +10,6 @@
       <MlCadViewer
         locale="en"
         :local-file="selectedFile"
-        base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
       />
     </div>
   </div>

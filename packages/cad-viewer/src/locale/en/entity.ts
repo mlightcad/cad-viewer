@@ -262,6 +262,8 @@ export default {
     locationX: 'Location X',
     locationY: 'Location Y',
     locationZ: 'Location Z',
+    oblique: 'Oblique',
+    widthFactor: 'Width Factor',
     x: 'X',
     y: 'Y',
     z: 'Z',
