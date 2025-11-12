@@ -456,6 +456,7 @@ const closeNotificationCenter = () => {
   position: absolute;
   top: 0;
   left: 50%;
+  color: var(--el-text-color-regular);
   transform: translateX(-50%);
   text-align: center;
   width: 100%;
