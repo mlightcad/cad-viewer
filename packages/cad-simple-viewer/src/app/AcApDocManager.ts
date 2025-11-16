@@ -4,7 +4,9 @@ import {
   AcDbOpenDatabaseOptions,
   AcDbProgressdEventArgs,
   AcDbSysVarManager,
-  AcGeBox2d
+  AcGeBox2d,
+  AcGePoint3d,
+  AcGeVector3d
 } from '@mlightcad/data-model'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
@@ -525,6 +527,14 @@ export class AcApDocManager {
    */
   protected onBeforeOpenDocument() {
     this.curView.clear()
+    const db = this.context.doc.database
+    if (!db.extents.isEmpty()) {
+      const center = new AcGeVector3d()
+      db.extents.getCenter(center)
+      this.curView.basePoint = center
+    } else {
+      this.curView.basePoint = new AcGePoint3d(4.8 * 10e8, 2.5 * 10e9, 0)
+    }
   }
 
   /**

@@ -4,10 +4,9 @@ import * as THREE from 'three'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrBufferGeometryUtil } from '../util'
 import { AcTrEntity } from './AcTrEntity'
+import { AcTrPointsRebaser } from './rebaser'
 
 export class AcTrLine extends AcTrEntity {
-  public geometry: THREE.BufferGeometry
-
   constructor(
     points: AcGePoint3dLike[],
     traits: AcGiSubEntityTraits,
@@ -29,6 +28,9 @@ export class AcTrLine extends AcTrEntity {
       vertices[pos++] = point.y
       vertices[pos++] = point.z ?? 0
     }
+
+    const offset = this.rebase(new AcTrPointsRebaser(points))
+
     for (let i = 0, pos = 0; i < maxVertexCount - 1; i++) {
       indices[pos++] = i
       indices[pos++] = i + 1
@@ -36,16 +38,11 @@ export class AcTrLine extends AcTrEntity {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
     geometry.setIndex(new THREE.BufferAttribute(indices, 1))
-    this.setBoundingBox(geometry)
-    this.geometry = geometry
+
+    this.setBoundingBox(geometry, offset)
 
     const line = new THREE.LineSegments(geometry, material)
     AcTrBufferGeometryUtil.computeLineDistances(line)
     this.add(line)
-  }
-
-  private setBoundingBox(geometry: THREE.BufferGeometry) {
-    geometry.computeBoundingBox()
-    this.box = geometry.boundingBox!
   }
 }

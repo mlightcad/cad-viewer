@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrEntity } from './AcTrEntity'
+import { AcTrPointRebaser } from './rebaser'
 
 const _vector3 = /*@__PURE__*/ new THREE.Vector3()
 
@@ -30,6 +31,7 @@ export class AcTrPoint extends AcTrEntity {
     )
 
     this.isShowPoint = pointSymbol.point != null
+    const offset = this.rebase(new AcTrPointRebaser(point))
 
     // Always create one THREE.Points object. If 'isShowPoint' is true, show it. Otherwise, hide it.
     const geometry =
@@ -57,5 +59,7 @@ export class AcTrPoint extends AcTrEntity {
       lineSegmentsObj.userData.position = { x: point.x, y: point.y, z: point.z }
       this.add(lineSegmentsObj)
     }
+
+    this.updateBoundingBox(offset)
   }
 }

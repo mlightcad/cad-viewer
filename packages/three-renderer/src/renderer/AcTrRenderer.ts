@@ -42,7 +42,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     fontNotFound: new AcCmEventManager<FontManagerEventArgs>()
   }
 
-  constructor(renderer: THREE.WebGLRenderer) {
+  constructor(renderer: THREE.WebGLRenderer, basePoint?: AcGePoint3dLike) {
     this._renderer = renderer
     this._styleManager = new AcTrStyleManager()
     AcTrMTextRenderer.getInstance().overrideStyleManager(this._styleManager)

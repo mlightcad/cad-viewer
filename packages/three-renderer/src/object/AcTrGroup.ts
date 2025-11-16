@@ -7,6 +7,7 @@ import { AcTrEntity } from './AcTrEntity'
  */
 export class AcTrGroup extends AcTrEntity {
   private _isOnTheSameLayer: boolean
+
   constructor(entities: AcTrEntity[], styleManager: AcTrStyleManager) {
     super(styleManager)
     entities.forEach(entity => {

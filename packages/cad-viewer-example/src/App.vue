@@ -7,10 +7,7 @@
 
     <!-- CAD viewer when file is selected -->
     <div v-else>
-      <MlCadViewer
-        locale="en"
-        :local-file="selectedFile"
-      />
+      <MlCadViewer locale="en" :local-file="selectedFile" />
     </div>
   </div>
 </template>

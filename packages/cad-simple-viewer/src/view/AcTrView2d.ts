@@ -12,7 +12,8 @@ import {
   AcGeBox2d,
   AcGeBox3d,
   AcGePoint2d,
-  AcGePoint2dLike
+  AcGePoint2dLike,
+  AcGePoint3d
 } from '@mlightcad/data-model'
 import {
   AcTrEntity,
@@ -98,6 +99,7 @@ export class AcTrView2d extends AcEdBaseView {
   private _missedImages: Map<AcDbObjectId, string>
   /** The number of entities waiting for processing */
   private _numOfEntitiesToProcess: number
+  private _basePoint: AcGePoint3d
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -174,6 +176,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.animate()
     this._isDirty = true
     this._numOfEntitiesToProcess = 0
+    this._basePoint = new AcGePoint3d()
   }
 
   /**
@@ -305,6 +308,14 @@ export class AcTrView2d extends AcEdBaseView {
     return this._layoutViewManager.activeLayoutView!
   }
 
+  get basePoint() {
+    return this._basePoint
+  }
+  set basePoint(value: AcGePoint3d) {
+    this._basePoint.copy(value)
+    this._renderer.basePoint = value
+  }
+
   /**
    * The statistics of the current scene
    */
@@ -326,9 +337,10 @@ export class AcTrView2d extends AcEdBaseView {
    */
   cwcs2Wcs(point: AcGePoint2dLike): AcGePoint2d {
     const activeLayoutView = this.activeLayoutView
-    return activeLayoutView
+    const wcsPt = activeLayoutView
       ? activeLayoutView.cwcs2Wcs(point)
       : new AcGePoint2d(point)
+    return wcsPt.add(this._basePoint);
   }
 
   /**
@@ -336,16 +348,20 @@ export class AcTrView2d extends AcEdBaseView {
    */
   wcs2Cwcs(point: AcGePoint2dLike): AcGePoint2d {
     const activeLayoutView = this.activeLayoutView
-    return activeLayoutView
+    const cwcsPt = activeLayoutView
       ? activeLayoutView.wcs2Cwcs(point)
       : new AcGePoint2d(point)
+    return cwcsPt.add(this._basePoint)
   }
 
   /**
    * @inheritdoc
    */
   zoomTo(box: AcGeBox2d, margin: number = 1.1) {
-    this.activeLayoutView.zoomTo(box, margin)
+    const rebasedBox = new AcGeBox2d().copy(box)
+    rebasedBox.min.sub(this._basePoint)
+    rebasedBox.max.sub(this._basePoint)
+    this.activeLayoutView.zoomTo(rebasedBox, margin)
     this._isDirty = true
   }
 

@@ -9,6 +9,7 @@ import * as THREE from 'three'
 import { AcTrMTextRenderer } from '../renderer'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrEntity } from './AcTrEntity'
+import { AcTrPointRebaser } from './rebaser'
 
 export class AcTrMText extends AcTrEntity {
   private _mtext?: MTextObject
@@ -47,6 +48,7 @@ export class AcTrMText extends AcTrEntity {
 
     try {
       const style = this._style
+      const offset = this.rebase(new AcTrPointRebaser(this._text.position))
 
       // @ts-expect-error AcGiTextData and MTextData are compatible
       this._mtext = mtextRenderer.syncRenderMText(this._text, style, {
@@ -60,6 +62,7 @@ export class AcTrMText extends AcTrEntity {
         object.userData.bboxIntersectionCheck = true
       })
       this.box = this._mtext.box
+      this.updateBoundingBox(offset)
     } catch (error) {
       console.log(
         `Failed to render mtext '${this._text.text}' with the following error:\n`,
@@ -74,6 +77,7 @@ export class AcTrMText extends AcTrEntity {
 
     try {
       const style = this._style
+      const offset = this.rebase(new AcTrPointRebaser(this._text.position))
 
       // @ts-expect-error AcGiTextData and MTextData are compatible
       this._mtext = await mtextRenderer.asyncRenderMText(this._text, style, {
@@ -89,6 +93,7 @@ export class AcTrMText extends AcTrEntity {
             object.userData.bboxIntersectionCheck = true
           })
           this.box = this._mtext.box
+          this.updateBoundingBox(offset)
         })
     } catch (error) {
       console.log(

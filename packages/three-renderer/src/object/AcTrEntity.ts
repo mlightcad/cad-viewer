@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMaterialUtil } from '../util'
 import { AcTrObject } from './AcTrObject'
+import { AcTrRebaser } from './rebaser'
 
 /**
  * Represent the display object of one drawing entity.
@@ -82,6 +83,12 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     this.userData.layerName = value
   }
 
+  rebase(rebaser: AcTrRebaser) {
+    const offset = rebaser.rebase()
+    if (offset) this.position.copy(offset)
+    return offset
+  }
+  
   /**
    * Flatten the hierarchy of the specified object so that all children are moved to be direct
    * children of this object. Preserve transformations.
@@ -305,6 +312,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     this.ownerId = object.ownerId
     this.layerName = object.layerName
     this.box = object.box
+    this.position.copy(object.position)
     return super.copy(object, recursive)
   }
 
@@ -361,5 +369,18 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
       pos += 3
     }
     return colors
+  }
+
+  protected updateBoundingBox(offset?: AcGePoint3d) {
+    if (offset) {
+      this.box.min.add(offset)
+      this.box.max.add(offset)
+    }
+  }
+
+  protected setBoundingBox(geometry: THREE.BufferGeometry, offset?: AcGePoint3d) {
+    geometry.computeBoundingBox()
+    this.box = geometry.boundingBox!
+    this.updateBoundingBox(offset)
   }
 }

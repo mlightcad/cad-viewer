@@ -12,6 +12,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrEntity } from './AcTrEntity'
+import { AcTrLoopsRebaser } from './rebaser'
 
 export class AcTrPolygon extends AcTrEntity {
   constructor(
@@ -22,6 +23,8 @@ export class AcTrPolygon extends AcTrEntity {
     super(styleManager)
 
     const pointBoundaries = area.getPoints(100)
+    const offset = this.rebase(new AcTrLoopsRebaser(pointBoundaries))
+
     const hierarchy = area.buildHierarchy()
 
     const geometries: THREE.BufferGeometry[] = []
@@ -35,13 +38,13 @@ export class AcTrPolygon extends AcTrEntity {
     if (!geometry || !geometry.getIndex() || geometry.getIndex()?.count === 0) {
       console.warn('Failed to convert hatch boundaries!')
     } else {
-      geometry.computeBoundingBox()
-      this.box = geometry.boundingBox!
+      this.setBoundingBox(geometry, offset)
 
       const material = this.styleManager.getFillMaterial(traits)
       this.add(new THREE.Mesh(geometry, material))
     }
   }
+
   private buildHatchGeometry(
     pointBoundaries: AcGePoint2d[][],
     node: AcGeIndexNode,
