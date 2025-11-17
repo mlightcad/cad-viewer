@@ -533,7 +533,7 @@ export class AcApDocManager {
       db.extents.getCenter(center)
       this.curView.basePoint = center
     } else {
-      this.curView.basePoint = new AcGePoint3d(4.8 * 10e8, 2.5 * 10e9, 0)
+      this.curView.basePoint = new AcGePoint3d(1.88 * 10e10, 6.1 * 10e9, 0)
     }
   }
 

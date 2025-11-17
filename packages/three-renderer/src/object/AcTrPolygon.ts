@@ -4,6 +4,7 @@ import {
   AcGeIndexNode,
   AcGePoint2d,
   AcGePoint2dLike,
+  AcGePoint3d,
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 import { GeometryEpsilon, PolyBool, Segments } from '@velipso/polybool'
@@ -18,12 +19,13 @@ export class AcTrPolygon extends AcTrEntity {
   constructor(
     area: AcGeArea2d,
     traits: AcGiSubEntityTraits,
-    styleManager: AcTrStyleManager
+    styleManager: AcTrStyleManager,
+    basePoint?: AcGePoint3d
   ) {
     super(styleManager)
 
     const pointBoundaries = area.getPoints(100)
-    const offset = this.rebase(new AcTrLoopsRebaser(pointBoundaries))
+    const offset = this.rebase(new AcTrLoopsRebaser(pointBoundaries), basePoint)
 
     const hierarchy = area.buildHierarchy()
 

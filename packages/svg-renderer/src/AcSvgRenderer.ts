@@ -65,9 +65,11 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   }
   set basePoint(value: AcGePoint3d | undefined) {
     if (this._basePoint) {
-      value ? this._basePoint.copy(value) : this._basePoint = undefined
+      value ? this._basePoint.copy(value) : (this._basePoint = undefined)
     } else {
-      value ? this._basePoint = new AcGePoint3d(value) : this._basePoint = undefined
+      value
+        ? (this._basePoint = new AcGePoint3d(value))
+        : (this._basePoint = undefined)
     }
   }
 

@@ -83,12 +83,12 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     this.userData.layerName = value
   }
 
-  rebase(rebaser: AcTrRebaser) {
-    const offset = rebaser.rebase()
-    if (offset) this.position.copy(offset)
+  rebase(rebaser: AcTrRebaser, basePoint?: AcGePoint3d) {
+    const offset = rebaser.rebase(basePoint)
+    if (offset) this.position.add(offset)
     return offset
   }
-  
+
   /**
    * Flatten the hierarchy of the specified object so that all children are moved to be direct
    * children of this object. Preserve transformations.
@@ -378,7 +378,10 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     }
   }
 
-  protected setBoundingBox(geometry: THREE.BufferGeometry, offset?: AcGePoint3d) {
+  protected setBoundingBox(
+    geometry: THREE.BufferGeometry,
+    offset?: AcGePoint3d
+  ) {
     geometry.computeBoundingBox()
     this.box = geometry.boundingBox!
     this.updateBoundingBox(offset)

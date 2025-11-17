@@ -1,5 +1,7 @@
+import { AcGePoint3d } from '@mlightcad/data-model'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrEntity } from './AcTrEntity'
+import { AcTrGroupRebaser } from './rebaser'
 
 /**
  * One collection of graphic interface entities. Now it is used to render block reference,
@@ -8,7 +10,11 @@ import { AcTrEntity } from './AcTrEntity'
 export class AcTrGroup extends AcTrEntity {
   private _isOnTheSameLayer: boolean
 
-  constructor(entities: AcTrEntity[], styleManager: AcTrStyleManager) {
+  constructor(
+    entities: AcTrEntity[],
+    styleManager: AcTrStyleManager,
+    basePoint?: AcGePoint3d
+  ) {
     super(styleManager)
     entities.forEach(entity => {
       if (Array.isArray(entity)) {
@@ -20,6 +26,7 @@ export class AcTrGroup extends AcTrEntity {
         this.box.union(entity.box)
       }
     })
+    this.rebase(new AcTrGroupRebaser(entities), basePoint)
     this.flatten()
 
     // It is a little tricky that how AutoCAD handles block references (inserts), their

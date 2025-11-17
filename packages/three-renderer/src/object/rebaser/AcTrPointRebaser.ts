@@ -1,5 +1,9 @@
-import { AcGePoint2dLike, AcGePoint3d, AcGePoint3dLike } from "@mlightcad/data-model"
-import { AcTrRebaser, MAX_REBASE_THRESHOLD } from "./AcTrRebaser"
+import {
+  AcGePoint2dLike,
+  AcGePoint3d,
+  AcGePoint3dLike
+} from '@mlightcad/data-model'
+import { AcTrRebaser, MAX_REBASE_THRESHOLD } from './AcTrRebaser'
 
 export class AcTrPointRebaser implements AcTrRebaser {
   private _point: AcGePoint3dLike | AcGePoint2dLike
@@ -21,10 +25,10 @@ export class AcTrPointRebaser implements AcTrRebaser {
     return new AcGePoint3d().copy(this._point)
   }
 
-  rebase() {
-    if (this.shouldRebase()) {
+  rebase(basePoint?: AcGePoint3d) {
+    if (basePoint || this.shouldRebase()) {
       const point = this._point as AcGePoint3dLike
-      const offset = this.computeOffset()
+      const offset = basePoint ?? this.computeOffset()
       point.x -= offset.x
       point.y -= offset.y
       if (point.z != null) {

@@ -340,7 +340,7 @@ export class AcTrView2d extends AcEdBaseView {
     const wcsPt = activeLayoutView
       ? activeLayoutView.cwcs2Wcs(point)
       : new AcGePoint2d(point)
-    return wcsPt.add(this._basePoint);
+    return wcsPt.add(this._basePoint)
   }
 
   /**

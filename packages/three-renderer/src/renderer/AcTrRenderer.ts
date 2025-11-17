@@ -197,7 +197,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   group(entities: AcTrEntity[]) {
-    return new AcTrGroup(entities, this._styleManager)
+    return new AcTrGroup(entities, this._styleManager, this._basePoint)
   }
 
   /**

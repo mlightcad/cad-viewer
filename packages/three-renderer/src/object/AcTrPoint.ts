@@ -1,4 +1,5 @@
 import {
+  AcGePoint3d,
   AcGePoint3dLike,
   AcGiPointStyle,
   AcGiSubEntityTraits
@@ -22,7 +23,8 @@ export class AcTrPoint extends AcTrEntity {
     point: AcGePoint3dLike,
     traits: AcGiSubEntityTraits,
     style: AcGiPointStyle,
-    styleManager: AcTrStyleManager
+    styleManager: AcTrStyleManager,
+    basePoint?: AcGePoint3d
   ) {
     super(styleManager)
     const pointSymbol = AcTrPointSymbolCreator.instance.create(
@@ -31,7 +33,7 @@ export class AcTrPoint extends AcTrEntity {
     )
 
     this.isShowPoint = pointSymbol.point != null
-    const offset = this.rebase(new AcTrPointRebaser(point))
+    const offset = this.rebase(new AcTrPointRebaser(point), basePoint)
 
     // Always create one THREE.Points object. If 'isShowPoint' is true, show it. Otherwise, hide it.
     const geometry =

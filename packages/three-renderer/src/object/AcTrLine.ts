@@ -4,7 +4,6 @@ import * as THREE from 'three'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrBufferGeometryUtil } from '../util'
 import { AcTrEntity } from './AcTrEntity'
-import { AcTrPointsRebaser } from './rebaser'
 
 export class AcTrLine extends AcTrEntity {
   constructor(
@@ -28,9 +27,6 @@ export class AcTrLine extends AcTrEntity {
       vertices[pos++] = point.y
       vertices[pos++] = point.z ?? 0
     }
-
-    const offset = this.rebase(new AcTrPointsRebaser(points))
-
     for (let i = 0, pos = 0; i < maxVertexCount - 1; i++) {
       indices[pos++] = i
       indices[pos++] = i + 1

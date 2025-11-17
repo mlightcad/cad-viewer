@@ -1,4 +1,4 @@
-import { AcGiSubEntityTraits } from '@mlightcad/data-model'
+import { AcGePoint3d, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
@@ -12,13 +12,17 @@ export class AcTrLineSegments extends AcTrEntity {
     itemSize: number,
     indices: Uint16Array,
     traits: AcGiSubEntityTraits,
-    styleManager: AcTrStyleManager
+    styleManager: AcTrStyleManager,
+    basePoint?: AcGePoint3d,
   ) {
     super(styleManager)
 
     const material = this.styleManager.getLineMaterial(traits)
     const geometry = new THREE.BufferGeometry()
-    const offset = this.rebase(new AcTrFloatArrayRebaser(array, itemSize))
+    const offset = this.rebase(
+      new AcTrFloatArrayRebaser(array, itemSize),
+      basePoint
+    )
 
     geometry.setAttribute(
       'position',

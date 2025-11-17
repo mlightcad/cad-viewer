@@ -1,4 +1,5 @@
 import {
+  AcGePoint3d,
   AcGiMTextData,
   AcGiSubEntityTraits,
   AcGiTextStyle
@@ -27,7 +28,8 @@ export class AcTrMText extends AcTrEntity {
     traits: AcGiSubEntityTraits,
     style: AcGiTextStyle,
     styleManager: AcTrStyleManager,
-    delay: boolean = false
+    delay: boolean = false,
+    basePoint?: AcGePoint3d
   ) {
     super(styleManager)
     this._text = text
@@ -36,6 +38,9 @@ export class AcTrMText extends AcTrEntity {
       color: traits.rgbColor,
       isByLayer: traits.color.isByLayer,
       layer: traits.layer
+    }
+    if (basePoint) {
+      this._basePoint = basePoint.clone()
     }
     if (!delay) {
       this.syncDraw()
@@ -48,7 +53,10 @@ export class AcTrMText extends AcTrEntity {
 
     try {
       const style = this._style
-      const offset = this.rebase(new AcTrPointRebaser(this._text.position))
+      const offset = this.rebase(
+        new AcTrPointRebaser(this._text.position),
+        this._basePoint
+      )
 
       // @ts-expect-error AcGiTextData and MTextData are compatible
       this._mtext = mtextRenderer.syncRenderMText(this._text, style, {
@@ -77,7 +85,10 @@ export class AcTrMText extends AcTrEntity {
 
     try {
       const style = this._style
-      const offset = this.rebase(new AcTrPointRebaser(this._text.position))
+      const offset = this.rebase(
+        new AcTrPointRebaser(this._text.position),
+        this._basePoint
+      )
 
       // @ts-expect-error AcGiTextData and MTextData are compatible
       this._mtext = await mtextRenderer.asyncRenderMText(this._text, style, {

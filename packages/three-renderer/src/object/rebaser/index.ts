@@ -1,5 +1,6 @@
 export * from './AcTrRebaser'
 export * from './AcTrFloatArrayRebaser'
+export * from './AcTrGroupRebaser'
 export * from './AcTrLoopsRebaser'
 export * from './AcTrPointRebaser'
 export * from './AcTrPointsRebaser'
