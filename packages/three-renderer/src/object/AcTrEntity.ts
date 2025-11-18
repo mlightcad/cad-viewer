@@ -13,9 +13,10 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   protected _box: THREE.Box3
   protected _basePoint?: AcGePoint3d
 
-  constructor(styleManager: AcTrStyleManager) {
+  constructor(styleManager: AcTrStyleManager, basePoint?: AcGePoint3d) {
     super(styleManager)
     this._box = new THREE.Box3()
+    this._basePoint = basePoint
   }
 
   /**
@@ -28,6 +29,13 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   }
   set box(box: THREE.Box3) {
     this._box.copy(box)
+  }
+
+  get basePoint() {
+    return this._basePoint
+  }
+  set basePoint(value: AcGePoint3d | undefined) {
+    this._basePoint = value
   }
 
   /**
@@ -85,7 +93,9 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
 
   rebase(rebaser: AcTrRebaser, basePoint?: AcGePoint3d) {
     const offset = rebaser.rebase(basePoint)
-    if (offset) this.position.add(offset)
+    if (offset) {
+      this.basePoint = basePoint
+    }
     return offset
   }
 

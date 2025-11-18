@@ -1,4 +1,5 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
+
 import { AcTrEntity } from '../AcTrEntity'
 import { AcTrRebaser, MAX_REBASE_THRESHOLD } from './AcTrRebaser'
 

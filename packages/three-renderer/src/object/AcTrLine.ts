@@ -11,7 +11,7 @@ export class AcTrLine extends AcTrEntity {
     traits: AcGiSubEntityTraits,
     styleManager: AcTrStyleManager
   ) {
-    super(styleManager)
+    super(styleManager, basePoint)
 
     const material = this.styleManager.getLineMaterial(traits)
     const maxVertexCount = points.length

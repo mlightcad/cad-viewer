@@ -358,10 +358,7 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   zoomTo(box: AcGeBox2d, margin: number = 1.1) {
-    const rebasedBox = new AcGeBox2d().copy(box)
-    rebasedBox.min.sub(this._basePoint)
-    rebasedBox.max.sub(this._basePoint)
-    this.activeLayoutView.zoomTo(rebasedBox, margin)
+    this.activeLayoutView.zoomTo(box, margin)
     this._isDirty = true
   }
 

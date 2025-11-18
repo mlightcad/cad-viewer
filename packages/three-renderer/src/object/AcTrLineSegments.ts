@@ -15,7 +15,7 @@ export class AcTrLineSegments extends AcTrEntity {
     styleManager: AcTrStyleManager,
     basePoint?: AcGePoint3d,
   ) {
-    super(styleManager)
+    super(styleManager, basePoint)
 
     const material = this.styleManager.getLineMaterial(traits)
     const geometry = new THREE.BufferGeometry()

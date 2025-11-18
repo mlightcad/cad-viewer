@@ -26,7 +26,7 @@ export class AcTrPoint extends AcTrEntity {
     styleManager: AcTrStyleManager,
     basePoint?: AcGePoint3d
   ) {
-    super(styleManager)
+    super(styleManager, basePoint)
     const pointSymbol = AcTrPointSymbolCreator.instance.create(
       style.displayMode,
       point

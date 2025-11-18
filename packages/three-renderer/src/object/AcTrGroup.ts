@@ -1,4 +1,5 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
+
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrEntity } from './AcTrEntity'
 import { AcTrGroupRebaser } from './rebaser'
@@ -15,7 +16,7 @@ export class AcTrGroup extends AcTrEntity {
     styleManager: AcTrStyleManager,
     basePoint?: AcGePoint3d
   ) {
-    super(styleManager)
+    super(styleManager, basePoint)
     entities.forEach(entity => {
       if (Array.isArray(entity)) {
         const subGroup = new AcTrEntity(styleManager)
@@ -26,8 +27,13 @@ export class AcTrGroup extends AcTrEntity {
         this.box.union(entity.box)
       }
     })
-    this.rebase(new AcTrGroupRebaser(entities), basePoint)
+    // Important:
+    // The third parameter must be false because call to flatten will apply position
+    // to geometry again. It may destory number precision. So set group's position
+    // after calling to flatten.
+    const offset = this.rebase(new AcTrGroupRebaser(entities), basePoint)
     this.flatten()
+    if (offset) this.position.copy(offset)
 
     // It is a little tricky that how AutoCAD handles block references (inserts), their
     // own layer, and the layers of entities inside the block.

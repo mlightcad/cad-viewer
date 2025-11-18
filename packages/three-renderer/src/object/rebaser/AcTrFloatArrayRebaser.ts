@@ -1,4 +1,5 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
+
 import { AcTrRebaser, MAX_REBASE_THRESHOLD } from './AcTrRebaser'
 
 export class AcTrFloatArrayRebaser implements AcTrRebaser {
@@ -24,16 +25,16 @@ export class AcTrFloatArrayRebaser implements AcTrRebaser {
     const array = this._array
     const offset = new AcGePoint3d()
     if (this._itemSize == 2) {
-      let i = 0,
-        len = array.length
+      let i = 0
+      const len = array.length
       while (i < len) {
         offset.x += array[i]
         offset.y += array[i + 1]
         i += 2
       }
     } else if (this._itemSize == 3) {
-      let i = 0,
-        len = array.length
+      let i = 0
+      const len = array.length
       while (i < len) {
         offset.x += array[i]
         offset.y += array[i + 1]
@@ -74,8 +75,8 @@ export class AcTrFloatArrayRebaser implements AcTrRebaser {
     by: number,
     bz: number
   ) {
-    let i = 0,
-      len = array.length
+    let i = 0
+    const len = array.length
     while (i < len) {
       array[i] -= bx
       array[i + 1] -= by
@@ -85,8 +86,8 @@ export class AcTrFloatArrayRebaser implements AcTrRebaser {
   }
 
   private subtract2dPoint(array: Float32Array, bx: number, by: number) {
-    let i = 0,
-      len = array.length
+    let i = 0
+    const len = array.length
     while (i < len) {
       array[i] -= bx
       array[i + 1] -= by

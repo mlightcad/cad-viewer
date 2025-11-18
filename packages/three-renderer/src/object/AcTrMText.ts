@@ -31,7 +31,7 @@ export class AcTrMText extends AcTrEntity {
     delay: boolean = false,
     basePoint?: AcGePoint3d
   ) {
-    super(styleManager)
+    super(styleManager, basePoint)
     this._text = text
     this._style = {
       ...style,

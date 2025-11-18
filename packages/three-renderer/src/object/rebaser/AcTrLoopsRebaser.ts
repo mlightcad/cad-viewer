@@ -1,4 +1,5 @@
 import { AcGePoint2dLike, AcGePoint3d } from '@mlightcad/data-model'
+
 import { AcTrRebaser, MAX_REBASE_THRESHOLD } from './AcTrRebaser'
 
 export class AcTrLoopsRebaser implements AcTrRebaser {

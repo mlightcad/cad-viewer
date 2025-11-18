@@ -22,7 +22,7 @@ export class AcTrPolygon extends AcTrEntity {
     styleManager: AcTrStyleManager,
     basePoint?: AcGePoint3d
   ) {
-    super(styleManager)
+    super(styleManager, basePoint)
 
     const pointBoundaries = area.getPoints(100)
     const offset = this.rebase(new AcTrLoopsRebaser(pointBoundaries), basePoint)
