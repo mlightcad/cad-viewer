@@ -102,10 +102,10 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * JavaScript (and WebGL) use 64‑bit floating point numbers for CPU-side calculations,
    * but GPU shaders typically use 32‑bit floats. A 32-bit float has ~7.2 decimal digits
-   * of precision. If passing 64-bit floating vertices data to GPU directly, it will 
+   * of precision. If passing 64-bit floating vertices data to GPU directly, it will
    * destroy number preciesion.
-   * 
-   * So we adopt a simpler but effective version of the “origin-shift” idea. Recompute 
+   *
+   * So we adopt a simpler but effective version of the “origin-shift” idea. Recompute
    * geometry using re-centered coordinates and apply offset to its position. The base
    * point is extractly offset value.
    */
@@ -329,6 +329,7 @@ export class AcTrView2d extends AcEdBaseView {
         ? this._basePoint.copy(value)
         : new AcGePoint3d(value)
     }
+    this._renderer.basePoint = value
   }
 
   /**
@@ -352,10 +353,9 @@ export class AcTrView2d extends AcEdBaseView {
    */
   cwcs2Wcs(point: AcGePoint2dLike): AcGePoint2d {
     const activeLayoutView = this.activeLayoutView
-    const wcsPt = activeLayoutView
+    return activeLayoutView
       ? activeLayoutView.cwcs2Wcs(point)
       : new AcGePoint2d(point)
-    return this._basePoint ? wcsPt.add(this._basePoint) : wcsPt
   }
 
   /**
@@ -363,10 +363,9 @@ export class AcTrView2d extends AcEdBaseView {
    */
   wcs2Cwcs(point: AcGePoint2dLike): AcGePoint2d {
     const activeLayoutView = this.activeLayoutView
-    const cwcsPt = activeLayoutView
+    return activeLayoutView
       ? activeLayoutView.wcs2Cwcs(point)
       : new AcGePoint2d(point)
-    return this._basePoint ? cwcsPt.add(this._basePoint) : cwcsPt
   }
 
   /**
@@ -733,8 +732,8 @@ export class AcTrView2d extends AcEdBaseView {
       const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
       if (threeEntity) {
         // Set the base point of this view as the base point of the first entity to render in drawing
-        if (this._renderer.basePoint == null && threeEntity.basePoint != null) {
-          this._renderer.basePoint = threeEntity.basePoint
+        if (this.basePoint == null && threeEntity.basePoint != null) {
+          this.basePoint = threeEntity.basePoint
         }
         threeEntity.objectId = entity.objectId
         threeEntity.ownerId = entity.ownerId
