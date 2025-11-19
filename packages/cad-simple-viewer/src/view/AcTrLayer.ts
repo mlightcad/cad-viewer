@@ -176,6 +176,9 @@ export class AcTrLayer {
     const box = entity.box
     // For infinitive line such as ray and xline, they are not used to extend box
     if (extendBbox) this._box.union(box)
+    if (entity.basePoint) {
+      this._group.position.copy(entity.basePoint)
+    }
   }
 
   /**

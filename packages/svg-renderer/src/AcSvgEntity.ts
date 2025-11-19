@@ -18,7 +18,7 @@ export class AcSvgEntity implements AcGiEntity {
   private _svg: string
   protected _basePoint?: AcGePoint3d
 
-  constructor() {
+  constructor(basePoint?: AcGePoint3d) {
     this._objectId = ''
     this._ownerId = ''
     this._layerName = ''
@@ -26,6 +26,7 @@ export class AcSvgEntity implements AcGiEntity {
     this._userData = {}
     this._box = new AcGeBox2d()
     this._svg = ''
+    this._basePoint = basePoint
   }
 
   /**
@@ -36,6 +37,13 @@ export class AcSvgEntity implements AcGiEntity {
   }
   set box(value: AcGeBox2d) {
     this._box.copy(value)
+  }
+
+  get basePoint() {
+    return this._basePoint
+  }
+  set basePoint(value: AcGePoint3d | undefined) {
+    this._basePoint = value
   }
 
   /**

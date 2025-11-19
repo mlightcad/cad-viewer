@@ -23,13 +23,17 @@ export class AcTrGroupRebaser implements AcTrRebaser {
   computeOffset() {
     const offset = new AcGePoint3d()
     const entities = this._entities
+    let count = 0
     entities.forEach(entity => {
-      const point = entity.position
-      offset.x += point.x
-      offset.y += point.y
-      offset.z += point.z
+      const point = entity.basePoint
+      if (point) {
+        offset.x += point.x
+        offset.y += point.y
+        offset.z += point.z
+        count++
+      }
     })
-    offset.divideScalar(entities.length)
+    if (count > 0) offset.divideScalar(count)
     return offset
   }
 
@@ -38,10 +42,10 @@ export class AcTrGroupRebaser implements AcTrRebaser {
       const entities = this._entities
       const offset = basePoint ?? this.computeOffset()
       for (let i = 0; i < entities.length; i++) {
-        const position = entities[i].position
-        position.x -= offset.x
-        position.y -= offset.y
-        position.z -= offset.z
+        if (entities[i].basePoint == null) {
+          entities[i].basePoint = new AcGePoint3d()
+        }
+        entities[i].basePoint?.sub(offset)
       }
       return offset
     }

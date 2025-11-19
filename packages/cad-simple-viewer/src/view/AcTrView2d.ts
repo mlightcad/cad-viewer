@@ -99,7 +99,17 @@ export class AcTrView2d extends AcEdBaseView {
   private _missedImages: Map<AcDbObjectId, string>
   /** The number of entities waiting for processing */
   private _numOfEntitiesToProcess: number
-  private _basePoint: AcGePoint3d
+  /**
+   * JavaScript (and WebGL) use 64‑bit floating point numbers for CPU-side calculations,
+   * but GPU shaders typically use 32‑bit floats. A 32-bit float has ~7.2 decimal digits
+   * of precision. If passing 64-bit floating vertices data to GPU directly, it will 
+   * destroy number preciesion.
+   * 
+   * So we adopt a simpler but effective version of the “origin-shift” idea. Recompute 
+   * geometry using re-centered coordinates and apply offset to its position. The base
+   * point is extractly offset value.
+   */
+  private _basePoint?: AcGePoint3d
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -311,9 +321,14 @@ export class AcTrView2d extends AcEdBaseView {
   get basePoint() {
     return this._basePoint
   }
-  set basePoint(value: AcGePoint3d) {
-    this._basePoint.copy(value)
-    this._renderer.basePoint = value
+  set basePoint(value: AcGePoint3d | undefined) {
+    if (value == null) {
+      this._basePoint = value
+    } else {
+      this._basePoint = this._basePoint
+        ? this._basePoint.copy(value)
+        : new AcGePoint3d(value)
+    }
   }
 
   /**
@@ -340,7 +355,7 @@ export class AcTrView2d extends AcEdBaseView {
     const wcsPt = activeLayoutView
       ? activeLayoutView.cwcs2Wcs(point)
       : new AcGePoint2d(point)
-    return wcsPt.add(this._basePoint)
+    return this._basePoint ? wcsPt.add(this._basePoint) : wcsPt
   }
 
   /**
@@ -351,7 +366,7 @@ export class AcTrView2d extends AcEdBaseView {
     const cwcsPt = activeLayoutView
       ? activeLayoutView.wcs2Cwcs(point)
       : new AcGePoint2d(point)
-    return cwcsPt.add(this._basePoint)
+    return this._basePoint ? cwcsPt.add(this._basePoint) : cwcsPt
   }
 
   /**
@@ -608,6 +623,8 @@ export class AcTrView2d extends AcEdBaseView {
     this._isDirty = true
     this._missedImages.clear()
     this._renderer.dispose()
+    this._renderer.clearMissedFonts()
+    this._basePoint = undefined
   }
 
   /**
@@ -715,6 +732,10 @@ export class AcTrView2d extends AcEdBaseView {
       const entity = entities[i]
       const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
       if (threeEntity) {
+        // Set the base point of this view as the base point of the first entity to render in drawing
+        if (this._renderer.basePoint == null && threeEntity.basePoint != null) {
+          this._renderer.basePoint = threeEntity.basePoint
+        }
         threeEntity.objectId = entity.objectId
         threeEntity.ownerId = entity.ownerId
         threeEntity.layerName = entity.layer
