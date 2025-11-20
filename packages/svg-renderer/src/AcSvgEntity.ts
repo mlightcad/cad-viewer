@@ -39,13 +39,6 @@ export class AcSvgEntity implements AcGiEntity {
     this._box.copy(value)
   }
 
-  get basePoint() {
-    return this._basePoint
-  }
-  set basePoint(value: AcGePoint3d | undefined) {
-    this._basePoint = value
-  }
-
   /**
    * JavaScript (and WebGL) use 64‑bit floating point numbers for CPU-side calculations,
    * but GPU shaders typically use 32‑bit floats. A 32-bit float has ~7.2 decimal digits
