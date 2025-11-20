@@ -1,6 +1,6 @@
 import { AcEdBaseView } from '../view/AcEdBaseView'
-import { AcEdBoxSelector } from './AcEdBoxSelector'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
+import { AcEdInputManager } from './AcEdInputManager'
 import { AcEdInputPoint } from './AcEdInputPoint'
 
 /**
@@ -132,7 +132,7 @@ export class AcEditor {
    * ```
    */
   async getSelection() {
-    const selector = new AcEdBoxSelector(this._view)
-    return await selector.start()
+    const selector = new AcEdInputManager(this._view)
+    return await selector.getBox()
   }
 }

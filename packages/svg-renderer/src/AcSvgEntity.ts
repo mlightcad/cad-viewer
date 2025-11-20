@@ -1,4 +1,9 @@
-import { AcGeBox2d, AcGeMatrix3d, AcGiEntity } from '@mlightcad/data-model'
+import {
+  AcGeBox2d,
+  AcGeMatrix3d,
+  AcGePoint3d,
+  AcGiEntity
+} from '@mlightcad/data-model'
 
 /**
  * Represent the display object of one drawing entity.
@@ -11,6 +16,7 @@ export class AcSvgEntity implements AcGiEntity {
   private _userData: object
   protected _box: AcGeBox2d
   private _svg: string
+  protected _basePoint?: AcGePoint3d
 
   constructor() {
     this._objectId = ''
@@ -30,6 +36,29 @@ export class AcSvgEntity implements AcGiEntity {
   }
   set box(value: AcGeBox2d) {
     this._box.copy(value)
+  }
+
+  /**
+   * JavaScript (and WebGL) use 64‑bit floating point numbers for CPU-side calculations,
+   * but GPU shaders typically use 32‑bit floats. A 32-bit float has ~7.2 decimal digits
+   * of precision. If passing 64-bit floating vertices data to GPU directly, it will
+   * destroy number preciesion.
+   *
+   * So we adopt a simpler but effective version of the “origin-shift” idea. Recompute
+   * geometry using re-centered coordinates and apply offset to its position. The base
+   * point is extractly offset value.
+   */
+  get basePoint() {
+    return this._basePoint
+  }
+  set basePoint(value: AcGePoint3d | undefined) {
+    if (value == null) {
+      this._basePoint = value
+    } else {
+      this._basePoint = this._basePoint
+        ? this._basePoint.copy(value)
+        : new AcGePoint3d(value)
+    }
   }
 
   /**

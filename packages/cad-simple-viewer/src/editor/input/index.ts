@@ -1,4 +1,5 @@
 export * from './AcEdCursorManager'
+export * from './AcEdInputManager'
 export * from './AcEdJig'
 export * from './AcEditor'
 export * from './AcEdSelectionSet'

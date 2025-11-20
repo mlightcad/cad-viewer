@@ -21,10 +21,27 @@ import { AcSvgLine } from './AcSvgLine'
 export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   private _container: Array<string>
   private _bbox: AcGeBox2d
+  private _basePoint?: AcGePoint3d
 
   constructor() {
     this._container = new Array<string>()
     this._bbox = new AcGeBox2d()
+  }
+
+  /**
+   * @inheritdoc
+   */
+  get basePoint() {
+    return this._basePoint
+  }
+  set basePoint(value: AcGePoint3d | undefined) {
+    if (value == null) {
+      this._basePoint = value
+    } else {
+      this._basePoint = this._basePoint
+        ? this._basePoint.copy(value)
+        : new AcGePoint3d(value)
+    }
   }
 
   /**

@@ -216,7 +216,7 @@ function formatDisplayValue(row: MlDisplayPropertyRow): string {
 
     case 'enum': {
       const opt = row.options?.find(o => o.value === v)
-      return (opt && opt.label) ? entityPropEnum(opt.label) : ''
+      return opt && opt.label ? entityPropEnum(opt.label) : ''
     }
 
     case 'color':
@@ -233,16 +233,20 @@ async function copyReadonlyValue(row: MlDisplayPropertyRow) {
   try {
     await navigator.clipboard.writeText(value)
     ElMessage({
-      message: t('main.toolPalette.entityProperties.propertyPanel.propValCopied'),
+      message: t(
+        'main.toolPalette.entityProperties.propertyPanel.propValCopied'
+      ),
       grouping: true,
-      type: 'success',
+      type: 'success'
     })
   } catch (e) {
     console.error(e)
     ElMessage({
-      message: t('main.toolPalette.entityProperties.propertyPanel.failedToCopyPropVal'),
+      message: t(
+        'main.toolPalette.entityProperties.propertyPanel.failedToCopyPropVal'
+      ),
       grouping: true,
-      type: 'error',
+      type: 'error'
     })
   }
 }
