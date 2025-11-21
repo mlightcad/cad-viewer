@@ -1,6 +1,17 @@
 import { AcGeBox2d, AcGePoint2dLike } from '@mlightcad/data-model'
 
 import { AcEdBaseView } from '../view'
+import {
+  AcEdAngleHandler,
+  AcEdDistanceHandler,
+  AcEdIntegerHandler,
+  AcEdNumericalHandler
+} from './handler'
+import {
+  AcEdPromptAngleOptions,
+  AcEdPromptDistanceOptions,
+  AcEdPromptIntegerOptions
+} from './prompt'
 
 export interface AcEdPosition {
   world: AcGePoint2dLike
@@ -420,7 +431,7 @@ export class AcEdInputManager {
    */
   private getNumberTyped(
     message: string,
-    integerOnly = false
+    handler: AcEdNumericalHandler | AcEdAngleHandler
   ): Promise<number> {
     const promise = this.makePromise<number>()
     const { inputX } = this.createInputBox(message, false)
@@ -429,10 +440,8 @@ export class AcEdInputManager {
 
     inputX.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
-        const value = integerOnly
-          ? parseInt(inputX.value, 10)
-          : parseFloat(inputX.value)
-        if (!isNaN(value)) {
+        const value = handler.parse(inputX.value)
+        if (value != null) {
           this.cleanup()
           this.activeResolver?.(value)
         } else {
@@ -445,23 +454,29 @@ export class AcEdInputManager {
   }
 
   /** Request a distance (number) from the user. */
-  getDistance(): Promise<number> {
-    return this.getNumberTyped('distance')
+  getDistance(options: AcEdPromptDistanceOptions): Promise<number> {
+    return this.getNumberTyped(
+      options.message,
+      new AcEdDistanceHandler(options)
+    )
   }
 
   /** Request an angle in degrees from the user. */
-  getAngle(): Promise<number> {
-    return this.getNumberTyped('angle (deg)')
+  getAngle(options: AcEdPromptAngleOptions): Promise<number> {
+    return this.getNumberTyped(options.message, new AcEdAngleHandler(options))
   }
 
   /** Request a double/float from the user. */
-  getDouble(): Promise<number> {
-    return this.getNumberTyped('double')
+  getDouble(options: AcEdPromptDistanceOptions): Promise<number> {
+    return this.getNumberTyped(
+      options.message,
+      new AcEdDistanceHandler(options)
+    )
   }
 
   /** Request an integer from the user. */
-  getInteger(): Promise<number> {
-    return this.getNumberTyped('integer', true)
+  getInteger(options: AcEdPromptIntegerOptions): Promise<number> {
+    return this.getNumberTyped(options.message, new AcEdIntegerHandler(options))
   }
 
   /**
