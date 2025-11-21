@@ -1,5 +1,6 @@
 export default {
   ACAD: {
+    circle: 'Creates one circle by center and radius',
     csvg: 'Converts current drawing to SVG',
     la: 'Layer properties manager',
     log: 'Logs debug information in console',

@@ -1,5 +1,9 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
-import { AcTrEntity, AcTrObject } from '@mlightcad/three-renderer'
+import {
+  AcTrEntity,
+  AcTrObject,
+  AcTrTransientManager
+} from '@mlightcad/three-renderer'
 import { AcEdLayerInfo } from 'editor'
 import * as THREE from 'three'
 
@@ -57,6 +61,8 @@ export class AcTrScene {
   private _activeLayoutBtrId: AcDbObjectId
   /** ID of the model space layout */
   private _modelSpaceBtrId: AcDbObjectId
+  /** Transient objects manager */
+  private _transientManager: AcTrTransientManager
 
   /**
    * Creates a new CAD scene instance.
@@ -65,6 +71,7 @@ export class AcTrScene {
    */
   constructor() {
     this._scene = new THREE.Scene()
+    this._transientManager = new AcTrTransientManager(this._scene)
     this._layers = new Map()
     this._layouts = new Map()
     this._activeLayoutBtrId = ''
@@ -186,7 +193,9 @@ export class AcTrScene {
     })
     this._layouts.clear()
     this._layers.clear()
+    this._transientManager.clear()
     this._scene.clear()
+    this._transientManager = new AcTrTransientManager(this._scene)
     return this
   }
 
@@ -263,8 +272,25 @@ export class AcTrScene {
   }
 
   /**
-   * Add one AutoCAD entity into this scene. If the layout associated with this entity doesn't exist,
-   * then create one layout, add this layout into this scene, and add the entity into the layout.
+   * Add the specified transient entity into this scene
+   * @param entity Input one transient entity
+   */
+  addTransientEntity(entity: AcTrEntity) {
+    this._transientManager.update(entity)
+  }
+
+  /**
+   * Remove the specified transient entity from this scene
+   * @param objectId Input the object id of the transient entity to remove
+   */
+  removeTransientEntity(objectId: AcDbObjectId) {
+    this._transientManager.remove(objectId)
+  }
+
+  /**
+   * Add one persistent entity (stored in the drawing database) into this scene. If the layout
+   * associated with this entity doesn't exist, then create one layout, add this layout into
+   * this scene, and add the entity into the layout.
    * @param entity Input AutoCAD entity to be added into scene.
    * @param extendBbox Input the flag whether to extend the bounding box of this scene by union the bounding box
    * of the specified entity.
@@ -286,11 +312,11 @@ export class AcTrScene {
   }
 
   /**
-   * Remove the specified entity from this scene.
+   * Remove the specified persistent entity (stored in the drawing database) from this scene.
    * @param objectId Input the object id of the entity to remove
    * @returns Return true if remove the specified entity successfully. Otherwise, return false.
    */
-  remove(objectId: AcDbObjectId) {
+  removeEntity(objectId: AcDbObjectId) {
     for (const [_, layout] of this._layouts) {
       if (layout.remove(objectId)) return true
     }
@@ -298,11 +324,11 @@ export class AcTrScene {
   }
 
   /**
-   * Update the specified entity in this scene.
+   * Update the specified persistent entity (stored in the drawing database) in this scene.
    * @param objectId Input the entity to update
    * @returns Return true if update the specified entity successfully. Otherwise, return false.
    */
-  update(entity: AcTrEntity) {
+  updateEntity(entity: AcTrEntity) {
     for (const [_, layout] of this._layouts) {
       if (layout.updateEntity(entity)) return true
     }

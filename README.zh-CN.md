@@ -4,9 +4,9 @@
 
 CAD-Viewer 是一款高性能、现代化的 Web 端 CAD 查看与编辑器，灵感来自 AutoCAD。它支持在纯浏览器环境中查看与编辑 DWG/DXF 文件，**无需任何后端服务**，并具备出色的渲染速度与流畅交互。项目采用模块化设计，便于与其他应用无缝集成。
 
-- [**🌐 在线演示**](https://mlightcad.gitlab.io/cad-viewer/)
-- [**🌐 API 文档**](https://mlightcad.gitlab.io/cad-viewer/docs/)
-- [**🌐 项目 Wiki**](https://gitlab.com/mlightcad/cad-viewer/-/wikis/home)
+- [**🌐 在线演示**](https://mlightcad.github.io/cad-viewer/)
+- [**🌐 API 文档**](https://mlightcad.github.io/cad-viewer/docs/)
+- [**🌐 项目 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 
 ![CAD-Viewer](./assets/dwg-viewer.jpg)
 
@@ -51,7 +51,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 - **不支持的实体**：
   - **表格（仅 DWG）**：当前使用的 [LibreDWG](https://github.com/LibreDWG/libredwg) 库尚不支持 DWG 表格实体；若表格由线段/多段线构成，则可正常显示。
   - **外部参照（XRef）**：暂不支持显示。
-- **DWG 兼容性**：部分 DWG 图纸可能因 [LibreDWG](https://github.com/LibreDWG/libredwg) 的问题无法打开。若遇到此类问题，欢迎在 [CAD-Viewer 问题页](https://gitlab.com/mlightcad/cad-viewer/-/issues) 或 [LibreDWG 问题页](https://github.com/LibreDWG/libredwg/issues) 反馈。
+- **DWG 兼容性**：部分 DWG 图纸可能因 [LibreDWG](https://github.com/LibreDWG/libredwg) 的问题无法打开。若遇到此类问题，欢迎在 [CAD-Viewer 问题页](https://github.com/mlightcad/cad-viewer/issues) 或 [LibreDWG 问题页](https://github.com/LibreDWG/libredwg/issues) 反馈。
 
 上述限制将会在后续版本中逐步改进。
 
@@ -68,7 +68,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 **说明**：
 
-第二项目前已部分完成。虽然目前暂不支持将修改直接保存回 DWG/DXF 文件，但已提供完善的实时修改能力。你可以通过 [RealDWG-Web API](https://mlightcad.gitlab.io/realdwg-web/) 新增/编辑/删除图元，查看器会自动实时更新显示。其使用方式与 AutoCAD RealDWG 十分相似，熟悉 RealDWG 的开发者可以快速上手。更多细节请参考 [cad-simple-viewer README](packages/cad-simple-viewer/README.md)。
+第二项目前已部分完成。虽然目前暂不支持将修改直接保存回 DWG/DXF 文件，但已提供完善的实时修改能力。你可以通过 [RealDWG-Web API](https://mlightcad.github.io/realdwg-web/) 新增/编辑/删除图元，查看器会自动实时更新显示。其使用方式与 AutoCAD RealDWG 十分相似，熟悉 RealDWG 的开发者可以快速上手。更多细节请参考 [cad-simple-viewer README](packages/cad-simple-viewer/README.md)。
 
 ## 我应该选择哪个 Viewer？
 
@@ -102,8 +102,8 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 ## 示例项目
 
-- [`cad-simple-viewer-example`](https://gitlab.com/mlightcad/cad-simple-viewer-example)：展示如何在真实项目中使用 `cad-simple-viewer`
-- [`cad-viewer-example`](https://gitlab.com/mlightcad/cad-viewer-example)：展示如何在真实项目中使用 `cad-viewer`
+- [`cad-simple-viewer-example`](https://github.com/mlightcad/cad-simple-viewer-example)：展示如何在真实项目中使用 `cad-simple-viewer`
+- [`cad-viewer-example`](https://github.com/mlightcad/cad-viewer-example)：展示如何在真实项目中使用 `cad-viewer`
 
 ## 参与贡献
 

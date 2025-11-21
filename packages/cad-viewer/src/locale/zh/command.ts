@@ -1,5 +1,6 @@
 export default {
   ACAD: {
+    circle: '使用圆心和半径创建圆',
     csvg: '转换当前图纸为SVG格式',
     la: '图层属性管理器',
     log: '在控制台输出调试信息',

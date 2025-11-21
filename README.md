@@ -4,9 +4,9 @@
 
 CAD-Viewer is a **high-performance**, modern, web-based CAD editor inspired by AutoCAD. It enables users to view and edit DWG/DXF files **entirely in the browser without requiring any backend server**, providing exceptional rendering speed and smooth interactions. The project is modular and designed for seamless integration with other applications.
 
-- [**🌐 Live Demo**](https://mlightcad.gitlab.io/cad-viewer/)
-- [**🌐 API Docs**](https://mlightcad.gitlab.io/cad-viewer/docs/)
-- [**🌐 Wiki**](https://gitlab.com/mlightcad/cad-viewer/-/wikis/home)
+- [**🌐 Live Demo**](https://mlightcad.github.io/cad-viewer/)
+- [**🌐 API Docs**](https://mlightcad.github.io/cad-viewer/docs/)
+- [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 
 ![CAD-Viewer](./assets/dwg-viewer.jpg)
 
@@ -53,7 +53,7 @@ CAD-Viewer has some known limitations that users should be aware of:
 - **Unsupported Entities**: 
   - **Tables** (DWG files only): Table entities are not currently supported in DWG files because [LibreDWG](https://github.com/LibreDWG/libredwg) is used to read DWG files and it doesn't support table entity yet. If one table is created by line and polyline entities, definitely it is supported.
   - **XRefs**: External references (XRefs) are not supported and will not be displayed.
-- **DWG File Compatibility**: Some DWG drawings may fail to open due to bugs in the underlying [LibreDWG](https://github.com/LibreDWG/libredwg) library. This is a known limitation of the current DWG parsing implementation. If you find those issues, please log one issue on [CAD-Viewer issues page](https://gitlab.com/mlightcad/cad-viewer/-/issues) or [LibreDWG issues page](https://github.com/LibreDWG/libredwg/issues).
+- **DWG File Compatibility**: Some DWG drawings may fail to open due to bugs in the underlying [LibreDWG](https://github.com/LibreDWG/libredwg) library. This is a known limitation of the current DWG parsing implementation. If you find those issues, please log one issue on [CAD-Viewer issues page](https://github.com/mlightcad/cad-viewer/issues) or [LibreDWG issues page](https://github.com/LibreDWG/libredwg/issues).
 
 These issues are being tracked and will be addressed in future releases.
 
@@ -70,7 +70,7 @@ To achieve the final goal, the following milestones are defined:
 
 **Note**: 
 
-The second item is partially finished now. While CAD-Viewer doesn't support saving modificaiton to DWG/DXF files now, it provides comprehensive support for modifying drawings in real-time. You can add, edit, and delete entities within the drawing by [RealDWG-Web API](https://mlightcad.gitlab.io/realdwg-web/), and the viewer will automatically update to reflect these changes. The usage patterns of [RealDWG-Web API](https://mlightcad.gitlab.io/realdwg-web/) are very similar to AutoCAD RealDWG. If you're familiar with AutoCAD RealDWG development, you'll find the API structure and workflow nearly identical. Please refer to [cad-simple-viewer README](packages/cad-simple-viewer/README.md) to get more details.
+The second item is partially finished now. While CAD-Viewer doesn't support saving modificaiton to DWG/DXF files now, it provides comprehensive support for modifying drawings in real-time. You can add, edit, and delete entities within the drawing by [RealDWG-Web API](https://mlightcad.github.io/realdwg-web/), and the viewer will automatically update to reflect these changes. The usage patterns of [RealDWG-Web API](https://mlightcad.github.io/realdwg-web/) are very similar to AutoCAD RealDWG. If you're familiar with AutoCAD RealDWG development, you'll find the API structure and workflow nearly identical. Please refer to [cad-simple-viewer README](packages/cad-simple-viewer/README.md) to get more details.
 
 ## Which Viewer Should I Use?
 
@@ -104,8 +104,8 @@ For more details, see the [cad-viewer README](packages/cad-viewer/README.md) and
 
 ## Examples
 
-- [`cad-simple-viewer-example`](https://gitlab.com/mlightcad/cad-simple-viewer-example): Example application demonstrating how to use the `cad-simple-viewer` component in a real project.
-- [`cad-viewer-example`](https://gitlab.com/mlightcad/cad-viewer-example): Example application demonstrating how to use the `cad-viewer` component in a real project.
+- [`cad-simple-viewer-example`](https://github.com/mlightcad/cad-simple-viewer-example): Example application demonstrating how to use the `cad-simple-viewer` component in a real project.
+- [`cad-viewer-example`](https://github.com/mlightcad/cad-viewer-example): Example application demonstrating how to use the `cad-viewer` component in a real project.
 
 ## Contributing
 

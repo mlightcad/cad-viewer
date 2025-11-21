@@ -447,9 +447,21 @@ export abstract class AcEdBaseView {
   abstract updateLayer(layer: AcDbLayerTableRecord): void
 
   /**
+   * Add the specified transient entity or entities in the current scene.
+   * @param entity Input one or multiple transient entities
+   */
+  abstract addTransientEntity(entity: AcDbEntity | AcDbEntity[]): void
+
+  /**
+   * Remove the specified transient entity or entities in the current scene.
+   * @param entity Input the object id of one transient entity
+   */
+  abstract removeTransientEntity(objectId: AcDbObjectId): void
+
+  /**
    * Add the specified entity or entities in drawing database into the current scene
    * and draw it or them
-   * @param entity Input the entity to add into the current scene
+   * @param entity Input one or multiple entities to add into the current scene
    */
   abstract addEntity(entity: AcDbEntity | AcDbEntity[]): void
 

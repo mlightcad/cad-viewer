@@ -7,6 +7,7 @@ import {
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 import {
+  AcApCircleCmd,
   AcApConvertToSvgCmd,
   AcApOpenCmd,
   AcApPanCmd,
@@ -369,6 +370,12 @@ export class AcApDocManager {
    */
   registerCommands() {
     const register = AcEdCommandStack.instance
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'circle',
+      'circle',
+      new AcApCircleCmd()
+    )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'pan',

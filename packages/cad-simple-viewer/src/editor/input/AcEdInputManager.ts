@@ -1,10 +1,23 @@
-import { AcGeBox2d, AcGePoint2dLike } from '@mlightcad/data-model'
+import { AcGeBox2d, AcGePoint3dLike } from '@mlightcad/data-model'
 
 import { AcEdBaseView } from '../view'
+import { AcEdPreviewJig } from './AcEdPreviewJig'
+import {
+  AcEdAngleHandler,
+  AcEdDistanceHandler,
+  AcEdIntegerHandler,
+  AcEdNumericalHandler
+} from './handler'
+import {
+  AcEdPromptAngleOptions,
+  AcEdPromptDistanceOptions,
+  AcEdPromptIntegerOptions,
+  AcEdPromptPointOptions
+} from './prompt'
 
 export interface AcEdPosition {
-  world: AcGePoint2dLike
-  screen: AcGePoint2dLike
+  world: AcGePoint3dLike
+  screen: AcGePoint3dLike
 }
 
 /**
@@ -34,10 +47,13 @@ export class AcEdInputManager {
   private inputEl: HTMLDivElement | null = null
 
   /** The overlay DIV used to preview the selection rectangle for getBox. */
-  private previewRectEl: HTMLDivElement | null = null
+  private previewEl: HTMLDivElement | null = null
 
   /** Last known mouse position relative to the canvas top-left. */
-  private mouse: AcGePoint2dLike = { x: 0, y: 0 }
+  private mouse: AcGePoint3dLike = { x: 0, y: 0, z: 0 }
+
+  /** Stores last confirmed point from getPoint() or getBox() */
+  private lastPoint: AcGePoint3dLike | null = null
 
   /** Handler reference for Escape key cancellation. */
   private escHandler: ((e: KeyboardEvent) => void) | null = null
@@ -59,13 +75,20 @@ export class AcEdInputManager {
     const canvas = view.canvas
     this.canvas = canvas
     this.rect = canvas.getBoundingClientRect()
+    // The class’s constructor runs before the canvas is fully laid out, getBoundingClientRect()
+    // may return incorrect width/height/position. requestAnimationFrame() runs after layout and
+    // before painting, so the rect is guaranteed to be correct.
+    requestAnimationFrame(() => {
+      this.rect = this.canvas.getBoundingClientRect()
+    })
 
     this.injectCSS()
 
     // Update mouse position and adjust floating input position / preview
     canvas.addEventListener('mousemove', (e: MouseEvent) => {
-      this.mouse.x = e.clientX - this.rect.left
-      this.mouse.y = e.clientY - this.rect.top
+      const rect = canvas.getBoundingClientRect()
+      this.mouse.x = e.clientX - rect.left
+      this.mouse.y = e.clientY - rect.top
 
       if (this.inputEl) {
         // Proposed new position near cursor
@@ -134,8 +157,16 @@ export class AcEdInputManager {
       }
       .aced-preview-rect {
         position: absolute;
-        border: 1px dashed #0f0;
+        border: 1px dashed var(--line-color, #0f0);
         background: rgba(0, 255, 0, 0.04);
+        pointer-events: none;
+        z-index: 9999;
+      }
+      .aced-preview-line {
+        position: absolute;
+        height: 1px;
+        background: var(--line-color, #0f0);
+        transform-origin: 0 0;
         pointer-events: none;
         z-index: 9999;
       }
@@ -235,14 +266,84 @@ export class AcEdInputManager {
   }
 
   /**
+   * Create a floating HTML line element (div) for previews.
+   * If a parent is provided, the line is appended to the parent, otherwise to document.body.
+   * @param parent Optional parent element to append the line to
+   */
+  private createLine(parent?: HTMLElement): HTMLDivElement {
+    const line = document.createElement('div')
+    line.className = 'aced-preview-line'
+
+    if (parent) {
+      parent.appendChild(line)
+    } else {
+      document.body.appendChild(line)
+    }
+
+    return line
+  }
+
+  /**
+   * Create a parent container holding two line elements for preview.
+   * Returns an object containing the parent and the two lines.
+   */
+  private createTwoLines(): {
+    container: HTMLDivElement
+    lineA: HTMLDivElement
+    lineB: HTMLDivElement
+  } {
+    const container = document.createElement('div')
+    container.style.position = 'absolute'
+    container.style.top = '0'
+    container.style.left = '0'
+    container.style.width = '0'
+    container.style.height = '0'
+    document.body.appendChild(container)
+
+    const lineA = this.createLine(container)
+    const lineB = this.createLine(container)
+
+    return { container, lineA, lineB }
+  }
+
+  /**
+   * Draw a line element from (x1, y1) to (x2, y2) with optional color and dashed style.
+   */
+  private drawLine(
+    line: HTMLDivElement,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    options?: { color?: string; dashed?: boolean }
+  ) {
+    const dx = x2 - x1
+    const dy = y2 - y1
+    const length = Math.sqrt(dx * dx + dy * dy)
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+
+    line.style.width = `${length}px`
+    line.style.transform = `rotate(${angle}deg)`
+    line.style.left = `${x1}px`
+    line.style.top = `${y1}px`
+    if (options?.color) line.style.background = options.color
+    line.style.borderTop = options?.dashed
+      ? '1px dashed var(--line-color, #0f0)'
+      : 'none'
+    line.style.background = options?.dashed
+      ? 'transparent'
+      : options?.color || line.style.background
+  }
+
+  /**
    * Remove UI elements and event handlers created for the active input session.
    */
   private cleanup(): void {
     if (this.inputEl) this.inputEl.remove()
     this.inputEl = null
 
-    if (this.previewRectEl) this.previewRectEl.remove()
-    this.previewRectEl = null
+    if (this.previewEl) this.previewEl.remove()
+    this.previewEl = null
 
     if (this.clickHandler)
       this.canvas.removeEventListener('click', this.clickHandler)
@@ -276,21 +377,44 @@ export class AcEdInputManager {
   }
 
   /**
+   * Format a number for display in input box.
+   * Default: 3 decimal places for points/distance, 2 decimal places for angles.
+   * @param value The numeric value
+   * @param type Optional type: 'point' | 'distance' | 'angle'
+   */
+  private formatNumber(
+    value: number,
+    type: 'point' | 'distance' | 'angle'
+  ): string {
+    switch (type) {
+      case 'angle':
+        return value.toFixed(2)
+      case 'distance':
+      case 'point':
+      default:
+        return value.toFixed(3)
+    }
+  }
+
+  /**
    * Public point input API.
    */
-  async getPoint(message: string): Promise<AcEdPosition> {
-    return this.getPointInternal(message)
+  async getPoint(options: AcEdPromptPointOptions): Promise<AcEdPosition> {
+    return this.getPointInternal({ message: options.message, jig: options.jig })
   }
 
   /**
    * Shared point input logic used by getPoint() and getBox().
    * Accepts "x,y" typed input OR mouse click.
    */
-  private getPointInternal(
-    message: string,
-    options?: { noCleanup?: boolean }
-  ): Promise<AcEdPosition> {
+  private getPointInternal(options?: {
+    message: string
+    noCleanup?: boolean
+    jig?: AcEdPreviewJig<AcGePoint3dLike>
+  }): Promise<AcEdPosition> {
+    const message = options?.message ?? ''
     const noCleanup = options?.noCleanup ?? false
+    const jig = options?.jig
     const promise = this.makePromise<AcEdPosition>()
     const resolver = this.activeResolver
 
@@ -301,8 +425,8 @@ export class AcEdInputManager {
     const { container, inputX, inputY } = this.createInputBox(message, true)
 
     // Prefill values (editable)
-    inputX.value = mouseWorld.x.toFixed(3)
-    if (inputY) inputY.value = mouseWorld.y.toFixed(3)
+    inputX.value = this.formatNumber(mouseWorld.x, 'point')
+    if (inputY) inputY.value = this.formatNumber(mouseWorld.y, 'point')
 
     // Select immediately
     setTimeout(() => {
@@ -322,28 +446,31 @@ export class AcEdInputManager {
       userTyped = true
       clearInvalid(inputX)
     })
-    if (inputY) {
-      inputY.addEventListener('input', () => {
-        userTyped = true
-        clearInvalid(inputY)
-      })
-    }
+    inputY?.addEventListener('input', () => {
+      userTyped = true
+      clearInvalid(inputY)
+    })
 
-    // Mouse-move → update coords + ALWAYS SELECT if user has not typed
+    /** 🟦 Mouse move → update input + jig update + jig render */
     const mouseMoveHandler = () => {
-      if (!userTyped) {
-        const w = this.view.cwcs2Wcs({ x: this.mouse.x, y: this.mouse.y })
-        inputX.value = w.x.toFixed(3)
-        if (inputY) inputY.value = w.y.toFixed(3)
+      const w = this.view.cwcs2Wcs({ x: this.mouse.x, y: this.mouse.y })
 
-        // Auto-select text (Option A)
+      if (!userTyped) {
+        inputX.value = this.formatNumber(w.x, 'point')
+        if (inputY) inputY.value = this.formatNumber(w.y, 'point')
         if (inputY) inputY.select()
         inputX.select()
+      }
+
+      // Jig preview update
+      if (jig) {
+        jig.update({ x: w.x, y: w.y, z: 0 })
+        jig.render()
       }
     }
     document.addEventListener('mousemove', mouseMoveHandler)
 
-    // Handle Enter key
+    /** 🟦 Enter key → resolve */
     const keyHandler = (e: KeyboardEvent) => {
       if (e.key !== 'Enter') return
 
@@ -363,20 +490,17 @@ export class AcEdInputManager {
 
       if (!ok) return
 
-      // Valid → cleanup & resolve
-      container.removeEventListener('keydown', keyHandler)
-      document.removeEventListener('mousemove', mouseMoveHandler)
-
-      if (this.inputEl === container) {
-        container.remove()
-        this.inputEl = null
-      }
+      cleanupEventListeners()
 
       const world = { x, y }
       const screen = this.view.wcs2Cwcs(world)
 
+      jig?.end()
+
       try {
-        resolver?.({ world, screen })
+        resolver?.({ world: { ...world, z: 0 }, screen: { ...screen, z: 0 } })
+        // Remember last picked world coordinate
+        this.lastPoint = { ...world, z: 0 }
       } finally {
         if (!noCleanup) this.cleanup()
       }
@@ -384,7 +508,7 @@ export class AcEdInputManager {
 
     container.addEventListener('keydown', keyHandler)
 
-    // Mouse click resolves p
+    /** 🟦 Mouse click resolves point */
     const clickHandlerLocal = (e: MouseEvent) => {
       const cx = e.clientX - this.rect.left
       const cy = e.clientY - this.rect.top
@@ -392,16 +516,14 @@ export class AcEdInputManager {
       const world = this.view.cwcs2Wcs({ x: cx, y: cy })
       const screen = this.view.wcs2Cwcs(world)
 
-      container.removeEventListener('keydown', keyHandler)
-      document.removeEventListener('mousemove', mouseMoveHandler)
+      cleanupEventListeners()
 
-      if (this.inputEl === container) {
-        container.remove()
-        this.inputEl = null
-      }
+      jig?.end()
 
       try {
-        resolver?.({ world, screen })
+        resolver?.({ world: { ...world, z: 0 }, screen: { ...screen, z: 0 } })
+        // Remember last picked world coordinate
+        this.lastPoint = { ...world, z: 0 }
       } finally {
         if (!noCleanup) this.cleanup()
       }
@@ -409,6 +531,18 @@ export class AcEdInputManager {
 
     this.clickHandler = clickHandlerLocal
     this.canvas.addEventListener('click', clickHandlerLocal)
+
+    /** Helper to remove listeners and input box */
+    const cleanupEventListeners = () => {
+      container.removeEventListener('keydown', keyHandler)
+      document.removeEventListener('mousemove', mouseMoveHandler)
+      this.canvas.removeEventListener('click', clickHandlerLocal)
+
+      if (this.inputEl === container) {
+        container.remove()
+        this.inputEl = null
+      }
+    }
 
     return promise
   }
@@ -420,7 +554,7 @@ export class AcEdInputManager {
    */
   private getNumberTyped(
     message: string,
-    integerOnly = false
+    handler: AcEdNumericalHandler | AcEdAngleHandler
   ): Promise<number> {
     const promise = this.makePromise<number>()
     const { inputX } = this.createInputBox(message, false)
@@ -429,10 +563,8 @@ export class AcEdInputManager {
 
     inputX.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
-        const value = integerOnly
-          ? parseInt(inputX.value, 10)
-          : parseFloat(inputX.value)
-        if (!isNaN(value)) {
+        const value = handler.parse(inputX.value)
+        if (value != null) {
           this.cleanup()
           this.activeResolver?.(value)
         } else {
@@ -445,23 +577,218 @@ export class AcEdInputManager {
   }
 
   /** Request a distance (number) from the user. */
-  getDistance(): Promise<number> {
-    return this.getNumberTyped('distance')
+  getDistance(options: AcEdPromptDistanceOptions): Promise<number> {
+    // If no base point defined → fall back to typed numeric input
+    if (!this.lastPoint) {
+      // fallback to normal numeric input
+      return this.getNumberTyped(
+        options.message,
+        new AcEdDistanceHandler(options)
+      )
+    }
+
+    const promise = this.makePromise<number>()
+    const resolver = this.activeResolver
+    const handler = new AcEdDistanceHandler(options)
+    const jig = options?.jig
+
+    // Create input box
+    const { inputX } = this.createInputBox(options.message, false)
+
+    // Track if user typed manually
+    let userTyped = false
+    inputX.addEventListener('input', () => {
+      userTyped = true
+      inputX.classList.remove('invalid')
+    })
+
+    // create HTML preview line
+    this.previewEl = this.createLine()
+
+    const finish = (value: number): void => {
+      this.cleanup() // internal cleanup (textbox, events, preview)
+      jig?.end() // finalize jig
+      resolver?.(value)
+    }
+
+    const drawPreview = (): void => {
+      const world = this.view.cwcs2Wcs({
+        x: this.mouse.x,
+        y: this.mouse.y
+      })
+
+      const dx = world.x - this.lastPoint!.x
+      const dy = world.y - this.lastPoint!.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+
+      // Jig preview update
+      if (jig) {
+        jig.update(dist)
+        jig.render()
+      }
+
+      // update input box only when user has not typed manually
+      if (!userTyped) {
+        inputX.value = this.formatNumber(dist, 'distance')
+        inputX.focus()
+        inputX.select()
+      }
+
+      // draw transient line
+      const p1 = this.view.wcs2Cwcs(this.lastPoint!)
+      const p2 = this.view.wcs2Cwcs(world)
+
+      if (this.previewEl) {
+        this.drawLine(
+          this.previewEl,
+          p1.x + this.rect.left,
+          p1.y + this.rect.top,
+          p2.x + this.rect.left,
+          p2.y + this.rect.top,
+          {
+            dashed: options.useDashedLine
+          }
+        )
+      }
+    }
+
+    this.drawPreview = drawPreview
+
+    // Enter key resolves
+    inputX.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const value = handler.parse(inputX.value)
+        if (value != null) {
+          finish(value)
+        } else {
+          inputX.classList.add('invalid')
+        }
+      }
+    })
+
+    // Mouse click resolves distance
+    this.clickHandler = (e: MouseEvent) => {
+      const world = this.view.cwcs2Wcs({
+        x: e.clientX - this.rect.left,
+        y: e.clientY - this.rect.top
+      })
+      const dx = world.x - this.lastPoint!.x
+      const dy = world.y - this.lastPoint!.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+
+      finish(dist)
+    }
+    this.canvas.addEventListener('click', this.clickHandler)
+
+    return promise
   }
 
   /** Request an angle in degrees from the user. */
-  getAngle(): Promise<number> {
-    return this.getNumberTyped('angle (deg)')
+  getAngle(options: AcEdPromptAngleOptions): Promise<number> {
+    if (!this.lastPoint) {
+      return this.getNumberTyped(options.message, new AcEdAngleHandler(options))
+    }
+
+    const promise = this.makePromise<number>()
+    const resolver = this.activeResolver
+    const handler = new AcEdAngleHandler(options)
+
+    const { inputX } = this.createInputBox(options.message, false)
+    let userTyped = false
+    inputX.addEventListener('input', () => {
+      userTyped = true
+      inputX.classList.remove('invalid')
+    })
+
+    // Create two-line preview
+    const { container: lineContainer, lineA, lineB } = this.createTwoLines()
+    this.previewEl = lineContainer
+
+    const drawPreview = () => {
+      const current = this.view.cwcs2Wcs({ x: this.mouse.x, y: this.mouse.y })
+      const dx = current.x - this.lastPoint!.x
+      const dy = current.y - this.lastPoint!.y
+      const len = Math.sqrt(dx * dx + dy * dy)
+
+      const ang = Math.atan2(dy, dx)
+      const deg = (ang * 180) / Math.PI
+
+      if (!userTyped) {
+        inputX.value = this.formatNumber(deg, 'angle')
+        inputX.focus()
+        inputX.select()
+      }
+
+      const p1 = this.view.wcs2Cwcs(this.lastPoint!)
+      const p2 = this.view.wcs2Cwcs(current)
+
+      this.drawLine(
+        lineA,
+        p1.x + this.rect.left,
+        p1.y + this.rect.top,
+        p2.x + this.rect.left,
+        p2.y + this.rect.top,
+        { dashed: options.useDashedLine }
+      )
+      const pB = this.view.wcs2Cwcs({
+        x: this.lastPoint!.x + len,
+        y: this.lastPoint!.y
+      })
+      this.drawLine(
+        lineB,
+        p1.x + this.rect.left,
+        p1.y + this.rect.top,
+        pB.x + this.rect.left,
+        pB.y + this.rect.top,
+        { dashed: options.useDashedLine }
+      )
+    }
+
+    this.drawPreview = drawPreview
+
+    // Enter resolves
+    inputX.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const value = handler.parse(inputX.value)
+        if (value != null) {
+          this.cleanup()
+          resolver?.(value)
+        } else {
+          inputX.classList.add('invalid')
+        }
+      }
+    })
+
+    // Mouse click resolves
+    this.clickHandler = (e: MouseEvent) => {
+      const world = this.view.cwcs2Wcs({
+        x: e.clientX - this.rect.left,
+        y: e.clientY - this.rect.top
+      })
+      const dx = world.x - this.lastPoint!.x
+      const dy = world.y - this.lastPoint!.y
+      const ang = Math.atan2(dy, dx)
+      const deg = (ang * 180) / Math.PI
+
+      this.cleanup()
+      resolver?.(deg)
+    }
+    this.canvas.addEventListener('click', this.clickHandler)
+
+    return promise
   }
 
   /** Request a double/float from the user. */
-  getDouble(): Promise<number> {
-    return this.getNumberTyped('double')
+  getDouble(options: AcEdPromptDistanceOptions): Promise<number> {
+    return this.getNumberTyped(
+      options.message,
+      new AcEdDistanceHandler(options)
+    )
   }
 
   /** Request an integer from the user. */
-  getInteger(): Promise<number> {
-    return this.getNumberTyped('integer', true)
+  getInteger(options: AcEdPromptIntegerOptions): Promise<number> {
+    return this.getNumberTyped(options.message, new AcEdIntegerHandler(options))
   }
 
   /**
@@ -492,15 +819,18 @@ export class AcEdInputManager {
     message2: string = 'Specify the second corner or'
   ): Promise<AcGeBox2d> {
     // Get first point
-    const p1 = await this.getPointInternal(message1, { noCleanup: true })
+    const p1 = await this.getPointInternal({
+      message: message1,
+      noCleanup: true
+    })
 
     // Create preview rectangle
-    this.previewRectEl = document.createElement('div')
-    this.previewRectEl.className = 'aced-preview-rect'
-    document.body.appendChild(this.previewRectEl)
+    this.previewEl = document.createElement('div')
+    this.previewEl.className = 'aced-preview-rect'
+    document.body.appendChild(this.previewEl)
 
     this.drawPreview = () => {
-      if (!this.previewRectEl) return
+      if (!this.previewEl) return
 
       const x1 = p1.screen.x + this.rect.left
       const y1 = p1.screen.y + this.rect.top
@@ -512,7 +842,7 @@ export class AcEdInputManager {
       const width = Math.abs(x1 - x2)
       const height = Math.abs(y1 - y2)
 
-      Object.assign(this.previewRectEl.style, {
+      Object.assign(this.previewEl.style, {
         left: `${left}px`,
         top: `${top}px`,
         width: `${width}px`,
@@ -521,12 +851,15 @@ export class AcEdInputManager {
     }
 
     // Second point
-    const p2 = await this.getPointInternal(message2, { noCleanup: false })
+    const p2 = await this.getPointInternal({
+      message: message2,
+      noCleanup: false
+    })
 
     // Remove preview
-    if (this.previewRectEl) {
-      this.previewRectEl.remove()
-      this.previewRectEl = null
+    if (this.previewEl) {
+      this.previewEl.remove()
+      this.previewEl = null
     }
     this.drawPreview = null
 

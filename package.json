@@ -6,7 +6,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/mlightcad/cad-viewer.git"
+    "url": "https://github.com/mlightcad/cad-viewer"
   },
   "workspaces": [
     "packages/*"
@@ -18,7 +18,7 @@
     "dev": "nx run @mlightcad/cad-viewer-example:dev",
     "dev:simple": "nx run @mlightcad/cad-simple-viewer-example:dev",
     "doc": "typedoc",
-    "format": "prettier --config ./.prettierrc.js --write packages/**/*.{ts,js,vue,json}",
+    "format": "prettier --config ./.prettierrc.js --write \"packages/**/*.{ts,js,vue,json}\"",
     "lint": "nx run-many -t lint",
     "lint:fix": "nx run-many -t lint:fix",
     "preview": "nx run @mlightcad/cad-viewer-example:preview",

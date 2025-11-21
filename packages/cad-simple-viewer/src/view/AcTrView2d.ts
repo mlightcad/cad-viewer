@@ -207,7 +207,6 @@ export class AcTrView2d extends AcEdBaseView {
    */
   set mode(value: AcEdViewMode) {
     this.activeLayoutView.mode = value
-    this.editor.getPoint()
   }
 
   /**
@@ -456,6 +455,35 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Add the specified transient entity or entities into this view
+   * @param entity Input one or multiple transient entities
+   */
+  addTransientEntity(entity: AcDbEntity | AcDbEntity[]) {
+    const entities = Array.isArray(entity) ? entity : [entity]
+    for (let i = 0; i < entities.length; ++i) {
+      const entity = entities[i]
+      const threeEntity: AcTrEntity | null = entity.draw(
+        this._renderer,
+        true
+      ) as AcTrEntity
+      if (threeEntity) {
+        threeEntity.objectId = entity.objectId
+        this._scene.addTransientEntity(threeEntity)
+        this._isDirty = true
+      }
+    }
+  }
+
+  /**
+   * Remove the specified transient entity from this view
+   * @param objectId Input the object id of the transient entity to remove
+   */
+  removeTransientEntity(objectId: AcDbObjectId) {
+    this._scene.removeTransientEntity(objectId)
+    this._isDirty = true
+  }
+
+  /**
    * @inheritdoc
    */
   addEntity(entity: AcDbEntity | AcDbEntity[]) {
@@ -471,7 +499,7 @@ export class AcTrView2d extends AcEdBaseView {
    * @param objectId Input the object id of the entity to remove
    */
   removeEntity(objectId: AcDbObjectId) {
-    this._scene.remove(objectId)
+    this._scene.removeEntity(objectId)
   }
 
   /**
@@ -493,7 +521,7 @@ export class AcTrView2d extends AcEdBaseView {
         threeEntity.ownerId = entity.ownerId
         threeEntity.layerName = entity.layer
         threeEntity.visible = entity.visibility
-        this._scene.update(threeEntity)
+        this._scene.updateEntity(threeEntity)
       }
     }
     this._isDirty = true

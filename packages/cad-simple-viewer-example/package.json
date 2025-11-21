@@ -5,7 +5,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/mlightcad/cad-viewer.git"
+    "url": "https://github.com/mlightcad/cad-viewer.git"
   },
   "scripts": {
     "build": "tsc && vite build",

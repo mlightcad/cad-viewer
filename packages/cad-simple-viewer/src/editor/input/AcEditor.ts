@@ -1,7 +1,11 @@
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
 import { AcEdInputManager } from './AcEdInputManager'
-import { AcEdInputPoint } from './AcEdInputPoint'
+import {
+  AcEdPromptAngleOptions,
+  AcEdPromptDistanceOptions,
+  AcEdPromptPointOptions
+} from './prompt'
 
 /**
  * Advanced input handler for CAD operations providing high-level user interaction methods.
@@ -37,6 +41,8 @@ export class AcEditor {
   private _currentCursor?: AcEdCorsorType
   /** Manager for cursor appearance and behavior */
   private _cursorManager: AcEdCursorManager
+  /** Manager for mouse and keyboard input */
+  private _inputManager: AcEdInputManager
   /** The view this editor is associated with */
   protected _view: AcEdBaseView
 
@@ -48,6 +54,7 @@ export class AcEditor {
   constructor(view: AcEdBaseView) {
     this._view = view
     this._cursorManager = new AcEdCursorManager()
+    this._inputManager = new AcEdInputManager(view)
   }
 
   /**
@@ -91,23 +98,43 @@ export class AcEditor {
   }
 
   /**
-   * Prompts the user to input a point by clicking on the view.
+   * Prompts the user to input a point by clicking on the view or inputting
+   * one coordinate value.
    *
-   * This method returns a promise that resolves when the user clicks
-   * on the view, providing the world coordinates of the click point.
+   * This method returns a promise that resolves after the user clicks
+   * on the view or inputs one valid coordinate value, providing the
+   * world coordinates of the click point.
    *
    * @returns Promise that resolves to the input point coordinates
-   *
-   * @example
-   * ```typescript
-   * const startPoint = await editor.getPoint();
-   * const endPoint = await editor.getPoint();
-   * // Now you can create a line from startPoint to endPoint
-   * ```
    */
-  async getPoint() {
-    const inputter = new AcEdInputPoint(this._view)
-    return await inputter.start()
+  async getPoint(options: AcEdPromptPointOptions) {
+    return (await this._inputManager.getPoint(options)).world
+  }
+
+  /**
+   * Prompts the user to input an angle by clicking on the view or input
+   * one number.
+   *
+   * This method returns a promise that resolves after the user clicks
+   * on the view or inputs one valid angle value.
+   *
+   * @returns Promise that resolves to the input angle value.
+   */
+  async getAngle(options: AcEdPromptAngleOptions) {
+    return await this._inputManager.getAngle(options)
+  }
+
+  /**
+   * Prompts the user to input a distance by clicking on the view or input
+   * one number.
+   *
+   * This method returns a promise that resolves after the user clicks
+   * on the view or inputs one valid distance value.
+   *
+   * @returns Promise that resolves to the input distance value.
+   */
+  async getDistance(options: AcEdPromptDistanceOptions) {
+    return await this._inputManager.getDistance(options)
   }
 
   /**
@@ -132,7 +159,6 @@ export class AcEditor {
    * ```
    */
   async getSelection() {
-    const selector = new AcEdInputManager(this._view)
-    return await selector.getBox()
+    return await this._inputManager.getBox()
   }
 }

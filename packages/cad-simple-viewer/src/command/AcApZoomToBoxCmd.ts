@@ -1,50 +1,5 @@
-import { AcApContext } from '../app'
-import { AcApDocManager } from '../app'
+import { AcApContext, AcApDocManager } from '../app'
 import { AcEdCommand } from '../command'
-import { AcEdBaseView, AcEdJig } from '../editor'
-
-/**
- * Jig for handling zoom-to-box selection interaction.
- *
- * This jig handles the user interaction for selecting a rectangular
- * area to zoom to. It extends {@link AcEdJig} to provide interactive
- * selection capabilities.
- *
- * The jig allows users to:
- * - Select a rectangular area on the drawing
- * - Zoom the view to fit the selected area
- * - Provide visual feedback during selection
- *
- * @example
- * ```typescript
- * const jig = new AcApZoomToBoxJig(view);
- * await jig.drag(); // User selects area to zoom to
- * ```
- */
-export class AcApZoomToBoxJig extends AcEdJig<boolean> {
-  /**
-   * Creates a new zoom-to-box jig.
-   *
-   * @param view - The view that will be zoomed
-   */
-  constructor(view: AcEdBaseView) {
-    super(view)
-  }
-
-  /**
-   * Handles the selection sampling and zooming operation.
-   *
-   * This method gets the user's selection box and applies
-   * the zoom operation to fit that area in the view.
-   *
-   * @returns Promise that resolves when the zoom operation completes
-   */
-  async sampler() {
-    await AcApDocManager.instance.editor.getSelection().then(box => {
-      return this.view.zoomTo(box, 1)
-    })
-  }
-}
 
 /**
  * Command for zooming to a user-selected rectangular area.
@@ -74,7 +29,7 @@ export class AcApZoomToBoxCmd extends AcEdCommand {
    * @returns Promise that resolves when the zoom operation completes
    */
   async execute(context: AcApContext) {
-    const jig = new AcApZoomToBoxJig(context.view)
-    await jig.drag()
+    const box = await AcApDocManager.instance.editor.getSelection()
+    return context.view.zoomTo(box, 1)
   }
 }
