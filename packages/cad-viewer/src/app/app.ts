@@ -5,6 +5,7 @@ import '../style/index.scss'
 import {
   AcApDocManager,
   AcApDocManagerOptions,
+  createUiComponents,
   registerWorkers
 } from '@mlightcad/cad-simple-viewer'
 
@@ -14,5 +15,6 @@ export const initializeCadViewer = (options: AcApDocManagerOptions = {}) => {
   AcApDocManager.createInstance(options)
   registerWorkers()
   registerCmds()
+  createUiComponents()
   AcApDocManager.instance.loadDefaultFonts()
 }

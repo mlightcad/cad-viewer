@@ -1,4 +1,4 @@
-import { AcEdCommandStack } from '@mlightcad/cad-simple-viewer'
+import { AcApI18n, AcEdCommandStack } from '@mlightcad/cad-simple-viewer'
 import { AcDbConversionStage, AcDbEntity } from '@mlightcad/data-model'
 import { createI18n } from 'vue-i18n'
 
@@ -36,9 +36,12 @@ const messages = {
   }
 }
 
+AcApI18n.mergeLocaleMessage('en', messages.en)
+AcApI18n.mergeLocaleMessage('zh', messages.zh)
+
 export const i18n = createI18n({
   legacy: false,
-  messages,
+  messages: AcApI18n.messages,
   locale: getInitialLocale(),
   fallbackLocale: 'en',
   allowComposition: true,

@@ -97,7 +97,6 @@ import { useLocale, useNotificationCenter } from '../composable'
 import { LocaleProp } from '../locale'
 import { MlDialogManager, MlFileReader } from './common'
 import {
-  MlCommandLine,
   MlEntityInfo,
   MlLanguageSelector,
   MlMainMenu,
@@ -403,9 +402,6 @@ const closeNotificationCenter = () => {
 
       <!-- Footer section with command line and status information -->
       <footer>
-        <!-- Command line for text-based CAD commands -->
-        <ml-command-line />
-
         <!-- Status bar with progress, settings, and theme controls -->
         <ml-status-bar @toggle-notification-center="toggleNotificationCenter" />
       </footer>

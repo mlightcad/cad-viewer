@@ -1,9 +1,10 @@
+import { AcApI18n, AcApLocale } from '@mlightcad/cad-simple-viewer'
 import en from 'element-plus/es/locale/lang/en'
 import zh from 'element-plus/es/locale/lang/zh-cn'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { i18n, LocaleProp, LocaleValue } from '../locale'
+import { i18n, LocaleProp } from '../locale'
 
 const STORAGE_KEY = 'preferred_lang'
 
@@ -11,17 +12,18 @@ export function useLocale(propLocale?: LocaleProp) {
   const { locale: i18nLocale } = useI18n()
 
   // Get initial locale from localStorage or browser preference
-  const getInitialLocale = (): LocaleValue => {
+  const getInitialLocale = (): AcApLocale => {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'en' || stored === 'zh') return stored
 
     const browserLang = navigator.language.toLowerCase()
-    const browserLocale = browserLang.substring(0, 2)
-    return browserLocale === 'zh' ? 'zh' : 'en'
+    const browserLocale = browserLang.substring(0, 2) === 'zh' ? 'zh' : 'en'
+    AcApI18n.setCurrentLocale(browserLocale)
+    return browserLocale
   }
 
   // Current effective locale
-  const currentLocale = ref<LocaleValue>(getInitialLocale())
+  const currentLocale = ref<AcApLocale>(getInitialLocale())
 
   // Effective locale - always return the current active locale
   const effectiveLocale = computed<LocaleProp>(() => {
@@ -29,7 +31,7 @@ export function useLocale(propLocale?: LocaleProp) {
   })
 
   // Set locale and update all related systems
-  const setLocale = (newLocale: LocaleValue) => {
+  const setLocale = (newLocale: AcApLocale) => {
     // Update i18n locale
     i18n.global.locale.value = newLocale
 
@@ -40,6 +42,9 @@ export function useLocale(propLocale?: LocaleProp) {
     if (!propLocale || propLocale === 'default') {
       localStorage.setItem(STORAGE_KEY, newLocale)
     }
+
+    // Update locale stored in AcApI18n so that it is aligned with i18n
+    AcApI18n.setCurrentLocale(newLocale)
   }
 
   // Clear localStorage preference (used when prop takes precedence)
@@ -54,9 +59,7 @@ export function useLocale(propLocale?: LocaleProp) {
       newPropLocale => {
         if (newPropLocale && newPropLocale !== 'default') {
           // Initialize with prop value
-          currentLocale.value = newPropLocale
-          i18n.global.locale.value = newPropLocale
-          clearStoragePreference()
+          setLocale(newPropLocale)
         }
       },
       { immediate: true }
@@ -70,7 +73,7 @@ export function useLocale(propLocale?: LocaleProp) {
       // Only update if not controlled by prop
       if (!propLocale || propLocale === 'default') {
         const validLocale = newI18nLocale === 'zh' ? 'zh' : 'en'
-        currentLocale.value = validLocale
+        setLocale(validLocale)
       }
     }
   )

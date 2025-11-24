@@ -1,3 +1,4 @@
+export * from './AcEdCommandLine'
 export * from './AcEdCursorManager'
 export * from './AcEdInputManager'
 export * from './AcEditor'

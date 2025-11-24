@@ -1,9 +1,8 @@
-import {
-  AcApContext,
-  AcEdCommand,
-  AcTrView2d
-} from '@mlightcad/cad-simple-viewer'
 import { AcCmPerformanceCollector } from '@mlightcad/data-model'
+
+import { AcApContext } from '../app'
+import { AcEdCommand } from '../command'
+import { AcTrView2d } from '../view'
 
 /**
  * This is an internal command used to log some debug information in console.

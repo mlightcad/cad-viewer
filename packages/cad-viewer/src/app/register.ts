@@ -3,7 +3,6 @@ import { markRaw } from 'vue'
 
 import {
   AcApLayerStateCmd,
-  AcApLogCmd,
   AcApMissedDataCmd,
   AcApPointStyleCmd
 } from '../command'
@@ -11,12 +10,6 @@ import { MlPointStyleDlg, MlReplacementDlg } from '../component'
 import { useDialogManager } from '../composable'
 
 export const registerCmds = () => {
-  AcEdCommandStack.instance.addCommand(
-    AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-    'log',
-    'log',
-    new AcApLogCmd()
-  )
   AcEdCommandStack.instance.addCommand(
     AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
     'la',

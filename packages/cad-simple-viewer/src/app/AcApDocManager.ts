@@ -9,6 +9,7 @@ import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 import {
   AcApCircleCmd,
   AcApConvertToSvgCmd,
+  AcApLogCmd,
   AcApOpenCmd,
   AcApPanCmd,
   AcApQNewCmd,
@@ -358,13 +359,14 @@ export class AcApDocManager {
    * Registers all default commands available in the CAD viewer.
    *
    * This method sets up the command system by registering built-in commands including:
+   * - csvg: Convert to SVG
+   * - log: Output debug information in console
+   * - open: Open document
+   * - qnew: Quick new document
    * - pan: Pan/move the view
    * - select: Select entities
    * - zoom: Zoom in/out
    * - zoomw: Zoom to window/box
-   * - csvg: Convert to SVG
-   * - qnew: Quick new document
-   * - open: Open document
    *
    * All commands are registered under the system command group.
    */
@@ -378,9 +380,33 @@ export class AcApDocManager {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'csvg',
+      'csvg',
+      new AcApConvertToSvgCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'log',
+      'log',
+      new AcApLogCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'open',
+      'open',
+      new AcApOpenCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'pan',
       'pan',
       new AcApPanCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'qnew',
+      'qnew',
+      new AcApQNewCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
@@ -405,24 +431,6 @@ export class AcApDocManager {
       'zoomw',
       'zoomw',
       new AcApZoomToBoxCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'csvg',
-      'csvg',
-      new AcApConvertToSvgCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'qnew',
-      'qnew',
-      new AcApQNewCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'open',
-      'open',
-      new AcApOpenCmd()
     )
   }
 

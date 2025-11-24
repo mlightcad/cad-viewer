@@ -8,6 +8,7 @@ import {
   AcEdPromptDistanceOptions,
   AcEdPromptPointOptions
 } from '../editor'
+import { AcApI18n } from '../i18n'
 
 export class AcApCircleJig extends AcEdPreviewJig<number> {
   private _circle: AcDbCircle
@@ -37,12 +38,12 @@ export class AcApCircleJig extends AcEdPreviewJig<number> {
 export class AcApCircleCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const centerPrompt = new AcEdPromptPointOptions(
-      'Specify the center of circle:'
+      AcApI18n.t('jig.circle.center')
     )
     const center = await AcApDocManager.instance.editor.getPoint(centerPrompt)
 
     const radiusPrompt = new AcEdPromptDistanceOptions(
-      'Specify the radius of circle:'
+      AcApI18n.t('jig.circle.radius')
     )
     radiusPrompt.jig = new AcApCircleJig(context.view, center)
     const radius =

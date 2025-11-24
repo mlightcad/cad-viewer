@@ -1,5 +1,8 @@
 import { AcEdCommand } from './AcEdCommand'
-import { AcEdCommandIterator } from './AcEdCommandIterator'
+import {
+  AcEdCommandIterator,
+  AcEdCommandIteratorItem
+} from './AcEdCommandIterator'
 
 /**
  * Interface representing a command group in the command stack.
@@ -97,6 +100,10 @@ export class AcEdCommandStack {
     cmdLocalName: string,
     cmd: AcEdCommand
   ) {
+    cmdGroupName = cmdGroupName.toUpperCase()
+    cmdGlobalName = cmdGlobalName.toUpperCase()
+    cmdLocalName = cmdLocalName.toUpperCase()
+
     if (!cmdGlobalName) {
       throw new Error(
         '[AcEdCommandStack] The global name of the command is required!'
@@ -150,6 +157,43 @@ export class AcEdCommandStack {
   }
 
   /**
+   * Fuzzy search for commands by prefix using the command iterator.
+   *
+   * This method iterates through all commands in all command groups and returns those
+   * whose global or local names start with the provided prefix. The search is case-insensitive.
+   *
+   * @param prefix - The prefix string to search for. Case-insensitive.
+   * @returns An array of objects containing matched commands and their corresponding group names.
+   *
+   * @example
+   * ```typescript
+   * const matches = commandStack.searchCommandsByPrefix('LI');
+   * matches.forEach(item => {
+   *   console.log(item.groupName, item.command.globalName);
+   * });
+   * ```
+   */
+  searchCommandsByPrefix(prefix: string): AcEdCommandIteratorItem[] {
+    prefix = prefix.toUpperCase()
+    const results: AcEdCommandIteratorItem[] = []
+
+    const iter = this.iterator()
+    let item = iter.next()
+    while (!item.done) {
+      const { command } = item.value
+      if (
+        command.globalName.startsWith(prefix) ||
+        command.localName.startsWith(prefix)
+      ) {
+        results.push(item.value)
+      }
+      item = iter.next()
+    }
+
+    return results
+  }
+
+  /**
    * Search through all of the global and untranslated names in all of the command groups in the command
    * stack starting at the top of the stack trying to find a match with cmdName. If a match is found, the
    * matched AcEdCommand object is returned. Otherwise undefined is returned to indicate that the command
@@ -160,6 +204,7 @@ export class AcEdCommandStack {
    * @returns Return the matched AcEdCommand object if a match is found. Otherwise, return undefined.
    */
   lookupGlobalCmd(cmdName: string) {
+    cmdName = cmdName.toUpperCase()
     let result: AcEdCommand | undefined = undefined
     for (const group of this._commandsByGroup) {
       result = group.commandsByGlobalName.get(cmdName)
@@ -179,6 +224,7 @@ export class AcEdCommandStack {
    * @returns Return the matched AcEdCommand object if a match is found. Otherwise, return undefined.
    */
   lookupLocalCmd(cmdName: string) {
+    cmdName = cmdName.toUpperCase()
     let result: AcEdCommand | undefined = undefined
     for (const group of this._commandsByGroup) {
       result = group.commandsByLocalName.get(cmdName)
@@ -198,6 +244,8 @@ export class AcEdCommandStack {
    * name `cmdGlobalName` is found in the `cmdGroupName` command group.
    */
   removeCmd(cmdGroupName: string, cmdGlobalName: string) {
+    cmdGroupName = cmdGroupName.toUpperCase()
+    cmdGlobalName = cmdGlobalName.toUpperCase()
     for (const group of this._commandsByGroup) {
       if (group.groupName == cmdGroupName) {
         return group.commandsByGlobalName.delete(cmdGlobalName)
@@ -214,6 +262,7 @@ export class AcEdCommandStack {
    * @returns Return true if successful. Return false if no command group is found with the name `GroupName`.
    */
   removeGroup(groupName: string) {
+    groupName = groupName.toUpperCase()
     let tmp = -1
     this._commandsByGroup.some((group, index) => {
       tmp = index

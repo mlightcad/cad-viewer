@@ -1,5 +1,6 @@
 import { AcGeBox2d, AcGePoint3dLike } from '@mlightcad/data-model'
 
+import { AcApI18n } from '../../i18n'
 import { AcEdBaseView } from '../view'
 import { AcEdPreviewJig } from './AcEdPreviewJig'
 import {
@@ -12,7 +13,8 @@ import {
   AcEdPromptAngleOptions,
   AcEdPromptDistanceOptions,
   AcEdPromptIntegerOptions,
-  AcEdPromptPointOptions
+  AcEdPromptPointOptions,
+  AcEdPromptStringOptions
 } from './prompt'
 
 export interface AcEdPosition {
@@ -794,9 +796,9 @@ export class AcEdInputManager {
   /**
    * Prompt the user to type an arbitrary string. Resolved when Enter is pressed.
    */
-  getString(message: string): Promise<string> {
+  getString(options: AcEdPromptStringOptions): Promise<string> {
     const promise = this.makePromise<string>()
-    const { inputX } = this.createInputBox(message, false)
+    const { inputX } = this.createInputBox(options.message, false)
 
     inputX.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
@@ -814,11 +816,9 @@ export class AcEdInputManager {
    * Each corner may be specified by clicking on the canvas or typing "x,y".
    * A live HTML overlay rectangle previews the box as the user moves the mouse.
    */
-  async getBox(
-    message1: string = 'Specify the first corner or',
-    message2: string = 'Specify the second corner or'
-  ): Promise<AcGeBox2d> {
+  async getBox(): Promise<AcGeBox2d> {
     // Get first point
+    const message1 = AcApI18n.t('main.inputManager.firstCorner')
     const p1 = await this.getPointInternal({
       message: message1,
       noCleanup: true
@@ -851,6 +851,7 @@ export class AcEdInputManager {
     }
 
     // Second point
+    const message2 = AcApI18n.t('main.inputManager.secondCorner')
     const p2 = await this.getPointInternal({
       message: message2,
       noCleanup: false

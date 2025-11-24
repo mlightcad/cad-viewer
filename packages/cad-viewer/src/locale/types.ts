@@ -1,2 +1,3 @@
-export type LocaleValue = 'en' | 'zh'
-export type LocaleProp = LocaleValue | 'default'
+import { AcApLocale } from '@mlightcad/cad-simple-viewer'
+
+export type LocaleProp = AcApLocale | 'default'
