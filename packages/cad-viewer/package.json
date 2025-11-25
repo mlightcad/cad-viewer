@@ -61,7 +61,7 @@
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.3.13",
+    "@mlightcad/data-model": "^1.3.14",
     "@vueuse/core": "^11.1.0",
     "element-plus": "^2.9.1",
     "vue": "^3.4.21",

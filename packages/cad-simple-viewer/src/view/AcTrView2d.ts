@@ -732,7 +732,13 @@ export class AcTrView2d extends AcEdBaseView {
       // definition is '0', it should be put on layer where the group exist.
       entity.layerName = layerName === '0' ? groupLayerName : layerName
       entity.box = groupBox
-      entity.add(...objects)
+
+      // Important:
+      // DO NOT USE spread operator when adding objects because it may be one very large array
+      // and can result in maximum call stack size exceeded
+      for (let i = 0; i < objects.length; i++) {
+        entity.add(objects[i])
+      }
       this._scene.addEntity(entity, true)
       entity.dispose()
     })
