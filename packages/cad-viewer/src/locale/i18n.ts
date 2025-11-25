@@ -1,5 +1,5 @@
 import { AcApI18n, AcEdCommandStack } from '@mlightcad/cad-simple-viewer'
-import { AcDbConversionStage, AcDbEntity } from '@mlightcad/data-model'
+import { AcDbEntity } from '@mlightcad/data-model'
 import { createI18n } from 'vue-i18n'
 
 import enCommand from './en/command'
@@ -88,12 +88,6 @@ export const colorName = (colorKeyName: string) => {
     const key = 'entity.color.' + colorKeyName
     return t(key, colorKeyName, { missingWarn: false })
   }
-}
-
-export const conversionSubStageName = (stage: AcDbConversionStage) => {
-  const t = i18n.global.t
-  const key = 'main.progress.' + stage.replace(/_/g, '').toLowerCase()
-  return t(key, stage)
 }
 
 export const toolPaletteTitle = (name: string) => {

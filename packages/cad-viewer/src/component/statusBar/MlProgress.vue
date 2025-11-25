@@ -15,12 +15,11 @@ import {
   AcDbParsingTaskStats,
   AcDbProgressdEventArgs
 } from '@mlightcad/data-model'
-import { ElLoading, ElProgress } from 'element-plus'
+import { ElProgress } from 'element-plus'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useNotificationCenter } from '../../composable'
-import { conversionSubStageName } from '../../locale'
 
 const { t } = useI18n()
 const percentage = ref(0)
@@ -29,13 +28,7 @@ const { warning } = useNotificationCenter()
 
 const updateProgress = (data: AcDbProgressdEventArgs) => {
   if (data.stage === 'CONVERSION') {
-    const loading = ElLoading.service({
-      lock: true
-    })
     if (data.subStage) {
-      const stageName = conversionSubStageName(data.subStage)
-      loading.setText(stageName)
-
       if (
         data.subStage === 'PARSE' &&
         data.subStageStatus === 'END' &&
@@ -52,27 +45,12 @@ const updateProgress = (data: AcDbProgressdEventArgs) => {
         }
       }
     }
-
-    percentage.value = data.percentage
-    if (percentage.value < 100) {
-      visible.value = true
-    } else {
-      visible.value = false
-      loading.close()
-    }
-  } else if (data.stage === 'FETCH_FILE') {
-    const loading = ElLoading.service({
-      lock: true
-    })
-    loading.setText(t('main.message.fetchingDrawingFile'))
-
-    percentage.value = data.percentage
-    if (percentage.value < 100) {
-      visible.value = true
-    } else {
-      visible.value = false
-      loading.close()
-    }
+  }
+  percentage.value = data.percentage
+  if (percentage.value < 100) {
+    visible.value = true
+  } else {
+    visible.value = false
   }
 }
 

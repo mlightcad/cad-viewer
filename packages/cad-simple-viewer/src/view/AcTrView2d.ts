@@ -718,6 +718,19 @@ export class AcTrView2d extends AcEdBaseView {
       }
       objectsGroupByLayer.get(layerName)?.push(child)
     })
+    // Important:
+    // Sometimes one group may contain huge amount of objects (> 100,000). So it is important
+    // to re-parent object with the fast approach. Calling add/remove method in THREE.Object3D
+    // is very slow because it do lots of things
+    // - Remove children from old group
+    // - Insert them into new group
+    // - Reset parent pointer
+    // - Do one updateMatrixWorld() at the end (optional)
+    // So we operate its children directly.
+    group.children = []
+    for (const child of children) {
+      child.parent = null
+    }
 
     const styleManager = group.styleManager
     const groupObjectId = group.objectId

@@ -2,6 +2,7 @@ import {
   AcCmEventManager,
   acdbHostApplicationServices,
   AcDbOpenDatabaseOptions,
+  AcDbProgressdEventArgs,
   AcGeBox2d
 } from '@mlightcad/data-model'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
@@ -20,10 +21,12 @@ import {
   AcEdCommandStack
 } from '../command'
 import { AcEdCalculateSizeCallback, eventBus } from '../editor'
+import { AcApI18n } from '../i18n'
 import { AcTrView2d } from '../view'
 import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
+import { AcApProgress } from './AcApProgress'
 
 const DEFAULT_BASE_URL = 'https://mlightcad.gitlab.io/cad-data/'
 
@@ -76,6 +79,8 @@ export class AcApDocManager {
   private _fontLoader: AcApFontLoader
   /** Base URL to get fonts, templates, and example files */
   private _baseUrl: string
+  /** Progress animation */
+  private _progress: AcApProgress
   /** Singleton instance */
   private static _instance?: AcApDocManager
 
@@ -107,14 +112,16 @@ export class AcApDocManager {
     // Create one empty drawing
     const doc = new AcApDocument()
     doc.database.events.openProgress.addEventListener(args => {
-      eventBus.emit('open-file-progress', {
+      const progress = {
         database: doc.database,
         percentage: args.percentage,
         stage: args.stage,
         subStage: args.subStage,
         subStageStatus: args.subStageStatus,
         data: args.data
-      })
+      }
+      eventBus.emit('open-file-progress', progress)
+      this.updateProgress(progress)
     })
     const callback: AcEdCalculateSizeCallback = () => {
       return {
@@ -132,6 +139,8 @@ export class AcApDocManager {
     this._fontLoader.baseUrl = this._baseUrl + 'fonts/'
     acdbHostApplicationServices().workingDatabase = doc.database
     this.registerCommands()
+    this._progress = new AcApProgress()
+    this._progress.hide()
   }
 
   /**
@@ -522,5 +531,28 @@ export class AcApDocManager {
       options.fontLoader = this._fontLoader
     }
     return options
+  }
+
+  /**
+   * Shows progress animation and progress message
+   * @param data - Progress data
+   */
+  private updateProgress(data: AcDbProgressdEventArgs) {
+    if (data.stage === 'CONVERSION') {
+      if (data.subStage) {
+        const key =
+          'main.progress.' + data.subStage.replace(/_/g, '').toLowerCase()
+        this._progress.setMessage(AcApI18n.t(key))
+      }
+    } else if (data.stage === 'FETCH_FILE') {
+      this._progress.setMessage(AcApI18n.t('main.message.fetchingDrawingFile'))
+    }
+
+    const percentage = data.percentage
+    if (percentage >= 100) {
+      this._progress.hide()
+    } else {
+      this._progress.show()
+    }
   }
 }

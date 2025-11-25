@@ -4,7 +4,6 @@ import { AcDbOpenDatabaseOptions } from '@mlightcad/data-model'
 class CadViewerApp {
   private canvas: HTMLCanvasElement
   private fileInput: HTMLInputElement
-  private loadingElement: HTMLElement
 
   constructor() {
     // Get DOM elements
@@ -12,7 +11,6 @@ class CadViewerApp {
     this.fileInput = document.getElementById(
       'fileInputElement'
     ) as HTMLInputElement
-    this.loadingElement = document.getElementById('loading') as HTMLElement
 
     registerWorkers()
     this.initializeViewer()
@@ -60,7 +58,6 @@ class CadViewerApp {
       return
     }
 
-    this.showLoading(true)
     this.clearMessages()
 
     try {
@@ -94,8 +91,6 @@ class CadViewerApp {
     } catch (error) {
       console.error('Error loading file:', error)
       this.showMessage(`Error loading file: ${error}`, 'error')
-    } finally {
-      this.showLoading(false)
     }
   }
 
@@ -106,10 +101,6 @@ class CadViewerApp {
       reader.onerror = () => reject(reader.error)
       reader.readAsArrayBuffer(file)
     })
-  }
-
-  private showLoading(show: boolean) {
-    this.loadingElement.style.display = show ? 'block' : 'none'
   }
 
   private showMessage(

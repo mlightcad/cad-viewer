@@ -4,25 +4,6 @@ export default {
     open: '打开图纸',
     export: '导出为SVG'
   },
-  commandLine: {
-    prompt: '输入命令...'
-  },
-  progress: {
-    start: '开始解析文件...',
-    parse: '正在解析文件 ...',
-    font: '正在下载图纸所需字体...',
-    ltype: '正在解析线形...',
-    style: '正在解析文字样式...',
-    dimstyle: '正在解析标注样式...',
-    layer: '正在解析图层...',
-    vport: '正在解析视口...',
-    blockrecord: '正在解析BTRs...',
-    header: '正在解析文件头...',
-    block: '正在解析块..',
-    entity: '正在解析图元...',
-    object: '正在解析NODs...',
-    end: '完成！'
-  },
   verticalToolbar: {
     select: {
       text: '选择',

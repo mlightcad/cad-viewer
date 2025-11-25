@@ -23,8 +23,6 @@ export interface AcEdPosition {
 }
 
 /**
- * AcEdInputManager
- * -----------------
  * A fully type-safe TypeScript class providing CAD-style interactive user input
  * using floating HTML input boxes and mouse events. Supports collecting points,
  * distances, angles, numbers, strings, and selecting a 2-point rectangular box
@@ -127,7 +125,7 @@ export class AcEdInputManager {
   private injectCSS() {
     const style = document.createElement('style')
     style.textContent = `
-      .floating-input {
+      .ml-floating-input {
         position: absolute;
         display: flex;
         align-items: center;
@@ -140,7 +138,7 @@ export class AcEdInputManager {
         font-size: 12px;
         z-index: 10000;
       }
-      .floating-input input {
+      .ml-floating-input input {
         font-size: 12px;
         padding: 2px 4px;
         height: 22px;
@@ -149,22 +147,22 @@ export class AcEdInputManager {
         border: 1px solid #666; /* subtle border */
         border-radius: 2px;
       }
-      .floating-input input.invalid {
+      .ml-floating-input input.invalid {
         border-color: red;
         color: red;
       }
-      .aced-label {
+      .ml-floating-input-label {
         white-space: nowrap;
         color: #fff; /* white label text */
       }
-      .aced-preview-rect {
+      .ml-jig-preview-rect {
         position: absolute;
         border: 1px dashed var(--line-color, #0f0);
         background: rgba(0, 255, 0, 0.04);
         pointer-events: none;
         z-index: 9999;
       }
-      .aced-preview-line {
+      .ml-jig-preview-line {
         position: absolute;
         height: 1px;
         background: var(--line-color, #0f0);
@@ -207,10 +205,10 @@ export class AcEdInputManager {
    */
   private createInputBox(message = '', twoInputs = false) {
     const container = document.createElement('div')
-    container.className = 'floating-input'
+    container.className = 'ml-floating-input'
 
     const label = document.createElement('span')
-    label.className = 'aced-label'
+    label.className = 'ml-floating-input-label'
     label.textContent = message
     container.appendChild(label)
 
@@ -274,7 +272,7 @@ export class AcEdInputManager {
    */
   private createLine(parent?: HTMLElement): HTMLDivElement {
     const line = document.createElement('div')
-    line.className = 'aced-preview-line'
+    line.className = 'ml-jig-preview-line'
 
     if (parent) {
       parent.appendChild(line)
@@ -826,7 +824,7 @@ export class AcEdInputManager {
 
     // Create preview rectangle
     this.previewEl = document.createElement('div')
-    this.previewEl.className = 'aced-preview-rect'
+    this.previewEl.className = 'ml-jig-preview-rect'
     document.body.appendChild(this.previewEl)
 
     this.drawPreview = () => {

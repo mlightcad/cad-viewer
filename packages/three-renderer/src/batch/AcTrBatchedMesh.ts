@@ -212,6 +212,13 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     reservedVertexCount: number = -1,
     reservedIndexCount: number = -1
   ) {
+    // Remove uv and normal to save memory
+    if (geometry.hasAttribute('uv')) {
+      geometry.deleteAttribute('uv')
+    }
+    if (geometry.hasAttribute('normal')) {
+      geometry.deleteAttribute('normal')
+    }
     this._initializeGeometry(geometry)
     this._validateGeometry(geometry)
 

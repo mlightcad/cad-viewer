@@ -157,7 +157,7 @@ export class AcEdCommandLine {
   injectCSS() {
     const style = document.createElement('style')
     style.textContent = `
-      .acad-cli-container {
+      .ml-cli-container {
         position: fixed;
         bottom: 45px;
         left: 50%;
@@ -168,7 +168,7 @@ export class AcEdCommandLine {
         user-select: none;
       }
 
-      .acad-cli-bar {
+      .ml-cli-bar {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -180,7 +180,7 @@ export class AcEdCommandLine {
         height: 32px;
       }
 
-      .acad-cli-left {
+      .ml-cli-left {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -191,7 +191,7 @@ export class AcEdCommandLine {
         height: 100%;
       }
 
-      .acad-cli-term {
+      .ml-cli-term {
         width: 22px;
         height: 18px;
         display: inline-flex;
@@ -205,8 +205,8 @@ export class AcEdCommandLine {
         font-size: 12px;
       }
 
-      .acad-cli-down,
-      .acad-cli-up {
+      .ml-cli-down,
+      .ml-cli-up {
         width: 20px;
         height: 20px;
         display: inline-flex;
@@ -221,7 +221,7 @@ export class AcEdCommandLine {
         padding: 0;
       }
 
-      .acad-cli-input {
+      .ml-cli-input {
         flex: 1;
         display: flex;
         align-items: center;
@@ -238,7 +238,7 @@ export class AcEdCommandLine {
         line-height: normal;
       }
 
-      .acad-cli-input[data-placeholder]:empty:before {
+      .ml-cli-input[data-placeholder]:empty:before {
         content: attr(data-placeholder);
         color: #9a9a9a;
         font-weight: 400;
@@ -247,7 +247,7 @@ export class AcEdCommandLine {
         height: 100%;
       }
 
-      .acad-cli-option {
+      .ml-cli-option {
         display: inline-block;
         color: #222;
         background: #f7f7f7;
@@ -259,11 +259,11 @@ export class AcEdCommandLine {
         font-size: 12px;
       }
 
-      .acad-cli-option:hover {
+      .ml-cli-option:hover {
         background: #eaeaea;
       }
 
-      .acad-cli-cmd-popup {
+      .ml-cli-cmd-popup {
         position: absolute;
         bottom: 100%;
         left: 0;
@@ -278,18 +278,18 @@ export class AcEdCommandLine {
         color: #fff;
       }
 
-      .acad-cli-cmd-popup .item {
+      .ml-cli-cmd-popup .item {
         padding: 8px 14px;
         cursor: pointer;
         color: #fff;
         font-size: 14px;
       }
 
-      .acad-cli-cmd-popup .item:hover {
+      .ml-cli-cmd-popup .item:hover {
         background: #444;
       }
 
-      .acad-cli-msg-panel {
+      .ml-cli-msg-panel {
         position: absolute;
         bottom: 100%;
         left: 0;
@@ -308,16 +308,16 @@ export class AcEdCommandLine {
         line-height: 1.35;
       }
 
-      .acad-cli-history-line {
+      .ml-cli-history-line {
         padding: 4px 6px;
         color: #fff;
       }
 
-      .acad-cli-msg-error {
+      .ml-cli-msg-error {
         color: #ff5555;
       }
 
-      .acad-cli-wrapper {
+      .ml-cli-wrapper {
         position: relative;
         width: 100%;
       }
@@ -326,13 +326,13 @@ export class AcEdCommandLine {
         display: none !important;
       }
 
-      .acad-cli-cmd-popup::-webkit-scrollbar,
-      .acad-cli-msg-panel::-webkit-scrollbar {
+      .ml-cli-cmd-popup::-webkit-scrollbar,
+      .ml-cli-msg-panel::-webkit-scrollbar {
         width: 10px;
       }
 
-      .acad-cli-cmd-popup::-webkit-scrollbar-thumb,
-      .acad-cli-msg-panel::-webkit-scrollbar-thumb {
+      .ml-cli-cmd-popup::-webkit-scrollbar-thumb,
+      .ml-cli-msg-panel::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.2);
         border-radius: 6px;
       }
@@ -343,32 +343,32 @@ export class AcEdCommandLine {
   /** Create the command line UI elements */
   createUI() {
     this.cliContainer = document.createElement('div')
-    this.cliContainer.className = 'acad-cli-container'
+    this.cliContainer.className = 'ml-cli-container'
     this.wrapper = document.createElement('div')
-    this.wrapper.className = 'acad-cli-wrapper'
+    this.wrapper.className = 'ml-cli-wrapper'
     this.cliContainer.appendChild(this.wrapper)
 
     this.bar = document.createElement('div')
-    this.bar.className = 'acad-cli-bar'
+    this.bar.className = 'ml-cli-bar'
     this.wrapper.appendChild(this.bar)
 
     this.leftGroup = document.createElement('div')
-    this.leftGroup.className = 'acad-cli-left'
+    this.leftGroup.className = 'ml-cli-left'
     this.bar.appendChild(this.leftGroup)
 
     this.termGlyph = document.createElement('div')
-    this.termGlyph.className = 'acad-cli-term'
+    this.termGlyph.className = 'ml-cli-term'
     this.termGlyph.textContent = '>'
     this.leftGroup.appendChild(this.termGlyph)
 
     this.downBtn = document.createElement('button')
-    this.downBtn.className = 'acad-cli-down'
+    this.downBtn.className = 'ml-cli-down'
     this.downBtn.title = this.localize('main.commandLine.showHistory')
     this.downBtn.innerHTML = '&#9662;'
     this.leftGroup.appendChild(this.downBtn)
 
     this.input = document.createElement('div')
-    this.input.className = 'acad-cli-input'
+    this.input.className = 'ml-cli-input'
     this.input.contentEditable = 'true'
     this.input.setAttribute('spellcheck', 'false')
     this.input.setAttribute(
@@ -378,17 +378,17 @@ export class AcEdCommandLine {
     this.bar.appendChild(this.input)
 
     this.upBtn = document.createElement('button')
-    this.upBtn.className = 'acad-cli-up'
+    this.upBtn.className = 'ml-cli-up'
     this.upBtn.title = this.localize('main.commandLine.showMessages')
     this.upBtn.innerHTML = '&#9652;'
     this.bar.appendChild(this.upBtn)
 
     this.cmdPopup = document.createElement('div')
-    this.cmdPopup.className = 'acad-cli-cmd-popup hidden'
+    this.cmdPopup.className = 'ml-cli-cmd-popup hidden'
     this.wrapper.appendChild(this.cmdPopup)
 
     this.msgPanel = document.createElement('div')
-    this.msgPanel.className = 'acad-cli-msg-panel hidden'
+    this.msgPanel.className = 'ml-cli-msg-panel hidden'
     this.wrapper.appendChild(this.msgPanel)
 
     this.container.appendChild(this.cliContainer)
@@ -529,7 +529,7 @@ export class AcEdCommandLine {
   /** Get current input text */
   getInputText(): string {
     const clone = this.input.cloneNode(true) as HTMLElement
-    clone.querySelectorAll('.acad-cli-option').forEach(n => n.remove())
+    clone.querySelectorAll('.ml-cli-option').forEach(n => n.remove())
     return clone.innerText.replace(/\u00A0/g, ' ').trim()
   }
 
@@ -546,7 +546,7 @@ export class AcEdCommandLine {
     if (cmd) this.input.appendChild(document.createTextNode(cmd + ' '))
     options.forEach(opt => {
       const span = document.createElement('span')
-      span.className = 'acad-cli-option'
+      span.className = 'ml-cli-option'
       span.textContent = opt
       span.addEventListener('click', e => {
         e.stopPropagation()
@@ -634,7 +634,7 @@ export class AcEdCommandLine {
   /** Print message to message panel with optional localization key */
   printMessage(msg: string, msgKey?: string) {
     const div = document.createElement('div')
-    div.className = 'acad-cli-history-line'
+    div.className = 'ml-cli-history-line'
     div.textContent = msg
     if (msgKey) div.dataset.msgKey = msgKey
     this.msgPanel.appendChild(div)
@@ -644,7 +644,7 @@ export class AcEdCommandLine {
   /** Print error message with optional localization key */
   printError(msg: string, msgKey?: string) {
     const div = document.createElement('div')
-    div.className = 'acad-cli-history-line acad-cli-msg-error'
+    div.className = 'ml-cli-history-line ml-cli-msg-error'
     div.textContent = msg
     if (msgKey) div.dataset.msgKey = msgKey
     this.msgPanel.appendChild(div)
@@ -654,7 +654,7 @@ export class AcEdCommandLine {
   /** Print executed command line to history */
   printHistoryLine(cmdLine: string) {
     const div = document.createElement('div')
-    div.className = 'acad-cli-history-line'
+    div.className = 'ml-cli-history-line'
     div.textContent = '> ' + cmdLine
     // For executed command messages, also store msgKey
     div.dataset.msgKey = 'main.commandLine.executed'
