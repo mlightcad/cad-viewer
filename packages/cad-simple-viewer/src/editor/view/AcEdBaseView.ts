@@ -612,7 +612,10 @@ export abstract class AcEdBaseView {
 
     // Hover handler
     if (this.mode == AcEdViewMode.SELECTION) {
-      this.startHoverTimer(wcsPos.x, wcsPos.y)
+      // If it is in “input acquisition” mode, disable hover behavior
+      if (!this._editor.isActive) {
+        this.startHoverTimer(wcsPos.x, wcsPos.y)
+      }
     }
   }
 
