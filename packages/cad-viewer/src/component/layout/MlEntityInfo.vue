@@ -35,7 +35,10 @@
 </template>
 
 <script setup lang="ts">
-import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApDocManager,
+  AcApSettingManager
+} from '@mlightcad/cad-simple-viewer'
 import { AcDbEntity } from '@mlightcad/data-model'
 import { ComponentPublicInstance, computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -76,7 +79,8 @@ const visible = computed(
   () =>
     hovered.value &&
     info.value.type !== '' &&
-    AcApSettingManager.instance.isShowEntityInfo
+    AcApSettingManager.instance.isShowEntityInfo &&
+    !AcApDocManager.instance.editor.isActive
 )
 
 watch(visible, async val => {

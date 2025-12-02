@@ -1,6 +1,6 @@
-import { AcApDocManager } from '../../app'
-import { AcApI18n } from '../../i18n'
-import { AcEdCommandStack } from '../command'
+import { AcApDocManager } from '../../../app'
+import { AcApI18n } from '../../../i18n'
+import { AcEdCommandStack } from '../../command'
 
 /**
  * AutoCAD-style floating command line with Promise-based execution.
@@ -131,19 +131,16 @@ export class AcEdCommandLine {
       }
     }
 
-    const parts = cmdLine.trim().split(/\s+/)
-    const cmdStr = parts[0].toUpperCase()
-
-    const command = this.resolveCommand(cmdStr)
+    const command = this.resolveCommand(cmdLine)
     if (!command) {
       const unknown = this.localize('main.commandLine.unknownCommand')
-      this.printError(`${unknown}: ${cmdStr}`)
+      this.printError(`${unknown}: ${cmdLine}`)
       return
     }
 
-    this.history.push(cmdStr)
+    this.history.push(command.globalName)
     this.historyIndex = this.history.length
-    this.lastExecuted = cmdStr
+    this.lastExecuted = command.globalName
 
     this.printHistoryLine(cmdLine)
     const executed = this.localize('main.commandLine.executed')
@@ -478,7 +475,11 @@ export class AcEdCommandLine {
         const div = document.createElement('div')
         div.className = 'item'
         div.dataset.value = item.command.globalName
-        div.innerHTML = `<strong>${item.command.globalName}</strong>`
+        const description = AcApI18n.cmdDescription(
+          item.commandGroup,
+          item.command.globalName
+        )
+        div.innerHTML = `<strong>${item.command.globalName} - ${description}</strong>`
         if (idx === this.autoCompleteIndex) div.classList.add('selected')
         this.cmdPopup.appendChild(div)
       })
@@ -579,9 +580,11 @@ export class AcEdCommandLine {
   }
 
   /** Resolve command name */
-  resolveCommand(cmd: string) {
+  resolveCommand(cmdLine: string) {
+    const parts = cmdLine.trim().split(/\s+/)
+    const cmdStr = parts[0].toUpperCase()
     // TODO: Should look up local cmd too
-    return AcEdCommandStack.instance.lookupLocalCmd(cmd)
+    return AcEdCommandStack.instance.lookupLocalCmd(cmdStr)
   }
 
   /** Show or hide popups */

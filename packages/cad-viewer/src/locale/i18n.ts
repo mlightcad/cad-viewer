@@ -1,4 +1,4 @@
-import { AcApI18n, AcEdCommandStack } from '@mlightcad/cad-simple-viewer'
+import { AcApI18n } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntity } from '@mlightcad/data-model'
 import { createI18n } from 'vue-i18n'
 
@@ -47,21 +47,6 @@ export const i18n = createI18n({
   allowComposition: true,
   globalInjection: true
 })
-
-export const cmdDescription = (groupName: string, cmdName: string) => {
-  const t = i18n.global.t
-  const key = `command.${groupName}.${cmdName}`
-  return t(key, '')
-}
-
-export const sysCmdDescription = (name: string) => {
-  return cmdDescription(AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME, name)
-}
-
-export const userCmdDescription = (name: string) => {
-  return cmdDescription(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, name)
-}
-
 export const entityName = (entity: AcDbEntity) => {
   const t = i18n.global.t
   const key = 'entity.entityName.' + entity.type

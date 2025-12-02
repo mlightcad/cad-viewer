@@ -169,8 +169,8 @@ export abstract class AcEdBaseView {
   private _bbox: AcGeBox3d
   /** Current mouse position in world coordinates */
   private _curPos: AcGePoint2d
-  /** Current mouse position in screen coordinates */
-  private _curScreenPos: AcGePoint2d
+  /** Current mouse position in client window coordinates */
+  private _curMousePos: AcGePoint2d
   /** Set of currently selected entities */
   private _selectionSet: AcEdSelectionSet
   /** Input manager for handling user interactions */
@@ -215,7 +215,7 @@ export abstract class AcEdBaseView {
     this._width = rect.width
     this._height = rect.height
     this._curPos = new AcGePoint2d()
-    this._curScreenPos = new AcGePoint2d()
+    this._curMousePos = new AcGePoint2d()
     this._selectionSet = new AcEdSelectionSet()
     this._editor = new AcEditor(this)
     this._canvas.addEventListener('mousemove', event => this.onMouseMove(event))
@@ -406,13 +406,27 @@ export abstract class AcEdBaseView {
   abstract search(box: AcGeBox2d | AcGeBox3d): AcEdSpatialQueryResultItem[]
 
   /**
-   * Pick entities intersected with the specified point in the world coordinate
-   * system.
-   * @param point Input the point to pick objects. If not provided, the position
-   * of current cursor is used.
-   * @returns Return ids of entities intersected with the specified point
+   * Picks entities that intersect a hit-region centered at the specified point
+   * in world coordinates.
+   *
+   * The hit-region is defined as a square (or bounding box) centered at the
+   * input point, whose half-size is determined by the `hitRadius` parameter.
+   * Only entities whose geometry intersects this region are returned.
+   *
+   * @param point The center point of the hit-region in world coordinates.
+   * If omitted, the current cursor position is used.
+   *
+   * @param hitRadius The half-width (in pixel size) of the hit-region around
+   * the point. It will be converted on one value in the world
+   * coordinate 'wcsHitRadius' and creates a square bounding box:
+   * [point.x ± wcsHitRadius, point.y ± wcsHitRadius].
+   * A larger value increases the pick sensitivity. If omitted, a reasonable
+   * default is used.
+   *
+   * @returns An array of object IDs representing the entities that intersect
+   * the hit-region.
    */
-  abstract pick(point?: AcGePoint2dLike): AcDbObjectId[]
+  abstract pick(point?: AcGePoint2dLike, hitRadius?: number): AcDbObjectId[]
 
   /**
    * Select entities intersected with the specified bounding box in the world
@@ -558,10 +572,10 @@ export abstract class AcEdBaseView {
   }
 
   /**
-   * Postion of current mouse in screen coordinate system
+   * Postion of current mouse in client window
    */
-  get curScreenPos() {
-    return this._curScreenPos
+  get curMousePos() {
+    return this._curMousePos
   }
 
   /**
@@ -591,8 +605,8 @@ export abstract class AcEdBaseView {
    * @param event Input mouse event argument
    */
   private onMouseMove(event: MouseEvent) {
-    this._curScreenPos = new AcGePoint2d(event.clientX, event.clientY)
-    const wcsPos = this.cwcs2Wcs(this._curScreenPos)
+    this._curMousePos = new AcGePoint2d(event.clientX, event.clientY)
+    const wcsPos = this.cwcs2Wcs(this._curMousePos)
     this._curPos.copy(wcsPos)
     this.events.mouseMove.dispatch({ x: wcsPos.x, y: wcsPos.y })
 
@@ -606,8 +620,8 @@ export abstract class AcEdBaseView {
     if (this._hoveredObjectId) {
       this.events.unhover.dispatch({
         id: this._hoveredObjectId,
-        x: this.curScreenPos.x,
-        y: this.curScreenPos.y
+        x: this.curMousePos.x,
+        y: this.curMousePos.y
       })
       this.onUnhover(this._hoveredObjectId)
     }
@@ -651,8 +665,8 @@ export abstract class AcEdBaseView {
     this._pauseTimer = setTimeout(() => {
       this.events.hover.dispatch({
         id: id,
-        x: this.curScreenPos.x,
-        y: this.curScreenPos.y
+        x: this.curMousePos.x,
+        y: this.curMousePos.y
       })
     }, 500)
   }

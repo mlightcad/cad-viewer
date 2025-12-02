@@ -1,5 +1,7 @@
 import { AcCmEventManager } from '@mlightcad/data-model'
 
+import { AcEdCommandStack } from '../editor'
+
 /**
  * Language/locale id used in the application.
  * Matches the naming style used by vue-i18n ("Locale").
@@ -165,6 +167,38 @@ export class AcApI18n {
     }
 
     return typeof cur === 'string' ? cur : (options?.fallback ?? key)
+  }
+
+  /**
+   * Get localized command description
+   * @param groupName - Command group name
+   * @param cmdName - Global command name
+   * @returns - The localized command description.
+   */
+  public static cmdDescription(groupName: string, cmdName: string) {
+    const key = `command.${groupName}.${cmdName.toLowerCase()}`
+    return this.t(key)
+  }
+
+  /**
+   * Tries to find command in system group and gets its localized command description
+   * @param cmdName - Global command name
+   * @returns - The localized command description
+   */
+  public static sysCmdDescription(name: string) {
+    return this.cmdDescription(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      name
+    )
+  }
+
+  /**
+   * Tries to find command in user group and gets its localized command description
+   * @param cmdName - Global command name
+   * @returns - The localized command description
+   */
+  public static userCmdDescription = (name: string) => {
+    return this.cmdDescription(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, name)
   }
 }
 

@@ -1,11 +1,11 @@
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
-import { AcEdInputManager } from './AcEdInputManager'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptDistanceOptions,
   AcEdPromptPointOptions
 } from './prompt'
+import { AcEdInputManager } from './ui'
 
 /**
  * Advanced input handler for CAD operations providing high-level user interaction methods.
@@ -55,6 +55,14 @@ export class AcEditor {
     this._view = view
     this._cursorManager = new AcEdCursorManager()
     this._inputManager = new AcEdInputManager(view)
+  }
+
+  /**
+   * The flag to indicate whether it is currently in an “input acquisition” mode (e.g., point
+   * selection, distance/angle prompt, string prompt, etc.),
+   */
+  get isActive() {
+    return this._inputManager.isActive
   }
 
   /**
@@ -108,7 +116,7 @@ export class AcEditor {
    * @returns Promise that resolves to the input point coordinates
    */
   async getPoint(options: AcEdPromptPointOptions) {
-    return (await this._inputManager.getPoint(options)).world
+    return await this._inputManager.getPoint(options)
   }
 
   /**

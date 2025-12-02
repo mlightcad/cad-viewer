@@ -382,13 +382,16 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  pick(point?: AcGePoint2dLike) {
+  pick(point?: AcGePoint2dLike, hitRadius?: number) {
     if (point == null) point = this.curPos
     const results: AcDbObjectId[] = []
     const activeLayout = this._scene.activeLayout
     if (activeLayout) {
       const activeLayoutView = this.activeLayoutView
-      const box = activeLayoutView.pointToBox(point, this.selectionBoxSize)
+      const box = activeLayoutView.pointToBox(
+        point,
+        hitRadius ?? this.selectionBoxSize
+      )
       const firstQueryResults = this._scene.search(box)
 
       const threshold = Math.max(box.size.width / 2, box.size.height / 2)

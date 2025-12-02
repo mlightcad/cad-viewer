@@ -10,6 +10,7 @@ import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 import {
   AcApCircleCmd,
   AcApConvertToSvgCmd,
+  AcApDimCmd,
   AcApLogCmd,
   AcApOpenCmd,
   AcApPanCmd,
@@ -392,6 +393,12 @@ export class AcApDocManager {
       'csvg',
       'csvg',
       new AcApConvertToSvgCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'dim',
+      'dim',
+      new AcApDimCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
