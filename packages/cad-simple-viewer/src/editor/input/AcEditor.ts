@@ -1,11 +1,22 @@
+import { AcCmEventManager } from '@mlightcad/data-model'
+
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptDistanceOptions,
-  AcEdPromptPointOptions
+  AcEdPromptPointOptions,
+  AcEdPromptStringOptions
 } from './prompt'
 import { AcEdInputManager } from './ui'
+
+/**
+ * Event arguments for system variable related events.
+ */
+export interface AcDbSysVarEventArgs {
+  /** The system variable name */
+  name: string
+}
 
 /**
  * Advanced input handler for CAD operations providing high-level user interaction methods.
@@ -47,13 +58,24 @@ export class AcEditor {
   protected _view: AcEdBaseView
 
   /**
+   * Editor events
+   */
+  public readonly events = {
+    /**
+     * Fired after a system variable is changed directly through the SETVAR command or
+     * by entering the variable name at the command line.
+     */
+    sysVarChanged: new AcCmEventManager<AcDbSysVarEventArgs>()
+  }
+
+  /**
    * Creates a new editor instance for the specified view.
    *
    * @param view - The view that this editor will handle input for
    */
   constructor(view: AcEdBaseView) {
     this._view = view
-    this._cursorManager = new AcEdCursorManager()
+    this._cursorManager = new AcEdCursorManager(view)
     this._inputManager = new AcEdInputManager(view)
   }
 
@@ -100,7 +122,7 @@ export class AcEditor {
    * ```
    */
   setCursor(cursorType: AcEdCorsorType) {
-    this._cursorManager.setCursor(cursorType, this._view.canvas)
+    this._cursorManager.setCursor(cursorType)
     this._previousCursor = this._currentCursor
     this._currentCursor = cursorType
   }
@@ -143,6 +165,15 @@ export class AcEditor {
    */
   async getDistance(options: AcEdPromptDistanceOptions) {
     return await this._inputManager.getDistance(options)
+  }
+
+  /**
+   * Prompts the user to input a string.
+   *
+   * @returns Promise that resolves to the input one string.
+   */
+  async getString(options: AcEdPromptStringOptions) {
+    return await this._inputManager.getString(options)
   }
 
   /**

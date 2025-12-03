@@ -67,7 +67,7 @@ export class AcEdInputManager {
    * Construct the manager and attach mousemove listener used for floating input
    * positioning and live preview updates.
    *
-   * @param canvas The canvas element (usually THREE.js renderer.domElement)
+   * @param view - The view associated with the input manager
    */
   constructor(view: AcEdBaseView) {
     this.view = view
@@ -296,7 +296,7 @@ export class AcEdInputManager {
     const message2 = AcApI18n.t('main.inputManager.secondCorner')
     const options2 = new AcEdPromptPointOptions(message2)
     options2.useDashedLine = false
-    options2.useBasePoint = true
+    options2.useBasePoint = false
     const p2 = await this.getPointInternal(options2, cleanup, drawPreview)
 
     return new AcGeBox2d().expandByPoint(p1).expandByPoint(p2)

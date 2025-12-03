@@ -1,3 +1,7 @@
+import { AcDbSysVarManager } from '@mlightcad/data-model'
+
+import { AcEdBaseView } from '../view'
+
 /**
  * Enumeration of cursor types available in the CAD editor.
  *
@@ -59,55 +63,59 @@ export enum AcEdCorsorType {
  *
  * The cursor manager maintains a cache of cursor definitions to avoid
  * recreating them repeatedly, improving performance.
- *
- * @internal This class is for internal use by the editor system
- *
- * @example
- * ```typescript
- * const cursorManager = new AcEdCursorManager();
- * const canvas = document.getElementById('canvas') as HTMLCanvasElement;
- *
- * // Set crosshair cursor
- * cursorManager.setCursor(AcEdCorsorType.Crosshair, canvas);
- *
- * // Set grab cursor for panning
- * cursorManager.setCursor(AcEdCorsorType.Grab, canvas);
- * ```
  */
 export class AcEdCursorManager {
+  /** The view associated with the cursor manager */
+  private _view: AcEdBaseView
+
+  /** The current curos type in the associated view */
+  private _currentCursor!: AcEdCorsorType
+
   /** Cache of cursor definitions mapped by cursor type */
   private _cursorMap: Map<AcEdCorsorType, string>
 
   /**
    * Creates a new cursor manager instance.
-   *
-   * Initializes the cursor cache and creates default cursor definitions.
+   * Initializes the cursor and creates default cursor definitions.
+   * @param view - The view associated with the cursor manager
    */
-  constructor() {
+  constructor(view: AcEdBaseView) {
+    this._view = view
     this._cursorMap = new Map()
+    const totalLength = 20
+    const rectSize = 10
     this._cursorMap.set(
       AcEdCorsorType.Crosshair,
-      this.createRectCrossIcon(10, 10)
+      this.createRectCrossIcon(rectSize, totalLength - rectSize)
     )
+    AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
+      if (args.name === 'PICKBOX') {
+        let size = args.newVal as number
+        size = size >= 0 ? size : 0
+        this._cursorMap.set(
+          AcEdCorsorType.Crosshair,
+          this.createRectCrossIcon(size, totalLength - size)
+        )
+        this.setCursor(this._currentCursor)
+      }
+    })
+    this.setCursor(AcEdCorsorType.Crosshair)
   }
 
   /**
-   * Sets the cursor for the specified HTML element.
-   *
-   * Applies the appropriate cursor style based on the cursor type.
-   * For built-in cursor types, uses CSS cursor values. For custom
-   * cursor types, uses cached SVG-based cursor definitions.
+   * The current cursor type for the associated view.
+   */
+  get currentCursor() {
+    return this._currentCursor
+  }
+
+  /**
+   * Sets the current cursor for the associated view.
    *
    * @param cursorType - The type of cursor to set
-   * @param element - The HTML element to apply the cursor to
-   *
-   * @example
-   * ```typescript
-   * const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-   * cursorManager.setCursor(AcEdCorsorType.Crosshair, canvas);
-   * ```
    */
-  setCursor(cursorType: AcEdCorsorType, element: HTMLElement) {
+  setCursor(cursorType: AcEdCorsorType) {
+    const element = this._view.canvas
     if (cursorType <= AcEdCorsorType.NoSpecialCursor) {
       element.style.cursor = 'default'
     } else if (cursorType == AcEdCorsorType.Grab) {
@@ -118,6 +126,7 @@ export class AcEdCursorManager {
         element.style.cursor = cursor
       }
     }
+    this._currentCursor = cursorType
   }
 
   /**

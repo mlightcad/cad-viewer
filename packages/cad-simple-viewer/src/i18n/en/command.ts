@@ -5,6 +5,8 @@ export default {
     log: 'Logs debug information in console',
     open: 'Opens an existing drawing file',
     pan: 'Shifts the view without changing the viewing direction or magnification',
+    pickbox:
+      'Sets the size (in pixels) of the selection box used to pick objects',
     qnew: 'Starts a new drawing',
     regen: 'Redraw the current drawing',
     select: 'Selects entities',

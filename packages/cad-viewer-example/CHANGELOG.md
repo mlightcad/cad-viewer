@@ -1,5 +1,14 @@
 # @mlightcad/cad-viewer-example
 
+## 1.2.5
+
+### Patch Changes
+
+- feat: refine input mangager and jig system
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.2.5
+  - @mlightcad/cad-viewer@1.2.5
+
 ## 1.2.4
 
 ### Patch Changes

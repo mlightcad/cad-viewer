@@ -3,6 +3,7 @@ import {
   acdbHostApplicationServices,
   AcDbOpenDatabaseOptions,
   AcDbProgressdEventArgs,
+  AcDbSysVarManager,
   AcGeBox2d
 } from '@mlightcad/data-model'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
@@ -17,6 +18,7 @@ import {
   AcApQNewCmd,
   AcApRegenCmd,
   AcApSelectCmd,
+  AcApSysVarCmd,
   AcApZoomCmd,
   AcApZoomToBoxCmd,
   AcEdCommandStack
@@ -448,6 +450,17 @@ export class AcApDocManager {
       'zoomw',
       new AcApZoomToBoxCmd()
     )
+
+    // Register system variables as commands
+    const sysVars = AcDbSysVarManager.instance().getAllDescriptors()
+    sysVars.forEach(sysVar => {
+      register.addCommand(
+        AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+        sysVar.name,
+        sysVar.name,
+        new AcApSysVarCmd()
+      )
+    })
   }
 
   /**

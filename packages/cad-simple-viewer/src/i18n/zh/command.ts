@@ -5,6 +5,7 @@ export default {
     log: '在控制台输出调试信息',
     open: '打开图纸',
     pan: '平移视图',
+    pickbox: '控制用于选择对象的拾取框大小（像素）',
     qnew: '创建新图纸',
     regen: '重绘图纸',
     select: '选择图元',
