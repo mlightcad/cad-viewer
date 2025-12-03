@@ -363,7 +363,7 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  zoomToFit(timeout: number = 0) {
+  zoomToFitDrawing(timeout: number = 0) {
     const waiter = new AcEdConditionWaiter(
       () => this._numOfEntitiesToProcess <= 0,
       () => {
@@ -373,10 +373,27 @@ export class AcTrView2d extends AcEdBaseView {
           this._isDirty = true
         }
       },
-      300, // check every 200 ms
+      300, // check every 300 ms
       timeout
     )
     waiter.start()
+  }
+
+  /**
+   * @inheritdoc
+   */
+  zoomToFitLayer(layerName: string) {
+    const activeLayout = this._scene.activeLayout
+    if (activeLayout) {
+      const layer = activeLayout.getLayer(layerName)
+      if (layer && !layer.box.isEmpty()) {
+        const box = AcTrGeometryUtil.threeBox3dToGeBox2d(layer.box)
+        this.zoomTo(box)
+        this._isDirty = true
+        return true
+      }
+    }
+    return false
   }
 
   /**

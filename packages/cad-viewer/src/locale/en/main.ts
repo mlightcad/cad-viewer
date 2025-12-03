@@ -73,7 +73,8 @@ export default {
       layerList: {
         name: 'Name',
         on: 'On',
-        color: 'Color'
+        color: 'Color',
+        zoomToLayer: 'Zoomed to the clicked layer'
       }
     }
   },

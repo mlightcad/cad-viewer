@@ -64,12 +64,18 @@ export class AcTrLayer {
   private _group: AcTrBatchedGroup
 
   /**
+   * Bounding box containing all entities in this layer
+   */
+  private _box: THREE.Box3
+
+  /**
    * Construct one instance of this class
    * @param name Input layer name
    */
   constructor(name: string) {
     this._group = new AcTrBatchedGroup()
     this._name = name
+    this._box = new THREE.Box3()
   }
 
   /**
@@ -80,6 +86,15 @@ export class AcTrLayer {
   }
   set name(value: string) {
     this._name = value
+  }
+
+  /**
+   * Gets the bounding box that contains all entities in this layer.
+   *
+   * @returns The layer's bounding box
+   */
+  get box() {
+    return this._box
   }
 
   get visible() {
@@ -132,9 +147,14 @@ export class AcTrLayer {
   /**
    * Add one AutoCAD entity into this layer.
    * @param entity Input AutoCAD entity to be added into this layer.
+   * @param extendBbox - Input the flag whether to extend the bounding box of the scene by union the bounding box
+   * of the specified entity. Defaults to true.
    */
-  addEntity(entity: AcTrEntity) {
+  addEntity(entity: AcTrEntity, extendBbox: boolean = true) {
     this._group.addEntity(entity)
+    const box = entity.box
+    // For infinitive line such as ray and xline, they are not used to extend box
+    if (extendBbox) this._box.union(box)
   }
 
   /**

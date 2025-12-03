@@ -232,7 +232,7 @@ export class AcTrLayout {
     layer.addEntity(entity)
 
     const box = entity.box
-    // For infinitive line such as ray and xline
+    // For infinitive line such as ray and xline, they are not used to extend box
     if (extendBbox) this._box.union(box)
 
     this._indexTree.insert({
@@ -270,6 +270,15 @@ export class AcTrLayout {
       if (layer.update(entity)) return true
     }
     return false
+  }
+
+  /**
+   * Gets the layer with the specified name from this layout
+   * @param name - Layer name
+   * @returns - The layer with the specified name in this layout
+   */
+  getLayer(name: string) {
+    return this._layers.get(name)
   }
 
   /**

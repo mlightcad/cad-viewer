@@ -539,7 +539,7 @@ export class AcApDocManager {
 
       // The extents of drawing database may be empty. Espically dxf files.
       if (db.extents.isEmpty()) {
-        this.curView.zoomToFit()
+        this.curView.zoomToFitDrawing()
       } else {
         this.curView.zoomTo(new AcGeBox2d(db.extmin, db.extmax))
       }

@@ -366,7 +366,7 @@ export abstract class AcEdBaseView {
   abstract zoomTo(box: AcGeBox2d, margin: number): void
 
   /**
-   * Zooms the view to fit all visible entities in the current scene.
+   * Zooms the view to fit all visible entities in the current drawing.
    *
    * This method automatically calculates the bounding box of all entities
    * currently displayed in the view and adjusts the view's center and zoom
@@ -381,7 +381,21 @@ export abstract class AcEdBaseView {
    * @param timeout - Maximum time (ms) to wait before executing zoom to fit
    * action. Default: 0 (no timeout).
    */
-  abstract zoomToFit(timeout?: number): void
+  abstract zoomToFitDrawing(timeout?: number): void
+
+  /**
+   * Zooms the view to fit all visible entities in the current scene.
+   *
+   * This method automatically calculates the bounding box of all entities
+   * currently displayed in the specified layer and adjusts the view's center
+   * and zoom level to show the entire layer. This is useful for getting an
+   * overview of the entire layer of one drawing or after loading new content.
+   *
+   * @param layerName - The layer name
+   *
+   * @return - Return true if zoomed to the layer successfully.
+   */
+  abstract zoomToFitLayer(layerName: string): boolean
 
   /**
    * Gets the background color of the view.

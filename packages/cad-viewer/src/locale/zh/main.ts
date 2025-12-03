@@ -72,7 +72,8 @@ export default {
       layerList: {
         name: '名称',
         on: '可见',
-        color: '颜色'
+        color: '颜色',
+        zoomToLayer: '已缩放到所点击的图层'
       }
     }
   },
