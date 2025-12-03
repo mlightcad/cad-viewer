@@ -1,9 +1,10 @@
-import { AcApDocManager, registerWorkers } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcDbOpenDatabaseOptions } from '@mlightcad/data-model'
 
 class CadViewerApp {
   private canvas: HTMLCanvasElement
   private fileInput: HTMLInputElement
+  private isInitialized: boolean = false
 
   constructor() {
     // Get DOM elements
@@ -11,26 +12,24 @@ class CadViewerApp {
     this.fileInput = document.getElementById(
       'fileInputElement'
     ) as HTMLInputElement
-
-    registerWorkers()
-    this.initializeViewer()
     this.setupFileHandling()
   }
 
-  private async initializeViewer() {
-    try {
-      // Initialize the document manager with the canvas and baseUrl.
-      // Actually 'baseUrl' here isn't required. Override default 'baseUrl'
-      // value is just for demostration.
-      AcApDocManager.createInstance({
-        canvas: this.canvas,
-        baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
-      })
-      // Load default fonts
-      await AcApDocManager.instance.loadDefaultFonts()
-    } catch (error) {
-      console.error('Failed to initialize CAD viewer:', error)
-      this.showMessage('Failed to initialize CAD viewer', 'error')
+  private initialize() {
+    if (!this.isInitialized) {
+      try {
+        // Initialize the document manager with the canvas and baseUrl.
+        // Actually 'baseUrl' here isn't required. Override default 'baseUrl'
+        // value is just for demostration.
+        AcApDocManager.createInstance({
+          canvas: this.canvas,
+          baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
+        })
+        this.isInitialized = true
+      } catch (error) {
+        console.error('Failed to initialize CAD viewer:', error)
+        this.showMessage('Failed to initialize CAD viewer', 'error')
+      }
     }
   }
 
@@ -46,10 +45,7 @@ class CadViewerApp {
   }
 
   private async loadFile(file: File) {
-    if (!AcApDocManager.instance) {
-      this.showMessage('CAD viewer not initialized', 'error')
-      return
-    }
+    this.initialize()
 
     // Validate file type
     const fileName = file.name.toLowerCase()

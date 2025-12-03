@@ -23,13 +23,15 @@ import {
   AcApZoomToBoxCmd,
   AcEdCommandStack
 } from '../command'
-import { AcEdCalculateSizeCallback, eventBus } from '../editor'
+import { AcEdCalculateSizeCallback, AcEdCommandLine, eventBus } from '../editor'
 import { AcApI18n } from '../i18n'
 import { AcTrView2d } from '../view'
 import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
+import { registerWorkers } from './AcApGlobalFunc'
 import { AcApProgress } from './AcApProgress'
+import { AcApSettingManager } from './AcApSettingManager'
 
 const DEFAULT_BASE_URL = 'https://mlightcad.gitlab.io/cad-data/'
 
@@ -61,6 +63,12 @@ export interface AcApDocManagerOptions {
    *         rendering results.
    */
   useMainThreadDraw?: boolean
+
+  /**
+   * The flag whether to load default fonts when initializing viewer. If no default font loaded,
+   * texts with fonts which can't be found in font repository will not be shown correctly.
+   */
+  notLoadDefaultFonts?: boolean
 }
 
 /**
@@ -144,6 +152,11 @@ export class AcApDocManager {
     this.registerCommands()
     this._progress = new AcApProgress()
     this._progress.hide()
+    if (!options.notLoadDefaultFonts) {
+      this.loadDefaultFonts()
+    }
+    registerWorkers()
+    this.createCommandLine()
   }
 
   /**
@@ -574,5 +587,16 @@ export class AcApDocManager {
     } else {
       this._progress.show()
     }
+  }
+
+  /**
+   * Creates command line UI component
+   */
+  private createCommandLine() {
+    const commandLine = new AcEdCommandLine(document.body)
+    commandLine.visible = AcApSettingManager.instance.isShowCommandLine
+    AcApSettingManager.instance.events.modified.addEventListener(() => {
+      commandLine.visible = AcApSettingManager.instance.isShowCommandLine
+    })
   }
 }

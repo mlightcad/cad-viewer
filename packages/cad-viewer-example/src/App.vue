@@ -17,15 +17,15 @@
 </template>
 
 <script setup lang="ts">
-import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
+// import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 import { MlCadViewer } from '@mlightcad/cad-viewer'
 import { ref } from 'vue'
 
 import FileUpload from './components/FileUpload.vue'
 
-// Initialize settings
-AcApSettingManager.instance.isShowCommandLine = false
-// Decide whether to show vertical toolbar at the right side, performance stats, coordinates in status bar, etc.
+// Decide whether to show command line vertical toolbar at the right side,
+// performance stats, coordinates in status bar, etc.
+// AcApSettingManager.instance.isShowCommandLine = false
 // AcApSettingManager.instance.isShowToolbar = false
 // AcApSettingManager.instance.isShowStats = false
 // AcApSettingManager.instance.isShowCoordinate = false

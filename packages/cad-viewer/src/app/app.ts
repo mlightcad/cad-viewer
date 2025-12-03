@@ -4,17 +4,13 @@ import '../style/index.scss'
 
 import {
   AcApDocManager,
-  AcApDocManagerOptions,
-  createUiComponents,
-  registerWorkers
+  AcApDocManagerOptions
 } from '@mlightcad/cad-simple-viewer'
 
-import { registerCmds } from './register'
+import { registerCmds, registerDialogs } from './register'
 
 export const initializeCadViewer = (options: AcApDocManagerOptions = {}) => {
   AcApDocManager.createInstance(options)
-  registerWorkers()
   registerCmds()
-  createUiComponents()
-  AcApDocManager.instance.loadDefaultFonts()
+  registerDialogs()
 }

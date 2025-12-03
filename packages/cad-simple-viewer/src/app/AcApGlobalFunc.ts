@@ -6,9 +6,6 @@ import {
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
-import { AcEdCommandLine } from '../editor'
-import { AcApSettingManager } from './AcApSettingManager'
-
 /**
  * Registers file format converters for CAD file processing.
  *
@@ -72,12 +69,4 @@ export function registerWorkers() {
   } else {
     AcTrMTextRenderer.getInstance().initialize('./mtext-renderer-worker.js')
   }
-}
-
-export function createUiComponents() {
-  const commandLine = new AcEdCommandLine(document.body)
-  commandLine.visible = AcApSettingManager.instance.isShowCommandLine
-  AcApSettingManager.instance.events.modified.addEventListener(() => {
-    commandLine.visible = AcApSettingManager.instance.isShowCommandLine
-  })
 }

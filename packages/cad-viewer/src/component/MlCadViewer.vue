@@ -92,7 +92,7 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { initializeCadViewer, registerDialogs, store } from '../app'
+import { initializeCadViewer, store } from '../app'
 import { useLocale, useNotificationCenter } from '../composable'
 import { LocaleProp } from '../locale'
 import { MlDialogManager, MlFileReader } from './common'
@@ -271,7 +271,6 @@ onMounted(async () => {
       baseUrl: props.baseUrl,
       useMainThreadDraw: props.useMainThreadDraw
     })
-    registerDialogs()
     // Set the editor reference after initialization
     editorRef.value = AcApDocManager.instance
   }
