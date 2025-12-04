@@ -78,16 +78,13 @@
  * import { MlCadViewer } from '@mlightcad/cad-viewer'
  * ```
  *
- * @since 1.0.0
- * @version 1.0.0
- * @author MLight Lee (mlight.lee@outlook.com)
- *
  * @see {@link https://github.com/mlightcad/cad-viewer | Project Repository}
  * @see {@link https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/MlCadViewer.vue | Source Code}
  */
 
 import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
 import { AcDbOpenDatabaseOptions } from '@mlightcad/data-model'
+import { useDark, useToggle } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -124,6 +121,8 @@ interface Props {
    * - false: use web worker
    */
   useMainThreadDraw?: boolean
+  /** Initial theme of the viewer */
+  theme?: 'light' | 'dark'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -132,7 +131,8 @@ const props = withDefaults(defineProps<Props>(), {
   localFile: undefined,
   background: undefined,
   baseUrl: undefined,
-  useMainThreadDraw: false
+  useMainThreadDraw: false,
+  theme: 'dark'
 })
 
 const { t } = useI18n()
@@ -142,6 +142,9 @@ const { info, warning, error, success } = useNotificationCenter()
 // Canvas element reference
 const canvasRef = ref<HTMLCanvasElement>()
 
+// Referenence to the root element used to switch theme
+const viewerRoot = ref<HTMLElement | null>(null)
+
 // Editor reference that gets updated after initialization
 const editorRef = ref<AcApDocManager | null>(null)
 
@@ -150,6 +153,15 @@ const editor = computed(() => editorRef.value as AcApDocManager)
 
 // Notification center visibility
 const showNotificationCenter = ref(false)
+
+const isDark = useDark({
+  selector: viewerRoot,
+  attribute: 'class',
+  valueDark: 'ml-theme-dark',
+  valueLight: 'ml-theme-light'
+})
+
+const toggleDark = useToggle(isDark)
 
 /**
  * Handles file read events from the file reader component
@@ -262,6 +274,14 @@ watch(
   }
 )
 
+// Watch for theme changes and apply to the view
+watch(
+  () => props.theme,
+  newTheme => {
+    isDark.value = newTheme === 'dark' ? true : false
+  }
+)
+
 // Component lifecycle: Initialize and load initial file if URL or localFile is provided
 onMounted(async () => {
   // Initialize the CAD viewer with the internal canvas
@@ -287,6 +307,13 @@ onMounted(async () => {
   // Apply initial background color if provided
   if (props.background != null) {
     AcApDocManager.instance.curView.backgroundColor = props.background
+  }
+
+  // Set initial theme from props
+  if (props.theme === 'dark') {
+    isDark.value = true
+  } else {
+    isDark.value = false
   }
 })
 
@@ -375,7 +402,7 @@ const closeNotificationCenter = () => {
   <canvas ref="canvasRef" class="ml-cad-canvas"></canvas>
 
   <!-- Main CAD viewer container with complete UI layout -->
-  <div v-if="editorRef" class="ml-cad-viewer-container">
+  <div ref="viewerRoot" v-if="editorRef" class="ml-cad-viewer-container">
     <!-- Element Plus configuration provider for internationalization -->
     <el-config-provider :locale="elementPlusLocale">
       <!-- Header section with main menu and language selector -->
@@ -402,7 +429,11 @@ const closeNotificationCenter = () => {
       <!-- Footer section with command line and status information -->
       <footer>
         <!-- Status bar with progress, settings, and theme controls -->
-        <ml-status-bar @toggle-notification-center="toggleNotificationCenter" />
+        <ml-status-bar
+          :is-dark="isDark"
+          :toggle-dark="toggleDark"
+          @toggle-notification-center="toggleNotificationCenter"
+        />
       </footer>
 
       <!-- Hidden components for file handling and entity information -->

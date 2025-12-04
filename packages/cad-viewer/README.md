@@ -189,6 +189,7 @@ The `MlCadViewer` component accepts the following props:
 | `background` | `number` | `undefined` | Background color as 24-bit hexadecimal RGB (e.g., `0x000000` for black, `0x808080` for gray). |
 | `baseUrl` | `string` | `undefined` | Base URL for loading fonts, templates, and example files. This URL is used by the CAD viewer to load resources like fonts and drawing templates. **Note**: If not provided, uses the default URL. |
 | `useMainThreadDraw` | `boolean` | `false` | Optional flag whether to use main thread or webwork to render drawing. The true value means using main thread to render drawing. This approach take less memory and take longer time to show rendering results. The false value means using web worker to render drawing. This approach take more memory and take shorter time to show rendering results. |
+| `theme` | `'light' \| 'dark'` | `'dark'` | Initial theme of the CAD viewer. `'light'` applies the light theme (`ml-theme-light` class) and `'dark'` applies the dark theme (`ml-theme-dark` class). The theme can also be toggled at runtime using the status bar theme button. |
 
 ### UI Settings
 

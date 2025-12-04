@@ -26,7 +26,10 @@
         >
         <ml-warning-button />
         <ml-notification-button @click="toggleNotificationCenter" />
-        <ml-theme-button />
+        <ml-theme-button
+          :is-dark="props.isDark"
+          :toggle-dark="props.toggleDark"
+        />
         <ml-full-screen-button />
         <ml-point-style-button />
         <ml-setting-button />
@@ -54,6 +57,11 @@ import MlProgress from './MlProgress.vue'
 import MlSettingButton from './MlSettingButton.vue'
 import MlThemeButton from './MlThemeButton.vue'
 import MlWarningButton from './MlWarningButton.vue'
+
+const props = defineProps<{
+  isDark: boolean
+  toggleDark: () => void
+}>()
 
 const { text: posText } = useCurrentPos(AcApDocManager.instance.curView)
 const layouts = useLayouts(AcApDocManager.instance)
