@@ -667,8 +667,13 @@ export class AcEdCommandLine {
 
   /** Handle window resize */
   resizeHandler() {
-    const w = Math.max(this.minWidth, window.innerWidth * this.widthRatio)
+    // Calculate desired width based on ratio and minimum width
+    let w = Math.max(this.minWidth, window.innerWidth * this.widthRatio)
+    // Clamp width so it never exceeds the window width
+    w = Math.min(w, window.innerWidth - 20) // optional 20px margin from edges
     this.bar.style.width = w + 'px'
+
+    // Reposition popups to match new width
     this.positionMsgPanel()
     this.positionCmdPopup()
   }

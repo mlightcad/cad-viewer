@@ -71,6 +71,9 @@ export default defineConfig(({ command, mode }) => {
         }
       }
     },
-    plugins: plugins
+    plugins: plugins,
+    server: {
+      host: true
+    }
   }
 })

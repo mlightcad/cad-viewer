@@ -214,6 +214,10 @@ export class AcTrBaseView {
     cameraControls.mouseButtons = {
       MIDDLE: THREE.MOUSE.PAN
     }
+    cameraControls.touches = {
+      ONE: THREE.TOUCH.PAN,
+      TWO: THREE.TOUCH.DOLLY_PAN
+    }
     cameraControls.update()
     return cameraControls
   }

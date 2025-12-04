@@ -30,8 +30,8 @@ CAD-Viewer is a **high-performance**, modern, web-based CAD editor inspired by A
 
 ### Pad/Mobile Browser Operations
 - **Select**: Tap on entities
-- **Zoom**: Pinch with two fingers to zoom in/out
-- **Pan**: Drag with two fingers to move the view
+- **Zoom**: Pinch with two fingers
+- **Pan**: Single-finger drag
 
 ## Performance
 
