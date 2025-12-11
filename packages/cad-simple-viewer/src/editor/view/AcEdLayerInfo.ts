@@ -1,3 +1,5 @@
+import { AcCmColor } from '@mlightcad/data-model'
+
 /**
  * Describes basic layer state information within the editor view.
  *
@@ -17,4 +19,8 @@ export interface AcEdLayerInfo {
    * When true, the layer is turned off (entities are hidden from display but still participate regen).
    */
   isOff: boolean
+  /**
+   * Layer color
+   */
+  color: AcCmColor
 }

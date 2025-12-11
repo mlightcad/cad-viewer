@@ -6,7 +6,7 @@
     @ok="handleConfirm"
     @open="loadAvailableFonts"
   >
-    <el-tabs type="card" v-model="activeName">
+    <el-tabs size="small" v-model="activeName">
       <el-tab-pane
         v-if="fontMapping.size > 0"
         :label="t('dialog.replacementDlg.fontTabName')"

@@ -1,5 +1,7 @@
 export { default as MlBaseDialog } from './MlBaseDialog.vue'
 export { default as MlBaseInputNumber } from './MlBaseInputNumber.vue'
+export { default as MlColorDropdown } from './MlColorDropdown.vue'
+export { default as MlColorIndexPicker } from './MlColorIndexPicker.vue'
 export { default as MlDialogManager } from './MlDialogManager.vue'
 export { default as MlFileReader } from './MlFileReader.vue'
 export { default as MlToggleButton } from './MlToggleButton.vue'

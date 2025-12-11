@@ -1,5 +1,6 @@
 {
   "name": "mlightcad",
+  "private": true,
   "version": "1.0.0",
   "license": "MIT",
   "author": "MLight Lee <mlight.lee@outlook.com>",
@@ -32,9 +33,9 @@
     "pnpm": ">=8"
   },
   "dependencies": {
-    "@mlightcad/common": "1.2.5",
-    "@mlightcad/geometry-engine": "3.0.7",
-    "@mlightcad/graphic-interface": "3.0.9"
+    "@mlightcad/common": "1.2.6",
+    "@mlightcad/geometry-engine": "3.0.8",
+    "@mlightcad/graphic-interface": "3.0.10"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.5",

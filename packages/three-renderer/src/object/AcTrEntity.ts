@@ -2,7 +2,7 @@ import { AcGeMatrix3d, AcGePoint3d, AcGiEntity } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrMaterialUtil } from '../util/AcTrMaterialUtil'
+import { AcTrMaterialUtil } from '../util'
 import { AcTrObject } from './AcTrObject'
 
 /**

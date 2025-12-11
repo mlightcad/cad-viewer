@@ -1,8 +1,8 @@
-import { AcGePoint3dLike, AcGiLineStyle } from '@mlightcad/data-model'
+import { AcGePoint3dLike, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
+import { AcTrBufferGeometryUtil } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrLine extends AcTrEntity {
@@ -10,19 +10,12 @@ export class AcTrLine extends AcTrEntity {
 
   constructor(
     points: AcGePoint3dLike[],
-    style: AcGiLineStyle | undefined,
+    traits: AcGiSubEntityTraits,
     styleManager: AcTrStyleManager
   ) {
     super(styleManager)
 
-    let material: THREE.Material
-    const color = style ? style.color : 0xffffff
-    if (style) {
-      material = this.styleManager.getLineShaderMaterial(style, 1)
-    } else {
-      material = new THREE.LineBasicMaterial({ color })
-    }
-
+    const material = this.styleManager.getLineMaterial(traits)
     const maxVertexCount = points.length
     const vertices = new Float32Array(maxVertexCount * 3)
     const indices =

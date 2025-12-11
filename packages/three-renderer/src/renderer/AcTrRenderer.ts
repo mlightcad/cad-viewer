@@ -6,12 +6,11 @@ import {
   AcGePoint3d,
   AcGePoint3dLike,
   AcGiFontMapping,
-  AcGiHatchStyle,
   AcGiImageStyle,
-  AcGiLineStyle,
   AcGiMTextData,
   AcGiPointStyle,
   AcGiRenderer,
+  AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
 import { FontManager, FontManagerEventArgs } from '@mlightcad/mtext-renderer'
@@ -29,12 +28,15 @@ import {
   AcTrPolygon
 } from '../object'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport'
+import { AcTrMTextRenderer } from './AcTrMTextRenderer'
 
 export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   private _styleManager: AcTrStyleManager
   private _renderer: THREE.WebGLRenderer
   private _basePoint?: AcGePoint3d
+  private _subEntityTraits: AcGiSubEntityTraits
 
   public readonly events = {
     fontNotFound: new AcCmEventManager<FontManagerEventArgs>()
@@ -43,9 +45,18 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   constructor(renderer: THREE.WebGLRenderer) {
     this._renderer = renderer
     this._styleManager = new AcTrStyleManager()
+    AcTrMTextRenderer.getInstance().overrideStyleManager(this._styleManager)
     FontManager.instance.events.fontNotFound.addEventListener(args => {
       this.events.fontNotFound.dispatch(args)
     })
+    this._subEntityTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+  }
+
+  /**
+   * @inheritdoc
+   */
+  get subEntityTraits() {
+    return this._subEntityTraits
   }
 
   get autoClear() {
@@ -161,11 +172,11 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     return FontManager.instance.missedFonts
   }
 
-  /**
-   * Clear fonts which can't be found
-   */
-  clearMissedFonts() {
-    FontManager.instance.missedFonts = {}
+  updateLayerMaterial(
+    layerName: string,
+    newTraits: Partial<AcGiSubEntityTraits>
+  ): Record<number, THREE.Material> {
+    return this._styleManager.updateLayerMaterial(layerName, newTraits)
   }
 
   /**
@@ -193,47 +204,47 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   point(point: AcGePoint3d, style: AcGiPointStyle) {
-    const geometry = new AcTrPoint(point, style, this._styleManager)
+    const geometry = new AcTrPoint(
+      point,
+      this._subEntityTraits,
+      style,
+      this._styleManager
+    )
     return geometry
   }
 
   /**
    * @inheritdoc
    */
-  circularArc(arc: AcGeCircArc3d, style: AcGiLineStyle) {
+  circularArc(arc: AcGeCircArc3d) {
     // TODO: Compute division based on current viewport size
-    return this.linePoints(arc.getPoints(100), style)
+    return this.linePoints(arc.getPoints(100))
   }
 
   /**
    * @inheritdoc
    */
-  ellipticalArc(ellipseArc: AcGeEllipseArc3d, style: AcGiLineStyle) {
+  ellipticalArc(ellipseArc: AcGeEllipseArc3d) {
     // TODO: Compute division based on current viewport size
-    return this.linePoints(ellipseArc.getPoints(100), style)
+    return this.linePoints(ellipseArc.getPoints(100))
   }
 
   /**
    * @inheritdoc
    */
-  lines(points: AcGePoint3dLike[], style: AcGiLineStyle) {
-    return this.linePoints(points, style)
+  lines(points: AcGePoint3dLike[]) {
+    return this.linePoints(points)
   }
 
   /**
    * @inheritdoc
    */
-  lineSegments(
-    array: Float32Array,
-    itemSize: number,
-    indices: Uint16Array,
-    style: AcGiLineStyle
-  ) {
+  lineSegments(array: Float32Array, itemSize: number, indices: Uint16Array) {
     return new AcTrLineSegments(
       array,
       itemSize,
       indices,
-      style,
+      this._subEntityTraits,
       this._styleManager
     )
   }
@@ -241,15 +252,21 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   /**
    * @inheritdoc
    */
-  area(area: AcGeArea2d, style: AcGiHatchStyle) {
-    return new AcTrPolygon(area, style, this._styleManager)
+  area(area: AcGeArea2d) {
+    return new AcTrPolygon(area, this._subEntityTraits, this._styleManager)
   }
 
   /**
    * @inheritdoc
    */
   mtext(mtext: AcGiMTextData, style: AcGiTextStyle, delay?: boolean) {
-    return new AcTrMText(mtext, style, this._styleManager, delay)
+    return new AcTrMText(
+      mtext,
+      this._subEntityTraits,
+      style,
+      this._styleManager,
+      delay
+    )
   }
 
   /**
@@ -259,10 +276,15 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     return new AcTrImage(blob, style, this._styleManager)
   }
 
-  private linePoints(
-    points: AcGePoint3dLike[],
-    style: AcGiLineStyle | undefined = undefined
-  ) {
-    return new AcTrLine(points, style, this._styleManager)
+  /**
+   * Clears all cached materials and releases its memory
+   */
+  dispose() {
+    this._styleManager.dispose()
+    FontManager.instance.missedFonts = {}
+  }
+
+  private linePoints(points: AcGePoint3dLike[]) {
+    return new AcTrLine(points, this._subEntityTraits, this._styleManager)
   }
 }

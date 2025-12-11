@@ -1,10 +1,8 @@
 <template>
   <el-table
-    ref="multipleTableRef"
     :data="layers"
     class="ml-layer-list"
-    @selection-change="handleSelectionChange"
-    @row-click="handleRowClick"
+    @row-dblclick="handleRowDbClick"
   >
     <el-table-column
       property="name"
@@ -34,20 +32,35 @@
     >
       <template #default="scope">
         <div class="ml-layer-list-cell">
-          <el-tag :color="scope.row.color" class="ml-layer-list-color" />
+          <el-tag
+            :color="getLayerCssColor(scope.row).value"
+            class="ml-layer-list-color"
+            @click.stop="openColorPicker(scope.row)"
+          />
         </div>
       </template>
     </el-table-column>
   </el-table>
+
+  <!-- Color picker dialog -->
+  <ml-color-picker-dlg
+    v-model="colorDialogVisible"
+    :title="t('dialog.colorPickerDlg.title')"
+    :color="oldColor"
+    @ok="handleColorDialogOk"
+    @cancel="handleColorDialogCancel"
+  />
 </template>
 
 <script setup lang="ts">
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
+import { AcCmColor } from '@mlightcad/data-model'
 import { ElMessage, ElTable } from 'element-plus'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { LayerInfo, useLayers } from '../../composable'
+import { MlColorPickerDlg } from '../dialog'
 
 const { t } = useI18n()
 
@@ -70,33 +83,32 @@ const props = defineProps<Props>()
  */
 const layers = useLayers(props.editor)
 
-/** Reference to the Element Plus <el-table> component instance */
-const multipleTableRef = ref<InstanceType<typeof ElTable>>()
-
-/** Stores currently selected rows from the table */
-const multipleSelection = ref<LayerInfo[]>([])
-
 /**
- * Triggered when row selections change (checkbox selection mode).
- * Stores current selection results.
+ * Returns the CSS color string for a layer row.
+ * Creates a new AcCmColor from row.color and reads its cssColor.
  */
-const handleSelectionChange = (val: LayerInfo[]) => {
-  multipleSelection.value = val
+const getLayerCssColor = (row: LayerInfo) => {
+  return computed(() => {
+    const color = AcCmColor.fromString(row.color)
+    return color?.cssColor || '#FFFFFF'
+  })
 }
 
 /**
- * Triggered when a row in the layer list table is clicked.
+ * Triggered when a row in the layer list table is double-clicked.
  *
  * Calls editor.curView.zoomToFitLayer(name) to zoom the viewport
  * to show all objects belonging to that layer.
  *
  * @param row - The LayerInfo representing the clicked layer
  */
-const handleRowClick = (row: LayerInfo) => {
+const handleRowDbClick = (row: LayerInfo) => {
   const isSuccess = props.editor.curView.zoomToFitLayer(row.name)
   if (isSuccess) {
     ElMessage({
-      message: t('main.toolPalette.layerManager.layerList.zoomToLayer'),
+      message: t('main.toolPalette.layerManager.layerList.zoomToLayer', {
+        layer: row.name
+      }),
       grouping: true,
       type: 'success'
     })
@@ -117,6 +129,55 @@ const handleLayerVisibility = (row: LayerInfo) => {
   )
   if (layer) layer.isOff = !row.isOn
 }
+
+/**
+ * ===== Layer Color Picker Integration =====
+ */
+
+/** Dialog visibility for color picking */
+const colorDialogVisible = ref(false)
+
+/** Currently edited layer for color change */
+const colorTargetLayer = ref<LayerInfo | null>(null)
+
+/** Current color being edited, passed to color picker dialog */
+const oldColor = ref<string | undefined>(undefined)
+
+/**
+ * Open color picker dialog when clicking color cell.
+ */
+const openColorPicker = (row: LayerInfo) => {
+  colorTargetLayer.value = row
+  oldColor.value = row.color
+  colorDialogVisible.value = true
+}
+
+/**
+ * Apply selected color to both UI layer list and CAD database layer table.
+ */
+const applySelectedColor = (color: AcCmColor) => {
+  if (!colorTargetLayer.value) return
+
+  // Update UI layer list color
+  const target = colorTargetLayer.value
+  target.color = color.toString()
+
+  // Update underlying CAD layer color using AcCmColor
+  const dbLayer = props.editor.curDocument.database.tables.layerTable.getAt(
+    target.name
+  )
+  if (dbLayer) {
+    dbLayer.color = color
+  }
+}
+
+const handleColorDialogOk = (color: AcCmColor) => {
+  applySelectedColor(color)
+}
+
+const handleColorDialogCancel = () => {
+  // No-op for now; we simply discard temporary selection
+}
 </script>
 
 <style>
@@ -125,6 +186,18 @@ const handleLayerVisibility = (row: LayerInfo) => {
   width: 100%;
   font-size: small;
   min-width: 100%;
+}
+
+/* Compact row height */
+.ml-layer-list .el-table__cell {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+/* Optional: slightly smaller header padding as well */
+.ml-layer-list .el-table__header .el-table__cell {
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 /* Add bottom border to header and body */

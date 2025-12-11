@@ -1,4 +1,8 @@
-import { AcGiMTextData, AcGiTextStyle } from '@mlightcad/data-model'
+import {
+  AcGiMTextData,
+  AcGiSubEntityTraits,
+  AcGiTextStyle
+} from '@mlightcad/data-model'
 import { MTextObject } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
@@ -9,17 +13,29 @@ import { AcTrEntity } from './AcTrEntity'
 export class AcTrMText extends AcTrEntity {
   private _mtext?: MTextObject
   private _text: AcGiMTextData
-  private _style: AcGiTextStyle
+  private _style: AcGiTextStyle & {
+    color: number
+    isByLayer: boolean
+    layer: string
+    byLayerColor?: number
+    byBlockColor?: number
+  }
 
   constructor(
     text: AcGiMTextData,
+    traits: AcGiSubEntityTraits,
     style: AcGiTextStyle,
     styleManager: AcTrStyleManager,
     delay: boolean = false
   ) {
     super(styleManager)
     this._text = text
-    this._style = style
+    this._style = {
+      ...style,
+      color: traits.rgbColor,
+      isByLayer: traits.color.isByLayer,
+      layer: traits.layer
+    }
     if (!delay) {
       this.syncDraw()
     }

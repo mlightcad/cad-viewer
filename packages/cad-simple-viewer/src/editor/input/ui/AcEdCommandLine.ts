@@ -168,34 +168,32 @@ export class AcEdCommandLine {
       .ml-cli-bar {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         border-radius: 6px;
         background: linear-gradient(#ededed, #e0e0e0);
         border: 1px solid rgba(0, 0, 0, 0.35);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
         min-width: 300px;
-        height: 32px;
+        height: 30px;
       }
 
       .ml-cli-left {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
         background: rgba(0, 0, 0, 0.06);
-        padding: 4px 6px;
         border-radius: 4px;
         border: 1px solid rgba(0, 0, 0, 0.08);
         height: 100%;
       }
 
       .ml-cli-term {
-        width: 22px;
-        height: 18px;
+        width: 18px;
+        height: 16px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         border-radius: 3px;
-        background: #fff;
         border: 1px solid rgba(0, 0, 0, 0.15);
         font-weight: 700;
         color: #222;
@@ -204,8 +202,8 @@ export class AcEdCommandLine {
 
       .ml-cli-down,
       .ml-cli-up {
-        width: 20px;
-        height: 20px;
+        width: 16px;
+        height: 16px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -213,9 +211,24 @@ export class AcEdCommandLine {
         background: transparent;
         border: none;
         cursor: pointer;
-        font-size: 20px;
+        font-size: 16px;
         color: #222;
         padding: 0;
+      }
+
+      .ml-cli-up {
+        transform: rotate(180deg);
+        transform-origin: center;
+      }
+
+      .ml-cli-right {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.06);
+        border-radius: 4px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        height: 100%;
       }
 
       .ml-cli-input {
@@ -374,11 +387,15 @@ export class AcEdCommandLine {
     )
     this.bar.appendChild(this.input)
 
+    const rightGroup = document.createElement('div')
+    rightGroup.className = 'ml-cli-right'
+    this.bar.appendChild(rightGroup)
+
     this.upBtn = document.createElement('button')
     this.upBtn.className = 'ml-cli-up'
     this.upBtn.title = this.localize('main.commandLine.showMessages')
-    this.upBtn.innerHTML = '&#9652;'
-    this.bar.appendChild(this.upBtn)
+    this.upBtn.innerHTML = '&#9662;'
+    rightGroup.appendChild(this.upBtn)
 
     this.cmdPopup = document.createElement('div')
     this.cmdPopup.className = 'ml-cli-cmd-popup hidden'
@@ -625,6 +642,15 @@ export class AcEdCommandLine {
 
   /** Show message panel */
   showMessagePanel() {
+    // If there is no message history, show a localized "no history" placeholder
+    if (!this.msgPanel.children.length) {
+      const empty = document.createElement('div')
+      empty.className = 'ml-cli-history-line'
+      empty.textContent = this.localize('main.commandLine.noHistory')
+      empty.dataset.msgKey = 'main.commandLine.noHistory'
+      this.msgPanel.appendChild(empty)
+    }
+
     this.msgPanel.scrollTop = this.msgPanel.scrollHeight
     this.positionMsgPanel()
   }
@@ -634,8 +660,19 @@ export class AcEdCommandLine {
     this.msgPanel.style.width = this.bar.offsetWidth + 'px'
   }
 
+  /** Remove "no history" placeholder if present */
+  private clearNoHistoryPlaceholder() {
+    Array.from(this.msgPanel.children).forEach(child => {
+      const div = child as HTMLDivElement
+      if (div.dataset.msgKey === 'main.commandLine.noHistory') {
+        this.msgPanel.removeChild(div)
+      }
+    })
+  }
+
   /** Print message to message panel with optional localization key */
   printMessage(msg: string, msgKey?: string) {
+    this.clearNoHistoryPlaceholder()
     const div = document.createElement('div')
     div.className = 'ml-cli-history-line'
     div.textContent = msg
@@ -646,6 +683,7 @@ export class AcEdCommandLine {
 
   /** Print error message with optional localization key */
   printError(msg: string, msgKey?: string) {
+    this.clearNoHistoryPlaceholder()
     const div = document.createElement('div')
     div.className = 'ml-cli-history-line ml-cli-msg-error'
     div.textContent = msg
@@ -656,6 +694,7 @@ export class AcEdCommandLine {
 
   /** Print executed command line to history */
   printHistoryLine(cmdLine: string) {
+    this.clearNoHistoryPlaceholder()
     const div = document.createElement('div')
     div.className = 'ml-cli-history-line'
     div.textContent = '> ' + cmdLine

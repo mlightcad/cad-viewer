@@ -1,5 +1,11 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.3.0
+
+### Minor Changes
+
+- feat: support changing layer color
+
 ## 1.2.5
 
 ### Patch Changes

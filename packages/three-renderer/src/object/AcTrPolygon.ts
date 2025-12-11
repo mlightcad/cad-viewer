@@ -4,7 +4,7 @@ import {
   AcGeIndexNode,
   AcGePoint2d,
   AcGePoint2dLike,
-  AcGiHatchStyle
+  AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 import { GeometryEpsilon, PolyBool, Segments } from '@velipso/polybool'
 import * as THREE from 'three'
@@ -16,7 +16,7 @@ import { AcTrEntity } from './AcTrEntity'
 export class AcTrPolygon extends AcTrEntity {
   constructor(
     area: AcGeArea2d,
-    style: AcGiHatchStyle,
+    traits: AcGiSubEntityTraits,
     styleManager: AcTrStyleManager
   ) {
     super(styleManager)
@@ -38,10 +38,7 @@ export class AcTrPolygon extends AcTrEntity {
       geometry.computeBoundingBox()
       this.box = geometry.boundingBox!
 
-      const material = this.styleManager.getHatchShaderMaterial(
-        style,
-        new THREE.Vector2(0, 0)
-      )
+      const material = this.styleManager.getFillMaterial(traits)
       this.add(new THREE.Mesh(geometry, material))
     }
   }

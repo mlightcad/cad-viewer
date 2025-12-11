@@ -8,7 +8,7 @@ import {
 import * as THREE from 'three'
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
+import { AcTrBufferGeometryUtil } from '../util'
 
 const arrawTypeData = [
   // Closed filled

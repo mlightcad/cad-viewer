@@ -3,13 +3,9 @@
     <!-- Overlay -->
     <div class="ml-base-dialog-overlay" @click="handleCancel"></div>
 
-    <!-- Dialog Container (with transition) -->
-    <transition name="ml-base-dialog-fade" @after-enter="handleOpened">
-      <div
-        v-show="modelValue"
-        class="ml-base-dialog-container"
-        :style="{ width: widthStyle }"
-      >
+    <!-- Config Provider to globally set size="small" for all Element-Plus components -->
+    <el-config-provider :size="'small'">
+      <div class="ml-base-dialog-container" :style="{ width: widthStyle }">
         <!-- Header -->
         <div class="ml-base-dialog-header">
           <div class="ml-base-dialog-title">
@@ -19,12 +15,7 @@
             <span>{{ title }}</span>
           </div>
           <div class="ml-base-dialog-actions">
-            <el-button
-              text
-              size="small"
-              class="ml-base-dialog-close"
-              @click="handleCancel"
-            >
+            <el-button text class="ml-base-dialog-close" @click="handleCancel">
               <el-icon><Close /></el-icon>
             </el-button>
           </div>
@@ -45,13 +36,14 @@
           </el-button>
         </div>
       </div>
-    </transition>
+    </el-config-provider>
+    <!-- ⬆ END Config Provider -->
   </div>
 </template>
 
 <script setup lang="ts">
 import { Close } from '@element-plus/icons-vue'
-import { type Component, computed, watch } from 'vue'
+import { type Component, computed, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { mlightcad } from '../../svg'
@@ -69,30 +61,26 @@ const emits = defineEmits([
   'update:modelValue',
   'ok',
   'cancel',
-  'open', // 🔹 new event
-  'opened' // 🔹 new event
+  'open',
+  'opened'
 ])
 
-// Use provided icon or fallback to default
 const computedIcon = computed<Component>(() => props.icon ?? mlightcad)
 
 const widthStyle = computed(() =>
   typeof props.width === 'number' ? `${props.width}px` : props.width
 )
 
-// Watch modelValue to emit 'open' when dialog is shown
 watch(
   () => props.modelValue,
-  (newVal, oldVal) => {
+  async (newVal, oldVal) => {
     if (newVal && !oldVal) {
-      emits('open') // 🔹 emit "open" immediately when shown
+      emits('open')
+      await nextTick()
+      emits('opened')
     }
   }
 )
-
-function handleOpened() {
-  emits('opened') // 🔹 emit after opening animation ends
-}
 
 function handleOk() {
   emits('ok')
@@ -106,19 +94,6 @@ function handleCancel() {
 </script>
 
 <style scoped>
-/* Fade animation */
-.ml-base-dialog-fade-enter-active,
-.ml-base-dialog-fade-leave-active {
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
-}
-.ml-base-dialog-fade-enter-from,
-.ml-base-dialog-fade-leave-to {
-  opacity: 0;
-  transform: scale(0.95);
-}
-
 /* Base Layout */
 .ml-base-dialog {
   position: fixed;
@@ -140,6 +115,8 @@ function handleCancel() {
 .ml-base-dialog-container {
   position: relative;
   z-index: 1;
+  --ml-dialog-font-size: 12px;
+  --el-font-size-base: 12px;
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color);
   border-radius: 8px;
@@ -155,8 +132,8 @@ function handleCancel() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px;
-  height: 30px;
+  padding: 2px 6px;
+  height: 24px;
   border-bottom: 1px solid var(--el-border-color);
   background: var(--el-fill-color-light);
   position: relative;
@@ -167,7 +144,7 @@ function handleCancel() {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--ml-dialog-font-size);
   color: var(--el-text-color-primary);
 }
 
@@ -207,6 +184,7 @@ function handleCancel() {
   padding: 16px;
   overflow-y: auto;
   flex: 1;
+  font-size: var(--ml-dialog-font-size);
 }
 
 /* Footer */
@@ -216,15 +194,10 @@ function handleCancel() {
   gap: 8px;
   border-top: 1px solid var(--el-border-color);
   background: var(--el-bg-color);
-  padding: 8px 12px;
+  padding: 4px 8px;
 }
 
-/* Dark mode */
-.dark .ml-base-dialog-container {
-  background: var(--el-bg-color-page);
-}
-
-.dark .ml-base-dialog-header {
-  background: var(--el-fill-color-darker);
+.ml-base-dialog-footer :deep(.el-button) {
+  min-width: 72px;
 }
 </style>

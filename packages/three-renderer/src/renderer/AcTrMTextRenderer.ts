@@ -3,9 +3,34 @@ import {
   MTextData,
   MTextObject,
   RenderMode,
+  StyleManager,
+  StyleTraits,
   TextStyle,
   UnifiedRenderer
 } from '@mlightcad/mtext-renderer'
+import * as THREE from 'three'
+
+import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrSubEntityTraitsUtil } from '../util'
+
+class AcTrMTextStyleManager implements StyleManager {
+  public unsupportedTextStyles: Record<string, number> = {}
+  private _styleManager: AcTrStyleManager
+
+  constructor(styeManager: AcTrStyleManager) {
+    this._styleManager = styeManager
+  }
+
+  getMeshBasicMaterial(traits: StyleTraits): THREE.Material {
+    const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(traits)
+    return this._styleManager.getFillMaterial(entityTraits)
+  }
+
+  getLineBasicMaterial(traits: StyleTraits): THREE.Material {
+    const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(traits)
+    return this._styleManager.getLineMaterial(entityTraits, true)
+  }
+}
 
 /**
  * Singleton class for managing MText rendering using WebWorkerRenderer
@@ -16,6 +41,7 @@ export class AcTrMTextRenderer {
   private _renderer?: UnifiedRenderer
   private _fontUrl?: string
   private _renderMode?: RenderMode
+  private _styleManager?: AcTrStyleManager
 
   private constructor() {
     // Do nothing for now
@@ -29,6 +55,15 @@ export class AcTrMTextRenderer {
       AcTrMTextRenderer._instance = new AcTrMTextRenderer()
     }
     return AcTrMTextRenderer._instance
+  }
+
+  /**
+   * Override text renderer's default style manager with cad-viewer's style manager so
+   * that cad-viewer's style manager can manage materials used by texts too.
+   * @param value - New style manager
+   */
+  overrideStyleManager(value: AcTrStyleManager) {
+    this._styleManager = value
   }
 
   /**
@@ -114,6 +149,10 @@ export class AcTrMTextRenderer {
     }
     if (this._renderMode) {
       this._renderer.setDefaultMode(this._renderMode)
+    }
+    if (this._styleManager) {
+      const styleManager = new AcTrMTextStyleManager(this._styleManager)
+      this._renderer.setStyleManager(styleManager)
     }
   }
 

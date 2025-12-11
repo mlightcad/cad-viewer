@@ -8,7 +8,6 @@
       <el-select
         v-model="selectedIndex"
         placeholder="Select Entity"
-        size="small"
         style="width: 100%; margin-bottom: 0.5rem"
       >
         <el-option
@@ -35,7 +34,6 @@
       :data="tableRows"
       row-key="id"
       border
-      size="small"
       default-expand-all
       :tree-props="{ children: 'children', hasChildren: 'children' }"
       :show-header="false"
@@ -58,82 +56,83 @@
       <el-table-column>
         <template #default="{ row }">
           <div class="ml-cell-value" v-if="!row.isGroup">
-            <!-- Readonly Mode -->
-            <span
-              v-if="!editable || !row.editable"
-              :title="formatDisplayValue(row)"
-              class="ml-readonly-value"
-              @dblclick="copyReadonlyValue(row)"
-            >
-              {{ formatDisplayValue(row) }}
-            </span>
-
-            <!-- Editable Mode -->
-            <template v-else>
-              <!-- Enum -->
-              <el-select
-                v-if="row.type === 'enum'"
+            <!-- ===== Readonly Mode ===== -->
+            <template v-if="!editable || !row.editable">
+              <!-- Readonly Color: use disabled dropdown -->
+              <ml-color-dropdown
+                v-if="row.type === 'color'"
                 :model-value="row.accessor.get()"
-                :disabled="!row.editable || !editable"
-                size="small"
-                style="width: 100%"
-                @change="(v: unknown) => onPropertyChange(row, v)"
-              >
-                <el-option
-                  v-for="opt in row.options || []"
-                  :key="opt.value"
-                  :label="entityPropEnum(opt.label)"
-                  :value="opt.value"
-                />
-              </el-select>
-
-              <!-- Color -->
-              <el-color-picker
-                v-else-if="row.type === 'color'"
-                :model-value="row.accessor.get()"
-                :disabled="!row.editable || !editable"
-                size="small"
-                @change="(v: unknown) => onPropertyChange(row, v)"
+                disabled
               />
 
-              <!-- Boolean -->
-              <el-switch
-                v-else-if="row.type === 'boolean'"
-                :model-value="row.accessor.get()"
-                :disabled="!row.editable || !editable"
-                @change="(v: boolean) => onPropertyChange(row, v)"
-              />
-
-              <!-- Int -->
-              <el-input-number
-                v-else-if="row.type === 'int'"
-                :model-value="row.accessor.get()"
-                :disabled="!row.editable || !editable"
-                size="small"
-                :step="1"
-                :precision="0"
-                @change="(v: number) => onPropertyChange(row, v)"
-              />
-
-              <!-- Float -->
-              <el-input-number
-                v-else-if="row.type === 'float'"
-                :model-value="row.accessor.get()"
-                :disabled="!row.editable || !editable"
-                size="small"
-                :step="0.1"
-                :precision="3"
-                @change="(v: number) => onPropertyChange(row, v)"
-              />
-
-              <!-- String -->
-              <el-input
+              <!-- Readonly Non-Color -->
+              <span
                 v-else
-                :model-value="row.accessor.get()"
-                :disabled="!row.editable || !editable"
-                size="small"
-                @input="(v: string) => onPropertyChange(row, v)"
-              />
+                :title="formatDisplayValue(row)"
+                class="ml-readonly-value"
+                @dblclick="copyReadonlyValue(row)"
+              >
+                {{ formatDisplayValue(row) }}
+              </span>
+            </template>
+
+            <!-- ===== Editable Mode ===== -->
+            <template v-else>
+              <div>
+                <!-- Enum -->
+                <el-select
+                  v-if="row.type === 'enum'"
+                  :model-value="row.accessor.get()"
+                  @change="(v: unknown) => onPropertyChange(row, v)"
+                  style="width: 100%"
+                >
+                  <el-option
+                    v-for="opt in row.options || []"
+                    :key="opt.value"
+                    :label="entityPropEnum(opt.label)"
+                    :value="opt.value"
+                  />
+                </el-select>
+
+                <!-- Color -->
+                <ml-color-dropdown
+                  v-else-if="row.type === 'color'"
+                  :model-value="row.accessor.get()"
+                  @color-change="(v: unknown) => onPropertyChange(row, v)"
+                />
+
+                <!-- Boolean -->
+                <el-switch
+                  v-else-if="row.type === 'boolean'"
+                  :model-value="row.accessor.get()"
+                  @change="(v: unknown) => onPropertyChange(row, v)"
+                />
+
+                <!-- Int -->
+                <el-input-number
+                  v-else-if="row.type === 'int'"
+                  :model-value="row.accessor.get()"
+                  :step="1"
+                  :precision="0"
+                  @change="(v: unknown) => onPropertyChange(row, v)"
+                />
+
+                <!-- Float -->
+                <el-input-number
+                  v-else-if="row.type === 'float'"
+                  :model-value="row.accessor.get()"
+                  :step="0.1"
+                  :precision="3"
+                  @change="(v: unknown) => onPropertyChange(row, v)"
+                />
+
+                <!-- String -->
+                <el-input
+                  v-else
+                  :model-value="row.accessor.get()"
+                  @input="(v: unknown) => onPropertyChange(row, v)"
+                />
+              </div>
             </template>
           </div>
         </template>
@@ -159,6 +158,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { entityPropEnum, entityPropName } from '../../locale'
+import { MlColorDropdown } from '../common'
 
 const { t } = useI18n()
 

@@ -74,9 +74,18 @@ export default {
         name: 'Name',
         on: 'On',
         color: 'Color',
-        zoomToLayer: 'Zoomed to the clicked layer'
+        zoomToLayer: 'Zoomed to the clicked layer "{layer}"'
       }
     }
+  },
+  colorDropdown: {
+    custom: 'Custom'
+  },
+  colorIndexPicker: {
+    color: 'Color: ',
+    colorIndex: 'Color Index: ',
+    inputPlaceholder: '0-256, BYLAYER, BYBLOCK',
+    rgb: 'RGB: '
   },
   entityInfo: {
     color: 'Color',

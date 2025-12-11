@@ -2,6 +2,7 @@ import {
   AcDbEntity,
   acdbHostApplicationServices,
   AcDbLayerTableRecord,
+  AcDbLayerTableRecordAttrs,
   AcDbLayout,
   AcDbObjectId,
   AcDbRasterImage,
@@ -457,7 +458,8 @@ export class AcTrView2d extends AcEdBaseView {
     this._scene.addLayer({
       name: layer.name,
       isFrozen: layer.isFrozen,
-      isOff: layer.isOff
+      isOff: layer.isOff,
+      color: layer.color
     })
     this._isDirty = true
   }
@@ -465,11 +467,38 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  updateLayer(layer: AcDbLayerTableRecord) {
-    this._scene.updateLayer({
+  updateLayer(
+    layer: AcDbLayerTableRecord,
+    changes: Partial<AcDbLayerTableRecordAttrs>
+  ) {
+    const updatedLayers = this._scene.updateLayer({
       name: layer.name,
       isFrozen: layer.isFrozen,
-      isOff: layer.isOff
+      isOff: layer.isOff,
+      color: layer.color
+    })
+    const traits: Record<string, unknown> = {}
+    if (changes.color) {
+      traits.color = changes.color.clone()
+      traits.rgbColor = changes.color.RGB
+    }
+    if (changes.lineStyle) {
+      traits.lineType = layer.lineStyle
+    }
+    if (changes.lineWeight !== undefined) {
+      traits.lineWeight = changes.lineWeight
+    }
+    if (changes.transparency !== undefined) {
+      traits.transparency = changes.transparency
+    }
+    traits.layer = layer.name // always present
+
+    const materials = this._renderer.updateLayerMaterial(layer.name, traits)
+    updatedLayers.forEach(layer => {
+      for (const id in materials) {
+        const material = materials[id]
+        layer.updateMaterial(Number(id), material)
+      }
     })
     this._isDirty = true
   }
@@ -482,10 +511,7 @@ export class AcTrView2d extends AcEdBaseView {
     const entities = Array.isArray(entity) ? entity : [entity]
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
-      const threeEntity: AcTrEntity | null = entity.draw(
-        this._renderer,
-        true
-      ) as AcTrEntity
+      const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
       if (threeEntity) {
         threeEntity.objectId = entity.objectId
         this._scene.addTransientEntity(threeEntity)
@@ -568,7 +594,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._scene.clear()
     this._isDirty = true
     this._missedImages.clear()
-    this._renderer.clearMissedFonts()
+    this._renderer.dispose()
   }
 
   /**
@@ -662,6 +688,21 @@ export class AcTrView2d extends AcEdBaseView {
     }
   }
 
+  private drawEntity(entity: AcDbEntity, delay?: boolean) {
+    const traits = this._renderer.subEntityTraits
+    traits.color = entity.color
+    traits.rgbColor = entity.rgbColor
+    traits.lineType = entity.lineStyle
+    traits.lineTypeScale = entity.linetypeScale
+    traits.lineWeight = entity.lineWeight
+    traits.transparency = entity.transparency
+    traits.layer = entity.layer
+    if ('thickness' in entity) {
+      traits.thickness = entity.thickness as number
+    }
+    return entity.draw(this._renderer, delay) as AcTrEntity | null
+  }
+
   /**
    * Converts the specified database entities to three entities
    * @param entities - The database entities
@@ -670,10 +711,7 @@ export class AcTrView2d extends AcEdBaseView {
   private async batchConvert(entities: AcDbEntity[]) {
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
-      const threeEntity: AcTrEntity | null = entity.draw(
-        this._renderer,
-        true
-      ) as AcTrEntity
+      const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
       if (threeEntity) {
         threeEntity.objectId = entity.objectId
         threeEntity.ownerId = entity.ownerId

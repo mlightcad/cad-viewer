@@ -1,8 +1,8 @@
-import { AcGiLineStyle } from '@mlightcad/data-model'
+import { AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
+import { AcTrBufferGeometryUtil } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrLineSegments extends AcTrEntity {
@@ -10,17 +10,12 @@ export class AcTrLineSegments extends AcTrEntity {
     array: Float32Array,
     itemSize: number,
     indices: Uint16Array,
-    style: AcGiLineStyle | undefined,
+    traits: AcGiSubEntityTraits,
     styleManager: AcTrStyleManager
   ) {
     super(styleManager)
 
-    let material: THREE.Material
-    if (style) {
-      material = this.styleManager.getLineShaderMaterial(style, 1)
-    } else {
-      material = new THREE.LineBasicMaterial({ color: 0xffffff })
-    }
+    const material = this.styleManager.getLineMaterial(traits)
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
       'position',

@@ -12,12 +12,12 @@ export interface AcTrPatternLine {
 export function createHatchPatternShaderMaterial(
   patternLines: AcTrPatternLine[],
   patternAngle: number,
-  cameraZoomUniform: { value: number },
+  cameraZoomUniform: number,
   color: THREE.Color,
   fixedThicknessInWorldCoord = 0
 ): THREE.Material {
   const uniforms = {
-    u_cameraZoom: cameraZoomUniform,
+    u_cameraZoom: { value: cameraZoomUniform },
     u_patternLines: { value: patternLines },
     u_patternAngle: { value: patternAngle },
     u_color: { value: color }

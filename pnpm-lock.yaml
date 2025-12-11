@@ -9,14 +9,14 @@ importers:
   .:
     dependencies:
       '@mlightcad/common':
-        specifier: 1.2.5
-        version: 1.2.5
+        specifier: 1.2.6
+        version: 1.2.6
       '@mlightcad/geometry-engine':
-        specifier: 3.0.7
-        version: 3.0.7(@mlightcad/common@1.2.5)
+        specifier: 3.0.8
+        version: 3.0.8(@mlightcad/common@1.2.6)
       '@mlightcad/graphic-interface':
-        specifier: 3.0.9
-        version: 3.0.9(@mlightcad/geometry-engine@3.0.7(@mlightcad/common@1.2.5))
+        specifier: 3.0.10
+        version: 3.0.10(@mlightcad/common@1.2.6)(@mlightcad/geometry-engine@3.0.8(@mlightcad/common@1.2.6))
     devDependencies:
       '@changesets/cli':
         specifier: ^2.29.5
@@ -95,19 +95,19 @@ importers:
         version: 8.38.0(eslint@9.31.0(jiti@1.21.7))(typescript@5.8.3)
       vite:
         specifier: ^5.4.19
-        version: 5.4.19(@types/node@20.19.9)(sass@1.89.2)(terser@5.43.1)
+        version: 5.4.19(@types/node@20.19.9)(sass@1.95.1)(terser@5.43.1)
       vite-plugin-static-copy:
         specifier: ^3.1.1
-        version: 3.1.1(vite@5.4.19(@types/node@20.19.9)(sass@1.89.2)(terser@5.43.1))
+        version: 3.1.1(vite@5.4.19(@types/node@20.19.9)(sass@1.95.1)(terser@5.43.1))
 
   packages/cad-simple-viewer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.3.16
-        version: 1.3.16
+        specifier: ^1.3.17
+        version: 1.3.17
       '@mlightcad/libredwg-converter':
-        specifier: ^3.1.16
-        version: 3.1.16(@mlightcad/data-model@1.3.16)
+        specifier: ^3.1.17
+        version: 3.1.17(@mlightcad/data-model@1.3.17)
       lodash-es:
         specifier: 4.17.21
         version: 4.17.21
@@ -122,8 +122,8 @@ importers:
         version: 0.172.0
     devDependencies:
       '@mlightcad/mtext-renderer':
-        specifier: ^0.7.6
-        version: 0.7.6(three@0.172.0)
+        specifier: ^0.8.0
+        version: 0.8.0(three@0.172.0)
       '@mlightcad/svg-renderer':
         specifier: workspace:*
         version: link:../svg-renderer
@@ -149,8 +149,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.3.16
-        version: 1.3.16
+        specifier: ^1.3.17
+        version: 1.3.17
 
   packages/cad-viewer:
     dependencies:
@@ -161,14 +161,14 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.3.16
-        version: 1.3.16
+        specifier: ^1.3.17
+        version: 1.3.17
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.3.0(vue@3.5.18(typescript@5.8.3))
       element-plus:
-        specifier: ^2.9.1
-        version: 2.10.4(vue@3.5.18(typescript@5.8.3))
+        specifier: ^2.12.0
+        version: 2.12.0(vue@3.5.18(typescript@5.8.3))
       lodash-es:
         specifier: 4.17.21
         version: 4.17.21
@@ -181,6 +181,9 @@ importers:
       vue-i18n:
         specifier: ^10.0.1
         version: 10.0.8(vue@3.5.18(typescript@5.8.3))
+      vue-pick-colors:
+        specifier: ^1.8.0
+        version: 1.8.0(@popperjs/core@2.11.8)(vue@3.5.18(typescript@5.8.3))
     devDependencies:
       '@mlightcad/svg-renderer':
         specifier: workspace:*
@@ -192,23 +195,23 @@ importers:
         specifier: 0.0.9
         version: 0.0.9(three@0.172.0)
       '@mlightcad/ui-components':
-        specifier: ^0.1.1
-        version: 0.1.1(element-plus@2.10.4(vue@3.5.18(typescript@5.8.3)))(vue@3.5.18(typescript@5.8.3))
+        specifier: ^0.1.2
+        version: 0.1.2(element-plus@2.12.0(vue@3.5.18(typescript@5.8.3)))(vue@3.5.18(typescript@5.8.3))
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
       '@vitejs/plugin-vue':
         specifier: ^5.1.3
-        version: 5.2.4(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.89.2)(terser@5.43.1)(yaml@2.8.0))(vue@3.5.18(typescript@5.8.3))
+        version: 5.2.4(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0))(vue@3.5.18(typescript@5.8.3))
       sass:
-        specifier: ^1.80.6
-        version: 1.89.2
+        specifier: ^1.95.1
+        version: 1.95.1
       vite-plugin-dts:
         specifier: ^4.0.0
-        version: 4.5.4(@types/node@20.19.9)(rollup@4.45.1)(typescript@5.8.3)(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.89.2)(terser@5.43.1)(yaml@2.8.0))
+        version: 4.5.4(@types/node@20.19.9)(rollup@4.45.1)(typescript@5.8.3)(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0))
       vite-plugin-lib-inject-css:
         specifier: ^1.0.0
-        version: 1.3.0(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.89.2)(terser@5.43.1)(yaml@2.8.0))
+        version: 1.3.0(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0))
       vite-svg-loader:
         specifier: ^5.1.0
         version: 5.1.0(vue@3.5.18(typescript@5.8.3))
@@ -231,8 +234,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-viewer
       '@mlightcad/data-model':
-        specifier: ^1.3.16
-        version: 1.3.16
+        specifier: ^1.3.17
+        version: 1.3.17
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.3.0(vue@3.5.18(typescript@5.8.3))
@@ -301,17 +304,17 @@ importers:
   packages/svg-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.3.16
-        version: 1.3.16
+        specifier: ^1.3.17
+        version: 1.3.17
 
   packages/three-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.3.16
-        version: 1.3.16
+        specifier: ^1.3.17
+        version: 1.3.17
       '@mlightcad/mtext-renderer':
-        specifier: ^0.7.6
-        version: 0.7.6(three@0.172.0)
+        specifier: ^0.8.0
+        version: 0.8.0(three@0.172.0)
       '@velipso/polybool':
         specifier: ^1.1.1
         version: 1.1.1
@@ -1019,6 +1022,11 @@ packages:
     peerDependencies:
       vue: ^3.2.0
 
+  '@element-plus/icons-vue@2.3.2':
+    resolution: {integrity: sha512-OzIuTaIfC8QXEPmJvB4Y4kw34rSXdCJzxcD1kFStBvr8bK6X1zQAYDo0CNMjojnfTqRQCJ0I7prlErcoRiET2A==}
+    peerDependencies:
+      vue: ^3.2.0
+
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
     engines: {node: '>=12'}
@@ -1550,38 +1558,39 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@mlightcad/common@1.2.5':
-    resolution: {integrity: sha512-+ZbAyQsXxP+DVrQvhRhRDROHHaIGqz+2Glm3onW+ceZZRCfDoGFDyUwhmhBQPxLe0ROmA7ZA2pXDl/XokBK1ag==}
+  '@mlightcad/common@1.2.6':
+    resolution: {integrity: sha512-afFNx440zdhFYaWrzLeOxoQnJ7623Pp0Ua9sC4FzLX9bqsSct8yqiET1a8XTgm/ewmPrc9EcNlZG6XSfdcJLrw==}
 
-  '@mlightcad/data-model@1.3.16':
-    resolution: {integrity: sha512-n1OuUJx6bn3FPgjkMS7IzLmz3OXszDb1x0VVcswYRGWINXrVEZIpycrYsbQUYzkxK2+4jKEMHDfzNvvWlYCSnA==}
+  '@mlightcad/data-model@1.3.17':
+    resolution: {integrity: sha512-/MbjTlTA+IJo5kiPc89IVY/YfcL4VNpyBOVEsNzZibUUzJx9FuPVrhrdBU4VRXjxodsvQSaa+13cW3P3KZf/ww==}
 
   '@mlightcad/dxf-json@1.0.10':
     resolution: {integrity: sha512-KY2E49y9DHPb0LoEi2Uz2cgmtVFgiNNNBn1DsWYvqn4VLD7itr2+GE51yBZLAzG1SFXiwqPjp5mprU6fI7kysg==}
 
-  '@mlightcad/geometry-engine@3.0.7':
-    resolution: {integrity: sha512-TW+Li0FeR4DUz/v1meIS/HkQZxq5RUCkcjc1P5LDsiS7Oj30tIMM8kqiaO9cc4B+u65Ryy4ex5vRlzgsWDL9iw==}
+  '@mlightcad/geometry-engine@3.0.8':
+    resolution: {integrity: sha512-mlBq1fDUuJMd4qoICNRydXyLBZyNuwm9CVbkm+SxuDn/UbeNT17myCwokAyOcGPyDVoudX4GtAh4rVZ6/PjkfQ==}
     peerDependencies:
-      '@mlightcad/common': 1.2.5
+      '@mlightcad/common': 1.2.6
 
-  '@mlightcad/graphic-interface@3.0.9':
-    resolution: {integrity: sha512-kyrsyP9m1eiUwb1LXHhv9XlNe9PMxAYHOUyBxvEJu6kfj3T3msZ9bSM9EbkcjmK/nh7S4vsbfgAy+XgAZMOUMA==}
+  '@mlightcad/graphic-interface@3.0.10':
+    resolution: {integrity: sha512-5MXBQieVEgTuj3Cuk6N3se3AVusA/+j8HwwHJR6zCFabviSQwmOE8s+w3HW7jQ8dJNbZQ277HVuxCk0QDn8RWg==}
     peerDependencies:
-      '@mlightcad/geometry-engine': 3.0.7
+      '@mlightcad/common': 1.2.6
+      '@mlightcad/geometry-engine': 3.0.8
 
-  '@mlightcad/libredwg-converter@3.1.16':
-    resolution: {integrity: sha512-oND2wDcbQoCTApX58DOXW34uYyPcwT25G7f1fkKFQ/vjWI92fG9jg0E0kOsnOkWKU0aTcoUFWOfBOUJ8BlQFVQ==}
+  '@mlightcad/libredwg-converter@3.1.17':
+    resolution: {integrity: sha512-083+rhJcak8xwXNrc338v4R1Ity1wBEZZcIngllsSjgQ51OB67uSOh+mL6ZomVOs/lfkrRXUudHrBl8az5cFJQ==}
     peerDependencies:
-      '@mlightcad/data-model': 1.3.16
+      '@mlightcad/data-model': 1.3.17
 
-  '@mlightcad/libredwg-web@0.4.2':
-    resolution: {integrity: sha512-ACmRvq85lU9NQuGde+qxnWXvReDeAcMqUuSf5FKjFOuNJTYYxB2jQ2Mpr75MtIhJtb00pzrNfW7/F1yYQ7BK/A==}
+  '@mlightcad/libredwg-web@0.4.3':
+    resolution: {integrity: sha512-t0tJQYRoQsSlMijbHauacPXYiyS02UD+k0ehLaVCLnNksddm1YjGcbfSH0Bd4HiM5ipr+nqN8e0df8U4C0OBMA==}
 
   '@mlightcad/mtext-parser@1.3.1':
     resolution: {integrity: sha512-4D/1927gPBUVJbysTSnqi1RWcQznzTKGXWwTwaP87ezB3F6gWZ5kAz48zgNaF9eYXLj/Q/PsedUTgzd6t6b7KA==}
 
-  '@mlightcad/mtext-renderer@0.7.6':
-    resolution: {integrity: sha512-N0OGqtNqmZaXFj44jusKgMaaXTF2LFdEXZtm2O3f2XOAp2HAoXJMnLz2S65QAWucUbBuDwRqAoFjOB+AR52MCg==}
+  '@mlightcad/mtext-renderer@0.8.0':
+    resolution: {integrity: sha512-Ln7p+peXehBhzahWFeeOnVqgqElxBwjX841NDLsJKSThNg40mBBWYFXfrj5a9eU2rmr2ccF++Ztz4gquTYWQ7Q==}
     peerDependencies:
       three: ^0.172.0
 
@@ -1593,10 +1602,10 @@ packages:
     peerDependencies:
       three: ^0.172.0
 
-  '@mlightcad/ui-components@0.1.1':
-    resolution: {integrity: sha512-ytqpmMbG1XFjuYR68qaB/DYuohFNchWneEHRDcAAddbeQP+vY+SE0cX4ufXY+WV+RQbXQM0a8hnSDtAzDuTvaw==}
+  '@mlightcad/ui-components@0.1.2':
+    resolution: {integrity: sha512-EmvcWkqRD5efn6WlkWEOX/7WgJGN5EfVx9ZdTTHPkvVI+13dzvEHW3CW/QwcixtjIF/LRpQTXQtsRdOAbsjwfA==}
     peerDependencies:
-      element-plus: ^2.8.1
+      element-plus: ^2.12.0
       vue: ^3.4.21
 
   '@nodelib/fs.scandir@2.1.5':
@@ -1796,6 +1805,9 @@ packages:
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
+
+  '@popperjs/core@2.11.8':
+    resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
 
   '@rollup/pluginutils@5.2.0':
     resolution: {integrity: sha512-qWJ2ZTbmumwiLFomfzTyt5Kng4hwPi9rwCYN4SHb6eaRU1KNO4ccxINHr/VhH4GgPlt1XfSTLX2LBTme8ne4Zw==}
@@ -2770,6 +2782,9 @@ packages:
   dayjs@1.11.13:
     resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
 
+  dayjs@1.11.19:
+    resolution: {integrity: sha512-t5EcLVS6QPBNqM2z8fakk/NKel+Xzshgt8FFKAn+qwlD1pzZWxh0nVCrvFK7ZDb6XucZeF9z8C7CBWTRIVApAw==}
+
   de-indent@1.0.2:
     resolution: {integrity: sha512-e/1zu3xH5MQryN2zdVaF0OrdNLUbvWxzMbi+iNA6Bky7l1RoP8a2fIbRocyHclXt/arDrrR6lL3TqFD9pMQTsg==}
 
@@ -2897,6 +2912,11 @@ packages:
 
   element-plus@2.10.4:
     resolution: {integrity: sha512-UD4elWHrCnp1xlPhbXmVcaKFLCRaRAY6WWRwemGfGW3ceIjXm9fSYc9RNH3AiOEA6Ds1p9ZvhCs76CR9J8Vd+A==}
+    peerDependencies:
+      vue: ^3.2.0
+
+  element-plus@2.12.0:
+    resolution: {integrity: sha512-M9YLSn2np9OnqrSKWsiXvGe3qnF8pd94+TScsHj1aTMCD+nSEvucXermf807qNt6hOP040le0e5Aft7E9ZfHmA==}
     peerDependencies:
       vue: ^3.2.0
 
@@ -4421,6 +4441,11 @@ packages:
     engines: {node: '>=14.0.0'}
     hasBin: true
 
+  sass@1.95.1:
+    resolution: {integrity: sha512-uPoDh5NIEZV4Dp5GBodkmNY9tSQfXY02pmCcUo+FR1P+x953HGkpw+vV28D4IqYB6f8webZtwoSaZaiPtpTeMg==}
+    engines: {node: '>=14.0.0'}
+    hasBin: true
+
   scule@1.3.0:
     resolution: {integrity: sha512-6FtHJEvt+pVMIB9IBY+IcCJ6Z5f1iQnytgyfKMhDKgmzYG+TeH/wx1y3l27rshSbLiSanrR9ffZDrEsmjlQF2g==}
 
@@ -4999,6 +5024,12 @@ packages:
     engines: {node: '>= 16'}
     peerDependencies:
       vue: ^3.0.0
+
+  vue-pick-colors@1.8.0:
+    resolution: {integrity: sha512-lIP28A1BZEPp0v0Y6m9lNbsC6jNM2LP+Dc2tJbUXiNRvDgXqBMe/msX3svqjspV4B+SZdPAjx75JY2zem0hA2Q==}
+    peerDependencies:
+      '@popperjs/core': ^2.11.2
+      vue: ^3.2.26
 
   vue-tsc@2.2.12:
     resolution: {integrity: sha512-P7OP77b2h/Pmk+lZdJ0YWs+5tJ6J2+uOQPo7tlBnY44QqQSPYvS0qVT4wqDJgwrZaLe47etJLLQRFia71GYITw==}
@@ -6054,6 +6085,10 @@ snapshots:
     dependencies:
       vue: 3.5.18(typescript@5.8.3)
 
+  '@element-plus/icons-vue@2.3.2(vue@3.5.18(typescript@5.8.3))':
+    dependencies:
+      vue: 3.5.18(typescript@5.8.3)
+
   '@esbuild/aix-ppc64@0.21.5':
     optional: true
 
@@ -6608,11 +6643,11 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@mlightcad/common@1.2.5':
+  '@mlightcad/common@1.2.6':
     dependencies:
       loglevel: 1.9.2
 
-  '@mlightcad/data-model@1.3.16':
+  '@mlightcad/data-model@1.3.17':
     dependencies:
       '@mlightcad/dxf-json': 1.0.10
       iconv-lite: 0.7.0
@@ -6622,25 +6657,26 @@ snapshots:
     dependencies:
       '@fxts/core': 1.21.1
 
-  '@mlightcad/geometry-engine@3.0.7(@mlightcad/common@1.2.5)':
+  '@mlightcad/geometry-engine@3.0.8(@mlightcad/common@1.2.6)':
     dependencies:
-      '@mlightcad/common': 1.2.5
+      '@mlightcad/common': 1.2.6
       verb-nurbs-web: 2.1.3
 
-  '@mlightcad/graphic-interface@3.0.9(@mlightcad/geometry-engine@3.0.7(@mlightcad/common@1.2.5))':
+  '@mlightcad/graphic-interface@3.0.10(@mlightcad/common@1.2.6)(@mlightcad/geometry-engine@3.0.8(@mlightcad/common@1.2.6))':
     dependencies:
-      '@mlightcad/geometry-engine': 3.0.7(@mlightcad/common@1.2.5)
+      '@mlightcad/common': 1.2.6
+      '@mlightcad/geometry-engine': 3.0.8(@mlightcad/common@1.2.6)
 
-  '@mlightcad/libredwg-converter@3.1.16(@mlightcad/data-model@1.3.16)':
+  '@mlightcad/libredwg-converter@3.1.17(@mlightcad/data-model@1.3.17)':
     dependencies:
-      '@mlightcad/data-model': 1.3.16
-      '@mlightcad/libredwg-web': 0.4.2
+      '@mlightcad/data-model': 1.3.17
+      '@mlightcad/libredwg-web': 0.4.3
 
-  '@mlightcad/libredwg-web@0.4.2': {}
+  '@mlightcad/libredwg-web@0.4.3': {}
 
   '@mlightcad/mtext-parser@1.3.1': {}
 
-  '@mlightcad/mtext-renderer@0.7.6(three@0.172.0)':
+  '@mlightcad/mtext-renderer@0.8.0(three@0.172.0)':
     dependencies:
       '@mlightcad/mtext-parser': 1.3.1
       '@mlightcad/shx-parser': 1.3.1
@@ -6655,9 +6691,9 @@ snapshots:
     dependencies:
       three: 0.172.0
 
-  '@mlightcad/ui-components@0.1.1(element-plus@2.10.4(vue@3.5.18(typescript@5.8.3)))(vue@3.5.18(typescript@5.8.3))':
+  '@mlightcad/ui-components@0.1.2(element-plus@2.12.0(vue@3.5.18(typescript@5.8.3)))(vue@3.5.18(typescript@5.8.3))':
     dependencies:
-      element-plus: 2.10.4(vue@3.5.18(typescript@5.8.3))
+      element-plus: 2.12.0(vue@3.5.18(typescript@5.8.3))
       vue: 3.5.18(typescript@5.8.3)
 
   '@nodelib/fs.scandir@2.1.5':
@@ -6878,6 +6914,8 @@ snapshots:
   '@pkgr/core@0.2.9': {}
 
   '@polka/url@1.0.0-next.29': {}
+
+  '@popperjs/core@2.11.8': {}
 
   '@rollup/pluginutils@5.2.0(rollup@4.45.1)':
     dependencies:
@@ -7380,9 +7418,9 @@ snapshots:
       vite: 5.4.19(@types/node@20.19.9)(sass@1.89.2)(terser@5.43.1)
       vue: 3.5.18(typescript@5.8.3)
 
-  '@vitejs/plugin-vue@5.2.4(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.89.2)(terser@5.43.1)(yaml@2.8.0))(vue@3.5.18(typescript@5.8.3))':
+  '@vitejs/plugin-vue@5.2.4(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0))(vue@3.5.18(typescript@5.8.3))':
     dependencies:
-      vite: 6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.89.2)(terser@5.43.1)(yaml@2.8.0)
+      vite: 6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0)
       vue: 3.5.18(typescript@5.8.3)
 
   '@volar/language-core@2.4.15':
@@ -8028,6 +8066,8 @@ snapshots:
 
   dayjs@1.11.13: {}
 
+  dayjs@1.11.19: {}
+
   de-indent@1.0.2: {}
 
   debug@2.6.9:
@@ -8130,6 +8170,26 @@ snapshots:
       async-validator: 4.2.5
       dayjs: 1.11.13
       escape-html: 1.0.3
+      lodash: 4.17.21
+      lodash-es: 4.17.21
+      lodash-unified: 1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.17.21)(lodash@4.17.21)
+      memoize-one: 6.0.0
+      normalize-wheel-es: 1.2.0
+      vue: 3.5.18(typescript@5.8.3)
+    transitivePeerDependencies:
+      - '@vue/composition-api'
+
+  element-plus@2.12.0(vue@3.5.18(typescript@5.8.3)):
+    dependencies:
+      '@ctrl/tinycolor': 3.6.1
+      '@element-plus/icons-vue': 2.3.2(vue@3.5.18(typescript@5.8.3))
+      '@floating-ui/dom': 1.7.2
+      '@popperjs/core': '@sxzz/popperjs-es@2.11.7'
+      '@types/lodash': 4.17.20
+      '@types/lodash-es': 4.17.12
+      '@vueuse/core': 9.13.0(vue@3.5.18(typescript@5.8.3))
+      async-validator: 4.2.5
+      dayjs: 1.11.19
       lodash: 4.17.21
       lodash-es: 4.17.21
       lodash-unified: 1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.17.21)(lodash@4.17.21)
@@ -9884,6 +9944,14 @@ snapshots:
     optionalDependencies:
       '@parcel/watcher': 2.5.1
 
+  sass@1.95.1:
+    dependencies:
+      chokidar: 4.0.3
+      immutable: 5.1.3
+      source-map-js: 1.2.1
+    optionalDependencies:
+      '@parcel/watcher': 2.5.1
+
   scule@1.3.0: {}
 
   semver@6.3.1: {}
@@ -10367,7 +10435,7 @@ snapshots:
     dependencies:
       vite: 5.4.19(@types/node@20.19.9)(sass@1.89.2)(terser@5.43.1)
 
-  vite-plugin-dts@4.5.4(@types/node@20.19.9)(rollup@4.45.1)(typescript@5.8.3)(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.89.2)(terser@5.43.1)(yaml@2.8.0)):
+  vite-plugin-dts@4.5.4(@types/node@20.19.9)(rollup@4.45.1)(typescript@5.8.3)(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0)):
     dependencies:
       '@microsoft/api-extractor': 7.52.10(@types/node@20.19.9)
       '@rollup/pluginutils': 5.2.0(rollup@4.45.1)
@@ -10380,17 +10448,17 @@ snapshots:
       magic-string: 0.30.17
       typescript: 5.8.3
     optionalDependencies:
-      vite: 6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.89.2)(terser@5.43.1)(yaml@2.8.0)
+      vite: 6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
       - supports-color
 
-  vite-plugin-lib-inject-css@1.3.0(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.89.2)(terser@5.43.1)(yaml@2.8.0)):
+  vite-plugin-lib-inject-css@1.3.0(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0)):
     dependencies:
       magic-string: 0.30.17
       picocolors: 1.1.1
-      vite: 6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.89.2)(terser@5.43.1)(yaml@2.8.0)
+      vite: 6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0)
 
   vite-plugin-static-copy@3.1.1(vite@5.4.19(@types/node@20.19.9)(sass@1.89.2)(terser@5.43.1)):
     dependencies:
@@ -10400,6 +10468,15 @@ snapshots:
       picocolors: 1.1.1
       tinyglobby: 0.2.14
       vite: 5.4.19(@types/node@20.19.9)(sass@1.89.2)(terser@5.43.1)
+
+  vite-plugin-static-copy@3.1.1(vite@5.4.19(@types/node@20.19.9)(sass@1.95.1)(terser@5.43.1)):
+    dependencies:
+      chokidar: 3.6.0
+      fs-extra: 11.3.0
+      p-map: 7.0.3
+      picocolors: 1.1.1
+      tinyglobby: 0.2.14
+      vite: 5.4.19(@types/node@20.19.9)(sass@1.95.1)(terser@5.43.1)
 
   vite-svg-loader@5.1.0(vue@3.5.18(typescript@5.8.3)):
     dependencies:
@@ -10417,7 +10494,18 @@ snapshots:
       sass: 1.89.2
       terser: 5.43.1
 
-  vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.89.2)(terser@5.43.1)(yaml@2.8.0):
+  vite@5.4.19(@types/node@20.19.9)(sass@1.95.1)(terser@5.43.1):
+    dependencies:
+      esbuild: 0.21.5
+      postcss: 8.5.6
+      rollup: 4.45.1
+    optionalDependencies:
+      '@types/node': 20.19.9
+      fsevents: 2.3.3
+      sass: 1.95.1
+      terser: 5.43.1
+
+  vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0):
     dependencies:
       esbuild: 0.25.8
       fdir: 6.4.6(picomatch@4.0.3)
@@ -10429,7 +10517,7 @@ snapshots:
       '@types/node': 20.19.9
       fsevents: 2.3.3
       jiti: 1.21.7
-      sass: 1.89.2
+      sass: 1.95.1
       terser: 5.43.1
       yaml: 2.8.0
 
@@ -10457,6 +10545,11 @@ snapshots:
       '@intlify/core-base': 10.0.8
       '@intlify/shared': 10.0.8
       '@vue/devtools-api': 6.6.4
+      vue: 3.5.18(typescript@5.8.3)
+
+  vue-pick-colors@1.8.0(@popperjs/core@2.11.8)(vue@3.5.18(typescript@5.8.3)):
+    dependencies:
+      '@popperjs/core': 2.11.8
       vue: 3.5.18(typescript@5.8.3)
 
   vue-tsc@2.2.12(typescript@5.8.3):

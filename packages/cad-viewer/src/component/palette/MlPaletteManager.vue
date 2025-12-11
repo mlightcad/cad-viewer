@@ -1,20 +1,22 @@
 <template>
-  <ml-tool-palette
-    class="ml-layer-manager"
-    v-model="store.dialogs.layerManager"
-    v-model:active-tab="activeTab"
-    :tabs="tabs"
-    :bottom-offset="30"
-  >
-    <template #tab-layerManager>
-      <div class="ml-layer-list-wrapper">
-        <ml-layer-list :editor="props.editor" />
-      </div>
-    </template>
-    <template #tab-entityProperties>
-      <ml-entity-properties :entity-props-list="properties" />
-    </template>
-  </ml-tool-palette>
+  <el-config-provider :size="'small'">
+    <ml-tool-palette
+      class="ml-layer-manager"
+      v-model="store.dialogs.layerManager"
+      v-model:active-tab="activeTab"
+      :tabs="tabs"
+      :bottom-offset="30"
+    >
+      <template #tab-layerManager>
+        <div class="ml-layer-list-wrapper">
+          <ml-layer-list :editor="props.editor" />
+        </div>
+      </template>
+      <template #tab-entityProperties>
+        <ml-entity-properties :entity-props-list="properties" />
+      </template>
+    </ml-tool-palette>
+  </el-config-provider>
 </template>
 
 <script setup lang="ts">

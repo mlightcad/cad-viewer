@@ -6,6 +6,8 @@ import {
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
+import { AcEdLayerInfo } from '../editor'
+
 /**
  * Statistics for a CAD layer including name and batched rendering metrics.
  *
@@ -70,12 +72,13 @@ export class AcTrLayer {
 
   /**
    * Construct one instance of this class
-   * @param name Input layer name
+   * @param layer - Layer information
    */
-  constructor(name: string) {
+  constructor(layer: AcEdLayerInfo) {
     this._group = new AcTrBatchedGroup()
-    this._name = name
+    this._name = layer.name
     this._box = new THREE.Box3()
+    this._group.visible = !(layer.isFrozen || layer.isOff)
   }
 
   /**
@@ -127,6 +130,24 @@ export class AcTrLayer {
   }
 
   /**
+   * Update layer information of this layer
+   * @param value - New layer information
+   */
+  update(value: AcEdLayerInfo) {
+    this._name = value.name
+    this._group.visible = !(value.isFrozen || value.isOff)
+  }
+
+  /**
+   * Find entities associated with the specified material and replace their material with new material
+   * @param oldId - Id of the old material
+   * @param material - The new material associated with entities
+   */
+  updateMaterial(oldId: number, material: THREE.Material) {
+    this._group.updateMaterial(oldId, material)
+  }
+
+  /**
    * Re-render points with latest point style settings
    * @param displayMode Input display mode of points
    */
@@ -171,7 +192,7 @@ export class AcTrLayer {
    * @param objectId Input the object id of the entity to remove
    * @returns Return true if remove the specified entity successfully. Otherwise, return false.
    */
-  remove(_objectId: AcDbObjectId): boolean {
+  removeEntity(_objectId: AcDbObjectId): boolean {
     // TODO: Finish it
     throw new Error('Not implemented yet!')
   }
@@ -181,7 +202,7 @@ export class AcTrLayer {
    * @param entity Input the entity to update
    * @returns Return true if update the specified entity successfully. Otherwise, return false.
    */
-  update(entity: AcTrEntity): boolean {
+  updateEntity(entity: AcTrEntity): boolean {
     // TODO: Finish it
     this._group.add(entity)
     return true

@@ -2,7 +2,7 @@ import * as THREE from 'three'
 
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
-import { AcTrMaterialUtil } from '../util/AcTrMaterialUtil'
+import { AcTrMaterialUtil } from '../util'
 import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
 import { AcTrBatchedLine } from './AcTrBatchedLine'
 import { AcTrBatchedMesh } from './AcTrBatchedMesh'
@@ -198,25 +198,29 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   clear() {
-    this.clearPoint()
-    this.clearLine()
-    this.clearMesh()
+    this.groups.forEach(group => {
+      group.forEach(value => {
+        value.dispose()
+      })
+      group.clear()
+    })
     return this
   }
 
-  clearPoint() {
-    this.clearBatch(this._pointBatches)
-    this.clearBatch(this._pointSymbolBatches)
-  }
-
-  clearLine() {
-    this.clearBatch(this._lineBatches)
-    this.clearBatch(this._lineWithIndexBatches)
-  }
-
-  clearMesh() {
-    this.clearBatch(this._meshBatches)
-    this.clearBatch(this._meshWithIndexBatches)
+  /**
+   * Update material of batch objects
+   * @param oldId - Id of the old material associated with batch objects
+   * @param material - The new material associated with the batch object
+   */
+  updateMaterial(oldId: number, material: THREE.Material) {
+    this.groups.forEach(group => {
+      const batch = group.get(oldId)
+      if (batch) {
+        batch.material = material
+        // @ts-expect-error batch is from group and it must be type-safe.
+        group.set(material.id, batch)
+      }
+    })
   }
 
   /**
@@ -298,6 +302,17 @@ export class AcTrBatchedGroup extends THREE.Group {
 
   unselect(objectId: string) {
     this.unhighlight(objectId, this._selectedObjects)
+  }
+
+  protected get groups() {
+    return [
+      this._lineBatches,
+      this._lineWithIndexBatches,
+      this._meshBatches,
+      this._meshWithIndexBatches,
+      this._pointBatches,
+      this._pointSymbolBatches
+    ]
   }
 
   protected highlight(objectId: string, containerGroup: THREE.Group) {
@@ -414,18 +429,6 @@ export class AcTrBatchedGroup extends THREE.Group {
       batches = this._meshWithIndexBatches
     }
     return batches
-  }
-
-  private clearBatch(
-    batch:
-      | Map<number, AcTrBatchedPoint>
-      | Map<number, AcTrBatchedLine>
-      | Map<number, AcTrBatchedMesh>
-  ) {
-    batch.forEach(value => {
-      value.dispose()
-    })
-    batch.clear()
   }
 
   private getBatchedGeometrySize(

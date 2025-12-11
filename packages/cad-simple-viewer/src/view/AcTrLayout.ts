@@ -252,9 +252,9 @@ export class AcTrLayout {
    * @param objectId - Input the object id of the entity to remove
    * @returns Return true if remove the specified entity successfully. Otherwise, return false.
    */
-  remove(objectId: AcDbObjectId) {
+  removeEntity(objectId: AcDbObjectId) {
     for (const [_, layer] of this._layers) {
-      if (layer.remove(objectId)) return true
+      if (layer.removeEntity(objectId)) return true
     }
     return false
   }
@@ -267,7 +267,7 @@ export class AcTrLayout {
    */
   updateEntity(entity: AcTrEntity) {
     for (const [_, layer] of this._layers) {
-      if (layer.update(entity)) return true
+      if (layer.updateEntity(entity)) return true
     }
     return false
   }
@@ -282,35 +282,35 @@ export class AcTrLayout {
   }
 
   /**
-   * Adds layer group into this layout. If the layer already exist, do nothing.
+   * Adds layer into this layout. If the layer already exist, do nothing.
    *
    * @param name - Input layer name
-   * @returns Return added layer group or the existing layer group in this layout if one layer
+   * @returns Return added layer or the existing layer in this layout if one layer
    * group already exists in this layout.
    */
-  addLayer(layer: AcEdLayerInfo) {
-    const name = layer.name
-    let layerGroup = this._layers.get(name)
-    if (layerGroup === undefined) {
-      layerGroup = new AcTrLayer(name)
-      layerGroup.visible = !(layer.isFrozen || layer.isOff)
-      this._layers.set(name, layerGroup)
-      this._group.add(layerGroup.internalObject)
+  addLayer(info: AcEdLayerInfo) {
+    const name = info.name
+    let layer = this._layers.get(name)
+    if (layer === undefined) {
+      layer = new AcTrLayer(info)
+      this._layers.set(name, layer)
+      this._group.add(layer.internalObject)
     }
     return layer
   }
 
   /**
-   * Updates layer group information (such as visibility). If the layer doesn't exist, do nothing.
-   * @param layerName Input layer information
+   * Updates layer information (such as visibility). If the layer doesn't exist, do nothing.
+   * @param info - The layer information
    * @returns Returns the updated layer group.
    */
-  updateLayer(layer: AcEdLayerInfo) {
-    const layerGroup = this._layers.get(layer.name)
-    if (layerGroup) {
-      layerGroup.visible = !(layer.isFrozen || layer.isOff)
+  updateLayer(info: AcEdLayerInfo) {
+    const layer = this._layers.get(info.name)
+    if (layer) {
+      // TODO: Handle layer name changes
+      layer.update(info)
     }
-    return layerGroup
+    return layer
   }
 
   /**

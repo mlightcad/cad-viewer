@@ -7,6 +7,7 @@ import {
 import { AcEdLayerInfo } from 'editor'
 import * as THREE from 'three'
 
+import { AcTrLayer } from './AcTrLayer'
 import { AcTrLayout, AcTrLayoutStats } from './AcTrLayout'
 
 /**
@@ -258,17 +259,23 @@ export class AcTrScene {
   }
 
   addLayer(layer: AcEdLayerInfo) {
+    const updatedLayers: AcTrLayer[] = []
     this._layers.set(layer.name, layer)
     this._layouts.forEach(layout => {
-      layout.addLayer(layer)
+      const updatedLayer = layout.addLayer(layer)
+      if (updatedLayer) updatedLayers.push(updatedLayer)
     })
+    return updatedLayers
   }
 
   updateLayer(layer: AcEdLayerInfo) {
+    const updatedLayers: AcTrLayer[] = []
     this._layers.set(layer.name, layer)
     this._layouts.forEach(layout => {
-      layout.updateLayer(layer)
+      const updatedLayer = layout.updateLayer(layer)
+      if (updatedLayer) updatedLayers.push(updatedLayer)
     })
+    return updatedLayers
   }
 
   /**
@@ -318,7 +325,7 @@ export class AcTrScene {
    */
   removeEntity(objectId: AcDbObjectId) {
     for (const [_, layout] of this._layouts) {
-      if (layout.remove(objectId)) return true
+      if (layout.removeEntity(objectId)) return true
     }
     return false
   }

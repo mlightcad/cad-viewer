@@ -10,8 +10,8 @@ export class AcTrLinePatternShaders {
     pattern: AcGiLineTypePatternElement[],
     color: number,
     scale: number,
-    viewportScaleUniform: { value: number },
-    cameraZoomUniform: { value: number }
+    viewportScaleUniform: number,
+    cameraZoomUniform: number
   ): THREE.Material {
     let totalLength = 0.0
 
@@ -38,8 +38,8 @@ export class AcTrLinePatternShaders {
       }
     ])
 
-    uniforms.u_viewportScale = viewportScaleUniform
-    uniforms.u_cameraZoom = cameraZoomUniform
+    uniforms.u_viewportScale = { value: viewportScaleUniform }
+    uniforms.u_cameraZoom = { value: cameraZoomUniform }
 
     const vertexShader = /*glsl*/ `
             attribute float lineDistance;

@@ -70,7 +70,7 @@ export const colorName = (colorKeyName: string) => {
     return colorKeyName
   } else {
     const t = i18n.global.t
-    const key = 'entity.color.' + colorKeyName
+    const key = 'entity.color.' + colorKeyName.toLowerCase()
     return t(key, colorKeyName, { missingWarn: false })
   }
 }

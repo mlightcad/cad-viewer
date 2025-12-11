@@ -73,9 +73,18 @@ export default {
         name: '名称',
         on: '可见',
         color: '颜色',
-        zoomToLayer: '已缩放到所点击的图层'
+        zoomToLayer: '已缩放到所点击的图层"{layer}"'
       }
     }
+  },
+  colorDropdown: {
+    custom: '自定义'
+  },
+  colorIndexPicker: {
+    color: '颜色：',
+    colorIndex: '颜色索引：',
+    inputPlaceholder: '0-256, BYLAYER, BYBLOCK',
+    rgb: 'RGB: '
   },
   entityInfo: {
     color: '颜色',

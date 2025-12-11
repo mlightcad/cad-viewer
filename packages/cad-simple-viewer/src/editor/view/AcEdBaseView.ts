@@ -2,6 +2,7 @@ import {
   AcCmEventManager,
   AcDbEntity,
   AcDbLayerTableRecord,
+  AcDbLayerTableRecordAttrs,
   AcDbLayout,
   AcDbObjectId,
   AcGeBox2d,
@@ -470,9 +471,13 @@ export abstract class AcEdBaseView {
 
   /**
    * Update the specified layer in the current scene
-   * @param layer Input the layer to update
+   * @param layer - The layer to update
+   * @param changes - Changes made to the layer
    */
-  abstract updateLayer(layer: AcDbLayerTableRecord): void
+  abstract updateLayer(
+    layer: AcDbLayerTableRecord,
+    changes: Partial<AcDbLayerTableRecordAttrs>
+  ): void
 
   /**
    * Add the specified transient entity or entities in the current scene.

@@ -7,13 +7,3 @@ body,
 html {
   height: 100%;
 }
-
-.el-dialog {
-  padding-bottom: 8px;
-  padding-top: 8px;
-}
-
-.el-dialog__headerbtn {
-  height: 36px;
-  width: 36px;
-}

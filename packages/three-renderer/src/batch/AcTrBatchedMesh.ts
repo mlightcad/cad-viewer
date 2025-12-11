@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import { AcTrCommonUtil } from '../util/AcTrCommonUtil'
+import { AcTrCommonUtil } from '../util'
 import {
   AcTrBatchedGeometryInfo,
   AcTrBatchGeometryUserData,

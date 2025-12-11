@@ -16,5 +16,10 @@ export default {
   pointStyleDlg: {
     title: 'Point Style',
     pointSize: 'Point Size:'
+  },
+  colorPickerDlg: {
+    title: 'Select Color',
+    aciTabTitle: 'Color Index',
+    rgbTabTitle: 'True Color'
   }
 }

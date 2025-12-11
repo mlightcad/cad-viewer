@@ -66,7 +66,7 @@ export class AcApContext {
 
     // Update layer information such as visibility
     doc.database.events.layerModified.addEventListener(args => {
-      this._view.updateLayer(args.layer)
+      this._view.updateLayer(args.layer, args.changes)
     })
 
     // Set point display mode

@@ -1,4 +1,5 @@
 import {
+  AcCmColor,
   AcGeArea2d,
   AcGeBox2d,
   AcGeCircArc3d,
@@ -7,9 +8,9 @@ import {
   AcGePoint3dLike,
   AcGiFontMapping,
   AcGiImageStyle,
-  AcGiLineStyle,
   AcGiMTextData,
   AcGiRenderer,
+  AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
 
@@ -22,10 +23,39 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   private _container: Array<string>
   private _bbox: AcGeBox2d
   private _basePoint?: AcGePoint3d
+  private _subEntityTraits: AcGiSubEntityTraits
 
   constructor() {
     this._container = new Array<string>()
     this._bbox = new AcGeBox2d()
+    this._subEntityTraits = {
+      color: new AcCmColor(),
+      rgbColor: 0x000000,
+      lineType: {
+        type: 'ByLayer',
+        name: 'Continuous',
+        standardFlag: 0,
+        description: 'Solid line',
+        totalPatternLength: 0
+      },
+      lineTypeScale: 1,
+      lineWeight: 1,
+      fillType: {
+        solidFill: true,
+        patternAngle: 0,
+        patternLines: []
+      },
+      transparency: 0,
+      thickness: 0,
+      layer: '0'
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  get subEntityTraits() {
+    return this._subEntityTraits
   }
 
   /**
@@ -89,7 +119,7 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   /**
    * @inheritdoc
    */
-  lines(points: AcGePoint3dLike[], _style: AcGiLineStyle) {
+  lines(points: AcGePoint3dLike[]) {
     const entity = new AcSvgLine(points)
     this._container.push(entity.svg)
     this._bbox.union(entity.box)
@@ -99,12 +129,7 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   /**
    * @inheritdoc
    */
-  lineSegments(
-    _array: Float32Array,
-    _itemSize: number,
-    _indices: Uint16Array,
-    _style: AcGiLineStyle
-  ) {
+  lineSegments(_array: Float32Array, _itemSize: number, _indices: Uint16Array) {
     // TODO: Implement it
     return _tempEntity
   }

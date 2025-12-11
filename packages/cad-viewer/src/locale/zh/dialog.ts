@@ -16,5 +16,10 @@ export default {
   pointStyleDlg: {
     title: '点样式',
     pointSize: '点大小:'
+  },
+  colorPickerDlg: {
+    title: '选择颜色',
+    aciTabTitle: '颜色索引',
+    rgbTabTitle: '真彩色'
   }
 }

@@ -1,4 +1,8 @@
-import { AcGePoint3dLike, AcGiPointStyle } from '@mlightcad/data-model'
+import {
+  AcGePoint3dLike,
+  AcGiPointStyle,
+  AcGiSubEntityTraits
+} from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
@@ -15,6 +19,7 @@ export class AcTrPoint extends AcTrEntity {
 
   constructor(
     point: AcGePoint3dLike,
+    traits: AcGiSubEntityTraits,
     style: AcGiPointStyle,
     styleManager: AcTrStyleManager
   ) {
@@ -32,7 +37,7 @@ export class AcTrPoint extends AcTrEntity {
       new THREE.BufferGeometry().setFromPoints([_vector3.copy(point)])
     geometry.computeBoundingBox()
     if (geometry.boundingBox) this.box.union(geometry.boundingBox)
-    const material = this.styleManager.getPointsMaterial(style.color)
+    const material = this.styleManager.getPointsMaterial(traits)
     const pointObj = new THREE.Points(geometry, material)
     // Add the flag to check intersection using bounding box of the mesh
     pointObj.userData.bboxIntersectionCheck = true
@@ -43,7 +48,7 @@ export class AcTrPoint extends AcTrEntity {
       const geometry = pointSymbol.line
       geometry.computeBoundingBox()
       if (geometry.boundingBox) this.box.union(geometry.boundingBox)
-      const material = this.styleManager.getLineBasicMaterial(style.color)
+      const material = this.styleManager.getLineMaterial(traits, true)
       const lineSegmentsObj = new THREE.LineSegments(geometry, material)
       // Add the flag to check intersection using bounding box of the mesh
       lineSegmentsObj.userData.bboxIntersectionCheck = true
