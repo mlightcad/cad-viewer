@@ -7,7 +7,8 @@ export default {
     placeholder: '输入命令',
     showMessages: '显示消息历史',
     canceled: '*已取消*',
-    noHistory: '(无历史记录)'
+    noHistory: '(无历史记录)',
+    close: '关闭命令行'
   },
   inputManager: {
     firstCorner: '指定第一个角点或',

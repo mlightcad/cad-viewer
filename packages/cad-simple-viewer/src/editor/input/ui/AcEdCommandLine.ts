@@ -1,4 +1,4 @@
-import { AcApDocManager } from '../../../app'
+import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
 import { AcEdCommandStack } from '../../command'
 
@@ -29,7 +29,7 @@ export class AcEdCommandLine {
   wrapper!: HTMLDivElement
   bar!: HTMLDivElement
   leftGroup!: HTMLDivElement
-  termGlyph!: HTMLDivElement
+  closeBtn!: HTMLDivElement        // renamed from termGlyph
   downBtn!: HTMLButtonElement
   input!: HTMLDivElement
   upBtn!: HTMLButtonElement
@@ -187,17 +187,22 @@ export class AcEdCommandLine {
         height: 100%;
       }
 
-      .ml-cli-term {
+      .ml-cli-close-btn {
         width: 18px;
         height: 16px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 3px;
-        border: 1px solid rgba(0, 0, 0, 0.15);
         font-weight: 700;
         color: #222;
         font-size: 12px;
+        background: transparent;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .ml-cli-close-btn:hover {
+        background: rgba(0,0,0,0.10);
       }
 
       .ml-cli-down,
@@ -366,10 +371,12 @@ export class AcEdCommandLine {
     this.leftGroup.className = 'ml-cli-left'
     this.bar.appendChild(this.leftGroup)
 
-    this.termGlyph = document.createElement('div')
-    this.termGlyph.className = 'ml-cli-term'
-    this.termGlyph.textContent = '>'
-    this.leftGroup.appendChild(this.termGlyph)
+    // Close button (renamed from termGlyph)
+    this.closeBtn = document.createElement('div')
+    this.closeBtn.className = 'ml-cli-close-btn'
+    this.closeBtn.title = this.localize('main.commandLine.close', 'Close')
+    this.closeBtn.innerHTML = '&#10005;'
+    this.leftGroup.appendChild(this.closeBtn)
 
     this.downBtn = document.createElement('button')
     this.downBtn.className = 'ml-cli-down'
@@ -410,6 +417,13 @@ export class AcEdCommandLine {
 
   /** Bind event listeners */
   bindEvents() {
+    // Close command line when clicking the button
+    this.closeBtn.addEventListener('click', e => {
+      e.stopPropagation()
+      this.visible = false
+      AcApSettingManager.instance.isShowCommandLine = false
+    })
+
     this.downBtn.addEventListener('click', e => {
       e.stopPropagation()
       this.isCmdPopupOpen = !this.isCmdPopupOpen

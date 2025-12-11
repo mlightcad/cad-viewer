@@ -7,7 +7,8 @@ export default {
     placeholder: 'Type command',
     showMessages: 'Show message history',
     canceled: '*Canceled*',
-    noHistory: '(no history)'
+    noHistory: '(no history)',
+    close: 'Close command line'
   },
   inputManager: {
     firstCorner: 'Specify the first corner or',
