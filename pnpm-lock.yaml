@@ -195,8 +195,8 @@ importers:
         specifier: 0.0.9
         version: 0.0.9(three@0.172.0)
       '@mlightcad/ui-components':
-        specifier: ^0.1.2
-        version: 0.1.2(element-plus@2.12.0(vue@3.5.18(typescript@5.8.3)))(vue@3.5.18(typescript@5.8.3))
+        specifier: ^0.1.3
+        version: 0.1.3(element-plus@2.12.0(vue@3.5.18(typescript@5.8.3)))(vue@3.5.18(typescript@5.8.3))
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
@@ -1602,8 +1602,8 @@ packages:
     peerDependencies:
       three: ^0.172.0
 
-  '@mlightcad/ui-components@0.1.2':
-    resolution: {integrity: sha512-EmvcWkqRD5efn6WlkWEOX/7WgJGN5EfVx9ZdTTHPkvVI+13dzvEHW3CW/QwcixtjIF/LRpQTXQtsRdOAbsjwfA==}
+  '@mlightcad/ui-components@0.1.3':
+    resolution: {integrity: sha512-SUMEbmxZF60yAbE2y3Sy3BXAUYg1CwxT3nNhIZCKGjMpCx3pDC2FN6nj/R98PNvrm9IEdFbM/PEnw/raqP928Q==}
     peerDependencies:
       element-plus: ^2.12.0
       vue: ^3.4.21
@@ -6691,7 +6691,7 @@ snapshots:
     dependencies:
       three: 0.172.0
 
-  '@mlightcad/ui-components@0.1.2(element-plus@2.12.0(vue@3.5.18(typescript@5.8.3)))(vue@3.5.18(typescript@5.8.3))':
+  '@mlightcad/ui-components@0.1.3(element-plus@2.12.0(vue@3.5.18(typescript@5.8.3)))(vue@3.5.18(typescript@5.8.3))':
     dependencies:
       element-plus: 2.12.0(vue@3.5.18(typescript@5.8.3))
       vue: 3.5.18(typescript@5.8.3)
