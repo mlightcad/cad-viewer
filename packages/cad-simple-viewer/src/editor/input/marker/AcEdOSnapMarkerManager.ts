@@ -1,4 +1,4 @@
-import { AcGePoint2dLike } from '@mlightcad/geometry-engine'
+import { AcGePoint2dLike } from '@mlightcad/data-model'
 
 import { AcEdBaseView } from '../../view'
 import { AcEdMarker, AcEdMarkerType } from './AcEdMarker'

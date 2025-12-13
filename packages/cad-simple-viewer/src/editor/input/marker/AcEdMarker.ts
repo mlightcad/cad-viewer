@@ -1,4 +1,4 @@
-import { AcGePoint2dLike } from '@mlightcad/geometry-engine'
+import { AcGePoint2dLike } from '@mlightcad/data-model'
 
 /**
  * Supported marker shapes.
