@@ -1,5 +1,13 @@
 # @mlightcad/cad-simple-viewer-example
 
+## 1.3.1
+
+### Patch Changes
+
+- feat: upgrade dependencies to fix issue on reading color from dwg file
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.3.1
+
 ## 1.3.0
 
 ### Minor Changes

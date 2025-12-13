@@ -1,5 +1,6 @@
 import {
   AcCmColor,
+  AcCmTransparency,
   AcGeArea2d,
   AcGeBox2d,
   AcGeCircArc3d,
@@ -45,7 +46,7 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
         patternAngle: 0,
         patternLines: []
       },
-      transparency: 0,
+      transparency: new AcCmTransparency(),
       thickness: 0,
       layer: '0'
     }

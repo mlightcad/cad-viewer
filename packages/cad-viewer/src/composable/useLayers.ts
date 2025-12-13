@@ -13,7 +13,7 @@ export interface LayerInfo {
   isInUse: boolean
   isOn: boolean
   isPlottable: boolean
-  transparency: number
+  transparency: string
   linetype: string
   lineWeight: number
 }
@@ -33,7 +33,7 @@ export function useLayers(editor: AcApDocManager) {
         isInUse: layer.isInUse,
         isOn: !layer.isOff,
         isPlottable: layer.isPlottable,
-        transparency: layer.transparency,
+        transparency: layer.transparency.toString(),
         linetype: layer.linetype,
         lineWeight: layer.lineWeight
       })
@@ -55,7 +55,7 @@ export function useLayers(editor: AcApDocManager) {
       if (changes.isOff != null) layer.isOn = !changes.isOff
       if (changes.isPlottable != null) layer.isPlottable = changes.isPlottable
       if (changes.transparency != null)
-        layer.transparency = changes.transparency
+        layer.transparency = changes.transparency.toString()
       if (changes.linetype != null) layer.linetype = changes.linetype
       if (changes.lineWeight != null) layer.lineWeight = changes.lineWeight
     }

@@ -1,4 +1,4 @@
-import { AcCmColor, AcGiSubEntityTraits } from '@mlightcad/data-model'
+import { AcCmColor, AcCmTransparency, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import { StyleTraits } from '@mlightcad/mtext-renderer'
 
 export class AcTrSubEntityTraitsUtil {
@@ -20,7 +20,7 @@ export class AcTrSubEntityTraitsUtil {
         patternAngle: 0,
         patternLines: []
       },
-      transparency: 0,
+      transparency: new AcCmTransparency(),
       thickness: 0,
       layer: '0'
     }
@@ -48,7 +48,7 @@ export class AcTrSubEntityTraitsUtil {
         patternAngle: 0,
         patternLines: []
       },
-      transparency: 0,
+      transparency: new AcCmTransparency(),
       thickness: 0,
       layer: traits.layer ?? '0'
     }
