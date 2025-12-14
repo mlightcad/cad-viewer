@@ -1,3 +1,5 @@
+import { AcGePoint2dLike } from '@mlightcad/data-model'
+
 /**
  * Describes the raw text values from the X and Y fields in {@link AcEdFloatingInput}.
  */
@@ -69,16 +71,14 @@ export type AcEdFloatingInputCancelCallback = () => void
  * Callback invoked on mousemove to update the preview geometry.
  */
 export type AcEdFloatingInputDrawPreviewCallback = (
-  x: number,
-  y: number
+  pos: AcGePoint2dLike
 ) => void
 
 /**
  * Callback used to dynamically compute input values for the floating input fields.
  */
 export type AcEdFloatingInputDynamicValueCallback<T> = (
-  x: number,
-  y: number
+  pos: AcGePoint2dLike
 ) => AcEdFloatingInputDynamicValue<T>
 
 /**
@@ -104,6 +104,11 @@ export interface AcEdFloatingInputOptions<T> {
    * Useful for describing expected input (e.g., "Specify next point").
    */
   message?: string
+
+  /**
+   * The flag to indicate whether to disable osnap.
+   */
+  disableOSnap?: boolean
 
   /**
    * Custom validation function.

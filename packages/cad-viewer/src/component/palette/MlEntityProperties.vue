@@ -148,10 +148,13 @@
 </template>
 
 <script setup lang="ts">
-import type {
+import {
+  AcCmColor,
+  AcCmTransparency,
   AcDbEntityProperties,
   AcDbEntityPropertyGroup,
-  AcDbEntityRuntimeProperty
+  AcDbEntityRuntimeProperty,
+  AcGiLineWeight
 } from '@mlightcad/data-model'
 import { ElMessage } from 'element-plus'
 import { computed, ref } from 'vue'
@@ -220,7 +223,13 @@ function formatDisplayValue(row: MlDisplayPropertyRow): string {
     }
 
     case 'color':
-      return String(v)
+      return (v as AcCmColor).toString()
+
+    case 'lineweight':
+      return AcGiLineWeight[v as number]
+
+    case 'transparency':
+      return (v as AcCmTransparency).toString()
 
     default:
       return v != null ? String(v) : ''

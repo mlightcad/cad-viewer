@@ -1,10 +1,6 @@
-import {
-  AcGePoint2dLike,
-  AcGePoint3d,
-  AcGePoint3dLike
-} from '@mlightcad/data-model'
+import { AcGePoint2dLike, AcGePoint3d } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../..'
+import { AcEdBaseView } from '../../view'
 
 /**
  * Options for the AcEdRubberBand preview.
@@ -78,7 +74,7 @@ export class AcEdRubberBand {
    * Starts the rubber-band preview.
    * @param basePoint The starting point in world coordinates.
    */
-  start(basePoint: AcGePoint3dLike, options?: AcEdRubberBandOptions) {
+  start(basePoint: AcGePoint2dLike, options?: AcEdRubberBandOptions) {
     this.basePoint = new AcGePoint3d(basePoint)
     this.options = options || {}
 

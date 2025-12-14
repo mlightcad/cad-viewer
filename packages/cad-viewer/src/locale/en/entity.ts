@@ -201,6 +201,7 @@ export default {
     linetypeScale: 'Linetype Scale',
     lineWeight: 'Lineweight',
     thickness: 'Thickness',
+    transparency: 'Transparency',
     startX: 'Start X',
     startY: 'Start Y',
     startZ: 'Start Z',

@@ -201,6 +201,7 @@ export default {
     linetypeScale: '线型比例',
     lineWeight: '线宽',
     thickness: '厚度',
+    transparency: '透明度',
     startX: '起点 X',
     startY: '起点 Y',
     startZ: '起点 Z',

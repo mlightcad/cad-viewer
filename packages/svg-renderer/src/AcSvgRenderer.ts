@@ -9,6 +9,7 @@ import {
   AcGePoint3dLike,
   AcGiFontMapping,
   AcGiImageStyle,
+  AcGiLineWeight,
   AcGiMTextData,
   AcGiRenderer,
   AcGiSubEntityTraits,
@@ -40,7 +41,7 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
         totalPatternLength: 0
       },
       lineTypeScale: 1,
-      lineWeight: 1,
+      lineWeight: AcGiLineWeight.ByLayer,
       fillType: {
         solidFill: true,
         patternAngle: 0,

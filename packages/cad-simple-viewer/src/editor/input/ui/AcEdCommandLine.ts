@@ -29,7 +29,7 @@ export class AcEdCommandLine {
   wrapper!: HTMLDivElement
   bar!: HTMLDivElement
   leftGroup!: HTMLDivElement
-  closeBtn!: HTMLDivElement        // renamed from termGlyph
+  closeBtn!: HTMLDivElement // renamed from termGlyph
   downBtn!: HTMLButtonElement
   input!: HTMLDivElement
   upBtn!: HTMLButtonElement

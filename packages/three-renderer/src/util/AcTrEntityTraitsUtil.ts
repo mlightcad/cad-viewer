@@ -1,4 +1,9 @@
-import { AcCmColor, AcCmTransparency, AcGiSubEntityTraits } from '@mlightcad/data-model'
+import {
+  AcCmColor,
+  AcCmTransparency,
+  AcGiLineWeight,
+  AcGiSubEntityTraits
+} from '@mlightcad/data-model'
 import { StyleTraits } from '@mlightcad/mtext-renderer'
 
 export class AcTrSubEntityTraitsUtil {
@@ -14,7 +19,7 @@ export class AcTrSubEntityTraitsUtil {
         totalPatternLength: 0
       },
       lineTypeScale: 1,
-      lineWeight: 1,
+      lineWeight: AcGiLineWeight.ByLayer,
       fillType: {
         solidFill: true,
         patternAngle: 0,
@@ -42,7 +47,7 @@ export class AcTrSubEntityTraitsUtil {
         totalPatternLength: 0
       },
       lineTypeScale: 1,
-      lineWeight: 1,
+      lineWeight: AcGiLineWeight.ByLayer,
       fillType: {
         solidFill: true,
         patternAngle: 0,

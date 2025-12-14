@@ -1,5 +1,14 @@
-import { AcGePoint2dLike } from '@mlightcad/data-model'
+import {
+  acdbHostApplicationServices,
+  AcDbOsnapMode,
+  AcGePoint2d,
+  AcGePoint2dLike,
+  AcGePoint3d,
+  AcGePoint3dLike
+} from '@mlightcad/data-model'
 
+import { AcEdBaseView } from '../../view'
+import { AcEdMarkerManager } from '../marker'
 import { AcEdFloatingInputBoxes } from './AcEdFloatingInputBoxes'
 import {
   AcEdFloatingInputCancelCallback,
@@ -28,10 +37,11 @@ import {
  * remain clean and free from DOM-handling logic.
  */
 export class AcEdFloatingInput<T> {
-  /**
-   * Mouse position in the parent element of the floating input.
-   */
-  mousePos?: AcGePoint2dLike
+  /** Stores last confirmed point */
+  lastPoint: AcGePoint2d | null = null
+
+  /** The view associated with this input operation */
+  protected view: AcEdBaseView
 
   /** Inject styles only once */
   private static stylesInjected = false
@@ -50,6 +60,14 @@ export class AcEdFloatingInput<T> {
    * X and Y Input elements.
    */
   private inputs: AcEdFloatingInputBoxes<T>
+
+  /**
+   * OSNAP marker manager to display and hide OSNAP marker
+   */
+  private osnapMarkerManager?: AcEdMarkerManager
+
+  /** Stores last confirmed osnap point */
+  private lastOSnapPoint?: AcGePoint3dLike
 
   /**
    * Callback functions
@@ -94,10 +112,16 @@ export class AcEdFloatingInput<T> {
   /**
    * Constructs a new floating input widget with the given options.
    *
+   * @param view - The view associated with the floating input
    * @param options Configuration object controlling behavior, callbacks,
    *                validation, and display mode.
    */
-  constructor(options: AcEdFloatingInputOptions<T>) {
+  constructor(view: AcEdBaseView, options: AcEdFloatingInputOptions<T>) {
+    this.view = view
+    if (!options.disableOSnap) {
+      this.osnapMarkerManager = new AcEdMarkerManager(view)
+    }
+
     this.parent = options.parent ?? document.body
     this.validateFn = options.validate
     this.getDynamicValue = options.getDynamicValue
@@ -241,6 +265,7 @@ export class AcEdFloatingInput<T> {
     if (this.disposed) return
     this.disposed = true
 
+    this.osnapMarkerManager?.clear()
     this.inputs.dispose()
     this.removeListener(true)
     this.container.remove()
@@ -259,7 +284,6 @@ export class AcEdFloatingInput<T> {
       x: pos.x - parentRect.left,
       y: pos.y - parentRect.top
     }
-    this.mousePos = mousePos
 
     // Compute position within parent bounds
     let left = mousePos.x + 10
@@ -323,7 +347,20 @@ export class AcEdFloatingInput<T> {
     const mousePos = this.setPosition({ x: e.x, y: e.y })
 
     // Update input values if empty using dynamic value callback
-    const defaults = this.getDynamicValue(mousePos.x, mousePos.y)
+    const wcsMousePos = this.view.cwcs2Wcs(mousePos)
+
+    // Show OSNAP Point
+    if (this.osnapMarkerManager) {
+      this.osnapMarkerManager.hideMarker()
+      this.lastOSnapPoint = this.getOSnapPoint()
+      if (this.lastOSnapPoint) {
+        wcsMousePos.x = this.lastOSnapPoint.x
+        wcsMousePos.y = this.lastOSnapPoint.y
+        this.osnapMarkerManager.showMarker(this.lastOSnapPoint)
+      }
+    }
+
+    const defaults = this.getDynamicValue(wcsMousePos)
     this.inputs.setValue(defaults.raw)
 
     // If inputs lost focus due to some reason, let's try to focus them again.
@@ -331,7 +368,7 @@ export class AcEdFloatingInput<T> {
       this.inputs.focus()
     }
 
-    this.drawPreview?.(mousePos.x, mousePos.y)
+    this.drawPreview?.(wcsMousePos)
   }
 
   /**
@@ -342,8 +379,88 @@ export class AcEdFloatingInput<T> {
   private handleClick(e: MouseEvent) {
     if (!this.visible) return
 
-    const mousePos = this.setPosition({ x: e.x, y: e.y })
-    const defaults = this.getDynamicValue(mousePos.x, mousePos.y)
+    const mousePos = this.setPosition(e)
+    const wcsMousePos = this.view.cwcs2Wcs(mousePos)
+    const defaults = this.getDynamicValue(wcsMousePos)
+
+    this.lastPoint = wcsMousePos
     this.onCommit?.(defaults.value)
+  }
+
+  /**
+   * Picks entities that intersect a hit-region centered at the specified point
+   * in world coordinates.
+   *
+   * The hit-region is defined as a square (or bounding box) centered at the
+   * input point, whose half-size is determined by the `hitRadius` parameter.
+   * Only entities whose geometry intersects this region are returned.
+   *
+   * @param point The center point of the hit-region in world coordinates.
+   * If omitted, the current cursor position is used.
+   *
+   * @param hitRadius The half-width (in world coordinate system) of the
+   * hit-region around the point. This creates a square bounding box:
+   * [point.x ± hitRadius, point.y ± hitRadius].
+   * A larger value increases the pick sensitivity. If omitted, a reasonable
+   * default is used.
+   * @returns - Returns The OSNAP point in the specified position in world coordinate system
+   * if found. Return undefined if no OSNAP point found.
+   */
+  /**
+   * Gets OSNAP point of entities that intersect a hit-region centered at the
+   * specified point in world coordinates.
+   *
+   * The hit-region is defined as a square (or bounding box) centered at the
+   * input point, whose half-size is determined by the `hitRadius` parameter.
+   * Only entities whose geometry intersects this region are returned.
+   *
+   * @param point The center point of the hit-region in world coordinates.
+   * If omitted, the current cursor position is used.
+   *
+   * @param hitRadius The half-width (in pixel size) of the hit-region around
+   * the point. It will be converted on one value in the world
+   * coordinate 'wcsHitRadius' and creates a square bounding box:
+   * [point.x ± wcsHitRadius, point.y ± wcsHitRadius].
+   * A larger value increases the pick sensitivity. If omitted, a reasonable
+   * default is used.
+   *
+   * @returns An array of object IDs representing the entities that intersect
+   * the hit-region.
+   */
+  private getOSnapPoint(point?: AcGePoint2dLike, hitRadius: number = 20) {
+    const results = this.view.pick(point, hitRadius)
+    if (results.length > 0) {
+      // TODO: Is there one better way to get current working database
+      const db = acdbHostApplicationServices().workingDatabase
+      const entity = db.tables.blockTable.modelSpace.getIdAt(results[0])
+      if (entity) {
+        const snapPoints: AcGePoint3d[] = []
+        entity.subGetOsnapPoints(
+          AcDbOsnapMode.EndPoint,
+          { ...this.view.curPos, z: 0 },
+          this.lastPoint,
+          snapPoints
+        )
+
+        // Find the nearest osnap point
+        let minDist = Number.MAX_VALUE
+        let minDistIndex = -1
+        for (let i = 0; i < snapPoints.length; ++i) {
+          const distance = this.view.curPos.distanceTo(snapPoints[i])
+          if (distance < minDist) {
+            minDist = distance
+            minDistIndex = i
+          }
+        }
+        if (minDistIndex != -1) {
+          const p1 = this.view.cwcs2Wcs({ x: 0, y: 0 })
+          const p2 = this.view.cwcs2Wcs({ x: hitRadius, y: 0 })
+          if (minDist < p2.x - p1.x) {
+            return snapPoints[minDistIndex]
+          }
+        }
+      }
+    }
+    return undefined
   }
 }
