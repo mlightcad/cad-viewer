@@ -344,22 +344,7 @@ export class AcEdFloatingInput<T> {
   private handleMouseMove(e: MouseEvent) {
     if (!this.visible) return
 
-    const mousePos = this.setPosition({ x: e.x, y: e.y })
-
-    // Update input values if empty using dynamic value callback
-    const wcsMousePos = this.view.cwcs2Wcs(mousePos)
-
-    // Show OSNAP Point
-    if (this.osnapMarkerManager) {
-      this.osnapMarkerManager.hideMarker()
-      this.lastOSnapPoint = this.getOSnapPoint()
-      if (this.lastOSnapPoint) {
-        wcsMousePos.x = this.lastOSnapPoint.x
-        wcsMousePos.y = this.lastOSnapPoint.y
-        this.osnapMarkerManager.showMarker(this.lastOSnapPoint)
-      }
-    }
-
+    const wcsMousePos = this.getPosition(e)
     const defaults = this.getDynamicValue(wcsMousePos)
     this.inputs.setValue(defaults.raw)
 
@@ -379,12 +364,33 @@ export class AcEdFloatingInput<T> {
   private handleClick(e: MouseEvent) {
     if (!this.visible) return
 
-    const mousePos = this.setPosition(e)
-    const wcsMousePos = this.view.cwcs2Wcs(mousePos)
+    const wcsMousePos = this.getPosition(e)
     const defaults = this.getDynamicValue(wcsMousePos)
 
     this.lastPoint = wcsMousePos
     this.onCommit?.(defaults.value)
+  }
+
+  /**
+   * Gets the position after considering window size and osnap
+   * @param e - Mouse event
+   * @returns The position after considering window size and osnap
+   */
+  private getPosition(e: MouseEvent) {
+    const mousePos = this.setPosition(e)
+    const wcsMousePos = this.view.cwcs2Wcs(mousePos)
+
+    // Show OSNAP Point
+    if (this.osnapMarkerManager) {
+      this.osnapMarkerManager.hideMarker()
+      this.lastOSnapPoint = this.getOSnapPoint()
+      if (this.lastOSnapPoint) {
+        wcsMousePos.x = this.lastOSnapPoint.x
+        wcsMousePos.y = this.lastOSnapPoint.y
+        this.osnapMarkerManager.showMarker(this.lastOSnapPoint)
+      }
+    }
+    return wcsMousePos
   }
 
   /**

@@ -11,7 +11,8 @@ import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 import {
   AcApCircleCmd,
   AcApConvertToSvgCmd,
-  AcApDimCmd,
+  AcApDimLinearCmd,
+  AcApLineCmd,
   AcApLogCmd,
   AcApOpenCmd,
   AcApPanCmd,
@@ -411,9 +412,15 @@ export class AcApDocManager {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'dim',
-      'dim',
-      new AcApDimCmd()
+      'dimlinear',
+      'dimlinear',
+      new AcApDimLinearCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'line',
+      'line',
+      new AcApLineCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

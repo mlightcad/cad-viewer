@@ -14,9 +14,9 @@ export class AcApCircleJig extends AcEdPreviewJig<number> {
   private _circle: AcDbCircle
 
   /**
-   * Creates a new zoom-to-box jig.
+   * Creates a circle jig.
    *
-   * @param view - The view that will be zoomed
+   * @param view - The associated view
    */
   constructor(view: AcEdBaseView, center: AcGePoint3dLike) {
     super(view)
@@ -33,7 +33,7 @@ export class AcApCircleJig extends AcEdPreviewJig<number> {
 }
 
 /**
- * Example Command to create one circle to demostrate how to use Jig.
+ * Command to create one circle.
  */
 export class AcApCircleCmd extends AcEdCommand {
   async execute(context: AcApContext) {
