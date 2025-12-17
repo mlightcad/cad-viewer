@@ -1,5 +1,11 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.3.3
+
+### Patch Changes
+
+- feat: refine input propmpt related classes
+
 ## 1.3.2
 
 ### Patch Changes

@@ -10,9 +10,9 @@ import { AcEdPromptNumericalOptions } from './AcEdPromptNumericalOptions'
  */
 export class AcEdPromptDistanceOptions extends AcEdPromptNumericalOptions {
   private _basePoint?: AcGePoint3d
-  private _useBasePoint: boolean = false
-  private _useDashedLine: boolean = false
-  private _only2d: boolean = false
+  private _useBasePoint: boolean = true
+  private _useDashedLine: boolean = true
+  private _only2d: boolean = true
 
   /**
    * Constructs a new `AcEdPromptDistanceOptions` with a prompt message.

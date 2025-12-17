@@ -19,6 +19,7 @@ import {
   AcEdFloatingInputOptions,
   AcEdFloatingInputValidationCallback
 } from './AcEdFloatingInputTypes'
+import { AcEdRubberBand } from './AcEdRubberBand'
 
 /**
  * A UI component providing a small floating input box used inside CAD editing
@@ -60,6 +61,11 @@ export class AcEdFloatingInput<T> {
    * X and Y Input elements.
    */
   private inputs: AcEdFloatingInputBoxes<T>
+
+  /**
+   * Provides a temporary CAD-style rubber-band preview.
+   */
+  private rubberBand?: AcEdRubberBand
 
   /**
    * OSNAP marker manager to display and hide OSNAP marker
@@ -120,6 +126,14 @@ export class AcEdFloatingInput<T> {
     this.view = view
     if (!options.disableOSnap) {
       this.osnapMarkerManager = new AcEdMarkerManager(view)
+    }
+
+    if (options.basePoint) {
+      this.rubberBand = new AcEdRubberBand(this.view)
+      this.rubberBand.start(options.basePoint, {
+        color: '#0f0',
+        showBaseLineOnly: options.showBaseLineOnly
+      })
     }
 
     this.parent = options.parent ?? document.body
@@ -267,6 +281,7 @@ export class AcEdFloatingInput<T> {
 
     this.osnapMarkerManager?.clear()
     this.inputs.dispose()
+    this.rubberBand?.dispose()
     this.removeListener(true)
     this.container.remove()
   }
@@ -347,6 +362,7 @@ export class AcEdFloatingInput<T> {
     const wcsMousePos = this.getPosition(e)
     const defaults = this.getDynamicValue(wcsMousePos)
     this.inputs.setValue(defaults.raw)
+    this.rubberBand?.update(wcsMousePos)
 
     // If inputs lost focus due to some reason, let's try to focus them again.
     if (!this.inputs.focused) {

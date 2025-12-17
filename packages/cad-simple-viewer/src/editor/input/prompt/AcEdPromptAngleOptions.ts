@@ -10,8 +10,8 @@ import { AcEdPromptOptions } from './AcEdPromptOptions'
  */
 export class AcEdPromptAngleOptions extends AcEdPromptOptions<number> {
   private _basePoint?: AcGePoint3d
-  private _useBasePoint: boolean = false
-  private _useDashedLine: boolean = false
+  private _useBasePoint: boolean = true
+  private _useDashedLine: boolean = true
   private _useAngleBase: boolean = false
   private _defaultValue: number = 0
   private _useDefaultValue: boolean = false

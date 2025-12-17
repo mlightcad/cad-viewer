@@ -31,7 +31,6 @@ import {
   AcEdFloatingInputDynamicValueCallback,
   AcEdFloatingInputRawData
 } from './AcEdFloatingInputTypes'
-import { AcEdRubberBand } from './AcEdRubberBand'
 
 /**
  * A fully type-safe TypeScript class providing CAD-style interactive user input
@@ -181,8 +180,9 @@ export class AcEdInputManager {
       message: options.message,
       twoInputs: false,
       jig: options.jig,
-      showBaseLineOnly: false,
+      showBaseLineOnly: !options.useDashedLine,
       useBasePoint: true,
+      basePoint: options.basePoint,
       handler,
       getDynamicValue
     })
@@ -206,8 +206,9 @@ export class AcEdInputManager {
       message: options.message,
       twoInputs: false,
       jig: options.jig,
-      showBaseLineOnly: false,
+      showBaseLineOnly: !options.useDashedLine,
       useBasePoint: true,
+      basePoint: options.basePoint,
       handler,
       getDynamicValue
     })
@@ -320,6 +321,7 @@ export class AcEdInputManager {
       jig: options.jig,
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: options.useBasePoint,
+      basePoint: options.basePoint,
       cleanup,
       handler,
       getDynamicValue,
@@ -340,6 +342,7 @@ export class AcEdInputManager {
     jig?: AcEdPreviewJig<T>
     showBaseLineOnly?: boolean
     useBasePoint?: boolean
+    basePoint?: AcGePoint2dLike
     disableOSnap?: boolean
     handler: AcEdInputHandler<T>
     cleanup?: () => void
@@ -356,11 +359,22 @@ export class AcEdInputManager {
         }
       }
 
+      let basePoint: AcGePoint2dLike | undefined = undefined
+      if (options.useBasePoint) {
+        if (options.basePoint) {
+          basePoint = options.basePoint
+        } else if (this.lastPoint) {
+          basePoint = { x: this.lastPoint.x, y: this.lastPoint.y }
+        }
+      }
+
       const floatingInput = new AcEdFloatingInput(this.view, {
         parent: this.view.canvas,
         twoInputs: options.twoInputs,
         message: options.message,
         disableOSnap: options.disableOSnap,
+        showBaseLineOnly: options.showBaseLineOnly,
+        basePoint,
         validate: validate,
         getDynamicValue: options.getDynamicValue,
         drawPreview: (pos: AcGePoint2dLike) => {
@@ -369,10 +383,6 @@ export class AcEdInputManager {
             options.jig.update(defaults.value)
             options.jig.render()
           }
-          if (rubberBand) {
-            rubberBand?.update(pos)
-          }
-
           options.drawPreview?.(pos)
         },
         onCommit: (val: T) => {
@@ -386,22 +396,11 @@ export class AcEdInputManager {
         },
         onCancel: () => rejector()
       })
-
-      let rubberBand: AcEdRubberBand | undefined = undefined
-      if (this.lastPoint && options.useBasePoint) {
-        rubberBand = new AcEdRubberBand(this.view)
-        rubberBand.start(this.lastPoint, {
-          color: '#0f0',
-          showBaseLineOnly: options.showBaseLineOnly
-        })
-      }
-
       const cleanup = () => {
         this.active = false
         options.cleanup?.()
         options.jig?.end()
         document.removeEventListener('keydown', escHandler)
-        rubberBand?.dispose()
         floatingInput.dispose()
       }
 

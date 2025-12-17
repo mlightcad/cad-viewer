@@ -111,6 +111,17 @@ export interface AcEdFloatingInputOptions<T> {
   disableOSnap?: boolean
 
   /**
+   * The base point used to draw rubber band or base line
+   */
+  basePoint?: AcGePoint2dLike | undefined
+
+  /**
+   * The flag to indicate whether to show base line only instead of showing the whole
+   * rubber band. The flog takes effect only if 'basePoint' is specified in options.
+   */
+  showBaseLineOnly?: boolean
+
+  /**
    * Custom validation function.
    */
   validate: AcEdFloatingInputValidationCallback<T>
