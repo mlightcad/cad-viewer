@@ -561,7 +561,7 @@ export class AcTrView2d extends AcEdBaseView {
 
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
-      const threeEntity = entity.draw(this._renderer) as AcTrEntity
+      const threeEntity = entity.worldDraw(this._renderer) as AcTrEntity
       if (threeEntity) {
         threeEntity.objectId = entity.objectId
         threeEntity.ownerId = entity.ownerId
@@ -689,18 +689,7 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   private drawEntity(entity: AcDbEntity, delay?: boolean) {
-    const traits = this._renderer.subEntityTraits
-    traits.color = entity.color
-    traits.rgbColor = entity.rgbColor
-    traits.lineType = entity.lineStyle
-    traits.lineTypeScale = entity.linetypeScale
-    traits.lineWeight = entity.lineWeight
-    traits.transparency = entity.transparency
-    traits.layer = entity.layer
-    if ('thickness' in entity) {
-      traits.thickness = entity.thickness as number
-    }
-    return entity.draw(this._renderer, delay) as AcTrEntity | null
+    return entity.worldDraw(this._renderer, delay) as AcTrEntity | null
   }
 
   /**

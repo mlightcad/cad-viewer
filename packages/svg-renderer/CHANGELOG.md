@@ -1,5 +1,11 @@
 # @mlightcad/svg-renderer
 
+## 1.3.2
+
+### Patch Changes
+
+- fix: fix regression isssue on rendering block with wrong color
+
 ## 1.3.1
 
 ### Patch Changes

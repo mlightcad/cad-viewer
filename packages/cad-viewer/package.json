@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-viewer",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -62,7 +62,7 @@
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.4.2",
+    "@mlightcad/data-model": "^1.5.0",
     "@vueuse/core": "^11.1.0",
     "element-plus": "^2.12.0",
     "vue": "^3.4.21",

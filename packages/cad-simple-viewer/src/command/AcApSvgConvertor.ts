@@ -44,7 +44,7 @@ export class AcApSvgConvertor {
       AcApDocManager.instance.curDocument.database.tables.blockTable.modelSpace.newIterator()
     const renderer = new AcSvgRenderer()
     for (const entity of entities) {
-      entity.draw(renderer)
+      entity.worldDraw(renderer)
     }
     this.createFileAndDownloadIt(renderer.export())
   }

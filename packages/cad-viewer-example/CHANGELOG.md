@@ -1,5 +1,14 @@
 # @mlightcad/cad-viewer-example
 
+## 1.3.2
+
+### Patch Changes
+
+- fix: fix regression isssue on rendering block with wrong color
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.3.2
+  - @mlightcad/cad-viewer@1.3.2
+
 ## 1.3.1
 
 ### Patch Changes
