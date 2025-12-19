@@ -59,53 +59,207 @@ These issues are being tracked and will be addressed in future releases.
 
 ## Roadmap
 
-To achieve the final goal, the following milestones are defined:
+The goal of this project is to create a full-featured **2D AutoCAD-like system in the browser** (viewer + editor), with modular architecture and framework-agnostic integration.
 
-- [x] **DWG/DXF Viewer**: Create an offline web viewer for DWG/DXF files.
-- [x] **Entity Editing Framework**: Support drawing modification.
-- [ ] **Integration**: Integrate the DWG/DXF viewer into other applications or frameworks (e.g., CMS, Notion, OpenLayers).
-- [ ] **WeChat App**: Develop a WeChat app to display DWG/DXF files within WeChat.
-- [ ] **Offline CAD Editor**: Build an offline CAD editor that allows users to modify DWG/DXF files in the browser and store changes locally.
-- [ ] **Online CAD Editor**: Add backend support to enable users to store changes to DXF/DWG files in the cloud.
+Legend:
+- [x] Completed
+- [ ] Planned
+- [ ] ⏳ In progress
 
-**Note**: 
+### Core File & Data Layer
 
-The second item is partially finished now. While CAD-Viewer doesn't support saving modificaiton to DWG/DXF files now, it provides comprehensive support for modifying drawings in real-time. You can add, edit, and delete entities within the drawing by [RealDWG-Web API](https://mlightcad.github.io/realdwg-web/), and the viewer will automatically update to reflect these changes. The usage patterns of [RealDWG-Web API](https://mlightcad.github.io/realdwg-web/) are very similar to AutoCAD RealDWG. If you're familiar with AutoCAD RealDWG development, you'll find the API structure and workflow nearly identical. Please refer to [cad-simple-viewer README](packages/cad-simple-viewer/README.md) to get more details.
+#### File Support
 
-## Which Viewer Should I Use?
+* [x] DXF loading
+* [x] DWG loading (via RealDWG / compatible backend)
+* [x] Large file streaming / incremental loading
+* [ ] ⏳ File version compatibility (R12–Latest)
 
-This project provides two viewers `cad-viewer` and `cad-simple-viewer` for users. Which viewer to choose depends on your project requirements and desired level of integration:
+#### Data Model
 
-### Use **cad-viewer** if:
-- You want a **ready-to-use Vue 3 component** with a modern UI, dialogs, toolbars, and state management.
-- You need to quickly embed a high-performance CAD viewer/editor into your Vue application with minimal setup.
-- You prefer a solution that handles file loading, rendering, layer/entity management, and user interactions out of the box.
-- You want seamless integration with optimized SVG and THREE.js renderers, internationalization, and theming.
-- You do **not** want to build your own UI from scratch.
+* [x] Unified entity data model
+* [x] Layer table support
+* [x] Block / insert structure
+* [ ] ⏳ Handle & object ID management: currently objectId is same as handle and represented as one string instead of bigint (int64).
+* [ ] XData / extension dictionary support
+* [ ] Proxy entity handling
 
-**Recommended for:** Most web applications, dashboards, or platforms that need to display CAD files with a polished user interface.
+### Rendering & Performance
 
-### Use **cad-simple-viewer** if:
-- You need **core CAD logic only** (document management, command stack, rendering engine integration) without any UI framework dependencies.
-- You want to build your **own custom UI** or integrate CAD functionality into a non-Vue or non-web environment.
-- You require maximum flexibility and performance for handling large CAD files, and plan to connect the logic to your own rendering or UI layer.
-- You want a framework-agnostic solution that provides only the essential CAD operations and canvas rendering.
+#### Rendering Engine
 
-**Recommended for:** Custom integrations, headless CAD processing, or advanced users building highly tailored CAD solutions.
+* [x] WebGL-based rendering (Three.js)
+* [x] 2D-only optimized pipeline
+* [x] Layer-based scene organization
+* [ ] Layout / paper space rendering
+* [ ] Viewport entity support
 
-**Summary Table:**
+#### Performance Optimization
 
-| Package             | UI Provided | Framework | Use Case                                      |
-|---------------------|-------------|-----------|-----------------------------------------------|
-| `cad-viewer`        | Yes         | Vue 3     | Turnkey CAD viewer/editor with modern UI       |
-| `cad-simple-viewer` | No          | None      | Core CAD logic for custom or headless use      |
+* [x] Geometry merging & batching
+* [x] Spatial indexing (basic)
+* [x] Advanced spatial index (R-tree / BVH)
+* [ ] Level-of-detail (LOD) rendering
+* [ ] Multi-canvas / tiled rendering for very large drawings
 
-For more details, see the [cad-viewer README](packages/cad-viewer/README.md) and [cad-simple-viewer README](packages/cad-simple-viewer/README.md).
+### Viewing & Navigation
 
-## Examples
+#### View Controls
 
-- [`cad-simple-viewer-example`](https://github.com/mlightcad/cad-simple-viewer-example): Example application demonstrating how to use the `cad-simple-viewer` component in a real project.
-- [`cad-viewer-example`](https://github.com/mlightcad/cad-viewer-example): Example application demonstrating how to use the `cad-viewer` component in a real project.
+* [x] Pan
+* [x] Zoom (wheel / box zoom)
+* [x] Fit to view / extents
+* [ ] Named views
+* [ ] View history (undo / redo view changes)
+
+#### Display Controls
+
+* [x] Layer visibility on/off
+* [ ] Layer freeze / lock
+* [ ] Lineweight display
+* [ ] Linetype scaling
+* [ ] ⏳ Background / theme switching
+
+### Selection & Interaction
+
+#### Selection
+
+* [x] Single entity selection
+* [x] Highlight selected entities
+* [ ] Window selection
+* [ ] Crossing selection
+* [ ] Selection filters (by type / layer)
+* [ ] Selection cycling
+
+#### Snapping (OSNAP)
+
+* [ ] ⏳ Endpoint: Now working for INSERT entity yet.
+* [x] Midpoint
+* [ ] Center
+* [ ] Intersection
+* [ ] Perpendicular / tangent
+* [ ] ⏳ Nearest
+* [ ] Snap tracking
+
+
+### Editing & Modification
+
+#### Basic Editing
+
+* [x] Entity editing framework
+* [ ] Move
+* [ ] Copy
+* [ ] Rotate
+* [ ] Scale
+* [ ] Delete
+* [ ] Undo / redo
+
+#### Geometry Editing
+
+* [ ] Grip points
+* [ ] Stretch
+* [ ] Trim
+* [ ] Extend
+* [ ] Offset
+* [ ] Explode
+* [ ] Join / fillet / chamfer (2D)
+
+### Drawing & Creation Tools
+
+#### Basic Entities
+
+* [x] Line
+* [ ] Polyline
+* [x] Circle
+* [ ] Arc
+* [ ] Ellipse
+* [ ] Rectangle / polygon
+
+#### Advanced Entities
+
+* [ ] Hatch
+* [ ] Text (single-line / multi-line)
+* [ ] Dimensions (linear, aligned, angular)
+* [ ] Blocks creation & insertion
+
+### Measurement & Dimension
+
+* [ ] ⏳ Distance measurement & dimension
+* [ ] Area measurement & dimension
+* [ ] Angle measurement & dimension
+* [ ] Coordinate readout
+* [ ] Entity statistics (length, area, count)
+
+### Properties & UI Panels
+
+#### Property Palette
+
+* [x] Selected entity properties
+* [ ] Layer, color, linetype editing
+* [x] Live update on change
+
+#### Panels & UI
+
+* [x] Layer manager
+* [ ] Block manager
+* [x] Command history / console
+* [ ] ⏳ Status bar (snap, ortho, grid)
+
+#### Command System
+
+* [x] Command registry
+* [ ] Command aliases
+* [ ] Keyboard-driven workflow
+* [x] Command prompts (AutoCAD-style)
+
+### Integration & Extensibility
+
+#### Framework Integration
+
+* [x] Framework-agnostic core
+* [ ] React integration example
+* [ ] Vue integration example
+* [ ] OpenLayers / Map integration
+* [ ] CMS / Notion embedding
+
+#### Plugin System
+
+* [ ] Plugin API
+* [ ] Custom entity support
+* [ ] Custom command injection
+
+### Offline & Online Editing
+
+#### Offline Editor
+
+* [ ] Local editing in browser
+* [ ] Save to DXF
+* [ ] Save change set / diff
+* [ ] IndexedDB persistence
+
+#### Online Editor
+
+* [ ] Backend API design
+* [ ] User authentication
+* [ ] File versioning
+* [ ] Multi-user access control
+* [ ] Real-time collaboration (future)
+
+### Platform Targets
+
+* [ ] ⏳ Google Drive Integration
+* [ ] WeChat Mini Program viewer
+* [ ] Mobile browser support (read-only)
+
+### Documentation & Community
+
+* [x] Architecture documentation
+* [x] API reference
+* [ ] Contribution guide
+* [x] Example projects
+* [x] Roadmap & changelog maintenance
+
+This roadmap is intentionally granular so contributors can clearly see **what exists**, **what is missing**, and **where help is needed**.
 
 ## Contributing
 
