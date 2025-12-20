@@ -784,6 +784,12 @@ export class AcTrView2d extends AcEdBaseView {
     const groupLayerName = group.layerName
     const groupBox = group.box
     objectsGroupByLayer.forEach((objects, layerName) => {
+      // In AutoCAD, an INSERT entity may reference multiple child entities that
+      // reside on different layers. During rendering, this engine groups entities
+      // by layer and assigns each group the INSERT entity's object ID.
+      // As a result, a single object ID (typically from an INSERT entity) may
+      // correspond to multiple layers. However, in this layer its object id is still
+      // uniqiue.
       const entity = new AcTrEntity(styleManager)
       entity.applyMatrix4(group.matrix)
       entity.objectId = groupObjectId

@@ -201,8 +201,12 @@ export class AcTrLayout {
    * @returns True if the object intersects with the ray, false otherwise
    */
   isIntersectWith(objectId: string, raycaster: THREE.Raycaster) {
-    const layer = this.getLayerByObjectId(objectId)
-    return layer && layer.isIntersectWith(objectId, raycaster)
+    const layers = this.getLayersByObjectId(objectId)
+    for (let index = 0; index < layers.length; ++index) {
+      const layer = layers[index]
+      if (layer && layer.isIntersectWith(objectId, raycaster)) return true
+    }
+    return false
   }
 
   /**
@@ -321,10 +325,8 @@ export class AcTrLayout {
    */
   hover(ids: AcDbObjectId[]) {
     ids.forEach(id => {
-      const layer = this.getLayerByObjectId(id)
-      if (layer) {
-        layer.hover([id])
-      }
+      const layers = this.getLayersByObjectId(id)
+      layers.forEach(layer => layer.hover([id]))
     })
   }
 
@@ -336,10 +338,8 @@ export class AcTrLayout {
    */
   unhover(ids: AcDbObjectId[]) {
     ids.forEach(id => {
-      const layer = this.getLayerByObjectId(id)
-      if (layer) {
-        layer.unhover([id])
-      }
+      const layers = this.getLayersByObjectId(id)
+      layers.forEach(layer => layer.unhover([id]))
     })
   }
 
@@ -351,10 +351,8 @@ export class AcTrLayout {
    */
   select(ids: AcDbObjectId[]) {
     ids.forEach(id => {
-      const layer = this.getLayerByObjectId(id)
-      if (layer) {
-        layer.select([id])
-      }
+      const layers = this.getLayersByObjectId(id)
+      layers.forEach(layer => layer.unselect([id]))
     })
   }
 
@@ -366,10 +364,8 @@ export class AcTrLayout {
    */
   unselect(ids: AcDbObjectId[]) {
     ids.forEach(id => {
-      const layer = this.getLayerByObjectId(id)
-      if (layer) {
-        layer.unselect([id])
-      }
+      const layers = this.getLayersByObjectId(id)
+      layers.forEach(layer => layer.unselect([id]))
     })
   }
 
@@ -405,15 +401,27 @@ export class AcTrLayout {
   }
 
   /**
-   * Finds the layer containing the entity with the specified object ID.
+   * Returns all layers that contain renderable entities associated with
+   * the specified AutoCAD object ID.
    *
-   * @param objectId - The object ID to search for
-   * @returns The layer containing the entity, or undefined if not found
+   * In AutoCAD, an INSERT entity may reference multiple child entities that
+   * reside on different layers. During rendering, this engine groups entities
+   * by layer and assigns each group the INSERT entity's object ID.
+   *
+   * As a result, a single object ID (typically from an INSERT entity) may
+   * correspond to multiple layers, and this method returns all such layers.
+   *
+   * @param objectId - The AutoCAD object ID to search for (e.g. an INSERT entity ID)
+   * @returns An array of layers containing entities associated with the given object ID;
+   *          returns an empty array if no matching layers are found
    */
-  private getLayerByObjectId(objectId: AcDbObjectId) {
+  private getLayersByObjectId(objectId: AcDbObjectId) {
+    const layers = []
     for (const [_, layer] of this._layers) {
-      if (layer.hasEntity(objectId)) return layer
+      if (layer.hasEntity(objectId)) {
+        layers.push(layer)
+      }
     }
-    return undefined
+    return layers
   }
 }
