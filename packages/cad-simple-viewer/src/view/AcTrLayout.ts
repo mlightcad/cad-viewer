@@ -352,7 +352,7 @@ export class AcTrLayout {
   select(ids: AcDbObjectId[]) {
     ids.forEach(id => {
       const layers = this.getLayersByObjectId(id)
-      layers.forEach(layer => layer.unselect([id]))
+      layers.forEach(layer => layer.select([id]))
     })
   }
 
