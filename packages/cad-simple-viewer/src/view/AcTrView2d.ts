@@ -169,8 +169,15 @@ export class AcTrView2d extends AcEdBaseView {
     // such as the canvas or the entire document. This can interfere with other event listeners you
     // add, including the keydown event.
     document.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.code === 'Escape') {
-        this.selectionSet.clear()
+      switch (e.code) {
+        case 'Escape':
+          this.selectionSet.clear()
+          break
+
+        case 'Delete':
+          this.selectionSet.ids.forEach(id => this.removeEntity(id))
+          this.selectionSet.clear()
+          break
       }
     })
     acdbHostApplicationServices().layoutManager.events.layoutSwitched.addEventListener(

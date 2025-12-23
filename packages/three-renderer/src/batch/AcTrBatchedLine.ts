@@ -463,94 +463,103 @@ export class AcTrBatchedLine extends THREE.LineSegments {
     }
 
     geometryInfoList[geometryId].active = false
+    geometryInfoList[geometryId].visible = false
     this._availableGeometryIds.push(geometryId)
 
     return this
   }
 
   optimize() {
-    // track the next indices to copy data to
+    const geometry = this.geometry
+    const hasIndex = geometry.index !== null
+
+    const attributes = geometry.attributes
+    const indexAttr = geometry.index
+
     let nextVertexStart = 0
     let nextIndexStart = 0
 
-    // Iterate over all geometry ranges in order sorted from earliest in the geometry buffer to latest
-    // in the geometry buffer. Because draw range objects can be reused there is no guarantee of their order.
-    const geometryInfoList = this._geometryInfo
-    const indices = geometryInfoList
-      .map((_e, i) => i)
-      .sort((a, b) => {
-        return geometryInfoList[a].vertexStart - geometryInfoList[b].vertexStart
-      })
+    // Sort geometries by current vertexStart to preserve order
+    const infos = this._geometryInfo
+      .map((info, i) => ({ info, i }))
+      .filter(e => e.info.active)
+      .sort((a, b) => a.info.vertexStart - b.info.vertexStart)
 
-    const geometry = this.geometry
-    for (let i = 0, l = geometryInfoList.length; i < l; i++) {
-      // if a geometry range is inactive then don't copy anything
-      const index = indices[i]
-      const geometryInfo = geometryInfoList[index]
-      if (geometryInfo.active === false) {
-        continue
-      }
+    // ---- pack active geometries ----
+    for (const { info } of infos) {
+      const vertexCount = info.vertexCount
+      const indexCount = hasIndex ? info.indexCount : 0
 
-      // if a geometry contains an index buffer then shift it, as well
-      if (geometry.index !== null) {
-        if (geometryInfo.indexStart !== nextIndexStart) {
-          const { indexStart, vertexStart, reservedIndexCount } = geometryInfo
-          const index = geometry.index
-          const array = index.array
-
-          // shift the index pointers based on how the vertex data will shift
-          // adjusting the index must happen first so the original vertex start value is available
-          const elementDelta = nextVertexStart - vertexStart
-          for (let j = indexStart; j < indexStart + reservedIndexCount; j++) {
-            array[j] = array[j] + elementDelta
-          }
-
-          index.array.copyWithin(
-            nextIndexStart,
-            indexStart,
-            indexStart + reservedIndexCount
-          )
-          index.addUpdateRange(nextIndexStart, reservedIndexCount)
-
-          geometryInfo.indexStart = nextIndexStart
-        }
-
-        nextIndexStart += geometryInfo.reservedIndexCount
-      }
-
-      // if a geometry needs to be moved then copy attribute data to overwrite unused space
-      if (geometryInfo.vertexStart !== nextVertexStart) {
-        const { vertexStart, reservedVertexCount } = geometryInfo
-        const attributes = geometry.attributes
+      // --- move vertices ---
+      if (info.vertexStart !== nextVertexStart) {
         for (const key in attributes) {
-          const attribute = attributes[key] as THREE.BufferAttribute
-          const { array, itemSize } = attribute
+          const attr = attributes[key] as THREE.BufferAttribute
+          const { array, itemSize } = attr
+
           array.copyWithin(
             nextVertexStart * itemSize,
-            vertexStart * itemSize,
-            (vertexStart + reservedVertexCount) * itemSize
+            info.vertexStart * itemSize,
+            (info.vertexStart + vertexCount) * itemSize
           )
-          attribute.addUpdateRange(
+
+          attr.addUpdateRange(
             nextVertexStart * itemSize,
-            reservedVertexCount * itemSize
+            vertexCount * itemSize
           )
         }
 
-        geometryInfo.vertexStart = nextVertexStart
+        info.vertexStart = nextVertexStart
       }
 
-      nextVertexStart += geometryInfo.reservedVertexCount
-      geometryInfo.start = geometry.index
-        ? geometryInfo.indexStart
-        : geometryInfo.vertexStart
+      // --- move indices ---
+      if (hasIndex && indexAttr) {
+        if (info.indexStart !== nextIndexStart) {
+          const indexArray = indexAttr.array
+          const delta = nextVertexStart - info.vertexStart
 
-      // step the next geometry points to the shifted position
-      this._nextIndexStart = geometry.index
-        ? geometryInfo.indexStart + geometryInfo.reservedIndexCount
-        : 0
-      this._nextVertexStart =
-        geometryInfo.vertexStart + geometryInfo.reservedVertexCount
+          // remap indices
+          for (let i = info.indexStart; i < info.indexStart + indexCount; i++) {
+            indexArray[i] += delta
+          }
+
+          indexArray.copyWithin(
+            nextIndexStart,
+            info.indexStart,
+            info.indexStart + indexCount
+          )
+
+          indexAttr.addUpdateRange(nextIndexStart, indexCount)
+          info.indexStart = nextIndexStart
+        }
+      }
+
+      // --- update draw info ---
+      info.start = hasIndex ? info.indexStart : info.vertexStart
+      info.count = hasIndex ? indexCount : vertexCount
+
+      nextVertexStart += vertexCount
+      nextIndexStart += indexCount
     }
+
+    // ---- clear trailing unused indices (safety) ----
+    if (hasIndex && indexAttr) {
+      const indexArray = indexAttr.array
+      for (let i = nextIndexStart; i < indexArray.length; i++) {
+        indexArray[i] = 0
+      }
+      indexAttr.needsUpdate = true
+    }
+
+    // ---- update draw range (CRITICAL) ----
+    if (hasIndex) {
+      geometry.setDrawRange(0, nextIndexStart)
+    } else {
+      geometry.setDrawRange(0, nextVertexStart)
+    }
+
+    // ---- update internal cursors ----
+    this._nextVertexStart = nextVertexStart
+    this._nextIndexStart = nextIndexStart
 
     return this
   }

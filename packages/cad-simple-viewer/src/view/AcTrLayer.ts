@@ -195,9 +195,8 @@ export class AcTrLayer {
    * @param objectId Input the object id of the entity to remove
    * @returns Return true if remove the specified entity successfully. Otherwise, return false.
    */
-  removeEntity(_objectId: AcDbObjectId): boolean {
-    // TODO: Finish it
-    throw new Error('Not implemented yet!')
+  removeEntity(objectId: AcDbObjectId): boolean {
+    return this._group.removeEntity(objectId)
   }
 
   /**
