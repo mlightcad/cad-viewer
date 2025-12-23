@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.3.4
+
+### Patch Changes
+
+- fix: fix issues on rendering times.shx font characters and block with non-zero base point
+
 ## 1.3.2
 
 ### Patch Changes

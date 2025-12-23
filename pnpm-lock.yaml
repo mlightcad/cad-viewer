@@ -112,8 +112,8 @@ importers:
         version: 0.172.0
     devDependencies:
       '@mlightcad/mtext-renderer':
-        specifier: ^0.8.2
-        version: 0.8.2(three@0.172.0)
+        specifier: ^0.8.3
+        version: 0.8.3(three@0.172.0)
       '@mlightcad/svg-renderer':
         specifier: workspace:*
         version: link:../svg-renderer
@@ -303,8 +303,8 @@ importers:
         specifier: ^1.5.1
         version: 1.5.1
       '@mlightcad/mtext-renderer':
-        specifier: ^0.8.2
-        version: 0.8.2(three@0.172.0)
+        specifier: ^0.8.3
+        version: 0.8.3(three@0.172.0)
       '@velipso/polybool':
         specifier: ^1.1.1
         version: 1.1.1
@@ -1579,13 +1579,13 @@ packages:
   '@mlightcad/mtext-parser@1.3.2':
     resolution: {integrity: sha512-lOmuLCDs2oKrYcxx0EP82gfXrEprg0e1G5gaQSCXqePldIA8WAh5zfvynAkQJkmKKISA2jHcgz/8X3Xxyzbjog==}
 
-  '@mlightcad/mtext-renderer@0.8.2':
-    resolution: {integrity: sha512-lEw860tKYWTXELkezywIeBhbnK5lPz81GyBhvlpZz2qIgGQYadQNPkLjbBczIehDfDMD6EGLHnTugFLPvGoSKQ==}
+  '@mlightcad/mtext-renderer@0.8.3':
+    resolution: {integrity: sha512-o6J2AEnq858IysGOJsS/aZZUAyInq2Fwijv2MeUSOErhc3eZVs1nrmz6UGPv+QoF+GUWkrgx5ZBjKyy2U3BsJA==}
     peerDependencies:
       three: ^0.172.0
 
-  '@mlightcad/shx-parser@1.3.1':
-    resolution: {integrity: sha512-pBbdEgif25kh6SE7pgKr94IdM7sNGyd1/pt0Yu6TyMwjklqh54OsW3cFiEvLfLQILF0L1c9zjlIAILK7h/1neQ==}
+  '@mlightcad/shx-parser@1.3.2':
+    resolution: {integrity: sha512-j84hqbWOVMDuepLEjVsYvxeiCXOVxHyJhl4gM4HtgXZ6ChgTLsuSnqs2bNOt2SwriTvFOsv3QLsOu2iJh857JA==}
 
   '@mlightcad/three-viewcube@0.0.9':
     resolution: {integrity: sha512-oGWC+NrfgfHyCGtO/3NGC3M91qrj9Y1cOVaRKGALEicqCJYg7M4fKUbuag2rCNZLml1BdhpS9JMTZyfbYeAO7Q==}
@@ -6669,16 +6669,16 @@ snapshots:
 
   '@mlightcad/mtext-parser@1.3.2': {}
 
-  '@mlightcad/mtext-renderer@0.8.2(three@0.172.0)':
+  '@mlightcad/mtext-renderer@0.8.3(three@0.172.0)':
     dependencies:
       '@mlightcad/mtext-parser': 1.3.2
-      '@mlightcad/shx-parser': 1.3.1
+      '@mlightcad/shx-parser': 1.3.2
       iconv-lite: 0.7.0
       idb: 8.0.3
       opentype.js: 1.3.4
       three: 0.172.0
 
-  '@mlightcad/shx-parser@1.3.1': {}
+  '@mlightcad/shx-parser@1.3.2': {}
 
   '@mlightcad/three-viewcube@0.0.9(three@0.172.0)':
     dependencies:
