@@ -332,60 +332,58 @@ export class AcTrBatchedPoint extends THREE.Points {
     }
 
     geometryInfoList[geometryId].active = false
+    geometryInfoList[geometryId].visible = false
     this._availableGeometryIds.push(geometryId)
 
     return this
   }
 
   optimize() {
-    // track the next indices to copy data to
     let nextVertexStart = 0
-
-    // Iterate over all geometry ranges in order sorted from earliest in the geometry buffer to latest
-    // in the geometry buffer. Because draw range objects can be reused there is no guarantee of their order.
-    const geometryInfoList = this._geometryInfo
-    const indices = geometryInfoList
-      .map((_e, i) => i)
-      .sort((a, b) => {
-        return geometryInfoList[a].vertexStart - geometryInfoList[b].vertexStart
-      })
-
     const geometry = this.geometry
-    for (let i = 0, l = geometryInfoList.length; i < l; i++) {
-      // if a geometry range is inactive then don't copy anything
-      const index = indices[i]
-      const geometryInfo = geometryInfoList[index]
-      if (geometryInfo.active === false) {
-        continue
-      }
+    const geometryInfoList = this._geometryInfo
 
-      // if a geometry needs to be moved then copy attribute data to overwrite unused space
-      if (geometryInfo.vertexStart !== nextVertexStart) {
-        const { vertexStart, reservedVertexCount } = geometryInfo
-        const attributes = geometry.attributes
-        for (const key in attributes) {
-          const attribute = attributes[key] as THREE.BufferAttribute
-          const { array, itemSize } = attribute
+    // Sort geometry IDs by original buffer order
+    const indices = geometryInfoList
+      .map((_g, i) => i)
+      .filter(i => geometryInfoList[i].active)
+      .sort(
+        (a, b) =>
+          geometryInfoList[a].vertexStart - geometryInfoList[b].vertexStart
+      )
+
+    // Compact active geometries
+    for (let k = 0; k < indices.length; k++) {
+      const id = indices[k]
+      const info = geometryInfoList[id]
+
+      const srcStart = info.vertexStart
+      const count = info.reservedVertexCount
+
+      if (srcStart !== nextVertexStart) {
+        for (const key in geometry.attributes) {
+          const attr = geometry.attributes[key] as THREE.BufferAttribute
+          const { array, itemSize } = attr
+
           array.copyWithin(
             nextVertexStart * itemSize,
-            vertexStart * itemSize,
-            (vertexStart + reservedVertexCount) * itemSize
+            srcStart * itemSize,
+            (srcStart + count) * itemSize
           )
-          attribute.addUpdateRange(
-            nextVertexStart * itemSize,
-            reservedVertexCount * itemSize
-          )
+
+          attr.addUpdateRange(nextVertexStart * itemSize, count * itemSize)
+          attr.needsUpdate = true
         }
 
-        geometryInfo.vertexStart = nextVertexStart
+        info.vertexStart = nextVertexStart
       }
 
-      nextVertexStart += geometryInfo.reservedVertexCount
-
-      // step the next geometry points to the shifted position
-      this._nextVertexStart =
-        geometryInfo.vertexStart + geometryInfo.reservedVertexCount
+      nextVertexStart += count
     }
+
+    // Final authoritative state
+    this._nextVertexStart = nextVertexStart
+    geometry.setDrawRange(0, nextVertexStart)
 
     return this
   }

@@ -257,10 +257,13 @@ export class AcTrLayout {
    * @returns Return true if remove the specified entity successfully. Otherwise, return false.
    */
   removeEntity(objectId: AcDbObjectId) {
+    let result = false
     for (const [_, layer] of this._layers) {
-      if (layer.removeEntity(objectId)) return true
+      if (layer.removeEntity(objectId)) {
+        result = true
+      }
     }
-    return false
+    return result
   }
 
   /**

@@ -266,6 +266,27 @@ export class AcTrBatchedGroup extends THREE.Group {
     })
   }
 
+  removeEntity(objectId: string) {
+    let result = false
+    const entityInfo = this._entitiesMap.get(objectId)
+    if (entityInfo) {
+      const batchedObjects = new Map<number, AcTrBatchedObject>()
+      for (let index = 0, len = entityInfo.length; index < len; index++) {
+        const item = entityInfo[index]
+        const batchedObject = this.getObjectById(
+          item.batchedObjectId
+        ) as AcTrBatchedObject
+        if (batchedObject) {
+          batchedObject.deleteGeometry(item.batchId)
+          batchedObjects.set(item.batchedObjectId, batchedObject)
+          result = true
+        }
+      }
+      batchedObjects.forEach(batchedObject => batchedObject.optimize())
+    }
+    return result
+  }
+
   /**
    * Return true if the object with the specified object id is intersected with the ray by using raycast.
    * @param objectId  Input object id of object to check for intersection with the ray.
@@ -281,8 +302,10 @@ export class AcTrBatchedGroup extends THREE.Group {
         const batchedObject = this.getObjectById(
           item.batchedObjectId
         ) as AcTrBatchedObject
-        batchedObject.intersectWith(item.batchId, raycaster, intersects)
-        if (intersects.length > 0) return true
+        if (batchedObject) {
+          batchedObject.intersectWith(item.batchId, raycaster, intersects)
+          if (intersects.length > 0) return true
+        }
       }
     }
     return result

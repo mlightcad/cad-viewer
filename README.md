@@ -151,7 +151,7 @@ Legend:
 * [ ] Copy
 * [ ] Rotate
 * [ ] Scale
-* [ ] Delete
+* [x] Delete
 * [ ] Undo / redo
 
 #### Geometry Editing
