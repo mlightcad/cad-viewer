@@ -499,6 +499,13 @@ export abstract class AcEdBaseView {
   abstract addEntity(entity: AcDbEntity | AcDbEntity[]): void
 
   /**
+   * Remove the specified entity or entities from current drawing database and current scene
+   * and draw it or them
+   * @param entity Input one or multiple entities to remove
+   */
+  abstract removeEntity(entity: AcDbEntity | AcDbEntity[]): void
+
+  /**
    * Update the specified entity or entities
    * @param entity Input the entity or entities to update
    */
