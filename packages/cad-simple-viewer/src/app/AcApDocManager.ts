@@ -12,6 +12,7 @@ import {
   AcApCircleCmd,
   AcApConvertToSvgCmd,
   AcApDimLinearCmd,
+  AcApEraseCmd,
   AcApLineCmd,
   AcApLogCmd,
   AcApOpenCmd,
@@ -409,6 +410,12 @@ export class AcApDocManager {
       'csvg',
       'csvg',
       new AcApConvertToSvgCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'erase',
+      'erase',
+      new AcApEraseCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

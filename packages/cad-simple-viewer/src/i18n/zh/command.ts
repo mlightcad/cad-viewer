@@ -3,6 +3,7 @@ export default {
     circle: '使用圆心和半径创建圆',
     csvg: '转换当前图纸为SVG格式',
     dimlinear: '创建线性尺寸标注',
+    erase: '从图纸中删除所选对象',
     line: '在指定点之间绘制直线段',
     log: '在控制台输出调试信息',
     open: '打开图纸',

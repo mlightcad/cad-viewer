@@ -59,6 +59,11 @@ export class AcApContext {
       this.view.updateEntity(args.entity)
     })
 
+    // Erase entity
+    doc.database.events.entityErased.addEventListener(args => {
+      this.view.removeEntity(args.entity)
+    })
+
     // Set layer visibility
     doc.database.events.layerAppended.addEventListener(args => {
       this._view.addLayer(args.layer)

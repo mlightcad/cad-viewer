@@ -3,6 +3,7 @@ export default {
     circle: 'Creates one circle by center and radius',
     csvg: 'Converts current drawing to SVG',
     dimlinear: 'Creates linear dimensions',
+    erase: 'Deletes selected entities from the drawing',
     line: 'Draws straight line segments between points',
     log: 'Logs debug information in console',
     open: 'Opens an existing drawing file',

@@ -24,7 +24,7 @@ import {
 import * as THREE from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 
-import { AcApSettingManager } from '../app'
+import { AcApDocManager, AcApSettingManager } from '../app'
 import {
   AcEdBaseView,
   AcEdCalculateSizeCallback,
@@ -175,8 +175,7 @@ export class AcTrView2d extends AcEdBaseView {
           break
 
         case 'Delete':
-          this.selectionSet.ids.forEach(id => this.removeEntity(id))
-          this.selectionSet.clear()
+          AcApDocManager.instance.sendStringToExecute('erase')
           break
       }
     })
@@ -575,11 +574,11 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Remove the specified entity from this view.
-   * @param objectId Input the object id of the entity to remove
+   * @inheritdoc
    */
-  removeEntity(objectId: AcDbObjectId) {
-    this._scene.removeEntity(objectId)
+  removeEntity(entity: AcDbEntity | AcDbEntity[]) {
+    const entities = Array.isArray(entity) ? entity : [entity]
+    entities.forEach(entity => this._scene.removeEntity(entity.objectId))
   }
 
   /**
