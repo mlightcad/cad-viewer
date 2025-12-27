@@ -40,8 +40,8 @@
       :span-method="spanMethod"
       class="ml-entity-properties-table"
     >
-      <!-- Label / Group -->
-      <el-table-column prop="name" min-width="auto">
+      <!-- Label -->
+      <el-table-column prop="name">
         <template #default="{ row }">
           <div class="ml-cell-container">
             <div :class="['ml-cell-label', { 'ml-group-row': row.isGroup }]">
@@ -56,16 +56,15 @@
       <el-table-column>
         <template #default="{ row }">
           <div class="ml-cell-value" v-if="!row.isGroup">
-            <!-- ===== Readonly Mode ===== -->
-            <template v-if="!editable || !row.editable">
-              <!-- Readonly Color: use disabled dropdown -->
+            <!-- ===== Readonly ===== -->
+            <template
+              v-if="!row.__isArrayIndex && (!editable || !row.editable)"
+            >
               <ml-color-dropdown
                 v-if="row.type === 'color'"
                 :model-value="row.accessor.get()"
                 disabled
               />
-
-              <!-- Readonly Non-Color -->
               <span
                 v-else
                 :title="formatDisplayValue(row)"
@@ -76,63 +75,66 @@
               </span>
             </template>
 
-            <!-- ===== Editable Mode ===== -->
+            <!-- ===== Editable ===== -->
             <template v-else>
-              <div>
-                <!-- Enum -->
-                <el-select
-                  v-if="row.type === 'enum'"
-                  :model-value="row.accessor.get()"
-                  @change="(v: unknown) => onPropertyChange(row, v)"
-                  style="width: 100%"
-                >
-                  <el-option
-                    v-for="opt in row.options || []"
-                    :key="opt.value"
-                    :label="entityPropEnum(opt.label)"
-                    :value="opt.value"
-                  />
-                </el-select>
-
-                <!-- Color -->
-                <ml-color-dropdown
-                  v-else-if="row.type === 'color'"
-                  :model-value="row.accessor.get()"
-                  @color-change="(v: unknown) => onPropertyChange(row, v)"
+              <el-select
+                v-if="row.type === 'enum'"
+                :model-value="row.accessor.get()"
+                @change="(v: string | number) => onPropertyChange(row, v)"
+              >
+                <el-option
+                  v-for="opt in row.options || []"
+                  :key="opt.value"
+                  :label="entityPropEnum(opt.label)"
+                  :value="opt.value"
                 />
+              </el-select>
 
-                <!-- Boolean -->
-                <el-switch
-                  v-else-if="row.type === 'boolean'"
-                  :model-value="row.accessor.get()"
-                  @change="(v: unknown) => onPropertyChange(row, v)"
-                />
+              <ml-color-dropdown
+                v-else-if="row.type === 'color'"
+                :model-value="row.accessor.get()"
+                @color-change="(v: AcCmColor) => onPropertyChange(row, v)"
+              />
 
-                <!-- Int -->
-                <el-input-number
-                  v-else-if="row.type === 'int'"
-                  :model-value="row.accessor.get()"
-                  :step="1"
-                  :precision="0"
-                  @change="(v: unknown) => onPropertyChange(row, v)"
-                />
+              <el-switch
+                v-else-if="row.type === 'boolean'"
+                :model-value="row.accessor.get()"
+                @change="(v: boolean) => onPropertyChange(row, v)"
+              />
 
-                <!-- Float -->
-                <el-input-number
-                  v-else-if="row.type === 'float'"
-                  :model-value="row.accessor.get()"
-                  :step="0.1"
-                  :precision="3"
-                  @change="(v: unknown) => onPropertyChange(row, v)"
-                />
+              <el-input-number
+                v-else-if="row.type === 'int'"
+                controls-position="right"
+                :model-value="row.accessor.get()"
+                :min="row.__min"
+                :max="row.__max"
+                :step="1"
+                :precision="0"
+                @change="
+                  (v: number) => {
+                    if (row.__isArrayIndex) {
+                      row.accessor.set?.(v)
+                    } else {
+                      onPropertyChange(row, v)
+                    }
+                  }
+                "
+              />
 
-                <!-- String -->
-                <el-input
-                  v-else
-                  :model-value="row.accessor.get()"
-                  @input="(v: unknown) => onPropertyChange(row, v)"
-                />
-              </div>
+              <el-input-number
+                v-else-if="row.type === 'float'"
+                controls-position="right"
+                :model-value="row.accessor.get()"
+                :step="0.1"
+                :precision="3"
+                @change="(v: number) => onPropertyChange(row, v)"
+              />
+
+              <el-input
+                v-else
+                :model-value="row.accessor.get()"
+                @input="(v: string) => onPropertyChange(row, v)"
+              />
             </template>
           </div>
         </template>
@@ -165,17 +167,13 @@ import { MlColorDropdown } from '../common'
 
 const { t } = useI18n()
 
-/**
- * Props
- */
+/* ================= props / emits ================= */
+
 const props = defineProps<{
   entityPropsList?: AcDbEntityProperties[] | null
   editable?: boolean
 }>()
 
-/**
- * Emits event (optional)
- */
 const emit = defineEmits<{
   (
     e: 'update-property',
@@ -187,50 +185,64 @@ const emit = defineEmits<{
   ): void
 }>()
 
-/**
- * Dropdown selection index:
- * -1 → show common properties
- * >=0 → show the selected entity
- */
+/* ================= state ================= */
+
 const selectedIndex = ref(-1)
+const arrayIndexMap = ref<Record<string, number>>({})
 
 /**
- * Display row types
+ * 🔑 Forces rebuild of array property rows
  */
+const arrayRebuildVersion = ref(0)
+
+/* ================= row types ================= */
+
 interface MlDisplayRowBase {
   id: string
-  isGroup: boolean
   name: string
+  isGroup: boolean
 }
 
-type MlDisplayPropertyRow = MlDisplayRowBase & AcDbEntityRuntimeProperty
+type MlDisplayPropertyRow = MlDisplayRowBase &
+  AcDbEntityRuntimeProperty & {
+    __groupName?: string
+    __min?: number
+    __max?: number
+    __isArrayIndex?: boolean
+  }
+
 type MlDisplayGroupRow = MlDisplayRowBase & {
   isGroup: true
   children: MlDisplayPropertyRow[]
 }
+
 type MlDisplayRow = MlDisplayGroupRow | MlDisplayPropertyRow
+
+/* ================= helpers ================= */
+
+function isArrayProperty(p: AcDbEntityRuntimeProperty): boolean {
+  return p.type === 'array' && !!p.itemSchema
+}
+
+function arrayKey(group: string, prop: string) {
+  return `${group}.${prop}`
+}
+
+/* ================= formatting ================= */
 
 function formatDisplayValue(row: MlDisplayPropertyRow): string {
   const v = row.accessor.get()
-
   switch (row.type) {
     case 'boolean':
       return v ? 'True' : 'False'
-
-    case 'enum': {
-      const opt = row.options?.find(o => o.value === v)
-      return opt && opt.label ? entityPropEnum(opt.label) : ''
-    }
-
+    case 'enum':
+      return entityPropEnum(row.options?.find(o => o.value === v)?.label ?? '')
     case 'color':
       return (v as AcCmColor).toString()
-
     case 'lineweight':
       return AcGiLineWeight[v as number]
-
     case 'transparency':
       return (v as AcCmTransparency).toString()
-
     default:
       return v != null ? String(v) : ''
   }
@@ -260,83 +272,134 @@ async function copyReadonlyValue(row: MlDisplayPropertyRow) {
   }
 }
 
-/**
- * Compute table rows
- */
+/* ================= rows ================= */
+
 const tableRows = computed<MlDisplayRow[]>(() => {
+  // 🔑 dependency to force rebuild when array index changes
+  arrayRebuildVersion.value
+
   const list = props.entityPropsList
-  if (!list || list.length === 0) return []
+  if (!list?.length) return []
 
-  // Only one entity → show all
-  if (list.length === 1) return toRows(list[0])
+  const entity =
+    list.length === 1
+      ? list[0]
+      : selectedIndex.value >= 0
+        ? list[selectedIndex.value]
+        : findCommonProperties(list)
 
-  // Multiple entities
-  if (selectedIndex.value >= 0) {
-    // Specific entity selected
-    const selected = list[selectedIndex.value]
-    return toRows(selected)
-  } else {
-    // Show common properties across all
-    const commonProps = findCommonProperties(list)
-    return toRows(commonProps)
-  }
+  return expandEntity(entity)
 })
 
-/**
- * Convert entityProps to table rows
- */
-function toRows(entityProps: AcDbEntityProperties): MlDisplayRow[] {
-  return entityProps.groups.map((group, gi) => ({
-    id: `group-${gi}`,
-    name: group.groupName,
-    isGroup: true,
-    children: group.properties.map((p, pi) => ({
-      ...p,
-      id: `group-${gi}-prop-${pi}`,
-      isGroup: false
-    }))
-  }))
+function expandEntity(entity: AcDbEntityProperties): MlDisplayRow[] {
+  return entity.groups.map((group, gi) => {
+    const children: MlDisplayPropertyRow[] = []
+
+    group.properties.forEach((prop, pi) => {
+      if (!isArrayProperty(prop)) {
+        children.push({
+          ...prop,
+          id: `g-${gi}-p-${pi}`,
+          isGroup: false,
+          __groupName: group.groupName
+        })
+        return
+      }
+
+      const arr = prop.accessor.get() as unknown[]
+      const key = arrayKey(group.groupName, prop.name)
+
+      if (!arrayIndexMap.value[key]) arrayIndexMap.value[key] = 1
+
+      arrayIndexMap.value[key] = Math.min(
+        Math.max(1, arrayIndexMap.value[key]),
+        arr.length
+      )
+
+      /* ===== index row (always editable) ===== */
+      children.push({
+        id: `g-${gi}-p-${pi}-index`,
+        name: prop.name,
+        type: 'int',
+        editable: true,
+        isGroup: false,
+        __groupName: group.groupName,
+        __isArrayIndex: true,
+        __min: 1,
+        __max: arr.length,
+        accessor: {
+          get: () => arrayIndexMap.value[key],
+          set: (v: number) => {
+            const newIndex = Math.min(Math.max(1, v), arr.length)
+            if (arrayIndexMap.value[key] !== newIndex) {
+              arrayIndexMap.value[key] = newIndex
+              arrayRebuildVersion.value++ // 🔥 force rebuild
+            }
+          }
+        }
+      } as MlDisplayPropertyRow)
+
+      const element = arr[arrayIndexMap.value[key] - 1] as Record<string, unknown>
+      if (!element) return
+
+      /* ===== element property rows ===== */
+      if (prop.itemSchema) {
+        for (const itemProp of prop.itemSchema.properties) {
+          children.push({
+            id: `g-${gi}-p-${pi}-${itemProp.name}`,
+            name: itemProp.name,
+            type: itemProp.type,
+            editable: itemProp.editable,
+            isGroup: false,
+            __groupName: group.groupName,
+            accessor: {
+              get: () => element[itemProp.name],
+              set: (v: unknown) => {
+                element[itemProp.name] = v
+              }
+            }
+          })
+        }        
+      }
+    })
+
+    return {
+      id: `group-${gi}`,
+      name: group.groupName,
+      isGroup: true,
+      children
+    }
+  })
 }
 
-/**
- * Find properties that have identical values across all entities
- */
+/* ================= common props ================= */
+
 function findCommonProperties(
   list: AcDbEntityProperties[]
 ): AcDbEntityProperties {
-  if (!list.length) return { type: '', groups: [] }
-
-  // Start from the first entity's groups
   const first = list[0]
-  const commonGroups: AcDbEntityPropertyGroup[] = []
+  const groups: AcDbEntityPropertyGroup[] = []
 
-  for (const group of first.groups) {
-    const commonProps: AcDbEntityRuntimeProperty[] = []
+  for (const g of first.groups) {
+    const props: AcDbEntityRuntimeProperty[] = []
 
-    for (const prop of group.properties) {
-      const hasSameValueInAll = list.every(ent => {
-        const g = ent.groups.find(g2 => g2.groupName === group.groupName)
-        const p = g?.properties.find(p2 => p2.name === prop.name)
-        return p && p.accessor.get() === prop.accessor.get()
-      })
-
-      if (hasSameValueInAll) {
-        commonProps.push(prop)
+    for (const p of g.properties) {
+      if (
+        list.every(ent => {
+          const gp = ent.groups
+            .find(x => x.groupName === g.groupName)
+            ?.properties.find(x => x.name === p.name)
+          return gp && gp.accessor.get() === p.accessor.get()
+        })
+      ) {
+        props.push(p)
       }
     }
 
-    if (commonProps.length) {
-      commonGroups.push({
-        groupName: group.groupName,
-        properties: commonProps
-      })
-    }
+    if (props.length) groups.push({ groupName: g.groupName, properties: props })
   }
 
-  return {
-    type: first.type,
-    groups: commonGroups
-  }
+  return { type: first.type, groups }
 }
 
 /**
@@ -359,20 +422,10 @@ const spanMethod = ({
  * Handle property change (direct call to accessor.set)
  */
 function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
-  if (!props.editable || !props.entityPropsList?.length) return
-
-  const current =
-    selectedIndex.value >= 0
-      ? props.entityPropsList[selectedIndex.value]
-      : props.entityPropsList[0]
-
-  const group = current.groups.find(g =>
-    g.properties.some(p => p.name === row.name)
-  )
-  if (!group) return
+  if (row.__isArrayIndex) return
 
   emit('update-property', {
-    groupName: group.groupName,
+    groupName: row.__groupName ?? '',
     propertyName: row.name,
     newValue
   })
@@ -386,6 +439,10 @@ function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
 
 ::v-deep(.el-table .cell) {
   display: flex;
+}
+
+::v-deep(.ml-cell-value > *) {
+  width: 100%;
 }
 
 .ml-entity-properties {

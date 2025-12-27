@@ -73,7 +73,7 @@ import { MlColorPickerDlg } from '../dialog'
 
 const props = defineProps<{
   modelValue: AcCmColor | undefined
-  disabled?: boolean // ← ADD THIS
+  disabled?: boolean
   onCustomColorSelected?: (
     oldColor: AcCmColor | undefined
   ) => AcCmColor | undefined | Promise<AcCmColor | undefined>

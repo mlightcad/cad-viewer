@@ -198,6 +198,7 @@ export default {
     geometry: '几何图形',
     pattern: '图案',
     table: '表格',
+    others: '其它',
     patternType: '类型',
     patternName: '图案名',
     patternAngle: '角度',
@@ -268,6 +269,8 @@ export default {
     numRows: '行数',
     numColumns: '列数',
     tableWidth: '表格宽度',
-    tableHeight: '表格高度'
+    tableHeight: '表格高度',
+    vertices: '顶点',
+    closed: '闭合'
   }
 }

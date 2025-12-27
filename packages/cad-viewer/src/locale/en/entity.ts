@@ -198,6 +198,7 @@ export default {
     geometry: 'Geometry',
     pattern: 'Pattern',
     table: 'Table',
+    others: 'Others',
     patternType: 'Type',
     patternName: 'Name',
     patternAngle: 'Angle',
@@ -268,6 +269,8 @@ export default {
     numRows: 'Number of Rows',
     numColumns: 'Number of Columns',
     tableWidth: 'Table Width',
-    tableHeight: 'Table Height'
+    tableHeight: 'Table Height',
+    vertices: 'Vertices',
+    closed: 'Closed'
   }
 }
