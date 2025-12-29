@@ -140,7 +140,7 @@ const { effectiveLocale, elementPlusLocale } = useLocale(props.locale)
 const { info, warning, error, success } = useNotificationCenter()
 
 // Canvas element reference
-const canvasRef = ref<HTMLCanvasElement>()
+const containerRef = ref<HTMLDivElement>()
 
 // Referenence to the root element used to switch theme
 const viewerRoot = ref<HTMLElement | null>(null)
@@ -285,10 +285,11 @@ watch(
 // Component lifecycle: Initialize and load initial file if URL or localFile is provided
 onMounted(async () => {
   // Initialize the CAD viewer with the internal canvas
-  if (canvasRef.value) {
+  if (containerRef.value) {
     initializeCadViewer({
-      canvas: canvasRef.value,
+      container: containerRef.value,
       baseUrl: props.baseUrl,
+      autoResize: true,
       useMainThreadDraw: props.useMainThreadDraw
     })
     // Set the editor reference after initialization
@@ -399,7 +400,7 @@ const closeNotificationCenter = () => {
 
 <template>
   <!-- Canvas element for CAD rendering - positioned as background -->
-  <canvas ref="canvasRef" class="ml-cad-canvas"></canvas>
+  <div ref="containerRef" class="ml-cad-container"></div>
 
   <!-- Main CAD viewer container with complete UI layout -->
   <div ref="viewerRoot" v-if="editorRef" class="ml-cad-viewer-container">
@@ -454,8 +455,8 @@ const closeNotificationCenter = () => {
 
 <!-- Component-specific styles -->
 <style>
-/* Canvas element styling */
-.ml-cad-canvas {
+/* Container element styling */
+.ml-cad-container {
   position: absolute;
   top: 0px;
   left: 0px;
@@ -466,7 +467,7 @@ const closeNotificationCenter = () => {
   display: block;
   outline: none;
   z-index: 1; /* Canvas above background but below UI */
-  pointer-events: auto; /* Ensure canvas can receive mouse events */
+  pointer-events: auto; /* Ensure container can receive mouse events */
 }
 
 /* Main CAD viewer container styling */
@@ -487,7 +488,7 @@ const closeNotificationCenter = () => {
   text-align: center;
   width: 100%;
   margin-top: 20px;
-  pointer-events: none; /* Allow mouse events to pass through to canvas */
+  pointer-events: none; /* Allow mouse events to pass through to container */
   z-index: 1; /* Ensure it's above canvas but doesn't block events */
 }
 </style>
