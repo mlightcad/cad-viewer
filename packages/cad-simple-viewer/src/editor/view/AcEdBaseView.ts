@@ -10,6 +10,7 @@ import {
   AcGePoint2d,
   AcGePoint2dLike
 } from '@mlightcad/data-model'
+import { debounce } from 'lodash-es'
 
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
@@ -205,7 +206,7 @@ export abstract class AcEdBaseView {
    * Creates a new base view instance.
    *
    * Sets up the canvas, initializes internal state, and registers event listeners
-   * for mouse interactions and window resize events.
+   * for mouse interactions and container resize events.
    *
    * @param canvas - The HTML canvas element to render into
    */
@@ -232,7 +233,15 @@ export abstract class AcEdBaseView {
         this._editor.restoreCursor()
       }
     })
-    window.addEventListener('resize', this.onWindowResize.bind(this))
+
+    const debouncedWindowResize = debounce(
+      () => this.onWindowResize(),
+      0,
+      { leading: false, trailing: true }
+    )
+    const resizeObserver = new ResizeObserver(debouncedWindowResize)
+    resizeObserver.observe(this._canvas.parentElement as Element)
+
     this._selectionBoxSize = 4
 
     // Initialize hover/unhover handler

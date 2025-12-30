@@ -43,9 +43,9 @@ import { AcTrScene } from './AcTrScene'
  */
 export interface AcTrView2dOptions {
   /**
-   * Canvas HTML element used by renderer
+   * Container HTML element used by renderer
    */
-  canvas?: HTMLCanvasElement
+  container?: HTMLElement
   /**
    * Callback function used to calculate size of canvas when window resized
    */
@@ -115,7 +115,7 @@ export class AcTrView2d extends AcEdBaseView {
    * Creates a new 2D CAD viewer instance.
    *
    * @param options - Configuration options for the viewer
-   * @param options.canvas - Optional HTML canvas element. If not provided, a new canvas will be created
+   * @param options.container - Optional HTML container element. If not provided, a new container will be created
    * @param options.calculateSizeCallback - Optional callback function to calculate canvas size on window resize
    * @param options.background - Optional background color as hex number (default: 0x000000)
    */
@@ -124,18 +124,21 @@ export class AcTrView2d extends AcEdBaseView {
       ...DEFAULT_VIEW_2D_OPTIONS,
       ...options
     }
+
+    const container = mergedOptions.container ?? document.createElement('div')
+    mergedOptions.container = container
+
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
-      canvas: options.canvas
     })
-    if (mergedOptions.canvas == null) {
-      mergedOptions.canvas = renderer.domElement
-    }
-    super(mergedOptions.canvas)
+    container.appendChild(renderer.domElement)
+
+    super(renderer.domElement)
     if (options.calculateSizeCallback) {
       this.setCalculateSizeCallback(options.calculateSizeCallback)
     }
+
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setSize(this.width, this.height)
 
