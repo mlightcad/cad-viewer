@@ -7,6 +7,10 @@ CAD-Viewer is a **high-performance**, modern, web-based CAD editor inspired by A
 - [**🌐 Live Demo**](https://mlightcad.github.io/cad-viewer/)
 - [**🌐 API Docs**](https://mlightcad.github.io/cad-viewer/docs/)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
+- X (Twitter): [@mlightcad](https://x.com/mlightcad)
+- Medium: [@mlightcad](https://medium.com/@mlightcad)
+- Juejin(稀土掘金): [@mlightcad](https://juejin.cn/column/7501992214283501579)
+
 
 ![CAD-Viewer](./assets/dwg-viewer.jpg)
 

@@ -7,6 +7,9 @@ CAD-Viewer 是一款高性能、现代化的 Web 端 CAD 查看与编辑器，�
 - [**🌐 在线演示**](https://mlightcad.github.io/cad-viewer/)
 - [**🌐 API 文档**](https://mlightcad.github.io/cad-viewer/docs/)
 - [**🌐 项目 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
+- X (Twitter): [@mlightcad](https://x.com/mlightcad)
+- Medium: [@mlightcad](https://medium.com/@mlightcad)
+- 稀土掘金: [@mlightcad](https://juejin.cn/column/7501992214283501579)
 
 ![CAD-Viewer](./assets/dwg-viewer.jpg)
 
