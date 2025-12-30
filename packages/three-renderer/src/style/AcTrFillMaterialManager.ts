@@ -74,14 +74,14 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         hatchPatternLine.origin.y
       )
         .sub(options.rebaseOffset)
-        .rotateAround(tempCenter, -THREE.MathUtils.degToRad(style.patternAngle))
+        .rotateAround(tempCenter, -style.patternAngle)
 
       const delta = new THREE.Vector2(
         hatchPatternLine.delta.x,
         hatchPatternLine.delta.y
       ).rotateAround(
         tempCenter,
-        -THREE.MathUtils.degToRad(hatchPatternLine.angle)
+        -hatchPatternLine.angle
       )
 
       if (delta.y === 0) {
@@ -128,10 +128,12 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         patternSum[i] = patternLength
       }
 
+      // Convert angle to degrees
+      const angle = THREE.MathUtils.radToDeg(hatchPatternLine.angle - style.patternAngle)
       const patternLine = {
         origin,
         delta,
-        angle: hatchPatternLine.angle - style.patternAngle,
+        angle,
         pattern,
         patternSum,
         patternLength
@@ -151,8 +153,8 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
     const material = createHatchPatternShaderMaterial(
       patternLines,
-      style.patternAngle,
-      this.options.cameraZoomUniform,
+      THREE.MathUtils.radToDeg(style.patternAngle),
+      AcTrMaterialManager.CameraZoomUniform,
       new THREE.Color(traits.rgbColor)
     )
     material.defines = {

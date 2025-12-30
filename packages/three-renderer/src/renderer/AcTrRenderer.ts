@@ -27,6 +27,7 @@ import {
   AcTrPoint,
   AcTrPolygon
 } from '../object'
+import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport'
@@ -113,6 +114,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   render(scene: THREE.Object3D, camera: AcTrCamera) {
+    this.updateCameraZoomUniform(camera.zoom)
     this._renderer.render(scene, camera.internalCamera)
   }
 
@@ -286,5 +288,13 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   private linePoints(points: AcGePoint3dLike[]) {
     return new AcTrLine(points, this._subEntityTraits, this._styleManager)
+  }
+
+  /**
+   * Updates camera zoom value for shader materials
+   */
+  private updateCameraZoomUniform(zoom: number) {
+    // DxfLoader.CameraZoomUniform.value = (zoom * this.container.height) / 50;
+    AcTrMaterialManager.CameraZoomUniform.value = zoom
   }
 }
