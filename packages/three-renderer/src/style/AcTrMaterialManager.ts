@@ -18,6 +18,9 @@ import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
  * - createMaterialImpl()
  */
 export abstract class AcTrMaterialManager<T> {
+  /** Materials share this uniform */
+  static CameraZoomUniform = { value: 1.0 };
+
   /** Material cache indexed by key. */
   protected cache: Record<string, THREE.Material> = {}
 

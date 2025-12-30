@@ -68,7 +68,7 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
         traits.rgbColor,
         traits.lineTypeScale,
         this.options.viewportScaleUniform,
-        this.options.cameraZoomUniform
+        AcTrMaterialManager.CameraZoomUniform
       )
     } else {
       material = new THREE.LineBasicMaterial({ color: traits.rgbColor })
