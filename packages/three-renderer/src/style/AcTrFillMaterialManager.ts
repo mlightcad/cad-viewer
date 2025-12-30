@@ -128,8 +128,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         patternSum[i] = patternLength
       }
 
-      // Convert angle to degrees
-      const angle = THREE.MathUtils.radToDeg(hatchPatternLine.angle - style.patternAngle)
+      const angle = hatchPatternLine.angle - style.patternAngle
       const patternLine = {
         origin,
         delta,
@@ -153,7 +152,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
     const material = createHatchPatternShaderMaterial(
       patternLines,
-      THREE.MathUtils.radToDeg(style.patternAngle),
+      style.patternAngle,
       AcTrMaterialManager.CameraZoomUniform,
       new THREE.Color(traits.rgbColor)
     )
