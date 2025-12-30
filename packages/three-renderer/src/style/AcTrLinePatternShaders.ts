@@ -15,24 +15,28 @@ export class AcTrLinePatternShaders {
   ): THREE.Material {
     let totalLength = 0.0
 
-    const newPattern: number[] = []
+    const ltypeElementLenArr: number[] = [];
     for (let i = 0; i < pattern.length; i++) {
-      newPattern[i] = pattern[i].elementLength * scale
-      totalLength += Math.abs(newPattern[i])
-    }
-
-    for (let i = 0; i < newPattern.length; i++) {
-      // It is hard to draw a dot. So convert it to a short line.
-      if (newPattern[i] === 0) {
-        newPattern[i] = totalLength * 0.01 * scale
-        totalLength += newPattern[i]
-      }
+        let len = pattern[i].elementLength;
+        // because we cannot (or, it's kind of hard to) draw a dot, let's draw a short dash (0.5 long)
+        if (len === 0) {
+            len = 0.5;
+        } else if (len < 0 && pattern[i].elementTypeFlag !== 0) {
+            // If current element is a complex linetype element.
+            // Since we don"t support this kind of linetype now, we'll need to make its length possitive,
+            // in order to draw a line segment for this case!
+            // TODO: support complex ltype, thus we can remove unsupportedLineTypes
+            len = Math.abs(len);
+        }
+        len *= scale;
+        ltypeElementLenArr[i] = len;
+        totalLength += Math.abs(ltypeElementLenArr[i]);
     }
 
     const uniforms = THREE.UniformsUtils.merge([
       THREE.UniformsLib.common,
       {
-        pattern: { value: newPattern },
+        pattern: { value: ltypeElementLenArr },
         patternLength: { value: totalLength },
         u_color: { value: new THREE.Color(color) }
       }
