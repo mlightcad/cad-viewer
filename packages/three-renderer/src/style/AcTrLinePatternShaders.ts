@@ -15,22 +15,27 @@ export class AcTrLinePatternShaders {
   ): THREE.Material {
     let totalLength = 0.0
 
-    const ltypeElementLenArr: number[] = [];
+    const ltypeElementLenArr: number[] = []
     for (let i = 0; i < pattern.length; i++) {
-        let len = pattern[i].elementLength;
-        // because we cannot (or, it's kind of hard to) draw a dot, let's draw a short dash (0.5 long)
-        if (len === 0) {
-            len = 0.5;
-        } else if (len < 0 && pattern[i].elementTypeFlag !== 0) {
-            // If current element is a complex linetype element.
-            // Since we don"t support this kind of linetype now, we'll need to make its length possitive,
-            // in order to draw a line segment for this case!
-            // TODO: support complex ltype, thus we can remove unsupportedLineTypes
-            len = Math.abs(len);
-        }
-        len *= scale;
-        ltypeElementLenArr[i] = len;
-        totalLength += Math.abs(ltypeElementLenArr[i]);
+      let len = pattern[i].elementLength
+      if (len < 0 && pattern[i].elementTypeFlag !== 0) {
+        // If current element is a complex linetype element.
+        // Since we don"t support this kind of linetype now, we'll need to make its length possitive,
+        // in order to draw a line segment for this case!
+        // TODO: support complex ltype, thus we can remove unsupportedLineTypes
+        len = Math.abs(len)
+      }
+      len *= scale
+      ltypeElementLenArr[i] = len
+      totalLength += Math.abs(ltypeElementLenArr[i])
+    }
+    // Because we cannot (or, it's kind of hard to) draw a dot, let's draw a short dash.
+    // A really small value doesn't look good, so, use a fixed small value now!
+    for (let i = 0; i < ltypeElementLenArr.length; i++) {
+      if (ltypeElementLenArr[i] === 0) {
+        ltypeElementLenArr[i] = 0.5/*totalLength * 0.01 * scale*/
+        totalLength += ltypeElementLenArr[i]
+      }
     }
 
     const uniforms = THREE.UniformsUtils.merge([
