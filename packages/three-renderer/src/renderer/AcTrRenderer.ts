@@ -114,7 +114,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   render(scene: THREE.Object3D, camera: AcTrCamera) {
-    this.updateCameraZoomUniform(camera.zoom);
+    this.updateCameraZoomUniform(camera.zoom)
     this._renderer.render(scene, camera.internalCamera)
   }
 
@@ -295,6 +295,6 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    */
   private updateCameraZoomUniform(zoom: number) {
     // DxfLoader.CameraZoomUniform.value = (zoom * this.container.height) / 50;
-    AcTrMaterialManager.CameraZoomUniform.value = zoom;
+    AcTrMaterialManager.CameraZoomUniform.value = zoom
   }
 }
