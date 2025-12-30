@@ -2,16 +2,14 @@ import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcDbOpenDatabaseOptions } from '@mlightcad/data-model'
 
 class CadViewerApp {
-  private canvas: HTMLCanvasElement
+  private container: HTMLDivElement
   private fileInput: HTMLInputElement
   private isInitialized: boolean = false
 
   constructor() {
     // Get DOM elements
-    this.canvas = document.getElementById('canvas') as HTMLCanvasElement
-    this.fileInput = document.getElementById(
-      'fileInputElement'
-    ) as HTMLInputElement
+    this.container = document.getElementById('cad-container') as HTMLDivElement
+    this.fileInput = document.getElementById('fileInputElement') as HTMLInputElement
     this.setupFileHandling()
   }
 
@@ -22,7 +20,8 @@ class CadViewerApp {
         // Actually 'baseUrl' here isn't required. Override default 'baseUrl'
         // value is just for demostration.
         AcApDocManager.createInstance({
-          canvas: this.canvas,
+          container: this.container,
+          autoResize: true,
           baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
         })
         this.isInitialized = true

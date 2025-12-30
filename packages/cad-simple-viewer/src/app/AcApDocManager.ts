@@ -50,9 +50,21 @@ export interface AcDbDocumentEventArgs {
  */
 export interface AcApDocManagerOptions {
   /**
-   * Optional HTML canvas element for rendering. If not provided, a new canvas will be created
+   * Optional HTML container element for rendering. If not provided, a new container will be created
    */
-  canvas?: HTMLCanvasElement
+  container?: HTMLElement
+  /**
+   * Width of the canvas element. If not provided, use container's width
+   */
+  width?: number
+  /**
+   * Height of the canvas element. If not provided, use container's height
+   */
+  height?: number
+  /**
+   * The flag whether to auto resize canvas when container size changed. Default is false.
+   */
+  autoResize?: boolean
   /**
    * Base URL to load resources (such as fonts annd drawing templates) needed
    */
@@ -136,14 +148,24 @@ export class AcApDocManager {
       eventBus.emit('open-file-progress', progress)
       this.updateProgress(progress)
     })
+
+    const initialSize = options.container?.getBoundingClientRect() ?? { width: 300, height: 150 }
     const callback: AcEdCalculateSizeCallback = () => {
-      return {
-        width: window.innerWidth,
-        height: window.innerHeight - 30
+      if (options.autoResize) {
+        const box = options.container?.getBoundingClientRect()
+        return {
+          width: box?.width ?? initialSize.width,
+          height: box?.height ?? initialSize.height
+        }
+      } else {
+        return {
+          width: options.width ?? initialSize.width,
+          height: options.height ?? initialSize.height
+        }
       }
     }
     const view = new AcTrView2d({
-      canvas: options.canvas,
+      container: options.container,
       calculateSizeCallback: callback
     })
     this._context = new AcApContext(view, doc)
