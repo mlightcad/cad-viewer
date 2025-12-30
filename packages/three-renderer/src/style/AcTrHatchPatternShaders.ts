@@ -3,21 +3,30 @@ import * as THREE from 'three'
 export interface AcTrPatternLine {
   origin: THREE.Vector2
   delta: THREE.Vector2
-  angle: number
+  angle: number // in degrees
   pattern: number[] // line pattern
   patternSum: number[]
   patternLength: number // total length of a line pattern
 }
 
+/**
+ * 
+ * @param patternLines Line patterns. Angles are in degrees.
+ * @param patternAngle In degrees
+ * @param cameraZoomUniform Camera zoom uniform
+ * @param color Color
+ * @param fixedThicknessInWorldCoord Fixed thickness in world coordinates
+ * @returns Shader material
+ */
 export function createHatchPatternShaderMaterial(
   patternLines: AcTrPatternLine[],
   patternAngle: number,
-  cameraZoomUniform: number,
+  cameraZoomUniform: { value: number },
   color: THREE.Color,
   fixedThicknessInWorldCoord = 0
 ): THREE.Material {
   const uniforms = {
-    u_cameraZoom: { value: cameraZoomUniform },
+    u_cameraZoom: cameraZoomUniform,
     u_patternLines: { value: patternLines },
     u_patternAngle: { value: patternAngle },
     u_color: { value: color }
