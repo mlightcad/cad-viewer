@@ -79,10 +79,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       const delta = new THREE.Vector2(
         hatchPatternLine.delta.x,
         hatchPatternLine.delta.y
-      ).rotateAround(
-        tempCenter,
-        -hatchPatternLine.angle
-      )
+      ).rotateAround(tempCenter, -hatchPatternLine.angle)
 
       if (delta.y === 0) {
         console.warn('delta.y is zero, skipping pattern line')

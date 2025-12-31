@@ -14,17 +14,7 @@ import { debounce } from 'lodash-es'
 
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
-
-/**
- * Item returned by spatial query
- */
-export interface AcEdSpatialQueryResultItem {
-  minX: number
-  minY: number
-  maxX: number
-  maxY: number
-  id: AcDbObjectId
-}
+import { AcEdSpatialQueryResultItemEx } from './AcEdSpatialQueryResult'
 
 /**
  * Interface to define arguments of mouse event events.
@@ -427,7 +417,7 @@ export abstract class AcEdBaseView {
    * @param box Input the query bounding box
    * @returns Return query results
    */
-  abstract search(box: AcGeBox2d | AcGeBox3d): AcEdSpatialQueryResultItem[]
+  abstract search(box: AcGeBox2d | AcGeBox3d): AcEdSpatialQueryResultItemEx[]
 
   /**
    * Picks entities that intersect a hit-region centered at the specified point
@@ -447,10 +437,13 @@ export abstract class AcEdBaseView {
    * A larger value increases the pick sensitivity. If omitted, a reasonable
    * default is used.
    *
-   * @returns An array of object IDs representing the entities that intersect
+   * @returns Return query results representing the entities that intersect
    * the hit-region.
    */
-  abstract pick(point?: AcGePoint2dLike, hitRadius?: number): AcDbObjectId[]
+  abstract pick(
+    point?: AcGePoint2dLike,
+    hitRadius?: number
+  ): AcEdSpatialQueryResultItemEx[]
 
   /**
    * Select entities intersected with the specified bounding box in the world
@@ -673,7 +666,7 @@ export abstract class AcEdBaseView {
   private hoverAt(x: number, y: number) {
     const results = this.pick({ x, y })
     if (results.length > 0) {
-      this.setHoveredObjectId(results[0])
+      this.setHoveredObjectId(results[0].id)
     } else {
       this.setHoveredObjectId(null)
       this.clearPauseTimer()

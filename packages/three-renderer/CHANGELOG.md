@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.4.0
+
+### Minor Changes
+
+- feat: support osnap for insert entity
+
 ## 1.3.4
 
 ### Patch Changes

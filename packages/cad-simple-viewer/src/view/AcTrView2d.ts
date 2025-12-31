@@ -29,6 +29,7 @@ import {
   AcEdCalculateSizeCallback,
   AcEdConditionWaiter,
   AcEdCorsorType,
+  AcEdSpatialQueryResultItemEx,
   AcEdViewMode,
   eventBus
 } from '../editor'
@@ -411,7 +412,7 @@ export class AcTrView2d extends AcEdBaseView {
    */
   pick(point?: AcGePoint2dLike, hitRadius?: number) {
     if (point == null) point = this.curPos
-    const results: AcDbObjectId[] = []
+    const results: AcEdSpatialQueryResultItemEx[] = []
     const activeLayout = this._scene.activeLayout
     if (activeLayout) {
       const activeLayoutView = this.activeLayoutView
@@ -426,7 +427,7 @@ export class AcTrView2d extends AcEdBaseView {
       firstQueryResults.forEach(item => {
         const objectId = item.id
         if (activeLayout.isIntersectWith(objectId, raycaster)) {
-          results.push(objectId)
+          results.push(item)
         }
       })
     }
@@ -446,7 +447,7 @@ export class AcTrView2d extends AcEdBaseView {
   select(point?: AcGePoint2dLike) {
     const idsAdded: Array<AcDbObjectId> = []
     const results = this.pick(point)
-    results.forEach(id => idsAdded.push(id))
+    results.forEach(item => idsAdded.push(item.id))
     if (idsAdded.length > 0) this.selectionSet.add(idsAdded)
   }
 
@@ -635,11 +636,7 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   protected createScene() {
-    const scene = new AcTrScene()
-    scene.layouts.forEach(layout => {
-      layout.setSnapObject(this.renderer.createObject())
-    })
-    return scene
+    return new AcTrScene()
   }
 
   private createStats(show?: boolean) {
@@ -817,6 +814,8 @@ export class AcTrView2d extends AcEdBaseView {
       this._scene.addEntity(entity, true)
       entity.dispose()
     })
+    group.dispose()
+
     this._isDirty = true
   }
 

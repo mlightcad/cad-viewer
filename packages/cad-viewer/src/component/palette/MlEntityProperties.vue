@@ -339,7 +339,10 @@ function expandEntity(entity: AcDbEntityProperties): MlDisplayRow[] {
         }
       } as MlDisplayPropertyRow)
 
-      const element = arr[arrayIndexMap.value[key] - 1] as Record<string, unknown>
+      const element = arr[arrayIndexMap.value[key] - 1] as Record<
+        string,
+        unknown
+      >
       if (!element) return
 
       /* ===== element property rows ===== */
@@ -359,7 +362,7 @@ function expandEntity(entity: AcDbEntityProperties): MlDisplayRow[] {
               }
             }
           })
-        }        
+        }
       }
     })
 

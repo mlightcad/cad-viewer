@@ -2,7 +2,7 @@ import { AcGeMatrix3d, AcGePoint3d, AcGiEntity } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrMaterialUtil } from '../util'
+import { AcTrMaterialUtil, AcTrMatrixUtil } from '../util'
 import { AcTrObject } from './AcTrObject'
 
 /**
@@ -229,25 +229,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * @inheritdoc
    */
   applyMatrix(matrix: AcGeMatrix3d) {
-    const elements = matrix.elements
-    const threeMatrix = new THREE.Matrix4(
-      elements[0],
-      elements[4],
-      elements[8],
-      elements[12],
-      elements[1],
-      elements[5],
-      elements[9],
-      elements[13],
-      elements[2],
-      elements[6],
-      elements[10],
-      elements[14],
-      elements[3],
-      elements[7],
-      elements[11],
-      elements[15]
-    )
+    const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
     this.applyMatrix4(threeMatrix)
     this.updateMatrixWorld(true)
     this._box.applyMatrix4(threeMatrix)
