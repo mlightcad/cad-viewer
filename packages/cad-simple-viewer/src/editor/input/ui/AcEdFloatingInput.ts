@@ -6,7 +6,6 @@ import {
   AcDbOsnapMode,
   AcGePoint2d,
   AcGePoint2dLike,
-  AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
@@ -24,6 +23,10 @@ import {
   AcEdFloatingInputValidationCallback
 } from './AcEdFloatingInputTypes'
 import { AcEdRubberBand } from './AcEdRubberBand'
+
+type AcEdOsnapPoint = AcGePoint3dLike & {
+  type: AcDbOsnapMode
+}
 
 /**
  * A UI component providing a small floating input box used inside CAD editing
@@ -77,7 +80,7 @@ export class AcEdFloatingInput<T> {
   private osnapMarkerManager?: AcEdMarkerManager
 
   /** Stores last confirmed osnap point */
-  private lastOSnapPoint?: AcGePoint3dLike
+  private lastOsnapPoint?: AcEdOsnapPoint
 
   /**
    * Callback functions
@@ -403,14 +406,29 @@ export class AcEdFloatingInput<T> {
     // Show OSNAP Point
     if (this.osnapMarkerManager) {
       this.osnapMarkerManager.hideMarker()
-      this.lastOSnapPoint = this.getOSnapPoint()
-      if (this.lastOSnapPoint) {
-        wcsMousePos.x = this.lastOSnapPoint.x
-        wcsMousePos.y = this.lastOSnapPoint.y
-        this.osnapMarkerManager.showMarker(this.lastOSnapPoint)
+      this.lastOsnapPoint = this.getOsnapPoint()
+      if (this.lastOsnapPoint) {
+        wcsMousePos.x = this.lastOsnapPoint.x
+        wcsMousePos.y = this.lastOsnapPoint.y
+        this.osnapMarkerManager.showMarker(this.lastOsnapPoint, this.osnapMode2MarkerType(this.lastOsnapPoint.type))
       }
     }
     return wcsMousePos
+  }
+
+  private osnapMode2MarkerType(osnapMode: AcDbOsnapMode) {
+    switch(osnapMode) {
+      case AcDbOsnapMode.EndPoint:
+        return 'rect'
+      case AcDbOsnapMode.MidPoint:
+        return 'triangle'
+      case AcDbOsnapMode.Center:
+        return 'circle'
+      case AcDbOsnapMode.Quadrant:
+        return 'diamond'
+      default:
+        return 'rect'
+    }
   }
 
   /**
@@ -450,11 +468,10 @@ export class AcEdFloatingInput<T> {
    * A larger value increases the pick sensitivity. If omitted, a reasonable
    * default is used.
    *
-   * @returns An array of object IDs representing the entities that intersect
-   * the hit-region.
+   * @returns An array of snap points.
    */
-  private getOSnapPoint(point?: AcGePoint2dLike, hitRadius: number = 20) {
-    const snapPoints: AcGePoint3d[] = this.getOSnapPoints(point, hitRadius)
+  private getOsnapPoint(point?: AcGePoint2dLike, hitRadius: number = 20) {
+    const snapPoints: AcEdOsnapPoint[] = this.getOsnapPoints(point, hitRadius)
 
     // Find the nearest osnap point
     let minDist = Number.MAX_VALUE
@@ -476,13 +493,13 @@ export class AcEdFloatingInput<T> {
     return undefined
   }
 
-  private getOSnapPoints(point?: AcGePoint2dLike, hitRadius: number = 20) {
+  private getOsnapPoints(point?: AcGePoint2dLike, hitRadius: number = 20) {
     const results = this.view.pick(point, hitRadius)
 
     // TODO: Is there one better way to get current working database
     const db = acdbHostApplicationServices().workingDatabase
     const modelSpace = db.tables.blockTable.modelSpace
-    const snapPoints: AcGePoint3d[] = []
+    const osnapPoints: AcEdOsnapPoint[] = []
     results.forEach(item => {
       // FIXME:
       // It isn't correct to get the item in model space only.
@@ -491,39 +508,44 @@ export class AcEdFloatingInput<T> {
       if (entity) {
         if (item.children) {
           item.children.forEach(child => {
-            this.getOSnapPointsInAvaiableModes(entity, snapPoints, child.id)
+            this.getOsnapPointsInAvaiableModes(entity, osnapPoints, child.id)
           })
         } else {
-          this.getOSnapPointsInAvaiableModes(entity, snapPoints)
+          this.getOsnapPointsInAvaiableModes(entity, osnapPoints)
         }
       }
     })
-    return snapPoints
+    return osnapPoints
   }
 
-  private getOSnapPointsInAvaiableModes(
+  private getOsnapPointsInAvaiableModes(
     entity: AcDbEntity,
-    snapPoints: AcGePoint3dLike[],
+    osnapPoints: AcEdOsnapPoint[],
     gsMark?: AcDbObjectId
   ) {
     const modes = acdbMaskToOsnapModes(AcApSettingManager.instance.osnapModes)
     modes.forEach(mode => {
-      this.getOSnapPointsByMode(entity, mode, snapPoints, gsMark)
+      this.getOsnapPointsByMode(entity, mode, osnapPoints, gsMark)
     })
   }
 
-  private getOSnapPointsByMode(
+  private getOsnapPointsByMode(
     entity: AcDbEntity,
     osnapMode: AcDbOsnapMode,
-    snapPoints: AcGePoint3dLike[],
+    osnapPoints: AcEdOsnapPoint[],
     gsMark?: AcDbObjectId
   ) {
+    const start = osnapPoints.length
     entity.subGetOsnapPoints(
       osnapMode,
       { ...this.view.curPos, z: 0 },
       this.lastPoint,
-      snapPoints,
+      osnapPoints,
       gsMark
     )
+    const end = osnapPoints.length
+    for(let index = start; index < end; index++) {
+      osnapPoints[index].type = osnapMode
+    }
   }
 }

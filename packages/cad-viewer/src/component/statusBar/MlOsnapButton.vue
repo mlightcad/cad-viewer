@@ -1,7 +1,7 @@
 <template>
   <el-tooltip :content="t('main.statusBar.osnap.tooltip')" :hide-after="0">
     <el-dropdown trigger="click" @command="handleCommand">
-      <el-button class="ml-osnap-setting-button" :icon="Setting" />
+      <el-button class="ml-osnap-setting-button" :icon="osnap" />
       <template #dropdown>
         <el-dropdown-menu>
           <el-dropdown-item
@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Check, Setting } from '@element-plus/icons-vue'
+import { Check } from '@element-plus/icons-vue'
 import {
   acdbHasOsnapMode,
   AcDbOsnapMode,
@@ -31,6 +31,8 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useSettings } from '../../composable'
+import { osnap } from '../../svg'
+import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 
 const { t } = useI18n()
 const features = useSettings()
@@ -62,6 +64,7 @@ const osnapModes = [
  */
 const handleCommand = (mode: AcDbOsnapMode) => {
   features.osnapModes = acdbToggleOsnapMode(features.osnapModes, mode)
+  AcApSettingManager.instance.osnapModes = features.osnapModes
 }
 </script>
 
