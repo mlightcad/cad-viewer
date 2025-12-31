@@ -451,36 +451,53 @@ export class AcEdFloatingInput<T> {
    */
   private getOSnapPoint(point?: AcGePoint2dLike, hitRadius: number = 20) {
     const results = this.view.pick(point, hitRadius)
-    if (results.length > 0) {
-      // TODO: Is there one better way to get current working database
-      const db = acdbHostApplicationServices().workingDatabase
-      const entity = db.tables.blockTable.modelSpace.getIdAt(results[0])
-      if (entity) {
-        const snapPoints: AcGePoint3d[] = []
-        entity.subGetOsnapPoints(
-          AcDbOsnapMode.EndPoint,
-          { ...this.view.curPos, z: 0 },
-          this.lastPoint,
-          snapPoints
-        )
 
-        // Find the nearest osnap point
-        let minDist = Number.MAX_VALUE
-        let minDistIndex = -1
-        for (let i = 0; i < snapPoints.length; ++i) {
-          const distance = this.view.curPos.distanceTo(snapPoints[i])
-          if (distance < minDist) {
-            minDist = distance
-            minDistIndex = i
-          }
+    // TODO: Is there one better way to get current working database
+    const db = acdbHostApplicationServices().workingDatabase
+    const modelSpace = db.tables.blockTable.modelSpace
+    const snapPoints: AcGePoint3d[] = []
+    results.forEach(item => {
+      // FIXME:
+      // It isn't correct to get the item in model space only.
+      // It may be one entity in paper space
+      const entity = modelSpace.getIdAt(item.id)
+      if (entity) {
+        if (item.children) {
+          item.children.forEach(child => {
+            entity.subGetOsnapPoints(
+              AcDbOsnapMode.EndPoint,
+              { ...this.view.curPos, z: 0 },
+              this.lastPoint,
+              snapPoints,
+              child.id
+            )
+          })
+        } else {
+          entity.subGetOsnapPoints(
+            AcDbOsnapMode.EndPoint,
+            { ...this.view.curPos, z: 0 },
+            this.lastPoint,
+            snapPoints
+          )
         }
-        if (minDistIndex != -1) {
-          const p1 = this.view.cwcs2Wcs({ x: 0, y: 0 })
-          const p2 = this.view.cwcs2Wcs({ x: hitRadius, y: 0 })
-          if (minDist < p2.x - p1.x) {
-            return snapPoints[minDistIndex]
-          }
-        }
+      }
+    })
+
+    // Find the nearest osnap point
+    let minDist = Number.MAX_VALUE
+    let minDistIndex = -1
+    for (let i = 0; i < snapPoints.length; ++i) {
+      const distance = this.view.curPos.distanceTo(snapPoints[i])
+      if (distance < minDist) {
+        minDist = distance
+        minDistIndex = i
+      }
+    }
+    if (minDistIndex != -1) {
+      const p1 = this.view.cwcs2Wcs({ x: 0, y: 0 })
+      const p2 = this.view.cwcs2Wcs({ x: hitRadius, y: 0 })
+      if (minDist < p2.x - p1.x) {
+        return snapPoints[minDistIndex]
       }
     }
     return undefined

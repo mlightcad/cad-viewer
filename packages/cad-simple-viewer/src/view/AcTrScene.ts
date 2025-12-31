@@ -1,9 +1,5 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
-import {
-  AcTrEntity,
-  AcTrObject,
-  AcTrTransientManager
-} from '@mlightcad/three-renderer'
+import { AcTrEntity, AcTrTransientManager } from '@mlightcad/three-renderer'
 import { AcEdLayerInfo } from 'editor'
 import * as THREE from 'three'
 
@@ -340,12 +336,5 @@ export class AcTrScene {
       if (layout.updateEntity(entity)) return true
     }
     return false
-  }
-
-  setSnapObject(object: AcTrObject) {
-    this._layouts.forEach(layout => {
-      layout.setSnapObject(object)
-    })
-    return this
   }
 }

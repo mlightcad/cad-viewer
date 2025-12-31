@@ -1,5 +1,17 @@
 # @mlightcad/cad-viewer-example
 
+## 1.4.0
+
+### Minor Changes
+
+- feat: support osnap for insert entity
+
+### Patch Changes
+
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.4.0
+  - @mlightcad/cad-viewer@2.0.0
+
 ## 1.3.4
 
 ### Patch Changes

@@ -1,9 +1,9 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
-import { AcTrEntity, AcTrObject } from '@mlightcad/three-renderer'
-import RBush from 'rbush'
+import { AcTrEntity, AcTrGroup } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
-import { AcEdLayerInfo, AcEdSpatialQueryResultItem } from '../editor'
+import { AcEdLayerInfo } from '../editor'
+import { AcTrHierarchicalSpatialIndex } from '../spatialIndex'
 import { AcTrLayer, AcTrLayerStats } from './AcTrLayer'
 
 /**
@@ -61,13 +61,11 @@ export class AcTrLayout {
   /** The group that contains all entities in this layout */
   private _group: THREE.Group
   /** Spatial index tree for efficient entity queries */
-  private _indexTree: RBush<AcEdSpatialQueryResultItem>
+  private _spatialIndex: AcTrHierarchicalSpatialIndex
   /** Bounding box containing all entities in this layout */
   private _box: THREE.Box3
   /** Map of layers indexed by layer name */
   private _layers: Map<string, AcTrLayer>
-  /** Optional object for displaying snap points */
-  private _snapPointsObject?: AcTrObject
 
   /**
    * Creates a new layout instance.
@@ -75,7 +73,7 @@ export class AcTrLayout {
    */
   constructor() {
     this._group = new THREE.Group()
-    this._indexTree = new RBush()
+    this._spatialIndex = new AcTrHierarchicalSpatialIndex()
     this._box = new THREE.Box3()
     this._layers = new Map()
   }
@@ -177,7 +175,7 @@ export class AcTrLayout {
     })
     this._layers.clear()
     this._box.makeEmpty()
-    this._indexTree.clear()
+    this._spatialIndex.clear()
     return this
   }
 
@@ -239,13 +237,17 @@ export class AcTrLayout {
     // For infinitive line such as ray and xline, they are not used to extend box
     if (extendBbox) this._box.union(box)
 
-    this._indexTree.insert({
+    this._spatialIndex.insert({
       minX: box.min.x,
       minY: box.min.y,
       maxX: box.max.x,
       maxY: box.max.y,
       id: entity.objectId
     })
+    // If it is one block, we need to build spatial index for entities in this block
+    if (entity instanceof AcTrGroup) {
+      this._spatialIndex.createChildIndex(entity)
+    }
 
     return this
   }
@@ -263,6 +265,7 @@ export class AcTrLayout {
         result = true
       }
     }
+    this._spatialIndex.removeById(objectId)
     return result
   }
 
@@ -276,6 +279,7 @@ export class AcTrLayout {
     for (const [_, layer] of this._layers) {
       if (layer.updateEntity(entity)) return true
     }
+    // TODO: Uodate spatial index
     return false
   }
 
@@ -373,20 +377,6 @@ export class AcTrLayout {
   }
 
   /**
-   * Sets the snap points object for this layout.
-   * Replaces any existing snap points object with the new one.
-   *
-   * @param object - The snap points object to display
-   */
-  setSnapObject(object: AcTrObject) {
-    if (this._snapPointsObject) {
-      this._group.remove(this._snapPointsObject)
-    }
-    this._snapPointsObject = object
-    this._group.add(object)
-  }
-
-  /**
    * Search entities intersected or contained in the specified bounding box.
    * Uses the spatial index for efficient querying of entities within the given bounds.
    *
@@ -394,7 +384,7 @@ export class AcTrLayout {
    * @returns Return query results containing entity IDs and their bounds
    */
   search(box: AcGeBox2d | AcGeBox3d) {
-    const results = this._indexTree.search({
+    const results = this._spatialIndex.search({
       minX: box.min.x,
       minY: box.min.y,
       maxX: box.max.x,

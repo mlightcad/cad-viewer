@@ -1,7 +1,16 @@
-import { AcGePoint3d } from '@mlightcad/data-model'
+import { AcDbObjectId, AcGeMatrix3d, AcGePoint3d } from '@mlightcad/data-model'
+import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrMatrixUtil } from '../util'
 import { AcTrEntity } from './AcTrEntity'
+export interface AcTrEntityBox {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+  id: AcDbObjectId
+}
 
 /**
  * One collection of graphic interface entities. Now it is used to render block reference,
@@ -9,6 +18,7 @@ import { AcTrEntity } from './AcTrEntity'
  */
 export class AcTrGroup extends AcTrEntity {
   private _isOnTheSameLayer: boolean
+  private _boxes: AcTrEntityBox[] = []
 
   /**
    * Notes:
@@ -24,6 +34,7 @@ export class AcTrGroup extends AcTrEntity {
   ) {
     super(styleManager, basePoint)
     entities.forEach(entity => {
+      // FIXME: It looks like that code within 'Array.isArray(entity)' condition is useless.
       if (Array.isArray(entity)) {
         const subGroup = new AcTrEntity(styleManager)
         this.add(subGroup)
@@ -32,6 +43,7 @@ export class AcTrGroup extends AcTrEntity {
         this.add(entity)
         this.box.union(entity.box)
       }
+      this.storeBoxes(entity)
     })
     this.flatten()
 
@@ -88,11 +100,26 @@ export class AcTrGroup extends AcTrEntity {
     return this._isOnTheSameLayer
   }
 
+  get boxes() {
+    return this._boxes
+  }
+
+  /**
+   * @inheritdoc
+   */
+  applyMatrix(matrix: AcGeMatrix3d) {
+    const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
+    this._boxes.forEach(box => this.applyMatrixToEntityBox(box, threeMatrix))
+    super.applyMatrix(matrix)
+  }
+
   /**
    * @inheritdoc
    */
   copy(object: AcTrGroup, recursive?: boolean) {
     this._isOnTheSameLayer = object._isOnTheSameLayer
+    this._boxes = []
+    object.boxes.forEach(box => this._boxes.push({ ...box }))
     return super.copy(object, recursive)
   }
 
@@ -104,5 +131,52 @@ export class AcTrGroup extends AcTrEntity {
     cloned.copy(this, false)
     this.copyGeometry(this, cloned)
     return cloned
+  }
+
+  private storeBoxes(object: THREE.Object3D) {
+    if (object instanceof AcTrGroup) {
+      object._boxes.forEach(box => this._boxes.push(box))
+    } else if (object instanceof AcTrEntity) {
+      // only leaf entities should contribute to _boxes
+      this._boxes.push({
+        minX: object.box.min.x,
+        minY: object.box.min.y,
+        maxX: object.box.max.x,
+        maxY: object.box.max.y,
+        id: object.objectId
+      })
+    }
+  }
+
+  private applyMatrixToEntityBox(box: AcTrEntityBox, matrix: THREE.Matrix4) {
+    const points = [
+      new THREE.Vector3(box.minX, box.minY, 0),
+      new THREE.Vector3(box.maxX, box.minY, 0),
+      new THREE.Vector3(box.maxX, box.maxY, 0),
+      new THREE.Vector3(box.minX, box.maxY, 0)
+    ]
+
+    // Apply matrix to all corners
+    for (const p of points) {
+      p.applyMatrix4(matrix)
+    }
+
+    // Recompute AABB
+    let minX = Infinity,
+      minY = Infinity
+    let maxX = -Infinity,
+      maxY = -Infinity
+
+    for (const p of points) {
+      minX = Math.min(minX, p.x)
+      minY = Math.min(minY, p.y)
+      maxX = Math.max(maxX, p.x)
+      maxY = Math.max(maxY, p.y)
+    }
+
+    box.minX = minX
+    box.minY = minY
+    box.maxX = maxX
+    box.maxY = maxY
   }
 }
