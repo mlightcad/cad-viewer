@@ -32,7 +32,6 @@ export function createHatchPatternShaderMaterial(
     u_color: { value: color }
   }
 
-
   // TODO: it doesn't support "GRAVEL" pattern well, the reason may because of the angle
   // in PatternLine! Tried to normalize the angle but doesn't work.
 

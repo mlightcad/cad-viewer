@@ -1,5 +1,8 @@
 import {
+  AcDbEntity,
   acdbHostApplicationServices,
+  acdbMaskToOsnapModes,
+  AcDbObjectId,
   AcDbOsnapMode,
   AcGePoint2d,
   AcGePoint2dLike,
@@ -7,6 +10,7 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
+import { AcApSettingManager } from '../../../app'
 import { AcEdBaseView } from '../../view'
 import { AcEdMarkerManager } from '../marker'
 import { AcEdFloatingInputBoxes } from './AcEdFloatingInputBoxes'
@@ -450,38 +454,7 @@ export class AcEdFloatingInput<T> {
    * the hit-region.
    */
   private getOSnapPoint(point?: AcGePoint2dLike, hitRadius: number = 20) {
-    const results = this.view.pick(point, hitRadius)
-
-    // TODO: Is there one better way to get current working database
-    const db = acdbHostApplicationServices().workingDatabase
-    const modelSpace = db.tables.blockTable.modelSpace
-    const snapPoints: AcGePoint3d[] = []
-    results.forEach(item => {
-      // FIXME:
-      // It isn't correct to get the item in model space only.
-      // It may be one entity in paper space
-      const entity = modelSpace.getIdAt(item.id)
-      if (entity) {
-        if (item.children) {
-          item.children.forEach(child => {
-            entity.subGetOsnapPoints(
-              AcDbOsnapMode.EndPoint,
-              { ...this.view.curPos, z: 0 },
-              this.lastPoint,
-              snapPoints,
-              child.id
-            )
-          })
-        } else {
-          entity.subGetOsnapPoints(
-            AcDbOsnapMode.EndPoint,
-            { ...this.view.curPos, z: 0 },
-            this.lastPoint,
-            snapPoints
-          )
-        }
-      }
-    })
+    const snapPoints: AcGePoint3d[] = this.getOSnapPoints(point, hitRadius)
 
     // Find the nearest osnap point
     let minDist = Number.MAX_VALUE
@@ -501,5 +474,56 @@ export class AcEdFloatingInput<T> {
       }
     }
     return undefined
+  }
+
+  private getOSnapPoints(point?: AcGePoint2dLike, hitRadius: number = 20) {
+    const results = this.view.pick(point, hitRadius)
+
+    // TODO: Is there one better way to get current working database
+    const db = acdbHostApplicationServices().workingDatabase
+    const modelSpace = db.tables.blockTable.modelSpace
+    const snapPoints: AcGePoint3d[] = []
+    results.forEach(item => {
+      // FIXME:
+      // It isn't correct to get the item in model space only.
+      // It may be one entity in paper space
+      const entity = modelSpace.getIdAt(item.id)
+      if (entity) {
+        if (item.children) {
+          item.children.forEach(child => {
+            this.getOSnapPointsInAvaiableModes(entity, snapPoints, child.id)
+          })
+        } else {
+          this.getOSnapPointsInAvaiableModes(entity, snapPoints)
+        }
+      }
+    })
+    return snapPoints
+  }
+
+  private getOSnapPointsInAvaiableModes(
+    entity: AcDbEntity,
+    snapPoints: AcGePoint3dLike[],
+    gsMark?: AcDbObjectId
+  ) {
+    const modes = acdbMaskToOsnapModes(AcApSettingManager.instance.osnapModes)
+    modes.forEach(mode => {
+      this.getOSnapPointsByMode(entity, mode, snapPoints, gsMark)
+    })
+  }
+
+  private getOSnapPointsByMode(
+    entity: AcDbEntity,
+    osnapMode: AcDbOsnapMode,
+    snapPoints: AcGePoint3dLike[],
+    gsMark?: AcDbObjectId
+  ) {
+    entity.subGetOsnapPoints(
+      osnapMode,
+      { ...this.view.curPos, z: 0 },
+      this.lastPoint,
+      snapPoints,
+      gsMark
+    )
   }
 }

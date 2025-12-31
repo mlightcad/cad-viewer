@@ -149,7 +149,10 @@ export class AcApDocManager {
       this.updateProgress(progress)
     })
 
-    const initialSize = options.container?.getBoundingClientRect() ?? { width: 300, height: 150 }
+    const initialSize = options.container?.getBoundingClientRect() ?? {
+      width: 300,
+      height: 150
+    }
     const callback: AcEdCalculateSizeCallback = () => {
       if (options.autoResize) {
         const box = options.container?.getBoundingClientRect()

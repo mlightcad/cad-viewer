@@ -32,6 +32,7 @@
         />
         <ml-full-screen-button />
         <ml-point-style-button />
+        <ml-osnap-button />
         <ml-setting-button />
       </el-button-group>
     </template>
@@ -52,6 +53,7 @@ import {
 } from '../../composable'
 import MlFullScreenButton from './MlFullScreenButton.vue'
 import MlNotificationButton from './MlNotificationButton.vue'
+import MlOsnapButton from './MlOsnapButton.vue'
 import MlPointStyleButton from './MlPointStyleButton.vue'
 import MlProgress from './MlProgress.vue'
 import MlSettingButton from './MlSettingButton.vue'

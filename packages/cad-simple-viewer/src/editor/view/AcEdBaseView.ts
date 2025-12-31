@@ -224,11 +224,10 @@ export abstract class AcEdBaseView {
       }
     })
 
-    const debouncedWindowResize = debounce(
-      () => this.onWindowResize(),
-      0,
-      { leading: false, trailing: true }
-    )
+    const debouncedWindowResize = debounce(() => this.onWindowResize(), 0, {
+      leading: false,
+      trailing: true
+    })
     const resizeObserver = new ResizeObserver(debouncedWindowResize)
     resizeObserver.observe(this._canvas.parentElement as Element)
 
