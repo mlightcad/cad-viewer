@@ -30,6 +30,7 @@ import {
 } from '../prompt'
 import { AcEdFloatingInput } from './AcEdFloatingInput'
 import {
+  AcEdFloatingInputBoxCount,
   AcEdFloatingInputDrawPreviewCallback,
   AcEdFloatingInputDynamicValueCallback,
   AcEdFloatingInputRawData
@@ -151,7 +152,7 @@ export class AcEdInputManager {
 
     return this.makePromise<number>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: false,
       useBasePoint: false,
@@ -181,7 +182,7 @@ export class AcEdInputManager {
     const handler = new AcEdDistanceHandler(options)
     return this.makePromise<number>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: true,
@@ -207,7 +208,7 @@ export class AcEdInputManager {
     const handler = new AcEdAngleHandler(options)
     return this.makePromise<number>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: true,
@@ -241,7 +242,7 @@ export class AcEdInputManager {
     const handler = new AcEdStringHandler(options)
     return this.makePromise<string>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: false,
       useBasePoint: false,
@@ -264,7 +265,7 @@ export class AcEdInputManager {
     const handler = new AcEdKeywordHandler(options)
     return this.makePromise<string>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: false,
       useBasePoint: false,
@@ -420,7 +421,7 @@ export class AcEdInputManager {
     const handler = new AcEdPointHandler(options)
     return this.makePromise<AcGePoint3dLike>({
       message: options.message,
-      twoInputs: true,
+      inputCount: 2,
       jig: options.jig,
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: options.useBasePoint,
@@ -441,7 +442,7 @@ export class AcEdInputManager {
    */
   private makePromise<T>(options: {
     message?: string
-    twoInputs?: boolean
+    inputCount?: AcEdFloatingInputBoxCount
     jig?: AcEdPreviewJig<T>
     showBaseLineOnly?: boolean
     useBasePoint?: boolean
@@ -473,7 +474,7 @@ export class AcEdInputManager {
 
       const floatingInput = new AcEdFloatingInput(this.view, {
         parent: this.view.canvas,
-        twoInputs: options.twoInputs,
+        inputCount: options.inputCount,
         message: options.message,
         disableOSnap: options.disableOSnap,
         showBaseLineOnly: options.showBaseLineOnly,

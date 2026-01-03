@@ -163,7 +163,7 @@ export class AcEdFloatingInput<T> {
 
     this.inputs = new AcEdFloatingInputBoxes<T>({
       parent: this.container,
-      twoInputs: options.twoInputs,
+      twoInputs: options.inputCount === 2,
       validate: this.validateFn,
       onCancel: this.onCancel,
       onCommit: this.onCommit,

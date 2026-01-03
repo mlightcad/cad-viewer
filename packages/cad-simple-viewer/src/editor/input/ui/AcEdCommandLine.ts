@@ -509,6 +509,8 @@ export class AcEdCommandLine {
         }
 
         this.executeCommand(this.getInputText())
+        this.clearInput()
+        this.historyIndex = this.history.length
         this.updatePopups({ showCmd: false, showMsg: false })
         return
       }
