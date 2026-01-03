@@ -24,15 +24,16 @@
 
 <script lang="ts" setup>
 import { Check } from '@element-plus/icons-vue'
+import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 import {
   acdbHasOsnapMode,
   AcDbOsnapMode,
-  acdbToggleOsnapMode} from '@mlightcad/data-model'
+  acdbToggleOsnapMode
+} from '@mlightcad/data-model'
 import { useI18n } from 'vue-i18n'
 
 import { useSettings } from '../../composable'
 import { osnap } from '../../svg'
-import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 
 const { t } = useI18n()
 const features = useSettings()

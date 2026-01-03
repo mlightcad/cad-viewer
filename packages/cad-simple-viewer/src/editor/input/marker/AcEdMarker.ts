@@ -3,12 +3,7 @@ import { AcGePoint2dLike } from '@mlightcad/data-model'
 /**
  * Supported marker shapes.
  */
-export type AcEdMarkerType =
-  | 'circle'
-  | 'triangle'
-  | 'rect'
-  | 'diamond'
-  | 'x'
+export type AcEdMarkerType = 'circle' | 'triangle' | 'rect' | 'diamond' | 'x'
 
 /**
  * Represents a single marker displayed in screen coordinates.
@@ -158,7 +153,7 @@ export class AcEdMarker {
         transform: translate(-50%, -50%) rotate(-45deg);
       }
     `
-  
+
     document.head.appendChild(style)
   }
 
@@ -173,31 +168,31 @@ export class AcEdMarker {
     this._el.style.height = ''
     this._el.style.fontSize = ''
     this._el.style.transform = 'translate(-50%, -50%)'
-  
+
     switch (this._type) {
       case 'circle':
         this._el.classList.add('ml-marker-circle')
         this._el.style.width = `${this._size}px`
         this._el.style.height = `${this._size}px`
         break
-  
+
       case 'rect':
         this._el.classList.add('ml-marker-rect')
         this._el.style.width = `${this._size}px`
         this._el.style.height = `${this._size}px`
         break
-  
+
       case 'triangle':
         this._el.classList.add('ml-marker-triangle')
         this._el.style.fontSize = `${this._size}px`
         break
-  
+
       case 'diamond':
         this._el.classList.add('ml-marker-diamond')
         this._el.style.width = `${this._size}px`
         this._el.style.height = `${this._size}px`
         break
-  
+
       case 'x':
         this._el.classList.add('ml-marker-x')
         this._el.style.width = `${this._size}px`
@@ -205,7 +200,6 @@ export class AcEdMarker {
         break
     }
   }
-  
 
   /**
    * Sets the screen position of the marker.

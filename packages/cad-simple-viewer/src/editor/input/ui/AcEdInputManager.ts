@@ -17,10 +17,12 @@ import {
   AcEdPointHandler,
   AcEdStringHandler
 } from '../handler'
+import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptDistanceOptions,
   AcEdPromptIntegerOptions,
+  AcEdPromptKeywordOptions,
   AcEdPromptNumericalOptions,
   AcEdPromptPointOptions,
   AcEdPromptStringOptions
@@ -236,6 +238,29 @@ export class AcEdInputManager {
     }
 
     const handler = new AcEdStringHandler(options)
+    return this.makePromise<string>({
+      message: options.message,
+      twoInputs: false,
+      jig: options.jig,
+      showBaseLineOnly: false,
+      useBasePoint: false,
+      handler,
+      getDynamicValue
+    })
+  }
+
+  /**
+   * Prompt the user to type a keyword. Resolved when Enter is pressed.
+   */
+  getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
+    const getDynamicValue = () => {
+      return {
+        value: '',
+        raw: { x: '' }
+      }
+    }
+
+    const handler = new AcEdKeywordHandler(options)
     return this.makePromise<string>({
       message: options.message,
       twoInputs: false,

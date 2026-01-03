@@ -410,14 +410,17 @@ export class AcEdFloatingInput<T> {
       if (this.lastOsnapPoint) {
         wcsMousePos.x = this.lastOsnapPoint.x
         wcsMousePos.y = this.lastOsnapPoint.y
-        this.osnapMarkerManager.showMarker(this.lastOsnapPoint, this.osnapMode2MarkerType(this.lastOsnapPoint.type))
+        this.osnapMarkerManager.showMarker(
+          this.lastOsnapPoint,
+          this.osnapMode2MarkerType(this.lastOsnapPoint.type)
+        )
       }
     }
     return wcsMousePos
   }
 
   private osnapMode2MarkerType(osnapMode: AcDbOsnapMode) {
-    switch(osnapMode) {
+    switch (osnapMode) {
       case AcDbOsnapMode.EndPoint:
         return 'rect'
       case AcDbOsnapMode.MidPoint:
@@ -544,7 +547,7 @@ export class AcEdFloatingInput<T> {
       gsMark
     )
     const end = osnapPoints.length
-    for(let index = start; index < end; index++) {
+    for (let index = start; index < end; index++) {
       osnapPoints[index].type = osnapMode
     }
   }

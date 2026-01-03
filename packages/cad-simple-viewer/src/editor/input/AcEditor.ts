@@ -1,14 +1,16 @@
 import { AcCmEventManager } from '@mlightcad/data-model'
 
+import { AcApSettingManager } from '../../app'
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptDistanceOptions,
+  AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
   AcEdPromptStringOptions
 } from './prompt'
-import { AcEdInputManager } from './ui'
+import { AcEdCommandLine, AcEdInputManager } from './ui'
 
 /**
  * Event arguments for system variable related events.
@@ -54,6 +56,8 @@ export class AcEditor {
   private _cursorManager: AcEdCursorManager
   /** Manager for mouse and keyboard input */
   private _inputManager: AcEdInputManager
+  /** Command line UI component */
+  private _commandLine: AcEdCommandLine
   /** The view this editor is associated with */
   protected _view: AcEdBaseView
 
@@ -77,6 +81,7 @@ export class AcEditor {
     this._view = view
     this._cursorManager = new AcEdCursorManager(view)
     this._inputManager = new AcEdInputManager(view)
+    this._commandLine = this.createCommandLine()
   }
 
   /**
@@ -177,6 +182,16 @@ export class AcEditor {
   }
 
   /**
+   * Prompts the user to input a keyword.
+   *
+   * @returns Promise that resolves to the input one keyword.
+   */
+  async getKeywords(options: AcEdPromptKeywordOptions) {
+    this._commandLine.renderCommandLine(options)
+    return await this._inputManager.getKeywords(options)
+  }
+
+  /**
    * Prompts the user to select entities using box selection.
    *
    * This method allows the user to drag a selection box to select
@@ -199,5 +214,17 @@ export class AcEditor {
    */
   async getSelection() {
     return await this._inputManager.getBox()
+  }
+
+  /**
+   * Creates command line UI component
+   */
+  private createCommandLine() {
+    const commandLine = new AcEdCommandLine(document.body)
+    commandLine.visible = AcApSettingManager.instance.isShowCommandLine
+    AcApSettingManager.instance.events.modified.addEventListener(() => {
+      commandLine.visible = AcApSettingManager.instance.isShowCommandLine
+    })
+    return commandLine
   }
 }

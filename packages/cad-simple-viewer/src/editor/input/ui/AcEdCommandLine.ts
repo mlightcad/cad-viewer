@@ -1,6 +1,7 @@
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
 import { AcEdCommandStack } from '../../command'
+import { AcEdPromptKeywordOptions } from '../prompt'
 
 /**
  * AutoCAD-style floating command line with Promise-based execution.
@@ -17,25 +18,27 @@ import { AcEdCommandStack } from '../../command'
  *  - Auto-complete popup for matching commands
  */
 export class AcEdCommandLine {
-  container: HTMLElement
-  history: string[]
-  historyIndex: number
-  lastExecuted: string | null
-  isCmdPopupOpen: boolean
-  isMsgPanelOpen: boolean
-  minWidth: number
-  widthRatio: number
-  cliContainer!: HTMLDivElement
-  wrapper!: HTMLDivElement
-  bar!: HTMLDivElement
-  leftGroup!: HTMLDivElement
-  closeBtn!: HTMLDivElement // renamed from termGlyph
-  downBtn!: HTMLButtonElement
-  input!: HTMLDivElement
-  upBtn!: HTMLButtonElement
-  cmdPopup!: HTMLDivElement
-  msgPanel!: HTMLDivElement
-  autoCompleteIndex: number
+  private container: HTMLElement
+  private history: string[]
+  private historyIndex: number
+  private lastExecuted: string | null
+  private isCmdPopupOpen: boolean
+  private isMsgPanelOpen: boolean
+  private minWidth: number
+  private widthRatio: number
+  private cliContainer!: HTMLDivElement
+  private wrapper!: HTMLDivElement
+  private bar!: HTMLDivElement
+  private leftGroup!: HTMLDivElement
+  private closeBtn!: HTMLDivElement // renamed from termGlyph
+  private downBtn!: HTMLButtonElement
+  private centerEl!: HTMLDivElement
+  private promptEl!: HTMLDivElement
+  private textInput!: HTMLInputElement
+  private upBtn!: HTMLButtonElement
+  private cmdPopup!: HTMLDivElement
+  private msgPanel!: HTMLDivElement
+  private autoCompleteIndex: number
 
   constructor(container: HTMLElement = document.body) {
     this.container = container
@@ -104,7 +107,7 @@ export class AcEdCommandLine {
     })
 
     // Refresh input placeholder
-    this.input.setAttribute(
+    this.centerEl.setAttribute(
       'data-placeholder',
       this.localize('main.commandLine.placeholder')
     )
@@ -147,7 +150,6 @@ export class AcEdCommandLine {
     this.printMessage(`${executed}: ${command.localName}`)
 
     AcApDocManager.instance.sendStringToExecute(cmdLine)
-    this.renderCommandLine('')
   }
 
   /** Inject CSS styles */
@@ -236,35 +238,32 @@ export class AcEdCommandLine {
         height: 100%;
       }
 
-      .ml-cli-input {
-        flex: 1;
+      .ml-cli-center {
         display: flex;
         align-items: center;
-        min-height: 22px;
-        padding: 0 6px;
-        border-radius: 3px;
-        background: transparent;
-        outline: none;
-        border: none;
-        font-family: monospace;
+        flex: 1;
+        min-width: 0;
         color: #333;
-        white-space: nowrap;
-        overflow: hidden;
-        line-height: normal;
       }
 
-      .ml-cli-input[data-placeholder]:empty:before {
-        content: attr(data-placeholder);
-        color: #9a9a9a;
-        font-weight: 400;
-        display: flex;
-        align-items: center;
-        height: 100%;
+      .ml-cli-prompt {
+        white-space: nowrap;
+        user-select: none;
+        margin-right: 4px;
+      }
+
+      .ml-cli-text {
+        flex: 1;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-family: monospace;
+        font-size: 13px;
+        color: #333;
       }
 
       .ml-cli-option {
         display: inline-block;
-        color: #222;
         background: #f7f7f7;
         border: 1px solid rgba(0, 0, 0, 0.06);
         padding: 2px 6px;
@@ -359,61 +358,71 @@ export class AcEdCommandLine {
   createUI() {
     this.cliContainer = document.createElement('div')
     this.cliContainer.className = 'ml-cli-container'
+  
     this.wrapper = document.createElement('div')
     this.wrapper.className = 'ml-cli-wrapper'
     this.cliContainer.appendChild(this.wrapper)
-
+  
     this.bar = document.createElement('div')
     this.bar.className = 'ml-cli-bar'
     this.wrapper.appendChild(this.bar)
-
+  
+    /* ---------- left group ---------- */
     this.leftGroup = document.createElement('div')
     this.leftGroup.className = 'ml-cli-left'
     this.bar.appendChild(this.leftGroup)
-
-    // Close button (renamed from termGlyph)
+  
     this.closeBtn = document.createElement('div')
     this.closeBtn.className = 'ml-cli-close-btn'
-    this.closeBtn.title = this.localize('main.commandLine.close', 'Close')
     this.closeBtn.innerHTML = '&#10005;'
     this.leftGroup.appendChild(this.closeBtn)
-
+  
     this.downBtn = document.createElement('button')
     this.downBtn.className = 'ml-cli-down'
-    this.downBtn.title = this.localize('main.commandLine.showHistory')
     this.downBtn.innerHTML = '&#9662;'
     this.leftGroup.appendChild(this.downBtn)
-
-    this.input = document.createElement('div')
-    this.input.className = 'ml-cli-input'
-    this.input.contentEditable = 'true'
-    this.input.setAttribute('spellcheck', 'false')
-    this.input.setAttribute(
-      'data-placeholder',
-      this.localize('main.commandLine.placeholder')
+  
+    /* ---------- center (prompt + input) ---------- */
+    this.centerEl = document.createElement('div')
+    this.centerEl.className = 'ml-cli-center'
+    this.bar.appendChild(this.centerEl)
+  
+    this.promptEl = document.createElement('div')
+    this.promptEl.className = 'ml-cli-prompt'
+    this.centerEl.appendChild(this.promptEl)
+  
+    this.textInput = document.createElement('input')
+    this.textInput.className = 'ml-cli-text'
+    this.textInput.type = 'text'
+    this.textInput.spellcheck = false
+    this.textInput.autocomplete = 'off'
+    this.textInput.placeholder = this.localize(
+      'main.commandLine.placeholder',
+      'Type command'
     )
-    this.bar.appendChild(this.input)
-
+    this.centerEl.appendChild(this.textInput)
+  
+    /* ---------- right group ---------- */
     const rightGroup = document.createElement('div')
     rightGroup.className = 'ml-cli-right'
     this.bar.appendChild(rightGroup)
-
+  
     this.upBtn = document.createElement('button')
     this.upBtn.className = 'ml-cli-up'
-    this.upBtn.title = this.localize('main.commandLine.showMessages')
     this.upBtn.innerHTML = '&#9662;'
     rightGroup.appendChild(this.upBtn)
-
+  
+    /* ---------- popups ---------- */
     this.cmdPopup = document.createElement('div')
     this.cmdPopup.className = 'ml-cli-cmd-popup hidden'
     this.wrapper.appendChild(this.cmdPopup)
-
+  
     this.msgPanel = document.createElement('div')
     this.msgPanel.className = 'ml-cli-msg-panel hidden'
     this.wrapper.appendChild(this.msgPanel)
-
+  
     this.container.appendChild(this.cliContainer)
-  }
+  }  
 
   /** Bind event listeners */
   bindEvents() {
@@ -444,10 +453,9 @@ export class AcEdCommandLine {
       }
     })
 
-    this.input.addEventListener('keydown', e => this.handleKeyDown(e))
-    this.input.addEventListener('keydown', e => this.handleArrowKeys(e))
-    this.input.addEventListener('input', () => this.handleInputChange())
-    this.input.addEventListener('focus', () =>
+    this.textInput.addEventListener('keydown', e => this.handleKeyDown(e))
+    this.textInput.addEventListener('input', () => this.handleInputChange())
+    this.centerEl.addEventListener('focus', () =>
       this.updatePopups({ showCmd: false, showMsg: false })
     )
 
@@ -455,7 +463,7 @@ export class AcEdCommandLine {
       const item = (e.target as HTMLElement).closest('.item') as HTMLElement
       if (item) {
         this.setInputText(item.dataset.value || '')
-        this.input.focus()
+        this.centerEl.focus()
         this.updatePopups({ showCmd: false, showMsg: false })
       }
     })
@@ -463,16 +471,43 @@ export class AcEdCommandLine {
 
   /** Handle Enter/Escape keys */
   handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      const text = this.getInputText()
-      this.executeCommand(text)
-      this.updatePopups({ showCmd: false, showMsg: false })
-    } else if (e.key === 'Escape') {
-      e.preventDefault()
-      this.setInputText('')
-      this.printMessage(this.localize('main.commandLine.canceled'))
-      this.updatePopups({ showCmd: false, showMsg: false })
+    // IME / composition safety (important!)
+    if (e.isComposing) return
+
+    switch (e.key) {
+      case 'Enter': {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+
+        const text = this.getInputText()
+        this.executeCommand(text)
+        this.updatePopups({ showCmd: false, showMsg: false })
+        return
+      }
+
+      case 'Escape': {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+
+        this.setInputText('')
+        this.printMessage(this.localize('main.commandLine.canceled'))
+        this.updatePopups({ showCmd: false, showMsg: false })
+        return
+      }
+
+      case 'ArrowUp': {
+        e.preventDefault()
+        if (this.isCmdPopupOpen) this.navigateAutoComplete(-1)
+        else this.navigateHistory(-1)
+        return
+      }
+
+      case 'ArrowDown': {
+        e.preventDefault()
+        if (this.isCmdPopupOpen) this.navigateAutoComplete(1)
+        else this.navigateHistory(1)
+        return
+      }
     }
   }
 
@@ -560,54 +595,73 @@ export class AcEdCommandLine {
 
   /** Get current input text */
   getInputText(): string {
-    const clone = this.input.cloneNode(true) as HTMLElement
-    clone.querySelectorAll('.ml-cli-option').forEach(n => n.remove())
-    return clone.innerText.replace(/\u00A0/g, ' ').trim()
+    return this.textInput.value.trim()
   }
 
   /** Set input text */
   setInputText(text = '') {
-    this.input.innerHTML = ''
-    if (text) this.input.appendChild(document.createTextNode(text + ' '))
-    this.setCursorToEnd()
+    this.textInput.value = text
+    this.textInput.focus()
   }
 
   /** Render command line with options */
-  renderCommandLine(cmd: string, options: string[] = []) {
-    this.input.innerHTML = ''
-    if (cmd) this.input.appendChild(document.createTextNode(cmd + ' '))
-    options.forEach(opt => {
-      const span = document.createElement('span')
-      span.className = 'ml-cli-option'
-      span.textContent = opt
-      span.addEventListener('click', e => {
-        e.stopPropagation()
-        this.insertOption(opt)
-      })
-      this.input.appendChild(span)
-      this.input.appendChild(document.createTextNode(' '))
-    })
-    this.setCursorToEnd()
-    this.input.focus()
-  }
+  renderCommandLine(options?: AcEdPromptKeywordOptions) {
+    this.promptEl.innerHTML = ''
+  
+    if (!options) {
+      this.textInput.value = ''
+      this.textInput.focus()
+      return
+    }
+  
+    if (options.message) {
+      this.promptEl.append(options.message.trim() + ' ')
+    }
+  
+    if (options.appendKeywordsToMessage && options.keywords) {
+      const keywords = options.keywords.toArray().filter(k => k.visible)
+  
+      if (keywords.length) {
+        this.promptEl.append('[')
+  
+        keywords.forEach((kw, i) => {
+          if (i > 0) this.promptEl.append('/')
+  
+          const span = document.createElement('span')
+          span.className = 'ml-cli-option'
+          span.textContent = kw.displayName
+  
+          if (!kw.enabled) {
+            span.style.opacity = '0.45'
+            span.style.pointerEvents = 'none'
+          } else {
+            span.onclick = () => {
+              this.textInput.value = kw.globalName
+              this.textInput.focus()
+            }
+          }
+  
+          this.promptEl.append(span)
+        })
+  
+        this.promptEl.append('] ')
+  
+        const def = options.keywords.default
+        if (def?.visible) {
+          this.promptEl.append(`<${def.displayName}> `)
+        }
+  
+        this.promptEl.append(': ')
+      }
+    }
+  
+    this.textInput.focus()
+  }  
 
   /** Insert option into input */
   insertOption(opt: string) {
-    this.input.appendChild(document.createTextNode(opt + ' '))
-    this.setCursorToEnd()
-    this.input.focus()
-  }
-
-  /** Move cursor to end of input */
-  setCursorToEnd() {
-    const range = document.createRange()
-    range.selectNodeContents(this.input)
-    range.collapse(false)
-    const sel = window.getSelection()
-    if (!sel) return
-    sel.removeAllRanges()
-    sel.addRange(range)
-    this.input.scrollLeft = this.input.scrollWidth
+    this.centerEl.appendChild(document.createTextNode(opt + ' '))
+    this.centerEl.focus()
   }
 
   /** Resolve command name */
