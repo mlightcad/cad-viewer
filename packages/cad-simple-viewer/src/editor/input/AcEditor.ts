@@ -6,6 +6,7 @@ import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptDistanceOptions,
+  AcEdPromptEntityOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
   AcEdPromptStringOptions
@@ -187,8 +188,16 @@ export class AcEditor {
    * @returns Promise that resolves to the input one keyword.
    */
   async getKeywords(options: AcEdPromptKeywordOptions) {
-    this._commandLine.renderCommandLine(options)
-    return await this._inputManager.getKeywords(options)
+    return await this._commandLine.getKeywords(options)
+  }
+
+  /**
+   * Prompts the user to input a keyword.
+   *
+   * @returns Promise that resolves to the input one keyword.
+   */
+  async getEntity(options: AcEdPromptEntityOptions) {
+    return await this._inputManager.getEntity(options)
   }
 
   /**

@@ -548,6 +548,7 @@ export class AcTrView2d extends AcEdBaseView {
     setTimeout(async () => {
       await this.batchConvert(entities)
     })
+    this._isDirty = true
   }
 
   /**
@@ -556,6 +557,7 @@ export class AcTrView2d extends AcEdBaseView {
   removeEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
     entities.forEach(entity => this._scene.removeEntity(entity.objectId))
+    this._isDirty = true
   }
 
   /**

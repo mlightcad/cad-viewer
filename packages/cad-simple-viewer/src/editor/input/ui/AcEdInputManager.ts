@@ -21,6 +21,7 @@ import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptDistanceOptions,
+  AcEdPromptEntityOptions,
   AcEdPromptIntegerOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptNumericalOptions,
@@ -269,6 +270,83 @@ export class AcEdInputManager {
       useBasePoint: false,
       handler,
       getDynamicValue
+    })
+  }
+
+  /**
+   * Prompts the user to select a single entity.
+   * Similar to Editor.GetEntity() in AutoCAD.
+   */
+  getEntity(options: AcEdPromptEntityOptions): Promise<string | null> {
+    return new Promise((resolve, reject) => {
+      if (this.active) {
+        reject(new Error('input manager is busy'))
+        return
+      }
+
+      this.active = true
+      // this.view.showMessage(options.message)
+
+      const cleanup = () => {
+        this.active = false
+        options.jig?.end()
+        document.removeEventListener('keydown', keyHandler)
+        this.view.canvas.removeEventListener('mousemove', moveHandler)
+        this.view.canvas.removeEventListener('mousedown', clickHandler)
+      }
+
+      /** Mouse move → preview jig */
+      const moveHandler = (e: MouseEvent) => {
+        if (!options.jig) return
+        const pos = this.view.cwcs2Wcs(e)
+        options.jig.update(pos as any)
+        options.jig.render()
+      }
+
+      /** Mouse click → try select entity */
+      const clickHandler = (e: MouseEvent) => {
+        const pos = this.view.cwcs2Wcs(e)
+        const picked = this.view.pick(pos)
+
+        // Clicked empty space
+        if (picked.length == 0) {
+          // this.view.showMessage(options.rejectMessage)
+          return
+        }
+
+        // Locked layer
+        // if (picked.locked && !options.allowObjectOnLockedLayer) {
+        //   this.view.showMessage(options.rejectMessage)
+        //   return
+        // }
+
+        // Class filter
+        // if (!options.isClassAllowed(picked.className)) {
+        //   this.view.showMessage(options.rejectMessage)
+        //   return
+        // }
+
+        cleanup()
+        resolve(picked[0].id)
+      }
+
+      /** Keyboard handling */
+      const keyHandler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          cleanup()
+          reject(new Error('cancelled'))
+          return
+        }
+
+        if (e.key === 'Enter' && options.allowNone) {
+          cleanup()
+          resolve(null)
+        }
+      }
+
+      document.addEventListener('keydown', keyHandler)
+      this.view.canvas.addEventListener('mousemove', moveHandler)
+      this.view.canvas.addEventListener('mousedown', clickHandler)
     })
   }
 

@@ -1,5 +1,5 @@
 import { AcApContext, AcApDocManager } from '../app'
-import { AcEdPromptKeywordOptions } from '../editor'
+import { AcEdPromptEntityOptions } from '../editor'
 import { AcApI18n } from '../i18n'
 import { AcEdCommand } from '.'
 
@@ -19,10 +19,13 @@ export class AcApEraseCmd extends AcEdCommand {
       selectionSet.clear()
     } else {
       const message = AcApI18n.sysCmdPrompt('erase')
-      const options = new AcEdPromptKeywordOptions(message)
-      options.keywords.add('Click')
-      options.keywords.add('Window')
-      await AcApDocManager.instance.editor.getKeywords(options)
+      // const keywordOptions = new AcEdPromptKeywordOptions(message)
+      // keywordOptions.keywords.add('Click')
+      // keywordOptions.keywords.add('Window')
+      // await AcApDocManager.instance.editor.getKeywords(keywordOptions)
+      const entityOptions = new AcEdPromptEntityOptions(message)
+      const id = await AcApDocManager.instance.editor.getEntity(entityOptions)
+      if (id) context.doc.database.tables.blockTable.removeEntity(id)
     }
   }
 }

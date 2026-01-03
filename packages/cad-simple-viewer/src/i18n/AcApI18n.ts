@@ -218,10 +218,7 @@ export class AcApI18n {
    * @returns - The localized command prompt message
    */
   public static sysCmdPrompt(name: string) {
-    return this.cmdPrompt(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      name
-    )
+    return this.cmdPrompt(AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME, name)
   }
 
   /**
