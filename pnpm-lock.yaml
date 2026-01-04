@@ -93,11 +93,11 @@ importers:
   packages/cad-simple-viewer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.5.4
-        version: 1.5.4
+        specifier: ../../../realdwg-web/packages/data-model/
+        version: link:../../../realdwg-web/packages/data-model
       '@mlightcad/libredwg-converter':
-        specifier: ^3.3.4
-        version: 3.3.4(@mlightcad/data-model@1.5.4)
+        specifier: ../../../realdwg-web/packages/libredwg-converter/
+        version: link:../../../realdwg-web/packages/libredwg-converter
       lodash-es:
         specifier: 4.17.21
         version: 4.17.21
@@ -139,8 +139,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.5.4
-        version: 1.5.4
+        specifier: ../../../realdwg-web/packages/data-model/
+        version: link:../../../realdwg-web/packages/data-model
 
   packages/cad-viewer:
     dependencies:
@@ -151,8 +151,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.5.4
-        version: 1.5.4
+        specifier: ../../../realdwg-web/packages/data-model/
+        version: link:../../../realdwg-web/packages/data-model
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.3.0(vue@3.5.18(typescript@5.8.3))
@@ -224,8 +224,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-viewer
       '@mlightcad/data-model':
-        specifier: ^1.5.4
-        version: 1.5.4
+        specifier: ../../../realdwg-web/packages/data-model/
+        version: link:../../../realdwg-web/packages/data-model
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.3.0(vue@3.5.18(typescript@5.8.3))
@@ -294,14 +294,14 @@ importers:
   packages/svg-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.5.4
-        version: 1.5.4
+        specifier: ../../../realdwg-web/packages/data-model/
+        version: link:../../../realdwg-web/packages/data-model
 
   packages/three-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.5.4
-        version: 1.5.4
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
       '@mlightcad/mtext-renderer':
         specifier: ^0.8.3
         version: 0.8.3(three@0.172.0)
@@ -1358,9 +1358,6 @@ packages:
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
 
-  '@fxts/core@1.23.0':
-    resolution: {integrity: sha512-URaV1oAhU64s4zfhzMIAB444aDB1fyLHcS7tEw3TrHll7YExbks/FimjrJN2MXrHVB0jXBtGeTTpW5k40R7NXg==}
-
   '@gerrit0/mini-shiki@1.27.2':
     resolution: {integrity: sha512-GeWyHz8ao2gBiUW4OJnQDxXQnFgZQwwQk05t/CVVgNBN7/rK8XZ7xY6YhLVv9tH3VppWWmr9DCl3MwemB/i+Og==}
 
@@ -1525,10 +1522,6 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@lukeed/csprng@1.1.0':
-    resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
-    engines: {node: '>=8'}
-
   '@manypkg/find-root@1.1.0':
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}
 
@@ -1547,34 +1540,6 @@ packages:
 
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
-
-  '@mlightcad/common@1.3.0':
-    resolution: {integrity: sha512-J49ZpiYxiFrd5qxuHhuzQELVd5YsHq9QrpsRQJJXUg/Ij8mFWyFg5p3B3FvVYlZdi4ptMdSRe4Bkl1SWHtRskw==}
-
-  '@mlightcad/data-model@1.5.4':
-    resolution: {integrity: sha512-R6x0TXR2MB6P1speCJNtDPu7jKSLS5Rvy2wU+ZfJmQsW3FdkuU8XF3gi6kk2XoteBaWUMXjcDC2FrtG/JR5nhQ==}
-
-  '@mlightcad/dxf-json@1.0.10':
-    resolution: {integrity: sha512-KY2E49y9DHPb0LoEi2Uz2cgmtVFgiNNNBn1DsWYvqn4VLD7itr2+GE51yBZLAzG1SFXiwqPjp5mprU6fI7kysg==}
-
-  '@mlightcad/geometry-engine@3.1.3':
-    resolution: {integrity: sha512-nRDWCQxMwsD7TTOxfGrFDNLsBvuJR76tY2LhxUQkLc7A2VYBGkx+neSw4iAft1ALv04tUNS601Ipuv/bTtDw9w==}
-    peerDependencies:
-      '@mlightcad/common': 1.3.0
-
-  '@mlightcad/graphic-interface@3.1.4':
-    resolution: {integrity: sha512-0AxNWgj9HVgTEZKLVbDM4DVkKZVKZcmNc/5BNzmJLEL8Ma4uQkWVXiOzH8hOi/X6pnTTOn6yJ1Eu74QAStDNpQ==}
-    peerDependencies:
-      '@mlightcad/common': 1.3.0
-      '@mlightcad/geometry-engine': 3.1.3
-
-  '@mlightcad/libredwg-converter@3.3.4':
-    resolution: {integrity: sha512-eZWSoOGga+7UC+HE59AAksiQanfSGKDN9/d87z9eDgYFeBK2k4ytpwOjH9S7ub0MwtZ8tGEBXjxDxRyV7AGoBQ==}
-    peerDependencies:
-      '@mlightcad/data-model': 1.5.4
-
-  '@mlightcad/libredwg-web@0.4.5':
-    resolution: {integrity: sha512-dEOEnSE0M1PDoLcarrjaS3nBCyA3VTCeMSBSmg4Hr0XcnHI4oAlwzp3MdBPllqqi2oMDNw/Am2/wu80qGiYQzQ==}
 
   '@mlightcad/mtext-parser@1.3.2':
     resolution: {integrity: sha512-lOmuLCDs2oKrYcxx0EP82gfXrEprg0e1G5gaQSCXqePldIA8WAh5zfvynAkQJkmKKISA2jHcgz/8X3Xxyzbjog==}
@@ -2510,9 +2475,6 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
-  bindings@1.5.0:
-    resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
-
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
 
@@ -3169,9 +3131,6 @@ packages:
   file-entry-cache@8.0.0:
     resolution: {integrity: sha512-XXTUwCvisa5oacNGRP9SfNtYBNAMi+RPwBFmblZEF7N7swHYQS6/Zfk7SRwx4D5j3CH211YNRco1DEMNVfZCnQ==}
     engines: {node: '>=16.0.0'}
-
-  file-uri-to-path@1.0.0:
-    resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
 
   filelist@1.0.4:
     resolution: {integrity: sha512-w1cEuf3S+DrLCQL7ET6kz+gmlJdbq9J7yXCSjK/OZCPA+qEN1WyF4ZAf0YYJa4/shHJra2t/d/r8SV4Ji+x+8Q==}
@@ -3832,10 +3791,6 @@ packages:
     resolution: {integrity: sha512-9ie8ItPR6tjY5uYJh8K/Zrv/RMZ5VOlOWvtZdEHYSTFKZfIBPQa9tOAEeAWhd+AnIneLJ22w5fjOYtoutpWq5w==}
     engines: {node: '>=18'}
 
-  loglevel@1.9.2:
-    resolution: {integrity: sha512-HgMmCqIJSAKqo68l0rS2AanEWfkxaZ5wNiEFb5ggm08lDs9Xl2KxBlX3PTcaD2chBM1gXAYf491/M2Rv8Jwayg==}
-    engines: {node: '>= 0.6.0'}
-
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
 
@@ -3976,9 +3931,6 @@ packages:
 
   muggle-string@0.4.1:
     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
-
-  nan@2.24.0:
-    resolution: {integrity: sha512-Vpf9qnVW1RaDkoNKFUvfxqAbtI8ncb8OJlqZ9wwpXzWPEsvsB1nvdUi6oYrHIkQ1Y/tMDnr1h4nczS0VB9Xykg==}
 
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
@@ -4777,10 +4729,6 @@ packages:
   ufo@1.6.1:
     resolution: {integrity: sha512-9a4/uxlTWJ4+a5i0ooc1rU7C7YOw3wT+UGqdeNNHWnOF9qcMBgLRS+4IYUqbczewFx4mLEig6gawh7X6mFlEkA==}
 
-  uid@2.0.2:
-    resolution: {integrity: sha512-u3xV3X7uzvi5b1MncmZo3i2Aw222Zk1keqLA1YkHldREkAhAqi65wuPfe7lHx8H/Wzy+8CE7S7uS3jekIM5s8g==}
-    engines: {node: '>=8'}
-
   unconfig@0.3.13:
     resolution: {integrity: sha512-N9Ph5NC4+sqtcOjPfHrRcHekBCadCXWTBzp2VYYbySOHW0PfD9XLCeXshTXjkPYwLrBr9AtSeU0CZmkYECJhng==}
 
@@ -4884,9 +4832,6 @@ packages:
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
-
-  verb-nurbs-web@2.1.3:
-    resolution: {integrity: sha512-2PvI2bx7dn0r3kWtk+JuDIDZ+p7I5Piu8y6/ZNhUVpilOyHKK1nNzLHtgown+dFOmBnKnuAKIMh1xn/5kzrxZA==}
 
   vite-plugin-css-injected-by-js@3.5.2:
     resolution: {integrity: sha512-2MpU/Y+SCZyWUB6ua3HbJCrgnF0KACAsmzOQt1UvRVJCGF6S8xdA3ZUhWcWdM9ivG4I5az8PnQmwwrkC2CAQrQ==}
@@ -5043,10 +4988,6 @@ packages:
 
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
-
-  webworker-threads@0.7.17:
-    resolution: {integrity: sha512-Y2w2aXBbDLk9IzTEb9u+MsODC3s4YlGI7g4h0t+1OAwIO8yBI9rQL35ZYlyayiCuWu1dZMH/P7kGU8OwW7YsyA==}
-    engines: {node: '>= 0.10.16'}
 
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
@@ -6281,10 +6222,6 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@fxts/core@1.23.0':
-    dependencies:
-      tslib: 2.8.1
-
   '@gerrit0/mini-shiki@1.27.2':
     dependencies:
       '@shikijs/engine-oniguruma': 1.29.2
@@ -6580,8 +6517,6 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.4
 
-  '@lukeed/csprng@1.1.0': {}
-
   '@manypkg/find-root@1.1.0':
     dependencies:
       '@babel/runtime': 7.28.2
@@ -6632,40 +6567,6 @@ snapshots:
       resolve: 1.22.10
 
   '@microsoft/tsdoc@0.15.1': {}
-
-  '@mlightcad/common@1.3.0':
-    dependencies:
-      loglevel: 1.9.2
-
-  '@mlightcad/data-model@1.5.4':
-    dependencies:
-      '@mlightcad/common': 1.3.0
-      '@mlightcad/dxf-json': 1.0.10
-      '@mlightcad/geometry-engine': 3.1.3(@mlightcad/common@1.3.0)
-      '@mlightcad/graphic-interface': 3.1.4(@mlightcad/common@1.3.0)(@mlightcad/geometry-engine@3.1.3(@mlightcad/common@1.3.0))
-      iconv-lite: 0.7.0
-      uid: 2.0.2
-
-  '@mlightcad/dxf-json@1.0.10':
-    dependencies:
-      '@fxts/core': 1.23.0
-
-  '@mlightcad/geometry-engine@3.1.3(@mlightcad/common@1.3.0)':
-    dependencies:
-      '@mlightcad/common': 1.3.0
-      verb-nurbs-web: 2.1.3
-
-  '@mlightcad/graphic-interface@3.1.4(@mlightcad/common@1.3.0)(@mlightcad/geometry-engine@3.1.3(@mlightcad/common@1.3.0))':
-    dependencies:
-      '@mlightcad/common': 1.3.0
-      '@mlightcad/geometry-engine': 3.1.3(@mlightcad/common@1.3.0)
-
-  '@mlightcad/libredwg-converter@3.3.4(@mlightcad/data-model@1.5.4)':
-    dependencies:
-      '@mlightcad/data-model': 1.5.4
-      '@mlightcad/libredwg-web': 0.4.5
-
-  '@mlightcad/libredwg-web@0.4.5': {}
 
   '@mlightcad/mtext-parser@1.3.2': {}
 
@@ -7788,11 +7689,6 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
-  bindings@1.5.0:
-    dependencies:
-      file-uri-to-path: 1.0.0
-    optional: true
-
   bl@4.1.0:
     dependencies:
       buffer: 5.7.1
@@ -8520,9 +8416,6 @@ snapshots:
   file-entry-cache@8.0.0:
     dependencies:
       flat-cache: 4.0.1
-
-  file-uri-to-path@1.0.0:
-    optional: true
 
   filelist@1.0.4:
     dependencies:
@@ -9340,8 +9233,6 @@ snapshots:
       strip-ansi: 7.1.0
       wrap-ansi: 9.0.0
 
-  loglevel@1.9.2: {}
-
   lru-cache@10.4.3: {}
 
   lru-cache@11.1.0: {}
@@ -9460,9 +9351,6 @@ snapshots:
   ms@2.1.3: {}
 
   muggle-string@0.4.1: {}
-
-  nan@2.24.0:
-    optional: true
 
   nanoid@3.3.11: {}
 
@@ -10277,10 +10165,6 @@ snapshots:
 
   ufo@1.6.1: {}
 
-  uid@2.0.2:
-    dependencies:
-      '@lukeed/csprng': 1.1.0
-
   unconfig@0.3.13:
     dependencies:
       '@antfu/utils': 0.7.10
@@ -10419,10 +10303,6 @@ snapshots:
   validate-npm-package-name@5.0.1: {}
 
   vary@1.1.2: {}
-
-  verb-nurbs-web@2.1.3:
-    optionalDependencies:
-      webworker-threads: 0.7.17
 
   vite-plugin-css-injected-by-js@3.5.2(vite@5.4.19(@types/node@20.19.9)(sass@1.89.2)(terser@5.43.1)):
     dependencies:
@@ -10570,12 +10450,6 @@ snapshots:
       defaults: 1.0.4
 
   webpack-virtual-modules@0.6.2: {}
-
-  webworker-threads@0.7.17:
-    dependencies:
-      bindings: 1.5.0
-      nan: 2.24.0
-    optional: true
 
   which@2.0.2:
     dependencies:

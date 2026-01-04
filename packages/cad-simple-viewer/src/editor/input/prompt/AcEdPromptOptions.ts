@@ -1,3 +1,5 @@
+import { AcGePoint3d } from '@mlightcad/data-model'
+
 import { AcEdPreviewJig } from '../AcEdPreviewJig'
 import { AcEdKeywordCollection } from './AcEdKeywordCollection'
 
@@ -5,7 +7,7 @@ import { AcEdKeywordCollection } from './AcEdKeywordCollection'
  * Represents the base class for prompt options in the Editor, similar to `Autodesk.AutoCAD.EditorInput.PromptOptions`.
  * Provides configuration for the prompt message, keyword collection, and how keywords are appended/displayed.
  */
-export class AcEdPromptOptions<T> {
+export class AcEdPromptOptions<T = number | string | AcGePoint3d> {
   private _jig?: AcEdPreviewJig<T>
   private _message: string
   private _appendKeywordsToMessage: boolean

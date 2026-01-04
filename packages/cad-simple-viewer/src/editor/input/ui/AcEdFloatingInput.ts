@@ -1,12 +1,15 @@
 import {
+  AcDbEntity,
   acdbHostApplicationServices,
+  acdbMaskToOsnapModes,
+  AcDbObjectId,
   AcDbOsnapMode,
   AcGePoint2d,
   AcGePoint2dLike,
-  AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
+import { AcApSettingManager } from '../../../app'
 import { AcEdBaseView } from '../../view'
 import { AcEdMarkerManager } from '../marker'
 import { AcEdFloatingInputBoxes } from './AcEdFloatingInputBoxes'
@@ -20,6 +23,10 @@ import {
   AcEdFloatingInputValidationCallback
 } from './AcEdFloatingInputTypes'
 import { AcEdRubberBand } from './AcEdRubberBand'
+
+type AcEdOsnapPoint = AcGePoint3dLike & {
+  type: AcDbOsnapMode
+}
 
 /**
  * A UI component providing a small floating input box used inside CAD editing
@@ -73,7 +80,7 @@ export class AcEdFloatingInput<T> {
   private osnapMarkerManager?: AcEdMarkerManager
 
   /** Stores last confirmed osnap point */
-  private lastOSnapPoint?: AcGePoint3dLike
+  private lastOsnapPoint?: AcEdOsnapPoint
 
   /**
    * Callback functions
@@ -156,7 +163,7 @@ export class AcEdFloatingInput<T> {
 
     this.inputs = new AcEdFloatingInputBoxes<T>({
       parent: this.container,
-      twoInputs: options.twoInputs,
+      twoInputs: options.inputCount === 2,
       validate: this.validateFn,
       onCancel: this.onCancel,
       onCommit: this.onCommit,
@@ -399,14 +406,32 @@ export class AcEdFloatingInput<T> {
     // Show OSNAP Point
     if (this.osnapMarkerManager) {
       this.osnapMarkerManager.hideMarker()
-      this.lastOSnapPoint = this.getOSnapPoint()
-      if (this.lastOSnapPoint) {
-        wcsMousePos.x = this.lastOSnapPoint.x
-        wcsMousePos.y = this.lastOSnapPoint.y
-        this.osnapMarkerManager.showMarker(this.lastOSnapPoint)
+      this.lastOsnapPoint = this.getOsnapPoint()
+      if (this.lastOsnapPoint) {
+        wcsMousePos.x = this.lastOsnapPoint.x
+        wcsMousePos.y = this.lastOsnapPoint.y
+        this.osnapMarkerManager.showMarker(
+          this.lastOsnapPoint,
+          this.osnapMode2MarkerType(this.lastOsnapPoint.type)
+        )
       }
     }
     return wcsMousePos
+  }
+
+  private osnapMode2MarkerType(osnapMode: AcDbOsnapMode) {
+    switch (osnapMode) {
+      case AcDbOsnapMode.EndPoint:
+        return 'rect'
+      case AcDbOsnapMode.MidPoint:
+        return 'triangle'
+      case AcDbOsnapMode.Center:
+        return 'circle'
+      case AcDbOsnapMode.Quadrant:
+        return 'diamond'
+      default:
+        return 'rect'
+    }
   }
 
   /**
@@ -446,42 +471,10 @@ export class AcEdFloatingInput<T> {
    * A larger value increases the pick sensitivity. If omitted, a reasonable
    * default is used.
    *
-   * @returns An array of object IDs representing the entities that intersect
-   * the hit-region.
+   * @returns An array of snap points.
    */
-  private getOSnapPoint(point?: AcGePoint2dLike, hitRadius: number = 20) {
-    const results = this.view.pick(point, hitRadius)
-
-    // TODO: Is there one better way to get current working database
-    const db = acdbHostApplicationServices().workingDatabase
-    const modelSpace = db.tables.blockTable.modelSpace
-    const snapPoints: AcGePoint3d[] = []
-    results.forEach(item => {
-      // FIXME:
-      // It isn't correct to get the item in model space only.
-      // It may be one entity in paper space
-      const entity = modelSpace.getIdAt(item.id)
-      if (entity) {
-        if (item.children) {
-          item.children.forEach(child => {
-            entity.subGetOsnapPoints(
-              AcDbOsnapMode.EndPoint,
-              { ...this.view.curPos, z: 0 },
-              this.lastPoint,
-              snapPoints,
-              child.id
-            )
-          })
-        } else {
-          entity.subGetOsnapPoints(
-            AcDbOsnapMode.EndPoint,
-            { ...this.view.curPos, z: 0 },
-            this.lastPoint,
-            snapPoints
-          )
-        }
-      }
-    })
+  private getOsnapPoint(point?: AcGePoint2dLike, hitRadius: number = 20) {
+    const snapPoints: AcEdOsnapPoint[] = this.getOsnapPoints(point, hitRadius)
 
     // Find the nearest osnap point
     let minDist = Number.MAX_VALUE
@@ -501,5 +494,61 @@ export class AcEdFloatingInput<T> {
       }
     }
     return undefined
+  }
+
+  private getOsnapPoints(point?: AcGePoint2dLike, hitRadius: number = 20) {
+    const results = this.view.pick(point, hitRadius)
+
+    // TODO: Is there one better way to get current working database
+    const db = acdbHostApplicationServices().workingDatabase
+    const modelSpace = db.tables.blockTable.modelSpace
+    const osnapPoints: AcEdOsnapPoint[] = []
+    results.forEach(item => {
+      // FIXME:
+      // It isn't correct to get the item in model space only.
+      // It may be one entity in paper space
+      const entity = modelSpace.getIdAt(item.id)
+      if (entity) {
+        if (item.children) {
+          item.children.forEach(child => {
+            this.getOsnapPointsInAvaiableModes(entity, osnapPoints, child.id)
+          })
+        } else {
+          this.getOsnapPointsInAvaiableModes(entity, osnapPoints)
+        }
+      }
+    })
+    return osnapPoints
+  }
+
+  private getOsnapPointsInAvaiableModes(
+    entity: AcDbEntity,
+    osnapPoints: AcEdOsnapPoint[],
+    gsMark?: AcDbObjectId
+  ) {
+    const modes = acdbMaskToOsnapModes(AcApSettingManager.instance.osnapModes)
+    modes.forEach(mode => {
+      this.getOsnapPointsByMode(entity, mode, osnapPoints, gsMark)
+    })
+  }
+
+  private getOsnapPointsByMode(
+    entity: AcDbEntity,
+    osnapMode: AcDbOsnapMode,
+    osnapPoints: AcEdOsnapPoint[],
+    gsMark?: AcDbObjectId
+  ) {
+    const start = osnapPoints.length
+    entity.subGetOsnapPoints(
+      osnapMode,
+      { ...this.view.curPos, z: 0 },
+      this.lastPoint,
+      osnapPoints,
+      gsMark
+    )
+    const end = osnapPoints.length
+    for (let index = start; index < end; index++) {
+      osnapPoints[index].type = osnapMode
+    }
   }
 }

@@ -17,6 +17,6 @@
   },
   "dependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.5.4"
+    "@mlightcad/data-model": "../../../realdwg-web/packages/data-model/"
   }
 }

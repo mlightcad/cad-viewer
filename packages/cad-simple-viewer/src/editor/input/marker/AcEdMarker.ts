@@ -3,7 +3,7 @@ import { AcGePoint2dLike } from '@mlightcad/data-model'
 /**
  * Supported marker shapes.
  */
-export type AcEdMarkerType = 'circle' | 'triangle' | 'rect'
+export type AcEdMarkerType = 'circle' | 'triangle' | 'rect' | 'diamond' | 'x'
 
 /**
  * Represents a single marker displayed in screen coordinates.
@@ -104,16 +104,20 @@ export class AcEdMarker {
         pointer-events: none;
         transform: translate(-50%, -50%);
         z-index: 999999;
+        box-sizing: border-box;
       }
+    
       .ml-marker-circle {
         border-radius: 50%;
-        border: 2px solid currentColor;
+        border: 1px solid currentColor;
         background: transparent;
       }
+    
       .ml-marker-rect {
-        border: 2px solid currentColor;
+        border: 1px solid currentColor;
         background: transparent;
       }
+    
       .ml-marker-triangle {
         width: 0;
         height: 0;
@@ -122,7 +126,34 @@ export class AcEdMarker {
         border-bottom: 1em solid currentColor;
         transform: translate(-50%, -100%);
       }
+    
+      .ml-marker-diamond {
+        border: 1px solid currentColor;
+        background: transparent;
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+    
+      .ml-marker-x::before,
+      .ml-marker-x::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 1px;
+        background: currentColor;
+        transform-origin: center;
+      }
+    
+      .ml-marker-x::before {
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+    
+      .ml-marker-x::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+      }
     `
+
     document.head.appendChild(style)
   }
 
@@ -131,6 +162,13 @@ export class AcEdMarker {
    * according to the marker's chosen shape type.
    */
   private applyShape() {
+    // Reset
+    this._el.className = 'ml-marker'
+    this._el.style.width = ''
+    this._el.style.height = ''
+    this._el.style.fontSize = ''
+    this._el.style.transform = 'translate(-50%, -50%)'
+
     switch (this._type) {
       case 'circle':
         this._el.classList.add('ml-marker-circle')
@@ -146,7 +184,19 @@ export class AcEdMarker {
 
       case 'triangle':
         this._el.classList.add('ml-marker-triangle')
-        this._el.style.fontSize = `${this._size}px` // font-size scales triangle
+        this._el.style.fontSize = `${this._size}px`
+        break
+
+      case 'diamond':
+        this._el.classList.add('ml-marker-diamond')
+        this._el.style.width = `${this._size}px`
+        this._el.style.height = `${this._size}px`
+        break
+
+      case 'x':
+        this._el.classList.add('ml-marker-x')
+        this._el.style.width = `${this._size}px`
+        this._el.style.height = `${this._size}px`
         break
     }
   }

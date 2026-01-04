@@ -17,16 +17,20 @@ import {
   AcEdPointHandler,
   AcEdStringHandler
 } from '../handler'
+import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptDistanceOptions,
+  AcEdPromptEntityOptions,
   AcEdPromptIntegerOptions,
+  AcEdPromptKeywordOptions,
   AcEdPromptNumericalOptions,
   AcEdPromptPointOptions,
   AcEdPromptStringOptions
 } from '../prompt'
 import { AcEdFloatingInput } from './AcEdFloatingInput'
 import {
+  AcEdFloatingInputBoxCount,
   AcEdFloatingInputDrawPreviewCallback,
   AcEdFloatingInputDynamicValueCallback,
   AcEdFloatingInputRawData
@@ -148,7 +152,7 @@ export class AcEdInputManager {
 
     return this.makePromise<number>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: false,
       useBasePoint: false,
@@ -178,7 +182,7 @@ export class AcEdInputManager {
     const handler = new AcEdDistanceHandler(options)
     return this.makePromise<number>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: true,
@@ -204,7 +208,7 @@ export class AcEdInputManager {
     const handler = new AcEdAngleHandler(options)
     return this.makePromise<number>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: true,
@@ -238,12 +242,112 @@ export class AcEdInputManager {
     const handler = new AcEdStringHandler(options)
     return this.makePromise<string>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: false,
       useBasePoint: false,
       handler,
       getDynamicValue
+    })
+  }
+
+  /**
+   * Prompt the user to type a keyword. Resolved when Enter is pressed.
+   */
+  getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
+    const getDynamicValue = () => {
+      return {
+        value: '',
+        raw: { x: '' }
+      }
+    }
+
+    const handler = new AcEdKeywordHandler(options)
+    return this.makePromise<string>({
+      message: options.message,
+      inputCount: 1,
+      jig: options.jig,
+      showBaseLineOnly: false,
+      useBasePoint: false,
+      handler,
+      getDynamicValue
+    })
+  }
+
+  /**
+   * Prompts the user to select a single entity.
+   * Similar to Editor.GetEntity() in AutoCAD.
+   */
+  getEntity(options: AcEdPromptEntityOptions): Promise<string | null> {
+    return new Promise((resolve, reject) => {
+      if (this.active) {
+        reject(new Error('input manager is busy'))
+        return
+      }
+
+      this.active = true
+      // this.view.showMessage(options.message)
+
+      const cleanup = () => {
+        this.active = false
+        options.jig?.end()
+        document.removeEventListener('keydown', keyHandler)
+        this.view.canvas.removeEventListener('mousemove', moveHandler)
+        this.view.canvas.removeEventListener('mousedown', clickHandler)
+      }
+
+      /** Mouse move → preview jig */
+      const moveHandler = (e: MouseEvent) => {
+        if (!options.jig) return
+        const pos = this.view.cwcs2Wcs(e)
+        options.jig.update(pos as any)
+        options.jig.render()
+      }
+
+      /** Mouse click → try select entity */
+      const clickHandler = (e: MouseEvent) => {
+        const pos = this.view.cwcs2Wcs(e)
+        const picked = this.view.pick(pos)
+
+        // Clicked empty space
+        if (picked.length == 0) {
+          // this.view.showMessage(options.rejectMessage)
+          return
+        }
+
+        // Locked layer
+        // if (picked.locked && !options.allowObjectOnLockedLayer) {
+        //   this.view.showMessage(options.rejectMessage)
+        //   return
+        // }
+
+        // Class filter
+        // if (!options.isClassAllowed(picked.className)) {
+        //   this.view.showMessage(options.rejectMessage)
+        //   return
+        // }
+
+        cleanup()
+        resolve(picked[0].id)
+      }
+
+      /** Keyboard handling */
+      const keyHandler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          cleanup()
+          reject(new Error('cancelled'))
+          return
+        }
+
+        if (e.key === 'Enter' && options.allowNone) {
+          cleanup()
+          resolve(null)
+        }
+      }
+
+      document.addEventListener('keydown', keyHandler)
+      this.view.canvas.addEventListener('mousemove', moveHandler)
+      this.view.canvas.addEventListener('mousedown', clickHandler)
     })
   }
 
@@ -317,7 +421,7 @@ export class AcEdInputManager {
     const handler = new AcEdPointHandler(options)
     return this.makePromise<AcGePoint3dLike>({
       message: options.message,
-      twoInputs: true,
+      inputCount: 2,
       jig: options.jig,
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: options.useBasePoint,
@@ -338,7 +442,7 @@ export class AcEdInputManager {
    */
   private makePromise<T>(options: {
     message?: string
-    twoInputs?: boolean
+    inputCount?: AcEdFloatingInputBoxCount
     jig?: AcEdPreviewJig<T>
     showBaseLineOnly?: boolean
     useBasePoint?: boolean
@@ -370,7 +474,7 @@ export class AcEdInputManager {
 
       const floatingInput = new AcEdFloatingInput(this.view, {
         parent: this.view.canvas,
-        twoInputs: options.twoInputs,
+        inputCount: options.inputCount,
         message: options.message,
         disableOSnap: options.disableOSnap,
         showBaseLineOnly: options.showBaseLineOnly,

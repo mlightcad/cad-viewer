@@ -38,6 +38,15 @@ export default {
       toolbar: 'Toolbar',
       stats: 'Statistics'
     },
+    osnap: {
+      tooltip: 'Object Snap',
+      endpoint: 'Endpoint',
+      midpoint: 'Midpoint',
+      center: 'Center',
+      node: 'Node',
+      quadrant: 'Quadrant',
+      insertion: 'Insertion'
+    },
     pointStyle: {
       tooltip: 'Modify point style'
     },

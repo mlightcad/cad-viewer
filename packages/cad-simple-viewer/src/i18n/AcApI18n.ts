@@ -176,7 +176,18 @@ export class AcApI18n {
    * @returns - The localized command description.
    */
   public static cmdDescription(groupName: string, cmdName: string) {
-    const key = `command.${groupName}.${cmdName.toLowerCase()}`
+    const key = `command.${groupName}.${cmdName.toLowerCase()}.description`
+    return this.t(key)
+  }
+
+  /**
+   * Get localized command prommpt message
+   * @param groupName - Command group name
+   * @param cmdName - Global command name
+   * @returns - The localized command prompt message.
+   */
+  public static cmdPrompt(groupName: string, cmdName: string) {
+    const key = `command.${groupName}.${cmdName.toLowerCase()}.prompt`
     return this.t(key)
   }
 
@@ -199,6 +210,24 @@ export class AcApI18n {
    */
   public static userCmdDescription = (name: string) => {
     return this.cmdDescription(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, name)
+  }
+
+  /**
+   * Tries to find command in system group and gets its localized command prompt message
+   * @param cmdName - Global command name
+   * @returns - The localized command prompt message
+   */
+  public static sysCmdPrompt(name: string) {
+    return this.cmdPrompt(AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME, name)
+  }
+
+  /**
+   * Tries to find command in user group and gets its localized command prompt message
+   * @param cmdName - Global command name
+   * @returns - The localized command prompt message
+   */
+  public static userCmdPrompt = (name: string) => {
+    return this.cmdPrompt(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, name)
   }
 }
 

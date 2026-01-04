@@ -2,7 +2,7 @@ import { AcEdPromptResult } from './AcEdPromptResult'
 import { AcEdPromptStatus } from './AcEdPromptStatus'
 
 /**
- * Result of a prompt that requests a **double** or **integer** numeric value.
+ * Result of a prompt that requests a double or integer numeric value.
  */
 export class AcEdPromptNumericalResult extends AcEdPromptResult {
   /**

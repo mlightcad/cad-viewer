@@ -3,7 +3,7 @@ import { AcEdInputHandler } from './AcEdInputHandler'
 
 /**
  * Validates string input according to {@link AcEdPromptStringOptions}.
- * Supports empty string rules, keyword checking, and maximum length.
+ * Supports empty string rules and maximum length.
  */
 export class AcEdStringHandler implements AcEdInputHandler<string> {
   private options: AcEdPromptStringOptions

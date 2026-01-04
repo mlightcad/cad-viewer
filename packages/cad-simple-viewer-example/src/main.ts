@@ -9,7 +9,9 @@ class CadViewerApp {
   constructor() {
     // Get DOM elements
     this.container = document.getElementById('cad-container') as HTMLDivElement
-    this.fileInput = document.getElementById('fileInputElement') as HTMLInputElement
+    this.fileInput = document.getElementById(
+      'fileInputElement'
+    ) as HTMLInputElement
     this.setupFileHandling()
   }
 
