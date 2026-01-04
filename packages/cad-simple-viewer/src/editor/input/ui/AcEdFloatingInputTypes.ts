@@ -49,7 +49,10 @@ export type AcEdFloatingInputValidationCallback<T> = (
  *
  * When `twoInputs` is `false`, Y will always be `null`.
  */
-export type AcEdFloatingInputCommitCallback<T> = (point: T) => void
+export type AcEdFloatingInputCommitCallback<T> = (
+  value: T,
+  pos?: AcGePoint2dLike
+) => boolean
 
 /**
  * Callback invoked whenever the user edits either input field.

@@ -1,6 +1,5 @@
 import { AcCmEventManager } from '@mlightcad/data-model'
 
-import { AcApSettingManager } from '../../app'
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
 import {
@@ -11,7 +10,7 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStringOptions
 } from './prompt'
-import { AcEdCommandLine, AcEdInputManager } from './ui'
+import { AcEdInputManager } from './ui'
 
 /**
  * Event arguments for system variable related events.
@@ -57,8 +56,6 @@ export class AcEditor {
   private _cursorManager: AcEdCursorManager
   /** Manager for mouse and keyboard input */
   private _inputManager: AcEdInputManager
-  /** Command line UI component */
-  private _commandLine: AcEdCommandLine
   /** The view this editor is associated with */
   protected _view: AcEdBaseView
 
@@ -82,7 +79,6 @@ export class AcEditor {
     this._view = view
     this._cursorManager = new AcEdCursorManager(view)
     this._inputManager = new AcEdInputManager(view)
-    this._commandLine = this.createCommandLine()
   }
 
   /**
@@ -188,7 +184,7 @@ export class AcEditor {
    * @returns Promise that resolves to the input one keyword.
    */
   async getKeywords(options: AcEdPromptKeywordOptions) {
-    return await this._commandLine.getKeywords(options)
+    return await this._inputManager.getKeywords(options)
   }
 
   /**
@@ -223,17 +219,5 @@ export class AcEditor {
    */
   async getSelection() {
     return await this._inputManager.getBox()
-  }
-
-  /**
-   * Creates command line UI component
-   */
-  private createCommandLine() {
-    const commandLine = new AcEdCommandLine(document.body)
-    commandLine.visible = AcApSettingManager.instance.isShowCommandLine
-    AcApSettingManager.instance.events.modified.addEventListener(() => {
-      commandLine.visible = AcApSettingManager.instance.isShowCommandLine
-    })
-    return commandLine
   }
 }

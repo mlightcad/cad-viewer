@@ -70,12 +70,23 @@ export class AcEdCommandLine {
     this.cliContainer.style.display = val ? 'block' : 'none'
   }
 
+  setPrompt(message?: string) {
+    this.promptEl.innerHTML = message ?? ''
+    this.textInput.placeholder = ''
+  }
+
+  clear() {
+    this.clearPrompt()
+    this.clearInput()
+  }
+
   clearPrompt() {
     this.promptEl.innerHTML = ''
   }
 
   clearInput() {
     this.textInput.value = ''
+    this.textInput.placeholder = this.localize('main.commandLine.placeholder')
   }
 
   focusInput() {
@@ -98,11 +109,6 @@ export class AcEdCommandLine {
    * @param key - Localization key (flat key style, e.g. "command.placeholder")
    * @param defaultText - Default English (or fallback) text to use if the key is missing
    * @returns localized string from AcApI18n or the provided defaultText
-   *
-   * @example
-   * ```ts
-   * const placeholder = this.localize('main.commandLine.placeholder', 'Type command')
-   * ```
    */
   private localize(key: string, defaultText?: string): string {
     return AcApI18n.t(key, { fallback: defaultText })
@@ -171,6 +177,7 @@ export class AcEdCommandLine {
     this.printMessage(`${executed}: ${command.localName}`)
 
     AcApDocManager.instance.sendStringToExecute(cmdLine)
+    this.clearInput()
   }
 
   /** Inject CSS styles */
@@ -265,21 +272,37 @@ export class AcEdCommandLine {
         flex: 1;
         min-width: 0;
         color: #333;
+        height: 100%; 
+      }
+
+      .ml-cli-prompt,
+      .ml-cli-text {
+        font-family: Consolas, "Courier New", monospace;
       }
 
       .ml-cli-prompt {
+        display: flex;
+        align-items: center;
         white-space: nowrap;
         user-select: none;
         margin-right: 4px;
+        line-height: 1;
       }
 
       .ml-cli-text {
         flex: 1;
+        height: 100%;
         border: none;
         outline: none;
         background: transparent;
-        font-family: monospace;
+
         font-size: 13px;
+        line-height: 1;
+        padding: 0;
+        margin: 0;
+
+        display: flex;
+        align-items: center;
         color: #333;
       }
 
@@ -417,10 +440,7 @@ export class AcEdCommandLine {
     this.textInput.type = 'text'
     this.textInput.spellcheck = false
     this.textInput.autocomplete = 'off'
-    this.textInput.placeholder = this.localize(
-      'main.commandLine.placeholder',
-      'Type command'
-    )
+    this.textInput.placeholder = this.localize('main.commandLine.placeholder')
     this.centerEl.appendChild(this.textInput)
 
     /* ---------- right group ---------- */
@@ -509,7 +529,6 @@ export class AcEdCommandLine {
         }
 
         this.executeCommand(this.getInputText())
-        this.clearInput()
         this.historyIndex = this.history.length
         this.updatePopups({ showCmd: false, showMsg: false })
         return
@@ -525,7 +544,7 @@ export class AcEdCommandLine {
           return
         }
 
-        this.setInputText('')
+        this.clear()
         this.printMessage(this.localize('main.commandLine.canceled'))
         this.updatePopups({ showCmd: false, showMsg: false })
         return

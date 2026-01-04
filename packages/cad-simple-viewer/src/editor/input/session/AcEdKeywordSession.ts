@@ -34,7 +34,6 @@ export class AcEdKeywordSession extends AcEdInputSession<string> {
   }
 
   protected cleanup(): void {
-    this.cli.clearPrompt()
-    this.cli.clearInput()
+    this.cli.clear()
   }
 }

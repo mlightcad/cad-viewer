@@ -19,10 +19,6 @@ export class AcApEraseCmd extends AcEdCommand {
       selectionSet.clear()
     } else {
       const message = AcApI18n.sysCmdPrompt('erase')
-      // const keywordOptions = new AcEdPromptKeywordOptions(message)
-      // keywordOptions.keywords.add('Click')
-      // keywordOptions.keywords.add('Window')
-      // await AcApDocManager.instance.editor.getKeywords(keywordOptions)
       const entityOptions = new AcEdPromptEntityOptions(message)
       const id = await AcApDocManager.instance.editor.getEntity(entityOptions)
       if (id) context.doc.database.tables.blockTable.removeEntity(id)
