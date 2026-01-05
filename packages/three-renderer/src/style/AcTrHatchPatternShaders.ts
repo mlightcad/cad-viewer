@@ -1,12 +1,25 @@
 import * as THREE from 'three'
 
+/**
+ * Another format of AcTrPatternLine.
+ * We need to redefine it in order to send it to gpu.
+ */
 export interface AcTrPatternLine {
-  origin: THREE.Vector2
-  delta: THREE.Vector2
-  angle: number // in radians
-  pattern: number[] // line pattern
-  patternSum: number[]
-  patternLength: number // total length of a line pattern
+    angle: number // in radians
+    base: THREE.Vector2
+    offset: THREE.Vector2
+    /**
+     * Dash and gap list.
+     * E.g., [1, -1, 2, -1], defines a line repeats by "- - -- " (a dash, a gap, 2 dashes, a gap...)
+     * The array size shouldn't be 0.
+     */
+    dashLengths: number[]
+    /**
+     * Total length of a *this* pattern definition.
+     * We need to pass it in as a individual variable because it's not convenient to get it in glsl.
+     * E.g., for dashLengths: [1, -1, 2, -1], patternLength is 5.
+     */
+    patternLength: number
 }
 
 /**
@@ -56,11 +69,10 @@ export function createHatchPatternShaderMaterial(
     varying vec3 v_pos;
 
     struct PatternLine {
-        vec2 origin;
-        vec2 delta;
         float angle;
-        float pattern[MAX_PATTERN_SEGMENT_COUNT];
-        float patternSum[MAX_PATTERN_SEGMENT_COUNT+1];
+        vec2 base;
+        vec2 offset;
+        float dashLengths[MAX_PATTERN_SEGMENT_COUNT];
         float patternLength;
     };
 
@@ -72,17 +84,18 @@ export function createHatchPatternShaderMaterial(
     // Clamp [0..1] range
     #define saturate(a) clamp(a, 0.0, 1.0)
 
-    const float EPS = 1000.0;
+    const float MAX_THICKNESS = 1000.0; // If line thickness exceeds this, use solid fill instead of pattern
+    const float EPSILON = 1e-6;
 
     vec2 getWorldScale() {
         return vec2(length(modelMatrix[0].xyz), length(modelMatrix[1].xyz));
     }
 
     // Rotate a 2D point by rotation angle (in radians)
-    vec2 rotate(vec2 st, float angle) {
+    vec2 rotate(vec2 samplePos, float angle) {
         float s = sin(angle);
         float c = cos(angle);
-        return vec2(c * st.x - s * st.y, c * st.y + s * st.x);
+        return vec2(c * samplePos.x - s * samplePos.y, c * samplePos.y + s * samplePos.x);
     }
 
     vec2 translate(vec2 samplePosition, vec2 offset) {
@@ -94,47 +107,57 @@ export function createHatchPatternShaderMaterial(
         return samplePosition / scale;
     }
 
-    // signed distance from point st to infinite line (a->b)
-    float sdfLine(vec2 st, vec2 a, vec2 b) {
-        vec2 ap = st - a;
+    // signed distance from point samplePos to infinite line (a->b)
+    float sdfLine(vec2 samplePos, vec2 a, vec2 b) {
+        vec2 ap = samplePos - a;
         vec2 ab = b - a;
-        return abs((ap.x * ab.y) - (ab.x * ap.y)) / max(length(ab), 1e-6);
+        return abs((ap.x * ab.y) - (ab.x * ap.y)) / max(length(ab), EPSILON);
     }
 
     // Draw a repeated line pattern in object/world space with smooth anti-aliasing.
-    float drawSpaceLine(vec2 st, float distanceBetweenLines, float thick) {
-        float dist = sdfLine(st, vec2(0.0, 0.0), vec2(1.0, 0.0));
+    float drawSpaceLine(vec2 samplePos, float distanceBetweenLines, float thick) {
+        float dist = sdfLine(samplePos, vec2(0.0, 0.0), vec2(1.0, 0.0));
 
         // compute fractional distance to nearest repeated line center
-        float u = dist / max(distanceBetweenLines, 1e-6);
-        float lineDistance = abs(fract(u + 0.5) - 0.5) * distanceBetweenLines;
-        float threshold = step(thick, lineDistance);
-        return threshold;
+        float normalizedDist = dist / max(distanceBetweenLines, EPSILON);
+        float lineDistance = abs(fract(normalizedDist + 0.5) - 0.5) * distanceBetweenLines;
+        // opacity: 0.0 = don't draw, 1.0 = draw
+        float opacity = 1.0 - step(thick, lineDistance);
+        return opacity;
     }
 
     float drawSolidLine(PatternLine patternLine, float thick) {
-        vec2 origin = patternLine.origin;
-        vec2 delta = patternLine.delta;
-        float distanceBetweenLines = length(delta);
+        vec2 base = patternLine.base;
+        vec2 offset = patternLine.offset;
+        float distanceBetweenLines = length(offset);
 
-        origin = rotate(origin, u_patternAngle);
-        vec2 st = rotate(v_pos.xy - origin, -(patternLine.angle + u_patternAngle));
+        base = rotate(base, u_patternAngle);
+        vec2 samplePos = rotate(v_pos.xy - base, -(patternLine.angle + u_patternAngle));
 
-        return drawSpaceLine(st, distanceBetweenLines, thick);
+        return drawSpaceLine(samplePos, distanceBetweenLines, thick);
     }
 
-    int getPatternIndex(PatternLine patternLine, float u, out float distance) {
-        //u = mod(u, patternLine.patternLength);
-        float y = floor(u / patternLine.patternLength);
-        u = u - patternLine.patternLength * y;
-        //float distance = 0.0;
+    int getPatternIndex(PatternLine patternLine, float linePosition, out float distance) {
+        if (patternLine.dashLengths.length() < 1 || patternLine.patternLength <= 0.0) {
+            return -1;
+        }
 
+        // Normalize linePosition to [0, patternLength) range
+        float patternRepeat = floor(linePosition / patternLine.patternLength);
+        linePosition -= patternLine.patternLength * patternRepeat;
+
+        // Use cumulative sum approach for better precision
+        float sum = 0.0;
         #pragma unroll_loop_start
-        for (int i = 1; i < patternLine.patternSum.length(); i++){
-            if (u <= patternLine.patternSum[i]) {
-                distance = u - patternLine.patternSum[i - 1];
-                return i - 1;
+        for (int i = 0; i < patternLine.dashLengths.length(); i++) {
+            float segmentLength = abs(patternLine.dashLengths[i]);
+            if (linePosition <= sum + segmentLength + EPSILON) {
+                distance = linePosition - sum;
+                // Clamp distance to avoid negative values due to precision
+                distance = max(0.0, distance);
+                return i;
             }
+            sum += segmentLength;
         }
         #pragma unroll_loop_end
 
@@ -142,45 +165,46 @@ export function createHatchPatternShaderMaterial(
     }
 
     float drawDashedLine(PatternLine patternLine, float thick){
-        float threshold = 1.0;
-        vec2 origin = patternLine.origin;
-        vec2 delta = patternLine.delta;
-        float distanceBetweenLines = abs(delta.y);
+        float opacity = 0.0; // 0.0 = don't draw, 1.0 = draw
+        vec2 base = patternLine.base;
+        vec2 offset = patternLine.offset;
+        float distanceBetweenLines = abs(offset.y);
 
-        origin = rotate(origin, u_patternAngle);
-        vec2 st = rotate(v_pos.xy - origin, -(patternLine.angle + u_patternAngle));
+        base = rotate(base, u_patternAngle);
+        vec2 samplePos = rotate(v_pos.xy - base, -(patternLine.angle + u_patternAngle));
 
         float offsetX = 0.0;
-        if (abs(delta.y) > 1e-6) {
-            offsetX = st.y * delta.x / delta.y;
+        if (abs(offset.y) > EPSILON) {
+            offsetX = samplePos.y * offset.x / offset.y;
         }
-        float u = st.x - offsetX;
+        float linePosition = samplePos.x - offsetX;
         float distance = 0.0;
-        int index = getPatternIndex(patternLine, u, distance);
-        if (index < 0) {
-            return threshold;
+        int index = getPatternIndex(patternLine, linePosition, distance);
+        if (index < 0 || index >= patternLine.dashLengths.length()) {
+            return opacity;
         }
 
-        float size = patternLine.pattern[index];
+        float size = patternLine.dashLengths[index];
         if (size >= 0.0) {
-            threshold = drawSpaceLine(st, distanceBetweenLines, thick);
+            // Dash segment: draw the line
+            opacity = drawSpaceLine(samplePos, distanceBetweenLines, thick);
             // Try to solve the problem caused by the precision after zooming out by drawing a part of the dashed line
         } else if (distance < thick) {
-            //threshold = 0.8;
-            threshold = drawSpaceLine(st, distanceBetweenLines, thick);
+            // Gap segment: draw only if very close to edge (for precision handling)
+            opacity = drawSpaceLine(samplePos, distanceBetweenLines, thick);
         }
 
-        return threshold;
+        return opacity;
     }
 
     float drawLine(PatternLine patternLine, float thick) {
-        float t = 0.0;
+        float opacity = 0.0;
         if (patternLine.patternLength > 0.0) {
-            t = drawDashedLine(patternLine, thick);
+            opacity = drawDashedLine(patternLine, thick);
         } else {
-            t = drawSolidLine(patternLine, thick);
+            opacity = drawSolidLine(patternLine, thick);
         }
-        return t;
+        return opacity;
     }
 
     void main() {
@@ -202,7 +226,7 @@ export function createHatchPatternShaderMaterial(
         float thick = (0.7 / averageScale) / u_cameraZoom;
 #endif
 
-        if (thick > EPS) {
+        if (thick > MAX_THICKNESS) {
             gl_FragColor = vec4(u_color, 1.0);
             #include <colorspace_fragment>
             return;
@@ -214,13 +238,13 @@ export function createHatchPatternShaderMaterial(
         #pragma unroll_loop_start
         for (int i = 0; i < u_patternLines.length(); i++) {
             PatternLine pl = u_patternLines[i];
-            float t = drawLine(pl, thick);
-            total += (1.0 - t);
+            float opacity = drawLine(pl, thick);
+            total += opacity;
         }
         #pragma unroll_loop_end
 #else
-        float t = drawLine(u_patternLines[0], thick);
-        total += (1.0 - t);
+        float opacity = drawLine(u_patternLines[0], thick);
+        total += opacity;
 #endif
 
         total = saturate(total);
