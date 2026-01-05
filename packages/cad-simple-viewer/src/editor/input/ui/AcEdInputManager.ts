@@ -4,6 +4,7 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
+import { AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
 import { AcEdBaseView } from '../../view'
 import { AcEdPreviewJig } from '../AcEdPreviewJig'
@@ -17,20 +18,27 @@ import {
   AcEdPointHandler,
   AcEdStringHandler
 } from '../handler'
+import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptDistanceOptions,
+  AcEdPromptEntityOptions,
   AcEdPromptIntegerOptions,
+  AcEdPromptKeywordOptions,
   AcEdPromptNumericalOptions,
   AcEdPromptPointOptions,
   AcEdPromptStringOptions
 } from '../prompt'
+import { AcEdCommandLine } from './AcEdCommandLine'
 import { AcEdFloatingInput } from './AcEdFloatingInput'
 import {
+  AcEdFloatingInputBoxCount,
+  AcEdFloatingInputCommitCallback,
   AcEdFloatingInputDrawPreviewCallback,
   AcEdFloatingInputDynamicValueCallback,
   AcEdFloatingInputRawData
 } from './AcEdFloatingInputTypes'
+import { AcEdFloatingMessage } from './AcEdFloatingMessage'
 
 /**
  * A fully type-safe TypeScript class providing CAD-style interactive user input
@@ -48,6 +56,9 @@ export class AcEdInputManager {
 
   /** Stores last confirmed point from getPoint() or getBox() */
   private lastPoint: AcGePoint2dLike | null = null
+  
+  /** Command line UI component */
+  private _commandLine: AcEdCommandLine
 
   /**
    * The flag to indicate whether it is currently in an “input acquisition” mode (e.g., point
@@ -64,6 +75,12 @@ export class AcEdInputManager {
   constructor(view: AcEdBaseView) {
     this.view = view
     this.injectCSS()
+    const commandLine = new AcEdCommandLine(document.body)
+    this._commandLine = commandLine
+    commandLine.visible = AcApSettingManager.instance.isShowCommandLine
+    AcApSettingManager.instance.events.modified.addEventListener(() => {
+      commandLine.visible = AcApSettingManager.instance.isShowCommandLine
+    })
   }
 
   /**
@@ -146,9 +163,9 @@ export class AcEdInputManager {
       }
     }
 
-    return this.makePromise<number>({
+    return this.makeFloatingInputPromise<number>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: false,
       useBasePoint: false,
@@ -176,9 +193,9 @@ export class AcEdInputManager {
     }
 
     const handler = new AcEdDistanceHandler(options)
-    return this.makePromise<number>({
+    return this.makeFloatingInputPromise<number>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: true,
@@ -202,9 +219,9 @@ export class AcEdInputManager {
     }
 
     const handler = new AcEdAngleHandler(options)
-    return this.makePromise<number>({
+    return this.makeFloatingInputPromise<number>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: true,
@@ -236,14 +253,104 @@ export class AcEdInputManager {
     }
 
     const handler = new AcEdStringHandler(options)
-    return this.makePromise<string>({
+    return this.makeFloatingInputPromise<string>({
       message: options.message,
-      twoInputs: false,
+      inputCount: 1,
       jig: options.jig,
       showBaseLineOnly: false,
       useBasePoint: false,
       handler,
       getDynamicValue
+    })
+  }
+
+  /**
+   * Prompt the user to type a keyword. Resolved when Enter is pressed.
+   */
+  getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
+    const getDynamicValue = () => {
+      return {
+        value: '',
+        raw: { x: '' }
+      }
+    }
+
+    const handler = new AcEdKeywordHandler(options)
+    return this.makeFloatingInputPromise<string>({
+      message: options.message,
+      inputCount: 1,
+      jig: options.jig,
+      showBaseLineOnly: false,
+      useBasePoint: false,
+      handler,
+      getDynamicValue
+    })
+  }
+
+  /**
+   * Prompts the user to select a single entity.
+   * Similar to Editor.GetEntity() in AutoCAD.
+   */
+  getEntity(options: AcEdPromptEntityOptions): Promise<string | null> {
+    return new Promise((resolve, reject) => {
+      this.active = true
+      const floatingMessage = new AcEdFloatingMessage(this.view, {
+        parent: this.view.canvas,
+        message: options.message
+      })
+      this._commandLine.setPrompt(options.message)
+      const cleanup = () => {
+        this.active = false
+        options.jig?.end()
+        document.removeEventListener('keydown', keyHandler)
+        this.view.canvas.removeEventListener('mousedown', clickHandler)
+        floatingMessage.dispose()
+        this._commandLine.clear()
+      }
+
+      /** Mouse click → try select entity */
+      const clickHandler = (e: MouseEvent) => {
+        const pos = this.view.cwcs2Wcs(e)
+        const picked = this.view.pick(pos)
+
+        // Clicked empty space
+        if (picked.length == 0) {
+          // this.view.showMessage(options.rejectMessage)
+          return
+        }
+
+        // Locked layer
+        // if (picked.locked && !options.allowObjectOnLockedLayer) {
+        //   this.view.showMessage(options.rejectMessage)
+        //   return
+        // }
+
+        // Class filter
+        // if (!options.isClassAllowed(picked.className)) {
+        //   this.view.showMessage(options.rejectMessage)
+        //   return
+        // }
+
+        cleanup()
+        resolve(picked[0].id)
+      }
+
+      /** Keyboard handling */
+      const keyHandler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          cleanup()
+          reject(new Error('cancelled'))
+          return
+        }
+
+        if (e.key === 'Enter' && options.allowNone) {
+          cleanup()
+          resolve(null)
+        }
+      }
+
+      document.addEventListener('keydown', keyHandler)
+      this.view.canvas.addEventListener('mousedown', clickHandler)
     })
   }
 
@@ -315,9 +422,9 @@ export class AcEdInputManager {
     }
 
     const handler = new AcEdPointHandler(options)
-    return this.makePromise<AcGePoint3dLike>({
+    return this.makeFloatingInputPromise<AcGePoint3dLike>({
       message: options.message,
-      twoInputs: true,
+      inputCount: 2,
       jig: options.jig,
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: options.useBasePoint,
@@ -330,15 +437,15 @@ export class AcEdInputManager {
   }
 
   /**
-   * Creates a Promise that will be resolved or rejected by user input.
+   * Creates a promise for floating input that will be resolved or rejected by user input.
    *
    * This method centralizes the lifecycle of an interactive input operation,
    * including handling the Escape key to cancel, resolving with user-provided
    * values, and guaranteeing cleanup of UI elements and event handlers.
    */
-  private makePromise<T>(options: {
+  private makeFloatingInputPromise<T>(options: {
     message?: string
-    twoInputs?: boolean
+    inputCount?: AcEdFloatingInputBoxCount
     jig?: AcEdPreviewJig<T>
     showBaseLineOnly?: boolean
     useBasePoint?: boolean
@@ -347,7 +454,8 @@ export class AcEdInputManager {
     handler: AcEdInputHandler<T>
     cleanup?: () => void
     getDynamicValue: AcEdFloatingInputDynamicValueCallback<T>
-    drawPreview?: AcEdFloatingInputDrawPreviewCallback
+    drawPreview?: AcEdFloatingInputDrawPreviewCallback,
+    onCommit?: AcEdFloatingInputCommitCallback<T>
   }): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.active = true
@@ -368,9 +476,10 @@ export class AcEdInputManager {
         }
       }
 
+      this._commandLine.setPrompt(options.message)
       const floatingInput = new AcEdFloatingInput(this.view, {
         parent: this.view.canvas,
-        twoInputs: options.twoInputs,
+        inputCount: options.inputCount,
         message: options.message,
         disableOSnap: options.disableOSnap,
         showBaseLineOnly: options.showBaseLineOnly,
@@ -386,13 +495,18 @@ export class AcEdInputManager {
           options.drawPreview?.(pos)
         },
         onCommit: (val: T) => {
-          resolver(val)
+          let result = false
+          if (!options.onCommit || options.onCommit(val)) {
+            resolver(val)
+            result = true
+          }
           if (floatingInput.lastPoint) {
             this.lastPoint = {
               x: floatingInput.lastPoint.x,
               y: floatingInput.lastPoint.y
             }
           }
+          return result
         },
         onCancel: () => rejector()
       })
@@ -402,6 +516,7 @@ export class AcEdInputManager {
         options.jig?.end()
         document.removeEventListener('keydown', escHandler)
         floatingInput.dispose()
+        this._commandLine.clear()
       }
 
       const resolver = (value: T) => {

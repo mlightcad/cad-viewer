@@ -1,12 +1,15 @@
 import {
+  AcDbEntity,
   acdbHostApplicationServices,
+  acdbMaskToOsnapModes,
+  AcDbObjectId,
   AcDbOsnapMode,
   AcGePoint2d,
   AcGePoint2dLike,
-  AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
+import { AcApSettingManager } from '../../../app'
 import { AcEdBaseView } from '../../view'
 import { AcEdMarkerManager } from '../marker'
 import { AcEdFloatingInputBoxes } from './AcEdFloatingInputBoxes'
@@ -19,7 +22,12 @@ import {
   AcEdFloatingInputOptions,
   AcEdFloatingInputValidationCallback
 } from './AcEdFloatingInputTypes'
+import { AcEdFloatingMessage } from './AcEdFloatingMessage'
 import { AcEdRubberBand } from './AcEdRubberBand'
+
+type AcEdOsnapPoint = AcGePoint3dLike & {
+  type: AcDbOsnapMode
+}
 
 /**
  * A UI component providing a small floating input box used inside CAD editing
@@ -37,78 +45,36 @@ import { AcEdRubberBand } from './AcEdRubberBand'
  * This abstraction allows higher-level objects such as AcEdInputManager to
  * remain clean and free from DOM-handling logic.
  */
-export class AcEdFloatingInput<T> {
-  /** Stores last confirmed point */
+export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
+  /** Stores last confirmed WCS point */
   lastPoint: AcGePoint2d | null = null
 
-  /** The view associated with this input operation */
-  protected view: AcEdBaseView
-
   /** Inject styles only once */
-  private static stylesInjected = false
+  private static inputStylesInjected = false
 
-  /**
-   * Parent element for positioning. Defaults to body if not provided.
-   */
-  private parent: HTMLElement
+  /** Input box container (single or double input) */
+  private inputs?: AcEdFloatingInputBoxes<T>
 
-  /**
-   * Root container DIV used to position and style the floating widget.
-   */
-  private container: HTMLDivElement
-
-  /**
-   * X and Y Input elements.
-   */
-  private inputs: AcEdFloatingInputBoxes<T>
-
-  /**
-   * Provides a temporary CAD-style rubber-band preview.
-   */
+  /** Provides a temporary CAD-style rubber-band preview. */
   private rubberBand?: AcEdRubberBand
 
-  /**
-   * OSNAP marker manager to display and hide OSNAP marker
-   */
+  /** OSNAP marker manager to display and hide OSNAP marker */
   private osnapMarkerManager?: AcEdMarkerManager
 
   /** Stores last confirmed osnap point */
-  private lastOSnapPoint?: AcGePoint3dLike
+  private lastOsnapPoint?: AcEdOsnapPoint
 
-  /**
-   * Callback functions
-   */
+  /** Callbacks */
   private onCommit?: AcEdFloatingInputCommitCallback<T>
   private onChange?: AcEdFloatingInputChangeCallback<T>
   private onCancel?: AcEdFloatingInputCancelCallback
+
+  /** Validation and dynamic value providers */
   private validateFn: AcEdFloatingInputValidationCallback<T>
   private getDynamicValue: AcEdFloatingInputDynamicValueCallback<T>
   private drawPreview?: AcEdFloatingInputDrawPreviewCallback
 
-  /** Whether the widget is currently visible. */
-  private visible = false
-
-  /** Whether this instance has been disposed. */
-  private disposed = false
-
-  /**
-   * Cached bound handler for mouse enter event—ensures removal works.
-   */
-  private boundOnMouseEnter: (e: MouseEvent) => void
-
-  /**
-   * Cached bound handler for mouse leave event—ensures removal works.
-   */
-  private boundOnMouseLeave: (e: MouseEvent) => void
-
-  /**
-   * Cached bound handler for mouse move event—ensures removal works.
-   */
-  private boundOnMouseMove: (e: MouseEvent) => void
-
-  /**
-   * Cached bound handler for click event—ensures removal works.
-   */
+  /** Cached click handler */
   private boundOnClick: (e: MouseEvent) => void
 
   // ---------------------------------------------------------------------------
@@ -123,20 +89,29 @@ export class AcEdFloatingInput<T> {
    *                validation, and display mode.
    */
   constructor(view: AcEdBaseView, options: AcEdFloatingInputOptions<T>) {
-    this.view = view
+    super(view, options)
+
+    // -----------------------------
+    // OSNAP
+    // -----------------------------
     if (!options.disableOSnap) {
       this.osnapMarkerManager = new AcEdMarkerManager(view)
     }
 
+    // -----------------------------
+    // Rubber band
+    // -----------------------------
     if (options.basePoint) {
-      this.rubberBand = new AcEdRubberBand(this.view)
+      this.rubberBand = new AcEdRubberBand(view)
       this.rubberBand.start(options.basePoint, {
         color: '#0f0',
         showBaseLineOnly: options.showBaseLineOnly
       })
     }
 
-    this.parent = options.parent ?? document.body
+    // -----------------------------
+    // Callbacks
+    // -----------------------------
     this.validateFn = options.validate
     this.getDynamicValue = options.getDynamicValue
     this.drawPreview = options.drawPreview
@@ -145,361 +120,231 @@ export class AcEdFloatingInput<T> {
     this.onChange = options.onChange
     this.onCancel = options.onCancel
 
-    // Create DOM
-    this.container = document.createElement('div')
-    this.container.className = 'ml-floating-input'
+    // -----------------------------
+    // Input boxes
+    // -----------------------------
+    if (options.inputCount !== 0) {
+      this.inputs = new AcEdFloatingInputBoxes<T>({
+        parent: this.container,
+        twoInputs: options.inputCount === 2,
+        validate: this.validateFn,
+        onCancel: this.onCancel,
+        onCommit: this.onCommit,
+        onChange: this.onChange
+      })
+    }
 
-    const label = document.createElement('span')
-    label.className = 'ml-floating-input-label'
-    label.textContent = options.message ?? ''
-    this.container.appendChild(label)
-
-    this.inputs = new AcEdFloatingInputBoxes<T>({
-      parent: this.container,
-      twoInputs: options.twoInputs,
-      validate: this.validateFn,
-      onCancel: this.onCancel,
-      onCommit: this.onCommit,
-      onChange: this.onChange
-    })
-
-    // Always add it as children of body element because the browser will ignore it completely if
-    // adding an <input> element as a child of a <canvas> element.
-    document.body.appendChild(this.container)
-
-    // Bind events
-    this.boundOnMouseEnter = e => this.handleMouseEnter(e)
-    this.boundOnMouseLeave = () => this.handleMouseLeave()
-    this.boundOnMouseMove = e => this.handleMouseMove(e)
+    // -----------------------------
+    // Click commit
+    // -----------------------------
     this.boundOnClick = e => this.handleClick(e)
-
-    // When the mouse enters the parent element, show floating input as AutoCAD
-    this.parent.addEventListener('mouseenter', this.boundOnMouseEnter)
-    // When the mouse leaves the parent element, hide floating input as AutoCAD
-    this.parent.addEventListener('mouseleave', this.boundOnMouseLeave)
-
-    this.injectCSS()
+    this.parent.addEventListener('click', this.boundOnClick)
+    this.injectInputCSS()
   }
 
-  /**
-   * Injects minimal CSS required for the floating input and preview rectangle.
-   * Useful when you do not have a separate CSS file.
-   */
-  private injectCSS() {
-    if (AcEdFloatingInput.stylesInjected) return
-    AcEdFloatingInput.stylesInjected = true
-
+  private injectInputCSS() {
+    if (AcEdFloatingInput.inputStylesInjected) return
+    AcEdFloatingInput.inputStylesInjected = true
+  
     const style = document.createElement('style')
     style.textContent = `
-      .ml-floating-input {
-        position: absolute;
-        display: flex;
-        align-items: center;
-        padding: 2px 4px;
-        background: #444; /* gray background for container */
-        color: #fff; /* white text for message */
-        border: none;
-        border-radius: 4px;
-        font-size: 12px;
-        pointer-events: none;
-        z-index: 10000;
-      }
       .ml-floating-input input {
         font-size: 12px;
         padding: 2px 4px;
         margin-left: 6px;
         height: 22px;
-        width: 90px; /* wider to show coordinates */
-        background: #888; /* gray background for input */
-        border: 1px solid #666; /* subtle border */
+        width: 90px;
+        background: #888;
+        border: 1px solid #666;
         border-radius: 2px;
       }
+  
       .ml-floating-input input.invalid {
         border-color: red;
         color: red;
-      }
-      .ml-floating-input-label {
-        white-space: nowrap;
-        color: #fff; /* white label text */
       }
     `
     document.head.appendChild(style)
   }
 
-  /**
-   * Indicates whether the floating input widget is currently visible.
-   * Can be used by external code to check if the input is shown on the screen.
-   */
-  get isVisible() {
-    return this.visible
-  }
+  // ---------------------------------------------------------------------------
+  // Overrides
+  // ---------------------------------------------------------------------------
 
-  /**
-   * Shows the floating input box at the specified screen coordinates.
-   * @param pos - The mouse position in browser
-   */
-  showAt(pos: AcGePoint2dLike): void {
+  override dispose() {
     if (this.disposed) return
-    this.container.style.display = 'flex'
-    this.visible = true
-    this.inputs.focus()
-    this.setPosition(pos)
+    super.dispose()
 
-    // Listen to mouse move and click on parent
-    this.parent.addEventListener('mousemove', this.boundOnMouseMove)
-    this.parent.addEventListener('click', this.boundOnClick)
-  }
-
-  /**
-   * Hides the floating input widget.
-   *
-   * - Removes the widget from view.
-   * - Stops tracking mouse movement on the parent element.
-   *
-   * Safe to call multiple times; if the widget is already hidden, this method
-   * does nothing.
-   */
-  hide() {
-    if (!this.visible) return
-    this.container.style.display = 'none'
-    this.visible = false
-    this.removeListener()
-  }
-
-  /**
-   * Disposes the floating input widget permanently.
-   *
-   * - Removes all event listeners (keyboard, input, mouse move).
-   * - Removes the widget's DOM container from the parent.
-   * - Marks the widget as disposed; after this, it cannot be shown again.
-   *
-   * Safe to call multiple times; subsequent calls have no effect.
-   */
-  dispose() {
-    if (this.disposed) return
-    this.disposed = true
-
-    this.osnapMarkerManager?.clear()
-    this.inputs.dispose()
-    this.rubberBand?.dispose()
-    this.removeListener(true)
-    this.container.remove()
-  }
-
-  /**
-   * Sets position of this floating input
-   * @param pos - The mouse position in browser
-   * @returns The mouse position in the parent element of the floating input.
-   */
-  setPosition(pos: AcGePoint2dLike) {
-    const parentRect = this.parent.getBoundingClientRect()
-    const containerRect = this.container.getBoundingClientRect()
-
-    const mousePos = {
-      x: pos.x - parentRect.left,
-      y: pos.y - parentRect.top
-    }
-
-    // Compute position within parent bounds
-    let left = mousePos.x + 10
-    let top = mousePos.y + 10
-    if (left + containerRect.width > parentRect.right)
-      left = parentRect.right - containerRect.width
-    if (top + containerRect.height > parentRect.bottom)
-      top = parentRect.bottom - containerRect.height
-    if (left < parentRect.left) left = parentRect.left
-    if (top < parentRect.top) top = parentRect.top
-
-    this.container.style.left = `${left}px`
-    this.container.style.top = `${top}px`
-
-    return mousePos
-  }
-
-  /**
-   * Removes event listeners bound to the parent element
-   * @param isRemoveAll - If true, removes all of event listeners bound
-   * to the parent element
-   */
-  private removeListener(isRemoveAll: boolean = false) {
-    this.parent.removeEventListener('mousemove', this.boundOnMouseMove)
     this.parent.removeEventListener('click', this.boundOnClick)
-
-    if (isRemoveAll) {
-      this.parent.removeEventListener('mouseenter', this.boundOnMouseEnter)
-      this.parent.removeEventListener('mouseleave', this.boundOnMouseLeave)
-    }
+    this.inputs?.dispose()
+    this.rubberBand?.dispose()
+    this.osnapMarkerManager?.clear()
   }
 
   /**
-   * Handles mouse move events to show floating input.
-   * @param e The mouse leave event.
+   * Mouse move handler.
+   * Updates dynamic input values, rubber-band preview, OSNAP marker,
+   * and optional preview drawing.
    */
-  private handleMouseEnter(e: MouseEvent) {
-    this.showAt(e)
-  }
-
-  /**
-   * Handles mouse move events to hide floating input.
-   * @param e The mouse leave event.
-   */
-  private handleMouseLeave() {
-    this.hide()
-  }
-
-  /**
-   * Handles mouse move events to reposition the floating input.
-   *
-   * Ensures that the input box follows the cursor while staying entirely
-   * within the bounds of the parent element. Applies a small offset
-   * to avoid overlapping the cursor.
-   *
-   * @param e The mouse move event containing the current cursor position.
-   */
-  private handleMouseMove(e: MouseEvent) {
+  protected override handleMouseMove(e: MouseEvent) {
     if (!this.visible) return
 
-    const wcsMousePos = this.getPosition(e)
-    const defaults = this.getDynamicValue(wcsMousePos)
-    this.inputs.setValue(defaults.raw)
-    this.rubberBand?.update(wcsMousePos)
+    const wcsPos = this.getPosition(e)
+    const defaults = this.getDynamicValue(wcsPos)
 
-    // If inputs lost focus due to some reason, let's try to focus them again.
-    if (!this.inputs.focused) {
+    this.inputs?.setValue(defaults.raw)
+
+    // Ensure focus stays in input boxes
+    if (this.inputs && !this.inputs.focused) {
       this.inputs.focus()
     }
 
-    this.drawPreview?.(wcsMousePos)
+    this.rubberBand?.update(wcsPos)
+    this.drawPreview?.(wcsPos)
   }
 
-  /**
-   * Handles click events to commit inputs.
-   *
-   * @param e The click event containing the current cursor position.
-   */
+  // ---------------------------------------------------------------------------
+  // Click / Commit
+  // ---------------------------------------------------------------------------
+
   private handleClick(e: MouseEvent) {
     if (!this.visible) return
 
-    const wcsMousePos = this.getPosition(e)
-    const defaults = this.getDynamicValue(wcsMousePos)
+    const wcsPos = this.getPosition(e)
+    const defaults = this.getDynamicValue(wcsPos)
 
-    this.lastPoint = wcsMousePos
-    this.onCommit?.(defaults.value)
+    this.lastPoint = wcsPos
+    this.onCommit?.(defaults.value, wcsPos)
   }
 
+  // ---------------------------------------------------------------------------
+  // Position & OSNAP
+  // ---------------------------------------------------------------------------
+
   /**
-   * Gets the position after considering window size and osnap
-   * @param e - Mouse event
-   * @returns The position after considering window size and osnap
+   * Gets the current cursor position in WCS, considering OSNAP.
    */
   private getPosition(e: MouseEvent) {
-    const mousePos = this.setPosition(e)
-    const wcsMousePos = this.view.cwcs2Wcs(mousePos)
+    // Update floating UI position (screen space)
+    const mousePos = super.setPosition(e)
 
-    // Show OSNAP Point
+    // Convert cursor to WCS
+    const wcsPos = this.view.cwcs2Wcs(mousePos)
+
+    // Apply OSNAP
     if (this.osnapMarkerManager) {
       this.osnapMarkerManager.hideMarker()
-      this.lastOSnapPoint = this.getOSnapPoint()
-      if (this.lastOSnapPoint) {
-        wcsMousePos.x = this.lastOSnapPoint.x
-        wcsMousePos.y = this.lastOSnapPoint.y
-        this.osnapMarkerManager.showMarker(this.lastOSnapPoint)
+      this.lastOsnapPoint = this.getOsnapPoint()
+
+      if (this.lastOsnapPoint) {
+        wcsPos.x = this.lastOsnapPoint.x
+        wcsPos.y = this.lastOsnapPoint.y
+
+        this.osnapMarkerManager.showMarker(
+          this.lastOsnapPoint,
+          this.osnapMode2MarkerType(this.lastOsnapPoint.type)
+        )
       }
     }
-    return wcsMousePos
+    return wcsPos
   }
 
-  /**
-   * Picks entities that intersect a hit-region centered at the specified point
-   * in world coordinates.
-   *
-   * The hit-region is defined as a square (or bounding box) centered at the
-   * input point, whose half-size is determined by the `hitRadius` parameter.
-   * Only entities whose geometry intersects this region are returned.
-   *
-   * @param point The center point of the hit-region in world coordinates.
-   * If omitted, the current cursor position is used.
-   *
-   * @param hitRadius The half-width (in world coordinate system) of the
-   * hit-region around the point. This creates a square bounding box:
-   * [point.x ± hitRadius, point.y ± hitRadius].
-   * A larger value increases the pick sensitivity. If omitted, a reasonable
-   * default is used.
-   * @returns - Returns The OSNAP point in the specified position in world coordinate system
-   * if found. Return undefined if no OSNAP point found.
-   */
-  /**
-   * Gets OSNAP point of entities that intersect a hit-region centered at the
-   * specified point in world coordinates.
-   *
-   * The hit-region is defined as a square (or bounding box) centered at the
-   * input point, whose half-size is determined by the `hitRadius` parameter.
-   * Only entities whose geometry intersects this region are returned.
-   *
-   * @param point The center point of the hit-region in world coordinates.
-   * If omitted, the current cursor position is used.
-   *
-   * @param hitRadius The half-width (in pixel size) of the hit-region around
-   * the point. It will be converted on one value in the world
-   * coordinate 'wcsHitRadius' and creates a square bounding box:
-   * [point.x ± wcsHitRadius, point.y ± wcsHitRadius].
-   * A larger value increases the pick sensitivity. If omitted, a reasonable
-   * default is used.
-   *
-   * @returns An array of object IDs representing the entities that intersect
-   * the hit-region.
-   */
-  private getOSnapPoint(point?: AcGePoint2dLike, hitRadius: number = 20) {
-    const results = this.view.pick(point, hitRadius)
+  private osnapMode2MarkerType(osnapMode: AcDbOsnapMode) {
+    switch (osnapMode) {
+      case AcDbOsnapMode.EndPoint:
+        return 'rect'
+      case AcDbOsnapMode.MidPoint:
+        return 'triangle'
+      case AcDbOsnapMode.Center:
+        return 'circle'
+      case AcDbOsnapMode.Quadrant:
+        return 'diamond'
+      default:
+        return 'rect'
+    }
+  }
 
-    // TODO: Is there one better way to get current working database
-    const db = acdbHostApplicationServices().workingDatabase
-    const modelSpace = db.tables.blockTable.modelSpace
-    const snapPoints: AcGePoint3d[] = []
-    results.forEach(item => {
-      // FIXME:
-      // It isn't correct to get the item in model space only.
-      // It may be one entity in paper space
-      const entity = modelSpace.getIdAt(item.id)
-      if (entity) {
-        if (item.children) {
-          item.children.forEach(child => {
-            entity.subGetOsnapPoints(
-              AcDbOsnapMode.EndPoint,
-              { ...this.view.curPos, z: 0 },
-              this.lastPoint,
-              snapPoints,
-              child.id
-            )
-          })
-        } else {
-          entity.subGetOsnapPoints(
-            AcDbOsnapMode.EndPoint,
-            { ...this.view.curPos, z: 0 },
-            this.lastPoint,
-            snapPoints
-          )
-        }
-      }
-    })
+  // ---------------------------------------------------------------------------
+  // OSNAP calculation
+  // ---------------------------------------------------------------------------
 
-    // Find the nearest osnap point
+  private getOsnapPoint(point?: AcGePoint2dLike, hitRadius = 20) {
+    const snapPoints = this.getOsnapPoints(point, hitRadius)
+
     let minDist = Number.MAX_VALUE
-    let minDistIndex = -1
-    for (let i = 0; i < snapPoints.length; ++i) {
-      const distance = this.view.curPos.distanceTo(snapPoints[i])
-      if (distance < minDist) {
-        minDist = distance
-        minDistIndex = i
+    let index = -1
+
+    for (let i = 0; i < snapPoints.length; i++) {
+      const d = this.view.curPos.distanceTo(snapPoints[i])
+      if (d < minDist) {
+        minDist = d
+        index = i
       }
     }
-    if (minDistIndex != -1) {
+
+    if (index !== -1) {
       const p1 = this.view.cwcs2Wcs({ x: 0, y: 0 })
       const p2 = this.view.cwcs2Wcs({ x: hitRadius, y: 0 })
       if (minDist < p2.x - p1.x) {
-        return snapPoints[minDistIndex]
+        return snapPoints[index]
       }
     }
     return undefined
+  }
+
+  private getOsnapPoints(point?: AcGePoint2dLike, hitRadius = 20) {
+    const results = this.view.pick(point, hitRadius)
+
+    const db = acdbHostApplicationServices().workingDatabase
+    const modelSpace = db.tables.blockTable.modelSpace
+    const osnapPoints: AcEdOsnapPoint[] = []
+
+    results.forEach(item => {
+      const entity = modelSpace.getIdAt(item.id)
+      if (!entity) return
+
+      if (item.children) {
+        item.children.forEach(child =>
+          this.getOsnapPointsInAvailableModes(entity, osnapPoints, child.id)
+        )
+      } else {
+        this.getOsnapPointsInAvailableModes(entity, osnapPoints)
+      }
+    })
+
+    return osnapPoints
+  }
+
+  private getOsnapPointsInAvailableModes(
+    entity: AcDbEntity,
+    osnapPoints: AcEdOsnapPoint[],
+    gsMark?: AcDbObjectId
+  ) {
+    const modes = acdbMaskToOsnapModes(
+      AcApSettingManager.instance.osnapModes
+    )
+    modes.forEach(mode =>
+      this.getOsnapPointsByMode(entity, mode, osnapPoints, gsMark)
+    )
+  }
+
+  private getOsnapPointsByMode(
+    entity: AcDbEntity,
+    osnapMode: AcDbOsnapMode,
+    osnapPoints: AcEdOsnapPoint[],
+    gsMark?: AcDbObjectId
+  ) {
+    const start = osnapPoints.length
+    entity.subGetOsnapPoints(
+      osnapMode,
+      { ...this.view.curPos, z: 0 },
+      this.lastPoint,
+      osnapPoints,
+      gsMark
+    )
+
+    for (let i = start; i < osnapPoints.length; i++) {
+      osnapPoints[i].type = osnapMode
+    }
   }
 }

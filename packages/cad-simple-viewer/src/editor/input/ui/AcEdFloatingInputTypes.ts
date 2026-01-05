@@ -49,7 +49,10 @@ export type AcEdFloatingInputValidationCallback<T> = (
  *
  * When `twoInputs` is `false`, Y will always be `null`.
  */
-export type AcEdFloatingInputCommitCallback<T> = (point: T) => void
+export type AcEdFloatingInputCommitCallback<T> = (
+  value: T,
+  pos?: AcGePoint2dLike
+) => boolean
 
 /**
  * Callback invoked whenever the user edits either input field.
@@ -82,6 +85,11 @@ export type AcEdFloatingInputDynamicValueCallback<T> = (
 ) => AcEdFloatingInputDynamicValue<T>
 
 /**
+ * The number of input boxes shown in floating input UI
+ */
+export type AcEdFloatingInputBoxCount = 0 | 1 | 2
+
+/**
  * Construction options for {@link AcEdFloatingInput}.
  */
 export interface AcEdFloatingInputOptions<T> {
@@ -92,12 +100,13 @@ export interface AcEdFloatingInputOptions<T> {
   parent?: HTMLElement
 
   /**
-   * If true, display both X and Y inputs.
-   * If false, display only X input (useful for distance, angle, etc.).
+   * If 2, display both X and Y inputs.
+   * If 1, display only X input (useful for distance, angle, etc.).
+   * if 0, display message only and no input box
    *
-   * Default: `true`
+   * Default: 2
    */
-  twoInputs?: boolean
+  inputCount?: AcEdFloatingInputBoxCount
 
   /**
    * A message or hint displayed above the input fields.
