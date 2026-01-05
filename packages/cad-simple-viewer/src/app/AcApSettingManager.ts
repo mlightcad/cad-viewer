@@ -1,7 +1,5 @@
-import { AcCmEventManager, AcDbOsnapMode } from '@mlightcad/data-model'
+import { AcCmEventManager, AcDbOsnapMode, acdbOsnapModesToMask } from '@mlightcad/data-model'
 import { defaults } from 'lodash-es'
-
-import { acdbOsnapModesToMask } from '../../../../../realdwg-web/packages/data-model/lib'
 
 /**
  * Font mappings for CAD text rendering.
