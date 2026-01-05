@@ -29,12 +29,12 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     options: AcTrFillMaterialOptions
   ): THREE.Material {
     const style = traits.fillType
-    if (!style.patternLines || style.patternLines.length < 1) {
+    if (!style.definitionLines || style.definitionLines.length < 1) {
       return this.createMeshBasicMaterial(traits)
     }
 
     // Validate pattern lines
-    if (style.patternLines.some(line => !line.dashPattern)) {
+    if (style.definitionLines.some(line => !line.dashLengths)) {
       console.warn('Invalid dash pattern', style)
       return this.createMeshBasicMaterial(traits)
     }
@@ -57,9 +57,9 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     // Get a max size to be used for all patternLines, this value will be used during
     // glsl compile time, and it cannot be 0 (compile error) and cannot be 1 (run time warning).
     let maxPatternSegmentCount = 2
-    style.patternLines.forEach(patternLine => {
+    style.definitionLines.forEach(definitionLine => {
       maxPatternSegmentCount = Math.max(
-        patternLine.dashPattern.length,
+        definitionLine.dashLengths.length,
         maxPatternSegmentCount
       )
     })
@@ -68,17 +68,17 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
     const patternLines: AcTrPatternLine[] = []
     const tempCenter = new THREE.Vector2()
-    for (const hatchPatternLine of style.patternLines) {
+    for (const hatchPatternLine of style.definitionLines) {
       const base = new THREE.Vector2(
-        hatchPatternLine.origin.x,
-        hatchPatternLine.origin.y
+        hatchPatternLine.base.x,
+        hatchPatternLine.base.y
       )
         .sub(options.rebaseOffset)
         .rotateAround(tempCenter, -style.patternAngle)
 
       const offset = new THREE.Vector2(
-        hatchPatternLine.delta.x,
-        hatchPatternLine.delta.y
+        hatchPatternLine.offset.x,
+        hatchPatternLine.offset.y
       ).rotateAround(tempCenter, -hatchPatternLine.angle)
 
       if (offset.y === 0) {
@@ -86,13 +86,13 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         continue
       }
 
-      const numberOfDashes = hatchPatternLine.dashPattern.length
+      const numberOfDashes = hatchPatternLine.dashLengths.length
       // Indicates the dot pattern when the dashPatterns contain only 0 and negative numbers
       let bDotPattern = true
       // calculates the total length of the pattern
       let length = 0
       for (let i = 0; i < numberOfDashes; ++i) {
-        const value = hatchPatternLine.dashPattern[i]
+        const value = hatchPatternLine.dashLengths[i]
         if (value > 0) {
           bDotPattern = false
         }
@@ -107,7 +107,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       const dashLengths: number[] = []
       let patternLength = 0
       for (let i = 0; i < numberOfDashes; ++i) {
-        dashLengths[i] = hatchPatternLine.dashPattern[i]
+        dashLengths[i] = hatchPatternLine.dashLengths[i]
         if (dashLengths[i] === 0) {
           dashLengths[i] = ratio * length
         }
@@ -166,16 +166,16 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const style = traits.fillType
 
     // Use color + layer + rebaseOffset + pattern info for key
-    const isSolid = !style.patternLines || style.patternLines.length === 0
+    const isSolid = !style.definitionLines || style.definitionLines.length === 0
     if (isSolid) {
       return `solid_${traits.layer}_${traits.rgbColor}`
     }
 
-    const patternHash = style.patternLines
+    const patternHash = style.definitionLines
       .map(
         pl =>
-          pl.dashPattern.join(',') +
-          `@${pl.angle},${pl.origin.x},${pl.origin.y}`
+          pl.dashLengths.join(',') +
+          `@${pl.angle},${pl.base.x},${pl.base.y}`
       )
       .join('|')
 
