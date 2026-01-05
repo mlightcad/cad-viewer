@@ -8,6 +8,7 @@ import {
   AcEdPromptEntityOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
+  AcEdPromptSelectionOptions,
   AcEdPromptStringOptions
 } from './prompt'
 import { AcEdInputManager } from './ui'
@@ -204,20 +205,17 @@ export class AcEditor {
    * conventions (left-to-right for crossing, right-to-left for window).
    *
    * @returns Promise that resolves to the selection set containing selected entity IDs
-   *
-   * @example
-   * ```typescript
-   * const selection = await editor.getSelection();
-   * if (selection.count > 0) {
-   *   console.log(`Selected ${selection.count} entities`);
-   *   // Process the selected entities
-   *   for (const id of selection.ids) {
-   *     // Do something with each selected entity
-   *   }
-   * }
-   * ```
    */
-  async getSelection() {
+  async getSelection(options: AcEdPromptSelectionOptions) {
+    return await this._inputManager.getSelection(options)
+  }
+
+  /**
+   * Prompts the user to specify a rectangular bounding box (two corners).
+   *
+   * @returns Promise that resolves to rectangular bounding box.
+   */
+  async getBox() {
     return await this._inputManager.getBox()
   }
 }

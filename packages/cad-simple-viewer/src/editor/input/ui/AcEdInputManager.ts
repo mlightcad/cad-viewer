@@ -27,6 +27,7 @@ import {
   AcEdPromptKeywordOptions,
   AcEdPromptNumericalOptions,
   AcEdPromptPointOptions,
+  AcEdPromptSelectionOptions,
   AcEdPromptStringOptions
 } from '../prompt'
 import { AcEdCommandLine } from './AcEdCommandLine'
@@ -284,6 +285,154 @@ export class AcEdInputManager {
       useBasePoint: false,
       handler,
       getDynamicValue
+    })
+  }
+
+  /**
+   * Prompts the user to select one or more entities by mouse interaction.
+   *
+   * This method supports two selection modes:
+   *
+   * - **Click selection**: Clicking on an entity selects the entity under the cursor.
+   * - **Box selection**: Dragging the mouse to let the user specify a rectangular window,
+   *   and all entities intersecting that box are selected.
+   *
+   * The selection operation behaves similarly to AutoCAD's
+   * `Editor.GetSelection()` API:
+   *
+   * - Press **Enter** to accept the current selection set.
+   * - Press **Escape** to cancel the operation.
+   * - If {@link AcEdPromptSelectionOptions.singleOnly} is `true`, the selection
+   *   completes immediately after the first entity is selected.
+   *
+   * This method does not use floating input boxes. Instead, it relies entirely on
+   * mouse gestures and keyboard input. A floating prompt message and command line
+   * prompt are displayed during the operation.
+   *
+   * @param options - Selection prompt options that control user messaging and
+   *                  whether only a single entity may be selected.
+   * @returns A promise that resolves to an array of selected entity IDs.
+   *          The array is empty if no entities are selected and the user presses Enter.
+   *          The promise is rejected if the operation is cancelled.
+   */
+  async getSelection(
+    options: AcEdPromptSelectionOptions
+  ): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+      this.active = true
+      this._commandLine.setPrompt(options.message)
+  
+      const floatingMessage = new AcEdFloatingMessage(this.view, {
+        parent: this.view.canvas,
+        message: options.message
+      })
+  
+      const selected = new Set<string>()
+      let startWcs: AcGePoint2dLike | null = null
+      let previewEl: HTMLDivElement | null = null
+  
+      const cleanup = () => {
+        this.active = false
+        floatingMessage.dispose()
+        previewEl?.remove()
+        this._commandLine.clear()
+  
+        document.removeEventListener('keydown', keyHandler)
+        this.view.canvas.removeEventListener('mousedown', mouseDown)
+        this.view.canvas.removeEventListener('mousemove', mouseMove)
+        this.view.canvas.removeEventListener('mouseup', mouseUp)
+      }
+  
+      /** ---------- Keyboard ---------- */
+  
+      const keyHandler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          cleanup()
+          reject(new Error('cancelled'))
+          return
+        }
+  
+        if (e.key === 'Enter') {
+          cleanup()
+          resolve([...selected])
+        }
+      }
+  
+      /** ---------- Mouse ---------- */
+  
+      const mouseDown = (e: MouseEvent) => {
+        startWcs = this.view.cwcs2Wcs(e)
+  
+        previewEl = document.createElement('div')
+        previewEl.className = 'ml-jig-preview-rect'
+        document.body.appendChild(previewEl)
+      }
+  
+      const mouseMove = (e: MouseEvent) => {
+        if (!startWcs || !previewEl) return
+  
+        const curWcs = this.view.cwcs2Wcs(e)
+        const p1 = this.view.wcs2Cwcs(startWcs)
+        const p2 = this.view.wcs2Cwcs(curWcs)
+  
+        const left = Math.min(p1.x, p2.x)
+        const top = Math.min(p1.y, p2.y)
+        const width = Math.abs(p1.x - p2.x)
+        const height = Math.abs(p1.y - p2.y)
+  
+        Object.assign(previewEl.style, {
+          left: `${left}px`,
+          top: `${top}px`,
+          width: `${width}px`,
+          height: `${height}px`
+        })
+      }
+  
+      const mouseUp = (e: MouseEvent) => {
+        if (!startWcs) return
+  
+        const endWcs = this.view.cwcs2Wcs(e)
+        previewEl?.remove()
+        previewEl = null
+  
+        // Click selection
+        const dist = Math.hypot(
+          endWcs.x - startWcs.x,
+          endWcs.y - startWcs.y
+        )
+  
+        if (dist < 2) {
+          const picked = this.view.pick(endWcs)
+          if (picked.length > 0) {
+            selected.add(picked[0].id)
+            if (options.singleOnly) {
+              cleanup()
+              resolve([...selected])
+            }
+          }
+        } else {
+          // Box selection
+          const box = new AcGeBox2d()
+            .expandByPoint(startWcs)
+            .expandByPoint(endWcs)
+  
+          this.view.selectByBox(box)
+  
+          for (const id of this.view.selectionSet.ids) {
+            selected.add(id)
+            if (options.singleOnly) break
+          }
+        }
+  
+        startWcs = null
+      }
+  
+      /** ---------- Attach ---------- */
+  
+      document.addEventListener('keydown', keyHandler)
+      this.view.canvas.addEventListener('mousedown', mouseDown)
+      this.view.canvas.addEventListener('mousemove', mouseMove)
+      this.view.canvas.addEventListener('mouseup', mouseUp)
     })
   }
 
