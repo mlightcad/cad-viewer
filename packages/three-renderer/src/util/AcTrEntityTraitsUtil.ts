@@ -23,7 +23,7 @@ export class AcTrSubEntityTraitsUtil {
       fillType: {
         solidFill: true,
         patternAngle: 0,
-        patternLines: []
+        definitionLines: []
       },
       transparency: new AcCmTransparency(),
       thickness: 0,
@@ -51,7 +51,7 @@ export class AcTrSubEntityTraitsUtil {
       fillType: {
         solidFill: true,
         patternAngle: 0,
-        patternLines: []
+        definitionLines: []
       },
       transparency: new AcCmTransparency(),
       thickness: 0,
