@@ -147,10 +147,11 @@ export class AcApDocManager {
       eventBus.emit('open-file-progress', progress)
       this.updateProgress(progress)
 
-      // After doc header is loaded, need to set global stscale
+      // After doc header is loaded, need to set global ltscale and celtscale
       // It's too late when subStage is 'END'
       if (args.subStage === 'HEADER') {
-        this.curView.ltScale = doc.database.ltscale;
+        this.curView.ltscale = doc.database.ltscale;
+        this.curView.celtscale = doc.database.celtscale;
       }
     })
 

@@ -325,8 +325,15 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * Sets global ltscale
    */
-  set ltScale(scale: number) {
-    this._renderer.ltScale = scale
+  set ltscale(scale: number) {
+    this._renderer.ltscale = scale
+  }
+
+  /**
+   * Sets global celtscale
+   */
+  set celtscale(scale: number) {
+    this._renderer.celtscale = scale
   }
 
   animate() {

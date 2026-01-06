@@ -170,8 +170,15 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   /**
    * Sets global ltscale
    */
-  set ltScale(scale: number) {
-    AcTrStyleManager.options.ltScale = scale
+  set ltscale(scale: number) {
+    AcTrStyleManager.options.ltscale = scale
+  }
+
+  /**
+   * Sets global celtscale
+   */
+  set celtscale(scale: number) {
+    AcTrStyleManager.options.celtscale = scale
   }
 
   /**
