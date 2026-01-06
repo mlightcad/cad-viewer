@@ -82,11 +82,11 @@ export class AcEdCommandLine {
 
   clearPrompt() {
     this.promptEl.innerHTML = ''
+    this.textInput.placeholder = this.localize('main.commandLine.placeholder')
   }
 
   clearInput() {
     this.textInput.value = ''
-    this.textInput.placeholder = this.localize('main.commandLine.placeholder')
   }
 
   focusInput() {
