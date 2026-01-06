@@ -168,6 +168,13 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
+   * Sets global ltscale
+   */
+  set ltScale(scale: number) {
+    AcTrStyleManager.options.ltScale = scale
+  }
+
+  /**
    * Fonts list which can't be found
    */
   get missedFonts() {

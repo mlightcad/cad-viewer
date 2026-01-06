@@ -87,7 +87,7 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     //   return scales
     // }
     // // Global linetype scale
-    // scales.ltScale = (this.header["$LTSCALE"] as number) || 1
+    scales.ltScale = this.options.ltScale || 1
     // //Current entity linetype scale
     // scales.celtScale = (this.header["$CELTSCALE"] as number) || 1
     return scales
