@@ -21,7 +21,10 @@ export class AcApEraseCmd extends AcEdCommand {
       const message = AcApI18n.sysCmdPrompt('erase')
       const options = new AcEdPromptSelectionOptions(message)
       const ids = await AcApDocManager.instance.editor.getSelection(options)
-      if (ids) context.doc.database.tables.blockTable.removeEntity(ids)
+      if (ids && ids.length > 0) {
+        context.doc.database.tables.blockTable.removeEntity(ids)
+        selectionSet.clear()
+      }
     }
   }
 }
