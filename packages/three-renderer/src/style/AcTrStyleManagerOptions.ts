@@ -2,6 +2,11 @@ export interface AcTrStyleManagerOptions {
   // /** Uniform used by line and hatch shaders to support zoom-dependent effects. */
   // cameraZoomUniform: number
 
+  /**
+   *
+   */
+  ltScale: number
+
   /** Uniform that accounts for viewport scale in line-pattern rendering. */
   viewportScaleUniform: number
 

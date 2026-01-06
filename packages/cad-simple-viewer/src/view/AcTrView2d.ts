@@ -322,6 +322,13 @@ export class AcTrView2d extends AcEdBaseView {
     return this._scene.stats
   }
 
+  /**
+   * Sets global ltscale
+   */
+  set ltScale(scale: number) {
+    this._renderer.ltScale = scale
+  }
+
   animate() {
     requestAnimationFrame(this.animate.bind(this))
     if (this._isDirty) {

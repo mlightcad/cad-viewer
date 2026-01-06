@@ -77,9 +77,16 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   }
 
   /**
-   * @inheritdoc
+   * Sets global ltscale
    */
   setFontMapping(_mapping: AcGiFontMapping) {
+    // TODO: Implement it
+  }
+
+  /**
+   * @inheritdoc
+   */
+  set ltScale(_scale: number) {
     // TODO: Implement it
   }
 

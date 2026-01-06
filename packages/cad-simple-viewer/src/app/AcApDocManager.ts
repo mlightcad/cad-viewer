@@ -146,6 +146,12 @@ export class AcApDocManager {
       }
       eventBus.emit('open-file-progress', progress)
       this.updateProgress(progress)
+
+      // After doc header is loaded, need to set global stscale
+      // It's too late when subStage is 'END'
+      if (args.subStage === 'HEADER') {
+        this.curView.ltScale = doc.database.ltscale;
+      }
     })
 
     const initialSize = options.container?.getBoundingClientRect() ?? {
