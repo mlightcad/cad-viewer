@@ -1,6 +1,8 @@
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
 import { AcEdCommandStack } from '../../command'
+import { AcEdPromptKeywordOptions } from '../prompt'
+import { AcEdKeywordSession } from '../session'
 
 /**
  * AutoCAD-style floating command line with Promise-based execution.
@@ -17,25 +19,28 @@ import { AcEdCommandStack } from '../../command'
  *  - Auto-complete popup for matching commands
  */
 export class AcEdCommandLine {
-  container: HTMLElement
-  history: string[]
-  historyIndex: number
-  lastExecuted: string | null
-  isCmdPopupOpen: boolean
-  isMsgPanelOpen: boolean
-  minWidth: number
-  widthRatio: number
-  cliContainer!: HTMLDivElement
-  wrapper!: HTMLDivElement
-  bar!: HTMLDivElement
-  leftGroup!: HTMLDivElement
-  closeBtn!: HTMLDivElement // renamed from termGlyph
-  downBtn!: HTMLButtonElement
-  input!: HTMLDivElement
-  upBtn!: HTMLButtonElement
-  cmdPopup!: HTMLDivElement
-  msgPanel!: HTMLDivElement
-  autoCompleteIndex: number
+  private container: HTMLElement
+  private history: string[]
+  private historyIndex: number
+  private lastExecuted: string | null
+  private isCmdPopupOpen: boolean
+  private isMsgPanelOpen: boolean
+  private minWidth: number
+  private widthRatio: number
+  private cliContainer!: HTMLDivElement
+  private wrapper!: HTMLDivElement
+  private bar!: HTMLDivElement
+  private leftGroup!: HTMLDivElement
+  private closeBtn!: HTMLDivElement // renamed from termGlyph
+  private downBtn!: HTMLButtonElement
+  private centerEl!: HTMLDivElement
+  private promptEl!: HTMLDivElement
+  private textInput!: HTMLInputElement
+  private upBtn!: HTMLButtonElement
+  private cmdPopup!: HTMLDivElement
+  private msgPanel!: HTMLDivElement
+  private autoCompleteIndex: number
+  private activeSession?: AcEdKeywordSession
 
   constructor(container: HTMLElement = document.body) {
     this.container = container
@@ -65,6 +70,36 @@ export class AcEdCommandLine {
     this.cliContainer.style.display = val ? 'block' : 'none'
   }
 
+  setPrompt(message?: string) {
+    this.promptEl.innerHTML = message ?? ''
+    this.textInput.placeholder = ''
+  }
+
+  clear() {
+    this.clearPrompt()
+    this.clearInput()
+  }
+
+  clearPrompt() {
+    this.promptEl.innerHTML = ''
+  }
+
+  clearInput() {
+    this.textInput.value = ''
+    this.textInput.placeholder = this.localize('main.commandLine.placeholder')
+  }
+
+  focusInput() {
+    this.textInput.focus()
+  }
+
+  async getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
+    this.activeSession = new AcEdKeywordSession(this, options)
+    const result = await this.activeSession.start()
+    this.activeSession = undefined
+    return result
+  }
+
   /**
    * Localize a text key using AcApI18n.t().
    *
@@ -74,11 +109,6 @@ export class AcEdCommandLine {
    * @param key - Localization key (flat key style, e.g. "command.placeholder")
    * @param defaultText - Default English (or fallback) text to use if the key is missing
    * @returns localized string from AcApI18n or the provided defaultText
-   *
-   * @example
-   * ```ts
-   * const placeholder = this.localize('main.commandLine.placeholder', 'Type command')
-   * ```
    */
   private localize(key: string, defaultText?: string): string {
     return AcApI18n.t(key, { fallback: defaultText })
@@ -104,7 +134,7 @@ export class AcEdCommandLine {
     })
 
     // Refresh input placeholder
-    this.input.setAttribute(
+    this.centerEl.setAttribute(
       'data-placeholder',
       this.localize('main.commandLine.placeholder')
     )
@@ -147,11 +177,11 @@ export class AcEdCommandLine {
     this.printMessage(`${executed}: ${command.localName}`)
 
     AcApDocManager.instance.sendStringToExecute(cmdLine)
-    this.renderCommandLine('')
+    this.clearInput()
   }
 
   /** Inject CSS styles */
-  injectCSS() {
+  private injectCSS() {
     const style = document.createElement('style')
     style.textContent = `
       .ml-cli-container {
@@ -236,35 +266,48 @@ export class AcEdCommandLine {
         height: 100%;
       }
 
-      .ml-cli-input {
-        flex: 1;
+      .ml-cli-center {
         display: flex;
         align-items: center;
-        min-height: 22px;
-        padding: 0 6px;
-        border-radius: 3px;
-        background: transparent;
-        outline: none;
-        border: none;
-        font-family: monospace;
+        flex: 1;
+        min-width: 0;
         color: #333;
-        white-space: nowrap;
-        overflow: hidden;
-        line-height: normal;
+        height: 100%; 
       }
 
-      .ml-cli-input[data-placeholder]:empty:before {
-        content: attr(data-placeholder);
-        color: #9a9a9a;
-        font-weight: 400;
+      .ml-cli-prompt,
+      .ml-cli-text {
+        font-family: Consolas, "Courier New", monospace;
+      }
+
+      .ml-cli-prompt {
         display: flex;
         align-items: center;
+        white-space: nowrap;
+        user-select: none;
+        margin-right: 4px;
+        line-height: 1;
+      }
+
+      .ml-cli-text {
+        flex: 1;
         height: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+
+        font-size: 13px;
+        line-height: 1;
+        padding: 0;
+        margin: 0;
+
+        display: flex;
+        align-items: center;
+        color: #333;
       }
 
       .ml-cli-option {
         display: inline-block;
-        color: #222;
         background: #f7f7f7;
         border: 1px solid rgba(0, 0, 0, 0.06);
         padding: 2px 6px;
@@ -356,9 +399,10 @@ export class AcEdCommandLine {
   }
 
   /** Create the command line UI elements */
-  createUI() {
+  private createUI() {
     this.cliContainer = document.createElement('div')
     this.cliContainer.className = 'ml-cli-container'
+
     this.wrapper = document.createElement('div')
     this.wrapper.className = 'ml-cli-wrapper'
     this.cliContainer.appendChild(this.wrapper)
@@ -367,43 +411,49 @@ export class AcEdCommandLine {
     this.bar.className = 'ml-cli-bar'
     this.wrapper.appendChild(this.bar)
 
+    /* ---------- left group ---------- */
     this.leftGroup = document.createElement('div')
     this.leftGroup.className = 'ml-cli-left'
     this.bar.appendChild(this.leftGroup)
 
-    // Close button (renamed from termGlyph)
     this.closeBtn = document.createElement('div')
     this.closeBtn.className = 'ml-cli-close-btn'
-    this.closeBtn.title = this.localize('main.commandLine.close', 'Close')
     this.closeBtn.innerHTML = '&#10005;'
     this.leftGroup.appendChild(this.closeBtn)
 
     this.downBtn = document.createElement('button')
     this.downBtn.className = 'ml-cli-down'
-    this.downBtn.title = this.localize('main.commandLine.showHistory')
     this.downBtn.innerHTML = '&#9662;'
     this.leftGroup.appendChild(this.downBtn)
 
-    this.input = document.createElement('div')
-    this.input.className = 'ml-cli-input'
-    this.input.contentEditable = 'true'
-    this.input.setAttribute('spellcheck', 'false')
-    this.input.setAttribute(
-      'data-placeholder',
-      this.localize('main.commandLine.placeholder')
-    )
-    this.bar.appendChild(this.input)
+    /* ---------- center (prompt + input) ---------- */
+    this.centerEl = document.createElement('div')
+    this.centerEl.className = 'ml-cli-center'
+    this.bar.appendChild(this.centerEl)
 
+    this.promptEl = document.createElement('div')
+    this.promptEl.className = 'ml-cli-prompt'
+    this.centerEl.appendChild(this.promptEl)
+
+    this.textInput = document.createElement('input')
+    this.textInput.className = 'ml-cli-text'
+    this.textInput.type = 'text'
+    this.textInput.spellcheck = false
+    this.textInput.autocomplete = 'off'
+    this.textInput.placeholder = this.localize('main.commandLine.placeholder')
+    this.centerEl.appendChild(this.textInput)
+
+    /* ---------- right group ---------- */
     const rightGroup = document.createElement('div')
     rightGroup.className = 'ml-cli-right'
     this.bar.appendChild(rightGroup)
 
     this.upBtn = document.createElement('button')
     this.upBtn.className = 'ml-cli-up'
-    this.upBtn.title = this.localize('main.commandLine.showMessages')
     this.upBtn.innerHTML = '&#9662;'
     rightGroup.appendChild(this.upBtn)
 
+    /* ---------- popups ---------- */
     this.cmdPopup = document.createElement('div')
     this.cmdPopup.className = 'ml-cli-cmd-popup hidden'
     this.wrapper.appendChild(this.cmdPopup)
@@ -416,7 +466,7 @@ export class AcEdCommandLine {
   }
 
   /** Bind event listeners */
-  bindEvents() {
+  private bindEvents() {
     // Close command line when clicking the button
     this.closeBtn.addEventListener('click', e => {
       e.stopPropagation()
@@ -444,10 +494,9 @@ export class AcEdCommandLine {
       }
     })
 
-    this.input.addEventListener('keydown', e => this.handleKeyDown(e))
-    this.input.addEventListener('keydown', e => this.handleArrowKeys(e))
-    this.input.addEventListener('input', () => this.handleInputChange())
-    this.input.addEventListener('focus', () =>
+    this.textInput.addEventListener('keydown', e => this.handleKeyDown(e))
+    this.textInput.addEventListener('input', () => this.handleInputChange())
+    this.centerEl.addEventListener('focus', () =>
       this.updatePopups({ showCmd: false, showMsg: false })
     )
 
@@ -455,43 +504,70 @@ export class AcEdCommandLine {
       const item = (e.target as HTMLElement).closest('.item') as HTMLElement
       if (item) {
         this.setInputText(item.dataset.value || '')
-        this.input.focus()
+        this.centerEl.focus()
         this.updatePopups({ showCmd: false, showMsg: false })
       }
     })
   }
 
   /** Handle Enter/Escape keys */
-  handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      const text = this.getInputText()
-      this.executeCommand(text)
-      this.updatePopups({ showCmd: false, showMsg: false })
-    } else if (e.key === 'Escape') {
-      e.preventDefault()
-      this.setInputText('')
-      this.printMessage(this.localize('main.commandLine.canceled'))
-      this.updatePopups({ showCmd: false, showMsg: false })
-    }
-  }
+  private handleKeyDown(e: KeyboardEvent) {
+    // IME / composition safety (important!)
+    if (e.isComposing) return
 
-  /** Handle Up/Down keys for history or auto-complete */
-  handleArrowKeys(e: KeyboardEvent) {
-    if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      if (this.isCmdPopupOpen) this.navigateAutoComplete(-1)
-      else this.navigateHistory(-1)
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      if (this.isCmdPopupOpen) this.navigateAutoComplete(1)
-      else this.navigateHistory(1)
+    switch (e.key) {
+      case 'Enter': {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+
+        if (this.activeSession) {
+          const handled = this.activeSession.handleEnter(this.getInputText())
+          if (!handled) {
+            this.printError(this.localize('main.commandLine.invalidKeyword'))
+          }
+          return
+        }
+
+        this.executeCommand(this.getInputText())
+        this.historyIndex = this.history.length
+        this.updatePopups({ showCmd: false, showMsg: false })
+        return
+      }
+
+      case 'Escape': {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+
+        if (this.activeSession) {
+          this.activeSession.handleEscape()
+          this.activeSession = undefined
+          return
+        }
+
+        this.clear()
+        this.printMessage(this.localize('main.commandLine.canceled'))
+        this.updatePopups({ showCmd: false, showMsg: false })
+        return
+      }
+
+      case 'ArrowUp': {
+        e.preventDefault()
+        if (this.isCmdPopupOpen) this.navigateAutoComplete(-1)
+        else this.navigateHistory(-1)
+        return
+      }
+
+      case 'ArrowDown': {
+        e.preventDefault()
+        if (this.isCmdPopupOpen) this.navigateAutoComplete(1)
+        else this.navigateHistory(1)
+        return
+      }
     }
   }
 
   /** Handle input change to show auto-complete */
-  handleInputChange() {
+  private handleInputChange() {
     const text = this.getInputText()
     if (!text) {
       this.updatePopups({ showCmd: false })
@@ -521,7 +597,7 @@ export class AcEdCommandLine {
   }
 
   /** Navigate auto-complete list with arrow keys */
-  navigateAutoComplete(dir: number) {
+  private navigateAutoComplete(dir: number) {
     const items = Array.from(
       this.cmdPopup.querySelectorAll('.item')
     ) as HTMLElement[]
@@ -544,7 +620,7 @@ export class AcEdCommandLine {
   }
 
   /** Navigate command history */
-  navigateHistory(dir: number) {
+  private navigateHistory(dir: number) {
     if (!this.history.length) return
     if (this.historyIndex === -1) this.historyIndex = this.history.length
     this.historyIndex += dir
@@ -559,59 +635,54 @@ export class AcEdCommandLine {
   }
 
   /** Get current input text */
-  getInputText(): string {
-    const clone = this.input.cloneNode(true) as HTMLElement
-    clone.querySelectorAll('.ml-cli-option').forEach(n => n.remove())
-    return clone.innerText.replace(/\u00A0/g, ' ').trim()
+  private getInputText(): string {
+    return this.textInput.value.trim()
   }
 
   /** Set input text */
-  setInputText(text = '') {
-    this.input.innerHTML = ''
-    if (text) this.input.appendChild(document.createTextNode(text + ' '))
-    this.setCursorToEnd()
+  private setInputText(text = '') {
+    this.textInput.value = text
+    this.textInput.focus()
   }
 
-  /** Render command line with options */
-  renderCommandLine(cmd: string, options: string[] = []) {
-    this.input.innerHTML = ''
-    if (cmd) this.input.appendChild(document.createTextNode(cmd + ' '))
-    options.forEach(opt => {
+  /** Render prompt message and keyword options in command line */
+  renderKeywordPrompt(
+    options: AcEdPromptKeywordOptions,
+    onClick: (kw: string) => void
+  ) {
+    this.promptEl.innerHTML = ''
+
+    if (options.message) {
+      this.promptEl.append(options.message.trim() + ' ')
+    }
+
+    const keywords = options.keywords?.toArray().filter(k => k.visible) ?? []
+    if (!keywords.length) return
+
+    this.promptEl.append('[')
+
+    keywords.forEach((kw, i) => {
+      if (i > 0) this.promptEl.append('/')
+
       const span = document.createElement('span')
       span.className = 'ml-cli-option'
-      span.textContent = opt
-      span.addEventListener('click', e => {
-        e.stopPropagation()
-        this.insertOption(opt)
-      })
-      this.input.appendChild(span)
-      this.input.appendChild(document.createTextNode(' '))
+      span.textContent = kw.displayName
+
+      if (!kw.enabled) {
+        span.style.opacity = '0.45'
+        span.style.pointerEvents = 'none'
+      } else {
+        span.onclick = () => onClick(kw.globalName)
+      }
+
+      this.promptEl.append(span)
     })
-    this.setCursorToEnd()
-    this.input.focus()
-  }
 
-  /** Insert option into input */
-  insertOption(opt: string) {
-    this.input.appendChild(document.createTextNode(opt + ' '))
-    this.setCursorToEnd()
-    this.input.focus()
-  }
-
-  /** Move cursor to end of input */
-  setCursorToEnd() {
-    const range = document.createRange()
-    range.selectNodeContents(this.input)
-    range.collapse(false)
-    const sel = window.getSelection()
-    if (!sel) return
-    sel.removeAllRanges()
-    sel.addRange(range)
-    this.input.scrollLeft = this.input.scrollWidth
+    this.promptEl.append(']: ')
   }
 
   /** Resolve command name */
-  resolveCommand(cmdLine: string) {
+  private resolveCommand(cmdLine: string) {
     const parts = cmdLine.trim().split(/\s+/)
     const cmdStr = parts[0].toUpperCase()
     // TODO: Should look up local cmd too
@@ -619,7 +690,7 @@ export class AcEdCommandLine {
   }
 
   /** Show or hide popups */
-  updatePopups({ showCmd = false, showMsg = false } = {}) {
+  private updatePopups({ showCmd = false, showMsg = false } = {}) {
     this.isCmdPopupOpen = showCmd
     this.isMsgPanelOpen = showMsg
     this.cmdPopup.classList.toggle('hidden', !showCmd)
@@ -629,7 +700,7 @@ export class AcEdCommandLine {
   }
 
   /** Show command history popup */
-  showCommandHistoryPopup() {
+  private showCommandHistoryPopup() {
     this.cmdPopup.innerHTML = ''
     if (!this.history.length) {
       const empty = document.createElement('div')
@@ -649,13 +720,13 @@ export class AcEdCommandLine {
   }
 
   /** Position command history popup */
-  positionCmdPopup() {
+  private positionCmdPopup() {
     this.cmdPopup.style.left = '0px'
     this.cmdPopup.style.width = this.bar.offsetWidth + 'px'
   }
 
   /** Show message panel */
-  showMessagePanel() {
+  private showMessagePanel() {
     // If there is no message history, show a localized "no history" placeholder
     if (!this.msgPanel.children.length) {
       const empty = document.createElement('div')
@@ -670,7 +741,7 @@ export class AcEdCommandLine {
   }
 
   /** Position message panel */
-  positionMsgPanel() {
+  private positionMsgPanel() {
     this.msgPanel.style.width = this.bar.offsetWidth + 'px'
   }
 
@@ -685,7 +756,7 @@ export class AcEdCommandLine {
   }
 
   /** Print message to message panel with optional localization key */
-  printMessage(msg: string, msgKey?: string) {
+  private printMessage(msg: string, msgKey?: string) {
     this.clearNoHistoryPlaceholder()
     const div = document.createElement('div')
     div.className = 'ml-cli-history-line'
@@ -696,7 +767,7 @@ export class AcEdCommandLine {
   }
 
   /** Print error message with optional localization key */
-  printError(msg: string, msgKey?: string) {
+  private printError(msg: string, msgKey?: string) {
     this.clearNoHistoryPlaceholder()
     const div = document.createElement('div')
     div.className = 'ml-cli-history-line ml-cli-msg-error'
@@ -707,7 +778,7 @@ export class AcEdCommandLine {
   }
 
   /** Print executed command line to history */
-  printHistoryLine(cmdLine: string) {
+  private printHistoryLine(cmdLine: string) {
     this.clearNoHistoryPlaceholder()
     const div = document.createElement('div')
     div.className = 'ml-cli-history-line'
@@ -719,7 +790,7 @@ export class AcEdCommandLine {
   }
 
   /** Handle window resize */
-  resizeHandler() {
+  private resizeHandler() {
     // Calculate desired width based on ratio and minimum width
     let w = Math.max(this.minWidth, window.innerWidth * this.widthRatio)
     // Clamp width so it never exceeds the window width

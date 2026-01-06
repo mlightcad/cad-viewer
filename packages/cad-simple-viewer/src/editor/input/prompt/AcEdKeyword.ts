@@ -103,4 +103,34 @@ export class AcEdKeyword {
   set visible(flag: boolean) {
     if (!this._isReadOnly) this._visible = flag
   }
+
+  /**
+   * As AutoCAD .NET API, you cannot specify a keyword alias the same way as ObjectARX (Yes _Y).
+   * There is no alias parameter in {@link AdKeywordCollection.add}.
+   *
+   * However, a different and implicit alias mechanism is provided as AutoCAD .NET API. The rule
+   * is the capital letters in the keyword global name define the alias.
+   *
+   * User can type:
+   * - Y → Yes
+   * - N → No
+   * - C → Cancel
+   *
+   * Multi-letter aliases
+   * You can control the alias length by capitalizing multiple letters:
+   *
+   * ```typescript
+   * opts.keywords.add("WireFrame");   // alias = WF
+   * opts.keywords.add("HiddenLine");  // alias = HL
+   * opts.keywords.add("Realistic");   // alias = R
+   * ```
+   *
+   * User input:
+   * - WF
+   * - HL
+   * - R
+   */
+  get alias(): string {
+    return this._globalName.replace(/[^A-Z]/g, '')
+  }
 }

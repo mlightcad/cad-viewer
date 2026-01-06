@@ -33,7 +33,7 @@ export class AcTrLinePatternShaders {
     // A really small value doesn't look good, so, use a fixed small value now!
     for (let i = 0; i < ltypeElementLenArr.length; i++) {
       if (ltypeElementLenArr[i] === 0) {
-        ltypeElementLenArr[i] = 0.5/*totalLength * 0.01 * scale*/
+        ltypeElementLenArr[i] = 0.5 /*totalLength * 0.01 * scale*/
         totalLength += ltypeElementLenArr[i]
       }
     }

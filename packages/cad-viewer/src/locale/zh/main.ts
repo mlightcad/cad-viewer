@@ -37,6 +37,15 @@ export default {
       toolbar: '工具栏',
       stats: '性能面板'
     },
+    osnap: {
+      tooltip: '对象捕捉',
+      endpoint: '端点',
+      midpoint: '中点',
+      center: '圆心',
+      node: '节点',
+      quadrant: '象限点',
+      insertion: '插入'
+    },
     pointStyle: {
       tooltip: '修改点样式'
     },

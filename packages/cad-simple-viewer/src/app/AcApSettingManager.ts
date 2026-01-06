@@ -1,4 +1,4 @@
-import { AcCmEventManager } from '@mlightcad/data-model'
+import { AcCmEventManager, AcDbOsnapMode, acdbOsnapModesToMask } from '@mlightcad/data-model'
 import { defaults } from 'lodash-es'
 
 /**
@@ -42,6 +42,8 @@ export interface AcApSettings {
   isShowStats: boolean
   /** Font mapping configuration for text rendering */
   fontMapping: AcApFontMapping
+  /** Object snap modes */
+  osnapModes: number
 }
 
 /** Default values for all application settings */
@@ -54,7 +56,12 @@ const DEFAULT_VALUES: AcApSettings = {
   isShowMainMenu: true,
   isShowToolbar: true,
   isShowStats: false,
-  fontMapping: {}
+  fontMapping: {},
+  osnapModes: acdbOsnapModesToMask([
+    AcDbOsnapMode.EndPoint,
+    AcDbOsnapMode.MidPoint,
+    AcDbOsnapMode.Center
+  ])
 }
 
 /** Local storage key for persisting settings */
@@ -367,6 +374,24 @@ export class AcApSettingManager<T extends AcApSettings = AcApSettings> {
     const mapping = this.get('fontMapping') as AcApFontMapping
     mapping[originalFont] = mappedFont
     this.set('fontMapping', mapping)
+  }
+
+  /**
+   * Gets the object snapping configuration.
+   *
+   * @returns The current object snapping configuration.
+   */
+  get osnapModes() {
+    return this.get('osnapModes')
+  }
+
+  /**
+   * Sets the object snapping configuration.
+   *
+   * @param value - The new object snapping configuration.
+   */
+  set osnapModes(value: number) {
+    this.set('osnapModes', value)
   }
 
   /**
