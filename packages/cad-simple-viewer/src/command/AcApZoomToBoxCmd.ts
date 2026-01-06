@@ -22,14 +22,11 @@ export class AcApZoomToBoxCmd extends AcEdCommand {
   /**
    * Executes the zoom-to-box command.
    *
-   * Creates a jig for interactive area selection and initiates
-   * the drag operation for the user to select the zoom area.
-   *
    * @param context - The application context containing the view
    * @returns Promise that resolves when the zoom operation completes
    */
   async execute(context: AcApContext) {
-    const box = await AcApDocManager.instance.editor.getSelection()
+    const box = await AcApDocManager.instance.editor.getBox()
     return context.view.zoomTo(box, 1)
   }
 }

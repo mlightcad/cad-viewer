@@ -1,7 +1,7 @@
 import { AcApContext, AcApDocManager } from '../app'
-import { AcEdPromptEntityOptions } from '../editor'
+import { AcEdCommand } from '../command'
+import { AcEdPromptSelectionOptions } from '../editor/input/prompt'
 import { AcApI18n } from '../i18n'
-import { AcEdCommand } from '.'
 
 /**
  * Command to delete selected objects from the drawing.
@@ -19,9 +19,12 @@ export class AcApEraseCmd extends AcEdCommand {
       selectionSet.clear()
     } else {
       const message = AcApI18n.sysCmdPrompt('erase')
-      const entityOptions = new AcEdPromptEntityOptions(message)
-      const id = await AcApDocManager.instance.editor.getEntity(entityOptions)
-      if (id) context.doc.database.tables.blockTable.removeEntity(id)
+      const options = new AcEdPromptSelectionOptions(message)
+      const ids = await AcApDocManager.instance.editor.getSelection(options)
+      if (ids && ids.length > 0) {
+        context.doc.database.tables.blockTable.removeEntity(ids)
+        selectionSet.clear()
+      }
     }
   }
 }
