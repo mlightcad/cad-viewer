@@ -23,7 +23,8 @@ import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
 export class AcTrStyleManager {
   static options: AcTrStyleManagerOptions = {
     // cameraZoomUniform: 1.0,
-    ltScale: 1.0,
+    ltscale: 1.0,
+    celtscale: 1.0,
     viewportScaleUniform: 1.0,
     maxFragmentUniforms: 1024
   }

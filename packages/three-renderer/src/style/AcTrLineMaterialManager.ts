@@ -63,7 +63,7 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     let material: THREE.Material
 
     const scales = this.getLineTypeScales();
-    const scale = scales.ltScale * scales.celtScale * traits.lineTypeScale;
+    const scale = scales.ltscale * scales.celtscale * traits.lineTypeScale;
 
     if (this.isShaderMaterial(traits, options)) {
       material = AcTrLinePatternShaders.createLineShaderMaterial(
@@ -81,15 +81,9 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
 
   //References https://knowledge.autodesk.com/support/autocad-lt/learn-explore/caas/CloudHelp/cloudhelp/2020/ENU/AutoCAD-LT/files/GUID-4323BBAD-2757-4E92-B2E4-E0E550BB37CB-htm.html
   private getLineTypeScales() {
-    const scales = { ltScale: 1.0, celtScale: 1.0 }
-    // TODO: get ltScale and celtScale from database
-    // if (!this.header) {
-    //   return scales
-    // }
-    // // Global linetype scale
-    scales.ltScale = this.options.ltScale || 1
-    // //Current entity linetype scale
-    // scales.celtScale = (this.header["$CELTSCALE"] as number) || 1
-    return scales
+    return {
+      ltscale: this.options.ltscale || 1.0,
+      celtscale: this.options.celtscale || 1.0
+    }
   }
 }

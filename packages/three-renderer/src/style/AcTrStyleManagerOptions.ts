@@ -3,9 +3,13 @@ export interface AcTrStyleManagerOptions {
   // cameraZoomUniform: number
 
   /**
-   *
+   * Global ltscale
    */
-  ltScale: number
+  ltscale: number
+  /**
+   * Global celtscale
+   */
+  celtscale: number
 
   /** Uniform that accounts for viewport scale in line-pattern rendering. */
   viewportScaleUniform: number

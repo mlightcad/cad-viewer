@@ -66,6 +66,7 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   get basePoint() {
     return this._basePoint
   }
+
   set basePoint(value: AcGePoint3d | undefined) {
     if (value == null) {
       this._basePoint = value
@@ -77,16 +78,23 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   }
 
   /**
-   * Sets global ltscale
+   * @inheritdoc
    */
   setFontMapping(_mapping: AcGiFontMapping) {
     // TODO: Implement it
   }
 
   /**
-   * @inheritdoc
+   * Sets global ltscale
    */
-  set ltScale(_scale: number) {
+  set ltscale(_scale: number) {
+    // TODO: Implement it
+  }
+
+  /**
+   * Sets global celtscale
+   */
+  set celtscale(_scale: number) {
     // TODO: Implement it
   }
 
@@ -105,6 +113,7 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
     // TODO: Implement it
     return _tempEntity
   }
+
   /**
    * @inheritdoc
    */
