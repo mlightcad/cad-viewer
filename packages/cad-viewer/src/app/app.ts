@@ -14,3 +14,5 @@ export const initializeCadViewer = (options: AcApDocManagerOptions = {}) => {
   registerCmds()
   registerDialogs()
 }
+
+

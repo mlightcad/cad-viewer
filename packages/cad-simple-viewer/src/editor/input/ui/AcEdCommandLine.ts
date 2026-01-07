@@ -1,6 +1,5 @@
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
-import { AcEdCommandStack } from '../../command'
 import { AcEdPromptKeywordOptions } from '../prompt'
 import { AcEdKeywordSession } from '../session'
 
@@ -574,7 +573,7 @@ export class AcEdCommandLine {
       return
     }
 
-    const matches = AcEdCommandStack.instance.searchCommandsByPrefix(text)
+    const matches = AcApDocManager.instance.commandManager.searchCommandsByPrefix(text)
     if (matches.length) {
       this.autoCompleteIndex = -1
       this.cmdPopup.innerHTML = ''
@@ -686,7 +685,7 @@ export class AcEdCommandLine {
     const parts = cmdLine.trim().split(/\s+/)
     const cmdStr = parts[0].toUpperCase()
     // TODO: Should look up local cmd too
-    return AcEdCommandStack.instance.lookupLocalCmd(cmdStr)
+    return AcApDocManager.instance.commandManager.lookupLocalCmd(cmdStr)
   }
 
   /** Show or hide popups */

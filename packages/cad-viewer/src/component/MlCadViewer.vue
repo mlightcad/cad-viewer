@@ -86,7 +86,7 @@ import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
 import { AcDbOpenDatabaseOptions } from '@mlightcad/data-model'
 import { useDark, useToggle } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { initializeCadViewer, store } from '../app'
@@ -316,6 +316,11 @@ onMounted(async () => {
   } else {
     isDark.value = false
   }
+})
+
+// Destroy the CAD viewer when the component is unmounted
+onUnmounted(() => {
+  AcApDocManager.instance.destory()
 })
 
 // Set up global event listeners for various CAD operations and notifications

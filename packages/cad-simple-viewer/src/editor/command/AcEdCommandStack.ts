@@ -20,13 +20,13 @@ export interface AcEdCommandGroup {
 /**
  * The class to create, define, and register command objects.
  *
- * This is a singleton class that manages all command registration and lookup functionality.
+ * It is used to manages all command registration and lookup functionality.
  * Commands are organized into groups, with system commands (ACAD) and user commands (USER)
  * being the default groups.
  *
  * @example
  * ```typescript
- * const commandStack = AcEdCommandStack.instance;
+ * const commandStack = AcApDocManager.instance.commandManager;
  * commandStack.addCommand('USER', 'MYCOMMAND', 'MYCOMMAND', myCommandInstance);
  * const command = commandStack.lookupGlobalCmd('MYCOMMAND');
  * ```
@@ -43,14 +43,12 @@ export class AcEdCommandStack {
   private _systemCommandGroup: AcEdCommandGroup
   /** Reference to the default user command group */
   private _defaultCommandGroup: AcEdCommandGroup
-  /** Singleton instance of the command stack */
-  private static _instance?: AcEdCommandStack
 
   /**
    * Private constructor to enforce singleton pattern.
    * Initializes the command stack with system and default command groups.
    */
-  private constructor() {
+  constructor() {
     this._commandsByGroup = []
     this._systemCommandGroup = {
       groupName: AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
@@ -64,19 +62,6 @@ export class AcEdCommandStack {
     }
     this._commandsByGroup.push(this._systemCommandGroup)
     this._commandsByGroup.push(this._defaultCommandGroup)
-  }
-
-  /**
-   * Gets the singleton instance of the command stack.
-   * Creates a new instance if one doesn't exist.
-   *
-   * @returns The singleton instance of AcEdCommandStack
-   */
-  static get instance() {
-    if (!AcEdCommandStack._instance) {
-      AcEdCommandStack._instance = new AcEdCommandStack()
-    }
-    return AcEdCommandStack._instance
   }
 
   /**
@@ -273,5 +258,16 @@ export class AcEdCommandStack {
       return true
     }
     return false
+  }
+
+  /**
+   * Removes all of registered commands
+   */
+  removeAll() {
+    this._commandsByGroup = []
+    this._defaultCommandGroup.commandsByGlobalName.clear()
+    this._defaultCommandGroup.commandsByLocalName.clear()
+    this._systemCommandGroup.commandsByGlobalName.clear()
+    this._systemCommandGroup.commandsByLocalName.clear()
   }
 }

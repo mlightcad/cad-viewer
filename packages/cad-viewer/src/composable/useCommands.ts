@@ -1,4 +1,4 @@
-import { AcEdCommandStack } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { reactive } from 'vue'
 
 export interface CommandInfo {
@@ -9,7 +9,7 @@ export interface CommandInfo {
 export function useCommands() {
   const reactiveCommands = reactive<CommandInfo[]>([])
 
-  const commands = AcEdCommandStack.instance.iterator()
+  const commands = AcApDocManager.instance.commandManager.iterator()
   for (const command of commands) {
     reactiveCommands.push({
       commandName: command.command.localName,

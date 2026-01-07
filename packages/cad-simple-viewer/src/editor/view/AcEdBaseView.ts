@@ -180,6 +180,9 @@ export abstract class AcEdBaseView {
   /** The HTML canvas element for rendering */
   protected _canvas: HTMLCanvasElement
 
+  /** The HTML element to contain this view */
+  protected _container: HTMLElement
+
   /** Events fired by the view for various interactions */
   public readonly events = {
     /** Fired when mouse moves over the view */
@@ -199,8 +202,11 @@ export abstract class AcEdBaseView {
    * for mouse interactions and container resize events.
    *
    * @param canvas - The HTML canvas element to render into
+   * @param container - The HTML element to contain this viewer. The canvas element
+   * must be children element of container element.
    */
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, container: HTMLElement) {
+    this._container = container
     this._canvas = canvas
     const rect = canvas.getBoundingClientRect()
     this._bbox = new AcGeBox3d()
@@ -585,6 +591,13 @@ export abstract class AcEdBaseView {
    */
   get canvas() {
     return this._canvas
+  }
+
+  /**
+   * The HTML element to contain this view
+   */
+  get container() {
+    return this._container
   }
 
   get aspect() {
