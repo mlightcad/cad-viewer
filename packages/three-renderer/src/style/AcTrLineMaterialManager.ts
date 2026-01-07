@@ -62,8 +62,8 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
   ): THREE.Material {
     let material: THREE.Material
 
-    const scales = this.getLineTypeScales();
-    const scale = scales.ltscale * scales.celtscale * traits.lineTypeScale;
+    const scales = this.getLineTypeScales()
+    const scale = scales.ltscale * scales.celtscale * traits.lineTypeScale
 
     if (this.isShaderMaterial(traits, options)) {
       material = AcTrLinePatternShaders.createLineShaderMaterial(

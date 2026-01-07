@@ -40,7 +40,7 @@ export class AcEdMarkerManager {
     size?: number,
     color?: string
   ) {
-    const winPos = this.view.wcs2Cwcs(pos)
+    const winPos = this.view.worldToScreen(pos)
     const marker = new AcEdMarker(type, size, color)
     marker.setPosition(winPos)
     this.stack.push(marker)

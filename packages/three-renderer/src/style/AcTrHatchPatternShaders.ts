@@ -5,21 +5,21 @@ import * as THREE from 'three'
  * We need to redefine it in order to send it to gpu.
  */
 export interface AcTrPatternLine {
-    angle: number // in radians
-    base: THREE.Vector2
-    offset: THREE.Vector2
-    /**
-     * Dash and gap list.
-     * E.g., [1, -1, 2, -1], defines a line repeats by "- - -- " (a dash, a gap, 2 dashes, a gap...)
-     * The array size shouldn't be 0.
-     */
-    dashLengths: number[]
-    /**
-     * Total length of a *this* pattern definition.
-     * We need to pass it in as a individual variable because it's not convenient to get it in glsl.
-     * E.g., for dashLengths: [1, -1, 2, -1], patternLength is 5.
-     */
-    patternLength: number
+  angle: number // in radians
+  base: THREE.Vector2
+  offset: THREE.Vector2
+  /**
+   * Dash and gap list.
+   * E.g., [1, -1, 2, -1], defines a line repeats by "- - -- " (a dash, a gap, 2 dashes, a gap...)
+   * The array size shouldn't be 0.
+   */
+  dashLengths: number[]
+  /**
+   * Total length of a *this* pattern definition.
+   * We need to pass it in as a individual variable because it's not convenient to get it in glsl.
+   * E.g., for dashLengths: [1, -1, 2, -1], patternLength is 5.
+   */
+  patternLength: number
 }
 
 /**

@@ -57,7 +57,7 @@ export class AcEdInputManager {
 
   /** Stores last confirmed point from getPoint() or getBox() */
   private lastPoint: AcGePoint2dLike | null = null
-  
+
   /** Command line UI component */
   private _commandLine: AcEdCommandLine
 
@@ -315,71 +315,69 @@ export class AcEdInputManager {
    *          The array is empty if no entities are selected and the user presses Enter.
    *          The promise is rejected if the operation is cancelled.
    */
-  async getSelection(
-    options: AcEdPromptSelectionOptions
-  ): Promise<string[]> {
+  async getSelection(options: AcEdPromptSelectionOptions): Promise<string[]> {
     return new Promise((resolve, reject) => {
       this.active = true
       this._commandLine.setPrompt(options.message)
-  
+
       const floatingMessage = new AcEdFloatingMessage(this.view, {
         parent: this.view.canvas,
         message: options.message
       })
-  
+
       const selected = new Set<string>()
       let startWcs: AcGePoint2dLike | null = null
       let previewEl: HTMLDivElement | null = null
-  
+
       const cleanup = () => {
         this.active = false
         floatingMessage.dispose()
         previewEl?.remove()
         this._commandLine.clear()
-  
+
         document.removeEventListener('keydown', keyHandler)
         this.view.canvas.removeEventListener('mousedown', mouseDown)
         this.view.canvas.removeEventListener('mousemove', mouseMove)
         this.view.canvas.removeEventListener('mouseup', mouseUp)
       }
-  
+
       /** ---------- Keyboard ---------- */
-  
+
       const keyHandler = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           cleanup()
           reject(new Error('cancelled'))
           return
         }
-  
+
         if (e.key === 'Enter') {
           cleanup()
           resolve([...selected])
         }
       }
-  
+
       /** ---------- Mouse ---------- */
-  
+
       const mouseDown = (e: MouseEvent) => {
-        startWcs = this.view.cwcs2Wcs(e)
-  
+        startWcs = this.view.screenToWorld(e)
+
         previewEl = document.createElement('div')
         previewEl.className = 'ml-jig-preview-rect'
         document.body.appendChild(previewEl)
       }
-  
+
       const mouseMove = (e: MouseEvent) => {
         if (!startWcs || !previewEl) return
-  
-        const curWcs = this.view.cwcs2Wcs(e)
-        const p1 = this.view.wcs2Cwcs(startWcs)
-        const p2 = this.view.wcs2Cwcs(curWcs)
-  
+
+        const curWcs = this.view.screenToWorld(e)
+        const p1 = this.view.worldToScreen(startWcs)
+        const p2 = this.view.worldToScreen(curWcs)
+
         const left = Math.min(p1.x, p2.x)
         const top = Math.min(p1.y, p2.y)
         const width = Math.abs(p1.x - p2.x)
         const height = Math.abs(p1.y - p2.y)
-  
+
         Object.assign(previewEl.style, {
           left: `${left}px`,
           top: `${top}px`,
@@ -387,20 +385,17 @@ export class AcEdInputManager {
           height: `${height}px`
         })
       }
-  
+
       const mouseUp = (e: MouseEvent) => {
         if (!startWcs) return
-  
-        const endWcs = this.view.cwcs2Wcs(e)
+
+        const endWcs = this.view.screenToWorld(e)
         previewEl?.remove()
         previewEl = null
-  
+
         // Click selection
-        const dist = Math.hypot(
-          endWcs.x - startWcs.x,
-          endWcs.y - startWcs.y
-        )
-  
+        const dist = Math.hypot(endWcs.x - startWcs.x, endWcs.y - startWcs.y)
+
         if (dist < 2) {
           const picked = this.view.pick(endWcs)
           if (picked.length > 0) {
@@ -415,20 +410,20 @@ export class AcEdInputManager {
           const box = new AcGeBox2d()
             .expandByPoint(startWcs)
             .expandByPoint(endWcs)
-  
+
           this.view.selectByBox(box)
-  
+
           for (const id of this.view.selectionSet.ids) {
             selected.add(id)
             if (options.singleOnly) break
           }
         }
-  
+
         startWcs = null
       }
-  
+
       /** ---------- Attach ---------- */
-  
+
       document.addEventListener('keydown', keyHandler)
       this.view.canvas.addEventListener('mousedown', mouseDown)
       this.view.canvas.addEventListener('mousemove', mouseMove)
@@ -459,7 +454,7 @@ export class AcEdInputManager {
 
       /** Mouse click → try select entity */
       const clickHandler = (e: MouseEvent) => {
-        const pos = this.view.cwcs2Wcs(e)
+        const pos = this.view.screenToWorld(e)
         const picked = this.view.pick(pos)
 
         // Clicked empty space
@@ -515,7 +510,7 @@ export class AcEdInputManager {
     options1.useDashedLine = false
     options1.useBasePoint = false
     const p1 = await this.getPoint(options1)
-    const cwcsP1 = this.view.wcs2Cwcs(p1)
+    const cwcsP1 = this.view.worldToScreen(p1)
 
     // Create preview rectangle
     const previewEl = document.createElement('div')
@@ -527,7 +522,7 @@ export class AcEdInputManager {
     }
 
     const drawPreview = (pos: AcGePoint2dLike) => {
-      const cwcsP2 = this.view.wcs2Cwcs(pos)
+      const cwcsP2 = this.view.worldToScreen(pos)
       const left = Math.min(cwcsP2.x, cwcsP1.x)
       const top = Math.min(cwcsP2.y, cwcsP1.y)
       const width = Math.abs(cwcsP2.x - cwcsP1.x)
@@ -603,7 +598,7 @@ export class AcEdInputManager {
     handler: AcEdInputHandler<T>
     cleanup?: () => void
     getDynamicValue: AcEdFloatingInputDynamicValueCallback<T>
-    drawPreview?: AcEdFloatingInputDrawPreviewCallback,
+    drawPreview?: AcEdFloatingInputDrawPreviewCallback
     onCommit?: AcEdFloatingInputCommitCallback<T>
   }): Promise<T> {
     return new Promise<T>((resolve, reject) => {

@@ -348,7 +348,7 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  cwcs2Wcs(point: AcGePoint2dLike): AcGePoint2d {
+  screenToWorld(point: AcGePoint2dLike): AcGePoint2d {
     const activeLayoutView = this.activeLayoutView
     return activeLayoutView
       ? activeLayoutView.cwcs2Wcs(point)
@@ -358,7 +358,7 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  wcs2Cwcs(point: AcGePoint2dLike): AcGePoint2d {
+  worldToScreen(point: AcGePoint2dLike): AcGePoint2d {
     const activeLayoutView = this.activeLayoutView
     return activeLayoutView
       ? activeLayoutView.wcs2Cwcs(point)
