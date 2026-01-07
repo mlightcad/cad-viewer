@@ -145,7 +145,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   private injectInputCSS() {
     if (AcEdFloatingInput.inputStylesInjected) return
     AcEdFloatingInput.inputStylesInjected = true
-  
+
     const style = document.createElement('style')
     style.textContent = `
       .ml-floating-input input {
@@ -229,7 +229,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     const mousePos = super.setPosition(e)
 
     // Convert cursor to WCS
-    const wcsPos = this.view.cwcs2Wcs(mousePos)
+    const wcsPos = this.view.screenToWorld(mousePos)
 
     // Apply OSNAP
     if (this.osnapMarkerManager) {
@@ -283,8 +283,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     }
 
     if (index !== -1) {
-      const p1 = this.view.cwcs2Wcs({ x: 0, y: 0 })
-      const p2 = this.view.cwcs2Wcs({ x: hitRadius, y: 0 })
+      const p1 = this.view.screenToWorld({ x: 0, y: 0 })
+      const p2 = this.view.screenToWorld({ x: hitRadius, y: 0 })
       if (minDist < p2.x - p1.x) {
         return snapPoints[index]
       }
@@ -320,9 +320,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     osnapPoints: AcEdOsnapPoint[],
     gsMark?: AcDbObjectId
   ) {
-    const modes = acdbMaskToOsnapModes(
-      AcApSettingManager.instance.osnapModes
-    )
+    const modes = acdbMaskToOsnapModes(AcApSettingManager.instance.osnapModes)
     modes.forEach(mode =>
       this.getOsnapPointsByMode(entity, mode, osnapPoints, gsMark)
     )

@@ -125,8 +125,8 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         base,
         offset,
         dashLengths,
-        patternLength,
-    }
+        patternLength
+      }
 
       currentUniformCount += 4 // angle, base, offset, patternLength
       currentUniformCount += maxPatternSegmentCount // dashLengths, consistent with HatchPatternShader
@@ -174,8 +174,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const patternHash = style.definitionLines
       .map(
         pl =>
-          pl.dashLengths.join(',') +
-          `@${pl.angle},${pl.base.x},${pl.base.y}`
+          pl.dashLengths.join(',') + `@${pl.angle},${pl.base.x},${pl.base.y}`
       )
       .join('|')
 

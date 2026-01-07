@@ -172,8 +172,8 @@ export class AcEdRubberBand {
     if (!this.container || !this.basePoint || !this.baseLine) return
 
     const rect = this.view.canvas.getBoundingClientRect()
-    const p0 = this.view.wcs2Cwcs(this.basePoint)
-    const p3 = this.view.wcs2Cwcs(targetPoint)
+    const p0 = this.view.worldToScreen(this.basePoint)
+    const p3 = this.view.worldToScreen(targetPoint)
 
     const offsetX = rect.left
     const offsetY = rect.top

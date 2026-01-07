@@ -316,41 +316,41 @@ export abstract class AcEdBaseView {
   abstract set center(value: AcGePoint2d)
 
   /**
-   * Converts a point from client window coordinates to world coordinates.
+   * Converts a point from screen coordinates to world coordinates.
    *
-   * The client window coordinate system has its origin at the top-left corner
+   * The screen coordinate system has its origin at the top-left corner
    * of the canvas, with Y increasing downward. World coordinates use the
    * CAD coordinate system with Y typically increasing upward.
    *
-   * @param point - Point in client window coordinates
+   * @param point - Point in screen coordinates
    * @returns Point in world coordinates
    *
    * @example
    * ```typescript
    * const screenPoint = { x: 100, y: 200 }; // 100px right, 200px down
-   * const worldPoint = view.cwcs2Wcs(screenPoint);
+   * const worldPoint = view.screenToWorld(screenPoint);
    * console.log('World coordinates:', worldPoint.x, worldPoint.y);
    * ```
    */
-  abstract cwcs2Wcs(point: AcGePoint2dLike): AcGePoint2d
+  abstract screenToWorld(point: AcGePoint2dLike): AcGePoint2d
 
   /**
-   * Converts a point from world coordinates to client window coordinates.
+   * Converts a point from world coordinates to screen coordinates.
    *
-   * This is the inverse of `cwcs2Wcs()`, converting from the CAD world
+   * This is the inverse of `screenToWorld()`, converting from the CAD world
    * coordinate system to screen pixel coordinates.
    *
    * @param point - Point in world coordinates
-   * @returns Point in client window coordinates
+   * @returns Point in screen coordinates
    *
    * @example
    * ```typescript
    * const worldPoint = new AcGePoint2d(10, 20); // CAD coordinates
-   * const screenPoint = view.wcs2Cwcs(worldPoint);
+   * const screenPoint = view.worldToScreen(worldPoint);
    * console.log('Screen position:', screenPoint.x, screenPoint.y);
    * ```
    */
-  abstract wcs2Cwcs(point: AcGePoint2dLike): AcGePoint2d
+  abstract worldToScreen(point: AcGePoint2dLike): AcGePoint2d
 
   /**
    * Zooms the view to fit the specified bounding box with optional margin.
@@ -633,7 +633,7 @@ export abstract class AcEdBaseView {
    */
   private onMouseMove(event: MouseEvent) {
     this._curMousePos = new AcGePoint2d(event.clientX, event.clientY)
-    const wcsPos = this.cwcs2Wcs(this._curMousePos)
+    const wcsPos = this.screenToWorld(this._curMousePos)
     this._curPos.copy(wcsPos)
     this.events.mouseMove.dispatch({ x: wcsPos.x, y: wcsPos.y })
 
