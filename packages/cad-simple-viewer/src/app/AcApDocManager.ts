@@ -105,6 +105,8 @@ export class AcApDocManager {
   private _baseUrl: string
   /** Progress animation */
   private _progress: AcApProgress
+  /** Command manager */
+  private _commandManager: AcEdCommandStack
   /** Singleton instance */
   private static _instance?: AcApDocManager
 
@@ -182,6 +184,8 @@ export class AcApDocManager {
     this._fontLoader = new AcApFontLoader()
     this._fontLoader.baseUrl = this._baseUrl + 'fonts/'
     acdbHostApplicationServices().workingDatabase = doc.database
+
+    this._commandManager = new AcEdCommandStack()
     this.registerCommands()
     this._progress = new AcApProgress()
     this._progress.hide()
@@ -219,6 +223,13 @@ export class AcApDocManager {
       AcApDocManager._instance = new AcApDocManager()
     }
     return AcApDocManager._instance
+  }
+
+  /**
+   * Destroy  Releases 
+   */
+  destory() {
+    AcApDocManager._instance = undefined
   }
 
   /**
@@ -269,6 +280,15 @@ export class AcApDocManager {
    */
   get editor() {
     return this._context.view.editor
+  }
+
+  /**
+   * Gets command manager to look up and register commands
+   * 
+   * @returns The command manager
+   */
+  get commandManager() {
+    return this._commandManager
   }
 
   /**
@@ -427,8 +447,8 @@ export class AcApDocManager {
    *
    * All commands are registered under the system command group.
    */
-  registerCommands() {
-    const register = AcEdCommandStack.instance
+  private registerCommands() {
+    const register = this._commandManager
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'circle',
@@ -535,8 +555,7 @@ export class AcApDocManager {
    * ```
    */
   sendStringToExecute(cmdStr: string) {
-    const register = AcEdCommandStack.instance
-    const cmd = register.lookupGlobalCmd(cmdStr)
+    const cmd = this._commandManager.lookupGlobalCmd(cmdStr)
     cmd?.execute(this.context)
   }
 

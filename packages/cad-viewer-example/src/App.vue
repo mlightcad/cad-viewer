@@ -7,11 +7,14 @@
 
     <!-- CAD viewer when file is selected -->
     <div v-else>
-      <MlCadViewer
-        locale="en"
-        :local-file="selectedFile"
-        base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
-      />
+      <div @click="showMICad=!showMICad" style="position:fixed;left:0;top:0;z-index:999">关闭/打开CAD</div>
+      <div v-if="showMICad">
+        <MlCadViewer
+          locale="en"
+          :local-file="selectedFile"
+          base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -32,6 +35,8 @@ import FileUpload from './components/FileUpload.vue'
 
 // State for file selection
 const selectedFile = ref<File | null>(null)
+
+const showMICad = ref(true)
 
 // Handle file selection from upload component
 const handleFileSelect = (file: File) => {

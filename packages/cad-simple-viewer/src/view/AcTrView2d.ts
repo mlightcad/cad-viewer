@@ -123,7 +123,7 @@ export class AcTrView2d extends AcEdBaseView {
     })
     container.appendChild(renderer.domElement)
 
-    super(renderer.domElement)
+    super(renderer.domElement, container)
     if (options.calculateSizeCallback) {
       this.setCalculateSizeCallback(options.calculateSizeCallback)
     }

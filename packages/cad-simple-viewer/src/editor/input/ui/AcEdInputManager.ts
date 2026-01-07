@@ -76,7 +76,7 @@ export class AcEdInputManager {
   constructor(view: AcEdBaseView) {
     this.view = view
     this.injectCSS()
-    const commandLine = new AcEdCommandLine(document.body)
+    const commandLine = new AcEdCommandLine(this.view.container)
     this._commandLine = commandLine
     commandLine.visible = AcApSettingManager.instance.isShowCommandLine
     AcApSettingManager.instance.events.modified.addEventListener(() => {
