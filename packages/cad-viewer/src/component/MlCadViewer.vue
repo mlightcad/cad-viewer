@@ -103,6 +103,18 @@ import { MlNotificationCenter } from './notification'
 import { MlPaletteManager } from './palette'
 import { MlStatusBar } from './statusBar'
 
+const emit = defineEmits<{
+  /**
+   * Fired after CAD viewer is fully created and ready to use
+   */
+  (e: 'create'): void
+
+  /**
+   * Fired right before CAD viewer is destroyed
+   */
+  (e: 'destroy'): void
+}>()
+
 // Define component props with their purposes
 interface Props {
   /** Language locale for internationalization ('en', 'zh', or 'default') */
@@ -316,11 +328,17 @@ onMounted(async () => {
   } else {
     isDark.value = false
   }
+
+  // FINAL STEP: viewer is now ready
+  emit('create')
 })
 
 // Destroy the CAD viewer when the component is unmounted
 onUnmounted(() => {
-  AcApDocManager.instance.destory()
+  // Notify consumers first
+  emit('destroy')
+
+  AcApDocManager.instance.destroy()
 })
 
 // Set up global event listeners for various CAD operations and notifications

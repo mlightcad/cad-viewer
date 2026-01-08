@@ -226,9 +226,9 @@ export class AcApDocManager {
   }
 
   /**
-   * Destroy  Releases 
+   * Destroy the view
    */
-  destory() {
+  destroy() {
     AcApDocManager._instance = undefined
   }
 
@@ -284,7 +284,7 @@ export class AcApDocManager {
 
   /**
    * Gets command manager to look up and register commands
-   * 
+   *
    * @returns The command manager
    */
   get commandManager() {

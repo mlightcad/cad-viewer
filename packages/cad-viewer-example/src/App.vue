@@ -1,30 +1,46 @@
 <template>
   <div id="app-root">
     <!-- Upload screen when no file is selected -->
-    <div v-if="!selectedFile" class="upload-screen">
+    <div v-if="!store.selectedFile" class="upload-screen">
       <FileUpload @file-select="handleFileSelect" />
     </div>
 
     <!-- CAD viewer when file is selected -->
     <div v-else>
-      <div @click="showMICad=!showMICad" style="position:fixed;left:0;top:0;z-index:999">关闭/打开CAD</div>
-      <div v-if="showMICad">
-        <MlCadViewer
-          locale="en"
-          :local-file="selectedFile"
-          base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
-        />
-      </div>
+      <MlCadViewer
+        locale="en"
+        :local-file="store.selectedFile"
+        @create="registerCommands"
+        base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 // import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, AcEdCommandStack } from '@mlightcad/cad-simple-viewer'
 import { MlCadViewer } from '@mlightcad/cad-viewer'
-import { ref } from 'vue'
 
+import { AcApQuitCmd } from './commands'
 import FileUpload from './components/FileUpload.vue'
+import { store } from './store'
+
+const registerCommands = () => {
+  const register = AcApDocManager.instance.commandManager
+  register.addCommand(
+    AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+    'quit',
+    'quit',
+    new AcApQuitCmd()
+  )
+  register.addCommand(
+    AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+    'exit',
+    'exit',
+    new AcApQuitCmd()
+  )
+}
 
 // Decide whether to show command line vertical toolbar at the right side,
 // performance stats, coordinates in status bar, etc.
@@ -33,14 +49,9 @@ import FileUpload from './components/FileUpload.vue'
 // AcApSettingManager.instance.isShowStats = false
 // AcApSettingManager.instance.isShowCoordinate = false
 
-// State for file selection
-const selectedFile = ref<File | null>(null)
-
-const showMICad = ref(true)
-
 // Handle file selection from upload component
 const handleFileSelect = (file: File) => {
-  selectedFile.value = file
+  store.selectedFile = file
 }
 </script>
 
