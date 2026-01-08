@@ -1,5 +1,11 @@
 # @mlightcad/cad-viewer-examples
 
+## 1.2.5
+
+### Patch Changes
+
+- feat: fix some issues on rendering linetype and hatch
+
 ## 1.2.4
 
 ### Patch Changes

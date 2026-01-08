@@ -1,5 +1,11 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.4.1
+
+### Patch Changes
+
+- feat: fix some issues on rendering linetype and hatch
+
 ## 1.4.0
 
 ### Minor Changes

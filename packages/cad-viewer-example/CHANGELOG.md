@@ -1,5 +1,14 @@
 # @mlightcad/cad-viewer-example
 
+## 1.4.1
+
+### Patch Changes
+
+- feat: fix some issues on rendering linetype and hatch
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.4.1
+  - @mlightcad/cad-viewer@1.4.1
+
 ## 1.4.0
 
 ### Minor Changes
