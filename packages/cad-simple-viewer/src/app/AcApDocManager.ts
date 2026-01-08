@@ -1,5 +1,8 @@
 import {
   AcCmEventManager,
+  AcDbDatabaseConverterManager,
+  AcDbDxfConverter,
+  AcDbFileType,
   acdbHostApplicationServices,
   AcDbOpenDatabaseOptions,
   AcDbProgressdEventArgs,
@@ -31,8 +34,8 @@ import { AcTrView2d } from '../view'
 import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
-import { registerWorkers } from './AcApGlobalFunc'
 import { AcApProgress } from './AcApProgress'
+import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 
 const DEFAULT_BASE_URL = 'https://mlightcad.gitlab.io/cad-data/'
 
@@ -42,6 +45,38 @@ const DEFAULT_BASE_URL = 'https://mlightcad.gitlab.io/cad-data/'
 export interface AcDbDocumentEventArgs {
   /** The document involved in the event */
   doc: AcApDocument
+}
+
+/**
+ * Defines URLs for Web Worker JavaScript bundles used by the CAD viewer.
+ *
+ * Each entry points to a standalone worker script responsible for
+ * off-main-thread processing such as file parsing or text rendering.
+ */
+export interface AcApWebworkerFiles {
+  /**
+   * URL of the Web Worker bundle responsible for parsing DXF files.
+   *
+   * This worker performs DXF decoding and entity extraction in a
+   * background thread to avoid blocking the UI.
+   */
+  dxfParser?: string
+
+  /**
+   * URL of the Web Worker bundle responsible for parsing DWG files.
+   *
+   * DWG parsing is computationally expensive and must be executed
+   * in a Web Worker to maintain UI responsiveness.
+   */
+  dwgParser?: string
+
+  /**
+   * URL of the Web Worker bundle responsible for rendering MTEXT entities.
+   *
+   * This worker handles MTEXT layout, formatting, and glyph processing
+   * independently from the main rendering thread.
+   */
+  mtextRender?: string
 }
 
 /**
@@ -82,6 +117,10 @@ export interface AcApDocManagerOptions {
    * texts with fonts which can't be found in font repository will not be shown correctly.
    */
   notLoadDefaultFonts?: boolean
+  /**
+   * URLs for Web Worker JavaScript bundles used by the CAD viewer.
+   */
+  webworkerFileUrls?: AcApWebworkerFiles
 }
 
 /**
@@ -192,7 +231,7 @@ export class AcApDocManager {
     if (!options.notLoadDefaultFonts) {
       this.loadDefaultFonts()
     }
-    registerWorkers()
+    this.registerWorkers()
   }
 
   /**
@@ -649,6 +688,89 @@ export class AcApDocManager {
       this._progress.hide()
     } else {
       this._progress.show()
+    }
+  }
+
+  /**
+   * Registers file format converters for CAD file processing.
+   *
+   * This function initializes and registers both DXF and DWG converters with the
+   * global database converter manager. Each converter is configured to use web workers
+   * for improved performance during file parsing operations.
+   *
+   * The function handles registration errors gracefully by logging them to the console
+   * without throwing exceptions, ensuring that the application can continue to function
+   * even if one or more converters fail to register.
+   */
+  private registerConverters(webworkerFileUrls?: AcApWebworkerFiles) {
+    // Register DXF converter
+    try {
+      const converter = new AcDbDxfConverter({
+        convertByEntityType: false,
+        useWorker: true,
+        parserWorkerUrl:
+          webworkerFileUrls && webworkerFileUrls.dxfParser
+            ? webworkerFileUrls.dxfParser
+            : './assets/dxf-parser-worker.js'
+      })
+      AcDbDatabaseConverterManager.instance.register(
+        AcDbFileType.DXF,
+        converter
+      )
+    } catch (error) {
+      console.error('Failed to register dxf converter: ', error)
+    }
+
+    // Register DWG converter
+    try {
+      const converter = new AcDbLibreDwgConverter({
+        convertByEntityType: false,
+        useWorker: true,
+        parserWorkerUrl:
+          webworkerFileUrls && webworkerFileUrls.dwgParser
+            ? webworkerFileUrls.dwgParser
+            : './assets/libredwg-parser-worker.js'
+      })
+      AcDbDatabaseConverterManager.instance.register(
+        AcDbFileType.DWG,
+        converter
+      )
+    } catch (error) {
+      console.error('Failed to register dwg converter: ', error)
+    }
+  }
+
+  /**
+   * Initializes background workers used by the viewer runtime.
+   *
+   * This function performs two tasks:
+   * - Ensures DXF/DWG converters are registered with worker-based parsers for
+   *   off-main-thread file processing.
+   * - Initializes the MText renderer by pointing it to its dedicated Web Worker
+   *   script for text layout and shaping.
+   *
+   * The function is safe to call during application startup. Errors during
+   * initialization are handled inside the respective registration routines.
+   */
+  private registerWorkers(webworkerFileUrls?: AcApWebworkerFiles) {
+    this.registerConverters(webworkerFileUrls)
+    const isDev =
+      typeof window !== 'undefined' &&
+      !!window.location &&
+      (window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1')
+    if (isDev) {
+      AcTrMTextRenderer.getInstance().initialize(
+        webworkerFileUrls && webworkerFileUrls.mtextRender
+          ? webworkerFileUrls.mtextRender
+          : '/assets/mtext-renderer-worker.js'
+      )
+    } else {
+      AcTrMTextRenderer.getInstance().initialize(
+        webworkerFileUrls && webworkerFileUrls.mtextRender
+          ? webworkerFileUrls.mtextRender
+          : './mtext-renderer-worker.js'
+      )
     }
   }
 }
