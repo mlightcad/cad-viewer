@@ -5,15 +5,6 @@ import svgLoader from 'vite-svg-loader'
 import { visualizer } from 'rollup-plugin-visualizer'
 import vue from '@vitejs/plugin-vue'
 
-import Unocss from 'unocss/vite'
-import {
-  presetAttributify,
-  presetIcons,
-  presetUno,
-  transformerDirectives,
-  transformerVariantGroup
-} from 'unocss'
-
 export default defineConfig(({ command, mode }) => {
   const aliases: Alias[] = []
   if (command === 'serve') {
@@ -26,17 +17,6 @@ export default defineConfig(({ command, mode }) => {
   const plugins = [
     vue(),
     svgLoader(),
-    Unocss({
-      presets: [
-        presetUno(),
-        presetAttributify(),
-        presetIcons({
-          scale: 1.2,
-          warn: true
-        })
-      ],
-      transformers: [transformerDirectives(), transformerVariantGroup()]
-    }),
     viteStaticCopy({
       targets: [
         {
