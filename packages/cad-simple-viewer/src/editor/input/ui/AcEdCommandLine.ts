@@ -573,7 +573,8 @@ export class AcEdCommandLine {
       return
     }
 
-    const matches = AcApDocManager.instance.commandManager.searchCommandsByPrefix(text)
+    const matches =
+      AcApDocManager.instance.commandManager.searchCommandsByPrefix(text)
     if (matches.length) {
       this.autoCompleteIndex = -1
       this.cmdPopup.innerHTML = ''
