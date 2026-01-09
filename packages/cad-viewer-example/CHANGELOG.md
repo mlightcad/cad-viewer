@@ -1,5 +1,14 @@
 # @mlightcad/cad-viewer-example
 
+## 1.4.2
+
+### Patch Changes
+
+- feat: supports setting webworker javascript bundle urls in AcApDocManagerOptions
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.4.2
+  - @mlightcad/cad-viewer@1.4.2
+
 ## 1.4.1
 
 ### Patch Changes

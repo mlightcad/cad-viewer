@@ -1,7 +1,7 @@
 {
   "name": "@mlightcad/three-renderer",
   "private": true,
-  "version": "1.4.1",
+  "version": "1.4.2",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -42,8 +42,8 @@
     "@types/three": "^0.172.0"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.6.0",
-    "@mlightcad/mtext-renderer": "^0.8.3",
+    "@mlightcad/data-model": "^1.6.1",
+    "@mlightcad/mtext-renderer": "^0.8.4",
     "@velipso/polybool": "^1.1.1",
     "three": "^0.172.0"
   }

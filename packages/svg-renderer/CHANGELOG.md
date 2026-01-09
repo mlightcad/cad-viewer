@@ -1,5 +1,11 @@
 # @mlightcad/svg-renderer
 
+## 1.4.2
+
+### Patch Changes
+
+- feat: supports setting webworker javascript bundle urls in AcApDocManagerOptions
+
 ## 1.4.1
 
 ### Patch Changes
