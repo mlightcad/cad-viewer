@@ -9,6 +9,7 @@ import {
   AcDbSysVarManager,
   AcGeBox2d
 } from '@mlightcad/data-model'
+import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 import {
@@ -35,7 +36,6 @@ import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
 import { AcApProgress } from './AcApProgress'
-import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 
 const DEFAULT_BASE_URL = 'https://mlightcad.gitlab.io/cad-data/'
 
@@ -754,23 +754,10 @@ export class AcApDocManager {
    */
   private registerWorkers(webworkerFileUrls?: AcApWebworkerFiles) {
     this.registerConverters(webworkerFileUrls)
-    const isDev =
-      typeof window !== 'undefined' &&
-      !!window.location &&
-      (window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1')
-    if (isDev) {
-      AcTrMTextRenderer.getInstance().initialize(
-        webworkerFileUrls && webworkerFileUrls.mtextRender
-          ? webworkerFileUrls.mtextRender
-          : '/assets/mtext-renderer-worker.js'
-      )
-    } else {
-      AcTrMTextRenderer.getInstance().initialize(
-        webworkerFileUrls && webworkerFileUrls.mtextRender
-          ? webworkerFileUrls.mtextRender
-          : './mtext-renderer-worker.js'
-      )
-    }
+    AcTrMTextRenderer.getInstance().initialize(
+      webworkerFileUrls && webworkerFileUrls.mtextRender
+        ? webworkerFileUrls.mtextRender
+        : './assets/mtext-renderer-worker.js'
+    )
   }
 }

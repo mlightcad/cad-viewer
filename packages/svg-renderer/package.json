@@ -29,6 +29,6 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.6.0"
+    "@mlightcad/data-model": "^1.6.1"
   }
 }
