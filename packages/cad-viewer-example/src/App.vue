@@ -10,7 +10,7 @@
       <MlCadViewer
         locale="en"
         :local-file="store.selectedFile"
-        @create="registerCommands"
+        @create="initialize"
         base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
       />
     </div>
@@ -24,9 +24,11 @@ import { MlCadViewer } from '@mlightcad/cad-viewer'
 
 import { AcApQuitCmd } from './commands'
 import FileUpload from './components/FileUpload.vue'
+import { initializeLocale } from './locale'
 import { store } from './store'
 
-const registerCommands = () => {
+const initialize = () => {
+  initializeLocale()
   const register = AcApDocManager.instance.commandManager
   register.addCommand(
     AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

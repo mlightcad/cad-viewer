@@ -33,6 +33,7 @@ export default {
       commandLine: 'Command Line',
       coordinate: 'Coordinate',
       entityInfo: 'Entity Info',
+      fileName: 'File Name',
       languageSelector: 'Language Selector',
       mainMenu: 'Main Menu',
       toolbar: 'Toolbar',
