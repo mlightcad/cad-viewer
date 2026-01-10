@@ -32,6 +32,7 @@ export default {
       commandLine: '命令行',
       coordinate: '坐标',
       entityInfo: '图元信息',
+      fileName: '文件名',
       languageSelector: '语言菜单',
       mainMenu: '主菜单',
       toolbar: '工具栏',

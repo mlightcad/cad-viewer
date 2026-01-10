@@ -36,6 +36,8 @@ export interface AcApSettings {
   isShowCoordinate: boolean
   /** Whether entity info card is visible */
   isShowEntityInfo: boolean
+  /** Whether file name is visible */
+  isShowFileName: boolean
   /** Whether language selector is visible */
   isShowLanguageSelector: boolean
   /** Whether main menu is visible */
@@ -56,6 +58,7 @@ const DEFAULT_VALUES: AcApSettings = {
   isShowCommandLine: true,
   isShowCoordinate: true,
   isShowEntityInfo: false,
+  isShowFileName: true,
   isShowLanguageSelector: true,
   isShowMainMenu: true,
   isShowToolbar: true,
@@ -276,6 +279,24 @@ export class AcApSettingManager<T extends AcApSettings = AcApSettings> {
    */
   set isShowEntityInfo(value: boolean) {
     this.set('isShowEntityInfo', value)
+  }
+
+  /**
+   * Gets whether file name is visible.
+   *
+   * @returns True if file name should be displayed
+   */
+  get isShowFileName() {
+    return this.get('isShowFileName')
+  }
+
+  /**
+   * Sets whether file name is visible.
+   *
+   * @param value - True to show file name
+   */
+  set isShowFileName(value: boolean) {
+    this.set('isShowFileName', value)
   }
 
   /**

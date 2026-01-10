@@ -18,9 +18,8 @@ class CadViewerApp {
   private initialize() {
     if (!this.isInitialized) {
       try {
-        // Initialize the document manager with the canvas and baseUrl.
-        // Actually 'baseUrl' here isn't required. Override default 'baseUrl'
-        // value is just for demostration.
+        // Initialize the document manager with baseUrl. Actually 'baseUrl' here isn't required.
+        // Override default 'baseUrl' value is just for demonstration.
         AcApDocManager.createInstance({
           container: this.container,
           autoResize: true,
