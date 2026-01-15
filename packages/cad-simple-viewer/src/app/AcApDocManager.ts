@@ -231,7 +231,7 @@ export class AcApDocManager {
     if (!options.notLoadDefaultFonts) {
       this.loadDefaultFonts()
     }
-    this.registerWorkers()
+    this.registerWorkers(options.webworkerFileUrls)
   }
 
   /**

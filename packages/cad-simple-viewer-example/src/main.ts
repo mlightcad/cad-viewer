@@ -18,12 +18,22 @@ class CadViewerApp {
   private initialize() {
     if (!this.isInitialized) {
       try {
-        // Initialize the document manager with baseUrl. Actually 'baseUrl' here isn't required.
-        // Override default 'baseUrl' value is just for demonstration.
+        // In most of cases, you can initialize the document manager with default.
+        // settings. Here some settings are overriden for demostration only.
+        // - 'baseUrl': default value works too. You can override it if you host fonts
+        //              data in your own hosts.
+        // - 'webworkerFileUrls': In `vite.config.ts`, JavaScript worker bundle files
+        //              are copied to folder 'workers' on purpose so that we can demostrate
+        //              how to config it when initializing AcApDocManager.
         AcApDocManager.createInstance({
           container: this.container,
           autoResize: true,
-          baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
+          baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
+          webworkerFileUrls: {
+            mtextRender: './workers/mtext-renderer-worker.js',
+            dxfParser: './workers/dxf-parser-worker.js',
+            dwgParser: './workers/libredwg-parser-worker.js'
+          }
         })
         this.isInitialized = true
       } catch (error) {
