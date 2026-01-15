@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-simple-viewer",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -48,7 +48,7 @@
     "@types/three": "^0.172.0"
   },
   "dependencies": {
-    "@mlightcad/libredwg-converter": "^3.4.5",
+    "@mlightcad/libredwg-converter": "^3.4.6",
     "mitt": "^3.0.1",
     "rbush": "^4.0.1"
   },

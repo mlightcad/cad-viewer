@@ -1,5 +1,11 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.4.3
+
+### Patch Changes
+
+- feat: refine cad-simple-viewer-example to show how to config 'webworkerFileUrls'
+
 ## 1.4.2
 
 ### Patch Changes
