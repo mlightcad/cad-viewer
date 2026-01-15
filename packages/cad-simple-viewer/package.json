@@ -48,7 +48,7 @@
     "@types/three": "^0.172.0"
   },
   "dependencies": {
-    "@mlightcad/libredwg-converter": "^3.4.4",
+    "@mlightcad/libredwg-converter": "^3.4.5",
     "mitt": "^3.0.1",
     "rbush": "^4.0.1"
   },
