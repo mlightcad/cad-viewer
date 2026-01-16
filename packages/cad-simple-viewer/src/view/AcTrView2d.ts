@@ -174,6 +174,9 @@ export class AcTrView2d extends AcEdBaseView {
     acdbHostApplicationServices().layoutManager.events.layoutSwitched.addEventListener(
       args => {
         this.activeLayoutBtrId = args.layout.blockTableRecordId
+        this.createLayoutViewIfNeeded(args.layout.blockTableRecordId)
+        this.loadLayoutEntitiesIfNeeded(args.layout.blockTableRecordId)
+        this._isDirty = true
       }
     )
 
@@ -698,6 +701,50 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Load entities from the specified layout if they haven't been loaded yet.
+   * This ensures that when switching to a layout, all its entities are available for rendering.
+   * @param layoutBtrId Input the block table record id of the layout
+   */
+  private loadLayoutEntitiesIfNeeded(layoutBtrId: AcDbObjectId) {
+    try {
+      const db = AcApDocManager.instance.curDocument.database
+      const blockTableRecord = db.tables.blockTable.getIdAt(layoutBtrId)
+      if (!blockTableRecord) {
+        return
+      }
+
+      const layout = this._scene.activeLayout
+      if (layout) {
+        // Check if layout has any entities by checking if bounding box is not empty
+        const box = layout.box
+        if (box && !box.isEmpty()) {
+          // Layout exists and has entities (bounding box is not empty), no need to reload
+          return
+        }
+      }
+
+      // Collect all entities from this layout
+      const entities: AcDbEntity[] = []
+      const iterator = blockTableRecord.newIterator()
+      for (const entity of iterator) {
+        entities.push(entity)
+      }
+
+      // Ensure layout exists in scene
+      this._scene.addEmptyLayout(layoutBtrId)
+      if (entities.length > 0) {
+        // Load entities asynchronously
+        this._numOfEntitiesToProcess += entities.length
+        setTimeout(async () => {
+          await this.batchConvert(entities)
+        })
+      }
+    } catch (error) {
+      console.error('[AcTrView2d] Error loading layout entities:', error)
+    }
+  }
+
+  /**
    * Show or hide stats component
    * @param show If it is true, show stats component. Otherwise, hide stats component.
    * Default value is false.
@@ -714,6 +761,9 @@ export class AcTrView2d extends AcEdBaseView {
     return entity.worldDraw(this._renderer, delay) as AcTrEntity | null
   }
 
+  // Define this in order to workaround libredwg bug.
+  // Should be removed after libredwg is fixed.
+  static viewportIdCounter = 1000
   /**
    * Converts the specified database entities to three entities
    * @param entities - The database entities
@@ -722,6 +772,13 @@ export class AcTrView2d extends AcEdBaseView {
   private async batchConvert(entities: AcDbEntity[]) {
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
+      // Workaround the bug in libredwg that viewportId is always 0!
+      if (entity instanceof AcDbViewport) {
+        if (entity.number === 0) {
+          entity.number = AcTrView2d.viewportIdCounter++
+          console.warn(`Viewport id for handle ${entity.objectId} is 0! Set it to ${entity.number}`)
+        }
+      }
       const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
       if (threeEntity) {
         threeEntity.objectId = entity.objectId
