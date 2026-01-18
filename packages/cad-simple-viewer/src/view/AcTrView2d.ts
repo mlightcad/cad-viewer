@@ -776,7 +776,9 @@ export class AcTrView2d extends AcEdBaseView {
       if (entity instanceof AcDbViewport) {
         if (entity.number === 0) {
           entity.number = AcTrView2d.viewportIdCounter++
-          console.warn(`Viewport id for handle ${entity.objectId} is 0! Set it to ${entity.number}`)
+          console.warn(
+            `Viewport id for handle ${entity.objectId} is 0! Set it to ${entity.number}`
+          )
         }
       }
       const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)

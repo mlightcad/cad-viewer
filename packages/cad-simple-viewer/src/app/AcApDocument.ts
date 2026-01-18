@@ -126,7 +126,7 @@ export class AcApDocument {
   /**
    * Gets the display title of the document.
    *
-   * @returns The document title displayed in the window/tab
+   * @returns The title of the document
    */
   get docTitle() {
     return this._docTitle
@@ -135,16 +135,16 @@ export class AcApDocument {
   /**
    * Sets the display title of the document.
    *
-   * Also updates the browser tab title if running in a browser environment.
+   * Notes:
+   * The browser tab title isn't updated on purpose because users may use it as
+   * one component and don't want to the browser tab title changed. So if you
+   * want to change the browser tab title, you can listen events
+   * `AcApDocManager.events.documentActivated` to change it in your event listener.
    *
    * @param value - The new document title
    */
   set docTitle(value: string) {
     this._docTitle = value
-    // Update browser title when document title changes
-    if (typeof document !== 'undefined') {
-      document.title = value
-    }
   }
 
   /**

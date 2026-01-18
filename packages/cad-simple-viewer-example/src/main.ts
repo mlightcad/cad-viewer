@@ -35,6 +35,12 @@ class CadViewerApp {
             dwgParser: './workers/libredwg-parser-worker.js'
           }
         })
+        // Set the browser tab title
+        AcApDocManager.instance.events.documentActivated.addEventListener(
+          args => {
+            document.title = args.doc.docTitle
+          }
+        )
         this.isInitialized = true
       } catch (error) {
         console.error('Failed to initialize CAD viewer:', error)
