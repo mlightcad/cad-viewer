@@ -403,6 +403,15 @@ export abstract class AcEdBaseView {
   abstract zoomToFitLayer(layerName: string): boolean
 
   /**
+   * Moves the current view to the specified 2D point at the given scale.
+   *
+   * @param point - Target location in world coordinates to fly the view to.
+   * @param scale - The optional target zoom scale to apply after the transition.
+   * If not specified, the scale will not change.
+   */
+  abstract flyTo(point: AcGePoint2dLike, scale?: number): void
+
+  /**
    * Gets the background color of the view.
    *
    * The color is represented as a 24-bit hexadecimal RGB number, for example
