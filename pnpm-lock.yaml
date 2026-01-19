@@ -151,8 +151,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ../../../realdwg-web/packages/data-model/
-        version: link:../../../realdwg-web/packages/data-model
+        specifier: ^1.6.4
+        version: 1.6.4
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.3.0(vue@3.5.18(typescript@5.8.3))
