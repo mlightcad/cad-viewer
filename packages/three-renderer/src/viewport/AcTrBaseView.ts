@@ -165,7 +165,7 @@ export class AcTrBaseView {
     const height = size.y * margin
     const widthRatio = this._width / width
     const heightRatio = this._height / height
-    let scale = Math.min(widthRatio, heightRatio)
+    const scale = Math.min(widthRatio, heightRatio)
 
     this.flyTo(center, scale)
     this.updateCameraFrustum()
