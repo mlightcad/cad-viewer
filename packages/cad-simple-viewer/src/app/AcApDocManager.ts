@@ -60,7 +60,7 @@ export interface AcApWebworkerFiles {
    * This worker performs DXF decoding and entity extraction in a
    * background thread to avoid blocking the UI.
    */
-  dxfParser?: string
+  dxfParser?: string | URL
 
   /**
    * URL of the Web Worker bundle responsible for parsing DWG files.
@@ -68,7 +68,7 @@ export interface AcApWebworkerFiles {
    * DWG parsing is computationally expensive and must be executed
    * in a Web Worker to maintain UI responsiveness.
    */
-  dwgParser?: string
+  dwgParser?: string | URL
 
   /**
    * URL of the Web Worker bundle responsible for rendering MTEXT entities.
@@ -76,7 +76,7 @@ export interface AcApWebworkerFiles {
    * This worker handles MTEXT layout, formatting, and glyph processing
    * independently from the main rendering thread.
    */
-  mtextRender?: string
+  mtextRender?: string | URL
 }
 
 /**

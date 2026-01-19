@@ -39,7 +39,7 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/mtext-renderer": "^0.8.5",
+    "@mlightcad/mtext-renderer": "^0.8.6",
     "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",
@@ -48,12 +48,12 @@
     "@types/three": "^0.172.0"
   },
   "dependencies": {
-    "@mlightcad/libredwg-converter": "^3.4.6",
+    "@mlightcad/libredwg-converter": "^3.4.7",
     "mitt": "^3.0.1",
     "rbush": "^4.0.1"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.6.3",
+    "@mlightcad/data-model": "^1.6.4",
     "three": "^0.172.0",
     "lodash-es": "4.17.21"
   }

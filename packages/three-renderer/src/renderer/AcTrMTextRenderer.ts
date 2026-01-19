@@ -37,7 +37,7 @@ class AcTrMTextStyleManager implements StyleManager {
  */
 export class AcTrMTextRenderer {
   private static _instance: AcTrMTextRenderer | null = null
-  private _workerUrl?: string
+  private _workerUrl?: string | URL
   private _renderer?: UnifiedRenderer
   private _fontUrl?: string
   private _renderMode?: RenderMode
@@ -137,7 +137,7 @@ export class AcTrMTextRenderer {
    * Initialize the renderer with worker URL
    * @param workerUrl - URL to the worker script
    */
-  initialize(workerUrl: string): void {
+  initialize(workerUrl: string | URL): void {
     this._workerUrl = workerUrl
     // Notes:
     // Please don't modify the default rendering mode from 'worker' to 'main'.
