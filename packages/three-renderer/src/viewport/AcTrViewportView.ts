@@ -20,8 +20,8 @@ export class AcTrViewportView extends AcTrBaseView {
   ) {
     const wcsViewportBox = viewport.box
     const cwcsViewportBox = new AcGeBox2d()
-    cwcsViewportBox.expandByPoint(parentView.wcs2Cwcs(wcsViewportBox.min))
-    cwcsViewportBox.expandByPoint(parentView.wcs2Cwcs(wcsViewportBox.max))
+    cwcsViewportBox.expandByPoint(parentView.worldToScreen(wcsViewportBox.min))
+    cwcsViewportBox.expandByPoint(parentView.worldToScreen(wcsViewportBox.max))
     return cwcsViewportBox
   }
 

@@ -354,7 +354,7 @@ export class AcTrView2d extends AcEdBaseView {
   screenToWorld(point: AcGePoint2dLike): AcGePoint2d {
     const activeLayoutView = this.activeLayoutView
     return activeLayoutView
-      ? activeLayoutView.cwcs2Wcs(point)
+      ? activeLayoutView.screenToWorld(point)
       : new AcGePoint2d(point)
   }
 
@@ -364,7 +364,7 @@ export class AcTrView2d extends AcEdBaseView {
   worldToScreen(point: AcGePoint2dLike): AcGePoint2d {
     const activeLayoutView = this.activeLayoutView
     return activeLayoutView
-      ? activeLayoutView.wcs2Cwcs(point)
+      ? activeLayoutView.worldToScreen(point)
       : new AcGePoint2d(point)
   }
 
@@ -422,6 +422,14 @@ export class AcTrView2d extends AcEdBaseView {
       }
     }
     return false
+  }
+
+  /**
+   * @inheritdoc
+   */
+  flyTo(point: AcGePoint2dLike, scale: number) {
+    this.activeLayoutView.flyTo(point, scale)
+    this._isDirty = true
   }
 
   /**

@@ -85,7 +85,7 @@ export class AcTrBaseView {
    * The center point of the current layout view
    */
   get center() {
-    return this._camera.cwcs2Wcs(
+    return this._camera.screenToWorld(
       { x: this._width / 2, y: this._height / 2 },
       this._width,
       this._height
@@ -97,23 +97,23 @@ export class AcTrBaseView {
   }
 
   /**
-   * Convert point cooridinate from the client window coordinate system to the world coordinate system.
-   * The origin of the client window coordinate system is the left-top corner of the client window.
+   * Convert point cooridinate from the screen coordinate system to the world coordinate system.
+   * The origin of the screen coordinate system is the left-top corner of the browser.
    * @param point Input point to convert
    * @returns Return point coordinate in the world coordinate system
    */
-  cwcs2Wcs(point: AcGePoint2dLike): AcGePoint2d {
-    return this._camera.cwcs2Wcs(point, this._width, this._height)
+  screenToWorld(point: AcGePoint2dLike): AcGePoint2d {
+    return this._camera.screenToWorld(point, this._width, this._height)
   }
 
   /**
-   * Convert point cooridinate from the world coordinate system to the client window coordinate system.
-   * The origin of the client window coordinate system is the left-top corner of the client window.
+   * Convert point cooridinate from the world coordinate system to the screen coordinate system.
+   * The origin of the screen coordinate system is the left-top corner of the browser.
    * @param point Input point to convert
-   * @returns Return point coordinate in the client window coordinate system
+   * @returns Return point coordinate in the screen coordinate system
    */
-  wcs2Cwcs(point: AcGePoint2dLike): AcGePoint2d {
-    return this._camera.wcs2Cwcs(point, this._width, this._height)
+  worldToScreen(point: AcGePoint2dLike): AcGePoint2d {
+    return this._camera.worldToScreen(point, this._width, this._height)
   }
 
   /**
@@ -123,12 +123,12 @@ export class AcTrBaseView {
    * @returns Return one bounding box
    */
   pointToBox(point: AcGePoint2dLike, margin: number) {
-    const cwcsCoord = this.wcs2Cwcs(point)
-    const p1 = this.cwcs2Wcs({
+    const cwcsCoord = this.worldToScreen(point)
+    const p1 = this.screenToWorld({
       x: cwcsCoord.x + margin,
       y: cwcsCoord.y + margin
     })
-    const p2 = this.cwcs2Wcs({
+    const p2 = this.screenToWorld({
       x: cwcsCoord.x - margin,
       y: cwcsCoord.y - margin
     })
@@ -161,19 +161,34 @@ export class AcTrBaseView {
     const center = new AcGeVector2d()
     box.getCenter(center)
 
-    const threeCenter = new THREE.Vector3(center.x, center.y, 0)
-    this._camera.position.set(center.x, center.y, this._camera.position.z)
-    this._camera.lookAt(threeCenter)
-    this._camera.setRotationFromEuler(new THREE.Euler(0, 0, 0))
-
     const width = size.x * margin
     const height = size.y * margin
     const widthRatio = this._width / width
     const heightRatio = this._height / height
-    this._camera.zoom = Math.min(widthRatio, heightRatio)
+    let scale = Math.min(widthRatio, heightRatio)
+
+    this.flyTo(center, scale)
+    this.updateCameraFrustum()
+  }
+
+  /**
+   * Moves the current view to the specified 2D point at the given scale.
+   *
+   * @param point - Target location in world coordinates to fly the view to.
+   * @param scale - The optional target zoom scale to apply after the transition.
+   * If not specified, the scale will not change.
+   */
+  flyTo(point: AcGePoint2dLike, scale?: number) {
+    const threeCenter = new THREE.Vector3(point.x, point.y, 0)
+    this._camera.position.set(point.x, point.y, this._camera.position.z)
+
+    this._camera.lookAt(threeCenter)
+    this._camera.setRotationFromEuler(new THREE.Euler(0, 0, 0))
 
     this._cameraControls.target = threeCenter
-    this.updateCameraFrustum()
+
+    if (scale != null) this._camera.zoom = scale
+    this._camera.updateProjectionMatrix()
   }
 
   protected updateCameraFrustum(width?: number, height?: number) {

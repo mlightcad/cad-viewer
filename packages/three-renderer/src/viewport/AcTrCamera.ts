@@ -67,14 +67,14 @@ export class AcTrCamera {
   }
 
   /**
-   * Convert point cooridinate from the client window coordinate system to the world coordinate system.
-   * The origin of the client window coordinate system is the left-top corner of the client window.
+   * Convert point cooridinate from the screen coordinate system to the world coordinate system.
+   * The origin of the screen coordinate system is the left-top corner of the browser.
    * @param point Input point to convert
-   * @param width Input width of the client window
-   * @param height Input height of the client window
+   * @param width Input width of the browser window
+   * @param height Input height of the browser window
    * @returns Return point coordinate in the world coordinate system
    */
-  cwcs2Wcs(point: AcGePoint2dLike, width: number, height: number) {
+  screenToWorld(point: AcGePoint2dLike, width: number, height: number) {
     const cwcsPos = new THREE.Vector3(point.x, point.y, 0)
     cwcsPos.x = (point.x / width) * 2 - 1
     cwcsPos.y = -(point.y / height) * 2 + 1
@@ -82,14 +82,14 @@ export class AcTrCamera {
     return new AcGePoint2d(wcsPos.x, wcsPos.y)
   }
   /**
-   * Convert point cooridinate from the world coordinate system to the client window coordinate system.
-   * The origin of the client window coordinate system is the left-top corner of the client window.
+   * Convert point cooridinate from the world coordinate system to the screen coordinate system.
+   * The origin of the screen coordinate system is the left-top corner of the browser.
    * @param point Input point to convert
-   * @param width Input width of the client window
-   * @param height Input height of the client window
-   * @returns Return point coordinate in the client window coordinate system
+   * @param width Input width of the browser window
+   * @param height Input height of the browser window
+   * @returns Return point coordinate in the screen coordinate system
    */
-  wcs2Cwcs(point: AcGePoint2dLike, width: number, height: number) {
+  worldToScreen(point: AcGePoint2dLike, width: number, height: number) {
     const wcsPos = new THREE.Vector3(point.x, point.y, 0)
     const cwcsPos = wcsPos.project(this._camera)
     return new AcGePoint2d(
@@ -103,7 +103,7 @@ export class AcTrCamera {
    * Bottom-left cooridinate in NDC (Normalized screen coordinate) is (-1, -1) and top-right is (1, 1).
    */
   public wcs2Ndc(point: AcGePoint2dLike, width: number, height: number) {
-    const cwcsCoord = this.wcs2Cwcs(point, width, height)
+    const cwcsCoord = this.worldToScreen(point, width, height)
     return this.cwcs2Ndc(cwcsCoord, width, height)
   }
 
