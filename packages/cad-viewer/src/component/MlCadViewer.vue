@@ -251,8 +251,7 @@ const openLocalFile = async (file: File) => {
       throw new Error('Failed to open local file')
     }
     store.fileName = AcApDocManager.instance.curDocument.docTitle
-  } catch (error) {
-    // console.error('Failed to open local file:', error)
+  } catch {
     ElMessage({
       message: t('main.message.failedToOpenFile', { fileName: file.name }),
       grouping: true,

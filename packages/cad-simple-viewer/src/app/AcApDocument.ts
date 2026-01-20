@@ -97,10 +97,9 @@ export class AcApDocument {
         fileExtension == 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
       )
       this.docTitle = this._fileName
-    } catch (e) {
+    } catch {
       isSuccess = false
       eventBus.emit('failed-to-open-file', { fileName: fileName })
-      // console.error(e)
     }
     return isSuccess
   }
