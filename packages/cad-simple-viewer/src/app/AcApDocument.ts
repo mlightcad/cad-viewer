@@ -100,7 +100,7 @@ export class AcApDocument {
     } catch (e) {
       isSuccess = false
       eventBus.emit('failed-to-open-file', { fileName: fileName })
-      console.error(e)
+      // console.error(e)
     }
     return isSuccess
   }
