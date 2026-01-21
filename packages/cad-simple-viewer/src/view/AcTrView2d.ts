@@ -87,6 +87,17 @@ export const DEFAULT_VIEW_2D_OPTIONS: AcTrView2dOptions = {
 export class AcTrView2d extends AcEdBaseView {
   /** The Three.js renderer wrapper for CAD rendering */
   private _renderer: AcTrRenderer
+  /**
+   * ID of the currently scheduled requestAnimationFrame callback.
+   *
+   * This value is used to:
+   * - Track whether the animation loop is currently running
+   * - Prevent scheduling multiple animation loops
+   * - Cancel the animation loop when the view is paused, hidden, or disposed
+   *
+   * A value of `null` indicates that no animation frame is currently scheduled.
+   */
+  private _rafId: number | null = null
   /** Manager for layout views and viewport handling */
   private _layoutViewManager: AcTrLayoutViewManager
   /** The 3D scene containing all CAD entities organized by layouts and layers */
@@ -184,8 +195,8 @@ export class AcTrView2d extends AcEdBaseView {
     this._layoutViewManager = new AcTrLayoutViewManager()
     this.initialize()
     this.onWindowResize()
-    this.animate()
     this._isDirty = true
+    this.startAnimationLoop()
     this._numOfEntitiesToProcess = 0
   }
 
@@ -339,15 +350,6 @@ export class AcTrView2d extends AcEdBaseView {
     this._renderer.celtscale = scale
   }
 
-  animate() {
-    requestAnimationFrame(this.animate.bind(this))
-    if (this._isDirty) {
-      this._layoutViewManager.render(this._scene)
-      this._stats?.update()
-      this._isDirty = false
-    }
-  }
-
   /**
    * @inheritdoc
    */
@@ -435,7 +437,7 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  pick(point?: AcGePoint2dLike, hitRadius?: number) {
+  pick(point?: AcGePoint2dLike, hitRadius?: number, pickOneOnly?: boolean) {
     if (point == null) point = this.curPos
     const results: AcEdSpatialQueryResultItemEx[] = []
     const activeLayout = this._scene.activeLayout
@@ -446,15 +448,27 @@ export class AcTrView2d extends AcEdBaseView {
         hitRadius ?? this.selectionBoxSize
       )
       const firstQueryResults = this._scene.search(box)
+      console.log('firstQueryResults: ', firstQueryResults)
 
       const threshold = Math.max(box.size.width / 2, box.size.height / 2)
       const raycaster = activeLayoutView.resetRaycaster(point, threshold)
-      firstQueryResults.forEach(item => {
-        const objectId = item.id
-        if (activeLayout.isIntersectWith(objectId, raycaster)) {
-          results.push(item)
-        }
-      })
+      if (pickOneOnly) {
+        firstQueryResults.some(item => {
+          const objectId = item.id
+          if (activeLayout.isIntersectWith(objectId, raycaster)) {
+            results.push(item)
+            return true
+          }
+          return false
+        })
+      } else {
+        firstQueryResults.forEach(item => {
+          const objectId = item.id
+          if (activeLayout.isIntersectWith(objectId, raycaster)) {
+            results.push(item)
+          }
+        })
+      }
     }
     return results
   }
@@ -648,6 +662,13 @@ export class AcTrView2d extends AcEdBaseView {
     this._isDirty = this._scene.unselect(ids)
   }
 
+  stopAnimationLoop() {
+    if (this._rafId != null) {
+      cancelAnimationFrame(this._rafId)
+      this._rafId = null
+    }
+  }
+
   /**
    * @inheritdoc
    */
@@ -685,6 +706,22 @@ export class AcTrView2d extends AcEdBaseView {
     this._renderer.setSize(this.width, this.height)
     this._layoutViewManager.resize(this.width, this.height)
     this._isDirty = true
+  }
+
+  private animate = () => {
+    this._rafId = requestAnimationFrame(this.animate)
+
+    if (!this._isDirty) return
+
+    this._layoutViewManager.render(this._scene)
+    this._stats?.update()
+    this._isDirty = false
+  }
+
+  private startAnimationLoop() {
+    if (this._rafId == null) {
+      this._rafId = requestAnimationFrame(this.animate)
+    }
   }
 
   /**
