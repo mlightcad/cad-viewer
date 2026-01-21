@@ -456,7 +456,8 @@ export abstract class AcEdBaseView {
    */
   abstract pick(
     point?: AcGePoint2dLike,
-    hitRadius?: number
+    hitRadius?: number,
+    pickOneOnly?: boolean
   ): AcEdSpatialQueryResultItemEx[]
 
   /**
@@ -710,7 +711,7 @@ export abstract class AcEdBaseView {
     this.clearHoverTimer()
     this._hoverTimer = setTimeout(() => {
       this.hoverAt(x, y)
-    }, 50)
+    }, 500)
   }
 
   private startPauseTimer(id: AcDbObjectId) {

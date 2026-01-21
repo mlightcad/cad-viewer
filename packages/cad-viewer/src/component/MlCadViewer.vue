@@ -191,7 +191,11 @@ const features = useSettings()
  */
 const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
   const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
-  const success = await AcApDocManager.instance.openDocument(fileName, fileContent, options)
+  const success = await AcApDocManager.instance.openDocument(
+    fileName,
+    fileContent,
+    options
+  )
   if (!success) {
     throw new Error('Failed to open file')
   }
@@ -246,7 +250,11 @@ const openLocalFile = async (file: File) => {
 
     // Open the file using the document manager
     const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
-    const success = await AcApDocManager.instance.openDocument(file.name, fileContent, options)
+    const success = await AcApDocManager.instance.openDocument(
+      file.name,
+      fileContent,
+      options
+    )
     if (!success) {
       throw new Error('Failed to open local file')
     }

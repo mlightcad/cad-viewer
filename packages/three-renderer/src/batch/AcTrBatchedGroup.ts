@@ -340,7 +340,10 @@ export class AcTrBatchedGroup extends THREE.Group {
 
   protected highlight(objectId: string, containerGroup: THREE.Group) {
     const entityInfo = this._entitiesMap.get(objectId)
-    if (entityInfo) {
+    // TODO:
+    // If there are more than 1000 batched object to highlight, just ignore it due to
+    // performance reason. We will fix it in the future.
+    if (entityInfo && entityInfo.length < 1000) {
       entityInfo.forEach(item => {
         const batchedObject = this.getObjectById(
           item.batchedObjectId

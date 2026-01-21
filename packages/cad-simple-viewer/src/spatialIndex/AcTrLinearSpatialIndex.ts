@@ -25,38 +25,54 @@ import { AcTrSpatialIndex, AcTrSpatialIndexBBox } from './AcTrSpatialIndex'
  * not scale well for large numbers of items.
  */
 export class AcTrLinearSpatialIndex implements AcTrSpatialIndex {
-  private items: AcEdSpatialQueryResultItem[] = []
+  /** Items indexed by object id */
+  private items = new Map<AcDbObjectId, AcEdSpatialQueryResultItem>()
 
   insert(item: AcEdSpatialQueryResultItem): void {
-    this.items.push(item)
+    this.items.set(item.id, item)
   }
 
   load(items: readonly AcEdSpatialQueryResultItem[]): void {
-    this.items.push(...items)
+    for (const item of items) {
+      this.items.set(item.id, item)
+    }
   }
 
   remove(item: AcEdSpatialQueryResultItem): void {
-    this.items = this.items.filter(i => i.id !== item.id)
+    this.items.delete(item.id)
   }
 
-  removeById(id: AcDbObjectId) {
-    this.items = this.items.filter(i => i.id !== id)
+  removeById(id: AcDbObjectId): void {
+    this.items.delete(id)
   }
 
   clear(): void {
-    this.items.length = 0
+    this.items.clear()
   }
 
   search(bbox: AcTrSpatialIndexBBox): AcEdSpatialQueryResultItem[] {
-    return this.items.filter(i => intersects(i, bbox))
+    const result: AcEdSpatialQueryResultItem[] = []
+
+    for (const item of this.items.values()) {
+      if (intersects(item, bbox)) {
+        result.push(item)
+      }
+    }
+
+    return result
   }
 
   collides(bbox: AcTrSpatialIndexBBox): boolean {
-    return this.items.some(i => intersects(i, bbox))
+    for (const item of this.items.values()) {
+      if (intersects(item, bbox)) {
+        return true
+      }
+    }
+    return false
   }
 
   all(): AcEdSpatialQueryResultItem[] {
-    return [...this.items]
+    return Array.from(this.items.values())
   }
 }
 
