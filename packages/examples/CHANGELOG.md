@@ -1,5 +1,11 @@
 # @mlightcad/cad-viewer-examples
 
+## 1.2.6
+
+### Patch Changes
+
+- fix: fix issues 64 and 73
+
 ## 1.2.5
 
 ### Patch Changes

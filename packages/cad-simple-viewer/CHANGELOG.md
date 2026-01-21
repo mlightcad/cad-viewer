@@ -1,5 +1,11 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.4.4
+
+### Patch Changes
+
+- fix: fix issues 64 and 73
+
 ## 1.4.3
 
 ### Patch Changes
