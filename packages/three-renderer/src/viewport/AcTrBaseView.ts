@@ -11,7 +11,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { AcTrRenderer } from '../renderer'
 import { AcTrCamera } from './AcTrCamera'
 
-export interface AcDbEntityEventArgs {
+export interface AcTrBaseViewEventArgs {
   view: AcTrBaseView
 }
 
@@ -28,7 +28,7 @@ export class AcTrBaseView {
   protected _raycaster: THREE.Raycaster
 
   public readonly events = {
-    viewChanged: new AcCmEventManager<AcDbEntityEventArgs>()
+    viewChanged: new AcCmEventManager<AcTrBaseViewEventArgs>()
   }
 
   /**

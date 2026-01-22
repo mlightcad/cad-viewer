@@ -14,6 +14,7 @@ import { debounce } from 'lodash-es'
 
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
+import { AcEdHoverController } from './AcEdHoverController'
 import { AcEdSpatialQueryResultItemEx } from './AcEdSpatialQueryResult'
 
 /**
@@ -170,12 +171,19 @@ export abstract class AcEdBaseView {
   /** Size of selection box in pixels for entity picking */
   private _selectionBoxSize: number
 
-  /** Timer for hover detection delay */
-  private _hoverTimer: NodeJS.Timeout | null
-  /** Timer for hover pause detection */
-  private _pauseTimer: NodeJS.Timeout | null
-  /** ID of currently hovered entity */
-  private _hoveredObjectId: AcDbObjectId | null
+  /**
+   * Controller responsible for all hover-related behavior in this view.
+   *
+   * This includes:
+   * - Delayed hover detection while the mouse is stationary
+   * - Pause-based hover confirmation
+   * - Tracking the currently hovered entity
+   * - Dispatching hover and unhover events
+   *
+   * Extracted into a separate class to keep `AcEdBaseView` focused on
+   * view lifecycle and input routing rather than interaction timing logic.
+   */
+  private _hoverController: AcEdHoverController
 
   /** The HTML canvas element for rendering */
   protected _canvas: HTMLCanvasElement
@@ -189,6 +197,8 @@ export abstract class AcEdBaseView {
     mouseMove: new AcCmEventManager<AcEdMouseEventArgs>(),
     /** Fired when the view is resized */
     viewResize: new AcCmEventManager<AcEdViewResizedEventArgs>(),
+    /** Fired when the view camera is changed */
+    viewChanged: new AcCmEventManager<void>(),
     /** Fired when mouse hovers over an entity */
     hover: new AcCmEventManager<AcEdViewHoverEventArgs>(),
     /** Fired when mouse stops hovering over an entity */
@@ -240,9 +250,11 @@ export abstract class AcEdBaseView {
     this._selectionBoxSize = 4
 
     // Initialize hover/unhover handler
-    this._hoverTimer = null
-    this._pauseTimer = null
-    this._hoveredObjectId = null
+    this._hoverController = new AcEdHoverController(
+      this,
+      this.events.hover,
+      this.events.unhover
+    )
   }
 
   /**
@@ -546,12 +558,12 @@ export abstract class AcEdBaseView {
   /**
    * Called when hovering the specified entity
    */
-  protected abstract onHover(id: AcDbObjectId): void
+  abstract onHover(id: AcDbObjectId): void
 
   /**
    * Called when unhovering the specified entity
    */
-  protected abstract onUnhover(id: AcDbObjectId): void
+  abstract onUnhover(id: AcDbObjectId): void
 
   /**
    * Set cursor type of this view
@@ -651,6 +663,13 @@ export abstract class AcEdBaseView {
   }
 
   /**
+   * Clears the current hover state and cancels all hover-related timers.
+   */
+  protected clearHover() {
+    this._hoverController.clear()
+  }
+
+  /**
    * Mouse move event handler.
    * @param event Input mouse event argument
    */
@@ -664,63 +683,8 @@ export abstract class AcEdBaseView {
     if (this.mode == AcEdViewMode.SELECTION) {
       // If it is in “input acquisition” mode, disable hover behavior
       if (!this._editor.isActive) {
-        this.startHoverTimer(wcsPos.x, wcsPos.y)
+        this._hoverController.handleMouseMove(wcsPos.x, wcsPos.y)
       }
     }
-  }
-
-  private setHoveredObjectId(newId: string | null) {
-    if (this._hoveredObjectId) {
-      this.events.unhover.dispatch({
-        id: this._hoveredObjectId,
-        x: this.curMousePos.x,
-        y: this.curMousePos.y
-      })
-      this.onUnhover(this._hoveredObjectId)
-    }
-    this._hoveredObjectId = newId
-    if (newId) {
-      this.startPauseTimer(newId)
-      this.onHover(newId)
-    }
-  }
-
-  private hoverAt(x: number, y: number) {
-    const results = this.pick({ x, y })
-    if (results.length > 0) {
-      this.setHoveredObjectId(results[0].id)
-    } else {
-      this.setHoveredObjectId(null)
-      this.clearPauseTimer()
-    }
-  }
-
-  private clearHoverTimer() {
-    if (this._hoverTimer) {
-      clearTimeout(this._hoverTimer)
-    }
-  }
-
-  private clearPauseTimer() {
-    if (this._pauseTimer) {
-      clearTimeout(this._pauseTimer)
-    }
-  }
-
-  private startHoverTimer(x: number, y: number) {
-    this.clearHoverTimer()
-    this._hoverTimer = setTimeout(() => {
-      this.hoverAt(x, y)
-    }, 500)
-  }
-
-  private startPauseTimer(id: AcDbObjectId) {
-    this._pauseTimer = setTimeout(() => {
-      this.events.hover.dispatch({
-        id: id,
-        x: this.curMousePos.x,
-        y: this.curMousePos.y
-      })
-    }, 500)
   }
 }

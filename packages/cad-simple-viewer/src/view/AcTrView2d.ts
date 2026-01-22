@@ -448,7 +448,6 @@ export class AcTrView2d extends AcEdBaseView {
         hitRadius ?? this.selectionBoxSize
       )
       const firstQueryResults = this._scene.search(box)
-      console.log('firstQueryResults: ', firstQueryResults)
 
       const threshold = Math.max(box.size.width / 2, box.size.height / 2)
       const raycaster = activeLayoutView.resetRaycaster(point, threshold)
@@ -672,14 +671,14 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  protected onHover(id: AcDbObjectId) {
+  onHover(id: AcDbObjectId) {
     this._isDirty = this._scene.hover([id])
   }
 
   /**
    * @inheritdoc
    */
-  protected onUnhover(id: AcDbObjectId) {
+  onUnhover(id: AcDbObjectId) {
     this._isDirty = this._scene.unhover([id])
   }
 
@@ -739,6 +738,8 @@ export class AcTrView2d extends AcEdBaseView {
       )
       layoutView.events.viewChanged.addEventListener(() => {
         this._isDirty = true
+        this.events.viewChanged.dispatch()
+        this.clearHover()
       })
       this._layoutViewManager.add(layoutView)
     }
