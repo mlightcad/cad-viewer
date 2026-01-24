@@ -816,9 +816,12 @@ export class AcTrView2d extends AcEdBaseView {
    * @returns The converted three entities
    */
   private async batchConvert(entities: AcDbEntity[]) {
+    // Pre-process viewports to:
+    // 1) Work around libredwg bug where viewportId is always 0
+    // 2) Ignore viewport with id/number === 1. If there is no such viewport, ignore the first viewport in the layout
+    const viewportsByLayout = new Map<AcDbObjectId, AcDbViewport[]>()
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
-      // Workaround the bug in libredwg that viewportId is always 0!
       if (entity instanceof AcDbViewport) {
         if (entity.number === 0) {
           entity.number = AcTrView2d.viewportIdCounter++
@@ -826,7 +829,40 @@ export class AcTrView2d extends AcEdBaseView {
             `Viewport id for handle ${entity.objectId} is 0! Set it to ${entity.number}`
           )
         }
+
+        const ownerId = entity.ownerId
+        let list = viewportsByLayout.get(ownerId)
+        if (!list) {
+          list = []
+          viewportsByLayout.set(ownerId, list)
+        }
+        list.push(entity)
       }
+    }
+
+    // Decide which viewports should actually be created for each layout
+    const validViewportIds = new Set<AcDbObjectId>()
+    viewportsByLayout.forEach(viewports => {
+      if (viewports.length === 0) {
+        return
+      }
+
+      // First, try to ignore viewport with number === 1
+      let filtered = viewports.filter(vp => vp.number !== 1)
+
+      // If nothing was filtered (i.e., no viewport with number === 1),
+      // then ignore the first viewport in this layout
+      if (filtered.length === viewports.length && viewports.length > 0) {
+        filtered = viewports.slice(1)
+      }
+
+      filtered.forEach(vp => {
+        validViewportIds.add(vp.objectId)
+      })
+    })
+
+    for (let i = 0; i < entities.length; ++i) {
+      const entity = entities[i]
       const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
       if (threeEntity) {
         threeEntity.objectId = entity.objectId
@@ -861,7 +897,7 @@ export class AcTrView2d extends AcEdBaseView {
           // In paper space layouts, there is always a system-defined "default" viewport that exists as
           // the bottom-most item. This viewport doesn't show any entities and is mainly for internal
           // AutoCAD purposes. The viewport id number of this system-defined "default" viewport is 1.
-          if (entity.number > 1) {
+          if (validViewportIds.has(entity.objectId)) {
             const layoutView = this._layoutViewManager.getAt(entity.ownerId)
             if (layoutView) {
               const viewportView = new AcTrViewportView(
