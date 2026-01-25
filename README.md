@@ -8,11 +8,11 @@ CAD-Viewer is a **high-performance**, modern, web-based CAD editor inspired by A
 - [**🌐 API Docs**](https://mlightcad.github.io/cad-viewer/docs/)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
+- YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
 - Medium: [@mlightcad](https://medium.com/@mlightcad)
 - Juejin(稀土掘金): [@mlightcad](https://juejin.cn/column/7501992214283501579)
 
-
-![CAD-Viewer](./assets/dwg-viewer.jpg)
+![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
 ## Features
 
@@ -31,6 +31,7 @@ CAD-Viewer is a **high-performance**, modern, web-based CAD editor inspired by A
 - **Select**: Left-click on entities
 - **Zoom in/out**: Scroll mouse wheel up/down
 - **Pan**: Hold middle mouse button and drag
+- **Erase**: Select entities and press `Del` key
 
 ### Pad/Mobile Browser Operations
 - **Select**: Tap on entities
