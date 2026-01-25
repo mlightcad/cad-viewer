@@ -674,7 +674,13 @@ export abstract class AcEdBaseView {
    * @param event Input mouse event argument
    */
   private onMouseMove(event: MouseEvent) {
-    this._curMousePos = new AcGePoint2d(event.clientX, event.clientY)
+    const rect = this._canvas.getBoundingClientRect()
+
+    // Convert from viewport coordinates → canvas-local coordinates
+    const screenX = event.clientX - rect.left
+    const screenY = event.clientY - rect.top
+
+    this._curMousePos = new AcGePoint2d(screenX, screenY)
     const wcsPos = this.screenToWorld(this._curMousePos)
     this._curPos.copy(wcsPos)
     this.events.mouseMove.dispatch({ x: wcsPos.x, y: wcsPos.y })
