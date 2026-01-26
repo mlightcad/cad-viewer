@@ -385,6 +385,8 @@ export class AcTrBatchedPoint extends THREE.Points {
     this._nextVertexStart = nextVertexStart
     geometry.setDrawRange(0, nextVertexStart)
 
+    this._availableGeometryIds.length = 0
+
     return this
   }
 

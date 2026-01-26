@@ -513,6 +513,8 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     this._nextVertexStart = nextVertexStart
     this._nextIndexStart = nextIndexStart
 
+    this._availableGeometryIds.length = 0
+
     return this
   }
 

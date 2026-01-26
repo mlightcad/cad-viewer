@@ -561,6 +561,8 @@ export class AcTrBatchedLine extends THREE.LineSegments {
     this._nextVertexStart = nextVertexStart
     this._nextIndexStart = nextIndexStart
 
+    this._availableGeometryIds.length = 0
+
     return this
   }
 
