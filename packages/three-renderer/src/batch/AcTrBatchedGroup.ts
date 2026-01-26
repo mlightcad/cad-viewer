@@ -283,6 +283,8 @@ export class AcTrBatchedGroup extends THREE.Group {
         }
       }
       batchedObjects.forEach(batchedObject => batchedObject.optimize())
+      this.unhighlight(objectId, this._selectedObjects)
+      this._entitiesMap.delete(objectId)
     }
     return result
   }

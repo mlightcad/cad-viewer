@@ -255,6 +255,8 @@ export class AcTrBatchedPoint extends THREE.Points {
       geometryInfo.vertexStart + geometryInfo.reservedVertexCount
     this.geometry.setDrawRange(0, this._nextVertexStart)
 
+    this._syncDrawRange()
+
     return geometryId
   }
 
@@ -343,7 +345,7 @@ export class AcTrBatchedPoint extends THREE.Points {
     const geometry = this.geometry
     const geometryInfoList = this._geometryInfo
 
-    // Sort geometry IDs by original buffer order
+    // Sort ACTIVE geometries by original buffer order
     const indices = geometryInfoList
       .map((_g, i) => i)
       .filter(i => geometryInfoList[i].active)
@@ -352,23 +354,23 @@ export class AcTrBatchedPoint extends THREE.Points {
           geometryInfoList[a].vertexStart - geometryInfoList[b].vertexStart
       )
 
-    // Compact active geometries
+    // ---- pack active geometries ----
     for (let k = 0; k < indices.length; k++) {
       const id = indices[k]
       const info = geometryInfoList[id]
 
-      const srcStart = info.vertexStart
+      const oldVertexStart = info.vertexStart
       const count = info.reservedVertexCount
 
-      if (srcStart !== nextVertexStart) {
+      if (oldVertexStart !== nextVertexStart) {
         for (const key in geometry.attributes) {
           const attr = geometry.attributes[key] as THREE.BufferAttribute
           const { array, itemSize } = attr
 
           array.copyWithin(
             nextVertexStart * itemSize,
-            srcStart * itemSize,
-            (srcStart + count) * itemSize
+            oldVertexStart * itemSize,
+            (oldVertexStart + count) * itemSize
           )
 
           attr.addUpdateRange(nextVertexStart * itemSize, count * itemSize)
@@ -381,9 +383,14 @@ export class AcTrBatchedPoint extends THREE.Points {
       nextVertexStart += count
     }
 
-    // Final authoritative state
+    // ---- update authoritative state ----
     this._nextVertexStart = nextVertexStart
-    geometry.setDrawRange(0, nextVertexStart)
+
+    // ---- sync GPU draw range ----
+    this._syncDrawRange()
+
+    // ---- reset reusable ids ----
+    this._availableGeometryIds.length = 0
 
     return this
   }
@@ -514,6 +521,8 @@ export class AcTrBatchedPoint extends THREE.Points {
         geometry.attributes[key].array
       )
     }
+
+    this._syncDrawRange()
   }
 
   getObjectAt(batchId: number) {
@@ -561,6 +570,14 @@ export class AcTrBatchedPoint extends THREE.Points {
     lineSegments.geometry.index = null
     lineSegments.geometry.attributes = {}
     lineSegments.geometry.setDrawRange(0, Infinity)
+  }
+
+  /**
+   * Keeps geometry.drawRange in sync with active vertex data.
+   * Call after add / optimize / resize.
+   */
+  private _syncDrawRange() {
+    this.geometry.setDrawRange(0, this._nextVertexStart)
   }
 
   intersectWith(
