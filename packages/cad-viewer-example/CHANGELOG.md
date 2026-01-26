@@ -1,5 +1,14 @@
 # @mlightcad/cad-viewer-example
 
+## 1.4.5
+
+### Patch Changes
+
+- fix: fix issues 79 andn 80
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.4.5
+  - @mlightcad/cad-viewer@1.4.5
+
 ## 1.4.4
 
 ### Patch Changes
