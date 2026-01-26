@@ -347,6 +347,8 @@ export class AcTrBatchedLine extends THREE.LineSegments {
     this._nextVertexStart =
       geometryInfo.vertexStart + geometryInfo.reservedVertexCount
 
+    this._syncDrawRange()
+
     return geometryId
   }
 
@@ -479,69 +481,77 @@ export class AcTrBatchedLine extends THREE.LineSegments {
     let nextVertexStart = 0
     let nextIndexStart = 0
 
-    // Sort geometries by current vertexStart to preserve order
-    const infos = this._geometryInfo
-      .map((info, i) => ({ info, i }))
+    // Collect active geometries in buffer order
+    const entries = this._geometryInfo
+      .map((info, id) => ({ info, id }))
       .filter(e => e.info.active)
       .sort((a, b) => a.info.vertexStart - b.info.vertexStart)
 
-    // ---- pack active geometries ----
-    for (const { info } of infos) {
+    for (const { info } of entries) {
       const vertexCount = info.vertexCount
       const indexCount = hasIndex ? info.indexCount : 0
 
-      // --- move vertices ---
-      if (info.vertexStart !== nextVertexStart) {
+      const oldVertexStart = info.vertexStart
+      const newVertexStart = nextVertexStart
+      const vertexDelta = newVertexStart - oldVertexStart
+
+      // ---------- move vertex attributes ----------
+      if (vertexDelta !== 0 && vertexCount > 0) {
         for (const key in attributes) {
           const attr = attributes[key] as THREE.BufferAttribute
           const { array, itemSize } = attr
 
           array.copyWithin(
-            nextVertexStart * itemSize,
-            info.vertexStart * itemSize,
-            (info.vertexStart + vertexCount) * itemSize
+            newVertexStart * itemSize,
+            oldVertexStart * itemSize,
+            (oldVertexStart + vertexCount) * itemSize
           )
 
-          attr.addUpdateRange(
-            nextVertexStart * itemSize,
-            vertexCount * itemSize
-          )
+          attr.addUpdateRange(newVertexStart * itemSize, vertexCount * itemSize)
+
+          attr.needsUpdate = true
         }
-
-        info.vertexStart = nextVertexStart
       }
 
-      // --- move indices ---
-      if (hasIndex && indexAttr) {
-        if (info.indexStart !== nextIndexStart) {
-          const indexArray = indexAttr.array
-          const delta = nextVertexStart - info.vertexStart
+      // ---------- move & remap indices ----------
+      if (hasIndex && indexAttr && indexCount > 0) {
+        const oldIndexStart = info.indexStart
+        const newIndexStart = nextIndexStart
+        const indexArray = indexAttr.array
 
-          // remap indices
-          for (let i = info.indexStart; i < info.indexStart + indexCount; i++) {
-            indexArray[i] += delta
+        // remap vertex indices FIRST
+        if (vertexDelta !== 0) {
+          for (let i = oldIndexStart; i < oldIndexStart + indexCount; i++) {
+            indexArray[i] += vertexDelta
           }
-
-          indexArray.copyWithin(
-            nextIndexStart,
-            info.indexStart,
-            info.indexStart + indexCount
-          )
-
-          indexAttr.addUpdateRange(nextIndexStart, indexCount)
-          info.indexStart = nextIndexStart
         }
+
+        // move index range
+        if (oldIndexStart !== newIndexStart) {
+          indexArray.copyWithin(
+            newIndexStart,
+            oldIndexStart,
+            oldIndexStart + indexCount
+          )
+        }
+
+        indexAttr.addUpdateRange(newIndexStart, indexCount)
+        indexAttr.needsUpdate = true
+
+        info.indexStart = newIndexStart
       }
 
-      // --- update draw info ---
+      // ---------- update geometry info ----------
+      info.vertexStart = newVertexStart
       info.start = hasIndex ? info.indexStart : info.vertexStart
       info.count = hasIndex ? indexCount : vertexCount
 
-      nextVertexStart += vertexCount
-      nextIndexStart += indexCount
+      // advance by RESERVED sizes (CRITICAL)
+      nextVertexStart += info.reservedVertexCount
+      nextIndexStart += info.reservedIndexCount
     }
 
-    // ---- clear trailing unused indices (safety) ----
+    // ---------- clear trailing index data (safety) ----------
     if (hasIndex && indexAttr) {
       const indexArray = indexAttr.array
       for (let i = nextIndexStart; i < indexArray.length; i++) {
@@ -550,16 +560,18 @@ export class AcTrBatchedLine extends THREE.LineSegments {
       indexAttr.needsUpdate = true
     }
 
-    // ---- update draw range (CRITICAL) ----
+    // ---------- update draw range ----------
     if (hasIndex) {
       geometry.setDrawRange(0, nextIndexStart)
     } else {
       geometry.setDrawRange(0, nextVertexStart)
     }
 
-    // ---- update internal cursors ----
+    // ---------- update internal cursors ----------
     this._nextVertexStart = nextVertexStart
     this._nextIndexStart = nextIndexStart
+
+    this._syncDrawRange()
 
     this._availableGeometryIds.length = 0
 
@@ -691,6 +703,7 @@ export class AcTrBatchedLine extends THREE.LineSegments {
         geometry.attributes[key].array
       )
     }
+    this._syncDrawRange()
   }
 
   getObjectAt(batchId: number) {
@@ -738,6 +751,19 @@ export class AcTrBatchedLine extends THREE.LineSegments {
     lineSegments.geometry.index = null
     lineSegments.geometry.attributes = {}
     lineSegments.geometry.setDrawRange(0, Infinity)
+  }
+
+  /**
+   * Before calling optimize(), drawRange defaults to { start: 0, count: Infinity }.
+   * After calling , you need to explicitly shrink it to the exact active range.
+   */
+  private _syncDrawRange() {
+    const geometry = this.geometry
+    if (geometry.index) {
+      geometry.setDrawRange(0, this._nextIndexStart)
+    } else {
+      geometry.setDrawRange(0, this._nextVertexStart)
+    }
   }
 
   intersectWith(

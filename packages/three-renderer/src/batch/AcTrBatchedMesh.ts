@@ -301,6 +301,8 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     this._nextVertexStart =
       geometryInfo.vertexStart + geometryInfo.reservedVertexCount
 
+    this._syncDrawRange()
+
     return geometryId
   }
 
@@ -431,7 +433,7 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     let nextVertexStart = 0
     let nextIndexStart = 0
 
-    // Sort ACTIVE geometries by current position
+    // Sort ACTIVE geometries by current vertex position
     const activeInfos = this._geometryInfo
       .map((info, i) => ({ info, i }))
       .filter(e => e.info.active)
@@ -442,45 +444,46 @@ export class AcTrBatchedMesh extends THREE.Mesh {
       const vertexCount = info.vertexCount
       const indexCount = hasIndex ? info.indexCount : 0
 
+      const oldVertexStart = info.vertexStart
+      const oldIndexStart = info.indexStart
+
       // ---- move vertices ----
-      if (info.vertexStart !== nextVertexStart) {
+      if (oldVertexStart !== nextVertexStart) {
         for (const key in attributes) {
           const attr = attributes[key] as THREE.BufferAttribute
           const { array, itemSize } = attr
 
           array.copyWithin(
             nextVertexStart * itemSize,
-            info.vertexStart * itemSize,
-            (info.vertexStart + vertexCount) * itemSize
+            oldVertexStart * itemSize,
+            (oldVertexStart + vertexCount) * itemSize
           )
 
           attr.addUpdateRange(
             nextVertexStart * itemSize,
             vertexCount * itemSize
           )
+          attr.needsUpdate = true
         }
 
         info.vertexStart = nextVertexStart
       }
 
-      // ---- move indices ----
+      // ---- move & remap indices ----
       if (hasIndex && indexAttr) {
-        if (info.indexStart !== nextIndexStart) {
+        if (oldIndexStart !== nextIndexStart) {
           const indexArray = indexAttr.array
-          const delta = nextVertexStart - info.vertexStart
+          const delta = nextVertexStart - oldVertexStart
 
-          // remap indices
-          for (let i = info.indexStart; i < info.indexStart + indexCount; i++) {
-            indexArray[i] += delta
+          // copy + remap indices safely
+          for (let i = 0; i < indexCount; i++) {
+            indexArray[nextIndexStart + i] =
+              indexArray[oldIndexStart + i] + delta
           }
 
-          indexArray.copyWithin(
-            nextIndexStart,
-            info.indexStart,
-            info.indexStart + indexCount
-          )
-
           indexAttr.addUpdateRange(nextIndexStart, indexCount)
+          indexAttr.needsUpdate = true
+
           info.indexStart = nextIndexStart
         }
       }
@@ -496,22 +499,17 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     // ---- clear unused index tail (safety) ----
     if (hasIndex && indexAttr) {
       const array = indexAttr.array
-      for (let i = nextIndexStart; i < array.length; i++) {
+      for (let i = nextIndexStart, l = array.length; i < l; i++) {
         array[i] = 0
       }
       indexAttr.needsUpdate = true
     }
 
-    // ---- update draw range (CRITICAL) ----
-    if (hasIndex) {
-      geometry.setDrawRange(0, nextIndexStart)
-    } else {
-      geometry.setDrawRange(0, nextVertexStart)
-    }
-
     // ---- update internal cursors ----
     this._nextVertexStart = nextVertexStart
     this._nextIndexStart = nextIndexStart
+
+    this._syncDrawRange()
 
     this._availableGeometryIds.length = 0
 
@@ -643,6 +641,7 @@ export class AcTrBatchedMesh extends THREE.Mesh {
         geometry.attributes[key].array
       )
     }
+    this._syncDrawRange()
   }
 
   getObjectAt(batchId: number) {
@@ -690,6 +689,19 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     raycastObject.geometry.index = null
     raycastObject.geometry.attributes = {}
     raycastObject.geometry.setDrawRange(0, Infinity)
+  }
+
+  /**
+   * Before calling optimize(), drawRange defaults to { start: 0, count: Infinity }.
+   * After calling , you need to explicitly shrink it to the exact active range.
+   */
+  private _syncDrawRange() {
+    const geometry = this.geometry
+    if (geometry.index) {
+      geometry.setDrawRange(0, this._nextIndexStart)
+    } else {
+      geometry.setDrawRange(0, this._nextVertexStart)
+    }
   }
 
   intersectWith(
