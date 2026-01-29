@@ -1,5 +1,11 @@
 # @mlightcad/svg-renderer
 
+## 1.4.6
+
+### Patch Changes
+
+- feat: support ATTDEF ATTRIB entities when reading DXF file
+
 ## 1.4.5
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @mlightcad/cad-viewer-examples
 
+## 1.2.8
+
+### Patch Changes
+
+- feat: support ATTDEF ATTRIB entities when reading DXF file
+
 ## 1.2.7
 
 ### Patch Changes
