@@ -156,4 +156,18 @@ export class AcSvgEntity implements AcGiEntity {
     // TODO: Implement it correctly
     return this
   }
+
+  /**
+   * @inheritdoc
+   */
+  addChild(_entity: AcGiEntity) {
+    // Do nothing for now
+  }
+
+  /**
+   * @inheritdoc
+   */
+  bakeTransformToChildren() {
+    // Do nothing for now
+  }
 }

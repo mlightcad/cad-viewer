@@ -46,7 +46,7 @@
           <div class="ml-cell-container">
             <div :class="['ml-cell-label', { 'ml-group-row': row.isGroup }]">
               <strong v-if="row.isGroup">{{ entityPropName(row.name) }}</strong>
-              <span v-else>{{ entityPropName(row.name) }}</span>
+              <span v-else>{{ getPropertyName(row) }}</span>
             </div>
           </div>
         </template>
@@ -229,6 +229,10 @@ function arrayKey(group: string, prop: string) {
 }
 
 /* ================= formatting ================= */
+
+function getPropertyName(row: MlDisplayPropertyRow): string {
+  return row.skipTranslation ? row.name : entityPropName(row.name)
+}
 
 function formatDisplayValue(row: MlDisplayPropertyRow): string {
   const v = row.accessor.get()

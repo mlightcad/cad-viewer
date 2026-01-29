@@ -2,16 +2,18 @@
 
 [English](./README.md)
 
-CAD-Viewer 是一款高性能、现代化的 Web 端 CAD 查看与编辑器，灵感来自 AutoCAD。它支持在纯浏览器环境中查看与编辑 DWG/DXF 文件，**无需任何后端服务**，并具备出色的渲染速度与流畅交互。项目采用模块化设计，便于与其他应用无缝集成。
+CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后端服务的 Web 版 DXF/DWG 查看与编辑器`。
+通过在浏览器中直接完成 DWG/DXF 解析、几何处理和渲染，CAD-Viewer 实现了真正的无服务器（serverless）CAD 查看与编辑，非常适合云应用、离线使用以及对隐私敏感的工作场景。
 
 - [**🌐 在线演示**](https://mlightcad.github.io/cad-viewer/)
 - [**🌐 API 文档**](https://mlightcad.github.io/cad-viewer/docs/)
 - [**🌐 项目 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
+- YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
 - Medium: [@mlightcad](https://medium.com/@mlightcad)
 - 稀土掘金: [@mlightcad](https://juejin.cn/column/7501992214283501579)
 
-![CAD-Viewer](./assets/dwg-viewer.jpg)
+![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
 ## 功能特性
 
@@ -30,6 +32,7 @@ CAD-Viewer 是一款高性能、现代化的 Web 端 CAD 查看与编辑器，�
 - **选择**：鼠标左键单击实体
 - **缩放**：滚动鼠标滚轮上/下
 - **平移**：按住鼠标中键拖拽
+- **删除**：选中实体后按 `Del` 键
 
 ### 平板/手机浏览器操作
 - **选择**：轻触实体
@@ -54,63 +57,220 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 - **不支持的实体**：
   - **表格（仅 DWG）**：当前使用的 [LibreDWG](https://github.com/LibreDWG/libredwg) 库尚不支持 DWG 表格实体；若表格由线段/多段线构成，则可正常显示。
   - **外部参照（XRef）**：暂不支持显示。
-- **DWG 兼容性**：部分 DWG 图纸可能因 [LibreDWG](https://github.com/LibreDWG/libredwg) 的问题无法打开。若遇到此类问题，欢迎在 [CAD-Viewer 问题页](https://github.com/mlightcad/cad-viewer/issues) 或 [LibreDWG 问题页](https://github.com/LibreDWG/libredwg/issues) 反馈。
+- **DWG 兼容性**：
+  - 部分 DWG 图纸可能因 [LibreDWG](https://github.com/LibreDWG/libredwg) 的问题无法打开。若遇到此类问题，欢迎在 [CAD-Viewer 问题页](https://github.com/mlightcad/cad-viewer/issues) 或 [LibreDWG 问题页](https://github.com/LibreDWG/libredwg/issues) 反馈。
+  - 国内建筑行业大量使用`天正软件`来创建 CAD 图纸，但天正中的许多图元属于其自定义对象，且未提供公开的 API 用于解析其内部数据。因此，在使用 CAD-Viewer 打开此类图纸之前，需要先通过天正软件将图纸转换为 T3 格式。完成转换后，即可使用 CAD-Viewer 正常打开和查看图纸内容。
 
 上述限制将会在后续版本中逐步改进。
 
-## 路线图
+## 路线图（Roadmap）
 
-为实现最终目标，项目规划了以下里程碑：
+本项目的目标是打造一个**运行在浏览器中的、功能完整的二维 AutoCAD 系统**（查看器 + 编辑器），具备模块化架构，并且可与各类前端框架无关地进行集成。
 
-- [x] **DWG/DXF 查看器**：提供离线 Web 端查看能力
-- [x] **实体编辑框架**：支持图形修改
-- [ ] **系统集成**：将 DWG/DXF 查看器集成进其他系统/框架（如 CMS、Notion、OpenLayers）
-- [ ] **微信小程序**：在微信中展示 DWG/DXF 文件
-- [ ] **离线 CAD 编辑器**：在浏览器离线修改并本地存储变更
-- [ ] **在线 CAD 编辑器**：提供后端以支持云端存储 DXF/DWG 变更
+图例说明：
 
-**说明**：
+-   [x] 已完成
+-   [ ] 计划中
+-   [ ] ⏳ 进行中
 
-第二项目前已部分完成。虽然目前暂不支持将修改直接保存回 DWG/DXF 文件，但已提供完善的实时修改能力。你可以通过 [RealDWG-Web API](https://mlightcad.github.io/realdwg-web/) 新增/编辑/删除图元，查看器会自动实时更新显示。其使用方式与 AutoCAD RealDWG 十分相似，熟悉 RealDWG 的开发者可以快速上手。更多细节请参考 [cad-simple-viewer README](packages/cad-simple-viewer/README.md)。
+### 核心文件与数据层
 
-## 我应该选择哪个 Viewer？
+#### 文件支持
 
-本项目提供 `cad-viewer` 与 `cad-simple-viewer` 两个方案，如何选择取决于你的项目需求与集成方式：
+-   [x] DXF 加载
+-   [x] DWG 加载
+-   [x] 大文件流式加载 / 增量加载
+-   [ ] ⏳ 文件版本兼容（R12–最新版本）
 
-### 选择 **cad-viewer** 当：
-- 需要一个**即插即用的 Vue 3 组件**，含现代 UI、对话框、工具栏与状态管理
-- 希望以最少配置快速嵌入高性能 CAD 查看/编辑能力
-- 希望开箱即用地处理文件加载、渲染、图层/实体管理与用户交互
-- 需要无缝集成优化的 SVG 与 THREE.js 渲染器、国际化与主题
-- 不想从零搭建 UI
+#### 数据模型
 
-**推荐用于：** 需要展示 CAD 文件并带完整 UI 的大多数 Web 应用、管理后台与平台。
+-   [x] 统一的实体数据模型
+-   [x] 图层表支持
+-   [x] 块（Block）/ 插入（Insert）结构
+-   [ ] ⏳ Handle 与对象 ID 管理：当前 objectId 与 handle 相同，并且以字符串表示，而不是 bigint（int64）
+-   [ ] XData / 扩展字典支持
+-   [ ] 代理实体（Proxy Entity）处理
 
-### 选择 **cad-simple-viewer** 当：
-- 只需要**核心 CAD 逻辑**（文档管理、命令栈、渲染引擎对接），不依赖任何 UI 框架
-- 计划自行构建 UI，或集成到非 Vue/非 Web 的环境
-- 需要在大数据量下的极致性能，并将逻辑与自研渲染/界面层结合
-- 需要一个与框架无关、仅提供核心 CAD 操作与画布渲染的解决方案
+### 渲染与性能
 
-**推荐用于：** 定制化集成、无界面处理或构建高度定制的 CAD 解决方案的高级用户。
+#### 渲染引擎
 
-**对比一览：**
+-   [x] 基于 WebGL 的渲染（Three.js）
+-   [x] 仅针对 2D 的优化渲染管线
+-   [x] 基于图层的场景组织
+-   [ ] 布局（Layout）/ 图纸空间（Paper Space）渲染
+-   [ ] 视口（Viewport）实体支持
 
-| 包名称               | 是否包含 UI | 框架   | 适用场景                                   |
-|----------------------|-------------|--------|--------------------------------------------|
-| `cad-viewer`         | 是          | Vue 3  | 带现代化 UI 的一站式 CAD 查看/编辑组件     |
-| `cad-simple-viewer`  | 否          | 无     | 面向自定义或无界面场景的核心 CAD 能力       |
+#### 性能优化
 
-更多详情请参阅 [cad-viewer README](packages/cad-viewer/README.md) 与 [cad-simple-viewer README](packages/cad-simple-viewer/README.md)。
+-   [x] 几何体合并与批处理
+-   [x] 空间索引（基础）
+-   [x] 高级空间索引（R-tree / BVH）
+-   [ ] 细节层次（LOD）渲染
+-   [ ] 超大图纸的多画布 / 分块渲染
 
-## 示例项目
+### 查看与导航
 
-- [`cad-simple-viewer-example`](https://github.com/mlightcad/cad-simple-viewer-example)：展示如何在真实项目中使用 `cad-simple-viewer`
-- [`cad-viewer-example`](https://github.com/mlightcad/cad-viewer-example)：展示如何在真实项目中使用 `cad-viewer`
+#### 视图控制
 
-## 参与贡献
+-   [x] 平移（Pan）
+-   [x] 缩放（滚轮 / 框选缩放）
+-   [x] 适配视图 / 显示范围
+-   [ ] 命名视图
+-   [ ] 视图历史（撤销 / 重做视图变更）
 
-欢迎通过 Issue 或 Pull Request 提交缺陷修复、功能与建议。若是缺陷反馈，提供相关图纸示例将有助于复现与定位问题。
+#### 显示控制
+
+-   [x] 图层显示 / 隐藏
+-   [ ] 图层冻结 / 锁定
+-   [ ] 线宽显示
+-   [ ] 线型比例
+-   [ ] ⏳ 背景 / 主题切换
+
+### 选择与交互
+
+#### 选择
+
+-   [x] 单个实体选择
+-   [x] 选中实体高亮
+-   [ ] 窗口选择（Window Selection）
+-   [ ] 交叉选择（Crossing Selection）
+-   [ ] 选择过滤（按类型 / 图层）
+-   [ ] 循环选择（Selection Cycling）
+
+#### 捕捉（OSNAP）
+
+-   [ ] ⏳ 端点（Endpoint）：当前尚未支持 INSERT 实体
+-   [x] 中点（Midpoint）
+-   [ ] 圆心（Center）
+-   [ ] 交点（Intersection）
+-   [ ] 垂足 / 切点（Perpendicular / Tangent）
+-   [ ] ⏳ 最近点（Nearest）
+-   [ ] 捕捉追踪（Snap Tracking）
+
+### 编辑与修改
+
+#### 基础编辑
+
+-   [x] 实体编辑框架
+-   [ ] 移动（Move）
+-   [ ] 复制（Copy）
+-   [ ] 旋转（Rotate）
+-   [ ] 缩放（Scale）
+-   [x] 删除（Delete）
+-   [ ] 撤销 / 重做（Undo / Redo）
+
+#### 几何编辑
+
+-   [ ] 夹点（Grip Points）
+-   [ ] 拉伸（Stretch）
+-   [ ] 修剪（Trim）
+-   [ ] 延伸（Extend）
+-   [ ] 偏移（Offset）
+-   [ ] 分解（Explode）
+-   [ ] 连接 / 圆角 / 倒角（2D）
+
+### 绘制与创建工具
+
+#### 基础实体
+
+-   [x] 直线（Line）
+-   [ ] 多段线（Polyline）
+-   [x] 圆（Circle）
+-   [ ] 圆弧（Arc）
+-   [ ] 椭圆（Ellipse）
+-   [ ] 矩形 / 多边形（Rectangle / Polygon）
+
+#### 高级实体
+
+-   [ ] 填充（Hatch）
+-   [ ] 文本（单行 / 多行）
+-   [ ] 标注（线性、对齐、角度）
+-   [ ] 块创建与插入
+
+### 测量与标注
+
+-   [ ] ⏳ 距离测量与标注
+-   [ ] 面积测量与标注
+-   [ ] 角度测量与标注
+-   [ ] 坐标读取
+-   [ ] 实体统计（长度、面积、数量）
+
+### 属性与 UI 面板
+
+#### 属性面板（Property Palette）
+
+-   [x] 选中实体属性
+-   [ ] 图层、颜色、线型编辑
+-   [x] 属性修改实时更新
+
+#### 面板与界面
+
+-   [x] 图层管理器
+-   [ ] 块管理器
+-   [x] 命令历史 / 控制台
+-   [ ] ⏳ 状态栏（捕捉、正交、网格）
+
+#### 命令系统
+
+-   [x] 命令注册机制
+-   [ ] 命令别名
+-   [ ] 键盘驱动工作流
+-   [x] 命令提示（AutoCAD 风格）
+
+### 集成与可扩展性
+
+#### 框架集成
+
+-   [x] 与前端框架无关的核心设计
+-   [ ] React 集成示例
+-   [ ] Vue 集成示例
+-   [ ] OpenLayers / 地图集成
+-   [ ] CMS / Notion 嵌入
+
+#### 插件系统
+
+-   [ ] 插件 API
+-   [ ] 自定义实体支持
+-   [ ] 自定义命令注入
+
+### 离线与在线编辑
+
+#### 离线编辑器
+
+-   [ ] 浏览器本地编辑
+-   [ ] 保存为 DXF
+-   [ ] 保存变更集 / 差异（diff）
+-   [ ] IndexedDB 持久化
+
+#### 在线编辑器
+
+-   [ ] 后端 API 设计
+-   [ ] 用户认证
+-   [ ] 文件版本管理
+-   [ ] 多用户访问控制
+-   [ ] 实时协作（未来）
+
+### 平台目标
+
+-   [ ] ⏳ Google Drive 集成
+-   [ ] 微信小程序查看器
+-   [ ] 移动端浏览器支持（只读）
+
+### 文档与社区
+
+-   [x] 架构文档
+-   [x] API 参考文档
+-   [ ] 贡献指南
+-   [x] 示例项目
+-   [x] 路线图与变更日志维护
+
+该路线图刻意拆分得较为细致，以便贡献者能够清楚地了解 **已有功能**、**缺失功能** 以及 **最需要帮助的方向**。
+
+## 参与贡献（Contributing）
+
+欢迎各种形式的贡献！你可以通过提交 issue 或 pull request 来修复 bug、添加新功能或提出建议。  
+在提交 bug 报告时，如果能提供有问题的图纸链接，将有助于问题的复现与修复。
 
 ## 许可证
 
