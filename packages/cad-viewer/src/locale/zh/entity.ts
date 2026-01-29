@@ -196,6 +196,7 @@ export default {
   property: {
     general: '常规',
     geometry: '几何图形',
+    attribute: '属性',
     pattern: '图案',
     table: '表格',
     others: '其它',

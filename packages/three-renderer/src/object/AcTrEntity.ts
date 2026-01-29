@@ -228,11 +228,44 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   /**
    * @inheritdoc
    */
+  addChild(entity: AcTrEntity) {
+    this.add(entity)
+  }
+
+  /**
+   * @inheritdoc
+   */
   applyMatrix(matrix: AcGeMatrix3d) {
     const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
     this.applyMatrix4(threeMatrix)
     this.updateMatrixWorld(true)
     this._box.applyMatrix4(threeMatrix)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  bakeTransformToChildren(): void {
+    // Ensure the object's world matrix is up to date
+    this.updateWorldMatrix(true, false)
+
+    // Cache the object's current world matrix
+    const objectWorldMatrix = this.matrixWorld.clone()
+
+    // Bake the object's world transform into all direct children
+    this.children.forEach(child => {
+      // Ensure the child's local matrix is up to date
+      child.updateMatrix()
+
+      // child.localMatrix = objectWorldMatrix * child.localMatrix
+      child.applyMatrix4(objectWorldMatrix)
+    })
+
+    // Reset the object to an identity transform
+    this.position.set(0, 0, 0)
+    this.rotation.set(0, 0, 0)
+    this.scale.set(1, 1, 1)
+    this.updateMatrix()
   }
 
   /**

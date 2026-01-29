@@ -196,6 +196,7 @@ export default {
   property: {
     general: 'General',
     geometry: 'Geometry',
+    attribute: 'Attribute',
     pattern: 'Pattern',
     table: 'Table',
     others: 'Others',
