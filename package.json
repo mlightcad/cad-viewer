@@ -26,6 +26,7 @@
     "preview:simple": "nx run @mlightcad/cad-simple-viewer-example:preview",
     "pre-serve": "nx run @mlightcad/cad-viewer-examples:pre-serve",
     "publish-viewer": "pnpm -r publish --filter cad-viewer --filter cad-simple-viewer --no-git-checks",
+    "release": "node tools/release.mjs",
     "serve": "nx run @mlightcad/cad-viewer-examples:serve",
     "test": "jest"
   },
