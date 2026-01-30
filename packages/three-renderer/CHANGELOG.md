@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.4.7
+
+### Patch Changes
+
+- fix: fix issues 89 and 90
+
 ## 1.4.6
 
 ### Patch Changes
