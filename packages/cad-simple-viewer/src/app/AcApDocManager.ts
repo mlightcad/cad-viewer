@@ -31,6 +31,7 @@ import {
 } from '../command'
 import { AcEdCalculateSizeCallback, eventBus } from '../editor'
 import { AcApI18n } from '../i18n'
+import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { AcTrView2d } from '../view'
 import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
@@ -121,6 +122,59 @@ export interface AcApDocManagerOptions {
    * URLs for Web Worker JavaScript bundles used by the CAD viewer.
    */
   webworkerFileUrls?: AcApWebworkerFiles
+
+  /**
+   * Configuration for automatic plugin loading.
+   *
+   * Plugins can be loaded automatically during initialization from:
+   * - A configuration array of plugin instances or factory functions
+   * - A folder path with a list of plugin files to load
+   *
+   * @example
+   * ```typescript
+   * // Load plugins from configuration
+   * AcApDocManager.createInstance({
+   *   plugins: {
+   *     fromConfig: [
+   *       new MyPlugin1(),
+   *       () => new MyPlugin2()
+   *     ]
+   *   }
+   * });
+   *
+   * // Load plugins from folder
+   * AcApDocManager.createInstance({
+   *   plugins: {
+   *     fromFolder: {
+   *       folderPath: './plugins',
+   *       pluginList: ['Plugin1.js', 'Plugin2.js'],
+   *       continueOnError: true
+   *     }
+   *   }
+   * });
+   * ```
+   */
+  plugins?: {
+    /**
+     * Load plugins from a configuration array.
+     * Each item can be a plugin instance or a factory function that returns a plugin.
+     */
+    fromConfig?: Array<
+      | import('../plugin/AcApPlugin').AcApPlugin
+      | (() => import('../plugin/AcApPlugin').AcApPlugin)
+    >
+    /**
+     * Load plugins from a folder using dynamic imports.
+     */
+    fromFolder?: {
+      /** Path to the folder containing plugin files */
+      folderPath: string
+      /** List of plugin file names to load */
+      pluginList: string[]
+      /** Continue loading other plugins if one fails (default: false) */
+      continueOnError?: boolean
+    }
+  }
 }
 
 /**
@@ -146,6 +200,8 @@ export class AcApDocManager {
   private _progress: AcApProgress
   /** Command manager */
   private _commandManager: AcEdCommandStack
+  /** Plugin manager */
+  private _pluginManager: AcApPluginManager
   /** Singleton instance */
   private static _instance?: AcApDocManager
 
@@ -226,12 +282,20 @@ export class AcApDocManager {
 
     this._commandManager = new AcEdCommandStack()
     this.registerCommands()
+    this._pluginManager = new AcApPluginManager(
+      this._context,
+      this._commandManager
+    )
     this._progress = new AcApProgress()
     this._progress.hide()
     if (!options.notLoadDefaultFonts) {
       this.loadDefaultFonts()
     }
     this.registerWorkers(options.webworkerFileUrls)
+    // Load plugins asynchronously (don't await to avoid blocking initialization)
+    this.loadPlugins(options.plugins).catch(error => {
+      console.error('[AcApDocManager] Error loading plugins:', error)
+    })
   }
 
   /**
@@ -265,9 +329,10 @@ export class AcApDocManager {
   }
 
   /**
-   * Destroy the view
+   * Destroy the view and unload all plugins
    */
-  destroy() {
+  async destroy() {
+    await this._pluginManager.unloadAllPlugins()
     AcApDocManager._instance = undefined
   }
 
@@ -328,6 +393,15 @@ export class AcApDocManager {
    */
   get commandManager() {
     return this._commandManager
+  }
+
+  /**
+   * Gets plugin manager to load and unload plugins
+   *
+   * @returns The plugin manager
+   */
+  get pluginManager() {
+    return this._pluginManager
   }
 
   /**
@@ -759,5 +833,77 @@ export class AcApDocManager {
         ? webworkerFileUrls.mtextRender
         : './assets/mtext-renderer-worker.js'
     )
+  }
+
+  /**
+   * Loads plugins automatically based on the provided configuration.
+   *
+   * This method is called during initialization if plugins are configured.
+   * It supports loading from both configuration arrays and folder paths.
+   *
+   * @param pluginsConfig - Plugin loading configuration
+   * @private
+   */
+  private async loadPlugins(pluginsConfig?: AcApDocManagerOptions['plugins']) {
+    if (!pluginsConfig) {
+      return
+    }
+
+    // Load plugins from configuration array
+    if (pluginsConfig.fromConfig && pluginsConfig.fromConfig.length > 0) {
+      try {
+        const result = await this._pluginManager.loadPluginsFromConfig(
+          pluginsConfig.fromConfig,
+          { continueOnError: true }
+        )
+        if (result.loaded.length > 0) {
+          console.log(
+            `[AcApDocManager] Loaded ${result.loaded.length} plugin(s) from config:`,
+            result.loaded
+          )
+        }
+        if (result.failed.length > 0) {
+          console.warn(
+            `[AcApDocManager] Failed to load ${result.failed.length} plugin(s):`,
+            result.failed.map(f => `${f.name}: ${f.error.message}`)
+          )
+        }
+      } catch (error) {
+        console.error(
+          '[AcApDocManager] Error loading plugins from config:',
+          error
+        )
+      }
+    }
+
+    // Load plugins from folder
+    if (pluginsConfig.fromFolder) {
+      try {
+        const result = await this._pluginManager.loadPluginsFromFolder(
+          pluginsConfig.fromFolder.folderPath,
+          {
+            pluginList: pluginsConfig.fromFolder.pluginList,
+            continueOnError: pluginsConfig.fromFolder.continueOnError ?? true
+          }
+        )
+        if (result.loaded.length > 0) {
+          console.log(
+            `[AcApDocManager] Loaded ${result.loaded.length} plugin(s) from folder:`,
+            result.loaded
+          )
+        }
+        if (result.failed.length > 0) {
+          console.warn(
+            `[AcApDocManager] Failed to load ${result.failed.length} plugin(s) from folder:`,
+            result.failed.map(f => `${f.name}: ${f.error.message}`)
+          )
+        }
+      } catch (error) {
+        console.error(
+          '[AcApDocManager] Error loading plugins from folder:',
+          error
+        )
+      }
+    }
   }
 }
