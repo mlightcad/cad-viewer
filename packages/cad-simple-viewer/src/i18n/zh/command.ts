@@ -31,11 +31,20 @@ export default {
     qnew: {
       description: '创建新图纸'
     },
+    rect: {
+      description: '通过指定两个对角点创建矩形'
+    },
     regen: {
       description: '重绘图纸'
     },
+    revcloud: {
+      description: '创建矩形云线（修订云线）'
+    },
     select: {
       description: '选择图元'
+    },
+    sketch: {
+      description: '使用多段线创建手绘线，跟踪鼠标移动'
     },
     zoom: {
       description: '缩放以显示所有对象'

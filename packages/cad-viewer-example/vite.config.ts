@@ -41,6 +41,9 @@ export default defineConfig(({ command, mode }) => {
     resolve: {
       alias: aliases
     },
+    optimizeDeps: {
+      force: command === 'serve' // Force re-optimization in dev mode to fix stale cache issues
+    },
     build: {
       outDir: 'dist',
       modulePreload: false,

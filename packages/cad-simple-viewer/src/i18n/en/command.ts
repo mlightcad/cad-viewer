@@ -33,11 +33,21 @@ export default {
     qnew: {
       description: 'Starts a new drawing'
     },
+    rect: {
+      description: 'Creates a rectangle by specifying two opposite corners'
+    },
     regen: {
-      description: 'Redraw the current drawing'
+      description: 'Redraws the current drawing'
+    },
+    revcloud: {
+      description: 'Creates a revision cloud (cloud line) in rectangular shape'
     },
     select: {
       description: 'Selects entities'
+    },
+    sketch: {
+      description:
+        'Creates a sketch line using polyline that tracks mouse movement'
     },
     zoom: {
       description: 'Zooms to display the maximum extents of all entities'

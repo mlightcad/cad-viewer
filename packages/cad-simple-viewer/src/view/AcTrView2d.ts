@@ -178,6 +178,7 @@ export class AcTrView2d extends AcEdBaseView {
           break
 
         case 'Delete':
+        case 'Backspace':
           AcApDocManager.instance.sendStringToExecute('erase')
           break
       }
