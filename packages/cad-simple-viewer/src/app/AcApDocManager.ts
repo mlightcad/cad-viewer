@@ -22,8 +22,11 @@ import {
   AcApOpenCmd,
   AcApPanCmd,
   AcApQNewCmd,
+  AcApRectCmd,
   AcApRegenCmd,
+  AcApRevCloudCmd,
   AcApSelectCmd,
+  AcApSketchCmd,
   AcApSysVarCmd,
   AcApZoomCmd,
   AcApZoomToBoxCmd,
@@ -618,15 +621,33 @@ export class AcApDocManager {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'rectangle',
+      'rectangle',
+      new AcApRectCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'regen',
       'regen',
       new AcApRegenCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'revcloud',
+      'revcloud',
+      new AcApRevCloudCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'select',
       'select',
       new AcApSelectCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'sketch',
+      'sketch',
+      new AcApSketchCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
