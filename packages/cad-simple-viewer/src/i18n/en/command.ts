@@ -33,7 +33,7 @@ export default {
     qnew: {
       description: 'Starts a new drawing'
     },
-    rect: {
+    rectangle: {
       description: 'Creates a rectangle by specifying two opposite corners'
     },
     regen: {

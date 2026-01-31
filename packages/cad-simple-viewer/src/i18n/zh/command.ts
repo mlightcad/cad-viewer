@@ -31,7 +31,7 @@ export default {
     qnew: {
       description: '创建新图纸'
     },
-    rect: {
+    rectangle: {
       description: '通过指定两个对角点创建矩形'
     },
     regen: {
