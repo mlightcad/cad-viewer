@@ -31,7 +31,7 @@ import { AcApPlugin } from './AcApPlugin'
 /**
  * Example command that prints a greeting message.
  */
-class HelloCommand extends AcEdCommand {
+class AcApHelloCommand extends AcEdCommand {
   execute(context: AcApContext) {
     console.log('Hello from ExamplePlugin!')
     console.log('Current document:', context.doc)
@@ -42,7 +42,7 @@ class HelloCommand extends AcEdCommand {
 /**
  * Example plugin implementation.
  */
-export class ExamplePlugin implements AcApPlugin {
+export class AcApExamplePlugin implements AcApPlugin {
   name = 'ExamplePlugin'
   version = '1.0.0'
   description = 'An example plugin demonstrating the plugin system'
@@ -60,7 +60,7 @@ export class ExamplePlugin implements AcApPlugin {
       'USER', // Command group
       'HELLO', // Global command name
       'Hello', // Local command name
-      new HelloCommand()
+      new AcApHelloCommand()
     )
 
     // Track the command for cleanup
