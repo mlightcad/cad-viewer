@@ -156,7 +156,7 @@ const props = withDefaults(defineProps<Props>(), {
   baseUrl: undefined,
   useMainThreadDraw: false,
   theme: 'dark',
-  mode: AcEdOpenMode.Read
+  mode: AcEdOpenMode.Write
 })
 
 const { t } = useI18n()

@@ -54,7 +54,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Read)
+const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
 
 const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
   if (uploadFile.raw) {
