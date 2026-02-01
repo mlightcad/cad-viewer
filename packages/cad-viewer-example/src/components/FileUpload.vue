@@ -16,6 +16,24 @@
         <p class="upload-description">
           Drop file here or <em>click to select</em>
         </p>
+        <div>
+          <el-radio-group v-model="selectedMode" class="mode-radio-group">
+            <el-radio :label="0" border>Read</el-radio>
+            <el-radio :label="4" border>Review</el-radio>
+            <el-radio :label="8" border>Write</el-radio>
+          </el-radio-group>
+          <div class="mode-description">
+            <p v-if="selectedMode === 0" class="mode-info">
+              <strong>Read:</strong> View-only access
+            </p>
+            <p v-else-if="selectedMode === 4" class="mode-info">
+              <strong>Review:</strong> View and review access
+            </p>
+            <p v-else-if="selectedMode === 8" class="mode-info">
+              <strong>Write:</strong> Full read/write access
+            </p>
+          </div>
+        </div>
       </div>
       <template #tip>
         <div class="el-upload__tip">Supported formats: DWG, DXF</div>
@@ -26,18 +44,22 @@
 
 <script setup lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue'
+import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 import type { UploadFile, UploadProps } from 'element-plus'
+import { ref } from 'vue'
 
 interface Props {
-  onFileSelect: (file: File) => void
+  onFileSelect: (file: File, mode: AcEdOpenMode) => void
 }
 
 const props = defineProps<Props>()
 
+const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Read)
+
 const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
   if (uploadFile.raw) {
     if (isValidFile(uploadFile.raw)) {
-      props.onFileSelect(uploadFile.raw)
+      props.onFileSelect(uploadFile.raw, selectedMode.value)
     }
   }
 }
@@ -60,16 +82,12 @@ const isValidFile = (file: File): boolean => {
 <style scoped>
 .file-upload-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 20px;
-  width: 100%;
-  height: 100%;
-}
-
-.upload-demo {
   max-width: 500px;
   width: 100%;
+  height: 100%;
 }
 
 .upload-demo :deep(.el-upload) {
@@ -140,5 +158,33 @@ const isValidFile = (file: File): boolean => {
   font-size: 14px;
   color: #ffffff;
   text-align: center;
+}
+
+.mode-radio-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.mode-radio-group :deep(.el-radio) {
+  margin-right: 0;
+  margin-bottom: 0;
+}
+
+.mode-description {
+  margin-top: 12px;
+}
+
+.mode-info {
+  margin: 0;
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.mode-info strong {
+  color: #409eff;
+  font-weight: 600;
 }
 </style>

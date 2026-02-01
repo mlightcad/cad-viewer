@@ -4,6 +4,7 @@ import { AcApContext, AcApDocManager } from '../app'
 import {
   AcEdBaseView,
   AcEdCommand,
+  AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions
 } from '../editor'
@@ -35,6 +36,11 @@ export class AcApLineJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * Command to create one line.
  */
 export class AcApLineCmd extends AcEdCommand {
+  constructor() {
+    super()
+    this.mode = AcEdOpenMode.Review
+  }
+
   async execute(context: AcApContext) {
     const startPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.line.firstPoint')

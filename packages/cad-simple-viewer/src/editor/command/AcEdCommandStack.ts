@@ -1,3 +1,4 @@
+import { AcEdOpenMode } from '../view'
 import { AcEdCommand } from './AcEdCommand'
 import {
   AcEdCommandIterator,
@@ -146,19 +147,25 @@ export class AcEdCommandStack {
    *
    * This method iterates through all commands in all command groups and returns those
    * whose global or local names start with the provided prefix. The search is case-insensitive.
+   * If a mode is specified, only commands compatible with that mode are returned.
+   * Higher value modes are compatible with lower value modes.
    *
    * @param prefix - The prefix string to search for. Case-insensitive.
+   * @param mode - Optional access mode to filter commands. Only commands compatible with this mode are returned.
    * @returns An array of objects containing matched commands and their corresponding group names.
    *
    * @example
    * ```typescript
-   * const matches = commandStack.searchCommandsByPrefix('LI');
+   * const matches = commandStack.searchCommandsByPrefix('LI', AcEdOpenMode.Write);
    * matches.forEach(item => {
    *   console.log(item.groupName, item.command.globalName);
    * });
    * ```
    */
-  searchCommandsByPrefix(prefix: string): AcEdCommandIteratorItem[] {
+  searchCommandsByPrefix(
+    prefix: string,
+    mode?: AcEdOpenMode
+  ): AcEdCommandIteratorItem[] {
     prefix = prefix.toUpperCase()
     const results: AcEdCommandIteratorItem[] = []
 
@@ -170,7 +177,10 @@ export class AcEdCommandStack {
         command.globalName.startsWith(prefix) ||
         command.localName.startsWith(prefix)
       ) {
-        results.push(item.value)
+        // Check mode compatibility if mode is specified
+        if (mode === undefined || this.isModeCompatible(mode, command.mode)) {
+          results.push(item.value)
+        }
       }
       item = iter.next()
     }
@@ -185,15 +195,26 @@ export class AcEdCommandStack {
    * could not be found. If more than one command of the same name is present in the command stack (that
    * is, in separate command groups), then the first one found is used.
    *
+   * If a mode is specified, the command is only returned if it is compatible with that mode.
+   * Higher value modes are compatible with lower value modes.
+   *
    * @param cmdName - Input the command name to search for
-   * @returns Return the matched AcEdCommand object if a match is found. Otherwise, return undefined.
+   * @param mode - Optional access mode to check compatibility. Only returns the command if it's compatible with this mode.
+   * @returns Return the matched AcEdCommand object if a match is found and compatible with the mode. Otherwise, return undefined.
    */
-  lookupGlobalCmd(cmdName: string) {
+  lookupGlobalCmd(cmdName: string, mode?: AcEdOpenMode) {
     cmdName = cmdName.toUpperCase()
     let result: AcEdCommand | undefined = undefined
     for (const group of this._commandsByGroup) {
       result = group.commandsByGlobalName.get(cmdName)
-      if (result) break
+      if (result) {
+        // Check mode compatibility if mode is specified
+        if (mode === undefined || this.isModeCompatible(mode, result.mode)) {
+          break
+        } else {
+          result = undefined
+        }
+      }
     }
     return result
   }
@@ -205,15 +226,26 @@ export class AcEdCommandStack {
    * be found. If more than one command of the same name is present in the command stack (that is, in
    * separate command groups), then the first one found is used.
    *
+   * If a mode is specified, the command is only returned if it is compatible with that mode.
+   * Higher value modes are compatible with lower value modes.
+   *
    * @param cmdName - Input the command name to search for
-   * @returns Return the matched AcEdCommand object if a match is found. Otherwise, return undefined.
+   * @param mode - Optional access mode to check compatibility. Only returns the command if it's compatible with this mode.
+   * @returns Return the matched AcEdCommand object if a match is found and compatible with the mode. Otherwise, return undefined.
    */
-  lookupLocalCmd(cmdName: string) {
+  lookupLocalCmd(cmdName: string, mode?: AcEdOpenMode) {
     cmdName = cmdName.toUpperCase()
     let result: AcEdCommand | undefined = undefined
     for (const group of this._commandsByGroup) {
       result = group.commandsByLocalName.get(cmdName)
-      if (result) break
+      if (result) {
+        // Check mode compatibility if mode is specified
+        if (mode === undefined || this.isModeCompatible(mode, result.mode)) {
+          break
+        } else {
+          result = undefined
+        }
+      }
     }
     return result
   }
@@ -269,5 +301,25 @@ export class AcEdCommandStack {
     this._defaultCommandGroup.commandsByLocalName.clear()
     this._systemCommandGroup.commandsByGlobalName.clear()
     this._systemCommandGroup.commandsByLocalName.clear()
+  }
+
+  /**
+   * Checks if a document mode is compatible with a command's required mode.
+   *
+   * Higher value modes are compatible with lower value modes.
+   * - Write mode (8) is compatible with Review (4) and Read (0) commands
+   * - Review mode (4) is compatible with Read (0) commands
+   * - Read mode (0) is only compatible with Read (0) commands
+   *
+   * @param documentMode - The mode of the document
+   * @param commandMode - The mode required by the command
+   * @returns True if the document mode is compatible with the command mode
+   */
+  private isModeCompatible(
+    documentMode: AcEdOpenMode,
+    commandMode: AcEdOpenMode
+  ): boolean {
+    // Higher value modes are compatible with lower value modes
+    return documentMode >= commandMode
   }
 }

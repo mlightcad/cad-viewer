@@ -82,8 +82,12 @@
  * @see {@link https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/MlCadViewer.vue | Source Code}
  */
 
-import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
-import { AcDbOpenDatabaseOptions } from '@mlightcad/data-model'
+import {
+  AcApDocManager,
+  AcApOpenDatabaseOptions,
+  AcEdOpenMode,
+  eventBus
+} from '@mlightcad/cad-simple-viewer'
 import { useDark, useToggle } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -135,6 +139,13 @@ interface Props {
   useMainThreadDraw?: boolean
   /** Initial theme of the viewer */
   theme?: 'light' | 'dark'
+  /**
+   * Access mode for opening CAD files.
+   * - Read (0): Read-only access
+   * - Review (4): Review access, compatible with Read
+   * - Write (8): Full read/write access, compatible with Review and Read
+   */
+  mode?: AcEdOpenMode
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -144,7 +155,8 @@ const props = withDefaults(defineProps<Props>(), {
   background: undefined,
   baseUrl: undefined,
   useMainThreadDraw: false,
-  theme: 'dark'
+  theme: 'dark',
+  mode: AcEdOpenMode.Read
 })
 
 const { t } = useI18n()
@@ -190,7 +202,10 @@ const features = useSettings()
  * @param fileContent - File content as string (DXF) or ArrayBuffer (DWG)
  */
 const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
-  const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
+  const options: AcApOpenDatabaseOptions = {
+    minimumChunkSize: 1000,
+    mode: props.mode
+  }
   const success = await AcApDocManager.instance.openDocument(
     fileName,
     fileContent,
@@ -210,7 +225,10 @@ const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
  */
 const openFileFromUrl = async (url: string) => {
   try {
-    const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
+    const options: AcApOpenDatabaseOptions = {
+      minimumChunkSize: 1000,
+      mode: props.mode
+    }
     await AcApDocManager.instance.openUrl(url, options)
     store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch (error) {
@@ -249,7 +267,10 @@ const openLocalFile = async (file: File) => {
     })
 
     // Open the file using the document manager
-    const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
+    const options: AcApOpenDatabaseOptions = {
+      minimumChunkSize: 1000,
+      mode: props.mode
+    }
     const success = await AcApDocManager.instance.openDocument(
       file.name,
       fileContent,

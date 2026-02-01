@@ -4,6 +4,7 @@ import { AcApContext, AcApDocManager } from '../app'
 import {
   AcEdBaseView,
   AcEdCommand,
+  AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptDistanceOptions,
   AcEdPromptPointOptions
@@ -36,6 +37,11 @@ export class AcApCircleJig extends AcEdPreviewJig<number> {
  * Command to create one circle.
  */
 export class AcApCircleCmd extends AcEdCommand {
+  constructor() {
+    super()
+    this.mode = AcEdOpenMode.Review
+  }
+
   async execute(context: AcApContext) {
     const centerPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.circle.center')
