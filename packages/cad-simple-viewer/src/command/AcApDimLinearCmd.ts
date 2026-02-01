@@ -10,6 +10,7 @@ import { AcApContext, AcApDocManager } from '../app'
 import {
   AcEdBaseView,
   AcEdCommand,
+  AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions
 } from '../editor'
@@ -76,6 +77,11 @@ export class AcApDimJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * Command to create one aligned dimension.
  */
 export class AcApDimLinearCmd extends AcEdCommand {
+  constructor() {
+    super()
+    this.mode = AcEdOpenMode.Review
+  }
+
   async execute(context: AcApContext) {
     const xLine1PointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.dimlinear.xLine1Point')

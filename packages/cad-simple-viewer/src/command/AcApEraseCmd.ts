@@ -1,12 +1,18 @@
 import { AcApContext, AcApDocManager } from '../app'
 import { AcEdCommand } from '../command'
 import { AcEdPromptSelectionOptions } from '../editor/input/prompt'
+import { AcEdOpenMode } from '../editor/view'
 import { AcApI18n } from '../i18n'
 
 /**
  * Command to delete selected objects from the drawing.
  */
 export class AcApEraseCmd extends AcEdCommand {
+  constructor() {
+    super()
+    this.mode = AcEdOpenMode.Write
+  }
+
   /**
    * Executes the command to delete selected objects from the drawing
    *

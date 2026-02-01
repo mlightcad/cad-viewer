@@ -1,7 +1,7 @@
 import { AcDbSysVarManager } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
-import { AcEdCommand, AcEdPromptStringOptions } from '../editor'
+import { AcEdCommand, AcEdOpenMode, AcEdPromptStringOptions } from '../editor'
 import { AcApI18n } from '../i18n'
 
 /**
@@ -9,6 +9,11 @@ import { AcApI18n } from '../i18n'
  * this command.
  */
 export class AcApSysVarCmd extends AcEdCommand {
+  constructor() {
+    super()
+    this.mode = AcEdOpenMode.Review
+  }
+
   /**
    * Executes the command to modify the value of one system variable.
    *

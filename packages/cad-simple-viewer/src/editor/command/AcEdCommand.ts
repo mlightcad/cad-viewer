@@ -1,6 +1,7 @@
 import { AcCmEventManager } from '@mlightcad/data-model'
 
 import { AcApContext } from '../../app'
+import { AcEdOpenMode } from '../view'
 
 /**
  * Event arguments for command lifecycle events.
@@ -60,6 +61,8 @@ export abstract class AcEdCommand {
   private _globalName: string
   /** The local (translated) name of the command */
   private _localName: string
+  /** The minimum access mode required to execute this command */
+  private _mode: AcEdOpenMode = AcEdOpenMode.Read
 
   /**
    * Creates a new command instance.
@@ -120,6 +123,27 @@ export abstract class AcEdCommand {
    */
   set localName(value: string) {
     this._localName = value
+  }
+
+  /**
+   * Gets the minimum access mode required to execute this command.
+   *
+   * Commands with higher mode requirements can only be executed when the document
+   * is opened in a compatible mode. Higher value modes are compatible with lower value modes.
+   *
+   * @returns The minimum access mode required
+   */
+  get mode() {
+    return this._mode
+  }
+
+  /**
+   * Sets the minimum access mode required to execute this command.
+   *
+   * @param value - The minimum access mode (Read, Review, or Write)
+   */
+  set mode(value: AcEdOpenMode) {
+    this._mode = value
   }
 
   /**

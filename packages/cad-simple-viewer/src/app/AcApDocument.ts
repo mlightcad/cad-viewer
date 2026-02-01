@@ -5,13 +5,15 @@ import {
 } from '@mlightcad/data-model'
 
 import { eventBus } from '../editor'
+import { AcEdOpenMode } from '../editor/view'
+import { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
 
 /**
  * Represents a CAD document that manages a drawing database and associated metadata.
  *
  * This class handles:
  * - Opening CAD files from URIs or file content (DWG/DXF formats)
- * - Managing document properties (title, read-only state)
+ * - Managing document properties (title, access mode)
  * - Providing access to the underlying database
  * - Handling file loading errors through event emission
  */
@@ -24,40 +26,46 @@ export class AcApDocument {
   private _fileName: string = ''
   /** The display title of the document */
   private _docTitle: string = ''
-  /** Whether the document is opened in read-only mode */
-  private _isReadOnly: boolean = true
+  /** The access mode for the document */
+  private _openMode: AcEdOpenMode = AcEdOpenMode.Write
 
   /**
    * Creates a new document instance with an empty database.
    *
-   * The document is initialized with an "Untitled" title and read-only mode enabled.
+   * The document is initialized with an "Untitled" title and write mode enabled.
    */
   constructor() {
     this._database = new AcDbDatabase()
     this.docTitle = 'Untitled'
+    this._openMode = AcEdOpenMode.Write
   }
 
   /**
    * Opens a CAD document from a URI.
    *
    * @param uri - The URI of the CAD file to open
-   * @param options - Options for opening the database, including read-only mode
+   * @param options - Options for opening the database
    * @returns Promise resolving to true if successful, false if failed
    *
    * @example
    * ```typescript
    * const success = await document.openUri('https://example.com/drawing.dwg', {
-   *   readOnly: true
+   *   mode: AcEdOpenMode.Read
    * });
    * ```
    */
-  async openUri(uri: string, options: AcDbOpenDatabaseOptions) {
+  async openUri(uri: string, options: AcApOpenDatabaseOptions) {
     this._uri = uri
-    this._isReadOnly = (options && options.readOnly) || false
+    this._openMode = options?.mode ?? AcEdOpenMode.Read
     this._fileName = this.getFileNameFromUri(uri)
     let isSuccess = true
     try {
-      await this._database.openUri(uri, options)
+      // Convert to base options for database method
+      const baseOptions: AcDbOpenDatabaseOptions = {
+        ...options,
+        readOnly: this._openMode === AcEdOpenMode.Read
+      }
+      await this._database.openUri(uri, baseOptions)
       this.docTitle = this._fileName
     } catch (_) {
       isSuccess = false
@@ -71,29 +79,35 @@ export class AcApDocument {
    *
    * @param fileName - The name of the file (used to determine file type from extension)
    * @param content - The file content as string or ArrayBuffer
-   * @param options - Options for opening the database, including read-only mode
+   * @param options - Options for opening the database
    * @returns Promise resolving to true if successful, false if failed
    *
    * @example
    * ```typescript
    * const fileContent = await fetch('drawing.dwg').then(r => r.arrayBuffer());
    * const success = await document.openDocument('drawing.dwg', fileContent, {
-   *   readOnly: false
+   *   mode: AcEdOpenMode.Write
    * });
    * ```
    */
   async openDocument(
     fileName: string,
     content: ArrayBuffer,
-    options: AcDbOpenDatabaseOptions
+    options: AcApOpenDatabaseOptions
   ) {
     let isSuccess = true
     this._fileName = fileName
+    this._openMode = options?.mode ?? AcEdOpenMode.Read
     try {
       const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
+      // Convert to base options for database method
+      const baseOptions: AcDbOpenDatabaseOptions = {
+        ...options,
+        readOnly: this._openMode === AcEdOpenMode.Read
+      }
       await this._database.read(
         content,
-        options,
+        baseOptions,
         fileExtension == 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
       )
       this.docTitle = this._fileName
@@ -147,12 +161,12 @@ export class AcApDocument {
   }
 
   /**
-   * Gets whether the document is opened in read-only mode.
+   * Gets the access mode of the document.
    *
-   * @returns True if the document is read-only, false if editable
+   * @returns The access mode (Read, Review, or Write)
    */
-  get isReadOnly() {
-    return this._isReadOnly
+  get openMode() {
+    return this._openMode
   }
 
   /**
