@@ -10,6 +10,7 @@
       <MlCadViewer
         locale="en"
         :local-file="store.selectedFile"
+        :mode="selectedMode"
         @create="initialize"
         base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
       />
@@ -19,8 +20,13 @@
 
 <script setup lang="ts">
 // import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
-import { AcApDocManager, AcEdCommandStack } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApDocManager,
+  AcEdCommandStack,
+  AcEdOpenMode
+} from '@mlightcad/cad-simple-viewer'
 import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { ref } from 'vue'
 
 import { AcApQuitCmd } from './commands'
 import FileUpload from './components/FileUpload.vue'
@@ -51,9 +57,12 @@ const initialize = () => {
 // AcApSettingManager.instance.isShowStats = false
 // AcApSettingManager.instance.isShowCoordinate = false
 
+const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Read)
+
 // Handle file selection from upload component
-const handleFileSelect = (file: File) => {
+const handleFileSelect = (file: File, mode: AcEdOpenMode) => {
   store.selectedFile = file
+  selectedMode.value = mode
 }
 </script>
 

@@ -190,7 +190,7 @@ The `MlCadViewer` component accepts the following props:
 | `baseUrl` | `string` | `undefined` | Base URL for loading fonts, templates, and example files. This URL is used by the CAD viewer to load resources like fonts and drawing templates. **Note**: If not provided, uses the default URL. |
 | `useMainThreadDraw` | `boolean` | `false` | Optional flag whether to use main thread or webwork to render drawing. The true value means using main thread to render drawing. This approach take less memory and take longer time to show rendering results. The false value means using web worker to render drawing. This approach take more memory and take shorter time to show rendering results. |
 | `theme` | `'light' \| 'dark'` | `'dark'` | Initial theme of the CAD viewer. `'light'` applies the light theme (`ml-theme-light` class) and `'dark'` applies the dark theme (`ml-theme-dark` class). The theme can also be toggled at runtime using the status bar theme button. |
-
+| `mode` | `AcEdOpenMode` | `'AcEdOpenMode.Write'` | Access mode for opening CAD files. `'AcEdOpenMode.Read'` means read-only access. `'AcEdOpenMode.Review'` means review access, compatible with read. `'AcEdOpenMode.Write'` means full read/write access, compatible with review and read. |
 ### UI Settings
 
 The `MlCadViewer` reads its UI visibility from the global `AcApSettingManager` (provided by `@mlightcad/cad-simple-viewer`). Configure these flags anywhere before rendering the viewer to customize the UI.

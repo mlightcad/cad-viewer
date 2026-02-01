@@ -8,6 +8,7 @@ import { AcApContext, AcApDocManager } from '../app'
 import {
   AcEdBaseView,
   AcEdCommand,
+  AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions
 } from '../editor'
@@ -186,6 +187,11 @@ export class AcApRevCloudJig extends AcEdPreviewJig<AcGePoint2dLike> {
  * Command to create a revision cloud (cloud line) in rectangular shape.
  */
 export class AcApRevCloudCmd extends AcEdCommand {
+  constructor() {
+    super()
+    this.mode = AcEdOpenMode.Review
+  }
+
   async execute(context: AcApContext) {
     const firstPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.line.firstPoint')

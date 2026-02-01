@@ -4,7 +4,6 @@ import {
   AcDbDxfConverter,
   AcDbFileType,
   acdbHostApplicationServices,
-  AcDbOpenDatabaseOptions,
   AcDbProgressdEventArgs,
   AcDbSysVarManager,
   AcGeBox2d
@@ -32,7 +31,7 @@ import {
   AcApZoomToBoxCmd,
   AcEdCommandStack
 } from '../command'
-import { AcEdCalculateSizeCallback, eventBus } from '../editor'
+import { AcEdCalculateSizeCallback, AcEdOpenMode, eventBus } from '../editor'
 import { AcApI18n } from '../i18n'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { AcTrView2d } from '../view'
@@ -40,6 +39,7 @@ import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
 import { AcApProgress } from './AcApProgress'
+import { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
 
 const DEFAULT_BASE_URL = 'https://mlightcad.gitlab.io/cad-data/'
 
@@ -495,7 +495,7 @@ export class AcApDocManager {
    * }
    * ```
    */
-  async openUrl(url: string, options?: AcDbOpenDatabaseOptions) {
+  async openUrl(url: string, options?: AcApOpenDatabaseOptions) {
     this.onBeforeOpenDocument()
     options = this.setOptions(options)
     // TODO: The correct way is to create one new context instead of using old context and document
@@ -525,7 +525,7 @@ export class AcApDocManager {
   async openDocument(
     fileName: string,
     content: ArrayBuffer,
-    options: AcDbOpenDatabaseOptions
+    options: AcApOpenDatabaseOptions
   ) {
     this.onBeforeOpenDocument()
     options = this.setOptions(options)
@@ -546,6 +546,65 @@ export class AcApDocManager {
   regen() {
     this.curView.clear()
     this.context.doc.database.regen()
+  }
+
+  /**
+   * Search through all of the local and translated names in all of the command groups in the command stack
+   * starting at the top of the stack trying to find a match with cmdName. If a match is found, the matched
+   * AcEdCommand object is returned. Otherwise undefined is returned to indicate that the command could not
+   * be found. If more than one command of the same name is present in the command stack (that is, in
+   * separate command groups), then the first one found is used.
+   *
+   * The command which is compatible with the open mode of the current document is only returned
+   *
+   * @param cmdName - Input the command name to search for
+   * @returns Return the matched AcEdCommand object if a match is found and compatible with the open mode of
+   * the current document. Otherwise, return undefined.
+   */
+  lookupLocalCmd(cmdName: string) {
+    return this._commandManager.lookupLocalCmd(
+      cmdName,
+      this.curDocument.openMode
+    )
+  }
+
+  /**
+   * Search through all of the global and untranslated names in all of the command groups in the command
+   * stack starting at the top of the stack trying to find a match with cmdName. If a match is found, the
+   * matched AcEdCommand object is returned. Otherwise undefined is returned to indicate that the command
+   * could not be found. If more than one command of the same name is present in the command stack (that
+   * is, in separate command groups), then the first one found is used.
+   *
+   * The command is only returned if it is compatible with that open mode of the current document.
+   * Higher value modes are compatible with lower value modes.
+   *
+   * @param cmdName - Input the command name to search for
+   * @returns Return the matched AcEdCommand object if a match is found and compatible with the open mode
+   * of the current document. Otherwise, return undefined.
+   */
+  lookupGlobalCmd(cmdName: string) {
+    return this._commandManager.lookupGlobalCmd(
+      cmdName,
+      this.curDocument.openMode
+    )
+  }
+
+  /**
+   * Fuzzy search for commands by prefix using the command iterator.
+   *
+   * This method iterates through all commands in all command groups and returns those
+   * whose global or local names start with the provided prefix. The search is case-insensitive.
+   * Only commands which are compatible with that open mode of the current document are returned.
+   * Higher value modes are compatible with lower value modes.
+   *
+   * @param prefix - The prefix string to search for. Case-insensitive.
+   * @returns An array of objects containing matched commands and their corresponding group names.
+   */
+  searchCommandsByPrefix(prefix: string) {
+    return this._commandManager.searchCommandsByPrefix(
+      prefix,
+      this.curDocument.openMode
+    )
   }
 
   /**
@@ -678,9 +737,11 @@ export class AcApDocManager {
    * Executes a command by its string name.
    *
    * This method looks up a registered command by name and executes it with the current context.
-   * If the command is not found, no action is taken.
+   * It checks if the command's required mode is compatible with the document's current mode.
+   * If the command is not found or not compatible, an error is thrown.
    *
    * @param cmdStr - The command string to execute (e.g., 'pan', 'zoom', 'select')
+   * @throws {Error} If the command is not found or if the command's mode is not compatible with the document's mode
    *
    * @example
    * ```typescript
@@ -689,8 +750,21 @@ export class AcApDocManager {
    * ```
    */
   sendStringToExecute(cmdStr: string) {
+    const documentMode = this.context.doc.openMode
     const cmd = this._commandManager.lookupGlobalCmd(cmdStr)
-    cmd?.execute(this.context)
+
+    if (!cmd) {
+      throw new Error(`Command '${cmdStr}' not found`)
+    }
+
+    // Check mode compatibility: document mode must be >= command mode
+    if (documentMode < cmd.mode) {
+      throw new Error(
+        `Command '${cmdStr}' requires mode '${AcEdOpenMode[cmd.mode]}' but document is in mode '${AcEdOpenMode[documentMode]}'!`
+      )
+    }
+
+    cmd.execute(this.context)
   }
 
   /**
@@ -754,7 +828,7 @@ export class AcApDocManager {
    * @returns The validated options object with font loader configured
    * @private
    */
-  private setOptions(options?: AcDbOpenDatabaseOptions) {
+  private setOptions(options?: AcApOpenDatabaseOptions) {
     if (options == null) {
       options = { fontLoader: this._fontLoader }
     } else if (options.fontLoader == null) {

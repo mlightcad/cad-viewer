@@ -573,8 +573,7 @@ export class AcEdCommandLine {
       return
     }
 
-    const matches =
-      AcApDocManager.instance.commandManager.searchCommandsByPrefix(text)
+    const matches = AcApDocManager.instance.searchCommandsByPrefix(text)
     if (matches.length) {
       this.autoCompleteIndex = -1
       this.cmdPopup.innerHTML = ''
@@ -686,7 +685,7 @@ export class AcEdCommandLine {
     const parts = cmdLine.trim().split(/\s+/)
     const cmdStr = parts[0].toUpperCase()
     // TODO: Should look up local cmd too
-    return AcApDocManager.instance.commandManager.lookupLocalCmd(cmdStr)
+    return AcApDocManager.instance.lookupLocalCmd(cmdStr)
   }
 
   /** Show or hide popups */

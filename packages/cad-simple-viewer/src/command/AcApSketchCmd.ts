@@ -8,6 +8,7 @@ import { AcApContext, AcApDocManager } from '../app'
 import {
   AcEdBaseView,
   AcEdCommand,
+  AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions
 } from '../editor'
@@ -80,6 +81,11 @@ export class AcApSketchJig extends AcEdPreviewJig<AcGePoint2dLike> {
  * and adds points to the polyline until the user specifies the second point.
  */
 export class AcApSketchCmd extends AcEdCommand {
+  constructor() {
+    super()
+    this.mode = AcEdOpenMode.Review
+  }
+
   async execute(context: AcApContext) {
     const firstPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.sketch.firstPoint')
