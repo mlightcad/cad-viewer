@@ -5,6 +5,35 @@ export default {
     export: 'Export to SVG'
   },
   verticalToolbar: {
+    comment: {
+      text: 'Comment',
+      description:
+        'Create text or graphic annotations to explain and mark up drawing content'
+    },
+    revCircle: {
+      text: 'Circle',
+      description: 'Use circles to highlight and annotate areas in the drawing'
+    },
+    revLine: {
+      text: 'Line',
+      description:
+        'Use straight lines to annotate and explain objects or areas in the drawing'
+    },
+    revFreehand: {
+      text: 'Freehand',
+      description:
+        'Use freehand strokes to freely annotate and emphasize drawing content'
+    },
+    revRect: {
+      text: 'Rectangle',
+      description:
+        'Use rectangles to highlight and annotate objects or areas in the drawing'
+    },
+    revCloud: {
+      text: 'Rev Cloud',
+      description:
+        'Used to highlight areas in a drawing with a cloud-shaped outline'
+    },
     select: {
       text: 'Select',
       description: 'Selects entities'
