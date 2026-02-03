@@ -19,14 +19,13 @@ export class AcApSysVarCmd extends AcEdCommand {
    *
    * @param context - The application context containing the view
    */
-  async execute(_context: AcApContext) {
+  async execute(context: AcApContext) {
     const prompt = new AcEdPromptStringOptions(AcApI18n.t('jig.sysvar.prompt'))
-    AcEdPromptStringOptions
     const value = await AcApDocManager.instance.editor.getString(prompt)
     const sysVarManager = AcDbSysVarManager.instance()
     const sysVar = sysVarManager.getDescriptor(this.globalName)
     if (sysVar) {
-      sysVarManager.setVar(this.globalName, value)
+      sysVarManager.setVar(this.globalName, value, context.doc.database)
     }
   }
 }

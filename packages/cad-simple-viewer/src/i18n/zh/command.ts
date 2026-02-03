@@ -1,5 +1,11 @@
 export default {
   ACAD: {
+    cecolor: {
+      description: '设置新创建对象的当前默认颜色'
+    },
+    clayer: {
+      description: '设置新建对象和编辑操作所使用的当前图层'
+    },
     circle: {
       description: '使用圆心和半径创建圆'
     },
@@ -45,6 +51,9 @@ export default {
     },
     sketch: {
       description: '使用多段线创建手绘线，跟踪鼠标移动'
+    },
+    whitebkcolor: {
+      description: '切换绘图区域背景颜色，在白色和黑色背景之间切换'
     },
     zoom: {
       description: '缩放以显示所有对象'
