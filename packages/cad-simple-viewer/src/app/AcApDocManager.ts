@@ -24,8 +24,10 @@ import {
   AcApRectCmd,
   AcApRegenCmd,
   AcApRevCloudCmd,
+  AcApRevVisibilityCmd,
   AcApSelectCmd,
   AcApSketchCmd,
+  AcApSwitchBgCmd,
   AcApSysVarCmd,
   AcApZoomCmd,
   AcApZoomToBoxCmd,
@@ -698,6 +700,12 @@ export class AcApDocManager {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'revvis',
+      'revvis',
+      new AcApRevVisibilityCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'select',
       'select',
       new AcApSelectCmd()
@@ -707,6 +715,12 @@ export class AcApDocManager {
       'sketch',
       'sketch',
       new AcApSketchCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'switchbg',
+      'switchbg',
+      new AcApSwitchBgCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

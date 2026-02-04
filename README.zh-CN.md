@@ -88,7 +88,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 -   [x] 图层表支持
 -   [x] 块（Block）/ 插入（Insert）结构
 -   [ ] ⏳ Handle 与对象 ID 管理：当前 objectId 与 handle 相同，并且以字符串表示，而不是 bigint（int64）
--   [ ] XData / 扩展字典支持
+-   [ ] ⏳ XData / 扩展字典支持
 -   [ ] 代理实体（Proxy Entity）处理
 
 ### 渲染与性能
@@ -98,7 +98,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 -   [x] 基于 WebGL 的渲染（Three.js）
 -   [x] 仅针对 2D 的优化渲染管线
 -   [x] 基于图层的场景组织
--   [ ] 布局（Layout）/ 图纸空间（Paper Space）渲染
+-   [x] 布局（Layout）/ 图纸空间（Paper Space）渲染
 -   [ ] 视口（Viewport）实体支持
 
 #### 性能优化
@@ -142,7 +142,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 -   [ ] ⏳ 端点（Endpoint）：当前尚未支持 INSERT 实体
 -   [x] 中点（Midpoint）
--   [ ] 圆心（Center）
+-   [ ] ⏳ 圆心（Center）
 -   [ ] 交点（Intersection）
 -   [ ] 垂足 / 切点（Perpendicular / Tangent）
 -   [ ] ⏳ 最近点（Nearest）
@@ -179,7 +179,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 -   [x] 圆（Circle）
 -   [ ] 圆弧（Arc）
 -   [ ] 椭圆（Ellipse）
--   [ ] 矩形 / 多边形（Rectangle / Polygon）
+-   [ ] ⏳ 矩形 / 多边形（Rectangle / Polygon）
 
 #### 高级实体
 
@@ -224,21 +224,21 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 -   [x] 与前端框架无关的核心设计
 -   [ ] React 集成示例
--   [ ] Vue 集成示例
+-   [x] Vue 集成示例
 -   [ ] OpenLayers / 地图集成
 -   [ ] CMS / Notion 嵌入
 
 #### 插件系统
 
--   [ ] 插件 API
+-   [x] 插件 API
 -   [ ] 自定义实体支持
--   [ ] 自定义命令注入
+-   [x] 自定义命令
 
 ### 离线与在线编辑
 
 #### 离线编辑器
 
--   [ ] 浏览器本地编辑
+-   [ ] ⏳ 浏览器本地编辑
 -   [ ] 保存为 DXF
 -   [ ] 保存变更集 / 差异（diff）
 -   [ ] IndexedDB 持久化

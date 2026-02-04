@@ -8,21 +8,34 @@ export default {
     comment: {
       text: 'Comment',
       description:
-        'Create text or graphic annotations to explain and mark up drawing content'
+        'Creates text or graphic annotations to explain and mark up drawing content'
+    },
+    hideComment: {
+      text: 'Hide',
+      description: 'Hides comments'
+    },
+    layer: {
+      text: 'Layer',
+      description: 'Manages layers'
+    },
+    pan: {
+      text: 'Pan',
+      description:
+        'Shifts the view without changing the viewing direction or magnification'
     },
     revCircle: {
       text: 'Circle',
-      description: 'Use circles to highlight and annotate areas in the drawing'
+      description: 'Uses circles to highlight and annotate areas in the drawing'
     },
     revLine: {
       text: 'Line',
       description:
-        'Use straight lines to annotate and explain objects or areas in the drawing'
+        'Uses straight lines to annotate and explain objects or areas in the drawing'
     },
     revFreehand: {
       text: 'Freehand',
       description:
-        'Use freehand strokes to freely annotate and emphasize drawing content'
+        'Uses freehand strokes to freely annotate and emphasize drawing content'
     },
     revRect: {
       text: 'Rectangle',
@@ -38,10 +51,13 @@ export default {
       text: 'Select',
       description: 'Selects entities'
     },
-    pan: {
-      text: 'Pan',
-      description:
-        'Shifts the view without changing the viewing direction or magnification'
+    showComment: {
+      text: 'Show',
+      description: 'Shows comments'
+    },
+    switchBg: {
+      text: 'Switch',
+      description: 'Switches the drawing background between white and black'
     },
     zoomToExtent: {
       text: 'Zoom Extents',
@@ -50,10 +66,6 @@ export default {
     zoomToBox: {
       text: 'Zoom Window',
       description: 'Zooms to display an area specified by a rectangular window'
-    },
-    layer: {
-      text: 'Layer',
-      description: 'Manages layers'
     }
   },
   statusBar: {

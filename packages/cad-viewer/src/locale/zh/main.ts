@@ -9,6 +9,18 @@ export default {
       text: '批注',
       description: '创建用于说明和标注图纸内容的文字或图形批注'
     },
+    hideComment: {
+      text: '隐藏批注',
+      description: '隐藏批注'
+    },
+    layer: {
+      text: '图层',
+      description: '管理图层'
+    },
+    pan: {
+      text: '移动',
+      description: '平移视图'
+    },
     revCircle: {
       text: '圆',
       description: '使用圆高亮并标注图纸中的区域'
@@ -33,9 +45,13 @@ export default {
       text: '选择',
       description: '选择图元'
     },
-    pan: {
-      text: '移动',
-      description: '平移视图'
+    showComment: {
+      text: '显示批注',
+      description: '显示批注'
+    },
+    switchBg: {
+      text: '切换背景色',
+      description: '在白色与黑色之间切换绘图背景色'
     },
     zoomToExtent: {
       text: '范围缩放',
@@ -44,10 +60,6 @@ export default {
     zoomToBox: {
       text: '矩形缩放',
       description: '缩放以显示矩形窗口内的对象'
-    },
-    layer: {
-      text: '图层',
-      description: '管理图层'
     }
   },
   statusBar: {

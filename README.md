@@ -89,7 +89,7 @@ Legend:
 * [x] Layer table support
 * [x] Block / insert structure
 * [ ] ⏳ Handle & object ID management: currently objectId is same as handle and represented as one string instead of bigint (int64).
-* [ ] XData / extension dictionary support
+* [ ] ⏳ XData / extension dictionary support
 * [ ] Proxy entity handling
 
 ### Rendering & Performance
@@ -99,7 +99,7 @@ Legend:
 * [x] WebGL-based rendering (Three.js)
 * [x] 2D-only optimized pipeline
 * [x] Layer-based scene organization
-* [ ] Layout / paper space rendering
+* [x] Layout / paper space rendering
 * [ ] Viewport entity support
 
 #### Performance Optimization
@@ -143,7 +143,7 @@ Legend:
 
 * [ ] ⏳ Endpoint: Now working for INSERT entity yet.
 * [x] Midpoint
-* [ ] Center
+* [ ] ⏳ Center
 * [ ] Intersection
 * [ ] Perpendicular / tangent
 * [ ] ⏳ Nearest
@@ -226,21 +226,21 @@ Legend:
 
 * [x] Framework-agnostic core
 * [ ] React integration example
-* [ ] Vue integration example
+* [x] Vue integration example
 * [ ] OpenLayers / Map integration
 * [ ] CMS / Notion embedding
 
 #### Plugin System
 
-* [ ] Plugin API
+* [x] Plugin API
 * [ ] Custom entity support
-* [ ] Custom command injection
+* [x] Custom command
 
 ### Offline & Online Editing
 
 #### Offline Editor
 
-* [ ] Local editing in browser
+* [ ] ⏳ Local editing in browser
 * [ ] Save to DXF
 * [ ] Save change set / diff
 * [ ] IndexedDB persistence
