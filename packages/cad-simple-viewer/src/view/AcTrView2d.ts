@@ -7,6 +7,7 @@ import {
   AcDbObjectId,
   AcDbRasterImage,
   AcDbRay,
+  AcDbSysVarManager,
   AcDbViewport,
   AcDbXline,
   AcGeBox2d,
@@ -156,6 +157,13 @@ export class AcTrView2d extends AcEdBaseView {
     // Initialize background color via renderer clear color
     this._renderer.setClearColor(mergedOptions.background || 0x000000)
     this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
+
+    AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
+      if (args.name === 'WHITEBKCOLOR') {
+        const useWhiteBackgroundColor = args.newVal as boolean
+        this.backgroundColor = useWhiteBackgroundColor ? 0xffffff : 0
+      }
+    })
 
     AcApSettingManager.instance.events.modified.addEventListener(args => {
       if (args.key == 'isShowStats') {

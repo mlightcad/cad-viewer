@@ -1,5 +1,12 @@
 export default {
   ACAD: {
+    cecolor: {
+      description: 'Sets the current default color for newly created objects'
+    },
+    clayer: {
+      description:
+        'Sets the current layer for new objects and editing operations'
+    },
     circle: {
       description: 'Creates one circle by center and radius'
     },
@@ -48,6 +55,9 @@ export default {
     sketch: {
       description:
         'Creates a sketch line using polyline that tracks mouse movement'
+    },
+    whitebkcolor: {
+      description: 'Toggles the drawing area background between white and black'
     },
     zoom: {
       description: 'Zooms to display the maximum extents of all entities'

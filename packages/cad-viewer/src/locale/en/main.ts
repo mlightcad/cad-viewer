@@ -5,14 +5,59 @@ export default {
     export: 'Export to SVG'
   },
   verticalToolbar: {
-    select: {
-      text: 'Select',
-      description: 'Selects entities'
+    comment: {
+      text: 'Comment',
+      description:
+        'Creates text or graphic annotations to explain and mark up drawing content'
+    },
+    hideComment: {
+      text: 'Hide',
+      description: 'Hides comments'
+    },
+    layer: {
+      text: 'Layer',
+      description: 'Manages layers'
     },
     pan: {
       text: 'Pan',
       description:
         'Shifts the view without changing the viewing direction or magnification'
+    },
+    revCircle: {
+      text: 'Circle',
+      description: 'Uses circles to highlight and annotate areas in the drawing'
+    },
+    revLine: {
+      text: 'Line',
+      description:
+        'Uses straight lines to annotate and explain objects or areas in the drawing'
+    },
+    revFreehand: {
+      text: 'Freehand',
+      description:
+        'Uses freehand strokes to freely annotate and emphasize drawing content'
+    },
+    revRect: {
+      text: 'Rectangle',
+      description:
+        'Use rectangles to highlight and annotate objects or areas in the drawing'
+    },
+    revCloud: {
+      text: 'Rev Cloud',
+      description:
+        'Used to highlight areas in a drawing with a cloud-shaped outline'
+    },
+    select: {
+      text: 'Select',
+      description: 'Selects entities'
+    },
+    showComment: {
+      text: 'Show',
+      description: 'Shows comments'
+    },
+    switchBg: {
+      text: 'Switch',
+      description: 'Switches the drawing background between white and black'
     },
     zoomToExtent: {
       text: 'Zoom Extents',
@@ -21,10 +66,6 @@ export default {
     zoomToBox: {
       text: 'Zoom Window',
       description: 'Zooms to display an area specified by a rectangular window'
-    },
-    layer: {
-      text: 'Layer',
-      description: 'Manages layers'
     }
   },
   statusBar: {
