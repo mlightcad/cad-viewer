@@ -101,6 +101,7 @@ import {
   MlEntityInfo,
   MlLanguageSelector,
   MlMainMenu,
+  MlDrawStyleToolbar,
   MlToolBars
 } from './layout'
 import { MlNotificationCenter } from './notification'
@@ -478,6 +479,12 @@ const closeNotificationCenter = () => {
           {{ store.fileName }}
         </div>
 
+        <!-- Toolbar for review options -->
+        <ml-draw-style-toolbar 
+          :editor="editor"
+          class="ml-rev-tool-bar" 
+        />
+
         <!-- Toolbar with common CAD operations (zoom, pan, select, etc.) -->
         <ml-tool-bars />
 
@@ -551,5 +558,14 @@ const closeNotificationCenter = () => {
   margin-top: 20px;
   pointer-events: none; /* Allow mouse events to pass through to container */
   z-index: 1; /* Ensure it's above canvas but doesn't block events */
+}
+
+/* Position the filename display at the top center of the viewer */
+.ml-rev-tool-bar {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2; /* Ensure it's above canvas but doesn't block events */
 }
 </style>

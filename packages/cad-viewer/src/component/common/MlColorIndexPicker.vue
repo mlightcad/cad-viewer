@@ -61,6 +61,7 @@
           <span>{{ t('main.colorIndexPicker.color') }}</span>
           <input
             v-model="manualInput"
+            @blur="applyInput"
             @keydown.enter="applyInput"
             :placeholder="t('main.colorIndexPicker.inputPlaceholder')"
           />

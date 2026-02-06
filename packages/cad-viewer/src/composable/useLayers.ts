@@ -1,6 +1,6 @@
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
-import { AcDbDatabase } from '@mlightcad/data-model'
-import { reactive } from 'vue'
+import { AcCmColor, AcDbDatabase } from '@mlightcad/data-model'
+import { computed, reactive } from 'vue'
 
 export interface LayerInfo {
   name: string
@@ -21,6 +21,15 @@ export interface LayerInfo {
 export function useLayers(editor: AcApDocManager) {
   const reactiveLayers = reactive<LayerInfo[]>([])
   const doc = editor.curDocument
+
+  const currentLayer = computed<string>({
+    get() {
+      return doc.database.clayer
+    },
+    set(layerName: string) {
+      return doc.database.clayer = layerName
+    }
+  })
 
   const reset = (doc: AcDbDatabase) => {
     const layers = doc.tables.layerTable.newIterator()
@@ -66,5 +75,30 @@ export function useLayers(editor: AcApDocManager) {
     reset(args.doc.database)
   })
 
-  return reactiveLayers
+  /**
+   * =========================================================
+   * Mutations
+   * =========================================================
+   */
+  function setLayerColor(layerName: string, colorIndex: number) {
+    const dbLayer = doc.database.tables.layerTable.getAt(layerName)
+    if (!dbLayer) return
+
+    const color = new AcCmColor()
+    color.colorIndex = colorIndex
+    dbLayer.color = color
+  }
+
+  function setLayerLineWeight(layerName: string, lineWeight: number) {
+    const dbLayer = doc.database.tables.layerTable.getAt(layerName)
+    if (!dbLayer) return
+    dbLayer.lineWeight = lineWeight
+  }
+
+  return {
+    layers: reactiveLayers,
+    currentLayer,
+    setLayerColor,
+    setLayerLineWeight
+  }
 }

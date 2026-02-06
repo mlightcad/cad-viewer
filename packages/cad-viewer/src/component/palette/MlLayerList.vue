@@ -81,7 +81,7 @@ const props = defineProps<Props>()
  * layers: reactive array of LayerInfo retrieved from editor.
  * This composable also updates automatically when CAD document changes.
  */
-const layers = useLayers(props.editor)
+const { layers } = useLayers(props.editor)
 
 /**
  * Returns the CSS color string for a layer row.
