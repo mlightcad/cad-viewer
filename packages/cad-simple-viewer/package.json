@@ -48,12 +48,12 @@
     "@types/three": "^0.172.0"
   },
   "dependencies": {
-    "@mlightcad/libredwg-converter": "../../../realdwg-web/packages/libredwg-converter/",
+    "@mlightcad/libredwg-converter": "^3.5.0",
     "mitt": "^3.0.1",
     "rbush": "^4.0.1"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "../../../realdwg-web/packages/data-model/",
+    "@mlightcad/data-model": "^1.7.0",
     "three": "^0.172.0",
     "lodash-es": "4.17.21"
   }

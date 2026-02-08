@@ -1,5 +1,6 @@
 export * from '../editor/command/AcEdCommand'
 export * from '../editor/command/AcEdCommandStack'
+export * from './AcApBaseRevCmd'
 export * from './AcApCircleCmd'
 export * from './AcApConvertToSvgCmd'
 export * from './AcApDimLinearCmd'

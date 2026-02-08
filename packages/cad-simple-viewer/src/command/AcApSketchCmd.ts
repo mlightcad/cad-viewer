@@ -7,12 +7,12 @@ import {
 import { AcApContext, AcApDocManager } from '../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions
 } from '../editor'
 import { AcApI18n } from '../i18n'
+import { AcApBaseRevCmd } from './AcApBaseRevCmd'
 
 // Minimum distance between points to add a new vertex (in world units)
 const MIN_DISTANCE = 0.1
@@ -80,7 +80,7 @@ export class AcApSketchJig extends AcEdPreviewJig<AcGePoint2dLike> {
  * After specifying the first point, continuously tracks mouse movement
  * and adds points to the polyline until the user specifies the second point.
  */
-export class AcApSketchCmd extends AcEdCommand {
+export class AcApSketchCmd extends AcApBaseRevCmd {
   constructor() {
     super()
     this.mode = AcEdOpenMode.Review

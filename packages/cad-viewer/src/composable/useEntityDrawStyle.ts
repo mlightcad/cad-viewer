@@ -1,4 +1,4 @@
-import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
+import { AcApBaseRevCmd, AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
   AcCmColorMethod,
@@ -44,9 +44,9 @@ export function useEntityDrawStyle(editor: AcApDocManager) {
   const isShowToolbar = ref<boolean>(false)
 
   editor.context.view.editor.events.commandWillStart.addEventListener(args => {
-    const commands = ['SKETCH', 'REVCIRCLE', 'REVCLOUD', 'REVRECT']
-    if (commands.includes(args.command.globalName.toUpperCase())) {
-      isShowToolbar.value = true
+    const command = args.command
+    if (command instanceof AcApBaseRevCmd) {
+      isShowToolbar.value = command.isShowEntityDrawStyleToolbar
     }
   })
 

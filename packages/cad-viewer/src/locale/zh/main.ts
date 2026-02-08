@@ -5,11 +5,11 @@ export default {
     export: '导出为SVG'
   },
   verticalToolbar: {
-    comment: {
+    annotation: {
       text: '批注',
       description: '创建用于说明和标注图纸内容的文字或图形批注'
     },
-    hideComment: {
+    hideAnnotation: {
       text: '隐藏批注',
       description: '隐藏批注'
     },
@@ -45,7 +45,7 @@ export default {
       text: '选择',
       description: '选择图元'
     },
-    showComment: {
+    showAnnotation: {
       text: '显示批注',
       description: '显示批注'
     },

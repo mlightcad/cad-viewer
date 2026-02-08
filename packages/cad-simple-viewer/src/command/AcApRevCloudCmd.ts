@@ -7,12 +7,12 @@ import {
 import { AcApContext, AcApDocManager } from '../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions
 } from '../editor'
 import { AcApI18n } from '../i18n'
+import { AcApBaseRevCmd } from './AcApBaseRevCmd'
 
 // Cloud line diameter in pixels
 const CLOUD_DIAMETER_PIXELS = 8
@@ -186,7 +186,7 @@ export class AcApRevCloudJig extends AcEdPreviewJig<AcGePoint2dLike> {
 /**
  * Command to create a revision cloud (cloud line) in rectangular shape.
  */
-export class AcApRevCloudCmd extends AcEdCommand {
+export class AcApRevCloudCmd extends AcApBaseRevCmd {
   constructor() {
     super()
     this.mode = AcEdOpenMode.Review

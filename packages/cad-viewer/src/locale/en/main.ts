@@ -5,14 +5,14 @@ export default {
     export: 'Export to SVG'
   },
   verticalToolbar: {
-    comment: {
-      text: 'Comment',
+    annotation: {
+      text: 'Annotation',
       description:
         'Creates text or graphic annotations to explain and mark up drawing content'
     },
-    hideComment: {
+    hideAnnotation: {
       text: 'Hide',
-      description: 'Hides comments'
+      description: 'Hides annotations'
     },
     layer: {
       text: 'Layer',
@@ -51,9 +51,9 @@ export default {
       text: 'Select',
       description: 'Selects entities'
     },
-    showComment: {
+    showAnnotation: {
       text: 'Show',
-      description: 'Shows comments'
+      description: 'Shows annotations'
     },
     switchBg: {
       text: 'Switch',
