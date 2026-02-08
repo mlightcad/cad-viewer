@@ -29,7 +29,7 @@ export class AcApSelectCmd extends AcEdCommand {
    *
    * @param context - The application context containing the view
    */
-  execute(context: AcApContext) {
+  async execute(context: AcApContext) {
     context.view.mode = AcEdViewMode.SELECTION
     context.view.setCursor(AcEdCorsorType.Crosshair)
   }

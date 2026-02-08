@@ -45,7 +45,7 @@ const itemsInReviewMode: MlButtonData[] = [
       {
         icon: revRect,
         text: t('main.verticalToolbar.revRect.text'),
-        command: 'rectangle',
+        command: 'revrect',
         description: t('main.verticalToolbar.revRect.description')
       },
       {
@@ -57,7 +57,7 @@ const itemsInReviewMode: MlButtonData[] = [
       {
         icon: revCircle,
         text: t('main.verticalToolbar.revCircle.text'),
-        command: 'circle',
+        command: 'revcircle',
         description: t('main.verticalToolbar.revCircle.description')
       }
     ]

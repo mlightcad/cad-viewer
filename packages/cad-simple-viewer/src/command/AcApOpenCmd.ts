@@ -34,7 +34,7 @@ export class AcApOpenCmd extends AcEdCommand {
    *
    * @param _context - The current application context (not used in this command)
    */
-  execute(_context: AcApContext) {
+  async execute(_context: AcApContext) {
     eventBus.emit('open-file', {})
   }
 }

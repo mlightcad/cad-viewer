@@ -1,17 +1,5 @@
-import { AcCmEventManager } from '@mlightcad/data-model'
-
 import { AcApContext } from '../../app'
 import { AcEdOpenMode } from '../view'
-
-/**
- * Event arguments for command lifecycle events.
- *
- * Contains the command instance that triggered the event.
- */
-export interface AcEdCommandEventArgs {
-  /** The command instance involved in the event */
-  command: AcEdCommand
-}
 
 /**
  * Abstract base class for all CAD commands.
@@ -27,9 +15,9 @@ export interface AcEdCommandEventArgs {
  *
  * ## Command Lifecycle
  * 1. Command is triggered via `trigger()` method
- * 2. `commandWillStart` event is fired
+ * 2. `AcEditor.commandWillStart` event is fired
  * 3. `execute()` method is called with current context
- * 4. `commandEnded` event is fired
+ * 4. `AcEditor.commandEnded` event is fired
  *
  * @example
  * ```typescript
@@ -56,13 +44,15 @@ export interface AcEdCommandEventArgs {
  * command.trigger(context);
  * ```
  */
-export abstract class AcEdCommand {
+export abstract class AcEdCommand<TUserData extends object = {}> {
   /** The global (untranslated) name of the command */
   private _globalName: string
   /** The local (translated) name of the command */
   private _localName: string
   /** The minimum access mode required to execute this command */
   private _mode: AcEdOpenMode = AcEdOpenMode.Read
+
+  private _userData: TUserData
 
   /**
    * Creates a new command instance.
@@ -73,14 +63,40 @@ export abstract class AcEdCommand {
   constructor() {
     this._globalName = ''
     this._localName = ''
+    this._userData = {} as TUserData
   }
 
-  /** Events fired during command execution lifecycle */
-  public readonly events = {
-    /** Fired just before the command starts executing */
-    commandWillStart: new AcCmEventManager<AcEdCommandEventArgs>(),
-    /** Fired after the command finishes executing */
-    commandEnded: new AcCmEventManager<AcEdCommandEventArgs>()
+  /**
+   * Gets the custom user-defined data associated with this command.
+   *
+   * `userData` is a generic, strongly-typed container that allows consumers
+   * of the command to attach arbitrary metadata without modifying the
+   * command class itself.
+   *
+   * The shape of `userData` is defined by the generic parameter `TUserData`
+   * when the command is declared:
+   *
+   * @example
+   * ```ts
+   * interface MyCommandData {
+   *   sourceLayerId: string
+   *   isPreview: boolean
+   * }
+   *
+   * class MyCommand extends AcEdCommand<MyCommandData> {}
+   *
+   * const cmd = new MyCommand()
+   * cmd.userData.sourceLayerId = 'Layer-01'
+   * cmd.userData.isPreview = true
+   * ```
+   *
+   * This design provides flexibility similar to `THREE.Object3D.userData`
+   * while preserving full compile-time type safety.
+   *
+   * @returns The user-defined data object associated with this command
+   */
+  get userData() {
+    return this._userData
   }
 
   /**
@@ -147,6 +163,39 @@ export abstract class AcEdCommand {
   }
 
   /**
+   * Called right before the command starts executing.
+   *
+   * This lifecycle hook is intended for subclasses that need to perform
+   * setup work before `execute()` runs, such as:
+   * - Initializing temporary state
+   * - Locking resources
+   * - Preparing UI or editor state
+   *
+   * The default implementation does nothing.
+   *
+   * @param _context - The current application context
+   */
+  protected onCommandWillStart(_context: AcApContext): void {
+    // Intentionally empty — override in subclasses if needed
+  }
+
+  /**
+   * Called after the command has finished executing.
+   *
+   * This lifecycle hook is intended for cleanup or follow-up logic, such as:
+   * - Releasing resources
+   * - Resetting editor state
+   * - Finalizing transactions
+   *
+   * The default implementation does nothing.
+   *
+   * @param _context - The current application context
+   */
+  protected onCommandEnded(_context: AcApContext): void {
+    // Intentionally empty — override in subclasses if needed
+  }
+
+  /**
    * Triggers the command execution with proper event handling.
    *
    * This method should not be overridden by subclasses as it handles
@@ -166,10 +215,15 @@ export abstract class AcEdCommand {
    * command.trigger(docManager.context);
    * ```
    */
-  tirgger(context: AcApContext) {
-    this.events.commandWillStart.dispatch({ command: this })
-    this.execute(context)
-    this.events.commandEnded.dispatch({ command: this })
+  async trigger(context: AcApContext) {
+    try {
+      context.view.editor.events.commandWillStart.dispatch({ command: this })
+      this.onCommandWillStart(context)
+      await this.execute(context)
+    } finally {
+      context.view.editor.events.commandEnded.dispatch({ command: this })
+      this.onCommandEnded(context)
+    }
   }
 
   /**
@@ -196,7 +250,7 @@ export abstract class AcEdCommand {
    * }
    * ```
    */
-  execute(_context: AcApContext) {
+  async execute(_context: AcApContext) {
     // Do nothing - subclasses should override this method
   }
 }

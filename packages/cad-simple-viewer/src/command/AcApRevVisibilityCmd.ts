@@ -1,10 +1,8 @@
-import { AcDbSysVarManager } from '@mlightcad/data-model'
-
 import { AcApContext } from '../app'
 import { AcEdCommand, AcEdOpenMode } from '../editor'
 
 /**
- * Command for switching the visibility of comments.
+ * Command for switching the visibility of the current layer.
  */
 export class AcApRevVisibilityCmd extends AcEdCommand {
   constructor() {
@@ -13,21 +11,16 @@ export class AcApRevVisibilityCmd extends AcEdCommand {
   }
 
   /**
-   * Executes the command to switch the visibility of comments.
+   * Executes the command to switch the visibility of the current layer.
    *
    * @param context - The application context containing the view
    */
   async execute(context: AcApContext) {
-    const variableName = 'CLAYER'
-    const sysVarManager = AcDbSysVarManager.instance()
-    const sysVar = sysVarManager.getDescriptor(variableName)
-    if (sysVar) {
-      const db = context.doc.database
-      const currentLayer = sysVarManager.getVar(variableName, db) as string
-      if (currentLayer) {
-        const layer = db.tables.layerTable.getAt(currentLayer)
-        if (layer) layer.isOff = !layer.isOff
-      }
+    const db = context.doc.database
+    const currentLayer = db.clayer
+    if (currentLayer) {
+      const layer = db.tables.layerTable.getAt(currentLayer)
+      if (layer) layer.isOff = !layer.isOff
     }
   }
 }

@@ -98,10 +98,10 @@ import { useLocale, useNotificationCenter, useSettings } from '../composable'
 import { LocaleProp } from '../locale'
 import { MlDialogManager, MlFileReader } from './common'
 import {
+  MlEntityDrawStyleToolbar,
   MlEntityInfo,
   MlLanguageSelector,
   MlMainMenu,
-  MlDrawStyleToolbar,
   MlToolBars
 } from './layout'
 import { MlNotificationCenter } from './notification'
@@ -479,10 +479,10 @@ const closeNotificationCenter = () => {
           {{ store.fileName }}
         </div>
 
-        <!-- Toolbar for review options -->
-        <ml-draw-style-toolbar 
+        <!-- Toolbar for entity draw style -->
+        <ml-entity-draw-style-toolbar
           :editor="editor"
-          class="ml-rev-tool-bar" 
+          class="ml-rev-tool-bar"
         />
 
         <!-- Toolbar with common CAD operations (zoom, pan, select, etc.) -->
@@ -566,6 +566,7 @@ const closeNotificationCenter = () => {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
+  margin-top: 20px;
   z-index: 2; /* Ensure it's above canvas but doesn't block events */
 }
 </style>

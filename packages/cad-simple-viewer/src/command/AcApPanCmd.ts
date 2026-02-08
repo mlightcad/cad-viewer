@@ -28,7 +28,7 @@ export class AcApPanCmd extends AcEdCommand {
    *
    * @param context - The application context containing the view
    */
-  execute(context: AcApContext) {
+  async execute(context: AcApContext) {
     context.view.mode = AcEdViewMode.PAN
     context.view.setCursor(AcEdCorsorType.Grab)
   }

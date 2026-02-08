@@ -33,7 +33,7 @@
       <template #default="scope">
         <div class="ml-layer-list-cell">
           <el-tag
-            :color="getLayerCssColor(scope.row).value"
+            :color="scope.row.cssColor"
             class="ml-layer-list-color"
             @click.stop="openColorPicker(scope.row)"
           />
@@ -56,7 +56,7 @@
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
 import { ElMessage, ElTable } from 'element-plus'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { LayerInfo, useLayers } from '../../composable'
@@ -82,17 +82,6 @@ const props = defineProps<Props>()
  * This composable also updates automatically when CAD document changes.
  */
 const { layers } = useLayers(props.editor)
-
-/**
- * Returns the CSS color string for a layer row.
- * Creates a new AcCmColor from row.color and reads its cssColor.
- */
-const getLayerCssColor = (row: LayerInfo) => {
-  return computed(() => {
-    const color = AcCmColor.fromString(row.color)
-    return color?.cssColor || '#FFFFFF'
-  })
-}
 
 /**
  * Triggered when a row in the layer list table is double-clicked.

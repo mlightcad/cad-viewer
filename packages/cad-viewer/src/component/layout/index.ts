@@ -1,5 +1,6 @@
-export { default as MlDrawStyleToolbar } from './MlDrawStyleToolbar.vue'
+export { default as MlEntityDrawStyleToolbar } from './MlEntityDrawStyleToolbar.vue'
 export { default as MlEntityInfo } from './MlEntityInfo.vue'
 export { default as MlLanguageSelector } from './MlLanguageSelector.vue'
+export { default as MlLayerDrawStyleToolbar } from './MlLayerDrawStyleToolbar.vue'
 export { default as MlMainMenu } from './MlMainMenu.vue'
 export { default as MlToolBars } from './MlToolBars.vue'

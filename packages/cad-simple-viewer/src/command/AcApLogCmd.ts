@@ -9,7 +9,7 @@ import { AcTrView2d } from '../view'
  * @internal
  */
 export class AcApLogCmd extends AcEdCommand {
-  execute(context: AcApContext) {
+  async execute(context: AcApContext) {
     this.printSelectionSet(context)
     this.printStats(context)
     this.printPerformanceData()
