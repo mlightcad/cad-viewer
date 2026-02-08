@@ -12,6 +12,10 @@ export default {
     firstPoint: '指定第一个点：',
     nextPoint: '指定下一个点：'
   },
+  rect: {
+    firstPoint: '指定第一个点：',
+    nextPoint: '指定下一个点：'
+  },
   sketch: {
     firstPoint: '指定第一个点：',
     nextPoint: '指定结束点：'

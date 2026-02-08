@@ -39,7 +39,7 @@ export class AcApCircleJig extends AcEdPreviewJig<number> {
 export class AcApCircleCmd extends AcEdCommand {
   constructor() {
     super()
-    this.mode = AcEdOpenMode.Review
+    this.mode = AcEdOpenMode.Write
   }
 
   async execute(context: AcApContext) {

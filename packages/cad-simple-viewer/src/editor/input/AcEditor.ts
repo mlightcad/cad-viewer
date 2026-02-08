@@ -1,5 +1,6 @@
 import { AcCmEventManager } from '@mlightcad/data-model'
 
+import { AcEdCommand } from '../command'
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
 import {
@@ -19,6 +20,16 @@ import { AcEdInputManager } from './ui'
 export interface AcDbSysVarEventArgs {
   /** The system variable name */
   name: string
+}
+
+/**
+ * Event arguments for command lifecycle events.
+ *
+ * Contains the command instance that triggered the event.
+ */
+export interface AcEdCommandEventArgs {
+  /** The command instance involved in the event */
+  command: AcEdCommand
 }
 
 /**
@@ -68,7 +79,11 @@ export class AcEditor {
      * Fired after a system variable is changed directly through the SETVAR command or
      * by entering the variable name at the command line.
      */
-    sysVarChanged: new AcCmEventManager<AcDbSysVarEventArgs>()
+    sysVarChanged: new AcCmEventManager<AcDbSysVarEventArgs>(),
+    /** Fired just before the command starts executing */
+    commandWillStart: new AcCmEventManager<AcEdCommandEventArgs>(),
+    /** Fired after the command finishes executing */
+    commandEnded: new AcCmEventManager<AcEdCommandEventArgs>()
   }
 
   /**

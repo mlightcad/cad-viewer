@@ -32,7 +32,7 @@ import { AcApPlugin } from './AcApPlugin'
  * Example command that prints a greeting message.
  */
 class AcApHelloCommand extends AcEdCommand {
-  execute(context: AcApContext) {
+  async execute(context: AcApContext) {
     console.log('Hello from ExamplePlugin!')
     console.log('Current document:', context.doc)
     console.log('Current view:', context.view)

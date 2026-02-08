@@ -23,7 +23,9 @@ import {
   AcApQNewCmd,
   AcApRectCmd,
   AcApRegenCmd,
+  AcApRevCircleCmd,
   AcApRevCloudCmd,
+  AcApRevRectCmd,
   AcApRevVisibilityCmd,
   AcApSelectCmd,
   AcApSketchCmd,
@@ -694,9 +696,21 @@ export class AcApDocManager {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'revcircle',
+      'revcircle',
+      new AcApRevCircleCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'revcloud',
       'revcloud',
       new AcApRevCloudCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'revrect',
+      'revrect',
+      new AcApRevRectCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
@@ -778,7 +792,7 @@ export class AcApDocManager {
       )
     }
 
-    cmd.execute(this.context)
+    cmd.trigger(this.context)
   }
 
   /**

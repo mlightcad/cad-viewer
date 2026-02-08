@@ -42,13 +42,13 @@ const features = useSettings()
 const handleCommand = (command: string) => {
   if (command === 'Convert') {
     const cmd = new AcApConvertToSvgCmd()
-    cmd.tirgger(AcApDocManager.instance.context)
+    cmd.trigger(AcApDocManager.instance.context)
   } else if (command === 'QNew') {
     const cmd = new AcApQNewCmd()
-    cmd.tirgger(AcApDocManager.instance.context)
+    cmd.trigger(AcApDocManager.instance.context)
   } else if (command === 'Open') {
     const cmd = new AcApOpenCmd()
-    cmd.tirgger(AcApDocManager.instance.context)
+    cmd.trigger(AcApDocManager.instance.context)
   }
 }
 </script>

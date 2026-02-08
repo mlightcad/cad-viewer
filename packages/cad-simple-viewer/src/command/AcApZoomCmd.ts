@@ -31,7 +31,7 @@ export class AcApZoomCmd extends AcEdCommand {
    *
    * @param context - The current application context containing the view to zoom
    */
-  execute(context: AcApContext) {
+  async execute(context: AcApContext) {
     context.view.zoomToFitDrawing()
   }
 }

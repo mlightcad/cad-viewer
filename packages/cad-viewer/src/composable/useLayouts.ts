@@ -18,7 +18,7 @@ export function useLayouts(editor: AcApDocManager) {
   const doc = editor.curDocument
 
   const reset = (doc: AcDbDatabase) => {
-    const layouts = doc.dictionaries.layouts.newIterator()
+    const layouts = doc.objects.layout.newIterator()
     reactiveLayouts.length = 0
     for (const layout of layouts) {
       reactiveLayouts.push({

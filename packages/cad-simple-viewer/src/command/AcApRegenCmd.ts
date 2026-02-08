@@ -18,7 +18,7 @@ export class AcApRegenCmd extends AcEdCommand {
   /**
    * Executes the regen command to redraw the current drawing
    */
-  execute() {
+  async execute() {
     AcApDocManager.instance.regen()
   }
 }

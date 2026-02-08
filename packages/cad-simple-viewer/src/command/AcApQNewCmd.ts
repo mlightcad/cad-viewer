@@ -29,7 +29,7 @@ export class AcApQNewCmd extends AcEdCommand {
    *
    * @param _context - The application context (unused in this command)
    */
-  execute(_context: AcApContext) {
+  async execute(_context: AcApContext) {
     const baseUrl = AcApDocManager.instance.baseUrl
     AcApDocManager.instance.openUrl(baseUrl + 'templates/acadiso.dxf')
   }

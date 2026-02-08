@@ -1,3 +1,4 @@
+export * from './AcApAnnotation'
 export * from './AcApContext'
 export * from './AcApDocument'
 export * from './AcApDocManager'

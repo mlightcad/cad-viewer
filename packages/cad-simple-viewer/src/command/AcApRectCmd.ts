@@ -57,23 +57,23 @@ export class AcApRectJig extends AcEdPreviewJig<AcGePoint2dLike> {
 }
 
 /**
- * Command to create one line.
+ * Command to create one rectangle.
  */
 export class AcApRectCmd extends AcEdCommand {
   constructor() {
     super()
-    this.mode = AcEdOpenMode.Review
+    this.mode = AcEdOpenMode.Write
   }
 
   async execute(context: AcApContext) {
     const firstPointPrompt = new AcEdPromptPointOptions(
-      AcApI18n.t('jig.line.firstPoint')
+      AcApI18n.t('jig.rect.firstPoint')
     )
     const firstPoint =
       await AcApDocManager.instance.editor.getPoint(firstPointPrompt)
 
     const secondPointPrompt = new AcEdPromptPointOptions(
-      AcApI18n.t('jig.line.nextPoint')
+      AcApI18n.t('jig.rect.nextPoint')
     )
     secondPointPrompt.jig = new AcApRectJig(context.view, firstPoint)
     secondPointPrompt.useDashedLine = false

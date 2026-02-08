@@ -29,7 +29,7 @@ export class AcApConvertToSvgCmd extends AcEdCommand {
    *
    * @param _context - The application context (unused in this command)
    */
-  execute(_context: AcApContext) {
+  async execute(_context: AcApContext) {
     const converter = new AcApSvgConvertor()
     converter.convert()
   }

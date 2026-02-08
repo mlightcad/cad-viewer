@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChatDotRound } from '@element-plus/icons-vue'
+import { ChatDotRound, Hide, View } from '@element-plus/icons-vue'
 import { AcApDocManager, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 import { MlButtonData, MlToolBar } from '@mlightcad/ui-components'
 import { computed } from 'vue'
@@ -32,9 +32,9 @@ const itemsInReviewMode: MlButtonData[] = [
   },
   {
     icon: ChatDotRound,
-    text: t('main.verticalToolbar.comment.text'),
+    text: t('main.verticalToolbar.annotation.text'),
     command: '',
-    description: t('main.verticalToolbar.comment.description'),
+    description: t('main.verticalToolbar.annotation.description'),
     children: [
       {
         icon: revFreeDraw,
@@ -45,7 +45,7 @@ const itemsInReviewMode: MlButtonData[] = [
       {
         icon: revRect,
         text: t('main.verticalToolbar.revRect.text'),
-        command: 'rectangle',
+        command: 'revrect',
         description: t('main.verticalToolbar.revRect.description')
       },
       {
@@ -57,27 +57,27 @@ const itemsInReviewMode: MlButtonData[] = [
       {
         icon: revCircle,
         text: t('main.verticalToolbar.revCircle.text'),
-        command: 'circle',
+        command: 'revcircle',
         description: t('main.verticalToolbar.revCircle.description')
       }
     ]
+  },
+  {
+    command: 'revvis',
+    toggle: {
+      value: true,
+      on: {
+        icon: View,
+        text: t('main.verticalToolbar.showAnnotation.text'),
+        description: t('main.verticalToolbar.showAnnotation.description')
+      },
+      off: {
+        icon: Hide,
+        text: t('main.verticalToolbar.hideAnnotation.text'),
+        description: t('main.verticalToolbar.showAnnotation.description')
+      }
+    }
   }
-  // {
-  //   command: 'revvis',
-  //   toggle: {
-  //     value: true,
-  //     on: {
-  //       icon: View,
-  //       text: t('main.verticalToolbar.showComment.text'),
-  //       description: t('main.verticalToolbar.showComment.description')
-  //     },
-  //     off: {
-  //       icon: Hide,
-  //       text: t('main.verticalToolbar.hideComment.text'),
-  //       description: t('main.verticalToolbar.showComment.description')
-  //     }
-  //   }
-  // },
 ]
 
 const verticalToolbarData = computed(() => {
