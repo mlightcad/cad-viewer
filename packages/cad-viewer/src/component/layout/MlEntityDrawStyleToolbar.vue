@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor, AcGiLineWeight } from '@mlightcad/data-model'
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
 
 import { useEntityDrawStyle } from '../../composable'
 import { MlBaseDrawStyleToolbar } from '../common'
@@ -36,7 +36,7 @@ import { MlBaseDrawStyleToolbar } from '../common'
  * =============================================================
  */
 const props = defineProps<{
-  editor: AcApDocManager
+  editor: AcApDocManager | null
 }>()
 
 /**
@@ -59,6 +59,7 @@ const emit = defineEmits<{
  * Local entity draw style state
  * =============================================================
  */
+const editorRef = toRef(props, 'editor')
 const {
   color,
   lineWeight,
@@ -66,11 +67,12 @@ const {
   isShowToolbar,
   setColorIndex,
   setLineWeight
-} = useEntityDrawStyle(props.editor)
+} = useEntityDrawStyle(editorRef)
 
 const colorIndex = computed(() => {
   const c = AcCmColor.fromString(color.value)
-  return c?.colorIndex ?? 256
+  // The default color for annotation is red
+  return c?.colorIndex ?? 1
 })
 
 /**
