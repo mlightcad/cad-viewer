@@ -1,4 +1,5 @@
 import {
+  AcApAnnotation,
   AcApBaseRevCmd,
   AcApDocManager,
   AcEdCommandEventArgs
@@ -35,7 +36,7 @@ export function useEntityDrawStyle(editorRef: Ref<AcApDocManager | null>) {
    * Reactive state
    * -------------------------------------------------------------
    */
-  const color = ref<string>('#FFFFFF')
+  const color = ref<string>(AcApAnnotation.DEFAULT_ANNOTATION_COLOR.toString())
   const lineWeight = ref<AcGiLineWeight>(AcGiLineWeight.ByLayer)
   const isShowToolbar = ref<boolean>(false)
 
@@ -46,7 +47,7 @@ export function useEntityDrawStyle(editorRef: Ref<AcApDocManager | null>) {
    */
   const cssColor = computed(() => {
     const c = AcCmColor.fromString(color.value)
-    return c?.cssColor || '#FFFFFF'
+    return c?.cssColor || '#FF0000'
   })
 
   /**
@@ -84,14 +85,11 @@ export function useEntityDrawStyle(editorRef: Ref<AcApDocManager | null>) {
         return
       }
 
-      // initialize from database
-      color.value = db.cecolor.toString()
-      lineWeight.value = db.celweight
-
       const willStart = (args: AcEdCommandEventArgs) => {
         const command = args.command
         if (command instanceof AcApBaseRevCmd) {
           isShowToolbar.value = command.isShowEntityDrawStyleToolbar
+          syncToDatabase()
         }
       }
 
@@ -156,6 +154,20 @@ export function useEntityDrawStyle(editorRef: Ref<AcApDocManager | null>) {
     lineWeight.value = db.celweight
   }
 
+  /**
+   * -------------------------------------------------------------
+   * Sync to database
+   * -------------------------------------------------------------
+   */
+  function syncToDatabase() {
+    const editor = editorRef.value
+    const db = editor?.curDocument?.database
+    if (!db) return
+
+    db.cecolor = AcCmColor.fromString(color.value) ?? new AcCmColor()
+    db.celweight = lineWeight.value
+  }
+
   return {
     /* state */
     color,
@@ -168,6 +180,7 @@ export function useEntityDrawStyle(editorRef: Ref<AcApDocManager | null>) {
     setLineWeight,
 
     /* lifecycle */
-    syncFromDatabase
+    syncFromDatabase,
+    syncToDatabase
   }
 }

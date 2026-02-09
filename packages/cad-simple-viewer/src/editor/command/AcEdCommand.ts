@@ -217,8 +217,8 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
    */
   async trigger(context: AcApContext) {
     try {
-      context.view.editor.events.commandWillStart.dispatch({ command: this })
       this.onCommandWillStart(context)
+      context.view.editor.events.commandWillStart.dispatch({ command: this })
       await this.execute(context)
     } finally {
       context.view.editor.events.commandEnded.dispatch({ command: this })

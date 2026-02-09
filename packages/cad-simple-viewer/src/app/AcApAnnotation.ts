@@ -4,10 +4,16 @@ import {
   AcDbDatabase,
   AcDbDxfCode,
   AcDbLayerTableRecord,
+  AcDbObject,
+  AcDbObjectId,
   AcDbResultBuffer
 } from '@mlightcad/data-model'
 
 export class AcApAnnotation {
+  /**
+   * Default annotation color is red
+   */
+  static DEFAULT_ANNOTATION_COLOR = new AcCmColor(AcCmColorMethod.ByACI, 1)
   private _database: AcDbDatabase
 
   constructor(db: AcDbDatabase) {
@@ -49,18 +55,7 @@ export class AcApAnnotation {
 
     // 1. Try to find an existing annotation layer by XData
     for (const layer of layerTable.newIterator()) {
-      const xdata = layer.getXData(appId)
-      if (!xdata) continue
-
-      // Look for Description string == 'mlightcad'
-      for (const tv of xdata) {
-        if (
-          tv.code === AcDbDxfCode.ExtendedDataAsciiString &&
-          tv.value === appId
-        ) {
-          return layer.name
-        }
-      }
+      if (this.hasAnnotationXData(layer)) return layer.name
     }
 
     // 2. Generate a unique layer name
@@ -91,5 +86,36 @@ export class AcApAnnotation {
     layerTable.add(record)
 
     return layerName
+  }
+
+  filterAnnotationEntities(ids: AcDbObjectId[]) {
+    const layerName = this.getAnnotationLayer()
+    return ids.filter(id => {
+      const entity = this._database.tables.blockTable.getEntityById(id)
+      return entity && entity.layer == layerName
+    })
+  }
+
+  /**
+   * Returns true if the specified object contains annotation xdata, which means
+   * it is only object created by annotation related commands.
+   * @param object - Object to check whether it contains annotation xdata.
+   * @returns Returns true if the specified object contains annotation xdata.
+   */
+  public hasAnnotationXData(object: AcDbObject) {
+    const appId = AcDbDatabase.MLIGHTCAD_APPID
+    const xdata = object.getXData(appId)
+    if (!xdata) return false
+
+    // Look for Description string == 'mlightcad'
+    for (const tv of xdata) {
+      if (
+        tv.code === AcDbDxfCode.ExtendedDataAsciiString &&
+        tv.value === appId
+      ) {
+        return true
+      }
+    }
+    return false
   }
 }

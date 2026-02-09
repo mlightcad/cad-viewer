@@ -38,7 +38,7 @@ export class AcApLineJig extends AcEdPreviewJig<AcGePoint3dLike> {
 export class AcApLineCmd extends AcEdCommand {
   constructor() {
     super()
-    this.mode = AcEdOpenMode.Review
+    this.mode = AcEdOpenMode.Write
   }
 
   async execute(context: AcApContext) {
