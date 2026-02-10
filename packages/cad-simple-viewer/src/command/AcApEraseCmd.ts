@@ -1,4 +1,4 @@
-import { AcApContext, AcApDocManager } from '../app'
+import { AcApAnnotation, AcApContext, AcApDocManager } from '../app'
 import { AcEdCommand } from '../command'
 import { AcEdPromptSelectionOptions } from '../editor/input/prompt'
 import { AcEdOpenMode } from '../editor/view'
@@ -10,7 +10,7 @@ import { AcApI18n } from '../i18n'
 export class AcApEraseCmd extends AcEdCommand {
   constructor() {
     super()
-    this.mode = AcEdOpenMode.Write
+    this.mode = AcEdOpenMode.Review
   }
 
   /**
@@ -20,14 +20,23 @@ export class AcApEraseCmd extends AcEdCommand {
    */
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
+    const annotation = new AcApAnnotation(context.doc.database)
     if (selectionSet.count > 0) {
-      context.doc.database.tables.blockTable.removeEntity(selectionSet.ids)
+      // If it is in review mode, annotation entities can be deleted only
+      const ids =
+        context.doc.openMode == AcEdOpenMode.Review
+          ? annotation.filterAnnotationEntities(selectionSet.ids)
+          : selectionSet.ids
+      context.doc.database.tables.blockTable.removeEntity(ids)
       selectionSet.clear()
     } else {
       const message = AcApI18n.sysCmdPrompt('erase')
       const options = new AcEdPromptSelectionOptions(message)
-      const ids = await AcApDocManager.instance.editor.getSelection(options)
+      let ids = await AcApDocManager.instance.editor.getSelection(options)
       if (ids && ids.length > 0) {
+        // If it is in review mode, annotation entities can be deleted only
+        if (context.doc.openMode == AcEdOpenMode.Review)
+          ids = annotation.filterAnnotationEntities(selectionSet.ids)
         context.doc.database.tables.blockTable.removeEntity(ids)
         selectionSet.clear()
       }

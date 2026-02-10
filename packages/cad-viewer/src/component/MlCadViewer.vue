@@ -94,7 +94,12 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { initializeCadViewer, store } from '../app'
-import { useLocale, useNotificationCenter, useSettings } from '../composable'
+import {
+  useEntityDrawStyle,
+  useLocale,
+  useNotificationCenter,
+  useSettings
+} from '../composable'
 import { LocaleProp } from '../locale'
 import { MlDialogManager, MlFileReader } from './common'
 import {
@@ -189,6 +194,8 @@ const isDark = useDark({
 const toggleDark = useToggle(isDark)
 
 const features = useSettings()
+
+const { isShowToolbar } = useEntityDrawStyle(editor)
 
 /**
  * Handles file read events from the file reader component
@@ -475,7 +482,10 @@ const closeNotificationCenter = () => {
       <!-- Main content area with CAD viewing tools and controls -->
       <main>
         <!-- Display current filename at the top center -->
-        <div v-if="features.isShowFileName" class="ml-file-name">
+        <div
+          v-if="features.isShowFileName && !isShowToolbar"
+          class="ml-file-name"
+        >
           {{ store.fileName }}
         </div>
 
