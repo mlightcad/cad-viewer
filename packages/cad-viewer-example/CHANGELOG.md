@@ -1,5 +1,14 @@
 # @mlightcad/cad-viewer-example
 
+## 1.4.8
+
+### Patch Changes
+
+- feat: support annotation
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.4.8
+  - @mlightcad/cad-viewer@1.4.8
+
 ## 1.4.7
 
 ### Patch Changes

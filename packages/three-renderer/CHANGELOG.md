@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.4.8
+
+### Patch Changes
+
+- feat: support annotation
+
 ## 1.4.7
 
 ### Patch Changes
