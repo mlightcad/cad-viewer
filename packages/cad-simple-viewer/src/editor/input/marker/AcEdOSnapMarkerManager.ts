@@ -40,9 +40,12 @@ export class AcEdMarkerManager {
     size?: number,
     color?: string
   ) {
-    const winPos = this.view.worldToScreen(pos)
-    const marker = new AcEdMarker(type, size, color)
-    marker.setPosition(winPos)
+    // worldToScreen() returns canvas-local coordinates.
+    const canvasPos = this.view.worldToScreen(pos)
+    // Marker DOM is mounted in view.container, so convert to container-local.
+    const containerPos = this.view.canvasToContainer(canvasPos)
+    const marker = new AcEdMarker(type, size, color, this.view.container)
+    marker.setPosition(containerPos)
     this.stack.push(marker)
     return marker
   }

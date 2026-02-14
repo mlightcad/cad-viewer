@@ -162,7 +162,12 @@ export abstract class AcEdBaseView {
   private _bbox: AcGeBox3d
   /** Current mouse position in world coordinates */
   private _curPos: AcGePoint2d
-  /** Current mouse position in client window coordinates */
+  /**
+   * Current mouse position in canvas-local screen coordinates (pixels).
+   *
+   * This value is derived from viewport/client mouse coordinates by subtracting
+   * the canvas bounding-rect origin (`viewportToCanvas`).
+   */
   private _curMousePos: AcGePoint2d
   /** Set of currently selected entities */
   private _selectionSet: AcEdSelectionSet
@@ -622,6 +627,49 @@ export abstract class AcEdBaseView {
     return this._container
   }
 
+  /**
+   * Converts a viewport/client-space point (e.g. MouseEvent.clientX/Y)
+   * into canvas-local coordinates.
+   */
+  viewportToCanvas(point: AcGePoint2dLike): AcGePoint2d {
+    const rect = this._canvas.getBoundingClientRect()
+    return new AcGePoint2d(point.x - rect.left, point.y - rect.top)
+  }
+
+  /**
+   * Converts canvas-local coordinates into viewport/client-space coordinates.
+   */
+  canvasToViewport(point: AcGePoint2dLike): AcGePoint2d {
+    const rect = this._canvas.getBoundingClientRect()
+    return new AcGePoint2d(point.x + rect.left, point.y + rect.top)
+  }
+
+  /**
+   * Converts canvas-local coordinates into container-local coordinates.
+   *
+   * This is useful for DOM overlays mounted in `container` while CAD APIs
+   * return screen points in canvas space.
+   */
+  canvasToContainer(point: AcGePoint2dLike): AcGePoint2d {
+    const canvasRect = this._canvas.getBoundingClientRect()
+    const containerRect = this._container.getBoundingClientRect()
+    return new AcGePoint2d(
+      point.x + (canvasRect.left - containerRect.left),
+      point.y + (canvasRect.top - containerRect.top)
+    )
+  }
+
+  /**
+   * Converts a viewport/client-space point into container-local coordinates.
+   */
+  viewportToContainer(point: AcGePoint2dLike): AcGePoint2d {
+    const containerRect = this._container.getBoundingClientRect()
+    return new AcGePoint2d(
+      point.x - containerRect.left,
+      point.y - containerRect.top
+    )
+  }
+
   get aspect() {
     return this._width / this._height
   }
@@ -634,7 +682,10 @@ export abstract class AcEdBaseView {
   }
 
   /**
-   * Postion of current mouse in client window
+   * Current mouse position in canvas-local screen coordinates (pixels).
+   *
+   * Note: this is NOT viewport/client coordinates; use `canvasToViewport()`
+   * when browser-viewport coordinates are required by DOM APIs.
    */
   get curMousePos() {
     return this._curMousePos
@@ -674,13 +725,11 @@ export abstract class AcEdBaseView {
    * @param event Input mouse event argument
    */
   private onMouseMove(event: MouseEvent) {
-    const rect = this._canvas.getBoundingClientRect()
-
-    // Convert from viewport coordinates → canvas-local coordinates
-    const screenX = event.clientX - rect.left
-    const screenY = event.clientY - rect.top
-
-    this._curMousePos = new AcGePoint2d(screenX, screenY)
+    // Keep one canonical conversion path for all view input code.
+    this._curMousePos = this.viewportToCanvas({
+      x: event.clientX,
+      y: event.clientY
+    })
     const wcsPos = this.screenToWorld(this._curMousePos)
     this._curPos.copy(wcsPos)
     this.events.mouseMove.dispatch({ x: wcsPos.x, y: wcsPos.y })

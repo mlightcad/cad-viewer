@@ -293,7 +293,7 @@ export class AcApDocManager {
       this._context,
       this._commandManager
     )
-    this._progress = new AcApProgress()
+    this._progress = new AcApProgress({ host: view.container })
     this._progress.hide()
     if (!options.notLoadDefaultFonts) {
       this.loadDefaultFonts()

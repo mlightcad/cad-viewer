@@ -95,7 +95,8 @@ export type AcEdFloatingInputBoxCount = 0 | 1 | 2
 export interface AcEdFloatingInputOptions<T> {
   /**
    * Optional parent element to constrain the floating input within.
-   * If not provided, the container is added to document.body.
+   * If not provided, mouse tracking is bound to the view canvas.
+   * Floating UI is always mounted inside the view container.
    */
   parent?: HTMLElement
 

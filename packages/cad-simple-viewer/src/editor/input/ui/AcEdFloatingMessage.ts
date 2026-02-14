@@ -37,6 +37,12 @@ export class AcEdFloatingMessage {
   protected parent: HTMLElement
 
   /**
+   * Host element where floating DOM is mounted.
+   * This should be tied to the view area (not global document body).
+   */
+  protected host: HTMLElement
+
+  /**
    * Root container of the floating message.
    * Positioned absolutely and follows the mouse cursor.
    */
@@ -80,7 +86,16 @@ export class AcEdFloatingMessage {
     }
   ) {
     this.view = view
-    this.parent = options.parent ?? document.body
+    // Mouse tracking is attached to canvas by default so interaction scope
+    // stays inside the active view.
+    this.parent = options.parent ?? this.view.canvas
+    this.host = this.view.container
+
+    // Floating UI is absolutely positioned in the view host.
+    const hostPosition = getComputedStyle(this.host).position
+    if (hostPosition === 'static') {
+      this.host.style.position = 'relative'
+    }
 
     // Create container
     this.container = document.createElement('div')
@@ -92,8 +107,8 @@ export class AcEdFloatingMessage {
     this.label.textContent = options.message ?? ''
     this.container.appendChild(this.label)
 
-    // Always append to body (inputs / overlays are ignored inside canvas)
-    document.body.appendChild(this.container)
+    // Mount inside view host so UI is constrained to the view canvas area.
+    this.host.appendChild(this.container)
 
     // Bind handlers once so they can be removed safely
     this.boundOnMouseEnter = e => this.handleMouseEnter(e)
@@ -198,20 +213,18 @@ export class AcEdFloatingMessage {
    * @param pos Mouse position in browser coordinates
    */
   protected setPosition(pos: AcGePoint2dLike) {
-    const parentRect = this.parent.getBoundingClientRect()
+    const hostRect = this.host.getBoundingClientRect()
     const rect = this.container.getBoundingClientRect()
 
-    const mousePos = {
-      x: pos.x - parentRect.left,
-      y: pos.y - parentRect.top
-    }
+    const mousePos = this.view.viewportToCanvas(pos)
 
-    let left = pos.x - parentRect.left + 10
-    let top = pos.y - parentRect.top + 10
+    const hostPos = this.view.viewportToContainer(pos)
+    let left = hostPos.x + 10
+    let top = hostPos.y + 10
 
-    // Clamp to parent bounds
-    left = Math.min(left, parentRect.width - rect.width)
-    top = Math.min(top, parentRect.height - rect.height)
+    // Clamp to host bounds
+    left = Math.min(left, hostRect.width - rect.width)
+    top = Math.min(top, hostRect.height - rect.height)
     left = Math.max(left, 0)
     top = Math.max(top, 0)
 
