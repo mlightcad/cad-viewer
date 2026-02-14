@@ -76,6 +76,12 @@ export class AcEdInputManager {
   constructor(view: AcEdBaseView) {
     this.view = view
     this.injectCSS()
+    // Newly added UI overlays (command line, previews) are container-local.
+    // Ensure absolute-positioned children are anchored to this view only.
+    const containerPosition = getComputedStyle(this.view.container).position
+    if (containerPosition === 'static') {
+      this.view.container.style.position = 'relative'
+    }
     const commandLine = new AcEdCommandLine(this.view.container)
     this._commandLine = commandLine
     commandLine.visible = AcApSettingManager.instance.isShowCommandLine
@@ -359,17 +365,21 @@ export class AcEdInputManager {
       /** ---------- Mouse ---------- */
 
       const mouseDown = (e: MouseEvent) => {
-        startWcs = this.view.screenToWorld(e)
+        startWcs = this.view.screenToWorld(
+          this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
+        )
 
         previewEl = document.createElement('div')
         previewEl.className = 'ml-jig-preview-rect'
-        document.body.appendChild(previewEl)
+        this.view.container.appendChild(previewEl)
       }
 
       const mouseMove = (e: MouseEvent) => {
         if (!startWcs || !previewEl) return
 
-        const curWcs = this.view.screenToWorld(e)
+        const curWcs = this.view.screenToWorld(
+          this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
+        )
         const p1 = this.view.worldToScreen(startWcs)
         const p2 = this.view.worldToScreen(curWcs)
 
@@ -389,7 +399,9 @@ export class AcEdInputManager {
       const mouseUp = (e: MouseEvent) => {
         if (!startWcs) return
 
-        const endWcs = this.view.screenToWorld(e)
+        const endWcs = this.view.screenToWorld(
+          this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
+        )
         previewEl?.remove()
         previewEl = null
 
@@ -454,7 +466,9 @@ export class AcEdInputManager {
 
       /** Mouse click → try select entity */
       const clickHandler = (e: MouseEvent) => {
-        const pos = this.view.screenToWorld(e)
+        const pos = this.view.screenToWorld(
+          this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
+        )
         const picked = this.view.pick(pos)
 
         // Clicked empty space
@@ -515,7 +529,7 @@ export class AcEdInputManager {
     // Create preview rectangle
     const previewEl = document.createElement('div')
     previewEl.className = 'ml-jig-preview-rect'
-    document.body.appendChild(previewEl)
+    this.view.container.appendChild(previewEl)
 
     const cleanup = () => {
       previewEl.remove()
@@ -679,7 +693,8 @@ export class AcEdInputManager {
         }
       }
       document.addEventListener('keydown', escHandler)
-      floatingInput.showAt(this.view.curMousePos)
+      // showAt() expects viewport coordinates; curMousePos is canvas-local.
+      floatingInput.showAt(this.view.canvasToViewport(this.view.curMousePos))
     })
   }
 }

@@ -3,6 +3,13 @@
  */
 export interface AcApProgressOptions {
   /**
+   * Host element where overlay is mounted.
+   * Use the CAD view container so mask is scoped to canvas area.
+   * @defaultValue `document.body`
+   */
+  host?: HTMLElement
+
+  /**
    * Size of the circular loader (width & height).
    * Accepts any valid CSS length value (e.g. "48px", "3rem", "25%").
    * @defaultValue `"48px"`
@@ -79,7 +86,7 @@ export class AcApProgress {
   public static stylesInjected = false
 
   /**
-   * Root overlay container element appended to `document.body`.
+   * Root overlay container element appended to the configured host.
    */
   public root!: HTMLDivElement
 
@@ -108,6 +115,7 @@ export class AcApProgress {
       size: options.size ?? '48px',
       borderWidth: options.borderWidth ?? '5px',
       color: options.color ?? '#0b84ff',
+      host: options.host ?? document.body,
       overlay: options.overlay ?? true,
       overlayColor: options.overlayColor ?? 'rgba(0,0,0,0.5)',
       message: options.message ?? ''
@@ -166,10 +174,16 @@ export class AcApProgress {
   }
 
   /**
-   * Creates required DOM elements and mounts them into `document.body`.
+   * Creates required DOM elements and mounts them into configured host.
    * Called automatically by constructor.
    */
   private createDom(): void {
+    const host = this.options.host
+    const hostPosition = getComputedStyle(host).position
+    if (hostPosition === 'static') {
+      host.style.position = 'relative'
+    }
+
     const root = document.createElement('div')
     root.className = 'ml-ccl-overlay'
     root.style.display = 'flex'
@@ -195,7 +209,7 @@ export class AcApProgress {
     wrapper.appendChild(message)
 
     root.appendChild(wrapper)
-    document.body.appendChild(root)
+    host.appendChild(root)
 
     this.root = root
     this.spinner = spinner
@@ -214,7 +228,7 @@ export class AcApProgress {
 
     const css = `
   .ml-ccl-overlay {
-    position: fixed;
+    position: absolute;
     inset: 0;
     display: none;
     justify-content: center;

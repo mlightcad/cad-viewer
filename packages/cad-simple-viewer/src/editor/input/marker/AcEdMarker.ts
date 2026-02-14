@@ -19,6 +19,8 @@ export type AcEdMarkerType = 'circle' | 'triangle' | 'rect' | 'diamond' | 'x'
 export class AcEdMarker {
   /** DOM element representing the marker */
   private _el: HTMLElement
+  /** Host element where the marker DOM is mounted */
+  private _host: HTMLElement
 
   /** Size (width = height) of the marker in pixels */
   private _size: number
@@ -35,18 +37,28 @@ export class AcEdMarker {
    * @param type - Shape type of the marker (`circle`, `triangle`, `rect`)
    * @param size - Size of the marker (width/height in px; triangle uses font-size)
    * @param color - Marker color (CSS color string)
+   * @param host - Host container where marker DOM is mounted and positioned
    */
   constructor(
     type: AcEdMarkerType = 'rect',
     size: number = 8,
-    color: string = 'green'
+    color: string = 'green',
+    host: HTMLElement
   ) {
     this._type = type
     this._size = size
     this._color = color
+    this._host = host
 
     // Ensure CSS is injected once
     AcEdMarker.injectCSS()
+
+    // Markers are now anchored to an explicit host (usually view.container),
+    // so they stay inside the current view instead of global viewport space.
+    const hostPosition = getComputedStyle(this._host).position
+    if (hostPosition === 'static') {
+      this._host.style.position = 'relative'
+    }
 
     // Create marker DOM
     this._el = document.createElement('div')
@@ -55,8 +67,8 @@ export class AcEdMarker {
 
     this.applyShape()
 
-    // Attach to document
-    document.body.appendChild(this._el)
+    // Attach to host
+    this._host.appendChild(this._el)
   }
 
   /**

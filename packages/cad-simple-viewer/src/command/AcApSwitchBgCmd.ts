@@ -1,17 +1,12 @@
 import { AcDbSysVarManager } from '@mlightcad/data-model'
 
 import { AcApContext } from '../app'
-import { AcEdCommand, AcEdOpenMode } from '../editor'
+import { AcEdCommand } from '../editor'
 
 /**
  * Command for switching the drawing background between white and black.
  */
 export class AcApSwitchBgCmd extends AcEdCommand {
-  constructor() {
-    super()
-    this.mode = AcEdOpenMode.Review
-  }
-
   /**
    * Executes the command to switch the drawing background between white and black.
    *

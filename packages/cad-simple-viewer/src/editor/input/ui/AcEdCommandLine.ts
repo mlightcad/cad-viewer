@@ -40,6 +40,7 @@ export class AcEdCommandLine {
   private msgPanel!: HTMLDivElement
   private autoCompleteIndex: number
   private activeSession?: AcEdKeywordSession
+  private resizeObserver?: ResizeObserver
 
   constructor(container: HTMLElement = document.body) {
     this.container = container
@@ -57,6 +58,8 @@ export class AcEdCommandLine {
     this.bindEvents()
     this.resizeHandler()
     window.addEventListener('resize', () => this.resizeHandler())
+    this.resizeObserver = new ResizeObserver(() => this.resizeHandler())
+    this.resizeObserver.observe(this.container)
     AcApI18n.events.localeChanged.addEventListener(() => this.refreshLocale())
   }
 
@@ -401,6 +404,16 @@ export class AcEdCommandLine {
   private createUI() {
     this.cliContainer = document.createElement('div')
     this.cliContainer.className = 'ml-cli-container'
+    this.cliContainer.style.position = this.useViewportPositioning()
+      ? 'fixed'
+      : 'absolute'
+
+    if (!this.useViewportPositioning()) {
+      const containerPosition = getComputedStyle(this.container).position
+      if (containerPosition === 'static') {
+        this.container.style.position = 'relative'
+      }
+    }
 
     this.wrapper = document.createElement('div')
     this.wrapper.className = 'ml-cli-wrapper'
@@ -790,14 +803,21 @@ export class AcEdCommandLine {
 
   /** Handle window resize */
   private resizeHandler() {
+    const hostWidth = this.useViewportPositioning()
+      ? window.innerWidth
+      : this.container.getBoundingClientRect().width
     // Calculate desired width based on ratio and minimum width
-    let w = Math.max(this.minWidth, window.innerWidth * this.widthRatio)
-    // Clamp width so it never exceeds the window width
-    w = Math.min(w, window.innerWidth - 20) // optional 20px margin from edges
+    let w = Math.max(this.minWidth, hostWidth * this.widthRatio)
+    // Clamp width so it never exceeds the host container width
+    w = Math.min(w, Math.max(200, hostWidth - 20))
     this.bar.style.width = w + 'px'
 
     // Reposition popups to match new width
     this.positionMsgPanel()
     this.positionCmdPopup()
+  }
+
+  private useViewportPositioning() {
+    return this.container === document.body
   }
 }
