@@ -3,6 +3,13 @@ export default {
     cecolor: {
       description: 'Sets the current default color for newly created objects'
     },
+    celtscale: {
+      description:
+        'Controls the linetype scale factor for newly created objects'
+    },
+    celweight: {
+      description: 'Sets the default lineweight for newly created objects'
+    },
     clayer: {
       description:
         'Sets the current layer for new objects and editing operations'

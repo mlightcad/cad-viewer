@@ -1,5 +1,6 @@
-import { AcGiSubEntityTraits } from '@mlightcad/data-model'
+import { AcGiLineWeight, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 import { AcTrLinePatternShaders } from './AcTrLinePatternShaders'
 import { AcTrMaterialManager } from './AcTrMaterialManager'
@@ -32,16 +33,18 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     options: AcTrLineMaterialOptions
   ): string {
     const isByLayer = this.isByLayer(traits)
+    const lineWidth = this.resolveLineWidth(traits.lineWeight)
+    const mode = this.getMaterialMode(traits, options)
 
-    if (this.isShaderMaterial(traits, options)) {
+    if (mode === 'shader') {
       return isByLayer
-        ? `layer_${traits.layer}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}`
-        : `entity_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}`
+        ? `layer_${mode}_${traits.layer}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}_${lineWidth}`
+        : `entity_${mode}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}_${lineWidth}`
     }
 
     return isByLayer
-      ? `layer_${traits.layer}_${traits.rgbColor}`
-      : `entity_${traits.rgbColor}`
+      ? `layer_${mode}_${traits.layer}_${traits.rgbColor}_${lineWidth}`
+      : `entity_${mode}_${traits.rgbColor}_${lineWidth}`
   }
 
   /** Returns true if a shader material is required. */
@@ -54,6 +57,14 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
       traits.lineType.pattern &&
       traits.lineType.pattern.length > 0
     )
+  }
+
+  private getMaterialMode(
+    traits: AcGiSubEntityTraits,
+    options: AcTrLineMaterialOptions
+  ): 'shader' | 'basic' | 'fat' {
+    if (this.isShaderMaterial(traits, options)) return 'shader'
+    return options.basicMaterialOnly ? 'basic' : 'fat'
   }
 
   protected createMaterialImpl(
@@ -73,10 +84,39 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
         this.options.viewportScaleUniform,
         AcTrMaterialManager.CameraZoomUniform
       )
+    } else if (options.basicMaterialOnly) {
+      material = new THREE.LineBasicMaterial({
+        color: traits.rgbColor
+      })
     } else {
-      material = new THREE.LineBasicMaterial({ color: traits.rgbColor })
+      const fatLineMaterial = new LineMaterial({
+        color: traits.rgbColor,
+        linewidth: this.resolveLineWidth(traits.lineWeight)
+      })
+      fatLineMaterial.resolution.copy(this.options.resolution)
+      material = fatLineMaterial
     }
     return material
+  }
+
+  protected isByLayer(traits: AcGiSubEntityTraits): boolean {
+    return (
+      super.isByLayer(traits) || traits.lineWeight === AcGiLineWeight.ByLayer
+    )
+  }
+
+  private resolveLineWidth(lineWeight: AcGiLineWeight): number {
+    if (lineWeight < 0) return 1
+    return Math.max(1, lineWeight / 40)
+  }
+
+  updateResolution() {
+    const resolution = this.options.resolution
+    Object.values(this.cache).forEach(material => {
+      if (material instanceof LineMaterial) {
+        material.resolution.copy(resolution)
+      }
+    })
   }
 
   //References https://knowledge.autodesk.com/support/autocad-lt/learn-explore/caas/CloudHelp/cloudhelp/2020/ENU/AutoCAD-LT/files/GUID-4323BBAD-2757-4E92-B2E4-E0E550BB37CB-htm.html

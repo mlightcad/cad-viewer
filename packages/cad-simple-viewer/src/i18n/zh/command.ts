@@ -3,6 +3,12 @@ export default {
     cecolor: {
       description: '设置新创建对象的当前默认颜色'
     },
+    celtscale: {
+      description: '控制新创建对象的线型比例系数'
+    },
+    celweight: {
+      description: '设置新创建对象的默认线宽'
+    },
     clayer: {
       description: '设置新建对象和编辑操作所使用的当前图层'
     },

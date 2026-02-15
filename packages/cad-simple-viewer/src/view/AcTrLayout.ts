@@ -26,10 +26,21 @@ export interface AcTrLayoutStats {
       mesh: number
       /** Memory used by point geometries (bytes) */
       point: number
+      /** Memory used by unbatched geometries (bytes) */
+      unbatched: number
       /** Total geometry memory usage (bytes) */
       geometry: number
       /** Memory used by entity mappings (bytes) */
       mapping: number
+      /** Number of unbatched objects */
+      unbatchedCount: number
+      /** Unbatched object count by type */
+      unbatchedByType: {
+        line: number
+        mesh: number
+        point: number
+        other: number
+      }
     }
   }
 }
@@ -136,6 +147,14 @@ export class AcTrLayout {
     let lineTotalSize = 0
     let meshTotalSize = 0
     let pointTotalSize = 0
+    let unbatchedTotalSize = 0
+    let unbatchedTotalCount = 0
+    const unbatchedByType = {
+      line: 0,
+      mesh: 0,
+      point: 0,
+      other: 0
+    }
     this._layers.forEach(layer => {
       const stats = layer.stats
       layers.push(stats)
@@ -145,6 +164,12 @@ export class AcTrLayout {
         stats.mesh.indexed.geometrySize + stats.mesh.nonIndexed.geometrySize
       pointTotalSize +=
         stats.point.indexed.geometrySize + stats.point.nonIndexed.geometrySize
+      unbatchedTotalSize += stats.unbatched.geometrySize
+      unbatchedTotalCount += stats.unbatched.count
+      unbatchedByType.line += stats.unbatched.byType.line
+      unbatchedByType.mesh += stats.unbatched.byType.mesh
+      unbatchedByType.point += stats.unbatched.byType.point
+      unbatchedByType.other += stats.unbatched.byType.other
       totalGeometrySize += stats.summary.totalGeometrySize
       totalMappingSize += stats.summary.totalMappingSize
     })
@@ -156,8 +181,11 @@ export class AcTrLayout {
           line: lineTotalSize,
           mesh: meshTotalSize,
           point: pointTotalSize,
+          unbatched: unbatchedTotalSize,
           geometry: totalGeometrySize,
-          mapping: totalMappingSize
+          mapping: totalMappingSize,
+          unbatchedCount: unbatchedTotalCount,
+          unbatchedByType
         }
       }
     } as AcTrLayoutStats
