@@ -26,6 +26,17 @@ export interface AcTrGeometryInfo {
   nonIndexed: AcTrGeometrySize
 }
 
+export interface AcTrUnbatchedGroupStats {
+  count: number
+  geometrySize: number
+  byType: {
+    line: number
+    mesh: number
+    point: number
+    other: number
+  }
+}
+
 export interface AcTrBatchedGroupStats {
   summary: {
     entityCount: number
@@ -35,6 +46,7 @@ export interface AcTrBatchedGroupStats {
   mesh: AcTrGeometryInfo
   line: AcTrGeometryInfo
   point: AcTrGeometryInfo
+  unbatched: AcTrUnbatchedGroupStats
 }
 
 export class AcTrBatchedGroup extends THREE.Group {
@@ -83,6 +95,11 @@ export class AcTrBatchedGroup extends THREE.Group {
    */
   private _hoverObjects: THREE.Group
   /**
+   * Non-batched objects (for render paths that cannot be merged, e.g. fat lines).
+   */
+  private _unbatchedObjects: THREE.Group
+  private _unbatchedEntities: Map<string, THREE.Object3D[]>
+  /**
    * All entities added in this group.
    * - The key is object id of the entity
    * - The value is the entity's position information in the batched objects
@@ -98,8 +115,11 @@ export class AcTrBatchedGroup extends THREE.Group {
     this._meshBatches = new Map()
     this._meshWithIndexBatches = new Map()
     this._entitiesMap = new Map()
+    this._unbatchedEntities = new Map()
+    this._unbatchedObjects = new THREE.Group()
     this._selectedObjects = new THREE.Group()
     this._hoverObjects = new THREE.Group()
+    this.add(this._unbatchedObjects)
     this.add(this._selectedObjects)
     this.add(this._hoverObjects)
   }
@@ -115,6 +135,7 @@ export class AcTrBatchedGroup extends THREE.Group {
    * The statistics data of this batched group
    */
   get stats() {
+    const unbatched = this.getUnbatchedStats()
     const stats: AcTrBatchedGroupStats = {
       summary: {
         entityCount: this._entitiesMap.size,
@@ -162,7 +183,8 @@ export class AcTrBatchedGroup extends THREE.Group {
           geometrySize: this.getBatchedGeometrySize(this._pointBatches),
           mappingSize: this.getBatchedGeometryMappingSize(this._pointBatches)
         }
-      }
+      },
+      unbatched
     }
     stats.summary.totalGeometrySize =
       stats.line.indexed.geometrySize +
@@ -170,7 +192,8 @@ export class AcTrBatchedGroup extends THREE.Group {
       stats.mesh.indexed.geometrySize +
       stats.mesh.nonIndexed.geometrySize +
       stats.point.indexed.geometrySize +
-      stats.point.nonIndexed.geometrySize
+      stats.point.nonIndexed.geometrySize +
+      stats.unbatched.geometrySize
     stats.summary.totalMappingSize =
       stats.line.indexed.mappingSize +
       stats.line.nonIndexed.mappingSize +
@@ -204,6 +227,12 @@ export class AcTrBatchedGroup extends THREE.Group {
       })
       group.clear()
     })
+    this._unbatchedObjects.children.forEach(object => {
+      this.disposeObject(object)
+    })
+    this._unbatchedObjects.clear()
+    this._unbatchedEntities.clear()
+    this._entitiesMap.clear()
     return this
   }
 
@@ -221,6 +250,14 @@ export class AcTrBatchedGroup extends THREE.Group {
         group.set(material.id, batch)
       }
     })
+    this._unbatchedObjects.traverse(object => {
+      if (!('material' in object)) return
+      const userDataMaterialId = object.userData.styleMaterialId as number
+      if (userDataMaterialId === oldId) {
+        object.material = material
+        object.userData.styleMaterialId = material.id
+      }
+    })
   }
 
   /**
@@ -236,10 +273,19 @@ export class AcTrBatchedGroup extends THREE.Group {
   addEntity(entity: AcTrEntity) {
     const entityInfo: AcTrEntityInBatchedObject[] = []
     this._entitiesMap.set(entity.objectId, entityInfo)
+    const unbatchedObjects: THREE.Object3D[] = []
+    this._unbatchedEntities.set(entity.objectId, unbatchedObjects)
 
     entity.updateMatrixWorld(true)
     entity.traverse(object => {
       const bboxIntersectionCheck = !!object.userData.bboxIntersectionCheck
+      if (object.userData.noBatch) {
+        const cloned = this.cloneUnbatchedObject(object)
+        cloned.userData.bboxIntersectionCheck = bboxIntersectionCheck
+        this._unbatchedObjects.add(cloned)
+        unbatchedObjects.push(cloned)
+        return
+      }
       if (object instanceof THREE.LineSegments) {
         entityInfo.push(
           this.addLine(object, {
@@ -286,6 +332,17 @@ export class AcTrBatchedGroup extends THREE.Group {
       this.unhighlight(objectId, this._selectedObjects)
       this._entitiesMap.delete(objectId)
     }
+    const unbatchedObjects = this._unbatchedEntities.get(objectId)
+    if (unbatchedObjects) {
+      this.unhighlight(objectId, this._selectedObjects)
+      this.unhighlight(objectId, this._hoverObjects)
+      unbatchedObjects.forEach(object => {
+        this.disposeObject(object)
+        this._unbatchedObjects.remove(object)
+      })
+      this._unbatchedEntities.delete(objectId)
+      result = true
+    }
     return result
   }
 
@@ -308,6 +365,14 @@ export class AcTrBatchedGroup extends THREE.Group {
           batchedObject.intersectWith(item.batchId, raycaster, intersects)
           if (intersects.length > 0) return true
         }
+      }
+    }
+    const unbatchedObjects = this._unbatchedEntities.get(objectId)
+    if (unbatchedObjects) {
+      for (let i = 0; i < unbatchedObjects.length; i++) {
+        const object = unbatchedObjects[i]
+        const intersects = raycaster.intersectObject(object, true)
+        if (intersects.length > 0) return true
       }
     }
     return result
@@ -358,6 +423,22 @@ export class AcTrBatchedGroup extends THREE.Group {
 
         object.userData.objectId = objectId
         containerGroup.add(object)
+      })
+    }
+
+    const unbatchedObjects = this._unbatchedEntities.get(objectId)
+    if (unbatchedObjects && unbatchedObjects.length < 1000) {
+      unbatchedObjects.forEach(obj => {
+        const highlightObj = obj.clone()
+        if (this.hasMaterial(highlightObj)) {
+          const clonedMaterial = AcTrMaterialUtil.cloneMaterial(
+            highlightObj.material
+          )
+          AcTrMaterialUtil.setMaterialColor(clonedMaterial)
+          highlightObj.material = clonedMaterial
+        }
+        highlightObj.userData.objectId = objectId
+        containerGroup.add(highlightObj)
       })
     }
   }
@@ -486,32 +567,127 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   private getGeometrySize(object: THREE.Object3D) {
+    const visitedBuffers = new Set<ArrayBufferLike>()
     let memory = 0
 
     // Geometry memory usage
-    if ('geometry' in object) {
+    if (this.hasGeometry(object)) {
       const geometry = object.geometry as THREE.BufferGeometry
 
-      // Vertices
-      if (geometry.attributes.position) {
-        memory += geometry.attributes.position.array.byteLength
-      }
+      Object.keys(geometry.attributes).forEach(attributeName => {
+        const attribute = geometry.attributes[attributeName] as
+          | THREE.BufferAttribute
+          | THREE.InterleavedBufferAttribute
+        const array = this.getAttributeArray(attribute)
+        if (array && !visitedBuffers.has(array.buffer)) {
+          memory += array.byteLength
+          visitedBuffers.add(array.buffer)
+        }
+      })
 
-      // Normals
-      if (geometry.attributes.normal) {
-        memory += geometry.attributes.normal.array.byteLength
-      }
-
-      // UVs (each UV has 2 floats)
-      if (geometry.attributes.uv) {
-        memory += geometry.attributes.uv.array.byteLength
-      }
-
-      // Indices
       if (geometry.index) {
-        memory += geometry.index.array.byteLength
+        const indexArray = geometry.index.array
+        if (!visitedBuffers.has(indexArray.buffer)) {
+          memory += indexArray.byteLength
+          visitedBuffers.add(indexArray.buffer)
+        }
       }
     }
     return memory
+  }
+
+  private getUnbatchedStats(): AcTrUnbatchedGroupStats {
+    const stats: AcTrUnbatchedGroupStats = {
+      count: 0,
+      geometrySize: 0,
+      byType: {
+        line: 0,
+        mesh: 0,
+        point: 0,
+        other: 0
+      }
+    }
+    this._unbatchedObjects.children.forEach(object => {
+      stats.count += 1
+      stats.geometrySize += this.getGeometrySize(object)
+      if (this.isLineObject(object)) {
+        stats.byType.line += 1
+      } else if (object instanceof THREE.Mesh) {
+        stats.byType.mesh += 1
+      } else if (object instanceof THREE.Points) {
+        stats.byType.point += 1
+      } else {
+        stats.byType.other += 1
+      }
+    })
+    return stats
+  }
+
+  private cloneUnbatchedObject(source: THREE.Object3D) {
+    const cloned = source.clone() as THREE.Object3D
+    if (this.hasGeometry(source) && this.hasGeometry(cloned)) {
+      const geometry = source.geometry
+      const clonedGeometry = geometry.clone()
+      clonedGeometry.applyMatrix4(source.matrixWorld)
+      cloned.geometry = clonedGeometry
+    }
+    if (this.hasMaterial(source) && this.hasMaterial(cloned)) {
+      cloned.material = source.material
+      cloned.userData.styleMaterialId =
+        source.userData.styleMaterialId ?? this.getMaterialId(source.material)
+    }
+    cloned.position.set(0, 0, 0)
+    cloned.rotation.set(0, 0, 0)
+    cloned.scale.set(1, 1, 1)
+    cloned.updateMatrix()
+    cloned.updateMatrixWorld(true)
+    return cloned
+  }
+
+  private disposeObject(object: THREE.Object3D) {
+    object.removeFromParent()
+    if (this.hasGeometry(object)) {
+      object.geometry.dispose()
+    }
+    object.children.forEach(child => this.disposeObject(child))
+  }
+
+  private hasMaterial(
+    object: THREE.Object3D
+  ): object is THREE.Mesh | THREE.Line | THREE.Points {
+    return 'material' in object
+  }
+
+  private hasGeometry(
+    object: THREE.Object3D
+  ): object is THREE.Mesh | THREE.Line | THREE.Points {
+    return 'geometry' in object
+  }
+
+  private getAttributeArray(
+    attribute: THREE.BufferAttribute | THREE.InterleavedBufferAttribute
+  ):
+    | (ArrayLike<number> & { buffer: ArrayBufferLike; byteLength: number })
+    | null {
+    if ('array' in attribute && attribute.array) {
+      return attribute.array
+    }
+    if ('data' in attribute && attribute.data && attribute.data.array) {
+      return attribute.data.array
+    }
+    return null
+  }
+
+  private isLineObject(object: THREE.Object3D): boolean {
+    if (object instanceof THREE.Line) return true
+    return !!(object as THREE.Object3D & { isLineSegments2?: boolean })
+      .isLineSegments2
+  }
+
+  private getMaterialId(material: THREE.Material | THREE.Material[]) {
+    if (Array.isArray(material)) {
+      return material[0]?.id ?? -1
+    }
+    return material.id
   }
 }

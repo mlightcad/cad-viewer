@@ -46,6 +46,8 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   constructor(renderer: THREE.WebGLRenderer) {
     this._renderer = renderer
     this._styleManager = new AcTrStyleManager()
+    const size = renderer.getSize(new THREE.Vector2())
+    this._styleManager.updateLineResolution(size.x, size.y)
     AcTrMTextRenderer.getInstance().overrideStyleManager(this._styleManager)
     FontManager.instance.events.fontNotFound.addEventListener(args => {
       this.events.fontNotFound.dispatch(args)
@@ -96,6 +98,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   setSize(width: number, height: number) {
     this._renderer.setSize(width, height)
+    this._styleManager.updateLineResolution(width, height)
   }
 
   getViewport(target: THREE.Vector4) {

@@ -26,7 +26,8 @@ export class AcTrStyleManager {
     ltscale: 1.0,
     celtscale: 1.0,
     viewportScaleUniform: 1.0,
-    maxFragmentUniforms: 1024
+    maxFragmentUniforms: 1024,
+    resolution: new THREE.Vector2(1, 1)
   }
   private pointMgr: AcTrPointMaterialManager
   private lineMgr: AcTrLineMaterialManager
@@ -109,6 +110,11 @@ export class AcTrStyleManager {
     this.lineMgr.dispose()
     this.pointMgr.dispose()
     this.fillMgr.dispose()
+  }
+
+  updateLineResolution(width: number, height: number): void {
+    AcTrStyleManager.options.resolution.set(width, height)
+    this.lineMgr.updateResolution()
   }
 }
 

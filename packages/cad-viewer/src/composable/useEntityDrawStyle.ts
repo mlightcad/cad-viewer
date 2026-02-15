@@ -37,7 +37,9 @@ export function useEntityDrawStyle(editorRef: Ref<AcApDocManager | null>) {
    * -------------------------------------------------------------
    */
   const color = ref<string>(AcApAnnotation.DEFAULT_ANNOTATION_COLOR.toString())
-  const lineWeight = ref<AcGiLineWeight>(AcGiLineWeight.ByLayer)
+  const lineWeight = ref<AcGiLineWeight>(
+    AcApAnnotation.DEFAULT_ANNOTATION_LINE_WEIGHT
+  )
   const isShowToolbar = ref<boolean>(false)
 
   /**

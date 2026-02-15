@@ -1,3 +1,5 @@
+import * as THREE from 'three'
+
 export interface AcTrStyleManagerOptions {
   // /** Uniform used by line and hatch shaders to support zoom-dependent effects. */
   // cameraZoomUniform: number
@@ -19,4 +21,9 @@ export interface AcTrStyleManagerOptions {
    * clippingPlanes as expected.
    */
   maxFragmentUniforms: number
+
+  /**
+   * Viewport size used by fat-line materials.
+   */
+  resolution: THREE.Vector2
 }

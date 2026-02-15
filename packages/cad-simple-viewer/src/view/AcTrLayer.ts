@@ -16,6 +16,17 @@ import { AcEdLayerInfo } from '../editor'
 export type AcTrLayerStats = AcTrBatchedGroupStats & {
   /** The name of the layer */
   name: string
+  /** Statistics for non-batched objects in this layer */
+  unbatched: {
+    count: number
+    geometrySize: number
+    byType: {
+      line: number
+      mesh: number
+      point: number
+      other: number
+    }
+  }
 }
 
 /**
