@@ -16,17 +16,18 @@ export type AcTrBatchedGeometryInfo = AcTrBatchGeometryUserData & {
 
   // state
   boundingBox: THREE.Box3 | null
-  boundingSphere: THREE.Sphere | null
   active: boolean
   visible: boolean
 }
 
 const _box = /*@__PURE__*/ new THREE.Box3()
+const _sphere = /*@__PURE__*/ new THREE.Sphere()
 const _vector = /*@__PURE__*/ new THREE.Vector3()
 const _raycastObject = /*@__PURE__*/ new THREE.Points()
 const _batchIntersects: THREE.Intersection[] = []
 
 export class AcTrBatchedPoint extends THREE.Points {
+  private static readonly GROWTH_FACTOR = 1.25
   boundingBox: THREE.Box3 | null = null
   boundingSphere: THREE.Sphere | null = null
 
@@ -126,8 +127,11 @@ export class AcTrBatchedPoint extends THREE.Points {
     let newMaxVertexCount = this._maxVertexCount
     if (positionAttribute) {
       if (this.unusedVertexCount < positionAttribute.count) {
-        newMaxVertexCount =
-          (this._maxVertexCount + positionAttribute.count) * 1.5
+        const requiredVertexCount =
+          this._nextVertexStart + positionAttribute.count
+        newMaxVertexCount = Math.ceil(
+          requiredVertexCount * AcTrBatchedPoint.GROWTH_FACTOR
+        )
       }
     }
 
@@ -190,11 +194,9 @@ export class AcTrBatchedPoint extends THREE.Points {
     const geometryInfo = this._geometryInfo
     boundingSphere.makeEmpty()
     for (let i = 0, l = geometryInfo.length; i < l; i++) {
-      const geometry = geometryInfo[i]
-      if (geometry.active === false) continue
-      if (geometry.boundingSphere != null) {
-        boundingSphere.union(geometry.boundingSphere)
-      }
+      if (geometryInfo[i].active === false) continue
+      this.getBoundingSphereAt(i, _sphere)
+      boundingSphere.union(_sphere)
     }
   }
 
@@ -205,13 +207,6 @@ export class AcTrBatchedPoint extends THREE.Points {
     this._initializeGeometry(geometry)
     this._validateGeometry(geometry)
 
-    if (geometry.boundingBox == null) {
-      geometry.computeBoundingBox()
-    }
-    if (geometry.boundingSphere == null) {
-      geometry.computeBoundingSphere()
-    }
-
     this._resizeSpaceIfNeeded(geometry)
 
     const geometryInfo: AcTrBatchedGeometryInfo = {
@@ -221,8 +216,7 @@ export class AcTrBatchedPoint extends THREE.Points {
       reservedVertexCount: -1,
 
       // state
-      boundingBox: geometry.boundingBox!,
-      boundingSphere: geometry.boundingSphere!,
+      boundingBox: null,
       active: true,
       visible: true
     }
@@ -310,16 +304,8 @@ export class AcTrBatchedPoint extends THREE.Points {
       )
     }
 
-    // store the bounding boxes
+    // lazily computed when needed by hit testing
     geometryInfo.boundingBox = null
-    if (geometry.boundingBox !== null) {
-      geometryInfo.boundingBox = geometry.boundingBox.clone()
-    }
-
-    geometryInfo.boundingSphere = null
-    if (geometry.boundingSphere !== null) {
-      geometryInfo.boundingSphere = geometry.boundingSphere.clone()
-    }
 
     return geometryId
   }
@@ -429,47 +415,13 @@ export class AcTrBatchedPoint extends THREE.Points {
     return target
   }
 
-  // get bounding sphere and compute it if it doesn't exist
+  // get bounding sphere
   getBoundingSphereAt(geometryId: number, target: THREE.Sphere) {
     if (geometryId >= this._geometryCount) {
       return null
     }
-
-    // compute bounding sphere
-    const geometry = this.geometry
-    const geometryInfo = this._geometryInfo[geometryId]
-    if (geometryInfo.boundingSphere === null) {
-      const sphere = new THREE.Sphere()
-      this.getBoundingBoxAt(geometryId, _box)
-      _box.getCenter(sphere.center)
-
-      const index = geometry.index
-      const position = geometry.attributes.position
-
-      let maxRadiusSq = 0
-      for (
-        let i = geometryInfo.vertexStart,
-          l = geometryInfo.vertexStart + geometryInfo.vertexCount;
-        i < l;
-        i++
-      ) {
-        let iv = i
-        if (index) {
-          iv = index.getX(iv)
-        }
-
-        _vector.fromBufferAttribute(position, iv)
-        maxRadiusSq = Math.max(
-          maxRadiusSq,
-          sphere.center.distanceToSquared(_vector)
-        )
-      }
-
-      sphere.radius = Math.sqrt(maxRadiusSq)
-      geometryInfo.boundingSphere = sphere
-    }
-
-    target.copy(geometryInfo.boundingSphere)
+    this.getBoundingBoxAt(geometryId, _box)
+    _box.getBoundingSphere(target)
     return target
   }
 
@@ -601,10 +553,9 @@ export class AcTrBatchedPoint extends THREE.Points {
     }
 
     if (geometryInfo.bboxIntersectionCheck) {
-      const box = geometryInfo.boundingBox
-
+      this.getBoundingBoxAt(geometryId, _box)
       // Check for intersection with the bounding box
-      if (raycaster.ray.intersectBox(box!, _vector)) {
+      if (raycaster.ray.intersectBox(_box, _vector)) {
         const distance = raycaster.ray.origin.distanceTo(_vector)
         // Push intersection details
         intersects.push({
@@ -663,10 +614,7 @@ export class AcTrBatchedPoint extends THREE.Points {
 
     this._geometryInfo = source._geometryInfo.map(info => ({
       ...info,
-
-      boundingBox: info.boundingBox !== null ? info.boundingBox.clone() : null,
-      boundingSphere:
-        info.boundingSphere !== null ? info.boundingSphere.clone() : null
+      boundingBox: info.boundingBox !== null ? info.boundingBox.clone() : null
     }))
 
     this._maxVertexCount = source._maxVertexCount

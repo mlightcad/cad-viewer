@@ -13,7 +13,12 @@ export class AcTrImage extends AcTrEntity {
     super(styleManager)
     const blobUrl = URL.createObjectURL(blob)
     const textureLoader = new THREE.TextureLoader()
-    const texture = textureLoader.load(blobUrl)
+    const texture = textureLoader.load(
+      blobUrl,
+      () => URL.revokeObjectURL(blobUrl),
+      undefined,
+      () => URL.revokeObjectURL(blobUrl)
+    )
     texture.colorSpace = THREE.SRGBColorSpace
     const material = new THREE.MeshBasicMaterial({
       side: THREE.DoubleSide,

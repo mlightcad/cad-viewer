@@ -23,13 +23,8 @@ export type AcTrBatchedGeometryInfo = AcTrBatchGeometryUserData & {
   indexCount: number
   reservedIndexCount: number
 
-  // draw range information
-  start: number
-  count: number
-
   // state
   boundingBox: THREE.Box3 | null
-  boundingSphere: THREE.Sphere | null
   active: boolean
   visible: boolean
 }

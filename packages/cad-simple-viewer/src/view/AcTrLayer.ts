@@ -213,9 +213,21 @@ export class AcTrLayer {
    * @returns Return true if update the specified entity successfully. Otherwise, return false.
    */
   updateEntity(entity: AcTrEntity): boolean {
-    // TODO: Finish it
-    this._group.add(entity)
+    if (!entity.objectId) {
+      return false
+    }
+    this._group.removeEntity(entity.objectId)
+    this._group.addEntity(entity)
     return true
+  }
+
+  /**
+   * Clear all entities in this layer and release batched geometry resources.
+   */
+  clear() {
+    this._group.clear()
+    this._box.makeEmpty()
+    this._group.removeFromParent()
   }
 
   /**

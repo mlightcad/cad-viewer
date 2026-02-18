@@ -10,11 +10,13 @@ import {
 } from './AcTrBatchedGeometryInfo'
 
 const _box = /*@__PURE__*/ new THREE.Box3()
+const _sphere = /*@__PURE__*/ new THREE.Sphere()
 const _vector = /*@__PURE__*/ new THREE.Vector3()
 const _raycastObject = /*@__PURE__*/ new THREE.Mesh()
 const _batchIntersects: THREE.Intersection[] = []
 
 export class AcTrBatchedMesh extends THREE.Mesh {
+  private static readonly GROWTH_FACTOR = 1.25
   boundingBox: THREE.Box3 | null = null
   boundingSphere: THREE.Sphere | null = null
 
@@ -139,7 +141,10 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     let newMaxIndexCount = this._maxIndexCount
     if (hasIndex) {
       if (this.unusedIndexCount < index.count) {
-        newMaxIndexCount = (this._maxIndexCount + index.count) * 1.5
+        const requiredIndexCount = this._nextIndexStart + index.count
+        newMaxIndexCount = Math.ceil(
+          requiredIndexCount * AcTrBatchedMesh.GROWTH_FACTOR
+        )
       }
     }
 
@@ -147,8 +152,11 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     let newMaxVertexCount = this._maxVertexCount
     if (positionAttribute) {
       if (this.unusedVertexCount < positionAttribute.count) {
-        newMaxVertexCount =
-          (this._maxVertexCount + positionAttribute.count) * 1.5
+        const requiredVertexCount =
+          this._nextVertexStart + positionAttribute.count
+        newMaxVertexCount = Math.ceil(
+          requiredVertexCount * AcTrBatchedMesh.GROWTH_FACTOR
+        )
       }
     }
 
@@ -199,11 +207,9 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     const geometryInfo = this._geometryInfo
     boundingSphere.makeEmpty()
     for (let i = 0, l = geometryInfo.length; i < l; i++) {
-      const geometry = geometryInfo[i]
-      if (geometry.active === false) continue
-      if (geometry.boundingSphere != null) {
-        boundingSphere.union(geometry.boundingSphere)
-      }
+      if (geometryInfo[i].active === false) continue
+      this.getBoundingSphereAt(i, _sphere)
+      boundingSphere.union(_sphere)
     }
   }
 
@@ -222,13 +228,6 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     this._initializeGeometry(geometry)
     this._validateGeometry(geometry)
 
-    if (geometry.boundingBox == null) {
-      geometry.computeBoundingBox()
-    }
-    if (geometry.boundingSphere == null) {
-      geometry.computeBoundingSphere()
-    }
-
     this._resizeSpaceIfNeeded(geometry)
 
     const geometryInfo: AcTrBatchedGeometryInfo = {
@@ -241,13 +240,8 @@ export class AcTrBatchedMesh extends THREE.Mesh {
       indexCount: -1,
       reservedIndexCount: -1,
 
-      // draw range information
-      start: -1,
-      count: -1,
-
       // state
-      boundingBox: geometry.boundingBox,
-      boundingSphere: geometry.boundingSphere,
+      boundingBox: null,
       active: true,
       visible: true
     }
@@ -385,24 +379,8 @@ export class AcTrBatchedMesh extends THREE.Mesh {
       dstIndex.addUpdateRange(indexStart, geometryInfo.reservedIndexCount)
     }
 
-    // update the draw range
-    geometryInfo.start = hasIndex
-      ? geometryInfo.indexStart
-      : geometryInfo.vertexStart
-    geometryInfo.count = hasIndex
-      ? geometryInfo.indexCount
-      : geometryInfo.vertexCount
-
-    // store the bounding boxes
+    // lazily computed when needed by hit testing
     geometryInfo.boundingBox = null
-    if (geometry.boundingBox !== null) {
-      geometryInfo.boundingBox = geometry.boundingBox.clone()
-    }
-
-    geometryInfo.boundingSphere = null
-    if (geometry.boundingSphere !== null) {
-      geometryInfo.boundingSphere = geometry.boundingSphere.clone()
-    }
 
     return geometryId
   }
@@ -489,9 +467,6 @@ export class AcTrBatchedMesh extends THREE.Mesh {
       }
 
       // ---- update draw info ----
-      info.start = hasIndex ? info.indexStart : info.vertexStart
-      info.count = hasIndex ? indexCount : vertexCount
-
       nextVertexStart += vertexCount
       nextIndexStart += indexCount
     }
@@ -529,8 +504,9 @@ export class AcTrBatchedMesh extends THREE.Mesh {
       const box = new THREE.Box3()
       const index = geometry.index
       const position = geometry.attributes.position
+      const { start, count } = this.getDrawRange(geometryInfo, index != null)
       for (
-        let i = geometryInfo.start, l = geometryInfo.start + geometryInfo.count;
+        let i = start, l = start + count;
         i < l;
         i++
       ) {
@@ -549,46 +525,13 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     return target
   }
 
-  // get bounding sphere and compute it if it doesn't exist
+  // get bounding sphere
   getBoundingSphereAt(geometryId: number, target: THREE.Sphere) {
     if (geometryId >= this._geometryCount) {
       return null
     }
-
-    // compute bounding sphere
-    const geometry = this.geometry
-    const geometryInfo = this._geometryInfo[geometryId]
-    if (geometryInfo.boundingSphere === null) {
-      const sphere = new THREE.Sphere()
-      this.getBoundingBoxAt(geometryId, _box)
-      _box.getCenter(sphere.center)
-
-      const index = geometry.index
-      const position = geometry.attributes.position
-
-      let maxRadiusSq = 0
-      for (
-        let i = geometryInfo.start, l = geometryInfo.start + geometryInfo.count;
-        i < l;
-        i++
-      ) {
-        let iv = i
-        if (index) {
-          iv = index.getX(iv)
-        }
-
-        _vector.fromBufferAttribute(position, iv)
-        maxRadiusSq = Math.max(
-          maxRadiusSq,
-          sphere.center.distanceToSquared(_vector)
-        )
-      }
-
-      sphere.radius = Math.sqrt(maxRadiusSq)
-      geometryInfo.boundingSphere = sphere
-    }
-
-    target.copy(geometryInfo.boundingSphere)
+    this.getBoundingBoxAt(geometryId, _box)
+    _box.getBoundingSphere(target)
     return target
   }
 
@@ -648,11 +591,12 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     const object = new THREE.Mesh()
     this._initializeRaycastObject(object)
     const geometryInfo = this._geometryInfo[batchId]
+    const { start, count } = this.getDrawRange(geometryInfo)
     this._setRaycastObjectInfo(
       object,
       batchId,
-      geometryInfo.start,
-      geometryInfo.count
+      start,
+      count
     )
     return object
   }
@@ -725,10 +669,9 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     }
 
     if (geometryInfo.bboxIntersectionCheck) {
-      const box = geometryInfo.boundingBox
-
+      this.getBoundingBoxAt(geometryId, _box)
       // Check for intersection with the bounding box
-      if (raycaster.ray.intersectBox(box!, _vector)) {
+      if (raycaster.ray.intersectBox(_box, _vector)) {
         const distance = raycaster.ray.origin.distanceTo(_vector)
         // Push intersection details
         intersects.push({
@@ -744,11 +687,12 @@ export class AcTrBatchedMesh extends THREE.Mesh {
         })
       }
     } else {
+      const { start, count } = this.getDrawRange(geometryInfo)
       this._setRaycastObjectInfo(
         _raycastObject,
         geometryId,
-        geometryInfo.start,
-        geometryInfo.count
+        start,
+        count
       )
       _raycastObject.raycast(raycaster, _batchIntersects)
 
@@ -787,10 +731,7 @@ export class AcTrBatchedMesh extends THREE.Mesh {
 
     this._geometryInfo = source._geometryInfo.map(info => ({
       ...info,
-
-      boundingBox: info.boundingBox !== null ? info.boundingBox.clone() : null,
-      boundingSphere:
-        info.boundingSphere !== null ? info.boundingSphere.clone() : null
+      boundingBox: info.boundingBox !== null ? info.boundingBox.clone() : null
     }))
 
     this._maxVertexCount = source._maxVertexCount
@@ -806,5 +747,14 @@ export class AcTrBatchedMesh extends THREE.Mesh {
     // Assuming the geometry is not shared with other meshes
     this.geometry.dispose()
     return this
+  }
+
+  private getDrawRange(
+    geometryInfo: AcTrBatchedGeometryInfo,
+    hasIndex: boolean = this.geometry.index != null
+  ) {
+    return hasIndex
+      ? { start: geometryInfo.indexStart, count: geometryInfo.indexCount }
+      : { start: geometryInfo.vertexStart, count: geometryInfo.vertexCount }
   }
 }
