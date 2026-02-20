@@ -199,7 +199,7 @@ export class AcTrLayout {
    */
   clear() {
     this._layers.forEach(layer => {
-      this._group.remove(layer.internalObject)
+      layer.clear()
     })
     this._layers.clear()
     this._box.makeEmpty()

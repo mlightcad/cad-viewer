@@ -86,6 +86,7 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
   clear(): void {
     this.rootIndex.clear()
     this.childIndexes.forEach(i => i.clear())
+    this.childIndexes.clear()
   }
 
   search(bbox: AcTrSpatialIndexBBox): AcEdSpatialQueryResultItemEx[] {

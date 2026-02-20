@@ -50,6 +50,11 @@ export interface AcTrBatchedGroupStats {
 }
 
 export class AcTrBatchedGroup extends THREE.Group {
+  private static readonly INITIAL_LINE_VERTEX_CAPACITY = 128
+  private static readonly INITIAL_LINE_INDEX_CAPACITY = 256
+  private static readonly INITIAL_MESH_VERTEX_CAPACITY = 128
+  private static readonly INITIAL_MESH_INDEX_CAPACITY = 256
+  private static readonly INITIAL_POINT_VERTEX_CAPACITY = 16
   /**
    * Batched line map for line segments without vertex index.
    * - the key is material id
@@ -448,6 +453,16 @@ export class AcTrBatchedGroup extends THREE.Group {
     containerGroup.children.forEach(obj => {
       if (obj.userData.objectId === objectId) objects.push(obj)
     })
+    objects.forEach(obj => {
+      if ('material' in obj) {
+        const material = obj.material as THREE.Material | THREE.Material[]
+        if (Array.isArray(material)) {
+          material.forEach(m => m.dispose())
+        } else {
+          material.dispose()
+        }
+      }
+    })
     containerGroup.remove(...objects)
   }
 
@@ -459,7 +474,11 @@ export class AcTrBatchedGroup extends THREE.Group {
     const batches = this.getMatchedLineBatches(object)
     let batchedLine = batches.get(material.id)
     if (batchedLine == null) {
-      batchedLine = new AcTrBatchedLine(1000, 2000, material)
+      batchedLine = new AcTrBatchedLine(
+        AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
+        AcTrBatchedGroup.INITIAL_LINE_INDEX_CAPACITY,
+        material
+      )
       batches.set(material.id, batchedLine)
       this.add(batchedLine)
     }
@@ -482,7 +501,11 @@ export class AcTrBatchedGroup extends THREE.Group {
     const batches = this.getMatchedMeshBatches(object)
     let batchedMesh = batches.get(material.id)
     if (batchedMesh == null) {
-      batchedMesh = new AcTrBatchedMesh(1000, 2000, material)
+      batchedMesh = new AcTrBatchedMesh(
+        AcTrBatchedGroup.INITIAL_MESH_VERTEX_CAPACITY,
+        AcTrBatchedGroup.INITIAL_MESH_INDEX_CAPACITY,
+        material
+      )
       batches.set(material.id, batchedMesh)
       this.add(batchedMesh)
     }
@@ -503,7 +526,10 @@ export class AcTrBatchedGroup extends THREE.Group {
     const material = object.material as THREE.Material
     let batchedPoint = this._pointBatches.get(material.id)
     if (batchedPoint == null) {
-      batchedPoint = new AcTrBatchedPoint(100, material)
+      batchedPoint = new AcTrBatchedPoint(
+        AcTrBatchedGroup.INITIAL_POINT_VERTEX_CAPACITY,
+        material
+      )
       batchedPoint.visible = object.visible
       this._pointBatches.set(material.id, batchedPoint)
       this.add(batchedPoint)
