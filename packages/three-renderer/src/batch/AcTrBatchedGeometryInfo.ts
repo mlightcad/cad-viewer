@@ -1,6 +1,12 @@
 import { AcGePoint3dLike } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
+/**
+ * Per-sub-geometry metadata stored in batched objects.
+ *
+ * These fields are copied into each batched geometry record and are later used
+ * by hit-testing / highlighting workflows.
+ */
 export interface AcTrBatchGeometryUserData {
   objectId?: string
   /**
@@ -13,27 +19,58 @@ export interface AcTrBatchGeometryUserData {
   position?: AcGePoint3dLike
 }
 
-export type AcTrBatchedGeometryInfo = AcTrBatchGeometryUserData & {
-  // geometry information
-  vertexStart: number
-  vertexCount: number
-  reservedVertexCount: number
-
-  indexStart: number
-  indexCount: number
-  reservedIndexCount: number
-
-  // state
+export interface AcTrBatchGeometryState {
+  /** Lazily computed per-geometry bounds used for culling/hit tests. */
   boundingBox: THREE.Box3 | null
+  /** Whether this geometry slot is active (not deleted). */
   active: boolean
+  /** Per-geometry visibility toggle. */
   visible: boolean
 }
 
+/**
+ * Common geometry range/state information for non-indexed batched primitives.
+ */
+export type AcTrVertexBatchGeometryInfo = AcTrBatchGeometryUserData &
+  AcTrBatchGeometryState & {
+    /** Start offset in packed vertex/segment buffer. */
+    vertexStart: number
+    /** Actual used vertex/segment count in this slot. */
+    vertexCount: number
+    /** Reserved capacity for future updates without relocation. */
+    reservedVertexCount: number
+  }
+
+/**
+ * Geometry range/state information for indexed batched primitives.
+ */
+export type AcTrIndexedBatchGeometryInfo = AcTrVertexBatchGeometryInfo & {
+  /** Start offset in packed index buffer. */
+  indexStart: number
+  /** Actual used index count in this slot. */
+  indexCount: number
+  /** Reserved index capacity for future updates without relocation. */
+  reservedIndexCount: number
+}
+
+/**
+ * Backward-compatible alias used by existing line/mesh batching code.
+ */
+export type AcTrBatchedGeometryInfo = AcTrIndexedBatchGeometryInfo
+
+/**
+ * Ascending sort comparator for reusable geometry ids.
+ */
 export function ascIdSort(a: number, b: number) {
   return a - b
 }
 
-// copies data from attribute "src" into "target" starting at "targetOffset"
+/**
+ * Copies attribute data from `src` into `target` at `targetOffset`.
+ *
+ * Falls back to per-component copy for incompatible array layouts and uses
+ * fast typed-array block copy when both attributes share the same array type.
+ */
 export function copyAttributeData(
   src: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
   target: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
@@ -60,7 +97,13 @@ export function copyAttributeData(
   target.needsUpdate = true
 }
 
-// safely copies array contents to a potentially smaller array
+/**
+ * Safely copies `src` typed-array contents into `target`.
+ *
+ * The copy is capped to `Math.min(src.length, target.length)` and supports
+ * different array constructors (for example index upsize from `Uint16Array`
+ * to `Uint32Array`).
+ */
 export function copyArrayContents(
   src: THREE.TypedArray,
   target: THREE.TypedArray
