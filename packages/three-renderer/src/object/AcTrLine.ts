@@ -47,7 +47,6 @@ export class AcTrLine extends AcTrEntity {
       this.box.copy(box)
 
       const line = new LineSegments2(lineGeometry, material)
-      line.userData.noBatch = true
       line.userData.styleMaterialId = material.id
       this.add(line)
       return
