@@ -60,6 +60,8 @@ export class AcEdInputManager {
 
   /** Command line UI component */
   private _commandLine: AcEdCommandLine
+  /** Buffered command-line style inputs (each item is one Enter-confirmed value). */
+  private _scriptInputs: string[] = []
 
   /**
    * The flag to indicate whether it is currently in an “input acquisition” mode (e.g., point
@@ -96,6 +98,20 @@ export class AcEdInputManager {
    */
   get isActive() {
     return this.active
+  }
+
+  /**
+   * Queue scripted inputs for subsequent getXXX calls.
+   * One array item equals one Enter-confirmed value.
+   */
+  enqueueScriptInputs(inputs: string[]) {
+    if (!inputs.length) return
+    this._scriptInputs.push(...inputs)
+  }
+
+  /** Clears any pending scripted inputs. */
+  clearScriptInputs() {
+    this._scriptInputs.length = 0
   }
 
   /**
@@ -151,6 +167,10 @@ export class AcEdInputManager {
    * Public point input API.
    */
   getPoint(options: AcEdPromptPointOptions): Promise<AcGePoint3dLike> {
+    const scriptedValue = this.tryGetScriptedPoint(options)
+    if (scriptedValue != null) {
+      return Promise.resolve(scriptedValue)
+    }
     return this.getPointInternal(options)
   }
 
@@ -183,6 +203,13 @@ export class AcEdInputManager {
 
   /** Request a distance (number) from the user. */
   getDistance(options: AcEdPromptDistanceOptions): Promise<number> {
+    const scriptedValue = this.tryGetScriptedNumber(
+      new AcEdDistanceHandler(options)
+    )
+    if (scriptedValue != null) {
+      return Promise.resolve(scriptedValue)
+    }
+
     // If no base point defined → fall back to typed numeric input
     if (!this.lastPoint) {
       // fallback to normal numeric input
@@ -214,6 +241,13 @@ export class AcEdInputManager {
 
   /** Request an angle in degrees from the user. */
   getAngle(options: AcEdPromptAngleOptions): Promise<number> {
+    const scriptedValue = this.tryGetScriptedNumber(
+      new AcEdAngleHandler(options)
+    )
+    if (scriptedValue != null) {
+      return Promise.resolve(scriptedValue)
+    }
+
     const getDynamicValue = (pos: AcGePoint2dLike) => {
       const dx = pos.x - this.lastPoint!.x
       const dy = pos.y - this.lastPoint!.y
@@ -240,11 +274,23 @@ export class AcEdInputManager {
 
   /** Request a double/float from the user. */
   getDouble(options: AcEdPromptDistanceOptions): Promise<number> {
+    const scriptedValue = this.tryGetScriptedNumber(
+      new AcEdDoubleHandler(options)
+    )
+    if (scriptedValue != null) {
+      return Promise.resolve(scriptedValue)
+    }
     return this.getNumberTyped(options, new AcEdDoubleHandler(options))
   }
 
   /** Request an integer from the user. */
   getInteger(options: AcEdPromptIntegerOptions): Promise<number> {
+    const scriptedValue = this.tryGetScriptedNumber(
+      new AcEdIntegerHandler(options)
+    )
+    if (scriptedValue != null) {
+      return Promise.resolve(scriptedValue)
+    }
     return this.getNumberTyped(options, new AcEdIntegerHandler(options))
   }
 
@@ -252,6 +298,13 @@ export class AcEdInputManager {
    * Prompt the user to type an arbitrary string. Resolved when Enter is pressed.
    */
   getString(options: AcEdPromptStringOptions): Promise<string> {
+    const scriptedValue = this.tryGetScriptedValue(
+      new AcEdStringHandler(options)
+    )
+    if (scriptedValue != null) {
+      return Promise.resolve(scriptedValue)
+    }
+
     const getDynamicValue = () => {
       return {
         value: '',
@@ -275,6 +328,13 @@ export class AcEdInputManager {
    * Prompt the user to type a keyword. Resolved when Enter is pressed.
    */
   getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
+    const scriptedValue = this.tryGetScriptedValue(
+      new AcEdKeywordHandler(options)
+    )
+    if (scriptedValue != null) {
+      return Promise.resolve(scriptedValue)
+    }
+
     const getDynamicValue = () => {
       return {
         value: '',
@@ -569,6 +629,12 @@ export class AcEdInputManager {
     cleanup?: () => void,
     drawPreview?: AcEdFloatingInputDrawPreviewCallback
   ) {
+    const scriptedValue = this.tryGetScriptedPoint(options)
+    if (scriptedValue != null) {
+      cleanup?.()
+      return Promise.resolve(scriptedValue)
+    }
+
     const getDynamicValue = (pos: AcGePoint2dLike) => {
       return {
         value: { x: pos.x, y: pos.y, z: 0 },
@@ -592,6 +658,73 @@ export class AcEdInputManager {
       getDynamicValue,
       drawPreview
     })
+  }
+
+  /**
+   * Attempts to consume one scripted input and parse it as a point.
+   * Supported forms: "x,y", "x,y,z", or "x y".
+   */
+  private tryGetScriptedPoint(
+    options: AcEdPromptPointOptions
+  ): AcGePoint3dLike | undefined {
+    const token = this.dequeueScriptInput()
+    if (token === undefined) return undefined
+
+    const parsed = this.splitScriptedPoint(token)
+    if (!parsed) {
+      throw new Error(`Invalid point input '${token}'`)
+    }
+
+    const value = new AcEdPointHandler(options).parse(parsed.x, parsed.y)
+    if (value == null) {
+      throw new Error(`Invalid point input '${token}'`)
+    }
+
+    this.lastPoint = { x: value.x, y: value.y }
+    return value
+  }
+
+  /**
+   * Attempts to consume one scripted input and parse it with the supplied handler.
+   */
+  private tryGetScriptedValue<T>(handler: AcEdInputHandler<T>): T | undefined {
+    const token = this.dequeueScriptInput()
+    if (token === undefined) return undefined
+
+    const value = handler.parse(token)
+    if (value == null) {
+      throw new Error(`Invalid scripted input '${token}'`)
+    }
+    return value
+  }
+
+  private tryGetScriptedNumber(
+    handler: AcEdNumericalHandler | AcEdAngleHandler
+  ): number | undefined {
+    return this.tryGetScriptedValue(handler)
+  }
+
+  private dequeueScriptInput() {
+    if (!this._scriptInputs.length) return undefined
+    return this._scriptInputs.shift()
+  }
+
+  private splitScriptedPoint(
+    token: string
+  ): { x: string; y: string } | undefined {
+    const trimmed = token.trim()
+    if (!trimmed) return undefined
+
+    if (trimmed.includes(',')) {
+      const parts = trimmed.split(',').map(v => v.trim())
+      if (parts.length !== 2 && parts.length !== 3) return undefined
+      if (parts.length === 3 && Number.isNaN(Number(parts[2]))) return undefined
+      return { x: parts[0], y: parts[1] }
+    }
+
+    const parts = trimmed.split(/\s+/)
+    if (parts.length < 2) return undefined
+    return { x: parts[0], y: parts[1] }
   }
 
   /**
