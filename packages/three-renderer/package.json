@@ -42,7 +42,7 @@
     "@types/three": "^0.172.0"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.7.2",
+    "@mlightcad/data-model": "^1.7.3",
     "@mlightcad/mtext-renderer": "^0.8.7",
     "@velipso/polybool": "^1.1.1",
     "three": "^0.172.0"
