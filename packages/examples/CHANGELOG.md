@@ -1,5 +1,11 @@
 # @mlightcad/cad-viewer-examples
 
+## 1.4.10
+
+### Patch Changes
+
+- feat: add line weight supports
+
 ## 1.4.9
 
 ### Patch Changes

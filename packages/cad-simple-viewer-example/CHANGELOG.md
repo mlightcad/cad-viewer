@@ -1,5 +1,13 @@
 # @mlightcad/cad-simple-viewer-example
 
+## 1.4.10
+
+### Patch Changes
+
+- feat: add line weight supports
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.4.10
+
 ## 1.4.9
 
 ### Patch Changes
