@@ -226,6 +226,7 @@ export class AcTrBaseView {
     cameraControls.autoRotate = false
     cameraControls.enableRotate = false
     cameraControls.zoomSpeed = 5
+    cameraControls.zoomToCursor = true
     cameraControls.mouseButtons = {
       MIDDLE: THREE.MOUSE.PAN
     }
