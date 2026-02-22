@@ -778,21 +778,52 @@ export class AcApDocManager {
    * ```
    */
   sendStringToExecute(cmdStr: string) {
+    const lines = this.splitCommandScript(cmdStr)
+    if (!lines.length) {
+      throw new Error('Command string is empty')
+    }
+
+    const [cmdName, ...scriptInputs] = lines
     const documentMode = this.context.doc.openMode
-    const cmd = this._commandManager.lookupGlobalCmd(cmdStr)
+    const cmd =
+      this._commandManager.lookupGlobalCmd(cmdName) ??
+      this._commandManager.lookupLocalCmd(cmdName, documentMode)
 
     if (!cmd) {
-      throw new Error(`Command '${cmdStr}' not found`)
+      throw new Error(`Command '${cmdName}' not found`)
     }
 
     // Check mode compatibility: document mode must be >= command mode
     if (documentMode < cmd.mode) {
       throw new Error(
-        `Command '${cmdStr}' requires mode '${AcEdOpenMode[cmd.mode]}' but document is in mode '${AcEdOpenMode[documentMode]}'!`
+        `Command '${cmdName}' requires mode '${AcEdOpenMode[cmd.mode]}' but document is in mode '${AcEdOpenMode[documentMode]}'!`
       )
     }
 
-    cmd.trigger(this.context)
+    this.editor.clearScriptInputs()
+    this.editor.enqueueScriptInputs(scriptInputs)
+    void cmd.trigger(this.context).finally(() => {
+      this.editor.clearScriptInputs()
+    })
+  }
+
+  /**
+   * Splits command script into Enter-separated values.
+   * First line is command name, remaining lines are queued inputs for getXXX.
+   */
+  private splitCommandScript(commandScript: string) {
+    const source =
+      commandScript.includes('\n') || commandScript.includes('\r')
+        ? commandScript
+        : commandScript.replace(/\\n/g, '\n')
+
+    const lines = source.replace(/\r\n/g, '\n').split('\n')
+    if (!lines.length) return []
+
+    const cmdName = lines[0].trim()
+    if (!cmdName) return []
+
+    return [cmdName, ...lines.slice(1)]
   }
 
   /**

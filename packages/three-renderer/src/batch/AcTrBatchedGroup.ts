@@ -281,9 +281,12 @@ export class AcTrBatchedGroup extends THREE.Group {
     this.groups.forEach(group => {
       group.forEach(value => {
         value.dispose()
+        value.removeFromParent()
       })
       group.clear()
     })
+    this.clearHighlightGroup(this._selectedObjects)
+    this.clearHighlightGroup(this._hoverObjects)
     this._unbatchedObjects.children.forEach(object => {
       this.disposeObject(object)
     })
@@ -521,6 +524,8 @@ export class AcTrBatchedGroup extends THREE.Group {
         object.material = clonedMaterial
 
         object.userData.objectId = objectId
+        object.userData.disposeGeometryOnRemove =
+          batchedObject instanceof AcTrBatchedLine2
         containerGroup.add(object)
       })
     }
@@ -550,16 +555,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     containerGroup.children.forEach(obj => {
       if (obj.userData.objectId === objectId) objects.push(obj)
     })
-    objects.forEach(obj => {
-      if ('material' in obj) {
-        const material = obj.material as THREE.Material | THREE.Material[]
-        if (Array.isArray(material)) {
-          material.forEach(m => m.dispose())
-        } else {
-          material.dispose()
-        }
-      }
-    })
+    objects.forEach(obj => this.disposeHighlightObject(obj))
     containerGroup.remove(...objects)
   }
 
@@ -875,6 +871,32 @@ export class AcTrBatchedGroup extends THREE.Group {
       object.geometry.dispose()
     }
     object.children.forEach(child => this.disposeObject(child))
+  }
+
+  /**
+   * Disposes all highlight children of one highlight container.
+   */
+  private clearHighlightGroup(group: THREE.Group) {
+    const objects = [...group.children]
+    objects.forEach(obj => this.disposeHighlightObject(obj))
+    group.clear()
+  }
+
+  /**
+   * Disposes highlight object resources (cloned material and optional geometry).
+   */
+  private disposeHighlightObject(object: THREE.Object3D) {
+    if (this.hasMaterial(object)) {
+      const material = object.material as THREE.Material | THREE.Material[]
+      if (Array.isArray(material)) {
+        material.forEach(m => m.dispose())
+      } else {
+        material.dispose()
+      }
+    }
+    if (this.hasGeometry(object) && object.userData.disposeGeometryOnRemove) {
+      object.geometry.dispose()
+    }
   }
 
   /**

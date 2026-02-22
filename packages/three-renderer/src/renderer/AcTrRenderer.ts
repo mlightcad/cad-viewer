@@ -191,6 +191,22 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     return FontManager.instance.missedFonts
   }
 
+  /**
+   * Gets whether entity lineweights are displayed.
+   */
+  get showLineWeight() {
+    return this._styleManager.showLineWeight
+  }
+
+  /**
+   * Sets whether entity lineweights are displayed.
+   *
+   * When disabled, line entities are rendered with basic 1px materials.
+   */
+  set showLineWeight(value: boolean) {
+    this._styleManager.showLineWeight = value
+  }
+
   updateLayerMaterial(
     layerName: string,
     newTraits: Partial<AcGiSubEntityTraits>

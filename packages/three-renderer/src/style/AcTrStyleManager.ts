@@ -27,7 +27,8 @@ export class AcTrStyleManager {
     celtscale: 1.0,
     viewportScaleUniform: 1.0,
     maxFragmentUniforms: 1024,
-    resolution: new THREE.Vector2(1, 1)
+    resolution: new THREE.Vector2(1, 1),
+    showLineWeight: true
   }
   private pointMgr: AcTrPointMaterialManager
   private lineMgr: AcTrLineMaterialManager
@@ -64,9 +65,28 @@ export class AcTrStyleManager {
     traits: AcGiSubEntityTraits,
     basicMaterialOnly?: boolean
   ): THREE.Material {
+    const hasLinePattern = !!(
+      traits.lineType.pattern && traits.lineType.pattern.length > 0
+    )
+    const forceBasicMaterial =
+      !AcTrStyleManager.options.showLineWeight && !hasLinePattern
     return this.lineMgr.getMaterial(traits, {
-      basicMaterialOnly
+      basicMaterialOnly: basicMaterialOnly || forceBasicMaterial
     })!
+  }
+
+  /**
+   * Gets whether lineweights are currently displayed.
+   */
+  get showLineWeight(): boolean {
+    return AcTrStyleManager.options.showLineWeight
+  }
+
+  /**
+   * Sets whether lineweights are displayed.
+   */
+  set showLineWeight(value: boolean) {
+    AcTrStyleManager.options.showLineWeight = value
   }
 
   /**

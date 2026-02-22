@@ -1,4 +1,4 @@
-import { AcDbLayout } from '@mlightcad/data-model'
+import { AcDbLayout, AcDbSysVarManager } from '@mlightcad/data-model'
 
 import { AcEdBaseView } from '../editor/view/AcEdBaseView'
 import { AcTrView2d } from '../view'
@@ -75,9 +75,19 @@ export class AcApContext {
     })
 
     // Set point display mode
-    doc.database.events.headerSysVarChanged.addEventListener(args => {
+    AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
       if (args.name == 'pdmode') {
         ;(this._view as AcTrView2d).rerenderPoints(args.database.pdmode)
+      } else if (args.name == 'lwdisplay') {
+        const view = this._view as AcTrView2d
+        const showLineWeight = !!args.database.lwdisplay
+        if (view.renderer.showLineWeight !== showLineWeight) {
+          view.renderer.showLineWeight = showLineWeight
+          // Existing line objects may need different geometry/material classes.
+          // Regenerate to rebuild scene content using the new display mode.
+          view.clear()
+          args.database.regen()
+        }
       }
     })
 

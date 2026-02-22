@@ -26,4 +26,12 @@ export interface AcTrStyleManagerOptions {
    * Viewport size used by fat-line materials.
    */
   resolution: THREE.Vector2
+
+  /**
+   * Whether to render entity lineweights using fat-line materials.
+   *
+   * - `true`: render lineweights (AutoCAD-like lineweight display on)
+   * - `false`: force basic line materials with 1px width
+   */
+  showLineWeight: boolean
 }

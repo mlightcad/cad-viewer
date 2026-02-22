@@ -3,7 +3,7 @@ import {
   AcApOpenDatabaseOptions,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
-import { AcDbOpenDatabaseOptions } from '@mlightcad/data-model'
+import { AcDbSysVarManager } from '@mlightcad/data-model'
 
 class CadViewerApp {
   private container: HTMLDivElement
@@ -13,6 +13,8 @@ class CadViewerApp {
   private toolbarZoomButton: HTMLButtonElement
   private toolbarZoomWindowButton: HTMLButtonElement
   private toolbarBgButton: HTMLButtonElement
+  private toolbarPickboxButton: HTMLButtonElement
+  private toolbarLineWeightButton: HTMLButtonElement
   private emptyState: HTMLDivElement
   private predefinedButtons: NodeListOf<HTMLButtonElement>
   private isInitialized: boolean = false
@@ -38,6 +40,12 @@ class CadViewerApp {
     ) as HTMLButtonElement
     this.toolbarBgButton = document.getElementById(
       'toolbarBgButton'
+    ) as HTMLButtonElement
+    this.toolbarPickboxButton = document.getElementById(
+      'toolbarPickboxButton'
+    ) as HTMLButtonElement
+    this.toolbarLineWeightButton = document.getElementById(
+      'toolbarLineWeightButton'
     ) as HTMLButtonElement
     this.emptyState = document.getElementById('emptyState') as HTMLDivElement
     this.predefinedButtons = document.querySelectorAll(
@@ -118,6 +126,44 @@ class CadViewerApp {
       }
       AcApDocManager.instance.sendStringToExecute('switchbg')
     })
+
+    this.toolbarPickboxButton.addEventListener('click', () => {
+      if (!this.hasLoadedDocument || !this.isInitialized) {
+        return
+      }
+
+      const currentPickbox = AcDbSysVarManager.instance().getVar(
+        'pickbox',
+        AcApDocManager.instance.curDocument.database
+      )
+      const initialPickbox =
+        currentPickbox == null ? '10' : String(currentPickbox)
+      const valueText = window.prompt(
+        'Set pick box size (integer):',
+        initialPickbox
+      )
+      if (valueText == null) {
+        return
+      }
+
+      const pickboxValue = Number.parseInt(valueText, 10)
+      if (!Number.isFinite(pickboxValue) || pickboxValue <= 0) {
+        this.showMessage('Pickbox size must be a positive integer', 'error')
+        return
+      }
+
+      AcApDocManager.instance.sendStringToExecute(`pickbox\n${pickboxValue}`)
+      this.showMessage(`Pickbox set to: ${pickboxValue}`, 'success')
+    })
+
+    this.toolbarLineWeightButton.addEventListener('click', () => {
+      if (!this.hasLoadedDocument || !this.isInitialized) {
+        return
+      }
+      const db = AcApDocManager.instance.curDocument.database
+      db.lwdisplay = !db.lwdisplay
+      this.updateLineWeightButtonLabel()
+    })
   }
 
   private setupPredefinedFileActions() {
@@ -150,9 +196,9 @@ class CadViewerApp {
 
     try {
       const fileContent = await this.readFile(file)
-      const options: AcDbOpenDatabaseOptions = {
+      const options: AcApOpenDatabaseOptions = {
         minimumChunkSize: 1000,
-        readOnly: true
+        mode: AcEdOpenMode.Write
       }
 
       const success = await AcApDocManager.instance.openDocument(
@@ -217,6 +263,20 @@ class CadViewerApp {
     this.toolbarZoomButton.disabled = !this.hasLoadedDocument
     this.toolbarZoomWindowButton.disabled = !this.hasLoadedDocument
     this.toolbarBgButton.disabled = !this.hasLoadedDocument
+    this.toolbarPickboxButton.disabled = !this.hasLoadedDocument
+    this.toolbarLineWeightButton.disabled = !this.hasLoadedDocument
+    this.updateLineWeightButtonLabel()
+  }
+
+  private updateLineWeightButtonLabel() {
+    const showLineWeight =
+      this.hasLoadedDocument && this.isInitialized
+        ? AcApDocManager.instance.curDocument.database.lwdisplay
+        : false
+
+    this.toolbarLineWeightButton.textContent = showLineWeight
+      ? 'LineWeight: On'
+      : 'LineWeight: Off'
   }
 
   private getFileNameFromUrl(url: string) {

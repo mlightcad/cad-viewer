@@ -1,5 +1,5 @@
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
-import { AcDbDatabase } from '@mlightcad/data-model'
+import { AcDbDatabase, AcDbSysVarManager } from '@mlightcad/data-model'
 import { reactive } from 'vue'
 
 export interface SystemVariables {
@@ -17,7 +17,7 @@ export function useSystemVars(editor: AcApDocManager) {
   }
   reset(doc.database)
 
-  doc.database.events.headerSysVarChanged.addEventListener(args => {
+  AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
     // @ts-expect-error no good way to fix type errors here
     reactiveSystemVars[args.name] = args.database[args.name]
   })

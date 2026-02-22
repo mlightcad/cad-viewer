@@ -106,6 +106,19 @@ export class AcEditor {
   }
 
   /**
+   * Queues scripted command-line inputs for subsequent getXXX prompts.
+   * One entry equals one Enter-confirmed input.
+   */
+  enqueueScriptInputs(inputs: string[]) {
+    this._inputManager.enqueueScriptInputs(inputs)
+  }
+
+  /** Clears any queued scripted inputs. */
+  clearScriptInputs() {
+    this._inputManager.clearScriptInputs()
+  }
+
+  /**
    * Gets the currently active cursor type.
    *
    * @returns The current cursor type, or undefined if none is set
