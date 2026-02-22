@@ -159,7 +159,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
 
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
-      if (args.name === 'WHITEBKCOLOR') {
+      if (args.name === 'whitebkcolor') {
         const useWhiteBackgroundColor = args.newVal as boolean
         this.backgroundColor = useWhiteBackgroundColor ? 0xffffff : 0
       }
