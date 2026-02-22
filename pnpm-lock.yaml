@@ -93,11 +93,11 @@ importers:
   packages/cad-simple-viewer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.2
-        version: 1.7.2
+        specifier: ^1.7.3
+        version: 1.7.3
       '@mlightcad/libredwg-converter':
-        specifier: ^3.5.2
-        version: 3.5.2(@mlightcad/data-model@1.7.2)
+        specifier: ^3.5.3
+        version: 3.5.3(@mlightcad/data-model@1.7.3)
       lodash-es:
         specifier: 4.17.21
         version: 4.17.21
@@ -139,8 +139,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.2
-        version: 1.7.2
+        specifier: ^1.7.3
+        version: 1.7.3
 
   packages/cad-viewer:
     dependencies:
@@ -151,8 +151,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.2
-        version: 1.7.2
+        specifier: ^1.7.3
+        version: 1.7.3
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.3.0(vue@3.5.18(typescript@5.8.3))
@@ -224,8 +224,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.2
-        version: 1.7.2
+        specifier: ^1.7.3
+        version: 1.7.3
       element-plus:
         specifier: ^2.12.0
         version: 2.12.0(vue@3.5.18(typescript@5.8.3))
@@ -276,14 +276,14 @@ importers:
   packages/svg-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.2
-        version: 1.7.2
+        specifier: ^1.7.3
+        version: 1.7.3
 
   packages/three-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.2
-        version: 1.7.2
+        specifier: ^1.7.3
+        version: 1.7.3
       '@mlightcad/mtext-renderer':
         specifier: ^0.8.7
         version: 0.8.7(three@0.172.0)
@@ -1515,30 +1515,30 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@mlightcad/common@1.4.2':
-    resolution: {integrity: sha512-YfYGLuU+CMZcp3beUUfl4NQj6ab7xKTl5NRTFMnli/zkrGwVzF7HvHPbluYVKxEp8qycDHxZXYQpdyXG1ktaiA==}
+  '@mlightcad/common@1.4.3':
+    resolution: {integrity: sha512-5K+U/cpqPeyNXwS5DMutAM260qyfzySeYM8rwepfUN0VXm1ejkpmRuSkO+ZEWa4nrilCN2edPQpdinP/rYjuSA==}
 
-  '@mlightcad/data-model@1.7.2':
-    resolution: {integrity: sha512-MkTrQg2DG+2kIbODxYVCBMktNqwUhFDWmifjYDopOQ71ALzK5DHDMjrjme2TXjPaMygPmSyHiYtw8+Z7IS3F5A==}
+  '@mlightcad/data-model@1.7.3':
+    resolution: {integrity: sha512-3uwUGjT2k71IJt0V/nVgwDKMYc4+mjntWbQ8xkn/AYSqmhZVdycWSV9bytm2Sibh6gNvX0GGBxBq+NF0E10J/w==}
 
   '@mlightcad/dxf-json@1.0.10':
     resolution: {integrity: sha512-KY2E49y9DHPb0LoEi2Uz2cgmtVFgiNNNBn1DsWYvqn4VLD7itr2+GE51yBZLAzG1SFXiwqPjp5mprU6fI7kysg==}
 
-  '@mlightcad/geometry-engine@3.2.2':
-    resolution: {integrity: sha512-ZT7ymCAuZ6L9k7RjLKsN6TGXHEIc0Tv61mM3U37ocYORqrN9CvXGKmsJF0saQI3me5eyldItKjsbSbDxjl6uaw==}
+  '@mlightcad/geometry-engine@3.2.3':
+    resolution: {integrity: sha512-Dw2n8Po3Tss6PRvZ9coSJMR05j7GBhOB13YrDh63mcpH506cvr8mSRE5qFK9qKMJm4iqc7qA/zv/PRBTpIXfew==}
     peerDependencies:
-      '@mlightcad/common': 1.4.2
+      '@mlightcad/common': 1.4.3
 
-  '@mlightcad/graphic-interface@3.3.2':
-    resolution: {integrity: sha512-nHWQqqpBv5OYcbLyL5FPsSi4AkhMuYG4Wi+bp6RdZjybURbsjH+c8d/LfVw/To7lCQgseqz2q8WkMaLJIOt+Pw==}
+  '@mlightcad/graphic-interface@3.3.3':
+    resolution: {integrity: sha512-PVZMybA4+HsDCOf291BHj+uwtUb0G6Ez9IW+zilPmpyBeAs9eXd5LOacV6zab4mdqCIajOb6uksMVVbD8icEFA==}
     peerDependencies:
-      '@mlightcad/common': 1.4.2
-      '@mlightcad/geometry-engine': 3.2.2
+      '@mlightcad/common': 1.4.3
+      '@mlightcad/geometry-engine': 3.2.3
 
-  '@mlightcad/libredwg-converter@3.5.2':
-    resolution: {integrity: sha512-HcnSLm+NHzVQtTch/bPIO4JY6FlBD8M1c44GJnpK/Kq/ovFWgPP91PvbMnACSH3gekqsyyv1ZPE6LM2qW8rWAQ==}
+  '@mlightcad/libredwg-converter@3.5.3':
+    resolution: {integrity: sha512-X5u04+mH5qJXl9M15cY6t7ymwuVPZyN/K1bno1l+fB9aIVwLzDiu0PXPD9OIGxmYsr6pEm0oc/3l6d8OHv2GQg==}
     peerDependencies:
-      '@mlightcad/data-model': 1.7.2
+      '@mlightcad/data-model': 1.7.3
 
   '@mlightcad/libredwg-web@0.6.6':
     resolution: {integrity: sha512-Xv8uhe0M7etEW3mHDOWYhZx5qqLXLO/702H32bf22J9veQLjjxO33aNQfo37tgQs3CnaxkSMdeRvVrQCQwmigw==}
@@ -6344,16 +6344,16 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@mlightcad/common@1.4.2':
+  '@mlightcad/common@1.4.3':
     dependencies:
       loglevel: 1.9.2
 
-  '@mlightcad/data-model@1.7.2':
+  '@mlightcad/data-model@1.7.3':
     dependencies:
-      '@mlightcad/common': 1.4.2
+      '@mlightcad/common': 1.4.3
       '@mlightcad/dxf-json': 1.0.10
-      '@mlightcad/geometry-engine': 3.2.2(@mlightcad/common@1.4.2)
-      '@mlightcad/graphic-interface': 3.3.2(@mlightcad/common@1.4.2)(@mlightcad/geometry-engine@3.2.2(@mlightcad/common@1.4.2))
+      '@mlightcad/geometry-engine': 3.2.3(@mlightcad/common@1.4.3)
+      '@mlightcad/graphic-interface': 3.3.3(@mlightcad/common@1.4.3)(@mlightcad/geometry-engine@3.2.3(@mlightcad/common@1.4.3))
       iconv-lite: 0.7.2
       uid: 2.0.2
 
@@ -6361,19 +6361,19 @@ snapshots:
     dependencies:
       '@fxts/core': 1.26.0
 
-  '@mlightcad/geometry-engine@3.2.2(@mlightcad/common@1.4.2)':
+  '@mlightcad/geometry-engine@3.2.3(@mlightcad/common@1.4.3)':
     dependencies:
-      '@mlightcad/common': 1.4.2
+      '@mlightcad/common': 1.4.3
       verb-nurbs-web: 2.1.3
 
-  '@mlightcad/graphic-interface@3.3.2(@mlightcad/common@1.4.2)(@mlightcad/geometry-engine@3.2.2(@mlightcad/common@1.4.2))':
+  '@mlightcad/graphic-interface@3.3.3(@mlightcad/common@1.4.3)(@mlightcad/geometry-engine@3.2.3(@mlightcad/common@1.4.3))':
     dependencies:
-      '@mlightcad/common': 1.4.2
-      '@mlightcad/geometry-engine': 3.2.2(@mlightcad/common@1.4.2)
+      '@mlightcad/common': 1.4.3
+      '@mlightcad/geometry-engine': 3.2.3(@mlightcad/common@1.4.3)
 
-  '@mlightcad/libredwg-converter@3.5.2(@mlightcad/data-model@1.7.2)':
+  '@mlightcad/libredwg-converter@3.5.3(@mlightcad/data-model@1.7.3)':
     dependencies:
-      '@mlightcad/data-model': 1.7.2
+      '@mlightcad/data-model': 1.7.3
       '@mlightcad/libredwg-web': 0.6.6
 
   '@mlightcad/libredwg-web@0.6.6': {}
