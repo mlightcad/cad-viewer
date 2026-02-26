@@ -12,6 +12,9 @@ export default {
     firstPoint: '指定第一个点：',
     nextPoint: '指定下一个点：'
   },
+  mtext: {
+    point: '指定多行文本插入点：'
+  },
   rect: {
     firstPoint: '指定第一个点：',
     nextPoint: '指定下一个点：'

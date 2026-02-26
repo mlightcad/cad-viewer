@@ -28,6 +28,9 @@ export default {
     line: {
       description: '在指定点之间绘制直线段'
     },
+    mtext: {
+      description: '创建一条多行文本（MTEXT）'
+    },
     log: {
       description: '在控制台输出调试信息'
     },

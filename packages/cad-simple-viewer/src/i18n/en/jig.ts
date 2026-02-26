@@ -12,6 +12,9 @@ export default {
     firstPoint: 'Specify the first point:',
     nextPoint: 'Specify the next point:'
   },
+  mtext: {
+    point: 'Specify mtext insertion point:'
+  },
   rect: {
     firstPoint: 'Specify the first point:',
     nextPoint: 'Specify the next point:'

@@ -346,6 +346,20 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * The internal THREE scene used by this view.
+   */
+  get internalScene() {
+    return this._scene.internalScene
+  }
+
+  /**
+   * The internal THREE camera used by current active layout.
+   */
+  get internalCamera() {
+    return this.activeLayoutView.internalCamera
+  }
+
+  /**
    * Sets global ltscale
    */
   set ltscale(scale: number) {

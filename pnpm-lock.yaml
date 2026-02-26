@@ -111,9 +111,12 @@ importers:
         specifier: ^0.172.0
         version: 0.172.0
     devDependencies:
+      '@mlightcad/mtext-input-box':
+        specifier: ../../../mtext-input-box/packages/mtext-input-box
+        version: link:../../../mtext-input-box/packages/mtext-input-box
       '@mlightcad/mtext-renderer':
-        specifier: ^0.8.7
-        version: 0.8.7(three@0.172.0)
+        specifier: ^0.9.2
+        version: 0.9.2(three@0.172.0)
       '@mlightcad/svg-renderer':
         specifier: workspace:*
         version: link:../svg-renderer
@@ -285,8 +288,8 @@ importers:
         specifier: ^1.7.3
         version: 1.7.3
       '@mlightcad/mtext-renderer':
-        specifier: ^0.8.7
-        version: 0.8.7(three@0.172.0)
+        specifier: ^0.9.2
+        version: 0.9.2(three@0.172.0)
       '@velipso/polybool':
         specifier: ^1.1.1
         version: 1.1.1
@@ -1546,8 +1549,8 @@ packages:
   '@mlightcad/mtext-parser@1.3.2':
     resolution: {integrity: sha512-lOmuLCDs2oKrYcxx0EP82gfXrEprg0e1G5gaQSCXqePldIA8WAh5zfvynAkQJkmKKISA2jHcgz/8X3Xxyzbjog==}
 
-  '@mlightcad/mtext-renderer@0.8.7':
-    resolution: {integrity: sha512-kfZi3NR/7Dh6+Guj419fQFB9b6KsfAJkxsAz3beTWBNVjTyaNUfzfEQnWdC3dQXgw7IKPTp900yHepbHGkwbjA==}
+  '@mlightcad/mtext-renderer@0.9.2':
+    resolution: {integrity: sha512-bt9YRRLjPZ1S/g+pqZUfAxXh1V90jsVXYgpbRzGJ72V9b7Qq6V6GpEreyPillym6h2YGkF8YtH9ZXD9hJkBPCg==}
     peerDependencies:
       three: ^0.172.0
 
@@ -6380,7 +6383,7 @@ snapshots:
 
   '@mlightcad/mtext-parser@1.3.2': {}
 
-  '@mlightcad/mtext-renderer@0.8.7(three@0.172.0)':
+  '@mlightcad/mtext-renderer@0.9.2(three@0.172.0)':
     dependencies:
       '@mlightcad/mtext-parser': 1.3.2
       '@mlightcad/shx-parser': 1.3.2
