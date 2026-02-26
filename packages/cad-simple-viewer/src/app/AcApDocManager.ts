@@ -22,6 +22,7 @@ import {
   AcApMeasureArcCmd,
   AcApMeasureAreaCmd,
   AcApMeasureDistanceCmd,
+  AcApMTextCmd,
   AcApOpenCmd,
   AcApPanCmd,
   AcApQNewCmd,
@@ -685,6 +686,12 @@ export class AcApDocManager {
       'line',
       'line',
       new AcApLineCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'mtext',
+      'mtext',
+      new AcApMTextCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
