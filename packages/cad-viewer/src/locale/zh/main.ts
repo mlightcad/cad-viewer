@@ -5,6 +5,26 @@ export default {
     export: '导出为SVG'
   },
   verticalToolbar: {
+    measure: {
+      text: '测量',
+      description: '测量工具'
+    },
+    measureDistance: {
+      text: '距离',
+      description: '测量两点之间的距离'
+    },
+    measureArea: {
+      text: '面积',
+      description: '测量多边形的面积'
+    },
+    measureArc: {
+      text: '弧长',
+      description: '测量由三点定义的弧长'
+    },
+    clearMeasurements: {
+      text: '清除',
+      description: '清除视图中的所有测量标注'
+    },
     annotation: {
       text: '批注',
       description: '创建用于说明和标注图纸内容的文字或图形批注'

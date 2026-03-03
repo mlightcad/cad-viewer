@@ -7,7 +7,12 @@ import { useI18n } from 'vue-i18n'
 
 import { useDocOpenMode, useSettings } from '../../composable'
 import {
+  clearMeasurements,
   layer,
+  measure,
+  measureArea,
+  measureArc,
+  measureDistance,
   move,
   revCircle,
   revCloud,
@@ -111,6 +116,38 @@ const verticalToolbarData = computed(() => {
       text: t('main.verticalToolbar.layer.text'),
       command: 'la',
       description: t('main.verticalToolbar.layer.description')
+    },
+    {
+      icon: measure,
+      text: t('main.verticalToolbar.measure.text'),
+      command: '',
+      description: t('main.verticalToolbar.measure.description'),
+      children: [
+        {
+          icon: measureDistance,
+          text: t('main.verticalToolbar.measureDistance.text'),
+          command: 'measuredistance',
+          description: t('main.verticalToolbar.measureDistance.description')
+        },
+        {
+          icon: measureArea,
+          text: t('main.verticalToolbar.measureArea.text'),
+          command: 'measurearea',
+          description: t('main.verticalToolbar.measureArea.description')
+        },
+        {
+          icon: measureArc,
+          text: t('main.verticalToolbar.measureArc.text'),
+          command: 'measurearc',
+          description: t('main.verticalToolbar.measureArc.description')
+        },
+        {
+          icon: clearMeasurements,
+          text: t('main.verticalToolbar.clearMeasurements.text'),
+          command: 'clearmeasurements',
+          description: t('main.verticalToolbar.clearMeasurements.description')
+        }
+      ]
     }
   ]
 

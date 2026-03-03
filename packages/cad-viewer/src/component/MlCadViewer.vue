@@ -97,6 +97,7 @@ import { initializeCadViewer, store } from '../app'
 import {
   useEntityDrawStyle,
   useLocale,
+  useMeasurements,
   useNotificationCenter,
   useSettings
 } from '../composable'
@@ -196,6 +197,8 @@ const toggleDark = useToggle(isDark)
 const features = useSettings()
 
 const { isShowToolbar } = useEntityDrawStyle(editor)
+
+useMeasurements()
 
 /**
  * Handles file read events from the file reader component
