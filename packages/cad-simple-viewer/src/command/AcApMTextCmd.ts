@@ -3,7 +3,11 @@ import { MTextInputBox } from '@mlightcad/mtext-input-box'
 import * as THREE from 'three'
 
 import { AcApContext, AcApDocManager } from '../app'
-import { AcEdCommand, AcEdOpenMode, AcEdPromptPointOptions } from '../editor'
+import {
+  AcEdCommand,
+  AcEdOpenMode,
+  AcEdPromptBoxOptions
+} from '../editor'
 import { AcApI18n } from '../i18n'
 import { AcTrView2d } from '../view'
 
@@ -23,11 +27,24 @@ export class AcApMTextCmd extends AcEdCommand {
   }
 
   async execute(context: AcApContext) {
-    const pointPrompt = new AcEdPromptPointOptions(AcApI18n.t('jig.mtext.point'))
-    const location = await AcApDocManager.instance.editor.getPoint(pointPrompt)
+    const boxPrompt = new AcEdPromptBoxOptions(
+      AcApI18n.t('main.inputManager.firstCorner'),
+      AcApI18n.t('main.inputManager.secondCorner')
+    )
+    boxPrompt.useBasePoint = false
+    boxPrompt.useDashedLine = false
+    const box = await AcApDocManager.instance.editor.getBox(boxPrompt)
 
+    const width = Math.max(Math.abs(box.max.x - box.min.x), 1e-4)
     const view = context.view as AcTrView2d
-    const result = await this.openMTextEditor(view, location)
+    const textHeight = this.pixelsToWorldY(view, 24)
+    const location = { x: box.min.x, y: box.max.y, z: 0 }
+    const result = await this.openMTextEditor(
+      view,
+      location,
+      width,
+      textHeight
+    )
     if (!result) return
 
     const contents = result.contents.trim()
@@ -44,11 +61,13 @@ export class AcApMTextCmd extends AcEdCommand {
 
   private openMTextEditor(
     view: AcTrView2d,
-    location: AcGePoint3dLike
+    location: AcGePoint3dLike,
+    width: number,
+    textHeight: number
   ): Promise<AcApMTextEditorResult | null> {
-    const width = this.pixelsToWorldX(view, 360)
-    const height = this.pixelsToWorldY(view, 24)
     const origin = new THREE.Vector3(location.x, location.y, location.z ?? 0)
+    const isLightBackground = view.backgroundColor === 0xffffff
+    const cursorColor = isLightBackground ? '#000000' : '#ffffff'
 
     const mtextInputBox = new MTextInputBox({
       scene: view.internalScene,
@@ -58,7 +77,7 @@ export class AcApMTextCmd extends AcEdCommand {
       initialText: '',
       defaultFormat: {
         fontFamily: 'simkai',
-        fontSize: height,
+        fontSize: textHeight,
         bold: false,
         italic: false,
         underline: false,
@@ -66,12 +85,16 @@ export class AcApMTextCmd extends AcEdCommand {
         strike: false,
         script: 'normal',
         aci: null,
-        rgb: 0xffffff
+        rgb: isLightBackground ? 0x000000 : 0xffffff
+      },
+      cursorStyle: {
+        color: cursorColor,
+        glowColor: cursorColor
       },
       imeTarget: view.canvas,
       toolbar: {
         enabled: true,
-        theme: view.backgroundColor === 0xffffff ? 'light' : 'dark',
+        theme: isLightBackground ? 'light' : 'dark',
         container: view.container,
         offsetY: 10
       }
@@ -79,27 +102,16 @@ export class AcApMTextCmd extends AcEdCommand {
 
     return new Promise(resolve => {
       let done = false
-      let rafId = 0
 
-      const toLocalPoint = (event: MouseEvent) => {
-        const canvasPoint = view.viewportToCanvas({
-          x: event.clientX,
-          y: event.clientY
-        })
-        const worldPoint = view.screenToWorld(canvasPoint)
-        return {
-          x: worldPoint.x - origin.x,
-          y: worldPoint.y - origin.y
-        }
+      const onRenderFrame = () => {
+        if (done) return
+        mtextInputBox.update()
+        view.isDirty = true
       }
 
       const cleanup = () => {
-        cancelAnimationFrame(rafId)
         mtextInputBox.dispose()
-        view.canvas.removeEventListener('mousedown', onMouseDown)
-        view.canvas.removeEventListener('mousemove', onMouseMove)
-        view.canvas.removeEventListener('dblclick', onDoubleClick)
-        window.removeEventListener('mouseup', onMouseUp)
+        view.events.renderFrame.removeEventListener(onRenderFrame)
         window.removeEventListener('keydown', onKeyDown, true)
         view.isDirty = true
       }
@@ -109,42 +121,6 @@ export class AcApMTextCmd extends AcEdCommand {
         done = true
         cleanup()
         resolve(result)
-      }
-
-      const tick = () => {
-        if (done) return
-        mtextInputBox.update()
-        view.isDirty = true
-        rafId = requestAnimationFrame(tick)
-      }
-
-      const onMouseDown = (event: MouseEvent) => {
-        if (event.button === 1 || event.altKey) return
-
-        const point = toLocalPoint(event)
-        mtextInputBox.handleMouseDown(point.x, point.y, event.shiftKey)
-        event.preventDefault()
-        event.stopPropagation()
-      }
-
-      const onMouseMove = (event: MouseEvent) => {
-        if (event.buttons === 0) return
-
-        const point = toLocalPoint(event)
-        mtextInputBox.handleMouseMove(point.x, point.y)
-        event.preventDefault()
-        event.stopPropagation()
-      }
-
-      const onMouseUp = () => {
-        mtextInputBox.handleMouseUp()
-      }
-
-      const onDoubleClick = (event: MouseEvent) => {
-        const point = toLocalPoint(event)
-        mtextInputBox.handleDoubleClick(point.x, point.y)
-        event.preventDefault()
-        event.stopPropagation()
       }
 
       const onKeyDown = (event: KeyboardEvent) => {
@@ -161,24 +137,14 @@ export class AcApMTextCmd extends AcEdCommand {
           finish({
             contents: mtextInputBox.getText(),
             width,
-            height
+            height: textHeight
           })
         }
       }
 
-      view.canvas.addEventListener('mousedown', onMouseDown)
-      view.canvas.addEventListener('mousemove', onMouseMove)
-      view.canvas.addEventListener('dblclick', onDoubleClick)
-      window.addEventListener('mouseup', onMouseUp)
       window.addEventListener('keydown', onKeyDown, true)
-      tick()
+      view.events.renderFrame.addEventListener(onRenderFrame)
     })
-  }
-
-  private pixelsToWorldX(view: AcTrView2d, pixels: number) {
-    const p0 = view.screenToWorld({ x: 0, y: 0 })
-    const p1 = view.screenToWorld({ x: pixels, y: 0 })
-    return Math.max(Math.abs(p1.x - p0.x), 1e-4)
   }
 
   private pixelsToWorldY(view: AcTrView2d, pixels: number) {

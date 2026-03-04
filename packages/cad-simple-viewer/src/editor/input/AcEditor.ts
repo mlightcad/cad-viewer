@@ -5,6 +5,7 @@ import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
 import {
   AcEdPromptAngleOptions,
+  AcEdPromptBoxOptions,
   AcEdPromptDistanceOptions,
   AcEdPromptEntityOptions,
   AcEdPromptKeywordOptions,
@@ -243,7 +244,7 @@ export class AcEditor {
    *
    * @returns Promise that resolves to rectangular bounding box.
    */
-  async getBox() {
-    return await this._inputManager.getBox()
+  async getBox(options: AcEdPromptBoxOptions) {
+    return await this._inputManager.getBox(options)
   }
 }
