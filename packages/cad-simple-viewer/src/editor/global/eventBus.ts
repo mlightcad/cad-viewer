@@ -1,4 +1,4 @@
-import { AcDbProgressdEventArgs } from '@mlightcad/data-model'
+import { AcDbProgressdEventArgs, AcGePoint3dLike } from '@mlightcad/data-model'
 import mitt, { type Emitter } from 'mitt'
 
 /**
@@ -16,6 +16,25 @@ export interface AcEdFontNotLoadedInfo {
 }
 
 /**
+ * Data payload for a completed measurement overlay.
+ *
+ * Discriminated union keyed by `type` so the composable in `cad-viewer` can
+ * render the correct DOM elements for each measurement kind without any UI
+ * logic leaking into `cad-simple-viewer`.
+ */
+export type MeasurementRecord =
+  | { type: 'distance'; p1: AcGePoint3dLike; p2: AcGePoint3dLike; dist: number }
+  | { type: 'area'; points: AcGePoint3dLike[]; area: number }
+  | {
+      type: 'arc'
+      geom: { cx: number; cy: number; r: number }
+      start: AcGePoint3dLike
+      end: AcGePoint3dLike
+      arcLen: number
+      mid: AcGePoint3dLike
+    }
+
+/**
  * Type definition for all events that can be emitted through the global event bus.
  *
  * This type maps event names to their corresponding payload types, providing
@@ -25,6 +44,7 @@ export interface AcEdFontNotLoadedInfo {
  * - **File Operations**: `open-file`, `open-file-progress`, `failed-to-open-file`
  * - **Font Management**: `fonts-not-loaded`, `failed-to-get-avaiable-fonts`, `font-not-found`
  * - **User Messages**: `message`
+ * - **Measurements**: `measurement-added`, `measurements-cleared`
  */
 export type AcEdEvents = {
   /** Emitted to request opening a file dialog */
@@ -63,6 +83,10 @@ export type AcEdEvents = {
     /** Number of entities that require this font */
     count: number
   }
+  /** Emitted when a measurement command completes with its result data */
+  'measurement-added': MeasurementRecord
+  /** Emitted when all active measurement overlays should be cleared */
+  'measurements-cleared': undefined
 }
 
 /**

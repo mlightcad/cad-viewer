@@ -5,6 +5,26 @@ export default {
     export: 'Export to SVG'
   },
   verticalToolbar: {
+    measure: {
+      text: 'Measure',
+      description: 'Measurement tools'
+    },
+    measureDistance: {
+      text: 'Distance',
+      description: 'Measures the distance between two points'
+    },
+    measureArea: {
+      text: 'Area',
+      description: 'Measures the area of a polygon'
+    },
+    measureArc: {
+      text: 'Arc',
+      description: 'Measures the length of an arc defined by three points'
+    },
+    clearMeasurements: {
+      text: 'Clear',
+      description: 'Removes all active measurements from the view'
+    },
     annotation: {
       text: 'Annotation',
       description:
