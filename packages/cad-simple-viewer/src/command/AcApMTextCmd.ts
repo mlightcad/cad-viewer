@@ -34,11 +34,20 @@ export class AcApMTextCmd extends AcEdCommand {
     const view = context.view as AcTrView2d
     const textHeight = this.pixelsToWorldY(view, 24)
     const location = { x: box.min.x, y: box.max.y, z: 0 }
+    const toolbarFontFamilies = Array.from(
+      new Set(
+        AcApDocManager.instance.avaiableFonts
+          .flatMap(fontInfo => fontInfo.name)
+          .map(fontName => fontName.trim())
+          .filter(fontName => fontName.length > 0)
+      )
+    )
     const result = await this.mtextEditor.open({
       view,
       location,
       width,
-      textHeight
+      textHeight,
+      toolbarFontFamilies
     })
     if (!result) return
 
