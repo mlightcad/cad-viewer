@@ -13,11 +13,15 @@ import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 import {
   AcApCircleCmd,
+  AcApClearMeasurementsCmd,
   AcApConvertToSvgCmd,
   AcApDimLinearCmd,
   AcApEraseCmd,
   AcApLineCmd,
   AcApLogCmd,
+  AcApMeasureArcCmd,
+  AcApMeasureAreaCmd,
+  AcApMeasureDistanceCmd,
   AcApOpenCmd,
   AcApPanCmd,
   AcApQNewCmd,
@@ -651,6 +655,30 @@ export class AcApDocManager {
       'dimlinear',
       'dimlinear',
       new AcApDimLinearCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'measuredistance',
+      'measuredistance',
+      new AcApMeasureDistanceCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'measurearea',
+      'measurearea',
+      new AcApMeasureAreaCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'measurearc',
+      'measurearc',
+      new AcApMeasureArcCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'clearmeasurements',
+      'clearmeasurements',
+      new AcApClearMeasurementsCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

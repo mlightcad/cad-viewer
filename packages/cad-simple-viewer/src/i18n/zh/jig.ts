@@ -3,6 +3,19 @@ export default {
     center: '指定圆的圆心：',
     radius: '指定圆的半径：'
   },
+  measureDistance: {
+    firstPoint: '指定第一个点：',
+    secondPoint: '指定第二个点：'
+  },
+  measureArea: {
+    firstPoint: '指定第一个点：',
+    nextPoint: '指定下一个点（或按 Enter 完成）：'
+  },
+  measureArc: {
+    startPoint: '指定弧的起点：',
+    throughPoint: '指定弧上的一个点：',
+    endPoint: '指定弧的终点：'
+  },
   dimlinear: {
     xLine1Point: '指定第一条尺寸界限原点：',
     xLine2Point: '指定第二条尺寸界限原点：',
