@@ -1,5 +1,8 @@
 import { AcGePoint3dLike } from '@mlightcad/data-model'
-import { MTextInputBox } from '@mlightcad/mtext-input-box'
+import {
+  MTextInputBox,
+  type MTextToolbarColorPickerFactory
+} from '@mlightcad/mtext-input-box'
 import * as THREE from 'three'
 
 import { AcTrView2d } from '../../../view'
@@ -37,6 +40,12 @@ export interface AcEdMTextEditorOptions {
    * to `MTextInputBox`.
    */
   toolbarFontFamilies?: string[]
+  /**
+   * Optional custom toolbar color picker factory. When provided (or when set via
+   * {@link AcEdMTextEditor.setDefaultColorPicker}), replaces the default native
+   * color input in the MTEXT toolbar.
+   */
+  toolbarColorPicker?: MTextToolbarColorPickerFactory
 }
 
 /**
@@ -46,6 +55,24 @@ export interface AcEdMTextEditorOptions {
  * render loop and handles lifecycle cleanup when the editor is closed.
  */
 export class AcEdMTextEditor {
+  /**
+   * Default toolbar color picker factory used when opening the editor if
+   * per-call options do not provide {@link AcEdMTextEditorOptions.toolbarColorPicker}.
+   * Set via {@link AcEdMTextEditor.setDefaultColorPicker}.
+   */
+  static defaultColorPicker: MTextToolbarColorPickerFactory | null = null
+
+  /**
+   * Registers a default toolbar color picker factory. The factory is used for
+   * every subsequent {@link open} call unless overridden by
+   * {@link AcEdMTextEditorOptions.toolbarColorPicker}.
+   *
+   * @param factory - Factory to use, or `null` to clear and use the built-in picker.
+   */
+  static setDefaultColorPicker(factory: MTextToolbarColorPickerFactory | null): void {
+    AcEdMTextEditor.defaultColorPicker = factory
+  }
+
   /**
    * Opens the MTEXT editor and resolves when user closes the editor UI.
    *
@@ -66,7 +93,8 @@ export class AcEdMTextEditor {
       width,
       textHeight,
       initialText = '',
-      toolbarFontFamilies = []
+      toolbarFontFamilies = [],
+      toolbarColorPicker
     } = options
     const origin = new THREE.Vector3(location.x, location.y, location.z ?? 0)
     const isLightBackground = view.backgroundColor === 0xffffff
@@ -107,7 +135,11 @@ export class AcEdMTextEditor {
         theme: isLightBackground ? 'light' : 'dark',
         fontFamilies,
         container: view.container,
-        offsetY: 10
+        offsetY: 10,
+        colorPicker:
+          toolbarColorPicker ??
+          AcEdMTextEditor.defaultColorPicker ??
+          undefined
       }
     })
 
