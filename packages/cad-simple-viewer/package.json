@@ -39,7 +39,7 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/mtext-input-box": "../../../mtext-input-box/packages/mtext-input-box",
+    "@mlightcad/mtext-input-box": "^0.1.2",
     "@mlightcad/mtext-renderer": "^0.10.2",
     "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",

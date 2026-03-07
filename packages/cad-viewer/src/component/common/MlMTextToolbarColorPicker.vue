@@ -12,12 +12,12 @@
       />
 
       <template #reference>
-        <ElButton class="ml-mtext-toolbar-aci-trigger">
+        <button type="button" class="ml-mtext-toolbar-aci-trigger">
           <span
             class="ml-mtext-toolbar-aci-indicator"
             :style="{ background: cssColor || 'transparent' }"
           />
-        </ElButton>
+        </button>
       </template>
     </ElPopover>
   </div>
@@ -25,7 +25,7 @@
 
 <script setup lang="ts">
 import { AcCmColor } from '@mlightcad/data-model'
-import { ElButton, ElPopover } from 'element-plus'
+import { ElPopover } from 'element-plus'
 import { computed, ref } from 'vue'
 
 import MlColorIndexPicker from './MlColorIndexPicker.vue'
@@ -58,10 +58,28 @@ function onAciChange(aci: number | null) {
 <style scoped>
 .ml-mtext-toolbar-aci-picker {
   min-width: 40px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
 }
 
 .ml-mtext-toolbar-aci-trigger {
   width: 100%;
+  min-height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  cursor: pointer;
 }
 
 .ml-mtext-toolbar-aci-indicator {
@@ -69,6 +87,6 @@ function onAciChange(aci: number | null) {
   height: 14px;
   border-radius: 50%;
   border: 1px solid #666;
-  display: inline-block;
+  display: block;
 }
 </style>
