@@ -43,9 +43,9 @@
 </template>
 
 <script setup lang="ts">
-import { log } from '@mlightcad/data-model'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
+import { log } from '@mlightcad/data-model'
 import type { UploadFile, UploadProps } from 'element-plus'
 import { ref } from 'vue'
 

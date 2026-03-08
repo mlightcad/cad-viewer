@@ -42,7 +42,6 @@
 -->
 
 <script setup lang="ts">
-import { log } from '@mlightcad/data-model'
 /**
  * MlCadViewer Component
  *
@@ -82,13 +81,13 @@ import { log } from '@mlightcad/data-model'
  * @see {@link https://github.com/mlightcad/cad-viewer | Project Repository}
  * @see {@link https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/MlCadViewer.vue | Source Code}
  */
-
 import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
   AcEdOpenMode,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
+import { log } from '@mlightcad/data-model'
 import { useDark, useToggle } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'

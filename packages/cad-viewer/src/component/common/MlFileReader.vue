@@ -10,8 +10,8 @@
 </template>
 
 <script setup lang="ts">
-import { log } from '@mlightcad/data-model'
 import { eventBus } from '@mlightcad/cad-simple-viewer'
+import { log } from '@mlightcad/data-model'
 import { computed, onMounted, ref } from 'vue'
 
 import { useFileTypes } from '../../composable/useFileTypes'
