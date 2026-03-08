@@ -4,7 +4,8 @@ import {
   AcGeIndexNode,
   AcGePoint2d,
   AcGePoint2dLike,
-  AcGiSubEntityTraits
+  AcGiSubEntityTraits,
+  log
 } from '@mlightcad/data-model'
 import { GeometryEpsilon, PolyBool, Segments } from '@velipso/polybool'
 import * as THREE from 'three'
@@ -33,7 +34,7 @@ export class AcTrPolygon extends AcTrEntity {
     }
 
     if (!geometry || !geometry.getIndex() || geometry.getIndex()?.count === 0) {
-      console.warn('Failed to convert hatch boundaries!')
+      log.warn('Failed to convert hatch boundaries!')
     } else {
       geometry.computeBoundingBox()
       this.box = geometry.boundingBox!
@@ -74,7 +75,7 @@ export class AcTrPolygon extends AcTrEntity {
         }
         geometries.push(geom)
       } catch (_error) {
-        console.warn(
+        log.warn(
           `Triangulate shape error: ${shape
             .getPoints()
             .map(v => v.toArray())
@@ -144,12 +145,12 @@ export class AcTrPolygon extends AcTrEntity {
                   shape.holes.push(new THREE.Path(vec2s))
                 })
               } else {
-                console.warn('mergedHoles.regions is empty!')
+                log.warn('mergedHoles.regions is empty!')
               }
             }
           })
         } catch (error) {
-          console.warn(`Polybool error: ${error}, epsilon is ${epsilon}`)
+          log.warn(`Polybool error: ${error}, epsilon is ${epsilon}`)
         }
       })
       const ignoreHoleIndexArr = needMergeHolesArr.flat(2)
@@ -201,3 +202,4 @@ export class AcTrPolygon extends AcTrEntity {
     return holeIndexArr
   }
 }
+

@@ -1,3 +1,4 @@
+import { log } from '@mlightcad/data-model'
 import { AcApContext } from '../app/AcApContext'
 import { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
 import { AcApPlugin } from './AcApPlugin'
@@ -26,7 +27,7 @@ import { AcApPlugin } from './AcApPlugin'
  *
  * // Check if a plugin is loaded
  * if (pluginManager.isPluginLoaded('MyPlugin')) {
- *   console.log('Plugin is loaded');
+ *   log.info('Plugin is loaded');
  * }
  *
  * // Get all loaded plugins
@@ -108,7 +109,7 @@ export class AcApPluginManager {
    * ```typescript
    * const success = await pluginManager.unloadPlugin('MyPlugin');
    * if (success) {
-   *   console.log('Plugin unloaded successfully');
+   *   log.info('Plugin unloaded successfully');
    * }
    * ```
    */
@@ -123,7 +124,7 @@ export class AcApPluginManager {
       // Call onUnload hook (plugin should clean up its commands here)
       await plugin.onUnload(this._context, this._commandManager)
     } catch (error) {
-      console.error(
+      log.error(
         `[AcApPluginManager] Error unloading plugin '${pluginName}':`,
         error
       )
@@ -211,8 +212,8 @@ export class AcApPluginManager {
    *   [new Plugin1(), new Plugin2()],
    *   { continueOnError: true }
    * );
-   * console.log('Loaded:', result.loaded);
-   * console.log('Failed:', result.failed);
+   * log.info('Loaded:', result.loaded);
+   * log.info('Failed:', result.failed);
    * ```
    */
   async loadPluginsFromConfig(
@@ -307,7 +308,7 @@ export class AcApPluginManager {
     const failed: Array<{ name: string; error: Error }> = []
 
     if (pluginList.length === 0) {
-      console.warn(
+      log.warn(
         '[AcApPluginManager] No plugin list provided. Cannot load plugins from folder without a list of files.'
       )
       return { loaded, failed }
@@ -391,3 +392,5 @@ export class AcApPluginManager {
     return { loaded, failed }
   }
 }
+
+

@@ -1,7 +1,8 @@
 import {
   AcGiMTextData,
   AcGiSubEntityTraits,
-  AcGiTextStyle
+  AcGiTextStyle,
+  log
 } from '@mlightcad/data-model'
 import { MTextObject } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
@@ -61,7 +62,7 @@ export class AcTrMText extends AcTrEntity {
       })
       this.box = this._mtext.box
     } catch (error) {
-      console.log(
+      log.info(
         `Failed to render mtext '${this._text.text}' with the following error:\n`,
         error
       )
@@ -91,7 +92,7 @@ export class AcTrMText extends AcTrEntity {
           this.box = this._mtext.box
         })
     } catch (error) {
-      console.log(
+      log.info(
         `Failed to render mtext '${this._text.text}' with the following error:\n`,
         error
       )
@@ -106,3 +107,4 @@ export class AcTrMText extends AcTrEntity {
     this._mtext?.raycast(raycaster, intersects)
   }
 }
+

@@ -1,3 +1,4 @@
+import { log } from '@mlightcad/data-model'
 import { AcApContext } from '../app/AcApContext'
 import { AcEdCommand } from '../editor/command/AcEdCommand'
 import { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
@@ -33,9 +34,9 @@ import { AcApPlugin } from './AcApPlugin'
  */
 class AcApHelloCommand extends AcEdCommand {
   async execute(context: AcApContext) {
-    console.log('Hello from ExamplePlugin!')
-    console.log('Current document:', context.doc)
-    console.log('Current view:', context.view)
+    log.info('Hello from ExamplePlugin!')
+    log.info('Current document:', context.doc)
+    log.info('Current view:', context.view)
   }
 }
 
@@ -66,8 +67,8 @@ export class AcApExamplePlugin implements AcApPlugin {
     // Track the command for cleanup
     this.registeredCommands.push({ group: 'USER', name: 'HELLO' })
 
-    console.log(`[${this.name}] Plugin loaded successfully`)
-    console.log(`[${this.name}] Registered command: HELLO`)
+    log.info(`[${this.name}] Plugin loaded successfully`)
+    log.info(`[${this.name}] Registered command: HELLO`)
   }
 
   /**
@@ -81,6 +82,8 @@ export class AcApExamplePlugin implements AcApPlugin {
     }
     this.registeredCommands = []
 
-    console.log(`[${this.name}] Plugin unloaded`)
+    log.info(`[${this.name}] Plugin unloaded`)
   }
 }
+
+

@@ -42,6 +42,7 @@
 -->
 
 <script setup lang="ts">
+import { log } from '@mlightcad/data-model'
 /**
  * MlCadViewer Component
  *
@@ -243,7 +244,7 @@ const openFileFromUrl = async (url: string) => {
     await AcApDocManager.instance.openUrl(url, options)
     store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch (error) {
-    console.error('Failed to open file from URL:', error)
+    log.error('Failed to open file from URL:', error)
     ElMessage({
       message: t('main.message.failedToOpenFile', { fileName: url }),
       grouping: true,
@@ -583,3 +584,5 @@ const closeNotificationCenter = () => {
   z-index: 2; /* Ensure it's above canvas but doesn't block events */
 }
 </style>
+
+
