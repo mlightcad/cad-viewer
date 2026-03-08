@@ -189,5 +189,3 @@ const isValidFile = (file: File): boolean => {
   font-weight: 600;
 }
 </style>
-
-

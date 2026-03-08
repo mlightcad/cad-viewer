@@ -1014,4 +1014,3 @@ export class AcTrView2d extends AcEdBaseView {
     }
   }
 }
-

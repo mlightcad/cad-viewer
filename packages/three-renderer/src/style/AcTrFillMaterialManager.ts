@@ -181,4 +181,3 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     return `hatch_${traits.layer}_${traits.rgbColor}_${style.patternAngle}_${patternHash}`
   }
 }
-

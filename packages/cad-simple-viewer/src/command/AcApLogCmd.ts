@@ -122,4 +122,3 @@ export class AcApLogCmd extends AcEdCommand {
     AcCmPerformanceCollector.getInstance().printAll()
   }
 }
-

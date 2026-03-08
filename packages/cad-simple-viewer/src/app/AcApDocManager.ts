@@ -1059,10 +1059,7 @@ export class AcApDocManager {
           )
         }
       } catch (error) {
-        log.error(
-          '[AcApDocManager] Error loading plugins from config:',
-          error
-        )
+        log.error('[AcApDocManager] Error loading plugins from config:', error)
       }
     }
 
@@ -1089,12 +1086,8 @@ export class AcApDocManager {
           )
         }
       } catch (error) {
-        log.error(
-          '[AcApDocManager] Error loading plugins from folder:',
-          error
-        )
+        log.error('[AcApDocManager] Error loading plugins from folder:', error)
       }
     }
   }
 }
-

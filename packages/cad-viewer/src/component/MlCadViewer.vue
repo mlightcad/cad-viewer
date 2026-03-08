@@ -584,5 +584,3 @@ const closeNotificationCenter = () => {
   z-index: 2; /* Ensure it's above canvas but doesn't block events */
 }
 </style>
-
-

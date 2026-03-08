@@ -86,5 +86,3 @@ export class AcEdConditionWaiter {
     return this.timerId !== null
   }
 }
-
-

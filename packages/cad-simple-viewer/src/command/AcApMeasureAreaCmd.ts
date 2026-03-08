@@ -1,4 +1,8 @@
-import { AcDbLine, AcGePoint3dLike, AcGiLineWeight } from '@mlightcad/data-model'
+import {
+  AcDbLine,
+  AcGePoint3dLike,
+  AcGiLineWeight
+} from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
 import {

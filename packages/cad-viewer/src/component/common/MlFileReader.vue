@@ -69,5 +69,3 @@ const handleFileChange = (event: Event): void => {
   }
 }
 </script>
-
-

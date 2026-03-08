@@ -501,4 +501,3 @@ function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
   padding: 0.5rem;
 }
 </style>
-

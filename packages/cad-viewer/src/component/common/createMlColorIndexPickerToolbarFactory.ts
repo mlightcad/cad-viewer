@@ -93,7 +93,7 @@ function aciToHex(aci: number): string {
  * so that the editor receives hex as expected by {@link MTextInputBox}.
  */
 export function createMlColorIndexPickerToolbarFactory(): MTextToolbarColorPickerFactory {
-  return (context) => {
+  return context => {
     const { container, initialColor, theme, onChange } = context
     const normalizedHex = normalizeHex(initialColor) ?? '#ffffff'
     const aciRef = ref<number | null>(hexToNearestAci(normalizedHex))

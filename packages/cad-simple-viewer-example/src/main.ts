@@ -352,4 +352,3 @@ if (document.readyState === 'loading') {
 } else {
   new CadViewerApp()
 }
-

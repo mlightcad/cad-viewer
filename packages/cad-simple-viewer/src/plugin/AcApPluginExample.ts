@@ -1,4 +1,5 @@
 import { log } from '@mlightcad/data-model'
+
 import { AcApContext } from '../app/AcApContext'
 import { AcEdCommand } from '../editor/command/AcEdCommand'
 import { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
@@ -85,5 +86,3 @@ export class AcApExamplePlugin implements AcApPlugin {
     log.info(`[${this.name}] Plugin unloaded`)
   }
 }
-
-

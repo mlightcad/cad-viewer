@@ -64,7 +64,9 @@ export const registerDialogs = () => {
 let isMTextColorPickerRegistered = false
 export const registerMTextColorPicker = () => {
   if (!isMTextColorPickerRegistered) {
-    AcEdMTextEditor.setDefaultColorPicker(createMlColorIndexPickerToolbarFactory())
+    AcEdMTextEditor.setDefaultColorPicker(
+      createMlColorIndexPickerToolbarFactory()
+    )
     isMTextColorPickerRegistered = true
   }
 }

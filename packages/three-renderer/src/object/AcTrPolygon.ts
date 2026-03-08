@@ -202,4 +202,3 @@ export class AcTrPolygon extends AcTrEntity {
     return holeIndexArr
   }
 }
-
