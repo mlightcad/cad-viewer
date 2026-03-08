@@ -69,7 +69,9 @@ export class AcEdMTextEditor {
    *
    * @param factory - Factory to use, or `null` to clear and use the built-in picker.
    */
-  static setDefaultColorPicker(factory: MTextToolbarColorPickerFactory | null): void {
+  static setDefaultColorPicker(
+    factory: MTextToolbarColorPickerFactory | null
+  ): void {
     AcEdMTextEditor.defaultColorPicker = factory
   }
 
@@ -137,9 +139,7 @@ export class AcEdMTextEditor {
         container: view.container,
         offsetY: 10,
         colorPicker:
-          toolbarColorPicker ??
-          AcEdMTextEditor.defaultColorPicker ??
-          undefined
+          toolbarColorPicker ?? AcEdMTextEditor.defaultColorPicker ?? undefined
       }
     })
 

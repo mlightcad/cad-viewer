@@ -45,6 +45,7 @@
 <script setup lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue'
 import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
+import { log } from '@mlightcad/data-model'
 import type { UploadFile, UploadProps } from 'element-plus'
 import { ref } from 'vue'
 
@@ -66,7 +67,7 @@ const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
 
 const beforeUpload: UploadProps['beforeUpload'] = (rawFile: File) => {
   if (!isValidFile(rawFile)) {
-    console.warn('Invalid file type. Please upload DWG or DXF files.')
+    log.warn('Invalid file type. Please upload DWG or DXF files.')
     return false
   }
   return true

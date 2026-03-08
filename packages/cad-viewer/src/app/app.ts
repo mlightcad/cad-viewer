@@ -7,7 +7,11 @@ import {
   AcApDocManagerOptions
 } from '@mlightcad/cad-simple-viewer'
 
-import { registerCmds, registerDialogs, registerMTextColorPicker } from './register'
+import {
+  registerCmds,
+  registerDialogs,
+  registerMTextColorPicker
+} from './register'
 
 export const initializeCadViewer = (options: AcApDocManagerOptions = {}) => {
   AcApDocManager.createInstance(options)

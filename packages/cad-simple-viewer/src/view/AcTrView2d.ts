@@ -13,7 +13,8 @@ import {
   AcGeBox2d,
   AcGeBox3d,
   AcGePoint2d,
-  AcGePoint2dLike
+  AcGePoint2dLike,
+  log
 } from '@mlightcad/data-model'
 import {
   AcTrEntity,
@@ -813,7 +814,7 @@ export class AcTrView2d extends AcEdBaseView {
         })
       }
     } catch (error) {
-      console.error('[AcTrView2d] Error loading layout entities:', error)
+      log.error('[AcTrView2d] Error loading layout entities:', error)
     }
   }
 
@@ -852,7 +853,7 @@ export class AcTrView2d extends AcEdBaseView {
       if (entity instanceof AcDbViewport) {
         if (entity.number === 0) {
           entity.number = AcTrView2d.viewportIdCounter++
-          console.warn(
+          log.warn(
             `Viewport id for handle ${entity.objectId} is 0! Set it to ${entity.number}`
           )
         }
@@ -1007,7 +1008,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._numOfEntitiesToProcess--
     if (this._numOfEntitiesToProcess < 0) {
       this._numOfEntitiesToProcess = 0
-      console.warn(
+      log.warn(
         'Something wrong! The number of entities to process should not be less than 0.'
       )
     }

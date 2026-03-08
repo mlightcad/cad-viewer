@@ -1,7 +1,8 @@
 import {
   AcDbDatabase,
   AcDbFileType,
-  AcDbOpenDatabaseOptions
+  AcDbOpenDatabaseOptions,
+  log
 } from '@mlightcad/data-model'
 
 import { eventBus } from '../editor'
@@ -185,7 +186,7 @@ export class AcApDocument {
       // Return the last part of the pathname as the file name
       return pathParts[pathParts.length - 1] || ''
     } catch (error) {
-      console.error('Invalid URI:', error)
+      log.error('Invalid URI:', error)
       return ''
     }
   }

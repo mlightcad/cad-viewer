@@ -81,13 +81,13 @@
  * @see {@link https://github.com/mlightcad/cad-viewer | Project Repository}
  * @see {@link https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/MlCadViewer.vue | Source Code}
  */
-
 import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
   AcEdOpenMode,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
+import { log } from '@mlightcad/data-model'
 import { useDark, useToggle } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -243,7 +243,7 @@ const openFileFromUrl = async (url: string) => {
     await AcApDocManager.instance.openUrl(url, options)
     store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch (error) {
-    console.error('Failed to open file from URL:', error)
+    log.error('Failed to open file from URL:', error)
     ElMessage({
       message: t('main.message.failedToOpenFile', { fileName: url }),
       grouping: true,

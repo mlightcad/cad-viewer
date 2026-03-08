@@ -3,7 +3,7 @@ import {
   AcApOpenDatabaseOptions,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
-import { AcDbSysVarManager } from '@mlightcad/data-model'
+import { AcDbSysVarManager, log } from '@mlightcad/data-model'
 
 class CadViewerApp {
   private container: HTMLDivElement
@@ -81,7 +81,7 @@ class CadViewerApp {
 
         this.isInitialized = true
       } catch (error) {
-        console.error('Failed to initialize CAD viewer:', error)
+        log.error('Failed to initialize CAD viewer:', error)
         this.showMessage('Failed to initialize CAD viewer', 'error')
       }
     }
@@ -215,7 +215,7 @@ class CadViewerApp {
         this.showMessage(`Failed to load: ${file.name}`, 'error')
       }
     } catch (error) {
-      console.error('Error loading file:', error)
+      log.error('Error loading file:', error)
       this.showMessage(`Error loading file: ${error}`, 'error')
     }
   }
@@ -243,7 +243,7 @@ class CadViewerApp {
         )
       }
     } catch (error) {
-      console.error('Error loading predefined file:', error)
+      log.error('Error loading predefined file:', error)
       this.showMessage(`Error loading file: ${error}`, 'error')
     }
   }

@@ -1,3 +1,4 @@
+import { log } from '@mlightcad/data-model'
 /**
  * A utility class that waits until a specified condition is met
  * or a timeout occurs, and then executes a single action.
@@ -6,7 +7,7 @@
  * ```ts
  * const waiter = new AcEdConditionWaiter(
  *   () => isDataReady(),     // condition
- *   () => console.log('Ready or timed out'), // action
+ *   () => log.info('Ready or timed out'), // action
  *   1000,                    // check every 1s
  *   10000                    // timeout after 10s
  * );
@@ -50,7 +51,7 @@ export class AcEdConditionWaiter {
     // Setup timeout if provided
     if (this.timeout > 0) {
       this.timeoutId = window.setTimeout(() => {
-        console.warn('AcEdConditionWaiter: Timeout reached.')
+        log.warn('AcEdConditionWaiter: Timeout reached.')
         this.executeAndStop()
       }, this.timeout)
     }

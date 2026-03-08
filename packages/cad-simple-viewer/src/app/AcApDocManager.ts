@@ -6,7 +6,8 @@ import {
   acdbHostApplicationServices,
   AcDbProgressdEventArgs,
   AcDbSysVarManager,
-  AcGeBox2d
+  AcGeBox2d,
+  log
 } from '@mlightcad/data-model'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
@@ -306,7 +307,7 @@ export class AcApDocManager {
     this.registerWorkers(options.webworkerFileUrls)
     // Load plugins asynchronously (don't await to avoid blocking initialization)
     this.loadPlugins(options.plugins).catch(error => {
-      console.error('[AcApDocManager] Error loading plugins:', error)
+      log.error('[AcApDocManager] Error loading plugins:', error)
     })
   }
 
@@ -500,7 +501,7 @@ export class AcApDocManager {
    * ```typescript
    * const success = await docManager.openUrl('https://example.com/drawing.dwg');
    * if (success) {
-   *   console.log('Document opened successfully');
+   *   log.info('Document opened successfully');
    * }
    * ```
    */
@@ -981,7 +982,7 @@ export class AcApDocManager {
         converter
       )
     } catch (error) {
-      console.error('Failed to register dxf converter: ', error)
+      log.error('Failed to register dxf converter: ', error)
     }
 
     // Register DWG converter
@@ -999,7 +1000,7 @@ export class AcApDocManager {
         converter
       )
     } catch (error) {
-      console.error('Failed to register dwg converter: ', error)
+      log.error('Failed to register dwg converter: ', error)
     }
   }
 
@@ -1046,22 +1047,19 @@ export class AcApDocManager {
           { continueOnError: true }
         )
         if (result.loaded.length > 0) {
-          console.log(
+          log.info(
             `[AcApDocManager] Loaded ${result.loaded.length} plugin(s) from config:`,
             result.loaded
           )
         }
         if (result.failed.length > 0) {
-          console.warn(
+          log.warn(
             `[AcApDocManager] Failed to load ${result.failed.length} plugin(s):`,
             result.failed.map(f => `${f.name}: ${f.error.message}`)
           )
         }
       } catch (error) {
-        console.error(
-          '[AcApDocManager] Error loading plugins from config:',
-          error
-        )
+        log.error('[AcApDocManager] Error loading plugins from config:', error)
       }
     }
 
@@ -1076,22 +1074,19 @@ export class AcApDocManager {
           }
         )
         if (result.loaded.length > 0) {
-          console.log(
+          log.info(
             `[AcApDocManager] Loaded ${result.loaded.length} plugin(s) from folder:`,
             result.loaded
           )
         }
         if (result.failed.length > 0) {
-          console.warn(
+          log.warn(
             `[AcApDocManager] Failed to load ${result.failed.length} plugin(s) from folder:`,
             result.failed.map(f => `${f.name}: ${f.error.message}`)
           )
         }
       } catch (error) {
-        console.error(
-          '[AcApDocManager] Error loading plugins from folder:',
-          error
-        )
+        log.error('[AcApDocManager] Error loading plugins from folder:', error)
       }
     }
   }

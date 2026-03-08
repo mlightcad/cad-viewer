@@ -1,4 +1,4 @@
-import { AcGiSubEntityTraits } from '@mlightcad/data-model'
+import { AcGiSubEntityTraits, log } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import {
@@ -35,7 +35,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
     // Validate pattern lines
     if (style.definitionLines.some(line => !line.dashLengths)) {
-      console.warn('Invalid dash pattern', style)
+      log.warn('Invalid dash pattern', style)
       return this.createMeshBasicMaterial(traits)
     }
 
@@ -82,7 +82,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       ).rotateAround(tempCenter, -hatchPatternLine.angle)
 
       if (offset.y === 0) {
-        console.warn('offset.y is zero, skipping pattern line')
+        log.warn('offset.y is zero, skipping pattern line')
         continue
       }
 
@@ -132,7 +132,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       currentUniformCount += maxPatternSegmentCount // dashLengths, consistent with HatchPatternShader
       currentUniformCount += 4 // patternLength
       if (currentUniformCount > this.options.maxFragmentUniforms) {
-        console.warn(
+        log.warn(
           'There will be warning in fragment shader when number of uniforms exceeds 1024, so extra hatch line patterns are ignored here!'
         )
         break
