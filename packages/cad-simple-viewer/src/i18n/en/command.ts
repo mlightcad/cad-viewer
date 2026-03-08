@@ -30,6 +30,9 @@ export default {
     line: {
       description: 'Draws straight line segments between points'
     },
+    mtext: {
+      description: 'Creates one mtext entity'
+    },
     log: {
       description: 'Logs debug information in console'
     },

@@ -64,6 +64,20 @@ export interface AcEdViewHoverEventArgs {
 }
 
 /**
+ * Interface to define arguments of render frame events.
+ */
+export interface AcEdViewRenderFrameEventArgs {
+  /**
+   * The renderer used for rendering the frame
+   */
+  render: unknown
+  /**
+   * The camera used for rendering the frame
+   */
+  camera: unknown
+}
+
+/**
  * Enumeration of view interaction modes.
  *
  * The view mode determines how the view responds to user mouse interactions:
@@ -207,7 +221,9 @@ export abstract class AcEdBaseView {
     /** Fired when mouse hovers over an entity */
     hover: new AcCmEventManager<AcEdViewHoverEventArgs>(),
     /** Fired when mouse stops hovering over an entity */
-    unhover: new AcCmEventManager<AcEdViewHoverEventArgs>()
+    unhover: new AcCmEventManager<AcEdViewHoverEventArgs>(),
+    /** Fired when a frame is rendered */
+    renderFrame: new AcCmEventManager<AcEdViewRenderFrameEventArgs>()
   }
 
   /**

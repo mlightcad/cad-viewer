@@ -346,6 +346,20 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * The internal THREE scene used by this view.
+   */
+  get internalScene() {
+    return this._scene.internalScene
+  }
+
+  /**
+   * The internal THREE camera used by current active layout.
+   */
+  get internalCamera() {
+    return this.activeLayoutView?.internalCamera
+  }
+
+  /**
    * Sets global ltscale
    */
   set ltscale(scale: number) {
@@ -719,8 +733,12 @@ export class AcTrView2d extends AcEdBaseView {
   private animate = () => {
     this._rafId = requestAnimationFrame(this.animate)
 
-    if (!this._isDirty) return
+    this.events.renderFrame.dispatch({
+      render: this._renderer,
+      camera: this.internalCamera
+    })
 
+    if (!this._isDirty) return
     this._layoutViewManager.render(this._scene)
     this._stats?.update()
     this._isDirty = false

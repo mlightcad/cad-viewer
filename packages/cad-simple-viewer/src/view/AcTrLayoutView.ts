@@ -110,6 +110,13 @@ export class AcTrLayoutView extends AcTrBaseView {
   }
 
   /**
+   * The internal THREE camera used by this layout view.
+   */
+  get internalCamera() {
+    return this._camera.internalCamera
+  }
+
+  /**
    * Add one viewport view instance to this layout view.
    * Viewports are used in paper space layouts to show different views of the model.
    *

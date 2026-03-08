@@ -21,6 +21,7 @@ import {
 import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler'
 import {
   AcEdPromptAngleOptions,
+  AcEdPromptBoxOptions,
   AcEdPromptDistanceOptions,
   AcEdPromptEntityOptions,
   AcEdPromptIntegerOptions,
@@ -577,12 +578,13 @@ export class AcEdInputManager {
    * Each corner may be specified by clicking on the canvas or typing "x,y".
    * A live HTML overlay rectangle previews the box as the user moves the mouse.
    */
-  async getBox(): Promise<AcGeBox2d> {
+  async getBox(options: AcEdPromptBoxOptions): Promise<AcGeBox2d> {
     // Get first point
-    const message1 = AcApI18n.t('main.inputManager.firstCorner')
+    const message1 =
+      options.firstCornerMessage || AcApI18n.t('main.inputManager.firstCorner')
     const options1 = new AcEdPromptPointOptions(message1)
-    options1.useDashedLine = false
-    options1.useBasePoint = false
+    options1.useDashedLine = options.useDashedLine
+    options1.useBasePoint = options.useBasePoint
     const p1 = await this.getPoint(options1)
     const cwcsP1 = this.view.worldToScreen(p1)
 
@@ -611,10 +613,12 @@ export class AcEdInputManager {
     }
 
     // Second point
-    const message2 = AcApI18n.t('main.inputManager.secondCorner')
+    const message2 =
+      options.secondCornerMessage ||
+      AcApI18n.t('main.inputManager.secondCorner')
     const options2 = new AcEdPromptPointOptions(message2)
-    options2.useDashedLine = false
-    options2.useBasePoint = false
+    options2.useDashedLine = options.useDashedLine
+    options2.useBasePoint = options.useBasePoint
     const p2 = await this.getPointInternal(options2, cleanup, drawPreview)
 
     return new AcGeBox2d().expandByPoint(p1).expandByPoint(p2)
