@@ -23,6 +23,11 @@ export interface AcTrLineMaterialOptions {
  * maintaining a separate layer → key mapping.
  */
 export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMaterialOptions> {
+  /** Shared resolution uniform updated on resize. */
+  static ResolutionUniform = {
+    value: new THREE.Vector2(window.innerWidth, window.innerHeight)
+  }
+
   /**
    * Builds a stable material key from traits.
    * Key differs for shader vs basic, ByLayer vs ByEntity.

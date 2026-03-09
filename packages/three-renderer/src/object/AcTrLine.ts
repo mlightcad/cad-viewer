@@ -1,6 +1,8 @@
 import { AcGePoint3dLike, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
+import { AcTrLineMaterialManager } from '../style/AcTrLineMaterialManager'
+import { AcTrSolidLineShaders } from '../style/AcTrSolidLineShaders'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrBufferGeometryUtil } from '../util'
 import { AcTrEntity } from './AcTrEntity'
@@ -33,19 +35,31 @@ export class AcTrLine extends AcTrEntity {
       indices[pos++] = i
       indices[pos++] = i + 1
     }
+
+    // Always create standard line geometry for bbox and batching/raycaster
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
     geometry.setIndex(new THREE.BufferAttribute(indices, 1))
-    this.setBoundingBox(geometry)
-    this.geometry = geometry
-
-    const line = new THREE.LineSegments(geometry, material)
-    AcTrBufferGeometryUtil.computeLineDistances(line)
-    this.add(line)
-  }
-
-  private setBoundingBox(geometry: THREE.BufferGeometry) {
     geometry.computeBoundingBox()
     this.box = geometry.boundingBox!
+    this.geometry = geometry
+
+    if (material instanceof THREE.LineBasicMaterial) {
+      // Use triangle-based quad geometry for non-patterned solid lines to avoid
+      // WebGL gl.LINES brightness/gap artifacts. Patterned lines still use
+      // LineSegments because they rely on lineDistance attributes.
+      const segmentCount = (maxVertexCount - 1)
+      const usedIndices = indices.slice(0, segmentCount * 2)
+      const mesh = AcTrSolidLineShaders.buildQuadMesh(
+        vertices, usedIndices, geometry, material,
+        material.color.getHex(), AcTrLineMaterialManager.ResolutionUniform
+      )
+      this.add(mesh)
+    } else {
+      const line = new THREE.LineSegments(geometry, material)
+      AcTrBufferGeometryUtil.computeLineDistances(line)
+      this.add(line)
+    }
   }
+
 }

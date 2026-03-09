@@ -16,6 +16,7 @@ import {
 import { FontManager, FontManagerEventArgs } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
+import { AcTrLineMaterialManager } from '../style/AcTrLineMaterialManager'
 import {
   AcTrEntity,
   AcTrGroup,
@@ -96,6 +97,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   setSize(width: number, height: number) {
     this._renderer.setSize(width, height)
+    AcTrLineMaterialManager.ResolutionUniform.value.set(width, height)
   }
 
   getViewport(target: THREE.Vector4) {

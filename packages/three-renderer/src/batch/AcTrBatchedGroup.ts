@@ -2,7 +2,9 @@ import * as THREE from 'three'
 
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
-import { AcTrMaterialUtil } from '../util'
+import { AcTrLineMaterialManager } from '../style/AcTrLineMaterialManager'
+import { AcTrSolidLineShaders } from '../style/AcTrSolidLineShaders'
+import { AcTrMaterialUtil, HIGHLIGHT_COLOR } from '../util'
 import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
 import { AcTrBatchedLine } from './AcTrBatchedLine'
 import { AcTrBatchedMesh } from './AcTrBatchedMesh'
@@ -13,6 +15,8 @@ export type AcTrBatchedObject = AcTrBatchedLine | AcTrBatchedMesh
 export interface AcTrEntityInBatchedObject {
   batchedObjectId: number
   batchId: number
+  /** True when the line was routed from a quad-geometry Mesh (solid line). */
+  isQuadSource?: boolean
 }
 
 export interface AcTrGeometrySize {
@@ -88,6 +92,8 @@ export class AcTrBatchedGroup extends THREE.Group {
    * - The value is the entity's position information in the batched objects
    */
   private _entitiesMap: Map<string, AcTrEntityInBatchedObject[]>
+  /** Cached highlight material for quad-geometry solid lines (shared across all highlights). */
+  private _quadHighlightMaterial: THREE.ShaderMaterial | null = null
 
   constructor() {
     super()
@@ -102,6 +108,18 @@ export class AcTrBatchedGroup extends THREE.Group {
     this._hoverObjects = new THREE.Group()
     this.add(this._selectedObjects)
     this.add(this._hoverObjects)
+  }
+
+  /** Get or create the shared highlight material for quad-geometry lines. */
+  private getQuadHighlightMaterial(): THREE.ShaderMaterial {
+    if (!this._quadHighlightMaterial) {
+      this._quadHighlightMaterial = AcTrSolidLineShaders.createMaterial(
+        HIGHLIGHT_COLOR.getHex(),
+        1.0,
+        AcTrLineMaterialManager.ResolutionUniform
+      )
+    }
+    return this._quadHighlightMaterial
   }
 
   /**
@@ -238,9 +256,11 @@ export class AcTrBatchedGroup extends THREE.Group {
     this._entitiesMap.set(entity.objectId, entityInfo)
 
     entity.updateMatrixWorld(true)
+    let meshCount = 0, lineCount = 0, pointCount = 0, otherCount = 0
     entity.traverse(object => {
       const bboxIntersectionCheck = !!object.userData.bboxIntersectionCheck
       if (object instanceof THREE.LineSegments) {
+        lineCount++
         entityInfo.push(
           this.addLine(object, {
             position: object.userData.position,
@@ -249,6 +269,30 @@ export class AcTrBatchedGroup extends THREE.Group {
           })
         )
       } else if (object instanceof THREE.Mesh) {
+        // Quad-geometry meshes (from AcTrSolidLineShaders) carry the original
+        // line geometry in userData. Route them through addLine for proper
+        // batching and line-segment raycaster support.
+        const lineGeo = object.userData.lineGeometry as THREE.BufferGeometry | undefined
+        if (lineGeo) {
+          const lineMat = object.userData.lineMaterial as THREE.Material
+          // TODO: addLine applies matrixWorld to geometry in-place, so we must clone here.
+          // A future optimization could make addLine accept a read-only geometry + separate matrix
+          // to avoid this per-entity clone overhead.
+          const clonedGeo = lineGeo.clone()
+          const tmpLine = new THREE.LineSegments(clonedGeo, lineMat)
+          // Copy the world matrix from the quad Mesh so addLine transforms correctly
+          tmpLine.matrixWorld.copy(object.matrixWorld)
+          lineCount++
+          const lineInfo = this.addLine(tmpLine, {
+            position: object.userData.position,
+            objectId: entity.objectId,
+            bboxIntersectionCheck: bboxIntersectionCheck
+          })
+          lineInfo.isQuadSource = true
+          entityInfo.push(lineInfo)
+          return
+        }
+        meshCount++
         entityInfo.push(
           this.addMesh(object, {
             objectId: entity.objectId,
@@ -256,12 +300,15 @@ export class AcTrBatchedGroup extends THREE.Group {
           })
         )
       } else if (object instanceof THREE.Points) {
+        pointCount++
         entityInfo.push(
           this.addPoint(object, {
             objectId: entity.objectId,
             bboxIntersectionCheck: bboxIntersectionCheck
           })
         )
+      } else {
+        otherCount++
       }
     })
   }
@@ -351,6 +398,31 @@ export class AcTrBatchedGroup extends THREE.Group {
           item.batchedObjectId
         ) as AcTrBatchedObject
         const object = batchedObject.getObjectAt(item.batchId)
+
+        // For solid lines batched from quad-geometry entities, build a quad Mesh
+        // highlight object to avoid gl.LINES brightness artifacts.
+        // Only applies to quad-routed lines, not native dashed LineSegments.
+        if (item.isQuadSource && batchedObject instanceof AcTrBatchedLine) {
+          const lineGeo = object.geometry as THREE.BufferGeometry
+          const positions = lineGeo.getAttribute('position') as THREE.BufferAttribute
+          const index = lineGeo.getIndex()
+          if (positions && index) {
+            const drawRange = lineGeo.drawRange
+            const usedIndices = (index.array as Uint16Array | Uint32Array).slice(
+              drawRange.start,
+              drawRange.start + drawRange.count
+            )
+            const quadGeo = AcTrSolidLineShaders.buildQuadGeometry(
+              positions.array as Float32Array,
+              usedIndices
+            )
+            const quadMesh = new THREE.Mesh(quadGeo, this.getQuadHighlightMaterial())
+            quadMesh.frustumCulled = false
+            quadMesh.userData.objectId = objectId
+            containerGroup.add(quadMesh)
+            return
+          }
+        }
 
         const clonedMaterial = AcTrMaterialUtil.cloneMaterial(object.material)
         AcTrMaterialUtil.setMaterialColor(clonedMaterial)

@@ -83,6 +83,28 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   }
 
   /**
+   * Apply a matrix transformation to quad-geometry custom attributes (instanceStart/instanceEnd)
+   * that THREE.BufferGeometry.applyMatrix4 does not handle.
+   */
+  static applyMatrix4ToQuadGeometry(geom: THREE.BufferGeometry, matrix: THREE.Matrix4) {
+    const instanceStart = geom.getAttribute('instanceStart') as THREE.BufferAttribute | undefined
+    const instanceEnd = geom.getAttribute('instanceEnd') as THREE.BufferAttribute | undefined
+    if (!instanceStart || !instanceEnd) return
+
+    const v = new THREE.Vector3()
+    for (let i = 0, l = instanceStart.count; i < l; i++) {
+      v.fromBufferAttribute(instanceStart, i).applyMatrix4(matrix)
+      instanceStart.setXYZ(i, v.x, v.y, v.z)
+    }
+    for (let i = 0, l = instanceEnd.count; i < l; i++) {
+      v.fromBufferAttribute(instanceEnd, i).applyMatrix4(matrix)
+      instanceEnd.setXYZ(i, v.x, v.y, v.z)
+    }
+    instanceStart.needsUpdate = true
+    instanceEnd.needsUpdate = true
+  }
+
+  /**
    * Flatten the hierarchy of the specified object so that all children are moved to be direct
    * children of this object. Preserve transformations.
    * @param root Input object to be flatten
@@ -138,7 +160,22 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
       // need to clone geometry, because a geometry can be shared by many objects
       if ('geometry' in child) {
         const geom = child.geometry as THREE.BufferGeometry
-        geom.applyMatrix4(child.matrixWorld)
+
+        // Quad-geometry (from AcTrSolidLineShaders) has instanceStart/instanceEnd
+        // instead of position — use dedicated transform. Standard geometry uses
+        // the built-in applyMatrix4 which transforms position/normal/tangent.
+        if (geom.getAttribute('instanceStart')) {
+          AcTrEntity.applyMatrix4ToQuadGeometry(geom, child.matrixWorld)
+        } else {
+          geom.applyMatrix4(child.matrixWorld)
+        }
+
+        // Also transform the stored line geometry used for batching/raycaster
+        const lineGeo = child.userData.lineGeometry as THREE.BufferGeometry | undefined
+        if (lineGeo) {
+          lineGeo.applyMatrix4(child.matrixWorld)
+          lineGeo.computeBoundingBox()
+        }
 
         child.matrixWorld.identity()
         child.matrixWorldNeedsUpdate = false
@@ -171,6 +208,12 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     ) {
       if (object.geometry) {
         object.geometry.dispose()
+      }
+      // Dispose stored line geometry used by quad-geometry meshes
+      const lineGeo = object.userData.lineGeometry as THREE.BufferGeometry | undefined
+      if (lineGeo) {
+        lineGeo.dispose()
+        delete object.userData.lineGeometry
       }
     }
 
@@ -336,6 +379,11 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
         clonedChild.geometry = (
           clonedChild.geometry as THREE.BufferGeometry
         ).clone()
+      }
+      // Deep clone stored line geometry for quad-geometry meshes
+      const lineGeo = child.userData.lineGeometry as THREE.BufferGeometry | undefined
+      if (lineGeo) {
+        clonedChild.userData.lineGeometry = lineGeo.clone()
       }
       target.add(clonedChild)
     }
