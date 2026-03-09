@@ -558,16 +558,14 @@ const closeNotificationCenter = () => {
 
 /* Position the filename display at the top center of the viewer */
 .ml-file-name {
-  position: absolute;
-  top: 0;
+  position: fixed;
+  top: 20px;
   left: 50%;
   color: var(--el-text-color-regular);
   transform: translateX(-50%);
   text-align: center;
-  width: 100%;
-  margin-top: 20px;
   pointer-events: none; /* Allow mouse events to pass through to container */
-  z-index: 1; /* Ensure it's above canvas but doesn't block events */
+  z-index: 3; /* Ensure it's above canvas but doesn't block events */
 }
 
 /* Position the filename display at the top center of the viewer */
