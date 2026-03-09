@@ -88,18 +88,21 @@ import {
   eventBus
 } from '@mlightcad/cad-simple-viewer'
 import { log } from '@mlightcad/data-model'
-import { useDark, useToggle } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { initializeCadViewer, store } from '../app'
 import {
+  ensureColorThemeSync,
   useEntityDrawStyle,
+  isDark,
   useLocale,
   useMeasurements,
   useNotificationCenter,
-  useSettings
+  useSettings,
+  setColorTheme,
+  toggleDark
 } from '../composable'
 import { LocaleProp } from '../locale'
 import { MlDialogManager, MlFileReader } from './common'
@@ -174,8 +177,6 @@ const { info, warning, error, success } = useNotificationCenter()
 const containerRef = ref<HTMLDivElement>()
 
 // Referenence to the root element used to switch theme
-const viewerRoot = ref<HTMLElement | null>(null)
-
 // Editor reference that gets updated after initialization
 const editorRef = ref<AcApDocManager | null>(null)
 
@@ -185,14 +186,9 @@ const editor = computed(() => editorRef.value as AcApDocManager)
 // Notification center visibility
 const showNotificationCenter = ref(false)
 
-const isDark = useDark({
-  selector: viewerRoot,
-  attribute: 'class',
-  valueDark: 'ml-theme-dark',
-  valueLight: 'ml-theme-light'
-})
-
-const toggleDark = useToggle(isDark)
+const viewerThemeClass = computed(() =>
+  isDark.value ? 'ml-theme-dark' : 'ml-theme-light'
+)
 
 const features = useSettings()
 
@@ -337,7 +333,7 @@ watch(
 watch(
   () => props.theme,
   newTheme => {
-    isDark.value = newTheme === 'dark' ? true : false
+    setColorTheme(newTheme)
   }
 )
 
@@ -353,6 +349,7 @@ onMounted(async () => {
     })
     // Set the editor reference after initialization
     editorRef.value = AcApDocManager.instance
+    ensureColorThemeSync()
   }
 
   // If URL prop is provided, automatically load the file on mount
@@ -370,11 +367,7 @@ onMounted(async () => {
   }
 
   // Set initial theme from props
-  if (props.theme === 'dark') {
-    isDark.value = true
-  } else {
-    isDark.value = false
-  }
+  setColorTheme(props.theme)
 
   // FINAL STEP: viewer is now ready
   emit('create')
@@ -470,10 +463,14 @@ const closeNotificationCenter = () => {
 
 <template>
   <!-- Canvas element for CAD rendering - positioned as background -->
-  <div ref="containerRef" class="ml-cad-container"></div>
+  <div :class="viewerThemeClass" ref="containerRef" class="ml-cad-container"></div>
 
   <!-- Main CAD viewer container with complete UI layout -->
-  <div ref="viewerRoot" v-if="editorRef" class="ml-cad-viewer-container">
+  <div
+    v-if="editorRef"
+    :class="viewerThemeClass"
+    class="ml-cad-viewer-container"
+  >
     <!-- Element Plus configuration provider for internationalization -->
     <el-config-provider :locale="elementPlusLocale">
       <!-- Header section with main menu and language selector -->

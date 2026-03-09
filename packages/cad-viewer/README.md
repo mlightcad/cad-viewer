@@ -189,7 +189,7 @@ The `MlCadViewer` component accepts the following props:
 | `background` | `number` | `undefined` | Background color as 24-bit hexadecimal RGB (e.g., `0x000000` for black, `0x808080` for gray). |
 | `baseUrl` | `string` | `undefined` | Base URL for loading fonts, templates, and example files. This URL is used by the CAD viewer to load resources like fonts and drawing templates. **Note**: If not provided, uses the default URL. |
 | `useMainThreadDraw` | `boolean` | `false` | Optional flag whether to use main thread or webwork to render drawing. The true value means using main thread to render drawing. This approach take less memory and take longer time to show rendering results. The false value means using web worker to render drawing. This approach take more memory and take shorter time to show rendering results. |
-| `theme` | `'light' \| 'dark'` | `'dark'` | Initial theme of the CAD viewer. `'light'` applies the light theme (`ml-theme-light` class) and `'dark'` applies the dark theme (`ml-theme-dark` class). The theme can also be toggled at runtime using the status bar theme button. |
+| `theme` | `'light' \| 'dark'` | `'dark'` | Initial UI theme of the CAD viewer. On mount, this prop initializes the `COLORTHEME` system variable in the active database (`0 = dark`, `1 = light`). After that, the viewer theme is driven by `COLORTHEME`, so runtime changes from the status bar theme button or direct system-variable updates stay synchronized across `cad-viewer` and `cad-simple-viewer`. |
 | `mode` | `AcEdOpenMode` | `'AcEdOpenMode.Write'` | Access mode for opening CAD files. `'AcEdOpenMode.Read'` means read-only access. `'AcEdOpenMode.Review'` means review access, compatible with read. `'AcEdOpenMode.Write'` means full read/write access, compatible with review and read. |
 ### UI Settings
 
@@ -298,7 +298,7 @@ The `MlCadViewer` component includes:
 - **File Reader** - Local file loading via file dialog and drag-and-drop support
 - **Entity Info** - Detailed information about selected entities
 - **Language Selector** - UI language switching
-- **Theme Support** - Dark/light mode toggle
+- **Theme Support** - Dark/light mode driven by the `COLORTHEME` system variable
 
 ### Event Handling
 
@@ -340,7 +340,7 @@ Please refer to [readme of cad-simple-viewer](../cad-simple-viewer/README.md) to
 
 - `useCommands` - Command management
 - `useCurrentPos` - Current position tracking
-- `useDark` - Dark mode support
+- `useDark` - Reactive dark-mode state backed by the `COLORTHEME` system variable
 - `useDialogManager` - Dialog management
 - `useFileTypes` - File type utilities
 - `useLayers` - Layer management
@@ -348,6 +348,17 @@ Please refer to [readme of cad-simple-viewer](../cad-simple-viewer/README.md) to
 - `useMissedData` - Missed data handling
 - `useSettings` - Settings management
 - `useSystemVars` - System variables
+
+### Theme Synchronization
+
+The viewer UI theme is synchronized through the `COLORTHEME` system variable managed by `AcDbSysVarManager`.
+
+- `COLORTHEME = 0` means dark theme.
+- `COLORTHEME = 1` means light theme.
+- The `theme` prop provides the initial value when `MlCadViewer` mounts.
+- Clicking the status bar theme button updates `COLORTHEME`.
+- Any runtime change to `COLORTHEME` is reflected automatically in viewer UI and MTEXT-related UI.
+- The exported `useDark` composable is still available, but it now wraps `COLORTHEME` instead of maintaining an isolated local dark-mode state.
 
 ### Locale
 
