@@ -1,9 +1,12 @@
-import { AcDbSysVarManager, AcGePoint3dLike } from '@mlightcad/data-model'
-import { AcDbSystemVariables } from '@mlightcad/data-model/src/database/AcDbSystemVariables'
+import {
+  AcDbSystemVariables,
+  AcDbSysVarManager,
+  AcGePoint3dLike
+} from '@mlightcad/data-model'
 import {
   MTextInputBox,
-  type MTextToolbarTheme,
-  type MTextToolbarColorPickerFactory
+  type MTextToolbarColorPickerFactory,
+  type MTextToolbarTheme
 } from '@mlightcad/mtext-input-box'
 import * as THREE from 'three'
 
@@ -171,12 +174,10 @@ export class AcEdMTextEditor {
         view.isDirty = true
       }
 
-      const onSysVarChanged = (args: {
-        name: string
-        database: unknown
-      }) => {
+      const onSysVarChanged = (args: { name: string; database: unknown }) => {
         if (
-          args.name.toLowerCase() !== AcDbSystemVariables.COLORTHEME.toLowerCase()
+          args.name.toLowerCase() !==
+          AcDbSystemVariables.COLORTHEME.toLowerCase()
         ) {
           return
         }

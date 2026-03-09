@@ -1,5 +1,4 @@
-import { AcDbSysVarManager } from '@mlightcad/data-model'
-import { AcDbSystemVariables } from '@mlightcad/data-model/src/database/AcDbSystemVariables'
+import { AcDbSystemVariables, AcDbSysVarManager } from '@mlightcad/data-model'
 
 import { AcApContext } from '../app'
 import { AcEdCommand } from '../editor'

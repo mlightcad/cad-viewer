@@ -105,7 +105,8 @@ export function createMlColorIndexPickerToolbarFactory(): MTextToolbarColorPicke
           h(
             'div',
             {
-              class: themeRef.value === 'dark' ? 'ml-theme-dark' : 'ml-theme-light'
+              class:
+                themeRef.value === 'dark' ? 'ml-theme-dark' : 'ml-theme-light'
             },
             [
               h(MlMTextToolbarColorPicker, {

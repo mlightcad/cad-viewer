@@ -1,8 +1,8 @@
 import {
   AcDbLayout,
+  AcDbSystemVariables,
   AcDbSysVarManager
 } from '@mlightcad/data-model'
-import { AcDbSystemVariables } from '@mlightcad/data-model/src/database/AcDbSystemVariables'
 
 import { AcEdBaseView } from '../editor/view/AcEdBaseView'
 import { AcTrView2d } from '../view'

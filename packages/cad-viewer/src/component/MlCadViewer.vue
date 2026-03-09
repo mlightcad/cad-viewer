@@ -95,14 +95,14 @@ import { useI18n } from 'vue-i18n'
 import { initializeCadViewer, store } from '../app'
 import {
   ensureColorThemeSync,
-  useEntityDrawStyle,
   isDark,
+  setColorTheme,
+  toggleDark,
+  useEntityDrawStyle,
   useLocale,
   useMeasurements,
   useNotificationCenter,
-  useSettings,
-  setColorTheme,
-  toggleDark
+  useSettings
 } from '../composable'
 import { LocaleProp } from '../locale'
 import { MlDialogManager, MlFileReader } from './common'
@@ -463,7 +463,11 @@ const closeNotificationCenter = () => {
 
 <template>
   <!-- Canvas element for CAD rendering - positioned as background -->
-  <div :class="viewerThemeClass" ref="containerRef" class="ml-cad-container"></div>
+  <div
+    :class="viewerThemeClass"
+    ref="containerRef"
+    class="ml-cad-container"
+  ></div>
 
   <!-- Main CAD viewer container with complete UI layout -->
   <div
@@ -558,16 +562,14 @@ const closeNotificationCenter = () => {
 
 /* Position the filename display at the top center of the viewer */
 .ml-file-name {
-  position: absolute;
-  top: 0;
+  position: fixed;
+  top: 20px;
   left: 50%;
   color: var(--el-text-color-regular);
   transform: translateX(-50%);
   text-align: center;
-  width: 100%;
-  margin-top: 20px;
   pointer-events: none; /* Allow mouse events to pass through to container */
-  z-index: 1; /* Ensure it's above canvas but doesn't block events */
+  z-index: 3; /* Ensure it's above canvas but doesn't block events */
 }
 
 /* Position the filename display at the top center of the viewer */

@@ -1,9 +1,10 @@
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
-import { AcDbDatabase, AcDbSysVarManager } from '@mlightcad/data-model'
 import {
   type AcDbColorTheme,
-  AcDbSystemVariables
-} from '@mlightcad/data-model/src/database/AcDbSystemVariables'
+  AcDbDatabase,
+  AcDbSystemVariables,
+  AcDbSysVarManager
+} from '@mlightcad/data-model'
 import { computed, ref } from 'vue'
 
 import {
