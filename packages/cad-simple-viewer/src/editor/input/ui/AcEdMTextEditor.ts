@@ -1,10 +1,16 @@
-import { AcGePoint3dLike } from '@mlightcad/data-model'
+import {
+  AcDbSystemVariables,
+  AcDbSysVarManager,
+  AcGePoint3dLike
+} from '@mlightcad/data-model'
 import {
   MTextInputBox,
-  type MTextToolbarColorPickerFactory
+  type MTextToolbarColorPickerFactory,
+  type MTextToolbarTheme
 } from '@mlightcad/mtext-input-box'
 import * as THREE from 'three'
 
+import { AcApDocManager } from '../../../app'
 import { AcTrView2d } from '../../../view'
 
 /**
@@ -101,6 +107,22 @@ export class AcEdMTextEditor {
     const origin = new THREE.Vector3(location.x, location.y, location.z ?? 0)
     const isLightBackground = view.backgroundColor === 0xffffff
     const cursorColor = isLightBackground ? '#000000' : '#ffffff'
+    const getToolbarTheme = (): MTextToolbarTheme => {
+      const database = AcApDocManager.instance.curDocument.database
+      const rawTheme = AcDbSysVarManager.instance().getVar(
+        AcDbSystemVariables.COLORTHEME,
+        database
+      )
+      if (
+        rawTheme === 0 ||
+        rawTheme === '0' ||
+        rawTheme === false ||
+        rawTheme === 'dark'
+      ) {
+        return 'dark'
+      }
+      return 'light'
+    }
     const fontFamilies = Array.from(
       new Set(
         toolbarFontFamilies
@@ -134,7 +156,7 @@ export class AcEdMTextEditor {
       imeTarget: view.canvas,
       toolbar: {
         enabled: true,
-        theme: isLightBackground ? 'light' : 'dark',
+        theme: getToolbarTheme(),
         fontFamilies,
         container: view.container,
         offsetY: 10,
@@ -152,10 +174,24 @@ export class AcEdMTextEditor {
         view.isDirty = true
       }
 
+      const onSysVarChanged = (args: { name: string; database: unknown }) => {
+        if (
+          args.name.toLowerCase() !==
+          AcDbSystemVariables.COLORTHEME.toLowerCase()
+        ) {
+          return
+        }
+        mtextInputBox.setToolbarTheme(getToolbarTheme())
+        view.isDirty = true
+      }
+
       const cleanup = () => {
         mtextInputBox.dispose()
         view.events.renderFrame.removeEventListener(onRenderFrame)
         mtextInputBox.off('close', onClose)
+        AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
+          onSysVarChanged
+        )
         view.isDirty = true
       }
 
@@ -176,6 +212,9 @@ export class AcEdMTextEditor {
 
       mtextInputBox.on('close', onClose)
       view.events.renderFrame.addEventListener(onRenderFrame)
+      AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
+        onSysVarChanged
+      )
     })
   }
 }

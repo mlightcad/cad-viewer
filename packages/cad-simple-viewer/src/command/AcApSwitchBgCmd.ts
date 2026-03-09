@@ -1,4 +1,4 @@
-import { AcDbSysVarManager } from '@mlightcad/data-model'
+import { AcDbSystemVariables, AcDbSysVarManager } from '@mlightcad/data-model'
 
 import { AcApContext } from '../app'
 import { AcEdCommand } from '../editor'
@@ -13,7 +13,7 @@ export class AcApSwitchBgCmd extends AcEdCommand {
    * @param context - The application context containing the view
    */
   async execute(context: AcApContext) {
-    const variableName = 'WHITEBKCOLOR'
+    const variableName = AcDbSystemVariables.WHITEBKCOLOR
     const sysVarManager = AcDbSysVarManager.instance()
     const sysVar = sysVarManager.getDescriptor(variableName)
     if (sysVar) {

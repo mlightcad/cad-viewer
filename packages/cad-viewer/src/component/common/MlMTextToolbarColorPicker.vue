@@ -5,6 +5,8 @@
       trigger="click"
       width="320"
       v-model:visible="colorPopoverVisible"
+      :teleported="false"
+      :popper-class="`ml-mtext-toolbar-aci-popper ml-theme-${props.theme}`"
     >
       <MlColorIndexPicker
         :model-value="effectiveModelValue"
@@ -32,6 +34,7 @@ import MlColorIndexPicker from './MlColorIndexPicker.vue'
 
 const props = defineProps<{
   modelValue: number | null
+  theme: 'light' | 'dark'
 }>()
 
 const emit = defineEmits<{
@@ -64,6 +67,10 @@ function onAciChange(aci: number | null) {
   align-items: center;
   justify-content: center;
   line-height: 0;
+}
+
+.ml-mtext-toolbar-aci-popper {
+  padding: 0;
 }
 
 .ml-mtext-toolbar-aci-trigger {

@@ -1,4 +1,8 @@
-import { AcDbLayout, AcDbSysVarManager } from '@mlightcad/data-model'
+import {
+  AcDbLayout,
+  AcDbSystemVariables,
+  AcDbSysVarManager
+} from '@mlightcad/data-model'
 
 import { AcEdBaseView } from '../editor/view/AcEdBaseView'
 import { AcTrView2d } from '../view'
@@ -76,9 +80,9 @@ export class AcApContext {
 
     // Set point display mode
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
-      if (args.name == 'pdmode') {
+      if (args.name == AcDbSystemVariables.PDMODE.toLowerCase()) {
         ;(this._view as AcTrView2d).rerenderPoints(args.database.pdmode)
-      } else if (args.name == 'lwdisplay') {
+      } else if (args.name == AcDbSystemVariables.LWDISPLAY.toLowerCase()) {
         const view = this._view as AcTrView2d
         const showLineWeight = !!args.database.lwdisplay
         if (view.renderer.showLineWeight !== showLineWeight) {

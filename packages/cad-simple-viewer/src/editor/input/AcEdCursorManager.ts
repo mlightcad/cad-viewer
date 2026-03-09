@@ -1,4 +1,4 @@
-import { AcDbSysVarManager } from '@mlightcad/data-model'
+import { AcDbSystemVariables, AcDbSysVarManager } from '@mlightcad/data-model'
 
 import { AcEdBaseView } from '../view'
 
@@ -89,7 +89,7 @@ export class AcEdCursorManager {
       this.createRectCrossIcon(rectSize, totalLength - rectSize)
     )
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
-      if (args.name === 'pickbox') {
+      if (args.name === AcDbSystemVariables.PICKBOX.toLowerCase()) {
         let size = args.newVal as number
         size = size >= 0 ? size : 0
         this._cursorMap.set(

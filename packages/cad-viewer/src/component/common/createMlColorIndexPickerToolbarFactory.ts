@@ -102,14 +102,24 @@ export function createMlColorIndexPickerToolbarFactory(): MTextToolbarColorPicke
     const Root = {
       setup() {
         return () =>
-          h(MlMTextToolbarColorPicker, {
-            modelValue: aciRef.value,
-            'onUpdate:modelValue': (aci: number | null) => {
-              if (aci == null) return
-              aciRef.value = aci
-              onChange(aciToHex(aci))
-            }
-          })
+          h(
+            'div',
+            {
+              class:
+                themeRef.value === 'dark' ? 'ml-theme-dark' : 'ml-theme-light'
+            },
+            [
+              h(MlMTextToolbarColorPicker, {
+                modelValue: aciRef.value,
+                theme: themeRef.value,
+                'onUpdate:modelValue': (aci: number | null) => {
+                  if (aci == null) return
+                  aciRef.value = aci
+                  onChange(aciToHex(aci))
+                }
+              })
+            ]
+          )
       }
     }
 

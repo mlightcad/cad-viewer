@@ -16,6 +16,7 @@ import {
   AcGePoint2dLike,
   log
 } from '@mlightcad/data-model'
+import { AcDbSystemVariables } from '@mlightcad/data-model'
 import {
   AcTrEntity,
   AcTrGroup,
@@ -160,7 +161,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
 
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
-      if (args.name === 'whitebkcolor') {
+      if (args.name === AcDbSystemVariables.WHITEBKCOLOR.toLowerCase()) {
         const useWhiteBackgroundColor = args.newVal as boolean
         this.backgroundColor = useWhiteBackgroundColor ? 0xffffff : 0
       }
