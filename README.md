@@ -26,6 +26,47 @@ By performing DWG/DXF parsing, geometry processing, and rendering directly in th
 - THREE.js 3D rendering engines with advanced optimization techniques
 - Designed for extensibility and integration with platforms like CMS, Notion, and WeChat
 
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) >= 18
+- [pnpm](https://pnpm.io/) >= 8
+
+### Installation
+
+```bash
+git clone https://github.com/mlightcad/cad-viewer.git
+cd cad-viewer
+pnpm install
+```
+
+### Development
+
+```bash
+# Start the full-featured viewer (cad-viewer)
+pnpm dev
+
+# Or start the simple viewer
+pnpm dev:simple
+```
+
+### Build
+
+```bash
+pnpm build
+```
+
+### Preview
+
+```bash
+# Preview the full-featured viewer
+pnpm preview
+
+# Preview the simple viewer
+pnpm preview:simple
+```
+
 ## How to Use
 
 ### Desktop Browser Operations
