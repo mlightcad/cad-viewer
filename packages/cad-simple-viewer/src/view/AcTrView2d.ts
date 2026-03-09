@@ -788,13 +788,8 @@ export class AcTrView2d extends AcEdBaseView {
       }
 
       const layout = this._scene.activeLayout
-      if (layout) {
-        // Check if layout has any entities by checking if bounding box is not empty
-        const box = layout.box
-        if (box && !box.isEmpty()) {
-          // Layout exists and has entities (bounding box is not empty), no need to reload
-          return
-        }
+      if (layout && layout.isLoaded) {
+        return
       }
 
       // Collect all entities from this layout
@@ -811,6 +806,10 @@ export class AcTrView2d extends AcEdBaseView {
         this._numOfEntitiesToProcess += entities.length
         setTimeout(async () => {
           await this.batchConvert(entities)
+          const layout = this._scene.layouts.get(layoutBtrId)
+          if (layout) {
+            layout.isLoaded = true
+          }
         })
       }
     } catch (error) {
@@ -876,13 +875,13 @@ export class AcTrView2d extends AcEdBaseView {
       }
 
       // First, try to ignore viewport with number === 1
-      let filtered = viewports.filter(vp => vp.number !== 1)
+      const filtered = viewports.filter(vp => vp.number !== 1)
 
       // If nothing was filtered (i.e., no viewport with number === 1),
       // then ignore the first viewport in this layout
-      if (filtered.length === viewports.length && viewports.length > 0) {
-        filtered = viewports.slice(1)
-      }
+      // if (filtered.length === viewports.length && viewports.length > 0) {
+      //   filtered = viewports.slice(1)
+      // }
 
       filtered.forEach(vp => {
         validViewportIds.add(vp.objectId)
