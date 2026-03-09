@@ -8,6 +8,11 @@ import { useI18n } from 'vue-i18n'
 import { useDocOpenMode, useSettings } from '../../composable'
 import {
   layer,
+  measureAngle,
+  measureArea,
+  measureClear,
+  measureDist,
+  measureGroup,
   move,
   revCircle,
   revCloud,
@@ -22,63 +27,6 @@ import {
 const { t } = useI18n()
 const features = useSettings()
 const docOpenMode = useDocOpenMode()
-
-const itemsInReviewMode: MlButtonData[] = [
-  {
-    icon: switchBg,
-    text: t('main.verticalToolbar.switchBg.text'),
-    command: 'switchbg',
-    description: t('main.verticalToolbar.switchBg.description')
-  },
-  {
-    icon: ChatDotRound,
-    text: t('main.verticalToolbar.annotation.text'),
-    command: '',
-    description: t('main.verticalToolbar.annotation.description'),
-    children: [
-      {
-        icon: revFreeDraw,
-        text: t('main.verticalToolbar.revFreehand.text'),
-        command: 'sketch',
-        description: t('main.verticalToolbar.revFreehand.description')
-      },
-      {
-        icon: revRect,
-        text: t('main.verticalToolbar.revRect.text'),
-        command: 'revrect',
-        description: t('main.verticalToolbar.revRect.description')
-      },
-      {
-        icon: revCloud,
-        text: t('main.verticalToolbar.revCloud.text'),
-        command: 'revcloud',
-        description: t('main.verticalToolbar.revCloud.description')
-      },
-      {
-        icon: revCircle,
-        text: t('main.verticalToolbar.revCircle.text'),
-        command: 'revcircle',
-        description: t('main.verticalToolbar.revCircle.description')
-      }
-    ]
-  },
-  {
-    command: 'revvis',
-    toggle: {
-      value: true,
-      on: {
-        icon: View,
-        text: t('main.verticalToolbar.showAnnotation.text'),
-        description: t('main.verticalToolbar.showAnnotation.description')
-      },
-      off: {
-        icon: Hide,
-        text: t('main.verticalToolbar.hideAnnotation.text'),
-        description: t('main.verticalToolbar.showAnnotation.description')
-      }
-    }
-  }
-]
 
 const verticalToolbarData = computed(() => {
   const items: MlButtonData[] = [
@@ -111,12 +59,99 @@ const verticalToolbarData = computed(() => {
       text: t('main.verticalToolbar.layer.text'),
       command: 'la',
       description: t('main.verticalToolbar.layer.description')
+    },
+    {
+      icon: measureGroup,
+      text: t('main.verticalToolbar.measure.text'),
+      command: '',
+      description: t('main.verticalToolbar.measure.description'),
+      children: [
+        {
+          icon: measureDist,
+          text: t('main.verticalToolbar.measureDist.text'),
+          command: 'measureDist',
+          description: t('main.verticalToolbar.measureDist.description')
+        },
+        {
+          icon: measureArea,
+          text: t('main.verticalToolbar.measureArea.text'),
+          command: 'measureArea',
+          description: t('main.verticalToolbar.measureArea.description')
+        },
+        {
+          icon: measureAngle,
+          text: t('main.verticalToolbar.measureAngle.text'),
+          command: 'measureAngle',
+          description: t('main.verticalToolbar.measureAngle.description')
+        },
+        {
+          icon: measureClear,
+          text: t('main.verticalToolbar.measureClear.text'),
+          command: 'measureClear',
+          description: t('main.verticalToolbar.measureClear.description')
+        }
+      ]
     }
   ]
 
   // Only show Comment tools in Review mode or higher
   if (docOpenMode.value >= AcEdOpenMode.Review) {
-    items.push(...itemsInReviewMode)
+    items.push(
+      {
+        icon: switchBg,
+        text: t('main.verticalToolbar.switchBg.text'),
+        command: 'switchbg',
+        description: t('main.verticalToolbar.switchBg.description')
+      },
+      {
+        icon: ChatDotRound,
+        text: t('main.verticalToolbar.annotation.text'),
+        command: '',
+        description: t('main.verticalToolbar.annotation.description'),
+        children: [
+          {
+            icon: revFreeDraw,
+            text: t('main.verticalToolbar.revFreehand.text'),
+            command: 'sketch',
+            description: t('main.verticalToolbar.revFreehand.description')
+          },
+          {
+            icon: revRect,
+            text: t('main.verticalToolbar.revRect.text'),
+            command: 'revrect',
+            description: t('main.verticalToolbar.revRect.description')
+          },
+          {
+            icon: revCloud,
+            text: t('main.verticalToolbar.revCloud.text'),
+            command: 'revcloud',
+            description: t('main.verticalToolbar.revCloud.description')
+          },
+          {
+            icon: revCircle,
+            text: t('main.verticalToolbar.revCircle.text'),
+            command: 'revcircle',
+            description: t('main.verticalToolbar.revCircle.description')
+          }
+        ]
+      },
+      {
+        command: 'revvis',
+        toggle: {
+          value: true,
+          on: {
+            icon: View,
+            text: t('main.verticalToolbar.showAnnotation.text'),
+            description: t('main.verticalToolbar.showAnnotation.description')
+          },
+          off: {
+            icon: Hide,
+            text: t('main.verticalToolbar.hideAnnotation.text'),
+            description: t('main.verticalToolbar.showAnnotation.description')
+          }
+        }
+      }
+    )
   }
   return items
 })

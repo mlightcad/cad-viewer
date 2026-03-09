@@ -3,6 +3,10 @@ import { markRaw } from 'vue'
 
 import {
   AcApLayerStateCmd,
+  AcApMeasureAngleCmd,
+  AcApMeasureAreaCmd,
+  AcApMeasureClearCmd,
+  AcApMeasureDistCmd,
   AcApMissedDataCmd,
   AcApPointStyleCmd
 } from '../command'
@@ -30,6 +34,30 @@ export const registerCmds = () => {
       'pttype',
       'pttype',
       new AcApPointStyleCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'measureDist',
+      'measureDist',
+      new AcApMeasureDistCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'measureArea',
+      'measureArea',
+      new AcApMeasureAreaCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'measureAngle',
+      'measureAngle',
+      new AcApMeasureAngleCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'measureClear',
+      'measureClear',
+      new AcApMeasureClearCmd()
     )
     isCommandRegistered = true
   }

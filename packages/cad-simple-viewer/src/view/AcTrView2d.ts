@@ -18,7 +18,9 @@ import {
 import {
   AcTrEntity,
   AcTrGroup,
+  AcTrLineMaterialManager,
   AcTrRenderer,
+  AcTrSolidLineShaders,
   AcTrViewportView
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
@@ -111,6 +113,8 @@ export class AcTrView2d extends AcEdBaseView {
   private _missedImages: Map<AcDbObjectId, string>
   /** The number of entities waiting for processing */
   private _numOfEntitiesToProcess: number
+  /** Overlay scene for transient objects (measurements, etc.) rendered on top of the CAD scene */
+  private _overlayScene: THREE.Scene
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -172,7 +176,7 @@ export class AcTrView2d extends AcEdBaseView {
     })
 
     this.canvas.addEventListener('click', () => {
-      if (this.mode == AcEdViewMode.SELECTION) {
+      if (this.mode == AcEdViewMode.SELECTION && !this.editor.isActive) {
         this.select()
       }
     })
@@ -201,6 +205,7 @@ export class AcTrView2d extends AcEdBaseView {
     )
 
     this._missedImages = new Map()
+    this._overlayScene = new THREE.Scene()
     this._layoutViewManager = new AcTrLayoutViewManager()
     this.initialize()
     this.onWindowResize()
@@ -716,12 +721,91 @@ export class AcTrView2d extends AcEdBaseView {
     this._isDirty = true
   }
 
+  /**
+   * Adds a Three.js object to the overlay scene rendered on top of the CAD drawing.
+   * Objects in this scene share the same camera/coordinate system as the CAD scene,
+   * so they automatically follow pan and zoom without any coordinate recalculation.
+   */
+  addOverlayObject(obj: THREE.Object3D) {
+    this._overlayScene.add(obj)
+    this._isDirty = true
+  }
+
+  /**
+   * Removes a Three.js object from the overlay scene.
+   */
+  removeOverlayObject(obj: THREE.Object3D) {
+    this._overlayScene.remove(obj)
+    this._isDirty = true
+  }
+
+  /**
+   * Removes all objects from the overlay scene.
+   */
+  clearOverlay() {
+    this._overlayScene.clear()
+    this._isDirty = true
+  }
+
+  /**
+   * Adds a polyline to the overlay scene using world-space points.
+   * Returns the created Line object so the caller can remove it later.
+   * @param points - Array of {x, y} world-space points
+   * @param color - Hex color number (default cyan 0x00e5ff)
+   */
+  addMeasureLine(points: { x: number; y: number }[], color = 0x00e5ff): THREE.Object3D {
+    const vertexCount = points.length
+    const segmentCount = vertexCount - 1
+    if (segmentCount <= 0) return new THREE.Object3D()
+
+    const vertices = new Float32Array(vertexCount * 3)
+    const indices = new Uint16Array(segmentCount * 2)
+    for (let i = 0; i < vertexCount; i++) {
+      vertices[i * 3] = points[i].x
+      vertices[i * 3 + 1] = points[i].y
+      vertices[i * 3 + 2] = 0
+    }
+    for (let i = 0; i < segmentCount; i++) {
+      indices[i * 2] = i
+      indices[i * 2 + 1] = i + 1
+    }
+
+    const quadGeo = AcTrSolidLineShaders.buildQuadGeometry(vertices, indices)
+    const mat = AcTrSolidLineShaders.createMaterial(
+      color, 1.0, AcTrLineMaterialManager.ResolutionUniform
+    )
+    mat.depthTest = false
+    const mesh = new THREE.Mesh(quadGeo, mat)
+    mesh.frustumCulled = false
+    mesh.renderOrder = 999
+    this.addOverlayObject(mesh)
+    return mesh
+  }
+
+  /**
+   * Adds point markers to the overlay scene using world-space points.
+   * Returns the created Points object so the caller can remove it later.
+   * @param points - Array of {x, y} world-space points
+   * @param color - Hex color number (default cyan 0x00e5ff)
+   */
+  addMeasurePoints(points: { x: number; y: number }[], color = 0x00e5ff): THREE.Points {
+    const positions: number[] = []
+    for (const p of points) positions.push(p.x, p.y, 0)
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    const mat = new THREE.PointsMaterial({ color, size: 6, sizeAttenuation: false, depthTest: false })
+    const pts = new THREE.Points(geo, mat)
+    pts.renderOrder = 999
+    this.addOverlayObject(pts)
+    return pts
+  }
+
   private animate = () => {
     this._rafId = requestAnimationFrame(this.animate)
 
     if (!this._isDirty) return
 
-    this._layoutViewManager.render(this._scene)
+    this._layoutViewManager.render(this._scene, this._overlayScene)
     this._stats?.update()
     this._isDirty = false
   }

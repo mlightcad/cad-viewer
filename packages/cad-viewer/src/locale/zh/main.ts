@@ -60,6 +60,30 @@ export default {
     zoomToBox: {
       text: '矩形缩放',
       description: '缩放以显示矩形窗口内的对象'
+    },
+    measure: {
+      text: '测量',
+      description: '测量工具'
+    },
+    measureDist: {
+      text: '测量距离',
+      command: 'measureDist',
+      description: '点击两点测量距离'
+    },
+    measureArea: {
+      text: '测量面积',
+      command: 'measureArea',
+      description: '点击多点测量面积'
+    },
+    measureAngle: {
+      text: '测量角度',
+      command: 'measureAngle',
+      description: '点击三点测量角度（顶点、边1、边2）'
+    },
+    measureClear: {
+      text: '清除测量',
+      command: 'measureClear',
+      description: '清除所有测量标注'
     }
   },
   statusBar: {
@@ -147,6 +171,24 @@ export default {
     fetchingDrawingFile: '正在加载图纸文件...',
     unknownEntities:
       '这张图纸中包含了{count}个未知或不支持的实体，这些实体将无法显示！'
+  },
+  measure: {
+    dist: {
+      firstPoint: '测量距离 - 指定第一点',
+      secondPoint: '测量距离 - 指定第二点',
+      result: '距离: {value}'
+    },
+    area: {
+      firstPoint: '测量面积 - 指定第一点（按 Esc 结束）',
+      nextPoint: '测量面积 - 指定下一点（已选 {count} 点，按 Esc 结束）',
+      result: '面积: {value}'
+    },
+    angle: {
+      vertex: '测量角度 - 指定角顶点',
+      arm1: '测量角度 - 指定第一条边上的点',
+      arm2: '测量角度 - 指定第二条边上的点',
+      result: '角度: {value}°'
+    }
   },
   notification: {
     center: {

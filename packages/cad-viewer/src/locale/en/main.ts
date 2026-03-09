@@ -66,6 +66,30 @@ export default {
     zoomToBox: {
       text: 'Zoom Window',
       description: 'Zooms to display an area specified by a rectangular window'
+    },
+    measure: {
+      text: 'Measure',
+      description: 'Measurement tools'
+    },
+    measureDist: {
+      text: 'Distance',
+      command: 'measureDist',
+      description: 'Click two points to measure distance'
+    },
+    measureArea: {
+      text: 'Area',
+      command: 'measureArea',
+      description: 'Click multiple points to measure area'
+    },
+    measureAngle: {
+      text: 'Angle',
+      command: 'measureAngle',
+      description: 'Click three points to measure angle (vertex, arm1, arm2)'
+    },
+    measureClear: {
+      text: 'Clear',
+      command: 'measureClear',
+      description: 'Clear all measurements'
     }
   },
   statusBar: {
@@ -153,6 +177,24 @@ export default {
     fetchingDrawingFile: 'Fetching file ...',
     unknownEntities:
       'This drawing contains {count} unknown or unsupported entities! Those entities will not be shown.'
+  },
+  measure: {
+    dist: {
+      firstPoint: 'Measure distance - Specify first point',
+      secondPoint: 'Measure distance - Specify second point',
+      result: 'Distance: {value}'
+    },
+    area: {
+      firstPoint: 'Measure area - Specify first point (Esc to finish)',
+      nextPoint: 'Measure area - Specify next point ({count} points selected, Esc to finish)',
+      result: 'Area: {value}'
+    },
+    angle: {
+      vertex: 'Measure angle - Specify vertex',
+      arm1: 'Measure angle - Specify point on first arm',
+      arm2: 'Measure angle - Specify point on second arm',
+      result: 'Angle: {value}°'
+    }
   },
   notification: {
     center: {

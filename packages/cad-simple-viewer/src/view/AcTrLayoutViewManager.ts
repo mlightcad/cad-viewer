@@ -1,3 +1,5 @@
+import * as THREE from 'three'
+
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrScene } from './AcTrScene'
 
@@ -115,7 +117,7 @@ export class AcTrLayoutViewManager {
    *
    * @param scene - Input the scene to render
    */
-  render(scene: AcTrScene) {
-    this.activeLayoutView?.render(scene)
+  render(scene: AcTrScene, overlayScene?: THREE.Scene) {
+    this.activeLayoutView?.render(scene, overlayScene)
   }
 }

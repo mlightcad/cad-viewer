@@ -151,12 +151,19 @@ export class AcTrLayoutView extends AcTrBaseView {
    *
    * @param scene - The scene containing the layout data to render
    */
-  render(scene: AcTrScene) {
+  render(scene: AcTrScene, overlayScene?: THREE.Scene) {
     this._renderer.clear()
     this._renderer.render(scene.internalScene, this._camera)
     const modelSpaceLayout = scene.modelSpaceLayout
     if (modelSpaceLayout) {
       this.drawViewports(modelSpaceLayout.internalObject)
+    }
+    if (overlayScene) {
+      const autoClear = this._renderer.autoClear
+      this._renderer.autoClear = false
+      this._renderer.clearDepth()
+      this._renderer.render(overlayScene, this._camera)
+      this._renderer.autoClear = autoClear
     }
     this._axesGizmo?.update()
   }
