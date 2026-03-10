@@ -3,7 +3,11 @@ import {
   AcApOpenDatabaseOptions,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
-import { AcDbSysVarManager, log } from '@mlightcad/data-model'
+import {
+  AcDbSystemVariables,
+  AcDbSysVarManager,
+  log
+} from '@mlightcad/data-model'
 
 class CadViewerApp {
   private container: HTMLDivElement
@@ -133,7 +137,7 @@ class CadViewerApp {
       }
 
       const currentPickbox = AcDbSysVarManager.instance().getVar(
-        'pickbox',
+        AcDbSystemVariables.PICKBOX,
         AcApDocManager.instance.curDocument.database
       )
       const initialPickbox =
@@ -152,7 +156,9 @@ class CadViewerApp {
         return
       }
 
-      AcApDocManager.instance.sendStringToExecute(`pickbox\n${pickboxValue}`)
+      AcApDocManager.instance.sendStringToExecute(
+        `${AcDbSystemVariables.PICKBOX}\n${pickboxValue}`
+      )
       this.showMessage(`Pickbox set to: ${pickboxValue}`, 'success')
     })
 

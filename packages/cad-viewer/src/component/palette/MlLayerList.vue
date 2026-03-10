@@ -16,6 +16,16 @@
       :label="t('main.toolPalette.layerManager.layerList.on')"
       width="50"
     >
+      <template #header>
+        <div class="ml-layer-list-header-toggle">
+          <el-checkbox
+            :model-value="isAllOn"
+            :indeterminate="isSomeOn"
+            :aria-label="t('main.toolPalette.layerManager.layerList.on')"
+            @change="handleToggleAll"
+          />
+        </div>
+      </template>
       <template #default="scope">
         <div class="ml-layer-list-cell">
           <el-checkbox
@@ -56,7 +66,7 @@
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
 import { ElMessage, ElTable } from 'element-plus'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { LayerInfo, useLayers } from '../../composable'
@@ -82,6 +92,35 @@ const props = defineProps<Props>()
  * This composable also updates automatically when CAD document changes.
  */
 const { layers } = useLayers(props.editor)
+
+/**
+ * ===== Master Layer Visibility Toggle =====
+ */
+const isAllOn = computed(() => {
+  if (!layers.length) return false
+  return layers.every(layer => layer.isOn)
+})
+
+const isSomeOn = computed(() => {
+  if (!layers.length) return false
+  const anyOn = layers.some(layer => layer.isOn)
+  return anyOn && !isAllOn.value
+})
+
+const setLayerVisibility = (row: LayerInfo, isOn: boolean) => {
+  row.isOn = isOn
+  const layer = props.editor.curDocument.database.tables.layerTable.getAt(
+    row.name
+  )
+  if (layer) layer.isOff = !isOn
+}
+
+const handleToggleAll = (isOn: boolean) => {
+  layers.forEach(row => {
+    if (row.isOn === isOn) return
+    setLayerVisibility(row, isOn)
+  })
+}
 
 /**
  * Triggered when a row in the layer list table is double-clicked.
@@ -113,10 +152,7 @@ const handleRowDbClick = (row: LayerInfo) => {
  * @param row - LayerInfo for the row being changed
  */
 const handleLayerVisibility = (row: LayerInfo) => {
-  const layer = props.editor.curDocument.database.tables.layerTable.getAt(
-    row.name
-  )
-  if (layer) layer.isOff = !row.isOn
+  setLayerVisibility(row, row.isOn)
 }
 
 /**
@@ -197,6 +233,13 @@ const handleColorDialogCancel = () => {
 
 /* Flex container for centered cell content */
 .ml-layer-list-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Center master toggle in header */
+.ml-layer-list-header-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
