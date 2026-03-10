@@ -15,6 +15,9 @@ export default {
     circle: {
       description: '使用圆心和半径创建圆'
     },
+    colortheme: {
+      description: '控制用户界面的颜色主题（深色或浅色）'
+    },
     csvg: {
       description: '转换当前图纸为SVG格式'
     },
