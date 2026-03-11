@@ -14,6 +14,7 @@ import {
 } from '../editor'
 import { eventBus } from '../editor/global/eventBus'
 import { AcApI18n } from '../i18n'
+import { MEASUREMENT_CANVAS_LINE_WIDTH, MEASUREMENT_COLOR } from '../util'
 
 interface CircleGeom {
   cx: number
@@ -112,8 +113,8 @@ function drawArcOnCanvas(
 
   ctx.beginPath()
   ctx.arc(sc.x, sc.y, screenR, sa, ea, antiClockwise)
-  ctx.strokeStyle = '#60a5fa'
-  ctx.lineWidth = 4
+  ctx.strokeStyle = MEASUREMENT_COLOR
+  ctx.lineWidth = MEASUREMENT_CANVAS_LINE_WIDTH
   ctx.stroke()
 
   ctx.restore()
@@ -145,7 +146,7 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
     this._indicator = document.createElement('div')
     this._indicator.style.cssText =
-      'position:fixed;width:10px;height:10px;border:2px solid #60a5fa;' +
+      `position:fixed;width:10px;height:10px;border:2px solid ${MEASUREMENT_COLOR};` +
       'background:transparent;pointer-events:none;box-sizing:border-box;' +
       'transform:translate(-50%,-50%);z-index:99998;display:none;'
     document.body.appendChild(this._indicator)
@@ -217,7 +218,7 @@ class AcApArcEndSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
     this._indicator = document.createElement('div')
     this._indicator.style.cssText =
-      'position:fixed;width:10px;height:10px;border:2px solid #60a5fa;' +
+      `position:fixed;width:10px;height:10px;border:2px solid ${MEASUREMENT_COLOR};` +
       'background:transparent;pointer-events:none;box-sizing:border-box;' +
       'transform:translate(-50%,-50%);z-index:99998;'
     document.body.appendChild(this._indicator)
@@ -309,8 +310,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     // dot1 and liveBadge are short-lived during construction
     const dot1 = document.createElement('div')
     dot1.style.cssText =
-      'position:fixed;width:12px;height:12px;border-radius:50%;' +
-      'background:#60a5fa;border:2px solid white;box-sizing:border-box;' +
+      `position:fixed;width:12px;height:12px;border-radius:50%;` +
+      `background:${MEASUREMENT_COLOR};border:2px solid white;box-sizing:border-box;` +
       'pointer-events:none;transform:translate(-50%,-50%);z-index:99999;'
     const liveBadge = document.createElement('div')
     liveBadge.style.cssText =
