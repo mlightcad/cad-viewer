@@ -16,8 +16,8 @@ import { onMounted, onUnmounted } from 'vue'
 function makeDot(): HTMLDivElement {
   const el = document.createElement('div')
   el.style.cssText =
-    `position:fixed;width:12px;height:12px;border-radius:50%;` +
-    `background:${MEASUREMENT_COLOR};border:2px solid white;box-sizing:border-box;` +
+    'position:fixed;width:12px;height:12px;border-radius:50%;' +
+    'background:' + MEASUREMENT_COLOR + ';border:2px solid white;box-sizing:border-box;' +
     'pointer-events:none;transform:translate(-50%,-50%);z-index:99999;'
   return el
 }

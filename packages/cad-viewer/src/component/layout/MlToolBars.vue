@@ -10,6 +10,7 @@ import {
   clearMeasurements,
   layer,
   measure,
+  measureAngle,
   measureArc,
   measureArea,
   measureDistance,
@@ -27,63 +28,6 @@ import {
 const { t } = useI18n()
 const features = useSettings()
 const docOpenMode = useDocOpenMode()
-
-const itemsInReviewMode: MlButtonData[] = [
-  {
-    icon: switchBg,
-    text: t('main.verticalToolbar.switchBg.text'),
-    command: 'switchbg',
-    description: t('main.verticalToolbar.switchBg.description')
-  },
-  {
-    icon: ChatDotRound,
-    text: t('main.verticalToolbar.annotation.text'),
-    command: '',
-    description: t('main.verticalToolbar.annotation.description'),
-    children: [
-      {
-        icon: revFreeDraw,
-        text: t('main.verticalToolbar.revFreehand.text'),
-        command: 'sketch',
-        description: t('main.verticalToolbar.revFreehand.description')
-      },
-      {
-        icon: revRect,
-        text: t('main.verticalToolbar.revRect.text'),
-        command: 'revrect',
-        description: t('main.verticalToolbar.revRect.description')
-      },
-      {
-        icon: revCloud,
-        text: t('main.verticalToolbar.revCloud.text'),
-        command: 'revcloud',
-        description: t('main.verticalToolbar.revCloud.description')
-      },
-      {
-        icon: revCircle,
-        text: t('main.verticalToolbar.revCircle.text'),
-        command: 'revcircle',
-        description: t('main.verticalToolbar.revCircle.description')
-      }
-    ]
-  },
-  {
-    command: 'revvis',
-    toggle: {
-      value: true,
-      on: {
-        icon: View,
-        text: t('main.verticalToolbar.showAnnotation.text'),
-        description: t('main.verticalToolbar.showAnnotation.description')
-      },
-      off: {
-        icon: Hide,
-        text: t('main.verticalToolbar.hideAnnotation.text'),
-        description: t('main.verticalToolbar.showAnnotation.description')
-      }
-    }
-  }
-]
 
 const verticalToolbarData = computed(() => {
   const items: MlButtonData[] = [
@@ -130,6 +74,12 @@ const verticalToolbarData = computed(() => {
           description: t('main.verticalToolbar.measureDistance.description')
         },
         {
+          icon: measureAngle,
+          text: t('main.verticalToolbar.measureAngle.text'),
+          command: 'measureangle',
+          description: t('main.verticalToolbar.measureAngle.description')
+        },
+        {
           icon: measureArea,
           text: t('main.verticalToolbar.measureArea.text'),
           command: 'measurearea',
@@ -153,7 +103,62 @@ const verticalToolbarData = computed(() => {
 
   // Only show Comment tools in Review mode or higher
   if (docOpenMode.value >= AcEdOpenMode.Review) {
-    items.push(...itemsInReviewMode)
+    items.push(
+      {
+        icon: switchBg,
+        text: t('main.verticalToolbar.switchBg.text'),
+        command: 'switchbg',
+        description: t('main.verticalToolbar.switchBg.description')
+      },
+      {
+        icon: ChatDotRound,
+        text: t('main.verticalToolbar.annotation.text'),
+        command: '',
+        description: t('main.verticalToolbar.annotation.description'),
+        children: [
+          {
+            icon: revFreeDraw,
+            text: t('main.verticalToolbar.revFreehand.text'),
+            command: 'sketch',
+            description: t('main.verticalToolbar.revFreehand.description')
+          },
+          {
+            icon: revRect,
+            text: t('main.verticalToolbar.revRect.text'),
+            command: 'revrect',
+            description: t('main.verticalToolbar.revRect.description')
+          },
+          {
+            icon: revCloud,
+            text: t('main.verticalToolbar.revCloud.text'),
+            command: 'revcloud',
+            description: t('main.verticalToolbar.revCloud.description')
+          },
+          {
+            icon: revCircle,
+            text: t('main.verticalToolbar.revCircle.text'),
+            command: 'revcircle',
+            description: t('main.verticalToolbar.revCircle.description')
+          }
+        ]
+      },
+      {
+        command: 'revvis',
+        toggle: {
+          value: true,
+          on: {
+            icon: View,
+            text: t('main.verticalToolbar.showAnnotation.text'),
+            description: t('main.verticalToolbar.showAnnotation.description')
+          },
+          off: {
+            icon: Hide,
+            text: t('main.verticalToolbar.hideAnnotation.text'),
+            description: t('main.verticalToolbar.showAnnotation.description')
+          }
+        }
+      }
+    )
   }
   return items
 })

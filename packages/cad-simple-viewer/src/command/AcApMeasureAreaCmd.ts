@@ -1,8 +1,4 @@
-import {
-  AcDbLine,
-  AcGePoint3dLike,
-  AcGiLineWeight
-} from '@mlightcad/data-model'
+import { AcDbLine, AcGePoint3dLike } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
 import {
@@ -14,7 +10,8 @@ import {
 } from '../editor'
 import { eventBus } from '../editor/global/eventBus'
 import { AcApI18n } from '../i18n'
-import { blueColor } from '../util'
+import { createMeasurementLine, MEASUREMENT_CANVAS_LINE_WIDTH, MEASUREMENT_COLOR, MEASUREMENT_COLOR_FILL } from '../util'
+import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 /**
  * Rubber-band jig: shows a preview line from the last confirmed
@@ -30,9 +27,7 @@ class AcApMeasureAreaJig extends AcEdPreviewJig<AcGePoint3dLike> {
     onMove: (p: AcGePoint3dLike) => void
   ) {
     super(view)
-    this._line = new AcDbLine(from, from)
-    this._line.color = blueColor()
-    this._line.lineWeight = AcGiLineWeight.LineWeight070
+    this._line = createMeasurementLine(from, from)
     this._onMove = onMove
   }
 
@@ -163,7 +158,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         for (let i = 1; i < fillSpts.length; i++)
           ctx.lineTo(fillSpts[i].x, fillSpts[i].y)
         ctx.closePath()
-        ctx.fillStyle = 'rgba(96, 165, 250, 0.2)'
+        ctx.fillStyle = MEASUREMENT_COLOR_FILL
         ctx.fill()
       }
 
@@ -172,8 +167,8 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         ctx.moveTo(confirmedSpts[0].x, confirmedSpts[0].y)
         for (let i = 1; i < confirmedSpts.length; i++)
           ctx.lineTo(confirmedSpts[i].x, confirmedSpts[i].y)
-        ctx.strokeStyle = '#60a5fa'
-        ctx.lineWidth = 2.5
+        ctx.strokeStyle = MEASUREMENT_COLOR
+        ctx.lineWidth = MEASUREMENT_CANVAS_LINE_WIDTH
         ctx.setLineDash([8, 5])
         ctx.stroke()
         ctx.setLineDash([])
@@ -259,6 +254,21 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     if (points.length < 3) return
 
     const area = shoelaceArea(points)
+
+    // CAD transient lines for the polygon edges (zoom/pan aware)
+    const lines: AcDbLine[] = []
+    for (let i = 0; i < points.length; i++) {
+      const j = (i + 1) % points.length
+      const line = createMeasurementLine(points[i], points[j])
+      context.view.addTransientEntity(line)
+      lines.push(line)
+    }
+
+    registerMeasurementCleanup(() => {
+      for (const line of lines) {
+        context.view.removeTransientEntity(line.objectId)
+      }
+    })
 
     // Notify the useMeasurements composable to render the persistent DOM overlay
     eventBus.emit('measurement-added', { type: 'area', points, area })

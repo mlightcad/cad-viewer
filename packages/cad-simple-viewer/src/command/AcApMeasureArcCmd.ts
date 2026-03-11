@@ -310,8 +310,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     // dot1 and liveBadge are short-lived during construction
     const dot1 = document.createElement('div')
     dot1.style.cssText =
-      `position:fixed;width:12px;height:12px;border-radius:50%;` +
-      `background:${MEASUREMENT_COLOR};border:2px solid white;box-sizing:border-box;` +
+      'position:fixed;width:12px;height:12px;border-radius:50%;' +
+      'background:' + MEASUREMENT_COLOR + ';border:2px solid white;box-sizing:border-box;' +
       'pointer-events:none;transform:translate(-50%,-50%);z-index:99999;'
     const liveBadge = document.createElement('div')
     liveBadge.style.cssText =

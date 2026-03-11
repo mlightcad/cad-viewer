@@ -15,7 +15,7 @@ export class AcApAnnotation {
    * Default annotation color is red
    */
   static DEFAULT_ANNOTATION_COLOR = new AcCmColor(AcCmColorMethod.ByACI, 1)
-  static DEFAULT_ANNOTATION_LINE_WEIGHT = AcGiLineWeight.LineWeight100
+  static DEFAULT_ANNOTATION_LINE_WEIGHT = AcGiLineWeight.LineWeight040
   private _database: AcDbDatabase
 
   constructor(db: AcDbDatabase) {
