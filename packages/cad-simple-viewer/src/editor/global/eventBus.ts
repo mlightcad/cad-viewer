@@ -33,6 +33,13 @@ export type MeasurementRecord =
       arcLen: number
       mid: AcGePoint3dLike
     }
+  | {
+      type: 'angle'
+      vertex: AcGePoint3dLike
+      arm1: AcGePoint3dLike
+      arm2: AcGePoint3dLike
+      degrees: number
+    }
 
 /**
  * Type definition for all events that can be emitted through the global event bus.

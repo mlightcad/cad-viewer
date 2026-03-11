@@ -1,7 +1,11 @@
 import {
   AcApDocManager,
   eventBus,
-  MeasurementRecord
+  MEASUREMENT_CANVAS_LINE_WIDTH,
+  MEASUREMENT_COLOR,
+  MEASUREMENT_COLOR_FILL,
+  MeasurementRecord,
+  prepareCanvasOverlay
 } from '@mlightcad/cad-simple-viewer'
 import { onMounted, onUnmounted } from 'vue'
 
@@ -13,7 +17,7 @@ function makeDot(): HTMLDivElement {
   const el = document.createElement('div')
   el.style.cssText =
     'position:fixed;width:12px;height:12px;border-radius:50%;' +
-    'background:#60a5fa;border:2px solid white;box-sizing:border-box;' +
+    'background:' + MEASUREMENT_COLOR + ';border:2px solid white;box-sizing:border-box;' +
     'pointer-events:none;transform:translate(-50%,-50%);z-index:99999;'
   return el
 }
@@ -35,6 +39,24 @@ function placeAt(el: HTMLElement, sx: number, sy: number, rect: DOMRect): void {
   el.style.top = `${sy + rect.top}px`
 }
 
+// ─── Shared canvas setup ─────────────────────────────────────────────────────
+
+/**
+ * Thin wrapper around {@link prepareCanvasOverlay} that resolves the active
+ * view's canvas automatically.
+ */
+function prepareCanvas(
+  canvas: HTMLCanvasElement
+): CanvasRenderingContext2D | null {
+  const view = AcApDocManager.instance.curView
+  if (!view) return null
+  return prepareCanvasOverlay(canvas, view.canvas)
+}
+
+/** Normalises an angle into [0, 2π). */
+const normaliseAngle = (a: number) =>
+  ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+
 // ─── Arc canvas helper ────────────────────────────────────────────────────────
 
 function drawArcOnCanvas(
@@ -44,29 +66,8 @@ function drawArcOnCanvas(
   p2: { x: number; y: number }
 ): void {
   const view = AcApDocManager.instance.curView
-  if (!view) return
-
-  const rect = view.canvas.getBoundingClientRect()
-  const dpr = window.devicePixelRatio || 1
-  const w = Math.round(rect.width)
-  const h = Math.round(rect.height)
-
-  canvas.style.left = `${rect.left}px`
-  canvas.style.top = `${rect.top}px`
-  canvas.style.width = `${w}px`
-  canvas.style.height = `${h}px`
-
-  if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-    canvas.width = w * dpr
-    canvas.height = h * dpr
-  }
-
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.save()
-  ctx.scale(dpr, dpr)
+  const ctx = prepareCanvas(canvas)
+  if (!ctx || !view) return
 
   const sc = view.worldToScreen({ x: g.cx, y: g.cy })
   const ss = view.worldToScreen(p1)
@@ -75,18 +76,13 @@ function drawArcOnCanvas(
 
   const sa = Math.atan2(ss.y - sc.y, ss.x - sc.x)
   const ea = Math.atan2(se.y - sc.y, se.x - sc.x)
-
-  const norm = (a: number) =>
-    ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
-  const cwSpan = norm(ea - sa)
-  const antiClockwise = cwSpan > Math.PI
+  const antiClockwise = normaliseAngle(ea - sa) > Math.PI
 
   ctx.beginPath()
   ctx.arc(sc.x, sc.y, screenR, sa, ea, antiClockwise)
-  ctx.strokeStyle = '#60a5fa'
-  ctx.lineWidth = 4
+  ctx.strokeStyle = MEASUREMENT_COLOR
+  ctx.lineWidth = MEASUREMENT_CANVAS_LINE_WIDTH
   ctx.stroke()
-
   ctx.restore()
 }
 
@@ -97,29 +93,8 @@ function drawAreaOnCanvas(
   points: { x: number; y: number }[]
 ): void {
   const view = AcApDocManager.instance.curView
-  if (!view) return
-
-  const rect = view.canvas.getBoundingClientRect()
-  const dpr = window.devicePixelRatio || 1
-  const w = Math.round(rect.width)
-  const h = Math.round(rect.height)
-
-  canvas.style.left = `${rect.left}px`
-  canvas.style.top = `${rect.top}px`
-  canvas.style.width = `${w}px`
-  canvas.style.height = `${h}px`
-
-  if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-    canvas.width = w * dpr
-    canvas.height = h * dpr
-  }
-
-  const ctx = canvas.getContext('2d')
-  if (!ctx || points.length < 3) return
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.save()
-  ctx.scale(dpr, dpr)
+  const ctx = prepareCanvas(canvas)
+  if (!ctx || !view || points.length < 3) { ctx?.restore(); return }
 
   const spts = points.map(p => view.worldToScreen(p))
 
@@ -127,12 +102,40 @@ function drawAreaOnCanvas(
   ctx.moveTo(spts[0].x, spts[0].y)
   for (let i = 1; i < spts.length; i++) ctx.lineTo(spts[i].x, spts[i].y)
   ctx.closePath()
-  ctx.fillStyle = 'rgba(96, 165, 250, 0.2)'
+  ctx.fillStyle = MEASUREMENT_COLOR_FILL
   ctx.fill()
-  ctx.strokeStyle = '#60a5fa'
-  ctx.lineWidth = 2.5
-  ctx.stroke()
+  ctx.restore()
+}
 
+// ─── Angle canvas helper ─────────────────────────────────────────────────────
+
+function drawAngleOnCanvas(
+  canvas: HTMLCanvasElement,
+  vertex: { x: number; y: number },
+  arm1: { x: number; y: number },
+  arm2: { x: number; y: number }
+): void {
+  const view = AcApDocManager.instance.curView
+  const ctx = prepareCanvas(canvas)
+  if (!ctx || !view) return
+
+  const sv = view.worldToScreen(vertex)
+  const sa1 = view.worldToScreen(arm1)
+  const sa2 = view.worldToScreen(arm2)
+
+  const len1 = Math.hypot(sa1.x - sv.x, sa1.y - sv.y)
+  const len2 = Math.hypot(sa2.x - sv.x, sa2.y - sv.y)
+  const arcR = Math.max(Math.min(len1, len2) * 0.3, 15)
+
+  const startAngle = Math.atan2(sa1.y - sv.y, sa1.x - sv.x)
+  const endAngle = Math.atan2(sa2.y - sv.y, sa2.x - sv.x)
+  const antiClockwise = normaliseAngle(endAngle - startAngle) > Math.PI
+
+  ctx.beginPath()
+  ctx.arc(sv.x, sv.y, arcR, startAngle, endAngle, antiClockwise)
+  ctx.strokeStyle = MEASUREMENT_COLOR
+  ctx.lineWidth = MEASUREMENT_CANVAS_LINE_WIDTH
+  ctx.stroke()
   ctx.restore()
 }
 
@@ -255,6 +258,57 @@ function renderArc(
   }
 }
 
+function renderAngle(
+  record: Extract<MeasurementRecord, { type: 'angle' }>
+): Cleanup {
+  const view = AcApDocManager.instance.curView
+  const { vertex, arm1, arm2, degrees } = record
+
+  const angleCanvas = document.createElement('canvas')
+  angleCanvas.style.cssText = 'position:fixed;pointer-events:none;z-index:99997;'
+  document.body.appendChild(angleCanvas)
+
+  const dotV = makeDot()
+  const dot1 = makeDot()
+  const dot2 = makeDot()
+  const badge = makeBadge(`${degrees.toFixed(2)}°`)
+  document.body.append(dotV, dot1, dot2, badge)
+
+  const reposition = () => {
+    drawAngleOnCanvas(angleCanvas, vertex, arm1, arm2)
+    const rect = view.canvas.getBoundingClientRect()
+    const sv = view.worldToScreen(vertex)
+    const s1 = view.worldToScreen(arm1)
+    const s2 = view.worldToScreen(arm2)
+    placeAt(dotV, sv.x, sv.y, rect)
+    placeAt(dot1, s1.x, s1.y, rect)
+    placeAt(dot2, s2.x, s2.y, rect)
+    // Place badge along the angle bisector, offset by arcR + padding
+    const a1 = Math.atan2(s1.y - sv.y, s1.x - sv.x)
+    const a2 = Math.atan2(s2.y - sv.y, s2.x - sv.x)
+    let bisector = (a1 + a2) / 2
+    // Ensure bisector points into the smaller angle
+    if (Math.abs(a1 - a2) > Math.PI) bisector += Math.PI
+    const bLen1 = Math.hypot(s1.x - sv.x, s1.y - sv.y)
+    const bLen2 = Math.hypot(s2.x - sv.x, s2.y - sv.y)
+    const bArcR = Math.max(Math.min(bLen1, bLen2) * 0.3, 15)
+    const badgeOffset = bArcR + 20
+    placeAt(badge, sv.x + Math.cos(bisector) * badgeOffset, sv.y + Math.sin(bisector) * badgeOffset, rect)
+  }
+
+  reposition()
+  view.events.viewChanged.addEventListener(reposition)
+
+  return () => {
+    angleCanvas.remove()
+    dotV.remove()
+    dot1.remove()
+    dot2.remove()
+    badge.remove()
+    view.events.viewChanged.removeEventListener(reposition)
+  }
+}
+
 // ─── Composable ───────────────────────────────────────────────────────────────
 
 /**
@@ -275,6 +329,8 @@ export function useMeasurements() {
       cleanup = renderDistance(record)
     } else if (record.type === 'area') {
       cleanup = renderArea(record)
+    } else if (record.type === 'angle') {
+      cleanup = renderAngle(record)
     } else {
       cleanup = renderArc(record)
     }

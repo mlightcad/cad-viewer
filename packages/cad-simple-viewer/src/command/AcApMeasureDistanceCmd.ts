@@ -1,8 +1,4 @@
-import {
-  AcDbLine,
-  AcGePoint3dLike,
-  AcGiLineWeight
-} from '@mlightcad/data-model'
+import { AcDbLine, AcGePoint3dLike } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
 import {
@@ -14,7 +10,7 @@ import {
 } from '../editor'
 import { eventBus } from '../editor/global/eventBus'
 import { AcApI18n } from '../i18n'
-import { blueColor } from '../util'
+import { createMeasurementLine } from '../util'
 import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 /** Returns the 2D Euclidean distance between two world points. */
@@ -42,9 +38,7 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
     super(view)
     this._p1 = p1
     this._view = view
-    this._line = new AcDbLine(p1, p1)
-    this._line.color = blueColor()
-    this._line.lineWeight = AcGiLineWeight.LineWeight070
+    this._line = createMeasurementLine(p1, p1)
 
     // Live badge — short-lived, cleaned up in end()
     this._badge = document.createElement('div')
@@ -119,9 +113,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
     const dist = calcDist(p1, p2)
 
     // CAD transient line (zoom/pan aware, rendered by the engine)
-    const line = new AcDbLine(p1, p2)
-    line.color = blueColor()
-    line.lineWeight = AcGiLineWeight.LineWeight070
+    const line = createMeasurementLine(p1, p2)
     context.view.addTransientEntity(line)
 
     registerMeasurementCleanup(() => {
