@@ -1,5 +1,6 @@
 import { AcApContext, AcApDocManager } from '../app'
-import { AcEdCommand } from '../command'
+import { AcEdCommand, AcEdPromptBoxOptions } from '../editor'
+import { AcApI18n } from '../i18n'
 
 /**
  * Command for zooming to a user-selected rectangular area.
@@ -26,7 +27,11 @@ export class AcApZoomToBoxCmd extends AcEdCommand {
    * @returns Promise that resolves when the zoom operation completes
    */
   async execute(context: AcApContext) {
-    const box = await AcApDocManager.instance.editor.getBox()
+    const options = new AcEdPromptBoxOptions(
+      AcApI18n.t('main.inputManager.firstCorner'),
+      AcApI18n.t('main.inputManager.secondCorner')
+    )
+    const box = await AcApDocManager.instance.editor.getBox(options)
     return context.view.zoomTo(box, 1)
   }
 }

@@ -9,8 +9,9 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { eventBus } from '@mlightcad/cad-simple-viewer'
+import { log } from '@mlightcad/data-model'
 import { computed, onMounted, ref } from 'vue'
 
 import { useFileTypes } from '../../composable/useFileTypes'
@@ -63,7 +64,7 @@ const handleFileChange = (event: Event): void => {
     }
 
     reader.onerror = () => {
-      console.error('Failed to read the file.')
+      log.error('Failed to read the file.')
     }
   }
 }

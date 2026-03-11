@@ -20,9 +20,22 @@ export class AcApSysVarCmd extends AcEdCommand {
    * @param context - The application context containing the view
    */
   async execute(context: AcApContext) {
-    const prompt = new AcEdPromptStringOptions(AcApI18n.t('jig.sysvar.prompt'))
-    const value = await AcApDocManager.instance.editor.getString(prompt)
     const sysVarManager = AcDbSysVarManager.instance()
+    const currentValue = sysVarManager.getVar(
+      this.globalName,
+      context.doc.database
+    )
+    const basePrompt = AcApI18n.t('jig.sysvar.prompt').trim()
+    const match = basePrompt.match(/([：:])\s*$/)
+    // Preserve the existing trailing colon style (Chinese or ASCII) if present.
+    const colon = match?.[1] ?? ':'
+    const promptCore = match
+      ? basePrompt.slice(0, match.index).trimEnd()
+      : basePrompt
+    const suffix = currentValue == null ? '' : ` <${String(currentValue)}>`
+    const promptMessage = `${promptCore}${suffix}${colon}`
+    const prompt = new AcEdPromptStringOptions(promptMessage)
+    const value = await AcApDocManager.instance.editor.getString(prompt)
     const sysVar = sysVarManager.getDescriptor(this.globalName)
     if (sysVar) {
       sysVarManager.setVar(this.globalName, value, context.doc.database)

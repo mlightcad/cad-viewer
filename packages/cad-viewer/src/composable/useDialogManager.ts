@@ -1,6 +1,6 @@
 import { computed, reactive } from 'vue'
 
-interface Dialog {
+export interface Dialog {
   name: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   component: any

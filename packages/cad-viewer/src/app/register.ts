@@ -1,4 +1,8 @@
-import { AcApDocManager, AcEdCommandStack } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApDocManager,
+  AcEdCommandStack,
+  AcEdMTextEditor
+} from '@mlightcad/cad-simple-viewer'
 import { markRaw } from 'vue'
 
 import {
@@ -6,7 +10,11 @@ import {
   AcApMissedDataCmd,
   AcApPointStyleCmd
 } from '../command'
-import { MlPointStyleDlg, MlReplacementDlg } from '../component'
+import {
+  createMlColorIndexPickerToolbarFactory,
+  MlPointStyleDlg,
+  MlReplacementDlg
+} from '../component'
 import { useDialogManager } from '../composable'
 
 let isCommandRegistered = false
@@ -50,5 +58,15 @@ export const registerDialogs = () => {
       props: {}
     })
     isDialogRegistered = true
+  }
+}
+
+let isMTextColorPickerRegistered = false
+export const registerMTextColorPicker = () => {
+  if (!isMTextColorPickerRegistered) {
+    AcEdMTextEditor.setDefaultColorPicker(
+      createMlColorIndexPickerToolbarFactory()
+    )
+    isMTextColorPickerRegistered = true
   }
 }

@@ -156,7 +156,8 @@ import {
   AcDbEntityProperties,
   AcDbEntityPropertyGroup,
   AcDbEntityRuntimeProperty,
-  AcGiLineWeight
+  AcGiLineWeight,
+  log
 } from '@mlightcad/data-model'
 import { ElMessage } from 'element-plus'
 import { computed, ref } from 'vue'
@@ -265,7 +266,7 @@ async function copyReadonlyValue(row: MlDisplayPropertyRow) {
       type: 'success'
     })
   } catch (e) {
-    console.error(e)
+    log.error(e)
     ElMessage({
       message: t(
         'main.toolPalette.entityProperties.propertyPanel.failedToCopyPropVal'

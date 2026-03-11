@@ -1,4 +1,4 @@
-import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
+import { AcDbObjectId, AcGeBox2d, AcGeBox3d, log } from '@mlightcad/data-model'
 import { AcTrEntity, AcTrTransientManager } from '@mlightcad/three-renderer'
 import { AcEdLayerInfo } from 'editor'
 import * as THREE from 'three'
@@ -373,7 +373,7 @@ export class AcTrScene {
       }
       layout.addEntity(entity, extendBbox)
     } else {
-      console.warn('[AcTrSecene] The owner id of one entity cannot be empty!')
+      log.warn('[AcTrSecene] The owner id of one entity cannot be empty!')
     }
 
     return this

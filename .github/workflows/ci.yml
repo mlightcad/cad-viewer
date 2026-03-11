@@ -31,6 +31,7 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
+          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -51,6 +52,12 @@ jobs:
 
       - name: Pre-serve
         run: pnpm pre-serve
+
+      - name: Publish packages to npm
+        if: startsWith(github.ref, 'refs/tags/')
+        run: pnpm publish:viewer
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create github release
         if: startsWith(github.ref, 'refs/tags/')

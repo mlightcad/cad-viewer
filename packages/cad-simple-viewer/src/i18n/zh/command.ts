@@ -15,6 +15,9 @@ export default {
     circle: {
       description: '使用圆心和半径创建圆'
     },
+    colortheme: {
+      description: '控制用户界面的颜色主题（深色或浅色）'
+    },
     csvg: {
       description: '转换当前图纸为SVG格式'
     },
@@ -27,6 +30,9 @@ export default {
     },
     line: {
       description: '在指定点之间绘制直线段'
+    },
+    mtext: {
+      description: '创建一条多行文本（MTEXT）'
     },
     log: {
       description: '在控制台输出调试信息'

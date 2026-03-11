@@ -76,7 +76,8 @@ function drawArcOnCanvas(
   const sa = Math.atan2(ss.y - sc.y, ss.x - sc.x)
   const ea = Math.atan2(se.y - sc.y, se.x - sc.x)
 
-  const norm = (a: number) => ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+  const norm = (a: number) =>
+    ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
   const cwSpan = norm(ea - sa)
   const antiClockwise = cwSpan > Math.PI
 
@@ -139,7 +140,9 @@ function drawAreaOnCanvas(
 
 type Cleanup = () => void
 
-function renderDistance(record: Extract<MeasurementRecord, { type: 'distance' }>): Cleanup {
+function renderDistance(
+  record: Extract<MeasurementRecord, { type: 'distance' }>
+): Cleanup {
   const view = AcApDocManager.instance.curView
   const { p1, p2, dist } = record
 
@@ -168,7 +171,9 @@ function renderDistance(record: Extract<MeasurementRecord, { type: 'distance' }>
   }
 }
 
-function renderArea(record: Extract<MeasurementRecord, { type: 'area' }>): Cleanup {
+function renderArea(
+  record: Extract<MeasurementRecord, { type: 'area' }>
+): Cleanup {
   const view = AcApDocManager.instance.curView
   const { points, area } = record
 
@@ -212,7 +217,9 @@ function renderArea(record: Extract<MeasurementRecord, { type: 'area' }>): Clean
   }
 }
 
-function renderArc(record: Extract<MeasurementRecord, { type: 'arc' }>): Cleanup {
+function renderArc(
+  record: Extract<MeasurementRecord, { type: 'arc' }>
+): Cleanup {
   const view = AcApDocManager.instance.curView
   const { geom, start, end, arcLen, mid } = record
 

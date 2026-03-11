@@ -13,8 +13,10 @@ import {
   AcGeBox2d,
   AcGeBox3d,
   AcGePoint2d,
-  AcGePoint2dLike
+  AcGePoint2dLike,
+  log
 } from '@mlightcad/data-model'
+import { AcDbSystemVariables } from '@mlightcad/data-model'
 import {
   AcTrEntity,
   AcTrGroup,
@@ -159,7 +161,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
 
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
-      if (args.name === 'whitebkcolor') {
+      if (args.name === AcDbSystemVariables.WHITEBKCOLOR.toLowerCase()) {
         const useWhiteBackgroundColor = args.newVal as boolean
         this.backgroundColor = useWhiteBackgroundColor ? 0xffffff : 0
       }
@@ -343,6 +345,20 @@ export class AcTrView2d extends AcEdBaseView {
    */
   get stats() {
     return this._scene.stats
+  }
+
+  /**
+   * The internal THREE scene used by this view.
+   */
+  get internalScene() {
+    return this._scene.internalScene
+  }
+
+  /**
+   * The internal THREE camera used by current active layout.
+   */
+  get internalCamera() {
+    return this.activeLayoutView?.internalCamera
   }
 
   /**
@@ -719,8 +735,12 @@ export class AcTrView2d extends AcEdBaseView {
   private animate = () => {
     this._rafId = requestAnimationFrame(this.animate)
 
-    if (!this._isDirty) return
+    this.events.renderFrame.dispatch({
+      render: this._renderer,
+      camera: this.internalCamera
+    })
 
+    if (!this._isDirty) return
     this._layoutViewManager.render(this._scene)
     this._stats?.update()
     this._isDirty = false
@@ -769,13 +789,8 @@ export class AcTrView2d extends AcEdBaseView {
       }
 
       const layout = this._scene.activeLayout
-      if (layout) {
-        // Check if layout has any entities by checking if bounding box is not empty
-        const box = layout.box
-        if (box && !box.isEmpty()) {
-          // Layout exists and has entities (bounding box is not empty), no need to reload
-          return
-        }
+      if (layout && layout.isLoaded) {
+        return
       }
 
       // Collect all entities from this layout
@@ -792,10 +807,14 @@ export class AcTrView2d extends AcEdBaseView {
         this._numOfEntitiesToProcess += entities.length
         setTimeout(async () => {
           await this.batchConvert(entities)
+          const layout = this._scene.layouts.get(layoutBtrId)
+          if (layout) {
+            layout.isLoaded = true
+          }
         })
       }
     } catch (error) {
-      console.error('[AcTrView2d] Error loading layout entities:', error)
+      log.error('[AcTrView2d] Error loading layout entities:', error)
     }
   }
 
@@ -834,7 +853,7 @@ export class AcTrView2d extends AcEdBaseView {
       if (entity instanceof AcDbViewport) {
         if (entity.number === 0) {
           entity.number = AcTrView2d.viewportIdCounter++
-          console.warn(
+          log.warn(
             `Viewport id for handle ${entity.objectId} is 0! Set it to ${entity.number}`
           )
         }
@@ -857,13 +876,13 @@ export class AcTrView2d extends AcEdBaseView {
       }
 
       // First, try to ignore viewport with number === 1
-      let filtered = viewports.filter(vp => vp.number !== 1)
+      const filtered = viewports.filter(vp => vp.number !== 1)
 
       // If nothing was filtered (i.e., no viewport with number === 1),
       // then ignore the first viewport in this layout
-      if (filtered.length === viewports.length && viewports.length > 0) {
-        filtered = viewports.slice(1)
-      }
+      // if (filtered.length === viewports.length && viewports.length > 0) {
+      //   filtered = viewports.slice(1)
+      // }
 
       filtered.forEach(vp => {
         validViewportIds.add(vp.objectId)
@@ -989,7 +1008,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._numOfEntitiesToProcess--
     if (this._numOfEntitiesToProcess < 0) {
       this._numOfEntitiesToProcess = 0
-      console.warn(
+      log.warn(
         'Something wrong! The number of entities to process should not be less than 0.'
       )
     }

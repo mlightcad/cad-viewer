@@ -17,6 +17,10 @@ export default {
     circle: {
       description: 'Creates one circle by center and radius'
     },
+    colortheme: {
+      description:
+        'Controls the color theme of the user interface (dark or light)'
+    },
     csvg: {
       description: 'Converts current drawing to SVG'
     },
@@ -29,6 +33,9 @@ export default {
     },
     line: {
       description: 'Draws straight line segments between points'
+    },
+    mtext: {
+      description: 'Creates one mtext entity'
     },
     log: {
       description: 'Logs debug information in console'

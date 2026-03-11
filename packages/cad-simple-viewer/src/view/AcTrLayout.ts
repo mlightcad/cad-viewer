@@ -77,6 +77,8 @@ export class AcTrLayout {
   private _box: THREE.Box3
   /** Map of layers indexed by layer name */
   private _layers: Map<string, AcTrLayer>
+  /** The flag indicating whether the layout is loaded/activated */
+  private _isLoaded: boolean
 
   /**
    * Creates a new layout instance.
@@ -87,6 +89,7 @@ export class AcTrLayout {
     this._spatialIndex = new AcTrHierarchicalSpatialIndex()
     this._box = new THREE.Box3()
     this._layers = new Map()
+    this._isLoaded = false
   }
 
   /**
@@ -113,6 +116,24 @@ export class AcTrLayout {
    */
   get box() {
     return this._box
+  }
+
+  /**
+   * The flag indicating whether the layout is loaded/activated.
+   *
+   * @returns The flag indicating whether the layout is loaded/activated.
+   */
+  get isLoaded() {
+    return this._isLoaded
+  }
+
+  /**
+   * Sets the flag indicating whether the layout is loaded/activated.
+   *
+   * @param value - The flag indicating whether the layout is loaded/activated.
+   */
+  set isLoaded(value: boolean) {
+    this._isLoaded = value
   }
 
   /**

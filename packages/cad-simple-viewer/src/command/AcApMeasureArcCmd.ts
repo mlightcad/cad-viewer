@@ -1,4 +1,9 @@
-import { AcDbArc, AcDbCircle, AcDbLine, AcGePoint3dLike } from '@mlightcad/data-model'
+import {
+  AcDbArc,
+  AcDbCircle,
+  AcDbLine,
+  AcGePoint3dLike
+} from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
 import {
@@ -22,7 +27,11 @@ function snapToCircle(
   g: CircleGeom
 ): { x: number; y: number; z: number } {
   const angle = Math.atan2(p.y - g.cy, p.x - g.cx)
-  return { x: g.cx + g.r * Math.cos(angle), y: g.cy + g.r * Math.sin(angle), z: 0 }
+  return {
+    x: g.cx + g.r * Math.cos(angle),
+    y: g.cy + g.r * Math.sin(angle),
+    z: 0
+  }
 }
 
 /** Returns the shorter arc length between two points on a circle */
@@ -33,7 +42,8 @@ function shortArcLength(
 ): number {
   const a1 = Math.atan2(p1.y - g.cy, p1.x - g.cx)
   const a2 = Math.atan2(p2.y - g.cy, p2.x - g.cx)
-  const norm = (a: number) => ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+  const norm = (a: number) =>
+    ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
   const span = norm(a2 - a1)
   return Math.min(span, 2 * Math.PI - span) * g.r
 }
@@ -46,7 +56,8 @@ function shortArcMid(
 ): { x: number; y: number; z: number } {
   const a1 = Math.atan2(p1.y - g.cy, p1.x - g.cx)
   const a2 = Math.atan2(p2.y - g.cy, p2.x - g.cx)
-  const norm = (a: number) => ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+  const norm = (a: number) =>
+    ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
   const ccwSpan = norm(a2 - a1)
   const mid =
     ccwSpan <= Math.PI ? a1 + ccwSpan / 2 : a1 - (2 * Math.PI - ccwSpan) / 2
@@ -94,7 +105,8 @@ function drawArcOnCanvas(
   const sa = Math.atan2(ss.y - sc.y, ss.x - sc.x)
   const ea = Math.atan2(se.y - sc.y, se.x - sc.x)
 
-  const norm = (a: number) => ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+  const norm = (a: number) =>
+    ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
   const cwSpan = norm(ea - sa)
   const antiClockwise = cwSpan > Math.PI
 
@@ -115,7 +127,10 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _dummy: AcDbLine
   private _indicator: HTMLDivElement
   private _ctx: AcApContext
-  private _onSnap: (geom: CircleGeom | null, snapped: AcGePoint3dLike | null) => void
+  private _onSnap: (
+    geom: CircleGeom | null,
+    snapped: AcGePoint3dLike | null
+  ) => void
 
   constructor(
     context: AcApContext,
@@ -257,7 +272,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
 
     // Construction-phase canvas — removed before this method returns
     const arcCanvas = document.createElement('canvas')
-    arcCanvas.style.cssText = 'position:fixed;pointer-events:none;z-index:99997;'
+    arcCanvas.style.cssText =
+      'position:fixed;pointer-events:none;z-index:99997;'
     document.body.appendChild(arcCanvas)
 
     // ── Phase 1: snap to circle/arc entity ──────────────────────────────────
@@ -314,7 +330,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     }
     reposDot1()
 
-    const redrawPreview = () => drawArcOnCanvas(arcCanvas, context, geom, start, start)
+    const redrawPreview = () =>
+      drawArcOnCanvas(arcCanvas, context, geom, start, start)
     const onViewChangedPreview = () => {
       reposDot1()
       redrawPreview()
@@ -364,6 +381,13 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     const mid = shortArcMid(start, end, geom)
 
     // Notify the useMeasurements composable to render the persistent DOM overlay
-    eventBus.emit('measurement-added', { type: 'arc', geom, start, end, arcLen, mid })
+    eventBus.emit('measurement-added', {
+      type: 'arc',
+      geom,
+      start,
+      end,
+      arcLen,
+      mid
+    })
   }
 }

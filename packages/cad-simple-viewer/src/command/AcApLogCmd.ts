@@ -1,4 +1,4 @@
-import { AcCmPerformanceCollector } from '@mlightcad/data-model'
+import { AcCmPerformanceCollector, log } from '@mlightcad/data-model'
 
 import { AcApContext } from '../app'
 import { AcEdCommand } from '../command'
@@ -19,14 +19,14 @@ export class AcApLogCmd extends AcEdCommand {
     const modelSpace = context.doc.database.tables.blockTable.modelSpace
     context.view.selectionSet.ids.forEach(id => {
       const entity = modelSpace.getIdAt(id)
-      if (entity) console.log(entity)
+      if (entity) log.info(entity)
     })
   }
 
   private printStats(context: AcApContext) {
     const stats = (context.view as AcTrView2d).stats
     const layouts = stats.layouts
-    console.log('Geometry information in current drawing:')
+    log.info('Geometry information in current drawing:')
     for (let index = 0; index < layouts.length; ++index) {
       console.group(`Layout: ${index}`)
       const layout = layouts[index]

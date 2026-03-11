@@ -1,6 +1,7 @@
 export * from './AcEdKeyword'
 export * from './AcEdKeywordCollection'
 export * from './AcEdPromptAngleOptions'
+export * from './AcEdPromptBoxOptions'
 export * from './AcEdPromptDistanceOptions'
 export * from './AcEdPromptDoubleOptions'
 export * from './AcEdPromptEntityOptions'

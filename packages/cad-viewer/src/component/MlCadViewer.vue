@@ -81,20 +81,23 @@
  * @see {@link https://github.com/mlightcad/cad-viewer | Project Repository}
  * @see {@link https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/MlCadViewer.vue | Source Code}
  */
-
 import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
   AcEdOpenMode,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
-import { useDark, useToggle } from '@vueuse/core'
+import { log } from '@mlightcad/data-model'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { initializeCadViewer, store } from '../app'
 import {
+  ensureColorThemeSync,
+  isDark,
+  setColorTheme,
+  toggleDark,
   useEntityDrawStyle,
   useLocale,
   useMeasurements,
@@ -174,8 +177,6 @@ const { info, warning, error, success } = useNotificationCenter()
 const containerRef = ref<HTMLDivElement>()
 
 // Referenence to the root element used to switch theme
-const viewerRoot = ref<HTMLElement | null>(null)
-
 // Editor reference that gets updated after initialization
 const editorRef = ref<AcApDocManager | null>(null)
 
@@ -185,14 +186,9 @@ const editor = computed(() => editorRef.value as AcApDocManager)
 // Notification center visibility
 const showNotificationCenter = ref(false)
 
-const isDark = useDark({
-  selector: viewerRoot,
-  attribute: 'class',
-  valueDark: 'ml-theme-dark',
-  valueLight: 'ml-theme-light'
-})
-
-const toggleDark = useToggle(isDark)
+const viewerThemeClass = computed(() =>
+  isDark.value ? 'ml-theme-dark' : 'ml-theme-light'
+)
 
 const features = useSettings()
 
@@ -243,7 +239,7 @@ const openFileFromUrl = async (url: string) => {
     await AcApDocManager.instance.openUrl(url, options)
     store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch (error) {
-    console.error('Failed to open file from URL:', error)
+    log.error('Failed to open file from URL:', error)
     ElMessage({
       message: t('main.message.failedToOpenFile', { fileName: url }),
       grouping: true,
@@ -337,7 +333,7 @@ watch(
 watch(
   () => props.theme,
   newTheme => {
-    isDark.value = newTheme === 'dark' ? true : false
+    setColorTheme(newTheme)
   }
 )
 
@@ -353,6 +349,7 @@ onMounted(async () => {
     })
     // Set the editor reference after initialization
     editorRef.value = AcApDocManager.instance
+    ensureColorThemeSync()
   }
 
   // If URL prop is provided, automatically load the file on mount
@@ -370,11 +367,7 @@ onMounted(async () => {
   }
 
   // Set initial theme from props
-  if (props.theme === 'dark') {
-    isDark.value = true
-  } else {
-    isDark.value = false
-  }
+  setColorTheme(props.theme)
 
   // FINAL STEP: viewer is now ready
   emit('create')
@@ -470,10 +463,18 @@ const closeNotificationCenter = () => {
 
 <template>
   <!-- Canvas element for CAD rendering - positioned as background -->
-  <div ref="containerRef" class="ml-cad-container"></div>
+  <div
+    :class="viewerThemeClass"
+    ref="containerRef"
+    class="ml-cad-container"
+  ></div>
 
   <!-- Main CAD viewer container with complete UI layout -->
-  <div ref="viewerRoot" v-if="editorRef" class="ml-cad-viewer-container">
+  <div
+    v-if="editorRef"
+    :class="viewerThemeClass"
+    class="ml-cad-viewer-container"
+  >
     <!-- Element Plus configuration provider for internationalization -->
     <el-config-provider :locale="elementPlusLocale">
       <!-- Header section with main menu and language selector -->
@@ -561,16 +562,14 @@ const closeNotificationCenter = () => {
 
 /* Position the filename display at the top center of the viewer */
 .ml-file-name {
-  position: absolute;
-  top: 0;
+  position: fixed;
+  top: 20px;
   left: 50%;
   color: var(--el-text-color-regular);
   transform: translateX(-50%);
   text-align: center;
-  width: 100%;
-  margin-top: 20px;
   pointer-events: none; /* Allow mouse events to pass through to container */
-  z-index: 1; /* Ensure it's above canvas but doesn't block events */
+  z-index: 3; /* Ensure it's above canvas but doesn't block events */
 }
 
 /* Position the filename display at the top center of the viewer */
