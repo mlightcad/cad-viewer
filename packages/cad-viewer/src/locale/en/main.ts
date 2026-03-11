@@ -17,6 +17,10 @@ export default {
       text: 'Area',
       description: 'Measures the area of a polygon'
     },
+    measureAngle: {
+      text: 'Angle',
+      description: 'Measures the angle between two lines sharing a common vertex'
+    },
     measureArc: {
       text: 'Arc',
       description: 'Measures the length of an arc defined by three points'

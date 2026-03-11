@@ -17,6 +17,10 @@ export default {
       text: '面积',
       description: '测量多边形的面积'
     },
+    measureAngle: {
+      text: '角度',
+      description: '测量共享一个顶点的两条线之间的角度'
+    },
     measureArc: {
       text: '弧长',
       description: '测量由三点定义的弧长'
