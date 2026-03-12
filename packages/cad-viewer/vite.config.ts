@@ -19,7 +19,8 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     peerDepsExternal() as PluginOption,
     dts({
       include: ['src/**/*.ts', 'src/**/*.vue'],
-      exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts']
+      exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
+      outDir: 'dist'
     }) as PluginOption
   ]
 
