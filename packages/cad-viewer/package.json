@@ -20,9 +20,9 @@
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./lib/index.d.ts",
   "exports": {
-    "types": "./dist/index.d.ts",
+    "types": "./lib/index.d.ts",
     "import": "./dist/index.js"
   },
   "files": [
@@ -35,7 +35,7 @@
     "analyze": "vite build --mode analyze",
     "dev": "vite",
     "clean": "rimraf dist lib tsconfig.tsbuildinfo",
-    "build": "vue-tsc && vite build",
+    "build": "vue-tsc --declaration --emitDeclarationOnly --outDir lib && vite build",
     "preview": "vite preview",
     "lint": "eslint src/",
     "lint:fix": "eslint --fix --quiet src/"

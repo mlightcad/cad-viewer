@@ -4,6 +4,9 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "baseUrl": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
     "lib": [
       "ESNext",
       "DOM"
