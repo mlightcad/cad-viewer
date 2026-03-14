@@ -8,6 +8,7 @@ import {
   type MTextToolbarColorPickerFactory,
   type MTextToolbarTheme
 } from '@mlightcad/mtext-input-box'
+import type { TextStyle } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { AcApDocManager } from '../../../app'
@@ -107,8 +108,10 @@ export class AcEdMTextEditor {
     const origin = new THREE.Vector3(location.x, location.y, location.z ?? 0)
     const isLightBackground = view.backgroundColor === 0xffffff
     const cursorColor = isLightBackground ? '#000000' : '#ffffff'
+    const docManager = AcApDocManager.instance
+    const database = docManager.curDocument.database
+    const { entityColor, layerColor } = docManager.resolveColors()
     const getToolbarTheme = (): MTextToolbarTheme => {
-      const database = AcApDocManager.instance.curDocument.database
       const rawTheme = AcDbSysVarManager.instance().getVar(
         AcDbSystemVariables.COLORTHEME,
         database
@@ -130,6 +133,37 @@ export class AcEdMTextEditor {
           .filter(fontName => fontName.length > 0)
       )
     )
+    const resolveLayerTextStyle = () => {
+      const layerName = database.clayer
+      const layer = database.tables.layerTable.getAt(layerName)
+      if (!layer) return undefined
+
+      const layerTextStyle = (layer as { textStyle?: TextStyle | string })
+        .textStyle
+      if (layerTextStyle && typeof layerTextStyle !== 'string') {
+        return layerTextStyle
+      }
+
+      const textStyleName =
+        typeof layerTextStyle === 'string'
+          ? layerTextStyle
+          : (layer as { textStyleName?: string }).textStyleName
+
+      if (!textStyleName) return undefined
+
+      const record = database.tables.textStyleTable.getAt(textStyleName)
+      return record?.textStyle
+    }
+    const normalizedTextHeight = Math.max(1, textHeight)
+    const layerTextStyle = resolveLayerTextStyle()
+    const defaultTextStyle = layerTextStyle
+      ? {
+          ...layerTextStyle,
+          fixedTextHeight: normalizedTextHeight,
+          lastHeight: normalizedTextHeight,
+          color: entityColor
+        }
+      : undefined
 
     const mtextInputBox = new MTextInputBox({
       scene: view.internalScene,
@@ -137,23 +171,16 @@ export class AcEdMTextEditor {
       width,
       position: origin.clone(),
       initialText,
-      defaultFormat: {
-        fontFamily: 'simkai',
-        fontSize: textHeight,
-        bold: false,
-        italic: false,
-        underline: false,
-        overline: false,
-        strike: false,
-        script: 'normal',
-        aci: null,
-        rgb: isLightBackground ? 0x000000 : 0xffffff
-      },
+      textStyle: defaultTextStyle,
       cursorStyle: {
         color: cursorColor,
         glowColor: cursorColor
       },
       imeTarget: view.canvas,
+      colorSettings: {
+        byLayerColor: layerColor,
+        byBlockColor: layerColor
+      },
       toolbar: {
         enabled: true,
         theme: getToolbarTheme(),

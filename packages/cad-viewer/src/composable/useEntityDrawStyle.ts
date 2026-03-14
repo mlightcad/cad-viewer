@@ -4,11 +4,7 @@ import {
   AcApDocManager,
   AcEdCommandEventArgs
 } from '@mlightcad/cad-simple-viewer'
-import {
-  AcCmColor,
-  AcCmColorMethod,
-  AcGiLineWeight
-} from '@mlightcad/data-model'
+import { AcCmColor, AcGiLineWeight } from '@mlightcad/data-model'
 import { computed, type Ref, ref, watch } from 'vue'
 
 /**
@@ -123,14 +119,13 @@ export function useEntityDrawStyle(editorRef: Ref<AcApDocManager | null>) {
    * Setters (explicit side effects)
    * -------------------------------------------------------------
    */
-  function setColorIndex(v: number) {
+  function setColor(nextColor: AcCmColor) {
     const editor = editorRef.value
     const db = editor?.curDocument?.database
     if (!db) return
 
-    const c = new AcCmColor(AcCmColorMethod.ByACI, v)
-    color.value = c.toString()
-    db.cecolor = c
+    color.value = nextColor.toString()
+    db.cecolor = nextColor
   }
 
   function setLineWeight(v: AcGiLineWeight) {
@@ -178,7 +173,7 @@ export function useEntityDrawStyle(editorRef: Ref<AcApDocManager | null>) {
     isShowToolbar,
 
     /* setters */
-    setColorIndex,
+    setColor,
     setLineWeight,
 
     /* lifecycle */

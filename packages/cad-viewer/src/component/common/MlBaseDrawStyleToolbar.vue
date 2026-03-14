@@ -8,27 +8,21 @@
     <!-- =========================================================
            Color button
            ========================================================= -->
-    <el-popover
-      placement="bottom"
-      trigger="click"
-      width="320"
-      v-model:visible="colorPopoverVisible"
+    <MlColorPickerDropdown
+      :model-value="pickerColor"
+      :display-color="displayCssColor"
       :disabled="disabled"
+      @update:modelValue="onPickerColorChange"
     >
-      <MlColorIndexPicker
-        :model-value="colorIndex"
-        @update:modelValue="onColorChange"
-      />
-
       <template #reference>
         <el-button :disabled="disabled">
           <span
             class="ml-base-draw-style-color-indicator"
-            :style="{ background: cssColor || 'transparent' }"
+            :style="{ background: displayCssColor }"
           />
         </el-button>
       </template>
-    </el-popover>
+    </MlColorPickerDropdown>
 
     <!-- =========================================================
            Line weight dropdown
@@ -42,10 +36,11 @@
 </template>
 
 <script setup lang="ts">
+import { AcCmColor } from '@mlightcad/data-model'
 import { AcGiLineWeight } from '@mlightcad/data-model'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
-import { MlColorIndexPicker, MlLineWeightSelect } from '../common'
+import { MlColorPickerDropdown, MlLineWeightSelect } from '../common'
 
 /**
  * =============================================================
@@ -65,8 +60,8 @@ import { MlColorIndexPicker, MlLineWeightSelect } from '../common'
  * =============================================================
  */
 const props = defineProps<{
-  /** Color index (AutoCAD style) */
-  colorIndex: number
+  /** Current draw color */
+  color?: AcCmColor
   /** CSS color string for preview */
   cssColor?: string
   /** Current line weight */
@@ -81,7 +76,7 @@ const props = defineProps<{
  * =============================================================
  */
 const emit = defineEmits<{
-  (e: 'color-change', v: number): void
+  (e: 'color-change', v: AcCmColor | undefined): void
   (e: 'lineweight-change', v: AcGiLineWeight): void
 }>()
 
@@ -90,7 +85,10 @@ const emit = defineEmits<{
  * Local state
  * =============================================================
  */
-const colorPopoverVisible = ref(false)
+const pickerColor = computed<AcCmColor | undefined>(() => props.color)
+const displayCssColor = computed(() => {
+  return props.cssColor ?? props.color?.cssColor ?? 'transparent'
+})
 
 const lineWeightProxy = computed<AcGiLineWeight>({
   get: () => props.lineWeight,
@@ -102,9 +100,8 @@ const lineWeightProxy = computed<AcGiLineWeight>({
  * Event handlers
  * =============================================================
  */
-function onColorChange(colorIndex: number) {
-  emit('color-change', colorIndex)
-  colorPopoverVisible.value = false
+function onPickerColorChange(color: AcCmColor | undefined) {
+  emit('color-change', color)
 }
 
 function onLineWeightChange(value: AcGiLineWeight) {

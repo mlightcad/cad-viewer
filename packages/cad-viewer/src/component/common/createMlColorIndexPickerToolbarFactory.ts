@@ -1,102 +1,29 @@
+import {
+  MTextColor,
+  type MTextToolbarColorPickerFactory
+} from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
-import { createApp, h, ref } from 'vue'
+import { createApp, h, ref, shallowRef } from 'vue'
 
 import { i18n } from '../../locale'
-import MlMTextToolbarColorPicker from './MlMTextToolbarColorPicker.vue'
+import MlColorPickerDropdown from './MlColorPickerDropdown.vue'
 
 /**
- * Context passed to the toolbar color picker factory by MTextInputBox.
- * Matches @mlightcad/mtext-input-box MTextToolbarColorPickerContext.
- */
-interface MTextToolbarColorPickerContext {
-  container: HTMLElement
-  initialColor: string
-  theme: 'light' | 'dark'
-  onChange: (hexColor: string) => void
-}
-
-/**
- * Factory type for toolbar color picker. Matches @mlightcad/mtext-input-box
- * MTextToolbarColorPickerFactory.
- */
-type MTextToolbarColorPickerFactory = (
-  context: MTextToolbarColorPickerContext
-) => {
-  setValue?: (nextColor: string) => void
-  setTheme?: (nextTheme: 'light' | 'dark') => void
-  dispose?: () => void
-}
-
-function normalizeHex(hex: string): string | null {
-  const s = hex.trim()
-  if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase()
-  if (/^[0-9a-fA-F]{6}$/.test(s)) return `#${s.toLowerCase()}`
-  return null
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const normalized = normalizeHex(hex)
-  if (!normalized) return null
-  const n = Number.parseInt(normalized.slice(1), 16)
-  return {
-    r: (n >> 16) & 0xff,
-    g: (n >> 8) & 0xff,
-    b: n & 0xff
-  }
-}
-
-/**
- * Find the ACI (1–255) whose RGB is closest to the given hex color.
- * Returns 256 (ByLayer) if hex is invalid.
- */
-function hexToNearestAci(hex: string): number {
-  const rgb = hexToRgb(hex)
-  if (!rgb) return 256
-
-  let bestAci = 256
-  let bestDist = Number.POSITIVE_INFINITY
-  const color = new AcCmColor()
-
-  for (let aci = 1; aci <= 255; aci += 1) {
-    color.colorIndex = aci
-    const r = color.red ?? 0
-    const g = color.green ?? 0
-    const b = color.blue ?? 0
-    const dr = rgb.r - r
-    const dg = rgb.g - g
-    const db = rgb.b - b
-    const dist = dr * dr + dg * dg + db * db
-    if (dist < bestDist) {
-      bestDist = dist
-      bestAci = aci
-    }
-  }
-  return bestAci
-}
-
-/**
- * Convert ACI to hex string (#rrggbb). ACI 0 (ByBlock) and 256 (ByLayer)
- * are treated as white for display purposes.
- */
-function aciToHex(aci: number): string {
-  const color = new AcCmColor()
-  color.colorIndex = aci
-  const r = (color.red ?? 255) & 0xff
-  const g = (color.green ?? 255) & 0xff
-  const b = (color.blue ?? 255) & 0xff
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-}
-
-/**
- * Creates a toolbar color picker factory that mounts {@link MlColorIndexPicker}
- * (ACI-based) in the MTEXT toolbar. The picker converts between ACI and hex
- * so that the editor receives hex as expected by {@link MTextInputBox}.
+ * Creates a toolbar color picker factory that mounts a unified (ACI + RGB)
+ * picker in the MTEXT toolbar and syncs with {@link MTextInputBox} colors.
  */
 export function createMlColorIndexPickerToolbarFactory(): MTextToolbarColorPickerFactory {
   return context => {
     const { container, initialColor, theme, onChange } = context
-    const normalizedHex = normalizeHex(initialColor) ?? '#ffffff'
-    const aciRef = ref<number | null>(hexToNearestAci(normalizedHex))
+    const initialResolved = new AcCmColor()
+    if (initialColor) {
+      if (initialColor.aci != null) {
+        initialResolved.colorIndex = initialColor.aci
+      } else if (initialColor.isRgb) {
+        initialResolved.setRGBValue(initialColor.rgbValue)
+      }
+    }
+    const colorRef = shallowRef<AcCmColor>(initialResolved)
     const themeRef = ref(theme)
 
     const Root = {
@@ -109,13 +36,35 @@ export function createMlColorIndexPickerToolbarFactory(): MTextToolbarColorPicke
                 themeRef.value === 'dark' ? 'ml-theme-dark' : 'ml-theme-light'
             },
             [
-              h(MlMTextToolbarColorPicker, {
-                modelValue: aciRef.value,
-                theme: themeRef.value,
-                'onUpdate:modelValue': (aci: number | null) => {
-                  if (aci == null) return
-                  aciRef.value = aci
-                  onChange(aciToHex(aci))
+              h(MlColorPickerDropdown, {
+                modelValue: colorRef.value,
+                popperClass: `ml-theme-${themeRef.value}`,
+                'onUpdate:modelValue': (color: AcCmColor | undefined) => {
+                  if (!color) return
+                  colorRef.value = color
+                  if (color.isByColor && typeof color.cssColor === 'string') {
+                    const nextColor = MTextColor.fromCssColor(color.cssColor)
+                    onChange(nextColor ?? new MTextColor())
+                    return
+                  }
+                  const nextColor = new MTextColor()
+                  if (color.isByLayer) {
+                    nextColor.aci = 256
+                  } else if (color.isByBlock) {
+                    nextColor.aci = 0
+                  } else if (color.isByACI) {
+                    nextColor.aci =
+                      typeof color.colorIndex === 'number'
+                        ? color.colorIndex
+                        : 256
+                  } else if (typeof color.RGB === 'number') {
+                    const rgbColor = MTextColor.fromCssColor(color.cssColor)
+                    if (rgbColor) {
+                      onChange(rgbColor)
+                      return
+                    }
+                  }
+                  onChange(nextColor)
                 }
               })
             ]
@@ -128,11 +77,23 @@ export function createMlColorIndexPickerToolbarFactory(): MTextToolbarColorPicke
     app.mount(container)
 
     return {
-      setValue(nextColor: string) {
-        const hex = normalizeHex(nextColor)
-        if (hex) aciRef.value = hexToNearestAci(hex)
+      setValue(nextColor) {
+        if (!nextColor) return
+        const resolved = new AcCmColor()
+        const cssColor = nextColor.toCssColor()
+        if (cssColor) {
+          resolved.setRGBFromCss(cssColor)
+          colorRef.value = resolved
+          return
+        }
+        if (typeof nextColor.aci === 'number') {
+          if (nextColor.aci === 256) resolved.setByLayer()
+          else if (nextColor.aci === 0) resolved.setByBlock()
+          else resolved.colorIndex = nextColor.aci
+          colorRef.value = resolved
+        }
       },
-      setTheme(nextTheme: 'light' | 'dark') {
+      setTheme(nextTheme) {
         themeRef.value = nextTheme
       },
       dispose() {
