@@ -57,12 +57,11 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
     "lodash-es": "4.17.21",
-    "three": "^0.172.0",
-    "vue-pick-colors": "^1.8.0"
+    "three": "^0.172.0"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.7.4",
+    "@mlightcad/data-model": "^1.7.5",
     "@vueuse/core": "^11.1.0",
     "element-plus": "^2.12.0",
     "vue": "^3.4.21",

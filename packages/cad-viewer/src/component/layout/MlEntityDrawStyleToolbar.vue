@@ -1,7 +1,7 @@
 <template>
   <ml-base-draw-style-toolbar
     v-if="isShowToolbar"
-    :color-index="colorIndex"
+    :color="drawColor"
     :css-color="cssColor"
     :line-weight="lineWeight"
     @color-change="onColorChange"
@@ -48,7 +48,7 @@ const emit = defineEmits<{
   (
     e: 'style-change',
     v: {
-      colorIndex: number
+      color: AcCmColor
       lineWeight: AcGiLineWeight
     }
   ): void
@@ -60,19 +60,11 @@ const emit = defineEmits<{
  * =============================================================
  */
 const editorRef = toRef(props, 'editor')
-const {
-  color,
-  lineWeight,
-  cssColor,
-  isShowToolbar,
-  setColorIndex,
-  setLineWeight
-} = useEntityDrawStyle(editorRef)
+const { color, lineWeight, cssColor, isShowToolbar, setColor, setLineWeight } =
+  useEntityDrawStyle(editorRef)
 
-const colorIndex = computed(() => {
-  const c = AcCmColor.fromString(color.value)
-  // The default color for annotation is red
-  return c?.colorIndex ?? 1
+const drawColor = computed(() => {
+  return AcCmColor.fromString(color.value) ?? new AcCmColor()
 })
 
 /**
@@ -80,8 +72,9 @@ const colorIndex = computed(() => {
  * Event handlers
  * =============================================================
  */
-function onColorChange(v: number) {
-  setColorIndex(v)
+function onColorChange(v: AcCmColor | undefined) {
+  if (!v) return
+  setColor(v)
   emitStyleChange()
 }
 
@@ -92,7 +85,7 @@ function onLineWeightChange(v: AcGiLineWeight) {
 
 function emitStyleChange() {
   emit('style-change', {
-    colorIndex: colorIndex.value,
+    color: drawColor.value,
     lineWeight: lineWeight.value
   })
 }

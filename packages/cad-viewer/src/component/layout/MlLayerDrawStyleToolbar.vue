@@ -1,6 +1,6 @@
 <template>
   <ml-base-draw-style-toolbar
-    :color-index="currentColorIndex"
+    :color="currentColor"
     :css-color="currentLayerInfo?.cssColor"
     :line-weight="currentLineWeight"
     :disabled="!currentLayerInfo"
@@ -106,10 +106,9 @@ const {
  * Derived values
  * =============================================================
  */
-const currentColorIndex = computed(() => {
-  if (!currentLayerInfo.value) return 1
-  const c = AcCmColor.fromString(currentLayerInfo.value.color)
-  return c?.colorIndex ?? 256
+const currentColor = computed(() => {
+  if (!currentLayerInfo.value) return new AcCmColor()
+  return AcCmColor.fromString(currentLayerInfo.value.color) ?? new AcCmColor()
 })
 
 const currentLineWeight = computed<AcGiLineWeight>(() => {
@@ -129,9 +128,10 @@ function onLayerChange(layerName: string) {
   emit('layer-change', layerName)
 }
 
-function onColorChange(colorIndex: number) {
+function onColorChange(color: AcCmColor | undefined) {
   if (!currentLayerInfo.value) return
-  setLayerColor(currentLayerInfo.value.name, colorIndex)
+  if (!color) return
+  setLayerColor(currentLayerInfo.value.name, color)
 }
 
 function onLineWeightChange(value: AcGiLineWeight) {
