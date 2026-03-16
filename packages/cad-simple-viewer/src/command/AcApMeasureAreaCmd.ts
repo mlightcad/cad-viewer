@@ -1,4 +1,5 @@
 import {
+  AcCmColor,
   AcDbLine,
   AcGePoint3dLike,
   AcGiLineWeight
@@ -13,7 +14,7 @@ import {
   AcEdPromptPointOptions
 } from '../editor'
 import { AcApI18n } from '../i18n'
-import { blueColor, makeBadge, makeDot } from '../util'
+import { colorToCss, colorToCssAlpha, makeBadge, makeDot, measurementColor } from '../util'
 import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 /**
@@ -27,11 +28,12 @@ class AcApMeasureAreaJig extends AcEdPreviewJig<AcGePoint3dLike> {
   constructor(
     view: AcEdBaseView,
     from: AcGePoint3dLike,
+    color: AcCmColor,
     onMove: (p: AcGePoint3dLike) => void
   ) {
     super(view)
     this._line = new AcDbLine(from, from)
-    this._line.color = blueColor()
+    this._line.color = color
     this._line.lineWeight = AcGiLineWeight.LineWeight070
     this._onMove = onMove
   }
@@ -92,7 +94,8 @@ function centroid(pts: AcGePoint3dLike[]): { x: number; y: number } {
 function drawAreaOnCanvas(
   canvas: HTMLCanvasElement,
   view: AcEdBaseView,
-  points: AcGePoint3dLike[]
+  points: AcGePoint3dLike[],
+  color: AcCmColor
 ): void {
   const rect = view.canvas.getBoundingClientRect()
   const dpr = window.devicePixelRatio || 1
@@ -122,9 +125,9 @@ function drawAreaOnCanvas(
   ctx.moveTo(spts[0].x, spts[0].y)
   for (let i = 1; i < spts.length; i++) ctx.lineTo(spts[i].x, spts[i].y)
   ctx.closePath()
-  ctx.fillStyle = 'rgba(96, 165, 250, 0.2)'
+  ctx.fillStyle = colorToCssAlpha(color, 0.2)
   ctx.fill()
-  ctx.strokeStyle = '#60a5fa'
+  ctx.strokeStyle = colorToCss(color)
   ctx.lineWidth = 2.5
   ctx.stroke()
 
@@ -153,6 +156,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const editor = AcApDocManager.instance.editor
+    const color = measurementColor(context.doc.database)
     const points: AcGePoint3dLike[] = []
 
     // Construction-phase canvas overlay — removed before this method returns
@@ -164,7 +168,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     // Live area badge shown while the jig is active — also removed before returning
     const liveBadge = document.createElement('div')
     liveBadge.style.cssText =
-      'position:fixed;background:rgba(255,255,255,0.95);color:#1e40af;' +
+      `position:fixed;background:rgba(255,255,255,0.95);color:${colorToCss(color)};` +
       'font-size:13px;font-family:sans-serif;font-weight:500;' +
       'padding:3px 14px;border-radius:20px;pointer-events:none;' +
       'transform:translate(-50%,-50%);white-space:nowrap;' +
@@ -205,7 +209,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         for (let i = 1; i < fillSpts.length; i++)
           ctx.lineTo(fillSpts[i].x, fillSpts[i].y)
         ctx.closePath()
-        ctx.fillStyle = 'rgba(96, 165, 250, 0.2)'
+        ctx.fillStyle = colorToCssAlpha(color, 0.2)
         ctx.fill()
       }
 
@@ -214,7 +218,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         ctx.moveTo(confirmedSpts[0].x, confirmedSpts[0].y)
         for (let i = 1; i < confirmedSpts.length; i++)
           ctx.lineTo(confirmedSpts[i].x, confirmedSpts[i].y)
-        ctx.strokeStyle = '#60a5fa'
+        ctx.strokeStyle = colorToCss(color)
         ctx.lineWidth = 2.5
         ctx.setLineDash([8, 5])
         ctx.stroke()
@@ -257,6 +261,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         prompt.jig = new AcApMeasureAreaJig(
           context.view,
           points[points.length - 1],
+          color,
           onMove
         )
 
@@ -307,10 +312,10 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     persistCanvas.style.cssText =
       'position:fixed;pointer-events:none;z-index:99997;'
     document.body.appendChild(persistCanvas)
-    drawAreaOnCanvas(persistCanvas, context.view, points)
+    drawAreaOnCanvas(persistCanvas, context.view, points, color)
 
     const redrawPersist = () =>
-      drawAreaOnCanvas(persistCanvas, context.view, points)
+      drawAreaOnCanvas(persistCanvas, context.view, points, color)
     context.view.events.viewChanged.addEventListener(redrawPersist)
 
     // Persistent badge + dots via htmlTransientManager
@@ -318,9 +323,9 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     const id = `area-${Date.now()}`
     const mid = centroid(points)
 
-    htManager.add(`${id}-badge`, makeBadge(`~ ${area.toFixed(3)} m²`), mid, 'measurement')
+    htManager.add(`${id}-badge`, makeBadge(color, `~ ${area.toFixed(3)} m²`), mid, 'measurement')
     points.forEach((p, i) => {
-      htManager.add(`${id}-dot${i}`, makeDot(), p, 'measurement')
+      htManager.add(`${id}-dot${i}`, makeDot(color), p, 'measurement')
     })
 
     registerMeasurementCleanup(() => {
