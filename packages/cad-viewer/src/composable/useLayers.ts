@@ -99,12 +99,10 @@ export function useLayers(editor: AcApDocManager) {
    * Mutations
    * =========================================================
    */
-  function setLayerColor(layerName: string, colorIndex: number) {
+  function setLayerColor(layerName: string, color: AcCmColor) {
     const dbLayer = doc.database.tables.layerTable.getAt(layerName)
     if (!dbLayer) return
 
-    const color = new AcCmColor()
-    color.colorIndex = colorIndex
     dbLayer.color = color
   }
 
