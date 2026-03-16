@@ -1,8 +1,6 @@
-import {
-  MTextColor,
-  type MTextToolbarColorPickerFactory
-} from '@mlightcad/cad-simple-viewer'
+import { type MTextToolbarColorPickerFactory } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
+import { AcTrMTextColorUtil } from '@mlightcad/three-renderer'
 import { createApp, h, ref, shallowRef } from 'vue'
 
 import { i18n } from '../../locale'
@@ -15,15 +13,9 @@ import MlColorPickerDropdown from './MlColorPickerDropdown.vue'
 export function createMlColorIndexPickerToolbarFactory(): MTextToolbarColorPickerFactory {
   return context => {
     const { container, initialColor, theme, onChange } = context
-    const initialResolved = new AcCmColor()
-    if (initialColor) {
-      if (initialColor.aci != null) {
-        initialResolved.colorIndex = initialColor.aci
-      } else if (initialColor.isRgb) {
-        initialResolved.setRGBValue(initialColor.rgbValue)
-      }
-    }
-    const colorRef = shallowRef<AcCmColor>(initialResolved)
+    const colorRef = shallowRef<AcCmColor>(
+      AcTrMTextColorUtil.toAcCmColor(initialColor)
+    )
     const themeRef = ref(theme)
 
     const Root = {
@@ -42,29 +34,7 @@ export function createMlColorIndexPickerToolbarFactory(): MTextToolbarColorPicke
                 'onUpdate:modelValue': (color: AcCmColor | undefined) => {
                   if (!color) return
                   colorRef.value = color
-                  if (color.isByColor && typeof color.cssColor === 'string') {
-                    const nextColor = MTextColor.fromCssColor(color.cssColor)
-                    onChange(nextColor ?? new MTextColor())
-                    return
-                  }
-                  const nextColor = new MTextColor()
-                  if (color.isByLayer) {
-                    nextColor.aci = 256
-                  } else if (color.isByBlock) {
-                    nextColor.aci = 0
-                  } else if (color.isByACI) {
-                    nextColor.aci =
-                      typeof color.colorIndex === 'number'
-                        ? color.colorIndex
-                        : 256
-                  } else if (typeof color.RGB === 'number') {
-                    const rgbColor = MTextColor.fromCssColor(color.cssColor)
-                    if (rgbColor) {
-                      onChange(rgbColor)
-                      return
-                    }
-                  }
-                  onChange(nextColor)
+                  onChange(AcTrMTextColorUtil.toMTextColor(color))
                 }
               })
             ]
@@ -79,19 +49,7 @@ export function createMlColorIndexPickerToolbarFactory(): MTextToolbarColorPicke
     return {
       setValue(nextColor) {
         if (!nextColor) return
-        const resolved = new AcCmColor()
-        const cssColor = nextColor.toCssColor()
-        if (cssColor) {
-          resolved.setRGBFromCss(cssColor)
-          colorRef.value = resolved
-          return
-        }
-        if (typeof nextColor.aci === 'number') {
-          if (nextColor.aci === 256) resolved.setByLayer()
-          else if (nextColor.aci === 0) resolved.setByBlock()
-          else resolved.colorIndex = nextColor.aci
-          colorRef.value = resolved
-        }
+        colorRef.value = AcTrMTextColorUtil.toAcCmColor(nextColor)
       },
       setTheme(nextTheme) {
         themeRef.value = nextTheme

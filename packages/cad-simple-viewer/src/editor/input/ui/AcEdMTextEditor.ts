@@ -8,7 +8,7 @@ import {
   type MTextToolbarColorPickerFactory,
   type MTextToolbarTheme
 } from '@mlightcad/mtext-input-box'
-import type { TextStyle } from '@mlightcad/mtext-renderer'
+import { MTextColor } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { AcApDocManager } from '../../../app'
@@ -110,7 +110,7 @@ export class AcEdMTextEditor {
     const cursorColor = isLightBackground ? '#000000' : '#ffffff'
     const docManager = AcApDocManager.instance
     const database = docManager.curDocument.database
-    const { entityColor, layerColor } = docManager.resolveColors()
+    const { layerColor } = docManager.resolveColors()
     const getToolbarTheme = (): MTextToolbarTheme => {
       const rawTheme = AcDbSysVarManager.instance().getVar(
         AcDbSystemVariables.COLORTHEME,
@@ -134,24 +134,7 @@ export class AcEdMTextEditor {
       )
     )
     const resolveLayerTextStyle = () => {
-      const layerName = database.clayer
-      const layer = database.tables.layerTable.getAt(layerName)
-      if (!layer) return undefined
-
-      const layerTextStyle = (layer as { textStyle?: TextStyle | string })
-        .textStyle
-      if (layerTextStyle && typeof layerTextStyle !== 'string') {
-        return layerTextStyle
-      }
-
-      const textStyleName =
-        typeof layerTextStyle === 'string'
-          ? layerTextStyle
-          : (layer as { textStyleName?: string }).textStyleName
-
-      if (!textStyleName) return undefined
-
-      const record = database.tables.textStyleTable.getAt(textStyleName)
+      const record = database.tables.textStyleTable.getAt(database.textstyle)
       return record?.textStyle
     }
     const normalizedTextHeight = Math.max(1, textHeight)
@@ -160,8 +143,7 @@ export class AcEdMTextEditor {
       ? {
           ...layerTextStyle,
           fixedTextHeight: normalizedTextHeight,
-          lastHeight: normalizedTextHeight,
-          color: entityColor
+          lastHeight: normalizedTextHeight
         }
       : undefined
 
@@ -178,6 +160,8 @@ export class AcEdMTextEditor {
       },
       imeTarget: view.canvas,
       colorSettings: {
+        layer: database.clayer,
+        color: new MTextColor(),
         byLayerColor: layerColor,
         byBlockColor: layerColor
       },
