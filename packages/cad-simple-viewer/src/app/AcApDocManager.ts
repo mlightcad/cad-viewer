@@ -1,4 +1,5 @@
 import {
+  AcCmColor,
   AcCmEventManager,
   AcDbDatabaseConverterManager,
   AcDbDxfConverter,
@@ -422,6 +423,56 @@ export class AcApDocManager {
    */
   get baseUrl() {
     return this._baseUrl
+  }
+
+  /**
+   * Resolves colors for creating new entities.
+   *
+   * Returns:
+   * - `entityColor`: the resolved RGB color (24-bit) to use for newly created entities.
+   * - `layerColor`: the current layer's resolved RGB color (24-bit).
+   */
+  resolveColors(): { entityColor: number; layerColor: number } {
+    const db = this.curDocument.database
+    const layer = db.tables.layerTable.getAt(db.clayer)
+    const layerColorValue = this.resolveColorToRgb(layer?.color)
+
+    let resolved: AcCmColor | undefined = db.cecolor
+    if (resolved?.isByLayer) {
+      resolved = layer?.color
+    }
+
+    return {
+      entityColor: this.resolveColorToRgb(resolved),
+      layerColor: layerColorValue
+    }
+  }
+
+  /**
+   * Resolves an AcCmColor into a 24-bit RGB number.
+   * Falls back to ACI 7 when the color is ByLayer/ByBlock or undefined.
+   */
+  private resolveColorToRgb(color?: AcCmColor): number {
+    if (
+      !color ||
+      color.isByLayer ||
+      color.isByBlock ||
+      (color.isByACI && color.colorIndex === 7)
+    ) {
+      return this.resolveAci7ForBackground()
+    }
+    const rgbValue = color.RGB
+    return rgbValue ?? this.resolveAci7ForBackground()
+  }
+
+  /**
+   * Resolves ACI 7 based on the current viewer background color.
+   * - Light background (white): use black.
+   * - Dark background: use white.
+   */
+  private resolveAci7ForBackground(): number {
+    const bg = this.curView.backgroundColor
+    return bg === 0xffffff ? 0x000000 : 0xffffff
   }
 
   /**

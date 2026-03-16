@@ -1,10 +1,10 @@
 import {
   ColorSettings,
+  createDefaultColorSettings,
   MTextData,
   MTextObject,
   RenderMode,
   StyleManager,
-  StyleTraits,
   TextStyle,
   UnifiedRenderer
 } from '@mlightcad/mtext-renderer'
@@ -21,12 +21,12 @@ class AcTrMTextStyleManager implements StyleManager {
     this._styleManager = styeManager
   }
 
-  getMeshBasicMaterial(traits: StyleTraits): THREE.Material {
+  getMeshBasicMaterial(traits: ColorSettings): THREE.Material {
     const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(traits)
     return this._styleManager.getFillMaterial(entityTraits)
   }
 
-  getLineBasicMaterial(traits: StyleTraits): THREE.Material {
+  getLineBasicMaterial(traits: ColorSettings): THREE.Material {
     const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(traits)
     return this._styleManager.getLineMaterial(entityTraits, true)
   }
@@ -94,10 +94,7 @@ export class AcTrMTextRenderer {
   async asyncRenderMText(
     mtextContent: MTextData,
     textStyle: TextStyle,
-    colorSettings: ColorSettings = {
-      byLayerColor: 0xffffff,
-      byBlockColor: 0xffffff
-    }
+    colorSettings: ColorSettings = createDefaultColorSettings()
   ): Promise<MTextObject> {
     if (!this._renderer) {
       throw new Error('AcTrMTextRenderer not initialized!')
@@ -116,10 +113,7 @@ export class AcTrMTextRenderer {
   syncRenderMText(
     mtextContent: MTextData,
     textStyle: TextStyle,
-    colorSettings: ColorSettings = {
-      byLayerColor: 0xffffff,
-      byBlockColor: 0xffffff
-    }
+    colorSettings: ColorSettings = createDefaultColorSettings()
   ): MTextObject {
     this.ensureRendererCreated()
     if (!this._renderer) {
