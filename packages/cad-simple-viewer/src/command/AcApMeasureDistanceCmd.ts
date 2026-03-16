@@ -1,4 +1,5 @@
 import {
+  AcCmColor,
   AcDbLine,
   AcGePoint3dLike,
   AcGiLineWeight
@@ -13,7 +14,7 @@ import {
   AcEdPromptPointOptions
 } from '../editor'
 import { AcApI18n } from '../i18n'
-import { blueColor, makeBadge, makeDot } from '../util'
+import { colorToCss, makeBadge, makeDot, measurementColor } from '../util'
 import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 /** Returns the 2D Euclidean distance between two world points. */
@@ -37,18 +38,18 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _view: AcEdBaseView
   private _badge: HTMLDivElement
 
-  constructor(view: AcEdBaseView, p1: AcGePoint3dLike) {
+  constructor(view: AcEdBaseView, p1: AcGePoint3dLike, color: AcCmColor) {
     super(view)
     this._p1 = p1
     this._view = view
     this._line = new AcDbLine(p1, p1)
-    this._line.color = blueColor()
+    this._line.color = color
     this._line.lineWeight = AcGiLineWeight.LineWeight070
 
     // Live badge — short-lived, cleaned up in end()
     this._badge = document.createElement('div')
     this._badge.style.cssText =
-      'position:fixed;background:rgba(255,255,255,0.95);color:#1e40af;' +
+      `position:fixed;background:rgba(255,255,255,0.95);color:${colorToCss(color)};` +
       'font-size:13px;font-family:sans-serif;font-weight:500;' +
       'padding:3px 14px;border-radius:20px;pointer-events:none;' +
       'transform:translate(-50%,-50%);white-space:nowrap;' +
@@ -101,6 +102,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const editor = AcApDocManager.instance.editor
+    const color = measurementColor(context.doc.database)
 
     const p1Prompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.measureDistance.firstPoint')
@@ -111,14 +113,14 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
       AcApI18n.t('jig.measureDistance.secondPoint')
     )
     p2Prompt.useBasePoint = true
-    p2Prompt.jig = new AcApMeasureDistanceJig(context.view, p1)
+    p2Prompt.jig = new AcApMeasureDistanceJig(context.view, p1, color)
     const p2 = await editor.getPoint(p2Prompt)
 
     const dist = calcDist(p1, p2)
 
     // CAD transient line (zoom/pan aware, rendered by the engine)
     const line = new AcDbLine(p1, p2)
-    line.color = blueColor()
+    line.color = color
     line.lineWeight = AcGiLineWeight.LineWeight070
     context.view.addTransientEntity(line)
 
@@ -127,9 +129,9 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
     const id = `dist-${Date.now()}`
     const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
 
-    htManager.add(`${id}-dot1`, makeDot(), p1, 'measurement')
-    htManager.add(`${id}-dot2`, makeDot(), p2, 'measurement')
-    htManager.add(`${id}-badge`, makeBadge(`~ ${dist.toFixed(3)} m`), mid, 'measurement')
+    htManager.add(`${id}-dot1`, makeDot(color), p1, 'measurement')
+    htManager.add(`${id}-dot2`, makeDot(color), p2, 'measurement')
+    htManager.add(`${id}-badge`, makeBadge(color, `~ ${dist.toFixed(3)} m`), mid, 'measurement')
 
     registerMeasurementCleanup(() => {
       context.view.removeTransientEntity(line.objectId)
