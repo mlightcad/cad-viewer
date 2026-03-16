@@ -20,11 +20,13 @@ import { AcDbSystemVariables } from '@mlightcad/data-model'
 import {
   AcTrEntity,
   AcTrGroup,
+  AcTrHtmlTransientManager,
   AcTrRenderer,
   AcTrViewportView
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
+import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
 import { AcApDocManager, AcApSettingManager } from '../app'
 import {
@@ -113,6 +115,8 @@ export class AcTrView2d extends AcEdBaseView {
   private _missedImages: Map<AcDbObjectId, string>
   /** The number of entities waiting for processing */
   private _numOfEntitiesToProcess: number
+  /** CSS2D renderer for HTML transient overlays */
+  private _css2dRenderer: CSS2DRenderer
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -201,6 +205,14 @@ export class AcTrView2d extends AcEdBaseView {
         this._isDirty = true
       }
     )
+
+    this._css2dRenderer = new CSS2DRenderer()
+    this._css2dRenderer.setSize(this.width, this.height)
+    this._css2dRenderer.domElement.style.position = 'absolute'
+    this._css2dRenderer.domElement.style.top = '0px'
+    this._css2dRenderer.domElement.style.left = '0px'
+    this._css2dRenderer.domElement.style.pointerEvents = 'none'
+    container.appendChild(this._css2dRenderer.domElement)
 
     this._missedImages = new Map()
     this._layoutViewManager = new AcTrLayoutViewManager()
@@ -352,6 +364,13 @@ export class AcTrView2d extends AcEdBaseView {
    */
   get internalScene() {
     return this._scene.internalScene
+  }
+
+  /**
+   * The HTML transient elements manager for placing overlays anchored to world coordinates.
+   */
+  get htmlTransientManager(): AcTrHtmlTransientManager {
+    return this._scene.htmlTransientManager
   }
 
   /**
@@ -728,6 +747,7 @@ export class AcTrView2d extends AcEdBaseView {
   protected onWindowResize() {
     super.onWindowResize()
     this._renderer.setSize(this.width, this.height)
+    this._css2dRenderer.setSize(this.width, this.height)
     this._layoutViewManager.resize(this.width, this.height)
     this._isDirty = true
   }
@@ -742,6 +762,9 @@ export class AcTrView2d extends AcEdBaseView {
 
     if (!this._isDirty) return
     this._layoutViewManager.render(this._scene)
+    if (this.internalCamera) {
+      this._css2dRenderer.render(this._scene.internalScene, this.internalCamera)
+    }
     this._stats?.update()
     this._isDirty = false
   }
