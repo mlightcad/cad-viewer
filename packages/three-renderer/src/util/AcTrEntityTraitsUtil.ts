@@ -4,7 +4,9 @@ import {
   AcGiLineWeight,
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
-import { StyleTraits } from '@mlightcad/mtext-renderer'
+import { ColorSettings } from '@mlightcad/mtext-renderer'
+
+import { AcTrMTextColorUtil } from './AcTrMTextColorUtil'
 
 export class AcTrSubEntityTraitsUtil {
   static createDefaultTraits(): AcGiSubEntityTraits {
@@ -31,14 +33,14 @@ export class AcTrSubEntityTraitsUtil {
     }
   }
 
-  static createTraitsForMText(traits: StyleTraits): AcGiSubEntityTraits {
-    const color = new AcCmColor()
-    if (!traits.isByLayer) {
-      color.setRGBValue(traits.color)
-    }
+  static createTraitsForMText(
+    colorSettings: ColorSettings
+  ): AcGiSubEntityTraits {
+    const color = AcTrMTextColorUtil.toAcCmColor(colorSettings.color)
+    const rgbColor = AcTrMTextColorUtil.resolveRgbColor(colorSettings)
     return {
       color,
-      rgbColor: traits.color,
+      rgbColor,
       lineType: {
         type: 'ByLayer',
         name: 'Continuous',
@@ -55,7 +57,7 @@ export class AcTrSubEntityTraitsUtil {
       },
       transparency: new AcCmTransparency(),
       thickness: 0,
-      layer: traits.layer ?? '0'
+      layer: colorSettings.layer ?? '0'
     }
   }
 }

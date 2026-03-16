@@ -4,23 +4,19 @@ import {
   AcGiTextStyle,
   log
 } from '@mlightcad/data-model'
-import { MTextObject } from '@mlightcad/mtext-renderer'
+import { ColorSettings, MTextObject } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { AcTrMTextRenderer } from '../renderer'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrMTextColorUtil } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrMText extends AcTrEntity {
   private _mtext?: MTextObject
   private _text: AcGiMTextData
-  private _style: AcGiTextStyle & {
-    color: number
-    isByLayer: boolean
-    layer: string
-    byLayerColor?: number
-    byBlockColor?: number
-  }
+  private _style: AcGiTextStyle
+  private _colorSettings: ColorSettings
 
   constructor(
     text: AcGiMTextData,
@@ -31,11 +27,12 @@ export class AcTrMText extends AcTrEntity {
   ) {
     super(styleManager)
     this._text = text
-    this._style = {
-      ...style,
-      color: traits.rgbColor,
-      isByLayer: traits.color.isByLayer,
-      layer: traits.layer
+    this._style = { ...style }
+    this._colorSettings = {
+      layer: traits.layer,
+      color: AcTrMTextColorUtil.toMTextColor(traits.color),
+      byLayerColor: 0xffffff,  // TODO: Fix it
+      byBlockColor: 0xffffff   // TODO: Fix it
     }
     if (!delay) {
       this.syncDraw()
@@ -50,10 +47,7 @@ export class AcTrMText extends AcTrEntity {
       const style = this._style
 
       // @ts-expect-error AcGiTextData and MTextData are compatible
-      this._mtext = mtextRenderer.syncRenderMText(this._text, style, {
-        byLayerColor: style.byLayerColor,
-        byBlockColor: style.byBlockColor
-      })
+      this._mtext = mtextRenderer.syncRenderMText(this._text, style, this._colorSettings)
       this.add(this._mtext)
       this.flatten()
       this.traverse(object => {
@@ -77,10 +71,7 @@ export class AcTrMText extends AcTrEntity {
       const style = this._style
 
       // @ts-expect-error AcGiTextData and MTextData are compatible
-      this._mtext = await mtextRenderer.asyncRenderMText(this._text, style, {
-          byLayerColor: style.byLayerColor,
-          byBlockColor: style.byBlockColor
-        })
+      this._mtext = await mtextRenderer.asyncRenderMText(this._text, style, this._colorSettings)
         .then(mtext => {
           this._mtext = mtext
           this.add(this._mtext)
