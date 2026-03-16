@@ -12,9 +12,9 @@ import {
   AcEdPreviewJig,
   AcEdPromptPointOptions
 } from '../editor'
-import { eventBus } from '../editor/global/eventBus'
 import { AcApI18n } from '../i18n'
-import { blueColor } from '../util'
+import { blueColor, makeBadge, makeDot } from '../util'
+import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 /**
  * Rubber-band jig: shows a preview line from the last confirmed
@@ -88,6 +88,49 @@ function centroid(pts: AcGePoint3dLike[]): { x: number; y: number } {
   return { x, y }
 }
 
+/** Draws a filled polygon on a full-viewport canvas overlay. */
+function drawAreaOnCanvas(
+  canvas: HTMLCanvasElement,
+  view: AcEdBaseView,
+  points: AcGePoint3dLike[]
+): void {
+  const rect = view.canvas.getBoundingClientRect()
+  const dpr = window.devicePixelRatio || 1
+  const w = Math.round(rect.width)
+  const h = Math.round(rect.height)
+
+  canvas.style.left = `${rect.left}px`
+  canvas.style.top = `${rect.top}px`
+  canvas.style.width = `${w}px`
+  canvas.style.height = `${h}px`
+
+  if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+    canvas.width = w * dpr
+    canvas.height = h * dpr
+  }
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx || points.length < 3) return
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  ctx.save()
+  ctx.scale(dpr, dpr)
+
+  const spts = points.map(p => view.worldToScreen(p))
+
+  ctx.beginPath()
+  ctx.moveTo(spts[0].x, spts[0].y)
+  for (let i = 1; i < spts.length; i++) ctx.lineTo(spts[i].x, spts[i].y)
+  ctx.closePath()
+  ctx.fillStyle = 'rgba(96, 165, 250, 0.2)'
+  ctx.fill()
+  ctx.strokeStyle = '#60a5fa'
+  ctx.lineWidth = 2.5
+  ctx.stroke()
+
+  ctx.restore()
+}
+
 /**
  * Command that measures the area of a polygon drawn by the user.
  *
@@ -98,10 +141,9 @@ function centroid(pts: AcGePoint3dLike[]): { x: number; y: number } {
  * edge — matching AutoCAD's area measurement behaviour. Pressing ESC/Enter
  * also finalises the polygon.
  *
- * The construction-phase canvas and live badge are created and removed within
- * this execute() method. After closing, a `measurement-added` event is emitted
- * so the `useMeasurements` composable in `cad-viewer` renders the persistent
- * DOM overlay (fill canvas + badge + vertex dots).
+ * Persistent overlays are placed via {@link AcTrHtmlTransientManager} for dots
+ * and badge. The filled area canvas is managed with a viewChanged listener
+ * cleaned up via {@link registerMeasurementCleanup}.
  */
 export class AcApMeasureAreaCmd extends AcEdCommand {
   constructor() {
@@ -251,7 +293,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
       // user pressed Enter/ESC to finish
     }
 
-    // Clean up construction-phase elements before returning
+    // Clean up construction-phase elements
     liveBadge.remove()
     context.view.events.viewChanged.removeEventListener(redrawOnViewChange)
     fillCanvas.remove()
@@ -260,7 +302,34 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
 
     const area = shoelaceArea(points)
 
-    // Notify the useMeasurements composable to render the persistent DOM overlay
-    eventBus.emit('measurement-added', { type: 'area', points, area })
+    // Persistent fill canvas — redrawn on viewChanged, cleaned up by Clear
+    const persistCanvas = document.createElement('canvas')
+    persistCanvas.style.cssText =
+      'position:fixed;pointer-events:none;z-index:99997;'
+    document.body.appendChild(persistCanvas)
+    drawAreaOnCanvas(persistCanvas, context.view, points)
+
+    const redrawPersist = () =>
+      drawAreaOnCanvas(persistCanvas, context.view, points)
+    context.view.events.viewChanged.addEventListener(redrawPersist)
+
+    // Persistent badge + dots via htmlTransientManager
+    const htManager = AcApDocManager.instance.curView.htmlTransientManager
+    const id = `area-${Date.now()}`
+    const mid = centroid(points)
+
+    htManager.add(`${id}-badge`, makeBadge(`~ ${area.toFixed(3)} m²`), mid, 'measurement')
+    points.forEach((p, i) => {
+      htManager.add(`${id}-dot${i}`, makeDot(), p, 'measurement')
+    })
+
+    registerMeasurementCleanup(() => {
+      persistCanvas.remove()
+      context.view.events.viewChanged.removeEventListener(redrawPersist)
+      htManager.remove(`${id}-badge`)
+      points.forEach((_, i) => {
+        htManager.remove(`${id}-dot${i}`)
+      })
+    })
   }
 }

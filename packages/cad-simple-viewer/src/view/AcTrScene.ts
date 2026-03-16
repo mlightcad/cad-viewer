@@ -1,5 +1,9 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d, log } from '@mlightcad/data-model'
-import { AcTrEntity, AcTrTransientManager } from '@mlightcad/three-renderer'
+import {
+  AcTrEntity,
+  AcTrHtmlTransientManager,
+  AcTrTransientManager
+} from '@mlightcad/three-renderer'
 import { AcEdLayerInfo } from 'editor'
 import * as THREE from 'three'
 
@@ -83,6 +87,8 @@ export class AcTrScene {
   private _modelSpaceBtrId: AcDbObjectId
   /** Transient objects manager */
   private _transientManager: AcTrTransientManager
+  /** HTML transient elements manager */
+  private _htmlTransientManager: AcTrHtmlTransientManager
 
   /**
    * Creates a new CAD scene instance.
@@ -92,10 +98,18 @@ export class AcTrScene {
   constructor() {
     this._scene = new THREE.Scene()
     this._transientManager = new AcTrTransientManager(this._scene)
+    this._htmlTransientManager = new AcTrHtmlTransientManager(this._scene)
     this._layers = new Map()
     this._layouts = new Map()
     this._activeLayoutBtrId = ''
     this._modelSpaceBtrId = ''
+  }
+
+  /**
+   * The HTML transient elements manager for this scene
+   */
+  get htmlTransientManager() {
+    return this._htmlTransientManager
   }
 
   /**
@@ -256,8 +270,10 @@ export class AcTrScene {
     this._layouts.clear()
     this._layers.clear()
     this._transientManager.clear()
+    this._htmlTransientManager.clear()
     this._scene.clear()
     this._transientManager = new AcTrTransientManager(this._scene)
+    this._htmlTransientManager = new AcTrHtmlTransientManager(this._scene)
     return this
   }
 
