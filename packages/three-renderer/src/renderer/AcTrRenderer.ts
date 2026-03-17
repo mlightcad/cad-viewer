@@ -122,6 +122,14 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
+   * Changes rendering color to the specified color for entities whose color is ACI 7.
+   * @param color - New rendering color for ACI 7.
+   */
+  changeForeground(color: number) {
+    this._styleManager.changeForeground(color)
+  }
+
+  /**
    * Sets the clear color used when clearing the canvas.
    *
    * @param color - Background color as 24-bit hexadecimal RGB number
@@ -145,14 +153,14 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    *
    * @param alpha - Alpha value (0.0 - 1.0)
    */
-  setClearAlpha(alpha: number) {
+  set clearAlpha(alpha: number) {
     this._renderer.setClearAlpha(alpha)
   }
 
   /**
    * Gets the current clear alpha value.
    */
-  getClearAlpha() {
+  get clearAlpha() {
     return this._renderer.getClearAlpha()
   }
 

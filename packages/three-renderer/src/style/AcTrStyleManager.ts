@@ -124,6 +124,18 @@ export class AcTrStyleManager {
   }
 
   /**
+   * Changes material color to the specified color if its userData 'isForeground' is true.
+   * Generally this function is used to change rendering color of entities whose color is
+   * ACI 7.
+   * @param color - New rendering color.
+   */
+  changeForeground(color: number) {
+    this.lineMgr.changeForeground(color)
+    this.pointMgr.changeForeground(color)
+    this.fillMgr.changeForeground(color)
+  }
+
+  /**
    * Clears all cached materials and releases its memory
    */
   dispose(): void {

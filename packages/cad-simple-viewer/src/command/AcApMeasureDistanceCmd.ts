@@ -131,7 +131,12 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
 
     htManager.add(`${id}-dot1`, makeDot(color), p1, 'measurement')
     htManager.add(`${id}-dot2`, makeDot(color), p2, 'measurement')
-    htManager.add(`${id}-badge`, makeBadge(color, `~ ${dist.toFixed(3)} m`), mid, 'measurement')
+    htManager.add(
+      `${id}-badge`,
+      makeBadge(color, `~ ${dist.toFixed(3)} m`),
+      mid,
+      'measurement'
+    )
 
     registerMeasurementCleanup(() => {
       context.view.removeTransientEntity(line.objectId)
