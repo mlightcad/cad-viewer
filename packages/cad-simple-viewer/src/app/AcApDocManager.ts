@@ -21,6 +21,7 @@ import {
   AcApEraseCmd,
   AcApLineCmd,
   AcApLogCmd,
+  AcApMeasureAngleCmd,
   AcApMeasureArcCmd,
   AcApMeasureAreaCmd,
   AcApMeasureDistanceCmd,
@@ -720,6 +721,12 @@ export class AcApDocManager {
       'measurearea',
       'measurearea',
       new AcApMeasureAreaCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'measureangle',
+      'measureangle',
+      new AcApMeasureAngleCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
