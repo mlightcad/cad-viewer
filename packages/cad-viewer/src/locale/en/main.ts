@@ -13,6 +13,10 @@ export default {
       text: 'Distance',
       description: 'Measures the distance between two points'
     },
+    measureAngle: {
+      text: 'Angle',
+      description: 'Measures the angle between two lines sharing a common vertex'
+    },
     measureArea: {
       text: 'Area',
       description: 'Measures the area of a polygon'

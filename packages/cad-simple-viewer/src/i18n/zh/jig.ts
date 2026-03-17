@@ -11,6 +11,11 @@ export default {
     firstPoint: '指定第一个点：',
     nextPoint: '指定下一个点（或按 Enter 完成）：'
   },
+  measureAngle: {
+    vertex: '指定顶点：',
+    arm1: '指定第一条边上的点：',
+    arm2: '指定第二条边上的点：'
+  },
   measureArc: {
     startPoint: '指定弧的起点：',
     throughPoint: '指定弧上的一个点：',
