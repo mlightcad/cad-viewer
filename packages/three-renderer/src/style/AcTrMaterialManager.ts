@@ -1,6 +1,7 @@
 import { AcGiSubEntityTraits, deepClone } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
+import { AcTrMaterialUtil } from '../util'
 import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
 
 /**
@@ -118,6 +119,28 @@ export abstract class AcTrMaterialManager<T> {
   }
 
   /**
+   * Changes material color to the specified color if its userData 'isForeground' is true.
+   * Generally this function is used to change rendering color of entities whose color is
+   * ACI 7.
+   * @param color - New rendering color.
+   */
+  changeForeground(color: number) {
+    // iterate all cached materials and check userData
+    for (const oldKey of Object.keys(this.cache)) {
+      const oldMaterial = this.cache[oldKey]
+      const data = oldMaterial.userData || {}
+
+      const isTarget = data.isForeground
+      if (!isTarget) continue
+
+      const oldTraits = this.keyToTraits[oldKey]
+      if (!oldTraits) continue
+
+      AcTrMaterialUtil.setMaterialColor(oldMaterial, new THREE.Color(color))
+    }
+  }
+
+  /**
    * Clears all cached materials.
    */
   dispose(): void {
@@ -141,6 +164,7 @@ export abstract class AcTrMaterialManager<T> {
     // Attach metadata required for layer updates
     material.userData.layer = traits.layer
     material.userData.isByLayer = this.isByLayer(traits)
+    material.userData.isForeground = traits.color.isForeground
 
     this.cache[key] = material
     return material

@@ -404,7 +404,12 @@ export class AcApMeasureArcCmd extends AcEdCommand {
 
     htManager.add(`${id}-dot1`, makeDot(color), start, 'measurement')
     htManager.add(`${id}-dot2`, makeDot(color), end, 'measurement')
-    htManager.add(`${id}-badge`, makeBadge(color, `~ ${arcLen.toFixed(4)} m`), mid, 'measurement')
+    htManager.add(
+      `${id}-badge`,
+      makeBadge(color, `~ ${arcLen.toFixed(4)} m`),
+      mid,
+      'measurement'
+    )
 
     registerMeasurementCleanup(() => {
       persistCanvas.remove()

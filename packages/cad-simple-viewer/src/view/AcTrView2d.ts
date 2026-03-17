@@ -320,6 +320,7 @@ export class AcTrView2d extends AcEdBaseView {
    */
   set backgroundColor(value: number) {
     this._renderer.setClearColor(value)
+    this._renderer.changeForeground(value == 0 ? 0xffffff : 0)
     this._isDirty = true
   }
 
