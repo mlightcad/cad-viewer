@@ -1,4 +1,5 @@
 import {
+  AcCmColor,
   AcDbLine,
   AcGePoint3dLike,
   AcGiLineWeight
@@ -12,9 +13,8 @@ import {
   AcEdPreviewJig,
   AcEdPromptPointOptions
 } from '../editor'
-import { eventBus } from '../editor/global/eventBus'
 import { AcApI18n } from '../i18n'
-import { blueColor } from '../util'
+import { colorToCss, makeBadge, makeDot, measurementColor } from '../util'
 import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 /** Returns the 2D Euclidean distance between two world points. */
@@ -38,18 +38,18 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _view: AcEdBaseView
   private _badge: HTMLDivElement
 
-  constructor(view: AcEdBaseView, p1: AcGePoint3dLike) {
+  constructor(view: AcEdBaseView, p1: AcGePoint3dLike, color: AcCmColor) {
     super(view)
     this._p1 = p1
     this._view = view
     this._line = new AcDbLine(p1, p1)
-    this._line.color = blueColor()
+    this._line.color = color
     this._line.lineWeight = AcGiLineWeight.LineWeight070
 
     // Live badge — short-lived, cleaned up in end()
     this._badge = document.createElement('div')
     this._badge.style.cssText =
-      'position:fixed;background:rgba(255,255,255,0.95);color:#1e40af;' +
+      `position:fixed;background:rgba(255,255,255,0.95);color:${colorToCss(color)};` +
       'font-size:13px;font-family:sans-serif;font-weight:500;' +
       'padding:3px 14px;border-radius:20px;pointer-events:none;' +
       'transform:translate(-50%,-50%);white-space:nowrap;' +
@@ -90,10 +90,9 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * Command that measures the straight-line distance between two points.
  *
  * Prompts the user to pick two world points, then registers a transient CAD
- * line between them with `registerMeasurementCleanup` so it can be removed by
- * the Clear Measurements command. The persistent DOM overlay (dots + badge) is
- * handled by the `useMeasurements` composable in `cad-viewer`, which listens for
- * the `measurement-added` event emitted here.
+ * line between them. Persistent DOM overlays (dots + badge) are placed via
+ * {@link AcTrHtmlTransientManager} using CSS2DObject, so they track zoom/pan
+ * automatically without manual viewChanged listeners.
  */
 export class AcApMeasureDistanceCmd extends AcEdCommand {
   constructor() {
@@ -103,6 +102,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const editor = AcApDocManager.instance.editor
+    const color = measurementColor(context.doc.database)
 
     const p1Prompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.measureDistance.firstPoint')
@@ -113,22 +113,31 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
       AcApI18n.t('jig.measureDistance.secondPoint')
     )
     p2Prompt.useBasePoint = true
-    p2Prompt.jig = new AcApMeasureDistanceJig(context.view, p1)
+    p2Prompt.jig = new AcApMeasureDistanceJig(context.view, p1, color)
     const p2 = await editor.getPoint(p2Prompt)
 
     const dist = calcDist(p1, p2)
 
     // CAD transient line (zoom/pan aware, rendered by the engine)
     const line = new AcDbLine(p1, p2)
-    line.color = blueColor()
+    line.color = color
     line.lineWeight = AcGiLineWeight.LineWeight070
     context.view.addTransientEntity(line)
 
+    // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
+    const htManager = AcApDocManager.instance.curView.htmlTransientManager
+    const id = `dist-${Date.now()}`
+    const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+
+    htManager.add(`${id}-dot1`, makeDot(color), p1, 'measurement')
+    htManager.add(`${id}-dot2`, makeDot(color), p2, 'measurement')
+    htManager.add(`${id}-badge`, makeBadge(color, `~ ${dist.toFixed(3)} m`), mid, 'measurement')
+
     registerMeasurementCleanup(() => {
       context.view.removeTransientEntity(line.objectId)
+      htManager.remove(`${id}-dot1`)
+      htManager.remove(`${id}-dot2`)
+      htManager.remove(`${id}-badge`)
     })
-
-    // Notify the useMeasurements composable to render the persistent DOM overlay
-    eventBus.emit('measurement-added', { type: 'distance', p1, p2, dist })
   }
 }

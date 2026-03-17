@@ -100,7 +100,6 @@ import {
   toggleDark,
   useEntityDrawStyle,
   useLocale,
-  useMeasurements,
   useNotificationCenter,
   useSettings
 } from '../composable'
@@ -193,8 +192,6 @@ const viewerThemeClass = computed(() =>
 const features = useSettings()
 
 const { isShowToolbar } = useEntityDrawStyle(editor)
-
-useMeasurements()
 
 /**
  * Handles file read events from the file reader component
