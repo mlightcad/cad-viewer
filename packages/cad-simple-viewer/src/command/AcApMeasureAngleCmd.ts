@@ -324,24 +324,35 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
     htManager.add(`${id}-dot1`, makeDot(color), arm1, 'measurement')
     htManager.add(`${id}-dot2`, makeDot(color), arm2, 'measurement')
 
-    // Place badge along the angle bisector
-    const sv = context.view.worldToScreen(vertex)
-    const s1 = context.view.worldToScreen(arm1)
-    const s2 = context.view.worldToScreen(arm2)
-    const a1 = Math.atan2(s1.y - sv.y, s1.x - sv.x)
-    const a2 = Math.atan2(s2.y - sv.y, s2.x - sv.x)
-    let bisector = (a1 + a2) / 2
-    if (Math.abs(a1 - a2) > Math.PI) bisector += Math.PI
-    const bLen1 = Math.hypot(s1.x - sv.x, s1.y - sv.y)
-    const bLen2 = Math.hypot(s2.x - sv.x, s2.y - sv.y)
-    const bArcR = Math.max(Math.min(bLen1, bLen2) * 0.3, 15)
-    const badgeOffset = bArcR + 20
-    // Convert badge screen position back to world for htmlTransientManager
-    const badgeScreen = {
-      x: sv.x + Math.cos(bisector) * badgeOffset,
-      y: sv.y + Math.sin(bisector) * badgeOffset
+    // Place badge along the angle bisector in world space
+    const dx1 = arm1.x - vertex.x
+    const dy1 = arm1.y - vertex.y
+    const dx2 = arm2.x - vertex.x
+    const dy2 = arm2.y - vertex.y
+    const wLen1 = Math.hypot(dx1, dy1)
+    const wLen2 = Math.hypot(dx2, dy2)
+    // Unit vectors along each arm
+    const u1x = wLen1 > 0 ? dx1 / wLen1 : 1
+    const u1y = wLen1 > 0 ? dy1 / wLen1 : 0
+    const u2x = wLen2 > 0 ? dx2 / wLen2 : 1
+    const u2y = wLen2 > 0 ? dy2 / wLen2 : 0
+    // Bisector direction (sum of unit vectors)
+    let bx = u1x + u2x
+    let by = u1y + u2y
+    const bLen = Math.hypot(bx, by)
+    if (bLen > 0) {
+      bx /= bLen
+      by /= bLen
+    } else {
+      // Arms are exactly opposite — use perpendicular
+      bx = -u1y
+      by = u1x
     }
-    const badgeWorld = context.view.screenToWorld(badgeScreen)
+    const badgeOffset = Math.max(Math.min(wLen1, wLen2) * 0.4, Math.max(wLen1, wLen2) * 0.15)
+    const badgeWorld = {
+      x: vertex.x + bx * badgeOffset,
+      y: vertex.y + by * badgeOffset
+    }
     htManager.add(
       `${id}-badge`,
       makeBadge(color, `${degrees.toFixed(2)}\u00B0`),
