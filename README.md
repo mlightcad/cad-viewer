@@ -15,8 +15,8 @@ By performing DWG/DXF parsing, geometry processing, and rendering directly in th
 
 ### Built with cad-viewer
 
-- [CAD Viewer Web App](https://cad.thingraph.site/open?use2d=1) - Production-ready 2D/3D CAD viewer, built on cad-viewer, used by engineering teams globally for seamless browser-based file access.
-- [DWG Viewer for Google Drive](https://drive.thingraph.site/) - A widely adopted Google Drive integration powered by cad-viewer, enabling thousands of users to preview DWG/DXF files directly in Drive, streamlining cloud workflows.
+- [DWG Viewer for Google Drive](https://drive.thingraph.site/) - A widely adopted Google Drive integration powered by cad-viewer, enabling thousands of users to preview DWG/DXF files directly in Drive, streamlining cloud workflows. [Install to Google Drive](https://workspace.google.com/marketplace/app/dwg_viewer/641533811831)
+- [CAD Viewer Web App](https://cad.thingraph.site/open?use2d=1) - 2D/3D CAD viewer, built on cad-viewer, used by engineering teams globally for seamless browser-based file access. It is integreated to Google Drive too, [Install](https://workspace.google.com/u/0/marketplace/app/cad_viewer/688654001920).
 
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
