@@ -13,6 +13,9 @@ export class AcTrMTextColorUtil {
 
     if (color.isRgb && typeof color.rgbValue === 'number') {
       resolved.setRGBValue(color.rgbValue)
+      if (color.rgbValue === 0xffffff || color.rgbValue === 0x000000) {
+        resolved.colorIndex = 7
+      }
       return resolved
     }
 
