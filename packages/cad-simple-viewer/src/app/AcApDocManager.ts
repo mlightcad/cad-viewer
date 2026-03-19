@@ -7,7 +7,6 @@ import {
   acdbHostApplicationServices,
   AcDbProgressdEventArgs,
   AcDbSysVarManager,
-  AcGeBox2d,
   log
 } from '@mlightcad/data-model'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
@@ -959,14 +958,11 @@ export class AcApDocManager {
       const doc = this.context.doc
       this.events.documentActivated.dispatch({ doc })
       this.setActiveLayout()
-      const db = doc.database
 
-      // The extents of drawing database may be empty. Espically dxf files.
-      if (db.extents.isEmpty()) {
-        this.curView.zoomToFitDrawing()
-      } else {
-        this.curView.zoomTo(new AcGeBox2d(db.extmin, db.extmax))
-      }
+      // The initial zoom is handled after batchConvert completes, so the
+      // camera goes directly to the viewport area without a visible jump.
+      // For files without viewports, zoomToFitDrawing provides the fallback.
+      this.curView.zoomToFitDrawing()
     }
   }
 
