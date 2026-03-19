@@ -1,5 +1,14 @@
 # @mlightcad/cad-viewer-example
 
+## 1.4.11
+
+### Patch Changes
+
+- feat: add measurement feature
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.4.11
+  - @mlightcad/cad-viewer@1.4.11
+
 ## 1.4.10
 
 ### Patch Changes
