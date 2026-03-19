@@ -13,6 +13,11 @@ By performing DWG/DXF parsing, geometry processing, and rendering directly in th
 - Medium: [@mlightcad](https://medium.com/@mlightcad)
 - Juejin(稀土掘金): [@mlightcad](https://juejin.cn/column/7501992214283501579)
 
+### Built with cad-viewer
+
+- [CAD Viewer Web App](https://cad.thingraph.site/open?use2d=1) - Production-ready 2D/3D CAD viewer, built on cad-viewer, used by engineering teams globally for seamless browser-based file access.
+- [DWG Viewer for Google Drive](https://drive.thingraph.site/) - A widely adopted Google Drive integration powered by cad-viewer, enabling thousands of users to preview DWG/DXF files directly in Drive, streamlining cloud workflows.
+
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
 ## Features
