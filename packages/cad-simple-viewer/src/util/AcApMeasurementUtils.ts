@@ -2,7 +2,8 @@ import {
   AcCmColor,
   AcDbDatabase,
   AcDbSystemVariables,
-  AcDbSysVarManager} from '@mlightcad/data-model'
+  AcDbSysVarManager
+} from '@mlightcad/data-model'
 
 /** Returns the current measurement overlay color from the MEASUREMENTCOLOR system variable. */
 export function measurementColor(db: AcDbDatabase): AcCmColor {

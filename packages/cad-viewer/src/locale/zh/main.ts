@@ -13,6 +13,10 @@ export default {
       text: '距离',
       description: '测量两点之间的距离'
     },
+    measureAngle: {
+      text: '角度',
+      description: '测量共享一个顶点的两条线之间的角度'
+    },
     measureArea: {
       text: '面积',
       description: '测量多边形的面积'

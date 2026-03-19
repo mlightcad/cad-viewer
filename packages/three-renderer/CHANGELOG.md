@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.4.11
+
+### Patch Changes
+
+- feat: add measurement feature
+
 ## 1.4.10
 
 ### Patch Changes

@@ -98,6 +98,9 @@ cd packages/cad-simple-viewer-example && pnpm build
 packages/examples/
 ├── public/
 │   ├── index.html              # Main navigation page
+│   ├── robots.txt              # Crawlers policy
+│   ├── sitemap.xml             # Search engine sitemap
+│   ├── llms.txt                # LLM-friendly project summary
 │   ├── cad-viewer/             # Full CAD viewer demo
 │   └── cad-simple-viewer/      # Simple CAD viewer demo
 ├── copyDist.js                 # Script to copy built examples

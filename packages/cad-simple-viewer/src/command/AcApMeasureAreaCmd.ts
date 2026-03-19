@@ -14,7 +14,13 @@ import {
   AcEdPromptPointOptions
 } from '../editor'
 import { AcApI18n } from '../i18n'
-import { colorToCss, colorToCssAlpha, makeBadge, makeDot, measurementColor } from '../util'
+import {
+  colorToCss,
+  colorToCssAlpha,
+  makeBadge,
+  makeDot,
+  measurementColor
+} from '../util'
 import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 /**
@@ -323,7 +329,12 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     const id = `area-${Date.now()}`
     const mid = centroid(points)
 
-    htManager.add(`${id}-badge`, makeBadge(color, `~ ${area.toFixed(3)} m²`), mid, 'measurement')
+    htManager.add(
+      `${id}-badge`,
+      makeBadge(color, `~ ${area.toFixed(3)} m²`),
+      mid,
+      'measurement'
+    )
     points.forEach((p, i) => {
       htManager.add(`${id}-dot${i}`, makeDot(color), p, 'measurement')
     })

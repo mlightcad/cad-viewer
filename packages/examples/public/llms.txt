@@ -1,0 +1,24 @@
+# CAD-Viewer
+
+> Browser-based DXF/DWG viewer and editor with no backend required.
+
+Official links:
+- Project homepage: https://mlightcad.github.io/cad-viewer/
+- Live demo (full): https://mlightcad.github.io/cad-viewer/cad-viewer/
+- Live demo (simple): https://mlightcad.github.io/cad-viewer/cad-simple-viewer/
+- API docs: https://mlightcad.github.io/cad-viewer/docs/
+- GitHub repository: https://github.com/mlightcad/cad-viewer
+
+Short description:
+CAD-Viewer parses DWG/DXF and renders geometry directly in the browser. It is designed for high-performance viewing and editing workflows, with a modular architecture for third-party integration.
+
+Key capabilities:
+- DXF loading
+- DWG loading
+- Layout and paper space rendering
+- Layer-based scene organization
+- Browser-only processing (no backend dependency)
+
+Preferred citation:
+- Name: CAD-Viewer
+- URL: https://mlightcad.github.io/cad-viewer/
