@@ -1,2 +1,2 @@
-export * from './AcApMeasurementUtils'
+export * from './AcApMeasurementElementGenerator'
 export * from './AcTrGeometryUtil'

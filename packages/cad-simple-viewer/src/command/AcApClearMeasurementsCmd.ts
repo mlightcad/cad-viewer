@@ -1,5 +1,6 @@
-import { AcApContext, AcApDocManager } from '../app'
+import { AcApContext } from '../app'
 import { AcEdCommand, AcEdOpenMode } from '../editor'
+import { AcTrView2d } from '../view'
 
 /** Cleanup callbacks registered by measurement commands. */
 const cleanups: (() => void)[] = []
@@ -19,12 +20,12 @@ export class AcApClearMeasurementsCmd extends AcEdCommand {
     this.mode = AcEdOpenMode.Read
   }
 
-  async execute(_context: AcApContext) {
+  async execute(context: AcApContext) {
     // Run registered cleanups (CAD transients, canvas overlays, listeners)
     cleanups.forEach(fn => fn())
     cleanups.length = 0
 
     // Clear all HTML transient overlays in the measurement layer
-    AcApDocManager.instance.curView.htmlTransientManager.clear('measurement')
+    ;(context.view as AcTrView2d).htmlTransientManager.clear('measurement')
   }
 }

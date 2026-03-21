@@ -14,7 +14,8 @@ import {
   AcEdPromptPointOptions
 } from '../editor'
 import { AcApI18n } from '../i18n'
-import { colorToCss, makeBadge, makeDot, measurementColor } from '../util'
+import { makeBadge, makeDot, makeLiveBadge, measurementColor } from '../util'
+import { AcTrView2d } from '../view'
 import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 /** Returns the 2D Euclidean distance between two world points. */
@@ -47,14 +48,7 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._line.lineWeight = AcGiLineWeight.LineWeight070
 
     // Live badge — short-lived, cleaned up in end()
-    this._badge = document.createElement('div')
-    this._badge.style.cssText =
-      `position:fixed;background:rgba(255,255,255,0.95);color:${colorToCss(color)};` +
-      'font-size:13px;font-family:sans-serif;font-weight:500;' +
-      'padding:3px 14px;border-radius:20px;pointer-events:none;' +
-      'transform:translate(-50%,-50%);white-space:nowrap;' +
-      'box-shadow:0 1px 4px rgba(0,0,0,0.2);z-index:99999;display:none;'
-    document.body.appendChild(this._badge)
+    this._badge = makeLiveBadge(color)
   }
 
   get entity(): AcDbLine {
@@ -125,7 +119,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
     context.view.addTransientEntity(line)
 
     // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
-    const htManager = AcApDocManager.instance.curView.htmlTransientManager
+    const htManager = (context.view as AcTrView2d).htmlTransientManager
     const id = `dist-${Date.now()}`
     const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
 

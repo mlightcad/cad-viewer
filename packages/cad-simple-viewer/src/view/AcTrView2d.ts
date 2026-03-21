@@ -212,6 +212,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._css2dRenderer.domElement.style.top = '0px'
     this._css2dRenderer.domElement.style.left = '0px'
     this._css2dRenderer.domElement.style.pointerEvents = 'none'
+    this._css2dRenderer.domElement.style.zIndex = '99998'
     container.appendChild(this._css2dRenderer.domElement)
 
     this._missedImages = new Map()
