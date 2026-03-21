@@ -4,7 +4,7 @@ import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 /**
  * Entry stored for each HTML transient element.
  */
-interface HtmlTransientEntry {
+interface AcTrHtmlTransientEntry {
   /** The CSS2DObject wrapping the HTML element */
   object: CSS2DObject
   /** The layer this entry belongs to */
@@ -29,7 +29,7 @@ export class AcTrHtmlTransientManager {
   private readonly htmlGroup: THREE.Group
 
   /** Mapping from entry ID → entry */
-  private readonly entries: Map<string, HtmlTransientEntry>
+  private readonly entries: Map<string, AcTrHtmlTransientEntry>
 
   constructor(scene: THREE.Scene) {
     this.scene = scene

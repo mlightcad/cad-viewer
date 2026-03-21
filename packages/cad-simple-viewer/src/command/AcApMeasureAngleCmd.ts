@@ -14,7 +14,15 @@ import {
   AcEdPromptPointOptions
 } from '../editor'
 import { AcApI18n } from '../i18n'
-import { colorToCss, makeBadge, makeDot, measurementColor } from '../util'
+import {
+  cssColor,
+  makeBadge,
+  makeDot,
+  makeLiveBadge,
+  makeOverlayCanvas,
+  measurementColor
+} from '../util'
+import { AcTrView2d } from '../view'
 import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 /** Returns the angle in degrees between two arms sharing a common vertex. */
@@ -53,8 +61,9 @@ function drawArm1OnCanvas(
   const w = Math.round(rect.width)
   const h = Math.round(rect.height)
 
-  canvas.style.left = `${rect.left}px`
-  canvas.style.top = `${rect.top}px`
+  const origin = view.canvasToContainer({ x: 0, y: 0 })
+  canvas.style.left = `${origin.x}px`
+  canvas.style.top = `${origin.y}px`
   canvas.style.width = `${w}px`
   canvas.style.height = `${h}px`
 
@@ -76,7 +85,7 @@ function drawArm1OnCanvas(
   ctx.beginPath()
   ctx.moveTo(sv.x, sv.y)
   ctx.lineTo(sa.x, sa.y)
-  ctx.strokeStyle = colorToCss(color)
+  ctx.strokeStyle = cssColor(color)
   ctx.lineWidth = 2
   ctx.setLineDash([8, 5])
   ctx.stroke()
@@ -102,8 +111,9 @@ function drawAngleArcOnCanvas(
   const w = Math.round(rect.width)
   const h = Math.round(rect.height)
 
-  canvas.style.left = `${rect.left}px`
-  canvas.style.top = `${rect.top}px`
+  const origin = view.canvasToContainer({ x: 0, y: 0 })
+  canvas.style.left = `${origin.x}px`
+  canvas.style.top = `${origin.y}px`
   canvas.style.width = `${w}px`
   canvas.style.height = `${h}px`
 
@@ -133,7 +143,7 @@ function drawAngleArcOnCanvas(
 
   ctx.beginPath()
   ctx.arc(sv.x, sv.y, arcR, startAngle, endAngle, antiClockwise)
-  ctx.strokeStyle = colorToCss(color)
+  ctx.strokeStyle = cssColor(color)
   ctx.lineWidth = 2
   ctx.stroke()
   ctx.restore()
@@ -193,14 +203,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._line.color = color
     this._line.lineWeight = AcGiLineWeight.LineWeight070
 
-    this._badge = document.createElement('div')
-    this._badge.style.cssText =
-      `position:fixed;background:rgba(255,255,255,0.95);color:${colorToCss(color)};` +
-      'font-size:13px;font-family:sans-serif;font-weight:500;' +
-      'padding:3px 14px;border-radius:20px;pointer-events:none;' +
-      'transform:translate(-50%,-50%);white-space:nowrap;' +
-      'box-shadow:0 1px 4px rgba(0,0,0,0.2);z-index:99999;display:none;'
-    document.body.appendChild(this._badge)
+    this._badge = makeLiveBadge(color)
   }
 
   get entity(): AcDbLine {
@@ -262,10 +265,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
     const arm1 = await editor.getPoint(arm1Prompt)
 
     // Construction-phase canvas for the first arm dashed line
-    const armCanvas = document.createElement('canvas')
-    armCanvas.style.cssText =
-      'position:fixed;pointer-events:none;z-index:99997;'
-    document.body.appendChild(armCanvas)
+    const armCanvas = makeOverlayCanvas(context.view.container)
     drawArm1OnCanvas(armCanvas, context.view, vertex, arm1, color)
 
     const redrawOnViewChange = () =>
@@ -306,10 +306,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
     context.view.addTransientEntity(line2)
 
     // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
-    const persistCanvas = document.createElement('canvas')
-    persistCanvas.style.cssText =
-      'position:fixed;pointer-events:none;z-index:99997;'
-    document.body.appendChild(persistCanvas)
+    const persistCanvas = makeOverlayCanvas(context.view.container)
     drawAngleArcOnCanvas(persistCanvas, context.view, vertex, arm1, arm2, color)
 
     const redrawPersist = () =>
@@ -317,7 +314,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
     context.view.events.viewChanged.addEventListener(redrawPersist)
 
     // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
-    const htManager = AcApDocManager.instance.curView.htmlTransientManager
+    const htManager = (context.view as AcTrView2d).htmlTransientManager
     const id = `angle-${Date.now()}`
 
     htManager.add(`${id}-dotV`, makeDot(color), vertex, 'measurement')

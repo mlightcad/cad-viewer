@@ -15,12 +15,15 @@ import {
 } from '../editor'
 import { AcApI18n } from '../i18n'
 import {
-  colorToCss,
   colorToCssAlpha,
+  cssColor,
   makeBadge,
   makeDot,
+  makeLiveBadge,
+  makeOverlayCanvas,
   measurementColor
 } from '../util'
+import { AcTrView2d } from '../view'
 import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 /**
@@ -108,8 +111,9 @@ function drawAreaOnCanvas(
   const w = Math.round(rect.width)
   const h = Math.round(rect.height)
 
-  canvas.style.left = `${rect.left}px`
-  canvas.style.top = `${rect.top}px`
+  const origin = view.canvasToContainer({ x: 0, y: 0 })
+  canvas.style.left = `${origin.x}px`
+  canvas.style.top = `${origin.y}px`
   canvas.style.width = `${w}px`
   canvas.style.height = `${h}px`
 
@@ -133,7 +137,7 @@ function drawAreaOnCanvas(
   ctx.closePath()
   ctx.fillStyle = colorToCssAlpha(color, 0.2)
   ctx.fill()
-  ctx.strokeStyle = colorToCss(color)
+  ctx.strokeStyle = cssColor(color)
   ctx.lineWidth = 2.5
   ctx.stroke()
 
@@ -166,20 +170,10 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     const points: AcGePoint3dLike[] = []
 
     // Construction-phase canvas overlay — removed before this method returns
-    const fillCanvas = document.createElement('canvas')
-    fillCanvas.style.cssText =
-      'position:fixed;pointer-events:none;z-index:99997;'
-    document.body.appendChild(fillCanvas)
+    const fillCanvas = makeOverlayCanvas(context.view.container)
 
     // Live area badge shown while the jig is active — also removed before returning
-    const liveBadge = document.createElement('div')
-    liveBadge.style.cssText =
-      `position:fixed;background:rgba(255,255,255,0.95);color:${colorToCss(color)};` +
-      'font-size:13px;font-family:sans-serif;font-weight:500;' +
-      'padding:3px 14px;border-radius:20px;pointer-events:none;' +
-      'transform:translate(-50%,-50%);white-space:nowrap;' +
-      'box-shadow:0 1px 4px rgba(0,0,0,0.2);z-index:99999;display:none;'
-    document.body.appendChild(liveBadge)
+    const liveBadge = makeLiveBadge(color)
 
     const drawPolygon = (cursor?: AcGePoint3dLike) => {
       const rect = context.view.canvas.getBoundingClientRect()
@@ -187,8 +181,9 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
       const w = Math.round(rect.width)
       const h = Math.round(rect.height)
 
-      fillCanvas.style.left = `${rect.left}px`
-      fillCanvas.style.top = `${rect.top}px`
+      const origin = context.view.canvasToContainer({ x: 0, y: 0 })
+      fillCanvas.style.left = `${origin.x}px`
+      fillCanvas.style.top = `${origin.y}px`
       fillCanvas.style.width = `${w}px`
       fillCanvas.style.height = `${h}px`
 
@@ -224,7 +219,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         ctx.moveTo(confirmedSpts[0].x, confirmedSpts[0].y)
         for (let i = 1; i < confirmedSpts.length; i++)
           ctx.lineTo(confirmedSpts[i].x, confirmedSpts[i].y)
-        ctx.strokeStyle = colorToCss(color)
+        ctx.strokeStyle = cssColor(color)
         ctx.lineWidth = 2.5
         ctx.setLineDash([8, 5])
         ctx.stroke()
@@ -314,10 +309,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     const area = shoelaceArea(points)
 
     // Persistent fill canvas — redrawn on viewChanged, cleaned up by Clear
-    const persistCanvas = document.createElement('canvas')
-    persistCanvas.style.cssText =
-      'position:fixed;pointer-events:none;z-index:99997;'
-    document.body.appendChild(persistCanvas)
+    const persistCanvas = makeOverlayCanvas(context.view.container)
     drawAreaOnCanvas(persistCanvas, context.view, points, color)
 
     const redrawPersist = () =>
@@ -325,7 +317,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     context.view.events.viewChanged.addEventListener(redrawPersist)
 
     // Persistent badge + dots via htmlTransientManager
-    const htManager = AcApDocManager.instance.curView.htmlTransientManager
+    const htManager = (context.view as AcTrView2d).htmlTransientManager
     const id = `area-${Date.now()}`
     const mid = centroid(points)
 

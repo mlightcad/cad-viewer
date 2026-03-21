@@ -15,7 +15,17 @@ import {
   AcEdPromptPointOptions
 } from '../editor'
 import { AcApI18n } from '../i18n'
-import { colorToCss, makeBadge, makeDot, measurementColor } from '../util'
+import {
+  cssColor,
+  makeBadge,
+  makeDot,
+  makeLiveBadge,
+  makeLiveDot,
+  makeOverlayCanvas,
+  makeSnapIndicator,
+  measurementColor
+} from '../util'
+import { AcTrView2d } from '../view'
 import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
 
 interface CircleGeom {
@@ -84,8 +94,9 @@ function drawArcOnCanvas(
   const w = Math.round(rect.width)
   const h = Math.round(rect.height)
 
-  canvas.style.left = `${rect.left}px`
-  canvas.style.top = `${rect.top}px`
+  const origin = view.canvasToContainer({ x: 0, y: 0 })
+  canvas.style.left = `${origin.x}px`
+  canvas.style.top = `${origin.y}px`
   canvas.style.width = `${w}px`
   canvas.style.height = `${h}px`
 
@@ -116,7 +127,7 @@ function drawArcOnCanvas(
 
   ctx.beginPath()
   ctx.arc(sc.x, sc.y, screenR, sa, ea, antiClockwise)
-  ctx.strokeStyle = colorToCss(color)
+  ctx.strokeStyle = cssColor(color)
   ctx.lineWidth = 4
   ctx.stroke()
 
@@ -148,12 +159,7 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
     const o = { x: 0, y: 0, z: 0 }
     this._dummy = new AcDbLine(o, o)
 
-    this._indicator = document.createElement('div')
-    this._indicator.style.cssText =
-      `position:fixed;width:10px;height:10px;border:2px solid ${colorToCss(color)};` +
-      'background:transparent;pointer-events:none;box-sizing:border-box;' +
-      'transform:translate(-50%,-50%);z-index:99998;display:none;'
-    document.body.appendChild(this._indicator)
+    this._indicator = makeSnapIndicator(color)
   }
 
   get entity(): AcDbLine {
@@ -221,12 +227,8 @@ class AcApArcEndSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
     const o = { x: 0, y: 0, z: 0 }
     this._dummy = new AcDbLine(o, o)
 
-    this._indicator = document.createElement('div')
-    this._indicator.style.cssText =
-      `position:fixed;width:10px;height:10px;border:2px solid ${colorToCss(color)};` +
-      'background:transparent;pointer-events:none;box-sizing:border-box;' +
-      'transform:translate(-50%,-50%);z-index:99998;'
-    document.body.appendChild(this._indicator)
+    this._indicator = makeSnapIndicator(color)
+    this._indicator.style.display = 'block'
   }
 
   get entity(): AcDbLine {
@@ -277,10 +279,7 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     const color = measurementColor(context.doc.database)
 
     // Construction-phase canvas — removed before this method returns
-    const arcCanvas = document.createElement('canvas')
-    arcCanvas.style.cssText =
-      'position:fixed;pointer-events:none;z-index:99997;'
-    document.body.appendChild(arcCanvas)
+    const arcCanvas = makeOverlayCanvas(context.view.container)
 
     // ── Phase 1: snap to circle/arc entity ──────────────────────────────────
     let snapGeom: CircleGeom | null = null
@@ -312,22 +311,9 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     const start = snappedStart
 
     // ── Phase 2: end point with live arc preview ─────────────────────────────
-    const css = colorToCss(color)
     // dot1 and liveBadge are short-lived during construction
-    const dot1 = document.createElement('div')
-    dot1.style.cssText =
-      'position:fixed;width:12px;height:12px;border-radius:50%;' +
-      `background:${css};border:2px solid white;box-sizing:border-box;` +
-      'pointer-events:none;transform:translate(-50%,-50%);z-index:99999;'
-    const liveBadge = document.createElement('div')
-    liveBadge.style.cssText =
-      `position:fixed;background:rgba(255,255,255,0.95);color:${css};` +
-      'font-size:13px;font-family:sans-serif;font-weight:500;' +
-      'padding:3px 14px;border-radius:20px;pointer-events:none;' +
-      'transform:translate(-50%,-50%);white-space:nowrap;' +
-      'box-shadow:0 1px 4px rgba(0,0,0,0.2);z-index:99999;display:none;'
-    document.body.appendChild(dot1)
-    document.body.appendChild(liveBadge)
+    const dot1 = makeLiveDot(color)
+    const liveBadge = makeLiveBadge(color)
 
     const reposDot1 = () => {
       const rect = context.view.canvas.getBoundingClientRect()
@@ -388,10 +374,7 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     const mid = shortArcMid(start, end, geom)
 
     // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
-    const persistCanvas = document.createElement('canvas')
-    persistCanvas.style.cssText =
-      'position:fixed;pointer-events:none;z-index:99997;'
-    document.body.appendChild(persistCanvas)
+    const persistCanvas = makeOverlayCanvas(context.view.container)
     drawArcOnCanvas(persistCanvas, context.view, geom, start, end, color)
 
     const redrawPersist = () =>
@@ -399,7 +382,7 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     context.view.events.viewChanged.addEventListener(redrawPersist)
 
     // Persistent badge + dots via htmlTransientManager
-    const htManager = AcApDocManager.instance.curView.htmlTransientManager
+    const htManager = (context.view as AcTrView2d).htmlTransientManager
     const id = `arc-${Date.now()}`
 
     htManager.add(`${id}-dot1`, makeDot(color), start, 'measurement')
