@@ -2,7 +2,7 @@ export default {
   mainMenu: {
     new: '新建图纸',
     open: '打开图纸',
-    export: '导出为SVG'
+    export: '导出为DXF'
   },
   verticalToolbar: {
     measure: {

@@ -170,9 +170,9 @@ Legend:
 
 * [x] Layer visibility on/off
 * [ ] Layer freeze / lock
-* [ ] Lineweight display
+* [x] Lineweight display
 * [ ] Linetype scaling
-* [ ] ⏳ Background / theme switching
+* [x] Background / theme switching
 
 ### Selection & Interaction
 
@@ -236,13 +236,20 @@ Legend:
 * [ ] Dimensions (linear, aligned, angular)
 * [ ] Blocks creation & insertion
 
-### Measurement & Dimension
+### Measurement
 
-* [ ] ⏳ Distance measurement & dimension
-* [ ] Area measurement & dimension
-* [ ] Angle measurement & dimension
-* [ ] Coordinate readout
+* [x] Distance
+* [x] Arc length
+* [x] Area
+* [x] Angle
+* [ ] Coordinate
 * [ ] Entity statistics (length, area, count)
+
+### Dimension
+
+* [ ] Linear dimension
+* [ ] Angle dimension
+* [ ] Coordinate
 
 ### Properties & UI Panels
 

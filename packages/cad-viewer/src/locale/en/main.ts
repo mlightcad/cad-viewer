@@ -2,7 +2,7 @@ export default {
   mainMenu: {
     new: 'New Drawing',
     open: 'Open Drawing',
-    export: 'Export to SVG'
+    export: 'Export to DXF'
   },
   verticalToolbar: {
     measure: {
