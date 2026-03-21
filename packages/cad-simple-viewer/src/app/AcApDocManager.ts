@@ -16,6 +16,7 @@ import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 import {
   AcApCircleCmd,
   AcApClearMeasurementsCmd,
+  AcApConvertToDxfCmd,
   AcApConvertToSvgCmd,
   AcApDimLinearCmd,
   AcApEraseCmd,
@@ -673,6 +674,7 @@ export class AcApDocManager {
    * Registers all default commands available in the CAD viewer.
    *
    * This method sets up the command system by registering built-in commands including:
+   * - cdxf: Convert to DXF
    * - csvg: Convert to SVG
    * - log: Output debug information in console
    * - open: Open document
@@ -691,6 +693,12 @@ export class AcApDocManager {
       'circle',
       'circle',
       new AcApCircleCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'cdxf',
+      'cdxf',
+      new AcApConvertToDxfCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

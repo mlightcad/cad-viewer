@@ -138,6 +138,15 @@ export class AcApDocument {
   }
 
   /**
+   * Gets the file name of the current document.
+   *
+   * @returns The file name, or an empty string for untitled documents
+   */
+  get fileName() {
+    return this._fileName
+  }
+
+  /**
    * Gets the display title of the document.
    *
    * @returns The title of the document

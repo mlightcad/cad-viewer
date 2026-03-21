@@ -18,6 +18,9 @@ export default {
     colortheme: {
       description: '控制用户界面的颜色主题（深色或浅色）'
     },
+    cdxf: {
+      description: '导出当前图纸为DXF格式'
+    },
     csvg: {
       description: '转换当前图纸为SVG格式'
     },

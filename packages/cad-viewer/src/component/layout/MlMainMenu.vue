@@ -16,9 +16,9 @@
         <el-dropdown-item command="Open">{{
           t('main.mainMenu.open')
         }}</el-dropdown-item>
-        <!-- <el-dropdown-item command="Convert">{{
+        <el-dropdown-item command="Convert">{{
           t('main.mainMenu.export')
-        }}</el-dropdown-item> -->
+        }}</el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { Menu as ElMenu } from '@element-plus/icons-vue'
 import {
-  AcApConvertToSvgCmd,
+  AcApConvertToDxfCmd,
   AcApDocManager,
   AcApOpenCmd,
   AcApQNewCmd
@@ -41,7 +41,7 @@ const features = useSettings()
 
 const handleCommand = (command: string) => {
   if (command === 'Convert') {
-    const cmd = new AcApConvertToSvgCmd()
+    const cmd = new AcApConvertToDxfCmd()
     cmd.trigger(AcApDocManager.instance.context)
   } else if (command === 'QNew') {
     const cmd = new AcApQNewCmd()

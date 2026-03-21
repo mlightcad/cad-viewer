@@ -176,6 +176,7 @@ const handleToggle = (command: string, _value: boolean) => {
   <div v-if="features.isShowToolbar" class="ml-vertical-toolbar-container">
     <ml-tool-bar
       :items="verticalToolbarData"
+      collapsible
       size="small"
       direction="vertical"
       placement="left"

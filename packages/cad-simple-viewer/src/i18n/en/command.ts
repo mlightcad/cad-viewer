@@ -21,6 +21,9 @@ export default {
       description:
         'Controls the color theme of the user interface (dark or light)'
     },
+    cdxf: {
+      description: 'Exports current drawing to DXF'
+    },
     csvg: {
       description: 'Converts current drawing to SVG'
     },
