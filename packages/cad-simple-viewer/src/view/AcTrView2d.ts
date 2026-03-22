@@ -322,6 +322,7 @@ export class AcTrView2d extends AcEdBaseView {
   set backgroundColor(value: number) {
     this._renderer.setClearColor(value)
     this._renderer.changeForeground(value == 0 ? 0xffffff : 0)
+    this.editor.setCursorColor(value == 0 ? 'white' : 'black')
     this._isDirty = true
   }
 

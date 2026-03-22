@@ -214,7 +214,13 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._line.endPoint = p
 
     // Redraw the first arm dashed line (stays in sync with pan/zoom)
-    drawArm1OnCanvas(this._canvas, this._view, this._vertex, this._arm1, this._color)
+    drawArm1OnCanvas(
+      this._canvas,
+      this._view,
+      this._vertex,
+      this._arm1,
+      this._color
+    )
 
     const deg = calcAngleDeg(this._vertex, this._arm1, p)
     this._badge.textContent = `~ ${deg.toFixed(2)}\u00B0`
@@ -276,7 +282,13 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
     const arm2Prompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.measureAngle.arm2')
     )
-    arm2Prompt.jig = new AcApMeasureAngleJig(context.view, vertex, arm1, armCanvas, color)
+    arm2Prompt.jig = new AcApMeasureAngleJig(
+      context.view,
+      vertex,
+      arm1,
+      armCanvas,
+      color
+    )
 
     let arm2: AcGePoint3dLike
     try {
@@ -310,7 +322,14 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
     drawAngleArcOnCanvas(persistCanvas, context.view, vertex, arm1, arm2, color)
 
     const redrawPersist = () =>
-      drawAngleArcOnCanvas(persistCanvas, context.view, vertex, arm1, arm2, color)
+      drawAngleArcOnCanvas(
+        persistCanvas,
+        context.view,
+        vertex,
+        arm1,
+        arm2,
+        color
+      )
     context.view.events.viewChanged.addEventListener(redrawPersist)
 
     // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
@@ -345,7 +364,10 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
       bx = -u1y
       by = u1x
     }
-    const badgeOffset = Math.max(Math.min(wLen1, wLen2) * 0.4, Math.max(wLen1, wLen2) * 0.15)
+    const badgeOffset = Math.max(
+      Math.min(wLen1, wLen2) * 0.4,
+      Math.max(wLen1, wLen2) * 0.15
+    )
     const badgeWorld = {
       x: vertex.x + bx * badgeOffset,
       y: vertex.y + by * badgeOffset

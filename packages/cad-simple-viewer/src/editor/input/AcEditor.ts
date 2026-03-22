@@ -160,6 +160,15 @@ export class AcEditor {
   }
 
   /**
+   * Sets the cursor color for the crosshair cursor
+   *
+   * @param color - The color for the cursor
+   */
+  setCursorColor(color: string) {
+    this._cursorManager.setCursorColor(color)
+  }
+
+  /**
    * Prompts the user to input a point by clicking on the view or inputting
    * one coordinate value.
    *
