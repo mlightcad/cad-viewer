@@ -15,7 +15,8 @@ export default {
     },
     measureAngle: {
       text: 'Angle',
-      description: 'Measures the angle between two lines sharing a common vertex'
+      description:
+        'Measures the angle between two lines sharing a common vertex'
     },
     measureArea: {
       text: 'Area',

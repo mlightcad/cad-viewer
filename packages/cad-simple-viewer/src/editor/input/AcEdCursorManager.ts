@@ -73,6 +73,10 @@ export class AcEdCursorManager {
 
   /** Cache of cursor definitions mapped by cursor type */
   private _cursorMap: Map<AcEdCorsorType, string>
+  /** The current background color */
+  private _backgroundColor: number = 0
+  /** Total length of the cursor crosshair */
+  private readonly _totalLength: number = 20
 
   /**
    * Creates a new cursor manager instance.
@@ -82,21 +86,23 @@ export class AcEdCursorManager {
   constructor(view: AcEdBaseView) {
     this._view = view
     this._cursorMap = new Map()
-    const totalLength = 20
-    const rectSize = 10
-    this._cursorMap.set(
-      AcEdCorsorType.Crosshair,
-      this.createRectCrossIcon(rectSize, totalLength - rectSize)
-    )
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
       if (args.name === AcDbSystemVariables.PICKBOX.toLowerCase()) {
         let size = args.newVal as number
         size = size >= 0 ? size : 0
         this._cursorMap.set(
           AcEdCorsorType.Crosshair,
-          this.createRectCrossIcon(size, totalLength - size)
+          this.createRectCrossIcon(
+            size,
+            this._totalLength - size,
+            this._backgroundColor === 0 ? 'white' : 'black'
+          )
         )
         this.setCursor(this._currentCursor)
+      } else if (args.name === AcDbSystemVariables.WHITEBKCOLOR.toLowerCase()) {
+        const useWhiteBackgroundColor = args.newVal as boolean
+        this._backgroundColor = useWhiteBackgroundColor ? 0xffffff : 0
+        this.setCursorColor(this._backgroundColor === 0 ? 'white' : 'black')
       }
     })
     this.setCursor(AcEdCorsorType.Crosshair)
@@ -127,6 +133,24 @@ export class AcEdCursorManager {
       }
     }
     this._currentCursor = cursorType
+  }
+
+  /**
+   * Sets the cursor color for the crosshair cursor
+   *
+   * @param color - The color for the cursor
+   */
+  setCursorColor(color: string) {
+    const rectSize = 10
+    const cursor = this.createRectCrossIcon(
+      rectSize,
+      this._totalLength - rectSize,
+      color
+    )
+    this._cursorMap.set(AcEdCorsorType.Crosshair, cursor)
+    if (this._currentCursor === AcEdCorsorType.Crosshair) {
+      this._view.canvas.style.cursor = cursor
+    }
   }
 
   /**
