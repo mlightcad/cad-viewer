@@ -1,0 +1,44 @@
+{
+  "name": "@mlightcad/graphic-interface",
+  "version": "3.3.8",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/realdwg-web"
+  },
+  "keywords": [
+    "autocad",
+    "cad",
+    "dwg",
+    "dxf",
+    "mlight",
+    "mlightcad",
+    "objectarx",
+    "realdwg"
+  ],
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/graphic-interface.umd.cjs",
+  "module": "./dist/graphic-interface.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    "types": "./lib/index.d.ts",
+    "import": "./dist/graphic-interface.js",
+    "require": "./dist/graphic-interface.umd.cjs"
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "peerDependencies": {
+    "@mlightcad/common": "workspace:*",
+    "@mlightcad/geometry-engine": "workspace:*"
+  }
+}

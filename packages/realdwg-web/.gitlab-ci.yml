@@ -1,0 +1,75 @@
+stages:
+  - ci
+  - deploy
+  - pages
+
+variables:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9"
+
+# ----------------------
+# CI Job
+# ----------------------
+ci:
+  stage: ci
+  image: node:20
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+      - .pnpm-store/
+  before_script:
+    - npm install -g pnpm@${PNPM_VERSION}
+  script:
+    - pnpm install --frozen-lockfile
+    - pnpm lint
+    - pnpm build
+    - pnpm test
+  rules:
+    # Run on pushes to main
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    # Run on merge requests
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# ----------------------
+# Deploy Job (Build API Docs)
+# ----------------------
+deploy:
+  stage: deploy
+  image: node:20
+  dependencies:
+    - ci
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+      - .pnpm-store/
+  before_script:
+    - npm install -g pnpm@${PNPM_VERSION}
+  script:
+    - pnpm install --frozen-lockfile
+    - pnpm build
+    - pnpm doc
+    - mkdir -p public
+    - cp -r ./docs/* public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# ----------------------
+# GitLab Pages Deployment
+# ----------------------
+pages:
+  stage: pages
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - echo "Deploying to GitLab Pages..."
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

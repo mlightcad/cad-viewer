@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>realdwg-web + data-model (TS)</title>
+</head>
+<body>
+  <div>
+    <input type="file" id="fileInput" accept=".dwg,.dxf" />
+    <select id="modeSelect">
+      <option value="compare" selected>Compare main thread vs worker</option>
+      <option value="main">Main thread only</option>
+      <option value="worker">Web worker only</option>
+    </select>
+    <button id="runButton" type="button">Run parse</button>
+  </div>
+  <div id="status"></div>
+  <pre id="output"></pre>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

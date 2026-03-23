@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./lib",
+    "baseUrl": "./src",
+    "composite": true
+  },
+  "references": [
+    {
+      "path": "../geometry-engine"
+    }
+  ],
+  "include": [
+    "src"
+  ]
+}

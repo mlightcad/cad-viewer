@@ -1,0 +1,6 @@
+{
+  "entryPoints": [],
+  "exclude": [
+    "**/*"
+  ]
+}

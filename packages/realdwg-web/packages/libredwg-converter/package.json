@@ -1,0 +1,55 @@
+{
+  "name": "@mlightcad/libredwg-converter",
+  "version": "3.5.8",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/realdwg-web"
+  },
+  "keywords": [
+    "autocad",
+    "cad",
+    "dwg",
+    "dxf",
+    "libredwg",
+    "libredwg-web",
+    "mlight",
+    "mlightcad",
+    "objectarx",
+    "realdwg"
+  ],
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/libredwg-converter.umd.cjs",
+  "module": "./dist/libredwg-converter.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    "types": "./lib/index.d.ts",
+    "import": "./dist/libredwg-converter.js",
+    "require": "./dist/libredwg-converter.umd.cjs"
+  },
+  "scripts": {
+    "analyze": "pnpm run analyze:lib && pnpm run analyze:worker",
+    "analyze:lib": "vite build --mode analyze --config vite.config.main.ts",
+    "analyze:worker": "vite build --mode analyze --config vite.config.worker.ts",
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build -c vite.config.main.ts && vite build -c vite.config.worker.ts",
+    "build:main": "vite build -c vite.config.main.ts",
+    "build:worker": "vite build -c vite.config.worker.ts",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "dependencies": {
+    "@mlightcad/libredwg-web": "0.6.6"
+  },
+  "devDependencies": {
+    "vite": "^5.2.10"
+  },
+  "peerDependencies": {
+    "@mlightcad/data-model": "workspace:*"
+  }
+}
