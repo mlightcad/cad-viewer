@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
     build: {
       emptyOutDir: false,
       outDir: 'dist',
+      sourcemap: true,
       lib: {
         entry: 'src/index.ts',
         name: 'libredwg-converter',

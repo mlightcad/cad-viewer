@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
     build: {
       emptyOutDir: false,
       outDir: 'dist',
+      sourcemap: true,
       lib: {
         entry: 'src/converter/worker/AcDbDxfParserWorker.ts',
         fileName: 'dxf-parser-worker',
