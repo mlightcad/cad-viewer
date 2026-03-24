@@ -44,8 +44,6 @@ export class AcTrViewportView extends AcTrBaseView {
     super(renderer, viewportSize.width, viewportSize.height)
     this._parentView = parentView
     this._viewport = viewport.clone()
-    this._frustum *= viewport.height / parentView.height
-    this.zoomTo(this._viewport.viewBox)
     this.enabled = false
   }
 
@@ -60,7 +58,7 @@ export class AcTrViewportView extends AcTrBaseView {
    * Update camera of this viewport
    */
   update() {
-    this.zoomTo(this._viewport.viewBox)
+    this.zoomTo(this._viewport.viewBox, 1.0)
   }
 
   /**
@@ -73,24 +71,31 @@ export class AcTrViewportView extends AcTrBaseView {
       this._viewport
     )
     if (!viewportWindowBox.isEmpty()) {
-      // The origin of the cient window coordinate system is the left-top corner of the client window.
-      // The origin of the viewport coordinate system is the left-bottom corner of the viewport. So the
-      // value of 'cwcsViewportBox.min.y' need to be converted to the viewport coordinate system.
+      const vpW = viewportWindowBox.size.width
+      const vpH = viewportWindowBox.size.height
+
+      if (vpW !== this._width || vpH !== this._height) {
+        this._width = vpW
+        this._height = vpH
+        this._frustum = vpH / 2
+        this.zoomTo(this._viewport.viewBox, 1.0)
+      }
+
       const y =
         this._parentView.height -
         viewportWindowBox.min.y -
-        viewportWindowBox.size.height
+        vpH
       this._renderer.setViewport(
         viewportWindowBox.min.x,
         y,
-        viewportWindowBox.size.width,
-        viewportWindowBox.size.height
+        vpW,
+        vpH
       )
       this._renderer.internalRenderer.setScissor(
         viewportWindowBox.min.x,
         y,
-        viewportWindowBox.size.width,
-        viewportWindowBox.size.height
+        vpW,
+        vpH
       )
       this._renderer.internalRenderer.setScissorTest(true)
       this._renderer.render(scene, this._camera)

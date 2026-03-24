@@ -1,3 +1,4 @@
+import { AcGeBox2d } from '@mlightcad/data-model'
 import {
   AcTrBaseView,
   AcTrRenderer,
@@ -114,6 +115,21 @@ export class AcTrLayoutView extends AcTrBaseView {
    */
   get internalCamera() {
     return this._camera.internalCamera
+  }
+
+  /**
+   * Paper-space bounding box enclosing all viewport borders in this layout.
+   * Returns undefined when the layout has no viewports.
+   */
+  get viewportsBoundingBox(): AcGeBox2d | undefined {
+    if (this._viewportViews.size === 0) return undefined
+    const box = new AcGeBox2d()
+    this._viewportViews.forEach(vp => {
+      const vpBox = vp.viewport.box
+      box.expandByPoint(vpBox.min)
+      box.expandByPoint(vpBox.max)
+    })
+    return box.isEmpty() ? undefined : box
   }
 
   /**
