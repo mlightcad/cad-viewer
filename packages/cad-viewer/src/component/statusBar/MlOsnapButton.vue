@@ -53,10 +53,10 @@ const osnapModes = [
   { value: AcDbOsnapMode.Center, label: t('main.statusBar.osnap.center') },
   { value: AcDbOsnapMode.Node, label: t('main.statusBar.osnap.node') },
   { value: AcDbOsnapMode.Quadrant, label: t('main.statusBar.osnap.quadrant') },
-  { value: AcDbOsnapMode.Insertion, label: t('main.statusBar.osnap.insertion') }
+  { value: AcDbOsnapMode.Insertion, label: t('main.statusBar.osnap.insertion') },
+  { value: AcDbOsnapMode.Nearest, label: t('main.statusBar.osnap.nearest') }
   // { value: AcDbOsnapMode.Perpendicular, label: t('main.statusBar.osnap.perpendicular') },
   // { value: AcDbOsnapMode.Tangent, label: t('main.statusBar.osnap.tangent') },
-  // { value: AcDbOsnapMode.Nearest, label: t('main.statusBar.osnap.nearest') },
   // { value: AcDbOsnapMode.Centroid, label: t('main.statusBar.osnap.centroid') }
 ]
 

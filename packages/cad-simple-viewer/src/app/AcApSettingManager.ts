@@ -67,7 +67,9 @@ const DEFAULT_VALUES: AcApSettings = {
   osnapModes: acdbOsnapModesToMask([
     AcDbOsnapMode.EndPoint,
     AcDbOsnapMode.MidPoint,
-    AcDbOsnapMode.Center
+    AcDbOsnapMode.Center,
+    AcDbOsnapMode.Quadrant,
+    AcDbOsnapMode.Nearest
   ])
 }
 
