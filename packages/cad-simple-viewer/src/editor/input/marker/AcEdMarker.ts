@@ -41,7 +41,7 @@ export class AcEdMarker {
    */
   constructor(
     type: AcEdMarkerType = 'rect',
-    size: number = 8,
+    size: number = 12,
     color: string = 'green',
     host: HTMLElement
   ) {
@@ -121,12 +121,12 @@ export class AcEdMarker {
     
       .ml-marker-circle {
         border-radius: 50%;
-        border: 1px solid currentColor;
+        border: 2px solid currentColor;
         background: transparent;
       }
     
       .ml-marker-rect {
-        border: 1px solid currentColor;
+        border: 2px solid currentColor;
         background: transparent;
       }
     
@@ -140,7 +140,7 @@ export class AcEdMarker {
       }
     
       .ml-marker-diamond {
-        border: 1px solid currentColor;
+        border: 2px solid currentColor;
         background: transparent;
         transform: translate(-50%, -50%) rotate(45deg);
       }
@@ -152,7 +152,7 @@ export class AcEdMarker {
         top: 50%;
         left: 50%;
         width: 100%;
-        height: 1px;
+        height: 2px;
         background: currentColor;
         transform-origin: center;
       }

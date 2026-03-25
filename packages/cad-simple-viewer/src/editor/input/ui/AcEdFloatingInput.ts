@@ -259,6 +259,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         return 'circle'
       case AcDbOsnapMode.Quadrant:
         return 'diamond'
+      case AcDbOsnapMode.Nearest:
+        return 'x'
       default:
         return 'rect'
     }

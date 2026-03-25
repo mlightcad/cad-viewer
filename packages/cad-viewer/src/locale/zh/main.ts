@@ -105,7 +105,8 @@ export default {
       center: '圆心',
       node: '节点',
       quadrant: '象限点',
-      insertion: '插入'
+      insertion: '插入',
+      nearest: '最近点'
     },
     pointStyle: {
       tooltip: '修改点样式'

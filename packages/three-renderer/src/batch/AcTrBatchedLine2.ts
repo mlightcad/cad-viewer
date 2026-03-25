@@ -471,6 +471,38 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     _raycastObject.material = this.material as LineMaterial
     _raycastObject.raycast(raycaster, _batchIntersects)
 
+    // LineSegments2.raycast() ignores raycaster.params.Line.threshold and
+    // only uses the pixel-based LineMaterial.linewidth for hit detection.
+    // When linewidth is small the pick area can be too narrow, so fall back
+    // to a bounding-box intersection check when the precise raycast misses.
+    if (_batchIntersects.length === 0) {
+      this.getBoundingBoxAt(geometryId, _box)
+      if (raycaster.ray.intersectBox(_box, _vector)) {
+        // Verify the intersection point is within the Line threshold
+        const threshold = raycaster.params.Line.threshold
+        _box.expandByScalar(threshold)
+        if (raycaster.ray.intersectBox(_box, _vector2)) {
+          const distance = raycaster.ray.origin.distanceTo(_vector2)
+          ;(
+            intersects as Array<
+              THREE.Intersection & { batchId?: number; objectId?: string }
+            >
+          ).push({
+            distance,
+            point: _vector2.clone(),
+            object: this,
+            face: null,
+            faceIndex: undefined,
+            uv: undefined,
+            batchId: geometryId,
+            objectId: geometryInfo.objectId
+          })
+        }
+      }
+      geometry.dispose()
+      return
+    }
+
     for (let i = 0, l = _batchIntersects.length; i < l; i++) {
       const intersect = _batchIntersects[i]
       ;(

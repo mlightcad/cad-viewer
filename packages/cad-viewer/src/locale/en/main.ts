@@ -112,7 +112,8 @@ export default {
       center: 'Center',
       node: 'Node',
       quadrant: 'Quadrant',
-      insertion: 'Insertion'
+      insertion: 'Insertion',
+      nearest: 'Nearest'
     },
     pointStyle: {
       tooltip: 'Modify point style'
