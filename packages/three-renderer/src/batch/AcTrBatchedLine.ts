@@ -20,6 +20,7 @@ import {
 
 const _box = /*@__PURE__*/ new THREE.Box3()
 const _vector = /*@__PURE__*/ new THREE.Vector3()
+const _vector2 = /*@__PURE__*/ new THREE.Vector3()
 
 const AcTrBatchedLineBase = createAcTrBatchedMixin<AcTrBatchedGeometryInfo>(
   THREE.LineSegments,
@@ -487,6 +488,107 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     } else {
       geometry.setDrawRange(0, this._nextVertexStart)
     }
+  }
+
+  /**
+   * Override mixin `_intersectWith` to add a bounding-box fallback when
+   * `THREE.LineSegments.raycast()` returns no hits.
+   *
+   * `THREE.LineSegments.raycast()` honours `raycaster.params.Line.threshold`
+   * but can still miss for very precise geometries or when the threshold is
+   * too small relative to the camera distance.  The fallback expands the
+   * per-entity bounding box by the Line threshold and tests again, matching
+   * the pattern used in `AcTrBatchedLine2._intersectWith`.
+   */
+  _intersectWith(
+    geometryId: number,
+    raycaster: THREE.Raycaster,
+    intersects: THREE.Intersection[]
+  ) {
+    const geometryInfo = this._geometryInfo[geometryId]
+    if (!geometryInfo.active || !geometryInfo.visible) {
+      return
+    }
+
+    // Fast path: entities flagged for bbox-only intersection check
+    if (geometryInfo.bboxIntersectionCheck) {
+      this.getBoundingBoxAt(geometryId, this._box)
+      if (raycaster.ray.intersectBox(this._box, this._vector)) {
+        const distance = raycaster.ray.origin.distanceTo(this._vector)
+        ;(
+          intersects as Array<
+            THREE.Intersection & { batchId?: number; objectId?: string }
+          >
+        ).push({
+          distance,
+          point: this._vector.clone(),
+          object: this,
+          face: null,
+          faceIndex: undefined,
+          uv: undefined,
+          batchId: geometryId,
+          objectId: geometryInfo.objectId
+        })
+      }
+      return
+    }
+
+    // Standard raycast via THREE.LineSegments
+    const drawRange =
+      this.geometry.index != null
+        ? {
+            start: geometryInfo.indexStart,
+            count: geometryInfo.indexCount
+          }
+        : {
+            start: geometryInfo.vertexStart,
+            count: geometryInfo.vertexCount
+          }
+    this._setRaycastObjectInfo(
+      this._raycastObject,
+      geometryId,
+      drawRange.start,
+      drawRange.count
+    )
+    this._raycastObject.raycast(raycaster, this._batchIntersects)
+
+    // Fallback: when the precise raycast misses, test against the
+    // bounding box expanded by the Line threshold.
+    if (this._batchIntersects.length === 0) {
+      this.getBoundingBoxAt(geometryId, _box)
+      if (raycaster.ray.intersectBox(_box, _vector)) {
+        const threshold = raycaster.params.Line.threshold
+        _box.expandByScalar(threshold)
+        if (raycaster.ray.intersectBox(_box, _vector2)) {
+          const distance = raycaster.ray.origin.distanceTo(_vector2)
+          ;(
+            intersects as Array<
+              THREE.Intersection & { batchId?: number; objectId?: string }
+            >
+          ).push({
+            distance,
+            point: _vector2.clone(),
+            object: this,
+            face: null,
+            faceIndex: undefined,
+            uv: undefined,
+            batchId: geometryId,
+            objectId: geometryInfo.objectId
+          })
+        }
+      }
+      return
+    }
+
+    for (let j = 0, l = this._typedBatchIntersects.length; j < l; j++) {
+      const intersect = this._typedBatchIntersects[j]
+      intersect.object = this
+      intersect.batchId = geometryId
+      intersect.objectId = geometryInfo.objectId
+      intersects.push(intersect)
+    }
+
+    this._batchIntersects.length = 0
   }
 
   copy(source: AcTrBatchedLine) {
