@@ -7,7 +7,8 @@ import {
   AcDbObject,
   AcDbObjectId,
   AcDbResultBuffer,
-  AcGiLineWeight
+  AcGiLineWeight,
+  MLIGHTCAD_APPID
 } from '@mlightcad/data-model'
 
 export class AcApAnnotation {
@@ -51,7 +52,7 @@ export class AcApAnnotation {
    */
   public getAnnotationLayer(): string {
     const prefix = '$revision_'
-    const appId = AcDbDatabase.MLIGHTCAD_APPID
+    const appId = MLIGHTCAD_APPID
 
     const layerTable = this._database.tables.layerTable
 
@@ -105,7 +106,7 @@ export class AcApAnnotation {
    * @returns Returns true if the specified object contains annotation xdata.
    */
   public hasAnnotationXData(object: AcDbObject) {
-    const appId = AcDbDatabase.MLIGHTCAD_APPID
+    const appId = MLIGHTCAD_APPID
     const xdata = object.getXData(appId)
     if (!xdata) return false
 
