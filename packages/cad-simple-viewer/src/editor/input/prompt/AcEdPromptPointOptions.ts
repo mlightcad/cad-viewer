@@ -13,6 +13,7 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   private _useBasePoint: boolean = false
   private _useDashedLine: boolean = false
   private _allowNone: boolean = false
+  private _disableOSnap: boolean = false
 
   /**
    * Constructs a new `AcEdPromptPointOptions` with a given prompt message.
@@ -79,6 +80,21 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   set allowNone(flag: boolean) {
     if (!this.isReadOnly) {
       this._allowNone = flag
+    }
+  }
+
+  /**
+   * Gets or sets whether OSNAP should be disabled for this prompt.
+   * When true, the prompt will not apply automatic object snapping,
+   * allowing commands with custom snap logic (e.g. arc measurement)
+   * to control snapping themselves.
+   */
+  get disableOSnap(): boolean {
+    return this._disableOSnap
+  }
+  set disableOSnap(flag: boolean) {
+    if (!this.isReadOnly) {
+      this._disableOSnap = flag
     }
   }
 }
