@@ -258,88 +258,77 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
     const editor = context.view.editor
     const color = measurementColor(context.doc.database)
 
-    // Save current cursor/mode so we can restore after the command
+    // Save current mode so we can restore after the command
     const previousMode = context.view.mode
-    const previousCursor = editor.currentCursor
-
-    // Switch to crosshair for measurement interaction
     context.view.mode = AcEdViewMode.SELECTION
-    context.view.setCursor(AcEdCorsorType.Crosshair)
 
     try {
-      // Pick vertex
-      const vertexPrompt = new AcEdPromptPointOptions(
-        AcApI18n.t('jig.measureAngle.vertex')
-      )
-      const vertex = await editor.getPoint(vertexPrompt)
+      await editor.withCursor(AcEdCorsorType.Crosshair, async () => {
+        // Pick vertex
+        const vertexPrompt = new AcEdPromptPointOptions(
+          AcApI18n.t('jig.measureAngle.vertex')
+        )
+        const vertex = await editor.getPoint(vertexPrompt)
 
-      // Pick first arm endpoint (jig provides preview line from vertex)
-      const arm1Prompt = new AcEdPromptPointOptions(
-        AcApI18n.t('jig.measureAngle.arm1')
-      )
-      arm1Prompt.useBasePoint = true
-      arm1Prompt.jig = new AcApMeasureArm1Jig(context.view, vertex, color)
-      const arm1 = await editor.getPoint(arm1Prompt)
+        // Pick first arm endpoint (jig provides preview line from vertex)
+        const arm1Prompt = new AcEdPromptPointOptions(
+          AcApI18n.t('jig.measureAngle.arm1')
+        )
+        arm1Prompt.useBasePoint = true
+        arm1Prompt.jig = new AcApMeasureArm1Jig(context.view, vertex, color)
+        const arm1 = await editor.getPoint(arm1Prompt)
 
-      // Construction-phase canvas for the first arm dashed line
-      const armCanvas = makeOverlayCanvas(context.view.container)
-      drawArm1OnCanvas(armCanvas, context.view, vertex, arm1, color)
-
-      const redrawOnViewChange = () =>
+        // Construction-phase canvas for the first arm dashed line
+        const armCanvas = makeOverlayCanvas(context.view.container)
         drawArm1OnCanvas(armCanvas, context.view, vertex, arm1, color)
-      context.view.events.viewChanged.addEventListener(redrawOnViewChange)
 
-      // Pick second arm endpoint with live preview (jig provides line + angle badge)
-      const arm2Prompt = new AcEdPromptPointOptions(
-        AcApI18n.t('jig.measureAngle.arm2')
-      )
-      arm2Prompt.jig = new AcApMeasureAngleJig(
-        context.view,
-        vertex,
-        arm1,
-        armCanvas,
-        color
-      )
+        const redrawOnViewChange = () =>
+          drawArm1OnCanvas(armCanvas, context.view, vertex, arm1, color)
+        context.view.events.viewChanged.addEventListener(redrawOnViewChange)
 
-      let arm2: AcGePoint3dLike
-      try {
-        arm2 = await editor.getPoint(arm2Prompt)
-      } catch {
-        // User pressed ESC / cancelled — clean up construction-phase DOM
+        // Pick second arm endpoint with live preview (jig provides line + angle badge)
+        const arm2Prompt = new AcEdPromptPointOptions(
+          AcApI18n.t('jig.measureAngle.arm2')
+        )
+        arm2Prompt.jig = new AcApMeasureAngleJig(
+          context.view,
+          vertex,
+          arm1,
+          armCanvas,
+          color
+        )
+
+        let arm2: AcGePoint3dLike
+        try {
+          arm2 = await editor.getPoint(arm2Prompt)
+        } catch {
+          // User pressed ESC / cancelled — clean up construction-phase DOM
+          context.view.events.viewChanged.removeEventListener(
+            redrawOnViewChange
+          )
+          armCanvas.remove()
+          return
+        }
+
+        // Clean up construction-phase canvas
         context.view.events.viewChanged.removeEventListener(redrawOnViewChange)
         armCanvas.remove()
-        return
-      }
 
-      // Clean up construction-phase canvas
-      context.view.events.viewChanged.removeEventListener(redrawOnViewChange)
-      armCanvas.remove()
+        const degrees = calcAngleDeg(vertex, arm1, arm2)
 
-      const degrees = calcAngleDeg(vertex, arm1, arm2)
+        // Persistent CAD transient lines for both arms (zoom/pan aware)
+        const line1 = new AcDbLine(vertex, arm1)
+        line1.color = color
+        line1.lineWeight = AcGiLineWeight.LineWeight070
+        context.view.addTransientEntity(line1)
 
-      // Persistent CAD transient lines for both arms (zoom/pan aware)
-      const line1 = new AcDbLine(vertex, arm1)
-      line1.color = color
-      line1.lineWeight = AcGiLineWeight.LineWeight070
-      context.view.addTransientEntity(line1)
+        const line2 = new AcDbLine(vertex, arm2)
+        line2.color = color
+        line2.lineWeight = AcGiLineWeight.LineWeight070
+        context.view.addTransientEntity(line2)
 
-      const line2 = new AcDbLine(vertex, arm2)
-      line2.color = color
-      line2.lineWeight = AcGiLineWeight.LineWeight070
-      context.view.addTransientEntity(line2)
-
-      // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
-      const persistCanvas = makeOverlayCanvas(context.view.container)
-      drawAngleArcOnCanvas(
-        persistCanvas,
-        context.view,
-        vertex,
-        arm1,
-        arm2,
-        color
-      )
-
-      const redrawPersist = () =>
+        // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
+        const persistCanvas = makeOverlayCanvas(context.view.container)
         drawAngleArcOnCanvas(
           persistCanvas,
           context.view,
@@ -348,71 +337,78 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
           arm2,
           color
         )
-      context.view.events.viewChanged.addEventListener(redrawPersist)
 
-      // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
-      const htManager = (context.view as AcTrView2d).htmlTransientManager
-      const id = `angle-${Date.now()}`
+        const redrawPersist = () =>
+          drawAngleArcOnCanvas(
+            persistCanvas,
+            context.view,
+            vertex,
+            arm1,
+            arm2,
+            color
+          )
+        context.view.events.viewChanged.addEventListener(redrawPersist)
 
-      htManager.add(`${id}-dotV`, makeDot(color), vertex, 'measurement')
-      htManager.add(`${id}-dot1`, makeDot(color), arm1, 'measurement')
-      htManager.add(`${id}-dot2`, makeDot(color), arm2, 'measurement')
+        // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
+        const htManager = (context.view as AcTrView2d).htmlTransientManager
+        const id = `angle-${Date.now()}`
 
-      // Place badge along the angle bisector in world space
-      const dx1 = arm1.x - vertex.x
-      const dy1 = arm1.y - vertex.y
-      const dx2 = arm2.x - vertex.x
-      const dy2 = arm2.y - vertex.y
-      const wLen1 = Math.hypot(dx1, dy1)
-      const wLen2 = Math.hypot(dx2, dy2)
-      // Unit vectors along each arm
-      const u1x = wLen1 > 0 ? dx1 / wLen1 : 1
-      const u1y = wLen1 > 0 ? dy1 / wLen1 : 0
-      const u2x = wLen2 > 0 ? dx2 / wLen2 : 1
-      const u2y = wLen2 > 0 ? dy2 / wLen2 : 0
-      // Bisector direction (sum of unit vectors)
-      let bx = u1x + u2x
-      let by = u1y + u2y
-      const bLen = Math.hypot(bx, by)
-      if (bLen > 0) {
-        bx /= bLen
-        by /= bLen
-      } else {
-        // Arms are exactly opposite — use perpendicular
-        bx = -u1y
-        by = u1x
-      }
-      const badgeOffset = Math.max(
-        Math.min(wLen1, wLen2) * 0.4,
-        Math.max(wLen1, wLen2) * 0.15
-      )
-      const badgeWorld = {
-        x: vertex.x + bx * badgeOffset,
-        y: vertex.y + by * badgeOffset
-      }
-      htManager.add(
-        `${id}-badge`,
-        makeBadge(color, `${degrees.toFixed(2)}\u00B0`),
-        badgeWorld,
-        'measurement'
-      )
+        htManager.add(`${id}-dotV`, makeDot(color), vertex, 'measurement')
+        htManager.add(`${id}-dot1`, makeDot(color), arm1, 'measurement')
+        htManager.add(`${id}-dot2`, makeDot(color), arm2, 'measurement')
 
-      registerMeasurementCleanup(() => {
-        context.view.removeTransientEntity(line1.objectId)
-        context.view.removeTransientEntity(line2.objectId)
-        persistCanvas.remove()
-        context.view.events.viewChanged.removeEventListener(redrawPersist)
-        htManager.remove(`${id}-dotV`)
-        htManager.remove(`${id}-dot1`)
-        htManager.remove(`${id}-dot2`)
-        htManager.remove(`${id}-badge`)
+        // Place badge along the angle bisector in world space
+        const dx1 = arm1.x - vertex.x
+        const dy1 = arm1.y - vertex.y
+        const dx2 = arm2.x - vertex.x
+        const dy2 = arm2.y - vertex.y
+        const wLen1 = Math.hypot(dx1, dy1)
+        const wLen2 = Math.hypot(dx2, dy2)
+        // Unit vectors along each arm
+        const u1x = wLen1 > 0 ? dx1 / wLen1 : 1
+        const u1y = wLen1 > 0 ? dy1 / wLen1 : 0
+        const u2x = wLen2 > 0 ? dx2 / wLen2 : 1
+        const u2y = wLen2 > 0 ? dy2 / wLen2 : 0
+        // Bisector direction (sum of unit vectors)
+        let bx = u1x + u2x
+        let by = u1y + u2y
+        const bLen = Math.hypot(bx, by)
+        if (bLen > 0) {
+          bx /= bLen
+          by /= bLen
+        } else {
+          // Arms are exactly opposite — use perpendicular
+          bx = -u1y
+          by = u1x
+        }
+        const badgeOffset = Math.max(
+          Math.min(wLen1, wLen2) * 0.4,
+          Math.max(wLen1, wLen2) * 0.15
+        )
+        const badgeWorld = {
+          x: vertex.x + bx * badgeOffset,
+          y: vertex.y + by * badgeOffset
+        }
+        htManager.add(
+          `${id}-badge`,
+          makeBadge(color, `${degrees.toFixed(2)}\u00B0`),
+          badgeWorld,
+          'measurement'
+        )
+
+        registerMeasurementCleanup(() => {
+          context.view.removeTransientEntity(line1.objectId)
+          context.view.removeTransientEntity(line2.objectId)
+          persistCanvas.remove()
+          context.view.events.viewChanged.removeEventListener(redrawPersist)
+          htManager.remove(`${id}-dotV`)
+          htManager.remove(`${id}-dot1`)
+          htManager.remove(`${id}-dot2`)
+          htManager.remove(`${id}-badge`)
+        })
       })
     } finally {
-      // Restore previous cursor/mode
       context.view.mode = previousMode
-      if (previousCursor != null) {
-        context.view.setCursor(previousCursor)
-      }
     }
   }
 }

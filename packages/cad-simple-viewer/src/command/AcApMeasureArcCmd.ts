@@ -280,146 +280,142 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     const editor = context.view.editor
     const color = measurementColor(context.doc.database)
 
-    // Save current cursor/mode so we can restore after the command
+    // Save current mode so we can restore after the command
     const previousMode = context.view.mode
-    const previousCursor = editor.currentCursor
-
-    // Switch to crosshair for measurement interaction
     context.view.mode = AcEdViewMode.SELECTION
-    context.view.setCursor(AcEdCorsorType.Crosshair)
 
     // Construction-phase canvas — removed before this method returns
     const arcCanvas = makeOverlayCanvas(context.view.container)
 
     try {
-      // ── Phase 1: snap to circle/arc entity ──────────────────────────────────
-      let snapGeom: CircleGeom | null = null
-      let snappedStart: AcGePoint3dLike | null = null
+      await editor.withCursor(AcEdCorsorType.Crosshair, async () => {
+        // ── Phase 1: snap to circle/arc entity ──────────────────────────────────
+        let snapGeom: CircleGeom | null = null
+        let snappedStart: AcGePoint3dLike | null = null
 
-      const snapJig = new AcApArcSnapJig(context, color, (geom, snapped) => {
-        snapGeom = geom
-        snappedStart = snapped
-      })
+        const snapJig = new AcApArcSnapJig(context, color, (geom, snapped) => {
+          snapGeom = geom
+          snappedStart = snapped
+        })
 
-      const p1Prompt = new AcEdPromptPointOptions(
-        AcApI18n.t('jig.measureArc.startPoint')
-      )
-      p1Prompt.jig = snapJig
+        const p1Prompt = new AcEdPromptPointOptions(
+          AcApI18n.t('jig.measureArc.startPoint')
+        )
+        p1Prompt.jig = snapJig
 
-      try {
-        await editor.getPoint(p1Prompt)
-      } catch {
-        arcCanvas.remove()
-        return
-      }
+        try {
+          await editor.getPoint(p1Prompt)
+        } catch {
+          arcCanvas.remove()
+          return
+        }
 
-      if (!snapGeom || !snappedStart) {
-        arcCanvas.remove()
-        return
-      }
+        if (!snapGeom || !snappedStart) {
+          arcCanvas.remove()
+          return
+        }
 
-      const geom = snapGeom
-      const start = snappedStart
+        const geom = snapGeom
+        const start = snappedStart
 
-      // ── Phase 2: end point with live arc preview ─────────────────────────────
-      // dot1 and liveBadge are short-lived during construction
-      const dot1 = makeLiveDot(color)
-      const liveBadge = makeLiveBadge(color)
+        // ── Phase 2: end point with live arc preview ─────────────────────────────
+        // dot1 and liveBadge are short-lived during construction
+        const dot1 = makeLiveDot(color)
+        const liveBadge = makeLiveBadge(color)
 
-      const reposDot1 = () => {
-        const rect = context.view.canvas.getBoundingClientRect()
-        const sp = context.view.worldToScreen(start)
-        dot1.style.left = `${sp.x + rect.left}px`
-        dot1.style.top = `${sp.y + rect.top}px`
-      }
-      reposDot1()
-
-      const redrawPreview = () =>
-        drawArcOnCanvas(arcCanvas, context.view, geom, start, start, color)
-      const onViewChangedPreview = () => {
+        const reposDot1 = () => {
+          const rect = context.view.canvas.getBoundingClientRect()
+          const sp = context.view.worldToScreen(start)
+          dot1.style.left = `${sp.x + rect.left}px`
+          dot1.style.top = `${sp.y + rect.top}px`
+        }
         reposDot1()
-        redrawPreview()
-      }
-      context.view.events.viewChanged.addEventListener(onViewChangedPreview)
 
-      const onMove = (snapped: AcGePoint3dLike) => {
-        drawArcOnCanvas(arcCanvas, context.view, geom, start, snapped, color)
+        const redrawPreview = () =>
+          drawArcOnCanvas(arcCanvas, context.view, geom, start, start, color)
+        const onViewChangedPreview = () => {
+          reposDot1()
+          redrawPreview()
+        }
+        context.view.events.viewChanged.addEventListener(onViewChangedPreview)
 
-        const len = shortArcLength(start, snapped, geom)
-        liveBadge.textContent = `~ ${len.toFixed(4)} m`
-        liveBadge.style.display = ''
+        const onMove = (snapped: AcGePoint3dLike) => {
+          drawArcOnCanvas(arcCanvas, context.view, geom, start, snapped, color)
 
-        const mid = shortArcMid(start, snapped, geom)
-        const rect = context.view.canvas.getBoundingClientRect()
-        const sm = context.view.worldToScreen(mid)
-        liveBadge.style.left = `${sm.x + rect.left}px`
-        liveBadge.style.top = `${sm.y + rect.top}px`
+          const len = shortArcLength(start, snapped, geom)
+          liveBadge.textContent = `~ ${len.toFixed(4)} m`
+          liveBadge.style.display = ''
 
-        reposDot1()
-      }
+          const mid = shortArcMid(start, snapped, geom)
+          const rect = context.view.canvas.getBoundingClientRect()
+          const sm = context.view.worldToScreen(mid)
+          liveBadge.style.left = `${sm.x + rect.left}px`
+          liveBadge.style.top = `${sm.y + rect.top}px`
 
-      const p2Prompt = new AcEdPromptPointOptions(
-        AcApI18n.t('jig.measureArc.endPoint')
-      )
-      p2Prompt.jig = new AcApArcEndSnapJig(context, geom, color, onMove)
+          reposDot1()
+        }
 
-      let p2Raw: AcGePoint3dLike
-      try {
-        p2Raw = await editor.getPoint(p2Prompt)
-      } catch {
-        arcCanvas.remove()
-        dot1.remove()
+        const p2Prompt = new AcEdPromptPointOptions(
+          AcApI18n.t('jig.measureArc.endPoint')
+        )
+        p2Prompt.jig = new AcApArcEndSnapJig(context, geom, color, onMove)
+
+        let p2Raw: AcGePoint3dLike
+        try {
+          p2Raw = await editor.getPoint(p2Prompt)
+        } catch {
+          arcCanvas.remove()
+          dot1.remove()
+          liveBadge.remove()
+          context.view.events.viewChanged.removeEventListener(
+            onViewChangedPreview
+          )
+          return
+        }
+
+        // Clean up construction-phase elements
         liveBadge.remove()
+        dot1.remove()
         context.view.events.viewChanged.removeEventListener(
           onViewChangedPreview
         )
-        return
-      }
+        arcCanvas.remove()
 
-      // Clean up construction-phase elements
-      liveBadge.remove()
-      dot1.remove()
-      context.view.events.viewChanged.removeEventListener(onViewChangedPreview)
-      arcCanvas.remove()
+        const end = snapToCircle(p2Raw, geom)
+        const arcLen = shortArcLength(start, end, geom)
+        const mid = shortArcMid(start, end, geom)
 
-      const end = snapToCircle(p2Raw, geom)
-      const arcLen = shortArcLength(start, end, geom)
-      const mid = shortArcMid(start, end, geom)
-
-      // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
-      const persistCanvas = makeOverlayCanvas(context.view.container)
-      drawArcOnCanvas(persistCanvas, context.view, geom, start, end, color)
-
-      const redrawPersist = () =>
+        // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
+        const persistCanvas = makeOverlayCanvas(context.view.container)
         drawArcOnCanvas(persistCanvas, context.view, geom, start, end, color)
-      context.view.events.viewChanged.addEventListener(redrawPersist)
 
-      // Persistent badge + dots via htmlTransientManager
-      const htManager = (context.view as AcTrView2d).htmlTransientManager
-      const id = `arc-${Date.now()}`
+        const redrawPersist = () =>
+          drawArcOnCanvas(persistCanvas, context.view, geom, start, end, color)
+        context.view.events.viewChanged.addEventListener(redrawPersist)
 
-      htManager.add(`${id}-dot1`, makeDot(color), start, 'measurement')
-      htManager.add(`${id}-dot2`, makeDot(color), end, 'measurement')
-      htManager.add(
-        `${id}-badge`,
-        makeBadge(color, `~ ${arcLen.toFixed(4)} m`),
-        mid,
-        'measurement'
-      )
+        // Persistent badge + dots via htmlTransientManager
+        const htManager = (context.view as AcTrView2d).htmlTransientManager
+        const id = `arc-${Date.now()}`
 
-      registerMeasurementCleanup(() => {
-        persistCanvas.remove()
-        context.view.events.viewChanged.removeEventListener(redrawPersist)
-        htManager.remove(`${id}-dot1`)
-        htManager.remove(`${id}-dot2`)
-        htManager.remove(`${id}-badge`)
+        htManager.add(`${id}-dot1`, makeDot(color), start, 'measurement')
+        htManager.add(`${id}-dot2`, makeDot(color), end, 'measurement')
+        htManager.add(
+          `${id}-badge`,
+          makeBadge(color, `~ ${arcLen.toFixed(4)} m`),
+          mid,
+          'measurement'
+        )
+
+        registerMeasurementCleanup(() => {
+          persistCanvas.remove()
+          context.view.events.viewChanged.removeEventListener(redrawPersist)
+          htManager.remove(`${id}-dot1`)
+          htManager.remove(`${id}-dot2`)
+          htManager.remove(`${id}-badge`)
+        })
       })
     } finally {
-      // Restore previous cursor/mode
       context.view.mode = previousMode
-      if (previousCursor != null) {
-        context.view.setCursor(previousCursor)
-      }
     }
   }
 }

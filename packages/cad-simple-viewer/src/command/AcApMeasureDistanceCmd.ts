@@ -100,61 +100,55 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
     const editor = context.view.editor
     const color = measurementColor(context.doc.database)
 
-    // Save current cursor/mode so we can restore after the command
+    // Save current mode so we can restore after the command
     const previousMode = context.view.mode
-    const previousCursor = editor.currentCursor
-
-    // Switch to crosshair for measurement interaction
     context.view.mode = AcEdViewMode.SELECTION
-    context.view.setCursor(AcEdCorsorType.Crosshair)
 
     try {
-      const p1Prompt = new AcEdPromptPointOptions(
-        AcApI18n.t('jig.measureDistance.firstPoint')
-      )
-      const p1 = await editor.getPoint(p1Prompt)
+      await editor.withCursor(AcEdCorsorType.Crosshair, async () => {
+        const p1Prompt = new AcEdPromptPointOptions(
+          AcApI18n.t('jig.measureDistance.firstPoint')
+        )
+        const p1 = await editor.getPoint(p1Prompt)
 
-      const p2Prompt = new AcEdPromptPointOptions(
-        AcApI18n.t('jig.measureDistance.secondPoint')
-      )
-      p2Prompt.useBasePoint = true
-      p2Prompt.jig = new AcApMeasureDistanceJig(context.view, p1, color)
-      const p2 = await editor.getPoint(p2Prompt)
+        const p2Prompt = new AcEdPromptPointOptions(
+          AcApI18n.t('jig.measureDistance.secondPoint')
+        )
+        p2Prompt.useBasePoint = true
+        p2Prompt.jig = new AcApMeasureDistanceJig(context.view, p1, color)
+        const p2 = await editor.getPoint(p2Prompt)
 
-      const dist = calcDist(p1, p2)
+        const dist = calcDist(p1, p2)
 
-      // CAD transient line (zoom/pan aware, rendered by the engine)
-      const line = new AcDbLine(p1, p2)
-      line.color = color
-      line.lineWeight = AcGiLineWeight.LineWeight070
-      context.view.addTransientEntity(line)
+        // CAD transient line (zoom/pan aware, rendered by the engine)
+        const line = new AcDbLine(p1, p2)
+        line.color = color
+        line.lineWeight = AcGiLineWeight.LineWeight070
+        context.view.addTransientEntity(line)
 
-      // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
-      const htManager = (context.view as AcTrView2d).htmlTransientManager
-      const id = `dist-${Date.now()}`
-      const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+        // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
+        const htManager = (context.view as AcTrView2d).htmlTransientManager
+        const id = `dist-${Date.now()}`
+        const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
 
-      htManager.add(`${id}-dot1`, makeDot(color), p1, 'measurement')
-      htManager.add(`${id}-dot2`, makeDot(color), p2, 'measurement')
-      htManager.add(
-        `${id}-badge`,
-        makeBadge(color, `~ ${dist.toFixed(3)} m`),
-        mid,
-        'measurement'
-      )
+        htManager.add(`${id}-dot1`, makeDot(color), p1, 'measurement')
+        htManager.add(`${id}-dot2`, makeDot(color), p2, 'measurement')
+        htManager.add(
+          `${id}-badge`,
+          makeBadge(color, `~ ${dist.toFixed(3)} m`),
+          mid,
+          'measurement'
+        )
 
-      registerMeasurementCleanup(() => {
-        context.view.removeTransientEntity(line.objectId)
-        htManager.remove(`${id}-dot1`)
-        htManager.remove(`${id}-dot2`)
-        htManager.remove(`${id}-badge`)
+        registerMeasurementCleanup(() => {
+          context.view.removeTransientEntity(line.objectId)
+          htManager.remove(`${id}-dot1`)
+          htManager.remove(`${id}-dot2`)
+          htManager.remove(`${id}-badge`)
+        })
       })
     } finally {
-      // Restore previous cursor/mode
       context.view.mode = previousMode
-      if (previousCursor != null) {
-        context.view.setCursor(previousCursor)
-      }
     }
   }
 }
