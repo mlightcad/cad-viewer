@@ -657,7 +657,6 @@ export class AcEdInputManager {
       showBaseLineOnly: !options.useDashedLine,
       useBasePoint: options.useBasePoint,
       basePoint: options.basePoint,
-      disableOSnap: options.disableOSnap,
       cleanup,
       handler,
       getDynamicValue,

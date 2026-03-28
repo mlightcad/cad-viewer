@@ -321,7 +321,6 @@ export class AcApMeasureArcCmd extends AcEdCommand {
       AcApI18n.t('jig.measureArc.startPoint')
     )
     p1Prompt.jig = snapJig
-    p1Prompt.disableOSnap = true
 
     try {
       await editor.getPoint(p1Prompt)
@@ -379,7 +378,6 @@ export class AcApMeasureArcCmd extends AcEdCommand {
       AcApI18n.t('jig.measureArc.endPoint')
     )
     p2Prompt.jig = new AcApArcEndSnapJig(context, geom, color, onMove)
-    p2Prompt.disableOSnap = true
 
     let p2Raw: AcGePoint3dLike
     try {
