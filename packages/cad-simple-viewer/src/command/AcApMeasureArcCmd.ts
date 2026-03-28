@@ -172,6 +172,12 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
     const hits = this._ctx.view.pick(p)
     const modelSpace = this._ctx.doc.database.tables.blockTable.modelSpace
 
+    // Collect all circle/arc candidates, then pick the one whose
+    // circumference is closest to the cursor (fixes wrong-arc selection
+    // when multiple arcs overlap in the pick area).
+    let bestGeom: CircleGeom | null = null
+    let bestDist = Number.MAX_VALUE
+
     for (const hit of hits) {
       const entity = modelSpace.getIdAt(hit.id)
       let geom: CircleGeom | null = null
@@ -183,13 +189,34 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
       }
 
       if (geom) {
-        const snapped = snapToCircle(p, geom)
+        // Distance from cursor to circumference
+        const distToCenter = Math.hypot(p.x - geom.cx, p.y - geom.cy)
+        const distToCircumference = Math.abs(distToCenter - geom.r)
+
+        if (distToCircumference < bestDist) {
+          bestDist = distToCircumference
+          bestGeom = geom
+        }
+      }
+    }
+
+    if (bestGeom) {
+      // Only snap when cursor is close enough to the circumference in
+      // screen space (20 px threshold) — prevents snapping from far away.
+      const snapped = snapToCircle(p, bestGeom)
+      const cursorScreen = this._ctx.view.worldToScreen(p)
+      const snapScreen = this._ctx.view.worldToScreen(snapped)
+      const screenDist = Math.hypot(
+        cursorScreen.x - snapScreen.x,
+        cursorScreen.y - snapScreen.y
+      )
+
+      if (screenDist <= 20) {
         const rect = this._ctx.view.canvas.getBoundingClientRect()
-        const sp = this._ctx.view.worldToScreen(snapped)
-        this._indicator.style.left = `${sp.x + rect.left}px`
-        this._indicator.style.top = `${sp.y + rect.top}px`
+        this._indicator.style.left = `${snapScreen.x + rect.left}px`
+        this._indicator.style.top = `${snapScreen.y + rect.top}px`
         this._indicator.style.display = 'block'
-        this._onSnap(geom, snapped)
+        this._onSnap(bestGeom, snapped)
         return
       }
     }
