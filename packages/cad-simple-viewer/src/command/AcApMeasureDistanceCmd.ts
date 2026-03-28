@@ -5,13 +5,15 @@ import {
   AcGiLineWeight
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../app'
+import { AcApContext } from '../app'
 import {
   AcEdBaseView,
   AcEdCommand,
+  AcEdCorsorType,
   AcEdOpenMode,
   AcEdPreviewJig,
-  AcEdPromptPointOptions
+  AcEdPromptPointOptions,
+  AcEdViewMode
 } from '../editor'
 import { AcApI18n } from '../i18n'
 import { makeBadge, makeDot, makeLiveBadge, measurementColor } from '../util'
@@ -95,48 +97,58 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
   }
 
   async execute(context: AcApContext) {
-    const editor = AcApDocManager.instance.editor
+    const editor = context.view.editor
     const color = measurementColor(context.doc.database)
 
-    const p1Prompt = new AcEdPromptPointOptions(
-      AcApI18n.t('jig.measureDistance.firstPoint')
-    )
-    const p1 = await editor.getPoint(p1Prompt)
+    // Save current mode so we can restore after the command
+    const previousMode = context.view.mode
+    context.view.mode = AcEdViewMode.SELECTION
 
-    const p2Prompt = new AcEdPromptPointOptions(
-      AcApI18n.t('jig.measureDistance.secondPoint')
-    )
-    p2Prompt.useBasePoint = true
-    p2Prompt.jig = new AcApMeasureDistanceJig(context.view, p1, color)
-    const p2 = await editor.getPoint(p2Prompt)
+    try {
+      await editor.withCursor(AcEdCorsorType.Crosshair, async () => {
+        const p1Prompt = new AcEdPromptPointOptions(
+          AcApI18n.t('jig.measureDistance.firstPoint')
+        )
+        const p1 = await editor.getPoint(p1Prompt)
 
-    const dist = calcDist(p1, p2)
+        const p2Prompt = new AcEdPromptPointOptions(
+          AcApI18n.t('jig.measureDistance.secondPoint')
+        )
+        p2Prompt.useBasePoint = true
+        p2Prompt.jig = new AcApMeasureDistanceJig(context.view, p1, color)
+        const p2 = await editor.getPoint(p2Prompt)
 
-    // CAD transient line (zoom/pan aware, rendered by the engine)
-    const line = new AcDbLine(p1, p2)
-    line.color = color
-    line.lineWeight = AcGiLineWeight.LineWeight070
-    context.view.addTransientEntity(line)
+        const dist = calcDist(p1, p2)
 
-    // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
-    const htManager = (context.view as AcTrView2d).htmlTransientManager
-    const id = `dist-${Date.now()}`
-    const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+        // CAD transient line (zoom/pan aware, rendered by the engine)
+        const line = new AcDbLine(p1, p2)
+        line.color = color
+        line.lineWeight = AcGiLineWeight.LineWeight070
+        context.view.addTransientEntity(line)
 
-    htManager.add(`${id}-dot1`, makeDot(color), p1, 'measurement')
-    htManager.add(`${id}-dot2`, makeDot(color), p2, 'measurement')
-    htManager.add(
-      `${id}-badge`,
-      makeBadge(color, `~ ${dist.toFixed(3)} m`),
-      mid,
-      'measurement'
-    )
+        // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
+        const htManager = (context.view as AcTrView2d).htmlTransientManager
+        const id = `dist-${Date.now()}`
+        const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
 
-    registerMeasurementCleanup(() => {
-      context.view.removeTransientEntity(line.objectId)
-      htManager.remove(`${id}-dot1`)
-      htManager.remove(`${id}-dot2`)
-      htManager.remove(`${id}-badge`)
-    })
+        htManager.add(`${id}-dot1`, makeDot(color), p1, 'measurement')
+        htManager.add(`${id}-dot2`, makeDot(color), p2, 'measurement')
+        htManager.add(
+          `${id}-badge`,
+          makeBadge(color, `~ ${dist.toFixed(3)} m`),
+          mid,
+          'measurement'
+        )
+
+        registerMeasurementCleanup(() => {
+          context.view.removeTransientEntity(line.objectId)
+          htManager.remove(`${id}-dot1`)
+          htManager.remove(`${id}-dot2`)
+          htManager.remove(`${id}-badge`)
+        })
+      })
+    } finally {
+      context.view.mode = previousMode
+    }
   }
 }
