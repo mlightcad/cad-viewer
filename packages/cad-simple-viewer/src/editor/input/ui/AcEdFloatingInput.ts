@@ -270,28 +270,58 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   // OSNAP calculation
   // ---------------------------------------------------------------------------
 
+  /**
+   * Returns the priority tier for a given OSNAP mode.
+   * Lower number = higher priority. Matches AutoCAD behavior where
+   * Endpoint/Midpoint/Center take precedence over Nearest.
+   */
+  private osnapModePriority(mode: AcDbOsnapMode): number {
+    switch (mode) {
+      case AcDbOsnapMode.EndPoint:
+      case AcDbOsnapMode.MidPoint:
+      case AcDbOsnapMode.Center:
+        return 0
+      case AcDbOsnapMode.Quadrant:
+        return 1
+      case AcDbOsnapMode.Nearest:
+        return 2
+      default:
+        return 1
+    }
+  }
+
   private getOsnapPoint(point?: AcGePoint2dLike, hitRadius = 20) {
     const snapPoints = this.getOsnapPoints(point, hitRadius)
+    if (snapPoints.length === 0) return undefined
 
-    let minDist = Number.MAX_VALUE
-    let index = -1
+    const p1 = this.view.screenToWorld({ x: 0, y: 0 })
+    const p2 = this.view.screenToWorld({ x: hitRadius, y: 0 })
+    const threshold = p2.x - p1.x
+
+    // Group candidates by priority tier, picking the nearest within each tier.
+    // Higher-priority modes (Endpoint, Midpoint, Center) always win over
+    // lower-priority ones (Nearest), matching AutoCAD behavior.
+    let bestPriority = Number.MAX_VALUE
+    let bestDist = Number.MAX_VALUE
+    let bestIndex = -1
 
     for (let i = 0; i < snapPoints.length; i++) {
       const d = this.view.curPos.distanceTo(snapPoints[i])
-      if (d < minDist) {
-        minDist = d
-        index = i
+      if (d >= threshold) continue
+
+      const priority = this.osnapModePriority(snapPoints[i].type)
+
+      if (
+        priority < bestPriority ||
+        (priority === bestPriority && d < bestDist)
+      ) {
+        bestPriority = priority
+        bestDist = d
+        bestIndex = i
       }
     }
 
-    if (index !== -1) {
-      const p1 = this.view.screenToWorld({ x: 0, y: 0 })
-      const p2 = this.view.screenToWorld({ x: hitRadius, y: 0 })
-      if (minDist < p2.x - p1.x) {
-        return snapPoints[index]
-      }
-    }
-    return undefined
+    return bestIndex !== -1 ? snapPoints[bestIndex] : undefined
   }
 
   private getOsnapPoints(point?: AcGePoint2dLike, hitRadius = 20) {
