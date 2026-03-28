@@ -160,6 +160,41 @@ export class AcEditor {
   }
 
   /**
+   * Temporarily sets a new cursor for the duration of a function execution.
+   *
+   * This method saves the current cursor, sets the new cursor, executes the provided function,
+   * and then restores the original cursor regardless of whether the function succeeds or fails.
+   *
+   * @param cursorType - The cursor type to use temporarily
+   * @param action - The function to execute with the temporary cursor
+   * @returns The result of the executed function
+   *
+   * @example
+   * ```typescript
+   * // Temporarily set grab cursor for a pan operation
+   * await editor.withCursor(AcEdCorsorType.Grab, async () => {
+   *   // Perform pan operation
+   *   await this.performPan();
+   * });
+   * // Cursor is automatically restored to previous state
+   * ```
+   */
+  async withCursor<T>(cursorType: AcEdCorsorType, action: () => Promise<T> | T): Promise<T> {
+    const originalCursor = this._currentCursor
+    this.setCursor(cursorType)
+    
+    try {
+      return await Promise.resolve(action())
+    } finally {
+      if (originalCursor !== undefined) {
+        this.setCursor(originalCursor)
+      } else {
+        this.restoreCursor()
+      }
+    }
+  }
+
+  /**
    * Sets the cursor color for the crosshair cursor
    *
    * @param color - The color for the cursor
