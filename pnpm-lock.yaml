@@ -96,11 +96,11 @@ importers:
   packages/cad-simple-viewer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.9
-        version: 1.7.9
+        specifier: ^1.7.11
+        version: 1.7.11
       '@mlightcad/libredwg-converter':
-        specifier: ^3.5.9
-        version: 3.5.9(@mlightcad/data-model@1.7.9)
+        specifier: ^3.5.11
+        version: 3.5.11(@mlightcad/data-model@1.7.11)
       lodash-es:
         specifier: 4.17.21
         version: 4.17.21
@@ -145,8 +145,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.9
-        version: 1.7.9
+        specifier: ^1.7.11
+        version: 1.7.11
 
   packages/cad-viewer:
     dependencies:
@@ -157,8 +157,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.9
-        version: 1.7.9
+        specifier: ^1.7.11
+        version: 1.7.11
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.3.0(vue@3.5.18(typescript@5.8.3))
@@ -227,8 +227,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.9
-        version: 1.7.9
+        specifier: ^1.7.11
+        version: 1.7.11
       element-plus:
         specifier: ^2.12.0
         version: 2.12.0(vue@3.5.18(typescript@5.8.3))
@@ -279,14 +279,14 @@ importers:
   packages/svg-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.9
-        version: 1.7.9
+        specifier: ^1.7.11
+        version: 1.7.11
 
   packages/three-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.9
-        version: 1.7.9
+        specifier: ^1.7.11
+        version: 1.7.11
       '@mlightcad/mtext-renderer':
         specifier: ^0.10.7
         version: 0.10.7(three@0.172.0)
@@ -1518,33 +1518,33 @@ packages:
   '@microsoft/tsdoc@0.15.1':
     resolution: {integrity: sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw==}
 
-  '@mlightcad/common@1.4.9':
-    resolution: {integrity: sha512-AegHR44p9w5iebhYopQkTlRUted1nWwKQX+AR7Y71mRyGC0r4AL1vr4p8ImFQaoOUo048BeNBNufqgt6Bvg4HQ==}
+  '@mlightcad/common@1.4.11':
+    resolution: {integrity: sha512-FVZ0GGEeHjbNbAdemBXBDBRnj+E2AxdI2ARx8iY0SgV9bchssFGNB0b3AJ4hc2XWS7+N+CvbDp2/MET2HC7AVg==}
 
-  '@mlightcad/data-model@1.7.9':
-    resolution: {integrity: sha512-DDadCs08b22nGNno9Zc8P8gfcmDiDecYSCH/FctbT02988iO9vyv0abE6y1l3ILu3lyPLWw1tyqtd1zAOQld2g==}
+  '@mlightcad/data-model@1.7.11':
+    resolution: {integrity: sha512-3UHKxdU+wQFkr8xHduJVqPrkrlOygvM9/IBXo6Kn4N1Gb1yp6VfxLfXh+QjHn1aUrQSP/ii1l0bujkvvotPgMA==}
 
-  '@mlightcad/dxf-json@1.0.10':
-    resolution: {integrity: sha512-KY2E49y9DHPb0LoEi2Uz2cgmtVFgiNNNBn1DsWYvqn4VLD7itr2+GE51yBZLAzG1SFXiwqPjp5mprU6fI7kysg==}
+  '@mlightcad/dxf-json@1.1.1':
+    resolution: {integrity: sha512-Is/ZdV0mqfZiiWHRltY37T9BroQD6q5xboEFr2cDDkVF6YDVLC017LP6uUu7/iNArrevo1e4Zsck/o5KDNu9gg==}
 
-  '@mlightcad/geometry-engine@3.2.9':
-    resolution: {integrity: sha512-VKtd52RNlZZkG1/CZzTY/vXcErDT7Gaf7Rl/WY6+dQfYQOYtqrtJfsR/3J8YAcCL5cc6WuK3QikUdfb0hvIfng==}
+  '@mlightcad/geometry-engine@3.2.11':
+    resolution: {integrity: sha512-9a/DyNjv6zL/XP8BXyvMjXZlJdT6IjnB7zSBSUJoCo+aVhIN35f1DNm6iV6ipgJtgF4fLM+buKibvPskvJpYqQ==}
     peerDependencies:
-      '@mlightcad/common': 1.4.9
+      '@mlightcad/common': 1.4.11
 
-  '@mlightcad/graphic-interface@3.3.9':
-    resolution: {integrity: sha512-vCZW53olAbYQ6xRHwPfBN9fNJjEswndewewK4IBT1B91cYr4SRr8tzQliFCt05GrAssl2AY3VcNV3h1RxeXNSQ==}
+  '@mlightcad/graphic-interface@3.3.11':
+    resolution: {integrity: sha512-hjBEs+BGd7BRyVHKDmmp2LOj3Zpnu/MB8xHlNOoZVxLiTcaoJL0PH1om9tOjSK3G1P+Y14ZENzU0Zo3lhP7PJw==}
     peerDependencies:
-      '@mlightcad/common': 1.4.9
-      '@mlightcad/geometry-engine': 3.2.9
+      '@mlightcad/common': 1.4.11
+      '@mlightcad/geometry-engine': 3.2.11
 
-  '@mlightcad/libredwg-converter@3.5.9':
-    resolution: {integrity: sha512-sv0BuyxQqpXVQ/isMuZjfk9MLjeb+ancZYn44TrHTov3r4of8+4sFXZdjiw8T4jTiK86YZttDiPmZb+3TPDsPw==}
+  '@mlightcad/libredwg-converter@3.5.11':
+    resolution: {integrity: sha512-ixgse0McCO4ELXeqCPmDfFeyZjGWfBSieVmIV98aObi11O09l4uikHnDLIBwzU+rKnbaSBwXayrP8B4R2/6Tzg==}
     peerDependencies:
-      '@mlightcad/data-model': 1.7.9
+      '@mlightcad/data-model': 1.7.11
 
-  '@mlightcad/libredwg-web@0.6.6':
-    resolution: {integrity: sha512-Xv8uhe0M7etEW3mHDOWYhZx5qqLXLO/702H32bf22J9veQLjjxO33aNQfo37tgQs3CnaxkSMdeRvVrQCQwmigw==}
+  '@mlightcad/libredwg-web@0.6.7':
+    resolution: {integrity: sha512-FWJ3lpqxeMcCUNhOyBME6m8NUTkux1g1LbcrS0RdHFL4pU+Om/laKBkUN8RRY+kK5Arlun8bkkCqf3nw+ZaPag==}
 
   '@mlightcad/mtext-input-box@0.2.3':
     resolution: {integrity: sha512-+PMrtMKS96yAI7FKc4xuwIyljQ2Uqg8+ccg7QiyIbY56CcTrOCLQQqt/6EHMQADIcZYobf21+9PkoBaGndgfHg==}
@@ -2399,9 +2399,6 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
-  bindings@1.5.0:
-    resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
-
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
 
@@ -3026,9 +3023,6 @@ packages:
   file-entry-cache@8.0.0:
     resolution: {integrity: sha512-XXTUwCvisa5oacNGRP9SfNtYBNAMi+RPwBFmblZEF7N7swHYQS6/Zfk7SRwx4D5j3CH211YNRco1DEMNVfZCnQ==}
     engines: {node: '>=16.0.0'}
-
-  file-uri-to-path@1.0.0:
-    resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
 
   filelist@1.0.4:
     resolution: {integrity: sha512-w1cEuf3S+DrLCQL7ET6kz+gmlJdbq9J7yXCSjK/OZCPA+qEN1WyF4ZAf0YYJa4/shHJra2t/d/r8SV4Ji+x+8Q==}
@@ -3814,9 +3808,6 @@ packages:
 
   muggle-string@0.4.1:
     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
-
-  nan@2.26.2:
-    resolution: {integrity: sha512-0tTvBTYkt3tdGw22nrAy50x7gpbGCCFH3AFcyS5WiUu7Eu4vWlri1woE6qHBSfy11vksDqkiwjOnlR7WV8G1Hw==}
 
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
@@ -4639,9 +4630,6 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  verb-nurbs-web@2.1.3:
-    resolution: {integrity: sha512-2PvI2bx7dn0r3kWtk+JuDIDZ+p7I5Piu8y6/ZNhUVpilOyHKK1nNzLHtgown+dFOmBnKnuAKIMh1xn/5kzrxZA==}
-
   vite-plugin-dts@4.5.4:
     resolution: {integrity: sha512-d4sOM8M/8z7vRXHHq/ebbblfaxENjogAAekcfcDCCwAyvGqnPrc7f4NZbvItS+g4WTgerW0xDwSz5qz11JT3vg==}
     peerDependencies:
@@ -4783,10 +4771,6 @@ packages:
 
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
-
-  webworker-threads@0.7.17:
-    resolution: {integrity: sha512-Y2w2aXBbDLk9IzTEb9u+MsODC3s4YlGI7g4h0t+1OAwIO8yBI9rQL35ZYlyayiCuWu1dZMH/P7kGU8OwW7YsyA==}
-    engines: {node: '>= 0.10.16'}
 
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
@@ -6349,39 +6333,38 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.1': {}
 
-  '@mlightcad/common@1.4.9':
+  '@mlightcad/common@1.4.11':
     dependencies:
       loglevel: 1.9.2
 
-  '@mlightcad/data-model@1.7.9':
+  '@mlightcad/data-model@1.7.11':
     dependencies:
-      '@mlightcad/common': 1.4.9
-      '@mlightcad/dxf-json': 1.0.10
-      '@mlightcad/geometry-engine': 3.2.9(@mlightcad/common@1.4.9)
-      '@mlightcad/graphic-interface': 3.3.9(@mlightcad/common@1.4.9)(@mlightcad/geometry-engine@3.2.9(@mlightcad/common@1.4.9))
+      '@mlightcad/common': 1.4.11
+      '@mlightcad/dxf-json': 1.1.1
+      '@mlightcad/geometry-engine': 3.2.11(@mlightcad/common@1.4.11)
+      '@mlightcad/graphic-interface': 3.3.11(@mlightcad/common@1.4.11)(@mlightcad/geometry-engine@3.2.11(@mlightcad/common@1.4.11))
       iconv-lite: 0.7.2
       uid: 2.0.2
 
-  '@mlightcad/dxf-json@1.0.10':
+  '@mlightcad/dxf-json@1.1.1':
     dependencies:
       '@fxts/core': 1.26.0
 
-  '@mlightcad/geometry-engine@3.2.9(@mlightcad/common@1.4.9)':
+  '@mlightcad/geometry-engine@3.2.11(@mlightcad/common@1.4.11)':
     dependencies:
-      '@mlightcad/common': 1.4.9
-      verb-nurbs-web: 2.1.3
+      '@mlightcad/common': 1.4.11
 
-  '@mlightcad/graphic-interface@3.3.9(@mlightcad/common@1.4.9)(@mlightcad/geometry-engine@3.2.9(@mlightcad/common@1.4.9))':
+  '@mlightcad/graphic-interface@3.3.11(@mlightcad/common@1.4.11)(@mlightcad/geometry-engine@3.2.11(@mlightcad/common@1.4.11))':
     dependencies:
-      '@mlightcad/common': 1.4.9
-      '@mlightcad/geometry-engine': 3.2.9(@mlightcad/common@1.4.9)
+      '@mlightcad/common': 1.4.11
+      '@mlightcad/geometry-engine': 3.2.11(@mlightcad/common@1.4.11)
 
-  '@mlightcad/libredwg-converter@3.5.9(@mlightcad/data-model@1.7.9)':
+  '@mlightcad/libredwg-converter@3.5.11(@mlightcad/data-model@1.7.11)':
     dependencies:
-      '@mlightcad/data-model': 1.7.9
-      '@mlightcad/libredwg-web': 0.6.6
+      '@mlightcad/data-model': 1.7.11
+      '@mlightcad/libredwg-web': 0.6.7
 
-  '@mlightcad/libredwg-web@0.6.6': {}
+  '@mlightcad/libredwg-web@0.6.7': {}
 
   '@mlightcad/mtext-input-box@0.2.3(@mlightcad/mtext-renderer@0.10.7(three@0.172.0))(three@0.172.0)':
     dependencies:
@@ -7357,11 +7340,6 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
-  bindings@1.5.0:
-    dependencies:
-      file-uri-to-path: 1.0.0
-    optional: true
-
   bl@4.1.0:
     dependencies:
       buffer: 5.7.1
@@ -8050,9 +8028,6 @@ snapshots:
   file-entry-cache@8.0.0:
     dependencies:
       flat-cache: 4.0.1
-
-  file-uri-to-path@1.0.0:
-    optional: true
 
   filelist@1.0.4:
     dependencies:
@@ -8977,9 +8952,6 @@ snapshots:
 
   muggle-string@0.4.1: {}
 
-  nan@2.26.2:
-    optional: true
-
   nanoid@3.3.11: {}
 
   natural-compare@1.4.0: {}
@@ -9805,10 +9777,6 @@ snapshots:
 
   vary@1.1.2: {}
 
-  verb-nurbs-web@2.1.3:
-    optionalDependencies:
-      webworker-threads: 0.7.17
-
   vite-plugin-dts@4.5.4(@types/node@20.19.9)(rollup@4.45.1)(typescript@5.8.3)(vite@6.3.5(@types/node@20.19.9)(jiti@1.21.7)(sass@1.95.1)(terser@5.43.1)(yaml@2.8.0)):
     dependencies:
       '@microsoft/api-extractor': 7.52.10(@types/node@20.19.9)
@@ -9924,12 +9892,6 @@ snapshots:
   wcwidth@1.0.1:
     dependencies:
       defaults: 1.0.4
-
-  webworker-threads@0.7.17:
-    dependencies:
-      bindings: 1.5.0
-      nan: 2.26.2
-    optional: true
 
   which@2.0.2:
     dependencies:
