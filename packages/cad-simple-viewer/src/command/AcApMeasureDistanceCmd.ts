@@ -100,12 +100,8 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
     const editor = context.view.editor
     const color = measurementColor(context.doc.database)
 
-    // Save current mode so we can restore after the command
-    const previousMode = context.view.mode
-    context.view.mode = AcEdViewMode.SELECTION
-
-    try {
-      await editor.withCursor(AcEdCorsorType.Crosshair, async () => {
+    await context.view.withMode(AcEdViewMode.SELECTION, () =>
+      editor.withCursor(AcEdCorsorType.Crosshair, async () => {
         const p1Prompt = new AcEdPromptPointOptions(
           AcApI18n.t('jig.measureDistance.firstPoint')
         )
@@ -147,8 +143,6 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
           htManager.remove(`${id}-badge`)
         })
       })
-    } finally {
-      context.view.mode = previousMode
-    }
+    )
   }
 }

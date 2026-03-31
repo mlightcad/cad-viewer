@@ -587,6 +587,38 @@ export abstract class AcEdBaseView {
   abstract onUnhover(id: AcDbObjectId): void
 
   /**
+   * Temporarily switches the view mode, executes an action, then restores
+   * the previous mode — even if the action throws.
+   *
+   * This is the mode-level counterpart of {@link AcEditor.withCursor} and
+   * follows the same save → set → restore pattern.
+   *
+   * @param mode - The temporary view mode to apply
+   * @param action - The async (or sync) action to run under the temporary mode
+   * @returns The value returned by the action
+   *
+   * @example
+   * ```typescript
+   * await view.withMode(AcEdViewMode.SELECTION, async () => {
+   *   const pt = await view.editor.getPoint('Pick a point')
+   * })
+   * // view.mode is restored to whatever it was before
+   * ```
+   */
+  async withMode<T>(
+    mode: AcEdViewMode,
+    action: () => Promise<T> | T
+  ): Promise<T> {
+    const previousMode = this.mode
+    this.mode = mode
+    try {
+      return await Promise.resolve(action())
+    } finally {
+      this.mode = previousMode
+    }
+  }
+
+  /**
    * Set cursor type of this view
    * @param cursorType Input cursor type
    */
