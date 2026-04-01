@@ -307,15 +307,11 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     const editor = context.view.editor
     const color = measurementColor(context.doc.database)
 
-    // Save current mode so we can restore after the command
-    const previousMode = context.view.mode
-    context.view.mode = AcEdViewMode.SELECTION
-
     // Construction-phase canvas — removed before this method returns
     const arcCanvas = makeOverlayCanvas(context.view.container)
 
-    try {
-      await editor.withCursor(AcEdCorsorType.Crosshair, async () => {
+    await context.view.withMode(AcEdViewMode.SELECTION, () =>
+      editor.withCursor(AcEdCorsorType.Crosshair, async () => {
         // ── Phase 1: snap to circle/arc entity ──────────────────────────────────
         let snapGeom: CircleGeom | null = null
         let snappedStart: AcGePoint3dLike | null = null
@@ -441,8 +437,6 @@ export class AcApMeasureArcCmd extends AcEdCommand {
           htManager.remove(`${id}-badge`)
         })
       })
-    } finally {
-      context.view.mode = previousMode
-    }
+    )
   }
 }

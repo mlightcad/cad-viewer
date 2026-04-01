@@ -170,10 +170,6 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     const editor = context.view.editor
     const color = measurementColor(context.doc.database)
 
-    // Save current mode so we can restore after the command
-    const previousMode = context.view.mode
-    context.view.mode = AcEdViewMode.SELECTION
-
     const points: AcGePoint3dLike[] = []
 
     // Construction-phase canvas overlay — removed before this method returns
@@ -182,8 +178,8 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     // Live area badge shown while the jig is active — also removed before returning
     const liveBadge = makeLiveBadge(color)
 
-    try {
-      await editor.withCursor(AcEdCorsorType.Crosshair, async () => {
+    await context.view.withMode(AcEdViewMode.SELECTION, () =>
+      editor.withCursor(AcEdCorsorType.Crosshair, async () => {
         const drawPolygon = (cursor?: AcGePoint3dLike) => {
           const rect = context.view.canvas.getBoundingClientRect()
           const dpr = window.devicePixelRatio || 1
@@ -349,8 +345,6 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
           })
         })
       })
-    } finally {
-      context.view.mode = previousMode
-    }
+    )
   }
 }

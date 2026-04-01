@@ -258,12 +258,8 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
     const editor = context.view.editor
     const color = measurementColor(context.doc.database)
 
-    // Save current mode so we can restore after the command
-    const previousMode = context.view.mode
-    context.view.mode = AcEdViewMode.SELECTION
-
-    try {
-      await editor.withCursor(AcEdCorsorType.Crosshair, async () => {
+    await context.view.withMode(AcEdViewMode.SELECTION, () =>
+      editor.withCursor(AcEdCorsorType.Crosshair, async () => {
         // Pick vertex
         const vertexPrompt = new AcEdPromptPointOptions(
           AcApI18n.t('jig.measureAngle.vertex')
@@ -407,8 +403,6 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
           htManager.remove(`${id}-badge`)
         })
       })
-    } finally {
-      context.view.mode = previousMode
-    }
+    )
   }
 }
