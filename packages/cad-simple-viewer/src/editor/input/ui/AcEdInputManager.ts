@@ -361,8 +361,9 @@ export class AcEdInputManager {
    * This method supports two selection modes:
    *
    * - **Click selection**: Clicking on an entity selects the entity under the cursor.
-   * - **Box selection**: Dragging the mouse to let the user specify a rectangular window,
-   *   and all entities intersecting that box are selected.
+   * - **Box selection**:
+   *   - left-to-right drag: window selection (entities fully inside the box)
+   *   - right-to-left drag: crossing selection (entities intersecting the box)
    *
    * The selection operation behaves similarly to AutoCAD's
    * `Editor.GetSelection()` API:
@@ -484,7 +485,7 @@ export class AcEdInputManager {
             .expandByPoint(startWcs)
             .expandByPoint(endWcs)
 
-          this.view.selectByBox(box)
+            this.view.selectByBox(box)
 
           for (const id of this.view.selectionSet.ids) {
             selected.add(id)

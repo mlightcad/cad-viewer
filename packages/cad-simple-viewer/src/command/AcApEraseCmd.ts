@@ -35,8 +35,9 @@ export class AcApEraseCmd extends AcEdCommand {
       let ids = await AcApDocManager.instance.editor.getSelection(options)
       if (ids && ids.length > 0) {
         // If it is in review mode, annotation entities can be deleted only
-        if (context.doc.openMode == AcEdOpenMode.Review)
-          ids = annotation.filterAnnotationEntities(selectionSet.ids)
+        if (context.doc.openMode == AcEdOpenMode.Review) {
+          ids = annotation.filterAnnotationEntities(ids)
+        }
         context.doc.database.tables.blockTable.removeEntity(ids)
         selectionSet.clear()
       }

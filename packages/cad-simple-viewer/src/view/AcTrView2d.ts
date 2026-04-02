@@ -160,8 +160,8 @@ export class AcTrView2d extends AcEdBaseView {
     })
 
     this._scene = this.createScene()
-    // Initialize background color via renderer clear color
-    this._renderer.setClearColor(mergedOptions.background || 0x000000)
+    // Initialize background color through setter to keep renderer/cursor/foreground in sync.
+    this.backgroundColor = mergedOptions.background || 0x000000
     this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
 
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
