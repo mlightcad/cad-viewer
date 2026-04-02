@@ -44,6 +44,8 @@ export class AcTrViewportView extends AcTrBaseView {
     super(renderer, viewportSize.width, viewportSize.height)
     this._parentView = parentView
     this._viewport = viewport.clone()
+    this._frustum *= viewport.height / parentView.height
+    this.zoomTo(this._viewport.viewBox)
     this.enabled = false
   }
 

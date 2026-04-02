@@ -275,7 +275,7 @@ export class AcEditor {
    *
    * This method allows the user to drag a selection box to select
    * multiple entities at once. The selection behavior follows CAD
-   * conventions (left-to-right for crossing, right-to-left for window).
+   * conventions (left-to-right for window, right-to-left for crossing).
    *
    * @returns Promise that resolves to the selection set containing selected entity IDs
    */
