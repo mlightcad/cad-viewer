@@ -49,12 +49,12 @@
     "@types/three": "^0.172.0"
   },
   "dependencies": {
-    "@mlightcad/libredwg-converter": "^3.5.13",
+    "@mlightcad/libredwg-converter": "^3.5.14",
     "mitt": "^3.0.1",
     "rbush": "^4.0.1"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.7.13",
+    "@mlightcad/data-model": "^1.7.14",
     "three": "^0.172.0",
     "lodash-es": "4.17.21"
   }

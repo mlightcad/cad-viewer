@@ -163,7 +163,7 @@ const props = withDefaults(defineProps<Props>(), {
   localFile: undefined,
   background: undefined,
   baseUrl: undefined,
-  useMainThreadDraw: false,
+  useMainThreadDraw: true,
   theme: 'dark',
   mode: AcEdOpenMode.Write
 })

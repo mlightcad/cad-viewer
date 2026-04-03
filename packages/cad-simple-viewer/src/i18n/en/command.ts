@@ -37,6 +37,12 @@ export default {
     line: {
       description: 'Draws straight line segments between points'
     },
+    polyline: {
+      description: 'Creates a polyline by specifying multiple points'
+    },
+    spline: {
+      description: 'Creates a smooth spline curve by specifying control points'
+    },
     mtext: {
       description: 'Creates one mtext entity'
     },
