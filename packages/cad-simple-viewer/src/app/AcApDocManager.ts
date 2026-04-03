@@ -28,6 +28,7 @@ import {
   AcApMTextCmd,
   AcApOpenCmd,
   AcApPanCmd,
+  AcApPolylineCmd,
   AcApQNewCmd,
   AcApRectCmd,
   AcApRegenCmd,
@@ -37,6 +38,7 @@ import {
   AcApRevVisibilityCmd,
   AcApSelectCmd,
   AcApSketchCmd,
+  AcApSplineCmd,
   AcApSwitchBgCmd,
   AcApSysVarCmd,
   AcApZoomCmd,
@@ -779,6 +781,12 @@ export class AcApDocManager {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'pline',
+      'pline',
+      new AcApPolylineCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'qnew',
       'qnew',
       new AcApQNewCmd()
@@ -830,6 +838,12 @@ export class AcApDocManager {
       'sketch',
       'sketch',
       new AcApSketchCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'spline',
+      'spline',
+      new AcApSplineCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

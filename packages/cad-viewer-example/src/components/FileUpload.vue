@@ -18,9 +18,9 @@
         </p>
         <div>
           <el-radio-group v-model="selectedMode" class="mode-radio-group">
-            <el-radio :label="0" border>Read</el-radio>
-            <el-radio :label="4" border>Review</el-radio>
-            <el-radio :label="8" border>Write</el-radio>
+            <el-radio :value="0" border>Read</el-radio>
+            <el-radio :value="4" border>Review</el-radio>
+            <el-radio :value="8" border>Write</el-radio>
           </el-radio-group>
           <div class="mode-description">
             <p v-if="selectedMode === 0" class="mode-info">

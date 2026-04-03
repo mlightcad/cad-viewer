@@ -41,6 +41,14 @@ export default {
     firstPoint: 'Specify the first point:',
     nextPoint: 'Specify the end point:'
   },
+  polyline: {
+    firstPoint: 'Specify the first point:',
+    nextPoint: 'Specify the next point (or press Enter to finish):'
+  },
+  spline: {
+    firstPoint: 'Specify the first point:',
+    nextPoint: 'Specify the next point (or press Enter to finish):'
+  },
   sysvar: {
     prompt: 'Please input new value:'
   }

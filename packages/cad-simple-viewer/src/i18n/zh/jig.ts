@@ -41,6 +41,14 @@ export default {
     firstPoint: '指定第一个点：',
     nextPoint: '指定结束点：'
   },
+  polyline: {
+    firstPoint: '指定第一个点：',
+    nextPoint: '指定下一个点（或按 Enter 完成）：'
+  },
+  spline: {
+    firstPoint: '指定第一个点：',
+    nextPoint: '指定下一个点（或按 Enter 完成）：'
+  },
   sysvar: {
     prompt: '请输入新的值：'
   }

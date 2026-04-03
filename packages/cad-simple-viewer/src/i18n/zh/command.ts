@@ -34,6 +34,12 @@ export default {
     line: {
       description: '在指定点之间绘制直线段'
     },
+    polyline: {
+      description: '通过指定多个点创建多段线'
+    },
+    spline: {
+      description: '通过指定控制点创建平滑的样条曲线'
+    },
     mtext: {
       description: '创建一条多行文本（MTEXT）'
     },
