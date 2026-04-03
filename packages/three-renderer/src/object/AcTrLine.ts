@@ -14,29 +14,26 @@ export class AcTrLine extends AcTrEntity {
   constructor(
     points: AcGePoint3dLike[],
     traits: AcGiSubEntityTraits,
-    styleManager: AcTrStyleManager
+    styleManager: AcTrStyleManager,
+    basicMaterialOnly: boolean = false
   ) {
     super(styleManager)
 
-    const material = this.styleManager.getLineMaterial(traits)
+    const material = this.styleManager.getLineMaterial(traits, basicMaterialOnly)
     const maxVertexCount = points.length
+    const localOrigin = this.computeLocalOrigin(points)
 
     if (material instanceof LineMaterial) {
       const segmentPositions = new Float32Array((maxVertexCount - 1) * 6)
-      const box = new THREE.Box3()
-      for (let i = 0; i < maxVertexCount; i++) {
-        const point = points[i]
-        box.expandByPoint(_point1.set(point.x, point.y, point.z ?? 0))
-      }
       for (let i = 0, pos = 0; i < maxVertexCount - 1; i++) {
         const p1 = points[i]
         const p2 = points[i + 1]
-        segmentPositions[pos++] = p1.x
-        segmentPositions[pos++] = p1.y
-        segmentPositions[pos++] = p1.z ?? 0
-        segmentPositions[pos++] = p2.x
-        segmentPositions[pos++] = p2.y
-        segmentPositions[pos++] = p2.z ?? 0
+        segmentPositions[pos++] = p1.x - localOrigin.x
+        segmentPositions[pos++] = p1.y - localOrigin.y
+        segmentPositions[pos++] = (p1.z ?? 0) - localOrigin.z
+        segmentPositions[pos++] = p2.x - localOrigin.x
+        segmentPositions[pos++] = p2.y - localOrigin.y
+        segmentPositions[pos++] = (p2.z ?? 0) - localOrigin.z
       }
 
       const lineGeometry = new LineSegmentsGeometry()
@@ -44,9 +41,10 @@ export class AcTrLine extends AcTrEntity {
       lineGeometry.computeBoundingBox()
       lineGeometry.computeBoundingSphere()
       this.geometry = lineGeometry
-      this.box.copy(box)
+      this.setBoundingBox(lineGeometry as unknown as THREE.BufferGeometry, localOrigin)
 
       const line = new LineSegments2(lineGeometry, material)
+      line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
       line.userData.styleMaterialId = material.id
       this.add(line)
       return
@@ -60,9 +58,9 @@ export class AcTrLine extends AcTrEntity {
 
     for (let i = 0, pos = 0; i < maxVertexCount; i++) {
       const point = points[i]
-      vertices[pos++] = point.x
-      vertices[pos++] = point.y
-      vertices[pos++] = point.z ?? 0
+      vertices[pos++] = point.x - localOrigin.x
+      vertices[pos++] = point.y - localOrigin.y
+      vertices[pos++] = (point.z ?? 0) - localOrigin.z
     }
     for (let i = 0, pos = 0; i < maxVertexCount - 1; i++) {
       indices[pos++] = i
@@ -71,17 +69,29 @@ export class AcTrLine extends AcTrEntity {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
     geometry.setIndex(new THREE.BufferAttribute(indices, 1))
-    this.setBoundingBox(geometry)
+    this.setBoundingBox(geometry, localOrigin)
 
     this.geometry = geometry
     const line = new THREE.LineSegments(geometry, material)
+    line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
     AcTrBufferGeometryUtil.computeLineDistances(line)
     this.add(line)
   }
 
-  private setBoundingBox(geometry: THREE.BufferGeometry) {
+  private setBoundingBox(geometry: THREE.BufferGeometry, localOrigin: THREE.Vector3) {
     geometry.computeBoundingBox()
-    this.box = geometry.boundingBox!
+    const worldBox = geometry.boundingBox!.clone()
+    worldBox.translate(localOrigin)
+    this.box = worldBox
+  }
+
+  private computeLocalOrigin(points: AcGePoint3dLike[]) {
+    const box = new THREE.Box3()
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i]
+      box.expandByPoint(_point1.set(p.x, p.y, p.z ?? 0))
+    }
+    return box.getCenter(new THREE.Vector3())
   }
 }
 
