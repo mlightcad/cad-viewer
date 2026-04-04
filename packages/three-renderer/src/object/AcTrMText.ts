@@ -4,7 +4,11 @@ import {
   AcGiTextStyle,
   log
 } from '@mlightcad/data-model'
-import { ColorSettings, MTextObject } from '@mlightcad/mtext-renderer'
+import {
+  ColorSettings,
+  MTextData,
+  MTextObject
+} from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { AcTrMTextRenderer } from '../renderer'
@@ -31,8 +35,8 @@ export class AcTrMText extends AcTrEntity {
     this._colorSettings = {
       layer: traits.layer,
       color: AcTrMTextColorUtil.toMTextColor(traits.color),
-      byLayerColor: 0xffffff,  // TODO: Fix it
-      byBlockColor: 0xffffff   // TODO: Fix it
+      byLayerColor: 0xffffff, // TODO: Fix it
+      byBlockColor: 0xffffff // TODO: Fix it
     }
     if (!delay) {
       this.syncDraw()
@@ -45,9 +49,13 @@ export class AcTrMText extends AcTrEntity {
 
     try {
       const style = this._style
+      const mtextData = this._text as MTextData
 
-      // @ts-expect-error AcGiTextData and MTextData are compatible
-      this._mtext = mtextRenderer.syncRenderMText(this._text, style, this._colorSettings)
+      this._mtext = mtextRenderer.syncRenderMText(
+        mtextData,
+        style,
+        this._colorSettings
+      )
       this.add(this._mtext)
       this.flatten()
       this.traverse(object => {
@@ -69,19 +77,21 @@ export class AcTrMText extends AcTrEntity {
 
     try {
       const style = this._style
+      const mtextData = this._text as MTextData
 
-      // @ts-expect-error AcGiTextData and MTextData are compatible
-      this._mtext = await mtextRenderer.asyncRenderMText(this._text, style, this._colorSettings)
-        .then(mtext => {
-          this._mtext = mtext
-          this.add(this._mtext)
-          this.flatten()
-          this.traverse(object => {
-            // Add the flag to check intersection using bounding box of the mesh
-            object.userData.bboxIntersectionCheck = true
-          })
-          this.box = this._mtext.box
-        })
+      const mtext = await mtextRenderer.asyncRenderMText(
+        mtextData,
+        style,
+        this._colorSettings
+      )
+      this._mtext = mtext
+      this.add(this._mtext)
+      this.flatten()
+      this.traverse(object => {
+        // Add the flag to check intersection using bounding box of the mesh
+        object.userData.bboxIntersectionCheck = true
+      })
+      this.box = this._mtext.box
     } catch (error) {
       log.info(
         `Failed to render mtext '${this._text.text}' with the following error:\n`,
@@ -98,4 +108,3 @@ export class AcTrMText extends AcTrEntity {
     this._mtext?.raycast(raycaster, intersects)
   }
 }
-

@@ -17,8 +17,10 @@ import { AcEdOpenMode } from '../editor/view'
  * };
  * ```
  */
-export interface AcApOpenDatabaseOptions
-  extends Omit<AcDbOpenDatabaseOptions, 'readOnly'> {
+export interface AcApOpenDatabaseOptions extends Omit<
+  AcDbOpenDatabaseOptions,
+  'readOnly'
+> {
   /**
    * The access mode for opening the database.
    * Higher value modes are compatible with lower value modes.

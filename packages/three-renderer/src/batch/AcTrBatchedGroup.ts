@@ -649,12 +649,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     )
     matrixNoTranslation.setPosition(0, 0, 0)
     geometry.applyMatrix4(matrixNoTranslation)
-    const geometryId = batchedLine.addGeometry(
-      geometry,
-      -1,
-      -1,
-      worldOffset
-    )
+    const geometryId = batchedLine.addGeometry(geometry, -1, -1, worldOffset)
     batchedLine.setGeometryInfo(geometryId, userData)
     geometry.dispose()
 
@@ -1104,8 +1099,12 @@ export class AcTrBatchedGroup extends THREE.Group {
     // Compute the maximum absolute coordinate value across all axes
     // This represents the furthest distance from the world origin
     const maxAbs = Math.max(
-      Math.abs(min.x), Math.abs(min.y), Math.abs(min.z),
-      Math.abs(max.x), Math.abs(max.y), Math.abs(max.z)
+      Math.abs(min.x),
+      Math.abs(min.y),
+      Math.abs(min.z),
+      Math.abs(max.x),
+      Math.abs(max.y),
+      Math.abs(max.z)
     )
 
     // If any coordinate exceeds the threshold, it is considered unsafe for batching

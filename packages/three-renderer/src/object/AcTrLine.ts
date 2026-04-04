@@ -19,7 +19,10 @@ export class AcTrLine extends AcTrEntity {
   ) {
     super(styleManager)
 
-    const material = this.styleManager.getLineMaterial(traits, basicMaterialOnly)
+    const material = this.styleManager.getLineMaterial(
+      traits,
+      basicMaterialOnly
+    )
     const maxVertexCount = points.length
     const localOrigin = this.computeLocalOrigin(points)
 
@@ -41,7 +44,10 @@ export class AcTrLine extends AcTrEntity {
       lineGeometry.computeBoundingBox()
       lineGeometry.computeBoundingSphere()
       this.geometry = lineGeometry
-      this.setBoundingBox(lineGeometry as unknown as THREE.BufferGeometry, localOrigin)
+      this.setBoundingBox(
+        lineGeometry as unknown as THREE.BufferGeometry,
+        localOrigin
+      )
 
       const line = new LineSegments2(lineGeometry, material)
       line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
@@ -78,7 +84,10 @@ export class AcTrLine extends AcTrEntity {
     this.add(line)
   }
 
-  private setBoundingBox(geometry: THREE.BufferGeometry, localOrigin: THREE.Vector3) {
+  private setBoundingBox(
+    geometry: THREE.BufferGeometry,
+    localOrigin: THREE.Vector3
+  ) {
     geometry.computeBoundingBox()
     const worldBox = geometry.boundingBox!.clone()
     worldBox.translate(localOrigin)

@@ -12,9 +12,7 @@ export interface AcEdCommandIteratorItem {
  * This class allows you to traverse the chain of command groups that are registered with AutoCAD and
  * obtain information about the groups and the AcEdCommand objects within them.
  */
-export class AcEdCommandIterator
-  implements IterableIterator<AcEdCommandIteratorItem>
-{
+export class AcEdCommandIterator implements IterableIterator<AcEdCommandIteratorItem> {
   private _index: number
   private _commands: AcEdCommandIteratorItem[]
 

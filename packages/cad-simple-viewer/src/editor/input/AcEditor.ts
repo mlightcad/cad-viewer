@@ -179,10 +179,13 @@ export class AcEditor {
    * // Cursor is automatically restored to previous state
    * ```
    */
-  async withCursor<T>(cursorType: AcEdCorsorType, action: () => Promise<T> | T): Promise<T> {
+  async withCursor<T>(
+    cursorType: AcEdCorsorType,
+    action: () => Promise<T> | T
+  ): Promise<T> {
     const originalCursor = this._currentCursor
     this.setCursor(cursorType)
-    
+
     try {
       return await Promise.resolve(action())
     } finally {
