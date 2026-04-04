@@ -29,9 +29,9 @@
     "@element-plus/icons-vue": "^2.3.1",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/cad-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.7.14",
-    "element-plus": "^2.12.0",
-    "vue": "^3.4.21",
-    "vue-i18n": "^10.0.1"
+    "@mlightcad/data-model": "workspace:*",
+    "element-plus": "workspace:*",
+    "vue": "workspace:*",
+    "vue-i18n": "workspace:*"
   }
 }
