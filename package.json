@@ -33,6 +33,17 @@
   "engines": {
     "pnpm": ">=8"
   },
+  "pnpm": {
+    "overrides": {
+      "@mlightcad/data-model": "^1.7.14",
+      "@mlightcad/libredwg-converter": "^3.5.14",
+      "@mlightcad/mtext-renderer": "^0.10.7",
+      "element-plus": "^2.12.0",
+      "three": "^0.172.0",
+      "vue": "^3.4.21",
+      "vue-i18n": "^10.0.1"
+    }
+  },
   "devDependencies": {
     "@changesets/cli": "^2.29.5",
     "@eslint/js": "^9.9.1",
