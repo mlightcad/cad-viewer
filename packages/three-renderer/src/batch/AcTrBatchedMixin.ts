@@ -464,8 +464,8 @@ export function resetRaycastObjectInfo(raycastObject: AcTrBatchBaseObject) {
  */
 export function createAcTrBatchedMixin<
   TInfo extends AcTrBatchGeometryLike,
-  TBase extends
-    Constructor<AcTrBatchBaseObject> = Constructor<AcTrBatchBaseObject>
+  TBase extends Constructor<AcTrBatchBaseObject> =
+    Constructor<AcTrBatchBaseObject>
 >(
   Base: TBase,
   options: {

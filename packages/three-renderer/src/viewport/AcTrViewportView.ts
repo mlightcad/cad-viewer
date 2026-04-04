@@ -83,16 +83,8 @@ export class AcTrViewportView extends AcTrBaseView {
         this.zoomTo(this._viewport.viewBox, 1.0)
       }
 
-      const y =
-        this._parentView.height -
-        viewportWindowBox.min.y -
-        vpH
-      this._renderer.setViewport(
-        viewportWindowBox.min.x,
-        y,
-        vpW,
-        vpH
-      )
+      const y = this._parentView.height - viewportWindowBox.min.y - vpH
+      this._renderer.setViewport(viewportWindowBox.min.x, y, vpW, vpH)
       this._renderer.internalRenderer.setScissor(
         viewportWindowBox.min.x,
         y,

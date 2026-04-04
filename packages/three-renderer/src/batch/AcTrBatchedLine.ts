@@ -530,10 +530,12 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     return object
   }
 
-  override _initializeRaycastObject(raycastObject: THREE.Object3D & {
-    geometry: THREE.BufferGeometry
-    material: THREE.Material | THREE.Material[]
-  }) {
+  override _initializeRaycastObject(
+    raycastObject: THREE.Object3D & {
+      geometry: THREE.BufferGeometry
+      material: THREE.Material | THREE.Material[]
+    }
+  ) {
     super._initializeRaycastObject(raycastObject)
     raycastObject.position.copy(this.position)
     raycastObject.updateMatrixWorld(true)

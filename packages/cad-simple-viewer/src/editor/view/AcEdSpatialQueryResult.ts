@@ -11,7 +11,6 @@ export interface AcEdSpatialQueryResultItem {
   id: AcDbObjectId
 }
 
-export interface AcEdSpatialQueryResultItemEx
-  extends AcEdSpatialQueryResultItem {
+export interface AcEdSpatialQueryResultItemEx extends AcEdSpatialQueryResultItem {
   children?: AcEdSpatialQueryResultItem[]
 }

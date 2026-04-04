@@ -485,7 +485,7 @@ export class AcEdInputManager {
             .expandByPoint(startWcs)
             .expandByPoint(endWcs)
 
-            this.view.selectByBox(box)
+          this.view.selectByBox(box)
 
           for (const id of this.view.selectionSet.ids) {
             selected.add(id)

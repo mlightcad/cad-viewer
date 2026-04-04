@@ -67,7 +67,8 @@ export class AcApPolylineCmd extends AcEdCommand {
     const firstPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.polyline.firstPoint')
     )
-    currentPoint = await AcApDocManager.instance.editor.getPoint(firstPointPrompt)
+    currentPoint =
+      await AcApDocManager.instance.editor.getPoint(firstPointPrompt)
     if (currentPoint) {
       points.push(new AcGePoint2d(currentPoint))
 
@@ -79,9 +80,10 @@ export class AcApPolylineCmd extends AcEdCommand {
         nextPointPrompt.useDashedLine = true
         nextPointPrompt.useBasePoint = true
         nextPointPrompt.jig = new AcApPolylineJig(context.view, points)
-        
+
         try {
-          currentPoint = await AcApDocManager.instance.editor.getPoint(nextPointPrompt)
+          currentPoint =
+            await AcApDocManager.instance.editor.getPoint(nextPointPrompt)
           if (currentPoint) {
             points.push(new AcGePoint2d(currentPoint))
           } else {
