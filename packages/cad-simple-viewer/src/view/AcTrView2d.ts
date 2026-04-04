@@ -444,11 +444,7 @@ export class AcTrView2d extends AcEdBaseView {
     const waiter = new AcEdConditionWaiter(
       () => this._numOfEntitiesToProcess <= 0,
       () => {
-        const vpBox = this.activeLayoutView?.viewportsBoundingBox
-        if (vpBox) {
-          this.zoomTo(vpBox)
-          this._isDirty = true
-        } else if (this._scene.box) {
+        if (this._scene.box) {
           const box = AcTrGeometryUtil.threeBox3dToGeBox2d(this._scene.box)
           this.zoomTo(box)
           this._isDirty = true
@@ -767,7 +763,7 @@ export class AcTrView2d extends AcEdBaseView {
       camera: this.internalCamera
     })
 
-    if (!this._isDirty || this._numOfEntitiesToProcess > 0) return
+    if (!this._isDirty) return
     this._layoutViewManager.render(this._scene)
     if (this.internalCamera) {
       this._css2dRenderer.render(this._scene.internalScene, this.internalCamera)
@@ -841,20 +837,6 @@ export class AcTrView2d extends AcEdBaseView {
           if (layout) {
             layout.isLoaded = true
           }
-
-          // Zoom to the viewport area, or fall back to the full scene
-          // extent for model-space layouts without viewports.
-          const layoutView = this._layoutViewManager.getAt(layoutBtrId)
-          const vpBox = layoutView?.viewportsBoundingBox
-          if (vpBox) {
-            this.zoomTo(vpBox)
-          } else if (this._scene.box) {
-            const sceneBox = AcTrGeometryUtil.threeBox3dToGeBox2d(
-              this._scene.box
-            )
-            this.zoomTo(sceneBox)
-          }
-          this._isDirty = true
         })
       }
     } catch (error) {
@@ -888,84 +870,8 @@ export class AcTrView2d extends AcEdBaseView {
    * @returns The converted three entities
    */
   private async batchConvert(entities: AcDbEntity[]) {
-    // Pre-process viewports to:
-    // 1) Work around libredwg bug where viewportId is always 0
-    // 2) Ignore viewport with id/number === 1. If there is no such viewport, ignore the first viewport in the layout
-    const viewportsByLayout = new Map<AcDbObjectId, AcDbViewport[]>()
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
-      if (entity instanceof AcDbViewport) {
-        if (entity.number === 0) {
-          entity.number = AcTrView2d.viewportIdCounter++
-          log.warn(
-            `Viewport id for handle ${entity.objectId} is 0! Set it to ${entity.number}`
-          )
-        }
-
-        const ownerId = entity.ownerId
-        let list = viewportsByLayout.get(ownerId)
-        if (!list) {
-          list = []
-          viewportsByLayout.set(ownerId, list)
-        }
-        list.push(entity)
-      }
-    }
-
-    // Decide which viewports should actually be created for each layout
-    const validViewportIds = new Set<AcDbObjectId>()
-    viewportsByLayout.forEach(viewports => {
-      if (viewports.length === 0) {
-        return
-      }
-
-      // First, try to ignore viewport with number === 1
-      let filtered = viewports.filter(vp => vp.number !== 1)
-
-      // If nothing was filtered (i.e., no viewport with number === 1),
-      // then ignore the first viewport in this layout
-      // if (filtered.length === viewports.length && viewports.length > 0) {
-      //   filtered = viewports.slice(1)
-      // }
-
-      // Skip the full-paper viewport whose paper-space area dwarfs every other
-      // viewport. AutoCAD auto-creates this viewport (number 2) when a new
-      // layout is added. Its border is the "big square" visible in the viewer.
-      if (filtered.length > 1) {
-        let maxArea = 0
-        let maxIdx = 0
-        for (let i = 0; i < filtered.length; i++) {
-          const a = filtered[i].width * filtered[i].height
-          if (a > maxArea) {
-            maxArea = a
-            maxIdx = i
-          }
-        }
-        const rest = filtered.filter((_, i) => i !== maxIdx)
-        const secondLargest = rest.reduce(
-          (max, vp) => Math.max(max, vp.width * vp.height),
-          0
-        )
-        if (maxArea > secondLargest * 10) {
-          filtered = rest
-        }
-      }
-
-      filtered.forEach(vp => {
-        validViewportIds.add(vp.objectId)
-      })
-    })
-
-    for (let i = 0; i < entities.length; ++i) {
-      const entity = entities[i]
-
-      // Skip drawing filtered-out viewport entities entirely so their
-      // borders don't appear in paper space or affect the bounding box.
-      if (entity instanceof AcDbViewport && !validViewportIds.has(entity.objectId)) {
-        this.decreaseNumOfEntitiesToProcess()
-        continue
-      }
-
       const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
       if (threeEntity) {
         threeEntity.objectId = entity.objectId
@@ -997,14 +903,19 @@ export class AcTrView2d extends AcEdBaseView {
         }
 
         if (entity instanceof AcDbViewport) {
-          const layoutView = this._layoutViewManager.getAt(entity.ownerId)
-          if (layoutView) {
-            const viewportView = new AcTrViewportView(
-              layoutView,
-              entity.toGiViewport(),
-              this._renderer
-            )
-            layoutView.addViewport(viewportView)
+          // In paper space layouts, there is always a system-defined "default" viewport that exists as
+          // the bottom-most item. This viewport doesn't show any entities and is mainly for internal
+          // AutoCAD purposes. The viewport id number of this system-defined "default" viewport is 1.
+          if (entity.number !== 1) {
+            const layoutView = this._layoutViewManager.getAt(entity.ownerId)
+            if (layoutView) {
+              const viewportView = new AcTrViewportView(
+                layoutView,
+                entity.toGiViewport(),
+                this._renderer
+              )
+              layoutView.addViewport(viewportView)
+            }
           }
         } else if (entity instanceof AcDbRasterImage) {
           const fileName = entity.imageFileName
