@@ -17,6 +17,7 @@ import { AcTrMTextColorUtil } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrMText extends AcTrEntity {
+  private static readonly RTE_SPLIT_TRANSLATION_FLAG = '__acTrUseSplitTranslation'
   private _mtext?: MTextObject
   private _text: AcGiMTextData
   private _style: AcGiTextStyle
@@ -57,10 +58,12 @@ export class AcTrMText extends AcTrEntity {
         this._colorSettings
       )
       this.add(this._mtext)
-      this.flatten()
       this.traverse(object => {
         // Add the flag to check intersection using bounding box of the mesh
         object.userData.bboxIntersectionCheck = true
+        if ('material' in object && object.material != null) {
+          object.userData[AcTrMText.RTE_SPLIT_TRANSLATION_FLAG] = true
+        }
       })
       this.box = this._mtext.box
     } catch (error) {
@@ -86,10 +89,12 @@ export class AcTrMText extends AcTrEntity {
       )
       this._mtext = mtext
       this.add(this._mtext)
-      this.flatten()
       this.traverse(object => {
         // Add the flag to check intersection using bounding box of the mesh
         object.userData.bboxIntersectionCheck = true
+        if ('material' in object && object.material != null) {
+          object.userData[AcTrMText.RTE_SPLIT_TRANSLATION_FLAG] = true
+        }
       })
       this.box = this._mtext.box
     } catch (error) {
