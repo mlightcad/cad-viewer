@@ -94,7 +94,8 @@ export class AcTrMTextRenderer {
   async asyncRenderMText(
     mtextContent: MTextData,
     textStyle: TextStyle,
-    colorSettings: ColorSettings = createDefaultColorSettings()
+    colorSettings: ColorSettings = createDefaultColorSettings(),
+    mode?: RenderMode
   ): Promise<MTextObject> {
     if (!this._renderer) {
       throw new Error('AcTrMTextRenderer not initialized!')
@@ -102,7 +103,8 @@ export class AcTrMTextRenderer {
     const mtext = await this._renderer!.asyncRenderMText(
       mtextContent,
       textStyle,
-      colorSettings
+      colorSettings,
+      mode
     )
     return mtext
   }

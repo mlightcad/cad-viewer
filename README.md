@@ -223,11 +223,12 @@ Legend:
 #### Basic Entities
 
 * [x] Line
-* [ ] Polyline
+* [x] Polyline
+* [x] Spline
 * [x] Circle
 * [ ] Arc
 * [ ] Ellipse
-* [ ] Rectangle / polygon
+* [x] Rectangle / polygon
 
 #### Advanced Entities
 

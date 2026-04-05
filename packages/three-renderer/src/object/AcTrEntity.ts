@@ -331,14 +331,35 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   protected copyGeometry(source: AcTrEntity, target: AcTrEntity) {
     for (let i = 0; i < source.children.length; i++) {
       const child = source.children[i]
-      const clonedChild = child.clone(false)
-      if ('geometry' in clonedChild) {
-        clonedChild.geometry = (
-          clonedChild.geometry as THREE.BufferGeometry
-        ).clone()
-      }
+      const clonedChild = this.cloneChildSubtree(child)
       target.add(clonedChild)
     }
+  }
+
+  /**
+   * Clones one render subtree without requiring custom entity classes to expose
+   * a zero-argument constructor.
+   */
+  private cloneChildSubtree(child: THREE.Object3D): THREE.Object3D {
+    let clonedChild: THREE.Object3D
+    if (child instanceof AcTrEntity) {
+      clonedChild = new AcTrEntity(child.styleManager)
+      clonedChild.copy(child, false)
+    } else {
+      clonedChild = child.clone(false)
+    }
+
+    if ('geometry' in clonedChild && clonedChild.geometry) {
+      clonedChild.geometry = (
+        clonedChild.geometry as THREE.BufferGeometry
+      ).clone()
+    }
+
+    for (let i = 0; i < child.children.length; i++) {
+      clonedChild.add(this.cloneChildSubtree(child.children[i]))
+    }
+
+    return clonedChild
   }
 
   /**

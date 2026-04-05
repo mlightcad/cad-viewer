@@ -82,10 +82,15 @@ export class AcTrMText extends AcTrEntity {
       const style = this._style
       const mtextData = this._text as MTextData
 
+      // The worker renderer currently reconstructs MText as a flattened plain
+      // group and loses the local transform structure that block-contained
+      // annotation text relies on. Keep delay semantics, but render async on the
+      // main thread so the returned object matches syncRenderMText().
       const mtext = await mtextRenderer.asyncRenderMText(
         mtextData,
         style,
-        this._colorSettings
+        this._colorSettings,
+        'main'
       )
       this._mtext = mtext
       this.add(this._mtext)

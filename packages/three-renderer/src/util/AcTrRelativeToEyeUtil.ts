@@ -311,6 +311,13 @@ ${vertexShader}`
       return
     }
 
+    // Text-like objects that rely on split-translation keep their local geometry
+    // untouched and let the shader handle the large world offset.
+    if (object.userData[RTE_SPLIT_TRANSLATION_FLAG]) {
+      object.userData[RTE_GEOMETRY_REBASED_FLAG] = true
+      return
+    }
+
     const geometry = object.geometry
     if (!geometry) {
       return
@@ -438,7 +445,9 @@ ${vertexShader}`
     node: { box?: THREE.Box3; children?: unknown[] },
     offset: THREE.Vector3
   ) {
-    node.box?.translate(offset)
+    if (node.box instanceof THREE.Box3) {
+      node.box.translate(offset)
+    }
     const children = node.children as
       | Array<{ box?: THREE.Box3; children?: unknown[] }>
       | undefined

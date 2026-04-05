@@ -1,5 +1,8 @@
 import * as THREE from 'three'
 
+const RTE_MATERIAL_FLAG = '__acTrRteMaterialEnabled'
+const RTE_SHADER_REF = '__acTrRteShader'
+
 /**
  * Highlight color.
  */
@@ -38,11 +41,11 @@ export class AcTrMaterialUtil {
     if (Array.isArray(material)) {
       const materials: THREE.Material[] = []
       material.forEach(mat => {
-        materials.push(mat.clone())
+        materials.push(this.cloneSingleMaterial(mat))
       })
       return materials
     }
-    return (material as THREE.Material).clone()
+    return this.cloneSingleMaterial(material as THREE.Material)
   }
 
   public static setMaterialColor(
@@ -90,5 +93,25 @@ export class AcTrMaterialUtil {
     material: THREE.Material
   ): material is MaterialWithUniforms {
     return 'uniforms' in material && material.uniforms !== undefined
+  }
+
+  private static cloneSingleMaterial(material: THREE.Material) {
+    const clonedMaterial = material.clone()
+    this.resetRuntimeShaderState(clonedMaterial)
+    return clonedMaterial
+  }
+
+  /**
+   * Cloned highlight materials must not inherit runtime-only shader state from
+   * the source instance, otherwise the clone can keep using stale RTE shader
+   * uniforms/program keys bound to another render object.
+   */
+  private static resetRuntimeShaderState(material: THREE.Material) {
+    delete material.userData[RTE_MATERIAL_FLAG]
+    delete material.userData[RTE_SHADER_REF]
+    material.onBeforeCompile = THREE.Material.prototype.onBeforeCompile
+    material.customProgramCacheKey =
+      THREE.Material.prototype.customProgramCacheKey
+    material.needsUpdate = true
   }
 }

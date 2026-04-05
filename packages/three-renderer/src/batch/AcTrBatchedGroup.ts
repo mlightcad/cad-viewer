@@ -84,6 +84,8 @@ export interface AcTrBatchedGroupStats {
  * dedicated unbatched group.
  */
 export class AcTrBatchedGroup extends THREE.Group {
+  private static readonly RTE_SPLIT_TRANSLATION_FLAG = '__acTrUseSplitTranslation'
+  private static readonly NO_BATCH_FLAG = 'noBatch'
   private static readonly INITIAL_LINE_VERTEX_CAPACITY = 128
   private static readonly INITIAL_LINE_INDEX_CAPACITY = 256
   private static readonly INITIAL_MESH_VERTEX_CAPACITY = 128
@@ -519,11 +521,8 @@ export class AcTrBatchedGroup extends THREE.Group {
           item.batchedObjectId
         ) as AcTrBatchedObject
         const object = batchedObject.getObjectAt(item.batchId)
-
-        const clonedMaterial = AcTrMaterialUtil.cloneMaterial(object.material)
-        AcTrMaterialUtil.setMaterialColor(clonedMaterial)
-        object.material = clonedMaterial
-
+        this.copyHighlightMetadata(batchedObject, object)
+        this.applyHighlightMaterial(object)
         object.userData.objectId = objectId
         object.userData.disposeGeometryOnRemove =
           batchedObject instanceof AcTrBatchedLine2
@@ -535,16 +534,35 @@ export class AcTrBatchedGroup extends THREE.Group {
     if (unbatchedObjects && unbatchedObjects.length < 1000) {
       unbatchedObjects.forEach(obj => {
         const highlightObj = obj.clone()
-        if (this.hasMaterial(highlightObj)) {
-          const clonedMaterial = AcTrMaterialUtil.cloneMaterial(
-            highlightObj.material
-          )
-          AcTrMaterialUtil.setMaterialColor(clonedMaterial)
-          highlightObj.material = clonedMaterial
-        }
+        this.copyHighlightMetadata(obj, highlightObj)
+        this.applyHighlightMaterial(highlightObj)
         highlightObj.userData.objectId = objectId
         containerGroup.add(highlightObj)
       })
+    }
+  }
+
+  private applyHighlightMaterial(object: THREE.Object3D) {
+    if (this.hasMaterial(object)) {
+      const clonedMaterial = AcTrMaterialUtil.cloneMaterial(object.material)
+      AcTrMaterialUtil.setMaterialColor(clonedMaterial)
+      object.material = clonedMaterial
+    }
+
+    object.children.forEach(child => this.applyHighlightMaterial(child))
+  }
+
+  private copyHighlightMetadata(source: THREE.Object3D, target: THREE.Object3D) {
+    if (source.userData[AcTrBatchedGroup.RTE_SPLIT_TRANSLATION_FLAG]) {
+      target.userData[AcTrBatchedGroup.RTE_SPLIT_TRANSLATION_FLAG] = true
+    }
+    if (source.userData[AcTrBatchedGroup.NO_BATCH_FLAG]) {
+      target.userData[AcTrBatchedGroup.NO_BATCH_FLAG] = true
+    }
+
+    const childCount = Math.min(source.children.length, target.children.length)
+    for (let i = 0; i < childCount; i++) {
+      this.copyHighlightMetadata(source.children[i], target.children[i])
     }
   }
 
