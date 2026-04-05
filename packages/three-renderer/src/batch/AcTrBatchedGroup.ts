@@ -345,77 +345,17 @@ export class AcTrBatchedGroup extends THREE.Group {
     entity.traverse(object => {
       const bboxIntersectionCheck = !!object.userData.bboxIntersectionCheck
 
-      // Special handling for LineSegments2 (wide lines)
-      // ------------------------------------------------------------
-      // Unlike regular THREE.LineSegments, LineSegments2 relies on
-      // shader-based screen-space expansion, which is much more sensitive
-      // to floating-point precision issues when coordinates are large.
-      //
-      // In large-coordinate scenes (e.g. CAD / GIS), batching multiple
-      // LineSegments2 objects into a single draw call can introduce
-      // noticeable rendering artifacts such as jittering or instability,
-      // due to loss of precision in GPU calculations.
-      //
-      // To balance performance and visual correctness, we conditionally
-      // decide whether a LineSegments2 can be safely batched based on its
-      // world-space coordinate range.
       if (object instanceof LineSegments2) {
-        // Evaluate whether the object stays within a safe coordinate range
-        // (in world space) for batching. This uses a bounding box check
-        // transformed by matrixWorld, and compares against a threshold.
-        //
-        // Threshold (1e6) is chosen as a practical limit for typical
-        // CAD-scale scenes. Beyond this range, floating-point precision
-        // issues become more likely when batching.
-        const canBatch = this.isLine2WithinWorldRangeByBBox(object, 1e6)
-
-        if (canBatch) {
-          // ✅ SAFE FOR BATCHING
-          // ------------------------------------------------------------
-          // The object is within a small coordinate range, so it can be
-          // merged into the batched Line2 buffer.
-          //
-          // Benefits:
-          // - Reduces draw calls significantly
-          // - Improves rendering performance
-          // - No noticeable precision loss in this range
-          entityInfo.push(
-            this.addLine2(object, {
-              objectId,
-              bboxIntersectionCheck: bboxIntersectionCheck
-            })
-          )
-        } else {
-          // ❌ NOT SAFE FOR BATCHING
-          // ------------------------------------------------------------
-          // The object is too far from the origin (large coordinates),
-          // so batching could introduce floating-point precision artifacts.
-          //
-          // Instead, we keep it as an independent (unbatched) object.
-          // This preserves rendering correctness at the cost of higher
-          // draw calls.
-          //
-          // Note:
-          // We clone the object to avoid mutating the original entity,
-          // and store it separately in the unbatched collection.
-          const cloned = this.cloneUnbatchedObject(object)
-
-          // Preserve bbox intersection flag for downstream culling / picking
-          cloned.userData.bboxIntersectionCheck = bboxIntersectionCheck
-
-          // Add to unbatched rendering pool
-          this._unbatchedObjects.add(cloned)
-          unbatchedObjects.push(cloned)
-
-          // Mark that this entity contains unbatched content
-          hasUnbatched = true
-        }
-
-        // Early return since LineSegments2 is fully handled here
+        entityInfo.push(
+          this.addLine2(object, {
+            objectId,
+            bboxIntersectionCheck: bboxIntersectionCheck
+          })
+        )
         return
       }
 
-      if (object.userData.noBatch) {
+      if (object.userData[AcTrEntity.NO_BATCH_FLAG]) {
         const cloned = this.cloneUnbatchedObject(object)
         cloned.userData.bboxIntersectionCheck = bboxIntersectionCheck
         this._unbatchedObjects.add(cloned)
@@ -608,6 +548,16 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
   }
 
+  private applyHighlightMaterial(object: THREE.Object3D) {
+    if (this.hasMaterial(object)) {
+      const clonedMaterial = AcTrMaterialUtil.cloneMaterial(object.material)
+      AcTrMaterialUtil.setMaterialColor(clonedMaterial)
+      object.material = clonedMaterial
+    }
+
+    object.children.forEach(child => this.applyHighlightMaterial(child))
+  }
+
   /**
    * Removes and disposes highlight objects for one entity id.
    */
@@ -677,8 +627,16 @@ export class AcTrBatchedGroup extends THREE.Group {
       this.add(batchedLine)
     }
 
-    const geometry = this.cloneLineSegments2GeometryInWorld(object)
-    const geometryId = batchedLine.addGeometry(geometry)
+    const matrixNoTranslation = object.matrixWorld.clone()
+    const worldOffset = new THREE.Vector3().setFromMatrixPosition(
+      object.matrixWorld
+    )
+    matrixNoTranslation.setPosition(0, 0, 0)
+    const geometry = this.cloneLineSegments2Geometry(
+      object,
+      matrixNoTranslation
+    )
+    const geometryId = batchedLine.addGeometry(geometry, -1, worldOffset)
     batchedLine.setGeometryInfo(geometryId, userData)
     geometry.dispose()
 
@@ -708,9 +666,16 @@ export class AcTrBatchedGroup extends THREE.Group {
       batches.set(material.id, batchedMesh)
       this.add(batchedMesh)
     }
-    object.geometry.applyMatrix4(object.matrixWorld)
-    const geometryId = batchedMesh.addGeometry(object.geometry)
+    const geometry = object.geometry.clone()
+    const matrixNoTranslation = object.matrixWorld.clone()
+    const worldOffset = new THREE.Vector3().setFromMatrixPosition(
+      object.matrixWorld
+    )
+    matrixNoTranslation.setPosition(0, 0, 0)
+    geometry.applyMatrix4(matrixNoTranslation)
+    const geometryId = batchedMesh.addGeometry(geometry, -1, -1, worldOffset)
     batchedMesh.setGeometryInfo(geometryId, userData)
+    geometry.dispose()
 
     return {
       batchedObjectId: batchedMesh.id,
@@ -736,9 +701,16 @@ export class AcTrBatchedGroup extends THREE.Group {
       this._pointBatches.set(material.id, batchedPoint)
       this.add(batchedPoint)
     }
-    object.geometry.applyMatrix4(object.matrixWorld)
-    const geometryId = batchedPoint.addGeometry(object.geometry)
+    const geometry = object.geometry.clone()
+    const matrixNoTranslation = object.matrixWorld.clone()
+    const worldOffset = new THREE.Vector3().setFromMatrixPosition(
+      object.matrixWorld
+    )
+    matrixNoTranslation.setPosition(0, 0, 0)
+    geometry.applyMatrix4(matrixNoTranslation)
+    const geometryId = batchedPoint.addGeometry(geometry, -1, worldOffset)
     batchedPoint.setGeometryInfo(geometryId, userData)
+    geometry.dispose()
 
     return {
       batchedObjectId: batchedPoint.id,
@@ -896,9 +868,12 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   /**
-   * Clones `LineSegments2` geometry into world space for wide-line batching.
+   * Clones `LineSegments2` geometry and bakes non-translation transforms.
    */
-  private cloneLineSegments2GeometryInWorld(object: LineSegments2) {
+  private cloneLineSegments2Geometry(
+    object: LineSegments2,
+    transform: THREE.Matrix4
+  ) {
     const source = object.geometry as LineSegmentsGeometry
     const instanceStart = source.getAttribute('instanceStart')
     const instanceEnd = source.getAttribute('instanceEnd')
@@ -906,8 +881,8 @@ export class AcTrBatchedGroup extends THREE.Group {
     const segmentPositions = new Float32Array(count * 6)
 
     for (let i = 0, p = 0; i < count; i++) {
-      _v1.fromBufferAttribute(instanceStart, i).applyMatrix4(object.matrixWorld)
-      _v2.fromBufferAttribute(instanceEnd, i).applyMatrix4(object.matrixWorld)
+      _v1.fromBufferAttribute(instanceStart, i).applyMatrix4(transform)
+      _v2.fromBufferAttribute(instanceEnd, i).applyMatrix4(transform)
       segmentPositions[p++] = _v1.x
       segmentPositions[p++] = _v1.y
       segmentPositions[p++] = _v1.z
@@ -1022,93 +997,6 @@ export class AcTrBatchedGroup extends THREE.Group {
       return material[0]?.id ?? -1
     }
     return material.id
-  }
-
-  /**
-   * Determines whether a {@link LineSegments2} object can be safely included in a batched rendering group
-   * based on the magnitude of its coordinates in **world space**.
-   *
-   * This method evaluates the object's geometry bounding box (AABB), transforms it into world space
-   * using {@link THREE.Object3D.matrixWorld}, and checks whether any coordinate exceeds a given threshold.
-   *
-   * ---
-   * ### Why this is needed
-   *
-   * In large-coordinate scenes (e.g. CAD, GIS, or geospatial data), batching geometries that are far
-   * from the origin can introduce significant floating-point precision errors (e.g. jittering, z-fighting).
-   *
-   * To avoid this:
-   * - Small-coordinate objects → safe to batch (reduces draw calls)
-   * - Large-coordinate objects → should remain unbatched (preserves precision)
-   *
-   * ---
-   * ### How it works
-   *
-   * 1. Ensures the geometry has a local-space bounding box
-   * 2. Clones and transforms the bounding box into world space
-   * 3. Computes the maximum absolute coordinate value across all axes
-   * 4. Compares against the given threshold
-   *
-   * ---
-   * ### Performance characteristics
-   *
-   * - O(1) — does NOT iterate over vertices
-   * - Much faster than per-vertex world position checks
-   * - Suitable for real-time batching decisions
-   *
-   * ---
-   * @param object - The {@link LineSegments2} instance to evaluate
-   * @param threshold - Maximum allowed absolute coordinate value in world space (default: `1e6`)
-   *
-   * @returns `true` if the object is within the safe coordinate range for batching;
-   *          `false` if it should remain unbatched to avoid precision issues
-   *
-   * ---
-   * @example
-   * ```ts
-   * if (this.isLine2WithinWorldRangeByBBox(line, 1e6)) {
-   *   // safe to batch
-   * } else {
-   *   // keep unbatched to avoid precision artifacts
-   * }
-   * ```
-   */
-  private isLine2WithinWorldRangeByBBox(
-    object: LineSegments2,
-    threshold = 1e6
-  ): boolean {
-    const geometry = object.geometry as THREE.BufferGeometry
-
-    // Ensure the geometry has a local-space bounding box
-    if (!geometry.boundingBox) {
-      geometry.computeBoundingBox()
-    }
-
-    // If bounding box is still unavailable, treat as unsafe for batching
-    if (!geometry.boundingBox) return false
-
-    // Clone the bounding box to avoid mutating the original geometry state
-    const worldBBox = geometry.boundingBox.clone()
-
-    // Transform the bounding box into world space using the object's matrixWorld
-    worldBBox.applyMatrix4(object.matrixWorld)
-
-    const min = worldBBox.min
-    const max = worldBBox.max
-
-    // Compute the maximum absolute coordinate value across all axes
-    // This represents the furthest distance from the world origin
-    const maxAbs = Math.max(
-      Math.abs(min.x),
-      Math.abs(min.y),
-      Math.abs(min.z),
-      Math.abs(max.x),
-      Math.abs(max.y),
-      Math.abs(max.z)
-    )
-
-    // If any coordinate exceeds the threshold, it is considered unsafe for batching
-    return maxAbs < threshold
   }
 }
 

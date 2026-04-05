@@ -9,6 +9,7 @@ import { AcTrObject } from './AcTrObject'
  * Represent the display object of one drawing entity.
  */
 export class AcTrEntity extends AcTrObject implements AcGiEntity {
+  static readonly NO_BATCH_FLAG = 'noBatch'
   protected _box: THREE.Box3
   protected _basePoint?: AcGePoint3d
 
@@ -83,72 +84,109 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   }
 
   /**
-   * Flatten the hierarchy of the specified object so that all children are moved to be direct
-   * children of this object. Preserve transformations.
-   * @param root Input object to be flatten
-   * @returns Return the flatten object
+   * Flattens the descendant hierarchy under `root` so that every leaf render object becomes a
+   * direct child of `root`, while keeping the visual result unchanged.
+   *
+   * The key constraint is that this method must preserve transforms without baking them into
+   * leaf geometries. In CAD scenes, vertex coordinates can already be very large, and applying
+   * additional parent transforms directly to geometry can further increase their magnitude,
+   * which risks precision loss once those coordinates are uploaded to GPU float buffers.
+   *
+   * To avoid that, the method:
+   * 1. Traverses the hierarchy and collects only leaf objects.
+   * 2. Computes each leaf's transform relative to `root`.
+   * 3. Removes intermediate grouping nodes from the hierarchy.
+   * 4. Re-parents each leaf directly under `root`.
+   * 5. Restores the previously computed relative transform onto the leaf object itself
+   *    (`position`, `quaternion`, `scale`) rather than modifying its geometry data.
+   *
+   * After flattening:
+   * - `root` keeps its own local/world transform unchanged.
+   * - intermediate container nodes below `root` are removed.
+   * - leaf geometry buffers remain numerically unchanged.
+   * - each leaf still renders in the same world-space location as before.
+   *
+   * @param root The root entity whose descendant hierarchy should be flattened.
    */
   static flattenObject(root: AcTrEntity) {
-    // Temporary array to store children that will be re-parented
-    const objectsToReparent: THREE.Object3D[] = []
+    // Store each leaf together with the transform that places it correctly under `root`.
+    // The matrix is expressed in `root` local space, not in world space.
+    const objectsToReparent: Array<{
+      object: THREE.Object3D
+      relativeMatrix: THREE.Matrix4
+    }> = []
+    const position = new THREE.Vector3()
+    const quaternion = new THREE.Quaternion()
+    const scale = new THREE.Vector3()
 
-    function resetObjectMatrix(object: THREE.Object3D) {
-      // Clear local transformations of the child (now global transformations are applied)
-      object.position.set(0, 0, 0)
-      object.rotation.set(0, 0, 0)
-      object.scale.set(1, 1, 1)
-      object.matrix.identity()
+    // Reconstruct the object's local TRS from the relative matrix. We intentionally restore
+    // the transform onto the object itself instead of applying the matrix to its geometry.
+    function applyRelativeMatrix(
+      object: THREE.Object3D,
+      relativeMatrix: THREE.Matrix4
+    ) {
+      relativeMatrix.decompose(position, quaternion, scale)
+      object.position.copy(position)
+      object.quaternion.copy(quaternion)
+      object.scale.copy(scale)
+      object.updateMatrix()
     }
 
-    // Helper function to recursively traverse the tree
+    // Walk the subtree and collect only leaf render objects. Any intermediate groups are
+    // removed so the final hierarchy under `root` is one level deep.
     function traverseAndCollectChildren(
       object: THREE.Object3D,
-      parentMatrixWorld: THREE.Matrix4
+      rootMatrixWorldInverse: THREE.Matrix4
     ) {
-      const children = [...object.children] // Copy the children array
+      // Copy first because we will mutate the hierarchy during traversal.
+      const children = [...object.children]
       for (const child of children) {
+        // Propagate layer information downward when the leaf itself does not define one.
         if (!child.userData.layerName && object.userData.layerName) {
           child.userData.layerName = object.userData.layerName
         }
 
-        // Update the child's world matrix to preserve its world transform
-        child.applyMatrix4(parentMatrixWorld)
-
-        // Clear local transformations of the child (now global transformations are applied)
-        resetObjectMatrix(child)
-
         if (child.children.length > 0) {
-          // Recursively process the child's children
-          traverseAndCollectChildren(child, child.matrixWorld)
+          // Keep descending until we reach actual render leaves.
+          traverseAndCollectChildren(child, rootMatrixWorldInverse)
         } else {
-          // Collect the child for re-parenting
-          objectsToReparent.push(child)
+          // Refresh world matrices before computing the leaf transform relative to `root`.
+          child.updateMatrixWorld(true)
+
+          // Convert from world space into `root` local space:
+          //   relative = inverse(rootWorld) * childWorld
+          // This preserves the final rendered placement after the child is re-parented
+          // directly under `root`.
+          objectsToReparent.push({
+            object: child,
+            relativeMatrix: rootMatrixWorldInverse
+              .clone()
+              .multiply(child.matrixWorld)
+          })
         }
+
+        // Detach the current child from its old parent so that the old nested hierarchy is
+        // removed completely before we attach the collected leaves back under `root`.
+        object.remove(child)
       }
-      object.children = [] // Clear children of the current object
     }
 
-    // Start recursive traversal with the root's matrix world
-    // Ensure the root's matrixWorld is up to date
+    // Capture `root`'s current world transform once. The inverse lets us convert each leaf's
+    // existing world transform into the local transform it should have after re-parenting.
     root.updateMatrixWorld(true)
-    traverseAndCollectChildren(root, root.matrixWorld)
+    traverseAndCollectChildren(root, root.matrixWorld.clone().invert())
 
-    // Add all collected children directly to the root
-    for (const child of objectsToReparent) {
-      // need to clone geometry, because a geometry can be shared by many objects
-      if ('geometry' in child) {
-        const geom = child.geometry as THREE.BufferGeometry
-        geom.applyMatrix4(child.matrixWorld)
+    // Re-parent all collected leaves directly under `root`, restoring only object-level
+    // transforms so geometry coordinates remain untouched.
+    for (const item of objectsToReparent) {
+      const { object: child, relativeMatrix } = item
 
-        child.matrixWorld.identity()
-        child.matrixWorldNeedsUpdate = false
-        root.add(child)
-      }
+      applyRelativeMatrix(child, relativeMatrix)
+      root.add(child)
     }
 
-    resetObjectMatrix(root)
-    root.matrixWorld.identity()
-    root.matrixWorldNeedsUpdate = false
+    // Refresh matrices so downstream code sees the updated flattened hierarchy immediately.
+    root.updateMatrixWorld(true)
   }
 
   /**
@@ -331,6 +369,12 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   protected copyGeometry(source: AcTrEntity, target: AcTrEntity) {
     for (let i = 0; i < source.children.length; i++) {
       const child = source.children[i]
+
+      if (child instanceof AcTrEntity) {
+        target.add(child.fastDeepClone())
+        continue
+      }
+
       const clonedChild = child.clone(false)
       if ('geometry' in clonedChild) {
         clonedChild.geometry = (

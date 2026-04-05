@@ -40,6 +40,8 @@ const AcTrBatchedMeshBase = createAcTrBatchedMixin<AcTrBatchedGeometryInfo>(
  */
 export class AcTrBatchedMesh extends AcTrBatchedMeshBase {
   private static readonly GROWTH_FACTOR = 1.25
+  /** Stable world origin for this batch. */
+  private _origin?: THREE.Vector3
 
   /** Current allocated vertex capacity. */
   private _maxVertexCount: number
@@ -129,8 +131,11 @@ export class AcTrBatchedMesh extends AcTrBatchedMeshBase {
   addGeometry(
     geometry: THREE.BufferGeometry,
     reservedVertexCount: number = -1,
-    reservedIndexCount: number = -1
+    reservedIndexCount: number = -1,
+    worldOffset: THREE.Vector3 = new THREE.Vector3()
   ) {
+    this.rebaseGeometryInPlace(geometry, worldOffset)
+
     // Remove uv and normal to save memory
     if (geometry.hasAttribute('uv')) {
       geometry.deleteAttribute('uv')
@@ -195,6 +200,53 @@ export class AcTrBatchedMesh extends AcTrBatchedMeshBase {
     this._syncDrawRange()
 
     return geometryId
+  }
+
+  private rebaseGeometryInPlace(
+    geometry: THREE.BufferGeometry,
+    worldOffset: THREE.Vector3
+  ) {
+    const position = geometry.getAttribute('position') as
+      | THREE.BufferAttribute
+      | undefined
+    if (!position) {
+      return
+    }
+
+    if (!this._origin) {
+      geometry.computeBoundingBox()
+      const center = geometry.boundingBox
+        ? geometry.boundingBox.getCenter(new THREE.Vector3())
+        : new THREE.Vector3()
+      this._origin = center.add(worldOffset.clone())
+      this.position.copy(this._origin)
+    }
+
+    const origin = this._origin
+    if (!origin) {
+      return
+    }
+
+    const array = position.array
+    if (array instanceof Float32Array) {
+      for (let i = 0; i < array.length; i += 3) {
+        array[i] = array[i] + worldOffset.x - origin.x
+        array[i + 1] = array[i + 1] + worldOffset.y - origin.y
+        array[i + 2] = array[i + 2] + worldOffset.z - origin.z
+      }
+      position.needsUpdate = true
+      return
+    }
+
+    for (let i = 0; i < position.count; i++) {
+      position.setXYZ(
+        i,
+        position.getX(i) + worldOffset.x - origin.x,
+        position.getY(i) + worldOffset.y - origin.y,
+        position.getZ(i) + worldOffset.z - origin.z
+      )
+    }
+    position.needsUpdate = true
   }
 
   /**
@@ -439,6 +491,7 @@ export class AcTrBatchedMesh extends AcTrBatchedMeshBase {
 
     this._geometryInitialized = source._geometryInitialized
     this._geometryCount = source._geometryCount
+    this._origin = source._origin?.clone()
 
     return this
   }

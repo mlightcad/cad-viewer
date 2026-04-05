@@ -604,6 +604,11 @@ export function createAcTrBatchedMixin<
 
     _initializeRaycastObject(raycastObject: AcTrBatchBaseObject) {
       initializeRaycastObject(raycastObject, this.geometry, this.material)
+      raycastObject.position.copy(this.position)
+      raycastObject.quaternion.copy(this.quaternion)
+      raycastObject.scale.copy(this.scale)
+      raycastObject.updateMatrix()
+      raycastObject.updateMatrixWorld(true)
     }
 
     _setRaycastObjectInfo(
@@ -636,6 +641,7 @@ export function createAcTrBatchedMixin<
         ;(
           this as unknown as AcTrBatchBaseObject & AcTrBatchBounds
         ).getBoundingBoxAt(geometryId, this._box)
+        this._box.applyMatrix4((this as unknown as THREE.Object3D).matrixWorld)
         if (raycaster.ray.intersectBox(this._box, this._vector)) {
           const distance = raycaster.ray.origin.distanceTo(this._vector)
           ;(

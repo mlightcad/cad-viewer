@@ -46,6 +46,8 @@ const AcTrBatchedLine2Base =
  */
 export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
   private static readonly GROWTH_FACTOR = 1.25
+  /** Stable world origin for this batch. */
+  private _origin?: THREE.Vector3
 
   /** Current allocated segment capacity. */
   private _maxSegmentCount: number
@@ -138,6 +140,8 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     this._availableGeometryIds = []
     this._nextSegmentStart = 0
     this._geometryCount = 0
+    this._origin = undefined
+    this.position.set(0, 0, 0)
     this._geometryInitialized = false
     this.geometry.dispose()
   }
@@ -147,8 +151,10 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
    */
   addGeometry(
     geometry: LineSegmentsGeometry,
-    reservedSegmentCount: number = -1
+    reservedSegmentCount: number = -1,
+    worldOffset: THREE.Vector3 = new THREE.Vector3()
   ) {
+    this.rebaseGeometryInPlace(geometry, worldOffset)
     this._initializeGeometry(geometry)
     this._validateGeometry(geometry)
     this._resizeSpaceIfNeeded(geometry)
@@ -186,6 +192,55 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     this._syncDrawRange()
 
     return geometryId
+  }
+
+  private rebaseGeometryInPlace(
+    geometry: LineSegmentsGeometry,
+    worldOffset: THREE.Vector3
+  ) {
+    const start = geometry.getAttribute('instanceStart') as
+      | THREE.InterleavedBufferAttribute
+      | THREE.BufferAttribute
+      | undefined
+    const end = geometry.getAttribute('instanceEnd') as
+      | THREE.InterleavedBufferAttribute
+      | THREE.BufferAttribute
+      | undefined
+    if (!start || !end) {
+      return
+    }
+
+    if (!this._origin) {
+      geometry.computeBoundingBox()
+      const center = geometry.boundingBox
+        ? geometry.boundingBox.getCenter(new THREE.Vector3())
+        : new THREE.Vector3()
+      this._origin = center.add(worldOffset.clone())
+      this.position.copy(this._origin)
+    }
+
+    const origin = this._origin
+    if (!origin) {
+      return
+    }
+
+    for (let i = 0; i < start.count; i++) {
+      start.setXYZ(
+        i,
+        start.getX(i) + worldOffset.x - origin.x,
+        start.getY(i) + worldOffset.y - origin.y,
+        start.getZ(i) + worldOffset.z - origin.z
+      )
+      end.setXYZ(
+        i,
+        end.getX(i) + worldOffset.x - origin.x,
+        end.getY(i) + worldOffset.y - origin.y,
+        end.getZ(i) + worldOffset.z - origin.z
+      )
+    }
+
+    start.needsUpdate = true
+    end.needsUpdate = true
   }
 
   /**
@@ -367,6 +422,9 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
       true
     )
     const object = new LineSegments2(geometry, this.material as LineMaterial)
+    object.position.copy(this.position)
+    object.updateMatrix()
+    object.updateMatrixWorld(true)
     this.getBoundingBoxAt(
       batchId,
       object.geometry.boundingBox ?? new THREE.Box3()
@@ -416,6 +474,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     this._geometryCount = source._geometryCount
     this._nextSegmentStart = source._nextSegmentStart
     this._geometryInitialized = source._geometryInitialized
+    this._origin = source._origin?.clone()
     return this
   }
 
@@ -442,6 +501,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
 
     if (geometryInfo.bboxIntersectionCheck) {
       this.getBoundingBoxAt(geometryId, _box)
+      _box.applyMatrix4(this.matrixWorld)
       if (raycaster.ray.intersectBox(_box, _vector)) {
         const distance = raycaster.ray.origin.distanceTo(_vector)
         ;(
@@ -469,6 +529,11 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     )
     _raycastObject.geometry = geometry
     _raycastObject.material = this.material as LineMaterial
+    _raycastObject.position.copy(this.position)
+    _raycastObject.quaternion.copy(this.quaternion)
+    _raycastObject.scale.copy(this.scale)
+    _raycastObject.updateMatrix()
+    _raycastObject.updateMatrixWorld(true)
     _raycastObject.raycast(raycaster, _batchIntersects)
 
     // LineSegments2.raycast() ignores raycaster.params.Line.threshold and
@@ -477,6 +542,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     // to a bounding-box intersection check when the precise raycast misses.
     if (_batchIntersects.length === 0) {
       this.getBoundingBoxAt(geometryId, _box)
+      _box.applyMatrix4(this.matrixWorld)
       if (raycaster.ray.intersectBox(_box, _vector)) {
         // Verify the intersection point is within the Line threshold
         const threshold = raycaster.params.Line.threshold

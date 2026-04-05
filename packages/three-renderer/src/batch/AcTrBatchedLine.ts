@@ -146,6 +146,8 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     this._geometryCount = 0
     this._geometryInfo.length = 0
 
+    this._origin = undefined
+    this.position.set(0, 0, 0)
     this._geometryInitialized = false
     this.geometry.dispose()
   }
@@ -674,6 +676,7 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
 
     this._geometryInitialized = source._geometryInitialized
     this._geometryCount = source._geometryCount
+    this._origin = source._origin?.clone()
 
     return this
   }
