@@ -9,6 +9,7 @@ import { AcTrObject } from './AcTrObject'
  * Represent the display object of one drawing entity.
  */
 export class AcTrEntity extends AcTrObject implements AcGiEntity {
+  static readonly NO_BATCH_FLAG = 'noBatch'
   protected _box: THREE.Box3
   protected _basePoint?: AcGePoint3d
 

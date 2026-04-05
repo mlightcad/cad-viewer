@@ -18,7 +18,6 @@ export interface AcTrEntityBox {
  * table and viewport.
  */
 export class AcTrGroup extends AcTrEntity {
-  private static readonly NO_BATCH_FLAG = 'noBatch'
   private _isOnTheSameLayer: boolean
   private _boxes: AcTrEntityBox[] = []
   private _flattenResolved = false
@@ -197,7 +196,7 @@ export class AcTrGroup extends AcTrEntity {
       entity.traverse(object => {
         if (
           object.userData[RTE_SPLIT_TRANSLATION_FLAG] ||
-          object.userData[AcTrGroup.NO_BATCH_FLAG]
+          object.userData[AcTrEntity.NO_BATCH_FLAG]
         ) {
           hasPrecisionSensitiveChild = true
         }

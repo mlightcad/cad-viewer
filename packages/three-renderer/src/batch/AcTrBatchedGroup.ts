@@ -85,7 +85,6 @@ export interface AcTrBatchedGroupStats {
  * dedicated unbatched group.
  */
 export class AcTrBatchedGroup extends THREE.Group {
-  private static readonly NO_BATCH_FLAG = 'noBatch'
   private static readonly INITIAL_LINE_VERTEX_CAPACITY = 128
   private static readonly INITIAL_LINE_INDEX_CAPACITY = 256
   private static readonly INITIAL_MESH_VERTEX_CAPACITY = 128
@@ -357,7 +356,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         return
       }
 
-      if (object.userData.noBatch) {
+      if (object.userData[AcTrEntity.NO_BATCH_FLAG]) {
         const cloned = this.cloneUnbatchedObject(object)
         cloned.userData.bboxIntersectionCheck = bboxIntersectionCheck
         this._unbatchedObjects.add(cloned)
@@ -559,8 +558,8 @@ export class AcTrBatchedGroup extends THREE.Group {
     if (source.userData[RTE_SPLIT_TRANSLATION_FLAG]) {
       target.userData[RTE_SPLIT_TRANSLATION_FLAG] = true
     }
-    if (source.userData[AcTrBatchedGroup.NO_BATCH_FLAG]) {
-      target.userData[AcTrBatchedGroup.NO_BATCH_FLAG] = true
+    if (source.userData[AcTrEntity.NO_BATCH_FLAG]) {
+      target.userData[AcTrEntity.NO_BATCH_FLAG] = true
     }
 
     const childCount = Math.min(source.children.length, target.children.length)
