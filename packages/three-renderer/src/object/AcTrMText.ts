@@ -89,8 +89,7 @@ export class AcTrMText extends AcTrEntity {
       const mtext = await mtextRenderer.asyncRenderMText(
         mtextData,
         style,
-        this._colorSettings,
-        'main'
+        this._colorSettings
       )
       this._mtext = mtext
       this.add(this._mtext)

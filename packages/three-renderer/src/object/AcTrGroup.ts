@@ -3,7 +3,6 @@ import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMatrixUtil } from '../util'
-import { RTE_SPLIT_TRANSLATION_FLAG } from '../util/AcTrRelativeToEyeUtil'
 import { AcTrEntity } from './AcTrEntity'
 export interface AcTrEntityBox {
   minX: number
@@ -20,7 +19,6 @@ export interface AcTrEntityBox {
 export class AcTrGroup extends AcTrEntity {
   private _isOnTheSameLayer: boolean
   private _boxes: AcTrEntityBox[] = []
-  private _flattenResolved = false
 
   constructor(entities: AcTrEntity[], styleManager: AcTrStyleManager) {
     super(styleManager)
@@ -36,6 +34,8 @@ export class AcTrGroup extends AcTrEntity {
       }
       this.storeBoxes(entity)
     })
+    this.flatten()
+
     // It is a little tricky that how AutoCAD handles block references (inserts), their
     // own layer, and the layers of entities inside the block.
     //
@@ -107,7 +107,6 @@ export class AcTrGroup extends AcTrEntity {
    */
   copy(object: AcTrGroup, recursive?: boolean) {
     this._isOnTheSameLayer = object._isOnTheSameLayer
-    this._flattenResolved = object._flattenResolved
     this._boxes = []
     object.boxes.forEach(box => this._boxes.push({ ...box }))
     return super.copy(object, recursive)
@@ -123,54 +122,6 @@ export class AcTrGroup extends AcTrEntity {
     return cloned
   }
 
-  /**
-   * Resolve child draw trees before deciding whether this group can be flattened.
-   *
-   * The order here is important:
-   * 1. Some child entities, especially text-related ones, build their real render
-   *    objects lazily in `draw()`. Before that happens, the group only contains the
-   *    logical entity wrappers, so we cannot yet see the final mesh/line children
-   *    that will actually be rendered.
-   * 2. The flattening decision depends on those final render children. We need to
-   *    inspect whether any descendant is marked as precision-sensitive
-   *    (`__acTrUseSplitTranslation` / `noBatch`). These markers are attached during
-   *    child draw, not at group construction time.
-   * 3. If we flattened first, we could bake large world transforms into text glyph
-   *    geometry too early. Once that local hierarchy is destroyed, the later RTE
-   *    path has no clean local transform data left to work with, and text inside
-   *    blocks can shift or break apart.
-   *
-   * So the safe sequence is:
-   * - let every child finish `draw()` and materialize its real subtree
-   * - inspect the resulting subtree
-   * - flatten only when we know there is no precision-sensitive content inside
-   */
-  async draw() {
-    for (let i = 0; i < this.children.length; i++) {
-      const child = this.children[i]
-      if (child instanceof AcTrEntity) {
-        // Child draw may asynchronously create its final renderables. We must
-        // wait for that to finish before deciding whether flattening is allowed.
-        await child.draw()
-      }
-    }
-
-    if (!this._flattenResolved) {
-      // Only after children are fully drawn do we have reliable metadata for
-      // precision-sensitive descendants. Flattening earlier would make the
-      // decision based on incomplete information.
-      const entities = this.children.filter(
-        child => child instanceof AcTrEntity
-      ) as AcTrEntity[]
-      if (this.shouldFlatten(entities)) {
-        // Flatten only when the finalized child subtree proves it is safe to
-        // bake transforms into geometry.
-        this.flatten()
-      }
-      this._flattenResolved = true
-    }
-  }
-
   private storeBoxes(object: THREE.Object3D) {
     if (object instanceof AcTrGroup) {
       object._boxes.forEach(box => this._boxes.push(box))
@@ -184,28 +135,6 @@ export class AcTrGroup extends AcTrEntity {
         id: object.objectId
       })
     }
-  }
-
-  /**
-   * Keep text-like renderables in their original hierarchy so their local
-   * transforms are preserved for high-precision rendering.
-   */
-  private shouldFlatten(entities: AcTrEntity[]) {
-    for (const entity of entities) {
-      let hasPrecisionSensitiveChild = false
-      entity.traverse(object => {
-        if (
-          object.userData[RTE_SPLIT_TRANSLATION_FLAG] ||
-          object.userData[AcTrEntity.NO_BATCH_FLAG]
-        ) {
-          hasPrecisionSensitiveChild = true
-        }
-      })
-      if (hasPrecisionSensitiveChild) {
-        return false
-      }
-    }
-    return true
   }
 
   private applyMatrixToEntityBox(box: AcTrEntityBox, matrix: THREE.Matrix4) {
