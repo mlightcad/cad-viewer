@@ -14,7 +14,6 @@ import * as THREE from 'three'
 import { AcTrMTextRenderer } from '../renderer'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMTextColorUtil } from '../util'
-import { RTE_SPLIT_TRANSLATION_FLAG } from '../util/AcTrRelativeToEyeUtil'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrMText extends AcTrEntity {
@@ -58,12 +57,10 @@ export class AcTrMText extends AcTrEntity {
         this._colorSettings
       )
       this.add(this._mtext)
+      this.flatten()
       this.traverse(object => {
         // Add the flag to check intersection using bounding box of the mesh
         object.userData.bboxIntersectionCheck = true
-        if ('material' in object && object.material != null) {
-          object.userData[RTE_SPLIT_TRANSLATION_FLAG] = true
-        }
       })
       this.box = this._mtext.box
     } catch (error) {
@@ -82,10 +79,6 @@ export class AcTrMText extends AcTrEntity {
       const style = this._style
       const mtextData = this._text as MTextData
 
-      // The worker renderer currently reconstructs MText as a flattened plain
-      // group and loses the local transform structure that block-contained
-      // annotation text relies on. Keep delay semantics, but render async on the
-      // main thread so the returned object matches syncRenderMText().
       const mtext = await mtextRenderer.asyncRenderMText(
         mtextData,
         style,
@@ -93,12 +86,10 @@ export class AcTrMText extends AcTrEntity {
       )
       this._mtext = mtext
       this.add(this._mtext)
+      this.flatten()
       this.traverse(object => {
         // Add the flag to check intersection using bounding box of the mesh
         object.userData.bboxIntersectionCheck = true
-        if ('material' in object && object.material != null) {
-          object.userData[RTE_SPLIT_TRANSLATION_FLAG] = true
-        }
       })
       this.box = this._mtext.box
     } catch (error) {
