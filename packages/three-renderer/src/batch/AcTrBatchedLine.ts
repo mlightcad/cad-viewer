@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
-import { AcTrRelativeToEyeUtil } from '../util/AcTrRelativeToEyeUtil'
 import {
   AcTrBatchedGeometryInfo,
   AcTrBatchGeometryUserData,
@@ -66,7 +65,6 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
   ) {
     super(new THREE.BufferGeometry(), material)
     this.frustumCulled = false
-    AcTrRelativeToEyeUtil.enableForObject(this)
 
     // cached user options
     this._maxVertexCount = maxVertexCount

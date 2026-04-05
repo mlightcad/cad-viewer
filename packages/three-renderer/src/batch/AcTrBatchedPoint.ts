@@ -1,6 +1,5 @@
 import * as THREE from 'three'
 
-import { AcTrRelativeToEyeUtil } from '../util/AcTrRelativeToEyeUtil'
 import {
   AcTrBatchGeometryUserData,
   AcTrVertexBatchGeometryInfo,
@@ -57,7 +56,6 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
   constructor(maxVertexCount: number = 1000, material?: THREE.Material) {
     super(new THREE.BufferGeometry(), material)
     this.frustumCulled = false
-    AcTrRelativeToEyeUtil.enableForObject(this)
 
     // cached user options
     this._maxVertexCount = maxVertexCount

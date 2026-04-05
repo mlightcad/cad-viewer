@@ -29,7 +29,7 @@ import {
 } from '../object'
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrRelativeToEyeUtil, AcTrSubEntityTraitsUtil } from '../util'
+import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport'
 import { AcTrMTextRenderer } from './AcTrMTextRenderer'
 
@@ -118,7 +118,6 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   render(scene: THREE.Object3D, camera: AcTrCamera) {
     this.updateCameraZoomUniform(camera.zoom)
-    AcTrRelativeToEyeUtil.prepareScene(scene)
     this._renderer.render(scene, camera.internalCamera)
   }
 
