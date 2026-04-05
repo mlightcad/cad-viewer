@@ -3,6 +3,7 @@ import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMatrixUtil } from '../util'
+import { RTE_SPLIT_TRANSLATION_FLAG } from '../util/AcTrRelativeToEyeUtil'
 import { AcTrEntity } from './AcTrEntity'
 export interface AcTrEntityBox {
   minX: number
@@ -17,7 +18,6 @@ export interface AcTrEntityBox {
  * table and viewport.
  */
 export class AcTrGroup extends AcTrEntity {
-  private static readonly RTE_SPLIT_TRANSLATION_FLAG = '__acTrUseSplitTranslation'
   private static readonly NO_BATCH_FLAG = 'noBatch'
   private _isOnTheSameLayer: boolean
   private _boxes: AcTrEntityBox[] = []
@@ -196,7 +196,7 @@ export class AcTrGroup extends AcTrEntity {
       let hasPrecisionSensitiveChild = false
       entity.traverse(object => {
         if (
-          object.userData[AcTrGroup.RTE_SPLIT_TRANSLATION_FLAG] ||
+          object.userData[RTE_SPLIT_TRANSLATION_FLAG] ||
           object.userData[AcTrGroup.NO_BATCH_FLAG]
         ) {
           hasPrecisionSensitiveChild = true

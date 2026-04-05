@@ -5,6 +5,7 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
 import { AcTrMaterialUtil } from '../util'
+import { RTE_SPLIT_TRANSLATION_FLAG } from '../util/AcTrRelativeToEyeUtil'
 import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
 import { AcTrBatchedLine } from './AcTrBatchedLine'
 import { AcTrBatchedLine2 } from './AcTrBatchedLine2'
@@ -84,7 +85,6 @@ export interface AcTrBatchedGroupStats {
  * dedicated unbatched group.
  */
 export class AcTrBatchedGroup extends THREE.Group {
-  private static readonly RTE_SPLIT_TRANSLATION_FLAG = '__acTrUseSplitTranslation'
   private static readonly NO_BATCH_FLAG = 'noBatch'
   private static readonly INITIAL_LINE_VERTEX_CAPACITY = 128
   private static readonly INITIAL_LINE_INDEX_CAPACITY = 256
@@ -552,9 +552,12 @@ export class AcTrBatchedGroup extends THREE.Group {
     object.children.forEach(child => this.applyHighlightMaterial(child))
   }
 
-  private copyHighlightMetadata(source: THREE.Object3D, target: THREE.Object3D) {
-    if (source.userData[AcTrBatchedGroup.RTE_SPLIT_TRANSLATION_FLAG]) {
-      target.userData[AcTrBatchedGroup.RTE_SPLIT_TRANSLATION_FLAG] = true
+  private copyHighlightMetadata(
+    source: THREE.Object3D,
+    target: THREE.Object3D
+  ) {
+    if (source.userData[RTE_SPLIT_TRANSLATION_FLAG]) {
+      target.userData[RTE_SPLIT_TRANSLATION_FLAG] = true
     }
     if (source.userData[AcTrBatchedGroup.NO_BATCH_FLAG]) {
       target.userData[AcTrBatchedGroup.NO_BATCH_FLAG] = true
@@ -640,7 +643,10 @@ export class AcTrBatchedGroup extends THREE.Group {
       object.matrixWorld
     )
     matrixNoTranslation.setPosition(0, 0, 0)
-    const geometry = this.cloneLineSegments2Geometry(object, matrixNoTranslation)
+    const geometry = this.cloneLineSegments2Geometry(
+      object,
+      matrixNoTranslation
+    )
     const geometryId = batchedLine.addGeometry(geometry, -1, worldOffset)
     batchedLine.setGeometryInfo(geometryId, userData)
     geometry.dispose()
@@ -1003,7 +1009,6 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
     return material.id
   }
-
 }
 
 const _v1 = /*@__PURE__*/ new THREE.Vector3()

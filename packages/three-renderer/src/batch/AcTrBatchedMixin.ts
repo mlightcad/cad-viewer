@@ -641,9 +641,7 @@ export function createAcTrBatchedMixin<
         ;(
           this as unknown as AcTrBatchBaseObject & AcTrBatchBounds
         ).getBoundingBoxAt(geometryId, this._box)
-        this._box.applyMatrix4(
-          (this as unknown as THREE.Object3D).matrixWorld
-        )
+        this._box.applyMatrix4((this as unknown as THREE.Object3D).matrixWorld)
         if (raycaster.ray.intersectBox(this._box, this._vector)) {
           const distance = raycaster.ray.origin.distanceTo(this._vector)
           ;(

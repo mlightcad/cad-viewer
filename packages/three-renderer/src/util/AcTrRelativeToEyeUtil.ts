@@ -12,7 +12,7 @@ const RTE_PROGRAM_KEY = 'acTrRte:v3'
 const RTE_GEOMETRY_REBASED_FLAG = '__acTrRteGeometryRebased'
 const RTE_LAYOUT_CACHE_KEY = 'layoutCache'
 const RTE_REBASE_THRESHOLD = 1e5
-const RTE_SPLIT_TRANSLATION_FLAG = '__acTrUseSplitTranslation'
+export const RTE_SPLIT_TRANSLATION_FLAG = '__acTrUseSplitTranslation'
 
 type RteShader = {
   uniforms: Record<string, { value: unknown }> & {
@@ -109,9 +109,8 @@ export class AcTrRelativeToEyeUtil {
     }
 
     const previousOnBeforeCompile = material.onBeforeCompile.bind(material)
-    const previousCustomProgramCacheKey = material.customProgramCacheKey?.bind(
-      material
-    )
+    const previousCustomProgramCacheKey =
+      material.customProgramCacheKey?.bind(material)
     const isLineMaterial = material instanceof LineMaterial
 
     material.onBeforeCompile = (shader, renderer) => {
@@ -152,9 +151,7 @@ export class AcTrRelativeToEyeUtil {
 
     camera.getWorldPosition(_cameraWorldPosition)
     _objectWorldPosition.setFromMatrixPosition(object.matrixWorld)
-    _relativeWorldPosition
-      .copy(_objectWorldPosition)
-      .sub(_cameraWorldPosition)
+    _relativeWorldPosition.copy(_objectWorldPosition).sub(_cameraWorldPosition)
     _viewRotationMatrix.copy(camera.matrixWorldInverse)
     _viewRotationMatrix.setPosition(0, 0, 0)
 
@@ -182,7 +179,9 @@ export class AcTrRelativeToEyeUtil {
     if (!(uniforms[RTE_CAMERA_WORLD_POSITION].value instanceof THREE.Vector3)) {
       uniforms[RTE_CAMERA_WORLD_POSITION].value = new THREE.Vector3()
     }
-    if (!(uniforms[RTE_RELATIVE_WORLD_POSITION].value instanceof THREE.Vector3)) {
+    if (
+      !(uniforms[RTE_RELATIVE_WORLD_POSITION].value instanceof THREE.Vector3)
+    ) {
       uniforms[RTE_RELATIVE_WORLD_POSITION].value = new THREE.Vector3()
     }
     if (!(uniforms[RTE_VIEW_ROTATION_MATRIX].value instanceof THREE.Matrix4)) {
@@ -414,9 +413,10 @@ ${vertexShader}`
     },
     center: THREE.Vector3
   ) {
-    _rebaseOffset.copy(center).multiply(object.scale).applyQuaternion(
-      object.quaternion
-    )
+    _rebaseOffset
+      .copy(center)
+      .multiply(object.scale)
+      .applyQuaternion(object.quaternion)
     object.position.add(_rebaseOffset)
     object.updateMatrix()
     object.updateMatrixWorld(true)

@@ -14,10 +14,10 @@ import * as THREE from 'three'
 import { AcTrMTextRenderer } from '../renderer'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMTextColorUtil } from '../util'
+import { RTE_SPLIT_TRANSLATION_FLAG } from '../util/AcTrRelativeToEyeUtil'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrMText extends AcTrEntity {
-  private static readonly RTE_SPLIT_TRANSLATION_FLAG = '__acTrUseSplitTranslation'
   private _mtext?: MTextObject
   private _text: AcGiMTextData
   private _style: AcGiTextStyle
@@ -62,7 +62,7 @@ export class AcTrMText extends AcTrEntity {
         // Add the flag to check intersection using bounding box of the mesh
         object.userData.bboxIntersectionCheck = true
         if ('material' in object && object.material != null) {
-          object.userData[AcTrMText.RTE_SPLIT_TRANSLATION_FLAG] = true
+          object.userData[RTE_SPLIT_TRANSLATION_FLAG] = true
         }
       })
       this.box = this._mtext.box
@@ -98,7 +98,7 @@ export class AcTrMText extends AcTrEntity {
         // Add the flag to check intersection using bounding box of the mesh
         object.userData.bboxIntersectionCheck = true
         if ('material' in object && object.material != null) {
-          object.userData[AcTrMText.RTE_SPLIT_TRANSLATION_FLAG] = true
+          object.userData[RTE_SPLIT_TRANSLATION_FLAG] = true
         }
       })
       this.box = this._mtext.box
