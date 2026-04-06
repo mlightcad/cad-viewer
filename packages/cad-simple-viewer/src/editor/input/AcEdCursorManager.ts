@@ -86,6 +86,7 @@ export class AcEdCursorManager {
   constructor(view: AcEdBaseView) {
     this._view = view
     this._cursorMap = new Map()
+    this.setCursorColor(this._backgroundColor === 0 ? 'white' : 'black')
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
       if (args.name === AcDbSystemVariables.PICKBOX.toLowerCase()) {
         let size = args.newVal as number
