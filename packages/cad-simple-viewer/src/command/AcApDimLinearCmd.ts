@@ -12,7 +12,8 @@ import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
-  AcEdPromptPointOptions
+  AcEdPromptPointOptions,
+  AcEdPromptStatus
 } from '../editor'
 import { AcApI18n } from '../i18n'
 
@@ -86,15 +87,19 @@ export class AcApDimLinearCmd extends AcEdCommand {
     const xLine1PointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.dimlinear.xLine1Point')
     )
-    const xLine1Point =
+    const xLine1PointResult =
       await AcApDocManager.instance.editor.getPoint(xLine1PointPrompt)
+    if (xLine1PointResult.status !== AcEdPromptStatus.OK) return
+    const xLine1Point = xLine1PointResult.value!
 
     const xLine2PointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.dimlinear.xLine2Point')
     )
     xLine2PointPrompt.useBasePoint = true
-    const xLine2Point =
+    const xLine2PointResult =
       await AcApDocManager.instance.editor.getPoint(xLine2PointPrompt)
+    if (xLine2PointResult.status !== AcEdPromptStatus.OK) return
+    const xLine2Point = xLine2PointResult.value!
 
     const dimLinePointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.dimlinear.dimLinePoint')
@@ -105,8 +110,10 @@ export class AcApDimLinearCmd extends AcEdCommand {
       xLine1Point,
       xLine2Point
     )
-    const dimLinePoint =
+    const dimLinePointResult =
       await AcApDocManager.instance.editor.getPoint(dimLinePointPrompt)
+    if (dimLinePointResult.status !== AcEdPromptStatus.OK) return
+    const dimLinePoint = dimLinePointResult.value!
 
     const db = context.doc.database
     const dimension = new AcDbAlignedDimension(

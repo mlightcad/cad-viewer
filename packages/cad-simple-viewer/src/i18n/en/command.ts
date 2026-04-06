@@ -37,7 +37,10 @@ export default {
     line: {
       description: 'Draws straight line segments between points'
     },
-    polyline: {
+    lwdisplay: {
+      description: 'Controls whether lineweights are displayed in the drawing'
+    },
+    pline: {
       description: 'Creates a polyline by specifying multiple points'
     },
     spline: {

@@ -13,6 +13,7 @@ import {
   AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
+  AcEdPromptStatus,
   AcEdViewMode
 } from '../editor'
 import { AcApI18n } from '../i18n'
@@ -264,7 +265,9 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
         const vertexPrompt = new AcEdPromptPointOptions(
           AcApI18n.t('jig.measureAngle.vertex')
         )
-        const vertex = await editor.getPoint(vertexPrompt)
+        const vertexResult = await editor.getPoint(vertexPrompt)
+        if (vertexResult.status !== AcEdPromptStatus.OK) return
+        const vertex = vertexResult.value!
 
         // Pick first arm endpoint (jig provides preview line from vertex)
         const arm1Prompt = new AcEdPromptPointOptions(
@@ -272,7 +275,9 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
         )
         arm1Prompt.useBasePoint = true
         arm1Prompt.jig = new AcApMeasureArm1Jig(context.view, vertex, color)
-        const arm1 = await editor.getPoint(arm1Prompt)
+        const arm1Result = await editor.getPoint(arm1Prompt)
+        if (arm1Result.status !== AcEdPromptStatus.OK) return
+        const arm1 = arm1Result.value!
 
         // Construction-phase canvas for the first arm dashed line
         const armCanvas = makeOverlayCanvas(context.view.container)
@@ -296,7 +301,16 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
 
         let arm2: AcGePoint3dLike
         try {
-          arm2 = await editor.getPoint(arm2Prompt)
+          const arm2Result = await editor.getPoint(arm2Prompt)
+          if (arm2Result.status !== AcEdPromptStatus.OK) {
+            // User pressed ESC / cancelled — clean up construction-phase DOM
+            context.view.events.viewChanged.removeEventListener(
+              redrawOnViewChange
+            )
+            armCanvas.remove()
+            return
+          }
+          arm2 = arm2Result.value!
         } catch {
           // User pressed ESC / cancelled — clean up construction-phase DOM
           context.view.events.viewChanged.removeEventListener(

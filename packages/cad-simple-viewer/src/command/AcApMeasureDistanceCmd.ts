@@ -13,6 +13,7 @@ import {
   AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
+  AcEdPromptStatus,
   AcEdViewMode
 } from '../editor'
 import { AcApI18n } from '../i18n'
@@ -105,14 +106,18 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
         const p1Prompt = new AcEdPromptPointOptions(
           AcApI18n.t('jig.measureDistance.firstPoint')
         )
-        const p1 = await editor.getPoint(p1Prompt)
+        const p1Result = await editor.getPoint(p1Prompt)
+        if (p1Result.status !== AcEdPromptStatus.OK) return
+        const p1 = p1Result.value!
 
         const p2Prompt = new AcEdPromptPointOptions(
           AcApI18n.t('jig.measureDistance.secondPoint')
         )
         p2Prompt.useBasePoint = true
         p2Prompt.jig = new AcApMeasureDistanceJig(context.view, p1, color)
-        const p2 = await editor.getPoint(p2Prompt)
+        const p2Result = await editor.getPoint(p2Prompt)
+        if (p2Result.status !== AcEdPromptStatus.OK) return
+        const p2 = p2Result.value!
 
         const dist = calcDist(p1, p2)
 

@@ -8,6 +8,7 @@ import { AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
 import { AcEdBaseView } from '../../view'
 import { AcEdPreviewJig } from '../AcEdPreviewJig'
+import { AcEdSelectionSet } from '../AcEdSelectionSet'
 import {
   AcEdAngleHandler,
   AcEdDistanceHandler,
@@ -22,13 +23,20 @@ import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptBoxOptions,
+  AcEdPromptBoxResult,
   AcEdPromptDistanceOptions,
+  AcEdPromptDoubleOptions,
+  AcEdPromptDoubleResult,
   AcEdPromptEntityOptions,
+  AcEdPromptEntityResult,
   AcEdPromptIntegerOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptNumericalOptions,
   AcEdPromptPointOptions,
+  AcEdPromptPointResult,
   AcEdPromptSelectionOptions,
+  AcEdPromptSelectionResult,
+  AcEdPromptStatus,
   AcEdPromptStringOptions
 } from '../prompt'
 import { AcEdCommandLine } from './AcEdCommandLine'
@@ -167,12 +175,18 @@ export class AcEdInputManager {
   /**
    * Public point input API.
    */
-  getPoint(options: AcEdPromptPointOptions): Promise<AcGePoint3dLike> {
-    const scriptedValue = this.tryGetScriptedPoint(options)
-    if (scriptedValue != null) {
-      return Promise.resolve(scriptedValue)
+  async getPoint(
+    options: AcEdPromptPointOptions
+  ): Promise<AcEdPromptPointResult> {
+    try {
+      const value = await this.getPointInternal(options)
+      return new AcEdPromptPointResult(AcEdPromptStatus.OK, value)
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptPointResult(AcEdPromptStatus.Cancel)
+      }
+      throw error
     }
-    return this.getPointInternal(options)
   }
 
   /**
@@ -203,50 +217,59 @@ export class AcEdInputManager {
   }
 
   /** Request a distance (number) from the user. */
-  getDistance(options: AcEdPromptDistanceOptions): Promise<number> {
-    const scriptedValue = this.tryGetScriptedNumber(
-      new AcEdDistanceHandler(options)
-    )
-    if (scriptedValue != null) {
-      return Promise.resolve(scriptedValue)
-    }
-
-    // If no base point defined → fall back to typed numeric input
-    if (!this.lastPoint) {
-      // fallback to normal numeric input
-      return this.getNumberTyped(options, new AcEdDistanceHandler(options))
-    }
-
-    const getDynamicValue = (pos: AcGePoint2dLike) => {
-      const dx = pos.x - this.lastPoint!.x
-      const dy = pos.y - this.lastPoint!.y
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      return {
-        value: dist,
-        raw: { x: this.formatNumber(dist, 'distance') }
-      }
-    }
-
+  async getDistance(
+    options: AcEdPromptDistanceOptions
+  ): Promise<AcEdPromptDoubleResult> {
     const handler = new AcEdDistanceHandler(options)
-    return this.makeFloatingInputPromise<number>({
-      message: options.message,
-      inputCount: 1,
-      jig: options.jig,
-      showBaseLineOnly: !options.useDashedLine,
-      useBasePoint: true,
-      basePoint: options.basePoint,
-      handler,
-      getDynamicValue
-    })
+    const scriptedValue = this.tryGetScriptedNumber(handler)
+    if (scriptedValue != null) {
+      return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
+    }
+
+    try {
+      // If no base point defined → fall back to typed numeric input
+      if (!this.lastPoint) {
+        const value = await this.getNumberTyped(options, handler)
+        return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, value)
+      }
+
+      const getDynamicValue = (pos: AcGePoint2dLike) => {
+        const dx = pos.x - this.lastPoint!.x
+        const dy = pos.y - this.lastPoint!.y
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        return {
+          value: dist,
+          raw: { x: this.formatNumber(dist, 'distance') }
+        }
+      }
+
+      const value = await this.makeFloatingInputPromise<number>({
+        message: options.message,
+        inputCount: 1,
+        jig: options.jig,
+        showBaseLineOnly: !options.useDashedLine,
+        useBasePoint: true,
+        basePoint: options.basePoint,
+        handler,
+        getDynamicValue
+      })
+      return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, value)
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptDoubleResult(AcEdPromptStatus.Cancel)
+      }
+      throw error
+    }
   }
 
   /** Request an angle in degrees from the user. */
-  getAngle(options: AcEdPromptAngleOptions): Promise<number> {
-    const scriptedValue = this.tryGetScriptedNumber(
-      new AcEdAngleHandler(options)
-    )
+  async getAngle(
+    options: AcEdPromptAngleOptions
+  ): Promise<AcEdPromptDoubleResult> {
+    const handler = new AcEdAngleHandler(options)
+    const scriptedValue = this.tryGetScriptedNumber(handler)
     if (scriptedValue != null) {
-      return Promise.resolve(scriptedValue)
+      return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
     }
 
     const getDynamicValue = (pos: AcGePoint2dLike) => {
@@ -260,28 +283,45 @@ export class AcEdInputManager {
       }
     }
 
-    const handler = new AcEdAngleHandler(options)
-    return this.makeFloatingInputPromise<number>({
-      message: options.message,
-      inputCount: 1,
-      jig: options.jig,
-      showBaseLineOnly: !options.useDashedLine,
-      useBasePoint: true,
-      basePoint: options.basePoint,
-      handler,
-      getDynamicValue
-    })
+    try {
+      const value = await this.makeFloatingInputPromise<number>({
+        message: options.message,
+        inputCount: 1,
+        jig: options.jig,
+        showBaseLineOnly: !options.useDashedLine,
+        useBasePoint: true,
+        basePoint: options.basePoint,
+        handler,
+        getDynamicValue
+      })
+      return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, value)
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptDoubleResult(AcEdPromptStatus.Cancel)
+      }
+      throw error
+    }
   }
 
   /** Request a double/float from the user. */
-  getDouble(options: AcEdPromptDistanceOptions): Promise<number> {
-    const scriptedValue = this.tryGetScriptedNumber(
-      new AcEdDoubleHandler(options)
-    )
+  async getDouble(
+    options: AcEdPromptDoubleOptions
+  ): Promise<AcEdPromptDoubleResult> {
+    const handler = new AcEdDoubleHandler(options)
+    const scriptedValue = this.tryGetScriptedNumber(handler)
     if (scriptedValue != null) {
-      return Promise.resolve(scriptedValue)
+      return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
     }
-    return this.getNumberTyped(options, new AcEdDoubleHandler(options))
+
+    try {
+      const value = await this.getNumberTyped(options, handler)
+      return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, value)
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptDoubleResult(AcEdPromptStatus.Cancel)
+      }
+      throw error
+    }
   }
 
   /** Request an integer from the user. */
@@ -383,72 +423,256 @@ export class AcEdInputManager {
    *          The array is empty if no entities are selected and the user presses Enter.
    *          The promise is rejected if the operation is cancelled.
    */
-  async getSelection(options: AcEdPromptSelectionOptions): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-      this.active = true
-      this._commandLine.setPrompt(options.message)
+  async getSelection(
+    options: AcEdPromptSelectionOptions
+  ): Promise<AcEdPromptSelectionResult> {
+    try {
+      const value = await new Promise<string[]>((resolve, reject) => {
+        this.active = true
+        this._commandLine.setPrompt(options.message)
 
-      const floatingMessage = new AcEdFloatingMessage(this.view, {
-        parent: this.view.canvas,
-        message: options.message
+        const floatingMessage = new AcEdFloatingMessage(this.view, {
+          parent: this.view.canvas,
+          message: options.message
+        })
+
+        const selected = new Set<string>()
+        let startWcs: AcGePoint2dLike | null = null
+        let previewEl: HTMLDivElement | null = null
+
+        const cleanup = () => {
+          this.active = false
+          floatingMessage.dispose()
+          previewEl?.remove()
+          this._commandLine.clear()
+
+          document.removeEventListener('keydown', keyHandler)
+          this.view.canvas.removeEventListener('mousedown', mouseDown)
+          this.view.canvas.removeEventListener('mousemove', mouseMove)
+          this.view.canvas.removeEventListener('mouseup', mouseUp)
+        }
+
+        /** ---------- Keyboard ---------- */
+
+        const keyHandler = (e: KeyboardEvent) => {
+          if (e.key === 'Escape') {
+            cleanup()
+            reject(new Error('cancelled'))
+            return
+          }
+
+          if (e.key === 'Enter') {
+            cleanup()
+            resolve([...selected])
+          }
+        }
+
+        /** ---------- Mouse ---------- */
+
+        const mouseDown = (e: MouseEvent) => {
+          startWcs = this.view.screenToWorld(
+            this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
+          )
+
+          previewEl = document.createElement('div')
+          previewEl.className = 'ml-jig-preview-rect'
+          this.view.container.appendChild(previewEl)
+        }
+
+        const mouseMove = (e: MouseEvent) => {
+          if (!startWcs || !previewEl) return
+
+          const curWcs = this.view.screenToWorld(
+            this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
+          )
+          const p1 = this.view.worldToScreen(startWcs)
+          const p2 = this.view.worldToScreen(curWcs)
+
+          const left = Math.min(p1.x, p2.x)
+          const top = Math.min(p1.y, p2.y)
+          const width = Math.abs(p1.x - p2.x)
+          const height = Math.abs(p1.y - p2.y)
+
+          Object.assign(previewEl.style, {
+            left: `${left}px`,
+            top: `${top}px`,
+            width: `${width}px`,
+            height: `${height}px`
+          })
+        }
+
+        const mouseUp = (e: MouseEvent) => {
+          if (!startWcs) return
+
+          const endWcs = this.view.screenToWorld(
+            this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
+          )
+          previewEl?.remove()
+          previewEl = null
+
+          // Click selection
+          const dist = Math.hypot(endWcs.x - startWcs.x, endWcs.y - startWcs.y)
+
+          if (dist < 2) {
+            const picked = this.view.pick(endWcs)
+            if (picked.length > 0) {
+              selected.add(picked[0].id)
+              if (options.singleOnly) {
+                cleanup()
+                resolve([...selected])
+              }
+            }
+          } else {
+            // Box selection
+            const box = new AcGeBox2d()
+              .expandByPoint(startWcs)
+              .expandByPoint(endWcs)
+
+            this.view.selectByBox(box)
+
+            for (const id of this.view.selectionSet.ids) {
+              selected.add(id)
+              if (options.singleOnly) break
+            }
+          }
+
+          startWcs = null
+        }
+
+        /** ---------- Attach ---------- */
+
+        document.addEventListener('keydown', keyHandler)
+        this.view.canvas.addEventListener('mousedown', mouseDown)
+        this.view.canvas.addEventListener('mousemove', mouseMove)
+        this.view.canvas.addEventListener('mouseup', mouseUp)
       })
+      return new AcEdPromptSelectionResult(
+        AcEdPromptStatus.OK,
+        new AcEdSelectionSet(value)
+      )
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptSelectionResult(AcEdPromptStatus.Cancel)
+      }
+      throw error
+    }
+  }
 
-      const selected = new Set<string>()
-      let startWcs: AcGePoint2dLike | null = null
-      let previewEl: HTMLDivElement | null = null
+  /**
+   * Prompts the user to select a single entity.
+   * Similar to Editor.GetEntity() in AutoCAD.
+   */
+  async getEntity(
+    options: AcEdPromptEntityOptions
+  ): Promise<AcEdPromptEntityResult> {
+    try {
+      const value = await new Promise<string | null>((resolve, reject) => {
+        this.active = true
+        const floatingMessage = new AcEdFloatingMessage(this.view, {
+          parent: this.view.canvas,
+          message: options.message
+        })
+        this._commandLine.setPrompt(options.message)
+        const cleanup = () => {
+          this.active = false
+          options.jig?.end()
+          document.removeEventListener('keydown', keyHandler)
+          this.view.canvas.removeEventListener('mousedown', clickHandler)
+          floatingMessage.dispose()
+          this._commandLine.clear()
+        }
+
+        /** Mouse click → try select entity */
+        const clickHandler = (e: MouseEvent) => {
+          const pos = this.view.screenToWorld(
+            this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
+          )
+          const picked = this.view.pick(pos)
+
+          // Clicked empty space
+          if (picked.length == 0) {
+            // this.view.showMessage(options.rejectMessage)
+            return
+          }
+
+          // Locked layer
+          // if (picked.locked && !options.allowObjectOnLockedLayer) {
+          //   this.view.showMessage(options.rejectMessage)
+          //   return
+          // }
+
+          // Class filter
+          // if (!options.isClassAllowed(picked.className)) {
+          //   this.view.showMessage(options.rejectMessage)
+          //   return
+          // }
+
+          cleanup()
+          resolve(picked[0].id)
+        }
+
+        /** Keyboard handling */
+        const keyHandler = (e: KeyboardEvent) => {
+          if (e.key === 'Escape') {
+            cleanup()
+            reject(new Error('cancelled'))
+            return
+          }
+
+          if (e.key === 'Enter' && options.allowNone) {
+            cleanup()
+            resolve(null)
+          }
+        }
+
+        document.addEventListener('keydown', keyHandler)
+        this.view.canvas.addEventListener('mousedown', clickHandler)
+      })
+      return new AcEdPromptEntityResult(AcEdPromptStatus.OK, value || undefined)
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptEntityResult(AcEdPromptStatus.Cancel)
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Prompt the user to specify a rectangular box by selecting two corners.
+   * Each corner may be specified by clicking on the canvas or typing "x,y".
+   * A live HTML overlay rectangle previews the box as the user moves the mouse.
+   */
+  async getBox(options: AcEdPromptBoxOptions): Promise<AcEdPromptBoxResult> {
+    try {
+      // Get first point
+      const message1 =
+        options.firstCornerMessage ||
+        AcApI18n.t('main.inputManager.firstCorner')
+      const options1 = new AcEdPromptPointOptions(message1)
+      options1.useDashedLine = options.useDashedLine
+      options1.useBasePoint = options.useBasePoint
+      const p1Result = await this.getPoint(options1)
+      if (p1Result.status !== AcEdPromptStatus.OK) {
+        return new AcEdPromptBoxResult(p1Result.status)
+      }
+      const p1 = p1Result.value!
+      const cwcsP1 = this.view.worldToScreen(p1)
+
+      // Create preview rectangle
+      const previewEl = document.createElement('div')
+      previewEl.className = 'ml-jig-preview-rect'
+      this.view.container.appendChild(previewEl)
 
       const cleanup = () => {
-        this.active = false
-        floatingMessage.dispose()
-        previewEl?.remove()
-        this._commandLine.clear()
-
-        document.removeEventListener('keydown', keyHandler)
-        this.view.canvas.removeEventListener('mousedown', mouseDown)
-        this.view.canvas.removeEventListener('mousemove', mouseMove)
-        this.view.canvas.removeEventListener('mouseup', mouseUp)
+        previewEl.remove()
       }
 
-      /** ---------- Keyboard ---------- */
-
-      const keyHandler = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          cleanup()
-          reject(new Error('cancelled'))
-          return
-        }
-
-        if (e.key === 'Enter') {
-          cleanup()
-          resolve([...selected])
-        }
-      }
-
-      /** ---------- Mouse ---------- */
-
-      const mouseDown = (e: MouseEvent) => {
-        startWcs = this.view.screenToWorld(
-          this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
-        )
-
-        previewEl = document.createElement('div')
-        previewEl.className = 'ml-jig-preview-rect'
-        this.view.container.appendChild(previewEl)
-      }
-
-      const mouseMove = (e: MouseEvent) => {
-        if (!startWcs || !previewEl) return
-
-        const curWcs = this.view.screenToWorld(
-          this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
-        )
-        const p1 = this.view.worldToScreen(startWcs)
-        const p2 = this.view.worldToScreen(curWcs)
-
-        const left = Math.min(p1.x, p2.x)
-        const top = Math.min(p1.y, p2.y)
-        const width = Math.abs(p1.x - p2.x)
-        const height = Math.abs(p1.y - p2.y)
+      const drawPreview = (pos: AcGePoint2dLike) => {
+        const cwcsP2 = this.view.worldToScreen(pos)
+        const left = Math.min(cwcsP2.x, cwcsP1.x)
+        const top = Math.min(cwcsP2.y, cwcsP1.y)
+        const width = Math.abs(cwcsP2.x - cwcsP1.x)
+        const height = Math.abs(cwcsP2.y - cwcsP1.y)
 
         Object.assign(previewEl.style, {
           left: `${left}px`,
@@ -458,171 +682,23 @@ export class AcEdInputManager {
         })
       }
 
-      const mouseUp = (e: MouseEvent) => {
-        if (!startWcs) return
+      // Second point
+      const message2 =
+        options.secondCornerMessage ||
+        AcApI18n.t('main.inputManager.secondCorner')
+      const options2 = new AcEdPromptPointOptions(message2)
+      options2.useDashedLine = options.useDashedLine
+      options2.useBasePoint = options.useBasePoint
+      const p2 = await this.getPointInternal(options2, cleanup, drawPreview)
 
-        const endWcs = this.view.screenToWorld(
-          this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
-        )
-        previewEl?.remove()
-        previewEl = null
-
-        // Click selection
-        const dist = Math.hypot(endWcs.x - startWcs.x, endWcs.y - startWcs.y)
-
-        if (dist < 2) {
-          const picked = this.view.pick(endWcs)
-          if (picked.length > 0) {
-            selected.add(picked[0].id)
-            if (options.singleOnly) {
-              cleanup()
-              resolve([...selected])
-            }
-          }
-        } else {
-          // Box selection
-          const box = new AcGeBox2d()
-            .expandByPoint(startWcs)
-            .expandByPoint(endWcs)
-
-          this.view.selectByBox(box)
-
-          for (const id of this.view.selectionSet.ids) {
-            selected.add(id)
-            if (options.singleOnly) break
-          }
-        }
-
-        startWcs = null
+      const box = new AcGeBox2d().expandByPoint(p1).expandByPoint(p2)
+      return new AcEdPromptBoxResult(AcEdPromptStatus.OK, box)
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptBoxResult(AcEdPromptStatus.Cancel)
       }
-
-      /** ---------- Attach ---------- */
-
-      document.addEventListener('keydown', keyHandler)
-      this.view.canvas.addEventListener('mousedown', mouseDown)
-      this.view.canvas.addEventListener('mousemove', mouseMove)
-      this.view.canvas.addEventListener('mouseup', mouseUp)
-    })
-  }
-
-  /**
-   * Prompts the user to select a single entity.
-   * Similar to Editor.GetEntity() in AutoCAD.
-   */
-  getEntity(options: AcEdPromptEntityOptions): Promise<string | null> {
-    return new Promise((resolve, reject) => {
-      this.active = true
-      const floatingMessage = new AcEdFloatingMessage(this.view, {
-        parent: this.view.canvas,
-        message: options.message
-      })
-      this._commandLine.setPrompt(options.message)
-      const cleanup = () => {
-        this.active = false
-        options.jig?.end()
-        document.removeEventListener('keydown', keyHandler)
-        this.view.canvas.removeEventListener('mousedown', clickHandler)
-        floatingMessage.dispose()
-        this._commandLine.clear()
-      }
-
-      /** Mouse click → try select entity */
-      const clickHandler = (e: MouseEvent) => {
-        const pos = this.view.screenToWorld(
-          this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
-        )
-        const picked = this.view.pick(pos)
-
-        // Clicked empty space
-        if (picked.length == 0) {
-          // this.view.showMessage(options.rejectMessage)
-          return
-        }
-
-        // Locked layer
-        // if (picked.locked && !options.allowObjectOnLockedLayer) {
-        //   this.view.showMessage(options.rejectMessage)
-        //   return
-        // }
-
-        // Class filter
-        // if (!options.isClassAllowed(picked.className)) {
-        //   this.view.showMessage(options.rejectMessage)
-        //   return
-        // }
-
-        cleanup()
-        resolve(picked[0].id)
-      }
-
-      /** Keyboard handling */
-      const keyHandler = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          cleanup()
-          reject(new Error('cancelled'))
-          return
-        }
-
-        if (e.key === 'Enter' && options.allowNone) {
-          cleanup()
-          resolve(null)
-        }
-      }
-
-      document.addEventListener('keydown', keyHandler)
-      this.view.canvas.addEventListener('mousedown', clickHandler)
-    })
-  }
-
-  /**
-   * Prompt the user to specify a rectangular box by selecting two corners.
-   * Each corner may be specified by clicking on the canvas or typing "x,y".
-   * A live HTML overlay rectangle previews the box as the user moves the mouse.
-   */
-  async getBox(options: AcEdPromptBoxOptions): Promise<AcGeBox2d> {
-    // Get first point
-    const message1 =
-      options.firstCornerMessage || AcApI18n.t('main.inputManager.firstCorner')
-    const options1 = new AcEdPromptPointOptions(message1)
-    options1.useDashedLine = options.useDashedLine
-    options1.useBasePoint = options.useBasePoint
-    const p1 = await this.getPoint(options1)
-    const cwcsP1 = this.view.worldToScreen(p1)
-
-    // Create preview rectangle
-    const previewEl = document.createElement('div')
-    previewEl.className = 'ml-jig-preview-rect'
-    this.view.container.appendChild(previewEl)
-
-    const cleanup = () => {
-      previewEl.remove()
+      throw error
     }
-
-    const drawPreview = (pos: AcGePoint2dLike) => {
-      const cwcsP2 = this.view.worldToScreen(pos)
-      const left = Math.min(cwcsP2.x, cwcsP1.x)
-      const top = Math.min(cwcsP2.y, cwcsP1.y)
-      const width = Math.abs(cwcsP2.x - cwcsP1.x)
-      const height = Math.abs(cwcsP2.y - cwcsP1.y)
-
-      Object.assign(previewEl.style, {
-        left: `${left}px`,
-        top: `${top}px`,
-        width: `${width}px`,
-        height: `${height}px`
-      })
-    }
-
-    // Second point
-    const message2 =
-      options.secondCornerMessage ||
-      AcApI18n.t('main.inputManager.secondCorner')
-    const options2 = new AcEdPromptPointOptions(message2)
-    options2.useDashedLine = options.useDashedLine
-    options2.useBasePoint = options.useBasePoint
-    const p2 = await this.getPointInternal(options2, cleanup, drawPreview)
-
-    return new AcGeBox2d().expandByPoint(p1).expandByPoint(p2)
   }
 
   /**
@@ -730,6 +806,10 @@ export class AcEdInputManager {
     const parts = trimmed.split(/\s+/)
     if (parts.length < 2) return undefined
     return { x: parts[0], y: parts[1] }
+  }
+
+  private isPromptCancelled(error: unknown): boolean {
+    return error instanceof Error && error.message === 'cancelled'
   }
 
   /**

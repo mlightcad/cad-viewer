@@ -10,7 +10,8 @@ import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
-  AcEdPromptPointOptions
+  AcEdPromptPointOptions,
+  AcEdPromptStatus
 } from '../editor'
 import { AcApI18n } from '../i18n'
 
@@ -69,8 +70,10 @@ export class AcApRectCmd extends AcEdCommand {
     const firstPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.rect.firstPoint')
     )
-    const firstPoint =
+    const firstPointResult =
       await AcApDocManager.instance.editor.getPoint(firstPointPrompt)
+    if (firstPointResult.status !== AcEdPromptStatus.OK) return
+    const firstPoint = firstPointResult.value!
 
     const secondPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.rect.nextPoint')
@@ -78,8 +81,10 @@ export class AcApRectCmd extends AcEdCommand {
     secondPointPrompt.jig = new AcApRectJig(context.view, firstPoint)
     secondPointPrompt.useDashedLine = false
     secondPointPrompt.useBasePoint = true
-    const secondPoint =
+    const secondPointResult =
       await AcApDocManager.instance.editor.getPoint(secondPointPrompt)
+    if (secondPointResult.status !== AcEdPromptStatus.OK) return
+    const secondPoint = secondPointResult.value!
 
     const db = context.doc.database
     const rect = new AcDbPolyline()

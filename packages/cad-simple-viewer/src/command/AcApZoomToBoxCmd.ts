@@ -1,5 +1,5 @@
 import { AcApContext, AcApDocManager } from '../app'
-import { AcEdCommand, AcEdPromptBoxOptions } from '../editor'
+import { AcEdCommand, AcEdPromptBoxOptions, AcEdPromptStatus } from '../editor'
 import { AcApI18n } from '../i18n'
 
 /**
@@ -31,7 +31,8 @@ export class AcApZoomToBoxCmd extends AcEdCommand {
       AcApI18n.t('main.inputManager.firstCorner'),
       AcApI18n.t('main.inputManager.secondCorner')
     )
-    const box = await AcApDocManager.instance.editor.getBox(options)
-    return context.view.zoomTo(box, 1)
+    const boxResult = await AcApDocManager.instance.editor.getBox(options)
+    if (boxResult.status !== AcEdPromptStatus.OK || !boxResult.value) return
+    return context.view.zoomTo(boxResult.value, 1)
   }
 }

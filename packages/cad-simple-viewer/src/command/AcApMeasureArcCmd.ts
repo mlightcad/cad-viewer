@@ -14,6 +14,7 @@ import {
   AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
+  AcEdPromptStatus,
   AcEdViewMode
 } from '../editor'
 import { AcApI18n } from '../i18n'
@@ -327,7 +328,11 @@ export class AcApMeasureArcCmd extends AcEdCommand {
         p1Prompt.jig = snapJig
 
         try {
-          await editor.getPoint(p1Prompt)
+          const p1Result = await editor.getPoint(p1Prompt)
+          if (p1Result.status !== AcEdPromptStatus.OK) {
+            arcCanvas.remove()
+            return
+          }
         } catch {
           arcCanvas.remove()
           return
@@ -385,7 +390,17 @@ export class AcApMeasureArcCmd extends AcEdCommand {
 
         let p2Raw: AcGePoint3dLike
         try {
-          p2Raw = await editor.getPoint(p2Prompt)
+          const p2Result = await editor.getPoint(p2Prompt)
+          if (p2Result.status !== AcEdPromptStatus.OK) {
+            arcCanvas.remove()
+            dot1.remove()
+            liveBadge.remove()
+            context.view.events.viewChanged.removeEventListener(
+              onViewChangedPreview
+            )
+            return
+          }
+          p2Raw = p2Result.value!
         } catch {
           arcCanvas.remove()
           dot1.remove()
