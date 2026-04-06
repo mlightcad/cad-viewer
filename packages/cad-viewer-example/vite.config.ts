@@ -47,6 +47,7 @@ export default defineConfig(({ command, mode }) => {
     build: {
       outDir: 'dist',
       modulePreload: false,
+      minify: true,
       rollupOptions: {
         // Main entry point for the app
         input: {

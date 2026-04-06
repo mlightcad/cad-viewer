@@ -204,7 +204,11 @@ class CadViewerApp {
       const fileContent = await this.readFile(file)
       const options: AcApOpenDatabaseOptions = {
         minimumChunkSize: 1000,
-        mode: AcEdOpenMode.Write
+        mode: AcEdOpenMode.Write,
+        // Override line weight display setting to false so that line weights are not displayed by default
+        sysVars: {
+          lwdisplay: false
+        }
       }
 
       const success = await AcApDocManager.instance.openDocument(

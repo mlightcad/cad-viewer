@@ -35,7 +35,8 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         name: 'cad-viewer',
         fileName: 'index',
         formats: ['es'] as LibraryFormats[]
-      }
+      },
+      minify: true
     },
     plugins
   }
