@@ -11,7 +11,8 @@ import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
-  AcEdPromptPointOptions
+  AcEdPromptPointOptions,
+  AcEdPromptStatus
 } from '../editor'
 import { AcApI18n } from '../i18n'
 
@@ -80,48 +81,48 @@ export class AcApSplineCmd extends AcEdCommand {
     const firstPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.spline.firstPoint')
     )
-    currentPoint =
+    const firstPointResult =
       await AcApDocManager.instance.editor.getPoint(firstPointPrompt)
-    if (currentPoint) {
-      points.push(new AcGePoint2d(currentPoint))
+    if (firstPointResult.status !== AcEdPromptStatus.OK) return
+    currentPoint = firstPointResult.value!
+    points.push(new AcGePoint2d(currentPoint))
 
-      // Get subsequent points until user presses Enter
-      while (true) {
-        const nextPointPrompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.spline.nextPoint')
-        )
-        nextPointPrompt.useDashedLine = true
-        nextPointPrompt.useBasePoint = true
-        nextPointPrompt.jig = new AcApSplineJig(context.view, points)
+    // Get subsequent points until user presses Enter
+    while (true) {
+      const nextPointPrompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.spline.nextPoint')
+      )
+      nextPointPrompt.useDashedLine = true
+      nextPointPrompt.useBasePoint = true
+      nextPointPrompt.jig = new AcApSplineJig(context.view, points)
 
-        try {
-          currentPoint =
-            await AcApDocManager.instance.editor.getPoint(nextPointPrompt)
-          if (currentPoint) {
-            points.push(new AcGePoint2d(currentPoint))
-          } else {
-            // User pressed Enter, exit loop
-            break
-          }
-        } catch {
-          // User canceled, exit loop
+      try {
+        const nextPointResult =
+          await AcApDocManager.instance.editor.getPoint(nextPointPrompt)
+        if (nextPointResult.status !== AcEdPromptStatus.OK) {
+          // User canceled or pressed Enter, exit loop
           break
         }
+        currentPoint = nextPointResult.value!
+        points.push(new AcGePoint2d(currentPoint))
+      } catch {
+        // User canceled, exit loop
+        break
       }
+    }
 
-      // Create spline if we have at least two points
-      if (points.length >= 2) {
-        const db = context.doc.database
-        const points3d = points.map(p => new AcGePoint3d(p.x, p.y, 0))
+    // Create spline if we have at least two points
+    if (points.length >= 2) {
+      const db = context.doc.database
+      const points3d = points.map(p => new AcGePoint3d(p.x, p.y, 0))
 
-        // For cubic spline (degree 3), we need at least 4 control points
-        // If we have less than 4 points, use a lower degree
-        const degree = Math.min(3, Math.max(1, points3d.length - 1))
+      // For cubic spline (degree 3), we need at least 4 control points
+      // If we have less than 4 points, use a lower degree
+      const degree = Math.min(3, Math.max(1, points3d.length - 1))
 
-        const knots = createKnots(points3d.length, degree)
-        const spline = new AcDbSpline(points3d, knots, undefined, degree, false)
-        db.tables.blockTable.modelSpace.appendEntity(spline)
-      }
+      const knots = createKnots(points3d.length, degree)
+      const spline = new AcDbSpline(points3d, knots, undefined, degree, false)
+      db.tables.blockTable.modelSpace.appendEntity(spline)
     }
   }
 }

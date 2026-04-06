@@ -6,11 +6,16 @@ import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptBoxOptions,
+  AcEdPromptBoxResult,
   AcEdPromptDistanceOptions,
+  AcEdPromptDoubleResult,
   AcEdPromptEntityOptions,
+  AcEdPromptEntityResult,
   AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
+  AcEdPromptPointResult,
   AcEdPromptSelectionOptions,
+  AcEdPromptSelectionResult,
   AcEdPromptStringOptions
 } from './prompt'
 import { AcEdInputManager } from './ui'
@@ -216,7 +221,9 @@ export class AcEditor {
    *
    * @returns Promise that resolves to the input point coordinates
    */
-  async getPoint(options: AcEdPromptPointOptions) {
+  async getPoint(
+    options: AcEdPromptPointOptions
+  ): Promise<AcEdPromptPointResult> {
     return await this._inputManager.getPoint(options)
   }
 
@@ -229,7 +236,9 @@ export class AcEditor {
    *
    * @returns Promise that resolves to the input angle value.
    */
-  async getAngle(options: AcEdPromptAngleOptions) {
+  async getAngle(
+    options: AcEdPromptAngleOptions
+  ): Promise<AcEdPromptDoubleResult> {
     return await this._inputManager.getAngle(options)
   }
 
@@ -242,7 +251,9 @@ export class AcEditor {
    *
    * @returns Promise that resolves to the input distance value.
    */
-  async getDistance(options: AcEdPromptDistanceOptions) {
+  async getDistance(
+    options: AcEdPromptDistanceOptions
+  ): Promise<AcEdPromptDoubleResult> {
     return await this._inputManager.getDistance(options)
   }
 
@@ -251,7 +262,7 @@ export class AcEditor {
    *
    * @returns Promise that resolves to the input one string.
    */
-  async getString(options: AcEdPromptStringOptions) {
+  async getString(options: AcEdPromptStringOptions): Promise<string> {
     return await this._inputManager.getString(options)
   }
 
@@ -260,7 +271,7 @@ export class AcEditor {
    *
    * @returns Promise that resolves to the input one keyword.
    */
-  async getKeywords(options: AcEdPromptKeywordOptions) {
+  async getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
     return await this._inputManager.getKeywords(options)
   }
 
@@ -269,7 +280,9 @@ export class AcEditor {
    *
    * @returns Promise that resolves to the input one keyword.
    */
-  async getEntity(options: AcEdPromptEntityOptions) {
+  async getEntity(
+    options: AcEdPromptEntityOptions
+  ): Promise<AcEdPromptEntityResult> {
     return await this._inputManager.getEntity(options)
   }
 
@@ -282,7 +295,9 @@ export class AcEditor {
    *
    * @returns Promise that resolves to the selection set containing selected entity IDs
    */
-  async getSelection(options: AcEdPromptSelectionOptions) {
+  async getSelection(
+    options: AcEdPromptSelectionOptions
+  ): Promise<AcEdPromptSelectionResult> {
     return await this._inputManager.getSelection(options)
   }
 
@@ -291,7 +306,7 @@ export class AcEditor {
    *
    * @returns Promise that resolves to rectangular bounding box.
    */
-  async getBox(options: AcEdPromptBoxOptions) {
+  async getBox(options: AcEdPromptBoxOptions): Promise<AcEdPromptBoxResult> {
     return await this._inputManager.getBox(options)
   }
 }

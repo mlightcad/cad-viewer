@@ -10,7 +10,8 @@ import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
-  AcEdPromptPointOptions
+  AcEdPromptPointOptions,
+  AcEdPromptStatus
 } from '../editor'
 import { AcApI18n } from '../i18n'
 
@@ -67,44 +68,44 @@ export class AcApPolylineCmd extends AcEdCommand {
     const firstPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.polyline.firstPoint')
     )
-    currentPoint =
+    const firstPointResult =
       await AcApDocManager.instance.editor.getPoint(firstPointPrompt)
-    if (currentPoint) {
-      points.push(new AcGePoint2d(currentPoint))
+    if (firstPointResult.status !== AcEdPromptStatus.OK) return
+    currentPoint = firstPointResult.value!
+    points.push(new AcGePoint2d(currentPoint))
 
-      // Get subsequent points until user presses Enter
-      while (true) {
-        const nextPointPrompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.polyline.nextPoint')
-        )
-        nextPointPrompt.useDashedLine = true
-        nextPointPrompt.useBasePoint = true
-        nextPointPrompt.jig = new AcApPolylineJig(context.view, points)
+    // Get subsequent points until user presses Enter
+    while (true) {
+      const nextPointPrompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.polyline.nextPoint')
+      )
+      nextPointPrompt.useDashedLine = true
+      nextPointPrompt.useBasePoint = true
+      nextPointPrompt.jig = new AcApPolylineJig(context.view, points)
 
-        try {
-          currentPoint =
-            await AcApDocManager.instance.editor.getPoint(nextPointPrompt)
-          if (currentPoint) {
-            points.push(new AcGePoint2d(currentPoint))
-          } else {
-            // User pressed Enter, exit loop
-            break
-          }
-        } catch {
-          // User canceled, exit loop
+      try {
+        const nextPointResult =
+          await AcApDocManager.instance.editor.getPoint(nextPointPrompt)
+        if (nextPointResult.status !== AcEdPromptStatus.OK) {
+          // User canceled or pressed Enter, exit loop
           break
         }
+        currentPoint = nextPointResult.value!
+        points.push(new AcGePoint2d(currentPoint))
+      } catch {
+        // User canceled, exit loop
+        break
       }
+    }
 
-      // Create polyline if we have at least two points
-      if (points.length >= 2) {
-        const db = context.doc.database
-        const polyline = new AcDbPolyline()
-        points.forEach((p, index) => {
-          polyline.addVertexAt(index, p)
-        })
-        db.tables.blockTable.modelSpace.appendEntity(polyline)
-      }
+    // Create polyline if we have at least two points
+    if (points.length >= 2) {
+      const db = context.doc.database
+      const polyline = new AcDbPolyline()
+      points.forEach((p, index) => {
+        polyline.addVertexAt(index, p)
+      })
+      db.tables.blockTable.modelSpace.appendEntity(polyline)
     }
   }
 }

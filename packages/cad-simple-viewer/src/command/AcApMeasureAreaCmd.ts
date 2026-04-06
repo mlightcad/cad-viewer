@@ -13,6 +13,7 @@ import {
   AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
+  AcEdPromptStatus,
   AcEdViewMode
 } from '../editor'
 import { AcApI18n } from '../i18n'
@@ -237,9 +238,11 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         const redrawOnViewChange = () => drawPolygon()
         context.view.events.viewChanged.addEventListener(redrawOnViewChange)
 
-        const p1 = await editor.getPoint(
+        const p1Result = await editor.getPoint(
           new AcEdPromptPointOptions(AcApI18n.t('jig.measureArea.firstPoint'))
         )
+        if (p1Result.status !== AcEdPromptStatus.OK) return
+        const p1 = p1Result.value!
         points.push(p1)
         drawPolygon()
 
@@ -271,7 +274,9 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
               onMove
             )
 
-            const p = await editor.getPoint(prompt)
+            const pResult = await editor.getPoint(prompt)
+            if (pResult.status !== AcEdPromptStatus.OK) break
+            const p = pResult.value!
             liveBadge.style.display = 'none'
 
             if (points.length >= 3) {

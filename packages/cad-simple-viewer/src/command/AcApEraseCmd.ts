@@ -1,6 +1,9 @@
 import { AcApAnnotation, AcApContext, AcApDocManager } from '../app'
 import { AcEdCommand } from '../command'
-import { AcEdPromptSelectionOptions } from '../editor/input/prompt'
+import {
+  AcEdPromptSelectionOptions,
+  AcEdPromptStatus
+} from '../editor/input/prompt'
 import { AcEdOpenMode } from '../editor/view'
 import { AcApI18n } from '../i18n'
 
@@ -32,8 +35,14 @@ export class AcApEraseCmd extends AcEdCommand {
     } else {
       const message = AcApI18n.sysCmdPrompt('erase')
       const options = new AcEdPromptSelectionOptions(message)
-      let ids = await AcApDocManager.instance.editor.getSelection(options)
-      if (ids && ids.length > 0) {
+      const selectionResult =
+        await AcApDocManager.instance.editor.getSelection(options)
+      if (
+        selectionResult.status === AcEdPromptStatus.OK &&
+        selectionResult.value &&
+        selectionResult.value.count > 0
+      ) {
+        let ids = selectionResult.value.ids
         // If it is in review mode, annotation entities can be deleted only
         if (context.doc.openMode == AcEdOpenMode.Review) {
           ids = annotation.filterAnnotationEntities(ids)

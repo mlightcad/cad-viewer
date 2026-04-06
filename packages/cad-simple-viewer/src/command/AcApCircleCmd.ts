@@ -7,7 +7,8 @@ import {
   AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptDistanceOptions,
-  AcEdPromptPointOptions
+  AcEdPromptPointOptions,
+  AcEdPromptStatus
 } from '../editor'
 import { AcApI18n } from '../i18n'
 
@@ -46,14 +47,19 @@ export class AcApCircleCmd extends AcEdCommand {
     const centerPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.circle.center')
     )
-    const center = await AcApDocManager.instance.editor.getPoint(centerPrompt)
+    const centerResult =
+      await AcApDocManager.instance.editor.getPoint(centerPrompt)
+    if (centerResult.status !== AcEdPromptStatus.OK) return
+    const center = centerResult.value!
 
     const radiusPrompt = new AcEdPromptDistanceOptions(
       AcApI18n.t('jig.circle.radius')
     )
     radiusPrompt.jig = new AcApCircleJig(context.view, center)
-    const radius =
+    const radiusResult =
       await AcApDocManager.instance.editor.getDistance(radiusPrompt)
+    if (radiusResult.status !== AcEdPromptStatus.OK) return
+    const radius = radiusResult.value!
 
     const db = context.doc.database
     const circle = new AcDbCircle(center, radius)

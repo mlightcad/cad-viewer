@@ -5,7 +5,8 @@ import {
   AcEdCommand,
   AcEdMTextEditor,
   AcEdOpenMode,
-  AcEdPromptBoxOptions
+  AcEdPromptBoxOptions,
+  AcEdPromptStatus
 } from '../editor'
 import { AcApI18n } from '../i18n'
 import { AcTrView2d } from '../view'
@@ -28,7 +29,9 @@ export class AcApMTextCmd extends AcEdCommand {
     )
     boxPrompt.useBasePoint = false
     boxPrompt.useDashedLine = false
-    const box = await AcApDocManager.instance.editor.getBox(boxPrompt)
+    const boxResult = await AcApDocManager.instance.editor.getBox(boxPrompt)
+    if (boxResult.status !== AcEdPromptStatus.OK || !boxResult.value) return
+    const box = boxResult.value
 
     const width = Math.max(Math.abs(box.max.x - box.min.x), 1e-4)
     const view = context.view as AcTrView2d

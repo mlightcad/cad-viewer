@@ -202,7 +202,7 @@ export class AcEdKeywordCollection {
   set default(kw: AcEdKeyword | undefined) {
     if (kw && !this._keywords.includes(kw)) {
       throw new Error(
-        'Default keyword must be one of the collection\'s keywords'
+        "Default keyword must be one of the collection's keywords"
       )
     }
     this._defaultKeyword = kw

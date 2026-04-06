@@ -6,7 +6,8 @@ import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
-  AcEdPromptPointOptions
+  AcEdPromptPointOptions,
+  AcEdPromptStatus
 } from '../editor'
 import { AcApI18n } from '../i18n'
 
@@ -45,8 +46,10 @@ export class AcApLineCmd extends AcEdCommand {
     const startPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.line.firstPoint')
     )
-    const startPoint =
+    const startPointResult =
       await AcApDocManager.instance.editor.getPoint(startPointPrompt)
+    if (startPointResult.status !== AcEdPromptStatus.OK) return
+    const startPoint = startPointResult.value!
 
     const endPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.line.nextPoint')
@@ -55,8 +58,10 @@ export class AcApLineCmd extends AcEdCommand {
     endPointPrompt.jig = new AcApLineJig(context.view, startPoint)
     endPointPrompt.useDashedLine = true
     endPointPrompt.useBasePoint = true
-    const endPoint =
+    const endPointResult =
       await AcApDocManager.instance.editor.getPoint(endPointPrompt)
+    if (endPointResult.status !== AcEdPromptStatus.OK) return
+    const endPoint = endPointResult.value!
 
     const db = context.doc.database
     const line = new AcDbLine(startPoint, endPoint)

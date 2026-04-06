@@ -9,7 +9,8 @@ import {
   AcEdBaseView,
   AcEdOpenMode,
   AcEdPreviewJig,
-  AcEdPromptPointOptions
+  AcEdPromptPointOptions,
+  AcEdPromptStatus
 } from '../editor'
 import { AcApI18n } from '../i18n'
 import { AcApBaseRevCmd } from './AcApBaseRevCmd'
@@ -196,8 +197,10 @@ export class AcApRevCloudCmd extends AcApBaseRevCmd {
     const firstPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.line.firstPoint')
     )
-    const firstPoint =
+    const firstPointResult =
       await AcApDocManager.instance.editor.getPoint(firstPointPrompt)
+    if (firstPointResult.status !== AcEdPromptStatus.OK) return
+    const firstPoint = firstPointResult.value!
 
     const secondPointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.line.nextPoint')
@@ -205,8 +208,10 @@ export class AcApRevCloudCmd extends AcApBaseRevCmd {
     secondPointPrompt.jig = new AcApRevCloudJig(context.view, firstPoint)
     secondPointPrompt.useDashedLine = false
     secondPointPrompt.useBasePoint = true
-    const secondPoint =
+    const secondPointResult =
       await AcApDocManager.instance.editor.getPoint(secondPointPrompt)
+    if (secondPointResult.status !== AcEdPromptStatus.OK) return
+    const secondPoint = secondPointResult.value!
 
     const db = context.doc.database
     const cloud = new AcDbPolyline()
