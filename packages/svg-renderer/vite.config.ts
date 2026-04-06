@@ -8,7 +8,8 @@ export default defineConfig({
       entry: 'src/index.ts',
       name: 'svg-renderer',
       fileName: 'index'
-    }
+    },
+    minify: true
   },
   plugins: [peerDepsExternal() as PluginOption]
 })

@@ -267,6 +267,7 @@ export class AcApDocManager {
       if (args.subStage === 'HEADER') {
         this.curView.ltscale = doc.database.ltscale
         this.curView.celtscale = doc.database.celtscale
+        this.curView.renderer.showLineWeight = doc.database.lwdisplay
       }
     })
 

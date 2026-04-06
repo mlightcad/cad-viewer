@@ -24,7 +24,6 @@ import { AcSvgLine } from './AcSvgLine'
 export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   private _container: Array<string>
   private _bbox: AcGeBox2d
-  private _basePoint?: AcGePoint3d
   private _subEntityTraits: AcGiSubEntityTraits
 
   constructor() {
@@ -58,23 +57,6 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
    */
   get subEntityTraits() {
     return this._subEntityTraits
-  }
-
-  /**
-   * @inheritdoc
-   */
-  get basePoint() {
-    return this._basePoint
-  }
-
-  set basePoint(value: AcGePoint3d | undefined) {
-    if (value == null) {
-      this._basePoint = value
-    } else {
-      this._basePoint = this._basePoint
-        ? this._basePoint.copy(value)
-        : new AcGePoint3d(value)
-    }
   }
 
   /**

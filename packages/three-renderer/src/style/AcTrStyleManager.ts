@@ -21,23 +21,23 @@ import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
  * and clean separation of material logic.
  */
 export class AcTrStyleManager {
-  static options: AcTrStyleManagerOptions = {
+  public options: AcTrStyleManagerOptions = {
     // cameraZoomUniform: 1.0,
     ltscale: 1.0,
     celtscale: 1.0,
     viewportScaleUniform: 1.0,
     maxFragmentUniforms: 1024,
     resolution: new THREE.Vector2(1, 1),
-    showLineWeight: true
+    showLineWeight: false
   }
   private pointMgr: AcTrPointMaterialManager
   private lineMgr: AcTrLineMaterialManager
   private fillMgr: AcTrFillMaterialManager
 
   constructor() {
-    this.pointMgr = new AcTrPointMaterialManager(AcTrStyleManager.options)
-    this.lineMgr = new AcTrLineMaterialManager(AcTrStyleManager.options)
-    this.fillMgr = new AcTrFillMaterialManager(AcTrStyleManager.options)
+    this.pointMgr = new AcTrPointMaterialManager(this.options)
+    this.lineMgr = new AcTrLineMaterialManager(this.options)
+    this.fillMgr = new AcTrFillMaterialManager(this.options)
   }
 
   /** Stores unsupported text styles mapped by name → usage count. */
@@ -68,8 +68,7 @@ export class AcTrStyleManager {
     const hasLinePattern = !!(
       traits.lineType.pattern && traits.lineType.pattern.length > 0
     )
-    const forceBasicMaterial =
-      !AcTrStyleManager.options.showLineWeight && !hasLinePattern
+    const forceBasicMaterial = !this.options.showLineWeight && !hasLinePattern
     return this.lineMgr.getMaterial(traits, {
       basicMaterialOnly: basicMaterialOnly || forceBasicMaterial
     })!
@@ -79,14 +78,14 @@ export class AcTrStyleManager {
    * Gets whether lineweights are currently displayed.
    */
   get showLineWeight(): boolean {
-    return AcTrStyleManager.options.showLineWeight
+    return this.options.showLineWeight
   }
 
   /**
    * Sets whether lineweights are displayed.
    */
   set showLineWeight(value: boolean) {
-    AcTrStyleManager.options.showLineWeight = value
+    this.options.showLineWeight = value
   }
 
   /**
@@ -145,7 +144,7 @@ export class AcTrStyleManager {
   }
 
   updateLineResolution(width: number, height: number): void {
-    AcTrStyleManager.options.resolution.set(width, height)
+    this.options.resolution.set(width, height)
     this.lineMgr.updateResolution()
   }
 }

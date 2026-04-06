@@ -36,7 +36,6 @@ import { AcTrMTextRenderer } from './AcTrMTextRenderer'
 export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   private _styleManager: AcTrStyleManager
   private _renderer: THREE.WebGLRenderer
-  private _basePoint?: AcGePoint3d
   private _subEntityTraits: AcGiSubEntityTraits
 
   public readonly events = {
@@ -71,29 +70,6 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   get domElement() {
     return this._renderer.domElement
-  }
-
-  /**
-   * JavaScript (and WebGL) use 64‑bit floating point numbers for CPU-side calculations,
-   * but GPU shaders typically use 32‑bit floats. A 32-bit float has ~7.2 decimal digits
-   * of precision. If passing 64-bit floating vertices data to GPU directly, it will
-   * destroy number preciesion.
-   *
-   * So we adopt a simpler but effective version of the “origin-shift” idea. Recompute
-   * geometry using re-centered coordinates and apply offset to its position. The base
-   * point is extractly offset value.
-   */
-  get basePoint() {
-    return this._basePoint
-  }
-  set basePoint(value: AcGePoint3d | undefined) {
-    if (value == null) {
-      this._basePoint = value
-    } else {
-      this._basePoint = this._basePoint
-        ? this._basePoint.copy(value)
-        : new AcGePoint3d(value)
-    }
   }
 
   setSize(width: number, height: number) {
@@ -182,14 +158,14 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * Sets global ltscale
    */
   set ltscale(scale: number) {
-    AcTrStyleManager.options.ltscale = scale
+    this._styleManager.options.ltscale = scale
   }
 
   /**
    * Sets global celtscale
    */
   set celtscale(scale: number) {
-    AcTrStyleManager.options.celtscale = scale
+    this._styleManager.options.celtscale = scale
   }
 
   /**

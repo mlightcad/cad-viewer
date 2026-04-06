@@ -7,6 +7,7 @@ export default defineConfig(() => {
     base: './',
     build: {
       modulePreload: false,
+      minify: true,
       rollupOptions: {
         // Main entry point for the app
         input: {
