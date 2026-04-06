@@ -34,6 +34,7 @@ import {
   AcEdPromptNumericalOptions,
   AcEdPromptPointOptions,
   AcEdPromptPointResult,
+  AcEdPromptResult,
   AcEdPromptSelectionOptions,
   AcEdPromptSelectionResult,
   AcEdPromptStatus,
@@ -325,7 +326,7 @@ export class AcEdInputManager {
   }
 
   /** Request an integer from the user. */
-  getInteger(options: AcEdPromptIntegerOptions): Promise<number> {
+  async getInteger(options: AcEdPromptIntegerOptions): Promise<number> {
     const scriptedValue = this.tryGetScriptedNumber(
       new AcEdIntegerHandler(options)
     )
@@ -338,37 +339,45 @@ export class AcEdInputManager {
   /**
    * Prompt the user to type an arbitrary string. Resolved when Enter is pressed.
    */
-  getString(options: AcEdPromptStringOptions): Promise<string> {
+  async getString(options: AcEdPromptStringOptions): Promise<AcEdPromptResult> {
     const scriptedValue = this.tryGetScriptedValue(
       new AcEdStringHandler(options)
     )
     if (scriptedValue != null) {
-      return Promise.resolve(scriptedValue)
+      return new AcEdPromptResult(AcEdPromptStatus.OK, scriptedValue)
     }
 
-    const getDynamicValue = () => {
-      return {
-        value: '',
-        raw: { x: '' }
+    try {
+      const getDynamicValue = () => {
+        return {
+          value: '',
+          raw: { x: '' }
+        }
       }
-    }
 
-    const handler = new AcEdStringHandler(options)
-    return this.makeFloatingInputPromise<string>({
-      message: options.message,
-      inputCount: 1,
-      jig: options.jig,
-      showBaseLineOnly: false,
-      useBasePoint: false,
-      handler,
-      getDynamicValue
-    })
+      const handler = new AcEdStringHandler(options)
+      const value = await this.makeFloatingInputPromise<string>({
+        message: options.message,
+        inputCount: 1,
+        jig: options.jig,
+        showBaseLineOnly: false,
+        useBasePoint: false,
+        handler,
+        getDynamicValue
+      })
+      return new AcEdPromptResult(AcEdPromptStatus.OK, value)
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptResult(AcEdPromptStatus.Cancel)
+      }
+      throw error
+    }
   }
 
   /**
    * Prompt the user to type a keyword. Resolved when Enter is pressed.
    */
-  getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
+  async getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
     const scriptedValue = this.tryGetScriptedValue(
       new AcEdKeywordHandler(options)
     )
@@ -705,7 +714,7 @@ export class AcEdInputManager {
    * Shared point input logic used by getPoint() and getBox(). Accepts "x,y"
    * typed input OR mouse click.
    */
-  private getPointInternal(
+  private async getPointInternal(
     options: AcEdPromptPointOptions,
     cleanup?: () => void,
     drawPreview?: AcEdFloatingInputDrawPreviewCallback
@@ -819,7 +828,7 @@ export class AcEdInputManager {
    * including handling the Escape key to cancel, resolving with user-provided
    * values, and guaranteeing cleanup of UI elements and event handlers.
    */
-  private makeFloatingInputPromise<T>(options: {
+  private async makeFloatingInputPromise<T>(options: {
     message?: string
     inputCount?: AcEdFloatingInputBoxCount
     jig?: AcEdPreviewJig<T>

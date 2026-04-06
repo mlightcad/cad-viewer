@@ -1,7 +1,7 @@
 import { AcDbSysVarManager } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
-import { AcEdCommand, AcEdOpenMode, AcEdPromptStringOptions } from '../editor'
+import { AcEdCommand, AcEdOpenMode, AcEdPromptStatus, AcEdPromptStringOptions } from '../editor'
 import { AcApI18n } from '../i18n'
 
 /**
@@ -35,7 +35,9 @@ export class AcApSysVarCmd extends AcEdCommand {
     const suffix = currentValue == null ? '' : ` <${String(currentValue)}>`
     const promptMessage = `${promptCore}${suffix}${colon}`
     const prompt = new AcEdPromptStringOptions(promptMessage)
-    const value = await AcApDocManager.instance.editor.getString(prompt)
+    const result = await AcApDocManager.instance.editor.getString(prompt)
+    if (result.status !== AcEdPromptStatus.OK || !result.stringResult) return
+    const value = result.stringResult
     const sysVar = sysVarManager.getDescriptor(this.globalName)
     if (sysVar) {
       sysVarManager.setVar(this.globalName, value, context.doc.database)

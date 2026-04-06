@@ -18,8 +18,8 @@ export class AcEdPromptStringOptions extends AcEdPromptOptions<string> {
    * Constructs a new `AcEdPromptStringOptions` with a given prompt message.
    * @param message - The message shown to the user when prompting for a string.
    */
-  constructor(message: string) {
-    super(message)
+  constructor(message: string, globalKeywords?: string) {
+    super(message, globalKeywords)
   }
 
   /**

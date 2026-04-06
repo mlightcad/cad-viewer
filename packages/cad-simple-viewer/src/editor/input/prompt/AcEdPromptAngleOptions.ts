@@ -22,8 +22,8 @@ export class AcEdPromptAngleOptions extends AcEdPromptOptions<number> {
    * Constructs a new `AcEdPromptAngleOptions` with a given prompt message.
    * @param message - The prompt message shown to the user.
    */
-  constructor(message: string) {
-    super(message)
+  constructor(message: string, globalKeywords?: string) {
+    super(message, globalKeywords)
   }
 
   /**

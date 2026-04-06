@@ -18,8 +18,8 @@ export class AcEdPromptNumericalOptions extends AcEdPromptOptions<number> {
    * Constructs a new `AcEdPromptNumericalOptions` with a given prompt message.
    * @param message - The message shown to the user when prompting for a number.
    */
-  constructor(message: string) {
-    super(message)
+  constructor(message: string, globalKeywords?: string) {
+    super(message, globalKeywords)
   }
 
   /**

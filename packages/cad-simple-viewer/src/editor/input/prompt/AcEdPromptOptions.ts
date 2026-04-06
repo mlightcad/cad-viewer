@@ -9,20 +9,26 @@ import { AcEdKeywordCollection } from './AcEdKeywordCollection'
  */
 export class AcEdPromptOptions<T = number | string | AcGePoint3d> {
   private _jig?: AcEdPreviewJig<T>
-  private _message: string
-  private _appendKeywordsToMessage: boolean
-  private _isReadOnly: boolean
-  private _keywords: AcEdKeywordCollection
+  private _message: string = ''
+  private _appendKeywordsToMessage: boolean = true
+  private _isReadOnly: boolean = false
+  private _keywords: AcEdKeywordCollection = new AcEdKeywordCollection()
 
   /**
    * Constructs a new `AcEdPromptOptions` with a given prompt message.
-   * @param message - The message to show to the user in the prompt.
+   * @param message - The message to show to the user in the prompt, or a combined message and keywords string in the format "Message text [Keyword1/Keyword2/...]".
+   * @param globalKeywords - Optional space-separated list of global keyword names. If provided, the message parameter is treated as a combined message and keywords string.
    */
-  constructor(message: string) {
-    this._message = message
-    this._appendKeywordsToMessage = true
-    this._isReadOnly = false
-    this._keywords = new AcEdKeywordCollection()
+  constructor(message: string, globalKeywords?: string) {
+    // Always call super() first (but since this is the base class, we don't have a super)
+    // Then handle the parameters
+    if (globalKeywords !== undefined) {
+      // Two-parameter constructor
+      this.setMessageAndKeywords(message, globalKeywords)
+    } else {
+      // Single-parameter constructor
+      this._message = message
+    }
   }
 
   /**
@@ -106,7 +112,7 @@ export class AcEdPromptOptions<T = number | string | AcGePoint3d> {
 
     // Parse message portion and keyword portion
     // e.g. "Enter option [Yes/No/Default]" → message = "Enter option", display keywords = ["Yes","No","Default"]
-    const msgMatch = messageAndKeywords.match(/^(.*?)\s*(?:\[(.*)\])?$/)
+    const msgMatch = messageAndKeywords.match(/^(.*?)\s*\[(.*?)\](.*)?$/)
     if (msgMatch) {
       const [, msgPart, kwPart] = msgMatch
       this._message = msgPart.trim()

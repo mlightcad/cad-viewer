@@ -14,6 +14,7 @@ import {
   AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
   AcEdPromptPointResult,
+  AcEdPromptResult,
   AcEdPromptSelectionOptions,
   AcEdPromptSelectionResult,
   AcEdPromptStringOptions
@@ -262,7 +263,7 @@ export class AcEditor {
    *
    * @returns Promise that resolves to the input one string.
    */
-  async getString(options: AcEdPromptStringOptions): Promise<string> {
+  async getString(options: AcEdPromptStringOptions): Promise<AcEdPromptResult> {
     return await this._inputManager.getString(options)
   }
 

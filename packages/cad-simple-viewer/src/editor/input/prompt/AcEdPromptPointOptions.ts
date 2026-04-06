@@ -18,8 +18,8 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
    * Constructs a new `AcEdPromptPointOptions` with a given prompt message.
    * @param message - The message to show to the user in the prompt.
    */
-  constructor(message: string) {
-    super(message)
+  constructor(message: string, globalKeywords?: string) {
+    super(message, globalKeywords)
   }
 
   /**

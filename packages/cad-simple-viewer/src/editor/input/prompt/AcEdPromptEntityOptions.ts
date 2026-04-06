@@ -20,8 +20,8 @@ export class AcEdPromptEntityOptions extends AcEdPromptOptions<string> {
    */
   private _allowedClasses = new Set<string>()
 
-  constructor(message: string) {
-    super(message)
+  constructor(message: string, globalKeywords?: string) {
+    super(message, globalKeywords)
   }
 
   /**
