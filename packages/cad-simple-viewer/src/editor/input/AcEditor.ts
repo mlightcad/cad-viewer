@@ -8,6 +8,7 @@ import {
   AcEdPromptBoxOptions,
   AcEdPromptBoxResult,
   AcEdPromptDistanceOptions,
+  AcEdPromptDoubleOptions,
   AcEdPromptDoubleResult,
   AcEdPromptEntityOptions,
   AcEdPromptEntityResult,
@@ -256,6 +257,17 @@ export class AcEditor {
     options: AcEdPromptDistanceOptions
   ): Promise<AcEdPromptDoubleResult> {
     return await this._inputManager.getDistance(options)
+  }
+
+  /**
+   * Prompts the user to input a double value.
+   *
+   * @returns Promise that resolves to the input double value.
+   */
+  async getDouble(
+    options: AcEdPromptDoubleOptions
+  ): Promise<AcEdPromptDoubleResult> {
+    return await this._inputManager.getDouble(options)
   }
 
   /**

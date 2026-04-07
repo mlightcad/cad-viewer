@@ -102,9 +102,13 @@ export class AcEdFloatingMessage {
     this.container.className = 'ml-floating-input'
 
     // Create message label
+    const message = options.message ?? ''
     this.label = document.createElement('span')
     this.label.className = 'ml-floating-input-label'
-    this.label.textContent = options.message ?? ''
+    this.label.textContent = message
+    if (!message.trim()) {
+      this.label.style.display = 'none'
+    }
     this.container.appendChild(this.label)
 
     // Mount inside view host so UI is constrained to the view canvas area.

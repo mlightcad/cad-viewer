@@ -76,6 +76,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
   /** Cached click handler */
   private boundOnClick: (e: MouseEvent) => void
+  /** Whether to suppress UI display while keeping input active */
+  private suppressDisplay: boolean
 
   // ---------------------------------------------------------------------------
   // CONSTRUCTOR
@@ -90,6 +92,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
    */
   constructor(view: AcEdBaseView, options: AcEdFloatingInputOptions<T>) {
     super(view, options)
+
+    this.suppressDisplay = !!options.suppressDisplay
 
     // -----------------------------
     // OSNAP
@@ -140,6 +144,19 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.boundOnClick = e => this.handleClick(e)
     this.parent.addEventListener('click', this.boundOnClick)
     this.injectInputCSS()
+  }
+
+  override showAt(pos: AcGePoint2dLike) {
+    if (this.disposed) return
+    if (!this.suppressDisplay) {
+      super.showAt(pos)
+      return
+    }
+
+    this.visible = true
+    this.container.style.display = 'none'
+    this.setPosition(pos)
+    this.parent.addEventListener('mousemove', this.boundOnMouseMove)
   }
 
   private injectInputCSS() {

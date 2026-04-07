@@ -95,8 +95,21 @@ export class AcEdCommandLine {
     this.textInput.focus()
   }
 
-  async getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
-    this.activeSession = new AcEdKeywordSession(this, options)
+  setInputReadOnly(readOnly: boolean) {
+    this.textInput.readOnly = readOnly
+  }
+
+  cancelActiveSession() {
+    if (!this.activeSession) return
+    this.activeSession.handleEscape()
+    this.activeSession = undefined
+  }
+
+  async getKeywords(
+    options: AcEdPromptKeywordOptions,
+    allowTyping: boolean = true
+  ): Promise<string> {
+    this.activeSession = new AcEdKeywordSession(this, options, allowTyping)
     const result = await this.activeSession.start()
     this.activeSession = undefined
     return result

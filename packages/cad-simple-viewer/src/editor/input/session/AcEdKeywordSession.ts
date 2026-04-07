@@ -8,7 +8,8 @@ export class AcEdKeywordSession extends AcEdInputSession<string> {
 
   constructor(
     private cli: AcEdCommandLine,
-    private options: AcEdPromptKeywordOptions
+    private options: AcEdPromptKeywordOptions,
+    private allowTyping: boolean = true
   ) {
     super()
     this.handler = new AcEdKeywordHandler(options)
@@ -16,11 +17,13 @@ export class AcEdKeywordSession extends AcEdInputSession<string> {
 
   protected onStart(): void {
     this.cli.clearInput()
+    this.cli.setInputReadOnly(!this.allowTyping)
     this.cli.renderKeywordPrompt(this.options, kw => this.finish(kw))
     this.cli.focusInput()
   }
 
   handleEnter(value: string): boolean {
+    if (!this.allowTyping) return true
     const parsed = this.handler.parse(value)
     if (parsed !== null) {
       this.finish(parsed)
@@ -34,6 +37,7 @@ export class AcEdKeywordSession extends AcEdInputSession<string> {
   }
 
   protected cleanup(): void {
+    this.cli.setInputReadOnly(false)
     this.cli.clear()
   }
 }

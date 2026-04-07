@@ -116,6 +116,12 @@ export interface AcEdFloatingInputOptions<T> {
   message?: string
 
   /**
+   * If true, keep dynamic input logic active but suppress UI display.
+   * Useful when dynamic input is disabled but mouse click input should still work.
+   */
+  suppressDisplay?: boolean
+
+  /**
    * The flag to indicate whether to disable osnap.
    */
   disableOSnap?: boolean
