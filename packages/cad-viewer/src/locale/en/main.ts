@@ -122,6 +122,10 @@ export default {
       on: 'Turn on full screen mode',
       off: 'Turn off full screen mode'
     },
+    dynamicInput: {
+      on: 'Turn on dynamic input',
+      off: 'Turn off dynamic input'
+    },
     theme: {
       dark: 'Switch to dark theme',
       light: 'Switch to light light'

@@ -2,7 +2,8 @@ import {
   AcDbPolyline,
   AcGePoint2d,
   AcGePoint2dLike,
-  AcGePoint3d} from '@mlightcad/data-model'
+  AcGePoint3d
+} from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
 import {

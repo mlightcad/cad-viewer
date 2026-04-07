@@ -1,9 +1,11 @@
 import {
   acdbHostApplicationServices,
+  AcDbSystemVariables,
   AcDbSysVarManager,
   AcGeBox2d,
   AcGePoint2dLike,
-  AcGePoint3dLike} from '@mlightcad/data-model'
+  AcGePoint3dLike
+} from '@mlightcad/data-model'
 
 import { AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
@@ -190,19 +192,12 @@ export class AcEdInputManager {
   }
 
   private isDynamicInputEnabled() {
-    const raw = this.getSysVarValue('DYNINPUT')
-    const fallback = raw == null ? this.getSysVarValue('DYNMODE') : raw
-    const mode = typeof fallback === 'number' ? fallback : Number(fallback)
-    return !Number.isNaN(mode) && mode !== 0
+    const mode = this.getSysVarValue(AcDbSystemVariables.DYNMODE) as number
+    return mode !== 0
   }
 
   private isDynamicPromptEnabled() {
-    const raw = this.getSysVarValue('DYNPROMPT')
-    if (raw === undefined || raw === null) return true
-    if (typeof raw === 'boolean') return raw
-    if (typeof raw === 'number') return raw !== 0
-    if (typeof raw === 'string') return raw !== '0'
-    return Boolean(raw)
+    return !!this.getSysVarValue(AcDbSystemVariables.DYNPROMPT)
   }
 
   private shouldShowDynamicPrompt() {
@@ -468,7 +463,10 @@ export class AcEdInputManager {
     }
 
     try {
-      const value = await this.getNumberTyped(options, new AcEdIntegerHandler(options))
+      const value = await this.getNumberTyped(
+        options,
+        new AcEdIntegerHandler(options)
+      )
       return new AcEdPromptIntegerResult(AcEdPromptStatus.OK, value)
     } catch (error) {
       if (this.isPromptCancelled(error)) {
@@ -1114,7 +1112,8 @@ export class AcEdInputManager {
       const floatingInput = new AcEdFloatingInput(this.view, {
         parent: this.view.canvas,
         inputCount: options.inputCount,
-        message: options.showPrompt === false ? undefined : promptDefaults.message,
+        message:
+          options.showPrompt === false ? undefined : promptDefaults.message,
         disableOSnap: options.disableOSnap,
         showBaseLineOnly: promptDefaults.showBaseLineOnly,
         basePoint,

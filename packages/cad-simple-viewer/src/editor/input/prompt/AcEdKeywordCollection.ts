@@ -99,17 +99,22 @@ export class AcEdKeywordCollection {
         return comma >= 0 ? spec.substring(0, comma) : spec
       }
 
-      const globalName = parseSpec(globalSpec)
-      const localName = parseSpec(localSpec)
+      const rawGlobal = parseSpec(globalSpec)
+      const rawLocal = parseSpec(localSpec)
+      const hasGlobal = rawGlobal !== undefined
+      const hasLocal = rawLocal !== undefined
+
+      const globalName = hasGlobal ? rawGlobal! : ''
+      const localName = hasLocal ? rawLocal! : undefined
 
       // ARX rules:
       // - local without global → accepted, returns ""
       // - global without local → accepted only with underscore (already implied)
       // - matched → local maps to global
       const kw = new AcEdKeyword(
-        globalName ?? localName ?? '',
-        globalName ?? '',
-        localName ?? '',
+        globalName || localName || '',
+        globalName,
+        localName,
         true,
         false,
         true
@@ -202,7 +207,7 @@ export class AcEdKeywordCollection {
   set default(kw: AcEdKeyword | undefined) {
     if (kw && !this._keywords.includes(kw)) {
       throw new Error(
-        'Default keyword must be one of the collection\'s keywords'
+        "Default keyword must be one of the collection's keywords"
       )
     }
     this._defaultKeyword = kw
@@ -275,6 +280,11 @@ export class AcEdKeywordCollection {
 
       // Local name match (what user types)
       if (kw.localName && kw.localName.toLowerCase() === needle) {
+        return true
+      }
+
+      // Alias match (derived from global name capitals)
+      if (kw.alias && kw.alias.toLowerCase() === needle) {
         return true
       }
 

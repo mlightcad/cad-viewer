@@ -83,5 +83,6 @@ const handleClicked = () => {
   cursor: pointer;
   width: v-bind(size);
   height: v-bind(size);
+  color: var(--el-text-color-regular);
 }
 </style>

@@ -33,6 +33,7 @@
         <ml-full-screen-button />
         <ml-point-style-button />
         <ml-osnap-button />
+        <ml-dynamic-input-button />
         <ml-setting-button />
       </el-button-group>
     </template>
@@ -51,6 +52,7 @@ import {
   useLayouts,
   useSettings
 } from '../../composable'
+import MlDynamicInputButton from './MlDynamicInputButton.vue'
 import MlFullScreenButton from './MlFullScreenButton.vue'
 import MlNotificationButton from './MlNotificationButton.vue'
 import MlOsnapButton from './MlOsnapButton.vue'

@@ -1,7 +1,12 @@
 import { AcDbSysVarManager } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
-import { AcEdCommand, AcEdOpenMode, AcEdPromptStatus, AcEdPromptStringOptions } from '../editor'
+import {
+  AcEdCommand,
+  AcEdOpenMode,
+  AcEdPromptStatus,
+  AcEdPromptStringOptions
+} from '../editor'
 import { AcApI18n } from '../i18n'
 
 /**
