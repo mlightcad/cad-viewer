@@ -1,13 +1,18 @@
 <template>
   <el-tooltip :content="tooltip" :hide-after="0">
-    <el-button class="ml-toggle-button" :icon="icon" @click="handleClicked" />
+    <el-button
+      class="ml-toggle-button"
+      :icon="icon"
+      :style="{ color: iconColor }"
+      @click="handleClicked"
+    />
   </el-tooltip>
 </template>
 
 <script lang="ts" setup>
 import { Component, computed, DefineComponent } from 'vue'
 
-type MlIconType = (() => DefineComponent) | Component
+export type MlIconType = (() => DefineComponent) | Component
 
 /**
  * Data to descibe toggle button
@@ -29,6 +34,14 @@ export interface MlToggleButtonData {
    * Tooltip when button is 'off'
    */
   offTooltip: string
+  /**
+   * Icon color when button is 'on'
+   */
+  onColor?: string
+  /**
+   * Icon color when button is 'off'
+   */
+  offColor?: string
 }
 
 /**
@@ -69,6 +82,13 @@ const size = computed(() => {
 
 const tooltip = computed(() => {
   return on.value ? props.data.onTooltip : props.data.offTooltip
+})
+
+const iconColor = computed(() => {
+  if (on.value) {
+    return props.data.onColor ?? 'var(--el-color-primary)'
+  }
+  return props.data.offColor ?? 'var(--el-text-color-regular)'
 })
 
 const handleClicked = () => {

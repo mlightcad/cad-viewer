@@ -1,7 +1,4 @@
 import {
-  acdbHostApplicationServices,
-  AcDbSystemVariables,
-  AcDbSysVarManager,
   AcGeBox2d,
   AcGePoint2dLike,
   AcGePoint3dLike
@@ -186,28 +183,6 @@ export class AcEdInputManager {
     }
   }
 
-  private getSysVarValue(name: string) {
-    const db = acdbHostApplicationServices().workingDatabase
-    return AcDbSysVarManager.instance().getVar(name, db)
-  }
-
-  private isDynamicInputEnabled() {
-    const mode = this.getSysVarValue(AcDbSystemVariables.DYNMODE) as number
-    return mode !== 0
-  }
-
-  private isDynamicPromptEnabled() {
-    return !!this.getSysVarValue(AcDbSystemVariables.DYNPROMPT)
-  }
-
-  private shouldShowDynamicPrompt() {
-    return this.isDynamicInputEnabled() && this.isDynamicPromptEnabled()
-  }
-
-  private allowCommandLineKeywordTyping() {
-    return !this.isDynamicInputEnabled()
-  }
-
   private hasKeywords(options: AcEdPromptOptions<unknown>) {
     const keywords = options.keywords?.toArray() ?? []
     return keywords.length > 0
@@ -303,8 +278,6 @@ export class AcEdInputManager {
     options: AcEdPromptNumericalOptions,
     handler: AcEdNumericalHandler | AcEdAngleHandler
   ): Promise<number> {
-    const showPrompt = this.shouldShowDynamicPrompt()
-    const allowKeywordTyping = this.allowCommandLineKeywordTyping()
     const getDynamicValue = () => {
       return {
         value: 0,
@@ -315,8 +288,6 @@ export class AcEdInputManager {
     return this.makeFloatingInputPromise<number>({
       inputCount: 1,
       promptOptions: options,
-      allowKeywordTyping,
-      showPrompt,
       handler,
       getDynamicValue
     })
@@ -331,10 +302,6 @@ export class AcEdInputManager {
     if (scriptedValue != null) {
       return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
     }
-
-    const dynamicInputEnabled = this.isDynamicInputEnabled()
-    const showPrompt = this.shouldShowDynamicPrompt()
-    const allowKeywordTyping = this.allowCommandLineKeywordTyping()
 
     try {
       // If no base point defined → fall back to typed numeric input
@@ -354,11 +321,8 @@ export class AcEdInputManager {
       }
 
       const value = await this.makeFloatingInputPromise<number>({
-        inputCount: dynamicInputEnabled ? 1 : 0,
+        inputCount: 1,
         promptOptions: options,
-        suppressDisplay: !dynamicInputEnabled,
-        allowKeywordTyping,
-        showPrompt,
         handler,
         getDynamicValue
       })
@@ -386,10 +350,6 @@ export class AcEdInputManager {
       return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
     }
 
-    const dynamicInputEnabled = this.isDynamicInputEnabled()
-    const showPrompt = this.shouldShowDynamicPrompt()
-    const allowKeywordTyping = this.allowCommandLineKeywordTyping()
-
     const getDynamicValue = (pos: AcGePoint2dLike) => {
       const dx = pos.x - this.lastPoint!.x
       const dy = pos.y - this.lastPoint!.y
@@ -403,11 +363,8 @@ export class AcEdInputManager {
 
     try {
       const value = await this.makeFloatingInputPromise<number>({
-        inputCount: dynamicInputEnabled ? 1 : 0,
+        inputCount: 1,
         promptOptions: options,
-        suppressDisplay: !dynamicInputEnabled,
-        allowKeywordTyping,
-        showPrompt,
         handler,
         getDynamicValue
       })
@@ -493,8 +450,6 @@ export class AcEdInputManager {
     }
 
     try {
-      const showPrompt = this.shouldShowDynamicPrompt()
-      const allowKeywordTyping = this.allowCommandLineKeywordTyping()
       const getDynamicValue = () => {
         return {
           value: '',
@@ -506,8 +461,6 @@ export class AcEdInputManager {
       const value = await this.makeFloatingInputPromise<string>({
         inputCount: 1,
         promptOptions: options,
-        allowKeywordTyping,
-        showPrompt,
         handler,
         getDynamicValue
       })
@@ -534,11 +487,7 @@ export class AcEdInputManager {
       return Promise.resolve(scriptedValue)
     }
 
-    const allowKeywordTyping = this.allowCommandLineKeywordTyping()
-    const result = await this._commandLine.getKeywords(
-      options,
-      allowKeywordTyping
-    )
+    const result = await this._commandLine.getKeywords(options, true)
     if (!result) {
       throw new Error('cancelled')
     }
@@ -579,21 +528,15 @@ export class AcEdInputManager {
     try {
       const value = await new Promise<string[]>((resolve, reject) => {
         this.active = true
-        const allowKeywordTyping = this.allowCommandLineKeywordTyping()
-        const keywordSession = this.startKeywordSession(
-          options,
-          allowKeywordTyping
-        )
+        const keywordSession = this.startKeywordSession(options, true)
         if (!keywordSession) {
           this._commandLine.setPrompt(options.message)
         }
 
-        const floatingMessage = this.shouldShowDynamicPrompt()
-          ? new AcEdFloatingMessage(this.view, {
-              parent: this.view.canvas,
-              message: options.message
-            })
-          : undefined
+        const floatingMessage = new AcEdFloatingMessage(this.view, {
+          parent: this.view.canvas,
+          message: options.message
+        })
 
         const selected = new Set<string>()
         let startWcs: AcGePoint2dLike | null = null
@@ -749,17 +692,11 @@ export class AcEdInputManager {
     try {
       const value = await new Promise<string | null>((resolve, reject) => {
         this.active = true
-        const allowKeywordTyping = this.allowCommandLineKeywordTyping()
-        const keywordSession = this.startKeywordSession(
-          options,
-          allowKeywordTyping
-        )
-        const floatingMessage = this.shouldShowDynamicPrompt()
-          ? new AcEdFloatingMessage(this.view, {
-              parent: this.view.canvas,
-              message: options.message
-            })
-          : undefined
+        const keywordSession = this.startKeywordSession(options, true)
+        const floatingMessage = new AcEdFloatingMessage(this.view, {
+          parent: this.view.canvas,
+          message: options.message
+        })
         if (!keywordSession) {
           this._commandLine.setPrompt(options.message)
         }
@@ -939,10 +876,6 @@ export class AcEdInputManager {
       return Promise.resolve(scriptedValue)
     }
 
-    const dynamicInputEnabled = this.isDynamicInputEnabled()
-    const showPrompt = this.shouldShowDynamicPrompt()
-    const allowKeywordTyping = this.allowCommandLineKeywordTyping()
-
     const getDynamicValue = (pos: AcGePoint2dLike) => {
       return {
         value: { x: pos.x, y: pos.y, z: 0 },
@@ -955,12 +888,9 @@ export class AcEdInputManager {
 
     const handler = new AcEdPointHandler(options)
     return this.makeFloatingInputPromise<AcGePoint3dLike>({
-      inputCount: dynamicInputEnabled ? 2 : 0,
+      inputCount: 2,
       promptOptions: options,
       cleanup,
-      suppressDisplay: !dynamicInputEnabled,
-      allowKeywordTyping,
-      showPrompt,
       handler,
       getDynamicValue,
       drawPreview
@@ -1072,9 +1002,7 @@ export class AcEdInputManager {
     disableOSnap?: boolean
     handler: AcEdInputHandler<T>
     cleanup?: () => void
-    allowKeywordTyping?: boolean
-    suppressDisplay?: boolean
-    showPrompt?: boolean
+    allowPrompt?: boolean
     getDynamicValue: AcEdFloatingInputDynamicValueCallback<T>
     drawPreview?: AcEdFloatingInputDrawPreviewCallback
     onCommit?: AcEdFloatingInputCommitCallback<T>
@@ -1093,7 +1021,7 @@ export class AcEdInputManager {
       const promptDefaults = this.resolvePromptDefaults(options.promptOptions)
       const keywordSession = this.startKeywordSession(
         options.promptOptions,
-        options.allowKeywordTyping ?? true
+        true
       )
 
       let basePoint: AcGePoint2dLike | undefined = undefined
@@ -1112,12 +1040,11 @@ export class AcEdInputManager {
       const floatingInput = new AcEdFloatingInput(this.view, {
         parent: this.view.canvas,
         inputCount: options.inputCount,
-        message:
-          options.showPrompt === false ? undefined : promptDefaults.message,
+        message: promptDefaults.message,
         disableOSnap: options.disableOSnap,
         showBaseLineOnly: promptDefaults.showBaseLineOnly,
         basePoint,
-        suppressDisplay: options.suppressDisplay,
+        allowPrompt: options.allowPrompt !== false,
         validate: validate,
         getDynamicValue: options.getDynamicValue,
         drawPreview: (pos: AcGePoint2dLike) => {

@@ -116,10 +116,10 @@ export interface AcEdFloatingInputOptions<T> {
   message?: string
 
   /**
-   * If true, keep dynamic input logic active but suppress UI display.
-   * Useful when dynamic input is disabled but mouse click input should still work.
+   * Whether the prompt label is allowed to be shown at all.
+   * Actual visibility is still controlled by DYNMODE/DYNPROMPT.
    */
-  suppressDisplay?: boolean
+  allowPrompt?: boolean
 
   /**
    * The flag to indicate whether to disable osnap.

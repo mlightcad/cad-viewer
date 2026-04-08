@@ -78,6 +78,11 @@ export class AcEdFloatingInputBox {
     this.input.focus()
   }
 
+  /** Forwards blur() to the underlying element. */
+  blur() {
+    this.input.blur()
+  }
+
   /** Forwards select() to the underlying element. */
   select() {
     this.input.select()

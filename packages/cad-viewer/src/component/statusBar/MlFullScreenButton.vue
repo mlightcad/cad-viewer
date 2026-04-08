@@ -27,6 +27,6 @@ const fullScreenBtnData = computed(() => {
 })
 
 const isFullscreenMode = computed(() => {
-  return !isFullscreen.value
+  return isFullscreen.value
 })
 </script>

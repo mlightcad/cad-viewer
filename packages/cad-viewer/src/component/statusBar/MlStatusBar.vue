@@ -33,7 +33,25 @@
         <ml-full-screen-button />
         <ml-point-style-button />
         <ml-osnap-button />
-        <ml-dynamic-input-button />
+        <ml-sys-var-toggle-button
+          :sys-var-name="AcDbSystemVariables.LWDISPLAY"
+          :on-icon="lineWidth"
+          :off-icon="lineWidth"
+          :on-tooltip="t('main.statusBar.lineWidth.on')"
+          :off-tooltip="t('main.statusBar.lineWidth.off')"
+          on-color="var(--el-color-primary)"
+          off-color="var(--el-text-color-regular)"
+        />
+        <ml-sys-var-toggle-button
+          :sys-var-name="AcDbSystemVariables.DYNMODE"
+          :on-icon="dynamicInput"
+          :off-icon="dynamicInput"
+          :on-tooltip="t('main.statusBar.dynamicInput.on')"
+          :off-tooltip="t('main.statusBar.dynamicInput.off')"
+          on-color="var(--el-color-primary)"
+          off-color="var(--el-text-color-regular)"
+          remember-last-enabled
+        />
         <ml-setting-button />
       </el-button-group>
     </template>
@@ -42,8 +60,12 @@
 
 <script setup lang="ts">
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
-import { acdbHostApplicationServices } from '@mlightcad/data-model'
+import {
+  acdbHostApplicationServices,
+  AcDbSystemVariables
+} from '@mlightcad/data-model'
 import { MlStatusBar } from '@mlightcad/ui-components'
+import { useI18n } from 'vue-i18n'
 
 import {
   LayoutInfo,
@@ -52,7 +74,8 @@ import {
   useLayouts,
   useSettings
 } from '../../composable'
-import MlDynamicInputButton from './MlDynamicInputButton.vue'
+import { dynamicInput, lineWidth } from '../../svg'
+import { MlSysVarToggleButton } from '../common'
 import MlFullScreenButton from './MlFullScreenButton.vue'
 import MlNotificationButton from './MlNotificationButton.vue'
 import MlOsnapButton from './MlOsnapButton.vue'
@@ -71,6 +94,7 @@ const { text: posText } = useCurrentPos(AcApDocManager.instance.curView)
 const layouts = useLayouts(AcApDocManager.instance)
 const features = useSettings()
 const { isMobile } = useIsMobile()
+const { t } = useI18n()
 
 const handleSelectLayout = (layout: LayoutInfo) => {
   acdbHostApplicationServices().layoutManager.setCurrentLayoutBtrId(

@@ -119,16 +119,20 @@ export default {
       tooltip: 'Modify point style'
     },
     fullScreen: {
-      on: 'Turn on full screen mode',
-      off: 'Turn off full screen mode'
+      on: 'Turn off full screen mode',
+      off: 'Turn on full screen mode'
     },
     dynamicInput: {
-      on: 'Turn on dynamic input',
-      off: 'Turn off dynamic input'
+      on: 'Turn off dynamic input',
+      off: 'Turn on dynamic input'
+    },
+    lineWidth: {
+      on: 'Hide line widths',
+      off: 'Show line widths'
     },
     theme: {
-      dark: 'Switch to dark theme',
-      light: 'Switch to light light'
+      dark: 'Switch to light light',
+      light: 'Switch to dark theme'
     },
     warning: {
       font: 'The following fonts are not found!'
