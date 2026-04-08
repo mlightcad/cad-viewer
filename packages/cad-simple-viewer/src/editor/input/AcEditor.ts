@@ -112,6 +112,12 @@ export class AcEditor {
   get isActive() {
     return this._inputManager.isActive
   }
+  /**
+   * Whether the current input session explicitly allows entity selection.
+   */
+  get isEntitySelectionActive() {
+    return this._inputManager.isEntitySelectionActive
+  }
 
   /**
    * Queues scripted command-line inputs for subsequent getXXX prompts.

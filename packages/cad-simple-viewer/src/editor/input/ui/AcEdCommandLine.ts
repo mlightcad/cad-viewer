@@ -41,6 +41,7 @@ export class AcEdCommandLine {
   private autoCompleteIndex: number
   private activeSession?: AcEdKeywordSession
   private resizeObserver?: ResizeObserver
+  private isPromptActive: boolean = false
 
   constructor(container: HTMLElement = document.body) {
     this.container = container
@@ -73,6 +74,7 @@ export class AcEdCommandLine {
   }
 
   setPrompt(message?: string) {
+    this.isPromptActive = true
     this.promptEl.innerHTML = message ?? ''
     this.textInput.placeholder = ''
   }
@@ -84,11 +86,14 @@ export class AcEdCommandLine {
 
   clearPrompt() {
     this.promptEl.innerHTML = ''
+    this.isPromptActive = false
   }
 
   clearInput() {
     this.textInput.value = ''
-    this.textInput.placeholder = this.localize('main.commandLine.placeholder')
+    this.textInput.placeholder = this.isPromptActive
+      ? ''
+      : this.localize('main.commandLine.placeholder')
   }
 
   focusInput() {
@@ -153,6 +158,9 @@ export class AcEdCommandLine {
       'data-placeholder',
       this.localize('main.commandLine.placeholder')
     )
+    if (!this.isPromptActive && !this.textInput.value) {
+      this.textInput.placeholder = this.localize('main.commandLine.placeholder')
+    }
 
     // Refresh button titles
     this.downBtn.title = this.localize('main.commandLine.showHistory')
@@ -588,6 +596,14 @@ export class AcEdCommandLine {
         else this.navigateHistory(1)
         return
       }
+
+      case 'Backspace':
+      case 'Delete': {
+        // Let the input handle deletion, but do not bubble to global handlers
+        // that might delete selected entities.
+        e.stopPropagation()
+        return
+      }
     }
   }
 
@@ -676,6 +692,9 @@ export class AcEdCommandLine {
     onClick: (kw: string) => void
   ) {
     this.promptEl.innerHTML = ''
+    this.isPromptActive = true
+    // Hide default placeholder when showing a prompt/keyword message.
+    this.textInput.placeholder = ''
 
     if (options.message) {
       this.promptEl.append(options.message.trim() + ' ')

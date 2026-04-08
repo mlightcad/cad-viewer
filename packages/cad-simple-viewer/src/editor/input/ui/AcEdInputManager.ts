@@ -88,6 +88,11 @@ export class AcEdInputManager {
    * selection, distance/angle prompt, string prompt, etc.),
    */
   private active: boolean = false
+  /**
+   * True only when the current input session explicitly expects entity selection
+   * (getEntity/getSelection). Used to gate view-level selection behavior.
+   */
+  private entitySelectionActive: boolean = false
 
   /**
    * Construct the manager and attach mousemove listener used for floating input
@@ -118,6 +123,12 @@ export class AcEdInputManager {
    */
   get isActive() {
     return this.active
+  }
+  /**
+   * Whether current input session allows entity selection in the view.
+   */
+  get isEntitySelectionActive() {
+    return this.entitySelectionActive
   }
 
   /**
@@ -528,6 +539,7 @@ export class AcEdInputManager {
     try {
       const value = await new Promise<string[]>((resolve, reject) => {
         this.active = true
+        this.entitySelectionActive = true
         const keywordSession = this.startKeywordSession(options, true)
         if (!keywordSession) {
           this._commandLine.setPrompt(options.message)
@@ -547,6 +559,7 @@ export class AcEdInputManager {
           if (settled) return
           settled = true
           this.active = false
+          this.entitySelectionActive = false
           floatingMessage?.dispose()
           previewEl?.remove()
           keywordSession?.cancel()
@@ -692,6 +705,7 @@ export class AcEdInputManager {
     try {
       const value = await new Promise<string | null>((resolve, reject) => {
         this.active = true
+        this.entitySelectionActive = true
         const keywordSession = this.startKeywordSession(options, true)
         const floatingMessage = new AcEdFloatingMessage(this.view, {
           parent: this.view.canvas,
@@ -705,6 +719,7 @@ export class AcEdInputManager {
           if (settled) return
           settled = true
           this.active = false
+          this.entitySelectionActive = false
           options.jig?.end()
           document.removeEventListener('keydown', keyHandler)
           this.view.canvas.removeEventListener('mousedown', clickHandler)
@@ -1009,6 +1024,7 @@ export class AcEdInputManager {
   }): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.active = true
+      this.entitySelectionActive = false
       let settled = false
       const validate = (raw: AcEdFloatingInputRawData) => {
         const value = options.handler.parse(raw.x, raw.y)
@@ -1075,6 +1091,7 @@ export class AcEdInputManager {
         if (settled) return
         settled = true
         this.active = false
+        this.entitySelectionActive = false
         options.cleanup?.()
         promptDefaults.jig?.end()
         document.removeEventListener('keydown', escHandler)
