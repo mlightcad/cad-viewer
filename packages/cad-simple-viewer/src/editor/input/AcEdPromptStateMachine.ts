@@ -27,7 +27,9 @@ export interface AcEdPromptState<TPromptOptions, TResult> {
    *
    * @param result - The result returned from the editor for this prompt.
    */
-  handleResult(result: TResult): Promise<AcEdPromptStateStep> | AcEdPromptStateStep
+  handleResult(
+    result: TResult
+  ): Promise<AcEdPromptStateStep> | AcEdPromptStateStep
 }
 
 /**

@@ -180,10 +180,10 @@ Legend:
 
 * [x] Single entity selection
 * [x] Highlight selected entities
-* [ ] Window selection
-* [ ] Crossing selection
+* [x] Window selection
+* [x] Crossing selection
 * [ ] Selection filters (by type / layer)
-* [ ] Selection cycling
+* [x] Selection cycling
 
 #### Snapping (OSNAP)
 

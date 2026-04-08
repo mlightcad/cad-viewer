@@ -65,6 +65,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
   /** Stores last confirmed osnap point */
   private lastOsnapPoint?: AcEdOsnapPoint
+  /** Stores last dynamic WCS point used for preview updates */
+  private lastDynamicPoint?: AcGePoint2dLike
 
   /** Callbacks */
   private onCommit?: AcEdFloatingInputCommitCallback<T>
@@ -178,6 +180,9 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.updateDynamicInputDisplay()
     if (!this.suppressDisplay) {
       super.showAt(pos)
+      // Seed preview so modifier toggles can refresh immediately.
+      const wcsPos = this.view.screenToWorld(this.view.viewportToCanvas(pos))
+      this.updateDynamicPreview(wcsPos)
       return
     }
 
@@ -185,6 +190,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.container.style.display = 'none'
     this.setPosition(pos)
     this.parent.addEventListener('mousemove', this.boundOnMouseMove)
+    const wcsPos = this.view.screenToWorld(this.view.viewportToCanvas(pos))
+    this.updateDynamicPreview(wcsPos)
   }
 
   private injectInputCSS() {
@@ -239,17 +246,16 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (!this.visible) return
 
     const wcsPos = this.getPosition(e)
-    const defaults = this.getDynamicValue(wcsPos)
+    this.updateDynamicPreview(wcsPos)
+  }
 
-    this.inputs?.setValue(defaults.raw)
-
-    // Ensure focus stays in input boxes
-    if (this.inputs && !this.inputs.focused && !this.suppressDisplay) {
-      this.inputs.focus()
-    }
-
-    this.rubberBand?.update(wcsPos)
-    this.drawPreview?.(wcsPos)
+  /**
+   * Re-render the current preview using the most recent cursor position.
+   * Useful when modifier keys change without mouse movement.
+   */
+  requestPreviewRefresh() {
+    if (!this.visible || !this.lastDynamicPoint) return
+    this.updateDynamicPreview(this.lastDynamicPoint)
   }
 
   // ---------------------------------------------------------------------------
@@ -264,6 +270,21 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
     this.lastPoint = wcsPos
     this.onCommit?.(defaults.value, wcsPos)
+  }
+
+  private updateDynamicPreview(wcsPos: AcGePoint2dLike) {
+    this.lastDynamicPoint = { x: wcsPos.x, y: wcsPos.y }
+    const defaults = this.getDynamicValue(wcsPos)
+
+    this.inputs?.setValue(defaults.raw)
+
+    // Ensure focus stays in input boxes
+    if (this.inputs && !this.inputs.focused && !this.suppressDisplay) {
+      this.inputs.focus()
+    }
+
+    this.rubberBand?.update(wcsPos)
+    this.drawPreview?.(wcsPos)
   }
 
   // ---------------------------------------------------------------------------
