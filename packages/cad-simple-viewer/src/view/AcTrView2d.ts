@@ -177,12 +177,94 @@ export class AcTrView2d extends AcEdBaseView {
       }
     })
 
-    this.canvas.addEventListener('click', () => {
-      if (this.mode == AcEdViewMode.SELECTION) {
-        if (!this.editor.isActive || this.editor.isEntitySelectionActive) {
-          this.select()
-        }
+    let selectionStartWcs: AcGePoint2dLike | null = null
+    let selectionStartCanvas: AcGePoint2dLike | null = null
+    let selectionPreviewEl: HTMLDivElement | null = null
+
+    const canHandleSelectionGesture = () => {
+      return this.mode === AcEdViewMode.SELECTION && !this.editor.isActive
+    }
+
+    const clearSelectionPreview = () => {
+      selectionPreviewEl?.remove()
+      selectionPreviewEl = null
+    }
+
+    this.canvas.addEventListener('mousedown', e => {
+      if (e.button !== 0) return
+      if (!canHandleSelectionGesture()) return
+
+      selectionStartCanvas = this.viewportToCanvas({
+        x: e.clientX,
+        y: e.clientY
+      })
+      selectionStartWcs = this.screenToWorld(selectionStartCanvas)
+
+      selectionPreviewEl = document.createElement('div')
+      selectionPreviewEl.className = 'ml-jig-preview-rect'
+      this.container.appendChild(selectionPreviewEl)
+    })
+
+    this.canvas.addEventListener('mousemove', e => {
+      if (!selectionStartWcs || !selectionPreviewEl || !selectionStartCanvas) {
+        return
       }
+
+      const curCanvas = this.viewportToCanvas({ x: e.clientX, y: e.clientY })
+      const curWcs = this.screenToWorld(curCanvas)
+
+      const p1 = this.worldToScreen(selectionStartWcs)
+      const p2 = this.worldToScreen(curWcs)
+
+      const left = Math.min(p1.x, p2.x)
+      const top = Math.min(p1.y, p2.y)
+      const width = Math.abs(p1.x - p2.x)
+      const height = Math.abs(p1.y - p2.y)
+
+      const mode = this.getSelectionMode(selectionStartCanvas, curCanvas)
+      const action = this.getSelectionActionFromEvent(e)
+      const style = this.getSelectionPreviewStyle(mode, action)
+
+      Object.assign(selectionPreviewEl.style, {
+        left: `${left}px`,
+        top: `${top}px`,
+        width: `${width}px`,
+        height: `${height}px`,
+        borderStyle: style.borderStyle,
+        background: style.background
+      })
+      selectionPreviewEl.style.setProperty('--line-color', style.lineColor)
+    })
+
+    this.canvas.addEventListener('mouseup', e => {
+      if (!selectionStartWcs || !selectionStartCanvas) return
+
+      const endCanvas = this.viewportToCanvas({
+        x: e.clientX,
+        y: e.clientY
+      })
+      const endWcs = this.screenToWorld(endCanvas)
+      clearSelectionPreview()
+
+      const action = this.getSelectionActionFromEvent(e)
+
+      if (this.isSelectionClick(selectionStartCanvas, endCanvas)) {
+        const picked = this.pick(endWcs)
+        if (picked.length > 0) {
+          this.applySelection([picked[0].id], action)
+        } else if (action === 'replace') {
+          this.selectionSet.clear()
+        }
+      } else {
+        const box = new AcGeBox2d()
+          .expandByPoint(selectionStartWcs)
+          .expandByPoint(endWcs)
+        const mode = this.getSelectionMode(selectionStartCanvas, endCanvas)
+        this.selectByBoxWithMode(box, mode, action)
+      }
+
+      selectionStartWcs = null
+      selectionStartCanvas = null
     })
     // When using OrbitControls in THREE.js, it attaches its own event listeners to the DOM elements,
     // such as the canvas or the entire document. This can interfere with other event listeners you
@@ -542,10 +624,7 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   selectByBox(box: AcGeBox2d) {
-    const idsAdded: Array<AcDbObjectId> = []
-    const results = this._scene.search(box)
-    results.forEach(item => idsAdded.push(item.id))
-    this.selectionSet.add(idsAdded)
+    this.selectByBoxWithMode(box, 'crossing', 'add')
   }
 
   /**
