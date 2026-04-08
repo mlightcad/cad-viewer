@@ -223,9 +223,9 @@ export class AcEdCommandLine {
         align-items: center;
         gap: 6px;
         border-radius: 6px;
-        background: linear-gradient(#ededed, #e0e0e0);
-        border: 1px solid rgba(0, 0, 0, 0.35);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+        background: var(--ml-ui-bg, linear-gradient(#ededed, #e0e0e0));
+        border: 1px solid var(--ml-ui-border, rgba(0, 0, 0, 0.35));
+        box-shadow: var(--ml-ui-shadow, 0 2px 6px rgba(0, 0, 0, 0.25));
         min-width: 300px;
         height: 30px;
       }
@@ -234,9 +234,9 @@ export class AcEdCommandLine {
         display: flex;
         align-items: center;
         gap: 4px;
-        background: rgba(0, 0, 0, 0.06);
+        background: var(--ml-ui-bg, rgba(0, 0, 0, 0.06));
         border-radius: 4px;
-        border: 1px solid rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--ml-ui-border, rgba(0, 0, 0, 0.08));
         height: 100%;
       }
 
@@ -247,7 +247,7 @@ export class AcEdCommandLine {
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        color: #222;
+        color: var(--ml-ui-text, #222);
         font-size: 12px;
         background: transparent;
         cursor: pointer;
@@ -255,7 +255,7 @@ export class AcEdCommandLine {
       }
 
       .ml-cli-close-btn:hover {
-        background: rgba(0,0,0,0.10);
+        background: var(--ml-ui-border, rgba(0, 0, 0, 0.10));
       }
 
       .ml-cli-down,
@@ -270,7 +270,7 @@ export class AcEdCommandLine {
         border: none;
         cursor: pointer;
         font-size: 16px;
-        color: #222;
+        color: var(--ml-ui-text, #222);
         padding: 0;
       }
 
@@ -283,9 +283,9 @@ export class AcEdCommandLine {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(0, 0, 0, 0.06);
+        background: var(--ml-ui-bg, rgba(0, 0, 0, 0.06));
         border-radius: 4px;
-        border: 1px solid rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--ml-ui-border, rgba(0, 0, 0, 0.08));
         height: 100%;
       }
 
@@ -294,7 +294,7 @@ export class AcEdCommandLine {
         align-items: center;
         flex: 1;
         min-width: 0;
-        color: #333;
+        color: var(--ml-ui-text-muted, #333);
         height: 100%; 
       }
 
@@ -326,13 +326,13 @@ export class AcEdCommandLine {
 
         display: flex;
         align-items: center;
-        color: #333;
+        color: var(--ml-ui-text-muted, #333);
       }
 
       .ml-cli-option {
         display: inline-block;
-        background: #f7f7f7;
-        border: 1px solid rgba(0, 0, 0, 0.06);
+        background: var(--ml-ui-bg, #f7f7f7);
+        border: 1px solid var(--ml-ui-border, rgba(0, 0, 0, 0.06));
         padding: 2px 6px;
         border-radius: 3px;
         margin: 0 4px;
@@ -341,7 +341,7 @@ export class AcEdCommandLine {
       }
 
       .ml-cli-option:hover {
-        background: #eaeaea;
+        background: var(--ml-ui-border, #eaeaea);
       }
 
       .ml-cli-cmd-popup {
@@ -351,23 +351,23 @@ export class AcEdCommandLine {
         transform: translate(0, 0);
         max-height: 220px;
         overflow-y: auto;
-        background: #333;
-        border: 1px solid rgba(0, 0, 0, 0.5);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+        background: var(--ml-ui-bg, #333);
+        border: 1px solid var(--ml-ui-border, rgba(0, 0, 0, 0.5));
+        box-shadow: var(--ml-ui-shadow, 0 6px 18px rgba(0, 0, 0, 0.35));
         border-radius: 4px;
         padding: 6px 0;
-        color: #fff;
+        color: var(--ml-ui-text, #fff);
       }
 
       .ml-cli-cmd-popup .item {
         padding: 8px 14px;
         cursor: pointer;
-        color: #fff;
+        color: var(--ml-ui-text, #fff);
         font-size: 14px;
       }
 
       .ml-cli-cmd-popup .item:hover {
-        background: #444;
+        background: var(--ml-ui-border, #444);
       }
 
       .ml-cli-msg-panel {
@@ -377,13 +377,13 @@ export class AcEdCommandLine {
         transform: translate(0, 0);
         max-height: 340px;
         overflow-y: auto;
-        background: #333;
-        border: 1px solid rgba(0, 0, 0, 0.5);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+        background: var(--ml-ui-bg, #333);
+        border: 1px solid var(--ml-ui-border, rgba(0, 0, 0, 0.5));
+        box-shadow: var(--ml-ui-shadow, 0 6px 18px rgba(0, 0, 0, 0.35));
         border-radius: 4px;
         padding: 6px 0;
         font-family: "Microsoft YaHei", Arial, sans-serif;
-        color: #fff;
+        color: var(--ml-ui-text, #fff);
         font-size: 14px;
         white-space: pre-wrap;
         line-height: 1.35;
@@ -391,11 +391,11 @@ export class AcEdCommandLine {
 
       .ml-cli-history-line {
         padding: 4px 6px;
-        color: #fff;
+        color: var(--ml-ui-text, #fff);
       }
 
       .ml-cli-msg-error {
-        color: #ff5555;
+        color: var(--ml-ui-danger, #ff5555);
       }
 
       .ml-cli-wrapper {
@@ -414,7 +414,7 @@ export class AcEdCommandLine {
 
       .ml-cli-cmd-popup::-webkit-scrollbar-thumb,
       .ml-cli-msg-panel::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
+        background: var(--ml-ui-border, rgba(255, 255, 255, 0.2));
         border-radius: 6px;
       }
     `
