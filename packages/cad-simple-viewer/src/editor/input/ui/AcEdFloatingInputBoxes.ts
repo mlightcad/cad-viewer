@@ -44,6 +44,12 @@ export interface AcEdFloatingInputBoxesOptions<T> {
    * Callback invoked on cancellation (Escape or hide()).
    */
   onCancel?: AcEdFloatingInputCancelCallback
+
+  /**
+   * Whether to autofocus/select inputs after mount.
+   * Default: true
+   */
+  autoFocus?: boolean
 }
 
 /**
@@ -113,11 +119,13 @@ export class AcEdFloatingInputBoxes<T> {
     this.onCancel = options.onCancel
 
     // Focus/select after mount
-    setTimeout(() => {
-      if (this.yInput) this.yInput.select()
-      this.xInput.focus()
-      this.xInput.select()
-    }, 0)
+    if (options.autoFocus !== false) {
+      setTimeout(() => {
+        if (this.yInput) this.yInput.select()
+        this.xInput.focus()
+        this.xInput.select()
+      }, 0)
+    }
   }
 
   /** Returns true if user typed in ANY input box */
@@ -133,6 +141,12 @@ export class AcEdFloatingInputBoxes<T> {
   /** Focus on X input */
   focus() {
     this.xInput.focus()
+  }
+
+  /** Blur both inputs */
+  blur() {
+    this.xInput.blur()
+    this.yInput?.blur()
   }
 
   /** Sets text value of X and Y inputs if user doesn't type value */

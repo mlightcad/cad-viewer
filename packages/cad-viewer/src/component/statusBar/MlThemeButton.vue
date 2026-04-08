@@ -1,6 +1,6 @@
 <template>
   <ml-toggle-button
-    :model-value="isDark"
+    :model-value="!isDark"
     :data="themeBtnData"
     @click="toggleDark()"
   />
@@ -21,9 +21,9 @@ const { isDark, toggleDark } = defineProps<{
 const { t } = useI18n()
 
 const themeBtnData = computed(() => ({
-  onIcon: Sunny,
-  offIcon: Moon,
-  onTooltip: t('main.statusBar.theme.light'),
-  offTooltip: t('main.statusBar.theme.dark')
+  onIcon: Moon,
+  offIcon: Sunny,
+  onTooltip: t('main.statusBar.theme.dark'),
+  offTooltip: t('main.statusBar.theme.light')
 }))
 </script>

@@ -7,7 +7,6 @@ import {
 import { AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
 import { AcEdBaseView } from '../../view'
-import { AcEdPreviewJig } from '../AcEdPreviewJig'
 import { AcEdSelectionSet } from '../AcEdSelectionSet'
 import {
   AcEdAngleHandler,
@@ -30,10 +29,13 @@ import {
   AcEdPromptEntityOptions,
   AcEdPromptEntityResult,
   AcEdPromptIntegerOptions,
+  AcEdPromptIntegerResult,
   AcEdPromptKeywordOptions,
   AcEdPromptNumericalOptions,
+  AcEdPromptOptions,
   AcEdPromptPointOptions,
   AcEdPromptPointResult,
+  AcEdPromptResult,
   AcEdPromptSelectionOptions,
   AcEdPromptSelectionResult,
   AcEdPromptStatus,
@@ -49,6 +51,15 @@ import {
   AcEdFloatingInputRawData
 } from './AcEdFloatingInputTypes'
 import { AcEdFloatingMessage } from './AcEdFloatingMessage'
+
+class AcEdKeywordInputError extends Error {
+  readonly keyword: string
+
+  constructor(keyword: string) {
+    super('keyword')
+    this.keyword = keyword
+  }
+}
 
 /**
  * A fully type-safe TypeScript class providing CAD-style interactive user input
@@ -77,6 +88,11 @@ export class AcEdInputManager {
    * selection, distance/angle prompt, string prompt, etc.),
    */
   private active: boolean = false
+  /**
+   * True only when the current input session explicitly expects entity selection
+   * (getEntity/getSelection). Used to gate view-level selection behavior.
+   */
+  private entitySelectionActive: boolean = false
 
   /**
    * Construct the manager and attach mousemove listener used for floating input
@@ -107,6 +123,12 @@ export class AcEdInputManager {
    */
   get isActive() {
     return this.active
+  }
+  /**
+   * Whether current input session allows entity selection in the view.
+   */
+  get isEntitySelectionActive() {
+    return this.entitySelectionActive
   }
 
   /**
@@ -172,6 +194,70 @@ export class AcEdInputManager {
     }
   }
 
+  private hasKeywords(options: AcEdPromptOptions<unknown>) {
+    const keywords = options.keywords?.toArray() ?? []
+    return keywords.length > 0
+  }
+
+  private buildKeywordOptions<T>(
+    options: AcEdPromptOptions<T>
+  ): AcEdPromptKeywordOptions {
+    const keywordOptions = new AcEdPromptKeywordOptions(options.message)
+    keywordOptions.appendKeywordsToMessage = options.appendKeywordsToMessage
+
+    const keywords = options.keywords?.toArray() ?? []
+    keywords.forEach(kw => {
+      const added = keywordOptions.keywords.add(
+        kw.displayName,
+        kw.globalName,
+        kw.localName,
+        kw.enabled,
+        kw.visible
+      )
+      if (options.keywords.default === kw) {
+        keywordOptions.keywords.default = added
+      }
+    })
+
+    return keywordOptions
+  }
+
+  private copyKeywords(
+    source: AcEdPromptOptions<unknown>,
+    target: AcEdPromptOptions<unknown>
+  ) {
+    target.appendKeywordsToMessage = source.appendKeywordsToMessage
+    const keywords = source.keywords?.toArray() ?? []
+    keywords.forEach(kw => {
+      const added = target.keywords.add(
+        kw.displayName,
+        kw.globalName,
+        kw.localName,
+        kw.enabled,
+        kw.visible
+      )
+      if (source.keywords.default === kw) {
+        target.keywords.default = added
+      }
+    })
+  }
+
+  private startKeywordSession(
+    options: AcEdPromptOptions<unknown>,
+    allowTyping: boolean
+  ) {
+    if (!this.hasKeywords(options)) return undefined
+    const keywordOptions = this.buildKeywordOptions(options)
+    return {
+      promise: this._commandLine.getKeywords(keywordOptions, allowTyping),
+      cancel: () => this._commandLine.cancelActiveSession()
+    }
+  }
+
+  private isPromptKeyword(error: unknown): error is AcEdKeywordInputError {
+    return error instanceof AcEdKeywordInputError
+  }
+
   /**
    * Public point input API.
    */
@@ -184,6 +270,11 @@ export class AcEdInputManager {
     } catch (error) {
       if (this.isPromptCancelled(error)) {
         return new AcEdPromptPointResult(AcEdPromptStatus.Cancel)
+      }
+      if (this.isPromptKeyword(error)) {
+        const result = new AcEdPromptPointResult(AcEdPromptStatus.Keyword)
+        result.stringResult = error.keyword
+        return result
       }
       throw error
     }
@@ -206,11 +297,8 @@ export class AcEdInputManager {
     }
 
     return this.makeFloatingInputPromise<number>({
-      message: options.message,
       inputCount: 1,
-      jig: options.jig,
-      showBaseLineOnly: false,
-      useBasePoint: false,
+      promptOptions: options,
       handler,
       getDynamicValue
     })
@@ -244,12 +332,8 @@ export class AcEdInputManager {
       }
 
       const value = await this.makeFloatingInputPromise<number>({
-        message: options.message,
         inputCount: 1,
-        jig: options.jig,
-        showBaseLineOnly: !options.useDashedLine,
-        useBasePoint: true,
-        basePoint: options.basePoint,
+        promptOptions: options,
         handler,
         getDynamicValue
       })
@@ -257,6 +341,11 @@ export class AcEdInputManager {
     } catch (error) {
       if (this.isPromptCancelled(error)) {
         return new AcEdPromptDoubleResult(AcEdPromptStatus.Cancel)
+      }
+      if (this.isPromptKeyword(error)) {
+        const result = new AcEdPromptDoubleResult(AcEdPromptStatus.Keyword)
+        result.stringResult = error.keyword
+        return result
       }
       throw error
     }
@@ -285,12 +374,8 @@ export class AcEdInputManager {
 
     try {
       const value = await this.makeFloatingInputPromise<number>({
-        message: options.message,
         inputCount: 1,
-        jig: options.jig,
-        showBaseLineOnly: !options.useDashedLine,
-        useBasePoint: true,
-        basePoint: options.basePoint,
+        promptOptions: options,
         handler,
         getDynamicValue
       })
@@ -298,6 +383,11 @@ export class AcEdInputManager {
     } catch (error) {
       if (this.isPromptCancelled(error)) {
         return new AcEdPromptDoubleResult(AcEdPromptStatus.Cancel)
+      }
+      if (this.isPromptKeyword(error)) {
+        const result = new AcEdPromptDoubleResult(AcEdPromptStatus.Keyword)
+        result.stringResult = error.keyword
+        return result
       }
       throw error
     }
@@ -320,55 +410,87 @@ export class AcEdInputManager {
       if (this.isPromptCancelled(error)) {
         return new AcEdPromptDoubleResult(AcEdPromptStatus.Cancel)
       }
+      if (this.isPromptKeyword(error)) {
+        const result = new AcEdPromptDoubleResult(AcEdPromptStatus.Keyword)
+        result.stringResult = error.keyword
+        return result
+      }
       throw error
     }
   }
 
   /** Request an integer from the user. */
-  getInteger(options: AcEdPromptIntegerOptions): Promise<number> {
+  async getInteger(
+    options: AcEdPromptIntegerOptions
+  ): Promise<AcEdPromptIntegerResult> {
     const scriptedValue = this.tryGetScriptedNumber(
       new AcEdIntegerHandler(options)
     )
     if (scriptedValue != null) {
-      return Promise.resolve(scriptedValue)
+      return new AcEdPromptIntegerResult(AcEdPromptStatus.OK, scriptedValue)
     }
-    return this.getNumberTyped(options, new AcEdIntegerHandler(options))
+
+    try {
+      const value = await this.getNumberTyped(
+        options,
+        new AcEdIntegerHandler(options)
+      )
+      return new AcEdPromptIntegerResult(AcEdPromptStatus.OK, value)
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptIntegerResult(AcEdPromptStatus.Cancel)
+      }
+      if (this.isPromptKeyword(error)) {
+        const result = new AcEdPromptIntegerResult(AcEdPromptStatus.Keyword)
+        result.stringResult = error.keyword
+        return result
+      }
+      throw error
+    }
   }
 
   /**
    * Prompt the user to type an arbitrary string. Resolved when Enter is pressed.
    */
-  getString(options: AcEdPromptStringOptions): Promise<string> {
+  async getString(options: AcEdPromptStringOptions): Promise<AcEdPromptResult> {
     const scriptedValue = this.tryGetScriptedValue(
       new AcEdStringHandler(options)
     )
     if (scriptedValue != null) {
-      return Promise.resolve(scriptedValue)
+      return new AcEdPromptResult(AcEdPromptStatus.OK, scriptedValue)
     }
 
-    const getDynamicValue = () => {
-      return {
-        value: '',
-        raw: { x: '' }
+    try {
+      const getDynamicValue = () => {
+        return {
+          value: '',
+          raw: { x: '' }
+        }
       }
-    }
 
-    const handler = new AcEdStringHandler(options)
-    return this.makeFloatingInputPromise<string>({
-      message: options.message,
-      inputCount: 1,
-      jig: options.jig,
-      showBaseLineOnly: false,
-      useBasePoint: false,
-      handler,
-      getDynamicValue
-    })
+      const handler = new AcEdStringHandler(options)
+      const value = await this.makeFloatingInputPromise<string>({
+        inputCount: 1,
+        promptOptions: options,
+        handler,
+        getDynamicValue
+      })
+      return new AcEdPromptResult(AcEdPromptStatus.OK, value)
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptResult(AcEdPromptStatus.Cancel)
+      }
+      if (this.isPromptKeyword(error)) {
+        return new AcEdPromptResult(AcEdPromptStatus.Keyword, error.keyword)
+      }
+      throw error
+    }
   }
 
   /**
    * Prompt the user to type a keyword. Resolved when Enter is pressed.
    */
-  getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
+  async getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
     const scriptedValue = this.tryGetScriptedValue(
       new AcEdKeywordHandler(options)
     )
@@ -376,23 +498,11 @@ export class AcEdInputManager {
       return Promise.resolve(scriptedValue)
     }
 
-    const getDynamicValue = () => {
-      return {
-        value: '',
-        raw: { x: '' }
-      }
+    const result = await this._commandLine.getKeywords(options, true)
+    if (!result) {
+      throw new Error('cancelled')
     }
-
-    const handler = new AcEdKeywordHandler(options)
-    return this.makeFloatingInputPromise<string>({
-      message: options.message,
-      inputCount: 1,
-      jig: options.jig,
-      showBaseLineOnly: false,
-      useBasePoint: false,
-      handler,
-      getDynamicValue
-    })
+    return result
   }
 
   /**
@@ -429,7 +539,11 @@ export class AcEdInputManager {
     try {
       const value = await new Promise<string[]>((resolve, reject) => {
         this.active = true
-        this._commandLine.setPrompt(options.message)
+        this.entitySelectionActive = true
+        const keywordSession = this.startKeywordSession(options, true)
+        if (!keywordSession) {
+          this._commandLine.setPrompt(options.message)
+        }
 
         const floatingMessage = new AcEdFloatingMessage(this.view, {
           parent: this.view.canvas,
@@ -440,10 +554,15 @@ export class AcEdInputManager {
         let startWcs: AcGePoint2dLike | null = null
         let previewEl: HTMLDivElement | null = null
 
+        let settled = false
         const cleanup = () => {
+          if (settled) return
+          settled = true
           this.active = false
-          floatingMessage.dispose()
+          this.entitySelectionActive = false
+          floatingMessage?.dispose()
           previewEl?.remove()
+          keywordSession?.cancel()
           this._commandLine.clear()
 
           document.removeEventListener('keydown', keyHandler)
@@ -451,6 +570,17 @@ export class AcEdInputManager {
           this.view.canvas.removeEventListener('mousemove', mouseMove)
           this.view.canvas.removeEventListener('mouseup', mouseUp)
         }
+
+        keywordSession?.promise.then(keyword => {
+          if (settled) return
+          if (!keyword) {
+            cleanup()
+            reject(new Error('cancelled'))
+            return
+          }
+          cleanup()
+          reject(new AcEdKeywordInputError(keyword))
+        })
 
         /** ---------- Keyboard ---------- */
 
@@ -554,6 +684,13 @@ export class AcEdInputManager {
       if (this.isPromptCancelled(error)) {
         return new AcEdPromptSelectionResult(AcEdPromptStatus.Cancel)
       }
+      if (this.isPromptKeyword(error)) {
+        return new AcEdPromptSelectionResult(
+          AcEdPromptStatus.Keyword,
+          undefined,
+          error.keyword
+        )
+      }
       throw error
     }
   }
@@ -568,19 +705,39 @@ export class AcEdInputManager {
     try {
       const value = await new Promise<string | null>((resolve, reject) => {
         this.active = true
+        this.entitySelectionActive = true
+        const keywordSession = this.startKeywordSession(options, true)
         const floatingMessage = new AcEdFloatingMessage(this.view, {
           parent: this.view.canvas,
           message: options.message
         })
-        this._commandLine.setPrompt(options.message)
+        if (!keywordSession) {
+          this._commandLine.setPrompt(options.message)
+        }
+        let settled = false
         const cleanup = () => {
+          if (settled) return
+          settled = true
           this.active = false
+          this.entitySelectionActive = false
           options.jig?.end()
           document.removeEventListener('keydown', keyHandler)
           this.view.canvas.removeEventListener('mousedown', clickHandler)
-          floatingMessage.dispose()
+          floatingMessage?.dispose()
+          keywordSession?.cancel()
           this._commandLine.clear()
         }
+
+        keywordSession?.promise.then(keyword => {
+          if (settled) return
+          if (!keyword) {
+            cleanup()
+            reject(new Error('cancelled'))
+            return
+          }
+          cleanup()
+          reject(new AcEdKeywordInputError(keyword))
+        })
 
         /** Mouse click → try select entity */
         const clickHandler = (e: MouseEvent) => {
@@ -633,6 +790,11 @@ export class AcEdInputManager {
       if (this.isPromptCancelled(error)) {
         return new AcEdPromptEntityResult(AcEdPromptStatus.Cancel)
       }
+      if (this.isPromptKeyword(error)) {
+        const result = new AcEdPromptEntityResult(AcEdPromptStatus.Keyword)
+        result.stringResult = error.keyword
+        return result
+      }
       throw error
     }
   }
@@ -649,11 +811,16 @@ export class AcEdInputManager {
         options.firstCornerMessage ||
         AcApI18n.t('main.inputManager.firstCorner')
       const options1 = new AcEdPromptPointOptions(message1)
+      this.copyKeywords(options, options1)
       options1.useDashedLine = options.useDashedLine
       options1.useBasePoint = options.useBasePoint
       const p1Result = await this.getPoint(options1)
       if (p1Result.status !== AcEdPromptStatus.OK) {
-        return new AcEdPromptBoxResult(p1Result.status)
+        return new AcEdPromptBoxResult(
+          p1Result.status,
+          undefined,
+          p1Result.stringResult
+        )
       }
       const p1 = p1Result.value!
       const cwcsP1 = this.view.worldToScreen(p1)
@@ -687,6 +854,7 @@ export class AcEdInputManager {
         options.secondCornerMessage ||
         AcApI18n.t('main.inputManager.secondCorner')
       const options2 = new AcEdPromptPointOptions(message2)
+      this.copyKeywords(options, options2)
       options2.useDashedLine = options.useDashedLine
       options2.useBasePoint = options.useBasePoint
       const p2 = await this.getPointInternal(options2, cleanup, drawPreview)
@@ -697,6 +865,13 @@ export class AcEdInputManager {
       if (this.isPromptCancelled(error)) {
         return new AcEdPromptBoxResult(AcEdPromptStatus.Cancel)
       }
+      if (this.isPromptKeyword(error)) {
+        return new AcEdPromptBoxResult(
+          AcEdPromptStatus.Keyword,
+          undefined,
+          error.keyword
+        )
+      }
       throw error
     }
   }
@@ -705,7 +880,7 @@ export class AcEdInputManager {
    * Shared point input logic used by getPoint() and getBox(). Accepts "x,y"
    * typed input OR mouse click.
    */
-  private getPointInternal(
+  private async getPointInternal(
     options: AcEdPromptPointOptions,
     cleanup?: () => void,
     drawPreview?: AcEdFloatingInputDrawPreviewCallback
@@ -728,12 +903,8 @@ export class AcEdInputManager {
 
     const handler = new AcEdPointHandler(options)
     return this.makeFloatingInputPromise<AcGePoint3dLike>({
-      message: options.message,
       inputCount: 2,
-      jig: options.jig,
-      showBaseLineOnly: !options.useDashedLine,
-      useBasePoint: options.useBasePoint,
-      basePoint: options.basePoint,
+      promptOptions: options,
       cleanup,
       handler,
       getDynamicValue,
@@ -819,22 +990,42 @@ export class AcEdInputManager {
    * including handling the Escape key to cancel, resolving with user-provided
    * values, and guaranteeing cleanup of UI elements and event handlers.
    */
-  private makeFloatingInputPromise<T>(options: {
-    message?: string
+  private resolvePromptDefaults<T>(options: AcEdPromptOptions<T>) {
+    const hasBasePoint = 'basePoint' in options
+    const hasUseBasePoint = 'useBasePoint' in options
+    const hasUseDashedLine = 'useDashedLine' in options
+
+    const basePoint =
+      hasBasePoint && options.basePoint
+        ? (options.basePoint as unknown as AcGePoint2dLike)
+        : undefined
+    const useBasePoint = hasUseBasePoint ? options.useBasePoint : false
+    const showBaseLineOnly = hasUseDashedLine ? !options.useDashedLine : false
+
+    return {
+      message: options.message,
+      jig: options.jig,
+      basePoint,
+      useBasePoint,
+      showBaseLineOnly
+    }
+  }
+
+  private async makeFloatingInputPromise<T>(options: {
+    promptOptions: AcEdPromptOptions<T>
     inputCount?: AcEdFloatingInputBoxCount
-    jig?: AcEdPreviewJig<T>
-    showBaseLineOnly?: boolean
-    useBasePoint?: boolean
-    basePoint?: AcGePoint2dLike
     disableOSnap?: boolean
     handler: AcEdInputHandler<T>
     cleanup?: () => void
+    allowPrompt?: boolean
     getDynamicValue: AcEdFloatingInputDynamicValueCallback<T>
     drawPreview?: AcEdFloatingInputDrawPreviewCallback
     onCommit?: AcEdFloatingInputCommitCallback<T>
   }): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.active = true
+      this.entitySelectionActive = false
+      let settled = false
       const validate = (raw: AcEdFloatingInputRawData) => {
         const value = options.handler.parse(raw.x, raw.y)
         return {
@@ -843,30 +1034,40 @@ export class AcEdInputManager {
         }
       }
 
+      const promptDefaults = this.resolvePromptDefaults(options.promptOptions)
+      const keywordSession = this.startKeywordSession(
+        options.promptOptions,
+        true
+      )
+
       let basePoint: AcGePoint2dLike | undefined = undefined
-      if (options.useBasePoint) {
-        if (options.basePoint) {
-          basePoint = options.basePoint
+      if (promptDefaults.useBasePoint) {
+        if (promptDefaults.basePoint) {
+          basePoint = promptDefaults.basePoint
         } else if (this.lastPoint) {
           basePoint = { x: this.lastPoint.x, y: this.lastPoint.y }
         }
       }
 
-      this._commandLine.setPrompt(options.message)
+      const commandLineMessage = promptDefaults.message
+      if (!keywordSession) {
+        this._commandLine.setPrompt(commandLineMessage)
+      }
       const floatingInput = new AcEdFloatingInput(this.view, {
         parent: this.view.canvas,
         inputCount: options.inputCount,
-        message: options.message,
+        message: promptDefaults.message,
         disableOSnap: options.disableOSnap,
-        showBaseLineOnly: options.showBaseLineOnly,
+        showBaseLineOnly: promptDefaults.showBaseLineOnly,
         basePoint,
+        allowPrompt: options.allowPrompt !== false,
         validate: validate,
         getDynamicValue: options.getDynamicValue,
         drawPreview: (pos: AcGePoint2dLike) => {
-          if (options.jig) {
+          if (promptDefaults.jig) {
             const defaults = options.getDynamicValue(pos)
-            options.jig.update(defaults.value)
-            options.jig.render()
+            promptDefaults.jig.update(defaults.value)
+            promptDefaults.jig.render()
           }
           options.drawPreview?.(pos)
         },
@@ -887,11 +1088,15 @@ export class AcEdInputManager {
         onCancel: () => rejector()
       })
       const cleanup = () => {
+        if (settled) return
+        settled = true
         this.active = false
+        this.entitySelectionActive = false
         options.cleanup?.()
-        options.jig?.end()
+        promptDefaults.jig?.end()
         document.removeEventListener('keydown', escHandler)
         floatingInput.dispose()
+        keywordSession?.cancel()
         this._commandLine.clear()
       }
 
@@ -900,9 +1105,13 @@ export class AcEdInputManager {
         resolve(value)
       }
 
-      const rejector = () => {
+      const rejector = (err?: Error) => {
         cleanup()
-        reject(new Error('cancelled'))
+        reject(err ?? new Error('cancelled'))
+      }
+
+      const keywordRejector = (keyword: string) => {
+        rejector(new AcEdKeywordInputError(keyword))
       }
 
       const escHandler = (e: KeyboardEvent) => {
@@ -913,6 +1122,15 @@ export class AcEdInputManager {
       document.addEventListener('keydown', escHandler)
       // showAt() expects viewport coordinates; curMousePos is canvas-local.
       floatingInput.showAt(this.view.canvasToViewport(this.view.curMousePos))
+
+      keywordSession?.promise.then(keyword => {
+        if (settled) return
+        if (!keyword) {
+          rejector()
+          return
+        }
+        keywordRejector(keyword)
+      })
     })
   }
 }

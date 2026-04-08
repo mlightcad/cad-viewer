@@ -115,6 +115,14 @@ export default {
       on: '切换到全屏模式',
       off: '退出全屏模式'
     },
+    dynamicInput: {
+      on: '打开动态输入',
+      off: '关闭动态输入'
+    },
+    lineWidth: {
+      on: '隐藏线宽',
+      off: '显示线宽'
+    },
     theme: {
       dark: '切换到暗黑主题',
       light: '切换到明亮主题'

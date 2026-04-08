@@ -1,4 +1,9 @@
-import { AcGePoint2dLike } from '@mlightcad/data-model'
+import {
+  acdbHostApplicationServices,
+  AcDbSystemVariables,
+  AcDbSysVarManager,
+  AcGePoint2dLike
+} from '@mlightcad/data-model'
 
 import { AcEdBaseView } from '../../view'
 
@@ -71,6 +76,18 @@ export class AcEdFloatingMessage {
   /** Cached event handler: mouse move */
   protected boundOnMouseMove: (e: MouseEvent) => void
 
+  /** Whether cursor is inside parent */
+  private isHovering = false
+
+  /** Whether prompt display is allowed at all */
+  protected allowPrompt: boolean
+
+  /** Cached sysvar handler */
+  private boundOnSysVarChanged: (args: {
+    name: string
+    database: unknown
+  }) => void
+
   /**
    * Constructs a floating message widget.
    *
@@ -83,6 +100,7 @@ export class AcEdFloatingMessage {
     options: {
       parent?: HTMLElement
       message?: string
+      allowPrompt?: boolean
     }
   ) {
     this.view = view
@@ -101,10 +119,16 @@ export class AcEdFloatingMessage {
     this.container = document.createElement('div')
     this.container.className = 'ml-floating-input'
 
+    this.allowPrompt = options.allowPrompt !== false
+
     // Create message label
+    const message = options.message ?? ''
     this.label = document.createElement('span')
     this.label.className = 'ml-floating-input-label'
-    this.label.textContent = options.message ?? ''
+    this.label.textContent = message
+    if (!message.trim()) {
+      this.label.style.display = 'none'
+    }
     this.container.appendChild(this.label)
 
     // Mount inside view host so UI is constrained to the view canvas area.
@@ -120,6 +144,20 @@ export class AcEdFloatingMessage {
     // - Hide message when mouse leaves parent
     this.parent.addEventListener('mouseenter', this.boundOnMouseEnter)
     this.parent.addEventListener('mouseleave', this.boundOnMouseLeave)
+
+    this.boundOnSysVarChanged = args => {
+      const name = args.name?.toLowerCase()
+      if (
+        name === AcDbSystemVariables.DYNMODE.toLowerCase() ||
+        name === AcDbSystemVariables.DYNPROMPT.toLowerCase()
+      ) {
+        this.updateDynamicDisplay()
+      }
+    }
+    AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
+      this.boundOnSysVarChanged
+    )
+    this.updateDynamicDisplay()
 
     this.injectCSS()
   }
@@ -169,6 +207,7 @@ export class AcEdFloatingMessage {
    */
   showAt(pos: AcGePoint2dLike) {
     if (this.disposed) return
+    if (!this.shouldShowPrompt()) return
 
     this.visible = true
     this.container.style.display = 'flex'
@@ -203,6 +242,9 @@ export class AcEdFloatingMessage {
     this.hide()
     this.parent.removeEventListener('mouseenter', this.boundOnMouseEnter)
     this.parent.removeEventListener('mouseleave', this.boundOnMouseLeave)
+    AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
+      this.boundOnSysVarChanged
+    )
     this.container.remove()
   }
 
@@ -239,6 +281,7 @@ export class AcEdFloatingMessage {
    * Shows the floating message at the current cursor position.
    */
   protected handleMouseEnter(e: MouseEvent) {
+    this.isHovering = true
     this.showAt(e)
   }
 
@@ -247,6 +290,7 @@ export class AcEdFloatingMessage {
    * Hides the floating message.
    */
   protected handleMouseLeave() {
+    this.isHovering = false
     this.hide()
   }
 
@@ -258,5 +302,43 @@ export class AcEdFloatingMessage {
   protected handleMouseMove(e: MouseEvent) {
     if (!this.visible) return
     this.setPosition(e)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dynamic Prompt Settings
+  // ---------------------------------------------------------------------------
+
+  protected getSysVarValue(name: string) {
+    const db = acdbHostApplicationServices().workingDatabase
+    return AcDbSysVarManager.instance().getVar(name, db)
+  }
+
+  protected isDynamicInputEnabled() {
+    const mode = this.getSysVarValue(AcDbSystemVariables.DYNMODE) as number
+    return mode !== 0
+  }
+
+  protected isDynamicPromptEnabled() {
+    return !!this.getSysVarValue(AcDbSystemVariables.DYNPROMPT)
+  }
+
+  private shouldShowPrompt() {
+    const hasMessage = !!this.label.textContent?.trim()
+    if (!hasMessage) return false
+    if (!this.allowPrompt) return false
+    if (!this.isDynamicInputEnabled()) return false
+    if (!this.isDynamicPromptEnabled()) return false
+    return true
+  }
+
+  private updateDynamicDisplay() {
+    if (!this.shouldShowPrompt()) {
+      this.hide()
+      return
+    }
+
+    if (this.isHovering) {
+      this.showAt(this.view.canvasToViewport(this.view.curMousePos))
+    }
   }
 }

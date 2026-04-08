@@ -43,7 +43,51 @@ export default {
   },
   polyline: {
     firstPoint: '指定第一个点：',
-    nextPoint: '指定下一个点（或按 Enter 完成）：'
+    nextPoint: '指定下一个点（或按 Enter 完成）：',
+    nextPointWithOptions: '请指定下一个点或',
+    nextPointWithArcOptions: '请指定下一个点或',
+    keywords: {
+      arc: {
+        display: '圆弧(A)',
+        local: '圆弧',
+        global: 'Arc'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      line: {
+        display: '直线(L)',
+        local: '直线',
+        global: 'Line'
+      },
+      angle: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      },
+      center: {
+        display: '圆心(C)',
+        local: '圆心',
+        global: 'Center'
+      },
+      secondPoint: {
+        display: '第二点(P)',
+        local: '第二点',
+        global: 'SecondPoint'
+      },
+      radius: {
+        display: '半径(R)',
+        local: '半径',
+        global: 'Radius'
+      }
+    },
+    arcAngle: '指定弧角度：',
+    arcCenter: '指定圆心：',
+    arcSecondPoint: '指定弧上的第二点：',
+    arcEndPoint: '指定弧的终点：',
+    arcRadius: '指定弧半径：'
   },
   spline: {
     firstPoint: '指定第一个点：',

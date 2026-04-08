@@ -116,6 +116,12 @@ export interface AcEdFloatingInputOptions<T> {
   message?: string
 
   /**
+   * Whether the prompt label is allowed to be shown at all.
+   * Actual visibility is still controlled by DYNMODE/DYNPROMPT.
+   */
+  allowPrompt?: boolean
+
+  /**
    * The flag to indicate whether to disable osnap.
    */
   disableOSnap?: boolean

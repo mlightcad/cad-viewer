@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
+  <g>
+    <rect x="1" y="1" width="20" height="20" rx="2" fill="currentColor" fill-opacity="0.15"></rect>
+    <path d="M12.0415001,7.9299836L7.9299836,7.9299836L7.9299836,12.0415001L7.1087666,12.0415001L7.1087666,7.9299836L3,7.9299836L3,7.1087666L7.1087666,7.1087666L7.1087666,3L7.9299836,3L7.9299836,7.1087666L12.0415001,7.1087666L12.0415001,7.9299836ZM11,11L11,19L19,19L19,11L11,11ZM12,12L12,13.25L18,13.25L18,12L12,12ZM12,14.25L12,15.75L18,15.75L18,14.25L12,14.25ZM18,18L18,16.75L12,16.75L12,18L18,18Z"
+          fill="currentColor" fill-rule="evenodd" fill-opacity="1"></path>
+    <rect x="0.5" y="0.5" width="21" height="21" rx="2.5" stroke="currentColor" fill="none" stroke-width="1"></rect>
+  </g>
+</svg>

@@ -43,7 +43,51 @@ export default {
   },
   polyline: {
     firstPoint: 'Specify the first point:',
-    nextPoint: 'Specify the next point (or press Enter to finish):'
+    nextPoint: 'Specify the next point (or press Enter to finish):',
+    nextPointWithOptions: 'Specify next point or',
+    nextPointWithArcOptions: 'Specify next point or',
+    keywords: {
+      arc: {
+        display: 'Arc(A)',
+        local: 'Arc',
+        global: 'Arc'
+      },
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
+      },
+      line: {
+        display: 'Line(L)',
+        local: 'Line',
+        global: 'Line'
+      },
+      angle: {
+        display: 'Angle(A)',
+        local: 'Angle',
+        global: 'Angle'
+      },
+      center: {
+        display: 'Center(C)',
+        local: 'Center',
+        global: 'Center'
+      },
+      secondPoint: {
+        display: 'Second point(P)',
+        local: 'Second point',
+        global: 'SecondPoint'
+      },
+      radius: {
+        display: 'Radius(R)',
+        local: 'Radius',
+        global: 'Radius'
+      }
+    },
+    arcAngle: 'Specify arc angle:',
+    arcCenter: 'Specify center point:',
+    arcSecondPoint: 'Specify second point on arc:',
+    arcEndPoint: 'Specify arc end point:',
+    arcRadius: 'Specify arc radius:'
   },
   spline: {
     firstPoint: 'Specify the first point:',

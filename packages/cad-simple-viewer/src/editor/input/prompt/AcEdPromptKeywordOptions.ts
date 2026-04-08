@@ -12,8 +12,8 @@ export class AcEdPromptKeywordOptions extends AcEdPromptOptions<string> {
    * Constructs a new `AcEdPromptKeywordOptions` with a given prompt message.
    * @param message - The message shown to the user when prompting for a number.
    */
-  constructor(message: string) {
-    super(message)
+  constructor(message: string, globalKeywords?: string) {
+    super(message, globalKeywords)
   }
 
   /**

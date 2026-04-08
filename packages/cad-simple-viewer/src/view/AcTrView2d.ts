@@ -179,7 +179,9 @@ export class AcTrView2d extends AcEdBaseView {
 
     this.canvas.addEventListener('click', () => {
       if (this.mode == AcEdViewMode.SELECTION) {
-        this.select()
+        if (!this.editor.isActive || this.editor.isEntitySelectionActive) {
+          this.select()
+        }
       }
     })
     // When using OrbitControls in THREE.js, it attaches its own event listeners to the DOM elements,

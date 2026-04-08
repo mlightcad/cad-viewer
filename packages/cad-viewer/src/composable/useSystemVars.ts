@@ -8,11 +8,15 @@ import {
 import { reactive } from 'vue'
 
 export const COLOR_THEME_SYSVAR_NAME = AcDbSystemVariables.COLORTHEME
+export const DYNAMIC_MODE_SYSVAR_NAME = AcDbSystemVariables.DYNMODE
+export const LINEWIDTH_DISPLAY_SYSVAR_NAME = AcDbSystemVariables.LWDISPLAY
 
 export interface SystemVariables {
   pdmode?: number
   pdsize?: number
   colortheme?: AcDbColorTheme
+  dynmode?: number
+  lwdisplay?: number
 }
 
 function getDatabaseSysVarValue(database: AcDbDatabase, name: string): unknown {
@@ -53,6 +57,20 @@ export function getColorThemeFromDatabase(
   )
 }
 
+export function normalizeDynamicInput(value: unknown): number {
+  const normalized = Number(value)
+  if (Number.isNaN(normalized)) return 3
+
+  return Math.min(3, Math.max(0, Math.trunc(normalized)))
+}
+
+export function normalizeLineWidthDisplay(value: unknown): number {
+  const normalized = Number(value)
+  if (Number.isNaN(normalized)) return 1
+
+  return normalized === 0 ? 0 : 1
+}
+
 export function setColorThemeForDatabase(
   database: AcDbDatabase,
   theme: AcDbColorTheme
@@ -72,6 +90,12 @@ export function useSystemVars(editor: AcApDocManager) {
     reactiveSystemVars.pdmode = doc.pdmode
     reactiveSystemVars.pdsize = doc.pdsize
     reactiveSystemVars.colortheme = getColorThemeFromDatabase(doc)
+    reactiveSystemVars.dynmode = AcDbSysVarManager.instance().getDefaultValue(
+      DYNAMIC_MODE_SYSVAR_NAME
+    ) as number
+    reactiveSystemVars.lwdisplay = AcDbSysVarManager.instance().getDefaultValue(
+      LINEWIDTH_DISPLAY_SYSVAR_NAME
+    ) as number
   }
   reset(doc.database)
 
@@ -79,6 +103,16 @@ export function useSystemVars(editor: AcApDocManager) {
     const name = args.name.toLowerCase()
     if (name === COLOR_THEME_SYSVAR_NAME.toLowerCase()) {
       reactiveSystemVars.colortheme = normalizeColorTheme(args.newVal)
+      return
+    }
+
+    if (name === DYNAMIC_MODE_SYSVAR_NAME.toLowerCase()) {
+      reactiveSystemVars.dynmode = normalizeDynamicInput(args.newVal)
+      return
+    }
+
+    if (name === LINEWIDTH_DISPLAY_SYSVAR_NAME.toLowerCase()) {
+      reactiveSystemVars.lwdisplay = normalizeLineWidthDisplay(args.newVal)
       return
     }
 

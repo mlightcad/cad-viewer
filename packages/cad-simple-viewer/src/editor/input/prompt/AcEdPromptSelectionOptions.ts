@@ -8,8 +8,8 @@ export class AcEdPromptSelectionOptions extends AcEdPromptOptions<string> {
   /** Whether to force single object selection only */
   private _singleOnly = false
 
-  constructor(message: string) {
-    super(message)
+  constructor(message: string, globalKeywords?: string) {
+    super(message, globalKeywords)
   }
 
   /**

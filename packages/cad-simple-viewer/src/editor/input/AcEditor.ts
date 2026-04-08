@@ -8,12 +8,14 @@ import {
   AcEdPromptBoxOptions,
   AcEdPromptBoxResult,
   AcEdPromptDistanceOptions,
+  AcEdPromptDoubleOptions,
   AcEdPromptDoubleResult,
   AcEdPromptEntityOptions,
   AcEdPromptEntityResult,
   AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
   AcEdPromptPointResult,
+  AcEdPromptResult,
   AcEdPromptSelectionOptions,
   AcEdPromptSelectionResult,
   AcEdPromptStringOptions
@@ -109,6 +111,12 @@ export class AcEditor {
    */
   get isActive() {
     return this._inputManager.isActive
+  }
+  /**
+   * Whether the current input session explicitly allows entity selection.
+   */
+  get isEntitySelectionActive() {
+    return this._inputManager.isEntitySelectionActive
   }
 
   /**
@@ -258,11 +266,22 @@ export class AcEditor {
   }
 
   /**
+   * Prompts the user to input a double value.
+   *
+   * @returns Promise that resolves to the input double value.
+   */
+  async getDouble(
+    options: AcEdPromptDoubleOptions
+  ): Promise<AcEdPromptDoubleResult> {
+    return await this._inputManager.getDouble(options)
+  }
+
+  /**
    * Prompts the user to input a string.
    *
    * @returns Promise that resolves to the input one string.
    */
-  async getString(options: AcEdPromptStringOptions): Promise<string> {
+  async getString(options: AcEdPromptStringOptions): Promise<AcEdPromptResult> {
     return await this._inputManager.getString(options)
   }
 
