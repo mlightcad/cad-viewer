@@ -1,6 +1,7 @@
 export * from './AcEdCursorManager'
 export * from './AcEditor'
 export * from './AcEdPreviewJig'
+export * from './AcEdPromptStateMachine'
 export * from './AcEdSelectionSet'
 export * from './marker'
 export * from './prompt'

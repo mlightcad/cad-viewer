@@ -57,6 +57,11 @@ export default {
         local: 'Undo',
         global: 'Undo'
       },
+      close: {
+        display: 'Close(C)',
+        local: 'Close',
+        global: 'Close'
+      },
       line: {
         display: 'Line(L)',
         local: 'Line',
