@@ -115,6 +115,20 @@ export enum AcEdViewMode {
 }
 
 /**
+ * Selection box interaction mode.
+ */
+export type AcEdSelectionMode = 'window' | 'crossing'
+
+/**
+ * Selection modification action.
+ *
+ * - replace: replace current selection with new ids
+ * - add: add ids to current selection
+ * - remove: remove ids from current selection
+ */
+export type AcEdSelectionAction = 'replace' | 'add' | 'remove'
+
+/**
  * Represents missed data when rendering entities in the drawing
  */
 export interface AcEdMissedData {
@@ -624,6 +638,123 @@ export abstract class AcEdBaseView {
    */
   setCursor(cursorType: AcEdCorsorType) {
     this._editor.setCursor(cursorType)
+  }
+
+  /**
+   * Returns selection mode based on drag direction in canvas coordinates.
+   * Left-to-right = window selection, right-to-left = crossing selection.
+   */
+  getSelectionMode(
+    startCanvas: AcGePoint2dLike,
+    endCanvas: AcGePoint2dLike
+  ): AcEdSelectionMode {
+    return endCanvas.x >= startCanvas.x ? 'window' : 'crossing'
+  }
+
+  /**
+   * Returns the selection action based on modifier keys.
+   * Shift: remove, Ctrl/Cmd: add, default: replace.
+   */
+  getSelectionActionFromEvent(
+    e: MouseEvent,
+    defaultAction: AcEdSelectionAction = 'replace'
+  ): AcEdSelectionAction {
+    if (e.shiftKey) return 'remove'
+    if (e.ctrlKey || e.metaKey) return 'add'
+    return defaultAction
+  }
+
+  /**
+   * Determine whether a drag is effectively a click.
+   */
+  isSelectionClick(
+    startCanvas: AcGePoint2dLike,
+    endCanvas: AcGePoint2dLike,
+    threshold: number = 2
+  ) {
+    const dx = endCanvas.x - startCanvas.x
+    const dy = endCanvas.y - startCanvas.y
+    return Math.hypot(dx, dy) < threshold
+  }
+
+  /**
+   * Returns preview styles for selection rectangle.
+   */
+  getSelectionPreviewStyle(
+    mode: AcEdSelectionMode,
+    action: AcEdSelectionAction
+  ) {
+    const windowColor = '#00ff5a'
+    const crossingColor = '#00d1ff'
+    const removeColor = '#ff4d4f'
+    const lineColor =
+      action === 'remove'
+        ? removeColor
+        : mode === 'window'
+          ? windowColor
+          : crossingColor
+    const background =
+      action === 'remove'
+        ? 'rgba(255, 77, 79, 0.08)'
+        : mode === 'window'
+          ? 'rgba(0, 255, 90, 0.06)'
+          : 'rgba(0, 209, 255, 0.06)'
+    const borderStyle = mode === 'window' ? 'solid' : 'dashed'
+    return { borderStyle, lineColor, background }
+  }
+
+  /**
+   * Applies selection based on action.
+   */
+  applySelection(ids: AcDbObjectId[], action: AcEdSelectionAction) {
+    if (action === 'replace') {
+      this.selectionSet.clear()
+      const unique = ids.filter(id => !this.selectionSet.has(id))
+      if (unique.length > 0) this.selectionSet.add(unique)
+      return
+    }
+
+    if (ids.length === 0) return
+
+    if (action === 'add') {
+      const unique = ids.filter(id => !this.selectionSet.has(id))
+      if (unique.length > 0) this.selectionSet.add(unique)
+    } else {
+      const existing = ids.filter(id => this.selectionSet.has(id))
+      if (existing.length > 0) this.selectionSet.delete(existing)
+    }
+  }
+
+  /**
+   * Select entities by box with window/crossing behavior.
+   */
+  selectByBoxWithMode(
+    box: AcGeBox2d,
+    mode: AcEdSelectionMode,
+    action: AcEdSelectionAction = 'add'
+  ) {
+    const ids = this.collectSelectionIdsByBox(box, mode)
+    this.applySelection(ids, action)
+  }
+
+  /**
+   * Collects ids using window or crossing selection rules.
+   */
+  protected collectSelectionIdsByBox(box: AcGeBox2d, mode: AcEdSelectionMode) {
+    const results = this.search(box)
+    const ids: AcDbObjectId[] = []
+    results.forEach(item => {
+      if (
+        mode === 'crossing' ||
+        (item.minX >= box.min.x &&
+          item.maxX <= box.max.x &&
+          item.minY >= box.min.y &&
+          item.maxY <= box.max.y)
+      ) {
+        ids.push(item.id)
+      }
+    })
+    return ids
   }
 
   /**

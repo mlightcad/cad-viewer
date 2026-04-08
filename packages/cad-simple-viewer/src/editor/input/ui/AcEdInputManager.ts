@@ -552,6 +552,7 @@ export class AcEdInputManager {
 
         const selected = new Set<string>()
         let startWcs: AcGePoint2dLike | null = null
+        let startCanvas: AcGePoint2dLike | null = null
         let previewEl: HTMLDivElement | null = null
 
         let settled = false
@@ -600,9 +601,11 @@ export class AcEdInputManager {
         /** ---------- Mouse ---------- */
 
         const mouseDown = (e: MouseEvent) => {
-          startWcs = this.view.screenToWorld(
-            this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
-          )
+          startCanvas = this.view.viewportToCanvas({
+            x: e.clientX,
+            y: e.clientY
+          })
+          startWcs = this.view.screenToWorld(startCanvas)
 
           previewEl = document.createElement('div')
           previewEl.className = 'ml-jig-preview-rect'
@@ -610,11 +613,15 @@ export class AcEdInputManager {
         }
 
         const mouseMove = (e: MouseEvent) => {
-          if (!startWcs || !previewEl) return
+          if (!startWcs || !previewEl || !startCanvas) return
 
           const curWcs = this.view.screenToWorld(
             this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
           )
+          const curCanvas = this.view.viewportToCanvas({
+            x: e.clientX,
+            y: e.clientY
+          })
           const p1 = this.view.worldToScreen(startWcs)
           const p2 = this.view.worldToScreen(curWcs)
 
@@ -622,54 +629,68 @@ export class AcEdInputManager {
           const top = Math.min(p1.y, p2.y)
           const width = Math.abs(p1.x - p2.x)
           const height = Math.abs(p1.y - p2.y)
+          const mode = this.view.getSelectionMode(startCanvas, curCanvas)
+          const action = this.view.getSelectionActionFromEvent(e, 'add')
+          const style = this.view.getSelectionPreviewStyle(mode, action)
 
           Object.assign(previewEl.style, {
             left: `${left}px`,
             top: `${top}px`,
             width: `${width}px`,
-            height: `${height}px`
+            height: `${height}px`,
+            borderStyle: style.borderStyle,
+            background: style.background
           })
+          previewEl.style.setProperty('--line-color', style.lineColor)
         }
 
         const mouseUp = (e: MouseEvent) => {
-          if (!startWcs) return
+          if (!startWcs || !startCanvas) return
 
           const endWcs = this.view.screenToWorld(
             this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
           )
+          const endCanvas = this.view.viewportToCanvas({
+            x: e.clientX,
+            y: e.clientY
+          })
           previewEl?.remove()
           previewEl = null
 
           // Click selection
-          const dist = Math.hypot(endWcs.x - startWcs.x, endWcs.y - startWcs.y)
+          const action = this.view.getSelectionActionFromEvent(e, 'add')
 
-          if (dist < 2) {
+          if (this.view.isSelectionClick(startCanvas, endCanvas)) {
             const picked = this.view.pick(endWcs)
             if (picked.length > 0) {
-              selected.add(picked[0].id)
-              if (options.singleOnly) {
-                cleanup()
-                resolve([...selected])
-              }
+              this.view.applySelection([picked[0].id], action)
+            } else if (action === 'replace') {
+              this.view.selectionSet.clear()
             }
           } else {
             // Box selection
             const box = new AcGeBox2d()
               .expandByPoint(startWcs)
               .expandByPoint(endWcs)
+            const mode = this.view.getSelectionMode(startCanvas, endCanvas)
+            this.view.selectByBoxWithMode(box, mode, action)
+          }
 
-            this.view.selectByBox(box)
+          selected.clear()
+          for (const id of this.view.selectionSet.ids) {
+            selected.add(id)
+          }
 
-            for (const id of this.view.selectionSet.ids) {
-              selected.add(id)
-              if (options.singleOnly) break
+          if (options.singleOnly && action !== 'remove') {
+            if (selected.size > 0) {
+              cleanup()
+              resolve([...selected])
             }
           }
 
           startWcs = null
+          startCanvas = null
         }
-
-        /** ---------- Attach ---------- */
 
         document.addEventListener('keydown', keyHandler)
         this.view.canvas.addEventListener('mousedown', mouseDown)
