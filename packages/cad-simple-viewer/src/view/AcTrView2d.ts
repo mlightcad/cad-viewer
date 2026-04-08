@@ -36,6 +36,7 @@ import {
   AcEdCorsorType,
   AcEdSpatialQueryResultItemEx,
   AcEdViewMode,
+  applyUiThemeFromBackground,
   eventBus
 } from '../editor'
 import { AcTrGeometryUtil } from '../util'
@@ -407,6 +408,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._renderer.setClearColor(value)
     this._renderer.changeForeground(value == 0 ? 0xffffff : 0)
     this.editor.setCursorColor(value == 0 ? 'white' : 'black')
+    applyUiThemeFromBackground(value)
     this._isDirty = true
   }
 

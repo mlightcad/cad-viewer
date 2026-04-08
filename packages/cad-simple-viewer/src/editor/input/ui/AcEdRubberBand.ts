@@ -78,7 +78,7 @@ export class AcEdRubberBand {
     this.basePoint = new AcGePoint3d(basePoint)
     this.options = options || {}
 
-    const color = this.options.color || '#0f0'
+    const color = this.options.color || 'var(--ml-ui-canvas-line, #0f0)'
 
     // --------------------------------------------------------------------
     // Create parent container

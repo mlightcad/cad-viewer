@@ -684,21 +684,17 @@ export abstract class AcEdBaseView {
     mode: AcEdSelectionMode,
     action: AcEdSelectionAction
   ) {
-    const windowColor = '#00ff5a'
-    const crossingColor = '#00d1ff'
-    const removeColor = '#ff4d4f'
+    const windowLine = 'var(--ml-ui-canvas-line, #00ff5a)'
+    const crossingLine = 'var(--ml-ui-accent-alt, #00d1ff)'
+    const removeLine = 'var(--ml-ui-danger, #ff4d4f)'
     const lineColor =
       action === 'remove'
-        ? removeColor
+        ? removeLine
         : mode === 'window'
-          ? windowColor
-          : crossingColor
+          ? windowLine
+          : crossingLine
     const background =
-      action === 'remove'
-        ? 'rgba(255, 77, 79, 0.08)'
-        : mode === 'window'
-          ? 'rgba(0, 255, 90, 0.06)'
-          : 'rgba(0, 209, 255, 0.06)'
+      'var(--ml-ui-canvas-fill-mix, var(--ml-ui-canvas-fill, rgba(64, 158, 255, 0.12)))'
     const borderStyle = mode === 'window' ? 'solid' : 'dashed'
     return { borderStyle, lineColor, background }
   }

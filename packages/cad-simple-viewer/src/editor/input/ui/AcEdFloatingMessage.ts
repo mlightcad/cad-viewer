@@ -177,8 +177,8 @@ export class AcEdFloatingMessage {
         display: flex;
         align-items: center;
         padding: 2px 4px;
-        background: #444;
-        color: #fff;
+        background: var(--ml-ui-bg, #444);
+        color: var(--ml-ui-text, #fff);
         border-radius: 4px;
         font-size: 12px;
         pointer-events: none;
@@ -186,7 +186,7 @@ export class AcEdFloatingMessage {
       }
       .ml-floating-input-label {
         white-space: nowrap;
-        color: #fff;
+        color: var(--ml-ui-text, #fff);
       }
     `
     document.head.appendChild(style)

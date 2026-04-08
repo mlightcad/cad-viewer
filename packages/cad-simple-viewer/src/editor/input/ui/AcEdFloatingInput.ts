@@ -116,7 +116,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (options.basePoint) {
       this.rubberBand = new AcEdRubberBand(view)
       this.rubberBand.start(options.basePoint, {
-        color: '#0f0',
+        color: 'var(--ml-ui-canvas-line, #0f0)',
         showBaseLineOnly: options.showBaseLineOnly
       })
     }
@@ -199,14 +199,15 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         margin-left: 6px;
         height: 22px;
         width: 90px;
-        background: #888;
-        border: 1px solid #666;
+        background: var(--ml-ui-bg, #888);
+        border: 1px solid var(--ml-ui-border, #666);
+        color: var(--ml-ui-text, #fff);
         border-radius: 2px;
       }
   
       .ml-floating-input input.invalid {
-        border-color: red;
-        color: red;
+        border-color: var(--ml-ui-danger, red);
+        color: var(--ml-ui-danger, red);
       }
     `
     document.head.appendChild(style)

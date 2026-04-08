@@ -157,15 +157,15 @@ export class AcEdInputManager {
     style.textContent = `
       .ml-jig-preview-rect {
         position: absolute;
-        border: 1px dashed var(--line-color, #0f0);
-        background: rgba(0, 255, 0, 0.04);
+        border: 1px dashed var(--line-color, var(--ml-ui-canvas-line, #0f0));
+        background: var(--ml-ui-canvas-fill-mix, var(--ml-ui-canvas-fill, rgba(64, 158, 255, 0.12)));
         pointer-events: none;
         z-index: 9999;
       }
       .ml-jig-preview-line {
         position: absolute;
         height: 1px;
-        background: var(--line-color, #0f0);
+        background: var(--line-color, var(--ml-ui-canvas-line, #0f0));
         transform-origin: 0 0;
         pointer-events: none;
         z-index: 9999;

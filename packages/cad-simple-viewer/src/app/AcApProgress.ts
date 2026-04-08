@@ -114,10 +114,10 @@ export class AcApProgress {
     this.options = {
       size: options.size ?? '48px',
       borderWidth: options.borderWidth ?? '5px',
-      color: options.color ?? '#0b84ff',
+      color: options.color ?? 'var(--ml-ui-accent, #0b84ff)',
       host: options.host ?? document.body,
       overlay: options.overlay ?? true,
-      overlayColor: options.overlayColor ?? 'rgba(0,0,0,0.5)',
+      overlayColor: options.overlayColor ?? 'var(--ml-ui-overlay, rgba(0,0,0,0.5))',
       message: options.message ?? ''
     }
 
@@ -247,8 +247,8 @@ export class AcApProgress {
   .ml-ccl-spinner {
     border-radius: 50%;
     border-style: solid;
-    border-color: rgba(0,0,0,0.25);
-    border-top-color: #0b84ff;
+    border-color: var(--ml-ui-border, rgba(0,0,0,0.25));
+    border-top-color: var(--ml-ui-accent, #0b84ff);
     animation: ml-ccl-rotate 0.85s linear infinite;
     box-sizing: border-box;
   }
@@ -256,7 +256,7 @@ export class AcApProgress {
   .ml-ccl-message {
     margin-top: 12px;
     font-size: 14px;
-    color: #FFF;
+    color: var(--ml-ui-text, #FFF);
     text-align: center;
     user-select: none;
   }

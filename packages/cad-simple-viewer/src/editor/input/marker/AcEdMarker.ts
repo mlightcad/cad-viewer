@@ -42,7 +42,7 @@ export class AcEdMarker {
   constructor(
     type: AcEdMarkerType = 'rect',
     size: number = 12,
-    color: string = 'green',
+    color: string = 'var(--ml-ui-canvas-line, green)',
     host: HTMLElement
   ) {
     this._type = type
