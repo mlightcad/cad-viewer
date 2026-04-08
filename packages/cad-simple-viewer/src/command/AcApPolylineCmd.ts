@@ -266,10 +266,19 @@ export class AcApPolylineCmd extends AcEdCommand {
   }
 
   async execute(context: AcApContext) {
+    AcApDocManager.instance.editor.resetInputToggles()
     const points: AcGePoint2d[] = []
     const bulges: (number | undefined)[] = []
     let closed = false
     const ARC_BULGE = 0.5
+    const getArcDirectionFactor = () => {
+      const toggles = AcApDocManager.instance.editor.getInputToggles()
+      return toggles.ctrlArcFlip ? -1 : 1
+    }
+    const applyArcDirection = (bulge?: number) => {
+      if (bulge == null) return bulge
+      return bulge * getArcDirectionFactor()
+    }
     const computeBulgeFromCenter = (
       start: AcGePoint2dLike,
       end: AcGePoint2dLike,
@@ -432,13 +441,15 @@ export class AcApPolylineCmd extends AcEdCommand {
         if (basePoint) {
           prompt.basePoint = new AcGePoint3d(basePoint)
         }
-        prompt.jig = createPreviewJig(ARC_BULGE)
+        prompt.jig = createPreviewJig(undefined, () =>
+          applyArcDirection(ARC_BULGE)
+        )
         return prompt
       }
 
       async handleResult(result: AcEdPromptPointResult): Promise<StepResult> {
         if (result.status === AcEdPromptStatus.OK) {
-          setSegmentBulge(ARC_BULGE)
+          setSegmentBulge(applyArcDirection(ARC_BULGE))
           appendPoint(result.value!)
           return 'continue'
         }
@@ -480,12 +491,14 @@ export class AcApPolylineCmd extends AcEdCommand {
           endPrompt.basePoint = new AcGePoint3d(startPoint)
           const angleRad = (angleResult.value ?? 0) * (Math.PI / 180)
           const angleBulge = Math.tan(angleRad / 4)
-          endPrompt.jig = createPreviewJig(angleBulge)
+          endPrompt.jig = createPreviewJig(undefined, () =>
+            applyArcDirection(angleBulge)
+          )
           const endResult =
             await AcApDocManager.instance.editor.getPoint(endPrompt)
           if (shouldFinish(endResult.status)) return 'finish'
 
-          setSegmentBulge(angleBulge)
+          setSegmentBulge(applyArcDirection(angleBulge))
           appendPoint(endResult.value!)
           return 'continue'
         }
@@ -506,7 +519,9 @@ export class AcApPolylineCmd extends AcEdCommand {
           endPrompt.useBasePoint = true
           endPrompt.basePoint = new AcGePoint3d(startPoint)
           endPrompt.jig = createPreviewJig(undefined, end =>
-            computeBulgeFromCenter(startPoint, end, centerResult.value!)
+            applyArcDirection(
+              computeBulgeFromCenter(startPoint, end, centerResult.value!)
+            )
           )
           const endResult =
             await AcApDocManager.instance.editor.getPoint(endPrompt)
@@ -518,7 +533,7 @@ export class AcApPolylineCmd extends AcEdCommand {
             centerResult.value!
           )
           if (bulge === undefined) return 'continue'
-          setSegmentBulge(bulge)
+          setSegmentBulge(applyArcDirection(bulge))
           appendPoint(endResult.value!)
           return 'continue'
         }
@@ -542,10 +557,8 @@ export class AcApPolylineCmd extends AcEdCommand {
           endPrompt.useBasePoint = true
           endPrompt.basePoint = new AcGePoint3d(startPoint)
           endPrompt.jig = createPreviewJig(undefined, end =>
-            computeBulgeFromThreePoints(
-              startPoint,
-              secondResult.value!,
-              end
+            applyArcDirection(
+              computeBulgeFromThreePoints(startPoint, secondResult.value!, end)
             )
           )
           const endResult =
@@ -558,7 +571,7 @@ export class AcApPolylineCmd extends AcEdCommand {
             endResult.value!
           )
           if (bulge === undefined) return 'continue'
-          setSegmentBulge(bulge)
+          setSegmentBulge(applyArcDirection(bulge))
           appendPoint(endResult.value!)
           return 'continue'
         }
@@ -579,10 +592,8 @@ export class AcApPolylineCmd extends AcEdCommand {
           endPrompt.useBasePoint = true
           endPrompt.basePoint = new AcGePoint3d(startPoint)
           endPrompt.jig = createPreviewJig(undefined, end =>
-            computeBulgeFromRadius(
-              startPoint,
-              end,
-              radiusResult.value ?? 0
+            applyArcDirection(
+              computeBulgeFromRadius(startPoint, end, radiusResult.value ?? 0)
             )
           )
           const endResult =
@@ -595,7 +606,7 @@ export class AcApPolylineCmd extends AcEdCommand {
             radiusResult.value ?? 0
           )
           if (bulge === undefined) return 'continue'
-          setSegmentBulge(bulge)
+          setSegmentBulge(applyArcDirection(bulge))
           appendPoint(endResult.value!)
           return 'continue'
         }
@@ -619,9 +630,7 @@ export class AcApPolylineCmd extends AcEdCommand {
       AcEdPromptPointResult
     >()
     machine.setState(new LineState(machine))
-    await machine.run(prompt =>
-      AcApDocManager.instance.editor.getPoint(prompt)
-    )
+    await machine.run(prompt => AcApDocManager.instance.editor.getPoint(prompt))
 
     // Create polyline if we have at least two points
     if (points.length >= 2) {

@@ -117,7 +117,8 @@ export class AcApProgress {
       color: options.color ?? 'var(--ml-ui-accent, #0b84ff)',
       host: options.host ?? document.body,
       overlay: options.overlay ?? true,
-      overlayColor: options.overlayColor ?? 'var(--ml-ui-overlay, rgba(0,0,0,0.5))',
+      overlayColor:
+        options.overlayColor ?? 'var(--ml-ui-overlay, rgba(0,0,0,0.5))',
       message: options.message ?? ''
     }
 

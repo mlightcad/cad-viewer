@@ -6,8 +6,7 @@ const THEME_TOKENS: Record<AcEdUiTheme, Record<string, string>> = {
     '--ml-ui-text-muted': 'var(--el-text-color-regular, #606266)',
     '--ml-ui-bg': 'var(--el-bg-color-overlay, #ffffff)',
     '--ml-ui-border': 'var(--el-border-color, #dcdfe6)',
-    '--ml-ui-shadow':
-      'var(--el-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.12))',
+    '--ml-ui-shadow': 'var(--el-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.12))',
     '--ml-ui-overlay': 'var(--el-overlay-color-lighter, rgba(0, 0, 0, 0.18))',
 
     '--ml-ui-accent': 'var(--el-color-primary, #409eff)',
@@ -24,8 +23,7 @@ const THEME_TOKENS: Record<AcEdUiTheme, Record<string, string>> = {
     '--ml-ui-text-muted': 'var(--el-text-color-regular, #cfd3dc)',
     '--ml-ui-bg': 'var(--el-bg-color-overlay, #1d1e1f)',
     '--ml-ui-border': 'var(--el-border-color, #4c4d4f)',
-    '--ml-ui-shadow':
-      'var(--el-box-shadow, 0 6px 18px rgba(0, 0, 0, 0.35))',
+    '--ml-ui-shadow': 'var(--el-box-shadow, 0 6px 18px rgba(0, 0, 0, 0.35))',
     '--ml-ui-overlay': 'var(--el-overlay-color-lighter, rgba(0, 0, 0, 0.5))',
 
     '--ml-ui-accent': 'var(--el-color-primary, #409eff)',

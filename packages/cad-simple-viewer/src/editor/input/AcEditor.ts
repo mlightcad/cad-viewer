@@ -3,6 +3,8 @@ import { AcCmEventManager } from '@mlightcad/data-model'
 import { AcEdCommand } from '../command'
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
+import { AcEdInputModifiers } from './AcEdInputModifiers'
+import { AcEdInputToggles } from './AcEdInputToggles'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptBoxOptions,
@@ -117,6 +119,25 @@ export class AcEditor {
    */
   get isEntitySelectionActive() {
     return this._inputManager.isEntitySelectionActive
+  }
+
+  /**
+   * Current modifier key state (Ctrl/Shift/Alt/Meta) during input sessions.
+   */
+  getInputModifiers(): AcEdInputModifiers {
+    return this._inputManager.modifiers
+  }
+
+  /**
+   * Toggle-style input states (e.g. Ctrl-press flip) during input sessions.
+   */
+  getInputToggles(): AcEdInputToggles {
+    return this._inputManager.toggles
+  }
+
+  /** Reset toggle-style inputs to their default state. */
+  resetInputToggles() {
+    this._inputManager.resetToggles()
   }
 
   /**

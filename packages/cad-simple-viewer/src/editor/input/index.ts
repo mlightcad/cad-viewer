@@ -1,4 +1,6 @@
 export * from './AcEdCursorManager'
+export * from './AcEdInputModifiers'
+export * from './AcEdInputToggles'
 export * from './AcEditor'
 export * from './AcEdPreviewJig'
 export * from './AcEdPromptStateMachine'

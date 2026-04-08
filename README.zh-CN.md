@@ -174,10 +174,10 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 -   [x] 单个实体选择
 -   [x] 选中实体高亮
--   [ ] 窗口选择（Window Selection）
--   [ ] 交叉选择（Crossing Selection）
+-   [x] 窗口选择（Window Selection）
+-   [x] 交叉选择（Crossing Selection）
 -   [ ] 选择过滤（按类型 / 图层）
--   [ ] 循环选择（Selection Cycling）
+-   [x] 循环选择（Selection Cycling）
 
 #### 捕捉（OSNAP）
 

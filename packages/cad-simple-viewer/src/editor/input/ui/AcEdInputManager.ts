@@ -7,6 +7,8 @@ import {
 import { AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
 import { AcEdBaseView } from '../../view'
+import { AcEdInputModifiers } from '../AcEdInputModifiers'
+import { AcEdInputToggles } from '../AcEdInputToggles'
 import { AcEdSelectionSet } from '../AcEdSelectionSet'
 import {
   AcEdAngleHandler,
@@ -82,6 +84,15 @@ export class AcEdInputManager {
   private _commandLine: AcEdCommandLine
   /** Buffered command-line style inputs (each item is one Enter-confirmed value). */
   private _scriptInputs: string[] = []
+  /** Current modifier key state during input sessions. */
+  private _modifierState: AcEdInputModifiers = {
+    ctrlKey: false,
+    shiftKey: false,
+    altKey: false,
+    metaKey: false
+  }
+  /** Toggle-style Ctrl flip state (press Ctrl once to flip arc direction). */
+  private _ctrlArcFlip: boolean = false
 
   /**
    * The flag to indicate whether it is currently in an “input acquisition” mode (e.g., point
@@ -129,6 +140,25 @@ export class AcEdInputManager {
    */
   get isEntitySelectionActive() {
     return this.entitySelectionActive
+  }
+
+  /**
+   * Current modifier key state (Ctrl/Shift/Alt/Meta) during input sessions.
+   */
+  get modifiers() {
+    return this._modifierState
+  }
+
+  /**
+   * Toggle-style input states (press once to flip, persists after keyup).
+   */
+  get toggles(): AcEdInputToggles {
+    return { ctrlArcFlip: this._ctrlArcFlip }
+  }
+
+  /** Reset toggle-style inputs to their default state. */
+  resetToggles() {
+    this._ctrlArcFlip = false
   }
 
   /**
@@ -1004,6 +1034,39 @@ export class AcEdInputManager {
     return error instanceof Error && error.message === 'cancelled'
   }
 
+  private updateModifierStateFromEvent(e: {
+    ctrlKey?: boolean
+    shiftKey?: boolean
+    altKey?: boolean
+    metaKey?: boolean
+  }) {
+    const next: AcEdInputModifiers = {
+      ctrlKey: !!e.ctrlKey,
+      shiftKey: !!e.shiftKey,
+      altKey: !!e.altKey,
+      metaKey: !!e.metaKey
+    }
+
+    const prev = this._modifierState
+    const changed =
+      prev.ctrlKey !== next.ctrlKey ||
+      prev.shiftKey !== next.shiftKey ||
+      prev.altKey !== next.altKey ||
+      prev.metaKey !== next.metaKey
+
+    if (changed) {
+      this._modifierState = next
+    }
+    return changed
+  }
+
+  private handleCtrlToggleKey(e: KeyboardEvent) {
+    if (e.key !== 'Control' || e.repeat) return false
+    if (e.type !== 'keydown') return false
+    this._ctrlArcFlip = !this._ctrlArcFlip
+    return true
+  }
+
   /**
    * Creates a promise for floating input that will be resolved or rejected by user input.
    *
@@ -1116,6 +1179,8 @@ export class AcEdInputManager {
         options.cleanup?.()
         promptDefaults.jig?.end()
         document.removeEventListener('keydown', escHandler)
+        document.removeEventListener('keydown', modifierHandler)
+        document.removeEventListener('keyup', modifierHandler)
         floatingInput.dispose()
         keywordSession?.cancel()
         this._commandLine.clear()
@@ -1140,7 +1205,16 @@ export class AcEdInputManager {
           rejector()
         }
       }
+      const modifierHandler = (e: KeyboardEvent) => {
+        const toggled = this.handleCtrlToggleKey(e)
+        const changed = this.updateModifierStateFromEvent(e)
+        if (toggled || changed) {
+          floatingInput.requestPreviewRefresh()
+        }
+      }
       document.addEventListener('keydown', escHandler)
+      document.addEventListener('keydown', modifierHandler)
+      document.addEventListener('keyup', modifierHandler)
       // showAt() expects viewport coordinates; curMousePos is canvas-local.
       floatingInput.showAt(this.view.canvasToViewport(this.view.curMousePos))
 
