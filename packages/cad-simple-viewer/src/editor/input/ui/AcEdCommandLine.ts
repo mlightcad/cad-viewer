@@ -602,6 +602,7 @@ export class AcEdCommandLine {
         // Let the input handle deletion, but do not bubble to global handlers
         // that might delete selected entities.
         e.stopPropagation()
+        e.stopImmediatePropagation()
         return
       }
     }

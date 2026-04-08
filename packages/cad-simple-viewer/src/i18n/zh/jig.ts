@@ -57,6 +57,11 @@ export default {
         local: '放弃',
         global: 'Undo'
       },
+      close: {
+        display: '闭合(C)',
+        local: '闭合',
+        global: 'Close'
+      },
       line: {
         display: '直线(L)',
         local: '直线',
