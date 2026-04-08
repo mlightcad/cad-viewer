@@ -1,5 +1,8 @@
 export default {
   ACAD: {
+    arc: {
+      description: '创建圆弧'
+    },
     cecolor: {
       description: '设置新创建对象的当前默认颜色'
     },

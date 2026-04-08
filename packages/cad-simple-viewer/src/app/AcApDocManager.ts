@@ -14,6 +14,7 @@ import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 import {
+  AcApArcCmd,
   AcApCircleCmd,
   AcApClearMeasurementsCmd,
   AcApConvertToDxfCmd,
@@ -691,6 +692,12 @@ export class AcApDocManager {
    */
   private registerCommands() {
     const register = this._commandManager
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'arc',
+      'arc',
+      new AcApArcCmd()
+    )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'circle',

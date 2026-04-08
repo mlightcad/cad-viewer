@@ -1,5 +1,8 @@
 export default {
   ACAD: {
+    arc: {
+      description: 'Creates an arc'
+    },
     cecolor: {
       description: 'Sets the current default color for newly created objects'
     },
