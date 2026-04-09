@@ -265,7 +265,7 @@ function createArcFromThreePoints(
   // Ctrl toggle can reverse this selection to the complementary direction.
   const autoNormalSign = chooseThreePointNormalSign(center, start, second, end)
   const normalSign = reverseDirection
-    ? ((-autoNormalSign) as ArcNormalSign)
+    ? (-autoNormalSign as ArcNormalSign)
     : autoNormalSign
   return {
     center,
@@ -537,7 +537,13 @@ function createArcFromStartEndRadius(
  * as cursor input changes.
  */
 class AcApArcJig extends AcEdPreviewJig<AcGePoint3dLike> {
+  /**
+   * Transient arc entity reused across preview updates.
+   */
   private _arc: AcDbArc
+  /**
+   * Builder callback that resolves current cursor point to arc definition.
+   */
   private _builder: (point: AcGePoint3dLike) => ArcDefinition | undefined
 
   /**
@@ -834,7 +840,8 @@ export class AcApArcCmd extends AcEdCommand {
     startPrompt.useBasePoint = true
     startPrompt.useDashedLine = true
     startPrompt.basePoint = new AcGePoint3d(center)
-    const startResult = await AcApDocManager.instance.editor.getPoint(startPrompt)
+    const startResult =
+      await AcApDocManager.instance.editor.getPoint(startPrompt)
     if (startResult.status !== AcEdPromptStatus.OK) return
 
     await this.finishCenterStartFlow(context, center, startResult.value!)

@@ -119,7 +119,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
       this.rubberBand = new AcEdRubberBand(view)
       this.rubberBand.start(options.basePoint, {
         color: 'var(--ml-ui-canvas-line, #0f0)',
-        showBaseLineOnly: options.showBaseLineOnly
+        showBaseLineOnly: options.showBaseLineOnly,
+        baseAngle: options.baseAngle
       })
     }
 

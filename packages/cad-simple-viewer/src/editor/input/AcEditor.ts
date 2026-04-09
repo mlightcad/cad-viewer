@@ -14,6 +14,8 @@ import {
   AcEdPromptDoubleResult,
   AcEdPromptEntityOptions,
   AcEdPromptEntityResult,
+  AcEdPromptIntegerOptions,
+  AcEdPromptIntegerResult,
   AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
   AcEdPromptPointResult,
@@ -298,6 +300,17 @@ export class AcEditor {
   }
 
   /**
+   * Prompts the user to input an integer value.
+   *
+   * @returns Promise that resolves to the input integer value.
+   */
+  async getInteger(
+    options: AcEdPromptIntegerOptions
+  ): Promise<AcEdPromptIntegerResult> {
+    return await this._inputManager.getInteger(options)
+  }
+
+  /**
    * Prompts the user to input a string.
    *
    * @returns Promise that resolves to the input one string.
@@ -311,7 +324,9 @@ export class AcEditor {
    *
    * @returns Promise that resolves to the input one keyword.
    */
-  async getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
+  async getKeywords(
+    options: AcEdPromptKeywordOptions
+  ): Promise<AcEdPromptResult> {
     return await this._inputManager.getKeywords(options)
   }
 

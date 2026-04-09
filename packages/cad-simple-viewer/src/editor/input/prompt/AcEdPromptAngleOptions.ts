@@ -10,6 +10,7 @@ import { AcEdPromptOptions } from './AcEdPromptOptions'
  */
 export class AcEdPromptAngleOptions extends AcEdPromptOptions<number> {
   private _basePoint?: AcGePoint3d
+  private _baseAngle?: number
   private _useBasePoint: boolean = true
   private _useDashedLine: boolean = true
   private _useAngleBase: boolean = false
@@ -42,6 +43,19 @@ export class AcEdPromptAngleOptions extends AcEdPromptOptions<number> {
           ? this._basePoint.copy(point)
           : new AcGePoint3d(point)
       }
+    }
+  }
+
+  /**
+   * Gets or sets the base angle (in degrees) used as the 0-degree direction.
+   * If undefined, +X direction is used as the default angle origin.
+   */
+  get baseAngle(): number {
+    return this._baseAngle ?? 0
+  }
+  set baseAngle(angle: number) {
+    if (!this.isReadOnly) {
+      this._baseAngle = angle
     }
   }
 

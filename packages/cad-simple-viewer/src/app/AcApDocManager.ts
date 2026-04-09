@@ -20,6 +20,7 @@ import {
   AcApConvertToDxfCmd,
   AcApConvertToSvgCmd,
   AcApDimLinearCmd,
+  AcApEllipseCmd,
   AcApEraseCmd,
   AcApLineCmd,
   AcApLogCmd,
@@ -30,6 +31,7 @@ import {
   AcApMTextCmd,
   AcApOpenCmd,
   AcApPanCmd,
+  AcApPolygonCmd,
   AcApPolylineCmd,
   AcApQNewCmd,
   AcApRectCmd,
@@ -718,6 +720,12 @@ export class AcApDocManager {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'ellipse',
+      'ellipse',
+      new AcApEllipseCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'erase',
       'erase',
       new AcApEraseCmd()
@@ -787,6 +795,12 @@ export class AcApDocManager {
       'pan',
       'pan',
       new AcApPanCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'polygon',
+      'polygon',
+      new AcApPolygonCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

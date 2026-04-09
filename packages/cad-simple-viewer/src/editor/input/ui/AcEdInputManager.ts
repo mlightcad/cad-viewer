@@ -54,9 +54,24 @@ import {
 } from './AcEdFloatingInputTypes'
 import { AcEdFloatingMessage } from './AcEdFloatingMessage'
 
+/**
+ * Internal control-flow error used to propagate keyword picks out of
+ * floating-input loops.
+ *
+ * This error is intentionally caught by prompt wrappers and converted into
+ * `AcEdPromptStatus.Keyword` results.
+ */
 class AcEdKeywordInputError extends Error {
+  /**
+   * Canonical keyword token resolved by the prompt parser.
+   */
   readonly keyword: string
 
+  /**
+   * Creates a keyword control-flow error.
+   *
+   * @param keyword - Canonical keyword token to bubble to prompt callers.
+   */
   constructor(keyword: string) {
     super('keyword')
     this.keyword = keyword
@@ -316,7 +331,7 @@ export class AcEdInputManager {
    * the typed value does not conform, allowing the user to retype.
    */
   private getNumberTyped(
-    options: AcEdPromptNumericalOptions,
+    options: AcEdPromptNumericalOptions | AcEdPromptAngleOptions,
     handler: AcEdNumericalHandler | AcEdAngleHandler
   ): Promise<number> {
     const getDynamicValue = () => {
@@ -391,10 +406,37 @@ export class AcEdInputManager {
       return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
     }
 
+    const basePoint =
+      options.useBasePoint && options.basePoint
+        ? options.basePoint
+        : this.lastPoint
+
+    // No reference point available: fallback to typed angle input only.
+    if (!basePoint) {
+      try {
+        const value = await this.getNumberTyped(options, handler)
+        return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, value)
+      } catch (error) {
+        if (this.isPromptCancelled(error)) {
+          return new AcEdPromptDoubleResult(AcEdPromptStatus.Cancel)
+        }
+        if (this.isPromptKeyword(error)) {
+          const result = new AcEdPromptDoubleResult(AcEdPromptStatus.Keyword)
+          result.stringResult = error.keyword
+          return result
+        }
+        throw error
+      }
+    }
+
     const getDynamicValue = (pos: AcGePoint2dLike) => {
-      const dx = pos.x - this.lastPoint!.x
-      const dy = pos.y - this.lastPoint!.y
-      const angleRad = Math.atan2(dy, dx)
+      const dx = pos.x - basePoint.x
+      const dy = pos.y - basePoint.y
+      const rawAngleRad = Math.atan2(dy, dx)
+      const baseAngleRad = (options.baseAngle * Math.PI) / 180
+      let angleRad = rawAngleRad - baseAngleRad
+      while (angleRad <= -Math.PI) angleRad += Math.PI * 2
+      while (angleRad > Math.PI) angleRad -= Math.PI * 2
       const angleDeg = (angleRad * 180) / Math.PI
       return {
         value: angleDeg,
@@ -520,19 +562,28 @@ export class AcEdInputManager {
   /**
    * Prompt the user to type a keyword. Resolved when Enter is pressed.
    */
-  async getKeywords(options: AcEdPromptKeywordOptions): Promise<string> {
+  async getKeywords(
+    options: AcEdPromptKeywordOptions
+  ): Promise<AcEdPromptResult> {
     const scriptedValue = this.tryGetScriptedValue(
       new AcEdKeywordHandler(options)
     )
     if (scriptedValue != null) {
-      return Promise.resolve(scriptedValue)
+      return new AcEdPromptResult(AcEdPromptStatus.OK, scriptedValue)
     }
 
-    const result = await this._commandLine.getKeywords(options, true)
-    if (!result) {
-      throw new Error('cancelled')
+    try {
+      const result = await this._commandLine.getKeywords(options, true)
+      if (!result) {
+        return new AcEdPromptResult(AcEdPromptStatus.Cancel)
+      }
+      return new AcEdPromptResult(AcEdPromptStatus.OK, result)
+    } catch (error) {
+      if (this.isPromptCancelled(error)) {
+        return new AcEdPromptResult(AcEdPromptStatus.Cancel)
+      }
+      throw error
     }
-    return result
   }
 
   /**
@@ -1078,6 +1129,7 @@ export class AcEdInputManager {
     const hasBasePoint = 'basePoint' in options
     const hasUseBasePoint = 'useBasePoint' in options
     const hasUseDashedLine = 'useDashedLine' in options
+    const hasBaseAngle = 'baseAngle' in options
 
     const basePoint =
       hasBasePoint && options.basePoint
@@ -1085,13 +1137,15 @@ export class AcEdInputManager {
         : undefined
     const useBasePoint = hasUseBasePoint ? options.useBasePoint : false
     const showBaseLineOnly = hasUseDashedLine ? !options.useDashedLine : false
+    const baseAngle = hasBaseAngle ? (options.baseAngle as number) : undefined
 
     return {
       message: options.message,
       jig: options.jig,
       basePoint,
       useBasePoint,
-      showBaseLineOnly
+      showBaseLineOnly,
+      baseAngle
     }
   }
 
@@ -1144,6 +1198,7 @@ export class AcEdInputManager {
         disableOSnap: options.disableOSnap,
         showBaseLineOnly: promptDefaults.showBaseLineOnly,
         basePoint,
+        baseAngle: promptDefaults.baseAngle,
         allowPrompt: options.allowPrompt !== false,
         validate: validate,
         getDynamicValue: options.getDynamicValue,

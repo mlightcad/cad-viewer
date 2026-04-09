@@ -132,6 +132,12 @@ export interface AcEdFloatingInputOptions<T> {
   basePoint?: AcGePoint2dLike | undefined
 
   /**
+   * Base angle in degrees used by angle rubber-band preview as the 0-degree direction.
+   * If not specified, +X direction is used.
+   */
+  baseAngle?: number
+
+  /**
    * The flag to indicate whether to show base line only instead of showing the whole
    * rubber band. The flog takes effect only if 'basePoint' is specified in options.
    */
