@@ -1,5 +1,11 @@
 # @mlightcad/svg-renderer
 
+## 1.4.12
+
+### Patch Changes
+
+- fix: fix lots of bugs
+
 ## 1.4.11
 
 ### Patch Changes
