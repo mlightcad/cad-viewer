@@ -174,4 +174,11 @@ export interface AcEdFloatingInputOptions<T> {
    * Callback invoked on cancellation (Escape or hide()).
    */
   onCancel?: AcEdFloatingInputCancelCallback
+
+  /**
+   * When true, pressing Enter without having manually typed coordinates
+   * cancels the prompt instead of committing the dynamic-preview value.
+   * Mirrors AutoCAD's `PromptPointOptions.AllowNone`.
+   */
+  allowNone?: boolean
 }
