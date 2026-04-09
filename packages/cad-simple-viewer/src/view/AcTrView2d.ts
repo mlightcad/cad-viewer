@@ -290,7 +290,13 @@ export class AcTrView2d extends AcEdBaseView {
 
         case 'Delete':
         case 'Backspace':
-          AcApDocManager.instance.sendStringToExecute('erase')
+          // Only dispatch erase when no command is currently active.
+          // Dispatching erase mid-command (e.g. while LINE awaits the next
+          // point) corrupts the active command's input pipeline because
+          // sendStringToExecute clears scripted inputs unconditionally.
+          if (!this.editor.isActive) {
+            AcApDocManager.instance.sendStringToExecute('erase')
+          }
           break
       }
     })
