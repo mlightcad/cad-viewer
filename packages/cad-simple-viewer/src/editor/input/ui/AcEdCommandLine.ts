@@ -104,6 +104,35 @@ export class AcEdCommandLine {
     this.textInput.readOnly = readOnly
   }
 
+  /**
+   * Displays a non-error message in the command line history panel.
+   *
+   * This is a lightweight public wrapper around the internal history/message
+   * rendering pipeline so other editor components can surface prompt feedback
+   * without needing direct access to the private printing helpers.
+   *
+   * @param message - Message text to append to the command line message panel
+   * @param msgKey - Optional localization key stored with the rendered entry
+   */
+  showMessage(message: string, msgKey?: string) {
+    this.printMessage(message, msgKey)
+  }
+
+  /**
+   * Displays an error message in the command line history panel.
+   *
+   * Prompt workflows such as entity picking use this to report rejected input
+   * while keeping the current interaction active. The rendered line is styled
+   * as an error entry so it is visually distinct from normal informational
+   * messages.
+   *
+   * @param message - Error text to append to the command line message panel
+   * @param msgKey - Optional localization key stored with the rendered entry
+   */
+  showError(message: string, msgKey?: string) {
+    this.printError(message, msgKey)
+  }
+
   cancelActiveSession() {
     if (!this.activeSession) return
     this.activeSession.handleEscape()

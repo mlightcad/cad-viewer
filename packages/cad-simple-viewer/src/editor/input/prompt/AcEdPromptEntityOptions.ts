@@ -20,6 +20,27 @@ export class AcEdPromptEntityOptions extends AcEdPromptOptions<string> {
    */
   private _allowedClasses = new Set<string>()
 
+  /**
+   * Normalizes entity class names so both "Line" and "AcDbLine" are accepted.
+   *
+   * `PromptEntityOptions.AddAllowedClass()` in host CAD APIs is typically used
+   * with runtime class identifiers, while this web implementation works with
+   * string names resolved from the underlying entity instances. In practice,
+   * callers may provide either the short CAD-style type name (`Line`) or the
+   * concrete TypeScript constructor name (`AcDbLine`).
+   *
+   * This helper canonicalizes both representations to the same short form so
+   * the allow-list can be matched consistently regardless of which naming style
+   * was used by the caller or discovered at pick time.
+   *
+   * @param className - Raw entity class name supplied by callers or runtime inspection
+   * @returns Normalized class name without the `AcDb` prefix
+   */
+  private normalizeClassName(className: string): string {
+    const normalized = className.trim()
+    return normalized.startsWith('AcDb') ? normalized.slice(4) : normalized
+  }
+
   constructor(message: string, globalKeywords?: string) {
     super(message, globalKeywords)
   }
@@ -79,7 +100,10 @@ export class AcEdPromptEntityOptions extends AcEdPromptOptions<string> {
    */
   addAllowedClass(className: string): this {
     if (!this.isReadOnly) {
-      this._allowedClasses.add(className)
+      const normalized = this.normalizeClassName(className)
+      if (normalized) {
+        this._allowedClasses.add(normalized)
+      }
     }
     return this
   }
@@ -90,7 +114,10 @@ export class AcEdPromptEntityOptions extends AcEdPromptOptions<string> {
    */
   removeAllowedClass(className: string): this {
     if (!this.isReadOnly) {
-      this._allowedClasses.delete(className)
+      const normalized = this.normalizeClassName(className)
+      if (normalized) {
+        this._allowedClasses.delete(normalized)
+      }
     }
     return this
   }
@@ -110,8 +137,9 @@ export class AcEdPromptEntityOptions extends AcEdPromptOptions<string> {
    * Used internally by selection logic.
    */
   isClassAllowed(className: string): boolean {
+    const normalized = this.normalizeClassName(className)
     return (
-      this._allowedClasses.size === 0 || this._allowedClasses.has(className)
+      this._allowedClasses.size === 0 || this._allowedClasses.has(normalized)
     )
   }
 }
