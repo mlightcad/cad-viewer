@@ -605,7 +605,8 @@ export class AcApEllipseCmd extends AcEdCommand {
       }),
       baseEllipse.center
     )
-    const startResult = await AcApDocManager.instance.editor.getAngle(startPrompt)
+    const startResult =
+      await AcApDocManager.instance.editor.getAngle(startPrompt)
     if (startResult.status !== AcEdPromptStatus.OK) return undefined
 
     const startAngle = geometricAngleDegToEllipseParamRad(

@@ -1,13 +1,12 @@
 export default {
   arc: {
-    startPointOrCenter: 'Specify start point of arc or [Center]:',
-    secondPointOrOptions: 'Specify second point of arc or [Center/End]:',
+    startPointOrCenter: 'Specify start point of arc or',
+    secondPointOrOptions: 'Specify second point of arc or',
     startPoint: 'Specify start point of arc:',
     centerPoint: 'Specify center point of arc:',
     endPoint: 'Specify end point of arc:',
-    endPointOrOptions: 'Specify end point of arc or [Angle/chord Length]:',
-    centerPointOrOptions:
-      'Specify center point of arc or [Angle/Direction/Radius]:',
+    endPointOrOptions: 'Specify end point of arc or',
+    centerPointOrOptions: 'Specify center point of arc',
     includedAngle: 'Specify included angle:',
     chordLength: 'Specify chord length:',
     tangentDirection: 'Specify tangent direction for start point of arc:',
@@ -61,9 +60,9 @@ export default {
   },
   circle: {
     center: 'Specify the center of circle:',
-    centerOrOptions: 'Specify center point of circle or [3P/2P]:',
+    centerOrOptions: 'Specify center point of circle or',
     radius: 'Specify the radius of circle:',
-    radiusOrDiameter: 'Specify radius of circle or [Diameter]:',
+    radiusOrDiameter: 'Specify radius of circle or',
     diameter: 'Specify diameter of circle:',
     twoPointFirst: 'Specify first endpoint of circle diameter:',
     twoPointSecond: 'Specify second endpoint of circle diameter:',
@@ -89,13 +88,12 @@ export default {
     }
   },
   ellipse: {
-    axisEndpointOrOptions: 'Specify axis endpoint of ellipse or [Arc/Center]:',
-    arcAxisEndpointOrCenter:
-      'Specify axis endpoint of elliptical arc or [Center]:',
+    axisEndpointOrOptions: 'Specify axis endpoint of ellipse or',
+    arcAxisEndpointOrCenter: 'Specify axis endpoint of elliptical arc or',
     center: 'Specify center of ellipse:',
     firstAxisEndpoint: 'Specify endpoint of axis:',
     secondAxisEndpoint: 'Specify other endpoint of axis:',
-    otherAxisOrRotation: 'Specify distance to other axis or [Rotation]:',
+    otherAxisOrRotation: 'Specify distance to other axis or',
     rotationAngle: 'Specify rotation angle around major axis:',
     arcStartAngle: 'Specify start angle of elliptical arc:',
     arcEndAngle: 'Specify end angle of elliptical arc:',
@@ -181,7 +179,7 @@ export default {
     dimensionLength: 'Specify rectangle length:',
     dimensionWidth: 'Specify rectangle width:',
     areaValue: 'Specify rectangle area:',
-    areaLengthOrWidth: 'Specify rectangle length or [Width(W)]:',
+    areaLengthOrWidth: 'Specify rectangle length',
     areaSpecifyWidth: 'Specify rectangle width:',
     invalidPositive: 'Invalid input. Please enter a value greater than 0.',
     invalidRect:

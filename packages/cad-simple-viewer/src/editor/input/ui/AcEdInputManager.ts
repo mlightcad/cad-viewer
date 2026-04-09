@@ -1,10 +1,11 @@
 import {
+  AcDbEntity,
   AcGeBox2d,
   AcGePoint2dLike,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApSettingManager } from '../../../app'
+import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
 import { AcEdBaseView } from '../../view'
 import { AcEdInputModifiers } from '../AcEdInputModifiers'
@@ -239,11 +240,35 @@ export class AcEdInputManager {
     }
   }
 
+  /**
+   * Returns whether the supplied prompt defines any keywords.
+   *
+   * Keyword-aware prompts need extra command-line wiring so textual input can
+   * be interpreted as keyword picks instead of free-form values. This helper
+   * centralizes the check and gracefully handles prompts that expose no keyword
+   * collection.
+   *
+   * @param options - Prompt options to inspect
+   * @returns `true` when at least one keyword is registered on the prompt
+   */
   private hasKeywords(options: AcEdPromptOptions<unknown>) {
     const keywords = options.keywords?.toArray() ?? []
     return keywords.length > 0
   }
 
+  /**
+   * Builds a keyword-only prompt options object from a general prompt.
+   *
+   * Several input flows support optional keywords in parallel with their main
+   * acquisition mode. Rather than duplicating keyword definitions manually, the
+   * original prompt's keyword metadata is cloned into a dedicated
+   * `AcEdPromptKeywordOptions` instance that can be passed to the command-line
+   * keyword session.
+   *
+   * @typeParam T - Value type produced by the source prompt
+   * @param options - Source prompt whose keyword definitions should be copied
+   * @returns A keyword prompt configured with the same message and keyword set
+   */
   private buildKeywordOptions<T>(
     options: AcEdPromptOptions<T>
   ): AcEdPromptKeywordOptions {
@@ -267,6 +292,16 @@ export class AcEdInputManager {
     return keywordOptions
   }
 
+  /**
+   * Copies keyword definitions from one prompt options object to another.
+   *
+   * This is primarily used by composite prompts such as `getBox()`, which break
+   * a higher-level workflow into multiple sub-prompts while preserving the same
+   * keyword vocabulary and default keyword behavior across each stage.
+   *
+   * @param source - Prompt options providing the keyword definitions
+   * @param target - Prompt options receiving the cloned keyword definitions
+   */
   private copyKeywords(
     source: AcEdPromptOptions<unknown>,
     target: AcEdPromptOptions<unknown>
@@ -287,6 +322,97 @@ export class AcEdInputManager {
     })
   }
 
+  /**
+   * Resolves a picked object id back to its database entity instance.
+   *
+   * View-level picking only returns lightweight hit-test data such as object
+   * ids and bounding information. Prompt validation, however, needs access to
+   * the backing `AcDbEntity` so it can inspect runtime metadata like the entity
+   * type and layer.
+   *
+   * @param objectId - Object id returned by the spatial pick query
+   * @returns The matching database entity, or `undefined` if it can no longer be found
+   */
+  private getEntityById(objectId: string): AcDbEntity | undefined {
+    return AcApDocManager.instance.curDocument.database.tables.blockTable.getEntityById(
+      objectId
+    )
+  }
+
+  /**
+   * Returns whether the specified entity belongs to a locked layer.
+   *
+   * The entity itself only stores its layer name, so this helper resolves the
+   * layer record from the current drawing database and inspects its lock state.
+   * Missing layer records are treated as unlocked to avoid rejecting input due
+   * to incomplete metadata.
+   *
+   * @param entity - Entity being evaluated for prompt selection
+   * @returns `true` if the entity's layer exists and is locked; otherwise `false`
+   */
+  private isEntityOnLockedLayer(entity: AcDbEntity): boolean {
+    const layerName = entity.layer
+    if (!layerName) {
+      return false
+    }
+
+    return !!AcApDocManager.instance.curDocument.database.tables.layerTable.getAt(
+      layerName
+    )?.isLocked
+  }
+
+  /**
+   * Checks whether a picked entity satisfies the prompt's allowed-class filter.
+   *
+   * Different parts of the stack expose the entity type in slightly different
+   * forms. The data-model layer provides a short CAD type name through
+   * `entity.type` (for example `Line`), while runtime inspection exposes the
+   * TypeScript constructor name (for example `AcDbLine`). To maximize
+   * compatibility with existing caller expectations, both forms are tested
+   * against the prompt's allow-list.
+   *
+   * @param entity - Picked entity being validated
+   * @param options - Prompt options containing the configured allowed classes
+   * @returns `true` when the entity matches at least one allowed class, or when
+   * no class restriction has been configured
+   */
+  private isEntityClassAllowed(
+    entity: AcDbEntity,
+    options: AcEdPromptEntityOptions
+  ): boolean {
+    const candidates = new Set<string>()
+
+    if (entity.type) {
+      candidates.add(entity.type)
+    }
+
+    const constructorName = entity.constructor?.name
+    if (constructorName) {
+      candidates.add(constructorName)
+    }
+
+    for (const candidate of candidates) {
+      if (options.isClassAllowed(candidate)) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  /**
+   * Starts a command-line keyword session for the given prompt when needed.
+   *
+   * Many interactive prompts accept both mouse-driven input and typed keywords
+   * at the same time. This helper lazily creates the command-line keyword
+   * session only when keywords are actually configured, and returns a small
+   * control object that lets callers await or cancel that session.
+   *
+   * @param options - Prompt options that may define keywords
+   * @param allowTyping - Whether arbitrary typing is allowed alongside keyword completion
+   * @returns An object containing the keyword promise and cancel callback, or
+   * `undefined` when the prompt has no keywords
+   */
   private startKeywordSession(
     options: AcEdPromptOptions<unknown>,
     allowTyping: boolean
@@ -299,12 +425,31 @@ export class AcEdInputManager {
     }
   }
 
+  /**
+   * Narrows an unknown error value to the internal keyword control-flow error.
+   *
+   * Prompt implementations use {@link AcEdKeywordInputError} as a private
+   * mechanism for bubbling a keyword pick out of deeply nested async UI flows.
+   * This type guard keeps the outer prompt wrappers readable while preserving
+   * strong typing for the extracted keyword token.
+   *
+   * @param error - Unknown error value thrown from an input workflow
+   * @returns `true` if the error represents a keyword selection
+   */
   private isPromptKeyword(error: unknown): error is AcEdKeywordInputError {
     return error instanceof AcEdKeywordInputError
   }
 
   /**
-   * Public point input API.
+   * Prompts the user to specify a point.
+   *
+   * The point may be supplied by clicking in the view, typing coordinates into
+   * the floating input, or consuming a queued scripted input token. Keywords are
+   * also supported when configured on the prompt options.
+   *
+   * @param options - Point prompt options controlling messaging, base-point
+   * behavior, jig integration, and keywords
+   * @returns A prompt result containing the picked point, cancel status, or keyword
    */
   async getPoint(
     options: AcEdPromptPointOptions
@@ -326,9 +471,16 @@ export class AcEdInputManager {
   }
 
   /**
-   * Prompt the user to type a numeric value. If integerOnly is true, integers
-   * are enforced. The input is validated and the box will be marked invalid if
-   * the typed value does not conform, allowing the user to retype.
+   * Prompts the user for a purely typed numeric value through floating input.
+   *
+   * This helper is shared by distance, angle, double, and integer prompts when
+   * no mouse-driven geometric reference is needed. Validation is delegated to
+   * the supplied handler so the floating UI can mark invalid values and keep
+   * the prompt alive until the user enters an acceptable number.
+   *
+   * @param options - Numeric prompt options describing the message and keyword set
+   * @param handler - Parser/validator responsible for converting raw text into a number
+   * @returns A promise that resolves to the parsed numeric value
    */
   private getNumberTyped(
     options: AcEdPromptNumericalOptions | AcEdPromptAngleOptions,
@@ -349,7 +501,17 @@ export class AcEdInputManager {
     })
   }
 
-  /** Request a distance (number) from the user. */
+  /**
+   * Prompts the user to specify a distance value.
+   *
+   * When a base point is available, the floating input previews the live
+   * distance from that reference point to the current cursor. Otherwise, the
+   * method falls back to typed numeric entry only. Scripted inputs and keywords
+   * are supported as well.
+   *
+   * @param options - Distance prompt options controlling base-point behavior and messaging
+   * @returns A prompt result containing the resolved distance, cancel status, or keyword
+   */
   async getDistance(
     options: AcEdPromptDistanceOptions
   ): Promise<AcEdPromptDoubleResult> {
@@ -396,7 +558,16 @@ export class AcEdInputManager {
     }
   }
 
-  /** Request an angle in degrees from the user. */
+  /**
+   * Prompts the user to specify an angle in degrees.
+   *
+   * If a base point is available, the cursor position is converted into a live
+   * angular preview relative to that point and the optional prompt base angle.
+   * Without a geometric reference, the method accepts typed numeric input only.
+   *
+   * @param options - Angle prompt options controlling base point, base angle, and messaging
+   * @returns A prompt result containing the resolved angle, cancel status, or keyword
+   */
   async getAngle(
     options: AcEdPromptAngleOptions
   ): Promise<AcEdPromptDoubleResult> {
@@ -465,7 +636,15 @@ export class AcEdInputManager {
     }
   }
 
-  /** Request a double/float from the user. */
+  /**
+   * Prompts the user for a floating-point number.
+   *
+   * This is the generic free-form numeric entry path used when no geometric
+   * interpretation such as distance or angle is required.
+   *
+   * @param options - Double prompt options controlling validation and messaging
+   * @returns A prompt result containing the parsed number, cancel status, or keyword
+   */
   async getDouble(
     options: AcEdPromptDoubleOptions
   ): Promise<AcEdPromptDoubleResult> {
@@ -491,7 +670,15 @@ export class AcEdInputManager {
     }
   }
 
-  /** Request an integer from the user. */
+  /**
+   * Prompts the user for an integer value.
+   *
+   * The supplied integer handler enforces integer-only parsing for both typed
+   * input and scripted command input.
+   *
+   * @param options - Integer prompt options controlling validation and messaging
+   * @returns A prompt result containing the parsed integer, cancel status, or keyword
+   */
   async getInteger(
     options: AcEdPromptIntegerOptions
   ): Promise<AcEdPromptIntegerResult> {
@@ -522,7 +709,14 @@ export class AcEdInputManager {
   }
 
   /**
-   * Prompt the user to type an arbitrary string. Resolved when Enter is pressed.
+   * Prompts the user to type an arbitrary string.
+   *
+   * The value is collected through the shared floating-input pipeline so it can
+   * participate in the same cancellation, keyword, and scripted-input behavior
+   * as the other prompt types.
+   *
+   * @param options - String prompt options controlling the prompt message and keywords
+   * @returns A prompt result containing the entered string, cancel status, or keyword
    */
   async getString(options: AcEdPromptStringOptions): Promise<AcEdPromptResult> {
     const scriptedValue = this.tryGetScriptedValue(
@@ -560,7 +754,14 @@ export class AcEdInputManager {
   }
 
   /**
-   * Prompt the user to type a keyword. Resolved when Enter is pressed.
+   * Prompts the user to enter one of the configured keywords.
+   *
+   * Unlike the mixed-mode keyword sessions used by other prompt types, this
+   * method runs a dedicated keyword prompt and returns the chosen keyword as the
+   * result value.
+   *
+   * @param options - Keyword prompt options describing the allowed keywords
+   * @returns A prompt result containing the chosen keyword or cancel status
    */
   async getKeywords(
     options: AcEdPromptKeywordOptions
@@ -799,12 +1000,22 @@ export class AcEdInputManager {
 
   /**
    * Prompts the user to select a single entity.
-   * Similar to Editor.GetEntity() in AutoCAD.
+   *
+   * Selection is performed by clicking in the view and validating the first
+   * hit-tested entity under the cursor. The picked entity may be rejected when
+   * it belongs to a locked layer or does not satisfy the prompt's allowed-class
+   * filter, in which case the rejection message is shown and the prompt remains
+   * active. Keywords and `AllowNone` behavior are also supported.
+   *
+   * @param options - Entity prompt options controlling filtering, messaging, and keywords
+   * @returns A prompt result containing the selected entity id, picked point,
+   * cancel status, or keyword
    */
   async getEntity(
     options: AcEdPromptEntityOptions
   ): Promise<AcEdPromptEntityResult> {
     try {
+      let pickedPoint: AcGePoint3dLike | undefined
       const value = await new Promise<string | null>((resolve, reject) => {
         this.active = true
         this.entitySelectionActive = true
@@ -846,26 +1057,34 @@ export class AcEdInputManager {
           const pos = this.view.screenToWorld(
             this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
           )
-          const picked = this.view.pick(pos)
+          const picked = this.view.pick(pos, undefined, true)
 
           // Clicked empty space
           if (picked.length == 0) {
-            // this.view.showMessage(options.rejectMessage)
+            this._commandLine.showError(options.rejectMessage)
             return
           }
 
-          // Locked layer
-          // if (picked.locked && !options.allowObjectOnLockedLayer) {
-          //   this.view.showMessage(options.rejectMessage)
-          //   return
-          // }
+          const entity = this.getEntityById(picked[0].id)
+          if (!entity) {
+            this._commandLine.showError(options.rejectMessage)
+            return
+          }
 
-          // Class filter
-          // if (!options.isClassAllowed(picked.className)) {
-          //   this.view.showMessage(options.rejectMessage)
-          //   return
-          // }
+          if (
+            !options.allowObjectOnLockedLayer &&
+            this.isEntityOnLockedLayer(entity)
+          ) {
+            this._commandLine.showError(options.rejectMessage)
+            return
+          }
 
+          if (!this.isEntityClassAllowed(entity, options)) {
+            this._commandLine.showError(options.rejectMessage)
+            return
+          }
+
+          pickedPoint = { x: pos.x, y: pos.y, z: 0 }
           cleanup()
           resolve(picked[0].id)
         }
@@ -887,7 +1106,11 @@ export class AcEdInputManager {
         document.addEventListener('keydown', keyHandler)
         this.view.canvas.addEventListener('mousedown', clickHandler)
       })
-      return new AcEdPromptEntityResult(AcEdPromptStatus.OK, value || undefined)
+      return new AcEdPromptEntityResult(
+        AcEdPromptStatus.OK,
+        value || undefined,
+        pickedPoint
+      )
     } catch (error) {
       if (this.isPromptCancelled(error)) {
         return new AcEdPromptEntityResult(AcEdPromptStatus.Cancel)
@@ -905,6 +1128,13 @@ export class AcEdInputManager {
    * Prompt the user to specify a rectangular box by selecting two corners.
    * Each corner may be specified by clicking on the canvas or typing "x,y".
    * A live HTML overlay rectangle previews the box as the user moves the mouse.
+   *
+   * The box prompt is implemented as two chained point prompts. Keywords from
+   * the original box prompt are copied into each corner prompt so the caller
+   * sees a consistent interaction model across both stages.
+   *
+   * @param options - Box prompt options controlling corner messages, preview behavior, and keywords
+   * @returns A prompt result containing the final 2D box, cancel status, or keyword
    */
   async getBox(options: AcEdPromptBoxOptions): Promise<AcEdPromptBoxResult> {
     try {
@@ -981,6 +1211,15 @@ export class AcEdInputManager {
   /**
    * Shared point input logic used by getPoint() and getBox(). Accepts "x,y"
    * typed input OR mouse click.
+   *
+   * This helper optionally wires extra cleanup and preview callbacks so
+   * higher-level workflows can overlay additional temporary graphics while
+   * reusing the same point acquisition behavior.
+   *
+   * @param options - Point prompt options controlling the interaction
+   * @param cleanup - Optional callback invoked when the point prompt ends
+   * @param drawPreview - Optional callback invoked as the cursor moves for live preview rendering
+   * @returns A promise that resolves to the chosen point
    */
   private async getPointInternal(
     options: AcEdPromptPointOptions,
@@ -1017,6 +1256,14 @@ export class AcEdInputManager {
   /**
    * Attempts to consume one scripted input and parse it as a point.
    * Supported forms: "x,y", "x,y,z", or "x y".
+   *
+   * Successful scripted points also update `lastPoint` so subsequent prompts
+   * that rely on prior geometric context behave the same way as with manual
+   * point picking.
+   *
+   * @param options - Point prompt options used to validate the scripted coordinates
+   * @returns Parsed point value, or `undefined` when no scripted token is queued
+   * @throws Error if a queued scripted token cannot be parsed as a valid point
    */
   private tryGetScriptedPoint(
     options: AcEdPromptPointOptions
@@ -1040,6 +1287,16 @@ export class AcEdInputManager {
 
   /**
    * Attempts to consume one scripted input and parse it with the supplied handler.
+   *
+   * Scripted input is used to emulate command-line entry in automated or
+   * replayed workflows. This helper keeps the parsing path consistent with
+   * interactive input by delegating to the same handler implementation used by
+   * the floating-input UI.
+   *
+   * @typeParam T - Parsed value type
+   * @param handler - Input handler used to parse the queued token
+   * @returns Parsed value, or `undefined` when no scripted token is available
+   * @throws Error if a queued token exists but fails validation
    */
   private tryGetScriptedValue<T>(handler: AcEdInputHandler<T>): T | undefined {
     const token = this.dequeueScriptInput()
@@ -1052,17 +1309,42 @@ export class AcEdInputManager {
     return value
   }
 
+  /**
+   * Attempts to consume one scripted numeric token.
+   *
+   * This is a thin specialization of {@link tryGetScriptedValue} that narrows
+   * the accepted handler types to those used by numeric-style prompts.
+   *
+   * @param handler - Numeric handler used to parse the queued token
+   * @returns Parsed numeric value, or `undefined` when no scripted token is queued
+   */
   private tryGetScriptedNumber(
     handler: AcEdNumericalHandler | AcEdAngleHandler
   ): number | undefined {
     return this.tryGetScriptedValue(handler)
   }
 
+  /**
+   * Removes and returns the next queued scripted input token.
+   *
+   * @returns The next scripted token, or `undefined` when the queue is empty
+   */
   private dequeueScriptInput() {
     if (!this._scriptInputs.length) return undefined
     return this._scriptInputs.shift()
   }
 
+  /**
+   * Splits a scripted point token into x/y coordinate components.
+   *
+   * The accepted formats intentionally mirror common CAD command-line point
+   * entry conventions, including comma-separated coordinates and whitespace-
+   * separated coordinates. An optional third `z` component is tolerated for
+   * compatibility, but only the `x` and `y` values are used by 2D prompts.
+   *
+   * @param token - Raw scripted point token
+   * @returns Extracted x/y string pair, or `undefined` if the token is malformed
+   */
   private splitScriptedPoint(
     token: string
   ): { x: string; y: string } | undefined {
@@ -1081,10 +1363,31 @@ export class AcEdInputManager {
     return { x: parts[0], y: parts[1] }
   }
 
+  /**
+   * Returns whether an unknown error value represents prompt cancellation.
+   *
+   * Prompt flows normalize cancellation to a regular `Error` with the message
+   * `'cancelled'`. This helper keeps the outer result-conversion code concise
+   * and consistent across prompt types.
+   *
+   * @param error - Unknown error value thrown from an input workflow
+   * @returns `true` if the error represents prompt cancellation
+   */
   private isPromptCancelled(error: unknown): boolean {
     return error instanceof Error && error.message === 'cancelled'
   }
 
+  /**
+   * Synchronizes the stored modifier-key snapshot with a DOM keyboard event.
+   *
+   * Floating preview rendering depends on modifier state for behaviors such as
+   * temporary mode switches. This helper updates the cached modifier snapshot
+   * and reports whether anything actually changed so callers can avoid
+   * unnecessary preview refreshes.
+   *
+   * @param e - Keyboard-like event carrying modifier-key flags
+   * @returns `true` if any modifier flag changed; otherwise `false`
+   */
   private updateModifierStateFromEvent(e: {
     ctrlKey?: boolean
     shiftKey?: boolean
@@ -1111,6 +1414,16 @@ export class AcEdInputManager {
     return changed
   }
 
+  /**
+   * Handles the sticky Ctrl toggle used by certain jig interactions.
+   *
+   * Instead of tracking Ctrl as a purely held modifier, some commands treat a
+   * Ctrl key press as a persistent toggle. This helper flips that toggle on the
+   * first non-repeating keydown event for the Control key.
+   *
+   * @param e - Keyboard event to inspect
+   * @returns `true` if the toggle state changed and previews should refresh
+   */
   private handleCtrlToggleKey(e: KeyboardEvent) {
     if (e.key !== 'Control' || e.repeat) return false
     if (e.type !== 'keydown') return false
@@ -1119,11 +1432,16 @@ export class AcEdInputManager {
   }
 
   /**
-   * Creates a promise for floating input that will be resolved or rejected by user input.
+   * Extracts cross-prompt defaults from a prompt options object.
    *
-   * This method centralizes the lifecycle of an interactive input operation,
-   * including handling the Escape key to cancel, resolving with user-provided
-   * values, and guaranteeing cleanup of UI elements and event handlers.
+   * Not every prompt type exposes the same optional properties, but the
+   * floating-input pipeline needs a normalized shape for values such as base
+   * point, dashed-baseline behavior, jig, and base angle. This helper performs
+   * those property-existence checks in one place.
+   *
+   * @typeParam T - Value type produced by the prompt
+   * @param options - Prompt options to normalize
+   * @returns A normalized object containing only the floating-input defaults it understands
    */
   private resolvePromptDefaults<T>(options: AcEdPromptOptions<T>) {
     const hasBasePoint = 'basePoint' in options
@@ -1149,6 +1467,20 @@ export class AcEdInputManager {
     }
   }
 
+  /**
+   * Runs a floating-input prompt and resolves it to a parsed value.
+   *
+   * This is the core interaction primitive used by most non-selection prompts.
+   * It wires together command-line keyword handling, floating input creation,
+   * validation, preview refreshes, jig updates, cancellation handling, and
+   * cleanup. The method guarantees that temporary UI and event listeners are
+   * torn down no matter how the prompt completes.
+   *
+   * @typeParam T - Value type produced by the prompt
+   * @param options - Configuration describing how the floating prompt should parse,
+   * validate, preview, and commit its value
+   * @returns A promise that resolves with the committed value or rejects on cancel/keyword
+   */
   private async makeFloatingInputPromise<T>(options: {
     promptOptions: AcEdPromptOptions<T>
     inputCount?: AcEdFloatingInputBoxCount
