@@ -146,7 +146,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         onCancel: this.onCancel,
         onCommit: this.onCommit,
         onChange: this.onChange,
-        autoFocus: this.isDynamicInputEnabled()
+        autoFocus: this.isDynamicInputEnabled(),
+        allowNone: options.allowNone
       })
     }
 

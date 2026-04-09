@@ -50,6 +50,13 @@ export interface AcEdFloatingInputBoxesOptions<T> {
    * Default: true
    */
   autoFocus?: boolean
+
+  /**
+   * When true, pressing Enter without having manually typed coordinates
+   * cancels the prompt (equivalent to Escape) instead of committing the
+   * current dynamic-preview value.  Mirrors AutoCAD's AllowNone behaviour.
+   */
+  allowNone?: boolean
 }
 
 /**
@@ -90,6 +97,7 @@ export class AcEdFloatingInputBoxes<T> {
   private onChange?: AcEdFloatingInputChangeCallback<T>
   private onCancel?: AcEdFloatingInputCancelCallback
   private validateFn: AcEdFloatingInputValidationCallback<T>
+  private allowNone: boolean
 
   /**
    * Constructs one instance of this class
@@ -117,6 +125,7 @@ export class AcEdFloatingInputBoxes<T> {
     this.onCommit = options.onCommit
     this.onChange = options.onChange
     this.onCancel = options.onCancel
+    this.allowNone = options.allowNone ?? false
 
     // Focus/select after mount
     if (options.autoFocus !== false) {
@@ -200,12 +209,19 @@ export class AcEdFloatingInputBoxes<T> {
     }
 
     if (e.key === 'Enter') {
-      const state = this.validate()
-      if (state.isValid && state.value != null) {
-        this.onCommit?.(state.value)
-        currentInput.markValid()
+      // When allowNone is set and the user has not manually typed coordinates,
+      // treat Enter as a cancel (finish the prompt without adding a point) so
+      // that commands like MeasureArea can use Enter-to-finish naturally.
+      if (this.allowNone && !this.userTyped) {
+        this.onCancel?.()
       } else {
-        currentInput.markInvalid()
+        const state = this.validate()
+        if (state.isValid && state.value != null) {
+          this.onCommit?.(state.value)
+          currentInput.markValid()
+        } else {
+          currentInput.markInvalid()
+        }
       }
       e.preventDefault()
       e.stopPropagation()

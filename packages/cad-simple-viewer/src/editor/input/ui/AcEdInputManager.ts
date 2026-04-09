@@ -1191,6 +1191,10 @@ export class AcEdInputManager {
       if (!keywordSession) {
         this._commandLine.setPrompt(commandLineMessage)
       }
+      const allowNone =
+        'allowNone' in options.promptOptions
+          ? (options.promptOptions as { allowNone: boolean }).allowNone
+          : false
       const floatingInput = new AcEdFloatingInput(this.view, {
         parent: this.view.canvas,
         inputCount: options.inputCount,
@@ -1200,6 +1204,7 @@ export class AcEdInputManager {
         basePoint,
         baseAngle: promptDefaults.baseAngle,
         allowPrompt: options.allowPrompt !== false,
+        allowNone,
         validate: validate,
         getDynamicValue: options.getDynamicValue,
         drawPreview: (pos: AcGePoint2dLike) => {

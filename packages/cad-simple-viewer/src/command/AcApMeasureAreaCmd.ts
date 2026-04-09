@@ -252,6 +252,9 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
               AcApI18n.t('jig.measureArea.nextPoint')
             )
             prompt.useBasePoint = true
+            // Allow the user to press Enter (without typing coordinates) to
+            // finish picking vertices and close the area polygon.
+            prompt.allowNone = true
 
             const onMove = (cursor: AcGePoint3dLike) => {
               if (points.length < 2) return
