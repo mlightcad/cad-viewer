@@ -21,6 +21,12 @@ export interface AcEdRubberBandOptions {
    * If true, only the baseLine will be shown. Other lines are hidden.
    */
   showBaseLineOnly?: boolean
+
+  /**
+   * Base angle in degrees used as the 0-degree direction for angle preview.
+   * If not specified, +X is used.
+   */
+  baseAngle?: number
 }
 
 /**
@@ -61,11 +67,20 @@ export class AcEdRubberBand {
 
   private options: AcEdRubberBandOptions = {}
 
-  /** Returns the parent container element that holds all rubber-band HTML elements. */
+  /**
+   * Gets the root overlay container that owns all temporary rubber-band nodes.
+   *
+   * @returns Overlay `<div>` element when active, otherwise `null`.
+   */
   get element() {
     return this.container
   }
 
+  /**
+   * Creates a rubber-band renderer bound to one editor view.
+   *
+   * @param view - View used to convert world coordinates to screen coordinates.
+   */
   constructor(view: AcEdBaseView) {
     this.view = view
   }
@@ -257,7 +272,21 @@ export class AcEdRubberBand {
     // Horizontal X-axis line (same length as base line)
     // --------------------------------------------------------------------
     if (this.xAxisLine) {
-      const pX = { x: p0.x + lengthBase, y: p0.y }
+      const baseAngleRadWorld = ((this.options.baseAngle ?? 0) * Math.PI) / 180
+      const worldRefPoint = {
+        x: this.basePoint.x + Math.cos(baseAngleRadWorld),
+        y: this.basePoint.y + Math.sin(baseAngleRadWorld),
+        z: 0
+      }
+      const screenRefPoint = this.view.worldToScreen(worldRefPoint)
+      const baseAngleRadScreen = Math.atan2(
+        screenRefPoint.y - p0.y,
+        screenRefPoint.x - p0.x
+      )
+      const pX = {
+        x: p0.x + lengthBase * Math.cos(baseAngleRadScreen),
+        y: p0.y + lengthBase * Math.sin(baseAngleRadScreen)
+      }
       drawLine(this.xAxisLine, p0, pX)
     }
 
@@ -277,12 +306,25 @@ export class AcEdRubberBand {
       // at (center - radius). Then coordinates inside SVG are:
       // start = (2r, r), end = (r + r*cos(theta), r + r*sin(theta))
 
-      // angle between +X and baseLine in screen coordinate system
-      const angleRad = Math.atan2(p3.y - p0.y, p3.x - p0.x)
+      const baseAngleRadWorld = ((this.options.baseAngle ?? 0) * Math.PI) / 180
+      const worldRefPoint = {
+        x: this.basePoint.x + Math.cos(baseAngleRadWorld),
+        y: this.basePoint.y + Math.sin(baseAngleRadWorld),
+        z: 0
+      }
+      const screenRefPoint = this.view.worldToScreen(worldRefPoint)
+      const baseAngleRadScreen = Math.atan2(
+        screenRefPoint.y - p0.y,
+        screenRefPoint.x - p0.x
+      )
+      const targetAngleRad = Math.atan2(p3.y - p0.y, p3.x - p0.x)
+      let angleRad = targetAngleRad - baseAngleRadScreen
+      while (angleRad <= -Math.PI) angleRad += Math.PI * 2
+      while (angleRad > Math.PI) angleRad -= Math.PI * 2
       const angleDeg = (angleRad * 180) / Math.PI
 
       // mid-angle for placing label (middle of arc)
-      const midAngle = angleRad / 2
+      const midAngle = baseAngleRadScreen + angleRad / 2
 
       // SVG position and sizing
       const svgLeft = centerScreenX - radius
@@ -299,10 +341,10 @@ export class AcEdRubberBand {
       // compute start and end in SVG local coords (origin top-left)
       const cx = radius
       const cy = radius
-      const sx = cx + radius // = 2*radius
-      const sy = cy
-      const ex = cx + radius * Math.cos(angleRad)
-      const ey = cy + radius * Math.sin(angleRad)
+      const sx = cx + radius * Math.cos(baseAngleRadScreen)
+      const sy = cy + radius * Math.sin(baseAngleRadScreen)
+      const ex = cx + radius * Math.cos(baseAngleRadScreen + angleRad)
+      const ey = cy + radius * Math.sin(baseAngleRadScreen + angleRad)
 
       // large-arc-flag: whether to take the long way around
       const largeArcFlag = Math.abs(angleRad) > Math.PI ? '1' : '0'

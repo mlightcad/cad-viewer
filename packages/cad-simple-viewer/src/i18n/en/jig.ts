@@ -61,7 +61,67 @@ export default {
   },
   circle: {
     center: 'Specify the center of circle:',
-    radius: 'Specify the radius of circle:'
+    centerOrOptions: 'Specify center point of circle or [3P/2P]:',
+    radius: 'Specify the radius of circle:',
+    radiusOrDiameter: 'Specify radius of circle or [Diameter]:',
+    diameter: 'Specify diameter of circle:',
+    twoPointFirst: 'Specify first endpoint of circle diameter:',
+    twoPointSecond: 'Specify second endpoint of circle diameter:',
+    threePointFirst: 'Specify first point on circle:',
+    threePointSecond: 'Specify second point on circle:',
+    threePointThird: 'Specify third point on circle:',
+    keywords: {
+      threeP: {
+        display: '3P(3P)',
+        local: '3P',
+        global: '3P'
+      },
+      twoP: {
+        display: '2P(2P)',
+        local: '2P',
+        global: '2P'
+      },
+      diameter: {
+        display: 'Diameter(D)',
+        local: 'Diameter',
+        global: 'Diameter'
+      }
+    }
+  },
+  ellipse: {
+    axisEndpointOrOptions: 'Specify axis endpoint of ellipse or [Arc/Center]:',
+    arcAxisEndpointOrCenter:
+      'Specify axis endpoint of elliptical arc or [Center]:',
+    center: 'Specify center of ellipse:',
+    firstAxisEndpoint: 'Specify endpoint of axis:',
+    secondAxisEndpoint: 'Specify other endpoint of axis:',
+    otherAxisOrRotation: 'Specify distance to other axis or [Rotation]:',
+    rotationAngle: 'Specify rotation angle around major axis:',
+    arcStartAngle: 'Specify start angle of elliptical arc:',
+    arcEndAngle: 'Specify end angle of elliptical arc:',
+    keywords: {
+      arc: {
+        display: 'Arc(A)',
+        local: 'Arc',
+        global: 'Arc'
+      },
+      center: {
+        display: 'Center(C)',
+        local: 'Center',
+        global: 'Center'
+      },
+      rotation: {
+        display: 'Rotation(R)',
+        local: 'Rotation',
+        global: 'Rotation'
+      }
+    },
+    invalid: {
+      axis: 'Invalid axis input: axis length must be greater than 0.',
+      otherAxis: 'Invalid other-axis input: distance must be greater than 0.',
+      rotation:
+        'Invalid rotation input: resulting minor axis must be greater than 0.'
+    }
   },
   measureDistance: {
     firstPoint: 'Specify first point:',
@@ -88,14 +148,127 @@ export default {
   },
   line: {
     firstPoint: 'Specify the first point:',
-    nextPoint: 'Specify the next point:'
+    nextPoint: 'Specify the next point:',
+    nextPointWithOptions: 'Specify next point or',
+    keywords: {
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
+      },
+      close: {
+        display: 'Close(C)',
+        local: 'Close',
+        global: 'Close'
+      }
+    }
   },
   mtext: {
     point: 'Specify mtext insertion point:'
   },
   rect: {
-    firstPoint: 'Specify the first point:',
-    nextPoint: 'Specify the next point:'
+    firstPoint: 'Specify first corner point:',
+    nextPoint: 'Specify other corner point:',
+    firstPointWithOptions: 'Specify first corner point or',
+    otherCornerWithOptions: 'Specify other corner point or',
+    chamferFirst: 'Specify first chamfer distance:',
+    chamferSecond: 'Specify second chamfer distance:',
+    filletRadius: 'Specify fillet radius:',
+    segmentWidth: 'Specify rectangle line width:',
+    elevationValue: 'Specify elevation:',
+    thicknessValue: 'Specify thickness:',
+    rotationAngle: 'Specify rectangle rotation angle:',
+    dimensionLength: 'Specify rectangle length:',
+    dimensionWidth: 'Specify rectangle width:',
+    areaValue: 'Specify rectangle area:',
+    areaLengthOrWidth: 'Specify rectangle length or [Width(W)]:',
+    areaSpecifyWidth: 'Specify rectangle width:',
+    invalidPositive: 'Invalid input. Please enter a value greater than 0.',
+    invalidRect:
+      'Unable to create rectangle. Please specify valid corners or dimensions.',
+    thicknessNotSupported:
+      'Rectangle thickness is currently not written to entity data. The thickness setting is ignored.',
+    keywords: {
+      chamfer: {
+        display: 'Chamfer(C)',
+        local: 'Chamfer',
+        global: 'Chamfer'
+      },
+      elevation: {
+        display: 'Elevation(E)',
+        local: 'Elevation',
+        global: 'Elevation'
+      },
+      fillet: {
+        display: 'Fillet(F)',
+        local: 'Fillet',
+        global: 'Fillet'
+      },
+      thickness: {
+        display: 'Thickness(T)',
+        local: 'Thickness',
+        global: 'Thickness'
+      },
+      width: {
+        display: 'Width(W)',
+        local: 'Width',
+        global: 'Width'
+      },
+      area: {
+        display: 'Area(A)',
+        local: 'Area',
+        global: 'Area'
+      },
+      dimensions: {
+        display: 'Dimensions(D)',
+        local: 'Dimensions',
+        global: 'Dimensions'
+      },
+      rotation: {
+        display: 'Rotation(R)',
+        local: 'Rotation',
+        global: 'Rotation'
+      },
+      length: {
+        display: 'Length(L)',
+        local: 'Length',
+        global: 'Length'
+      },
+      rectWidth: {
+        display: 'Width(W)',
+        local: 'Width',
+        global: 'Width'
+      }
+    }
+  },
+  polygon: {
+    numberOfSides: 'Enter number of sides:',
+    centerOrEdge: 'Specify center of polygon or',
+    radiusOrType: 'Enter options',
+    edgeStart: 'Specify first endpoint of edge:',
+    edgeEnd: 'Specify second endpoint of edge:',
+    keywords: {
+      edge: {
+        display: 'Edge(E)',
+        local: 'Edge',
+        global: 'Edge'
+      },
+      inscribed: {
+        display: 'Inscribed in circle(I)',
+        local: 'Inscribed in circle',
+        global: 'Inscribed'
+      },
+      circumscribed: {
+        display: 'Circumscribed about circle(C)',
+        local: 'Circumscribed about circle',
+        global: 'Circumscribed'
+      }
+    },
+    invalid: {
+      sides: 'Invalid number of sides. Enter an integer between 3 and 1024.',
+      radius: 'Invalid radius. Radius must be greater than 0.',
+      edge: 'Invalid edge. The edge length must be greater than 0.'
+    }
   },
   sketch: {
     firstPoint: 'Specify the first point:',
@@ -156,7 +329,65 @@ export default {
   },
   spline: {
     firstPoint: 'Specify the first point:',
-    nextPoint: 'Specify the next point (or press Enter to finish):'
+    nextPoint: 'Specify the next point (or press Enter to finish):',
+    firstPointWithOptions: 'Specify first point or',
+    nextPointWithFitOptions: 'Specify next point or',
+    nextPointWithCvOptions: 'Specify next control vertex or',
+    methodPrompt: 'Enter spline creation method',
+    knotsPrompt: 'Enter knot parameterization',
+    degreePrompt: 'Specify spline degree:',
+    keywords: {
+      method: {
+        display: 'Method(M)',
+        local: 'Method',
+        global: 'Method'
+      },
+      fit: {
+        display: 'Fit(F)',
+        local: 'Fit',
+        global: 'Fit'
+      },
+      cv: {
+        display: 'CV(C)',
+        local: 'CV',
+        global: 'CV'
+      },
+      knots: {
+        display: 'Knots(K)',
+        local: 'Knots',
+        global: 'Knots'
+      },
+      degree: {
+        display: 'Degree(D)',
+        local: 'Degree',
+        global: 'Degree'
+      },
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
+      },
+      close: {
+        display: 'Close(C)',
+        local: 'Close',
+        global: 'Close'
+      },
+      chord: {
+        display: 'Chord(C)',
+        local: 'Chord',
+        global: 'Chord'
+      },
+      sqrtChord: {
+        display: 'Sqrt chord(S)',
+        local: 'Sqrt chord',
+        global: 'SqrtChord'
+      },
+      uniform: {
+        display: 'Uniform(U)',
+        local: 'Uniform',
+        global: 'Uniform'
+      }
+    }
   },
   sysvar: {
     prompt: 'Please input new value:'

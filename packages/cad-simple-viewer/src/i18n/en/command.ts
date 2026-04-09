@@ -33,6 +33,10 @@ export default {
     dimlinear: {
       description: 'Creates linear dimensions'
     },
+    ellipse: {
+      description:
+        'Creates an ellipse or elliptical arc by axis endpoints or center'
+    },
     erase: {
       description: 'Deletes selected entities from the drawing',
       prompt: 'Select entities'
@@ -45,6 +49,10 @@ export default {
     },
     pline: {
       description: 'Creates a polyline by specifying multiple points'
+    },
+    polygon: {
+      description:
+        'Creates a regular polygon by center/radius or by one polygon edge'
     },
     spline: {
       description: 'Creates a smooth spline curve by specifying control points'

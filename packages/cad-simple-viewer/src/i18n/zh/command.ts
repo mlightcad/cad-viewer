@@ -30,6 +30,9 @@ export default {
     dimlinear: {
       description: '创建线性尺寸标注'
     },
+    ellipse: {
+      description: '通过轴端点或中心点创建椭圆或椭圆弧'
+    },
     erase: {
       description: '从图纸中删除所选对象',
       prompt: '选择对象'
@@ -42,6 +45,9 @@ export default {
     },
     pline: {
       description: '通过指定多个点创建多段线'
+    },
+    polygon: {
+      description: '通过中心和半径或指定一条边创建正多边形'
     },
     spline: {
       description: '通过指定控制点创建平滑的样条曲线'

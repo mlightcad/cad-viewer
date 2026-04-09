@@ -271,6 +271,18 @@ export class AcTrView2d extends AcEdBaseView {
     // such as the canvas or the entire document. This can interfere with other event listeners you
     // add, including the keydown event.
     document.addEventListener('keydown', (e: KeyboardEvent) => {
+      // Ignore global shortcuts while typing or during IME composition.
+      const target = e.target as HTMLElement | null
+      const isEditableTarget =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target?.isContentEditable === true
+      // keyCode 229 is commonly reported by IME composing key events.
+      const isImeComposing = e.isComposing || e.keyCode === 229
+      if (isEditableTarget || isImeComposing) {
+        return
+      }
+
       switch (e.code) {
         case 'Escape':
           this.selectionSet.clear()
