@@ -37,6 +37,9 @@ export default {
       description: '从图纸中删除所选对象',
       prompt: '选择对象'
     },
+    hatch: {
+      description: '用填充图案填充封闭区域或所选对象'
+    },
     line: {
       description: '在指定点之间绘制直线段'
     },

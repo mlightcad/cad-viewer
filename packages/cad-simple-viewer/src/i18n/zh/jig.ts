@@ -317,6 +317,79 @@ export default {
     arcEndPoint: '指定弧的终点：',
     arcRadius: '指定弧半径：'
   },
+  hatch: {
+    prompt: '选择边界对象或',
+    pickPoint: '指定内部点（或按 Enter 结束）：',
+    select: '选择要填充的对象：',
+    patternName: '输入填充图案名称：',
+    scale: '指定填充图案比例：',
+    angle: '指定填充图案角度：',
+    style: '输入填充样式',
+    associative: '指定关联性',
+    invalidBoundary: '所选对象无法构成闭合边界。',
+    keywords: {
+      pick: {
+        display: '拾取点(P)',
+        local: '拾取点',
+        global: 'PickPoints'
+      },
+      select: {
+        display: '选择对象(S)',
+        local: '选择对象',
+        global: 'SelectObjects'
+      },
+      pattern: {
+        display: '图案(P)',
+        local: '图案',
+        global: 'Pattern'
+      },
+      scale: {
+        display: '比例(S)',
+        local: '比例',
+        global: 'Scale'
+      },
+      angle: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      },
+      style: {
+        display: '样式(T)',
+        local: '样式',
+        global: 'HatchStyle'
+      },
+      associative: {
+        display: '关联(AS)',
+        local: '关联',
+        global: 'AssociativeMode'
+      },
+      normal: {
+        display: '普通(N)',
+        local: '普通',
+        global: 'Normal'
+      },
+      outer: {
+        display: '外部(O)',
+        local: '外部',
+        global: 'Outer'
+      },
+      ignore: {
+        display: '忽略(I)',
+        local: '忽略',
+        global: 'Ignore'
+      },
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      }
+    }
+  },
   spline: {
     firstPoint: '指定第一个点：',
     nextPoint: '指定下一个点（或按 Enter 完成）：',
