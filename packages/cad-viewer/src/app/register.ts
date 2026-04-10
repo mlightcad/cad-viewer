@@ -8,11 +8,13 @@ import { markRaw } from 'vue'
 import {
   AcApLayerStateCmd,
   AcApMissedDataCmd,
-  AcApPointStyleCmd
+  AcApPointStyleCmd,
+  AcApQSelectCmd
 } from '../command'
 import {
   createMlColorIndexPickerToolbarFactory,
   MlPointStyleDlg,
+  MlQuickSelectDlg,
   MlReplacementDlg
 } from '../component'
 import { useDialogManager } from '../composable'
@@ -39,6 +41,12 @@ export const registerCmds = () => {
       'pttype',
       new AcApPointStyleCmd()
     )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'qselect',
+      'qselect',
+      new AcApQSelectCmd()
+    )
     isCommandRegistered = true
   }
 }
@@ -55,6 +63,11 @@ export const registerDialogs = () => {
     registerDialog({
       name: 'PointStyleDlg',
       component: markRaw(MlPointStyleDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'QuickSelectDlg',
+      component: markRaw(MlQuickSelectDlg),
       props: {}
     })
     isDialogRegistered = true
