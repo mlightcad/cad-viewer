@@ -41,6 +41,10 @@ export default {
       description: 'Deletes selected entities from the drawing',
       prompt: 'Select entities'
     },
+    hatch: {
+      description:
+        'Fills an enclosed area or selected objects with a hatch pattern'
+    },
     line: {
       description: 'Draws straight line segments between points'
     },

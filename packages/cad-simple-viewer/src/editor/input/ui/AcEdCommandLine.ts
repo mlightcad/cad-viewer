@@ -327,11 +327,6 @@ export class AcEdCommandLine {
         height: 100%; 
       }
 
-      .ml-cli-prompt,
-      .ml-cli-text {
-        font-family: Consolas, "Courier New", monospace;
-      }
-
       .ml-cli-prompt {
         display: flex;
         align-items: center;
@@ -339,6 +334,10 @@ export class AcEdCommandLine {
         user-select: none;
         margin-right: 4px;
         line-height: 1;
+        font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+        font-size: 12px;
+        letter-spacing: 0;
+        word-spacing: 0;
       }
 
       .ml-cli-text {
@@ -348,8 +347,11 @@ export class AcEdCommandLine {
         outline: none;
         background: transparent;
 
+        font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
         font-size: 13px;
         line-height: 1;
+        letter-spacing: 0;
+        word-spacing: 0;
         padding: 0;
         margin: 0;
 
@@ -362,11 +364,14 @@ export class AcEdCommandLine {
         display: inline-block;
         background: var(--ml-ui-bg, #f7f7f7);
         border: 1px solid var(--ml-ui-border, rgba(0, 0, 0, 0.06));
-        padding: 2px 6px;
+        padding: 1px 4px;
         border-radius: 3px;
-        margin: 0 4px;
+        margin: 0 1px;
         cursor: pointer;
         font-size: 12px;
+        line-height: 1.1;
+        letter-spacing: 0;
+        word-spacing: 0;
       }
 
       .ml-cli-option:hover {

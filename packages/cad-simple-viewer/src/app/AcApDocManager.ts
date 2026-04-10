@@ -22,6 +22,7 @@ import {
   AcApDimLinearCmd,
   AcApEllipseCmd,
   AcApEraseCmd,
+  AcApHatchCmd,
   AcApLineCmd,
   AcApLogCmd,
   AcApMeasureAngleCmd,
@@ -765,6 +766,12 @@ export class AcApDocManager {
       'clearmeasurements',
       'clearmeasurements',
       new AcApClearMeasurementsCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'hatch',
+      'hatch',
+      new AcApHatchCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

@@ -325,6 +325,79 @@ export default {
     arcEndPoint: 'Specify arc end point:',
     arcRadius: 'Specify arc radius:'
   },
+  hatch: {
+    prompt: 'Select boundary object or',
+    pickPoint: 'Specify internal point (or press Enter to finish):',
+    select: 'Select objects to hatch:',
+    patternName: 'Enter hatch pattern name:',
+    scale: 'Specify hatch pattern scale:',
+    angle: 'Specify hatch pattern angle:',
+    style: 'Enter hatch style',
+    associative: 'Specify associativity',
+    invalidBoundary: 'Selected objects do not form a closed boundary.',
+    keywords: {
+      pick: {
+        display: 'Pick points(P)',
+        local: 'Pick points',
+        global: 'PickPoints'
+      },
+      select: {
+        display: 'Select objects(S)',
+        local: 'Select objects',
+        global: 'SelectObjects'
+      },
+      pattern: {
+        display: 'Pattern(P)',
+        local: 'Pattern',
+        global: 'Pattern'
+      },
+      scale: {
+        display: 'Scale(S)',
+        local: 'Scale',
+        global: 'Scale'
+      },
+      angle: {
+        display: 'Angle(A)',
+        local: 'Angle',
+        global: 'Angle'
+      },
+      style: {
+        display: 'Style(T)',
+        local: 'Style',
+        global: 'HatchStyle'
+      },
+      associative: {
+        display: 'Associative(AS)',
+        local: 'Associative',
+        global: 'AssociativeMode'
+      },
+      normal: {
+        display: 'Normal(N)',
+        local: 'Normal',
+        global: 'Normal'
+      },
+      outer: {
+        display: 'Outer(O)',
+        local: 'Outer',
+        global: 'Outer'
+      },
+      ignore: {
+        display: 'Ignore(I)',
+        local: 'Ignore',
+        global: 'Ignore'
+      },
+      yes: {
+        display: 'Yes(Y)',
+        local: 'Yes',
+        global: 'Yes'
+      },
+      no: {
+        display: 'No(N)',
+        local: 'No',
+        global: 'No'
+      }
+    }
+  },
   spline: {
     firstPoint: 'Specify the first point:',
     nextPoint: 'Specify the next point (or press Enter to finish):',
