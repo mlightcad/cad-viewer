@@ -16,6 +16,21 @@ export interface AcEdCommandGroup {
   commandsByGlobalName: Map<string, AcEdCommand>
   /** Map of commands indexed by their local names */
   commandsByLocalName: Map<string, AcEdCommand>
+  /**
+   * Map of commands indexed by alias names.
+   *
+   * Key is normalized alias (uppercase), value is the registered command object.
+   * Used for direct lookup by alias and conflict checks during registration.
+   */
+  commandsByAlias: Map<string, AcEdCommand>
+  /**
+   * Reverse index of aliases by command instance.
+   *
+   * This map allows:
+   * - Efficient cleanup of all aliases when a command is removed
+   * - Efficient alias listing in command UI (auto-complete display)
+   */
+  aliasesByCommand: Map<AcEdCommand, Set<string>>
 }
 
 /**
@@ -54,12 +69,16 @@ export class AcEdCommandStack {
     this._systemCommandGroup = {
       groupName: AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       commandsByGlobalName: new Map(),
-      commandsByLocalName: new Map()
+      commandsByLocalName: new Map(),
+      commandsByAlias: new Map(),
+      aliasesByCommand: new Map()
     }
     this._defaultCommandGroup = {
       groupName: AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME,
       commandsByGlobalName: new Map(),
-      commandsByLocalName: new Map()
+      commandsByLocalName: new Map(),
+      commandsByAlias: new Map(),
+      aliasesByCommand: new Map()
     }
     this._commandsByGroup.push(this._systemCommandGroup)
     this._commandsByGroup.push(this._defaultCommandGroup)
@@ -72,6 +91,8 @@ export class AcEdCommandStack {
    * @param cmdGlobalName - The global (untranslated) name of the command. Must be unique within the group.
    * @param cmdLocalName - The local (translated) name of the command. Defaults to global name if empty.
    * @param cmd - The command object to add to the stack.
+   * @param cmdAlias - Optional command alias or alias list. Aliases are case-insensitive and
+   * normalized to uppercase during registration.
    *
    * @throws {Error} When the global name is empty or when a command with the same name already exists
    *
@@ -84,7 +105,8 @@ export class AcEdCommandStack {
     cmdGroupName: string,
     cmdGlobalName: string,
     cmdLocalName: string,
-    cmd: AcEdCommand
+    cmd: AcEdCommand,
+    cmdAlias?: string | string[]
   ) {
     cmdGroupName = cmdGroupName.toUpperCase()
     cmdGlobalName = cmdGlobalName.toUpperCase()
@@ -108,8 +130,11 @@ export class AcEdCommandStack {
         commandGroup = {
           groupName: cmdGroupName,
           commandsByGlobalName: new Map(),
-          commandsByLocalName: new Map()
+          commandsByLocalName: new Map(),
+          commandsByAlias: new Map(),
+          aliasesByCommand: new Map()
         }
+        this._commandsByGroup.push(commandGroup)
       } else {
         commandGroup = tmp
       }
@@ -124,9 +149,29 @@ export class AcEdCommandStack {
         `[AcEdCommandStack] The command with local name '${cmdLocalName}' already exists!`
       )
     }
+    const aliases = this.normalizeAliases(cmdAlias, cmdGlobalName, cmdLocalName)
+    for (const alias of aliases) {
+      if (commandGroup.commandsByAlias.has(alias)) {
+        throw new Error(
+          `[AcEdCommandStack] The command alias '${alias}' already exists!`
+        )
+      }
+      if (
+        commandGroup.commandsByGlobalName.has(alias) ||
+        commandGroup.commandsByLocalName.has(alias)
+      ) {
+        throw new Error(
+          `[AcEdCommandStack] The command alias '${alias}' conflicts with existing command name!`
+        )
+      }
+    }
 
     commandGroup.commandsByGlobalName.set(cmdGlobalName, cmd)
     commandGroup.commandsByLocalName.set(cmdLocalName, cmd)
+    aliases.forEach(alias => {
+      commandGroup.commandsByAlias.set(alias, cmd)
+    })
+    commandGroup.aliasesByCommand.set(cmd, new Set(aliases))
     cmd.globalName = cmdGlobalName
     cmd.localName = cmdLocalName
   }
@@ -175,7 +220,8 @@ export class AcEdCommandStack {
       const { command } = item.value
       if (
         command.globalName.startsWith(prefix) ||
-        command.localName.startsWith(prefix)
+        command.localName.startsWith(prefix) ||
+        this.commandAliasStartsWith(item.value.commandGroup, command, prefix)
       ) {
         // Check mode compatibility if mode is specified
         if (mode === undefined || this.isModeCompatible(mode, command.mode)) {
@@ -207,6 +253,9 @@ export class AcEdCommandStack {
     let result: AcEdCommand | undefined = undefined
     for (const group of this._commandsByGroup) {
       result = group.commandsByGlobalName.get(cmdName)
+      if (!result) {
+        result = group.commandsByAlias.get(cmdName)
+      }
       if (result) {
         // Check mode compatibility if mode is specified
         if (mode === undefined || this.isModeCompatible(mode, result.mode)) {
@@ -238,6 +287,9 @@ export class AcEdCommandStack {
     let result: AcEdCommand | undefined = undefined
     for (const group of this._commandsByGroup) {
       result = group.commandsByLocalName.get(cmdName)
+      if (!result) {
+        result = group.commandsByAlias.get(cmdName)
+      }
       if (result) {
         // Check mode compatibility if mode is specified
         if (mode === undefined || this.isModeCompatible(mode, result.mode)) {
@@ -265,7 +317,18 @@ export class AcEdCommandStack {
     cmdGlobalName = cmdGlobalName.toUpperCase()
     for (const group of this._commandsByGroup) {
       if (group.groupName == cmdGroupName) {
-        return group.commandsByGlobalName.delete(cmdGlobalName)
+        const command = group.commandsByGlobalName.get(cmdGlobalName)
+        if (!command) {
+          return false
+        }
+        group.commandsByGlobalName.delete(cmdGlobalName)
+        group.commandsByLocalName.delete(command.localName)
+        const aliases = group.aliasesByCommand.get(command)
+        aliases?.forEach(alias => {
+          group.commandsByAlias.delete(alias)
+        })
+        group.aliasesByCommand.delete(command)
+        return true
       }
     }
     return false
@@ -280,13 +343,11 @@ export class AcEdCommandStack {
    */
   removeGroup(groupName: string) {
     groupName = groupName.toUpperCase()
-    let tmp = -1
-    this._commandsByGroup.some((group, index) => {
-      tmp = index
-      return group.groupName == groupName
-    })
-    if (tmp >= 0) {
-      this._commandsByGroup.splice(tmp, 1)
+    const index = this._commandsByGroup.findIndex(
+      group => group.groupName === groupName
+    )
+    if (index >= 0) {
+      this._commandsByGroup.splice(index, 1)
       return true
     }
     return false
@@ -296,11 +357,113 @@ export class AcEdCommandStack {
    * Removes all of registered commands
    */
   removeAll() {
-    this._commandsByGroup = []
     this._defaultCommandGroup.commandsByGlobalName.clear()
     this._defaultCommandGroup.commandsByLocalName.clear()
+    this._defaultCommandGroup.commandsByAlias.clear()
+    this._defaultCommandGroup.aliasesByCommand.clear()
     this._systemCommandGroup.commandsByGlobalName.clear()
     this._systemCommandGroup.commandsByLocalName.clear()
+    this._systemCommandGroup.commandsByAlias.clear()
+    this._systemCommandGroup.aliasesByCommand.clear()
+    this._commandsByGroup = [
+      this._systemCommandGroup,
+      this._defaultCommandGroup
+    ]
+  }
+
+  /**
+   * Gets all aliases of the specified command in a command group.
+   *
+   * @param command - Target command object
+   * @param commandGroupName - Optional command group name. If omitted, the first matching group is used.
+   * @returns Alias list in registration order
+   */
+  getCommandAliases(command: AcEdCommand, commandGroupName?: string): string[] {
+    const normalizedGroupName = commandGroupName?.trim().toUpperCase()
+
+    const groups = normalizedGroupName
+      ? this._commandsByGroup.filter(
+          group => group.groupName === normalizedGroupName
+        )
+      : this._commandsByGroup
+
+    for (const group of groups) {
+      const aliases = group.aliasesByCommand.get(command)
+      if (aliases) {
+        return [...aliases]
+      }
+    }
+
+    return []
+  }
+
+  /**
+   * Checks whether any alias of the given command starts with the input prefix.
+   *
+   * This helper is used by prefix search so alias names can participate in
+   * command auto-complete matching together with global/local command names.
+   *
+   * @param commandGroupName - Name of the command group containing the command
+   * @param command - Command instance whose aliases are inspected
+   * @param prefix - Uppercase prefix to match
+   * @returns True if any alias starts with the prefix
+   */
+  private commandAliasStartsWith(
+    commandGroupName: string,
+    command: AcEdCommand,
+    prefix: string
+  ) {
+    const group = this._commandsByGroup.find(
+      value => value.groupName === commandGroupName
+    )
+    if (!group) {
+      return false
+    }
+    const aliases = group.aliasesByCommand.get(command)
+    if (!aliases) {
+      return false
+    }
+    for (const alias of aliases) {
+      if (alias.startsWith(prefix)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Normalizes raw alias input into a validated alias list for registration.
+   *
+   * Processing rules:
+   * - Accepts one alias string or a list of alias strings.
+   * - Trims whitespace and converts aliases to uppercase.
+   * - Removes empty aliases.
+   * - Removes aliases that are identical to command global/local names.
+   * - Removes duplicates while preserving insertion order.
+   *
+   * @param aliases - Raw alias input from caller
+   * @param cmdGlobalName - Command global name in uppercase
+   * @param cmdLocalName - Command local name in uppercase
+   * @returns Normalized alias list
+   */
+  private normalizeAliases(
+    aliases: string | string[] | undefined,
+    cmdGlobalName: string,
+    cmdLocalName: string
+  ) {
+    const values = Array.isArray(aliases) ? aliases : aliases ? [aliases] : []
+    const result = new Set<string>()
+    values.forEach(alias => {
+      const normalized = alias.trim().toUpperCase()
+      if (
+        normalized &&
+        normalized !== cmdGlobalName &&
+        normalized !== cmdLocalName
+      ) {
+        result.add(normalized)
+      }
+    })
+    return [...result]
   }
 
   /**

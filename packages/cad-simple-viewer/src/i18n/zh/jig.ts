@@ -139,9 +139,15 @@ export default {
   },
   line: {
     firstPoint: '指定第一个点：',
+    firstPointOrContinue: '请指定第一个点或',
     nextPoint: '指定下一个点：',
     nextPointWithOptions: '请指定下一个点或',
     keywords: {
+      continue: {
+        display: '继续(C)',
+        local: '继续',
+        global: 'Continue'
+      },
       undo: {
         display: '放弃(U)',
         local: '放弃',

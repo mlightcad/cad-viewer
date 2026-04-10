@@ -52,9 +52,21 @@ export class AcApLineJig extends AcEdPreviewJig<AcGePoint3dLike> {
 }
 
 /**
- * Command to create one line.
+ * Command to create chained line segments.
+ *
+ * Behavior is aligned with AutoCAD LINE:
+ * - After the first point, each confirmed next point immediately creates one segment.
+ * - `Undo` removes the last created segment.
+ * - `Close` creates the closing segment to the first point and ends command.
  */
 export class AcApLineCmd extends AcEdCommand {
+  /**
+   * Last endpoint created by LINE command.
+   *
+   * Used by "Continue" option at next LINE start.
+   */
+  private static _lastEndpoint?: AcGePoint3d
+
   /**
    * Creates LINE command instance.
    */
@@ -71,24 +83,74 @@ export class AcApLineCmd extends AcEdCommand {
    * @param context - Current application/document context.
    */
   async execute(context: AcApContext) {
+    const db = context.doc.database
     const points: AcGePoint3d[] = []
-    let closed = false
+    const createdSegments: AcDbLine[] = []
+    const hasContinuePoint = () => !!AcApLineCmd._lastEndpoint
+    const getContinuePoint = () =>
+      AcApLineCmd._lastEndpoint
+        ? new AcGePoint3d(AcApLineCmd._lastEndpoint)
+        : undefined
+    const syncLastEndpoint = () => {
+      const current = getCurrentPoint()
+      if (current) {
+        AcApLineCmd._lastEndpoint = new AcGePoint3d(current)
+      }
+    }
     const appendPoint = (point: AcGePoint3dLike) => {
       points.push(new AcGePoint3d(point))
     }
-    const undoLast = () => {
-      if (points.length <= 1) return
+    const getCurrentPoint = () => points[points.length - 1]
+    const appendSegment = (endPoint: AcGePoint3dLike) => {
+      const startPoint = getCurrentPoint()
+      if (!startPoint) return
+      const segment = new AcDbLine(new AcGePoint3d(startPoint), endPoint)
+      db.tables.blockTable.modelSpace.appendEntity(segment)
+      createdSegments.push(segment)
+      appendPoint(endPoint)
+    }
+    const undoLastSegment = () => {
+      if (createdSegments.length <= 0 || points.length <= 1) return
+      createdSegments.pop()?.erase()
       points.pop()
     }
-    const getCurrentPoint = () => points[points.length - 1]
+    const closeSegment = () => {
+      if (points.length <= 1) return
+      const first = points[0]
+      const current = getCurrentPoint()
+      if (!current) return
+      const isSamePoint =
+        first.x === current.x && first.y === current.y && first.z === current.z
+      if (!isSamePoint) {
+        appendSegment(first)
+      }
+    }
 
     const startPointPrompt = new AcEdPromptPointOptions(
-      AcApI18n.t('jig.line.firstPoint')
+      hasContinuePoint()
+        ? AcApI18n.t('jig.line.firstPointOrContinue')
+        : AcApI18n.t('jig.line.firstPoint')
     )
+    if (hasContinuePoint()) {
+      startPointPrompt.keywords.add(
+        AcApI18n.t('jig.line.keywords.continue.display'),
+        AcApI18n.t('jig.line.keywords.continue.global'),
+        AcApI18n.t('jig.line.keywords.continue.local')
+      )
+    }
     const startPointResult =
       await AcApDocManager.instance.editor.getPoint(startPointPrompt)
-    if (startPointResult.status !== AcEdPromptStatus.OK) return
-    appendPoint(startPointResult.value!)
+    if (startPointResult.status === AcEdPromptStatus.OK) {
+      appendPoint(startPointResult.value!)
+    } else if (
+      startPointResult.status === AcEdPromptStatus.Keyword &&
+      startPointResult.stringResult === 'Continue' &&
+      hasContinuePoint()
+    ) {
+      appendPoint(getContinuePoint()!)
+    } else {
+      return
+    }
 
     type LineState = AcEdPromptState<
       AcEdPromptPointOptions,
@@ -138,17 +200,17 @@ export class AcApLineCmd extends AcEdCommand {
        */
       async handleResult(result: AcEdPromptPointResult): Promise<StepResult> {
         if (result.status === AcEdPromptStatus.OK) {
-          appendPoint(result.value!)
+          appendSegment(result.value!)
           return 'continue'
         }
         if (result.status === AcEdPromptStatus.Keyword) {
           const keyword = result.stringResult ?? ''
           if (keyword === 'Undo') {
-            undoLast()
+            undoLastSegment()
             return 'continue'
           }
           if (keyword === 'Close' && points.length > 1) {
-            closed = true
+            closeSegment()
             return 'finish'
           }
           return 'continue'
@@ -163,18 +225,6 @@ export class AcApLineCmd extends AcEdCommand {
     >()
     machine.setState(new NextPointState())
     await machine.run(prompt => AcApDocManager.instance.editor.getPoint(prompt))
-
-    const db = context.doc.database
-    if (closed && points.length > 1) {
-      appendPoint(points[0])
-    }
-
-    for (let index = 0; index < points.length - 1; index++) {
-      const startPoint = points[index]
-      const endPoint = points[index + 1]
-      db.tables.blockTable.modelSpace.appendEntity(
-        new AcDbLine(startPoint, endPoint)
-      )
-    }
+    syncLastEndpoint()
   }
 }

@@ -146,9 +146,15 @@ export default {
   },
   line: {
     firstPoint: 'Specify the first point:',
+    firstPointOrContinue: 'Specify first point or',
     nextPoint: 'Specify the next point:',
     nextPointWithOptions: 'Specify next point or',
     keywords: {
+      continue: {
+        display: 'Continue(C)',
+        local: 'Continue',
+        global: 'Continue'
+      },
       undo: {
         display: 'Undo(U)',
         local: 'Undo',
