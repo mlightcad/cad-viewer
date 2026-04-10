@@ -8,6 +8,9 @@ export default {
     },
     pttype: {
       description: '设置点的显示样式和尺寸'
+    },
+    qselect: {
+      description: '按对象类型与属性条件筛选图元并创建选择集'
     }
   },
   USER: {}

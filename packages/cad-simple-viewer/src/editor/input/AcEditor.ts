@@ -1,10 +1,13 @@
-import { AcCmEventManager } from '@mlightcad/data-model'
+import { AcCmEventManager, AcDbObjectId } from '@mlightcad/data-model'
 
+import { AcApDocManager } from '../../app'
 import { AcEdCommand } from '../command'
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
 import { AcEdInputModifiers } from './AcEdInputModifiers'
 import { AcEdInputToggles } from './AcEdInputToggles'
+import { AcEdSelectionFilter } from './AcEdSelectionFilter'
+import { AcEdSelectionSet } from './AcEdSelectionSet'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptBoxOptions,
@@ -22,6 +25,7 @@ import {
   AcEdPromptResult,
   AcEdPromptSelectionOptions,
   AcEdPromptSelectionResult,
+  AcEdPromptStatus,
   AcEdPromptStringOptions
 } from './prompt'
 import { AcEdInputManager } from './ui'
@@ -363,5 +367,37 @@ export class AcEditor {
    */
   async getBox(options: AcEdPromptBoxOptions): Promise<AcEdPromptBoxResult> {
     return await this._inputManager.getBox(options)
+  }
+
+  /**
+   * Selects all objects in model space that satisfy the specified filter.
+   *
+   * This method is analogous to AutoCAD .NET `Editor.SelectAll(SelectionFilter)`,
+   * but it does not modify the current view selection set directly. Instead, it
+   * returns an independent {@link AcEdPromptSelectionResult}.
+   *
+   * @param filter - Optional typed-value filter expression
+   * @returns Selection result containing all matched object ids
+   */
+  selectAll(filter?: AcEdSelectionFilter): AcEdPromptSelectionResult {
+    try {
+      const modelSpace =
+        AcApDocManager.instance.curDocument.database.tables.blockTable
+          .modelSpace
+      const ids: AcDbObjectId[] = []
+
+      for (const entity of modelSpace.newIterator()) {
+        if (!filter || filter.matches(entity)) {
+          ids.push(entity.objectId)
+        }
+      }
+
+      return new AcEdPromptSelectionResult(
+        AcEdPromptStatus.OK,
+        new AcEdSelectionSet(ids)
+      )
+    } catch {
+      return new AcEdPromptSelectionResult(AcEdPromptStatus.Error)
+    }
   }
 }
