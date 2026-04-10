@@ -325,6 +325,92 @@ export default {
     arcEndPoint: 'Specify arc end point:',
     arcRadius: 'Specify arc radius:'
   },
+  layer: {
+    main: 'Enter option',
+    listSummary: 'Layer list was printed to browser console',
+    emptyInput: 'No layer name was entered.',
+    newPrompt: 'Enter name for new layer(s):',
+    makePrompt: 'Enter name of layer to make current:',
+    setPrompt: 'Enter name of layer to set current:',
+    onPrompt: 'Enter layer name(s) to turn on:',
+    offPrompt: 'Enter layer name(s) to turn off:',
+    freezePrompt: 'Enter layer name(s) to freeze:',
+    thawPrompt: 'Enter layer name(s) to thaw:',
+    lockPrompt: 'Enter layer name(s) to lock:',
+    unlockPrompt: 'Enter layer name(s) to unlock:',
+    colorLayerPrompt: 'Enter layer name(s) to change color:',
+    colorValuePrompt:
+      'Enter color (ACI 1-255, RGB like 255,0,0, or CSS color name):',
+    invalidColor: 'Invalid color input.',
+    descriptionLayerPrompt: 'Enter layer name to edit description:',
+    descriptionValuePrompt: 'Enter new layer description:',
+    created: 'Created layer count',
+    alreadyExists: 'Layer already exists',
+    notFound: 'Layer not found',
+    cannotChangeCurrent: 'Cannot turn off or freeze the current layer.',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      make: {
+        display: 'Make(M)',
+        local: 'Make',
+        global: 'Make'
+      },
+      set: {
+        display: 'Set(S)',
+        local: 'Set',
+        global: 'Set'
+      },
+      new: {
+        display: 'New(N)',
+        local: 'New',
+        global: 'New'
+      },
+      on: {
+        display: 'On(ON)',
+        local: 'On',
+        global: 'On'
+      },
+      off: {
+        display: 'Off(OF)',
+        local: 'Off',
+        global: 'Off'
+      },
+      color: {
+        display: 'Color(C)',
+        local: 'Color',
+        global: 'Color'
+      },
+      freeze: {
+        display: 'Freeze(F)',
+        local: 'Freeze',
+        global: 'Freeze'
+      },
+      thaw: {
+        display: 'Thaw(T)',
+        local: 'Thaw',
+        global: 'Thaw'
+      },
+      lock: {
+        display: 'Lock(L)',
+        local: 'Lock',
+        global: 'Lock'
+      },
+      unlock: {
+        display: 'Unlock(U)',
+        local: 'Unlock',
+        global: 'Unlock'
+      },
+      description: {
+        display: 'Description(D)',
+        local: 'Description',
+        global: 'Description'
+      }
+    }
+  },
   hatch: {
     prompt: 'Select boundary object or',
     pickPoint: 'Specify internal point (or press Enter to finish):',

@@ -45,6 +45,9 @@ export default {
       description:
         'Fills an enclosed area or selected objects with a hatch pattern'
     },
+    '-layer': {
+      description: 'Manages layers through command-line options'
+    },
     line: {
       description: 'Draws straight line segments between points'
     },

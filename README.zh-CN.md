@@ -176,7 +176,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 -   [x] 选中实体高亮
 -   [x] 窗口选择（Window Selection）
 -   [x] 交叉选择（Crossing Selection）
--   [ ] 选择过滤（按类型 / 图层）
+-   [x] 选择过滤（按类型 / 图层）
 -   [x] 循环选择（Selection Cycling）
 
 #### 捕捉（OSNAP）
@@ -216,15 +216,15 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 #### 基础实体
 
 -   [x] 直线（Line）
--   [ ] 多段线（Polyline）
+-   [x] 多段线（Polyline）
 -   [x] 圆（Circle）
--   [ ] 圆弧（Arc）
--   [ ] 椭圆（Ellipse）
--   [ ] ⏳ 矩形 / 多边形（Rectangle / Polygon）
+-   [x] 圆弧（Arc）
+-   [x] 椭圆（Ellipse）
+-   [x] ⏳ 矩形 / 多边形（Rectangle / Polygon）
 
 #### 高级实体
 
--   [ ] 填充（Hatch）
+-   [x] 填充（Hatch）
 -   [ ] 文本（单行 / 多行）
 -   [ ] 标注（线性、对齐、角度）
 -   [ ] 块创建与插入
@@ -263,7 +263,6 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 -   [x] 命令注册机制
 -   [ ] 命令别名
--   [ ] 键盘驱动工作流
 -   [x] 命令提示（AutoCAD 风格）
 
 ### 集成与可扩展性
@@ -287,7 +286,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 #### 离线编辑器
 
 -   [ ] ⏳ 浏览器本地编辑
--   [ ] 保存为 DXF
+-   [ ] ⏳ 保存为 DXF
 -   [ ] 保存变更集 / 差异（diff）
 -   [ ] IndexedDB 持久化
 
