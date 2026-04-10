@@ -142,6 +142,45 @@ register.addCommand(
 )
 ```
 
+### Command Alias
+
+CAD Viewer supports AutoCAD-style command aliases. You can register aliases when adding a command:
+
+```typescript
+register.addCommand(
+  AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+  'line',
+  'line',
+  new AcApLineCmd(),
+  ['L', 'LN'] // alias
+)
+```
+
+Alias behavior:
+
+1. Aliases are case-insensitive (internally normalized to uppercase).
+2. Alias must be unique in the same command group.
+3. Alias cannot conflict with existing global/local command names.
+4. Command lookup and prefix search both support alias matching.
+
+You can also configure aliases globally when creating `AcApDocManager`:
+
+```typescript
+AcApDocManager.createInstance({
+  commandAliases: {
+    LINE: ['L', 'LN'],
+    CIRCLE: 'C'
+  }
+})
+```
+
+Rules for `commandAliases`:
+
+1. Key is the command global name.
+2. Value is one alias or alias list.
+3. If a command is not configured, built-in default aliases are used.
+4. If configured, user aliases replace built-in defaults for that command.
+
 ## Step 6: Update the Command Index
 
 Add the command to the exports in `src/command/index.ts`:

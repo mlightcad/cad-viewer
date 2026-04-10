@@ -662,7 +662,13 @@ export class AcEdCommandLine {
           item.commandGroup,
           item.command.globalName
         )
-        div.innerHTML = `<strong>${item.command.globalName} - ${description}</strong>`
+        const aliases =
+          AcApDocManager.instance.commandManager.getCommandAliases(
+            item.command,
+            item.commandGroup
+          )
+        const aliasText = aliases.length ? `(${aliases.join(', ')})` : ''
+        div.innerHTML = `<strong>${item.command.globalName}${aliasText} - ${description}</strong>`
         if (idx === this.autoCompleteIndex) div.classList.add('selected')
         this.cmdPopup.appendChild(div)
       })

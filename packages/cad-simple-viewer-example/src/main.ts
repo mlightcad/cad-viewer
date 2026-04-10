@@ -9,6 +9,24 @@ import {
   log
 } from '@mlightcad/data-model'
 
+/**
+ * Demo-only command alias overrides used by the example app.
+ *
+ * Purpose:
+ * - Provide visible alias differences from built-in defaults so the alias
+ *   feature can be validated quickly in command line UI and execution flow.
+ *
+ * Behavior:
+ * - This object is passed to `AcApDocManager.createInstance({ commandAliases })`.
+ * - For commands listed here, these aliases replace the built-in defaults.
+ * - Commands not listed keep their built-in alias set.
+ */
+const EXAMPLE_COMMAND_ALIASES = {
+  LINE: ['LX'],
+  CIRCLE: ['CI'],
+  ZOOM: ['ZZ']
+}
+
 class CadViewerApp {
   private container: HTMLDivElement
   private fileInput: HTMLInputElement
@@ -70,6 +88,7 @@ class CadViewerApp {
           container: this.container,
           autoResize: true,
           baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
+          commandAliases: EXAMPLE_COMMAND_ALIASES,
           webworkerFileUrls: {
             mtextRender: './workers/mtext-renderer-worker.js',
             dxfParser: './workers/dxf-parser-worker.js',

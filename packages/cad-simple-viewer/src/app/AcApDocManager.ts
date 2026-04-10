@@ -49,6 +49,7 @@ import {
   AcApSysVarCmd,
   AcApZoomCmd,
   AcApZoomToBoxCmd,
+  AcEdCommand,
   AcEdCommandStack
 } from '../command'
 import { AcEdCalculateSizeCallback, AcEdOpenMode, eventBus } from '../editor'
@@ -62,6 +63,43 @@ import { AcApProgress } from './AcApProgress'
 import { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
 
 const DEFAULT_BASE_URL = 'https://mlightcad.gitlab.io/cad-data/'
+/**
+ * Built-in command alias table used when users do not provide explicit alias overrides.
+ *
+ * Rules:
+ * - Key is the command global name in uppercase.
+ * - Value is one or more aliases in uppercase.
+ * - This table is intentionally partial; commands not listed here simply have no default aliases.
+ *
+ * Notes:
+ * - Runtime lookup is case-insensitive because all aliases are normalized to uppercase.
+ * - User-provided aliases in `AcApDocManagerOptions.commandAliases` have higher priority
+ *   and will fully replace the defaults for the same command name.
+ */
+const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
+  ARC: ['A'],
+  CIRCLE: ['C'],
+  ELLIPSE: ['EL'],
+  ERASE: ['E'],
+  DIMLINEAR: ['DLI'],
+  MEASUREDISTANCE: ['DI', 'DIST'],
+  MEASUREAREA: ['AA', 'AREA'],
+  MEASUREANGLE: ['ANG'],
+  HATCH: ['H'],
+  '-LAYER': ['LA'],
+  LINE: ['L'],
+  MTEXT: ['T'],
+  OPEN: ['OP'],
+  PAN: ['P'],
+  POLYGON: ['POL'],
+  PLINE: ['PL'],
+  RECTANGLE: ['REC'],
+  REGEN: ['RE'],
+  SELECT: ['SE'],
+  SPLINE: ['SPL'],
+  ZOOM: ['Z'],
+  ZOOMW: ['ZW']
+}
 
 /**
  * Event arguments for document-related events.
@@ -198,6 +236,22 @@ export interface AcApDocManagerOptions {
       continueOnError?: boolean
     }
   }
+
+  /**
+   * Optional command alias overrides.
+   *
+   * Key is command global name, value is one alias or alias list.
+   * If a command is not configured here, built-in default aliases are used.
+   *
+   * @example
+   * ```typescript
+   * commandAliases: {
+   *   LINE: ['L', 'LN'],
+   *   CIRCLE: 'CI'
+   * }
+   * ```
+   */
+  commandAliases?: Record<string, string | string[]>
 }
 
 /**
@@ -225,6 +279,17 @@ export class AcApDocManager {
   private _commandManager: AcEdCommandStack
   /** Plugin manager */
   private _pluginManager: AcApPluginManager
+  /**
+   * Alias overrides provided by caller options.
+   *
+   * Storage format:
+   * - Key: normalized command global name (uppercase)
+   * - Value: normalized alias list (uppercase, deduplicated)
+   *
+   * The map is prepared once during manager initialization and reused when
+   * registering built-in and system-variable commands.
+   */
+  private _commandAliasOverrides: Map<string, string[]>
   /** Singleton instance */
   private static _instance?: AcApDocManager
 
@@ -247,6 +312,9 @@ export class AcApDocManager {
    */
   private constructor(options: AcApDocManagerOptions = {}) {
     this._baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
+    this._commandAliasOverrides = this.normalizeCommandAliasConfig(
+      options.commandAliases
+    )
     if (options.useMainThreadDraw) {
       AcTrMTextRenderer.getInstance().setRenderMode('main')
     } else {
@@ -696,210 +764,76 @@ export class AcApDocManager {
    */
   private registerCommands() {
     const register = this._commandManager
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'arc',
-      'arc',
-      new AcApArcCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'circle',
-      'circle',
-      new AcApCircleCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'cdxf',
-      'cdxf',
-      new AcApConvertToDxfCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'csvg',
-      'csvg',
-      new AcApConvertToSvgCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'ellipse',
-      'ellipse',
-      new AcApEllipseCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'erase',
-      'erase',
-      new AcApEraseCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'dimlinear',
-      'dimlinear',
-      new AcApDimLinearCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+    /**
+     * Helper for registering one built-in system command with resolved aliases.
+     *
+     * Alias resolution order:
+     * 1. User override from `options.commandAliases`
+     * 2. Built-in defaults from `DEFAULT_COMMAND_ALIASES`
+     * 3. Empty list (no alias)
+     *
+     * @param cmdGlobalName - Global command name (language-neutral)
+     * @param cmdLocalName - Localized/display command name
+     * @param cmd - Command implementation instance
+     */
+    const addSystemCommand = (
+      cmdGlobalName: string,
+      cmdLocalName: string,
+      cmd: AcEdCommand
+    ) => {
+      const defaults =
+        DEFAULT_COMMAND_ALIASES[cmdGlobalName.toUpperCase()] ?? []
+      register.addCommand(
+        AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+        cmdGlobalName,
+        cmdLocalName,
+        cmd,
+        this.resolveCommandAliases(cmdGlobalName, defaults)
+      )
+    }
+
+    addSystemCommand('arc', 'arc', new AcApArcCmd())
+    addSystemCommand('circle', 'circle', new AcApCircleCmd())
+    addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
+    addSystemCommand('csvg', 'csvg', new AcApConvertToSvgCmd())
+    addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
+    addSystemCommand('erase', 'erase', new AcApEraseCmd())
+    addSystemCommand('dimlinear', 'dimlinear', new AcApDimLinearCmd())
+    addSystemCommand(
       'measuredistance',
       'measuredistance',
       new AcApMeasureDistanceCmd()
     )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'measurearea',
-      'measurearea',
-      new AcApMeasureAreaCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'measureangle',
-      'measureangle',
-      new AcApMeasureAngleCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'measurearc',
-      'measurearc',
-      new AcApMeasureArcCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+    addSystemCommand('measurearea', 'measurearea', new AcApMeasureAreaCmd())
+    addSystemCommand('measureangle', 'measureangle', new AcApMeasureAngleCmd())
+    addSystemCommand('measurearc', 'measurearc', new AcApMeasureArcCmd())
+    addSystemCommand(
       'clearmeasurements',
       'clearmeasurements',
       new AcApClearMeasurementsCmd()
     )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'hatch',
-      'hatch',
-      new AcApHatchCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      '-layer',
-      '-layer',
-      new AcApLayerCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'line',
-      'line',
-      new AcApLineCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'mtext',
-      'mtext',
-      new AcApMTextCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'log',
-      'log',
-      new AcApLogCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'open',
-      'open',
-      new AcApOpenCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'pan',
-      'pan',
-      new AcApPanCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'polygon',
-      'polygon',
-      new AcApPolygonCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'pline',
-      'pline',
-      new AcApPolylineCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'qnew',
-      'qnew',
-      new AcApQNewCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'rectangle',
-      'rectangle',
-      new AcApRectCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'regen',
-      'regen',
-      new AcApRegenCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'revcircle',
-      'revcircle',
-      new AcApRevCircleCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'revcloud',
-      'revcloud',
-      new AcApRevCloudCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'revrect',
-      'revrect',
-      new AcApRevRectCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'revvis',
-      'revvis',
-      new AcApRevVisibilityCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'select',
-      'select',
-      new AcApSelectCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'sketch',
-      'sketch',
-      new AcApSketchCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'spline',
-      'spline',
-      new AcApSplineCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'switchbg',
-      'switchbg',
-      new AcApSwitchBgCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'zoom',
-      'zoom',
-      new AcApZoomCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'zoomw',
-      'zoomw',
-      new AcApZoomToBoxCmd()
-    )
+    addSystemCommand('hatch', 'hatch', new AcApHatchCmd())
+    addSystemCommand('-layer', '-layer', new AcApLayerCmd())
+    addSystemCommand('line', 'line', new AcApLineCmd())
+    addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
+    addSystemCommand('log', 'log', new AcApLogCmd())
+    addSystemCommand('open', 'open', new AcApOpenCmd())
+    addSystemCommand('pan', 'pan', new AcApPanCmd())
+    addSystemCommand('polygon', 'polygon', new AcApPolygonCmd())
+    addSystemCommand('pline', 'pline', new AcApPolylineCmd())
+    addSystemCommand('qnew', 'qnew', new AcApQNewCmd())
+    addSystemCommand('rectangle', 'rectangle', new AcApRectCmd())
+    addSystemCommand('regen', 'regen', new AcApRegenCmd())
+    addSystemCommand('revcircle', 'revcircle', new AcApRevCircleCmd())
+    addSystemCommand('revcloud', 'revcloud', new AcApRevCloudCmd())
+    addSystemCommand('revrect', 'revrect', new AcApRevRectCmd())
+    addSystemCommand('revvis', 'revvis', new AcApRevVisibilityCmd())
+    addSystemCommand('select', 'select', new AcApSelectCmd())
+    addSystemCommand('sketch', 'sketch', new AcApSketchCmd())
+    addSystemCommand('spline', 'spline', new AcApSplineCmd())
+    addSystemCommand('switchbg', 'switchbg', new AcApSwitchBgCmd())
+    addSystemCommand('zoom', 'zoom', new AcApZoomCmd())
+    addSystemCommand('zoomw', 'zoomw', new AcApZoomToBoxCmd())
 
     // Register system variables as commands
     const sysVars = AcDbSysVarManager.instance().getAllDescriptors()
@@ -908,9 +842,86 @@ export class AcApDocManager {
         AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
         sysVar.name,
         sysVar.name,
-        new AcApSysVarCmd()
+        new AcApSysVarCmd(),
+        this.resolveCommandAliases(sysVar.name, [])
       )
     })
+  }
+
+  /**
+   * Normalizes external command alias configuration into an internal map.
+   *
+   * Normalization rules:
+   * - Command names and aliases are trimmed and converted to uppercase.
+   * - Empty command names are ignored.
+   * - Alias strings are deduplicated per command.
+   * - Alias values identical to the command name are ignored.
+   *
+   * This method does not validate cross-command conflicts; conflict checks are
+   * handled by `AcEdCommandStack.addCommand` during registration.
+   *
+   * @param config - Optional command alias configuration from user options
+   * @returns Normalized alias override map keyed by command global name
+   */
+  private normalizeCommandAliasConfig(
+    config?: AcApDocManagerOptions['commandAliases']
+  ) {
+    const map = new Map<string, string[]>()
+    if (!config) {
+      return map
+    }
+
+    Object.entries(config).forEach(([commandName, aliases]) => {
+      const normalizedCommandName = commandName.trim().toUpperCase()
+      if (!normalizedCommandName) {
+        return
+      }
+      const aliasList = Array.isArray(aliases) ? aliases : [aliases]
+      const normalizedAliases = new Set<string>()
+      aliasList.forEach(alias => {
+        const normalizedAlias = alias.trim().toUpperCase()
+        if (normalizedAlias && normalizedAlias !== normalizedCommandName) {
+          normalizedAliases.add(normalizedAlias)
+        }
+      })
+      map.set(normalizedCommandName, [...normalizedAliases])
+    })
+
+    return map
+  }
+
+  /**
+   * Resolves the final alias list for a command.
+   *
+   * Behavior:
+   * - If the user configured aliases for this command, return that list directly.
+   * - Otherwise, return normalized built-in defaults.
+   *
+   * All returned aliases are uppercase and deduplicated. Any alias equal to the
+   * command name itself is dropped to avoid redundant/ambiguous registration.
+   *
+   * @param commandName - Command global name
+   * @param defaultAliases - Built-in default aliases for this command
+   * @returns Final aliases used for command registration
+   */
+  private resolveCommandAliases(commandName: string, defaultAliases: string[]) {
+    const normalizedCommandName = commandName.trim().toUpperCase()
+    const configuredAliases = this._commandAliasOverrides.get(
+      normalizedCommandName
+    )
+
+    if (configuredAliases) {
+      return [...configuredAliases]
+    }
+
+    const normalizedDefaults = new Set<string>()
+    defaultAliases.forEach(alias => {
+      const normalizedAlias = alias.trim().toUpperCase()
+      if (normalizedAlias && normalizedAlias !== normalizedCommandName) {
+        normalizedDefaults.add(normalizedAlias)
+      }
+    })
+    return [...normalizedDefaults]
   }
 
   /**
