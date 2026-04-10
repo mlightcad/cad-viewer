@@ -317,6 +317,91 @@ export default {
     arcEndPoint: '指定弧的终点：',
     arcRadius: '指定弧半径：'
   },
+  layer: {
+    main: '输入选项',
+    listSummary: '图层列表已输出到浏览器控制台',
+    emptyInput: '未输入图层名。',
+    newPrompt: '输入新建图层名称（可用逗号分隔多个）：',
+    makePrompt: '输入要创建并设为当前的图层名：',
+    setPrompt: '输入要设为当前的图层名：',
+    onPrompt: '输入要打开的图层名：',
+    offPrompt: '输入要关闭的图层名：',
+    freezePrompt: '输入要冻结的图层名：',
+    thawPrompt: '输入要解冻的图层名：',
+    lockPrompt: '输入要锁定的图层名：',
+    unlockPrompt: '输入要解锁的图层名：',
+    colorLayerPrompt: '输入要修改颜色的图层名：',
+    colorValuePrompt: '输入颜色（ACI 1-255、RGB 如 255,0,0 或颜色名）：',
+    invalidColor: '颜色输入无效。',
+    descriptionLayerPrompt: '输入要修改说明的图层名：',
+    descriptionValuePrompt: '输入新的图层说明：',
+    created: '已创建图层数量',
+    alreadyExists: '图层已存在',
+    notFound: '未找到图层',
+    cannotChangeCurrent: '不能关闭或冻结当前图层。',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      make: {
+        display: '创建并置为当前(M)',
+        local: '创建并置为当前',
+        global: 'Make'
+      },
+      set: {
+        display: '置为当前(S)',
+        local: '置为当前',
+        global: 'Set'
+      },
+      new: {
+        display: '新建(N)',
+        local: '新建',
+        global: 'New'
+      },
+      on: {
+        display: '打开(ON)',
+        local: '打开',
+        global: 'On'
+      },
+      off: {
+        display: '关闭(OF)',
+        local: '关闭',
+        global: 'Off'
+      },
+      color: {
+        display: '颜色(C)',
+        local: '颜色',
+        global: 'Color'
+      },
+      freeze: {
+        display: '冻结(F)',
+        local: '冻结',
+        global: 'Freeze'
+      },
+      thaw: {
+        display: '解冻(T)',
+        local: '解冻',
+        global: 'Thaw'
+      },
+      lock: {
+        display: '锁定(L)',
+        local: '锁定',
+        global: 'Lock'
+      },
+      unlock: {
+        display: '解锁(U)',
+        local: '解锁',
+        global: 'Unlock'
+      },
+      description: {
+        display: '说明(D)',
+        local: '说明',
+        global: 'Description'
+      }
+    }
+  },
   hatch: {
     prompt: '选择边界对象或',
     pickPoint: '指定内部点（或按 Enter 结束）：',

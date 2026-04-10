@@ -40,6 +40,9 @@ export default {
     hatch: {
       description: '用填充图案填充封闭区域或所选对象'
     },
+    '-layer': {
+      description: '通过命令行选项管理图层'
+    },
     line: {
       description: '在指定点之间绘制直线段'
     },

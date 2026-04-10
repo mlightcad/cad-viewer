@@ -182,7 +182,7 @@ Legend:
 * [x] Highlight selected entities
 * [x] Window selection
 * [x] Crossing selection
-* [ ] Selection filters (by type / layer)
+* [x] Selection filters (by type / layer)
 * [x] Selection cycling
 
 #### Snapping (OSNAP)
@@ -226,13 +226,13 @@ Legend:
 * [x] Polyline
 * [x] Spline
 * [x] Circle
-* [ ] Arc
-* [ ] Ellipse
+* [x] Arc
+* [x] Ellipse
 * [x] Rectangle / polygon
 
 #### Advanced Entities
 
-* [ ] Hatch
+* [x] Hatch
 * [ ] Text (single-line / multi-line)
 * [ ] Dimensions (linear, aligned, angular)
 * [ ] Blocks creation & insertion
@@ -271,7 +271,6 @@ Legend:
 
 * [x] Command registry
 * [ ] Command aliases
-* [ ] Keyboard-driven workflow
 * [x] Command prompts (AutoCAD-style)
 
 ### Integration & Extensibility
@@ -295,7 +294,7 @@ Legend:
 #### Offline Editor
 
 * [ ] ⏳ Local editing in browser
-* [ ] Save to DXF
+* [ ] ⏳ Save to DXF
 * [ ] Save change set / diff
 * [ ] IndexedDB persistence
 

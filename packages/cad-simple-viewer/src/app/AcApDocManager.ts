@@ -23,6 +23,7 @@ import {
   AcApEllipseCmd,
   AcApEraseCmd,
   AcApHatchCmd,
+  AcApLayerCmd,
   AcApLineCmd,
   AcApLogCmd,
   AcApMeasureAngleCmd,
@@ -772,6 +773,12 @@ export class AcApDocManager {
       'hatch',
       'hatch',
       new AcApHatchCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      '-layer',
+      '-layer',
+      new AcApLayerCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
