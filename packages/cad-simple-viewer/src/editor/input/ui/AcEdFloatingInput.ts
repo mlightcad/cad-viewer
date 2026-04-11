@@ -21,6 +21,7 @@ import {
   AcEdFloatingInputCommitCallback,
   AcEdFloatingInputDrawPreviewCallback,
   AcEdFloatingInputDynamicValueCallback,
+  AcEdFloatingInputNoneCallback,
   AcEdFloatingInputOptions,
   AcEdFloatingInputValidationCallback
 } from './AcEdFloatingInputTypes'
@@ -72,6 +73,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   private onCommit?: AcEdFloatingInputCommitCallback<T>
   private onChange?: AcEdFloatingInputChangeCallback<T>
   private onCancel?: AcEdFloatingInputCancelCallback
+  private onNone?: AcEdFloatingInputNoneCallback
 
   /** Validation and dynamic value providers */
   private validateFn: AcEdFloatingInputValidationCallback<T>
@@ -134,6 +136,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.onCommit = options.onCommit
     this.onChange = options.onChange
     this.onCancel = options.onCancel
+    this.onNone = options.onNone
 
     // -----------------------------
     // Input boxes
@@ -144,10 +147,13 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         twoInputs: options.inputCount === 2,
         validate: this.validateFn,
         onCancel: this.onCancel,
+        onNone: this.onNone,
         onCommit: this.onCommit,
         onChange: this.onChange,
         autoFocus: this.isDynamicInputEnabled(),
-        allowNone: options.allowNone
+        allowNone: options.allowNone,
+        useDefaultValue: options.useDefaultValue,
+        defaultValue: options.defaultValue
       })
     }
 

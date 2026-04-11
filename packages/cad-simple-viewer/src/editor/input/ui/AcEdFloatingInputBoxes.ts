@@ -3,6 +3,7 @@ import {
   AcEdFloatingInputCancelCallback,
   AcEdFloatingInputChangeCallback,
   AcEdFloatingInputCommitCallback,
+  AcEdFloatingInputNoneCallback,
   AcEdFloatingInputRawData,
   AcEdFloatingInputValidationCallback,
   AcEdFloatingInputValidationResult
@@ -46,6 +47,11 @@ export interface AcEdFloatingInputBoxesOptions<T> {
   onCancel?: AcEdFloatingInputCancelCallback
 
   /**
+   * Callback invoked when Enter submits "none" (AllowNone + empty typed input).
+   */
+  onNone?: AcEdFloatingInputNoneCallback
+
+  /**
    * Whether to autofocus/select inputs after mount.
    * Default: true
    */
@@ -57,6 +63,16 @@ export interface AcEdFloatingInputBoxesOptions<T> {
    * current dynamic-preview value.  Mirrors AutoCAD's AllowNone behaviour.
    */
   allowNone?: boolean
+
+  /**
+   * Whether Enter with no manual input should submit defaultValue.
+   */
+  useDefaultValue?: boolean
+
+  /**
+   * Default value submitted when useDefaultValue is true.
+   */
+  defaultValue?: T
 }
 
 /**
@@ -96,8 +112,11 @@ export class AcEdFloatingInputBoxes<T> {
   private onCommit?: AcEdFloatingInputCommitCallback<T>
   private onChange?: AcEdFloatingInputChangeCallback<T>
   private onCancel?: AcEdFloatingInputCancelCallback
+  private onNone?: AcEdFloatingInputNoneCallback
   private validateFn: AcEdFloatingInputValidationCallback<T>
   private allowNone: boolean
+  private useDefaultValue: boolean
+  private defaultValue?: T
 
   /**
    * Constructs one instance of this class
@@ -125,7 +144,10 @@ export class AcEdFloatingInputBoxes<T> {
     this.onCommit = options.onCommit
     this.onChange = options.onChange
     this.onCancel = options.onCancel
+    this.onNone = options.onNone
     this.allowNone = options.allowNone ?? false
+    this.useDefaultValue = options.useDefaultValue ?? false
+    this.defaultValue = options.defaultValue
 
     // Focus/select after mount
     if (options.autoFocus !== false) {
@@ -139,7 +161,7 @@ export class AcEdFloatingInputBoxes<T> {
 
   /** Returns true if user typed in ANY input box */
   get userTyped(): boolean {
-    return this.xInput.userTyped || !!this.xInput?.userTyped
+    return this.xInput.userTyped || !!this.yInput?.userTyped
   }
 
   /** Return one flag to indicate whether one of inputs is focused. */
@@ -209,11 +231,23 @@ export class AcEdFloatingInputBoxes<T> {
     }
 
     if (e.key === 'Enter') {
+      if (this.useDefaultValue && !this.userTyped) {
+        const committed =
+          !this.onCommit || this.onCommit(this.defaultValue as T)
+        if (committed) {
+          currentInput.markValid()
+        } else {
+          currentInput.markInvalid()
+        }
+        e.preventDefault()
+        e.stopPropagation()
+        return
+      }
+
       // When allowNone is set and the user has not manually typed coordinates,
-      // treat Enter as a cancel (finish the prompt without adding a point) so
-      // that commands like MeasureArea can use Enter-to-finish naturally.
+      // treat Enter as PromptStatus.None so commands can finish naturally.
       if (this.allowNone && !this.userTyped) {
-        this.onCancel?.()
+        this.onNone?.()
       } else {
         const state = this.validate()
         if (state.isValid && state.value != null) {

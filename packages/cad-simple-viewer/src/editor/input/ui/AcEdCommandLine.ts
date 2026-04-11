@@ -741,8 +741,10 @@ export class AcEdCommandLine {
       this.promptEl.append(options.message.trim() + ' ')
     }
 
-    const keywords = options.keywords?.toArray().filter(k => k.visible) ?? []
-    if (!keywords.length) return
+    const promptFormat = options.getKeywordPromptFormat()
+    if (!promptFormat.visibleKeywords.length) return
+    const keywords = options.keywords?.toArray().filter(k => k.visible)
+    if (!keywords?.length) return
 
     this.promptEl.append('[')
 
@@ -763,7 +765,13 @@ export class AcEdCommandLine {
       this.promptEl.append(span)
     })
 
-    this.promptEl.append(']: ')
+    this.promptEl.append(']')
+
+    if (promptFormat.defaultKeyword) {
+      this.promptEl.append(` <${promptFormat.defaultKeyword}>`)
+    }
+
+    this.promptEl.append(': ')
   }
 
   /** Resolve command name */

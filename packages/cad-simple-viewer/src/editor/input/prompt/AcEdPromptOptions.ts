@@ -1,7 +1,10 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
 
 import { AcEdPreviewJig } from '../AcEdPreviewJig'
-import { AcEdKeywordCollection } from './AcEdKeywordCollection'
+import {
+  AcEdKeywordCollection,
+  AcEdKeywordPromptFormat
+} from './AcEdKeywordCollection'
 
 /**
  * Represents the base class for prompt options in the Editor, similar to `Autodesk.AutoCAD.EditorInput.PromptOptions`.
@@ -87,6 +90,14 @@ export class AcEdPromptOptions<T = number | string | AcGePoint3d> {
    */
   get keywords(): AcEdKeywordCollection {
     return this._keywords
+  }
+
+  /**
+   * Returns AutoCAD-style keyword prompt format data:
+   * [Keywords] <Default>:
+   */
+  getKeywordPromptFormat(): AcEdKeywordPromptFormat {
+    return this._keywords.getPromptFormat()
   }
 
   /**
