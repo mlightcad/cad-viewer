@@ -71,6 +71,11 @@ export type AcEdFloatingInputChangeCallback<T> = (
 export type AcEdFloatingInputCancelCallback = () => void
 
 /**
+ * Callback invoked when user confirms "no input" (Enter with AllowNone).
+ */
+export type AcEdFloatingInputNoneCallback = () => void
+
+/**
  * Callback invoked on mousemove to update the preview geometry.
  */
 export type AcEdFloatingInputDrawPreviewCallback = (
@@ -174,6 +179,22 @@ export interface AcEdFloatingInputOptions<T> {
    * Callback invoked on cancellation (Escape or hide()).
    */
   onCancel?: AcEdFloatingInputCancelCallback
+
+  /**
+   * Callback invoked when user enters no value and prompt allows none.
+   */
+  onNone?: AcEdFloatingInputNoneCallback
+
+  /**
+   * Whether pressing Enter with no manual input should submit defaultValue.
+   */
+  useDefaultValue?: boolean
+
+  /**
+   * Default value submitted when Enter is pressed with no manual input and
+   * useDefaultValue is true.
+   */
+  defaultValue?: T
 
   /**
    * When true, pressing Enter without having manually typed coordinates
