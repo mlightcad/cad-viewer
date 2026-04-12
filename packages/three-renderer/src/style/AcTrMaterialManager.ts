@@ -5,6 +5,19 @@ import { AcTrMaterialUtil } from '../util'
 import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
 
 /**
+ * Valid material side values for cache partitioning.
+ *
+ * - `'front'` — default; culls back-faces (CW winding after CCW input).
+ * - `'back'`  — culls front-faces; used for meshes whose winding was
+ *   reversed by a mirrored transform (negative determinant).
+ *
+ * `DoubleSide` is intentionally excluded: in 2-D CAD every fill has a
+ * deterministic winding after the matrix bake, so one of the two
+ * single-side values always suffices with zero fillrate overhead.
+ */
+export type AcTrMaterialSide = 'front' | 'back'
+
+/**
  * Base class for all material managers (line, fill, point).
  *
  * This class implements:
@@ -150,9 +163,23 @@ export abstract class AcTrMaterialManager<T> {
   }
 
   /**
+   * Returns a `BackSide` variant of the given material.
+   *
+   * The default implementation returns the material unchanged — only
+   * subclasses whose primitives are affected by face culling (i.e.
+   * meshes / fills) override this to produce a cached `BackSide` clone.
+   *
+   * @param material - A material previously obtained from this manager.
+   */
+  getBackSideVariant(material: THREE.Material): THREE.Material {
+    return material
+  }
+
+  /**
    * Creates a THREE.js material and stores metadata in userData:
    *   - layer
    *   - isByLayer
+   *   - materialKey (cache key, used by getBackSideVariant for reverse lookup)
    */
   protected createMaterial(
     key: string,
@@ -161,10 +188,11 @@ export abstract class AcTrMaterialManager<T> {
   ): THREE.Material {
     const material = this.createMaterialImpl(traits, options)
 
-    // Attach metadata required for layer updates
+    // Attach metadata required for layer updates and side-variant lookups
     material.userData.layer = traits.layer
     material.userData.isByLayer = this.isByLayer(traits)
     material.userData.isForeground = traits.color.isForeground
+    material.userData.materialKey = key
 
     this.cache[key] = material
     return material
