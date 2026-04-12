@@ -216,9 +216,11 @@ export class AcTrLayer {
     if (!entity.objectId) {
       return false
     }
-    this._group.removeEntity(entity.objectId)
-    this._group.addEntity(entity)
-    return true
+    const isRemoved = this._group.removeEntity(entity.objectId)
+    if (isRemoved) {
+      this._group.addEntity(entity)
+    }
+    return isRemoved
   }
 
   /**

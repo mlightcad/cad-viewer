@@ -170,6 +170,18 @@ export default {
   mtext: {
     point: 'Specify mtext insertion point:'
   },
+  move: {
+    basePointOrDisplacement: 'Specify base point or',
+    secondPointOrDisplacement: 'Specify second point or',
+    displacement: 'Specify displacement:',
+    keywords: {
+      displacement: {
+        display: 'Displacement(D)',
+        local: 'Displacement',
+        global: 'Displacement'
+      }
+    }
+  },
   rect: {
     firstPoint: 'Specify first corner point:',
     nextPoint: 'Specify other corner point:',

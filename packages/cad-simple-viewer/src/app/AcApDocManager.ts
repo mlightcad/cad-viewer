@@ -30,6 +30,7 @@ import {
   AcApMeasureArcCmd,
   AcApMeasureAreaCmd,
   AcApMeasureDistanceCmd,
+  AcApMoveCmd,
   AcApMTextCmd,
   AcApOpenCmd,
   AcApPanCmd,
@@ -89,6 +90,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   '-LAYER': ['LA'],
   LINE: ['L'],
   MTEXT: ['T'],
+  MOVE: ['M'],
   OPEN: ['OP'],
   PAN: ['P'],
   POLYGON: ['POL'],
@@ -816,6 +818,7 @@ export class AcApDocManager {
     addSystemCommand('-layer', '-layer', new AcApLayerCmd())
     addSystemCommand('line', 'line', new AcApLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
+    addSystemCommand('move', 'move', new AcApMoveCmd())
     addSystemCommand('log', 'log', new AcApLogCmd())
     addSystemCommand('open', 'open', new AcApOpenCmd())
     addSystemCommand('pan', 'pan', new AcApPanCmd())
