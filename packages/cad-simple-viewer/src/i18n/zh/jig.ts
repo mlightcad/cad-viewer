@@ -163,6 +163,18 @@ export default {
   mtext: {
     point: '指定多行文本插入点：'
   },
+  move: {
+    basePointOrDisplacement: '指定基点或',
+    secondPointOrDisplacement: '指定第二个点或',
+    displacement: '指定位移：',
+    keywords: {
+      displacement: {
+        display: '位移(D)',
+        local: '位移',
+        global: 'Displacement'
+      }
+    }
+  },
   rect: {
     firstPoint: '指定第一个角点：',
     nextPoint: '指定另一个角点：',

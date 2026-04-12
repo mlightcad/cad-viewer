@@ -67,6 +67,10 @@ export default {
     mtext: {
       description: 'Creates one mtext entity'
     },
+    move: {
+      description: 'Moves selected entities by a displacement vector',
+      prompt: 'Select entities'
+    },
     log: {
       description: 'Logs debug information in console'
     },

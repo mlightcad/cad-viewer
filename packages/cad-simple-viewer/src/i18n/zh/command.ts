@@ -61,6 +61,10 @@ export default {
     mtext: {
       description: '创建一条多行文本（MTEXT）'
     },
+    move: {
+      description: '通过位移向量移动所选图元',
+      prompt: '选择对象'
+    },
     log: {
       description: '在控制台输出调试信息'
     },
