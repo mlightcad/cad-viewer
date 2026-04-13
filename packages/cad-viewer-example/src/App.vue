@@ -14,14 +14,6 @@
         @create="initialize"
         base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
       />
-      <!-- Test export image button -->
-      <el-button
-        type="primary"
-        style="position: fixed; top: 60px; right: 10px; z-index: 9999;"
-        @click="exportImage"
-      >
-        Export PNG
-      </el-button>
     </div>
   </div>
 </template>
@@ -71,19 +63,6 @@ const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Read)
 const handleFileSelect = (file: File, mode: AcEdOpenMode) => {
   store.selectedFile = file
   selectedMode.value = mode
-}
-
-// Export the current view as PNG image
-const exportImage = () => {
-  const view = AcApDocManager.instance.curView
-  const canvas = view.renderer.domElement
-  const dataURL = canvas.toDataURL('image/png')
-
-  // Create download link
-  const link = document.createElement('a')
-  link.download = `cad-export-${Date.now()}.png`
-  link.href = dataURL
-  link.click()
 }
 </script>
 

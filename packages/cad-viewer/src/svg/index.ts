@@ -1,4 +1,4 @@
-export { default as circle } from './circle.svg'
+export { default as download } from './download.svg'
 export { default as clearMeasurements } from './clearMeasurements.svg'
 export { default as dynamicInput } from './dynamicInput.svg'
 export { default as fullScreen } from './fullScreen.svg'

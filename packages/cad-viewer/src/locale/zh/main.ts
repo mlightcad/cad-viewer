@@ -132,6 +132,9 @@ export default {
     },
     notification: {
       tooltip: '显示通知'
+    },
+    export: {
+      tooltip: '导出图片为 PNG'
     }
   },
   toolPalette: {

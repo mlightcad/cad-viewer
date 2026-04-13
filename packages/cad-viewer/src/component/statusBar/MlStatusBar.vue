@@ -52,6 +52,7 @@
           off-color="var(--el-text-color-regular)"
           remember-last-enabled
         />
+        <ml-export-button />
         <ml-setting-button />
       </el-button-group>
     </template>
@@ -77,6 +78,7 @@ import {
 import { dynamicInput, lineWidth } from '../../svg'
 import { MlSysVarToggleButton } from '../common'
 import MlFullScreenButton from './MlFullScreenButton.vue'
+import MlExportButton from './MlExportButton.vue'
 import MlNotificationButton from './MlNotificationButton.vue'
 import MlOsnapButton from './MlOsnapButton.vue'
 import MlPointStyleButton from './MlPointStyleButton.vue'
