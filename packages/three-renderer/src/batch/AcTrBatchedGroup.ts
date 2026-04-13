@@ -4,6 +4,7 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
+import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMaterialUtil } from '../util'
 import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
 import { AcTrBatchedLine } from './AcTrBatchedLine'
@@ -340,6 +341,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     this._unbatchedEntities.delete(objectId)
     const unbatchedObjects: THREE.Object3D[] = []
     let hasUnbatched = false
+    const styleManager = entity.styleManager
 
     entity.updateMatrixWorld(true)
     entity.traverse(object => {
@@ -376,7 +378,7 @@ export class AcTrBatchedGroup extends THREE.Group {
           this.addMesh(object, {
             objectId,
             bboxIntersectionCheck: bboxIntersectionCheck
-          })
+          }, styleManager)
         )
       } else if (object instanceof THREE.Points) {
         entityInfo.push(
@@ -648,12 +650,35 @@ export class AcTrBatchedGroup extends THREE.Group {
 
   /**
    * Adds one `THREE.Mesh` object into matching mesh batch.
+   *
+   * When the mesh's world transform has a negative determinant (mirrored
+   * block reference), the triangle winding is reversed and `FrontSide`
+   * culling would discard the fill.  In that case we swap to a
+   * `BackSide` variant of the same material — zero fillrate overhead,
+   * and the mesh lands in a separate batch keyed by the variant's id.
+   *
+   * Lines and points are unaffected by face culling and do not need
+   * this treatment.
+   *
+   * **Static-transform assumption:** this check runs once when the mesh
+   * enters the batch.  If a future feature mutates transforms after
+   * batching (live edit, animation), this check will not re-run.
    */
   private addMesh(
     object: THREE.Mesh,
-    userData: AcTrBatchGeometryUserData
+    userData: AcTrBatchGeometryUserData,
+    styleManager: AcTrStyleManager
   ): AcTrEntityInBatchedObject {
-    const material = object.material as THREE.Material
+    let material = object.material as THREE.Material
+
+    // Detect mirrored transforms: a negative determinant means the
+    // transform reversed triangle winding (odd number of negative scale
+    // factors).  Swap to BackSide so the culler keeps these triangles.
+    // det === 0 is a singular (collapsed) matrix — nothing renders, skip.
+    if (object.matrixWorld.determinant() < 0) {
+      material = styleManager.getBackSideVariant(material)
+      object.material = material
+    }
 
     const batches = this.getMatchedMeshBatches(object)
     let batchedMesh = batches.get(material.id)

@@ -36,7 +36,8 @@ export function createHatchPatternShaderMaterial(
   patternAngle: number, // in radians
   cameraZoomUniform: { value: number },
   color: THREE.Color,
-  fixedThicknessInWorldCoord = 0
+  fixedThicknessInWorldCoord = 0,
+  side: THREE.Side = THREE.FrontSide
 ): THREE.Material {
   const uniforms = {
     u_cameraZoom: cameraZoomUniform,
@@ -261,6 +262,7 @@ export function createHatchPatternShaderMaterial(
     uniforms,
     vertexShader,
     fragmentShader,
-    clipping: true
+    clipping: true,
+    side
   })
 }

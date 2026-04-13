@@ -104,6 +104,22 @@ export class AcTrStyleManager {
   }
 
   /**
+   * Returns a `BackSide` variant of the given fill material.
+   *
+   * Mirrored block references (transforms with negative determinant)
+   * reverse triangle winding.  Instead of paying `DoubleSide` for every
+   * fill in the scene, the batching layer calls this method only for
+   * meshes that actually need it.  The variant is cached so repeated
+   * calls for the same material are free.
+   *
+   * For non-fill materials (lines, points) this is a no-op — those
+   * primitives are unaffected by face culling.
+   */
+  getBackSideVariant(material: THREE.Material): THREE.Material {
+    return this.fillMgr.getBackSideVariant(material)
+  }
+
+  /**
    * Forces all materials that belong to the given layer to update,
    * for traits that use ByLayer color or ByLayer lineType.
    *

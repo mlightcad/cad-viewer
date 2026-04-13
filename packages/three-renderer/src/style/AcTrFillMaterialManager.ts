@@ -5,10 +5,19 @@ import {
   AcTrPatternLine,
   createHatchPatternShaderMaterial
 } from './AcTrHatchPatternShaders'
-import { AcTrMaterialManager } from './AcTrMaterialManager'
+import { AcTrMaterialManager, AcTrMaterialSide } from './AcTrMaterialManager'
 
 export interface AcTrFillMaterialOptions {
   rebaseOffset: THREE.Vector2
+  /**
+   * Which face the rasteriser keeps.  Defaults to `'front'`.
+   *
+   * Mirrored block references (negative-determinant transforms) reverse
+   * triangle winding, causing `FrontSide` fills to be culled.  The
+   * batching layer requests `'back'` for those meshes so the culler
+   * keeps the (now CW-wound) triangles — with zero fillrate overhead.
+   */
+  side?: AcTrMaterialSide
 }
 
 /**
@@ -22,6 +31,26 @@ export interface AcTrFillMaterialOptions {
  */
 export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMaterialOptions> {
   /**
+   * Returns a `BackSide` variant of the given fill material.
+   *
+   * The variant is cached under a separate key so that mirrored and
+   * non-mirrored fills land in different batches (same draw-call cost
+   * per fragment, no `DoubleSide` overhead).
+   */
+  getBackSideVariant(material: THREE.Material): THREE.Material {
+    const key = material.userData.materialKey as string | undefined
+    if (!key) return material
+
+    // Already a back-side material — return as-is (idempotent).
+    if (material.userData.side === 'back') return material
+
+    const traits = this.keyToTraits[key]
+    if (!traits) return material
+
+    return this.getMaterial(traits, { ...traits, side: 'back' })
+  }
+
+  /**
    * Create either MeshBasicMaterial or hatch shader material
    */
   protected createMaterialImpl(
@@ -29,18 +58,22 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     options: AcTrFillMaterialOptions
   ): THREE.Material {
     const style = traits.fillType
+    const side = options.side ?? 'front'
+    const threeSide = side === 'back' ? THREE.BackSide : THREE.FrontSide
+
+    let material: THREE.Material
     if (!style.definitionLines || style.definitionLines.length < 1) {
-      return this.createMeshBasicMaterial(traits)
-    }
-
-    // Validate pattern lines
-    if (style.definitionLines.some(line => !line.dashLengths)) {
+      material = this.createMeshBasicMaterial(traits, threeSide)
+    } else if (style.definitionLines.some(line => !line.dashLengths)) {
       log.warn('Invalid dash pattern', style)
-      return this.createMeshBasicMaterial(traits)
+      material = this.createMeshBasicMaterial(traits, threeSide)
+    } else {
+      material = this.createHatchShaderMaterial(traits, options, threeSide)
     }
 
-    // Otherwise create new hatch shader material
-    return this.createHatchShaderMaterial(traits, options)
+    // Store side in userData so getBackSideVariant can check idempotency
+    material.userData.side = side
+    return material
   }
 
   /**
@@ -48,7 +81,8 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
    */
   private createHatchShaderMaterial(
     traits: AcGiSubEntityTraits,
-    options: AcTrFillMaterialOptions
+    options: AcTrFillMaterialOptions,
+    threeSide: THREE.Side
   ): THREE.Material {
     const style = traits.fillType
     const RATIO_FOR_NONDOT_PATTERN = 0.005
@@ -144,7 +178,9 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       patternLines,
       style.patternAngle,
       AcTrMaterialManager.CameraZoomUniform,
-      new THREE.Color(traits.rgbColor)
+      new THREE.Color(traits.rgbColor),
+      0,
+      threeSide
     )
     material.defines = {
       MAX_PATTERN_SEGMENT_COUNT: maxPatternSegmentCount
@@ -152,23 +188,31 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     return material
   }
 
-  private createMeshBasicMaterial(traits: AcGiSubEntityTraits): THREE.Material {
-    return new THREE.MeshBasicMaterial({ color: traits.rgbColor })
+  private createMeshBasicMaterial(
+    traits: AcGiSubEntityTraits,
+    side: THREE.Side
+  ): THREE.Material {
+    return new THREE.MeshBasicMaterial({ color: traits.rgbColor, side })
   }
 
   /**
-   * Build a deterministic caching key based on traits and options
+   * Build a deterministic caching key based on traits and options.
+   *
+   * The `side` dimension is appended only when it differs from the
+   * default (`'front'`), keeping existing keys stable and avoiding
+   * unnecessary cache fragmentation for the common non-mirrored path.
    */
   protected buildKey(
     traits: AcGiSubEntityTraits,
-    _options: AcTrFillMaterialOptions
+    options: AcTrFillMaterialOptions
   ): string {
     const style = traits.fillType
+    const sideSuffix = options.side === 'back' ? '_back' : ''
 
     // Use color + layer + rebaseOffset + pattern info for key
     const isSolid = !style.definitionLines || style.definitionLines.length === 0
     if (isSolid) {
-      return `solid_${traits.layer}_${traits.rgbColor}`
+      return `solid_${traits.layer}_${traits.rgbColor}${sideSuffix}`
     }
 
     const patternHash = style.definitionLines
@@ -178,6 +222,6 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       )
       .join('|')
 
-    return `hatch_${traits.layer}_${traits.rgbColor}_${style.patternAngle}_${patternHash}`
+    return `hatch_${traits.layer}_${traits.rgbColor}_${style.patternAngle}_${patternHash}${sideSuffix}`
   }
 }
