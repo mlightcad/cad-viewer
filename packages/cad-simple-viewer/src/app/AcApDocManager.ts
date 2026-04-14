@@ -18,6 +18,7 @@ import {
   AcApCircleCmd,
   AcApClearMeasurementsCmd,
   AcApConvertToDxfCmd,
+  AcApConvertToPngCmd,
   AcApConvertToSvgCmd,
   AcApDimLinearCmd,
   AcApEllipseCmd,
@@ -798,6 +799,7 @@ export class AcApDocManager {
     addSystemCommand('circle', 'circle', new AcApCircleCmd())
     addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
     addSystemCommand('csvg', 'csvg', new AcApConvertToSvgCmd())
+    addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
     addSystemCommand('dimlinear', 'dimlinear', new AcApDimLinearCmd())

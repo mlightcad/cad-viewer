@@ -138,8 +138,7 @@ export class AcTrView2d extends AcEdBaseView {
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: true,
-      preserveDrawingBuffer: true
+      alpha: true
     })
     container.appendChild(renderer.domElement)
 
