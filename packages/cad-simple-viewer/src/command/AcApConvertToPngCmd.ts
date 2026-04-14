@@ -37,13 +37,13 @@ export class AcApConvertToPngCmd extends AcEdCommand {
     // TODO: Currently using hardcoded bounds for testing
     // TODO: Should support user-provided bounds in the future
     const bounds = new AcGeBox2d(
-      new AcGePoint2d(15845.702471051365, 12489.930464275007),
-      new AcGePoint2d(106945.7030976452, 78889.9302429927)
+      new AcGePoint2d(16377.86024334189, -510257.6376045831),
+      new AcGePoint2d(142277.8602433419, -419157.6376045831)
     )
     // bounds.expandByPoint(
     //   new AcGePoint2d(19345.702471051365, -506757.6376045831)
     // )
     // bounds.expandByPoint(new AcGePoint2d(456396.1555727676, 99178.62520575267))
-    converter.convert(bounds)
+    converter.convert(bounds, 8000)
   }
 }

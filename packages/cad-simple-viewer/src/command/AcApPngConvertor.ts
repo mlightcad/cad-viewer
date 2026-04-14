@@ -59,7 +59,7 @@ export class AcApPngConvertor {
    * converter.convert(bounds); // Downloads the specified region as PNG
    * ```
    */
-  convert(bounds?: AcGeBox2d) {
+  convert(bounds?: AcGeBox2d, long_side?: number) {
     const view = AcApDocManager.instance.curView as AcTrView2d
     const renderer = view.renderer.internalRenderer
     const scene = view.internalScene
@@ -70,8 +70,23 @@ export class AcApPngConvertor {
       return
     }
 
-    const width = view.width
-    const height = view.height
+    let outputWidth = view.width
+    let outputHeight = view.height
+
+    if (long_side && bounds) {
+      const size = new AcGeVector2d()
+      bounds.getSize(size)
+      const boundsWidth = size.x
+      const boundsHeight = size.y
+      const boundsAspect = boundsWidth / boundsHeight
+      if (boundsAspect > 1) {
+        outputWidth = long_side
+        outputHeight = Math.round(long_side / boundsAspect)
+      } else {
+        outputHeight = long_side
+        outputWidth = Math.round(long_side * boundsAspect)
+      }
+    }
 
     // Save original camera state for restoration later
     const originalZoom = camera.zoom
@@ -87,8 +102,8 @@ export class AcApPngConvertor {
 
       const boundsWidth = size.x
       const boundsHeight = size.y
-      const widthRatio = width / boundsWidth
-      const heightRatio = height / boundsHeight
+      const widthRatio = view.width / boundsWidth
+      const heightRatio = view.height / boundsHeight
       const scale = Math.min(widthRatio, heightRatio)
 
       // Set camera position to center of bounds and adjust zoom
@@ -98,12 +113,16 @@ export class AcApPngConvertor {
     }
 
     // Create a render target for offscreen rendering
-    const renderTarget = new THREE.WebGLRenderTarget(width, height, {
-      minFilter: THREE.LinearFilter,
-      magFilter: THREE.LinearFilter,
-      format: THREE.RGBAFormat,
-      type: THREE.UnsignedByteType
-    })
+    const renderTarget = new THREE.WebGLRenderTarget(
+      outputWidth,
+      outputHeight,
+      {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        format: THREE.RGBAFormat,
+        type: THREE.UnsignedByteType
+      }
+    )
 
     // Store the original render target
     const originalRenderTarget = renderer.getRenderTarget()
@@ -113,8 +132,15 @@ export class AcApPngConvertor {
     renderer.render(scene, camera)
 
     // Read pixels from the render target
-    const pixels = new Uint8Array(width * height * 4)
-    renderer.readRenderTargetPixels(renderTarget, 0, 0, width, height, pixels)
+    const pixels = new Uint8Array(outputWidth * outputHeight * 4)
+    renderer.readRenderTargetPixels(
+      renderTarget,
+      0,
+      0,
+      outputWidth,
+      outputHeight,
+      pixels
+    )
 
     // Restore the original render target
     renderer.setRenderTarget(originalRenderTarget)
@@ -128,10 +154,18 @@ export class AcApPngConvertor {
     camera.updateProjectionMatrix()
 
     // Flip the image vertically (WebGL renders upside down)
-    const flippedPixels = this.flipPixelsVertically(pixels, width, height)
+    const flippedPixels = this.flipPixelsVertically(
+      pixels,
+      outputWidth,
+      outputHeight
+    )
 
     // Create canvas and draw the pixels
-    const canvas = this.createCanvasFromPixels(flippedPixels, width, height)
+    const canvas = this.createCanvasFromPixels(
+      flippedPixels,
+      outputWidth,
+      outputHeight
+    )
 
     // Export to PNG and download
     this.createFileAndDownloadIt(canvas)
