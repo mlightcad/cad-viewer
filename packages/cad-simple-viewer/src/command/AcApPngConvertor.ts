@@ -1,3 +1,4 @@
+import { AcGeBox2d, AcGeVector2d } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcApDocManager } from '../app'
@@ -39,13 +40,26 @@ export class AcApPngConvertor {
    * - Creates a canvas with the pixel data
    * - Exports as PNG and downloads with timestamp-based filename
    *
+   * @param bounds - Optional world coordinate bounding box to export.
+   *                  If provided, the camera will zoom to fit this region.
+   *                  If not provided, exports the current view.
+   *
    * @example
    * ```typescript
    * const converter = new AcApPngConvertor();
    * converter.convert(); // Downloads the drawing as PNG
    * ```
+   *
+   * @example
+   * ```typescript
+   * // Export a specific region
+   * const bounds = new AcGeBox2d();
+   * bounds.setFromExtents(new AcGePoint2d(0, 0), new AcGePoint2d(100, 100));
+   * const converter = new AcApPngConvertor();
+   * converter.convert(bounds); // Downloads the specified region as PNG
+   * ```
    */
-  convert() {
+  convert(bounds?: AcGeBox2d) {
     const view = AcApDocManager.instance.curView as AcTrView2d
     const renderer = view.renderer.internalRenderer
     const scene = view.internalScene
@@ -58,6 +72,30 @@ export class AcApPngConvertor {
 
     const width = view.width
     const height = view.height
+
+    // Save original camera state for restoration later
+    const originalZoom = camera.zoom
+    const originalPosition = camera.position.clone()
+
+    // If bounds provided, calculate zoom and position to fit the specified region
+    if (bounds) {
+      const size = new AcGeVector2d()
+      bounds.getSize(size)
+
+      const center = new AcGeVector2d()
+      bounds.getCenter(center)
+
+      const boundsWidth = size.x
+      const boundsHeight = size.y
+      const widthRatio = width / boundsWidth
+      const heightRatio = height / boundsHeight
+      const scale = Math.min(widthRatio, heightRatio)
+
+      // Set camera position to center of bounds and adjust zoom
+      camera.position.set(center.x, center.y, camera.position.z)
+      camera.zoom = scale
+      camera.updateProjectionMatrix()
+    }
 
     // Create a render target for offscreen rendering
     const renderTarget = new THREE.WebGLRenderTarget(width, height, {
@@ -83,6 +121,11 @@ export class AcApPngConvertor {
 
     // Clean up the render target
     renderTarget.dispose()
+
+    // Restore original camera state
+    camera.zoom = originalZoom
+    camera.position.copy(originalPosition)
+    camera.updateProjectionMatrix()
 
     // Flip the image vertically (WebGL renders upside down)
     const flippedPixels = this.flipPixelsVertically(pixels, width, height)
