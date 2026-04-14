@@ -375,10 +375,14 @@ export class AcTrBatchedGroup extends THREE.Group {
         )
       } else if (object instanceof THREE.Mesh) {
         entityInfo.push(
-          this.addMesh(object, {
-            objectId,
-            bboxIntersectionCheck: bboxIntersectionCheck
-          }, styleManager)
+          this.addMesh(
+            object,
+            {
+              objectId,
+              bboxIntersectionCheck: bboxIntersectionCheck
+            },
+            styleManager
+          )
         )
       } else if (object instanceof THREE.Points) {
         entityInfo.push(

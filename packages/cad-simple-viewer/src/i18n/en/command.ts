@@ -109,9 +109,6 @@ export default {
     },
     zoom: {
       description: 'Zooms to display the maximum extents of all entities'
-    },
-    zoomw: {
-      description: 'Zooms to display an area specified by a rectangular window'
     }
   },
   USER: {}

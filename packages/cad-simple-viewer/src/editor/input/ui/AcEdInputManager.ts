@@ -1367,6 +1367,16 @@ export class AcEdInputManager {
     const token = this.dequeueScriptInput()
     if (token === undefined) return undefined
 
+    const trimmed = token.trim()
+    if (!trimmed && options.allowNone) {
+      throw new AcEdNoneInputError()
+    }
+
+    const keyword = options.keywords.findByName(trimmed)
+    if (keyword) {
+      throw new AcEdKeywordInputError(keyword.globalName)
+    }
+
     const parsed = this.splitScriptedPoint(token)
     if (!parsed) {
       throw new Error(`Invalid point input '${token}'`)

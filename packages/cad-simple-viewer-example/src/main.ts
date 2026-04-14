@@ -133,14 +133,14 @@ class CadViewerApp {
       if (!this.hasLoadedDocument || !this.isInitialized) {
         return
       }
-      AcApDocManager.instance.sendStringToExecute('zoom')
+      AcApDocManager.instance.sendStringToExecute('zoom\\nall')
     })
 
     this.toolbarZoomWindowButton.addEventListener('click', () => {
       if (!this.hasLoadedDocument || !this.isInitialized) {
         return
       }
-      AcApDocManager.instance.sendStringToExecute('zoomw')
+      AcApDocManager.instance.sendStringToExecute('zoom\\nwindow')
     })
 
     this.toolbarBgButton.addEventListener('click', () => {

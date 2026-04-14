@@ -343,6 +343,46 @@ export default {
     arcEndPoint: 'Specify arc end point:',
     arcRadius: 'Specify arc radius:'
   },
+  zoom: {
+    mainPrompt: 'Specify corner of window or',
+    firstCorner: 'Specify first corner:',
+    secondCorner: 'Specify opposite corner:',
+    centerPoint: 'Specify center point:',
+    heightOrScale: 'Enter height or scale factor (nX or nXP):',
+    scaleFactor: 'Enter scale factor (nX or nXP):',
+    keywords: {
+      all: {
+        display: 'All(A)',
+        local: 'All',
+        global: 'All'
+      },
+      center: {
+        display: 'Center(C)',
+        local: 'Center',
+        global: 'Center'
+      },
+      extents: {
+        display: 'Extents(E)',
+        local: 'Extents',
+        global: 'Extents'
+      },
+      previous: {
+        display: 'Previous(P)',
+        local: 'Previous',
+        global: 'Previous'
+      },
+      scale: {
+        display: 'Scale(S)',
+        local: 'Scale',
+        global: 'Scale'
+      },
+      window: {
+        display: 'Window(W)',
+        local: 'Window',
+        global: 'Window'
+      }
+    }
+  },
   layer: {
     main: 'Enter option',
     listSummary: 'Layer list was printed to browser console',

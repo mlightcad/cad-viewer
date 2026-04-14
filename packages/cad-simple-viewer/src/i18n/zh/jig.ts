@@ -335,6 +335,46 @@ export default {
     arcEndPoint: '指定弧的终点：',
     arcRadius: '指定弧半径：'
   },
+  zoom: {
+    mainPrompt: '指定窗口角点或',
+    firstCorner: '指定第一个角点：',
+    secondCorner: '指定对角点：',
+    centerPoint: '指定缩放中心点：',
+    heightOrScale: '输入高度或比例因子（nX 或 nXP）：',
+    scaleFactor: '输入比例因子（nX 或 nXP）：',
+    keywords: {
+      all: {
+        display: '全部(A)',
+        local: '全部',
+        global: 'All'
+      },
+      center: {
+        display: '中心(C)',
+        local: '中心',
+        global: 'Center'
+      },
+      extents: {
+        display: '范围(E)',
+        local: '范围',
+        global: 'Extents'
+      },
+      previous: {
+        display: '上一个(P)',
+        local: '上一个',
+        global: 'Previous'
+      },
+      scale: {
+        display: '比例(S)',
+        local: '比例',
+        global: 'Scale'
+      },
+      window: {
+        display: '窗口(W)',
+        local: '窗口',
+        global: 'Window'
+      }
+    }
+  },
   layer: {
     main: '输入选项',
     listSummary: '图层列表已输出到浏览器控制台',
