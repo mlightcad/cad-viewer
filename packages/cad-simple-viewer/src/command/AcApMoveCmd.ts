@@ -112,11 +112,11 @@ export class AcApMoveCmd extends AcEdCommand {
     const selectionIds =
       selectionSet.count > 0
         ? selectionSet.ids
-        : (
+        : ((
             await AcApDocManager.instance.editor.getSelection(
               new AcEdPromptSelectionOptions(AcApI18n.sysCmdPrompt('move'))
             )
-          ).value?.ids ?? []
+          ).value?.ids ?? [])
 
     if (selectionIds.length === 0) return
 
@@ -140,7 +140,10 @@ export class AcApMoveCmd extends AcEdCommand {
     let basePoint: AcGePoint3d | undefined
     let displacement: AcGePoint3d | undefined
 
-    type MoveState = AcEdPromptState<AcEdPromptPointOptions, AcEdPromptPointResult>
+    type MoveState = AcEdPromptState<
+      AcEdPromptPointOptions,
+      AcEdPromptPointResult
+    >
     type MoveStep = AcEdPromptStateStep
     type MoveMachine = AcEdPromptStateMachine<
       AcEdPromptPointOptions,

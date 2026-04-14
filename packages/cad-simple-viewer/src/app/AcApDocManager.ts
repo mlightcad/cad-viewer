@@ -49,7 +49,6 @@ import {
   AcApSwitchBgCmd,
   AcApSysVarCmd,
   AcApZoomCmd,
-  AcApZoomToBoxCmd,
   AcEdCommand,
   AcEdCommandStack
 } from '../command'
@@ -99,8 +98,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   REGEN: ['RE'],
   SELECT: ['SE'],
   SPLINE: ['SPL'],
-  ZOOM: ['Z'],
-  ZOOMW: ['ZW']
+  ZOOM: ['Z']
 }
 
 /**
@@ -760,7 +758,6 @@ export class AcApDocManager {
    * - pan: Pan/move the view
    * - select: Select entities
    * - zoom: Zoom in/out
-   * - zoomw: Zoom to window/box
    *
    * All commands are registered under the system command group.
    */
@@ -836,7 +833,6 @@ export class AcApDocManager {
     addSystemCommand('spline', 'spline', new AcApSplineCmd())
     addSystemCommand('switchbg', 'switchbg', new AcApSwitchBgCmd())
     addSystemCommand('zoom', 'zoom', new AcApZoomCmd())
-    addSystemCommand('zoomw', 'zoomw', new AcApZoomToBoxCmd())
 
     // Register system variables as commands
     const sysVars = AcDbSysVarManager.instance().getAllDescriptors()

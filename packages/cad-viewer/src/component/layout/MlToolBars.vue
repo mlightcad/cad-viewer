@@ -46,13 +46,13 @@ const verticalToolbarData = computed(() => {
     {
       icon: zoomToExtent,
       text: t('main.verticalToolbar.zoomToExtent.text'),
-      command: 'zoom',
+      command: 'zoom\\nall',
       description: t('main.verticalToolbar.zoomToExtent.description')
     },
     {
       icon: zoomToBox,
       text: t('main.verticalToolbar.zoomToBox.text'),
-      command: 'zoomw',
+      command: 'zoom\\nwindow',
       description: t('main.verticalToolbar.zoomToBox.description')
     },
     {

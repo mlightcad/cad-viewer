@@ -100,9 +100,6 @@ export default {
     },
     zoom: {
       description: '缩放以显示所有对象'
-    },
-    zoomw: {
-      description: '缩放以显示矩形窗口内的对象'
     }
   },
   USER: {}
