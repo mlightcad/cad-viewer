@@ -43,7 +43,9 @@ export class AcApPngConvertor {
    * @param bounds - Optional world coordinate bounding box to export.
    *                  If provided, the camera will zoom to fit this region.
    *                  If not provided, exports the current view.
-   *
+   * @param long_side - Optional maximum dimension (width or height) in pixels for the output PNG.
+   *                    The other dimension is calculated based on the aspect ratio of bounds.
+   *                    If not provided, uses the current view dimensions.
    * @example
    * ```typescript
    * const converter = new AcApPngConvertor();
@@ -53,8 +55,7 @@ export class AcApPngConvertor {
    * @example
    * ```typescript
    * // Export a specific region
-   * const bounds = new AcGeBox2d();
-   * bounds.setFromExtents(new AcGePoint2d(0, 0), new AcGePoint2d(100, 100));
+   * const bounds = new AcGeBox2d(new AcGePoint2d(0, 0), new AcGePoint2d(100, 100));
    * const converter = new AcApPngConvertor();
    * converter.convert(bounds); // Downloads the specified region as PNG
    * ```
