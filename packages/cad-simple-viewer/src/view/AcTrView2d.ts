@@ -962,9 +962,6 @@ export class AcTrView2d extends AcEdBaseView {
     return entity.worldDraw(this._renderer, delay) as AcTrEntity | null
   }
 
-  // Define this in order to workaround libredwg bug.
-  // Should be removed after libredwg is fixed.
-  static viewportIdCounter = 1000
   /**
    * Converts the specified database entities to three entities
    * @param entities - The database entities
