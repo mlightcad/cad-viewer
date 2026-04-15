@@ -1,5 +1,10 @@
 export default {
   ACAD: {
+    pngout: {
+      boundsFirstCorner: 'Specify first corner of bounds',
+      boundsSecondCorner: 'Specify opposite corner',
+      longSidePrompt: 'Enter long side size in pixels'
+    },
     arc: {
       description: 'Creates an arc'
     },

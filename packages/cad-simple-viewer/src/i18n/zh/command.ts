@@ -1,5 +1,10 @@
 export default {
   ACAD: {
+    pngout: {
+      boundsFirstCorner: '指定边界的第一个角点',
+      boundsSecondCorner: '指定对角点',
+      longSidePrompt: '输入长边像素大小'
+    },
     arc: {
       description: '创建圆弧'
     },

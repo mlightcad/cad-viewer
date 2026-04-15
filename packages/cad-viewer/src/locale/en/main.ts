@@ -139,6 +139,9 @@ export default {
     },
     notification: {
       tooltip: 'Show notifications'
+    },
+    export: {
+      tooltip: 'Export image as PNG'
     }
   },
   toolPalette: {
