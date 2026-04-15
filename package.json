@@ -42,13 +42,7 @@
       "three": "^0.172.0",
       "vue": "^3.4.21",
       "vue-i18n": "^10.0.1"
-    },
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "esbuild",
-      "nx",
-      "vue-demi"
-    ]
+    }
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.5",
