@@ -4,6 +4,44 @@ export default {
     open: 'Open Drawing',
     export: 'Export to DXF'
   },
+  ribbon: {
+    circle: {
+      centerRadius: 'Center, Radius',
+      centerDiameter: 'Center, Diameter',
+      twoPoint: '2-Point',
+      threePoint: '3-Point',
+      tanTanRadius: 'Tan, Tan, Radius',
+      tanTanTan: 'Tan, Tan, Tan'
+    },
+    command: {
+      line: 'Line',
+      polyline: 'Polyline',
+      circle: 'Circle',
+      arc: 'Arc',
+      spline: 'Spline',
+      rect: 'Rect',
+      rectangle: 'Rectangle',
+      polygon: 'Polygon',
+      point: 'Point',
+      divide: 'Divide',
+      hatch: 'Hatch',
+      gradient: 'Gradient',
+      move: 'Move',
+      copy: 'Copy',
+      stretch: 'Stretch',
+      rotate: 'Rotate',
+      mirror: 'Mirror',
+      scale: 'Scale',
+      trim: 'Trim',
+      extend: 'Extend',
+      fillet: 'Fillet',
+      chamfer: 'Chamfer',
+      array: 'Array',
+      polarArray: 'Polar Array',
+      layerState: 'Layer State',
+      off: 'Off'
+    }
+  },
   verticalToolbar: {
     measure: {
       text: 'Measure',

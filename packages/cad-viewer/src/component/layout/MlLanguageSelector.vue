@@ -9,11 +9,10 @@
 </template>
 
 <script setup lang="ts">
-import { AcApLocale } from '@mlightcad/cad-simple-viewer'
 import { MlDropdownMenuItem, MlLanguage } from '@mlightcad/ui-components'
 import { reactive } from 'vue'
 
-import { useLocale, useSettings } from '../../composable'
+import { isSupportedLocale, LOCALE_OPTIONS, useLocale, useSettings } from '../../composable'
 import { LocaleProp } from '../../locale'
 
 const features = useSettings()
@@ -29,21 +28,17 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { effectiveLocale, setLocale } = useLocale(props.currentLocale)
 
-const languages = reactive<MlDropdownMenuItem[]>([
-  {
-    name: 'en' as AcApLocale,
-    text: 'English'
-  },
-  {
-    name: 'zh' as AcApLocale,
-    text: '简体中文'
-  }
-])
+const languages = reactive<MlDropdownMenuItem[]>(
+  LOCALE_OPTIONS.map(option => ({
+    name: option.locale,
+    text: option.label
+  }))
+)
 
 const handleClick = (lang: string) => {
   // Allow changing locale regardless of prop control
-  if (lang === 'en' || lang === 'zh') {
-    setLocale(lang as 'en' | 'zh')
+  if (isSupportedLocale(lang)) {
+    setLocale(lang)
   }
 }
 </script>

@@ -409,14 +409,13 @@ export class AcApDocManager {
 
   /**
    * Gets the singleton instance of the document manager.
-   *
-   * Creates a new instance if one doesn't exist yet.
+   * Throw one exception if the instance isn't created yet.
    *
    * @returns The singleton document manager instance
    */
   static get instance() {
     if (!AcApDocManager._instance) {
-      AcApDocManager._instance = new AcApDocManager()
+      throw new Error('AcApDocManager instance is not created yet!')
     }
     return AcApDocManager._instance
   }

@@ -4,6 +4,44 @@ export default {
     open: '打开图纸',
     export: '导出为DXF'
   },
+  ribbon: {
+    circle: {
+      centerRadius: '圆心、半径',
+      centerDiameter: '圆心、直径',
+      twoPoint: '两点',
+      threePoint: '三点',
+      tanTanRadius: '相切、相切、半径',
+      tanTanTan: '相切、相切、相切'
+    },
+    command: {
+      line: '直线',
+      polyline: '多段线',
+      circle: '圆',
+      arc: '圆弧',
+      spline: '样条曲线',
+      rect: '矩形',
+      rectangle: '矩形',
+      polygon: '多边形',
+      point: '点',
+      divide: '定数等分',
+      hatch: '填充',
+      gradient: '渐变',
+      move: '移动',
+      copy: '复制',
+      stretch: '拉伸',
+      rotate: '旋转',
+      mirror: '镜像',
+      scale: '缩放',
+      trim: '修剪',
+      extend: '延伸',
+      fillet: '圆角',
+      chamfer: '倒角',
+      array: '阵列',
+      polarArray: '环形阵列',
+      layerState: '图层状态',
+      off: '关闭'
+    }
+  },
   verticalToolbar: {
     measure: {
       text: '测量',

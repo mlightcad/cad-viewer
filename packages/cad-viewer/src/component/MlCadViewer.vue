@@ -89,7 +89,7 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { log } from '@mlightcad/data-model'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { initializeCadViewer, store } from '../app'
@@ -98,6 +98,7 @@ import {
   isDark,
   setColorTheme,
   toggleDark,
+  useDocOpenMode,
   useEntityDrawStyle,
   useLocale,
   useNotificationCenter,
@@ -110,6 +111,7 @@ import {
   MlEntityInfo,
   MlLanguageSelector,
   MlMainMenu,
+  MlRibbonCommands,
   MlToolBars
 } from './layout'
 import { MlNotificationCenter } from './notification'
@@ -174,6 +176,7 @@ const { info, warning, error, success } = useNotificationCenter()
 
 // Canvas element reference
 const containerRef = ref<HTMLDivElement>()
+const headerRef = ref<HTMLElement>()
 
 // Referenence to the root element used to switch theme
 // Editor reference that gets updated after initialization
@@ -190,8 +193,32 @@ const viewerThemeClass = computed(() =>
 )
 
 const features = useSettings()
+const docOpenMode = useDocOpenMode()
+const isWriteMode = computed(() => docOpenMode.value === AcEdOpenMode.Write)
+const headerHeightPx = ref(0)
 
 const { isShowToolbar } = useEntityDrawStyle(editor)
+
+let headerResizeObserver: ResizeObserver | undefined
+
+const updateHeaderHeight = () => {
+  headerHeightPx.value = headerRef.value?.getBoundingClientRect().height ?? 0
+}
+
+const bindHeaderObserver = () => {
+  if (!headerRef.value) {
+    headerHeightPx.value = 0
+    return
+  }
+  headerResizeObserver?.disconnect()
+  if (typeof ResizeObserver !== 'undefined') {
+    headerResizeObserver = new ResizeObserver(() => {
+      updateHeaderHeight()
+    })
+    headerResizeObserver.observe(headerRef.value)
+  }
+  updateHeaderHeight()
+}
 
 /**
  * Handles file read events from the file reader component
@@ -344,10 +371,15 @@ onMounted(async () => {
       autoResize: true,
       useMainThreadDraw: props.useMainThreadDraw
     })
-    // Set the editor reference after initialization
+    // AcApDocManager.instance is guaranteed only after viewer initialization.
     editorRef.value = AcApDocManager.instance
     ensureColorThemeSync()
+  } else {
+    log.warn('MlCadViewer: containerRef is unavailable on mount')
   }
+
+  await nextTick()
+  bindHeaderObserver()
 
   // If URL prop is provided, automatically load the file on mount
   if (props.url) {
@@ -375,8 +407,18 @@ onUnmounted(() => {
   // Notify consumers first
   emit('destroy')
 
+  headerResizeObserver?.disconnect()
   AcApDocManager.instance.destroy()
 })
+
+watch(
+  [editorRef, isWriteMode, () => features.isShowToolbar],
+  async () => {
+    await nextTick()
+    bindHeaderObserver()
+  },
+  { immediate: true }
+)
 
 // Set up global event listeners for various CAD operations and notifications
 // These events are emitted by the underlying CAD engine and other components
@@ -459,73 +501,88 @@ const closeNotificationCenter = () => {
 </script>
 
 <template>
-  <!-- Canvas element for CAD rendering - positioned as background -->
-  <div
-    :class="viewerThemeClass"
-    ref="containerRef"
-    class="ml-cad-container"
-  ></div>
-
   <!-- Main CAD viewer container with complete UI layout -->
   <div
-    v-if="editorRef"
     :class="viewerThemeClass"
+    :style="{ '--ml-header-height': `${headerHeightPx}px` }"
     class="ml-cad-viewer-container"
   >
     <!-- Element Plus configuration provider for internationalization -->
     <el-config-provider :locale="elementPlusLocale">
-      <!-- Header section with main menu and language selector -->
-      <header>
-        <ml-main-menu />
-        <ml-language-selector :current-locale="effectiveLocale" />
-      </header>
+      <div class="ml-cad-layout">
+        <!-- Header section with main menu and language selector -->
+        <header v-if="editorRef" ref="headerRef" class="ml-cad-header">
+          <ml-ribbon-commands
+            v-if="isWriteMode"
+            :current-locale="effectiveLocale"
+          />
+          <ml-main-menu v-if="!isWriteMode" />
+          <ml-language-selector
+            v-if="!isWriteMode"
+            :current-locale="effectiveLocale"
+          />
+        </header>
 
-      <!-- Main content area with CAD viewing tools and controls -->
-      <main>
-        <!-- Display current filename at the top center -->
-        <div
-          v-if="features.isShowFileName && !isShowToolbar"
-          class="ml-file-name"
-        >
-          {{ store.fileName }}
-        </div>
+        <!-- Main content area with CAD viewing tools and controls -->
+        <main class="ml-cad-main">
+          <!-- Canvas element for CAD rendering -->
+          <div
+            :class="viewerThemeClass"
+            ref="containerRef"
+            class="ml-cad-container"
+          ></div>
 
-        <!-- Toolbar for entity draw style -->
-        <ml-entity-draw-style-toolbar
-          :editor="editor"
-          class="ml-rev-tool-bar"
-        />
+          <!-- Display current filename at the top center -->
+          <div
+            v-if="
+              editorRef &&
+              !isWriteMode &&
+              features.isShowFileName &&
+              !isShowToolbar
+            "
+            class="ml-file-name"
+          >
+            {{ store.fileName }}
+          </div>
 
-        <!-- Toolbar with common CAD operations (zoom, pan, select, etc.) -->
-        <ml-tool-bars />
+          <!-- Toolbar for entity draw style -->
+          <ml-entity-draw-style-toolbar
+            v-if="editorRef"
+            :editor="editor"
+            class="ml-rev-tool-bar"
+          />
 
-        <!-- Layer manager palette and entity properties palette for controlling entity visibility and properties -->
-        <ml-palette-manager :editor="editor" />
+          <!-- Toolbar with common CAD operations (zoom, pan, select, etc.) -->
+          <ml-tool-bars v-if="editorRef && !isWriteMode" />
 
-        <!-- Dialog manager for modal dialogs and settings -->
-        <ml-dialog-manager />
-      </main>
+          <!-- Layer manager palette and entity properties palette for controlling entity visibility and properties -->
+          <ml-palette-manager v-if="editorRef" :editor="editor" />
 
-      <!-- Footer section with command line and status information -->
-      <footer>
-        <!-- Status bar with progress, settings, and theme controls -->
-        <ml-status-bar
-          :is-dark="isDark"
-          :toggle-dark="toggleDark"
-          @toggle-notification-center="toggleNotificationCenter"
-        />
-      </footer>
+          <!-- Dialog manager for modal dialogs and settings -->
+          <ml-dialog-manager v-if="editorRef" />
+        </main>
+
+        <!-- Footer section with command line and status information -->
+        <footer v-if="editorRef" class="ml-cad-footer">
+          <!-- Status bar with progress, settings, and theme controls -->
+          <ml-status-bar
+            :is-dark="isDark"
+            :toggle-dark="toggleDark"
+            @toggle-notification-center="toggleNotificationCenter"
+          />
+        </footer>
+      </div>
 
       <!-- Hidden components for file handling and entity information -->
       <!-- File reader for local file uploads -->
-      <ml-file-reader @file-read="handleFileRead" />
+      <ml-file-reader v-if="editorRef" @file-read="handleFileRead" />
 
       <!-- Entity info panel for displaying object properties -->
-      <ml-entity-info />
+      <ml-entity-info v-if="editorRef" />
 
       <!-- Notification center -->
       <ml-notification-center
-        v-if="showNotificationCenter"
+        v-if="editorRef && showNotificationCenter"
         @close="closeNotificationCenter"
       />
     </el-config-provider>
@@ -537,24 +594,56 @@ const closeNotificationCenter = () => {
 /* Container element styling */
 .ml-cad-container {
   position: absolute;
-  top: 0px;
-  left: 0px;
-  height: calc(
-    100vh - var(--ml-status-bar-height)
-  ); /* Adjusts for menu and status bar */
-  width: 100%;
+  inset: 0;
   display: block;
   outline: none;
-  z-index: 1; /* Canvas above background but below UI */
+  z-index: 1; /* Canvas below UI overlays inside main */
   pointer-events: auto; /* Ensure container can receive mouse events */
 }
 
 /* Main CAD viewer container styling */
 .ml-cad-viewer-container {
-  position: relative;
-  width: 100vw;
+  position: fixed;
+  inset: 0;
   z-index: 2;
   pointer-events: auto;
+  overflow: hidden;
+}
+
+.ml-cad-layout {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.ml-cad-viewer-container > .el-config-provider {
+  display: block;
+  height: 100%;
+}
+
+.ml-cad-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+}
+
+.ml-cad-main {
+  position: absolute;
+  top: var(--ml-header-height);
+  left: 0;
+  right: 0;
+  bottom: var(--ml-status-bar-height);
+  min-height: 0;
+}
+
+.ml-cad-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
 }
 
 /* Position the filename display at the top center of the viewer */

@@ -7,6 +7,18 @@ import { useI18n } from 'vue-i18n'
 import { i18n, LocaleProp } from '../locale'
 
 const STORAGE_KEY = 'preferred_lang'
+export const LOCALE_OPTIONS = [
+  { locale: 'en' as const, label: 'English' },
+  { locale: 'zh' as const, label: '简体中文' }
+]
+
+export const isSupportedLocale = (value: string): value is AcApLocale => {
+  return value === 'en' || value === 'zh'
+}
+
+const normalizeLocale = (value: string | null | undefined): AcApLocale => {
+  return value === 'zh' ? 'zh' : 'en'
+}
 
 export function useLocale(propLocale?: LocaleProp) {
   const { locale: i18nLocale } = useI18n()
@@ -14,10 +26,10 @@ export function useLocale(propLocale?: LocaleProp) {
   // Get initial locale from localStorage or browser preference
   const getInitialLocale = (): AcApLocale => {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'en' || stored === 'zh') return stored
+    if (stored && isSupportedLocale(stored)) return stored
 
     const browserLang = navigator.language.toLowerCase()
-    const browserLocale = browserLang.substring(0, 2) === 'zh' ? 'zh' : 'en'
+    const browserLocale = normalizeLocale(browserLang.substring(0, 2))
     AcApI18n.setCurrentLocale(browserLocale)
     return browserLocale
   }
@@ -69,13 +81,13 @@ export function useLocale(propLocale?: LocaleProp) {
   // Watch for i18n locale changes (from other components)
   watch(
     () => i18nLocale.value,
-    newI18nLocale => {
-      // Only update if not controlled by prop
-      if (!propLocale || propLocale === 'default') {
-        const validLocale = newI18nLocale === 'zh' ? 'zh' : 'en'
-        setLocale(validLocale)
+      newI18nLocale => {
+        // Only update if not controlled by prop
+        if (!propLocale || propLocale === 'default') {
+          const validLocale = normalizeLocale(newI18nLocale)
+          setLocale(validLocale)
+        }
       }
-    }
   )
 
   // Element Plus locale computed
