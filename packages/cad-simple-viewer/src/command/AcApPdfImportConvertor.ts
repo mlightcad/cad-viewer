@@ -5,8 +5,8 @@ import {
   AcGePoint3d,
   log
 } from '@mlightcad/data-model'
-import type { PDFOperatorList } from 'pdfjs-dist/types/src/display/api'
 import * as pdfjsLib from 'pdfjs-dist'
+import type { PDFOperatorList } from 'pdfjs-dist/types/src/display/api'
 
 import { AcApDocManager } from '../app'
 
