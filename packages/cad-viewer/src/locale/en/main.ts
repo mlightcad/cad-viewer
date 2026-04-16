@@ -5,6 +5,18 @@ export default {
     export: 'Export to DXF'
   },
   ribbon: {
+    arc: {
+      threePoint: '3-Point',
+      startCenterEnd: 'Start, Center, End',
+      startCenterAngle: 'Start, Center, Angle',
+      startCenterLength: 'Start, Center, Length',
+      startEndAngle: 'Start, End, Angle',
+      startEndDirection: 'Start, End, Direction',
+      startEndRadius: 'Start, End, Radius',
+      centerStartEnd: 'Center, Start, End',
+      centerStartAngle: 'Center, Start, Angle',
+      centerStartLength: 'Center, Start, Length'
+    },
     circle: {
       centerRadius: 'Center, Radius',
       centerDiameter: 'Center, Diameter',

@@ -20,7 +20,17 @@ import { useCommands, useDocOpenMode, useSettings } from '../../composable'
 import { LocaleProp } from '../../locale'
 import {
   arc,
+  arcStartCenterAngle,
+  arcStartCenterEnd,
+  arcStartCenterLength,
+  arcThreePoints,
   circle,
+  circleCenterDiameter,
+  circleCenterRadius,
+  circleTanTanRadius,
+  circleTanTanTan,
+  circleThreePoints,
+  circleTwoPoints,
   fullScreen,
   hatch,
   layer,
@@ -29,8 +39,7 @@ import {
   pointstyle1,
   polyline,
   rect,
-  setting
-} from '../../svg'
+  setting} from '../../svg'
 import MlRibbonLanguageSelector from './MlRibbonLanguageSelector.vue'
 
 interface Props {
@@ -83,37 +92,37 @@ const buildBaseTabs = (): RibbonTabModel[] => [
                 label: t('main.ribbon.command.circle'),
                 size: 'large',
                 props: {
-                  icon: circle,
+                  icon: circleCenterRadius,
                   options: [
                     {
                       value: 'circle-center-radius',
                       label: t('main.ribbon.circle.centerRadius'),
-                      icon: circle
+                      icon: circleCenterRadius
                     },
                     {
                       value: 'circle-center-diameter',
                       label: t('main.ribbon.circle.centerDiameter'),
-                      icon: arc
+                      icon: circleCenterDiameter
                     },
                     {
                       value: 'circle-2-point',
                       label: t('main.ribbon.circle.twoPoint'),
-                      icon: rect
+                      icon: circleTwoPoints
                     },
                     {
                       value: 'circle-3-point',
                       label: t('main.ribbon.circle.threePoint'),
-                      icon: pointstyle1
+                      icon: circleThreePoints
                     },
                     {
                       value: 'circle-tan-tan-radius',
                       label: t('main.ribbon.circle.tanTanRadius'),
-                      icon: hatch
+                      icon: circleTanTanRadius
                     },
                     {
                       value: 'circle-tan-tan-tan',
                       label: t('main.ribbon.circle.tanTanTan'),
-                      icon: polyline
+                      icon: circleTanTanTan
                     }
                   ]
                 }
@@ -124,10 +133,58 @@ const buildBaseTabs = (): RibbonTabModel[] => [
                 label: t('main.ribbon.command.arc'),
                 size: 'large',
                 props: {
-                  icon: arc,
+                  icon: arcThreePoints,
                   options: [
-                    { value: 'arc', label: t('main.ribbon.command.arc') },
-                    { value: 'spline', label: t('main.ribbon.command.spline') }
+                    {
+                      value: 'arc-3-point',
+                      label: t('main.ribbon.arc.threePoint'),
+                      icon: arcThreePoints
+                    },
+                    {
+                      value: 'arc-start-center-end',
+                      label: t('main.ribbon.arc.startCenterEnd'),
+                      icon: arcStartCenterEnd
+                    },
+                    {
+                      value: 'arc-start-center-angle',
+                      label: t('main.ribbon.arc.startCenterAngle'),
+                      icon: arcStartCenterAngle
+                    },
+                    {
+                      value: 'arc-start-center-length',
+                      label: t('main.ribbon.arc.startCenterLength'),
+                      icon: arcStartCenterLength
+                    },
+                    {
+                      value: 'arc-start-end-angle',
+                      label: t('main.ribbon.arc.startEndAngle'),
+                      icon: arc
+                    },
+                    {
+                      value: 'arc-start-end-direction',
+                      label: t('main.ribbon.arc.startEndDirection'),
+                      icon: arc
+                    },
+                    {
+                      value: 'arc-start-end-radius',
+                      label: t('main.ribbon.arc.startEndRadius'),
+                      icon: arc
+                    },
+                    {
+                      value: 'arc-center-start-end',
+                      label: t('main.ribbon.arc.centerStartEnd'),
+                      icon: arc
+                    },
+                    {
+                      value: 'arc-center-start-angle',
+                      label: t('main.ribbon.arc.centerStartAngle'),
+                      icon: arc
+                    },
+                    {
+                      value: 'arc-center-start-length',
+                      label: t('main.ribbon.arc.centerStartLength'),
+                      icon: arc
+                    }
                   ]
                 }
               },
@@ -139,8 +196,14 @@ const buildBaseTabs = (): RibbonTabModel[] => [
                 props: {
                   icon: rect,
                   options: [
-                    { value: 'rectang', label: t('main.ribbon.command.rectangle') },
-                    { value: 'polygon', label: t('main.ribbon.command.polygon') }
+                    {
+                      value: 'rectang',
+                      label: t('main.ribbon.command.rectangle')
+                    },
+                    {
+                      value: 'polygon',
+                      label: t('main.ribbon.command.polygon')
+                    }
                   ]
                 }
               },
@@ -166,7 +229,10 @@ const buildBaseTabs = (): RibbonTabModel[] => [
                   icon: hatch,
                   options: [
                     { value: 'hatch', label: t('main.ribbon.command.hatch') },
-                    { value: 'gradient', label: t('main.ribbon.command.gradient') }
+                    {
+                      value: 'gradient',
+                      label: t('main.ribbon.command.gradient')
+                    }
                   ]
                 }
               }
@@ -247,7 +313,10 @@ const buildBaseTabs = (): RibbonTabModel[] => [
                   icon: Operation,
                   options: [
                     { value: 'fillet', label: t('main.ribbon.command.fillet') },
-                    { value: 'chamfer', label: t('main.ribbon.command.chamfer') }
+                    {
+                      value: 'chamfer',
+                      label: t('main.ribbon.command.chamfer')
+                    }
                   ]
                 }
               },
@@ -260,7 +329,10 @@ const buildBaseTabs = (): RibbonTabModel[] => [
                   icon: Grid,
                   options: [
                     { value: 'array', label: t('main.ribbon.command.array') },
-                    { value: 'polararray', label: t('main.ribbon.command.polarArray') }
+                    {
+                      value: 'polararray',
+                      label: t('main.ribbon.command.polarArray')
+                    }
                   ]
                 }
               }
@@ -317,6 +389,12 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-line', 'line')
   commandByItemId.set('cmd-polyline', 'pline')
   commandByItemId.set('cmd-circle', 'circle')
+  commandByItemId.set('circle-center-radius', 'circle')
+  commandByItemId.set('circle-center-diameter', 'circle\\nDiameter')
+  commandByItemId.set('circle-2-point', 'circle\\n2P')
+  commandByItemId.set('circle-3-point', 'circle\\n3P')
+  commandByItemId.set('circle-tan-tan-radius', 'circle')
+  commandByItemId.set('circle-tan-tan-tan', 'circle')
   commandByItemId.set('cmd-arc', 'arc')
   commandByItemId.set('cmd-rect', 'rectang')
   commandByItemId.set('cmd-point', 'point')
@@ -396,7 +474,6 @@ const handleRibbonItemClick = (payload: {
   if (!command) return
   AcApDocManager.instance.sendStringToExecute(command)
 }
-
 </script>
 
 <template>

@@ -81,13 +81,13 @@ export function useLocale(propLocale?: LocaleProp) {
   // Watch for i18n locale changes (from other components)
   watch(
     () => i18nLocale.value,
-      newI18nLocale => {
-        // Only update if not controlled by prop
-        if (!propLocale || propLocale === 'default') {
-          const validLocale = normalizeLocale(newI18nLocale)
-          setLocale(validLocale)
-        }
+    newI18nLocale => {
+      // Only update if not controlled by prop
+      if (!propLocale || propLocale === 'default') {
+        const validLocale = normalizeLocale(newI18nLocale)
+        setLocale(validLocale)
       }
+    }
   )
 
   // Element Plus locale computed

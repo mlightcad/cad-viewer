@@ -11,12 +11,16 @@ export function useDocOpenMode() {
       const manager = AcApDocManager.instance
       mode.value = manager.curDocument.openMode
 
-      const onDocumentActivated = (args: { doc: { openMode: AcEdOpenMode } }) => {
+      const onDocumentActivated = (args: {
+        doc: { openMode: AcEdOpenMode }
+      }) => {
         mode.value = args.doc.openMode
       }
       manager.events.documentActivated.addEventListener(onDocumentActivated)
       unbind = () => {
-        manager.events.documentActivated.removeEventListener(onDocumentActivated)
+        manager.events.documentActivated.removeEventListener(
+          onDocumentActivated
+        )
       }
       return true
     } catch {

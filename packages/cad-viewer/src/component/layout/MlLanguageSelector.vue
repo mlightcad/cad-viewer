@@ -12,7 +12,12 @@
 import { MlDropdownMenuItem, MlLanguage } from '@mlightcad/ui-components'
 import { reactive } from 'vue'
 
-import { isSupportedLocale, LOCALE_OPTIONS, useLocale, useSettings } from '../../composable'
+import {
+  isSupportedLocale,
+  LOCALE_OPTIONS,
+  useLocale,
+  useSettings
+} from '../../composable'
 import { LocaleProp } from '../../locale'
 
 const features = useSettings()

@@ -1,6 +1,10 @@
 <template>
   <div class="ml-ribbon-language-switch">
-    <el-select v-model="language" size="small" class="ml-ribbon-language-switch__select">
+    <el-select
+      v-model="language"
+      size="small"
+      class="ml-ribbon-language-switch__select"
+    >
       <el-option
         v-for="option in languageOptions"
         :key="option.value"

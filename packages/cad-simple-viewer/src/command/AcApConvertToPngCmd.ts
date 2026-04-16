@@ -68,10 +68,12 @@ export class AcApConvertToPngCmd extends AcEdCommand {
       AcApI18n.t('pngout.longSidePrompt')
     )
     longSidePrompt.allowNone = true
-    const longSideResult = await AcApDocManager.instance.editor.getDouble(longSidePrompt)
+    const longSideResult =
+      await AcApDocManager.instance.editor.getDouble(longSidePrompt)
 
     const longSide =
-      longSideResult.status === AcEdPromptStatus.OK && longSideResult.value !== undefined
+      longSideResult.status === AcEdPromptStatus.OK &&
+      longSideResult.value !== undefined
         ? longSideResult.value
         : 8000
 

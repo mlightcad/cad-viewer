@@ -5,6 +5,18 @@ export default {
     export: '导出为DXF'
   },
   ribbon: {
+    arc: {
+      threePoint: '三点',
+      startCenterEnd: '起点、圆心、终点',
+      startCenterAngle: '起点、圆心、角度',
+      startCenterLength: '起点、圆心、长度',
+      startEndAngle: '起点、终点、角度',
+      startEndDirection: '起点、终点、方向',
+      startEndRadius: '起点、终点、半径',
+      centerStartEnd: '圆心、起点、终点',
+      centerStartAngle: '圆心、起点、角度',
+      centerStartLength: '圆心、起点、长度'
+    },
     circle: {
       centerRadius: '圆心、半径',
       centerDiameter: '圆心、直径',
