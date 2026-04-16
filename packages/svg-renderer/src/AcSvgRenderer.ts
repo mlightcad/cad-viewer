@@ -11,24 +11,32 @@ import {
   AcGiImageStyle,
   AcGiLineWeight,
   AcGiMTextData,
+  AcGiPointStyle,
   AcGiRenderer,
   AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
 
+import { AcSvgArea } from './AcSvgArea'
 import { AcSvgCircArc } from './AcSvgCircArc'
 import { AcTrEllipticalArc } from './AcSvgEllipticalArc'
 import { AcSvgEntity } from './AcSvgEntity'
+import { AcSvgGroup } from './AcSvgGroup'
 import { AcSvgLine } from './AcSvgLine'
+import { AcSvgLineSegments } from './AcSvgLineSegments'
+import { AcSvgMText } from './AcSvgMText'
+import { AcSvgPoint } from './AcSvgPoint'
 
 export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   private _container: Array<string>
   private _bbox: AcGeBox2d
   private _subEntityTraits: AcGiSubEntityTraits
+  private _fontMapping: AcGiFontMapping
 
   constructor() {
     this._container = new Array<string>()
     this._bbox = new AcGeBox2d()
+    this._fontMapping = {}
     this._subEntityTraits = {
       color: new AcCmColor(),
       rgbColor: 0x000000,
@@ -62,38 +70,42 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   /**
    * @inheritdoc
    */
-  setFontMapping(_mapping: AcGiFontMapping) {
-    // TODO: Implement it
+  setFontMapping(mapping: AcGiFontMapping) {
+    this._fontMapping = mapping
   }
 
   /**
    * Sets global ltscale
    */
   set ltscale(_scale: number) {
-    // TODO: Implement it
+    // Reserved for future linetype dash-pattern scaling
   }
 
   /**
    * Sets global celtscale
    */
   set celtscale(_scale: number) {
-    // TODO: Implement it
+    // Reserved for future linetype dash-pattern scaling
   }
 
   /**
    * @inheritdoc
    */
-  group(_entities: AcSvgEntity[]) {
-    // TODO: Implement it
-    return _tempEntity
+  group(entities: AcSvgEntity[]) {
+    const entity = new AcSvgGroup(entities)
+    this._container.push(entity.svg)
+    this._bbox.union(entity.box)
+    return entity
   }
 
   /**
    * @inheritdoc
    */
-  point(_point: AcGePoint3d) {
-    // TODO: Implement it
-    return _tempEntity
+  point(point: AcGePoint3d, style: AcGiPointStyle) {
+    const entity = new AcSvgPoint(point, style)
+    this._container.push(entity.svg)
+    this._bbox.union(entity.box)
+    return entity
   }
 
   /**
@@ -129,29 +141,43 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   /**
    * @inheritdoc
    */
-  lineSegments(_array: Float32Array, _itemSize: number, _indices: Uint16Array) {
-    // TODO: Implement it
-    return _tempEntity
+  lineSegments(array: Float32Array, itemSize: number, indices: Uint16Array) {
+    const entity = new AcSvgLineSegments(array, itemSize, indices)
+    this._container.push(entity.svg)
+    this._bbox.union(entity.box)
+    return entity
   }
 
   /**
    * @inheritdoc
    */
-  area(_area: AcGeArea2d) {
-    // TODO: Implement it
-    return _tempEntity
+  area(area: AcGeArea2d) {
+    const entity = new AcSvgArea(area)
+    this._container.push(entity.svg)
+    this._bbox.union(entity.box)
+    return entity
   }
 
   /**
    * @inheritdoc
    */
-  mtext(_mtext: AcGiMTextData, _style: AcGiTextStyle, _delay: boolean) {
-    // TODO: Implement it
-    return _tempEntity
+  mtext(mtext: AcGiMTextData, style: AcGiTextStyle, _delay?: boolean) {
+    // Apply font mapping when available
+    const mappedFont = this._fontMapping[style.font] ?? style.font
+    const resolvedStyle: AcGiTextStyle = mappedFont !== style.font
+      ? { ...style, font: mappedFont }
+      : style
+    const entity = new AcSvgMText(mtext, resolvedStyle)
+    this._container.push(entity.svg)
+    this._bbox.union(entity.box)
+    return entity
   }
 
   /**
    * @inheritdoc
+   * Note: image rendering is async (Blob → base64). A placeholder empty entity
+   * is returned synchronously; callers that need the rendered image should use
+   * `AcSvgImage.fromBlob()` directly.
    */
   image(_blob: Blob, _style: AcGiImageStyle) {
     return _tempEntity

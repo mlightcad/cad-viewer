@@ -11,7 +11,7 @@ export class AcTrEllipticalArc extends AcSvgEntity {
     super()
     if (ellipseArc.closed) {
       // TODO: Considering rotation
-      this.svg = `\n<epllise cx="${ellipseArc.center.x}" cy="${ellipseArc.center.y}" rx="${ellipseArc.majorAxisRadius}" ry="${ellipseArc.minorAxisRadius}"/>`
+      this.svg = `\n<ellipse cx="${ellipseArc.center.x}" cy="${ellipseArc.center.y}" rx="${ellipseArc.majorAxisRadius}" ry="${ellipseArc.minorAxisRadius}"/>`
     } else {
       const start = ellipseArc.startPoint
       const end = ellipseArc.endPoint
