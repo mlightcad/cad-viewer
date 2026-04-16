@@ -18,6 +18,7 @@ import {
   AcApCircleCmd,
   AcApClearMeasurementsCmd,
   AcApConvertToDxfCmd,
+  AcApConvertToPdfCmd,
   AcApConvertToPngCmd,
   AcApConvertToSvgCmd,
   AcApDimLinearCmd,
@@ -764,6 +765,7 @@ export class AcApDocManager {
    */
   private registerCommands() {
     const register = this._commandManager
+<<<<<<< HEAD
     /**
      * Helper for registering one built-in system command with resolved aliases.
      *
@@ -801,6 +803,58 @@ export class AcApDocManager {
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
     addSystemCommand('dimlinear', 'dimlinear', new AcApDimLinearCmd())
     addSystemCommand(
+=======
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'arc',
+      'arc',
+      new AcApArcCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'circle',
+      'circle',
+      new AcApCircleCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'cdxf',
+      'cdxf',
+      new AcApConvertToDxfCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'csvg',
+      'csvg',
+      new AcApConvertToSvgCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'cpdf',
+      'cpdf',
+      new AcApConvertToPdfCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'ellipse',
+      'ellipse',
+      new AcApEllipseCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'erase',
+      'erase',
+      new AcApEraseCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'dimlinear',
+      'dimlinear',
+      new AcApDimLinearCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+>>>>>>> b1b4b31 (feat: add PDF export command (cpdf) via jsPDF + svg2pdf.js)
       'measuredistance',
       'measuredistance',
       new AcApMeasureDistanceCmd()

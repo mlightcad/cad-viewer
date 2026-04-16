@@ -19,6 +19,9 @@
         <el-dropdown-item command="Convert">{{
           t('main.mainMenu.export')
         }}</el-dropdown-item>
+        <el-dropdown-item command="ConvertPdf">{{
+          t('main.mainMenu.exportPdf')
+        }}</el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
@@ -28,6 +31,7 @@
 import { Menu as ElMenu } from '@element-plus/icons-vue'
 import {
   AcApConvertToDxfCmd,
+  AcApConvertToPdfCmd,
   AcApDocManager,
   AcApOpenCmd,
   AcApQNewCmd
@@ -42,6 +46,9 @@ const features = useSettings()
 const handleCommand = (command: string) => {
   if (command === 'Convert') {
     const cmd = new AcApConvertToDxfCmd()
+    cmd.trigger(AcApDocManager.instance.context)
+  } else if (command === 'ConvertPdf') {
+    const cmd = new AcApConvertToPdfCmd()
     cmd.trigger(AcApDocManager.instance.context)
   } else if (command === 'QNew') {
     const cmd = new AcApQNewCmd()

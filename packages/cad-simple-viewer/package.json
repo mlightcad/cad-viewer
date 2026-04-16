@@ -50,12 +50,14 @@
   },
   "dependencies": {
     "@mlightcad/libredwg-converter": "workspace:*",
+    "jspdf": "^4.2.1",
     "mitt": "^3.0.1",
-    "rbush": "^4.0.1"
+    "rbush": "^4.0.1",
+    "svg2pdf.js": "^2.7.0"
   },
   "peerDependencies": {
     "@mlightcad/data-model": "workspace:*",
-    "three": "workspace:*",
-    "lodash-es": "4.17.21"
+    "lodash-es": "4.17.21",
+    "three": "workspace:*"
   }
 }
