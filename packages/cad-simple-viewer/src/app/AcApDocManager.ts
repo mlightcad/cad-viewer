@@ -766,7 +766,6 @@ export class AcApDocManager {
    */
   private registerCommands() {
     const register = this._commandManager
-<<<<<<< HEAD
     /**
      * Helper for registering one built-in system command with resolved aliases.
      *
@@ -798,70 +797,14 @@ export class AcApDocManager {
     addSystemCommand('arc', 'arc', new AcApArcCmd())
     addSystemCommand('circle', 'circle', new AcApCircleCmd())
     addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
+    addSystemCommand('cpdf', 'cpdf', new AcApConvertToPdfCmd())
     addSystemCommand('csvg', 'csvg', new AcApConvertToSvgCmd())
     addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
+    addSystemCommand('ipdf', 'ipdf', new AcApImportPdfCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
     addSystemCommand('dimlinear', 'dimlinear', new AcApDimLinearCmd())
     addSystemCommand(
-=======
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'arc',
-      'arc',
-      new AcApArcCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'circle',
-      'circle',
-      new AcApCircleCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'cdxf',
-      'cdxf',
-      new AcApConvertToDxfCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'csvg',
-      'csvg',
-      new AcApConvertToSvgCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'cpdf',
-      'cpdf',
-      new AcApConvertToPdfCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'ipdf',
-      'ipdf',
-      new AcApImportPdfCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'ellipse',
-      'ellipse',
-      new AcApEllipseCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'erase',
-      'erase',
-      new AcApEraseCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'dimlinear',
-      'dimlinear',
-      new AcApDimLinearCmd()
-    )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
->>>>>>> b1b4b31 (feat: add PDF export command (cpdf) via jsPDF + svg2pdf.js)
       'measuredistance',
       'measuredistance',
       new AcApMeasureDistanceCmd()
