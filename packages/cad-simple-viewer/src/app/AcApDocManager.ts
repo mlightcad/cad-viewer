@@ -21,6 +21,7 @@ import {
   AcApConvertToPdfCmd,
   AcApConvertToPngCmd,
   AcApConvertToSvgCmd,
+  AcApImportPdfCmd,
   AcApDimLinearCmd,
   AcApEllipseCmd,
   AcApEraseCmd,
@@ -833,6 +834,12 @@ export class AcApDocManager {
       'cpdf',
       'cpdf',
       new AcApConvertToPdfCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'ipdf',
+      'ipdf',
+      new AcApImportPdfCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

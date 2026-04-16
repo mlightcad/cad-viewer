@@ -22,6 +22,9 @@
         <el-dropdown-item command="ConvertPdf">{{
           t('main.mainMenu.exportPdf')
         }}</el-dropdown-item>
+        <el-dropdown-item command="ImportPdf">{{
+          t('main.mainMenu.importPdf')
+        }}</el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
@@ -33,6 +36,7 @@ import {
   AcApConvertToDxfCmd,
   AcApConvertToPdfCmd,
   AcApDocManager,
+  AcApImportPdfCmd,
   AcApOpenCmd,
   AcApQNewCmd
 } from '@mlightcad/cad-simple-viewer'
@@ -49,6 +53,9 @@ const handleCommand = (command: string) => {
     cmd.trigger(AcApDocManager.instance.context)
   } else if (command === 'ConvertPdf') {
     const cmd = new AcApConvertToPdfCmd()
+    cmd.trigger(AcApDocManager.instance.context)
+  } else if (command === 'ImportPdf') {
+    const cmd = new AcApImportPdfCmd()
     cmd.trigger(AcApDocManager.instance.context)
   } else if (command === 'QNew') {
     const cmd = new AcApQNewCmd()
