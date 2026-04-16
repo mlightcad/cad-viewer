@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "module": "es6",
+    "module": "es2020",
     "declaration": true,
     "declarationMap": true,
     "allowJs": false,

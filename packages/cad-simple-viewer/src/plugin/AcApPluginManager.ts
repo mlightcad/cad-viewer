@@ -327,7 +327,6 @@ export class AcApPluginManager {
         const importPath = `${basePath}/${pluginFile.replace(/^\//, '')}`
 
         // Dynamically import the plugin module
-        // @ts-expect-error - Dynamic imports are supported at runtime in modern environments
         const module = await import(/* @vite-ignore */ importPath)
 
         // Get the plugin from the module
