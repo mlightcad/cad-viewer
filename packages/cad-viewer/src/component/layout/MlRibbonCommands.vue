@@ -19,12 +19,16 @@ import { useI18n } from 'vue-i18n'
 import { useCommands, useDocOpenMode, useSettings } from '../../composable'
 import { LocaleProp } from '../../locale'
 import {
-  arc,
+  arcCenterStartAngle,
+  arcCenterStartEnd,
+  arcCenterStartLength,
   arcStartCenterAngle,
   arcStartCenterEnd,
   arcStartCenterLength,
+  arcStartEndAngle,
+  arcStartEndDirection,
+  arcStartEndRadius,
   arcThreePoints,
-  circle,
   circleCenterDiameter,
   circleCenterRadius,
   circleTanTanRadius,
@@ -39,7 +43,8 @@ import {
   pointstyle1,
   polyline,
   rect,
-  setting} from '../../svg'
+  setting
+} from '../../svg'
 import MlRibbonLanguageSelector from './MlRibbonLanguageSelector.vue'
 
 interface Props {
@@ -158,32 +163,32 @@ const buildBaseTabs = (): RibbonTabModel[] => [
                     {
                       value: 'arc-start-end-angle',
                       label: t('main.ribbon.arc.startEndAngle'),
-                      icon: arc
+                      icon: arcStartEndAngle
                     },
                     {
                       value: 'arc-start-end-direction',
                       label: t('main.ribbon.arc.startEndDirection'),
-                      icon: arc
+                      icon: arcStartEndDirection
                     },
                     {
                       value: 'arc-start-end-radius',
                       label: t('main.ribbon.arc.startEndRadius'),
-                      icon: arc
+                      icon: arcStartEndRadius
                     },
                     {
                       value: 'arc-center-start-end',
                       label: t('main.ribbon.arc.centerStartEnd'),
-                      icon: arc
+                      icon: arcCenterStartEnd
                     },
                     {
                       value: 'arc-center-start-angle',
                       label: t('main.ribbon.arc.centerStartAngle'),
-                      icon: arc
+                      icon: arcCenterStartAngle
                     },
                     {
                       value: 'arc-center-start-length',
                       label: t('main.ribbon.arc.centerStartLength'),
-                      icon: arc
+                      icon: arcCenterStartLength
                     }
                   ]
                 }
