@@ -41,6 +41,7 @@ import {
   line,
   move,
   pointstyle1,
+  polygon,
   polyline,
   rect,
   setting
@@ -203,11 +204,13 @@ const buildBaseTabs = (): RibbonTabModel[] => [
                   options: [
                     {
                       value: 'rectang',
-                      label: t('main.ribbon.command.rectangle')
+                      label: t('main.ribbon.command.rectangle'),
+                      icon: rect
                     },
                     {
                       value: 'polygon',
-                      label: t('main.ribbon.command.polygon')
+                      label: t('main.ribbon.command.polygon'),
+                      icon: polygon
                     }
                   ]
                 }
