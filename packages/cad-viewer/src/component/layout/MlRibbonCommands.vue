@@ -57,12 +57,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const features = useSettings()
-const docOpenMode = useDocOpenMode()
-const commands = useCommands()
 const { t, locale } = useI18n()
-
-const normalizeIdPart = (value: string) =>
-  value.toLowerCase().replace(/[^a-z0-9_-]+/g, '-')
 
 const buildBaseTabs = (): RibbonTabModel[] => [
   {
@@ -217,31 +212,20 @@ const buildBaseTabs = (): RibbonTabModel[] => [
               },
               {
                 id: 'cmd-point',
-                type: 'dropdown',
+                type: 'button',
                 label: t('main.ribbon.command.point'),
                 size: 'large',
                 props: {
-                  icon: pointstyle1,
-                  options: [
-                    { value: 'point', label: t('main.ribbon.command.point') },
-                    { value: 'divide', label: t('main.ribbon.command.divide') }
-                  ]
+                  icon: pointstyle1
                 }
               },
               {
                 id: 'cmd-hatch',
-                type: 'dropdown',
+                type: 'button',
                 label: t('main.ribbon.command.hatch'),
                 size: 'large',
                 props: {
-                  icon: hatch,
-                  options: [
-                    { value: 'hatch', label: t('main.ribbon.command.hatch') },
-                    {
-                      value: 'gradient',
-                      label: t('main.ribbon.command.gradient')
-                    }
-                  ]
+                  icon: hatch
                 }
               }
             ]
@@ -420,53 +404,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-layer-state', '-layer')
   commandByItemId.set('cmd-layer-off', 'layoff')
 
-  const commandsByGroup = new Map<string, typeof commands>()
-  for (const cmd of commands) {
-    if (cmd.mode > docOpenMode.value) continue
-    if (!commandsByGroup.has(cmd.groupName)) {
-      commandsByGroup.set(cmd.groupName, [])
-    }
-    commandsByGroup.get(cmd.groupName)!.push(cmd)
-  }
-
-  const groups = [...commandsByGroup.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .slice(0, 6)
-    .map(([groupName, groupCommands], groupIndex) => ({
-      id: `group-${normalizeIdPart(groupName)}-${groupIndex}`,
-      title: groupName,
-      autoWidth: false,
-      collections: [
-        {
-          id: `collection-${normalizeIdPart(groupName)}-${groupIndex}`,
-          layout: 'column' as const,
-          items: groupCommands
-            .slice()
-            .sort((a, b) => a.commandName.localeCompare(b.commandName))
-            .slice(0, 12)
-            .map((cmd, cmdIndex) => {
-              const itemId = `cmd-${normalizeIdPart(groupName)}-${normalizeIdPart(cmd.globalName)}-${cmdIndex}`
-              commandByItemId.set(itemId, cmd.globalName)
-              return {
-                id: itemId,
-                type: 'button' as const,
-                label: cmd.commandName,
-                size: 'small' as const
-              }
-            })
-        }
-      ]
-    }))
-
-  const tabs: RibbonTabModel[] = [
-    ...buildBaseTabs(),
-    {
-      id: 'system-commands',
-      title: 'Commands',
-      groups
-    }
-  ]
-
+  const tabs: RibbonTabModel[] = buildBaseTabs()
   return {
     tabs,
     commandByItemId
