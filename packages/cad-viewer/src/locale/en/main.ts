@@ -57,6 +57,7 @@ export default {
       gradient: 'Gradient',
       move: 'Move',
       rotate: 'Rotate',
+      copy: 'Copy',
       erase: 'Erase',
       properties: 'Properties'
     }

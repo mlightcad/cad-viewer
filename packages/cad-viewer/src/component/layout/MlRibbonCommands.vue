@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import '@mlightcad/ribbon/style.css'
 
-import { Delete, Hide, RefreshRight, View } from '@element-plus/icons-vue'
+import {
+  Delete,
+  DocumentCopy,
+  Hide,
+  RefreshRight,
+  View
+} from '@element-plus/icons-vue'
 import {
   AcApAnnotation,
   AcApConvertToDxfCmd,
@@ -495,6 +501,13 @@ const buildBaseTabs = (
                   props: { icon: RefreshRight }
                 },
                 {
+                  id: 'cmd-copy',
+                  type: 'button',
+                  label: t('main.ribbon.command.copy'),
+                  size: 'large',
+                  props: { icon: DocumentCopy }
+                },
+                {
                   id: 'cmd-erase',
                   type: 'button',
                   label: t('main.ribbon.command.erase'),
@@ -597,6 +610,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-hatch', '-hatch')
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
+  commandByItemId.set('cmd-copy', 'copy')
   commandByItemId.set('cmd-erase', 'erase')
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')

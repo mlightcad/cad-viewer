@@ -186,6 +186,76 @@ export default {
       }
     }
   },
+  copy: {
+    basePointOrOptions: 'Specify base point or',
+    displacementOrArray: 'Specify displacement or',
+    secondPointOrArray: 'Specify second point or',
+    modePrompt: 'Enter copy mode option',
+    arrayItemCount:
+      'Enter the number of items in the array including the original:',
+    arraySecondPointOrFit: 'Specify second point or',
+    arrayFitSecondPoint: 'Specify second point:',
+    keywords: {
+      displacement: {
+        display: 'Displacement(D)',
+        local: 'Displacement',
+        global: 'Displacement'
+      },
+      mode: {
+        display: 'Mode(O)',
+        local: 'Mode',
+        global: 'Mode'
+      },
+      multiple: {
+        display: 'Multiple(M)',
+        local: 'Multiple',
+        global: 'Multiple'
+      },
+      single: {
+        display: 'Single(S)',
+        local: 'Single',
+        global: 'Single'
+      },
+      array: {
+        display: 'Array(A)',
+        local: 'Array',
+        global: 'Array'
+      },
+      fit: {
+        display: 'Fit(F)',
+        local: 'Fit',
+        global: 'Fit'
+      }
+    }
+  },
+  rotate: {
+    basePoint: 'Specify base point:',
+    rotationAngleOrOptions: 'Specify rotation angle or',
+    referenceAngleOrPoints: 'Specify reference angle or',
+    firstReferencePoint: 'Specify first point of reference angle:',
+    secondReferencePoint: 'Specify second point:',
+    newAngle: 'Specify new angle:',
+    keywords: {
+      copy: {
+        display: 'Copy(C)',
+        local: 'Copy',
+        global: 'Copy'
+      },
+      reference: {
+        display: 'Reference(R)',
+        local: 'Reference',
+        global: 'Reference'
+      },
+      points: {
+        display: 'Points(P)',
+        local: 'Points',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      referencePoints: 'Invalid reference points: points must be different.'
+    }
+  },
   rect: {
     firstPoint: 'Specify first corner point:',
     nextPoint: 'Specify other corner point:',

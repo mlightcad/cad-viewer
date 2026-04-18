@@ -70,6 +70,14 @@ export default {
       description: '通过位移向量移动所选图元',
       prompt: '选择对象'
     },
+    copy: {
+      description: '通过克隆将所选图元复制到新位置',
+      prompt: '选择对象'
+    },
+    rotate: {
+      description: '绕基点旋转所选图元',
+      prompt: '选择对象'
+    },
     log: {
       description: '在控制台输出调试信息'
     },
