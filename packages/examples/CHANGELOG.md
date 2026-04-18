@@ -1,5 +1,11 @@
 # @mlightcad/cad-viewer-examples
 
+## 1.4.13
+
+### Patch Changes
+
+- feat: add commands polygon, ellipse, hatch, layer, move, qselect, and pngout
+
 ## 1.4.12
 
 ### Patch Changes
