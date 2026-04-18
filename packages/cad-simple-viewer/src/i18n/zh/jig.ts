@@ -179,6 +179,75 @@ export default {
       }
     }
   },
+  copy: {
+    basePointOrOptions: '指定基点或',
+    displacementOrArray: '指定位移或',
+    secondPointOrArray: '指定第二个点或',
+    modePrompt: '输入复制模式选项',
+    arrayItemCount: '输入阵列中的项目数（包括原对象）：',
+    arraySecondPointOrFit: '指定第二个点或',
+    arrayFitSecondPoint: '指定第二个点：',
+    keywords: {
+      displacement: {
+        display: '位移(D)',
+        local: '位移',
+        global: 'Displacement'
+      },
+      mode: {
+        display: '模式(O)',
+        local: '模式',
+        global: 'Mode'
+      },
+      multiple: {
+        display: '多个(M)',
+        local: '多个',
+        global: 'Multiple'
+      },
+      single: {
+        display: '单个(S)',
+        local: '单个',
+        global: 'Single'
+      },
+      array: {
+        display: '阵列(A)',
+        local: '阵列',
+        global: 'Array'
+      },
+      fit: {
+        display: '布满(F)',
+        local: '布满',
+        global: 'Fit'
+      }
+    }
+  },
+  rotate: {
+    basePoint: '指定基点：',
+    rotationAngleOrOptions: '指定旋转角度或',
+    referenceAngleOrPoints: '指定参考角或',
+    firstReferencePoint: '指定参考角的第一点：',
+    secondReferencePoint: '指定第二点：',
+    newAngle: '指定新角度：',
+    keywords: {
+      copy: {
+        display: '复制(C)',
+        local: '复制',
+        global: 'Copy'
+      },
+      reference: {
+        display: '参照(R)',
+        local: '参照',
+        global: 'Reference'
+      },
+      points: {
+        display: '点(P)',
+        local: '点',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      referencePoints: '参考点输入无效：两点必须不同。'
+    }
+  },
   rect: {
     firstPoint: '指定第一个角点：',
     nextPoint: '指定另一个角点：',

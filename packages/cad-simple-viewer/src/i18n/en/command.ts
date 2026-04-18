@@ -76,6 +76,14 @@ export default {
       description: 'Moves selected entities by a displacement vector',
       prompt: 'Select entities'
     },
+    copy: {
+      description: 'Copies selected entities by cloning them to new positions',
+      prompt: 'Select entities'
+    },
+    rotate: {
+      description: 'Rotates selected entities around a base point',
+      prompt: 'Select entities'
+    },
     log: {
       description: 'Logs debug information in console'
     },

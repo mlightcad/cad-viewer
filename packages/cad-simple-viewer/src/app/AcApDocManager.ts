@@ -20,6 +20,7 @@ import {
   AcApConvertToDxfCmd,
   AcApConvertToPngCmd,
   AcApConvertToSvgCmd,
+  AcApCopyCmd,
   AcApDimLinearCmd,
   AcApEllipseCmd,
   AcApEraseCmd,
@@ -45,6 +46,7 @@ import {
   AcApRevCloudCmd,
   AcApRevRectCmd,
   AcApRevVisibilityCmd,
+  AcApRotateCmd,
   AcApSelectCmd,
   AcApSketchCmd,
   AcApSplineCmd,
@@ -93,6 +95,8 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   LINE: ['L'],
   MTEXT: ['T'],
   MOVE: ['M'],
+  COPY: ['CO'],
+  ROTATE: ['RO'],
   OPEN: ['OP'],
   PAN: ['P'],
   POINT: ['PO'],
@@ -823,7 +827,9 @@ export class AcApDocManager {
     addSystemCommand('-layer', '-layer', new AcApLayerCmd())
     addSystemCommand('line', 'line', new AcApLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
+    addSystemCommand('copy', 'copy', new AcApCopyCmd())
     addSystemCommand('move', 'move', new AcApMoveCmd())
+    addSystemCommand('rotate', 'rotate', new AcApRotateCmd())
     addSystemCommand('log', 'log', new AcApLogCmd())
     addSystemCommand('open', 'open', new AcApOpenCmd())
     addSystemCommand('pan', 'pan', new AcApPanCmd())

@@ -57,6 +57,7 @@ export default {
       gradient: '渐变',
       move: '移动',
       rotate: '旋转',
+      copy: '复制',
       erase: '删除',
       properties: '属性'
     }
