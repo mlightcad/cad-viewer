@@ -2,6 +2,7 @@
   <div class="ml-ribbon-language-switch">
     <el-select
       v-model="language"
+      :disabled="props.disabled"
       size="small"
       class="ml-ribbon-language-switch__select"
     >
@@ -25,10 +26,12 @@ import { LocaleProp } from '../../locale'
 
 interface Props {
   currentLocale?: LocaleProp
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  currentLocale: undefined
+  currentLocale: undefined,
+  disabled: false
 })
 
 const { effectiveLocale, setLocale } = useLocale(props.currentLocale)

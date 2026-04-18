@@ -2,6 +2,7 @@ export default {
   arc: {
     startPointOrCenter: 'Specify start point of arc or',
     secondPointOrOptions: 'Specify second point of arc or',
+    secondPoint: 'Specify second point of arc:',
     startPoint: 'Specify start point of arc:',
     centerPoint: 'Specify center point of arc:',
     endPoint: 'Specify end point of arc:',
@@ -169,6 +170,9 @@ export default {
   },
   mtext: {
     point: 'Specify mtext insertion point:'
+  },
+  point: {
+    point: 'Specify a point'
   },
   move: {
     basePointOrDisplacement: 'Specify base point or',

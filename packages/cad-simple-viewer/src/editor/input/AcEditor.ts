@@ -160,6 +160,20 @@ export class AcEditor {
   }
 
   /**
+   * Returns the next queued scripted input without consuming it.
+   */
+  peekScriptInput() {
+    return this._inputManager.peekScriptInput()
+  }
+
+  /**
+   * Consumes and returns the next queued scripted input.
+   */
+  consumeScriptInput() {
+    return this._inputManager.consumeScriptInput()
+  }
+
+  /**
    * Gets the currently active cursor type.
    *
    * @returns The current cursor type, or undefined if none is set

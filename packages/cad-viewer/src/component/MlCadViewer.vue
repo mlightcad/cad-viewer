@@ -96,9 +96,11 @@ import { initializeCadViewer, store } from '../app'
 import {
   ensureColorThemeSync,
   isDark,
+  provideViewerRect,
   setColorTheme,
   toggleDark,
   useDocOpenMode,
+  useDocumentOpening,
   useEntityDrawStyle,
   useLocale,
   useNotificationCenter,
@@ -193,11 +195,19 @@ const viewerThemeClass = computed(() =>
 )
 
 const features = useSettings()
+const { beginDocumentOpening, endDocumentOpening } = useDocumentOpening()
 const docOpenMode = useDocOpenMode()
-const isWriteMode = computed(() => docOpenMode.value === AcEdOpenMode.Write)
+const pendingOpenMode = ref<AcEdOpenMode>()
+const effectiveOpenMode = computed(
+  () => pendingOpenMode.value ?? docOpenMode.value
+)
+const isWriteMode = computed(
+  () => effectiveOpenMode.value === AcEdOpenMode.Write
+)
 const headerHeightPx = ref(0)
 
 const { isShowToolbar } = useEntityDrawStyle(editor)
+provideViewerRect(containerRef)
 
 let headerResizeObserver: ResizeObserver | undefined
 
@@ -220,6 +230,14 @@ const bindHeaderObserver = () => {
   updateHeaderHeight()
 }
 
+const beginPendingOpen = (mode: AcEdOpenMode) => {
+  pendingOpenMode.value = mode
+}
+
+const endPendingOpen = () => {
+  pendingOpenMode.value = undefined
+}
+
 /**
  * Handles file read events from the file reader component
  * Opens the file content using the document manager
@@ -237,15 +255,22 @@ const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
     minimumChunkSize: 1000,
     mode: props.mode
   }
-  const success = await AcApDocManager.instance.openDocument(
-    fileName,
-    fileContent,
-    options
-  )
-  if (!success) {
-    throw new Error('Failed to open file')
+  beginDocumentOpening()
+  beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
+  try {
+    const success = await AcApDocManager.instance.openDocument(
+      fileName,
+      fileContent,
+      options
+    )
+    if (!success) {
+      throw new Error('Failed to open file')
+    }
+    store.fileName = AcApDocManager.instance.curDocument.docTitle
+  } finally {
+    endDocumentOpening()
+    endPendingOpen()
   }
-  store.fileName = AcApDocManager.instance.curDocument.docTitle
 }
 
 /**
@@ -255,11 +280,13 @@ const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
  * @param url - Remote URL to the CAD file
  */
 const openFileFromUrl = async (url: string) => {
+  const options: AcApOpenDatabaseOptions = {
+    minimumChunkSize: 1000,
+    mode: props.mode
+  }
+  beginDocumentOpening()
+  beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
   try {
-    const options: AcApOpenDatabaseOptions = {
-      minimumChunkSize: 1000,
-      mode: props.mode
-    }
     await AcApDocManager.instance.openUrl(url, options)
     store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch (error) {
@@ -270,6 +297,9 @@ const openFileFromUrl = async (url: string) => {
       type: 'error',
       showClose: true
     })
+  } finally {
+    endDocumentOpening()
+    endPendingOpen()
   }
 }
 
@@ -280,6 +310,12 @@ const openFileFromUrl = async (url: string) => {
  * @param file - Local File object containing the CAD file
  */
 const openLocalFile = async (file: File) => {
+  const options: AcApOpenDatabaseOptions = {
+    minimumChunkSize: 1000,
+    mode: props.mode
+  }
+  beginDocumentOpening()
+  beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
   try {
     const reader = new FileReader()
     reader.readAsArrayBuffer(file)
@@ -298,10 +334,6 @@ const openLocalFile = async (file: File) => {
     })
 
     // Open the file using the document manager
-    const options: AcApOpenDatabaseOptions = {
-      minimumChunkSize: 1000,
-      mode: props.mode
-    }
     const success = await AcApDocManager.instance.openDocument(
       file.name,
       fileContent,
@@ -318,6 +350,9 @@ const openLocalFile = async (file: File) => {
       type: 'error',
       showClose: true
     })
+  } finally {
+    endDocumentOpening()
+    endPendingOpen()
   }
 }
 
@@ -363,6 +398,11 @@ watch(
 
 // Component lifecycle: Initialize and load initial file if URL or localFile is provided
 onMounted(async () => {
+  if (props.url || props.localFile) {
+    beginDocumentOpening()
+    beginPendingOpen(props.mode)
+  }
+
   // Initialize the CAD viewer with the internal canvas
   if (containerRef.value) {
     initializeCadViewer({
@@ -553,7 +593,7 @@ const closeNotificationCenter = () => {
           />
 
           <!-- Toolbar with common CAD operations (zoom, pan, select, etc.) -->
-          <ml-tool-bars v-if="editorRef && !isWriteMode" />
+          <ml-tool-bars v-if="editorRef" />
 
           <!-- Layer manager palette and entity properties palette for controlling entity visibility and properties -->
           <ml-palette-manager v-if="editorRef" :editor="editor" />

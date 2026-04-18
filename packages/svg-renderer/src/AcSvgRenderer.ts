@@ -164,9 +164,8 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   mtext(mtext: AcGiMTextData, style: AcGiTextStyle, _delay?: boolean) {
     // Apply font mapping when available
     const mappedFont = this._fontMapping[style.font] ?? style.font
-    const resolvedStyle: AcGiTextStyle = mappedFont !== style.font
-      ? { ...style, font: mappedFont }
-      : style
+    const resolvedStyle: AcGiTextStyle =
+      mappedFont !== style.font ? { ...style, font: mappedFont } : style
     const entity = new AcSvgMText(mtext, resolvedStyle)
     this._container.push(entity.svg)
     this._bbox.union(entity.box)

@@ -11,6 +11,7 @@ import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
+  AcEdPromptAngleOptions,
   AcEdPromptDistanceOptions,
   AcEdPromptDoubleOptions,
   AcEdPromptPointOptions,
@@ -57,6 +58,17 @@ function normalizeAngle(angle: number) {
  */
 function distance2d(p1: AcGePoint3dLike, p2: AcGePoint3dLike) {
   return Math.hypot(p2.x - p1.x, p2.y - p1.y)
+}
+
+/**
+ * Computes the absolute direction angle from one point to another in degrees.
+ *
+ * @param from - Origin point.
+ * @param to - Target point.
+ * @returns Direction angle in degrees.
+ */
+function directionAngleDeg(from: AcGePoint3dLike, to: AcGePoint3dLike) {
+  return (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI
 }
 
 /**
@@ -583,6 +595,68 @@ class AcApArcJig extends AcEdPreviewJig<AcGePoint3dLike> {
   }
 }
 
+/**
+ * Numeric preview jig for ARC command.
+ *
+ * This jig is used by angle, chord-length, and radius prompts where the user
+ * is no longer selecting a point directly, but we still want the transient arc
+ * to update from the current numeric value.
+ *
+ * @typeParam T - Numeric prompt value type that drives the preview.
+ */
+class AcApArcValueJig<T> extends AcEdPreviewJig<T> {
+  /**
+   * Transient arc entity reused across preview updates.
+   */
+  private _arc: AcDbArc
+  /**
+   * Builder callback that resolves current prompt value to an arc definition.
+   */
+  private _builder: (value: T) => ArcDefinition | undefined
+
+  /**
+   * Creates a numeric preview jig.
+   *
+   * @param view - Active editor view.
+   * @param builder - Prompt-value-to-arc definition resolver.
+   * @param fallback - Initial valid fallback definition.
+   */
+  constructor(
+    view: AcEdBaseView,
+    builder: (value: T) => ArcDefinition | undefined,
+    fallback: ArcDefinition
+  ) {
+    super(view)
+    this._builder = builder
+    this._arc = createArcEntity(fallback)
+  }
+
+  /**
+   * Gets transient arc entity.
+   */
+  get entity(): AcDbArc {
+    return this._arc
+  }
+
+  /**
+   * Updates transient arc for the current numeric input value.
+   *
+   * @param value - Current prompt value.
+   */
+  update(value: T) {
+    const definition = this._builder(value)
+    if (!definition) return
+    applyArcDefinition(this._arc, definition)
+  }
+}
+
+/**
+ * Keyword identifiers used to look up localized ARC prompt options.
+ *
+ * These values map directly to `jig.arc.keywords.*` translation entries and
+ * are intentionally kept small because they are only an internal bridge
+ * between prompt-building code and i18n resources.
+ */
 type ArcKeywordKey =
   | 'angle'
   | 'center'
@@ -591,6 +665,44 @@ type ArcKeywordKey =
   | 'end'
   | 'radius'
 
+/**
+ * Script-selectable ARC entry modes.
+ *
+ * `AcApArcCmd` still exposes a single `ARC` command externally. These modes are
+ * only an internal dispatch layer that allows scripted callers such as the
+ * ribbon UI to preselect one AutoCAD-style option family or one exact branch
+ * before the normal interactive prompt flow begins.
+ *
+ * Naming conventions:
+ * - `default`: ordinary ARC startup with no preselected branch
+ * - `threePoint`: Start/Second/End flow
+ * - `startCenter*`: Start-first, then Center family
+ * - `startEnd*`: Start-first, then End family
+ * - `centerStart*`: Center-first family
+ */
+type ArcEntryMode =
+  | 'default'
+  | 'threePoint'
+  | 'startCenter'
+  | 'startCenterEnd'
+  | 'startCenterAngle'
+  | 'startCenterLength'
+  | 'startEnd'
+  | 'startEndAngle'
+  | 'startEndDirection'
+  | 'startEndRadius'
+  | 'centerStart'
+  | 'centerStartEnd'
+  | 'centerStartAngle'
+  | 'centerStartLength'
+
+/**
+ * Invalid-geometry categories used for user-facing warning messages.
+ *
+ * Each key maps to one localized `jig.arc.invalid.*` message so the command can
+ * report why a particular geometric construction failed without duplicating
+ * message-selection logic throughout the control flow.
+ */
 type ArcInvalidKey =
   | 'threePoint'
   | 'center'
@@ -598,6 +710,53 @@ type ArcInvalidKey =
   | 'chordLength'
   | 'direction'
   | 'radius'
+
+/**
+ * Normalized scripted ARC entry tokens mapped to an internal entry mode.
+ *
+ * Tokens are normalized by lowercasing and stripping non-alphanumeric
+ * characters before lookup. This lets the command accept a few equivalent
+ * spellings for the same branch, for example:
+ * - documentation-style phrases such as `Start Center End`
+ * - compact aliases such as `SCE`
+ * - historical shorthand such as `3P`
+ *
+ * The table is intentionally centralized so supported scripted spellings remain
+ * easy to audit and extend without touching the main execution logic.
+ */
+const ARC_ENTRY_MODE_BY_TOKEN: Record<string, ArcEntryMode> = {
+  '3p': 'threePoint',
+  '3point': 'threePoint',
+  threepoint: 'threePoint',
+  startcenter: 'startCenter',
+  sc: 'startCenter',
+  startcenterend: 'startCenterEnd',
+  sce: 'startCenterEnd',
+  startcenterangle: 'startCenterAngle',
+  sca: 'startCenterAngle',
+  startcenterlength: 'startCenterLength',
+  startcenterchordlength: 'startCenterLength',
+  scl: 'startCenterLength',
+  startend: 'startEnd',
+  se: 'startEnd',
+  startendangle: 'startEndAngle',
+  sea: 'startEndAngle',
+  startenddirection: 'startEndDirection',
+  sed: 'startEndDirection',
+  startendradius: 'startEndRadius',
+  ser: 'startEndRadius',
+  center: 'centerStart',
+  c: 'centerStart',
+  centerstart: 'centerStart',
+  cs: 'centerStart',
+  centerstartend: 'centerStartEnd',
+  cse: 'centerStartEnd',
+  centerstartangle: 'centerStartAngle',
+  csa: 'centerStartAngle',
+  centerstartlength: 'centerStartLength',
+  centerstartchordlength: 'centerStartLength',
+  csl: 'centerStartLength'
+}
 
 /**
  * Command to create one arc.
@@ -628,6 +787,12 @@ export class AcApArcCmd extends AcEdCommand {
     // Keep ARC behavior deterministic for each run (same as PLINE flow).
     AcApDocManager.instance.editor.resetInputToggles()
 
+    const entryMode = this.consumeEntryMode()
+    if (entryMode !== 'default') {
+      await this.executeEntryMode(context, entryMode)
+      return
+    }
+
     // Entry step:
     // Start point by default, or switch to "Center" branch.
     const prompt = new AcEdPromptPointOptions(
@@ -645,6 +810,95 @@ export class AcApArcCmd extends AcEdCommand {
     if (result.status !== AcEdPromptStatus.OK) return
 
     await this.runStartFlow(context, result.value!)
+  }
+
+  /**
+   * Executes one preselected ARC branch.
+   *
+   * This method is used only when a scripted caller queued an entry token
+   * before invoking `ARC`. Instead of starting at the standard root prompt, the
+   * command jumps directly into the requested option family so the user still
+   * interacts with a single `ARC` command while shortcuts can open a more
+   * specific workflow.
+   *
+   * @param context - Current app context.
+   * @param entryMode - Resolved scripted branch to execute.
+   */
+  private async executeEntryMode(
+    context: AcApContext,
+    entryMode: ArcEntryMode
+  ) {
+    switch (entryMode) {
+      case 'threePoint':
+        await this.runExactThreePointFlow(context)
+        return
+      case 'startCenter':
+        await this.runStartCenterFlowFromEntry(context)
+        return
+      case 'startCenterEnd':
+        await this.runExactStartCenterFlow(context, 'end')
+        return
+      case 'startCenterAngle':
+        await this.runExactStartCenterFlow(context, 'angle')
+        return
+      case 'startCenterLength':
+        await this.runExactStartCenterFlow(context, 'chordLength')
+        return
+      case 'startEnd':
+        await this.runStartEndFlowFromEntry(context)
+        return
+      case 'startEndAngle':
+        await this.runExactStartEndFlow(context, 'angle')
+        return
+      case 'startEndDirection':
+        await this.runExactStartEndFlow(context, 'direction')
+        return
+      case 'startEndRadius':
+        await this.runExactStartEndFlow(context, 'radius')
+        return
+      case 'centerStart':
+        await this.runCenterStartFlow(context)
+        return
+      case 'centerStartEnd':
+        await this.runExactCenterStartFlow(context, 'end')
+        return
+      case 'centerStartAngle':
+        await this.runExactCenterStartFlow(context, 'angle')
+        return
+      case 'centerStartLength':
+        await this.runExactCenterStartFlow(context, 'chordLength')
+        return
+    }
+  }
+
+  /**
+   * Consumes one optional scripted ARC entry token when present.
+   *
+   * This keeps `ARC` as a single command while still allowing ribbon shortcuts
+   * to preselect a specific option family or exact branch.
+   *
+   * The next queued scripted token is treated as an ARC entry selector only
+   * when it matches a known token in {@link ARC_ENTRY_MODE_BY_TOKEN}. Unknown
+   * input is left untouched so the ordinary command prompts can consume it as
+   * regular scripted input.
+   *
+   * @returns Resolved entry mode, or `'default'` when no special entry token is
+   * queued.
+   */
+  private consumeEntryMode(): ArcEntryMode {
+    const token = AcApDocManager.instance.editor.peekScriptInput()
+    if (token == null) return 'default'
+
+    const normalized = token
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '')
+    const entryMode = ARC_ENTRY_MODE_BY_TOKEN[normalized]
+
+    if (!entryMode) return 'default'
+
+    AcApDocManager.instance.editor.consumeScriptInput()
+    return entryMode
   }
 
   /**
@@ -689,6 +943,539 @@ export class AcApArcCmd extends AcEdCommand {
       message: AcApI18n.t(`jig.arc.invalid.${key}`),
       type: 'warning'
     })
+  }
+
+  /**
+   * Prompts one start point.
+   *
+   * This helper is shared by several scripted entry branches that need to begin
+   * directly at a known Start-point step instead of the normal ARC root prompt.
+   *
+   * @returns Selected start point, or `undefined` when the user cancels or the
+   * prompt does not complete successfully.
+   */
+  private async promptStartPoint() {
+    const prompt = new AcEdPromptPointOptions(AcApI18n.t('jig.arc.startPoint'))
+    const result = await AcApDocManager.instance.editor.getPoint(prompt)
+    return result.status === AcEdPromptStatus.OK ? result.value! : undefined
+  }
+
+  /**
+   * Prompts one center point, optionally using a base point for feedback.
+   *
+   * When a base point is provided, the prompt mirrors the standard ARC UX by
+   * enabling dashed reference feedback from the previously chosen point.
+   *
+   * @param basePoint - Optional reference point.
+   * @returns Selected center point, or `undefined` when the prompt is aborted.
+   */
+  private async promptCenterPoint(basePoint?: AcGePoint3dLike) {
+    const prompt = new AcEdPromptPointOptions(AcApI18n.t('jig.arc.centerPoint'))
+    if (basePoint) {
+      prompt.useBasePoint = true
+      prompt.useDashedLine = true
+      prompt.basePoint = new AcGePoint3d(basePoint)
+    }
+    const result = await AcApDocManager.instance.editor.getPoint(prompt)
+    return result.status === AcEdPromptStatus.OK ? result.value! : undefined
+  }
+
+  /**
+   * Prompts one end point, optionally using a base point for feedback.
+   *
+   * This helper is used by the scripted entry paths that need a plain End-point
+   * acquisition step before resuming the standard ARC family logic.
+   *
+   * @param basePoint - Optional reference point.
+   * @returns Selected end point, or `undefined` when the prompt is aborted.
+   */
+  private async promptEndPoint(basePoint?: AcGePoint3dLike) {
+    const prompt = new AcEdPromptPointOptions(AcApI18n.t('jig.arc.endPoint'))
+    if (basePoint) {
+      prompt.useBasePoint = true
+      prompt.useDashedLine = true
+      prompt.basePoint = new AcGePoint3d(basePoint)
+    }
+    const result = await AcApDocManager.instance.editor.getPoint(prompt)
+    return result.status === AcEdPromptStatus.OK ? result.value! : undefined
+  }
+
+  /**
+   * Prompts the second point on the arc in the 3-point workflow.
+   *
+   * This is distinct from {@link promptEndPoint} because the 3-point ARC flow
+   * uses a different prompt message and semantic meaning: the second point lies
+   * somewhere on the arc, not necessarily at its final endpoint.
+   *
+   * @param start - Arc start point.
+   * @returns Selected second point, or `undefined` when the prompt is aborted.
+   */
+  private async promptSecondPoint(start: AcGePoint3dLike) {
+    const prompt = new AcEdPromptPointOptions(AcApI18n.t('jig.arc.secondPoint'))
+    prompt.useBasePoint = true
+    prompt.useDashedLine = true
+    prompt.basePoint = new AcGePoint3d(start)
+    const result = await AcApDocManager.instance.editor.getPoint(prompt)
+    return result.status === AcEdPromptStatus.OK ? result.value! : undefined
+  }
+
+  /**
+   * Runs the exact 3-point flow selected by a scripted entry token.
+   *
+   * This bypasses the ordinary ARC root prompt and immediately acquires the
+   * Start and Second points required for the 3-point construction, then reuses
+   * the existing shared finalization logic.
+   *
+   * @param context - Current app context.
+   */
+  private async runExactThreePointFlow(context: AcApContext) {
+    const start = await this.promptStartPoint()
+    if (!start) return
+
+    const second = await this.promptSecondPoint(start)
+    if (!second) return
+
+    await this.finishThreePointArc(context, start, second)
+  }
+
+  /**
+   * Runs the Start-Center option family from an explicit entry token.
+   *
+   * This mode corresponds to the AutoCAD-style branch where the command is
+   * already committed to the Start/Center family, but the final sub-option
+   * (End, Angle, or Chord Length) is still chosen interactively.
+   *
+   * @param context - Current app context.
+   */
+  private async runStartCenterFlowFromEntry(context: AcApContext) {
+    const start = await this.promptStartPoint()
+    if (!start) return
+    await this.runStartCenterFlow(context, start)
+  }
+
+  /**
+   * Runs one exact Start-Center-* flow selected by a scripted entry token.
+   *
+   * Unlike {@link runStartCenterFlowFromEntry}, this method locks both the
+   * option family and the terminal construction variant up front. It is used by
+   * ribbon dropdown items that represent a fully specified ARC recipe.
+   *
+   * @param context - Current app context.
+   * @param variant - Terminal Start-Center variant to execute after Start and
+   * Center are collected.
+   */
+  private async runExactStartCenterFlow(
+    context: AcApContext,
+    variant: 'end' | 'angle' | 'chordLength'
+  ) {
+    const start = await this.promptStartPoint()
+    if (!start) return
+
+    const center = await this.promptCenterPoint(start)
+    if (!center) return
+
+    if (variant === 'end') {
+      await this.finishExactCenterStartEnd(context, center, start)
+      return
+    }
+
+    if (variant === 'angle') {
+      const anglePrompt = new AcEdPromptAngleOptions(
+        AcApI18n.t('jig.arc.includedAngle')
+      )
+      anglePrompt.allowNegative = true
+      anglePrompt.allowZero = false
+      anglePrompt.useBasePoint = true
+      anglePrompt.useDashedLine = true
+      anglePrompt.basePoint = new AcGePoint3d(center)
+      anglePrompt.baseAngle = directionAngleDeg(center, start)
+      anglePrompt.jig = new AcApArcValueJig(
+        context.view,
+        degreeValue =>
+          createArcFromCenterStartSweep(
+            center,
+            start,
+            this.applyCtrlDirectionValue(this.degToRad(degreeValue))
+          ),
+        createFallbackArc(start)
+      )
+      const angleResult =
+        await AcApDocManager.instance.editor.getAngle(anglePrompt)
+      const angle =
+        angleResult.status === AcEdPromptStatus.OK
+          ? angleResult.value
+          : undefined
+      if (angle == null) return
+
+      const arc = createArcFromCenterStartSweep(
+        center,
+        start,
+        this.applyCtrlDirectionValue(this.degToRad(angle))
+      )
+      if (arc) {
+        this.appendArc(context, arc)
+      } else {
+        this.warnInvalidGeometry('angle')
+      }
+      return
+    }
+
+    const chordPrompt = new AcEdPromptDistanceOptions(
+      AcApI18n.t('jig.arc.chordLength')
+    )
+    chordPrompt.allowNegative = true
+    chordPrompt.allowZero = false
+    chordPrompt.useBasePoint = true
+    chordPrompt.useDashedLine = true
+    chordPrompt.basePoint = new AcGePoint3d(start)
+    chordPrompt.jig = new AcApArcValueJig(
+      context.view,
+      chordValue =>
+        createArcFromCenterStartChord(
+          center,
+          start,
+          this.applyCtrlDirectionValue(chordValue)
+        ),
+      createFallbackArc(start)
+    )
+    const chordResult =
+      await AcApDocManager.instance.editor.getDistance(chordPrompt)
+    const chordLength =
+      chordResult.status === AcEdPromptStatus.OK ? chordResult.value : undefined
+    if (chordLength == null) return
+
+    const arc = createArcFromCenterStartChord(
+      center,
+      start,
+      this.applyCtrlDirectionValue(chordLength)
+    )
+    if (arc) {
+      this.appendArc(context, arc)
+    } else {
+      this.warnInvalidGeometry('chordLength')
+    }
+  }
+
+  /**
+   * Runs one exact Center-Start-* flow selected by a scripted entry token.
+   *
+   * This mirrors {@link runExactStartCenterFlow} for the Center-first ARC
+   * family, allowing a shortcut to bypass the default root prompt and enter one
+   * fully specified Center/Start branch directly.
+   *
+   * @param context - Current app context.
+   * @param variant - Terminal Center-Start variant to execute after Center and
+   * Start are collected.
+   */
+  private async runExactCenterStartFlow(
+    context: AcApContext,
+    variant: 'end' | 'angle' | 'chordLength'
+  ) {
+    const center = await this.promptCenterPoint()
+    if (!center) return
+
+    const start = await this.promptStartPointFromCenter(center)
+    if (!start) return
+
+    if (variant === 'end') {
+      await this.finishExactCenterStartEnd(context, center, start)
+      return
+    }
+
+    if (variant === 'angle') {
+      const anglePrompt = new AcEdPromptAngleOptions(
+        AcApI18n.t('jig.arc.includedAngle')
+      )
+      anglePrompt.allowNegative = true
+      anglePrompt.allowZero = false
+      anglePrompt.useBasePoint = true
+      anglePrompt.useDashedLine = true
+      anglePrompt.basePoint = new AcGePoint3d(center)
+      anglePrompt.baseAngle = directionAngleDeg(center, start)
+      anglePrompt.jig = new AcApArcValueJig(
+        context.view,
+        degreeValue =>
+          createArcFromCenterStartSweep(
+            center,
+            start,
+            this.applyCtrlDirectionValue(this.degToRad(degreeValue))
+          ),
+        createFallbackArc(start)
+      )
+      const angleResult =
+        await AcApDocManager.instance.editor.getAngle(anglePrompt)
+      const angle =
+        angleResult.status === AcEdPromptStatus.OK
+          ? angleResult.value
+          : undefined
+      if (angle == null) return
+
+      const arc = createArcFromCenterStartSweep(
+        center,
+        start,
+        this.applyCtrlDirectionValue(this.degToRad(angle))
+      )
+      if (arc) {
+        this.appendArc(context, arc)
+      } else {
+        this.warnInvalidGeometry('angle')
+      }
+      return
+    }
+
+    const chordPrompt = new AcEdPromptDistanceOptions(
+      AcApI18n.t('jig.arc.chordLength')
+    )
+    chordPrompt.allowNegative = true
+    chordPrompt.allowZero = false
+    chordPrompt.useBasePoint = true
+    chordPrompt.useDashedLine = true
+    chordPrompt.basePoint = new AcGePoint3d(start)
+    chordPrompt.jig = new AcApArcValueJig(
+      context.view,
+      chordValue =>
+        createArcFromCenterStartChord(
+          center,
+          start,
+          this.applyCtrlDirectionValue(chordValue)
+        ),
+      createFallbackArc(start)
+    )
+    const chordResult =
+      await AcApDocManager.instance.editor.getDistance(chordPrompt)
+    const chordLength =
+      chordResult.status === AcEdPromptStatus.OK ? chordResult.value : undefined
+    if (chordLength == null) return
+
+    const arc = createArcFromCenterStartChord(
+      center,
+      start,
+      this.applyCtrlDirectionValue(chordLength)
+    )
+    if (arc) {
+      this.appendArc(context, arc)
+    } else {
+      this.warnInvalidGeometry('chordLength')
+    }
+  }
+
+  /**
+   * Runs one exact Start-End-* flow selected by a scripted entry token.
+   *
+   * This path is used when a shortcut already knows that the Start-End family
+   * should be used and only needs the command to perform the exact terminal
+   * construction indicated by `variant`.
+   *
+   * @param context - Current app context.
+   * @param variant - Terminal Start-End variant to execute after Start and End
+   * are collected.
+   */
+  private async runExactStartEndFlow(
+    context: AcApContext,
+    variant: 'angle' | 'direction' | 'radius'
+  ) {
+    const start = await this.promptStartPoint()
+    if (!start) return
+
+    const end = await this.promptEndPoint(start)
+    if (!end) return
+
+    if (variant === 'angle') {
+      const anglePrompt = new AcEdPromptAngleOptions(
+        AcApI18n.t('jig.arc.includedAngle')
+      )
+      anglePrompt.allowNegative = true
+      anglePrompt.allowZero = false
+      anglePrompt.useBasePoint = true
+      anglePrompt.useDashedLine = true
+      anglePrompt.basePoint = new AcGePoint3d(start)
+      anglePrompt.baseAngle = directionAngleDeg(start, end)
+      anglePrompt.jig = new AcApArcValueJig(
+        context.view,
+        degreeValue =>
+          createArcFromStartEndAngle(
+            start,
+            end,
+            this.applyCtrlDirectionValue(this.degToRad(degreeValue))
+          ),
+        createFallbackArc(start)
+      )
+      const angleResult =
+        await AcApDocManager.instance.editor.getAngle(anglePrompt)
+      const angle =
+        angleResult.status === AcEdPromptStatus.OK
+          ? angleResult.value
+          : undefined
+      if (angle == null) return
+
+      const arc = createArcFromStartEndAngle(
+        start,
+        end,
+        this.applyCtrlDirectionValue(this.degToRad(angle))
+      )
+      if (arc) {
+        this.appendArc(context, arc)
+      } else {
+        this.warnInvalidGeometry('angle')
+      }
+      return
+    }
+
+    if (variant === 'direction') {
+      const directionPrompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.arc.tangentDirection')
+      )
+      directionPrompt.useBasePoint = true
+      directionPrompt.useDashedLine = true
+      directionPrompt.basePoint = new AcGePoint3d(start)
+      directionPrompt.jig = new AcApArcJig(
+        context.view,
+        point =>
+          createArcFromStartEndDirection(
+            start,
+            end,
+            Math.atan2(point.y - start.y, point.x - start.x)
+          ),
+        createFallbackArc(start)
+      )
+      const directionResult =
+        await AcApDocManager.instance.editor.getPoint(directionPrompt)
+      const directionPoint =
+        directionResult.status === AcEdPromptStatus.OK
+          ? directionResult.value
+          : undefined
+      if (!directionPoint) return
+
+      const direction = Math.atan2(
+        directionPoint.y - start.y,
+        directionPoint.x - start.x
+      )
+      const arc = createArcFromStartEndDirection(start, end, direction)
+      if (arc) {
+        this.appendArc(context, arc)
+      } else {
+        this.warnInvalidGeometry('direction')
+      }
+      return
+    }
+
+    const radiusPrompt = new AcEdPromptDistanceOptions(
+      AcApI18n.t('jig.arc.radius')
+    )
+    radiusPrompt.allowNegative = true
+    radiusPrompt.allowZero = false
+    radiusPrompt.useBasePoint = true
+    radiusPrompt.useDashedLine = true
+    radiusPrompt.basePoint = new AcGePoint3d(start)
+    radiusPrompt.jig = new AcApArcValueJig(
+      context.view,
+      radiusValue =>
+        createArcFromStartEndRadius(
+          start,
+          end,
+          this.applyCtrlDirectionValue(radiusValue)
+        ),
+      createFallbackArc(start)
+    )
+    const radiusResult =
+      await AcApDocManager.instance.editor.getDistance(radiusPrompt)
+    const radius =
+      radiusResult.status === AcEdPromptStatus.OK
+        ? radiusResult.value
+        : undefined
+    if (radius == null) return
+
+    const arc = createArcFromStartEndRadius(
+      start,
+      end,
+      this.applyCtrlDirectionValue(radius)
+    )
+    if (arc) {
+      this.appendArc(context, arc)
+    } else {
+      this.warnInvalidGeometry('radius')
+    }
+  }
+
+  /**
+   * Runs the Start-End option family from an explicit entry token.
+   *
+   * This mode corresponds to the AutoCAD-style Start/End branch where the
+   * family is preselected, but the final option (Center, Angle, Direction, or
+   * Radius) is still chosen through the usual interactive prompts.
+   *
+   * @param context - Current app context.
+   */
+  private async runStartEndFlowFromEntry(context: AcApContext) {
+    const start = await this.promptStartPoint()
+    if (!start) return
+    await this.runStartEndFlow(context, start)
+  }
+
+  /**
+   * Prompts one start point using the given center point as reference.
+   *
+   * The supplied center point is used as the base point so the visual feedback
+   * matches the standard Center/Start ARC family experience.
+   *
+   * @param center - Arc center point.
+   * @returns Selected start point, or `undefined` when the prompt is aborted.
+   */
+  private async promptStartPointFromCenter(center: AcGePoint3dLike) {
+    const prompt = new AcEdPromptPointOptions(AcApI18n.t('jig.arc.startPoint'))
+    prompt.useBasePoint = true
+    prompt.useDashedLine = true
+    prompt.basePoint = new AcGePoint3d(center)
+    const result = await AcApDocManager.instance.editor.getPoint(prompt)
+    return result.status === AcEdPromptStatus.OK ? result.value! : undefined
+  }
+
+  /**
+   * Finishes one exact Center-Start-End style flow with end-point preview.
+   *
+   * This helper exists because the exact scripted branch needs the same live
+   * preview behavior as the interactive Center/Start/End path, but without the
+   * intermediate option-selection prompt used by the generic family handler.
+   *
+   * @param context - Current app context.
+   * @param center - Arc center point.
+   * @param start - Arc start point.
+   */
+  private async finishExactCenterStartEnd(
+    context: AcApContext,
+    center: AcGePoint3dLike,
+    start: AcGePoint3dLike
+  ) {
+    const endPrompt = new AcEdPromptPointOptions(AcApI18n.t('jig.arc.endPoint'))
+    endPrompt.useBasePoint = true
+    endPrompt.useDashedLine = true
+    endPrompt.basePoint = new AcGePoint3d(start)
+    endPrompt.jig = new AcApArcJig(
+      context.view,
+      point =>
+        createArcFromCenterStartProjectedEnd(
+          center,
+          start,
+          point,
+          this.applyCtrlDirectionSign(1)
+        ),
+      createFallbackArc(start)
+    )
+
+    const endResult = await AcApDocManager.instance.editor.getPoint(endPrompt)
+    if (endResult.status !== AcEdPromptStatus.OK) return
+
+    const arc = createArcFromCenterStartProjectedEnd(
+      center,
+      start,
+      endResult.value!,
+      this.applyCtrlDirectionSign(1)
+    )
+    if (arc) {
+      this.appendArc(context, arc)
+    } else {
+      this.warnInvalidGeometry('center')
+    }
   }
 
   /**

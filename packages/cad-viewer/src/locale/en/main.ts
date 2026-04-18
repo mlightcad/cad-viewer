@@ -5,6 +5,18 @@ export default {
     export: 'Export to DXF'
   },
   ribbon: {
+    tab: {
+      home: 'Home',
+      tools: 'Tools'
+    },
+    group: {
+      draw: 'Draw',
+      modify: 'Modify',
+      layer: 'Layer',
+      properties: 'Properties',
+      annotation: 'Annotation',
+      measurement: 'Measurement'
+    },
     arc: {
       threePoint: '3-Point',
       startCenterEnd: 'Start, Center, End',
@@ -25,11 +37,16 @@ export default {
       tanTanRadius: 'Tan, Tan, Radius',
       tanTanTan: 'Tan, Tan, Tan'
     },
+    ellipse: {
+      ellipse: 'Ellipse',
+      arc: 'Elliptical Arc'
+    },
     command: {
       line: 'Line',
       polyline: 'Polyline',
       circle: 'Circle',
       arc: 'Arc',
+      ellipse: 'Ellipse',
       spline: 'Spline',
       rect: 'Rect',
       rectangle: 'Rectangle',
@@ -39,19 +56,9 @@ export default {
       hatch: 'Hatch',
       gradient: 'Gradient',
       move: 'Move',
-      copy: 'Copy',
-      stretch: 'Stretch',
       rotate: 'Rotate',
-      mirror: 'Mirror',
-      scale: 'Scale',
-      trim: 'Trim',
-      extend: 'Extend',
-      fillet: 'Fillet',
-      chamfer: 'Chamfer',
-      array: 'Array',
-      polarArray: 'Polar Array',
-      layerState: 'Layer State',
-      off: 'Off'
+      erase: 'Erase',
+      properties: 'Properties'
     }
   },
   verticalToolbar: {

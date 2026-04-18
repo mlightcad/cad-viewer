@@ -5,6 +5,18 @@ export default {
     export: '导出为DXF'
   },
   ribbon: {
+    tab: {
+      home: '常用',
+      tools: '工具'
+    },
+    group: {
+      draw: '绘制',
+      modify: '修改',
+      layer: '图层',
+      properties: '属性',
+      annotation: '批注',
+      measurement: '测量'
+    },
     arc: {
       threePoint: '三点',
       startCenterEnd: '起点、圆心、终点',
@@ -25,11 +37,16 @@ export default {
       tanTanRadius: '相切、相切、半径',
       tanTanTan: '相切、相切、相切'
     },
+    ellipse: {
+      ellipse: '椭圆',
+      arc: '椭圆弧'
+    },
     command: {
       line: '直线',
       polyline: '多段线',
       circle: '圆',
       arc: '圆弧',
+      ellipse: '椭圆',
       spline: '样条曲线',
       rect: '矩形',
       rectangle: '矩形',
@@ -39,19 +56,9 @@ export default {
       hatch: '填充',
       gradient: '渐变',
       move: '移动',
-      copy: '复制',
-      stretch: '拉伸',
       rotate: '旋转',
-      mirror: '镜像',
-      scale: '缩放',
-      trim: '修剪',
-      extend: '延伸',
-      fillet: '圆角',
-      chamfer: '倒角',
-      array: '阵列',
-      polarArray: '环形阵列',
-      layerState: '图层状态',
-      off: '关闭'
+      erase: '删除',
+      properties: '属性'
     }
   },
   verticalToolbar: {

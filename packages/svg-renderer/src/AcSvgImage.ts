@@ -38,7 +38,10 @@ export class AcSvgImage extends AcSvgEntity {
   /**
    * Async factory: converts a Blob to a data URL, then creates the entity.
    */
-  static async fromBlob(blob: Blob, style: AcGiImageStyle): Promise<AcSvgImage> {
+  static async fromBlob(
+    blob: Blob,
+    style: AcGiImageStyle
+  ): Promise<AcSvgImage> {
     const dataUrl = await blobToDataUrl(blob)
     return new AcSvgImage(dataUrl, style)
   }
