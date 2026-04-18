@@ -1,5 +1,9 @@
 <template>
-  <ml-status-bar class="ml-status-bar">
+  <ml-status-bar
+    :class="{ 'is-disabled': isStatusBarDisabled }"
+    :aria-disabled="isStatusBarDisabled"
+    class="ml-status-bar"
+  >
     <!-- Left Slot Content -->
     <template #left>
       <el-button-group class="ml-status-bar-left-button-group">
@@ -65,11 +69,13 @@ import {
   AcDbSystemVariables
 } from '@mlightcad/data-model'
 import { MlStatusBar } from '@mlightcad/ui-components'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
   LayoutInfo,
   useCurrentPos,
+  useDocumentOpening,
   useIsMobile,
   useLayouts,
   useSettings
@@ -93,10 +99,13 @@ const props = defineProps<{
 const { text: posText } = useCurrentPos(AcApDocManager.instance.curView)
 const layouts = useLayouts(AcApDocManager.instance)
 const features = useSettings()
+const { isDocumentOpening } = useDocumentOpening()
 const { isMobile } = useIsMobile()
 const { t } = useI18n()
+const isStatusBarDisabled = computed(() => isDocumentOpening.value)
 
 const handleSelectLayout = (layout: LayoutInfo) => {
+  if (isStatusBarDisabled.value) return
   acdbHostApplicationServices().layoutManager.setCurrentLayoutBtrId(
     layout.blockTableRecordId
   )
@@ -107,6 +116,7 @@ const emit = defineEmits<{
 }>()
 
 const toggleNotificationCenter = () => {
+  if (isStatusBarDisabled.value) return
   emit('toggleNotificationCenter')
 }
 </script>
@@ -114,6 +124,12 @@ const toggleNotificationCenter = () => {
 <style scoped>
 .ml-status-bar {
   box-sizing: border-box;
+}
+
+.ml-status-bar.is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
 }
 
 .ml-status-bar-left-button-group {

@@ -11,6 +11,7 @@ import { Moon, Sunny } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
 import { MlToggleButton } from '../common'
 
 const { isDark, toggleDark } = defineProps<{
@@ -20,10 +21,12 @@ const { isDark, toggleDark } = defineProps<{
 
 const { t } = useI18n()
 
-const themeBtnData = computed(() => ({
-  onIcon: Moon,
-  offIcon: Sunny,
-  onTooltip: t('main.statusBar.theme.dark'),
-  offTooltip: t('main.statusBar.theme.light')
-}))
+const themeBtnData = computed(() =>
+  markComponentConfigRaw({
+    onIcon: Moon,
+    offIcon: Sunny,
+    onTooltip: t('main.statusBar.theme.dark'),
+    offTooltip: t('main.statusBar.theme.light')
+  })
+)
 </script>

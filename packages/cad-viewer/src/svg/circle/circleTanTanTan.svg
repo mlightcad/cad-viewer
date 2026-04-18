@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <rect x="9" y="9" width="2" height="2"></rect>
+  <path d="M10,18c-4.41,0-8-3.59-8-8S5.59,2,10,2s8,3.59,8,8-3.59,8-8,8Zm0-15c-3.86,0-7,3.14-7,7s3.14,7,7,7,7-3.14,7-7-3.14-7-7-7Z"></path>
+  <rect class="trace" x="9.7" y="15.1" width="10" height="1" transform="translate(-6.42 11.94) rotate(-36.86)"></rect>
+  <rect class="trace" x="14.2" y="-.6" width="1" height="10" transform="translate(2.36 13.52) rotate(-53.13)"></rect>
+  <rect class="trace" x="2" y="4" width="1" height="12"></rect>
+</svg>

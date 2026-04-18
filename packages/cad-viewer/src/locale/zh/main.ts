@@ -4,6 +4,63 @@ export default {
     open: '打开图纸',
     export: '导出为DXF'
   },
+  ribbon: {
+    tab: {
+      home: '常用',
+      tools: '工具'
+    },
+    group: {
+      draw: '绘制',
+      modify: '修改',
+      layer: '图层',
+      properties: '属性',
+      annotation: '批注',
+      measurement: '测量'
+    },
+    arc: {
+      threePoint: '三点',
+      startCenterEnd: '起点、圆心、终点',
+      startCenterAngle: '起点、圆心、角度',
+      startCenterLength: '起点、圆心、长度',
+      startEndAngle: '起点、终点、角度',
+      startEndDirection: '起点、终点、方向',
+      startEndRadius: '起点、终点、半径',
+      centerStartEnd: '圆心、起点、终点',
+      centerStartAngle: '圆心、起点、角度',
+      centerStartLength: '圆心、起点、长度'
+    },
+    circle: {
+      centerRadius: '圆心、半径',
+      centerDiameter: '圆心、直径',
+      twoPoint: '两点',
+      threePoint: '三点',
+      tanTanRadius: '相切、相切、半径',
+      tanTanTan: '相切、相切、相切'
+    },
+    ellipse: {
+      ellipse: '椭圆',
+      arc: '椭圆弧'
+    },
+    command: {
+      line: '直线',
+      polyline: '多段线',
+      circle: '圆',
+      arc: '圆弧',
+      ellipse: '椭圆',
+      spline: '样条曲线',
+      rect: '矩形',
+      rectangle: '矩形',
+      polygon: '多边形',
+      point: '点',
+      divide: '定数等分',
+      hatch: '填充',
+      gradient: '渐变',
+      move: '移动',
+      rotate: '旋转',
+      erase: '删除',
+      properties: '属性'
+    }
+  },
   verticalToolbar: {
     measure: {
       text: '测量',

@@ -35,6 +35,7 @@ import {
   AcApMTextCmd,
   AcApOpenCmd,
   AcApPanCmd,
+  AcApPointCmd,
   AcApPolygonCmd,
   AcApPolylineCmd,
   AcApQNewCmd,
@@ -86,16 +87,18 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   MEASUREDISTANCE: ['DI', 'DIST'],
   MEASUREAREA: ['AA', 'AREA'],
   MEASUREANGLE: ['ANG'],
-  HATCH: ['H'],
-  '-LAYER': ['LA'],
+  '-HATCH': ['-H'],
+  LAYER: ['LA'],
+  '-LAYER': ['-LA'],
   LINE: ['L'],
   MTEXT: ['T'],
   MOVE: ['M'],
   OPEN: ['OP'],
   PAN: ['P'],
+  POINT: ['PO'],
   POLYGON: ['POL'],
   PLINE: ['PL'],
-  RECTANGLE: ['REC'],
+  RECTANG: ['REC'],
   REGEN: ['RE'],
   SELECT: ['SE'],
   SPLINE: ['SPL'],
@@ -108,6 +111,8 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
 export interface AcDbDocumentEventArgs {
   /** The document involved in the event */
   doc: AcApDocument
+  /** The access mode used for the document open lifecycle */
+  mode: AcEdOpenMode
 }
 
 /**
@@ -296,6 +301,8 @@ export class AcApDocManager {
 
   /** Events fired during document lifecycle */
   public readonly events = {
+    /** Fired before a document starts opening */
+    documentToBeOpened: new AcCmEventManager<AcDbDocumentEventArgs>(),
     /** Fired when a new document is created */
     documentCreated: new AcCmEventManager<AcDbDocumentEventArgs>(),
     /** Fired when a document becomes active */
@@ -409,14 +416,13 @@ export class AcApDocManager {
 
   /**
    * Gets the singleton instance of the document manager.
-   *
-   * Creates a new instance if one doesn't exist yet.
+   * Throw one exception if the instance isn't created yet.
    *
    * @returns The singleton document manager instance
    */
   static get instance() {
     if (!AcApDocManager._instance) {
-      AcApDocManager._instance = new AcApDocManager()
+      throw new Error('AcApDocManager instance is not created yet!')
     }
     return AcApDocManager._instance
   }
@@ -636,11 +642,11 @@ export class AcApDocManager {
    * ```
    */
   async openUrl(url: string, options?: AcApOpenDatabaseOptions) {
-    this.onBeforeOpenDocument()
     options = this.setOptions(options)
+    this.onBeforeOpenDocument(options)
     // TODO: The correct way is to create one new context instead of using old context and document
     const isSuccess = await this.context.doc.openUri(url, options)
-    this.onAfterOpenDocument(isSuccess)
+    this.onAfterOpenDocument(isSuccess, options)
     return isSuccess
   }
 
@@ -667,15 +673,15 @@ export class AcApDocManager {
     content: ArrayBuffer,
     options: AcApOpenDatabaseOptions
   ) {
-    this.onBeforeOpenDocument()
     options = this.setOptions(options)
+    this.onBeforeOpenDocument(options)
     // TODO: The correct way is to create one new context instead of using old context and document
     const isSuccess = await this.context.doc.openDocument(
       fileName,
       content,
       options
     )
-    this.onAfterOpenDocument(isSuccess)
+    this.onAfterOpenDocument(isSuccess, options)
     return isSuccess
   }
 
@@ -813,7 +819,7 @@ export class AcApDocManager {
       'clearmeasurements',
       new AcApClearMeasurementsCmd()
     )
-    addSystemCommand('hatch', 'hatch', new AcApHatchCmd())
+    addSystemCommand('-hatch', '-hatch', new AcApHatchCmd())
     addSystemCommand('-layer', '-layer', new AcApLayerCmd())
     addSystemCommand('line', 'line', new AcApLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
@@ -821,10 +827,11 @@ export class AcApDocManager {
     addSystemCommand('log', 'log', new AcApLogCmd())
     addSystemCommand('open', 'open', new AcApOpenCmd())
     addSystemCommand('pan', 'pan', new AcApPanCmd())
+    addSystemCommand('point', 'point', new AcApPointCmd())
     addSystemCommand('polygon', 'polygon', new AcApPolygonCmd())
     addSystemCommand('pline', 'pline', new AcApPolylineCmd())
     addSystemCommand('qnew', 'qnew', new AcApQNewCmd())
-    addSystemCommand('rectangle', 'rectangle', new AcApRectCmd())
+    addSystemCommand('rectang', 'rectang', new AcApRectCmd())
     addSystemCommand('regen', 'regen', new AcApRegenCmd())
     addSystemCommand('revcircle', 'revcircle', new AcApRevCircleCmd())
     addSystemCommand('revcloud', 'revcloud', new AcApRevCloudCmd())
@@ -1010,7 +1017,11 @@ export class AcApDocManager {
    *
    * @protected
    */
-  protected onBeforeOpenDocument() {
+  protected onBeforeOpenDocument(options?: AcApOpenDatabaseOptions) {
+    this.events.documentToBeOpened.dispatch({
+      doc: this.context.doc,
+      mode: this.getDocumentEventMode(options)
+    })
     this.curView.clear()
   }
 
@@ -1024,10 +1035,16 @@ export class AcApDocManager {
    * @param isSuccess - Whether the document was successfully opened
    * @protected
    */
-  protected onAfterOpenDocument(isSuccess: boolean) {
+  protected onAfterOpenDocument(
+    isSuccess: boolean,
+    options?: AcApOpenDatabaseOptions
+  ) {
     if (isSuccess) {
       const doc = this.context.doc
-      this.events.documentActivated.dispatch({ doc })
+      this.events.documentActivated.dispatch({
+        doc,
+        mode: this.getDocumentEventMode(options)
+      })
       this.setActiveLayout()
       const db = doc.database
 
@@ -1058,6 +1075,15 @@ export class AcApDocManager {
       options.fontLoader = this._fontLoader
     }
     return options
+  }
+
+  /**
+   * Resolves the open mode used in document lifecycle events.
+   *
+   * When callers omit `mode`, document open APIs default to read mode.
+   */
+  private getDocumentEventMode(options?: AcApOpenDatabaseOptions) {
+    return options?.mode ?? AcEdOpenMode.Read
   }
 
   /**

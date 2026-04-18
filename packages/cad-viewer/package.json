@@ -43,6 +43,7 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
+    "@mlightcad/ribbon": "0.0.7",
     "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",
@@ -59,7 +60,7 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
     "lodash-es": "4.17.21",
-    "three": "^0.172.0"
+    "three": "workspace:*"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",

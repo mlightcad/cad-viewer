@@ -79,13 +79,16 @@ export default {
     pan: {
       description: '平移视图'
     },
+    point: {
+      description: '连续创建点'
+    },
     pickbox: {
       description: '控制用于选择对象的拾取框大小（像素）'
     },
     qnew: {
       description: '创建新图纸'
     },
-    rectangle: {
+    rectang: {
       description: '通过指定两个对角点创建矩形'
     },
     regen: {

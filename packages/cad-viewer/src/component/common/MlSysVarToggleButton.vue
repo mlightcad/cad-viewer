@@ -11,6 +11,7 @@ import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcDbSysVarManager } from '@mlightcad/data-model'
 import { computed, ref, watch } from 'vue'
 
+import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
 import {
   type SystemVariables,
   useSystemVars
@@ -62,14 +63,16 @@ watch(
   { immediate: true }
 )
 
-const buttonData = computed(() => ({
-  onIcon: props.onIcon,
-  offIcon: props.offIcon,
-  onTooltip: props.onTooltip,
-  offTooltip: props.offTooltip,
-  onColor: props.onColor,
-  offColor: props.offColor
-}))
+const buttonData = computed(() =>
+  markComponentConfigRaw({
+    onIcon: props.onIcon,
+    offIcon: props.offIcon,
+    onTooltip: props.onTooltip,
+    offTooltip: props.offTooltip,
+    onColor: props.onColor,
+    offColor: props.offColor
+  })
+)
 
 const isEnabled = computed(() => {
   const currentValue = Number(

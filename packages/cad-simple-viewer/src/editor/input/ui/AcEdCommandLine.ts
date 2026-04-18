@@ -238,7 +238,7 @@ export class AcEdCommandLine {
     style.textContent = `
       .ml-cli-container {
         position: fixed;
-        bottom: 45px;
+        bottom: 10px;
         left: 50%;
         transform: translateX(-50%);
         font-family: "Segoe UI", Arial, sans-serif;

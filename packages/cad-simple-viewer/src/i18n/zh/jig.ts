@@ -2,6 +2,7 @@ export default {
   arc: {
     startPointOrCenter: '指定圆弧的起点或',
     secondPointOrOptions: '指定圆弧上的第二点或',
+    secondPoint: '指定圆弧上的第二点：',
     startPoint: '指定圆弧的起点：',
     centerPoint: '指定圆弧的圆心：',
     endPoint: '指定圆弧的端点：',
@@ -162,6 +163,9 @@ export default {
   },
   mtext: {
     point: '指定多行文本插入点：'
+  },
+  point: {
+    point: '指定点'
   },
   move: {
     basePointOrDisplacement: '指定基点或',

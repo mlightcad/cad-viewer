@@ -5,7 +5,12 @@ import { MlButtonData, MlToolBar } from '@mlightcad/ui-components'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useDocOpenMode, useSettings } from '../../composable'
+import {
+  useDocOpenMode,
+  useDocumentOpening,
+  useSettings
+} from '../../composable'
+import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
 import {
   clearMeasurements,
   layer,
@@ -14,7 +19,7 @@ import {
   measureArc,
   measureArea,
   measureDistance,
-  move,
+  pan,
   revCircle,
   revCloud,
   revFreeDraw,
@@ -28,6 +33,8 @@ import {
 const { t } = useI18n()
 const features = useSettings()
 const docOpenMode = useDocOpenMode()
+const { isDocumentOpening } = useDocumentOpening()
+const isToolbarDisabled = computed(() => isDocumentOpening.value)
 
 const verticalToolbarData = computed(() => {
   const items: MlButtonData[] = [
@@ -38,7 +45,7 @@ const verticalToolbarData = computed(() => {
       description: t('main.verticalToolbar.select.description')
     },
     {
-      icon: move,
+      icon: pan,
       text: t('main.verticalToolbar.pan.text'),
       command: 'pan',
       description: t('main.verticalToolbar.pan.description')
@@ -58,7 +65,7 @@ const verticalToolbarData = computed(() => {
     {
       icon: layer,
       text: t('main.verticalToolbar.layer.text'),
-      command: 'la',
+      command: 'layer',
       description: t('main.verticalToolbar.layer.description')
     },
     {
@@ -160,20 +167,27 @@ const verticalToolbarData = computed(() => {
       }
     )
   }
-  return items
+  return markComponentConfigRaw(items)
 })
 
 const handleCommand = (command: string) => {
+  if (isToolbarDisabled.value) return
   AcApDocManager.instance.sendStringToExecute(command)
 }
 
 const handleToggle = (command: string, _value: boolean) => {
+  if (isToolbarDisabled.value) return
   AcApDocManager.instance.sendStringToExecute(command)
 }
 </script>
 
 <template>
-  <div v-if="features.isShowToolbar" class="ml-vertical-toolbar-container">
+  <div
+    v-if="features.isShowToolbar"
+    :class="{ 'is-disabled': isToolbarDisabled }"
+    :aria-disabled="isToolbarDisabled"
+    class="ml-vertical-toolbar-container"
+  >
     <ml-tool-bar
       :items="verticalToolbarData"
       collapsible
@@ -192,5 +206,12 @@ const handleToggle = (command: string, _value: boolean) => {
   right: 30px;
   top: 50%;
   transform: translateY(-50%);
+  z-index: 3;
+}
+
+.ml-vertical-toolbar-container.is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
 }
 </style>

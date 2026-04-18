@@ -9,6 +9,7 @@ import {
   AcApLayerStateCmd,
   AcApMissedDataCmd,
   AcApPointStyleCmd,
+  AcApPropertiesCmd,
   AcApQSelectCmd
 } from '../command'
 import {
@@ -25,8 +26,8 @@ export const registerCmds = () => {
     const register = AcApDocManager.instance.commandManager
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'la',
-      'la',
+      'layer',
+      'layer',
       new AcApLayerStateCmd()
     )
     register.addCommand(
@@ -46,6 +47,12 @@ export const registerCmds = () => {
       'qselect',
       'qselect',
       new AcApQSelectCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'properties',
+      'properties',
+      new AcApPropertiesCmd()
     )
     isCommandRegistered = true
   }

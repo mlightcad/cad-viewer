@@ -86,6 +86,9 @@ export default {
       description:
         'Shifts the view without changing the viewing direction or magnification'
     },
+    point: {
+      description: 'Creates points'
+    },
     pickbox: {
       description:
         'Sets the size (in pixels) of the selection box used to pick objects'
@@ -93,7 +96,7 @@ export default {
     qnew: {
       description: 'Starts a new drawing'
     },
-    rectangle: {
+    rectang: {
       description: 'Creates a rectangle by specifying two opposite corners'
     },
     regen: {

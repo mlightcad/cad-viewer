@@ -204,6 +204,24 @@ export class AcEdInputManager {
   }
 
   /**
+   * Returns the next scripted token without consuming it.
+   *
+   * @returns Next queued scripted token, or `undefined` when empty.
+   */
+  peekScriptInput() {
+    return this._scriptInputs[0]
+  }
+
+  /**
+   * Consumes and returns the next scripted token.
+   *
+   * @returns Next queued scripted token, or `undefined` when empty.
+   */
+  consumeScriptInput() {
+    return this.dequeueScriptInput()
+  }
+
+  /**
    * Injects minimal CSS required for the floating input and preview rectangle.
    * Useful when you do not have a separate CSS file.
    */
