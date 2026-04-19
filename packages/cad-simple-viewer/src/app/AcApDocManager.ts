@@ -25,7 +25,11 @@ import {
   AcApEllipseCmd,
   AcApEraseCmd,
   AcApHatchCmd,
+  AcApLayerCloseCmd,
   AcApLayerCmd,
+  AcApLayerDelCmd,
+  AcApLayerFreezeCmd,
+  AcApLayoffCmd,
   AcApLineCmd,
   AcApLogCmd,
   AcApMeasureAngleCmd,
@@ -52,11 +56,15 @@ import {
   AcApSplineCmd,
   AcApSwitchBgCmd,
   AcApSysVarCmd,
-  AcApZoomCmd,
-  AcEdCommand,
-  AcEdCommandStack
+  AcApZoomCmd
 } from '../command'
-import { AcEdCalculateSizeCallback, AcEdOpenMode, eventBus } from '../editor'
+import {
+  AcEdCalculateSizeCallback,
+  AcEdCommand,
+  AcEdCommandStack,
+  AcEdOpenMode,
+  eventBus
+} from '../editor'
 import { AcApI18n } from '../i18n'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { AcTrView2d } from '../view'
@@ -825,6 +833,10 @@ export class AcApDocManager {
     )
     addSystemCommand('-hatch', '-hatch', new AcApHatchCmd())
     addSystemCommand('-layer', '-layer', new AcApLayerCmd())
+    addSystemCommand('laydel', 'laydel', new AcApLayerDelCmd())
+    addSystemCommand('layfrz', 'layfrz', new AcApLayerFreezeCmd())
+    addSystemCommand('layoff', 'layoff', new AcApLayoffCmd())
+    addSystemCommand('layerclose', 'layerclose', new AcApLayerCloseCmd())
     addSystemCommand('line', 'line', new AcApLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
     addSystemCommand('copy', 'copy', new AcApCopyCmd())

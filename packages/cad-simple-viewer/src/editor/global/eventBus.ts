@@ -23,12 +23,15 @@ export interface AcEdFontNotLoadedInfo {
  *
  * ## Event Categories
  * - **File Operations**: `open-file`, `open-file-progress`, `failed-to-open-file`
+ * - **Palette Control**: `close-layer-manager`
  * - **Font Management**: `fonts-not-loaded`, `failed-to-get-avaiable-fonts`, `font-not-found`
  * - **User Messages**: `message`
  */
 export type AcEdEvents = {
   /** Emitted to request opening a file dialog */
   'open-file': {}
+  /** Emitted to request closing the layer properties manager */
+  'close-layer-manager': {}
   /** Emitted during file opening to report progress */
   'open-file-progress': AcDbProgressdEventArgs
   /** Emitted to display a message to the user */

@@ -529,6 +529,13 @@ eventBus.on('failed-to-open-file', params => {
   error('File Opening Failed', message)
 })
 
+// Mirror AutoCAD's LAYERCLOSE behavior: only close when the layer tab is open.
+eventBus.on('close-layer-manager', () => {
+  if (!store.dialogs.layerManager) return
+  if (store.dialogs.activePaletteTab !== 'layerManager') return
+  store.dialogs.layerManager = false
+})
+
 // Toggle notification center visibility
 const toggleNotificationCenter = () => {
   showNotificationCenter.value = !showNotificationCenter.value

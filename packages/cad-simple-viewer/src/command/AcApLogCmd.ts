@@ -1,7 +1,7 @@
 import { AcCmPerformanceCollector, log } from '@mlightcad/data-model'
 
 import { AcApContext } from '../app'
-import { AcEdCommand } from '../command'
+import { AcEdCommand } from '../editor'
 import { AcTrView2d } from '../view'
 
 /**

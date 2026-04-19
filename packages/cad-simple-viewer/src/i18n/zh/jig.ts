@@ -533,6 +533,70 @@ export default {
       }
     }
   },
+  layoff: {
+    prompt: '选择要关闭其图层的对象或',
+    invalidSelection: '所选对象无效。',
+    settingsPrompt: '输入要修改的 LAYOFF 设置',
+    viewportPrompt: '指定视口行为',
+    blockSelectionPrompt: '指定嵌套块选择行为',
+    vpfreezeFallback:
+      '当前 viewer 不支持按视口关闭图层，已退化为普通 Off 行为。',
+    nestedSelectionLimited:
+      '嵌套块选择设置会被保存，但当前拾取仍只能解析顶层对象所在图层。',
+    layerNotFound: '未找到图层',
+    cannotTurnOffCurrent: '不能关闭当前图层。',
+    alreadyOff: '图层已处于关闭状态',
+    turnedOff: '已关闭图层',
+    restored: '已恢复图层',
+    nothingToUndo: '当前没有可撤销的 LAYOFF 操作。',
+    keywords: {
+      settings: {
+        display: '设置(S)',
+        local: '设置',
+        global: 'Settings'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      viewports: {
+        display: '视口(V)',
+        local: '视口',
+        global: 'Viewports'
+      },
+      blockSelection: {
+        display: '块选择(B)',
+        local: '块选择',
+        global: 'BlockSelection'
+      },
+      off: {
+        display: '关闭(O)',
+        local: '关闭',
+        global: 'Off'
+      },
+      vpfreeze: {
+        display: '视口冻结(V)',
+        local: '视口冻结',
+        global: 'Vpfreeze'
+      },
+      block: {
+        display: '块(B)',
+        local: '块',
+        global: 'Block'
+      },
+      entity: {
+        display: '对象(E)',
+        local: '对象',
+        global: 'Entity'
+      },
+      none: {
+        display: '无(N)',
+        local: '无',
+        global: 'None'
+      }
+    }
+  },
   hatch: {
     prompt: '选择边界对象或',
     pickPoint: '指定内部点（或按 Enter 结束）：',

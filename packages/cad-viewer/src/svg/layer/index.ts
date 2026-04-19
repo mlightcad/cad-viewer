@@ -1,0 +1,8 @@
+export { default as layerCurrent } from './layerCurrent.svg'
+export { default as layerFreeze } from './layerFreeze.svg'
+export { default as layerLock } from './layerLock.svg'
+export { default as layerOff } from './layerOff.svg'
+export { default as layerOn } from './layerOn.svg'
+export { default as layerPrevious } from './layerPrevious.svg'
+export { default as layerUnfreeze } from './layerUnfreeze.svg'
+export { default as layerUnlock } from './layerUnlock.svg'

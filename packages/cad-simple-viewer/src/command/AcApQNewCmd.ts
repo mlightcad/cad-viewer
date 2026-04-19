@@ -1,6 +1,5 @@
-import { AcApContext } from '../app'
-import { AcApDocManager } from '../app'
-import { AcEdCommand } from '../command'
+import { AcApContext, AcApDocManager } from '../app'
+import { AcEdCommand } from '../editor'
 
 /**
  * Command for creating a new CAD document from a template.
