@@ -16,7 +16,12 @@ import {
   AcApQNewCmd,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
-import { AcDbDatabase } from '@mlightcad/data-model'
+import {
+  AcCmColor,
+  AcDbDatabase,
+  AcDbSysVarManager,
+  AcGiLineWeight
+} from '@mlightcad/data-model'
 import {
   FileMenuItemModel,
   MlRibbon,
@@ -74,10 +79,25 @@ import {
   revRect,
   spline
 } from '../../svg'
+import {
+  MlRibbonPropertyColorDropdown,
+  MlRibbonPropertyLineTypeSelect,
+  MlRibbonPropertyLineWeightSelect
+} from '../common'
 import MlRibbonLanguageSelector from './MlRibbonLanguageSelector.vue'
 
 interface Props {
   currentLocale?: LocaleProp
+}
+
+/**
+ * Subset of the system variable change event used by the ribbon property sync.
+ */
+interface RibbonSysVarChangeEvent {
+  /** Database whose system variable changed. */
+  database: AcDbDatabase
+  /** Name of the updated system variable. */
+  name: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -90,8 +110,42 @@ const docOpenMode = useDocOpenMode()
 const { t, locale } = useI18n()
 const isAnnotationVisible = ref(true)
 const isRibbonDisabled = computed(() => isDocumentOpening.value)
+const ribbonColor = ref<AcCmColor>(new AcCmColor())
+const ribbonColorDisplay = ref('#7b8794')
+const ribbonLineType = ref('ByLayer')
+const ribbonLineWeight = ref<AcGiLineWeight>(AcGiLineWeight.ByLayer)
 
 let observedDatabase: AcDbDatabase | undefined
+
+/**
+ * Returns the database currently attached to the active document, if any.
+ */
+const getCurrentDatabase = () => AcApDocManager.instance?.curDocument?.database
+
+/**
+ * Mirrors the active drawing's current property defaults into ribbon-local refs.
+ *
+ * @param db Database whose `CECOLOR`, `CELTYPE`, and `CELWEIGHT` values should be reflected.
+ */
+const syncRibbonProperties = (db = getCurrentDatabase()) => {
+  if (!db) {
+    ribbonColor.value = new AcCmColor()
+    ribbonColorDisplay.value = '#7b8794'
+    ribbonLineWeight.value = AcGiLineWeight.ByLayer
+    ribbonLineType.value = 'ByLayer'
+    return
+  }
+
+  ribbonColor.value = db.cecolor.clone()
+  const currentLayer = db.tables.layerTable.getAt(db.clayer)
+  ribbonColorDisplay.value = ribbonColor.value.isByLayer
+    ? currentLayer?.color.cssColor || '#7b8794'
+    : ribbonColor.value.isByBlock
+      ? '#a0a8b8'
+      : ribbonColor.value.cssColor || '#7b8794'
+  ribbonLineWeight.value = db.celweight
+  ribbonLineType.value = db.celtype || 'ByLayer'
+}
 
 const syncAnnotationVisibility = () => {
   const db = AcApDocManager.instance?.curDocument?.database
@@ -113,6 +167,26 @@ const syncAnnotationVisibility = () => {
 
 const handleAnnotationLayerChange = () => {
   syncAnnotationVisibility()
+  syncRibbonProperties(observedDatabase)
+}
+
+/**
+ * Updates ribbon property controls when document default drawing properties change.
+ *
+ * @param args System variable change payload raised by the CAD runtime.
+ */
+const handleSysVarChange = (args: RibbonSysVarChangeEvent) => {
+  if (args.database !== observedDatabase) return
+
+  switch (args.name.toUpperCase()) {
+    case 'CECOLOR':
+    case 'CELTYPE':
+    case 'CELWEIGHT':
+      syncRibbonProperties(args.database)
+      break
+    default:
+      break
+  }
 }
 
 const bindAnnotationVisibilityEvents = (db?: AcDbDatabase) => {
@@ -142,9 +216,13 @@ const bindAnnotationVisibilityEvents = (db?: AcDbDatabase) => {
 const handleDocumentActivated = () => {
   bindAnnotationVisibilityEvents(AcApDocManager.instance?.curDocument?.database)
   syncAnnotationVisibility()
+  syncRibbonProperties(AcApDocManager.instance?.curDocument?.database)
 }
 
 onMounted(() => {
+  AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
+    handleSysVarChange
+  )
   AcApDocManager.instance.events.documentActivated.addEventListener(
     handleDocumentActivated
   )
@@ -152,21 +230,95 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
+    handleSysVarChange
+  )
   AcApDocManager.instance.events.documentActivated.removeEventListener(
     handleDocumentActivated
   )
   bindAnnotationVisibilityEvents(undefined)
 })
 
+/**
+ * Applies a newly selected ribbon color to the active database defaults.
+ *
+ * @param value Color chosen from the ribbon property dropdown.
+ */
+const handleRibbonColorChange = (value?: AcCmColor) => {
+  const db = getCurrentDatabase()
+  if (!db || !value) return
+
+  db.cecolor = value
+  syncRibbonProperties(db)
+}
+
+/**
+ * Applies a newly selected ribbon line weight to the active database defaults.
+ *
+ * @param value Line weight chosen from the ribbon property dropdown.
+ */
+const handleRibbonLineWeightChange = (value: AcGiLineWeight) => {
+  const db = getCurrentDatabase()
+  if (!db) return
+
+  db.celweight = value
+  syncRibbonProperties(db)
+}
+
+/**
+ * Applies a newly selected ribbon line type to the active database defaults.
+ *
+ * @param value Line type chosen from the ribbon property dropdown.
+ */
+const handleRibbonLineTypeChange = (value: string) => {
+  const db = getCurrentDatabase()
+  if (!db) return
+
+  db.celtype = value
+  syncRibbonProperties(db)
+}
+
 const buildBaseTabs = (
   openMode: AcEdOpenMode,
   annotationVisible: boolean
 ): RibbonTabModel[] => {
+  const ribbonTooltips = {
+    line: t('main.ribbon.tooltip.line'),
+    polyline: t('main.ribbon.tooltip.polyline'),
+    spline: t('main.ribbon.tooltip.spline'),
+    circle: t('main.ribbon.tooltip.circle'),
+    arc: t('main.ribbon.tooltip.arc'),
+    ellipse: t('main.ribbon.tooltip.ellipse'),
+    rect: t('main.ribbon.tooltip.rect'),
+    point: t('main.ribbon.tooltip.point'),
+    hatch: t('main.ribbon.tooltip.hatch'),
+    move: t('main.ribbon.tooltip.move'),
+    rotate: t('main.ribbon.tooltip.rotate'),
+    copy: t('main.ribbon.tooltip.copy'),
+    erase: t('main.ribbon.tooltip.erase'),
+    properties: t('main.ribbon.tooltip.properties')
+  }
+  const verticalToolbarDescriptions = {
+    revFreehand: t('main.verticalToolbar.revFreehand.description'),
+    revRect: t('main.verticalToolbar.revRect.description'),
+    revCloud: t('main.verticalToolbar.revCloud.description'),
+    revCircle: t('main.verticalToolbar.revCircle.description'),
+    showAnnotation: t('main.verticalToolbar.showAnnotation.description'),
+    hideAnnotation: t('main.verticalToolbar.hideAnnotation.description'),
+    measureDistance: t('main.verticalToolbar.measureDistance.description'),
+    measureAngle: t('main.verticalToolbar.measureAngle.description'),
+    measureArea: t('main.verticalToolbar.measureArea.description'),
+    measureArc: t('main.verticalToolbar.measureArc.description'),
+    clearMeasurements: t('main.verticalToolbar.clearMeasurements.description'),
+    layer: t('main.verticalToolbar.layer.description')
+  }
+
   const annotationItems: RibbonItemModel[] = [
     {
       id: 'cmd-tool-rev-freehand',
       type: 'button',
       label: t('main.verticalToolbar.revFreehand.text'),
+      tooltip: verticalToolbarDescriptions.revFreehand,
       size: 'large',
       props: { icon: revFreeDraw }
     },
@@ -174,6 +326,7 @@ const buildBaseTabs = (
       id: 'cmd-tool-rev-rect',
       type: 'button',
       label: t('main.verticalToolbar.revRect.text'),
+      tooltip: verticalToolbarDescriptions.revRect,
       size: 'large',
       props: { icon: revRect }
     },
@@ -181,6 +334,7 @@ const buildBaseTabs = (
       id: 'cmd-tool-rev-cloud',
       type: 'button',
       label: t('main.verticalToolbar.revCloud.text'),
+      tooltip: verticalToolbarDescriptions.revCloud,
       size: 'large',
       props: { icon: revCloud }
     },
@@ -188,6 +342,7 @@ const buildBaseTabs = (
       id: 'cmd-tool-rev-circle',
       type: 'button',
       label: t('main.verticalToolbar.revCircle.text'),
+      tooltip: verticalToolbarDescriptions.revCircle,
       size: 'large',
       props: { icon: revCircle }
     },
@@ -195,6 +350,9 @@ const buildBaseTabs = (
       id: 'cmd-tool-rev-vis',
       type: 'toggle',
       label: t('main.verticalToolbar.showAnnotation.text'),
+      tooltip: annotationVisible
+        ? verticalToolbarDescriptions.hideAnnotation
+        : verticalToolbarDescriptions.showAnnotation,
       size: 'large',
       props: {
         modelValue: annotationVisible,
@@ -213,6 +371,7 @@ const buildBaseTabs = (
       id: 'cmd-tool-measure-distance',
       type: 'button',
       label: t('main.verticalToolbar.measureDistance.text'),
+      tooltip: verticalToolbarDescriptions.measureDistance,
       size: 'large',
       props: { icon: measureDistance }
     },
@@ -220,6 +379,7 @@ const buildBaseTabs = (
       id: 'cmd-tool-measure-angle',
       type: 'button',
       label: t('main.verticalToolbar.measureAngle.text'),
+      tooltip: verticalToolbarDescriptions.measureAngle,
       size: 'large',
       props: { icon: measureAngle }
     },
@@ -227,6 +387,7 @@ const buildBaseTabs = (
       id: 'cmd-tool-measure-area',
       type: 'button',
       label: t('main.verticalToolbar.measureArea.text'),
+      tooltip: verticalToolbarDescriptions.measureArea,
       size: 'large',
       props: { icon: measureArea }
     },
@@ -234,6 +395,7 @@ const buildBaseTabs = (
       id: 'cmd-tool-measure-arc',
       type: 'button',
       label: t('main.verticalToolbar.measureArc.text'),
+      tooltip: verticalToolbarDescriptions.measureArc,
       size: 'large',
       props: { icon: measureArc }
     },
@@ -241,6 +403,7 @@ const buildBaseTabs = (
       id: 'cmd-tool-clear-measurements',
       type: 'button',
       label: t('main.verticalToolbar.clearMeasurements.text'),
+      tooltip: verticalToolbarDescriptions.clearMeasurements,
       size: 'large',
       props: { icon: clearMeasurements }
     }
@@ -294,6 +457,7 @@ const buildBaseTabs = (
                   id: 'cmd-line',
                   type: 'button',
                   label: t('main.ribbon.command.line'),
+                  tooltip: ribbonTooltips.line,
                   size: 'large',
                   props: { icon: line }
                 },
@@ -301,6 +465,7 @@ const buildBaseTabs = (
                   id: 'cmd-polyline',
                   type: 'button',
                   label: t('main.ribbon.command.polyline'),
+                  tooltip: ribbonTooltips.polyline,
                   size: 'large',
                   props: { icon: polyline }
                 },
@@ -308,6 +473,7 @@ const buildBaseTabs = (
                   id: 'cmd-spline',
                   type: 'button',
                   label: t('main.ribbon.command.spline'),
+                  tooltip: ribbonTooltips.spline,
                   size: 'large',
                   props: { icon: spline }
                 },
@@ -315,6 +481,7 @@ const buildBaseTabs = (
                   id: 'cmd-circle',
                   type: 'dropdown',
                   label: t('main.ribbon.command.circle'),
+                  tooltip: ribbonTooltips.circle,
                   size: 'large',
                   props: {
                     icon: circleCenterRadius,
@@ -356,6 +523,7 @@ const buildBaseTabs = (
                   id: 'cmd-arc',
                   type: 'dropdown',
                   label: t('main.ribbon.command.arc'),
+                  tooltip: ribbonTooltips.arc,
                   size: 'large',
                   props: {
                     icon: arcThreePoints,
@@ -417,6 +585,7 @@ const buildBaseTabs = (
                   id: 'cmd-ellipse',
                   type: 'dropdown',
                   label: t('main.ribbon.command.ellipse'),
+                  tooltip: ribbonTooltips.ellipse,
                   size: 'large',
                   props: {
                     icon: ellipseCenter,
@@ -438,6 +607,7 @@ const buildBaseTabs = (
                   id: 'cmd-rect',
                   type: 'dropdown',
                   label: t('main.ribbon.command.rect'),
+                  tooltip: ribbonTooltips.rect,
                   size: 'large',
                   props: {
                     icon: rect,
@@ -459,6 +629,7 @@ const buildBaseTabs = (
                   id: 'cmd-point',
                   type: 'button',
                   label: t('main.ribbon.command.point'),
+                  tooltip: ribbonTooltips.point,
                   size: 'large',
                   props: {
                     icon: pointstyle1
@@ -468,6 +639,7 @@ const buildBaseTabs = (
                   id: 'cmd-hatch',
                   type: 'button',
                   label: t('main.ribbon.command.hatch'),
+                  tooltip: ribbonTooltips.hatch,
                   size: 'large',
                   props: {
                     icon: hatch
@@ -490,6 +662,7 @@ const buildBaseTabs = (
                   id: 'cmd-move',
                   type: 'button',
                   label: t('main.ribbon.command.move'),
+                  tooltip: ribbonTooltips.move,
                   size: 'large',
                   props: { icon: move }
                 },
@@ -497,6 +670,7 @@ const buildBaseTabs = (
                   id: 'cmd-rotate',
                   type: 'button',
                   label: t('main.ribbon.command.rotate'),
+                  tooltip: ribbonTooltips.rotate,
                   size: 'large',
                   props: { icon: RefreshRight }
                 },
@@ -504,6 +678,7 @@ const buildBaseTabs = (
                   id: 'cmd-copy',
                   type: 'button',
                   label: t('main.ribbon.command.copy'),
+                  tooltip: ribbonTooltips.copy,
                   size: 'large',
                   props: { icon: DocumentCopy }
                 },
@@ -511,6 +686,7 @@ const buildBaseTabs = (
                   id: 'cmd-erase',
                   type: 'button',
                   label: t('main.ribbon.command.erase'),
+                  tooltip: ribbonTooltips.erase,
                   size: 'large',
                   props: { icon: Delete }
                 }
@@ -522,17 +698,69 @@ const buildBaseTabs = (
           id: 'home-properties',
           title: t('main.ribbon.group.properties'),
           orientation: 'row',
+          autoWidth: true,
+          priority: 20,
           collections: [
             {
-              id: 'home-properties-main',
+              id: 'home-properties-button',
               layout: 'row',
               items: [
                 {
                   id: 'cmd-properties',
                   type: 'button',
                   label: t('main.ribbon.command.properties'),
+                  tooltip: ribbonTooltips.properties,
                   size: 'large',
                   props: { icon: properties }
+                }
+              ]
+            },
+            {
+              id: 'home-properties-main',
+              layout: 'column',
+              rows: 3,
+              items: [
+                {
+                  id: 'entity-color',
+                  type: 'custom',
+                  size: 'small',
+                  tooltip: t('main.ribbon.property.color'),
+                  props: {
+                    component: MlRibbonPropertyColorDropdown,
+                    componentProps: {
+                      modelValue: ribbonColor.value,
+                      displayColor: ribbonColorDisplay.value,
+                      placeholder: t('main.ribbon.property.color'),
+                      'onUpdate:modelValue': handleRibbonColorChange
+                    }
+                  }
+                },
+                {
+                  id: 'entity-line-type',
+                  type: 'custom',
+                  size: 'small',
+                  tooltip: t('main.ribbon.property.lineType'),
+                  props: {
+                    component: MlRibbonPropertyLineTypeSelect,
+                    componentProps: {
+                      modelValue: ribbonLineType.value,
+                      placeholder: t('main.lineTypeSelect.placeholder'),
+                      'onUpdate:modelValue': handleRibbonLineTypeChange
+                    }
+                  }
+                },
+                {
+                  id: 'entity-line-weight',
+                  type: 'custom',
+                  size: 'small',
+                  tooltip: t('main.ribbon.property.lineWeight'),
+                  props: {
+                    component: MlRibbonPropertyLineWeightSelect,
+                    componentProps: {
+                      modelValue: ribbonLineWeight.value,
+                      'onUpdate:modelValue': handleRibbonLineWeightChange
+                    }
+                  }
                 }
               ]
             }
@@ -551,6 +779,7 @@ const buildBaseTabs = (
                   id: 'cmd-layer',
                   type: 'button',
                   label: t('main.verticalToolbar.layer.text'),
+                  tooltip: verticalToolbarDescriptions.layer,
                   size: 'large',
                   props: { icon: layer }
                 }

@@ -17,6 +17,11 @@ export default {
       annotation: 'Annotation',
       measurement: 'Measurement'
     },
+    property: {
+      color: 'Color',
+      lineType: 'Linetype',
+      lineWeight: 'Lineweight'
+    },
     arc: {
       threePoint: '3-Point',
       startCenterEnd: 'Start, Center, End',
@@ -40,6 +45,23 @@ export default {
     ellipse: {
       ellipse: 'Ellipse',
       arc: 'Elliptical Arc'
+    },
+    tooltip: {
+      line: 'Draw a single straight line segment.',
+      polyline:
+        'Draw a connected series of line or arc segments as one object.',
+      spline: 'Draw a smooth spline curve through fit or control points.',
+      circle: 'Draw a circle with multiple construction methods.',
+      arc: 'Draw an arc with multiple construction methods.',
+      ellipse: 'Draw an ellipse or elliptical arc.',
+      rect: 'Draw a rectangle or regular polygon.',
+      point: 'Place a point object in the drawing.',
+      hatch: 'Fill a closed area with a hatch pattern.',
+      move: 'Move selected objects to a new position.',
+      rotate: 'Rotate selected objects around a base point.',
+      copy: 'Copy selected objects to a new location.',
+      erase: 'Delete selected objects from the drawing.',
+      properties: 'Open the Properties palette for the current selection.'
     },
     command: {
       line: 'Line',
@@ -227,6 +249,15 @@ export default {
   colorDropdown: {
     custom: 'Custom'
   },
+  lineTypeSelect: {
+    placeholder: 'Linetype'
+  },
+  lineWeightSelect: {
+    byLayer: 'ByLayer',
+    byBlock: 'ByBlock',
+    byDIPs: 'ByDIPs',
+    default: 'Default'
+  },
   colorIndexPicker: {
     color: 'Color: ',
     colorIndex: 'Color Index: ',
@@ -237,6 +268,11 @@ export default {
     color: 'Color',
     layer: 'Layer',
     lineType: 'Linetype'
+  },
+  ribbonProperty: {
+    color: 'Color',
+    lineType: 'Linetype',
+    lineWeight: 'Lineweight'
   },
   message: {
     loadingFonts: 'Loading fonts ...',

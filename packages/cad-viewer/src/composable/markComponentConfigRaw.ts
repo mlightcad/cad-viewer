@@ -1,11 +1,13 @@
 import { markRaw } from 'vue'
 
 const COMPONENT_CONFIG_KEYS = new Set([
+  'component',
   'icon',
   'onIcon',
   'offIcon',
   'activeIcon',
-  'inactiveIcon'
+  'inactiveIcon',
+  'leadingIcon'
 ])
 
 export const markComponentConfigRaw = <T>(value: T): T => {
