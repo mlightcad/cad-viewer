@@ -543,6 +543,70 @@ export default {
       }
     }
   },
+  layoff: {
+    prompt: 'Select object on layer to turn off or',
+    invalidSelection: 'Invalid object selected.',
+    settingsPrompt: 'Enter LAYOFF setting to change',
+    viewportPrompt: 'Specify viewport behavior',
+    blockSelectionPrompt: 'Specify nested block selection behavior',
+    vpfreezeFallback:
+      'Current viewer does not support per-viewport layer off; using Off behavior instead.',
+    nestedSelectionLimited:
+      'Nested block selection settings are stored, but current picking still resolves the top-level entity layer.',
+    layerNotFound: 'Layer not found',
+    cannotTurnOffCurrent: 'Cannot turn off the current layer.',
+    alreadyOff: 'Layer is already off',
+    turnedOff: 'Turned off layer',
+    restored: 'Restored layer',
+    nothingToUndo: 'There is no LAYOFF action to undo.',
+    keywords: {
+      settings: {
+        display: 'Settings(S)',
+        local: 'Settings',
+        global: 'Settings'
+      },
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
+      },
+      viewports: {
+        display: 'Viewports(V)',
+        local: 'Viewports',
+        global: 'Viewports'
+      },
+      blockSelection: {
+        display: 'Block selection(B)',
+        local: 'Block selection',
+        global: 'BlockSelection'
+      },
+      off: {
+        display: 'Off(O)',
+        local: 'Off',
+        global: 'Off'
+      },
+      vpfreeze: {
+        display: 'Vpfreeze(V)',
+        local: 'Vpfreeze',
+        global: 'Vpfreeze'
+      },
+      block: {
+        display: 'Block(B)',
+        local: 'Block',
+        global: 'Block'
+      },
+      entity: {
+        display: 'Entity(E)',
+        local: 'Entity',
+        global: 'Entity'
+      },
+      none: {
+        display: 'None(N)',
+        local: 'None',
+        global: 'None'
+      }
+    }
+  },
   hatch: {
     prompt: 'Select boundary object or',
     pickPoint: 'Specify internal point (or press Enter to finish):',

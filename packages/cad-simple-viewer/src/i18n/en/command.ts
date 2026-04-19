@@ -53,6 +53,20 @@ export default {
     '-layer': {
       description: 'Manages layers through command-line options'
     },
+    laydel: {
+      description: 'Deletes a layer and all objects on that layer'
+    },
+    layfrz: {
+      description: 'Freezes the layer of selected objects',
+      prompt: 'Select object on layer to freeze'
+    },
+    layoff: {
+      description: 'Turns off the layer of selected objects',
+      prompt: 'Select object on layer to turn off'
+    },
+    layerclose: {
+      description: 'Closes the Layer Properties Manager'
+    },
     line: {
       description: 'Draws straight line segments between points'
     },

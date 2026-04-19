@@ -48,6 +48,20 @@ export default {
     '-layer': {
       description: '通过命令行选项管理图层'
     },
+    laydel: {
+      description: '删除图层及该图层上的所有对象'
+    },
+    layfrz: {
+      description: '冻结所选对象所在的图层',
+      prompt: '选择要冻结其图层的对象'
+    },
+    layoff: {
+      description: '关闭所选对象所在的图层',
+      prompt: '选择要关闭其图层的对象'
+    },
+    layerclose: {
+      description: '关闭图层属性管理器'
+    },
     line: {
       description: '在指定点之间绘制直线段'
     },
