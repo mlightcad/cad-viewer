@@ -3,12 +3,12 @@ import { AcDbLayerTableRecord, AcDbObjectId } from '@mlightcad/data-model'
 import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
+  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptStatus
 } from '../../editor'
-import { eventBus } from '../../editor/global/eventBus'
 import { AcApI18n } from '../../i18n'
 
 /**
@@ -144,16 +144,13 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
   }
 
   /**
-   * Sends a localized status message through the shared editor event bus.
+   * Sends a localized status message through the command-line output.
    *
    * @param message - Text to display to the user.
-   * @param type - Visual severity used by the host notification UI.
+   * @param type - Visual severity mapped to command-line message styles.
    */
-  private notify(
-    message: string,
-    type: 'success' | 'warning' | 'info' = 'info'
-  ) {
-    eventBus.emit('message', { message, type })
+  private notify(message: string, type: AcEdMessageType = 'info') {
+    AcApDocManager.instance.editor.showMessage(message, type)
   }
 
   /**

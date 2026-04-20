@@ -1,12 +1,7 @@
 import { AcDbProgressdEventArgs } from '@mlightcad/data-model'
 import mitt, { type Emitter } from 'mitt'
 
-/**
- * Message severity type for user notifications.
- *
- * Used to categorize messages shown to users with appropriate visual styling.
- */
-export type AcEdMessageType = 'success' | 'warning' | 'info' | 'error'
+import { AcEdMessageType } from '../input/ui/AcEdMessageType'
 
 export interface AcEdFontNotLoadedInfo {
   /** Font name */

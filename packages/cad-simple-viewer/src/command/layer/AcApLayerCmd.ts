@@ -7,12 +7,12 @@ import {
 import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
+  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptKeywordOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
 } from '../../editor'
-import { eventBus } from '../../editor/global/eventBus'
 import { AcApI18n } from '../../i18n'
 
 /**
@@ -170,18 +170,13 @@ export class AcApLayerCmd extends AcEdCommand {
   }
 
   /**
-   * Emits one user-facing message through the global event bus.
-   *
-   * This keeps command logic decoupled from concrete UI rendering.
+   * Emits one user-facing message through the command-line output.
    *
    * @param message - Message text to display.
    * @param type - Message severity category.
    */
-  private notify(
-    message: string,
-    type: 'success' | 'warning' | 'info' = 'info'
-  ) {
-    eventBus.emit('message', { message, type })
+  private notify(message: string, type: AcEdMessageType = 'info') {
+    AcApDocManager.instance.editor.showMessage(message, type)
   }
 
   /**

@@ -2,6 +2,7 @@ import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
 import { AcEdPromptKeywordOptions } from '../prompt'
 import { AcEdKeywordSession } from '../session'
+import { AcEdMessageType } from './AcEdMessageType'
 
 /**
  * AutoCAD-style floating command line with Promise-based execution.
@@ -28,6 +29,7 @@ export class AcEdCommandLine {
   private widthRatio: number
   private cliContainer!: HTMLDivElement
   private wrapper!: HTMLDivElement
+  private recentPanel!: HTMLDivElement
   private bar!: HTMLDivElement
   private leftGroup!: HTMLDivElement
   private closeBtn!: HTMLDivElement // renamed from termGlyph
@@ -42,6 +44,9 @@ export class AcEdCommandLine {
   private activeSession?: AcEdKeywordSession
   private resizeObserver?: ResizeObserver
   private isPromptActive: boolean = false
+  private readonly recentMessages: string[] = []
+  private recentHideTimer?: ReturnType<typeof setTimeout>
+  private isCommandLifecycleBound: boolean = false
 
   constructor(container: HTMLElement = document.body) {
     this.container = container
@@ -57,6 +62,7 @@ export class AcEdCommandLine {
     this.injectCSS()
     this.createUI()
     this.bindEvents()
+    this.bindCommandLifecycleEvents()
     this.resizeHandler()
     window.addEventListener('resize', () => this.resizeHandler())
     this.resizeObserver = new ResizeObserver(() => this.resizeHandler())
@@ -77,6 +83,7 @@ export class AcEdCommandLine {
     this.isPromptActive = true
     this.promptEl.innerHTML = message ?? ''
     this.textInput.placeholder = ''
+    this.recordRecentMessage(message)
   }
 
   clear() {
@@ -105,32 +112,18 @@ export class AcEdCommandLine {
   }
 
   /**
-   * Displays a non-error message in the command line history panel.
+   * Displays a message in the command line history panel.
    *
-   * This is a lightweight public wrapper around the internal history/message
-   * rendering pipeline so other editor components can surface prompt feedback
-   * without needing direct access to the private printing helpers.
-   *
-   * @param message - Message text to append to the command line message panel
+   * @param message - Text to append to the command line message panel
+   * @param type - Message severity controlling the rendered style
    * @param msgKey - Optional localization key stored with the rendered entry
    */
-  showMessage(message: string, msgKey?: string) {
-    this.printMessage(message, msgKey)
-  }
-
-  /**
-   * Displays an error message in the command line history panel.
-   *
-   * Prompt workflows such as entity picking use this to report rejected input
-   * while keeping the current interaction active. The rendered line is styled
-   * as an error entry so it is visually distinct from normal informational
-   * messages.
-   *
-   * @param message - Error text to append to the command line message panel
-   * @param msgKey - Optional localization key stored with the rendered entry
-   */
-  showError(message: string, msgKey?: string) {
-    this.printError(message, msgKey)
+  showMessage(
+    message: string,
+    type: AcEdMessageType = 'info',
+    msgKey?: string
+  ) {
+    this.appendMessage(message, type, msgKey)
   }
 
   cancelActiveSession() {
@@ -206,7 +199,7 @@ export class AcEdCommandLine {
     if (!cmdLine || !cmdLine.trim()) {
       if (this.lastExecuted) cmdLine = this.lastExecuted
       else {
-        this.printMessage(
+        this.showMessage(
           this.localize('main.commandLine.noLast', '(no last command)')
         )
         return
@@ -216,7 +209,7 @@ export class AcEdCommandLine {
     const command = this.resolveCommand(cmdLine)
     if (!command) {
       const unknown = this.localize('main.commandLine.unknownCommand')
-      this.printError(`${unknown}: ${cmdLine}`)
+      this.showMessage(`${unknown}: ${cmdLine}`, 'warning')
       return
     }
 
@@ -226,7 +219,7 @@ export class AcEdCommandLine {
 
     this.printHistoryLine(cmdLine)
     const executed = this.localize('main.commandLine.executed')
-    this.printMessage(`${executed}: ${command.localName}`)
+    this.showMessage(`${executed}: ${command.localName}`)
 
     AcApDocManager.instance.sendStringToExecute(cmdLine)
     this.clearInput()
@@ -391,6 +384,7 @@ export class AcEdCommandLine {
         border-radius: 4px;
         padding: 6px 0;
         color: var(--ml-ui-text, #fff);
+        z-index: 3;
       }
 
       .ml-cli-cmd-popup .item {
@@ -421,6 +415,7 @@ export class AcEdCommandLine {
         font-size: 14px;
         white-space: pre-wrap;
         line-height: 1.35;
+        z-index: 4;
       }
 
       .ml-cli-history-line {
@@ -435,6 +430,39 @@ export class AcEdCommandLine {
       .ml-cli-wrapper {
         position: relative;
         width: 100%;
+      }
+
+      .ml-cli-recent {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 8px);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      .ml-cli-recent-line {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: rgba(230, 233, 238, 0.95);
+        background: rgba(45, 48, 54, 0.88);
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+        font-size: 12px;
+        line-height: 1.25;
+        letter-spacing: 0;
+        word-spacing: 0;
+      }
+
+      .ml-cli-recent-covered {
+        opacity: 0;
       }
 
       .hidden {
@@ -473,6 +501,10 @@ export class AcEdCommandLine {
     this.wrapper = document.createElement('div')
     this.wrapper.className = 'ml-cli-wrapper'
     this.cliContainer.appendChild(this.wrapper)
+
+    this.recentPanel = document.createElement('div')
+    this.recentPanel.className = 'ml-cli-recent'
+    this.wrapper.appendChild(this.recentPanel)
 
     this.bar = document.createElement('div')
     this.bar.className = 'ml-cli-bar'
@@ -590,7 +622,10 @@ export class AcEdCommandLine {
         if (this.activeSession) {
           const handled = this.activeSession.handleEnter(this.getInputText())
           if (!handled) {
-            this.printError(this.localize('main.commandLine.invalidKeyword'))
+            this.showMessage(
+              this.localize('main.commandLine.invalidKeyword'),
+              'warning'
+            )
           }
           return
         }
@@ -612,7 +647,7 @@ export class AcEdCommandLine {
         }
 
         this.clear()
-        this.printMessage(this.localize('main.commandLine.canceled'))
+        this.showMessage(this.localize('main.commandLine.canceled'))
         this.updatePopups({ showCmd: false, showMsg: false })
         return
       }
@@ -772,6 +807,30 @@ export class AcEdCommandLine {
     }
 
     this.promptEl.append(': ')
+    this.recordRecentMessage(this.promptEl.textContent ?? options.message)
+  }
+
+  /** Bind command lifecycle for auto-hide behavior of recent messages. */
+  private bindCommandLifecycleEvents() {
+    if (this.isCommandLifecycleBound) return
+    let editorEvents: AcApDocManager['editor']['events'] | undefined
+
+    try {
+      editorEvents = AcApDocManager.instance.editor.events
+    } catch {
+      // AcApDocManager singleton may not be ready while constructing view/editor.
+      setTimeout(() => this.bindCommandLifecycleEvents(), 0)
+      return
+    }
+
+    editorEvents.commandWillStart.addEventListener(() => {
+      this.cancelRecentAutoHide()
+      this.showRecentPanel()
+    })
+    editorEvents.commandEnded.addEventListener(() => {
+      this.scheduleRecentAutoHide()
+    })
+    this.isCommandLifecycleBound = true
   }
 
   /** Resolve command name */
@@ -788,6 +847,7 @@ export class AcEdCommandLine {
     this.isMsgPanelOpen = showMsg
     this.cmdPopup.classList.toggle('hidden', !showCmd)
     this.msgPanel.classList.toggle('hidden', !showMsg)
+    this.recentPanel.classList.toggle('ml-cli-recent-covered', showMsg)
     if (showCmd) this.positionCmdPopup()
     if (showMsg) this.positionMsgPanel()
   }
@@ -848,25 +908,22 @@ export class AcEdCommandLine {
     })
   }
 
-  /** Print message to message panel with optional localization key */
-  private printMessage(msg: string, msgKey?: string) {
+  /** Appends a typed message to the message panel. */
+  private appendMessage(
+    msg: string,
+    type: AcEdMessageType = 'info',
+    msgKey?: string
+  ) {
     this.clearNoHistoryPlaceholder()
     const div = document.createElement('div')
-    div.className = 'ml-cli-history-line'
+    div.className =
+      type === 'warning'
+        ? 'ml-cli-history-line ml-cli-msg-error'
+        : 'ml-cli-history-line'
     div.textContent = msg
     if (msgKey) div.dataset.msgKey = msgKey
     this.msgPanel.appendChild(div)
-    this.showMessagePanel()
-  }
-
-  /** Print error message with optional localization key */
-  private printError(msg: string, msgKey?: string) {
-    this.clearNoHistoryPlaceholder()
-    const div = document.createElement('div')
-    div.className = 'ml-cli-history-line ml-cli-msg-error'
-    div.textContent = msg
-    if (msgKey) div.dataset.msgKey = msgKey
-    this.msgPanel.appendChild(div)
+    this.recordRecentMessage(msg)
     this.showMessagePanel()
   }
 
@@ -892,10 +949,60 @@ export class AcEdCommandLine {
     // Clamp width so it never exceeds the host container width
     w = Math.min(w, Math.max(200, hostWidth - 20))
     this.bar.style.width = w + 'px'
+    this.recentPanel.style.width = w + 'px'
 
     // Reposition popups to match new width
     this.positionMsgPanel()
     this.positionCmdPopup()
+  }
+
+  /** Store and render up to two latest command-line messages above the bar. */
+  private recordRecentMessage(message?: string) {
+    const normalized = message?.replace(/\s+/g, ' ').trim()
+    if (!normalized) return
+    this.recentMessages.push(normalized)
+    if (this.recentMessages.length > 2) {
+      this.recentMessages.shift()
+    }
+    this.showRecentPanel()
+    this.renderRecentMessages()
+  }
+
+  /** Refresh the fixed recent-message preview area. */
+  private renderRecentMessages() {
+    this.recentPanel.innerHTML = ''
+    this.recentMessages.forEach(message => {
+      const line = document.createElement('div')
+      line.className = 'ml-cli-recent-line'
+      line.textContent = message
+      this.recentPanel.appendChild(line)
+    })
+  }
+
+  /** Start a 2-second timer to hide recent messages after command ends. */
+  private scheduleRecentAutoHide() {
+    this.cancelRecentAutoHide()
+    this.recentHideTimer = setTimeout(() => {
+      this.hideRecentPanel()
+      this.recentHideTimer = undefined
+    }, 2000)
+  }
+
+  /** Cancel current auto-hide timer when a new command starts. */
+  private cancelRecentAutoHide() {
+    if (!this.recentHideTimer) return
+    clearTimeout(this.recentHideTimer)
+    this.recentHideTimer = undefined
+  }
+
+  /** Show recent message area. */
+  private showRecentPanel() {
+    this.recentPanel.classList.remove('hidden')
+  }
+
+  /** Hide recent message area. */
+  private hideRecentPanel() {
+    this.recentPanel.classList.add('hidden')
   }
 
   private useViewportPositioning() {
