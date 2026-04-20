@@ -45,7 +45,7 @@ defineProps<RibbonPropertyFieldProps>()
   --ml-ribbon-property-gap: calc(6px * var(--ml-ribbon-property-scale));
   --ml-ribbon-property-icon-size: calc(18px * var(--ml-ribbon-property-scale));
   --ml-ribbon-property-column-width: calc(
-    138px * var(--ml-ribbon-property-scale)
+    188px * var(--ml-ribbon-property-scale)
   );
   display: inline-flex;
   align-items: center;

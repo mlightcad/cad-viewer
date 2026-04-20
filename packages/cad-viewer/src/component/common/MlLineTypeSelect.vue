@@ -22,8 +22,15 @@
           </span>
           <span
             class="ml-linetype-preview"
+            :class="{ 'ml-linetype-preview--svg': !!selectedPreviewSvg }"
             :style="{ '--ml-linetype-bg': selectedPreviewBackground }"
-          />
+          >
+            <span
+              class="ml-linetype-preview-svg"
+              aria-hidden="true"
+              v-html="selectedPreviewSvg ?? ''"
+            />
+          </span>
           <span class="ml-linetype-text">{{ currentLabel }}</span>
         </div>
       </template>
@@ -37,8 +44,15 @@
         <div class="ml-linetype-item">
           <span
             class="ml-linetype-preview"
+            :class="{ 'ml-linetype-preview--svg': !!item.previewSvgString }"
             :style="{ '--ml-linetype-bg': resolveLineTypeBackground(item) }"
-          />
+          >
+            <span
+              class="ml-linetype-preview-svg"
+              aria-hidden="true"
+              v-html="item.previewSvgString ?? ''"
+            />
+          </span>
           <span class="ml-linetype-text">{{ item.label }}</span>
         </div>
       </el-option>
@@ -59,7 +73,8 @@ import {
 import {
   buildLineTypeOptions,
   type LineTypeOption,
-  resolveLineTypeBackground
+  resolveLineTypeBackground,
+  resolveLineTypePreviewSvg
 } from './lineTypeOptions'
 
 defineOptions({
@@ -93,8 +108,11 @@ const activeDatabase = shallowRef(
   AcApDocManager.instance?.curDocument?.database
 )
 
-const resolvedOptions = computed(
-  () => props.options ?? buildLineTypeOptions(activeDatabase.value)
+const resolvedOptions = computed(() =>
+  (props.options ?? buildLineTypeOptions(activeDatabase.value)).map(item => ({
+    ...item,
+    previewSvgString: resolveLineTypePreviewSvg(item)
+  }))
 )
 const selectedOption = computed(
   () =>
@@ -106,6 +124,9 @@ const currentLabel = computed(
 )
 const selectedPreviewBackground = computed(() =>
   resolveLineTypeBackground(selectedOption.value)
+)
+const selectedPreviewSvg = computed(() =>
+  resolveLineTypePreviewSvg(selectedOption.value)
 )
 const resolvedModelValue = computed(() => selectedOption.value?.value ?? '')
 
@@ -183,10 +204,37 @@ onUnmounted(() => {
 }
 
 .ml-linetype-preview {
-  width: 48px;
+  position: relative;
+  width: 52px;
+  height: 14px;
+  flex: 0 0 52px;
+}
+
+.ml-linetype-preview::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
   height: 2px;
-  flex: 0 0 48px;
+  transform: translateY(-50%);
   background: var(--ml-linetype-bg);
+}
+
+.ml-linetype-preview--svg::before {
+  content: none;
+}
+
+.ml-linetype-preview-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ml-linetype-preview-svg :deep(svg) {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .ml-linetype-text {

@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@mlightcad/data-model': ^1.7.21
-  '@mlightcad/libredwg-converter': ^3.5.21
+  '@mlightcad/data-model': ^1.7.22
+  '@mlightcad/libredwg-converter': ^3.5.22
   '@mlightcad/mtext-renderer': ^0.10.7
   element-plus: ^2.12.0
   three: ^0.172.0
@@ -105,11 +105,11 @@ importers:
   packages/cad-simple-viewer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.21
-        version: 1.7.21
+        specifier: ^1.7.22
+        version: 1.7.22
       '@mlightcad/libredwg-converter':
-        specifier: ^3.5.21
-        version: 3.5.21(@mlightcad/data-model@1.7.21)
+        specifier: ^3.5.22
+        version: 3.5.22(@mlightcad/data-model@1.7.22)
       lodash-es:
         specifier: 4.17.21
         version: 4.17.21
@@ -154,8 +154,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.21
-        version: 1.7.21
+        specifier: ^1.7.22
+        version: 1.7.22
 
   packages/cad-viewer:
     dependencies:
@@ -166,8 +166,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.21
-        version: 1.7.21
+        specifier: ^1.7.22
+        version: 1.7.22
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.3.0(vue@3.5.31(typescript@5.9.3))
@@ -239,8 +239,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.21
-        version: 1.7.21
+        specifier: ^1.7.22
+        version: 1.7.22
       element-plus:
         specifier: ^2.12.0
         version: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
@@ -251,6 +251,9 @@ importers:
         specifier: ^10.0.1
         version: 10.0.8(vue@3.5.31(typescript@5.9.3))
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.55.0
+        version: 1.59.1
       '@vitejs/plugin-vue':
         specifier: ^5.1.3
         version: 5.2.4(vite@5.4.21(@types/node@20.19.37)(sass@1.98.0))(vue@3.5.31(typescript@5.9.3))
@@ -291,14 +294,14 @@ importers:
   packages/svg-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.21
-        version: 1.7.21
+        specifier: ^1.7.22
+        version: 1.7.22
 
   packages/three-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.21
-        version: 1.7.21
+        specifier: ^1.7.22
+        version: 1.7.22
       '@mlightcad/mtext-renderer':
         specifier: ^0.10.7
         version: 0.10.7(three@0.172.0)
@@ -1362,30 +1365,30 @@ packages:
   '@microsoft/tsdoc@0.16.0':
     resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
 
-  '@mlightcad/common@1.4.21':
-    resolution: {integrity: sha512-yrjoTgqBmpkxa8BfYStkXD0YJlAZNh+Ne42UI8MHD5OHLMQMXS2D9vzItMwglvE7qpjiP0AFKjX3GE4C4m0yKg==}
+  '@mlightcad/common@1.4.22':
+    resolution: {integrity: sha512-3yjAUhRiU4RW0LDnZG/+0yWbHsq/UizVm0koWKilF5EXFivjv+oOnizBjF5BEfrp3W3s2rc5cleS118xNIm6Ag==}
 
-  '@mlightcad/data-model@1.7.21':
-    resolution: {integrity: sha512-MtgjrIX91DcDMgOdgh7Uq+CgHMnuDsE7l7g6Grb1Q/m+omjj70x2ekYLrRhDCBTy4Hd0cp+4BtL+kR7a72Zq7w==}
+  '@mlightcad/data-model@1.7.22':
+    resolution: {integrity: sha512-MLs2jeWPzPHiYiteNO40J9H5xHua2Gx/sCYZK+sSkqLTnetQLVPHunbbzE7nd1BpdrF3Qb+5j4PqZWuaH9278A==}
 
   '@mlightcad/dxf-json@1.1.3':
     resolution: {integrity: sha512-XslMIrowLI9VOs84/x4SmcsKSdNxSSGyEVrhJTFiSsB3CghtU2tzOmvDoCHCPa4jYCmYkQ1GK/rgQ+89wXXPgw==}
 
-  '@mlightcad/geometry-engine@3.2.21':
-    resolution: {integrity: sha512-cqCARgMjzONk9tdkYS0Myh78PDObIiqkY+gOGkUjavb3RmAThvKmYafYCZnVWn73Kw4j8I7A0b7xjiHMUn3pJA==}
+  '@mlightcad/geometry-engine@3.2.22':
+    resolution: {integrity: sha512-kCp/2zKj4207ZbbpYU5MHwpX/hX6c9f2yM9sbDU4em2goUvaLvzY2bk5W1MlzGGFDOysVlypjR0YEWlZdeoplA==}
     peerDependencies:
-      '@mlightcad/common': 1.4.21
+      '@mlightcad/common': 1.4.22
 
-  '@mlightcad/graphic-interface@3.3.21':
-    resolution: {integrity: sha512-kQFVe0lUWiLjNr9jieNgsg0uJ79Oi6YUSeVWzeTsmSKQ6pJQU+gcHRRZ6UBRcL1T3DUowaRktBZitEQ+bVpKCQ==}
+  '@mlightcad/graphic-interface@3.3.22':
+    resolution: {integrity: sha512-RIyXIzHOv+FKI4Xh9tIt1aN88yo6PJ7xFof+FRxlXI6SO/qu2UQ3B11BeCowaiAl1B1D5fYCwwSRZL+1lJnKxQ==}
     peerDependencies:
-      '@mlightcad/common': 1.4.21
-      '@mlightcad/geometry-engine': 3.2.21
+      '@mlightcad/common': 1.4.22
+      '@mlightcad/geometry-engine': 3.2.22
 
-  '@mlightcad/libredwg-converter@3.5.21':
-    resolution: {integrity: sha512-R5wTqUxGyONgcjWHHfCTTIM/xsk9SbN6iT8eb5uaiKRztw5Zcc+oiB76DuL5s9bGv3ZFLg3Muwuj3dGq8iq8AQ==}
+  '@mlightcad/libredwg-converter@3.5.22':
+    resolution: {integrity: sha512-8jHTsZvSDuJlbChQcN4YCgx/m4UuEBnui4RQ+1XCrdd6Fil7qB/LTnxXR5KDwCPcZXQ0qtvf6t5q5XZLM+M97g==}
     peerDependencies:
-      '@mlightcad/data-model': ^1.7.21
+      '@mlightcad/data-model': ^1.7.22
 
   '@mlightcad/libredwg-web@0.6.10':
     resolution: {integrity: sha512-yJ9bTyuKWTst2vEaYmWjW36bIM5xkfTPg3QhpbexdG+bqi7/UY/Jyp3X7tovcOv0HJ/gnDXV9RaeAs+IzUxJ5w==}
@@ -1497,24 +1500,28 @@ packages:
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@nx/nx-linux-arm64-musl@19.3.1':
     resolution: {integrity: sha512-JMuBbg2Zqdz4N7i+hiJGr2QdsDarDZ8vyzzeoevFq3b8nhZfqKh/lno7+Y0WkXNpH7aT05GHaUA1r1NXf/5BeQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@nx/nx-linux-x64-gnu@19.3.1':
     resolution: {integrity: sha512-cVmDMtolaqK7PziWxvjus1nCyj2wMNM+N0/4+rBEjG4v47gTtBxlZJoxK02jApdV+XELehsTjd0Z/xVfO4Rl1Q==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@nx/nx-linux-x64-musl@19.3.1':
     resolution: {integrity: sha512-UGujK/TLMz9TNJ6+6HLhoOV7pdlgPVosSyeNZcoXCHOg/Mg9NGM7Hgk9jDodtcAY+TP6QMDJIMVGuXBsCE7NLQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@nx/nx-win32-arm64-msvc@19.3.1':
     resolution: {integrity: sha512-q+2aaRXarh/+HOOW/JXRwEnEEwPdGipsfzXBPDuDDJ7aOYKuyG7g1DlSERKdzI/aEBP+joneZbcbZHaDcEv2xw==}
@@ -1560,36 +1567,42 @@ packages:
     engines: {node: '>= 10.0.0'}
     cpu: [arm]
     os: [linux]
+    libc: [glibc]
 
   '@parcel/watcher-linux-arm-musl@2.5.6':
     resolution: {integrity: sha512-Ve3gUCG57nuUUSyjBq/MAM0CzArtuIOxsBdQ+ftz6ho8n7s1i9E1Nmk/xmP323r2YL0SONs1EuwqBp2u1k5fxg==}
     engines: {node: '>= 10.0.0'}
     cpu: [arm]
     os: [linux]
+    libc: [musl]
 
   '@parcel/watcher-linux-arm64-glibc@2.5.6':
     resolution: {integrity: sha512-f2g/DT3NhGPdBmMWYoxixqYr3v/UXcmLOYy16Bx0TM20Tchduwr4EaCbmxh1321TABqPGDpS8D/ggOTaljijOA==}
     engines: {node: '>= 10.0.0'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@parcel/watcher-linux-arm64-musl@2.5.6':
     resolution: {integrity: sha512-qb6naMDGlbCwdhLj6hgoVKJl2odL34z2sqkC7Z6kzir8b5W65WYDpLB6R06KabvZdgoHI/zxke4b3zR0wAbDTA==}
     engines: {node: '>= 10.0.0'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@parcel/watcher-linux-x64-glibc@2.5.6':
     resolution: {integrity: sha512-kbT5wvNQlx7NaGjzPFu8nVIW1rWqV780O7ZtkjuWaPUgpv2NMFpjYERVi0UYj1msZNyCzGlaCWEtzc+exjMGbQ==}
     engines: {node: '>= 10.0.0'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@parcel/watcher-linux-x64-musl@2.5.6':
     resolution: {integrity: sha512-1JRFeC+h7RdXwldHzTsmdtYR/Ku8SylLgTU/reMuqdVD7CtLwf0VR1FqeprZ0eHQkO0vqsbvFLXUmYm/uNKJBg==}
     engines: {node: '>= 10.0.0'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@parcel/watcher-win32-arm64@2.5.6':
     resolution: {integrity: sha512-3ukyebjc6eGlw9yRt678DxVF7rjXatWiHvTXqphZLvo7aC5NdEgFufVwjFfY51ijYEWpXbqF5jtrK275z52D4Q==}
@@ -1624,6 +1637,11 @@ packages:
   '@pkgr/core@0.2.9':
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
+
+  '@playwright/test@1.59.1':
+    resolution: {integrity: sha512-PG6q63nQg5c9rIi4/Z5lR5IVF7yU5MqmKaPOe0HSc0O2cX1fPi96sUQu5j7eo4gKCkB2AnNGoWt7y4/Xx3Kcqg==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@rollup/pluginutils@5.3.0':
     resolution: {integrity: sha512-5EdhGZtnu3V88ces7s53hhfK5KSASnJZv8Lulpc04cWO3REESroJXg73DFsOmgbU2BhwV0E20bu2IDZb3VKW4Q==}
@@ -1668,66 +1686,79 @@ packages:
     resolution: {integrity: sha512-L+34Qqil+v5uC0zEubW7uByo78WOCIrBvci69E7sFASRl0X7b/MB6Cqd1lky/CtcSVTydWa2WZwFuWexjS5o6g==}
     cpu: [arm]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-arm-musleabihf@4.60.1':
     resolution: {integrity: sha512-n83O8rt4v34hgFzlkb1ycniJh7IR5RCIqt6mz1VRJD6pmhRi0CXdmfnLu9dIUS6buzh60IvACM842Ffb3xd6Gg==}
     cpu: [arm]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-arm64-gnu@4.60.1':
     resolution: {integrity: sha512-Nql7sTeAzhTAja3QXeAI48+/+GjBJ+QmAH13snn0AJSNL50JsDqotyudHyMbO2RbJkskbMbFJfIJKWA6R1LCJQ==}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-arm64-musl@4.60.1':
     resolution: {integrity: sha512-+pUymDhd0ys9GcKZPPWlFiZ67sTWV5UU6zOJat02M1+PiuSGDziyRuI/pPue3hoUwm2uGfxdL+trT6Z9rxnlMA==}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-loong64-gnu@4.60.1':
     resolution: {integrity: sha512-VSvgvQeIcsEvY4bKDHEDWcpW4Yw7BtlKG1GUT4FzBUlEKQK0rWHYBqQt6Fm2taXS+1bXvJT6kICu5ZwqKCnvlQ==}
     cpu: [loong64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-loong64-musl@4.60.1':
     resolution: {integrity: sha512-4LqhUomJqwe641gsPp6xLfhqWMbQV04KtPp7/dIp0nzPxAkNY1AbwL5W0MQpcalLYk07vaW9Kp1PBhdpZYYcEw==}
     cpu: [loong64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-ppc64-gnu@4.60.1':
     resolution: {integrity: sha512-tLQQ9aPvkBxOc/EUT6j3pyeMD6Hb8QF2BTBnCQWP/uu1lhc9AIrIjKnLYMEroIz/JvtGYgI9dF3AxHZNaEH0rw==}
     cpu: [ppc64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-ppc64-musl@4.60.1':
     resolution: {integrity: sha512-RMxFhJwc9fSXP6PqmAz4cbv3kAyvD1etJFjTx4ONqFP9DkTkXsAMU4v3Vyc5BgzC+anz7nS/9tp4obsKfqkDHg==}
     cpu: [ppc64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-riscv64-gnu@4.60.1':
     resolution: {integrity: sha512-QKgFl+Yc1eEk6MmOBfRHYF6lTxiiiV3/z/BRrbSiW2I7AFTXoBFvdMEyglohPj//2mZS4hDOqeB0H1ACh3sBbg==}
     cpu: [riscv64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-riscv64-musl@4.60.1':
     resolution: {integrity: sha512-RAjXjP/8c6ZtzatZcA1RaQr6O1TRhzC+adn8YZDnChliZHviqIjmvFwHcxi4JKPSDAt6Uhf/7vqcBzQJy0PDJg==}
     cpu: [riscv64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-s390x-gnu@4.60.1':
     resolution: {integrity: sha512-wcuocpaOlaL1COBYiA89O6yfjlp3RwKDeTIA0hM7OpmhR1Bjo9j31G1uQVpDlTvwxGn2nQs65fBFL5UFd76FcQ==}
     cpu: [s390x]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-x64-gnu@4.60.1':
     resolution: {integrity: sha512-77PpsFQUCOiZR9+LQEFg9GClyfkNXj1MP6wRnzYs0EeWbPcHs02AXu4xuUbM1zhwn3wqaizle3AEYg5aeoohhg==}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-x64-musl@4.60.1':
     resolution: {integrity: sha512-5cIATbk5vynAjqqmyBjlciMJl1+R/CwX9oLk/EyiFXDWd95KpHdrOJT//rnUl4cUcskrd0jCCw3wpZnhIHdD9w==}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-openbsd-x64@4.60.1':
     resolution: {integrity: sha512-cl0w09WsCi17mcmWqqglez9Gk8isgeWvoUZ3WiJFYSR3zjBQc2J5/ihSjpl+VLjPqjQ/1hJRcqBfLjssREQILw==}
@@ -2997,6 +3028,11 @@ packages:
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -3938,6 +3974,16 @@ packages:
 
   pkg-types@2.3.0:
     resolution: {integrity: sha512-SIqCzDRg0s9npO5XQ3tNZioRY1uK06lA41ynBC1YmFTmnY6FjUjVt6s4LoADmwoig1qqD0oK8h1p/8mlMx8Oig==}
+
+  playwright-core@1.59.1:
+    resolution: {integrity: sha512-HBV/RJg81z5BiiZ9yPzIiClYV/QMsDCKUyogwH9p3MCP6IYjUFu/MActgYAvK0oWyV9NlwM3GLBjADyWgydVyg==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.59.1:
+    resolution: {integrity: sha512-C8oWjPR3F81yljW9o5OxcWzfh6avkVwDD2VYdwIGqTkl+OGFISgypqzfu7dOe4QNLL2aqcWBmI3PMtLIK233lw==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   postcss-selector-parser@6.1.2:
     resolution: {integrity: sha512-Q8qQfPiZ+THO/3ZrOrO0cJJKfpYCagtMUkXbnEfmgUjwXg6z/WBeOyS9APBBPCTSiDV+s4SwQGu8yFsiMRIudg==}
@@ -6106,16 +6152,16 @@ snapshots:
 
   '@microsoft/tsdoc@0.16.0': {}
 
-  '@mlightcad/common@1.4.21':
+  '@mlightcad/common@1.4.22':
     dependencies:
       loglevel: 1.9.2
 
-  '@mlightcad/data-model@1.7.21':
+  '@mlightcad/data-model@1.7.22':
     dependencies:
-      '@mlightcad/common': 1.4.21
+      '@mlightcad/common': 1.4.22
       '@mlightcad/dxf-json': 1.1.3
-      '@mlightcad/geometry-engine': 3.2.21(@mlightcad/common@1.4.21)
-      '@mlightcad/graphic-interface': 3.3.21(@mlightcad/common@1.4.21)(@mlightcad/geometry-engine@3.2.21(@mlightcad/common@1.4.21))
+      '@mlightcad/geometry-engine': 3.2.22(@mlightcad/common@1.4.22)
+      '@mlightcad/graphic-interface': 3.3.22(@mlightcad/common@1.4.22)(@mlightcad/geometry-engine@3.2.22(@mlightcad/common@1.4.22))
       iconv-lite: 0.7.2
       uid: 2.0.2
 
@@ -6123,18 +6169,18 @@ snapshots:
     dependencies:
       '@fxts/core': 1.26.0
 
-  '@mlightcad/geometry-engine@3.2.21(@mlightcad/common@1.4.21)':
+  '@mlightcad/geometry-engine@3.2.22(@mlightcad/common@1.4.22)':
     dependencies:
-      '@mlightcad/common': 1.4.21
+      '@mlightcad/common': 1.4.22
 
-  '@mlightcad/graphic-interface@3.3.21(@mlightcad/common@1.4.21)(@mlightcad/geometry-engine@3.2.21(@mlightcad/common@1.4.21))':
+  '@mlightcad/graphic-interface@3.3.22(@mlightcad/common@1.4.22)(@mlightcad/geometry-engine@3.2.22(@mlightcad/common@1.4.22))':
     dependencies:
-      '@mlightcad/common': 1.4.21
-      '@mlightcad/geometry-engine': 3.2.21(@mlightcad/common@1.4.21)
+      '@mlightcad/common': 1.4.22
+      '@mlightcad/geometry-engine': 3.2.22(@mlightcad/common@1.4.22)
 
-  '@mlightcad/libredwg-converter@3.5.21(@mlightcad/data-model@1.7.21)':
+  '@mlightcad/libredwg-converter@3.5.22(@mlightcad/data-model@1.7.22)':
     dependencies:
-      '@mlightcad/data-model': 1.7.21
+      '@mlightcad/data-model': 1.7.22
       '@mlightcad/libredwg-web': 0.6.10
 
   '@mlightcad/libredwg-web@0.6.10': {}
@@ -6393,6 +6439,10 @@ snapshots:
   '@pkgr/core@0.1.2': {}
 
   '@pkgr/core@0.2.9': {}
+
+  '@playwright/test@1.59.1':
+    dependencies:
+      playwright: 1.59.1
 
   '@rollup/pluginutils@5.3.0(rollup@4.60.1)':
     dependencies:
@@ -7876,6 +7926,9 @@ snapshots:
 
   fs.realpath@1.0.0: {}
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -8970,6 +9023,14 @@ snapshots:
       confbox: 0.2.4
       exsolve: 1.0.8
       pathe: 2.0.3
+
+  playwright-core@1.59.1: {}
+
+  playwright@1.59.1:
+    dependencies:
+      playwright-core: 1.59.1
+    optionalDependencies:
+      fsevents: 2.3.2
 
   postcss-selector-parser@6.1.2:
     dependencies:
