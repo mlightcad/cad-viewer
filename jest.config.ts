@@ -13,6 +13,8 @@ const config: Config = {
   ],
   moduleNameMapper: {
     '^lodash-es$': 'lodash',
+    '^three/examples/jsm/lines/LineMaterial\\.js$':
+      '<rootDir>/test/mocks/three/LineMaterial.js',
   },
 }
 

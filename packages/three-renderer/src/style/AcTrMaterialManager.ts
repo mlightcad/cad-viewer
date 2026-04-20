@@ -211,6 +211,47 @@ export abstract class AcTrMaterialManager<T> {
   }
 
   /**
+   * Reuses the symbolic traits behind a cached material while assigning a new effective layer.
+   *
+   * This is primarily used for block contents that are authored on layer `0` but inherit the
+   * layer of the INSERT that owns them. The returned material keeps the same visual traits and
+   * cache semantics, but future layer updates will target the effective layer instead of the
+   * original source layer.
+   *
+   * @param material - Existing cached material to remap.
+   * @param layerName - Effective layer name that should own the remapped material.
+   * @returns The remapped cached material, or `undefined` when the input material is not owned
+   * by this manager.
+   */
+  remapMaterialLayer(
+    material: THREE.Material,
+    layerName: string
+  ): THREE.Material | undefined {
+    const key = material.userData.materialKey as string | undefined
+    if (!key) return undefined
+
+    const traits = this.keyToTraits[key]
+    if (!traits) return undefined
+
+    if (traits.layer === layerName) {
+      return material
+    }
+
+    const remappedTraits = {
+      ...deepClone(traits),
+      layer: layerName
+    }
+    const remappedKey = this.buildKey(remappedTraits, remappedTraits)
+
+    if (this.cache[remappedKey]) {
+      return this.cache[remappedKey]
+    }
+
+    this.keyToTraits[remappedKey] = remappedTraits
+    return this.createMaterial(remappedKey, remappedTraits, remappedTraits)
+  }
+
+  /**
    * Creates a THREE.js material and stores metadata in userData:
    *   - layer
    *   - isByLayer

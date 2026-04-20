@@ -1115,6 +1115,9 @@ export class AcTrView2d extends AcEdBaseView {
       })
     )
     objectsGroupByLayer.forEach((objects, layerName) => {
+      const effectiveLayerName = layerName === '0' ? groupLayerName : layerName
+      this.remapInheritedLayerObjects(objects, layerName, effectiveLayerName)
+
       // In AutoCAD, an INSERT entity may reference multiple child entities that
       // reside on different layers. During rendering, this engine groups entities
       // by layer and assigns each group the INSERT entity's object ID.
@@ -1127,7 +1130,7 @@ export class AcTrView2d extends AcEdBaseView {
       entity.ownerId = group.ownerId
       // Here one group represents one block reference. If the layer name of entities in block
       // definition is '0', it should be put on layer where the group exist.
-      entity.layerName = layerName === '0' ? groupLayerName : layerName
+      entity.layerName = effectiveLayerName
       entity.box = groupBox
       const entityUserData = entity.userData as {
         spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
@@ -1146,6 +1149,51 @@ export class AcTrView2d extends AcEdBaseView {
     group.dispose()
 
     this._isDirty = true
+  }
+
+  /**
+   * Retags layer-0 block contents with the INSERT's effective layer and remaps their cached
+   * materials so later layer edits target the inherited layer instead of the source layer.
+   */
+  private remapInheritedLayerObjects(
+    objects: THREE.Object3D[],
+    sourceLayerName: string,
+    effectiveLayerName: string
+  ) {
+    if (sourceLayerName === effectiveLayerName) return
+
+    const renderer = this._renderer as AcTrRenderer & {
+      remapMaterialLayer(
+        material: THREE.Material,
+        layerName: string
+      ): THREE.Material
+    }
+
+    for (const object of objects) {
+      object.traverse(child => {
+        if (child.userData.layerName === sourceLayerName) {
+          child.userData.layerName = effectiveLayerName
+        }
+
+        if (!('material' in child)) return
+
+        const material = child.material
+        if (Array.isArray(material)) {
+          const materials = material as THREE.Material[]
+          child.material = materials.map(entry =>
+            renderer.remapMaterialLayer(entry, effectiveLayerName)
+          )
+          return
+        }
+
+        const remappedMaterial = renderer.remapMaterialLayer(
+          material as THREE.Material,
+          effectiveLayerName
+        )
+        child.material = remappedMaterial
+        child.userData.styleMaterialId = remappedMaterial.id
+      })
+    }
   }
 
   private decreaseNumOfEntitiesToProcess() {

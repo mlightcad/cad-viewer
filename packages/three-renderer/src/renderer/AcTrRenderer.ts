@@ -241,6 +241,15 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
+   * Remaps one cached material to an effective layer while preserving its symbolic traits.
+   *
+   * This is used for block contents that inherit the layer of the INSERT they belong to.
+   */
+  remapMaterialLayer(material: THREE.Material, layerName: string) {
+    return this._styleManager.remapMaterialLayer(material, layerName)
+  }
+
+  /**
    * Create one empty drawable object
    */
   createObject() {

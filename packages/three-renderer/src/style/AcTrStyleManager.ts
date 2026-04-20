@@ -206,6 +206,26 @@ export class AcTrStyleManager {
   }
 
   /**
+   * Reassigns one cached material to an effective layer without changing its symbolic traits.
+   *
+   * This is used when block contents authored on layer `0` inherit the layer of the INSERT that
+   * owns them. The remapped material keeps the same appearance now, but future layer updates
+   * will target the effective layer instead of the source layer.
+   *
+   * @param material - Existing material used by a rendered object.
+   * @param layerName - Effective layer that should own future updates for this material.
+   * @returns A cached material bound to the effective layer.
+   */
+  remapMaterialLayer(material: THREE.Material, layerName: string) {
+    return (
+      this.lineMgr.remapMaterialLayer(material, layerName) ||
+      this.pointMgr.remapMaterialLayer(material, layerName) ||
+      this.fillMgr.remapMaterialLayer(material, layerName) ||
+      material
+    )
+  }
+
+  /**
    * Changes material color to the specified color if its userData 'isForeground' is true.
    * Generally this function is used to change rendering color of entities whose color is
    * ACI 7.
