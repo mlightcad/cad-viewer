@@ -692,6 +692,28 @@ export class AcTrBatchedGroup extends THREE.Group {
         AcTrBatchedGroup.INITIAL_MESH_INDEX_CAPACITY,
         material
       )
+      // Draw-order tiering by primitive type, matching AutoCAD's
+      // default SortentsTable behaviour:
+      //
+      //   renderOrder = -1  → hatch / solid area fills
+      //   renderOrder =  0  → lines, points, text glyph meshes (default)
+      //
+      // All CAD geometry lives on the same Z plane, so depth test alone
+      // cannot decide which primitive wins on a shared pixel.  Without
+      // explicit `renderOrder`, THREE sorts opaque objects by material
+      // id — effectively random — and white HATCH fills end up painted
+      // over BYLAYER outlines (tower DWG: interior floor divisions were
+      // invisible in both light and dark themes because the fills were
+      // drawn after the lines).
+      //
+      // Text glyphs are meshes too but must stay ABOVE lines, so they
+      // keep the default `0`.  They are distinguished from hatches via
+      // `material.userData.isTextFill`, stamped by
+      // `AcTrFillMaterialManager.createMaterialImpl` when the MText
+      // renderer requests a fill material via `getMTextFillMaterial`.
+      if (!material.userData.isTextFill) {
+        batchedMesh.renderOrder = -1
+      }
       batches.set(material.id, batchedMesh)
       this.add(batchedMesh)
     }

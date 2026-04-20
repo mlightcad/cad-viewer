@@ -28,7 +28,11 @@ export class AcTrStyleManager {
     viewportScaleUniform: 1.0,
     maxFragmentUniforms: 1024,
     resolution: new THREE.Vector2(1, 1),
-    showLineWeight: false
+    showLineWeight: false,
+    // Matches DEFAULT_VIEW_2D_OPTIONS.background in cad-simple-viewer.
+    // The setter below keeps this in sync with the canvas bg and fires
+    // `changeBackground` so existing materials are repainted on a flip.
+    currentBackgroundColor: 0x000000
   }
   private pointMgr: AcTrPointMaterialManager
   private lineMgr: AcTrLineMaterialManager
@@ -89,6 +93,40 @@ export class AcTrStyleManager {
   }
 
   /**
+   * Current canvas background colour tracked by the style manager.
+   *
+   * See `AcTrStyleManagerOptions.currentBackgroundColor` for the full
+   * contract.  In short: this is the single source of truth that the
+   * fill material manager consults when creating a background-follow
+   * material so it is born with the right colour, and it is also what
+   * `changeBackground` repaints existing materials to when the theme
+   * flips mid-session.
+   */
+  get currentBackgroundColor(): number {
+    return this.options.currentBackgroundColor
+  }
+
+  /**
+   * Updates the canvas background colour and repaints existing
+   * background-follow materials so they track the new colour.
+   *
+   * Order matters:
+   * 1. Write to `options.currentBackgroundColor` first, so any material
+   *    created AFTER this point (e.g. hatches from a DWG that finishes
+   *    loading later in the boot sequence) is born with the new colour.
+   * 2. Fire `changeBackground(value)` so materials already in the
+   *    cache (created BEFORE the flip) are repainted in place.
+   *
+   * Together these cover both the mid-session theme toggle (step 2
+   * alone) and the initial boot-in-dark edge case where the theme is
+   * set before the DWG finishes parsing (step 1 alone).
+   */
+  set currentBackgroundColor(value: number) {
+    this.options.currentBackgroundColor = value
+    this.changeBackground(value)
+  }
+
+  /**
    * Returns the shader hatch material or a mesh fallback.
    *
    * @param traits - Current entity traits.
@@ -100,6 +138,35 @@ export class AcTrStyleManager {
   ): THREE.Material {
     return this.fillMgr.getMaterial(traits, {
       rebaseOffset
+    })
+  }
+
+  /**
+   * Returns a fill material for MText glyph geometry.
+   *
+   * MText glyphs are rendered as mesh fills, so they share the
+   * `AcTrFillMaterialManager` with hatches — but the two have
+   * opposite COLORTHEME semantics: text must stay legible against
+   * the theme background (invert ACI 7 with the theme), whereas
+   * hatches keep their resolved RGB in both themes.  This method
+   * sets the `isTextFill` option so the fill manager opts the
+   * resulting material into `changeForeground` inversion AND
+   * keeps it in a separate cache slot from any hatch that happens
+   * to share colour + layer.
+   *
+   * @param traits - Current entity traits (built via
+   *                 `AcTrSubEntityTraitsUtil.createTraitsForMText`).
+   * @param rebaseOffset - Offset used to transform pattern origins
+   *                       (unused for solid glyph fills, kept for
+   *                       API symmetry with `getFillMaterial`).
+   */
+  getMTextFillMaterial(
+    traits: AcGiSubEntityTraits,
+    rebaseOffset: THREE.Vector2 = _rebaseOffset
+  ): THREE.Material {
+    return this.fillMgr.getMaterial(traits, {
+      rebaseOffset,
+      isTextFill: true
     })
   }
 
@@ -148,6 +215,24 @@ export class AcTrStyleManager {
     this.lineMgr.changeForeground(color)
     this.pointMgr.changeForeground(color)
     this.fillMgr.changeForeground(color)
+  }
+
+  /**
+   * Repaints every material marked as `isBackgroundFill` with the
+   * given colour — used to keep ACI 7 solid hatches fused with the
+   * canvas bg as the theme flips (see `AcTrFillMaterialManager`).
+   *
+   * Point and line managers currently never opt materials into this
+   * behaviour, so their delegation is a no-op; keeping it symmetric
+   * with `changeForeground` allows future managers to opt in without
+   * touching the callers.
+   *
+   * @param color - New rendering color (typically the canvas bg).
+   */
+  changeBackground(color: number) {
+    this.lineMgr.changeBackground(color)
+    this.pointMgr.changeBackground(color)
+    this.fillMgr.changeBackground(color)
   }
 
   /**
