@@ -57,6 +57,7 @@ import {
   AcEdFloatingInputRawData
 } from './AcEdFloatingInputTypes'
 import { AcEdFloatingMessage } from './AcEdFloatingMessage'
+import { AcEdMessageType } from './AcEdMessageType'
 
 /**
  * Internal control-flow error used to propagate keyword picks out of
@@ -201,6 +202,21 @@ export class AcEdInputManager {
   /** Clears any pending scripted inputs. */
   clearScriptInputs() {
     this._scriptInputs.length = 0
+  }
+
+  /**
+   * Displays a typed message in the command-line message panel.
+   *
+   * @param message - Message text to render
+   * @param type - Message severity controlling the rendered style
+   * @param msgKey - Optional localization key associated with the message
+   */
+  showMessage(
+    message: string,
+    type: AcEdMessageType = 'info',
+    msgKey?: string
+  ) {
+    this._commandLine.showMessage(message, type, msgKey)
   }
 
   /**
@@ -1183,13 +1199,13 @@ export class AcEdInputManager {
 
             // Clicked empty space
             if (picked.length == 0) {
-              this._commandLine.showError(options.rejectMessage)
+              this._commandLine.showMessage(options.rejectMessage, 'warning')
               return
             }
 
             const entity = this.getEntityById(picked[0].id)
             if (!entity) {
-              this._commandLine.showError(options.rejectMessage)
+              this._commandLine.showMessage(options.rejectMessage, 'warning')
               return
             }
 
@@ -1197,12 +1213,12 @@ export class AcEdInputManager {
               !options.allowObjectOnLockedLayer &&
               this.isEntityOnLockedLayer(entity)
             ) {
-              this._commandLine.showError(options.rejectMessage)
+              this._commandLine.showMessage(options.rejectMessage, 'warning')
               return
             }
 
             if (!this.isEntityClassAllowed(entity, options)) {
-              this._commandLine.showError(options.rejectMessage)
+              this._commandLine.showMessage(options.rejectMessage, 'warning')
               return
             }
 

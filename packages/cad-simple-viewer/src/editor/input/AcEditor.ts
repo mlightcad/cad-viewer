@@ -28,7 +28,7 @@ import {
   AcEdPromptStatus,
   AcEdPromptStringOptions
 } from './prompt'
-import { AcEdInputManager } from './ui'
+import { AcEdInputManager, AcEdMessageType } from './ui'
 
 /**
  * Event arguments for system variable related events.
@@ -157,6 +157,21 @@ export class AcEditor {
   /** Clears any queued scripted inputs. */
   clearScriptInputs() {
     this._inputManager.clearScriptInputs()
+  }
+
+  /**
+   * Displays a typed message in the command-line message panel.
+   *
+   * @param message - Message text to render
+   * @param type - Message severity controlling the rendered style
+   * @param msgKey - Optional localization key associated with the message
+   */
+  showMessage(
+    message: string,
+    type: AcEdMessageType = 'info',
+    msgKey?: string
+  ) {
+    this._inputManager.showMessage(message, type, msgKey)
   }
 
   /**
