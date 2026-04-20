@@ -28,15 +28,16 @@
     "publish:viewer": "pnpm -r publish --filter cad-viewer --filter cad-simple-viewer --no-git-checks",
     "release": "node tools/release.mjs",
     "serve": "nx run @mlightcad/cad-viewer-examples:serve",
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "pnpm --filter @mlightcad/cad-viewer-example test:e2e"
   },
   "engines": {
     "pnpm": ">=8"
   },
   "pnpm": {
     "overrides": {
-      "@mlightcad/data-model": "^1.7.21",
-      "@mlightcad/libredwg-converter": "^3.5.21",
+      "@mlightcad/data-model": "^1.7.22",
+      "@mlightcad/libredwg-converter": "^3.5.22",
       "@mlightcad/mtext-renderer": "^0.10.7",
       "element-plus": "^2.12.0",
       "three": "^0.172.0",

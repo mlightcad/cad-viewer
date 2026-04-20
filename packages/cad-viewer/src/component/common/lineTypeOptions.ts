@@ -12,6 +12,8 @@ export interface LineTypeOption {
   value: string
   /** User-facing label rendered in the dropdown list. */
   label: string
+  /** Optional inline SVG preview generated from the backing line type record. */
+  previewSvgString?: string
   /** Optional fallback pattern hint used when a live line type record is absent. */
   pattern?: 'solid' | 'dashed' | 'hidden' | 'center'
   /** Backing CAD line type record used to derive a preview from dash segments. */
@@ -92,6 +94,47 @@ function buildPatternBackground(lineType: AcGiBaseLineStyle) {
   return `repeating-linear-gradient(90deg, ${stops.join(', ')})`
 }
 
+type PreviewSvgProvider = {
+  toPreviewSvgString?: () => string | null | undefined
+}
+
+/**
+ * Invokes the preview-SVG generator defensively and normalizes blank output.
+ *
+ * @param provider Potential object carrying `toPreviewSvgString`.
+ * @returns Inline SVG markup when available.
+ */
+function callPreviewSvgString(provider?: PreviewSvgProvider) {
+  if (!provider || typeof provider.toPreviewSvgString !== 'function') {
+    return undefined
+  }
+
+  try {
+    const svgString = provider.toPreviewSvgString()
+    if (!svgString) return undefined
+    const normalized = svgString.trim()
+    return normalized.length ? normalized : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Resolves the optional inline SVG preview from explicit option metadata or the
+ * backing CAD line type object.
+ *
+ * @param option Option to visualize.
+ * @returns Inline SVG markup string when available.
+ */
+export function resolveLineTypePreviewSvg(option?: LineTypeOption) {
+  if (!option) return undefined
+  return (
+    callPreviewSvgString({
+      toPreviewSvgString: () => option.previewSvgString
+    }) ?? callPreviewSvgString(option.lineType as PreviewSvgProvider)
+  )
+}
+
 /**
  * Resolves the CSS background used to preview a line type option.
  *
@@ -133,9 +176,14 @@ export function buildLineTypeOptions(db?: AcDbDatabase): LineTypeOption[] {
     if (!name || seen.has(name)) continue
 
     seen.add(name)
+    const previewSvgString =
+      callPreviewSvgString(record as PreviewSvgProvider) ??
+      callPreviewSvgString(record.linetype as PreviewSvgProvider)
+
     options.push({
       value: name,
       label: name,
+      previewSvgString,
       lineType: record.linetype
     })
   }

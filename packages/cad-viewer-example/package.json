@@ -13,11 +13,15 @@
     "build": "vue-tsc && vite build",
     "clean": "rimraf dist lib tsconfig.tsbuildinfo",
     "dev": "vite",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
     "lint": "eslint src/",
     "lint:fix": "eslint --fix --quiet src/",
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@vitejs/plugin-vue": "^5.1.3",
     "vite": "^5.4.19",
     "vite-plugin-static-copy": "^3.1.1",

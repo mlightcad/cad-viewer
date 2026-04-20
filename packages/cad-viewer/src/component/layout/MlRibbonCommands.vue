@@ -219,6 +219,28 @@ const handleDocumentActivated = () => {
   syncRibbonProperties(AcApDocManager.instance?.curDocument?.database)
 }
 
+/**
+ * Applies one mutation callback to all currently selected entities.
+ *
+ * @param mutator Mutation logic executed for each selected entity.
+ */
+const applyToSelectedEntities = (
+  mutator: (
+    entity: ReturnType<AcDbDatabase['tables']['blockTable']['getEntityById']>
+  ) => void
+) => {
+  const db = getCurrentDatabase()
+  const ids = AcApDocManager.instance?.curView?.selectionSet?.ids
+  if (!db || !ids?.length) return
+
+  ids.forEach(id => {
+    const entity = db.tables.blockTable.getEntityById(id)
+    if (!entity) return
+    mutator(entity)
+    entity.triggerModifiedEvent()
+  })
+}
+
 onMounted(() => {
   AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
     handleSysVarChange
@@ -249,6 +271,10 @@ const handleRibbonColorChange = (value?: AcCmColor) => {
   if (!db || !value) return
 
   db.cecolor = value
+  applyToSelectedEntities(entity => {
+    if (!entity) return
+    entity.color = value
+  })
   syncRibbonProperties(db)
 }
 
@@ -262,6 +288,10 @@ const handleRibbonLineWeightChange = (value: AcGiLineWeight) => {
   if (!db) return
 
   db.celweight = value
+  applyToSelectedEntities(entity => {
+    if (!entity) return
+    entity.lineWeight = value
+  })
   syncRibbonProperties(db)
 }
 
@@ -275,6 +305,10 @@ const handleRibbonLineTypeChange = (value: string) => {
   if (!db) return
 
   db.celtype = value
+  applyToSelectedEntities(entity => {
+    if (!entity) return
+    entity.lineType = value
+  })
   syncRibbonProperties(db)
 }
 

@@ -9,6 +9,7 @@ const config: Config = {
   },
   testPathIgnorePatterns: [
     "packages/dxf-json/",
+    "/e2e/",
   ],
   moduleNameMapper: {
     '^lodash-es$': 'lodash',

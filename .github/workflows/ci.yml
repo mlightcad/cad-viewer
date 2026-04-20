@@ -47,6 +47,24 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      - name: Install Playwright Chromium
+        run: pnpm --filter @mlightcad/cad-viewer-example exec playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: pnpm --filter @mlightcad/cad-viewer-example test:e2e
+        env:
+          PLAYWRIGHT_BROWSER_CHANNEL: chromium
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            packages/cad-viewer-example/playwright-report/
+            packages/cad-viewer-example/test-results/
+          if-no-files-found: ignore
+
       - name: Build docs
         run: pnpm doc
 
