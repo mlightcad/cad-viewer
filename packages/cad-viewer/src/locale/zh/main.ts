@@ -17,6 +17,11 @@ export default {
       annotation: '批注',
       measurement: '测量'
     },
+    property: {
+      color: '颜色',
+      lineType: '线型',
+      lineWeight: '线宽'
+    },
     arc: {
       threePoint: '三点',
       startCenterEnd: '起点、圆心、终点',
@@ -40,6 +45,22 @@ export default {
     ellipse: {
       ellipse: '椭圆',
       arc: '椭圆弧'
+    },
+    tooltip: {
+      line: '绘制单段直线。',
+      polyline: '以一个对象绘制由直线或圆弧组成的连续线段。',
+      spline: '通过拟合点或控制点绘制平滑样条曲线。',
+      circle: '使用多种构造方式绘制圆。',
+      arc: '使用多种构造方式绘制圆弧。',
+      ellipse: '绘制椭圆或椭圆弧。',
+      rect: '绘制矩形或正多边形。',
+      point: '在图纸中放置点对象。',
+      hatch: '用填充图案填充闭合区域。',
+      move: '将选中的对象移动到新位置。',
+      rotate: '围绕基点旋转选中的对象。',
+      copy: '将选中的对象复制到新位置。',
+      erase: '从图纸中删除选中的对象。',
+      properties: '打开当前所选对象的属性面板。'
     },
     command: {
       line: '直线',
@@ -220,6 +241,15 @@ export default {
   colorDropdown: {
     custom: '自定义'
   },
+  lineTypeSelect: {
+    placeholder: '线型'
+  },
+  lineWeightSelect: {
+    byLayer: '随层',
+    byBlock: '随块',
+    byDIPs: '按DIP',
+    default: '默认'
+  },
   colorIndexPicker: {
     color: '颜色：',
     colorIndex: '颜色索引：',
@@ -230,6 +260,11 @@ export default {
     color: '颜色',
     layer: '图层',
     lineType: '线型'
+  },
+  ribbonProperty: {
+    color: '颜色',
+    lineType: '线型',
+    lineWeight: '线宽'
   },
   message: {
     loadingFonts: '正在加载字体...',
