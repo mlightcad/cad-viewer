@@ -34,6 +34,7 @@ import {
   AcEdCalculateSizeCallback,
   AcEdConditionWaiter,
   AcEdCorsorType,
+  AcEdSpatialQueryResultItem,
   AcEdSpatialQueryResultItemEx,
   AcEdViewMode,
   applyUiThemeFromBackground,
@@ -1053,6 +1054,11 @@ export class AcTrView2d extends AcEdBaseView {
     const groupObjectId = group.objectId
     const groupLayerName = group.layerName
     const groupBox = group.box
+    const groupChildBoxes: AcEdSpatialQueryResultItem[] = group.boxes.map(
+      box => ({
+        ...box
+      })
+    )
     objectsGroupByLayer.forEach((objects, layerName) => {
       // In AutoCAD, an INSERT entity may reference multiple child entities that
       // reside on different layers. During rendering, this engine groups entities
@@ -1068,6 +1074,10 @@ export class AcTrView2d extends AcEdBaseView {
       // definition is '0', it should be put on layer where the group exist.
       entity.layerName = layerName === '0' ? groupLayerName : layerName
       entity.box = groupBox
+      const entityUserData = entity.userData as {
+        spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
+      }
+      entityUserData.spatialIndexChildBoxes = groupChildBoxes
 
       // Important:
       // DO NOT USE spread operator when adding objects because it may be one very large array

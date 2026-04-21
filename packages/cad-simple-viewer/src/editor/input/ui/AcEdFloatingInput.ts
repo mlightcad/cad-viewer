@@ -481,10 +481,12 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     gsMark?: AcDbObjectId
   ) {
     const start = osnapPoints.length
+    const pickPoint = { ...this.view.curPos, z: 0 }
+    const lastPoint = this.lastPoint ? { ...this.lastPoint, z: 0 } : pickPoint
     entity.subGetOsnapPoints(
       osnapMode,
-      { ...this.view.curPos, z: 0 },
-      this.lastPoint,
+      pickPoint,
+      lastPoint,
       osnapPoints,
       gsMark
     )
