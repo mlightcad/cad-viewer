@@ -2,7 +2,7 @@ import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
 import { AcTrEntity, AcTrGroup } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
-import { AcEdLayerInfo } from '../editor'
+import { AcEdLayerInfo, AcEdSpatialQueryResultItem } from '../editor'
 import { AcTrHierarchicalSpatialIndex } from '../spatialIndex'
 import { AcTrLayer, AcTrLayerStats } from './AcTrLayer'
 
@@ -293,8 +293,18 @@ export class AcTrLayout {
       maxY: box.max.y,
       id: entity.objectId
     })
-    // If it is one block, we need to build spatial index for entities in this block
-    if (entity instanceof AcTrGroup) {
+
+    // Some INSERT rendering paths split one block reference into multiple layer
+    // groups (AcTrEntity instead of AcTrGroup). Keep child-box index via userData
+    // so object snap can still resolve gsMark to sub-entities.
+    const spatialIndexChildBoxes = this.getSpatialIndexChildBoxes(entity)
+    if (spatialIndexChildBoxes) {
+      this._spatialIndex.ensureChildIndex(
+        entity.objectId,
+        spatialIndexChildBoxes
+      )
+    } else if (entity instanceof AcTrGroup) {
+      // If it is one block group, build spatial index for entities in this block.
       this._spatialIndex.createChildIndex(entity)
     }
 
@@ -465,5 +475,34 @@ export class AcTrLayout {
       }
     }
     return layers
+  }
+
+  /**
+   * Gets optional child bounding boxes used to build a child-level spatial index
+   * for one render entity.
+   *
+   * Some rendering paths (for example INSERT decomposition across layers) cannot
+   * provide a single `AcTrGroup` hierarchy for child indexing. In these cases,
+   * precomputed child query items are attached to `entity.userData` and consumed
+   * here so snapping and fine-grained spatial queries can still resolve
+   * sub-entities correctly.
+   *
+   * @param entity - The render entity that may carry `spatialIndexChildBoxes` in
+   *                 its `userData`.
+   * @returns The child query boxes when available and non-empty; otherwise
+   *          `undefined`.
+   */
+  private getSpatialIndexChildBoxes(entity: AcTrEntity) {
+    const boxes = (
+      entity.userData as {
+        spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
+      }
+    ).spatialIndexChildBoxes
+
+    if (!boxes || boxes.length === 0) {
+      return undefined
+    }
+
+    return boxes
   }
 }
