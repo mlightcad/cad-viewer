@@ -29,8 +29,8 @@
       <template #default="scope">
         <div class="ml-layer-list-cell">
           <el-checkbox
-            v-model="scope.row.isOn"
-            @change="handleLayerVisibility(scope.row)"
+            :model-value="scope.row.isOn"
+            @change="handleLayerVisibility(scope.row, $event)"
           />
         </div>
       </template>
@@ -91,7 +91,7 @@ const props = defineProps<Props>()
  * layers: reactive array of LayerInfo retrieved from editor.
  * This composable also updates automatically when CAD document changes.
  */
-const { layers } = useLayers(props.editor)
+const { layers, setLayerOn, setLayerColor } = useLayers(props.editor)
 
 /**
  * ===== Master Layer Visibility Toggle =====
@@ -108,11 +108,7 @@ const isSomeOn = computed(() => {
 })
 
 const setLayerVisibility = (row: LayerInfo, isOn: boolean) => {
-  row.isOn = isOn
-  const layer = props.editor.curDocument.database.tables.layerTable.getAt(
-    row.name
-  )
-  if (layer) layer.isOff = !isOn
+  setLayerOn(row.name, isOn)
 }
 
 const handleToggleAll = (isOn: boolean) => {
@@ -151,8 +147,8 @@ const handleRowDbClick = (row: LayerInfo) => {
  *
  * @param row - LayerInfo for the row being changed
  */
-const handleLayerVisibility = (row: LayerInfo) => {
-  setLayerVisibility(row, row.isOn)
+const handleLayerVisibility = (row: LayerInfo, isOn: boolean) => {
+  setLayerVisibility(row, isOn)
 }
 
 /**
@@ -183,17 +179,8 @@ const openColorPicker = (row: LayerInfo) => {
 const applySelectedColor = (color: AcCmColor) => {
   if (!colorTargetLayer.value) return
 
-  // Update UI layer list color
   const target = colorTargetLayer.value
-  target.color = color.toString()
-
-  // Update underlying CAD layer color using AcCmColor
-  const dbLayer = props.editor.curDocument.database.tables.layerTable.getAt(
-    target.name
-  )
-  if (dbLayer) {
-    dbLayer.color = color
-  }
+  setLayerColor(target.name, color)
 }
 
 const handleColorDialogOk = (color: AcCmColor) => {

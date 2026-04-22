@@ -1,6 +1,17 @@
-import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
-import { AcCmColor, AcDbDatabase } from '@mlightcad/data-model'
-import { computed, reactive } from 'vue'
+import {
+  AcApDocManager,
+  AcDbDocumentEventArgs
+} from '@mlightcad/cad-simple-viewer'
+import {
+  AcCmColor,
+  AcDbDatabase,
+  AcDbLayerEventArgs,
+  AcDbLayerModifiedEventArgs,
+  AcDbLayerTableRecord,
+  AcDbSysVarEventArgs,
+  AcDbSysVarManager
+} from '@mlightcad/data-model'
+import { computed, onScopeDispose, reactive, ref } from 'vue'
 
 export interface LayerInfo {
   name: string
@@ -10,7 +21,7 @@ export interface LayerInfo {
   color: string
   cssColor: string
   isLocked: boolean
-  isHidden: boolean
+  isFrozen: boolean
   isInUse: boolean
   isOn: boolean
   isPlottable: boolean
@@ -19,9 +30,124 @@ export interface LayerInfo {
   lineWeight: number
 }
 
+export type LayerStateToggleKey = 'on' | 'frozen' | 'locked'
+
+export interface LayerStateSnapshot {
+  clayer: string
+  states: LayerInfo[]
+}
+
 export function useLayers(editor: AcApDocManager) {
+  const layerFrozenFlag = 0x01
+  const layerLockedFlag = 0x04
   const reactiveLayers = reactive<LayerInfo[]>([])
-  const doc = editor.curDocument
+  const currentLayerNameState = ref('')
+  let observedDatabase: AcDbDatabase | undefined
+
+  const getCurrentDatabase = () => editor.curDocument?.database
+  const syncCurrentLayerName = (db = getCurrentDatabase()) => {
+    currentLayerNameState.value = db?.clayer || ''
+  }
+
+  const setLayerFrozenState = (
+    layer: AcDbLayerTableRecord,
+    frozen: boolean
+  ) => {
+    const flags = layer.standardFlags ?? 0
+    layer.standardFlags = frozen
+      ? flags | layerFrozenFlag
+      : flags & ~layerFrozenFlag
+  }
+
+  const setLayerLockedState = (
+    layer: AcDbLayerTableRecord,
+    locked: boolean
+  ) => {
+    const flags = layer.standardFlags ?? 0
+    layer.standardFlags = locked
+      ? flags | layerLockedFlag
+      : flags & ~layerLockedFlag
+  }
+
+  const toLayerInfo = (layer: AcDbLayerTableRecord): LayerInfo => ({
+    name: layer.name,
+    color: layer.color.toString(),
+    cssColor: layer.color.cssColor || '#FFFFFF',
+    isLocked: layer.isLocked,
+    isFrozen: layer.isFrozen,
+    isInUse: layer.isInUse,
+    isOn: !layer.isOff,
+    isPlottable: layer.isPlottable,
+    transparency: layer.transparency.toString(),
+    linetype: layer.linetype,
+    lineWeight: layer.lineWeight
+  })
+
+  const reset = (db?: AcDbDatabase) => {
+    reactiveLayers.length = 0
+    if (!db) return
+
+    for (const layer of db.tables.layerTable.newIterator()) {
+      reactiveLayers.push(toLayerInfo(layer))
+    }
+  }
+
+  const findLayerInfo = (name: string) =>
+    reactiveLayers.find(layer => layer.name === name)
+
+  const upsertLayerInfo = (layer: AcDbLayerTableRecord) => {
+    const info = findLayerInfo(layer.name)
+    const nextInfo = toLayerInfo(layer)
+    if (!info) {
+      reactiveLayers.push(nextInfo)
+      return
+    }
+    Object.assign(info, nextInfo)
+  }
+
+  const handleLayerAppended = (args: AcDbLayerEventArgs) => {
+    upsertLayerInfo(args.layer)
+  }
+
+  const handleLayerModified = (args: AcDbLayerModifiedEventArgs) => {
+    const info = findLayerInfo(args.layer.name)
+    if (!info) {
+      upsertLayerInfo(args.layer)
+      return
+    }
+    Object.assign(info, toLayerInfo(args.layer))
+  }
+
+  const bindDatabase = (db?: AcDbDatabase) => {
+    if (observedDatabase === db) return
+
+    if (observedDatabase) {
+      observedDatabase.events.layerAppended.removeEventListener(
+        handleLayerAppended
+      )
+      observedDatabase.events.layerModified.removeEventListener(
+        handleLayerModified
+      )
+    }
+
+    observedDatabase = db
+    reset(observedDatabase)
+    syncCurrentLayerName(observedDatabase)
+
+    if (!observedDatabase) return
+    observedDatabase.events.layerAppended.addEventListener(handleLayerAppended)
+    observedDatabase.events.layerModified.addEventListener(handleLayerModified)
+  }
+
+  const handleDocumentActivated = (args: AcDbDocumentEventArgs) => {
+    bindDatabase(args.doc.database)
+  }
+
+  const handleSysVarChanged = (args: AcDbSysVarEventArgs) => {
+    if (args.database !== observedDatabase) return
+    if (args.name.toUpperCase() !== 'CLAYER') return
+    syncCurrentLayerName(args.database)
+  }
 
   /**
    * =========================================================
@@ -29,9 +155,9 @@ export function useLayers(editor: AcApDocManager) {
    * =========================================================
    */
   const currentLayerName = computed<string>({
-    get: () => doc.database.clayer,
+    get: () => currentLayerNameState.value,
     set: name => {
-      doc.database.clayer = name
+      setCurrentLayer(name)
     }
   })
 
@@ -41,81 +167,245 @@ export function useLayers(editor: AcApDocManager) {
 
   /**
    * =========================================================
-   * Init / reset
-   * =========================================================
-   */
-  const reset = (db: AcDbDatabase) => {
-    const it = db.tables.layerTable.newIterator()
-    for (const layer of it) {
-      reactiveLayers.push({
-        name: layer.name,
-        color: layer.color.toString(),
-        cssColor: layer.color.cssColor || '#FFFFFF',
-        isLocked: layer.isLocked,
-        isHidden: layer.isHidden,
-        isInUse: layer.isInUse,
-        isOn: !layer.isOff,
-        isPlottable: layer.isPlottable,
-        transparency: layer.transparency.toString(),
-        linetype: layer.linetype,
-        lineWeight: layer.lineWeight
-      })
-    }
-  }
-
-  reset(doc.database)
-
-  /**
-   * =========================================================
-   * Event sync
-   * =========================================================
-   */
-  doc.database.events.layerModified.addEventListener(args => {
-    const layer = reactiveLayers.find(l => l.name === args.layer.name)
-    if (!layer) return
-
-    const c = args.changes
-    if (c.color) {
-      layer.color = c.color.toString()
-      layer.cssColor = c.color.cssColor || '#FFFFFF'
-    }
-    if (c.isLocked != null) layer.isLocked = c.isLocked
-    if (c.isHidden != null) layer.isHidden = c.isHidden
-    if (c.isInUse != null) layer.isInUse = c.isInUse
-    if (c.isOff != null) layer.isOn = !c.isOff
-    if (c.isPlottable != null) layer.isPlottable = c.isPlottable
-    if (c.transparency) layer.transparency = c.transparency.toString()
-    if (c.linetype) layer.linetype = c.linetype
-    if (c.lineWeight != null) layer.lineWeight = c.lineWeight
-  })
-
-  editor.events.documentActivated.addEventListener(args => {
-    reactiveLayers.length = 0
-    reset(args.doc.database)
-  })
-
-  /**
-   * =========================================================
    * Mutations
    * =========================================================
    */
+  function switchCurrentLayerIfNeeded(
+    db: AcDbDatabase,
+    targetLayerName: string
+  ) {
+    if (db.clayer !== targetLayerName) return true
+
+    let fallbackLayer: AcDbLayerTableRecord | undefined
+    let preferredLayer: AcDbLayerTableRecord | undefined
+
+    for (const layer of db.tables.layerTable.newIterator()) {
+      if (layer.name === targetLayerName) continue
+      fallbackLayer ??= layer
+      if (!layer.isOff && !layer.isFrozen) {
+        preferredLayer = layer
+        break
+      }
+    }
+
+    const nextCurrentLayer = preferredLayer ?? fallbackLayer
+    if (!nextCurrentLayer) return false
+    nextCurrentLayer.isOff = false
+    setLayerFrozenState(nextCurrentLayer, false)
+    db.clayer = nextCurrentLayer.name
+    syncCurrentLayerName(db)
+    return true
+  }
+
+  function setCurrentLayer(layerName: string) {
+    const db = getCurrentDatabase()
+    if (!db || !layerName) return false
+
+    const layer = db.tables.layerTable.getAt(layerName)
+    if (!layer) return false
+
+    layer.isOff = false
+    setLayerFrozenState(layer, false)
+    db.clayer = layer.name
+    syncCurrentLayerName(db)
+    return true
+  }
+
+  function setLayerOn(layerName: string, isOn: boolean) {
+    const db = getCurrentDatabase()
+    if (!db || !layerName) return false
+
+    const layer = db.tables.layerTable.getAt(layerName)
+    if (!layer) return false
+
+    if (!isOn && !switchCurrentLayerIfNeeded(db, layer.name)) return false
+    layer.isOff = !isOn
+    return true
+  }
+
+  function toggleLayerOn(layerName: string) {
+    const db = getCurrentDatabase()
+    if (!db || !layerName) return false
+    const layer = db.tables.layerTable.getAt(layerName)
+    if (!layer) return false
+    return setLayerOn(layer.name, layer.isOff)
+  }
+
+  function setLayerFrozen(layerName: string, isFrozen: boolean) {
+    const db = getCurrentDatabase()
+    if (!db || !layerName) return false
+
+    const layer = db.tables.layerTable.getAt(layerName)
+    if (!layer) return false
+
+    if (isFrozen && !switchCurrentLayerIfNeeded(db, layer.name)) return false
+    setLayerFrozenState(layer, isFrozen)
+    return true
+  }
+
+  function toggleLayerFrozen(layerName: string) {
+    const db = getCurrentDatabase()
+    if (!db || !layerName) return false
+    const layer = db.tables.layerTable.getAt(layerName)
+    if (!layer) return false
+    return setLayerFrozen(layer.name, !layer.isFrozen)
+  }
+
+  function setLayerLocked(layerName: string, isLocked: boolean) {
+    const db = getCurrentDatabase()
+    if (!db || !layerName) return false
+
+    const layer = db.tables.layerTable.getAt(layerName)
+    if (!layer) return false
+
+    setLayerLockedState(layer, isLocked)
+    return true
+  }
+
+  function toggleLayerLocked(layerName: string) {
+    const db = getCurrentDatabase()
+    if (!db || !layerName) return false
+    const layer = db.tables.layerTable.getAt(layerName)
+    if (!layer) return false
+    return setLayerLocked(layer.name, !layer.isLocked)
+  }
+
+  function toggleLayerState(layerName: string, state: LayerStateToggleKey) {
+    switch (state) {
+      case 'on':
+        return toggleLayerOn(layerName)
+      case 'frozen':
+        return toggleLayerFrozen(layerName)
+      case 'locked':
+        return toggleLayerLocked(layerName)
+      default:
+        return false
+    }
+  }
+
+  function isolateLayer(layerName: string) {
+    const db = getCurrentDatabase()
+    if (!db || !layerName) return false
+
+    const targetLayer = db.tables.layerTable.getAt(layerName)
+    if (!targetLayer) return false
+
+    for (const layer of db.tables.layerTable.newIterator()) {
+      const keepVisible = layer.name === targetLayer.name
+      layer.isOff = !keepVisible
+      if (keepVisible) {
+        setLayerFrozenState(layer, false)
+      }
+    }
+
+    db.clayer = targetLayer.name
+    syncCurrentLayerName(db)
+    return true
+  }
+
+  function setAllLayersOn() {
+    const db = getCurrentDatabase()
+    if (!db) return false
+
+    let changed = false
+    for (const layer of db.tables.layerTable.newIterator()) {
+      if (!layer.isOff) continue
+      layer.isOff = false
+      changed = true
+    }
+
+    return changed
+  }
+
   function setLayerColor(layerName: string, color: AcCmColor) {
-    const dbLayer = doc.database.tables.layerTable.getAt(layerName)
-    if (!dbLayer) return
+    const db = getCurrentDatabase()
+    if (!db) return false
+
+    const dbLayer = db.tables.layerTable.getAt(layerName)
+    if (!dbLayer) return false
 
     dbLayer.color = color
+    return true
   }
 
   function setLayerLineWeight(layerName: string, lineWeight: number) {
-    const dbLayer = doc.database.tables.layerTable.getAt(layerName)
-    if (!dbLayer) return
+    const db = getCurrentDatabase()
+    if (!db) return false
+
+    const dbLayer = db.tables.layerTable.getAt(layerName)
+    if (!dbLayer) return false
+
     dbLayer.lineWeight = lineWeight
+    return true
   }
+
+  function captureLayerSnapshot(
+    db = getCurrentDatabase()
+  ): LayerStateSnapshot | null {
+    if (!db) return null
+    return {
+      clayer: db.clayer,
+      states: [...db.tables.layerTable.newIterator()].map(toLayerInfo)
+    }
+  }
+
+  function applyLayerSnapshot(
+    snapshot: LayerStateSnapshot,
+    db = getCurrentDatabase()
+  ) {
+    if (!db) return false
+
+    snapshot.states.forEach(state => {
+      const layer = db.tables.layerTable.getAt(state.name)
+      if (!layer) return
+      layer.isOff = !state.isOn
+      setLayerFrozenState(layer, state.isFrozen)
+      setLayerLockedState(layer, state.isLocked)
+    })
+
+    const currentLayer = db.tables.layerTable.getAt(snapshot.clayer)
+    if (currentLayer) {
+      currentLayer.isOff = false
+      setLayerFrozenState(currentLayer, false)
+      db.clayer = currentLayer.name
+      syncCurrentLayerName(db)
+      return true
+    }
+
+    syncCurrentLayerName(db)
+    return false
+  }
+
+  editor.events.documentActivated.addEventListener(handleDocumentActivated)
+  AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
+    handleSysVarChanged
+  )
+  bindDatabase(getCurrentDatabase())
+
+  onScopeDispose(() => {
+    editor.events.documentActivated.removeEventListener(handleDocumentActivated)
+    AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
+      handleSysVarChanged
+    )
+    bindDatabase(undefined)
+  })
 
   return {
     layers: reactiveLayers,
     currentLayerName,
     currentLayerInfo,
+    setCurrentLayer,
+    setLayerOn,
+    setLayerFrozen,
+    setLayerLocked,
+    toggleLayerOn,
+    toggleLayerFrozen,
+    toggleLayerLocked,
+    toggleLayerState,
+    isolateLayer,
+    setAllLayersOn,
+    captureLayerSnapshot,
+    applyLayerSnapshot,
     setLayerColor,
     setLayerLineWeight
   }
