@@ -166,10 +166,43 @@ export class AcTrView2d extends AcEdBaseView {
     this.backgroundColor = mergedOptions.background || 0x000000
     this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
 
+    // Two sysvars can drive the canvas background:
+    //
+    // - WHITEBKCOLOR (boolean): the low-level "is the paper white?" flag
+    //   that the View has always honoured.
+    // - COLORTHEME (number): the AutoCAD-standard theme selector where
+    //   0 = dark theme (black bg) and 1 = light theme (white bg).
+    //
+    // The Vue composable `useDark` (cad-viewer) toggles only COLORTHEME
+    // when the user flips the theme.  Without this bridge, toggling the
+    // UI theme left WHITEBKCOLOR stale and the canvas kept its previous
+    // background even though `changeForeground` had been fired through
+    // MTEXT/line inversion — producing e.g. a black canvas in light mode
+    // or a white canvas in dark mode.
+    //
+    // Listening to both sysvars keeps either entry point working.  The
+    // two remain independent (settable in isolation) because setting
+    // `this.backgroundColor` is idempotent and the handler for each
+    // sysvar only fires when that specific variable changes.
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
-      if (args.name === AcDbSystemVariables.WHITEBKCOLOR.toLowerCase()) {
+      const nameLower = args.name.toLowerCase()
+      if (nameLower === AcDbSystemVariables.WHITEBKCOLOR.toLowerCase()) {
         const useWhiteBackgroundColor = args.newVal as boolean
         this.backgroundColor = useWhiteBackgroundColor ? 0xffffff : 0
+      } else if (nameLower === AcDbSystemVariables.COLORTHEME.toLowerCase()) {
+        // COLORTHEME is registered with type 'number' in the data-model
+        // (0 = dark, 1 = light), but the sysvar bus does not strictly
+        // coerce values.  Normalise defensively so plugins setting the
+        // value as a string or boolean still behave correctly.
+        const newVal = args.newVal
+        const isLight =
+          typeof newVal === 'number'
+            ? newVal === 1
+            : typeof newVal === 'boolean'
+              ? newVal
+              : String(newVal).toLowerCase() === 'light' ||
+                String(newVal) === '1'
+        this.backgroundColor = isLight ? 0xffffff : 0
       }
     })
 
@@ -426,6 +459,28 @@ export class AcTrView2d extends AcEdBaseView {
   set backgroundColor(value: number) {
     this._renderer.setClearColor(value)
     this._renderer.changeForeground(value == 0 ? 0xffffff : 0)
+    // Keep solid ACI 7 hatches fused with the canvas background in
+    // both themes (matches AutoCAD, where such hatches vanish into
+    // the paper and only the overlaid wireframe stays visible).
+    //
+    // Setting `currentBackgroundColor` (instead of calling
+    // `changeBackground` directly) covers BOTH phases of the lifecycle:
+    //
+    // 1. Mid-session theme flip: every background-follow material
+    //    already in the material manager's cache is repainted to the
+    //    new bg — same as `changeBackground` alone would have done.
+    // 2. Initial boot (e.g. `useDark` sets dark theme before the DWG
+    //    finishes loading): the style manager stores the bg on its
+    //    options so hatch materials created LATER during `batchConvert`
+    //    are BORN with the correct bg colour.  Without this, the first
+    //    frame after load showed ACI 7 hatches as solid white on a
+    //    black canvas until the user manually toggled the theme.
+    //
+    // `changeForeground` above already handles the inverse flip for
+    // lines/text/MText; `currentBackgroundColor` is the symmetric
+    // counterpart for fills opted into `isBackgroundFill` by
+    // `AcTrFillMaterialManager.shouldTrackBackground`.
+    this._renderer.currentBackgroundColor = value
     this.editor.setCursorColor(value == 0 ? 'white' : 'black')
     applyUiThemeFromBackground(value)
     this._isDirty = true
