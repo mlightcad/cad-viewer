@@ -22,6 +22,19 @@ export default {
       lineType: 'Linetype',
       lineWeight: 'Lineweight'
     },
+    layerTools: {
+      select: 'Layer',
+      off: 'Turn Off Layer',
+      isolate: 'Isolate',
+      freeze: 'Freeze Layer',
+      lock: 'Lock Layer',
+      current: 'Set Current',
+      allOn: 'Layer On',
+      unisolate: 'Unisolate',
+      thaw: 'Thaw Layer',
+      unlock: 'Unlock Layer',
+      restore: 'Layer Restore'
+    },
     arc: {
       threePoint: '3-Point',
       startCenterEnd: 'Start, Center, End',
@@ -61,7 +74,56 @@ export default {
       rotate: 'Rotate selected objects around a base point.',
       copy: 'Copy selected objects to a new location.',
       erase: 'Delete selected objects from the drawing.',
-      properties: 'Open the Properties palette for the current selection.'
+      properties: 'Open the Properties palette for the current selection.',
+      propertyColor:
+        'Set the color for newly created objects or selected entities.',
+      propertyLineType:
+        'Set the line type for newly created objects or selected entities.',
+      propertyLineWeight:
+        'Set the line weight for newly created objects or selected entities.',
+      circleOption: {
+        centerRadius:
+          'Create a circle by specifying a center point and a radius.',
+        centerDiameter:
+          'Create a circle by specifying a center point and a diameter.',
+        twoPoint: 'Create a circle whose diameter is defined by two points.',
+        threePoint: 'Create a circle that passes through three points.',
+        tanTanRadius:
+          'Create a circle tangent to two objects with a specified radius.',
+        tanTanTan: 'Create a circle tangent to three objects.'
+      },
+      arcOption: {
+        threePoint:
+          'Create an arc that passes through a start point, a second point, and an end point.',
+        startCenterEnd:
+          'Create an arc by specifying a start point, center point, and end point.',
+        startCenterAngle:
+          'Create an arc using a start point, center point, and included angle.',
+        startCenterLength:
+          'Create an arc using a start point, center point, and arc length.',
+        startEndAngle:
+          'Create an arc from start and end points with an included angle.',
+        startEndDirection:
+          'Create an arc from start and end points with a tangent direction at the start point.',
+        startEndRadius:
+          'Create an arc from start and end points with a specified radius.',
+        centerStartEnd:
+          'Create an arc by specifying a center point, start point, and end point.',
+        centerStartAngle:
+          'Create an arc by specifying a center point, start point, and included angle.',
+        centerStartLength:
+          'Create an arc by specifying a center point, start point, and arc length.'
+      },
+      rectOption: {
+        rectangle:
+          'Create a rectangle by specifying opposite corners or dimensions.',
+        polygon:
+          'Create a regular polygon by specifying the number of sides and construction method.'
+      },
+      ellipseOption: {
+        ellipse: 'Create a full ellipse by specifying major and minor axes.',
+        arc: 'Create an elliptical arc by specifying ellipse axes and arc limits.'
+      }
     },
     command: {
       line: 'Line',
@@ -252,12 +314,6 @@ export default {
   lineTypeSelect: {
     placeholder: 'Linetype'
   },
-  lineWeightSelect: {
-    byLayer: 'ByLayer',
-    byBlock: 'ByBlock',
-    byDIPs: 'ByDIPs',
-    default: 'Default'
-  },
   colorIndexPicker: {
     color: 'Color: ',
     colorIndex: 'Color Index: ',
@@ -272,7 +328,27 @@ export default {
   ribbonProperty: {
     color: 'Color',
     lineType: 'Linetype',
-    lineWeight: 'Lineweight'
+    lineWeight: 'Lineweight',
+    layer: 'Layer'
+  },
+  layerSelect: {
+    searchPlaceholder: 'Search layer name',
+    noLayerAvailable: 'No layers available',
+    noMatchedLayer: 'No matched layers',
+    tooltip: {
+      layer: 'Layer',
+      visibility: 'Visibility',
+      freeze: 'Freeze',
+      lock: 'Lock',
+      lineType: 'Linetype',
+      color: 'Color',
+      visible: 'Visible',
+      hidden: 'Hidden',
+      frozen: 'Frozen',
+      thawed: 'Thawed',
+      locked: 'Locked',
+      unlocked: 'Unlocked'
+    }
   },
   message: {
     loadingFonts: 'Loading fonts ...',

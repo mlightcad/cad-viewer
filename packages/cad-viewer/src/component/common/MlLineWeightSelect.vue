@@ -1,59 +1,49 @@
 <template>
-  <div class="ml-lineweight-select">
-    <el-select
-      :model-value="resolvedModelValue"
-      :disabled="props.disabled || !lineWeightItems.length"
-      class="ml-lineweight-select__control"
-      style="width: 100%"
-      @change="onSelect"
-    >
-      <template #label>
-        <div class="ml-lineweight-item ml-lineweight-item--selected">
-          <span
-            v-if="props.leadingIcon"
-            class="ml-lineweight-leading-icon"
-            aria-hidden="true"
-          >
-            <component :is="props.leadingIcon" />
-          </span>
-          <span
-            v-if="currentPreviewWidth !== null"
-            class="ml-lineweight-preview"
-            :style="{ height: currentPreviewWidth + 'px' }"
-          />
-          <span class="ml-lineweight-text">
-            {{ currentLabel }}
-          </span>
-        </div>
-      </template>
+  <el-dropdown
+    trigger="click"
+    :disabled="props.disabled || !lineWeightItems.length"
+    @command="onSelect"
+  >
+    <el-button class="ml-lineweight-btn" :disabled="props.disabled">
+      <el-space>
+        <span class="ml-lineweight-label">{{ currentLabel }}</span>
+        <span
+          v-if="currentPreviewWidth !== null"
+          class="ml-lineweight-preview ml-lineweight-preview--btn"
+          :style="{ height: currentPreviewWidth + 'px' }"
+        />
+        <el-icon class="ml-lineweight-caret">
+          <ArrowDown />
+        </el-icon>
+      </el-space>
+    </el-button>
 
-      <el-option
-        v-for="item in lineWeightItems"
-        :key="item.value"
-        :label="item.label"
-        :value="item.value"
-      >
-        <div class="ml-lineweight-item">
-          <span
-            v-if="item.previewWidth !== null"
-            class="ml-lineweight-preview"
-            :style="{ height: item.previewWidth + 'px' }"
-          />
-          <span class="ml-lineweight-text">{{ item.label }}</span>
-        </div>
-      </el-option>
-    </el-select>
-  </div>
+    <template #dropdown>
+      <el-dropdown-menu class="ml-lineweight-menu">
+        <el-dropdown-item
+          v-for="item in lineWeightItems"
+          :key="item.value"
+          :command="item.value"
+          class="ml-lineweight-item"
+        >
+          <el-space>
+            <span class="ml-lineweight-text">{{ item.label }}</span>
+            <span
+              v-if="item.previewWidth !== null"
+              class="ml-lineweight-preview"
+              :style="{ height: item.previewWidth + 'px' }"
+            />
+          </el-space>
+        </el-dropdown-item>
+      </el-dropdown-menu>
+    </template>
+  </el-dropdown>
 </template>
 
 <script setup lang="ts">
+import { ArrowDown } from '@element-plus/icons-vue'
 import { AcGiLineWeight } from '@mlightcad/data-model'
-import { type Component, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-defineOptions({
-  inheritAttrs: false
-})
+import { computed } from 'vue'
 
 /**
  * Render-ready line weight entry shown by the select control.
@@ -61,7 +51,7 @@ defineOptions({
 interface LineWeightItem {
   /** Enum value written back to the CAD database. */
   value: AcGiLineWeight
-  /** Localized label displayed in the dropdown list. */
+  /** Display label shown in the dropdown list. */
   label: string
   /** Preview stroke thickness in CSS pixels, or `null` for symbolic values. */
   previewWidth: number | null
@@ -75,8 +65,6 @@ interface LineWeightSelectProps {
   modelValue: AcGiLineWeight
   /** Disables selection while the surrounding ribbon is unavailable. */
   disabled?: boolean
-  /** Optional icon rendered before the selected value. */
-  leadingIcon?: string | Component
 }
 
 const props = defineProps<LineWeightSelectProps>()
@@ -86,10 +74,8 @@ const emit = defineEmits<{
   (e: 'change', value: AcGiLineWeight): void
 }>()
 
-const { t } = useI18n()
-
 /**
- * Formats a line weight enum into the localized label shown in the UI.
+ * Formats a line weight enum into the fixed label shown in the UI.
  *
  * @param value Line weight to describe.
  * @returns Human-readable text for the given enum member.
@@ -97,13 +83,11 @@ const { t } = useI18n()
 function formatLabel(value: AcGiLineWeight): string {
   switch (value) {
     case AcGiLineWeight.ByLayer:
-      return t('main.lineWeightSelect.byLayer')
+      return 'ByLayer'
     case AcGiLineWeight.ByBlock:
-      return t('main.lineWeightSelect.byBlock')
-    case AcGiLineWeight.ByDIPs:
-      return t('main.lineWeightSelect.byDIPs')
+      return 'ByBlock'
     case AcGiLineWeight.ByLineWeightDefault:
-      return t('main.lineWeightSelect.default')
+      return 'Default'
     default:
       return `${(value / 100).toFixed(2)} mm`
   }
@@ -132,8 +116,7 @@ function sortLineWeightValues(a: AcGiLineWeight, b: AcGiLineWeight) {
   const specialOrder = [
     AcGiLineWeight.ByLayer,
     AcGiLineWeight.ByBlock,
-    AcGiLineWeight.ByLineWeightDefault,
-    AcGiLineWeight.ByDIPs
+    AcGiLineWeight.ByLineWeightDefault
   ]
   const aIndex = specialOrder.indexOf(a)
   const bIndex = specialOrder.indexOf(b)
@@ -152,7 +135,8 @@ const lineWeightItems = computed<LineWeightItem[]>(() =>
   Array.from(
     new Set(
       Object.values(AcGiLineWeight).filter(
-        (v): v is AcGiLineWeight => typeof v === 'number'
+        (v): v is AcGiLineWeight =>
+          typeof v === 'number' && v !== AcGiLineWeight.ByDIPs
       )
     )
   )
@@ -164,12 +148,16 @@ const lineWeightItems = computed<LineWeightItem[]>(() =>
     }))
 )
 
-const currentLabel = computed(() => formatLabel(props.modelValue))
-const currentPreviewWidth = computed(() => previewPx(props.modelValue))
 const resolvedModelValue = computed<AcGiLineWeight | undefined>(() =>
   lineWeightItems.value.some(item => item.value === props.modelValue)
     ? props.modelValue
     : lineWeightItems.value[0]?.value
+)
+const currentLabel = computed(() =>
+  formatLabel(resolvedModelValue.value ?? props.modelValue)
+)
+const currentPreviewWidth = computed(() =>
+  previewPx(resolvedModelValue.value ?? props.modelValue)
 )
 
 /**
@@ -184,58 +172,42 @@ function onSelect(value: AcGiLineWeight) {
 </script>
 
 <style scoped>
-.ml-lineweight-select {
-  display: flex;
-  width: 100%;
-  min-width: 0;
-}
-
-.ml-lineweight-leading-icon {
+.ml-lineweight-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  color: var(--el-text-color-secondary);
+  gap: 6px;
 }
 
-.ml-lineweight-select__control {
-  width: 100%;
-  min-width: 0;
+.ml-lineweight-caret {
+  font-size: 12px;
 }
 
-.ml-lineweight-select :deep(.el-select__wrapper),
-.ml-lineweight-select :deep(.el-select__selection),
-.ml-lineweight-select :deep(.el-select__selected-item),
-.ml-lineweight-select :deep(.el-select__placeholder) {
-  width: 100%;
-  min-width: 0;
+.ml-lineweight-menu {
+  padding: 4px 0;
+  max-height: 260px;
+  overflow-y: auto;
 }
 
 .ml-lineweight-item {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  width: 100%;
-  min-width: 0;
+  min-width: 160px;
 }
 
-.ml-lineweight-item--selected {
-  width: 100%;
-}
-
-.ml-lineweight-text {
+.ml-lineweight-text,
+.ml-lineweight-label {
   font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .ml-lineweight-preview {
   width: 40px;
   background-color: currentColor;
   border-radius: 2px;
-  flex: 0 0 40px;
+}
+
+.ml-lineweight-preview--btn {
+  width: 32px;
 }
 </style>

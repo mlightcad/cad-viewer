@@ -188,8 +188,8 @@ importers:
         version: 10.0.8(vue@3.5.31(typescript@5.9.3))
     devDependencies:
       '@mlightcad/ribbon':
-        specifier: 0.0.8
-        version: 0.0.8(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
+        specifier: 0.0.9
+        version: 0.0.9(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
       '@mlightcad/svg-renderer':
         specifier: workspace:*
         version: link:../svg-renderer
@@ -1407,8 +1407,8 @@ packages:
     peerDependencies:
       three: ^0.172.0
 
-  '@mlightcad/ribbon@0.0.8':
-    resolution: {integrity: sha512-dALVhPxbObEajtCbmcRkF/WLbE8+L7zkTODiYplGVfjWxacJDmLu+gdFfvVT8UDFr7ItiKSvHZGXC2ggIfKN6g==}
+  '@mlightcad/ribbon@0.0.9':
+    resolution: {integrity: sha512-4ULp2Q9sH/W3yzTpn1HVnUKoGXOVVWlHDB/pfwke8CrDZwz8IHKPUZEItVxP6l0P1ITAA33B3dKD8sW92657kA==}
     peerDependencies:
       '@element-plus/icons-vue': ^2.3.2
       element-plus: ^2.12.0
@@ -6202,7 +6202,7 @@ snapshots:
       opentype.js: 1.3.4
       three: 0.172.0
 
-  '@mlightcad/ribbon@0.0.8(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
+  '@mlightcad/ribbon@0.0.9(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
     dependencies:
       '@element-plus/icons-vue': 2.3.2(vue@3.5.31(typescript@5.9.3))
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
