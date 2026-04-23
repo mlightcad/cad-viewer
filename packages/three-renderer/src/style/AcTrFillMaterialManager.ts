@@ -6,6 +6,10 @@ import {
   createHatchPatternShaderMaterial
 } from './AcTrHatchPatternShaders'
 import { AcTrMaterialManager, AcTrMaterialSide } from './AcTrMaterialManager'
+import {
+  getMaterialMetadata,
+  setMaterialMetadata
+} from './AcTrMaterialMetadata'
 
 export interface AcTrFillMaterialOptions {
   rebaseOffset: THREE.Vector2
@@ -51,11 +55,12 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
    * per fragment, no `DoubleSide` overhead).
    */
   getBackSideVariant(material: THREE.Material): THREE.Material {
-    const key = material.userData.materialKey as string | undefined
+    const metadata = getMaterialMetadata(material)
+    const key = metadata.materialKey
     if (!key) return material
 
     // Already a back-side material — return as-is (idempotent).
-    if (material.userData.side === 'back') return material
+    if (metadata.side === 'back') return material
 
     const traits = this.keyToTraits[key]
     if (!traits) return material
@@ -161,7 +166,6 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     }
 
     // Store side in userData so getBackSideVariant can check idempotency
-    material.userData.side = side
     // Stamp `isTextFill` so downstream consumers (notably
     // `AcTrBatchedGroup.addMesh`) can differentiate text glyph meshes
     // from hatch/solid area fills when deciding draw order.  AutoCAD's
@@ -171,7 +175,10 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     // hatches to occlude BYLAYER outlines (see tower DWG where interior
     // floor divisions disappear because white hatches paint over the
     // dark BYLAYER lines).
-    material.userData.isTextFill = options.isTextFill === true
+    setMaterialMetadata(material, {
+      side,
+      isTextFill: options.isTextFill === true
+    })
     return material
   }
 

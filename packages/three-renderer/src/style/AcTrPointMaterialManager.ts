@@ -22,13 +22,13 @@ export class AcTrPointMaterialManager extends AcTrMaterialManager<AcTrPointMater
     options: AcTrPointMaterialOptions
   ): string {
     const size = options.size ?? 1
-    return this.isByLayer(traits)
+    return this.hasByLayerKeyTraits(traits)
       ? `layer_${traits.layer}_${traits.rgbColor}_${size}`
       : `entity_${traits.rgbColor}_${size}`
   }
 
   /** Returns true if color is ByLayer. */
-  protected isByLayer(traits: AcGiSubEntityTraits): boolean {
+  protected hasByLayerKeyTraits(traits: AcGiSubEntityTraits): boolean {
     return traits.color.isByLayer
   }
 
