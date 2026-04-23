@@ -9,6 +9,7 @@ export class AcEdPromptBoxOptions extends AcEdPromptOptions<AcGeBox2d> {
   private _secondCornerMessage: string
   private _useBasePoint: boolean = false
   private _useDashedLine: boolean = false
+  private _disableOSnap: boolean = false
 
   constructor(firstCornerMessage: string, secondCornerMessage: string) {
     super(firstCornerMessage)
@@ -52,6 +53,19 @@ export class AcEdPromptBoxOptions extends AcEdPromptOptions<AcGeBox2d> {
   set useDashedLine(flag: boolean) {
     if (!this.isReadOnly) {
       this._useDashedLine = flag
+    }
+  }
+
+  /**
+   * Gets or sets whether object snap should be disabled for both box corners.
+   */
+  get disableOSnap(): boolean {
+    return this._disableOSnap
+  }
+
+  set disableOSnap(flag: boolean) {
+    if (!this.isReadOnly) {
+      this._disableOSnap = flag
     }
   }
 }

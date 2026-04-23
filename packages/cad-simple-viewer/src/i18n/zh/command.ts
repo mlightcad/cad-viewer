@@ -1,10 +1,5 @@
 export default {
   ACAD: {
-    pngout: {
-      boundsFirstCorner: '指定边界的第一个角点',
-      boundsSecondCorner: '指定对角点',
-      longSidePrompt: '输入长边像素大小'
-    },
     arc: {
       description: '创建圆弧'
     },
@@ -106,6 +101,9 @@ export default {
     },
     pickbox: {
       description: '控制用于选择对象的拾取框大小（像素）'
+    },
+    pngout: {
+      description: '导出为 PNG 图片'
     },
     qnew: {
       description: '创建新图纸'
