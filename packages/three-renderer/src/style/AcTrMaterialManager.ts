@@ -1,7 +1,17 @@
-import { AcGiSubEntityTraits, deepClone } from '@mlightcad/data-model'
+import {
+  AcGiLineWeight,
+  AcGiSubEntityTraits,
+  deepClone
+} from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrMaterialUtil } from '../util'
+import {
+  AcTrByLayerBindingFlags,
+  getMaterialMetadata,
+  hasByLayerBinding,
+  setMaterialMetadata
+} from './AcTrMaterialMetadata'
 import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
 
 /**
@@ -71,10 +81,11 @@ export abstract class AcTrMaterialManager<T> {
 
   /**
    * Updates all materials belonging to a given layer and whose style is
-   * partially or fully ByLayer (color or line type).
+   * partially or fully ByLayer.
    *
    * A material qualifies for replacement if:
-   *   material.userData.layer === layerName && material.userData.isLayer === true
+   *   metadata.layer === layerName &&
+   *   one of {isByLayerColor,isByLayerLineType,isByLayerLineWeight,isByLayerTransparency} is true
    *
    * For each qualifying material:
    * 1. Rebuild merged traits (old traits + new layer-level traits)
@@ -93,16 +104,26 @@ export abstract class AcTrMaterialManager<T> {
     // iterate all cached materials and check userData
     for (const oldKey of Object.keys(this.cache)) {
       const oldMaterial = this.cache[oldKey]
-      const data = oldMaterial.userData || {}
+      const metadata = getMaterialMetadata(oldMaterial)
 
-      const isTarget = data.layer === layerName && data.isByLayer
+      const isTarget =
+        metadata.layer === layerName && hasByLayerBinding(metadata)
       if (!isTarget) continue
 
       const oldTraits = this.keyToTraits[oldKey]
       if (!oldTraits) continue
 
-      // Step 1: merged traits
-      const mergedTraits = { ...deepClone(oldTraits), ...newTraits }
+      const byLayerBindings = this.resolveByLayerBindings(
+        oldTraits,
+        oldMaterial
+      )
+
+      // Step 1: merged traits (only mutate traits that are actually ByLayer)
+      const mergedTraits = deepClone(oldTraits)
+      this.applyInheritedLayerTraits(mergedTraits, newTraits, byLayerBindings)
+      if (newTraits.layer != null) {
+        mergedTraits.layer = newTraits.layer
+      }
 
       // Step 2: build new key
       const newKey = this.buildKey(mergedTraits, mergedTraits)
@@ -118,7 +139,8 @@ export abstract class AcTrMaterialManager<T> {
       const newMaterial = this.createMaterial(
         newKey,
         mergedTraits,
-        mergedTraits
+        mergedTraits,
+        byLayerBindings
       )
 
       // Step 5: store merged traits
@@ -141,9 +163,9 @@ export abstract class AcTrMaterialManager<T> {
     // iterate all cached materials and check userData
     for (const oldKey of Object.keys(this.cache)) {
       const oldMaterial = this.cache[oldKey]
-      const data = oldMaterial.userData || {}
+      const metadata = getMaterialMetadata(oldMaterial)
 
-      const isTarget = data.isForeground
+      const isTarget = metadata.isForeground === true
       if (!isTarget) continue
 
       const oldTraits = this.keyToTraits[oldKey]
@@ -176,9 +198,9 @@ export abstract class AcTrMaterialManager<T> {
   changeBackground(color: number) {
     for (const oldKey of Object.keys(this.cache)) {
       const oldMaterial = this.cache[oldKey]
-      const data = oldMaterial.userData || {}
+      const metadata = getMaterialMetadata(oldMaterial)
 
-      const isTarget = data.isBackgroundFill
+      const isTarget = metadata.isBackgroundFill === true
       if (!isTarget) continue
 
       const oldTraits = this.keyToTraits[oldKey]
@@ -211,11 +233,130 @@ export abstract class AcTrMaterialManager<T> {
   }
 
   /**
+   * Returns a cached material bound to the specified effective layer.
+   *
+   * This is primarily used for block contents that are authored on layer `0` but inherit the
+   * layer of the INSERT that owns them. The returned material preserves visual traits and
+   * cache semantics, but future layer updates will target the effective layer instead of the
+   * original source layer.
+   *
+   * @param material - Existing cached material to bind.
+   * @param layerName - Effective layer name that should own the returned material.
+   * @returns The layer-bound cached material, or `undefined` when the input material is not owned
+   * by this manager.
+   */
+  getLayerBoundMaterial(
+    material: THREE.Material,
+    layerName: string,
+    layerTraits?: Partial<AcGiSubEntityTraits>
+  ): THREE.Material | undefined {
+    const metadata = getMaterialMetadata(material)
+    const key = metadata.materialKey
+    if (!key) return undefined
+
+    const traits = this.keyToTraits[key]
+    if (!traits) return undefined
+
+    if (traits.layer === layerName && !layerTraits) {
+      return material
+    }
+
+    const remappedTraits: AcGiSubEntityTraits & T = {
+      ...deepClone(traits),
+      layer: layerName
+    }
+    const byLayerBindings = this.resolveByLayerBindings(traits, material)
+    this.applyInheritedLayerTraits(remappedTraits, layerTraits, byLayerBindings)
+    const remappedKey = this.buildKey(remappedTraits, remappedTraits)
+
+    if (this.cache[remappedKey]) {
+      return this.cache[remappedKey]
+    }
+
+    this.keyToTraits[remappedKey] = remappedTraits
+    return this.createMaterial(
+      remappedKey,
+      remappedTraits,
+      remappedTraits,
+      byLayerBindings
+    )
+  }
+
+  /**
+   * Applies target-layer traits only to attributes that are actually ByLayer on this entity.
+   *
+   * This preserves explicit per-entity settings while resolving inherited values during
+   * block layer-0 remapping.
+   */
+  private applyInheritedLayerTraits(
+    traits: AcGiSubEntityTraits & T,
+    layerTraits?: Partial<AcGiSubEntityTraits>,
+    byLayerBindings?: AcTrByLayerBindingFlags
+  ) {
+    if (!layerTraits) return
+
+    const isByLayerColor = byLayerBindings?.isByLayerColor === true
+    const isByLayerLineType = byLayerBindings?.isByLayerLineType === true
+    const isByLayerLineWeight = byLayerBindings?.isByLayerLineWeight === true
+    const isByLayerTransparency =
+      byLayerBindings?.isByLayerTransparency === true
+
+    if (isByLayerColor) {
+      if (layerTraits.rgbColor != null) {
+        traits.rgbColor = layerTraits.rgbColor
+      } else if (layerTraits.color) {
+        const inheritedRgb = layerTraits.color.RGB
+        if (inheritedRgb != null) {
+          traits.rgbColor = inheritedRgb
+        }
+      }
+    }
+
+    if (isByLayerLineType && layerTraits.lineType) {
+      traits.lineType = deepClone(layerTraits.lineType)
+    }
+
+    if (isByLayerLineWeight && layerTraits.lineWeight != null) {
+      traits.lineWeight = layerTraits.lineWeight
+    }
+
+    if (isByLayerTransparency && layerTraits.transparency) {
+      traits.transparency = deepClone(layerTraits.transparency)
+    }
+  }
+
+  /**
+   * Resolves ByLayer binding flags from explicit metadata first, then falls back
+   * to symbolic traits when metadata is unavailable.
+   */
+  private resolveByLayerBindings(
+    traits: AcGiSubEntityTraits,
+    material?: THREE.Material
+  ): AcTrByLayerBindingFlags {
+    const metadata = material ? getMaterialMetadata(material) : undefined
+    const inferredTransparencyByLayer =
+      (traits.transparency as Partial<{ isByLayer: boolean }>)?.isByLayer ===
+      true
+
+    return {
+      isByLayerColor:
+        metadata?.isByLayerColor ?? traits.color.isByLayer === true,
+      isByLayerLineType:
+        metadata?.isByLayerLineType ?? traits.lineType.type === 'ByLayer',
+      isByLayerLineWeight:
+        metadata?.isByLayerLineWeight ??
+        traits.lineWeight === AcGiLineWeight.ByLayer,
+      isByLayerTransparency:
+        metadata?.isByLayerTransparency ?? inferredTransparencyByLayer
+    }
+  }
+
+  /**
    * Creates a THREE.js material and stores metadata in userData:
    *   - layer
-   *   - isByLayer
-   *   - isForeground      (inverts with COLORTHEME — lines/text/MText)
-   *   - isBackgroundFill  (follows canvas bg — solid ACI 7 hatches)
+   *   - isByLayerColor/isByLayerLineType/isByLayerLineWeight/isByLayerTransparency
+   *   - isForeground      (inverts with COLORTHEME when tracked by manager)
+   *   - isBackgroundFill  (follows canvas bg when tracked by manager)
    *   - materialKey (cache key, used by getBackSideVariant for reverse lookup)
    *
    * `isForeground` and `isBackgroundFill` are mutually exclusive in
@@ -228,26 +369,36 @@ export abstract class AcTrMaterialManager<T> {
   protected createMaterial(
     key: string,
     traits: AcGiSubEntityTraits,
-    options: T
+    options: T,
+    byLayerBindings?: AcTrByLayerBindingFlags
   ): THREE.Material {
     const material = this.createMaterialImpl(traits, options)
+    const resolvedByLayerBindings =
+      byLayerBindings ?? this.resolveByLayerBindings(traits)
 
     // Attach metadata required for layer updates and side-variant lookups
-    material.userData.layer = traits.layer
-    material.userData.isByLayer = this.isByLayer(traits)
-    material.userData.isForeground = this.shouldTrackForeground(traits, options)
-    material.userData.isBackgroundFill = this.shouldTrackBackground(
-      traits,
-      options
-    )
-    material.userData.materialKey = key
+    setMaterialMetadata(material, {
+      layer: traits.layer,
+      isByLayerColor: resolvedByLayerBindings.isByLayerColor,
+      isByLayerLineType: resolvedByLayerBindings.isByLayerLineType,
+      isByLayerLineWeight: resolvedByLayerBindings.isByLayerLineWeight,
+      isByLayerTransparency: resolvedByLayerBindings.isByLayerTransparency,
+      isForeground: this.shouldTrackForeground(traits, options),
+      isBackgroundFill: this.shouldTrackBackground(traits, options),
+      materialKey: key
+    })
 
     this.cache[key] = material
     return material
   }
 
-  /** Returns true if either color or linetype is ByLayer. */
-  protected isByLayer(traits: AcGiSubEntityTraits): boolean {
+  /**
+   * Returns whether traits should be cached as layer-scoped instead of entity-scoped.
+   *
+   * This flag is used for material-key partitioning only; userData stores granular
+   * ByLayer flags per trait.
+   */
+  protected hasByLayerKeyTraits(traits: AcGiSubEntityTraits): boolean {
     return traits.color.isByLayer || traits.lineType.type === 'ByLayer'
   }
 

@@ -32,17 +32,17 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     traits: AcGiSubEntityTraits,
     options: AcTrLineMaterialOptions
   ): string {
-    const isByLayer = this.isByLayer(traits)
+    const hasByLayerKeyTraits = this.hasByLayerKeyTraits(traits)
     const lineWidth = this.resolveLineWidth(traits.lineWeight)
     const mode = this.getMaterialMode(traits, options)
 
     if (mode === 'shader') {
-      return isByLayer
+      return hasByLayerKeyTraits
         ? `layer_${mode}_${traits.layer}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}_${lineWidth}`
         : `entity_${mode}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}_${lineWidth}`
     }
 
-    return isByLayer
+    return hasByLayerKeyTraits
       ? `layer_${mode}_${traits.layer}_${traits.rgbColor}_${lineWidth}`
       : `entity_${mode}_${traits.rgbColor}_${lineWidth}`
   }
@@ -99,9 +99,10 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     return material
   }
 
-  protected isByLayer(traits: AcGiSubEntityTraits): boolean {
+  protected hasByLayerKeyTraits(traits: AcGiSubEntityTraits): boolean {
     return (
-      super.isByLayer(traits) || traits.lineWeight === AcGiLineWeight.ByLayer
+      super.hasByLayerKeyTraits(traits) ||
+      traits.lineWeight === AcGiLineWeight.ByLayer
     )
   }
 

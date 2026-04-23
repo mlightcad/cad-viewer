@@ -241,6 +241,23 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
+   * Returns one cached material bound to an effective layer while preserving symbolic traits.
+   *
+   * This is used for block contents that inherit the layer of the INSERT they belong to.
+   */
+  getLayerBoundMaterial(
+    material: THREE.Material,
+    layerName: string,
+    layerTraits?: Partial<AcGiSubEntityTraits>
+  ) {
+    return this._styleManager.getLayerBoundMaterial(
+      material,
+      layerName,
+      layerTraits
+    )
+  }
+
+  /**
    * Create one empty drawable object
    */
   createObject() {

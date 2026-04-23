@@ -14,6 +14,7 @@ import {
   AcGeBox3d,
   AcGePoint2d,
   AcGePoint2dLike,
+  AcGiSubEntityTraits,
   log
 } from '@mlightcad/data-model'
 import { AcDbSystemVariables } from '@mlightcad/data-model'
@@ -22,7 +23,10 @@ import {
   AcTrGroup,
   AcTrHtmlTransientManager,
   AcTrRenderer,
-  AcTrViewportView
+  AcTrViewportView,
+  getMaterialMetadata,
+  hasByLayerBinding,
+  setMaterialMetadata
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
@@ -707,11 +711,27 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   addLayer(layer: AcDbLayerTableRecord) {
-    this._scene.addLayer({
+    const updatedLayers = this._scene.addLayer({
       name: layer.name,
       isFrozen: layer.isFrozen,
       isOff: layer.isOff,
       color: layer.color
+    })
+
+    const traits: Partial<AcGiSubEntityTraits> = {
+      layer: layer.name,
+      color: layer.color.clone(),
+      rgbColor: layer.color.RGB,
+      lineType: layer.lineStyle,
+      lineWeight: layer.lineWeight,
+      transparency: layer.transparency
+    }
+    const materials = this._renderer.updateLayerMaterial(layer.name, traits)
+    updatedLayers.forEach(updatedLayer => {
+      for (const id in materials) {
+        const material = materials[id]
+        updatedLayer.updateMaterial(Number(id), material)
+      }
     })
     this._isDirty = true
   }
@@ -1034,6 +1054,18 @@ export class AcTrView2d extends AcEdBaseView {
         threeEntity.visible = entity.visibility
         if (
           threeEntity instanceof AcTrGroup &&
+          (threeEntity as AcTrGroup).isOnTheSameLayer
+        ) {
+          // Even when a block expands to a single layer bucket, children authored on
+          // layer "0" still inherit the INSERT layer for ByLayer traits (color, etc.).
+          this.remapInheritedLayerObjects(
+            (threeEntity as AcTrGroup).children,
+            '0',
+            threeEntity.layerName
+          )
+        }
+        if (
+          threeEntity instanceof AcTrGroup &&
           !(threeEntity as AcTrGroup).isOnTheSameLayer
         ) {
           this.handleGroup(threeEntity as AcTrGroup)
@@ -1115,19 +1147,26 @@ export class AcTrView2d extends AcEdBaseView {
       })
     )
     objectsGroupByLayer.forEach((objects, layerName) => {
-      // In AutoCAD, an INSERT entity may reference multiple child entities that
-      // reside on different layers. During rendering, this engine groups entities
-      // by layer and assigns each group the INSERT entity's object ID.
-      // As a result, a single object ID (typically from an INSERT entity) may
-      // correspond to multiple layers. However, in this layer its object id is still
-      // uniqiue.
+      // AutoCAD block rule: entities authored on layer "0" inherit the INSERT's layer.
+      // Non-zero layers keep their original layer name.
+      const effectiveLayerName = layerName === '0' ? groupLayerName : layerName
+
+      // Keep runtime layer metadata/material cache aligned with the inherited layer so
+      // later layer style edits (color, linetype, lineweight, transparency) target this
+      // object set correctly.
+      this.remapInheritedLayerObjects(objects, layerName, effectiveLayerName)
+
+      // One INSERT can expand to children from multiple layers. Here we create one
+      // render entity per layer bucket but preserve the INSERT object id for all
+      // buckets, so selection/highlight still maps back to the same database object.
+      // Within each layer bucket, the object id remains unique in scene indexing.
       const entity = new AcTrEntity(styleManager)
       entity.applyMatrix4(group.matrix)
       entity.objectId = groupObjectId
       entity.ownerId = group.ownerId
-      // Here one group represents one block reference. If the layer name of entities in block
-      // definition is '0', it should be put on layer where the group exist.
-      entity.layerName = layerName === '0' ? groupLayerName : layerName
+      // If block-definition entities are on layer "0", this bucket now uses the layer
+      // of the block reference itself (effectiveLayerName).
+      entity.layerName = effectiveLayerName
       entity.box = groupBox
       const entityUserData = entity.userData as {
         spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
@@ -1146,6 +1185,104 @@ export class AcTrView2d extends AcEdBaseView {
     group.dispose()
 
     this._isDirty = true
+  }
+
+  /**
+   * Remaps layer metadata/material bindings from a source layer to the effective render layer.
+   *
+   * During block decomposition, one INSERT may be split into multiple layer buckets. For
+   * children authored on layer "0", AutoCAD requires inheriting the INSERT's own layer.
+   * This method applies that inheritance by mutating each child's `userData.layerName` and
+   * re-binding materials via renderer cache, so subsequent layer-level style changes still
+   * hit the correct material instances.
+   *
+   * @param objects - Root objects in the current layer bucket to traverse and remap.
+   * @param sourceLayerName - Layer name found in block definition before inheritance.
+   * @param effectiveLayerName - Final layer name used by rendering and style updates.
+   */
+  private remapInheritedLayerObjects(
+    objects: THREE.Object3D[],
+    sourceLayerName: string,
+    effectiveLayerName: string
+  ) {
+    if (sourceLayerName === effectiveLayerName) return
+
+    const renderer = this._renderer
+    const layerTraits = this.getEffectiveLayerTraits(effectiveLayerName)
+    for (const object of objects) {
+      object.traverse(child => {
+        if (child.userData.layerName === sourceLayerName) {
+          child.userData.layerName = effectiveLayerName
+        }
+
+        if (!('material' in child)) return
+
+        const material = child.material
+        if (Array.isArray(material)) {
+          const materials = material as THREE.Material[]
+          child.material = materials.map(entry =>
+            renderer.getLayerBoundMaterial(
+              this.promoteLayerZeroByLayerColor(entry, sourceLayerName),
+              effectiveLayerName,
+              layerTraits
+            )
+          )
+          return
+        }
+
+        const remappedMaterial = renderer.getLayerBoundMaterial(
+          this.promoteLayerZeroByLayerColor(
+            material as THREE.Material,
+            sourceLayerName
+          ),
+          effectiveLayerName,
+          layerTraits
+        )
+        child.material = remappedMaterial
+        child.userData.styleMaterialId = remappedMaterial.id
+      })
+    }
+  }
+
+  /**
+   * Some DXF conversion paths lose `isByLayerColor` on layer-0 block contents while still
+   * retaining other ByLayer markers (lineType/lineWeight/transparency). For AutoCAD-compatible
+   * INSERT inheritance, treat such colors as inheritable when remapping from layer "0".
+   */
+  private promoteLayerZeroByLayerColor(
+    material: THREE.Material,
+    sourceLayerName: string
+  ): THREE.Material {
+    const metadata = getMaterialMetadata(material)
+    const hasAnyOtherByLayerBinding =
+      hasByLayerBinding(metadata) && metadata.isByLayerColor !== true
+
+    if (sourceLayerName === '0' && hasAnyOtherByLayerBinding) {
+      setMaterialMetadata(material, { isByLayerColor: true })
+    }
+    return material
+  }
+
+  /**
+   * Builds the resolved layer traits used when layer-0 block content inherits an INSERT layer.
+   */
+  private getEffectiveLayerTraits(
+    layerName: string
+  ): Partial<AcGiSubEntityTraits> | undefined {
+    const layer =
+      AcApDocManager.instance.curDocument.database.tables.layerTable.getAt(
+        layerName
+      )
+    if (!layer) return undefined
+
+    return {
+      layer: layer.name,
+      color: layer.color.clone(),
+      rgbColor: layer.color.RGB,
+      lineType: layer.lineStyle,
+      lineWeight: layer.lineWeight,
+      transparency: layer.transparency
+    }
   }
 
   private decreaseNumOfEntitiesToProcess() {
