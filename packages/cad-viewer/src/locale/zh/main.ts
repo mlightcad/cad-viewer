@@ -2,7 +2,8 @@ export default {
   mainMenu: {
     new: '新建图纸',
     open: '打开图纸',
-    export: '导出为DXF'
+    export: '导出为DXF',
+    exportImage: '导出图片'
   },
   ribbon: {
     tab: {

@@ -1,10 +1,5 @@
 export default {
   ACAD: {
-    pngout: {
-      boundsFirstCorner: 'Specify first corner of bounds',
-      boundsSecondCorner: 'Specify opposite corner',
-      longSidePrompt: 'Enter long side size in pixels'
-    },
     arc: {
       description: 'Creates an arc'
     },
@@ -114,6 +109,9 @@ export default {
     pickbox: {
       description:
         'Sets the size (in pixels) of the selection box used to pick objects'
+    },
+    pngout: {
+      description: 'Exports to PNG'
     },
     qnew: {
       description: 'Starts a new drawing'

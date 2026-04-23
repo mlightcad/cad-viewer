@@ -2,7 +2,8 @@ export default {
   mainMenu: {
     new: 'New Drawing',
     open: 'Open Drawing',
-    export: 'Export to DXF'
+    export: 'Export to DXF',
+    exportImage: 'Export to Image'
   },
   ribbon: {
     tab: {

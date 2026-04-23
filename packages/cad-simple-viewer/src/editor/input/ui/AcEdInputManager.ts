@@ -1285,6 +1285,7 @@ export class AcEdInputManager {
         this.copyKeywords(options, options1)
         options1.useDashedLine = options.useDashedLine
         options1.useBasePoint = options.useBasePoint
+        options1.disableOSnap = options.disableOSnap
         const p1Result = await this.getPoint(options1)
         if (p1Result.status !== AcEdPromptStatus.OK) {
           return new AcEdPromptBoxResult(
@@ -1328,6 +1329,7 @@ export class AcEdInputManager {
         this.copyKeywords(options, options2)
         options2.useDashedLine = options.useDashedLine
         options2.useBasePoint = options.useBasePoint
+        options2.disableOSnap = options.disableOSnap
         const p2 = await this.getPointInternal(options2, cleanup, drawPreview)
 
         const box = new AcGeBox2d().expandByPoint(p1).expandByPoint(p2)
@@ -1376,6 +1378,7 @@ export class AcEdInputManager {
     return this.makeFloatingInputPromise<AcGePoint3dLike>({
       inputCount: 2,
       promptOptions: options,
+      disableOSnap: options.disableOSnap,
       cleanup,
       handler,
       getDynamicValue,

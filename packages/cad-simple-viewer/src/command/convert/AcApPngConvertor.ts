@@ -11,22 +11,6 @@ import { AcTrView2d } from '../../view'
  * to PNG format and download it as a file. It renders the current view
  * using WebGLRenderTarget for optimal performance without requiring
  * preserveDrawingBuffer to be enabled on the renderer.
- *
- * The conversion process:
- * 1. Gets the current view and its associated renderer, scene, and camera
- * 2. Creates an offscreen render target for pixel capture
- * 3. Renders the scene to the render target
- * 4. Reads the pixel data and flips it vertically (WebGL renders upside down)
- * 5. Creates a canvas, draws the pixel data, and exports as PNG
- * 6. Triggers a download of the PNG file
- *
- * @example
- * ```typescript
- * const converter = new AcApPngConvertor();
- *
- * // Convert and download current drawing as PNG
- * converter.convert();
- * ```
  */
 export class AcApPngConvertor {
   /**
@@ -41,26 +25,11 @@ export class AcApPngConvertor {
    * - Exports as PNG and downloads with timestamp-based filename
    *
    * @param bounds - Optional world coordinate bounding box to export.
-   *                  If provided, the camera will zoom to fit this region.
-   *                  If not provided, exports the current view.
-   * @param long_side - Optional maximum dimension (width or height) in pixels for the output PNG.
-   *                    The other dimension is calculated based on the aspect ratio of bounds.
-   *                    If not provided, uses the current view dimensions.
-   * @example
-   * ```typescript
-   * const converter = new AcApPngConvertor();
-   * converter.convert(); // Downloads the drawing as PNG
-   * ```
-   *
-   * @example
-   * ```typescript
-   * // Export a specific region
-   * const bounds = new AcGeBox2d(new AcGePoint2d(0, 0), new AcGePoint2d(100, 100));
-   * const converter = new AcApPngConvertor();
-   * converter.convert(bounds); // Downloads the specified region as PNG
-   * ```
+   *                 If provided, the camera will zoom to fit this region.
+   *                 If not provided, exports the current view.
+   * @param longSide - Optional maximum dimension (width or height) in pixels.
    */
-  convert(bounds?: AcGeBox2d, long_side?: number) {
+  convert(bounds?: AcGeBox2d, longSide?: number) {
     const view = AcApDocManager.instance.curView as AcTrView2d
     const renderer = view.renderer.internalRenderer
     const scene = view.internalScene
@@ -71,29 +40,33 @@ export class AcApPngConvertor {
       return
     }
 
-    let outputWidth = view.width
-    let outputHeight = view.height
+    const viewAspect = view.width / Math.max(view.height, 1)
+    const targetAspect = bounds ? this.getBoundsAspect(bounds) : viewAspect
+    let outputWidth = Math.max(1, Math.round(view.width))
+    let outputHeight = Math.max(1, Math.round(view.height))
 
-    if (long_side && bounds) {
-      const size = new AcGeVector2d()
-      bounds.getSize(size)
-      const boundsWidth = size.x
-      const boundsHeight = size.y
-      const boundsAspect = boundsWidth / boundsHeight
-      if (boundsAspect > 1) {
-        outputWidth = long_side
-        outputHeight = Math.round(long_side / boundsAspect)
-      } else {
-        outputHeight = long_side
-        outputWidth = Math.round(long_side * boundsAspect)
-      }
+    if (longSide && longSide > 0) {
+      const outputSize = this.resolveOutputSize(longSide, targetAspect)
+      outputWidth = outputSize.width
+      outputHeight = outputSize.height
     }
 
-    // Save original camera state for restoration later
+    // Keep stable render path at view aspect, then center-crop to target aspect.
+    const renderSize = this.resolveRenderSizeForCenterCrop(
+      outputWidth,
+      outputHeight,
+      viewAspect
+    )
+    const renderWidth = renderSize.width
+    const renderHeight = renderSize.height
+    const needsCrop =
+      renderWidth !== outputWidth || renderHeight !== outputHeight
+
+    // Save original camera state for restoration later (keep legacy fitting path).
     const originalZoom = camera.zoom
     const originalPosition = camera.position.clone()
 
-    // If bounds provided, calculate zoom and position to fit the specified region
+    // Legacy zoom-based fitting; this path historically produced correct bounds.
     if (bounds) {
       const size = new AcGeVector2d()
       bounds.getSize(size)
@@ -101,8 +74,8 @@ export class AcApPngConvertor {
       const center = new AcGeVector2d()
       bounds.getCenter(center)
 
-      const boundsWidth = size.x
-      const boundsHeight = size.y
+      const boundsWidth = Math.max(Math.abs(size.x), Number.EPSILON)
+      const boundsHeight = Math.max(Math.abs(size.y), Number.EPSILON)
       const widthRatio = view.width / boundsWidth
       const heightRatio = view.height / boundsHeight
       const scale = Math.min(widthRatio, heightRatio)
@@ -113,10 +86,9 @@ export class AcApPngConvertor {
       camera.updateProjectionMatrix()
     }
 
-    // Create a render target for offscreen rendering
     const renderTarget = new THREE.WebGLRenderTarget(
-      outputWidth,
-      outputHeight,
+      renderWidth,
+      renderHeight,
       {
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,
@@ -125,51 +97,150 @@ export class AcApPngConvertor {
       }
     )
 
-    // Store the original render target
     const originalRenderTarget = renderer.getRenderTarget()
 
-    // Render to the offscreen target
     renderer.setRenderTarget(renderTarget)
+
     renderer.render(scene, camera)
 
-    // Read pixels from the render target
-    const pixels = new Uint8Array(outputWidth * outputHeight * 4)
+    const pixels = new Uint8Array(renderWidth * renderHeight * 4)
     renderer.readRenderTargetPixels(
       renderTarget,
       0,
       0,
-      outputWidth,
-      outputHeight,
+      renderWidth,
+      renderHeight,
       pixels
     )
 
-    // Restore the original render target
     renderer.setRenderTarget(originalRenderTarget)
-
-    // Clean up the render target
     renderTarget.dispose()
 
-    // Restore original camera state
     camera.zoom = originalZoom
     camera.position.copy(originalPosition)
     camera.updateProjectionMatrix()
 
-    // Flip the image vertically (WebGL renders upside down)
     const flippedPixels = this.flipPixelsVertically(
       pixels,
-      outputWidth,
-      outputHeight
+      renderWidth,
+      renderHeight
     )
+    const finalPixels = needsCrop
+      ? this.cropPixelsCentered(
+          flippedPixels,
+          renderWidth,
+          renderHeight,
+          outputWidth,
+          outputHeight
+        )
+      : flippedPixels
 
-    // Create canvas and draw the pixels
     const canvas = this.createCanvasFromPixels(
-      flippedPixels,
+      finalPixels,
       outputWidth,
       outputHeight
     )
 
-    // Export to PNG and download
     this.createFileAndDownloadIt(canvas)
+  }
+
+  /**
+   * Resolves a pixel output size from a long-side target and aspect ratio.
+   */
+  private resolveOutputSize(
+    longSide: number,
+    aspect: number
+  ): { width: number; height: number } {
+    const clampedLongSide = Math.max(1, Math.round(longSide))
+    const safeAspect =
+      Number.isFinite(aspect) && aspect > Number.EPSILON ? aspect : 1
+
+    if (safeAspect >= 1) {
+      return {
+        width: clampedLongSide,
+        height: Math.max(1, Math.round(clampedLongSide / safeAspect))
+      }
+    }
+
+    return {
+      width: Math.max(1, Math.round(clampedLongSide * safeAspect)),
+      height: clampedLongSide
+    }
+  }
+
+  /**
+   * Computes render size using source aspect so final target can be center-cropped.
+   */
+  private resolveRenderSizeForCenterCrop(
+    targetWidth: number,
+    targetHeight: number,
+    sourceAspect: number
+  ) {
+    const safeSourceAspect =
+      Number.isFinite(sourceAspect) && sourceAspect > Number.EPSILON
+        ? sourceAspect
+        : 1
+    const targetAspect = targetWidth / Math.max(targetHeight, 1)
+
+    if (Math.abs(targetAspect - safeSourceAspect) < 1e-6) {
+      return { width: targetWidth, height: targetHeight }
+    }
+
+    if (safeSourceAspect > targetAspect) {
+      // Source is wider; extend width then crop left/right.
+      return {
+        width: Math.max(
+          targetWidth,
+          Math.ceil(targetHeight * safeSourceAspect)
+        ),
+        height: targetHeight
+      }
+    }
+
+    // Source is taller/narrower; extend height then crop top/bottom.
+    return {
+      width: targetWidth,
+      height: Math.max(targetHeight, Math.ceil(targetWidth / safeSourceAspect))
+    }
+  }
+
+  /**
+   * Center-crops an RGBA pixel buffer from source to destination size.
+   */
+  private cropPixelsCentered(
+    pixels: Uint8Array,
+    srcWidth: number,
+    srcHeight: number,
+    dstWidth: number,
+    dstHeight: number
+  ) {
+    if (srcWidth === dstWidth && srcHeight === dstHeight) {
+      return pixels
+    }
+
+    const offsetX = Math.floor((srcWidth - dstWidth) / 2)
+    const offsetY = Math.floor((srcHeight - dstHeight) / 2)
+    const cropped = new Uint8Array(dstWidth * dstHeight * 4)
+
+    for (let y = 0; y < dstHeight; y++) {
+      const srcStart = ((y + offsetY) * srcWidth + offsetX) * 4
+      const srcEnd = srcStart + dstWidth * 4
+      const dstStart = y * dstWidth * 4
+      cropped.set(pixels.subarray(srcStart, srcEnd), dstStart)
+    }
+
+    return cropped
+  }
+
+  /**
+   * Returns the world-space aspect ratio of bounds.
+   */
+  private getBoundsAspect(bounds: AcGeBox2d) {
+    const size = new AcGeVector2d()
+    bounds.getSize(size)
+    const width = Math.max(Math.abs(size.x), Number.EPSILON)
+    const height = Math.max(Math.abs(size.y), Number.EPSILON)
+    return width / height
   }
 
   /**
