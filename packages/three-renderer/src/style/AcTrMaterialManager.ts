@@ -373,6 +373,22 @@ export abstract class AcTrMaterialManager<T> {
     byLayerBindings?: AcTrByLayerBindingFlags
   ): THREE.Material {
     const material = this.createMaterialImpl(traits, options)
+    const isForeground = this.shouldTrackForeground(traits, options)
+    const isBackgroundFill = this.shouldTrackBackground(traits, options)
+
+    // Foreground-follow materials (typically ACI 7 lines/text) must be
+    // initialized against the current canvas background color, otherwise
+    // they can be created with stale white color on a light background
+    // before any theme-change repaint occurs.
+    if (isForeground) {
+      const foregroundColor =
+        this.options.currentBackgroundColor === 0 ? 0xffffff : 0x000000
+      AcTrMaterialUtil.setMaterialColor(
+        material,
+        new THREE.Color(foregroundColor)
+      )
+    }
+
     const resolvedByLayerBindings =
       byLayerBindings ?? this.resolveByLayerBindings(traits)
 
@@ -383,8 +399,8 @@ export abstract class AcTrMaterialManager<T> {
       isByLayerLineType: resolvedByLayerBindings.isByLayerLineType,
       isByLayerLineWeight: resolvedByLayerBindings.isByLayerLineWeight,
       isByLayerTransparency: resolvedByLayerBindings.isByLayerTransparency,
-      isForeground: this.shouldTrackForeground(traits, options),
-      isBackgroundFill: this.shouldTrackBackground(traits, options),
+      isForeground,
+      isBackgroundFill,
       materialKey: key
     })
 

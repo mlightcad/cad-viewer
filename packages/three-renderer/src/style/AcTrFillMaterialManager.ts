@@ -1,4 +1,8 @@
-import { AcGiSubEntityTraits, log } from '@mlightcad/data-model'
+import {
+  type AcGiHatchPatternLine,
+  AcGiSubEntityTraits,
+  log
+} from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import {
@@ -154,8 +158,13 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     let material: THREE.Material
     if (!style.definitionLines || style.definitionLines.length < 1) {
       material = this.createMeshBasicMaterial(effectiveTraits, threeSide)
-    } else if (style.definitionLines.some(line => !line.dashLengths)) {
-      log.warn('Invalid dash pattern', style)
+    } else if (
+      style.definitionLines.some(line => !this.isValidDefinitionLine(line))
+    ) {
+      log.warn(
+        'Invalid hatch pattern definition line, fallback to solid fill',
+        style
+      )
       material = this.createMeshBasicMaterial(effectiveTraits, threeSide)
     } else {
       material = this.createHatchShaderMaterial(
@@ -339,12 +348,65 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     }
 
     const patternHash = style.definitionLines
-      .map(
-        pl =>
-          pl.dashLengths.join(',') + `@${pl.angle},${pl.base.x},${pl.base.y}`
-      )
+      .map(pl => {
+        if (!this.isValidDefinitionLine(pl)) {
+          return 'invalid'
+        }
+
+        const dash = pl.dashLengths!.join(',')
+        const angle = Number.isFinite(pl.angle) ? pl.angle : 0
+        const baseX = pl.base!.x!
+        const baseY = pl.base!.y!
+        return `${dash}@${angle},${baseX},${baseY}`
+      })
       .join('|')
 
     return `hatch_${traits.layer}_${traits.rgbColor}_${style.patternAngle}_${patternHash}${sideSuffix}${textSuffix}${bgSuffix}`
+  }
+
+  /**
+   * Normalizes one hatch pattern definition line in-place and validates it.
+   *
+   * DXF payloads occasionally contain partial pattern-line records. To keep
+   * hatch rendering resilient, this method applies fallback defaults:
+   * - `base` missing  -> `{ x: 0, y: 0 }`
+   * - `offset` missing -> `{ x: 0, y: 0 }`
+   * - `angle` missing  -> `0`
+   *
+   * `dashLengths` must still be an array; when absent or malformed, the line is
+   * considered invalid and the caller can fall back to solid fill rendering.
+   *
+   * @param line Candidate value read from hatch pattern data.
+   * @returns `true` when the line is usable for hatch shader generation.
+   */
+  private isValidDefinitionLine(line: AcGiHatchPatternLine) {
+    if (!line || typeof line !== 'object') return false
+    const mutable = line as AcGiHatchPatternLine & {
+      angle?: unknown
+      dashLengths?: unknown
+      base?: { x?: unknown; y?: unknown } | null
+      offset?: { x?: unknown; y?: unknown } | null
+    }
+
+    if (!Array.isArray(mutable.dashLengths)) return false
+
+    mutable.base = {
+      x: this.toFiniteNumber(mutable.base?.x, 0),
+      y: this.toFiniteNumber(mutable.base?.y, 0)
+    }
+    mutable.offset = {
+      x: this.toFiniteNumber(mutable.offset?.x, 0),
+      y: this.toFiniteNumber(mutable.offset?.y, 0)
+    }
+    mutable.angle = this.toFiniteNumber(mutable.angle, 0)
+    mutable.dashLengths = mutable.dashLengths.map(item =>
+      this.toFiniteNumber(item, 0)
+    )
+
+    return true
+  }
+
+  private toFiniteNumber(value: unknown, fallback = 0): number {
+    return Number.isFinite(value) ? (value as number) : fallback
   }
 }

@@ -36,8 +36,8 @@
   },
   "pnpm": {
     "overrides": {
-      "@mlightcad/data-model": "^1.7.23",
-      "@mlightcad/libredwg-converter": "^3.5.23",
+      "@mlightcad/data-model": "^1.7.24",
+      "@mlightcad/libredwg-converter": "^3.5.24",
       "@mlightcad/mtext-renderer": "^0.10.7",
       "element-plus": "^2.12.0",
       "three": "^0.172.0",

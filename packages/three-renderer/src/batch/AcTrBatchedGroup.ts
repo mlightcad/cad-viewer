@@ -336,10 +336,17 @@ export class AcTrBatchedGroup extends THREE.Group {
    */
   addEntity(entity: AcTrEntity) {
     const objectId = entity.objectId
-    const entityInfo: AcTrEntityInBatchedObject[] = []
-    this._entitiesMap.set(objectId, entityInfo)
-    this._unbatchedEntities.delete(objectId)
-    const unbatchedObjects: THREE.Object3D[] = []
+    // One logical entity (same objectId) can be appended in multiple passes
+    // (e.g. INSERT decomposition by source layer and inherited layer-0 bucket).
+    // Keep accumulating geometry mappings instead of overwriting previous ones.
+    let entityInfo = this._entitiesMap.get(objectId)
+    if (!entityInfo) {
+      entityInfo = []
+      this._entitiesMap.set(objectId, entityInfo)
+    }
+
+    const existingUnbatched = this._unbatchedEntities.get(objectId)
+    const unbatchedObjects: THREE.Object3D[] = existingUnbatched ?? []
     let hasUnbatched = false
     const styleManager = entity.styleManager
 

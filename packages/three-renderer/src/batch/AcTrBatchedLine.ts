@@ -579,6 +579,7 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     // Fast path: entities flagged for bbox-only intersection check
     if (geometryInfo.bboxIntersectionCheck) {
       this.getBoundingBoxAt(geometryId, this._box)
+      this._box.applyMatrix4(this.matrixWorld)
       if (raycaster.ray.intersectBox(this._box, this._vector)) {
         const distance = raycaster.ray.origin.distanceTo(this._vector)
         ;(
@@ -622,26 +623,27 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     // bounding box expanded by the Line threshold.
     if (this._batchIntersects.length === 0) {
       this.getBoundingBoxAt(geometryId, _box)
-      if (raycaster.ray.intersectBox(_box, _vector)) {
-        const threshold = raycaster.params.Line.threshold
+      _box.applyMatrix4(this.matrixWorld)
+      const threshold = raycaster.params.Line.threshold
+      if (threshold > 0) {
         _box.expandByScalar(threshold)
-        if (raycaster.ray.intersectBox(_box, _vector2)) {
-          const distance = raycaster.ray.origin.distanceTo(_vector2)
-          ;(
-            intersects as Array<
-              THREE.Intersection & { batchId?: number; objectId?: string }
-            >
-          ).push({
-            distance,
-            point: _vector2.clone(),
-            object: this,
-            face: null,
-            faceIndex: undefined,
-            uv: undefined,
-            batchId: geometryId,
-            objectId: geometryInfo.objectId
-          })
-        }
+      }
+      if (raycaster.ray.intersectBox(_box, _vector2)) {
+        const distance = raycaster.ray.origin.distanceTo(_vector2)
+        ;(
+          intersects as Array<
+            THREE.Intersection & { batchId?: number; objectId?: string }
+          >
+        ).push({
+          distance,
+          point: _vector2.clone(),
+          object: this,
+          face: null,
+          faceIndex: undefined,
+          uv: undefined,
+          batchId: geometryId,
+          objectId: geometryInfo.objectId
+        })
       }
       return
     }

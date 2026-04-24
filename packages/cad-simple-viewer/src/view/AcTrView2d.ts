@@ -1046,8 +1046,10 @@ export class AcTrView2d extends AcEdBaseView {
   private async batchConvert(entities: AcDbEntity[]) {
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
-      const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
-      if (threeEntity) {
+      try {
+        const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
+        if (!threeEntity) continue
+
         threeEntity.objectId = entity.objectId
         threeEntity.ownerId = entity.ownerId
         threeEntity.layerName = entity.layer
@@ -1069,23 +1071,16 @@ export class AcTrView2d extends AcEdBaseView {
           !(threeEntity as AcTrGroup).isOnTheSameLayer
         ) {
           this.handleGroup(threeEntity as AcTrGroup)
-          this.decreaseNumOfEntitiesToProcess()
         } else {
           const isExtendBbox = !(
             entity instanceof AcDbRay || entity instanceof AcDbXline
           )
 
-          await threeEntity
-            .draw()
-            .then(() => {
-              this._scene.addEntity(threeEntity, isExtendBbox)
-              // Release memory occupied by this entity
-              threeEntity.dispose()
-              this._isDirty = true
-            })
-            .finally(() => {
-              this.decreaseNumOfEntitiesToProcess()
-            })
+          await threeEntity.draw()
+          this._scene.addEntity(threeEntity, isExtendBbox)
+          // Release memory occupied by this entity
+          threeEntity.dispose()
+          this._isDirty = true
         }
 
         if (entity instanceof AcDbViewport) {
@@ -1107,7 +1102,12 @@ export class AcTrView2d extends AcEdBaseView {
           const fileName = entity.imageFileName
           if (fileName) this._missedImages.set(entity.objectId, fileName)
         }
-      } else {
+      } catch (error) {
+        log.error(
+          `[AcTrView2d] Failed to convert entity ${entity.objectId} (${entity.type}):`,
+          error
+        )
+      } finally {
         this.decreaseNumOfEntitiesToProcess()
       }
     }
