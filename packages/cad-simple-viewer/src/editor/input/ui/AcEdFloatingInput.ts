@@ -451,7 +451,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
       const entity = modelSpace.getIdAt(item.id)
       if (!entity) return
 
-      if (item.children) {
+      if (item.children && item.children.length > 0) {
         item.children.forEach(child =>
           this.getOsnapPointsInAvailableModes(entity, osnapPoints, child.id)
         )

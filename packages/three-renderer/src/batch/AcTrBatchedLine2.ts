@@ -543,27 +543,26 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     if (_batchIntersects.length === 0) {
       this.getBoundingBoxAt(geometryId, _box)
       _box.applyMatrix4(this.matrixWorld)
-      if (raycaster.ray.intersectBox(_box, _vector)) {
-        // Verify the intersection point is within the Line threshold
-        const threshold = raycaster.params.Line.threshold
+      const threshold = raycaster.params.Line.threshold
+      if (threshold > 0) {
         _box.expandByScalar(threshold)
-        if (raycaster.ray.intersectBox(_box, _vector2)) {
-          const distance = raycaster.ray.origin.distanceTo(_vector2)
-          ;(
-            intersects as Array<
-              THREE.Intersection & { batchId?: number; objectId?: string }
-            >
-          ).push({
-            distance,
-            point: _vector2.clone(),
-            object: this,
-            face: null,
-            faceIndex: undefined,
-            uv: undefined,
-            batchId: geometryId,
-            objectId: geometryInfo.objectId
-          })
-        }
+      }
+      if (raycaster.ray.intersectBox(_box, _vector2)) {
+        const distance = raycaster.ray.origin.distanceTo(_vector2)
+        ;(
+          intersects as Array<
+            THREE.Intersection & { batchId?: number; objectId?: string }
+          >
+        ).push({
+          distance,
+          point: _vector2.clone(),
+          object: this,
+          face: null,
+          faceIndex: undefined,
+          uv: undefined,
+          batchId: geometryId,
+          objectId: geometryInfo.objectId
+        })
       }
       geometry.dispose()
       return
