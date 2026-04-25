@@ -42,7 +42,8 @@ import {
   AcEdSpatialQueryResultItemEx,
   AcEdViewMode,
   applyUiThemeFromBackground,
-  eventBus
+  eventBus,
+  resolvePointerSelectionAction
 } from '../editor'
 import { AcTrGeometryUtil } from '../util'
 import { AcTrLayoutView } from './AcTrLayoutView'
@@ -261,7 +262,7 @@ export class AcTrView2d extends AcEdBaseView {
       const height = Math.abs(p1.y - p2.y)
 
       const mode = this.getSelectionMode(selectionStartCanvas, curCanvas)
-      const action = this.getSelectionActionFromEvent(e)
+      const action = this.getPointerSelectionAction(e)
       const style = this.getSelectionPreviewStyle(mode, action)
 
       Object.assign(selectionPreviewEl.style, {
@@ -285,7 +286,7 @@ export class AcTrView2d extends AcEdBaseView {
       const endWcs = this.screenToWorld(endCanvas)
       clearSelectionPreview()
 
-      const action = this.getSelectionActionFromEvent(e)
+      const action = this.getPointerSelectionAction(e)
 
       if (this.isSelectionClick(selectionStartCanvas, endCanvas)) {
         const picked = this.pick(endWcs)
@@ -363,6 +364,10 @@ export class AcTrView2d extends AcEdBaseView {
     this._isDirty = true
     this.startAnimationLoop()
     this._numOfEntitiesToProcess = 0
+  }
+
+  private getPointerSelectionAction(e: MouseEvent) {
+    return resolvePointerSelectionAction(e)
   }
 
   /**

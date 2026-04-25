@@ -144,15 +144,10 @@ export class AcTrStyleManager {
   /**
    * Returns a fill material for MText glyph geometry.
    *
-   * MText glyphs are rendered as mesh fills, so they share the
-   * `AcTrFillMaterialManager` with hatches — but the two have
-   * opposite COLORTHEME semantics: text must stay legible against
-   * the theme background (invert ACI 7 with the theme), whereas
-   * hatches keep their resolved RGB in both themes.  This method
-   * sets the `isTextFill` option so the fill manager opts the
-   * resulting material into `changeForeground` inversion AND
-   * keeps it in a separate cache slot from any hatch that happens
-   * to share colour + layer.
+   * MText glyphs are rendered as mesh fills, so they share the fill
+   * manager with hatches and wide polylines. Their distinction now
+   * lives on `traits.drawOrder`: normal linework-tier fills stay at
+   * `0`, while hatches set `-1` upstream.
    *
    * @param traits - Current entity traits (built via
    *                 `AcTrSubEntityTraitsUtil.createTraitsForMText`).
@@ -165,8 +160,7 @@ export class AcTrStyleManager {
     rebaseOffset: THREE.Vector2 = _rebaseOffset
   ): THREE.Material {
     return this.fillMgr.getMaterial(traits, {
-      rebaseOffset,
-      isTextFill: true
+      rebaseOffset
     })
   }
 

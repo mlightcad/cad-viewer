@@ -41,7 +41,10 @@
       class="ml-entity-properties-table"
     >
       <!-- Label -->
-      <el-table-column prop="name">
+      <el-table-column
+        prop="name"
+        :show-overflow-tooltip="{ placement: 'top-start', showAfter: 2000 }"
+      >
         <template #default="{ row }">
           <div class="ml-cell-container">
             <div :class="['ml-cell-label', { 'ml-group-row': row.isGroup }]">
@@ -464,11 +467,15 @@ function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
 .ml-cell-container {
   display: flex;
   align-items: center;
+  width: 100%;
+  min-width: 0;
   line-height: 1;
 }
 
 .ml-cell-label {
   font-weight: normal;
+  width: 100%;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

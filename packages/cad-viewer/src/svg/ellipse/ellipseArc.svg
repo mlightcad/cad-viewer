@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-<rect x="9" y="9" width="2" height="2"></rect>
-<rect x="9" y="15" width="2" height="2"></rect>
-<rect x="1" y="9" width="2" height="2"></rect>
-<path d="M10.14,3.4c-3.15,0-5.88,1.34-7.31,3.3h1.01c1.36-1.5,3.67-2.5,6.31-2.5,4.19,0,7.6,2.51,7.6,5.6,0,2.26-1.82,4.2-4.44,5.09v.83c3.07-.95,5.24-3.24,5.24-5.92,0-3.53-3.77-6.4-8.4-6.4Z"></path>
-<path d="M3.07,7c1.38-1.79,3.97-3,6.93-3,4.42,0,8,2.69,8,6,0,2.52-2.07,4.67-5,5.56"></path>
+<rect x="9" y="9" width="2" height="2" fill="var(--el-color-primary)"></rect>
+<rect x="9" y="15" width="2" height="2" fill="var(--el-color-primary)"></rect>
+<rect x="1" y="9" width="2" height="2" fill="var(--el-color-primary)"></rect>
+<path d="M10.14,3.4c-3.15,0-5.88,1.34-7.31,3.3h1.01c1.36-1.5,3.67-2.5,6.31-2.5,4.19,0,7.6,2.51,7.6,5.6,0,2.26-1.82,4.2-4.44,5.09v.83c3.07-.95,5.24-3.24,5.24-5.92,0-3.53-3.77-6.4-8.4-6.4Z" fill="none" stroke="currentColor" stroke-width="1"></path>
+<path d="M3.07,7c1.38-1.79,3.97-3,6.93-3,4.42,0,8,2.69,8,6,0,2.52-2.07,4.67-5,5.56" fill="none" stroke="currentColor" stroke-width="1"></path>
 </svg>

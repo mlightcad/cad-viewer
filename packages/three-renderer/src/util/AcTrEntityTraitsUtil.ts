@@ -29,7 +29,8 @@ export class AcTrSubEntityTraitsUtil {
       },
       transparency: new AcCmTransparency(),
       thickness: 0,
-      layer: '0'
+      layer: '0',
+      drawOrder: 0
     }
   }
 
@@ -57,7 +58,8 @@ export class AcTrSubEntityTraitsUtil {
       },
       transparency: new AcCmTransparency(),
       thickness: 0,
-      layer: colorSettings.layer ?? '0'
+      layer: colorSettings.layer ?? '0',
+      drawOrder: 0
     }
   }
 }

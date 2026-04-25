@@ -23,14 +23,9 @@ class AcTrMTextStyleManager implements StyleManager {
 
   getMeshBasicMaterial(traits: ColorSettings): THREE.Material {
     const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(traits)
-    // Route MText glyph fills through `getMTextFillMaterial` so they
-    // keep COLORTHEME inversion (ACI 7 text must stay legible) while
-    // hatch / solid area fills go through `getFillMaterial` and skip
-    // the inversion (AutoCAD keeps ACI 7 hatches at their resolved
-    // RGB regardless of theme).  Using the dedicated method also
-    // partitions the material cache so text glyphs never share a
-    // material with a hatch that happens to have matching colour and
-    // layer.
+    // Route MText glyph fills through the dedicated helper so their
+    // linework-tier `drawOrder` semantics stay explicit even though
+    // they are rasterized as meshes.
     return this._styleManager.getMTextFillMaterial(entityTraits)
   }
 

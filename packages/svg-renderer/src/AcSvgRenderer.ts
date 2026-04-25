@@ -56,7 +56,8 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
       },
       transparency: new AcCmTransparency(),
       thickness: 0,
-      layer: '0'
+      layer: '0',
+      drawOrder: 0
     }
   }
 

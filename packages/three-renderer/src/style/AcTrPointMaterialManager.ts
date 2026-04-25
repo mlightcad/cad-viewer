@@ -22,9 +22,10 @@ export class AcTrPointMaterialManager extends AcTrMaterialManager<AcTrPointMater
     options: AcTrPointMaterialOptions
   ): string {
     const size = options.size ?? 1
+    const drawOrderSuffix = this.buildDrawOrderSuffix(traits)
     return this.hasByLayerKeyTraits(traits)
-      ? `layer_${traits.layer}_${traits.rgbColor}_${size}`
-      : `entity_${traits.rgbColor}_${size}`
+      ? `layer_${traits.layer}_${traits.rgbColor}_${size}${drawOrderSuffix}`
+      : `entity_${traits.rgbColor}_${size}${drawOrderSuffix}`
   }
 
   /** Returns true if color is ByLayer. */

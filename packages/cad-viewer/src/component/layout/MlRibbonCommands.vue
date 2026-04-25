@@ -80,7 +80,7 @@ import {
   measureArea,
   measureDistance,
   move,
-  pointstyle1,
+  multiPoints,
   polygon,
   polyline,
   properties,
@@ -89,7 +89,7 @@ import {
   revCloud,
   revFreeDraw,
   revRect,
-  spline
+  splineFitPoints
 } from '../../svg'
 import {
   MlLayerSelect,
@@ -689,14 +689,14 @@ const buildBaseTabs = (
               type: 'button',
               label: t('main.ribbon.command.spline'),
               tooltip: ribbonTooltips.spline,
-              props: { icon: spline }
+              props: { icon: splineFitPoints }
             },
             {
               id: 'cmd-point',
               type: 'button',
               label: t('main.ribbon.command.point'),
               tooltip: ribbonTooltips.point,
-              props: { icon: pointstyle1 }
+              props: { icon: multiPoints }
             }
           ],
           collections: [
