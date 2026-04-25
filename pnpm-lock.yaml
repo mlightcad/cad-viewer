@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@mlightcad/data-model': ^1.7.24
-  '@mlightcad/libredwg-converter': ^3.5.24
+  '@mlightcad/data-model': ^1.7.25
+  '@mlightcad/libredwg-converter': ^3.5.25
   '@mlightcad/mtext-renderer': ^0.10.7
   element-plus: ^2.12.0
   three: ^0.172.0
@@ -105,11 +105,11 @@ importers:
   packages/cad-simple-viewer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.24
-        version: 1.7.24
+        specifier: ^1.7.25
+        version: 1.7.25
       '@mlightcad/libredwg-converter':
-        specifier: ^3.5.24
-        version: 3.5.24(@mlightcad/data-model@1.7.24)
+        specifier: ^3.5.25
+        version: 3.5.25(@mlightcad/data-model@1.7.25)
       lodash-es:
         specifier: 4.17.21
         version: 4.17.21
@@ -154,8 +154,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.24
-        version: 1.7.24
+        specifier: ^1.7.25
+        version: 1.7.25
 
   packages/cad-viewer:
     dependencies:
@@ -166,8 +166,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.24
-        version: 1.7.24
+        specifier: ^1.7.25
+        version: 1.7.25
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.3.0(vue@3.5.31(typescript@5.9.3))
@@ -239,8 +239,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-viewer
       '@mlightcad/data-model':
-        specifier: ^1.7.24
-        version: 1.7.24
+        specifier: ^1.7.25
+        version: 1.7.25
       element-plus:
         specifier: ^2.12.0
         version: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
@@ -294,14 +294,14 @@ importers:
   packages/svg-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.24
-        version: 1.7.24
+        specifier: ^1.7.25
+        version: 1.7.25
 
   packages/three-renderer:
     dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.7.24
-        version: 1.7.24
+        specifier: ^1.7.25
+        version: 1.7.25
       '@mlightcad/mtext-renderer':
         specifier: ^0.10.7
         version: 0.10.7(three@0.172.0)
@@ -1365,30 +1365,30 @@ packages:
   '@microsoft/tsdoc@0.16.0':
     resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
 
-  '@mlightcad/common@1.4.24':
-    resolution: {integrity: sha512-PWlSxdBWEne/wSz43jibEIJ8/uj40XDum9TZjQ1HWPeD2zp/xv63sr9PblZFhNEUnuQ3bSnnQjcD99z5+oZJVQ==}
+  '@mlightcad/common@1.4.25':
+    resolution: {integrity: sha512-Lowyt6cHJn7sX1+zreiOgMPokMBrfQBKUTrAUvTpRiNd6aMQtgVGpgjG70WllDGLCXi5M9xEopRff7JUYZCe5g==}
 
-  '@mlightcad/data-model@1.7.24':
-    resolution: {integrity: sha512-sp/zxSFqeVvbNLL9St2LKxf25yqa2z4rZRPb8m73gI0DoWVuanKJpsVG9dO4BuQddBhBUbbHCMBbS3KFma7y9Q==}
+  '@mlightcad/data-model@1.7.25':
+    resolution: {integrity: sha512-3BFTrQ53sWcp9lS4KVZ7n8TGJfF3NqrIGKwt2F5+6phJHSDvqyCbVZh4dAgncbgnE3e2SvjkQX9Ck46G9e0h+Q==}
 
   '@mlightcad/dxf-json@1.1.3':
     resolution: {integrity: sha512-XslMIrowLI9VOs84/x4SmcsKSdNxSSGyEVrhJTFiSsB3CghtU2tzOmvDoCHCPa4jYCmYkQ1GK/rgQ+89wXXPgw==}
 
-  '@mlightcad/geometry-engine@3.2.24':
-    resolution: {integrity: sha512-/q0//UwMFsjzYfh4DQ+MMI65hWJ0Zn6zLTe706XyIHw43d8g3YyENu5mGoXkv7FIkoz7UIW+G2vAY/23Exhfbg==}
+  '@mlightcad/geometry-engine@3.2.25':
+    resolution: {integrity: sha512-NCockKrpUJTtJRNJCnK1RP2CXYRl4R1aPUiUTHCc1EQlK3j1Yds+zBp7P1XwMWuJIlD8YdhbgXtwTWY+/3mUOA==}
     peerDependencies:
-      '@mlightcad/common': 1.4.24
+      '@mlightcad/common': 1.4.25
 
-  '@mlightcad/graphic-interface@3.3.24':
-    resolution: {integrity: sha512-aLhBKQlPlVs8qvyK+MCV1qVcGM0SNlwMzr1qzRgb7fcul33Jk94NMlwB5Z3MAXtXfcfMTY8g0g84i3x+ZsV4cQ==}
+  '@mlightcad/graphic-interface@3.3.25':
+    resolution: {integrity: sha512-v5lGzaox1DImnMoJSgfPxrEW/hUWOgCQxJ4U9LNax3IEHuSZFq9uDdd5eVj7KgWcrLUkPAykS9jvFSeAkSTZCg==}
     peerDependencies:
-      '@mlightcad/common': 1.4.24
-      '@mlightcad/geometry-engine': 3.2.24
+      '@mlightcad/common': 1.4.25
+      '@mlightcad/geometry-engine': 3.2.25
 
-  '@mlightcad/libredwg-converter@3.5.24':
-    resolution: {integrity: sha512-hMzYvMrwCdvQeilKZJ12HSZhPf2ruLI++rTsErKnQ7+zpw4exhAC/g01N4OTaFEgvkiTziosZq3Gbl2qGzt+Tg==}
+  '@mlightcad/libredwg-converter@3.5.25':
+    resolution: {integrity: sha512-zD+xxZRj8oVQ0BYbWAp1gfITYVYqSCuvP6Nj318PkXCknfzOzNyghvqSeq3ghoZ+VP37WHw1QUracQnZjbx1/w==}
     peerDependencies:
-      '@mlightcad/data-model': ^1.7.24
+      '@mlightcad/data-model': ^1.7.25
 
   '@mlightcad/libredwg-web@0.7.0':
     resolution: {integrity: sha512-x58HIOaRGskAk143hhJwuT8Gw2Gker7qLfrHFJZsNrSSpD7wLwuuZIdfGD0VZMlzq2/PmQoTJFKqIM4Qp+ptJw==}
@@ -1500,28 +1500,24 @@ packages:
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@nx/nx-linux-arm64-musl@19.3.1':
     resolution: {integrity: sha512-JMuBbg2Zqdz4N7i+hiJGr2QdsDarDZ8vyzzeoevFq3b8nhZfqKh/lno7+Y0WkXNpH7aT05GHaUA1r1NXf/5BeQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@nx/nx-linux-x64-gnu@19.3.1':
     resolution: {integrity: sha512-cVmDMtolaqK7PziWxvjus1nCyj2wMNM+N0/4+rBEjG4v47gTtBxlZJoxK02jApdV+XELehsTjd0Z/xVfO4Rl1Q==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@nx/nx-linux-x64-musl@19.3.1':
     resolution: {integrity: sha512-UGujK/TLMz9TNJ6+6HLhoOV7pdlgPVosSyeNZcoXCHOg/Mg9NGM7Hgk9jDodtcAY+TP6QMDJIMVGuXBsCE7NLQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@nx/nx-win32-arm64-msvc@19.3.1':
     resolution: {integrity: sha512-q+2aaRXarh/+HOOW/JXRwEnEEwPdGipsfzXBPDuDDJ7aOYKuyG7g1DlSERKdzI/aEBP+joneZbcbZHaDcEv2xw==}
@@ -1567,42 +1563,36 @@ packages:
     engines: {node: '>= 10.0.0'}
     cpu: [arm]
     os: [linux]
-    libc: [glibc]
 
   '@parcel/watcher-linux-arm-musl@2.5.6':
     resolution: {integrity: sha512-Ve3gUCG57nuUUSyjBq/MAM0CzArtuIOxsBdQ+ftz6ho8n7s1i9E1Nmk/xmP323r2YL0SONs1EuwqBp2u1k5fxg==}
     engines: {node: '>= 10.0.0'}
     cpu: [arm]
     os: [linux]
-    libc: [musl]
 
   '@parcel/watcher-linux-arm64-glibc@2.5.6':
     resolution: {integrity: sha512-f2g/DT3NhGPdBmMWYoxixqYr3v/UXcmLOYy16Bx0TM20Tchduwr4EaCbmxh1321TABqPGDpS8D/ggOTaljijOA==}
     engines: {node: '>= 10.0.0'}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@parcel/watcher-linux-arm64-musl@2.5.6':
     resolution: {integrity: sha512-qb6naMDGlbCwdhLj6hgoVKJl2odL34z2sqkC7Z6kzir8b5W65WYDpLB6R06KabvZdgoHI/zxke4b3zR0wAbDTA==}
     engines: {node: '>= 10.0.0'}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@parcel/watcher-linux-x64-glibc@2.5.6':
     resolution: {integrity: sha512-kbT5wvNQlx7NaGjzPFu8nVIW1rWqV780O7ZtkjuWaPUgpv2NMFpjYERVi0UYj1msZNyCzGlaCWEtzc+exjMGbQ==}
     engines: {node: '>= 10.0.0'}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@parcel/watcher-linux-x64-musl@2.5.6':
     resolution: {integrity: sha512-1JRFeC+h7RdXwldHzTsmdtYR/Ku8SylLgTU/reMuqdVD7CtLwf0VR1FqeprZ0eHQkO0vqsbvFLXUmYm/uNKJBg==}
     engines: {node: '>= 10.0.0'}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@parcel/watcher-win32-arm64@2.5.6':
     resolution: {integrity: sha512-3ukyebjc6eGlw9yRt678DxVF7rjXatWiHvTXqphZLvo7aC5NdEgFufVwjFfY51ijYEWpXbqF5jtrK275z52D4Q==}
@@ -1686,79 +1676,66 @@ packages:
     resolution: {integrity: sha512-L+34Qqil+v5uC0zEubW7uByo78WOCIrBvci69E7sFASRl0X7b/MB6Cqd1lky/CtcSVTydWa2WZwFuWexjS5o6g==}
     cpu: [arm]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-arm-musleabihf@4.60.1':
     resolution: {integrity: sha512-n83O8rt4v34hgFzlkb1ycniJh7IR5RCIqt6mz1VRJD6pmhRi0CXdmfnLu9dIUS6buzh60IvACM842Ffb3xd6Gg==}
     cpu: [arm]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-arm64-gnu@4.60.1':
     resolution: {integrity: sha512-Nql7sTeAzhTAja3QXeAI48+/+GjBJ+QmAH13snn0AJSNL50JsDqotyudHyMbO2RbJkskbMbFJfIJKWA6R1LCJQ==}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-arm64-musl@4.60.1':
     resolution: {integrity: sha512-+pUymDhd0ys9GcKZPPWlFiZ67sTWV5UU6zOJat02M1+PiuSGDziyRuI/pPue3hoUwm2uGfxdL+trT6Z9rxnlMA==}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-loong64-gnu@4.60.1':
     resolution: {integrity: sha512-VSvgvQeIcsEvY4bKDHEDWcpW4Yw7BtlKG1GUT4FzBUlEKQK0rWHYBqQt6Fm2taXS+1bXvJT6kICu5ZwqKCnvlQ==}
     cpu: [loong64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-loong64-musl@4.60.1':
     resolution: {integrity: sha512-4LqhUomJqwe641gsPp6xLfhqWMbQV04KtPp7/dIp0nzPxAkNY1AbwL5W0MQpcalLYk07vaW9Kp1PBhdpZYYcEw==}
     cpu: [loong64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-ppc64-gnu@4.60.1':
     resolution: {integrity: sha512-tLQQ9aPvkBxOc/EUT6j3pyeMD6Hb8QF2BTBnCQWP/uu1lhc9AIrIjKnLYMEroIz/JvtGYgI9dF3AxHZNaEH0rw==}
     cpu: [ppc64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-ppc64-musl@4.60.1':
     resolution: {integrity: sha512-RMxFhJwc9fSXP6PqmAz4cbv3kAyvD1etJFjTx4ONqFP9DkTkXsAMU4v3Vyc5BgzC+anz7nS/9tp4obsKfqkDHg==}
     cpu: [ppc64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-riscv64-gnu@4.60.1':
     resolution: {integrity: sha512-QKgFl+Yc1eEk6MmOBfRHYF6lTxiiiV3/z/BRrbSiW2I7AFTXoBFvdMEyglohPj//2mZS4hDOqeB0H1ACh3sBbg==}
     cpu: [riscv64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-riscv64-musl@4.60.1':
     resolution: {integrity: sha512-RAjXjP/8c6ZtzatZcA1RaQr6O1TRhzC+adn8YZDnChliZHviqIjmvFwHcxi4JKPSDAt6Uhf/7vqcBzQJy0PDJg==}
     cpu: [riscv64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-s390x-gnu@4.60.1':
     resolution: {integrity: sha512-wcuocpaOlaL1COBYiA89O6yfjlp3RwKDeTIA0hM7OpmhR1Bjo9j31G1uQVpDlTvwxGn2nQs65fBFL5UFd76FcQ==}
     cpu: [s390x]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-x64-gnu@4.60.1':
     resolution: {integrity: sha512-77PpsFQUCOiZR9+LQEFg9GClyfkNXj1MP6wRnzYs0EeWbPcHs02AXu4xuUbM1zhwn3wqaizle3AEYg5aeoohhg==}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-x64-musl@4.60.1':
     resolution: {integrity: sha512-5cIATbk5vynAjqqmyBjlciMJl1+R/CwX9oLk/EyiFXDWd95KpHdrOJT//rnUl4cUcskrd0jCCw3wpZnhIHdD9w==}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-openbsd-x64@4.60.1':
     resolution: {integrity: sha512-cl0w09WsCi17mcmWqqglez9Gk8isgeWvoUZ3WiJFYSR3zjBQc2J5/ihSjpl+VLjPqjQ/1hJRcqBfLjssREQILw==}
@@ -6152,16 +6129,16 @@ snapshots:
 
   '@microsoft/tsdoc@0.16.0': {}
 
-  '@mlightcad/common@1.4.24':
+  '@mlightcad/common@1.4.25':
     dependencies:
       loglevel: 1.9.2
 
-  '@mlightcad/data-model@1.7.24':
+  '@mlightcad/data-model@1.7.25':
     dependencies:
-      '@mlightcad/common': 1.4.24
+      '@mlightcad/common': 1.4.25
       '@mlightcad/dxf-json': 1.1.3
-      '@mlightcad/geometry-engine': 3.2.24(@mlightcad/common@1.4.24)
-      '@mlightcad/graphic-interface': 3.3.24(@mlightcad/common@1.4.24)(@mlightcad/geometry-engine@3.2.24(@mlightcad/common@1.4.24))
+      '@mlightcad/geometry-engine': 3.2.25(@mlightcad/common@1.4.25)
+      '@mlightcad/graphic-interface': 3.3.25(@mlightcad/common@1.4.25)(@mlightcad/geometry-engine@3.2.25(@mlightcad/common@1.4.25))
       iconv-lite: 0.7.2
       uid: 2.0.2
 
@@ -6169,18 +6146,18 @@ snapshots:
     dependencies:
       '@fxts/core': 1.26.0
 
-  '@mlightcad/geometry-engine@3.2.24(@mlightcad/common@1.4.24)':
+  '@mlightcad/geometry-engine@3.2.25(@mlightcad/common@1.4.25)':
     dependencies:
-      '@mlightcad/common': 1.4.24
+      '@mlightcad/common': 1.4.25
 
-  '@mlightcad/graphic-interface@3.3.24(@mlightcad/common@1.4.24)(@mlightcad/geometry-engine@3.2.24(@mlightcad/common@1.4.24))':
+  '@mlightcad/graphic-interface@3.3.25(@mlightcad/common@1.4.25)(@mlightcad/geometry-engine@3.2.25(@mlightcad/common@1.4.25))':
     dependencies:
-      '@mlightcad/common': 1.4.24
-      '@mlightcad/geometry-engine': 3.2.24(@mlightcad/common@1.4.24)
+      '@mlightcad/common': 1.4.25
+      '@mlightcad/geometry-engine': 3.2.25(@mlightcad/common@1.4.25)
 
-  '@mlightcad/libredwg-converter@3.5.24(@mlightcad/data-model@1.7.24)':
+  '@mlightcad/libredwg-converter@3.5.25(@mlightcad/data-model@1.7.25)':
     dependencies:
-      '@mlightcad/data-model': 1.7.24
+      '@mlightcad/data-model': 1.7.25
       '@mlightcad/libredwg-web': 0.7.0
 
   '@mlightcad/libredwg-web@0.7.0': {}

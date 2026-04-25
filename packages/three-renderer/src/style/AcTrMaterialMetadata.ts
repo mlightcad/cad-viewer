@@ -33,8 +33,8 @@ export interface AcTrMaterialMetadata extends AcTrByLayerBindingFlags {
   isForeground: boolean
   /** True when fill should be repainted with current canvas background. */
   isBackgroundFill?: boolean
-  /** True when fill material is created for text glyph mesh rendering. */
-  isTextFill?: boolean
+  /** Explicit render-order tier for the batch that owns this material. */
+  drawOrder?: number
   /** Culling side used by fill materials. Present only when explicitly set. */
   side?: 'front' | 'back'
 }

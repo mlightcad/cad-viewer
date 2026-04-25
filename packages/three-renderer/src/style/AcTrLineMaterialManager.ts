@@ -35,16 +35,17 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     const hasByLayerKeyTraits = this.hasByLayerKeyTraits(traits)
     const lineWidth = this.resolveLineWidth(traits.lineWeight)
     const mode = this.getMaterialMode(traits, options)
+    const drawOrderSuffix = this.buildDrawOrderSuffix(traits)
 
     if (mode === 'shader') {
       return hasByLayerKeyTraits
-        ? `layer_${mode}_${traits.layer}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}_${lineWidth}`
-        : `entity_${mode}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}_${lineWidth}`
+        ? `layer_${mode}_${traits.layer}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}_${lineWidth}${drawOrderSuffix}`
+        : `entity_${mode}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}_${lineWidth}${drawOrderSuffix}`
     }
 
     return hasByLayerKeyTraits
-      ? `layer_${mode}_${traits.layer}_${traits.rgbColor}_${lineWidth}`
-      : `entity_${mode}_${traits.rgbColor}_${lineWidth}`
+      ? `layer_${mode}_${traits.layer}_${traits.rgbColor}_${lineWidth}${drawOrderSuffix}`
+      : `entity_${mode}_${traits.rgbColor}_${lineWidth}${drawOrderSuffix}`
   }
 
   /** Returns true if a shader material is required. */

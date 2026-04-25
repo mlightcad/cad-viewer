@@ -357,6 +357,7 @@ export abstract class AcTrMaterialManager<T> {
    *   - isByLayerColor/isByLayerLineType/isByLayerLineWeight/isByLayerTransparency
    *   - isForeground      (inverts with COLORTHEME when tracked by manager)
    *   - isBackgroundFill  (follows canvas bg when tracked by manager)
+   *   - drawOrder         (batch/render-order tier for same-plane meshes)
    *   - materialKey (cache key, used by getBackSideVariant for reverse lookup)
    *
    * `isForeground` and `isBackgroundFill` are mutually exclusive in
@@ -401,6 +402,7 @@ export abstract class AcTrMaterialManager<T> {
       isByLayerTransparency: resolvedByLayerBindings.isByLayerTransparency,
       isForeground,
       isBackgroundFill,
+      drawOrder: traits.drawOrder ?? 0,
       materialKey: key
     })
 
@@ -428,10 +430,10 @@ export abstract class AcTrMaterialManager<T> {
    * / light stroke on dark background).
    *
    * Subclasses can override this to opt a primitive type out of the
-   * inversion — `AcTrFillMaterialManager` uses `options.isTextFill`
-   * to distinguish text glyph fills (invert) from hatch/solid area
-   * fills (do NOT invert — AutoCAD keeps ACI 7 hatches at their
-   * resolved RGB in both themes).
+   * inversion. `AcTrFillMaterialManager` overrides this and uses
+   * `traits.drawOrder` to distinguish text / line-like fills
+   * (invert) from hatch fills (do NOT invert — AutoCAD keeps
+   * ACI 7 hatches fused with the paper colour).
    */
   protected shouldTrackForeground(
     traits: AcGiSubEntityTraits,
@@ -459,6 +461,18 @@ export abstract class AcTrMaterialManager<T> {
     _options: T
   ): boolean {
     return false
+  }
+
+  /**
+   * Cache-key suffix used to keep different render tiers from sharing
+   * the same material instance.
+   *
+   * This matters for mesh primitives because batching groups by
+   * material id. If two entities need different `renderOrder` values,
+   * they must not collapse onto the same cached material.
+   */
+  protected buildDrawOrderSuffix(traits: AcGiSubEntityTraits): string {
+    return traits.drawOrder === 0 ? '' : `_draw_${traits.drawOrder ?? 0}`
   }
 
   /** Subclass must build stable key. */

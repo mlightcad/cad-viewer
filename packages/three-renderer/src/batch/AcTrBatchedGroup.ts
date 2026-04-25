@@ -4,6 +4,7 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
+import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMaterialUtil } from '../util'
 import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
@@ -694,33 +695,20 @@ export class AcTrBatchedGroup extends THREE.Group {
     const batches = this.getMatchedMeshBatches(object)
     let batchedMesh = batches.get(material.id)
     if (batchedMesh == null) {
+      const metadata = getMaterialMetadata(material)
+      const drawOrder = metadata.drawOrder ?? 0
       batchedMesh = new AcTrBatchedMesh(
         AcTrBatchedGroup.INITIAL_MESH_VERTEX_CAPACITY,
         AcTrBatchedGroup.INITIAL_MESH_INDEX_CAPACITY,
         material
       )
-      // Draw-order tiering by primitive type, matching AutoCAD's
-      // default SortentsTable behaviour:
-      //
-      //   renderOrder = -1  → hatch / solid area fills
-      //   renderOrder =  0  → lines, points, text glyph meshes (default)
-      //
       // All CAD geometry lives on the same Z plane, so depth test alone
-      // cannot decide which primitive wins on a shared pixel.  Without
-      // explicit `renderOrder`, THREE sorts opaque objects by material
-      // id — effectively random — and white HATCH fills end up painted
-      // over BYLAYER outlines (tower DWG: interior floor divisions were
-      // invisible in both light and dark themes because the fills were
-      // drawn after the lines).
-      //
-      // Text glyphs are meshes too but must stay ABOVE lines, so they
-      // keep the default `0`.  They are distinguished from hatches via
-      // `material.userData.isTextFill`, stamped by
-      // `AcTrFillMaterialManager.createMaterialImpl` when the MText
-      // renderer requests a fill material via `getMTextFillMaterial`.
-      if (!material.userData.isTextFill) {
-        batchedMesh.renderOrder = -1
-      }
+      // cannot decide which primitive wins on a shared pixel. Use the
+      // material's explicit draw-order tier, derived from
+      // `AcGiSubEntityTraits.drawOrder`, so hatch fills sit below
+      // linework while wide polylines and text glyph meshes stay at the
+      // normal linework tier.
+      batchedMesh.renderOrder = drawOrder
       batches.set(material.id, batchedMesh)
       this.add(batchedMesh)
     }

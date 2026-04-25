@@ -88,4 +88,42 @@ describe('AcTrStyleManager', () => {
 
     expect(refreshed.color.getHex()).toBe(0xffff00)
   })
+
+  it('separates hatch fills from linework-tier fill meshes via drawOrder', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0xffffff
+
+    const hatchTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    hatchTraits.layer = 'A-WALL'
+    hatchTraits.color = new AcCmColor().setForeground()
+    hatchTraits.rgbColor = 0xffffff
+    hatchTraits.drawOrder = -1
+
+    const lineworkFillTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    lineworkFillTraits.layer = 'A-WALL'
+    lineworkFillTraits.color = new AcCmColor().setForeground()
+    lineworkFillTraits.rgbColor = 0xffffff
+    lineworkFillTraits.drawOrder = 0
+
+    const hatchMaterial = styleManager.getFillMaterial(
+      hatchTraits
+    ) as THREE.MeshBasicMaterial
+    const lineworkFillMaterial = styleManager.getFillMaterial(
+      lineworkFillTraits
+    ) as THREE.MeshBasicMaterial
+
+    expect(hatchMaterial).not.toBe(lineworkFillMaterial)
+
+    const hatchMetadata = getMaterialMetadata(hatchMaterial)
+    expect(hatchMetadata.drawOrder).toBe(-1)
+    expect(hatchMetadata.isBackgroundFill).toBe(true)
+    expect(hatchMetadata.isForeground).toBe(false)
+    expect(hatchMaterial.color.getHex()).toBe(0xffffff)
+
+    const lineworkFillMetadata = getMaterialMetadata(lineworkFillMaterial)
+    expect(lineworkFillMetadata.drawOrder).toBe(0)
+    expect(lineworkFillMetadata.isForeground).toBe(true)
+    expect(lineworkFillMetadata.isBackgroundFill).toBe(false)
+    expect(lineworkFillMaterial.color.getHex()).toBe(0x000000)
+  })
 })

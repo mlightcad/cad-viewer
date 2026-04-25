@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+<path d="M3 17C3.7 15.2 5.3 6.5 7 6C8.7 5.5 11.3 14.5 13 14C14.7 13.5 16.3 5 17 3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="12" y="13" width="2" height="2" fill="var(--el-color-primary)"></rect>
+<rect x="6" y="5" width="2" height="2" fill="var(--el-color-primary)"></rect>
+<rect x="16" y="2" width="2" height="2" fill="var(--el-color-primary)"></rect>
+<rect x="2" y="16" width="2" height="2" fill="var(--el-color-primary)"></rect>
+</svg>

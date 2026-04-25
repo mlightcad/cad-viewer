@@ -15,6 +15,10 @@ import { debounce } from 'lodash-es'
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
 import { AcEdHoverController } from './AcEdHoverController'
+import {
+  AcEdSelectionAction,
+  resolveSelectionActionFromEvent
+} from './AcEdSelectionAction'
 import { AcEdSpatialQueryResultItemEx } from './AcEdSpatialQueryResult'
 
 /**
@@ -119,14 +123,11 @@ export enum AcEdViewMode {
  */
 export type AcEdSelectionMode = 'window' | 'crossing'
 
-/**
- * Selection modification action.
- *
- * - replace: replace current selection with new ids
- * - add: add ids to current selection
- * - remove: remove ids from current selection
- */
-export type AcEdSelectionAction = 'replace' | 'add' | 'remove'
+export type { AcEdSelectionAction } from './AcEdSelectionAction'
+export {
+  resolvePointerSelectionAction,
+  resolveSelectionActionFromEvent
+} from './AcEdSelectionAction'
 
 /**
  * Represents missed data when rendering entities in the drawing
@@ -659,9 +660,7 @@ export abstract class AcEdBaseView {
     e: MouseEvent,
     defaultAction: AcEdSelectionAction = 'replace'
   ): AcEdSelectionAction {
-    if (e.shiftKey) return 'remove'
-    if (e.ctrlKey || e.metaKey) return 'add'
-    return defaultAction
+    return resolveSelectionActionFromEvent(e, defaultAction)
   }
 
   /**
