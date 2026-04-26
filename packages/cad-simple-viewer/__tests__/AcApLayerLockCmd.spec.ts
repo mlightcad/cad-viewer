@@ -48,6 +48,7 @@ jest.mock('../src/i18n', () => ({
 
 import { AcApDocManager } from '../src/app'
 import { AcApLayerLockCmd } from '../src/command/layer/AcApLayerLockCmd'
+import { AcEdPromptStatus } from '../src/editor'
 
 interface TestLayer {
   name: string
@@ -105,8 +106,11 @@ describe('AcApLayerLockCmd', () => {
     const { clear, context } = createContext(new Map([[layer.name, layer]]))
     const getEntity = jest.mocked(AcApDocManager.instance.editor.getEntity)
     getEntity
-      .mockResolvedValueOnce({ status: 'OK', objectId: 'entity-1' })
-      .mockResolvedValueOnce({ status: 'None' })
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
+        objectId: 'entity-1'
+      })
+      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
 
     const cmd = new AcApLayerLockCmd()
     await cmd.execute(context as never)
@@ -130,8 +134,11 @@ describe('AcApLayerLockCmd', () => {
     const { clear, context } = createContext(new Map([[layer.name, layer]]))
     jest
       .mocked(AcApDocManager.instance.editor.getEntity)
-      .mockResolvedValueOnce({ status: 'OK', objectId: 'entity-1' })
-      .mockResolvedValueOnce({ status: 'None' })
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
+        objectId: 'entity-1'
+      })
+      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
 
     const cmd = new AcApLayerLockCmd()
     await cmd.execute(context as never)

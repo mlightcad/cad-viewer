@@ -432,6 +432,12 @@ export default {
     alreadyThawed: '所有图层都已经解冻。',
     thawed: '已解冻图层数量'
   },
+  layuniso: {
+    noPrevious: '没有可恢复的上一次 LAYISO 图层状态。',
+    layerNotFound: '未找到图层',
+    nothingRestored: '没有恢复任何 LAYISO 图层改动。',
+    restored: '已恢复图层数量'
+  },
   laylck: {
     prompt: '选择要锁定其图层的对象',
     invalidSelection: '所选对象无效。',
