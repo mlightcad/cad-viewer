@@ -27,9 +27,15 @@ import {
   AcApHatchCmd,
   AcApLayerCloseCmd,
   AcApLayerCmd,
+  AcApLayerCurCmd,
   AcApLayerDelCmd,
   AcApLayerFreezeCmd,
+  AcApLayerIsoCmd,
+  AcApLayerLockCmd,
   AcApLayerOnCmd,
+  AcApLayerThawCmd,
+  AcApLayerUnisoCmd,
+  AcApLayerUnlockCmd,
   AcApLayoffCmd,
   AcApLineCmd,
   AcApLogCmd,
@@ -834,10 +840,16 @@ export class AcApDocManager {
     )
     addSystemCommand('-hatch', '-hatch', new AcApHatchCmd())
     addSystemCommand('-layer', '-layer', new AcApLayerCmd())
+    addSystemCommand('laycur', 'laycur', new AcApLayerCurCmd())
     addSystemCommand('laydel', 'laydel', new AcApLayerDelCmd())
     addSystemCommand('layfrz', 'layfrz', new AcApLayerFreezeCmd())
+    addSystemCommand('layiso', 'layiso', new AcApLayerIsoCmd())
+    addSystemCommand('laylck', 'laylck', new AcApLayerLockCmd())
     addSystemCommand('layon', 'layon', new AcApLayerOnCmd())
     addSystemCommand('layoff', 'layoff', new AcApLayoffCmd())
+    addSystemCommand('laythw', 'laythw', new AcApLayerThawCmd())
+    addSystemCommand('layuniso', 'layuniso', new AcApLayerUnisoCmd())
+    addSystemCommand('layulk', 'layulk', new AcApLayerUnlockCmd())
     addSystemCommand('layerclose', 'layerclose', new AcApLayerCloseCmd())
     addSystemCommand('line', 'line', new AcApLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())

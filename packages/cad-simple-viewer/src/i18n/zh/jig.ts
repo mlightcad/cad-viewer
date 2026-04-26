@@ -323,6 +323,129 @@ export default {
     alreadyOn: '所有图层都已经打开。',
     turnedOn: '已打开图层数量'
   },
+  laycur: {
+    prompt: '选择要更改到当前图层的对象',
+    currentLayerNotFound: '未找到当前图层。',
+    noObjects: '没有选择有效对象。',
+    alreadyCurrent: '所选对象已位于当前图层。',
+    changed: '已将对象更改到当前图层'
+  },
+  layfrz: {
+    prompt: '选择要冻结其图层的对象或',
+    invalidSelection: '所选对象无效。',
+    settingsPrompt: '输入要修改的 LAYFRZ 设置',
+    viewportPrompt: '指定视口冻结行为',
+    blockSelectionPrompt: '指定嵌套块选择行为',
+    vpfreezeFallback:
+      '当前 viewer 不支持按视口冻结图层，已退化为普通 Freeze 行为。',
+    nestedSelectionLimited:
+      '嵌套块选择设置会被保存，但当前拾取仍只能解析顶层对象所在图层。',
+    layerNotFound: '未找到图层',
+    cannotFreezeCurrent: '不能冻结当前图层。',
+    alreadyFrozen: '图层已处于冻结状态',
+    frozen: '已冻结图层',
+    restored: '已恢复图层',
+    nothingToUndo: '当前没有可撤销的 LAYFRZ 操作。',
+    keywords: {
+      settings: {
+        display: '设置(S)',
+        local: '设置',
+        global: 'Settings'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      viewports: {
+        display: '视口(V)',
+        local: '视口',
+        global: 'Viewports'
+      },
+      blockSelection: {
+        display: '块选择(B)',
+        local: '块选择',
+        global: 'BlockSelection'
+      },
+      freeze: {
+        display: '冻结(F)',
+        local: '冻结',
+        global: 'Freeze'
+      },
+      vpfreeze: {
+        display: '视口冻结(V)',
+        local: '视口冻结',
+        global: 'Vpfreeze'
+      },
+      block: {
+        display: '块(B)',
+        local: '块',
+        global: 'Block'
+      },
+      entity: {
+        display: '对象(E)',
+        local: '对象',
+        global: 'Entity'
+      },
+      none: {
+        display: '无(N)',
+        local: '无',
+        global: 'None'
+      }
+    }
+  },
+  layiso: {
+    prompt: '选择要隔离其图层的对象或',
+    settingsPrompt: '输入未隔离图层的处理设置',
+    offModePrompt: '输入未隔离图层的关闭行为',
+    noLayers: '未选择有效图层。',
+    layerNotFound: '未找到图层',
+    isolated: '已隔离图层',
+    affectedLayers: '受影响图层数',
+    vpfreezeFallback:
+      '当前 viewer 不支持按视口冻结图层，已退化为普通 Off 行为。',
+    lockFadeFallback: '当前 viewer 不支持图层淡显显示，未隔离图层将仅被锁定。',
+    keywords: {
+      settings: {
+        display: '设置(S)',
+        local: '设置',
+        global: 'Settings'
+      },
+      off: {
+        display: '关闭(O)',
+        local: '关闭',
+        global: 'Off'
+      },
+      lockAndFade: {
+        display: '锁定并淡显(L)',
+        local: '锁定并淡显',
+        global: 'LockAndFade'
+      },
+      vpfreeze: {
+        display: '视口冻结(V)',
+        local: '视口冻结',
+        global: 'Vpfreeze'
+      }
+    }
+  },
+  laythw: {
+    alreadyThawed: '所有图层都已经解冻。',
+    thawed: '已解冻图层数量'
+  },
+  laylck: {
+    prompt: '选择要锁定其图层的对象',
+    invalidSelection: '所选对象无效。',
+    layerNotFound: '未找到图层',
+    alreadyLocked: '图层已处于锁定状态',
+    locked: '已锁定图层'
+  },
+  layulk: {
+    prompt: '选择要解锁其图层的对象',
+    invalidSelection: '所选对象无效。',
+    layerNotFound: '未找到图层',
+    alreadyUnlocked: '图层已处于解锁状态',
+    unlocked: '已解锁图层'
+  },
   layoff: {
     prompt: '选择要关闭其图层的对象或',
     invalidSelection: '所选对象无效。',
