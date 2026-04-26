@@ -328,6 +328,10 @@ export default {
       }
     }
   },
+  layon: {
+    alreadyOn: 'All layers are already on.',
+    turnedOn: 'Turned on layers'
+  },
   layoff: {
     prompt: 'Select object on layer to turn off or',
     invalidSelection: 'Invalid object selected.',

@@ -1,5 +1,5 @@
 <template>
-  <el-button-group class="ml-base-draw-style-toolbar">
+  <div class="ml-base-draw-style-toolbar">
     <!-- =========================================================
            Prefix slot (e.g. layer dropdown)
            ========================================================= -->
@@ -9,18 +9,23 @@
            Color button
            ========================================================= -->
     <MlColorPickerDropdown
+      class="ml-base-draw-style-toolbar__color-picker"
       :model-value="pickerColor"
       :display-color="displayCssColor"
       :disabled="disabled"
       @update:modelValue="onPickerColorChange"
     >
       <template #reference>
-        <el-button :disabled="disabled">
+        <button
+          type="button"
+          class="ml-base-draw-style-toolbar__color-button"
+          :disabled="disabled"
+        >
           <span
             class="ml-base-draw-style-color-indicator"
             :style="{ background: displayCssColor }"
           />
-        </el-button>
+        </button>
       </template>
     </MlColorPickerDropdown>
 
@@ -28,11 +33,12 @@
            Line weight dropdown
            ========================================================= -->
     <MlLineWeightSelect
+      class="ml-base-draw-style-toolbar__lineweight"
       v-model="lineWeightProxy"
       :disabled="disabled"
       @change="onLineWeightChange"
     />
-  </el-button-group>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -111,7 +117,59 @@ function onLineWeightChange(value: AcGiLineWeight) {
 
 <style scoped>
 .ml-base-draw-style-toolbar {
+  --ml-base-draw-style-height: var(--ml-rb-compact-height, 28px);
+  --ml-base-draw-style-lineweight-width: 188px;
   display: inline-flex;
+  align-items: stretch;
+}
+
+.ml-base-draw-style-toolbar__color-picker {
+  flex: 0 0 auto;
+  width: var(--ml-base-draw-style-height);
+  min-width: var(--ml-base-draw-style-height);
+  height: var(--ml-base-draw-style-height);
+}
+
+.ml-base-draw-style-toolbar__color-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--el-border-radius-base);
+  background: var(--el-fill-color-blank);
+  color: var(--el-text-color-regular);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    border-color var(--el-transition-duration),
+    box-shadow var(--el-transition-duration);
+}
+
+.ml-base-draw-style-toolbar__color-button:hover {
+  border-color: var(--el-border-color-hover);
+}
+
+.ml-base-draw-style-toolbar__color-button:focus-visible {
+  outline: none;
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+.ml-base-draw-style-toolbar__color-button:disabled {
+  cursor: not-allowed;
+  color: var(--el-disabled-text-color);
+  background: var(--el-fill-color-light);
+  border-color: var(--el-border-color-light);
+}
+
+.ml-base-draw-style-toolbar :deep(.ml-base-draw-style-toolbar__lineweight) {
+  flex: 0 0 var(--ml-base-draw-style-lineweight-width);
+  width: var(--ml-base-draw-style-lineweight-width);
+  min-width: var(--ml-base-draw-style-lineweight-width);
+  height: var(--ml-base-draw-style-height);
 }
 
 /* =============================================================

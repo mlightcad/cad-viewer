@@ -114,10 +114,8 @@ const resolvedOptions = computed(() =>
     previewSvgString: resolveLineTypePreviewSvg(item)
   }))
 )
-const selectedOption = computed(
-  () =>
-    resolvedOptions.value.find(item => item.value === props.modelValue) ??
-    resolvedOptions.value[0]
+const selectedOption = computed(() =>
+  resolvedOptions.value.find(item => item.value === props.modelValue)
 )
 const currentLabel = computed(
   () => selectedOption.value?.label ?? props.placeholder ?? ''
@@ -128,7 +126,7 @@ const selectedPreviewBackground = computed(() =>
 const selectedPreviewSvg = computed(() =>
   resolveLineTypePreviewSvg(selectedOption.value)
 )
-const resolvedModelValue = computed(() => selectedOption.value?.value ?? '')
+const resolvedModelValue = computed(() => selectedOption.value?.value)
 
 /**
  * Refreshes the database-backed option list after the active document changes.

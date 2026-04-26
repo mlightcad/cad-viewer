@@ -19,6 +19,8 @@ import {
 import {
   AcCmColor,
   AcDbDatabase,
+  AcDbEntity,
+  AcDbObjectId,
   AcDbSysVarManager,
   AcGiLineWeight
 } from '@mlightcad/data-model'
@@ -84,6 +86,7 @@ import {
   polygon,
   polyline,
   properties,
+  qselect,
   rect,
   revCircle,
   revCloud,
@@ -135,13 +138,13 @@ const docOpenMode = useDocOpenMode()
 const { t, locale } = useI18n()
 const isAnnotationVisible = ref(true)
 const isRibbonDisabled = computed(() => isDocumentOpening.value)
-const ribbonColor = ref<AcCmColor>(new AcCmColor())
+const ribbonColor = ref<AcCmColor | undefined>(new AcCmColor())
 const ribbonColorDisplay = ref('#7b8794')
-const ribbonLineType = ref('ByLayer')
-const ribbonLineWeight = ref<AcGiLineWeight>(AcGiLineWeight.ByLayer)
+const ribbonLineType = ref<string | undefined>('ByLayer')
+const ribbonLineWeight = ref<AcGiLineWeight | undefined>(AcGiLineWeight.ByLayer)
+const ribbonDisplayedLayerName = ref('')
 const {
   layers: ribbonLayers,
-  currentLayerName: ribbonLayerName,
   setCurrentLayer: setRibbonCurrentLayer,
   setLayerOn: setRibbonLayerOn,
   setLayerFrozen: setRibbonLayerFrozen,
@@ -182,9 +185,57 @@ const ribbonLayerActionIds = new Set<RibbonLayerActionKey>([
 let observedDatabase: AcDbDatabase | undefined
 
 /**
+ * Returns the selection set attached to the active view, if any.
+ */
+const getCurrentSelectionSet = () =>
+  AcApDocManager.instance?.curView?.selectionSet
+
+let observedSelectionSet: ReturnType<typeof getCurrentSelectionSet> | undefined
+const selectedEntityIds = ref<AcDbObjectId[]>([])
+
+/**
  * Returns the database currently attached to the active document, if any.
  */
 const getCurrentDatabase = () => AcApDocManager.instance?.curDocument?.database
+
+function createByLayerColor() {
+  const color = new AcCmColor()
+  color.setByLayer()
+  return color
+}
+
+function syncSelectedEntityIds() {
+  selectedEntityIds.value = [...(getCurrentSelectionSet()?.ids ?? [])]
+}
+
+function getSelectedEntities(db: AcDbDatabase) {
+  return selectedEntityIds.value
+    .map(id => db.tables.blockTable.getEntityById(id))
+    .filter((entity): entity is AcDbEntity => entity != null)
+}
+
+function getCommonValue<T>(
+  entities: AcDbEntity[],
+  resolve: (entity: AcDbEntity) => T
+) {
+  if (!entities.length) return undefined
+  const first = resolve(entities[0])
+  return entities.every(entity => resolve(entity) === first) ? first : undefined
+}
+
+function resolveRibbonColorDisplay(
+  color: AcCmColor | undefined,
+  db: AcDbDatabase,
+  layerName?: string
+) {
+  if (!color) return ''
+  if (color.isByLayer) {
+    if (!layerName) return '#7b8794'
+    return db.tables.layerTable.getAt(layerName)?.color.cssColor || '#7b8794'
+  }
+  if (color.isByBlock) return '#a0a8b8'
+  return color.cssColor || '#7b8794'
+}
 
 /**
  * Mirrors the active drawing's current property defaults into ribbon-local refs.
@@ -197,18 +248,44 @@ const syncRibbonProperties = (db = getCurrentDatabase()) => {
     ribbonColorDisplay.value = '#7b8794'
     ribbonLineWeight.value = AcGiLineWeight.ByLayer
     ribbonLineType.value = 'ByLayer'
+    ribbonDisplayedLayerName.value = ''
     return
   }
 
-  ribbonColor.value = db.cecolor.clone()
-  const currentLayer = db.tables.layerTable.getAt(db.clayer)
-  ribbonColorDisplay.value = ribbonColor.value.isByLayer
-    ? currentLayer?.color.cssColor || '#7b8794'
-    : ribbonColor.value.isByBlock
-      ? '#a0a8b8'
-      : ribbonColor.value.cssColor || '#7b8794'
-  ribbonLineWeight.value = db.celweight
-  ribbonLineType.value = db.celtype || 'ByLayer'
+  const selectedEntities = getSelectedEntities(db)
+  const commonLayerName = getCommonValue(
+    selectedEntities,
+    entity => entity.layer ?? ''
+  )
+  const commonLineType = getCommonValue(
+    selectedEntities,
+    entity => entity.lineType || 'ByLayer'
+  )
+  const commonLineWeight = getCommonValue(
+    selectedEntities,
+    entity => entity.lineWeight ?? AcGiLineWeight.ByLayer
+  )
+  const commonColorKey = getCommonValue(
+    selectedEntities,
+    entity => entity.color?.toString() ?? createByLayerColor().toString()
+  )
+  const commonColor =
+    commonColorKey != null
+      ? (AcCmColor.fromString(commonColorKey) ?? createByLayerColor())
+      : undefined
+
+  ribbonColor.value =
+    selectedEntities.length > 0 ? commonColor : db.cecolor.clone()
+  ribbonDisplayedLayerName.value =
+    selectedEntities.length > 0 ? (commonLayerName ?? '') : db.clayer
+  ribbonLineType.value =
+    selectedEntities.length > 0 ? commonLineType : db.celtype || 'ByLayer'
+  ribbonLineWeight.value =
+    selectedEntities.length > 0 ? commonLineWeight : db.celweight
+  ribbonColorDisplay.value =
+    selectedEntities.length > 0
+      ? resolveRibbonColorDisplay(commonColor, db, commonLayerName)
+      : resolveRibbonColorDisplay(db.cecolor, db, db.clayer)
 }
 
 const syncAnnotationVisibility = () => {
@@ -234,6 +311,25 @@ const handleAnnotationLayerChange = () => {
   syncRibbonProperties(observedDatabase)
 }
 
+const handleSelectionChanged = () => {
+  syncSelectedEntityIds()
+  syncRibbonProperties(observedDatabase)
+}
+
+const handleObservedEntityChange = (args: {
+  entity?: AcDbEntity | AcDbEntity[]
+}) => {
+  const entities = Array.isArray(args.entity) ? args.entity : [args.entity]
+  const hasSelectedEntityChanged = entities.some(
+    entity =>
+      entity?.objectId != null &&
+      selectedEntityIds.value.includes(entity.objectId)
+  )
+
+  if (!hasSelectedEntityChanged) return
+  syncRibbonProperties(observedDatabase)
+}
+
 /**
  * Updates ribbon property controls when document default drawing properties change.
  *
@@ -256,6 +352,31 @@ const handleSysVarChange = (args: RibbonSysVarChangeEvent) => {
   }
 }
 
+const bindSelectionEvents = (selectionSet = getCurrentSelectionSet()) => {
+  if (observedSelectionSet === selectionSet) return
+
+  if (observedSelectionSet) {
+    observedSelectionSet.events.selectionAdded.removeEventListener(
+      handleSelectionChanged
+    )
+    observedSelectionSet.events.selectionRemoved.removeEventListener(
+      handleSelectionChanged
+    )
+  }
+
+  observedSelectionSet = selectionSet
+  syncSelectedEntityIds()
+
+  if (!observedSelectionSet) return
+
+  observedSelectionSet.events.selectionAdded.addEventListener(
+    handleSelectionChanged
+  )
+  observedSelectionSet.events.selectionRemoved.addEventListener(
+    handleSelectionChanged
+  )
+}
+
 const bindAnnotationVisibilityEvents = (db?: AcDbDatabase) => {
   if (observedDatabase === db) return
 
@@ -265,6 +386,12 @@ const bindAnnotationVisibilityEvents = (db?: AcDbDatabase) => {
     )
     observedDatabase.events.layerModified.removeEventListener(
       handleAnnotationLayerChange
+    )
+    observedDatabase.events.entityModified.removeEventListener(
+      handleObservedEntityChange
+    )
+    observedDatabase.events.entityErased.removeEventListener(
+      handleObservedEntityChange
     )
   }
 
@@ -278,9 +405,16 @@ const bindAnnotationVisibilityEvents = (db?: AcDbDatabase) => {
   observedDatabase.events.layerModified.addEventListener(
     handleAnnotationLayerChange
   )
+  observedDatabase.events.entityModified.addEventListener(
+    handleObservedEntityChange
+  )
+  observedDatabase.events.entityErased.addEventListener(
+    handleObservedEntityChange
+  )
 }
 
 const handleDocumentActivated = () => {
+  bindSelectionEvents(getCurrentSelectionSet())
   bindAnnotationVisibilityEvents(AcApDocManager.instance?.curDocument?.database)
   ribbonLayerIsolationSnapshot.value = null
   ribbonLayerPreviousSnapshot.value = null
@@ -295,7 +429,9 @@ const handleDocumentActivated = () => {
  */
 const applyToSelectedEntities = (
   mutator: (
-    entity: ReturnType<AcDbDatabase['tables']['blockTable']['getEntityById']>
+    entity: NonNullable<
+      ReturnType<AcDbDatabase['tables']['blockTable']['getEntityById']>
+    >
   ) => void
 ) => {
   const db = getCurrentDatabase()
@@ -327,6 +463,7 @@ onUnmounted(() => {
   AcApDocManager.instance.events.documentActivated.removeEventListener(
     handleDocumentActivated
   )
+  bindSelectionEvents(undefined)
   bindAnnotationVisibilityEvents(undefined)
 })
 
@@ -387,9 +524,21 @@ const handleRibbonLineTypeChange = (value: string) => {
  * @param layerName Layer name chosen from the ribbon layer selector.
  */
 const handleRibbonLayerChange = (layerName: string) => {
-  const changed = setRibbonCurrentLayer(layerName)
-  if (!changed) return
   const db = getCurrentDatabase()
+  if (!db || !layerName) return
+
+  let changed = false
+  if (selectedEntityIds.value.length > 0) {
+    applyToSelectedEntities(entity => {
+      if (entity.layer === layerName) return
+      entity.layer = layerName
+      changed = true
+    })
+  } else {
+    changed = setRibbonCurrentLayer(layerName)
+  }
+
+  if (!changed) return
   syncRibbonProperties(db)
 }
 
@@ -416,7 +565,9 @@ const handleRibbonLayerAction = (action: RibbonLayerActionKey) => {
     return
   }
 
-  const selectedLayer = db.tables.layerTable.getAt(ribbonLayerName.value)
+  const selectedLayer = db.tables.layerTable.getAt(
+    ribbonDisplayedLayerName.value
+  )
   const requiresSelectedLayer = action !== 'layer-action-all-on'
   if (requiresSelectedLayer && !selectedLayer) return
 
@@ -507,6 +658,7 @@ const buildBaseTabs = (
     copy: t('main.ribbon.tooltip.copy'),
     erase: t('main.ribbon.tooltip.erase'),
     properties: t('main.ribbon.tooltip.properties'),
+    quickSelect: t('main.ribbon.tooltip.quickSelect'),
     propertyColor: t('main.ribbon.tooltip.propertyColor'),
     propertyLineType: t('main.ribbon.tooltip.propertyLineType'),
     propertyLineWeight: t('main.ribbon.tooltip.propertyLineWeight')
@@ -532,6 +684,18 @@ const buildBaseTabs = (
     polygon: t('main.ribbon.tooltip.rectOption.polygon'),
     ellipse: t('main.ribbon.tooltip.ellipseOption.ellipse'),
     ellipseArc: t('main.ribbon.tooltip.ellipseOption.arc')
+  }
+  const ribbonLayerActionTooltips = {
+    off: t('main.ribbon.tooltip.layerAction.off'),
+    isolate: t('main.ribbon.tooltip.layerAction.isolate'),
+    freeze: t('main.ribbon.tooltip.layerAction.freeze'),
+    lock: t('main.ribbon.tooltip.layerAction.lock'),
+    current: t('main.ribbon.tooltip.layerAction.current'),
+    allOn: t('main.ribbon.tooltip.layerAction.allOn'),
+    unisolate: t('main.ribbon.tooltip.layerAction.unisolate'),
+    thaw: t('main.ribbon.tooltip.layerAction.thaw'),
+    unlock: t('main.ribbon.tooltip.layerAction.unlock'),
+    restore: t('main.ribbon.tooltip.layerAction.restore')
   }
   const verticalToolbarDescriptions = {
     revFreehand: t('main.verticalToolbar.revFreehand.description'),
@@ -971,6 +1135,140 @@ const buildBaseTabs = (
           ]
         },
         {
+          id: 'home-layer',
+          title: t('main.ribbon.group.layer'),
+          orientation: 'row',
+          enableGroupOverflow: true,
+          priority: 90,
+          collections: [
+            {
+              id: 'home-layer-button',
+              layout: 'row',
+              items: [
+                {
+                  id: 'cmd-layer',
+                  type: 'button',
+                  label: t('main.verticalToolbar.layer.text'),
+                  tooltip: verticalToolbarDescriptions.layer,
+                  size: 'large',
+                  props: { icon: layer }
+                }
+              ]
+            },
+            {
+              id: 'home-layer-main',
+              layout: 'column',
+              rows: 3,
+              items: [
+                {
+                  id: 'layer-select',
+                  type: 'custom',
+                  size: 'small',
+                  tooltip: t('main.ribbon.layerTools.select'),
+                  disabled: ribbonLayerOptions.value.length === 0,
+                  props: {
+                    width: 'full',
+                    component: MlLayerSelect,
+                    componentProps: {
+                      modelValue: ribbonDisplayedLayerName.value,
+                      options: ribbonLayerOptions.value,
+                      disabled: ribbonLayerOptions.value.length === 0,
+                      'onUpdate:modelValue': handleRibbonLayerChange,
+                      onLayerStateToggle: handleRibbonLayerStateToggle
+                    }
+                  }
+                },
+                {
+                  id: 'layer-actions-primary',
+                  type: 'buttonGroup',
+                  hideLabel: true,
+                  size: 'small',
+                  disabled: ribbonLayerOptions.value.length === 0,
+                  props: {
+                    wrap: false,
+                    buttonSize: 'small',
+                    options: [
+                      {
+                        label: '',
+                        value: 'layer-action-off',
+                        icon: layerOff,
+                        tooltip: ribbonLayerActionTooltips.off
+                      },
+                      {
+                        label: '',
+                        value: 'layer-action-isolate',
+                        icon: layerIsolate,
+                        tooltip: ribbonLayerActionTooltips.isolate
+                      },
+                      {
+                        label: '',
+                        value: 'layer-action-freeze',
+                        icon: layerFreeze,
+                        tooltip: ribbonLayerActionTooltips.freeze
+                      },
+                      {
+                        label: '',
+                        value: 'layer-action-lock',
+                        icon: layerLock,
+                        tooltip: ribbonLayerActionTooltips.lock
+                      },
+                      {
+                        label: t('main.ribbon.layerTools.current'),
+                        value: 'layer-action-current',
+                        icon: layerCurrent,
+                        tooltip: ribbonLayerActionTooltips.current
+                      }
+                    ]
+                  }
+                },
+                {
+                  id: 'layer-actions-secondary',
+                  type: 'buttonGroup',
+                  hideLabel: true,
+                  size: 'small',
+                  disabled: ribbonLayerOptions.value.length === 0,
+                  props: {
+                    wrap: false,
+                    buttonSize: 'small',
+                    options: [
+                      {
+                        label: '',
+                        value: 'layer-action-all-on',
+                        icon: layerOn,
+                        tooltip: ribbonLayerActionTooltips.allOn
+                      },
+                      {
+                        label: '',
+                        value: 'layer-action-unisolate',
+                        icon: layerUnisolate,
+                        tooltip: ribbonLayerActionTooltips.unisolate
+                      },
+                      {
+                        label: '',
+                        value: 'layer-action-thaw',
+                        icon: layerUnfreeze,
+                        tooltip: ribbonLayerActionTooltips.thaw
+                      },
+                      {
+                        label: '',
+                        value: 'layer-action-unlock',
+                        icon: layerUnlock,
+                        tooltip: ribbonLayerActionTooltips.unlock
+                      },
+                      {
+                        label: t('main.ribbon.layerTools.restore'),
+                        value: 'layer-action-restore',
+                        icon: layerPrevious,
+                        tooltip: ribbonLayerActionTooltips.restore
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           id: 'home-properties',
           title: t('main.ribbon.group.properties'),
           orientation: 'row',
@@ -1012,6 +1310,20 @@ const buildBaseTabs = (
                   }
                 },
                 {
+                  id: 'entity-line-weight',
+                  type: 'custom',
+                  size: 'small',
+                  tooltip: ribbonTooltips.propertyLineWeight,
+                  props: {
+                    component: MlRibbonPropertyLineWeightSelect,
+                    componentProps: {
+                      modelValue: ribbonLineWeight.value,
+                      placeholder: t('main.ribbon.property.lineWeight'),
+                      'onUpdate:modelValue': handleRibbonLineWeightChange
+                    }
+                  }
+                },
+                {
                   id: 'entity-line-type',
                   type: 'custom',
                   size: 'small',
@@ -1024,143 +1336,27 @@ const buildBaseTabs = (
                       'onUpdate:modelValue': handleRibbonLineTypeChange
                     }
                   }
-                },
-                {
-                  id: 'entity-line-weight',
-                  type: 'custom',
-                  size: 'small',
-                  tooltip: ribbonTooltips.propertyLineWeight,
-                  props: {
-                    component: MlRibbonPropertyLineWeightSelect,
-                    componentProps: {
-                      modelValue: ribbonLineWeight.value,
-                      'onUpdate:modelValue': handleRibbonLineWeightChange
-                    }
-                  }
                 }
               ]
             }
           ]
         },
         {
-          id: 'home-layer',
-          title: t('main.ribbon.group.layer'),
+          id: 'home-utilities',
+          title: t('main.ribbon.group.utilities'),
           orientation: 'row',
-          enableGroupOverflow: true,
-          priority: 90,
           collections: [
             {
-              id: 'home-layer-button',
+              id: 'home-utilities-main',
               layout: 'row',
               items: [
                 {
-                  id: 'cmd-layer',
+                  id: 'cmd-qselect',
                   type: 'button',
-                  label: t('main.verticalToolbar.layer.text'),
-                  tooltip: verticalToolbarDescriptions.layer,
+                  label: t('main.ribbon.command.quickSelect'),
+                  tooltip: ribbonTooltips.quickSelect,
                   size: 'large',
-                  props: { icon: layer }
-                }
-              ]
-            },
-            {
-              id: 'home-layer-main',
-              layout: 'column',
-              rows: 3,
-              items: [
-                {
-                  id: 'layer-select',
-                  type: 'custom',
-                  size: 'small',
-                  tooltip: t('main.ribbon.layerTools.select'),
-                  disabled: ribbonLayerOptions.value.length === 0,
-                  props: {
-                    width: 'full',
-                    component: MlLayerSelect,
-                    componentProps: {
-                      modelValue: ribbonLayerName.value,
-                      options: ribbonLayerOptions.value,
-                      disabled: ribbonLayerOptions.value.length === 0,
-                      'onUpdate:modelValue': handleRibbonLayerChange,
-                      onLayerStateToggle: handleRibbonLayerStateToggle
-                    }
-                  }
-                },
-                {
-                  id: 'layer-actions-primary',
-                  type: 'buttonGroup',
-                  hideLabel: true,
-                  size: 'small',
-                  disabled: ribbonLayerOptions.value.length === 0,
-                  props: {
-                    wrap: false,
-                    buttonSize: 'small',
-                    options: [
-                      {
-                        label: '',
-                        value: 'layer-action-off',
-                        icon: layerOff
-                      },
-                      {
-                        label: '',
-                        value: 'layer-action-isolate',
-                        icon: layerIsolate
-                      },
-                      {
-                        label: '',
-                        value: 'layer-action-freeze',
-                        icon: layerFreeze
-                      },
-                      {
-                        label: '',
-                        value: 'layer-action-lock',
-                        icon: layerLock
-                      },
-                      {
-                        label: t('main.ribbon.layerTools.current'),
-                        value: 'layer-action-current',
-                        icon: layerCurrent
-                      }
-                    ]
-                  }
-                },
-                {
-                  id: 'layer-actions-secondary',
-                  type: 'buttonGroup',
-                  hideLabel: true,
-                  size: 'small',
-                  disabled: ribbonLayerOptions.value.length === 0,
-                  props: {
-                    wrap: false,
-                    buttonSize: 'small',
-                    options: [
-                      {
-                        label: '',
-                        value: 'layer-action-all-on',
-                        icon: layerOn
-                      },
-                      {
-                        label: '',
-                        value: 'layer-action-unisolate',
-                        icon: layerUnisolate
-                      },
-                      {
-                        label: '',
-                        value: 'layer-action-thaw',
-                        icon: layerUnfreeze
-                      },
-                      {
-                        label: '',
-                        value: 'layer-action-unlock',
-                        icon: layerUnlock
-                      },
-                      {
-                        label: t('main.ribbon.layerTools.restore'),
-                        value: 'layer-action-restore',
-                        icon: layerPrevious
-                      }
-                    ]
-                  }
+                  props: { icon: qselect }
                 }
               ]
             }
@@ -1222,6 +1418,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-erase', 'erase')
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')
+  commandByItemId.set('cmd-qselect', 'qselect')
   commandByItemId.set('cmd-tool-rev-freehand', 'sketch')
   commandByItemId.set('cmd-tool-rev-rect', 'revrect')
   commandByItemId.set('cmd-tool-rev-cloud', 'revcloud')

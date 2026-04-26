@@ -29,6 +29,7 @@ import {
   AcApLayerCmd,
   AcApLayerDelCmd,
   AcApLayerFreezeCmd,
+  AcApLayerOnCmd,
   AcApLayoffCmd,
   AcApLineCmd,
   AcApLogCmd,
@@ -835,6 +836,7 @@ export class AcApDocManager {
     addSystemCommand('-layer', '-layer', new AcApLayerCmd())
     addSystemCommand('laydel', 'laydel', new AcApLayerDelCmd())
     addSystemCommand('layfrz', 'layfrz', new AcApLayerFreezeCmd())
+    addSystemCommand('layon', 'layon', new AcApLayerOnCmd())
     addSystemCommand('layoff', 'layoff', new AcApLayoffCmd())
     addSystemCommand('layerclose', 'layerclose', new AcApLayerCloseCmd())
     addSystemCommand('line', 'line', new AcApLineCmd())

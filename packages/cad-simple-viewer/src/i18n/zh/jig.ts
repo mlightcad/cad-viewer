@@ -319,6 +319,10 @@ export default {
       }
     }
   },
+  layon: {
+    alreadyOn: '所有图层都已经打开。',
+    turnedOn: '已打开图层数量'
+  },
   layoff: {
     prompt: '选择要关闭其图层的对象或',
     invalidSelection: '所选对象无效。',

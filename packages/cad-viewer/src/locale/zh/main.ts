@@ -15,6 +15,7 @@ export default {
       modify: '修改',
       layer: '图层',
       properties: '属性',
+      utilities: '实用工具',
       annotation: '批注',
       measurement: '测量'
     },
@@ -75,9 +76,24 @@ export default {
       copy: '将选中的对象复制到新位置。',
       erase: '从图纸中删除选中的对象。',
       properties: '打开当前所选对象的属性面板。',
+      quickSelect: '打开快速选择对话框，按条件筛选并选择图元。',
       propertyColor: '设置新建对象或当前选中对象使用的颜色。',
       propertyLineType: '设置新建对象或当前选中对象使用的线型。',
       propertyLineWeight: '设置新建对象或当前选中对象使用的线宽。',
+      layerAction: {
+        off: '关闭当前选中的图层，使该图层上的对象隐藏，但不会冻结该图层。',
+        isolate: '仅显示当前选中的图层，并隐藏其他图层，方便专注处理相关对象。',
+        freeze: '冻结当前选中的图层，使其对象隐藏，并在重生成时跳过该图层。',
+        lock: '锁定当前选中的图层，使其对象保持可见，但不能被编辑。',
+        current:
+          '将当前选中的图层设为当前图层，之后新建对象会默认放在该图层上。',
+        allOn: '打开所有已关闭的图层；已冻结的图层会继续保持冻结状态。',
+        unisolate:
+          '恢复被图层隔离隐藏或锁定的图层，同时保留隔离之后的其他图层更改。',
+        thaw: '解冻当前选中的图层，使其对象重新显示并重新参与重生成。',
+        unlock: '解锁当前选中的图层，使其对象可以再次被选择和编辑。',
+        restore: '恢复此 Ribbon 中最近一次图层操作之前的图层状态。'
+      },
       circleOption: {
         centerRadius: '通过指定圆心和半径创建圆。',
         centerDiameter: '通过指定圆心和直径创建圆。',
@@ -125,7 +141,8 @@ export default {
       rotate: '旋转',
       copy: '复制',
       erase: '删除',
-      properties: '属性'
+      properties: '属性',
+      quickSelect: '快速选择'
     }
   },
   verticalToolbar: {

@@ -55,6 +55,9 @@ export default {
       description: 'Freezes the layer of selected objects',
       prompt: 'Select object on layer to freeze'
     },
+    layon: {
+      description: 'Turns on all layers in the drawing'
+    },
     layoff: {
       description: 'Turns off the layer of selected objects',
       prompt: 'Select object on layer to turn off'

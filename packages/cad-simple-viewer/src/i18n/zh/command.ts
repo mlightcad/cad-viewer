@@ -50,6 +50,9 @@ export default {
       description: '冻结所选对象所在的图层',
       prompt: '选择要冻结其图层的对象'
     },
+    layon: {
+      description: '打开图纸中的所有图层'
+    },
     layoff: {
       description: '关闭所选对象所在的图层',
       prompt: '选择要关闭其图层的对象'

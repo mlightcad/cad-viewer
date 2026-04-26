@@ -7,6 +7,7 @@
     <ml-line-weight-select
       :model-value="modelValue"
       :disabled="disabled"
+      :placeholder="placeholder"
       @update:modelValue="emit('update:modelValue', $event)"
     />
   </ml-ribbon-property-field>
@@ -24,9 +25,11 @@ import MlRibbonPropertyField from './MlRibbonPropertyField.vue'
  */
 interface RibbonPropertyLineWeightSelectProps {
   /** Active `CELWEIGHT` value mirrored from the current drawing. */
-  modelValue: AcGiLineWeight
+  modelValue?: AcGiLineWeight
   /** Disables interaction while ribbon actions are unavailable. */
   disabled?: boolean
+  /** Placeholder shown when no line weight can be resolved. */
+  placeholder?: string
 }
 
 defineProps<RibbonPropertyLineWeightSelectProps>()
