@@ -1,4 +1,5 @@
 import {
+  AcDbDatabase,
   AcDbEntity,
   acdbHostApplicationServices,
   AcDbLayerTableRecord,
@@ -171,29 +172,62 @@ export class AcTrView2d extends AcEdBaseView {
     this.backgroundColor = mergedOptions.background || 0x000000
     this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
 
-    // Two sysvars can drive the canvas background:
+    // Two sysvars drive the canvas background and they are kept in sync:
     //
-    // - WHITEBKCOLOR (boolean): the low-level "is the paper white?" flag
-    //   that the View has always honoured.
-    // - COLORTHEME (number): the AutoCAD-standard theme selector where
-    //   0 = dark theme (black bg) and 1 = light theme (white bg).
+    // - WHITEBKCOLOR (boolean) — toggled by the "switch background"
+    //   toolbar button (AcApSwitchBgCmd) and read by AcEdCursorManager.
+    // - COLORTHEME (number, 0 = dark / 1 = light) — toggled by the
+    //   status-bar theme button (Vue `useDark` composable) and by
+    //   AcEdMTextEditor.
     //
-    // The Vue composable `useDark` (cad-viewer) toggles only COLORTHEME
-    // when the user flips the theme.  Without this bridge, toggling the
-    // UI theme left WHITEBKCOLOR stale and the canvas kept its previous
-    // background even though `changeForeground` had been fired through
-    // MTEXT/line inversion — producing e.g. a black canvas in light mode
-    // or a white canvas in dark mode.
+    // Writing one propagates to the other so legacy entry points stay in
+    // sync regardless of which knob the user touches.  Without this
+    // bridge, AcApSwitchBgCmd would read a stale WHITEBKCOLOR after the
+    // user flipped the status-bar theme button, requiring two clicks to
+    // toggle the background.  See PR follow-up to #228.
     //
-    // Listening to both sysvars keeps either entry point working.  The
-    // two remain independent (settable in isolation) because setting
-    // `this.backgroundColor` is idempotent and the handler for each
-    // sysvar only fires when that specific variable changes.
-    AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
+    // The bridge is safe against feedback loops: AcDbSysVarManager.setVar
+    // only dispatches sysVarChanged when the value actually changed
+    // (Object.is check in `hasValueChanged`).  The companion sysvar is
+    // therefore set at most once per user-visible toggle, and the second
+    // dispatch finds the companion already in sync and stops.
+    const sysVarManager = AcDbSysVarManager.instance()
+    const syncCompanion = (
+      changed: 'whitebk' | 'colortheme',
+      isLight: boolean,
+      db: AcDbDatabase | undefined
+    ) => {
+      if (!db) return
+      if (changed === 'colortheme') {
+        const current = sysVarManager.getVar(
+          AcDbSystemVariables.WHITEBKCOLOR,
+          db
+        ) as boolean | undefined
+        if (current !== isLight) {
+          sysVarManager.setVar(
+            AcDbSystemVariables.WHITEBKCOLOR,
+            isLight,
+            db
+          )
+        }
+      } else {
+        const current = sysVarManager.getVar(
+          AcDbSystemVariables.COLORTHEME,
+          db
+        ) as number | string | undefined
+        const desired = isLight ? 1 : 0
+        if (Number(current) !== desired) {
+          sysVarManager.setVar(AcDbSystemVariables.COLORTHEME, desired, db)
+        }
+      }
+    }
+
+    sysVarManager.events.sysVarChanged.addEventListener(args => {
       const nameLower = args.name.toLowerCase()
       if (nameLower === AcDbSystemVariables.WHITEBKCOLOR.toLowerCase()) {
         const useWhiteBackgroundColor = args.newVal as boolean
         this.backgroundColor = useWhiteBackgroundColor ? 0xffffff : 0
+        syncCompanion('whitebk', useWhiteBackgroundColor, args.database)
       } else if (nameLower === AcDbSystemVariables.COLORTHEME.toLowerCase()) {
         // COLORTHEME is registered with type 'number' in the data-model
         // (0 = dark, 1 = light), but the sysvar bus does not strictly
@@ -208,6 +242,7 @@ export class AcTrView2d extends AcEdBaseView {
               : String(newVal).toLowerCase() === 'light' ||
                 String(newVal) === '1'
         this.backgroundColor = isLight ? 0xffffff : 0
+        syncCompanion('colortheme', isLight, args.database)
       }
     })
 
