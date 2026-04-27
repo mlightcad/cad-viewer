@@ -78,6 +78,9 @@ export default {
       description: 'Turns off the layer of selected objects',
       prompt: 'Select object on layer to turn off'
     },
+    layerp: {
+      description: 'Undoes the last change or set of changes made to layer settings'
+    },
     laythw: {
       description: 'Thaws all frozen layers in the drawing'
     },

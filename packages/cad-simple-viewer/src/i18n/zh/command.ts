@@ -72,6 +72,9 @@ export default {
       description: '关闭所选对象所在的图层',
       prompt: '选择要关闭其图层的对象'
     },
+    layerp: {
+      description: '撤销对图层设置的最后一次更改或一组更改'
+    },
     laythw: {
       description: '解冻图纸中的所有冻结图层'
     },
