@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <polygon points="19 3.57 15 8.01 14.56 8.5 13.21 10 13.85 8.5 14.28 7.5 15.14 5.5 11.93 5.5 14.5 1 18.36 1 15.79 3.57 19 3.57"></polygon>
+  <path d="M18,11v7H9V11h9m1-1H8v9H19V10Z"></path>
+  <polygon points="17 12 12 12 12 13 17 13 17 12 17 12"></polygon>
+  <polygon points="11 12 10 12 10 13 11 13 11 12 11 12"></polygon>
+  <polygon points="17 14 12 14 12 15 17 15 17 14 17 14"></polygon>
+  <polygon points="11 14 10 14 10 15 11 15 11 14 11 14"></polygon>
+  <polygon points="17 16 12 16 12 17 17 17 17 16 17 16"></polygon>
+  <polygon points="11 16 10 16 10 17 11 17 11 16 11 16"></polygon>
+  <path d="M4.6,4.6V9.4H9.4V4.6Zm4,4H5.4V5.4H8.6Z"></path>
+  <polygon points="7.4 1.4 6.6 1.4 6.6 5.4 7.4 5.4 7.4 1.4 7.4 1.4"></polygon>
+  <polygon points="7.4 8.6 6.6 8.6 6.6 12.6 7.4 12.6 7.4 8.6 7.4 8.6"></polygon>
+  <polygon points="5.4 6.6 1 6.6 1 7.4 5.4 7.4 5.4 6.6 5.4 6.6"></polygon>
+  <polygon points="13 6.6 9 6.6 9 7.4 13 7.4 13 6.6 13 6.6"></polygon>
+</svg>

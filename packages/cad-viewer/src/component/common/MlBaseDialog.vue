@@ -28,12 +28,14 @@
 
         <!-- Footer -->
         <div class="ml-base-dialog-footer">
-          <el-button @click="handleCancel">
-            {{ t('dialog.baseDialog.cancel') }}
-          </el-button>
-          <el-button type="primary" @click="handleOk">
-            {{ t('dialog.baseDialog.ok') }}
-          </el-button>
+          <div class="ml-base-dialog-footer-actions">
+            <el-button @click="handleCancel">
+              {{ t('dialog.baseDialog.cancel') }}
+            </el-button>
+            <el-button type="primary" @click="handleOk">
+              {{ t('dialog.baseDialog.ok') }}
+            </el-button>
+          </div>
         </div>
       </div>
     </el-config-provider>
@@ -142,10 +144,12 @@ function handleCancel() {
 .ml-base-dialog-title {
   display: flex;
   align-items: center;
+  flex: 1 1 auto;
   gap: 8px;
   font-weight: 600;
   font-size: var(--ml-dialog-font-size);
   color: var(--el-text-color-primary);
+  min-width: 0;
 }
 
 .ml-base-dialog-icon-wrapper {
@@ -190,6 +194,7 @@ function handleCancel() {
 /* Footer */
 .ml-base-dialog-footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 8px;
   border-top: 1px solid var(--el-border-color);
@@ -197,7 +202,33 @@ function handleCancel() {
   padding: 4px 8px;
 }
 
-.ml-base-dialog-footer :deep(.el-button) {
+.ml-base-dialog-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.ml-base-dialog-footer-actions :deep(.el-button) {
   min-width: 72px;
+  display: inline-flex;
+  justify-content: center !important;
+  text-align: center !important;
+  border: var(--el-border) !important;
+  border-color: var(
+    --el-button-border-color,
+    var(--el-border-color)
+  ) !important;
+  background-color: var(
+    --el-button-bg-color,
+    var(--el-fill-color-blank)
+  ) !important;
+}
+
+.ml-base-dialog-footer-actions :deep(.el-button > span) {
+  width: 100%;
+  justify-content: center !important;
+  text-align: center !important;
 }
 </style>

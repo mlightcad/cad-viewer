@@ -97,8 +97,7 @@ defineProps<RibbonPropertyFieldProps>()
 }
 
 .ml-ribbon-property-field__control :deep(.el-select),
-.ml-ribbon-property-field__control :deep(.el-dropdown),
-.ml-ribbon-property-field__control :deep(.el-button) {
+.ml-ribbon-property-field__control :deep(.el-dropdown) {
   width: 100%;
 }
 </style>

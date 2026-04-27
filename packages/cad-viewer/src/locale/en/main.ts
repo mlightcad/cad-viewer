@@ -15,6 +15,7 @@ export default {
       modify: 'Modify',
       layer: 'Layer',
       properties: 'Properties',
+      utilities: 'Utilities',
       annotation: 'Annotation',
       measurement: 'Measurement'
     },
@@ -76,12 +77,33 @@ export default {
       copy: 'Copy selected objects to a new location.',
       erase: 'Delete selected objects from the drawing.',
       properties: 'Open the Properties palette for the current selection.',
+      quickSelect:
+        'Open Quick Select to filter and select entities by criteria.',
       propertyColor:
         'Set the color for newly created objects or selected entities.',
       propertyLineType:
         'Set the line type for newly created objects or selected entities.',
       propertyLineWeight:
         'Set the line weight for newly created objects or selected entities.',
+      layerAction: {
+        off: 'Turns off the selected layer so its objects are hidden without freezing the layer.',
+        isolate:
+          'Shows only the selected layer and hides the others so you can focus on related objects.',
+        freeze:
+          'Freezes the selected layer so its objects are hidden and skipped during regeneration.',
+        lock: 'Locks the selected layer so its objects stay visible but cannot be edited.',
+        current:
+          'Makes the selected layer current so new objects are created on that layer.',
+        allOn:
+          'Turns on every layer that is currently off. Layers that are frozen remain frozen.',
+        unisolate:
+          'Restores layers hidden or locked by Layer Isolate while keeping later layer changes.',
+        thaw: 'Thaws the selected layer so its objects are visible and included in regeneration again.',
+        unlock:
+          'Unlocks the selected layer so its objects can be selected and modified again.',
+        restore:
+          'Restores the previous layer state from the most recent layer action in this ribbon.'
+      },
       circleOption: {
         centerRadius:
           'Create a circle by specifying a center point and a radius.',
@@ -144,7 +166,8 @@ export default {
       rotate: 'Rotate',
       copy: 'Copy',
       erase: 'Erase',
-      properties: 'Properties'
+      properties: 'Properties',
+      quickSelect: 'Quick Select'
     }
   },
   verticalToolbar: {

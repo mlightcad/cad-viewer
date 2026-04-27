@@ -43,6 +43,10 @@ export default {
     '-layer': {
       description: '通过命令行选项管理图层'
     },
+    laycur: {
+      description: '将所选对象的图层属性更改为当前图层',
+      prompt: '选择要更改到当前图层的对象'
+    },
     laydel: {
       description: '删除图层及该图层上的所有对象'
     },
@@ -50,9 +54,30 @@ export default {
       description: '冻结所选对象所在的图层',
       prompt: '选择要冻结其图层的对象'
     },
+    layiso: {
+      description: '隔离所选对象所在的图层',
+      prompt: '选择要隔离其图层的对象'
+    },
+    layuniso: {
+      description: '恢复由 LAYISO 隐藏或锁定的图层'
+    },
+    laylck: {
+      description: '锁定所选对象所在的图层',
+      prompt: '选择要锁定其图层的对象'
+    },
+    layon: {
+      description: '打开图纸中的所有图层'
+    },
     layoff: {
       description: '关闭所选对象所在的图层',
       prompt: '选择要关闭其图层的对象'
+    },
+    laythw: {
+      description: '解冻图纸中的所有冻结图层'
+    },
+    layulk: {
+      description: '解锁所选对象所在的图层',
+      prompt: '选择要解锁其图层的对象'
     },
     layerclose: {
       description: '关闭图层属性管理器'

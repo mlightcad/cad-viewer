@@ -328,6 +328,140 @@ export default {
       }
     }
   },
+  layon: {
+    alreadyOn: 'All layers are already on.',
+    turnedOn: 'Turned on layers'
+  },
+  laycur: {
+    prompt: 'Select objects to be changed to the current layer',
+    currentLayerNotFound: 'Current layer not found.',
+    noObjects: 'No valid objects were selected.',
+    alreadyCurrent: 'Selected objects are already on the current layer.',
+    changed: 'Changed objects to current layer'
+  },
+  layfrz: {
+    prompt: 'Select object on layer to freeze or',
+    invalidSelection: 'Invalid object selected.',
+    settingsPrompt: 'Enter LAYFRZ setting to change',
+    viewportPrompt: 'Specify viewport freeze behavior',
+    blockSelectionPrompt: 'Specify nested block selection behavior',
+    vpfreezeFallback:
+      'Current viewer does not support per-viewport layer freeze; using Freeze behavior instead.',
+    nestedSelectionLimited:
+      'Nested block selection settings are stored, but current picking still resolves the top-level entity layer.',
+    layerNotFound: 'Layer not found',
+    cannotFreezeCurrent: 'Cannot freeze the current layer.',
+    alreadyFrozen: 'Layer is already frozen',
+    frozen: 'Frozen layer',
+    restored: 'Restored layer',
+    nothingToUndo: 'There is no LAYFRZ action to undo.',
+    keywords: {
+      settings: {
+        display: 'Settings(S)',
+        local: 'Settings',
+        global: 'Settings'
+      },
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
+      },
+      viewports: {
+        display: 'Viewports(V)',
+        local: 'Viewports',
+        global: 'Viewports'
+      },
+      blockSelection: {
+        display: 'Block selection(B)',
+        local: 'Block selection',
+        global: 'BlockSelection'
+      },
+      freeze: {
+        display: 'Freeze(F)',
+        local: 'Freeze',
+        global: 'Freeze'
+      },
+      vpfreeze: {
+        display: 'Vpfreeze(V)',
+        local: 'Vpfreeze',
+        global: 'Vpfreeze'
+      },
+      block: {
+        display: 'Block(B)',
+        local: 'Block',
+        global: 'Block'
+      },
+      entity: {
+        display: 'Entity(E)',
+        local: 'Entity',
+        global: 'Entity'
+      },
+      none: {
+        display: 'None(N)',
+        local: 'None',
+        global: 'None'
+      }
+    }
+  },
+  layiso: {
+    prompt: 'Select objects on the layer(s) to be isolated or',
+    settingsPrompt: 'Enter setting for layers not isolated',
+    offModePrompt: 'Enter off behavior for layers not isolated',
+    noLayers: 'No valid layers were selected.',
+    layerNotFound: 'Layer not found',
+    isolated: 'Isolated layer(s)',
+    affectedLayers: 'affected layers',
+    vpfreezeFallback:
+      'Current viewer does not support per-viewport layer freeze; using Off behavior instead.',
+    lockFadeFallback:
+      'Current viewer does not support layer fade display; non-isolated layers will be locked without fade.',
+    keywords: {
+      settings: {
+        display: 'Settings(S)',
+        local: 'Settings',
+        global: 'Settings'
+      },
+      off: {
+        display: 'Off(O)',
+        local: 'Off',
+        global: 'Off'
+      },
+      lockAndFade: {
+        display: 'Lock and fade(L)',
+        local: 'Lock and fade',
+        global: 'LockAndFade'
+      },
+      vpfreeze: {
+        display: 'Vpfreeze(V)',
+        local: 'Vpfreeze',
+        global: 'Vpfreeze'
+      }
+    }
+  },
+  layuniso: {
+    noPrevious: 'No previous LAYISO layer state to restore.',
+    layerNotFound: 'Layer not found',
+    nothingRestored: 'No LAYISO layer changes were restored.',
+    restored: 'Restored layers'
+  },
+  laythw: {
+    alreadyThawed: 'All layers are already thawed.',
+    thawed: 'Thawed layers'
+  },
+  laylck: {
+    prompt: 'Select an object on the layer to be locked',
+    invalidSelection: 'Invalid object selected.',
+    layerNotFound: 'Layer not found',
+    alreadyLocked: 'Layer is already locked',
+    locked: 'Locked layer'
+  },
+  layulk: {
+    prompt: 'Select an object on the layer to be unlocked',
+    invalidSelection: 'Invalid object selected.',
+    layerNotFound: 'Layer not found',
+    alreadyUnlocked: 'Layer is already unlocked',
+    unlocked: 'Unlocked layer'
+  },
   layoff: {
     prompt: 'Select object on layer to turn off or',
     invalidSelection: 'Invalid object selected.',

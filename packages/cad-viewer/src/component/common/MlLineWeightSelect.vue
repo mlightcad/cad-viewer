@@ -1,43 +1,50 @@
 <template>
-  <el-dropdown
-    trigger="click"
-    :disabled="props.disabled || !lineWeightItems.length"
-    @command="onSelect"
-  >
-    <el-button class="ml-lineweight-btn" :disabled="props.disabled">
-      <el-space>
-        <span class="ml-lineweight-label">{{ currentLabel }}</span>
-        <span
-          v-if="currentPreviewWidth !== null"
-          class="ml-lineweight-preview ml-lineweight-preview--btn"
-          :style="{ height: currentPreviewWidth + 'px' }"
-        />
+  <div class="ml-lineweight-select">
+    <el-dropdown
+      class="ml-lineweight-select__dropdown"
+      trigger="click"
+      popper-class="ml-lineweight-popper"
+      :disabled="props.disabled || !lineWeightItems.length"
+      @command="onSelect"
+    >
+      <button
+        type="button"
+        class="ml-lineweight-select__trigger"
+        :class="{ 'is-disabled': props.disabled }"
+        :disabled="props.disabled"
+      >
+        <span class="ml-lineweight-select__value">
+          <span
+            v-if="currentPreviewWidth !== null"
+            class="ml-lineweight-preview ml-lineweight-preview--btn"
+            :style="{ '--ml-lineweight-height': currentPreviewWidth + 'px' }"
+          />
+          <span class="ml-lineweight-label">{{ currentLabel }}</span>
+        </span>
         <el-icon class="ml-lineweight-caret">
           <ArrowDown />
         </el-icon>
-      </el-space>
-    </el-button>
+      </button>
 
-    <template #dropdown>
-      <el-dropdown-menu class="ml-lineweight-menu">
-        <el-dropdown-item
-          v-for="item in lineWeightItems"
-          :key="item.value"
-          :command="item.value"
-          class="ml-lineweight-item"
-        >
-          <el-space>
-            <span class="ml-lineweight-text">{{ item.label }}</span>
+      <template #dropdown>
+        <el-dropdown-menu class="ml-lineweight-menu">
+          <el-dropdown-item
+            v-for="item in lineWeightItems"
+            :key="item.value"
+            :command="item.value"
+            class="ml-lineweight-item"
+          >
             <span
               v-if="item.previewWidth !== null"
               class="ml-lineweight-preview"
-              :style="{ height: item.previewWidth + 'px' }"
+              :style="{ '--ml-lineweight-height': item.previewWidth + 'px' }"
             />
-          </el-space>
-        </el-dropdown-item>
-      </el-dropdown-menu>
-    </template>
-  </el-dropdown>
+            <span class="ml-lineweight-text">{{ item.label }}</span>
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -62,9 +69,11 @@ interface LineWeightItem {
  */
 interface LineWeightSelectProps {
   /** Currently selected line weight value. */
-  modelValue: AcGiLineWeight
+  modelValue?: AcGiLineWeight
   /** Disables selection while the surrounding ribbon is unavailable. */
   disabled?: boolean
+  /** Placeholder shown when no line weight can be resolved. */
+  placeholder?: string
 }
 
 const props = defineProps<LineWeightSelectProps>()
@@ -148,16 +157,14 @@ const lineWeightItems = computed<LineWeightItem[]>(() =>
     }))
 )
 
-const resolvedModelValue = computed<AcGiLineWeight | undefined>(() =>
-  lineWeightItems.value.some(item => item.value === props.modelValue)
-    ? props.modelValue
-    : lineWeightItems.value[0]?.value
+const selectedItem = computed<LineWeightItem | undefined>(() =>
+  lineWeightItems.value.find(item => item.value === props.modelValue)
 )
-const currentLabel = computed(() =>
-  formatLabel(resolvedModelValue.value ?? props.modelValue)
+const currentLabel = computed(
+  () => selectedItem.value?.label ?? props.placeholder ?? ''
 )
-const currentPreviewWidth = computed(() =>
-  previewPx(resolvedModelValue.value ?? props.modelValue)
+const currentPreviewWidth = computed(
+  () => selectedItem.value?.previewWidth ?? null
 )
 
 /**
@@ -172,14 +179,87 @@ function onSelect(value: AcGiLineWeight) {
 </script>
 
 <style scoped>
-.ml-lineweight-btn {
+.ml-lineweight-select {
+  --ml-lineweight-caret-size: var(--el-font-size-base);
+  display: flex;
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+.ml-lineweight-select__dropdown {
+  display: flex;
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+.ml-lineweight-select__dropdown :deep(.el-tooltip__trigger) {
+  display: flex;
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+.ml-lineweight-select__trigger {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  min-height: var(--ml-rb-compact-height, 28px);
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--el-border-radius-base);
+  background: var(--el-fill-color-blank);
+  color: var(--el-text-color-regular);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color var(--el-transition-duration),
+    box-shadow var(--el-transition-duration);
+}
+
+.ml-lineweight-select__trigger:hover {
+  border-color: var(--el-border-color-hover);
+}
+
+.ml-lineweight-select__trigger:focus-visible {
+  outline: none;
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+.ml-lineweight-select__trigger.is-disabled {
+  cursor: not-allowed;
+  color: var(--el-disabled-text-color);
+  background: var(--el-fill-color-light);
+  border-color: var(--el-border-color-light);
+}
+
+.ml-lineweight-select__value {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .ml-lineweight-caret {
-  font-size: 12px;
+  flex: 0 0 auto;
+  font-size: var(--ml-lineweight-caret-size);
+  color: var(--el-text-color-placeholder);
 }
 
 .ml-lineweight-menu {
@@ -188,26 +268,59 @@ function onSelect(value: AcGiLineWeight) {
   overflow-y: auto;
 }
 
-.ml-lineweight-item {
+.ml-lineweight-label {
+  font-size: 13px;
+  min-width: 0;
+}
+
+.ml-lineweight-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  flex: 1 1 auto;
+}
+
+.ml-lineweight-preview {
+  position: relative;
+  display: inline-flex;
+  width: 52px;
+  height: 14px;
+  flex: 0 0 52px;
+}
+
+.ml-lineweight-preview::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--ml-lineweight-height, 2px);
+  transform: translateY(-50%);
+  background-color: currentColor;
+  border-radius: 999px;
+}
+
+:global(.ml-lineweight-popper .ml-lineweight-menu) {
+  padding: 4px 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+:global(.ml-lineweight-popper .ml-lineweight-item) {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   min-width: 160px;
 }
 
-.ml-lineweight-text,
-.ml-lineweight-label {
+:global(.ml-lineweight-popper .ml-lineweight-text) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
   font-size: 13px;
-}
-
-.ml-lineweight-preview {
-  width: 40px;
-  background-color: currentColor;
-  border-radius: 2px;
-}
-
-.ml-lineweight-preview--btn {
-  width: 32px;
 }
 </style>

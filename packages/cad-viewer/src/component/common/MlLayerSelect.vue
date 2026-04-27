@@ -236,10 +236,8 @@ const { t } = useI18n()
 const searchQuery = ref('')
 const searchInputRef = ref<InstanceType<typeof ElInput>>()
 
-const selectedOption = computed(
-  () =>
-    props.options.find(item => item.value === props.modelValue) ??
-    props.options[0]
+const selectedOption = computed(() =>
+  props.options.find(item => item.value === props.modelValue)
 )
 const resolvedModelValue = computed(() => selectedOption.value?.value)
 const selectedOptionTooltip = computed(() => {
