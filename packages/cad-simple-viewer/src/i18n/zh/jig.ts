@@ -516,6 +516,10 @@ export default {
       }
     }
   },
+  layerp: {
+    restored: '恢复了之前的图层状态。',
+    noPreviousState: '没有可恢复的先前图层状态。'
+  },
   line: {
     firstPoint: '指定第一个点：',
     firstPointOrContinue: '请指定第一个点或',

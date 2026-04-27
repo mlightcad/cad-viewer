@@ -526,6 +526,10 @@ export default {
       }
     }
   },
+  layerp: {
+    restored: 'Restored previous layer state.',
+    noPreviousState: 'There is no previous layer state to restore.'
+  },
   line: {
     firstPoint: 'Specify the first point:',
     firstPointOrContinue: 'Specify first point or',

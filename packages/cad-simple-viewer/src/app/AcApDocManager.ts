@@ -33,6 +33,7 @@ import {
   AcApLayerIsoCmd,
   AcApLayerLockCmd,
   AcApLayerOnCmd,
+  AcApLayerPCmd,
   AcApLayerThawCmd,
   AcApLayerUnisoCmd,
   AcApLayerUnlockCmd,
@@ -850,6 +851,7 @@ export class AcApDocManager {
     addSystemCommand('laythw', 'laythw', new AcApLayerThawCmd())
     addSystemCommand('layuniso', 'layuniso', new AcApLayerUnisoCmd())
     addSystemCommand('layulk', 'layulk', new AcApLayerUnlockCmd())
+    addSystemCommand('layerp', 'layerp', new AcApLayerPCmd())
     addSystemCommand('layerclose', 'layerclose', new AcApLayerCloseCmd())
     addSystemCommand('line', 'line', new AcApLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())

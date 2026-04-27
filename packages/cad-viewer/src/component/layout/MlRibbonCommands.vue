@@ -116,18 +116,6 @@ interface RibbonSysVarChangeEvent {
   name: string
 }
 
-type RibbonLayerActionKey =
-  | 'layer-action-off'
-  | 'layer-action-isolate'
-  | 'layer-action-freeze'
-  | 'layer-action-lock'
-  | 'layer-action-current'
-  | 'layer-action-all-on'
-  | 'layer-action-unisolate'
-  | 'layer-action-thaw'
-  | 'layer-action-unlock'
-  | 'layer-action-restore'
-
 const props = withDefaults(defineProps<Props>(), {
   currentLocale: undefined
 })
@@ -146,14 +134,8 @@ const ribbonDisplayedLayerName = ref('')
 const {
   layers: ribbonLayers,
   setCurrentLayer: setRibbonCurrentLayer,
-  setLayerOn: setRibbonLayerOn,
-  setLayerFrozen: setRibbonLayerFrozen,
-  setLayerLocked: setRibbonLayerLocked,
   toggleLayerState: toggleRibbonLayerState,
-  isolateLayer: isolateRibbonLayer,
-  setAllLayersOn: setRibbonAllLayersOn,
-  captureLayerSnapshot: captureRibbonLayerSnapshot,
-  applyLayerSnapshot: applyRibbonLayerSnapshot
+  captureLayerSnapshot: captureRibbonLayerSnapshot
 } = useLayers(AcApDocManager.instance)
 const ribbonLayerOptions = computed(() =>
   ribbonLayers.map(layer => ({
@@ -168,19 +150,6 @@ const ribbonLayerOptions = computed(() =>
 )
 const ribbonLayerIsolationSnapshot = ref<LayerStateSnapshot | null>(null)
 const ribbonLayerPreviousSnapshot = ref<LayerStateSnapshot | null>(null)
-
-const ribbonLayerActionIds = new Set<RibbonLayerActionKey>([
-  'layer-action-off',
-  'layer-action-isolate',
-  'layer-action-freeze',
-  'layer-action-lock',
-  'layer-action-current',
-  'layer-action-all-on',
-  'layer-action-unisolate',
-  'layer-action-thaw',
-  'layer-action-unlock',
-  'layer-action-restore'
-])
 
 let observedDatabase: AcDbDatabase | undefined
 
@@ -539,87 +508,6 @@ const handleRibbonLayerChange = (layerName: string) => {
   }
 
   if (!changed) return
-  syncRibbonProperties(db)
-}
-
-const isLayerActionKey = (value: string): value is RibbonLayerActionKey =>
-  ribbonLayerActionIds.has(value as RibbonLayerActionKey)
-
-const handleRibbonLayerAction = (action: RibbonLayerActionKey) => {
-  const db = getCurrentDatabase()
-  if (!db) return
-
-  if (action === 'layer-action-restore') {
-    if (!ribbonLayerPreviousSnapshot.value) return
-    const snapshot = ribbonLayerPreviousSnapshot.value
-    ribbonLayerPreviousSnapshot.value = null
-    applyRibbonLayerSnapshot(snapshot, db)
-    syncRibbonProperties(db)
-    return
-  }
-
-  if (
-    action === 'layer-action-unisolate' &&
-    ribbonLayerIsolationSnapshot.value == null
-  ) {
-    return
-  }
-
-  const selectedLayer = db.tables.layerTable.getAt(
-    ribbonDisplayedLayerName.value
-  )
-  const requiresSelectedLayer = action !== 'layer-action-all-on'
-  if (requiresSelectedLayer && !selectedLayer) return
-
-  const previousSnapshot = captureRibbonLayerSnapshot(db)
-  if (!previousSnapshot) return
-  let changed = false
-
-  switch (action) {
-    case 'layer-action-off':
-      if (!selectedLayer) return
-      changed = setRibbonLayerOn(selectedLayer.name, false)
-      break
-    case 'layer-action-isolate':
-      if (!selectedLayer) return
-      ribbonLayerIsolationSnapshot.value = previousSnapshot
-      changed = isolateRibbonLayer(selectedLayer.name)
-      break
-    case 'layer-action-freeze':
-      if (!selectedLayer) return
-      changed = setRibbonLayerFrozen(selectedLayer.name, true)
-      break
-    case 'layer-action-lock':
-      if (!selectedLayer) return
-      changed = setRibbonLayerLocked(selectedLayer.name, true)
-      break
-    case 'layer-action-current':
-      if (!selectedLayer) return
-      changed = setRibbonCurrentLayer(selectedLayer.name)
-      break
-    case 'layer-action-all-on':
-      changed = setRibbonAllLayersOn()
-      break
-    case 'layer-action-unisolate':
-      if (!ribbonLayerIsolationSnapshot.value) return
-      applyRibbonLayerSnapshot(ribbonLayerIsolationSnapshot.value, db)
-      ribbonLayerIsolationSnapshot.value = null
-      changed = true
-      break
-    case 'layer-action-thaw':
-      if (!selectedLayer) return
-      changed = setRibbonLayerFrozen(selectedLayer.name, false)
-      break
-    case 'layer-action-unlock':
-      if (!selectedLayer) return
-      changed = setRibbonLayerLocked(selectedLayer.name, false)
-      break
-    default:
-      return
-  }
-
-  if (!changed) return
-  ribbonLayerPreviousSnapshot.value = previousSnapshot
   syncRibbonProperties(db)
 }
 
@@ -1429,6 +1317,17 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-tool-measure-area', 'measurearea')
   commandByItemId.set('cmd-tool-measure-arc', 'measurearc')
   commandByItemId.set('cmd-tool-clear-measurements', 'clearmeasurements')
+  // Layer actions
+  commandByItemId.set('layer-action-off', 'layoff')
+  commandByItemId.set('layer-action-isolate', 'layiso')
+  commandByItemId.set('layer-action-freeze', 'layfrz')
+  commandByItemId.set('layer-action-lock', 'laylck')
+  commandByItemId.set('layer-action-current', 'laycur')
+  commandByItemId.set('layer-action-all-on', 'layon')
+  commandByItemId.set('layer-action-unisolate', 'layuniso')
+  commandByItemId.set('layer-action-thaw', 'laythw')
+  commandByItemId.set('layer-action-unlock', 'layulk')
+  commandByItemId.set('layer-action-restore', 'layerp')
 
   const tabs: RibbonTabModel[] = buildBaseTabs(openMode, annotationVisible)
   return {
@@ -1472,10 +1371,6 @@ const handleRibbonItemClick = (payload: {
   itemId: string
 }) => {
   if (isRibbonDisabled.value) return
-  if (isLayerActionKey(payload.itemId)) {
-    handleRibbonLayerAction(payload.itemId)
-    return
-  }
   if (
     payload.groupId === 'home-layer' &&
     ribbonLayerOptions.value.some(item => item.value === payload.itemId)
