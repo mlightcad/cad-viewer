@@ -4,7 +4,7 @@ import {
   AcDbSysVarManager
 } from '@mlightcad/data-model'
 
-import { AcEdBaseView } from '../editor/view/AcEdBaseView'
+import { AcEdBaseView, AcEdLayerStateManager, type AcEdLayerStateSnapshot } from '../editor/view'
 import { AcTrView2d } from '../view'
 import { AcApDocument } from './AcApDocument'
 
@@ -36,6 +36,10 @@ export class AcApContext {
   private _view: AcEdBaseView
   /** The document containing the CAD database */
   private _doc: AcApDocument
+  /** Manager for handling layer state changes */
+  private _layerStateManager: AcEdLayerStateManager
+  /** Layer state snapshot captured at the start of a command, used to detect changes */
+  private _layerStateBeforeCommand: AcEdLayerStateSnapshot | null = null
 
   /**
    * Creates a new application context that binds a document with its view.
@@ -52,6 +56,7 @@ export class AcApContext {
   constructor(view: AcEdBaseView, doc: AcApDocument) {
     this._view = view
     this._doc = doc
+    this._layerStateManager = new AcEdLayerStateManager()
 
     // Add entity to scene
     doc.database.events.entityAppended.addEventListener(args => {
@@ -110,6 +115,63 @@ export class AcApContext {
     view.selectionSet.events.selectionRemoved.addEventListener(args => {
       view.unhighlight(args.ids)
     })
+
+    // Set up automatic layer state tracking:
+    // 1. On commandWillStart: capture the current layer state
+    // 2. On commandEnded: compare and update if there were changes
+    view.editor.events.commandWillStart.addEventListener(() => {
+      try {
+        this._layerStateBeforeCommand = {
+          clayer: this.doc.database.clayer,
+          states: [...this.doc.database.tables.layerTable.newIterator()].map(
+            layer => ({
+              name: layer.name,
+              isOn: !layer.isOff,
+              isFrozen: layer.isFrozen,
+              isLocked: ((layer.standardFlags ?? 0) & 0x04) !== 0
+            })
+          )
+        }
+      } catch {
+        // Silently ignore if context is not available during early initialization
+        this._layerStateBeforeCommand = null
+      }
+    })
+    view.editor.events.commandEnded.addEventListener(() => {
+      try {
+        if (!this._layerStateBeforeCommand) {
+          return
+        }
+
+        const layerStateAfterCommand: AcEdLayerStateSnapshot = {
+          clayer: this.doc.database.clayer,
+          states: [...this.doc.database.tables.layerTable.newIterator()].map(
+            layer => ({
+              name: layer.name,
+              isOn: !layer.isOff,
+              isFrozen: layer.isFrozen,
+              isLocked: ((layer.standardFlags ?? 0) & 0x04) !== 0
+            })
+          )
+        }
+
+        // Check if layer state changed
+        if (
+          AcEdLayerStateManager.hasLayerStateChanged(
+            this._layerStateBeforeCommand,
+            layerStateAfterCommand
+          )
+        ) {
+          // Layer state changed, update the manager with the previous state
+          this._layerStateManager.importSnapshot(this._layerStateBeforeCommand)
+        }
+
+        this._layerStateBeforeCommand = null
+      } catch {
+        // Silently ignore errors during cleanup
+        this._layerStateBeforeCommand = null
+      }
+    })
   }
 
   /**
@@ -128,5 +190,15 @@ export class AcApContext {
    */
   get doc(): AcApDocument {
     return this._doc
+  }
+
+  /**
+   * Restores the previous layer state captured before a command, if available.
+   *
+   * This is used by the `LAYERP` command to revert layer changes.
+   * @returns Returns true if the previous layer state was successfully restored, false if no snapshot is available.
+   */
+  restorePreviousLayerState() {
+    return this._layerStateManager.restorePreviousState(this.doc.database)
   }
 }
