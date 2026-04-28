@@ -67,6 +67,12 @@ export class AcTrMaterialUtil {
       if (material.uniforms.u_color) {
         material.uniforms.u_color.value.set(color)
       }
+      if (material.uniforms.u_startColor) {
+        material.uniforms.u_startColor.value.set(color)
+      }
+      if (material.uniforms.u_endColor) {
+        material.uniforms.u_endColor.value.set(color)
+      }
     }
   }
 

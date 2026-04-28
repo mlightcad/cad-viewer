@@ -39,10 +39,54 @@ export class AcTrPolygon extends AcTrEntity {
       geometry.computeBoundingBox()
       this.box = geometry.boundingBox!
 
-      const material = this.styleManager.getFillMaterial(traits)
+      this.addGradientPositionAttribute(geometry, traits)
+
+      const gradientBounds = {
+        minX: this.box.min.x,
+        minY: this.box.min.y,
+        maxX: this.box.max.x,
+        maxY: this.box.max.y
+      }
+      const material = this.styleManager.getFillMaterial(
+        traits,
+        undefined,
+        gradientBounds
+      )
       this.add(new THREE.Mesh(geometry, material))
     }
   }
+
+  private addGradientPositionAttribute(
+    geometry: THREE.BufferGeometry,
+    traits: AcGiSubEntityTraits
+  ) {
+    if (!traits.fillType.gradient || !geometry.boundingBox) {
+      return
+    }
+
+    const position = geometry.getAttribute('position')
+    if (!position) {
+      return
+    }
+
+    const box = geometry.boundingBox
+    const centerX = (box.min.x + box.max.x) * 0.5
+    const centerY = (box.min.y + box.max.y) * 0.5
+    const halfWidth = Math.max((box.max.x - box.min.x) * 0.5, 1e-9)
+    const halfHeight = Math.max((box.max.y - box.min.y) * 0.5, 1e-9)
+    const values = new Float32Array(position.count * 2)
+
+    for (let index = 0; index < position.count; index++) {
+      values[index * 2] = (position.getX(index) - centerX) / halfWidth
+      values[index * 2 + 1] = (position.getY(index) - centerY) / halfHeight
+    }
+
+    geometry.setAttribute(
+      'gradientPosition',
+      new THREE.BufferAttribute(values, 2)
+    )
+  }
+
   private buildHatchGeometry(
     pointBoundaries: AcGePoint2d[][],
     node: AcGeIndexNode,
