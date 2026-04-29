@@ -6,6 +6,11 @@ import {
 import * as THREE from 'three'
 
 import {
+  AcTrGradientBounds,
+  createGradientHatchShaderMaterial,
+  normalizeGradientBounds
+} from './AcTrGradientHatchShaders'
+import {
   AcTrPatternLine,
   createHatchPatternShaderMaterial
 } from './AcTrHatchPatternShaders'
@@ -17,6 +22,7 @@ import {
 
 export interface AcTrFillMaterialOptions {
   rebaseOffset: THREE.Vector2
+  gradientBounds?: AcTrGradientBounds
   /**
    * Which face the rasteriser keeps.  Defaults to `'front'`.
    *
@@ -33,8 +39,8 @@ export interface AcTrFillMaterialOptions {
  *
  * Responsibilities:
  * - Returns THREE.MeshBasicMaterial for solid fills or empty/unsupported hatches.
- * - Returns custom shader materials for patterned hatches.
- * - Caches both MeshBasicMaterials and hatch shader materials.
+ * - Returns custom shader materials for patterned and gradient hatches.
+ * - Caches MeshBasicMaterials and hatch shader materials.
  * - Provides `clear()` method to dispose of all cached materials.
  */
 export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMaterialOptions> {
@@ -94,7 +100,11 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     traits: AcGiSubEntityTraits,
     _options: AcTrFillMaterialOptions
   ): boolean {
-    return (traits.drawOrder ?? 0) < 0 && traits.color.isForeground
+    return (
+      (traits.drawOrder ?? 0) < 0 &&
+      traits.color.isForeground &&
+      !traits.fillType.gradient
+    )
   }
 
   /**
@@ -125,7 +135,13 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       : traits
 
     let material: THREE.Material
-    if (!style.definitionLines || style.definitionLines.length < 1) {
+    if (style.gradient) {
+      material = this.createGradientShaderMaterial(
+        effectiveTraits,
+        options,
+        threeSide
+      )
+    } else if (!style.definitionLines || style.definitionLines.length < 1) {
       material = this.createMeshBasicMaterial(effectiveTraits, threeSide)
     } else if (
       style.definitionLines.some(line => !this.isValidDefinitionLine(line))
@@ -150,6 +166,19 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       side
     })
     return material
+  }
+
+  private createGradientShaderMaterial(
+    traits: AcGiSubEntityTraits,
+    options: AcTrFillMaterialOptions,
+    threeSide: THREE.Side
+  ): THREE.Material {
+    return createGradientHatchShaderMaterial(
+      traits.fillType.gradient!,
+      normalizeGradientBounds(options.gradientBounds),
+      new THREE.Color(traits.rgbColor),
+      threeSide
+    )
   }
 
   /**
@@ -300,9 +329,36 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     // layer + colour.  The suffix is appended only when the condition
     // matches, keeping the common path's keys bit-identical.
     const bgSuffix =
-      (traits.drawOrder ?? 0) < 0 && traits.color.isForeground ? '_bgfill' : ''
+      (traits.drawOrder ?? 0) < 0 &&
+      traits.color.isForeground &&
+      !style.gradient
+        ? '_bgfill'
+        : ''
 
     // Use color + layer + rebaseOffset + pattern info for key
+    if (style.gradient) {
+      const gradient = style.gradient
+      const bounds = normalizeGradientBounds(options.gradientBounds)
+      return [
+        'gradient',
+        traits.layer,
+        traits.rgbColor,
+        gradient.name || 'LINEAR',
+        gradient.angle ?? 0,
+        gradient.shift ?? 0,
+        gradient.oneColorMode ? 1 : 0,
+        gradient.shadeTintValue ?? 0,
+        gradient.startColor ?? '',
+        gradient.endColor ?? '',
+        bounds.minX,
+        bounds.minY,
+        bounds.maxX,
+        bounds.maxY,
+        sideSuffix,
+        drawOrderSuffix
+      ].join('_')
+    }
+
     const isSolid = !style.definitionLines || style.definitionLines.length === 0
     if (isSolid) {
       return `solid_${traits.layer}_${traits.rgbColor}${sideSuffix}${drawOrderSuffix}${bgSuffix}`

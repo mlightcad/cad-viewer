@@ -126,4 +126,49 @@ describe('AcTrStyleManager', () => {
     expect(lineworkFillMetadata.isBackgroundFill).toBe(false)
     expect(lineworkFillMaterial.color.getHex()).toBe(0x000000)
   })
+
+  it('creates gradient hatch shader materials with per-boundary uniforms', () => {
+    const styleManager = new AcTrStyleManager()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'A-GRAD'
+    traits.rgbColor = 0xff0000
+    traits.drawOrder = -1
+    traits.fillType = {
+      solidFill: false,
+      patternAngle: 0,
+      definitionLines: [],
+      gradient: {
+        name: 'LINEAR',
+        angle: Math.PI / 4,
+        shift: 0.25,
+        oneColorMode: false,
+        shadeTintValue: 0,
+        endColor: 0x0000ff
+      }
+    }
+
+    const material = styleManager.getFillMaterial(traits, new THREE.Vector2(), {
+      minX: 1,
+      minY: 2,
+      maxX: 5,
+      maxY: 8
+    }) as THREE.ShaderMaterial
+    const otherBoundsMaterial = styleManager.getFillMaterial(
+      traits,
+      new THREE.Vector2(),
+      { minX: 0, minY: 0, maxX: 5, maxY: 8 }
+    )
+
+    expect(material).toBeInstanceOf(THREE.ShaderMaterial)
+    expect(material).not.toBe(otherBoundsMaterial)
+    expect(material.vertexShader).toContain('attribute vec2 gradientPosition')
+    expect(material.uniforms.u_startColor.value.getHex()).toBe(0xff0000)
+    expect(material.uniforms.u_endColor.value.getHex()).toBe(0x0000ff)
+    expect(material.uniforms.u_angle.value).toBeCloseTo(Math.PI / 4)
+    expect(material.uniforms.u_shift.value).toBeCloseTo(0.25)
+
+    const metadata = getMaterialMetadata(material)
+    expect(metadata.drawOrder).toBe(-1)
+    expect(metadata.isBackgroundFill).toBe(false)
+  })
 })

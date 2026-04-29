@@ -134,10 +134,17 @@ export class AcTrStyleManager {
    */
   getFillMaterial(
     traits: AcGiSubEntityTraits,
-    rebaseOffset: THREE.Vector2 = _rebaseOffset
+    rebaseOffset: THREE.Vector2 = _rebaseOffset,
+    gradientBounds?: {
+      minX: number
+      minY: number
+      maxX: number
+      maxY: number
+    }
   ): THREE.Material {
     return this.fillMgr.getMaterial(traits, {
-      rebaseOffset
+      rebaseOffset,
+      gradientBounds
     })
   }
 
