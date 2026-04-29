@@ -48,6 +48,7 @@ import {
 import { AcTrGeometryUtil } from '../util'
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
+import { sortPickResults } from './AcTrPickResultUtil'
 import { AcTrScene } from './AcTrScene'
 
 /**
@@ -667,23 +668,15 @@ export class AcTrView2d extends AcEdBaseView {
 
       const threshold = Math.max(box.size.width / 2, box.size.height / 2)
       const raycaster = activeLayoutView.resetRaycaster(point, threshold)
-      if (pickOneOnly) {
-        firstQueryResults.some(item => {
-          const objectId = item.id
-          if (activeLayout.isIntersectWith(objectId, raycaster)) {
-            results.push(item)
-            return true
-          }
-          return false
-        })
-      } else {
-        firstQueryResults.forEach(item => {
-          const objectId = item.id
-          if (activeLayout.isIntersectWith(objectId, raycaster)) {
-            results.push(item)
-          }
-        })
-      }
+      firstQueryResults.forEach(item => {
+        const objectId = item.id
+        if (activeLayout.isIntersectWith(objectId, raycaster)) {
+          results.push(item)
+        }
+      })
+
+      const sortedResults = sortPickResults(results, point)
+      return pickOneOnly ? sortedResults.slice(0, 1) : sortedResults
     }
     return results
   }

@@ -1039,8 +1039,9 @@ export class AcApDocManager {
    */
   setActiveLayout() {
     const currentView = this.curView as AcTrView2d
-    currentView.activeLayoutBtrId = this.curDocument.database.currentSpaceId
-    currentView.modelSpaceBtrId = this.curDocument.database.currentSpaceId
+    const db = this.curDocument.database
+    currentView.activeLayoutBtrId = db.currentSpaceId
+    currentView.modelSpaceBtrId = db.tables.blockTable.modelSpace.objectId
   }
 
   /**

@@ -256,6 +256,10 @@ export class AcTrLayout {
     return false
   }
 
+  hasVisibleEntity(objectId: AcDbObjectId) {
+    return this.getLayersByObjectId(objectId).some(layer => layer.visible)
+  }
+
   /**
    * Add one AutoCAD entity into this layout. If layer group referenced by the entity doesn't exist, create one
    * layer group and add this entity this group.
