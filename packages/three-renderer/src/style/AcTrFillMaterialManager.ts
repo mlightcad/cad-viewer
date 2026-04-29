@@ -6,14 +6,14 @@ import {
 import * as THREE from 'three'
 
 import {
-  AcTrPatternLine,
-  createHatchPatternShaderMaterial
-} from './AcTrHatchPatternShaders'
-import {
   AcTrGradientBounds,
   createGradientHatchShaderMaterial,
   normalizeGradientBounds
 } from './AcTrGradientHatchShaders'
+import {
+  AcTrPatternLine,
+  createHatchPatternShaderMaterial
+} from './AcTrHatchPatternShaders'
 import { AcTrMaterialManager, AcTrMaterialSide } from './AcTrMaterialManager'
 import {
   getMaterialMetadata,
