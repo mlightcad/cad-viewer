@@ -543,6 +543,34 @@ export default {
       }
     }
   },
+  xline: {
+    firstPointOrOptions: '指定点或',
+    secondPoint: '指定第二个点：',
+    throughPoint: '指定穿过点：',
+    angle: '输入构造线角度：',
+    invalidDirection: 'XLINE 的方向无效。',
+    keywords: {
+      hor: {
+        display: '水平(H)',
+        local: '水平',
+        global: 'Hor'
+      },
+      ver: {
+        display: '垂直(V)',
+        local: '垂直',
+        global: 'Ver'
+      },
+      ang: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Ang'
+      }
+    }
+  },
+  ray: {
+    startPoint: '指定起点：',
+    throughPoint: '指定通过点：'
+  },
   mline: {
     startPointWithOptions: '指定起点或',
     nextPointWithOptions: '指定下一点或',

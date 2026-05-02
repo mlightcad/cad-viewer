@@ -169,7 +169,9 @@ export class AcApMLineCmd extends AcEdCommand {
     }
 
     const promptScale = async () => {
-      const prompt = new AcEdPromptDoubleOptions(AcApI18n.t('jig.mline.scalePrompt'))
+      const prompt = new AcEdPromptDoubleOptions(
+        AcApI18n.t('jig.mline.scalePrompt')
+      )
       prompt.allowNone = true
       prompt.allowZero = true
       prompt.allowNegative = true
@@ -401,7 +403,8 @@ function createMLineSegments(
     const miter = createMiterInfo(edgeDirections, vertexIndex)
     return {
       position,
-      direction: edgeDirections[Math.min(vertexIndex, edgeDirections.length - 1)],
+      direction:
+        edgeDirections[Math.min(vertexIndex, edgeDirections.length - 1)],
       miterDirection: miter.direction,
       elements: elementOffsets.map(offset => ({
         parameterCount: 1,
@@ -500,7 +503,9 @@ function leftNormal(vector: AcGeVector3dLike): AcGeVector3dLike {
   return normal ?? { x: 0, y: 1, z: 0 }
 }
 
-function normalizeVector(vector: AcGeVector3dLike): AcGeVector3dLike | undefined {
+function normalizeVector(
+  vector: AcGeVector3dLike
+): AcGeVector3dLike | undefined {
   const length = Math.sqrt(
     vector.x * vector.x + vector.y * vector.y + vector.z * vector.z
   )

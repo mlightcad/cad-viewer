@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <rect class="trace" x="9" y="9" width="2" height="2" fill="var(--el-color-primary)"></rect>
+  <rect class="icon-line" x="11.46" y="5.14" width="6" height=".8" transform="translate(.32 11.85) rotate(-45)"></rect>
+  <polygon class="icon-line" points="18 2 13.54 3.2 16.11 3.89 16.8 6.46 18 2"></polygon>
+  <rect class="icon-line" x="2.54" y="14.06" width="6" height=".8" transform="translate(-8.61 8.15) rotate(-45)"></rect>
+  <polygon class="icon-line" points="2 18 6.46 16.8 3.89 16.11 3.2 13.54 2 18"></polygon>
+</svg>
