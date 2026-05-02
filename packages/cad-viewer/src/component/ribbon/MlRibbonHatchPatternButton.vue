@@ -1,54 +1,61 @@
 <template>
   <div class="ml-ribbon-hatch-pattern-large-dropdown">
-    <el-dropdown
-      ref="dropdownRef"
+    <ElPopover
       v-model:visible="isOpen"
       trigger="click"
       placement="bottom-start"
       popper-class="ml-hatch-pattern-dropdown-popper"
       :disabled="disabled"
+      :offset="6"
+      :show-arrow="false"
+      persistent
     >
-      <el-button class="ml-ribbon-hatch-pattern-large-dropdown__button" :disabled="disabled">
-        <span
-          class="ml-ribbon-hatch-pattern-large-dropdown__swatch"
-          :style="selectedSwatchStyle"
-          aria-hidden="true"
-        />
-        <span class="ml-ribbon-hatch-pattern-large-dropdown__label">{{ buttonLabel }}</span>
-        <el-icon class="ml-ribbon-hatch-pattern-large-dropdown__caret" aria-hidden="true">
-          <arrow-down />
-        </el-icon>
-      </el-button>
-
-      <template #dropdown>
-        <ml-hatch-pattern-panel
-          :model-value="normalizedModelValue"
-          :options="resolvedOptions"
+      <template #reference>
+        <MlRibbonButton
+          :id="buttonId"
+          class="ml-ribbon-hatch-pattern-large-dropdown__button"
+          :label="buttonLabel"
           :disabled="disabled"
-          @select="handlePatternSelect"
-        />
+          :aria-label="buttonLabel"
+        >
+          <template #icon>
+            <span
+              class="ml-ribbon-hatch-pattern-large-dropdown__swatch"
+              :style="selectedSwatchStyle"
+              aria-hidden="true"
+            />
+          </template>
+        </MlRibbonButton>
       </template>
-    </el-dropdown>
+
+      <MlHatchPatternPanel
+        :model-value="normalizedModelValue"
+        :options="resolvedOptions"
+        :disabled="disabled"
+        @select="handlePatternSelect"
+      />
+    </ElPopover>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ArrowDown } from '@element-plus/icons-vue'
+import { MlRibbonButton } from '@mlightcad/ribbon'
+import { ElPopover } from 'element-plus'
 import { computed, ref } from 'vue'
 
 import {
   DEFAULT_HATCH_PATTERN_OPTIONS,
   type HatchPatternOption,
   resolveHatchPatternSwatchStyle
-} from './hatchPatternPreview'
-import MlHatchPatternPanel from './MlHatchPatternPanel.vue'
+} from '../common/hatchPatternPreview'
+import MlHatchPatternPanel from '../common/MlHatchPatternPanel.vue'
 
 /**
  * Props accepted by the ribbon large hatch pattern dropdown button.
  */
 interface RibbonHatchPatternLargeDropdownProps {
   /** Full ribbon item model injected by the ribbon host for custom items. */
-  item?: { label?: string } | null
+  item?: { id?: string; label?: string } | null
   /** Current hatch pattern name stored in ribbon state. */
   modelValue?: string
   /** Candidate hatch patterns available in the picker panel. */
@@ -63,15 +70,18 @@ interface RibbonHatchPatternLargeDropdownProps {
   emitItemClick?: (payload?: string | number | boolean) => void
 }
 
-const props = withDefaults(defineProps<RibbonHatchPatternLargeDropdownProps>(), {
-  item: null,
-  modelValue: 'ANSI31',
-  options: () => DEFAULT_HATCH_PATTERN_OPTIONS,
-  itemIdPrefix: 'hatch-pattern:',
-  label: undefined,
-  disabled: false,
-  emitItemClick: undefined
-})
+const props = withDefaults(
+  defineProps<RibbonHatchPatternLargeDropdownProps>(),
+  {
+    item: null,
+    modelValue: 'ANSI31',
+    options: () => DEFAULT_HATCH_PATTERN_OPTIONS,
+    itemIdPrefix: 'hatch-pattern:',
+    label: undefined,
+    disabled: false,
+    emitItemClick: undefined
+  }
+)
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
@@ -79,9 +89,10 @@ const emit = defineEmits<{
 }>()
 
 const isOpen = ref(false)
-const dropdownRef = ref<{ handleClose?: () => void } | null>(null)
 
-const normalizedModelValue = computed(() => props.modelValue.trim().toUpperCase())
+const normalizedModelValue = computed(() =>
+  props.modelValue.trim().toUpperCase()
+)
 
 const resolvedOptions = computed<HatchPatternOption[]>(() =>
   props.options.map(item => ({
@@ -97,6 +108,8 @@ const selectedSwatchStyle = computed(() =>
 const buttonLabel = computed(
   () => props.label ?? props.item?.label ?? normalizedModelValue.value
 )
+
+const buttonId = computed(() => props.item?.id?.trim() || 'hatch-pattern')
 
 /**
  * Emits a ribbon item-click payload for the selected hatch pattern.
@@ -119,65 +132,37 @@ function handlePatternSelect(patternName: string) {
   if (props.disabled) return
   emitSelection(patternName)
   isOpen.value = false
-  dropdownRef.value?.handleClose?.()
 }
 </script>
 
 <style scoped>
 .ml-ribbon-hatch-pattern-large-dropdown {
+  --ml-ribbon-hatch-pattern-scale: var(--ml-rb-scale, 1);
   display: inline-flex;
   align-self: stretch;
-  min-width: 62px;
   height: 100%;
 }
 
-.ml-ribbon-hatch-pattern-large-dropdown :deep(.el-dropdown) {
+.ml-ribbon-hatch-pattern-large-dropdown :deep(.el-popover__reference-wrapper) {
   display: inline-flex;
   align-self: stretch;
   width: 100%;
   height: 100%;
-}
-
-.ml-ribbon-hatch-pattern-large-dropdown__button {
-  min-width: 68px;
-  width: 68px;
-  height: 100%;
-  min-height: 0;
-  padding: 8px 6px;
-}
-
-.ml-ribbon-hatch-pattern-large-dropdown__button :deep(> span) {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 100%;
 }
 
 .ml-ribbon-hatch-pattern-large-dropdown__swatch {
-  width: 30px;
-  height: 30px;
-  border: 1px solid #404a59;
+  display: inline-block;
+  width: calc(30px * var(--ml-ribbon-hatch-pattern-scale));
+  height: calc(30px * var(--ml-ribbon-hatch-pattern-scale));
+  border: 1px solid var(--ml-rb-border-strong, #404a59);
   box-sizing: border-box;
-}
-
-.ml-ribbon-hatch-pattern-large-dropdown__label {
-  font-size: 11px;
-  line-height: 1.15;
-  text-align: center;
-  max-width: 100%;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.ml-ribbon-hatch-pattern-large-dropdown__caret {
-  font-size: 10px;
-  line-height: 1;
-  opacity: 0.85;
 }
 
 :global(.ml-hatch-pattern-dropdown-popper) {
   padding: 0;
+}
+
+:global(.ml-hatch-pattern-dropdown-popper .el-popper__arrow) {
+  display: none;
 }
 </style>

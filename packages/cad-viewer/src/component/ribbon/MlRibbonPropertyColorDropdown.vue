@@ -18,7 +18,7 @@
 import { AcCmColor } from '@mlightcad/data-model'
 
 import { color as colorIcon } from '../../svg'
-import MlColorDropdown from './MlColorDropdown.vue'
+import MlColorDropdown from '../common/MlColorDropdown.vue'
 import MlRibbonPropertyField from './MlRibbonPropertyField.vue'
 
 /**

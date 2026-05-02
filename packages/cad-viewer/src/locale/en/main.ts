@@ -15,13 +15,14 @@ export default {
       contextTitle: 'Hatch Creation',
       group: {
         boundary: 'Boundaries',
+        pattern: 'Pattern',
         properties: 'Properties',
         close: 'Close'
       },
       command: {
         pickPoints: 'Pick Points',
         selectObjects: 'Select Objects',
-        close: 'Close Hatch'
+        close: 'Close'
       },
       field: {
         pattern: 'Pattern',

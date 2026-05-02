@@ -1,5 +1,9 @@
 <template>
-  <div class="ml-hatch-pattern-panel" role="listbox" :aria-label="panelAriaLabel">
+  <div
+    class="ml-hatch-pattern-panel"
+    role="listbox"
+    :aria-label="panelAriaLabel"
+  >
     <button
       v-for="option in normalizedOptions"
       :key="option.value"
@@ -56,7 +60,9 @@ const emit = defineEmits<{
   (e: 'select', value: string): void
 }>()
 
-const normalizedModelValue = computed(() => props.modelValue.trim().toUpperCase())
+const normalizedModelValue = computed(() =>
+  props.modelValue.trim().toUpperCase()
+)
 
 const normalizedOptions = computed<HatchPatternOption[]>(() =>
   props.options.map(item => ({

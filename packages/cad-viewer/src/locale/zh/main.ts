@@ -15,13 +15,14 @@ export default {
       contextTitle: '填充创建',
       group: {
         boundary: '边界',
+        pattern: '图案',
         properties: '特性',
         close: '关闭'
       },
       command: {
         pickPoints: '拾取点',
         selectObjects: '选择对象',
-        close: '关闭填充创建'
+        close: '关闭'
       },
       field: {
         pattern: '图案',
