@@ -50,7 +50,8 @@ export default {
       description: 'Creates linear dimensions'
     },
     measurearea: {
-      description: 'Calculates the area and perimeter of selected objects or points'
+      description:
+        'Calculates the area and perimeter of selected objects or points'
     },
     measureangle: {
       description: 'Measures the angle between two lines or three points'
@@ -166,6 +167,10 @@ export default {
     qnew: {
       description: 'Starts a new drawing'
     },
+    ray: {
+      description:
+        'Creates a ray that starts at a point and extends to infinity'
+    },
     rectang: {
       description: 'Creates a rectangle by specifying two opposite corners'
     },
@@ -191,6 +196,10 @@ export default {
     },
     whitebkcolor: {
       description: 'Toggles the drawing area background between white and black'
+    },
+    xline: {
+      description:
+        'Creates a construction line that extends infinitely in both directions'
     },
     zoom: {
       description: 'Zooms to display the maximum extents of all entities'

@@ -156,6 +156,9 @@ export default {
     qnew: {
       description: '创建新图纸'
     },
+    ray: {
+      description: '创建从起点向单一方向无限延伸的射线'
+    },
     rectang: {
       description: '通过指定两个对角点创建矩形'
     },
@@ -180,6 +183,9 @@ export default {
     },
     whitebkcolor: {
       description: '切换绘图区域背景颜色，在白色和黑色背景之间切换'
+    },
+    xline: {
+      description: '创建在两个方向上无限延伸的构造线'
     },
     zoom: {
       description: '缩放以显示所有对象'

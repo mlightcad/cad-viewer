@@ -83,17 +83,20 @@ import {
   measureDistance,
   mline,
   move,
+  mtext,
   multiPoints,
   polygon,
   polyline,
   properties,
   qselect,
+  ray,
   rect,
   revCircle,
   revCloud,
   revFreeDraw,
   revRect,
-  splineFitPoints
+  splineFitPoints,
+  xline
 } from '../../svg'
 import {
   MlLayerSelect,
@@ -539,10 +542,13 @@ const buildBaseTabs = (
     circle: t('main.ribbon.tooltip.circle'),
     arc: t('main.ribbon.tooltip.arc'),
     mline: t('main.ribbon.tooltip.mline'),
+    ray: t('main.ribbon.tooltip.ray'),
+    xline: t('main.ribbon.tooltip.xline'),
     ellipse: t('main.ribbon.tooltip.ellipse'),
     rect: t('main.ribbon.tooltip.rect'),
     point: t('main.ribbon.tooltip.point'),
     hatch: t('main.ribbon.tooltip.hatch'),
+    text: t('main.ribbon.tooltip.text'),
     move: t('main.ribbon.tooltip.move'),
     rotate: t('main.ribbon.tooltip.rotate'),
     copy: t('main.ribbon.tooltip.copy'),
@@ -751,6 +757,20 @@ const buildBaseTabs = (
               label: t('main.ribbon.command.mline'),
               tooltip: ribbonTooltips.mline,
               props: { icon: mline }
+            },
+            {
+              id: 'cmd-ray',
+              type: 'button',
+              label: t('main.ribbon.command.ray'),
+              tooltip: ribbonTooltips.ray,
+              props: { icon: ray }
+            },
+            {
+              id: 'cmd-xline',
+              type: 'button',
+              label: t('main.ribbon.command.xline'),
+              tooltip: ribbonTooltips.xline,
+              props: { icon: xline }
             },
             {
               id: 'cmd-point',
@@ -1239,6 +1259,27 @@ const buildBaseTabs = (
           ]
         },
         {
+          id: 'home-annotation',
+          title: t('main.ribbon.group.annotation'),
+          orientation: 'row',
+          collections: [
+            {
+              id: 'home-annotation-main',
+              layout: 'row',
+              items: [
+                {
+                  id: 'cmd-mtext',
+                  type: 'button',
+                  label: t('main.ribbon.command.text'),
+                  tooltip: ribbonTooltips.text,
+                  size: 'large',
+                  props: { icon: mtext }
+                }
+              ]
+            }
+          ]
+        },
+        {
           id: 'home-utilities',
           title: t('main.ribbon.group.utilities'),
           orientation: 'row',
@@ -1308,8 +1349,11 @@ const ribbonData = computed(() => {
   commandByItemId.set('rectang', 'rectang')
   commandByItemId.set('polygon', 'polygon')
   commandByItemId.set('cmd-point', 'point')
+  commandByItemId.set('cmd-ray', 'ray')
   commandByItemId.set('cmd-hatch', '-hatch')
+  commandByItemId.set('cmd-mtext', 'mtext')
   commandByItemId.set('cmd-mline', 'mline')
+  commandByItemId.set('cmd-xline', 'xline')
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-copy', 'copy')

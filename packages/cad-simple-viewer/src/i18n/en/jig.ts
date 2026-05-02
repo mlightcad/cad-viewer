@@ -553,6 +553,34 @@ export default {
       }
     }
   },
+  xline: {
+    firstPointOrOptions: 'Specify a point or',
+    secondPoint: 'Specify second point:',
+    throughPoint: 'Specify through point:',
+    angle: 'Enter angle of xline:',
+    invalidDirection: 'Invalid direction for XLINE.',
+    keywords: {
+      hor: {
+        display: 'Hor(H)',
+        local: 'Hor',
+        global: 'Hor'
+      },
+      ver: {
+        display: 'Ver(V)',
+        local: 'Ver',
+        global: 'Ver'
+      },
+      ang: {
+        display: 'Ang(A)',
+        local: 'Ang',
+        global: 'Ang'
+      }
+    }
+  },
+  ray: {
+    startPoint: 'Specify start point:',
+    throughPoint: 'Specify through point:'
+  },
   mline: {
     startPointWithOptions: 'Specify start point or',
     nextPointWithOptions: 'Specify next point or',
