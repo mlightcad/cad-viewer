@@ -127,6 +127,41 @@ describe('AcTrStyleManager', () => {
     expect(lineworkFillMaterial.color.getHex()).toBe(0x000000)
   })
 
+  it('keeps patterned foreground hatches as visible shader linework', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0xffffff
+
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'A-HATCH'
+    traits.color = new AcCmColor().setForeground()
+    traits.rgbColor = 0xffffff
+    traits.drawOrder = -1
+    traits.fillType = {
+      solidFill: false,
+      patternAngle: 0,
+      definitionLines: [
+        {
+          angle: Math.PI / 4,
+          base: { x: 0, y: 0 },
+          offset: { x: 0, y: 3.175 },
+          dashLengths: []
+        }
+      ]
+    }
+
+    const material = styleManager.getFillMaterial(
+      traits
+    ) as THREE.ShaderMaterial
+
+    expect(material).toBeInstanceOf(THREE.ShaderMaterial)
+    expect(material.uniforms.u_color.value.getHex()).toBe(0x000000)
+
+    const metadata = getMaterialMetadata(material)
+    expect(metadata.drawOrder).toBe(-1)
+    expect(metadata.isBackgroundFill).toBe(false)
+    expect(metadata.isForeground).toBe(true)
+  })
+
   it('creates gradient hatch shader materials with per-boundary uniforms', () => {
     const styleManager = new AcTrStyleManager()
     const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()

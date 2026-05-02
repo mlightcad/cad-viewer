@@ -31,7 +31,7 @@ import { AcApI18n } from '../../i18n'
 /**
  * Persisted HATCH command options reused between command invocations.
  */
-interface HatchSettings {
+export interface HatchSettings {
   /** Hatch pattern name, e.g. `ANSI31` or `SOLID`. */
   patternName: string
   /** Pattern scale factor in drawing units (must be positive). */
@@ -93,13 +93,20 @@ export class AcApHatchCmd extends AcEdCommand {
   }
 
   /**
+   * Current settings used by this command instance when creating hatches.
+   */
+  protected get settings(): HatchSettings {
+    return AcApHatchCmd._lastSettings
+  }
+
+  /**
    * Normalizes pattern name input.
    *
    * @param value Raw user-entered pattern name.
    * @returns Trimmed name, or `ANSI31` when input is empty.
    */
-  private normalizePatternName(value: string) {
-    const name = value.trim()
+  protected normalizePatternName(value: string) {
+    const name = value.trim().toUpperCase()
     return name.length > 0 ? name : 'ANSI31'
   }
 
@@ -109,7 +116,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * @param style Hatch style enum value.
    * @returns Command keyword name used by keyword prompts.
    */
-  private styleToKeyword(style: AcDbHatchStyle) {
+  protected styleToKeyword(style: AcDbHatchStyle) {
     switch (style) {
       case AcDbHatchStyle.Outer:
         return 'Outer'
@@ -127,7 +134,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * @param keyword Keyword returned by prompt API.
    * @returns Matching hatch style enum, defaulting to `Normal`.
    */
-  private keywordToStyle(keyword: string) {
+  protected keywordToStyle(keyword: string) {
     switch (keyword) {
       case 'Outer':
         return AcDbHatchStyle.Outer
@@ -240,7 +247,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * @param ids Object ids selected by the user.
    * @returns Closed loops ready for hatch creation.
    */
-  private collectLoopsFromIds(context: AcApContext, ids: AcDbObjectId[]) {
+  protected collectLoopsFromIds(context: AcApContext, ids: AcDbObjectId[]) {
     const modelSpace = context.doc.database.tables.blockTable.modelSpace
     const edges: AcGeBoundaryEdgeType[] = []
 
@@ -262,7 +269,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * @param context Active command context.
    * @returns Closed loops derived from all hatchable entities.
    */
-  private collectLoopsFromAllBoundaries(context: AcApContext) {
+  protected collectLoopsFromAllBoundaries(context: AcApContext) {
     const modelSpace = context.doc.database.tables.blockTable.modelSpace
     const edges: AcGeBoundaryEdgeType[] = []
     for (const entity of modelSpace.newIterator()) {
@@ -441,7 +448,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * @param loops Candidate loops.
    * @returns Ordered loop set to append into one hatch entity.
    */
-  private resolveLoopsForPickPoint(
+  protected resolveLoopsForPickPoint(
     point: { x: number; y: number },
     loops: ReadonlyArray<AcGeLoop2d>
   ) {
@@ -462,7 +469,7 @@ export class AcApHatchCmd extends AcEdCommand {
 
     // Pick-points mode should hatch the region connected to the picked seed.
     // Use target loop as outer boundary and its direct children as holes.
-    if (AcApHatchCmd._lastSettings.style !== AcDbHatchStyle.Ignore) {
+    if (this.settings.style !== AcDbHatchStyle.Ignore) {
       infos[target].children.forEach(child => selected.add(child))
     }
 
@@ -476,17 +483,22 @@ export class AcApHatchCmd extends AcEdCommand {
    * @param loops Boundary loops to be added to the hatch.
    * @returns `true` when hatch entity was created; otherwise `false`.
    */
-  private appendHatch(context: AcApContext, loops: ReadonlyArray<AcGeLoop2d>) {
+  protected appendHatch(
+    context: AcApContext,
+    loops: ReadonlyArray<AcGeLoop2d>
+  ) {
     if (!loops.length) return false
 
     const hatch = new AcDbHatch()
-    const settings = AcApHatchCmd._lastSettings
-    hatch.patternName = settings.patternName
+    const settings = this.settings
+    const patternName = this.normalizePatternName(settings.patternName)
+    const isSolidFill = patternName === 'SOLID'
+    hatch.patternName = patternName
     hatch.patternType = AcDbHatchPatternType.Predefined
     hatch.patternScale = settings.patternScale
     hatch.patternAngle = (settings.patternAngleDeg * Math.PI) / 180
     hatch.hatchStyle = settings.style
-    hatch.isSolidFill = settings.patternName.toUpperCase() === 'SOLID'
+    hatch.isSolidFill = isSolidFill
 
     loops.forEach(loop => hatch.add(loop))
     context.doc.database.tables.blockTable.modelSpace.appendEntity(hatch)
@@ -498,16 +510,17 @@ export class AcApHatchCmd extends AcEdCommand {
    *
    * @returns Promise resolved when prompt flow completes.
    */
-  private async promptPatternName() {
+  protected async promptPatternName() {
     const strOptions = new AcEdPromptStringOptions(
       AcApI18n.t('jig.hatch.patternName')
     )
     strOptions.allowEmpty = false
-    strOptions.defaultValue = AcApHatchCmd._lastSettings.patternName
+    const settings = this.settings
+    strOptions.defaultValue = settings.patternName
     strOptions.useDefaultValue = true
     const result = await AcApDocManager.instance.editor.getString(strOptions)
     if (result.status !== AcEdPromptStatus.OK) return
-    AcApHatchCmd._lastSettings.patternName = this.normalizePatternName(
+    settings.patternName = this.normalizePatternName(
       result.stringResult ?? strOptions.defaultValue
     )
   }
@@ -517,18 +530,19 @@ export class AcApHatchCmd extends AcEdCommand {
    *
    * @returns Promise resolved when prompt flow completes.
    */
-  private async promptPatternScale() {
+  protected async promptPatternScale() {
     const options = new AcEdPromptDoubleOptions(AcApI18n.t('jig.hatch.scale'))
     options.allowNone = true
     options.allowNegative = false
     options.allowZero = false
-    options.defaultValue = AcApHatchCmd._lastSettings.patternScale
+    const settings = this.settings
+    options.defaultValue = settings.patternScale
     options.useDefaultValue = true
     const result = await AcApDocManager.instance.editor.getDouble(options)
     if (result.status !== AcEdPromptStatus.OK) return
     const value = result.value ?? options.defaultValue
     if (value > 0) {
-      AcApHatchCmd._lastSettings.patternScale = value
+      settings.patternScale = value
     }
   }
 
@@ -537,17 +551,17 @@ export class AcApHatchCmd extends AcEdCommand {
    *
    * @returns Promise resolved when prompt flow completes.
    */
-  private async promptPatternAngle() {
+  protected async promptPatternAngle() {
     const options = new AcEdPromptDoubleOptions(AcApI18n.t('jig.hatch.angle'))
     options.allowNone = true
     options.allowNegative = true
     options.allowZero = true
-    options.defaultValue = AcApHatchCmd._lastSettings.patternAngleDeg
+    const settings = this.settings
+    options.defaultValue = settings.patternAngleDeg
     options.useDefaultValue = true
     const result = await AcApDocManager.instance.editor.getDouble(options)
     if (result.status !== AcEdPromptStatus.OK) return
-    AcApHatchCmd._lastSettings.patternAngleDeg =
-      result.value ?? options.defaultValue
+    settings.patternAngleDeg = result.value ?? options.defaultValue
   }
 
   /**
@@ -555,8 +569,9 @@ export class AcApHatchCmd extends AcEdCommand {
    *
    * @returns Promise resolved when prompt flow completes.
    */
-  private async promptStyle() {
-    const current = this.styleToKeyword(AcApHatchCmd._lastSettings.style)
+  protected async promptStyle() {
+    const settings = this.settings
+    const current = this.styleToKeyword(settings.style)
     const options = new AcEdPromptKeywordOptions(
       `${AcApI18n.t('jig.hatch.style')} <${current}>`
     )
@@ -578,10 +593,12 @@ export class AcApHatchCmd extends AcEdCommand {
     )
 
     const result = await AcApDocManager.instance.editor.getKeywords(options)
-    if (result.status === AcEdPromptStatus.Keyword && result.stringResult) {
-      AcApHatchCmd._lastSettings.style = this.keywordToStyle(
-        result.stringResult
-      )
+    if (
+      (result.status === AcEdPromptStatus.OK ||
+        result.status === AcEdPromptStatus.Keyword) &&
+      result.stringResult
+    ) {
+      settings.style = this.keywordToStyle(result.stringResult)
     }
   }
 
@@ -590,8 +607,9 @@ export class AcApHatchCmd extends AcEdCommand {
    *
    * @returns Promise resolved when prompt flow completes.
    */
-  private async promptAssociative() {
-    const current = AcApHatchCmd._lastSettings.associative ? 'Yes' : 'No'
+  protected async promptAssociative() {
+    const settings = this.settings
+    const current = settings.associative ? 'Yes' : 'No'
     const options = new AcEdPromptKeywordOptions(
       `${AcApI18n.t('jig.hatch.associative')} <${current}>`
     )
@@ -607,8 +625,11 @@ export class AcApHatchCmd extends AcEdCommand {
       AcApI18n.t('jig.hatch.keywords.no.local')
     )
     const result = await AcApDocManager.instance.editor.getKeywords(options)
-    if (result.status === AcEdPromptStatus.Keyword) {
-      AcApHatchCmd._lastSettings.associative = result.stringResult === 'Yes'
+    if (
+      result.status === AcEdPromptStatus.OK ||
+      result.status === AcEdPromptStatus.Keyword
+    ) {
+      settings.associative = result.stringResult === 'Yes'
     }
   }
 
@@ -618,7 +639,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * @param context Active command context.
    * @returns `true` if a hatch was created from selected objects.
    */
-  private async doSelectObjects(context: AcApContext) {
+  protected async doSelectObjects(context: AcApContext) {
     const options = new AcEdPromptSelectionOptions(
       AcApI18n.t('jig.hatch.select')
     )
@@ -639,7 +660,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * @param context Active command context.
    * @returns `true` if at least one hatch was created.
    */
-  private async doPickPoints(context: AcApContext) {
+  protected async doPickPoints(context: AcApContext) {
     const sourceLoops = this.collectLoopsFromAllBoundaries(context)
     if (!sourceLoops.length) return false
 

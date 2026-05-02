@@ -1,9 +1,8 @@
 import { CircleClose } from '@element-plus/icons-vue'
-import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import type { RibbonTabModel } from '@mlightcad/ribbon'
 import type { Ref } from 'vue'
 
-import { store } from '../../app'
+import { hatchRibbonCommand, type HatchRibbonStyle } from '../../command'
 import { useRibbonContextualTab } from '../../composable'
 import { hatch, qselect } from '../../svg'
 import {
@@ -13,7 +12,7 @@ import {
 import MlRibbonHatchPatternButton from './MlRibbonHatchPatternButton.vue'
 
 const HATCH_CONTEXTUAL_TAB_ID = 'hatch-context'
-const HATCH_COMMAND_GLOBAL_NAME = '-HATCH'
+const HATCH_COMMAND_GLOBAL_NAME = 'HATCH'
 const hatchPatternOptions: HatchPatternOption[] = [
   ...DEFAULT_HATCH_PATTERN_OPTIONS
 ]
@@ -40,38 +39,7 @@ export function useHatchContextualRibbon({
     tabId: HATCH_CONTEXTUAL_TAB_ID,
     commandGlobalNames: HATCH_COMMAND_GLOBAL_NAME
   })
-
-  const buildHatchSettingInputs = () => [
-    'Pattern',
-    store.hatch.patternName,
-    'Scale',
-    String(store.hatch.patternScale),
-    'Angle',
-    String(store.hatch.patternAngle),
-    'HatchStyle',
-    store.hatch.style,
-    'AssociativeMode',
-    store.hatch.associative ? 'Yes' : 'No'
-  ]
-
-  const enqueueHatchInputs = (inputs: string[]) => {
-    if (!isCommandActive.value) return false
-    AcApDocManager.instance.editor.enqueueScriptInputs(inputs)
-    return true
-  }
-
-  const startHatchCommand = (extraInputs: string[] = []) => {
-    const script = [
-      '-hatch',
-      ...buildHatchSettingInputs(),
-      ...extraInputs
-    ].join('\n')
-    AcApDocManager.instance.sendStringToExecute(script)
-  }
-
-  const applyHatchSetting = (keyword: string, value: string) => {
-    enqueueHatchInputs([keyword, value])
-  }
+  const hatchState = hatchRibbonCommand.state
 
   const parseHatchNumberValue = (itemId: string, prefix: string) => {
     if (!itemId.startsWith(prefix)) return undefined
@@ -82,59 +50,47 @@ export function useHatchContextualRibbon({
 
   const handleItem = (itemId: string) => {
     if (itemId === 'hatch-boundary-pick') {
-      if (!enqueueHatchInputs(['PickPoints'])) {
-        startHatchCommand(['PickPoints'])
-      }
+      hatchRibbonCommand.requestPickPoints()
       return true
     }
     if (itemId === 'hatch-boundary-select') {
-      if (!enqueueHatchInputs(['SelectObjects'])) {
-        startHatchCommand(['SelectObjects'])
-      }
+      hatchRibbonCommand.requestSelectObjects()
       return true
     }
     if (itemId === 'hatch-close') {
-      if (isCommandActive.value) {
-        enqueueHatchInputs(['', ''])
-      }
+      hatchRibbonCommand.close()
       hideContextTab()
       return true
     }
     if (itemId.startsWith('hatch-pattern:')) {
-      store.hatch.patternName = itemId.slice('hatch-pattern:'.length)
-      applyHatchSetting('Pattern', store.hatch.patternName)
+      hatchRibbonCommand.setPatternName(itemId.slice('hatch-pattern:'.length))
       return true
     }
     if (itemId.startsWith('hatch-style:')) {
       const value = itemId.slice('hatch-style:'.length)
       if (value === 'Normal' || value === 'Outer' || value === 'Ignore') {
-        store.hatch.style = value
-        applyHatchSetting('HatchStyle', value)
+        hatchRibbonCommand.setStyle(value as HatchRibbonStyle)
       }
       return true
     }
     if (itemId === 'hatch-associative-on') {
-      store.hatch.associative = true
-      applyHatchSetting('AssociativeMode', 'Yes')
+      hatchRibbonCommand.setAssociative(true)
       return true
     }
     if (itemId === 'hatch-associative-off') {
-      store.hatch.associative = false
-      applyHatchSetting('AssociativeMode', 'No')
+      hatchRibbonCommand.setAssociative(false)
       return true
     }
 
     const scale = parseHatchNumberValue(itemId, 'hatch-scale:')
     if (scale != null && scale > 0) {
-      store.hatch.patternScale = scale
-      applyHatchSetting('Scale', String(scale))
+      hatchRibbonCommand.setPatternScale(scale)
       return true
     }
 
     const angle = parseHatchNumberValue(itemId, 'hatch-angle:')
     if (angle != null) {
-      store.hatch.patternAngle = angle
-      applyHatchSetting('Angle', String(angle))
+      hatchRibbonCommand.setPatternAngle(angle)
       return true
     }
 
@@ -196,7 +152,7 @@ export function useHatchContextualRibbon({
                 props: {
                   component: MlRibbonHatchPatternButton,
                   componentProps: {
-                    modelValue: store.hatch.patternName,
+                    modelValue: hatchState.patternName,
                     options: hatchPatternOptions,
                     label: t('main.ribbon.hatch.field.pattern')
                   }
@@ -223,7 +179,7 @@ export function useHatchContextualRibbon({
                 size: 'small',
                 props: {
                   width: '108px',
-                  modelValue: `hatch-scale:${store.hatch.patternScale}`,
+                  modelValue: `hatch-scale:${hatchState.patternScale}`,
                   emitValueOnChange: true,
                   options: hatchScaleOptions.map(item => ({
                     label: String(item),
@@ -239,7 +195,7 @@ export function useHatchContextualRibbon({
                 size: 'small',
                 props: {
                   width: '108px',
-                  modelValue: `hatch-angle:${store.hatch.patternAngle}`,
+                  modelValue: `hatch-angle:${hatchState.patternAngle}`,
                   emitValueOnChange: true,
                   options: hatchAngleOptions.map(item => ({
                     label: String(item),
@@ -255,7 +211,7 @@ export function useHatchContextualRibbon({
                 size: 'small',
                 props: {
                   width: '124px',
-                  modelValue: `hatch-style:${store.hatch.style}`,
+                  modelValue: `hatch-style:${hatchState.style}`,
                   emitValueOnChange: true,
                   options: [
                     {
@@ -280,7 +236,7 @@ export function useHatchContextualRibbon({
                 tooltip: t('main.ribbon.hatch.tooltip.associative'),
                 size: 'small',
                 props: {
-                  modelValue: store.hatch.associative,
+                  modelValue: hatchState.associative,
                   activeLabel: t('main.ribbon.hatch.associative.on'),
                   inactiveLabel: t('main.ribbon.hatch.associative.off'),
                   activeValue: 'hatch-associative-on',

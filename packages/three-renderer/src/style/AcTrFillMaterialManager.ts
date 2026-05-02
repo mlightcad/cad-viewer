@@ -80,7 +80,16 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     traits: AcGiSubEntityTraits,
     _options: AcTrFillMaterialOptions
   ): boolean {
-    return (traits.drawOrder ?? 0) >= 0 && traits.color.isForeground
+    const style = traits.fillType
+    const isPatternHatch =
+      (traits.drawOrder ?? 0) < 0 &&
+      !style.gradient &&
+      !style.solidFill &&
+      !!style.definitionLines?.length
+    return (
+      traits.color.isForeground &&
+      ((traits.drawOrder ?? 0) >= 0 || isPatternHatch)
+    )
   }
 
   /**
@@ -103,6 +112,9 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     return (
       (traits.drawOrder ?? 0) < 0 &&
       traits.color.isForeground &&
+      traits.fillType.solidFill &&
+      (!traits.fillType.definitionLines ||
+        traits.fillType.definitionLines.length === 0) &&
       !traits.fillType.gradient
     )
   }
@@ -331,6 +343,8 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const bgSuffix =
       (traits.drawOrder ?? 0) < 0 &&
       traits.color.isForeground &&
+      style.solidFill &&
+      (!style.definitionLines || style.definitionLines.length === 0) &&
       !style.gradient
         ? '_bgfill'
         : ''
