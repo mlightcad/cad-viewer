@@ -81,6 +81,7 @@ import {
   measureArc,
   measureArea,
   measureDistance,
+  mline,
   move,
   multiPoints,
   polygon,
@@ -537,6 +538,7 @@ const buildBaseTabs = (
     spline: t('main.ribbon.tooltip.spline'),
     circle: t('main.ribbon.tooltip.circle'),
     arc: t('main.ribbon.tooltip.arc'),
+    mline: t('main.ribbon.tooltip.mline'),
     ellipse: t('main.ribbon.tooltip.ellipse'),
     rect: t('main.ribbon.tooltip.rect'),
     point: t('main.ribbon.tooltip.point'),
@@ -742,6 +744,13 @@ const buildBaseTabs = (
               label: t('main.ribbon.command.spline'),
               tooltip: ribbonTooltips.spline,
               props: { icon: splineFitPoints }
+            },
+            {
+              id: 'cmd-mline',
+              type: 'button',
+              label: t('main.ribbon.command.mline'),
+              tooltip: ribbonTooltips.mline,
+              props: { icon: mline }
             },
             {
               id: 'cmd-point',
@@ -1300,6 +1309,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('polygon', 'polygon')
   commandByItemId.set('cmd-point', 'point')
   commandByItemId.set('cmd-hatch', '-hatch')
+  commandByItemId.set('cmd-mline', 'mline')
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-copy', 'copy')
