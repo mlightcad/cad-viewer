@@ -44,6 +44,7 @@ import {
   AcApMeasureArcCmd,
   AcApMeasureAreaCmd,
   AcApMeasureDistanceCmd,
+  AcApMLineCmd,
   AcApMoveCmd,
   AcApMTextCmd,
   AcApOpenCmd,
@@ -109,6 +110,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   LAYER: ['LA'],
   '-LAYER': ['-LA'],
   LINE: ['L'],
+  MLINE: ['ML'],
   MTEXT: ['T'],
   MOVE: ['M'],
   COPY: ['CO'],
@@ -854,6 +856,7 @@ export class AcApDocManager {
     addSystemCommand('layerp', 'layerp', new AcApLayerPCmd())
     addSystemCommand('layerclose', 'layerclose', new AcApLayerCloseCmd())
     addSystemCommand('line', 'line', new AcApLineCmd())
+    addSystemCommand('mline', 'mline', new AcApMLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
     addSystemCommand('copy', 'copy', new AcApCopyCmd())
     addSystemCommand('move', 'move', new AcApMoveCmd())

@@ -1,7 +1,13 @@
 export default {
   ACAD: {
+    '-layer': {
+      description: 'Manages layers through command-line options'
+    },
     arc: {
       description: 'Creates an arc'
+    },
+    cdxf: {
+      description: 'Exports current drawing to DXF'
     },
     cecolor: {
       description: 'Sets the current default color for newly created objects'
@@ -13,25 +19,50 @@ export default {
     celweight: {
       description: 'Sets the default lineweight for newly created objects'
     },
+    circle: {
+      description: 'Creates one circle by center and radius'
+    },
     clayer: {
       description:
         'Sets the current layer for new objects and editing operations'
     },
-    circle: {
-      description: 'Creates one circle by center and radius'
+    cmleaderstyle: {
+      description: 'Sets the name of the current multileader style'
+    },
+    cmlscale: {
+      description: 'Controls the overall width of a multiline'
+    },
+    cmlstyle: {
+      description: 'Sets the name of the current multiline style'
     },
     colortheme: {
       description:
         'Controls the color theme of the user interface (dark or light)'
     },
-    cdxf: {
-      description: 'Exports current drawing to DXF'
+    copy: {
+      description: 'Copies selected entities by cloning them to new positions',
+      prompt: 'Select entities'
     },
     csvg: {
       description: 'Converts current drawing to SVG'
     },
     dimlinear: {
       description: 'Creates linear dimensions'
+    },
+    measurearea: {
+      description: 'Calculates the area and perimeter of selected objects or points'
+    },
+    measureangle: {
+      description: 'Measures the angle between two lines or three points'
+    },
+    measurearc: {
+      description: 'Measures the length of an arc segment'
+    },
+    measuredistance: {
+      description: 'Measures the distance and delta values between two points'
+    },
+    measurementcolor: {
+      description: 'Sets the color used for measurement overlays'
     },
     ellipse: {
       description:
@@ -45,9 +76,6 @@ export default {
       description:
         'Fills an enclosed area or selected objects with a hatch pattern'
     },
-    '-layer': {
-      description: 'Manages layers through command-line options'
-    },
     laycur: {
       description:
         'Changes the layer property of selected objects to the current layer',
@@ -55,6 +83,13 @@ export default {
     },
     laydel: {
       description: 'Deletes a layer and all objects on that layer'
+    },
+    layerclose: {
+      description: 'Closes the Layer Properties Manager'
+    },
+    layerp: {
+      description:
+        'Undoes the last change or set of changes made to layer settings'
     },
     layfrz: {
       description: 'Freezes the layer of selected objects',
@@ -64,23 +99,16 @@ export default {
       description: 'Isolates the layers of selected objects',
       prompt: 'Select objects on layers to isolate'
     },
-    layuniso: {
-      description: 'Restores layers hidden or locked by LAYISO'
-    },
     laylck: {
       description: 'Locks the layer of selected objects',
       prompt: 'Select object on layer to lock'
-    },
-    layon: {
-      description: 'Turns on all layers in the drawing'
     },
     layoff: {
       description: 'Turns off the layer of selected objects',
       prompt: 'Select object on layer to turn off'
     },
-    layerp: {
-      description:
-        'Undoes the last change or set of changes made to layer settings'
+    layon: {
+      description: 'Turns on all layers in the drawing'
     },
     laythw: {
       description: 'Thaws all frozen layers in the drawing'
@@ -89,42 +117,27 @@ export default {
       description: 'Unlocks the layer of selected objects',
       prompt: 'Select object on layer to unlock'
     },
-    layerclose: {
-      description: 'Closes the Layer Properties Manager'
+    layuniso: {
+      description: 'Restores layers hidden or locked by LAYISO'
     },
     line: {
       description: 'Draws straight line segments between points'
     },
+    log: {
+      description: 'Logs debug information in console'
+    },
     lwdisplay: {
       description: 'Controls whether lineweights are displayed in the drawing'
     },
-    pline: {
-      description: 'Creates a polyline by specifying multiple points'
-    },
-    polygon: {
-      description:
-        'Creates a regular polygon by center/radius or by one polygon edge'
-    },
-    spline: {
-      description: 'Creates a smooth spline curve by specifying control points'
-    },
-    mtext: {
-      description: 'Creates one mtext entity'
+    mline: {
+      description: 'Creates multiple parallel lines as one multiline object'
     },
     move: {
       description: 'Moves selected entities by a displacement vector',
       prompt: 'Select entities'
     },
-    copy: {
-      description: 'Copies selected entities by cloning them to new positions',
-      prompt: 'Select entities'
-    },
-    rotate: {
-      description: 'Rotates selected entities around a base point',
-      prompt: 'Select entities'
-    },
-    log: {
-      description: 'Logs debug information in console'
+    mtext: {
+      description: 'Creates one mtext entity'
     },
     open: {
       description: 'Opens an existing drawing file'
@@ -133,15 +146,22 @@ export default {
       description:
         'Shifts the view without changing the viewing direction or magnification'
     },
-    point: {
-      description: 'Creates points'
-    },
     pickbox: {
       description:
         'Sets the size (in pixels) of the selection box used to pick objects'
     },
+    pline: {
+      description: 'Creates a polyline by specifying multiple points'
+    },
     pngout: {
       description: 'Exports to PNG'
+    },
+    point: {
+      description: 'Creates points'
+    },
+    polygon: {
+      description:
+        'Creates a regular polygon by center/radius or by one polygon edge'
     },
     qnew: {
       description: 'Starts a new drawing'
@@ -155,12 +175,19 @@ export default {
     revcloud: {
       description: 'Creates a revision cloud (cloud line) in rectangular shape'
     },
+    rotate: {
+      description: 'Rotates selected entities around a base point',
+      prompt: 'Select entities'
+    },
     select: {
       description: 'Selects entities'
     },
     sketch: {
       description:
         'Creates a sketch line using polyline that tracks mouse movement'
+    },
+    spline: {
+      description: 'Creates a smooth spline curve by specifying control points'
     },
     whitebkcolor: {
       description: 'Toggles the drawing area background between white and black'

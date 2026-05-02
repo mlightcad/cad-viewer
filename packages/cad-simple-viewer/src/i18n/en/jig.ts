@@ -553,6 +553,58 @@ export default {
       }
     }
   },
+  mline: {
+    startPointWithOptions: 'Specify start point or',
+    nextPointWithOptions: 'Specify next point or',
+    justificationPrompt: 'Enter justification type',
+    scalePrompt: 'Specify mline scale:',
+    stylePrompt: 'Enter mline style name or [?] for list:',
+    styleNotFound: 'Mline style not found',
+    styleListHeader: 'Loaded mline styles:',
+    styleListEmpty: 'No mline style is loaded in current drawing.',
+    keywords: {
+      justification: {
+        display: 'Justification(J)',
+        local: 'Justification',
+        global: 'Justification'
+      },
+      scale: {
+        display: 'Scale(S)',
+        local: 'Scale',
+        global: 'Scale'
+      },
+      style: {
+        display: 'Style(ST)',
+        local: 'Style',
+        global: 'Style'
+      },
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
+      },
+      close: {
+        display: 'Close(C)',
+        local: 'Close',
+        global: 'Close'
+      },
+      top: {
+        display: 'Top(T)',
+        local: 'Top',
+        global: 'Top'
+      },
+      zero: {
+        display: 'Zero(Z)',
+        local: 'Zero',
+        global: 'Zero'
+      },
+      bottom: {
+        display: 'Bottom(B)',
+        local: 'Bottom',
+        global: 'Bottom'
+      }
+    }
+  },
   measureAngle: {
     vertex: 'Specify vertex point:',
     arm1: 'Specify point on first arm:',
