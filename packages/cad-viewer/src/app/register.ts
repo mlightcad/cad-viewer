@@ -6,6 +6,7 @@ import {
 import { markRaw } from 'vue'
 
 import {
+  AcApHatchRibbonCmd,
   AcApLayerStateCmd,
   AcApMissedDataCmd,
   AcApPointStyleCmd,
@@ -29,6 +30,12 @@ export const registerCmds = () => {
       'layer',
       'layer',
       new AcApLayerStateCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'hatch',
+      'hatch',
+      new AcApHatchRibbonCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

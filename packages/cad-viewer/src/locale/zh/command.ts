@@ -1,5 +1,8 @@
 export default {
   ACAD: {
+    hatch: {
+      description: '通过 Ribbon 上下文标签创建填充图案'
+    },
     layer: {
       description: '图层属性管理器'
     },

@@ -8,7 +8,47 @@ export default {
   ribbon: {
     tab: {
       home: '常用',
-      tools: '工具'
+      tools: '工具',
+      hatchContext: '填充'
+    },
+    hatch: {
+      contextTitle: '填充创建',
+      group: {
+        boundary: '边界',
+        properties: '特性',
+        close: '关闭'
+      },
+      command: {
+        pickPoints: '拾取点',
+        selectObjects: '选择对象',
+        close: '关闭填充创建'
+      },
+      field: {
+        pattern: '图案',
+        scale: '比例',
+        angle: '角度',
+        style: '样式',
+        associative: '关联'
+      },
+      style: {
+        normal: '普通',
+        outer: '外部',
+        ignore: '忽略'
+      },
+      associative: {
+        on: '开',
+        off: '关'
+      },
+      tooltip: {
+        pickPoints: '拾取内部点来创建填充区域。',
+        selectObjects: '选择闭合边界对象进行填充。',
+        pattern: '设置填充图案名称。',
+        scale: '设置填充图案比例。',
+        angle: '设置填充图案角度（度）。',
+        style: '控制填充时的岛屿检测样式。',
+        associative: '切换关联填充模式。',
+        close: '退出填充创建并关闭该上下文标签。'
+      }
     },
     group: {
       draw: '绘制',

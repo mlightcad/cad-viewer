@@ -14,6 +14,7 @@ import {
   AcApDocManager,
   AcApOpenCmd,
   AcApQNewCmd,
+  AcEdCommandEventArgs,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
 import {
@@ -35,6 +36,7 @@ import {
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { store } from '../../app'
 import type { LayerStateSnapshot, LayerStateToggleKey } from '../../composable'
 import {
   useDocOpenMode,
@@ -100,10 +102,15 @@ import {
 } from '../../svg'
 import {
   MlLayerSelect,
+  MlRibbonHatchPatternButton,
   MlRibbonPropertyColorDropdown,
   MlRibbonPropertyLineTypeSelect,
   MlRibbonPropertyLineWeightSelect
 } from '../common'
+import {
+  DEFAULT_HATCH_PATTERN_OPTIONS,
+  type HatchPatternOption
+} from '../common/hatchPatternPreview'
 import MlRibbonLanguageSelector from './MlRibbonLanguageSelector.vue'
 
 interface Props {
@@ -135,6 +142,10 @@ const ribbonColorDisplay = ref('#7b8794')
 const ribbonLineType = ref<string | undefined>('ByLayer')
 const ribbonLineWeight = ref<AcGiLineWeight | undefined>(AcGiLineWeight.ByLayer)
 const ribbonDisplayedLayerName = ref('')
+const activeRibbonTabId = ref('home')
+const isHatchContextVisible = ref(false)
+const isHatchCommandActive = ref(false)
+const hatchContextPreviousTabId = ref('home')
 const {
   layers: ribbonLayers,
   setCurrentLayer: setRibbonCurrentLayer,
@@ -423,6 +434,12 @@ onMounted(() => {
   AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
     handleSysVarChange
   )
+  AcApDocManager.instance.editor.events.commandWillStart.addEventListener(
+    handleCommandWillStart
+  )
+  AcApDocManager.instance.editor.events.commandEnded.addEventListener(
+    handleCommandEnded
+  )
   AcApDocManager.instance.events.documentActivated.addEventListener(
     handleDocumentActivated
   )
@@ -432,6 +449,12 @@ onMounted(() => {
 onUnmounted(() => {
   AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
     handleSysVarChange
+  )
+  AcApDocManager.instance.editor.events.commandWillStart.removeEventListener(
+    handleCommandWillStart
+  )
+  AcApDocManager.instance.editor.events.commandEnded.removeEventListener(
+    handleCommandEnded
   )
   AcApDocManager.instance.events.documentActivated.removeEventListener(
     handleDocumentActivated
@@ -529,6 +552,140 @@ const handleRibbonLayerStateToggle = (payload: {
   if (!changed) return
   ribbonLayerPreviousSnapshot.value = previousSnapshot
   syncRibbonProperties(db)
+}
+
+const hatchPatternOptions: HatchPatternOption[] = [
+  ...DEFAULT_HATCH_PATTERN_OPTIONS
+]
+const hatchScaleOptions = [0.5, 1, 2, 5, 10]
+const hatchAngleOptions = [0, 15, 30, 45, 60, 90]
+
+const isHatchCommand = (args: AcEdCommandEventArgs) =>
+  args.command?.globalName === '-HATCH'
+
+const showHatchContextTab = () => {
+  if (activeRibbonTabId.value !== 'hatch-context') {
+    hatchContextPreviousTabId.value = activeRibbonTabId.value || 'home'
+  }
+  isHatchContextVisible.value = true
+  activeRibbonTabId.value = 'hatch-context'
+}
+
+const hideHatchContextTab = () => {
+  isHatchContextVisible.value = false
+  if (activeRibbonTabId.value === 'hatch-context') {
+    activeRibbonTabId.value = hatchContextPreviousTabId.value || 'home'
+  }
+}
+
+const buildHatchSettingInputs = () => [
+  'Pattern',
+  store.hatch.patternName,
+  'Scale',
+  String(store.hatch.patternScale),
+  'Angle',
+  String(store.hatch.patternAngle),
+  'HatchStyle',
+  store.hatch.style,
+  'AssociativeMode',
+  store.hatch.associative ? 'Yes' : 'No'
+]
+
+const enqueueHatchInputs = (inputs: string[]) => {
+  if (!isHatchCommandActive.value) return false
+  AcApDocManager.instance.editor.enqueueScriptInputs(inputs)
+  return true
+}
+
+const startHatchCommand = (extraInputs: string[] = []) => {
+  const script = ['-hatch', ...buildHatchSettingInputs(), ...extraInputs].join(
+    '\n'
+  )
+  AcApDocManager.instance.sendStringToExecute(script)
+}
+
+const applyHatchSetting = (keyword: string, value: string) => {
+  enqueueHatchInputs([keyword, value])
+}
+
+const parseHatchNumberValue = (itemId: string, prefix: string) => {
+  if (!itemId.startsWith(prefix)) return undefined
+  const raw = itemId.slice(prefix.length)
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+const handleHatchItem = (itemId: string) => {
+  if (itemId === 'hatch-boundary-pick') {
+    if (!enqueueHatchInputs(['PickPoints'])) {
+      startHatchCommand(['PickPoints'])
+    }
+    return true
+  }
+  if (itemId === 'hatch-boundary-select') {
+    if (!enqueueHatchInputs(['SelectObjects'])) {
+      startHatchCommand(['SelectObjects'])
+    }
+    return true
+  }
+  if (itemId === 'hatch-close') {
+    if (isHatchCommandActive.value) {
+      enqueueHatchInputs(['', ''])
+    }
+    hideHatchContextTab()
+    return true
+  }
+  if (itemId.startsWith('hatch-pattern:')) {
+    store.hatch.patternName = itemId.slice('hatch-pattern:'.length)
+    applyHatchSetting('Pattern', store.hatch.patternName)
+    return true
+  }
+  if (itemId.startsWith('hatch-style:')) {
+    const value = itemId.slice('hatch-style:'.length)
+    if (value === 'Normal' || value === 'Outer' || value === 'Ignore') {
+      store.hatch.style = value
+      applyHatchSetting('HatchStyle', value)
+    }
+    return true
+  }
+  if (itemId === 'hatch-associative-on') {
+    store.hatch.associative = true
+    applyHatchSetting('AssociativeMode', 'Yes')
+    return true
+  }
+  if (itemId === 'hatch-associative-off') {
+    store.hatch.associative = false
+    applyHatchSetting('AssociativeMode', 'No')
+    return true
+  }
+
+  const scale = parseHatchNumberValue(itemId, 'hatch-scale:')
+  if (scale != null && scale > 0) {
+    store.hatch.patternScale = scale
+    applyHatchSetting('Scale', String(scale))
+    return true
+  }
+
+  const angle = parseHatchNumberValue(itemId, 'hatch-angle:')
+  if (angle != null) {
+    store.hatch.patternAngle = angle
+    applyHatchSetting('Angle', String(angle))
+    return true
+  }
+
+  return false
+}
+
+const handleCommandWillStart = (args: AcEdCommandEventArgs) => {
+  if (!isHatchCommand(args)) return
+  isHatchCommandActive.value = true
+  showHatchContextTab()
+}
+
+const handleCommandEnded = (args: AcEdCommandEventArgs) => {
+  if (!isHatchCommand(args)) return
+  isHatchCommandActive.value = false
+  hideHatchContextTab()
 }
 
 const buildBaseTabs = (
@@ -1303,6 +1460,166 @@ const buildBaseTabs = (
       ]
     },
     {
+      id: 'hatch-context',
+      title: t('main.ribbon.tab.hatchContext'),
+      contextual: true,
+      contextualColor: '#2a6ebf',
+      contextualTitle: t('main.ribbon.hatch.contextTitle'),
+      visible: isHatchContextVisible.value,
+      groups: [
+        {
+          id: 'hatch-boundary-group',
+          title: t('main.ribbon.hatch.group.boundary'),
+          orientation: 'row',
+          collections: [
+            {
+              id: 'hatch-boundary-main',
+              layout: 'row',
+              items: [
+                {
+                  id: 'hatch-boundary-pick',
+                  type: 'button',
+                  label: t('main.ribbon.hatch.command.pickPoints'),
+                  tooltip: t('main.ribbon.hatch.tooltip.pickPoints'),
+                  size: 'large',
+                  props: { icon: hatch }
+                },
+                {
+                  id: 'hatch-boundary-select',
+                  type: 'button',
+                  label: t('main.ribbon.hatch.command.selectObjects'),
+                  tooltip: t('main.ribbon.hatch.tooltip.selectObjects'),
+                  size: 'large',
+                  props: { icon: qselect }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'hatch-properties-group',
+          title: t('main.ribbon.hatch.group.properties'),
+          orientation: 'row',
+          collections: [
+            {
+              id: 'hatch-properties-main',
+              layout: 'row',
+              items: [
+                {
+                  id: 'hatch-pattern',
+                  type: 'custom',
+                  label: t('main.ribbon.hatch.field.pattern'),
+                  tooltip: t('main.ribbon.hatch.tooltip.pattern'),
+                  size: 'large',
+                  props: {
+                    component: MlRibbonHatchPatternButton,
+                    componentProps: {
+                      modelValue: store.hatch.patternName,
+                      options: hatchPatternOptions,
+                      label: t('main.ribbon.hatch.field.pattern')
+                    }
+                  }
+                },
+                {
+                  id: 'hatch-scale',
+                  type: 'comboBox',
+                  label: t('main.ribbon.hatch.field.scale'),
+                  tooltip: t('main.ribbon.hatch.tooltip.scale'),
+                  size: 'small',
+                  props: {
+                    width: '108px',
+                    modelValue: `hatch-scale:${store.hatch.patternScale}`,
+                    emitValueOnChange: true,
+                    options: hatchScaleOptions.map(item => ({
+                      label: String(item),
+                      value: `hatch-scale:${item}`
+                    }))
+                  }
+                },
+                {
+                  id: 'hatch-angle',
+                  type: 'comboBox',
+                  label: t('main.ribbon.hatch.field.angle'),
+                  tooltip: t('main.ribbon.hatch.tooltip.angle'),
+                  size: 'small',
+                  props: {
+                    width: '108px',
+                    modelValue: `hatch-angle:${store.hatch.patternAngle}`,
+                    emitValueOnChange: true,
+                    options: hatchAngleOptions.map(item => ({
+                      label: String(item),
+                      value: `hatch-angle:${item}`
+                    }))
+                  }
+                },
+                {
+                  id: 'hatch-style',
+                  type: 'comboBox',
+                  label: t('main.ribbon.hatch.field.style'),
+                  tooltip: t('main.ribbon.hatch.tooltip.style'),
+                  size: 'small',
+                  props: {
+                    width: '124px',
+                    modelValue: `hatch-style:${store.hatch.style}`,
+                    emitValueOnChange: true,
+                    options: [
+                      {
+                        label: t('main.ribbon.hatch.style.normal'),
+                        value: 'hatch-style:Normal'
+                      },
+                      {
+                        label: t('main.ribbon.hatch.style.outer'),
+                        value: 'hatch-style:Outer'
+                      },
+                      {
+                        label: t('main.ribbon.hatch.style.ignore'),
+                        value: 'hatch-style:Ignore'
+                      }
+                    ]
+                  }
+                },
+                {
+                  id: 'hatch-associative',
+                  type: 'toggle',
+                  label: t('main.ribbon.hatch.field.associative'),
+                  tooltip: t('main.ribbon.hatch.tooltip.associative'),
+                  size: 'small',
+                  props: {
+                    modelValue: store.hatch.associative,
+                    activeLabel: t('main.ribbon.hatch.associative.on'),
+                    inactiveLabel: t('main.ribbon.hatch.associative.off'),
+                    activeValue: 'hatch-associative-on',
+                    inactiveValue: 'hatch-associative-off'
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'hatch-close-group',
+          title: t('main.ribbon.hatch.group.close'),
+          orientation: 'row',
+          collections: [
+            {
+              id: 'hatch-close-main',
+              layout: 'row',
+              items: [
+                {
+                  id: 'hatch-close',
+                  type: 'button',
+                  label: t('main.ribbon.hatch.command.close'),
+                  tooltip: t('main.ribbon.hatch.tooltip.close'),
+                  size: 'large',
+                  props: { icon: hatch }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       id: 'tools',
       title: t('main.ribbon.tab.tools'),
       groups: toolGroups
@@ -1350,7 +1667,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('polygon', 'polygon')
   commandByItemId.set('cmd-point', 'point')
   commandByItemId.set('cmd-ray', 'ray')
-  commandByItemId.set('cmd-hatch', '-hatch')
+  commandByItemId.set('cmd-hatch', 'hatch')
   commandByItemId.set('cmd-mtext', 'mtext')
   commandByItemId.set('cmd-mline', 'mline')
   commandByItemId.set('cmd-xline', 'xline')
@@ -1425,6 +1742,7 @@ const handleRibbonItemClick = (payload: {
   itemId: string
 }) => {
   if (isRibbonDisabled.value) return
+  if (handleHatchItem(payload.itemId)) return
   if (
     payload.groupId === 'home-layer' &&
     ribbonLayerOptions.value.some(item => item.value === payload.itemId)
@@ -1461,6 +1779,7 @@ const handleFileMenuSelect = (command: string) => {
     class="ml-ribbon-toolbar-container"
   >
     <ml-ribbon
+      v-model:active-tab="activeRibbonTabId"
       :disabled="isRibbonDisabled"
       :file-menu-items="fileMenuItems"
       :minimized="false"

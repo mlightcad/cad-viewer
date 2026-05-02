@@ -1,5 +1,8 @@
 export default {
   ACAD: {
+    hatch: {
+      description: 'Creates hatch fills with a ribbon-based contextual workflow'
+    },
     layer: {
       description: 'Layer properties manager'
     },

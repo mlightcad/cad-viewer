@@ -8,7 +8,47 @@ export default {
   ribbon: {
     tab: {
       home: 'Home',
-      tools: 'Tools'
+      tools: 'Tools',
+      hatchContext: 'Hatch'
+    },
+    hatch: {
+      contextTitle: 'Hatch Creation',
+      group: {
+        boundary: 'Boundaries',
+        properties: 'Properties',
+        close: 'Close'
+      },
+      command: {
+        pickPoints: 'Pick Points',
+        selectObjects: 'Select Objects',
+        close: 'Close Hatch'
+      },
+      field: {
+        pattern: 'Pattern',
+        scale: 'Scale',
+        angle: 'Angle',
+        style: 'Style',
+        associative: 'Associative'
+      },
+      style: {
+        normal: 'Normal',
+        outer: 'Outer',
+        ignore: 'Ignore'
+      },
+      associative: {
+        on: 'On',
+        off: 'Off'
+      },
+      tooltip: {
+        pickPoints: 'Pick internal points to create hatch regions.',
+        selectObjects: 'Select closed boundary objects to hatch.',
+        pattern: 'Choose the hatch pattern name.',
+        scale: 'Set the hatch pattern scale.',
+        angle: 'Set the hatch pattern angle in degrees.',
+        style: 'Control island detection style for hatch creation.',
+        associative: 'Toggle associative hatch mode.',
+        close: 'Exit Hatch creation and close this contextual tab.'
+      }
     },
     group: {
       draw: 'Draw',
