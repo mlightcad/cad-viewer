@@ -113,11 +113,11 @@ import {
   MlEntityInfo,
   MlLanguageSelector,
   MlMainMenu,
-  MlRibbonCommands,
   MlToolBars
 } from './layout'
 import { MlNotificationCenter } from './notification'
 import { MlPaletteManager } from './palette'
+import { MlRibbonCommands } from './ribbon'
 import { MlStatusBar } from './statusBar'
 
 const emit = defineEmits<{

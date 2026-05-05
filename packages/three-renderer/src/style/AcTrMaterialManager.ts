@@ -180,18 +180,9 @@ export abstract class AcTrMaterialManager<T> {
    * 'isBackgroundFill' is true — i.e. fills that should fuse with the
    * canvas background instead of carrying an absolute RGB.
    *
-   * AutoCAD renders solid hatches whose colour resolves to the
-   * foreground (ACI 7) by painting them with the **background** colour,
-   * so they vanish against the paper in both light and dark themes and
-   * only the overlaid wireframe remains visible.  `changeForeground`
-   * handles the inverse flip (lines/text stay legible); this method is
-   * the symmetric counterpart for fills that must follow the canvas
-   * colour rather than its inverse.
-   *
-   * Only the fill material manager opts materials into this behaviour
-   * (see `AcTrFillMaterialManager.shouldTrackBackground`); managers for
-   * lines, points and text glyphs return `false` by default, so their
-   * caches are a no-op here.
+   * This path is reserved for fill styles that should track the canvas
+   * colour itself rather than the foreground colour. Managers opt in via
+   * `shouldTrackBackground`; the default is a no-op.
    *
    * @param color - New rendering color (typically the canvas background).
    */
@@ -363,9 +354,8 @@ export abstract class AcTrMaterialManager<T> {
    * `isForeground` and `isBackgroundFill` are mutually exclusive in
    * practice: the former flips a material to the colour *opposite* the
    * canvas bg (so ACI 7 text stays legible), whereas the latter paints
-   * the material with the canvas bg itself (so ACI 7 hatches fuse with
-   * the paper and leave the wireframe visible).  Subclasses enforce the
-   * split via `shouldTrackForeground` and `shouldTrackBackground`.
+   * the material with the canvas bg itself. Subclasses enforce the split via
+   * `shouldTrackForeground` and `shouldTrackBackground`.
    */
   protected createMaterial(
     key: string,
@@ -432,8 +422,7 @@ export abstract class AcTrMaterialManager<T> {
    * Subclasses can override this to opt a primitive type out of the
    * inversion. `AcTrFillMaterialManager` overrides this and uses
    * `traits.drawOrder` to distinguish text / line-like fills
-   * (invert) from hatch fills (do NOT invert — AutoCAD keeps
-   * ACI 7 hatches fused with the paper colour).
+   * (invert) from hatch fills when needed.
    */
   protected shouldTrackForeground(
     traits: AcGiSubEntityTraits,
@@ -450,11 +439,8 @@ export abstract class AcTrMaterialManager<T> {
    * Default is `false`: lines, points and text glyph fills never fuse
    * with the background — they need to stay visible against it.
    *
-   * `AcTrFillMaterialManager` overrides this to opt solid hatch fills
-   * whose resolved colour is the foreground (ACI 7) into the
-   * background-follow behaviour, matching AutoCAD's rendering where
-   * such hatches vanish into the paper in both light and dark themes
-   * and only the overlaid wireframe remains visible.
+   * Managers can override this to opt specific fill styles into
+   * background-follow behaviour.
    */
   protected shouldTrackBackground(
     _traits: AcGiSubEntityTraits,

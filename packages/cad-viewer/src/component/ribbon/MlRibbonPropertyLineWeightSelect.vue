@@ -17,7 +17,7 @@
 import { AcGiLineWeight } from '@mlightcad/data-model'
 
 import { lineWeight as lineWeightIcon } from '../../svg'
-import MlLineWeightSelect from './MlLineWeightSelect.vue'
+import MlLineWeightSelect from '../common/MlLineWeightSelect.vue'
 import MlRibbonPropertyField from './MlRibbonPropertyField.vue'
 
 /**

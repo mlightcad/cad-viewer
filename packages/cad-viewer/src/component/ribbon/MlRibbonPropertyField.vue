@@ -1,6 +1,7 @@
 <template>
   <section
     class="ml-ribbon-property-field"
+    :style="fieldStyle"
     :class="[
       variant ? `ml-ribbon-property-field--${variant}` : '',
       { 'ml-ribbon-property-field--disabled': disabled }
@@ -18,6 +19,7 @@
 
 <script setup lang="ts">
 import type { Component } from 'vue'
+import { computed } from 'vue'
 
 /**
  * Visual variants supported by the shared ribbon property field shell.
@@ -34,9 +36,17 @@ interface RibbonPropertyFieldProps {
   disabled?: boolean
   /** Variant-specific styling hook used by the ribbon layout. */
   variant?: RibbonPropertyFieldVariant
+  /** Optional fixed width for the embedded control area. */
+  controlWidth?: string
 }
 
-defineProps<RibbonPropertyFieldProps>()
+const props = defineProps<RibbonPropertyFieldProps>()
+
+const fieldStyle = computed(() =>
+  props.controlWidth
+    ? { '--ml-ribbon-property-column-width': props.controlWidth }
+    : undefined
+)
 </script>
 
 <style scoped>

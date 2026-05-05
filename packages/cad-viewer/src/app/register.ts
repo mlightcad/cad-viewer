@@ -10,7 +10,8 @@ import {
   AcApMissedDataCmd,
   AcApPointStyleCmd,
   AcApPropertiesCmd,
-  AcApQSelectCmd
+  AcApQSelectCmd,
+  hatchRibbonCommand
 } from '../command'
 import {
   createMlColorIndexPickerToolbarFactory,
@@ -29,6 +30,12 @@ export const registerCmds = () => {
       'layer',
       'layer',
       new AcApLayerStateCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'hatch',
+      'hatch',
+      hatchRibbonCommand
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

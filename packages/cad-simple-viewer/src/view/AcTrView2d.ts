@@ -469,27 +469,8 @@ export class AcTrView2d extends AcEdBaseView {
   set backgroundColor(value: number) {
     this._renderer.setClearColor(value)
     this._renderer.changeForeground(value == 0 ? 0xffffff : 0)
-    // Keep solid ACI 7 hatches fused with the canvas background in
-    // both themes (matches AutoCAD, where such hatches vanish into
-    // the paper and only the overlaid wireframe stays visible).
-    //
-    // Setting `currentBackgroundColor` (instead of calling
-    // `changeBackground` directly) covers BOTH phases of the lifecycle:
-    //
-    // 1. Mid-session theme flip: every background-follow material
-    //    already in the material manager's cache is repainted to the
-    //    new bg — same as `changeBackground` alone would have done.
-    // 2. Initial boot (e.g. `useDark` sets dark theme before the DWG
-    //    finishes loading): the style manager stores the bg on its
-    //    options so hatch materials created LATER during `batchConvert`
-    //    are BORN with the correct bg colour.  Without this, the first
-    //    frame after load showed ACI 7 hatches as solid white on a
-    //    black canvas until the user manually toggled the theme.
-    //
-    // `changeForeground` above already handles the inverse flip for
-    // lines/text/MText; `currentBackgroundColor` is the symmetric
-    // counterpart for fills opted into `isBackgroundFill` by
-    // `AcTrFillMaterialManager.shouldTrackBackground`.
+    // Store the canvas colour for theme-sensitive materials created after this
+    // point. `changeForeground` above keeps ACI 7 linework and hatches visible.
     this._renderer.currentBackgroundColor = value
     this.editor.setCursorColor(value == 0 ? 'white' : 'black')
     applyUiThemeFromBackground(value)

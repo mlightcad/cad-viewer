@@ -238,6 +238,7 @@ export class AcEdCommandLine {
         font-size: 13px;
         box-sizing: border-box;
         user-select: none;
+        max-width: calc(100% - 20px);
       }
 
       .ml-cli-bar {
@@ -250,6 +251,8 @@ export class AcEdCommandLine {
         box-shadow: var(--ml-ui-shadow, 0 2px 6px rgba(0, 0, 0, 0.25));
         min-width: 300px;
         height: 30px;
+        max-width: 100%;
+        overflow: hidden;
       }
 
       .ml-cli-left {
@@ -316,6 +319,7 @@ export class AcEdCommandLine {
         align-items: center;
         flex: 1;
         min-width: 0;
+        overflow: hidden;
         color: var(--ml-ui-text-muted, #333);
         height: 100%; 
       }
@@ -324,6 +328,11 @@ export class AcEdCommandLine {
         display: flex;
         align-items: center;
         white-space: nowrap;
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 65%;
+        overflow: hidden;
+        text-overflow: ellipsis;
         user-select: none;
         margin-right: 4px;
         line-height: 1;
@@ -335,6 +344,7 @@ export class AcEdCommandLine {
 
       .ml-cli-text {
         flex: 1;
+        min-width: 0;
         height: 100%;
         border: none;
         outline: none;
