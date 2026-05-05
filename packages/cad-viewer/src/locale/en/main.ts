@@ -29,12 +29,25 @@ export default {
         scale: 'Scale',
         angle: 'Angle',
         style: 'Style',
-        associative: 'Associative'
+        associative: 'Associative',
+        fillType: 'Fill Type',
+        fillColor: 'Color',
+        patternColor: 'Pattern Color',
+        gradient1Color: 'Gradient Color 1',
+        backgroundColor: 'Background Color',
+        gradient2Color: 'Gradient Color 2',
+        opacity: 'Transparency',
+        imageScale: 'Image Scale'
       },
       style: {
         normal: 'Normal',
         outer: 'Outer',
         ignore: 'Ignore'
+      },
+      fillType: {
+        solid: 'Solid',
+        pattern: 'Pattern',
+        gradient: 'Gradient'
       },
       associative: {
         on: 'On',
@@ -48,6 +61,14 @@ export default {
         angle: 'Set the hatch pattern angle in degrees.',
         style: 'Control island detection style for hatch creation.',
         associative: 'Toggle associative hatch mode.',
+        fillType: 'Select fill type: solid, pattern, or gradient.',
+        fillColor: 'Choose the fill color.',
+        patternColor: 'Choose the pattern line color.',
+        gradient1Color: 'Choose the first gradient color.',
+        backgroundColor: 'Choose the background color for pattern fill.',
+        gradient2Color: 'Choose the second gradient color.',
+        opacity: 'Set the hatch transparency (0-90).',
+        imageScale: 'Set the fill image scale.',
         close: 'Exit Hatch creation and close this contextual tab.'
       }
     },

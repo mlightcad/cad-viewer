@@ -2,6 +2,7 @@
   <ml-ribbon-property-field
     :icon="colorIcon"
     :disabled="disabled"
+    :control-width="controlWidth"
     variant="color"
   >
     <ml-color-dropdown
@@ -33,6 +34,8 @@ interface RibbonPropertyColorDropdownProps {
   displayColor?: string
   /** Fallback label shown when no explicit color can be displayed. */
   placeholder?: string
+  /** Optional fixed width for the embedded color dropdown. */
+  controlWidth?: string
 }
 
 defineProps<RibbonPropertyColorDropdownProps>()

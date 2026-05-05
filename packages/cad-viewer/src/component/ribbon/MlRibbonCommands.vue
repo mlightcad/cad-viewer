@@ -20,6 +20,7 @@ import {
   AcCmColor,
   AcDbDatabase,
   AcDbEntity,
+  AcDbHatch,
   AcDbObjectId,
   AcDbSysVarManager,
   AcGiLineWeight
@@ -138,10 +139,12 @@ const activeRibbonTabId = ref('home')
 const {
   handleCommandWillStart: handleHatchCommandWillStart,
   handleCommandEnded: handleHatchCommandEnded,
+  handleSelectionContextChanged: handleHatchSelectionContextChanged,
   handleItem: handleHatchItem,
   buildContextualTab: buildHatchContextualTab
 } = useHatchContextualRibbon({
-  activeTabId: activeRibbonTabId
+  activeTabId: activeRibbonTabId,
+  clearSelection: () => getCurrentSelectionSet()?.clear()
 })
 const {
   layers: ribbonLayers,
@@ -193,6 +196,19 @@ function getSelectedEntities(db: AcDbDatabase) {
   return selectedEntityIds.value
     .map(id => db.tables.blockTable.getEntityById(id))
     .filter((entity): entity is AcDbEntity => entity != null)
+}
+
+function syncHatchSelectionContext(db = getCurrentDatabase()) {
+  if (!db || selectedEntityIds.value.length === 0) {
+    handleHatchSelectionContextChanged(false)
+    return
+  }
+
+  const selectedEntities = getSelectedEntities(db)
+  const isOnlyHatchSelection =
+    selectedEntities.length === selectedEntityIds.value.length &&
+    selectedEntities.every(entity => entity instanceof AcDbHatch)
+  handleHatchSelectionContextChanged(isOnlyHatchSelection)
 }
 
 function getCommonValue<T>(
@@ -295,6 +311,7 @@ const handleAnnotationLayerChange = () => {
 const handleSelectionChanged = () => {
   syncSelectedEntityIds()
   syncRibbonProperties(observedDatabase)
+  syncHatchSelectionContext(observedDatabase)
 }
 
 const handleObservedEntityChange = (args: {
@@ -309,6 +326,7 @@ const handleObservedEntityChange = (args: {
 
   if (!hasSelectedEntityChanged) return
   syncRibbonProperties(observedDatabase)
+  syncHatchSelectionContext(observedDatabase)
 }
 
 /**
@@ -401,6 +419,7 @@ const handleDocumentActivated = () => {
   ribbonLayerPreviousSnapshot.value = null
   syncAnnotationVisibility()
   syncRibbonProperties(AcApDocManager.instance?.curDocument?.database)
+  syncHatchSelectionContext(AcApDocManager.instance?.curDocument?.database)
 }
 
 /**
@@ -1209,7 +1228,6 @@ const buildBaseTabs = (
           id: 'home-properties',
           title: t('main.ribbon.group.properties'),
           orientation: 'row',
-          autoWidth: true,
           priority: 20,
           collections: [
             {

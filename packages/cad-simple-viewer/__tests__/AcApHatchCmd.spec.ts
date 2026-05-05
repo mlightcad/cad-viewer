@@ -119,6 +119,12 @@ class TestHatchCmd extends AcApHatchCmd {
   }
 }
 
+class DefaultHatchCmd extends AcApHatchCmd {
+  appendForTest(context: never, loops: ReadonlyArray<AcGeLoop2d>) {
+    return this.appendHatch(context, loops)
+  }
+}
+
 const createSquareLoop = () =>
   new AcGeLoop2d([
     new AcGeLine2d({ x: 0, y: 0 }, { x: 10, y: 0 }),
@@ -160,6 +166,18 @@ const createSettings = (
 })
 
 describe('AcApHatchCmd', () => {
+  test('creates SOLID hatches by default', () => {
+    const { appended, context } = createContext()
+    const cmd = new DefaultHatchCmd()
+
+    expect(cmd.appendForTest(context as never, [createSquareLoop()])).toBe(true)
+
+    const hatch = appended[0]
+    expect(hatch.patternName).toBe('SOLID')
+    expect(hatch.isSolidFill).toBe(true)
+    expect(hatch.definitionLines).toHaveLength(0)
+  })
+
   test('expands predefined pattern names into hatch definition lines', () => {
     const { appended, context } = createContext()
     const cmd = new TestHatchCmd(createSettings())

@@ -89,7 +89,7 @@ describe('AcTrStyleManager', () => {
     expect(refreshed.color.getHex()).toBe(0xffff00)
   })
 
-  it('separates hatch fills from linework-tier fill meshes via drawOrder', () => {
+  it('keeps foreground hatch fills visible via drawOrder-separated materials', () => {
     const styleManager = new AcTrStyleManager()
     styleManager.currentBackgroundColor = 0xffffff
 
@@ -116,9 +116,9 @@ describe('AcTrStyleManager', () => {
 
     const hatchMetadata = getMaterialMetadata(hatchMaterial)
     expect(hatchMetadata.drawOrder).toBe(-1)
-    expect(hatchMetadata.isBackgroundFill).toBe(true)
-    expect(hatchMetadata.isForeground).toBe(false)
-    expect(hatchMaterial.color.getHex()).toBe(0xffffff)
+    expect(hatchMetadata.isBackgroundFill).toBe(false)
+    expect(hatchMetadata.isForeground).toBe(true)
+    expect(hatchMaterial.color.getHex()).toBe(0x000000)
 
     const lineworkFillMetadata = getMaterialMetadata(lineworkFillMaterial)
     expect(lineworkFillMetadata.drawOrder).toBe(0)

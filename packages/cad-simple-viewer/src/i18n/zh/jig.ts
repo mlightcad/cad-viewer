@@ -182,6 +182,11 @@ export default {
         local: '选择对象',
         global: 'SelectObjects'
       },
+      cancel: {
+        display: '放弃(C)',
+        local: '放弃',
+        global: 'Cancel'
+      },
       pattern: {
         display: '图案(P)',
         local: '图案',

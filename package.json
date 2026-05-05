@@ -42,8 +42,8 @@
       "vue-demi"
     ],
     "overrides": {
-      "@mlightcad/data-model": "^1.7.30",
-      "@mlightcad/libredwg-converter": "^3.5.30",
+      "@mlightcad/data-model": "../../../realdwg-web/packages/data-model",
+      "@mlightcad/libredwg-converter": "../../../realdwg-web/packages/libredwg-converter",
       "@mlightcad/mtext-renderer": "^0.10.7",
       "element-plus": "^2.12.0",
       "three": "^0.172.0",

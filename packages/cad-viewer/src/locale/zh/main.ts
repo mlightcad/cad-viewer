@@ -29,12 +29,25 @@ export default {
         scale: '比例',
         angle: '角度',
         style: '样式',
-        associative: '关联'
+        associative: '关联',
+        fillType: '填充类型',
+        fillColor: '颜色',
+        patternColor: '图案颜色',
+        gradient1Color: '渐变色1',
+        backgroundColor: '背景颜色',
+        gradient2Color: '渐变色2',
+        opacity: '透明度',
+        imageScale: '图片比例'
       },
       style: {
         normal: '普通',
         outer: '外部',
         ignore: '忽略'
+      },
+      fillType: {
+        solid: '实体',
+        pattern: '图案',
+        gradient: '渐变色'
       },
       associative: {
         on: '开',
@@ -48,6 +61,14 @@ export default {
         angle: '设置填充图案角度（度）。',
         style: '控制填充时的岛屿检测样式。',
         associative: '切换关联填充模式。',
+        fillType: '选择填充类型：实体、图案或渐变色。',
+        fillColor: '选择填充颜色。',
+        patternColor: '选择图案线条颜色。',
+        gradient1Color: '选择第一个渐变颜色。',
+        backgroundColor: '为图案填充选择背景颜色。',
+        gradient2Color: '选择第二个渐变颜色。',
+        opacity: '设置填充透明度（0-90）。',
+        imageScale: '设置填充图片比例。',
         close: '退出填充创建并关闭该上下文标签。'
       }
     },

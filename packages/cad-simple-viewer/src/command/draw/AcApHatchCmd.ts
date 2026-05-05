@@ -77,7 +77,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * Last-used command settings shared by all `AcApHatchCmd` instances.
    */
   private static _lastSettings: HatchSettings = {
-    patternName: 'ANSI31',
+    patternName: 'SOLID',
     patternScale: 1,
     patternAngleDeg: 0,
     style: AcDbHatchStyle.Normal,
@@ -103,11 +103,11 @@ export class AcApHatchCmd extends AcEdCommand {
    * Normalizes pattern name input.
    *
    * @param value Raw user-entered pattern name.
-   * @returns Trimmed name, or `ANSI31` when input is empty.
+   * @returns Trimmed name, or `SOLID` when input is empty.
    */
   protected normalizePatternName(value: string) {
     const name = value.trim().toUpperCase()
-    return name.length > 0 ? name : 'ANSI31'
+    return name.length > 0 ? name : 'SOLID'
   }
 
   /**
@@ -499,11 +499,20 @@ export class AcApHatchCmd extends AcEdCommand {
     hatch.patternAngle = (settings.patternAngleDeg * Math.PI) / 180
     hatch.hatchStyle = settings.style
     hatch.isSolidFill = isSolidFill
+    this.configureHatch(hatch)
 
     loops.forEach(loop => hatch.add(loop))
     context.doc.database.tables.blockTable.modelSpace.appendEntity(hatch)
     return true
   }
+
+  /**
+   * Allows specialized hatch commands to apply additional entity properties
+   * before the hatch is added to model space.
+   *
+   * @param _hatch Hatch entity being created.
+   */
+  protected configureHatch(_hatch: AcDbHatch) {}
 
   /**
    * Prompts for pattern name and updates persisted command settings.
