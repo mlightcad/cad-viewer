@@ -162,6 +162,33 @@ describe('AcTrStyleManager', () => {
     expect(metadata.isForeground).toBe(true)
   })
 
+  it('creates a new patterned hatch material when pattern offset changes', () => {
+    const styleManager = new AcTrStyleManager()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'A-HATCH'
+    traits.rgbColor = 0x00ff00
+    traits.drawOrder = -1
+    traits.fillType = {
+      solidFill: false,
+      patternAngle: 0,
+      definitionLines: [
+        {
+          angle: Math.PI / 4,
+          base: { x: 0, y: 0 },
+          offset: { x: 0, y: 3.175 },
+          dashLengths: []
+        }
+      ]
+    }
+
+    const material = styleManager.getFillMaterial(traits)
+    traits.fillType.definitionLines[0].offset.y = 6.35
+    const scaledMaterial = styleManager.getFillMaterial(traits)
+
+    expect(scaledMaterial).toBeInstanceOf(THREE.ShaderMaterial)
+    expect(scaledMaterial).not.toBe(material)
+  })
+
   it('creates gradient hatch shader materials with per-boundary uniforms', () => {
     const styleManager = new AcTrStyleManager()
     const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()

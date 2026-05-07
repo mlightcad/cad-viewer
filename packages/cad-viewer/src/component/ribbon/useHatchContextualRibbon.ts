@@ -1,7 +1,10 @@
 import { CircleClose } from '@element-plus/icons-vue'
 import type { AcEdCommandEventArgs } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
-import type { RibbonTabModel } from '@mlightcad/ribbon'
+import type {
+  RibbonGalleryCategoryModel,
+  RibbonTabModel
+} from '@mlightcad/ribbon'
 import { type Ref, ref } from 'vue'
 
 import { hatchRibbonCommand, type HatchRibbonStyle } from '../../command'
@@ -9,19 +12,17 @@ import { useRibbonContextualTab } from '../../composable'
 import { hatch, qselect } from '../../svg'
 import {
   DEFAULT_HATCH_PATTERN_OPTIONS,
-  type HatchPatternOption
+  type HatchPatternOption,
+  resolveHatchPatternPreviewSvg
 } from '../common/hatchPatternPreview'
 import MlRibbonHatchColorRow2 from './MlRibbonHatchColorRow2.vue'
 import MlRibbonHatchColorRow3 from './MlRibbonHatchColorRow3.vue'
-import MlRibbonHatchPatternButton from './MlRibbonHatchPatternButton.vue'
 
 const HATCH_CONTEXTUAL_TAB_ID = 'hatch-context'
 const HATCH_COMMAND_GLOBAL_NAME = 'HATCH'
 const hatchPatternOptions: HatchPatternOption[] = [
   ...DEFAULT_HATCH_PATTERN_OPTIONS
 ]
-const hatchAngleOptions = [0, 15, 30, 45, 60, 90]
-
 const toColorValue = (value: unknown) => {
   if (value instanceof AcCmColor) return value
   if (typeof value !== 'string') return undefined
@@ -39,6 +40,23 @@ interface UseHatchContextualRibbonOptions {
 }
 
 type Translate = (key: string) => string
+
+const buildHatchPatternGalleryCategories = (
+  title: string
+): RibbonGalleryCategoryModel[] => [
+  {
+    id: 'hatch-patterns',
+    title,
+    items: hatchPatternOptions.map(option => {
+      const patternName = option.value.trim().toUpperCase()
+      return {
+        id: `hatch-pattern:${patternName}`,
+        label: option.label ?? patternName,
+        previewSvg: resolveHatchPatternPreviewSvg(patternName)
+      }
+    })
+  }
+]
 
 export function useHatchContextualRibbon({
   activeTabId,
@@ -104,7 +122,9 @@ export function useHatchContextualRibbon({
       return true
     }
     if (itemId.startsWith('hatch-pattern:')) {
-      hatchRibbonCommand.setPatternName(itemId.slice('hatch-pattern:'.length))
+      hatchRibbonCommand.setPatternNameFromGallery(
+        itemId.slice('hatch-pattern:'.length)
+      )
       return true
     }
     if (itemId.startsWith('hatch-fillType:')) {
@@ -218,17 +238,17 @@ export function useHatchContextualRibbon({
               items: [
                 {
                   id: 'hatch-pattern',
-                  type: 'custom',
-                  label: t('main.ribbon.hatch.field.pattern'),
+                  type: 'gallery',
                   tooltip: t('main.ribbon.hatch.tooltip.pattern'),
                   size: 'large',
                   props: {
-                    component: MlRibbonHatchPatternButton,
-                    componentProps: {
-                      modelValue: hatchState.patternName,
-                      options: hatchPatternOptions,
-                      label: t('main.ribbon.hatch.field.pattern')
-                    }
+                    modelValue: `hatch-pattern:${hatchState.patternName
+                      .trim()
+                      .toUpperCase()}`,
+                    inlineItemLimit: 4,
+                    categories: buildHatchPatternGalleryCategories(
+                      t('main.ribbon.hatch.field.pattern')
+                    )
                   }
                 }
               ]
@@ -333,52 +353,47 @@ export function useHatchContextualRibbon({
               items: [
                 {
                   id: 'hatch-opacity',
-                  type: 'comboBox',
+                  type: 'inputNumber',
                   label: t('main.ribbon.hatch.field.opacity'),
                   tooltip: t('main.ribbon.hatch.tooltip.opacity'),
                   size: 'small',
                   props: {
                     width: '108px',
-                    modelValue: `hatch-opacity:${hatchState.opacity}`,
+                    modelValue: hatchState.opacity,
+                    min: 0,
+                    max: 90,
+                    step: 10,
                     emitValueOnChange: true,
-                    options: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90].map(
-                      item => ({
-                        label: String(item),
-                        value: `hatch-opacity:${item}`
-                      })
-                    )
+                    valuePrefix: 'hatch-opacity:'
                   }
                 },
                 {
                   id: 'hatch-angle',
-                  type: 'comboBox',
+                  type: 'inputNumber',
                   label: t('main.ribbon.hatch.field.angle'),
                   tooltip: t('main.ribbon.hatch.tooltip.angle'),
                   size: 'small',
                   props: {
                     width: '108px',
-                    modelValue: `hatch-angle:${hatchState.patternAngle}`,
+                    modelValue: hatchState.patternAngle,
+                    step: 15,
                     emitValueOnChange: true,
-                    options: hatchAngleOptions.map(item => ({
-                      label: String(item),
-                      value: `hatch-angle:${item}`
-                    }))
+                    valuePrefix: 'hatch-angle:'
                   }
                 },
                 {
                   id: 'hatch-scale',
-                  type: 'comboBox',
+                  type: 'inputNumber',
                   label: t('main.ribbon.hatch.field.scale'),
                   tooltip: t('main.ribbon.hatch.tooltip.scale'),
                   size: 'small',
                   props: {
                     width: '108px',
-                    modelValue: `hatch-scale:${hatchState.patternScale}`,
+                    modelValue: hatchState.patternScale,
+                    min: 0.1,
+                    step: 0.5,
                     emitValueOnChange: true,
-                    options: [0.5, 1, 1.5, 2, 3, 5].map(item => ({
-                      label: String(item),
-                      value: `hatch-scale:${item}`
-                    }))
+                    valuePrefix: 'hatch-scale:'
                   }
                 }
               ]

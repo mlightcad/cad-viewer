@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { DEFAULT_HATCH_PATTERN_IMPERIAL } from '@mlightcad/data-model'
 import { MlRibbonButton } from '@mlightcad/ribbon'
 import { ElPopover } from 'element-plus'
 import { computed, ref, watch } from 'vue'
@@ -70,7 +71,7 @@ interface HatchPatternDropdownProps {
 
 const props = withDefaults(defineProps<HatchPatternDropdownProps>(), {
   id: 'hatch-pattern',
-  modelValue: 'ANSI31',
+  modelValue: DEFAULT_HATCH_PATTERN_IMPERIAL,
   options: () => DEFAULT_HATCH_PATTERN_OPTIONS,
   itemIdPrefix: 'hatch-pattern:',
   disabled: false,

@@ -10,11 +10,15 @@ import {
 import {
   AcCmColor,
   AcCmTransparency,
+  type AcDbEntityEventArgs,
   AcDbHatch,
   AcDbHatchObjectType,
   AcDbHatchPatternType,
   AcDbSystemVariables,
-  AcDbSysVarManager
+  type AcDbSysVarEventArgs,
+  AcDbSysVarManager,
+  DEFAULT_HATCH_PATTERN_IMPERIAL,
+  HATCH_PATTERN_SOLID
 } from '@mlightcad/data-model'
 import { reactive } from 'vue'
 
@@ -23,6 +27,7 @@ export type HatchFillType = 'solid' | 'pattern' | 'gradient'
 
 export interface HatchRibbonState {
   patternName: string
+  hatchObjectType: AcDbHatchObjectType
   patternScale: number
   patternAngle: number
   style: HatchRibbonStyle
@@ -45,7 +50,8 @@ const DEFAULT_HATCH_GRADIENT_COLOR = new AcCmColor()
 
 export class AcApHatchRibbonCmd extends AcApHatchCmd {
   private readonly _state = reactive<HatchRibbonState>({
-    patternName: 'ANSI31',
+    patternName: DEFAULT_HATCH_PATTERN_IMPERIAL,
+    hatchObjectType: AcDbHatchObjectType.HatchObject,
     patternScale: 1,
     patternAngle: 0,
     style: 'Normal',
@@ -59,7 +65,9 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
 
   private _isActive = false
   private _queuedAction: HatchRibbonAction | undefined
-  private _sysVarChangeListener: ((args: any) => void) | undefined
+  private _sysVarChangeListener:
+    | ((args: AcDbSysVarEventArgs) => void)
+    | undefined
   private _settingsProxy: HatchSettings | undefined
   private readonly _activeHatchIds = new Set<string>()
 
@@ -74,9 +82,14 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     if (!database) return
 
     const sysVarManager = AcDbSysVarManager.instance()
-    this._state.patternName =
+    const patternName =
       (sysVarManager.getVar(AcDbSystemVariables.HPNAME, database) as string) ??
-      'ANSI31'
+      DEFAULT_HATCH_PATTERN_IMPERIAL
+    this._state.patternName = patternName
+    this._state.fillType = this.inferFillTypeFromPatternName(patternName)
+    this._state.hatchObjectType = this.inferHatchObjectTypeFromFillType(
+      this._state.fillType
+    )
     this._state.patternScale = this.normalizePositiveNumber(
       sysVarManager.getVar(AcDbSystemVariables.HPSCALE, database),
       1
@@ -130,7 +143,7 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
               (sysVarManager.getVar(
                 AcDbSystemVariables.HPNAME,
                 database
-              ) as string) ?? 'ANSI31'
+              ) as string) ?? DEFAULT_HATCH_PATTERN_IMPERIAL
             )
           case 'patternScale':
             return this.normalizePositiveNumber(
@@ -203,10 +216,16 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
   private initializeSysVarListener() {
     if (this._sysVarChangeListener) return
 
-    this._sysVarChangeListener = (args: any) => {
+    this._sysVarChangeListener = (args: AcDbSysVarEventArgs) => {
       const varName = args.name?.toLowerCase()
       if (varName === AcDbSystemVariables.HPNAME.toLowerCase()) {
-        this._state.patternName = (args.newVal as string) ?? 'ANSI31'
+        const patternName =
+          (args.newVal as string) ?? DEFAULT_HATCH_PATTERN_IMPERIAL
+        this._state.patternName = patternName
+        this._state.fillType = this.inferFillTypeFromPatternName(patternName)
+        this._state.hatchObjectType = this.inferHatchObjectTypeFromFillType(
+          this._state.fillType
+        )
       } else if (varName === AcDbSystemVariables.HPSCALE.toLowerCase()) {
         this._state.patternScale = this.normalizePositiveNumber(args.newVal, 1)
       } else if (varName === AcDbSystemVariables.HPANG.toLowerCase()) {
@@ -327,7 +346,22 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
 
   private getFillPatternName() {
     const patternName = this.normalizePatternName(this._state.patternName)
-    return patternName === 'SOLID' ? 'ANSI31' : patternName
+    return patternName === HATCH_PATTERN_SOLID
+      ? DEFAULT_HATCH_PATTERN_IMPERIAL
+      : patternName
+  }
+
+  private inferFillTypeFromPatternName(patternName: string): HatchFillType {
+    const normalized = this.normalizePatternName(patternName)
+    if (normalized === HATCH_PATTERN_SOLID) return 'solid'
+    if (normalized.startsWith('GR_')) return 'gradient'
+    return 'pattern'
+  }
+
+  private inferHatchObjectTypeFromFillType(fillType: HatchFillType) {
+    return fillType === 'gradient'
+      ? AcDbHatchObjectType.GradientObject
+      : AcDbHatchObjectType.HatchObject
   }
 
   private toRgb(value: HatchColorInput) {
@@ -345,14 +379,19 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     const fillColor = this.toAcCmColor(this._state.fillColor)
     const opacity = Math.max(0, Math.min(90, this._state.opacity))
 
-    if (this._state.fillType === 'gradient') {
+    if (
+      this._state.fillType === 'gradient' &&
+      this._state.hatchObjectType === AcDbHatchObjectType.GradientObject
+    ) {
       hatch.hatchObjectType = AcDbHatchObjectType.GradientObject
       hatch.gradientStartColor = this.toRgb(this._state.fillColor)
       hatch.gradientEndColor = this.toRgb(this._state.gradient2Color)
       hatch.gradientAngle = (this._state.patternAngle * Math.PI) / 180
     } else {
       const isSolidFill = this._state.fillType === 'solid'
-      const patternName = isSolidFill ? 'SOLID' : this.getFillPatternName()
+      const patternName = isSolidFill
+        ? HATCH_PATTERN_SOLID
+        : this.getFillPatternName()
       hatch.hatchObjectType = AcDbHatchObjectType.HatchObject
       hatch.patternName = patternName
       hatch.patternType = AcDbHatchPatternType.Predefined
@@ -361,6 +400,7 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
       hatch.hatchStyle = this.keywordToStyle(this._state.style)
       hatch.isSolidFill = isSolidFill
     }
+    hatch.hatchObjectType = this._state.hatchObjectType
 
     if (fillColor) {
       hatch.color = fillColor
@@ -388,6 +428,20 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     if (this._state.fillType === 'pattern') {
       this.applyStateToSelectedHatches()
     }
+  }
+
+  setPatternNameFromGallery(value: string) {
+    const db = AcApDocManager.instance.curDocument?.database
+    if (!db) return
+
+    const patternName = this.normalizePatternName(value)
+    this._state.patternName = patternName
+    this._state.fillType = this.inferFillTypeFromPatternName(patternName)
+    this._state.hatchObjectType = AcDbHatchObjectType.HatchObject
+
+    const sysVarManager = AcDbSysVarManager.instance()
+    sysVarManager.setVar(AcDbSystemVariables.HPNAME, patternName, db)
+    this.applyStateToSelectedHatches()
   }
 
   setPatternScale(value: number) {
@@ -433,6 +487,7 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
 
   setFillType(value: HatchFillType) {
     this._state.fillType = value
+    this._state.hatchObjectType = this.inferHatchObjectTypeFromFillType(value)
     this.applyStateToSelectedHatches()
   }
 
@@ -514,9 +569,12 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     this.syncStateFromSysVars()
     this._isActive = true
     this._activeHatchIds.clear()
-    const entityAppendedListener = (args: any) => {
-      if (args.entity instanceof AcDbHatch) {
-        this._activeHatchIds.add(args.entity.objectId)
+    const entityAppendedListener = (args: AcDbEntityEventArgs) => {
+      const entities = Array.isArray(args.entity) ? args.entity : [args.entity]
+      for (const entity of entities) {
+        if (entity instanceof AcDbHatch) {
+          this._activeHatchIds.add(entity.objectId)
+        }
       }
     }
     context.doc.database.events.entityAppended.addEventListener(

@@ -43,7 +43,10 @@
         @input="handleBackgroundColorChange"
       />
     </div>
-    <div v-else-if="modelValue === 'gradient'" class="ml-hatch-fill-type-panel__row">
+    <div
+      v-else-if="modelValue === 'gradient'"
+      class="ml-hatch-fill-type-panel__row"
+    >
       <label class="ml-hatch-fill-type-panel__label">
         {{ gradient2ColorLabel }}
       </label>
@@ -59,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { ElSelect, ElOption } from 'element-plus'
+import { ElOption,ElSelect } from 'element-plus'
 
 interface MlHatchFillTypePanelProps {
   modelValue?: string
@@ -73,20 +76,27 @@ interface MlHatchFillTypePanelProps {
   gradient2ColorLabel?: string
 }
 
-const { modelValue, fillColor, backgroundColor, gradient2Color, disabled, label, colorLabel, backgroundColorLabel, gradient2ColorLabel } = withDefaults(
-  defineProps<MlHatchFillTypePanelProps>(),
-  {
-    modelValue: 'solid',
-    fillColor: '#000000',
-    backgroundColor: '#FFFFFF',
-    gradient2Color: '#FFFFFF',
-    disabled: false,
-    label: 'Fill Type',
-    colorLabel: 'Color',
-    backgroundColorLabel: 'Background Color',
-    gradient2ColorLabel: 'Gradient Color 2'
-  }
-)
+const {
+  modelValue,
+  fillColor,
+  backgroundColor,
+  gradient2Color,
+  disabled,
+  label,
+  colorLabel,
+  backgroundColorLabel,
+  gradient2ColorLabel
+} = withDefaults(defineProps<MlHatchFillTypePanelProps>(), {
+  modelValue: 'solid',
+  fillColor: '#000000',
+  backgroundColor: '#FFFFFF',
+  gradient2Color: '#FFFFFF',
+  disabled: false,
+  label: 'Fill Type',
+  colorLabel: 'Color',
+  backgroundColorLabel: 'Background Color',
+  gradient2ColorLabel: 'Gradient Color 2'
+})
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void

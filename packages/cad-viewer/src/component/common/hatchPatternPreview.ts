@@ -29,6 +29,7 @@ const hatchPatternByName = new Map<string, AcDbPatPattern>(
 )
 
 const swatchBackgroundImageCache = new Map<string, string>()
+const previewSvgCache = new Map<string, string>()
 
 const SWATCH_BASE_STYLE: CSSProperties = {
   backgroundColor: '#f6f8fb',
@@ -43,14 +44,18 @@ const SWATCH_BASE_STYLE: CSSProperties = {
  * @param svg Raw SVG markup.
  * @returns CSS `url(...)` wrapper containing encoded SVG data URI.
  */
-function toCssSvgDataUrl(svg: string) {
+export function toSvgDataUri(svg: string) {
   const encoded = encodeURIComponent(svg)
     .replace(/%0A/g, '')
     .replace(/%20/g, ' ')
     .replace(/%3D/g, '=')
     .replace(/%3A/g, ':')
     .replace(/%2F/g, '/')
-  return `url("data:image/svg+xml,${encoded}")`
+  return `data:image/svg+xml,${encoded}`
+}
+
+function toCssSvgDataUrl(svg: string) {
+  return `url("${toSvgDataUri(svg)}")`
 }
 
 /**
@@ -77,6 +82,32 @@ function resolveHatchPatternBackgroundImage(name: string) {
   const backgroundImage = toCssSvgDataUrl(svg)
   swatchBackgroundImageCache.set(normalized, backgroundImage)
   return backgroundImage
+}
+
+/**
+ * Returns a cached SVG data URI preview for a hatch pattern.
+ *
+ * @param name Hatch pattern name.
+ * @returns Data URI suitable for image-based preview controls.
+ */
+export function resolveHatchPatternPreviewSvg(name: string) {
+  const normalized = name.trim().toUpperCase()
+  const cached = previewSvgCache.get(normalized)
+  if (cached) return cached
+
+  const pattern = hatchPatternByName.get(normalized)
+  if (!pattern) return undefined
+
+  const svg = hatchPatternSvgRenderer.renderPattern(pattern, {
+    width: 52,
+    height: 52,
+    stroke: '#2f3743',
+    strokeWidth: 1.2,
+    background: '#f6f8fb'
+  })
+  const dataUri = toSvgDataUri(svg)
+  previewSvgCache.set(normalized, dataUri)
+  return dataUri
 }
 
 /**

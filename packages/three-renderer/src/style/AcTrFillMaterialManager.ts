@@ -341,7 +341,9 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         const angle = Number.isFinite(pl.angle) ? pl.angle : 0
         const baseX = pl.base!.x!
         const baseY = pl.base!.y!
-        return `${dash}@${angle},${baseX},${baseY}`
+        const offsetX = pl.offset!.x!
+        const offsetY = pl.offset!.y!
+        return `${dash}@${angle},${baseX},${baseY},${offsetX},${offsetY}`
       })
       .join('|')
 

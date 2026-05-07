@@ -330,9 +330,8 @@ export class AcEdCommandLine {
         white-space: nowrap;
         flex: 0 1 auto;
         min-width: 0;
-        max-width: 65%;
+        max-width: calc(100% - 80px);
         overflow: hidden;
-        text-overflow: ellipsis;
         user-select: none;
         margin-right: 4px;
         line-height: 1;
@@ -344,7 +343,7 @@ export class AcEdCommandLine {
 
       .ml-cli-text {
         flex: 1;
-        min-width: 0;
+        min-width: 76px;
         height: 100%;
         border: none;
         outline: none;

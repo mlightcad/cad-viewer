@@ -96,8 +96,13 @@ jest.mock('../src/i18n', () => ({
 import {
   AcDbHatch,
   AcDbHatchStyle,
+  AcDbDatabase,
+  AcDbSystemVariables,
+  AcDbSysVarManager,
   AcGeLine2d,
-  AcGeLoop2d
+  AcGeLoop2d,
+  DEFAULT_HATCH_PATTERN_IMPERIAL,
+  HATCH_PATTERN_SOLID
 } from '@mlightcad/data-model'
 
 import {
@@ -134,30 +139,31 @@ const createSquareLoop = () =>
   ])
 
 const createContext = () => {
+  const database = new AcDbDatabase()
   const appended: AcDbHatch[] = []
+  const appendEntity = jest.spyOn(
+    database.tables.blockTable.modelSpace,
+    'appendEntity'
+  )
+  appendEntity.mockImplementation(entity => {
+    const entities = Array.isArray(entity) ? entity : [entity]
+    entities.forEach(item => {
+      if (item instanceof AcDbHatch) appended.push(item)
+    })
+  })
   const context = {
     doc: {
-      database: {
-        tables: {
-          blockTable: {
-            modelSpace: {
-              appendEntity: jest.fn((entity: AcDbHatch) =>
-                appended.push(entity)
-              )
-            }
-          }
-        }
-      }
+      database
     }
   }
 
-  return { appended, context }
+  return { appended, context, database }
 }
 
 const createSettings = (
   overrides: Partial<HatchSettings> = {}
 ): HatchSettings => ({
-  patternName: 'ANSI31',
+  patternName: DEFAULT_HATCH_PATTERN_IMPERIAL,
   patternScale: 2,
   patternAngleDeg: 15,
   style: AcDbHatchStyle.Normal,
@@ -167,26 +173,46 @@ const createSettings = (
 
 describe('AcApHatchCmd', () => {
   test('creates SOLID hatches by default', () => {
-    const { appended, context } = createContext()
+    const { appended, context, database } = createContext()
+    AcDbSysVarManager.instance().setVar(
+      AcDbSystemVariables.HPNAME,
+      HATCH_PATTERN_SOLID,
+      database
+    )
     const cmd = new DefaultHatchCmd()
 
     expect(cmd.appendForTest(context as never, [createSquareLoop()])).toBe(true)
 
     const hatch = appended[0]
-    expect(hatch.patternName).toBe('SOLID')
+    expect(hatch.patternName).toBe(HATCH_PATTERN_SOLID)
     expect(hatch.isSolidFill).toBe(true)
     expect(hatch.definitionLines).toHaveLength(0)
   })
 
   test('expands predefined pattern names into hatch definition lines', () => {
-    const { appended, context } = createContext()
+    const { appended, context, database } = createContext()
+    AcDbSysVarManager.instance().setVar(
+      AcDbSystemVariables.HPNAME,
+      DEFAULT_HATCH_PATTERN_IMPERIAL,
+      database
+    )
+    AcDbSysVarManager.instance().setVar(
+      AcDbSystemVariables.HPSCALE,
+      2,
+      database
+    )
+    AcDbSysVarManager.instance().setVar(
+      AcDbSystemVariables.HPANG,
+      Math.PI / 12,
+      database
+    )
     const cmd = new TestHatchCmd(createSettings())
 
     expect(cmd.appendForTest(context as never, [createSquareLoop()])).toBe(true)
 
     const hatch = appended[0]
     expect(hatch).toBeInstanceOf(AcDbHatch)
-    expect(hatch.patternName).toBe('ANSI31')
+    expect(hatch.patternName).toBe(DEFAULT_HATCH_PATTERN_IMPERIAL)
     expect(hatch.patternScale).toBe(2)
     expect(hatch.patternAngle).toBeCloseTo(Math.PI / 12)
     expect(hatch.isSolidFill).toBe(false)
@@ -196,13 +222,18 @@ describe('AcApHatchCmd', () => {
   })
 
   test('keeps SOLID hatches as solid fills without pattern definition lines', () => {
-    const { appended, context } = createContext()
+    const { appended, context, database } = createContext()
+    AcDbSysVarManager.instance().setVar(
+      AcDbSystemVariables.HPNAME,
+      HATCH_PATTERN_SOLID,
+      database
+    )
     const cmd = new TestHatchCmd(createSettings({ patternName: 'solid' }))
 
     expect(cmd.appendForTest(context as never, [createSquareLoop()])).toBe(true)
 
     const hatch = appended[0]
-    expect(hatch.patternName).toBe('SOLID')
+    expect(hatch.patternName).toBe(HATCH_PATTERN_SOLID)
     expect(hatch.isSolidFill).toBe(true)
     expect(hatch.definitionLines).toHaveLength(0)
   })

@@ -1,6 +1,7 @@
 import {
   AcDbArc,
   AcDbCircle,
+  AcDbDatabase,
   AcDbEntity,
   AcDbHatch,
   AcDbHatchPatternType,
@@ -8,10 +9,14 @@ import {
   AcDbLine,
   AcDbObjectId,
   AcDbPolyline,
+  AcDbSystemVariables,
+  AcDbSysVarManager,
+  type AcDbSysVarType,
   AcGeBoundaryEdgeType,
   AcGeCircArc2d,
   AcGeLine2d,
-  AcGeLoop2d
+  AcGeLoop2d,
+  HATCH_PATTERN_SOLID
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
@@ -32,7 +37,7 @@ import { AcApI18n } from '../../i18n'
  * Persisted HATCH command options reused between command invocations.
  */
 export interface HatchSettings {
-  /** Hatch pattern name, e.g. `ANSI31` or `SOLID`. */
+  /** Hatch pattern name, e.g. a predefined hatch pattern or `SOLID`. */
   patternName: string
   /** Pattern scale factor in drawing units (must be positive). */
   patternScale: number
@@ -77,7 +82,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * Last-used command settings shared by all `AcApHatchCmd` instances.
    */
   private static _lastSettings: HatchSettings = {
-    patternName: 'SOLID',
+    patternName: HATCH_PATTERN_SOLID,
     patternScale: 1,
     patternAngleDeg: 0,
     style: AcDbHatchStyle.Normal,
@@ -99,6 +104,82 @@ export class AcApHatchCmd extends AcEdCommand {
     return AcApHatchCmd._lastSettings
   }
 
+  private normalizeSysVarNumber(value: unknown, fallback: number) {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
+  private normalizePositiveSysVarNumber(value: unknown, fallback: number) {
+    const parsed = this.normalizeSysVarNumber(value, fallback)
+    return parsed > 0 ? parsed : fallback
+  }
+
+  private sysVarRadiansToDegrees(value: number) {
+    return Math.round(((value * 180) / Math.PI) * 1e6) / 1e6
+  }
+
+  private getSysVar(
+    sysVarManager: AcDbSysVarManager,
+    name: string,
+    database: AcDbDatabase
+  ) {
+    try {
+      return sysVarManager.getVar(name, database)
+    } catch {
+      return undefined
+    }
+  }
+
+  private getDatabaseSysVarSettings(database?: AcDbDatabase): HatchSettings {
+    const settings = this.settings
+    if (!(database instanceof AcDbDatabase)) return settings
+
+    try {
+      const sysVarManager = AcDbSysVarManager.instance()
+      const associative = this.getSysVar(
+        sysVarManager,
+        AcDbSystemVariables.HPASSOC,
+        database
+      )
+      return {
+        ...settings,
+        patternName: this.normalizePatternName(
+          (this.getSysVar(
+            sysVarManager,
+            AcDbSystemVariables.HPNAME,
+            database
+          ) as string) ?? settings.patternName
+        ),
+        patternScale: this.normalizePositiveSysVarNumber(
+          this.getSysVar(sysVarManager, AcDbSystemVariables.HPSCALE, database),
+          settings.patternScale
+        ),
+        patternAngleDeg: this.sysVarRadiansToDegrees(
+          this.normalizeSysVarNumber(
+            this.getSysVar(sysVarManager, AcDbSystemVariables.HPANG, database),
+            (settings.patternAngleDeg * Math.PI) / 180
+          )
+        ),
+        associative:
+          associative == null ? settings.associative : Number(associative) !== 0
+      }
+    } catch {
+      return settings
+    }
+  }
+
+  private getActiveSettings(): HatchSettings {
+    return this.getDatabaseSysVarSettings(
+      AcApDocManager.instance.curDocument?.database
+    )
+  }
+
+  private setActiveSysVar(name: string, value: AcDbSysVarType) {
+    const database = AcApDocManager.instance.curDocument?.database
+    if (!database) return
+    AcDbSysVarManager.instance().setVar(name, value, database)
+  }
+
   /**
    * Normalizes pattern name input.
    *
@@ -107,7 +188,7 @@ export class AcApHatchCmd extends AcEdCommand {
    */
   protected normalizePatternName(value: string) {
     const name = value.trim().toUpperCase()
-    return name.length > 0 ? name : 'SOLID'
+    return name.length > 0 ? name : HATCH_PATTERN_SOLID
   }
 
   /**
@@ -490,9 +571,12 @@ export class AcApHatchCmd extends AcEdCommand {
     if (!loops.length) return false
 
     const hatch = new AcDbHatch()
-    const settings = this.settings
+    if (context.doc.database instanceof AcDbDatabase) {
+      hatch.database = context.doc.database
+    }
+    const settings = this.getDatabaseSysVarSettings(context.doc.database)
     const patternName = this.normalizePatternName(settings.patternName)
-    const isSolidFill = patternName === 'SOLID'
+    const isSolidFill = patternName === HATCH_PATTERN_SOLID
     hatch.patternName = patternName
     hatch.patternType = AcDbHatchPatternType.Predefined
     hatch.patternScale = settings.patternScale
@@ -524,14 +608,16 @@ export class AcApHatchCmd extends AcEdCommand {
       AcApI18n.t('jig.hatch.patternName')
     )
     strOptions.allowEmpty = false
-    const settings = this.settings
+    const settings = this.getActiveSettings()
     strOptions.defaultValue = settings.patternName
     strOptions.useDefaultValue = true
     const result = await AcApDocManager.instance.editor.getString(strOptions)
     if (result.status !== AcEdPromptStatus.OK) return
-    settings.patternName = this.normalizePatternName(
+    const patternName = this.normalizePatternName(
       result.stringResult ?? strOptions.defaultValue
     )
+    this.settings.patternName = patternName
+    this.setActiveSysVar(AcDbSystemVariables.HPNAME, patternName)
   }
 
   /**
@@ -544,14 +630,15 @@ export class AcApHatchCmd extends AcEdCommand {
     options.allowNone = true
     options.allowNegative = false
     options.allowZero = false
-    const settings = this.settings
+    const settings = this.getActiveSettings()
     options.defaultValue = settings.patternScale
     options.useDefaultValue = true
     const result = await AcApDocManager.instance.editor.getDouble(options)
     if (result.status !== AcEdPromptStatus.OK) return
     const value = result.value ?? options.defaultValue
     if (value > 0) {
-      settings.patternScale = value
+      this.settings.patternScale = value
+      this.setActiveSysVar(AcDbSystemVariables.HPSCALE, value)
     }
   }
 
@@ -565,12 +652,14 @@ export class AcApHatchCmd extends AcEdCommand {
     options.allowNone = true
     options.allowNegative = true
     options.allowZero = true
-    const settings = this.settings
+    const settings = this.getActiveSettings()
     options.defaultValue = settings.patternAngleDeg
     options.useDefaultValue = true
     const result = await AcApDocManager.instance.editor.getDouble(options)
     if (result.status !== AcEdPromptStatus.OK) return
-    settings.patternAngleDeg = result.value ?? options.defaultValue
+    const angleDeg = result.value ?? options.defaultValue
+    this.settings.patternAngleDeg = angleDeg
+    this.setActiveSysVar(AcDbSystemVariables.HPANG, (angleDeg * Math.PI) / 180)
   }
 
   /**
@@ -579,7 +668,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * @returns Promise resolved when prompt flow completes.
    */
   protected async promptStyle() {
-    const settings = this.settings
+    const settings = this.getActiveSettings()
     const current = this.styleToKeyword(settings.style)
     const options = new AcEdPromptKeywordOptions(
       `${AcApI18n.t('jig.hatch.style')} <${current}>`
@@ -607,7 +696,7 @@ export class AcApHatchCmd extends AcEdCommand {
         result.status === AcEdPromptStatus.Keyword) &&
       result.stringResult
     ) {
-      settings.style = this.keywordToStyle(result.stringResult)
+      this.settings.style = this.keywordToStyle(result.stringResult)
     }
   }
 
@@ -617,7 +706,7 @@ export class AcApHatchCmd extends AcEdCommand {
    * @returns Promise resolved when prompt flow completes.
    */
   protected async promptAssociative() {
-    const settings = this.settings
+    const settings = this.getActiveSettings()
     const current = settings.associative ? 'Yes' : 'No'
     const options = new AcEdPromptKeywordOptions(
       `${AcApI18n.t('jig.hatch.associative')} <${current}>`
@@ -638,7 +727,9 @@ export class AcApHatchCmd extends AcEdCommand {
       result.status === AcEdPromptStatus.OK ||
       result.status === AcEdPromptStatus.Keyword
     ) {
-      settings.associative = result.stringResult === 'Yes'
+      const associative = result.stringResult === 'Yes'
+      this.settings.associative = associative
+      this.setActiveSysVar(AcDbSystemVariables.HPASSOC, associative ? 1 : 0)
     }
   }
 
