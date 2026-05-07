@@ -11,12 +11,14 @@ import {
   AcCmColor,
   AcCmTransparency,
   type AcDbEntityEventArgs,
+  type AcDbGradientName,
   AcDbHatch,
   AcDbHatchObjectType,
   AcDbHatchPatternType,
   AcDbSystemVariables,
   type AcDbSysVarEventArgs,
   AcDbSysVarManager,
+  DEFAULT_GRADIENT_HATCH_NAME,
   DEFAULT_HATCH_PATTERN_IMPERIAL,
   HATCH_PATTERN_SOLID
 } from '@mlightcad/data-model'
@@ -47,6 +49,19 @@ const DEFAULT_HATCH_BACKGROUND_COLOR = 'None'
 const DEFAULT_HATCH_GRADIENT_COLOR = new AcCmColor()
   .setRGB(255, 255, 255)
   .toString()
+const HATCH_GRADIENT_PATTERN_PREFIX = 'GR_'
+const HATCH_GRADIENT_NAMES = new Set<AcDbGradientName>([
+  'LINEAR',
+  'CYLINDER',
+  'INVCYLINDER',
+  'SPHERICAL',
+  'INVSPHERICAL',
+  'HEMISPHERICAL',
+  'INVHEMISPHERICAL',
+  'CURVED',
+  'INVCURVED'
+])
+const DEFAULT_HATCH_GRADIENT_PATTERN_NAME = `${HATCH_GRADIENT_PATTERN_PREFIX}${DEFAULT_GRADIENT_HATCH_NAME}`
 
 export class AcApHatchRibbonCmd extends AcApHatchCmd {
   private readonly _state = reactive<HatchRibbonState>({
@@ -354,8 +369,18 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
   private inferFillTypeFromPatternName(patternName: string): HatchFillType {
     const normalized = this.normalizePatternName(patternName)
     if (normalized === HATCH_PATTERN_SOLID) return 'solid'
-    if (normalized.startsWith('GR_')) return 'gradient'
+    if (normalized.startsWith(HATCH_GRADIENT_PATTERN_PREFIX)) return 'gradient'
     return 'pattern'
+  }
+
+  private getGradientName(): AcDbGradientName {
+    const normalized = this.normalizePatternName(this._state.patternName)
+    const name = normalized.startsWith(HATCH_GRADIENT_PATTERN_PREFIX)
+      ? normalized.slice(HATCH_GRADIENT_PATTERN_PREFIX.length)
+      : normalized
+    return HATCH_GRADIENT_NAMES.has(name as AcDbGradientName)
+      ? (name as AcDbGradientName)
+      : (DEFAULT_GRADIENT_HATCH_NAME as AcDbGradientName)
   }
 
   private inferHatchObjectTypeFromFillType(fillType: HatchFillType) {
@@ -384,6 +409,7 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
       this._state.hatchObjectType === AcDbHatchObjectType.GradientObject
     ) {
       hatch.hatchObjectType = AcDbHatchObjectType.GradientObject
+      hatch.gradientName = this.getGradientName()
       hatch.gradientStartColor = this.toRgb(this._state.fillColor)
       hatch.gradientEndColor = this.toRgb(this._state.gradient2Color)
       hatch.gradientAngle = (this._state.patternAngle * Math.PI) / 180
@@ -437,7 +463,9 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
     const patternName = this.normalizePatternName(value)
     this._state.patternName = patternName
     this._state.fillType = this.inferFillTypeFromPatternName(patternName)
-    this._state.hatchObjectType = AcDbHatchObjectType.HatchObject
+    this._state.hatchObjectType = this.inferHatchObjectTypeFromFillType(
+      this._state.fillType
+    )
 
     const sysVarManager = AcDbSysVarManager.instance()
     sysVarManager.setVar(AcDbSystemVariables.HPNAME, patternName, db)
@@ -488,6 +516,31 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
   setFillType(value: HatchFillType) {
     this._state.fillType = value
     this._state.hatchObjectType = this.inferHatchObjectTypeFromFillType(value)
+    const db = AcApDocManager.instance.curDocument?.database
+    const sysVarManager = AcDbSysVarManager.instance()
+
+    if (value === 'solid') {
+      this._state.patternName = HATCH_PATTERN_SOLID
+      if (db) {
+        sysVarManager.setVar(
+          AcDbSystemVariables.HPNAME,
+          HATCH_PATTERN_SOLID,
+          db
+        )
+      }
+    } else if (value === 'pattern') {
+      this._state.patternName = DEFAULT_HATCH_PATTERN_IMPERIAL
+      if (db) {
+        sysVarManager.setVar(
+          AcDbSystemVariables.HPNAME,
+          DEFAULT_HATCH_PATTERN_IMPERIAL,
+          db
+        )
+      }
+    } else if (value === 'gradient') {
+      this._state.patternName = DEFAULT_HATCH_GRADIENT_PATTERN_NAME
+    }
+
     this.applyStateToSelectedHatches()
   }
 
