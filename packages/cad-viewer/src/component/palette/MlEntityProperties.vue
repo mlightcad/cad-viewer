@@ -80,8 +80,18 @@
 
             <!-- ===== Editable ===== -->
             <template v-else>
+              <ml-hatch-pattern-dropdown
+                v-if="isHatchPatternField(row)"
+                :model-value="String(row.accessor.get() ?? '')"
+                @update:modelValue="
+                  (v: string) => {
+                    onPropertyChange(row, v)
+                  }
+                "
+              />
+
               <el-select
-                v-if="row.type === 'enum'"
+                v-else-if="row.type === 'enum'"
                 :model-value="row.accessor.get()"
                 @change="(v: string | number) => onPropertyChange(row, v)"
               >
@@ -167,7 +177,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { entityPropEnum, entityPropName } from '../../locale'
-import { MlColorDropdown } from '../common'
+import { MlColorDropdown, MlHatchPatternDropdown } from '../common'
 
 const { t } = useI18n()
 
@@ -198,6 +208,17 @@ const arrayIndexMap = ref<Record<string, number>>({})
  * 🔑 Forces rebuild of array property rows
  */
 const arrayRebuildVersion = ref(0)
+
+const activeEntityProperties = computed<AcDbEntityProperties | null>(() => {
+  const list = props.entityPropsList
+  if (!list?.length) return null
+
+  return list.length === 1
+    ? list[0]
+    : selectedIndex.value >= 0
+      ? list[selectedIndex.value]
+      : findCommonProperties(list)
+})
 
 /* ================= row types ================= */
 
@@ -286,18 +307,17 @@ const tableRows = computed<MlDisplayRow[]>(() => {
   // 🔑 dependency to force rebuild when array index changes
   arrayRebuildVersion.value
 
-  const list = props.entityPropsList
-  if (!list?.length) return []
-
-  const entity =
-    list.length === 1
-      ? list[0]
-      : selectedIndex.value >= 0
-        ? list[selectedIndex.value]
-        : findCommonProperties(list)
-
+  const entity = activeEntityProperties.value
+  if (!entity) return []
   return expandEntity(entity)
 })
+
+function isHatchPatternField(row: MlDisplayPropertyRow) {
+  if (row.__isArrayIndex) return false
+  if (activeEntityProperties.value?.type.toLowerCase() !== 'hatch') return false
+  const propertyName = row.name.toLowerCase()
+  return propertyName === 'patternname' || propertyName === 'pattern'
+}
 
 function expandEntity(entity: AcDbEntityProperties): MlDisplayRow[] {
   return entity.groups.map((group, gi) => {

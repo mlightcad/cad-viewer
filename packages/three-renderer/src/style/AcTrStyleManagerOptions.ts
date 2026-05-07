@@ -38,16 +38,11 @@ export interface AcTrStyleManagerOptions {
   /**
    * Current canvas background colour, as a 24-bit RGB number.
    *
-   * Used by `AcTrFillMaterialManager` when a solid hatch is opted into
-   * background-follow behaviour (`shouldTrackBackground === true`): the
-   * material is *born* with this colour instead of its resolved trait
-   * colour, so it fuses with the paper on the very first frame — even
-   * when the DWG is loaded AFTER the theme has already been set.
+   * Used by material managers to initialize theme-sensitive colours, such
+   * as ACI 7 foreground inversion.
    *
    * Kept in sync with `AcTrView2d.backgroundColor` via
-   * `AcTrStyleManager.currentBackgroundColor` (whose setter also fires
-   * `changeBackground(value)` on every manager so materials created
-   * before the flip are repainted).
+   * `AcTrStyleManager.currentBackgroundColor`.
    *
    * Default is `0x000000` (matches the default view bg in
    * `DEFAULT_VIEW_2D_OPTIONS`).

@@ -190,6 +190,11 @@ export default {
         local: 'Select objects',
         global: 'SelectObjects'
       },
+      cancel: {
+        display: 'Cancel(C)',
+        local: 'Cancel',
+        global: 'Cancel'
+      },
       pattern: {
         display: 'Pattern(P)',
         local: 'Pattern',

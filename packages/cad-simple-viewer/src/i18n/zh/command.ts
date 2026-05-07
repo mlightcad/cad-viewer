@@ -1,5 +1,8 @@
 export default {
   ACAD: {
+    '-hatch': {
+      description: '通过命令行选项创建填充，不显示 Ribbon 界面'
+    },
     '-layer': {
       description: '通过命令行选项管理图层'
     },
@@ -70,6 +73,39 @@ export default {
     },
     hatch: {
       description: '用填充图案填充封闭区域或所选对象'
+    },
+    hpang: {
+      description: '设置新创建填充图案的默认角度（弧度）'
+    },
+    hpassoc: {
+      description: '控制新创建的填充是否具有关联性'
+    },
+    hpbackgroundcolor: {
+      description: '设置新创建填充图案的默认背景颜色'
+    },
+    hpcolor: {
+      description: '设置新创建填充的默认颜色'
+    },
+    hpdouble: {
+      description: '控制用户定义的填充图案是否加倍'
+    },
+    hpislanddetection: {
+      description: '控制新创建填充边界内孤岛的处理方式'
+    },
+    hplayer: {
+      description: '设置新创建填充和填充区域的默认图层'
+    },
+    hpname: {
+      description: '设置当前会话中新创建填充的默认图案名称'
+    },
+    hpscale: {
+      description: '设置新创建填充图案的默认比例系数'
+    },
+    hpseparate: {
+      description: '控制为多个边界创建单个还是独立的填充对象'
+    },
+    hptransparency: {
+      description: '设置新创建填充和填充区域的默认透明度'
     },
     laycur: {
       description: '将所选对象的图层属性更改为当前图层',

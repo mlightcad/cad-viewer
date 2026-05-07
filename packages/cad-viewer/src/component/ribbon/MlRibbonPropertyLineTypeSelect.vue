@@ -16,8 +16,8 @@
 
 <script setup lang="ts">
 import { lineStyle as lineStyleIcon } from '../../svg'
-import { type LineTypeOption } from './lineTypeOptions'
-import MlLineTypeSelect from './MlLineTypeSelect.vue'
+import { type LineTypeOption } from '../common/lineTypeOptions'
+import MlLineTypeSelect from '../common/MlLineTypeSelect.vue'
 import MlRibbonPropertyField from './MlRibbonPropertyField.vue'
 
 /**

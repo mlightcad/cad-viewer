@@ -1,5 +1,9 @@
 export default {
   ACAD: {
+    '-hatch': {
+      description:
+        'Creates hatch fills through command-line options without the ribbon UI'
+    },
     '-layer': {
       description: 'Manages layers through command-line options'
     },
@@ -76,6 +80,46 @@ export default {
     hatch: {
       description:
         'Fills an enclosed area or selected objects with a hatch pattern'
+    },
+    hpang: {
+      description:
+        'Sets the default angle, in radians, for newly created hatch patterns'
+    },
+    hpassoc: {
+      description: 'Controls whether newly created hatches are associative'
+    },
+    hpbackgroundcolor: {
+      description:
+        'Sets the default background color for newly created hatch patterns'
+    },
+    hpcolor: {
+      description: 'Sets the default color for newly created hatches'
+    },
+    hpdouble: {
+      description: 'Controls whether user-defined hatch patterns are doubled'
+    },
+    hpislanddetection: {
+      description:
+        'Controls how islands within newly created hatch boundaries are treated'
+    },
+    hplayer: {
+      description: 'Sets the default layer for newly created hatches and fills'
+    },
+    hpname: {
+      description:
+        'Sets the default pattern name for newly created hatches in this session'
+    },
+    hpscale: {
+      description:
+        'Sets the default scale factor for newly created hatch patterns'
+    },
+    hpseparate: {
+      description:
+        'Controls whether one or separate hatch objects are created for multiple boundaries'
+    },
+    hptransparency: {
+      description:
+        'Sets the default transparency for newly created hatches and fills'
     },
     laycur: {
       description:

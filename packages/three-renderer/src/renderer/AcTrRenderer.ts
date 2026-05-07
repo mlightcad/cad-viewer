@@ -106,22 +106,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
-   * Repaints every material that was registered as a background-follow
-   * fill (currently: solid hatches whose resolved colour is ACI 7).
+   * Repaints materials explicitly registered as background-follow fills.
    *
-   * This is the symmetric counterpart of `changeForeground`: foreground
-   * materials take the *opposite* of the canvas colour (so lines/text
-   * stay legible), while background-fill materials take the canvas
-   * colour itself (so ACI 7 hatches vanish into the paper and only the
-   * wireframe remains visible).  Callers should invoke both after a
-   * theme flip — typically inside `AcTrView2d.backgroundColor`.
-   *
-   * Prefer setting `currentBackgroundColor` instead of calling this
-   * directly: the setter writes the colour into the style manager
-   * options BEFORE firing the repaint, so materials created AFTER the
-   * setter runs (e.g. hatches from a DWG still being parsed) are born
-   * with the correct colour.  Calling `changeBackground` on its own
-   * only repaints materials that already exist in the cache.
+   * The current fill manager keeps solid hatches on the foreground path, so
+   * this is mostly an extension point for future fill styles.
    *
    * @param color - New background color (typically the canvas bg).
    */
@@ -134,11 +122,8 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    *
    * Reading returns the value last written here (or the default
    * `0x000000`).  Writing both stores the colour on the style manager
-   * options (so materials created LATER inherit it) and repaints every
-   * background-follow material already in the cache (so materials
-   * created EARLIER track the new colour).  This is the correct entry
-   * point for `AcTrView2d.backgroundColor` — `changeBackground` on its
-   * own only covers the second half.
+   * options (so material managers know the current theme) and repaints
+   * every background-follow material already in the cache.
    */
   get currentBackgroundColor(): number {
     return this._styleManager.currentBackgroundColor

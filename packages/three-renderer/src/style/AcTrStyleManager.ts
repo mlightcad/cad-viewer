@@ -30,8 +30,7 @@ export class AcTrStyleManager {
     resolution: new THREE.Vector2(1, 1),
     showLineWeight: false,
     // Matches DEFAULT_VIEW_2D_OPTIONS.background in cad-simple-viewer.
-    // The setter below keeps this in sync with the canvas bg and fires
-    // `changeBackground` so existing materials are repainted on a flip.
+    // Theme-sensitive materials use this when they are created.
     currentBackgroundColor: 0x000000
   }
   private pointMgr: AcTrPointMaterialManager
@@ -96,11 +95,8 @@ export class AcTrStyleManager {
    * Current canvas background colour tracked by the style manager.
    *
    * See `AcTrStyleManagerOptions.currentBackgroundColor` for the full
-   * contract.  In short: this is the single source of truth that the
-   * fill material manager consults when creating a background-follow
-   * material so it is born with the right colour, and it is also what
-   * `changeBackground` repaints existing materials to when the theme
-   * flips mid-session.
+   * contract. In short: this is the single source of truth that material
+   * managers consult when creating theme-sensitive materials.
    */
   get currentBackgroundColor(): number {
     return this.options.currentBackgroundColor
@@ -109,17 +105,6 @@ export class AcTrStyleManager {
   /**
    * Updates the canvas background colour and repaints existing
    * background-follow materials so they track the new colour.
-   *
-   * Order matters:
-   * 1. Write to `options.currentBackgroundColor` first, so any material
-   *    created AFTER this point (e.g. hatches from a DWG that finishes
-   *    loading later in the boot sequence) is born with the new colour.
-   * 2. Fire `changeBackground(value)` so materials already in the
-   *    cache (created BEFORE the flip) are repainted in place.
-   *
-   * Together these cover both the mid-session theme toggle (step 2
-   * alone) and the initial boot-in-dark edge case where the theme is
-   * set before the DWG finishes parsing (step 1 alone).
    */
   set currentBackgroundColor(value: number) {
     this.options.currentBackgroundColor = value
@@ -244,9 +229,7 @@ export class AcTrStyleManager {
   }
 
   /**
-   * Repaints every material marked as `isBackgroundFill` with the
-   * given colour — used to keep ACI 7 solid hatches fused with the
-   * canvas bg as the theme flips (see `AcTrFillMaterialManager`).
+   * Repaints every material marked as `isBackgroundFill` with the given colour.
    *
    * Point and line managers currently never opt materials into this
    * behaviour, so their delegation is a no-op; keeping it symmetric
