@@ -217,8 +217,7 @@ import { AcApDocManager } from '../src/app/AcApDocManager'
 
 describe('AcApDocManager font URL configuration', () => {
   beforeEach(() => {
-    ;(AcApDocManager as unknown as { _instance: unknown })._instance =
-      undefined
+    ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined
     mockFontLoaderInstances.length = 0
     mockInitialize.mockClear()
     mockSetRenderMode.mockClear()

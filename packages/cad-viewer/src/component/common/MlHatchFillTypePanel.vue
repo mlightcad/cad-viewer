@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { ElOption,ElSelect } from 'element-plus'
+import { ElOption, ElSelect } from 'element-plus'
 
 interface MlHatchFillTypePanelProps {
   modelValue?: string
