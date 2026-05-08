@@ -539,6 +539,13 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
       }
     } else if (value === 'gradient') {
       this._state.patternName = DEFAULT_HATCH_GRADIENT_PATTERN_NAME
+      if (db) {
+        sysVarManager.setVar(
+          AcDbSystemVariables.HPNAME,
+          DEFAULT_HATCH_GRADIENT_PATTERN_NAME,
+          db
+        )
+      }
     }
 
     this.applyStateToSelectedHatches()

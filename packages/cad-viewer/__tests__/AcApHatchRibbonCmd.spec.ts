@@ -122,7 +122,7 @@ describe('AcApHatchRibbonCmd fill type synchronization', () => {
     ).toBe(DEFAULT_HATCH_PATTERN_IMPERIAL)
   })
 
-  test('selecting gradient selects the default gradient gallery pattern without updating HPNAME', () => {
+  test('selecting gradient also selects the default gradient gallery pattern', () => {
     const { command, database } = createCommandWithDatabase(
       DEFAULT_HATCH_PATTERN_IMPERIAL
     )
@@ -137,7 +137,7 @@ describe('AcApHatchRibbonCmd fill type synchronization', () => {
     expect(command.state.patternName).toBe(expectedPatternName)
     expect(
       AcDbSysVarManager.instance().getVar(AcDbSystemVariables.HPNAME, database)
-    ).toBe(DEFAULT_HATCH_PATTERN_IMPERIAL)
+    ).toBe(expectedPatternName)
   })
 
   test('selecting a gradient gallery pattern uses the prefixed pattern name', () => {

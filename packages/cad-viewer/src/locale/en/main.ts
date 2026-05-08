@@ -17,6 +17,7 @@ export default {
         boundary: 'Boundaries',
         pattern: 'Pattern',
         properties: 'Properties',
+        options: 'Options',
         close: 'Close'
       },
       command: {
