@@ -74,10 +74,8 @@ export class AcTrMTextRenderer {
    * @param value - URL to load fonts
    */
   setFontUrl(value: string) {
-    if (this._renderer) {
-      this._renderer.setFontUrl(value)
-    }
     this._fontUrl = value
+    this.applyFontUrl()
   }
 
   /**
@@ -85,10 +83,11 @@ export class AcTrMTextRenderer {
    * @param mode - Render mode
    */
   setRenderMode(mode: RenderMode) {
+    this._renderMode = mode
     if (this._renderer) {
       this._renderer.setDefaultMode(mode)
+      this.applyFontUrl()
     }
-    this._renderMode = mode
   }
 
   /**
@@ -136,17 +135,11 @@ export class AcTrMTextRenderer {
    */
   initialize(workerUrl: string | URL): void {
     this._workerUrl = workerUrl
-    // Notes:
-    // Please don't modify the default rendering mode from 'worker' to 'main'.
-    // Otherwise, web worker renderer will not get 'setFontUrl' message. Call
-    // to 'setFontUrl' in the following code will not take effect.
     this._renderer = new UnifiedRenderer('worker', { workerUrl })
-    if (this._fontUrl) {
-      this._renderer.setFontUrl(this._fontUrl)
-    }
     if (this._renderMode) {
       this._renderer.setDefaultMode(this._renderMode)
     }
+    this.applyFontUrl()
     if (this._styleManager) {
       const styleManager = new AcTrMTextStyleManager(this._styleManager)
       this._renderer.setStyleManager(styleManager)
@@ -167,6 +160,12 @@ export class AcTrMTextRenderer {
   private ensureRendererCreated() {
     if (!this._renderer && this._workerUrl) {
       this.initialize(this._workerUrl)
+    }
+  }
+
+  private applyFontUrl() {
+    if (this._renderer && this._fontUrl) {
+      this._renderer.setFontUrl(this._fontUrl)
     }
   }
 }

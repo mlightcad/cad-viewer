@@ -43,6 +43,22 @@ describe('AcTrMTextRenderer', () => {
     expect(mockRendererInstances[0].setFontUrl).toHaveBeenCalledWith(fontUrl)
   })
 
+  it('applies a pending custom font URL after restoring the render mode', () => {
+    const renderer = AcTrMTextRenderer.getInstance()
+    const fontUrl = 'https://cdn.example.com/cad/fonts/'
+
+    renderer.setRenderMode('main')
+    renderer.setFontUrl(fontUrl)
+    renderer.initialize('./assets/mtext-renderer-worker.js')
+
+    const rendererInstance = mockRendererInstances[0]
+    expect(rendererInstance.setDefaultMode).toHaveBeenCalledWith('main')
+    expect(rendererInstance.setFontUrl).toHaveBeenCalledWith(fontUrl)
+    expect(
+      rendererInstance.setDefaultMode.mock.invocationCallOrder[0]
+    ).toBeLessThan(rendererInstance.setFontUrl.mock.invocationCallOrder[0])
+  })
+
   it('forwards a custom font URL to an initialized renderer immediately', () => {
     const renderer = AcTrMTextRenderer.getInstance()
     const fontUrl = 'https://cdn.example.com/cad/fonts/'
@@ -50,6 +66,20 @@ describe('AcTrMTextRenderer', () => {
     renderer.initialize('./assets/mtext-renderer-worker.js')
     renderer.setFontUrl(fontUrl)
 
+    expect(mockRendererInstances[0].setFontUrl).toHaveBeenCalledWith(fontUrl)
+  })
+
+  it('reapplies the custom font URL when switching render modes', () => {
+    const renderer = AcTrMTextRenderer.getInstance()
+    const fontUrl = 'https://cdn.example.com/cad/fonts/'
+
+    renderer.initialize('./assets/mtext-renderer-worker.js')
+    renderer.setFontUrl(fontUrl)
+    mockRendererInstances[0].setFontUrl.mockClear()
+
+    renderer.setRenderMode('main')
+
+    expect(mockRendererInstances[0].setDefaultMode).toHaveBeenCalledWith('main')
     expect(mockRendererInstances[0].setFontUrl).toHaveBeenCalledWith(fontUrl)
   })
 })
