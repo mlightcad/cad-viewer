@@ -17,6 +17,7 @@ export default {
         boundary: '边界',
         pattern: '图案',
         properties: '特性',
+        options: '选项',
         close: '关闭'
       },
       command: {

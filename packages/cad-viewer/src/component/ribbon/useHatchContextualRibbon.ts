@@ -9,7 +9,7 @@ import { type Ref, ref } from 'vue'
 
 import { hatchRibbonCommand, type HatchRibbonStyle } from '../../command'
 import { useRibbonContextualTab } from '../../composable'
-import { hatch, qselect } from '../../svg'
+import { hatch, hatchAssociative, qselect } from '../../svg'
 import {
   DEFAULT_HATCH_PATTERN_OPTIONS,
   type HatchPatternOption,
@@ -394,6 +394,35 @@ export function useHatchContextualRibbon({
                     step: 0.5,
                     emitValueOnChange: true,
                     valuePrefix: 'hatch-scale:'
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'hatch-options-group',
+          title: t('main.ribbon.hatch.group.options'),
+          orientation: 'row',
+          collections: [
+            {
+              id: 'hatch-options-main',
+              layout: 'row',
+              items: [
+                {
+                  id: 'hatch-associative',
+                  type: 'toggle',
+                  label: t('main.ribbon.hatch.field.associative'),
+                  tooltip: t('main.ribbon.hatch.tooltip.associative'),
+                  size: 'large',
+                  props: {
+                    modelValue: hatchState.associative,
+                    activeIcon: hatchAssociative,
+                    inactiveIcon: hatchAssociative,
+                    activeLabel: t('main.ribbon.hatch.field.associative'),
+                    inactiveLabel: t('main.ribbon.hatch.field.associative'),
+                    activeValue: 'hatch-associative-on',
+                    inactiveValue: 'hatch-associative-off'
                   }
                 }
               ]

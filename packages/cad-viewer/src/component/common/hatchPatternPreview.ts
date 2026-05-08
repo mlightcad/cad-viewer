@@ -1,4 +1,5 @@
 import {
+  type AcDbGradientName,
   type AcDbPatPattern,
   AcDbPatSvgRenderer,
   AcDbPredefinedAcadIsoPat
@@ -16,6 +17,18 @@ export interface HatchPatternOption {
 }
 
 const hatchPatternSvgRenderer = new AcDbPatSvgRenderer()
+const HATCH_GRADIENT_PATTERN_PREFIX = 'GR_'
+const HATCH_GRADIENT_NAMES: AcDbGradientName[] = [
+  'LINEAR',
+  'CYLINDER',
+  'INVCYLINDER',
+  'SPHERICAL',
+  'INVSPHERICAL',
+  'HEMISPHERICAL',
+  'INVHEMISPHERICAL',
+  'CURVED',
+  'INVCURVED'
+]
 
 const normalizedPredefinedPatterns = AcDbPredefinedAcadIsoPat.patterns
   .map(pattern => ({
@@ -26,6 +39,12 @@ const normalizedPredefinedPatterns = AcDbPredefinedAcadIsoPat.patterns
 
 const hatchPatternByName = new Map<string, AcDbPatPattern>(
   normalizedPredefinedPatterns.map(pattern => [pattern.name, pattern])
+)
+const hatchGradientByPatternName = new Map<string, AcDbGradientName>(
+  HATCH_GRADIENT_NAMES.map(name => [
+    `${HATCH_GRADIENT_PATTERN_PREFIX}${name}`,
+    name
+  ])
 )
 
 const swatchBackgroundImageCache = new Map<string, string>()
@@ -58,6 +77,15 @@ function toCssSvgDataUrl(svg: string) {
   return `url("${toSvgDataUri(svg)}")`
 }
 
+function resolveGradientPreviewSvg(gradientName: AcDbGradientName) {
+  return hatchPatternSvgRenderer.renderGradient(gradientName, {
+    width: 52,
+    height: 52,
+    angle: Math.PI / 4,
+    background: '#f6f8fb'
+  })
+}
+
 /**
  * Builds a cached swatch background image for a hatch pattern.
  *
@@ -70,15 +98,18 @@ function resolveHatchPatternBackgroundImage(name: string) {
   if (cached) return cached
 
   const pattern = hatchPatternByName.get(normalized)
-  if (!pattern) return undefined
+  const gradientName = hatchGradientByPatternName.get(normalized)
+  if (!pattern && !gradientName) return undefined
 
-  const svg = hatchPatternSvgRenderer.renderPattern(pattern, {
-    width: 52,
-    height: 52,
-    stroke: '#2f3743',
-    strokeWidth: 1.2,
-    background: '#f6f8fb'
-  })
+  const svg = gradientName
+    ? resolveGradientPreviewSvg(gradientName)
+    : hatchPatternSvgRenderer.renderPattern(pattern!, {
+        width: 52,
+        height: 52,
+        stroke: '#2f3743',
+        strokeWidth: 1.2,
+        background: '#f6f8fb'
+      })
   const backgroundImage = toCssSvgDataUrl(svg)
   swatchBackgroundImageCache.set(normalized, backgroundImage)
   return backgroundImage
@@ -96,15 +127,18 @@ export function resolveHatchPatternPreviewSvg(name: string) {
   if (cached) return cached
 
   const pattern = hatchPatternByName.get(normalized)
-  if (!pattern) return undefined
+  const gradientName = hatchGradientByPatternName.get(normalized)
+  if (!pattern && !gradientName) return undefined
 
-  const svg = hatchPatternSvgRenderer.renderPattern(pattern, {
-    width: 52,
-    height: 52,
-    stroke: '#2f3743',
-    strokeWidth: 1.2,
-    background: '#f6f8fb'
-  })
+  const svg = gradientName
+    ? resolveGradientPreviewSvg(gradientName)
+    : hatchPatternSvgRenderer.renderPattern(pattern!, {
+        width: 52,
+        height: 52,
+        stroke: '#2f3743',
+        strokeWidth: 1.2,
+        background: '#f6f8fb'
+      })
   const dataUri = toSvgDataUri(svg)
   previewSvgCache.set(normalized, dataUri)
   return dataUri
@@ -137,10 +171,14 @@ export function resolveHatchPatternSwatchStyle(name: string): CSSProperties {
  * Canonical hatch pattern list used by the contextual ribbon picker.
  */
 export const DEFAULT_HATCH_PATTERN_OPTIONS: HatchPatternOption[] = [
-  ...new Map(
-    normalizedPredefinedPatterns.map(pattern => [
-      pattern.name,
-      { value: pattern.name, label: pattern.name }
-    ])
-  ).values()
+  ...new Map([
+    ...normalizedPredefinedPatterns.map(
+      pattern =>
+        [pattern.name, { value: pattern.name, label: pattern.name }] as const
+    ),
+    ...HATCH_GRADIENT_NAMES.map(name => {
+      const patternName = `${HATCH_GRADIENT_PATTERN_PREFIX}${name}`
+      return [patternName, { value: patternName, label: patternName }] as const
+    })
+  ]).values()
 ]
