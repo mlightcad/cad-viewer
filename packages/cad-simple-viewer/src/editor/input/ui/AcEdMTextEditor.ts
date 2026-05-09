@@ -14,6 +14,11 @@ import * as THREE from 'three'
 import { AcApDocManager } from '../../../app'
 import { AcTrView2d } from '../../../view'
 
+export type AcEdMTextEditorActiveInputBox = MTextInputBox
+export type AcEdMTextEditorActiveInputBoxChangeListener = (
+  inputBox: AcEdMTextEditorActiveInputBox | null
+) => void
+
 /**
  * Result payload returned by the MTEXT editor when editing is finished.
  */
@@ -64,6 +69,10 @@ export interface AcEdMTextEditorOptions {
  * render loop and handles lifecycle cleanup when the editor is closed.
  */
 export class AcEdMTextEditor {
+  private static activeInputBox: MTextInputBox | null = null
+  private static readonly activeInputBoxChangeListeners =
+    new Set<AcEdMTextEditorActiveInputBoxChangeListener>()
+
   /**
    * Default toolbar color picker factory used when opening the editor if
    * per-call options do not provide {@link AcEdMTextEditorOptions.toolbarColorPicker}.
@@ -82,6 +91,39 @@ export class AcEdMTextEditor {
     factory: MTextToolbarColorPickerFactory | null
   ): void {
     AcEdMTextEditor.defaultColorPicker = factory
+  }
+
+  /**
+   * Returns the MTEXT input box currently being edited, if any.
+   */
+  static getActiveInputBox(): AcEdMTextEditorActiveInputBox | null {
+    return AcEdMTextEditor.activeInputBox
+  }
+
+  /**
+   * Subscribes to active MTEXT input box changes.
+   */
+  static addActiveInputBoxChangeListener(
+    listener: AcEdMTextEditorActiveInputBoxChangeListener
+  ): void {
+    AcEdMTextEditor.activeInputBoxChangeListeners.add(listener)
+  }
+
+  /**
+   * Removes an active MTEXT input box listener.
+   */
+  static removeActiveInputBoxChangeListener(
+    listener: AcEdMTextEditorActiveInputBoxChangeListener
+  ): void {
+    AcEdMTextEditor.activeInputBoxChangeListeners.delete(listener)
+  }
+
+  private static setActiveInputBox(inputBox: MTextInputBox | null): void {
+    if (AcEdMTextEditor.activeInputBox === inputBox) return
+    AcEdMTextEditor.activeInputBox = inputBox
+    AcEdMTextEditor.activeInputBoxChangeListeners.forEach(listener => {
+      listener(inputBox)
+    })
   }
 
   /**
@@ -177,6 +219,7 @@ export class AcEdMTextEditor {
           toolbarColorPicker ?? AcEdMTextEditor.defaultColorPicker ?? undefined
       }
     })
+    AcEdMTextEditor.setActiveInputBox(mtextInputBox)
 
     return new Promise(resolve => {
       let done = false
@@ -199,6 +242,9 @@ export class AcEdMTextEditor {
       }
 
       const cleanup = () => {
+        if (AcEdMTextEditor.activeInputBox === mtextInputBox) {
+          AcEdMTextEditor.setActiveInputBox(null)
+        }
         mtextInputBox.dispose()
         view.events.renderFrame.removeEventListener(onRenderFrame)
         mtextInputBox.off('close', onClose)

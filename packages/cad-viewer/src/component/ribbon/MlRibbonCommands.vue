@@ -105,6 +105,7 @@ import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
 import MlRibbonPropertyLineTypeSelect from './MlRibbonPropertyLineTypeSelect.vue'
 import MlRibbonPropertyLineWeightSelect from './MlRibbonPropertyLineWeightSelect.vue'
 import { useHatchContextualRibbon } from './useHatchContextualRibbon'
+import { useMTextContextualRibbon } from './useMTextContextualRibbon'
 
 interface Props {
   currentLocale?: LocaleProp
@@ -145,6 +146,14 @@ const {
 } = useHatchContextualRibbon({
   activeTabId: activeRibbonTabId,
   clearSelection: () => getCurrentSelectionSet()?.clear()
+})
+const {
+  handleCommandWillStart: handleMTextCommandWillStart,
+  handleCommandEnded: handleMTextCommandEnded,
+  handleItem: handleMTextItem,
+  buildContextualTab: buildMTextContextualTab
+} = useMTextContextualRibbon({
+  activeTabId: activeRibbonTabId
 })
 const {
   layers: ribbonLayers,
@@ -453,8 +462,14 @@ onMounted(() => {
   AcApDocManager.instance.editor.events.commandWillStart.addEventListener(
     handleHatchCommandWillStart
   )
+  AcApDocManager.instance.editor.events.commandWillStart.addEventListener(
+    handleMTextCommandWillStart
+  )
   AcApDocManager.instance.editor.events.commandEnded.addEventListener(
     handleHatchCommandEnded
+  )
+  AcApDocManager.instance.editor.events.commandEnded.addEventListener(
+    handleMTextCommandEnded
   )
   AcApDocManager.instance.events.documentActivated.addEventListener(
     handleDocumentActivated
@@ -469,8 +484,14 @@ onUnmounted(() => {
   AcApDocManager.instance.editor.events.commandWillStart.removeEventListener(
     handleHatchCommandWillStart
   )
+  AcApDocManager.instance.editor.events.commandWillStart.removeEventListener(
+    handleMTextCommandWillStart
+  )
   AcApDocManager.instance.editor.events.commandEnded.removeEventListener(
     handleHatchCommandEnded
+  )
+  AcApDocManager.instance.editor.events.commandEnded.removeEventListener(
+    handleMTextCommandEnded
   )
   AcApDocManager.instance.events.documentActivated.removeEventListener(
     handleDocumentActivated
@@ -1341,6 +1362,7 @@ const buildBaseTabs = (
       ]
     },
     buildHatchContextualTab(t),
+    buildMTextContextualTab(t),
     {
       id: 'tools',
       title: t('main.ribbon.tab.tools'),
@@ -1465,6 +1487,7 @@ const handleRibbonItemClick = (payload: {
 }) => {
   if (isRibbonDisabled.value) return
   if (handleHatchItem(payload.itemId)) return
+  if (handleMTextItem(payload.itemId)) return
   if (
     payload.groupId === 'home-layer' &&
     ribbonLayerOptions.value.some(item => item.value === payload.itemId)
