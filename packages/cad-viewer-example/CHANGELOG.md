@@ -1,5 +1,17 @@
 # @mlightcad/cad-viewer-example
 
+## 1.5.0
+
+### Minor Changes
+
+- fix: upgrade dependencies to fix some position issues on rendering texts
+
+### Patch Changes
+
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.5.0
+  - @mlightcad/cad-viewer@2.0.0
+
 ## 1.4.13
 
 ### Patch Changes
