@@ -20,6 +20,8 @@ import { AcTrView2d } from '../../../view'
 export interface AcEdMTextEditorResult {
   /** Final MTEXT contents (including inline formatting codes). */
   contents: string
+  /** Final MTEXT insertion location in world coordinates. */
+  location: AcGePoint3dLike
   /** Final text box width in world units. */
   width: number
   /** Final text box height in world units. */
@@ -214,10 +216,16 @@ export class AcEdMTextEditor {
       }
 
       const onClose = () => {
+        const insertionPoint = mtextInputBox.getMTextInsertionPoint()
         finish({
           contents: mtextInputBox.getText(),
+          location: {
+            x: insertionPoint.x,
+            y: insertionPoint.y,
+            z: insertionPoint.z
+          },
           width,
-          height: textHeight
+          height: normalizedTextHeight
         })
       }
 
