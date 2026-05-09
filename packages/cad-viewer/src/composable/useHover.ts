@@ -75,13 +75,15 @@ export function useHover() {
   const mouse = ref({ x: -1, y: -1 })
   /** Handler for CAD viewer hover events */
   const updateHoverEntity = (args: AcEdViewHoverEventArgs) => {
+    const view = AcApDocManager.instance.curView
     const db = AcApDocManager.instance.curDocument.database
     const ent = db.tables.blockTable.modelSpace.getIdAt(args.id)
     if (ent) {
       entity.value = ent
       id.value = args.id
       hovered.value = true
-      mouse.value = { x: args.x, y: args.y }
+      const viewportPos = view.canvasToViewport({ x: args.x, y: args.y })
+      mouse.value = { x: viewportPos.x, y: viewportPos.y }
     } else {
       hovered.value = false
       entity.value = null

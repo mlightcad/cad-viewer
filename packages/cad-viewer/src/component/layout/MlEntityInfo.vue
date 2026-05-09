@@ -35,20 +35,18 @@
 </template>
 
 <script setup lang="ts">
-import {
-  AcApDocManager,
-  AcApSettingManager
-} from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntity } from '@mlightcad/data-model'
 import { ComponentPublicInstance, computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useHover } from '../../composable'
+import { useHover, useSettings } from '../../composable'
 import { colorName, entityName } from '../../locale'
 
 const { t } = useI18n()
 const cardRef = ref<ComponentPublicInstance<{}, HTMLElement> | null>(null)
 const { hovered, entity, mouse } = useHover()
+const features = useSettings()
 
 const cardWidth = ref(180)
 const cardHeight = ref(120)
@@ -79,7 +77,7 @@ const visible = computed(
   () =>
     hovered.value &&
     info.value.type !== '' &&
-    AcApSettingManager.instance.isShowEntityInfo &&
+    features.isShowEntityInfo &&
     !AcApDocManager.instance.editor.isActive
 )
 
@@ -100,6 +98,7 @@ watch(visible, async val => {
   position: fixed;
   left: v-bind(left);
   top: v-bind(top);
+  z-index: 99999;
   width: 180px;
   margin: 0;
   transition: none !important;
