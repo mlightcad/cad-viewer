@@ -89,7 +89,16 @@ describe('AcTrStyleManager', () => {
     expect(refreshed.color.getHex()).toBe(0xffff00)
   })
 
-  it('keeps foreground hatch fills visible via drawOrder-separated materials', () => {
+  it('solid foreground hatches fuse with the canvas bg (AutoCAD-aligned)', () => {
+    // AutoCAD reference: a solid ACI 7 hatch is rendered as if painted with
+    // the paper colour, so it fuses into both light and dark canvases and
+    // only the overlaid wireframe remains visible. See
+    // images-ex/hatch-bg-bug-refact-lee/autocad/tower-{light,dark}.png and
+    // the "drawing" pair in the same folder for the reference visuals.
+    //
+    // Linework-tier fills (drawOrder >= 0 — wide polylines, MText glyphs)
+    // are NOT hatches: they represent linework rasterized as a mesh and
+    // must invert with the theme so ACI 7 stays legible.
     const styleManager = new AcTrStyleManager()
     styleManager.currentBackgroundColor = 0xffffff
 
@@ -112,13 +121,19 @@ describe('AcTrStyleManager', () => {
       lineworkFillTraits
     ) as THREE.MeshBasicMaterial
 
+    // Solid hatch and linework-tier fill must NOT share a cache slot —
+    // otherwise the bg-tracked hatch material would be repainted by
+    // `changeForeground` and vice-versa.
     expect(hatchMaterial).not.toBe(lineworkFillMaterial)
 
     const hatchMetadata = getMaterialMetadata(hatchMaterial)
     expect(hatchMetadata.drawOrder).toBe(-1)
-    expect(hatchMetadata.isBackgroundFill).toBe(false)
-    expect(hatchMetadata.isForeground).toBe(true)
-    expect(hatchMaterial.color.getHex()).toBe(0x000000)
+    expect(hatchMetadata.isBackgroundFill).toBe(true)
+    expect(hatchMetadata.isForeground).toBe(false)
+    // Material is BORN with the current bg colour, not its trait RGB —
+    // so a DWG opened in dark theme does not flash a white silhouette
+    // before the first changeBackground call.
+    expect(hatchMaterial.color.getHex()).toBe(0xffffff)
 
     const lineworkFillMetadata = getMaterialMetadata(lineworkFillMaterial)
     expect(lineworkFillMetadata.drawOrder).toBe(0)
@@ -128,6 +143,10 @@ describe('AcTrStyleManager', () => {
   })
 
   it('keeps patterned foreground hatches as visible shader linework', () => {
+    // Patterned hatches differ from solid foreground fills: their visible
+    // component is the pattern lines themselves, which behave like linework
+    // and must stay legible against both canvases. So they invert with the
+    // theme (foreground tracking) instead of fusing with the bg.
     const styleManager = new AcTrStyleManager()
     styleManager.currentBackgroundColor = 0xffffff
 
@@ -160,6 +179,62 @@ describe('AcTrStyleManager', () => {
     expect(metadata.drawOrder).toBe(-1)
     expect(metadata.isBackgroundFill).toBe(false)
     expect(metadata.isForeground).toBe(true)
+  })
+
+  it('solid hatch with explicit truecolor stays at literal RGB across themes', () => {
+    // A DWG author who picked an explicit RGB via the truecolor picker
+    // (e.g. 255,255,255 from the colour palette) gets a literal hatch.
+    // `traits.color.isForeground` is only true for the ACI 7 / foreground
+    // pseudo-colour, so an explicit truecolor falls outside the bg-fuse
+    // rule even when the picked RGB happens to match the canvas paper.
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0xffffff
+
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'A-WALL'
+    // Explicit truecolor — NOT foreground.
+    traits.color.setRGB(0x80, 0x80, 0x80)
+    traits.rgbColor = 0x808080
+    traits.drawOrder = -1
+
+    const material = styleManager.getFillMaterial(
+      traits
+    ) as THREE.MeshBasicMaterial
+
+    const metadata = getMaterialMetadata(material)
+    expect(metadata.isBackgroundFill).toBe(false)
+    expect(metadata.isForeground).toBe(false)
+    expect(material.color.getHex()).toBe(0x808080)
+
+    // Theme flip must not mutate the literal truecolor.
+    styleManager.currentBackgroundColor = 0x000000
+    expect(material.color.getHex()).toBe(0x808080)
+  })
+
+  it('repaints solid foreground hatches on theme flip', () => {
+    // Lock the `_bgfill` cache partition + `isBackgroundFill` metadata
+    // contract: changeBackground must walk these materials and repaint
+    // them so the fuse-with-bg behaviour persists across theme flips.
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0xffffff
+
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'A-WALL'
+    traits.color = new AcCmColor().setForeground()
+    traits.rgbColor = 0xffffff
+    traits.drawOrder = -1
+
+    const material = styleManager.getFillMaterial(
+      traits
+    ) as THREE.MeshBasicMaterial
+
+    expect(material.color.getHex()).toBe(0xffffff)
+
+    styleManager.currentBackgroundColor = 0x000000
+    expect(material.color.getHex()).toBe(0x000000)
+
+    styleManager.currentBackgroundColor = 0xffffff
+    expect(material.color.getHex()).toBe(0xffffff)
   })
 
   it('creates a new patterned hatch material when pattern offset changes', () => {
