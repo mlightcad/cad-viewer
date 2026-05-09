@@ -1,7 +1,10 @@
-import { AcDbObjectId, AcGePoint2d } from '@mlightcad/data-model'
-import { AcCmEventManager } from '@mlightcad/data-model'
+import {
+  AcCmEventManager,
+  AcDbObjectId,
+  AcGePoint2d
+} from '@mlightcad/data-model'
 
-import { AcEdViewHoverEventArgs } from './AcEdBaseView'
+import type { AcEdViewHoverEventArgs } from './AcEdBaseView'
 
 /**
  * Interface implemented by a view that hosts hover behavior.
@@ -116,6 +119,10 @@ export class AcEdHoverController {
    */
   handleMouseMove(x: number, y: number) {
     this.clearHoverTimer()
+    if (this.hoveredId) {
+      this.hoverAt(x, y)
+      return
+    }
     this.hoverTimer = setTimeout(() => {
       this.hoverAt(x, y)
     }, this.hoverDelay)
@@ -134,6 +141,7 @@ export class AcEdHoverController {
    */
   clear() {
     this.setHoveredId(null)
+    this.clearHoverTimer()
     this.clearPauseTimer()
   }
 
@@ -177,6 +185,8 @@ export class AcEdHoverController {
    * @param newId - New hovered object id, or `null` to clear hover
    */
   private setHoveredId(newId: AcDbObjectId | null) {
+    if (this.hoveredId === newId) return
+
     if (this.hoveredId) {
       this.unhoverEvent.dispatch({
         id: this.hoveredId,
