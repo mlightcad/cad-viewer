@@ -12,6 +12,7 @@
   "workspaces": [
     "packages/*"
   ],
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "analyze": "nx run-many -t analyze",
     "build": "nx run-many -t build",
@@ -27,12 +28,13 @@
     "pre-serve": "nx run @mlightcad/cad-viewer-examples:pre-serve",
     "publish:viewer": "pnpm -r publish --filter cad-viewer --filter cad-simple-viewer --no-git-checks",
     "release": "node tools/release.mjs",
+    "sync:versions": "node tools/sync-workspace-versions.mjs",
     "serve": "nx run @mlightcad/cad-viewer-examples:serve",
     "test": "jest",
     "test:e2e": "pnpm --filter @mlightcad/cad-viewer-example test:e2e"
   },
   "engines": {
-    "pnpm": ">=8"
+    "pnpm": ">=9"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

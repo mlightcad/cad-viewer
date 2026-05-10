@@ -67,7 +67,9 @@ const selectedValue = computed(() =>
 )
 
 function formatHeight(value: number) {
-  return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(4)))
+  return Number.isInteger(value)
+    ? String(value)
+    : String(Number(value.toFixed(4)))
 }
 
 function handleChange(value: string | number) {

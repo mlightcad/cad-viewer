@@ -80,7 +80,8 @@ export default {
         textStyle: '文字样式',
         format: '格式',
         paragraph: '段落',
-        insert: '插入'
+        insert: '插入',
+        close: '关闭'
       },
       field: {
         textStyle: '文字样式',
@@ -102,7 +103,8 @@ export default {
         list: '项目符号和编号',
         lineSpacing: '行距',
         paragraphAlignment: '段落对齐',
-        symbol: '符号'
+        symbol: '符号',
+        close: '关闭'
       },
       tooltip: {
         textStyle: '选择当前图纸中的文字样式。',
@@ -122,7 +124,8 @@ export default {
         list: '插入或设置项目符号和编号。',
         lineSpacing: '设置行距。',
         paragraphAlignment: '设置段落水平对齐方式。',
-        symbol: '插入常用工程符号。'
+        symbol: '插入常用工程符号。',
+        close: '关闭文字编辑器并关闭该上下文标签。'
       },
       attachment: {
         TL: '左上 TL',

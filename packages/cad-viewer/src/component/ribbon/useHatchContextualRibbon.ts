@@ -23,6 +23,19 @@ const HATCH_COMMAND_GLOBAL_NAME = 'HATCH'
 const hatchPatternOptions: HatchPatternOption[] = [
   ...DEFAULT_HATCH_PATTERN_OPTIONS
 ]
+
+/**
+ * Converts ribbon color payloads into the CAD color model expected by the
+ * hatch color controls.
+ *
+ * The hatch command state can expose colors as existing `AcCmColor` instances,
+ * serialized CAD color strings, or CSS hex values. Values that cannot be
+ * interpreted as a hatch color are ignored so the custom color rows can render
+ * an empty/unchanged selection.
+ *
+ * @param value Raw color value stored in the hatch command state.
+ * @returns A normalized `AcCmColor`, or `undefined` when the value is invalid.
+ */
 const toColorValue = (value: unknown) => {
   if (value instanceof AcCmColor) return value
   if (typeof value !== 'string') return undefined
@@ -34,13 +47,37 @@ const toColorValue = (value: unknown) => {
   return undefined
 }
 
+/**
+ * Options required to coordinate the hatch contextual ribbon with the shared
+ * ribbon tab state.
+ */
 interface UseHatchContextualRibbonOptions {
+  /** Currently active ribbon tab id shared by the main ribbon shell. */
   activeTabId: Ref<string>
+  /**
+   * Optional callback used when the close button exits a selection-driven hatch
+   * context instead of an active HATCH command.
+   */
   clearSelection?: () => void
 }
 
+/**
+ * Minimal translation callback used while constructing ribbon model labels.
+ *
+ * @param key Locale message key.
+ * @returns Localized string for the active locale.
+ */
 type Translate = (key: string) => string
 
+/**
+ * Builds the gallery category model used by the hatch pattern picker.
+ *
+ * Pattern ids are emitted with the `hatch-pattern:` prefix because the ribbon
+ * item dispatcher routes all pattern selections through a single handler.
+ *
+ * @param title Display title for the hatch pattern category.
+ * @returns A ribbon gallery category containing every supported hatch pattern.
+ */
 const buildHatchPatternGalleryCategories = (
   title: string
 ): RibbonGalleryCategoryModel[] => [
@@ -58,6 +95,17 @@ const buildHatchPatternGalleryCategories = (
   }
 ]
 
+/**
+ * Creates the contextual ribbon controller for the HATCH workflow.
+ *
+ * The controller keeps the hatch contextual tab visible while either the HATCH
+ * command is running or the current selection consists of hatch entities. It
+ * also translates ribbon item ids into hatch command mutations and rebuilds the
+ * tab model from the latest command state.
+ *
+ * @param options Shared tab state and optional selection clearing hook.
+ * @returns Handlers and state consumed by the ribbon command host.
+ */
 export function useHatchContextualRibbon({
   activeTabId,
   clearSelection
@@ -77,6 +125,12 @@ export function useHatchContextualRibbon({
   const hatchState = hatchRibbonCommand.state
   const isSelectionContextActive = ref(false)
 
+  /**
+   * Reconciles contextual tab visibility with the command and selection modes.
+   *
+   * Command mode takes effect while HATCH is active; selection mode keeps the
+   * same tab available for editing hatch entities after command completion.
+   */
   const refreshContextTabVisibility = () => {
     if (isCommandActive.value || isSelectionContextActive.value) {
       showContextTab()
@@ -85,17 +139,38 @@ export function useHatchContextualRibbon({
     hideContextTab()
   }
 
+  /**
+   * Handles CAD command completion events for the HATCH contextual tab.
+   *
+   * @param args Command event payload raised by the CAD command manager.
+   */
   const handleCommandEnded = (args: AcEdCommandEventArgs) => {
     if (!isContextCommand(args)) return
     isCommandActive.value = false
     refreshContextTabVisibility()
   }
 
+  /**
+   * Updates whether the contextual tab should stay visible for hatch selection.
+   *
+   * @param active Whether the current selection should expose hatch editing UI.
+   */
   const handleSelectionContextChanged = (active: boolean) => {
     isSelectionContextActive.value = active
     refreshContextTabVisibility()
   }
 
+  /**
+   * Extracts a numeric value from a prefixed hatch ribbon item id.
+   *
+   * Input number controls emit ids such as `hatch-scale:2.5`; this helper keeps
+   * the parsing and invalid-value handling consistent for scale, angle, and
+   * opacity controls.
+   *
+   * @param itemId Ribbon item id emitted by a numeric hatch control.
+   * @param prefix Item id prefix that identifies the target hatch property.
+   * @returns Parsed number, or `undefined` when the id does not match or parse.
+   */
   const parseHatchNumberValue = (itemId: string, prefix: string) => {
     if (!itemId.startsWith(prefix)) return undefined
     const raw = itemId.slice(prefix.length)
@@ -103,6 +178,16 @@ export function useHatchContextualRibbon({
     return Number.isFinite(parsed) ? parsed : undefined
   }
 
+  /**
+   * Routes hatch contextual ribbon item clicks to the hatch command facade.
+   *
+   * The ribbon emits string ids rather than calling command APIs directly. This
+   * dispatcher owns the id contract for boundary picking, pattern/fill changes,
+   * color edits, numeric property edits, associativity, and close behavior.
+   *
+   * @param itemId Ribbon item id emitted by the hatch contextual tab.
+   * @returns `true` when the item id belongs to this contextual tab.
+   */
   const handleItem = (itemId: string) => {
     if (itemId === 'hatch-boundary-pick') {
       hatchRibbonCommand.requestPickPoints()
@@ -186,6 +271,16 @@ export function useHatchContextualRibbon({
     return false
   }
 
+  /**
+   * Builds the current hatch contextual ribbon tab model.
+   *
+   * The hatch command state is refreshed from CAD system variables before the
+   * model is created so defaults such as pattern, color, scale, and opacity are
+   * reflected immediately when the tab is rendered.
+   *
+   * @param t Translation callback used for all user-facing labels.
+   * @returns Ribbon tab model consumed by the ribbon renderer.
+   */
   const buildContextualTab = (t: Translate): RibbonTabModel => {
     hatchRibbonCommand.syncStateFromSysVars()
 

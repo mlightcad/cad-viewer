@@ -80,7 +80,8 @@ export default {
         textStyle: 'Text Style',
         format: 'Format',
         paragraph: 'Paragraph',
-        insert: 'Insert'
+        insert: 'Insert',
+        close: 'Close'
       },
       field: {
         textStyle: 'Text Style',
@@ -102,7 +103,8 @@ export default {
         list: 'Bullets and Numbering',
         lineSpacing: 'Line Spacing',
         paragraphAlignment: 'Paragraph Alignment',
-        symbol: 'Symbol'
+        symbol: 'Symbol',
+        close: 'Close'
       },
       tooltip: {
         textStyle: 'Choose a text style from the current drawing.',
@@ -122,7 +124,8 @@ export default {
         list: 'Insert or configure bullets and numbering.',
         lineSpacing: 'Set line spacing.',
         paragraphAlignment: 'Set paragraph horizontal alignment.',
-        symbol: 'Insert a common drafting symbol.'
+        symbol: 'Insert a common drafting symbol.',
+        close: 'Close the text editor and this contextual tab.'
       },
       attachment: {
         TL: 'Top Left TL',

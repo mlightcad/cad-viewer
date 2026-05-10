@@ -4,6 +4,7 @@ import {
   AcDbLayerTableRecord,
   AcDbLayerTableRecordAttrs,
   AcDbLayout,
+  AcDbMText,
   AcDbObjectId,
   AcDbRasterImage,
   AcDbRay,
@@ -38,6 +39,8 @@ import {
   AcEdCalculateSizeCallback,
   AcEdConditionWaiter,
   AcEdCorsorType,
+  AcEdMTextEditor,
+  AcEdOpenMode,
   AcEdSpatialQueryResultItem,
   AcEdSpatialQueryResultItemEx,
   AcEdViewMode,
@@ -223,7 +226,11 @@ export class AcTrView2d extends AcEdBaseView {
     let selectionPreviewEl: HTMLDivElement | null = null
 
     const canHandleSelectionGesture = () => {
-      return this.mode === AcEdViewMode.SELECTION && !this.editor.isActive
+      return (
+        this.mode === AcEdViewMode.SELECTION &&
+        !this.editor.isActive &&
+        !AcEdMTextEditor.getActiveInputBox()
+      )
     }
 
     const clearSelectionPreview = () => {
@@ -306,6 +313,15 @@ export class AcTrView2d extends AcEdBaseView {
 
       selectionStartWcs = null
       selectionStartCanvas = null
+    })
+
+    this.canvas.addEventListener('dblclick', e => {
+      if (e.button !== 0) return
+      if (!canHandleSelectionGesture()) return
+      if (AcApDocManager.instance.curDocument.openMode !== AcEdOpenMode.Write) {
+        return
+      }
+      void this.openPickedMTextEditor(e)
     })
     // When using OrbitControls in THREE.js, it attaches its own event listeners to the DOM elements,
     // such as the canvas or the entire document. This can interfere with other event listeners you
@@ -630,6 +646,79 @@ export class AcTrView2d extends AcEdBaseView {
   flyTo(point: AcGePoint2dLike, scale: number) {
     this.activeLayoutView.flyTo(point, scale)
     this._isDirty = true
+  }
+
+  private async openPickedMTextEditor(e: MouseEvent) {
+    const point = this.viewportToCanvas({
+      x: e.clientX,
+      y: e.clientY
+    })
+    const worldPoint = this.screenToWorld(point)
+    const picked = this.pick(worldPoint, undefined, true)
+    if (!picked.length) return
+
+    const entity =
+      AcApDocManager.instance.curDocument.database.tables.blockTable.getEntityById(
+        picked[0].id
+      )
+    if (!(entity instanceof AcDbMText)) return
+
+    e.preventDefault()
+    await this.editMTextEntity(entity)
+  }
+
+  private async editMTextEntity(mtext: AcDbMText) {
+    if (mtext.lineSpacingFactor !== AcEdMTextEditor.defaultLineSpacingFactor) {
+      mtext.lineSpacingFactor = AcEdMTextEditor.defaultLineSpacingFactor
+      mtext.triggerModifiedEvent()
+    }
+
+    const editor = new AcEdMTextEditor()
+    const result = await editor.open({
+      view: this,
+      location: mtext.location,
+      width: this.resolveMTextEditorWidth(mtext),
+      textHeight: this.resolveMTextEditorTextHeight(mtext),
+      initialText: mtext.contents,
+      toolbarFontFamilies: this.getMTextToolbarFontFamilies()
+    })
+    if (!result) return
+
+    mtext.location = result.location
+    mtext.contents = result.contents
+    mtext.width = result.width
+    mtext.height = result.height
+    mtext.lineSpacingFactor = result.lineSpacingFactor
+    mtext.triggerModifiedEvent()
+  }
+
+  private resolveMTextEditorWidth(mtext: AcDbMText) {
+    const width = Number(mtext.width)
+    if (Number.isFinite(width) && width > 0) return width
+    return 1e-4
+  }
+
+  private resolveMTextEditorTextHeight(mtext: AcDbMText) {
+    const textHeight = Number(mtext.height)
+    if (Number.isFinite(textHeight) && textHeight > 0) return textHeight
+    return this.pixelsToWorldY(24)
+  }
+
+  private pixelsToWorldY(pixels: number) {
+    const p0 = this.screenToWorld({ x: 0, y: 0 })
+    const p1 = this.screenToWorld({ x: 0, y: pixels })
+    return Math.max(Math.abs(p1.y - p0.y), 1e-4)
+  }
+
+  private getMTextToolbarFontFamilies() {
+    return Array.from(
+      new Set(
+        AcApDocManager.instance.avaiableFonts
+          .flatMap(fontInfo => fontInfo.name)
+          .map(fontName => fontName.trim())
+          .filter(fontName => fontName.length > 0)
+      )
+    )
   }
 
   /**

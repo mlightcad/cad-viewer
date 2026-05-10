@@ -7,7 +7,10 @@ import {
 import type { AcEdViewHoverEventArgs } from '../src/editor/view/AcEdBaseView'
 
 class MockHoverHost implements AcEdHoverHost {
-  pick = jest.fn<ReturnType<AcEdHoverHost['pick']>, Parameters<AcEdHoverHost['pick']>>()
+  pick = jest.fn<
+    ReturnType<AcEdHoverHost['pick']>,
+    Parameters<AcEdHoverHost['pick']>
+  >()
   onHover = jest.fn()
   onUnhover = jest.fn()
   curMousePos = new AcGePoint2d(20, 30)
