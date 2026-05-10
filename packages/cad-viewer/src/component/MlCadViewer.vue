@@ -84,6 +84,7 @@
 import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
+  AcEdMTextEditor,
   AcEdOpenMode,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
@@ -205,6 +206,14 @@ const isWriteMode = computed(
   () => effectiveOpenMode.value === AcEdOpenMode.Write
 )
 const headerHeightPx = ref(0)
+
+watch(
+  isWriteMode,
+  value => {
+    AcEdMTextEditor.setDefaultToolbarEnabled(!value)
+  },
+  { immediate: true }
+)
 
 const { isShowToolbar } = useEntityDrawStyle(editor)
 provideViewerRect(containerRef)
@@ -447,6 +456,7 @@ onUnmounted(() => {
   // Notify consumers first
   emit('destroy')
 
+  AcEdMTextEditor.setDefaultToolbarEnabled(true)
   headerResizeObserver?.disconnect()
   AcApDocManager.instance.destroy()
 })

@@ -5,6 +5,7 @@ import {
   log
 } from '@mlightcad/data-model'
 import {
+  type CharBox,
   ColorSettings,
   MTextData,
   MTextObject
@@ -21,6 +22,10 @@ import { AcTrEntity } from './AcTrEntity'
 // path avoids needless garbage collection pressure.
 const _raycastBox = /*@__PURE__*/ new THREE.Box3()
 const _raycastPoint = /*@__PURE__*/ new THREE.Vector3()
+const _topAlignmentTranslation = /*@__PURE__*/ new THREE.Vector3()
+const MTEXT_INPUT_BOX_LINE_ADVANCE_RATIO = 1.5
+
+const TOP_ATTACHMENT_POINTS = new Set([undefined, 1, 2, 3])
 
 export class AcTrMText extends AcTrEntity {
   private _mtext?: MTextObject
@@ -150,6 +155,7 @@ export class AcTrMText extends AcTrEntity {
    * @param mtext Rendered MTEXT object returned by the shared MTEXT renderer.
    */
   private attachMText(mtext: MTextObject) {
+    this.normalizeTopAlignedMText(mtext)
     this.add(mtext)
     this.flatten()
     this.traverse(object => {
@@ -162,23 +168,89 @@ export class AcTrMText extends AcTrEntity {
   }
 
   /**
+   * Matches the MTEXT input box's top-edge anchoring for top-attached text.
+   *
+   * The shared MTEXT renderer places glyph geometry from typographic metrics,
+   * while the editor normalizes the rendered layout so the logical top of the
+   * first line sits at the insertion point. Without applying the same
+   * normalization here, text created through the input box jumps upward when the
+   * editor closes and the persisted MTEXT entity is rendered normally.
+   *
+   * @param mtext Rendered MTEXT object to normalize before flattening.
+   */
+  private normalizeTopAlignedMText(mtext: MTextObject) {
+    const mtextData = this._text as MTextData
+    if (!TOP_ATTACHMENT_POINTS.has(mtextData.attachmentPoint)) return
+
+    const position = mtextData.position
+    if (!position) return
+
+    const layout = mtext.createLayoutData()
+    let bottomY = mtext.box.min.y
+    let topY = mtext.box.max.y
+
+    layout.lines.forEach(line => {
+      if (!Number.isFinite(line.y) || !Number.isFinite(line.height)) return
+      bottomY = Math.min(bottomY, line.y - line.height / 2)
+      topY = Math.max(topY, line.y + line.height / 2)
+    })
+
+    const textHeight = Number.isFinite(mtextData.height) ? mtextData.height : 0
+    const fallbackLineAdvance = Math.max(
+      1,
+      textHeight * MTEXT_INPUT_BOX_LINE_ADVANCE_RATIO
+    )
+    topY = bottomY + Math.max(topY - bottomY, fallbackLineAdvance)
+
+    const dy = position.y - topY
+    if (!Number.isFinite(dy) || Math.abs(dy) < 1e-8) return
+
+    _topAlignmentTranslation.set(0, dy, 0)
+    mtext.position.y += dy
+    mtext.box.translate(_topAlignmentTranslation)
+    layout.lines.forEach(line => {
+      line.y += dy
+    })
+    layout.chars.forEach(char => {
+      this.translateCharBox(char, _topAlignmentTranslation)
+    })
+    mtext.updateMatrixWorld(true)
+  }
+
+  private translateCharBox(char: CharBox, translation: THREE.Vector3) {
+    char.box?.translate(translation)
+    char.children?.forEach(child => {
+      this.translateCharBox(child, translation)
+    })
+  }
+
+  /**
    * Rebuilds the entity selection box used by the scene spatial index.
    *
-   * The box exposed by the mtext renderer describes its logical MTEXT layout.
-   * For some aligned text, especially middle/center attachment points, that box
-   * can be offset from the glyph geometry that actually appears on screen.  The
-   * scene performs a small spatial-index query before it ever calls raycast, so
-   * an offset box can prevent point selection from even considering the entity.
+   * The box exposed by the mtext renderer describes its logical MTEXT layout,
+   * including per-line vertical space above baseline-drawn glyphs.  The box
+   * computed from rendered children tracks visible geometry more closely, but
+   * by itself it can trim off that leading space and make edit overlays drift
+   * when they round-trip through the MTEXT input box.
    *
-   * To keep the spatial index aligned with what the user sees, prefer a box
-   * computed from the rendered children.  If rendering produced no geometry,
-   * keep the renderer-provided box as a conservative fallback.
+   * Use child geometry as the anchor for selection, then merge the renderer box
+   * only when it overlaps the geometry.  This keeps legitimate line spacing while
+   * still ignoring the known bad case where an aligned renderer box is displaced
+   * away from the glyphs.
    *
    * @param mtext Rendered MTEXT object whose logical box is used as fallback.
    */
   private updateSelectionBox(mtext: MTextObject) {
     const geometryBox = this.computeGeometryBox()
-    this.box = geometryBox.isEmpty() ? mtext.box : geometryBox
+    if (geometryBox.isEmpty()) {
+      this.box = mtext.box
+      return
+    }
+    if (!mtext.box.isEmpty() && mtext.box.intersectsBox(geometryBox)) {
+      this.box = geometryBox.clone().union(mtext.box)
+      return
+    }
+    this.box = geometryBox
   }
 
   /**

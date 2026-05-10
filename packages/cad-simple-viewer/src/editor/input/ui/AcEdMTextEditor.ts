@@ -14,6 +14,11 @@ import * as THREE from 'three'
 import { AcApDocManager } from '../../../app'
 import { AcTrView2d } from '../../../view'
 
+export type AcEdMTextEditorActiveInputBox = MTextInputBox
+export type AcEdMTextEditorActiveInputBoxChangeListener = (
+  inputBox: AcEdMTextEditorActiveInputBox | null
+) => void
+
 /**
  * Result payload returned by the MTEXT editor when editing is finished.
  */
@@ -26,6 +31,8 @@ export interface AcEdMTextEditorResult {
   width: number
   /** Final text box height in world units. */
   height: number
+  /** Line spacing factor used by the MTEXT input box renderer. */
+  lineSpacingFactor: number
 }
 
 /**
@@ -55,6 +62,11 @@ export interface AcEdMTextEditorOptions {
    * color input in the MTEXT toolbar.
    */
   toolbarColorPicker?: MTextToolbarColorPickerFactory
+  /**
+   * Controls the built-in MTEXT input box toolbar for this editor instance.
+   * Defaults to {@link AcEdMTextEditor.defaultToolbarEnabled}.
+   */
+  toolbarEnabled?: boolean
 }
 
 /**
@@ -64,12 +76,25 @@ export interface AcEdMTextEditorOptions {
  * render loop and handles lifecycle cleanup when the editor is closed.
  */
 export class AcEdMTextEditor {
+  static readonly defaultLineSpacingFactor = 0.3
+
+  private static activeInputBox: MTextInputBox | null = null
+  private static readonly activeInputBoxChangeListeners =
+    new Set<AcEdMTextEditorActiveInputBoxChangeListener>()
+
   /**
    * Default toolbar color picker factory used when opening the editor if
    * per-call options do not provide {@link AcEdMTextEditorOptions.toolbarColorPicker}.
    * Set via {@link AcEdMTextEditor.setDefaultColorPicker}.
    */
   static defaultColorPicker: MTextToolbarColorPickerFactory | null = null
+
+  /**
+   * Default visibility for the built-in MTEXT input box toolbar. Applications
+   * with their own contextual ribbon can disable this while keeping the input
+   * box editor active.
+   */
+  static defaultToolbarEnabled = true
 
   /**
    * Registers a default toolbar color picker factory. The factory is used for
@@ -82,6 +107,62 @@ export class AcEdMTextEditor {
     factory: MTextToolbarColorPickerFactory | null
   ): void {
     AcEdMTextEditor.defaultColorPicker = factory
+  }
+
+  /**
+   * Registers the default built-in toolbar visibility for subsequent
+   * {@link open} calls.
+   *
+   * @param enabled - `true` to show the MTEXT input box toolbar by default.
+   */
+  static setDefaultToolbarEnabled(enabled: boolean): void {
+    AcEdMTextEditor.defaultToolbarEnabled = enabled
+  }
+
+  /**
+   * Returns the MTEXT input box currently being edited, if any.
+   */
+  static getActiveInputBox(): AcEdMTextEditorActiveInputBox | null {
+    return AcEdMTextEditor.activeInputBox
+  }
+
+  /**
+   * Subscribes to active MTEXT input box changes.
+   */
+  static addActiveInputBoxChangeListener(
+    listener: AcEdMTextEditorActiveInputBoxChangeListener
+  ): void {
+    AcEdMTextEditor.activeInputBoxChangeListeners.add(listener)
+  }
+
+  /**
+   * Removes an active MTEXT input box listener.
+   */
+  static removeActiveInputBoxChangeListener(
+    listener: AcEdMTextEditorActiveInputBoxChangeListener
+  ): void {
+    AcEdMTextEditor.activeInputBoxChangeListeners.delete(listener)
+  }
+
+  private static setActiveInputBox(inputBox: MTextInputBox | null): void {
+    if (AcEdMTextEditor.activeInputBox === inputBox) return
+    AcEdMTextEditor.activeInputBox = inputBox
+    AcEdMTextEditor.activeInputBoxChangeListeners.forEach(listener => {
+      listener(inputBox)
+    })
+  }
+
+  private static createHiddenToolbarContainer(
+    parent: HTMLElement
+  ): HTMLElement {
+    const container = parent.ownerDocument.createElement('div')
+    container.setAttribute('aria-hidden', 'true')
+    Object.assign(container.style, {
+      display: 'none',
+      pointerEvents: 'none'
+    })
+    parent.appendChild(container)
+    return container
   }
 
   /**
@@ -105,7 +186,8 @@ export class AcEdMTextEditor {
       textHeight,
       initialText = '',
       toolbarFontFamilies = [],
-      toolbarColorPicker
+      toolbarColorPicker,
+      toolbarEnabled = AcEdMTextEditor.defaultToolbarEnabled
     } = options
     const origin = new THREE.Vector3(location.x, location.y, location.z ?? 0)
     const isLightBackground = view.backgroundColor === 0xffffff
@@ -148,6 +230,13 @@ export class AcEdMTextEditor {
           lastHeight: normalizedTextHeight
         }
       : undefined
+    // MTextInputBox still uses its shared toolbar object for internal format
+    // sync while editing. Keep that object alive when the app hides the built-in
+    // toolbar, but mount it into a hidden host so only the contextual ribbon is
+    // visible.
+    const hiddenToolbarContainer = toolbarEnabled
+      ? null
+      : AcEdMTextEditor.createHiddenToolbarContainer(view.container)
 
     const mtextInputBox = new MTextInputBox({
       scene: view.internalScene,
@@ -160,6 +249,9 @@ export class AcEdMTextEditor {
         color: cursorColor,
         glowColor: cursorColor
       },
+      boundingBoxStyle: {
+        padding: 0
+      },
       imeTarget: view.canvas,
       colorSettings: {
         layer: database.clayer,
@@ -171,12 +263,13 @@ export class AcEdMTextEditor {
         enabled: true,
         theme: getToolbarTheme(),
         fontFamilies,
-        container: view.container,
+        container: hiddenToolbarContainer ?? view.container,
         offsetY: 10,
         colorPicker:
           toolbarColorPicker ?? AcEdMTextEditor.defaultColorPicker ?? undefined
       }
     })
+    AcEdMTextEditor.setActiveInputBox(mtextInputBox)
 
     return new Promise(resolve => {
       let done = false
@@ -199,7 +292,11 @@ export class AcEdMTextEditor {
       }
 
       const cleanup = () => {
+        if (AcEdMTextEditor.activeInputBox === mtextInputBox) {
+          AcEdMTextEditor.setActiveInputBox(null)
+        }
         mtextInputBox.dispose()
+        hiddenToolbarContainer?.remove()
         view.events.renderFrame.removeEventListener(onRenderFrame)
         mtextInputBox.off('close', onClose)
         AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
@@ -225,7 +322,8 @@ export class AcEdMTextEditor {
             z: insertionPoint.z
           },
           width,
-          height: normalizedTextHeight
+          height: normalizedTextHeight,
+          lineSpacingFactor: AcEdMTextEditor.defaultLineSpacingFactor
         })
       }
 

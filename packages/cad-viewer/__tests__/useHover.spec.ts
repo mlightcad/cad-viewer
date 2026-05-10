@@ -31,7 +31,11 @@ class MockEventManager<T> {
 }
 
 const hoverEvent = new MockEventManager<{ id: string; x: number; y: number }>()
-const unhoverEvent = new MockEventManager<{ id: string; x: number; y: number }>()
+const unhoverEvent = new MockEventManager<{
+  id: string
+  x: number
+  y: number
+}>()
 const canvasToViewport = jest.fn()
 const getIdAt = jest.fn()
 

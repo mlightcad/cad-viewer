@@ -9,7 +9,8 @@ export default {
     tab: {
       home: '常用',
       tools: '工具',
-      hatchContext: '填充'
+      hatchContext: '填充',
+      mtextEditorContext: '文字编辑器'
     },
     hatch: {
       contextTitle: '填充创建',
@@ -71,6 +72,115 @@ export default {
         opacity: '设置填充透明度（0-90）。',
         imageScale: '设置填充图片比例。',
         close: '退出填充创建并关闭该上下文标签。'
+      }
+    },
+    mtext: {
+      contextTitle: '文字编辑器',
+      group: {
+        textStyle: '文字样式',
+        format: '格式',
+        paragraph: '段落',
+        insert: '插入',
+        close: '关闭'
+      },
+      field: {
+        textStyle: '文字样式',
+        font: '字体',
+        color: '颜色',
+        height: '高度'
+      },
+      command: {
+        bold: '粗体',
+        underline: '下划线',
+        superscript: '上标',
+        italic: '斜体',
+        overline: '上划线',
+        subscript: '下标',
+        strikethrough: '删除线',
+        stack: '堆叠',
+        toggleCase: '大小写',
+        attachment: '对正',
+        list: '项目符号和编号',
+        lineSpacing: '行距',
+        paragraphAlignment: '段落对齐',
+        symbol: '符号',
+        close: '关闭'
+      },
+      tooltip: {
+        textStyle: '选择当前图纸中的文字样式。',
+        bold: '切换粗体格式。',
+        underline: '切换下划线格式。',
+        superscript: '切换上标格式。',
+        italic: '切换斜体格式。',
+        overline: '切换上划线格式。',
+        subscript: '切换下标格式。',
+        strikethrough: '切换删除线格式。',
+        stack: '将选中的分数字符堆叠或还原。',
+        toggleCase: '切换选中文字的大小写。',
+        font: '设置当前文字字体。',
+        color: '设置当前文字颜色。',
+        height: '设置当前文字高度，可输入自定义值。',
+        attachment: '设置多行文字的附着点。',
+        list: '插入或设置项目符号和编号。',
+        lineSpacing: '设置行距。',
+        paragraphAlignment: '设置段落水平对齐方式。',
+        symbol: '插入常用工程符号。',
+        close: '关闭文字编辑器并关闭该上下文标签。'
+      },
+      attachment: {
+        TL: '左上 TL',
+        TC: '中上 TC',
+        TR: '右上 TR',
+        ML: '左中 ML',
+        MC: '正中 MC',
+        MR: '右中 MR',
+        BL: '左下 BL',
+        BC: '中下 BC',
+        BR: '右下 BR'
+      },
+      list: {
+        off: '关闭',
+        number: '以数字标记',
+        letter: '以字母标记',
+        bullet: '以项目符号标记',
+        start: '起点',
+        continue: '连续',
+        auto: '允许自动项目符号和编号',
+        allowList: '允许项目符号和列表'
+      },
+      lineSpacing: {
+        more: '更多...',
+        clear: '清除行间距'
+      },
+      paragraphAlign: {
+        default: '默认',
+        left: '左对齐',
+        center: '居中',
+        right: '右对齐',
+        justified: '对正',
+        distributed: '分散对齐'
+      },
+      symbol: {
+        degree: '度数  %%d',
+        plusMinus: '正/负  %%p',
+        diameter: '直径  %%c',
+        almostEqual: '几乎相等  \\U+2248',
+        angle: '角度  \\U+2220',
+        boundary: '边界线  \\U+E100',
+        centerLine: '中心线  \\U+2104',
+        delta: '差值  \\U+0394',
+        electricalPhase: '电相角  \\U+0278',
+        flowLine: '流线  \\U+E101',
+        identical: '恒等于  \\U+2261',
+        notEqual: '不相等  \\U+2260',
+        ohm: '欧姆  \\U+2126',
+        omega: '欧米加  \\U+03A9',
+        propertyLine: '地界线  \\U+214A',
+        subscriptTwo: '下标 2  \\U+2082',
+        squared: '平方  \\U+00B2',
+        cubed: '立方  \\U+00B3',
+        nbsp: '不断空格 Ctrl+Shift+Space',
+        other: '其他...'
       }
     },
     group: {

@@ -9,7 +9,8 @@ export default {
     tab: {
       home: 'Home',
       tools: 'Tools',
-      hatchContext: 'Hatch'
+      hatchContext: 'Hatch',
+      mtextEditorContext: 'Text Editor'
     },
     hatch: {
       contextTitle: 'Hatch Creation',
@@ -71,6 +72,115 @@ export default {
         opacity: 'Set the hatch transparency (0-90).',
         imageScale: 'Set the fill image scale.',
         close: 'Exit Hatch creation and close this contextual tab.'
+      }
+    },
+    mtext: {
+      contextTitle: 'Text Editor',
+      group: {
+        textStyle: 'Text Style',
+        format: 'Format',
+        paragraph: 'Paragraph',
+        insert: 'Insert',
+        close: 'Close'
+      },
+      field: {
+        textStyle: 'Text Style',
+        font: 'Font',
+        color: 'Color',
+        height: 'Height'
+      },
+      command: {
+        bold: 'Bold',
+        underline: 'Underline',
+        superscript: 'Superscript',
+        italic: 'Italic',
+        overline: 'Overline',
+        subscript: 'Subscript',
+        strikethrough: 'Strikethrough',
+        stack: 'Stack',
+        toggleCase: 'Upper/Lower Case',
+        attachment: 'Justify',
+        list: 'Bullets and Numbering',
+        lineSpacing: 'Line Spacing',
+        paragraphAlignment: 'Paragraph Alignment',
+        symbol: 'Symbol',
+        close: 'Close'
+      },
+      tooltip: {
+        textStyle: 'Choose a text style from the current drawing.',
+        bold: 'Toggle bold formatting.',
+        underline: 'Toggle underline formatting.',
+        superscript: 'Toggle superscript formatting.',
+        italic: 'Toggle italic formatting.',
+        overline: 'Toggle overline formatting.',
+        subscript: 'Toggle subscript formatting.',
+        strikethrough: 'Toggle strikethrough formatting.',
+        stack: 'Stack or unstack selected fraction text.',
+        toggleCase: 'Toggle the selected text between upper and lower case.',
+        font: 'Set the current text font.',
+        color: 'Set the current text color.',
+        height: 'Set the current text height. Custom values are allowed.',
+        attachment: 'Set the multiline text attachment point.',
+        list: 'Insert or configure bullets and numbering.',
+        lineSpacing: 'Set line spacing.',
+        paragraphAlignment: 'Set paragraph horizontal alignment.',
+        symbol: 'Insert a common drafting symbol.',
+        close: 'Close the text editor and this contextual tab.'
+      },
+      attachment: {
+        TL: 'Top Left TL',
+        TC: 'Top Center TC',
+        TR: 'Top Right TR',
+        ML: 'Middle Left ML',
+        MC: 'Middle Center MC',
+        MR: 'Middle Right MR',
+        BL: 'Bottom Left BL',
+        BC: 'Bottom Center BC',
+        BR: 'Bottom Right BR'
+      },
+      list: {
+        off: 'Off',
+        number: 'Numbered',
+        letter: 'Lettered',
+        bullet: 'Bulleted',
+        start: 'Start',
+        continue: 'Continue',
+        auto: 'Allow Auto Bullets and Numbering',
+        allowList: 'Allow Bullets and Lists'
+      },
+      lineSpacing: {
+        more: 'More...',
+        clear: 'Clear Paragraph Spacing'
+      },
+      paragraphAlign: {
+        default: 'Default',
+        left: 'Left',
+        center: 'Center',
+        right: 'Right',
+        justified: 'Justified',
+        distributed: 'Distributed'
+      },
+      symbol: {
+        degree: 'Degrees  %%d',
+        plusMinus: 'Plus/Minus  %%p',
+        diameter: 'Diameter  %%c',
+        almostEqual: 'Almost Equal  \\U+2248',
+        angle: 'Angle  \\U+2220',
+        boundary: 'Boundary Line  \\U+E100',
+        centerLine: 'Center Line  \\U+2104',
+        delta: 'Delta  \\U+0394',
+        electricalPhase: 'Electrical Phase  \\U+0278',
+        flowLine: 'Flow Line  \\U+E101',
+        identical: 'Identical To  \\U+2261',
+        notEqual: 'Not Equal  \\U+2260',
+        ohm: 'Ohm  \\U+2126',
+        omega: 'Omega  \\U+03A9',
+        propertyLine: 'Property Line  \\U+214A',
+        subscriptTwo: 'Subscript 2  \\U+2082',
+        squared: 'Squared  \\U+00B2',
+        cubed: 'Cubed  \\U+00B3',
+        nbsp: 'Nonbreaking Space Ctrl+Shift+Space',
+        other: 'Other...'
       }
     },
     group: {

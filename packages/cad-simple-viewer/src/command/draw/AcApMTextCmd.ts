@@ -62,6 +62,7 @@ export class AcApMTextCmd extends AcEdCommand {
     mtext.contents = result.contents
     mtext.width = result.width
     mtext.height = result.height
+    mtext.lineSpacingFactor = result.lineSpacingFactor
 
     context.doc.database.tables.blockTable.modelSpace.appendEntity(mtext)
   }
