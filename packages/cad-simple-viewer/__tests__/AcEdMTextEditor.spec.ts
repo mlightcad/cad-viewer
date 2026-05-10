@@ -14,6 +14,11 @@ class MockMTextInputBox {
   readonly setToolbarTheme = jest.fn()
   readonly getText = jest.fn(() => 'typed text')
   readonly getMTextInsertionPoint = jest.fn(() => ({ x: 1, y: 2, z: 3 }))
+  readonly setCurrentFormat = jest.fn()
+  readonly refreshCurrentFormatFromDocument = jest.fn()
+  readonly toggleCase = jest.fn()
+  readonly toggleStackSelection = jest.fn()
+  readonly toggleScriptSelection = jest.fn(() => true)
 
   constructor(readonly options: Record<string, unknown>) {
     mockMTextInputBoxInstances.push(this)
@@ -28,6 +33,11 @@ class MockMTextInputBox {
   emit(event: string) {
     this.handlers.get(event)?.forEach(handler => handler())
   }
+}
+
+interface FormatObservableInputBox {
+  addCurrentFormatChangeListener: (listener: () => void) => void
+  removeCurrentFormatChangeListener: (listener: () => void) => void
 }
 
 jest.mock(
@@ -171,5 +181,36 @@ describe('AcEdMTextEditor', () => {
     })
     expect(inputBox.dispose).toHaveBeenCalled()
     expect(toolbar.container.remove).toHaveBeenCalled()
+  })
+
+  it('notifies format listeners when the active input box format refreshes', async () => {
+    const view = createView()
+    const resultPromise = new AcEdMTextEditor().open({
+      view: view as never,
+      location: { x: 0, y: 0, z: 0 },
+      width: 10,
+      textHeight: 2
+    })
+
+    const inputBox = mockMTextInputBoxInstances[0]
+    const observable = inputBox as unknown as FormatObservableInputBox
+    const listener = jest.fn()
+
+    observable.addCurrentFormatChangeListener(listener)
+    inputBox.setCurrentFormat()
+    inputBox.refreshCurrentFormatFromDocument()
+    inputBox.toggleScriptSelection()
+    expect(listener).toHaveBeenCalledTimes(3)
+
+    observable.removeCurrentFormatChangeListener(listener)
+    inputBox.toggleCase()
+    expect(listener).toHaveBeenCalledTimes(3)
+
+    observable.addCurrentFormatChangeListener(listener)
+    inputBox.emit('close')
+    await resultPromise
+
+    inputBox.setCurrentFormat()
+    expect(listener).toHaveBeenCalledTimes(3)
   })
 })

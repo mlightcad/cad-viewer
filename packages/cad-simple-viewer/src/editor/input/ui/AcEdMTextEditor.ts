@@ -14,10 +14,41 @@ import * as THREE from 'three'
 import { AcApDocManager } from '../../../app'
 import { AcTrView2d } from '../../../view'
 
-export type AcEdMTextEditorActiveInputBox = MTextInputBox
+export type AcEdMTextEditorCurrentFormatChangeListener = () => void
+export interface AcEdMTextEditorCurrentFormatObservable {
+  addCurrentFormatChangeListener: (
+    listener: AcEdMTextEditorCurrentFormatChangeListener
+  ) => void
+  removeCurrentFormatChangeListener: (
+    listener: AcEdMTextEditorCurrentFormatChangeListener
+  ) => void
+}
+export type AcEdMTextEditorActiveInputBox = MTextInputBox &
+  Partial<AcEdMTextEditorCurrentFormatObservable>
 export type AcEdMTextEditorActiveInputBoxChangeListener = (
   inputBox: AcEdMTextEditorActiveInputBox | null
 ) => void
+
+type MTextInputBoxRuntimeMethod = (...args: unknown[]) => unknown
+type MTextInputBoxRuntimeMethodName =
+  | 'setCurrentFormat'
+  | 'refreshCurrentFormatFromDocument'
+  | 'toggleCase'
+  | 'toggleStackSelection'
+  | 'toggleScriptSelection'
+
+const mtextFormatBridgeKey = '__mlightcadMTextFormatBridge'
+
+interface MTextInputBoxFormatBridge
+  extends AcEdMTextEditorCurrentFormatObservable {
+  dispose: () => void
+}
+
+type MTextInputBoxRuntime = MTextInputBox &
+  Partial<Record<MTextInputBoxRuntimeMethodName, MTextInputBoxRuntimeMethod>> &
+  Partial<AcEdMTextEditorCurrentFormatObservable> & {
+    [mtextFormatBridgeKey]?: MTextInputBoxFormatBridge
+  }
 
 /**
  * Result payload returned by the MTEXT editor when editing is finished.
@@ -165,6 +196,69 @@ export class AcEdMTextEditor {
     return container
   }
 
+  private static attachFormatBridge(inputBox: MTextInputBox): void {
+    const runtime = inputBox as MTextInputBoxRuntime
+    if (runtime[mtextFormatBridgeKey]) return
+
+    const listeners = new Set<AcEdMTextEditorCurrentFormatChangeListener>()
+    const restoreMethods: Array<() => void> = []
+    const notifyFormatChanged = () => {
+      listeners.forEach(listener => {
+        listener()
+      })
+    }
+    const wrapMethod = (methodName: MTextInputBoxRuntimeMethodName) => {
+      const original = runtime[methodName]
+      if (typeof original !== 'function') return
+
+      runtime[methodName] = (...args: unknown[]) => {
+        const result = original.apply(runtime, args)
+        notifyFormatChanged()
+        return result
+      }
+      restoreMethods.push(() => {
+        runtime[methodName] = original
+      })
+    }
+
+    ;(
+      [
+        'setCurrentFormat',
+        'refreshCurrentFormatFromDocument',
+        'toggleCase',
+        'toggleStackSelection',
+        'toggleScriptSelection'
+      ] as const
+    ).forEach(wrapMethod)
+
+    runtime.addCurrentFormatChangeListener = listener => {
+      listeners.add(listener)
+    }
+    runtime.removeCurrentFormatChangeListener = listener => {
+      listeners.delete(listener)
+    }
+    runtime[mtextFormatBridgeKey] = {
+      addCurrentFormatChangeListener:
+        runtime.addCurrentFormatChangeListener,
+      removeCurrentFormatChangeListener:
+        runtime.removeCurrentFormatChangeListener,
+      dispose: () => {
+        restoreMethods.forEach(restore => {
+          restore()
+        })
+        listeners.clear()
+        delete runtime.addCurrentFormatChangeListener
+        delete runtime.removeCurrentFormatChangeListener
+        delete runtime[mtextFormatBridgeKey]
+      }
+    }
+  }
+
+  private static detachFormatBridge(inputBox: MTextInputBox): void {
+    const runtime = inputBox as MTextInputBoxRuntime
+    runtime[mtextFormatBridgeKey]?.dispose()
+  }
+
   /**
    * Opens the MTEXT editor and resolves when user closes the editor UI.
    *
@@ -269,6 +363,7 @@ export class AcEdMTextEditor {
           toolbarColorPicker ?? AcEdMTextEditor.defaultColorPicker ?? undefined
       }
     })
+    AcEdMTextEditor.attachFormatBridge(mtextInputBox)
     AcEdMTextEditor.setActiveInputBox(mtextInputBox)
 
     return new Promise(resolve => {
@@ -295,6 +390,7 @@ export class AcEdMTextEditor {
         if (AcEdMTextEditor.activeInputBox === mtextInputBox) {
           AcEdMTextEditor.setActiveInputBox(null)
         }
+        AcEdMTextEditor.detachFormatBridge(mtextInputBox)
         mtextInputBox.dispose()
         hiddenToolbarContainer?.remove()
         view.events.renderFrame.removeEventListener(onRenderFrame)

@@ -45,6 +45,12 @@ type MTextRibbonScript = 'normal' | 'superscript' | 'subscript'
 type MTextEditorEvent = 'change' | 'selectionChange' | 'cursorMove' | 'close'
 
 /**
+ * Listener notified when the active MText input box refreshes its current
+ * character format.
+ */
+type MTextFormatChangeListener = () => void
+
+/**
  * Listener called by the MText editor bridge when the active inline editor
  * changes.
  *
@@ -119,6 +125,14 @@ interface MTextRibbonEditor {
   on?: (event: MTextEditorEvent, handler: () => void) => void
   /** Unsubscribes a previously registered editor event handler. */
   off?: (event: string, handler: () => void) => void
+  /** Subscribes to format refreshes mirrored from the active input box. */
+  addCurrentFormatChangeListener?: (
+    listener: MTextFormatChangeListener
+  ) => void
+  /** Removes a previously registered format refresh listener. */
+  removeCurrentFormatChangeListener?: (
+    listener: MTextFormatChangeListener
+  ) => void
   /** Toggles stacked-fraction formatting for the current selection. */
   toggleStackSelection?: () => void
   /**
@@ -180,6 +194,28 @@ const DEFAULT_MTEXT_FORMAT: MTextRibbonFormat = {
   strike: false,
   aci: null,
   rgb: null
+}
+
+/**
+ * Compares two ribbon format snapshots using the same field-by-field contract
+ * as the MTEXT input box toolbar.
+ */
+function sameMTextRibbonFormat(
+  a: MTextRibbonFormat,
+  b: MTextRibbonFormat
+) {
+  return (
+    a.fontFamily === b.fontFamily &&
+    a.fontSize === b.fontSize &&
+    a.bold === b.bold &&
+    a.italic === b.italic &&
+    a.underline === b.underline &&
+    a.overline === b.overline &&
+    a.script === b.script &&
+    a.strike === b.strike &&
+    a.aci === b.aci &&
+    a.rgb === b.rgb
+  )
 }
 
 const toolbarIcons = {
@@ -478,8 +514,13 @@ export function useMTextContextualRibbon({
    */
   const syncColorStateFromFormat = (format: MTextRibbonFormat) => {
     const color = toAcCmColorFromFormat(format)
-    currentColor.value = color
-    currentColorDisplay.value = resolveColorDisplay(color)
+    const displayColor = resolveColorDisplay(color)
+    if (currentColor.value?.toString() !== color.toString()) {
+      currentColor.value = color
+    }
+    if (currentColorDisplay.value !== displayColor) {
+      currentColorDisplay.value = displayColor
+    }
   }
 
   /**
@@ -492,16 +533,21 @@ export function useMTextContextualRibbon({
     const editor = getActiveEditor()
     if (!editor) {
       activeEditor.value = null
-      currentFormat.value = { ...DEFAULT_MTEXT_FORMAT }
+      if (!sameMTextRibbonFormat(currentFormat.value, DEFAULT_MTEXT_FORMAT)) {
+        currentFormat.value = { ...DEFAULT_MTEXT_FORMAT }
+      }
       syncColorStateFromFormat(currentFormat.value)
       refreshContextTabVisibility()
       return
     }
 
     activeEditor.value = editor
-    currentFormat.value = {
+    const nextFormat = {
       ...DEFAULT_MTEXT_FORMAT,
       ...editor.getCurrentFormat()
+    }
+    if (!sameMTextRibbonFormat(currentFormat.value, nextFormat)) {
+      currentFormat.value = nextFormat
     }
     syncColorStateFromFormat(currentFormat.value)
     refreshContextTabVisibility()
@@ -520,6 +566,7 @@ export function useMTextContextualRibbon({
       observedEditor.off('cursorMove', syncFormatFromEditor)
       observedEditor.off('close', syncFormatFromEditor)
     }
+    observedEditor?.removeCurrentFormatChangeListener?.(syncFormatFromEditor)
     observedEditor = editor
     if (observedEditor?.on) {
       observedEditor.on('change', syncFormatFromEditor)
@@ -527,6 +574,7 @@ export function useMTextContextualRibbon({
       observedEditor.on('cursorMove', syncFormatFromEditor)
       observedEditor.on('close', syncFormatFromEditor)
     }
+    observedEditor?.addCurrentFormatChangeListener?.(syncFormatFromEditor)
     syncFormatFromEditor()
   }
 
