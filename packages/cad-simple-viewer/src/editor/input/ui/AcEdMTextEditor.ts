@@ -14,10 +14,59 @@ import * as THREE from 'three'
 import { AcApDocManager } from '../../../app'
 import { AcTrView2d } from '../../../view'
 
-export type AcEdMTextEditorActiveInputBox = MTextInputBox
+export type AcEdMTextEditorCurrentFormatChangeListener = () => void
+export interface AcEdMTextEditorCurrentFormatObservable {
+  addCurrentFormatChangeListener: (
+    listener: AcEdMTextEditorCurrentFormatChangeListener
+  ) => void
+  removeCurrentFormatChangeListener: (
+    listener: AcEdMTextEditorCurrentFormatChangeListener
+  ) => void
+}
+export type AcEdMTextEditorActiveInputBox = MTextInputBox &
+  Partial<AcEdMTextEditorCurrentFormatObservable> & {
+    /**
+     * Returns keyboard focus to the hidden IME input used by the editor.
+     *
+     * Contextual ribbon controls use this after formatting commands so the
+     * inline editor keeps behaving like its built-in toolbar.
+     */
+    focusEditor?: () => void
+    /** Returns whether the current selection is a non-script stacked fraction. */
+    isStackSelectionActive?: () => boolean
+  }
 export type AcEdMTextEditorActiveInputBoxChangeListener = (
   inputBox: AcEdMTextEditorActiveInputBox | null
 ) => void
+
+type MTextInputBoxRuntimeMethod = (...args: unknown[]) => unknown
+type MTextInputBoxRuntimeMethodName =
+  | 'setCurrentFormat'
+  | 'refreshCurrentFormatFromDocument'
+  | 'toggleCase'
+  | 'toggleStackSelection'
+  | 'toggleScriptSelection'
+
+const mtextFormatBridgeKey = '__mlightcadMTextFormatBridge'
+
+interface MTextInputBoxFormatBridge
+  extends AcEdMTextEditorCurrentFormatObservable {
+  dispose: () => void
+}
+
+type MTextInputBoxRuntime = MTextInputBox &
+  Partial<Record<MTextInputBoxRuntimeMethodName, MTextInputBoxRuntimeMethod>> &
+  Partial<AcEdMTextEditorCurrentFormatObservable> & {
+    focusEditor?: () => void
+    isStackSelectionActive?: () => boolean
+    [mtextFormatBridgeKey]?: MTextInputBoxFormatBridge
+  }
+interface MTextInputBoxRuntimeStackNode {
+  type?: string
+  divider?: string
+  numerator?: string
+  denominator?: string
+}
 
 /**
  * Result payload returned by the MTEXT editor when editing is finished.
@@ -165,6 +214,134 @@ export class AcEdMTextEditor {
     return container
   }
 
+  private static attachFormatBridge(inputBox: MTextInputBox): void {
+    const runtime = inputBox as MTextInputBoxRuntime
+    if (runtime[mtextFormatBridgeKey]) return
+
+    const listeners = new Set<AcEdMTextEditorCurrentFormatChangeListener>()
+    const restoreMethods: Array<() => void> = []
+    const notifyFormatChanged = () => {
+      listeners.forEach(listener => {
+        listener()
+      })
+    }
+    const wrapMethod = (methodName: MTextInputBoxRuntimeMethodName) => {
+      const original = runtime[methodName]
+      if (typeof original !== 'function') return
+
+      runtime[methodName] = (...args: unknown[]) => {
+        const result = original.apply(runtime, args)
+        notifyFormatChanged()
+        return result
+      }
+      restoreMethods.push(() => {
+        runtime[methodName] = original
+      })
+    }
+
+    ;(
+      [
+        'setCurrentFormat',
+        'refreshCurrentFormatFromDocument',
+        'toggleCase',
+        'toggleStackSelection',
+        'toggleScriptSelection'
+      ] as const
+    ).forEach(wrapMethod)
+
+    runtime.addCurrentFormatChangeListener = listener => {
+      listeners.add(listener)
+    }
+    runtime.removeCurrentFormatChangeListener = listener => {
+      listeners.delete(listener)
+    }
+    runtime.focusEditor = () => {
+      const runtimeMethods = runtime as unknown as Record<
+        string,
+        MTextInputBoxRuntimeMethod | undefined
+      >
+      const focus = runtimeMethods.focusImeInput
+      if (typeof focus === 'function') {
+        focus.call(runtime)
+        return
+      }
+
+      const refocusSoon = runtimeMethods.refocusImeInputSoon
+      if (typeof refocusSoon === 'function') {
+        refocusSoon.call(runtime)
+      }
+    }
+    runtime.isStackSelectionActive = () => {
+      const runtimeMethods = runtime as unknown as Record<string, unknown>
+      const getSelectionRange = runtimeMethods.getSelectionRange
+      const toDocumentIndexFromLogicalIndex =
+        runtimeMethods.toDocumentIndexFromLogicalIndex
+      const isScriptOnlyStack = runtimeMethods.isScriptOnlyStack
+      const document = runtimeMethods.document as
+        | { ast?: { nodes?: MTextInputBoxRuntimeStackNode[] } }
+        | undefined
+
+      if (
+        typeof getSelectionRange !== 'function' ||
+        typeof toDocumentIndexFromLogicalIndex !== 'function'
+      ) {
+        return false
+      }
+
+      const selection = getSelectionRange.call(runtime) as
+        | { start: number; end: number; isCollapsed: boolean }
+        | undefined
+      if (!selection || selection.isCollapsed) return false
+
+      const start = toDocumentIndexFromLogicalIndex.call(
+        runtime,
+        selection.start,
+        true
+      ) as number
+      const end = toDocumentIndexFromLogicalIndex.call(
+        runtime,
+        selection.end,
+        false
+      ) as number
+      const selectedNodes = document?.ast?.nodes?.slice(start, end) ?? []
+      const stackNode = selectedNodes[0]
+      if (selectedNodes.length !== 1 || stackNode?.type !== 'stack') {
+        return false
+      }
+
+      if (typeof isScriptOnlyStack === 'function') {
+        return !isScriptOnlyStack.call(runtime, stackNode)
+      }
+
+      if (stackNode.divider !== '^') return true
+      const hasNumerator = (stackNode.numerator ?? '').trim().length > 0
+      const hasDenominator = (stackNode.denominator ?? '').trim().length > 0
+      return hasNumerator === hasDenominator
+    }
+    runtime[mtextFormatBridgeKey] = {
+      addCurrentFormatChangeListener:
+        runtime.addCurrentFormatChangeListener,
+      removeCurrentFormatChangeListener:
+        runtime.removeCurrentFormatChangeListener,
+      dispose: () => {
+        restoreMethods.forEach(restore => {
+          restore()
+        })
+        listeners.clear()
+        delete runtime.addCurrentFormatChangeListener
+        delete runtime.removeCurrentFormatChangeListener
+        delete runtime.focusEditor
+        delete runtime.isStackSelectionActive
+        delete runtime[mtextFormatBridgeKey]
+      }
+    }
+  }
+
+  private static detachFormatBridge(inputBox: MTextInputBox): void {
+    const runtime = inputBox as MTextInputBoxRuntime
+    runtime[mtextFormatBridgeKey]?.dispose()
+  }
+
   /**
    * Opens the MTEXT editor and resolves when user closes the editor UI.
    *
@@ -269,6 +446,7 @@ export class AcEdMTextEditor {
           toolbarColorPicker ?? AcEdMTextEditor.defaultColorPicker ?? undefined
       }
     })
+    AcEdMTextEditor.attachFormatBridge(mtextInputBox)
     AcEdMTextEditor.setActiveInputBox(mtextInputBox)
 
     return new Promise(resolve => {
@@ -295,6 +473,7 @@ export class AcEdMTextEditor {
         if (AcEdMTextEditor.activeInputBox === mtextInputBox) {
           AcEdMTextEditor.setActiveInputBox(null)
         }
+        AcEdMTextEditor.detachFormatBridge(mtextInputBox)
         mtextInputBox.dispose()
         hiddenToolbarContainer?.remove()
         view.events.renderFrame.removeEventListener(onRenderFrame)

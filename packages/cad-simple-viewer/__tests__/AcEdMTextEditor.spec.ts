@@ -14,6 +14,32 @@ class MockMTextInputBox {
   readonly setToolbarTheme = jest.fn()
   readonly getText = jest.fn(() => 'typed text')
   readonly getMTextInsertionPoint = jest.fn(() => ({ x: 1, y: 2, z: 3 }))
+  readonly setCurrentFormat = jest.fn()
+  readonly refreshCurrentFormatFromDocument = jest.fn()
+  readonly toggleCase = jest.fn()
+  readonly toggleStackSelection = jest.fn()
+  readonly toggleScriptSelection = jest.fn(() => true)
+  readonly focusImeInput = jest.fn()
+  readonly refocusImeInputSoon = jest.fn()
+  readonly getSelectionRange = jest.fn(() => ({
+    start: 0,
+    end: 1,
+    isCollapsed: false
+  }))
+  readonly toDocumentIndexFromLogicalIndex = jest.fn((index: number) => index)
+  readonly isScriptOnlyStack = jest.fn(() => false)
+  readonly document = {
+    ast: {
+      nodes: [
+        {
+          type: 'stack',
+          numerator: '1',
+          denominator: '2',
+          divider: '/'
+        }
+      ]
+    }
+  }
 
   constructor(readonly options: Record<string, unknown>) {
     mockMTextInputBoxInstances.push(this)
@@ -28,6 +54,13 @@ class MockMTextInputBox {
   emit(event: string) {
     this.handlers.get(event)?.forEach(handler => handler())
   }
+}
+
+interface FormatObservableInputBox {
+  addCurrentFormatChangeListener: (listener: () => void) => void
+  removeCurrentFormatChangeListener: (listener: () => void) => void
+  focusEditor: () => void
+  isStackSelectionActive: () => boolean
 }
 
 jest.mock(
@@ -171,5 +204,41 @@ describe('AcEdMTextEditor', () => {
     })
     expect(inputBox.dispose).toHaveBeenCalled()
     expect(toolbar.container.remove).toHaveBeenCalled()
+  })
+
+  it('notifies format listeners when the active input box format refreshes', async () => {
+    const view = createView()
+    const resultPromise = new AcEdMTextEditor().open({
+      view: view as never,
+      location: { x: 0, y: 0, z: 0 },
+      width: 10,
+      textHeight: 2
+    })
+
+    const inputBox = mockMTextInputBoxInstances[0]
+    const observable = inputBox as unknown as FormatObservableInputBox
+    const listener = jest.fn()
+
+    observable.addCurrentFormatChangeListener(listener)
+    expect(typeof observable.focusEditor).toBe('function')
+    observable.focusEditor()
+    expect(inputBox.focusImeInput).toHaveBeenCalledTimes(1)
+    expect(observable.isStackSelectionActive()).toBe(true)
+
+    inputBox.setCurrentFormat()
+    inputBox.refreshCurrentFormatFromDocument()
+    inputBox.toggleScriptSelection()
+    expect(listener).toHaveBeenCalledTimes(3)
+
+    observable.removeCurrentFormatChangeListener(listener)
+    inputBox.toggleCase()
+    expect(listener).toHaveBeenCalledTimes(3)
+
+    observable.addCurrentFormatChangeListener(listener)
+    inputBox.emit('close')
+    await resultPromise
+
+    inputBox.setCurrentFormat()
+    expect(listener).toHaveBeenCalledTimes(3)
   })
 })

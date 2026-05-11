@@ -28,7 +28,7 @@
     "pre-serve": "nx run @mlightcad/cad-viewer-examples:pre-serve",
     "publish:viewer": "pnpm -r publish --filter cad-viewer --filter cad-simple-viewer --no-git-checks",
     "release": "node tools/release.mjs",
-    "sync:versions": "node tools/sync-workspace-versions.mjs",
+    "sync:versions": "node tools/sync-versions.mjs",
     "serve": "nx run @mlightcad/cad-viewer-examples:serve",
     "test": "jest",
     "test:e2e": "pnpm --filter @mlightcad/cad-viewer-example test:e2e"
@@ -44,9 +44,9 @@
       "vue-demi"
     ],
     "overrides": {
-      "@mlightcad/data-model": "^1.7.33",
-      "@mlightcad/libredwg-converter": "^3.5.33",
-      "@mlightcad/mtext-renderer": "^0.10.9",
+      "@mlightcad/data-model": "^1.7.34",
+      "@mlightcad/libredwg-converter": "^3.5.34",
+      "@mlightcad/mtext-renderer": "^0.10.10",
       "element-plus": "^2.12.0",
       "three": "^0.172.0",
       "vue": "^3.4.21",

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const toolsDir = path.dirname(new URL(import.meta.url).pathname);
+const toolsDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(toolsDir, '..');
 const packagesDir = path.join(rootDir, 'packages');
 const rootPackageJsonPath = path.join(rootDir, 'package.json');
@@ -55,7 +56,7 @@ async function findWorkspacePackageNames(rootPkg) {
   return packageNames;
 }
 
-async function syncPackage(packageFilePath, rootVersionMap, workspacePackageNames) {
+async function syncPackage(packageFilePath, rootVersionMap, workspacePackageNames, overrides = {}) {
   const pkg = await readJson(packageFilePath);
   const dependencyKeys = [
     'dependencies',
@@ -70,17 +71,26 @@ async function syncPackage(packageFilePath, rootVersionMap, workspacePackageName
     if (!deps || typeof deps !== 'object') continue;
 
     for (const [name, value] of Object.entries(deps)) {
-      if (!isWorkspaceVersion(value)) continue;
-      if (workspacePackageNames.has(name)) continue;
+      let newVersion = null;
 
-      const rootVersion = rootVersionMap[name];
-      if (!rootVersion) {
-        console.warn(`⚠️  ${pkg.name || packageFilePath}: no root version found for ${name} in ${depKey}`);
-        continue;
+      // Priority 1: handle workspace:* versions
+      if (isWorkspaceVersion(value)) {
+        if (workspacePackageNames.has(name)) continue;
+
+        const rootVersion = rootVersionMap[name];
+        if (!rootVersion) {
+          console.warn(`⚠️  ${pkg.name || packageFilePath}: no root version found for ${name} in ${depKey}`);
+          continue;
+        }
+        newVersion = rootVersion;
+      }
+      // Priority 2: check versions in pnpm.overrides
+      else if (overrides[name] && value !== overrides[name]) {
+        newVersion = overrides[name];
       }
 
-      if (deps[name] !== rootVersion) {
-        deps[name] = rootVersion;
+      if (newVersion && deps[name] !== newVersion) {
+        deps[name] = newVersion;
         changed = true;
       }
     }
@@ -97,6 +107,7 @@ async function syncPackage(packageFilePath, rootVersionMap, workspacePackageName
   try {
     const rootPkg = await readJson(rootPackageJsonPath);
     const rootVersionMap = buildRootVersionMap(rootPkg);
+    const overrides = rootPkg.pnpm?.overrides ?? {};
     const workspacePackageNames = await findWorkspacePackageNames(rootPkg);
 
     const packageDirs = await readdir(packagesDir, { withFileTypes: true });
@@ -106,7 +117,7 @@ async function syncPackage(packageFilePath, rootVersionMap, workspacePackageName
       if (!entry.isDirectory()) continue;
       const packageFilePath = path.join(packagesDir, entry.name, 'package.json');
       try {
-        const changed = await syncPackage(packageFilePath, rootVersionMap, workspacePackageNames);
+        const changed = await syncPackage(packageFilePath, rootVersionMap, workspacePackageNames, overrides);
         if (changed) changedFiles.push(packageFilePath);
       } catch (error) {
         console.error(`❌ Failed to process ${packageFilePath}:`, error.message);
