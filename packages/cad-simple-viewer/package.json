@@ -41,8 +41,8 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/mtext-input-box": "^0.2.5",
-    "@mlightcad/mtext-renderer": "^0.10.9",
+    "@mlightcad/mtext-input-box": "^0.2.6",
+    "@mlightcad/mtext-renderer": "^0.10.10",
     "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",

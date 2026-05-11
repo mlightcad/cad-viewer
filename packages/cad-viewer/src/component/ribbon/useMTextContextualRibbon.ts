@@ -23,8 +23,15 @@ import MlRibbonMTextHeightSelect from './MlRibbonMTextHeightSelect.vue'
 import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
 
 const MTEXT_CONTEXTUAL_TAB_ID = 'mtext-editor-context'
-const MTEXT_COMMAND_GLOBAL_NAME = 'MTEXT'
+const MTEXT_COMMAND_GLOBAL_NAMES = ['MTEXT', 'mtext'] as const
 const MTEXT_ITEM_PREFIX = 'mtext-'
+
+function isMTextCommandGlobalName(globalName: string | undefined) {
+  return (
+    globalName != null &&
+    MTEXT_COMMAND_GLOBAL_NAMES.some(name => name === globalName)
+  )
+}
 
 /**
  * Minimal translation callback used while constructing ribbon model labels.
@@ -112,6 +119,10 @@ interface MTextRibbonEditor {
   insertText: (text: string) => void
   /** Commits or closes the active MText editor. */
   closeEditor: () => void
+  /** Returns keyboard focus to the inline editor after ribbon interaction. */
+  focusEditor?: () => void
+  /** Returns whether the current selection is a non-script stacked fraction. */
+  isStackSelectionActive?: () => boolean
   /** Returns the editor's default text style information when available. */
   getDefaultTextStyle?: () => {
     /** Default font family from the active text style. */
@@ -473,13 +484,14 @@ export function useMTextContextualRibbon({
   } = useRibbonContextualTab({
     activeTabId,
     tabId: MTEXT_CONTEXTUAL_TAB_ID,
-    commandGlobalNames: MTEXT_COMMAND_GLOBAL_NAME
+    commandGlobalNames: MTEXT_COMMAND_GLOBAL_NAMES
   })
   const currentFormat = ref<MTextRibbonFormat>({ ...DEFAULT_MTEXT_FORMAT })
   const currentColor = shallowRef<AcCmColor>(
     toAcCmColorFromFormat(currentFormat.value)
   )
   const currentColorDisplay = ref(resolveColorDisplay(currentColor.value))
+  const stackActive = ref(false)
   const activeEditor = ref<MTextRibbonEditor | null>(null)
 
   let observedEditor: MTextRibbonEditor | null = null
@@ -536,6 +548,7 @@ export function useMTextContextualRibbon({
       if (!sameMTextRibbonFormat(currentFormat.value, DEFAULT_MTEXT_FORMAT)) {
         currentFormat.value = { ...DEFAULT_MTEXT_FORMAT }
       }
+      stackActive.value = false
       syncColorStateFromFormat(currentFormat.value)
       refreshContextTabVisibility()
       return
@@ -548,6 +561,10 @@ export function useMTextContextualRibbon({
     }
     if (!sameMTextRibbonFormat(currentFormat.value, nextFormat)) {
       currentFormat.value = nextFormat
+    }
+    const nextStackActive = editor.isStackSelectionActive?.() ?? false
+    if (stackActive.value !== nextStackActive) {
+      stackActive.value = nextStackActive
     }
     syncColorStateFromFormat(currentFormat.value)
     refreshContextTabVisibility()
@@ -620,6 +637,7 @@ export function useMTextContextualRibbon({
     const editor = getActiveEditor()
     if (!editor) return
     editor.setCurrentFormat(format)
+    editor.focusEditor?.()
     syncFormatFromEditor()
   }
 
@@ -652,15 +670,12 @@ export function useMTextContextualRibbon({
   ) => {
     const editor = getActiveEditor()
     if (!editor) return
-    if (!active) {
-      editor.setCurrentFormat({ script: 'normal' })
-      syncFormatFromEditor()
-      return
-    }
+    editor.focusEditor?.()
     const handled = editor.toggleScriptSelection?.(script)
     if (!handled) {
-      editor.setCurrentFormat({ script })
+      editor.setCurrentFormat({ script: active ? script : 'normal' })
     }
+    editor.focusEditor?.()
     syncFormatFromEditor()
   }
 
@@ -669,7 +684,9 @@ export function useMTextContextualRibbon({
    */
   const handleStack = () => {
     const editor = getActiveEditor()
+    editor?.focusEditor?.()
     editor?.toggleStackSelection?.()
+    editor?.focusEditor?.()
     syncFormatFromEditor()
   }
 
@@ -777,6 +794,7 @@ export function useMTextContextualRibbon({
     const editor = getActiveEditor()
     if (!editor) return
     editor.insertText(text)
+    editor.focusEditor?.()
     syncFormatFromEditor()
   }
 
@@ -786,7 +804,9 @@ export function useMTextContextualRibbon({
    * @param alignment Alignment id emitted by the ribbon button group.
    */
   const handleParagraphAlignment = (alignment: string) => {
-    getActiveEditor()?.setParagraphAlignment?.(alignment)
+    const editor = getActiveEditor()
+    editor?.setParagraphAlignment?.(alignment)
+    editor?.focusEditor?.()
     syncFormatFromEditor()
   }
 
@@ -827,20 +847,28 @@ export function useMTextContextualRibbon({
         handleScriptToggle(field, active)
         return true
       }
+      if (field === 'stack') {
+        handleStack()
+        return true
+      }
     }
     if (itemId === 'mtext-format:stack') {
       handleStack()
       return true
     }
     if (itemId === 'mtext-format:case') {
-      getActiveEditor()?.toggleCase?.()
+      const editor = getActiveEditor()
+      editor?.toggleCase?.()
+      editor?.focusEditor?.()
       syncFormatFromEditor()
       return true
     }
     if (itemId.startsWith('mtext-attachment:')) {
-      getActiveEditor()?.setAttachmentPoint?.(
+      const editor = getActiveEditor()
+      editor?.setAttachmentPoint?.(
         itemId.slice('mtext-attachment:'.length)
       )
+      editor?.focusEditor?.()
       return true
     }
     if (itemId.startsWith('mtext-list:')) {
@@ -853,10 +881,16 @@ export function useMTextContextualRibbon({
     if (itemId.startsWith('mtext-line-spacing:')) {
       const value = itemId.slice('mtext-line-spacing:'.length)
       if (value === 'clear') {
-        getActiveEditor()?.clearLineSpacing?.()
+        const editor = getActiveEditor()
+        editor?.clearLineSpacing?.()
+        editor?.focusEditor?.()
       } else {
         const factor = normalizeNumber(value)
-        if (factor != null) getActiveEditor()?.setLineSpacingFactor?.(factor)
+        if (factor != null) {
+          const editor = getActiveEditor()
+          editor?.setLineSpacingFactor?.(factor)
+          editor?.focusEditor?.()
+        }
       }
       return true
     }
@@ -1065,11 +1099,12 @@ export function useMTextContextualRibbon({
                   icons.strike,
                   format.strike
                 ),
-                createButtonItem(
+                createToggleItem(
                   'mtext-format:stack',
                   t('main.ribbon.mtext.command.stack'),
                   t('main.ribbon.mtext.tooltip.stack'),
-                  icons.stack
+                  icons.stack,
+                  stackActive.value
                 ),
                 createButtonItem(
                   'mtext-format:case',
@@ -1451,7 +1486,7 @@ export function useMTextContextualRibbon({
    */
   const handleRibbonCommandEnded = (args: AcEdCommandEventArgs) => {
     handleCommandEnded(args)
-    if (args.command?.globalName === MTEXT_COMMAND_GLOBAL_NAME) {
+    if (isMTextCommandGlobalName(args.command?.globalName)) {
       bindEditorEvents(null)
     }
   }

@@ -19,6 +19,27 @@ class MockMTextInputBox {
   readonly toggleCase = jest.fn()
   readonly toggleStackSelection = jest.fn()
   readonly toggleScriptSelection = jest.fn(() => true)
+  readonly focusImeInput = jest.fn()
+  readonly refocusImeInputSoon = jest.fn()
+  readonly getSelectionRange = jest.fn(() => ({
+    start: 0,
+    end: 1,
+    isCollapsed: false
+  }))
+  readonly toDocumentIndexFromLogicalIndex = jest.fn((index: number) => index)
+  readonly isScriptOnlyStack = jest.fn(() => false)
+  readonly document = {
+    ast: {
+      nodes: [
+        {
+          type: 'stack',
+          numerator: '1',
+          denominator: '2',
+          divider: '/'
+        }
+      ]
+    }
+  }
 
   constructor(readonly options: Record<string, unknown>) {
     mockMTextInputBoxInstances.push(this)
@@ -38,6 +59,8 @@ class MockMTextInputBox {
 interface FormatObservableInputBox {
   addCurrentFormatChangeListener: (listener: () => void) => void
   removeCurrentFormatChangeListener: (listener: () => void) => void
+  focusEditor: () => void
+  isStackSelectionActive: () => boolean
 }
 
 jest.mock(
@@ -197,6 +220,11 @@ describe('AcEdMTextEditor', () => {
     const listener = jest.fn()
 
     observable.addCurrentFormatChangeListener(listener)
+    expect(typeof observable.focusEditor).toBe('function')
+    observable.focusEditor()
+    expect(inputBox.focusImeInput).toHaveBeenCalledTimes(1)
+    expect(observable.isStackSelectionActive()).toBe(true)
+
     inputBox.setCurrentFormat()
     inputBox.refreshCurrentFormatFromDocument()
     inputBox.toggleScriptSelection()
