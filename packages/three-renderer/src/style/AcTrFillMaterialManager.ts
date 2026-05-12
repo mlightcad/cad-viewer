@@ -91,8 +91,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const drawOrder = traits.drawOrder ?? 0
     if (drawOrder >= 0) return true
     const style = traits.fillType
-    const isPatterned =
-      !style.gradient && !!style.definitionLines?.length
+    const isPatterned = !style.gradient && !!style.definitionLines?.length
     return isPatterned
   }
 
@@ -340,7 +339,9 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const style = traits.fillType
     const sideSuffix = options.side === 'back' ? '_back' : ''
     const drawOrderSuffix = this.buildDrawOrderSuffix(traits)
-    const bgSuffix = this.shouldTrackBackground(traits, options) ? '_bgfill' : ''
+    const bgSuffix = this.shouldTrackBackground(traits, options)
+      ? '_bgfill'
+      : ''
     // Use color + layer + rebaseOffset + pattern info for key
     if (style.gradient) {
       const gradient = style.gradient

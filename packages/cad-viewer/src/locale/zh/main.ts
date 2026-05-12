@@ -89,6 +89,15 @@ export default {
         color: '颜色',
         height: '高度'
       },
+      characterMap: {
+        title: '字符映射表',
+        font: '字体(F):',
+        charsToCopy: '复制字符(A):',
+        select: '选择(S)',
+        copy: '复制(C)',
+        noGlyphs: '该字体没有可显示的字符。',
+        copyFailed: '无法复制到剪贴板。'
+      },
       command: {
         bold: '粗体',
         underline: '下划线',

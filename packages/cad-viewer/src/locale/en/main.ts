@@ -89,6 +89,15 @@ export default {
         color: 'Color',
         height: 'Height'
       },
+      characterMap: {
+        title: 'Character Map',
+        font: 'Font(F):',
+        charsToCopy: 'Characters to copy(A):',
+        select: 'Select(S)',
+        copy: 'Copy(C)',
+        noGlyphs: 'No characters are available for this font.',
+        copyFailed: 'Unable to copy to the clipboard.'
+      },
       command: {
         bold: 'Bold',
         underline: 'Underline',

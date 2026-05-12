@@ -49,8 +49,7 @@ type MTextInputBoxRuntimeMethodName =
 
 const mtextFormatBridgeKey = '__mlightcadMTextFormatBridge'
 
-interface MTextInputBoxFormatBridge
-  extends AcEdMTextEditorCurrentFormatObservable {
+interface MTextInputBoxFormatBridge extends AcEdMTextEditorCurrentFormatObservable {
   dispose: () => void
 }
 
@@ -319,8 +318,7 @@ export class AcEdMTextEditor {
       return hasNumerator === hasDenominator
     }
     runtime[mtextFormatBridgeKey] = {
-      addCurrentFormatChangeListener:
-        runtime.addCurrentFormatChangeListener,
+      addCurrentFormatChangeListener: runtime.addCurrentFormatChangeListener,
       removeCurrentFormatChangeListener:
         runtime.removeCurrentFormatChangeListener,
       dispose: () => {
