@@ -1,6 +1,10 @@
 import { CircleClose } from '@element-plus/icons-vue'
 import type { AcEdCommandEventArgs } from '@mlightcad/cad-simple-viewer'
-import { AcApDocManager, AcEdMTextEditor } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApDocManager,
+  AcApFontUtil,
+  AcEdMTextEditor
+} from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
 import type {
   RibbonGalleryCategoryModel,
@@ -9,6 +13,7 @@ import type {
 } from '@mlightcad/ribbon'
 import {
   type Component,
+  computed,
   defineComponent,
   h,
   onMounted,
@@ -19,18 +24,44 @@ import {
 } from 'vue'
 
 import { useRibbonContextualTab } from '../../composable'
+import MlRibbonFontSelect from './MlRibbonFontSelect.vue'
 import MlRibbonMTextHeightSelect from './MlRibbonMTextHeightSelect.vue'
 import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
 
 const MTEXT_CONTEXTUAL_TAB_ID = 'mtext-editor-context'
 const MTEXT_COMMAND_GLOBAL_NAMES = ['MTEXT', 'mtext'] as const
 const MTEXT_ITEM_PREFIX = 'mtext-'
+/** Shared width for font, color, and height fields in the MText format ribbon group. */
+const MTEXT_FORMAT_PROPERTY_CONTROL_WIDTH = '154px'
 
 function isMTextCommandGlobalName(globalName: string | undefined) {
   return (
     globalName != null &&
     MTEXT_COMMAND_GLOBAL_NAMES.some(name => name === globalName)
   )
+}
+
+/** Matches a single AutoCAD-style MTEXT Unicode escape such as `\U+2248`. */
+const MTEXT_UNICODE_ESCAPE = /^\\U\+([0-9A-Fa-f]{1,6})$/i
+
+/**
+ * Turns a ribbon symbol payload into the string passed to the inline editor.
+ *
+ * AutoCAD MTEXT stores symbols as `\U+hhhh` escapes; the Vue input box shows
+ * those literally unless we expand them to real characters. Sequences like
+ * `%%d` or `\~` are left unchanged so the editor can interpret them.
+ *
+ * @param payload Text after the `mtext-symbol:` prefix (or a standalone escape).
+ * @returns The character for a `\U+` escape, or the original string otherwise.
+ */
+function mtextRibbonInsertPayloadToString(payload: string): string {
+  const match = MTEXT_UNICODE_ESCAPE.exec(payload)
+  if (!match) return payload
+  const codePoint = parseInt(match[1], 16)
+  if (!Number.isFinite(codePoint) || codePoint < 0 || codePoint > 0x10ffff) {
+    return payload
+  }
+  return String.fromCodePoint(codePoint)
 }
 
 /**
@@ -137,9 +168,7 @@ interface MTextRibbonEditor {
   /** Unsubscribes a previously registered editor event handler. */
   off?: (event: string, handler: () => void) => void
   /** Subscribes to format refreshes mirrored from the active input box. */
-  addCurrentFormatChangeListener?: (
-    listener: MTextFormatChangeListener
-  ) => void
+  addCurrentFormatChangeListener?: (listener: MTextFormatChangeListener) => void
   /** Removes a previously registered format refresh listener. */
   removeCurrentFormatChangeListener?: (
     listener: MTextFormatChangeListener
@@ -211,10 +240,7 @@ const DEFAULT_MTEXT_FORMAT: MTextRibbonFormat = {
  * Compares two ribbon format snapshots using the same field-by-field contract
  * as the MTEXT input box toolbar.
  */
-function sameMTextRibbonFormat(
-  a: MTextRibbonFormat,
-  b: MTextRibbonFormat
-) {
+function sameMTextRibbonFormat(a: MTextRibbonFormat, b: MTextRibbonFormat) {
   return (
     a.fontFamily === b.fontFamily &&
     a.fontSize === b.fontSize &&
@@ -437,25 +463,30 @@ function getTextStyleRecords() {
 function buildTextStyleGalleryCategories(
   title: string
 ): RibbonGalleryCategoryModel[] {
-  const records = getTextStyleRecords()
+  const seen = new Set<string>()
+  const items: RibbonGalleryCategoryModel['items'] = []
+  for (const record of getTextStyleRecords()) {
+    const raw = record.name ?? record.textStyle.name
+    const name = typeof raw === 'string' ? raw.trim() : ''
+    if (!name || seen.has(name)) continue
+    seen.add(name)
+    const font = record.textStyle.font || name
+    items.push({
+      id: `mtext-style:${name}`,
+      label: name,
+      preview: name,
+      componentProps: {
+        style: {
+          fontFamily: font
+        }
+      }
+    })
+  }
   return [
     {
       id: 'mtext-text-styles',
       title,
-      items: records.map(record => {
-        const name = record.name || record.textStyle.name
-        const font = record.textStyle.font || name
-        return {
-          id: `mtext-style:${name}`,
-          label: name,
-          preview: name,
-          componentProps: {
-            style: {
-              fontFamily: font
-            }
-          }
-        }
-      })
+      items
     }
   ]
 }
@@ -493,6 +524,7 @@ export function useMTextContextualRibbon({
   const currentColorDisplay = ref(resolveColorDisplay(currentColor.value))
   const stackActive = ref(false)
   const activeEditor = ref<MTextRibbonEditor | null>(null)
+  const characterMapVisible = ref(false)
 
   let observedEditor: MTextRibbonEditor | null = null
 
@@ -727,7 +759,10 @@ export function useMTextContextualRibbon({
     db.textstyle = styleName
     const textStyle = record.textStyle
     const nextFormat: Partial<MTextRibbonFormat> = {}
-    if (textStyle.font) nextFormat.fontFamily = textStyle.font
+    if (textStyle.font) {
+      void AcApFontUtil.ensureDrawingFontLoaded(textStyle.font)
+      nextFormat.fontFamily = textStyle.font
+    }
     const height =
       normalizeNumber(textStyle.fixedTextHeight) ??
       normalizeNumber(textStyle.lastHeight)
@@ -799,6 +834,33 @@ export function useMTextContextualRibbon({
   }
 
   /**
+   * Inserts text from the character map after applying the picked font to the editor.
+   *
+   * Loads the font through the same {@link AcApDocManager} / FontManager path as
+   * CAD text rendering so glyphs exist before the inline editor paints the run.
+   */
+  const handleCharacterMapInsert = async (payload: {
+    fontFamily: string
+    text: string
+  }) => {
+    if (!payload.text) return
+    const font = payload.fontFamily.trim()
+    if (font) {
+      try {
+        await AcApFontUtil.ensureDrawingFontLoaded(font)
+      } catch {
+        /* still apply format and insert; editor may substitute fonts */
+      }
+    }
+    applyCurrentFormat({ fontFamily: payload.fontFamily })
+    insertText(payload.text)
+  }
+
+  const characterMapFontOptions = computed(() => getFontOptions())
+
+  const characterMapInitialFont = computed(() => currentFormat.value.fontFamily)
+
+  /**
    * Applies paragraph alignment through the active editor.
    *
    * @param alignment Alignment id emitted by the ribbon button group.
@@ -827,7 +889,9 @@ export function useMTextContextualRibbon({
       return true
     }
     if (itemId.startsWith('mtext-font:')) {
-      applyCurrentFormat({ fontFamily: itemId.slice('mtext-font:'.length) })
+      const name = itemId.slice('mtext-font:'.length)
+      void AcApFontUtil.ensureDrawingFontLoaded(name)
+      applyCurrentFormat({ fontFamily: name })
       return true
     }
     if (itemId.startsWith('mtext-format:')) {
@@ -865,9 +929,7 @@ export function useMTextContextualRibbon({
     }
     if (itemId.startsWith('mtext-attachment:')) {
       const editor = getActiveEditor()
-      editor?.setAttachmentPoint?.(
-        itemId.slice('mtext-attachment:'.length)
-      )
+      editor?.setAttachmentPoint?.(itemId.slice('mtext-attachment:'.length))
       editor?.focusEditor?.()
       return true
     }
@@ -875,7 +937,8 @@ export function useMTextContextualRibbon({
       const value = itemId.slice('mtext-list:'.length)
       if (value === 'number') insertText('1. ')
       if (value === 'letter') insertText('a. ')
-      if (value === 'bullet') insertText('\\U+2022 ')
+      if (value === 'bullet')
+        insertText(`${mtextRibbonInsertPayloadToString('\\U+2022')} `)
       return true
     }
     if (itemId.startsWith('mtext-line-spacing:')) {
@@ -900,7 +963,11 @@ export function useMTextContextualRibbon({
     }
     if (itemId.startsWith('mtext-symbol:')) {
       const symbol = itemId.slice('mtext-symbol:'.length)
-      if (symbol !== 'other') insertText(symbol)
+      if (symbol === 'other') {
+        characterMapVisible.value = true
+      } else {
+        insertText(mtextRibbonInsertPayloadToString(symbol))
+      }
       return true
     }
     if (itemId === 'mtext-close') {
@@ -984,10 +1051,6 @@ export function useMTextContextualRibbon({
   const buildContextualTab = (t: Translate): RibbonTabModel => {
     syncFormatFromEditor()
 
-    const fontOptions = getFontOptions().map(fontName => ({
-      label: fontName,
-      value: `mtext-font:${fontName}`
-    }))
     const disabled = !activeEditor.value
     const format = currentFormat.value
 
@@ -1017,6 +1080,7 @@ export function useMTextContextualRibbon({
                   props: {
                     modelValue: `mtext-style:${getCurrentDatabase()?.textstyle ?? ''}`,
                     inlineItemLimit: 3,
+                    inlineItemWidthMode: 'auto',
                     categories: buildTextStyleGalleryCategories(
                       t('main.ribbon.mtext.field.textStyle')
                     )
@@ -1121,16 +1185,22 @@ export function useMTextContextualRibbon({
               items: [
                 {
                   id: 'mtext-font',
-                  type: 'comboBox',
+                  type: 'custom',
                   label: t('main.ribbon.mtext.field.font'),
                   tooltip: t('main.ribbon.mtext.tooltip.font'),
                   size: 'small',
                   disabled,
                   props: {
-                    width: '154px',
-                    modelValue: `mtext-font:${format.fontFamily}`,
-                    emitValueOnChange: true,
-                    options: fontOptions
+                    component: MlRibbonFontSelect,
+                    componentProps: {
+                      modelValue: format.fontFamily,
+                      options: getFontOptions(),
+                      disabled,
+                      placeholder: t('main.ribbon.mtext.field.font'),
+                      controlWidth: MTEXT_FORMAT_PROPERTY_CONTROL_WIDTH,
+                      'onUpdate:modelValue': (name: string) =>
+                        handleItem(`mtext-font:${name}`)
+                    }
                   }
                 },
                 {
@@ -1146,7 +1216,7 @@ export function useMTextContextualRibbon({
                       modelValue: currentColor.value,
                       displayColor: currentColorDisplay.value,
                       placeholder: t('main.ribbon.mtext.field.color'),
-                      controlWidth: '132px',
+                      controlWidth: MTEXT_FORMAT_PROPERTY_CONTROL_WIDTH,
                       'onUpdate:modelValue': handleMTextColorChange
                     }
                   }
@@ -1164,7 +1234,7 @@ export function useMTextContextualRibbon({
                       modelValue: format.fontSize,
                       options: getHeightOptions(),
                       placeholder: t('main.ribbon.mtext.field.height'),
-                      controlWidth: '132px',
+                      controlWidth: MTEXT_FORMAT_PROPERTY_CONTROL_WIDTH,
                       'onUpdate:modelValue': handleFontHeightChange
                     }
                   }
@@ -1441,7 +1511,8 @@ export function useMTextContextualRibbon({
                       },
                       {
                         value: 'mtext-symbol:other',
-                        label: t('main.ribbon.mtext.symbol.other')
+                        label: t('main.ribbon.mtext.symbol.other'),
+                        divided: true
                       }
                     ]
                   }
@@ -1497,6 +1568,10 @@ export function useMTextContextualRibbon({
     handleCommandWillStart,
     handleCommandEnded: handleRibbonCommandEnded,
     handleItem,
-    buildContextualTab
+    buildContextualTab,
+    characterMapVisible,
+    characterMapFontOptions,
+    characterMapInitialFont,
+    handleCharacterMapInsert
   }
 }

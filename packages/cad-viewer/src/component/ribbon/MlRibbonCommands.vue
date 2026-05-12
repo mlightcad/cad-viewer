@@ -100,6 +100,7 @@ import {
   xline
 } from '../../svg'
 import MlLayerSelect from '../common/MlLayerSelect.vue'
+import MlCharacterMapDialog from '../dialog/MlCharacterMapDialog.vue'
 import MlRibbonLanguageSelector from './MlRibbonLanguageSelector.vue'
 import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
 import MlRibbonPropertyLineTypeSelect from './MlRibbonPropertyLineTypeSelect.vue'
@@ -151,7 +152,11 @@ const {
   handleCommandWillStart: handleMTextCommandWillStart,
   handleCommandEnded: handleMTextCommandEnded,
   handleItem: handleMTextItem,
-  buildContextualTab: buildMTextContextualTab
+  buildContextualTab: buildMTextContextualTab,
+  characterMapVisible: mtextCharacterMapVisible,
+  characterMapFontOptions: mtextCharacterMapFontOptions,
+  characterMapInitialFont: mtextCharacterMapInitialFont,
+  handleCharacterMapInsert: handleMTextCharacterMapInsert
 } = useMTextContextualRibbon({
   activeTabId: activeRibbonTabId
 })
@@ -1545,6 +1550,12 @@ const handleFileMenuSelect = (command: string) => {
         />
       </template>
     </ml-ribbon>
+    <ml-character-map-dialog
+      v-model="mtextCharacterMapVisible"
+      :font-options="mtextCharacterMapFontOptions"
+      :initial-font="mtextCharacterMapInitialFont"
+      @insert="handleMTextCharacterMapInsert"
+    />
   </div>
 </template>
 
