@@ -1,4 +1,5 @@
 import type { MTextObject } from '@mlightcad/mtext-renderer'
+import type { AcGiMTextData } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 jest.mock('../src/renderer', () => ({
@@ -10,14 +11,11 @@ jest.mock('../src/renderer', () => ({
 import { AcTrMText } from '../src/object/AcTrMText'
 
 type GeometryHost = THREE.Object3D & {
-  _text?: {
-    position?: THREE.Vector3Like
-    attachmentPoint?: number
-    height?: number
-  }
+  _text?: Partial<AcGiMTextData>
   box: THREE.Box3
   computeGeometryBox: () => THREE.Box3
   hasGeometry: (object: THREE.Object3D) => boolean
+  normalizeMTextData: () => AcGiMTextData
   normalizeTopAlignedMText: (mtext: MTextObject) => void
 }
 
@@ -30,6 +28,7 @@ const privateMethods = AcTrMText.prototype as unknown as {
   computeGeometryBox(this: GeometryHost): THREE.Box3
   updateSelectionBox(this: GeometryHost, mtext: MTextObject): void
   hasGeometry(object: THREE.Object3D): boolean
+  normalizeMTextData(this: GeometryHost): AcGiMTextData
   normalizeTopAlignedMText(this: GeometryHost, mtext: MTextObject): void
   raycast(
     this: RaycastHost,
@@ -192,6 +191,35 @@ describe('AcTrMText selection geometry', () => {
 
     expect(intersects).toHaveLength(0)
   })
+
+  it('expands an impossible positive mtext wrap width before rendering', () => {
+    const host = createGeometryHost()
+    host._text = {
+      text: '设计依据\\P建筑机电工程抗震设计规范',
+      height: 100,
+      width: 0.5
+    }
+
+    const normalized = privateMethods.normalizeMTextData.call(host)
+
+    expect(normalized).not.toBe(host._text)
+    expect(normalized.width).toBe(960)
+    expect(host._text.width).toBe(0.5)
+  })
+
+  it('keeps a plausible mtext wrap width unchanged', () => {
+    const host = createGeometryHost()
+    host._text = {
+      text: '设计依据',
+      height: 100,
+      width: 300
+    }
+
+    const normalized = privateMethods.normalizeMTextData.call(host)
+
+    expect(normalized).toBe(host._text)
+    expect(normalized.width).toBe(300)
+  })
 })
 
 function createGeometryHost(): GeometryHost {
@@ -199,6 +227,7 @@ function createGeometryHost(): GeometryHost {
   host.box = new THREE.Box3()
   host.computeGeometryBox = privateMethods.computeGeometryBox
   host.hasGeometry = privateMethods.hasGeometry
+  host.normalizeMTextData = privateMethods.normalizeMTextData
   host.normalizeTopAlignedMText = privateMethods.normalizeTopAlignedMText
   return host
 }
