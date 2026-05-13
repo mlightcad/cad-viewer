@@ -13,7 +13,6 @@ export default {
       mtextEditorContext: '文字编辑器'
     },
     hatch: {
-      contextTitle: '填充创建',
       group: {
         boundary: '边界',
         pattern: '图案',
@@ -75,7 +74,6 @@ export default {
       }
     },
     mtext: {
-      contextTitle: '文字编辑器',
       group: {
         textStyle: '文字样式',
         format: '格式',
@@ -87,7 +85,10 @@ export default {
         textStyle: '文字样式',
         font: '字体',
         color: '颜色',
-        height: '高度'
+        height: '高度',
+        obliqueAngle: '倾斜角度',
+        tracking: '追踪',
+        widthFactor: '宽度因子'
       },
       characterMap: {
         title: '字符映射表',
@@ -129,6 +130,9 @@ export default {
         font: '设置当前文字字体。',
         color: '设置当前文字颜色。',
         height: '设置当前文字高度，可输入自定义值。',
+        obliqueAngle: '设置选中字符的倾斜角度（度；负值为另一方向倾斜）。',
+        tracking: '增大或减小选中字符之间的间距（1 为默认间距）。',
+        widthFactor: '加宽或压缩选中字符的水平宽度（1 为默认比例）。',
         attachment: '设置多行文字的附着点。',
         list: '插入或设置项目符号和编号。',
         lineSpacing: '设置行距。',

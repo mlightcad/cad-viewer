@@ -3,7 +3,8 @@ import {
   FontManager,
   type FontType,
   type ShxFontData,
-  ShxParserFont} from '@mlightcad/mtext-renderer'
+  ShxParserFont
+} from '@mlightcad/mtext-renderer'
 
 import { AcApDocManager } from '../app/AcApDocManager'
 

@@ -46,6 +46,10 @@ type MTextInputBoxRuntimeMethodName =
   | 'toggleCase'
   | 'toggleStackSelection'
   | 'toggleScriptSelection'
+  | 'setParagraphAlignment'
+  | 'setAttachmentPoint'
+  | 'setLineSpacingFactor'
+  | 'clearLineSpacing'
 
 const mtextFormatBridgeKey = '__mlightcadMTextFormatBridge'
 
@@ -244,7 +248,11 @@ export class AcEdMTextEditor {
         'refreshCurrentFormatFromDocument',
         'toggleCase',
         'toggleStackSelection',
-        'toggleScriptSelection'
+        'toggleScriptSelection',
+        'setParagraphAlignment',
+        'setAttachmentPoint',
+        'setLineSpacingFactor',
+        'clearLineSpacing'
       ] as const
     ).forEach(wrapMethod)
 
@@ -500,7 +508,9 @@ export class AcEdMTextEditor {
           },
           width,
           height: normalizedTextHeight,
-          lineSpacingFactor: AcEdMTextEditor.defaultLineSpacingFactor
+          lineSpacingFactor:
+            mtextInputBox.getLineSpacingFactor?.() ??
+            AcEdMTextEditor.defaultLineSpacingFactor
         })
       }
 

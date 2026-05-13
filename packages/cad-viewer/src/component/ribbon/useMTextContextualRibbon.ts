@@ -3,7 +3,8 @@ import type { AcEdCommandEventArgs } from '@mlightcad/cad-simple-viewer'
 import {
   AcApDocManager,
   AcApFontUtil,
-  AcEdMTextEditor
+  AcEdMTextEditor,
+  AcGiTextParagraphAlignment
 } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
 import type {
@@ -24,6 +25,7 @@ import {
 } from 'vue'
 
 import { useRibbonContextualTab } from '../../composable'
+import { mtextObliqueAngle, mtextTracking, mtextWidthFactor } from '../../svg'
 import MlRibbonFontSelect from './MlRibbonFontSelect.vue'
 import MlRibbonMTextHeightSelect from './MlRibbonMTextHeightSelect.vue'
 import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
@@ -129,6 +131,19 @@ interface MTextRibbonFormat {
   aci: number | null
   /** Packed RGB color value when the format uses a true color override. */
   rgb: number | null
+  /** Slant angle in degrees (MTEXT `\Q`; negative leans the opposite way). */
+  obliqueAngle: number
+  /** Character width scale factor (MTEXT `\W`). */
+  widthFactor: number
+  /** Inter-character spacing factor (MTEXT `\T` tracking; 1 is default). */
+  tracking: number
+  /** Active paragraph horizontal alignment for the cursor or selection. */
+  paragraphAlignment: AcGiTextParagraphAlignment
+  /**
+   * MTEXT attachment point (`TL` … `BR`), shown as "Justify" in English ribbon
+   * strings.
+   */
+  attachmentPoint: string
 }
 
 /**
@@ -193,6 +208,8 @@ interface MTextRibbonEditor {
   setLineSpacingFactor?: (factor: number) => void
   /** Clears an explicit paragraph line spacing override. */
   clearLineSpacing?: () => void
+  /** Two-letter attachment code for ribbon sync (`TL`, `MC`, …). */
+  getAttachmentPointCode?: () => string
 }
 
 /**
@@ -233,7 +250,12 @@ const DEFAULT_MTEXT_FORMAT: MTextRibbonFormat = {
   script: 'normal',
   strike: false,
   aci: null,
-  rgb: null
+  rgb: null,
+  obliqueAngle: 0,
+  widthFactor: 1,
+  tracking: 1,
+  paragraphAlignment: AcGiTextParagraphAlignment.DEFAULT,
+  attachmentPoint: 'TL'
 }
 
 /**
@@ -251,8 +273,40 @@ function sameMTextRibbonFormat(a: MTextRibbonFormat, b: MTextRibbonFormat) {
     a.script === b.script &&
     a.strike === b.strike &&
     a.aci === b.aci &&
-    a.rgb === b.rgb
+    a.rgb === b.rgb &&
+    a.obliqueAngle === b.obliqueAngle &&
+    a.widthFactor === b.widthFactor &&
+    a.tracking === b.tracking &&
+    a.paragraphAlignment === b.paragraphAlignment &&
+    a.attachmentPoint === b.attachmentPoint
   )
+}
+
+function mtextParagraphAlignToRibbonSlug(
+  align: AcGiTextParagraphAlignment
+): string {
+  switch (align) {
+    case AcGiTextParagraphAlignment.DEFAULT:
+      return 'default'
+    case AcGiTextParagraphAlignment.LEFT:
+      return 'left'
+    case AcGiTextParagraphAlignment.RIGHT:
+      return 'right'
+    case AcGiTextParagraphAlignment.CENTER:
+      return 'center'
+    case AcGiTextParagraphAlignment.JUSTIFIED:
+      return 'justified'
+    case AcGiTextParagraphAlignment.DISTRIBUTED:
+      return 'distributed'
+    default:
+      return 'default'
+  }
+}
+
+function mtextParagraphAlignToRibbonItemId(
+  align: AcGiTextParagraphAlignment
+): string {
+  return `mtext-paragraph-align:${mtextParagraphAlignToRibbonSlug(align)}`
 }
 
 const toolbarIcons = {
@@ -332,6 +386,22 @@ const icons = Object.fromEntries(
  */
 function normalizeNumber(value: unknown) {
   const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+/**
+ * Parses a numeric value from a prefixed MText ribbon `inputNumber` item id.
+ *
+ * @param itemId Full ribbon item id (for example `mtext-oblique:-12.5`).
+ * @param prefix Stable prefix including the trailing colon.
+ * @returns Parsed finite number, or `undefined` when the id does not match.
+ */
+function parseMTextNumberValue(itemId: string, prefix: string) {
+  if (!itemId.startsWith(prefix)) return undefined
+  const raw = itemId.slice(prefix.length)
+  if (raw === '' || raw === '-' || raw === '+' || raw === '.' || raw === '-.')
+    return undefined
+  const parsed = Number(raw)
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
@@ -589,7 +659,10 @@ export function useMTextContextualRibbon({
     activeEditor.value = editor
     const nextFormat = {
       ...DEFAULT_MTEXT_FORMAT,
-      ...editor.getCurrentFormat()
+      ...editor.getCurrentFormat(),
+      attachmentPoint:
+        editor.getAttachmentPointCode?.() ??
+        DEFAULT_MTEXT_FORMAT.attachmentPoint
     }
     if (!sameMTextRibbonFormat(currentFormat.value, nextFormat)) {
       currentFormat.value = nextFormat
@@ -931,6 +1004,7 @@ export function useMTextContextualRibbon({
       const editor = getActiveEditor()
       editor?.setAttachmentPoint?.(itemId.slice('mtext-attachment:'.length))
       editor?.focusEditor?.()
+      syncFormatFromEditor()
       return true
     }
     if (itemId.startsWith('mtext-list:')) {
@@ -959,6 +1033,21 @@ export function useMTextContextualRibbon({
     }
     if (itemId.startsWith('mtext-paragraph-align:')) {
       handleParagraphAlignment(itemId.slice('mtext-paragraph-align:'.length))
+      return true
+    }
+    const obliqueVal = parseMTextNumberValue(itemId, 'mtext-oblique:')
+    if (obliqueVal != null) {
+      applyCurrentFormat({ obliqueAngle: obliqueVal })
+      return true
+    }
+    const widthVal = parseMTextNumberValue(itemId, 'mtext-width:')
+    if (widthVal != null) {
+      if (widthVal >= 0.01) applyCurrentFormat({ widthFactor: widthVal })
+      return true
+    }
+    const trackingVal = parseMTextNumberValue(itemId, 'mtext-tracking:')
+    if (trackingVal != null) {
+      if (trackingVal >= 0.01) applyCurrentFormat({ tracking: trackingVal })
       return true
     }
     if (itemId.startsWith('mtext-symbol:')) {
@@ -1060,7 +1149,6 @@ export function useMTextContextualRibbon({
       contextual: true,
       contextualMode: 'exclusive',
       contextualColor: '#9a6a22',
-      contextualTitle: t('main.ribbon.mtext.contextTitle'),
       visible: isVisible.value,
       groups: [
         {
@@ -1241,6 +1329,64 @@ export function useMTextContextualRibbon({
                 }
               ]
             }
+          ],
+          footerMenuItems: [
+            {
+              id: 'mtext-footer-oblique',
+              type: 'inputNumber',
+              label: t('main.ribbon.mtext.field.obliqueAngle'),
+              tooltip: t('main.ribbon.mtext.tooltip.obliqueAngle'),
+              size: 'small',
+              disabled,
+              props: {
+                icon: mtextObliqueAngle,
+                width: MTEXT_FORMAT_PROPERTY_CONTROL_WIDTH,
+                modelValue: format.obliqueAngle,
+                min: -85,
+                max: 85,
+                step: 1,
+                emitValueOnChange: true,
+                valuePrefix: 'mtext-oblique:'
+              }
+            },
+            {
+              id: 'mtext-footer-tracking',
+              type: 'inputNumber',
+              label: t('main.ribbon.mtext.field.tracking'),
+              tooltip: t('main.ribbon.mtext.tooltip.tracking'),
+              size: 'small',
+              disabled,
+              props: {
+                icon: mtextTracking,
+                width: MTEXT_FORMAT_PROPERTY_CONTROL_WIDTH,
+                modelValue: format.tracking,
+                min: 0.1,
+                max: 10,
+                step: 0.05,
+                precision: 2,
+                emitValueOnChange: true,
+                valuePrefix: 'mtext-tracking:'
+              }
+            },
+            {
+              id: 'mtext-footer-width',
+              type: 'inputNumber',
+              label: t('main.ribbon.mtext.field.widthFactor'),
+              tooltip: t('main.ribbon.mtext.tooltip.widthFactor'),
+              size: 'small',
+              disabled,
+              props: {
+                icon: mtextWidthFactor,
+                width: MTEXT_FORMAT_PROPERTY_CONTROL_WIDTH,
+                modelValue: format.widthFactor,
+                min: 0.1,
+                max: 5,
+                step: 0.05,
+                precision: 2,
+                emitValueOnChange: true,
+                valuePrefix: 'mtext-width:'
+              }
+            }
           ]
         },
         {
@@ -1261,6 +1407,7 @@ export function useMTextContextualRibbon({
                   disabled,
                   props: {
                     icon: icons.align,
+                    modelValue: `mtext-attachment:${format.attachmentPoint}`,
                     options: [
                       'TL',
                       'TC',
@@ -1358,16 +1505,17 @@ export function useMTextContextualRibbon({
                 },
                 {
                   id: 'mtext-paragraph-align',
-                  type: 'buttonGroup',
+                  type: 'segmented',
                   label: t('main.ribbon.mtext.command.paragraphAlignment'),
-                  tooltip: t('main.ribbon.mtext.tooltip.paragraphAlignment'),
                   hideLabel: true,
                   size: 'small',
                   disabled,
                   props: {
-                    wrap: false,
-                    buttonSize: 'small',
-                    iconSize: '16px',
+                    modelValue: mtextParagraphAlignToRibbonItemId(
+                      format.paragraphAlignment
+                    ),
+                    direction: 'horizontal',
+                    block: false,
                     options: [
                       {
                         value: 'mtext-paragraph-align:default',
