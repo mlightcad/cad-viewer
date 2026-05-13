@@ -5,7 +5,7 @@ stages:
 
 variables:
   NODE_VERSION: "20"
-  PNPM_VERSION: "9"
+  PNPM_VERSION: "10.33.4"
 
 # ----------------------
 # CI Job
