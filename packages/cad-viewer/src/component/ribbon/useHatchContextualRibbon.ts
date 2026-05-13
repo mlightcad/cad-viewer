@@ -290,7 +290,6 @@ export function useHatchContextualRibbon({
       contextual: true,
       contextualMode: isCommandActive.value ? 'exclusive' : 'selection',
       contextualColor: '#2a6ebf',
-      contextualTitle: t('main.ribbon.hatch.contextTitle'),
       visible: isVisible.value,
       groups: [
         {

@@ -7,7 +7,7 @@ settings:
 overrides:
   '@mlightcad/data-model': ^1.7.34
   '@mlightcad/libredwg-converter': ^3.5.34
-  '@mlightcad/mtext-renderer': ^0.10.11
+  '@mlightcad/mtext-renderer': ^0.10.13
   element-plus: ^2.12.0
   three: ^0.172.0
   vue: ^3.4.21
@@ -27,8 +27,8 @@ importers:
         specifier: ^3.0.0
         version: 3.2.0(eslint@9.39.4)
       '@nx/js':
-        specifier: 19.3.1
-        version: 19.3.1(@babel/traverse@7.29.0)(@types/node@20.19.37)(nx@19.3.1)(typescript@5.9.3)
+        specifier: 20.0.4
+        version: 20.0.4(@babel/traverse@7.29.0)(@types/node@20.19.37)(nx@20.0.4)(typescript@5.9.3)
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.14
@@ -69,8 +69,8 @@ importers:
         specifier: ^15.2.7
         version: 15.5.2
       nx:
-        specifier: 19.3.1
-        version: 19.3.1
+        specifier: 20.0.4
+        version: 20.0.4
       prettier:
         specifier: ^3.3.3
         version: 3.8.1
@@ -124,11 +124,11 @@ importers:
         version: 0.172.0
     devDependencies:
       '@mlightcad/mtext-input-box':
-        specifier: ^0.2.7
-        version: 0.2.7(@mlightcad/mtext-renderer@0.10.11(three@0.172.0))(three@0.172.0)
+        specifier: ^0.2.8
+        version: 0.2.8(@mlightcad/mtext-renderer@0.10.13(three@0.172.0))(three@0.172.0)
       '@mlightcad/mtext-renderer':
-        specifier: ^0.10.11
-        version: 0.10.11(three@0.172.0)
+        specifier: ^0.10.13
+        version: 0.10.13(three@0.172.0)
       '@mlightcad/svg-renderer':
         specifier: workspace:*
         version: link:../svg-renderer
@@ -188,8 +188,8 @@ importers:
         version: 10.0.8(vue@3.5.31(typescript@5.9.3))
     devDependencies:
       '@mlightcad/ribbon':
-        specifier: 0.1.6
-        version: 0.1.6(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
+        specifier: 0.1.7
+        version: 0.1.7(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
       '@mlightcad/svg-renderer':
         specifier: workspace:*
         version: link:../svg-renderer
@@ -303,8 +303,8 @@ importers:
         specifier: ^1.7.34
         version: 1.7.34
       '@mlightcad/mtext-renderer':
-        specifier: ^0.10.11
-        version: 0.10.11(three@0.172.0)
+        specifier: ^0.10.13
+        version: 0.10.13(three@0.172.0)
       '@velipso/polybool':
         specifier: ^1.1.1
         version: 1.1.1
@@ -999,6 +999,15 @@ packages:
     peerDependencies:
       vue: ^3.4.21
 
+  '@emnapi/core@1.10.0':
+    resolution: {integrity: sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==}
+
+  '@emnapi/runtime@1.10.0':
+    resolution: {integrity: sha512-ewvYlk86xUoGI0zQRNq/mC+16R1QeDlKQy21Ki3oSYXNgLb45GV1P6A0M+/s6nyCuNDqe5VpaY84BzXGwVbwFA==}
+
+  '@emnapi/wasi-threads@1.2.1':
+    resolution: {integrity: sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w==}
+
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
     engines: {node: '>=12'}
@@ -1393,22 +1402,22 @@ packages:
   '@mlightcad/libredwg-web@0.7.1':
     resolution: {integrity: sha512-jHiLB6Rktty0eJLS+/awITmTQbTrJl4U6hkzqzzbBfHzhrR38mKnQTPLuhZMyX1IcKOM0zuDOh7Fd/J7Rj6/KQ==}
 
-  '@mlightcad/mtext-input-box@0.2.7':
-    resolution: {integrity: sha512-ueaeV/+ttaErHEtqol8+lvEr97IvJPa/VR9fhsNP1qcC7cvvjB+aafrPT3PnvbnvdkFf8JA0m5CFR13x9+YmWw==}
+  '@mlightcad/mtext-input-box@0.2.8':
+    resolution: {integrity: sha512-bbQQWok0YzO6GwdP9HdJuFk4DzohlCx24tAVzAwU8zX6WH9p1FzPQyYw/6MrseR6kF0TZvSCZZWEaLkOmkPtQA==}
     peerDependencies:
-      '@mlightcad/mtext-renderer': ^0.10.11
+      '@mlightcad/mtext-renderer': ^0.10.13
       three: ^0.172.0
 
   '@mlightcad/mtext-parser@1.4.1':
     resolution: {integrity: sha512-PU7D5H/k25vZpTERabpdn5HVAs8+SBNRqgi08wRPiplxTE1eB/zBZRNRrSwHqyWx6xMeQmZ9mhh9DPNpte3gYQ==}
 
-  '@mlightcad/mtext-renderer@0.10.11':
-    resolution: {integrity: sha512-1K6SJ8y7yLkh6UhS1uQB5QfZ0rqYKK75DsOQIqWut6AIGkJteuwoP2YD0BLZbObSBq28VR6kWWr0te3nbHWujA==}
+  '@mlightcad/mtext-renderer@0.10.13':
+    resolution: {integrity: sha512-zNT3Bivh0IdFisayBze9z9+4xi3FmPx31V1JTf0uTMjS0deb1rBZ6H7Sz7E9gOcGDpcZFnKtD/C9/o8sLKq0wg==}
     peerDependencies:
       three: ^0.172.0
 
-  '@mlightcad/ribbon@0.1.6':
-    resolution: {integrity: sha512-J2fJtA6BFETbI0uFK1Jc7jim5zdkneE8CT1Siy3rytDdxCiRswtqJ0zRpb/3zydzT/ty3r3eO1O5sIaHljK+uA==}
+  '@mlightcad/ribbon@0.1.7':
+    resolution: {integrity: sha512-hYbuRIMDliWuMYzg/jqKI/63uHfVlSFypGUgJTQJgX3T6f8vX4TLamx0eiruR+LooHlkPEF0mXKa3p8yDrQKtg==}
     peerDependencies:
       '@element-plus/icons-vue': ^2.3.2
       element-plus: ^2.12.0
@@ -1433,6 +1442,9 @@ packages:
       element-plus: ^2.12.0
       vue: ^3.4.21
 
+  '@napi-rs/wasm-runtime@0.2.4':
+    resolution: {integrity: sha512-9zESzOO5aDByvhIAsOy9TbpZ0Ur2AJbUI7UT73kcUTS2mxAMHOBaa1st/jAymNoCtvrit99kkzT1FZuXVcgfIQ==}
+
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -1445,98 +1457,85 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@nrwl/devkit@19.3.1':
-    resolution: {integrity: sha512-SUS4P+yOwqGIZYlGMiHyU8Lav6ofal77cNTHuI5g/tHjewA6oSoi7xlrsJpzT6F5dtsoTtrilStfOIp50HkOLw==}
-
-  '@nrwl/js@19.3.1':
-    resolution: {integrity: sha512-LfvlqbTXQuAs3agc11F/XLscWpGmmDvcYA4fq8VhzNSKrujasRj8NzM5v2AyDvRfiEGrcQGvsp8SnVN2WC/GwA==}
-
-  '@nrwl/tao@19.3.1':
-    resolution: {integrity: sha512-K3VqTNwJ5/4vAaExIVmESWnQgO95MiJEgo+OzkmfkFvYTCOH2006OwvgCJFTQdjyONJ8Ao/lUPrHSDfsoevSeA==}
-    hasBin: true
-
-  '@nrwl/workspace@19.3.1':
-    resolution: {integrity: sha512-skSiVs62WRbPM92yHt1/ezTcT7CczW24A5t7p/A8KJeRIGb+Zdd4ngR88cnQuCumi8CagL04c8STZLU6bs0gyA==}
-
-  '@nx/devkit@19.3.1':
-    resolution: {integrity: sha512-sMMPGy6xivhipajvyfR96RMDJiKdmhIRgRxAVW298nKSKwrkRrxW48EtxYqUtI8MZkUPQigNVvqN8fyZ/gE7CA==}
+  '@nx/devkit@20.0.4':
+    resolution: {integrity: sha512-oTJUKbycP8K3hCSctWZdZfU4xl+WRwjePTAlFopRI5Ib2xh080NBDcchAwxF/mu6H9R8uCS4pU/2S0MAAvG8lg==}
     peerDependencies:
-      nx: '>= 17 <= 20'
+      nx: '>= 19 <= 21'
 
-  '@nx/js@19.3.1':
-    resolution: {integrity: sha512-3/4Lew2HLzGtk0i9R4oc8OH1Ie6k30BUVz68fiEPYh5H6i1+a7onOERWDHdh7bfXq39f0qsTHPtEP0ObNOog7g==}
+  '@nx/js@20.0.4':
+    resolution: {integrity: sha512-e4MzYnqfd+FZ7B91C/0pZZswX6agwDA7Lo/WpqaJdy9xwsJsG8NuFC2uh4QEYr3hWxUltpf34465QjiY975bgA==}
     peerDependencies:
       verdaccio: ^5.0.4
     peerDependenciesMeta:
       verdaccio:
         optional: true
 
-  '@nx/nx-darwin-arm64@19.3.1':
-    resolution: {integrity: sha512-B8kpnfBBJJE4YfSvpNPNdKLi63cyd41dZJRePkBrW/7Va/wUiHuKoyAEQZEI2WmH9ZM3RNmw7dp5vESr05Sw5g==}
+  '@nx/nx-darwin-arm64@20.0.4':
+    resolution: {integrity: sha512-SUP7PnkY8EVQFnNZQENRZUsD2hRgRFy9RLt3VKZwiKSGDDqA6bPwet47o0rx1FIYbbNREUDZoji1Rww02++q9w==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
 
-  '@nx/nx-darwin-x64@19.3.1':
-    resolution: {integrity: sha512-XKY76oi7hLQAKZzGlEsqPxNWx7BOS8E801CA9k+hKNVqNJdD6Vz/1hkhzKo/TwBrPkyhdvrq+BqBMLS7ZDefKw==}
+  '@nx/nx-darwin-x64@20.0.4':
+    resolution: {integrity: sha512-ijGCJU2RV6ss0K8dq5NrBiJTWYOdhrq25pvz//fJGeWgQp7g4esLTnYB1Tm0ADcA+Q2GsiOHj8I1TWnk758P6g==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
 
-  '@nx/nx-freebsd-x64@19.3.1':
-    resolution: {integrity: sha512-ZXDmzosPEq1DKC9r7UxPxF9I2GE11TmmYePcwN2xE1/you9+NUd14+SVW/jh/uH1j1n/41w0g35oNA6X0U+fGw==}
+  '@nx/nx-freebsd-x64@20.0.4':
+    resolution: {integrity: sha512-yk2C4Q7e4tcvPK6m66D0nsmSPWskkk96Kn3kJQZiIKqTjpWdAIxtZ9RpqpKky5rg79Hv2rRz6gqHyiuQ6Jqh3g==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [freebsd]
 
-  '@nx/nx-linux-arm-gnueabihf@19.3.1':
-    resolution: {integrity: sha512-2Ls+08J14BmkHpkQ6DhHGdW97IcY3vvqmuwogTBrt5ATmJIim3o/O4Kp4Sq+uuotf0kae0NP986BuoFw/WW/xg==}
+  '@nx/nx-linux-arm-gnueabihf@20.0.4':
+    resolution: {integrity: sha512-0daSpWb4mZBVUQ2akfVS5pv672bAhTTsn9t4wkfEUgkiTbLgPJYhM+Emmk+OcKXasp93J0WLCxbk9SsDdJohhg==}
     engines: {node: '>= 10'}
     cpu: [arm]
     os: [linux]
 
-  '@nx/nx-linux-arm64-gnu@19.3.1':
-    resolution: {integrity: sha512-+UbThXaqKmctAavcwdYxmtZIjrojGLK4PJKdivR0awjPEJ9qXnxA0bOQk/GdbD8nse66LR2NnPeNDxxqfsh8tw==}
+  '@nx/nx-linux-arm64-gnu@20.0.4':
+    resolution: {integrity: sha512-h6VKuilBETHqsTX9Eh8QHCLjKSoI5n0W/nXuWjEbmLRfT2BGgo5IiPzkhkwQrp2GO6q+B1GURE4RiavKD+iz3w==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@nx/nx-linux-arm64-musl@19.3.1':
-    resolution: {integrity: sha512-JMuBbg2Zqdz4N7i+hiJGr2QdsDarDZ8vyzzeoevFq3b8nhZfqKh/lno7+Y0WkXNpH7aT05GHaUA1r1NXf/5BeQ==}
+  '@nx/nx-linux-arm64-musl@20.0.4':
+    resolution: {integrity: sha512-mnuPryIM6gflQzqVW0KB7iTaNz5VfAmIAbbwAvGwqDdvWYgbRsC49u72yadsb1Shi8ukoQhLOWdwLhVf4VT5Jg==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@nx/nx-linux-x64-gnu@19.3.1':
-    resolution: {integrity: sha512-cVmDMtolaqK7PziWxvjus1nCyj2wMNM+N0/4+rBEjG4v47gTtBxlZJoxK02jApdV+XELehsTjd0Z/xVfO4Rl1Q==}
+  '@nx/nx-linux-x64-gnu@20.0.4':
+    resolution: {integrity: sha512-JdCQIifvkFYRg730cLM9o/CzOvtDgsWeJjbX++NllWBkI3PXqzYIw323KIsazeO1v1gGiwhY3rMj5gv2S+cu+Q==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@nx/nx-linux-x64-musl@19.3.1':
-    resolution: {integrity: sha512-UGujK/TLMz9TNJ6+6HLhoOV7pdlgPVosSyeNZcoXCHOg/Mg9NGM7Hgk9jDodtcAY+TP6QMDJIMVGuXBsCE7NLQ==}
+  '@nx/nx-linux-x64-musl@20.0.4':
+    resolution: {integrity: sha512-TgqU0GcryeNTq0SbmsyTm/mw1A/9NO4wzDld4r95r82Mqnz3gAWTiqmQCyZUat8brNRIf4SOIaV7H50AQpjuQA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@nx/nx-win32-arm64-msvc@19.3.1':
-    resolution: {integrity: sha512-q+2aaRXarh/+HOOW/JXRwEnEEwPdGipsfzXBPDuDDJ7aOYKuyG7g1DlSERKdzI/aEBP+joneZbcbZHaDcEv2xw==}
+  '@nx/nx-win32-arm64-msvc@20.0.4':
+    resolution: {integrity: sha512-X4OQilxDevhPjfGPKYWgKrI2JkjdPVrZvpzNYwJj5dnK+Yuo/oPDtiDQG/vMoN4NzLtu13a6EuAlytVBCfc15w==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [win32]
 
-  '@nx/nx-win32-x64-msvc@19.3.1':
-    resolution: {integrity: sha512-TG4DP1lodTnIwY/CiSsc9Pk7o9/JZXgd1pP/xdHNTkrZYjE//z6TbSm+facBLuryuMhp6s/WlJaAlW241qva0Q==}
+  '@nx/nx-win32-x64-msvc@20.0.4':
+    resolution: {integrity: sha512-lc6/mtyXPlSy3O76FcvDlzaXIKG6OfUQE00ixk/68vKQmTzHEh0PV0ariQJYOPuLPY9ElZw1OXVDavm/Ido1lg==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
 
-  '@nx/workspace@19.3.1':
-    resolution: {integrity: sha512-vg9aHidIEgkq3bjMNQSBa9NdpEYs9rpgk/8TQsaacZR8Yr2JTU7DUiGdrYxDigoNyoX4nYBkCZQzdWD3YXYRJg==}
+  '@nx/workspace@20.0.4':
+    resolution: {integrity: sha512-aXlkpCPnci0MQoodooGEOXqhruDUdsOLpUn2kJMU6hiQ2QawhCdYerIMT9X5zsGoLLXk1/TBbItTm6Kp3eIxIQ==}
 
   '@parcel/watcher-android-arm64@2.5.6':
     resolution: {integrity: sha512-YQxSS34tPF/6ZG7r/Ih9xy+kP/WwediEUsqmtf0cuCV5TPPKw/PQHRhueUo6JdeFJaqV3pyjm0GdYjZotbRt/A==}
@@ -1861,6 +1860,9 @@ packages:
 
   '@tweenjs/tween.js@23.1.3':
     resolution: {integrity: sha512-vJmvvwFxYuGnF2axRtPYocag6Clbb5YS7kLL+SO/TeVFzHqDIWrNKYtcsPMibjDx9O+bu+psAy9NKfWklassUA==}
+
+  '@tybys/wasm-util@0.9.0':
+    resolution: {integrity: sha512-6+7nlbMVX/PVDCwaIQ8nTOPveOcFLSt8GcXdx8hD0bt39uWxYT88uXzqTd4fTvqta7oeUJqudepapKNt2DYJFw==}
 
   '@types/argparse@1.0.38':
     resolution: {integrity: sha512-ebDJ9b0e702Yr7pWgB0jzm+CX4Srzz8RcXtLJDJB+BSccqMa36uyH/zUsSYao5+BD1ytv3k3rPYCq4mAE1hsXA==}
@@ -2680,20 +2682,17 @@ packages:
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
 
-  dotenv-expand@10.0.0:
-    resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
+  dotenv-expand@11.0.7:
+    resolution: {integrity: sha512-zIHwmZPRshsCdpMDyVsqGmgyP0yT8GAgXUnkdAoJisxvf33k7yO6OuoKmcTGuXPWSsm8Oh88nZicRLA9Y0rUeA==}
     engines: {node: '>=12'}
 
-  dotenv@16.3.2:
-    resolution: {integrity: sha512-HTlk5nmhkm8F6JcdXvHIzaorzCoziNQT9mGxLPVXW8wJF1TiGSL60ZGB4gHWabHOaMmWmhvk2/lPHfnBiT78AQ==}
+  dotenv@16.4.7:
+    resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
     engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
-
-  duplexer@0.1.2:
-    resolution: {integrity: sha512-jtD6YG370ZCIi/9GTaJKQxWTZD045+4R4hTk/x1UyoqadyJ9x9CgSi1RlVDQF8U2sxLLSnFkCaMihqljHIWgMg==}
 
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
@@ -3533,8 +3532,8 @@ packages:
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
-  lines-and-columns@2.0.4:
-    resolution: {integrity: sha512-wM1+Z03eypVAVUCE7QdSqpVIvelbOakn1M0bPDoA4SGWPx3sNDVUiMo3L6To6WWGClB7VyXnhQ4Sn7gxiJbE6A==}
+  lines-and-columns@2.0.3:
+    resolution: {integrity: sha512-cNOjgCnLB+FnvWWtyRTzmB3POJ+cXxTA81LoW7u8JdmhfXzriropYwpjShnz1QLLWsQwY7nIxoDmcPTwphDK9w==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   linkify-it@5.0.0:
@@ -3798,8 +3797,8 @@ packages:
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
 
-  nx@19.3.1:
-    resolution: {integrity: sha512-dDkhnXMpnDN5/ZJxJXz7wPlKA3pQwQmwNQ3YmTrCwucNbpwNRdwXiDgbLpjlGCtaeE9yZh2E/dAH1HNbgViJ6g==}
+  nx@20.0.4:
+    resolution: {integrity: sha512-voDioNkgjSKZz52Ny3EwJiu1wWQAZlGzKMhdExlry2N3glvxi4jUEQFPUkVZQUd6vfBH9WPmkqjHO724siV4ZA==}
     hasBin: true
     peerDependencies:
       '@swc-node/register': ^1.8.0
@@ -4330,11 +4329,6 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
-  strong-log-transformer@2.1.0:
-    resolution: {integrity: sha512-B3Hgul+z0L9a236FAUC9iZsL+nVHgoCJnqCbN588DjYxvGXaXaaFbfmQ/JhvKjZwsOukuR72XbHv71Qkug0HxA==}
-    engines: {node: '>=4'}
-    hasBin: true
-
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
@@ -4374,9 +4368,6 @@ packages:
 
   three@0.172.0:
     resolution: {integrity: sha512-6HMgMlzU97MsV7D/tY8Va38b83kz8YJX+BefKjspMNAv0Vx6dxMogHOrnRl/sbMIs3BPUKijPqDqJ/+UwJbIow==}
-
-  through@2.3.8:
-    resolution: {integrity: sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg==}
 
   tiny-inflate@1.0.3:
     resolution: {integrity: sha512-pkY1fj1cKHb2seWDy0B16HeWyczlJA9/WW3u3c4z/NiWDsO3DOU5D7nhTLE9CF0yXv/QZFY7sEJmj24dK+Rrqw==}
@@ -5688,6 +5679,19 @@ snapshots:
     dependencies:
       vue: 3.5.31(typescript@5.9.3)
 
+  '@emnapi/core@1.10.0':
+    dependencies:
+      '@emnapi/wasi-threads': 1.2.1
+      tslib: 2.8.1
+
+  '@emnapi/runtime@1.10.0':
+    dependencies:
+      tslib: 2.8.1
+
+  '@emnapi/wasi-threads@1.2.1':
+    dependencies:
+      tslib: 2.8.1
+
   '@esbuild/aix-ppc64@0.21.5':
     optional: true
 
@@ -6185,15 +6189,15 @@ snapshots:
 
   '@mlightcad/libredwg-web@0.7.1': {}
 
-  '@mlightcad/mtext-input-box@0.2.7(@mlightcad/mtext-renderer@0.10.11(three@0.172.0))(three@0.172.0)':
+  '@mlightcad/mtext-input-box@0.2.8(@mlightcad/mtext-renderer@0.10.13(three@0.172.0))(three@0.172.0)':
     dependencies:
-      '@mlightcad/mtext-renderer': 0.10.11(three@0.172.0)
+      '@mlightcad/mtext-renderer': 0.10.13(three@0.172.0)
       '@mlightcad/text-box-cursor': 0.1.1(three@0.172.0)
       three: 0.172.0
 
   '@mlightcad/mtext-parser@1.4.1': {}
 
-  '@mlightcad/mtext-renderer@0.10.11(three@0.172.0)':
+  '@mlightcad/mtext-renderer@0.10.13(three@0.172.0)':
     dependencies:
       '@mlightcad/mtext-parser': 1.4.1
       '@mlightcad/shx-parser': 1.3.2
@@ -6202,7 +6206,7 @@ snapshots:
       opentype.js: 1.3.4
       three: 0.172.0
 
-  '@mlightcad/ribbon@0.1.6(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
+  '@mlightcad/ribbon@0.1.7(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
     dependencies:
       '@element-plus/icons-vue': 2.3.2(vue@3.5.31(typescript@5.9.3))
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
@@ -6223,6 +6227,12 @@ snapshots:
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
       vue: 3.5.31(typescript@5.9.3)
 
+  '@napi-rs/wasm-runtime@0.2.4':
+    dependencies:
+      '@emnapi/core': 1.10.0
+      '@emnapi/runtime': 1.10.0
+      '@tybys/wasm-util': 0.9.0
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -6235,58 +6245,19 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@nrwl/devkit@19.3.1(nx@19.3.1)':
+  '@nx/devkit@20.0.4(nx@20.0.4)':
     dependencies:
-      '@nx/devkit': 19.3.1(nx@19.3.1)
-    transitivePeerDependencies:
-      - nx
-
-  '@nrwl/js@19.3.1(@babel/traverse@7.29.0)(@types/node@20.19.37)(nx@19.3.1)(typescript@5.9.3)':
-    dependencies:
-      '@nx/js': 19.3.1(@babel/traverse@7.29.0)(@types/node@20.19.37)(nx@19.3.1)(typescript@5.9.3)
-    transitivePeerDependencies:
-      - '@babel/traverse'
-      - '@swc-node/register'
-      - '@swc/core'
-      - '@swc/wasm'
-      - '@types/node'
-      - debug
-      - nx
-      - supports-color
-      - typescript
-      - verdaccio
-
-  '@nrwl/tao@19.3.1':
-    dependencies:
-      nx: 19.3.1
-      tslib: 2.8.1
-    transitivePeerDependencies:
-      - '@swc-node/register'
-      - '@swc/core'
-      - debug
-
-  '@nrwl/workspace@19.3.1':
-    dependencies:
-      '@nx/workspace': 19.3.1
-    transitivePeerDependencies:
-      - '@swc-node/register'
-      - '@swc/core'
-      - debug
-
-  '@nx/devkit@19.3.1(nx@19.3.1)':
-    dependencies:
-      '@nrwl/devkit': 19.3.1(nx@19.3.1)
       ejs: 3.1.10
       enquirer: 2.3.6
       ignore: 5.3.2
       minimatch: 9.0.3
-      nx: 19.3.1
+      nx: 20.0.4
       semver: 7.7.4
       tmp: 0.2.5
       tslib: 2.8.1
       yargs-parser: 21.1.1
 
-  '@nx/js@19.3.1(@babel/traverse@7.29.0)(@types/node@20.19.37)(nx@19.3.1)(typescript@5.9.3)':
+  '@nx/js@20.0.4(@babel/traverse@7.29.0)(@types/node@20.19.37)(nx@20.0.4)(typescript@5.9.3)':
     dependencies:
       '@babel/core': 7.29.0
       '@babel/plugin-proposal-decorators': 7.29.0(@babel/core@7.29.0)
@@ -6295,19 +6266,20 @@ snapshots:
       '@babel/preset-env': 7.29.2(@babel/core@7.29.0)
       '@babel/preset-typescript': 7.28.5(@babel/core@7.29.0)
       '@babel/runtime': 7.29.2
-      '@nrwl/js': 19.3.1(@babel/traverse@7.29.0)(@types/node@20.19.37)(nx@19.3.1)(typescript@5.9.3)
-      '@nx/devkit': 19.3.1(nx@19.3.1)
-      '@nx/workspace': 19.3.1
+      '@nx/devkit': 20.0.4(nx@20.0.4)
+      '@nx/workspace': 20.0.4
+      '@zkochan/js-yaml': 0.0.7
       babel-plugin-const-enum: 1.2.0(@babel/core@7.29.0)
       babel-plugin-macros: 2.8.0
       babel-plugin-transform-typescript-metadata: 0.3.2(@babel/core@7.29.0)(@babel/traverse@7.29.0)
       chalk: 4.1.2
       columnify: 1.6.0
       detect-port: 1.6.1
+      enquirer: 2.3.6
       fast-glob: 3.2.7
-      fs-extra: 11.3.4
       ignore: 5.3.2
       js-tokens: 4.0.0
+      jsonc-parser: 3.2.0
       minimatch: 9.0.3
       npm-package-arg: 11.0.1
       npm-run-path: 4.0.1
@@ -6328,43 +6300,42 @@ snapshots:
       - supports-color
       - typescript
 
-  '@nx/nx-darwin-arm64@19.3.1':
+  '@nx/nx-darwin-arm64@20.0.4':
     optional: true
 
-  '@nx/nx-darwin-x64@19.3.1':
+  '@nx/nx-darwin-x64@20.0.4':
     optional: true
 
-  '@nx/nx-freebsd-x64@19.3.1':
+  '@nx/nx-freebsd-x64@20.0.4':
     optional: true
 
-  '@nx/nx-linux-arm-gnueabihf@19.3.1':
+  '@nx/nx-linux-arm-gnueabihf@20.0.4':
     optional: true
 
-  '@nx/nx-linux-arm64-gnu@19.3.1':
+  '@nx/nx-linux-arm64-gnu@20.0.4':
     optional: true
 
-  '@nx/nx-linux-arm64-musl@19.3.1':
+  '@nx/nx-linux-arm64-musl@20.0.4':
     optional: true
 
-  '@nx/nx-linux-x64-gnu@19.3.1':
+  '@nx/nx-linux-x64-gnu@20.0.4':
     optional: true
 
-  '@nx/nx-linux-x64-musl@19.3.1':
+  '@nx/nx-linux-x64-musl@20.0.4':
     optional: true
 
-  '@nx/nx-win32-arm64-msvc@19.3.1':
+  '@nx/nx-win32-arm64-msvc@20.0.4':
     optional: true
 
-  '@nx/nx-win32-x64-msvc@19.3.1':
+  '@nx/nx-win32-x64-msvc@20.0.4':
     optional: true
 
-  '@nx/workspace@19.3.1':
+  '@nx/workspace@20.0.4':
     dependencies:
-      '@nrwl/workspace': 19.3.1
-      '@nx/devkit': 19.3.1(nx@19.3.1)
+      '@nx/devkit': 20.0.4(nx@20.0.4)
       chalk: 4.1.2
       enquirer: 2.3.6
-      nx: 19.3.1
+      nx: 20.0.4
       tslib: 2.8.1
       yargs-parser: 21.1.1
     transitivePeerDependencies:
@@ -6607,6 +6578,10 @@ snapshots:
   '@tsconfig/node16@1.0.4': {}
 
   '@tweenjs/tween.js@23.1.3': {}
+
+  '@tybys/wasm-util@0.9.0':
+    dependencies:
+      tslib: 2.8.1
 
   '@types/argparse@1.0.38': {}
 
@@ -7528,17 +7503,17 @@ snapshots:
       domelementtype: 2.3.0
       domhandler: 5.0.3
 
-  dotenv-expand@10.0.0: {}
+  dotenv-expand@11.0.7:
+    dependencies:
+      dotenv: 16.4.7
 
-  dotenv@16.3.2: {}
+  dotenv@16.4.7: {}
 
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
       es-errors: 1.3.0
       gopd: 1.2.0
-
-  duplexer@0.1.2: {}
 
   eastasianwidth@0.2.0: {}
 
@@ -8574,7 +8549,7 @@ snapshots:
 
   lines-and-columns@1.2.4: {}
 
-  lines-and-columns@2.0.4: {}
+  lines-and-columns@2.0.3: {}
 
   linkify-it@5.0.0:
     dependencies:
@@ -8818,9 +8793,9 @@ snapshots:
     dependencies:
       boolbase: 1.0.0
 
-  nx@19.3.1:
+  nx@20.0.4:
     dependencies:
-      '@nrwl/tao': 19.3.1
+      '@napi-rs/wasm-runtime': 0.2.4
       '@yarnpkg/lockfile': 1.1.0
       '@yarnpkg/parsers': 3.0.0-rc.46
       '@zkochan/js-yaml': 0.0.7
@@ -8829,17 +8804,16 @@ snapshots:
       cli-cursor: 3.1.0
       cli-spinners: 2.6.1
       cliui: 8.0.1
-      dotenv: 16.3.2
-      dotenv-expand: 10.0.0
+      dotenv: 16.4.7
+      dotenv-expand: 11.0.7
       enquirer: 2.3.6
       figures: 3.2.0
       flat: 5.0.2
       front-matter: 4.0.2
-      fs-extra: 11.3.4
       ignore: 5.3.2
       jest-diff: 29.7.0
       jsonc-parser: 3.2.0
-      lines-and-columns: 2.0.4
+      lines-and-columns: 2.0.3
       minimatch: 9.0.3
       node-machine-id: 1.1.12
       npm-run-path: 4.0.1
@@ -8847,7 +8821,6 @@ snapshots:
       ora: 5.3.0
       semver: 7.7.4
       string-width: 4.2.3
-      strong-log-transformer: 2.1.0
       tar-stream: 2.2.0
       tmp: 0.2.5
       tsconfig-paths: 4.2.0
@@ -8855,16 +8828,16 @@ snapshots:
       yargs: 17.7.2
       yargs-parser: 21.1.1
     optionalDependencies:
-      '@nx/nx-darwin-arm64': 19.3.1
-      '@nx/nx-darwin-x64': 19.3.1
-      '@nx/nx-freebsd-x64': 19.3.1
-      '@nx/nx-linux-arm-gnueabihf': 19.3.1
-      '@nx/nx-linux-arm64-gnu': 19.3.1
-      '@nx/nx-linux-arm64-musl': 19.3.1
-      '@nx/nx-linux-x64-gnu': 19.3.1
-      '@nx/nx-linux-x64-musl': 19.3.1
-      '@nx/nx-win32-arm64-msvc': 19.3.1
-      '@nx/nx-win32-x64-msvc': 19.3.1
+      '@nx/nx-darwin-arm64': 20.0.4
+      '@nx/nx-darwin-x64': 20.0.4
+      '@nx/nx-freebsd-x64': 20.0.4
+      '@nx/nx-linux-arm-gnueabihf': 20.0.4
+      '@nx/nx-linux-arm64-gnu': 20.0.4
+      '@nx/nx-linux-arm64-musl': 20.0.4
+      '@nx/nx-linux-x64-gnu': 20.0.4
+      '@nx/nx-linux-x64-musl': 20.0.4
+      '@nx/nx-win32-arm64-msvc': 20.0.4
+      '@nx/nx-win32-x64-msvc': 20.0.4
     transitivePeerDependencies:
       - debug
 
@@ -9381,12 +9354,6 @@ snapshots:
 
   strip-json-comments@3.1.1: {}
 
-  strong-log-transformer@2.1.0:
-    dependencies:
-      duplexer: 0.1.2
-      minimist: 1.2.8
-      through: 2.3.8
-
   supports-color@7.2.0:
     dependencies:
       has-flag: 4.0.0
@@ -9433,8 +9400,6 @@ snapshots:
       minimatch: 3.1.5
 
   three@0.172.0: {}
-
-  through@2.3.8: {}
 
   tiny-inflate@1.0.3: {}
 
