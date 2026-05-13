@@ -12,7 +12,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "packageManager": "pnpm@9.15.9",
+  "packageManager": "pnpm@10.33.4",
   "scripts": {
     "analyze": "nx run-many -t analyze",
     "build": "nx run-many -t build",
@@ -34,7 +34,7 @@
     "test:e2e": "pnpm --filter @mlightcad/cad-viewer-example test:e2e"
   },
   "engines": {
-    "pnpm": ">=9"
+    "pnpm": ">=10"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
