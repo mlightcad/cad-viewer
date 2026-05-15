@@ -10,15 +10,9 @@ jest.mock('../src/renderer', () => ({
 import { AcTrMText } from '../src/object/AcTrMText'
 
 type GeometryHost = THREE.Object3D & {
-  _text?: {
-    position?: THREE.Vector3Like
-    attachmentPoint?: number
-    height?: number
-  }
   box: THREE.Box3
   computeGeometryBox: () => THREE.Box3
   hasGeometry: (object: THREE.Object3D) => boolean
-  normalizeTopAlignedMText: (mtext: MTextObject) => void
 }
 
 type RaycastHost = THREE.Object3D & {
@@ -30,7 +24,6 @@ const privateMethods = AcTrMText.prototype as unknown as {
   computeGeometryBox(this: GeometryHost): THREE.Box3
   updateSelectionBox(this: GeometryHost, mtext: MTextObject): void
   hasGeometry(object: THREE.Object3D): boolean
-  normalizeTopAlignedMText(this: GeometryHost, mtext: MTextObject): void
   raycast(
     this: RaycastHost,
     raycaster: THREE.Raycaster,
@@ -64,52 +57,6 @@ describe('AcTrMText selection geometry', () => {
 
     expect(host.box.min.toArray()).toEqual([10, 18, 0])
     expect(host.box.max.toArray()).toEqual([14, 24, 0])
-  })
-
-  it('normalizes top-attached mtext to the insertion top edge', () => {
-    const host = createGeometryHost()
-    host._text = {
-      position: new THREE.Vector3(10, 20, 0),
-      attachmentPoint: 1,
-      height: 2
-    }
-    const mtext = createMTextObject(
-      new THREE.Box3(
-        new THREE.Vector3(10, 11, 0),
-        new THREE.Vector3(18, 17, 0)
-      ),
-      [{ y: 14, height: 6 }]
-    )
-
-    privateMethods.normalizeTopAlignedMText.call(host, mtext)
-
-    expect(mtext.position.y).toBeCloseTo(3)
-    expect(mtext.box.min.y).toBeCloseTo(14)
-    expect(mtext.box.max.y).toBeCloseTo(20)
-    expect(mtext.createLayoutData().lines[0].y).toBeCloseTo(17)
-  })
-
-  it('uses the input box minimum line advance when normalizing top-attached mtext', () => {
-    const host = createGeometryHost()
-    host._text = {
-      position: new THREE.Vector3(10, 20, 0),
-      attachmentPoint: 1,
-      height: 6
-    }
-    const mtext = createMTextObject(
-      new THREE.Box3(
-        new THREE.Vector3(10, 11, 0),
-        new THREE.Vector3(18, 17, 0)
-      ),
-      [{ y: 14, height: 6 }]
-    )
-
-    privateMethods.normalizeTopAlignedMText.call(host, mtext)
-
-    expect(mtext.position.y).toBeCloseTo(0)
-    expect(mtext.box.min.y).toBeCloseTo(11)
-    expect(mtext.box.max.y).toBeCloseTo(17)
-    expect(mtext.createLayoutData().lines[0].y).toBeCloseTo(14)
   })
 
   it('ignores a disjoint renderer-provided mtext box', () => {
@@ -199,7 +146,6 @@ function createGeometryHost(): GeometryHost {
   host.box = new THREE.Box3()
   host.computeGeometryBox = privateMethods.computeGeometryBox
   host.hasGeometry = privateMethods.hasGeometry
-  host.normalizeTopAlignedMText = privateMethods.normalizeTopAlignedMText
   return host
 }
 
