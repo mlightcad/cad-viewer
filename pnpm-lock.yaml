@@ -106,25 +106,19 @@ importers:
 
   packages/cad-simple-viewer:
     dependencies:
-      '@mlightcad/data-model':
-        specifier: ^1.7.34
-        version: 1.7.34
       '@mlightcad/libredwg-converter':
         specifier: ^3.5.34
         version: 3.5.34(@mlightcad/data-model@1.7.34)
-      lodash-es:
-        specifier: 4.17.21
-        version: 4.17.21
       mitt:
         specifier: ^3.0.1
         version: 3.0.1
       rbush:
         specifier: ^4.0.1
         version: 4.0.1
-      three:
-        specifier: ^0.172.0
-        version: 0.172.0
     devDependencies:
+      '@mlightcad/data-model':
+        specifier: ^1.7.34
+        version: 1.7.34
       '@mlightcad/mtext-input-box':
         specifier: ^0.2.10
         version: 0.2.10(@mlightcad/mtext-renderer@0.10.14(three@0.172.0))(three@0.172.0)
@@ -149,6 +143,12 @@ importers:
       '@types/three':
         specifier: ^0.172.0
         version: 0.172.0
+      lodash-es:
+        specifier: 4.17.21
+        version: 4.17.21
+      three:
+        specifier: ^0.172.0
+        version: 0.172.0
 
   packages/cad-simple-viewer-example:
     dependencies:
@@ -158,37 +158,25 @@ importers:
       '@mlightcad/data-model':
         specifier: ^1.7.34
         version: 1.7.34
+      three:
+        specifier: ^0.172.0
+        version: 0.172.0
 
   packages/cad-viewer:
     dependencies:
       '@element-plus/icons-vue':
         specifier: ^2.3.1
         version: 2.3.2(vue@3.5.31(typescript@5.9.3))
+      lodash-es:
+        specifier: 4.17.21
+        version: 4.17.21
+    devDependencies:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
         specifier: ^1.7.34
         version: 1.7.34
-      '@vueuse/core':
-        specifier: ^11.1.0
-        version: 11.3.0(vue@3.5.31(typescript@5.9.3))
-      element-plus:
-        specifier: ^2.12.0
-        version: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
-      lodash-es:
-        specifier: 4.17.21
-        version: 4.17.21
-      three:
-        specifier: ^0.172.0
-        version: 0.172.0
-      vue:
-        specifier: ^3.4.21
-        version: 3.5.31(typescript@5.9.3)
-      vue-i18n:
-        specifier: ^10.0.1
-        version: 10.0.8(vue@3.5.31(typescript@5.9.3))
-    devDependencies:
       '@mlightcad/ribbon':
         specifier: ^0.1.8
         version: 0.1.8(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
@@ -210,9 +198,18 @@ importers:
       '@vitejs/plugin-vue':
         specifier: ^5.1.3
         version: 5.2.4(vite@5.4.21(@types/node@20.19.37)(sass@1.98.0))(vue@3.5.31(typescript@5.9.3))
+      '@vueuse/core':
+        specifier: ^11.1.0
+        version: 11.3.0(vue@3.5.31(typescript@5.9.3))
+      element-plus:
+        specifier: ^2.12.0
+        version: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
       sass:
         specifier: ^1.95.1
         version: 1.98.0
+      three:
+        specifier: ^0.172.0
+        version: 0.172.0
       vite-plugin-dts:
         specifier: ^4.0.0
         version: 4.5.4(@types/node@20.19.37)(rollup@4.60.1)(typescript@5.9.3)(vite@5.4.21(@types/node@20.19.37)(sass@1.98.0))
@@ -222,9 +219,15 @@ importers:
       vite-svg-loader:
         specifier: ^5.1.0
         version: 5.1.1(vue@3.5.31(typescript@5.9.3))
+      vue:
+        specifier: ^3.4.21
+        version: 3.5.31(typescript@5.9.3)
       vue-eslint-parser:
         specifier: ^9.4.3
         version: 9.4.3(eslint@9.39.4)
+      vue-i18n:
+        specifier: ^10.0.1
+        version: 10.0.8(vue@3.5.31(typescript@5.9.3))
       vue-tsc:
         specifier: ^2.1.6
         version: 2.2.12(typescript@5.9.3)
@@ -246,6 +249,9 @@ importers:
       element-plus:
         specifier: ^2.12.0
         version: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
+      three:
+        specifier: ^0.172.0
+        version: 0.172.0
       vue:
         specifier: ^3.4.21
         version: 3.5.31(typescript@5.9.3)

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.7.34"
+    "@mlightcad/data-model": "^1.7.34",
+    "three": "^0.172.0"
   }
 }
