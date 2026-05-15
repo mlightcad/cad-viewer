@@ -20,6 +20,7 @@
 
 <script setup lang="ts">
 import { Bell } from '@element-plus/icons-vue'
+import { ElBadge, ElButton, ElTooltip } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 import { useNotificationCenter } from '../../composable/useNotificationCenter'

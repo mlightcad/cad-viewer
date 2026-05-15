@@ -189,7 +189,7 @@
 
 <script setup lang="ts">
 import { Search } from '@element-plus/icons-vue'
-import { ElInput } from 'element-plus'
+import { ElIcon, ElInput, ElOption, ElSelect } from 'element-plus'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

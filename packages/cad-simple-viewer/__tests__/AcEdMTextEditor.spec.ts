@@ -14,6 +14,8 @@ class MockMTextInputBox {
   readonly setToolbarTheme = jest.fn()
   readonly getText = jest.fn(() => 'typed text')
   readonly getMTextInsertionPoint = jest.fn(() => ({ x: 1, y: 2, z: 3 }))
+  readonly getMTextAttachmentPoint = jest.fn(() => 1)
+  readonly getLineSpacingFactor = jest.fn(() => 0.3)
   readonly setCurrentFormat = jest.fn()
   readonly refreshCurrentFormatFromDocument = jest.fn()
   readonly toggleCase = jest.fn()
@@ -72,12 +74,16 @@ jest.mock(
 )
 
 jest.mock('@mlightcad/mtext-renderer', () => ({
-  MTextColor: class MTextColor {}
+  MTextColor: class MTextColor {},
+  MTextAttachmentPoint: { TopLeft: 1 }
 }))
 
 jest.mock('@mlightcad/data-model', () => ({
   AcDbSystemVariables: {
     COLORTHEME: 'COLORTHEME'
+  },
+  AcGiMTextAttachmentPoint: {
+    TopLeft: 1
   },
   AcDbSysVarManager: {
     instance: jest.fn(() => ({
@@ -200,7 +206,8 @@ describe('AcEdMTextEditor', () => {
       location: { x: 1, y: 2, z: 3 },
       width: 10,
       height: 2,
-      lineSpacingFactor: 0.3
+      lineSpacingFactor: 0.3,
+      attachmentPoint: 1
     })
     expect(inputBox.dispose).toHaveBeenCalled()
     expect(toolbar.container.remove).toHaveBeenCalled()

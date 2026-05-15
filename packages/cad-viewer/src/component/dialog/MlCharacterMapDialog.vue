@@ -112,7 +112,7 @@
  */
 import { AcApFontUtil, type ShxParserFont } from '@mlightcad/cad-simple-viewer'
 import { useEventListener } from '@vueuse/core'
-import { ElMessage } from 'element-plus'
+import { ElButton, ElInput, ElMessage } from 'element-plus'
 import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

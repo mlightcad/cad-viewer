@@ -65,7 +65,13 @@
 <script setup lang="ts">
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
-import { ElMessage, ElTable } from 'element-plus'
+import {
+  ElCheckbox,
+  ElMessage,
+  ElTable,
+  ElTableColumn,
+  ElTag
+} from 'element-plus'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

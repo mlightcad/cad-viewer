@@ -50,6 +50,12 @@
 <script setup lang="ts">
 import { ArrowDown } from '@element-plus/icons-vue'
 import { AcGiLineWeight } from '@mlightcad/data-model'
+import {
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElIcon
+} from 'element-plus'
 import { computed } from 'vue'
 
 /**

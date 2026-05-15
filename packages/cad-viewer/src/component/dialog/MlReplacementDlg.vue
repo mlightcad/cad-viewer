@@ -101,6 +101,17 @@ import {
   AcApSettingManager
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbRasterImage } from '@mlightcad/data-model'
+import {
+  ElButton,
+  ElCol,
+  ElOption,
+  ElRow,
+  ElSelect,
+  ElTable,
+  ElTableColumn,
+  ElTabPane,
+  ElTabs
+} from 'element-plus'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

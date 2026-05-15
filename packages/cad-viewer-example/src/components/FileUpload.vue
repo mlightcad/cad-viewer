@@ -47,6 +47,7 @@ import { UploadFilled } from '@element-plus/icons-vue'
 import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 import { log } from '@mlightcad/data-model'
 import type { UploadFile, UploadProps } from 'element-plus'
+import { ElIcon, ElRadio, ElRadioGroup, ElUpload } from 'element-plus'
 import { ref } from 'vue'
 
 interface Props {

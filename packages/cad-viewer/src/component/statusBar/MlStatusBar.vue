@@ -69,6 +69,7 @@ import {
   AcDbSystemVariables
 } from '@mlightcad/data-model'
 import { MlStatusBar } from '@mlightcad/ui-components'
+import { ElButton, ElButtonGroup } from 'element-plus'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

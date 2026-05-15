@@ -55,6 +55,7 @@ import {
   SuccessFilled,
   WarningFilled
 } from '@element-plus/icons-vue'
+import { ElButton, ElIcon } from 'element-plus'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

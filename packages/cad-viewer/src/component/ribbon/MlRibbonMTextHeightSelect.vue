@@ -25,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElOption, ElSelect } from 'element-plus'
 import { computed } from 'vue'
 
 import { mtext as mtextIcon } from '../../svg'
