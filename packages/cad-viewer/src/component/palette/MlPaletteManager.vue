@@ -27,6 +27,7 @@
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntityProperties } from '@mlightcad/data-model'
 import { MlToolPalette, MlToolPaletteTab } from '@mlightcad/ui-components'
+import { ElConfigProvider } from 'element-plus'
 import { computed, nextTick, watch } from 'vue'
 
 import { store } from '../../app'

@@ -93,7 +93,9 @@ describe('AcApMTextCmd', () => {
       contents: 'Hello',
       location: { x: 10, y: 70, z: 0 },
       width: 100,
-      height: 24
+      height: 24,
+      lineSpacingFactor: 0.25,
+      attachmentPoint: 1
     })
 
     await new AcApMTextCmd().execute(context as never)

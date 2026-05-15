@@ -32,6 +32,12 @@ import {
   AcApOpenCmd,
   AcApQNewCmd
 } from '@mlightcad/cad-simple-viewer'
+import {
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElIcon
+} from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 import { useSettings } from '../../composable'

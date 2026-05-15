@@ -42,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElOption, ElSelect } from 'element-plus'
 import { h } from 'vue'
 
 import MlRibbonPropertyField from './MlRibbonPropertyField.vue'

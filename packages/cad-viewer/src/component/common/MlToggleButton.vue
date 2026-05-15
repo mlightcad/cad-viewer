@@ -10,6 +10,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ElButton, ElTooltip } from 'element-plus'
 import { Component, computed, DefineComponent } from 'vue'
 
 export type MlIconType = (() => DefineComponent) | Component

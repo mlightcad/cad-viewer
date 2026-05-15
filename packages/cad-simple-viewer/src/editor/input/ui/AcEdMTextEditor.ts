@@ -1,18 +1,34 @@
 import {
   AcDbSystemVariables,
   AcDbSysVarManager,
-  AcGePoint3dLike
+  AcGePoint3dLike,
+  AcGiMTextAttachmentPoint
 } from '@mlightcad/data-model'
 import {
   MTextInputBox,
   type MTextToolbarColorPickerFactory,
   type MTextToolbarTheme
 } from '@mlightcad/mtext-input-box'
-import { MTextColor } from '@mlightcad/mtext-renderer'
+import { MTextAttachmentPoint, MTextColor } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { AcApDocManager } from '../../../app'
 import { AcTrView2d } from '../../../view'
+
+function acGiAttachmentToMText(
+  ap: AcGiMTextAttachmentPoint | undefined
+): MTextAttachmentPoint | undefined {
+  if (ap === undefined) return undefined
+  const v = ap as number
+  if (v >= 1 && v <= 12) return v as MTextAttachmentPoint
+  return MTextAttachmentPoint.TopLeft
+}
+
+function mTextAttachmentToAcGi(
+  ap: MTextAttachmentPoint
+): AcGiMTextAttachmentPoint {
+  return ap as unknown as AcGiMTextAttachmentPoint
+}
 
 export type AcEdMTextEditorCurrentFormatChangeListener = () => void
 export interface AcEdMTextEditorCurrentFormatObservable {
@@ -85,6 +101,8 @@ export interface AcEdMTextEditorResult {
   height: number
   /** Line spacing factor used by the MTEXT input box renderer. */
   lineSpacingFactor: number
+  /** MTEXT attachment (DXF group 71) matching the editor justify control. */
+  attachmentPoint: AcGiMTextAttachmentPoint
 }
 
 /**
@@ -95,6 +113,11 @@ export interface AcEdMTextEditorOptions {
   view: AcTrView2d
   /** Insertion location (top-left anchor) in world coordinates. */
   location: AcGePoint3dLike
+  /**
+   * Initial MTEXT attachment (DXF 71). When omitted, the editor uses top-left
+   * until the user changes justify in the ribbon.
+   */
+  initialAttachmentPoint?: AcGiMTextAttachmentPoint
   /** Initial MTEXT box width in world units. */
   width: number
   /** Default text height in world units. */
@@ -370,7 +393,8 @@ export class AcEdMTextEditor {
       initialText = '',
       toolbarFontFamilies = [],
       toolbarColorPicker,
-      toolbarEnabled = AcEdMTextEditor.defaultToolbarEnabled
+      toolbarEnabled = AcEdMTextEditor.defaultToolbarEnabled,
+      initialAttachmentPoint
     } = options
     const origin = new THREE.Vector3(location.x, location.y, location.z ?? 0)
     const isLightBackground = view.backgroundColor === 0xffffff
@@ -421,12 +445,17 @@ export class AcEdMTextEditor {
       ? null
       : AcEdMTextEditor.createHiddenToolbarContainer(view.container)
 
+    const mtextAttachment = acGiAttachmentToMText(initialAttachmentPoint)
+
     const mtextInputBox = new MTextInputBox({
       scene: view.internalScene,
       camera: view.internalCamera,
       width,
       position: origin.clone(),
       initialText,
+      ...(mtextAttachment !== undefined
+        ? { initialAttachmentPoint: mtextAttachment }
+        : {}),
       textStyle: defaultTextStyle,
       cursorStyle: {
         color: cursorColor,
@@ -510,7 +539,10 @@ export class AcEdMTextEditor {
           height: normalizedTextHeight,
           lineSpacingFactor:
             mtextInputBox.getLineSpacingFactor?.() ??
-            AcEdMTextEditor.defaultLineSpacingFactor
+            AcEdMTextEditor.defaultLineSpacingFactor,
+          attachmentPoint: mTextAttachmentToAcGi(
+            mtextInputBox.getMTextAttachmentPoint()
+          )
         })
       }
 

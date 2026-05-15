@@ -172,7 +172,16 @@ import {
   AcGiLineWeight,
   log
 } from '@mlightcad/data-model'
-import { ElMessage } from 'element-plus'
+import {
+  ElInput,
+  ElInputNumber,
+  ElMessage,
+  ElOption,
+  ElSelect,
+  ElSwitch,
+  ElTable,
+  ElTableColumn
+} from 'element-plus'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

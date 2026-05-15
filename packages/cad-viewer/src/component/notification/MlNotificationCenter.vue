@@ -61,19 +61,20 @@
 
 <script setup lang="ts">
 import { Bell, Close, Delete } from '@element-plus/icons-vue'
+import { ElButton, ElIcon, ElTooltip } from 'element-plus'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-interface Props {
-  /** Optional custom title for the notification center header */
-  title?: string
-}
 
 import {
   type NotificationAction,
   useNotificationCenter
 } from '../../composable/useNotificationCenter'
 import MlNotificationItem from './MlNotificationItem.vue'
+
+interface Props {
+  /** Optional custom title for the notification center header */
+  title?: string
+}
 
 const { t } = useI18n()
 const props = defineProps<Props>()

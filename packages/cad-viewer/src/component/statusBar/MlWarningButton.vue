@@ -11,6 +11,7 @@
 <script lang="ts" setup>
 import { Warning } from '@element-plus/icons-vue'
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
+import { ElButton } from 'element-plus'
 import { computed } from 'vue'
 
 import { useMissedData } from '../../composable'

@@ -61,6 +61,13 @@
 <script lang="ts" setup>
 import { Check, Setting } from '@element-plus/icons-vue'
 import { AcApSettingManager, AcApSettings } from '@mlightcad/cad-simple-viewer'
+import {
+  ElButton,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElTooltip
+} from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 import { useSettings } from '../../composable'

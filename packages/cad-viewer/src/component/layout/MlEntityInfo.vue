@@ -37,6 +37,7 @@
 <script setup lang="ts">
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntity } from '@mlightcad/data-model'
+import { ElCard, ElCol, ElRow, ElText } from 'element-plus'
 import { ComponentPublicInstance, computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

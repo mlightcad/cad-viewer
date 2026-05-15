@@ -45,6 +45,7 @@
 
 <script setup lang="ts">
 import { Close } from '@element-plus/icons-vue'
+import { ElButton, ElConfigProvider, ElIcon } from 'element-plus'
 import { type Component, computed, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

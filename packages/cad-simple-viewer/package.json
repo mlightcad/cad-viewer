@@ -41,8 +41,8 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/mtext-input-box": "^0.2.8",
-    "@mlightcad/mtext-renderer": "^0.10.13",
+    "@mlightcad/mtext-input-box": "^0.2.10",
+    "@mlightcad/mtext-renderer": "^0.10.14",
     "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",
@@ -57,7 +57,7 @@
   },
   "peerDependencies": {
     "@mlightcad/data-model": "^1.7.34",
-    "@mlightcad/mtext-renderer": "^0.10.13",
+    "@mlightcad/mtext-renderer": "^0.10.14",
     "three": "^0.172.0",
     "lodash-es": "4.17.21"
   }

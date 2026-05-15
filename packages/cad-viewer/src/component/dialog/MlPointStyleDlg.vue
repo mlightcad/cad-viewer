@@ -28,6 +28,7 @@
 
 <script lang="ts" setup>
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
+import { ElButton, ElCol, ElRow } from 'element-plus'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -98,10 +99,9 @@ reset()
 
 const buttonType = (rowIndex: number, colIndex: number) => {
   if (icons[rowIndex][colIndex].id == currentPointStyleIndex.value) {
-    return 'primary'
-  } else {
-    return null
+    return 'primary' as const
   }
+  return undefined
 }
 
 const handleSelectPointStyle = (rowIndex: number, colIndex: number) => {

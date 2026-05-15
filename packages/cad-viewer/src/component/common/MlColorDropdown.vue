@@ -73,6 +73,7 @@
 
 <script setup lang="ts">
 import { AcCmColor, AcCmColorMethod } from '@mlightcad/data-model'
+import { ElOption, ElSelect } from 'element-plus'
 import { type Component, computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

@@ -62,6 +62,7 @@
 
 <script setup lang="ts">
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
+import { ElOption, ElSelect } from 'element-plus'
 import {
   type Component,
   computed,
