@@ -6,8 +6,20 @@ export default {
     '-layer': {
       description: '通过命令行选项管理图层'
     },
+    angbase: {
+      description: '设置当前 UCS 中 0 度的基准角方向'
+    },
+    angdir: {
+      description: '设置正角度的方向为顺时针或逆时针'
+    },
     arc: {
       description: '创建圆弧'
+    },
+    aunits: {
+      description: '设置角度显示格式'
+    },
+    auprec: {
+      description: '设置角度显示精度（小数位数），与 AUNITS 配合使用'
     },
     cdxf: {
       description: '导出当前图纸为DXF格式'
@@ -18,8 +30,14 @@ export default {
     celtscale: {
       description: '控制新创建对象的线型比例系数'
     },
+    celtype: {
+      description: '设置新创建对象的线型'
+    },
     celweight: {
       description: '设置新创建对象的默认线宽'
+    },
+    cetranparency: {
+      description: '设置新创建对象的透明度'
     },
     circle: {
       description: '使用圆心和半径创建圆'
@@ -49,20 +67,11 @@ export default {
     dimlinear: {
       description: '创建线性尺寸标注'
     },
-    measurearea: {
-      description: '计算所选对象或点定义区域的面积和周长'
+    dynmode: {
+      description: '控制光标处的动态输入设置'
     },
-    measureangle: {
-      description: '测量两条线或三个点之间的夹角'
-    },
-    measurearc: {
-      description: '测量圆弧段的弧长'
-    },
-    measuredistance: {
-      description: '测量两点之间的距离及坐标增量'
-    },
-    measurementcolor: {
-      description: '设置测量标注覆盖图形使用的颜色'
+    dynprompt: {
+      description: '控制动态输入工具提示中提示的显示'
     },
     ellipse: {
       description: '通过轴端点或中心点创建椭圆或椭圆弧'
@@ -106,6 +115,10 @@ export default {
     },
     hptransparency: {
       description: '设置新创建填充和填充区域的默认透明度'
+    },
+    insunits: {
+      description:
+        '指定插入块、图像或外部参照时用于自动缩放的图形单位'
     },
     laycur: {
       description: '将所选对象的图层属性更改为当前图层',
@@ -155,8 +168,32 @@ export default {
     log: {
       description: '在控制台输出调试信息'
     },
+    lunits: {
+      description: '设置坐标和距离的显示格式'
+    },
+    luprec: {
+      description: '设置线性单位的显示精度（小数位数），与 LUNITS 配合使用'
+    },
     lwdisplay: {
       description: '用于控制是否在图纸中显示线宽效果'
+    },
+    measurearea: {
+      description: '计算所选对象或点定义区域的面积和周长'
+    },
+    measureangle: {
+      description: '测量两条线或三个点之间的夹角'
+    },
+    measurearc: {
+      description: '测量圆弧段的弧长'
+    },
+    measuredistance: {
+      description: '测量两点之间的距离及坐标增量'
+    },
+    measurement: {
+      description: '设置图形使用英制或公制单位'
+    },
+    measurementcolor: {
+      description: '设置测量标注覆盖图形使用的颜色'
     },
     mline: {
       description: '创建由多条平行线组成的多线对象'
@@ -170,6 +207,9 @@ export default {
     },
     open: {
       description: '打开图纸'
+    },
+    osmode: {
+      description: '使用位码设置运行中的对象捕捉模式'
     },
     pan: {
       description: '平移视图'
@@ -211,11 +251,21 @@ export default {
     select: {
       description: '选择图元'
     },
+    shortcutmenu: {
+      description: '控制图形区域中快捷菜单的可用性'
+    },
     sketch: {
       description: '使用多段线创建手绘线，跟踪鼠标移动'
     },
     spline: {
       description: '通过指定控制点创建平滑的样条曲线'
+    },
+    textstyle: {
+      description: '设置当前文字样式的名称'
+    },
+    unitmode: {
+      description:
+        '当 LUNITS 为建筑或分数格式时，控制坐标的分数显示格式'
     },
     whitebkcolor: {
       description: '切换绘图区域背景颜色，在白色和黑色背景之间切换'

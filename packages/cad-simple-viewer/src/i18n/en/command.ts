@@ -7,8 +7,23 @@ export default {
     '-layer': {
       description: 'Manages layers through command-line options'
     },
+    angbase: {
+      description:
+        'Sets the base angle 0 direction with respect to the current UCS'
+    },
+    angdir: {
+      description:
+        'Sets whether positive angles are measured clockwise or counterclockwise'
+    },
     arc: {
       description: 'Creates an arc'
+    },
+    aunits: {
+      description: 'Sets the display format for angles'
+    },
+    auprec: {
+      description:
+        'Sets the display precision for angles, used together with AUNITS'
     },
     cdxf: {
       description: 'Exports current drawing to DXF'
@@ -20,8 +35,14 @@ export default {
       description:
         'Controls the linetype scale factor for newly created objects'
     },
+    celtype: {
+      description: 'Sets the linetype for newly created objects'
+    },
     celweight: {
       description: 'Sets the default lineweight for newly created objects'
+    },
+    cetranparency: {
+      description: 'Sets the transparency for newly created objects'
     },
     circle: {
       description: 'Creates one circle by center and radius'
@@ -53,21 +74,11 @@ export default {
     dimlinear: {
       description: 'Creates linear dimensions'
     },
-    measurearea: {
-      description:
-        'Calculates the area and perimeter of selected objects or points'
+    dynmode: {
+      description: 'Controls Dynamic Input settings at the cursor'
     },
-    measureangle: {
-      description: 'Measures the angle between two lines or three points'
-    },
-    measurearc: {
-      description: 'Measures the length of an arc segment'
-    },
-    measuredistance: {
-      description: 'Measures the distance and delta values between two points'
-    },
-    measurementcolor: {
-      description: 'Sets the color used for measurement overlays'
+    dynprompt: {
+      description: 'Controls display of prompts in Dynamic Input tooltips'
     },
     ellipse: {
       description:
@@ -121,6 +132,10 @@ export default {
       description:
         'Sets the default transparency for newly created hatches and fills'
     },
+    insunits: {
+      description:
+        'Specifies drawing units for automatic scaling of inserted blocks, images, or xrefs'
+    },
     laycur: {
       description:
         'Changes the layer property of selected objects to the current layer',
@@ -171,8 +186,35 @@ export default {
     log: {
       description: 'Logs debug information in console'
     },
+    lunits: {
+      description: 'Sets the display format for coordinates and distances'
+    },
+    luprec: {
+      description:
+        'Sets the display precision for linear units, used together with LUNITS'
+    },
     lwdisplay: {
       description: 'Controls whether lineweights are displayed in the drawing'
+    },
+    measurearea: {
+      description:
+        'Calculates the area and perimeter of selected objects or points'
+    },
+    measureangle: {
+      description: 'Measures the angle between two lines or three points'
+    },
+    measurearc: {
+      description: 'Measures the length of an arc segment'
+    },
+    measuredistance: {
+      description: 'Measures the distance and delta values between two points'
+    },
+    measurement: {
+      description:
+        'Sets whether the drawing uses English (imperial) or metric units'
+    },
+    measurementcolor: {
+      description: 'Sets the color used for measurement overlays'
     },
     mline: {
       description: 'Creates multiple parallel lines as one multiline object'
@@ -186,6 +228,9 @@ export default {
     },
     open: {
       description: 'Opens an existing drawing file'
+    },
+    osmode: {
+      description: 'Sets running Object Snap modes using a bitcode value'
     },
     pan: {
       description:
@@ -231,12 +276,23 @@ export default {
     select: {
       description: 'Selects entities'
     },
+    shortcutmenu: {
+      description:
+        'Controls the availability of shortcut menus in the drawing area'
+    },
     sketch: {
       description:
         'Creates a sketch line using polyline that tracks mouse movement'
     },
     spline: {
       description: 'Creates a smooth spline curve by specifying control points'
+    },
+    textstyle: {
+      description: 'Sets the name of the current text style'
+    },
+    unitmode: {
+      description:
+        'Controls fractional display of coordinates when LUNITS is Architectural or Fractional'
     },
     whitebkcolor: {
       description: 'Toggles the drawing area background between white and black'

@@ -169,7 +169,8 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const editor = context.view.editor
-    const color = measurementColor(context.doc.database)
+    const db = context.doc.database
+    const color = measurementColor(db)
 
     const points: AcGePoint3dLike[] = []
 
@@ -260,7 +261,10 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
               if (points.length < 2) return
               const tempPts = [...points, cursor]
               const area = shoelaceArea(tempPts)
-              liveBadge.textContent = `~ ${area.toFixed(3)} m²`
+              liveBadge.textContent = `${db.formatter.formatLength(area, {
+                showUnits: true,
+                showApproximate: true
+              })}²`
               liveBadge.style.display = ''
               const mid = centroid(tempPts)
               const rect = context.view.canvas.getBoundingClientRect()
@@ -336,7 +340,13 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
 
         htManager.add(
           `${id}-badge`,
-          makeBadge(color, `~ ${area.toFixed(3)} m²`),
+          makeBadge(
+            color,
+            `${db.formatter.formatLength(area, {
+              showUnits: true,
+              showApproximate: true
+            })}²`
+          ),
           mid,
           'measurement'
         )

@@ -1,5 +1,6 @@
 import {
   AcCmColor,
+  AcDbDatabase,
   AcDbLine,
   AcGePoint3dLike,
   AcGiLineWeight
@@ -40,12 +41,19 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _line: AcDbLine
   private _p1: AcGePoint3dLike
   private _view: AcEdBaseView
+  private _db: AcDbDatabase
   private _badge: HTMLDivElement
 
-  constructor(view: AcEdBaseView, p1: AcGePoint3dLike, color: AcCmColor) {
+  constructor(
+    view: AcEdBaseView,
+    db: AcDbDatabase,
+    p1: AcGePoint3dLike,
+    color: AcCmColor
+  ) {
     super(view)
     this._p1 = p1
     this._view = view
+    this._db = db
     this._line = new AcDbLine(p1, p1)
     this._line.color = color
     this._line.lineWeight = AcGiLineWeight.LineWeight070
@@ -67,7 +75,10 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
       return
     }
 
-    this._badge.textContent = `~ ${dist.toFixed(3)} m`
+    this._badge.textContent = this._db.formatter.formatLength(dist, {
+      showUnits: true,
+      showApproximate: true
+    })
     this._badge.style.display = 'block'
 
     const mid = { x: (this._p1.x + p2.x) / 2, y: (this._p1.y + p2.y) / 2 }
@@ -99,7 +110,8 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const editor = context.view.editor
-    const color = measurementColor(context.doc.database)
+    const db = context.doc.database
+    const color = measurementColor(db)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -114,7 +126,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
           AcApI18n.t('jig.measureDistance.secondPoint')
         )
         p2Prompt.useBasePoint = true
-        p2Prompt.jig = new AcApMeasureDistanceJig(context.view, p1, color)
+        p2Prompt.jig = new AcApMeasureDistanceJig(context.view, db, p1, color)
         const p2Result = await editor.getPoint(p2Prompt)
         if (p2Result.status !== AcEdPromptStatus.OK) return
         const p2 = p2Result.value!
@@ -136,7 +148,13 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
         htManager.add(`${id}-dot2`, makeDot(color), p2, 'measurement')
         htManager.add(
           `${id}-badge`,
-          makeBadge(color, `~ ${dist.toFixed(3)} m`),
+          makeBadge(
+            color,
+            db.formatter.formatLength(dist, {
+              showUnits: true,
+              showApproximate: true
+            })
+          ),
           mid,
           'measurement'
         )

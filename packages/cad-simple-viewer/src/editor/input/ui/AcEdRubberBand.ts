@@ -1,5 +1,6 @@
 import { AcGePoint2dLike, AcGePoint3d } from '@mlightcad/data-model'
 
+import { AcApDocManager } from '../../../app'
 import { AcEdBaseView } from '../../view'
 
 /**
@@ -262,7 +263,10 @@ export class AcEdRubberBand {
           (targetPoint.y - this.basePoint.y) ** 2
       )
 
-      this.labelEl.textContent = dist.toFixed(3)
+      const db = AcApDocManager.instance.curDocument?.database
+      this.labelEl.textContent = db
+        ? db.formatter.formatLength(dist)
+        : dist.toFixed(3)
       this.labelEl.style.left = `${midX - 20}px`
       this.labelEl.style.top = `${midY}px`
       this.labelEl.style.display = ''
@@ -321,7 +325,6 @@ export class AcEdRubberBand {
       let angleRad = targetAngleRad - baseAngleRadScreen
       while (angleRad <= -Math.PI) angleRad += Math.PI * 2
       while (angleRad > Math.PI) angleRad -= Math.PI * 2
-      const angleDeg = (angleRad * 180) / Math.PI
 
       // mid-angle for placing label (middle of arc)
       const midAngle = baseAngleRadScreen + angleRad / 2
@@ -355,9 +358,14 @@ export class AcEdRubberBand {
       const d = `M ${sx} ${sy} A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${ex} ${ey}`
       this.anglePath.setAttribute('d', d)
 
-      // angle label (absolute degrees)
-      const angleValueDeg = Math.abs(angleDeg)
-      const angleText = `${angleValueDeg.toFixed(1)}°`
+      const angleValueRad = Math.abs(angleRad)
+      const db = AcApDocManager.instance.curDocument?.database
+      const angleText = db
+        ? db.formatter.formatAngle(angleValueRad, {
+            showUnits: true,
+            applyAngbaseAngdir: false
+          })
+        : `${((angleValueRad * 180) / Math.PI).toFixed(1)}°`
 
       // midpoint of arc in screen coords
       const midScreenX = centerScreenX + radius * Math.cos(midAngle)
