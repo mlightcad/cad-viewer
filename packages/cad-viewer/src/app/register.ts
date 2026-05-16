@@ -6,6 +6,7 @@ import {
 import { markRaw } from 'vue'
 
 import {
+  AcApDrawingUnitsCmd,
   AcApLayerStateCmd,
   AcApMissedDataCmd,
   AcApPointStyleCmd,
@@ -15,6 +16,7 @@ import {
 } from '../command'
 import {
   createMlColorIndexPickerToolbarFactory,
+  MlDrawingUnitsDlg,
   MlPointStyleDlg,
   MlQuickSelectDlg,
   MlReplacementDlg
@@ -57,6 +59,12 @@ export const registerCmds = () => {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'units',
+      'units',
+      new AcApDrawingUnitsCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'properties',
       'properties',
       new AcApPropertiesCmd()
@@ -82,6 +90,11 @@ export const registerDialogs = () => {
     registerDialog({
       name: 'QuickSelectDlg',
       component: markRaw(MlQuickSelectDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'DrawingUnitsDlg',
+      component: markRaw(MlDrawingUnitsDlg),
       props: {}
     })
     isDialogRegistered = true

@@ -2,6 +2,7 @@ export default {
   mainMenu: {
     new: '新建图纸',
     open: '打开图纸',
+    drawingUnits: '图形单位',
     export: '导出为DXF',
     exportImage: '导出图片'
   },
@@ -267,6 +268,7 @@ export default {
       erase: '从图纸中删除选中的对象。',
       properties: '打开当前所选对象的属性面板。',
       quickSelect: '打开快速选择对话框，按条件筛选并选择图元。',
+      drawingUnits: '打开图形单位对话框，设置坐标格式、精度与插入缩放单位。',
       propertyColor: '设置新建对象或当前选中对象使用的颜色。',
       propertyLineType: '设置新建对象或当前选中对象使用的线型。',
       propertyLineWeight: '设置新建对象或当前选中对象使用的线宽。',
@@ -336,7 +338,8 @@ export default {
       copy: '复制',
       erase: '删除',
       properties: '属性',
-      quickSelect: '快速选择'
+      quickSelect: '快速选择',
+      drawingUnits: '图形单位'
     }
   },
   verticalToolbar: {

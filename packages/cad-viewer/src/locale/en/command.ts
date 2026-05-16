@@ -18,6 +18,10 @@ export default {
     qselect: {
       description:
         'Creates a selection set by filtering objects with type and property conditions'
+    },
+    units: {
+      description:
+        'Sets linear and angular unit formats, precision, angle direction, and insertion scaling units'
     }
   },
   USER: {}
