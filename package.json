@@ -44,8 +44,8 @@
       "vue-demi"
     ],
     "overrides": {
-      "@mlightcad/data-model": "^1.7.35",
-      "@mlightcad/libredwg-converter": "^3.5.35",
+      "@mlightcad/data-model": "^1.7.36",
+      "@mlightcad/libredwg-converter": "^3.5.36",
       "@mlightcad/mtext-input-box": "^0.2.11",
       "@mlightcad/mtext-renderer": "^0.10.14",
       "@mlightcad/ribbon": "^0.1.9",

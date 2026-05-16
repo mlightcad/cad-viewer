@@ -306,7 +306,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const editor = context.view.editor
-    const color = measurementColor(context.doc.database)
+    const db = context.doc.database
+    const color = measurementColor(db)
 
     // Construction-phase canvas — removed before this method returns
     const arcCanvas = makeOverlayCanvas(context.view.container)
@@ -371,7 +372,10 @@ export class AcApMeasureArcCmd extends AcEdCommand {
           drawArcOnCanvas(arcCanvas, context.view, geom, start, snapped, color)
 
           const len = shortArcLength(start, snapped, geom)
-          liveBadge.textContent = `~ ${len.toFixed(4)} m`
+          liveBadge.textContent = db.formatter.formatLength(len, {
+            showUnits: true,
+            showApproximate: true
+          })
           liveBadge.style.display = ''
 
           const mid = shortArcMid(start, snapped, geom)
@@ -439,7 +443,13 @@ export class AcApMeasureArcCmd extends AcEdCommand {
         htManager.add(`${id}-dot2`, makeDot(color), end, 'measurement')
         htManager.add(
           `${id}-badge`,
-          makeBadge(color, `~ ${arcLen.toFixed(4)} m`),
+          makeBadge(
+            color,
+            db.formatter.formatLength(arcLen, {
+              showUnits: true,
+              showApproximate: true
+            })
+          ),
           mid,
           'measurement'
         )

@@ -1,5 +1,6 @@
 import {
   AcCmColor,
+  AcDbDatabase,
   AcDbLine,
   AcGePoint3dLike,
   AcGiLineWeight
@@ -188,9 +189,11 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _badge: HTMLDivElement
   private _canvas: HTMLCanvasElement
   private _color: AcCmColor
+  private _db: AcDbDatabase
 
   constructor(
     view: AcEdBaseView,
+    db: AcDbDatabase,
     vertex: AcGePoint3dLike,
     arm1: AcGePoint3dLike,
     canvas: HTMLCanvasElement,
@@ -202,6 +205,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._view = view
     this._canvas = canvas
     this._color = color
+    this._db = db
     this._line = new AcDbLine(vertex, vertex)
     this._line.color = color
     this._line.lineWeight = AcGiLineWeight.LineWeight070
@@ -226,7 +230,14 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     )
 
     const deg = calcAngleDeg(this._vertex, this._arm1, p)
-    this._badge.textContent = `~ ${deg.toFixed(2)}\u00B0`
+    this._badge.textContent = this._db.formatter.formatAngle(
+      (deg * Math.PI) / 180,
+      {
+        showUnits: true,
+        showApproximate: true,
+        applyAngbaseAngdir: false
+      }
+    )
     this._badge.style.display = 'block'
 
     const rect = this._view.canvas.getBoundingClientRect()
@@ -257,7 +268,8 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const editor = context.view.editor
-    const color = measurementColor(context.doc.database)
+    const db = context.doc.database
+    const color = measurementColor(db)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -293,6 +305,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
         )
         arm2Prompt.jig = new AcApMeasureAngleJig(
           context.view,
+          db,
           vertex,
           arm1,
           armCanvas,
@@ -401,7 +414,13 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
         }
         htManager.add(
           `${id}-badge`,
-          makeBadge(color, `${degrees.toFixed(2)}\u00B0`),
+          makeBadge(
+            color,
+            db.formatter.formatAngle((degrees * Math.PI) / 180, {
+              showUnits: true,
+              applyAngbaseAngdir: false
+            })
+          ),
           badgeWorld,
           'measurement'
         )

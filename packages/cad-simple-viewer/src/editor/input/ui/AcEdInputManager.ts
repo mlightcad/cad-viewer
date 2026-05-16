@@ -267,8 +267,7 @@ export class AcEdInputManager {
   }
 
   /**
-   * Format a number for display in input box.
-   * Default: 3 decimal places for points/distance, 2 decimal places for angles.
+   * Format a number for display in dynamic input boxes using the drawing formatter.
    * @param value The numeric value
    * @param type Optional type: 'point' | 'distance' | 'angle'
    */
@@ -276,13 +275,26 @@ export class AcEdInputManager {
     value: number,
     type: 'point' | 'distance' | 'angle'
   ): string {
+    const db = AcApDocManager.instance.curDocument?.database
+    if (!db) {
+      switch (type) {
+        case 'angle':
+          return value.toFixed(2)
+        case 'distance':
+        case 'point':
+        default:
+          return value.toFixed(3)
+      }
+    }
     switch (type) {
       case 'angle':
-        return value.toFixed(2)
+        return db.formatter.formatAngle((value * Math.PI) / 180, {
+          applyAngbaseAngdir: false
+        })
       case 'distance':
       case 'point':
       default:
-        return value.toFixed(3)
+        return db.formatter.formatLength(value)
     }
   }
 
