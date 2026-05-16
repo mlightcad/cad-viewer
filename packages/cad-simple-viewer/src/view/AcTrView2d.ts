@@ -673,25 +673,39 @@ export class AcTrView2d extends AcEdBaseView {
       mtext.triggerModifiedEvent()
     }
 
-    const editor = new AcEdMTextEditor()
-    const result = await editor.open({
-      view: this,
-      location: mtext.location,
-      width: this.resolveMTextEditorWidth(mtext),
-      textHeight: this.resolveMTextEditorTextHeight(mtext),
-      initialText: mtext.contents,
-      initialAttachmentPoint: mtext.attachmentPoint,
-      toolbarFontFamilies: this.getMTextToolbarFontFamilies()
-    })
-    if (!result) return
+    // Hide the in-scene MTEXT while the inline editor renders its own copy; otherwise
+    // both draw at once (double text) when the user double-clicks to edit.
+    // this.removeEntity(mtext)
+    this._isDirty = true
 
-    mtext.location = result.location
-    mtext.contents = result.contents
-    mtext.width = result.width
-    mtext.height = result.height
-    mtext.lineSpacingFactor = result.lineSpacingFactor
-    mtext.attachmentPoint = result.attachmentPoint
-    mtext.triggerModifiedEvent()
+    const editor = new AcEdMTextEditor()
+    let applied = false
+    try {
+      const result = await editor.open({
+        view: this,
+        location: mtext.location,
+        width: this.resolveMTextEditorWidth(mtext),
+        textHeight: this.resolveMTextEditorTextHeight(mtext),
+        initialText: mtext.contents,
+        initialAttachmentPoint: mtext.attachmentPoint,
+        toolbarFontFamilies: this.getMTextToolbarFontFamilies()
+      })
+      if (!result) return
+
+      mtext.location = result.location
+      mtext.contents = result.contents
+      mtext.width = result.width
+      mtext.height = result.height
+      mtext.lineSpacingFactor = result.lineSpacingFactor
+      mtext.attachmentPoint = result.attachmentPoint
+      mtext.triggerModifiedEvent()
+      applied = true
+    } finally {
+      if (!applied) {
+        this.updateEntity(mtext)
+        this._isDirty = true
+      }
+    }
   }
 
   private resolveMTextEditorWidth(mtext: AcDbMText) {
