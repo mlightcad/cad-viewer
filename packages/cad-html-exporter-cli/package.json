@@ -1,0 +1,40 @@
+{
+  "name": "@mlightcad/cad-html-exporter-cli",
+  "private": true,
+  "version": "1.5.0",
+  "description": "CLI example: convert DXF/DWG drawings to offline HTML",
+  "type": "module",
+  "bin": {
+    "cad-html-exporter": "./dist/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "scripts": {
+    "build": "tsc && vite build --config vite.runner.config.ts && node scripts/copy-runner-assets.mjs",
+    "install-browser": "playwright install chromium",
+    "clean": "rimraf dist dist-runner tsconfig.tsbuildinfo",
+    "export": "node ./dist/cli.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "dependencies": {
+    "@mlightcad/cad-html-exporter": "workspace:*",
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.7.34",
+    "@mlightcad/libredwg-converter": "^3.5.34",
+    "@mlightcad/mtext-renderer": "^0.10.14",
+    "commander": "^12.1.0",
+    "playwright": "^1.49.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.5.2",
+    "vite": "^5.4.19"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

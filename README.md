@@ -39,7 +39,7 @@ It also offers something you will rarely find in other CAD viewers—**one-click
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) >= 18
-- [pnpm](https://pnpm.io/) >= 8
+- [pnpm](https://pnpm.io/) >= 10
 
 ### Installation
 
