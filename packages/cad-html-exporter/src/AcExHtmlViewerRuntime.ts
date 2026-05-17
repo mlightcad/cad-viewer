@@ -1,20 +1,21 @@
 import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import { computeLayerExtentsMap } from './AcExLayerExtents'
+import {
+  AcExMeasureController,
+  type AcExMeasureMode
+} from './AcExMeasurement'
+import { AcExOsnapIndex } from './AcExOsnap'
+import { AcExOsnapMarker } from './AcExOsnapMarker'
 import { decodeSnapshot } from './AcExSnapshotCodec'
 import type { AcExExtents, AcExSnapshotV1 } from './AcExSnapshotTypes'
 
-/** Orthographic pan/zoom state for the offline viewer (WCS, XY plane). */
-interface ViewState {
-  /** World X coordinate at the center of the viewport. */
-  centerX: number
-  /** World Y coordinate at the center of the viewport. */
-  centerY: number
-  /** Pixels per drawing unit (larger = more zoomed in). */
-  scale: number
-}
+/** Matches {@link AcTrBaseView} orthographic half-height in world units. */
+const ACEX_CAMERA_FRUSTUM = 400
+const ACEX_CAMERA_DISTANCE = 500
 
 function hideLoading(): void {
   const loading = document.getElementById('mlcad-loading')
@@ -34,9 +35,8 @@ function bootstrap(): void {
 function startViewer(): void {
   const root = document.getElementById('mlcad-root')
   const statusEl = document.getElementById('mlcad-status-bar')
-  const measureLabel = document.getElementById('mlcad-measure-label')
   const snapshotEl = document.getElementById('mlcad-snapshot')
-  if (!root || !statusEl || !measureLabel || !snapshotEl) {
+  if (!root || !statusEl || !snapshotEl) {
     hideLoading()
     return
   }
@@ -76,7 +76,25 @@ function startViewer(): void {
   const scene = new THREE.Scene()
   scene.background = new THREE.Color(snapshot.meta.background)
 
-  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1000, 1000)
+  const getCanvasSize = () => ({
+    width: root.clientWidth || window.innerWidth,
+    height: root.clientHeight || window.innerHeight
+  })
+
+  const { width: initialWidth, height: initialHeight } = getCanvasSize()
+  const camera = new THREE.OrthographicCamera(
+    -initialWidth / 2,
+    initialWidth / 2,
+    initialHeight / 2,
+    -initialHeight / 2,
+    0.1,
+    1000
+  )
+  camera.position.set(0, 0, ACEX_CAMERA_DISTANCE)
+  camera.up.set(0, 1, 0)
+  camera.updateProjectionMatrix()
+
+  const controls = createOrbitControls(camera, renderer.domElement)
 
   const layerGroups = new Map<string, THREE.Group>()
 
@@ -106,38 +124,52 @@ function startViewer(): void {
     layout.meshBatches
   )
 
-  const view: ViewState = {
-    centerX: (snapshot.meta.extents.minX + snapshot.meta.extents.maxX) / 2,
-    centerY: (snapshot.meta.extents.minY + snapshot.meta.extents.maxY) / 2,
-    scale: 1
+  const osnapIndex = new AcExOsnapIndex()
+  const osnapMarker = new AcExOsnapMarker(root)
+  const isLayerVisible = (name: string) => layerVisible.get(name) !== false
+  const rebuildOsnapIndex = () => {
+    osnapIndex.rebuild(layout, isLayerVisible)
+  }
+  rebuildOsnapIndex()
+
+  const updateCameraFrustum = (width?: number, height?: number) => {
+    const size = getCanvasSize()
+    const w = width ?? size.width
+    const h = height ?? size.height
+    const aspect = w / h
+    camera.left = -aspect * ACEX_CAMERA_FRUSTUM
+    camera.right = aspect * ACEX_CAMERA_FRUSTUM
+    camera.top = ACEX_CAMERA_FRUSTUM
+    camera.bottom = -ACEX_CAMERA_FRUSTUM
+    camera.updateProjectionMatrix()
+    controls.update()
+  }
+
+  const flyTo = (centerX: number, centerY: number, zoom?: number) => {
+    const target = new THREE.Vector3(centerX, centerY, 0)
+    camera.position.set(centerX, centerY, ACEX_CAMERA_DISTANCE)
+    camera.lookAt(target)
+    camera.setRotationFromEuler(new THREE.Euler(0, 0, 0))
+    controls.target.copy(target)
+    if (zoom != null) camera.zoom = zoom
+    camera.updateProjectionMatrix()
+    controls.update()
   }
 
   const resize = () => {
-    const width = root.clientWidth || window.innerWidth
-    const height = root.clientHeight || window.innerHeight
+    const { width, height } = getCanvasSize()
     renderer.setSize(width, height)
-    updateCamera(width, height)
-  }
-
-  const updateCamera = (width: number, height: number) => {
-    const halfW = width / (2 * view.scale)
-    const halfH = height / (2 * view.scale)
-    camera.left = view.centerX - halfW
-    camera.right = view.centerX + halfW
-    camera.bottom = view.centerY - halfH
-    camera.top = view.centerY + halfH
-    camera.updateProjectionMatrix()
+    updateCameraFrustum(width, height)
   }
 
   const zoomToExtents = (extents: AcExExtents) => {
-    const width = root.clientWidth || window.innerWidth
-    const height = root.clientHeight || window.innerHeight
+    const { width, height } = getCanvasSize()
     const spanX = Math.max(extents.maxX - extents.minX, 1e-9)
     const spanY = Math.max(extents.maxY - extents.minY, 1e-9)
-    view.centerX = (extents.minX + extents.maxX) / 2
-    view.centerY = (extents.minY + extents.maxY) / 2
-    view.scale = Math.min(width / spanX, height / spanY) * 0.9
-    updateCamera(width, height)
+    const centerX = (extents.minX + extents.maxX) / 2
+    const centerY = (extents.minY + extents.maxY) / 2
+    const zoom = Math.min(width / spanX, height / spanY) * 0.9
+    flyTo(centerX, centerY, zoom)
     render()
   }
 
@@ -145,11 +177,81 @@ function startViewer(): void {
     zoomToExtents(snapshot.meta.extents)
   }
 
+  let readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
+
+  const screenToWcs = (clientX: number, clientY: number): THREE.Vector2 => {
+    const rect = renderer.domElement.getBoundingClientRect()
+    const ndc = new THREE.Vector3(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -(((clientY - rect.top) / rect.height) * 2 - 1),
+      0
+    )
+    const wcs = ndc.unproject(camera)
+    return new THREE.Vector2(wcs.x, wcs.y)
+  }
+
+  const wcsToScreen = (wcs: THREE.Vector2): { x: number; y: number } => {
+    const rect = renderer.domElement.getBoundingClientRect()
+    const ndc = new THREE.Vector3(wcs.x, wcs.y, 0).project(camera)
+    return {
+      x: rect.left + ((ndc.x + 1) / 2) * rect.width,
+      y: rect.top + ((1 - ndc.y) / 2) * rect.height
+    }
+  }
+
+  const formatLength = (value: number): string => {
+    const prec = snapshot.meta.units.luprec
+    return `${value.toFixed(prec)}`
+  }
+
+  const formatAngle = (valueDeg: number): string => {
+    const prec = snapshot.meta.units.auprec
+    return `${valueDeg.toFixed(prec)}°`
+  }
+
+  const osnapHitRadiusPx = 20
+  const osnapThresholdWcs = () => {
+    const a = screenToWcs(0, 0)
+    const b = screenToWcs(osnapHitRadiusPx, 0)
+    return Math.abs(b.x - a.x)
+  }
+
+  const resolveMeasurePoint = (clientX: number, clientY: number) => {
+    const raw = screenToWcs(clientX, clientY)
+    const snap = osnapIndex.findSnap(raw.x, raw.y, osnapThresholdWcs())
+    const point = snap
+      ? new THREE.Vector2(snap.x, snap.y)
+      : raw
+    return { point, snap: snap ?? null }
+  }
+
   const render = () => {
+    measure.syncOverlays()
     renderer.render(scene, camera)
   }
 
-  let readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
+  const measure = new AcExMeasureController({
+    root,
+    scene,
+    i18n,
+    statusEl,
+    getReadyStatus: () => readyStatus,
+    onOsnapMarker: (snap, screen) => {
+      if (snap && screen) {
+        osnapMarker.show(screen.x, screen.y, snap.mode)
+      } else {
+        osnapMarker.hide()
+      }
+    },
+    view: {
+      screenToWcs,
+      wcsToScreen,
+      render,
+      resolvePoint: resolveMeasurePoint,
+      formatLength,
+      formatAngle
+    }
+  })
 
   const layerPanel = setupLayerPanel({
     snapshot,
@@ -159,12 +261,13 @@ function startViewer(): void {
     statusEl,
     i18n,
     render,
-    zoomToExtents
+    zoomToExtents,
+    rebuildOsnapIndex
   })
 
   i18n.setOnChange(() => {
     readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
-    if (!measureMode) {
+    if (!measure.isActive) {
       statusEl.textContent = readyStatus
     }
     layerPanel?.refreshLayerLabels()
@@ -177,80 +280,19 @@ function startViewer(): void {
       i18n.toggleLocale()
     })
 
-  let isPanning = false
-  let lastX = 0
-  let lastY = 0
-  let measureMode = false
-  let measurePoints: THREE.Vector2[] = []
+  controls.addEventListener('change', () => render())
 
-  const screenToWcs = (clientX: number, clientY: number): THREE.Vector2 => {
-    const rect = renderer.domElement.getBoundingClientRect()
-    const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1
-    const ndcY = -(((clientY - rect.top) / rect.height) * 2 - 1)
-    const wcsX = view.centerX + (ndcX * (camera.right - camera.left)) / 2
-    const wcsY = view.centerY + (ndcY * (camera.top - camera.bottom)) / 2
-    return new THREE.Vector2(wcsX, wcsY)
-  }
+  setupMeasurePointerInput(renderer.domElement, () => measure, render)
 
-  const formatLength = (value: number): string => {
-    const prec = snapshot.meta.units.luprec
-    return `${value.toFixed(prec)}`
-  }
-
-  const onPointerDown = (event: PointerEvent) => {
-    if (measureMode) {
-      const pt = screenToWcs(event.clientX, event.clientY)
-      measurePoints.push(pt)
-      if (measurePoints.length === 2) {
-        const [a, b] = measurePoints
-        const dist = a.distanceTo(b)
-        statusEl.textContent = i18n.t('status.distance', {
-          value: formatLength(dist)
-        })
-        measurePoints = []
-        measureMode = false
-        document
-          .querySelector('#mlcad-toolbar [data-action="measure"]')
-          ?.classList.remove('active')
-      }
-      render()
-      return
-    }
-    isPanning = true
-    lastX = event.clientX
-    lastY = event.clientY
-    renderer.domElement.setPointerCapture(event.pointerId)
-  }
-
-  const onPointerMove = (event: PointerEvent) => {
-    if (!isPanning) return
-    const dx = event.clientX - lastX
-    const dy = event.clientY - lastY
-    lastX = event.clientX
-    lastY = event.clientY
-    view.centerX -= dx / view.scale
-    view.centerY += dy / view.scale
-    updateCamera(root.clientWidth, root.clientHeight)
-    render()
-  }
-
-  const onPointerUp = (event: PointerEvent) => {
-    isPanning = false
-    renderer.domElement.releasePointerCapture(event.pointerId)
-  }
-
-  const onWheel = (event: WheelEvent) => {
+  renderer.domElement.addEventListener('mousedown', event => {
+    if (event.button === 1) renderer.domElement.style.cursor = 'grabbing'
+  })
+  renderer.domElement.addEventListener('mouseup', event => {
+    if (event.button === 1) renderer.domElement.style.cursor = ''
+  })
+  renderer.domElement.addEventListener('contextmenu', event => {
     event.preventDefault()
-    const factor = event.deltaY > 0 ? 0.9 : 1.1
-    view.scale = Math.max(0.0001, view.scale * factor)
-    updateCamera(root.clientWidth, root.clientHeight)
-    render()
-  }
-
-  renderer.domElement.addEventListener('pointerdown', onPointerDown)
-  renderer.domElement.addEventListener('pointermove', onPointerMove)
-  renderer.domElement.addEventListener('pointerup', onPointerUp)
-  renderer.domElement.addEventListener('wheel', onWheel, { passive: false })
+  })
 
   document
     .querySelectorAll('#mlcad-toolbar button[data-action]')
@@ -259,16 +301,29 @@ function startViewer(): void {
         const action = button.getAttribute('data-action')
         if (action === 'fit') {
           fit()
+        } else if (action === 'clear-measurements') {
+          measure.clearAll()
+          statusEl.textContent = readyStatus
         } else if (action === 'measure') {
-          measureMode = !measureMode
-          measurePoints = []
-          button.classList.toggle('active', measureMode)
-          statusEl.textContent = measureMode
-            ? i18n.t('status.measureHint')
-            : readyStatus
+          const mode = button.getAttribute(
+            'data-measure-mode'
+          ) as AcExMeasureMode | null
+          if (mode) {
+            measure.setMode(mode)
+          }
         }
       })
     })
+
+  window.addEventListener('keydown', event => {
+    if (measure.handleKeyDown(event.key)) {
+      event.preventDefault()
+      return
+    }
+    if (measure.handleSelectionKeyDown(event.key, event)) {
+      event.preventDefault()
+    }
+  })
 
   window.addEventListener('resize', () => {
     resize()
@@ -282,7 +337,7 @@ function startViewer(): void {
 }
 
 /** DOM handles for one layer row in the drawer (used when locale changes). */
-interface LayerRowRefs {
+interface AcExLayerRowRefs {
   /** Layer name shown in the row. */
   name: string
   /** Per-layer zoom button whose `title` / `aria-label` are retranslated. */
@@ -290,7 +345,7 @@ interface LayerRowRefs {
 }
 
 /** Dependencies passed into {@link setupLayerPanel}. */
-interface LayerPanelContext {
+interface AcExLayerPanelContext {
   /** Full snapshot (layer table and metadata). */
   snapshot: AcExSnapshotV1
   /** Mutable visibility map shared with the THREE layer groups. */
@@ -307,15 +362,19 @@ interface LayerPanelContext {
   render: () => void
   /** Fits the camera to the given extents and redraws. */
   zoomToExtents: (extents: AcExExtents) => void
+  /** Rebuilds the object-snap index after layer visibility changes. */
+  rebuildOsnapIndex: () => void
 }
 
 /** Handles returned by {@link setupLayerPanel} for locale-driven UI updates. */
-interface LayerPanelController {
+interface AcExLayerPanelController {
   /** Reapplies `layers.zoomTo` labels on every per-layer zoom button. */
   refreshLayerLabels: () => void
 }
 
-function setupLayerPanel(ctx: LayerPanelContext): LayerPanelController | null {
+function setupLayerPanel(
+  ctx: AcExLayerPanelContext
+): AcExLayerPanelController | null {
   const {
     snapshot,
     layerVisible,
@@ -324,7 +383,8 @@ function setupLayerPanel(ctx: LayerPanelContext): LayerPanelController | null {
     statusEl,
     i18n,
     render,
-    zoomToExtents
+    zoomToExtents,
+    rebuildOsnapIndex
   } = ctx
 
   const layersBtn = document.getElementById('mlcad-layers-btn')
@@ -335,7 +395,7 @@ function setupLayerPanel(ctx: LayerPanelContext): LayerPanelController | null {
   const hideAllBtn = document.getElementById('mlcad-layer-hide-all')
   if (!layersBtn || !layerDrawer || !layerList) return null
 
-  const layerRows: LayerRowRefs[] = []
+  const layerRows: AcExLayerRowRefs[] = []
 
   const layerNames = new Set(snapshot.layers.map(layer => layer.name))
   for (const name of layerGroups.keys()) {
@@ -354,6 +414,7 @@ function setupLayerPanel(ctx: LayerPanelContext): LayerPanelController | null {
     layerVisible.set(name, visible)
     const group = layerGroups.get(name)
     if (group) group.visible = visible
+    rebuildOsnapIndex()
   }
 
   const setAllLayersVisible = (visible: boolean) => {
@@ -474,6 +535,56 @@ function createLineObject(batch: {
   }
   const material = new THREE.LineBasicMaterial({ color: batch.color })
   return new THREE.LineSegments(geometry, material)
+}
+
+/** Same defaults as {@link AcTrBaseView#createCameraControls}. */
+function createOrbitControls(
+  camera: THREE.OrthographicCamera,
+  domElement: HTMLElement
+): OrbitControls {
+  const controls = new OrbitControls(camera, domElement)
+  controls.enableDamping = false
+  controls.autoRotate = false
+  controls.enableRotate = false
+  controls.zoomSpeed = 5
+  controls.zoomToCursor = true
+  controls.mouseButtons = {
+    MIDDLE: THREE.MOUSE.PAN
+  }
+  controls.touches = {
+    ONE: THREE.TOUCH.PAN,
+    TWO: THREE.TOUCH.DOLLY_PAN
+  }
+  controls.update()
+  return controls
+}
+
+/**
+ * Left-button picking while a measure tool is active; pan/zoom stay on OrbitControls.
+ */
+function setupMeasurePointerInput(
+  domElement: HTMLElement,
+  getMeasure: () => AcExMeasureController,
+  render: () => void
+): void {
+  domElement.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return
+    const measure = getMeasure()
+    if (measure.isActive) {
+      measure.handlePointerDown(event.clientX, event.clientY)
+      render()
+      return
+    }
+    if (measure.handleSelectionPointerDown(event.clientX, event.clientY)) {
+      render()
+    }
+  })
+  domElement.addEventListener('pointermove', event => {
+    const measure = getMeasure()
+    if (!measure.isActive) return
+    measure.handlePointerMove(event.clientX, event.clientY)
+    render()
+  })
 }
 
 function createMeshObject(batch: {

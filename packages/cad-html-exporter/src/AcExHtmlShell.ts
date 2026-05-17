@@ -26,7 +26,12 @@ export const ACEX_HTML_SHELL_CSS = `
     color: var(--mlcad-ui-text);
   }
   #mlcad-root { position: relative; width: 100%; height: 100%; }
-  #mlcad-root canvas { display: block; width: 100%; height: 100%; }
+  #mlcad-root canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
 
   #mlcad-sidebar {
     position: absolute;
@@ -184,10 +189,70 @@ export const ACEX_HTML_SHELL_CSS = `
     backdrop-filter: blur(10px);
     pointer-events: none;
   }
-  #mlcad-measure-label {
-    position: absolute; pointer-events: none; z-index: 5;
-    color: var(--mlcad-accent); font-size: 12px; font-weight: 600;
-    text-shadow: 0 0 4px #000;
+  .mlcad-tool-separator {
+    height: 1px;
+    margin: 4px 8px;
+    background: var(--mlcad-ui-border);
+  }
+  #mlcad-measure-overlays {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    overflow: hidden;
+  }
+  .mlcad-measure-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+  }
+  .mlcad-measure-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--mlcad-accent);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .mlcad-measure-badge {
+    position: absolute;
+    padding: 3px 10px;
+    border-radius: 14px;
+    background: var(--mlcad-ui-bg-elevated);
+    border: 1px solid rgba(8, 232, 222, 0.45);
+    color: var(--mlcad-accent);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+  }
+  .mlcad-measure-badge--coordinate {
+    transform: translate(-50%, calc(-50% - 16px));
+  }
+  .mlcad-measure-dot.mlcad-measure-selected {
+    border-color: #ffd54f;
+    box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.55);
+  }
+  .mlcad-measure-badge.mlcad-measure-selected {
+    border-color: rgba(255, 213, 79, 0.75);
+    color: #ffd54f;
+  }
+  .mlcad-measure-canvas.mlcad-measure-selected {
+    filter: drop-shadow(0 0 3px #ffd54f);
+  }
+  .mlcad-measure-live-label {
+    position: absolute;
+    pointer-events: none;
+    color: var(--mlcad-accent);
+    font-size: 12px;
+    font-weight: 600;
+    text-shadow: 0 0 4px #000, 0 1px 3px #000;
     transform: translate(-50%, -120%);
     display: none;
   }
@@ -261,11 +326,42 @@ export function buildAcExHtmlShellBody(loadingBg: string): string {
           'data-i18n-key': 'toolbar.zoomExtents',
           'data-i18n-attr': 'title aria-label'
         })}
-        ${acExToolbarButton(acExHtmlIcons.measure, 'Measure distance', {
+        ${acExToolbarButton(acExHtmlIcons.measureDistance, 'Measure distance', {
           'data-action': 'measure',
+          'data-measure-mode': 'distance',
           'data-i18n-key': 'toolbar.measureDistance',
           'data-i18n-attr': 'title aria-label'
         })}
+        ${acExToolbarButton(acExHtmlIcons.measureAngle, 'Measure angle', {
+          'data-action': 'measure',
+          'data-measure-mode': 'angle',
+          'data-i18n-key': 'toolbar.measureAngle',
+          'data-i18n-attr': 'title aria-label'
+        })}
+        ${acExToolbarButton(acExHtmlIcons.measureArc, 'Measure arc length', {
+          'data-action': 'measure',
+          'data-measure-mode': 'arc',
+          'data-i18n-key': 'toolbar.measureArc',
+          'data-i18n-attr': 'title aria-label'
+        })}
+        ${acExToolbarButton(acExHtmlIcons.measureArea, 'Measure area', {
+          'data-action': 'measure',
+          'data-measure-mode': 'area',
+          'data-i18n-key': 'toolbar.measureArea',
+          'data-i18n-attr': 'title aria-label'
+        })}
+        ${acExToolbarButton(acExHtmlIcons.measureCoordinate, 'Measure coordinates', {
+          'data-action': 'measure',
+          'data-measure-mode': 'coordinate',
+          'data-i18n-key': 'toolbar.measureCoordinate',
+          'data-i18n-attr': 'title aria-label'
+        })}
+        ${acExToolbarButton(acExHtmlIcons.clearMeasurements, 'Clear measurements', {
+          'data-action': 'clear-measurements',
+          'data-i18n-key': 'toolbar.clearMeasurements',
+          'data-i18n-attr': 'title aria-label'
+        })}
+        <div class="mlcad-tool-separator" aria-hidden="true"></div>
         ${acExToolbarButton(acExHtmlIcons.layer, 'Layers', {
           id: 'mlcad-layers-btn',
           'aria-haspopup': 'dialog',
@@ -295,6 +391,5 @@ export function buildAcExHtmlShellBody(loadingBg: string): string {
       </div>
     </aside>
     <footer id="mlcad-status-bar" aria-live="polite"></footer>
-    <div id="mlcad-measure-label"></div>
   </div>`
 }
