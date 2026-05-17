@@ -64,6 +64,9 @@ export default {
     csvg: {
       description: '转换当前图纸为SVG格式'
     },
+    chtml: {
+      description: '将当前图纸导出为可离线打开的 HTML 文件'
+    },
     dimlinear: {
       description: '创建线性尺寸标注'
     },
@@ -117,8 +120,7 @@ export default {
       description: '设置新创建填充和填充区域的默认透明度'
     },
     insunits: {
-      description:
-        '指定插入块、图像或外部参照时用于自动缩放的图形单位'
+      description: '指定插入块、图像或外部参照时用于自动缩放的图形单位'
     },
     laycur: {
       description: '将所选对象的图层属性更改为当前图层',
@@ -264,8 +266,7 @@ export default {
       description: '设置当前文字样式的名称'
     },
     unitmode: {
-      description:
-        '当 LUNITS 为建筑或分数格式时，控制坐标的分数显示格式'
+      description: '当 LUNITS 为建筑或分数格式时，控制坐标的分数显示格式'
     },
     whitebkcolor: {
       description: '切换绘图区域背景颜色，在白色和黑色背景之间切换'

@@ -1487,6 +1487,10 @@ const fileMenuItems = computed<FileMenuItemModel[]>(() => {
       label: t('main.mainMenu.export')
     },
     {
+      id: 'ExportHtml',
+      label: t('main.mainMenu.exportHtml')
+    },
+    {
       id: 'PngOut',
       label: t('main.mainMenu.exportImage')
     }
@@ -1525,6 +1529,8 @@ const handleFileMenuSelect = (command: string) => {
   if (command === 'Convert') {
     const cmd = new AcApConvertToDxfCmd()
     cmd.trigger(AcApDocManager.instance.context)
+  } else if (command === 'ExportHtml') {
+    AcApDocManager.instance.sendStringToExecute('chtml')
   } else if (command === 'PngOut') {
     AcApDocManager.instance.sendStringToExecute('pngout')
   } else if (command === 'QNew') {

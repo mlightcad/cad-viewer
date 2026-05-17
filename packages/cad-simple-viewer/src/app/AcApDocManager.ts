@@ -24,6 +24,7 @@ import {
   AcApDimLinearCmd,
   AcApEllipseCmd,
   AcApEraseCmd,
+  AcApExportHtmlCmd,
   AcApHatchCmd,
   AcApLayerCloseCmd,
   AcApLayerCmd,
@@ -217,6 +218,19 @@ export interface AcApDocManagerOptions {
   webworkerFileUrls?: AcApWebworkerFiles
 
   /**
+   * URL of the offline HTML viewer runtime bundle (`viewer-runtime.iife.js`).
+   * Used by {@link AcApExportHtmlCmd} when packaging standalone HTML files.
+   */
+  htmlViewerRuntimeUrl?: string | URL
+
+  /**
+   * Host element for the busy overlay (e.g. HTML export spinner).
+   * Set to the viewer shell so the mask covers ribbon, toolbars, and status bar.
+   * Defaults to the canvas container when omitted.
+   */
+  busyIndicatorHost?: HTMLElement
+
+  /**
    * Configuration for automatic plugin loading.
    *
    * Plugins can be loaded automatically during initialization from:
@@ -305,8 +319,12 @@ export class AcApDocManager {
   private _fontLoader: AcApFontLoader
   /** Base URL to get fonts, templates, and example files */
   private _baseUrl: string
-  /** Progress animation */
+  /** URL of the HTML viewer runtime bundle for export */
+  private _htmlViewerRuntimeUrl?: string | URL
+  /** Progress animation while opening/parsing files */
   private _progress: AcApProgress
+  /** Full-viewer busy overlay (e.g. HTML export) */
+  private _busyProgress: AcApProgress
   /** Command manager */
   private _commandManager: AcEdCommandStack
   /** Plugin manager */
@@ -346,6 +364,7 @@ export class AcApDocManager {
    */
   private constructor(options: AcApDocManagerOptions = {}) {
     this._baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
+    this._htmlViewerRuntimeUrl = options.htmlViewerRuntimeUrl
     this._commandAliasOverrides = this.normalizeCommandAliasConfig(
       options.commandAliases
     )
@@ -414,6 +433,9 @@ export class AcApDocManager {
     )
     this._progress = new AcApProgress({ host: view.container })
     this._progress.hide()
+    const busyHost = options.busyIndicatorHost ?? view.container
+    this._busyProgress = new AcApProgress({ host: busyHost })
+    this._busyProgress.hide()
     if (!options.notLoadDefaultFonts) {
       this.loadDefaultFonts()
     }
@@ -534,6 +556,13 @@ export class AcApDocManager {
    */
   get baseUrl() {
     return this._baseUrl
+  }
+
+  /**
+   * URL of the offline HTML viewer runtime bundle used for HTML export.
+   */
+  get htmlViewerRuntimeUrl() {
+    return this._htmlViewerRuntimeUrl
   }
 
   /**
@@ -828,6 +857,7 @@ export class AcApDocManager {
     addSystemCommand('circle', 'circle', new AcApCircleCmd())
     addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
     addSystemCommand('csvg', 'csvg', new AcApConvertToSvgCmd())
+    addSystemCommand('chtml', 'chtml', new AcApExportHtmlCmd())
     addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
@@ -1128,6 +1158,21 @@ export class AcApDocManager {
    */
   private getDocumentEventMode(options?: AcApOpenDatabaseOptions) {
     return options?.mode ?? AcEdOpenMode.Read
+  }
+
+  /**
+   * Shows a spinner overlay without text (e.g. HTML export).
+   */
+  showBusyIndicator(): void {
+    this._busyProgress.setMessage('')
+    this._busyProgress.show()
+  }
+
+  /**
+   * Hides the spinner overlay shown by {@link showBusyIndicator}.
+   */
+  hideBusyIndicator(): void {
+    this._busyProgress.hide()
   }
 
   /**

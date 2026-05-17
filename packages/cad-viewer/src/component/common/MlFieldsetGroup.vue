@@ -1,6 +1,8 @@
 <template>
   <fieldset class="ml-fieldset-group" :disabled="disabled">
-    <legend v-if="hasTitle" class="ml-fieldset-group__legend">{{ title }}</legend>
+    <legend v-if="hasTitle" class="ml-fieldset-group__legend">
+      {{ title }}
+    </legend>
     <div class="ml-fieldset-group__body">
       <slot />
     </div>

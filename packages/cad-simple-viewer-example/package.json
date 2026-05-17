@@ -8,6 +8,7 @@
     "url": "https://github.com/mlightcad/cad-viewer.git"
   },
   "scripts": {
+    "prebuild": "pnpm --filter @mlightcad/cad-html-exporter build",
     "build": "tsc && vite build",
     "clean": "rimraf dist lib tsconfig.tsbuildinfo",
     "dev": "vite",
@@ -16,6 +17,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mlightcad/cad-html-exporter": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.7.34",
     "three": "^0.172.0"

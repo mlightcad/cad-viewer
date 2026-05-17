@@ -1,5 +1,6 @@
 {
-  "name": "@mlightcad/cad-simple-viewer",
+  "name": "@mlightcad/cad-html-exporter",
+  "private": true,
   "version": "1.5.0",
   "license": "MIT",
   "type": "module",
@@ -7,17 +8,6 @@
     "type": "git",
     "url": "https://github.com/mlightcad/cad-viewer.git"
   },
-  "keywords": [
-    "autocad",
-    "cad",
-    "cad-viewer",
-    "dwg",
-    "dwg-viewer",
-    "dxf",
-    "dxf-viewer",
-    "mlight",
-    "mlightcad"
-  ],
   "files": [
     "dist",
     "lib",
@@ -32,38 +22,30 @@
       "types": "./lib/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.umd.cjs"
+    },
+    "./viewer-runtime": {
+      "import": "./dist/viewer-runtime.iife.js"
     }
   },
   "scripts": {
     "clean": "rimraf dist lib tsconfig.tsbuildinfo",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && vite build --config vite.viewer.config.ts",
     "lint": "eslint src/",
     "lint:fix": "eslint --fix --quiet src/"
   },
+  "dependencies": {
+    "fflate": "^0.8.2"
+  },
   "devDependencies": {
     "@mlightcad/data-model": "^1.7.34",
-    "@mlightcad/mtext-input-box": "^0.2.10",
-    "@mlightcad/mtext-renderer": "^0.10.14",
-    "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
-    "@mlightcad/three-viewcube": "0.0.9",
-    "@types/lodash-es": "^4.17.12",
-    "@types/rbush": "^3.0.4",
+    "@types/jest": "^29.5.12",
     "@types/three": "^0.172.0",
-    "lodash-es": "4.17.21",
     "three": "^0.172.0"
   },
-  "dependencies": {
-    "@mlightcad/cad-html-exporter": "workspace:*",
-    "@mlightcad/libredwg-converter": "^3.5.34",
-    "mitt": "^3.0.1",
-    "rbush": "^4.0.1"
-  },
   "peerDependencies": {
-    "@mlightcad/cad-html-exporter": "^1.5.0",
     "@mlightcad/data-model": "^1.7.34",
-    "@mlightcad/mtext-renderer": "^0.10.14",
-    "three": "^0.172.0",
-    "lodash-es": "4.17.21"
+    "@mlightcad/three-renderer": "^1.5.0",
+    "three": "^0.172.0"
   }
 }

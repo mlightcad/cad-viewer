@@ -19,6 +19,9 @@
         <el-dropdown-item command="Convert">{{
           t('main.mainMenu.export')
         }}</el-dropdown-item>
+        <el-dropdown-item command="ExportHtml">{{
+          t('main.mainMenu.exportHtml')
+        }}</el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
@@ -49,6 +52,8 @@ const handleCommand = (command: string) => {
   if (command === 'Convert') {
     const cmd = new AcApConvertToDxfCmd()
     cmd.trigger(AcApDocManager.instance.context)
+  } else if (command === 'ExportHtml') {
+    AcApDocManager.instance.sendStringToExecute('chtml')
   } else if (command === 'QNew') {
     const cmd = new AcApQNewCmd()
     cmd.trigger(AcApDocManager.instance.context)

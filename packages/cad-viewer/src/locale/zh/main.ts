@@ -4,6 +4,7 @@ export default {
     open: '打开图纸',
     drawingUnits: '图形单位',
     export: '导出为DXF',
+    exportHtml: '导出为 HTML',
     exportImage: '导出图片'
   },
   ribbon: {

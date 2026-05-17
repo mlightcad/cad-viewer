@@ -37,6 +37,8 @@ class CadViewerApp {
   private toolbarBgButton: HTMLButtonElement
   private toolbarPickboxButton: HTMLButtonElement
   private toolbarLineWeightButton: HTMLButtonElement
+  private toolbarExportHtmlButton: HTMLButtonElement
+  private viewerPane: HTMLElement
   private emptyState: HTMLDivElement
   private predefinedButtons: NodeListOf<HTMLButtonElement>
   private isInitialized: boolean = false
@@ -69,6 +71,10 @@ class CadViewerApp {
     this.toolbarLineWeightButton = document.getElementById(
       'toolbarLineWeightButton'
     ) as HTMLButtonElement
+    this.toolbarExportHtmlButton = document.getElementById(
+      'toolbarExportHtmlButton'
+    ) as HTMLButtonElement
+    this.viewerPane = document.getElementById('viewerPane') as HTMLElement
     this.emptyState = document.getElementById('emptyState') as HTMLDivElement
     this.predefinedButtons = document.querySelectorAll(
       '#predefinedFileList .file-list-item'
@@ -86,6 +92,7 @@ class CadViewerApp {
       try {
         AcApDocManager.createInstance({
           container: this.container,
+          busyIndicatorHost: this.viewerPane,
           autoResize: true,
           baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
           commandAliases: EXAMPLE_COMMAND_ALIASES,
@@ -93,7 +100,8 @@ class CadViewerApp {
             mtextRender: './workers/mtext-renderer-worker.js',
             dxfParser: './workers/dxf-parser-worker.js',
             dwgParser: './workers/libredwg-parser-worker.js'
-          }
+          },
+          htmlViewerRuntimeUrl: './viewer-runtime.iife.js'
         })
 
         AcApDocManager.instance.events.documentActivated.addEventListener(
@@ -188,6 +196,13 @@ class CadViewerApp {
       const db = AcApDocManager.instance.curDocument.database
       db.lwdisplay = !db.lwdisplay
       this.updateLineWeightButtonLabel()
+    })
+
+    this.toolbarExportHtmlButton.addEventListener('click', () => {
+      if (!this.hasLoadedDocument || !this.isInitialized) {
+        return
+      }
+      AcApDocManager.instance.sendStringToExecute('chtml')
     })
   }
 
@@ -294,6 +309,7 @@ class CadViewerApp {
     this.toolbarBgButton.disabled = !this.hasLoadedDocument
     this.toolbarPickboxButton.disabled = !this.hasLoadedDocument
     this.toolbarLineWeightButton.disabled = !this.hasLoadedDocument
+    this.toolbarExportHtmlButton.disabled = !this.hasLoadedDocument
     this.updateLineWeightButtonLabel()
   }
 

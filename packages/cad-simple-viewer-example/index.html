@@ -80,6 +80,7 @@
       }
 
       .viewer-pane {
+        position: relative;
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -240,7 +241,7 @@
         </div>
       </aside>
 
-      <main class="viewer-pane">
+      <main class="viewer-pane" id="viewerPane">
         <header class="viewer-toolbar">
           <button type="button" class="toolbar-button" id="toolbarOpenButton">Open</button>
           <button
@@ -277,6 +278,14 @@
             disabled
           >
             LineWeight: On
+          </button>
+          <button
+            type="button"
+            class="toolbar-button"
+            id="toolbarExportHtmlButton"
+            disabled
+          >
+            Export HTML
           </button>
         </header>
 

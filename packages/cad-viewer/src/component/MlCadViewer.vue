@@ -146,6 +146,12 @@ interface Props {
   /** Base URL for loading fonts, templates, and example files (e.g., 'https://example.com/cad-data/') */
   baseUrl?: string
   /**
+   * URL of the offline HTML viewer runtime (`viewer-runtime.iife.js`).
+   * Required for File menu “Export to HTML”; copy the file from
+   * `@mlightcad/cad-html-exporter` build output into your app assets.
+   */
+  htmlViewerRuntimeUrl?: string | URL
+  /**
    * The flag whether to use main thread or webwork to render drawing.
    * - true: use main thread
    * - false: use web worker
@@ -168,6 +174,7 @@ const props = withDefaults(defineProps<Props>(), {
   localFile: undefined,
   background: undefined,
   baseUrl: undefined,
+  htmlViewerRuntimeUrl: './assets/viewer-runtime.iife.js',
   useMainThreadDraw: true,
   theme: 'dark',
   mode: AcEdOpenMode.Write
@@ -179,6 +186,7 @@ const { info, warning, error, success } = useNotificationCenter()
 
 // Canvas element reference
 const containerRef = ref<HTMLDivElement>()
+const layoutRef = ref<HTMLDivElement>()
 const headerRef = ref<HTMLElement>()
 
 // Referenence to the root element used to switch theme
@@ -413,10 +421,12 @@ onMounted(async () => {
   }
 
   // Initialize the CAD viewer with the internal canvas
-  if (containerRef.value) {
+  if (containerRef.value && layoutRef.value) {
     initializeCadViewer({
       container: containerRef.value,
+      busyIndicatorHost: layoutRef.value,
       baseUrl: props.baseUrl,
+      htmlViewerRuntimeUrl: props.htmlViewerRuntimeUrl,
       autoResize: true,
       useMainThreadDraw: props.useMainThreadDraw
     })
@@ -566,7 +576,7 @@ const closeNotificationCenter = () => {
   >
     <!-- Element Plus configuration provider for internationalization -->
     <el-config-provider :locale="elementPlusLocale">
-      <div class="ml-cad-layout">
+      <div ref="layoutRef" class="ml-cad-layout">
         <!-- Header section with main menu and language selector -->
         <header v-if="editorRef" ref="headerRef" class="ml-cad-header">
           <ml-ribbon-commands
