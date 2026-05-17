@@ -6,6 +6,24 @@ export * from './AcExSnapshotCodec'
 export * from './AcExSceneBatchCollector'
 /** Database metadata extraction for snapshot `meta` fields. */
 export * from './AcExViewerMetadata'
+/**
+ * Analytic OSNAP primitive types ({@link AcExOsnapPrimitive}, {@link AcExOsnapCatalog})
+ * and mode definitions for the offline HTML viewer.
+ */
+export * from './AcExOsnapPrimitiveTypes'
+/**
+ * Builds per-layout {@link AcExOsnapCatalog} from an open `AcDbDatabase`
+ * (lines, curves, splines, nested blocks in WCS).
+ */
+export { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
+/** Maps snapshot primitives to `AcGe*` curves for OSNAP. */
+export {
+  circleOrArcToAcGe,
+  ellipseToAcGe,
+  primitiveToAcGeCurve,
+  splineToAcGe,
+  type AcExOsnapAcGeCurve
+} from './AcExOsnapPrimitiveToAcGe'
 export { packHtml, type AcExPackHtmlOptions } from './AcExHtmlPackager'
 export {
   AcExHtmlI18n,

@@ -1,28 +1,21 @@
+import { collectPrimitiveSnapCandidates, distSq } from './AcExOsnapGeometry'
+import type {
+  AcExOsnapMode,
+  AcExOsnapPoint,
+  AcExOsnapPrimitive
+} from './AcExOsnapPrimitiveTypes'
+import { ACEX_DEFAULT_OSNAP_MODES } from './AcExOsnapPrimitiveTypes'
 import type {
   AcExLayoutSnapshot,
   AcExLineBatch,
   AcExMeshBatch
 } from './AcExSnapshotTypes'
 
-/** Object snap modes supported by the offline HTML viewer. */
-export type AcExOsnapMode = 'endpoint' | 'midpoint' | 'nearest'
-
-/** A snap candidate in world coordinates (WCS, XY plane). */
-export interface AcExOsnapPoint {
-  x: number
-  y: number
-  mode: AcExOsnapMode
-}
-
-/** Default snap modes (matches common AutoCAD defaults for measure workflows). */
-export const ACEX_DEFAULT_OSNAP_MODES: readonly AcExOsnapMode[] = [
-  'endpoint',
-  'midpoint',
-  'nearest'
-] as const
+export type { AcExOsnapMode, AcExOsnapPoint } from './AcExOsnapPrimitiveTypes'
+export { ACEX_DEFAULT_OSNAP_MODES } from './AcExOsnapPrimitiveTypes'
 
 /**
- * One line segment in WCS (XY) indexed for object snap.
+ * One line segment in WCS (XY) indexed for legacy tessellated object snap.
  * @internal
  */
 interface AcExOsnapSegment {
@@ -36,18 +29,18 @@ function modePriority(mode: AcExOsnapMode): number {
   switch (mode) {
     case 'endpoint':
     case 'midpoint':
+    case 'center':
       return 0
+    case 'quadrant':
+    case 'focus':
+    case 'control':
+    case 'node':
+      return 1
     case 'nearest':
       return 2
     default:
       return 1
   }
-}
-
-function distSq(ax: number, ay: number, bx: number, by: number): number {
-  const dx = ax - bx
-  const dy = ay - by
-  return dx * dx + dy * dy
 }
 
 function closestPointOnSegment(
@@ -138,12 +131,65 @@ function cellKey(cx: number, cy: number): string {
   return `${cx},${cy}`
 }
 
+function primitiveBounds(
+  prim: AcExOsnapPrimitive
+): { minX: number; minY: number; maxX: number; maxY: number } {
+  switch (prim.kind) {
+    case 'line':
+      return {
+        minX: Math.min(prim.x0, prim.x1),
+        minY: Math.min(prim.y0, prim.y1),
+        maxX: Math.max(prim.x0, prim.x1),
+        maxY: Math.max(prim.y0, prim.y1)
+      }
+    case 'circle':
+    case 'arc':
+      return {
+        minX: prim.cx - prim.r,
+        minY: prim.cy - prim.r,
+        maxX: prim.cx + prim.r,
+        maxY: prim.cy + prim.r
+      }
+    case 'ellipse':
+      return {
+        minX: prim.cx - prim.majorR,
+        minY: prim.cy - prim.majorR,
+        maxX: prim.cx + prim.majorR,
+        maxY: prim.cy + prim.majorR
+      }
+    case 'spline': {
+      let minX = Infinity
+      let minY = Infinity
+      let maxX = -Infinity
+      let maxY = -Infinity
+      for (let i = 0; i + 1 < prim.controlPoints.length; i += 2) {
+        const x = prim.controlPoints[i]!
+        const y = prim.controlPoints[i + 1]!
+        minX = Math.min(minX, x)
+        minY = Math.min(minY, y)
+        maxX = Math.max(maxX, x)
+        maxY = Math.max(maxY, y)
+      }
+      return { minX, minY, maxX, maxY }
+    }
+    case 'point':
+      return { minX: prim.x, minY: prim.y, maxX: prim.x, maxY: prim.y }
+  }
+}
+
 /**
- * Geometry index for object snap in the offline HTML viewer.
- * Built from exported line/mesh batches; respects per-layer visibility.
+ * Spatial index for object snap in the offline HTML viewer.
+ *
+ * On {@link AcExOsnapIndex.rebuild}, if {@link AcExLayoutSnapshot.osnap} contains
+ * primitives, snapping is computed from analytic curves via
+ * {@link collectPrimitiveSnapCandidates}. Otherwise the index falls back to
+ * line segments extracted from tessellated {@link AcExLineBatch} and mesh edges
+ * (legacy snapshots).
  */
 export class AcExOsnapIndex {
   private segments: AcExOsnapSegment[] = []
+  private primitives: AcExOsnapPrimitive[] = []
+  private usePrimitives = false
   private grid = new Map<string, number[]>()
   private cellSize = 1
   private modes: Set<AcExOsnapMode>
@@ -156,53 +202,92 @@ export class AcExOsnapIndex {
   }
 
   /**
-   * Rebuilds the segment index from layout batches.
+   * Rebuilds the snap index from the active layout snapshot.
    *
-   * @param layout - Active layout geometry.
-   * @param isLayerVisible - Returns whether a layer participates in snapping.
+   * When `layout.osnap.primitives` is non-empty, only those WCS primitives are
+   * indexed (curves are not approximated from render batches). When absent or
+   * empty, tessellated `lineBatches` and `meshBatches` are used instead.
+   *
+   * @param layout - Active layout snapshot (batches + optional {@link AcExLayoutSnapshot.osnap}).
+   * @param isLayerVisible - When `false`, primitives/batches on that layer are excluded.
    */
   rebuild(
     layout: AcExLayoutSnapshot,
     isLayerVisible: (layerName: string) => boolean
   ): void {
-    const segments: AcExOsnapSegment[] = []
-    for (const batch of layout.lineBatches) {
-      if (!isLayerVisible(batch.layer)) continue
-      for (const seg of iterLineSegments(batch)) {
-        segments.push(seg)
+    const catalog = layout.osnap
+    if (catalog && catalog.primitives.length > 0) {
+      this.usePrimitives = true
+      this.primitives = catalog.primitives.filter(p =>
+        isLayerVisible(p.layer)
+      )
+      this.segments = []
+    } else {
+      this.usePrimitives = false
+      this.primitives = []
+      const segments: AcExOsnapSegment[] = []
+      for (const batch of layout.lineBatches) {
+        if (!isLayerVisible(batch.layer)) continue
+        for (const seg of iterLineSegments(batch)) {
+          segments.push(seg)
+        }
       }
-    }
-    for (const batch of layout.meshBatches) {
-      if (!isLayerVisible(batch.layer)) continue
-      for (const seg of iterMeshEdges(batch)) {
-        segments.push(seg)
+      for (const batch of layout.meshBatches) {
+        if (!isLayerVisible(batch.layer)) continue
+        for (const seg of iterMeshEdges(batch)) {
+          segments.push(seg)
+        }
       }
+      this.segments = segments
     }
 
-    this.segments = segments
     this.grid.clear()
-
-    if (segments.length === 0) return
+    const items = this.usePrimitives ? this.primitives : this.segments
+    if (items.length === 0) return
 
     let minX = Infinity
     let minY = Infinity
     let maxX = -Infinity
     let maxY = -Infinity
-    for (const seg of segments) {
-      minX = Math.min(minX, seg.x0, seg.x1)
-      minY = Math.min(minY, seg.y0, seg.y1)
-      maxX = Math.max(maxX, seg.x0, seg.x1)
-      maxY = Math.max(maxY, seg.y0, seg.y1)
+
+    if (this.usePrimitives) {
+      for (const prim of this.primitives) {
+        const b = primitiveBounds(prim)
+        minX = Math.min(minX, b.minX)
+        minY = Math.min(minY, b.minY)
+        maxX = Math.max(maxX, b.maxX)
+        maxY = Math.max(maxY, b.maxY)
+      }
+    } else {
+      for (const seg of this.segments) {
+        minX = Math.min(minX, seg.x0, seg.x1)
+        minY = Math.min(minY, seg.y0, seg.y1)
+        maxX = Math.max(maxX, seg.x0, seg.x1)
+        maxY = Math.max(maxY, seg.y0, seg.y1)
+      }
     }
+
     const span = Math.max(maxX - minX, maxY - minY, 1)
     this.cellSize = Math.max(span / 200, 1e-6)
 
-    for (let i = 0; i < segments.length; i++) {
-      const seg = segments[i]!
-      const segMinX = Math.min(seg.x0, seg.x1)
-      const segMaxX = Math.max(seg.x0, seg.x1)
-      const segMinY = Math.min(seg.y0, seg.y1)
-      const segMaxY = Math.max(seg.y0, seg.y1)
+    for (let i = 0; i < items.length; i++) {
+      let segMinX: number
+      let segMinY: number
+      let segMaxX: number
+      let segMaxY: number
+      if (this.usePrimitives) {
+        const b = primitiveBounds(this.primitives[i]!)
+        segMinX = b.minX
+        segMinY = b.minY
+        segMaxX = b.maxX
+        segMaxY = b.maxY
+      } else {
+        const seg = this.segments[i]!
+        segMinX = Math.min(seg.x0, seg.x1)
+        segMaxX = Math.max(seg.x0, seg.x1)
+        segMinY = Math.min(seg.y0, seg.y1)
+        segMaxY = Math.max(seg.y0, seg.y1)
+      }
       const c0x = Math.floor(segMinX / this.cellSize)
       const c1x = Math.floor(segMaxX / this.cellSize)
       const c0y = Math.floor(segMinY / this.cellSize)
@@ -222,14 +307,20 @@ export class AcExOsnapIndex {
   }
 
   /**
-   * Finds the best snap point near the cursor, using AutoCAD-style mode priority.
+   * Finds the best snap point near the cursor in WCS.
    *
-   * @param px - Cursor WCS X.
-   * @param py - Cursor WCS Y.
-   * @param threshold - Maximum distance in drawing units.
+   * Uses AutoCAD-style mode priority: endpoint / midpoint / center beat
+   * quadrant / focus / control / node, which beat nearest. Within the same
+   * priority tier, the closest candidate within `threshold` wins.
+   *
+   * @param px - Cursor X in drawing units (WCS).
+   * @param py - Cursor Y in drawing units (WCS).
+   * @param threshold - Maximum snap distance in drawing units (aperture radius).
+   * @returns The winning snap point, or `undefined` if nothing is within range.
    */
   findSnap(px: number, py: number, threshold: number): AcExOsnapPoint | undefined {
-    if (this.segments.length === 0 || threshold <= 0) return undefined
+    const items = this.usePrimitives ? this.primitives : this.segments
+    if (items.length === 0 || threshold <= 0) return undefined
 
     const threshSq = threshold * threshold
     const cx = Math.floor(px / this.cellSize)
@@ -260,26 +351,38 @@ export class AcExOsnapIndex {
       for (let dy = -radiusCells; dy <= radiusCells; dy++) {
         const list = this.grid.get(cellKey(cx + dx, cy + dy))
         if (!list) continue
-        for (const segIndex of list) {
-          if (seen.has(segIndex)) continue
-          seen.add(segIndex)
-          const seg = this.segments[segIndex]!
+        for (const index of list) {
+          if (seen.has(index)) continue
+          seen.add(index)
 
-          if (this.modes.has('endpoint')) {
-            consider(seg.x0, seg.y0, 'endpoint')
-            consider(seg.x1, seg.y1, 'endpoint')
-          }
-          if (this.modes.has('midpoint')) {
-            consider(
-              (seg.x0 + seg.x1) * 0.5,
-              (seg.y0 + seg.y1) * 0.5,
-              'midpoint'
-            )
-          }
-          if (this.modes.has('nearest')) {
-            const near = closestPointOnSegment(px, py, seg)
-            if (near.distSq <= threshSq) {
-              consider(near.x, near.y, 'nearest')
+          if (this.usePrimitives) {
+            const prim = this.primitives[index]!
+            for (const candidate of collectPrimitiveSnapCandidates(
+              prim,
+              px,
+              py,
+              this.modes
+            )) {
+              consider(candidate.x, candidate.y, candidate.mode)
+            }
+          } else {
+            const seg = this.segments[index]!
+            if (this.modes.has('endpoint')) {
+              consider(seg.x0, seg.y0, 'endpoint')
+              consider(seg.x1, seg.y1, 'endpoint')
+            }
+            if (this.modes.has('midpoint')) {
+              consider(
+                (seg.x0 + seg.x1) * 0.5,
+                (seg.y0 + seg.y1) * 0.5,
+                'midpoint'
+              )
+            }
+            if (this.modes.has('nearest')) {
+              const near = closestPointOnSegment(px, py, seg)
+              if (near.distSq <= threshSq) {
+                consider(near.x, near.y, 'nearest')
+              }
             }
           }
         }
@@ -290,17 +393,29 @@ export class AcExOsnapIndex {
   }
 }
 
-/** Maps a snap mode to the marker shape used in the offline viewer. */
+/**
+ * Maps an {@link AcExOsnapMode} to the on-screen marker glyph in the offline viewer.
+ *
+ * @param mode - Active snap mode from {@link findSnap} or measurement UI.
+ * @returns CSS shape key used by {@link AcExOsnapMarker}.
+ */
 export function acExOsnapModeToMarkerType(
   mode: AcExOsnapMode
-): 'rect' | 'triangle' | 'x' {
+): 'rect' | 'triangle' | 'x' | 'circle' | 'diamond' {
   switch (mode) {
     case 'endpoint':
       return 'rect'
     case 'midpoint':
       return 'triangle'
+    case 'center':
+      return 'circle'
+    case 'quadrant':
+    case 'focus':
+      return 'diamond'
     case 'nearest':
       return 'x'
+    case 'control':
+    case 'node':
     default:
       return 'rect'
   }

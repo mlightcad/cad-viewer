@@ -1,12 +1,29 @@
 import type { AcExOsnapMode } from './AcExOsnap'
 import { acExOsnapModeToMarkerType } from './AcExOsnap'
 
-/** Visual shape of an object-snap marker in the offline HTML viewer. */
-export type AcExOsnapMarkerShape = 'rect' | 'triangle' | 'x'
+/**
+ * Visual shape of an object-snap marker in the offline HTML viewer.
+ *
+ * Selected by {@link acExOsnapModeToMarkerType} from {@link AcExOsnapMode}:
+ * - `rect` — endpoint, control, node
+ * - `triangle` — midpoint
+ * - `circle` — center
+ * - `diamond` — quadrant, focus
+ * - `x` — nearest
+ */
+export type AcExOsnapMarkerShape =
+  | 'rect'
+  | 'triangle'
+  | 'x'
+  | 'circle'
+  | 'diamond'
 
 /**
  * Screen-space object snap marker for the offline HTML viewer.
- * Mirrors the main viewer marker shapes (square, triangle, X).
+ *
+ * Renders a small glyph at the snapped screen position during measurement.
+ * Shape follows {@link acExOsnapModeToMarkerType} so behavior matches the
+ * main CAD viewer (square, triangle, circle, diamond, X).
  */
 export class AcExOsnapMarker {
   private readonly el: HTMLDivElement
@@ -84,6 +101,18 @@ export class AcExOsnapMarker {
         border-right: 6px solid transparent;
         border-bottom: 10px solid currentColor;
         transform: translate(-50%, -100%);
+      }
+      .mlcad-osnap-marker--circle {
+        width: 12px; height: 12px;
+        border: 2px solid currentColor;
+        border-radius: 50%;
+        background: transparent;
+      }
+      .mlcad-osnap-marker--diamond {
+        width: 10px; height: 10px;
+        border: 2px solid currentColor;
+        background: transparent;
+        transform: translate(-50%, -50%) rotate(45deg);
       }
       .mlcad-osnap-marker--x {
         width: 12px; height: 12px;
