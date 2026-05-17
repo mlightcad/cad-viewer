@@ -18,6 +18,11 @@ export type AcExHtmlMessageKey =
   | 'toolbar.viewerTools'
   | 'toolbar.zoomExtents'
   | 'toolbar.measureDistance'
+  | 'toolbar.measureAngle'
+  | 'toolbar.measureArc'
+  | 'toolbar.measureArea'
+  | 'toolbar.measureCoordinate'
+  | 'toolbar.clearMeasurements'
   | 'toolbar.layers'
   | 'toolbar.language'
   | 'toolbar.languageSwitch'
@@ -27,23 +32,39 @@ export type AcExHtmlMessageKey =
   | 'layers.hideAll'
   | 'layers.zoomTo'
   | 'status.ready'
-  | 'status.measureHint'
+  | 'status.measureDistanceHint'
+  | 'status.measureAngleHint'
+  | 'status.measureArcHint'
+  | 'status.measureAreaHint'
+  | 'status.measureCoordinateHint'
   | 'status.distance'
+  | 'status.coordinates'
+  | 'status.angle'
+  | 'status.arcLength'
+  | 'status.area'
   | 'status.zoomLayer'
   | 'status.loadFailed'
   | 'status.noLayout'
 
-/** Nested string table used for locale message lookup. */
-interface MessageTree {
-  [key: string]: string | MessageTree
+/**
+ * Nested string table used for locale message lookup.
+ * @internal
+ */
+interface AcExMessageTree {
+  [key: string]: string | AcExMessageTree
 }
 
-const MESSAGES: Record<AcExHtmlLocale, MessageTree> = {
+const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
   en: {
     toolbar: {
       viewerTools: 'Viewer tools',
       zoomExtents: 'Zoom extents',
       measureDistance: 'Measure distance',
+      measureAngle: 'Measure angle',
+      measureArc: 'Measure arc length',
+      measureArea: 'Measure area',
+      measureCoordinate: 'Measure coordinates',
+      clearMeasurements: 'Clear measurements',
       layers: 'Layers',
       language: 'Language',
       languageSwitch: 'Switch to Chinese'
@@ -57,8 +78,21 @@ const MESSAGES: Record<AcExHtmlLocale, MessageTree> = {
     },
     status: {
       ready: 'Ready',
-      measureHint: 'Click two points to measure distance.',
+      measureDistanceHint:
+        'Click two points to measure distance (object snap enabled).',
+      measureAngleHint:
+        'Click vertex, then two points on each arm (object snap enabled).',
+      measureArcHint:
+        'Click arc start, a point on the arc, then arc end (object snap enabled).',
+      measureAreaHint:
+        'Click polygon vertices; click near the first point or press Enter to finish.',
+      measureCoordinateHint:
+        'Click a point to read its X/Y coordinates (object snap enabled).',
       distance: 'Distance: {value}',
+      coordinates: 'X: {x}  Y: {y}',
+      angle: 'Angle: {value}',
+      arcLength: 'Arc length: {value}',
+      area: 'Area: {value}',
       zoomLayer: 'Zoom: {name}',
       loadFailed: 'Failed to load drawing: {error}',
       noLayout: 'No layout data in snapshot.'
@@ -69,6 +103,11 @@ const MESSAGES: Record<AcExHtmlLocale, MessageTree> = {
       viewerTools: '查看器工具',
       zoomExtents: '范围缩放',
       measureDistance: '测量距离',
+      measureAngle: '测量角度',
+      measureArc: '测量弧长',
+      measureArea: '测量面积',
+      measureCoordinate: '测量坐标',
+      clearMeasurements: '清除测量',
       layers: '图层',
       language: '语言',
       languageSwitch: '切换到 English'
@@ -82,8 +121,18 @@ const MESSAGES: Record<AcExHtmlLocale, MessageTree> = {
     },
     status: {
       ready: '就绪',
-      measureHint: '点击两点以测量距离。',
+      measureDistanceHint: '点击两点以测量距离（已启用对象捕捉）。',
+      measureAngleHint: '依次点击顶点与两条边上的点（已启用对象捕捉）。',
+      measureArcHint:
+        '依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。',
+      measureAreaHint:
+        '依次点击多边形顶点；靠近首点或按 Enter 完成。',
+      measureCoordinateHint: '点击一点以读取其 X/Y 坐标（已启用对象捕捉）。',
       distance: '距离：{value}',
+      coordinates: 'X：{x}  Y：{y}',
+      angle: '角度：{value}',
+      arcLength: '弧长：{value}',
+      area: '面积：{value}',
       zoomLayer: '缩放：{name}',
       loadFailed: '无法加载图纸：{error}',
       noLayout: '快照中没有布局数据。'
@@ -95,6 +144,7 @@ const MESSAGES: Record<AcExHtmlLocale, MessageTree> = {
  * Type guard for {@link AcExHtmlLocale}.
  *
  * @param value - Arbitrary string to test.
+ * @returns `true` when `value` is `'en'` or `'zh'`.
  */
 export function isAcExHtmlLocale(value: string): value is AcExHtmlLocale {
   return value === 'en' || value === 'zh'
@@ -152,9 +202,9 @@ export function detectAcExHtmlLocale(
   return 'en'
 }
 
-function lookupMessage(tree: MessageTree, key: string): string | undefined {
+function lookupMessage(tree: AcExMessageTree, key: string): string | undefined {
   const parts = key.split('.')
-  let node: string | MessageTree | undefined = tree
+  let node: string | AcExMessageTree | undefined = tree
   for (const part of parts) {
     if (node == null || typeof node === 'string') return undefined
     node = node[part]
