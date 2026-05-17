@@ -104,8 +104,33 @@ importers:
         specifier: ^3.1.1
         version: 3.4.0(vite@5.4.21(@types/node@20.19.37)(sass@1.98.0))
 
+  packages/cad-html-exporter:
+    dependencies:
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.2
+    devDependencies:
+      '@mlightcad/data-model':
+        specifier: ^1.7.36
+        version: 1.7.36
+      '@mlightcad/three-renderer':
+        specifier: workspace:*
+        version: link:../three-renderer
+      '@types/jest':
+        specifier: ^29.5.12
+        version: 29.5.14
+      '@types/three':
+        specifier: ^0.172.0
+        version: 0.172.0
+      three:
+        specifier: ^0.172.0
+        version: 0.172.0
+
   packages/cad-simple-viewer:
     dependencies:
+      '@mlightcad/cad-html-exporter':
+        specifier: workspace:*
+        version: link:../cad-html-exporter
       '@mlightcad/libredwg-converter':
         specifier: ^3.5.36
         version: 3.5.36(@mlightcad/data-model@1.7.36)
@@ -152,6 +177,9 @@ importers:
 
   packages/cad-simple-viewer-example:
     dependencies:
+      '@mlightcad/cad-html-exporter':
+        specifier: workspace:*
+        version: link:../cad-html-exporter
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
@@ -237,6 +265,9 @@ importers:
       '@element-plus/icons-vue':
         specifier: ^2.3.1
         version: 2.3.2(vue@3.5.31(typescript@5.9.3))
+      '@mlightcad/cad-html-exporter':
+        specifier: workspace:*
+        version: link:../cad-html-exporter
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer

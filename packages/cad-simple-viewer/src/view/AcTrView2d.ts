@@ -530,6 +530,13 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * CAD scene graph used for rendering and HTML export.
+   */
+  get cadScene() {
+    return this._scene
+  }
+
+  /**
    * The internal THREE scene used by this view.
    */
   get internalScene() {

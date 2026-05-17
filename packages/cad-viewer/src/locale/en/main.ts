@@ -4,6 +4,7 @@ export default {
     open: 'Open Drawing',
     drawingUnits: 'Drawing Units',
     export: 'Export to DXF',
+    exportHtml: 'Export to HTML',
     exportImage: 'Export to Image'
   },
   ribbon: {

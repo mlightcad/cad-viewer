@@ -1,11 +1,21 @@
-import { resolve } from 'path'
+import { existsSync } from 'fs'
+import { dirname, resolve } from 'path'
+import { fileURLToPath } from 'url'
 import { Alias, defineConfig } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import svgLoader from 'vite-svg-loader'
 import { visualizer } from 'rollup-plugin-visualizer'
 import vue from '@vitejs/plugin-vue'
 
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const VIEWER_RUNTIME_SRC = '../cad-html-exporter/dist/viewer-runtime.iife.js'
+
 export default defineConfig(({ command, mode }) => {
+  if (!existsSync(resolve(__dirname, VIEWER_RUNTIME_SRC))) {
+    throw new Error(
+      'viewer-runtime.iife.js not found. Build @mlightcad/cad-html-exporter before cad-viewer-example.'
+    )
+  }
   const aliases: Alias[] = []
   if (command === 'serve') {
     aliases.push({
@@ -25,6 +35,10 @@ export default defineConfig(({ command, mode }) => {
         },
         {
           src: './node_modules/@mlightcad/cad-simple-viewer/dist/*-worker.js',
+          dest: 'assets'
+        },
+        {
+          src: VIEWER_RUNTIME_SRC,
           dest: 'assets'
         }
       ]

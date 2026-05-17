@@ -1,4 +1,7 @@
 export * from './batch/AcTrBatchedGroup'
+export { AcTrBatchedLine } from './batch/AcTrBatchedLine'
+export { AcTrBatchedMesh } from './batch/AcTrBatchedMesh'
+export { AcTrBatchedPoint } from './batch/AcTrBatchedPoint'
 export * from './object/AcTrObject'
 export * from './object/AcTrEntity'
 export * from './object/AcTrGroup'

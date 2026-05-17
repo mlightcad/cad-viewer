@@ -10,6 +10,7 @@
   },
   "scripts": {
     "analyze": "vite build --mode analyze",
+    "prebuild": "pnpm --filter @mlightcad/cad-html-exporter build",
     "build": "vue-tsc && vite build",
     "clean": "rimraf dist lib tsconfig.tsbuildinfo",
     "dev": "vite",
@@ -31,6 +32,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@mlightcad/cad-html-exporter": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/cad-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.7.34",

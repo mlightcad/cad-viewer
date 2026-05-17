@@ -71,6 +71,9 @@ export default {
     csvg: {
       description: 'Converts current drawing to SVG'
     },
+    chtml: {
+      description: 'Exports current drawing to a standalone offline HTML file'
+    },
     dimlinear: {
       description: 'Creates linear dimensions'
     },
