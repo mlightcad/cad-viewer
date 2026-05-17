@@ -775,8 +775,7 @@ export class AcExMeasureController {
   handlePointerDown(clientX: number, clientY: number): boolean {
     if (!this._mode) return false
     this._lastPointer = { x: clientX, y: clientY }
-    const { point, snap } = this._view.resolvePoint(clientX, clientY)
-    this._onOsnapMarker(snap, snap ? this._view.wcsToScreen(point) : null)
+    const point = this._resolvePointerWithOsnap(clientX, clientY)
 
     switch (this._mode) {
       case 'distance':
@@ -802,9 +801,7 @@ export class AcExMeasureController {
   handlePointerMove(clientX: number, clientY: number): void {
     if (!this._mode) return
     this._lastPointer = { x: clientX, y: clientY }
-    const { point, snap } = this._view.resolvePoint(clientX, clientY)
-    const screen = this._view.wcsToScreen(point)
-    this._onOsnapMarker(snap, snap ? screen : null)
+    const point = this._resolvePointerWithOsnap(clientX, clientY)
 
     switch (this._mode) {
       case 'distance':
@@ -944,13 +941,26 @@ export class AcExMeasureController {
   }
 
   /**
-   * Redraws in-progress preview overlays after pan/zoom using the last pointer sample.
+   * Resolves the WCS pick (with object snap) and refreshes the on-screen snap marker.
+   * @internal
+   */
+  private _resolvePointerWithOsnap(
+    clientX: number,
+    clientY: number
+  ): THREE.Vector2 {
+    const { point, snap } = this._view.resolvePoint(clientX, clientY)
+    this._onOsnapMarker(snap, snap ? this._view.wcsToScreen(point) : null)
+    return point
+  }
+
+  /**
+   * Redraws in-progress preview and object-snap marker after pan/zoom using the last pointer sample.
    * @internal
    */
   private _refreshActivePreview(): void {
     if (!this._mode || !this._lastPointer) return
     const { x, y } = this._lastPointer
-    const { point } = this._view.resolvePoint(x, y)
+    const point = this._resolvePointerWithOsnap(x, y)
 
     switch (this._mode) {
       case 'distance':

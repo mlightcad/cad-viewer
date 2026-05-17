@@ -42,4 +42,48 @@ describe('AcExOsnapIndex', () => {
     index.rebuild(layout, name => name !== '0')
     expect(index.findSnap(0.1, 0.1, 1)).toBeUndefined()
   })
+
+  it('uses analytic primitives instead of tessellated segments', () => {
+    const primitiveLayout = {
+      ...layout,
+      osnap: {
+        primitives: [
+          {
+            kind: 'circle' as const,
+            layer: '0',
+            cx: 50,
+            cy: 0,
+            r: 10,
+            normalSign: 1 as const
+          }
+        ]
+      }
+    }
+    const index = new AcExOsnapIndex(['center'])
+    index.rebuild(primitiveLayout, () => true)
+    const snap = index.findSnap(50.2, 0.1, 2)
+    expect(snap).toEqual({ x: 50, y: 0, mode: 'center' })
+  })
+
+  it('prefers center over nearest on a circle primitive', () => {
+    const primitiveLayout = {
+      ...layout,
+      osnap: {
+        primitives: [
+          {
+            kind: 'circle' as const,
+            layer: '0',
+            cx: 0,
+            cy: 0,
+            r: 10,
+            normalSign: 1 as const
+          }
+        ]
+      }
+    }
+    const index = new AcExOsnapIndex(['center', 'nearest'])
+    index.rebuild(primitiveLayout, () => true)
+    const snap = index.findSnap(0.5, 0.5, 5)
+    expect(snap?.mode).toBe('center')
+  })
 })

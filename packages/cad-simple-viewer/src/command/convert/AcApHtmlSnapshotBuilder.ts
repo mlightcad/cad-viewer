@@ -5,6 +5,7 @@ import {
   type AcExLineBatch,
   type AcExMeshBatch,
   type AcExSnapshotV1,
+  buildOsnapCatalog,
   buildViewerMetadata,
   collectBatchesFromObject3D
 } from '@mlightcad/cad-html-exporter'
@@ -108,7 +109,8 @@ export class AcApHtmlSnapshotBuilder {
         name: resolveLayoutName(database, btrId),
         isModelSpace: btrId === scene.modelSpaceBtrId,
         lineBatches,
-        meshBatches
+        meshBatches,
+        osnap: buildOsnapCatalog(database, btrId)
       })
       await yieldToMain()
     }
@@ -159,7 +161,8 @@ export class AcApHtmlSnapshotBuilder {
         name: resolveLayoutName(database, btrId),
         isModelSpace: btrId === scene.modelSpaceBtrId,
         lineBatches,
-        meshBatches
+        meshBatches,
+        osnap: buildOsnapCatalog(database, btrId)
       })
     })
 

@@ -1,3 +1,5 @@
+import type { AcExOsnapCatalog } from './AcExOsnapPrimitiveTypes'
+
 /**
  * Current snapshot schema version.
  * Increment when breaking changes are introduced to {@link AcExSnapshotV1}.
@@ -123,6 +125,19 @@ export interface AcExLayoutSnapshot {
   lineBatches: AcExLineBatch[]
   /** All mesh/fill batches belonging to this layout. */
   meshBatches: AcExMeshBatch[]
+  /**
+   * Analytic geometry for object snap (OSNAP) in the offline viewer.
+   *
+   * Populated at export time by {@link buildOsnapCatalog} from the drawing database
+   * (not from tessellated THREE batches). Includes lines, arcs, circles, ellipses,
+   * splines, and points in WCS, including entities inside block references.
+   *
+   * When {@link AcExOsnapCatalog.primitives} is non-empty, {@link AcExOsnapIndex}
+   * uses these definitions exclusively and does **not** snap to discretized
+   * {@link AcExLineBatch} / {@link AcExMeshBatch} vertices. Older HTML files
+   * without this field continue to use batch-based snapping.
+   */
+  osnap?: AcExOsnapCatalog
 }
 
 /**
