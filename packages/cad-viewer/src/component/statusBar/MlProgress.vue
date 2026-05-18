@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts" setup>
-import { eventBus } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
 import {
   AcDbParsingTaskStats,
   AcDbProgressdEventArgs
@@ -25,6 +25,11 @@ const { t } = useI18n()
 const percentage = ref(0)
 const visible = ref(false)
 const { warning } = useNotificationCenter()
+
+const resetProgress = () => {
+  percentage.value = 0
+  visible.value = false
+}
 
 const updateProgress = (data: AcDbProgressdEventArgs) => {
   if (data.stage === 'CONVERSION') {
@@ -47,11 +52,11 @@ const updateProgress = (data: AcDbProgressdEventArgs) => {
     }
   }
   percentage.value = data.percentage
-  if (percentage.value < 100) {
-    visible.value = true
-  } else {
-    visible.value = false
-  }
+  const isComplete =
+    data.percentage >= 100 &&
+    data.subStage === 'END' &&
+    data.subStageStatus === 'END'
+  visible.value = !isComplete
 }
 
 const format = (percentage: number) => {
@@ -60,10 +65,18 @@ const format = (percentage: number) => {
 
 onMounted(() => {
   eventBus.on('open-file-progress', updateProgress)
+  eventBus.on('failed-to-open-file', resetProgress)
+  AcApDocManager.instance.events.documentToBeOpened.addEventListener(
+    resetProgress
+  )
 })
 
 onUnmounted(() => {
   eventBus.off('open-file-progress', updateProgress)
+  eventBus.off('failed-to-open-file', resetProgress)
+  AcApDocManager.instance.events.documentToBeOpened.removeEventListener(
+    resetProgress
+  )
 })
 </script>
 

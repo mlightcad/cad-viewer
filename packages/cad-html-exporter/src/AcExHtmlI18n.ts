@@ -123,10 +123,8 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       ready: '就绪',
       measureDistanceHint: '点击两点以测量距离（已启用对象捕捉）。',
       measureAngleHint: '依次点击顶点与两条边上的点（已启用对象捕捉）。',
-      measureArcHint:
-        '依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。',
-      measureAreaHint:
-        '依次点击多边形顶点；靠近首点或按 Enter 完成。',
+      measureArcHint: '依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。',
+      measureAreaHint: '依次点击多边形顶点；靠近首点或按 Enter 完成。',
       measureCoordinateHint: '点击一点以读取其 X/Y 坐标（已启用对象捕捉）。',
       distance: '距离：{value}',
       coordinates: 'X：{x}  Y：{y}',

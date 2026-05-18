@@ -3,7 +3,9 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/cad-html-exporter/src",
   "projectType": "library",
-  "tags": ["npm:private"],
+  "tags": [
+    "npm:private"
+  ],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
@@ -11,7 +13,9 @@
         "command": "tsc && vite build && vite build --config vite.viewer.config.ts",
         "cwd": "packages/cad-html-exporter"
       },
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "cache": true
     },
     "clean": {

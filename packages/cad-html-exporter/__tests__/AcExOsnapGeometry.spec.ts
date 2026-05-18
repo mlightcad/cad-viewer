@@ -23,12 +23,12 @@ describe('collectPrimitiveSnapCandidates', () => {
       5.1,
       modes
     )
-    expect(candidates.some(c => c.mode === 'center' && c.x === 5 && c.y === 5)).toBe(
-      true
-    )
-    expect(candidates.some(c => c.mode === 'quadrant' && c.x === 7 && c.y === 5)).toBe(
-      true
-    )
+    expect(
+      candidates.some(c => c.mode === 'center' && c.x === 5 && c.y === 5)
+    ).toBe(true)
+    expect(
+      candidates.some(c => c.mode === 'quadrant' && c.x === 7 && c.y === 5)
+    ).toBe(true)
   })
 
   it('snaps to arc endpoints and center', () => {
@@ -47,9 +47,9 @@ describe('collectPrimitiveSnapCandidates', () => {
       0.2,
       modes
     )
-    expect(candidates.some(c => c.mode === 'endpoint' && c.x === 10 && c.y === 0)).toBe(
-      true
-    )
+    expect(
+      candidates.some(c => c.mode === 'endpoint' && c.x === 10 && c.y === 0)
+    ).toBe(true)
     expect(candidates.some(c => c.mode === 'center')).toBe(true)
   })
 

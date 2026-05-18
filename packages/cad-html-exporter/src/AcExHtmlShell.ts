@@ -350,17 +350,25 @@ export function buildAcExHtmlShellBody(loadingBg: string): string {
           'data-i18n-key': 'toolbar.measureArea',
           'data-i18n-attr': 'title aria-label'
         })}
-        ${acExToolbarButton(acExHtmlIcons.measureCoordinate, 'Measure coordinates', {
-          'data-action': 'measure',
-          'data-measure-mode': 'coordinate',
-          'data-i18n-key': 'toolbar.measureCoordinate',
-          'data-i18n-attr': 'title aria-label'
-        })}
-        ${acExToolbarButton(acExHtmlIcons.clearMeasurements, 'Clear measurements', {
-          'data-action': 'clear-measurements',
-          'data-i18n-key': 'toolbar.clearMeasurements',
-          'data-i18n-attr': 'title aria-label'
-        })}
+        ${acExToolbarButton(
+          acExHtmlIcons.measureCoordinate,
+          'Measure coordinates',
+          {
+            'data-action': 'measure',
+            'data-measure-mode': 'coordinate',
+            'data-i18n-key': 'toolbar.measureCoordinate',
+            'data-i18n-attr': 'title aria-label'
+          }
+        )}
+        ${acExToolbarButton(
+          acExHtmlIcons.clearMeasurements,
+          'Clear measurements',
+          {
+            'data-action': 'clear-measurements',
+            'data-i18n-key': 'toolbar.clearMeasurements',
+            'data-i18n-attr': 'title aria-label'
+          }
+        )}
         <div class="mlcad-tool-separator" aria-hidden="true"></div>
         ${acExToolbarButton(acExHtmlIcons.layer, 'Layers', {
           id: 'mlcad-layers-btn',
