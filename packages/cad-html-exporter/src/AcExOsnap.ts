@@ -131,9 +131,12 @@ function cellKey(cx: number, cy: number): string {
   return `${cx},${cy}`
 }
 
-function primitiveBounds(
-  prim: AcExOsnapPrimitive
-): { minX: number; minY: number; maxX: number; maxY: number } {
+function primitiveBounds(prim: AcExOsnapPrimitive): {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+} {
   switch (prim.kind) {
     case 'line':
       return {
@@ -218,9 +221,7 @@ export class AcExOsnapIndex {
     const catalog = layout.osnap
     if (catalog && catalog.primitives.length > 0) {
       this.usePrimitives = true
-      this.primitives = catalog.primitives.filter(p =>
-        isLayerVisible(p.layer)
-      )
+      this.primitives = catalog.primitives.filter(p => isLayerVisible(p.layer))
       this.segments = []
     } else {
       this.usePrimitives = false
@@ -318,7 +319,11 @@ export class AcExOsnapIndex {
    * @param threshold - Maximum snap distance in drawing units (aperture radius).
    * @returns The winning snap point, or `undefined` if nothing is within range.
    */
-  findSnap(px: number, py: number, threshold: number): AcExOsnapPoint | undefined {
+  findSnap(
+    px: number,
+    py: number,
+    threshold: number
+  ): AcExOsnapPoint | undefined {
     const items = this.usePrimitives ? this.primitives : this.segments
     if (items.length === 0 || threshold <= 0) return undefined
 

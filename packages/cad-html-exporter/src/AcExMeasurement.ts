@@ -220,17 +220,15 @@ function distPointToPolylinePx(
   verts: { x: number; y: number }[]
 ): number {
   if (verts.length < 2) {
-    if (verts.length === 1) return Math.hypot(px - verts[0]!.x, py - verts[0]!.y)
+    if (verts.length === 1)
+      return Math.hypot(px - verts[0]!.x, py - verts[0]!.y)
     return Infinity
   }
   let best = Infinity
   for (let i = 0; i < verts.length - 1; i++) {
     const a = verts[i]!
     const b = verts[i + 1]!
-    best = Math.min(
-      best,
-      distPointToSegmentPx(px, py, a.x, a.y, b.x, b.y)
-    )
+    best = Math.min(best, distPointToSegmentPx(px, py, a.x, a.y, b.x, b.y))
   }
   return best
 }
@@ -255,9 +253,7 @@ function distPointToArcPx(
   const total = Math.abs(span)
   for (let i = 0; i <= samples; i++) {
     const t = i / samples
-    const a = antiClockwise
-      ? startAngle - t * total
-      : startAngle + t * total
+    const a = antiClockwise ? startAngle - t * total : startAngle + t * total
     const x = cx + r * Math.cos(a)
     const y = cy + r * Math.sin(a)
     best = Math.min(best, Math.hypot(px - x, py - y))
@@ -311,9 +307,7 @@ function hitTestAngleMeasure(
   wcsToScreen: (wcs: THREE.Vector2) => { x: number; y: number }
 ): boolean {
   const screenVerts = [vertex, arm1, vertex, arm2].map(p => wcsToScreen(p))
-  if (
-    distPointToPolylinePx(clientX, clientY, screenVerts) <= thresholdPx
-  ) {
+  if (distPointToPolylinePx(clientX, clientY, screenVerts) <= thresholdPx) {
     return true
   }
 
@@ -334,9 +328,7 @@ function hitTestAngleMeasure(
   }
 
   const badge = wcsToScreen(badgePos)
-  if (
-    Math.hypot(clientX - badge.x, clientY - badge.y) <= thresholdPx + 14
-  ) {
+  if (Math.hypot(clientX - badge.x, clientY - badge.y) <= thresholdPx + 14) {
     return true
   }
 
@@ -862,9 +854,7 @@ export class AcExMeasureController {
 
     for (let i = this._committed.length - 1; i >= 0; i--) {
       const measure = this._committed[i]!
-      if (
-        measure.hitTest(clientX, clientY, MEASURE_HIT_THRESHOLD_PX)
-      ) {
+      if (measure.hitTest(clientX, clientY, MEASURE_HIT_THRESHOLD_PX)) {
         const changed = measure.id !== this._selectedId
         this._select(measure.id)
         return changed
@@ -1441,11 +1431,7 @@ export class AcExMeasureController {
     this._setPreviewLine(pts)
     if (pts.length >= 3) {
       const area = shoelaceArea(pts)
-      this._showLiveLabel(
-        `${this._view.formatLength(area)}²`,
-        clientX,
-        clientY
-      )
+      this._showLiveLabel(`${this._view.formatLength(area)}²`, clientX, clientY)
       this._drawPreviewArea(pts)
     }
     this._requestRender()
@@ -1556,11 +1542,7 @@ export class AcExMeasureController {
 
   /** @internal */
   private _finishCommit(
-    hitTest: (
-      clientX: number,
-      clientY: number,
-      thresholdPx: number
-    ) => boolean
+    hitTest: (clientX: number, clientY: number, thresholdPx: number) => boolean
   ): void {
     const parts = this._commitParts
     if (!parts) return
@@ -1584,9 +1566,7 @@ export class AcExMeasureController {
   }
 
   /** @internal */
-  private _screenPolyline(
-    points: THREE.Vector2[]
-  ): { x: number; y: number }[] {
+  private _screenPolyline(points: THREE.Vector2[]): { x: number; y: number }[] {
     return points.map(p => {
       const s = this._view.wcsToScreen(p)
       return { x: s.x, y: s.y }
@@ -1613,7 +1593,10 @@ export class AcExMeasureController {
   }
 
   /** @internal */
-  private _applyMeasureSelection(parts: AcExCommitParts, selected: boolean): void {
+  private _applyMeasureSelection(
+    parts: AcExCommitParts,
+    selected: boolean
+  ): void {
     for (const line of parts.lines) {
       const material = line.material
       if (material instanceof THREE.LineBasicMaterial) {
@@ -1699,25 +1682,15 @@ export class AcExMeasureController {
     ctx.save()
     ctx.scale(dpr, dpr)
 
-    const arc = interiorAngleArcScreenMetrics(
-      vertex,
-      arm1,
-      arm2,
-      wcs => this._view.wcsToScreen(wcs)
+    const arc = interiorAngleArcScreenMetrics(vertex, arm1, arm2, wcs =>
+      this._view.wcsToScreen(wcs)
     )
     const rootRect = this._root.getBoundingClientRect()
     const vx = arc.cx - rootRect.left
     const vy = arc.cy - rootRect.top
 
     ctx.beginPath()
-    ctx.arc(
-      vx,
-      vy,
-      arc.r,
-      arc.startAngle,
-      arc.endAngle,
-      arc.antiClockwise
-    )
+    ctx.arc(vx, vy, arc.r, arc.startAngle, arc.endAngle, arc.antiClockwise)
     ctx.strokeStyle = MEASURE_CSS
     ctx.lineWidth = 2
     ctx.stroke()
@@ -1768,12 +1741,7 @@ export class AcExMeasureController {
     const screenR = Math.hypot(sx - cx, sy - cy)
     const sa = Math.atan2(sy - cy, sx - cx)
     const ea = Math.atan2(ey - cy, ex - cx)
-    const { counterClockwise } = arcSweepThroughMiddle(
-      start,
-      through,
-      end,
-      g
-    )
+    const { counterClockwise } = arcSweepThroughMiddle(start, through, end, g)
 
     ctx.beginPath()
     ctx.arc(cx, cy, screenR, sa, ea, counterClockwise)

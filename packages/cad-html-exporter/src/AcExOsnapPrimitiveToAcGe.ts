@@ -61,7 +61,9 @@ export function circleOrArcToAcGe(
  *
  * @param prim - Ellipse or elliptical arc in WCS.
  */
-export function ellipseToAcGe(prim: AcExOsnapEllipsePrimitive): AcGeEllipseArc2d {
+export function ellipseToAcGe(
+  prim: AcExOsnapEllipsePrimitive
+): AcGeEllipseArc2d {
   const rotation = Math.atan2(prim.majorY, prim.majorX)
   return new AcGeEllipseArc2d(
     { x: prim.cx, y: prim.cy, z: 0 },
@@ -102,7 +104,9 @@ export function splineToAcGe(prim: AcExOsnapSplinePrimitive): AcGeNurbsCurve {
  * @param prim - Exported primitive from {@link AcExOsnapCatalog}.
  * @returns Wrapped geometry for snap evaluation.
  */
-export function primitiveToAcGeCurve(prim: AcExOsnapPrimitive): AcExOsnapAcGeCurve {
+export function primitiveToAcGeCurve(
+  prim: AcExOsnapPrimitive
+): AcExOsnapAcGeCurve {
   switch (prim.kind) {
     case 'line':
       return {

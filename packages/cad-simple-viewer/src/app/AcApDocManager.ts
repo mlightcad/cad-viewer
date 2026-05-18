@@ -340,6 +340,10 @@ export class AcApDocManager {
    * registering built-in and system-variable commands.
    */
   private _commandAliasOverrides: Map<string, string[]>
+  /** Peak open-file percentage for the current open operation (monotonic) */
+  private _openFileProgressPeak = 0
+  /** Last open-file progress stage (FETCH_FILE or CONVERSION) */
+  private _openFileProgressStage?: AcDbProgressdEventArgs['stage']
   /** Singleton instance */
   private static _instance?: AcApDocManager
 
@@ -374,17 +378,21 @@ export class AcApDocManager {
       AcTrMTextRenderer.getInstance().setRenderMode('worker')
     }
 
+    this.events.documentToBeOpened.addEventListener(() => {
+      this.resetOpenFileProgress()
+    })
+
     // Create one empty drawing
     const doc = new AcApDocument()
     doc.database.events.openProgress.addEventListener(args => {
-      const progress = {
+      const progress = this.normalizeOpenFileProgress({
         database: doc.database,
         percentage: args.percentage,
         stage: args.stage,
         subStage: args.subStage,
         subStageStatus: args.subStageStatus,
         data: args.data
-      }
+      })
       eventBus.emit('open-file-progress', progress)
       this.updateProgress(progress)
 
@@ -1176,6 +1184,49 @@ export class AcApDocManager {
   }
 
   /**
+   * Resets tracked open-file progress for a new open operation.
+   */
+  private resetOpenFileProgress() {
+    this._openFileProgressPeak = 0
+    this._openFileProgressStage = undefined
+  }
+
+  /**
+   * Returns monotonic open-file progress for UI display.
+   *
+   * Entity conversion reports 0–100% within the ENTITY sub-stage while the
+   * pipeline accumulator is still ~33%; sub-stage END callbacks can therefore
+   * briefly report a lower percentage after IN-PROGRESS already reached 100%.
+   */
+  private normalizeOpenFileProgress(
+    data: AcDbProgressdEventArgs
+  ): AcDbProgressdEventArgs {
+    const stage = data.stage
+    if (stage !== this._openFileProgressStage) {
+      if (
+        this._openFileProgressStage === 'FETCH_FILE' &&
+        stage === 'CONVERSION'
+      ) {
+        this._openFileProgressPeak = 0
+      }
+      this._openFileProgressStage = stage
+    }
+    this._openFileProgressPeak = Math.max(
+      this._openFileProgressPeak,
+      data.percentage
+    )
+    return { ...data, percentage: this._openFileProgressPeak }
+  }
+
+  private isOpenFileProgressComplete(data: AcDbProgressdEventArgs) {
+    return (
+      data.percentage >= 100 &&
+      data.subStage === 'END' &&
+      data.subStageStatus === 'END'
+    )
+  }
+
+  /**
    * Shows progress animation and progress message
    * @param data - Progress data
    */
@@ -1190,9 +1241,9 @@ export class AcApDocManager {
       this._progress.setMessage(AcApI18n.t('main.message.fetchingDrawingFile'))
     }
 
-    const percentage = data.percentage
-    if (percentage >= 100) {
+    if (this.isOpenFileProgressComplete(data)) {
       this._progress.hide()
+      this.resetOpenFileProgress()
     } else {
       this._progress.show()
     }

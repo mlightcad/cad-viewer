@@ -75,8 +75,16 @@ function transformVector(
  * @internal
  */
 function scaleIsUniform(matrix: THREE.Matrix4): boolean {
-  const sx = new THREE.Vector3(matrix.elements[0], matrix.elements[1], matrix.elements[2]).length()
-  const sy = new THREE.Vector3(matrix.elements[4], matrix.elements[5], matrix.elements[6]).length()
+  const sx = new THREE.Vector3(
+    matrix.elements[0],
+    matrix.elements[1],
+    matrix.elements[2]
+  ).length()
+  const sy = new THREE.Vector3(
+    matrix.elements[4],
+    matrix.elements[5],
+    matrix.elements[6]
+  ).length()
   return Math.abs(sx - sy) <= EPS * Math.max(sx, sy, 1)
 }
 
@@ -111,7 +119,11 @@ function pushCircle(
   normal: AcGeVector3dLike
 ) {
   const c = transformPoint(matrix, center)
-  const sx = new THREE.Vector3(matrix.elements[0], matrix.elements[1], matrix.elements[2]).length()
+  const sx = new THREE.Vector3(
+    matrix.elements[0],
+    matrix.elements[1],
+    matrix.elements[2]
+  ).length()
   const prim: AcExOsnapCirclePrimitive = {
     kind: 'circle',
     layer,
@@ -131,7 +143,11 @@ function pushArc(
   entity: AcDbArc
 ) {
   const center = transformPoint(matrix, entity.center)
-  const sx = new THREE.Vector3(matrix.elements[0], matrix.elements[1], matrix.elements[2]).length()
+  const sx = new THREE.Vector3(
+    matrix.elements[0],
+    matrix.elements[1],
+    matrix.elements[2]
+  ).length()
   const prim: AcExOsnapArcPrimitive = {
     kind: 'arc',
     layer,
@@ -153,14 +169,21 @@ function pushEllipse(
   entity: AcDbEllipse
 ) {
   const center = transformPoint(matrix, entity.center)
-  const geo = (
-    entity as unknown as { _geo?: { majorAxis?: AcGeVector3dLike } }
-  )._geo
+  const geo = (entity as unknown as { _geo?: { majorAxis?: AcGeVector3dLike } })
+    ._geo
   const majorAxis = geo?.majorAxis ?? { x: 1, y: 0, z: 0 }
   const axis = transformVector(matrix, majorAxis)
   const len = Math.hypot(axis.x, axis.y) || 1
-  const sx = new THREE.Vector3(matrix.elements[0], matrix.elements[1], matrix.elements[2]).length()
-  const sy = new THREE.Vector3(matrix.elements[4], matrix.elements[5], matrix.elements[6]).length()
+  const sx = new THREE.Vector3(
+    matrix.elements[0],
+    matrix.elements[1],
+    matrix.elements[2]
+  ).length()
+  const sy = new THREE.Vector3(
+    matrix.elements[4],
+    matrix.elements[5],
+    matrix.elements[6]
+  ).length()
   const prim: AcExOsnapEllipsePrimitive = {
     kind: 'ellipse',
     layer,
@@ -346,7 +369,14 @@ function visitEntity(
 
   if (entity instanceof AcDbCircle) {
     if (scaleIsUniform(matrix)) {
-      pushCircle(out, layer, matrix, entity.center, entity.radius, entity.normal)
+      pushCircle(
+        out,
+        layer,
+        matrix,
+        entity.center,
+        entity.radius,
+        entity.normal
+      )
     } else {
       pushEllipse(out, layer, matrix, ellipseFromCircle(entity))
     }

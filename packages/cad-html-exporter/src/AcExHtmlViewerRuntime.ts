@@ -4,10 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import { computeLayerExtentsMap } from './AcExLayerExtents'
-import {
-  AcExMeasureController,
-  type AcExMeasureMode
-} from './AcExMeasurement'
+import { AcExMeasureController, type AcExMeasureMode } from './AcExMeasurement'
 import { AcExOsnapIndex } from './AcExOsnap'
 import { AcExOsnapMarker } from './AcExOsnapMarker'
 import { decodeSnapshot } from './AcExSnapshotCodec'
@@ -219,9 +216,7 @@ function startViewer(): void {
   const resolveMeasurePoint = (clientX: number, clientY: number) => {
     const raw = screenToWcs(clientX, clientY)
     const snap = osnapIndex.findSnap(raw.x, raw.y, osnapThresholdWcs())
-    const point = snap
-      ? new THREE.Vector2(snap.x, snap.y)
-      : raw
+    const point = snap ? new THREE.Vector2(snap.x, snap.y) : raw
     return { point, snap: snap ?? null }
   }
 
