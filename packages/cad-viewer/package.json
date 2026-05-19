@@ -44,8 +44,8 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.7.34",
-    "@mlightcad/ribbon": "^0.1.8",
+    "@mlightcad/data-model": "^1.7.38",
+    "@mlightcad/ribbon": "^0.1.9",
     "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",
@@ -70,7 +70,7 @@
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.7.34",
+    "@mlightcad/data-model": "^1.7.38",
     "@vueuse/core": "^11.1.0",
     "element-plus": "^2.12.0",
     "three": "^0.172.0",
