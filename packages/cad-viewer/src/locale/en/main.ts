@@ -271,6 +271,7 @@ export default {
       rotate: 'Rotate selected objects around a base point.',
       copy: 'Copy selected objects to a new location.',
       erase: 'Delete selected objects from the drawing.',
+      offset: 'Create a parallel copy of an object at a specified distance.',
       properties: 'Open the Properties palette for the current selection.',
       quickSelect:
         'Open Quick Select to filter and select entities by criteria.',
@@ -367,6 +368,7 @@ export default {
       rotate: 'Rotate',
       copy: 'Copy',
       erase: 'Erase',
+      offset: 'Offset',
       properties: 'Properties',
       quickSelect: 'Quick Select',
       drawingUnits: 'Drawing Units'

@@ -85,6 +85,7 @@ import {
   mline,
   move,
   mtext,
+  offset,
   multiPoints,
   polygon,
   polyline,
@@ -619,6 +620,7 @@ const buildBaseTabs = (
     rotate: t('main.ribbon.tooltip.rotate'),
     copy: t('main.ribbon.tooltip.copy'),
     erase: t('main.ribbon.tooltip.erase'),
+    offset: t('main.ribbon.tooltip.offset'),
     properties: t('main.ribbon.tooltip.properties'),
     quickSelect: t('main.ribbon.tooltip.quickSelect'),
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
@@ -1099,6 +1101,14 @@ const buildBaseTabs = (
                   tooltip: ribbonTooltips.copy,
                   size: 'small',
                   props: { icon: DocumentCopy }
+                },
+                {
+                  id: 'cmd-offset',
+                  type: 'button',
+                  label: t('main.ribbon.command.offset'),
+                  tooltip: ribbonTooltips.offset,
+                  size: 'small',
+                  props: { icon: offset }
                 }
               ]
             },
