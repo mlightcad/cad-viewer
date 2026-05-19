@@ -1,4 +1,6 @@
 export * from './AcApCopyCmd'
 export * from './AcApEraseCmd'
 export * from './AcApMoveCmd'
+export * from './AcApOffsetCmd'
+export * from './AcApOffsetGeometry'
 export * from './AcApRotateCmd'

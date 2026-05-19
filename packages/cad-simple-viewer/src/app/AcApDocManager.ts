@@ -47,6 +47,7 @@ import {
   AcApMeasureDistanceCmd,
   AcApMLineCmd,
   AcApMoveCmd,
+  AcApOffsetCmd,
   AcApMTextCmd,
   AcApOpenCmd,
   AcApPanCmd,
@@ -902,6 +903,7 @@ export class AcApDocManager {
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
     addSystemCommand('copy', 'copy', new AcApCopyCmd())
     addSystemCommand('move', 'move', new AcApMoveCmd())
+    addSystemCommand('offset', 'offset', new AcApOffsetCmd())
     addSystemCommand('rotate', 'rotate', new AcApRotateCmd())
     addSystemCommand('log', 'log', new AcApLogCmd())
     addSystemCommand('open', 'open', new AcApOpenCmd())
