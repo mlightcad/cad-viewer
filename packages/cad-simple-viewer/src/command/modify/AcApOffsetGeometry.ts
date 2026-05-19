@@ -37,10 +37,12 @@ export function offsetEllipse(ellipse: AcDbEllipse, distance: number, side: 1 | 
   const major = ellipse.majorAxisRadius + distance * side
   const minor = ellipse.minorAxisRadius + distance * side
   if (major <= 0 || minor <= 0) return null
-  // AcDbEllipse has no majorAxis getter, so we cannot recover the original axis direction.
-  // We pass X_AXIS as a unit direction; the constructor uses it only for orientation and
-  // the actual radii are supplied separately. For axis-aligned ellipses this is correct.
-  // Rotated ellipses will lose their rotation — a limitation of the current API.
+  // AcDbEllipse accepts a majorAxis direction vector in its constructor, but the class
+  // does not expose a majorAxis getter — the value is stored in the private _geo field
+  // (AcGeEllipseArc3d) which does have the getter, but it is not surfaced on AcDbEllipse.
+  // Until AcDbEllipse exposes a majorAxis getter, we fall back to (1, 0, 0), which is
+  // correct for axis-aligned ellipses. Rotated ellipses will silently lose their rotation.
+  // Fix: add `get majorAxis(): AcGeVector3d { return this._geo.majorAxis }` to AcDbEllipse.
   return new AcDbEllipse(
     ellipse.center, ellipse.normal,
     new AcGeVector3d(1, 0, 0),
@@ -158,8 +160,9 @@ export function pickSide(entity: AcDbEntity, p: AcGePoint3dLike): 1 | -1 {
     const c = entity.center
     const a = entity.majorAxisRadius
     const b = entity.minorAxisRadius
-    // AcDbEllipse has no majorAxis getter, so we cannot transform into the ellipse's
-    // local frame for rotated ellipses. This test is only correct for axis-aligned ellipses.
+    // AcDbEllipse does not expose a majorAxis getter (stored in private _geo field),
+    // so we cannot rotate the point into the ellipse's local frame. This test is only
+    // correct for axis-aligned ellipses. Fix: same as offsetEllipse — expose majorAxis.
     return ((p.x - c.x) / a) ** 2 + ((p.y - c.y) / b) ** 2 >= 1 ? 1 : -1
   }
   if (entity instanceof AcDbPolyline) {

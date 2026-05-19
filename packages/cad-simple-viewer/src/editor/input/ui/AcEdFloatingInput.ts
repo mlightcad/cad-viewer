@@ -16,10 +16,10 @@ import { AcEdBaseView } from '../../view'
 import { AcEdMarkerManager } from '../marker'
 import { AcEdFloatingInputBoxes } from './AcEdFloatingInputBoxes'
 import {
+  AcEdFloatingInputBoxPositionCallback,
   AcEdFloatingInputCancelCallback,
   AcEdFloatingInputChangeCallback,
   AcEdFloatingInputCommitCallback,
-  AcEdFloatingInputBoxPositionCallback,
   AcEdFloatingInputDrawPreviewCallback,
   AcEdFloatingInputDynamicValueCallback,
   AcEdFloatingInputNoneCallback,
