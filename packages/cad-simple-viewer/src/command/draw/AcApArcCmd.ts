@@ -74,7 +74,7 @@ function directionAngleDeg(from: AcGePoint3dLike, to: AcGePoint3dLike) {
 /**
  * Computes point angle around a center under a given arc orientation.
  *
- * For `normalSign = -1` (clockwise), the Y component is mirrored so that
+ * For `normalSign = -1` (clockwise), the X component is mirrored so that
  * angle growth still follows the selected arc direction convention.
  *
  * @param center - Arc center.

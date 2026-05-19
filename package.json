@@ -37,6 +37,7 @@
     "test:e2e": "pnpm --filter @mlightcad/cad-viewer-example test:e2e"
   },
   "engines": {
+    "node": ">=24",
     "pnpm": ">=10"
   },
   "pnpm": {
@@ -65,7 +66,7 @@
     "@nx/js": "20.0.4",
     "@types/jest": "^29.5.12",
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "^20.14.9",
+    "@types/node": "^24.0.0",
     "@types/rollup-plugin-peer-deps-external": "^2.2.5",
     "@typescript-eslint/parser": "^8.4.0",
     "eslint": "^9.9.1",
