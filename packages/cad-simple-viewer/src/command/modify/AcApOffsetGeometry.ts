@@ -3,7 +3,7 @@ import {
   AcDbPolyline, AcDbSpline, AcGePoint2d, AcGePoint3d,
   AcGePoint3dLike, AcGeVector3d,
 } from '@mlightcad/data-model'
-import ClipperShape from '@doodle3d/clipper-js'
+import { EndType, inflatePaths, JoinType, type Path64, type Paths64 } from 'clipper2-ts'
 
 const CLIPPER_SCALE = 1e6
 
@@ -51,21 +51,22 @@ export function offsetEllipse(ellipse: AcDbEllipse, distance: number, side: 1 | 
 export function offsetPolyline(poly: AcDbPolyline, distance: number, side: 1 | -1): AcDbPolyline | null {
   const n = poly.numberOfVertices
   if (n < 2) return null
-  const path = []
+  const path: Path64 = []
   for (let i = 0; i < n; i++) {
     const pt = poly.getPoint2dAt(i)
     path.push({ x: Math.round(pt.x * CLIPPER_SCALE), y: Math.round(pt.y * CLIPPER_SCALE) })
   }
-  const shape = new ClipperShape([path], poly.closed, true, false)
-  const offsetShape = shape.offset(distance * side * CLIPPER_SCALE, {
-    jointType: 'jtMiter',
-    endType: poly.closed ? 'etClosedPolygon' : 'etOpenButt',
-  })
-  const paths = offsetShape.paths
+  const source: Paths64 = [path]
+  const paths = inflatePaths(
+    source,
+    distance * side * CLIPPER_SCALE,
+    JoinType.Miter,
+    poly.closed ? EndType.Polygon : EndType.Butt,
+  )
   if (!paths || paths.length === 0) return null
   const result = new AcDbPolyline()
-  paths[0].forEach((pt: { X: number; Y: number }, i: number) => {
-    result.addVertexAt(i, new AcGePoint2d(pt.X / CLIPPER_SCALE, pt.Y / CLIPPER_SCALE))
+  paths[0].forEach((pt: { x: number; y: number }, i: number) => {
+    result.addVertexAt(i, new AcGePoint2d(pt.x / CLIPPER_SCALE, pt.y / CLIPPER_SCALE))
   })
   result.closed = poly.closed
   return result
