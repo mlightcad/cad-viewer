@@ -93,6 +93,17 @@ export class AcEdFloatingInputBox {
     this.input.remove()
   }
 
+  /** Assigns an additional CSS class to the input element. */
+  addClass(name: string) {
+    this.input.classList.add(name)
+  }
+
+  /** Positions the input inside an absolute overlay container. */
+  setPosition(left: number, top: number) {
+    this.input.style.left = `${left}px`
+    this.input.style.top = `${top}px`
+  }
+
   /** Return true if the specified event is originated from this input box. */
   isEventTarget(e: KeyboardEvent) {
     return e.target === this.input

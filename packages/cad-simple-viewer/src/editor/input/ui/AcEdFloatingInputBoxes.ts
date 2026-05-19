@@ -188,6 +188,30 @@ export class AcEdFloatingInputBoxes<T> {
     }
   }
 
+  /** Validates the current visible input text. */
+  getValidationState(): AcEdFloatingInputValidationResult<T> {
+    return this.validate()
+  }
+
+  /** Assigns stable layout classes to the underlying input elements. */
+  setInputClassNames(xClassName: string, yClassName?: string) {
+    this.xInput.addClass(xClassName)
+    if (this.yInput && yClassName) {
+      this.yInput.addClass(yClassName)
+    }
+  }
+
+  /** Positions input boxes inside an absolute overlay container. */
+  setInputPositions(positions: {
+    x: { x: number; y: number }
+    y?: { x: number; y: number }
+  }) {
+    this.xInput.setPosition(positions.x.x, positions.x.y)
+    if (this.yInput && positions.y) {
+      this.yInput.setPosition(positions.y.x, positions.y.y)
+    }
+  }
+
   /**
    * Disposes the floating input widget permanently.
    *

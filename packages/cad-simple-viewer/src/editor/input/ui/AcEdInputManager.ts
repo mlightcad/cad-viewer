@@ -5,6 +5,7 @@ import {
   AcDbSysVarManager,
   AcGeBox2d,
   AcGePoint2dLike,
+  AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
@@ -51,6 +52,7 @@ import { AcEdCommandLine } from './AcEdCommandLine'
 import { AcEdFloatingInput } from './AcEdFloatingInput'
 import {
   AcEdFloatingInputBoxCount,
+  AcEdFloatingInputBoxPositionCallback,
   AcEdFloatingInputCommitCallback,
   AcEdFloatingInputDrawPreviewCallback,
   AcEdFloatingInputDynamicValueCallback,
@@ -1235,6 +1237,7 @@ export class AcEdInputManager {
             }
 
             pickedPoint = { x: pos.x, y: pos.y, z: 0 }
+            AcEdFloatingInput.suppressNextCanvasClickCommit()
             cleanup()
             resolve(picked[0].id)
           }
@@ -1374,6 +1377,236 @@ export class AcEdInputManager {
     if (scriptedValue != null) {
       cleanup?.()
       return Promise.resolve(scriptedValue)
+    }
+
+    if (
+      options.dimensionInput?.type === 'rectangleDimensions' &&
+      options.basePoint
+    ) {
+      const basePoint = options.basePoint
+      const rotation = options.dimensionInput.rotation ?? 0
+      const cos = Math.cos(rotation)
+      const sin = Math.sin(rotation)
+      let directionX = 1
+      let directionY = 1
+
+      const toLocal = (point: AcGePoint2dLike) => {
+        const dx = point.x - basePoint.x
+        const dy = point.y - basePoint.y
+        return {
+          x: dx * cos + dy * sin,
+          y: -dx * sin + dy * cos
+        }
+      }
+      const toWorld = (localX: number, localY: number) => ({
+        x: basePoint.x + localX * cos - localY * sin,
+        y: basePoint.y + localX * sin + localY * cos,
+        z: 0
+      })
+      const updateDirection = (local: { x: number; y: number }) => {
+        if (Math.abs(local.x) > 1e-9) directionX = local.x >= 0 ? 1 : -1
+        if (Math.abs(local.y) > 1e-9) directionY = local.y >= 0 ? 1 : -1
+      }
+
+      const getDynamicValue = (pos: AcGePoint2dLike) => {
+        const resolved =
+          options.resolvePoint?.({ x: pos.x, y: pos.y, z: 0 }) ?? pos
+        const local = toLocal(resolved)
+        updateDirection(local)
+        return {
+          value: { x: resolved.x, y: resolved.y, z: 0 },
+          raw: {
+            x: this.formatNumber(Math.abs(local.x), 'distance'),
+            y: this.formatNumber(Math.abs(local.y), 'distance')
+          }
+        }
+      }
+
+      const handler: AcEdInputHandler<AcGePoint3dLike> = {
+        parse: (x: string, y?: string) => {
+          const width = Number(x)
+          const depth = Number(y)
+          if (
+            !Number.isFinite(width) ||
+            !Number.isFinite(depth) ||
+            width <= 0 ||
+            depth <= 0
+          ) {
+            return null
+          }
+          return toWorld(width * directionX, depth * directionY)
+        }
+      }
+
+      const getInputPositions: AcEdFloatingInputBoxPositionCallback<
+        AcGePoint3dLike
+      > = (_pos, dynamicValue) => {
+        const local = toLocal(dynamicValue.value)
+        const xEnd = toWorld(local.x, 0)
+        const corner = toWorld(local.x, local.y)
+        const canvasBase = this.view.worldToScreen(basePoint)
+        const canvasXEnd = this.view.worldToScreen(xEnd)
+        const canvasCorner = this.view.worldToScreen(corner)
+        const base = this.view.canvasToContainer(canvasBase)
+        const xEndPos = this.view.canvasToContainer(canvasXEnd)
+        const cornerPos = this.view.canvasToContainer(canvasCorner)
+        const xVec = {
+          x: xEndPos.x - base.x,
+          y: xEndPos.y - base.y
+        }
+        const yVec = {
+          x: cornerPos.x - xEndPos.x,
+          y: cornerPos.y - xEndPos.y
+        }
+        const xLen = Math.hypot(xVec.x, xVec.y) || 1
+        const yLen = Math.hypot(yVec.x, yVec.y) || 1
+        const yUnit = { x: yVec.x / yLen, y: yVec.y / yLen }
+        const xUnit = { x: xVec.x / xLen, y: xVec.y / xLen }
+        const offset = 28
+
+        return {
+          x: {
+            x: (base.x + xEndPos.x) / 2 - yUnit.x * offset,
+            y: (base.y + xEndPos.y) / 2 - yUnit.y * offset
+          },
+          y: {
+            x: (xEndPos.x + cornerPos.x) / 2 + xUnit.x * offset,
+            y: (xEndPos.y + cornerPos.y) / 2 + xUnit.y * offset
+          }
+        }
+      }
+
+      return this.makeFloatingInputPromise<AcGePoint3dLike>({
+        inputCount: 2,
+        promptOptions: options,
+        disableOSnap: options.disableOSnap,
+        cleanup,
+        handler,
+        getDynamicValue,
+        getInputPositions,
+        resolvePosition: pos =>
+          options.resolvePoint?.({ x: pos.x, y: pos.y, z: 0 }) ?? pos,
+        drawPreview,
+        onChange: value => {
+          options.jig?.update(new AcGePoint3d(value))
+          options.jig?.render()
+        }
+      })
+    }
+
+    if (
+      options.dimensionInput?.type === 'polarDistanceAngle' &&
+      options.basePoint
+    ) {
+      const basePoint = options.basePoint
+      const toPolar = (point: AcGePoint2dLike) => {
+        const dx = point.x - basePoint.x
+        const dy = point.y - basePoint.y
+        return {
+          distance: Math.hypot(dx, dy),
+          angle: (Math.atan2(dy, dx) * 180) / Math.PI
+        }
+      }
+      const toWorld = (distance: number, angleDegrees: number) => {
+        const angle = (angleDegrees * Math.PI) / 180
+        return {
+          x: basePoint.x + distance * Math.cos(angle),
+          y: basePoint.y + distance * Math.sin(angle),
+          z: 0
+        }
+      }
+
+      const getDynamicValue = (pos: AcGePoint2dLike) => {
+        const resolved =
+          options.resolvePoint?.({ x: pos.x, y: pos.y, z: 0 }) ?? pos
+        const polar = toPolar(resolved)
+        return {
+          value: { x: resolved.x, y: resolved.y, z: 0 },
+          raw: {
+            x: this.formatNumber(polar.distance, 'distance'),
+            y: this.formatNumber(polar.angle, 'angle')
+          }
+        }
+      }
+
+      const handler: AcEdInputHandler<AcGePoint3dLike> = {
+        parse: (x: string, y?: string) => {
+          const distance = Number(x)
+          const angle = Number(y)
+          if (
+            !Number.isFinite(distance) ||
+            !Number.isFinite(angle) ||
+            distance <= 0
+          ) {
+            return null
+          }
+          return toWorld(distance, angle)
+        }
+      }
+
+      return this.makeFloatingInputPromise<AcGePoint3dLike>({
+        inputCount: 2,
+        promptOptions: options,
+        disableOSnap: options.disableOSnap,
+        cleanup,
+        handler,
+        getDynamicValue,
+        resolvePosition: pos =>
+          options.resolvePoint?.({ x: pos.x, y: pos.y, z: 0 }) ?? pos,
+        drawPreview,
+        onChange: value => {
+          options.jig?.update(new AcGePoint3d(value))
+          options.jig?.render()
+        }
+      })
+    }
+
+    if (options.distanceInput) {
+      let referencePoint: AcGePoint3dLike | undefined
+      const getDynamicValue = (pos: AcGePoint2dLike) => {
+        const resolved =
+          options.resolvePoint?.({ x: pos.x, y: pos.y, z: 0 }) ?? pos
+        referencePoint = { x: resolved.x, y: resolved.y, z: 0 }
+        return {
+          value: referencePoint,
+          raw: {
+            x: this.formatNumber(
+              options.distanceInput!.getDistance(referencePoint),
+              'distance'
+            )
+          }
+        }
+      }
+
+      const handler: AcEdInputHandler<AcGePoint3dLike> = {
+        parse: (x: string) => {
+          const distance = Number(x)
+          if (
+            !Number.isFinite(distance) ||
+            distance <= 0 ||
+            !referencePoint
+          ) {
+            return null
+          }
+          return options.distanceInput!.resolvePoint(distance, referencePoint)
+        }
+      }
+
+      return this.makeFloatingInputPromise<AcGePoint3dLike>({
+        inputCount: 1,
+        promptOptions: options,
+        disableOSnap: options.disableOSnap,
+        cleanup,
+        handler,
+        getDynamicValue,
+        resolvePosition: pos =>
+          options.resolvePoint?.({ x: pos.x, y: pos.y, z: 0 }) ?? pos,
+        drawPreview,
+        onChange: value => {
+          options.jig?.update(new AcGePoint3d(value))
+          options.jig?.render()
+        }
+      })
     }
 
     const getDynamicValue = (pos: AcGePoint2dLike) => {
@@ -1687,7 +1920,10 @@ export class AcEdInputManager {
     cleanup?: () => void
     allowPrompt?: boolean
     getDynamicValue: AcEdFloatingInputDynamicValueCallback<T>
+    getInputPositions?: AcEdFloatingInputBoxPositionCallback<T>
+    resolvePosition?: (pos: AcGePoint2dLike) => AcGePoint2dLike
     drawPreview?: AcEdFloatingInputDrawPreviewCallback
+    onChange?: (value: T) => void
     onCommit?: AcEdFloatingInputCommitCallback<T>
   }): Promise<T> {
     return new Promise<T>((resolve, reject) => {
@@ -1733,15 +1969,18 @@ export class AcEdInputManager {
         inputCount: options.inputCount,
         message: promptDefaults.message,
         disableOSnap: options.disableOSnap,
+        resolvePosition: options.resolvePosition,
         showBaseLineOnly: promptDefaults.showBaseLineOnly,
         basePoint,
         baseAngle: promptDefaults.baseAngle,
+        lastPoint: basePoint,
         allowPrompt: options.allowPrompt !== false,
         allowNone,
         useDefaultValue: defaultBehavior.useDefaultValue,
         defaultValue: defaultBehavior.defaultValue,
         validate: validate,
         getDynamicValue: options.getDynamicValue,
+        getInputPositions: options.getInputPositions,
         drawPreview: (pos: AcGePoint2dLike) => {
           if (promptDefaults.jig) {
             const defaults = options.getDynamicValue(pos)
@@ -1749,6 +1988,11 @@ export class AcEdInputManager {
             promptDefaults.jig.render()
           }
           options.drawPreview?.(pos)
+        },
+        onChange: state => {
+          if (state.isValid && state.value != null) {
+            options.onChange?.(state.value)
+          }
         },
         onCommit: (val: T) => {
           let result = false

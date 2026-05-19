@@ -51,6 +51,8 @@ export function offsetEllipse(ellipse: AcDbEllipse, distance: number, side: 1 | 
 export function offsetPolyline(poly: AcDbPolyline, distance: number, side: 1 | -1): AcDbPolyline | null {
   const n = poly.numberOfVertices
   if (n < 2) return null
+  if (!poly.closed) return offsetOpenPolyline(poly, distance, side)
+
   const path: Path64 = []
   for (let i = 0; i < n; i++) {
     const pt = poly.getPoint2dAt(i)
@@ -70,6 +72,70 @@ export function offsetPolyline(poly: AcDbPolyline, distance: number, side: 1 | -
   })
   result.closed = poly.closed
   return result
+}
+
+type OffsetSegment = {
+  start: AcGePoint2d
+  end: AcGePoint2d
+  dx: number
+  dy: number
+}
+
+function offsetOpenPolyline(poly: AcDbPolyline, distance: number, side: 1 | -1): AcDbPolyline | null {
+  const sourcePoints: AcGePoint2d[] = []
+  for (let i = 0; i < poly.numberOfVertices; i++) {
+    sourcePoints.push(poly.getPoint2dAt(i))
+  }
+
+  const offsetSegments: OffsetSegment[] = []
+  const d = distance * side
+  for (let i = 0; i < sourcePoints.length - 1; i++) {
+    const start = sourcePoints[i]
+    const end = sourcePoints[i + 1]
+    const dx = end.x - start.x
+    const dy = end.y - start.y
+    const len = Math.hypot(dx, dy)
+    if (len <= 1e-9) continue
+
+    const nx = (-dy / len) * d
+    const ny = (dx / len) * d
+    offsetSegments.push({
+      start: new AcGePoint2d(start.x + nx, start.y + ny),
+      end: new AcGePoint2d(end.x + nx, end.y + ny),
+      dx,
+      dy,
+    })
+  }
+
+  if (offsetSegments.length === 0) return null
+
+  const resultPoints: AcGePoint2d[] = [offsetSegments[0].start]
+  for (let i = 1; i < offsetSegments.length; i++) {
+    resultPoints.push(
+      intersectOffsetSegments(offsetSegments[i - 1], offsetSegments[i])
+    )
+  }
+  resultPoints.push(offsetSegments[offsetSegments.length - 1].end)
+
+  const result = new AcDbPolyline()
+  resultPoints.forEach((point, index) => result.addVertexAt(index, point))
+  result.closed = false
+  return result
+}
+
+function intersectOffsetSegments(a: OffsetSegment, b: OffsetSegment): AcGePoint2d {
+  const det = a.dx * b.dy - a.dy * b.dx
+  if (Math.abs(det) <= 1e-9) {
+    return new AcGePoint2d(
+      (a.end.x + b.start.x) / 2,
+      (a.end.y + b.start.y) / 2,
+    )
+  }
+
+  const qpx = b.start.x - a.start.x
+  const qpy = b.start.y - a.start.y
+  const t = (qpx * b.dy - qpy * b.dx) / det
+  return new AcGePoint2d(a.start.x + t * a.dx, a.start.y + t * a.dy)
 }
 
 // Spline offset: control points not accessible via public API; returns null gracefully.

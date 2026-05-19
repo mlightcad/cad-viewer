@@ -1107,6 +1107,7 @@ const buildBaseTabs = (
                   type: 'button',
                   label: t('main.ribbon.command.offset'),
                   tooltip: ribbonTooltips.offset,
+                  hideLabel: true,
                   size: 'small',
                   props: { icon: offset }
                 }
@@ -1443,6 +1444,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-copy', 'copy')
+  commandByItemId.set('cmd-offset', 'offset')
   commandByItemId.set('cmd-erase', 'erase')
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')

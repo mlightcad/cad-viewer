@@ -19,6 +19,7 @@ import {
   AcEdFloatingInputCancelCallback,
   AcEdFloatingInputChangeCallback,
   AcEdFloatingInputCommitCallback,
+  AcEdFloatingInputBoxPositionCallback,
   AcEdFloatingInputDrawPreviewCallback,
   AcEdFloatingInputDynamicValueCallback,
   AcEdFloatingInputNoneCallback,
@@ -54,6 +55,9 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
   /** Inject styles only once */
   private static inputStylesInjected = false
+  private static pointerStateListenersAttached = false
+  private static primaryButtonDown = false
+  private static suppressNextClickCommit = false
 
   /** Input box container (single or double input) */
   private inputs?: AcEdFloatingInputBoxes<T>
@@ -63,6 +67,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
   /** OSNAP marker manager to display and hide OSNAP marker */
   private osnapMarkerManager?: AcEdMarkerManager
+  private resolvedPositionMarkerManager?: AcEdMarkerManager
 
   /** Stores last confirmed osnap point */
   private lastOsnapPoint?: AcEdOsnapPoint
@@ -78,12 +83,15 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   /** Validation and dynamic value providers */
   private validateFn: AcEdFloatingInputValidationCallback<T>
   private getDynamicValue: AcEdFloatingInputDynamicValueCallback<T>
+  private getInputPositions?: AcEdFloatingInputBoxPositionCallback<T>
   private drawPreview?: AcEdFloatingInputDrawPreviewCallback
+  private resolvePosition?: (pos: AcGePoint2dLike) => AcGePoint2dLike
 
   /** Cached click handler */
   private boundOnClick: (e: MouseEvent) => void
   /** Whether to suppress UI display while keeping input active */
   private suppressDisplay: boolean = false
+  private ignoreActivePointerClick: boolean = false
   /** Cached sysvar handler */
   private boundOnInputSysVarChanged: (args: {
     name: string
@@ -104,6 +112,11 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   constructor(view: AcEdBaseView, options: AcEdFloatingInputOptions<T>) {
     super(view, options)
 
+    AcEdFloatingInput.attachPointerStateListeners()
+    this.ignoreActivePointerClick =
+      AcEdFloatingInput.primaryButtonDown ||
+      AcEdFloatingInput.consumeSuppressNextClickCommit()
+
     this.allowPrompt = options.allowPrompt !== false
     this.suppressDisplay = !this.isDynamicInputEnabled()
 
@@ -112,6 +125,9 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     // -----------------------------
     if (!options.disableOSnap) {
       this.osnapMarkerManager = new AcEdMarkerManager(view)
+    }
+    if (options.resolvePosition) {
+      this.resolvedPositionMarkerManager = new AcEdMarkerManager(view)
     }
 
     // -----------------------------
@@ -126,12 +142,18 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
       })
     }
 
+    if (options.lastPoint) {
+      this.lastPoint = new AcGePoint2d(options.lastPoint)
+    }
+
     // -----------------------------
     // Callbacks
     // -----------------------------
     this.validateFn = options.validate
     this.getDynamicValue = options.getDynamicValue
+    this.getInputPositions = options.getInputPositions
     this.drawPreview = options.drawPreview
+    this.resolvePosition = options.resolvePosition
 
     this.onCommit = options.onCommit
     this.onChange = options.onChange
@@ -155,6 +177,13 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         useDefaultValue: options.useDefaultValue,
         defaultValue: options.defaultValue
       })
+      if (this.getInputPositions) {
+        this.container.classList.add('ml-floating-input--custom-position')
+        this.inputs.setInputClassNames(
+          'ml-floating-input__box--x',
+          'ml-floating-input__box--y'
+        )
+      }
     }
 
     // -----------------------------
@@ -213,7 +242,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         padding: 2px 4px;
         margin-left: 6px;
         height: 22px;
-        width: 90px;
+        width: 128px;
+        min-width: 128px;
         background: var(--ml-ui-bg, #888);
         border: 1px solid var(--ml-ui-border, #666);
         color: var(--ml-ui-text, #fff);
@@ -224,8 +254,56 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         border-color: var(--ml-ui-danger, red);
         color: var(--ml-ui-danger, red);
       }
+
+      .ml-floating-input--custom-position {
+        inset: 0 auto auto 0;
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        background: transparent;
+        border-radius: 0;
+      }
+
+      .ml-floating-input--custom-position .ml-floating-input-label {
+        display: none !important;
+      }
+
+      .ml-floating-input--custom-position input {
+        position: absolute;
+        margin-left: 0;
+        width: 72px;
+        min-width: 72px;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        pointer-events: auto;
+      }
     `
     document.head.appendChild(style)
+  }
+
+  private static attachPointerStateListeners() {
+    if (AcEdFloatingInput.pointerStateListenersAttached) return
+    AcEdFloatingInput.pointerStateListenersAttached = true
+
+    document.addEventListener('mousedown', e => {
+      if (e.button === 0) AcEdFloatingInput.primaryButtonDown = true
+    })
+    document.addEventListener('mouseup', e => {
+      if (e.button === 0) AcEdFloatingInput.primaryButtonDown = false
+    })
+    window.addEventListener('blur', () => {
+      AcEdFloatingInput.primaryButtonDown = false
+    })
+  }
+
+  static suppressNextCanvasClickCommit() {
+    AcEdFloatingInput.suppressNextClickCommit = true
+  }
+
+  private static consumeSuppressNextClickCommit() {
+    const suppress = AcEdFloatingInput.suppressNextClickCommit
+    AcEdFloatingInput.suppressNextClickCommit = false
+    return suppress
   }
 
   // ---------------------------------------------------------------------------
@@ -243,6 +321,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.inputs?.dispose()
     this.rubberBand?.dispose()
     this.osnapMarkerManager?.clear()
+    this.resolvedPositionMarkerManager?.clear()
   }
 
   /**
@@ -272,6 +351,10 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
   private handleClick(e: MouseEvent) {
     if (!this.visible) return
+    if (this.ignoreActivePointerClick) {
+      this.ignoreActivePointerClick = false
+      return
+    }
 
     const wcsPos = this.getPosition(e)
     const defaults = this.getDynamicValue(wcsPos)
@@ -285,6 +368,14 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     const defaults = this.getDynamicValue(wcsPos)
 
     this.inputs?.setValue(defaults.raw)
+    const inputState = this.inputs?.userTyped
+      ? this.inputs.getValidationState()
+      : undefined
+    const effectiveValue =
+      inputState?.isValid && inputState.value != null
+        ? { value: inputState.value, raw: defaults.raw }
+        : defaults
+    this.updateInputPositions(wcsPos, effectiveValue)
 
     // Ensure focus stays in input boxes
     if (this.inputs && !this.inputs.focused && !this.suppressDisplay) {
@@ -293,6 +384,21 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
     this.rubberBand?.update(wcsPos)
     this.drawPreview?.(wcsPos)
+    if (inputState?.isValid && inputState.value != null) {
+      this.onChange?.(inputState)
+    }
+  }
+
+  private updateInputPositions(
+    wcsPos: AcGePoint2dLike,
+    defaults: ReturnType<AcEdFloatingInputDynamicValueCallback<T>>
+  ) {
+    if (!this.inputs || !this.getInputPositions) return
+    this.container.style.left = '0px'
+    this.container.style.top = '0px'
+    const positions = this.getInputPositions(wcsPos, defaults)
+    if (!positions) return
+    this.inputs.setInputPositions(positions)
   }
 
   // ---------------------------------------------------------------------------
@@ -310,7 +416,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     const wcsPos = this.view.screenToWorld(mousePos)
 
     // Apply OSNAP
-    if (this.osnapMarkerManager) {
+    if (this.osnapMarkerManager && AcApSettingManager.instance.osnapModes !== 0) {
       this.osnapMarkerManager.hideMarker()
       this.lastOsnapPoint = this.getOsnapPoint()
 
@@ -323,6 +429,19 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
           this.osnapMode2MarkerType(this.lastOsnapPoint.type)
         )
       }
+    }
+
+    this.resolvedPositionMarkerManager?.hideMarker()
+    const resolved = this.resolvePosition?.(wcsPos) ?? wcsPos
+    wcsPos.x = resolved.x
+    wcsPos.y = resolved.y
+    if (this.resolvedPositionMarkerManager && this.resolvePosition) {
+      this.resolvedPositionMarkerManager.showMarker(
+        wcsPos,
+        'diamond',
+        14,
+        'var(--ml-ui-warning, #f59e0b)'
+      )
     }
     return wcsPos
   }

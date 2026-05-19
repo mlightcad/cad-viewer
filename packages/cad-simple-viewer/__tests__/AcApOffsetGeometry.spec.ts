@@ -1,8 +1,18 @@
-import { describe, it, expect } from 'vitest'
 import {
   AcDbLine, AcDbArc, AcDbCircle, AcDbEllipse, AcDbPolyline,
   AcGePoint3d, AcGeVector3d, AcGePoint2d,
 } from '@mlightcad/data-model'
+
+jest.mock(
+  'clipper2-ts',
+  () => ({
+    EndType: { Polygon: 0, Butt: 1 },
+    JoinType: { Miter: 0 },
+    inflatePaths: (paths: unknown) => paths,
+  }),
+  { virtual: true }
+)
+
 import {
   offsetLine, offsetArc, offsetCircle, offsetEllipse, offsetPolyline, pickSide,
 } from '../src/command/modify/AcApOffsetGeometry'

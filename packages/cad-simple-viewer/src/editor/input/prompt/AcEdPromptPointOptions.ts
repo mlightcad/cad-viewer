@@ -1,6 +1,24 @@
-import { AcGePoint3d } from '@mlightcad/data-model'
+import { AcGePoint3d, AcGePoint3dLike } from '@mlightcad/data-model'
 
 import { AcEdPromptOptions } from './AcEdPromptOptions'
+
+export interface AcEdPromptPointDimensionInputOptions {
+  /**
+   * Use distance fields instead of absolute X/Y coordinate fields, or polar
+   * distance/angle fields relative to the base point.
+   */
+  type: 'rectangleDimensions' | 'polarDistanceAngle'
+
+  /**
+   * Rectangle axis rotation in radians.
+   */
+  rotation?: number
+}
+
+export interface AcEdPromptPointDistanceInputOptions {
+  getDistance(point: AcGePoint3dLike): number
+  resolvePoint(distance: number, referencePoint: AcGePoint3dLike): AcGePoint3dLike | null
+}
 
 /**
  * Represents options for prompting the user to select a point, similar to
@@ -14,6 +32,9 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   private _useDashedLine: boolean = false
   private _allowNone: boolean = false
   private _disableOSnap: boolean = false
+  private _resolvePoint?: (point: AcGePoint3dLike) => AcGePoint3dLike
+  private _dimensionInput?: AcEdPromptPointDimensionInputOptions
+  private _distanceInput?: AcEdPromptPointDistanceInputOptions
 
   /**
    * Constructs a new `AcEdPromptPointOptions` with a given prompt message.
@@ -92,6 +113,41 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   set disableOSnap(flag: boolean) {
     if (!this.isReadOnly) {
       this._disableOSnap = flag
+    }
+  }
+
+  get resolvePoint():
+    | ((point: AcGePoint3dLike) => AcGePoint3dLike)
+    | undefined {
+    return this._resolvePoint
+  }
+  set resolvePoint(
+    resolver: ((point: AcGePoint3dLike) => AcGePoint3dLike) | undefined
+  ) {
+    if (!this.isReadOnly) {
+      this._resolvePoint = resolver
+    }
+  }
+
+  get dimensionInput(): AcEdPromptPointDimensionInputOptions | undefined {
+    return this._dimensionInput
+  }
+  set dimensionInput(
+    options: AcEdPromptPointDimensionInputOptions | undefined
+  ) {
+    if (!this.isReadOnly) {
+      this._dimensionInput = options ? { ...options } : undefined
+    }
+  }
+
+  get distanceInput(): AcEdPromptPointDistanceInputOptions | undefined {
+    return this._distanceInput
+  }
+  set distanceInput(
+    options: AcEdPromptPointDistanceInputOptions | undefined
+  ) {
+    if (!this.isReadOnly) {
+      this._distanceInput = options
     }
   }
 }

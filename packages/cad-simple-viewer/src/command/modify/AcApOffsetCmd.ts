@@ -46,8 +46,9 @@ function computeThroughDistance(entity: AcDbEntity, p: AcGePoint3dLike): number 
   if (entity instanceof AcDbPolyline) {
     const n = entity.numberOfVertices
     let minDist = Infinity
-    for (let i = 0; i < n - 1; i++) {
-      const a = entity.getPoint2dAt(i); const b = entity.getPoint2dAt(i + 1)
+    const segCount = entity.closed ? n : n - 1
+    for (let i = 0; i < segCount; i++) {
+      const a = entity.getPoint2dAt(i); const b = entity.getPoint2dAt((i + 1) % n)
       const dx = b.x - a.x; const dy = b.y - a.y
       const len2 = dx * dx + dy * dy
       if (len2 === 0) continue
@@ -60,13 +61,96 @@ function computeThroughDistance(entity: AcDbEntity, p: AcGePoint3dLike): number 
   return 0
 }
 
+function resolveThroughPoint(entity: AcDbEntity, distance: number, reference: AcGePoint3dLike): AcGePoint3dLike | null {
+  if (distance <= 0) return null
+  const side = pickSide(entity, reference)
+
+  if (entity instanceof AcDbLine) {
+    const s = entity.startPoint; const e = entity.endPoint
+    const dx = e.x - s.x; const dy = e.y - s.y
+    const len2 = dx * dx + dy * dy
+    if (len2 === 0) return null
+    const len = Math.sqrt(len2)
+    const t = ((reference.x - s.x) * dx + (reference.y - s.y) * dy) / len2
+    const baseX = s.x + dx * t
+    const baseY = s.y + dy * t
+    return {
+      x: baseX + (-dy / len) * distance * side,
+      y: baseY + (dx / len) * distance * side,
+      z: reference.z ?? 0
+    }
+  }
+
+  if (entity instanceof AcDbCircle || entity instanceof AcDbArc) {
+    const c = (entity as AcDbCircle).center
+    const r = (entity as AcDbCircle).radius + distance * side
+    if (r <= 0) return null
+    const dx = reference.x - c.x
+    const dy = reference.y - c.y
+    const len = Math.hypot(dx, dy) || 1
+    return {
+      x: c.x + (dx / len) * r,
+      y: c.y + (dy / len) * r,
+      z: reference.z ?? 0
+    }
+  }
+
+  if (entity instanceof AcDbEllipse) {
+    const c = entity.center
+    const dx = reference.x - c.x
+    const dy = reference.y - c.y
+    const len = Math.hypot(dx, dy) || 1
+    return {
+      x: c.x + (dx / len) * distance,
+      y: c.y + (dy / len) * distance,
+      z: reference.z ?? 0
+    }
+  }
+
+  if (entity instanceof AcDbPolyline) {
+    const n = entity.numberOfVertices
+    let bestDist = Infinity
+    let bestPoint: { x: number; y: number } | null = null
+    let bestNormal: { x: number; y: number } | null = null
+    const segCount = entity.closed ? n : n - 1
+    for (let i = 0; i < segCount; i++) {
+      const a = entity.getPoint2dAt(i); const b = entity.getPoint2dAt((i + 1) % n)
+      const dx = b.x - a.x; const dy = b.y - a.y
+      const len2 = dx * dx + dy * dy
+      if (len2 === 0) continue
+      const t = Math.max(0, Math.min(1, ((reference.x - a.x) * dx + (reference.y - a.y) * dy) / len2))
+      const baseX = a.x + dx * t
+      const baseY = a.y + dy * t
+      const dist = (reference.x - baseX) ** 2 + (reference.y - baseY) ** 2
+      if (dist < bestDist) {
+        const len = Math.sqrt(len2)
+        bestDist = dist
+        bestPoint = { x: baseX, y: baseY }
+        bestNormal = { x: -dy / len, y: dx / len }
+      }
+    }
+    if (!bestPoint || !bestNormal) return null
+    return {
+      x: bestPoint.x + bestNormal.x * distance * side,
+      y: bestPoint.y + bestNormal.y * distance * side,
+      z: reference.z ?? 0
+    }
+  }
+
+  return null
+}
+
 class AcApOffsetPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _view: AcEdBaseView
   private _source: AcDbEntity
-  private _distance: number
+  private _distance: number | ((point: AcGePoint3dLike) => number)
   private _preview: AcDbEntity | null = null
 
-  constructor(view: AcEdBaseView, source: AcDbEntity, distance: number) {
+  constructor(
+    view: AcEdBaseView,
+    source: AcDbEntity,
+    distance: number | ((point: AcGePoint3dLike) => number)
+  ) {
     super(view)
     this._view = view
     this._source = source
@@ -80,11 +164,12 @@ class AcApOffsetPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
       this._view.removeTransientEntity(this._preview.objectId)
       this._preview = null
     }
-    const result = computeOffset(this._source, this._distance, pickSide(this._source, point))
-    if (result) {
-      this._preview = result
-      this._view.addTransientEntity(result)
-    }
+    const distance = typeof this._distance === 'function'
+      ? this._distance(point)
+      : this._distance
+    this._preview = distance > 0
+      ? computeOffset(this._source, distance, pickSide(this._source, point))
+      : null
   }
 
   override end(): void {
@@ -136,7 +221,18 @@ export class AcApOffsetCmd extends AcEdCommand {
       if (!source) break
 
       const sidePrompt = new AcEdPromptPointOptions(AcApI18n.t('jig.offset.sideToOffset'))
-      if (!throughMode) sidePrompt.jig = new AcApOffsetPreviewJig(context.view, source, distance!)
+      if (throughMode) {
+        sidePrompt.distanceInput = {
+          getDistance: point => computeThroughDistance(source, point),
+          resolvePoint: (typedDistance, referencePoint) =>
+            resolveThroughPoint(source, typedDistance, referencePoint)
+        }
+      }
+      sidePrompt.jig = new AcApOffsetPreviewJig(
+        context.view,
+        source,
+        throughMode ? point => computeThroughDistance(source, point) : distance!
+      )
       const sideResult: AcEdPromptPointResult = await AcApDocManager.instance.editor.getPoint(sidePrompt)
       if (sideResult.status !== AcEdPromptStatus.OK || !sideResult.value) continue
 

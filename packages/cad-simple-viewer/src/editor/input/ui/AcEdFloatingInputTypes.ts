@@ -90,6 +90,22 @@ export type AcEdFloatingInputDynamicValueCallback<T> = (
 ) => AcEdFloatingInputDynamicValue<T>
 
 /**
+ * Absolute positions for individual floating input boxes in the view container.
+ */
+export interface AcEdFloatingInputBoxPositions {
+  x: AcGePoint2dLike
+  y?: AcGePoint2dLike
+}
+
+/**
+ * Callback used by custom layouts to position each input independently.
+ */
+export type AcEdFloatingInputBoxPositionCallback<T> = (
+  pos: AcGePoint2dLike,
+  value: AcEdFloatingInputDynamicValue<T>
+) => AcEdFloatingInputBoxPositions | undefined
+
+/**
  * The number of input boxes shown in floating input UI
  */
 export type AcEdFloatingInputBoxCount = 0 | 1 | 2
@@ -132,9 +148,20 @@ export interface AcEdFloatingInputOptions<T> {
   disableOSnap?: boolean
 
   /**
+   * Optional command-specific point resolver. It can replace the raw cursor
+   * point with a constrained point, such as a projection onto an offset side.
+   */
+  resolvePosition?: (pos: AcGePoint2dLike) => AcGePoint2dLike
+
+  /**
    * The base point used to draw rubber band or base line
    */
   basePoint?: AcGePoint2dLike | undefined
+
+  /**
+   * The last confirmed point used for ortho mode constraint.
+   */
+  lastPoint?: AcGePoint2dLike | undefined
 
   /**
    * Base angle in degrees used by angle rubber-band preview as the 0-degree direction.
@@ -159,6 +186,12 @@ export interface AcEdFloatingInputOptions<T> {
    * context-dependent defaults for the user.
    */
   getDynamicValue: AcEdFloatingInputDynamicValueCallback<T>
+
+  /**
+   * Optional custom placement for individual input boxes. When omitted, inputs
+   * stay grouped beside the cursor.
+   */
+  getInputPositions?: AcEdFloatingInputBoxPositionCallback<T>
 
   /**
    * Callback invoked on mousemove to update the preview geometry.
