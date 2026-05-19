@@ -171,6 +171,9 @@ importers:
       '@mlightcad/libredwg-converter':
         specifier: ^3.5.38
         version: 3.5.38(@mlightcad/data-model@1.7.38)
+      clipper2-ts:
+        specifier: 2.0.1-15
+        version: 2.0.1-15
       mitt:
         specifier: ^3.0.1
         version: 3.0.1
@@ -2547,6 +2550,10 @@ packages:
   clipboardy@3.0.0:
     resolution: {integrity: sha512-Su+uU5sr1jkUy1sGRpLKjKrvEOVXgSgiSInwa/qeID6aJ07yh+5NWc3h2QfjHjBnfX4LhtFcuAWKUsJ3r+fjbg==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+
+  clipper2-ts@2.0.1-15:
+    resolution: {integrity: sha512-roegGp2c3DIyBvTDZM6IwFxe1xRIkg4vvftmf4S6U9FYcRyzfiXVKZxtVL3F4JjqArXq78Cf4L1FzLWXOlE3cQ==}
+    engines: {node: '>=14.0.0'}
 
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
@@ -7398,6 +7405,8 @@ snapshots:
       arch: 2.2.0
       execa: 5.1.1
       is-wsl: 2.2.0
+
+  clipper2-ts@2.0.1-15: {}
 
   cliui@8.0.1:
     dependencies:

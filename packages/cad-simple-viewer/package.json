@@ -56,6 +56,7 @@
   "dependencies": {
     "@mlightcad/cad-html-exporter": "workspace:*",
     "@mlightcad/libredwg-converter": "^3.5.38",
+    "clipper2-ts": "2.0.1-15",
     "mitt": "^3.0.1",
     "rbush": "^4.0.1"
   },
