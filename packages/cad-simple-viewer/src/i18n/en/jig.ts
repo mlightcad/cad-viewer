@@ -671,6 +671,25 @@ export default {
   mtext: {
     point: 'Specify mtext insertion point:'
   },
+  offset: {
+    distanceOrOptions: 'Specify offset distance or',
+    selectObject: 'Select object to offset or',
+    sideToOffset: 'Specify point on side to offset or',
+    through: 'Specify through point:',
+    eraseSourceYes: 'Erase source objects after offsetting? [Yes/No]',
+    layerCurrent: 'Enter layer option for offset objects [Current/Source]:',
+    cannotOffset: 'Cannot offset this object.',
+    invalidDistance: 'Offset distance must be positive.',
+    keywords: {
+      through: { display: 'Through(T)', global: 'Through', local: 'Through' },
+      erase: { display: 'Erase(E)', global: 'Erase', local: 'Erase' },
+      layer: { display: 'Layer(L)', global: 'Layer', local: 'Layer' },
+      yes: { display: 'Yes(Y)', global: 'Yes', local: 'Yes' },
+      no: { display: 'No(N)', global: 'No', local: 'No' },
+      current: { display: 'Current(C)', global: 'Current', local: 'Current' },
+      source: { display: 'Source(S)', global: 'Source', local: 'Source' },
+    },
+  },
   pngout: {
     boundsFirstCorner: 'Specify first corner of bounds',
     boundsSecondCorner: 'Specify opposite corner',

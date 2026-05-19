@@ -226,6 +226,10 @@ export default {
       description: 'Moves selected entities by a displacement vector',
       prompt: 'Select entities'
     },
+    offset: {
+      description: 'Creates a parallel copy of a selected object at a specified distance',
+      prompt: 'Select object to offset',
+    },
     mtext: {
       description: 'Creates one mtext entity'
     },
