@@ -54,7 +54,7 @@ export function offsetPolyline(poly: AcDbPolyline, distance: number, side: 1 | -
   const path = []
   for (let i = 0; i < n; i++) {
     const pt = poly.getPoint2dAt(i)
-    path.push({ X: Math.round(pt.x * CLIPPER_SCALE), Y: Math.round(pt.y * CLIPPER_SCALE) })
+    path.push({ x: Math.round(pt.x * CLIPPER_SCALE), y: Math.round(pt.y * CLIPPER_SCALE) })
   }
   const shape = new ClipperShape([path], poly.closed, true, false)
   const offsetShape = shape.offset(distance * side * CLIPPER_SCALE, {
