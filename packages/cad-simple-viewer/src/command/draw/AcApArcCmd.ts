@@ -87,10 +87,11 @@ function angleByNormalSign(
   point: AcGePoint3dLike,
   normalSign: ArcNormalSign
 ) {
-  // For -Z arcs, mirror Y so the angle still increases in the arc direction.
+  // AcDbArc stores start/end in OCS. For a -Z extrusion, data-model chooses
+  // OCS X = -WCS X and OCS Y = WCS Y, so mirror X rather than Y.
   const dx = point.x - center.x
   const dy = point.y - center.y
-  const raw = normalSign === 1 ? Math.atan2(dy, dx) : Math.atan2(-dy, dx)
+  const raw = normalSign === 1 ? Math.atan2(dy, dx) : Math.atan2(dy, -dx)
   return normalizeAngle(raw)
 }
 
@@ -102,6 +103,10 @@ function angleByNormalSign(
  */
 function toNormal(sign: ArcNormalSign): AcGeVector3dLike {
   return sign === 1 ? POSITIVE_NORMAL : NEGATIVE_NORMAL
+}
+
+function normalSignOf(entity: AcDbArc): ArcNormalSign {
+  return entity.normal.z >= 0 ? 1 : -1
 }
 
 /**
@@ -591,6 +596,11 @@ class AcApArcJig extends AcEdPreviewJig<AcGePoint3dLike> {
     // Ignore invalid intermediate states while the cursor moves.
     const definition = this._builder(point)
     if (!definition) return
+    if (definition.normalSign !== normalSignOf(this._arc)) {
+      this.end()
+      this._arc = createArcEntity(definition)
+      return
+    }
     applyArcDefinition(this._arc, definition)
   }
 }
@@ -646,6 +656,11 @@ class AcApArcValueJig<T> extends AcEdPreviewJig<T> {
   update(value: T) {
     const definition = this._builder(value)
     if (!definition) return
+    if (definition.normalSign !== normalSignOf(this._arc)) {
+      this.end()
+      this._arc = createArcEntity(definition)
+      return
+    }
     applyArcDefinition(this._arc, definition)
   }
 }
