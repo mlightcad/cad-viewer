@@ -91,6 +91,36 @@ describe('offsetPolyline', () => {
     expect(result).not.toBeNull()
     expect(result!.numberOfVertices).toBeGreaterThanOrEqual(4)
   })
+
+  it('offsets an open polyline with 2 vertices', () => {
+    const poly = new AcDbPolyline()
+    poly.addVertexAt(0, new AcGePoint2d(0, 0))
+    poly.addVertexAt(1, new AcGePoint2d(10, 0))
+    poly.closed = false
+    const result = offsetPolyline(poly, 2, 1)
+    expect(result).not.toBeNull()
+    expect(result!.numberOfVertices).toBe(2)
+    expect(result!.getPoint2dAt(0).y).toBeCloseTo(2)
+    expect(result!.getPoint2dAt(1).y).toBeCloseTo(2)
+  })
+
+  it('offsets an open polyline with 3 vertices, joining offset segments', () => {
+    const poly = new AcDbPolyline()
+    poly.addVertexAt(0, new AcGePoint2d(0, 0))
+    poly.addVertexAt(1, new AcGePoint2d(10, 0))
+    poly.addVertexAt(2, new AcGePoint2d(10, 10))
+    poly.closed = false
+    const result = offsetPolyline(poly, 1, 1)
+    expect(result).not.toBeNull()
+    expect(result!.numberOfVertices).toBe(3)
+  })
+
+  it('returns null for open polyline with fewer than 2 vertices', () => {
+    const poly = new AcDbPolyline()
+    poly.addVertexAt(0, new AcGePoint2d(0, 0))
+    poly.closed = false
+    expect(offsetPolyline(poly, 1, 1)).toBeNull()
+  })
 })
 
 describe('pickSide', () => {

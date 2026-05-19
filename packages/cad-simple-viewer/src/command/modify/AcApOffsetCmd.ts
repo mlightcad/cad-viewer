@@ -204,8 +204,16 @@ export class AcApOffsetCmd extends AcEdCommand {
       } else if (distResult.status === AcEdPromptStatus.Keyword) {
         const kw = distResult.stringResult ?? ''
         if (kw === 'Through') { throughMode = true; break }
-        if (kw === 'Erase') { eraseSource = !eraseSource; continue }
-        if (kw === 'Layer') { layerMode = layerMode === 'source' ? 'current' : 'source'; continue }
+        if (kw === 'Erase') {
+          eraseSource = !eraseSource
+          AcApDocManager.instance.editor.showMessage(AcApI18n.t(eraseSource ? 'jig.offset.eraseOn' : 'jig.offset.eraseOff'))
+          continue
+        }
+        if (kw === 'Layer') {
+          layerMode = layerMode === 'source' ? 'current' : 'source'
+          AcApDocManager.instance.editor.showMessage(AcApI18n.t(layerMode === 'source' ? 'jig.offset.layerSource' : 'jig.offset.layerCurrent'))
+          continue
+        }
         return
       } else { return }
     }

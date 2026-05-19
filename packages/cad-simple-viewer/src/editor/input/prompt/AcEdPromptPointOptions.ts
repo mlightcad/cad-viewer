@@ -2,19 +2,6 @@ import { AcGePoint3d, AcGePoint3dLike } from '@mlightcad/data-model'
 
 import { AcEdPromptOptions } from './AcEdPromptOptions'
 
-export interface AcEdPromptPointDimensionInputOptions {
-  /**
-   * Use distance fields instead of absolute X/Y coordinate fields, or polar
-   * distance/angle fields relative to the base point.
-   */
-  type: 'rectangleDimensions' | 'polarDistanceAngle'
-
-  /**
-   * Rectangle axis rotation in radians.
-   */
-  rotation?: number
-}
-
 export interface AcEdPromptPointDistanceInputOptions {
   getDistance(point: AcGePoint3dLike): number
   resolvePoint(distance: number, referencePoint: AcGePoint3dLike): AcGePoint3dLike | null
@@ -33,7 +20,6 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   private _allowNone: boolean = false
   private _disableOSnap: boolean = false
   private _resolvePoint?: (point: AcGePoint3dLike) => AcGePoint3dLike
-  private _dimensionInput?: AcEdPromptPointDimensionInputOptions
   private _distanceInput?: AcEdPromptPointDistanceInputOptions
 
   /**
@@ -126,17 +112,6 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   ) {
     if (!this.isReadOnly) {
       this._resolvePoint = resolver
-    }
-  }
-
-  get dimensionInput(): AcEdPromptPointDimensionInputOptions | undefined {
-    return this._dimensionInput
-  }
-  set dimensionInput(
-    options: AcEdPromptPointDimensionInputOptions | undefined
-  ) {
-    if (!this.isReadOnly) {
-      this._dimensionInput = options ? { ...options } : undefined
     }
   }
 
