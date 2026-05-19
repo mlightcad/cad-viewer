@@ -10,6 +10,8 @@ const CLIPPER_SCALE = 1e6
 export function offsetLine(line: AcDbLine, distance: number, side: 1 | -1): AcDbLine {
   const s = line.startPoint
   const e = line.endPoint
+  const len = Math.sqrt((e.x - s.x) ** 2 + (e.y - s.y) ** 2)
+  if (len === 0) return new AcDbLine(s, e)
   const dir = new AcGeVector3d(e.x - s.x, e.y - s.y, 0).normalize()
   const perp = new AcGeVector3d(-dir.y, dir.x, 0)
   const d = distance * side
@@ -35,9 +37,13 @@ export function offsetEllipse(ellipse: AcDbEllipse, distance: number, side: 1 | 
   const major = ellipse.majorAxisRadius + distance * side
   const minor = ellipse.minorAxisRadius + distance * side
   if (major <= 0 || minor <= 0) return null
+  // AcDbEllipse has no majorAxis getter, so we cannot recover the original axis direction.
+  // We pass X_AXIS as a unit direction; the constructor uses it only for orientation and
+  // the actual radii are supplied separately. For axis-aligned ellipses this is correct.
+  // Rotated ellipses will lose their rotation — a limitation of the current API.
   return new AcDbEllipse(
     ellipse.center, ellipse.normal,
-    new AcGeVector3d(major, 0, 0),
+    new AcGeVector3d(1, 0, 0),
     major, minor, ellipse.startAngle, ellipse.endAngle,
   )
 }
@@ -85,15 +91,18 @@ export function pickSide(entity: AcDbEntity, p: AcGePoint3dLike): 1 | -1 {
     const c = entity.center
     const a = entity.majorAxisRadius
     const b = entity.minorAxisRadius
+    // AcDbEllipse has no majorAxis getter, so we cannot transform into the ellipse's
+    // local frame for rotated ellipses. This test is only correct for axis-aligned ellipses.
     return ((p.x - c.x) / a) ** 2 + ((p.y - c.y) / b) ** 2 >= 1 ? 1 : -1
   }
   if (entity instanceof AcDbPolyline) {
     const n = entity.numberOfVertices
     let bestDist = Infinity
     let bestSide: 1 | -1 = 1
-    for (let i = 0; i < n - 1; i++) {
+    const segCount = entity.closed ? n : n - 1
+    for (let i = 0; i < segCount; i++) {
       const a = entity.getPoint2dAt(i)
-      const b = entity.getPoint2dAt(i + 1)
+      const b = entity.getPoint2dAt((i + 1) % n)
       const dx = b.x - a.x; const dy = b.y - a.y
       const len2 = dx * dx + dy * dy
       if (len2 === 0) continue
