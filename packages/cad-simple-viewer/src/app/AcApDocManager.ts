@@ -1130,12 +1130,53 @@ export class AcApDocManager {
       this.setActiveLayout()
       const db = doc.database
 
-      // The extents of drawing database may be empty. Espically dxf files.
-      if (db.extents.isEmpty()) {
-        this.curView.zoomToFitDrawing()
-      } else {
+      // Three-way fit strategy at document open time:
+      //
+      // 1. **Paper space + has LIMMIN/LIMMAX**: frame the authoritative
+      //    paper sheet rectangle (`AcDbLayout.limits`). Real-world DWGs
+      //    frequently mix scales inside paper space (e.g. a title block
+      //    authored in mm alongside viewport rectangles authored in m),
+      //    so the entity bounding box is unreliable here — it gets
+      //    dominated by the largest-scale outliers and shrinks the
+      //    actual paper to a grain.
+      //
+      // 2. **Model space + non-empty database extents**: frame
+      //    EXTMIN/EXTMAX. Eager-zoom shortcut for the common case of
+      //    opening straight into model space; avoids waiting on the
+      //    converter (`zoomToFitDrawing` polls until entities are
+      //    converted).
+      //
+      // 3. **Fallback** (paper without limits, or model with empty
+      //    extents — typically DXF): poll `zoomToFitDrawing` and frame
+      //    the populated layout bounding box once entities land.
+      //
+      // The pre-fix code used `db.extmin/db.extmax` (always model-space
+      // EXTMIN/EXTMAX sysvars) even when opening into paper, landing on
+      // coordinates that don't exist in paper WCS. Paper layout would
+      // render zoomed into a random quadrant — title block looking
+      // giant, viewport collapsed to pixels. See
+      // `next_14_viewports_full.md` Bug C-open.
+      const modelSpaceId = db.tables.blockTable.modelSpace.objectId
+      const isPaperSpaceActive = db.currentSpaceId !== modelSpaceId
+      const activeLayout =
+        acdbHostApplicationServices().layoutManager.getActiveLayout(db)
+      const layoutLimits = activeLayout?.limits
+
+      if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
+        this.curView.zoomTo(layoutLimits)
+      } else if (!isPaperSpaceActive && !db.extents.isEmpty()) {
         this.curView.zoomTo(new AcGeBox2d(db.extmin, db.extmax))
+      } else {
+        this.curView.zoomToFitDrawing()
       }
+
+      // Tell the view we've already framed the startup layout, so that
+      // when the user later switches to a different tab and back, the
+      // `layoutSwitched` handler doesn't re-zoom and trash their pan/zoom
+      // state on this layout. Cast is intentional: `setActiveLayout`
+      // above relies on `curView` being an `AcTrView2d`, and the
+      // markLayoutAsInitialized method is part of that contract.
+      ;(this.curView as AcTrView2d).markLayoutAsInitialized(db.currentSpaceId)
     }
   }
 

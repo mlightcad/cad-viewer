@@ -111,6 +111,21 @@ export class AcTrLayoutView extends AcTrBaseView {
   }
 
   /**
+   * All viewport views in this layout. Exposed so the editor's pick pipeline
+   * can iterate viewports to implement paper-space → model-space
+   * drill-through selection without having to know how this view stores its
+   * viewports internally.
+   *
+   * Returns an iterable over `AcTrViewportView` instances (the value side
+   * of the underlying `Map`); the order is insertion order, which matches
+   * the order viewports were emitted by the converter. Callers that need a
+   * specific viewport should resolve it via `viewportView.viewport.id`.
+   */
+  get viewportViews(): Iterable<AcTrViewportView> {
+    return this._viewportViews.values()
+  }
+
+  /**
    * The internal THREE camera used by this layout view.
    */
   get internalCamera() {
