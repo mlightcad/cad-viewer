@@ -1,4 +1,5 @@
 import {
+  AcDbBlockTableRecord,
   AcDbEntity,
   acdbHostApplicationServices,
   AcDbLayerTableRecord,
@@ -128,6 +129,37 @@ export class AcTrView2d extends AcEdBaseView {
   private _numOfEntitiesToProcess: number
   /** CSS2D renderer for HTML transient overlays */
   private _css2dRenderer: CSS2DRenderer
+  /**
+   * Block table record ids of layouts whose entities are currently being
+   * batch-converted into the scene. Used by
+   * {@link AcTrView2d.loadLayoutEntitiesIfNeeded} to guard against
+   * re-entrant calls before the `setTimeout` callback flips
+   * `AcTrLayout.isLoaded` to `true`, which would otherwise duplicate
+   * entities when the same layout tab is clicked twice in quick succession.
+   */
+  private _loadingLayouts: Set<AcDbObjectId> = new Set()
+  /**
+   * Block table record ids of layouts that have already received an
+   * initial zoom-to-fit. Used by the `layoutSwitched` handler to apply
+   * the auto-zoom **only on the first user visit** to each layout, and
+   * to preserve the camera state on subsequent visits (matches AutoCAD's
+   * per-tab view persistence).
+   *
+   * Cannot be inferred from `_layoutViewManager.has(btrId)` because
+   * `addLayout` pre-creates an `AcTrLayoutView` for every layout in the
+   * DWG at document load time — by the time the user clicks a layout
+   * tab the view already exists, so "first existence of view" is
+   * always false. This set tracks the orthogonal question "has the user
+   * actually focused on this layout before?".
+   *
+   * Marked from two entry points:
+   *  - `onAfterOpenDocument` (via `markLayoutAsInitialized`): the
+   *    document's startup layout is initialized externally, so we don't
+   *    auto-zoom again when the user clicks back to it.
+   *  - `layoutSwitched` handler: after the first user-driven switch
+   *    completes its initial zoom-to-fit.
+   */
+  private _initializedLayouts: Set<AcDbObjectId> = new Set()
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -358,10 +390,52 @@ export class AcTrView2d extends AcEdBaseView {
     })
     acdbHostApplicationServices().layoutManager.events.layoutSwitched.addEventListener(
       args => {
-        this.activeLayoutBtrId = args.layout.blockTableRecordId
-        this.createLayoutViewIfNeeded(args.layout.blockTableRecordId)
-        this.loadLayoutEntitiesIfNeeded(args.layout.blockTableRecordId)
+        const btrId = args.layout.blockTableRecordId
+        // "First visit" is tracked separately from view existence because
+        // `addLayout` pre-creates an `AcTrLayoutView` for every layout in
+        // the DWG at load time — `_layoutViewManager.has(btrId)` is
+        // therefore `true` even for layouts the user has never focused
+        // on, and "first visit" computed from it would always be false.
+        // We use a dedicated set instead, marked here on first switch and
+        // also from `markLayoutAsInitialized` when the document opens
+        // straight into a layout (AcApDocManager has already framed it).
+        // Each AcTrLayoutView owns its own camera, so on subsequent
+        // visits the previous camera state is naturally restored and we
+        // must NOT zoom-to-fit again — that would be jarring and
+        // diverges from how AutoCAD preserves per-tab view state.
+        const isFirstVisit = !this._initializedLayouts.has(btrId)
+        this._initializedLayouts.add(btrId)
+
+        // Clear measurement overlays before swapping layouts.
+        // Measurements are screen/coordinate-anchored — their dimension
+        // text, hatch indicators, and HTML overlays were laid out in
+        // the previous layout's WCS (paper coords, ~unit scale) and
+        // would render at nonsense positions in a different layout
+        // (model WCS is typically O(10^5) larger, paper layouts use
+        // their own sheet coords). Selection state is intentionally
+        // **not** cleared here: it is entity-id-based and the same
+        // entity stays selected wherever it is rendered (the model
+        // entity drilled through a paper viewport remains visually
+        // selected when the user returns to model space, matching
+        // AutoCAD desktop's behaviour).
+        //
+        // Dynamic import avoids a circular dependency: the cleanup
+        // module already imports `AcTrView2d` for its
+        // `htmlTransientManager` cast, so a static import here would
+        // create a cycle. The cost (one extra microtask) is
+        // negligible for a layout switch.
+        void import('../command/measure/AcApClearMeasurementsCmd').then(
+          ({ clearAllMeasurements }) => clearAllMeasurements(this)
+        )
+
+        this.activeLayoutBtrId = btrId
+        this.createLayoutViewIfNeeded(btrId)
+        this.loadLayoutEntitiesIfNeeded(btrId)
         this._isDirty = true
+
+        if (isFirstVisit) {
+          this.applyInitialZoom(btrId, args.layout)
+        }
       }
     )
 
@@ -746,32 +820,142 @@ export class AcTrView2d extends AcEdBaseView {
 
   /**
    * @inheritdoc
+   *
+   * In **paper space** layouts the selection pipeline supports
+   * "drill-through": clicks inside a viewport rectangle resolve against
+   * the model-space entities that are visually rendered through that
+   * viewport, rather than picking the viewport's border. Clicks **near**
+   * the border still pick the `AcDbViewport` entity itself so the user
+   * can grip, move, lock or delete the viewport.
+   *
+   * This mirrors AutoCAD **web** behaviour (single-click selection of
+   * model content through the viewport). The desktop ARX behaviour
+   * (explicit MSPACE/PSPACE modes, CVPORT system variable, double-click
+   * to enter mspace) is a separate, larger feature — tracked in
+   * `.claude/plans/next_14_viewports_full.md` PR-γ Option A. We
+   * intentionally do **not** implement it here.
+   *
+   * The border vs interior decision uses a tolerance derived from
+   * `selectionBoxSize` (the same pixel-sized hit radius used elsewhere
+   * in pick) converted to paper-space WCS via `pointToBox`. This keeps
+   * the gesture consistent with how other entity edges behave — you
+   * don't have to land pixel-perfect on the viewport line to grab it.
    */
   pick(point?: AcGePoint2dLike, hitRadius?: number, pickOneOnly?: boolean) {
     if (point == null) point = this.curPos
     const results: AcEdSpatialQueryResultItemEx[] = []
     const activeLayout = this._scene.activeLayout
-    if (activeLayout) {
-      const activeLayoutView = this.activeLayoutView
-      const box = activeLayoutView.pointToBox(
-        point,
-        hitRadius ?? this.selectionBoxSize
-      )
-      const firstQueryResults = this._scene.search(box)
+    if (!activeLayout) return results
 
-      const threshold = Math.max(box.size.width / 2, box.size.height / 2)
-      const raycaster = activeLayoutView.resetRaycaster(point, threshold)
-      firstQueryResults.forEach(item => {
-        const objectId = item.id
-        if (activeLayout.isIntersectWith(objectId, raycaster)) {
+    const activeLayoutView = this.activeLayoutView
+    const effectiveHitRadius = hitRadius ?? this.selectionBoxSize
+    const paperBox = activeLayoutView.pointToBox(point, effectiveHitRadius)
+    const threshold = Math.max(
+      paperBox.size.width / 2,
+      paperBox.size.height / 2
+    )
+
+    // Identify drill-through viewports (paper space only): viewports whose
+    // paper rectangle contains the click AND whose border is NOT within
+    // tolerance of the click. The border tolerance is the average of the
+    // hit-box width/height — a robust, scale-aware proxy for "user is
+    // trying to grab the frame, not click inside".
+    const isPaperSpace =
+      activeLayoutView.layoutBtrId !== this._scene.modelSpaceBtrId
+    const borderTolerance = (paperBox.size.width + paperBox.size.height) / 2
+    const drillThroughViewports: AcTrViewportView[] = []
+    const drillThroughViewportIds = new Set<AcDbObjectId>()
+    if (isPaperSpace) {
+      for (const vpView of activeLayoutView.viewportViews) {
+        if (
+          vpView.containsPaperPoint(point) &&
+          !vpView.isNearPaperBorder(point, borderTolerance)
+        ) {
+          drillThroughViewports.push(vpView)
+          drillThroughViewportIds.add(vpView.viewport.id)
+        }
+      }
+    }
+
+    // 1) Resolve hits in the active layout. Skip the `AcDbViewport`
+    //    entity for any viewport we're drilling through — otherwise the
+    //    rectangle's bounding box always wins (it covers the whole click
+    //    region) and selection feels "stuck on the frame".
+    const firstQueryResults = this._scene.search(paperBox)
+    const raycaster = activeLayoutView.resetRaycaster(point, threshold)
+    firstQueryResults.forEach(item => {
+      if (drillThroughViewportIds.has(item.id)) return
+      if (activeLayout.isIntersectWith(item.id, raycaster)) {
+        results.push(item)
+      }
+    })
+
+    // 2) For each drill-through viewport, resolve hits against the
+    //    model-space layout using the viewport's own camera/raycaster.
+    if (drillThroughViewports.length > 0) {
+      this.pickThroughViewports(
+        point,
+        paperBox,
+        drillThroughViewports,
+        results
+      )
+    }
+
+    const sortedResults = sortPickResults(results, point)
+    return pickOneOnly ? sortedResults.slice(0, 1) : sortedResults
+  }
+
+  /**
+   * Resolves hits against the model-space layout for each viewport the
+   * click drills through. Appends the matches into `results` (caller
+   * sorts/dedups). Kept private and separate from `pick` so the main
+   * pick path stays a single straight read.
+   *
+   * Each viewport gets its own raycaster shot (using the viewport view's
+   * own camera, which is zoomed to `viewport.viewBox` in model WCS), so
+   * a click that lands in overlapping viewports correctly resolves
+   * against each viewport's particular model framing.
+   *
+   * `pickThroughViewports` does NOT consult the active (paper) layout's
+   * spatial index — that work is already done by the caller. It only
+   * adds model-space results that would otherwise be invisible to the
+   * paper-space pick.
+   */
+  private pickThroughViewports(
+    paperPoint: AcGePoint2dLike,
+    paperBox: AcGeBox2d,
+    viewports: AcTrViewportView[],
+    results: AcEdSpatialQueryResultItemEx[]
+  ) {
+    const modelLayout = this._scene.modelSpaceLayout
+    if (!modelLayout) return
+
+    // Half-extent of the paper-space hit box (== "radius" in paper WCS).
+    // Multiplied per viewport by its paper→model scale, this becomes a
+    // model-WCS radius that the per-viewport raycaster threshold and the
+    // spatial-index probe both use. This keeps the hit area visually
+    // consistent across viewports at different zoom levels.
+    const paperHalfRadius =
+      (paperBox.size.width + paperBox.size.height) / 4
+
+    for (const vpView of viewports) {
+      const modelPt = vpView.paperPointToModel(paperPoint)
+      const modelRadius = paperHalfRadius * vpView.paperToModelScale
+      if (modelRadius <= 0) continue
+
+      const modelBox = new AcGeBox2d().setFromPoints([
+        new AcGePoint2d(modelPt.x - modelRadius, modelPt.y - modelRadius),
+        new AcGePoint2d(modelPt.x + modelRadius, modelPt.y + modelRadius)
+      ])
+
+      const vpRaycaster = vpView.resetRaycaster(modelPt, modelRadius)
+      const modelHits = modelLayout.search(modelBox)
+      modelHits.forEach(item => {
+        if (modelLayout.isIntersectWith(item.id, vpRaycaster)) {
           results.push(item)
         }
       })
-
-      const sortedResults = sortPickResults(results, point)
-      return pickOneOnly ? sortedResults.slice(0, 1) : sortedResults
     }
-    return results
   }
 
   /**
@@ -953,6 +1137,101 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Marks a layout as already framed by an external caller (typically
+   * `AcApDocManager.onAfterOpenDocument`, which zooms the startup
+   * layout right after parsing). Subsequent `layoutSwitched` events
+   * for this btrId will skip their initial zoom-to-fit so the user's
+   * camera state on the startup layout is preserved when they click
+   * back to that tab.
+   *
+   * This is the public counterpart of the `_initializedLayouts` set —
+   * exposed so the application layer can stay in sync with the view's
+   * notion of "which layouts have been framed already" without
+   * needing access to private state.
+   */
+  markLayoutAsInitialized(layoutBtrId: AcDbObjectId) {
+    this._initializedLayouts.add(layoutBtrId)
+  }
+
+  /**
+   * Applies the initial zoom-to-fit for a layout the user just switched
+   * into for the first time. Picks the best available "what should the
+   * camera frame?" signal in this order:
+   *
+   * 1. **`AcDbLayout.limits`** (LIMMIN/LIMMAX) — only when it actually
+   *    contains the layout's viewports. Many real DWGs ship with garbage
+   *    limits (e.g. `(0,0)-(12,9)` from a legacy template setup) that
+   *    don't reflect the actual paper sheet. We reject those by
+   *    checking containment against `viewportsBoundingBox`.
+   *
+   * 2. **`AcTrLayoutView.viewportsBoundingBox`** — bounding box of all
+   *    real user viewports in the layout. In production sheets viewports
+   *    typically span 70-90% of the paper, so this is a great proxy for
+   *    the printable area and (crucially) ignores outliers like title
+   *    blocks authored in a different unit/scale.
+   *
+   * 3. **`AcDbLayout.extents`** — the layout's own EXTMIN/EXTMAX, if
+   *    populated. Many parsers leave this empty (we've seen `(0,0)-(0,0)`),
+   *    so it sits below the viewport-based heuristic.
+   *
+   * 4. **`zoomToFitDrawing`** (entity extents from spatial index) —
+   *    last-resort fallback for layouts with no viewports and no
+   *    sensible limits/extents (e.g. a freshly created empty paper).
+   *    Vulnerable to scale-mismatch outliers, but better than no zoom.
+   *
+   * **Critically, this runs through `AcEdConditionWaiter`**: at the
+   * moment `layoutSwitched` fires, the layout's entities (including its
+   * `AcDbViewport`s) have not yet been batch-converted into the scene
+   * — `loadLayoutEntitiesIfNeeded` chunked-converts via `setTimeout`.
+   * Without the waiter, `viewportsBoundingBox` returns undefined and
+   * the strategy degrades into (1) zooming to garbage `limits`, or
+   * (4) zooming to an empty scene box. The waiter polls
+   * `_numOfEntitiesToProcess` and only fires the heuristic once the
+   * conversion is done.
+   */
+  private applyInitialZoom(btrId: AcDbObjectId, layout: AcDbLayout) {
+    const waiter = new AcEdConditionWaiter(
+      () => this._numOfEntitiesToProcess <= 0,
+      () => {
+        const limits = layout.limits
+        const layoutView = this._layoutViewManager.getAt(btrId)
+        const vpsBox = layoutView?.viewportsBoundingBox
+
+        const limitsContainsViewports = (() => {
+          if (!limits || limits.isEmpty()) return false
+          if (!vpsBox) return true
+          return (
+            limits.min.x <= vpsBox.min.x &&
+            limits.min.y <= vpsBox.min.y &&
+            limits.max.x >= vpsBox.max.x &&
+            limits.max.y >= vpsBox.max.y
+          )
+        })()
+
+        if (limits && !limits.isEmpty() && limitsContainsViewports) {
+          this.zoomTo(limits)
+        } else if (vpsBox) {
+          this.zoomTo(vpsBox)
+        } else if (layout.extents && !layout.extents.isEmpty()) {
+          const extents = layout.extents
+          this.zoomTo(
+            new AcGeBox2d(
+              { x: extents.min.x, y: extents.min.y },
+              { x: extents.max.x, y: extents.max.y }
+            )
+          )
+        } else if (this._scene.box) {
+          this.zoomTo(AcTrGeometryUtil.threeBox3dToGeBox2d(this._scene.box))
+        }
+        this._isDirty = true
+      },
+      300,
+      0
+    )
+    waiter.start()
+  }
+
+  /**
    * @inheritdoc
    */
   clear() {
@@ -1072,6 +1351,22 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * Load entities from the specified layout if they haven't been loaded yet.
    * This ensures that when switching to a layout, all its entities are available for rendering.
+   *
+   * Two non-obvious invariants are enforced here:
+   *
+   * 1. The layout is looked up by `layoutBtrId` (the argument), not by
+   *    `this._scene.activeLayout`. The active layout reference happens to
+   *    match in the current `layoutSwitched` handler call site, but relying
+   *    on it would silently miss layouts that are pre-loaded ahead of
+   *    becoming active (e.g. background prefetch).
+   * 2. The `_loadingLayouts` guard prevents re-entrance while the
+   *    `setTimeout` chunked-convert callback is still in flight. Without it,
+   *    clicking the same layout tab twice in quick succession (or
+   *    `layoutSwitched` firing twice during the async window) would iterate
+   *    the block table record again and duplicate every entity in the
+   *    layout — visible as ghosted overdraw and double the spatial-index
+   *    weight.
+   *
    * @param layoutBtrId Input the block table record id of the layout
    */
   private loadLayoutEntitiesIfNeeded(layoutBtrId: AcDbObjectId) {
@@ -1082,9 +1377,64 @@ export class AcTrView2d extends AcEdBaseView {
         return
       }
 
-      const layout = this._scene.activeLayout
-      if (layout && layout.isLoaded) {
+      const existingLayout = this._scene.layouts.get(layoutBtrId)
+      if (existingLayout && existingLayout.isLoaded) {
         return
+      }
+      if (this._loadingLayouts.has(layoutBtrId)) {
+        return
+      }
+
+      // Ensure `AcTrViewportView`s exist for every real `AcDbViewport`
+      // in this layout when the layout's entities were already streamed
+      // in by the document parser. There is a race in the parser-driven
+      // load path: `addLayout(layout)` creates the `AcTrLayoutView`,
+      // but the parser may dispatch the AcDbViewport entities before
+      // that happens. When that races, `batchConvert`'s viewport
+      // handler does `_layoutViewManager.getAt(entity.ownerId)`, gets
+      // `undefined`, and **silently skips creating the
+      // AcTrViewportView**. The reload path below used to mask this by
+      // re-running batchConvert after the layoutView existed, but the
+      // entityCount-skip optimization that follows removes that
+      // side-effect, so we do the viewport-view-only pass explicitly
+      // here. Skipped when the layout is empty — in that case the
+      // batchConvert path below will create the viewport views directly
+      // as it processes each entity.
+      const layoutView = this._layoutViewManager.getAt(layoutBtrId)
+      if (
+        existingLayout &&
+        existingLayout.entityCount > 0 &&
+        layoutView &&
+        layoutView.viewportCount === 0
+      ) {
+        this.ensureViewportViews(blockTableRecord, layoutView)
+      }
+
+      // Model space (and any other layout pre-populated by the document
+      // parser at open time) lands here without `isLoaded` ever having
+      // been flipped — the initial entity stream goes through
+      // `addEntity()` directly, bypassing this method. Without this
+      // guard, switching back to model space from a paper layout would
+      // re-iterate the full block table record and re-batch-convert
+      // every entity (5759+ on real DWGs), freezing the UI for several
+      // seconds AND duplicating entities (every entity ends up in the
+      // layout twice, doubling the spatial-index weight and render
+      // cost).
+      //
+      // If the layout already has entities, the parser has finished
+      // loading them — flip the flag and bail. The reload path below
+      // is only for layouts whose entities were never streamed in
+      // (typically non-active paper-space layouts loaded on first user
+      // visit).
+      if (existingLayout && existingLayout.entityCount > 0) {
+        existingLayout.isLoaded = true
+        return
+      }
+
+      // Ensure layout exists in scene. `addEmptyLayout` is idempotent, but
+      // guarding the call avoids an unnecessary Map probe + log noise.
+      if (!existingLayout) {
+        this._scene.addEmptyLayout(layoutBtrId)
       }
 
       // Collect all entities from this layout
@@ -1094,19 +1444,30 @@ export class AcTrView2d extends AcEdBaseView {
         entities.push(entity)
       }
 
-      // Ensure layout exists in scene
-      this._scene.addEmptyLayout(layoutBtrId)
-      if (entities.length > 0) {
-        // Load entities asynchronously
-        this._numOfEntitiesToProcess += entities.length
-        setTimeout(async () => {
+      if (entities.length === 0) {
+        // Empty layout (e.g. a freshly-created paper space tab). Mark as
+        // loaded immediately so subsequent visits short-circuit.
+        const layout = this._scene.layouts.get(layoutBtrId)
+        if (layout) {
+          layout.isLoaded = true
+        }
+        return
+      }
+
+      // Load entities asynchronously
+      this._loadingLayouts.add(layoutBtrId)
+      this._numOfEntitiesToProcess += entities.length
+      setTimeout(async () => {
+        try {
           await this.batchConvert(entities)
           const layout = this._scene.layouts.get(layoutBtrId)
           if (layout) {
             layout.isLoaded = true
           }
-        })
-      }
+        } finally {
+          this._loadingLayouts.delete(layoutBtrId)
+        }
+      })
     } catch (error) {
       log.error('[AcTrView2d] Error loading layout entities:', error)
     }
@@ -1130,6 +1491,43 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Walks the given block table record once and creates one
+   * `AcTrViewportView` for every real `AcDbViewport` entity it finds
+   * (skipping the default paper-space viewport that is filtered
+   * everywhere else by `AcTrViewportView.isDefaultPaperSpaceViewport`).
+   *
+   * This is the recovery pass for paper-space layouts whose viewport
+   * entities reached `batchConvert` before the `AcTrLayoutView` was
+   * created — those entities were drawn and added to the scene, but
+   * the viewport-view creation step silently no-oped (lookup returned
+   * undefined). Without this recovery, `viewportsBoundingBox` stays
+   * `undefined` on first user visit, the initial-zoom strategy
+   * degrades to the bogus `limits` branch, and the layout renders as
+   * a "grain in the corner" with empty viewport scissors. See the
+   * call site in `loadLayoutEntitiesIfNeeded` for the full context.
+   *
+   * Cheap operation: only AcDbViewport entities are inspected; for a
+   * typical sheet that's a handful of entities even on 5000-entity
+   * paper layouts.
+   */
+  private ensureViewportViews(
+    blockTableRecord: AcDbBlockTableRecord,
+    layoutView: AcTrLayoutView
+  ) {
+    const iterator = blockTableRecord.newIterator()
+    for (const entity of iterator) {
+      if (!(entity instanceof AcDbViewport)) continue
+      if (AcTrViewportView.isDefaultPaperSpaceViewport(entity)) continue
+      const viewportView = new AcTrViewportView(
+        layoutView,
+        entity.toGiViewport(),
+        this._renderer
+      )
+      layoutView.addViewport(viewportView)
+    }
+  }
+
+  /**
    * Converts the specified database entities to three entities
    * @param entities - The database entities
    * @returns The converted three entities
@@ -1138,6 +1536,24 @@ export class AcTrView2d extends AcEdBaseView {
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
       try {
+        // Skip the default paper-space viewport (`*Paper_Space`) entirely:
+        // it is an AutoCAD-internal viewport that exists in every paper
+        // layout and must not be drawn (would render a giant rectangle in
+        // the paper coordinate system), nor added to the spatial index
+        // (would stretch the layout's bounding box and break
+        // zoomToFitDrawing), nor turned into an AcTrViewportView (would
+        // setScissor over most of the canvas and squeeze the real user
+        // viewports into a corner). See
+        // `AcTrViewportView.isDefaultPaperSpaceViewport` for the criterion
+        // and the rationale (legacy `number === 1` is unreliable across
+        // parsers).
+        if (
+          entity instanceof AcDbViewport &&
+          AcTrViewportView.isDefaultPaperSpaceViewport(entity)
+        ) {
+          continue
+        }
+
         const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
         if (!threeEntity) continue
 
@@ -1175,10 +1591,12 @@ export class AcTrView2d extends AcEdBaseView {
         }
 
         if (entity instanceof AcDbViewport) {
-          // In paper space layouts, there is always a system-defined "default" viewport that exists as
-          // the bottom-most item. This viewport doesn't show any entities and is mainly for internal
-          // AutoCAD purposes. The viewport id number of this system-defined "default" viewport is 1.
-          if (entity.number !== 1) {
+          // Default paper-space viewport was already filtered out at the
+          // top of the loop, so anything that reaches here is a real
+          // user-created viewport. The redundant check below is kept as
+          // a defensive guard in case a future refactor reorders the
+          // early-skip — it costs ~nothing and prevents a regression.
+          if (!AcTrViewportView.isDefaultPaperSpaceViewport(entity)) {
             const layoutView = this._layoutViewManager.getAt(entity.ownerId)
             if (layoutView) {
               const viewportView = new AcTrViewportView(

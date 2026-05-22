@@ -242,11 +242,24 @@ export class AcTrScene {
   }
 
   /**
-   * Add one empty layout with the specified block table record id as the its key
+   * Add one empty layout with the specified block table record id as the its key.
+   *
+   * This method is idempotent: when a layout already exists for the given
+   * `ownerId`, the existing instance is returned untouched and no new THREE
+   * group is attached to the scene. Re-creating eagerly would leak the
+   * previous `AcTrLayout.internalObject` as an orphan child of `_scene`
+   * (still rendered every frame and still indexed by ray/spatial queries),
+   * which manifested as "ghost" entities from previously-visited layouts
+   * accumulating on layout switches.
+   *
    * @param ownerId Input the block table record id associated with this layout
-   * @returns Return the newly created empty layout
+   * @returns Return the layout associated with `ownerId` — newly created when
+   * absent, or the pre-existing instance when already registered.
    */
   addEmptyLayout(ownerId: AcDbObjectId) {
+    const existing = this._layouts.get(ownerId)
+    if (existing) return existing
+
     const layout = new AcTrLayout()
     this._layouts.set(ownerId, layout)
     this._scene.add(layout.internalObject)
@@ -278,51 +291,61 @@ export class AcTrScene {
   }
 
   /**
-   * Hover the specified entities
+   * Hover the specified entities. Propagates the request to **every**
+   * layout in the scene, not just the active one — entities picked
+   * through a paper-space viewport (drill-through) live in the model
+   * layout while the active layout at pick time is paper, so the
+   * hover/select state must reach both. Layouts that don't own the
+   * given entity ids no-op gracefully (`getLayersByObjectId` returns
+   * an empty array there).
    */
   hover(ids: AcDbObjectId[]) {
-    const activeLayout = this.activeLayout
-    if (activeLayout) {
-      this.activeLayout.hover(ids)
-      return true
-    }
-    return false
+    if (this._layouts.size === 0) return false
+    this._layouts.forEach(layout => layout.hover(ids))
+    return true
   }
 
   /**
-   * Unhover the specified entities
+   * Unhover the specified entities across all layouts. See {@link hover}
+   * for rationale on propagation.
    */
   unhover(ids: AcDbObjectId[]) {
-    const activeLayout = this.activeLayout
-    if (activeLayout) {
-      this.activeLayout.unhover(ids)
-      return true
-    }
-    return false
+    if (this._layouts.size === 0) return false
+    this._layouts.forEach(layout => layout.unhover(ids))
+    return true
   }
 
   /**
-   * Select the specified entities
+   * Select the specified entities across all layouts.
+   *
+   * This is what makes drill-through selection visually consistent: a
+   * click inside a paper-space viewport resolves to a model entity, but
+   * the active layout at that moment is paper. Without propagating to
+   * the model layout, the selection would be silently lost — the entity
+   * goes into `selectionSet` but no highlight ever renders. The bug
+   * manifested as "I click on a line in the viewport and nothing
+   * visibly selects" (debug logs confirmed `firstPicked` was the
+   * correct entity, but the highlight never appeared).
+   *
+   * Cross-layout propagation also restores symmetry of
+   * `select`/`unselect`: a model entity highlighted via paper drill
+   * must un-highlight when the user replaces the selection from any
+   * layout, not just the one where it was originally picked.
    */
   select(ids: AcDbObjectId[]) {
-    const activeLayout = this.activeLayout
-    if (activeLayout) {
-      this.activeLayout.select(ids)
-      return true
-    }
-    return false
+    if (this._layouts.size === 0) return false
+    this._layouts.forEach(layout => layout.select(ids))
+    return true
   }
 
   /**
-   * Unselect the specified entities
+   * Unselect the specified entities across all layouts. See
+   * {@link select} for rationale.
    */
   unselect(ids: AcDbObjectId[]) {
-    const activeLayout = this.activeLayout
-    if (activeLayout) {
-      this.activeLayout.unselect(ids)
-      return true
-    }
-    return false
+    if (this._layouts.size === 0) return false
+    this._layouts.forEach(layout => layout.unselect(ids))
+    return true
   }
 
   /**

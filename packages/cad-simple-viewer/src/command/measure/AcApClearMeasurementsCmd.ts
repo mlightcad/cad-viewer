@@ -14,6 +14,21 @@ export function registerMeasurementCleanup(fn: () => void): void {
   cleanups.push(fn)
 }
 
+/**
+ * Runs every measurement-cleanup callback registered via
+ * `registerMeasurementCleanup` and clears the measurement HTML overlay
+ * layer on the given view. Shared between the user-facing
+ * `AcApClearMeasurementsCmd` command and internal lifecycle hooks
+ * (e.g. clearing measurements when the user switches paper-space
+ * layouts, where any pending measurement would otherwise leak across
+ * layouts in coordinates that no longer make sense).
+ */
+export function clearAllMeasurements(view: AcTrView2d): void {
+  cleanups.forEach(fn => fn())
+  cleanups.length = 0
+  view.htmlTransientManager.clear('measurement')
+}
+
 export class AcApClearMeasurementsCmd extends AcEdCommand {
   constructor() {
     super()
@@ -21,11 +36,6 @@ export class AcApClearMeasurementsCmd extends AcEdCommand {
   }
 
   async execute(context: AcApContext) {
-    // Run registered cleanups (CAD transients, canvas overlays, listeners)
-    cleanups.forEach(fn => fn())
-    cleanups.length = 0
-
-    // Clear all HTML transient overlays in the measurement layer
-    ;(context.view as AcTrView2d).htmlTransientManager.clear('measurement')
+    clearAllMeasurements(context.view as AcTrView2d)
   }
 }
