@@ -2,7 +2,8 @@ import {
   AcDbEntity,
   AcGeMatrix3d,
   AcGePoint3d,
-  AcGePoint3dLike
+  AcGePoint3dLike,
+  AcGeTol
 } from '@mlightcad/data-model'
 
 import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
@@ -18,8 +19,6 @@ import {
   eventBus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-
-const ANGLE_EPSILON = 1e-9
 
 /**
  * Static preview jig used while ROTATE asks for supporting inputs such as
@@ -136,7 +135,7 @@ class AcApRotatePreviewJig extends AcEdPreviewJig<number> {
 
     const angleRad = ((angleDeg - this._referenceAngleDeg) * Math.PI) / 180
     const deltaRad = angleRad - this._lastAngleRad
-    if (Math.abs(deltaRad) < ANGLE_EPSILON) return
+    if (AcGeTol.equalToZero(deltaRad)) return
 
     const matrix = AcApRotateCmd.createRotationMatrix(this._basePoint, deltaRad)
     this._previewEntities.forEach(entity => entity.transformBy(matrix))
@@ -241,7 +240,7 @@ export class AcApRotateCmd extends AcEdCommand {
   ): number | undefined {
     const dx = end.x - start.x
     const dy = end.y - start.y
-    if (Math.hypot(dx, dy) < ANGLE_EPSILON) return undefined
+    if (!AcGeTol.isPositive(Math.hypot(dx, dy))) return undefined
     return (Math.atan2(dy, dx) * 180) / Math.PI
   }
 

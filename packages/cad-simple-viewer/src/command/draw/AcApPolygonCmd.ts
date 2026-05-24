@@ -2,7 +2,8 @@ import {
   AcDbPolyline,
   AcGePoint2d,
   AcGePoint3d,
-  AcGePoint3dLike
+  AcGePoint3dLike,
+  AcGeTol
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
@@ -20,7 +21,6 @@ import { AcApI18n } from '../../i18n'
 
 const MIN_SIDES = 3
 const MAX_SIDES = 1024
-const EPSILON = 1e-9
 
 type PolygonMode = 'Inscribed' | 'Circumscribed'
 type PolygonKeywordKey = 'edge' | 'inscribed' | 'circumscribed'
@@ -46,13 +46,13 @@ function buildPolygonFromCenter(
   mode: PolygonMode
 ) {
   const inputRadius = distance2d(center, point)
-  if (inputRadius <= EPSILON) return undefined
+  if (AcGeTol.isNonPositive(inputRadius)) return undefined
 
   const step = (Math.PI * 2) / sides
   const baseAngle = Math.atan2(point.y - center.y, point.x - center.x)
   const circumRadius =
     mode === 'Inscribed' ? inputRadius : inputRadius / Math.cos(Math.PI / sides)
-  if (!Number.isFinite(circumRadius) || circumRadius <= EPSILON)
+  if (!Number.isFinite(circumRadius) || AcGeTol.isNonPositive(circumRadius))
     return undefined
 
   const firstVertexAngle =
@@ -80,7 +80,7 @@ function buildPolygonFromEdge(
   const dx = secondPoint.x - firstPoint.x
   const dy = secondPoint.y - firstPoint.y
   const edgeLength = Math.hypot(dx, dy)
-  if (edgeLength <= EPSILON) return undefined
+  if (AcGeTol.isNonPositive(edgeLength)) return undefined
 
   const step = (Math.PI * 2) / sides
   const vertices: AcGePoint2d[] = [

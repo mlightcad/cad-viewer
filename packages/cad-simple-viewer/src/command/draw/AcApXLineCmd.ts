@@ -1,4 +1,4 @@
-import { AcDbLine, AcGePoint3d, AcGePoint3dLike } from '@mlightcad/data-model'
+import { AcDbLine, AcGePoint3d, AcGePoint3dLike, AcGeTol } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
@@ -10,7 +10,6 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
-const ACAP_XLINE_MIN_VECTOR_LENGTH = 1e-9
 const ACAP_XLINE_HALF_LENGTH = 1_000_000
 
 type XLineMode = 'point' | 'hor' | 'ver' | 'ang'
@@ -194,7 +193,7 @@ export class AcApXLineCmd extends AcEdCommand {
     const length = Math.sqrt(
       vector.x * vector.x + vector.y * vector.y + vector.z * vector.z
     )
-    if (length <= ACAP_XLINE_MIN_VECTOR_LENGTH) return undefined
+    if (!AcGeTol.isPositive(length)) return undefined
     return {
       x: vector.x / length,
       y: vector.y / length,

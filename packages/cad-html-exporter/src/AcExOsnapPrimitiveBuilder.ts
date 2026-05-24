@@ -24,7 +24,10 @@ import {
   AcDbSpline,
   AcGeCircArc2d,
   type AcGePoint3dLike,
-  type AcGeVector3dLike
+  AcGeTol,
+  type AcGeVector3dLike,
+  FLOAT_TOL,
+  TAU
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
@@ -37,9 +40,6 @@ import type {
   AcExOsnapPrimitive,
   AcExOsnapSplinePrimitive
 } from './AcExOsnapPrimitiveTypes'
-
-const TAU = Math.PI * 2
-const EPS = 1e-9
 
 /** Maps entity extrusion normal to arc/circle winding sign. @internal */
 function normalSignFromVector(normal: AcGeVector3dLike): 1 | -1 {
@@ -85,7 +85,7 @@ function scaleIsUniform(matrix: THREE.Matrix4): boolean {
     matrix.elements[5],
     matrix.elements[6]
   ).length()
-  return Math.abs(sx - sy) <= EPS * Math.max(sx, sy, 1)
+  return AcGeTol.equal(sx, sy, FLOAT_TOL * Math.max(sx, sy, 1))
 }
 
 /** Appends a WCS line primitive after transforming endpoints. @internal */
@@ -290,7 +290,7 @@ function pushPolyline(
     const start = vertices[i]!
     const end = vertices[(i + 1) % count]!
     const bulge = start.bulge ?? 0
-    if (Math.abs(bulge) > EPS) {
+    if (AcGeTol.isPositive(Math.abs(bulge))) {
       const startW = transformPoint(matrix, { x: start.x, y: start.y, z: 0 })
       const endW = transformPoint(matrix, { x: end.x, y: end.y, z: 0 })
       const arc2d = new AcGeCircArc2d(startW, endW, bulge)

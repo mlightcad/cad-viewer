@@ -2,7 +2,8 @@ import {
   AcDbSpline,
   AcGePoint2d,
   AcGePoint2dLike,
-  AcGePoint3d
+  AcGePoint3d,
+  DEFAULT_TOL
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
@@ -633,13 +634,11 @@ function dedupeConsecutivePoints(points: AcGePoint3d[]) {
 }
 
 function isNearlySamePoint2d(a: AcGePoint2dLike, b: AcGePoint2dLike) {
-  return Math.hypot(a.x - b.x, a.y - b.y) <= 1e-9
+  return DEFAULT_TOL.equalPoint2d(a, b)
 }
 
 function isNearlySamePoint3d(a: AcGePoint3d, b: AcGePoint3d) {
-  const az = a.z ?? 0
-  const bz = b.z ?? 0
-  return Math.hypot(a.x - b.x, a.y - b.y, az - bz) <= 1e-9
+  return DEFAULT_TOL.equalPoint3d(a, b)
 }
 
 function mapKnotsTypeToParameterization(

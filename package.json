@@ -48,8 +48,8 @@
       "vue-demi"
     ],
     "overrides": {
-      "@mlightcad/data-model": "../../../realdwg-web/packages/data-model",
-      "@mlightcad/libredwg-converter": "../../../realdwg-web/packages/libredwg-converter",
+      "@mlightcad/data-model": "^1.7.39",
+      "@mlightcad/libredwg-converter": "^3.5.39",
       "@mlightcad/mtext-input-box": "^0.2.11",
       "@mlightcad/mtext-renderer": "^0.10.14",
       "@mlightcad/ribbon": "^0.1.9",

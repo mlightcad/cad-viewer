@@ -751,12 +751,11 @@ export class AcEdInputManager {
   /**
    * Prompts the user to specify a distance value.
    *
-   * When a base point is available (explicitly or via the last picked point),
-   * the floating input previews the live distance from that reference point to
-   * the cursor. When no reference point exists, the user picks two points on
-   * screen with rubber-band preview between them. If `useBasePoint` is false,
-   * only typed numeric entry is accepted. Scripted inputs and keywords are
-   * supported as well.
+   * When `useBasePoint` is true and a base point is specified, the floating
+   * input previews the live distance from that reference point to the cursor.
+   * Otherwise the user picks two points on screen with rubber-band preview
+   * between them. Typed numeric entry is supported in both modes. Scripted
+   * inputs and keywords are supported as well.
    *
    * @param options - Distance prompt options controlling base-point behavior and messaging
    * @returns A prompt result containing the resolved distance, cancel status, or keyword
@@ -768,14 +767,6 @@ export class AcEdInputManager {
     const scriptedValue = this.tryGetScriptedNumber(handler)
     if (scriptedValue != null) {
       return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
-    }
-
-    if (!options.useBasePoint) {
-      return this.executePrompt(
-        () => this.getNumberTyped(options, handler),
-        value => new AcEdPromptDoubleResult(AcEdPromptStatus.OK, value),
-        status => new AcEdPromptDoubleResult(status)
-      )
     }
 
     const basePoint = this.resolveDistanceBasePoint(options)

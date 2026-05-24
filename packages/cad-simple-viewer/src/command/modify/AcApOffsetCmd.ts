@@ -2,7 +2,8 @@ import {
   AcDbCurve,
   AcDbEntity,
   AcGePoint3d,
-  AcGePoint3dLike
+  AcGePoint3dLike,
+  AcGeTol
 } from '@mlightcad/data-model'
 
 import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
@@ -23,9 +24,6 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-
-/** Minimum positive offset distance accepted by the command. */
-const EPSILON = 1e-9
 
 /**
  * Union of prompt option types used across the OFFSET state machine.
@@ -259,7 +257,7 @@ export class AcApOffsetCmd extends AcEdCommand {
             ? `${AcApI18n.t('jig.offset.distance')} <${lastDistance}>`
             : AcApI18n.t('jig.offset.distance')
         const prompt = new AcEdPromptDistanceOptions(message)
-        prompt.useBasePoint = true
+        prompt.useBasePoint = false
         prompt.useDashedLine = true
         prompt.allowZero = false
         prompt.allowNegative = false
@@ -285,7 +283,7 @@ export class AcApOffsetCmd extends AcEdCommand {
         if (result.status !== AcEdPromptStatus.OK || result.value == null) {
           return 'finish'
         }
-        if (!Number.isFinite(result.value) || result.value <= EPSILON) {
+        if (!Number.isFinite(result.value) || AcGeTol.isNonPositive(result.value)) {
           AcApDocManager.instance.editor.showMessage(
             AcApI18n.t('jig.offset.invalidDistance'),
             'warning'

@@ -150,6 +150,7 @@ jest.mock('../src/command', () => {
     'AcApMLineCmd',
     'AcApMoveCmd',
     'AcApMTextCmd',
+    'AcApOffsetCmd',
     'AcApOpenCmd',
     'AcApPanCmd',
     'AcApPointCmd',
