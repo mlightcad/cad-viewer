@@ -1,4 +1,4 @@
-import { AcDbCircle } from '@mlightcad/data-model'
+import { AcDbCircle, AcGePoint3d } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
@@ -41,6 +41,9 @@ export class AcApRevCircleCmd extends AcApBaseRevCmd {
       AcApI18n.t('jig.circle.radius')
     )
     radiusPrompt.allowZero = false
+    radiusPrompt.useBasePoint = true
+    radiusPrompt.useDashedLine = true
+    radiusPrompt.basePoint = new AcGePoint3d(center)
     radiusPrompt.jig = new AcApCircleJig(context.view, center)
     const radiusResult =
       await AcApDocManager.instance.editor.getDistance(radiusPrompt)

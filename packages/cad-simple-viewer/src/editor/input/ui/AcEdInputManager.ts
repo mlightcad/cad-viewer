@@ -671,12 +671,91 @@ export class AcEdInputManager {
   }
 
   /**
+   * Resolves the reference point used by {@link getDistance}.
+   *
+   * Returns the explicit `basePoint` when `useBasePoint` is enabled, matching
+   * AutoCAD `PromptDistanceOptions`.
+   */
+  private resolveDistanceBasePoint(
+    options: AcEdPromptDistanceOptions
+  ): AcGePoint2dLike | undefined {
+    if (!options.useBasePoint) return undefined
+    if (options.basePoint) {
+      return { x: options.basePoint.x, y: options.basePoint.y }
+    }
+    return undefined
+  }
+
+  /**
+   * Builds the live distance preview callback for a fixed base point.
+   */
+  private createDistanceDynamicValue(
+    basePoint: AcGePoint2dLike
+  ): AcEdFloatingInputDynamicValueCallback<number> {
+    return (pos: AcGePoint2dLike) => {
+      const dx = pos.x - basePoint.x
+      const dy = pos.y - basePoint.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      return {
+        value: dist,
+        raw: { x: this.formatNumber(dist, 'distance') }
+      }
+    }
+  }
+
+  /**
+   * Acquires distance by two screen picks when no reference point is available.
+   *
+   * The user may still type a numeric distance instead of clicking. The first
+   * click records the start point and enables rubber-band preview; the second
+   * click returns the distance between the two points.
+   */
+  private async getDistanceTwoPoint(
+    options: AcEdPromptDistanceOptions,
+    handler: AcEdDistanceHandler
+  ): Promise<number> {
+    let firstPoint: AcGePoint2dLike | undefined
+    let floatingInput: AcEdFloatingInput<number> | undefined
+
+    const getDynamicValue = (pos: AcGePoint2dLike) => {
+      if (!firstPoint) {
+        return { value: 0, raw: { x: '' } }
+      }
+      return this.createDistanceDynamicValue(firstPoint)(pos)
+    }
+
+    return await this.makeFloatingInputPromise<number>({
+      inputCount: 1,
+      promptOptions: options,
+      handler,
+      getDynamicValue,
+      onFloatingInputCreated: input => {
+        floatingInput = input
+      },
+      onCommit: (_val, pos) => {
+        if (firstPoint) {
+          return true
+        }
+        if (pos) {
+          firstPoint = { x: pos.x, y: pos.y }
+          floatingInput?.setBasePoint(firstPoint, {
+            showBaseLineOnly: !options.useDashedLine
+          })
+          return false
+        }
+        return true
+      }
+    })
+  }
+
+  /**
    * Prompts the user to specify a distance value.
    *
-   * When a base point is available, the floating input previews the live
-   * distance from that reference point to the current cursor. Otherwise, the
-   * method falls back to typed numeric entry only. Scripted inputs and keywords
-   * are supported as well.
+   * When `useBasePoint` is true and a base point is specified, the floating
+   * input previews the live distance from that reference point to the cursor.
+   * Otherwise the user picks two points on screen with rubber-band preview
+   * between them. Typed numeric entry is supported in both modes. Scripted
+   * inputs and keywords are supported as well.
    *
    * @param options - Distance prompt options controlling base-point behavior and messaging
    * @returns A prompt result containing the resolved distance, cancel status, or keyword
@@ -690,29 +769,20 @@ export class AcEdInputManager {
       return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
     }
 
+    const basePoint = this.resolveDistanceBasePoint(options)
+
     return this.executePrompt(
       async () => {
-        // If no base point defined → fall back to typed numeric input
-        if (!this.lastPoint) {
-          return await this.getNumberTyped(options, handler)
+        if (basePoint) {
+          return await this.makeFloatingInputPromise<number>({
+            inputCount: 1,
+            promptOptions: options,
+            handler,
+            getDynamicValue: this.createDistanceDynamicValue(basePoint)
+          })
         }
 
-        const getDynamicValue = (pos: AcGePoint2dLike) => {
-          const dx = pos.x - this.lastPoint!.x
-          const dy = pos.y - this.lastPoint!.y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          return {
-            value: dist,
-            raw: { x: this.formatNumber(dist, 'distance') }
-          }
-        }
-
-        return await this.makeFloatingInputPromise<number>({
-          inputCount: 1,
-          promptOptions: options,
-          handler,
-          getDynamicValue
-        })
+        return await this.getDistanceTwoPoint(options, handler)
       },
       value => new AcEdPromptDoubleResult(AcEdPromptStatus.OK, value),
       status => new AcEdPromptDoubleResult(status)
@@ -1171,7 +1241,8 @@ export class AcEdInputManager {
             this.entitySelectionActive = false
             options.jig?.end()
             document.removeEventListener('keydown', keyHandler)
-            this.view.canvas.removeEventListener('mousedown', clickHandler)
+            this.view.canvas.removeEventListener('mousedown', mouseDownHandler)
+            this.view.canvas.removeEventListener('click', clickHandler)
             this.view.canvas.removeEventListener(
               'contextmenu',
               contextMenuHandler
@@ -1192,8 +1263,7 @@ export class AcEdInputManager {
             reject(new AcEdKeywordInputError(keyword))
           })
 
-          /** Mouse click → try select entity */
-          const clickHandler = (e: MouseEvent) => {
+          const mouseDownHandler = (e: MouseEvent) => {
             if (e.button === 2) {
               if (this.shouldUseRightClickEnter() && options.allowNone) {
                 e.preventDefault()
@@ -1202,6 +1272,10 @@ export class AcEdInputManager {
               }
               return
             }
+          }
+
+          /** Mouse click → try select entity */
+          const clickHandler = (e: MouseEvent) => {
             if (e.button !== 0) return
 
             const pos = this.view.screenToWorld(
@@ -1260,7 +1334,8 @@ export class AcEdInputManager {
           }
 
           document.addEventListener('keydown', keyHandler)
-          this.view.canvas.addEventListener('mousedown', clickHandler)
+          this.view.canvas.addEventListener('mousedown', mouseDownHandler)
+          this.view.canvas.addEventListener('click', clickHandler)
           this.view.canvas.addEventListener('contextmenu', contextMenuHandler)
         }),
       value =>
@@ -1689,6 +1764,7 @@ export class AcEdInputManager {
     getDynamicValue: AcEdFloatingInputDynamicValueCallback<T>
     drawPreview?: AcEdFloatingInputDrawPreviewCallback
     onCommit?: AcEdFloatingInputCommitCallback<T>
+    onFloatingInputCreated?: (input: AcEdFloatingInput<T>) => void
   }): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.active = true
@@ -1709,12 +1785,8 @@ export class AcEdInputManager {
       )
 
       let basePoint: AcGePoint2dLike | undefined = undefined
-      if (promptDefaults.useBasePoint) {
-        if (promptDefaults.basePoint) {
-          basePoint = promptDefaults.basePoint
-        } else if (this.lastPoint) {
-          basePoint = { x: this.lastPoint.x, y: this.lastPoint.y }
-        }
+      if (promptDefaults.useBasePoint && promptDefaults.basePoint) {
+        basePoint = promptDefaults.basePoint
       }
 
       const commandLineMessage = promptDefaults.message
@@ -1750,13 +1822,13 @@ export class AcEdInputManager {
           }
           options.drawPreview?.(pos)
         },
-        onCommit: (val: T) => {
+        onCommit: (val: T, pos?: AcGePoint2dLike) => {
           let result = false
-          if (!options.onCommit || options.onCommit(val)) {
+          if (!options.onCommit || options.onCommit(val, pos)) {
             resolver(val)
             result = true
           }
-          if (floatingInput.lastPoint) {
+          if (result && floatingInput.lastPoint) {
             this.lastPoint = {
               x: floatingInput.lastPoint.x,
               y: floatingInput.lastPoint.y
@@ -1767,6 +1839,7 @@ export class AcEdInputManager {
         onCancel: () => rejector(),
         onNone: () => noneRejector()
       })
+      options.onFloatingInputCreated?.(floatingInput)
       const cleanup = () => {
         if (settled) return
         settled = true

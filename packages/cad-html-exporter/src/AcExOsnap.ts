@@ -1,3 +1,5 @@
+import { FLOAT_TOL } from '@mlightcad/data-model'
+
 import { collectPrimitiveSnapCandidates, distSq } from './AcExOsnapGeometry'
 import type {
   AcExOsnapMode,
@@ -269,7 +271,7 @@ export class AcExOsnapIndex {
     }
 
     const span = Math.max(maxX - minX, maxY - minY, 1)
-    this.cellSize = Math.max(span / 200, 1e-6)
+    this.cellSize = Math.max(span / 200, FLOAT_TOL)
 
     for (let i = 0; i < items.length; i++) {
       let segMinX: number

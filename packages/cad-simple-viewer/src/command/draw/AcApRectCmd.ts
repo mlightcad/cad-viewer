@@ -2,7 +2,8 @@ import {
   AcDbPolyline,
   AcGePoint2d,
   AcGePoint2dLike,
-  AcGePoint3d
+  AcGePoint3d,
+  AcGeTol
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
@@ -23,7 +24,6 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
-const EPSILON = 1e-9
 const FILLET_BULGE_BASE = Math.tan(Math.PI / 8)
 
 type RectKeywordKey =
@@ -152,7 +152,7 @@ function buildChamferVertices(
   const d1 = Math.min(normalizeNonNegative(distance1), absX / 2)
   const d2 = Math.min(normalizeNonNegative(distance2), absY / 2)
 
-  if (d1 <= EPSILON && d2 <= EPSILON) {
+  if (AcGeTol.isNonPositive(d1) && AcGeTol.isNonPositive(d2)) {
     return buildSquareVertices(lx, ly)
   }
 
@@ -185,7 +185,7 @@ function buildFilletVertices(
   const absX = Math.abs(lx)
   const absY = Math.abs(ly)
   const r = Math.min(normalizeNonNegative(radius), absX / 2, absY / 2)
-  if (r <= EPSILON) return buildSquareVertices(lx, ly)
+  if (AcGeTol.isNonPositive(r)) return buildSquareVertices(lx, ly)
 
   const chamferLike = buildChamferVertices(lx, ly, r, r)
   const orientation = lx * ly >= 0 ? 1 : -1
@@ -204,10 +204,10 @@ function resolveRectVertices(
   ly: number,
   settings: RectSettings
 ): RectVertex[] {
-  if (settings.filletRadius > EPSILON) {
+  if (AcGeTol.isPositive(settings.filletRadius)) {
     return buildFilletVertices(lx, ly, settings.filletRadius)
   }
-  if (settings.chamferDist1 > EPSILON || settings.chamferDist2 > EPSILON) {
+  if (AcGeTol.isPositive(settings.chamferDist1) || AcGeTol.isPositive(settings.chamferDist2)) {
     return buildChamferVertices(
       lx,
       ly,
@@ -239,7 +239,7 @@ function updateRect(
     ly = input.width
   }
 
-  if (Math.abs(lx) <= EPSILON || Math.abs(ly) <= EPSILON) return false
+  if (AcGeTol.equalToZero(lx) || AcGeTol.equalToZero(ly)) return false
 
   rect.reset(false)
   const vertices = resolveRectVertices(lx, ly, settings)
@@ -247,7 +247,7 @@ function updateRect(
 
   vertices.forEach((vertex, index) => {
     const worldPoint = toWorldPoint(firstPoint, vertex.point, settings.rotation)
-    if (segWidth > EPSILON) {
+    if (AcGeTol.isPositive(segWidth)) {
       rect.addVertexAt(index, worldPoint, vertex.bulge, segWidth, segWidth)
     } else {
       rect.addVertexAt(index, worldPoint, vertex.bulge)
@@ -377,7 +377,7 @@ function cloneRectSettings(settings: RectSettings): RectSettings {
 }
 
 function isPositive(value: number | undefined) {
-  return Number.isFinite(value ?? NaN) && (value ?? 0) > EPSILON
+  return Number.isFinite(value ?? NaN) && AcGeTol.isPositive(value ?? 0)
 }
 
 /**
@@ -429,7 +429,7 @@ export class AcApRectCmd extends AcEdCommand {
       return
     }
 
-    if (settings.thickness > EPSILON) {
+    if (AcGeTol.isPositive(settings.thickness)) {
       warnRectMessage('thicknessNotSupported')
     }
 

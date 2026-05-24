@@ -2,7 +2,10 @@ import {
   AcDbArc,
   AcGePoint3d,
   AcGePoint3dLike,
-  AcGeVector3dLike
+  AcGeTol,
+  AcGeVector3dLike,
+  FLOAT_TOL,
+  TAU
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
@@ -20,8 +23,6 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
-const TAU = Math.PI * 2
-const EPSILON = 1e-9
 const POSITIVE_NORMAL: AcGeVector3dLike = { x: 0, y: 0, z: 1 }
 const NEGATIVE_NORMAL: AcGeVector3dLike = { x: 0, y: 0, z: -1 }
 
@@ -174,7 +175,7 @@ function projectPointToCircle(
   const dx = point.x - center.x
   const dy = point.y - center.y
   const distance = Math.hypot(dx, dy)
-  if (distance <= EPSILON) return undefined
+  if (AcGeTol.isNonPositive(distance)) return undefined
   const scale = radius / distance
   return {
     x: center.x + dx * scale,
@@ -261,7 +262,7 @@ function createArcFromThreePoints(
   const x3 = end.x
   const y3 = end.y
   const d = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
-  if (Math.abs(d) <= EPSILON) return undefined
+  if (AcGeTol.equalToZero(d)) return undefined
 
   const ux =
     ((x1 * x1 + y1 * y1) * (y2 - y3) +
@@ -276,7 +277,7 @@ function createArcFromThreePoints(
 
   const center = { x: ux, y: uy, z: 0 }
   const radius = distance2d(center, start)
-  if (!Number.isFinite(radius) || radius <= EPSILON) return undefined
+  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius)) return undefined
 
   // By default, choose the arc that actually passes through the second point.
   // Ctrl toggle can reverse this selection to the complementary direction.
@@ -310,11 +311,11 @@ function createArcFromCenterStartEnd(
 ) {
   const radiusFromStart = distance2d(center, start)
   const radiusFromEnd = distance2d(center, end)
-  if (radiusFromStart <= EPSILON || radiusFromEnd <= EPSILON) {
+  if (AcGeTol.isNonPositive(radiusFromStart) || AcGeTol.isNonPositive(radiusFromEnd)) {
     return undefined
   }
   // Start/end must lie on the same circle (small tolerance for picked input).
-  const tolerance = Math.max(EPSILON, radiusFromStart * 1e-6)
+  const tolerance = Math.max(FLOAT_TOL, radiusFromStart * FLOAT_TOL)
   if (Math.abs(radiusFromStart - radiusFromEnd) > tolerance) {
     return undefined
   }
@@ -347,7 +348,7 @@ function createArcFromCenterStartProjectedEnd(
   normalSign: ArcNormalSign
 ) {
   const radius = distance2d(center, start)
-  if (radius <= EPSILON) return undefined
+  if (AcGeTol.isNonPositive(radius)) return undefined
   const end = projectPointToCircle(center, radius, rawEnd)
   if (!end) return undefined
   return createArcFromCenterStartEnd(center, start, end, normalSign)
@@ -370,7 +371,11 @@ function createArcFromCenterStartSweep(
 ) {
   const radius = distance2d(center, start)
   const sweep = Math.abs(sweepRad)
-  if (radius <= EPSILON || sweep <= EPSILON || sweep >= TAU - EPSILON) {
+  if (
+    AcGeTol.isNonPositive(radius) ||
+    AcGeTol.isNonPositive(sweep) ||
+    !AcGeTol.great(TAU - sweep, 0)
+  ) {
     return undefined
   }
 
@@ -403,7 +408,11 @@ function createArcFromCenterStartChord(
 ) {
   const radius = distance2d(center, start)
   const chord = Math.abs(chordLength)
-  if (radius <= EPSILON || chord <= EPSILON || chord > 2 * radius + EPSILON) {
+  if (
+    AcGeTol.isNonPositive(radius) ||
+    AcGeTol.isNonPositive(chord) ||
+    AcGeTol.great(chord, 2 * radius)
+  ) {
     return undefined
   }
   const ratio = Math.max(-1, Math.min(1, chord / (2 * radius)))
@@ -427,17 +436,21 @@ function createArcFromStartEndAngle(
 ) {
   const chord = distance2d(start, end)
   const sweep = Math.abs(sweepRad)
-  if (chord <= EPSILON || sweep <= EPSILON || sweep >= TAU - EPSILON) {
+  if (
+    AcGeTol.isNonPositive(chord) ||
+    AcGeTol.isNonPositive(sweep) ||
+    !AcGeTol.great(TAU - sweep, 0)
+  ) {
     return undefined
   }
 
   // chord = 2 * r * sin(theta/2)  ->  r = chord / (2 * sin(theta/2))
   const sinHalf = Math.sin(sweep / 2)
-  if (Math.abs(sinHalf) <= EPSILON) return undefined
+  if (AcGeTol.equalToZero(sinHalf)) return undefined
 
   const radius = chord / (2 * sinHalf)
   const offsetSquared = radius * radius - (chord * chord) / 4
-  if (offsetSquared < -EPSILON) return undefined
+  if (AcGeTol.less(offsetSquared, 0)) return undefined
 
   const offset = Math.sqrt(Math.max(0, offsetSquared))
   const midX = (start.x + end.x) / 2
@@ -486,7 +499,7 @@ function createArcFromStartEndDirection(
   const nx = -ty
   const ny = tx
   const denominator = 2 * (dx * nx + dy * ny)
-  if (Math.abs(denominator) <= EPSILON) return undefined
+  if (AcGeTol.equalToZero(denominator)) return undefined
 
   // Solve center = start + lambda * n so that |center-start| = |center-end|.
   const lambda = (dx * dx + dy * dy) / denominator
@@ -500,7 +513,7 @@ function createArcFromStartEndDirection(
   const radiusVectorX = start.x - center.x
   const radiusVectorY = start.y - center.y
   const cross = radiusVectorX * ty - radiusVectorY * tx
-  if (Math.abs(cross) <= EPSILON) return undefined
+  if (AcGeTol.equalToZero(cross)) return undefined
 
   const normalSign: ArcNormalSign = cross >= 0 ? 1 : -1
   return createArcFromCenterStartEnd(center, start, end, normalSign)
@@ -523,7 +536,11 @@ function createArcFromStartEndRadius(
 ) {
   const radius = Math.abs(radiusInput)
   const chord = distance2d(start, end)
-  if (radius <= EPSILON || chord <= EPSILON || chord > 2 * radius + EPSILON) {
+  if (
+    AcGeTol.isNonPositive(radius) ||
+    AcGeTol.isNonPositive(chord) ||
+    AcGeTol.great(chord, 2 * radius)
+  ) {
     return undefined
   }
 
@@ -1758,6 +1775,9 @@ export class AcApArcCmd extends AcEdCommand {
       )
       chordPrompt.allowZero = false
       chordPrompt.allowNegative = true
+      chordPrompt.useBasePoint = true
+      chordPrompt.useDashedLine = true
+      chordPrompt.basePoint = new AcGePoint3d(start)
       const chordResult =
         await AcApDocManager.instance.editor.getDistance(chordPrompt)
       if (chordResult.status !== AcEdPromptStatus.OK) return
@@ -1891,6 +1911,9 @@ export class AcApArcCmd extends AcEdCommand {
       )
       radiusPrompt.allowZero = false
       radiusPrompt.allowNegative = true
+      radiusPrompt.useBasePoint = true
+      radiusPrompt.useDashedLine = true
+      radiusPrompt.basePoint = new AcGePoint3d(start)
       const radiusResult =
         await AcApDocManager.instance.editor.getDistance(radiusPrompt)
       if (radiusResult.status !== AcEdPromptStatus.OK) return

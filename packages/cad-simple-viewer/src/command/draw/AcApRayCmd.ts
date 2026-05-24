@@ -1,4 +1,4 @@
-import { AcDbRay, AcGePoint3d, AcGePoint3dLike } from '@mlightcad/data-model'
+import { AcDbRay, AcGePoint3d, AcGePoint3dLike, AcGeTol } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
@@ -11,14 +11,12 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
-const ACAP_RAY_EPSILON = 1e-9
-
 function resolveUnitDirection(
   start: AcGePoint3dLike,
   through: AcGePoint3dLike
 ): AcGePoint3d | undefined {
   const direction = new AcGePoint3d(through).sub(start)
-  if (direction.lengthSq() <= ACAP_RAY_EPSILON) return undefined
+  if (!AcGeTol.isPositive(direction.length())) return undefined
   return direction.normalize()
 }
 

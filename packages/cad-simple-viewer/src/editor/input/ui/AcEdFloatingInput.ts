@@ -275,9 +275,32 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
     const wcsPos = this.getPosition(e)
     const defaults = this.getDynamicValue(wcsPos)
+    const committed = this.onCommit?.(defaults.value, wcsPos) ?? true
+    if (committed) {
+      this.lastPoint = wcsPos
+    }
+  }
 
-    this.lastPoint = wcsPos
-    this.onCommit?.(defaults.value, wcsPos)
+  /**
+   * Starts rubber-band preview from a base point after the prompt has already begun.
+   * Used by two-point distance acquisition when the first point is picked by click.
+   */
+  setBasePoint(
+    basePoint: AcGePoint2dLike,
+    options?: {
+      color?: string
+      showBaseLineOnly?: boolean
+      baseAngle?: number
+    }
+  ) {
+    if (this.disposed || this.rubberBand) return
+    this.rubberBand = new AcEdRubberBand(this.view)
+    this.rubberBand.start(basePoint, {
+      color: options?.color ?? 'var(--ml-ui-canvas-line, #0f0)',
+      showBaseLineOnly: options?.showBaseLineOnly,
+      baseAngle: options?.baseAngle
+    })
+    this.requestPreviewRefresh()
   }
 
   private updateDynamicPreview(wcsPos: AcGePoint2dLike) {

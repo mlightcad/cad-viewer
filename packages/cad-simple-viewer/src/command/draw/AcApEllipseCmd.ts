@@ -2,7 +2,9 @@ import {
   AcDbEllipse,
   AcGePoint3d,
   AcGePoint3dLike,
-  AcGeVector3dLike
+  AcGeTol,
+  AcGeVector3dLike,
+  TAU
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
@@ -20,8 +22,6 @@ import {
 import { AcApI18n } from '../../i18n'
 import { AcApLineJig } from './AcApLineCmd'
 
-const EPSILON = 1e-9
-const TAU = Math.PI * 2
 const POSITIVE_NORMAL: AcGeVector3dLike = { x: 0, y: 0, z: 1 }
 
 type EllipseKeywordKey = 'arc' | 'center' | 'rotation'
@@ -49,7 +49,7 @@ function midpoint2d(p1: AcGePoint3dLike, p2: AcGePoint3dLike): AcGePoint3dLike {
 
 function normalizeVector2d(x: number, y: number): AcGeVector3dLike | undefined {
   const length = Math.hypot(x, y)
-  if (!Number.isFinite(length) || length <= EPSILON) return undefined
+  if (!Number.isFinite(length) || AcGeTol.isNonPositive(length)) return undefined
   return { x: x / length, y: y / length, z: 0 }
 }
 
@@ -110,8 +110,8 @@ function buildEllipseDefinition(
   if (
     !Number.isFinite(firstAxisRadius) ||
     !Number.isFinite(secondAxisRadius) ||
-    firstAxisRadius <= EPSILON ||
-    secondAxisRadius <= EPSILON
+    AcGeTol.isNonPositive(firstAxisRadius) ||
+    AcGeTol.isNonPositive(secondAxisRadius)
   ) {
     return undefined
   }

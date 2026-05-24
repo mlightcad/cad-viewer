@@ -1,4 +1,4 @@
-import { AcDbCircle, AcGePoint3d, AcGePoint3dLike } from '@mlightcad/data-model'
+import { AcDbCircle, AcGePoint3d, AcGePoint3dLike, AcGeTol } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
@@ -15,8 +15,6 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-
-const EPSILON = 1e-9
 
 interface CircleDefinition {
   center: AcGePoint3dLike
@@ -55,7 +53,7 @@ function createCircleFromCenterRadius(
   center: AcGePoint3dLike,
   radius: number
 ): CircleDefinition | undefined {
-  if (!Number.isFinite(radius) || radius <= EPSILON) return undefined
+  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius)) return undefined
   return {
     center: { x: center.x, y: center.y, z: 0 },
     radius
@@ -69,7 +67,7 @@ function createCircleFromTwoPoints(
   const dx = second.x - first.x
   const dy = second.y - first.y
   const diameter = Math.hypot(dx, dy)
-  if (diameter <= EPSILON) return undefined
+  if (AcGeTol.isNonPositive(diameter)) return undefined
   return {
     center: {
       x: (first.x + second.x) / 2,
@@ -93,7 +91,7 @@ function createCircleFromThreePoints(
   const y3 = p3.y
 
   const d = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
-  if (Math.abs(d) <= EPSILON) return undefined
+  if (AcGeTol.equalToZero(d)) return undefined
 
   const ux =
     ((x1 * x1 + y1 * y1) * (y2 - y3) +
@@ -107,7 +105,7 @@ function createCircleFromThreePoints(
     d
 
   const radius = Math.hypot(ux - x1, uy - y1)
-  if (!Number.isFinite(radius) || radius <= EPSILON) return undefined
+  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius)) return undefined
   return {
     center: { x: ux, y: uy, z: 0 },
     radius

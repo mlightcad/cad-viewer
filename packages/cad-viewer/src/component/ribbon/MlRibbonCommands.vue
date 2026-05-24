@@ -86,6 +86,7 @@ import {
   move,
   mtext,
   multiPoints,
+  offset,
   polygon,
   polyline,
   properties,
@@ -619,6 +620,7 @@ const buildBaseTabs = (
     rotate: t('main.ribbon.tooltip.rotate'),
     copy: t('main.ribbon.tooltip.copy'),
     erase: t('main.ribbon.tooltip.erase'),
+    offset: t('main.ribbon.tooltip.offset'),
     properties: t('main.ribbon.tooltip.properties'),
     quickSelect: t('main.ribbon.tooltip.quickSelect'),
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
@@ -1103,16 +1105,25 @@ const buildBaseTabs = (
               ]
             },
             {
-              id: 'home-modify-delete',
-              layout: 'row',
+              id: 'home-modify-secondary',
+              layout: 'column',
+              rows: 3,
               items: [
                 {
                   id: 'cmd-erase',
                   type: 'button',
                   label: t('main.ribbon.command.erase'),
                   tooltip: ribbonTooltips.erase,
-                  size: 'large',
+                  size: 'small',
                   props: { icon: Delete }
+                },
+                {
+                  id: 'cmd-offset',
+                  type: 'button',
+                  label: t('main.ribbon.command.offset'),
+                  tooltip: ribbonTooltips.offset,
+                  size: 'small',
+                  props: { icon: offset }
                 }
               ]
             }
@@ -1434,6 +1445,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-copy', 'copy')
   commandByItemId.set('cmd-erase', 'erase')
+  commandByItemId.set('cmd-offset', 'offset')
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')
   commandByItemId.set('cmd-qselect', 'qselect')

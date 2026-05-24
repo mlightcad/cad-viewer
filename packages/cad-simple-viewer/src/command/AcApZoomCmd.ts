@@ -1,4 +1,4 @@
-import { AcGeBox2d, AcGePoint2dLike, AcGePoint3d } from '@mlightcad/data-model'
+import { AcGeBox2d, AcGePoint2dLike, AcGePoint3d, FLOAT_TOL } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
 import {
@@ -218,8 +218,8 @@ export class AcApZoomCmd extends AcEdCommand {
     centerPoint?: AcGePoint2dLike
   ) {
     const current = this.captureCurrentViewBox(context)
-    const width = Math.max(current.max.x - current.min.x, 1e-9)
-    const height = Math.max(current.max.y - current.min.y, 1e-9)
+    const width = Math.max(current.max.x - current.min.x, FLOAT_TOL)
+    const height = Math.max(current.max.y - current.min.y, FLOAT_TOL)
     const halfWidth = width / (2 * factor)
     const halfHeight = height / (2 * factor)
 

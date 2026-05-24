@@ -267,6 +267,7 @@ export default {
       rotate: '围绕基点旋转选中的对象。',
       copy: '将选中的对象复制到新位置。',
       erase: '从图纸中删除选中的对象。',
+      offset: '按指定距离创建对象的平行副本。',
       properties: '打开当前所选对象的属性面板。',
       quickSelect: '打开快速选择对话框，按条件筛选并选择图元。',
       drawingUnits: '打开图形单位对话框，设置坐标格式、精度与插入缩放单位。',
@@ -338,6 +339,7 @@ export default {
       rotate: '旋转',
       copy: '复制',
       erase: '删除',
+      offset: '偏移',
       properties: '属性',
       quickSelect: '快速选择',
       drawingUnits: '图形单位'

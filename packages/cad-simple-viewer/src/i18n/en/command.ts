@@ -226,6 +226,10 @@ export default {
       description: 'Moves selected entities by a displacement vector',
       prompt: 'Select entities'
     },
+    offset: {
+      description:
+        'Creates parallel curves, polylines, or circles at a specified distance'
+    },
     mtext: {
       description: 'Creates one mtext entity'
     },

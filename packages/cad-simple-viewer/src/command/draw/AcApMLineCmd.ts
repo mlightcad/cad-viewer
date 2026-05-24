@@ -3,7 +3,9 @@ import {
   AcDbMLineJustification,
   AcGePoint3d,
   AcGePoint3dLike,
-  AcGeVector3dLike
+  AcGeTol,
+  AcGeVector3dLike,
+  DEFAULT_TOL
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
@@ -23,8 +25,6 @@ import {
   AcEdPromptStringOptions
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-
-const ACAP_MLINE_EPSILON = 1e-9
 
 /**
  * Preview jig that renders an MLINE from confirmed points and the current cursor point.
@@ -460,7 +460,7 @@ function createMiterInfo(
   }
 
   const projection = Math.abs(dotVector(blended, nextNormal))
-  if (projection <= ACAP_MLINE_EPSILON) {
+  if (AcGeTol.isNonPositive(projection)) {
     return { direction: blended, offsetScale: 1 }
   }
 
@@ -509,7 +509,7 @@ function normalizeVector(
   const length = Math.sqrt(
     vector.x * vector.x + vector.y * vector.y + vector.z * vector.z
   )
-  if (length <= ACAP_MLINE_EPSILON) return undefined
+  if (!AcGeTol.isPositive(length)) return undefined
   return {
     x: vector.x / length,
     y: vector.y / length,
@@ -522,9 +522,5 @@ function dotVector(a: AcGeVector3dLike, b: AcGeVector3dLike): number {
 }
 
 function isSamePoint3d(a: AcGePoint3dLike, b: AcGePoint3dLike): boolean {
-  return (
-    Math.abs(a.x - b.x) <= ACAP_MLINE_EPSILON &&
-    Math.abs(a.y - b.y) <= ACAP_MLINE_EPSILON &&
-    Math.abs(a.z - b.z) <= ACAP_MLINE_EPSILON
-  )
+  return DEFAULT_TOL.equalPoint3d(a, b)
 }

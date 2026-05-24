@@ -1,3 +1,4 @@
+import { FLOAT_TOL } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
@@ -161,8 +162,8 @@ function startViewer(): void {
 
   const zoomToExtents = (extents: AcExExtents) => {
     const { width, height } = getCanvasSize()
-    const spanX = Math.max(extents.maxX - extents.minX, 1e-9)
-    const spanY = Math.max(extents.maxY - extents.minY, 1e-9)
+    const spanX = Math.max(extents.maxX - extents.minX, FLOAT_TOL)
+    const spanY = Math.max(extents.maxY - extents.minY, FLOAT_TOL)
     const centerX = (extents.minX + extents.maxX) / 2
     const centerY = (extents.minY + extents.maxY) / 2
     const zoom = Math.min(width / spanX, height / spanY) * 0.9
