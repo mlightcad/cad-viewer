@@ -668,6 +668,14 @@ export default {
       }
     }
   },
+  offset: {
+    distance: 'Specify offset distance:',
+    selectObject: 'Select object to offset or press Enter to finish:',
+    sidePoint: 'Specify point on side to offset:',
+    invalidDistance: 'Offset distance must be greater than 0.',
+    invalidSelection: 'Selected object cannot be offset.',
+    offsetFailed: 'Unable to create an offset curve for the specified side.'
+  },
   mtext: {
     point: 'Specify mtext insertion point:'
   },

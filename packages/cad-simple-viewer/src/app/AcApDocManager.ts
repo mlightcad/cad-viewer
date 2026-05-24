@@ -48,6 +48,7 @@ import {
   AcApMLineCmd,
   AcApMoveCmd,
   AcApMTextCmd,
+  AcApOffsetCmd,
   AcApOpenCmd,
   AcApPanCmd,
   AcApPointCmd,
@@ -116,6 +117,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   MLINE: ['ML'],
   MTEXT: ['T'],
   MOVE: ['M'],
+  OFFSET: ['O'],
   COPY: ['CO'],
   ROTATE: ['RO'],
   OPEN: ['OP'],
@@ -902,6 +904,7 @@ export class AcApDocManager {
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
     addSystemCommand('copy', 'copy', new AcApCopyCmd())
     addSystemCommand('move', 'move', new AcApMoveCmd())
+    addSystemCommand('offset', 'offset', new AcApOffsetCmd())
     addSystemCommand('rotate', 'rotate', new AcApRotateCmd())
     addSystemCommand('log', 'log', new AcApLogCmd())
     addSystemCommand('open', 'open', new AcApOpenCmd())

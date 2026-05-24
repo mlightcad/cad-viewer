@@ -204,6 +204,9 @@ export default {
       description: '通过位移向量移动所选图元',
       prompt: '选择对象'
     },
+    offset: {
+      description: '按指定距离创建平行曲线、多段线或圆'
+    },
     mtext: {
       description: '创建多行文本'
     },

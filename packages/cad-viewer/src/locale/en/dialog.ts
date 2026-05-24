@@ -41,7 +41,7 @@ export default {
       dms: 'Deg/Min/Sec',
       gradians: 'Gradians',
       radians: 'Radians',
-      surveyors: 'Surveyor\'s Units'
+      surveyors: "Surveyor's Units"
     },
     insUnits: {
       _0: 'Unitless',

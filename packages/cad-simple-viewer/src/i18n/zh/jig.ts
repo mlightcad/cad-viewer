@@ -658,6 +658,14 @@ export default {
       }
     }
   },
+  offset: {
+    distance: '指定偏移距离：',
+    selectObject: '选择要偏移的对象，或按 Enter 结束：',
+    sidePoint: '指定要偏移到的那一侧的点：',
+    invalidDistance: '偏移距离必须大于 0。',
+    invalidSelection: '所选对象不能偏移。',
+    offsetFailed: '无法在指定侧创建偏移曲线。'
+  },
   mtext: {
     point: '指定多行文本插入点：'
   },

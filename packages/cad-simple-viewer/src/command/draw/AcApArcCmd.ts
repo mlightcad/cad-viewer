@@ -1758,6 +1758,9 @@ export class AcApArcCmd extends AcEdCommand {
       )
       chordPrompt.allowZero = false
       chordPrompt.allowNegative = true
+      chordPrompt.useBasePoint = true
+      chordPrompt.useDashedLine = true
+      chordPrompt.basePoint = new AcGePoint3d(start)
       const chordResult =
         await AcApDocManager.instance.editor.getDistance(chordPrompt)
       if (chordResult.status !== AcEdPromptStatus.OK) return
@@ -1891,6 +1894,9 @@ export class AcApArcCmd extends AcEdCommand {
       )
       radiusPrompt.allowZero = false
       radiusPrompt.allowNegative = true
+      radiusPrompt.useBasePoint = true
+      radiusPrompt.useDashedLine = true
+      radiusPrompt.basePoint = new AcGePoint3d(start)
       const radiusResult =
         await AcApDocManager.instance.editor.getDistance(radiusPrompt)
       if (radiusResult.status !== AcEdPromptStatus.OK) return
