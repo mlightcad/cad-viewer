@@ -14,6 +14,18 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrEntity } from './AcTrEntity'
 
+function toVector2(points: AcGePoint2dLike[]): THREE.Vector2[] {
+  return points.map(point => new THREE.Vector2(point.x, point.y))
+}
+
+function hasFillVertices(geometry: THREE.BufferGeometry | undefined): boolean {
+  if (!geometry) {
+    return false
+  }
+  const position = geometry.getAttribute('position')
+  return !!position && position.count > 0
+}
+
 export class AcTrPolygon extends AcTrEntity {
   constructor(
     area: AcGeArea2d,
@@ -24,18 +36,19 @@ export class AcTrPolygon extends AcTrEntity {
 
     const pointBoundaries = area.getPoints(100)
     const hierarchy = area.buildHierarchy()
+    const hasRenderableBoundaries = pointBoundaries.some(loop => loop.length >= 3)
 
     const geometries: THREE.BufferGeometry[] = []
     this.buildHatchGeometry(pointBoundaries, hierarchy, geometries)
 
     let geometry: THREE.BufferGeometry | undefined
-    if (geometries.length > 0) {
-      geometry = mergeGeometries(geometries)
+    if (geometries.length === 1) {
+      geometry = geometries[0]
+    } else if (geometries.length > 1) {
+      geometry = mergeGeometries(geometries) ?? undefined
     }
 
-    if (!geometry || !geometry.getIndex() || geometry.getIndex()?.count === 0) {
-      log.warn('Failed to convert hatch boundaries!')
-    } else {
+    if (geometry && hasFillVertices(geometry)) {
       geometry.computeBoundingBox()
       this.box = geometry.boundingBox!
 
@@ -53,6 +66,8 @@ export class AcTrPolygon extends AcTrEntity {
         gradientBounds
       )
       this.add(new THREE.Mesh(geometry, material))
+    } else if (hasRenderableBoundaries) {
+      log.warn('Failed to convert hatch boundaries!')
     }
   }
 
@@ -130,10 +145,10 @@ export class AcTrPolygon extends AcTrEntity {
 
     noHoles.forEach(index => {
       const points = pointBoundaries[index]
-      if (points.length === 0) {
+      if (points.length < 3) {
         return
       }
-      const shape = new THREE.Shape(points as unknown as THREE.Vector2[])
+      const shape = new THREE.Shape(toVector2(points))
       createGeometry(shape)
     })
 
@@ -141,9 +156,11 @@ export class AcTrPolygon extends AcTrEntity {
       vecs.map(p => p.toArray() as [number, number])
 
     for (const pair of holes) {
-      const shape = new THREE.Shape(
-        pointBoundaries[pair[0]] as unknown as THREE.Vector2[]
-      )
+      const outerPoints = pointBoundaries[pair[0]]
+      if (outerPoints.length < 3) {
+        continue
+      }
+      const shape = new THREE.Shape(toVector2(outerPoints))
       // merge holes
       let mergedHoles: {
         regions: number[][][]
@@ -202,9 +219,11 @@ export class AcTrPolygon extends AcTrEntity {
       for (let i = 0; i < pair[1].length; i++) {
         const idx = pair[1][i]
         if (!ignoreHoleIndexArr.includes(idx)) {
-          shape.holes.push(
-            new THREE.Path(pointBoundaries[idx] as unknown as THREE.Vector2[])
-          )
+          const holePoints = pointBoundaries[idx]
+          if (holePoints.length < 3) {
+            continue
+          }
+          shape.holes.push(new THREE.Path(toVector2(holePoints)))
         }
       }
       createGeometry(shape)
