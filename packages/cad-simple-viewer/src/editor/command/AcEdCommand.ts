@@ -1,5 +1,8 @@
-import { AcApContext } from '../../app'
-import { AcEdOpenMode } from '../view'
+// Type-only import — AcApContext is referenced only in method signatures and
+// JSDoc examples, never instantiated here. Avoids dragging the entire app
+// barrel into command-stack unit tests that run in plain Node.
+import type { AcApContext } from '../../app/AcApContext'
+import { AcEdOpenMode } from '../view/AcEdOpenMode'
 
 /**
  * Abstract base class for all CAD commands.

@@ -147,6 +147,19 @@ export class AcEditor {
   }
 
   /**
+   * Programmatically cancels the currently active input prompt, if any.
+   *
+   * Delegates to {@link AcEdInputManager.cancelActiveInput}. Used by the
+   * command dispatcher to enforce command exclusivity: when a new command is
+   * started while another is still waiting for user input, the previous
+   * prompt is aborted with the canonical `'cancelled'` status before the new
+   * command runs.
+   */
+  cancelActiveInput() {
+    this._inputManager.cancelActiveInput()
+  }
+
+  /**
    * Queues scripted command-line inputs for subsequent getXXX prompts.
    * One entry equals one Enter-confirmed input.
    */
