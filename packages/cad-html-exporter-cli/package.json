@@ -22,9 +22,9 @@
   "dependencies": {
     "@mlightcad/cad-html-exporter": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.7.38",
-    "@mlightcad/libredwg-converter": "^3.5.38",
-    "@mlightcad/mtext-renderer": "^0.10.14",
+    "@mlightcad/data-model": "^1.7.40",
+    "@mlightcad/libredwg-converter": "^3.5.40",
+    "@mlightcad/mtext-renderer": "^0.10.15",
     "commander": "^12.1.0",
     "playwright": "^1.49.1"
   },

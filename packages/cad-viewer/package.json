@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.7.38",
+    "@mlightcad/data-model": "^1.7.40",
     "@mlightcad/ribbon": "^0.1.9",
     "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
@@ -60,8 +60,8 @@
     "vite-plugin-lib-inject-css": "^1.0.0",
     "vite-svg-loader": "^5.1.0",
     "vue": "^3.4.21",
-    "vue-eslint-parser": "^9.4.3",
-    "vue-i18n": "^10.0.1",
+    "vue-eslint-parser": "^10.4.0",
+    "vue-i18n": "^11.4.4",
     "vue-tsc": "^2.1.6"
   },
   "dependencies": {
@@ -70,11 +70,11 @@
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.7.38",
+    "@mlightcad/data-model": "^1.7.40",
     "@vueuse/core": "^11.1.0",
     "element-plus": "^2.12.0",
     "three": "^0.172.0",
     "vue": "^3.4.21",
-    "vue-i18n": "^10.0.1"
+    "vue-i18n": "^11.4.4"
   }
 }

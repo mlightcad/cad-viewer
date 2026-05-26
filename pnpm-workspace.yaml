@@ -4,4 +4,5 @@ allowBuilds:
   '@parcel/watcher': true
   esbuild: true
   nx: true
+  unrs-resolver: true
   vue-demi: true
