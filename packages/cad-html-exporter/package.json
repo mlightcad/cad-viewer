@@ -1,7 +1,7 @@
 {
   "name": "@mlightcad/cad-html-exporter",
   "private": true,
-  "version": "1.5.0",
+  "version": "1.5.1",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -45,7 +45,7 @@
   },
   "peerDependencies": {
     "@mlightcad/data-model": "^1.7.40",
-    "@mlightcad/three-renderer": "^1.5.0",
+    "@mlightcad/three-renderer": "^1.5.1",
     "three": "^0.172.0"
   }
 }
