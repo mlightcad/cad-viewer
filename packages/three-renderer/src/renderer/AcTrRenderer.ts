@@ -92,9 +92,11 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     this._renderer.clearDepth()
   }
 
-  render(scene: THREE.Object3D, camera: AcTrCamera) {
+  render(scene: THREE.Object3D, camera: AcTrCamera): boolean {
     this.updateCameraZoomUniform(camera.zoom)
     this._renderer.render(scene, camera.internalCamera)
+    // RTE frame scheduling is added in the large-coordinate feature branch.
+    return false
   }
 
   /**

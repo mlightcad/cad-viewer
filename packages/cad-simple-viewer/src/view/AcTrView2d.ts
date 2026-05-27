@@ -893,12 +893,7 @@ export class AcTrView2d extends AcEdBaseView {
     // 2) For each drill-through viewport, resolve hits against the
     //    model-space layout using the viewport's own camera/raycaster.
     if (drillThroughViewports.length > 0) {
-      this.pickThroughViewports(
-        point,
-        paperBox,
-        drillThroughViewports,
-        results
-      )
+      this.pickThroughViewports(point, paperBox, drillThroughViewports, results)
     }
 
     const sortedResults = sortPickResults(results, point)
@@ -935,8 +930,7 @@ export class AcTrView2d extends AcEdBaseView {
     // model-WCS radius that the per-viewport raycaster threshold and the
     // spatial-index probe both use. This keeps the hit area visually
     // consistent across viewports at different zoom levels.
-    const paperHalfRadius =
-      (paperBox.size.width + paperBox.size.height) / 4
+    const paperHalfRadius = (paperBox.size.width + paperBox.size.height) / 4
 
     for (const vpView of viewports) {
       const modelPt = vpView.paperPointToModel(paperPoint)
@@ -1310,13 +1304,15 @@ export class AcTrView2d extends AcEdBaseView {
       camera: this.internalCamera
     })
 
-    if (!this._isDirty) return
-    this._layoutViewManager.render(this._scene)
+    const stillLoading = this._numOfEntitiesToProcess > 0
+    if (!this._isDirty && !stillLoading) return
+
+    const needsRedraw = this._layoutViewManager.render(this._scene)
     if (this.internalCamera) {
       this._css2dRenderer.render(this._scene.internalScene, this.internalCamera)
     }
     this._stats?.update()
-    this._isDirty = false
+    this._isDirty = stillLoading || needsRedraw
   }
 
   private startAnimationLoop() {

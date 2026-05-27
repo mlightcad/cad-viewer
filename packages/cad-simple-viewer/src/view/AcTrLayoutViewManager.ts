@@ -114,8 +114,10 @@ export class AcTrLayoutViewManager {
    * Only renders the currently active layout view, if one is set.
    *
    * @param scene - Input the scene to render
+   * @returns `true` when the renderer applied new RTE shader patches and another
+   * frame should be drawn.
    */
-  render(scene: AcTrScene) {
-    this.activeLayoutView?.render(scene)
+  render(scene: AcTrScene): boolean {
+    return this.activeLayoutView?.render(scene) ?? false
   }
 }

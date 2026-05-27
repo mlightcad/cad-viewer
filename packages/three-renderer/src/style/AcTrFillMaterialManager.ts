@@ -387,7 +387,17 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       })
       .join('|')
 
-    return `hatch_${traits.layer}_${traits.rgbColor}_${style.patternAngle}_${patternHash}${sideSuffix}${drawOrderSuffix}`
+    return [
+      'hatch',
+      traits.layer,
+      traits.rgbColor,
+      style.patternAngle,
+      options.rebaseOffset.x,
+      options.rebaseOffset.y,
+      patternHash,
+      sideSuffix,
+      drawOrderSuffix
+    ].join('_')
   }
 
   /**
