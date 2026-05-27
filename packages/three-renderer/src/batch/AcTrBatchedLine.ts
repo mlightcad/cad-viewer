@@ -3,6 +3,8 @@ import * as THREE from 'three'
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
+import { markSplitTranslationFlag } from '../util/AcTrObjectUserData'
+import { AcTrRelativeToEyeUtil } from '../util/AcTrRelativeToEyeUtil'
 import {
   AcTrBatchedGeometryInfo,
   AcTrBatchGeometryUserData,
@@ -100,6 +102,7 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
   ) {
     super(new THREE.BufferGeometry(), material)
     this.frustumCulled = false
+    AcTrRelativeToEyeUtil.enableForObject(this)
 
     // cached user options
     this._maxVertexCount = maxVertexCount
@@ -261,9 +264,14 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     const creator = AcTrPointSymbolCreator.instance
     userData.forEach(item => {
       if (item.position) {
-        const geometry = creator.create(displayMode, item.position)
+        const geometry = creator.create(displayMode)
         if (geometry.line) {
-          const geometryId = this.addGeometry(geometry.line)
+          const geometryId = this.addGeometry(
+            geometry.line,
+            -1,
+            -1,
+            _vector.set(item.position.x, item.position.y, item.position.z ?? 0)
+          )
           this.setGeometryInfo(geometryId, item)
         }
       }
@@ -371,6 +379,7 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
         : new THREE.Vector3()
       this._origin = center.add(worldOffset.clone())
       this.position.copy(this._origin)
+      markSplitTranslationFlag(this)
     }
 
     const origin = this._origin
@@ -666,10 +675,11 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
    * isolated line views align with rebased vertex data.
    *
    * @param batchId - Geometry slot index.
+   * @param raycaster - Optional raycaster used to resolve relative-to-eye position.
    * @returns A {@link THREE.LineSegments} view of the sub-geometry.
    */
-  override getObjectAt(batchId: number) {
-    const object = super.getObjectAt(batchId)
+  override getObjectAt(batchId: number, raycaster?: THREE.Raycaster) {
+    const object = super.getObjectAt(batchId, raycaster)
     object.position.copy(this.position)
     return object
   }
@@ -685,11 +695,10 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     raycastObject: THREE.Object3D & {
       geometry: THREE.BufferGeometry
       material: THREE.Material | THREE.Material[]
-    }
+    },
+    raycaster?: THREE.Raycaster
   ) {
-    super._initializeRaycastObject(raycastObject)
-    raycastObject.position.copy(this.position)
-    raycastObject.updateMatrixWorld(true)
+    super._initializeRaycastObject(raycastObject, raycaster)
   }
 
   /**
@@ -732,7 +741,7 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     // Fast path: entities flagged for bbox-only intersection check
     if (geometryInfo.bboxIntersectionCheck) {
       this.getBoundingBoxAt(geometryId, this._box)
-      this._box.applyMatrix4(this.matrixWorld)
+      AcTrRelativeToEyeUtil.applyPickBoundingBox(this._box, this, raycaster)
       if (raycaster.ray.intersectBox(this._box, this._vector)) {
         const distance = raycaster.ray.origin.distanceTo(this._vector)
         ;(
@@ -776,7 +785,7 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     // bounding box expanded by the Line threshold.
     if (this._batchIntersects.length === 0) {
       this.getBoundingBoxAt(geometryId, _box)
-      _box.applyMatrix4(this.matrixWorld)
+      AcTrRelativeToEyeUtil.applyPickBoundingBox(_box, this, raycaster)
       const threshold = raycaster.params.Line.threshold
       if (threshold > 0) {
         _box.expandByScalar(threshold)

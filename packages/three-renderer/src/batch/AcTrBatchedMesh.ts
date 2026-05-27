@@ -2,6 +2,8 @@ import * as THREE from 'three'
 
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
+import { markSplitTranslationFlag } from '../util/AcTrObjectUserData'
+import { AcTrRelativeToEyeUtil } from '../util/AcTrRelativeToEyeUtil'
 import {
   AcTrBatchedGeometryInfo,
   AcTrBatchGeometryUserData,
@@ -97,6 +99,7 @@ export class AcTrBatchedMesh extends AcTrBatchedMeshBase {
   ) {
     super(new THREE.BufferGeometry(), material)
     this.frustumCulled = false
+    AcTrRelativeToEyeUtil.enableForObject(this)
 
     // cached user options
     this._maxVertexCount = maxVertexCount
@@ -304,6 +307,7 @@ export class AcTrBatchedMesh extends AcTrBatchedMeshBase {
         : new THREE.Vector3()
       this._origin = center.add(worldOffset.clone())
       this.position.copy(this._origin)
+      markSplitTranslationFlag(this)
     }
 
     const origin = this._origin

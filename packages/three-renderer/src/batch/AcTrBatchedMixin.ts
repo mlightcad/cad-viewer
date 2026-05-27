@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 
 import { AcTrCommonUtil } from '../util'
+import { AcTrRelativeToEyeUtil } from '../util/AcTrRelativeToEyeUtil'
 import {
   AcTrBatchGeometryDefaultFlags,
   AcTrBatchGeometryFlags,
@@ -910,11 +911,12 @@ export function createAcTrBatchedMixin<
      * isolated rendering.
      *
      * @param batchId - Geometry slot index.
+     * @param raycaster - Optional raycaster used to resolve relative-to-eye position.
      * @returns A new THREE object representing only the requested sub-geometry.
      */
-    getObjectAt(batchId: number) {
+    getObjectAt(batchId: number, raycaster?: THREE.Raycaster) {
       const object = options.createObject()
-      this._initializeRaycastObject(object)
+      this._initializeRaycastObject(object, raycaster)
       const geometryInfo = this._geometryInfo[batchId]
       const { start, count } = options.getDrawRange(this, geometryInfo)
       this._setRaycastObjectInfo(object, batchId, start, count)
@@ -936,7 +938,7 @@ export function createAcTrBatchedMixin<
       raycaster: THREE.Raycaster,
       intersects: THREE.Intersection[]
     ) {
-      this._initializeRaycastObject(this._raycastObject)
+      this._initializeRaycastObject(this._raycastObject, raycaster)
       this._intersectWith(geometryId, raycaster, intersects)
       this._resetRaycastObjectInfo(this._raycastObject)
     }
@@ -950,7 +952,7 @@ export function createAcTrBatchedMixin<
      * @param intersects - Output array populated with intersection records.
      */
     raycast(raycaster: THREE.Raycaster, intersects: THREE.Intersection[]) {
-      this._initializeRaycastObject(this._raycastObject)
+      this._initializeRaycastObject(this._raycastObject, raycaster)
 
       for (let i = 0, l = this._geometryInfo.length; i < l; i++) {
         this._intersectWith(i, raycaster, intersects)
@@ -972,12 +974,22 @@ export function createAcTrBatchedMixin<
      * Synchronizes world transform and shared buffer bindings on a raycast object.
      *
      * @param raycastObject - Temporary object to configure before raycasting.
+     * @param raycaster - Optional raycaster used to resolve relative-to-eye position.
      */
-    _initializeRaycastObject(raycastObject: AcTrBatchBaseObject) {
+    _initializeRaycastObject(
+      raycastObject: AcTrBatchBaseObject,
+      raycaster?: THREE.Raycaster
+    ) {
       initializeRaycastObject(raycastObject, this.geometry, this.material)
-      raycastObject.position.copy(this.position)
-      raycastObject.quaternion.copy(this.quaternion)
-      raycastObject.scale.copy(this.scale)
+      AcTrRelativeToEyeUtil.copyRelativePosition(
+        (this as unknown as THREE.Object3D).position,
+        raycaster,
+        raycastObject.position
+      )
+      raycastObject.quaternion.copy(
+        (this as unknown as THREE.Object3D).quaternion
+      )
+      raycastObject.scale.copy((this as unknown as THREE.Object3D).scale)
       raycastObject.updateMatrix()
       raycastObject.updateMatrixWorld(true)
     }
@@ -1038,7 +1050,11 @@ export function createAcTrBatchedMixin<
         ;(
           this as unknown as AcTrBatchBaseObject & AcTrBatchBounds
         ).getBoundingBoxAt(geometryId, this._box)
-        this._box.applyMatrix4((this as unknown as THREE.Object3D).matrixWorld)
+        AcTrRelativeToEyeUtil.applyPickBoundingBox(
+          this._box,
+          this as unknown as THREE.Object3D,
+          raycaster
+        )
         if (raycaster.ray.intersectBox(this._box, this._vector)) {
           const distance = raycaster.ray.origin.distanceTo(this._vector)
           ;(

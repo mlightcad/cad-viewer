@@ -14,7 +14,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy'
 import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
+import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 
 function toVector2(points: AcGePoint2dLike[]): THREE.Vector2[] {
@@ -31,6 +31,9 @@ function hasFillVertices(geometry: THREE.BufferGeometry | undefined): boolean {
   return !!position && position.count > 0
 }
 
+const _origin2 = /*@__PURE__*/ new THREE.Vector2()
+const _origin3 = /*@__PURE__*/ new THREE.Vector3()
+
 export class AcTrPolygon extends AcTrEntity {
   private _traits: AcGiSubEntityTraits
 
@@ -43,13 +46,18 @@ export class AcTrPolygon extends AcTrEntity {
     this._traits = traits
 
     const pointBoundaries = area.getPoints(100)
+    const localOrigin = this.computeLocalOrigin(pointBoundaries)
+    const localPointBoundaries = this.translateBoundaries(
+      pointBoundaries,
+      localOrigin
+    )
     const hierarchy = area.buildHierarchy()
     const hasRenderableBoundaries = pointBoundaries.some(
       loop => loop.length >= 3
     )
 
     const geometries: THREE.BufferGeometry[] = []
-    this.buildHatchGeometry(pointBoundaries, hierarchy, geometries)
+    this.buildHatchGeometry(localPointBoundaries, hierarchy, geometries)
 
     let geometry: THREE.BufferGeometry | undefined
     if (geometries.length === 1) {
@@ -59,14 +67,15 @@ export class AcTrPolygon extends AcTrEntity {
     }
 
     if (geometry && hasFillVertices(geometry)) {
-      const boundingBox =
-        AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-      if (!boundingBox) {
+      const localBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+      if (!localBox) {
         log.warn('Skipped hatch fill with invalid geometry coordinates')
         geometry.dispose()
         return
       }
-      this.box = boundingBox
+      const worldBox = localBox.clone()
+      worldBox.translate(_origin3.set(localOrigin.x, localOrigin.y, 0))
+      this.box = worldBox
 
       this.addGradientPositionAttribute(geometry, traits)
 
@@ -78,10 +87,14 @@ export class AcTrPolygon extends AcTrEntity {
       }
       const material = this.styleManager.getFillMaterial(
         traits,
-        undefined,
+        localOrigin,
         gradientBounds
       )
       const mesh = new THREE.Mesh(geometry, material)
+      mesh.position.set(localOrigin.x, localOrigin.y, 0)
+      if (this.isPatternedHatch(traits)) {
+        getSceneDrawableUserData(mesh).noBatch = true
+      }
       this.add(mesh)
       this.finalizeLeafDrawables()
     } else if (hasRenderableBoundaries) {
@@ -96,6 +109,30 @@ export class AcTrPolygon extends AcTrEntity {
     return this.batchDrawPolicy.resolveDrawMode({
       anchor: resolveAnchorFromBox(this.box)
     })
+  }
+
+  private computeLocalOrigin(pointBoundaries: AcGePoint2d[][]) {
+    const box = new THREE.Box2()
+    pointBoundaries.forEach(loop => {
+      loop.forEach(point => {
+        box.expandByPoint(_origin2.set(point.x, point.y))
+      })
+    })
+    return box.isEmpty()
+      ? new THREE.Vector2()
+      : box.getCenter(new THREE.Vector2())
+  }
+
+  private translateBoundaries(
+    pointBoundaries: AcGePoint2d[][],
+    localOrigin: THREE.Vector2
+  ) {
+    return pointBoundaries.map(loop =>
+      loop.map(
+        point =>
+          new AcGePoint2d(point.x - localOrigin.x, point.y - localOrigin.y)
+      )
+    )
   }
 
   private isPatternedHatch(traits: AcGiSubEntityTraits) {

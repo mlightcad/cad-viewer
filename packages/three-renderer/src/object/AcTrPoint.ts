@@ -30,20 +30,24 @@ export class AcTrPoint extends AcTrEntity {
     super(context)
     this._point = point
     const pointSymbol = AcTrPointSymbolCreator.instance.create(
-      style.displayMode,
-      point
+      style.displayMode
     )
+    const localOrigin = _vector3.set(point.x, point.y, point.z ?? 0)
 
     this.isShowPoint = pointSymbol.point != null
 
     // Always create one THREE.Points object. If 'isShowPoint' is true, show it. Otherwise, hide it.
     const geometry =
       pointSymbol.point ??
-      new THREE.BufferGeometry().setFromPoints([_vector3.copy(point)])
-    AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-    if (geometry.boundingBox) this.box.union(geometry.boundingBox)
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3()])
+    const pointBoundingBox =
+      AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+    if (pointBoundingBox) {
+      this.box.union(pointBoundingBox.clone().translate(localOrigin))
+    }
     const material = this.styleManager.getPointsMaterial(traits)
     const pointObj = new THREE.Points(geometry, material)
+    pointObj.position.copy(localOrigin)
     // Add the flag to check intersection using bounding box of the mesh
     getSceneDrawableUserData(pointObj).bboxIntersectionCheck = true
     pointObj.visible = this.isShowPoint
@@ -51,10 +55,14 @@ export class AcTrPoint extends AcTrEntity {
 
     if (pointSymbol.line) {
       const geometry = pointSymbol.line
-      AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-      if (geometry.boundingBox) this.box.union(geometry.boundingBox)
+      const lineBoundingBox =
+        AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+      if (lineBoundingBox) {
+        this.box.union(lineBoundingBox.clone().translate(localOrigin))
+      }
       const material = this.styleManager.getLineMaterial(traits, true)
       const lineSegmentsObj = new THREE.LineSegments(geometry, material)
+      lineSegmentsObj.position.copy(localOrigin)
       const lineDrawable = getSceneDrawableUserData(lineSegmentsObj)
       // Add the flag to check intersection using bounding box of the mesh
       lineDrawable.bboxIntersectionCheck = true
