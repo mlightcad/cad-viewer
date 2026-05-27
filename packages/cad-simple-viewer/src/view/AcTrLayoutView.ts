@@ -191,12 +191,13 @@ export class AcTrLayoutView extends AcTrBaseView {
    */
   render(scene: AcTrScene) {
     this._renderer.clear()
-    this._renderer.render(scene.internalScene, this._camera)
+    const needsRedraw = this._renderer.render(scene.internalScene, this._camera)
     const modelSpaceLayout = scene.modelSpaceLayout
     if (modelSpaceLayout) {
       this.drawViewports(modelSpaceLayout.internalObject)
     }
     this._axesGizmo?.update()
+    return needsRedraw
   }
 
   /**
