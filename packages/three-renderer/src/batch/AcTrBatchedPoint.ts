@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 
+import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchGeometryUserData,
   AcTrVertexBatchGeometryInfo,
@@ -40,6 +41,7 @@ const AcTrBatchedPointBase = createAcTrBatchedMixin<AcTrBatchedGeometryInfo>(
  * Point geometries are packed into a shared non-indexed attribute buffer.
  */
 export class AcTrBatchedPoint extends AcTrBatchedPointBase {
+  declare userData: AcTrBatchedContainerUserData
   private static readonly GROWTH_FACTOR = 1.25
   /** Stable world origin for this batch. */
   private _origin?: THREE.Vector3

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
+import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchedGeometryInfo,
   AcTrBatchGeometryUserData,
@@ -41,6 +42,7 @@ const AcTrBatchedLineBase = createAcTrBatchedMixin<AcTrBatchedGeometryInfo>(
  * one combined buffer to reduce draw calls.
  */
 export class AcTrBatchedLine extends AcTrBatchedLineBase {
+  declare userData: AcTrBatchedContainerUserData
   private static readonly GROWTH_FACTOR = 1.25
   /** Stable world origin for this batch. */
   private _origin?: THREE.Vector3

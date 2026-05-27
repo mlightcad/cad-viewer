@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 
-const RTE_MATERIAL_FLAG = '__acTrRteMaterialEnabled'
-const RTE_SHADER_REF = '__acTrRteShader'
+import { getMaterialRuntimeUserData } from './AcTrObjectUserData'
 
 /**
  * Highlight color.
@@ -113,8 +112,9 @@ export class AcTrMaterialUtil {
    * uniforms/program keys bound to another render object.
    */
   private static resetRuntimeShaderState(material: THREE.Material) {
-    delete material.userData[RTE_MATERIAL_FLAG]
-    delete material.userData[RTE_SHADER_REF]
+    const materialData = getMaterialRuntimeUserData(material)
+    delete materialData.relativeToEyePatchVersion
+    delete materialData.relativeToEyeCompiledShader
     material.onBeforeCompile = THREE.Material.prototype.onBeforeCompile
     material.customProgramCacheKey =
       THREE.Material.prototype.customProgramCacheKey

@@ -3,6 +3,7 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
+import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchGeometryUserData,
   AcTrVertexBatchGeometryInfo,
@@ -45,6 +46,7 @@ const AcTrBatchedLine2Base =
  * GPU buffer and renders them via one `LineSegments2` object per material.
  */
 export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
+  declare userData: AcTrBatchedContainerUserData
   private static readonly GROWTH_FACTOR = 1.25
   /** Stable world origin for this batch. */
   private _origin?: THREE.Vector3
