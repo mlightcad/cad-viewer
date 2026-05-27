@@ -1055,11 +1055,39 @@ export class AcApDocManager {
       )
     }
 
+    // AutoCAD-style command exclusivity: cancel any in-flight command before
+    // starting this one. The previous command's pending prompt is rejected
+    // with `AcEdPromptStatus.Cancel`, and we await its `trigger()` settlement
+    // so its `commandEnded` lifecycle finishes before the new one begins.
+    //
+    // The dispatcher itself remains fire-and-forget — callers (UI buttons,
+    // command line) never block on it.
+    void this.dispatchCommand(cmd, scriptInputs)
+  }
+
+  /**
+   * Internal async dispatcher that enforces command exclusivity.
+   *
+   * Separated from {@link sendStringToExecute} so that callers retain the
+   * historical fire-and-forget contract while the cancel-then-execute
+   * sequence happens out-of-band.
+   *
+   * @param cmd - The command instance to execute
+   * @param scriptInputs - Queued scripted input tokens for the command's prompts
+   */
+  private async dispatchCommand(cmd: AcEdCommand, scriptInputs: string[]) {
+    await this._commandManager.cancelActive()
+
     this.editor.clearScriptInputs()
     this.editor.enqueueScriptInputs(scriptInputs)
-    void cmd.trigger(this.context).finally(() => {
+
+    const promise = cmd.trigger(this.context).finally(() => {
       this.editor.clearScriptInputs()
+      this._commandManager.clearActive(cmd)
     })
+    this._commandManager.markActive(cmd, this.curView, promise)
+
+    await promise
   }
 
   /**
