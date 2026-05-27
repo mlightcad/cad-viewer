@@ -207,7 +207,10 @@ function resolveRectVertices(
   if (AcGeTol.isPositive(settings.filletRadius)) {
     return buildFilletVertices(lx, ly, settings.filletRadius)
   }
-  if (AcGeTol.isPositive(settings.chamferDist1) || AcGeTol.isPositive(settings.chamferDist2)) {
+  if (
+    AcGeTol.isPositive(settings.chamferDist1) ||
+    AcGeTol.isPositive(settings.chamferDist2)
+  ) {
     return buildChamferVertices(
       lx,
       ly,

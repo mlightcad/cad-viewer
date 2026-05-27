@@ -310,7 +310,12 @@ export class AcApPolylineCmd extends AcEdCommand {
       x: start.x + nx * lambda,
       y: start.y + ny * lambda
     }
-    return this.computeBulgeFromCenterWithTangent(start, end, center, tangentRad)
+    return this.computeBulgeFromCenterWithTangent(
+      start,
+      end,
+      center,
+      tangentRad
+    )
   }
 
   /**

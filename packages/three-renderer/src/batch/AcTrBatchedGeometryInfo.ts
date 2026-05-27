@@ -2,10 +2,12 @@ import { AcGePoint3dLike } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 /**
- * Per-sub-geometry metadata stored in batched objects.
+ * Per-sub-geometry slot metadata for packed batch buffers.
  *
- * These fields are copied into each batched geometry record and are later used
- * by hit-testing / highlighting workflows.
+ * This is **not** {@link THREE.Object3D.userData}; it is copied into each
+ * `AcTrBatchedGeometryInfo` record via `setGeometryInfo()` and used by
+ * hit-testing / highlighting workflows. For typed `Object3D.userData`, see
+ * {@link AcTrObjectUserData} in `util/AcTrObjectUserData.ts`.
  */
 export interface AcTrBatchGeometryUserData {
   objectId?: string

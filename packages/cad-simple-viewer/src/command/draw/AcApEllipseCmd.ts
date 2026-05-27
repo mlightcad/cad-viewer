@@ -49,7 +49,8 @@ function midpoint2d(p1: AcGePoint3dLike, p2: AcGePoint3dLike): AcGePoint3dLike {
 
 function normalizeVector2d(x: number, y: number): AcGeVector3dLike | undefined {
   const length = Math.hypot(x, y)
-  if (!Number.isFinite(length) || AcGeTol.isNonPositive(length)) return undefined
+  if (!Number.isFinite(length) || AcGeTol.isNonPositive(length))
+    return undefined
   return { x: x / length, y: y / length, z: 0 }
 }
 

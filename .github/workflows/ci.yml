@@ -45,13 +45,15 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Install Playwright Chromium
-        run: pnpm --filter @mlightcad/cad-viewer-example exec playwright install --with-deps chromium
+      # Use system Google Chrome (preinstalled on ubuntu-latest) via channel "chrome".
+      # Avoids playwright install chromium, which often hangs at zip extraction on CI.
+      - name: Install Playwright system dependencies
+        run: pnpm --filter @mlightcad/cad-viewer-example exec playwright install-deps chromium
 
       - name: Run E2E tests
         run: pnpm --filter @mlightcad/cad-viewer-example test:e2e
         env:
-          PLAYWRIGHT_BROWSER_CHANNEL: chromium
+          PLAYWRIGHT_BROWSER_CHANNEL: chrome
 
       - name: Upload Playwright artifacts
         if: failure()

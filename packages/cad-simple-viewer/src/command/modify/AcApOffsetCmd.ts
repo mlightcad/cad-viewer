@@ -283,7 +283,10 @@ export class AcApOffsetCmd extends AcEdCommand {
         if (result.status !== AcEdPromptStatus.OK || result.value == null) {
           return 'finish'
         }
-        if (!Number.isFinite(result.value) || AcGeTol.isNonPositive(result.value)) {
+        if (
+          !Number.isFinite(result.value) ||
+          AcGeTol.isNonPositive(result.value)
+        ) {
           AcApDocManager.instance.editor.showMessage(
             AcApI18n.t('jig.offset.invalidDistance'),
             'warning'
