@@ -14,6 +14,7 @@ import * as THREE from 'three'
 import { AcTrMTextRenderer } from '../renderer'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMTextColorUtil } from '../util'
+import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
 import { AcTrEntity } from './AcTrEntity'
 
 // Reuse scratch objects during hover/pick hit-testing; raycast can run very
@@ -156,7 +157,7 @@ export class AcTrMText extends AcTrEntity {
       // Text picking should behave like CAD object picking: the visible glyph
       // area should be selectable even when the pointer lands inside a hollow
       // glyph or between tiny outline segments.
-      object.userData.bboxIntersectionCheck = true
+      getSceneDrawableUserData(object).bboxIntersectionCheck = true
     })
     this.updateSelectionBox(mtext)
   }

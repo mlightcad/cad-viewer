@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 
+import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchedGeometryInfo,
   AcTrBatchGeometryUserData,
@@ -39,6 +40,7 @@ const AcTrBatchedMeshBase = createAcTrBatchedMixin<AcTrBatchedGeometryInfo>(
  * per material to reduce draw calls.
  */
 export class AcTrBatchedMesh extends AcTrBatchedMeshBase {
+  declare userData: AcTrBatchedContainerUserData
   private static readonly GROWTH_FACTOR = 1.25
   /** Stable world origin for this batch. */
   private _origin?: THREE.Vector3

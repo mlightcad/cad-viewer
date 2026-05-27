@@ -3,13 +3,17 @@ import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMaterialUtil, AcTrMatrixUtil } from '../util'
+import {
+  type AcTrEntityUserData,
+  getObjectUserData
+} from '../util/AcTrObjectUserData'
 import { AcTrObject } from './AcTrObject'
 
 /**
  * Represent the display object of one drawing entity.
  */
 export class AcTrEntity extends AcTrObject implements AcGiEntity {
-  static readonly NO_BATCH_FLAG = 'noBatch'
+  declare userData: AcTrEntityUserData
   protected _box: THREE.Box3
   protected _basePoint?: AcGePoint3d
 
@@ -57,7 +61,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * @inheritdoc
    */
   get objectId() {
-    return this.userData.objectId as string
+    return this.userData.objectId!
   }
   set objectId(value: string) {
     this.userData.objectId = value
@@ -67,7 +71,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * @inheritdoc
    */
   get ownerId() {
-    return this.userData.ownerId as string
+    return this.userData.ownerId!
   }
   set ownerId(value: string) {
     this.userData.ownerId = value
@@ -77,7 +81,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * @inheritdoc
    */
   get layerName() {
-    return this.userData.layerName as string
+    return this.userData.layerName!
   }
   set layerName(value: string) {
     this.userData.layerName = value
@@ -142,8 +146,10 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
       const children = [...object.children]
       for (const child of children) {
         // Propagate layer information downward when the leaf itself does not define one.
-        if (!child.userData.layerName && object.userData.layerName) {
-          child.userData.layerName = object.userData.layerName
+        const objectData = getObjectUserData(object)
+        const childData = getObjectUserData(child)
+        if (!childData.layerName && objectData.layerName) {
+          childData.layerName = objectData.layerName
         }
 
         if (child.children.length > 0) {
@@ -319,11 +325,12 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   protected highlightObject(object: THREE.Object3D) {
     if ('material' in object) {
       const material = object.material as THREE.Material | THREE.Material[]
+      const objectData = getObjectUserData(object)
       // If 'originalMaterial' isn't null, this object is already highlighted
-      if (object.userData.originalMaterial == null) {
+      if (objectData.originalMaterial == null) {
         const clonedMaterial = AcTrMaterialUtil.cloneMaterial(material)
         AcTrMaterialUtil.setMaterialColor(clonedMaterial)
-        object.userData.originalMaterial = object.material
+        objectData.originalMaterial = material
         object.material = clonedMaterial
       }
     } else if (object.children.length > 0) {
@@ -391,8 +398,9 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   protected unhighlightObject(object: THREE.Object3D) {
     if ('material' in object) {
       const material = object.material as THREE.Material | THREE.Material[]
-      object.material = object.userData.originalMaterial
-      delete object.userData.originalMaterial
+      const objectData = getObjectUserData(object)
+      object.material = objectData.originalMaterial!
+      delete objectData.originalMaterial
 
       // clean up
       if (Array.isArray(material)) {

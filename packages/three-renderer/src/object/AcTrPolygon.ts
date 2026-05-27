@@ -12,6 +12,7 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
 import { AcTrEntity } from './AcTrEntity'
 
 function toVector2(points: AcGePoint2dLike[]): THREE.Vector2[] {
@@ -65,10 +66,19 @@ export class AcTrPolygon extends AcTrEntity {
         undefined,
         gradientBounds
       )
-      this.add(new THREE.Mesh(geometry, material))
+      const mesh = new THREE.Mesh(geometry, material)
+      if (this.isPatternedHatch(traits)) {
+        getSceneDrawableUserData(mesh).noBatch = true
+      }
+      this.add(mesh)
     } else if (hasRenderableBoundaries) {
       log.warn('Failed to convert hatch boundaries!')
     }
+  }
+
+  private isPatternedHatch(traits: AcGiSubEntityTraits) {
+    const style = traits.fillType
+    return !style.gradient && !!style.definitionLines?.length
   }
 
   private addGradientPositionAttribute(

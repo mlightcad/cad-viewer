@@ -2,6 +2,7 @@ import { AcGiImageStyle } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrImage extends AcTrEntity {
@@ -30,6 +31,7 @@ export class AcTrImage extends AcTrEntity {
     this.generateUVs(geometry)
 
     const mesh = new THREE.Mesh(geometry, material)
+    getSceneDrawableUserData(mesh).noBatch = true
     this.add(mesh)
   }
 

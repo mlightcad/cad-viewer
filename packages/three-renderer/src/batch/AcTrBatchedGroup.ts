@@ -7,6 +7,11 @@ import { AcTrEntity } from '../object'
 import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMaterialUtil } from '../util'
+import {
+  copyHighlightObjectFlags,
+  getHighlightUserData,
+  getSceneDrawableUserData
+} from '../util/AcTrObjectUserData'
 import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
 import { AcTrBatchedLine } from './AcTrBatchedLine'
 import { AcTrBatchedLine2 } from './AcTrBatchedLine2'
@@ -314,10 +319,10 @@ export class AcTrBatchedGroup extends THREE.Group {
     })
     this._unbatchedObjects.traverse(object => {
       if (!('material' in object)) return
-      const userDataMaterialId = object.userData.styleMaterialId as number
-      if (userDataMaterialId === oldId) {
+      const drawableUserData = getSceneDrawableUserData(object)
+      if (drawableUserData.styleMaterialId === oldId) {
         object.material = material
-        object.userData.styleMaterialId = material.id
+        drawableUserData.styleMaterialId = material.id
       }
     })
   }
@@ -353,7 +358,8 @@ export class AcTrBatchedGroup extends THREE.Group {
 
     entity.updateMatrixWorld(true)
     entity.traverse(object => {
-      const bboxIntersectionCheck = !!object.userData.bboxIntersectionCheck
+      const drawableUserData = getSceneDrawableUserData(object)
+      const bboxIntersectionCheck = !!drawableUserData.bboxIntersectionCheck
 
       if (object instanceof LineSegments2) {
         entityInfo.push(
@@ -365,9 +371,10 @@ export class AcTrBatchedGroup extends THREE.Group {
         return
       }
 
-      if (object.userData[AcTrEntity.NO_BATCH_FLAG]) {
+      if (drawableUserData.noBatch) {
         const cloned = this.cloneUnbatchedObject(object)
-        cloned.userData.bboxIntersectionCheck = bboxIntersectionCheck
+        getSceneDrawableUserData(cloned).bboxIntersectionCheck =
+          bboxIntersectionCheck
         this._unbatchedObjects.add(cloned)
         unbatchedObjects.push(cloned)
         hasUnbatched = true
@@ -376,7 +383,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       if (object instanceof THREE.LineSegments) {
         entityInfo.push(
           this.addLine(object, {
-            position: object.userData.position,
+            position: drawableUserData.position,
             objectId,
             bboxIntersectionCheck: bboxIntersectionCheck
           })
@@ -534,12 +541,11 @@ export class AcTrBatchedGroup extends THREE.Group {
         ) as AcTrBatchedObject
         const object = batchedObject.getObjectAt(item.batchId)
 
-        const clonedMaterial = AcTrMaterialUtil.cloneMaterial(object.material)
-        AcTrMaterialUtil.setMaterialColor(clonedMaterial)
-        object.material = clonedMaterial
-
-        object.userData.objectId = objectId
-        object.userData.disposeGeometryOnRemove =
+        this.copyHighlightMetadata(batchedObject, object)
+        this.applyHighlightMaterial(object)
+        const highlightUserData = getHighlightUserData(object)
+        highlightUserData.objectId = objectId
+        highlightUserData.disposeGeometryOnRemove =
           batchedObject instanceof AcTrBatchedLine2
         containerGroup.add(object)
       })
@@ -549,14 +555,9 @@ export class AcTrBatchedGroup extends THREE.Group {
     if (unbatchedObjects && unbatchedObjects.length < 1000) {
       unbatchedObjects.forEach(obj => {
         const highlightObj = obj.clone()
-        if (this.hasMaterial(highlightObj)) {
-          const clonedMaterial = AcTrMaterialUtil.cloneMaterial(
-            highlightObj.material
-          )
-          AcTrMaterialUtil.setMaterialColor(clonedMaterial)
-          highlightObj.material = clonedMaterial
-        }
-        highlightObj.userData.objectId = objectId
+        this.copyHighlightMetadata(obj, highlightObj)
+        this.applyHighlightMaterial(highlightObj)
+        getHighlightUserData(highlightObj).objectId = objectId
         containerGroup.add(highlightObj)
       })
     }
@@ -572,13 +573,20 @@ export class AcTrBatchedGroup extends THREE.Group {
     object.children.forEach(child => this.applyHighlightMaterial(child))
   }
 
+  private copyHighlightMetadata(
+    source: THREE.Object3D,
+    target: THREE.Object3D
+  ) {
+    copyHighlightObjectFlags(source, target)
+  }
+
   /**
    * Removes and disposes highlight objects for one entity id.
    */
   protected unhighlight(objectId: string, containerGroup: THREE.Group) {
     const objects: THREE.Object3D[] = []
     containerGroup.children.forEach(obj => {
-      if (obj.userData.objectId === objectId) objects.push(obj)
+      if (getHighlightUserData(obj).objectId === objectId) objects.push(obj)
     })
     objects.forEach(obj => this.disposeHighlightObject(obj))
     containerGroup.remove(...objects)
@@ -768,7 +776,7 @@ export class AcTrBatchedGroup extends THREE.Group {
    * Resolves matching line batch map by geometry/index mode.
    */
   private getMatchedLineBatches(object: THREE.LineSegments) {
-    if (object.userData.isPoint) {
+    if (getSceneDrawableUserData(object).isPoint) {
       return this._pointSymbolBatches
     } else {
       const hasIndex = object.geometry.getIndex() !== null
@@ -902,8 +910,9 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
     if (this.hasMaterial(source) && this.hasMaterial(cloned)) {
       cloned.material = source.material
-      cloned.userData.styleMaterialId =
-        source.userData.styleMaterialId ?? this.getMaterialId(source.material)
+      const sourceDrawable = getSceneDrawableUserData(source)
+      getSceneDrawableUserData(cloned).styleMaterialId =
+        sourceDrawable.styleMaterialId ?? this.getMaterialId(source.material)
     }
     cloned.position.set(0, 0, 0)
     cloned.rotation.set(0, 0, 0)
@@ -986,7 +995,10 @@ export class AcTrBatchedGroup extends THREE.Group {
         material.dispose()
       }
     }
-    if (this.hasGeometry(object) && object.userData.disposeGeometryOnRemove) {
+    if (
+      this.hasGeometry(object) &&
+      getHighlightUserData(object).disposeGeometryOnRemove
+    ) {
       object.geometry.dispose()
     }
   }
