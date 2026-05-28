@@ -1,0 +1,43 @@
+{
+  "name": "@mlightcad/cad-pdf-plugin",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/cad-pdf-plugin/src",
+  "projectType": "library",
+  "tags": [
+    "npm:private"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc && vite build",
+        "cwd": "packages/cad-pdf-plugin"
+      },
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": true
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "rimraf dist lib tsconfig.tsbuildinfo",
+        "cwd": "packages/cad-pdf-plugin"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint src/",
+        "cwd": "packages/cad-pdf-plugin"
+      }
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint --fix --quiet src/",
+        "cwd": "packages/cad-pdf-plugin"
+      }
+    }
+  }
+}

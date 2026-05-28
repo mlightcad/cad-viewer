@@ -24,6 +24,9 @@ export default {
     cdxf: {
       description: '导出当前图纸为DXF格式'
     },
+    cpdf: {
+      description: '导出当前图纸为PDF格式'
+    },
     cecolor: {
       description: '设置新创建对象的当前默认颜色'
     },
@@ -85,6 +88,9 @@ export default {
     },
     hatch: {
       description: '用填充图案填充封闭区域或所选对象'
+    },
+    ipdf: {
+      description: '从 PDF 文件导入矢量几何'
     },
     hpang: {
       description: '设置新创建填充图案的默认角度（弧度）'

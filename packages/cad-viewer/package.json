@@ -43,6 +43,7 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
+    "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.7.40",
     "@mlightcad/ribbon": "^0.1.9",
@@ -69,6 +70,7 @@
     "lodash-es": "4.17.21"
   },
   "peerDependencies": {
+    "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.7.40",
     "@vueuse/core": "^11.1.0",
@@ -76,5 +78,10 @@
     "three": "^0.172.0",
     "vue": "^3.4.21",
     "vue-i18n": "^11.4.4"
+  },
+  "peerDependenciesMeta": {
+    "@mlightcad/cad-pdf-plugin": {
+      "optional": true
+    }
   }
 }

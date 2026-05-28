@@ -5,6 +5,7 @@ export default {
     drawingUnits: '图形单位',
     export: '导出为DXF',
     exportHtml: '导出为 HTML',
+    exportPdf: '导出为PDF',
     exportImage: '导出图片'
   },
   ribbon: {

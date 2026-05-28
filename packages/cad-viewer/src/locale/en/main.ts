@@ -5,6 +5,7 @@ export default {
     drawingUnits: 'Drawing Units',
     export: 'Export to DXF',
     exportHtml: 'Export to HTML',
+    exportPdf: 'Export to PDF',
     exportImage: 'Export to Image'
   },
   ribbon: {

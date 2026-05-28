@@ -2,6 +2,7 @@ import { log } from '@mlightcad/data-model'
 
 import { AcApContext } from '../app/AcApContext'
 import { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
+import { AcApLazyPluginRegistration } from './AcApLazyPluginRegistration'
 import { AcApPlugin } from './AcApPlugin'
 
 /**
@@ -38,6 +39,12 @@ import { AcApPlugin } from './AcApPlugin'
 export class AcApPluginManager {
   /** Map of loaded plugins by name */
   private _plugins: Map<string, AcApPlugin>
+  /** Lazy plugin registrations keyed by plugin name */
+  private _lazyRegistrations: Map<string, AcApLazyPluginRegistration>
+  /** Maps trigger command names to lazy plugin names */
+  private _triggerToPluginName: Map<string, string>
+  /** In-flight lazy plugin loads keyed by plugin name */
+  private _lazyLoadPromises: Map<string, Promise<boolean>>
   /** The application context */
   private _context: AcApContext
   /** The command manager */
@@ -51,6 +58,9 @@ export class AcApPluginManager {
    */
   constructor(context: AcApContext, commandManager: AcEdCommandStack) {
     this._plugins = new Map()
+    this._lazyRegistrations = new Map()
+    this._triggerToPluginName = new Map()
+    this._lazyLoadPromises = new Map()
     this._context = context
     this._commandManager = commandManager
   }
@@ -94,6 +104,130 @@ export class AcApPluginManager {
 
     // Store plugin
     this._plugins.set(pluginName, plugin)
+  }
+
+  /**
+   * Registers a lazy plugin without loading it.
+   *
+   * The plugin is loaded automatically when one of its trigger commands is
+   * requested via {@link loadByTrigger} or {@link AcApDocManager.sendStringToExecute}.
+   *
+   * @param registration - Lazy plugin descriptor (name, triggers, loader)
+   */
+  registerLazyPlugin(registration: AcApLazyPluginRegistration): void {
+    const pluginName = registration.name
+
+    if (!pluginName) {
+      throw new Error('[AcApPluginManager] Lazy plugin name is required')
+    }
+
+    if (this._lazyRegistrations.has(pluginName)) {
+      throw new Error(
+        `[AcApPluginManager] Lazy plugin '${pluginName}' is already registered`
+      )
+    }
+
+    if (!registration.triggers.length) {
+      throw new Error(
+        `[AcApPluginManager] Lazy plugin '${pluginName}' requires at least one trigger`
+      )
+    }
+
+    this._lazyRegistrations.set(pluginName, registration)
+
+    for (const trigger of registration.triggers) {
+      const normalizedTrigger = trigger.trim().toUpperCase()
+      if (!normalizedTrigger) {
+        continue
+      }
+
+      if (this._triggerToPluginName.has(normalizedTrigger)) {
+        throw new Error(
+          `[AcApPluginManager] Trigger '${trigger}' is already registered to lazy plugin '${this._triggerToPluginName.get(normalizedTrigger)}'`
+        )
+      }
+
+      this._triggerToPluginName.set(normalizedTrigger, pluginName)
+    }
+  }
+
+  /**
+   * Returns whether a trigger command is registered to a lazy plugin.
+   *
+   * @param trigger - Command name to check (case-insensitive)
+   * @returns `true` if the trigger loads a lazy plugin
+   */
+  isLazyPluginTrigger(trigger: string): boolean {
+    return this._triggerToPluginName.has(trigger.trim().toUpperCase())
+  }
+
+  /**
+   * Gets all trigger command names registered for lazy plugins.
+   *
+   * @returns Normalized (uppercase) trigger command names
+   */
+  getLazyPluginTriggers(): string[] {
+    return Array.from(this._triggerToPluginName.keys())
+  }
+
+  /**
+   * Loads the lazy plugin associated with a trigger command, if registered.
+   *
+   * Concurrent calls for the same plugin share one in-flight load promise.
+   *
+   * @param trigger - Command name that triggers lazy load (case-insensitive)
+   * @returns `true` when the plugin is loaded after this call, otherwise `false`
+   */
+  async loadByTrigger(trigger: string): Promise<boolean> {
+    const normalizedTrigger = trigger.trim().toUpperCase()
+    const pluginName = this._triggerToPluginName.get(normalizedTrigger)
+
+    if (!pluginName) {
+      return false
+    }
+
+    if (this.isPluginLoaded(pluginName)) {
+      return true
+    }
+
+    const inFlight = this._lazyLoadPromises.get(pluginName)
+    if (inFlight) {
+      return inFlight
+    }
+
+    const registration = this._lazyRegistrations.get(pluginName)
+    if (!registration) {
+      return false
+    }
+
+    const loadPromise = (async () => {
+      try {
+        const plugin = await registration.loader()
+
+        if (plugin.name !== pluginName) {
+          throw new Error(
+            `[AcApPluginManager] Lazy plugin '${pluginName}' loader returned plugin '${plugin.name}'`
+          )
+        }
+
+        if (!this.isPluginLoaded(pluginName)) {
+          await this.loadPlugin(plugin)
+        }
+
+        return true
+      } catch (error) {
+        log.error(
+          `[AcApPluginManager] Failed to load lazy plugin '${pluginName}' for trigger '${trigger}':`,
+          error
+        )
+        return false
+      } finally {
+        this._lazyLoadPromises.delete(pluginName)
+      }
+    })()
+
+    this._lazyLoadPromises.set(pluginName, loadPromise)
+    return loadPromise
   }
 
   /**
