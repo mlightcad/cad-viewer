@@ -10,6 +10,7 @@ import {
 import {
   registerCmds,
   registerDialogs,
+  registerLazyPlugins,
   registerMTextColorPicker
 } from './register'
 
@@ -18,4 +19,5 @@ export const initializeCadViewer = (options: AcApDocManagerOptions = {}) => {
   registerCmds()
   registerDialogs()
   registerMTextColorPicker()
+  registerLazyPlugins()
 }

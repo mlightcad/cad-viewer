@@ -1503,6 +1503,10 @@ const fileMenuItems = computed<FileMenuItemModel[]>(() => {
       label: t('main.mainMenu.exportHtml')
     },
     {
+      id: 'ExportPdf',
+      label: t('main.mainMenu.exportPdf')
+    },
+    {
       id: 'PngOut',
       label: t('main.mainMenu.exportImage')
     }
@@ -1536,13 +1540,21 @@ const handleRibbonItemClick = (payload: {
   AcApDocManager.instance.sendStringToExecute(command)
 }
 
-const handleFileMenuSelect = (command: string) => {
+const runLazyCommand = async (command: string) => {
+  const pluginManager = AcApDocManager.instance.pluginManager
+  await pluginManager.loadByTrigger(command)
+  AcApDocManager.instance.sendStringToExecute(command)
+}
+
+const handleFileMenuSelect = async (command: string) => {
   if (isRibbonDisabled.value) return
   if (command === 'Convert') {
     const cmd = new AcApConvertToDxfCmd()
     cmd.trigger(AcApDocManager.instance.context)
   } else if (command === 'ExportHtml') {
     AcApDocManager.instance.sendStringToExecute('chtml')
+  } else if (command === 'ExportPdf') {
+    await runLazyCommand('cpdf')
   } else if (command === 'PngOut') {
     AcApDocManager.instance.sendStringToExecute('pngout')
   } else if (command === 'QNew') {

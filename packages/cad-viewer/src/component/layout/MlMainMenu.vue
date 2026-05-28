@@ -22,6 +22,9 @@
         <el-dropdown-item command="ExportHtml">{{
           t('main.mainMenu.exportHtml')
         }}</el-dropdown-item>
+        <el-dropdown-item command="ExportPdf">{{
+          t('main.mainMenu.exportPdf')
+        }}</el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
@@ -48,12 +51,15 @@ import { useSettings } from '../../composable'
 const { t } = useI18n()
 const features = useSettings()
 
-const handleCommand = (command: string) => {
+const handleCommand = async (command: string) => {
   if (command === 'Convert') {
     const cmd = new AcApConvertToDxfCmd()
     cmd.trigger(AcApDocManager.instance.context)
   } else if (command === 'ExportHtml') {
     AcApDocManager.instance.sendStringToExecute('chtml')
+  } else if (command === 'ExportPdf') {
+    await AcApDocManager.instance.pluginManager.loadByTrigger('cpdf')
+    AcApDocManager.instance.sendStringToExecute('cpdf')
   } else if (command === 'QNew') {
     const cmd = new AcApQNewCmd()
     cmd.trigger(AcApDocManager.instance.context)

@@ -36,7 +36,11 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         fileName: 'index',
         formats: ['es'] as LibraryFormats[]
       },
-      minify: true
+      minify: true,
+      rollupOptions: {
+        // PDF plugin is a peer; loaded at runtime via dynamic import in registerLazyPlugins
+        external: ['@mlightcad/cad-pdf-plugin']
+      }
     },
     plugins
   }

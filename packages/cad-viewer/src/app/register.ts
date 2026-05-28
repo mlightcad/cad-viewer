@@ -110,3 +110,29 @@ export const registerMTextColorPicker = () => {
     isMTextColorPickerRegistered = true
   }
 }
+
+let isLazyPluginRegistered = false
+
+/**
+ * Registers lazy plugins that load on first use of their trigger commands.
+ *
+ * Currently registers the PDF plugin (`cpdf`, `ipdf`), which is fetched only
+ * when one of those commands runs. Safe to call multiple times; registration
+ * runs once per application lifetime.
+ */
+export const registerLazyPlugins = () => {
+  if (isLazyPluginRegistered) {
+    return
+  }
+
+  AcApDocManager.instance.pluginManager.registerLazyPlugin({
+    name: 'PdfPlugin',
+    triggers: ['cpdf', 'ipdf'],
+    loader: async () => {
+      const { createPdfPlugin } = await import('@mlightcad/cad-pdf-plugin')
+      return createPdfPlugin()
+    }
+  })
+
+  isLazyPluginRegistered = true
+}

@@ -1020,6 +1020,8 @@ export class AcApDocManager {
    * Executes a command by its string name.
    *
    * This method looks up a registered command by name and executes it with the current context.
+   * If the command is not registered yet, it attempts to load a lazy plugin whose trigger
+   * matches the command name (see {@link AcApPluginManager.loadByTrigger}).
    * It checks if the command's required mode is compatible with the document's current mode.
    * If the command is not found or not compatible, an error is thrown.
    *
@@ -1033,6 +1035,18 @@ export class AcApDocManager {
    * ```
    */
   sendStringToExecute(cmdStr: string) {
+    void this.executeCommandString(cmdStr)
+  }
+
+  /**
+   * Executes a command script, loading lazy plugins when needed.
+   *
+   * When the command is missing from the command stack, {@link AcApPluginManager.loadByTrigger}
+   * is invoked so plugins registered via {@link AcApPluginManager.registerLazyPlugin} can load.
+   *
+   * @param cmdStr - Command script (first line is the command name)
+   */
+  private async executeCommandString(cmdStr: string) {
     const lines = this.splitCommandScript(cmdStr)
     if (!lines.length) {
       throw new Error('Command string is empty')
@@ -1040,9 +1054,18 @@ export class AcApDocManager {
 
     const [cmdName, ...scriptInputs] = lines
     const documentMode = this.context.doc.openMode
-    const cmd =
+    let cmd =
       this._commandManager.lookupGlobalCmd(cmdName) ??
       this._commandManager.lookupLocalCmd(cmdName, documentMode)
+
+    if (!cmd) {
+      const loaded = await this._pluginManager.loadByTrigger(cmdName)
+      if (loaded) {
+        cmd =
+          this._commandManager.lookupGlobalCmd(cmdName) ??
+          this._commandManager.lookupLocalCmd(cmdName, documentMode)
+      }
+    }
 
     if (!cmd) {
       throw new Error(`Command '${cmdName}' not found`)
@@ -1057,7 +1080,7 @@ export class AcApDocManager {
 
     this.editor.clearScriptInputs()
     this.editor.enqueueScriptInputs(scriptInputs)
-    void cmd.trigger(this.context).finally(() => {
+    await cmd.trigger(this.context).finally(() => {
       this.editor.clearScriptInputs()
     })
   }
