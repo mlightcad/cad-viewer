@@ -100,14 +100,6 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
-   * Changes rendering color to the specified color for entities whose color is ACI 7.
-   * @param color - New rendering color for ACI 7.
-   */
-  changeForeground(color: number) {
-    this._styleManager.changeForeground(color)
-  }
-
-  /**
    * Repaints materials explicitly registered as background-follow fills.
    *
    * The current fill manager keeps solid hatches on the foreground path, so

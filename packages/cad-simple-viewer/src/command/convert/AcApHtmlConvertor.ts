@@ -42,6 +42,11 @@ export class AcApHtmlConvertor {
 
       const document = docManager.curDocument
       const view = docManager.curView
+      if (!view?.cadScene) {
+        throw new Error(
+          'CAD scene is not available. Open a drawing before exporting to HTML.'
+        )
+      }
       const snapshot = await this._snapshotBuilder.buildAsync(
         view.cadScene,
         document.database,
@@ -134,7 +139,8 @@ export class AcApHtmlConvertor {
    * @returns Base name without drawing extension, plus `.html`.
    */
   private resolveDownloadName(fileName: string): string {
-    const base = fileName.replace(/\.(dwg|dxf)$/i, '') || 'drawing'
+    const leafName = fileName.split(/[\\/]/).pop() ?? fileName
+    const base = leafName.replace(/\.(dwg|dxf)$/i, '').trim() || 'drawing'
     return `${base}.html`
   }
 
@@ -153,6 +159,6 @@ export class AcApHtmlConvertor {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
   }
 }

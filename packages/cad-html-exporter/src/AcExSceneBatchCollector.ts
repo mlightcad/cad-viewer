@@ -29,6 +29,59 @@ export interface AcExCollectedBatches {
 }
 
 /**
+ * Clamps a draw-range start offset to a valid element index.
+ *
+ * @internal
+ */
+function clampRangeStart(start: number, total: number): number {
+  if (!Number.isFinite(start) || start < 0) {
+    return 0
+  }
+  return Math.min(Math.floor(start), total)
+}
+
+/**
+ * Resolves how many elements to copy from a buffer attribute or index array.
+ *
+ * Three.js batched geometries use `{ start: 0, count: Infinity }` until
+ * `optimize()` / `_syncDrawRange()` runs; treating that as a literal count
+ * overflows JS arrays during HTML export.
+ *
+ * @internal
+ */
+function resolveRangeCount(
+  drawCount: number,
+  total: number,
+  start: number
+): number {
+  const available = Math.max(0, total - start)
+  if (!Number.isFinite(drawCount) || drawCount <= 0) {
+    return available
+  }
+  return Math.min(Math.floor(drawCount), available)
+}
+
+/**
+ * Copies a contiguous numeric span from a typed array into a plain `number[]`.
+ *
+ * @internal
+ */
+function copyNumberRange(
+  array: ArrayLike<number>,
+  start: number,
+  count: number
+): number[] {
+  if (count <= 0) {
+    return []
+  }
+  const result = new Array<number>(count)
+  for (let i = 0; i < count; i++) {
+    result[i] = array[start + i]!
+  }
+  return result
+}
+
+/**
  * Extracts the actively used portion of a batched buffer geometry,
  * respecting `geometry.drawRange` when set.
  *
@@ -46,32 +99,34 @@ export function exportBufferGeometrySlice(
   }
 
   const drawRange = geometry.drawRange
-  const vertexStart = drawRange.start ?? 0
-  const vertexCount =
-    drawRange.count > 0 ? drawRange.count : positionAttr.count - vertexStart
-
-  const positions: number[] = []
-  const array = positionAttr.array as Float32Array
+  const array = positionAttr.array as ArrayLike<number>
   const itemSize = positionAttr.itemSize
-  const startIndex = vertexStart * itemSize
-  const endIndex = (vertexStart + vertexCount) * itemSize
-  for (let i = startIndex; i < endIndex; i++) {
-    positions.push(array[i]!)
-  }
-
   const indexAttr = geometry.getIndex()
+
   if (indexAttr) {
-    const indices: number[] = []
+    const positions = copyNumberRange(array, 0, positionAttr.count * itemSize)
     const indexArray = indexAttr.array
-    const indexStart = drawRange.start ?? 0
-    const indexCount =
-      drawRange.count > 0 ? drawRange.count : indexAttr.count - indexStart
-    for (let i = indexStart; i < indexStart + indexCount; i++) {
-      indices.push(indexArray[i]!)
-    }
+    const indexStart = clampRangeStart(drawRange.start, indexAttr.count)
+    const indexCount = resolveRangeCount(
+      drawRange.count,
+      indexAttr.count,
+      indexStart
+    )
+    const indices = copyNumberRange(indexArray, indexStart, indexCount)
     return { positions, indices }
   }
 
+  const vertexStart = clampRangeStart(drawRange.start, positionAttr.count)
+  const vertexCount = resolveRangeCount(
+    drawRange.count,
+    positionAttr.count,
+    vertexStart
+  )
+  const positions = copyNumberRange(
+    array,
+    vertexStart * itemSize,
+    vertexCount * itemSize
+  )
   return { positions }
 }
 

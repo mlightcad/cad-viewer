@@ -1,5 +1,6 @@
 import {
   AcDbBlockTableRecord,
+  AcDbDatabase,
   AcDbEntity,
   acdbHostApplicationServices,
   AcDbLayerTableRecord,
@@ -45,10 +46,14 @@ import {
   AcEdSpatialQueryResultItem,
   AcEdSpatialQueryResultItemEx,
   AcEdViewMode,
-  applyUiThemeFromBackground,
   eventBus,
   resolvePointerSelectionAction
 } from '../editor'
+import {
+  isModelSpaceDatabase,
+  MODEL_SPACE_BACKGROUND,
+  readLayoutBackgroundColor
+} from '../editor/global/AcEdUiColor'
 import { AcTrGeometryUtil } from '../util'
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
@@ -77,7 +82,7 @@ export interface AcTrView2dOptions {
  * Default view option values
  */
 export const DEFAULT_VIEW_2D_OPTIONS: AcTrView2dOptions = {
-  background: 0x000000
+  background: MODEL_SPACE_BACKGROUND
 }
 
 /**
@@ -203,47 +208,30 @@ export class AcTrView2d extends AcEdBaseView {
     })
 
     this._scene = this.createScene()
-    // Initialize background color through setter to keep renderer/cursor/foreground in sync.
-    this.backgroundColor = mergedOptions.background || 0x000000
+    // Initialize background color through setter to keep renderer/cursor in sync.
+    this.backgroundColor = mergedOptions.background ?? MODEL_SPACE_BACKGROUND
     this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
 
-    // Two sysvars can drive the canvas background:
-    //
-    // - WHITEBKCOLOR (boolean): the low-level "is the paper white?" flag
-    //   that the View has always honoured.
-    // - COLORTHEME (number): the AutoCAD-standard theme selector where
-    //   0 = dark theme (black bg) and 1 = light theme (white bg).
-    //
-    // The Vue composable `useDark` (cad-viewer) toggles only COLORTHEME
-    // when the user flips the theme.  Without this bridge, toggling the
-    // UI theme left WHITEBKCOLOR stale and the canvas kept its previous
-    // background even though `changeForeground` had been fired through
-    // MTEXT/line inversion — producing e.g. a black canvas in light mode
-    // or a white canvas in dark mode.
-    //
-    // Listening to both sysvars keeps either entry point working.  The
-    // two remain independent (settable in isolation) because setting
-    // `this.backgroundColor` is idempotent and the handler for each
-    // sysvar only fires when that specific variable changes.
-    AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
+    // Layout background sysvars drive the canvas clear colour and ACI-7
+    // inversion (`MODELBKCOLOR` for model space, `PAPERBKCOLOR` for the
+    // active layout). `COLORTHEME` only affects UI chrome — see
+    // `useDark` / `AcEdUiTheme`, not the renderer foreground.
+    const sysVarManager = AcDbSysVarManager.instance()
+    const modelBkVar = AcDbSystemVariables.MODELBKCOLOR.toLowerCase()
+    const paperBkVar = AcDbSystemVariables.PAPERBKCOLOR.toLowerCase()
+    sysVarManager.events.sysVarChanged.addEventListener(args => {
       const nameLower = args.name.toLowerCase()
-      if (nameLower === AcDbSystemVariables.WHITEBKCOLOR.toLowerCase()) {
-        const useWhiteBackgroundColor = args.newVal as boolean
-        this.backgroundColor = useWhiteBackgroundColor ? 0xffffff : 0
-      } else if (nameLower === AcDbSystemVariables.COLORTHEME.toLowerCase()) {
-        // COLORTHEME is registered with type 'number' in the data-model
-        // (0 = dark, 1 = light), but the sysvar bus does not strictly
-        // coerce values.  Normalise defensively so plugins setting the
-        // value as a string or boolean still behave correctly.
-        const newVal = args.newVal
-        const isLight =
-          typeof newVal === 'number'
-            ? newVal === 1
-            : typeof newVal === 'boolean'
-              ? newVal
-              : String(newVal).toLowerCase() === 'light' ||
-                String(newVal) === '1'
-        this.backgroundColor = isLight ? 0xffffff : 0
+      if (nameLower === modelBkVar || nameLower === paperBkVar) {
+        const isModelSpace = this.isModelSpaceLayout(args.database)
+        const applies =
+          (nameLower === modelBkVar && isModelSpace) ||
+          (nameLower === paperBkVar && !isModelSpace)
+        if (!applies) {
+          return
+        }
+        this.applyCanvasBackground(
+          readLayoutBackgroundColor(args.database, isModelSpace)
+        )
       }
     })
 
@@ -431,6 +419,7 @@ export class AcTrView2d extends AcEdBaseView {
         this.activeLayoutBtrId = btrId
         this.createLayoutViewIfNeeded(btrId)
         this.loadLayoutEntitiesIfNeeded(btrId)
+        this.refreshCanvasBackgroundForActiveLayout()
         this._isDirty = true
 
         if (isFirstVisit) {
@@ -557,14 +546,54 @@ export class AcTrView2d extends AcEdBaseView {
    * @param value - The background color as a 24-bit hexadecimal RGB number
    */
   set backgroundColor(value: number) {
+    this.applyCanvasBackground(value)
+  }
+
+  /**
+   * Applies canvas background colour from layout background sysvars or explicit
+   * API calls. Also refreshes ACI-7 foreground inversion via the style
+   * manager. Does not touch `COLORTHEME` / UI chrome.
+   */
+  private applyCanvasBackground(value: number) {
     this._renderer.setClearColor(value)
-    this._renderer.changeForeground(value == 0 ? 0xffffff : 0)
-    // Store the canvas colour for theme-sensitive materials created after this
-    // point. `changeForeground` above keeps ACI 7 linework and hatches visible.
     this._renderer.currentBackgroundColor = value
-    this.editor.setCursorColor(value == 0 ? 'white' : 'black')
-    applyUiThemeFromBackground(value)
+    this._renderer.changeBackground(value)
+    this.editor.syncCursorBackground(value)
     this._isDirty = true
+  }
+
+  private isModelSpaceLayout(database?: AcDbDatabase): boolean {
+    if (!database) {
+      return this.activeLayoutBtrId === this.modelSpaceBtrId
+    }
+    return isModelSpaceDatabase(database)
+  }
+
+  /**
+   * Re-reads layout background sysvars from the active database. Called after
+   * a document is opened so DWG-stored values take effect.
+   */
+  syncDisplaySysVars(database: AcDbDatabase) {
+    this.applyCanvasBackground(
+      readLayoutBackgroundColor(database, this.isModelSpaceLayout(database))
+    )
+  }
+
+  /**
+   * Re-apply canvas background after a layout tab switch using the sysvar for
+   * the newly active layout (model or paper space).
+   */
+  private refreshCanvasBackgroundForActiveLayout() {
+    const docManager = AcApDocManager as unknown as {
+      _instance?: AcApDocManager
+    }
+    const database = docManager._instance?.curDocument?.database
+    if (!database) return
+
+    const isModelSpace = this.activeLayoutBtrId === this.modelSpaceBtrId
+    this.applyCanvasBackground(
+      readLayoutBackgroundColor(database, isModelSpace)
+    )
   }
 
   /**

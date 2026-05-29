@@ -6,6 +6,7 @@ import {
 import * as THREE from 'three'
 
 import { AcTrMaterialUtil } from '../util'
+import { foregroundColorForBackground } from './AcTrDisplayColors'
 import {
   AcTrByLayerBindingFlags,
   getMaterialMetadata,
@@ -346,7 +347,7 @@ export abstract class AcTrMaterialManager<T> {
    * Creates a THREE.js material and stores metadata in userData:
    *   - layer
    *   - isByLayerColor/isByLayerLineType/isByLayerLineWeight/isByLayerTransparency
-   *   - isForeground      (inverts with COLORTHEME when tracked by manager)
+   *   - isForeground      (inverts with layout background when tracked)
    *   - isBackgroundFill  (follows canvas bg when tracked by manager)
    *   - drawOrder         (batch/render-order tier for same-plane meshes)
    *   - materialKey (cache key, used by getBackSideVariant for reverse lookup)
@@ -368,15 +369,15 @@ export abstract class AcTrMaterialManager<T> {
     const isBackgroundFill = this.shouldTrackBackground(traits, options)
 
     // Foreground-follow materials (typically ACI 7 lines/text) must be
-    // initialized against the current canvas background color, otherwise
-    // they can be created with stale white color on a light background
-    // before any theme-change repaint occurs.
+    // initialized from the current layout background, not from trait RGB,
+    // otherwise they can be created with stale white before the first
+    // background-driven repaint occurs.
     if (isForeground) {
-      const foregroundColor =
-        this.options.currentBackgroundColor === 0 ? 0xffffff : 0x000000
       AcTrMaterialUtil.setMaterialColor(
         material,
-        new THREE.Color(foregroundColor)
+        new THREE.Color(
+          foregroundColorForBackground(this.options.currentBackgroundColor)
+        )
       )
     }
 
@@ -411,8 +412,8 @@ export abstract class AcTrMaterialManager<T> {
   }
 
   /**
-   * Whether materials from this manager should follow COLORTHEME
-   * inversion (i.e. be flipped by `changeForeground`).
+   * Whether materials from this manager should follow layout-background
+   * ACI-7 inversion (i.e. be flipped by `changeForeground`).
    *
    * The default implementation delegates to `AcCmColor.isForeground`,
    * so lines, points and text glyph fills keep inverting ACI 7 with

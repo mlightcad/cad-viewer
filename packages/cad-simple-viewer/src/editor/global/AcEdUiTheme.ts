@@ -47,11 +47,3 @@ export function applyUiTheme(
   })
   target.setAttribute('data-ml-ui-theme', theme)
 }
-
-export function applyUiThemeFromBackground(
-  backgroundColor: number,
-  target: HTMLElement = document.documentElement
-) {
-  const theme: AcEdUiTheme = backgroundColor === 0xffffff ? 'light' : 'dark'
-  applyUiTheme(theme, target)
-}

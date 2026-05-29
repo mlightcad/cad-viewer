@@ -1,5 +1,9 @@
 import { AcDbSystemVariables, AcDbSysVarManager } from '@mlightcad/data-model'
 
+import {
+  cursorColorForBackground,
+  MODEL_SPACE_BACKGROUND
+} from '../global/AcEdUiColor'
 import { AcEdBaseView } from '../view'
 
 /**
@@ -74,7 +78,7 @@ export class AcEdCursorManager {
   /** Cache of cursor definitions mapped by cursor type */
   private _cursorMap: Map<AcEdCorsorType, string>
   /** The current background color */
-  private _backgroundColor: number = 0
+  private _backgroundColor: number = MODEL_SPACE_BACKGROUND
   /** Total length of the cursor crosshair */
   private readonly _totalLength: number = 20
 
@@ -86,7 +90,7 @@ export class AcEdCursorManager {
   constructor(view: AcEdBaseView) {
     this._view = view
     this._cursorMap = new Map()
-    this.setCursorColor(this._backgroundColor === 0 ? 'white' : 'black')
+    this.setCursorColor(cursorColorForBackground(this._backgroundColor))
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
       if (args.name === AcDbSystemVariables.PICKBOX.toLowerCase()) {
         let size = args.newVal as number
@@ -96,14 +100,10 @@ export class AcEdCursorManager {
           this.createRectCrossIcon(
             size,
             this._totalLength - size,
-            this._backgroundColor === 0 ? 'white' : 'black'
+            cursorColorForBackground(this._backgroundColor)
           )
         )
         this.setCursor(this._currentCursor)
-      } else if (args.name === AcDbSystemVariables.WHITEBKCOLOR.toLowerCase()) {
-        const useWhiteBackgroundColor = args.newVal as boolean
-        this._backgroundColor = useWhiteBackgroundColor ? 0xffffff : 0
-        this.setCursorColor(this._backgroundColor === 0 ? 'white' : 'black')
       }
     })
     this.setCursor(AcEdCorsorType.Crosshair)
@@ -134,6 +134,14 @@ export class AcEdCursorManager {
       }
     }
     this._currentCursor = cursorType
+  }
+
+  /**
+   * Syncs crosshair colour with the canvas background set by the view.
+   */
+  syncBackgroundColor(backgroundColor: number) {
+    this._backgroundColor = backgroundColor
+    this.setCursorColor(cursorColorForBackground(backgroundColor))
   }
 
   /**

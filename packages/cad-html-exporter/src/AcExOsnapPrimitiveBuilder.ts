@@ -11,7 +11,6 @@
 
 import {
   AcDbArc,
-  AcDbBlockReference,
   type AcDbBlockTableRecord,
   AcDbCircle,
   type AcDbDatabase,
@@ -86,6 +85,27 @@ function scaleIsUniform(matrix: THREE.Matrix4): boolean {
     matrix.elements[6]
   ).length()
   return AcGeTol.equal(sx, sy, FLOAT_TOL * Math.max(sx, sy, 1))
+}
+
+/** Block reference shape used for recursive osnap traversal. @internal */
+type AcExBlockReferenceLike = AcDbEntity & {
+  blockTableRecord: AcDbBlockTableRecord | undefined
+  getFullInsertionTransform(): THREE.Matrix4
+}
+
+/**
+ * Detects block references across data-model versions (`AcDbBlockReference`,
+ * `AcDbBlockReference2`, etc.) without relying on `instanceof`.
+ *
+ * @internal
+ */
+function isBlockReferenceEntity(
+  entity: AcDbEntity
+): entity is AcExBlockReferenceLike {
+  return (
+    typeof (entity as { getFullInsertionTransform?: unknown })
+      .getFullInsertionTransform === 'function' && 'blockTableRecord' in entity
+  )
 }
 
 /** Appends a WCS line primitive after transforming endpoints. @internal */
@@ -348,13 +368,11 @@ function visitEntity(
 
   const layer = effectiveLayer(entity.layer, insertLayer)
 
-  if (entity instanceof AcDbBlockReference) {
+  if (isBlockReferenceEntity(entity)) {
     const block = entity.blockTableRecord
     if (!block || blockStack.has(block.objectId)) return
     blockStack.add(block.objectId)
-    const insertMatrix = (
-      entity as unknown as { getFullInsertionTransform(): THREE.Matrix4 }
-    ).getFullInsertionTransform()
+    const insertMatrix = entity.getFullInsertionTransform()
     const nested = new THREE.Matrix4().multiplyMatrices(matrix, insertMatrix)
     const blockInsertLayer = effectiveLayer(entity.layer, insertLayer)
     visitBlock(block, nested, blockInsertLayer, out, blockStack)

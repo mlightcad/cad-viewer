@@ -37,7 +37,9 @@ export class AcTrPolygon extends AcTrEntity {
 
     const pointBoundaries = area.getPoints(100)
     const hierarchy = area.buildHierarchy()
-    const hasRenderableBoundaries = pointBoundaries.some(loop => loop.length >= 3)
+    const hasRenderableBoundaries = pointBoundaries.some(
+      loop => loop.length >= 3
+    )
 
     const geometries: THREE.BufferGeometry[] = []
     this.buildHatchGeometry(pointBoundaries, hierarchy, geometries)
