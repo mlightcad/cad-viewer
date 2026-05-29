@@ -1035,7 +1035,11 @@ export class AcApDocManager {
    * ```
    */
   sendStringToExecute(cmdStr: string) {
-    void this.executeCommandString(cmdStr)
+    void this.executeCommandString(cmdStr).catch(error => {
+      const message = error instanceof Error ? error.message : String(error)
+      this.editor.showMessage(message, 'error')
+      log.error(`[AcApDocManager] Command failed: ${cmdStr}`, error)
+    })
   }
 
   /**
@@ -1154,6 +1158,7 @@ export class AcApDocManager {
         mode: this.getDocumentEventMode(options)
       })
       this.setActiveLayout()
+      ;(this.curView as AcTrView2d).syncDisplaySysVars(doc.database)
       const db = doc.database
 
       // Three-way fit strategy at document open time:

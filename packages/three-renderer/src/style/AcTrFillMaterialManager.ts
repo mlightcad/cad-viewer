@@ -69,7 +69,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
   /**
    * Fill meshes at the linework tier (`drawOrder >= 0`) follow
-   * COLORTHEME inversion so ACI 7 content stays legible. This covers
+   * layout-background ACI-7 inversion so content stays legible. This covers
    * MText glyphs and wide polylines — meshes that are rasterized as
    * fill but represent linework.
    *

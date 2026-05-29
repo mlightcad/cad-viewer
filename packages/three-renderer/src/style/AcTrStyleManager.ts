@@ -1,6 +1,10 @@
 import { AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
+import {
+  foregroundColorForBackground,
+  MODEL_SPACE_BACKGROUND
+} from './AcTrDisplayColors'
 import { AcTrFillMaterialManager } from './AcTrFillMaterialManager'
 import { AcTrLineMaterialManager } from './AcTrLineMaterialManager'
 import { AcTrPointMaterialManager } from './AcTrPointMaterialManager'
@@ -29,9 +33,7 @@ export class AcTrStyleManager {
     maxFragmentUniforms: 1024,
     resolution: new THREE.Vector2(1, 1),
     showLineWeight: false,
-    // Matches DEFAULT_VIEW_2D_OPTIONS.background in cad-simple-viewer.
-    // Theme-sensitive materials use this when they are created.
-    currentBackgroundColor: 0x000000
+    currentBackgroundColor: MODEL_SPACE_BACKGROUND
   }
   private pointMgr: AcTrPointMaterialManager
   private lineMgr: AcTrLineMaterialManager
@@ -103,12 +105,14 @@ export class AcTrStyleManager {
   }
 
   /**
-   * Updates the canvas background colour and repaints existing
-   * background-follow materials so they track the new colour.
+   * Updates the canvas background colour, repaints background-follow
+   * materials, and refreshes ACI-7 foreground inversion to contrast with
+   * the new layout background.
    */
   set currentBackgroundColor(value: number) {
     this.options.currentBackgroundColor = value
     this.changeBackground(value)
+    this.repaintForegroundMaterials(foregroundColorForBackground(value))
   }
 
   /**
@@ -217,12 +221,9 @@ export class AcTrStyleManager {
   }
 
   /**
-   * Changes material color to the specified color if its userData 'isForeground' is true.
-   * Generally this function is used to change rendering color of entities whose color is
-   * ACI 7.
-   * @param color - New rendering color.
+   * Repaints cached ACI-7 / foreground-tracked materials.
    */
-  changeForeground(color: number) {
+  private repaintForegroundMaterials(color: number) {
     this.lineMgr.changeForeground(color)
     this.pointMgr.changeForeground(color)
     this.fillMgr.changeForeground(color)
@@ -233,8 +234,7 @@ export class AcTrStyleManager {
    *
    * Point and line managers currently never opt materials into this
    * behaviour, so their delegation is a no-op; keeping it symmetric
-   * with `changeForeground` allows future managers to opt in without
-   * touching the callers.
+   * allows future managers to opt in without touching the callers.
    *
    * @param color - New rendering color (typically the canvas bg).
    */

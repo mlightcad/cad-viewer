@@ -307,7 +307,7 @@ export default {
       description:
         'Controls fractional display of coordinates when LUNITS is Architectural or Fractional'
     },
-    whitebkcolor: {
+    switchbg: {
       description: 'Toggles the drawing area background between white and black'
     },
     xline: {

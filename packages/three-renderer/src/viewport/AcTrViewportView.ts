@@ -1,4 +1,9 @@
-import { AcGeBox2d, AcGePoint2d, AcGePoint2dLike, AcGiViewport } from '@mlightcad/data-model'
+import {
+  AcGeBox2d,
+  AcGePoint2d,
+  AcGePoint2dLike,
+  AcGiViewport
+} from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrRenderer } from '../renderer'

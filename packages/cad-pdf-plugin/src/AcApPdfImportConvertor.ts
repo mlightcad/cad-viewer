@@ -69,8 +69,7 @@ export class AcApPdfImportConvertor {
         return
       }
 
-      const modelSpace =
-        context.doc.database.tables.blockTable.modelSpace
+      const modelSpace = context.doc.database.tables.blockTable.modelSpace
 
       for (const entity of entities) {
         modelSpace.appendEntity(entity)

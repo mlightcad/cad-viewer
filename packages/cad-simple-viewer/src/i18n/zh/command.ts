@@ -277,7 +277,7 @@ export default {
     unitmode: {
       description: '当 LUNITS 为建筑或分数格式时，控制坐标的分数显示格式'
     },
-    whitebkcolor: {
+    switchbg: {
       description: '切换绘图区域背景颜色，在白色和黑色背景之间切换'
     },
     xline: {
