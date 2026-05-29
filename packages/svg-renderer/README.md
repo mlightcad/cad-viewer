@@ -1,6 +1,6 @@
 # svg-renderer
 
-This package implements the SVG-based rendering engine for MLightCAD. It converts DWG/DXF entities into SVG graphics for SVG exporting. For now, this module isn't fullly implemented yet.
+This package implements the SVG-based rendering engine for MLightCAD. It converts DWG/DXF entities into SVG graphics for SVG and PDF exporting.
 
 ## Key Features
 - Renders CAD entities as SVG elements

@@ -6,6 +6,7 @@ export default {
     export: 'Export to DXF',
     exportHtml: 'Export to HTML',
     exportPdf: 'Export to PDF',
+    exportSvg: 'Export to SVG',
     exportImage: 'Export to Image'
   },
   ribbon: {

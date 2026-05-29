@@ -397,10 +397,13 @@ importers:
         version: 14.2.6
 
   packages/svg-renderer:
-    dependencies:
+    devDependencies:
       '@mlightcad/data-model':
         specifier: ^1.7.40
         version: 1.7.40
+      '@mlightcad/mtext-parser':
+        specifier: ^1.4.1
+        version: 1.4.1
 
   packages/three-renderer:
     dependencies:

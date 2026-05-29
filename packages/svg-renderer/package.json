@@ -30,7 +30,12 @@
     "lint": "eslint src/",
     "lint:fix": "eslint --fix --quiet src/"
   },
+  "devDependencies": {
+    "@mlightcad/data-model": "^1.7.40",
+    "@mlightcad/mtext-parser": "^1.4.1"
+  },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.7.40"
+    "@mlightcad/data-model": "^1.7.40",
+    "@mlightcad/mtext-parser": "^1.4.1"
   }
 }

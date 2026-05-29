@@ -1,21 +1,26 @@
-import { AcGiImageStyle } from '@mlightcad/data-model'
+import { AcGiImageStyle, AcGiSubEntityTraits } from '@mlightcad/data-model'
 
 import { AcSvgEntity } from './AcSvgEntity'
+import { AcSvgExportUtil } from './AcSvgExportUtil'
+import { AcSvgStyleContext } from './AcSvgStyleUtil'
 
 /**
  * SVG image entity: embeds a raster image as a base64 `<image>` element.
- * The boundary array is expected to contain the corner points of the image.
  */
 export class AcSvgImage extends AcSvgEntity {
-  constructor(dataUrl: string, style: AcGiImageStyle) {
+  constructor(
+    dataUrl: string,
+    style: AcGiImageStyle,
+    _traits: AcGiSubEntityTraits,
+    _ctx: AcSvgStyleContext
+  ) {
     super()
     const { boundary } = style
 
-    if (boundary.length < 2) {
+    if (boundary.length < 2 || !AcSvgExportUtil.isSafeEmbeddedUrl(dataUrl)) {
       return
     }
 
-    // Compute axis-aligned bounding rect from boundary points
     let minX = Infinity,
       minY = Infinity,
       maxX = -Infinity,
@@ -30,20 +35,29 @@ export class AcSvgImage extends AcSvgEntity {
 
     const w = maxX - minX
     const h = maxY - minY
+    const href = escapeAttr(dataUrl)
 
-    // Parent <g> flips Y; compensate so the image renders right-side-up
-    this.svg = `<image x="${minX}" y="${minY}" width="${w}" height="${h}" href="${dataUrl}" transform="scale(1,-1) translate(0,${-(minY * 2 + h)})"/>`
+    this._localSvg = `<image x="${minX}" y="${minY}" width="${w}" height="${h}" href="${href}" xlink:href="${href}" transform="scale(1,-1) translate(0,${-(minY * 2 + h)})"/>`
   }
 
-  /**
-   * Async factory: converts a Blob to a data URL, then creates the entity.
-   */
   static async fromBlob(
     blob: Blob,
-    style: AcGiImageStyle
+    style: AcGiImageStyle,
+    traits: AcGiSubEntityTraits,
+    ctx: AcSvgStyleContext
   ): Promise<AcSvgImage> {
-    const dataUrl = await blobToDataUrl(blob)
-    return new AcSvgImage(dataUrl, style)
+    let dataUrl = await blobToDataUrl(blob)
+    if (
+      blob.type === 'image/svg+xml' ||
+      dataUrl.startsWith('data:image/svg+xml')
+    ) {
+      try {
+        dataUrl = await AcSvgExportUtil.rasterizeSvgDataUrl(dataUrl)
+      } catch {
+        return new AcSvgImage('', style, traits, ctx)
+      }
+    }
+    return new AcSvgImage(dataUrl, style, traits, ctx)
   }
 }
 
@@ -54,4 +68,8 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.onerror = reject
     reader.readAsDataURL(blob)
   })
+}
+
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
 }

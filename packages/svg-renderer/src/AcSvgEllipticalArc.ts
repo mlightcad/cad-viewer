@@ -1,28 +1,33 @@
-import {
-  AcGeEllipseArc3d,
-  AcGeMathUtil,
-  AcGeVector3d
-} from '@mlightcad/data-model'
+import { AcGeEllipseArc3d, AcGiSubEntityTraits } from '@mlightcad/data-model'
 
 import { AcSvgEntity } from './AcSvgEntity'
+import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
+
+/** Tessellation segment count for elliptical arc approximation. */
+const ARC_SEGMENTS = 100
 
 export class AcTrEllipticalArc extends AcSvgEntity {
-  constructor(ellipseArc: AcGeEllipseArc3d) {
+  constructor(
+    ellipseArc: AcGeEllipseArc3d,
+    traits: AcGiSubEntityTraits,
+    ctx: AcSvgStyleContext
+  ) {
     super()
-    if (ellipseArc.closed) {
-      // TODO: Considering rotation
-      this.svg = `\n<ellipse cx="${ellipseArc.center.x}" cy="${ellipseArc.center.y}" rx="${ellipseArc.majorAxisRadius}" ry="${ellipseArc.minorAxisRadius}"/>`
-    } else {
-      const start = ellipseArc.startPoint
-      const end = ellipseArc.endPoint
+    const points = ellipseArc.getPoints(ARC_SEGMENTS)
+    const d = points.reduce((acc, point, i) => {
+      acc += i === 0 ? 'M' : 'L'
+      acc += `${point.x},${point.y}`
+      return acc
+    }, '')
 
-      // Calculate sweepFlag
-      const xAxisRotation = AcGeMathUtil.radToDeg(
-        ellipseArc.majorAxis.angleTo(AcGeVector3d.X_AXIS)
-      )
-      const sweepFlag = ellipseArc.clockwise ? 0 : 1
-      this.svg = `\n<path d="M${start.x},${start.y} A${ellipseArc.majorAxisRadius},${ellipseArc.minorAxisRadius} ${xAxisRotation} ${ellipseArc.isLargeArc},${sweepFlag} ${end.x},${end.y}"/>`
+    if (d) {
+      const attrs = {
+        d,
+        ...AcSvgStyleUtil.strokeAttributes(traits, ctx)
+      }
+      this.svg = AcSvgStyleUtil.tag('path', attrs)
     }
+
     const box = ellipseArc.box
     this._box.min.copy(box.min)
     this._box.max.copy(box.max)

@@ -1,4 +1,5 @@
 import type { AcApContext } from '@mlightcad/cad-simple-viewer'
+import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 import { AcSvgRenderer } from '@mlightcad/svg-renderer'
 import { jsPDF } from 'jspdf'
 import { svg2pdf } from 'svg2pdf.js'
@@ -12,22 +13,35 @@ import { svg2pdf } from 'svg2pdf.js'
 export class AcApPdfConvertor {
   /**
    * Renders the current drawing to PDF and triggers a browser download.
-   *
-   * @param context - Application context for the drawing to export
    */
   async convert(context: AcApContext) {
-    const svgString = this.buildSvg(context)
+    const svgString = await this.buildSvg(context)
     await this.downloadAsPdf(svgString)
   }
 
-  private buildSvg(context: AcApContext): string {
+  private async buildSvg(context: AcApContext): Promise<string> {
     const entities =
       context.doc.database.tables.blockTable.modelSpace.newIterator()
     const renderer = new AcSvgRenderer()
+    this.configureRenderer(renderer, context)
+
     for (const entity of entities) {
       entity.worldDraw(renderer)
     }
-    return renderer.export()
+    return renderer.exportAsync()
+  }
+
+  private configureRenderer(renderer: AcSvgRenderer, context: AcApContext) {
+    const db = context.doc.database
+    renderer.ltscale = db.ltscale
+    renderer.celtscale = db.celtscale
+    renderer.showLineWeight = !!db.lwdisplay
+    renderer.setFontMapping(AcApSettingManager.instance.fontMapping)
+
+    const view = context.view as { backgroundColor?: number } | undefined
+    const bg = view?.backgroundColor ?? 0xffffff
+    renderer.currentBackgroundColor = bg
+    renderer.changeForeground(bg === 0 ? 0xffffff : 0x000000)
   }
 
   private async downloadAsPdf(svgString: string) {
