@@ -1,9 +1,14 @@
-import { AcGePoint3dLike } from '@mlightcad/data-model'
+import { AcGePoint3dLike, AcGiSubEntityTraits } from '@mlightcad/data-model'
 
 import { AcSvgEntity } from './AcSvgEntity'
+import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
 
 export class AcSvgLine extends AcSvgEntity {
-  constructor(points: AcGePoint3dLike[]) {
+  constructor(
+    points: AcGePoint3dLike[],
+    traits: AcGiSubEntityTraits,
+    ctx: AcSvgStyleContext
+  ) {
     super()
     const d = points.reduce(
       (acc: string, point: AcGePoint3dLike, i: number) => {
@@ -16,7 +21,11 @@ export class AcSvgLine extends AcSvgEntity {
     )
 
     if (d) {
-      this.svg = `<path d="${d}" />`
+      const attrs = {
+        d,
+        ...AcSvgStyleUtil.strokeAttributes(traits, ctx)
+      }
+      this.svg = AcSvgStyleUtil.tag('path', attrs)
     }
   }
 }

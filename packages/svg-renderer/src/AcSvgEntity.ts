@@ -5,6 +5,8 @@ import {
   AcGiEntity
 } from '@mlightcad/data-model'
 
+import { AcSvgMatrixUtil } from './AcSvgMatrixUtil'
+
 /**
  * Represent the display object of one drawing entity.
  */
@@ -15,7 +17,8 @@ export class AcSvgEntity implements AcGiEntity {
   private _visible: boolean
   private _userData: object
   protected _box: AcGeBox2d
-  private _svg: string
+  protected _localSvg: string
+  private _matrix?: AcGeMatrix3d
   protected _basePoint?: AcGePoint3d
 
   constructor() {
@@ -25,11 +28,11 @@ export class AcSvgEntity implements AcGiEntity {
     this._visible = true
     this._userData = {}
     this._box = new AcGeBox2d()
-    this._svg = ''
+    this._localSvg = ''
   }
 
   /**
-   * The bounding box of this object
+   * The bounding box of this object in world coordinates (includes transforms).
    */
   get box() {
     return this._box
@@ -38,16 +41,6 @@ export class AcSvgEntity implements AcGiEntity {
     this._box.copy(value)
   }
 
-  /**
-   * JavaScript (and WebGL) use 64‑bit floating point numbers for CPU-side calculations,
-   * but GPU shaders typically use 32‑bit floats. A 32-bit float has ~7.2 decimal digits
-   * of precision. If passing 64-bit floating vertices data to GPU directly, it will
-   * destroy number preciesion.
-   *
-   * So we adopt a simpler but effective version of the “origin-shift” idea. Recompute
-   * geometry using re-centered coordinates and apply offset to its position. The base
-   * point is extractly offset value.
-   */
   get basePoint() {
     return this._basePoint
   }
@@ -62,18 +55,36 @@ export class AcSvgEntity implements AcGiEntity {
   }
 
   /**
-   * SVG string of this entity
+   * SVG markup including any transforms applied via {@link applyMatrix}.
    */
   get svg() {
-    return this._svg
+    return this.renderSvg()
   }
   set svg(value: string) {
-    this._svg = value
+    this._localSvg = value
   }
 
   /**
-   * @inheritdoc
+   * Local SVG markup without wrapping transforms.
    */
+  getLocalSvg(): string {
+    return this._localSvg
+  }
+
+  /**
+   * Final SVG fragment with accumulated transforms applied.
+   */
+  renderSvg(): string {
+    if (!this._localSvg) {
+      return ''
+    }
+    if (!this._matrix) {
+      return this._localSvg
+    }
+    const transform = AcSvgMatrixUtil.toSvgTransform(this._matrix)
+    return `<g transform="${transform}">\n${this._localSvg}\n</g>`
+  }
+
   get objectId() {
     return this._objectId
   }
@@ -81,9 +92,6 @@ export class AcSvgEntity implements AcGiEntity {
     this._objectId = value
   }
 
-  /**
-   * @inheritdoc
-   */
   get ownerId() {
     return this._ownerId
   }
@@ -91,9 +99,6 @@ export class AcSvgEntity implements AcGiEntity {
     this._ownerId = value
   }
 
-  /**
-   * @inheritdoc
-   */
   get layerName() {
     return this._layerName
   }
@@ -101,9 +106,6 @@ export class AcSvgEntity implements AcGiEntity {
     this._layerName = value
   }
 
-  /**
-   * @inheritdoc
-   */
   get visible() {
     return this._visible
   }
@@ -111,9 +113,6 @@ export class AcSvgEntity implements AcGiEntity {
     this._visible = value
   }
 
-  /**
-   * @inheritdoc
-   */
   get userData(): object {
     return this._userData
   }
@@ -124,49 +123,35 @@ export class AcSvgEntity implements AcGiEntity {
   /**
    * @inheritdoc
    */
-  applyMatrix(_matrix: AcGeMatrix3d) {
-    // Do nothing
+  applyMatrix(matrix: AcGeMatrix3d) {
+    if (!this._matrix) {
+      this._matrix = matrix.clone()
+    } else {
+      this._matrix = matrix.clone().multiply(this._matrix)
+    }
+    AcSvgMatrixUtil.transformBox(this._box, matrix)
   }
 
-  /**
-   * @inheritdoc
-   */
   recomputeBoundingBox() {
-    // Do nothing
+    // Bounding boxes are maintained during draw and applyMatrix.
   }
 
-  /**
-   * @inheritdoc
-   */
   highlight() {
     // Do nothing
   }
 
-  /**
-   * @inheritdoc
-   */
   unhighlight() {
     // Do nothing
   }
 
-  /**
-   * @inheritdoc
-   */
   fastDeepClone() {
-    // TODO: Implement it correctly
     return this
   }
 
-  /**
-   * @inheritdoc
-   */
   addChild(_entity: AcGiEntity) {
     // Do nothing for now
   }
 
-  /**
-   * @inheritdoc
-   */
   bakeTransformToChildren() {
     // Do nothing for now
   }

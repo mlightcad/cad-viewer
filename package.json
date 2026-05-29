@@ -43,6 +43,7 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "@parcel/watcher",
+      "core-js",
       "esbuild",
       "nx",
       "unrs-resolver",

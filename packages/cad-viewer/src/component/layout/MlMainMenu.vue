@@ -25,6 +25,9 @@
         <el-dropdown-item command="ExportPdf">{{
           t('main.mainMenu.exportPdf')
         }}</el-dropdown-item>
+        <el-dropdown-item command="ExportSvg">{{
+          t('main.mainMenu.exportSvg')
+        }}</el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
@@ -60,6 +63,8 @@ const handleCommand = async (command: string) => {
   } else if (command === 'ExportPdf') {
     await AcApDocManager.instance.pluginManager.loadByTrigger('cpdf')
     AcApDocManager.instance.sendStringToExecute('cpdf')
+  } else if (command === 'ExportSvg') {
+    AcApDocManager.instance.sendStringToExecute('csvg')
   } else if (command === 'QNew') {
     const cmd = new AcApQNewCmd()
     cmd.trigger(AcApDocManager.instance.context)

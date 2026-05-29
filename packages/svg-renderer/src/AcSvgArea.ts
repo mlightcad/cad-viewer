@@ -1,6 +1,7 @@
-import { AcGeArea2d } from '@mlightcad/data-model'
+import { AcGeArea2d, AcGiSubEntityTraits } from '@mlightcad/data-model'
 
 import { AcSvgEntity } from './AcSvgEntity'
+import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
 
 /** Segments per arc when approximating curves in area loops. */
 const ARC_SEGMENTS = 32
@@ -10,7 +11,11 @@ const ARC_SEGMENTS = 32
  * Uses even-odd fill rule so inner loops (holes) render as transparent cutouts.
  */
 export class AcSvgArea extends AcSvgEntity {
-  constructor(area: AcGeArea2d) {
+  constructor(
+    area: AcGeArea2d,
+    traits: AcGiSubEntityTraits,
+    ctx: AcSvgStyleContext
+  ) {
     super()
     const loopPointArrays = area.getPoints(ARC_SEGMENTS)
     let d = ''
@@ -28,6 +33,13 @@ export class AcSvgArea extends AcSvgEntity {
       }
     }
 
-    this.svg = `<path d="${d}" fill-rule="evenodd"/>`
+    if (d) {
+      const attrs = {
+        d,
+        'fill-rule': 'evenodd',
+        ...AcSvgStyleUtil.fillAttributes(traits, ctx)
+      }
+      this.svg = AcSvgStyleUtil.tag('path', attrs)
+    }
   }
 }

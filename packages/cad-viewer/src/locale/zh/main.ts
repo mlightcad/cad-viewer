@@ -6,6 +6,7 @@ export default {
     export: '导出为DXF',
     exportHtml: '导出为 HTML',
     exportPdf: '导出为PDF',
+    exportSvg: '导出为 SVG',
     exportImage: '导出图片'
   },
   ribbon: {

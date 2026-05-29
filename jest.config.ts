@@ -5,8 +5,19 @@ const config: Config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest'
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.js$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          allowJs: true
+        }
+      }
+    ]
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!.*mtext-parser)'
+  ],
   testPathIgnorePatterns: ['packages/dxf-json/', '/e2e/'],
   moduleNameMapper: {
     '^lodash-es$': 'lodash',

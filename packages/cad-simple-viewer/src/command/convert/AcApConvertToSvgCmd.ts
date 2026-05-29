@@ -31,6 +31,6 @@ export class AcApConvertToSvgCmd extends AcEdCommand {
    */
   async execute(_context: AcApContext) {
     const converter = new AcApSvgConvertor()
-    converter.convert()
+    await converter.convert()
   }
 }
