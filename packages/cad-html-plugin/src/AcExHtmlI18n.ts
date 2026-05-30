@@ -168,7 +168,7 @@ export function resolveAcExHtmlLocale(
  * Chooses the initial locale for the offline viewer using, in order:
  * `localStorage`, snapshot preference, `<html lang>`, and `navigator.language`.
  *
- * @param preferred - Optional locale from {@link AcExSnapshotV1.meta.locale}.
+ * @param preferred - Optional locale from {@link AcExSnapshot.meta.locale}.
  * @returns Resolved locale, defaulting to `'en'`.
  */
 export function detectAcExHtmlLocale(

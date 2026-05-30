@@ -66,7 +66,11 @@ describe('AcExPatternSnapshot', () => {
 
   it('computes cumulative line distances for segment pairs', () => {
     expect(
-      computeLineDistancesForSegments([0, 0, 0, 3, 4, 0, 3, 4, 0, 6, 8, 0])
+      Array.from(
+        computeLineDistancesForSegments(
+          Float32Array.from([0, 0, 0, 3, 4, 0, 3, 4, 0, 6, 8, 0])
+        )
+      )
     ).toEqual([0, 5, 5, 10])
   })
 
@@ -97,7 +101,7 @@ describe('AcExPatternSnapshot', () => {
       layer: '0',
       color: 0xff0000,
       offset: [0, 0, 0],
-      positions: [0, 0, 0, 1, 0, 0],
+      positions: Float32Array.from([0, 0, 0, 1, 0, 0]),
       linePattern: {
         pattern: [4, -2],
         patternLength: 6,
@@ -110,7 +114,7 @@ describe('AcExPatternSnapshot', () => {
       layer: '0',
       color: 0x00ff00,
       offset: [0, 0, 0],
-      positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+      positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
       hatchPattern: {
         patternAngle: 0,
         patternLines: [
@@ -133,7 +137,7 @@ describe('AcExPatternSnapshot', () => {
       layer: '0',
       color: 0xff0000,
       offset: [0, 0, 0],
-      positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+      positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
       gradientFill: {
         startColor: 0xff0000,
         endColor: 0x0000ff,
@@ -141,7 +145,7 @@ describe('AcExPatternSnapshot', () => {
         shift: 0.1,
         gradientType: 0
       },
-      gradientPositions: [-1, 0, 1, 0, 0, 1]
+      gradientPositions: Float32Array.from([-1, 0, 1, 0, 0, 1])
     })
     expect(gradientMaterial).toBeInstanceOf(THREE.ShaderMaterial)
     expect((gradientMaterial as THREE.ShaderMaterial).vertexShader).toContain(

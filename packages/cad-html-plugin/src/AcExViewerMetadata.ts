@@ -24,7 +24,7 @@ export interface AcExViewerMetadata {
  *
  * @param database - Open `AcDbDatabase` to read sysvars and extents from.
  * @param options - Optional title override and background color (default `0x000000`).
- * @returns Metadata object suitable for {@link AcExSnapshotV1.meta}.
+ * @returns Metadata object suitable for {@link AcExSnapshot.meta}.
  */
 export function buildViewerMetadata(
   database: AcDbDatabase,

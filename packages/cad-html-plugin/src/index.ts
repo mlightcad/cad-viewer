@@ -8,6 +8,11 @@
 export * from './AcExSnapshotTypes'
 /** Gzip/base64 encode and decode for embedded snapshot payloads. */
 export * from './AcExSnapshotCodec'
+/** Binary snapshot serialization used by {@link encodeSnapshot}. */
+export {
+  decodeSnapshotBinary,
+  encodeSnapshotBinary
+} from './AcExSnapshotBinaryCodec'
 /** THREE.js scene traversal helpers that produce export batches. */
 export * from './AcExSceneBatchCollector'
 /** Database metadata extraction for snapshot `meta` fields. */

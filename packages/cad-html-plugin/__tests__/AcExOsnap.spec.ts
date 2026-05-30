@@ -14,6 +14,14 @@ describe('mergeConnectedSegments', () => {
   })
 })
 
+function f32(values: number[]): Float32Array {
+  return Float32Array.from(values)
+}
+
+function u32(values: number[]): Uint32Array {
+  return Uint32Array.from(values)
+}
+
 describe('AcExOsnapIndex', () => {
   const layout = {
     btrId: 'model',
@@ -24,7 +32,7 @@ describe('AcExOsnapIndex', () => {
         layer: '0',
         color: 0xffffff,
         offset: [0, 0, 0] as [number, number, number],
-        positions: [0, 0, 0, 10, 0, 0, 10, 10, 0, 0, 10, 0]
+        positions: f32([0, 0, 0, 10, 0, 0, 10, 10, 0, 0, 10, 0])
       }
     ],
     meshBatches: []
@@ -106,8 +114,8 @@ describe('AcExOsnapIndex', () => {
       layer: '0',
       color: 0xffffff,
       offset: [0, 0, 0] as [number, number, number],
-      positions: [0, 0, 0, 5, 0, 0, 10, 0, 0],
-      indices: [0, 1, 1, 2],
+      positions: f32([0, 0, 0, 5, 0, 0, 10, 0, 0]),
+      indices: u32([0, 1, 1, 2]),
       linePattern: {
         pattern: [4, -2],
         patternLength: 6,
@@ -136,8 +144,8 @@ describe('AcExOsnapIndex', () => {
           layer: '0',
           color: 0xffffff,
           offset: [0, 0, 0] as [number, number, number],
-          positions: [0, 0, 0, 2, 0, 0, 4, 0, 0],
-          indices: [0, 1, 1, 2],
+          positions: f32([0, 0, 0, 2, 0, 0, 4, 0, 0]),
+          indices: u32([0, 1, 1, 2]),
           linePattern: {
             pattern: [1, -1],
             patternLength: 2,

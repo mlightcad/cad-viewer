@@ -7,7 +7,7 @@ import {
 
 import { AcApHtmlSnapshotBuilder } from './AcApHtmlSnapshotBuilder'
 import { packHtml } from './AcExHtmlPackager'
-import type { AcExSnapshotV1 } from './AcExSnapshotTypes'
+import type { AcExSnapshot } from './AcExSnapshotTypes'
 
 /**
  * Relative URL of the bundled offline viewer script when no override is
@@ -19,7 +19,7 @@ const DEFAULT_RUNTIME_URL = './viewer-runtime.iife.js'
  * Orchestrates export of the active drawing to a downloadable HTML file.
  *
  * Workflow:
- * 1. Build a display-only {@link AcExSnapshotV1} from the current scene and database.
+ * 1. Build a display-only {@link AcExSnapshot} from the current scene and database.
  * 2. Fetch the IIFE viewer runtime (inlined into the HTML).
  * 3. Package snapshot + runtime via `packHtml` and trigger a browser download.
  *
@@ -94,7 +94,7 @@ export class AcApHtmlConvertor {
    *   include the `.html` extension).
    * @returns Resolves when packaging and download complete.
    */
-  async packSnapshot(snapshot: AcExSnapshotV1, downloadName: string) {
+  async packSnapshot(snapshot: AcExSnapshot, downloadName: string) {
     const docManager = AcApDocManager.instance
     docManager.showBusyIndicator()
 

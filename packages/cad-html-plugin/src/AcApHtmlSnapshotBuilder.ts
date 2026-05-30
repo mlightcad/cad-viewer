@@ -13,7 +13,7 @@ import {
   type AcExLayoutSnapshot,
   type AcExLineBatch,
   type AcExMeshBatch,
-  type AcExSnapshotV1
+  type AcExSnapshot
 } from './AcExSnapshotTypes'
 import { buildViewerMetadata } from './AcExViewerMetadata'
 
@@ -39,7 +39,7 @@ export interface AcApHtmlSnapshotBuilderOptions {
 }
 
 /**
- * Serializes the live Three.js scene into a versioned {@link AcExSnapshotV1}.
+ * Serializes the live Three.js scene into a versioned {@link AcExSnapshot}.
  *
  * The snapshot contains layer visibility, per-layout line/mesh batches, and
  * viewer metadata (extents, units, background). It is display-only: no DXF/DWG
@@ -60,7 +60,7 @@ export class AcApHtmlSnapshotBuilder {
     scene: AcTrScene,
     database: AcDbDatabase,
     options: AcApHtmlSnapshotBuilderOptions = {}
-  ): AcExSnapshotV1 {
+  ): AcExSnapshot {
     return this.buildSync(scene, database, options)
   }
 
@@ -79,7 +79,7 @@ export class AcApHtmlSnapshotBuilder {
     scene: AcTrScene,
     database: AcDbDatabase,
     options: AcApHtmlSnapshotBuilderOptions = {}
-  ): Promise<AcExSnapshotV1> {
+  ): Promise<AcExSnapshot> {
     await yieldToMain()
 
     const meta = buildViewerMetadata(database, {
@@ -138,7 +138,7 @@ export class AcApHtmlSnapshotBuilder {
     scene: AcTrScene,
     database: AcDbDatabase,
     options: AcApHtmlSnapshotBuilderOptions
-  ): AcExSnapshotV1 {
+  ): AcExSnapshot {
     const meta = buildViewerMetadata(database, {
       title: options.title,
       background: options.background
@@ -183,7 +183,7 @@ export class AcApHtmlSnapshotBuilder {
  *
  * @param meta - Extents, units, and background from {@link buildViewerMetadata}.
  * @param options - User overrides (title is taken from `meta`; locale from options).
- * @returns The `meta` block stored on {@link AcExSnapshotV1}.
+ * @returns The `meta` block stored on {@link AcExSnapshot}.
  */
 function buildSnapshotMeta(
   meta: ReturnType<typeof buildViewerMetadata>,
