@@ -128,7 +128,9 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    const dyValues = [...localSvg.matchAll(/\sdy="([^"]+)"/g)].map(match => Number(match[1]))
+    const dyValues = [...localSvg.matchAll(/\sdy="([^"]+)"/g)].map(match =>
+      Number(match[1])
+    )
     expect(dyValues.filter(value => value > 0).length).toBeGreaterThan(0)
     expect(localSvg).toMatch(/<tspan[^>]*x="0"[^>]*dy="0"/)
     expect(localSvg).toMatch(/<tspan[^>]*x="0"[^>]*dy="14\.1/)
@@ -147,7 +149,9 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    const dyValues = [...localSvg.matchAll(/\sdy="([^"]+)"/g)].map(match => Number(match[1]))
+    const dyValues = [...localSvg.matchAll(/\sdy="([^"]+)"/g)].map(match =>
+      Number(match[1])
+    )
     expect(dyValues.filter(value => value > 0).length).toBeGreaterThan(0)
   })
 
@@ -164,7 +168,9 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    const dyValues = [...localSvg.matchAll(/\sdy="([^"]+)"/g)].map(match => Number(match[1]))
+    const dyValues = [...localSvg.matchAll(/\sdy="([^"]+)"/g)].map(match =>
+      Number(match[1])
+    )
     expect(dyValues.filter(value => value > 0).length).toBeGreaterThan(0)
   })
 
@@ -253,7 +259,9 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    const yValues = [...localSvg.matchAll(/\sy="([^"]+)"/g)].map(match => Number(match[1]))
+    const yValues = [...localSvg.matchAll(/\sy="([^"]+)"/g)].map(match =>
+      Number(match[1])
+    )
     expect(yValues.length).toBeGreaterThan(1)
     expect(yValues[0]).toBeGreaterThan(yValues[yValues.length - 1])
   })
@@ -286,7 +294,9 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    expect(localSvg).toMatch(/<g transform="[^"]*translate\(1,2\)[^"]*scale\(1,-1\)"/)
+    expect(localSvg).toMatch(
+      /<g transform="[^"]*translate\(1,2\)[^"]*scale\(1,-1\)"/
+    )
     expect(localSvg).toContain('<text')
   })
 
@@ -297,7 +307,9 @@ describe('buildSvgMText', () => {
 
   it('honours custom font mapping overrides', () => {
     setSvgFontMapping({ customcad: 'Custom Font, sans-serif' })
-    expect(resolveSvgFontFamily('customcad.shx')).toBe('Custom Font, sans-serif')
+    expect(resolveSvgFontFamily('customcad.shx')).toBe(
+      'Custom Font, sans-serif'
+    )
     setSvgFontMapping({})
   })
 

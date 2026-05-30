@@ -62,12 +62,40 @@ export function createGradientHatchShaderMaterial(
     GradientTypes[(gradient.name || 'LINEAR').trim().toUpperCase()] ??
     AcTrGradientType.Linear
 
-  const uniforms = {
-    u_startColor: { value: startColor },
-    u_endColor: { value: endColor },
-    u_angle: { value: gradient.angle ?? 0 },
-    u_shift: { value: gradient.shift ?? 0 },
-    u_gradientType: { value: type }
+  return createGradientHatchShaderMaterialFromUniforms(
+    {
+      startColor: startColor.getHex(),
+      endColor: endColor.getHex(),
+      angle: gradient.angle ?? 0,
+      shift: gradient.shift ?? 0,
+      gradientType: type
+    },
+    side
+  )
+}
+
+export interface AcTrGradientFillUniforms {
+  startColor: number
+  endColor: number
+  angle: number
+  shift: number
+  gradientType: number
+}
+
+/**
+ * Creates a gradient hatch shader from pre-resolved uniform values.
+ * Used by HTML export playback where gradient data is serialized directly.
+ */
+export function createGradientHatchShaderMaterialFromUniforms(
+  uniforms: AcTrGradientFillUniforms,
+  side: THREE.Side = THREE.FrontSide
+): THREE.Material {
+  const materialUniforms = {
+    u_startColor: { value: new THREE.Color(uniforms.startColor) },
+    u_endColor: { value: new THREE.Color(uniforms.endColor) },
+    u_angle: { value: uniforms.angle },
+    u_shift: { value: uniforms.shift },
+    u_gradientType: { value: uniforms.gradientType }
   }
 
   const vertexShader = /* glsl */ `
@@ -155,7 +183,7 @@ export function createGradientHatchShaderMaterial(
     }`
 
   return new THREE.ShaderMaterial({
-    uniforms,
+    uniforms: materialUniforms,
     vertexShader,
     fragmentShader,
     side

@@ -8,8 +8,18 @@ import { computeLayerExtentsMap } from './AcExLayerExtents'
 import { AcExMeasureController, type AcExMeasureMode } from './AcExMeasurement'
 import { AcExOsnapIndex } from './AcExOsnap'
 import { AcExOsnapMarker } from './AcExOsnapMarker'
+import {
+  acexCameraZoomUniform,
+  createViewerLineMaterial,
+  createViewerMeshMaterial
+} from './AcExPatternSnapshot'
 import { decodeSnapshot } from './AcExSnapshotCodec'
-import type { AcExExtents, AcExSnapshotV1 } from './AcExSnapshotTypes'
+import type {
+  AcExExtents,
+  AcExLineBatch,
+  AcExMeshBatch,
+  AcExSnapshotV1
+} from './AcExSnapshotTypes'
 
 /** Matches {@link AcTrBaseView} orthographic half-height in world units. */
 const ACEX_CAMERA_FRUSTUM = 400
@@ -140,6 +150,7 @@ function startViewer(): void {
     camera.top = ACEX_CAMERA_FRUSTUM
     camera.bottom = -ACEX_CAMERA_FRUSTUM
     camera.updateProjectionMatrix()
+    acexCameraZoomUniform.value = camera.zoom
     controls.update()
   }
 
@@ -151,6 +162,7 @@ function startViewer(): void {
     controls.target.copy(target)
     if (zoom != null) camera.zoom = zoom
     camera.updateProjectionMatrix()
+    acexCameraZoomUniform.value = camera.zoom
     controls.update()
   }
 
@@ -510,12 +522,7 @@ function setupLayerPanel(
   }
 }
 
-function createLineObject(batch: {
-  color: number
-  offset: [number, number, number]
-  positions: number[]
-  indices?: number[]
-}): THREE.LineSegments | null {
+function createLineObject(batch: AcExLineBatch): THREE.LineSegments | null {
   if (batch.positions.length < 6) return null
   const geometry = new THREE.BufferGeometry()
   const positions = new Float32Array(batch.positions.length)
@@ -529,7 +536,17 @@ function createLineObject(batch: {
   if (batch.indices && batch.indices.length > 0) {
     geometry.setIndex(batch.indices)
   }
-  const material = new THREE.LineBasicMaterial({ color: batch.color })
+  if (
+    batch.linePattern &&
+    batch.lineDistances &&
+    batch.lineDistances.length > 0
+  ) {
+    geometry.setAttribute(
+      'lineDistance',
+      new THREE.Float32BufferAttribute(batch.lineDistances, 1)
+    )
+  }
+  const material = createViewerLineMaterial(batch)
   return new THREE.LineSegments(geometry, material)
 }
 
@@ -583,12 +600,7 @@ function setupMeasurePointerInput(
   })
 }
 
-function createMeshObject(batch: {
-  color: number
-  offset: [number, number, number]
-  positions: number[]
-  indices?: number[]
-}): THREE.Mesh | null {
+function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
   if (
     batch.positions.length < 9 &&
     (!batch.indices || batch.indices.length < 3)
@@ -609,10 +621,17 @@ function createMeshObject(batch: {
   } else if (positions.length >= 9) {
     geometry.setIndex([0, 1, 2])
   }
-  const material = new THREE.MeshBasicMaterial({
-    color: batch.color,
-    side: THREE.DoubleSide
-  })
+  if (
+    batch.gradientFill &&
+    batch.gradientPositions &&
+    batch.gradientPositions.length >= 2
+  ) {
+    geometry.setAttribute(
+      'gradientPosition',
+      new THREE.Float32BufferAttribute(batch.gradientPositions, 2)
+    )
+  }
+  const material = createViewerMeshMaterial(batch)
   return new THREE.Mesh(geometry, material)
 }
 

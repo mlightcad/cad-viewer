@@ -68,12 +68,21 @@ export interface AcTrEntityUserData
 }
 
 /**
+ * When an unbatched drawable is cloned into world space, stores the source
+ * world matrix so HTML export can re-align hatch pattern coordinates.
+ */
+export type AcTrBakedWorldMatrixUserData = {
+  bakedWorldMatrix?: number[]
+}
+
+/**
  * Leaf line/mesh/point objects produced by entity conversion, prior to batching.
  */
 export type AcTrSceneDrawableUserData = AcTrPickableObjectUserData &
   AcTrStyledDrawableUserData &
   AcTrRteObjectUserData &
-  AcTrNoBatchUserData
+  AcTrNoBatchUserData &
+  AcTrBakedWorldMatrixUserData
 
 export interface AcTrHighlightUserData {
   objectId?: string

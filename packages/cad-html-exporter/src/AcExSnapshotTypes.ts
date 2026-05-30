@@ -65,6 +65,45 @@ export interface AcExLayerSnapshot {
 }
 
 /**
+ * Pre-scaled linetype dash/gap sequence stored on a line batch.
+ * Values match the `pattern` / `patternLength` uniforms on the export-time shader.
+ */
+export interface AcExLinePattern {
+  /** Scaled dash and gap lengths for the linetype shader. */
+  pattern: number[]
+  /** Total repeat length of {@link AcExLinePattern.pattern}. */
+  patternLength: number
+  /** Viewport scale factor paired with {@link AcExLinePattern.pattern}. */
+  viewportScale: number
+}
+
+/**
+ * One hatch pattern definition line serialized for offline playback.
+ */
+export interface AcExHatchPatternLine {
+  /** Pattern line angle in radians. */
+  angle: number
+  /** Pattern origin in hatch object space. */
+  base: [number, number]
+  /** Spacing offset between repeated pattern lines. */
+  offset: [number, number]
+  /** Dash and gap lengths for this pattern line. */
+  dashLengths: number[]
+  /** Total repeat length of {@link AcExHatchPatternLine.dashLengths}. */
+  patternLength: number
+}
+
+/**
+ * Hatch fill pattern serialized for offline playback.
+ */
+export interface AcExHatchPattern {
+  /** Hatch-wide rotation applied before individual pattern lines. */
+  patternAngle: number
+  /** One or more pattern definition lines. */
+  patternLines: AcExHatchPatternLine[]
+}
+
+/**
  * One packed line batch suitable for `THREE.LineSegments`
  * (pairs of vertices interpreted as line segments).
  */
@@ -85,6 +124,29 @@ export interface AcExLineBatch {
    * When omitted, positions are consumed sequentially as segment pairs.
    */
   indices?: number[]
+  /** Optional linetype pattern for dashed/dotted lines. */
+  linePattern?: AcExLinePattern
+  /**
+   * Per-vertex cumulative distance along the polyline, required when
+   * {@link AcExLineBatch.linePattern} is set.
+   */
+  lineDistances?: number[]
+}
+
+/**
+ * Gradient hatch fill serialized for offline playback.
+ */
+export interface AcExGradientFill {
+  /** Gradient start color as 24-bit RGB hex. */
+  startColor: number
+  /** Gradient end color as 24-bit RGB hex. */
+  endColor: number
+  /** Gradient rotation in radians. */
+  angle: number
+  /** Gradient shift along the primary axis. */
+  shift: number
+  /** Gradient type enum matching {@link createGradientHatchShaderMaterial}. */
+  gradientType: number
 }
 
 /**
@@ -108,6 +170,17 @@ export interface AcExMeshBatch {
    * When omitted, a single triangle may be inferred from the first three vertices.
    */
   indices?: number[]
+  /** Optional hatch pattern for non-solid fills. */
+  hatchPattern?: AcExHatchPattern
+  /** Optional gradient fill parameters for gradient hatches. */
+  gradientFill?: AcExGradientFill
+  /**
+   * Normalized gradient coordinates per vertex `[x0, y0, x1, y1, …]`.
+   * Required when {@link AcExMeshBatch.gradientFill} is set.
+   */
+  gradientPositions?: number[]
+  /** Material side when a custom fill shader is used (`0` = front, `1` = back). */
+  side?: number
 }
 
 /**

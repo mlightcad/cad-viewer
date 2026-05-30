@@ -38,11 +38,31 @@ export class AcTrLinePatternShaders {
       }
     }
 
+    return this.createLineShaderMaterialFromScaledPattern(
+      ltypeElementLenArr,
+      totalLength,
+      color,
+      viewportScaleUniform,
+      cameraZoomUniform
+    )
+  }
+
+  /**
+   * Creates a linetype shader from pre-scaled pattern values.
+   * Used by HTML export playback where pattern uniforms are serialized directly.
+   */
+  static createLineShaderMaterialFromScaledPattern(
+    pattern: number[],
+    patternLength: number,
+    color: number,
+    viewportScaleUniform: number,
+    cameraZoomUniform: { value: number }
+  ): THREE.Material {
     const uniforms = THREE.UniformsUtils.merge([
       THREE.UniformsLib.common,
       {
-        pattern: { value: ltypeElementLenArr },
-        patternLength: { value: totalLength },
+        pattern: { value: pattern },
+        patternLength: { value: patternLength },
         u_color: { value: new THREE.Color(color) }
       }
     ])
