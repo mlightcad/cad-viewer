@@ -4,9 +4,10 @@ import { defineConfig, PluginOption } from 'vite'
 export default defineConfig({
   build: {
     outDir: 'dist',
+    emptyOutDir: true,
     lib: {
       entry: 'src/index.ts',
-      name: 'svg-renderer',
+      name: 'cad-svg-plugin',
       fileName: 'index'
     },
     minify: true

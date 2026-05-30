@@ -1,4 +1,4 @@
-# @mlightcad/svg-renderer
+# @mlightcad/cad-svg-plugin
 
 ## 1.5.1
 

@@ -5,6 +5,7 @@ import {
   AcApOpenDatabaseOptions,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
+import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin'
 import {
   AcDbSystemVariables,
   AcDbSysVarManager,
@@ -113,6 +114,7 @@ class CadViewerApp {
         const pluginManager = AcApDocManager.instance.pluginManager
         registerLazyHtmlPlugin(pluginManager)
         registerLazyPdfPlugin(pluginManager)
+        registerLazySvgPlugin(pluginManager)
 
         AcApDocManager.instance.events.documentActivated.addEventListener(
           args => {

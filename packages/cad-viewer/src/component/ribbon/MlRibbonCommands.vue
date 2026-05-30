@@ -1495,24 +1495,30 @@ const fileMenuItems = computed<FileMenuItemModel[]>(() => {
       label: t('main.mainMenu.drawingUnits')
     },
     {
-      id: 'Convert',
-      label: t('main.mainMenu.export')
-    },
-    {
-      id: 'ExportHtml',
-      label: t('main.mainMenu.exportHtml')
-    },
-    {
-      id: 'ExportPdf',
-      label: t('main.mainMenu.exportPdf')
-    },
-    {
-      id: 'ExportSvg',
-      label: t('main.mainMenu.exportSvg')
-    },
-    {
-      id: 'PngOut',
-      label: t('main.mainMenu.exportImage')
+      id: 'Export',
+      label: t('main.mainMenu.exportMenu'),
+      children: [
+        {
+          id: 'Convert',
+          label: t('main.mainMenu.export')
+        },
+        {
+          id: 'ExportHtml',
+          label: t('main.mainMenu.exportHtml')
+        },
+        {
+          id: 'ExportPdf',
+          label: t('main.mainMenu.exportPdf')
+        },
+        {
+          id: 'ExportSvg',
+          label: t('main.mainMenu.exportSvg')
+        },
+        {
+          id: 'PngOut',
+          label: t('main.mainMenu.exportImage')
+        }
+      ]
     }
   ]
 })

@@ -21,6 +21,6 @@ export class AcApExportHtmlCmd extends AcEdCommand {
    */
   async execute(context: AcApContext) {
     const converter = new AcApHtmlConvertor()
-    await converter.convert(context.doc.fileName)
+    await converter.convert(context.doc.fileName || context.doc.docTitle)
   }
 }
