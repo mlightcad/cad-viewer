@@ -140,8 +140,12 @@ function readMaterialStyle(material: THREE.Material): {
   const linePattern = extractLinePattern(material)
   const hatchPattern = extractHatchPattern(material)
   const gradientFill = extractGradientFill(material)
-  if (material instanceof THREE.ShaderMaterial) {
-    const shaderColor = material.uniforms.u_color?.value as
+  if (
+    material instanceof THREE.ShaderMaterial ||
+    material.type === 'ShaderMaterial'
+  ) {
+    const shaderMaterial = material as THREE.ShaderMaterial
+    const shaderColor = shaderMaterial.uniforms.u_color?.value as
       | THREE.Color
       | undefined
     if (shaderColor?.getHex) {

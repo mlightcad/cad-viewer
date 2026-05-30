@@ -232,8 +232,13 @@ export interface AcExSnapshot {
     title?: string
     /** ISO-8601 timestamp when the snapshot was created. */
     createdAt: string
-    /** Overall drawing extents for initial zoom-to-extents. */
+    /** Database header extents (`EXTMIN` / `EXTMAX`); not used for zoom-to-fit. */
     extents: AcExExtents
+    /**
+     * Batch-derived extents for the initially active layout, used by the
+     * offline viewer for zoom-to-fit instead of {@link AcExSnapshot.meta.extents}.
+     */
+    viewExtents?: AcExExtents
     /** Unit and formatting sysvars for measurement display. */
     units: AcExViewerUnits
     /** Canvas background color as 24-bit RGB hex. */

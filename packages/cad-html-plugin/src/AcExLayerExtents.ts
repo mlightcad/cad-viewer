@@ -1,6 +1,7 @@
 import { toWcsCoord } from './AcExBatchBuffers'
 import type {
   AcExExtents,
+  AcExLayoutSnapshot,
   AcExLineBatch,
   AcExMeshBatch
 } from './AcExSnapshotTypes'
@@ -94,6 +95,48 @@ export function toExtents(extents: AcExMutableExtents): AcExExtents | null {
     maxX: extents.maxX,
     maxY: extents.maxY
   }
+}
+
+/**
+ * Unions XY extents from every line and mesh batch in one layout.
+ *
+ * Used for initial zoom-to-fit in the offline viewer so hatch pattern shaders
+ * receive a realistic {@link acexCameraZoomUniform} instead of zooming to the
+ * often much larger database `EXTMIN`/`EXTMAX` header.
+ */
+export function computeLayoutExtents(
+  lineBatches: AcExLineBatch[],
+  meshBatches: AcExMeshBatch[]
+): AcExExtents | null {
+  const bucket = createEmptyExtents()
+  for (const batch of lineBatches) {
+    expandExtentsFromBatch(bucket, batch)
+  }
+  for (const batch of meshBatches) {
+    expandExtentsFromBatch(bucket, batch)
+  }
+  return toExtents(bucket)
+}
+
+/**
+ * Resolves zoom-to-fit extents for one layout snapshot.
+ *
+ * Prefers live batch geometry, then persisted {@link AcExSnapshot.meta.viewExtents},
+ * and only then the database header extents as a last resort.
+ */
+export function resolveLayoutViewExtents(
+  layout: Pick<AcExLayoutSnapshot, 'lineBatches' | 'meshBatches'>,
+  fallbackExtents?: AcExExtents
+): AcExExtents {
+  return (
+    computeLayoutExtents(layout.lineBatches, layout.meshBatches) ??
+    fallbackExtents ?? {
+      minX: 0,
+      minY: 0,
+      maxX: 1,
+      maxY: 1
+    }
+  )
 }
 
 /**
