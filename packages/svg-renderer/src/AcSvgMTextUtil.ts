@@ -111,9 +111,7 @@ function resolveWrapWidth(mtext: AcGiMTextData): number | null {
   return mtext.width
 }
 
-function resolveFlowMode(
-  drawingDirection?: AcGiMTextFlowDirection
-): FlowMode {
+function resolveFlowMode(drawingDirection?: AcGiMTextFlowDirection): FlowMode {
   switch (drawingDirection) {
     case AcGiMTextFlowDirection.RIGHT_TO_LEFT:
       return FlowMode.HorizontalRtl
@@ -383,13 +381,12 @@ class MTextSvgLayout {
           attrs.x = String(span.x)
           attrs.dy = isFirstLine ? '0' : String(this.lineAdvance)
           isFirstLine = false
-          expectedX = span.x + this.measureText(span.text, span.fontSize, span.tokenCtx)
-        } else if (
-          expectedX != null &&
-          Math.abs(span.x - expectedX) > 1e-6
-        ) {
+          expectedX =
+            span.x + this.measureText(span.text, span.fontSize, span.tokenCtx)
+        } else if (expectedX != null && Math.abs(span.x - expectedX) > 1e-6) {
           attrs.x = String(span.x)
-          expectedX = span.x + this.measureText(span.text, span.fontSize, span.tokenCtx)
+          expectedX =
+            span.x + this.measureText(span.text, span.fontSize, span.tokenCtx)
         } else {
           expectedX =
             (expectedX ?? span.x) +
@@ -471,10 +468,7 @@ class MTextSvgLayout {
     this.recomputeBoundsFromLines()
   }
 
-  private applyPropertyChange(
-    item: ChangedProperties,
-    tokenCtx: MTextContext
-  ) {
+  private applyPropertyChange(item: ChangedProperties, tokenCtx: MTextContext) {
     if (item.changes.paragraph?.align != null && this.currentLine) {
       this.currentLine.paragraphAlign = item.changes.paragraph.align
     }
@@ -519,11 +513,14 @@ class MTextSvgLayout {
       }
       const tokenCtx = line.spans[0]?.tokenCtx ?? new MTextContext()
       const contentWidth =
-        this.wrapWidth - this.paragraphLeft(tokenCtx) - this.rightMargin(tokenCtx)
+        this.wrapWidth -
+        this.paragraphLeft(tokenCtx) -
+        this.rightMargin(tokenCtx)
       let shift = 0
       switch (line.paragraphAlign) {
         case MTextParagraphAlignment.CENTER:
-          shift = line.columnLeft + contentWidth / 2 - (line.minX + line.maxX) / 2
+          shift =
+            line.columnLeft + contentWidth / 2 - (line.minX + line.maxX) / 2
           break
         case MTextParagraphAlignment.RIGHT:
           shift = line.columnLeft + contentWidth - line.maxX
@@ -633,10 +630,7 @@ class MTextSvgLayout {
     this.firstLineOfParagraph = false
   }
 
-  private emitStack(
-    data: [string, string, string],
-    tokenCtx: MTextContext
-  ) {
+  private emitStack(data: [string, string, string], tokenCtx: MTextContext) {
     const [numerator, denominator, divider] = data
     const start = this.currentPosition()
     const wasLineStart = this.isLineStart
@@ -766,7 +760,9 @@ class MTextSvgLayout {
 
   private resetLinePosition(tokenCtx: MTextContext) {
     const left = this.paragraphLeft(tokenCtx)
-    const indent = this.firstLineOfParagraph ? this.firstLineIndent(tokenCtx) : 0
+    const indent = this.firstLineOfParagraph
+      ? this.firstLineIndent(tokenCtx)
+      : 0
     const limits = this.lineLimits(tokenCtx)
 
     if (this.isHorizontalRtl()) {
@@ -827,9 +823,7 @@ class MTextSvgLayout {
       return Number.POSITIVE_INFINITY
     }
     return (
-      this.wrapWidth -
-      this.paragraphLeft(tokenCtx) -
-      this.rightMargin(tokenCtx)
+      this.wrapWidth - this.paragraphLeft(tokenCtx) - this.rightMargin(tokenCtx)
     )
   }
 
@@ -896,13 +890,19 @@ class MTextSvgLayout {
     const left = this.paragraphLeft(tokenCtx)
     const rightMargin = tokenCtx.paragraph.right * this.baseHeight
     const right =
-      this.wrapWidth != null ? left + this.wrapWidth - rightMargin : Number.POSITIVE_INFINITY
+      this.wrapWidth != null
+        ? left + this.wrapWidth - rightMargin
+        : Number.POSITIVE_INFINITY
     return { left, right }
   }
 
-  private verticalLimits(tokenCtx: MTextContext): { top: number; bottom: number } {
+  private verticalLimits(tokenCtx: MTextContext): {
+    top: number
+    bottom: number
+  } {
     if (this.isVerticalBtt()) {
-      const bottom = this.columnStartY - tokenCtx.paragraph.right * this.baseHeight
+      const bottom =
+        this.columnStartY - tokenCtx.paragraph.right * this.baseHeight
       const top =
         this.wrapWidth != null
           ? this.columnStartY - this.wrapWidth + this.firstLineIndent(tokenCtx)
@@ -912,7 +912,9 @@ class MTextSvgLayout {
     const top = this.columnStartY + this.firstLineIndent(tokenCtx)
     const bottom =
       this.wrapWidth != null
-        ? this.columnStartY + this.wrapWidth - tokenCtx.paragraph.right * this.baseHeight
+        ? this.columnStartY +
+          this.wrapWidth -
+          tokenCtx.paragraph.right * this.baseHeight
         : Number.POSITIVE_INFINITY
     return { top, bottom }
   }
@@ -1077,7 +1079,8 @@ class MTextSvgLayout {
     const widthFactor = this.resolveWidthFactor(tokenCtx)
     const tracking = this.resolveTracking(tokenCtx)
     if (tracking !== 1) {
-      attrs['letter-spacing'] = `${((tracking - 1) * fontSize * 0.25).toFixed(3)}`
+      attrs['letter-spacing'] =
+        `${((tracking - 1) * fontSize * 0.25).toFixed(3)}`
     }
 
     const oblique = tokenCtx.oblique
@@ -1138,9 +1141,7 @@ function resolveMTextFill(
   if (typeof rgb === 'number') {
     return AcSvgStyleUtil.rgbToHex(rgb)
   }
-  return AcSvgStyleUtil.rgbToHex(
-    AcSvgStyleUtil.resolveRgb(traits, ctx, 'text')
-  )
+  return AcSvgStyleUtil.rgbToHex(AcSvgStyleUtil.resolveRgb(traits, ctx, 'text'))
 }
 
 function escapeXml(s: string): string {

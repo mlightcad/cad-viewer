@@ -85,13 +85,17 @@ export function resolveSvgFontFamily(
     return fallbackFamily
   }
 
-  return cadFontName.includes(',') ? cadFontName : `"${cadFontName}", ${fallbackFamily}`
+  return cadFontName.includes(',')
+    ? cadFontName
+    : `"${cadFontName}", ${fallbackFamily}`
 }
 
 /**
  * Returns a font-size multiplier for the given CAD font (default {@code 1}).
  */
-export function resolveSvgFontSizeScale(cadFontName: string | undefined): number {
+export function resolveSvgFontSizeScale(
+  cadFontName: string | undefined
+): number {
   if (!cadFontName?.trim()) {
     return 1
   }

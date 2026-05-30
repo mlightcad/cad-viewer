@@ -6,6 +6,15 @@ import {
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
+import {
+  computeLineDistancesForSegments,
+  exportLineDistanceSlice,
+  exportVertexAttributeSlice,
+  extractGradientFill,
+  extractHatchPattern,
+  extractLinePattern,
+  transformHatchPatternToWorldSpace
+} from './AcExPatternSnapshot'
 import type { AcExLineBatch, AcExMeshBatch } from './AcExSnapshotTypes'
 
 /** Slice of buffer geometry exported for HTML snapshot batches. */
@@ -133,17 +142,57 @@ export function exportBufferGeometrySlice(
 function readMaterialStyle(material: THREE.Material): {
   color: number
   layer: string
+  linePattern?: ReturnType<typeof extractLinePattern>
+  hatchPattern?: ReturnType<typeof extractHatchPattern>
+  gradientFill?: ReturnType<typeof extractGradientFill>
+  side?: number
 } {
   const meta = getMaterialMetadata(material)
   const layer = meta.layer ?? '0'
   const mat = material as THREE.MeshBasicMaterial & {
     color?: THREE.Color
   }
-  const color =
+  let color =
     mat.color != null
       ? mat.color.getHex()
       : ((meta as { color?: number }).color ?? 0xffffff)
-  return { color, layer }
+  const linePattern = extractLinePattern(material)
+  const hatchPattern = extractHatchPattern(material)
+  const gradientFill = extractGradientFill(material)
+  if (material instanceof THREE.ShaderMaterial) {
+    const shaderColor = material.uniforms.u_color?.value as
+      | THREE.Color
+      | undefined
+    if (shaderColor?.getHex) {
+      color = shaderColor.getHex()
+    } else if (gradientFill) {
+      color = gradientFill.startColor
+    }
+  }
+  const usesCustomFillShader = !!hatchPattern || !!gradientFill
+  return {
+    color,
+    layer,
+    linePattern,
+    hatchPattern,
+    gradientFill,
+    side: usesCustomFillShader ? material.side : undefined
+  }
+}
+
+function resolveExportedHatchPattern(
+  object: THREE.Object3D,
+  hatchPattern: ReturnType<typeof extractHatchPattern> | undefined
+): ReturnType<typeof extractHatchPattern> {
+  if (!hatchPattern) {
+    return undefined
+  }
+  const bakedWorldMatrix = (object.userData as { bakedWorldMatrix?: number[] })
+    .bakedWorldMatrix
+  if (!bakedWorldMatrix || bakedWorldMatrix.length < 16) {
+    return hatchPattern
+  }
+  return transformHatchPatternToWorldSpace(hatchPattern, bakedWorldMatrix)
 }
 
 function readWorldOffset(object: THREE.Object3D): [number, number, number] {
@@ -151,16 +200,47 @@ function readWorldOffset(object: THREE.Object3D): [number, number, number] {
   return [p.x, p.y, p.z]
 }
 
+function buildMeshBatch(
+  geometry: THREE.BufferGeometry,
+  material: THREE.Material,
+  object: THREE.Object3D,
+  slice: AcExBufferGeometrySlice
+): AcExMeshBatch {
+  const style = readMaterialStyle(material)
+  const hatchPattern = resolveExportedHatchPattern(object, style.hatchPattern)
+  const gradientPositions = style.gradientFill
+    ? exportVertexAttributeSlice(geometry, 'gradientPosition')
+    : undefined
+  return {
+    layer: style.layer,
+    color: style.color,
+    offset: readWorldOffset(object),
+    hatchPattern,
+    gradientFill: style.gradientFill,
+    gradientPositions,
+    side: style.side,
+    ...slice
+  }
+}
+
 function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
   const slice = exportBufferGeometrySlice(batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
   }
-  const { color, layer } = readMaterialStyle(batch.material as THREE.Material)
+  const { color, layer, linePattern } = readMaterialStyle(
+    batch.material as THREE.Material
+  )
+  const lineDistances = linePattern
+    ? (exportLineDistanceSlice(batch.geometry) ??
+      computeLineDistancesForSegments(slice.positions))
+    : undefined
   return {
     layer,
     color,
     offset: readWorldOffset(batch),
+    linePattern,
+    lineDistances,
     ...slice
   }
 }
@@ -170,13 +250,12 @@ function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
   if (slice.positions.length === 0) {
     return undefined
   }
-  const { color, layer } = readMaterialStyle(batch.material as THREE.Material)
-  return {
-    layer,
-    color,
-    offset: readWorldOffset(batch),
-    ...slice
-  }
+  return buildMeshBatch(
+    batch.geometry,
+    batch.material as THREE.Material,
+    batch,
+    slice
+  )
 }
 
 function exportBatchedPoint(
@@ -186,13 +265,12 @@ function exportBatchedPoint(
   if (slice.positions.length === 0) {
     return undefined
   }
-  const { color, layer } = readMaterialStyle(batch.material as THREE.Material)
-  return {
-    layer,
-    color,
-    offset: readWorldOffset(batch),
-    ...slice
-  }
+  return buildMeshBatch(
+    batch.geometry,
+    batch.material as THREE.Material,
+    batch,
+    slice
+  )
 }
 
 /**
@@ -232,11 +310,17 @@ export function collectBatchesFromObject3D(
       const slice = exportBufferGeometrySlice(child.geometry)
       if (slice.positions.length === 0) return
       const material = child.material as THREE.Material
-      const { color, layer } = readMaterialStyle(material)
+      const { color, layer, linePattern } = readMaterialStyle(material)
+      const lineDistances = linePattern
+        ? (exportLineDistanceSlice(child.geometry) ??
+          computeLineDistancesForSegments(slice.positions))
+        : undefined
       lineBatches.push({
         layer,
         color,
         offset: readWorldOffset(child),
+        linePattern,
+        lineDistances,
         ...slice
       })
     } else if (
@@ -245,14 +329,14 @@ export function collectBatchesFromObject3D(
     ) {
       const slice = exportBufferGeometrySlice(child.geometry)
       if (slice.positions.length === 0) return
-      const material = child.material as THREE.Material
-      const { color, layer } = readMaterialStyle(material)
-      meshBatches.push({
-        layer,
-        color,
-        offset: readWorldOffset(child),
-        ...slice
-      })
+      meshBatches.push(
+        buildMeshBatch(
+          child.geometry,
+          child.material as THREE.Material,
+          child,
+          slice
+        )
+      )
     }
   })
 

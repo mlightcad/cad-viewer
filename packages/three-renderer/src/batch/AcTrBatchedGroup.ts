@@ -911,8 +911,10 @@ export class AcTrBatchedGroup extends THREE.Group {
     if (this.hasMaterial(source) && this.hasMaterial(cloned)) {
       cloned.material = source.material
       const sourceDrawable = getSceneDrawableUserData(source)
-      getSceneDrawableUserData(cloned).styleMaterialId =
+      const clonedDrawable = getSceneDrawableUserData(cloned)
+      clonedDrawable.styleMaterialId =
         sourceDrawable.styleMaterialId ?? this.getMaterialId(source.material)
+      clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray()
     }
     cloned.position.set(0, 0, 0)
     cloned.rotation.set(0, 0, 0)

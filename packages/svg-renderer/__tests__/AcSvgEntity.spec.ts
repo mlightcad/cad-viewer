@@ -101,9 +101,9 @@ describe('AcSvgEntity transforms', () => {
     ])
 
     const exported = renderer.export()
-    expect(exported).toMatch(
-      /<rect[^>]*fill="#000000"[^>]*\/>/
+    expect(exported).toMatch(/<rect[^>]*fill="#000000"[^>]*\/>/)
+    expect(exported.indexOf('<rect')).toBeLessThan(
+      exported.indexOf('<g transform')
     )
-    expect(exported.indexOf('<rect')).toBeLessThan(exported.indexOf('<g transform'))
   })
 })

@@ -39,10 +39,7 @@ export class AcSvgStyleUtil {
     if (!traits.color.isForeground) {
       return traits.rgbColor
     }
-    if (
-      kind === 'fill' &&
-      this.isSolidBackgroundHatch(traits)
-    ) {
+    if (kind === 'fill' && this.isSolidBackgroundHatch(traits)) {
       return ctx.backgroundColor
     }
     return ctx.foregroundColor
@@ -154,9 +151,7 @@ export class AcSvgStyleUtil {
     return !style.definitionLines || style.definitionLines.length === 0
   }
 
-  private static resolveStrokeWidth(
-    lineWeight: AcGiLineWeight
-  ): number | null {
+  private static resolveStrokeWidth(lineWeight: AcGiLineWeight): number | null {
     if (lineWeight < 0) {
       return null
     }
