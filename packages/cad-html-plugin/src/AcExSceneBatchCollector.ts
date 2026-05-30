@@ -6,6 +6,7 @@ import {
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
+import { copyFloat32Range, copyUint32Range } from './AcExBatchBuffers'
 import {
   computeLineDistancesForSegments,
   exportLineDistanceSlice,
@@ -22,11 +23,11 @@ export interface AcExBufferGeometrySlice {
   /**
    * Flat vertex positions `[x0, y0, z0, …]` honoring the geometry draw range.
    */
-  positions: number[]
+  positions: Float32Array
   /**
    * Optional index buffer referencing vertices in {@link AcExBufferGeometrySlice.positions}.
    */
-  indices?: number[]
+  indices?: Uint32Array
 }
 
 /** Result of {@link collectBatchesFromObject3D}. */
@@ -71,26 +72,6 @@ function resolveRangeCount(
 }
 
 /**
- * Copies a contiguous numeric span from a typed array into a plain `number[]`.
- *
- * @internal
- */
-function copyNumberRange(
-  array: ArrayLike<number>,
-  start: number,
-  count: number
-): number[] {
-  if (count <= 0) {
-    return []
-  }
-  const result = new Array<number>(count)
-  for (let i = 0; i < count; i++) {
-    result[i] = array[start + i]!
-  }
-  return result
-}
-
-/**
  * Extracts the actively used portion of a batched buffer geometry,
  * respecting `geometry.drawRange` when set.
  *
@@ -104,7 +85,7 @@ export function exportBufferGeometrySlice(
     | THREE.BufferAttribute
     | undefined
   if (!positionAttr) {
-    return { positions: [] }
+    return { positions: new Float32Array(0) }
   }
 
   const drawRange = geometry.drawRange
@@ -113,7 +94,7 @@ export function exportBufferGeometrySlice(
   const indexAttr = geometry.getIndex()
 
   if (indexAttr) {
-    const positions = copyNumberRange(array, 0, positionAttr.count * itemSize)
+    const positions = copyFloat32Range(array, 0, positionAttr.count * itemSize)
     const indexArray = indexAttr.array
     const indexStart = clampRangeStart(drawRange.start, indexAttr.count)
     const indexCount = resolveRangeCount(
@@ -121,7 +102,7 @@ export function exportBufferGeometrySlice(
       indexAttr.count,
       indexStart
     )
-    const indices = copyNumberRange(indexArray, indexStart, indexCount)
+    const indices = copyUint32Range(indexArray, indexStart, indexCount)
     return { positions, indices }
   }
 
@@ -131,7 +112,7 @@ export function exportBufferGeometrySlice(
     positionAttr.count,
     vertexStart
   )
-  const positions = copyNumberRange(
+  const positions = copyFloat32Range(
     array,
     vertexStart * itemSize,
     vertexCount * itemSize

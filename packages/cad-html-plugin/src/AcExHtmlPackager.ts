@@ -1,7 +1,7 @@
 import { resolveAcExHtmlLocale } from './AcExHtmlI18n'
 import { ACEX_HTML_SHELL_CSS, buildAcExHtmlShellBody } from './AcExHtmlShell'
 import { encodeSnapshot, snapshotMimeType } from './AcExSnapshotCodec'
-import type { AcExSnapshotV1 } from './AcExSnapshotTypes'
+import type { AcExSnapshot } from './AcExSnapshotTypes'
 
 /**
  * Options passed to {@link packHtml} when assembling a self-contained HTML file.
@@ -9,7 +9,7 @@ import type { AcExSnapshotV1 } from './AcExSnapshotTypes'
 export interface AcExPackHtmlOptions {
   /**
    * Page `<title>` and default download filename stem.
-   * Falls back to {@link AcExSnapshotV1.meta.title} or `"CAD Drawing"`.
+   * Falls back to {@link AcExSnapshot.meta.title} or `"CAD Drawing"`.
    */
   title?: string
   /**
@@ -28,7 +28,7 @@ export interface AcExPackHtmlOptions {
  * @returns Complete HTML document string (DOCTYPE, shell markup, snapshot, runtime).
  */
 export function packHtml(
-  snapshot: AcExSnapshotV1,
+  snapshot: AcExSnapshot,
   options: AcExPackHtmlOptions
 ): string {
   const title = options.title ?? snapshot.meta.title ?? 'CAD Drawing'

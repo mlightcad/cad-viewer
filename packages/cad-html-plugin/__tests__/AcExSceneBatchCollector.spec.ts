@@ -20,7 +20,7 @@ describe('exportBufferGeometrySlice', () => {
 
     const slice = exportBufferGeometrySlice(geometry)
 
-    expect(slice.positions).toEqual([0, 0, 0, 1, 0, 0])
+    expect(Array.from(slice.positions)).toEqual([0, 0, 0, 1, 0, 0])
     expect(slice.indices).toBeUndefined()
   })
 
@@ -38,8 +38,8 @@ describe('exportBufferGeometrySlice', () => {
 
     const slice = exportBufferGeometrySlice(geometry)
 
-    expect(slice.positions).toEqual([0, 0, 0, 1, 0, 0, 2, 0, 0])
-    expect(slice.indices).toEqual([0, 1, 2])
+    expect(Array.from(slice.positions)).toEqual([0, 0, 0, 1, 0, 0, 2, 0, 0])
+    expect(Array.from(slice.indices!)).toEqual([0, 1, 2])
   })
 
   it('honors a finite draw range on non-indexed geometry', () => {
@@ -55,6 +55,6 @@ describe('exportBufferGeometrySlice', () => {
 
     const slice = exportBufferGeometrySlice(geometry)
 
-    expect(slice.positions).toEqual([1, 0, 0, 2, 0, 0])
+    expect(Array.from(slice.positions)).toEqual([1, 0, 0, 2, 0, 0])
   })
 })

@@ -43,7 +43,7 @@ export function createEmptyExtents(): AcExMutableExtents {
  */
 export function expandExtentsFromPositions(
   extents: AcExMutableExtents,
-  positions: number[],
+  positions: Float32Array,
   offset: [number, number, number]
 ): void {
   if (positions.length < 3) return

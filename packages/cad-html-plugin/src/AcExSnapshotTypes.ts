@@ -2,9 +2,9 @@ import type { AcExOsnapCatalog } from './AcExOsnapPrimitiveTypes'
 
 /**
  * Current snapshot schema version.
- * Increment when breaking changes are introduced to {@link AcExSnapshotV1}.
+ * Increment when breaking changes are introduced to {@link AcExSnapshot}.
  */
-export const ACEX_SNAPSHOT_VERSION = 1 as const
+export const ACEX_SNAPSHOT_VERSION = 2 as const
 
 /**
  * Literal type of the supported snapshot schema version.
@@ -118,19 +118,19 @@ export interface AcExLineBatch {
    * Flat vertex buffer: `[x0, y0, z0, x1, y1, z1, …]` in local space
    * before {@link AcExLineBatch.offset} is applied.
    */
-  positions: number[]
+  positions: Float32Array
   /**
    * Optional index buffer referencing vertices in {@link AcExLineBatch.positions}.
    * When omitted, positions are consumed sequentially as segment pairs.
    */
-  indices?: number[]
+  indices?: Uint32Array
   /** Optional linetype pattern for dashed/dotted lines. */
   linePattern?: AcExLinePattern
   /**
    * Per-vertex cumulative distance along the polyline, required when
    * {@link AcExLineBatch.linePattern} is set.
    */
-  lineDistances?: number[]
+  lineDistances?: Float32Array
 }
 
 /**
@@ -164,12 +164,12 @@ export interface AcExMeshBatch {
    * Flat vertex buffer: `[x0, y0, z0, x1, y1, z1, …]` in local space
    * before {@link AcExMeshBatch.offset} is applied.
    */
-  positions: number[]
+  positions: Float32Array
   /**
    * Triangle index buffer into {@link AcExMeshBatch.positions}.
    * When omitted, a single triangle may be inferred from the first three vertices.
    */
-  indices?: number[]
+  indices?: Uint32Array
   /** Optional hatch pattern for non-solid fills. */
   hatchPattern?: AcExHatchPattern
   /** Optional gradient fill parameters for gradient hatches. */
@@ -178,7 +178,7 @@ export interface AcExMeshBatch {
    * Normalized gradient coordinates per vertex `[x0, y0, x1, y1, …]`.
    * Required when {@link AcExMeshBatch.gradientFill} is set.
    */
-  gradientPositions?: number[]
+  gradientPositions?: Float32Array
   /** Material side when a custom fill shader is used (`0` = front, `1` = back). */
   side?: number
 }
@@ -207,8 +207,7 @@ export interface AcExLayoutSnapshot {
    *
    * When {@link AcExOsnapCatalog.primitives} is non-empty, {@link AcExOsnapIndex}
    * uses these definitions exclusively and does **not** snap to discretized
-   * {@link AcExLineBatch} / {@link AcExMeshBatch} vertices. Older HTML files
-   * without this field continue to use batch-based snapping.
+   * {@link AcExLineBatch} / {@link AcExMeshBatch} vertices.
    */
   osnap?: AcExOsnapCatalog
 }
@@ -216,8 +215,12 @@ export interface AcExLayoutSnapshot {
 /**
  * Display-only snapshot embedded in exported HTML.
  * Does not contain DXF/DWG bytes, `AcDb` entity records, or editable drawing state.
+ *
+ * Geometry buffers ({@link AcExLineBatch.positions}, indices, distances, etc.)
+ * are stored as typed arrays in memory and serialized as raw binary in
+ * {@link encodeSnapshot} / {@link decodeSnapshot}.
  */
-export interface AcExSnapshotV1 {
+export interface AcExSnapshot {
   /** Schema version; must equal {@link ACEX_SNAPSHOT_VERSION}. */
   version: AcExSnapshotVersion
   /** Document-level metadata and viewer defaults. */

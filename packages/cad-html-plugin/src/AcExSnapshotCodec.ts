@@ -1,23 +1,27 @@
-import { gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate'
+import { gunzipSync, gzipSync } from 'fflate'
 
-import { ACEX_SNAPSHOT_VERSION, type AcExSnapshotV1 } from './AcExSnapshotTypes'
+import {
+  decodeSnapshotBinary,
+  encodeSnapshotBinary
+} from './AcExSnapshotBinaryCodec'
+import { ACEX_SNAPSHOT_VERSION, type AcExSnapshot } from './AcExSnapshotTypes'
 
-const SNAPSHOT_MIME = 'application/vnd.mlightcad.acex-snapshot+json'
+const SNAPSHOT_MIME = 'application/vnd.mlightcad.acex-snapshot+binary'
 
 /**
  * Serializes a snapshot to a gzip-compressed base64 string for HTML embedding.
  *
- * @param snapshot - Snapshot to encode; {@link AcExSnapshotV1.version} must match
+ * @param snapshot - Snapshot to encode; {@link AcExSnapshot.version} must match
  *   {@link ACEX_SNAPSHOT_VERSION}.
  * @returns Base64-encoded gzip payload (no data-URL prefix).
  * @throws When the snapshot version is unsupported.
  */
-export function encodeSnapshot(snapshot: AcExSnapshotV1): string {
+export function encodeSnapshot(snapshot: AcExSnapshot): string {
   if (snapshot.version !== ACEX_SNAPSHOT_VERSION) {
     throw new Error(`Unsupported snapshot version: ${snapshot.version}`)
   }
-  const json = JSON.stringify(snapshot)
-  const compressed = gzipSync(strToU8(json))
+  const binary = encodeSnapshotBinary(snapshot)
+  const compressed = gzipSync(binary)
   return uint8ToBase64(compressed)
 }
 
@@ -25,17 +29,13 @@ export function encodeSnapshot(snapshot: AcExSnapshotV1): string {
  * Parses a gzip-compressed base64 snapshot payload from an exported HTML file.
  *
  * @param payload - Base64 text from the snapshot `<script>` element body.
- * @returns Parsed {@link AcExSnapshotV1} object.
- * @throws When decompression, JSON parsing, or version validation fails.
+ * @returns Parsed {@link AcExSnapshot} object.
+ * @throws When decompression, parsing, or version validation fails.
  */
-export function decodeSnapshot(payload: string): AcExSnapshotV1 {
+export function decodeSnapshot(payload: string): AcExSnapshot {
   const bytes = base64ToUint8(payload.trim())
-  const json = strFromU8(gunzipSync(bytes))
-  const snapshot = JSON.parse(json) as AcExSnapshotV1
-  if (snapshot.version !== ACEX_SNAPSHOT_VERSION) {
-    throw new Error(`Unsupported snapshot version: ${snapshot.version}`)
-  }
-  return snapshot
+  const binary = gunzipSync(bytes)
+  return decodeSnapshotBinary(binary)
 }
 
 /**

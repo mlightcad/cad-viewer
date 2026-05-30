@@ -6,7 +6,7 @@ import { AcApHtmlConvertor } from './AcApHtmlConvertor'
  * Editor command that exports the active drawing as a self-contained HTML file.
  *
  * The command delegates to {@link AcApHtmlConvertor}, which serializes the
- * current Three.js scene into an {@link AcExSnapshotV1} HTML snapshot,
+ * current Three.js scene into an {@link AcExSnapshot} HTML snapshot,
  * bundles the offline viewer runtime, and triggers a browser download. No
  * prompts are shown; the output filename is derived from the document name.
  */

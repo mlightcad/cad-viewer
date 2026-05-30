@@ -6,6 +6,7 @@ import {
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
+import { copyFloat32Range } from './AcExBatchBuffers'
 import type {
   AcExGradientFill,
   AcExHatchPattern,
@@ -136,12 +137,14 @@ function deserializeHatchPatternLine(
 /**
  * Computes cumulative `lineDistance` values for line-segment geometry.
  */
-export function computeLineDistancesForSegments(positions: number[]): number[] {
+export function computeLineDistancesForSegments(
+  positions: Float32Array
+): Float32Array {
   const vertexCount = positions.length / 3
   if (vertexCount < 2) {
-    return []
+    return new Float32Array(0)
   }
-  const lineDistances = new Array<number>(vertexCount)
+  const lineDistances = new Float32Array(vertexCount)
   for (let i = 0; i < vertexCount; i += 2) {
     if (i === 0) {
       lineDistances[i] = 0
@@ -168,7 +171,7 @@ export function computeLineDistancesForSegments(positions: number[]): number[] {
  */
 export function exportLineDistanceSlice(
   geometry: THREE.BufferGeometry
-): number[] | undefined {
+): Float32Array | undefined {
   const lineDistanceAttr = geometry.getAttribute('lineDistance') as
     | THREE.BufferAttribute
     | undefined
@@ -179,11 +182,7 @@ export function exportLineDistanceSlice(
   const indexAttr = geometry.getIndex()
   if (indexAttr) {
     const array = lineDistanceAttr.array as ArrayLike<number>
-    const result = new Array<number>(lineDistanceAttr.count)
-    for (let i = 0; i < lineDistanceAttr.count; i++) {
-      result[i] = array[i]!
-    }
-    return result
+    return copyFloat32Range(array, 0, lineDistanceAttr.count)
   }
 
   const drawRange = geometry.drawRange
@@ -199,11 +198,7 @@ export function exportLineDistanceSlice(
   }
 
   const array = lineDistanceAttr.array as ArrayLike<number>
-  const result = new Array<number>(drawCount)
-  for (let i = 0; i < drawCount; i++) {
-    result[i] = array[vertexStart + i]!
-  }
-  return result
+  return copyFloat32Range(array, vertexStart, drawCount)
 }
 
 /**
@@ -212,7 +207,7 @@ export function exportLineDistanceSlice(
 export function exportVertexAttributeSlice(
   geometry: THREE.BufferGeometry,
   attributeName: string
-): number[] | undefined {
+): Float32Array | undefined {
   const attribute = geometry.getAttribute(attributeName) as
     | THREE.BufferAttribute
     | undefined
@@ -224,11 +219,7 @@ export function exportVertexAttributeSlice(
   const indexAttr = geometry.getIndex()
   if (indexAttr) {
     const array = attribute.array as ArrayLike<number>
-    const result = new Array<number>(attribute.count * itemSize)
-    for (let i = 0; i < attribute.count * itemSize; i++) {
-      result[i] = array[i]!
-    }
-    return result
+    return copyFloat32Range(array, 0, attribute.count * itemSize)
   }
 
   const drawRange = geometry.drawRange
@@ -244,11 +235,7 @@ export function exportVertexAttributeSlice(
   }
 
   const array = attribute.array as ArrayLike<number>
-  const result = new Array<number>(drawCount * itemSize)
-  for (let i = 0; i < drawCount * itemSize; i++) {
-    result[i] = array[vertexStart * itemSize + i]!
-  }
-  return result
+  return copyFloat32Range(array, vertexStart * itemSize, drawCount * itemSize)
 }
 
 /**

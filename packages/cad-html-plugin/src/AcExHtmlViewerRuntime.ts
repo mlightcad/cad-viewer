@@ -2,6 +2,7 @@ import { FLOAT_TOL } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
+import { applyOffsetToPositions } from './AcExBatchBuffers'
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import { computeLayerExtentsMap } from './AcExLayerExtents'
@@ -18,7 +19,7 @@ import type {
   AcExExtents,
   AcExLineBatch,
   AcExMeshBatch,
-  AcExSnapshotV1
+  AcExSnapshot
 } from './AcExSnapshotTypes'
 
 /** Matches {@link AcTrBaseView} orthographic half-height in world units. */
@@ -50,7 +51,7 @@ function startViewer(): void {
   }
 
   const payload = snapshotEl.textContent?.trim() ?? ''
-  let snapshot: AcExSnapshotV1
+  let snapshot: AcExSnapshot
   try {
     snapshot = decodeSnapshot(payload)
   } catch (error) {
@@ -355,7 +356,7 @@ interface AcExLayerRowRefs {
 /** Dependencies passed into {@link setupLayerPanel}. */
 interface AcExLayerPanelContext {
   /** Full snapshot (layer table and metadata). */
-  snapshot: AcExSnapshotV1
+  snapshot: AcExSnapshot
   /** Mutable visibility map shared with the THREE layer groups. */
   layerVisible: Map<string, boolean>
   /** THREE groups keyed by layer name. */
@@ -525,16 +526,10 @@ function setupLayerPanel(
 function createLineObject(batch: AcExLineBatch): THREE.LineSegments | null {
   if (batch.positions.length < 6) return null
   const geometry = new THREE.BufferGeometry()
-  const positions = new Float32Array(batch.positions.length)
-  const [ox, oy, oz] = batch.offset
-  for (let i = 0; i < batch.positions.length; i += 3) {
-    positions[i] = batch.positions[i]! + ox
-    positions[i + 1] = batch.positions[i + 1]! + oy
-    positions[i + 2] = (batch.positions[i + 2] ?? 0) + oz
-  }
+  const positions = applyOffsetToPositions(batch.positions, batch.offset)
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
   if (batch.indices && batch.indices.length > 0) {
-    geometry.setIndex(batch.indices)
+    geometry.setIndex(new THREE.BufferAttribute(batch.indices, 1))
   }
   if (
     batch.linePattern &&
@@ -608,16 +603,10 @@ function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
     return null
   }
   const geometry = new THREE.BufferGeometry()
-  const positions = new Float32Array(batch.positions.length)
-  const [ox, oy, oz] = batch.offset
-  for (let i = 0; i < batch.positions.length; i += 3) {
-    positions[i] = batch.positions[i]! + ox
-    positions[i + 1] = batch.positions[i + 1]! + oy
-    positions[i + 2] = (batch.positions[i + 2] ?? 0) + oz
-  }
+  const positions = applyOffsetToPositions(batch.positions, batch.offset)
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
   if (batch.indices && batch.indices.length > 0) {
-    geometry.setIndex(batch.indices)
+    geometry.setIndex(new THREE.BufferAttribute(batch.indices, 1))
   } else if (positions.length >= 9) {
     geometry.setIndex([0, 1, 2])
   }
