@@ -1,8 +1,8 @@
-import { type AcExSnapshotV1, packHtml } from '@mlightcad/cad-html-exporter'
+import { AcApDocManager, yieldToMain } from '@mlightcad/cad-simple-viewer'
 
-import { AcApDocManager } from '../../app'
-import { yieldToMain } from '../../util'
 import { AcApHtmlSnapshotBuilder } from './AcApHtmlSnapshotBuilder'
+import { packHtml } from './AcExHtmlPackager'
+import type { AcExSnapshotV1 } from './AcExSnapshotTypes'
 
 /**
  * Relative URL of the bundled offline viewer script when no override is
@@ -126,7 +126,7 @@ export class AcApHtmlConvertor {
     if (!response.ok) {
       throw new Error(
         `Failed to load HTML viewer runtime from "${runtimeUrl}" (${response.status}). ` +
-          'Build @mlightcad/cad-html-exporter and copy viewer-runtime.iife.js to your app assets.'
+          'Build @mlightcad/cad-html-plugin and copy viewer-runtime.iife.js to your app assets.'
       )
     }
     return response.text()

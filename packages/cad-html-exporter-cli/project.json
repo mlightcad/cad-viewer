@@ -14,7 +14,13 @@
         "cwd": "packages/cad-html-exporter-cli"
       },
       "dependsOn": [
-        "^build"
+        "^build",
+        {
+          "projects": [
+            "@mlightcad/cad-html-plugin"
+          ],
+          "target": "build"
+        }
       ],
       "cache": true
     },

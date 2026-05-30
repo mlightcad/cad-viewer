@@ -1,3 +1,9 @@
+/**
+ * HTML export plugin and offline HTML format for cad-simple-viewer.
+ *
+ * @packageDocumentation
+ */
+
 /** Snapshot schema types, version constant, and geometry batch shapes. */
 export * from './AcExSnapshotTypes'
 /** Gzip/base64 encode and decode for embedded snapshot payloads. */
@@ -35,6 +41,19 @@ export {
 
 /**
  * Default filename of the offline HTML viewer IIFE bundle
- * produced by the `cad-html-exporter` viewer build target.
+ * produced by the viewer build target.
  */
 export const HTML_VIEWER_RUNTIME_FILE = 'viewer-runtime.iife.js'
+
+export { AcApExportHtmlCmd } from './AcApExportHtmlCmd'
+export { AcApHtmlConvertor } from './AcApHtmlConvertor'
+export {
+  AcApHtmlSnapshotBuilder,
+  type AcApHtmlSnapshotBuilderOptions
+} from './AcApHtmlSnapshotBuilder'
+export {
+  createHtmlPlugin,
+  HTML_PLUGIN_NAME,
+  HTML_PLUGIN_TRIGGERS,
+  registerLazyHtmlPlugin
+} from './registerLazyHtmlPlugin'

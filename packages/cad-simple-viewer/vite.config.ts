@@ -23,10 +23,6 @@ export default defineConfig({
         {
           src: './node_modules/@mlightcad/mtext-renderer/dist/mtext-renderer-worker.js',
           dest: ''
-        },
-        {
-          src: './node_modules/@mlightcad/cad-html-exporter/dist/viewer-runtime.iife.js',
-          dest: ''
         }
       ]
     })

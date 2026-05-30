@@ -1,7 +1,7 @@
 {
-  "name": "@mlightcad/cad-html-exporter",
+  "name": "@mlightcad/cad-html-plugin",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/cad-html-exporter/src",
+  "sourceRoot": "packages/cad-html-plugin/src",
   "projectType": "library",
   "tags": [
     "npm:private"
@@ -11,7 +11,7 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "tsc && vite build && vite build --config vite.viewer.config.ts",
-        "cwd": "packages/cad-html-exporter"
+        "cwd": "packages/cad-html-plugin"
       },
       "dependsOn": [
         "^build"
@@ -22,21 +22,21 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "rimraf dist lib tsconfig.tsbuildinfo",
-        "cwd": "packages/cad-html-exporter"
+        "cwd": "packages/cad-html-plugin"
       }
     },
     "lint": {
       "executor": "nx:run-commands",
       "options": {
         "command": "eslint src/",
-        "cwd": "packages/cad-html-exporter"
+        "cwd": "packages/cad-html-plugin"
       }
     },
     "lint:fix": {
       "executor": "nx:run-commands",
       "options": {
         "command": "eslint --fix --quiet src/",
-        "cwd": "packages/cad-html-exporter"
+        "cwd": "packages/cad-html-plugin"
       }
     }
   }

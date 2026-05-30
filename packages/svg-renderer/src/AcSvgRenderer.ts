@@ -1,6 +1,7 @@
 import {
   AcCmColor,
   AcCmTransparency,
+  AcDbRenderingCache,
   AcGeArea2d,
   AcGeBox2d,
   AcGeCircArc3d,
@@ -31,6 +32,18 @@ import { AcSvgPoint } from './AcSvgPoint'
 import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
 
 export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
+  /**
+   * Clears the shared block rendering cache before SVG/PDF export.
+   *
+   * The cache stores drawable objects from the last renderer that populated it
+   * (typically Three.js). Reusing those entries during export causes failures
+   * such as `renderSvg is not a function` when dimensions or block references
+   * are resolved from cache.
+   */
+  static prepareExport(): void {
+    AcDbRenderingCache.instance.clear()
+  }
+
   private _entities: AcSvgEntity[]
   private _bbox: AcGeBox2d
   private _subEntityTraits: AcGiSubEntityTraits

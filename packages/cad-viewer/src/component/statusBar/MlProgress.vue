@@ -10,7 +10,11 @@
 </template>
 
 <script lang="ts" setup>
-import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApDocManager,
+  eventBus,
+  isOpenFileProgressComplete
+} from '@mlightcad/cad-simple-viewer'
 import {
   AcDbParsingTaskStats,
   AcDbProgressdEventArgs
@@ -52,11 +56,7 @@ const updateProgress = (data: AcDbProgressdEventArgs) => {
     }
   }
   percentage.value = data.percentage
-  const isComplete =
-    data.percentage >= 100 &&
-    data.subStage === 'END' &&
-    data.subStageStatus === 'END'
-  visible.value = !isComplete
+  visible.value = !isOpenFileProgressComplete(data)
 }
 
 const format = (percentage: number) => {

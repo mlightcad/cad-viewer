@@ -148,7 +148,7 @@ interface Props {
   /**
    * URL of the offline HTML viewer runtime (`viewer-runtime.iife.js`).
    * Required for File menu “Export to HTML”; copy the file from
-   * `@mlightcad/cad-html-exporter` build output into your app assets.
+   * `@mlightcad/cad-html-plugin` build output into your app assets.
    */
   htmlViewerRuntimeUrl?: string | URL
   /**

@@ -1,6 +1,5 @@
 {
   "name": "@mlightcad/three-renderer",
-  "private": true,
   "version": "1.5.1",
   "license": "MIT",
   "type": "module",

@@ -15,6 +15,8 @@ export class AcApSvgConvertor {
    * Converts the current CAD drawing to SVG format and initiates download.
    */
   async convert() {
+    AcSvgRenderer.prepareExport()
+
     const doc = AcApDocManager.instance.curDocument
     const renderer = new AcSvgRenderer()
     this.configureRenderer(renderer)

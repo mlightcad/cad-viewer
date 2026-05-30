@@ -8,12 +8,12 @@ import { visualizer } from 'rollup-plugin-visualizer'
 import vue from '@vitejs/plugin-vue'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const VIEWER_RUNTIME_SRC = '../cad-html-exporter/dist/viewer-runtime.iife.js'
+const VIEWER_RUNTIME_SRC = '../cad-html-plugin/dist/viewer-runtime.iife.js'
 
 export default defineConfig(({ command, mode }) => {
   if (!existsSync(resolve(__dirname, VIEWER_RUNTIME_SRC))) {
     throw new Error(
-      'viewer-runtime.iife.js not found. Build @mlightcad/cad-html-exporter before cad-viewer-example.'
+      'viewer-runtime.iife.js not found. Build @mlightcad/cad-html-plugin before cad-viewer-example.'
     )
   }
   const aliases: Alias[] = []
