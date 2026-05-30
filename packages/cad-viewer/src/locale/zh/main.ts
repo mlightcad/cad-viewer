@@ -3,6 +3,7 @@ export default {
     new: '新建图纸',
     open: '打开图纸',
     drawingUnits: '图形单位',
+    exportMenu: '导出',
     export: '导出为DXF',
     exportHtml: '导出为 HTML',
     exportPdf: '导出为PDF',

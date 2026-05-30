@@ -44,7 +44,6 @@
     "@mlightcad/data-model": "^1.7.40",
     "@mlightcad/mtext-input-box": "^0.2.12",
     "@mlightcad/mtext-renderer": "^0.10.15",
-    "@mlightcad/svg-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",
     "@types/lodash-es": "^4.17.12",

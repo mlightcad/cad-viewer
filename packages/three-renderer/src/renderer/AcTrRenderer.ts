@@ -13,7 +13,7 @@ import {
   AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
-import { FontManager, FontManagerEventArgs } from '@mlightcad/mtext-renderer'
+import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import {
@@ -33,13 +33,23 @@ import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport'
 import { AcTrMTextRenderer } from './AcTrMTextRenderer'
 
+/** Event payload when a mapped font cannot be resolved during rendering. */
+export interface AcTrFontNotFoundEventArgs {
+  /** Name of the font that could not be found. */
+  fontName: string
+  /** Number of characters using this font; set when the font is missing. */
+  count?: number
+}
+
 export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   private _styleManager: AcTrStyleManager
   private _renderer: THREE.WebGLRenderer
   private _subEntityTraits: AcGiSubEntityTraits
 
-  public readonly events = {
-    fontNotFound: new AcCmEventManager<FontManagerEventArgs>()
+  public readonly events: {
+    fontNotFound: AcCmEventManager<AcTrFontNotFoundEventArgs>
+  } = {
+    fontNotFound: new AcCmEventManager<AcTrFontNotFoundEventArgs>()
   }
 
   constructor(renderer: THREE.WebGLRenderer) {

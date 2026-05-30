@@ -1,4 +1,9 @@
-import { AcApDocManager, yieldToMain } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApDocManager,
+  getDrawingExportBaseName,
+  resolveExportDownloadName,
+  yieldToMain
+} from '@mlightcad/cad-simple-viewer'
 
 import { AcApHtmlSnapshotBuilder } from './AcApHtmlSnapshotBuilder'
 import { packHtml } from './AcExHtmlPackager'
@@ -47,11 +52,12 @@ export class AcApHtmlConvertor {
           'CAD scene is not available. Open a drawing before exporting to HTML.'
         )
       }
+      const sourceName = fileName || document.fileName || document.docTitle
       const snapshot = await this._snapshotBuilder.buildAsync(
         view.cadScene,
         document.database,
         {
-          title: fileName ?? document.fileName,
+          title: getDrawingExportBaseName(sourceName),
           background: view.backgroundColor
         }
       )
@@ -71,10 +77,7 @@ export class AcApHtmlConvertor {
 
       await yieldToMain()
 
-      this.downloadHtml(
-        html,
-        this.resolveDownloadName(fileName ?? document.fileName)
-      )
+      this.downloadHtml(html, resolveExportDownloadName(sourceName, 'html'))
     } finally {
       docManager.hideBusyIndicator()
     }
@@ -130,18 +133,6 @@ export class AcApHtmlConvertor {
       )
     }
     return response.text()
-  }
-
-  /**
-   * Derives the browser download file name from a drawing file name.
-   *
-   * @param fileName - Source drawing name (may include `.dwg` or `.dxf`).
-   * @returns Base name without drawing extension, plus `.html`.
-   */
-  private resolveDownloadName(fileName: string): string {
-    const leafName = fileName.split(/[\\/]/).pop() ?? fileName
-    const base = leafName.replace(/\.(dwg|dxf)$/i, '').trim() || 'drawing'
-    return `${base}.html`
   }
 
   /**

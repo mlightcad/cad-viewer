@@ -19,7 +19,6 @@ import {
   AcApClearMeasurementsCmd,
   AcApConvertToDxfCmd,
   AcApConvertToPngCmd,
-  AcApConvertToSvgCmd,
   AcApCopyCmd,
   AcApDimLinearCmd,
   AcApEllipseCmd,
@@ -823,7 +822,7 @@ export class AcApDocManager {
    *
    * This method sets up the command system by registering built-in commands including:
    * - cdxf: Convert to DXF
-   * - csvg: Convert to SVG
+   * - pngout: Export to PNG
    * - log: Output debug information in console
    * - open: Open document
    * - qnew: Quick new document
@@ -866,7 +865,6 @@ export class AcApDocManager {
     addSystemCommand('arc', 'arc', new AcApArcCmd())
     addSystemCommand('circle', 'circle', new AcApCircleCmd())
     addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
-    addSystemCommand('csvg', 'csvg', new AcApConvertToSvgCmd())
     addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())

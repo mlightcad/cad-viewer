@@ -9,7 +9,7 @@ overrides:
   '@mlightcad/libredwg-converter': ^3.6.0
   '@mlightcad/mtext-input-box': ^0.2.13
   '@mlightcad/mtext-renderer': ^0.10.16
-  '@mlightcad/ribbon': ^0.1.9
+  '@mlightcad/ribbon': ^0.1.10
   element-plus: ^2.12.0
   three: ^0.172.0
   vue: ^3.4.21
@@ -182,12 +182,12 @@ importers:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
+      '@mlightcad/cad-svg-plugin':
+        specifier: workspace:*
+        version: link:../cad-svg-plugin
       '@mlightcad/data-model':
         specifier: ^1.8.0
         version: 1.8.0
-      '@mlightcad/svg-renderer':
-        specifier: workspace:*
-        version: link:../svg-renderer
 
   packages/cad-simple-viewer:
     dependencies:
@@ -210,9 +210,6 @@ importers:
       '@mlightcad/mtext-renderer':
         specifier: ^0.10.16
         version: 0.10.16(three@0.172.0)
-      '@mlightcad/svg-renderer':
-        specifier: workspace:*
-        version: link:../svg-renderer
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
@@ -246,12 +243,27 @@ importers:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
+      '@mlightcad/cad-svg-plugin':
+        specifier: workspace:*
+        version: link:../cad-svg-plugin
       '@mlightcad/data-model':
         specifier: ^1.8.0
         version: 1.8.0
       three:
         specifier: ^0.172.0
         version: 0.172.0
+
+  packages/cad-svg-plugin:
+    devDependencies:
+      '@mlightcad/cad-simple-viewer':
+        specifier: workspace:*
+        version: link:../cad-simple-viewer
+      '@mlightcad/data-model':
+        specifier: ^1.8.0
+        version: 1.8.0
+      '@mlightcad/mtext-parser':
+        specifier: ^1.4.1
+        version: 1.4.1
 
   packages/cad-viewer:
     dependencies:
@@ -271,15 +283,15 @@ importers:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
+      '@mlightcad/cad-svg-plugin':
+        specifier: workspace:*
+        version: link:../cad-svg-plugin
       '@mlightcad/data-model':
         specifier: ^1.8.0
         version: 1.8.0
       '@mlightcad/ribbon':
-        specifier: ^0.1.9
-        version: 0.1.9(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
-      '@mlightcad/svg-renderer':
-        specifier: workspace:*
-        version: link:../svg-renderer
+        specifier: ^0.1.10
+        version: 0.1.10(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
@@ -402,31 +414,22 @@ importers:
         specifier: ^14.2.4
         version: 14.2.6
 
-  packages/svg-renderer:
-    devDependencies:
-      '@mlightcad/data-model':
-        specifier: ^1.8.0
-        version: 1.8.0
-      '@mlightcad/mtext-parser':
-        specifier: ^1.4.1
-        version: 1.4.1
-
   packages/three-renderer:
     dependencies:
+      '@velipso/polybool':
+        specifier: ^1.1.1
+        version: 1.1.1
+    devDependencies:
       '@mlightcad/data-model':
         specifier: ^1.8.0
         version: 1.8.0
       '@mlightcad/mtext-renderer':
         specifier: ^0.10.16
         version: 0.10.16(three@0.172.0)
-      '@velipso/polybool':
-        specifier: ^1.1.1
-        version: 1.1.1
-      three:
+      '@types/three':
         specifier: ^0.172.0
         version: 0.172.0
-    devDependencies:
-      '@types/three':
+      three:
         specifier: ^0.172.0
         version: 0.172.0
 
@@ -1558,8 +1561,8 @@ packages:
     peerDependencies:
       three: ^0.172.0
 
-  '@mlightcad/ribbon@0.1.9':
-    resolution: {integrity: sha512-XIn/1gkd8VdXDja6d3nYZo8QawfY7yVlmdSTpq1LbxPg74NfVSXcPq3vz9hCbhdEuHIn5hhYV2nYF6syE55DWg==}
+  '@mlightcad/ribbon@0.1.10':
+    resolution: {integrity: sha512-bAAatX3zIqpyrRphbEqe5mVgxX63jJJ9vHu4FYbIJnsWzrPAg07lGZS9xs/2eZOtYWj11uQB5WOuGbh113BthQ==}
     peerDependencies:
       '@element-plus/icons-vue': ^2.3.2
       element-plus: ^2.12.0
@@ -6674,7 +6677,7 @@ snapshots:
       opentype.js: 1.3.4
       three: 0.172.0
 
-  '@mlightcad/ribbon@0.1.9(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
+  '@mlightcad/ribbon@0.1.10(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
     dependencies:
       '@element-plus/icons-vue': 2.3.2(vue@3.5.31(typescript@5.9.3))
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))

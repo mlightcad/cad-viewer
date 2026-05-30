@@ -37,11 +37,11 @@
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.7.40",
-    "@mlightcad/svg-renderer": "workspace:*"
+    "@mlightcad/cad-svg-plugin": "workspace:*"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.7.40",
-    "@mlightcad/svg-renderer": "workspace:*"
+    "@mlightcad/cad-svg-plugin": "workspace:*"
   }
 }

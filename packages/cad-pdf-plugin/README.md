@@ -11,7 +11,7 @@ The plugin is designed for **lazy loading** so PDF libraries (`jspdf`, `pdfjs-di
 
 ## Key features
 
-- **Vector PDF export** — renders model-space entities via `@mlightcad/svg-renderer`, then converts SVG to PDF with `svg2pdf.js`
+- **Vector PDF export** — renders model-space entities via `@mlightcad/cad-svg-plugin`, then converts SVG to PDF with `svg2pdf.js`
 - **PDF import** — parses vector paths from the first page of a PDF (lines, polylines, Bézier curves) and appends CAD entities
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyPdfPlugin`
 - **Framework-agnostic** — no Vue/React dependency; works anywhere `cad-simple-viewer` runs
@@ -26,7 +26,7 @@ Peer dependencies:
 
 - `@mlightcad/cad-simple-viewer`
 - `@mlightcad/data-model`
-- `@mlightcad/svg-renderer`
+- `@mlightcad/cad-svg-plugin`
 
 Runtime dependencies (bundled with this package):
 
@@ -150,7 +150,7 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 
 ## Role in MLightCAD
 
-This package extends `cad-simple-viewer` with optional PDF I/O. It depends on `svg-renderer` for export quality parity with the existing SVG export command (`csvg`) and keeps heavy PDF dependencies out of the core viewer bundle through lazy loading.
+This package extends `cad-simple-viewer` with optional PDF I/O. It depends on `cad-svg-plugin` for export quality parity with the existing SVG export command (`csvg`) and keeps heavy PDF dependencies out of the core viewer bundle through lazy loading.
 
 ## License
 

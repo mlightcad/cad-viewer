@@ -3,6 +3,7 @@ export default {
     new: 'New Drawing',
     open: 'Open Drawing',
     drawingUnits: 'Drawing Units',
+    exportMenu: 'Export',
     export: 'Export to DXF',
     exportHtml: 'Export to HTML',
     exportPdf: 'Export to PDF',

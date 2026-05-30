@@ -1,6 +1,9 @@
 import type { AcApContext } from '@mlightcad/cad-simple-viewer'
-import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
-import { AcSvgRenderer } from '@mlightcad/svg-renderer'
+import {
+  AcApSettingManager,
+  resolveExportDownloadName
+} from '@mlightcad/cad-simple-viewer'
+import { AcSvgRenderer } from '@mlightcad/cad-svg-plugin'
 import { jsPDF } from 'jspdf'
 import { svg2pdf } from 'svg2pdf.js'
 
@@ -16,7 +19,11 @@ export class AcApPdfConvertor {
    */
   async convert(context: AcApContext) {
     const svgString = await this.buildSvg(context)
-    await this.downloadAsPdf(svgString)
+    const downloadName = resolveExportDownloadName(
+      context.doc.fileName || context.doc.docTitle,
+      'pdf'
+    )
+    await this.downloadAsPdf(svgString, downloadName)
   }
 
   private async buildSvg(context: AcApContext): Promise<string> {
@@ -46,7 +53,7 @@ export class AcApPdfConvertor {
     renderer.changeForeground(bg === 0 ? 0xffffff : 0x000000)
   }
 
-  private async downloadAsPdf(svgString: string) {
+  private async downloadAsPdf(svgString: string, downloadName: string) {
     const parser = new DOMParser()
     const svgDoc = parser.parseFromString(svgString, 'image/svg+xml')
     const svgEl = svgDoc.documentElement as unknown as SVGSVGElement
@@ -70,6 +77,6 @@ export class AcApPdfConvertor {
       height: vbHeight
     })
 
-    pdf.save('drawing.pdf')
+    pdf.save(downloadName)
   }
 }

@@ -66,7 +66,8 @@ In [cad-simple-viewer-example](https://github.com/mlight-lee/cad-simple-viewer-e
 - `AcApZoomCmd` - Zoom command
 - `AcApPanCmd` - Pan command
 - `AcApSelectCmd` - Selection command
-- `AcApConvertToSvgCmd` - SVG conversion command
+
+SVG export (`csvg`) is provided by the optional `@mlightcad/cad-svg-plugin` package.
 
 ### Editor Components
 
