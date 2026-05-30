@@ -19,17 +19,31 @@ import type {
 /** Shared camera zoom uniform updated by the offline HTML viewer. */
 export const acexCameraZoomUniform = { value: 1.0 }
 
+function asShaderMaterial(
+  material: THREE.Material
+): THREE.ShaderMaterial | undefined {
+  const candidate = material as THREE.ShaderMaterial
+  if (
+    candidate.isShaderMaterial === true ||
+    material.type === 'ShaderMaterial'
+  ) {
+    return candidate
+  }
+  return undefined
+}
+
 /**
  * Reads a serialized linetype from a live export-time shader material.
  */
 export function extractLinePattern(
   material: THREE.Material
 ): AcExLinePattern | undefined {
-  if (!(material instanceof THREE.ShaderMaterial)) {
+  const shaderMaterial = asShaderMaterial(material)
+  if (!shaderMaterial) {
     return undefined
   }
-  const patternUniform = material.uniforms.pattern
-  const patternLengthUniform = material.uniforms.patternLength
+  const patternUniform = shaderMaterial.uniforms.pattern
+  const patternLengthUniform = shaderMaterial.uniforms.patternLength
   if (!patternUniform || !patternLengthUniform) {
     return undefined
   }
@@ -40,7 +54,7 @@ export function extractLinePattern(
   return {
     pattern: [...pattern],
     patternLength: Number(patternLengthUniform.value),
-    viewportScale: Number(material.uniforms.u_viewportScale?.value ?? 1)
+    viewportScale: Number(shaderMaterial.uniforms.u_viewportScale?.value ?? 1)
   }
 }
 
@@ -50,10 +64,11 @@ export function extractLinePattern(
 export function extractHatchPattern(
   material: THREE.Material
 ): AcExHatchPattern | undefined {
-  if (!(material instanceof THREE.ShaderMaterial)) {
+  const shaderMaterial = asShaderMaterial(material)
+  if (!shaderMaterial) {
     return undefined
   }
-  const patternLinesUniform = material.uniforms.u_patternLines
+  const patternLinesUniform = shaderMaterial.uniforms.u_patternLines
   if (!patternLinesUniform) {
     return undefined
   }
@@ -70,7 +85,7 @@ export function extractHatchPattern(
     return undefined
   }
   return {
-    patternAngle: Number(material.uniforms.u_patternAngle?.value ?? 0),
+    patternAngle: Number(shaderMaterial.uniforms.u_patternAngle?.value ?? 0),
     patternLines: patternLines.map(serializeHatchPatternLine)
   }
 }
@@ -81,27 +96,28 @@ export function extractHatchPattern(
 export function extractGradientFill(
   material: THREE.Material
 ): AcExGradientFill | undefined {
-  if (!(material instanceof THREE.ShaderMaterial)) {
+  const shaderMaterial = asShaderMaterial(material)
+  if (!shaderMaterial) {
     return undefined
   }
-  if (material.uniforms.u_patternLines) {
+  if (shaderMaterial.uniforms.u_patternLines) {
     return undefined
   }
-  const startColor = material.uniforms.u_startColor?.value as
+  const startColor = shaderMaterial.uniforms.u_startColor?.value as
     | THREE.Color
     | undefined
-  const endColor = material.uniforms.u_endColor?.value as
+  const endColor = shaderMaterial.uniforms.u_endColor?.value as
     | THREE.Color
     | undefined
-  const gradientTypeUniform = material.uniforms.u_gradientType
+  const gradientTypeUniform = shaderMaterial.uniforms.u_gradientType
   if (!startColor?.getHex || gradientTypeUniform == null) {
     return undefined
   }
   return {
     startColor: startColor.getHex(),
     endColor: endColor?.getHex?.() ?? startColor.getHex(),
-    angle: Number(material.uniforms.u_angle?.value ?? 0),
-    shift: Number(material.uniforms.u_shift?.value ?? 0),
+    angle: Number(shaderMaterial.uniforms.u_angle?.value ?? 0),
+    shift: Number(shaderMaterial.uniforms.u_shift?.value ?? 0),
     gradientType: Number(gradientTypeUniform.value)
   }
 }

@@ -5,6 +5,7 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
+import { computeLayoutExtents } from './AcExLayerExtents'
 import { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
 import { collectBatchesFromObject3D } from './AcExSceneBatchCollector'
 import {
@@ -119,7 +120,12 @@ export class AcApHtmlSnapshotBuilder {
 
     return {
       version: ACEX_SNAPSHOT_VERSION,
-      meta: buildSnapshotMeta(meta, options),
+      meta: buildSnapshotMeta(
+        meta,
+        options,
+        layouts,
+        scene.activeLayoutBtrId || scene.modelSpaceBtrId
+      ),
       layers,
       layouts,
       activeLayoutBtrId: scene.activeLayoutBtrId || scene.modelSpaceBtrId
@@ -170,7 +176,12 @@ export class AcApHtmlSnapshotBuilder {
 
     return {
       version: ACEX_SNAPSHOT_VERSION,
-      meta: buildSnapshotMeta(meta, options),
+      meta: buildSnapshotMeta(
+        meta,
+        options,
+        layouts,
+        scene.activeLayoutBtrId || scene.modelSpaceBtrId
+      ),
       layers,
       layouts,
       activeLayoutBtrId: scene.activeLayoutBtrId || scene.modelSpaceBtrId
@@ -183,16 +194,27 @@ export class AcApHtmlSnapshotBuilder {
  *
  * @param meta - Extents, units, and background from {@link buildViewerMetadata}.
  * @param options - User overrides (title is taken from `meta`; locale from options).
+ * @param layouts - Exported layouts used to derive {@link AcExSnapshot.meta.viewExtents}.
+ * @param activeLayoutBtrId - Layout shown when the HTML file is first opened.
  * @returns The `meta` block stored on {@link AcExSnapshot}.
  */
 function buildSnapshotMeta(
   meta: ReturnType<typeof buildViewerMetadata>,
-  options: AcApHtmlSnapshotBuilderOptions
+  options: AcApHtmlSnapshotBuilderOptions,
+  layouts: AcExLayoutSnapshot[],
+  activeLayoutBtrId: string
 ) {
+  const activeLayout =
+    layouts.find(layout => layout.btrId === activeLayoutBtrId) ?? layouts[0]
+  const viewExtents = activeLayout
+    ? computeLayoutExtents(activeLayout.lineBatches, activeLayout.meshBatches)
+    : null
+
   return {
     title: meta.title,
     createdAt: new Date().toISOString(),
     extents: meta.extents,
+    viewExtents: viewExtents ?? undefined,
     units: meta.units,
     background: meta.background,
     locale: options.locale ?? AcApI18n.currentLocale

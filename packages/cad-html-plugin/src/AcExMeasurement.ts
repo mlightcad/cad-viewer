@@ -293,6 +293,31 @@ function interiorAngleArcScreenMetrics(
 }
 
 /**
+ * Hit test committed DOM overlays (badges/dots) using their rendered bounds.
+ * Accounts for CSS transforms such as the coordinate badge vertical offset.
+ * @internal
+ */
+function hitTestMeasureDom(
+  parts: AcExCommitParts,
+  clientX: number,
+  clientY: number,
+  paddingPx = 2
+): boolean {
+  for (const el of parts.dom) {
+    const rect = el.getBoundingClientRect()
+    if (
+      clientX >= rect.left - paddingPx &&
+      clientX <= rect.right + paddingPx &&
+      clientY >= rect.top - paddingPx &&
+      clientY <= rect.bottom + paddingPx
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
  * Hit test for a committed angle measurement (arms, arc, badge, endpoint dots).
  * @internal
  */
@@ -765,6 +790,9 @@ export class AcExMeasureController {
    * @returns `true` when the event was handled.
    */
   handlePointerDown(clientX: number, clientY: number): boolean {
+    if (this._trySelectCommittedAt(clientX, clientY, false)) {
+      return true
+    }
     if (!this._mode) return false
     this._lastPointer = { x: clientX, y: clientY }
     const point = this._resolvePointerWithOsnap(clientX, clientY)
@@ -851,19 +879,7 @@ export class AcExMeasureController {
    */
   handleSelectionPointerDown(clientX: number, clientY: number): boolean {
     if (this._mode || this._committed.length === 0) return false
-
-    for (let i = this._committed.length - 1; i >= 0; i--) {
-      const measure = this._committed[i]!
-      if (measure.hitTest(clientX, clientY, MEASURE_HIT_THRESHOLD_PX)) {
-        const changed = measure.id !== this._selectedId
-        this._select(measure.id)
-        return changed
-      }
-    }
-
-    if (!this._selectedId) return false
-    this._deselect()
-    return true
+    return this._trySelectCommittedAt(clientX, clientY, true)
   }
 
   /**
@@ -1571,6 +1587,53 @@ export class AcExMeasureController {
       const s = this._view.wcsToScreen(p)
       return { x: s.x, y: s.y }
     })
+  }
+
+  /** @internal */
+  private _measureHitAt(
+    measure: AcExCommittedMeasure,
+    clientX: number,
+    clientY: number
+  ): boolean {
+    if (hitTestMeasureDom(measure.parts, clientX, clientY)) {
+      return true
+    }
+    return measure.hitTest(clientX, clientY, MEASURE_HIT_THRESHOLD_PX)
+  }
+
+  /** @internal */
+  private _pickCommittedMeasure(
+    clientX: number,
+    clientY: number
+  ): AcExCommittedMeasure | null {
+    for (let i = this._committed.length - 1; i >= 0; i--) {
+      const measure = this._committed[i]!
+      if (this._measureHitAt(measure, clientX, clientY)) {
+        return measure
+      }
+    }
+    return null
+  }
+
+  /**
+   * Selects a committed measurement under the pointer, or deselects when idle.
+   * @param deselectOnMiss - When true and nothing was hit, clears the current selection.
+   * @internal
+   */
+  private _trySelectCommittedAt(
+    clientX: number,
+    clientY: number,
+    deselectOnMiss: boolean
+  ): boolean {
+    const measure = this._pickCommittedMeasure(clientX, clientY)
+    if (measure) {
+      const changed = measure.id !== this._selectedId
+      this._select(measure.id)
+      return changed || measure.id === this._selectedId
+    }
+    if (!deselectOnMiss || !this._selectedId) return false
+    this._deselect()
+    return true
   }
 
   /** @internal */

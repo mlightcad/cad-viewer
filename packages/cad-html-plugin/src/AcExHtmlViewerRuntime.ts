@@ -4,7 +4,10 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
-import { computeLayerExtentsMap } from './AcExLayerExtents'
+import {
+  computeLayerExtentsMap,
+  resolveLayoutViewExtents
+} from './AcExLayerExtents'
 import { AcExMeasureController, type AcExMeasureMode } from './AcExMeasurement'
 import { AcExOsnapIndex } from './AcExOsnap'
 import { AcExOsnapMarker } from './AcExOsnapMarker'
@@ -138,6 +141,10 @@ function startViewer(): void {
     layout.lineBatches,
     layout.meshBatches
   )
+  const layoutExtents = resolveLayoutViewExtents(
+    layout,
+    snapshot.meta.viewExtents ?? snapshot.meta.extents
+  )
 
   const osnapIndex = new AcExOsnapIndex()
   const osnapMarker = new AcExOsnapMarker(root)
@@ -195,7 +202,8 @@ function startViewer(): void {
   }
 
   const fit = () => {
-    zoomToExtents(snapshot.meta.extents)
+    // Initial open and toolbar "Zoom extents" both use batch-derived layout bounds.
+    zoomToExtents(layoutExtents)
   }
 
   let readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
@@ -305,7 +313,10 @@ function startViewer(): void {
       i18n.toggleLocale()
     })
 
-  controls.addEventListener('change', () => render())
+  controls.addEventListener('change', () => {
+    acexCameraZoomUniform.value = camera.zoom
+    render()
+  })
 
   setupMeasurePointerInput(renderer.domElement, () => measure, render)
 
@@ -608,8 +619,9 @@ function setupMeasurePointerInput(
     if (event.button !== 0) return
     const measure = getMeasure()
     if (measure.isActive) {
-      measure.handlePointerDown(event.clientX, event.clientY)
-      render()
+      if (measure.handlePointerDown(event.clientX, event.clientY)) {
+        render()
+      }
       return
     }
     if (measure.handleSelectionPointerDown(event.clientX, event.clientY)) {
