@@ -18,6 +18,8 @@ export const ACEX_HTML_SHELL_CSS = `
     --mlcad-drawer-width: 220px;
     --mlcad-drawer-gap: 8px;
     --mlcad-ui-inset: 12px;
+    --mlcad-z-chrome: 7;
+    --mlcad-z-measure: 5;
   }
   html, body {
     margin: 0; height: 100%; overflow: hidden;
@@ -37,7 +39,7 @@ export const ACEX_HTML_SHELL_CSS = `
     position: absolute;
     left: var(--mlcad-ui-inset);
     top: 50%;
-    z-index: 4;
+    z-index: var(--mlcad-z-chrome);
     transform: translateY(-50%);
     display: flex;
     align-items: flex-start;
@@ -178,7 +180,7 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-layer-zoom:disabled { opacity: 0.35; cursor: not-allowed; }
 
   #mlcad-status-bar {
-    position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 3;
+    position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: var(--mlcad-z-chrome);
     display: flex; align-items: center; min-height: 28px; padding: 0 12px;
     border: 1px solid var(--mlcad-ui-border);
     border-radius: 6px;
@@ -198,7 +200,7 @@ export const ACEX_HTML_SHELL_CSS = `
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 5;
+    z-index: var(--mlcad-z-measure);
     overflow: hidden;
   }
   .mlcad-measure-canvas {

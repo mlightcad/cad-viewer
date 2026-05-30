@@ -30,7 +30,7 @@ describe('rebase and measurement precision', () => {
       }
     }
     const index = new AcExOsnapIndex(['endpoint'])
-    index.rebuild(layout, () => true)
+    index.rebuild(layout)
     const snap = index.findSnap(origin + 0.26, origin + 0.51, 1)
     expect(snap).toEqual({
       x: origin + 0.25,
@@ -56,7 +56,7 @@ describe('rebase and measurement precision', () => {
       meshBatches: []
     }
     const index = new AcExOsnapIndex(['endpoint'])
-    index.rebuild(layout, () => true)
+    index.rebuild(layout)
     const snap = index.findSnap(origin + 0.1, origin + 0.1, 1)
     expect(snap).toEqual({ x: origin, y: origin, mode: 'endpoint' })
   })
