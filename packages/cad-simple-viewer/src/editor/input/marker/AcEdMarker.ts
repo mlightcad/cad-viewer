@@ -131,12 +131,10 @@ export class AcEdMarker {
       }
     
       .ml-marker-triangle {
-        width: 0;
-        height: 0;
-        border-left: 0.5em solid transparent;
-        border-right: 0.5em solid transparent;
-        border-bottom: 1em solid currentColor;
-        transform: translate(-50%, -100%);
+        background: currentColor;
+        clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        /* Centroid of the upward triangle is 2/3 of the height from the apex. */
+        transform: translate(-50%, -66.6667%);
       }
     
       .ml-marker-diamond {
@@ -196,7 +194,8 @@ export class AcEdMarker {
 
       case 'triangle':
         this._el.classList.add('ml-marker-triangle')
-        this._el.style.fontSize = `${this._size}px`
+        this._el.style.width = `${this._size}px`
+        this._el.style.height = `${this._size}px`
         break
 
       case 'diamond':

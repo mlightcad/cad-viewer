@@ -1,4 +1,18 @@
-import { AcExOsnapIndex } from '../src/AcExOsnap'
+import {
+  AcExOsnapIndex,
+  extractLineBatchSnapSegments,
+  mergeConnectedSegments
+} from '../src/AcExOsnap'
+
+describe('mergeConnectedSegments', () => {
+  it('merges indexed polyline edges into one logical segment', () => {
+    const merged = mergeConnectedSegments([
+      { x0: 0, y0: 0, x1: 5, y1: 0 },
+      { x0: 5, y0: 0, x1: 10, y1: 0 }
+    ])
+    expect(merged).toEqual([{ x0: 0, y0: 0, x1: 10, y1: 0 }])
+  })
+})
 
 describe('AcExOsnapIndex', () => {
   const layout = {
@@ -85,5 +99,68 @@ describe('AcExOsnapIndex', () => {
     index.rebuild(primitiveLayout, () => true)
     const snap = index.findSnap(0.5, 0.5, 5)
     expect(snap?.mode).toBe('center')
+  })
+
+  it('merges patterned line batch segments before endpoint snap', () => {
+    const batch = {
+      layer: '0',
+      color: 0xffffff,
+      offset: [0, 0, 0] as [number, number, number],
+      positions: [0, 0, 0, 5, 0, 0, 10, 0, 0],
+      indices: [0, 1, 1, 2],
+      linePattern: {
+        pattern: [4, -2],
+        patternLength: 6,
+        viewportScale: 1
+      }
+    }
+    expect(extractLineBatchSnapSegments(batch)).toEqual([
+      { x0: 0, y0: 0, x1: 10, y1: 0 }
+    ])
+
+    const patternedLayout = {
+      ...layout,
+      lineBatches: [batch]
+    }
+    const index = new AcExOsnapIndex(['endpoint'])
+    index.rebuild(patternedLayout, () => true)
+    const snap = index.findSnap(9.8, 0.1, 1)
+    expect(snap).toEqual({ x: 10, y: 0, mode: 'endpoint' })
+  })
+
+  it('prefers analytic line endpoints over patterned render segments', () => {
+    const hybridLayout = {
+      ...layout,
+      lineBatches: [
+        {
+          layer: '0',
+          color: 0xffffff,
+          offset: [0, 0, 0] as [number, number, number],
+          positions: [0, 0, 0, 2, 0, 0, 4, 0, 0],
+          indices: [0, 1, 1, 2],
+          linePattern: {
+            pattern: [1, -1],
+            patternLength: 2,
+            viewportScale: 1
+          }
+        }
+      ],
+      osnap: {
+        primitives: [
+          {
+            kind: 'line' as const,
+            layer: '0',
+            x0: 0,
+            y0: 0,
+            x1: 100,
+            y1: 0
+          }
+        ]
+      }
+    }
+    const index = new AcExOsnapIndex(['endpoint'])
+    index.rebuild(hybridLayout, () => true)
+    const snap = index.findSnap(1.5, 0.2, 2)
+    expect(snap).toEqual({ x: 0, y: 0, mode: 'endpoint' })
   })
 })

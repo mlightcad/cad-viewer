@@ -30,6 +30,90 @@ export type AcExOsnapAcGeCurve =
   | { kind: 'spline'; curve: AcGeNurbsCurve }
   | { kind: 'point'; point: AcGePoint2d }
 
+/** Positive CCW sweep from start to end angle (radians). */
+export function normalizeArcDelta(
+  startAngle: number,
+  endAngle: number
+): number {
+  let delta = endAngle - startAngle
+  while (delta <= 0) delta += TAU
+  while (delta > TAU) delta -= TAU
+  return delta
+}
+
+/** WCS point on a circular arc from center/radius and OCS-style angle. */
+export function arcWcsPoint(
+  cx: number,
+  cy: number,
+  r: number,
+  angle: number,
+  normalSign: 1 | -1
+): AcGePoint2d {
+  const sx = normalSign === -1 ? -1 : 1
+  return new AcGePoint2d(
+    cx + sx * r * Math.cos(angle),
+    cy + r * Math.sin(angle)
+  )
+}
+
+/**
+ * Builds an open circular arc in WCS from exported center/angle data.
+ *
+ * AutoCAD stores arc angles in OCS; a `-Z` extrusion mirrors X when mapping to
+ * WCS. {@link AcGeCircArc2d}'s `clockwise` flag alone does not reproduce that,
+ * so the arc is reconstructed from WCS endpoints and bulge.
+ */
+export function arcToAcGe(prim: AcExOsnapArcPrimitive): AcGeCircArc2d {
+  const start = arcWcsPoint(
+    prim.cx,
+    prim.cy,
+    prim.r,
+    prim.startAngle,
+    prim.normalSign
+  )
+  const end = arcWcsPoint(
+    prim.cx,
+    prim.cy,
+    prim.r,
+    prim.endAngle,
+    prim.normalSign
+  )
+  const delta = normalizeArcDelta(prim.startAngle, prim.endAngle)
+  const bulge = prim.normalSign * Math.tan(delta / 4)
+  return new AcGeCircArc2d(start, end, bulge)
+}
+
+/**
+ * Positive parameter sweep for an elliptical arc (radians).
+ *
+ * @param prim - Exported ellipse primitive.
+ */
+export function ellipseArcDelta(prim: AcExOsnapEllipsePrimitive): number {
+  return normalizeArcDelta(prim.startAngle, prim.endAngle)
+}
+
+/**
+ * Evaluates a WCS point on an elliptical arc at normalized parameter `u` ∈ [0, 1].
+ *
+ * Matches AutoCAD / `AcDbEllipse` OCS→WCS mapping (including `-Z` extrusion).
+ *
+ * @param prim - Exported ellipse primitive.
+ * @param u - Normalized parameter along the arc (`0` = start, `1` = end).
+ */
+export function ellipsePointAtNormalized(
+  prim: AcExOsnapEllipsePrimitive,
+  u: number
+): AcGePoint2d {
+  const delta = ellipseArcDelta(prim)
+  const t = prim.startAngle + u * delta
+  const normalSign = prim.normalSign ?? 1
+  const lx = prim.majorR * Math.cos(t)
+  const ly = normalSign * prim.minorR * Math.sin(t)
+  const c = prim.majorX
+  const s = prim.majorY
+  return new AcGePoint2d(prim.cx + lx * c - ly * s, prim.cy + lx * s + ly * c)
+}
+
 /**
  * Builds an `AcGeCircArc2d` from a circle or arc primitive.
  *
@@ -47,13 +131,7 @@ export function circleOrArcToAcGe(
       prim.normalSign === -1
     )
   }
-  return new AcGeCircArc2d(
-    { x: prim.cx, y: prim.cy },
-    prim.r,
-    prim.startAngle,
-    prim.endAngle,
-    prim.normalSign === -1
-  )
+  return arcToAcGe(prim)
 }
 
 /**
@@ -71,7 +149,7 @@ export function ellipseToAcGe(
     prim.minorR,
     prim.startAngle,
     prim.endAngle,
-    false,
+    prim.closed,
     rotation
   )
 }

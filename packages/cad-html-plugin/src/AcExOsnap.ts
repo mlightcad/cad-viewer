@@ -93,6 +93,300 @@ function* iterLineSegments(batch: AcExLineBatch): Generator<AcExOsnapSegment> {
   }
 }
 
+/**
+ * Returns whether two WCS XY points coincide within a tolerance.
+ *
+ * @param x1 - First point X.
+ * @param y1 - First point Y.
+ * @param x2 - Second point X.
+ * @param y2 - Second point Y.
+ * @param tol - Maximum distance treated as coincident (drawing units).
+ * @returns `true` when the Euclidean distance is at most `tol`.
+ * @internal
+ */
+function pointsEqual(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  tol: number
+): boolean {
+  return Math.hypot(x1 - x2, y1 - y2) <= tol
+}
+
+/**
+ * Merges line segments that share endpoints into longer logical segments.
+ *
+ * Non-indexed {@link AcExLineBatch} geometry stores disconnected vertex pairs
+ * (one pair per rendered edge). When {@link AcExLineBatch.linePattern} is set,
+ * consecutive pairs that meet at a common endpoint belong to the same CAD entity
+ * and should snap as one line, not as independent dash or tessellation fragments.
+ *
+ * The algorithm greedily extends each unused seed segment forward and backward
+ * by attaching neighbors whose endpoints coincide within `tol`.
+ *
+ * @param segments - Tessellated WCS segments, typically from {@link iterLineSegments}.
+ * @param tol - Endpoint coincidence tolerance in drawing units; defaults to {@link FLOAT_TOL}.
+ * @returns One segment per connected chain; input order does not affect the result.
+ * @internal
+ */
+export function mergeConnectedSegments(
+  segments: AcExOsnapSegment[],
+  tol = FLOAT_TOL
+): AcExOsnapSegment[] {
+  if (segments.length <= 1) {
+    return segments
+  }
+
+  const used = new Array<boolean>(segments.length).fill(false)
+  const merged: AcExOsnapSegment[] = []
+
+  for (let start = 0; start < segments.length; start++) {
+    if (used[start]) continue
+
+    const seed = segments[start]!
+    let x0 = seed.x0
+    let y0 = seed.y0
+    let x1 = seed.x1
+    let y1 = seed.y1
+    used[start] = true
+
+    let extended = true
+    while (extended) {
+      extended = false
+      for (let i = 0; i < segments.length; i++) {
+        if (used[i]) continue
+        const seg = segments[i]!
+        if (pointsEqual(x1, y1, seg.x0, seg.y0, tol)) {
+          x1 = seg.x1
+          y1 = seg.y1
+          used[i] = true
+          extended = true
+        } else if (pointsEqual(x1, y1, seg.x1, seg.y1, tol)) {
+          x1 = seg.x0
+          y1 = seg.y0
+          used[i] = true
+          extended = true
+        }
+      }
+    }
+
+    extended = true
+    while (extended) {
+      extended = false
+      for (let i = 0; i < segments.length; i++) {
+        if (used[i]) continue
+        const seg = segments[i]!
+        if (pointsEqual(x0, y0, seg.x1, seg.y1, tol)) {
+          x0 = seg.x0
+          y0 = seg.y0
+          used[i] = true
+          extended = true
+        } else if (pointsEqual(x0, y0, seg.x0, seg.y0, tol)) {
+          x0 = seg.x1
+          y0 = seg.y1
+          used[i] = true
+          extended = true
+        }
+      }
+    }
+
+    merged.push({ x0, y0, x1, y1 })
+  }
+
+  return merged
+}
+
+/**
+ * Reads one vertex from a line batch in WCS (XY).
+ *
+ * Applies {@link AcExLineBatch.offset} after indexing into the flat
+ * {@link AcExLineBatch.positions} buffer (`vertexIndex * 3` stride).
+ *
+ * @param batch - Exported line batch from the HTML snapshot.
+ * @param vertexIndex - Zero-based vertex index referenced by the batch index buffer.
+ * @returns Transformed XY coordinates in drawing units.
+ * @internal
+ */
+function readBatchVertex(
+  batch: AcExLineBatch,
+  vertexIndex: number
+): { x: number; y: number } {
+  const [ox, oy] = batch.offset
+  const base = vertexIndex * 3
+  return {
+    x: batch.positions[base]! + ox,
+    y: batch.positions[base + 1]! + oy
+  }
+}
+
+/**
+ * Derives logical snap segments from a patterned ({@link AcExLineBatch.linePattern}) line batch.
+ *
+ * Dashed and dotted lines are drawn with a GPU shader on top of a continuous vertex
+ * chain. The snapshot index buffer encodes that chain as shared-vertex edges
+ * (`0-1`, `1-2`, …). {@link iterLineSegments} treats every index pair as a separate
+ * edge, which makes endpoint snap land on internal tessellation vertices instead of
+ * the entity's true ends; unlike AutoCAD, linetype gaps are visual only.
+ *
+ * This function walks the index graph, traces open chains from endpoints (vertices
+ * whose degree is not two), and emits one {@link AcExOsnapSegment} per chain spanning
+ * the first and last vertex positions. Closed loops and isolated edges are handled
+ * as separate chains.
+ *
+ * When the batch has no index buffer, falls back to {@link mergeConnectedSegments}
+ * over {@link iterLineSegments} output (non-indexed pair storage).
+ *
+ * @param batch - Line batch with {@link AcExLineBatch.linePattern} set.
+ * @returns Logical WCS segments suitable for endpoint / midpoint / nearest snap.
+ * @internal
+ */
+function extractPatternLineSnapSegments(
+  batch: AcExLineBatch
+): AcExOsnapSegment[] {
+  if (!batch.indices || batch.indices.length < 2) {
+    return mergeConnectedSegments([...iterLineSegments(batch)])
+  }
+
+  const edges: Array<{ a: number; b: number }> = []
+
+  for (let i = 0; i + 1 < batch.indices.length; i += 2) {
+    edges.push({ a: batch.indices[i]!, b: batch.indices[i + 1]! })
+  }
+
+  const adjacency = new Map<number, number[]>()
+  const addEdge = (a: number, b: number) => {
+    if (a === b) return
+    let listA = adjacency.get(a)
+    if (!listA) {
+      listA = []
+      adjacency.set(a, listA)
+    }
+    listA.push(b)
+    let listB = adjacency.get(b)
+    if (!listB) {
+      listB = []
+      adjacency.set(b, listB)
+    }
+    listB.push(a)
+  }
+
+  for (const edge of edges) {
+    addEdge(edge.a, edge.b)
+  }
+
+  const visitedEdges = new Set<string>()
+  const edgeKey = (a: number, b: number) => (a < b ? `${a}:${b}` : `${b}:${a}`)
+  const logical: AcExOsnapSegment[] = []
+
+  const tracePath = (start: number, next: number): number[] => {
+    const path = [start]
+    let prev = start
+    let current = next
+    while (true) {
+      visitedEdges.add(edgeKey(prev, current))
+      path.push(current)
+      const neighbors = adjacency.get(current) ?? []
+      const candidates = neighbors.filter(
+        neighbor =>
+          neighbor !== prev && !visitedEdges.has(edgeKey(current, neighbor))
+      )
+      if (candidates.length !== 1) {
+        break
+      }
+      prev = current
+      current = candidates[0]!
+    }
+    return path
+  }
+
+  for (const edge of edges) {
+    const key = edgeKey(edge.a, edge.b)
+    if (visitedEdges.has(key)) continue
+
+    const degreeA = adjacency.get(edge.a)?.length ?? 0
+    const degreeB = adjacency.get(edge.b)?.length ?? 0
+    let path: number[]
+
+    if (degreeA !== 2) {
+      path = tracePath(edge.a, edge.b)
+    } else if (degreeB !== 2) {
+      path = tracePath(edge.b, edge.a)
+    } else {
+      path = tracePath(edge.a, edge.b)
+    }
+
+    const first = readBatchVertex(batch, path[0]!)
+    const last = readBatchVertex(batch, path[path.length - 1]!)
+    logical.push({
+      x0: first.x,
+      y0: first.y,
+      x1: last.x,
+      y1: last.y
+    })
+  }
+
+  return logical.length > 0 ? logical : [...iterLineSegments(batch)]
+}
+
+/**
+ * Extracts WCS snap segments from one exported {@link AcExLineBatch}.
+ *
+ * Chooses the extraction strategy from batch metadata:
+ *
+ * - **Patterned lines** (`linePattern` present): delegates to
+ *   {@link extractPatternLineSnapSegments} so snap follows entity geometry rather
+ *   than shader dash boundaries or per-edge tessellation.
+ * - **Solid lines**: yields one segment per index pair / vertex pair via
+ *   {@link iterLineSegments} without merging.
+ *
+ * Used by {@link collectBatchSegments} when building the tessellated fallback
+ * path of {@link AcExOsnapIndex}.
+ *
+ * @param batch - One line batch from {@link AcExLayoutSnapshot.lineBatches}.
+ * @returns Snap segments in WCS; may be empty when the batch has no geometry.
+ */
+export function extractLineBatchSnapSegments(
+  batch: AcExLineBatch
+): AcExOsnapSegment[] {
+  if (batch.linePattern) {
+    return extractPatternLineSnapSegments(batch)
+  }
+  return [...iterLineSegments(batch)]
+}
+
+/**
+ * Collects all tessellated snap segments from a layout snapshot.
+ *
+ * Iterates visible {@link AcExLayoutSnapshot.lineBatches} through
+ * {@link extractLineBatchSnapSegments} and appends mesh outline edges from
+ * {@link AcExLayoutSnapshot.meshBatches}. The result supplements (or replaces,
+ * when no catalog is present) analytic {@link AcExLayoutSnapshot.osnap} primitives
+ * inside {@link AcExOsnapIndex}.
+ *
+ * @param layout - Active layout snapshot.
+ * @param isLayerVisible - Layer visibility predicate from the offline viewer.
+ * @returns Flat list of WCS segments indexed by {@link AcExOsnapIndex.rebuild}.
+ * @internal
+ */
+function collectBatchSegments(
+  layout: AcExLayoutSnapshot,
+  isLayerVisible: (layerName: string) => boolean
+): AcExOsnapSegment[] {
+  const segments: AcExOsnapSegment[] = []
+  for (const batch of layout.lineBatches) {
+    if (!isLayerVisible(batch.layer)) continue
+    segments.push(...extractLineBatchSnapSegments(batch))
+  }
+  for (const batch of layout.meshBatches) {
+    if (!isLayerVisible(batch.layer)) continue
+    for (const seg of iterMeshEdges(batch)) {
+      segments.push(seg)
+    }
+  }
+  return segments
+}
+
 function* iterMeshEdges(batch: AcExMeshBatch): Generator<AcExOsnapSegment> {
   const [ox, oy] = batch.offset
   const p = batch.positions
@@ -185,16 +479,20 @@ function primitiveBounds(prim: AcExOsnapPrimitive): {
 /**
  * Spatial index for object snap in the offline HTML viewer.
  *
- * On {@link AcExOsnapIndex.rebuild}, if {@link AcExLayoutSnapshot.osnap} contains
- * primitives, snapping is computed from analytic curves via
- * {@link collectPrimitiveSnapCandidates}. Otherwise the index falls back to
- * line segments extracted from tessellated {@link AcExLineBatch} and mesh edges
- * (legacy snapshots).
+ * On {@link AcExOsnapIndex.rebuild}, analytic {@link AcExLayoutSnapshot.osnap}
+ * primitives are indexed first. Tessellated {@link AcExLineBatch} segments are
+ * used as a fallback for legacy snapshots or entity types missing from the catalog.
+ * Line batches with {@link AcExLineBatch.linePattern} merge connected render
+ * segments so endpoint snap follows entity geometry rather than dash gaps.
  */
+type AcExOsnapIndexKind = 'primitive' | 'segment'
+
 export class AcExOsnapIndex {
   private segments: AcExOsnapSegment[] = []
   private primitives: AcExOsnapPrimitive[] = []
-  private usePrimitives = false
+  private indexedItems: Array<
+    { kind: 'primitive'; index: number } | { kind: 'segment'; index: number }
+  > = []
   private grid = new Map<string, number[]>()
   private cellSize = 1
   private modes: Set<AcExOsnapMode>
@@ -209,9 +507,9 @@ export class AcExOsnapIndex {
   /**
    * Rebuilds the snap index from the active layout snapshot.
    *
-   * When `layout.osnap.primitives` is non-empty, only those WCS primitives are
-   * indexed (curves are not approximated from render batches). When absent or
-   * empty, tessellated `lineBatches` and `meshBatches` are used instead.
+   * Analytic {@link AcExLayoutSnapshot.osnap} primitives are preferred at query
+   * time. Tessellated batches supplement or replace them when the catalog is
+   * absent or does not cover the picked geometry.
    *
    * @param layout - Active layout snapshot (batches + optional {@link AcExLayoutSnapshot.osnap}).
    * @param isLayerVisible - When `false`, primitives/batches on that layer are excluded.
@@ -221,80 +519,50 @@ export class AcExOsnapIndex {
     isLayerVisible: (layerName: string) => boolean
   ): void {
     const catalog = layout.osnap
-    if (catalog && catalog.primitives.length > 0) {
-      this.usePrimitives = true
-      this.primitives = catalog.primitives.filter(p => isLayerVisible(p.layer))
-      this.segments = []
-    } else {
-      this.usePrimitives = false
-      this.primitives = []
-      const segments: AcExOsnapSegment[] = []
-      for (const batch of layout.lineBatches) {
-        if (!isLayerVisible(batch.layer)) continue
-        for (const seg of iterLineSegments(batch)) {
-          segments.push(seg)
-        }
-      }
-      for (const batch of layout.meshBatches) {
-        if (!isLayerVisible(batch.layer)) continue
-        for (const seg of iterMeshEdges(batch)) {
-          segments.push(seg)
-        }
-      }
-      this.segments = segments
+    this.primitives =
+      catalog?.primitives.filter(p => isLayerVisible(p.layer)) ?? []
+    this.segments = collectBatchSegments(layout, isLayerVisible)
+
+    this.indexedItems = []
+    for (let i = 0; i < this.primitives.length; i++) {
+      this.indexedItems.push({ kind: 'primitive', index: i })
+    }
+    for (let i = 0; i < this.segments.length; i++) {
+      this.indexedItems.push({ kind: 'segment', index: i })
     }
 
     this.grid.clear()
-    const items = this.usePrimitives ? this.primitives : this.segments
-    if (items.length === 0) return
+    if (this.indexedItems.length === 0) return
 
     let minX = Infinity
     let minY = Infinity
     let maxX = -Infinity
     let maxY = -Infinity
 
-    if (this.usePrimitives) {
-      for (const prim of this.primitives) {
-        const b = primitiveBounds(prim)
-        minX = Math.min(minX, b.minX)
-        minY = Math.min(minY, b.minY)
-        maxX = Math.max(maxX, b.maxX)
-        maxY = Math.max(maxY, b.maxY)
-      }
-    } else {
-      for (const seg of this.segments) {
-        minX = Math.min(minX, seg.x0, seg.x1)
-        minY = Math.min(minY, seg.y0, seg.y1)
-        maxX = Math.max(maxX, seg.x0, seg.x1)
-        maxY = Math.max(maxY, seg.y0, seg.y1)
-      }
+    for (const item of this.indexedItems) {
+      const b =
+        item.kind === 'primitive'
+          ? primitiveBounds(this.primitives[item.index]!)
+          : segmentBounds(this.segments[item.index]!)
+      minX = Math.min(minX, b.minX)
+      minY = Math.min(minY, b.minY)
+      maxX = Math.max(maxX, b.maxX)
+      maxY = Math.max(maxY, b.maxY)
     }
 
     const span = Math.max(maxX - minX, maxY - minY, 1)
     this.cellSize = Math.max(span / 200, FLOAT_TOL)
 
-    for (let i = 0; i < items.length; i++) {
-      let segMinX: number
-      let segMinY: number
-      let segMaxX: number
-      let segMaxY: number
-      if (this.usePrimitives) {
-        const b = primitiveBounds(this.primitives[i]!)
-        segMinX = b.minX
-        segMinY = b.minY
-        segMaxX = b.maxX
-        segMaxY = b.maxY
-      } else {
-        const seg = this.segments[i]!
-        segMinX = Math.min(seg.x0, seg.x1)
-        segMaxX = Math.max(seg.x0, seg.x1)
-        segMinY = Math.min(seg.y0, seg.y1)
-        segMaxY = Math.max(seg.y0, seg.y1)
-      }
-      const c0x = Math.floor(segMinX / this.cellSize)
-      const c1x = Math.floor(segMaxX / this.cellSize)
-      const c0y = Math.floor(segMinY / this.cellSize)
-      const c1y = Math.floor(segMaxY / this.cellSize)
+    for (let i = 0; i < this.indexedItems.length; i++) {
+      const item = this.indexedItems[i]!
+      const b =
+        item.kind === 'primitive'
+          ? primitiveBounds(this.primitives[item.index]!)
+          : segmentBounds(this.segments[item.index]!)
+      const c0x = Math.floor(b.minX / this.cellSize)
+      const c1x = Math.floor(b.maxX / this.cellSize)
+      const c0y = Math.floor(b.minY / this.cellSize)
+      const c1y = Math.floor(b.maxY / this.cellSize)
       for (let cx = c0x; cx <= c1x; cx++) {
         for (let cy = c0y; cy <= c1y; cy++) {
           const key = cellKey(cx, cy)
@@ -312,6 +580,10 @@ export class AcExOsnapIndex {
   /**
    * Finds the best snap point near the cursor in WCS.
    *
+   * Queries analytic {@link AcExLayoutSnapshot.osnap} primitives first; only when
+   * no primitive candidate lies within the aperture does the search fall back to
+   * tessellated {@link AcExLineBatch} / mesh segments.
+   *
    * Uses AutoCAD-style mode priority: endpoint / midpoint / center beat
    * quadrant / focus / control / node, which beat nearest. Within the same
    * priority tier, the closest candidate within `threshold` wins.
@@ -326,9 +598,46 @@ export class AcExOsnapIndex {
     py: number,
     threshold: number
   ): AcExOsnapPoint | undefined {
-    const items = this.usePrimitives ? this.primitives : this.segments
-    if (items.length === 0 || threshold <= 0) return undefined
+    if (this.indexedItems.length === 0 || threshold <= 0) return undefined
 
+    const fromPrimitives = this.findSnapInItems(
+      px,
+      py,
+      threshold,
+      item => item.kind === 'primitive'
+    )
+    if (fromPrimitives) {
+      return fromPrimitives
+    }
+
+    return this.findSnapInItems(
+      px,
+      py,
+      threshold,
+      item => item.kind === 'segment'
+    )
+  }
+
+  /**
+   * Spatial query over a subset of indexed snap items.
+   *
+   * Shared by {@link findSnap} for the primitive-first and segment-fallback passes.
+   * Scans grid cells within the aperture, evaluates snap candidates per item kind,
+   * and returns the highest-priority candidate within `threshold`.
+   *
+   * @param px - Cursor X in drawing units (WCS).
+   * @param py - Cursor Y in drawing units (WCS).
+   * @param threshold - Snap aperture radius in drawing units.
+   * @param include - Filter on {@link AcExOsnapIndex}'s indexed primitive/segment entries.
+   * @returns Best snap point among included items, or `undefined` when none qualify.
+   * @internal
+   */
+  private findSnapInItems(
+    px: number,
+    py: number,
+    threshold: number,
+    include: (item: { kind: AcExOsnapIndexKind; index: number }) => boolean
+  ): AcExOsnapPoint | undefined {
     const threshSq = threshold * threshold
     const cx = Math.floor(px / this.cellSize)
     const cy = Math.floor(py / this.cellSize)
@@ -361,9 +670,11 @@ export class AcExOsnapIndex {
         for (const index of list) {
           if (seen.has(index)) continue
           seen.add(index)
+          const item = this.indexedItems[index]!
+          if (!include(item)) continue
 
-          if (this.usePrimitives) {
-            const prim = this.primitives[index]!
+          if (item.kind === 'primitive') {
+            const prim = this.primitives[item.index]!
             for (const candidate of collectPrimitiveSnapCandidates(
               prim,
               px,
@@ -372,24 +683,25 @@ export class AcExOsnapIndex {
             )) {
               consider(candidate.x, candidate.y, candidate.mode)
             }
-          } else {
-            const seg = this.segments[index]!
-            if (this.modes.has('endpoint')) {
-              consider(seg.x0, seg.y0, 'endpoint')
-              consider(seg.x1, seg.y1, 'endpoint')
-            }
-            if (this.modes.has('midpoint')) {
-              consider(
-                (seg.x0 + seg.x1) * 0.5,
-                (seg.y0 + seg.y1) * 0.5,
-                'midpoint'
-              )
-            }
-            if (this.modes.has('nearest')) {
-              const near = closestPointOnSegment(px, py, seg)
-              if (near.distSq <= threshSq) {
-                consider(near.x, near.y, 'nearest')
-              }
+            continue
+          }
+
+          const seg = this.segments[item.index]!
+          if (this.modes.has('endpoint')) {
+            consider(seg.x0, seg.y0, 'endpoint')
+            consider(seg.x1, seg.y1, 'endpoint')
+          }
+          if (this.modes.has('midpoint')) {
+            consider(
+              (seg.x0 + seg.x1) * 0.5,
+              (seg.y0 + seg.y1) * 0.5,
+              'midpoint'
+            )
+          }
+          if (this.modes.has('nearest')) {
+            const near = closestPointOnSegment(px, py, seg)
+            if (near.distSq <= threshSq) {
+              consider(near.x, near.y, 'nearest')
             }
           }
         }
@@ -397,6 +709,27 @@ export class AcExOsnapIndex {
     }
 
     return best
+  }
+}
+
+/**
+ * Axis-aligned bounds of one tessellated snap segment in WCS.
+ *
+ * @param seg - Segment whose endpoints define the bounding box.
+ * @returns `{ minX, minY, maxX, maxY }` used by the spatial grid in {@link AcExOsnapIndex.rebuild}.
+ * @internal
+ */
+function segmentBounds(seg: AcExOsnapSegment): {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+} {
+  return {
+    minX: Math.min(seg.x0, seg.x1),
+    minY: Math.min(seg.y0, seg.y1),
+    maxX: Math.max(seg.x0, seg.x1),
+    maxY: Math.max(seg.y0, seg.y1)
   }
 }
 

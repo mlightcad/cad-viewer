@@ -87,6 +87,98 @@ function scaleIsUniform(matrix: THREE.Matrix4): boolean {
   return AcGeTol.equal(sx, sy, FLOAT_TOL * Math.max(sx, sy, 1))
 }
 
+/**
+ * Resolves the block table record (BTR) that owns a layout's geometry.
+ *
+ * {@link buildOsnapCatalog} walks this BTR recursively to emit analytic snap
+ * primitives. Lookup tries, in order:
+ *
+ * 1. {@link AcDbBlockTable.getIdAt} with `layoutBtrId`
+ * 2. Linear scan of the block table comparing {@link AcDbObjectId}
+ * 3. Model-space BTR when `layoutBtrId` matches {@link AcDbBlockTable.modelSpace}
+ *
+ * @param database - Open drawing whose block table is searched.
+ * @param layoutBtrId - Object id of the layout's owning block table record
+ *   (same value stored on {@link AcExLayoutSnapshot.btrId}).
+ * @returns The matching BTR, or `undefined` when no block can be resolved.
+ * @internal
+ */
+function resolveLayoutBlock(
+  database: AcDbDatabase,
+  layoutBtrId: string
+): AcDbBlockTableRecord | undefined {
+  const direct = database.tables.blockTable.getIdAt(layoutBtrId)
+  if (direct) {
+    return direct
+  }
+  for (const block of database.tables.blockTable.newIterator()) {
+    if (block.objectId === layoutBtrId) {
+      return block
+    }
+  }
+  const modelSpace = database.tables.blockTable.modelSpace
+  if (modelSpace.objectId === layoutBtrId) {
+    return modelSpace
+  }
+  return undefined
+}
+
+/**
+ * Type guard for CAD line entities across `@mlightcad/data-model` versions.
+ *
+ * Prefer {@link AcDbLine} via `instanceof` when available. Some runtime builds
+ * expose LINE entities with `type === 'LINE'` (or `'Line'`) and `startPoint` /
+ * `endPoint` fields without registering the `AcDbLine` constructor, which would
+ * otherwise be skipped during catalog export.
+ *
+ * @param entity - Candidate entity from a layout BTR iterator.
+ * @returns `true` when the entity carries two geometric endpoints suitable for
+ *   {@link AcExOsnapLinePrimitive} export.
+ * @internal
+ */
+function isLineLikeEntity(entity: AcDbEntity): entity is AcDbEntity & {
+  startPoint: AcGePoint3dLike
+  endPoint: AcGePoint3dLike
+} {
+  if (entity instanceof AcDbLine) {
+    return true
+  }
+  const candidate = entity as {
+    type?: string
+    startPoint?: AcGePoint3dLike
+    endPoint?: AcGePoint3dLike
+  }
+  return (
+    (candidate.type === 'LINE' || candidate.type === 'Line') &&
+    candidate.startPoint != null &&
+    candidate.endPoint != null
+  )
+}
+
+/**
+ * Appends one {@link AcExOsnapLinePrimitive} from a line-like database entity.
+ *
+ * Transforms {@link AcDbLine.startPoint} / {@link AcDbLine.endPoint} (or equivalent
+ * duck-typed fields) into WCS via `matrix`, then delegates to {@link pushLine}.
+ *
+ * @param out - Primitive array mutated by {@link visitEntity}.
+ * @param layer - Effective layer after block layer-0 inheritance.
+ * @param matrix - Accumulated layout / INSERT transform.
+ * @param entity - Line entity validated by {@link isLineLikeEntity}.
+ * @internal
+ */
+function pushLineEntity(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  entity: AcDbEntity & {
+    startPoint: AcGePoint3dLike
+    endPoint: AcGePoint3dLike
+  }
+) {
+  pushLine(out, layer, matrix, entity.startPoint, entity.endPoint)
+}
+
 /** Block reference shape used for recursive osnap traversal. @internal */
 type AcExBlockReferenceLike = AcDbEntity & {
   blockTableRecord: AcDbBlockTableRecord | undefined
@@ -215,7 +307,8 @@ function pushEllipse(
     minorR: entity.minorAxisRadius * sy,
     startAngle: entity.startAngle,
     endAngle: entity.endAngle,
-    closed: entity.closed
+    closed: entity.closed,
+    normalSign: normalSignFromVector(entity.normal)
   }
   out.push(prim)
 }
@@ -380,8 +473,8 @@ function visitEntity(
     return
   }
 
-  if (entity instanceof AcDbLine) {
-    pushLine(out, layer, matrix, entity.startPoint, entity.endPoint)
+  if (isLineLikeEntity(entity)) {
+    pushLineEntity(out, layer, matrix, entity)
     return
   }
 
@@ -496,7 +589,7 @@ export function buildOsnapCatalog(
   database: AcDbDatabase,
   layoutBtrId: string
 ): AcExOsnapCatalog {
-  const block = database.tables.blockTable.getIdAt(layoutBtrId)
+  const block = resolveLayoutBlock(database, layoutBtrId)
   if (!block) {
     return { primitives: [] }
   }
