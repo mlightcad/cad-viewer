@@ -378,33 +378,38 @@ export function extractLineBatchSnapSegments(
 /**
  * Collects all tessellated snap segments from a layout snapshot.
  *
- * Iterates visible {@link AcExLayoutSnapshot.lineBatches} through
+ * Iterates {@link AcExLayoutSnapshot.lineBatches} through
  * {@link extractLineBatchSnapSegments} and appends mesh outline edges from
  * {@link AcExLayoutSnapshot.meshBatches}. The result supplements (or replaces,
  * when no catalog is present) analytic {@link AcExLayoutSnapshot.osnap} primitives
  * inside {@link AcExOsnapIndex}.
  *
  * @param layout - Active layout snapshot.
- * @param isLayerVisible - Layer visibility predicate from the offline viewer.
- * @returns Flat list of WCS segments indexed by {@link AcExOsnapIndex.rebuild}.
+ * @returns Flat list of WCS segments and parallel layer names for spatial indexing.
  * @internal
  */
-function collectBatchSegments(
-  layout: AcExLayoutSnapshot,
-  isLayerVisible: (layerName: string) => boolean
-): AcExOsnapSegment[] {
+function collectBatchSegments(layout: AcExLayoutSnapshot): {
+  segments: AcExOsnapSegment[]
+  segmentLayers: string[]
+} {
   const segments: AcExOsnapSegment[] = []
-  for (const batch of layout.lineBatches) {
-    if (!isLayerVisible(batch.layer)) continue
-    appendSegments(segments, extractLineBatchSnapSegments(batch))
+  const segmentLayers: string[] = []
+  const pushSegment = (seg: AcExOsnapSegment, layer: string) => {
+    segments.push(seg)
+    segmentLayers.push(layer)
   }
-  for (const batch of layout.meshBatches) {
-    if (!isLayerVisible(batch.layer)) continue
-    for (const seg of iterMeshEdges(batch)) {
-      segments.push(seg)
+
+  for (const batch of layout.lineBatches) {
+    for (const seg of extractLineBatchSnapSegments(batch)) {
+      pushSegment(seg, batch.layer)
     }
   }
-  return segments
+  for (const batch of layout.meshBatches) {
+    for (const seg of iterMeshEdges(batch)) {
+      pushSegment(seg, batch.layer)
+    }
+  }
+  return { segments, segmentLayers }
 }
 
 function* iterMeshEdges(batch: AcExMeshBatch): Generator<AcExOsnapSegment> {
@@ -509,13 +514,20 @@ type AcExOsnapIndexKind = 'primitive' | 'segment'
 
 export class AcExOsnapIndex {
   private segments: AcExOsnapSegment[] = []
+  private segmentLayers: string[] = []
   private primitives: AcExOsnapPrimitive[] = []
   private indexedItems: Array<
-    { kind: 'primitive'; index: number } | { kind: 'segment'; index: number }
+    | { kind: 'primitive'; index: number; layer: string }
+    | {
+        kind: 'segment'
+        index: number
+        layer: string
+      }
   > = []
   private grid = new Map<string, number[]>()
   private cellSize = 1
   private modes: Set<AcExOsnapMode>
+  private hiddenLayers = new Set<string>()
 
   /**
    * @param modes - Enabled snap modes; defaults to {@link ACEX_DEFAULT_OSNAP_MODES}.
@@ -525,37 +537,74 @@ export class AcExOsnapIndex {
   }
 
   /**
-   * Rebuilds the snap index from the active layout snapshot.
+   * Marks one layer hidden or visible for object snap without rebuilding the index.
    *
-   * Analytic {@link AcExLayoutSnapshot.osnap} primitives are preferred at query
-   * time. Tessellated batches supplement or replace them when the catalog is
-   * absent or does not cover the picked geometry.
+   * @param layerName - Layer to update.
+   * @param hidden - When `true`, snap skips geometry on this layer.
+   */
+  setLayerHidden(layerName: string, hidden: boolean): void {
+    if (hidden) {
+      this.hiddenLayers.add(layerName)
+    } else {
+      this.hiddenLayers.delete(layerName)
+    }
+  }
+
+  /** Makes every indexed layer eligible for object snap. */
+  showAllLayers(): void {
+    this.hiddenLayers.clear()
+  }
+
+  /**
+   * Excludes every listed layer from object snap.
+   *
+   * @param layerNames - Layers to hide from snap queries.
+   */
+  hideAllLayers(layerNames: Iterable<string>): void {
+    this.hiddenLayers.clear()
+    for (const name of layerNames) {
+      this.hiddenLayers.add(name)
+    }
+  }
+
+  /**
+   * Builds the snap index from the active layout snapshot.
+   *
+   * Indexes all analytic and tessellated geometry once. Layer visibility is
+   * applied at query time via {@link setLayerHidden}, {@link showAllLayers}, and
+   * {@link hideAllLayers} so toggling many layers stays O(1).
    *
    * @param layout - Active layout snapshot (batches + optional {@link AcExLayoutSnapshot.osnap}).
-   * @param isLayerVisible - When `false`, primitives/batches on that layer are excluded.
    */
-  rebuild(
-    layout: AcExLayoutSnapshot,
-    isLayerVisible: (layerName: string) => boolean
-  ): void {
+  rebuild(layout: AcExLayoutSnapshot): void {
     const catalog = layout.osnap
-    this.primitives =
-      catalog?.primitives.filter(p => isLayerVisible(p.layer)) ?? []
-    // Tessellated batches can contain millions of edges; skip them when analytic
-    // osnap data is available (avoids stack overflow and unnecessary work).
-    this.segments =
-      this.primitives.length > 0
-        ? []
-        : collectBatchSegments(layout, isLayerVisible)
+    this.primitives = catalog?.primitives ?? []
+    if (this.primitives.length > 0) {
+      this.segments = []
+      this.segmentLayers = []
+    } else {
+      const collected = collectBatchSegments(layout)
+      this.segments = collected.segments
+      this.segmentLayers = collected.segmentLayers
+    }
 
     this.indexedItems = []
     for (let i = 0; i < this.primitives.length; i++) {
-      this.indexedItems.push({ kind: 'primitive', index: i })
+      this.indexedItems.push({
+        kind: 'primitive',
+        index: i,
+        layer: this.primitives[i]!.layer
+      })
     }
     for (let i = 0; i < this.segments.length; i++) {
-      this.indexedItems.push({ kind: 'segment', index: i })
+      this.indexedItems.push({
+        kind: 'segment',
+        index: i,
+        layer: this.segmentLayers[i]!
+      })
     }
 
+    this.hiddenLayers.clear()
     this.grid.clear()
     if (this.indexedItems.length === 0) return
 
@@ -697,6 +746,7 @@ export class AcExOsnapIndex {
           seen.add(index)
           const item = this.indexedItems[index]!
           if (!include(item)) continue
+          if (this.hiddenLayers.has(item.layer)) continue
 
           if (item.kind === 'primitive') {
             const prim = this.primitives[item.index]!

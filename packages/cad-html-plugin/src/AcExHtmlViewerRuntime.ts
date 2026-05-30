@@ -20,6 +20,13 @@ import type {
   AcExMeshBatch,
   AcExSnapshot
 } from './AcExSnapshotTypes'
+import {
+  copyFloat32Buffer,
+  copyUint32Buffer,
+  releaseLayerGroupsGeometryCpuArrays,
+  releaseSnapshotBatchBuffers,
+  removeSnapshotElement
+} from './AcExViewerMemory'
 
 /** Matches {@link AcTrBaseView} orthographic half-height in world units. */
 const ACEX_CAMERA_FRUSTUM = 400
@@ -134,11 +141,15 @@ function startViewer(): void {
 
   const osnapIndex = new AcExOsnapIndex()
   const osnapMarker = new AcExOsnapMarker(root)
-  const isLayerVisible = (name: string) => layerVisible.get(name) !== false
-  const rebuildOsnapIndex = () => {
-    osnapIndex.rebuild(layout, isLayerVisible)
+  osnapIndex.rebuild(layout)
+  for (const layer of snapshot.layers) {
+    if (!layer.visible) {
+      osnapIndex.setLayerHidden(layer.name, true)
+    }
   }
-  rebuildOsnapIndex()
+
+  releaseSnapshotBatchBuffers(snapshot, snapshot.activeLayoutBtrId)
+  removeSnapshotElement(snapshotEl)
 
   const updateCameraFrustum = (width?: number, height?: number) => {
     const size = getCanvasSize()
@@ -270,7 +281,13 @@ function startViewer(): void {
     i18n,
     render,
     zoomToExtents,
-    rebuildOsnapIndex
+    osnapIndex,
+    sortedLayerNames: [
+      ...new Set([
+        ...snapshot.layers.map(layer => layer.name),
+        ...layerGroups.keys()
+      ])
+    ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
   })
 
   i18n.setOnChange(() => {
@@ -340,6 +357,7 @@ function startViewer(): void {
 
   resize()
   fit()
+  releaseLayerGroupsGeometryCpuArrays(layerGroups)
   statusEl.textContent = readyStatus
   hideLoading()
 }
@@ -370,8 +388,10 @@ interface AcExLayerPanelContext {
   render: () => void
   /** Fits the camera to the given extents and redraws. */
   zoomToExtents: (extents: AcExExtents) => void
-  /** Rebuilds the object-snap index after layer visibility changes. */
-  rebuildOsnapIndex: () => void
+  /** Object-snap index updated when layer visibility changes. */
+  osnapIndex: AcExOsnapIndex
+  /** Sorted layer names for bulk show/hide actions. */
+  sortedLayerNames: string[]
 }
 
 /** Handles returned by {@link setupLayerPanel} for locale-driven UI updates. */
@@ -392,7 +412,8 @@ function setupLayerPanel(
     i18n,
     render,
     zoomToExtents,
-    rebuildOsnapIndex
+    osnapIndex,
+    sortedLayerNames
   } = ctx
 
   const layersBtn = document.getElementById('mlcad-layers-btn')
@@ -405,14 +426,7 @@ function setupLayerPanel(
 
   const layerRows: AcExLayerRowRefs[] = []
 
-  const layerNames = new Set(snapshot.layers.map(layer => layer.name))
-  for (const name of layerGroups.keys()) {
-    layerNames.add(name)
-  }
-
-  const sortedLayers = [...layerNames].sort((a, b) =>
-    a.localeCompare(b, undefined, { numeric: true })
-  )
+  const sortedLayers = sortedLayerNames
 
   const layerMeta = new Map(snapshot.layers.map(layer => [layer.name, layer]))
 
@@ -422,12 +436,19 @@ function setupLayerPanel(
     layerVisible.set(name, visible)
     const group = layerGroups.get(name)
     if (group) group.visible = visible
-    rebuildOsnapIndex()
+    osnapIndex.setLayerHidden(name, !visible)
   }
 
   const setAllLayersVisible = (visible: boolean) => {
     for (const name of sortedLayers) {
-      setLayerVisible(name, visible)
+      layerVisible.set(name, visible)
+      const group = layerGroups.get(name)
+      if (group) group.visible = visible
+    }
+    if (visible) {
+      osnapIndex.showAllLayers()
+    } else {
+      osnapIndex.hideAllLayers(sortedLayers)
     }
     for (const checkbox of checkboxes) {
       checkbox.checked = visible
@@ -527,10 +548,12 @@ function createLineObject(batch: AcExLineBatch): THREE.LineSegments | null {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(batch.positions, 3)
+    new THREE.BufferAttribute(copyFloat32Buffer(batch.positions), 3)
   )
   if (batch.indices && batch.indices.length > 0) {
-    geometry.setIndex(new THREE.BufferAttribute(batch.indices, 1))
+    geometry.setIndex(
+      new THREE.BufferAttribute(copyUint32Buffer(batch.indices), 1)
+    )
   }
   if (
     batch.linePattern &&
@@ -539,7 +562,10 @@ function createLineObject(batch: AcExLineBatch): THREE.LineSegments | null {
   ) {
     geometry.setAttribute(
       'lineDistance',
-      new THREE.Float32BufferAttribute(batch.lineDistances, 1)
+      new THREE.Float32BufferAttribute(
+        copyFloat32Buffer(batch.lineDistances),
+        1
+      )
     )
   }
   const material = createViewerLineMaterial(batch)
@@ -608,10 +634,12 @@ function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(batch.positions, 3)
+    new THREE.BufferAttribute(copyFloat32Buffer(batch.positions), 3)
   )
   if (batch.indices && batch.indices.length > 0) {
-    geometry.setIndex(new THREE.BufferAttribute(batch.indices, 1))
+    geometry.setIndex(
+      new THREE.BufferAttribute(copyUint32Buffer(batch.indices), 1)
+    )
   } else if (batch.positions.length >= 9) {
     geometry.setIndex([0, 1, 2])
   }
@@ -622,7 +650,10 @@ function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
   ) {
     geometry.setAttribute(
       'gradientPosition',
-      new THREE.Float32BufferAttribute(batch.gradientPositions, 2)
+      new THREE.Float32BufferAttribute(
+        copyFloat32Buffer(batch.gradientPositions),
+        2
+      )
     )
   }
   const material = createViewerMeshMaterial(batch)

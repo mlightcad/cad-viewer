@@ -40,29 +40,43 @@ describe('AcExOsnapIndex', () => {
 
   it('snaps to the nearest endpoint within threshold', () => {
     const index = new AcExOsnapIndex(['endpoint'])
-    index.rebuild(layout, () => true)
+    index.rebuild(layout)
     const snap = index.findSnap(0.4, 0.2, 1)
     expect(snap).toEqual({ x: 0, y: 0, mode: 'endpoint' })
   })
 
   it('snaps to segment midpoint', () => {
     const index = new AcExOsnapIndex(['midpoint'])
-    index.rebuild(layout, () => true)
+    index.rebuild(layout)
     const snap = index.findSnap(5.1, 0.1, 1)
     expect(snap).toEqual({ x: 5, y: 0, mode: 'midpoint' })
   })
 
   it('prefers endpoint over nearest on the same segment', () => {
     const index = new AcExOsnapIndex(['endpoint', 'nearest'])
-    index.rebuild(layout, () => true)
+    index.rebuild(layout)
     const snap = index.findSnap(0.2, 0.1, 1)
     expect(snap?.mode).toBe('endpoint')
   })
 
   it('ignores geometry on hidden layers', () => {
     const index = new AcExOsnapIndex(['endpoint'])
-    index.rebuild(layout, name => name !== '0')
+    index.rebuild(layout)
+    index.setLayerHidden('0', true)
     expect(index.findSnap(0.1, 0.1, 1)).toBeUndefined()
+  })
+
+  it('toggles layer visibility without rebuilding the spatial index', () => {
+    const index = new AcExOsnapIndex(['endpoint'])
+    index.rebuild(layout)
+    index.hideAllLayers(['0'])
+    expect(index.findSnap(0.1, 0.1, 1)).toBeUndefined()
+    index.showAllLayers()
+    expect(index.findSnap(0.1, 0.1, 1)).toEqual({
+      x: 0,
+      y: 0,
+      mode: 'endpoint'
+    })
   })
 
   it('uses analytic primitives instead of tessellated segments', () => {
@@ -82,7 +96,7 @@ describe('AcExOsnapIndex', () => {
       }
     }
     const index = new AcExOsnapIndex(['center'])
-    index.rebuild(primitiveLayout, () => true)
+    index.rebuild(primitiveLayout)
     const snap = index.findSnap(50.2, 0.1, 2)
     expect(snap).toEqual({ x: 50, y: 0, mode: 'center' })
   })
@@ -104,7 +118,7 @@ describe('AcExOsnapIndex', () => {
       }
     }
     const index = new AcExOsnapIndex(['center', 'nearest'])
-    index.rebuild(primitiveLayout, () => true)
+    index.rebuild(primitiveLayout)
     const snap = index.findSnap(0.5, 0.5, 5)
     expect(snap?.mode).toBe('center')
   })
@@ -131,7 +145,7 @@ describe('AcExOsnapIndex', () => {
       lineBatches: [batch]
     }
     const index = new AcExOsnapIndex(['endpoint'])
-    index.rebuild(patternedLayout, () => true)
+    index.rebuild(patternedLayout)
     const snap = index.findSnap(9.8, 0.1, 1)
     expect(snap).toEqual({ x: 10, y: 0, mode: 'endpoint' })
   })
@@ -167,7 +181,7 @@ describe('AcExOsnapIndex', () => {
       }
     }
     const index = new AcExOsnapIndex(['endpoint'])
-    index.rebuild(hybridLayout, () => true)
+    index.rebuild(hybridLayout)
     const snap = index.findSnap(1.5, 0.2, 2)
     expect(snap).toEqual({ x: 0, y: 0, mode: 'endpoint' })
   })
@@ -196,7 +210,7 @@ describe('AcExOsnapIndex', () => {
       meshBatches: []
     }
     const index = new AcExOsnapIndex(['endpoint'])
-    expect(() => index.rebuild(largeLayout, () => true)).not.toThrow()
+    expect(() => index.rebuild(largeLayout)).not.toThrow()
     expect(index.findSnap(0.2, 0.1, 1)).toEqual({
       x: 0,
       y: 0,
