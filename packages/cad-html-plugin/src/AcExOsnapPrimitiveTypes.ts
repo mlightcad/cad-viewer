@@ -176,6 +176,12 @@ export interface AcExOsnapEllipsePrimitive extends AcExOsnapPrimitiveBase {
   endAngle: number
   /** `true` for a closed ellipse; `false` for an elliptical arc. */
   closed: boolean
+  /**
+   * Extrusion normal sign (`+1` for +Z, `-1` for -Z).
+   *
+   * Omitted in older HTML exports; treated as `1`.
+   */
+  normalSign?: 1 | -1
 }
 
 /**

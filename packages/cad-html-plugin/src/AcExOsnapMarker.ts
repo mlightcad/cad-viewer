@@ -96,11 +96,12 @@ export class AcExOsnapMarker {
         background: transparent;
       }
       .mlcad-osnap-marker--triangle {
-        width: 0; height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-bottom: 10px solid currentColor;
-        transform: translate(-50%, -100%);
+        width: 12px;
+        height: 10px;
+        background: currentColor;
+        clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        /* Centroid of the upward triangle is 2/3 of the height from the apex. */
+        transform: translate(-50%, -66.6667%);
       }
       .mlcad-osnap-marker--circle {
         width: 12px; height: 12px;

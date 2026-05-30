@@ -11,7 +11,10 @@
 
 import type { AcGePoint2dLike } from '@mlightcad/data-model'
 
-import { primitiveToAcGeCurve } from './AcExOsnapPrimitiveToAcGe'
+import {
+  ellipsePointAtNormalized,
+  primitiveToAcGeCurve
+} from './AcExOsnapPrimitiveToAcGe'
 import type {
   AcExOsnapMode,
   AcExOsnapPrimitive
@@ -110,15 +113,16 @@ export function collectPrimitiveSnapCandidates(
     }
     case 'ellipse': {
       const ellipse = geo.curve
-      if (modes.has('endpoint') && !ellipse.closed) {
-        pushPoint(out, ellipse.startPoint, 'endpoint')
-        pushPoint(out, ellipse.endPoint, 'endpoint')
+      if (prim.kind !== 'ellipse') break
+      if (modes.has('endpoint') && !prim.closed) {
+        pushPoint(out, ellipsePointAtNormalized(prim, 0), 'endpoint')
+        pushPoint(out, ellipsePointAtNormalized(prim, 1), 'endpoint')
       }
       if (modes.has('center')) {
         pushPoint(out, ellipse.center, 'center')
       }
-      if (modes.has('midpoint') && !ellipse.closed) {
-        pushPoint(out, ellipse.getPoint(0.5), 'midpoint')
+      if (modes.has('midpoint') && !prim.closed) {
+        pushPoint(out, ellipsePointAtNormalized(prim, 0.5), 'midpoint')
       }
       if (modes.has('quadrant')) {
         for (const p of ellipse.getQuadrantPoints()) {
