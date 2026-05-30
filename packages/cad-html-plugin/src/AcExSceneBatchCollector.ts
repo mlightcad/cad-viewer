@@ -177,6 +177,7 @@ function resolveExportedHatchPattern(
 }
 
 function readWorldOffset(object: THREE.Object3D): [number, number, number] {
+  // Batched geometry is rebased: vertices are local and object.position is the origin.
   const p = object.position
   return [p.x, p.y, p.z]
 }

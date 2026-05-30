@@ -2,6 +2,8 @@
  * Object snap (OSNAP) types for the offline HTML viewer.
  *
  * These definitions describe **analytic** geometry in world coordinates (WCS, XY plane).
+ * All coordinate fields use IEEE-754 `number` (double precision) for measurement-grade
+ * accuracy on large-coordinate drawings.
  * They are serialized per layout in {@link AcExLayoutSnapshot.osnap} at export time
  * (see {@link buildOsnapCatalog}) and consumed at runtime by {@link AcExOsnapIndex}
  * instead of tessellated render batches.

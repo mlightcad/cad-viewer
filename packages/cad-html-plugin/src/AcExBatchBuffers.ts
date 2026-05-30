@@ -1,25 +1,4 @@
 /**
- * Applies a world-space offset to a flat XYZ {@link Float32Array} position buffer.
- *
- * @param positions - Local-space vertex buffer (`itemSize` 3).
- * @param offset - Translation added to every vertex.
- * @returns A new buffer with the offset baked in.
- */
-export function applyOffsetToPositions(
-  positions: Float32Array,
-  offset: [number, number, number]
-): Float32Array {
-  const result = new Float32Array(positions.length)
-  const [ox, oy, oz] = offset
-  for (let i = 0; i < positions.length; i += 3) {
-    result[i] = positions[i]! + ox
-    result[i + 1] = positions[i + 1]! + oy
-    result[i + 2] = positions[i + 2]! + oz
-  }
-  return result
-}
-
-/**
  * Copies a contiguous span from an array-like source into a {@link Float32Array}.
  *
  * @internal
@@ -57,4 +36,14 @@ export function copyUint32Range(
     result[i] = array[start + i]!
   }
   return result
+}
+
+/**
+ * Converts one rebased local coordinate plus batch origin to WCS using double precision.
+ *
+ * Used by extent and legacy batch-based OSNAP paths so large origins are not
+ * baked into {@link Float32Array} vertex buffers.
+ */
+export function toWcsCoord(local: number, origin: number): number {
+  return local + origin
 }

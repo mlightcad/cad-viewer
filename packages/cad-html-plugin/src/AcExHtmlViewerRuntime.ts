@@ -2,7 +2,6 @@ import { FLOAT_TOL } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
-import { applyOffsetToPositions } from './AcExBatchBuffers'
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import { computeLayerExtentsMap } from './AcExLayerExtents'
@@ -526,8 +525,10 @@ function setupLayerPanel(
 function createLineObject(batch: AcExLineBatch): THREE.LineSegments | null {
   if (batch.positions.length < 6) return null
   const geometry = new THREE.BufferGeometry()
-  const positions = applyOffsetToPositions(batch.positions, batch.offset)
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(batch.positions, 3)
+  )
   if (batch.indices && batch.indices.length > 0) {
     geometry.setIndex(new THREE.BufferAttribute(batch.indices, 1))
   }
@@ -542,7 +543,9 @@ function createLineObject(batch: AcExLineBatch): THREE.LineSegments | null {
     )
   }
   const material = createViewerLineMaterial(batch)
-  return new THREE.LineSegments(geometry, material)
+  const object = new THREE.LineSegments(geometry, material)
+  object.position.set(batch.offset[0], batch.offset[1], batch.offset[2])
+  return object
 }
 
 /** Same defaults as {@link AcTrBaseView#createCameraControls}. */
@@ -603,11 +606,13 @@ function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
     return null
   }
   const geometry = new THREE.BufferGeometry()
-  const positions = applyOffsetToPositions(batch.positions, batch.offset)
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(batch.positions, 3)
+  )
   if (batch.indices && batch.indices.length > 0) {
     geometry.setIndex(new THREE.BufferAttribute(batch.indices, 1))
-  } else if (positions.length >= 9) {
+  } else if (batch.positions.length >= 9) {
     geometry.setIndex([0, 1, 2])
   }
   if (
@@ -621,7 +626,9 @@ function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
     )
   }
   const material = createViewerMeshMaterial(batch)
-  return new THREE.Mesh(geometry, material)
+  const object = new THREE.Mesh(geometry, material)
+  object.position.set(batch.offset[0], batch.offset[1], batch.offset[2])
+  return object
 }
 
 bootstrap()

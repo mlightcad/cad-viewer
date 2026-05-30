@@ -1,3 +1,4 @@
+import { toWcsCoord } from './AcExBatchBuffers'
 import type {
   AcExExtents,
   AcExLineBatch,
@@ -50,8 +51,8 @@ export function expandExtentsFromPositions(
   const ox = offset[0]
   const oy = offset[1]
   for (let i = 0; i + 2 < positions.length; i += 3) {
-    const x = positions[i]! + ox
-    const y = positions[i + 1]! + oy
+    const x = toWcsCoord(positions[i]!, ox)
+    const y = toWcsCoord(positions[i + 1]!, oy)
     if (!extents.valid) {
       extents.minX = extents.maxX = x
       extents.minY = extents.maxY = y
