@@ -112,11 +112,11 @@ export interface AcExLineBatch {
   layer: string
   /** Line color as 24-bit RGB hex. */
   color: number
-  /** World-space translation applied to every vertex after unpacking. */
+  /** Rebase origin (world translation) stored in double precision; not baked into {@link AcExLineBatch.positions}. */
   offset: [number, number, number]
   /**
-   * Flat vertex buffer: `[x0, y0, z0, x1, y1, z1, …]` in local space
-   * before {@link AcExLineBatch.offset} is applied.
+   * Rebased local vertex buffer: `[x0, y0, z0, x1, y1, z1, …]`.
+   * World position = local + {@link AcExLineBatch.offset} (applied via object transform at render time).
    */
   positions: Float32Array
   /**
@@ -158,11 +158,11 @@ export interface AcExMeshBatch {
   layer: string
   /** Fill color as 24-bit RGB hex. */
   color: number
-  /** World-space translation applied to every vertex after unpacking. */
+  /** Rebase origin (world translation) stored in double precision; not baked into {@link AcExMeshBatch.positions}. */
   offset: [number, number, number]
   /**
-   * Flat vertex buffer: `[x0, y0, z0, x1, y1, z1, …]` in local space
-   * before {@link AcExMeshBatch.offset} is applied.
+   * Rebased local vertex buffer: `[x0, y0, z0, x1, y1, z1, …]`.
+   * World position = local + {@link AcExMeshBatch.offset} (applied via object transform at render time).
    */
   positions: Float32Array
   /**
@@ -204,6 +204,9 @@ export interface AcExLayoutSnapshot {
    * Populated at export time by {@link buildOsnapCatalog} from the drawing database
    * (not from tessellated THREE batches). Includes lines, arcs, circles, ellipses,
    * splines, and points in WCS, including entities inside block references.
+   *
+   * Coordinates are stored as IEEE-754 `number` (double) in JSON for measurement-grade
+   * precision; they are not converted to {@link Float32Array}.
    *
    * When {@link AcExOsnapCatalog.primitives} is non-empty, {@link AcExOsnapIndex}
    * uses these definitions exclusively and does **not** snap to discretized

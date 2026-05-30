@@ -1,5 +1,6 @@
 import { FLOAT_TOL } from '@mlightcad/data-model'
 
+import { toWcsCoord } from './AcExBatchBuffers'
 import { collectPrimitiveSnapCandidates, distSq } from './AcExOsnapGeometry'
 import type {
   AcExOsnapMode,
@@ -67,6 +68,23 @@ function closestPointOnSegment(
   return { x, y, distSq: distSq(px, py, x, y) }
 }
 
+function appendSegments(
+  target: AcExOsnapSegment[],
+  source: Iterable<AcExOsnapSegment>
+): void {
+  for (const seg of source) {
+    target.push(seg)
+  }
+}
+
+function segmentsFromIterable(
+  source: Iterable<AcExOsnapSegment>
+): AcExOsnapSegment[] {
+  const result: AcExOsnapSegment[] = []
+  appendSegments(result, source)
+  return result
+}
+
 function* iterLineSegments(batch: AcExLineBatch): Generator<AcExOsnapSegment> {
   const [ox, oy] = batch.offset
   const p = batch.positions
@@ -75,20 +93,20 @@ function* iterLineSegments(batch: AcExLineBatch): Generator<AcExOsnapSegment> {
       const i0 = batch.indices[i]! * 3
       const i1 = batch.indices[i + 1]! * 3
       yield {
-        x0: p[i0]! + ox,
-        y0: p[i0 + 1]! + oy,
-        x1: p[i1]! + ox,
-        y1: p[i1 + 1]! + oy
+        x0: toWcsCoord(p[i0]!, ox),
+        y0: toWcsCoord(p[i0 + 1]!, oy),
+        x1: toWcsCoord(p[i1]!, ox),
+        y1: toWcsCoord(p[i1 + 1]!, oy)
       }
     }
     return
   }
   for (let i = 0; i + 5 < p.length; i += 6) {
     yield {
-      x0: p[i]! + ox,
-      y0: p[i + 1]! + oy,
-      x1: p[i + 3]! + ox,
-      y1: p[i + 4]! + oy
+      x0: toWcsCoord(p[i]!, ox),
+      y0: toWcsCoord(p[i + 1]!, oy),
+      x1: toWcsCoord(p[i + 3]!, ox),
+      y1: toWcsCoord(p[i + 4]!, oy)
     }
   }
 }
@@ -215,8 +233,8 @@ function readBatchVertex(
   const [ox, oy] = batch.offset
   const base = vertexIndex * 3
   return {
-    x: batch.positions[base]! + ox,
-    y: batch.positions[base + 1]! + oy
+    x: toWcsCoord(batch.positions[base]!, ox),
+    y: toWcsCoord(batch.positions[base + 1]!, oy)
   }
 }
 
@@ -245,7 +263,7 @@ function extractPatternLineSnapSegments(
   batch: AcExLineBatch
 ): AcExOsnapSegment[] {
   if (!batch.indices || batch.indices.length < 2) {
-    return mergeConnectedSegments([...iterLineSegments(batch)])
+    return mergeConnectedSegments(segmentsFromIterable(iterLineSegments(batch)))
   }
 
   const edges: Array<{ a: number; b: number }> = []
@@ -326,7 +344,9 @@ function extractPatternLineSnapSegments(
     })
   }
 
-  return logical.length > 0 ? logical : [...iterLineSegments(batch)]
+  return logical.length > 0
+    ? logical
+    : segmentsFromIterable(iterLineSegments(batch))
 }
 
 /**
@@ -352,7 +372,7 @@ export function extractLineBatchSnapSegments(
   if (batch.linePattern) {
     return extractPatternLineSnapSegments(batch)
   }
-  return [...iterLineSegments(batch)]
+  return segmentsFromIterable(iterLineSegments(batch))
 }
 
 /**
@@ -376,7 +396,7 @@ function collectBatchSegments(
   const segments: AcExOsnapSegment[] = []
   for (const batch of layout.lineBatches) {
     if (!isLayerVisible(batch.layer)) continue
-    segments.push(...extractLineBatchSnapSegments(batch))
+    appendSegments(segments, extractLineBatchSnapSegments(batch))
   }
   for (const batch of layout.meshBatches) {
     if (!isLayerVisible(batch.layer)) continue
@@ -391,8 +411,8 @@ function* iterMeshEdges(batch: AcExMeshBatch): Generator<AcExOsnapSegment> {
   const [ox, oy] = batch.offset
   const p = batch.positions
   const read = (vi: number): { x: number; y: number } => ({
-    x: p[vi * 3]! + ox,
-    y: p[vi * 3 + 1]! + oy
+    x: toWcsCoord(p[vi * 3]!, ox),
+    y: toWcsCoord(p[vi * 3 + 1]!, oy)
   })
 
   function* triangleEdges(
@@ -521,7 +541,12 @@ export class AcExOsnapIndex {
     const catalog = layout.osnap
     this.primitives =
       catalog?.primitives.filter(p => isLayerVisible(p.layer)) ?? []
-    this.segments = collectBatchSegments(layout, isLayerVisible)
+    // Tessellated batches can contain millions of edges; skip them when analytic
+    // osnap data is available (avoids stack overflow and unnecessary work).
+    this.segments =
+      this.primitives.length > 0
+        ? []
+        : collectBatchSegments(layout, isLayerVisible)
 
     this.indexedItems = []
     for (let i = 0; i < this.primitives.length; i++) {

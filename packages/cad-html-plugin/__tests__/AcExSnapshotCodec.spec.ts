@@ -104,4 +104,60 @@ describe('AcExSnapshotCodec', () => {
     expect(Array.from(mesh.indices!)).toEqual([0, 1, 2])
     expect(Array.from(mesh.gradientPositions!)).toEqual([0, 0, 1, 0, 0, 1])
   })
+
+  it('preserves large rebase origins as float64', () => {
+    const largeOrigin = 1_234_567_890.125
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: {
+          minX: largeOrigin,
+          minY: largeOrigin,
+          maxX: largeOrigin + 10,
+          maxY: largeOrigin + 10
+        },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [
+            {
+              layer: '0',
+              color: 0xff0000,
+              offset: [largeOrigin, largeOrigin + 100, 0] as [
+                number,
+                number,
+                number
+              ],
+              positions: f32([0.5, 1.25, 0, 10.5, 2.75, 0])
+            }
+          ],
+          meshBatches: []
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const line = decodeSnapshot(encodeSnapshot(snapshot)).layouts[0]!
+      .lineBatches[0]!
+    expect(line.offset[0]).toBe(largeOrigin)
+    expect(line.offset[1]).toBe(largeOrigin + 100)
+    expect(Array.from(line.positions)).toEqual([0.5, 1.25, 0, 10.5, 2.75, 0])
+  })
 })

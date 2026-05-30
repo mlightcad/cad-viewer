@@ -171,4 +171,36 @@ describe('AcExOsnapIndex', () => {
     const snap = index.findSnap(1.5, 0.2, 2)
     expect(snap).toEqual({ x: 0, y: 0, mode: 'endpoint' })
   })
+
+  it('rebuilds large tessellated layouts without blowing the call stack', () => {
+    const positions = new Float32Array(200_000 * 6)
+    for (let i = 0; i < 200_000; i++) {
+      const base = i * 6
+      positions[base] = i
+      positions[base + 1] = 0
+      positions[base + 3] = i + 1
+      positions[base + 4] = 0
+    }
+    const largeLayout = {
+      btrId: 'model',
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [
+        {
+          layer: '0',
+          color: 0xffffff,
+          offset: [0, 0, 0] as [number, number, number],
+          positions
+        }
+      ],
+      meshBatches: []
+    }
+    const index = new AcExOsnapIndex(['endpoint'])
+    expect(() => index.rebuild(largeLayout, () => true)).not.toThrow()
+    expect(index.findSnap(0.2, 0.1, 1)).toEqual({
+      x: 0,
+      y: 0,
+      mode: 'endpoint'
+    })
+  })
 })

@@ -131,9 +131,9 @@ function readLayout(reader: BinaryReader): AcExLayoutSnapshot {
 function writeLineBatch(writer: BinaryWriter, batch: AcExLineBatch): void {
   writer.writeString(batch.layer)
   writer.writeU32(batch.color >>> 0)
-  writer.writeF32(batch.offset[0]!)
-  writer.writeF32(batch.offset[1]!)
-  writer.writeF32(batch.offset[2]!)
+  writer.writeF64(batch.offset[0]!)
+  writer.writeF64(batch.offset[1]!)
+  writer.writeF64(batch.offset[2]!)
   writer.writeFloat32Array(batch.positions)
 
   let flags = 0
@@ -159,9 +159,9 @@ function readLineBatch(reader: BinaryReader): AcExLineBatch {
   const layer = reader.readString()
   const color = reader.readU32()
   const offset: [number, number, number] = [
-    reader.readF32(),
-    reader.readF32(),
-    reader.readF32()
+    reader.readF64(),
+    reader.readF64(),
+    reader.readF64()
   ]
   const positions = reader.readFloat32Array()
   const flags = reader.readU8()
@@ -183,9 +183,9 @@ function readLineBatch(reader: BinaryReader): AcExLineBatch {
 function writeMeshBatch(writer: BinaryWriter, batch: AcExMeshBatch): void {
   writer.writeString(batch.layer)
   writer.writeU32(batch.color >>> 0)
-  writer.writeF32(batch.offset[0]!)
-  writer.writeF32(batch.offset[1]!)
-  writer.writeF32(batch.offset[2]!)
+  writer.writeF64(batch.offset[0]!)
+  writer.writeF64(batch.offset[1]!)
+  writer.writeF64(batch.offset[2]!)
   writer.writeFloat32Array(batch.positions)
 
   let flags = 0
@@ -219,9 +219,9 @@ function readMeshBatch(reader: BinaryReader): AcExMeshBatch {
   const layer = reader.readString()
   const color = reader.readU32()
   const offset: [number, number, number] = [
-    reader.readF32(),
-    reader.readF32(),
-    reader.readF32()
+    reader.readF64(),
+    reader.readF64(),
+    reader.readF64()
   ]
   const positions = reader.readFloat32Array()
   const flags = reader.readU8()
@@ -270,6 +270,13 @@ class BinaryWriter {
     new DataView(chunk.buffer).setFloat32(0, value, true)
     this.chunks.push(chunk)
     this.length += 4
+  }
+
+  writeF64(value: number): void {
+    const chunk = new Uint8Array(8)
+    new DataView(chunk.buffer).setFloat64(0, value, true)
+    this.chunks.push(chunk)
+    this.length += 8
   }
 
   writeBytes(bytes: Uint8Array): void {
@@ -346,6 +353,17 @@ class BinaryReader {
     )
     const value = view.getFloat32(0, true)
     this.offset += 4
+    return value
+  }
+
+  readF64(): number {
+    const view = new DataView(
+      this.bytes.buffer,
+      this.bytes.byteOffset + this.offset,
+      8
+    )
+    const value = view.getFloat64(0, true)
+    this.offset += 8
     return value
   }
 
