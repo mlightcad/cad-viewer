@@ -1,6 +1,5 @@
 {
   "name": "@mlightcad/cad-pdf-plugin",
-  "private": true,
   "version": "1.5.1",
   "license": "MIT",
   "type": "module",

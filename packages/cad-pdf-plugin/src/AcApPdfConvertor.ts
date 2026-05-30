@@ -20,6 +20,8 @@ export class AcApPdfConvertor {
   }
 
   private async buildSvg(context: AcApContext): Promise<string> {
+    AcSvgRenderer.prepareExport()
+
     const entities =
       context.doc.database.tables.blockTable.modelSpace.newIterator()
     const renderer = new AcSvgRenderer()

@@ -116,9 +116,9 @@ let isLazyPluginRegistered = false
 /**
  * Registers lazy plugins that load on first use of their trigger commands.
  *
- * Currently registers the PDF plugin (`cpdf`, `ipdf`), which is fetched only
- * when one of those commands runs. Safe to call multiple times; registration
- * runs once per application lifetime.
+ * Currently registers the PDF plugin (`cpdf`, `ipdf`) and the HTML export
+ * plugin (`chtml`), which are fetched only when one of those commands runs.
+ * Safe to call multiple times; registration runs once per application lifetime.
  */
 export const registerLazyPlugins = () => {
   if (isLazyPluginRegistered) {
@@ -131,6 +131,15 @@ export const registerLazyPlugins = () => {
     loader: async () => {
       const { createPdfPlugin } = await import('@mlightcad/cad-pdf-plugin')
       return createPdfPlugin()
+    }
+  })
+
+  AcApDocManager.instance.pluginManager.registerLazyPlugin({
+    name: 'HtmlPlugin',
+    triggers: ['chtml'],
+    loader: async () => {
+      const { createHtmlPlugin } = await import('@mlightcad/cad-html-plugin')
+      return createHtmlPlugin()
     }
   })
 

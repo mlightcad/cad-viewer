@@ -54,13 +54,11 @@
     "three": "^0.172.0"
   },
   "dependencies": {
-    "@mlightcad/cad-html-exporter": "workspace:*",
     "@mlightcad/libredwg-converter": "^3.5.40",
     "mitt": "^3.0.1",
     "rbush": "^4.0.1"
   },
   "peerDependencies": {
-    "@mlightcad/cad-html-exporter": "^1.5.1",
     "@mlightcad/data-model": "^1.7.40",
     "@mlightcad/mtext-renderer": "^0.10.15",
     "lodash-es": "4.17.21",

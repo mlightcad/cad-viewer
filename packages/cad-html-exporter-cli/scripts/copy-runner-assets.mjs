@@ -55,7 +55,7 @@ copy(
   join(workersDir, 'mtext-renderer-worker.js')
 )
 copy(
-  join(cliPackageRoot, '..', 'cad-html-exporter', 'dist', 'viewer-runtime.iife.js'),
+  join(pkgRoot('@mlightcad/cad-html-plugin'), 'dist', 'viewer-runtime.iife.js'),
   join(outDir, 'viewer-runtime.iife.js')
 )
 

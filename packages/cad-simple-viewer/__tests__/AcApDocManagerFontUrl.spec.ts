@@ -122,7 +122,6 @@ jest.mock('../src/command', () => {
     'AcApConvertToDxfCmd',
     'AcApConvertToPngCmd',
     'AcApConvertToSvgCmd',
-    'AcApExportHtmlCmd',
     'AcApCopyCmd',
     'AcApDimLinearCmd',
     'AcApEllipseCmd',

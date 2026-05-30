@@ -1,9 +1,5 @@
-import { packHtml } from '@mlightcad/cad-html-exporter'
-import {
-  AcApDocManager,
-  AcApHtmlSnapshotBuilder,
-  AcEdOpenMode
-} from '@mlightcad/cad-simple-viewer'
+import { packHtml, AcApHtmlSnapshotBuilder } from '@mlightcad/cad-html-plugin'
+import { AcApDocManager, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
 declare global {
   interface Window {

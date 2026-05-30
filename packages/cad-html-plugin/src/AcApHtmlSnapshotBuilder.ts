@@ -1,19 +1,21 @@
 import {
+  AcApI18n,
+  type AcTrScene,
+  yieldToMain
+} from '@mlightcad/cad-simple-viewer'
+import type { AcDbDatabase } from '@mlightcad/data-model'
+
+import { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
+import { collectBatchesFromObject3D } from './AcExSceneBatchCollector'
+import {
   ACEX_SNAPSHOT_VERSION,
   type AcExLayerSnapshot,
   type AcExLayoutSnapshot,
   type AcExLineBatch,
   type AcExMeshBatch,
-  type AcExSnapshotV1,
-  buildOsnapCatalog,
-  buildViewerMetadata,
-  collectBatchesFromObject3D
-} from '@mlightcad/cad-html-exporter'
-import type { AcDbDatabase } from '@mlightcad/data-model'
-
-import { AcApI18n } from '../../i18n'
-import { yieldToMain } from '../../util'
-import type { AcTrScene } from '../../view/AcTrScene'
+  type AcExSnapshotV1
+} from './AcExSnapshotTypes'
+import { buildViewerMetadata } from './AcExViewerMetadata'
 
 /**
  * Optional overrides applied when constructing an HTML export snapshot.

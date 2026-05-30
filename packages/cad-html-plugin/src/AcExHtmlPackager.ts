@@ -13,7 +13,7 @@ export interface AcExPackHtmlOptions {
    */
   title?: string
   /**
-   * Inline viewer bootstrap script (IIFE bundle from the `cad-html-exporter` build).
+   * Inline viewer bootstrap script (IIFE bundle from the `cad-html-plugin` build).
    * Typically the contents of {@link HTML_VIEWER_RUNTIME_FILE}.
    */
   viewerRuntime: string
@@ -43,7 +43,7 @@ export function packHtml(
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="generator" content="mlightcad-cad-html-exporter" />
+  <meta name="generator" content="mlightcad-cad-html-plugin" />
   <title>${escapeHtml(title)}</title>
   <style>${ACEX_HTML_SHELL_CSS}</style>
 </head>

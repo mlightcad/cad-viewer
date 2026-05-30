@@ -2,7 +2,8 @@ import {
   AcTrLinePatternShaders,
   type AcTrPatternLine,
   createGradientHatchShaderMaterialFromUniforms,
-  createHatchPatternShaderMaterial} from '@mlightcad/three-renderer'
+  createHatchPatternShaderMaterial
+} from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
 import type {

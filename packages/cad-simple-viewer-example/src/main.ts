@@ -1,3 +1,5 @@
+import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin'
+import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin'
 import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
@@ -38,6 +40,7 @@ class CadViewerApp {
   private toolbarPickboxButton: HTMLButtonElement
   private toolbarLineWeightButton: HTMLButtonElement
   private toolbarExportHtmlButton: HTMLButtonElement
+  private toolbarExportPdfButton: HTMLButtonElement
   private viewerPane: HTMLElement
   private emptyState: HTMLDivElement
   private predefinedButtons: NodeListOf<HTMLButtonElement>
@@ -74,6 +77,9 @@ class CadViewerApp {
     this.toolbarExportHtmlButton = document.getElementById(
       'toolbarExportHtmlButton'
     ) as HTMLButtonElement
+    this.toolbarExportPdfButton = document.getElementById(
+      'toolbarExportPdfButton'
+    ) as HTMLButtonElement
     this.viewerPane = document.getElementById('viewerPane') as HTMLElement
     this.emptyState = document.getElementById('emptyState') as HTMLDivElement
     this.predefinedButtons = document.querySelectorAll(
@@ -103,6 +109,10 @@ class CadViewerApp {
           },
           htmlViewerRuntimeUrl: './viewer-runtime.iife.js'
         })
+
+        const pluginManager = AcApDocManager.instance.pluginManager
+        registerLazyHtmlPlugin(pluginManager)
+        registerLazyPdfPlugin(pluginManager)
 
         AcApDocManager.instance.events.documentActivated.addEventListener(
           args => {
@@ -203,6 +213,13 @@ class CadViewerApp {
         return
       }
       AcApDocManager.instance.sendStringToExecute('chtml')
+    })
+
+    this.toolbarExportPdfButton.addEventListener('click', () => {
+      if (!this.hasLoadedDocument || !this.isInitialized) {
+        return
+      }
+      AcApDocManager.instance.sendStringToExecute('cpdf')
     })
   }
 
@@ -310,6 +327,7 @@ class CadViewerApp {
     this.toolbarPickboxButton.disabled = !this.hasLoadedDocument
     this.toolbarLineWeightButton.disabled = !this.hasLoadedDocument
     this.toolbarExportHtmlButton.disabled = !this.hasLoadedDocument
+    this.toolbarExportPdfButton.disabled = !this.hasLoadedDocument
     this.updateLineWeightButtonLabel()
   }
 

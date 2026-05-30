@@ -24,7 +24,6 @@ import {
   AcApDimLinearCmd,
   AcApEllipseCmd,
   AcApEraseCmd,
-  AcApExportHtmlCmd,
   AcApHatchCmd,
   AcApLayerCloseCmd,
   AcApLayerCmd,
@@ -86,6 +85,7 @@ import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
 import { AcApProgress } from './AcApProgress'
 import { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
+import { isOpenFileProgressComplete } from './openFileProgress'
 
 const DEFAULT_BASE_URL = 'https://mlightcad.gitlab.io/cad-data/'
 /**
@@ -221,7 +221,7 @@ export interface AcApDocManagerOptions {
 
   /**
    * URL of the offline HTML viewer runtime bundle (`viewer-runtime.iife.js`).
-   * Used by {@link AcApExportHtmlCmd} when packaging standalone HTML files.
+   * Used by the HTML export plugin when packaging standalone HTML files.
    */
   htmlViewerRuntimeUrl?: string | URL
 
@@ -867,7 +867,6 @@ export class AcApDocManager {
     addSystemCommand('circle', 'circle', new AcApCircleCmd())
     addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
     addSystemCommand('csvg', 'csvg', new AcApConvertToSvgCmd())
-    addSystemCommand('chtml', 'chtml', new AcApExportHtmlCmd())
     addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
@@ -1290,14 +1289,6 @@ export class AcApDocManager {
     return { ...data, percentage: this._openFileProgressPeak }
   }
 
-  private isOpenFileProgressComplete(data: AcDbProgressdEventArgs) {
-    return (
-      data.percentage >= 100 &&
-      data.subStage === 'END' &&
-      data.subStageStatus === 'END'
-    )
-  }
-
   /**
    * Shows progress animation and progress message
    * @param data - Progress data
@@ -1313,7 +1304,7 @@ export class AcApDocManager {
       this._progress.setMessage(AcApI18n.t('main.message.fetchingDrawingFile'))
     }
 
-    if (this.isOpenFileProgressComplete(data)) {
+    if (isOpenFileProgressComplete(data)) {
       this._progress.hide()
       this.resetOpenFileProgress()
     } else {

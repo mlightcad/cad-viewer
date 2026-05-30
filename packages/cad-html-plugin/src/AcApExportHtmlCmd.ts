@@ -1,5 +1,5 @@
-import { AcApContext } from '../../app'
-import { AcEdCommand } from '../../editor'
+import { AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
+
 import { AcApHtmlConvertor } from './AcApHtmlConvertor'
 
 /**
