@@ -320,7 +320,7 @@ function startViewer(): void {
   i18n.setOnChange(() => {
     readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
     if (!measure.isActive) {
-      statusEl.textContent = readyStatus
+      measure.refreshIdleStatus()
     }
     layerPanel?.refreshLayerLabels()
     measureSettingsRef.current?.refreshLabels()
@@ -360,7 +360,6 @@ function startViewer(): void {
           fit()
         } else if (action === 'clear-measurements') {
           measure.clearAll()
-          statusEl.textContent = readyStatus
         } else if (action === 'measure') {
           const mode = button.getAttribute(
             'data-measure-mode'
@@ -390,7 +389,7 @@ function startViewer(): void {
   resize()
   fit()
   releaseLayerGroupsGeometryCpuArrays(layerGroups)
-  statusEl.textContent = readyStatus
+  measure.refreshIdleStatus()
   hideLoading()
 }
 
