@@ -248,7 +248,7 @@ export interface AcExSnapshot {
     units: AcExViewerUnits
     /** Canvas background color as 24-bit RGB hex. */
     background: number
-    /** Preferred UI locale when the HTML is first opened (`en` | `zh`). */
+    /** Export-time UI locale from the CAD app (informational; runtime uses browser language). */
     locale?: string
   }
   /** Layer table used by the layer drawer (visibility toggles, swatches). */

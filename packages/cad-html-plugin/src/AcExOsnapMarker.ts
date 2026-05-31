@@ -5,10 +5,10 @@ import { acExOsnapModeToMarkerType } from './AcExOsnap'
  * Visual shape of an object-snap marker in the offline HTML viewer.
  *
  * Selected by {@link acExOsnapModeToMarkerType} from {@link AcExOsnapMode}:
- * - `rect` — endpoint, control, node
+ * - `rect` — endpoint, node
  * - `triangle` — midpoint
  * - `circle` — center
- * - `diamond` — quadrant, focus
+ * - `diamond` — quadrant
  * - `x` — nearest
  */
 export type AcExOsnapMarkerShape =
@@ -87,7 +87,7 @@ export class AcExOsnapMarker {
         z-index: 6;
         transform: translate(-50%, -50%);
         box-sizing: border-box;
-        color: var(--mlcad-accent, #08e8de);
+        color: var(--mlcad-measure-accent, #08e8de);
       }
       .mlcad-osnap-marker--hidden { display: none; }
       .mlcad-osnap-marker--rect {

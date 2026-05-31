@@ -41,6 +41,7 @@ export {
   type AcExHtmlLocale,
   type AcExHtmlMessageKey,
   detectAcExHtmlLocale,
+  detectBrowserAcExHtmlLocale,
   resolveAcExHtmlLocale
 } from './AcExHtmlI18n'
 

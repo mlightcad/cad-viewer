@@ -13,6 +13,7 @@ import {
   AcDb2dPolyline,
   AcDb3dPolyline,
   AcDbArc,
+  AcDbBlockReference,
   type AcDbBlockTableRecord,
   AcDbCircle,
   type AcDbDatabase,
@@ -20,20 +21,32 @@ import {
   AcDbEllipse,
   AcDbEntity,
   AcDbFace,
+  AcDbHatch,
   AcDbLeader,
   AcDbLine,
+  AcDbMLeader,
+  type AcDbMLeaderLeader,
+  type AcDbMLeaderLine,
+  AcDbMLine,
   AcDbMText,
   type AcDbObjectId,
   AcDbPoint,
   AcDbPolyline,
+  AcDbRasterImage,
   AcDbRay,
   AcDbSpline,
+  AcDbTable,
   AcDbText,
   AcDbTrace,
   AcDbXline,
   AcGeCircArc2d,
+  AcGeEllipseArc2d,
+  AcGeLine2d,
+  AcGeLoop2d,
+  type AcGeLoop2dType,
   type AcGeMatrix3d,
   type AcGePoint3dLike,
+  AcGePolyline2d,
   AcGeTol,
   type AcGeVector3dLike,
   FLOAT_TOL,
@@ -282,6 +295,52 @@ function resolveDimensionBlock(
 }
 
 /**
+ * Resolves the anonymous block referenced by a table entity.
+ *
+ * Prefers {@link AcDbBlockReference.blockTableRecord}; falls back to
+ * {@link AcDbTable.owningBlockRecordId} from imported DXF/DWG files.
+ *
+ * @internal
+ */
+function resolveTableBlock(
+  entity: AcDbTable,
+  database: AcDbDatabase
+): AcDbBlockTableRecord | undefined {
+  const asBlockRef = entity as unknown as AcExBlockReferenceLike
+  const resolved = resolveBlockReferenceBlock(asBlockRef, database)
+  if (resolved) {
+    return resolved
+  }
+  const owningBlockId = entity.owningBlockRecordId
+  return owningBlockId
+    ? database.tables.blockTable.getAt(owningBlockId)
+    : undefined
+}
+
+/** Returns the full INSERT transform for block/table entities. @internal */
+function blockInsertTransform(entity: AcDbBlockReference): AcGeMatrix3d {
+  return (
+    entity as unknown as AcExBlockReferenceLike
+  ).getFullInsertionTransform()
+}
+
+/** Returns whether a block table record contains at least one entity. @internal */
+function blockHasEntities(block: AcDbBlockTableRecord): boolean {
+  for (const _entity of block.newIterator()) {
+    return true
+  }
+  return false
+}
+
+/**
+ * Raster image shape used to read {@link AcDbRasterImage.boundaryPath}.
+ * @internal
+ */
+type AcExRasterImageLike = AcDbRasterImage & {
+  boundaryPath(): AcGePoint3dLike[]
+}
+
+/**
  * Detects block references across data-model versions (`AcDbBlockReference`,
  * `AcDbBlockReference2`, etc.) without relying on `instanceof`.
  *
@@ -366,6 +425,94 @@ function pushVertexPath(
       vertices[(i + 1) % vertices.length]!
     )
   }
+}
+
+/**
+ * Builds the MLINE reference path (`startPosition` + segment vertices).
+ *
+ * Matches {@link AcDbMLine.subGetOsnapPoints}, which snaps to the center path
+ * rather than offset style-element geometry.
+ *
+ * @internal
+ */
+function pushMLine(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  entity: AcDbMLine
+) {
+  const path: AcGePoint3dLike[] = [entity.startPosition]
+  for (const segment of entity.segments) {
+    path.push(segment.position)
+  }
+  pushVertexPath(out, layer, matrix, path, entity.closed)
+}
+
+/**
+ * Resolves drawable leader-line vertices the same way as
+ * `AcDbMLeader.getLeaderLineDrawPoints`.
+ *
+ * @internal
+ */
+function resolveMLeaderLineDrawPoints(
+  entity: AcDbMLeader,
+  leader: AcDbMLeaderLeader,
+  line: AcDbMLeaderLine
+): AcGePoint3dLike[] {
+  if (line.vertices.length >= 2) {
+    return line.vertices
+  }
+  if (line.vertices.length === 0) {
+    return []
+  }
+  const start = line.vertices[0]!
+  const end =
+    leader.lastLeaderLinePoint ??
+    leader.landingPoint ??
+    entity.landingPoint ??
+    entity.contentBasePosition
+  if (!end) {
+    return line.vertices
+  }
+  const dx = start.x - end.x
+  const dy = start.y - end.y
+  const dz = (start.z ?? 0) - (end.z ?? 0)
+  if (Math.hypot(dx, dy, dz) <= FLOAT_TOL) {
+    return line.vertices
+  }
+  return [start, end]
+}
+
+/**
+ * Exports multileader leader segments and annotation anchor points.
+ *
+ * Leader geometry follows {@link AcDbMLeader.subGetOsnapPoints}; anchor points
+ * mirror insertion snaps on MText/block content.
+ *
+ * @internal
+ */
+function pushMLeader(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  entity: AcDbMLeader
+) {
+  for (const leader of entity.leaders) {
+    for (const line of leader.leaderLines) {
+      const drawPoints = resolveMLeaderLineDrawPoints(entity, leader, line)
+      pushVertexPath(out, layer, matrix, drawPoints, false)
+    }
+  }
+
+  const pushAnchor = (point: AcGePoint3dLike | undefined) => {
+    if (!point) return
+    const p = transformPoint(matrix, point)
+    out.push({ kind: 'point', layer, x: p.x, y: p.y })
+  }
+
+  pushAnchor(entity.contentBasePosition)
+  pushAnchor(entity.mtextContent?.anchorPoint)
+  pushAnchor(entity.blockContent?.position)
 }
 
 /**
@@ -620,6 +767,314 @@ function pushPolyline(
   }
 }
 
+/** Appends a WCS arc from a 2D circular arc at a fixed elevation. @internal */
+function pushCircArc2dBoundary(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  arc: AcGeCircArc2d,
+  elevation: number
+) {
+  if (scaleIsUniform(matrix)) {
+    const center = transformPoint(matrix, {
+      x: arc.center.x,
+      y: arc.center.y,
+      z: elevation
+    })
+    const sx = new THREE.Vector3(
+      matrix.elements[0],
+      matrix.elements[1],
+      matrix.elements[2]
+    ).length()
+    out.push({
+      kind: 'arc',
+      layer,
+      cx: center.x,
+      cy: center.y,
+      r: arc.radius * sx,
+      startAngle: arc.startAngle,
+      endAngle: arc.endAngle,
+      normalSign: arc.clockwise ? -1 : 1
+    })
+    return
+  }
+
+  pushLine(
+    out,
+    layer,
+    matrix,
+    { x: arc.startPoint.x, y: arc.startPoint.y, z: elevation },
+    { x: arc.endPoint.x, y: arc.endPoint.y, z: elevation }
+  )
+}
+
+/** Appends a WCS ellipse arc from a 2D ellipse arc at a fixed elevation. @internal */
+function pushEllipseArc2dBoundary(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  arc: AcGeEllipseArc2d,
+  elevation: number
+) {
+  const center = transformPoint(matrix, {
+    x: arc.center.x,
+    y: arc.center.y,
+    z: elevation
+  })
+  const majorDir = transformVector(matrix, {
+    x: Math.cos(arc.rotation),
+    y: Math.sin(arc.rotation),
+    z: 0
+  })
+  const len = Math.hypot(majorDir.x, majorDir.y) || 1
+  const sx = new THREE.Vector3(
+    matrix.elements[0],
+    matrix.elements[1],
+    matrix.elements[2]
+  ).length()
+  const sy = new THREE.Vector3(
+    matrix.elements[4],
+    matrix.elements[5],
+    matrix.elements[6]
+  ).length()
+  out.push({
+    kind: 'ellipse',
+    layer,
+    cx: center.x,
+    cy: center.y,
+    majorX: majorDir.x / len,
+    majorY: majorDir.y / len,
+    majorR: arc.majorAxisRadius * sx,
+    minorR: arc.minorAxisRadius * sy,
+    startAngle: arc.startAngle,
+    endAngle: arc.endAngle,
+    closed: false,
+    normalSign: arc.clockwise ? -1 : 1
+  })
+}
+
+/**
+ * Exports one hatch boundary polyline loop (bulge-aware).
+ *
+ * Matches {@link AcDbHatch.subGetOsnapPoints} boundary traversal.
+ *
+ * @internal
+ */
+function pushHatchPolyline2d(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  polyline: AcGePolyline2d,
+  elevation: number
+) {
+  const vertexCount = polyline.numberOfVertices
+  if (vertexCount < 2) return
+
+  const segmentCount = polyline.closed ? vertexCount : vertexCount - 1
+  for (let index = 0; index < segmentCount; index++) {
+    const start = polyline.getPointAt(index)
+    const end = polyline.getPointAt((index + 1) % vertexCount)
+    const bulge = polyline.vertices[index]?.bulge ?? 0
+    const start3 = { x: start.x, y: start.y, z: elevation }
+    const end3 = { x: end.x, y: end.y, z: elevation }
+    if (AcGeTol.isPositive(Math.abs(bulge))) {
+      const startW = transformPoint(matrix, start3)
+      const endW = transformPoint(matrix, end3)
+      const arc2d = new AcGeCircArc2d(startW, endW, bulge)
+      const center = arc2d.center
+      out.push({
+        kind: 'arc',
+        layer,
+        cx: center.x,
+        cy: center.y,
+        r: arc2d.radius,
+        startAngle: arc2d.startAngle,
+        endAngle: arc2d.endAngle,
+        normalSign: arc2d.clockwise ? -1 : 1
+      })
+    } else {
+      pushLine(out, layer, matrix, start3, end3)
+    }
+  }
+}
+
+/** Exports one hatch boundary loop (polyline or edge loop). @internal */
+function pushHatchLoop(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  loop: AcGeLoop2dType,
+  elevation: number
+) {
+  if (loop instanceof AcGePolyline2d) {
+    pushHatchPolyline2d(out, layer, matrix, loop, elevation)
+    return
+  }
+
+  if (loop instanceof AcGeLoop2d) {
+    for (const curve of loop.curves) {
+      if (curve instanceof AcGeLine2d) {
+        pushLine(
+          out,
+          layer,
+          matrix,
+          {
+            x: curve.startPoint.x,
+            y: curve.startPoint.y,
+            z: elevation
+          },
+          {
+            x: curve.endPoint.x,
+            y: curve.endPoint.y,
+            z: elevation
+          }
+        )
+      } else if (curve instanceof AcGeCircArc2d) {
+        pushCircArc2dBoundary(out, layer, matrix, curve, elevation)
+      } else if (curve instanceof AcGeEllipseArc2d) {
+        pushEllipseArc2dBoundary(out, layer, matrix, curve, elevation)
+      }
+    }
+  }
+}
+
+/**
+ * Exports hatch boundary loops as line/arc/ellipse primitives.
+ *
+ * Reads internal `_geo.loops` from the data model, mirroring
+ * {@link AcDbHatch.subGetOsnapPoints}.
+ *
+ * @internal
+ */
+function pushHatch(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  entity: AcDbHatch
+) {
+  const loops = (
+    entity as unknown as {
+      _geo?: { loops?: ReadonlyArray<AcGeLoop2dType> }
+    }
+  )._geo?.loops
+  if (!loops?.length) return
+
+  const elevation = entity.elevation
+  for (const loop of loops) {
+    pushHatchLoop(out, layer, matrix, loop, elevation)
+  }
+}
+
+/**
+ * Exports procedural table grid lines when no anonymous block geometry exists.
+ *
+ * Grid layout follows {@link AcDbTable.subWorldDraw} local coordinates.
+ *
+ * @internal
+ */
+function pushTableGrid(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  entity: AcDbTable
+) {
+  const tableMatrix = composeTransforms(matrix, blockInsertTransform(entity))
+
+  const columnXs = [0]
+  for (let column = 0; column < entity.numColumns; column++) {
+    columnXs.push(columnXs[column]! + entity.columnWidth(column))
+  }
+
+  const rowYs = [0]
+  for (let row = 0; row < entity.numRows; row++) {
+    rowYs.push(rowYs[row]! - entity.rowHeight(row))
+  }
+
+  const totalWidth = columnXs[columnXs.length - 1]!
+  const totalHeight = rowYs[rowYs.length - 1]!
+
+  for (const y of rowYs) {
+    pushLine(
+      out,
+      layer,
+      tableMatrix,
+      { x: 0, y, z: 0 },
+      { x: totalWidth, y, z: 0 }
+    )
+  }
+
+  for (const x of columnXs) {
+    pushLine(
+      out,
+      layer,
+      tableMatrix,
+      { x, y: 0, z: 0 },
+      { x, y: totalHeight, z: 0 }
+    )
+  }
+}
+
+/**
+ * Visits a table entity: anonymous block content when present, else grid lines.
+ *
+ * @internal
+ */
+function visitTableEntity(
+  entity: AcDbTable,
+  matrix: THREE.Matrix4,
+  insertLayer: string,
+  out: AcExOsnapPrimitive[],
+  blockStack: Set<AcDbObjectId>,
+  database: AcDbDatabase
+) {
+  const layer = effectiveLayer(entity.layer, insertLayer)
+  const block = resolveTableBlock(entity, database)
+  if (block && !blockStack.has(block.objectId) && blockHasEntities(block)) {
+    blockStack.add(block.objectId)
+    const nested = composeTransforms(matrix, blockInsertTransform(entity))
+    visitBlock(block, nested, layer, out, blockStack, database)
+    blockStack.delete(block.objectId)
+    return
+  }
+
+  pushTableGrid(out, layer, matrix, entity)
+  const insertion = transformPoint(matrix, entity.position)
+  out.push({ kind: 'point', layer, x: insertion.x, y: insertion.y })
+}
+
+/**
+ * Exports raster image clip/frame boundary and insertion point.
+ *
+ * Uses {@link AcDbRasterImage.boundaryPath} to match live-viewer osnap behavior.
+ *
+ * @internal
+ */
+function pushRasterImage(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  entity: AcDbRasterImage
+) {
+  let boundary = (entity as AcExRasterImageLike).boundaryPath()
+  if (boundary.length > 1) {
+    const first = boundary[0]!
+    const last = boundary[boundary.length - 1]!
+    if (
+      first.x === last.x &&
+      first.y === last.y &&
+      (first.z ?? 0) === (last.z ?? 0)
+    ) {
+      boundary = boundary.slice(0, -1)
+    }
+  }
+  if (boundary.length >= 2) {
+    pushVertexPath(out, layer, matrix, boundary, true)
+  }
+
+  const insertion = transformPoint(matrix, entity.position)
+  out.push({ kind: 'point', layer, x: insertion.x, y: insertion.y })
+}
+
 /**
  * Resolves AutoCAD layer-0 inheritance inside blocks.
  *
@@ -651,6 +1106,11 @@ function visitEntity(
   if (!entity.visibility) return
 
   const layer = effectiveLayer(entity.layer, insertLayer)
+
+  if (entity instanceof AcDbTable) {
+    visitTableEntity(entity, matrix, insertLayer, out, blockStack, database)
+    return
+  }
 
   if (isBlockReferenceEntity(entity)) {
     const block = resolveBlockReferenceBlock(entity, database)
@@ -736,6 +1196,11 @@ function visitEntity(
     return
   }
 
+  if (entity instanceof AcDbHatch) {
+    pushHatch(out, layer, matrix, entity)
+    return
+  }
+
   if (entity instanceof AcDbRay) {
     pushDirectedLine(
       out,
@@ -780,6 +1245,16 @@ function visitEntity(
     return
   }
 
+  if (entity instanceof AcDbMLine) {
+    pushMLine(out, layer, matrix, entity)
+    return
+  }
+
+  if (entity instanceof AcDbMLeader) {
+    pushMLeader(out, layer, matrix, entity)
+    return
+  }
+
   if (entity instanceof AcDbText) {
     const p = transformPoint(matrix, entity.position)
     out.push({ kind: 'point', layer, x: p.x, y: p.y })
@@ -789,6 +1264,11 @@ function visitEntity(
   if (entity instanceof AcDbMText) {
     const p = transformPoint(matrix, entity.location)
     out.push({ kind: 'point', layer, x: p.x, y: p.y })
+    return
+  }
+
+  if (entity instanceof AcDbRasterImage) {
+    pushRasterImage(out, layer, matrix, entity)
     return
   }
 
@@ -846,9 +1326,10 @@ function ellipseFromArc(entity: AcDbArc): AcDbEllipse {
  * inside blocks inherit the INSERT layer per AutoCAD rules.
  *
  * Supported entity types: `AcDbLine`, `AcDbCircle`, `AcDbArc`, `AcDbEllipse`,
- * `AcDbSpline`, `AcDbPolyline`, `AcDb2dPolyline`, `AcDb3dPolyline`, `AcDbRay`,
- * `AcDbXline`, `AcDbTrace`, `AcDbFace`, `AcDbLeader`, `AcDbText`, `AcDbMText`,
- * `AcDbPoint`, INSERT, and dimension entities (`AcDbDimension` and subclasses
+ * `AcDbSpline`, `AcDbPolyline`, `AcDb2dPolyline`, `AcDb3dPolyline`, `AcDbHatch`,
+ * `AcDbRay`, `AcDbXline`, `AcDbTrace`, `AcDbFace`, `AcDbLeader`, `AcDbMLine`,
+ * `AcDbMLeader`, `AcDbText`, `AcDbMText`, `AcDbPoint`, `AcDbRasterImage`,
+ * `AcDbTable`, INSERT, and dimension entities (`AcDbDimension` and subclasses
  * via anonymous dim blocks).
  *
  * @param database - Open drawing database (same instance used for HTML export).

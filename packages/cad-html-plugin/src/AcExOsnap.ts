@@ -35,8 +35,6 @@ function modePriority(mode: AcExOsnapMode): number {
     case 'center':
       return 0
     case 'quadrant':
-    case 'focus':
-    case 'control':
     case 'node':
       return 1
     case 'nearest':
@@ -659,7 +657,7 @@ export class AcExOsnapIndex {
    * tessellated {@link AcExLineBatch} / mesh segments.
    *
    * Uses AutoCAD-style mode priority: endpoint / midpoint / center beat
-   * quadrant / focus / control / node, which beat nearest. Within the same
+   * quadrant / node, which beat nearest. Within the same
    * priority tier, the closest candidate within `threshold` wins.
    *
    * @param px - Cursor X in drawing units (WCS).
@@ -825,11 +823,9 @@ export function acExOsnapModeToMarkerType(
     case 'center':
       return 'circle'
     case 'quadrant':
-    case 'focus':
       return 'diamond'
     case 'nearest':
       return 'x'
-    case 'control':
     case 'node':
     default:
       return 'rect'

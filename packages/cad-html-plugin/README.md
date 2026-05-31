@@ -13,7 +13,7 @@ The plugin path is designed for **lazy loading** so the export bundle is only do
 - **Display-only snapshot** — layers, layouts, line/mesh batches, extents, and drawing units (no editable DXF/DWG payload)
 - **Self-contained HTML** — gzip/base64 snapshot + inline viewer runtime; opens offline in any modern browser
 - **Offline viewer** — pan/zoom (OrbitControls), layer panel, layout switching, measurement, object snap (OSNAP)
-- **i18n** — embedded English / Chinese UI in the exported HTML (`en`, `zh`)
+- **i18n** — embedded English / Chinese UI; initial language follows the browser (`zh*` → Chinese, otherwise English), with manual switch persisted in `localStorage`
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyHtmlPlugin`
 - **Composable API** — build snapshots from your own pipeline or call `packHtml` with a pre-built snapshot
 
@@ -155,7 +155,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `collectBatchesFromObject3D` | THREE.js scene → line/mesh batches |
 | `buildViewerMetadata` | Database → viewer meta (units, extents, background, …) |
 | `buildOsnapCatalog`, OSNAP primitive helpers | Analytic snap geometry for the offline viewer |
-| `AcExHtmlI18n`, `detectAcExHtmlLocale`, `resolveAcExHtmlLocale` | Viewer UI strings and locale detection |
+| `AcExHtmlI18n`, `detectAcExHtmlLocale`, `detectBrowserAcExHtmlLocale`, `resolveAcExHtmlLocale` | Viewer UI strings and locale detection |
 
 ## Project layout
 

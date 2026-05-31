@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
+import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
 import {
   computeLayerExtentsMap,
   resolveLayoutViewExtents
@@ -72,7 +73,7 @@ function startViewer(): void {
     return
   }
 
-  const i18n = new AcExHtmlI18n(detectAcExHtmlLocale(snapshot.meta.locale))
+  const i18n = new AcExHtmlI18n(detectAcExHtmlLocale())
   i18n.applyToDocument()
 
   const layout =
@@ -260,6 +261,10 @@ function startViewer(): void {
     renderer.render(scene, camera)
   }
 
+  const measureSettingsRef: {
+    current: ReturnType<typeof setupAcExHtmlMeasureSettings> | null
+  } = { current: null }
+
   const measure = new AcExMeasureController({
     root,
     scene,
@@ -273,6 +278,8 @@ function startViewer(): void {
         osnapMarker.hide()
       }
     },
+    getTrackingOptions: () =>
+      measureSettingsRef.current?.getTrackingOptions() ?? null,
     view: {
       screenToWcs,
       wcsToScreen,
@@ -282,6 +289,15 @@ function startViewer(): void {
       formatAngle
     }
   })
+
+  measureSettingsRef.current = setupAcExHtmlMeasureSettings({
+    i18n,
+    measure,
+    angbase: snapshot.meta.units.angbase,
+    angdir: snapshot.meta.units.angdir
+  })
+
+  const toolbarCollapse = setupToolbarCollapse(i18n)
 
   const layerPanel = setupLayerPanel({
     snapshot,
@@ -307,6 +323,8 @@ function startViewer(): void {
       statusEl.textContent = readyStatus
     }
     layerPanel?.refreshLayerLabels()
+    measureSettingsRef.current?.refreshLabels()
+    toolbarCollapse.refreshLabels()
   })
 
   document
@@ -382,6 +400,70 @@ interface AcExLayerRowRefs {
   name: string
   /** Per-layer zoom button whose `title` / `aria-label` are retranslated. */
   zoomBtn: HTMLButtonElement
+}
+
+/** Handles returned by {@link setupToolbarCollapse} for locale-driven UI updates. */
+interface AcExToolbarCollapseController {
+  refreshLabels: () => void
+}
+
+function setupToolbarCollapse(
+  i18n: AcExHtmlI18n
+): AcExToolbarCollapseController {
+  const sidebar = document.getElementById('mlcad-sidebar')
+  const toggleBtn = document.getElementById('mlcad-toolbar-toggle')
+  if (!sidebar || !toggleBtn) {
+    return { refreshLabels: () => {} }
+  }
+
+  let collapsed = false
+
+  const closeSidePanels = () => {
+    const layerDrawer = document.getElementById('mlcad-layer-drawer')
+    const layersBtn = document.getElementById('mlcad-layers-btn')
+    const settingsWrap = document.getElementById('mlcad-settings-wrap')
+    const settingsBtn = document.getElementById('mlcad-settings-btn')
+    const polarPanel = document.getElementById('mlcad-polar-angles')
+    const polarBtn = document.getElementById('mlcad-polar-btn')
+
+    if (layerDrawer) layerDrawer.hidden = true
+    layersBtn?.classList.remove('active')
+    layersBtn?.setAttribute('aria-expanded', 'false')
+
+    if (settingsWrap) settingsWrap.hidden = true
+    settingsBtn?.classList.remove('active')
+    settingsBtn?.setAttribute('aria-expanded', 'false')
+
+    if (polarPanel) polarPanel.hidden = true
+    polarBtn?.setAttribute('aria-expanded', 'false')
+  }
+
+  const syncToggle = () => {
+    sidebar.classList.toggle('mlcad-sidebar--collapsed', collapsed)
+    toggleBtn.innerHTML = collapsed
+      ? acExHtmlIcons.chevronDown
+      : acExHtmlIcons.chevronUp
+    toggleBtn.setAttribute('aria-expanded', String(!collapsed))
+    toggleBtn.dataset.i18nKey = collapsed
+      ? 'toolbar.expand'
+      : 'toolbar.collapse'
+    const label = i18n.t(collapsed ? 'toolbar.expand' : 'toolbar.collapse')
+    toggleBtn.setAttribute('title', label)
+    toggleBtn.setAttribute('aria-label', label)
+  }
+
+  toggleBtn.addEventListener('click', event => {
+    event.stopPropagation()
+    collapsed = !collapsed
+    if (collapsed) closeSidePanels()
+    syncToggle()
+  })
+
+  syncToggle()
+
+  return {
+    refreshLabels: () => syncToggle()
+  }
 }
 
 /** Dependencies passed into {@link setupLayerPanel}. */

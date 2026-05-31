@@ -8,6 +8,10 @@
 import * as THREE from 'three'
 
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
+import {
+  type AcExTrackingOptions,
+  constrainToAcExTracking
+} from './AcExMeasureTracking'
 import type { AcExOsnapPoint } from './AcExOsnap'
 
 /**
@@ -20,13 +24,20 @@ export const ACEX_MEASURE_COLOR = 0x08e8de
 export const ACEX_MEASURE_SELECT_COLOR = 0xffd54f
 
 /** CSS color string used by 2D canvas measurement overlays. */
-const MEASURE_CSS = '#08e8de'
+function measureColorToCss(hex: number): string {
+  return `#${hex.toString(16).padStart(6, '0')}`
+}
+
+/** Semi-transparent fill derived from a measure accent hex color. */
+function measureColorToFill(hex: number): string {
+  const r = (hex >> 16) & 0xff
+  const g = (hex >> 8) & 0xff
+  const b = hex & 0xff
+  return `rgba(${r}, ${g}, ${b}, 0.2)`
+}
 
 /** Screen-pixel tolerance for picking a committed measurement. */
 const MEASURE_HIT_THRESHOLD_PX = 10
-
-/** Semi-transparent fill for committed area measurements. */
-const MEASURE_FILL = 'rgba(8, 232, 222, 0.2)'
 
 /**
  * Active measurement tool selected from the toolbar.
@@ -134,6 +145,8 @@ export interface AcExMeasureControllerOptions {
     snap: AcExOsnapPoint | null,
     screen: { x: number; y: number } | null
   ) => void
+  /** Returns ortho/polar tracking options while measuring; omit to disable tracking. */
+  getTrackingOptions?: () => AcExTrackingOptions | null
 }
 
 /** Teardown callback registered when a measurement overlay is created. @internal */
@@ -635,6 +648,12 @@ export class AcExMeasureController {
   private readonly _getReadyStatus: () => string
   /** Snap marker callback for the runtime. */
   private readonly _onOsnapMarker: AcExMeasureControllerOptions['onOsnapMarker']
+  /** Ortho/polar tracking options from the settings panel. */
+  private readonly _getTrackingOptions:
+    | (() => AcExTrackingOptions | null)
+    | null
+  /** Accent color for lines, labels, and canvas overlays. */
+  private _measureColor = ACEX_MEASURE_COLOR
   /** Parent group for committed THREE line geometry. */
   private readonly _measureGroup: THREE.Group
   /** Host for canvas overlays, dots, badges, and the live label. */
@@ -651,8 +670,8 @@ export class AcExMeasureController {
   private _commitParts: AcExCommitParts | null = null
   /** Monotonic id source for {@link _committed}. */
   private _commitCounter = 0
-  /** Selected committed measurement id, if any. */
-  private _selectedId: string | null = null
+  /** Selected committed measurement ids. */
+  private readonly _selectedIds = new Set<string>()
 
   /** Active toolbar mode, or `null` when idle. */
   private _mode: AcExMeasureMode | null = null
@@ -677,6 +696,7 @@ export class AcExMeasureController {
     this._statusEl = options.statusEl
     this._getReadyStatus = options.getReadyStatus
     this._onOsnapMarker = options.onOsnapMarker
+    this._getTrackingOptions = options.getTrackingOptions ?? null
 
     this._measureGroup = new THREE.Group()
     this._measureGroup.name = 'measurements'
@@ -692,7 +712,7 @@ export class AcExMeasureController {
     this._overlayLayer.appendChild(this._liveLabel)
 
     const previewMaterial = new THREE.LineBasicMaterial({
-      color: ACEX_MEASURE_COLOR,
+      color: this._measureColor,
       depthTest: false
     })
     const previewGeometry = new THREE.BufferGeometry()
@@ -714,6 +734,41 @@ export class AcExMeasureController {
    */
   get mode(): AcExMeasureMode | null {
     return this._mode
+  }
+
+  /**
+   * Updates the accent color used for measurement overlays and redraws canvases.
+   *
+   * @param hex - 24-bit RGB color (for example `0x08e8de`).
+   */
+  setMeasureColor(hex: number): void {
+    if (!Number.isFinite(hex)) return
+    this._measureColor = hex
+    const material = this._previewLine.material
+    if (material instanceof THREE.LineBasicMaterial) {
+      material.color.setHex(hex)
+    }
+    for (const measure of this._committed) {
+      if (this._selectedIds.has(measure.id)) continue
+      for (const line of measure.parts.lines) {
+        const lineMaterial = line.material
+        if (lineMaterial instanceof THREE.LineBasicMaterial) {
+          lineMaterial.color.setHex(hex)
+        }
+      }
+    }
+    for (const fn of this._redrawListeners) fn()
+    this._view.render()
+  }
+
+  /** CSS stroke/fill color for canvas overlays. @internal */
+  private _measureCss(): string {
+    return measureColorToCss(this._measureColor)
+  }
+
+  /** Semi-transparent fill for area measurements. @internal */
+  private _measureFill(): string {
+    return measureColorToFill(this._measureColor)
   }
 
   /**
@@ -790,7 +845,7 @@ export class AcExMeasureController {
    * @returns `true` when the event was handled.
    */
   handlePointerDown(clientX: number, clientY: number): boolean {
-    if (this._trySelectCommittedAt(clientX, clientY, false)) {
+    if (this._trySelectCommittedAt(clientX, clientY)) {
       return true
     }
     if (!this._mode) return false
@@ -857,7 +912,7 @@ export class AcExMeasureController {
         this.cancelMode()
         return true
       }
-      if (this._selectedId) {
+      if (this._selectedIds.size > 0) {
         this._deselect()
         return true
       }
@@ -879,16 +934,16 @@ export class AcExMeasureController {
    */
   handleSelectionPointerDown(clientX: number, clientY: number): boolean {
     if (this._mode || this._committed.length === 0) return false
-    return this._trySelectCommittedAt(clientX, clientY, true)
+    return this._trySelectCommittedAt(clientX, clientY)
   }
 
   /**
-   * Deletes the selected committed measurement.
+   * Deletes all selected committed measurements.
    * Handles `Delete` and `Backspace` (Mac delete key).
    */
   handleSelectionKeyDown(key: string, event?: KeyboardEvent): boolean {
     if (key !== 'Delete' && key !== 'Backspace') return false
-    if (!this._selectedId) return false
+    if (this._selectedIds.size === 0) return false
 
     const target = event?.target
     if (target instanceof HTMLElement) {
@@ -898,8 +953,12 @@ export class AcExMeasureController {
       }
     }
 
-    this._removeCommitted(this._selectedId)
+    for (const id of [...this._selectedIds]) {
+      this._removeCommitted(id, false)
+    }
+    this._selectedIds.clear()
     this._statusEl.textContent = this._getReadyStatus()
+    this._view.render()
     return true
   }
 
@@ -954,9 +1013,24 @@ export class AcExMeasureController {
     clientX: number,
     clientY: number
   ): THREE.Vector2 {
-    const { point, snap } = this._view.resolvePoint(clientX, clientY)
+    const { point: rawPoint, snap } = this._view.resolvePoint(clientX, clientY)
+    let point = rawPoint
+    const tracking = this._getTrackingOptions?.()
+    const reference = this._trackingReference()
+    if (tracking && reference && (tracking.ortho || tracking.polar)) {
+      const constrained = constrainToAcExTracking(point, reference, tracking)
+      point = new THREE.Vector2(constrained.x, constrained.y)
+    }
     this._onOsnapMarker(snap, snap ? this._view.wcsToScreen(point) : null)
     return point
+  }
+
+  /** Reference point for ortho/polar tracking during the active tool. @internal */
+  private _trackingReference(): THREE.Vector2 | null {
+    if (!this._mode || this._points.length === 0) return null
+    if (this._mode === 'coordinate') return null
+    if (this._mode === 'angle') return this._points[0] ?? null
+    return this._points[this._points.length - 1] ?? null
   }
 
   /**
@@ -1488,7 +1562,7 @@ export class AcExMeasureController {
     const geometry = makeLineGeometry(points)
     if (!geometry) return
     const material = new THREE.LineBasicMaterial({
-      color: ACEX_MEASURE_COLOR,
+      color: this._measureColor,
       depthTest: false
     })
     const line = new THREE.Line(geometry, material)
@@ -1616,31 +1690,23 @@ export class AcExMeasureController {
   }
 
   /**
-   * Selects a committed measurement under the pointer, or deselects when idle.
-   * @param deselectOnMiss - When true and nothing was hit, clears the current selection.
+   * Selects a committed measurement under the pointer.
+   * Clicking empty space does not change the current selection.
    * @internal
    */
-  private _trySelectCommittedAt(
-    clientX: number,
-    clientY: number,
-    deselectOnMiss: boolean
-  ): boolean {
+  private _trySelectCommittedAt(clientX: number, clientY: number): boolean {
     const measure = this._pickCommittedMeasure(clientX, clientY)
     if (measure) {
-      const changed = measure.id !== this._selectedId
       this._select(measure.id)
-      return changed || measure.id === this._selectedId
+      return true
     }
-    if (!deselectOnMiss || !this._selectedId) return false
-    this._deselect()
-    return true
+    return false
   }
 
   /** @internal */
   private _select(id: string): void {
-    if (this._selectedId === id) return
-    this._deselect()
-    this._selectedId = id
+    if (this._selectedIds.has(id)) return
+    this._selectedIds.add(id)
     const measure = this._committed.find(m => m.id === id)
     if (measure) this._applyMeasureSelection(measure.parts, true)
     this._view.render()
@@ -1648,10 +1714,12 @@ export class AcExMeasureController {
 
   /** @internal */
   private _deselect(): void {
-    if (!this._selectedId) return
-    const measure = this._committed.find(m => m.id === this._selectedId)
-    if (measure) this._applyMeasureSelection(measure.parts, false)
-    this._selectedId = null
+    if (this._selectedIds.size === 0) return
+    for (const id of this._selectedIds) {
+      const measure = this._committed.find(m => m.id === id)
+      if (measure) this._applyMeasureSelection(measure.parts, false)
+    }
+    this._selectedIds.clear()
     this._view.render()
   }
 
@@ -1664,7 +1732,7 @@ export class AcExMeasureController {
       const material = line.material
       if (material instanceof THREE.LineBasicMaterial) {
         material.color.setHex(
-          selected ? ACEX_MEASURE_SELECT_COLOR : ACEX_MEASURE_COLOR
+          selected ? ACEX_MEASURE_SELECT_COLOR : this._measureColor
         )
       }
     }
@@ -1680,9 +1748,7 @@ export class AcExMeasureController {
   private _removeCommitted(id: string, render = true): void {
     const idx = this._committed.findIndex(m => m.id === id)
     if (idx < 0) return
-    if (this._selectedId === id) {
-      this._selectedId = null
-    }
+    this._selectedIds.delete(id)
     const [measure] = this._committed.splice(idx, 1)
     for (const fn of measure.parts.cleanups) fn()
     if (render) this._view.render()
@@ -1754,7 +1820,7 @@ export class AcExMeasureController {
 
     ctx.beginPath()
     ctx.arc(vx, vy, arc.r, arc.startAngle, arc.endAngle, arc.antiClockwise)
-    ctx.strokeStyle = MEASURE_CSS
+    ctx.strokeStyle = this._measureCss()
     ctx.lineWidth = 2
     ctx.stroke()
     ctx.restore()
@@ -1808,7 +1874,7 @@ export class AcExMeasureController {
 
     ctx.beginPath()
     ctx.arc(cx, cy, screenR, sa, ea, counterClockwise)
-    ctx.strokeStyle = MEASURE_CSS
+    ctx.strokeStyle = this._measureCss()
     ctx.lineWidth = 3
     ctx.stroke()
     ctx.restore()
@@ -1856,9 +1922,9 @@ export class AcExMeasureController {
       ctx.lineTo(spts[i]!.x, spts[i]!.y)
     }
     ctx.closePath()
-    ctx.fillStyle = MEASURE_FILL
+    ctx.fillStyle = this._measureFill()
     ctx.fill()
-    ctx.strokeStyle = MEASURE_CSS
+    ctx.strokeStyle = this._measureCss()
     ctx.lineWidth = 2
     ctx.stroke()
     ctx.restore()

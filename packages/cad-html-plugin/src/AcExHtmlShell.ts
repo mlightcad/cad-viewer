@@ -1,4 +1,5 @@
 import { acExHtmlIcons, acExToolbarButton } from './AcExHtmlIcons'
+import { buildAcExHtmlSettingsStrip } from './AcExHtmlMeasureSettings'
 
 /**
  * Shared CSS for the offline HTML viewer chrome (toolbar, layer drawer, status bar).
@@ -13,6 +14,9 @@ export const ACEX_HTML_SHELL_CSS = `
     --mlcad-ui-muted: #9aa0a6;
     --mlcad-accent: #08e8de;
     --mlcad-accent-active: #1a8cff;
+    --mlcad-measure-accent: #08e8de;
+    --mlcad-measure-accent-border: rgba(8, 232, 222, 0.45);
+    --mlcad-measure-accent-fill: rgba(8, 232, 222, 0.2);
     --mlcad-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
     --mlcad-toolbar-width: 44px;
     --mlcad-drawer-width: 220px;
@@ -82,6 +86,20 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   .mlcad-tool-btn svg {
     width: 20px; height: 20px; display: block; flex-shrink: 0;
+  }
+  #mlcad-toolbar-toggle {
+    height: calc(var(--mlcad-toolbar-width) / 2);
+    margin-top: -4px;
+    margin-bottom: -4px;
+    border-radius: 4px;
+  }
+  #mlcad-toolbar-toggle svg {
+    width: calc(var(--mlcad-toolbar-width) / 2);
+    height: calc(var(--mlcad-toolbar-width) / 2);
+  }
+  #mlcad-toolbar > .mlcad-tool-separator:last-of-type {
+    margin-top: 0;
+    margin-bottom: 0;
   }
   .mlcad-lang-btn { position: relative; }
   .mlcad-lang-badge {
@@ -196,6 +214,94 @@ export const ACEX_HTML_SHELL_CSS = `
     margin: 4px 8px;
     background: var(--mlcad-ui-border);
   }
+
+  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-settings-wrap,
+  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-layer-drawer {
+    display: none !important;
+  }
+  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-toolbar .mlcad-tool-btn:not(#mlcad-toolbar-toggle),
+  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-toolbar .mlcad-tool-separator {
+    display: none;
+  }
+
+  #mlcad-settings-wrap {
+    flex-shrink: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--mlcad-drawer-gap);
+  }
+  #mlcad-settings-wrap[hidden] { display: none; }
+
+  #mlcad-settings-strip {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 6px;
+    background: var(--mlcad-ui-bg);
+    border: 1px solid var(--mlcad-ui-border);
+    border-radius: 8px;
+    box-shadow: var(--mlcad-shadow);
+    backdrop-filter: blur(12px);
+  }
+
+  #mlcad-polar-angles {
+    flex-shrink: 0;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 6px;
+    max-width: min(280px, calc(100vw - 2 * var(--mlcad-ui-inset) - 3 * var(--mlcad-toolbar-width) - 3 * var(--mlcad-drawer-gap)));
+    background: var(--mlcad-ui-bg);
+    border: 1px solid var(--mlcad-ui-border);
+    border-radius: 8px;
+    box-shadow: var(--mlcad-shadow);
+    backdrop-filter: blur(12px);
+  }
+  #mlcad-polar-angles[hidden] { display: none; }
+
+  .mlcad-color-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .mlcad-settings-option-btn {
+    width: 100%;
+    box-sizing: border-box;
+    height: var(--mlcad-toolbar-width);
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .mlcad-settings-option-indicator {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--mlcad-ui-muted);
+    border-radius: 2px;
+    box-sizing: border-box;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .mlcad-settings-option-btn.active .mlcad-settings-option-indicator {
+    background: var(--mlcad-accent);
+    border-color: var(--mlcad-accent);
+  }
+  .mlcad-settings-option-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+    line-height: 1.2;
+  }
+
   #mlcad-measure-overlays {
     position: absolute;
     inset: 0;
@@ -214,7 +320,7 @@ export const ACEX_HTML_SHELL_CSS = `
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: var(--mlcad-accent);
+    background: var(--mlcad-measure-accent);
     border: 2px solid rgba(255, 255, 255, 0.9);
     box-sizing: border-box;
     transform: translate(-50%, -50%);
@@ -225,8 +331,8 @@ export const ACEX_HTML_SHELL_CSS = `
     padding: 3px 10px;
     border-radius: 14px;
     background: var(--mlcad-ui-bg-elevated);
-    border: 1px solid rgba(8, 232, 222, 0.45);
-    color: var(--mlcad-accent);
+    border: 1px solid var(--mlcad-measure-accent-border);
+    color: var(--mlcad-measure-accent);
     font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
@@ -251,7 +357,7 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-measure-live-label {
     position: absolute;
     pointer-events: none;
-    color: var(--mlcad-accent);
+    color: var(--mlcad-measure-accent);
     font-size: 12px;
     font-weight: 600;
     text-shadow: 0 0 4px #000, 0 1px 3px #000;
@@ -379,11 +485,22 @@ export function buildAcExHtmlShellBody(loadingBg: string): string {
           'data-i18n-key': 'toolbar.layers',
           'data-i18n-attr': 'title aria-label'
         })}
-        <button type="button" class="mlcad-tool-btn mlcad-lang-btn" id="mlcad-lang-btn" data-i18n-key="toolbar.languageSwitch" data-i18n-attr="title aria-label" title="Switch language" aria-label="Switch language">
-          ${acExHtmlIcons.language}
-          <span class="mlcad-lang-badge" id="mlcad-lang-badge">EN</span>
-        </button>
+        ${acExToolbarButton(acExHtmlIcons.setting, 'Measure settings', {
+          id: 'mlcad-settings-btn',
+          'aria-haspopup': 'true',
+          'aria-expanded': 'false',
+          'data-i18n-key': 'toolbar.settings',
+          'data-i18n-attr': 'title aria-label'
+        })}
+        <div class="mlcad-tool-separator" aria-hidden="true"></div>
+        ${acExToolbarButton(acExHtmlIcons.chevronUp, 'Collapse toolbar', {
+          id: 'mlcad-toolbar-toggle',
+          'aria-expanded': 'true',
+          'data-i18n-key': 'toolbar.collapse',
+          'data-i18n-attr': 'title aria-label'
+        })}
       </nav>
+      ${buildAcExHtmlSettingsStrip()}
       <div id="mlcad-layer-drawer" role="dialog" data-i18n-attr="aria-label" data-i18n-key="layers.title" aria-label="Layers" hidden>
         <div class="mlcad-drawer-header">
           <span data-i18n-key="layers.title" data-i18n-text>Layers</span>
