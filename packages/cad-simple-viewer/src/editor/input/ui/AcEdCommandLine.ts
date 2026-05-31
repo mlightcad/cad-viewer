@@ -239,6 +239,7 @@ export class AcEdCommandLine {
         box-sizing: border-box;
         user-select: none;
         max-width: calc(100% - 20px);
+        z-index: 5;
       }
 
       .ml-cli-bar {

@@ -10,6 +10,8 @@
  */
 
 import {
+  AcDb2dPolyline,
+  AcDb3dPolyline,
   AcDbArc,
   type AcDbBlockTableRecord,
   AcDbCircle,
@@ -17,11 +19,18 @@ import {
   AcDbDimension,
   AcDbEllipse,
   AcDbEntity,
+  AcDbFace,
+  AcDbLeader,
   AcDbLine,
+  AcDbMText,
   type AcDbObjectId,
   AcDbPoint,
   AcDbPolyline,
+  AcDbRay,
   AcDbSpline,
+  AcDbText,
+  AcDbTrace,
+  AcDbXline,
   AcGeCircArc2d,
   type AcGeMatrix3d,
   type AcGePoint3dLike,
@@ -46,6 +55,9 @@ import type {
 function normalSignFromVector(normal: AcGeVector3dLike): 1 | -1 {
   return normal.z >= 0 ? 1 : -1
 }
+
+/** Half-length used when exporting infinite rays/xlines as finite segments. @internal */
+const INFINITE_LINE_HALF_LENGTH = 1_000_000
 
 /** Applies a 4×4 layout/block matrix to a 3D point; returns XY. @internal */
 function transformPoint(
@@ -93,7 +105,10 @@ function composeTransforms(
   parent: THREE.Matrix4,
   child: AcGeMatrix3d
 ): THREE.Matrix4 {
-  return new THREE.Matrix4().multiplyMatrices(parent, acGeMatrix3dToThree(child))
+  return new THREE.Matrix4().multiplyMatrices(
+    parent,
+    acGeMatrix3dToThree(child)
+  )
 }
 
 /** Applies a 4×4 matrix to a direction vector (no translation); returns normalized XY. @internal */
@@ -300,6 +315,100 @@ function pushLine(
     y1: b.y
   }
   out.push(prim)
+}
+
+/**
+ * Appends a long WCS line segment along a unit direction (ray or xline).
+ *
+ * @internal
+ */
+function pushDirectedLine(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  base: AcGePoint3dLike,
+  unitDir: AcGeVector3dLike,
+  bidirectional: boolean
+) {
+  const origin = transformPoint(matrix, base)
+  const dir = transformVector(matrix, unitDir)
+  const len = Math.hypot(dir.x, dir.y) || 1
+  const ux = dir.x / len
+  const uy = dir.y / len
+  const half = INFINITE_LINE_HALF_LENGTH
+  const x0 = bidirectional ? origin.x - ux * half : origin.x
+  const y0 = bidirectional ? origin.y - uy * half : origin.y
+  const x1 = origin.x + ux * half
+  const y1 = origin.y + uy * half
+  out.push({ kind: 'line', layer, x0, y0, x1, y1 })
+}
+
+/**
+ * Appends line segments connecting an ordered vertex path.
+ *
+ * @internal
+ */
+function pushVertexPath(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  vertices: AcGePoint3dLike[],
+  closed: boolean
+) {
+  if (vertices.length < 2) return
+  const segmentCount = closed ? vertices.length : vertices.length - 1
+  for (let i = 0; i < segmentCount; i++) {
+    pushLine(
+      out,
+      layer,
+      matrix,
+      vertices[i]!,
+      vertices[(i + 1) % vertices.length]!
+    )
+  }
+}
+
+/**
+ * Decomposes `AcDb2dPolyline` into line and arc primitives (legacy POLYLINE).
+ *
+ * @internal
+ */
+function push2dPolyline(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  entity: AcDb2dPolyline
+) {
+  const count = entity.numberOfVertices
+  if (count < 2) return
+
+  const elevation = entity.elevation
+  const segmentCount = entity.closed ? count : count - 1
+  for (let i = 0; i < segmentCount; i++) {
+    const start2d = entity.getPointAt(i)
+    const end2d = entity.getPointAt((i + 1) % count)
+    const bulge = entity.getBulgeAt(i)
+    const start = { x: start2d.x, y: start2d.y, z: elevation }
+    const end = { x: end2d.x, y: end2d.y, z: elevation }
+    if (AcGeTol.isPositive(Math.abs(bulge))) {
+      const startW = transformPoint(matrix, start)
+      const endW = transformPoint(matrix, end)
+      const arc2d = new AcGeCircArc2d(startW, endW, bulge)
+      const center = arc2d.center
+      out.push({
+        kind: 'arc',
+        layer,
+        cx: center.x,
+        cy: center.y,
+        r: arc2d.radius,
+        startAngle: arc2d.startAngle,
+        endAngle: arc2d.endAngle,
+        normalSign: arc2d.clockwise ? -1 : 1
+      })
+    } else {
+      pushLine(out, layer, matrix, start, end)
+    }
+  }
 }
 
 /** Appends a WCS circle primitive (uniform scale on radius). @internal */
@@ -613,6 +722,76 @@ function visitEntity(
     return
   }
 
+  if (entity instanceof AcDb2dPolyline) {
+    push2dPolyline(out, layer, matrix, entity)
+    return
+  }
+
+  if (entity instanceof AcDb3dPolyline) {
+    const vertices: AcGePoint3dLike[] = []
+    for (let i = 0; i < entity.numberOfVertices; i++) {
+      vertices.push(entity.getPointAt(i))
+    }
+    pushVertexPath(out, layer, matrix, vertices, entity.closed)
+    return
+  }
+
+  if (entity instanceof AcDbRay) {
+    pushDirectedLine(
+      out,
+      layer,
+      matrix,
+      entity.basePoint,
+      entity.unitDir,
+      false
+    )
+    return
+  }
+
+  if (entity instanceof AcDbXline) {
+    pushDirectedLine(out, layer, matrix, entity.basePoint, entity.unitDir, true)
+    return
+  }
+
+  if (entity instanceof AcDbTrace) {
+    const vertices = [
+      entity.getPointAt(0),
+      entity.getPointAt(1),
+      entity.getPointAt(2),
+      entity.getPointAt(3)
+    ]
+    pushVertexPath(out, layer, matrix, vertices, true)
+    return
+  }
+
+  if (entity instanceof AcDbFace) {
+    const vertices = entity.subGetGripPoints()
+    if (vertices.length >= 2) {
+      pushVertexPath(out, layer, matrix, vertices, vertices.length >= 3)
+    }
+    return
+  }
+
+  if (entity instanceof AcDbLeader) {
+    const vertices = entity.vertices
+    if (vertices.length >= 2) {
+      pushVertexPath(out, layer, matrix, vertices, false)
+    }
+    return
+  }
+
+  if (entity instanceof AcDbText) {
+    const p = transformPoint(matrix, entity.position)
+    out.push({ kind: 'point', layer, x: p.x, y: p.y })
+    return
+  }
+
+  if (entity instanceof AcDbMText) {
+    const p = transformPoint(matrix, entity.location)
+    out.push({ kind: 'point', layer, x: p.x, y: p.y })
+    return
+  }
+
   if (entity instanceof AcDbPoint) {
     const p = transformPoint(matrix, entity.position)
     out.push({ kind: 'point', layer, x: p.x, y: p.y })
@@ -667,8 +846,10 @@ function ellipseFromArc(entity: AcDbArc): AcDbEllipse {
  * inside blocks inherit the INSERT layer per AutoCAD rules.
  *
  * Supported entity types: `AcDbLine`, `AcDbCircle`, `AcDbArc`, `AcDbEllipse`,
- * `AcDbSpline`, `AcDbPolyline` (lines + bulge arcs), `AcDbPoint`, INSERT, and
- * dimension entities (`AcDbDimension` and subclasses via anonymous dim blocks).
+ * `AcDbSpline`, `AcDbPolyline`, `AcDb2dPolyline`, `AcDb3dPolyline`, `AcDbRay`,
+ * `AcDbXline`, `AcDbTrace`, `AcDbFace`, `AcDbLeader`, `AcDbText`, `AcDbMText`,
+ * `AcDbPoint`, INSERT, and dimension entities (`AcDbDimension` and subclasses
+ * via anonymous dim blocks).
  *
  * @param database - Open drawing database (same instance used for HTML export).
  * @param layoutBtrId - Object id of the layout's owning block table record

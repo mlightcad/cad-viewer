@@ -87,6 +87,24 @@ export class AcEdRubberBand {
   }
 
   /**
+   * Converts a world point to container-local screen coordinates.
+   */
+  private toContainerPoint(point: AcGePoint2dLike): AcGePoint2dLike {
+    return this.view.canvasToContainer(this.view.worldToScreen(point))
+  }
+
+  /**
+   * Ensures the overlay host can anchor absolutely positioned children.
+   */
+  private ensureHostPositioned() {
+    const host = this.view.container
+    const hostPosition = getComputedStyle(host).position
+    if (hostPosition === 'static') {
+      host.style.position = 'relative'
+    }
+  }
+
+  /**
    * Starts the rubber-band preview.
    * @param basePoint The starting point in world coordinates.
    */
@@ -97,27 +115,31 @@ export class AcEdRubberBand {
     const color = this.options.color || 'var(--ml-ui-canvas-line, #0f0)'
 
     // --------------------------------------------------------------------
-    // Create parent container
+    // Create parent container inside the view so overlays stay within the
+    // canvas stacking context and do not float above ribbon/status bar.
     // --------------------------------------------------------------------
+    this.ensureHostPositioned()
     this.container = document.createElement('div')
-    this.container.style.position = 'fixed'
+    this.container.style.position = 'absolute'
     this.container.style.left = '0'
     this.container.style.top = '0'
+    this.container.style.width = '100%'
+    this.container.style.height = '100%'
     this.container.style.pointerEvents = 'none'
-    this.container.style.zIndex = '99999'
-    document.body.appendChild(this.container)
+    this.container.style.zIndex = '1'
+    this.view.container.appendChild(this.container)
 
     // --------------------------------------------------------------------
     // Always create baseLine
     // --------------------------------------------------------------------
     this.baseLine = document.createElement('div')
-    this.baseLine.style.position = 'fixed'
+    this.baseLine.style.position = 'absolute'
     this.baseLine.style.borderTop = `1px solid ${color}`
     this.container.appendChild(this.baseLine)
 
     const createDashed = () => {
       const el = document.createElement('div')
-      el.style.position = 'fixed'
+      el.style.position = 'absolute'
       el.style.borderTop = `1px dashed ${color}`
       this.container!.appendChild(el)
       return el
@@ -131,7 +153,7 @@ export class AcEdRubberBand {
 
       // distance label
       this.labelEl = document.createElement('div')
-      this.labelEl.style.position = 'fixed'
+      this.labelEl.style.position = 'absolute'
       // this.labelEl.style.background = 'rgba(0,0,0,0.6)'
       this.labelEl.style.color = color
       this.labelEl.style.fontSize = '12px'
@@ -141,7 +163,7 @@ export class AcEdRubberBand {
 
       // X-axis reference line
       this.xAxisLine = document.createElement('div')
-      this.xAxisLine.style.position = 'fixed'
+      this.xAxisLine.style.position = 'absolute'
       this.xAxisLine.style.borderTop = `1px solid ${color}`
       this.container.appendChild(this.xAxisLine)
 
@@ -170,7 +192,7 @@ export class AcEdRubberBand {
 
       // Angle label (HTML) positioned in screen coords at arc midpoint
       this.angleLabelEl = document.createElement('div')
-      this.angleLabelEl.style.position = 'fixed'
+      this.angleLabelEl.style.position = 'absolute'
       // this.angleLabelEl.style.background = 'rgba(0,0,0,0.6)'
       this.angleLabelEl.style.color = color
       this.angleLabelEl.style.fontSize = '12px'
@@ -187,12 +209,8 @@ export class AcEdRubberBand {
   update(targetPoint: AcGePoint2dLike) {
     if (!this.container || !this.basePoint || !this.baseLine) return
 
-    const rect = this.view.canvas.getBoundingClientRect()
-    const p0 = this.view.worldToScreen(this.basePoint)
-    const p3 = this.view.worldToScreen(targetPoint)
-
-    const offsetX = rect.left
-    const offsetY = rect.top
+    const p0 = this.toContainerPoint(this.basePoint)
+    const p3 = this.toContainerPoint(targetPoint)
 
     const drawLine = (
       line: HTMLDivElement,
@@ -205,7 +223,7 @@ export class AcEdRubberBand {
       const angle = Math.atan2(dy, dx) * (180 / Math.PI)
       line.style.width = `${length}px`
       line.style.transformOrigin = '0 0'
-      line.style.transform = `translate(${start.x + offsetX}px, ${start.y + offsetY}px) rotate(${angle}deg)`
+      line.style.transform = `translate(${start.x}px, ${start.y}px) rotate(${angle}deg)`
     }
 
     // --------------------------------------------------------------------
@@ -255,8 +273,8 @@ export class AcEdRubberBand {
     // Distance label
     // --------------------------------------------------------------------
     if (this.labelEl) {
-      const midX = (pBasePerp.x + pCursorPerp.x) / 2 + offsetX
-      const midY = (pBasePerp.y + pCursorPerp.y) / 2 + offsetY - 24
+      const midX = (pBasePerp.x + pCursorPerp.x) / 2
+      const midY = (pBasePerp.y + pCursorPerp.y) / 2 - 24
 
       const dist = Math.sqrt(
         (targetPoint.x - this.basePoint.x) ** 2 +
@@ -282,7 +300,7 @@ export class AcEdRubberBand {
         y: this.basePoint.y + Math.sin(baseAngleRadWorld),
         z: 0
       }
-      const screenRefPoint = this.view.worldToScreen(worldRefPoint)
+      const screenRefPoint = this.toContainerPoint(worldRefPoint)
       const baseAngleRadScreen = Math.atan2(
         screenRefPoint.y - p0.y,
         screenRefPoint.x - p0.x
@@ -301,9 +319,9 @@ export class AcEdRubberBand {
     if (this.angleSvg && this.anglePath && this.angleLabelEl) {
       const radius = lengthBase
 
-      // center (screen) of the arc
-      const centerScreenX = p0.x + offsetX
-      const centerScreenY = p0.y + offsetY
+      // center of the arc in container-local coordinates
+      const centerX = p0.x
+      const centerY = p0.y
 
       // We need coordinates relative to the SVG's top-left.
       // We'll make the SVG have width = height = 2*radius and be positioned
@@ -316,7 +334,7 @@ export class AcEdRubberBand {
         y: this.basePoint.y + Math.sin(baseAngleRadWorld),
         z: 0
       }
-      const screenRefPoint = this.view.worldToScreen(worldRefPoint)
+      const screenRefPoint = this.toContainerPoint(worldRefPoint)
       const baseAngleRadScreen = Math.atan2(
         screenRefPoint.y - p0.y,
         screenRefPoint.x - p0.x
@@ -330,8 +348,8 @@ export class AcEdRubberBand {
       const midAngle = baseAngleRadScreen + angleRad / 2
 
       // SVG position and sizing
-      const svgLeft = centerScreenX - radius
-      const svgTop = centerScreenY - radius
+      const svgLeft = centerX - radius
+      const svgTop = centerY - radius
       const svgSize = radius * 2
 
       // set SVG attributes and position
@@ -367,15 +385,15 @@ export class AcEdRubberBand {
           })
         : `${((angleValueRad * 180) / Math.PI).toFixed(1)}°`
 
-      // midpoint of arc in screen coords
-      const midScreenX = centerScreenX + radius * Math.cos(midAngle)
-      const midScreenY = centerScreenY + radius * Math.sin(midAngle)
+      // midpoint of arc in container-local coordinates
+      const midX = centerX + radius * Math.cos(midAngle)
+      const midY = centerY + radius * Math.sin(midAngle)
 
       this.angleLabelEl.textContent = angleText
       // center the label roughly
       const labelRectApproxWidth = 40 // rough centering; exact can be done by measuring
-      this.angleLabelEl.style.left = `${midScreenX - labelRectApproxWidth / 2}px`
-      this.angleLabelEl.style.top = `${midScreenY - 12}px`
+      this.angleLabelEl.style.left = `${midX - labelRectApproxWidth / 2}px`
+      this.angleLabelEl.style.top = `${midY - 12}px`
       this.angleLabelEl.style.display = ''
     }
   }

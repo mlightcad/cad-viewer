@@ -51,6 +51,18 @@ export class AcEdMarkerManager {
   }
 
   /**
+   * Repositions the top marker to a new world coordinate without recreating it.
+   */
+  public repositionTop(pos: AcGePoint2dLike) {
+    const marker = this.top()
+    if (!marker) return
+
+    const canvasPos = this.view.worldToScreen(pos)
+    const containerPos = this.view.canvasToContainer(canvasPos)
+    marker.setPosition(containerPos)
+  }
+
+  /**
    * Hides the most recently shown marker (LIFO).
    * If no marker exists, nothing happens.
    */

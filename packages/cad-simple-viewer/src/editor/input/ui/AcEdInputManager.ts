@@ -252,7 +252,7 @@ export class AcEdInputManager {
         border: 1px dashed var(--line-color, var(--ml-ui-canvas-line, #0f0));
         background: var(--ml-ui-canvas-fill-mix, var(--ml-ui-canvas-fill, rgba(64, 158, 255, 0.12)));
         pointer-events: none;
-        z-index: 9999;
+        z-index: 1;
       }
       .ml-jig-preview-line {
         position: absolute;
@@ -260,7 +260,7 @@ export class AcEdInputManager {
         background: var(--line-color, var(--ml-ui-canvas-line, #0f0));
         transform-origin: 0 0;
         pointer-events: none;
-        z-index: 9999;
+        z-index: 1;
       }
     `
     document.head.appendChild(style)
@@ -1028,6 +1028,45 @@ export class AcEdInputManager {
           let startWcs: AcGePoint2dLike | null = null
           let startCanvas: AcGePoint2dLike | null = null
           let previewEl: HTMLDivElement | null = null
+          let lastDragEvent: MouseEvent | null = null
+
+          const updateSelectionPreview = (e: MouseEvent) => {
+            if (!startWcs || !previewEl || !startCanvas) return
+
+            const curWcs = this.view.screenToWorld(
+              this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
+            )
+            const curCanvas = this.view.viewportToCanvas({
+              x: e.clientX,
+              y: e.clientY
+            })
+            const p1 = this.view.worldToScreen(startWcs)
+            const p2 = this.view.worldToScreen(curWcs)
+
+            const left = Math.min(p1.x, p2.x)
+            const top = Math.min(p1.y, p2.y)
+            const width = Math.abs(p1.x - p2.x)
+            const height = Math.abs(p1.y - p2.y)
+            const mode = this.view.getSelectionMode(startCanvas, curCanvas)
+            const action = this.view.getSelectionActionFromEvent(e, 'add')
+            const style = this.view.getSelectionPreviewStyle(mode, action)
+
+            Object.assign(previewEl.style, {
+              left: `${left}px`,
+              top: `${top}px`,
+              width: `${width}px`,
+              height: `${height}px`,
+              borderStyle: style.borderStyle,
+              background: style.background
+            })
+            previewEl.style.setProperty('--line-color', style.lineColor)
+          }
+
+          const onViewChanged = () => {
+            if (lastDragEvent) {
+              updateSelectionPreview(lastDragEvent)
+            }
+          }
 
           let settled = false
           const cleanup = () => {
@@ -1048,6 +1087,8 @@ export class AcEdInputManager {
               'contextmenu',
               contextMenuHandler
             )
+            this.view.events.viewChanged.removeEventListener(onViewChanged)
+            this.view.events.viewResize.removeEventListener(onViewChanged)
           }
 
           keywordSession?.promise.then(keyword => {
@@ -1109,33 +1150,8 @@ export class AcEdInputManager {
             if (e.buttons !== 1) return
             if (!startWcs || !previewEl || !startCanvas) return
 
-            const curWcs = this.view.screenToWorld(
-              this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
-            )
-            const curCanvas = this.view.viewportToCanvas({
-              x: e.clientX,
-              y: e.clientY
-            })
-            const p1 = this.view.worldToScreen(startWcs)
-            const p2 = this.view.worldToScreen(curWcs)
-
-            const left = Math.min(p1.x, p2.x)
-            const top = Math.min(p1.y, p2.y)
-            const width = Math.abs(p1.x - p2.x)
-            const height = Math.abs(p1.y - p2.y)
-            const mode = this.view.getSelectionMode(startCanvas, curCanvas)
-            const action = this.view.getSelectionActionFromEvent(e, 'add')
-            const style = this.view.getSelectionPreviewStyle(mode, action)
-
-            Object.assign(previewEl.style, {
-              left: `${left}px`,
-              top: `${top}px`,
-              width: `${width}px`,
-              height: `${height}px`,
-              borderStyle: style.borderStyle,
-              background: style.background
-            })
-            previewEl.style.setProperty('--line-color', style.lineColor)
+            lastDragEvent = e
+            updateSelectionPreview(e)
           }
 
           const mouseUp = (e: MouseEvent) => {
@@ -1151,6 +1167,7 @@ export class AcEdInputManager {
             })
             previewEl?.remove()
             previewEl = null
+            lastDragEvent = null
 
             // Click selection
             const action = this.view.getSelectionActionFromEvent(e, 'add')
@@ -1192,6 +1209,8 @@ export class AcEdInputManager {
           this.view.canvas.addEventListener('mousemove', mouseMove)
           this.view.canvas.addEventListener('mouseup', mouseUp)
           this.view.canvas.addEventListener('contextmenu', contextMenuHandler)
+          this.view.events.viewChanged.addEventListener(onViewChanged)
+          this.view.events.viewResize.addEventListener(onViewChanged)
         }),
       value =>
         new AcEdPromptSelectionResult(
@@ -1789,6 +1808,11 @@ export class AcEdInputManager {
         basePoint = promptDefaults.basePoint
       }
 
+      const orthoReferencePoint =
+        promptDefaults.useBasePoint && promptDefaults.basePoint
+          ? promptDefaults.basePoint
+          : (this.lastPoint ?? undefined)
+
       const commandLineMessage = promptDefaults.message
       if (!keywordSession) {
         this._commandLine.setPrompt(commandLineMessage)
@@ -1807,6 +1831,7 @@ export class AcEdInputManager {
         disableOSnap: options.disableOSnap,
         showBaseLineOnly: promptDefaults.showBaseLineOnly,
         basePoint,
+        orthoReferencePoint,
         baseAngle: promptDefaults.baseAngle,
         allowPrompt: options.allowPrompt !== false,
         allowNone,
