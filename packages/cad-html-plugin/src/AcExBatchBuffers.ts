@@ -39,6 +39,40 @@ export function copyUint32Range(
 }
 
 /**
+ * Trims an indexed geometry slice to the vertex span referenced by {@link indices}.
+ *
+ * Batched mesh buffers pre-allocate capacity; export copies the full position
+ * buffer but only a subset of indices. Unused tail vertices must not participate
+ * in fallback triangulation when indices are missing during HTML playback.
+ */
+export function compactIndexedSlice(
+  positions: Float32Array,
+  indices: Uint32Array
+): { positions: Float32Array; indices: Uint32Array } {
+  if (indices.length === 0) {
+    return { positions, indices }
+  }
+
+  let maxIndex = 0
+  for (let i = 0; i < indices.length; i++) {
+    const index = indices[i]!
+    if (index > maxIndex) {
+      maxIndex = index
+    }
+  }
+
+  const vertexFloatCount = (maxIndex + 1) * 3
+  if (vertexFloatCount >= positions.length) {
+    return { positions, indices }
+  }
+
+  return {
+    positions: copyFloat32Range(positions, 0, vertexFloatCount),
+    indices
+  }
+}
+
+/**
  * Converts one rebased local coordinate plus batch origin to WCS using double precision.
  *
  * Used by extent and legacy batch-based OSNAP paths so large origins are not

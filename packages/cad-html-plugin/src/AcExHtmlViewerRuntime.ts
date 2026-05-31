@@ -14,7 +14,8 @@ import { AcExOsnapMarker } from './AcExOsnapMarker'
 import {
   acexCameraZoomUniform,
   createViewerLineMaterial,
-  createViewerMeshMaterial
+  createViewerMeshMaterial,
+  createViewerPointsMaterial
 } from './AcExPatternSnapshot'
 import { decodeSnapshot } from './AcExSnapshotCodec'
 import type {
@@ -133,7 +134,9 @@ function startViewer(): void {
     if (object) getLayerGroup(batch.layer).add(object)
   }
   for (const batch of layout.meshBatches) {
-    const object = createMeshObject(batch)
+    const object = batch.points
+      ? createPointObject(batch)
+      : createMeshObject(batch)
     if (object) getLayerGroup(batch.layer).add(object)
   }
 
@@ -636,11 +639,21 @@ function setupMeasurePointerInput(
   })
 }
 
+function createPointObject(batch: AcExMeshBatch): THREE.Points | null {
+  if (batch.positions.length < 3) return null
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(copyFloat32Buffer(batch.positions), 3)
+  )
+  const material = createViewerPointsMaterial(batch)
+  const object = new THREE.Points(geometry, material)
+  object.position.set(batch.offset[0], batch.offset[1], batch.offset[2])
+  return object
+}
+
 function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
-  if (
-    batch.positions.length < 9 &&
-    (!batch.indices || batch.indices.length < 3)
-  ) {
+  if (!batch.indices || batch.indices.length < 3) {
     return null
   }
   const geometry = new THREE.BufferGeometry()
@@ -648,13 +661,9 @@ function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
     'position',
     new THREE.BufferAttribute(copyFloat32Buffer(batch.positions), 3)
   )
-  if (batch.indices && batch.indices.length > 0) {
-    geometry.setIndex(
-      new THREE.BufferAttribute(copyUint32Buffer(batch.indices), 1)
-    )
-  } else if (batch.positions.length >= 9) {
-    geometry.setIndex([0, 1, 2])
-  }
+  geometry.setIndex(
+    new THREE.BufferAttribute(copyUint32Buffer(batch.indices), 1)
+  )
   if (
     batch.gradientFill &&
     batch.gradientPositions &&

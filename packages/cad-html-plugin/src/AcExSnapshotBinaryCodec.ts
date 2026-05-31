@@ -19,6 +19,7 @@ const F_MESH_HATCH = 2
 const F_MESH_GRADIENT_FILL = 4
 const F_MESH_GRADIENT_POS = 8
 const F_MESH_SIDE = 16
+const F_MESH_POINTS = 32
 
 /**
  * Serializes a snapshot to a compact binary byte array.
@@ -196,6 +197,7 @@ function writeMeshBatch(writer: BinaryWriter, batch: AcExMeshBatch): void {
     flags |= F_MESH_GRADIENT_POS
   }
   if (batch.side != null) flags |= F_MESH_SIDE
+  if (batch.points) flags |= F_MESH_POINTS
   writer.writeU8(flags)
 
   if (flags & F_MESH_INDICES) {
@@ -243,6 +245,9 @@ function readMeshBatch(reader: BinaryReader): AcExMeshBatch {
   }
   if (flags & F_MESH_SIDE) {
     batch.side = reader.readU8()
+  }
+  if (flags & F_MESH_POINTS) {
+    batch.points = true
   }
   return batch
 }

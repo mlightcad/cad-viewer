@@ -6,7 +6,11 @@ import {
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
-import { copyFloat32Range, copyUint32Range } from './AcExBatchBuffers'
+import {
+  compactIndexedSlice,
+  copyFloat32Range,
+  copyUint32Range
+} from './AcExBatchBuffers'
 import {
   computeLineDistancesForSegments,
   exportLineDistanceSlice,
@@ -103,7 +107,7 @@ export function exportBufferGeometrySlice(
       indexStart
     )
     const indices = copyUint32Range(indexArray, indexStart, indexCount)
-    return { positions, indices }
+    return compactIndexedSlice(positions, indices)
   }
 
   const vertexStart = clampRangeStart(drawRange.start, positionAttr.count)
@@ -118,6 +122,59 @@ export function exportBufferGeometrySlice(
     vertexCount * itemSize
   )
   return { positions }
+}
+
+type AcTrPackedIndexInfo = {
+  active: boolean
+  indexStart: number
+  indexCount: number
+}
+
+/**
+ * Exports only active triangle indices from a batched mesh, skipping reserved
+ * padding slots that can form spurious filled triangles in the HTML viewer.
+ */
+function exportActiveBatchedMeshSlice(
+  batch: AcTrBatchedMesh,
+  geometry: THREE.BufferGeometry
+): AcExBufferGeometrySlice {
+  const positionAttr = geometry.getAttribute('position') as
+    | THREE.BufferAttribute
+    | undefined
+  const indexAttr = geometry.getIndex()
+  if (!positionAttr || !indexAttr) {
+    return exportBufferGeometrySlice(geometry)
+  }
+
+  const positions = copyFloat32Range(
+    positionAttr.array as ArrayLike<number>,
+    0,
+    positionAttr.count * positionAttr.itemSize
+  )
+
+  const indexArray = indexAttr.array
+  const activeIndices: number[] = []
+  const { count } = batch.mappingStats
+  for (let geometryId = 0; geometryId < count; geometryId++) {
+    let info: AcTrPackedIndexInfo
+    try {
+      info = batch.getGeometryRangeAt(geometryId) as AcTrPackedIndexInfo
+    } catch {
+      continue
+    }
+    if (!info.active || info.indexCount <= 0) {
+      continue
+    }
+    for (let i = 0; i < info.indexCount; i++) {
+      activeIndices.push(indexArray[info.indexStart + i]!)
+    }
+  }
+
+  if (activeIndices.length === 0) {
+    return { positions: new Float32Array(0) }
+  }
+
+  return compactIndexedSlice(positions, new Uint32Array(activeIndices))
 }
 
 function readMaterialStyle(material: THREE.Material): {
@@ -232,7 +289,7 @@ function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
 }
 
 function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
-  const slice = exportBufferGeometrySlice(batch.geometry)
+  const slice = exportActiveBatchedMeshSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
   }
@@ -251,12 +308,15 @@ function exportBatchedPoint(
   if (slice.positions.length === 0) {
     return undefined
   }
-  return buildMeshBatch(
-    batch.geometry,
-    batch.material as THREE.Material,
-    batch,
-    slice
-  )
+  return {
+    points: true,
+    ...buildMeshBatch(
+      batch.geometry,
+      batch.material as THREE.Material,
+      batch,
+      slice
+    )
+  }
 }
 
 /**
