@@ -124,57 +124,93 @@ export function exportBufferGeometrySlice(
   return { positions }
 }
 
-type AcTrPackedIndexInfo = {
+/** Per-slot geometry range metadata from {@link AcTrBatchedExportSource}. */
+type AcTrPackedGeometryInfo = {
   active: boolean
-  indexStart: number
-  indexCount: number
+  vertexStart: number
+  vertexCount: number
+  indexStart?: number
+  indexCount?: number
+}
+
+/** Batched object that exposes packed geometry slot metadata for HTML export. */
+type AcTrBatchedExportSource = {
+  mappingStats: { count: number }
+  getGeometryRangeAt(geometryId: number): AcTrPackedGeometryInfo
 }
 
 /**
- * Exports only active triangle indices from a batched mesh, skipping reserved
- * padding slots that can form spurious filled triangles in the HTML viewer.
+ * Exports only active geometry data from a batched line/mesh/point buffer,
+ * skipping reserved padding and inactive (deleted) slots.
  */
-function exportActiveBatchedMeshSlice(
-  batch: AcTrBatchedMesh,
+export function exportActiveBatchedSlice(
+  batch: AcTrBatchedExportSource,
   geometry: THREE.BufferGeometry
 ): AcExBufferGeometrySlice {
   const positionAttr = geometry.getAttribute('position') as
     | THREE.BufferAttribute
     | undefined
-  const indexAttr = geometry.getIndex()
-  if (!positionAttr || !indexAttr) {
-    return exportBufferGeometrySlice(geometry)
-  }
-
-  const positions = copyFloat32Range(
-    positionAttr.array as ArrayLike<number>,
-    0,
-    positionAttr.count * positionAttr.itemSize
-  )
-
-  const indexArray = indexAttr.array
-  const activeIndices: number[] = []
-  const { count } = batch.mappingStats
-  for (let geometryId = 0; geometryId < count; geometryId++) {
-    let info: AcTrPackedIndexInfo
-    try {
-      info = batch.getGeometryRangeAt(geometryId) as AcTrPackedIndexInfo
-    } catch {
-      continue
-    }
-    if (!info.active || info.indexCount <= 0) {
-      continue
-    }
-    for (let i = 0; i < info.indexCount; i++) {
-      activeIndices.push(indexArray[info.indexStart + i]!)
-    }
-  }
-
-  if (activeIndices.length === 0) {
+  if (!positionAttr) {
     return { positions: new Float32Array(0) }
   }
 
-  return compactIndexedSlice(positions, new Uint32Array(activeIndices))
+  const itemSize = positionAttr.itemSize
+  const positionArray = positionAttr.array as ArrayLike<number>
+  const indexAttr = geometry.getIndex()
+  const { count } = batch.mappingStats
+
+  if (indexAttr) {
+    const positions = copyFloat32Range(
+      positionArray,
+      0,
+      positionAttr.count * itemSize
+    )
+    const indexArray = indexAttr.array
+    const activeIndices: number[] = []
+
+    for (let geometryId = 0; geometryId < count; geometryId++) {
+      let info: AcTrPackedGeometryInfo
+      try {
+        info = batch.getGeometryRangeAt(geometryId)
+      } catch {
+        continue
+      }
+      const indexStart = info.indexStart ?? 0
+      const indexCount = info.indexCount ?? 0
+      if (!info.active || indexCount <= 0) {
+        continue
+      }
+      for (let i = 0; i < indexCount; i++) {
+        activeIndices.push(indexArray[indexStart + i]!)
+      }
+    }
+
+    if (activeIndices.length === 0) {
+      return { positions: new Float32Array(0) }
+    }
+
+    return compactIndexedSlice(positions, new Uint32Array(activeIndices))
+  }
+
+  const activeFloats: number[] = []
+  for (let geometryId = 0; geometryId < count; geometryId++) {
+    let info: AcTrPackedGeometryInfo
+    try {
+      info = batch.getGeometryRangeAt(geometryId)
+    } catch {
+      continue
+    }
+    if (!info.active || info.vertexCount <= 0) {
+      continue
+    }
+    const start = info.vertexStart * itemSize
+    const floatCount = info.vertexCount * itemSize
+    for (let i = 0; i < floatCount; i++) {
+      activeFloats.push(positionArray[start + i]!)
+    }
+  }
+
+  return { positions: new Float32Array(activeFloats) }
 }
 
 function readMaterialStyle(material: THREE.Material): {
@@ -267,7 +303,7 @@ function buildMeshBatch(
 }
 
 function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
-  const slice = exportBufferGeometrySlice(batch.geometry)
+  const slice = exportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
   }
@@ -275,8 +311,7 @@ function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
     batch.material as THREE.Material
   )
   const lineDistances = linePattern
-    ? (exportLineDistanceSlice(batch.geometry) ??
-      computeLineDistancesForSegments(slice.positions))
+    ? computeLineDistancesForSegments(slice.positions)
     : undefined
   return {
     layer,
@@ -289,7 +324,7 @@ function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
 }
 
 function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
-  const slice = exportActiveBatchedMeshSlice(batch, batch.geometry)
+  const slice = exportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
   }
@@ -304,7 +339,7 @@ function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
 function exportBatchedPoint(
   batch: AcTrBatchedPoint
 ): AcExMeshBatch | undefined {
-  const slice = exportBufferGeometrySlice(batch.geometry)
+  const slice = exportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
   }
