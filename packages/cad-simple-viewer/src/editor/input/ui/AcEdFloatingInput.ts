@@ -13,6 +13,7 @@ import {
 
 import { AcApSettingManager } from '../../../app'
 import { AcEdBaseView } from '../../view'
+import { constrainToTracking } from '../AcEdPolarTracking'
 import { AcEdMarkerManager } from '../marker'
 import { AcEdFloatingInputBoxes } from './AcEdFloatingInputBoxes'
 import {
@@ -69,6 +70,9 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   /** Stores last dynamic WCS point used for preview updates */
   private lastDynamicPoint?: AcGePoint2dLike
 
+  /** Reference point for ORTHOMODE cursor locking */
+  private orthoReferencePoint?: AcGePoint2dLike
+
   /** Callbacks */
   private onCommit?: AcEdFloatingInputCommitCallback<T>
   private onChange?: AcEdFloatingInputChangeCallback<T>
@@ -89,6 +93,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     name: string
     database: unknown
   }) => void
+  /** Cached view change handler */
+  private boundOnViewChanged: () => void
 
   // ---------------------------------------------------------------------------
   // CONSTRUCTOR
@@ -106,6 +112,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
     this.allowPrompt = options.allowPrompt !== false
     this.suppressDisplay = !this.isDynamicInputEnabled()
+    this.orthoReferencePoint =
+      options.orthoReferencePoint ?? options.basePoint ?? undefined
 
     // -----------------------------
     // OSNAP
@@ -173,11 +181,21 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         name === AcDbSystemVariables.DYNPROMPT.toLowerCase()
       ) {
         this.updateDynamicInputDisplay()
+      } else if (
+        name === AcDbSystemVariables.ORTHOMODE.toLowerCase() ||
+        name === AcDbSystemVariables.POLARMODE.toLowerCase() ||
+        name === AcDbSystemVariables.POLARANG.toLowerCase() ||
+        name === AcDbSystemVariables.POLARADDANG.toLowerCase()
+      ) {
+        this.requestPreviewRefresh()
       }
     }
     AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
       this.boundOnInputSysVarChanged
     )
+    this.boundOnViewChanged = () => this.requestPreviewRefresh()
+    this.view.events.viewChanged.addEventListener(this.boundOnViewChanged)
+    this.view.events.viewResize.addEventListener(this.boundOnViewChanged)
     this.updateDynamicInputDisplay()
 
     this.injectInputCSS()
@@ -240,6 +258,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
       this.boundOnInputSysVarChanged
     )
+    this.view.events.viewChanged.removeEventListener(this.boundOnViewChanged)
+    this.view.events.viewResize.removeEventListener(this.boundOnViewChanged)
     this.inputs?.dispose()
     this.rubberBand?.dispose()
     this.osnapMarkerManager?.clear()
@@ -264,6 +284,14 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   requestPreviewRefresh() {
     if (!this.visible || !this.lastDynamicPoint) return
     this.updateDynamicPreview(this.lastDynamicPoint)
+
+    if (this.osnapMarkerManager && this.lastOsnapPoint) {
+      this.osnapMarkerManager.repositionTop(this.lastOsnapPoint)
+    }
+
+    if (!this.suppressDisplay && this.view.curMousePos) {
+      this.setPosition(this.view.canvasToViewport(this.view.curMousePos))
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -300,6 +328,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
       showBaseLineOnly: options?.showBaseLineOnly,
       baseAngle: options?.baseAngle
     })
+    this.orthoReferencePoint = basePoint
     this.requestPreviewRefresh()
   }
 
@@ -347,6 +376,13 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         )
       }
     }
+
+    if (this.orthoReferencePoint) {
+      const constrained = constrainToTracking(wcsPos, this.orthoReferencePoint)
+      wcsPos.x = constrained.x
+      wcsPos.y = constrained.y
+    }
+
     return wcsPos
   }
 

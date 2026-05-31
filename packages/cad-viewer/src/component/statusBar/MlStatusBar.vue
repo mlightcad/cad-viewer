@@ -38,6 +38,16 @@
         <ml-point-style-button />
         <ml-osnap-button />
         <ml-sys-var-toggle-button
+          :sys-var-name="AcDbSystemVariables.ORTHOMODE"
+          :on-icon="orthoMode"
+          :off-icon="orthoMode"
+          :on-tooltip="t('main.statusBar.orthoMode.on')"
+          :off-tooltip="t('main.statusBar.orthoMode.off')"
+          on-color="var(--el-color-primary)"
+          off-color="var(--el-text-color-regular)"
+        />
+        <ml-polar-tracking-button />
+        <ml-sys-var-toggle-button
           :sys-var-name="AcDbSystemVariables.LWDISPLAY"
           :on-icon="lineWidth"
           :off-icon="lineWidth"
@@ -81,12 +91,13 @@ import {
   useLayouts,
   useSettings
 } from '../../composable'
-import { dynamicInput, lineWidth } from '../../svg'
+import { dynamicInput, lineWidth, orthoMode } from '../../svg'
 import { MlSysVarToggleButton } from '../common'
 import MlFullScreenButton from './MlFullScreenButton.vue'
 import MlNotificationButton from './MlNotificationButton.vue'
 import MlOsnapButton from './MlOsnapButton.vue'
 import MlPointStyleButton from './MlPointStyleButton.vue'
+import MlPolarTrackingButton from './MlPolarTrackingButton.vue'
 import MlProgress from './MlProgress.vue'
 import MlSettingButton from './MlSettingButton.vue'
 import MlThemeButton from './MlThemeButton.vue'

@@ -137,6 +137,12 @@ export interface AcEdFloatingInputOptions<T> {
   basePoint?: AcGePoint2dLike | undefined
 
   /**
+   * Reference point used to constrain cursor movement when ORTHOMODE is on.
+   * Defaults to {@link basePoint} when not specified.
+   */
+  orthoReferencePoint?: AcGePoint2dLike | undefined
+
+  /**
    * Base angle in degrees used by angle rubber-band preview as the 0-degree direction.
    * If not specified, +X direction is used.
    */

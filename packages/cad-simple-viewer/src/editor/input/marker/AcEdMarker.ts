@@ -115,7 +115,7 @@ export class AcEdMarker {
         position: absolute;
         pointer-events: none;
         transform: translate(-50%, -50%);
-        z-index: 999999;
+        z-index: 1;
         box-sizing: border-box;
       }
     

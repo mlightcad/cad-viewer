@@ -21,8 +21,8 @@
   "dependencies": {
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.8.0",
-    "@mlightcad/libredwg-converter": "^3.6.0",
+    "@mlightcad/data-model": "^1.8.1",
+    "@mlightcad/libredwg-converter": "^3.6.1",
     "@mlightcad/mtext-renderer": "^0.10.16",
     "commander": "^12.1.0",
     "playwright": "^1.49.1"

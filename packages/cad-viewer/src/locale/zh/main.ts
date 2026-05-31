@@ -467,6 +467,14 @@ export default {
       on: '隐藏线宽',
       off: '显示线宽'
     },
+    orthoMode: {
+      on: '关闭正交模式',
+      off: '打开正交模式'
+    },
+    polarTracking: {
+      on: '关闭极轴追踪',
+      off: '打开极轴追踪'
+    },
     theme: {
       dark: '切换到暗黑主题',
       light: '切换到明亮主题'

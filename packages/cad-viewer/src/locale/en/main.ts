@@ -503,6 +503,14 @@ export default {
       on: 'Hide line widths',
       off: 'Show line widths'
     },
+    orthoMode: {
+      on: 'Turn off ortho mode',
+      off: 'Turn on ortho mode'
+    },
+    polarTracking: {
+      on: 'Turn off polar tracking',
+      off: 'Turn on polar tracking'
+    },
     theme: {
       dark: 'Switch to light light',
       light: 'Switch to dark theme'
