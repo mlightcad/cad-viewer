@@ -271,6 +271,19 @@ export function createViewerLineMaterial(batch: AcExLineBatch): THREE.Material {
 }
 
 /**
+ * Creates a viewer material for one exported point batch.
+ */
+export function createViewerPointsMaterial(
+  batch: AcExMeshBatch
+): THREE.PointsMaterial {
+  return new THREE.PointsMaterial({
+    color: batch.color,
+    size: 1,
+    sizeAttenuation: false
+  })
+}
+
+/**
  * Re-aligns hatch pattern coordinates after unbatched geometry was baked
  * into world space during batch-group cloning.
  */

@@ -150,8 +150,8 @@ export interface AcExGradientFill {
 }
 
 /**
- * One packed mesh batch (filled regions, MText quads, point glyphs, etc.)
- * rendered as `THREE.Mesh` in the offline viewer.
+ * One packed mesh or point batch (filled regions, MText quads, point glyphs, etc.)
+ * rendered in the offline viewer.
  */
 export interface AcExMeshBatch {
   /** Layer name used for grouping and visibility in the viewer. */
@@ -166,8 +166,13 @@ export interface AcExMeshBatch {
    */
   positions: Float32Array
   /**
+   * When `true`, {@link AcExMeshBatch.positions} is rendered with `THREE.Points`
+   * instead of a filled `THREE.Mesh`.
+   */
+  points?: boolean
+  /**
    * Triangle index buffer into {@link AcExMeshBatch.positions}.
-   * When omitted, a single triangle may be inferred from the first three vertices.
+   * Required for filled mesh batches; omitted for {@link AcExMeshBatch.points}.
    */
   indices?: Uint32Array
   /** Optional hatch pattern for non-solid fills. */
