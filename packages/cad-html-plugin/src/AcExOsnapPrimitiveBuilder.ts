@@ -14,6 +14,7 @@ import {
   type AcDbBlockTableRecord,
   AcDbCircle,
   type AcDbDatabase,
+  AcDbDimension,
   AcDbEllipse,
   AcDbEntity,
   AcDbLine,
@@ -22,6 +23,7 @@ import {
   AcDbPolyline,
   AcDbSpline,
   AcGeCircArc2d,
+  type AcGeMatrix3d,
   type AcGePoint3dLike,
   AcGeTol,
   type AcGeVector3dLike,
@@ -52,6 +54,46 @@ function transformPoint(
 ): { x: number; y: number } {
   const v = new THREE.Vector3(p.x, p.y, p.z ?? 0).applyMatrix4(matrix)
   return { x: v.x, y: v.y }
+}
+
+/**
+ * Converts an {@link AcGeMatrix3d} (or compatible matrix) to `THREE.Matrix4`.
+ *
+ * Block and dimension transforms from `@mlightcad/data-model` are `AcGeMatrix3d`
+ * instances. They share column-major `elements` with Three.js but are not
+ * `THREE.Matrix4` subclasses, so they must be copied before use with Three APIs
+ * that rely on matrix type checks.
+ *
+ * @internal
+ */
+function acGeMatrix3dToThree(matrix: AcGeMatrix3d): THREE.Matrix4 {
+  const e = matrix.elements
+  return new THREE.Matrix4(
+    e[0],
+    e[4],
+    e[8],
+    e[12],
+    e[1],
+    e[5],
+    e[9],
+    e[13],
+    e[2],
+    e[6],
+    e[10],
+    e[14],
+    e[3],
+    e[7],
+    e[11],
+    e[15]
+  )
+}
+
+/** Composes parent and child layout / INSERT / dimension-block transforms. @internal */
+function composeTransforms(
+  parent: THREE.Matrix4,
+  child: AcGeMatrix3d
+): THREE.Matrix4 {
+  return new THREE.Matrix4().multiplyMatrices(parent, acGeMatrix3dToThree(child))
 }
 
 /** Applies a 4×4 matrix to a direction vector (no translation); returns normalized XY. @internal */
@@ -182,7 +224,46 @@ function pushLineEntity(
 /** Block reference shape used for recursive osnap traversal. @internal */
 type AcExBlockReferenceLike = AcDbEntity & {
   blockTableRecord: AcDbBlockTableRecord | undefined
-  getFullInsertionTransform(): THREE.Matrix4
+  blockName?: string
+  getFullInsertionTransform(): AcGeMatrix3d
+}
+
+/** Dimension entity shape whose geometry lives in an anonymous block. @internal */
+type AcExDimensionLike = AcDbDimension & {
+  getFullDimBlockTransform(): AcGeMatrix3d
+}
+
+/**
+ * Resolves the block table record referenced by an INSERT entity.
+ *
+ * Prefer {@link AcExBlockReferenceLike.blockTableRecord} when the entity is
+ * database-backed; fall back to `blockName` on the export database.
+ *
+ * @internal
+ */
+function resolveBlockReferenceBlock(
+  entity: AcExBlockReferenceLike,
+  database: AcDbDatabase
+): AcDbBlockTableRecord | undefined {
+  return (
+    entity.blockTableRecord ??
+    (entity.blockName
+      ? database.tables.blockTable.getAt(entity.blockName)
+      : undefined)
+  )
+}
+
+/**
+ * Resolves the anonymous block referenced by a dimension entity.
+ *
+ * @internal
+ */
+function resolveDimensionBlock(
+  entity: AcExDimensionLike,
+  database: AcDbDatabase
+): AcDbBlockTableRecord | undefined {
+  const dimBlockId = entity.dimBlockId
+  return dimBlockId ? database.tables.blockTable.getAt(dimBlockId) : undefined
 }
 
 /**
@@ -455,20 +536,34 @@ function visitEntity(
   matrix: THREE.Matrix4,
   insertLayer: string,
   out: AcExOsnapPrimitive[],
-  blockStack: Set<AcDbObjectId>
+  blockStack: Set<AcDbObjectId>,
+  database: AcDbDatabase
 ) {
   if (!entity.visibility) return
 
   const layer = effectiveLayer(entity.layer, insertLayer)
 
   if (isBlockReferenceEntity(entity)) {
-    const block = entity.blockTableRecord
+    const block = resolveBlockReferenceBlock(entity, database)
     if (!block || blockStack.has(block.objectId)) return
     blockStack.add(block.objectId)
-    const insertMatrix = entity.getFullInsertionTransform()
-    const nested = new THREE.Matrix4().multiplyMatrices(matrix, insertMatrix)
+    const nested = composeTransforms(matrix, entity.getFullInsertionTransform())
     const blockInsertLayer = effectiveLayer(entity.layer, insertLayer)
-    visitBlock(block, nested, blockInsertLayer, out, blockStack)
+    visitBlock(block, nested, blockInsertLayer, out, blockStack, database)
+    blockStack.delete(block.objectId)
+    return
+  }
+
+  if (entity instanceof AcDbDimension) {
+    const dimension = entity as AcExDimensionLike
+    const block = resolveDimensionBlock(dimension, database)
+    if (!block || blockStack.has(block.objectId)) return
+    blockStack.add(block.objectId)
+    const nested = composeTransforms(
+      matrix,
+      dimension.getFullDimBlockTransform()
+    )
+    visitBlock(block, nested, layer, out, blockStack, database)
     blockStack.delete(block.objectId)
     return
   }
@@ -530,10 +625,11 @@ function visitBlock(
   matrix: THREE.Matrix4,
   insertLayer: string,
   out: AcExOsnapPrimitive[],
-  blockStack: Set<AcDbObjectId>
+  blockStack: Set<AcDbObjectId>,
+  database: AcDbDatabase
 ) {
   for (const entity of block.newIterator()) {
-    visitEntity(entity, matrix, insertLayer, out, blockStack)
+    visitEntity(entity, matrix, insertLayer, out, blockStack, database)
   }
 }
 
@@ -571,7 +667,8 @@ function ellipseFromArc(entity: AcDbArc): AcDbEllipse {
  * inside blocks inherit the INSERT layer per AutoCAD rules.
  *
  * Supported entity types: `AcDbLine`, `AcDbCircle`, `AcDbArc`, `AcDbEllipse`,
- * `AcDbSpline`, `AcDbPolyline` (lines + bulge arcs), `AcDbPoint`, and INSERT.
+ * `AcDbSpline`, `AcDbPolyline` (lines + bulge arcs), `AcDbPoint`, INSERT, and
+ * dimension entities (`AcDbDimension` and subclasses via anonymous dim blocks).
  *
  * @param database - Open drawing database (same instance used for HTML export).
  * @param layoutBtrId - Object id of the layout's owning block table record
@@ -596,6 +693,6 @@ export function buildOsnapCatalog(
 
   const primitives: AcExOsnapPrimitive[] = []
   const identity = new THREE.Matrix4()
-  visitBlock(block, identity, '0', primitives, new Set())
+  visitBlock(block, identity, '0', primitives, new Set(), database)
   return { primitives }
 }
