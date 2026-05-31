@@ -9,6 +9,10 @@ import * as THREE from 'three'
 
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import {
+  type AcExMeasureQuantity,
+  type AcExMeasureQuantityEntry,
+  sumMeasureQuantities} from './AcExMeasureTotals'
+import {
   type AcExTrackingOptions,
   constrainToAcExTracking
 } from './AcExMeasureTracking'
@@ -165,6 +169,8 @@ interface AcExCommitParts {
 interface AcExCommittedMeasure {
   id: string
   parts: AcExCommitParts
+  quantity: AcExMeasureQuantity | null
+  value: number
   hitTest: (clientX: number, clientY: number, thresholdPx: number) => boolean
 }
 
@@ -787,7 +793,7 @@ export class AcExMeasureController {
       return
     }
     this.cancelMode()
-    this._deselect()
+    this._deselect(false)
     if (mode === null) return
     this._mode = mode
     this._points = []
@@ -806,8 +812,15 @@ export class AcExMeasureController {
     this._hidePreview()
     this._onOsnapMarker(null, null)
     this._updateToolbarActive()
-    this._statusEl.textContent = this._getReadyStatus()
+    this._updateIdleStatus()
     this._view.render()
+  }
+
+  /**
+   * Refreshes the idle status bar (totals or ready text) when no tool is active.
+   */
+  refreshIdleStatus(): void {
+    this._updateIdleStatus()
   }
 
   /**
@@ -816,10 +829,11 @@ export class AcExMeasureController {
    */
   clearAll(): void {
     this.cancelMode()
-    this._deselect()
+    this._deselect(false)
     for (const measure of [...this._committed]) {
       this._removeCommitted(measure.id, false)
     }
+    this._updateIdleStatus()
     this._view.render()
   }
 
@@ -957,9 +971,53 @@ export class AcExMeasureController {
       this._removeCommitted(id, false)
     }
     this._selectedIds.clear()
-    this._statusEl.textContent = this._getReadyStatus()
+    this._updateIdleStatus()
     this._view.render()
     return true
+  }
+
+  /** Updates the status bar with measurement totals when idle. @internal */
+  private _updateIdleStatus(): void {
+    if (this._mode) return
+    this._statusEl.textContent = this._idleStatusText()
+  }
+
+  /** Idle status: ready text, or aggregated length/area totals. @internal */
+  private _idleStatusText(): string {
+    const entries = this._quantityEntriesForIdleStatus()
+    if (entries.length === 0) return this._getReadyStatus()
+
+    const { length, area } = sumMeasureQuantities(entries)
+    const parts: string[] = []
+    if (entries.some(entry => entry.quantity === 'length')) {
+      parts.push(
+        this._i18n.t('status.lengthTotal', {
+          value: this._view.formatLength(length)
+        })
+      )
+    }
+    if (entries.some(entry => entry.quantity === 'area')) {
+      parts.push(
+        this._i18n.t('status.areaTotal', {
+          value: `${this._view.formatLength(area)}²`
+        })
+      )
+    }
+    return parts.length > 0 ? parts.join('  ') : this._getReadyStatus()
+  }
+
+  /** Committed measurements included in idle totals. @internal */
+  private _quantityEntriesForIdleStatus(): AcExMeasureQuantityEntry[] {
+    const measures =
+      this._selectedIds.size > 0
+        ? this._committed.filter(measure => this._selectedIds.has(measure.id))
+        : this._committed
+    const entries: AcExMeasureQuantityEntry[] = []
+    for (const measure of measures) {
+      if (measure.quantity == null) continue
+      entries.push({ quantity: measure.quantity, value: measure.value })
+    }
+    return entries
   }
 
   /** Localized status-bar hint for the given tool. @internal */
@@ -1148,7 +1206,7 @@ export class AcExMeasureController {
     this._finishCommit((clientX, clientY, threshold) => {
       const s = this._view.wcsToScreen(point)
       return Math.hypot(clientX - s.x, clientY - s.y) <= threshold
-    })
+    }, null)
     this._statusEl.textContent = this._i18n.t('status.coordinates', {
       x: this._view.formatLength(point.x),
       y: this._view.formatLength(point.y)
@@ -1206,14 +1264,18 @@ export class AcExMeasureController {
     this._addDot(b)
     const mid = new THREE.Vector2((a.x + b.x) / 2, (a.y + b.y) / 2)
     this._addBadge(mid, this._view.formatLength(dist))
-    this._finishCommit((clientX, clientY, threshold) => {
-      const sa = this._view.wcsToScreen(a)
-      const sb = this._view.wcsToScreen(b)
-      return (
-        distPointToSegmentPx(clientX, clientY, sa.x, sa.y, sb.x, sb.y) <=
-        threshold
-      )
-    })
+    this._finishCommit(
+      (clientX, clientY, threshold) => {
+        const sa = this._view.wcsToScreen(a)
+        const sb = this._view.wcsToScreen(b)
+        return (
+          distPointToSegmentPx(clientX, clientY, sa.x, sa.y, sb.x, sb.y) <=
+          threshold
+        )
+      },
+      'length',
+      dist
+    )
     this._statusEl.textContent = this._i18n.t('status.distance', {
       value: this._view.formatLength(dist)
     })
@@ -1318,17 +1380,19 @@ export class AcExMeasureController {
       vertex.y + by * offset
     )
     this._addBadge(badgePos, this._view.formatAngle(deg))
-    this._finishCommit((clientX, clientY, threshold) =>
-      hitTestAngleMeasure(
-        clientX,
-        clientY,
-        threshold,
-        vertex,
-        arm1,
-        arm2,
-        badgePos,
-        wcs => this._view.wcsToScreen(wcs)
-      )
+    this._finishCommit(
+      (clientX, clientY, threshold) =>
+        hitTestAngleMeasure(
+          clientX,
+          clientY,
+          threshold,
+          vertex,
+          arm1,
+          arm2,
+          badgePos,
+          wcs => this._view.wcsToScreen(wcs)
+        ),
+      null
     )
     this._statusEl.textContent = this._i18n.t('status.angle', {
       value: this._view.formatAngle(deg)
@@ -1422,34 +1486,38 @@ export class AcExMeasureController {
     this._addDot(through)
     this._addDot(end)
     this._addBadge(mid, this._view.formatLength(len))
-    this._finishCommit((clientX, clientY, threshold) => {
-      const sc = this._view.wcsToScreen(new THREE.Vector2(geom.cx, geom.cy))
-      const ss = this._view.wcsToScreen(start)
-      const se = this._view.wcsToScreen(end)
-      const cx = sc.x
-      const cy = sc.y
-      const screenR = Math.hypot(ss.x - cx, ss.y - cy)
-      const sa = Math.atan2(ss.y - cy, ss.x - cx)
-      const ea = Math.atan2(se.y - cy, se.x - cx)
-      const { counterClockwise } = arcSweepThroughMiddle(
-        start,
-        through,
-        end,
-        geom
-      )
-      return (
-        distPointToArcPx(
-          clientX,
-          clientY,
-          cx,
-          cy,
-          screenR,
-          sa,
-          ea,
-          counterClockwise
-        ) <= threshold
-      )
-    })
+    this._finishCommit(
+      (clientX, clientY, threshold) => {
+        const sc = this._view.wcsToScreen(new THREE.Vector2(geom.cx, geom.cy))
+        const ss = this._view.wcsToScreen(start)
+        const se = this._view.wcsToScreen(end)
+        const cx = sc.x
+        const cy = sc.y
+        const screenR = Math.hypot(ss.x - cx, ss.y - cy)
+        const sa = Math.atan2(ss.y - cy, ss.x - cx)
+        const ea = Math.atan2(se.y - cy, se.x - cx)
+        const { counterClockwise } = arcSweepThroughMiddle(
+          start,
+          through,
+          end,
+          geom
+        )
+        return (
+          distPointToArcPx(
+            clientX,
+            clientY,
+            cx,
+            cy,
+            screenR,
+            sa,
+            ea,
+            counterClockwise
+          ) <= threshold
+        )
+      },
+      'length',
+      len
+    )
     this._statusEl.textContent = this._i18n.t('status.arcLength', {
       value: this._view.formatLength(len)
     })
@@ -1546,12 +1614,16 @@ export class AcExMeasureController {
 
     for (const p of points) this._addDot(p)
     this._addBadge(centroid(points), `${this._view.formatLength(area)}²`)
-    this._finishCommit((clientX, clientY, threshold) => {
-      const poly = this._screenPolyline(points)
-      if (pointInPolygonPx(clientX, clientY, poly)) return true
-      const closedPoly = [...poly, poly[0]!]
-      return distPointToPolylinePx(clientX, clientY, closedPoly) <= threshold
-    })
+    this._finishCommit(
+      (clientX, clientY, threshold) => {
+        const poly = this._screenPolyline(points)
+        if (pointInPolygonPx(clientX, clientY, poly)) return true
+        const closedPoly = [...poly, poly[0]!]
+        return distPointToPolylinePx(clientX, clientY, closedPoly) <= threshold
+      },
+      'area',
+      area
+    )
     this._statusEl.textContent = this._i18n.t('status.area', {
       value: `${this._view.formatLength(area)}²`
     })
@@ -1632,11 +1704,13 @@ export class AcExMeasureController {
 
   /** @internal */
   private _finishCommit(
-    hitTest: (clientX: number, clientY: number, thresholdPx: number) => boolean
+    hitTest: (clientX: number, clientY: number, thresholdPx: number) => boolean,
+    quantity: AcExMeasureQuantity | null,
+    value = 0
   ): void {
     const parts = this._commitParts
     if (!parts) return
-    this._committed.push({ id: parts.id, parts, hitTest })
+    this._committed.push({ id: parts.id, parts, hitTest, quantity, value })
     this._commitParts = null
   }
 
@@ -1709,17 +1783,19 @@ export class AcExMeasureController {
     this._selectedIds.add(id)
     const measure = this._committed.find(m => m.id === id)
     if (measure) this._applyMeasureSelection(measure.parts, true)
+    if (!this._mode) this._updateIdleStatus()
     this._view.render()
   }
 
   /** @internal */
-  private _deselect(): void {
+  private _deselect(updateStatus = true): void {
     if (this._selectedIds.size === 0) return
     for (const id of this._selectedIds) {
       const measure = this._committed.find(m => m.id === id)
       if (measure) this._applyMeasureSelection(measure.parts, false)
     }
     this._selectedIds.clear()
+    if (updateStatus && !this._mode) this._updateIdleStatus()
     this._view.render()
   }
 
@@ -1751,6 +1827,7 @@ export class AcExMeasureController {
     this._selectedIds.delete(id)
     const [measure] = this._committed.splice(idx, 1)
     for (const fn of measure.parts.cleanups) fn()
+    if (render && !this._mode) this._updateIdleStatus()
     if (render) this._view.render()
   }
 

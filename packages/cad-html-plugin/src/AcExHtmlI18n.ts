@@ -50,6 +50,8 @@ export type AcExHtmlMessageKey =
   | 'status.angle'
   | 'status.arcLength'
   | 'status.area'
+  | 'status.lengthTotal'
+  | 'status.areaTotal'
   | 'status.zoomLayer'
   | 'status.loadFailed'
   | 'status.noLayout'
@@ -111,6 +113,8 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       angle: 'Angle: {value}',
       arcLength: 'Arc length: {value}',
       area: 'Area: {value}',
+      lengthTotal: 'Length total: {value}',
+      areaTotal: 'Area total: {value}',
       zoomLayer: 'Zoom: {name}',
       loadFailed: 'Failed to load drawing: {error}',
       noLayout: 'No layout data in snapshot.'
@@ -159,6 +163,8 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       angle: '角度：{value}',
       arcLength: '弧长：{value}',
       area: '面积：{value}',
+      lengthTotal: '长度合计：{value}',
+      areaTotal: '面积合计：{value}',
       zoomLayer: '缩放：{name}',
       loadFailed: '无法加载图纸：{error}',
       noLayout: '快照中没有布局数据。'
