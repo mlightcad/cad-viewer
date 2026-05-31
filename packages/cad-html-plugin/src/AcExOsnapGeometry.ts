@@ -129,11 +129,6 @@ export function collectPrimitiveSnapCandidates(
           pushPoint(out, p, 'quadrant')
         }
       }
-      if (modes.has('focus')) {
-        for (const p of ellipse.getFocusPoints()) {
-          pushPoint(out, p, 'focus')
-        }
-      }
       if (modes.has('nearest')) {
         pushPoint(out, ellipse.nearestPoint(pick), 'nearest')
       }
@@ -147,11 +142,6 @@ export function collectPrimitiveSnapCandidates(
       if (modes.has('endpoint')) {
         pushPoint(out, { x: startPt[0]!, y: startPt[1]! }, 'endpoint')
         pushPoint(out, { x: endPt[0]!, y: endPt[1]! }, 'endpoint')
-      }
-      if (modes.has('control')) {
-        for (const cp of spline.controlPoints()) {
-          pushPoint(out, cp, 'control')
-        }
       }
       if (modes.has('node') && prim.kind === 'spline') {
         const seen = new Set<number>()

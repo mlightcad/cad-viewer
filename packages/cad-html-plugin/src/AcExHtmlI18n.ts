@@ -23,9 +23,17 @@ export type AcExHtmlMessageKey =
   | 'toolbar.measureArea'
   | 'toolbar.measureCoordinate'
   | 'toolbar.clearMeasurements'
+  | 'toolbar.settings'
   | 'toolbar.layers'
   | 'toolbar.language'
   | 'toolbar.languageSwitch'
+  | 'toolbar.collapse'
+  | 'toolbar.expand'
+  | 'settings.toolbar'
+  | 'settings.measureColor'
+  | 'settings.ortho'
+  | 'settings.polar'
+  | 'settings.polarAngles'
   | 'layers.title'
   | 'layers.close'
   | 'layers.showAll'
@@ -65,9 +73,19 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       measureArea: 'Measure area',
       measureCoordinate: 'Measure coordinates',
       clearMeasurements: 'Clear measurements',
+      settings: 'Measure settings',
       layers: 'Layers',
       language: 'Language',
-      languageSwitch: 'Switch to Chinese'
+      languageSwitch: 'Switch to Chinese',
+      collapse: 'Collapse toolbar',
+      expand: 'Expand toolbar'
+    },
+    settings: {
+      toolbar: 'Measure settings',
+      measureColor: 'Measure color',
+      ortho: 'Toggle orthogonal mode',
+      polar: 'Polar tracking angles',
+      polarAngles: 'Polar tracking angles'
     },
     layers: {
       title: 'Layers',
@@ -108,9 +126,19 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       measureArea: '测量面积',
       measureCoordinate: '测量坐标',
       clearMeasurements: '清除测量',
+      settings: '测量设置',
       layers: '图层',
       language: '语言',
-      languageSwitch: '切换到 English'
+      languageSwitch: '切换到 English',
+      collapse: '收起工具栏',
+      expand: '展开工具栏'
+    },
+    settings: {
+      toolbar: '测量设置',
+      measureColor: '测量颜色',
+      ortho: '切换正交模式',
+      polar: '极轴追踪角度',
+      polarAngles: '极轴追踪角度'
     },
     layers: {
       title: '图层',
@@ -165,15 +193,35 @@ export function resolveAcExHtmlLocale(
 }
 
 /**
- * Chooses the initial locale for the offline viewer using, in order:
- * `localStorage`, snapshot preference, `<html lang>`, and `navigator.language`.
+ * Detects locale from the browser's language preferences.
+ * Chinese (`zh*`) maps to `'zh'`; all other languages default to `'en'`.
  *
- * @param preferred - Optional locale from {@link AcExSnapshot.meta.locale}.
+ * @returns `'zh'` when a preferred browser language is Chinese, otherwise `'en'`.
+ */
+export function detectBrowserAcExHtmlLocale(): AcExHtmlLocale {
+  if (typeof navigator === 'undefined') return 'en'
+
+  const candidates = [
+    ...(navigator.languages ?? []),
+    navigator.language
+  ].filter(Boolean)
+
+  for (const candidate of candidates) {
+    const resolved = resolveAcExHtmlLocale(candidate)
+    if (resolved === 'zh') return 'zh'
+    if (resolved === 'en') return 'en'
+  }
+
+  return 'en'
+}
+
+/**
+ * Chooses the initial locale for the offline viewer using, in order:
+ * persisted user choice in `localStorage`, then {@link detectBrowserAcExHtmlLocale}.
+ *
  * @returns Resolved locale, defaulting to `'en'`.
  */
-export function detectAcExHtmlLocale(
-  preferred?: string | null
-): AcExHtmlLocale {
+export function detectAcExHtmlLocale(): AcExHtmlLocale {
   if (typeof localStorage !== 'undefined') {
     try {
       const stored = localStorage.getItem(ACEX_HTML_LOCALE_STORAGE_KEY)
@@ -184,20 +232,7 @@ export function detectAcExHtmlLocale(
     }
   }
 
-  const fromPreferred = resolveAcExHtmlLocale(preferred)
-  if (fromPreferred) return fromPreferred
-
-  if (typeof document !== 'undefined') {
-    const fromDocument = resolveAcExHtmlLocale(document.documentElement.lang)
-    if (fromDocument) return fromDocument
-  }
-
-  if (typeof navigator !== 'undefined') {
-    const fromNavigator = resolveAcExHtmlLocale(navigator.language)
-    if (fromNavigator) return fromNavigator
-  }
-
-  return 'en'
+  return detectBrowserAcExHtmlLocale()
 }
 
 function lookupMessage(tree: AcExMessageTree, key: string): string | undefined {
@@ -319,6 +354,7 @@ export class AcExHtmlI18n {
   applyToDocument(root?: ParentNode): void {
     if (typeof document === 'undefined') return
     const scope = root ?? document
+    document.documentElement.lang = this._locale
 
     // Only leaf text targets — never set textContent on containers or icon buttons.
     scope.querySelectorAll<HTMLElement>('[data-i18n-text]').forEach(el => {

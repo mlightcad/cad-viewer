@@ -16,7 +16,7 @@
  *
  * Names align with common AutoCAD OSNAP modes. Priority when multiple candidates
  * are within the aperture is handled by {@link AcExOsnapIndex} (endpoint / midpoint /
- * center beat quadrant / focus / control / node, which beat nearest).
+ * center beat quadrant / node, which beat nearest).
  *
  * - `endpoint` — Line, arc, ellipse arc, and spline start/end vertices.
  * - `midpoint` — Segment midpoint, arc midpoint, or open ellipse arc parameter midpoint.
@@ -24,8 +24,6 @@
  * - `quadrant` — 0° / 90° / 180° / 270° on circles; arc-limited on arcs; axis crossings on closed ellipses.
  * - `nearest` — Closest point on the curve or segment to the pick point (not tessellated).
  * - `node` — Spline knot locations; also used for `AcDbPoint` entities.
- * - `focus` — Ellipse focal points (when major ≠ minor axis).
- * - `control` — B-spline control vertices (CV).
  *
  * Tangent snap is not implemented in the offline viewer.
  */
@@ -36,8 +34,6 @@ export type AcExOsnapMode =
   | 'quadrant'
   | 'nearest'
   | 'node'
-  | 'focus'
-  | 'control'
 
 /**
  * A single object snap candidate returned to the measurement UI.
@@ -58,7 +54,7 @@ export interface AcExOsnapPoint {
  *
  * Matches the subset commonly used for measure workflows in the main CAD viewer
  * (endpoint, midpoint, center, quadrant, nearest). Additional modes such as
- * `node`, `focus`, and `control` can be passed explicitly to {@link AcExOsnapIndex}.
+ * `node` can be passed explicitly to {@link AcExOsnapIndex}.
  */
 export const ACEX_DEFAULT_OSNAP_MODES: readonly AcExOsnapMode[] = [
   'endpoint',
