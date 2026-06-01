@@ -98,7 +98,8 @@
 <script lang="ts" setup>
 import {
   AcApDocManager,
-  AcApSettingManager
+  AcApSettingManager,
+  eventBus
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbRasterImage } from '@mlightcad/data-model'
 import {
@@ -135,8 +136,10 @@ const loadAvailableFonts = () => {
   availableFonts.value = fonts.map(f => f.name[0])
 }
 
-const handleConfirm = () => {
-  const db = AcApDocManager.instance.curDocument.database
+const handleConfirm = async () => {
+  const docManager = AcApDocManager.instance
+  const db = docManager.curDocument.database
+  let replacedImage = false
   imageTableData.forEach(item => {
     if (item.file) {
       item.ids.forEach(id => {
@@ -145,16 +148,43 @@ const handleConfirm = () => {
         ) as AcDbRasterImage
         image.image = item.file
         image.triggerModifiedEvent()
+        replacedImage = true
       })
     }
   })
 
   const settingManager = AcApSettingManager.instance
+  const nextFontMapping = { ...settingManager.fontMapping }
+  const fontsToLoad = new Set<string>()
+  let replacedFont = false
+
   fontMapping.forEach((mappedFont, missedFont) => {
-    if (missedFont && mappedFont) {
-      settingManager.setFontMapping(missedFont, mappedFont)
+    const originalFont = missedFont.trim()
+    const replacementFont = mappedFont.trim()
+
+    if (originalFont && replacementFont) {
+      nextFontMapping[originalFont] = replacementFont
+      fontsToLoad.add(replacementFont)
+      replacedFont = true
     }
   })
+
+  if (replacedFont) {
+    settingManager.fontMapping = nextFontMapping
+    docManager.curView.renderer.setFontMapping(nextFontMapping)
+
+    try {
+      await docManager.loadFonts([...fontsToLoad])
+    } catch {
+      // Font loader emits detailed failure notifications; still regenerate.
+    }
+
+    await docManager.regen()
+  }
+
+  if (replacedFont || replacedImage) {
+    eventBus.emit('missed-data-changed', {})
+  }
 }
 
 const handleSelectImage = (row: ImageMappingData) => {
