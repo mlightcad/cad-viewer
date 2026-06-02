@@ -119,6 +119,8 @@ function handleCancel() {
   position: relative;
   z-index: 1;
   --ml-dialog-font-size: 12px;
+  --ml-dialog-body-padding-x: 16px;
+  --ml-dialog-body-padding-y: 16px;
   --el-font-size-base: 12px;
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color);
@@ -184,9 +186,9 @@ function handleCancel() {
   justify-content: center;
 }
 
-/* Body */
+/* Body — horizontal/vertical content inset is shared by all dialogs */
 .ml-base-dialog-body {
-  padding: 16px;
+  padding: var(--ml-dialog-body-padding-y) var(--ml-dialog-body-padding-x);
   overflow-y: auto;
   flex: 1;
   font-size: var(--ml-dialog-font-size);

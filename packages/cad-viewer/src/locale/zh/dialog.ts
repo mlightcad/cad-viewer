@@ -11,7 +11,8 @@ export default {
     replace: '替换',
     missedFont: '缺失字体',
     replacedFont: '替换字体',
-    selectFont: '选择要替换的字体'
+    selectFont: '选择要替换的字体',
+    matchFontType: '使用相同类型的字体进行替换（SHX 替换 SHX，mesh 替换 mesh）'
   },
   pointStyleDlg: {
     title: '点样式',

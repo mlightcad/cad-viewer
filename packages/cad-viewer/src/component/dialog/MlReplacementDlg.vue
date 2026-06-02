@@ -1,35 +1,119 @@
 <template>
   <ml-base-dialog
     :title="t('dialog.replacementDlg.title')"
+    :width="480"
     v-model="dialogVisible"
     name="ReplacementDlg"
     @ok="handleConfirm"
-    @open="loadAvailableFonts"
+    @open="handleOpen"
   >
-    <el-tabs size="small" v-model="activeName">
-      <el-tab-pane
-        v-if="fontMapping.size > 0"
-        :label="t('dialog.replacementDlg.fontTabName')"
-        name="font"
-      >
-        <div>
-          <el-row>
-            <el-col :span="12">
+    <div class="ml-replacement-dlg">
+      <el-tabs v-if="showTabs" v-model="activeTab" class="ml-replacement-dlg__tabs">
+        <el-tab-pane
+          v-if="fontMapping.size > 0"
+          :label="t('dialog.replacementDlg.fontTabName')"
+          name="font"
+        >
+          <div class="ml-replacement-dlg__font-panel">
+            <el-checkbox v-model="matchFontType" class="ml-replacement-dlg__option">
+              {{ t('dialog.replacementDlg.matchFontType') }}
+            </el-checkbox>
+            <div class="ml-replacement-dlg__font-grid">
+              <div
+                class="ml-replacement-dlg__font-row ml-replacement-dlg__font-row--header"
+              >
+                <span>{{ t('dialog.replacementDlg.missedFont') }}</span>
+                <span>{{ t('dialog.replacementDlg.replacedFont') }}</span>
+              </div>
+              <div
+                v-for="[missedFont, mappedFont] in fontMapping"
+                :key="missedFont"
+                class="ml-replacement-dlg__font-row"
+              >
+                <span
+                  class="ml-replacement-dlg__missed-font"
+                  :title="missedFont"
+                >
+                  {{ missedFont }}
+                </span>
+                <el-select
+                  :model-value="mappedFont"
+                  :placeholder="t('dialog.replacementDlg.selectFont')"
+                  @update:model-value="
+                    (value: string) => updateMappedFont(missedFont, value)
+                  "
+                  style="width: 100%"
+                >
+                  <el-option
+                    v-for="replacement in getReplacementFontsFor(missedFont)"
+                    :key="replacement"
+                    :label="replacement"
+                    :value="replacement"
+                  />
+                </el-select>
+              </div>
+            </div>
+          </div>
+        </el-tab-pane>
+        <el-tab-pane
+          v-if="imageTableData.size > 0"
+          :label="t('dialog.replacementDlg.imageTabName')"
+          name="image"
+        >
+          <div class="ml-replacement-dlg__image-panel">
+            <el-table
+              :data="Array.from(imageTableData.values())"
+              style="width: 100%"
+            >
+              <el-table-column
+                :label="t('dialog.replacementDlg.file')"
+                prop="fileName"
+                :min-width="0"
+              />
+              <el-table-column
+                :label="t('dialog.replacementDlg.replace')"
+                fixed="right"
+                width="60"
+              >
+                <template #default="{ row }">
+                  <el-button
+                    link
+                    type="primary"
+                    size="small"
+                    @click="handleSelectImage(row)"
+                  >
+                    ...
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+
+      <template v-else>
+        <div v-if="fontMapping.size > 0" class="ml-replacement-dlg__font-panel">
+          <el-checkbox v-model="matchFontType" class="ml-replacement-dlg__option">
+            {{ t('dialog.replacementDlg.matchFontType') }}
+          </el-checkbox>
+          <div class="ml-replacement-dlg__font-grid">
+            <div
+              class="ml-replacement-dlg__font-row ml-replacement-dlg__font-row--header"
+            >
               <span>{{ t('dialog.replacementDlg.missedFont') }}</span>
-            </el-col>
-            <el-col :span="12">
               <span>{{ t('dialog.replacementDlg.replacedFont') }}</span>
-            </el-col>
-          </el-row>
-          <el-row
-            v-for="[missedFont, mappedFont] in fontMapping"
-            :key="missedFont"
-            style="margin-top: 10px"
-          >
-            <el-col :span="12">
-              <span>{{ missedFont }}</span>
-            </el-col>
-            <el-col :span="12">
+            </div>
+            <div
+              v-for="[missedFont, mappedFont] in fontMapping"
+              :key="missedFont"
+              class="ml-replacement-dlg__font-row"
+            >
+              <span
+                class="ml-replacement-dlg__missed-font"
+                :title="missedFont"
+              >
+                {{ missedFont }}
+              </span>
               <el-select
                 :model-value="mappedFont"
                 :placeholder="t('dialog.replacementDlg.selectFont')"
@@ -39,81 +123,76 @@
                 style="width: 100%"
               >
                 <el-option
-                  v-for="(replacement, rIndex) in availableFonts"
-                  :key="rIndex"
+                  v-for="replacement in getReplacementFontsFor(missedFont)"
+                  :key="replacement"
                   :label="replacement"
                   :value="replacement"
                 />
               </el-select>
-            </el-col>
-          </el-row>
+            </div>
+          </div>
         </div>
-      </el-tab-pane>
-      <el-tab-pane
-        v-if="imageTableData.size > 0"
-        :label="t('dialog.replacementDlg.imageTabName')"
-        name="image"
-      >
-        <el-table
-          :data="Array.from(imageTableData.values())"
-          style="width: 100%"
-          :v-show="false"
-        >
-          <el-table-column
-            :label="t('dialog.replacementDlg.file')"
-            prop="fileName"
-            :min-width="0"
-            :flex="1"
-          />
-          <el-table-column
-            :label="t('dialog.replacementDlg.replace')"
-            fixed="right"
-            width="60"
+
+        <div v-else class="ml-replacement-dlg__image-panel">
+          <el-table
+            :data="Array.from(imageTableData.values())"
+            style="width: 100%"
           >
-            <template #default="{ row }">
-              <el-button
-                link
-                type="primary"
-                size="small"
-                @click="handleSelectImage(row)"
-              >
-                ...
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        <!-- File Input (hidden) -->
-        <input
-          type="file"
-          ref="fileInput"
-          accept=".png,.jpg,.jpeg"
-          @change="handleFileChange"
-          style="display: none"
-        />
-      </el-tab-pane>
-    </el-tabs>
+            <el-table-column
+              :label="t('dialog.replacementDlg.file')"
+              prop="fileName"
+              :min-width="0"
+            />
+            <el-table-column
+              :label="t('dialog.replacementDlg.replace')"
+              fixed="right"
+              width="60"
+            >
+              <template #default="{ row }">
+                <el-button
+                  link
+                  type="primary"
+                  size="small"
+                  @click="handleSelectImage(row)"
+                >
+                  ...
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </template>
+
+      <input
+        type="file"
+        ref="fileInput"
+        accept=".png,.jpg,.jpeg"
+        @change="handleFileChange"
+        style="display: none"
+      />
+    </div>
   </ml-base-dialog>
 </template>
 
 <script lang="ts" setup>
 import {
   AcApDocManager,
+  AcApFontUtil,
   AcApSettingManager,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
-import { AcDbRasterImage } from '@mlightcad/data-model'
+import { AcDbFontInfo, AcDbRasterImage } from '@mlightcad/data-model'
 import {
   ElButton,
-  ElCol,
+  ElCheckbox,
   ElOption,
-  ElRow,
   ElSelect,
   ElTable,
   ElTableColumn,
   ElTabPane,
   ElTabs
 } from 'element-plus'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { ImageMappingData, useMissedData } from '../../composable'
@@ -123,17 +202,62 @@ const { t } = useI18n()
 const { fonts: fontMapping, images: imageTableData } = useMissedData()
 const dialogVisible = ref(true)
 
-const activeName = computed(() => {
-  return fontMapping.size > 0 ? 'font' : 'image'
-})
+const showTabs = computed(
+  () => fontMapping.size > 0 && imageTableData.size > 0
+)
+const activeTab = ref('font')
 const fileInput = ref<HTMLInputElement | null>(null)
+const availableFontInfos = ref<AcDbFontInfo[]>([])
+const matchFontType = ref(true)
+const pendingImageRow = ref<ImageMappingData | null>(null)
 
-// Move availableFonts to a ref and populate it in onMounted
-const availableFonts = ref<string[]>([])
+watch(
+  showTabs,
+  hasTabs => {
+    if (!hasTabs) {
+      activeTab.value = fontMapping.size > 0 ? 'font' : 'image'
+    }
+  },
+  { immediate: true }
+)
 
-const loadAvailableFonts = () => {
-  const fonts = AcApDocManager.instance.avaiableFonts
-  availableFonts.value = fonts.map(f => f.name[0])
+watch(matchFontType, enabled => {
+  if (!enabled) return
+
+  fontMapping.forEach((mappedFont, missedFont) => {
+    if (!mappedFont) return
+    const options = getReplacementFontsFor(missedFont)
+    if (!options.includes(mappedFont)) {
+      fontMapping.set(missedFont, '')
+    }
+  })
+})
+
+const handleOpen = () => {
+  availableFontInfos.value = AcApDocManager.instance.avaiableFonts
+}
+
+const getMissedFontType = (missedFont: string): 'shx' | 'mesh' | undefined => {
+  return (
+    AcApFontUtil.getCatalogFontType(missedFont) ??
+    AcApFontUtil.getFontType(missedFont)
+  )
+}
+
+const getReplacementFontsFor = (missedFont: string): string[] => {
+  const fonts = availableFontInfos.value
+  if (!matchFontType.value) {
+    return fonts.map(font => font.name[0])
+  }
+
+  const targetType = getMissedFontType(missedFont)
+  if (!targetType) {
+    return fonts.map(font => font.name[0])
+  }
+
+  return fonts
+    .filter(font => font.type === targetType)
+    .map(font => font.name[0])
 }
 
 const handleConfirm = async () => {
@@ -179,7 +303,8 @@ const handleConfirm = async () => {
       // Font loader emits detailed failure notifications; still regenerate.
     }
 
-    await docManager.regen()
+    docManager.regen()
+    await nextTick()
   }
 
   if (replacedFont || replacedImage) {
@@ -188,18 +313,18 @@ const handleConfirm = async () => {
 }
 
 const handleSelectImage = (row: ImageMappingData) => {
-  if (fileInput.value) {
-    fileInput.value.click()
-    fileInput.value.onchange = () => {
-      handleFileChange(row)
-    }
-  }
+  pendingImageRow.value = row
+  fileInput.value?.click()
 }
 
-const handleFileChange = (row: ImageMappingData) => {
+const handleFileChange = () => {
   const file = fileInput.value?.files?.[0]
-  if (file) {
-    row.file = file
+  if (file && pendingImageRow.value) {
+    pendingImageRow.value.file = file
+  }
+  pendingImageRow.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
   }
 }
 
@@ -207,3 +332,49 @@ const updateMappedFont = (missedFont: string, mappedFont: string) => {
   fontMapping.set(missedFont, mappedFont)
 }
 </script>
+
+<style scoped>
+.ml-replacement-dlg__tabs :deep(.el-tabs__header) {
+  margin: 0 0 8px;
+}
+
+.ml-replacement-dlg__tabs :deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+}
+
+.ml-replacement-dlg__tabs :deep(.el-tabs__item) {
+  height: 28px;
+  line-height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.ml-replacement-dlg__option {
+  margin-bottom: 8px;
+}
+
+.ml-replacement-dlg__font-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ml-replacement-dlg__font-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.ml-replacement-dlg__font-row--header {
+  color: var(--el-text-color-secondary);
+  font-weight: 600;
+  padding-bottom: 2px;
+}
+
+.ml-replacement-dlg__missed-font {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>

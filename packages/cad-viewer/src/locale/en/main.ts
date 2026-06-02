@@ -592,8 +592,11 @@ export default {
   message: {
     loadingFonts: 'Loading fonts ...',
     loadingDwgConverter: 'Loading DWG converter...',
-    fontsNotFound: 'Fonts "{fonts}" can not be found in font repository!',
-    fontsNotLoaded: 'Fonts "{fonts}" can not be loaded!',
+    fontsNotFound: 'Fonts {fonts} can not be found in font repository!',
+    fontsNotLoaded: 'Fonts {fonts} can not be loaded!',
+    fontMissedInDrawing:
+      'Font "{font}" is required by {count} text object(s) but is not available. Displaying with "{replacementFont}".',
+    fontMissedReplacement: '"{font}" (displaying with "{replacement}")',
     failedToGetAvaiableFonts: 'Failed to get avaiable fonts from "{url}"!',
     failedToOpenFile: 'Failed to open file "{fileName}"!',
     fetchingDrawingFile: 'Fetching file ...',
