@@ -83,6 +83,7 @@
  */
 import {
   AcApDocManager,
+  AcApFontUtil,
   AcApOpenDatabaseOptions,
   AcEdMTextEditor,
   AcEdOpenMode,
@@ -182,7 +183,35 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { t } = useI18n()
 const { effectiveLocale, elementPlusLocale } = useLocale(props.locale)
-const { info, warning, error, success } = useNotificationCenter()
+const {
+  info,
+  warning,
+  error,
+  success,
+  removeWhere,
+  removeResolvedFontMissedNotifications
+} = useNotificationCenter()
+
+const fontMissedNotificationOptions = (fontNames: string[]) => ({
+  source: 'font-missed' as const,
+  fontNames
+})
+
+const formatFontWithReplacement = (fontName: string) =>
+  t('main.message.fontMissedReplacement', {
+    font: fontName,
+    replacement: AcApFontUtil.getReplacementFontName(fontName)
+  })
+
+const formatFontsWithReplacement = (fontNames: string[]) =>
+  fontNames.map(formatFontWithReplacement).join(', ')
+
+const syncFontMissedNotifications = () => {
+  const missedFonts = Object.keys(
+    AcApDocManager.instance.curView.missedData.fonts
+  )
+  removeResolvedFontMissedNotifications(missedFonts)
+}
 
 // Canvas element reference
 const containerRef = ref<HTMLDivElement>()
@@ -512,17 +541,50 @@ eventBus.on('message', params => {
 
 // Handle failure that fonts can't be loaded from remote font repository
 eventBus.on('fonts-not-loaded', params => {
-  const fonts = params.fonts.map(font => font.fontName).join(', ')
-  const message = t('main.message.fontsNotLoaded', { fonts })
-  error(t('main.notification.title.fontNotFound'), message)
+  const fontNames = params.fonts.map(font => font.fontName)
+  const message = t('main.message.fontsNotLoaded', {
+    fonts: formatFontsWithReplacement(fontNames)
+  })
+  error(t('main.notification.title.fontNotFound'), message, {
+    ...fontMissedNotificationOptions(fontNames),
+    persistent: true
+  })
 })
 
 // Handle failure that fonts can't be found in remote font repository
 eventBus.on('fonts-not-found', params => {
   const message = t('main.message.fontsNotFound', {
-    fonts: params.fonts.join(', ')
+    fonts: formatFontsWithReplacement(params.fonts)
   })
-  warning(t('main.notification.title.fontNotFound'), message)
+  warning(t('main.notification.title.fontNotFound'), message, {
+    ...fontMissedNotificationOptions(params.fonts)
+  })
+})
+
+// Handle fonts required by the drawing that are not available during rendering
+eventBus.on('font-not-found', params => {
+  const fontName = params.fontName.trim()
+  if (!fontName) return
+
+  removeWhere(
+    notification =>
+      notification.source === 'font-missed' &&
+      notification.fontNames?.includes(fontName) === true
+  )
+
+  warning(
+    t('main.notification.title.fontNotFound'),
+    t('main.message.fontMissedInDrawing', {
+      font: fontName,
+      count: params.count,
+      replacementFont: AcApFontUtil.getReplacementFontName(fontName)
+    }),
+    fontMissedNotificationOptions([fontName])
+  )
+})
+
+eventBus.on('missed-data-changed', () => {
+  syncFontMissedNotifications()
 })
 
 // Handle failures when trying to get available fonts from the system

@@ -20,6 +20,7 @@ export interface AcEdFontNotLoadedInfo {
  * - **File Operations**: `open-file`, `open-file-progress`, `failed-to-open-file`
  * - **Palette Control**: `close-layer-manager`
  * - **Font Management**: `fonts-not-loaded`, `failed-to-get-avaiable-fonts`, `font-not-found`
+ * - **Missing Resources**: `missed-data-changed`
  * - **User Messages**: `message`
  */
 export type AcEdEvents = {
@@ -61,6 +62,8 @@ export type AcEdEvents = {
     /** Number of entities that require this font */
     count: number
   }
+  /** Emitted after missing resource caches change and UI state should refresh */
+  'missed-data-changed': {}
 }
 
 /**

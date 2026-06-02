@@ -11,7 +11,8 @@ export default {
     replace: 'Replace',
     missedFont: 'Missed Font',
     replacedFont: 'Replaced Font',
-    selectFont: 'Select font to replace'
+    selectFont: 'Select font to replace',
+    matchFontType: 'Use the same font type (SHX replaces SHX, mesh replaces mesh)'
   },
   pointStyleDlg: {
     title: 'Point Style',
