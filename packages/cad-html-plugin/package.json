@@ -32,15 +32,13 @@
     "lint": "eslint src/",
     "lint:fix": "eslint --fix --quiet src/"
   },
-  "dependencies": {
-    "fflate": "^0.8.2"
-  },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.8.1",
     "@mlightcad/three-renderer": "workspace:*",
     "@types/jest": "^29.5.12",
     "@types/three": "^0.172.0",
+    "fflate": "^0.8.2",
     "three": "^0.172.0"
   },
   "peerDependencies": {

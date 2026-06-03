@@ -15,6 +15,7 @@ overrides:
   vue: ^3.4.21
   vue-i18n: ^11.4.4
   glob: ^13.0.6
+  lodash-es: 4.17.21
 
 importers:
 
@@ -143,10 +144,6 @@ importers:
         version: 5.4.21(@types/node@20.19.37)(sass@1.98.0)
 
   packages/cad-html-plugin:
-    dependencies:
-      fflate:
-        specifier: ^0.8.2
-        version: 0.8.2
     devDependencies:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
@@ -163,21 +160,14 @@ importers:
       '@types/three':
         specifier: ^0.172.0
         version: 0.172.0
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.2
       three:
         specifier: ^0.172.0
         version: 0.172.0
 
   packages/cad-pdf-plugin:
-    dependencies:
-      jspdf:
-        specifier: ^4.2.1
-        version: 4.2.1
-      pdfjs-dist:
-        specifier: ^5.6.205
-        version: 5.7.284
-      svg2pdf.js:
-        specifier: ^2.7.0
-        version: 2.7.0(jspdf@4.2.1)
     devDependencies:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
@@ -188,22 +178,24 @@ importers:
       '@mlightcad/data-model':
         specifier: ^1.8.1
         version: 1.8.1
+      jspdf:
+        specifier: ^4.2.1
+        version: 4.2.1
+      pdfjs-dist:
+        specifier: ^5.6.205
+        version: 5.7.284
+      svg2pdf.js:
+        specifier: ^2.7.0
+        version: 2.7.0(jspdf@4.2.1)
 
   packages/cad-simple-viewer:
-    dependencies:
-      '@mlightcad/libredwg-converter':
-        specifier: ^3.6.1
-        version: 3.6.1(@mlightcad/data-model@1.8.1)
-      mitt:
-        specifier: ^3.0.1
-        version: 3.0.1
-      rbush:
-        specifier: ^4.0.1
-        version: 4.0.1
     devDependencies:
       '@mlightcad/data-model':
         specifier: ^1.8.1
         version: 1.8.1
+      '@mlightcad/libredwg-converter':
+        specifier: ^3.6.1
+        version: 3.6.1(@mlightcad/data-model@1.8.1)
       '@mlightcad/mtext-input-box':
         specifier: ^0.2.13
         version: 0.2.13(@mlightcad/mtext-renderer@0.10.16(three@0.172.0))(three@0.172.0)
@@ -228,6 +220,12 @@ importers:
       lodash-es:
         specifier: 4.17.21
         version: 4.17.21
+      mitt:
+        specifier: ^3.0.1
+        version: 3.0.1
+      rbush:
+        specifier: ^4.0.1
+        version: 4.0.1
       three:
         specifier: ^0.172.0
         version: 0.172.0
@@ -249,6 +247,9 @@ importers:
       '@mlightcad/data-model':
         specifier: ^1.8.1
         version: 1.8.1
+      lodash-es:
+        specifier: 4.17.21
+        version: 4.17.21
       three:
         specifier: ^0.172.0
         version: 0.172.0
@@ -266,14 +267,10 @@ importers:
         version: 1.4.1
 
   packages/cad-viewer:
-    dependencies:
+    devDependencies:
       '@element-plus/icons-vue':
         specifier: ^2.3.1
         version: 2.3.2(vue@3.5.31(typescript@5.9.3))
-      lodash-es:
-        specifier: 4.17.21
-        version: 4.17.21
-    devDependencies:
       '@mlightcad/cad-html-plugin':
         specifier: workspace:*
         version: link:../cad-html-plugin
@@ -301,9 +298,6 @@ importers:
       '@mlightcad/ui-components':
         specifier: ^0.1.6
         version: 0.1.6(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
-      '@types/lodash-es':
-        specifier: ^4.17.12
-        version: 4.17.12
       '@vitejs/plugin-vue':
         specifier: ^5.1.3
         version: 5.2.4(vite@5.4.21(@types/node@24.12.4)(sass@1.98.0))(vue@3.5.31(typescript@5.9.3))
@@ -313,6 +307,9 @@ importers:
       element-plus:
         specifier: ^2.12.0
         version: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
+      lodash-es:
+        specifier: 4.17.21
+        version: 4.17.21
       sass:
         specifier: ^1.95.1
         version: 1.98.0
@@ -364,6 +361,9 @@ importers:
       element-plus:
         specifier: ^2.12.0
         version: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
+      lodash-es:
+        specifier: 4.17.21
+        version: 4.17.21
       three:
         specifier: ^0.172.0
         version: 0.172.0
@@ -3954,15 +3954,12 @@ packages:
   lodash-es@4.17.21:
     resolution: {integrity: sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==}
 
-  lodash-es@4.18.1:
-    resolution: {integrity: sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A==}
-
   lodash-unified@1.0.3:
     resolution: {integrity: sha512-WK9qSozxXOD7ZJQlpSqOT+om2ZfcT4yO+03FuzAHD0wF6S0l0090LRPDx3vhTTLZ8cFKpBn+IOcVXK6qOcIlfQ==}
     peerDependencies:
       '@types/lodash-es': '*'
       lodash: '*'
-      lodash-es: '*'
+      lodash-es: 4.17.21
 
   lodash.debounce@4.0.8:
     resolution: {integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==}
@@ -8164,8 +8161,8 @@ snapshots:
       async-validator: 4.2.5
       dayjs: 1.11.20
       lodash: 4.18.1
-      lodash-es: 4.18.1
-      lodash-unified: 1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.18.1)(lodash@4.18.1)
+      lodash-es: 4.17.21
+      lodash-unified: 1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.17.21)(lodash@4.18.1)
       memoize-one: 6.0.0
       normalize-wheel-es: 1.2.0
       vue: 3.5.31(typescript@5.9.3)
@@ -9252,13 +9249,11 @@ snapshots:
 
   lodash-es@4.17.21: {}
 
-  lodash-es@4.18.1: {}
-
-  lodash-unified@1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.18.1)(lodash@4.18.1):
+  lodash-unified@1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.17.21)(lodash@4.18.1):
     dependencies:
       '@types/lodash-es': 4.17.12
       lodash: 4.18.1
-      lodash-es: 4.18.1
+      lodash-es: 4.17.21
 
   lodash.debounce@4.0.8: {}
 
