@@ -1579,6 +1579,10 @@ export class AcTrView2d extends AcEdBaseView {
           continue
         }
 
+        if (!entity.visibility) {
+          continue
+        }
+
         const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
         if (!threeEntity) continue
 
@@ -1651,6 +1655,9 @@ export class AcTrView2d extends AcEdBaseView {
     const children = group.children
     const objectsGroupByLayer: Map<string, THREE.Object3D[]> = new Map()
     children.forEach(child => {
+      if (!child.visible) {
+        return
+      }
       const layerName = child.userData.layerName
       if (!objectsGroupByLayer.has(layerName)) {
         objectsGroupByLayer.set(layerName, [])

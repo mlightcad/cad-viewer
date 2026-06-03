@@ -2,7 +2,7 @@ import { AcGeMatrix3d, AcGePoint3d, AcGiEntity } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrMaterialUtil, AcTrMatrixUtil } from '../util'
+import { AcTrMaterialUtil, AcTrMatrixUtil, isObjectHierarchyVisible } from '../util'
 import {
   type AcTrEntityUserData,
   getObjectUserData
@@ -163,6 +163,9 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
           //   relative = inverse(rootWorld) * childWorld
           // This preserves the final rendered placement after the child is re-parented
           // directly under `root`.
+          // flatten() removes intermediate AcTrEntity nodes; bake entity visibility onto
+          // render leaves so batched drawing still honors DXF group code 60.
+          child.visible = isObjectHierarchyVisible(child)
           objectsToReparent.push({
             object: child,
             relativeMatrix: rootMatrixWorldInverse

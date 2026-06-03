@@ -17,11 +17,30 @@ export default defineConfig(({ command, mode }) => {
     )
   }
   const aliases: Alias[] = []
+  const devSourcePackages = [
+    'cad-svg-plugin',
+    'three-renderer',
+    'cad-simple-viewer',
+    'cad-viewer'
+  ]
+  const realdwgDataModelEntry = resolve(
+    __dirname,
+    '../../../realdwg-web/packages/data-model/lib/index.js'
+  )
   if (command === 'serve') {
     aliases.push({
       find: /^@mlightcad\/(cad-svg-plugin|three-renderer|cad-simple-viewer|cad-viewer)$/,
       replacement: resolve(__dirname, '../$1/src')
     })
+    if (existsSync(realdwgDataModelEntry)) {
+      aliases.push({
+        find: '@mlightcad/data-model',
+        replacement: resolve(
+          __dirname,
+          '../../../realdwg-web/packages/data-model/lib'
+        )
+      })
+    }
   }
 
   const plugins = [
@@ -56,7 +75,16 @@ export default defineConfig(({ command, mode }) => {
       alias: aliases
     },
     optimizeDeps: {
-      force: command === 'serve' // Force re-optimization in dev mode to fix stale cache issues
+      force: command === 'serve', // Force re-optimization in dev mode to fix stale cache issues
+      exclude:
+        command === 'serve'
+          ? [
+              ...devSourcePackages.map(name => `@mlightcad/${name}`),
+              ...(existsSync(realdwgDataModelEntry)
+                ? ['@mlightcad/data-model']
+                : [])
+            ]
+          : []
     },
     build: {
       outDir: 'dist',
