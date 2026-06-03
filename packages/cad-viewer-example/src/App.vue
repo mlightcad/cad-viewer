@@ -35,6 +35,10 @@ import { store } from './store'
 
 const initialize = () => {
   initializeLocale()
+  if (import.meta.env.DEV) {
+    ;(globalThis as typeof globalThis & { AcApDocManager?: typeof AcApDocManager })
+      .AcApDocManager = AcApDocManager
+  }
   const register = AcApDocManager.instance.commandManager
   register.addCommand(
     AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

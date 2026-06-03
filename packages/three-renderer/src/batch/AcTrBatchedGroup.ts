@@ -341,7 +341,14 @@ export class AcTrBatchedGroup extends THREE.Group {
    * Adds one converted entity into batch/unbatched containers.
    */
   addEntity(entity: AcTrEntity) {
+    // Batched buffers always draw packed geometry; per-slot `visible` only affects
+    // raycast today. Skip invisible entities entirely so DXF group code 60 is honored.
+    if (!entity.visible) {
+      return
+    }
+
     const objectId = entity.objectId
+    const entityVisible = entity.visible
     // One logical entity (same objectId) can be appended in multiple passes
     // (e.g. INSERT decomposition by source layer and inherited layer-0 bucket).
     // Keep accumulating geometry mappings instead of overwriting previous ones.
@@ -358,21 +365,26 @@ export class AcTrBatchedGroup extends THREE.Group {
 
     entity.updateMatrixWorld(true)
     entity.traverse(object => {
+      if (!object.visible) {
+        return
+      }
+
       const drawableUserData = getSceneDrawableUserData(object)
       const bboxIntersectionCheck = !!drawableUserData.bboxIntersectionCheck
 
       if (object instanceof LineSegments2) {
-        entityInfo.push(
-          this.addLine2(object, {
-            objectId,
-            bboxIntersectionCheck: bboxIntersectionCheck
-          })
-        )
+        const item = this.addLine2(object, {
+          objectId,
+          bboxIntersectionCheck: bboxIntersectionCheck
+        })
+        entityInfo.push(item)
+        this.applyBatchSlotVisibility(item, entityVisible && object.visible)
         return
       }
 
       if (drawableUserData.noBatch) {
         const cloned = this.cloneUnbatchedObject(object)
+        cloned.visible = entityVisible && object.visible
         getSceneDrawableUserData(cloned).bboxIntersectionCheck =
           bboxIntersectionCheck
         this._unbatchedObjects.add(cloned)
@@ -381,31 +393,31 @@ export class AcTrBatchedGroup extends THREE.Group {
         return
       }
       if (object instanceof THREE.LineSegments) {
-        entityInfo.push(
-          this.addLine(object, {
-            position: drawableUserData.position,
-            objectId,
-            bboxIntersectionCheck: bboxIntersectionCheck
-          })
-        )
+        const item = this.addLine(object, {
+          position: drawableUserData.position,
+          objectId,
+          bboxIntersectionCheck: bboxIntersectionCheck
+        })
+        entityInfo.push(item)
+        this.applyBatchSlotVisibility(item, entityVisible && object.visible)
       } else if (object instanceof THREE.Mesh) {
-        entityInfo.push(
-          this.addMesh(
-            object,
-            {
-              objectId,
-              bboxIntersectionCheck: bboxIntersectionCheck
-            },
-            styleManager
-          )
-        )
-      } else if (object instanceof THREE.Points) {
-        entityInfo.push(
-          this.addPoint(object, {
+        const item = this.addMesh(
+          object,
+          {
             objectId,
             bboxIntersectionCheck: bboxIntersectionCheck
-          })
+          },
+          styleManager
         )
+        entityInfo.push(item)
+        this.applyBatchSlotVisibility(item, entityVisible && object.visible)
+      } else if (object instanceof THREE.Points) {
+        const item = this.addPoint(object, {
+          objectId,
+          bboxIntersectionCheck: bboxIntersectionCheck
+        })
+        entityInfo.push(item)
+        this.applyBatchSlotVisibility(item, entityVisible && object.visible)
       }
     })
 
@@ -590,6 +602,25 @@ export class AcTrBatchedGroup extends THREE.Group {
     })
     objects.forEach(obj => this.disposeHighlightObject(obj))
     containerGroup.remove(...objects)
+  }
+
+  /**
+   * Applies entity-level visibility to one batched geometry slot.
+   *
+   * Batched geometry defaults to visible; DXF group code 60 and AcDbEntity
+   * visibility must be reflected per slot so invisible entities are not drawn.
+   */
+  private applyBatchSlotVisibility(
+    item: AcTrEntityInBatchedObject,
+    visible: boolean
+  ) {
+    if (visible) {
+      return
+    }
+    const batchedObject = this.getObjectById(item.batchedObjectId) as
+      | AcTrBatchedObject
+      | undefined
+    batchedObject?.setVisibleAt(item.batchId, false)
   }
 
   /**
