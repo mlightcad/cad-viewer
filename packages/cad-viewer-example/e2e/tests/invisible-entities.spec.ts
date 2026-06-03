@@ -152,6 +152,24 @@ test('honors DXF group code 60 entity visibility for LWPOLYLINE', async ({
   expect(invisiblePixels).toBeLessThanOrEqual(emptyPixels + 250)
 })
 
+async function readBlockDefinitionVisibility(page: Page, blockName: string) {
+  return page.evaluate(name => {
+    const db =
+      (
+        window as Window & {
+          AcApDocManager?: {
+            instance: { curDocument: { database: { tables: { blockTable: { getAt: (n: string) => { newIterator: () => Iterable<{ visibility: boolean }> } | null } } } } }
+          }
+        }
+      ).AcApDocManager?.instance?.curDocument?.database
+    const block = db?.tables?.blockTable?.getAt(name)
+    if (!block?.newIterator) {
+      return [] as boolean[]
+    }
+    return [...block.newIterator()].map(entity => entity.visibility)
+  }, blockName)
+}
+
 test('honors DXF group code 60 for entities inside block definitions referenced by INSERT', async ({
   page
 }) => {
@@ -160,11 +178,19 @@ test('honors DXF group code 60 for entities inside block definitions referenced 
 
   await page.goto('/')
   await loadCadViewer(page, invisibleInBlockFixturePath)
+  const blockVisibilities = await readBlockDefinitionVisibility(
+    page,
+    'INV_POLY_BLK'
+  )
+  expect(blockVisibilities).toEqual([false])
   const invisibleInsertPixels = await countNonBackgroundPixels(page)
   expect(invisibleInsertPixels - emptyPixels).toBeLessThan(200)
 
   await page.goto('/')
   await loadCadViewer(page, visibleInBlockFixturePath)
+  expect(await readBlockDefinitionVisibility(page, 'VIS_POLY_BLK')).toEqual([
+    true
+  ])
   const visibleInsertPixels = await countNonBackgroundPixels(page)
   expect(visibleInsertPixels - emptyPixels).toBeGreaterThan(400)
   expect(invisibleInsertPixels).toBeLessThanOrEqual(emptyPixels + 250)

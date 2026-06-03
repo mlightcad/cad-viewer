@@ -365,7 +365,8 @@ export class AcTrBatchedGroup extends THREE.Group {
 
     entity.updateMatrixWorld(true)
     entity.traverse(object => {
-      if (!object.visible) {
+      // traverse() visits descendants even when an intermediate AcTrEntity is invisible.
+      if (!this.isHierarchyVisible(object)) {
         return
       }
 
@@ -602,6 +603,20 @@ export class AcTrBatchedGroup extends THREE.Group {
     })
     objects.forEach(obj => this.disposeHighlightObject(obj))
     containerGroup.remove(...objects)
+  }
+
+  /**
+   * Returns false when this object or any ancestor is not visible.
+   */
+  private isHierarchyVisible(object: THREE.Object3D): boolean {
+    let node: THREE.Object3D | null = object
+    while (node) {
+      if (!node.visible) {
+        return false
+      }
+      node = node.parent
+    }
+    return true
   }
 
   /**
