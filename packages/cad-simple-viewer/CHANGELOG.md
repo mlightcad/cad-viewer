@@ -1,5 +1,11 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.5.3
+
+### Patch Changes
+
+- chore(deps): reclassify package dependencies and pin lodash-es via pnpm overrides
+
 ## 1.5.2
 
 ### Patch Changes
