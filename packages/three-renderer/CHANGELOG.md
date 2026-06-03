@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.5.2
+
+### Patch Changes
+
+- feat: HTML/SVG export plugins, offline viewer enhancements, and ortho/polar tracking
+
 ## 1.5.1
 
 ### Patch Changes
