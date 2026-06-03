@@ -95,7 +95,7 @@ async function loadCadViewer(page: Page, fixturePath: string) {
 async function readModelSpaceEntityVisibility(page: Page) {
   return page.evaluate(() => {
     const mgr = (
-      globalThis as typeof globalThis & {
+      window as Window & {
         AcApDocManager?: {
           instance: {
             curDocument: {
