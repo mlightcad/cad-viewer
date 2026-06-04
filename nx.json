@@ -6,6 +6,14 @@
         "^build"
       ],
       "cache": true
+    },
+    "dev": {
+      "dependsOn": [
+        {
+          "target": "build",
+          "dependencies": true
+        }
+      ]
     }
   }
 }
