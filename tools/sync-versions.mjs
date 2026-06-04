@@ -7,17 +7,72 @@ const toolsDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(toolsDir, '..');
 const packagesDir = path.join(rootDir, 'packages');
 const rootPackageJsonPath = path.join(rootDir, 'package.json');
+const pnpmWorkspaceYamlPath = path.join(rootDir, 'pnpm-workspace.yaml');
 
 function isWorkspaceVersion(value) {
   return typeof value === 'string' && value.startsWith('workspace:');
 }
 
-function buildRootVersionMap(rootPkg) {
+function parseOverridesFromWorkspaceYaml(content) {
+  const overrides = {};
+  const lines = content.split(/\r?\n/);
+  let inOverrides = false;
+
+  for (const line of lines) {
+    if (!inOverrides) {
+      if (/^overrides:\s*$/.test(line)) {
+        inOverrides = true;
+      }
+      continue;
+    }
+
+    if (/^[^\s#]/.test(line)) {
+      break;
+    }
+
+    const trimmed = line.trimStart();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    const entryMatch = trimmed.match(
+      /^(?:'([^']+)'|"([^"]+)"|([^:\s]+))\s*:\s*(.+)$/
+    );
+    if (!entryMatch) continue;
+
+    const key = entryMatch[1] ?? entryMatch[2] ?? entryMatch[3];
+    let value = entryMatch[4].trim();
+    if (
+      (value.startsWith("'") && value.endsWith("'")) ||
+      (value.startsWith('"') && value.endsWith('"'))
+    ) {
+      value = value.slice(1, -1);
+    }
+    overrides[key] = value;
+  }
+
+  return overrides;
+}
+
+async function readPnpmOverrides() {
+  try {
+    const content = await readFile(pnpmWorkspaceYamlPath, { encoding: 'utf8' });
+    const fromYaml = parseOverridesFromWorkspaceYaml(content);
+    if (Object.keys(fromYaml).length > 0) {
+      return fromYaml;
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+
+  const rootPkg = await readJson(rootPackageJsonPath);
+  return rootPkg.pnpm?.overrides ?? {};
+}
+
+function buildRootVersionMap(rootPkg, overrides) {
   return {
     ...(rootPkg.dependencies ?? {}),
     ...(rootPkg.devDependencies ?? {}),
     ...(rootPkg.peerDependencies ?? {}),
-    ...(rootPkg.pnpm?.overrides ?? {}),
+    ...overrides,
   };
 }
 
@@ -84,7 +139,7 @@ async function syncPackage(packageFilePath, rootVersionMap, workspacePackageName
         }
         newVersion = rootVersion;
       }
-      // Priority 2: check versions in pnpm.overrides
+      // Priority 2: check versions in pnpm-workspace.yaml overrides
       else if (overrides[name] && value !== overrides[name]) {
         newVersion = overrides[name];
       }
@@ -106,8 +161,8 @@ async function syncPackage(packageFilePath, rootVersionMap, workspacePackageName
 (async () => {
   try {
     const rootPkg = await readJson(rootPackageJsonPath);
-    const rootVersionMap = buildRootVersionMap(rootPkg);
-    const overrides = rootPkg.pnpm?.overrides ?? {};
+    const overrides = await readPnpmOverrides();
+    const rootVersionMap = buildRootVersionMap(rootPkg, overrides);
     const workspacePackageNames = await findWorkspacePackageNames(rootPkg);
 
     const packageDirs = await readdir(packagesDir, { withFileTypes: true });
