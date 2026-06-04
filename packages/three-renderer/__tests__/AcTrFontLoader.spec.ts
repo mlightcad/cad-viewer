@@ -2,7 +2,7 @@ const mockSetFontUrl = jest.fn()
 
 jest.mock('@mlightcad/mtext-renderer', () => {
   class MockDefaultFontLoader {
-    private _baseUrl = 'https://mlightcad.gitlab.io/cad-data/fonts/'
+    private _baseUrl = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data/fonts/'
 
     get baseUrl() {
       return this._baseUrl

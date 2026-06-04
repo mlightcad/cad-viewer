@@ -11,7 +11,7 @@ overrides:
   '@mlightcad/data-model': '^1.8.1'
   '@mlightcad/libredwg-converter': '^3.6.1'
   '@mlightcad/mtext-input-box': '^0.2.13'
-  '@mlightcad/mtext-renderer': '^0.10.16'
+  '@mlightcad/mtext-renderer': '../../../mtext-renderer/packages/mtext-renderer'
   '@mlightcad/ribbon': '^0.1.10'
   element-plus: '^2.12.0'
   glob: '^13.0.6'

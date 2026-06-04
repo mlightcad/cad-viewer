@@ -11,6 +11,7 @@ import {
   log
 } from '@mlightcad/data-model'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
+import { FontManager } from '@mlightcad/mtext-renderer'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 import {
@@ -86,7 +87,7 @@ import { AcApProgress } from './AcApProgress'
 import { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
 import { isOpenFileProgressComplete } from './openFileProgress'
 
-const DEFAULT_BASE_URL = 'https://mlightcad.gitlab.io/cad-data/'
+const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
 /**
  * Built-in command alias table used when users do not provide explicit alias overrides.
  *
@@ -174,6 +175,9 @@ export interface AcApWebworkerFiles {
    */
   mtextRender?: string | URL
 }
+
+/** AutoCAD-era default font fallback chain used when glyphs are missing. */
+const DEFAULT_FONTS_PRESET = 'modern' as const
 
 /**
  * Options for creating AcApDocManager instance
@@ -378,6 +382,7 @@ export class AcApDocManager {
     } else {
       AcTrMTextRenderer.getInstance().setRenderMode('worker')
     }
+    FontManager.instance.setDefaultFonts(DEFAULT_FONTS_PRESET)
 
     this.events.documentToBeOpened.addEventListener(() => {
       this.resetOpenFileProgress()
@@ -653,20 +658,21 @@ export class AcApDocManager {
   /**
    * Loads default fonts for CAD text rendering.
    *
-   * This method loads either the specified fonts or falls back to default Chinese fonts
-   * (specifically 'simkai') if no fonts are provided. The loaded fonts are used for
-   * rendering CAD text entities like MText and Text in the viewer.
+   * This method loads either the specified fonts or the configured default font
+   * fallback chain ({@link DEFAULT_FONTS_PRESET}, currently `modern`:
+   * `hztxt` → `simsun` → `gdt`) if no fonts are provided. The loaded fonts are
+   * used for rendering CAD text entities like MText and Text in the viewer.
    *
    * It is better to load default fonts when viewer is initialized so that the viewer can
    * render text correctly if fonts used in the document are not available.
    *
    * @param fonts - Optional array of font names to load. If not provided or null,
-   *               defaults to ['simkai'] for Chinese text support
+   *               loads the active {@link FontManager.defaultFonts} chain
    * @returns Promise that resolves when all specified fonts are loaded
    *
    * @example
    * ```typescript
-   * // Load default fonts (simkai)
+   * // Load the modern default font chain
    * await docManager.loadDefaultFonts();
    *
    * // Load specific fonts
@@ -681,7 +687,7 @@ export class AcApDocManager {
    */
   async loadDefaultFonts(fonts?: string[]) {
     if (fonts == null) {
-      await this._fontLoader.load(['simkai'])
+      await this._fontLoader.load([...FontManager.instance.defaultFonts])
     } else {
       await this._fontLoader.load(fonts)
     }
