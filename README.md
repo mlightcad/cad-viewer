@@ -17,8 +17,14 @@ It also offers something you will rarely find in other CAD viewers—**one-click
 
 ### Apps Built with cad-viewer
 
-- [DWG Viewer for Google Drive](https://drive.thingraph.site/) - A widely adopted Google Drive integration powered by cad-viewer, enabling thousands of users to preview DWG/DXF files directly in Drive, streamlining cloud workflows. [Install to Google Drive](https://workspace.google.com/marketplace/app/dwg_viewer/641533811831)
-- [CAD Viewer Web App](https://cad.thingraph.site/open?use2d=1) - 2D/3D CAD viewer, built on cad-viewer, used by engineering teams globally for seamless browser-based file access. It is integreated to Google Drive too, [Install](https://workspace.google.com/u/0/marketplace/app/cad_viewer/688654001920).
+The [Thingraph](https://cad.thingraph.site/) team builds production DWG/DXF viewers and platform integrations on top of cad-viewer, serving tens of thousands of users worldwide:
+
+- [DWG Viewer Web App](https://cad.thingraph.site/dwg-viewer) — Browser-based DWG/DXF viewer used by engineering teams worldwide for fast, serverless drawing access. Install for your platform:
+  - [Google Drive](https://workspace.google.com/marketplace/app/dwg_viewer/641533811831) — open DWG/DXF from Drive with **Open with**
+  - [VS Code](https://marketplace.visualstudio.com/items?itemName=thingraph.dwg-viewer) — custom read-only editor for `.dwg` / `.dxf`
+  - [Cursor](https://open-vsx.org/extension/thingraph/dwg-viewer) — same extension via Open VSX
+  - [Confluence](https://marketplace.atlassian.com/apps/2890472615/dwg-viewer-for-confluence) — embed DWG/DXF previews on pages
+  - [Windows Explorer](https://cad.thingraph.site/install/windows) — thumbnail and preview in File Explorer
 
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
