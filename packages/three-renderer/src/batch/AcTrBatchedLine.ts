@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchedGeometryInfo,
@@ -361,7 +362,7 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     if (!position) return
 
     if (!this._origin) {
-      geometry.computeBoundingBox()
+      AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
       const center = geometry.boundingBox
         ? geometry.boundingBox.getCenter(new THREE.Vector3())
         : new THREE.Vector3()

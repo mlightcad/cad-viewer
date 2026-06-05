@@ -14,6 +14,7 @@ import * as THREE from 'three'
 import { AcTrMTextRenderer } from '../renderer'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrMTextColorUtil } from '../util'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
 import { AcTrEntity } from './AcTrEntity'
 
@@ -153,6 +154,7 @@ export class AcTrMText extends AcTrEntity {
   private attachMText(mtext: MTextObject) {
     this.add(mtext)
     this.flatten()
+    this.removeInvalidGeometryLeaves()
     this.traverse(object => {
       // Text picking should behave like CAD object picking: the visible glyph
       // area should be selectable even when the pointer lands inside a hollow
@@ -213,20 +215,41 @@ export class AcTrMText extends AcTrEntity {
       const geometry = object.geometry
       // Some renderer outputs already have bounds; compute lazily for those
       // that do not so custom/generated geometries still contribute.
-      if (geometry.boundingBox == null) {
-        geometry.computeBoundingBox()
-      }
-      if (geometry.boundingBox == null) return
+      const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+      if (boundingBox == null) return
 
       object.updateMatrixWorld(true)
       // Move the child's local geometry box into the entity's current coordinate
       // frame before unioning.  This preserves translation/rotation/scale left on
       // the child by flattening.
-      childBox.copy(geometry.boundingBox).applyMatrix4(object.matrixWorld)
+      childBox.copy(boundingBox).applyMatrix4(object.matrixWorld)
       box.union(childBox)
     })
 
     return box
+  }
+
+  /**
+   * Drops render leaves whose buffer positions contain NaN/Infinity.
+   *
+   * PCCAD tolerance MTEXT can occasionally emit degenerate glyph meshes; keeping
+   * them would poison bounding-box aggregation and flood the console with THREE.js
+   * warnings during batching.
+   */
+  private removeInvalidGeometryLeaves() {
+    const invalidObjects: THREE.Object3D[] = []
+    this.traverse(object => {
+      if (!this.hasGeometry(object)) return
+      if (AcTrBufferGeometryUtil.hasFinitePositions(object.geometry)) return
+      invalidObjects.push(object)
+    })
+
+    for (const object of invalidObjects) {
+      object.parent?.remove(object)
+      if (this.hasGeometry(object)) {
+        object.geometry.dispose()
+      }
+    }
   }
 
   /**

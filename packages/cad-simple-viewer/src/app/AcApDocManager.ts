@@ -659,15 +659,15 @@ export class AcApDocManager {
    * Loads default fonts for CAD text rendering.
    *
    * This method loads either the specified fonts or the configured default font
-   * fallback chain ({@link DEFAULT_FONTS_PRESET}, currently `modern`:
-   * `hztxt` → `simsun` → `gdt`) if no fonts are provided. The loaded fonts are
-   * used for rendering CAD text entities like MText and Text in the viewer.
+   * fallback chains ({@link DEFAULT_FONTS_PRESET}, currently `modern`: text
+   * `hztxt` → `simsun`, symbol `amgdt`) if no fonts are provided. The loaded
+   * fonts are used for rendering CAD text entities like MText and Text in the viewer.
    *
    * It is better to load default fonts when viewer is initialized so that the viewer can
    * render text correctly if fonts used in the document are not available.
    *
    * @param fonts - Optional array of font names to load. If not provided or null,
-   *               loads the active {@link FontManager.defaultFonts} chain
+   *               loads the active {@link FontManager.getFontsToLoad} chains
    * @returns Promise that resolves when all specified fonts are loaded
    *
    * @example
@@ -687,7 +687,7 @@ export class AcApDocManager {
    */
   async loadDefaultFonts(fonts?: string[]) {
     if (fonts == null) {
-      await this._fontLoader.load([...FontManager.instance.defaultFonts])
+      await this._fontLoader.load([...FontManager.instance.getFontsToLoad()])
     } else {
       await this._fontLoader.load(fonts)
     }
@@ -1379,11 +1379,13 @@ export class AcApDocManager {
    */
   private registerWorkers(webworkerFileUrls?: AcApWebworkerFiles) {
     this.registerConverters(webworkerFileUrls)
-    AcTrMTextRenderer.getInstance().initialize(
+    const mtextRenderer = AcTrMTextRenderer.getInstance()
+    mtextRenderer.initialize(
       webworkerFileUrls && webworkerFileUrls.mtextRender
         ? webworkerFileUrls.mtextRender
         : './assets/mtext-renderer-worker.js'
     )
+    void mtextRenderer.setDefaultFonts(DEFAULT_FONTS_PRESET)
   }
 
   /**

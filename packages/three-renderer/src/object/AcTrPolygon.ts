@@ -12,11 +12,16 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
 import { AcTrEntity } from './AcTrEntity'
 
 function toVector2(points: AcGePoint2dLike[]): THREE.Vector2[] {
-  return points.map(point => new THREE.Vector2(point.x, point.y))
+  return points
+    .filter(
+      point => Number.isFinite(point.x) && Number.isFinite(point.y)
+    )
+    .map(point => new THREE.Vector2(point.x, point.y))
 }
 
 function hasFillVertices(geometry: THREE.BufferGeometry | undefined): boolean {
@@ -52,8 +57,13 @@ export class AcTrPolygon extends AcTrEntity {
     }
 
     if (geometry && hasFillVertices(geometry)) {
-      geometry.computeBoundingBox()
-      this.box = geometry.boundingBox!
+      const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+      if (!boundingBox) {
+        log.warn('Skipped hatch fill with invalid geometry coordinates')
+        geometry.dispose()
+        return
+      }
+      this.box = boundingBox
 
       this.addGradientPositionAttribute(geometry, traits)
 
@@ -138,6 +148,10 @@ export class AcTrPolygon extends AcTrEntity {
     const createGeometry = (shape: THREE.Shape) => {
       try {
         const geom = new THREE.ShapeGeometry(shape)
+        if (!AcTrBufferGeometryUtil.hasFinitePositions(geom)) {
+          geom.dispose()
+          return
+        }
         if (geom.hasAttribute('uv')) {
           geom.deleteAttribute('uv')
         }

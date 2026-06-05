@@ -283,4 +283,61 @@ export class AcTrBufferGeometryUtil {
 
     return geometry
   }
+
+  /**
+   * Returns true when every value in the geometry position attribute is finite.
+   */
+  static hasFinitePositions(
+    geometry: THREE.BufferGeometry | null | undefined
+  ): boolean {
+    const position = geometry?.getAttribute('position')
+    if (!position || position.count === 0) {
+      return true
+    }
+
+    const array = position.array as ArrayLike<number>
+    for (let index = 0; index < array.length; index++) {
+      if (!Number.isFinite(array[index])) {
+        return false
+      }
+    }
+    return true
+  }
+
+  /**
+   * Computes a bounding box only when position data is finite.
+   *
+   * Returns null for invalid geometry instead of letting THREE.js warn on NaN
+   * inputs during CAD file conversion.
+   */
+  static safeComputeBoundingBox(
+    geometry: THREE.BufferGeometry,
+    target?: THREE.Box3
+  ): THREE.Box3 | null {
+    if (!AcTrBufferGeometryUtil.hasFinitePositions(geometry)) {
+      geometry.boundingBox = null
+      return null
+    }
+
+    if (target) {
+      geometry.boundingBox = target
+    }
+    geometry.computeBoundingBox()
+
+    const box = geometry.boundingBox
+    if (
+      !box ||
+      !Number.isFinite(box.min.x) ||
+      !Number.isFinite(box.min.y) ||
+      !Number.isFinite(box.min.z) ||
+      !Number.isFinite(box.max.x) ||
+      !Number.isFinite(box.max.y) ||
+      !Number.isFinite(box.max.z)
+    ) {
+      geometry.boundingBox = null
+      return null
+    }
+
+    return box
+  }
 }
