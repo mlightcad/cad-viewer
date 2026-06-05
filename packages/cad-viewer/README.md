@@ -259,7 +259,7 @@ The `baseUrl` property allows you to customize where the CAD viewer loads fonts,
 - **Custom branding**: Use your own templates and fonts
 
 #### Default Behavior
-If no `baseUrl` is provided, the viewer uses the default URL: `https://mlightcad.gitlab.io/cad-data/`
+If no `baseUrl` is provided, the viewer uses the default URL: `https://cdn.jsdelivr.net/gh/mlightcad/cad-data`
 
 #### Resource Structure
 When using a custom `baseUrl`, ensure your server has the following structure:

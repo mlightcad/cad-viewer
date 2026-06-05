@@ -7,15 +7,15 @@ settings:
 overrides:
   '@mlightcad/data-model': ^1.8.1
   '@mlightcad/libredwg-converter': ^3.6.1
-  '@mlightcad/mtext-input-box': ^0.2.13
-  '@mlightcad/mtext-renderer': ^0.10.16
+  '@mlightcad/mtext-input-box': ^0.2.14
+  '@mlightcad/mtext-renderer': ^0.11.0
   '@mlightcad/ribbon': ^0.1.10
   element-plus: ^2.12.0
+  glob: ^13.0.6
+  lodash-es: 4.17.21
   three: ^0.172.0
   vue: ^3.4.21
   vue-i18n: ^11.4.4
-  glob: ^13.0.6
-  lodash-es: 4.17.21
 
 importers:
 
@@ -121,8 +121,8 @@ importers:
         specifier: ^3.6.1
         version: 3.6.1(@mlightcad/data-model@1.8.1)
       '@mlightcad/mtext-renderer':
-        specifier: ^0.10.16
-        version: 0.10.16(three@0.172.0)
+        specifier: ^0.11.0
+        version: 0.11.0(three@0.172.0)
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -197,11 +197,11 @@ importers:
         specifier: ^3.6.1
         version: 3.6.1(@mlightcad/data-model@1.8.1)
       '@mlightcad/mtext-input-box':
-        specifier: ^0.2.13
-        version: 0.2.13(@mlightcad/mtext-renderer@0.10.16(three@0.172.0))(three@0.172.0)
+        specifier: ^0.2.14
+        version: 0.2.14(@mlightcad/mtext-renderer@0.11.0(three@0.172.0))(three@0.172.0)
       '@mlightcad/mtext-renderer':
-        specifier: ^0.10.16
-        version: 0.10.16(three@0.172.0)
+        specifier: ^0.11.0
+        version: 0.11.0(three@0.172.0)
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
@@ -424,8 +424,8 @@ importers:
         specifier: ^1.8.1
         version: 1.8.1
       '@mlightcad/mtext-renderer':
-        specifier: ^0.10.16
-        version: 0.10.16(three@0.172.0)
+        specifier: ^0.11.0
+        version: 0.11.0(three@0.172.0)
       '@types/three':
         specifier: ^0.172.0
         version: 0.172.0
@@ -1547,17 +1547,17 @@ packages:
   '@mlightcad/libredwg-web@0.7.1':
     resolution: {integrity: sha512-jHiLB6Rktty0eJLS+/awITmTQbTrJl4U6hkzqzzbBfHzhrR38mKnQTPLuhZMyX1IcKOM0zuDOh7Fd/J7Rj6/KQ==}
 
-  '@mlightcad/mtext-input-box@0.2.13':
-    resolution: {integrity: sha512-uIZj6b9rTTLkdJT/CkgJeqIIxZOOcRsNMG/rqB7VkLpCfi600g1jeAtw+e4hWpU6m7KEke0pdnpL9RWHEzK73g==}
+  '@mlightcad/mtext-input-box@0.2.14':
+    resolution: {integrity: sha512-4VxTPBqLAq5HesW4yige6NlgFzh5Ojo8TRvwwVBbkla1LtZz2dR3SfmdFZW5OjQTGj8upyM15BXdg4ECPA/IFA==}
     peerDependencies:
-      '@mlightcad/mtext-renderer': ^0.10.16
+      '@mlightcad/mtext-renderer': ^0.11.0
       three: ^0.172.0
 
   '@mlightcad/mtext-parser@1.4.1':
     resolution: {integrity: sha512-PU7D5H/k25vZpTERabpdn5HVAs8+SBNRqgi08wRPiplxTE1eB/zBZRNRrSwHqyWx6xMeQmZ9mhh9DPNpte3gYQ==}
 
-  '@mlightcad/mtext-renderer@0.10.16':
-    resolution: {integrity: sha512-mCDvR6fvIvK4ZxkK+P8WbEwmsJMVh3Z+AiONbPB44pE5x7ZZGFDIGr/8zLCNPZFZbFqwCkNmCeWc99r3bR6GKw==}
+  '@mlightcad/mtext-renderer@0.11.0':
+    resolution: {integrity: sha512-93jECtXH+J4F56Ifl3cTZUvL+AdZGVVuSi5c5hvpdWkRBFjIkonznyIVq5974Gx5uthxpM7MnILz1ZWSNrdjig==}
     peerDependencies:
       three: ^0.172.0
 
@@ -1568,8 +1568,8 @@ packages:
       element-plus: ^2.12.0
       vue: ^3.4.21
 
-  '@mlightcad/shx-parser@1.3.2':
-    resolution: {integrity: sha512-j84hqbWOVMDuepLEjVsYvxeiCXOVxHyJhl4gM4HtgXZ6ChgTLsuSnqs2bNOt2SwriTvFOsv3QLsOu2iJh857JA==}
+  '@mlightcad/shx-parser@1.3.4':
+    resolution: {integrity: sha512-y0clXQIBslAOwTMFtUnQqzZqhtD5lxUCiJA7lYTYvzO2dzBtsd2LVhUYdyA6R6DwjygOzjegXcP/4oCIsDiZhg==}
 
   '@mlightcad/text-box-cursor@0.1.1':
     resolution: {integrity: sha512-Q3uLz+FXG6mLInq/Q1jUNdyjGFdMWZduWA2WO6d+jUqFbWeh4xsn5M/HY+vy1Rs0bvLWZvdRgJeEFVe6nhIihQ==}
@@ -4225,9 +4225,8 @@ packages:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
 
-  opentype.js@1.3.4:
-    resolution: {integrity: sha512-d2JE9RP/6uagpQAVtJoF0pJJA/fgai89Cc50Yp0EJHk+eLp6QQ7gBoblsnubRULNY132I0J1QKMJ+JTbMqz4sw==}
-    engines: {node: '>= 8.0.0'}
+  opentype.js@2.0.0:
+    resolution: {integrity: sha512-kCyjv6xdDY1W/jLWZ/L3QhhTlKUqDZMQ5+Jdlw12b3dXkKNpYBqqlMMj0YDQPShWFTMwgZI1hG14kN3XUDSg/A==}
     hasBin: true
 
   optionator@0.9.4:
@@ -4700,9 +4699,6 @@ packages:
     resolution: {integrity: sha512-tsaTIkKW9b4N+AEj+SVA+WhJzV7/zMhcSu78mLKWSk7cXMOSHsBKFWUs0fWwq8QyK3MgJBQRX6Gbi4kYbdvGkQ==}
     engines: {node: '>=18'}
 
-  string.prototype.codepointat@0.2.1:
-    resolution: {integrity: sha512-2cBVCj6I4IOvEnjgO/hWqXjqBGsY+zwPmHl12Srk9IXSZ56Jwwmy+66XO5Iut/oQVR7t5ihYdLB0GMa4alEUcg==}
-
   string_decoder@1.3.0:
     resolution: {integrity: sha512-hkRX8U1WjJFd8LsDJ2yQ/wWWxaopEsABU1XfkM8A+j0+85JAGppt16cr1Whg6KIbb4okU6Mql6BOj+uup/wKeA==}
 
@@ -4792,9 +4788,6 @@ packages:
 
   three@0.172.0:
     resolution: {integrity: sha512-6HMgMlzU97MsV7D/tY8Va38b83kz8YJX+BefKjspMNAv0Vx6dxMogHOrnRl/sbMIs3BPUKijPqDqJ/+UwJbIow==}
-
-  tiny-inflate@1.0.3:
-    resolution: {integrity: sha512-pkY1fj1cKHb2seWDy0B16HeWyczlJA9/WW3u3c4z/NiWDsO3DOU5D7nhTLE9CF0yXv/QZFY7sEJmj24dK+Rrqw==}
 
   tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
@@ -6657,21 +6650,21 @@ snapshots:
 
   '@mlightcad/libredwg-web@0.7.1': {}
 
-  '@mlightcad/mtext-input-box@0.2.13(@mlightcad/mtext-renderer@0.10.16(three@0.172.0))(three@0.172.0)':
+  '@mlightcad/mtext-input-box@0.2.14(@mlightcad/mtext-renderer@0.11.0(three@0.172.0))(three@0.172.0)':
     dependencies:
-      '@mlightcad/mtext-renderer': 0.10.16(three@0.172.0)
+      '@mlightcad/mtext-renderer': 0.11.0(three@0.172.0)
       '@mlightcad/text-box-cursor': 0.1.1(three@0.172.0)
       three: 0.172.0
 
   '@mlightcad/mtext-parser@1.4.1': {}
 
-  '@mlightcad/mtext-renderer@0.10.16(three@0.172.0)':
+  '@mlightcad/mtext-renderer@0.11.0(three@0.172.0)':
     dependencies:
       '@mlightcad/mtext-parser': 1.4.1
-      '@mlightcad/shx-parser': 1.3.2
+      '@mlightcad/shx-parser': 1.3.4
       iconv-lite: 0.7.2
       idb: 8.0.3
-      opentype.js: 1.3.4
+      opentype.js: 2.0.0
       three: 0.172.0
 
   '@mlightcad/ribbon@0.1.10(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
@@ -6680,7 +6673,7 @@ snapshots:
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
       vue: 3.5.31(typescript@5.9.3)
 
-  '@mlightcad/shx-parser@1.3.2': {}
+  '@mlightcad/shx-parser@1.3.4': {}
 
   '@mlightcad/text-box-cursor@0.1.1(three@0.172.0)':
     dependencies:
@@ -9519,10 +9512,7 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  opentype.js@1.3.4:
-    dependencies:
-      string.prototype.codepointat: 0.2.1
-      tiny-inflate: 1.0.3
+  opentype.js@2.0.0: {}
 
   optionator@0.9.4:
     dependencies:
@@ -10000,8 +9990,6 @@ snapshots:
       get-east-asian-width: 1.5.0
       strip-ansi: 7.2.0
 
-  string.prototype.codepointat@0.2.1: {}
-
   string_decoder@1.3.0:
     dependencies:
       safe-buffer: 5.2.1
@@ -10090,8 +10078,6 @@ snapshots:
     optional: true
 
   three@0.172.0: {}
-
-  tiny-inflate@1.0.3: {}
 
   tinyglobby@0.2.15:
     dependencies:

@@ -1,6 +1,7 @@
 const mockRendererInstances: Array<{
   setFontUrl: jest.Mock
   setDefaultMode: jest.Mock
+  setDefaultFonts: jest.Mock
   setStyleManager: jest.Mock
   destroy: jest.Mock
 }> = []
@@ -9,6 +10,7 @@ const mockUnifiedRenderer = jest.fn().mockImplementation(() => {
   const renderer = {
     setFontUrl: jest.fn(),
     setDefaultMode: jest.fn(),
+    setDefaultFonts: jest.fn(() => Promise.resolve()),
     setStyleManager: jest.fn(),
     destroy: jest.fn()
   }
@@ -81,5 +83,23 @@ describe('AcTrMTextRenderer', () => {
 
     expect(mockRendererInstances[0].setDefaultMode).toHaveBeenCalledWith('main')
     expect(mockRendererInstances[0].setFontUrl).toHaveBeenCalledWith(fontUrl)
+  })
+
+  it('applies a pending default fonts preset when initialized later', async () => {
+    const renderer = AcTrMTextRenderer.getInstance()
+
+    await renderer.setDefaultFonts('modern')
+    renderer.initialize('./assets/mtext-renderer-worker.js')
+
+    expect(mockRendererInstances[0].setDefaultFonts).toHaveBeenCalledWith('modern')
+  })
+
+  it('forwards default fonts preset to an initialized renderer immediately', async () => {
+    const renderer = AcTrMTextRenderer.getInstance()
+
+    renderer.initialize('./assets/mtext-renderer-worker.js')
+    await renderer.setDefaultFonts('r12r14')
+
+    expect(mockRendererInstances[0].setDefaultFonts).toHaveBeenCalledWith('r12r14')
   })
 })

@@ -60,8 +60,10 @@ export class AcTrLineSegments extends AcTrEntity {
       new THREE.BufferAttribute(array, itemSize)
     )
     geometry.setIndex(new THREE.BufferAttribute(indices, 1))
-    geometry.computeBoundingBox()
-    this.box = geometry.boundingBox!
+    const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+    if (boundingBox) {
+      this.box = boundingBox
+    }
 
     const line = new THREE.LineSegments(geometry, material)
     AcTrBufferGeometryUtil.computeLineDistances(line)

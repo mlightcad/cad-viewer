@@ -88,8 +88,11 @@ export class AcTrLine extends AcTrEntity {
     geometry: THREE.BufferGeometry,
     localOrigin: THREE.Vector3
   ) {
-    geometry.computeBoundingBox()
-    const worldBox = geometry.boundingBox!.clone()
+    const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+    if (!boundingBox) {
+      return
+    }
+    const worldBox = boundingBox.clone()
     worldBox.translate(localOrigin)
     this.box = worldBox
   }

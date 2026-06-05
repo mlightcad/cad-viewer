@@ -7,6 +7,7 @@ import * as THREE from 'three'
 
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
 import { AcTrEntity } from './AcTrEntity'
 
@@ -36,7 +37,7 @@ export class AcTrPoint extends AcTrEntity {
     const geometry =
       pointSymbol.point ??
       new THREE.BufferGeometry().setFromPoints([_vector3.copy(point)])
-    geometry.computeBoundingBox()
+    AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
     if (geometry.boundingBox) this.box.union(geometry.boundingBox)
     const material = this.styleManager.getPointsMaterial(traits)
     const pointObj = new THREE.Points(geometry, material)
@@ -47,7 +48,7 @@ export class AcTrPoint extends AcTrEntity {
 
     if (pointSymbol.line) {
       const geometry = pointSymbol.line
-      geometry.computeBoundingBox()
+      AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
       if (geometry.boundingBox) this.box.union(geometry.boundingBox)
       const material = this.styleManager.getLineMaterial(traits, true)
       const lineSegmentsObj = new THREE.LineSegments(geometry, material)

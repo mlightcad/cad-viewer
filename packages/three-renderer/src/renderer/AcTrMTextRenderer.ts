@@ -1,6 +1,7 @@
 import {
   ColorSettings,
   createDefaultColorSettings,
+  DefaultFontsPreset,
   MTextData,
   MTextObject,
   RenderMode,
@@ -45,6 +46,7 @@ export class AcTrMTextRenderer {
   private _fontUrl?: string
   private _renderMode?: RenderMode
   private _styleManager?: AcTrStyleManager
+  private _defaultFonts?: DefaultFontsPreset | string | readonly string[]
 
   private constructor() {
     // Do nothing for now
@@ -88,6 +90,19 @@ export class AcTrMTextRenderer {
       this._renderer.setDefaultMode(mode)
       this.applyFontUrl()
     }
+  }
+
+  /**
+   * Sets the default text and symbol font fallback chains on the active renderer
+   * and syncs them to Web Workers.
+   *
+   * @param fonts - A preset name, a single font name, or an ordered list of font names
+   */
+  async setDefaultFonts(
+    fonts: DefaultFontsPreset | string | readonly string[]
+  ): Promise<void> {
+    this._defaultFonts = fonts
+    await this.applyDefaultFonts()
   }
 
   /**
@@ -140,6 +155,7 @@ export class AcTrMTextRenderer {
       this._renderer.setDefaultMode(this._renderMode)
     }
     this.applyFontUrl()
+    void this.applyDefaultFonts()
     if (this._styleManager) {
       const styleManager = new AcTrMTextStyleManager(this._styleManager)
       this._renderer.setStyleManager(styleManager)
@@ -166,6 +182,12 @@ export class AcTrMTextRenderer {
   private applyFontUrl() {
     if (this._renderer && this._fontUrl) {
       this._renderer.setFontUrl(this._fontUrl)
+    }
+  }
+
+  private async applyDefaultFonts() {
+    if (this._renderer && this._defaultFonts !== undefined) {
+      await this._renderer.setDefaultFonts(this._defaultFonts)
     }
   }
 }

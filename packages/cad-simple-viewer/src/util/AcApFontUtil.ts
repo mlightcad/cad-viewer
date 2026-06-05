@@ -39,7 +39,7 @@ export class AcApFontUtil {
    * Font name used at render time when the requested font is missing.
    *
    * Checks user {@link FontManager.setFontMapping | font mapping} first, then falls
-   * back to {@link FontManager.defaultFont}.
+   * back to {@link FontManager.defaultFonts}.
    *
    * @param fontName - Original font name referenced by the drawing.
    * @returns The loaded font name if available; otherwise the mapped or default replacement.

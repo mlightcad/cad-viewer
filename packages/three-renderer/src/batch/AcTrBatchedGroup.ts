@@ -6,7 +6,7 @@ import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
 import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrMaterialUtil } from '../util'
+import { AcTrBufferGeometryUtil,AcTrMaterialUtil } from '../util'
 import {
   copyHighlightObjectFlags,
   getHighlightUserData,
@@ -993,7 +993,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         source.getAttribute('instanceColorEnd').clone()
       )
     }
-    geometry.computeBoundingBox()
+    AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
     geometry.computeBoundingSphere()
     return geometry
   }
