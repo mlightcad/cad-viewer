@@ -5,6 +5,7 @@ import {
   MTextData,
   MTextObject,
   RenderMode,
+  ShapeData,
   StyleManager,
   TextStyle,
   UnifiedRenderer
@@ -142,6 +143,37 @@ export class AcTrMTextRenderer {
       colorSettings
     )
     return mtext
+  }
+
+  async asyncRenderShape(
+    shapeContent: ShapeData,
+    textStyle: TextStyle,
+    colorSettings: ColorSettings = createDefaultColorSettings()
+  ): Promise<MTextObject> {
+    if (!this._renderer) {
+      throw new Error('AcTrMTextRenderer not initialized!')
+    }
+    return this._renderer.asyncRenderShape(
+      shapeContent,
+      textStyle,
+      colorSettings
+    )
+  }
+
+  syncRenderShape(
+    shapeContent: ShapeData,
+    textStyle: TextStyle,
+    colorSettings: ColorSettings = createDefaultColorSettings()
+  ): MTextObject {
+    this.ensureRendererCreated()
+    if (!this._renderer) {
+      throw new Error('AcTrMTextRenderer not initialized!')
+    }
+    return this._renderer.syncRenderShape(
+      shapeContent,
+      textStyle,
+      colorSettings
+    )
   }
 
   /**

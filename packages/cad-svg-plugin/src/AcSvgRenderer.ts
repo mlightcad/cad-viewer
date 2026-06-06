@@ -14,6 +14,7 @@ import {
   AcGiMTextData,
   AcGiPointStyle,
   AcGiRenderer,
+  AcGiShapeData,
   AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
@@ -29,6 +30,7 @@ import { AcSvgLine } from './AcSvgLine'
 import { AcSvgLineSegments } from './AcSvgLineSegments'
 import { AcSvgMText } from './AcSvgMText'
 import { AcSvgPoint } from './AcSvgPoint'
+import { AcSvgShape } from './AcSvgShape'
 import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
 
 export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
@@ -254,6 +256,18 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
         this._subEntityTraits,
         this.styleContext
       )
+    )
+  }
+
+  /**
+   * @inheritdoc
+   */
+  shape(shape: AcGiShapeData, style: AcGiTextStyle, _delay?: boolean) {
+    const mappedFont = this._fontMapping[style.font] ?? style.font
+    const resolvedStyle: AcGiTextStyle =
+      mappedFont !== style.font ? { ...style, font: mappedFont } : style
+    return this.pushEntity(
+      new AcSvgShape(shape, resolvedStyle, this._subEntityTraits, this.styleContext)
     )
   }
 

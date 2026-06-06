@@ -16,25 +16,41 @@
         <el-dropdown-item command="Open">{{
           t('main.mainMenu.open')
         }}</el-dropdown-item>
-        <el-dropdown-item command="Convert">{{
-          t('main.mainMenu.export')
-        }}</el-dropdown-item>
-        <el-dropdown-item command="ExportHtml">{{
-          t('main.mainMenu.exportHtml')
-        }}</el-dropdown-item>
-        <el-dropdown-item command="ExportPdf">{{
-          t('main.mainMenu.exportPdf')
-        }}</el-dropdown-item>
-        <el-dropdown-item command="ExportSvg">{{
-          t('main.mainMenu.exportSvg')
-        }}</el-dropdown-item>
+        <el-dropdown-item class="ml-main-menu-export-item">
+          <el-dropdown
+            placement="right-start"
+            trigger="hover"
+            @command="handleCommand"
+          >
+            <span class="ml-main-menu-export-trigger">
+              {{ t('main.mainMenu.exportMenu') }}
+              <el-icon><ArrowRight /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="Convert">{{
+                  t('main.mainMenu.export')
+                }}</el-dropdown-item>
+                <el-dropdown-item command="ExportHtml">{{
+                  t('main.mainMenu.exportHtml')
+                }}</el-dropdown-item>
+                <el-dropdown-item command="ExportPdf">{{
+                  t('main.mainMenu.exportPdf')
+                }}</el-dropdown-item>
+                <el-dropdown-item command="ExportSvg">{{
+                  t('main.mainMenu.exportSvg')
+                }}</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
 </template>
 
 <script setup lang="ts">
-import { Menu as ElMenu } from '@element-plus/icons-vue'
+import { ArrowRight, Menu as ElMenu } from '@element-plus/icons-vue'
 import {
   AcApConvertToDxfCmd,
   AcApDocManager,
@@ -91,5 +107,24 @@ const handleCommand = async (command: string) => {
 .ml-main-menu-icon:hover {
   outline: none;
   border: none;
+}
+
+.ml-main-menu-export-item {
+  padding: 0;
+}
+
+.ml-main-menu-export-item :deep(.el-dropdown) {
+  display: block;
+  width: 100%;
+}
+
+.ml-main-menu-export-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 5px 16px;
+  line-height: 22px;
+  box-sizing: border-box;
 }
 </style>

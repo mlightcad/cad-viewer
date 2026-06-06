@@ -205,6 +205,9 @@ export default {
     lwdisplay: {
       description: 'Controls whether lineweights are displayed in the drawing'
     },
+    clearmeasurements: {
+      description: 'Removes all active measurements from the view'
+    },
     measurearea: {
       description:
         'Calculates the area and perimeter of selected objects or points'
