@@ -22,6 +22,10 @@ export default {
     units: {
       description:
         'Sets linear and angular unit formats, precision, angle direction, and insertion scaling units'
+    },
+    style: {
+      description:
+        'Creates, modifies, or specifies text styles for text and multiline text'
     }
   },
   USER: {}
