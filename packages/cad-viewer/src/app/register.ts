@@ -12,6 +12,7 @@ import {
   AcApPointStyleCmd,
   AcApPropertiesCmd,
   AcApQSelectCmd,
+  AcApTextStyleCmd,
   hatchRibbonCommand
 } from '../command'
 import {
@@ -19,7 +20,8 @@ import {
   MlDrawingUnitsDlg,
   MlPointStyleDlg,
   MlQuickSelectDlg,
-  MlReplacementDlg
+  MlReplacementDlg,
+  MlTextStyleDlg
 } from '../component'
 import { useDialogManager } from '../composable'
 
@@ -69,6 +71,13 @@ export const registerCmds = () => {
       'properties',
       new AcApPropertiesCmd()
     )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'style',
+      'style',
+      new AcApTextStyleCmd(),
+      'st'
+    )
     isCommandRegistered = true
   }
 }
@@ -95,6 +104,11 @@ export const registerDialogs = () => {
     registerDialog({
       name: 'DrawingUnitsDlg',
       component: markRaw(MlDrawingUnitsDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'TextStyleDlg',
+      component: markRaw(MlTextStyleDlg),
       props: {}
     })
     isDialogRegistered = true

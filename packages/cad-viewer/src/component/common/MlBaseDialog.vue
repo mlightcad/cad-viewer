@@ -1,5 +1,11 @@
 <template>
-  <div v-if="modelValue" class="ml-base-dialog" role="dialog" aria-modal="true">
+  <div
+    v-if="modelValue"
+    class="ml-base-dialog"
+    role="dialog"
+    aria-modal="true"
+    :style="{ zIndex }"
+  >
     <!-- Overlay -->
     <div class="ml-base-dialog-overlay" @click="handleCancel"></div>
 
@@ -57,7 +63,10 @@ const props = defineProps({
   modelValue: { type: Boolean, required: true },
   title: { type: String, required: true },
   width: { type: [Number, String], default: 400 },
-  icon: { type: Object as () => Component | null, default: null }
+  icon: { type: Object as () => Component | null, default: null },
+  /** When false, OK emits but leaves the dialog open (caller closes on success). */
+  autoClose: { type: Boolean, default: true },
+  zIndex: { type: Number, default: 2100 }
 })
 
 const emits = defineEmits([
@@ -87,7 +96,9 @@ watch(
 
 function handleOk() {
   emits('ok')
-  emits('update:modelValue', false)
+  if (props.autoClose) {
+    emits('update:modelValue', false)
+  }
 }
 
 function handleCancel() {
@@ -101,7 +112,6 @@ function handleCancel() {
 .ml-base-dialog {
   position: fixed;
   inset: 0;
-  z-index: 2100;
   display: flex;
   align-items: center;
   justify-content: center;
