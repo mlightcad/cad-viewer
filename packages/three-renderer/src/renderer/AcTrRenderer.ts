@@ -10,6 +10,7 @@ import {
   AcGiMTextData,
   AcGiPointStyle,
   AcGiRenderer,
+  AcGiShapeData,
   AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
@@ -25,7 +26,8 @@ import {
   AcTrMText,
   AcTrObject,
   AcTrPoint,
-  AcTrPolygon
+  AcTrPolygon,
+  AcTrShape
 } from '../object'
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
@@ -329,6 +331,19 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   mtext(mtext: AcGiMTextData, style: AcGiTextStyle, delay?: boolean) {
     return new AcTrMText(
       mtext,
+      this._subEntityTraits,
+      style,
+      this._styleManager,
+      delay
+    )
+  }
+
+  /**
+   * @inheritdoc
+   */
+  shape(shape: AcGiShapeData, style: AcGiTextStyle, delay?: boolean) {
+    return new AcTrShape(
+      shape,
       this._subEntityTraits,
       style,
       this._styleManager,
