@@ -177,6 +177,20 @@ export class AcTrLayer {
   }
 
   /**
+   * Updates visibility for one entity without rebuilding batched geometry.
+   */
+  setEntityVisible(objectId: AcDbObjectId, visible: boolean) {
+    return this._group.setEntityVisible(objectId, visible)
+  }
+
+  /**
+   * Returns the current scene visibility for one entity.
+   */
+  getEntityVisible(objectId: AcDbObjectId) {
+    return this._group.getEntityVisible(objectId)
+  }
+
+  /**
    * Add one AutoCAD entity into this layer.
    * @param entity Input AutoCAD entity to be added into this layer.
    * @param extendBbox - Input the flag whether to extend the bounding box of the scene by union the bounding box
@@ -219,8 +233,13 @@ export class AcTrLayer {
     const isRemoved = this._group.removeEntity(entity.objectId)
     if (isRemoved) {
       this._group.addEntity(entity)
+      return true
     }
-    return isRemoved
+    if (entity.visible) {
+      this._group.addEntity(entity)
+      return true
+    }
+    return false
   }
 
   /**

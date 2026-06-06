@@ -267,7 +267,12 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
     const resolvedStyle: AcGiTextStyle =
       mappedFont !== style.font ? { ...style, font: mappedFont } : style
     return this.pushEntity(
-      new AcSvgShape(shape, resolvedStyle, this._subEntityTraits, this.styleContext)
+      new AcSvgShape(
+        shape,
+        resolvedStyle,
+        this._subEntityTraits,
+        this.styleContext
+      )
     )
   }
 

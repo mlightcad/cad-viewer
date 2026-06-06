@@ -441,4 +441,42 @@ export class AcTrScene {
     }
     return false
   }
+
+  /**
+   * Returns true when the entity is present in any layout.
+   */
+  hasEntity(objectId: AcDbObjectId) {
+    for (const [_, layout] of this._layouts) {
+      if (layout.hasEntity(objectId)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Updates entity visibility without rebuilding batched geometry.
+   */
+  setEntityVisible(objectId: AcDbObjectId, visible: boolean) {
+    let updated = false
+    for (const [_, layout] of this._layouts) {
+      if (layout.setEntityVisible(objectId, visible)) {
+        updated = true
+      }
+    }
+    return updated
+  }
+
+  /**
+   * Returns the current scene visibility for one entity.
+   */
+  getEntityVisible(objectId: AcDbObjectId) {
+    for (const [_, layout] of this._layouts) {
+      const visible = layout.getEntityVisible(objectId)
+      if (visible !== undefined) {
+        return visible
+      }
+    }
+    return undefined
+  }
 }

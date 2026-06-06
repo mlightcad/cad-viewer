@@ -1,14 +1,12 @@
-import {
-  AcApDocManager,
-  AcApFontUtil
-} from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, AcApFontUtil } from '@mlightcad/cad-simple-viewer'
 import {
   type AcDbDatabase,
   type AcDbFontInfo,
   AcDbSystemVariables,
   AcDbSysVarManager,
   AcDbTextStyleTableRecord,
-  DEFAULT_TEXT_STYLE} from '@mlightcad/data-model'
+  DEFAULT_TEXT_STYLE
+} from '@mlightcad/data-model'
 import { computed, reactive, ref, watch } from 'vue'
 
 /**
@@ -152,7 +150,9 @@ function getTextStyleRecord(
  * @param record - Source text style table record.
  * @returns Populated form state reflecting the record's current values.
  */
-function readTextStyleForm(record: AcDbTextStyleTableRecord): TextStyleFormState {
+function readTextStyleForm(
+  record: AcDbTextStyleTableRecord
+): TextStyleFormState {
   const flag = record.textStyle.textGenerationFlag ?? 0
   const font = record.fileName || record.textStyle.font || ''
   return {
@@ -578,11 +578,7 @@ export function useTextStyle(editor: AcApDocManager = AcApDocManager.instance) {
     if (!db || !name || !canSetCurrent.value) return false
     if (!getTextStyleRecord(db, name)) return false
 
-    AcDbSysVarManager.instance().setVar(
-      AcDbSystemVariables.TEXTSTYLE,
-      name,
-      db
-    )
+    AcDbSysVarManager.instance().setVar(AcDbSystemVariables.TEXTSTYLE, name, db)
     currentStyleName.value = db.textstyle || name
     return true
   }

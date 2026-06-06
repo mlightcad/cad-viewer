@@ -577,6 +577,34 @@ export abstract class AcEdBaseView {
   abstract updateEntity(entity: AcDbEntity | AcDbEntity[]): void
 
   /**
+   * Returns true when the entity is already present in the scene.
+   */
+  hasEntity(_objectId: AcDbObjectId): boolean {
+    return false
+  }
+
+  /**
+   * Applies a visibility-only scene update without rebuilding geometry.
+   */
+  updateEntityVisibility(_entity: AcDbEntity): boolean {
+    return false
+  }
+
+  /**
+   * Updates scene visibility for one entity without changing the database.
+   */
+  setEntitySceneVisible(_objectId: AcDbObjectId, _visible: boolean): boolean {
+    return false
+  }
+
+  /**
+   * Returns the current scene visibility for one entity.
+   */
+  getEntityVisible(_objectId: AcDbObjectId): boolean | undefined {
+    return undefined
+  }
+
+  /**
    * Add the specified layout in drawing database into the current scene
    * @param layout Input the layout to add into the current scene
    */

@@ -215,7 +215,8 @@ export class AcTrMText extends AcTrEntity {
       const geometry = object.geometry
       // Some renderer outputs already have bounds; compute lazily for those
       // that do not so custom/generated geometries still contribute.
-      const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+      const boundingBox =
+        AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
       if (boundingBox == null) return
 
       object.updateMatrixWorld(true)

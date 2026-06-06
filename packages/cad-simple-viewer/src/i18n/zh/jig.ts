@@ -239,6 +239,11 @@ export default {
       }
     }
   },
+  hideobjects: {
+    hidden: '个对象已隐藏',
+    restored: '个对象已恢复显示',
+    nothingToRestore: '没有可恢复显示的对象'
+  },
   layer: {
     main: '输入选项',
     listSummary: '图层列表已输出到浏览器控制台',

@@ -2,7 +2,11 @@ import { AcGeMatrix3d, AcGePoint3d, AcGiEntity } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrMaterialUtil, AcTrMatrixUtil, isObjectHierarchyVisible } from '../util'
+import {
+  AcTrMaterialUtil,
+  AcTrMatrixUtil,
+  isObjectHierarchyVisible
+} from '../util'
 import {
   type AcTrEntityUserData,
   getObjectUserData

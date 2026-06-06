@@ -2,11 +2,20 @@ import * as THREE from 'three'
 
 import { AcTrCommonUtil } from '../util'
 import {
+  AcTrBatchGeometryDefaultFlags,
+  AcTrBatchGeometryFlags,
   AcTrIndexedBatchGeometryInfo,
   AcTrVertexBatchGeometryInfo,
   ascIdSort,
-  copyAttributeData
+  copyAttributeData,
+  isBatchGeometryActive,
+  isBatchGeometryVisible,
+  setBatchGeometryVisible
 } from './AcTrBatchedGeometryInfo'
+import {
+  type AcTrBatchDrawVisibilityInfo,
+  applyBatchSlotDrawVisibility
+} from './drawVisibility'
 
 /**
  * Generic constructor type used to parameterize the batched mixin factory.
@@ -234,7 +243,7 @@ export function resolveReservedCount(
 }
 
 /**
- * Creates default active/visible state for a newly inserted geometry record.
+ * Creates default slot state for a newly inserted geometry record.
  *
  * Bounding boxes start as `null` and are computed lazily on first bounds query.
  *
@@ -243,8 +252,7 @@ export function resolveReservedCount(
 export function createGeometryState() {
   return {
     boundingBox: null as THREE.Box3 | null,
-    active: true,
-    visible: true
+    flags: AcTrBatchGeometryDefaultFlags
   }
 }
 
@@ -323,7 +331,7 @@ export function growCapacityIfNeeded(params: {
 /**
  * Marks a geometry record as deleted and registers its id for reuse.
  *
- * Sets `active` and `visible` to `false` without compacting buffer memory;
+ * Sets slot flags to {@link AcTrBatchGeometryFlags.None} without compacting buffer memory;
  * callers should invoke `optimize()` on the concrete batch class to reclaim space.
  *
  * @typeParam T - Geometry-info record type extending {@link AcTrBatchGeometryLike}.
@@ -339,13 +347,12 @@ export function deleteGeometryById<T extends AcTrBatchGeometryLike>(
 ) {
   if (
     geometryId >= geometryInfoList.length ||
-    geometryInfoList[geometryId].active === false
+    !isBatchGeometryActive(geometryInfoList[geometryId].flags)
   ) {
     return false
   }
 
-  geometryInfoList[geometryId].active = false
-  geometryInfoList[geometryId].visible = false
+  geometryInfoList[geometryId].flags = AcTrBatchGeometryFlags.None
   availableGeometryIds.push(geometryId)
   return true
 }
@@ -367,7 +374,7 @@ export function validateGeometryId<T extends AcTrBatchGeometryLike>(
   if (
     geometryId < 0 ||
     geometryId >= geometryInfoList.length ||
-    geometryInfoList[geometryId].active === false
+    !isBatchGeometryActive(geometryInfoList[geometryId].flags)
   ) {
     throw new Error(
       `${typeName}: Invalid geometryId ${geometryId}. Geometry is either out of range or has been deleted.`
@@ -514,6 +521,17 @@ export function applyGeometryAt<T extends AcTrBatchGeometryLike>(
   }
 
   geometryInfo.boundingBox = null
+
+  if (isBatchGeometryActive(geometryInfo.flags)) {
+    delete geometryInfo.hiddenDrawSnapshot
+    if (!isBatchGeometryVisible(geometryInfo.flags)) {
+      applyBatchSlotDrawVisibility(
+        batchGeometry,
+        geometryInfo as AcTrBatchDrawVisibilityInfo,
+        false
+      )
+    }
+  }
 }
 
 /**
@@ -535,7 +553,7 @@ export function computeBoundingBox<T extends AcTrBatchGeometryLike>(
 
   for (let i = 0, l = geometryInfo.length; i < l; i++) {
     const geometry = geometryInfo[i]
-    if (geometry.active === false) continue
+    if (!isBatchGeometryActive(geometry.flags)) continue
     if (geometry.boundingBox != null) {
       boundingBox.union(geometry.boundingBox)
     }
@@ -569,7 +587,7 @@ export function computeBoundingSphere<T extends AcTrBatchGeometryLike>(
 
   const sphere = new THREE.Sphere()
   for (let i = 0, l = geometryInfo.length; i < l; i++) {
-    if (geometryInfo[i].active === false) continue
+    if (!isBatchGeometryActive(geometryInfo[i].flags)) continue
     getBoundingSphereAt(i, sphere)
     boundingSphere.union(sphere)
   }
@@ -786,8 +804,8 @@ export function createAcTrBatchedMixin<
     /**
      * Sets per-slot visibility without removing geometry from the batch buffer.
      *
-     * Invisible slots are skipped during raycasting but remain in packed memory
-     * until deleted and optimized.
+     * Invisible slots are skipped during raycasting and draw-time collapse keeps
+     * packed geometry in place until deleted and optimized.
      *
      * @param geometryId - Slot index to update.
      * @param value - Desired visibility flag.
@@ -797,11 +815,21 @@ export function createAcTrBatchedMixin<
     setVisibleAt(geometryId: number, value: boolean) {
       this.validateGeometryId(geometryId)
 
-      if (this._geometryInfo[geometryId].visible === value) {
+      if (
+        isBatchGeometryVisible(this._geometryInfo[geometryId].flags) === value
+      ) {
         return this
       }
 
-      this._geometryInfo[geometryId].visible = value
+      const info = this._geometryInfo[geometryId]
+      const applied = applyBatchSlotDrawVisibility(
+        this.geometry,
+        info as AcTrBatchDrawVisibilityInfo,
+        value
+      )
+      if (applied) {
+        info.flags = setBatchGeometryVisible(info.flags, value)
+      }
 
       return this
     }
@@ -815,7 +843,7 @@ export function createAcTrBatchedMixin<
      */
     getVisibleAt(geometryId: number) {
       this.validateGeometryId(geometryId)
-      return this._geometryInfo[geometryId].visible
+      return isBatchGeometryVisible(this._geometryInfo[geometryId].flags)
     }
 
     /**
@@ -968,7 +996,7 @@ export function createAcTrBatchedMixin<
       intersects: THREE.Intersection[]
     ) {
       const geometryInfo = this._geometryInfo[geometryId]
-      if (!geometryInfo.visible || !geometryInfo.active) {
+      if (!isBatchGeometryVisible(geometryInfo.flags)) {
         return
       }
 

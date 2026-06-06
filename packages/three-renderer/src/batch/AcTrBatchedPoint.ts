@@ -5,7 +5,8 @@ import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchGeometryUserData,
   AcTrVertexBatchGeometryInfo,
-  copyArrayContents
+  copyArrayContents,
+  isBatchGeometryActive
 } from './AcTrBatchedGeometryInfo'
 import {
   applyGeometryAt,
@@ -18,6 +19,7 @@ import {
   resolveReservedCount,
   validateGeometry
 } from './AcTrBatchedMixin'
+import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility'
 
 /**
  * Per-slot geometry-info type used by {@link AcTrBatchedPoint}.
@@ -366,7 +368,7 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
     // Sort ACTIVE geometries by original buffer order
     const indices = geometryInfoList
       .map((_g, i) => i)
-      .filter(i => geometryInfoList[i].active)
+      .filter(i => isBatchGeometryActive(geometryInfoList[i].flags))
       .sort(
         (a, b) =>
           geometryInfoList[a].vertexStart - geometryInfoList[b].vertexStart
@@ -409,6 +411,8 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
 
     // ---- reset reusable ids ----
     this._availableGeometryIds.length = 0
+
+    syncBatchDrawVisibilityAfterOptimize(geometry, geometryInfoList)
 
     return this
   }

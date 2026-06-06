@@ -63,7 +63,10 @@
               >
                 <div class="ml-text-style-dlg__pair-grid">
                   <div class="ml-text-style-dlg__pair-col">
-                    <el-form label-position="top" class="ml-text-style-dlg__form">
+                    <el-form
+                      label-position="top"
+                      class="ml-text-style-dlg__form"
+                    >
                       <el-form-item :label="t('dialog.textStyleDlg.fontName')">
                         <el-select
                           v-model="form.font"
@@ -95,7 +98,9 @@
                       label-position="top"
                       class="ml-text-style-dlg__form"
                     >
-                      <el-form-item :label="t('dialog.textStyleDlg.bigFontName')">
+                      <el-form-item
+                        :label="t('dialog.textStyleDlg.bigFontName')"
+                      >
                         <el-select
                           v-model="form.bigFont"
                           filterable
@@ -143,8 +148,13 @@
               >
                 <div class="ml-text-style-dlg__pair-grid">
                   <div class="ml-text-style-dlg__pair-col">
-                    <el-form label-position="top" class="ml-text-style-dlg__form">
-                      <el-form-item :label="t('dialog.textStyleDlg.textHeight')">
+                    <el-form
+                      label-position="top"
+                      class="ml-text-style-dlg__form"
+                    >
+                      <el-form-item
+                        :label="t('dialog.textStyleDlg.textHeight')"
+                      >
                         <el-input-number
                           :key="`${selectedName}-height`"
                           v-model="form.textHeight"
@@ -157,7 +167,9 @@
                       </el-form-item>
                     </el-form>
                   </div>
-                  <div class="ml-text-style-dlg__pair-col ml-text-style-dlg__pair-col--spacer" />
+                  <div
+                    class="ml-text-style-dlg__pair-col ml-text-style-dlg__pair-col--spacer"
+                  />
                 </div>
               </ml-fieldset-group>
             </div>
@@ -170,7 +182,9 @@
                 <div
                   class="ml-text-style-dlg__pair-grid ml-text-style-dlg__pair-grid--effects"
                 >
-                  <div class="ml-text-style-dlg__pair-col ml-text-style-dlg__effects-checks">
+                  <div
+                    class="ml-text-style-dlg__pair-col ml-text-style-dlg__effects-checks"
+                  >
                     <el-checkbox v-model="form.upsideDown">
                       {{ t('dialog.textStyleDlg.upsideDown') }}
                     </el-checkbox>
@@ -182,8 +196,13 @@
                     </el-checkbox>
                   </div>
                   <div class="ml-text-style-dlg__pair-col">
-                    <el-form label-position="top" class="ml-text-style-dlg__form">
-                      <el-form-item :label="t('dialog.textStyleDlg.widthFactor')">
+                    <el-form
+                      label-position="top"
+                      class="ml-text-style-dlg__form"
+                    >
+                      <el-form-item
+                        :label="t('dialog.textStyleDlg.widthFactor')"
+                      >
                         <el-input-number
                           :key="`${selectedName}-width`"
                           v-model="form.widthFactor"
@@ -194,7 +213,9 @@
                           class="ml-text-style-dlg__control"
                         />
                       </el-form-item>
-                      <el-form-item :label="t('dialog.textStyleDlg.obliqueAngle')">
+                      <el-form-item
+                        :label="t('dialog.textStyleDlg.obliqueAngle')"
+                      >
                         <el-input-number
                           :key="`${selectedName}-oblique`"
                           v-model="form.obliqueAngle"
@@ -220,10 +241,7 @@
           >
             {{ t('dialog.textStyleDlg.setCurrent') }}
           </el-button>
-          <el-button
-            class="ml-text-style-dlg__action-btn"
-            @click="handleNew"
-          >
+          <el-button class="ml-text-style-dlg__action-btn" @click="handleNew">
             {{ t('dialog.textStyleDlg.new') }}
           </el-button>
           <el-button

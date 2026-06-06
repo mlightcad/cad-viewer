@@ -1,4 +1,8 @@
 export * from './batch/AcTrBatchedGroup'
+export {
+  isBatchGeometryActive,
+  isBatchGeometryVisible
+} from './batch/AcTrBatchedGeometryInfo'
 export { AcTrBatchedLine } from './batch/AcTrBatchedLine'
 export { AcTrBatchedMesh } from './batch/AcTrBatchedMesh'
 export { AcTrBatchedPoint } from './batch/AcTrBatchedPoint'

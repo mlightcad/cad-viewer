@@ -94,6 +94,10 @@ export default {
       description: 'Deletes selected entities from the drawing',
       prompt: 'Select entities'
     },
+    hideobjects: {
+      description: 'Temporarily suppresses the display of selected objects',
+      prompt: 'Select objects'
+    },
     hatch: {
       description:
         'Fills an enclosed area or selected objects with a hatch pattern'
@@ -312,6 +316,9 @@ export default {
     },
     switchbg: {
       description: 'Toggles the drawing area background between white and black'
+    },
+    unisolateobjects: {
+      description: 'Redisplay all objects hidden by HIDEOBJECTS'
     },
     xline: {
       description:

@@ -86,6 +86,10 @@ export default {
       description: '从图纸中删除所选对象',
       prompt: '选择对象'
     },
+    hideobjects: {
+      description: '临时隐藏所选对象的显示',
+      prompt: '选择对象'
+    },
     hatch: {
       description: '用填充图案填充封闭区域或所选对象'
     },
@@ -282,6 +286,9 @@ export default {
     },
     switchbg: {
       description: '切换绘图区域背景颜色，在白色和黑色背景之间切换'
+    },
+    unisolateobjects: {
+      description: '重新显示 HIDEOBJECTS 隐藏的所有对象'
     },
     xline: {
       description: '创建在两个方向上无限延伸的构造线'

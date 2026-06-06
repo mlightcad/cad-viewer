@@ -83,8 +83,8 @@ async function countShapeEntities(page: Page) {
       }
     ).AcApDocManager?.instance
 
-    const modelSpace = docManager?.curDocument?.database?.tables.blockTable
-      .modelSpace
+    const modelSpace =
+      docManager?.curDocument?.database?.tables.blockTable.modelSpace
     if (!modelSpace) {
       return 0
     }

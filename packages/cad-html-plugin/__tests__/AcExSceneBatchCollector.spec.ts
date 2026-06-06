@@ -8,7 +8,9 @@ jest.mock('@mlightcad/three-renderer', () => ({
   AcTrBatchedPoint: class AcTrBatchedPoint {
     optimize() {}
   },
-  getMaterialMetadata: () => ({ layer: '0' })
+  getMaterialMetadata: () => ({ layer: '0' }),
+  isBatchGeometryActive: (flags: number) => (flags & 1) !== 0,
+  isBatchGeometryVisible: (flags: number) => (flags & 3) === 3
 }))
 
 import * as THREE from 'three'
@@ -19,9 +21,13 @@ import {
   exportBufferGeometrySlice
 } from '../src/AcExSceneBatchCollector'
 
+const BATCH_SLOT_ACTIVE = 0b11
+const BATCH_SLOT_HIDDEN = 0b01
+const BATCH_SLOT_INACTIVE = 0
+
 function createMockBatch(
   slots: Array<{
-    active: boolean
+    flags: number
     vertexStart: number
     vertexCount: number
     indexStart: number
@@ -32,7 +38,7 @@ function createMockBatch(
     mappingStats: { count: slots.length },
     getGeometryRangeAt(geometryId: number) {
       const info = slots[geometryId]
-      if (!info?.active) {
+      if (!info || (info.flags & 1) === 0) {
         throw new Error('inactive')
       }
       return info
@@ -126,7 +132,7 @@ describe('exportActiveBatchedSlice', () => {
     const slice = exportActiveBatchedSlice(
       createMockBatch([
         {
-          active: true,
+          flags: BATCH_SLOT_ACTIVE,
           vertexStart: 0,
           vertexCount: 3,
           indexStart: 0,
@@ -156,21 +162,21 @@ describe('exportActiveBatchedSlice', () => {
     const slice = exportActiveBatchedSlice(
       createMockBatch([
         {
-          active: true,
+          flags: BATCH_SLOT_ACTIVE,
           vertexStart: 0,
           vertexCount: 2,
           indexStart: -1,
           indexCount: 0
         },
         {
-          active: false,
+          flags: BATCH_SLOT_INACTIVE,
           vertexStart: 4,
           vertexCount: 2,
           indexStart: -1,
           indexCount: 0
         },
         {
-          active: true,
+          flags: BATCH_SLOT_ACTIVE,
           vertexStart: 4,
           vertexCount: 2,
           indexStart: -1,
@@ -183,6 +189,39 @@ describe('exportActiveBatchedSlice', () => {
     expect(Array.from(slice.positions)).toEqual([
       0, 0, 0, 1, 0, 0, 5, 5, 5, 6, 6, 6
     ])
+  })
+
+  it('skips active but hidden slots during export', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(
+        new Float32Array([0, 0, 0, 1, 0, 0, 9, 9, 9, 8, 8, 8]),
+        3
+      )
+    )
+
+    const slice = exportActiveBatchedSlice(
+      createMockBatch([
+        {
+          flags: BATCH_SLOT_HIDDEN,
+          vertexStart: 2,
+          vertexCount: 2,
+          indexStart: -1,
+          indexCount: 0
+        },
+        {
+          flags: BATCH_SLOT_ACTIVE,
+          vertexStart: 0,
+          vertexCount: 2,
+          indexStart: -1,
+          indexCount: 0
+        }
+      ]),
+      geometry
+    )
+
+    expect(Array.from(slice.positions)).toEqual([0, 0, 0, 1, 0, 0])
   })
 })
 

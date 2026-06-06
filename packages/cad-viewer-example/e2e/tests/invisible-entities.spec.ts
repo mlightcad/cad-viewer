@@ -15,12 +15,7 @@ const visibleFixturePath = path.resolve(
   'fixtures',
   'visible-lwpolylines.dxf'
 )
-const emptyFixturePath = path.resolve(
-  currentDir,
-  '..',
-  'fixtures',
-  'empty.dxf'
-)
+const emptyFixturePath = path.resolve(currentDir, '..', 'fixtures', 'empty.dxf')
 const invisibleInBlockFixturePath = path.resolve(
   currentDir,
   '..',
@@ -116,7 +111,8 @@ async function readModelSpaceEntityVisibility(page: Page) {
         }
       }
     ).AcApDocManager?.instance
-    const modelSpace = mgr?.curDocument?.database?.tables?.blockTable?.modelSpace
+    const modelSpace =
+      mgr?.curDocument?.database?.tables?.blockTable?.modelSpace
     if (!modelSpace?.newIterator) {
       return [] as Array<{ type: string; visibility: boolean }>
     }
@@ -154,14 +150,25 @@ test('honors DXF group code 60 entity visibility for LWPOLYLINE', async ({
 
 async function readBlockDefinitionVisibility(page: Page, blockName: string) {
   return page.evaluate(name => {
-    const db =
-      (
-        window as Window & {
-          AcApDocManager?: {
-            instance: { curDocument: { database: { tables: { blockTable: { getAt: (n: string) => { newIterator: () => Iterable<{ visibility: boolean }> } | null } } } } }
+    const db = (
+      window as Window & {
+        AcApDocManager?: {
+          instance: {
+            curDocument: {
+              database: {
+                tables: {
+                  blockTable: {
+                    getAt: (n: string) => {
+                      newIterator: () => Iterable<{ visibility: boolean }>
+                    } | null
+                  }
+                }
+              }
+            }
           }
         }
-      ).AcApDocManager?.instance?.curDocument?.database
+      }
+    ).AcApDocManager?.instance?.curDocument?.database
     const block = db?.tables?.blockTable?.getAt(name)
     if (!block?.newIterator) {
       return [] as boolean[]

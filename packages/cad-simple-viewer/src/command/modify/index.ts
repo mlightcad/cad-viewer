@@ -1,5 +1,7 @@
 export * from './AcApCopyCmd'
 export * from './AcApEraseCmd'
+export * from './AcApHideObjectsCmd'
 export * from './AcApMoveCmd'
 export * from './AcApOffsetCmd'
 export * from './AcApRotateCmd'
+export * from './AcApUnisolateObjectsCmd'

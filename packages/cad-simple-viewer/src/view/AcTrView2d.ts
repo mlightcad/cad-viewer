@@ -1123,6 +1123,52 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
+  hasEntity(objectId: AcDbObjectId) {
+    return this._scene.hasEntity(objectId)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  getEntityVisible(objectId: AcDbObjectId) {
+    return this._scene.getEntityVisible(objectId)
+  }
+
+  /**
+   * Updates entity visibility without rebuilding batched geometry.
+   */
+  updateEntityVisibility(entity: AcDbEntity) {
+    if (!this._scene.setEntityVisible(entity.objectId, entity.visibility)) {
+      return false
+    }
+    this._isDirty = true
+    return true
+  }
+
+  /**
+   * Updates scene visibility for one entity without changing the database.
+   */
+  setEntitySceneVisible(objectId: AcDbObjectId, visible: boolean) {
+    if (!this._scene.setEntityVisible(objectId, visible)) {
+      return false
+    }
+    this._isDirty = true
+    return true
+  }
+
+  /**
+   * Reapplies session-only hidden state after an entity enters the scene.
+   */
+  private applySessionHiddenObjectState(objectId: AcDbObjectId) {
+    if (!AcApDocManager.instance.curDocument.isObjectHidden(objectId)) {
+      return
+    }
+    this._scene.setEntityVisible(objectId, false)
+  }
+
+  /**
+   * @inheritdoc
+   */
   updateEntity(entity: AcDbEntity | AcDbEntity[]) {
     let entities: AcDbEntity[] = []
     if (Array.isArray(entity)) {
@@ -1614,6 +1660,7 @@ export class AcTrView2d extends AcEdBaseView {
 
           await threeEntity.draw()
           this._scene.addEntity(threeEntity, isExtendBbox)
+          this.applySessionHiddenObjectState(entity.objectId)
           // Release memory occupied by this entity
           threeEntity.dispose()
           this._isDirty = true
@@ -1721,6 +1768,7 @@ export class AcTrView2d extends AcEdBaseView {
         entity.add(objects[i])
       }
       this._scene.addEntity(entity, true)
+      this.applySessionHiddenObjectState(groupObjectId)
       entity.dispose()
     })
     group.dispose()

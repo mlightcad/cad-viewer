@@ -2,7 +2,9 @@ import {
   AcTrBatchedLine,
   AcTrBatchedMesh,
   AcTrBatchedPoint,
-  getMaterialMetadata
+  getMaterialMetadata,
+  isBatchGeometryActive,
+  isBatchGeometryVisible
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
@@ -126,7 +128,7 @@ export function exportBufferGeometrySlice(
 
 /** Per-slot geometry range metadata from {@link AcTrBatchedExportSource}. */
 type AcTrPackedGeometryInfo = {
-  active: boolean
+  flags: number
   vertexStart: number
   vertexCount: number
   indexStart?: number
@@ -177,7 +179,11 @@ export function exportActiveBatchedSlice(
       }
       const indexStart = info.indexStart ?? 0
       const indexCount = info.indexCount ?? 0
-      if (!info.active || indexCount <= 0) {
+      if (
+        !isBatchGeometryActive(info.flags) ||
+        !isBatchGeometryVisible(info.flags) ||
+        indexCount <= 0
+      ) {
         continue
       }
       for (let i = 0; i < indexCount; i++) {
@@ -200,7 +206,11 @@ export function exportActiveBatchedSlice(
     } catch {
       continue
     }
-    if (!info.active || info.vertexCount <= 0) {
+    if (
+      !isBatchGeometryActive(info.flags) ||
+      !isBatchGeometryVisible(info.flags) ||
+      info.vertexCount <= 0
+    ) {
       continue
     }
     const start = info.vertexStart * itemSize
