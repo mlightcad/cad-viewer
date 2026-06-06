@@ -127,6 +127,7 @@ jest.mock('../src/command', () => {
     'AcApDimLinearCmd',
     'AcApEllipseCmd',
     'AcApEraseCmd',
+    'AcApHideObjectsCmd',
     'AcApHatchCmd',
     'AcApLayerCloseCmd',
     'AcApLayerCmd',
@@ -170,6 +171,7 @@ jest.mock('../src/command', () => {
     'AcApSplineCmd',
     'AcApSwitchBgCmd',
     'AcApSysVarCmd',
+    'AcApUnisolateObjectsCmd',
     'AcApXLineCmd',
     'AcApZoomCmd'
   ]

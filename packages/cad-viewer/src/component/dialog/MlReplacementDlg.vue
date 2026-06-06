@@ -8,14 +8,21 @@
     @open="handleOpen"
   >
     <div class="ml-replacement-dlg">
-      <el-tabs v-if="showTabs" v-model="activeTab" class="ml-replacement-dlg__tabs">
+      <el-tabs
+        v-if="showTabs"
+        v-model="activeTab"
+        class="ml-replacement-dlg__tabs"
+      >
         <el-tab-pane
           v-if="fontMapping.size > 0"
           :label="t('dialog.replacementDlg.fontTabName')"
           name="font"
         >
           <div class="ml-replacement-dlg__font-panel">
-            <el-checkbox v-model="matchFontType" class="ml-replacement-dlg__option">
+            <el-checkbox
+              v-model="matchFontType"
+              class="ml-replacement-dlg__option"
+            >
               {{ t('dialog.replacementDlg.matchFontType') }}
             </el-checkbox>
             <div class="ml-replacement-dlg__font-grid">
@@ -93,7 +100,10 @@
 
       <template v-else>
         <div v-if="fontMapping.size > 0" class="ml-replacement-dlg__font-panel">
-          <el-checkbox v-model="matchFontType" class="ml-replacement-dlg__option">
+          <el-checkbox
+            v-model="matchFontType"
+            class="ml-replacement-dlg__option"
+          >
             {{ t('dialog.replacementDlg.matchFontType') }}
           </el-checkbox>
           <div class="ml-replacement-dlg__font-grid">
@@ -108,10 +118,7 @@
               :key="missedFont"
               class="ml-replacement-dlg__font-row"
             >
-              <span
-                class="ml-replacement-dlg__missed-font"
-                :title="missedFont"
-              >
+              <span class="ml-replacement-dlg__missed-font" :title="missedFont">
                 {{ missedFont }}
               </span>
               <el-select
@@ -202,9 +209,7 @@ const { t } = useI18n()
 const { fonts: fontMapping, images: imageTableData } = useMissedData()
 const dialogVisible = ref(true)
 
-const showTabs = computed(
-  () => fontMapping.size > 0 && imageTableData.size > 0
-)
+const showTabs = computed(() => fontMapping.size > 0 && imageTableData.size > 0)
 const activeTab = ref('font')
 const fileInput = ref<HTMLInputElement | null>(null)
 const availableFontInfos = ref<AcDbFontInfo[]>([])

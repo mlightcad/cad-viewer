@@ -18,9 +18,7 @@ import { AcTrEntity } from './AcTrEntity'
 
 function toVector2(points: AcGePoint2dLike[]): THREE.Vector2[] {
   return points
-    .filter(
-      point => Number.isFinite(point.x) && Number.isFinite(point.y)
-    )
+    .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y))
     .map(point => new THREE.Vector2(point.x, point.y))
 }
 
@@ -57,7 +55,8 @@ export class AcTrPolygon extends AcTrEntity {
     }
 
     if (geometry && hasFillVertices(geometry)) {
-      const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+      const boundingBox =
+        AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
       if (!boundingBox) {
         log.warn('Skipped hatch fill with invalid geometry coordinates')
         geometry.dispose()

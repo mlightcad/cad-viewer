@@ -11,7 +11,8 @@ import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import {
   type AcExMeasureQuantity,
   type AcExMeasureQuantityEntry,
-  sumMeasureQuantities} from './AcExMeasureTotals'
+  sumMeasureQuantities
+} from './AcExMeasureTotals'
 import {
   type AcExTrackingOptions,
   constrainToAcExTracking

@@ -25,6 +25,7 @@ import {
   AcApEllipseCmd,
   AcApEraseCmd,
   AcApHatchCmd,
+  AcApHideObjectsCmd,
   AcApLayerCloseCmd,
   AcApLayerCmd,
   AcApLayerCurCmd,
@@ -67,6 +68,7 @@ import {
   AcApSplineCmd,
   AcApSwitchBgCmd,
   AcApSysVarCmd,
+  AcApUnisolateObjectsCmd,
   AcApXLineCmd,
   AcApZoomCmd
 } from '../command'
@@ -874,6 +876,7 @@ export class AcApDocManager {
     addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
+    addSystemCommand('hideobjects', 'hideobjects', new AcApHideObjectsCmd())
     addSystemCommand('dimlinear', 'dimlinear', new AcApDimLinearCmd())
     addSystemCommand(
       'measuredistance',
@@ -927,6 +930,11 @@ export class AcApDocManager {
     addSystemCommand('sketch', 'sketch', new AcApSketchCmd())
     addSystemCommand('spline', 'spline', new AcApSplineCmd())
     addSystemCommand('switchbg', 'switchbg', new AcApSwitchBgCmd())
+    addSystemCommand(
+      'unisolateobjects',
+      'unisolateobjects',
+      new AcApUnisolateObjectsCmd()
+    )
     addSystemCommand('xline', 'xline', new AcApXLineCmd())
     addSystemCommand('zoom', 'zoom', new AcApZoomCmd())
 

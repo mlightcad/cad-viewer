@@ -141,7 +141,8 @@ export class AcTrShape extends AcTrEntity {
       if (!this.hasGeometry(object)) return
 
       const geometry = object.geometry
-      const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+      const boundingBox =
+        AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
       if (boundingBox == null) return
 
       object.updateMatrixWorld(true)

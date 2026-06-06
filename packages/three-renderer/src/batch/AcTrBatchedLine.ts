@@ -6,7 +6,9 @@ import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchedGeometryInfo,
   AcTrBatchGeometryUserData,
-  copyArrayContents
+  copyArrayContents,
+  isBatchGeometryActive,
+  isBatchGeometryVisible
 } from './AcTrBatchedGeometryInfo'
 import {
   applyGeometryAt,
@@ -19,6 +21,7 @@ import {
   resolveReservedCount,
   validateGeometry
 } from './AcTrBatchedMixin'
+import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility'
 
 /** Reusable scratch box for bounds queries. */
 const _box = /*@__PURE__*/ new THREE.Box3()
@@ -459,7 +462,7 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     // Collect active geometries in buffer order
     const entries = this._geometryInfo
       .map((info, id) => ({ info, id }))
-      .filter(e => e.info.active)
+      .filter(e => isBatchGeometryActive(e.info.flags))
       .sort((a, b) => a.info.vertexStart - b.info.vertexStart)
 
     for (const { info } of entries) {
@@ -547,6 +550,8 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     this._syncDrawRange()
 
     this._availableGeometryIds.length = 0
+
+    syncBatchDrawVisibilityAfterOptimize(geometry, this._geometryInfo)
 
     return this
   }
@@ -720,7 +725,7 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     intersects: THREE.Intersection[]
   ) {
     const geometryInfo = this._geometryInfo[geometryId]
-    if (!geometryInfo.active || !geometryInfo.visible) {
+    if (!isBatchGeometryVisible(geometryInfo.flags)) {
       return
     }
 

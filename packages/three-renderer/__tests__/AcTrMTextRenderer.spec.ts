@@ -91,7 +91,9 @@ describe('AcTrMTextRenderer', () => {
     await renderer.setDefaultFonts('modern')
     renderer.initialize('./assets/mtext-renderer-worker.js')
 
-    expect(mockRendererInstances[0].setDefaultFonts).toHaveBeenCalledWith('modern')
+    expect(mockRendererInstances[0].setDefaultFonts).toHaveBeenCalledWith(
+      'modern'
+    )
   })
 
   it('forwards default fonts preset to an initialized renderer immediately', async () => {
@@ -100,6 +102,8 @@ describe('AcTrMTextRenderer', () => {
     renderer.initialize('./assets/mtext-renderer-worker.js')
     await renderer.setDefaultFonts('r12r14')
 
-    expect(mockRendererInstances[0].setDefaultFonts).toHaveBeenCalledWith('r12r14')
+    expect(mockRendererInstances[0].setDefaultFonts).toHaveBeenCalledWith(
+      'r12r14'
+    )
   })
 })

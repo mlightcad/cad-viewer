@@ -347,6 +347,44 @@ export class AcTrLayout {
   }
 
   /**
+   * Returns true when any layer in this layout contains the entity.
+   */
+  hasEntity(objectId: AcDbObjectId) {
+    for (const [_, layer] of this._layers) {
+      if (layer.hasEntity(objectId)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Updates entity visibility without rebuilding batched geometry.
+   */
+  setEntityVisible(objectId: AcDbObjectId, visible: boolean) {
+    let updated = false
+    for (const [_, layer] of this._layers) {
+      if (layer.setEntityVisible(objectId, visible)) {
+        updated = true
+      }
+    }
+    return updated
+  }
+
+  /**
+   * Returns the current scene visibility for one entity.
+   */
+  getEntityVisible(objectId: AcDbObjectId) {
+    for (const [_, layer] of this._layers) {
+      const visible = layer.getEntityVisible(objectId)
+      if (visible !== undefined) {
+        return visible
+      }
+    }
+    return undefined
+  }
+
+  /**
    * Gets the layer with the specified name from this layout
    * @param name - Layer name
    * @returns - The layer with the specified name in this layout

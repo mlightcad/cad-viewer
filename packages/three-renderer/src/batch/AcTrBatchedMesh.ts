@@ -5,7 +5,8 @@ import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchedGeometryInfo,
   AcTrBatchGeometryUserData,
-  copyArrayContents
+  copyArrayContents,
+  isBatchGeometryActive
 } from './AcTrBatchedGeometryInfo'
 import {
   applyGeometryAt,
@@ -18,6 +19,7 @@ import {
   resolveReservedCount,
   validateGeometry
 } from './AcTrBatchedMixin'
+import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility'
 
 /** Reusable scratch box for bounds queries. */
 const _box = /*@__PURE__*/ new THREE.Box3()
@@ -398,7 +400,7 @@ export class AcTrBatchedMesh extends AcTrBatchedMeshBase {
     // Sort ACTIVE geometries by current vertex position
     const activeInfos = this._geometryInfo
       .map((info, i) => ({ info, i }))
-      .filter(e => e.info.active)
+      .filter(e => isBatchGeometryActive(e.info.flags))
       .sort((a, b) => a.info.vertexStart - b.info.vertexStart)
 
     // ---- pack active geometries ----
@@ -471,6 +473,8 @@ export class AcTrBatchedMesh extends AcTrBatchedMeshBase {
     this._syncDrawRange()
 
     this._availableGeometryIds.length = 0
+
+    syncBatchDrawVisibilityAfterOptimize(geometry, this._geometryInfo)
 
     return this
   }

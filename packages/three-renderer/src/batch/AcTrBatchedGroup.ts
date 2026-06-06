@@ -6,7 +6,7 @@ import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
 import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrBufferGeometryUtil,AcTrMaterialUtil } from '../util'
+import { AcTrBufferGeometryUtil, AcTrMaterialUtil } from '../util'
 import {
   copyHighlightObjectFlags,
   getHighlightUserData,
@@ -335,15 +335,76 @@ export class AcTrBatchedGroup extends THREE.Group {
    * return false.
    */
   hasEntity(objectId: string) {
-    return this._entitiesMap.has(objectId)
+    return (
+      this._entitiesMap.has(objectId) || this._unbatchedEntities.has(objectId)
+    )
+  }
+
+  /**
+   * Updates visibility for one entity without removing it from batch containers.
+   *
+   * @param objectId - Entity object id.
+   * @param visible - Desired visibility state.
+   * @returns `true` when the entity exists in this group.
+   */
+  setEntityVisible(objectId: string, visible: boolean) {
+    const entityInfo = this._entitiesMap.get(objectId)
+    const unbatchedObjects = this._unbatchedEntities.get(objectId)
+    if (!entityInfo && !unbatchedObjects) {
+      return false
+    }
+
+    entityInfo?.forEach(item => {
+      const batchedObject = this.getObjectById(
+        item.batchedObjectId
+      ) as AcTrBatchedObject
+      batchedObject?.setVisibleAt(item.batchId, visible)
+    })
+
+    unbatchedObjects?.forEach(object => {
+      object.visible = visible
+    })
+
+    if (!visible) {
+      this.unhighlight(objectId, this._selectedObjects)
+      this.unhighlight(objectId, this._hoverObjects)
+    }
+
+    return true
+  }
+
+  /**
+   * Returns the current scene visibility for one entity, or `undefined` when
+   * the entity is not present in this group.
+   */
+  getEntityVisible(objectId: string): boolean | undefined {
+    const entityInfo = this._entitiesMap.get(objectId)
+    const unbatchedObjects = this._unbatchedEntities.get(objectId)
+    if (!entityInfo && !unbatchedObjects) {
+      return undefined
+    }
+
+    let visible: boolean | undefined
+
+    if (entityInfo && entityInfo.length > 0) {
+      visible = entityInfo.every(item => this.getBatchItemVisible(item))
+    }
+
+    if (unbatchedObjects && unbatchedObjects.length > 0) {
+      const unbatchedVisible = unbatchedObjects.some(object => object.visible)
+      visible =
+        visible === undefined ? unbatchedVisible : visible && unbatchedVisible
+    }
+
+    return visible
   }
 
   /**
    * Adds one converted entity into batch/unbatched containers.
    */
   addEntity(entity: AcTrEntity) {
-    // Batched buffers always draw packed geometry; per-slot `visible` only affects
-    // raycast today. Skip invisible entities entirely so DXF group code 60 is honored.
+    // Skip invisible entities on initial insert so invisible DWG/DXF content does
+    // not allocate batch memory. Runtime visibility toggles use setEntityVisible.
     if (!entity.visible) {
       return
     }
@@ -616,13 +677,18 @@ export class AcTrBatchedGroup extends THREE.Group {
     item: AcTrEntityInBatchedObject,
     visible: boolean
   ) {
-    if (visible) {
-      return
-    }
     const batchedObject = this.getObjectById(item.batchedObjectId) as
       | AcTrBatchedObject
       | undefined
-    batchedObject?.setVisibleAt(item.batchId, false)
+    batchedObject?.setVisibleAt(item.batchId, visible)
+  }
+
+  private getBatchItemVisible(item: AcTrEntityInBatchedObject): boolean {
+    const batchedObject = this.getObjectById(item.batchedObjectId) as
+      | (AcTrBatchedObject & { getVisibleAt(geometryId: number): boolean })
+      | AcTrBatchedPoint
+      | undefined
+    return batchedObject?.getVisibleAt(item.batchId) ?? false
   }
 
   /**

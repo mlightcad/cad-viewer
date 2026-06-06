@@ -1,6 +1,7 @@
 import {
   AcDbDatabase,
   AcDbFileType,
+  AcDbObjectId,
   AcDbOpenDatabaseOptions,
   log
 } from '@mlightcad/data-model'
@@ -29,6 +30,8 @@ export class AcApDocument {
   private _docTitle: string = ''
   /** The access mode for the document */
   private _openMode: AcEdOpenMode = AcEdOpenMode.Write
+  /** Object ids temporarily hidden by HIDEOBJECTS in the current session */
+  private _hiddenObjects = new Set<AcDbObjectId>()
 
   /**
    * Creates a new document instance with an empty database.
@@ -177,6 +180,29 @@ export class AcApDocument {
    */
   get openMode() {
     return this._openMode
+  }
+
+  /**
+   * Returns true when the object is temporarily hidden by HIDEOBJECTS.
+   */
+  isObjectHidden(objectId: AcDbObjectId) {
+    return this._hiddenObjects.has(objectId)
+  }
+
+  /**
+   * Records one object as temporarily hidden in the current session.
+   */
+  addHiddenObject(objectId: AcDbObjectId) {
+    this._hiddenObjects.add(objectId)
+  }
+
+  /**
+   * Returns and clears all temporarily hidden object ids.
+   */
+  takeHiddenObjects(): AcDbObjectId[] {
+    const hiddenIds = [...this._hiddenObjects]
+    this._hiddenObjects.clear()
+    return hiddenIds
   }
 
   /**

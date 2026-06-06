@@ -247,6 +247,11 @@ export default {
       }
     }
   },
+  hideobjects: {
+    hidden: 'object(s) hidden',
+    restored: 'object(s) restored',
+    nothingToRestore: 'No hidden objects to restore'
+  },
   layer: {
     main: 'Enter option',
     listSummary: 'Layer list was printed to browser console',
