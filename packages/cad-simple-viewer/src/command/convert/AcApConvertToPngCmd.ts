@@ -59,11 +59,7 @@ export class AcApConvertToPngCmd extends AcEdCommand {
 
     let bounds: AcGeBox2d
     if (boxResult.status === AcEdPromptStatus.OK && boxResult.value) {
-      const expandedBounds = this.expandBoundsToEntityExtents(
-        boxResult.value,
-        view
-      )
-      bounds = expandedBounds.bounds
+      bounds = boxResult.value
     } else if (boxResult.status === AcEdPromptStatus.None) {
       bounds = this.getCurrentDrawingBounds()
     } else {
@@ -109,63 +105,6 @@ export class AcApConvertToPngCmd extends AcEdCommand {
       new AcGePoint2d(ext.min.x, ext.min.y),
       new AcGePoint2d(ext.max.x, ext.max.y)
     )
-  }
-
-  /**
-   * Expands user-picked bounds to include extents of intersected entities.
-   *
-   * This avoids cutting entities when the pick box touches their geometry
-   * edges (for example anti-aliased line caps or text glyph overhangs).
-   */
-  private expandBoundsToEntityExtents(
-    userBounds: AcGeBox2d,
-    view: AcTrView2d
-  ): { bounds: AcGeBox2d; expanded: boolean } {
-    const hits = view.search(userBounds)
-    const entityBounds = new AcGeBox2d()
-    let hasEntityBounds = false
-
-    const expandByItem = (item: {
-      minX: number
-      minY: number
-      maxX: number
-      maxY: number
-      children?: Array<{
-        minX: number
-        minY: number
-        maxX: number
-        maxY: number
-      }>
-    }) => {
-      entityBounds.expandByPoint(new AcGePoint2d(item.minX, item.minY))
-      entityBounds.expandByPoint(new AcGePoint2d(item.maxX, item.maxY))
-      hasEntityBounds = true
-
-      item.children?.forEach(child => {
-        entityBounds.expandByPoint(new AcGePoint2d(child.minX, child.minY))
-        entityBounds.expandByPoint(new AcGePoint2d(child.maxX, child.maxY))
-      })
-    }
-
-    hits.forEach(hit => expandByItem(hit))
-
-    if (!hasEntityBounds || entityBounds.isEmpty()) {
-      return { bounds: userBounds, expanded: false }
-    }
-
-    const merged = new AcGeBox2d()
-      .expandByPoint(userBounds.min)
-      .expandByPoint(userBounds.max)
-      .expandByPoint(entityBounds.min)
-      .expandByPoint(entityBounds.max)
-
-    const expanded =
-      merged.min.x !== userBounds.min.x ||
-      merged.min.y !== userBounds.min.y ||
-      merged.max.x !== userBounds.max.x ||
-      merged.max.y !== userBounds.max.y
-
-    return { bounds: merged, expanded }
   }
 
   /**

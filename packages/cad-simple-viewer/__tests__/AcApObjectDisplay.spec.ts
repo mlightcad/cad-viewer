@@ -1,9 +1,6 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
-import {
-  hideObjects,
-  unisolateObjects
-} from '../src/app/AcApObjectDisplay'
+import { hideObjects, unisolateObjects } from '../src/app/AcApObjectDisplay'
 import { AcApDocument } from '../src/app/AcApDocument'
 import { AcApContext } from '../src/app/AcApContext'
 
@@ -71,14 +68,8 @@ describe('AcApObjectDisplay', () => {
   it('hides visible scene entities without changing database visibility', () => {
     const { context, hidden, entities, selectionSet } = createMockContext({
       entities: new Map([
-        [
-          'a',
-          { visibility: true, inScene: true, sceneVisible: true }
-        ],
-        [
-          'b',
-          { visibility: true, inScene: true, sceneVisible: true }
-        ]
+        ['a', { visibility: true, inScene: true, sceneVisible: true }],
+        ['b', { visibility: true, inScene: true, sceneVisible: true }]
       ])
     })
 
@@ -97,14 +88,8 @@ describe('AcApObjectDisplay', () => {
     const { context, entities, selectionSet } = createMockContext({
       hidden,
       entities: new Map([
-        [
-          'a',
-          { visibility: true, inScene: true, sceneVisible: false }
-        ],
-        [
-          'b',
-          { visibility: false, inScene: true, sceneVisible: false }
-        ]
+        ['a', { visibility: true, inScene: true, sceneVisible: false }],
+        ['b', { visibility: false, inScene: true, sceneVisible: false }]
       ])
     })
 

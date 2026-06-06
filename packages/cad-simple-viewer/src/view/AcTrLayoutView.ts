@@ -176,6 +176,7 @@ export class AcTrLayoutView extends AcTrBaseView {
   resize(width: number, height: number) {
     this._height = height
     this._width = width
+    this._frustum = height / 2
     this.updateCameraFrustum()
     this._viewportViews.forEach(viewportView => {
       viewportView.update()

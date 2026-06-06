@@ -89,6 +89,20 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     this._styleManager.updateLineResolution(width, height)
   }
 
+  /**
+   * Updates wide-line shader resolution without resizing the canvas.
+   */
+  updateLineResolution(width: number, height: number) {
+    this._styleManager.updateLineResolution(width, height)
+  }
+
+  /**
+   * Syncs shader uniforms that depend on the active camera zoom.
+   */
+  syncCameraZoom(zoom: number) {
+    this.updateCameraZoomUniform(zoom)
+  }
+
   getViewport(target: THREE.Vector4) {
     return this._renderer.getViewport(target)
   }
