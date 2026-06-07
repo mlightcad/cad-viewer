@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.5.4
+
+### Patch Changes
+
+- feat: Text Style dialog, SHAPE rendering, batch visibility/HIDEOBJECTS, and font fallback/CDN; fix zoom-fit bounds, PNG export frustum, paper-space viewport detection, and dev startup deps; add demo links to README
+
 ## 1.5.3
 
 ### Patch Changes

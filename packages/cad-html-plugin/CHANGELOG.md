@@ -1,5 +1,14 @@
 # @mlightcad/cad-html-plugin
 
+## 1.5.4
+
+### Patch Changes
+
+- feat: Text Style dialog, SHAPE rendering, batch visibility/HIDEOBJECTS, and font fallback/CDN; fix zoom-fit bounds, PNG export frustum, paper-space viewport detection, and dev startup deps; add demo links to README
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.5.4
+  - @mlightcad/three-renderer@1.5.4
+
 ## 1.5.3
 
 ### Patch Changes
