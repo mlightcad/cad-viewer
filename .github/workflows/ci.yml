@@ -37,6 +37,10 @@ jobs:
       - name: Upgrade npm for Trusted Publishing
         run: npm install -g npm@latest
 
+      - name: Verify package.json versions match overrides
+        if: startsWith(github.ref, 'refs/tags/')
+        run: pnpm sync:versions:check
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

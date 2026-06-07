@@ -32,6 +32,7 @@
     "publish:viewer": "pnpm -r publish --access public --no-git-checks",
     "release": "node tools/release.mjs",
     "sync:versions": "node tools/sync-versions.mjs",
+    "sync:versions:check": "node tools/sync-versions.mjs --check",
     "serve": "nx run @mlightcad/cad-viewer-examples:serve",
     "test": "jest",
     "test:e2e": "pnpm --filter @mlightcad/cad-viewer-example test:e2e"
