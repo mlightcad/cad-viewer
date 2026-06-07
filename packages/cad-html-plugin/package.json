@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.8.1",
+    "@mlightcad/data-model": "^1.8.3",
     "@mlightcad/three-renderer": "workspace:*",
     "@types/jest": "^29.5.12",
     "@types/three": "^0.172.0",
@@ -43,7 +43,7 @@
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.8.1",
+    "@mlightcad/data-model": "^1.8.3",
     "@mlightcad/three-renderer": "workspace:*",
     "three": "^0.172.0"
   }

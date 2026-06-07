@@ -91,6 +91,13 @@ try {
   // non-fatal
 }
 
+console.log('Checking dependency versions against pnpm-workspace.yaml overrides...');
+try {
+  run('pnpm sync:versions:check');
+} catch {
+  fail('Dependency versions are out of sync. Run "pnpm sync:versions", commit, then retry.');
+}
+
 const status = run('git status --porcelain');
 if (status) {
   fail('Working tree is not clean. Please commit or stash changes.');

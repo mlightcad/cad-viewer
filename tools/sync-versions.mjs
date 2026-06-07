@@ -111,7 +111,13 @@ async function findWorkspacePackageNames(rootPkg) {
   return packageNames;
 }
 
-async function syncPackage(packageFilePath, rootVersionMap, workspacePackageNames, overrides = {}) {
+async function syncPackage(
+  packageFilePath,
+  rootVersionMap,
+  workspacePackageNames,
+  overrides = {},
+  { write = true } = {}
+) {
   const pkg = await readJson(packageFilePath);
   const dependencyKeys = [
     'dependencies',
@@ -120,6 +126,7 @@ async function syncPackage(packageFilePath, rootVersionMap, workspacePackageName
     'optionalDependencies',
   ];
   let changed = false;
+  const drifts = [];
 
   for (const depKey of dependencyKeys) {
     const deps = pkg[depKey];
@@ -145,20 +152,23 @@ async function syncPackage(packageFilePath, rootVersionMap, workspacePackageName
       }
 
       if (newVersion && deps[name] !== newVersion) {
+        drifts.push({ depKey, name, from: deps[name], to: newVersion });
         deps[name] = newVersion;
         changed = true;
       }
     }
   }
 
-  if (changed) {
+  if (changed && write) {
     await writeJson(packageFilePath, pkg);
   }
 
-  return changed;
+  return { changed, drifts, pkgName: pkg.name };
 }
 
 (async () => {
+  const checkOnly = process.argv.includes('--check');
+
   try {
     const rootPkg = await readJson(rootPackageJsonPath);
     const overrides = await readPnpmOverrides();
@@ -172,20 +182,41 @@ async function syncPackage(packageFilePath, rootVersionMap, workspacePackageName
       if (!entry.isDirectory()) continue;
       const packageFilePath = path.join(packagesDir, entry.name, 'package.json');
       try {
-        const changed = await syncPackage(packageFilePath, rootVersionMap, workspacePackageNames, overrides);
-        if (changed) changedFiles.push(packageFilePath);
+        const { changed, drifts, pkgName } = await syncPackage(
+          packageFilePath,
+          rootVersionMap,
+          workspacePackageNames,
+          overrides,
+          { write: !checkOnly }
+        );
+        if (changed) {
+          changedFiles.push({ packageFilePath, drifts, pkgName });
+        }
       } catch (error) {
         console.error(`❌ Failed to process ${packageFilePath}:`, error.message);
       }
     }
 
     if (changedFiles.length === 0) {
-      console.log('✅ No workspace:* versions needed syncing.');
-    } else {
-      console.log('✅ Synced versions in the following package.json files:');
-      for (const file of changedFiles) {
-        console.log(`  - ${path.relative(rootDir, file)}`);
+      console.log('✅ Package dependency versions are in sync with pnpm-workspace.yaml overrides.');
+      return;
+    }
+
+    if (checkOnly) {
+      console.error('❌ package.json dependency versions are out of sync with pnpm-workspace.yaml overrides:');
+      for (const { packageFilePath, drifts, pkgName } of changedFiles) {
+        console.error(`  ${pkgName || path.relative(rootDir, packageFilePath)}:`);
+        for (const { depKey, name, from, to } of drifts) {
+          console.error(`    ${depKey}.${name}: ${from} → ${to}`);
+        }
       }
+      console.error('\nRun "pnpm sync:versions", commit the changes, then retry the release.');
+      process.exit(1);
+    }
+
+    console.log('✅ Synced versions in the following package.json files:');
+    for (const { packageFilePath } of changedFiles) {
+      console.log(`  - ${path.relative(rootDir, packageFilePath)}`);
     }
   } catch (error) {
     console.error('❌ sync-workspace-versions failed:', error.message);
