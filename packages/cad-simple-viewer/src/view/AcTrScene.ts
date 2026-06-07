@@ -130,7 +130,10 @@ export class AcTrScene {
    * The bounding box of the visibile objects in this secene
    */
   get box() {
-    return this.activeLayout?.box
+    const layout = this.activeLayout
+    if (!layout) return undefined
+    const box = layout.box
+    return box.isEmpty() ? undefined : box
   }
 
   /**

@@ -165,6 +165,14 @@ export class AcTrView2d extends AcEdBaseView {
    *    completes its initial zoom-to-fit.
    */
   private _initializedLayouts: Set<AcDbObjectId> = new Set()
+  /**
+   * Layouts already framed by `AcApDocManager.onAfterOpenDocument` before a
+   * first-visit async zoom runs. Suppresses redundant `applyInitialZoom` /
+   * `zoomToFitDrawing(..., layoutBtrId)` callbacks that would override the
+   * application layer's initial camera when startup and layout-switch events
+   * race during document open.
+   */
+  private _externallyFramedLayouts: Set<AcDbObjectId> = new Set()
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -717,12 +725,18 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  zoomToFitDrawing(timeout: number = 0) {
+  zoomToFitDrawing(timeout: number = 0, layoutBtrId?: AcDbObjectId) {
     const waiter = new AcEdConditionWaiter(
       () => this._numOfEntitiesToProcess <= 0,
       () => {
-        if (this._scene.box) {
-          const box = AcTrGeometryUtil.threeBox3dToGeBox2d(this._scene.box)
+        if (
+          layoutBtrId &&
+          this._externallyFramedLayouts.delete(layoutBtrId)
+        ) {
+          return
+        }
+        const box = this.resolveLayoutFitBox()
+        if (box) {
           this.zoomTo(box)
           this._isDirty = true
         }
@@ -1208,10 +1222,10 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * Marks a layout as already framed by an external caller (typically
    * `AcApDocManager.onAfterOpenDocument`, which zooms the startup
-   * layout right after parsing). Subsequent `layoutSwitched` events
-   * for this btrId will skip their initial zoom-to-fit so the user's
-   * camera state on the startup layout is preserved when they click
-   * back to that tab.
+   * layout right after parsing). Subsequent first-visit async zoom
+   * callbacks (`applyInitialZoom`, `zoomToFitDrawing(..., layoutBtrId)`)
+   * for this btrId are suppressed so they do not override the
+   * application layer's initial camera.
    *
    * This is the public counterpart of the `_initializedLayouts` set —
    * exposed so the application layer can stay in sync with the view's
@@ -1220,6 +1234,19 @@ export class AcTrView2d extends AcEdBaseView {
    */
   markLayoutAsInitialized(layoutBtrId: AcDbObjectId) {
     this._initializedLayouts.add(layoutBtrId)
+    this._externallyFramedLayouts.add(layoutBtrId)
+  }
+
+  /**
+   * Resolves the 2D box to frame for the active layout once entities are
+   * converted. Uses {@link AcTrScene.box}, which is derived from batch geometry.
+   */
+  private resolveLayoutFitBox(): AcGeBox2d | undefined {
+    const sceneBox = this._scene.box
+    if (sceneBox && !sceneBox.isEmpty()) {
+      return AcTrGeometryUtil.threeBox3dToGeBox2d(sceneBox)
+    }
+    return undefined
   }
 
   /**
@@ -1243,7 +1270,7 @@ export class AcTrView2d extends AcEdBaseView {
    *    populated. Many parsers leave this empty (we've seen `(0,0)-(0,0)`),
    *    so it sits below the viewport-based heuristic.
    *
-   * 4. **`zoomToFitDrawing`** (entity extents from spatial index) —
+   * 4. **`resolveLayoutFitBox`** (entity extents from batch geometry) —
    *    last-resort fallback for layouts with no viewports and no
    *    sensible limits/extents (e.g. a freshly created empty paper).
    *    Vulnerable to scale-mismatch outliers, but better than no zoom.
@@ -1262,6 +1289,10 @@ export class AcTrView2d extends AcEdBaseView {
     const waiter = new AcEdConditionWaiter(
       () => this._numOfEntitiesToProcess <= 0,
       () => {
+        if (this._externallyFramedLayouts.delete(btrId)) {
+          return
+        }
+
         const limits = layout.limits
         const layoutView = this._layoutViewManager.getAt(btrId)
         const vpsBox = layoutView?.viewportsBoundingBox
@@ -1289,8 +1320,11 @@ export class AcTrView2d extends AcEdBaseView {
               { x: extents.max.x, y: extents.max.y }
             )
           )
-        } else if (this._scene.box) {
-          this.zoomTo(AcTrGeometryUtil.threeBox3dToGeBox2d(this._scene.box))
+        } else {
+          const box = this.resolveLayoutFitBox()
+          if (box) {
+            this.zoomTo(box)
+          }
         }
         this._isDirty = true
       },
@@ -1571,10 +1605,8 @@ export class AcTrView2d extends AcEdBaseView {
    * entities reached `batchConvert` before the `AcTrLayoutView` was
    * created — those entities were drawn and added to the scene, but
    * the viewport-view creation step silently no-oped (lookup returned
-   * undefined). Without this recovery, `viewportsBoundingBox` stays
-   * `undefined` on first user visit, the initial-zoom strategy
-   * degrades to the bogus `limits` branch, and the layout renders as
-   * a "grain in the corner" with empty viewport scissors. See the
+   * undefined). Without this recovery, paper-space viewports would not
+   * get scissors and the layout would render incorrectly. See the
    * call site in `loadLayoutEntitiesIfNeeded` for the full context.
    *
    * Cheap operation: only AcDbViewport entities are inspected; for a
@@ -1728,11 +1760,37 @@ export class AcTrView2d extends AcEdBaseView {
     const styleManager = group.styleManager
     const groupObjectId = group.objectId
     const groupLayerName = group.layerName
-    const groupBox = group.box
+    const worldGroupBox = group.box.clone()
+    worldGroupBox.applyMatrix4(group.matrix)
     const groupChildBoxes: AcEdSpatialQueryResultItem[] = group.boxes.map(
-      box => ({
-        ...box
-      })
+      box => {
+        const points = [
+          new THREE.Vector3(box.minX, box.minY, 0),
+          new THREE.Vector3(box.maxX, box.minY, 0),
+          new THREE.Vector3(box.maxX, box.maxY, 0),
+          new THREE.Vector3(box.minX, box.maxY, 0)
+        ]
+        for (const point of points) {
+          point.applyMatrix4(group.matrix)
+        }
+        let minX = Infinity
+        let minY = Infinity
+        let maxX = -Infinity
+        let maxY = -Infinity
+        for (const point of points) {
+          minX = Math.min(minX, point.x)
+          minY = Math.min(minY, point.y)
+          maxX = Math.max(maxX, point.x)
+          maxY = Math.max(maxY, point.y)
+        }
+        return {
+          minX,
+          minY,
+          maxX,
+          maxY,
+          id: box.id
+        }
+      }
     )
     objectsGroupByLayer.forEach((objects, layerName) => {
       // AutoCAD block rule: entities authored on layer "0" inherit the INSERT's layer.
@@ -1755,7 +1813,7 @@ export class AcTrView2d extends AcEdBaseView {
       // If block-definition entities are on layer "0", this bucket now uses the layer
       // of the block reference itself (effectiveLayerName).
       entity.layerName = effectiveLayerName
-      entity.box = groupBox
+      entity.box = worldGroupBox
       const entityUserData = entity.userData as {
         spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
       }

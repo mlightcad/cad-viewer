@@ -17,19 +17,25 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: release
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: 'pnpm'
-          registry-url: https://registry.npmjs.org
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@mlightcad'
+
+      - name: Upgrade npm for Trusted Publishing
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -71,11 +77,21 @@ jobs:
       - name: Pre-serve
         run: pnpm pre-serve
 
+      # Authenticates via npm Trusted Publishing (OIDC); no NPM_TOKEN needed.
+      # Configure each package on npmjs.com → Settings → Trusted publishing:
+      #   Provider: GitHub Actions
+      #   Repository: mlightcad/cad-viewer
+      #   Workflow filename: ci.yml
+      #   Environment: release  (must match the job environment below)
       - name: Publish packages to npm
         if: startsWith(github.ref, 'refs/tags/')
-        run: pnpm publish:viewer
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm --version
+          # setup-node writes an empty _authToken line that blocks OIDC fallback
+          if [ -f "$HOME/.npmrc" ]; then
+            sed -i '/_authToken/d' "$HOME/.npmrc"
+          fi
+          pnpm publish:viewer
 
       - name: Create github release
         if: startsWith(github.ref, 'refs/tags/')
