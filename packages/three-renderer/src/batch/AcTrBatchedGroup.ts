@@ -283,6 +283,60 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   /**
+   * Computes axis-aligned bounds from packed batch vertex data and visible
+   * unbatched drawables. Prefer this over entity-level bounding boxes when
+   * framing the view — it reflects what is actually rendered in GPU buffers.
+   */
+  computeBoundingBox(
+    target = new THREE.Box3(),
+    options?: { excludeObjectIds?: ReadonlySet<string> }
+  ) {
+    target.makeEmpty()
+    const scratch = new THREE.Box3()
+
+    const unionBatchMap = (
+      map: Map<
+        number,
+        | AcTrBatchedLine
+        | AcTrBatchedLine2
+        | AcTrBatchedMesh
+        | AcTrBatchedPoint
+      >
+    ) => {
+      map.forEach(batch => {
+        batch.unionActiveVisibleBoundingBoxInto(target, options)
+      })
+    }
+
+    unionBatchMap(this._lineBatches)
+    unionBatchMap(this._lineWithIndexBatches)
+    unionBatchMap(this._line2Batches)
+    unionBatchMap(this._meshBatches)
+    unionBatchMap(this._meshWithIndexBatches)
+    unionBatchMap(this._pointBatches)
+    unionBatchMap(this._pointSymbolBatches)
+
+    this._unbatchedEntities.forEach((objects, objectId) => {
+      if (options?.excludeObjectIds?.has(objectId)) {
+        return
+      }
+      for (const child of objects) {
+        if (!child.visible) continue
+        const geometry = (
+          child as THREE.Mesh | THREE.LineSegments | THREE.Points
+        ).geometry
+        if (!geometry) continue
+        AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+        if (!geometry.boundingBox) continue
+        scratch.copy(geometry.boundingBox).applyMatrix4(child.matrixWorld)
+        target.union(scratch)
+      }
+    })
+
+    return target
+  }
+
+  /**
    * Clears all batched/unbatched data and disposes owned resources.
    */
   clear() {

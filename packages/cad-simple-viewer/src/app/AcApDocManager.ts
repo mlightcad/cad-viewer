@@ -7,7 +7,6 @@ import {
   acdbHostApplicationServices,
   AcDbProgressdEventArgs,
   AcDbSysVarManager,
-  AcGeBox2d,
   log
 } from '@mlightcad/data-model'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
@@ -1172,7 +1171,7 @@ export class AcApDocManager {
       ;(this.curView as AcTrView2d).syncDisplaySysVars(doc.database)
       const db = doc.database
 
-      // Three-way fit strategy at document open time:
+      // Fit strategy at document open time:
       //
       // 1. **Paper space + has LIMMIN/LIMMAX**: frame the authoritative
       //    paper sheet rectangle (`AcDbLayout.limits`). Real-world DWGs
@@ -1182,15 +1181,8 @@ export class AcApDocManager {
       //    dominated by the largest-scale outliers and shrinks the
       //    actual paper to a grain.
       //
-      // 2. **Model space + non-empty database extents**: frame
-      //    EXTMIN/EXTMAX. Eager-zoom shortcut for the common case of
-      //    opening straight into model space; avoids waiting on the
-      //    converter (`zoomToFitDrawing` polls until entities are
-      //    converted).
-      //
-      // 3. **Fallback** (paper without limits, or model with empty
-      //    extents — typically DXF): poll `zoomToFitDrawing` and frame
-      //    the populated layout bounding box once entities land.
+      // 2. **Otherwise**: poll `zoomToFitDrawing` and frame batch-derived
+      //    geometry bounds once entities land.
       //
       // The pre-fix code used `db.extmin/db.extmax` (always model-space
       // EXTMIN/EXTMAX sysvars) even when opening into paper, landing on
@@ -1206,8 +1198,6 @@ export class AcApDocManager {
 
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
         this.curView.zoomTo(layoutLimits)
-      } else if (!isPaperSpaceActive && !db.extents.isEmpty()) {
-        this.curView.zoomTo(new AcGeBox2d(db.extmin, db.extmax))
       } else {
         this.curView.zoomToFitDrawing()
       }

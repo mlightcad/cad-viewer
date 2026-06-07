@@ -73,8 +73,12 @@ export class AcTrLayout {
   private _group: THREE.Group
   /** Spatial index tree for efficient entity queries */
   private _spatialIndex: AcTrHierarchicalSpatialIndex
-  /** Bounding box containing all entities in this layout */
-  private _box: THREE.Box3
+  /** Cached layout bounds derived from packed batch vertex buffers */
+  private _cachedBox: THREE.Box3
+  /** When true, {@link box} is recomputed from batch geometry on next read */
+  private _boxDirty: boolean
+  /** Entity ids excluded from layout bounds (e.g. RAY/XLINE) */
+  private _extentExcludedObjectIds: Set<AcDbObjectId>
   /** Map of layers indexed by layer name */
   private _layers: Map<string, AcTrLayer>
   /** The flag indicating whether the layout is loaded/activated */
@@ -87,7 +91,9 @@ export class AcTrLayout {
   constructor() {
     this._group = new THREE.Group()
     this._spatialIndex = new AcTrHierarchicalSpatialIndex()
-    this._box = new THREE.Box3()
+    this._cachedBox = new THREE.Box3()
+    this._boxDirty = true
+    this._extentExcludedObjectIds = new Set()
     this._layers = new Map()
     this._isLoaded = false
   }
@@ -112,10 +118,42 @@ export class AcTrLayout {
   /**
    * Gets the bounding box that contains all entities in this layout.
    *
+   * Derived from packed batch vertex buffers (same source as GPU draw data),
+   * not from accumulated {@link AcTrEntity.box} metadata.
+   *
    * @returns The layout's bounding box
    */
   get box() {
-    return this._box
+    if (this._boxDirty) {
+      this.recomputeBox()
+    }
+    return this._cachedBox
+  }
+
+  /**
+   * Recomputes {@link box} from batch geometry across all visible layers.
+   */
+  computeBatchBoundingBox(target = new THREE.Box3()) {
+    if (this._boxDirty) {
+      this.recomputeBox()
+    }
+    return target.copy(this._cachedBox)
+  }
+
+  private recomputeBox() {
+    this._cachedBox.makeEmpty()
+    const scratch = new THREE.Box3()
+    this._layers.forEach(layer => {
+      layer.computeBatchBoundingBox(scratch, this._extentExcludedObjectIds)
+      if (!scratch.isEmpty()) {
+        this._cachedBox.union(scratch)
+      }
+    })
+    this._boxDirty = false
+  }
+
+  private invalidateBox() {
+    this._boxDirty = true
   }
 
   /**
@@ -223,7 +261,9 @@ export class AcTrLayout {
       layer.clear()
     })
     this._layers.clear()
-    this._box.makeEmpty()
+    this._cachedBox.makeEmpty()
+    this._boxDirty = true
+    this._extentExcludedObjectIds.clear()
     this._spatialIndex.clear()
     return this
   }
@@ -286,31 +326,14 @@ export class AcTrLayout {
 
     layer.addEntity(entity)
 
-    const box = entity.box
-    // For infinitive line such as ray and xline, they are not used to extend box
-    if (extendBbox) this._box.union(box)
-
-    this._spatialIndex.insert({
-      minX: box.min.x,
-      minY: box.min.y,
-      maxX: box.max.x,
-      maxY: box.max.y,
-      id: entity.objectId
-    })
-
-    // Some INSERT rendering paths split one block reference into multiple layer
-    // groups (AcTrEntity instead of AcTrGroup). Keep child-box index via userData
-    // so object snap can still resolve gsMark to sub-entities.
-    const spatialIndexChildBoxes = this.getSpatialIndexChildBoxes(entity)
-    if (spatialIndexChildBoxes) {
-      this._spatialIndex.ensureChildIndex(
-        entity.objectId,
-        spatialIndexChildBoxes
-      )
-    } else if (entity instanceof AcTrGroup) {
-      // If it is one block group, build spatial index for entities in this block.
-      this._spatialIndex.createChildIndex(entity)
+    if (!extendBbox) {
+      this._extentExcludedObjectIds.add(entity.objectId)
+    } else {
+      this._extentExcludedObjectIds.delete(entity.objectId)
     }
+    this.invalidateBox()
+
+    this.registerEntitySpatialIndex(entity)
 
     return this
   }
@@ -328,7 +351,11 @@ export class AcTrLayout {
         result = true
       }
     }
-    this._spatialIndex.removeById(objectId)
+    if (result) {
+      this._spatialIndex.removeById(objectId)
+      this._extentExcludedObjectIds.delete(objectId)
+      this.invalidateBox()
+    }
     return result
   }
 
@@ -340,9 +367,13 @@ export class AcTrLayout {
    */
   updateEntity(entity: AcTrEntity) {
     for (const [_, layer] of this._layers) {
-      if (layer.updateEntity(entity)) return true
+      if (layer.updateEntity(entity)) {
+        this._spatialIndex.removeById(entity.objectId)
+        this.registerEntitySpatialIndex(entity)
+        this.invalidateBox()
+        return true
+      }
     }
-    // TODO: Uodate spatial index
     return false
   }
 
@@ -367,6 +398,9 @@ export class AcTrLayout {
       if (layer.setEntityVisible(objectId, visible)) {
         updated = true
       }
+    }
+    if (updated) {
+      this.invalidateBox()
     }
     return updated
   }
@@ -420,7 +454,11 @@ export class AcTrLayout {
     const layer = this._layers.get(info.name)
     if (layer) {
       // TODO: Handle layer name changes
+      const wasVisible = layer.visible
       layer.update(info)
+      if (wasVisible !== layer.visible) {
+        this.invalidateBox()
+      }
     }
     return layer
   }
@@ -546,5 +584,30 @@ export class AcTrLayout {
     }
 
     return boxes
+  }
+
+  private registerEntitySpatialIndex(entity: AcTrEntity) {
+    const box = entity.box
+    this._spatialIndex.insert({
+      minX: box.min.x,
+      minY: box.min.y,
+      maxX: box.max.x,
+      maxY: box.max.y,
+      id: entity.objectId
+    })
+
+    // Some INSERT rendering paths split one block reference into multiple layer
+    // groups (AcTrEntity instead of AcTrGroup). Keep child-box index via userData
+    // so object snap can still resolve gsMark to sub-entities.
+    const spatialIndexChildBoxes = this.getSpatialIndexChildBoxes(entity)
+    if (spatialIndexChildBoxes) {
+      this._spatialIndex.ensureChildIndex(
+        entity.objectId,
+        spatialIndexChildBoxes
+      )
+    } else if (entity instanceof AcTrGroup) {
+      // If it is one block group, build spatial index for entities in this block.
+      this._spatialIndex.createChildIndex(entity)
+    }
   }
 }

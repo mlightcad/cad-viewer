@@ -786,6 +786,40 @@ export function createAcTrBatchedMixin<
     }
 
     /**
+     * Unions axis-aligned bounds of every active, visible packed geometry slot
+     * into `target`. Uses lazily computed per-slot boxes derived from batch
+     * vertex buffers (not entity-level metadata boxes).
+     */
+    unionActiveVisibleBoundingBoxInto(
+      target: THREE.Box3,
+      options?: { excludeObjectIds?: ReadonlySet<string> }
+    ) {
+      const self = this as unknown as THREE.Object3D
+      self.updateMatrixWorld(true)
+
+      for (let i = 0; i < this._geometryCount; i++) {
+        const info = this._geometryInfo[i]
+        if (!isBatchGeometryActive(info.flags)) continue
+        if (!isBatchGeometryVisible(info.flags)) continue
+        if (
+          options?.excludeObjectIds &&
+          info.objectId &&
+          options.excludeObjectIds.has(info.objectId)
+        ) {
+          continue
+        }
+        const bounds = (
+          this as unknown as AcTrBatchBounds
+        ).getBoundingBoxAt(i, this._box)
+        if (bounds) {
+          // Per-slot boxes are in batch-local space; translate by batch origin.
+          this._box.applyMatrix4(self.matrixWorld)
+          target.union(this._box)
+        }
+      }
+    }
+
+    /**
      * Recomputes the aggregate bounding sphere from all active sub-geometries.
      *
      * @returns This instance for chaining.

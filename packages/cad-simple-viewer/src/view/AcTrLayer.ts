@@ -79,7 +79,8 @@ export class AcTrLayer {
   /**
    * Bounding box containing all entities in this layer
    */
-  private _box: THREE.Box3
+  private _cachedBox: THREE.Box3
+  private _boxDirty: boolean
 
   /**
    * Construct one instance of this class
@@ -88,7 +89,8 @@ export class AcTrLayer {
   constructor(layer: AcEdLayerInfo) {
     this._group = new AcTrBatchedGroup()
     this._name = layer.name
-    this._box = new THREE.Box3()
+    this._cachedBox = new THREE.Box3()
+    this._boxDirty = true
     this._group.visible = !(layer.isFrozen || layer.isOff)
   }
 
@@ -105,10 +107,30 @@ export class AcTrLayer {
   /**
    * Gets the bounding box that contains all entities in this layer.
    *
+   * Derived from packed batch vertex buffers, not entity metadata boxes.
+   *
    * @returns The layer's bounding box
    */
   get box() {
-    return this._box
+    if (this._boxDirty) {
+      this.computeBatchBoundingBox(this._cachedBox)
+      this._boxDirty = false
+    }
+    return this._cachedBox
+  }
+
+  /**
+   * Recomputes bounds from packed batch vertex buffers in this layer.
+   */
+  computeBatchBoundingBox(
+    target = new THREE.Box3(),
+    excludeObjectIds?: ReadonlySet<string>
+  ) {
+    if (!this.visible) {
+      target.makeEmpty()
+      return target
+    }
+    return this._group.computeBoundingBox(target, { excludeObjectIds })
   }
 
   get visible() {
@@ -145,8 +167,12 @@ export class AcTrLayer {
    * @param value - New layer information
    */
   update(value: AcEdLayerInfo) {
+    const wasVisible = this.visible
     this._name = value.name
     this._group.visible = !(value.isFrozen || value.isOff)
+    if (wasVisible !== this.visible) {
+      this._boxDirty = true
+    }
   }
 
   /**
@@ -196,11 +222,9 @@ export class AcTrLayer {
    * @param extendBbox - Input the flag whether to extend the bounding box of the scene by union the bounding box
    * of the specified entity. Defaults to true.
    */
-  addEntity(entity: AcTrEntity, extendBbox: boolean = true) {
+  addEntity(entity: AcTrEntity, _extendBbox: boolean = true) {
     this._group.addEntity(entity)
-    const box = entity.box
-    // For infinitive line such as ray and xline, they are not used to extend box
-    if (extendBbox) this._box.union(box)
+    this._boxDirty = true
   }
 
   /**
@@ -218,7 +242,11 @@ export class AcTrLayer {
    * @returns Return true if remove the specified entity successfully. Otherwise, return false.
    */
   removeEntity(objectId: AcDbObjectId): boolean {
-    return this._group.removeEntity(objectId)
+    const removed = this._group.removeEntity(objectId)
+    if (removed) {
+      this._boxDirty = true
+    }
+    return removed
   }
 
   /**
@@ -233,10 +261,12 @@ export class AcTrLayer {
     const isRemoved = this._group.removeEntity(entity.objectId)
     if (isRemoved) {
       this._group.addEntity(entity)
+      this._boxDirty = true
       return true
     }
     if (entity.visible) {
       this._group.addEntity(entity)
+      this._boxDirty = true
       return true
     }
     return false
@@ -247,7 +277,8 @@ export class AcTrLayer {
    */
   clear() {
     this._group.clear()
-    this._box.makeEmpty()
+    this._cachedBox.makeEmpty()
+    this._boxDirty = true
     this._group.removeFromParent()
   }
 
