@@ -1,5 +1,14 @@
 # @mlightcad/cad-html-plugin
 
+## 1.5.5
+
+### Patch Changes
+
+- chore: add version sync check and update deps
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.5.5
+  - @mlightcad/three-renderer@1.5.5
+
 ## 1.5.4
 
 ### Patch Changes

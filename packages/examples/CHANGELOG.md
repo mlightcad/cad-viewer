@@ -1,5 +1,11 @@
 # @mlightcad/cad-viewer-examples
 
+## 1.5.5
+
+### Patch Changes
+
+- chore: add version sync check and update deps
+
 ## 1.5.4
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-html-exporter-cli",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "CLI example: convert DXF/DWG drawings to offline HTML",
   "type": "module",
   "bin": {

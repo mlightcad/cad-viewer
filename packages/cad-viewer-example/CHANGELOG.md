@@ -1,5 +1,16 @@
 # @mlightcad/cad-viewer-example
 
+## 1.5.5
+
+### Patch Changes
+
+- chore: add version sync check and update deps
+- Updated dependencies
+  - @mlightcad/cad-html-plugin@1.5.5
+  - @mlightcad/cad-pdf-plugin@1.5.5
+  - @mlightcad/cad-simple-viewer@1.5.5
+  - @mlightcad/cad-viewer@1.5.5
+
 ## 1.5.4
 
 ### Patch Changes
