@@ -1631,6 +1631,24 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Returns `true` when the given viewport's rectangular boundary should not
+   * be drawn because the viewport entity lives on a non-plottable ("no-plot")
+   * layer.
+   *
+   * Authoring viewports on a no-plot layer is a common AutoCAD convention to
+   * keep their frames off the printed sheet. Honoring `isPlottable` here keeps
+   * the layout faithful: the viewport's model content still renders (via its
+   * {@link AcTrViewportView}); only the border is suppressed. Without this, a
+   * viewport whose model view is empty would leave a stray empty rectangle on
+   * the layout that AutoCAD never shows.
+   */
+  private isViewportBorderSuppressed(viewport: AcDbViewport): boolean {
+    const database = AcApDocManager.instance.curDocument?.database
+    const layer = database?.tables.layerTable.getAt(viewport.layer)
+    return layer ? !layer.isPlottable : false
+  }
+
+  /**
    * Converts the specified database entities to three entities
    * @param entities - The database entities
    * @returns The converted three entities
@@ -1661,41 +1679,60 @@ export class AcTrView2d extends AcEdBaseView {
           continue
         }
 
-        const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
-        if (!threeEntity) continue
+        // AutoCAD does not plot a viewport's boundary when the viewport entity
+        // lives on a non-plottable ("no-plot") layer — a common convention so
+        // viewport frames stay off the printed sheet. Suppress drawing the
+        // border in that case, but still create the viewport view below so the
+        // model content shown through the viewport keeps rendering. A viewport
+        // whose model view happens to be empty then leaves no stray rectangle
+        // on the layout, matching AutoCAD.
+        const drawBorder = !(
+          entity instanceof AcDbViewport &&
+          this.isViewportBorderSuppressed(entity)
+        )
 
-        threeEntity.objectId = entity.objectId
-        threeEntity.ownerId = entity.ownerId
-        threeEntity.layerName = entity.layer
-        threeEntity.visible = entity.visibility
-        if (
-          threeEntity instanceof AcTrGroup &&
-          (threeEntity as AcTrGroup).isOnTheSameLayer
-        ) {
-          // Even when a block expands to a single layer bucket, children authored on
-          // layer "0" still inherit the INSERT layer for ByLayer traits (color, etc.).
-          this.remapInheritedLayerObjects(
-            (threeEntity as AcTrGroup).children,
-            '0',
-            threeEntity.layerName
-          )
-        }
-        if (
-          threeEntity instanceof AcTrGroup &&
-          !(threeEntity as AcTrGroup).isOnTheSameLayer
-        ) {
-          this.handleGroup(threeEntity as AcTrGroup)
-        } else {
-          const isExtendBbox = !(
-            entity instanceof AcDbRay || entity instanceof AcDbXline
-          )
+        const threeEntity: AcTrEntity | null = drawBorder
+          ? this.drawEntity(entity, true)
+          : null
+        // For non-viewport entities a missing three-entity means nothing to
+        // render, so skip to the next entity. Viewports fall through so their
+        // viewport view is still created even when the border is suppressed.
+        if (!threeEntity && !(entity instanceof AcDbViewport)) continue
 
-          await threeEntity.draw()
-          this._scene.addEntity(threeEntity, isExtendBbox)
-          this.applySessionHiddenObjectState(entity.objectId)
-          // Release memory occupied by this entity
-          threeEntity.dispose()
-          this._isDirty = true
+        if (threeEntity) {
+          threeEntity.objectId = entity.objectId
+          threeEntity.ownerId = entity.ownerId
+          threeEntity.layerName = entity.layer
+          threeEntity.visible = entity.visibility
+          if (
+            threeEntity instanceof AcTrGroup &&
+            (threeEntity as AcTrGroup).isOnTheSameLayer
+          ) {
+            // Even when a block expands to a single layer bucket, children authored on
+            // layer "0" still inherit the INSERT layer for ByLayer traits (color, etc.).
+            this.remapInheritedLayerObjects(
+              (threeEntity as AcTrGroup).children,
+              '0',
+              threeEntity.layerName
+            )
+          }
+          if (
+            threeEntity instanceof AcTrGroup &&
+            !(threeEntity as AcTrGroup).isOnTheSameLayer
+          ) {
+            this.handleGroup(threeEntity as AcTrGroup)
+          } else {
+            const isExtendBbox = !(
+              entity instanceof AcDbRay || entity instanceof AcDbXline
+            )
+
+            await threeEntity.draw()
+            this._scene.addEntity(threeEntity, isExtendBbox)
+            this.applySessionHiddenObjectState(entity.objectId)
+            // Release memory occupied by this entity
+            threeEntity.dispose()
+            this._isDirty = true
+          }
         }
 
         if (entity instanceof AcDbViewport) {
