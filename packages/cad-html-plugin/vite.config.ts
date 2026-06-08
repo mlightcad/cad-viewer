@@ -1,27 +1,31 @@
 import { resolve } from 'path'
 import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import { defineConfig, PluginOption } from 'vite'
+import {
+  createPluginEntryFileName,
+  createPluginLibRollupOutput
+} from '../vite-config/pluginRollupOutput'
 
 const packageName = '@mlightcad/cad-html-plugin'
+const pluginId = 'cad-html-plugin'
 
 export default defineConfig({
   build: {
     outDir: 'dist',
-    // Keep false so parallel builds (nx run-many + example prebuild) do not
-    // delete viewer-runtime.iife.js produced by a concurrent viewer build.
-    emptyOutDir: false,
+    emptyOutDir: true,
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
         register: resolve(__dirname, 'src/register.ts')
       },
-      name: 'cad-html-plugin',
+      name: pluginId,
       fileName: (format, entryName) =>
-        format === 'es' ? `${entryName}.js` : `${entryName}.umd.cjs`
+        createPluginEntryFileName(pluginId, format, entryName)
     },
     minify: true,
     rollupOptions: {
-      external: [packageName]
+      external: [packageName],
+      output: createPluginLibRollupOutput(pluginId)
     }
   },
   plugins: [peerDepsExternal() as PluginOption]

@@ -57,8 +57,5 @@ export {
   AcApHtmlSnapshotBuilder,
   type AcApHtmlSnapshotBuilderOptions
 } from './AcApHtmlSnapshotBuilder'
-export {
-  createHtmlPlugin,
-  HTML_PLUGIN_NAME,
-  HTML_PLUGIN_TRIGGERS
-} from './register'
+export { createHtmlPlugin } from './createHtmlPlugin'
+export { HTML_PLUGIN_NAME, HTML_PLUGIN_TRIGGERS } from './register'

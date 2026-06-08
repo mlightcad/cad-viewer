@@ -13,8 +13,8 @@
     "README.md",
     "package.json"
   ],
-  "main": "./dist/index.umd.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/cad-svg-plugin.umd.cjs",
+  "module": "./dist/cad-svg-plugin.js",
   "sideEffects": false,
   "types": "./lib/index.d.ts",
   "typesVersions": {
@@ -27,13 +27,13 @@
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.umd.cjs"
+      "import": "./dist/cad-svg-plugin.js",
+      "require": "./dist/cad-svg-plugin.umd.cjs"
     },
     "./register": {
       "types": "./lib/register.d.ts",
-      "import": "./dist/register.js",
-      "require": "./dist/register.umd.cjs"
+      "import": "./dist/cad-svg-plugin-register.js",
+      "require": "./dist/cad-svg-plugin-register.umd.cjs"
     }
   },
   "scripts": {

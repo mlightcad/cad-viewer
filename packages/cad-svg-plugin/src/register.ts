@@ -11,16 +11,6 @@ export const SVG_PLUGIN_NAME = 'SvgPlugin'
 export const SVG_PLUGIN_TRIGGERS = ['csvg'] as const
 
 /**
- * Creates an SVG export plugin instance after loading the plugin module chunk.
- *
- * @returns A loaded {@link AcApSvgPlugin} instance
- */
-export async function createSvgPlugin() {
-  const { AcApSvgPlugin } = await import('./AcApSvgPlugin')
-  return new AcApSvgPlugin()
-}
-
-/**
  * Registers the SVG export plugin for lazy loading.
  *
  * Import from `@mlightcad/cad-svg-plugin/register` so the main plugin bundle
