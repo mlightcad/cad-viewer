@@ -18,13 +18,13 @@
     "mlight",
     "mlightcad"
   ],
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cad-viewer.js",
+  "module": "./dist/cad-viewer.js",
+  "types": "./dist/cad-viewer.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/cad-viewer.d.ts",
+      "import": "./dist/cad-viewer.js"
     }
   },
   "files": [

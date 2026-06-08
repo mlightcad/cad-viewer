@@ -7,8 +7,5 @@
 export * from './AcSvgRenderer'
 export { AcApConvertToSvgCmd } from './AcApConvertToSvgCmd'
 export { AcApSvgConvertor } from './AcApSvgConvertor'
-export {
-  createSvgPlugin,
-  SVG_PLUGIN_NAME,
-  SVG_PLUGIN_TRIGGERS
-} from './register'
+export { createSvgPlugin } from './createSvgPlugin'
+export { SVG_PLUGIN_NAME, SVG_PLUGIN_TRIGGERS } from './register'

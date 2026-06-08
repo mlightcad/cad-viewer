@@ -12,16 +12,6 @@ export const PDF_PLUGIN_NAME = 'PdfPlugin'
 export const PDF_PLUGIN_TRIGGERS = ['cpdf', 'ipdf'] as const
 
 /**
- * Creates a PDF plugin instance after loading the plugin module chunk.
- *
- * @returns A loaded {@link AcApPdfPlugin} instance
- */
-export async function createPdfPlugin() {
-  const { AcApPdfPlugin } = await import('./AcApPdfPlugin')
-  return new AcApPdfPlugin()
-}
-
-/**
  * Registers the PDF plugin for lazy loading.
  *
  * Import from `@mlightcad/cad-pdf-plugin/register` so the main plugin bundle

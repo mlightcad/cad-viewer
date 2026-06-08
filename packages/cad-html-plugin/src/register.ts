@@ -11,16 +11,6 @@ export const HTML_PLUGIN_NAME = 'HtmlPlugin'
 export const HTML_PLUGIN_TRIGGERS = ['chtml'] as const
 
 /**
- * Creates an HTML export plugin instance after loading the plugin module chunk.
- *
- * @returns A loaded {@link AcApHtmlPlugin} instance
- */
-export async function createHtmlPlugin() {
-  const { AcApHtmlPlugin } = await import('./AcApHtmlPlugin')
-  return new AcApHtmlPlugin()
-}
-
-/**
  * Registers the HTML export plugin for lazy loading.
  *
  * Import from `@mlightcad/cad-html-plugin/register` so the main plugin bundle

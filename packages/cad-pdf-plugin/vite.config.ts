@@ -1,8 +1,13 @@
 import { resolve } from 'path'
 import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import { defineConfig, PluginOption } from 'vite'
+import {
+  createPluginEntryFileName,
+  createPluginLibRollupOutput
+} from '../vite-config/pluginRollupOutput'
 
 const packageName = '@mlightcad/cad-pdf-plugin'
+const pluginId = 'cad-pdf-plugin'
 
 export default defineConfig({
   build: {
@@ -13,13 +18,14 @@ export default defineConfig({
         index: resolve(__dirname, 'src/index.ts'),
         register: resolve(__dirname, 'src/register.ts')
       },
-      name: 'cad-pdf-plugin',
+      name: pluginId,
       fileName: (format, entryName) =>
-        format === 'es' ? `${entryName}.js` : `${entryName}.umd.cjs`
+        createPluginEntryFileName(pluginId, format, entryName)
     },
     minify: true,
     rollupOptions: {
-      external: [packageName]
+      external: [packageName],
+      output: createPluginLibRollupOutput(pluginId)
     }
   },
   plugins: [peerDepsExternal() as PluginOption]

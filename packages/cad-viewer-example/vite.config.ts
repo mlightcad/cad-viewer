@@ -6,6 +6,7 @@ import { viteStaticCopy } from 'vite-plugin-static-copy'
 import svgLoader from 'vite-svg-loader'
 import { visualizer } from 'rollup-plugin-visualizer'
 import vue from '@vitejs/plugin-vue'
+import { exampleRollupOutput } from '../vite-config/pluginRollupOutput'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const VIEWER_RUNTIME_SRC = '../cad-html-plugin/dist/viewer-runtime.iife.js'
@@ -94,7 +95,8 @@ export default defineConfig(({ command, mode }) => {
         // Main entry point for the app
         input: {
           main: resolve(__dirname, 'index.html')
-        }
+        },
+        output: exampleRollupOutput
       }
     },
     plugins: plugins
