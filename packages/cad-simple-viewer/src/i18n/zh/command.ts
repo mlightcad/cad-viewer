@@ -42,6 +42,9 @@ export default {
     cetranparency: {
       description: '设置新创建对象的透明度'
     },
+    cachefont: {
+      description: '将本地字体文件缓存到 IndexedDB 以供文字渲染使用'
+    },
     circle: {
       description: '使用圆心和半径创建圆'
     },

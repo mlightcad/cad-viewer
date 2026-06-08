@@ -41,13 +41,13 @@
   },
   "devDependencies": {
     "@mlightcad/data-model": "^1.8.3",
-    "@mlightcad/mtext-renderer": "^0.11.1",
+    "@mlightcad/mtext-renderer": "^0.11.2",
     "@types/three": "^0.172.0",
     "three": "^0.172.0"
   },
   "peerDependencies": {
     "@mlightcad/data-model": "^1.8.3",
-    "@mlightcad/mtext-renderer": "^0.11.1",
+    "@mlightcad/mtext-renderer": "^0.11.2",
     "@velipso/polybool": "^1.1.1",
     "three": "^0.172.0"
   }

@@ -17,7 +17,7 @@ export interface AcEdFontNotLoadedInfo {
  * type safety for event emission and listening throughout the application.
  *
  * ## Event Categories
- * - **File Operations**: `open-file`, `open-file-progress`, `failed-to-open-file`
+ * - **File Operations**: `open-file`, `open-file-progress`, `failed-to-open-file`, `cache-font`, `font-file-selected`
  * - **Palette Control**: `close-layer-manager`
  * - **Font Management**: `fonts-not-loaded`, `failed-to-get-avaiable-fonts`, `font-not-found`
  * - **Missing Resources**: `missed-data-changed`
@@ -26,6 +26,12 @@ export interface AcEdFontNotLoadedInfo {
 export type AcEdEvents = {
   /** Emitted to request opening a file dialog */
   'open-file': {}
+  /** Emitted to request opening a font file dialog for IndexedDB caching */
+  'cache-font': {}
+  /** Emitted when the user selects a font file in the cache-font dialog */
+  'font-file-selected': {
+    file?: File
+  }
   /** Emitted to request closing the layer properties manager */
   'close-layer-manager': {}
   /** Emitted during file opening to report progress */

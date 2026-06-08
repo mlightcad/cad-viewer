@@ -15,7 +15,9 @@ export default {
     secondCorner: 'Specify the second corner or'
   },
   message: {
-    fetchingDrawingFile: 'Fetching file ...'
+    fetchingDrawingFile: 'Fetching file ...',
+    fontCached: 'Font cached successfully',
+    fontCacheFailed: 'Failed to cache font'
   },
   progress: {
     start: 'Start parsing file ...',

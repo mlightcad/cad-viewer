@@ -15,7 +15,9 @@ export default {
     secondCorner: '指定第二个角点或'
   },
   message: {
-    fetchingDrawingFile: '正在加载图纸文件...'
+    fetchingDrawingFile: '正在加载图纸文件...',
+    fontCached: '字体已成功缓存',
+    fontCacheFailed: '缓存字体失败'
   },
   progress: {
     start: '开始解析文件...',

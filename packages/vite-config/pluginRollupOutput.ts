@@ -65,12 +65,6 @@ export const exampleRollupOutput: OutputOptions = {
   assetFileNames: 'assets/[name]-[hash][extname]'
 }
 
-/** @deprecated Use {@link exampleRollupOutput}. */
-export const examplePluginRollupOutput = exampleRollupOutput
-
-/** @deprecated Use {@link exampleManualChunks}. */
-export const pluginManualChunks = exampleManualChunks
-
 export function createLibEntryFileName(
   packageId: string,
   format: string,

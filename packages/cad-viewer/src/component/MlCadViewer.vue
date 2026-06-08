@@ -109,7 +109,7 @@ import {
   useSettings
 } from '../composable'
 import { LocaleProp } from '../locale'
-import { MlDialogManager, MlFileReader } from './common'
+import { MlDialogManager, MlFileReader, MlFontFileReader } from './common'
 import {
   MlEntityDrawStyleToolbar,
   MlEntityInfo,
@@ -705,6 +705,7 @@ const closeNotificationCenter = () => {
       <!-- Hidden components for file handling and entity information -->
       <!-- File reader for local file uploads -->
       <ml-file-reader v-if="editorRef" @file-read="handleFileRead" />
+      <ml-font-file-reader v-if="editorRef" />
 
       <!-- Entity info panel for displaying object properties -->
       <ml-entity-info v-if="editorRef" />

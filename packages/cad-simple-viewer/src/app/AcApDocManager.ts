@@ -15,6 +15,7 @@ import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 import {
   AcApArcCmd,
+  AcApCacheFontCmd,
   AcApCircleCmd,
   AcApClearMeasurementsCmd,
   AcApConvertToDxfCmd,
@@ -870,6 +871,7 @@ export class AcApDocManager {
     }
 
     addSystemCommand('arc', 'arc', new AcApArcCmd())
+    addSystemCommand('cachefont', 'cachefont', new AcApCacheFontCmd())
     addSystemCommand('circle', 'circle', new AcApCircleCmd())
     addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
     addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
