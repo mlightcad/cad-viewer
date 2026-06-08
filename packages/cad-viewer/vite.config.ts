@@ -39,7 +39,11 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       minify: true,
       rollupOptions: {
         // PDF/HTML plugins are peers; loaded at runtime via dynamic import in registerLazyPlugins
-        external: ['@mlightcad/cad-pdf-plugin', '@mlightcad/cad-html-plugin']
+        external: [
+          '@mlightcad/cad-pdf-plugin',
+          '@mlightcad/cad-html-plugin',
+          '@mlightcad/cad-svg-plugin'
+        ]
       }
     },
     plugins

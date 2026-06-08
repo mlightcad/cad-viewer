@@ -7,7 +7,7 @@ A vanilla TypeScript demo that shows how to embed [`@mlightcad/cad-simple-viewer
 - **Local files** — Open `.dxf` / `.dwg` via file picker (toolbar **Open** or center **Open File**)
 - **Sample drawings** — Sidebar loads predefined files from the [cad-data](https://github.com/mlightcad/cad-data) CDN
 - **Viewer toolbar** — Zoom fit, zoom window, background toggle, pickbox size, line-weight display, export HTML/PDF
-- **Lazy plugins** — `@mlightcad/cad-html-plugin` (`chtml`), `@mlightcad/cad-pdf-plugin` (`cpdf`), and `@mlightcad/cad-svg-plugin` (`csvg`) load on demand
+- **Lazy plugins** — registered from `@mlightcad/cad-*-plugin/register` in `src/register.ts`; `chtml` / `cpdf` / `csvg` load plugin chunks on demand
 - **Browser-only** — Parsing and rendering run in the browser (Web Workers + WebAssembly for DWG)
 - **Responsive layout** — Sidebar + viewer pane; stacks vertically on narrow screens
 
@@ -92,7 +92,7 @@ Integration patterns useful when building your own host app (not a full CAD UI l
 | Remote open | `openUrl(url, options)` for CDN sample files |
 | Commands | `sendStringToExecute('zoom\\nall')`, `switchbg`, plugin commands `chtml` / `cpdf` |
 | System variables | `AcDbSysVarManager` + `sendStringToExecute` (e.g. `PICKBOX`) |
-| Plugins | `registerLazyHtmlPlugin` / `registerLazyPdfPlugin` / `registerLazySvgPlugin` on `pluginManager` |
+| Plugins | Lazy registration via `@mlightcad/*/register` in `src/register.ts` (only needed plugins) |
 | Command aliases | Demo overrides (`LINE` → `LX`, etc.) via `commandAliases` |
 | Workers & assets | `webworkerFileUrls`, `htmlViewerRuntimeUrl`, static copy in Vite |
 
@@ -103,7 +103,8 @@ Lazy initialization: `AcApDocManager` is created on first file open, not at page
 | Path | Role |
 |------|------|
 | `index.html` | Layout: sidebar, toolbar, canvas container, styles |
-| `src/main.ts` | `CadViewerApp` — wiring UI to `AcApDocManager` and plugins |
+| `src/main.ts` | `CadViewerApp` — wiring UI to `AcApDocManager` |
+| `src/register.ts` | Registers export plugins from `@mlightcad/cad-*-plugin/register` |
 | `vite.config.ts` | `base: './'`, copies workers + `viewer-runtime.iife.js` |
 | `package.json` | Scripts and workspace dependencies |
 

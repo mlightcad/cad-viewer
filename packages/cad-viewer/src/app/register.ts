@@ -1,8 +1,11 @@
+import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin/register'
+import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin/register'
 import {
   AcApDocManager,
   AcEdCommandStack,
   AcEdMTextEditor
 } from '@mlightcad/cad-simple-viewer'
+import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
 import { markRaw } from 'vue'
 
 import {
@@ -140,32 +143,9 @@ export const registerLazyPlugins = () => {
     return
   }
 
-  AcApDocManager.instance.pluginManager.registerLazyPlugin({
-    name: 'PdfPlugin',
-    triggers: ['cpdf', 'ipdf'],
-    loader: async () => {
-      const { createPdfPlugin } = await import('@mlightcad/cad-pdf-plugin')
-      return createPdfPlugin()
-    }
-  })
-
-  AcApDocManager.instance.pluginManager.registerLazyPlugin({
-    name: 'HtmlPlugin',
-    triggers: ['chtml'],
-    loader: async () => {
-      const { createHtmlPlugin } = await import('@mlightcad/cad-html-plugin')
-      return createHtmlPlugin()
-    }
-  })
-
-  AcApDocManager.instance.pluginManager.registerLazyPlugin({
-    name: 'SvgPlugin',
-    triggers: ['csvg'],
-    loader: async () => {
-      const { createSvgPlugin } = await import('@mlightcad/cad-svg-plugin')
-      return createSvgPlugin()
-    }
-  })
-
+  const pluginManager = AcApDocManager.instance.pluginManager
+  registerLazyPdfPlugin(pluginManager)
+  registerLazyHtmlPlugin(pluginManager)
+  registerLazySvgPlugin(pluginManager)
   isLazyPluginRegistered = true
 }

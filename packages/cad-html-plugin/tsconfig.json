@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "./src",
-    "outDir": "./lib"
+    "outDir": "./lib",
+    "paths": {
+      "@mlightcad/cad-html-plugin": ["./src/index.ts"]
+    }
   },
   "include": [
     "src"

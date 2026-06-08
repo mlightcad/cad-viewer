@@ -10,6 +10,5 @@ export { AcApSvgConvertor } from './AcApSvgConvertor'
 export {
   createSvgPlugin,
   SVG_PLUGIN_NAME,
-  SVG_PLUGIN_TRIGGERS,
-  registerLazySvgPlugin
-} from './registerLazySvgPlugin'
+  SVG_PLUGIN_TRIGGERS
+} from './register'

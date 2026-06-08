@@ -36,6 +36,8 @@ Runtime dependencies (bundled with this package):
 
 ## Build
 
+Produces `dist/index.js` (main library) and `dist/register.js` (lazy-registration entry).
+
 ```bash
 pnpm --filter @mlightcad/cad-pdf-plugin build
 ```
@@ -44,14 +46,16 @@ pnpm --filter @mlightcad/cad-pdf-plugin build
 
 ### Lazy registration (recommended)
 
-Register the plugin with the document manager's plugin manager. The module chunk loads on first use of `cpdf` or `ipdf`:
+Register the plugin with the document manager's plugin manager. Import from the `/register` subpath so only the registration stub enters your initial bundle; the main plugin chunk loads on first use of `cpdf` or `ipdf`:
 
 ```typescript
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
-import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin'
+import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin/register'
 
 registerLazyPdfPlugin(AcApDocManager.instance.pluginManager)
 ```
+
+Do **not** import `registerLazyPdfPlugin` from the package root in application code — that resolves to the full library build and defeats lazy loading.
 
 Equivalent manual registration:
 
@@ -128,9 +132,9 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 
 | Export | Role |
 |--------|------|
-| `registerLazyPdfPlugin` | One-line lazy registration helper |
 | `createPdfPlugin` | Async factory used by lazy loader |
 | `PDF_PLUGIN_NAME`, `PDF_PLUGIN_TRIGGERS` | Plugin id and command triggers |
+| `@mlightcad/cad-pdf-plugin/register` | `registerLazyPdfPlugin` and registration constants |
 | `AcApPdfPlugin` | `AcApPlugin` implementation |
 | `AcApConvertToPdfCmd` | `cpdf` command class |
 | `AcApImportPdfCmd` | `ipdf` command class |
@@ -141,7 +145,7 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 
 | Path | Role |
 |------|------|
-| `src/registerLazyPdfPlugin.ts` | Lazy plugin registration API |
+| `src/register.ts` | Lazy plugin registration (`/register` entry) and `createPdfPlugin` |
 | `src/AcApPdfPlugin.ts` | Plugin lifecycle (`onLoad` / `onUnload`) |
 | `src/AcApConvertToPdfCmd.ts` | `cpdf` command |
 | `src/AcApImportPdfCmd.ts` | `ipdf` command |

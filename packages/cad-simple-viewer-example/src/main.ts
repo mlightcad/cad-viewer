@@ -1,16 +1,15 @@
-import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin'
-import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin'
 import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
-import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin'
 import {
   AcDbSystemVariables,
   AcDbSysVarManager,
   log
 } from '@mlightcad/data-model'
+
+import { registerLazyPlugins } from './register'
 
 /**
  * Demo-only command alias overrides used by the example app.
@@ -111,10 +110,7 @@ class CadViewerApp {
           htmlViewerRuntimeUrl: './viewer-runtime.iife.js'
         })
 
-        const pluginManager = AcApDocManager.instance.pluginManager
-        registerLazyHtmlPlugin(pluginManager)
-        registerLazyPdfPlugin(pluginManager)
-        registerLazySvgPlugin(pluginManager)
+        registerLazyPlugins()
 
         AcApDocManager.instance.events.documentActivated.addEventListener(
           args => {

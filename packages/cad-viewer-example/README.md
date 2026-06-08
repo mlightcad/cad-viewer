@@ -90,7 +90,7 @@ Integration patterns useful when embedding `@mlightcad/cad-viewer` in your own V
 | Custom commands | `AcApDocManager.instance.commandManager.addCommand(…)` — see `quit` / `exit` in `src/commands/` |
 | Upload flow | Reactive store + conditional render: upload screen until `selectedFile` is set |
 | Workers & runtime | `vite-plugin-static-copy` copies DXF/DWG workers and `viewer-runtime.iife.js` |
-| Export plugins | Declared in `package.json`; `MlCadViewer` lazy-loads `@mlightcad/cad-html-plugin` / `@mlightcad/cad-pdf-plugin` |
+| Export plugins | Declared in `package.json`; `@mlightcad/cad-viewer` registers them via `@mlightcad/cad-*-plugin/register` on bootstrap |
 
 Minimal host wiring in `App.vue`:
 

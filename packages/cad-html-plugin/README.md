@@ -40,7 +40,8 @@ The package produces two artifacts:
 
 | Output | Description |
 |--------|-------------|
-| `dist/index.js` | Library entry (snapshot types, codec, `packHtml`, plugin helpers, …) |
+| `dist/index.js` | Library entry (snapshot types, codec, `packHtml`, `createHtmlPlugin`, …) |
+| `dist/register.js` | Lightweight lazy-registration entry (safe for static import in app bundles) |
 | `dist/viewer-runtime.iife.js` | Offline viewer bootstrap (loaded/inlined into exported HTML) |
 
 ```bash
@@ -53,11 +54,11 @@ Copy or serve `viewer-runtime.iife.js` from your app assets when using the brows
 
 ### Lazy registration (recommended)
 
-Register the plugin with the document manager's plugin manager. The module chunk loads on first use of `chtml`:
+Register the plugin with the document manager's plugin manager. Import from the `/register` subpath so only the registration stub enters your initial bundle; the main plugin chunk loads on first use of `chtml`:
 
 ```typescript
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
-import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin'
+import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin/register'
 
 AcApDocManager.createInstance({
   container: document.getElementById('cad-container')!,
@@ -66,6 +67,8 @@ AcApDocManager.createInstance({
 
 registerLazyHtmlPlugin(AcApDocManager.instance.pluginManager)
 ```
+
+Do **not** import `registerLazyHtmlPlugin` from the package root (`@mlightcad/cad-html-plugin`) in application code — that resolves to the full library build and defeats lazy loading.
 
 After registration:
 
@@ -128,15 +131,16 @@ For DXF/DWG → HTML without a browser UI, use [`@mlightcad/cad-html-exporter-cl
 When embedding HTML export in a web app:
 
 1. Build `@mlightcad/cad-html-plugin` and expose `viewer-runtime.iife.js` at a URL your app can `fetch` (e.g. Vite `public/` copy — see `cad-viewer-example` / `cad-simple-viewer-example` vite configs).
-2. Register `registerLazyHtmlPlugin` (or load the plugin eagerly).
+2. Register via `@mlightcad/cad-html-plugin/register` (or load the plugin eagerly).
 3. Optionally set `htmlViewerRuntimeUrl` on `AcApDocManager.createInstance()` to override the default `./viewer-runtime.iife.js` path.
 4. Ensure fonts used by the drawing are reachable during export if you rely on web-font substitution.
 
 The generated HTML itself needs **no backend**; only the export step may fetch the runtime bundle and fonts.
 
-Subpath export:
+Subpath exports:
 
 ```typescript
+import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin/register'
 import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.js
 ```
 
@@ -144,8 +148,9 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 
 | Export | Role |
 |--------|------|
-| `registerLazyHtmlPlugin`, `createHtmlPlugin` | Lazy plugin registration |
+| `createHtmlPlugin` | Async factory used by the lazy loader |
 | `HTML_PLUGIN_NAME`, `HTML_PLUGIN_TRIGGERS` | Plugin id and command triggers |
+| `@mlightcad/cad-html-plugin/register` | `registerLazyHtmlPlugin` and registration constants |
 | `AcApExportHtmlCmd`, `AcApHtmlConvertor` | `chtml` command and full export workflow |
 | `AcApHtmlSnapshotBuilder` | Live Three.js scene → `AcExSnapshotV1` |
 | `packHtml`, `AcExPackHtmlOptions` | Assemble HTML from snapshot + runtime source |
@@ -161,7 +166,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 
 | Path | Role |
 |------|------|
-| `src/registerLazyHtmlPlugin.ts` | Lazy plugin registration API |
+| `src/register.ts` | Lazy plugin registration (`/register` entry) and `createHtmlPlugin` |
 | `src/AcApHtmlPlugin.ts` | Plugin lifecycle (`onLoad` / `onUnload`) |
 | `src/AcApExportHtmlCmd.ts` | `chtml` command |
 | `src/AcApHtmlConvertor.ts` | Export orchestration (snapshot, runtime fetch, download) |

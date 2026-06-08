@@ -15,12 +15,25 @@
   ],
   "main": "./dist/index.umd.cjs",
   "module": "./dist/index.js",
+  "sideEffects": false,
   "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "register": [
+        "lib/register.d.ts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.umd.cjs"
+    },
+    "./register": {
+      "types": "./lib/register.d.ts",
+      "import": "./dist/register.js",
+      "require": "./dist/register.umd.cjs"
     }
   },
   "scripts": {

@@ -60,6 +60,5 @@ export {
 export {
   createHtmlPlugin,
   HTML_PLUGIN_NAME,
-  HTML_PLUGIN_TRIGGERS,
-  registerLazyHtmlPlugin
-} from './registerLazyHtmlPlugin'
+  HTML_PLUGIN_TRIGGERS
+} from './register'

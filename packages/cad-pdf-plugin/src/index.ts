@@ -11,6 +11,5 @@ export { AcApPdfImportConvertor } from './AcApPdfImportConvertor'
 export {
   createPdfPlugin,
   PDF_PLUGIN_NAME,
-  PDF_PLUGIN_TRIGGERS,
-  registerLazyPdfPlugin
-} from './registerLazyPdfPlugin'
+  PDF_PLUGIN_TRIGGERS
+} from './register'
