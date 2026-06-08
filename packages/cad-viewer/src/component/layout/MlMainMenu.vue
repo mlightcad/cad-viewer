@@ -3,6 +3,7 @@
     v-if="features.isShowMainMenu"
     aria-hidden="false"
     class="ml-main-menu-container"
+    popper-class="ml-main-menu-popper"
     @command="handleCommand"
   >
     <el-icon class="ml-main-menu-icon" size="30">
@@ -19,6 +20,7 @@
         <el-dropdown-item class="ml-main-menu-export-item">
           <el-dropdown
             placement="right-start"
+            popper-class="ml-main-menu-export-submenu"
             trigger="hover"
             @command="handleCommand"
           >
@@ -39,6 +41,9 @@
                 }}</el-dropdown-item>
                 <el-dropdown-item command="ExportSvg">{{
                   t('main.mainMenu.exportSvg')
+                }}</el-dropdown-item>
+                <el-dropdown-item command="PngOut">{{
+                  t('main.mainMenu.exportImage')
                 }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -81,6 +86,8 @@ const handleCommand = async (command: string) => {
     AcApDocManager.instance.sendStringToExecute('cpdf')
   } else if (command === 'ExportSvg') {
     AcApDocManager.instance.sendStringToExecute('csvg')
+  } else if (command === 'PngOut') {
+    AcApDocManager.instance.sendStringToExecute('pngout')
   } else if (command === 'QNew') {
     const cmd = new AcApQNewCmd()
     cmd.trigger(AcApDocManager.instance.context)
@@ -113,11 +120,6 @@ const handleCommand = async (command: string) => {
   padding: 0;
 }
 
-.ml-main-menu-export-item :deep(.el-dropdown) {
-  display: block;
-  width: 100%;
-}
-
 .ml-main-menu-export-trigger {
   display: flex;
   align-items: center;
@@ -126,5 +128,37 @@ const handleCommand = async (command: string) => {
   padding: 5px 16px;
   line-height: 22px;
   box-sizing: border-box;
+  text-align: left;
+}
+
+:global(.ml-main-menu-popper .el-dropdown-menu__item) {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+:global(.ml-main-menu-popper .ml-main-menu-export-item) {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+}
+
+:global(.ml-main-menu-popper .ml-main-menu-export-item > .el-dropdown) {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+:global(.ml-main-menu-popper .ml-main-menu-export-item .el-tooltip__trigger) {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+:global(.ml-main-menu-export-submenu .el-dropdown-menu__item) {
+  justify-content: flex-start;
+  text-align: left;
 }
 </style>

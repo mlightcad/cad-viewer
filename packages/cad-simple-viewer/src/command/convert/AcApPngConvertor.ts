@@ -2,6 +2,7 @@ import { AcGeBox2d, AcGeVector2d } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcApDocManager } from '../../app'
+import { resolveExportDownloadName } from '../../util/AcApExportFileNameUtil'
 import { AcTrView2d } from '../../view'
 
 /**
@@ -296,20 +297,26 @@ export class AcApPngConvertor {
    *
    * This method:
    * - Exports the canvas to a PNG data URL
-   * - Generates a timestamped filename
+   * - Uses the drawing file name as the download file name
    * - Creates and triggers a download link
    *
    * @param canvas - The canvas element containing the image
    * @private
    */
   private createFileAndDownloadIt(canvas: HTMLCanvasElement) {
+    const doc = AcApDocManager.instance.curDocument
+    const downloadName = resolveExportDownloadName(
+      doc.fileName || doc.docTitle,
+      'png'
+    )
+
     // Export canvas to PNG data URL
     const dataURL = canvas.toDataURL('image/png')
 
     // Create a download link and trigger the download
     const downloadLink = document.createElement('a')
     downloadLink.href = dataURL
-    downloadLink.download = `cad-export-${Date.now()}.png`
+    downloadLink.download = downloadName
 
     // Trigger the download
     document.body.appendChild(downloadLink)
