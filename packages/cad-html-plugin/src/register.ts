@@ -23,7 +23,8 @@ export async function createHtmlPlugin() {
 /**
  * Registers the HTML export plugin for lazy loading.
  *
- * The plugin bundle is not fetched until the `chtml` command runs.
+ * Import from `@mlightcad/cad-html-plugin/register` so the main plugin bundle
+ * is not pulled into the application entry chunk.
  *
  * @param pluginManager - Plugin manager that receives the lazy registration
  */
@@ -31,6 +32,9 @@ export function registerLazyHtmlPlugin(pluginManager: AcApPluginManager): void {
   pluginManager.registerLazyPlugin({
     name: HTML_PLUGIN_NAME,
     triggers: [...HTML_PLUGIN_TRIGGERS],
-    loader: createHtmlPlugin
+    loader: async () => {
+      const { createHtmlPlugin } = await import('@mlightcad/cad-html-plugin')
+      return createHtmlPlugin()
+    }
   })
 }

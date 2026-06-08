@@ -3,7 +3,10 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./lib",
-    "baseUrl": "./src"
+    "baseUrl": "./src",
+    "paths": {
+      "@mlightcad/cad-svg-plugin": ["./index.ts"]
+    }
   },
   "include": [
     "src"

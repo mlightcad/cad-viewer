@@ -29,6 +29,8 @@ Peer dependencies:
 
 ## Build
 
+Produces `dist/index.js` (main library) and `dist/register.js` (lazy-registration entry).
+
 ```bash
 pnpm --filter @mlightcad/cad-svg-plugin build
 ```
@@ -37,14 +39,16 @@ pnpm --filter @mlightcad/cad-svg-plugin build
 
 ### Lazy registration (recommended)
 
-Register the plugin with the document manager's plugin manager. The module chunk loads on first use of `csvg`:
+Register the plugin with the document manager's plugin manager. Import from the `/register` subpath so only the registration stub enters your initial bundle; the main plugin chunk loads on first use of `csvg`:
 
 ```typescript
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
-import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin'
+import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
 
 registerLazySvgPlugin(AcApDocManager.instance.pluginManager)
 ```
+
+Do **not** import `registerLazySvgPlugin` from the package root in application code — that resolves to the full library build and defeats lazy loading.
 
 Equivalent manual registration:
 
@@ -85,9 +89,9 @@ const svg = await renderer.exportAsync()
 
 | Export | Description |
 |--------|-------------|
-| `registerLazySvgPlugin` | One-line lazy registration helper |
 | `createSvgPlugin` | Async factory used by lazy loader |
 | `SVG_PLUGIN_NAME`, `SVG_PLUGIN_TRIGGERS` | Plugin metadata constants |
+| `@mlightcad/cad-svg-plugin/register` | `registerLazySvgPlugin` and registration constants |
 | `AcApSvgPlugin` | `AcApPlugin` implementation |
 | `AcApConvertToSvgCmd` | `csvg` command class |
 | `AcApSvgConvertor` | SVG export workflow |
@@ -97,7 +101,7 @@ const svg = await renderer.exportAsync()
 
 | Path | Role |
 |------|------|
-| `src/registerLazySvgPlugin.ts` | Lazy plugin registration API |
+| `src/register.ts` | Lazy plugin registration (`/register` entry) and `createSvgPlugin` |
 | `src/AcApSvgPlugin.ts` | Plugin lifecycle (`onLoad` / `onUnload`) |
 | `src/AcApConvertToSvgCmd.ts` | `csvg` command |
 | `src/AcApSvgConvertor.ts` | Export orchestration |

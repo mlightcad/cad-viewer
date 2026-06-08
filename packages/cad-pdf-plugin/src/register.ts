@@ -24,7 +24,8 @@ export async function createPdfPlugin() {
 /**
  * Registers the PDF plugin for lazy loading.
  *
- * The plugin bundle is not fetched until one of its trigger commands runs.
+ * Import from `@mlightcad/cad-pdf-plugin/register` so the main plugin bundle
+ * is not pulled into the application entry chunk.
  *
  * @param pluginManager - Plugin manager that receives the lazy registration
  */
@@ -32,6 +33,9 @@ export function registerLazyPdfPlugin(pluginManager: AcApPluginManager): void {
   pluginManager.registerLazyPlugin({
     name: PDF_PLUGIN_NAME,
     triggers: [...PDF_PLUGIN_TRIGGERS],
-    loader: createPdfPlugin
+    loader: async () => {
+      const { createPdfPlugin } = await import('@mlightcad/cad-pdf-plugin')
+      return createPdfPlugin()
+    }
   })
 }

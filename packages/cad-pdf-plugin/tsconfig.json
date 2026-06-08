@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "./src",
-    "outDir": "./lib"
+    "outDir": "./lib",
+    "paths": {
+      "@mlightcad/cad-pdf-plugin": ["./src/index.ts"]
+    }
   },
   "include": [
     "src"

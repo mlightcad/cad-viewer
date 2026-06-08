@@ -8,14 +8,9 @@ import { AcApPlugin } from './AcApPlugin'
  *
  * @example
  * ```typescript
- * pluginManager.registerLazyPlugin({
- *   name: 'PdfPlugin',
- *   triggers: ['cpdf', 'ipdf'],
- *   loader: async () => {
- *     const { createPdfPlugin } = await import('@mlightcad/cad-pdf-plugin')
- *     return createPdfPlugin()
- *   }
- * })
+ * import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin/register'
+ *
+ * registerLazyPdfPlugin(pluginManager)
  * ```
  */
 export interface AcApLazyPluginRegistration {

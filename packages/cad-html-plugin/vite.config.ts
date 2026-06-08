@@ -1,5 +1,8 @@
+import { resolve } from 'path'
 import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import { defineConfig, PluginOption } from 'vite'
+
+const packageName = '@mlightcad/cad-html-plugin'
 
 export default defineConfig({
   build: {
@@ -8,11 +11,18 @@ export default defineConfig({
     // delete viewer-runtime.iife.js produced by a concurrent viewer build.
     emptyOutDir: false,
     lib: {
-      entry: 'src/index.ts',
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        register: resolve(__dirname, 'src/register.ts')
+      },
       name: 'cad-html-plugin',
-      fileName: 'index'
+      fileName: (format, entryName) =>
+        format === 'es' ? `${entryName}.js` : `${entryName}.umd.cjs`
     },
-    minify: true
+    minify: true,
+    rollupOptions: {
+      external: [packageName]
+    }
   },
   plugins: [peerDepsExternal() as PluginOption]
 })
