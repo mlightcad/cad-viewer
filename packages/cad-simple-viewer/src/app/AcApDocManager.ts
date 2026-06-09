@@ -1,12 +1,14 @@
 import {
   AcCmColor,
   AcCmEventManager,
+  AcDbDatabase,
   AcDbDatabaseConverterManager,
   AcDbDxfConverter,
   AcDbFileType,
   acdbHostApplicationServices,
   AcDbProgressdEventArgs,
   AcDbSysVarManager,
+  AcGeBox2d,
   log
 } from '@mlightcad/data-model'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
@@ -1198,10 +1200,12 @@ export class AcApDocManager {
         acdbHostApplicationServices().layoutManager.getActiveLayout(db)
       const layoutLimits = activeLayout?.limits
 
+      const view = this.curView as AcTrView2d
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
-        this.curView.zoomTo(layoutLimits)
+        view.zoomTo(layoutLimits)
       } else {
-        this.curView.zoomToFitDrawing()
+        view.beginProgressiveOpenFit(this.resolveModelSpaceExtentsBox(db))
+        view.zoomToFitDrawing()
       }
 
       // Tell the view we've already framed the startup layout, so that
@@ -1264,6 +1268,26 @@ export class AcApDocManager {
   private resetOpenFileProgress() {
     this._openFileProgressPeak = 0
     this._openFileProgressStage = undefined
+  }
+
+  /**
+   * Builds a model-space extents box from database EXTMIN/EXTMAX sysvars.
+   *
+   * Used only for an immediate provisional zoom at document open so entities
+   * become visible while the view layer still batch-converts geometry.
+   */
+  private resolveModelSpaceExtentsBox(db: AcDbDatabase) {
+    const extmin = db.extmin
+    const extmax = db.extmax
+    if (!extmin || !extmax) {
+      return undefined
+    }
+
+    const box = new AcGeBox2d(
+      { x: extmin.x, y: extmin.y },
+      { x: extmax.x, y: extmax.y }
+    )
+    return box.isEmpty() ? undefined : box
   }
 
   /**

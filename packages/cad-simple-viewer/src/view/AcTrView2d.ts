@@ -58,6 +58,7 @@ import { AcTrGeometryUtil } from '../util'
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
 import { sortPickResults } from './AcTrPickResultUtil'
+import { AcTrProgressiveOpenFitController } from './AcTrProgressiveOpenFitController'
 import { AcTrScene } from './AcTrScene'
 
 /**
@@ -173,6 +174,8 @@ export class AcTrView2d extends AcEdBaseView {
    * race during document open.
    */
   private _externallyFramedLayouts: Set<AcDbObjectId> = new Set()
+  /** Progressive camera framing while entities batch-convert at document open. */
+  private readonly _progressiveOpenFit: AcTrProgressiveOpenFitController
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -447,6 +450,12 @@ export class AcTrView2d extends AcEdBaseView {
 
     this._missedImages = new Map()
     this._layoutViewManager = new AcTrLayoutViewManager()
+    this._progressiveOpenFit = new AcTrProgressiveOpenFitController(
+      (box, margin) => {
+        this.activeLayoutView.zoomTo(box, margin ?? 1.1)
+        this._isDirty = true
+      }
+    )
     this.initialize()
     this.onWindowResize()
     this._isDirty = true
@@ -508,6 +517,35 @@ export class AcTrView2d extends AcEdBaseView {
    */
   get isDirty() {
     return this._isDirty
+  }
+
+  /**
+   * True while {@link addEntity} batch-conversion callbacks are still running.
+   *
+   * Parsing can report 100% before this reaches zero; callers opening files
+   * should wait on this (as {@link zoomToFitDrawing} does) before hiding
+   * progress UI or assuming the canvas is ready.
+   */
+  get isProcessingEntities() {
+    return this._numOfEntitiesToProcess > 0
+  }
+
+  /**
+   * Enables progressive camera framing while entities are batch-converted at
+   * document open. Pair with {@link zoomToFitDrawing} for the final accurate fit.
+   *
+   * @param initialBox - Optional provisional extents (e.g. EXTMIN/EXTMAX) applied
+   * before the first converted entities land.
+   */
+  beginProgressiveOpenFit(initialBox?: AcGeBox2d) {
+    this._progressiveOpenFit.begin(initialBox, this._numOfEntitiesToProcess)
+  }
+
+  /**
+   * Disables progressive open framing after the final zoom-to-fit runs.
+   */
+  endProgressiveOpenFit() {
+    this._progressiveOpenFit.end()
   }
 
   /**
@@ -733,13 +771,13 @@ export class AcTrView2d extends AcEdBaseView {
           layoutBtrId &&
           this._externallyFramedLayouts.delete(layoutBtrId)
         ) {
+          this.endProgressiveOpenFit()
           return
         }
-        const box = this.resolveLayoutFitBox()
-        if (box) {
-          this.zoomTo(box)
-          this._isDirty = true
-        }
+        this._progressiveOpenFit.applyFinalFit(() =>
+          this.resolveLayoutFitBox()
+        )
+        this.endProgressiveOpenFit()
       },
       300, // check every 300 ms
       timeout
@@ -1444,6 +1482,7 @@ export class AcTrView2d extends AcEdBaseView {
         this.height
       )
       layoutView.events.viewChanged.addEventListener(() => {
+        this._progressiveOpenFit.onLayoutViewChanged()
         this._isDirty = true
         this.events.viewChanged.dispatch()
         this.clearHover()
@@ -1696,6 +1735,10 @@ export class AcTrView2d extends AcEdBaseView {
           // Release memory occupied by this entity
           threeEntity.dispose()
           this._isDirty = true
+          await this._progressiveOpenFit.afterGeometryBatch(
+            () => this.resolveLayoutFitBox(),
+            i
+          )
         }
 
         if (entity instanceof AcDbViewport) {
@@ -1832,6 +1875,9 @@ export class AcTrView2d extends AcEdBaseView {
     group.dispose()
 
     this._isDirty = true
+    void this._progressiveOpenFit.afterGeometryBatch(() =>
+      this.resolveLayoutFitBox()
+    )
   }
 
   /**
