@@ -14,8 +14,7 @@ import {
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus,
-  AcEdPromptStringOptions,
-  eventBus
+  AcEdPromptStringOptions
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
@@ -308,10 +307,7 @@ export class AcApPolygonCmd extends AcEdCommand {
    * @param key - Invalid-input category.
    */
   private warnInvalidInput(key: PolygonInvalidKey) {
-    eventBus.emit('message', {
-      message: AcApI18n.t(`jig.polygon.invalid.${key}`),
-      type: 'warning'
-    })
+    this.notify(AcApI18n.t(`jig.polygon.invalid.${key}`), 'warning')
   }
 
   /**

@@ -189,13 +189,13 @@ export class AcApMLineCmd extends AcEdCommand {
         ([name]) => name
       )
       if (styleNames.length <= 0) {
-        AcApDocManager.instance.editor.showMessage(
+        this.showMessage(
           AcApI18n.t('jig.mline.styleListEmpty'),
           'warning'
         )
         return
       }
-      AcApDocManager.instance.editor.showMessage(
+      this.showMessage(
         `${AcApI18n.t('jig.mline.styleListHeader')} ${styleNames.join(', ')}`,
         'info'
       )

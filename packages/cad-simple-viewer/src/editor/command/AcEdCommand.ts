@@ -1,4 +1,6 @@
-import { AcApContext } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app'
+import { eventBus } from '../global/eventBus'
+import { AcEdMessageType } from '../input/ui/AcEdMessageType'
 import { AcEdOpenMode } from '../view'
 
 /**
@@ -252,5 +254,30 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
    */
   async execute(_context: AcApContext) {
     // Do nothing - subclasses should override this method
+  }
+
+  /**
+   * Displays a message in the command-line output.
+   *
+   * @param message - Message text to render
+   * @param type - Message severity controlling the rendered style
+   * @param msgKey - Optional localization key associated with the message
+   */
+  protected showMessage(
+    message: string,
+    type: AcEdMessageType = 'info',
+    msgKey?: string
+  ): void {
+    AcApDocManager.instance.editor.showMessage(message, type, msgKey)
+  }
+
+  /**
+   * Sends a message to the UI module through the global event bus.
+   *
+   * @param message - Message text to display
+   * @param type - Message severity controlling the rendered style
+   */
+  protected notify(message: string, type: AcEdMessageType = 'info'): void {
+    eventBus.emit('message', { message, type })
   }
 }

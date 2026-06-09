@@ -7,7 +7,6 @@ import {
 import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
-  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptKeywordOptions,
   AcEdPromptStatus,
@@ -170,16 +169,6 @@ export class AcApLayerCmd extends AcEdCommand {
   }
 
   /**
-   * Emits one user-facing message through the command-line output.
-   *
-   * @param message - Message text to display.
-   * @param type - Message severity category.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
-  }
-
-  /**
    * Prints all layer states to browser console and reports summary in UI.
    *
    * The list contains the current-layer marker and common status columns
@@ -199,7 +188,7 @@ export class AcApLayerCmd extends AcEdCommand {
       color: layer.color.toString()
     }))
     console.table(rows)
-    this.notify(
+    this.showMessage(
       `${AcApI18n.t('jig.layer.listSummary')} (${rows.length})`,
       'info'
     )
@@ -297,7 +286,7 @@ export class AcApLayerCmd extends AcEdCommand {
     ].map(layer => layer.name)
     const names = this.parseLayerNameInput(result.stringResult ?? '', allNames)
     if (!names.length) {
-      this.notify(AcApI18n.t('jig.layer.emptyInput'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layer.emptyInput'), 'warning')
       return undefined
     }
     return names
@@ -358,10 +347,10 @@ export class AcApLayerCmd extends AcEdCommand {
     })
 
     if (created > 0) {
-      this.notify(`${AcApI18n.t('jig.layer.created')}: ${created}`, 'success')
+      this.showMessage(`${AcApI18n.t('jig.layer.created')}: ${created}`, 'success')
     }
     if (existed.length > 0) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layer.alreadyExists')}: ${existed.join(', ')}`,
         'warning'
       )
@@ -385,7 +374,7 @@ export class AcApLayerCmd extends AcEdCommand {
 
     const layer = context.doc.database.tables.layerTable.getAt(name)
     if (!layer) {
-      this.notify(`${AcApI18n.t('jig.layer.notFound')}: ${name}`, 'warning')
+      this.showMessage(`${AcApI18n.t('jig.layer.notFound')}: ${name}`, 'warning')
       return
     }
 
@@ -449,7 +438,7 @@ export class AcApLayerCmd extends AcEdCommand {
     const db = context.doc.database
     const { layers, missing } = this.resolveLayers(context, names)
     if (missing.length > 0) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layer.notFound')}: ${missing.join(', ')}`,
         'warning'
       )
@@ -465,7 +454,7 @@ export class AcApLayerCmd extends AcEdCommand {
     })
 
     if (skippedCurrent.length > 0) {
-      this.notify(AcApI18n.t('jig.layer.cannotChangeCurrent'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layer.cannotChangeCurrent'), 'warning')
     }
   }
 
@@ -491,7 +480,7 @@ export class AcApLayerCmd extends AcEdCommand {
     const db = context.doc.database
     const { layers, missing } = this.resolveLayers(context, names)
     if (missing.length > 0) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layer.notFound')}: ${missing.join(', ')}`,
         'warning'
       )
@@ -507,7 +496,7 @@ export class AcApLayerCmd extends AcEdCommand {
     })
 
     if (skippedCurrent.length > 0) {
-      this.notify(AcApI18n.t('jig.layer.cannotChangeCurrent'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layer.cannotChangeCurrent'), 'warning')
     }
   }
 
@@ -531,7 +520,7 @@ export class AcApLayerCmd extends AcEdCommand {
 
     const { layers, missing } = this.resolveLayers(context, names)
     if (missing.length > 0) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layer.notFound')}: ${missing.join(', ')}`,
         'warning'
       )
@@ -593,7 +582,7 @@ export class AcApLayerCmd extends AcEdCommand {
 
     const { layers, missing } = this.resolveLayers(context, names)
     if (missing.length > 0) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layer.notFound')}: ${missing.join(', ')}`,
         'warning'
       )
@@ -610,7 +599,7 @@ export class AcApLayerCmd extends AcEdCommand {
 
     const color = this.parseColorInput(colorResult.stringResult ?? '')
     if (!color) {
-      this.notify(AcApI18n.t('jig.layer.invalidColor'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layer.invalidColor'), 'warning')
       return
     }
 
@@ -636,7 +625,7 @@ export class AcApLayerCmd extends AcEdCommand {
 
     const layer = context.doc.database.tables.layerTable.getAt(name)
     if (!layer) {
-      this.notify(`${AcApI18n.t('jig.layer.notFound')}: ${name}`, 'warning')
+      this.showMessage(`${AcApI18n.t('jig.layer.notFound')}: ${name}`, 'warning')
       return
     }
 

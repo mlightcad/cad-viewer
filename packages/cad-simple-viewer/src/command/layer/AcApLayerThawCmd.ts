@@ -1,7 +1,7 @@
 import { AcDbLayerTableRecord } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
-import { AcEdCommand, AcEdMessageType, AcEdOpenMode } from '../../editor'
+import { AcApContext } from '../../app'
+import { AcEdCommand, AcEdOpenMode } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
 /**
@@ -39,11 +39,11 @@ export class AcApLayerThawCmd extends AcEdCommand {
     context.view.selectionSet.clear()
 
     if (thawed === 0) {
-      this.notify(AcApI18n.t('jig.laythw.alreadyThawed'))
+      this.showMessage(AcApI18n.t('jig.laythw.alreadyThawed'))
       return
     }
 
-    this.notify(`${AcApI18n.t('jig.laythw.thawed')}: ${thawed}`, 'success')
+    this.showMessage(`${AcApI18n.t('jig.laythw.thawed')}: ${thawed}`, 'success')
   }
 
   /**
@@ -55,15 +55,5 @@ export class AcApLayerThawCmd extends AcEdCommand {
   private setLayerFrozen(layer: AcDbLayerTableRecord, frozen: boolean) {
     const flags = layer.standardFlags ?? 0
     layer.standardFlags = frozen ? flags | 0x01 : flags & ~0x01
-  }
-
-  /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
   }
 }

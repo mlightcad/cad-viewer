@@ -15,8 +15,7 @@ import {
   AcEdPromptAngleOptions,
   AcEdPromptPointOptions,
   AcEdPromptSelectionOptions,
-  AcEdPromptStatus,
-  eventBus
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
@@ -221,10 +220,7 @@ export class AcApRotateCmd extends AcEdCommand {
    * @param key - Warning message key suffix.
    */
   private warnInvalidInput(key: 'referencePoints') {
-    eventBus.emit('message', {
-      message: AcApI18n.t(`jig.rotate.invalid.${key}`),
-      type: 'warning'
-    })
+    this.notify(AcApI18n.t(`jig.rotate.invalid.${key}`), 'warning')
   }
 
   /**

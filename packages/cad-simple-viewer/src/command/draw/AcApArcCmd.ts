@@ -18,8 +18,7 @@ import {
   AcEdPromptDistanceOptions,
   AcEdPromptDoubleOptions,
   AcEdPromptPointOptions,
-  AcEdPromptStatus,
-  eventBus
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
@@ -975,10 +974,7 @@ export class AcApArcCmd extends AcEdCommand {
    * @param key - Invalid-input category key.
    */
   private warnInvalidGeometry(key: ArcInvalidKey) {
-    eventBus.emit('message', {
-      message: AcApI18n.t(`jig.arc.invalid.${key}`),
-      type: 'warning'
-    })
+    this.notify(AcApI18n.t(`jig.arc.invalid.${key}`), 'warning')
   }
 
   /**

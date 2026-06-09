@@ -10,6 +10,7 @@ import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdBaseView,
   AcEdCommand,
+  AcEdMessageType,
   AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptDistanceOptions,
@@ -21,8 +22,7 @@ import {
   AcEdPromptState,
   AcEdPromptStateMachine,
   AcEdPromptStateStep,
-  AcEdPromptStatus
-} from '../../editor'
+  AcEdPromptStatus} from '../../editor'
 import { AcApI18n } from '../../i18n'
 
 /**
@@ -216,6 +216,12 @@ export class AcApOffsetCmd extends AcEdCommand {
    * @param context - Current application/document context.
    */
   async execute(context: AcApContext) {
+    const showCommandMessage = (
+      message: string,
+      type: AcEdMessageType = 'info'
+    ) => {
+      this.showMessage(message, type)
+    }
     const blockTable = context.doc.database.tables.blockTable
     const annotation = new AcApAnnotation(context.doc.database)
     let offsetDistance: number | undefined
@@ -287,7 +293,7 @@ export class AcApOffsetCmd extends AcEdCommand {
           !Number.isFinite(result.value) ||
           AcGeTol.isNonPositive(result.value)
         ) {
-          AcApDocManager.instance.editor.showMessage(
+          showCommandMessage(
             AcApI18n.t('jig.offset.invalidDistance'),
             'warning'
           )
@@ -351,7 +357,7 @@ export class AcApOffsetCmd extends AcEdCommand {
             : [result.objectId]
         const entity = blockTable.getEntityById(validIds[0])
         if (!isOffsettableCurve(entity)) {
-          AcApDocManager.instance.editor.showMessage(
+          showCommandMessage(
             AcApI18n.t('jig.offset.invalidSelection'),
             'warning'
           )
@@ -431,7 +437,7 @@ export class AcApOffsetCmd extends AcEdCommand {
           new AcGePoint3d(result.value)
         )
         if (offsetCurves.length === 0) {
-          AcApDocManager.instance.editor.showMessage(
+          showCommandMessage(
             AcApI18n.t('jig.offset.offsetFailed'),
             'warning'
           )

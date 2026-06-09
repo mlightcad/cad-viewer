@@ -19,8 +19,7 @@ import {
   AcEdPromptState,
   AcEdPromptStateMachine,
   AcEdPromptStateStep,
-  AcEdPromptStatus,
-  eventBus
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
@@ -91,13 +90,6 @@ function addDoubleKeyword(
     AcApI18n.t(`jig.rect.keywords.${key}.global`),
     AcApI18n.t(`jig.rect.keywords.${key}.local`)
   )
-}
-
-function warnRectMessage(key: string) {
-  eventBus.emit('message', {
-    message: AcApI18n.t(`jig.rect.${key}`),
-    type: 'warning'
-  })
 }
 
 function toWorldPoint(
@@ -428,16 +420,25 @@ export class AcApRectCmd extends AcEdCommand {
     const rect = new AcDbPolyline()
     const isValid = updateRect(rect, firstPoint, secondInput, settings)
     if (!isValid) {
-      warnRectMessage('invalidRect')
+      this.warnRectMessage('invalidRect')
       return
     }
 
     if (AcGeTol.isPositive(settings.thickness)) {
-      warnRectMessage('thicknessNotSupported')
+      this.warnRectMessage('thicknessNotSupported')
     }
 
     context.doc.database.tables.blockTable.modelSpace.appendEntity(rect)
     AcApRectCmd._settings = cloneRectSettings(settings)
+  }
+
+  /**
+   * Emits a warning message for invalid rectangle input.
+   *
+   * @param key - Invalid-input category key under `jig.rect`.
+   */
+  private warnRectMessage(key: string) {
+    this.notify(AcApI18n.t(`jig.rect.${key}`), 'warning')
   }
 
   /**
@@ -610,7 +611,7 @@ export class AcApRectCmd extends AcEdCommand {
       const result = await AcApDocManager.instance.editor.getDouble(prompt)
       if (result.status !== AcEdPromptStatus.OK) return undefined
       if (isPositive(result.value)) return result.value!
-      warnRectMessage('invalidPositive')
+      this.warnRectMessage('invalidPositive')
     }
   }
 

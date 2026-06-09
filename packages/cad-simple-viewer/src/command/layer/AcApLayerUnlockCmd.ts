@@ -3,7 +3,6 @@ import { AcDbLayerTableRecord, AcDbObjectId } from '@mlightcad/data-model'
 import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
-  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptStatus
@@ -83,13 +82,13 @@ export class AcApLayerUnlockCmd extends AcEdCommand {
     const layerName = entity?.layer?.trim()
 
     if (!layerName) {
-      this.notify(AcApI18n.t('jig.layulk.invalidSelection'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layulk.invalidSelection'), 'warning')
       return
     }
 
     const layer = db.tables.layerTable.getAt(layerName)
     if (!layer) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layulk.layerNotFound')}: ${layerName}`,
         'warning'
       )
@@ -97,7 +96,7 @@ export class AcApLayerUnlockCmd extends AcEdCommand {
     }
 
     if (!layer.isLocked) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layulk.alreadyUnlocked')}: ${layer.name}`,
         'info'
       )
@@ -106,19 +105,9 @@ export class AcApLayerUnlockCmd extends AcEdCommand {
 
     this.setLayerLocked(layer, false)
     context.view.selectionSet.clear()
-    this.notify(
+    this.showMessage(
       `${AcApI18n.t('jig.layulk.unlocked')}: ${layer.name}`,
       'success'
     )
-  }
-
-  /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
   }
 }

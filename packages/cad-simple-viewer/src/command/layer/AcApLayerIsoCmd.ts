@@ -3,7 +3,6 @@ import { AcDbLayerTableRecord, AcDbObjectId } from '@mlightcad/data-model'
 import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
-  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptKeywordOptions,
   AcEdPromptSelectionOptions,
@@ -130,16 +129,6 @@ export class AcApLayerIsoCmd extends AcEdCommand {
   }
 
   /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
-  }
-
-  /**
    * Registers a localized keyword on a prompt.
    *
    * @param prompt - Prompt instance that should expose the keyword.
@@ -229,7 +218,7 @@ export class AcApLayerIsoCmd extends AcEdCommand {
     }
 
     this._lockFadeHintShown = true
-    this.notify(AcApI18n.t('jig.layiso.lockFadeFallback'))
+    this.showMessage(AcApI18n.t('jig.layiso.lockFadeFallback'))
   }
 
   /**
@@ -269,7 +258,7 @@ export class AcApLayerIsoCmd extends AcEdCommand {
     AcApLayerIsoCmd._settings.offMode = keyword
     if (keyword === 'Vpfreeze') {
       this._vpfreezeHintShown = true
-      this.notify(AcApI18n.t('jig.layiso.vpfreezeFallback'))
+      this.showMessage(AcApI18n.t('jig.layiso.vpfreezeFallback'))
     } else {
       this._vpfreezeHintShown = false
     }
@@ -309,7 +298,7 @@ export class AcApLayerIsoCmd extends AcEdCommand {
   ) {
     const layerNames = this.collectSelectedLayerNames(context, objectIds)
     if (layerNames.length === 0) {
-      this.notify(AcApI18n.t('jig.layiso.noLayers'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layiso.noLayers'), 'warning')
       return
     }
 
@@ -387,7 +376,7 @@ export class AcApLayerIsoCmd extends AcEdCommand {
       AcApLayerIsoCmd._settings.offMode === 'Vpfreeze' &&
       !this._vpfreezeHintShown
     ) {
-      this.notify(AcApI18n.t('jig.layiso.vpfreezeFallback'))
+      this.showMessage(AcApI18n.t('jig.layiso.vpfreezeFallback'))
       this._vpfreezeHintShown = true
     }
 
@@ -395,12 +384,12 @@ export class AcApLayerIsoCmd extends AcEdCommand {
       AcApLayerIsoCmd._settings.isolationMode === 'LockAndFade' &&
       !this._lockFadeHintShown
     ) {
-      this.notify(AcApI18n.t('jig.layiso.lockFadeFallback'))
+      this.showMessage(AcApI18n.t('jig.layiso.lockFadeFallback'))
       this._lockFadeHintShown = true
     }
 
     context.view.selectionSet.clear()
-    this.notify(
+    this.showMessage(
       `${AcApI18n.t('jig.layiso.isolated')}: ${layerNames.join(', ')} (${AcApI18n.t('jig.layiso.affectedLayers')}: ${affectedLayerNames.size})`,
       'success'
     )
@@ -435,7 +424,7 @@ export class AcApLayerIsoCmd extends AcEdCommand {
     })
 
     if (missing.size > 0) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layiso.layerNotFound')}: ${[...missing].join(', ')}`,
         'warning'
       )

@@ -1,7 +1,7 @@
 import { AcDbLayerTableRecord } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
-import { AcEdCommand, AcEdMessageType, AcEdOpenMode } from '../../editor'
+import { AcApContext } from '../../app'
+import { AcEdCommand, AcEdOpenMode } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
 /**
@@ -150,22 +150,12 @@ export class AcApLayerPCmd extends AcEdCommand {
    */
   async execute(context: AcApContext) {
     if (layerPreviousStateManager.restorePreviousState(context)) {
-      this.notify(AcApI18n.t('jig.layerp.restored'), 'success')
+      this.showMessage(AcApI18n.t('jig.layerp.restored'), 'success')
     } else {
-      this.notify(AcApI18n.t('jig.layerp.noPreviousState'))
+      this.showMessage(AcApI18n.t('jig.layerp.noPreviousState'))
     }
 
     context.view.selectionSet.clear()
-  }
-
-  /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
   }
 }
 
