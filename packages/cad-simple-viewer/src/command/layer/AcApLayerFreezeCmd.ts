@@ -3,7 +3,6 @@ import { AcDbLayerTableRecord, AcDbObjectId } from '@mlightcad/data-model'
 import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
-  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptKeywordOptions,
@@ -144,16 +143,6 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
   }
 
   /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
-  }
-
-  /**
    * Registers a localized keyword on an entity or keyword prompt.
    *
    * @param prompt - Prompt instance that should expose the keyword to the user.
@@ -282,7 +271,7 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
     AcApLayerFreezeCmd._settings.viewportMode = keyword
     if (keyword === 'Vpfreeze') {
       this._vpfreezeHintShown = true
-      this.notify(AcApI18n.t('jig.layfrz.vpfreezeFallback'))
+      this.showMessage(AcApI18n.t('jig.layfrz.vpfreezeFallback'))
     } else {
       this._vpfreezeHintShown = false
     }
@@ -332,7 +321,7 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
     if (!keyword) return
 
     AcApLayerFreezeCmd._settings.blockSelectionMode = keyword
-    this.notify(AcApI18n.t('jig.layfrz.nestedSelectionLimited'))
+    this.showMessage(AcApI18n.t('jig.layfrz.nestedSelectionLimited'))
   }
 
   /**
@@ -361,13 +350,13 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
     const layerName = entity?.layer?.trim()
 
     if (!layerName) {
-      this.notify(AcApI18n.t('jig.layfrz.invalidSelection'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layfrz.invalidSelection'), 'warning')
       return
     }
 
     const layer = db.tables.layerTable.getAt(layerName)
     if (!layer) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layfrz.layerNotFound')}: ${layerName}`,
         'warning'
       )
@@ -375,12 +364,12 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
     }
 
     if (layer.name === db.clayer) {
-      this.notify(AcApI18n.t('jig.layfrz.cannotFreezeCurrent'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layfrz.cannotFreezeCurrent'), 'warning')
       return
     }
 
     if (layer.isFrozen) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layfrz.alreadyFrozen')}: ${layer.name}`,
         'info'
       )
@@ -391,7 +380,7 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
       AcApLayerFreezeCmd._settings.viewportMode === 'Vpfreeze' &&
       !this._vpfreezeHintShown
     ) {
-      this.notify(AcApI18n.t('jig.layfrz.vpfreezeFallback'))
+      this.showMessage(AcApI18n.t('jig.layfrz.vpfreezeFallback'))
       this._vpfreezeHintShown = true
     }
 
@@ -402,7 +391,7 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
 
     this.setLayerFrozen(layer, true)
     context.view.selectionSet.clear()
-    this.notify(`${AcApI18n.t('jig.layfrz.frozen')}: ${layer.name}`, 'success')
+    this.showMessage(`${AcApI18n.t('jig.layfrz.frozen')}: ${layer.name}`, 'success')
   }
 
   /**
@@ -413,7 +402,7 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
   private runUndo(context: AcApContext) {
     const history = this._history.pop()
     if (!history) {
-      this.notify(AcApI18n.t('jig.layfrz.nothingToUndo'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layfrz.nothingToUndo'), 'warning')
       return
     }
 
@@ -421,7 +410,7 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
       history.layerName
     )
     if (!layer) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layfrz.layerNotFound')}: ${history.layerName}`,
         'warning'
       )
@@ -430,7 +419,7 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
 
     this.setLayerFrozen(layer, history.wasFrozen)
     context.view.selectionSet.clear()
-    this.notify(
+    this.showMessage(
       `${AcApI18n.t('jig.layfrz.restored')}: ${layer.name}`,
       'success'
     )

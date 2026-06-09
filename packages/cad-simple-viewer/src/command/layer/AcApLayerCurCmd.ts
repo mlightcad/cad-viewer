@@ -3,7 +3,6 @@ import { AcDbEntity, AcDbObjectId } from '@mlightcad/data-model'
 import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
-  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptSelectionOptions,
   AcEdPromptStatus
@@ -73,7 +72,7 @@ export class AcApLayerCurCmd extends AcEdCommand {
       : undefined
 
     if (!currentLayer) {
-      this.notify(AcApI18n.t('jig.laycur.currentLayerNotFound'), 'warning')
+      this.showMessage(AcApI18n.t('jig.laycur.currentLayerNotFound'), 'warning')
       return
     }
 
@@ -98,7 +97,7 @@ export class AcApLayerCurCmd extends AcEdCommand {
     })
 
     if (changedEntities.length === 0) {
-      this.notify(
+      this.showMessage(
         alreadyCurrent > 0
           ? AcApI18n.t('jig.laycur.alreadyCurrent')
           : AcApI18n.t('jig.laycur.noObjects'),
@@ -111,19 +110,9 @@ export class AcApLayerCurCmd extends AcEdCommand {
     context.view.selectionSet.clear()
     // Layer changes move entities between render buckets, so rebuild the view.
     AcApDocManager.instance.regen()
-    this.notify(
+    this.showMessage(
       `${AcApI18n.t('jig.laycur.changed')}: ${changedEntities.length} (${currentLayer.name})`,
       'success'
     )
-  }
-
-  /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
   }
 }

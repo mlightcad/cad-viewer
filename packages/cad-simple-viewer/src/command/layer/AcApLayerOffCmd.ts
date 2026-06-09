@@ -3,7 +3,6 @@ import { AcDbObjectId } from '@mlightcad/data-model'
 import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
-  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptKeywordOptions,
@@ -143,16 +142,6 @@ export class AcApLayoffCmd extends AcEdCommand {
   }
 
   /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
-  }
-
-  /**
    * Registers a localized keyword on an entity or keyword prompt.
    *
    * @param prompt - Prompt instance that should expose the keyword to the user.
@@ -279,7 +268,7 @@ export class AcApLayoffCmd extends AcEdCommand {
     AcApLayoffCmd._settings.viewportMode = keyword
     if (keyword === 'Vpfreeze') {
       this._vpfreezeHintShown = true
-      this.notify(AcApI18n.t('jig.layoff.vpfreezeFallback'))
+      this.showMessage(AcApI18n.t('jig.layoff.vpfreezeFallback'))
     } else {
       this._vpfreezeHintShown = false
     }
@@ -329,7 +318,7 @@ export class AcApLayoffCmd extends AcEdCommand {
     if (!keyword) return
 
     AcApLayoffCmd._settings.blockSelectionMode = keyword
-    this.notify(AcApI18n.t('jig.layoff.nestedSelectionLimited'))
+    this.showMessage(AcApI18n.t('jig.layoff.nestedSelectionLimited'))
   }
 
   /**
@@ -347,13 +336,13 @@ export class AcApLayoffCmd extends AcEdCommand {
     const layerName = entity?.layer?.trim()
 
     if (!layerName) {
-      this.notify(AcApI18n.t('jig.layoff.invalidSelection'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layoff.invalidSelection'), 'warning')
       return
     }
 
     const layer = db.tables.layerTable.getAt(layerName)
     if (!layer) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layoff.layerNotFound')}: ${layerName}`,
         'warning'
       )
@@ -361,12 +350,12 @@ export class AcApLayoffCmd extends AcEdCommand {
     }
 
     if (layer.name === db.clayer) {
-      this.notify(AcApI18n.t('jig.layoff.cannotTurnOffCurrent'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layoff.cannotTurnOffCurrent'), 'warning')
       return
     }
 
     if (layer.isOff) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layoff.alreadyOff')}: ${layer.name}`,
         'info'
       )
@@ -377,7 +366,7 @@ export class AcApLayoffCmd extends AcEdCommand {
       AcApLayoffCmd._settings.viewportMode === 'Vpfreeze' &&
       !this._vpfreezeHintShown
     ) {
-      this.notify(AcApI18n.t('jig.layoff.vpfreezeFallback'))
+      this.showMessage(AcApI18n.t('jig.layoff.vpfreezeFallback'))
       this._vpfreezeHintShown = true
     }
 
@@ -388,7 +377,7 @@ export class AcApLayoffCmd extends AcEdCommand {
 
     layer.isOff = true
     context.view.selectionSet.clear()
-    this.notify(
+    this.showMessage(
       `${AcApI18n.t('jig.layoff.turnedOff')}: ${layer.name}`,
       'success'
     )
@@ -402,7 +391,7 @@ export class AcApLayoffCmd extends AcEdCommand {
   private runUndo(context: AcApContext) {
     const history = this._history.pop()
     if (!history) {
-      this.notify(AcApI18n.t('jig.layoff.nothingToUndo'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layoff.nothingToUndo'), 'warning')
       return
     }
 
@@ -410,7 +399,7 @@ export class AcApLayoffCmd extends AcEdCommand {
       history.layerName
     )
     if (!layer) {
-      this.notify(
+      this.showMessage(
         `${AcApI18n.t('jig.layoff.layerNotFound')}: ${history.layerName}`,
         'warning'
       )
@@ -419,7 +408,7 @@ export class AcApLayoffCmd extends AcEdCommand {
 
     layer.isOff = history.wasOff
     context.view.selectionSet.clear()
-    this.notify(
+    this.showMessage(
       `${AcApI18n.t('jig.layoff.restored')}: ${layer.name}`,
       'success'
     )

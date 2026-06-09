@@ -16,8 +16,7 @@ import {
   AcEdPromptAngleOptions,
   AcEdPromptDoubleOptions,
   AcEdPromptPointOptions,
-  AcEdPromptStatus,
-  eventBus
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import { AcApLineJig } from './AcApLineCmd'
@@ -351,10 +350,7 @@ export class AcApEllipseCmd extends AcEdCommand {
    * @param key - Invalid-input category key.
    */
   private warnInvalidInput(key: 'axis' | 'otherAxis' | 'rotation') {
-    eventBus.emit('message', {
-      message: AcApI18n.t(`jig.ellipse.invalid.${key}`),
-      type: 'warning'
-    })
+    this.notify(AcApI18n.t(`jig.ellipse.invalid.${key}`), 'warning')
   }
 
   /**

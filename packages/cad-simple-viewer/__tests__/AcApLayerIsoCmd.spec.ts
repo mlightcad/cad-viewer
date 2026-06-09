@@ -11,8 +11,18 @@ jest.mock('../src/app', () => ({
 }))
 
 jest.mock('../src/editor', () => {
+  const { AcApDocManager } = jest.requireMock('../src/app')
+
   class AcEdCommand {
     mode: unknown
+
+    showMessage(message: string, type: string = 'info') {
+      AcApDocManager.instance.editor.showMessage(message, type)
+    }
+
+    notify(message: string, type: string = 'info') {
+      AcApDocManager.instance.editor.showMessage(message, type)
+    }
   }
 
   class MockKeywordCollection {

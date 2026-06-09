@@ -1,5 +1,5 @@
-import { AcApContext, AcApDocManager } from '../../app'
-import { AcEdCommand, AcEdMessageType, AcEdOpenMode } from '../../editor'
+import { AcApContext } from '../../app'
+import { AcEdCommand, AcEdOpenMode } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
 /**
@@ -37,20 +37,10 @@ export class AcApLayerOnCmd extends AcEdCommand {
     context.view.selectionSet.clear()
 
     if (turnedOn === 0) {
-      this.notify(AcApI18n.t('jig.layon.alreadyOn'))
+      this.showMessage(AcApI18n.t('jig.layon.alreadyOn'))
       return
     }
 
-    this.notify(`${AcApI18n.t('jig.layon.turnedOn')}: ${turnedOn}`, 'success')
-  }
-
-  /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
+    this.showMessage(`${AcApI18n.t('jig.layon.turnedOn')}: ${turnedOn}`, 'success')
   }
 }

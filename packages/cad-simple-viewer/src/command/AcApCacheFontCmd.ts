@@ -41,7 +41,8 @@ export class AcApCacheFontCmd extends AcEdCommand {
     file: File,
     options?: AcApCacheFontOptions
   ): Promise<FontLoadStatus> {
-    const notify = options?.notify ?? true
+    const shouldNotify = options?.notify ?? true
+    const cmd = new AcApCacheFontCmd()
 
     try {
       const status = await AcApFontUtil.cacheFont(
@@ -50,27 +51,27 @@ export class AcApCacheFontCmd extends AcEdCommand {
         options?.aliases
       )
 
-      if (notify) {
+      if (shouldNotify) {
         if (status.status === 'Success') {
-          eventBus.emit('message', {
-            message: `${AcApI18n.t('main.message.fontCached')}: ${status.fontName}`,
-            type: 'success'
-          })
+          cmd.notify(
+            `${AcApI18n.t('main.message.fontCached')}: ${status.fontName}`,
+            'success'
+          )
         } else {
-          eventBus.emit('message', {
-            message: `${AcApI18n.t('main.message.fontCacheFailed')}: ${file.name}`,
-            type: 'error'
-          })
+          cmd.notify(
+            `${AcApI18n.t('main.message.fontCacheFailed')}: ${file.name}`,
+            'error'
+          )
         }
       }
 
       return status
     } catch {
-      if (notify) {
-        eventBus.emit('message', {
-          message: `${AcApI18n.t('main.message.fontCacheFailed')}: ${file.name}`,
-          type: 'error'
-        })
+      if (shouldNotify) {
+        cmd.notify(
+          `${AcApI18n.t('main.message.fontCacheFailed')}: ${file.name}`,
+          'error'
+        )
       }
 
       return {

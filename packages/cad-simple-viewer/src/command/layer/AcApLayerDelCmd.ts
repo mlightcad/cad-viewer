@@ -7,7 +7,6 @@ import {
 import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
-  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptStatus,
@@ -144,16 +143,6 @@ export class AcApLayerDelCmd extends AcEdCommand {
   }
 
   /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
-  }
-
-  /**
    * Registers a localized keyword on an entity or string prompt.
    *
    * @param prompt - Prompt instance that should expose the keyword.
@@ -272,7 +261,7 @@ export class AcApLayerDelCmd extends AcEdCommand {
       locked: layer.isLocked ? 'Yes' : 'No'
     }))
     console.table(rows)
-    this.notify(AcApI18n.t('jig.laydel.layerListSummary'), 'info')
+    this.showMessage(AcApI18n.t('jig.laydel.layerListSummary'), 'info')
   }
 
   /**
@@ -287,7 +276,7 @@ export class AcApLayerDelCmd extends AcEdCommand {
     const layerName = entity?.layer?.trim()
 
     if (!layerName) {
-      this.notify(AcApI18n.t('jig.laydel.invalidSelection'), 'warning')
+      this.showMessage(AcApI18n.t('jig.laydel.invalidSelection'), 'warning')
       return
     }
 
@@ -308,17 +297,17 @@ export class AcApLayerDelCmd extends AcEdCommand {
     const layer = db.tables.layerTable.getAt(layerName)
 
     if (!layer) {
-      this.notify(`${AcApI18n.t('jig.laydel.layerNotFound')}: ${layerName}`)
+      this.showMessage(`${AcApI18n.t('jig.laydel.layerNotFound')}: ${layerName}`)
       return
     }
 
     if (layer.name === '0') {
-      this.notify(AcApI18n.t('jig.laydel.cannotDeleteZeroLayer'), 'warning')
+      this.showMessage(AcApI18n.t('jig.laydel.cannotDeleteZeroLayer'), 'warning')
       return
     }
 
     if (layer.name === db.clayer) {
-      this.notify(AcApI18n.t('jig.laydel.cannotDeleteCurrent'), 'warning')
+      this.showMessage(AcApI18n.t('jig.laydel.cannotDeleteCurrent'), 'warning')
       return
     }
 
@@ -336,7 +325,7 @@ export class AcApLayerDelCmd extends AcEdCommand {
 
     context.view.selectionSet.clear()
     AcApDocManager.instance.regen()
-    this.notify(`${AcApI18n.t('jig.laydel.deleted')}: ${layer.name}`, 'success')
+    this.showMessage(`${AcApI18n.t('jig.laydel.deleted')}: ${layer.name}`, 'success')
   }
 
   /**
@@ -400,7 +389,7 @@ export class AcApLayerDelCmd extends AcEdCommand {
   private runUndo(context: AcApContext) {
     const entry = this._history.pop()
     if (!entry) {
-      this.notify(AcApI18n.t('jig.laydel.nothingToUndo'), 'warning')
+      this.showMessage(AcApI18n.t('jig.laydel.nothingToUndo'), 'warning')
       return
     }
 
@@ -424,7 +413,7 @@ export class AcApLayerDelCmd extends AcEdCommand {
 
     context.view.selectionSet.clear()
     AcApDocManager.instance.regen()
-    this.notify(
+    this.showMessage(
       `${AcApI18n.t('jig.laydel.restored')}: ${entry.layer.name}`,
       'success'
     )

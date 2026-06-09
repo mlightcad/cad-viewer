@@ -1,7 +1,7 @@
 import { AcDbLayerTableRecord } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
-import { AcEdCommand, AcEdMessageType, AcEdOpenMode } from '../../editor'
+import { AcApContext } from '../../app'
+import { AcEdCommand, AcEdOpenMode } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
   AcApLayerIsoLayerSnapshot,
@@ -33,7 +33,7 @@ export class AcApLayerUnisoCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const snapshot = AcApLayerIsoState.consume()
     if (!snapshot) {
-      this.notify(AcApI18n.t('jig.layuniso.noPrevious'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layuniso.noPrevious'), 'warning')
       return
     }
 
@@ -44,7 +44,7 @@ export class AcApLayerUnisoCmd extends AcEdCommand {
     for (const entry of snapshot.layers) {
       const layer = table.getAt(entry.name)
       if (!layer) {
-        this.notify(
+        this.showMessage(
           `${AcApI18n.t('jig.layuniso.layerNotFound')}: ${entry.name}`,
           'warning'
         )
@@ -67,11 +67,11 @@ export class AcApLayerUnisoCmd extends AcEdCommand {
     context.view.selectionSet.clear()
 
     if (restoredLayers === 0) {
-      this.notify(AcApI18n.t('jig.layuniso.nothingRestored'))
+      this.showMessage(AcApI18n.t('jig.layuniso.nothingRestored'))
       return
     }
 
-    this.notify(
+    this.showMessage(
       `${AcApI18n.t('jig.layuniso.restored')}: ${restoredLayers}`,
       'success'
     )
@@ -137,15 +137,5 @@ export class AcApLayerUnisoCmd extends AcEdCommand {
   private setLayerLocked(layer: AcDbLayerTableRecord, locked: boolean) {
     const flags = layer.standardFlags ?? 0
     layer.standardFlags = locked ? flags | 0x04 : flags & ~0x04
-  }
-
-  /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
   }
 }

@@ -1,4 +1,4 @@
-import { AcApContext, AcApDocManager, unisolateObjects } from '../../app'
+import { AcApContext, unisolateObjects } from '../../app'
 import { AcEdCommand } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
@@ -14,14 +14,14 @@ export class AcApUnisolateObjectsCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const count = unisolateObjects(context)
     if (count > 0) {
-      AcApDocManager.instance.editor.showMessage(
+      this.showMessage(
         `${count} ${AcApI18n.t('jig.hideobjects.restored')}`,
         'success'
       )
       return
     }
 
-    AcApDocManager.instance.editor.showMessage(
+    this.showMessage(
       AcApI18n.t('jig.hideobjects.nothingToRestore'),
       'info'
     )

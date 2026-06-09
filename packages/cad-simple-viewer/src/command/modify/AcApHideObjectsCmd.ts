@@ -39,7 +39,7 @@ export class AcApHideObjectsCmd extends AcEdCommand {
 
     const count = hideObjects(context, objectIds)
     if (count > 0) {
-      AcApDocManager.instance.editor.showMessage(
+      this.showMessage(
         `${count} ${AcApI18n.t('jig.hideobjects.hidden')}`,
         'success'
       )
