@@ -43,8 +43,8 @@
   "devDependencies": {
     "@mlightcad/data-model": "^1.8.3",
     "@mlightcad/libredwg-converter": "^3.6.3",
-    "@mlightcad/mtext-input-box": "^0.2.15",
-    "@mlightcad/mtext-renderer": "^0.11.1",
+    "@mlightcad/mtext-input-box": "^0.2.16",
+    "@mlightcad/mtext-renderer": "^0.11.2",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",
     "@types/lodash-es": "^4.17.12",

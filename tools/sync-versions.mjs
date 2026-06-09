@@ -178,6 +178,8 @@ async function syncPackage(
     const packageDirs = await readdir(packagesDir, { withFileTypes: true });
     const changedFiles = [];
 
+    let hadProcessingErrors = false;
+
     for (const entry of packageDirs) {
       if (!entry.isDirectory()) continue;
       const packageFilePath = path.join(packagesDir, entry.name, 'package.json');
@@ -193,8 +195,19 @@ async function syncPackage(
           changedFiles.push({ packageFilePath, drifts, pkgName });
         }
       } catch (error) {
+        if (error.code === 'ENOENT') {
+          console.warn(
+            `⚠️  Skipping ${path.relative(rootDir, path.join(packagesDir, entry.name))}: package.json not found`
+          );
+          continue;
+        }
+        hadProcessingErrors = true;
         console.error(`❌ Failed to process ${packageFilePath}:`, error.message);
       }
+    }
+
+    if (hadProcessingErrors) {
+      process.exit(1);
     }
 
     if (changedFiles.length === 0) {

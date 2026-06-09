@@ -43,21 +43,31 @@
                 >
                   {{ missedFont }}
                 </span>
-                <el-select
-                  :model-value="mappedFont"
-                  :placeholder="t('dialog.replacementDlg.selectFont')"
-                  @update:model-value="
-                    (value: string) => updateMappedFont(missedFont, value)
-                  "
-                  style="width: 100%"
-                >
-                  <el-option
-                    v-for="replacement in getReplacementFontsFor(missedFont)"
-                    :key="replacement"
-                    :label="replacement"
-                    :value="replacement"
-                  />
-                </el-select>
+                <div class="ml-replacement-dlg__font-select">
+                  <el-select
+                    :model-value="mappedFont"
+                    :placeholder="t('dialog.replacementDlg.selectFont')"
+                    @update:model-value="
+                      (value: string) => updateMappedFont(missedFont, value)
+                    "
+                  >
+                    <el-option
+                      v-for="replacement in getReplacementFontsFor(missedFont)"
+                      :key="replacement"
+                      :label="replacement"
+                      :value="replacement"
+                    />
+                  </el-select>
+                  <el-button
+                    link
+                    type="primary"
+                    size="small"
+                    :title="t('dialog.replacementDlg.selectLocalFont')"
+                    @click="handleSelectLocalFont(missedFont)"
+                  >
+                    ...
+                  </el-button>
+                </div>
               </div>
             </div>
           </div>
@@ -121,21 +131,31 @@
               <span class="ml-replacement-dlg__missed-font" :title="missedFont">
                 {{ missedFont }}
               </span>
-              <el-select
-                :model-value="mappedFont"
-                :placeholder="t('dialog.replacementDlg.selectFont')"
-                @update:model-value="
-                  (value: string) => updateMappedFont(missedFont, value)
-                "
-                style="width: 100%"
-              >
-                <el-option
-                  v-for="replacement in getReplacementFontsFor(missedFont)"
-                  :key="replacement"
-                  :label="replacement"
-                  :value="replacement"
-                />
-              </el-select>
+              <div class="ml-replacement-dlg__font-select">
+                <el-select
+                  :model-value="mappedFont"
+                  :placeholder="t('dialog.replacementDlg.selectFont')"
+                  @update:model-value="
+                    (value: string) => updateMappedFont(missedFont, value)
+                  "
+                >
+                  <el-option
+                    v-for="replacement in getReplacementFontsFor(missedFont)"
+                    :key="replacement"
+                    :label="replacement"
+                    :value="replacement"
+                  />
+                </el-select>
+                <el-button
+                  link
+                  type="primary"
+                  size="small"
+                  :title="t('dialog.replacementDlg.selectLocalFont')"
+                  @click="handleSelectLocalFont(missedFont)"
+                >
+                  ...
+                </el-button>
+              </div>
             </div>
           </div>
         </div>
@@ -177,12 +197,20 @@
         @change="handleFileChange"
         style="display: none"
       />
+      <input
+        type="file"
+        ref="fontFileInput"
+        accept=".shx,.ttf,.otf,.woff"
+        @change="handleFontFileChange"
+        style="display: none"
+      />
     </div>
   </ml-base-dialog>
 </template>
 
 <script lang="ts" setup>
 import {
+  AcApCacheFontCmd,
   AcApDocManager,
   AcApFontUtil,
   AcApSettingManager,
@@ -212,9 +240,18 @@ const dialogVisible = ref(true)
 const showTabs = computed(() => fontMapping.size > 0 && imageTableData.size > 0)
 const activeTab = ref('font')
 const fileInput = ref<HTMLInputElement | null>(null)
+const fontFileInput = ref<HTMLInputElement | null>(null)
 const availableFontInfos = ref<AcDbFontInfo[]>([])
 const matchFontType = ref(true)
 const pendingImageRow = ref<ImageMappingData | null>(null)
+const pendingFontMissed = ref<string | null>(null)
+
+interface LocalCachedFont {
+  name: string
+  type: 'shx' | 'mesh'
+}
+
+const localCachedFonts = ref<LocalCachedFont[]>([])
 
 watch(
   showTabs,
@@ -249,20 +286,36 @@ const getMissedFontType = (missedFont: string): 'shx' | 'mesh' | undefined => {
   )
 }
 
+const addLocalCachedFont = (fontName: string) => {
+  const type = AcApFontUtil.getFontType(fontName)
+  if (!type) return
+  if (localCachedFonts.value.some(font => font.name === fontName)) return
+  localCachedFonts.value.push({ name: fontName, type })
+}
+
 const getReplacementFontsFor = (missedFont: string): string[] => {
-  const fonts = availableFontInfos.value
+  const remoteFonts = availableFontInfos.value
+  let remoteNames: string[]
   if (!matchFontType.value) {
-    return fonts.map(font => font.name[0])
+    remoteNames = remoteFonts.map(font => font.name[0])
+  } else {
+    const targetType = getMissedFontType(missedFont)
+    remoteNames = targetType
+      ? remoteFonts
+          .filter(font => font.type === targetType)
+          .map(font => font.name[0])
+      : remoteFonts.map(font => font.name[0])
   }
 
-  const targetType = getMissedFontType(missedFont)
-  if (!targetType) {
-    return fonts.map(font => font.name[0])
-  }
+  const localNames = localCachedFonts.value
+    .filter(font => {
+      if (!matchFontType.value) return true
+      const targetType = getMissedFontType(missedFont)
+      return !targetType || font.type === targetType
+    })
+    .map(font => font.name)
 
-  return fonts
-    .filter(font => font.type === targetType)
-    .map(font => font.name[0])
+  return [...new Set([...localNames, ...remoteNames])]
 }
 
 const handleConfirm = async () => {
@@ -333,6 +386,49 @@ const handleFileChange = () => {
   }
 }
 
+const handleSelectLocalFont = (missedFont: string) => {
+  pendingFontMissed.value = missedFont
+  fontFileInput.value?.click()
+}
+
+const handleFontFileChange = async () => {
+  const file = fontFileInput.value?.files?.[0]
+  const missedFont = pendingFontMissed.value
+  pendingFontMissed.value = null
+
+  if (!file || !missedFont) {
+    if (fontFileInput.value) {
+      fontFileInput.value.value = ''
+    }
+    return
+  }
+
+  try {
+    const status = await AcApCacheFontCmd.cacheFontFile(file, {
+      aliases: [missedFont],
+      notify: false
+    })
+    if (status.status === 'Success') {
+      addLocalCachedFont(status.fontName)
+      fontMapping.set(missedFont, status.fontName)
+    } else {
+      eventBus.emit('message', {
+        message: t('main.message.fontCacheFailed', { fileName: file.name }),
+        type: 'error'
+      })
+    }
+  } catch {
+    eventBus.emit('message', {
+      message: t('main.message.fontCacheFailed', { fileName: file.name }),
+      type: 'error'
+    })
+  }
+
+  if (fontFileInput.value) {
+    fontFileInput.value.value = ''
+  }
+}
+
 const updateMappedFont = (missedFont: string, mappedFont: string) => {
   fontMapping.set(missedFont, mappedFont)
 }
@@ -381,5 +477,17 @@ const updateMappedFont = (missedFont: string, mappedFont: string) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ml-replacement-dlg__font-select {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ml-replacement-dlg__font-select :deep(.el-select) {
+  flex: 1;
+  min-width: 0;
 }
 </style>

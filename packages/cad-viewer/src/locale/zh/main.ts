@@ -561,6 +561,8 @@ export default {
     fontMissedInDrawing:
       '字体 "{font}" 被 {count} 个文字对象使用，但不可用，已使用 "{replacementFont}" 显示。',
     fontMissedReplacement: '"{font}"（已用 "{replacement}" 显示）',
+    fontCached: '字体 "{font}" 已成功缓存。',
+    fontCacheFailed: '缓存字体 "{fileName}" 失败。',
     failedToGetAvaiableFonts: '无法从"{url}"获取可用的字体信息！',
     failedToOpenFile: '无法打开文件"{fileName}"！',
     fetchingDrawingFile: '正在加载图纸文件...',

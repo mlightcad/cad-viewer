@@ -12,6 +12,7 @@ export default {
     missedFont: 'Missed Font',
     replacedFont: 'Replaced Font',
     selectFont: 'Select font to replace',
+    selectLocalFont: 'Select local font file',
     matchFontType:
       'Use the same font type (SHX replaces SHX, mesh replaces mesh)'
   },

@@ -597,6 +597,8 @@ export default {
     fontMissedInDrawing:
       'Font "{font}" is required by {count} text object(s) but is not available. Displaying with "{replacementFont}".',
     fontMissedReplacement: '"{font}" (displaying with "{replacement}")',
+    fontCached: 'Font "{font}" cached successfully.',
+    fontCacheFailed: 'Failed to cache font "{fileName}".',
     failedToGetAvaiableFonts: 'Failed to get avaiable fonts from "{url}"!',
     failedToOpenFile: 'Failed to open file "{fileName}"!',
     fetchingDrawingFile: 'Fetching file ...',

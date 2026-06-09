@@ -119,6 +119,7 @@ jest.mock('../src/editor', () => ({
 jest.mock('../src/command', () => {
   const commandNames = [
     'AcApArcCmd',
+    'AcApCacheFontCmd',
     'AcApCircleCmd',
     'AcApClearMeasurementsCmd',
     'AcApConvertToDxfCmd',

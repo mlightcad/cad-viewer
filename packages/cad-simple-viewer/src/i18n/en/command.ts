@@ -47,6 +47,9 @@ export default {
     cetranparency: {
       description: 'Sets the transparency for newly created objects'
     },
+    cachefont: {
+      description: 'Caches a local font file into IndexedDB for text rendering'
+    },
     circle: {
       description: 'Creates one circle by center and radius'
     },
