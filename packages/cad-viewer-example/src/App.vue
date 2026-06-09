@@ -11,6 +11,7 @@
         locale="en"
         :local-file="store.selectedFile"
         :mode="selectedMode"
+        :use-main-thread-draw="useMainThreadDraw"
         @create="initialize"
         base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
       />
@@ -63,11 +64,17 @@ const initialize = () => {
 // AcApSettingManager.instance.isShowCoordinate = false
 
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Read)
+const useMainThreadDraw = ref(false)
 
 // Handle file selection from upload component
-const handleFileSelect = (file: File, mode: AcEdOpenMode) => {
+const handleFileSelect = (
+  file: File,
+  mode: AcEdOpenMode,
+  mainThreadDraw: boolean
+) => {
   store.selectedFile = file
   selectedMode.value = mode
+  useMainThreadDraw.value = mainThreadDraw
 }
 </script>
 
