@@ -13,6 +13,7 @@
         :mode="selectedMode"
         :use-main-thread-draw="useMainThreadDraw"
         :draw-no-plot-layers="drawNoPlotLayers"
+        :progressive-rendering="progressiveRendering"
         @create="initialize"
         base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
       />
@@ -67,18 +68,21 @@ const initialize = () => {
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Read)
 const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
+const progressiveRendering = ref(true)
 
 // Handle file selection from upload component
 const handleFileSelect = (
   file: File,
   mode: AcEdOpenMode,
   mainThreadDraw: boolean,
-  showNoPlotLayers: boolean
+  showNoPlotLayers: boolean,
+  enableProgressiveRendering: boolean
 ) => {
   store.selectedFile = file
   selectedMode.value = mode
   useMainThreadDraw.value = mainThreadDraw
   drawNoPlotLayers.value = showNoPlotLayers
+  progressiveRendering.value = enableProgressiveRendering
 }
 </script>
 
@@ -93,10 +97,12 @@ const handleFileSelect = (
   width: 100vw;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  overflow-y: auto;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   margin: 0;
-  padding: 0;
+  padding: 24px 0;
+  box-sizing: border-box;
   position: absolute;
   top: 0;
   left: 0;

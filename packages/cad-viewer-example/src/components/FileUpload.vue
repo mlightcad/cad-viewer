@@ -1,117 +1,177 @@
 <template>
   <div class="file-upload-container">
     <div class="upload-panel">
-      <section class="upload-hero">
-        <div class="upload-icon">
-          <el-icon :size="28">
-            <UploadFilled />
-          </el-icon>
-        </div>
-        <h1 class="upload-title">Select CAD File to View</h1>
-        <p class="upload-subtitle">Import DWG or DXF drawings into the viewer</p>
-      </section>
-
-      <el-upload
-        class="upload-dropzone"
-        drag
-        :auto-upload="false"
-        accept=".dwg,.dxf"
-        :on-change="handleFileChange"
-        :before-upload="beforeUpload"
-      >
-        <div class="dropzone-content">
-          <p class="dropzone-title">Drop your file here</p>
-          <p class="dropzone-hint">
-            or <span class="dropzone-link">browse files</span>
-          </p>
-          <div class="format-tags">
-            <span class="format-tag">DWG</span>
-            <span class="format-tag">DXF</span>
+      <div class="upload-main">
+        <section class="upload-hero">
+          <div class="upload-icon">
+            <el-icon :size="24">
+              <UploadFilled />
+            </el-icon>
           </div>
-        </div>
-      </el-upload>
+          <div class="upload-hero-text">
+            <h1 class="upload-title">Select CAD File to View</h1>
+            <p class="upload-subtitle">
+              Import DWG or DXF drawings into the viewer
+            </p>
+          </div>
+        </section>
+
+        <el-upload
+          class="upload-dropzone"
+          drag
+          :auto-upload="false"
+          accept=".dwg,.dxf"
+          :on-change="handleFileChange"
+          :before-upload="beforeUpload"
+        >
+          <div class="dropzone-content">
+            <p class="dropzone-title">Drop your file here</p>
+            <p class="dropzone-hint">
+              or <span class="dropzone-link">browse files</span>
+            </p>
+            <div class="format-tags">
+              <span class="format-tag">DWG</span>
+              <span class="format-tag">DXF</span>
+            </div>
+          </div>
+        </el-upload>
+      </div>
 
       <section class="settings-section">
-        <div class="setting-block">
-          <h2 class="setting-label">Access mode</h2>
-          <div class="mode-segment" role="radiogroup" aria-label="Access mode">
-            <button
-              v-for="mode in accessModes"
-              :key="mode.value"
-              type="button"
-              class="mode-option"
-              :class="{ 'is-active': selectedMode === mode.value }"
-              role="radio"
-              :aria-checked="selectedMode === mode.value"
-              @click="selectedMode = mode.value"
-            >
-              <span class="mode-option-title">{{ mode.label }}</span>
-              <span class="mode-option-desc">{{ mode.description }}</span>
-            </button>
-          </div>
-        </div>
+        <header class="settings-header">
+          <h2 class="settings-title">Open options</h2>
+          <p class="settings-subtitle">Applied when the file is loaded</p>
+        </header>
 
-        <div class="setting-block">
-          <h2 class="setting-label">Text rendering</h2>
-          <div
-            class="render-segment"
-            role="radiogroup"
-            aria-label="Text rendering"
-          >
-            <button
-              type="button"
-              class="render-option"
-              :class="{ 'is-active': !useMainThreadDraw }"
-              role="radio"
-              :aria-checked="!useMainThreadDraw"
-              @click="useMainThreadDraw = false"
-            >
-              <span class="render-option-title">Web worker</span>
-              <span class="render-option-desc">Faster, more memory</span>
-            </button>
-            <button
-              type="button"
-              class="render-option"
-              :class="{ 'is-active': useMainThreadDraw }"
-              role="radio"
-              :aria-checked="useMainThreadDraw"
-              @click="useMainThreadDraw = true"
-            >
-              <span class="render-option-title">Main thread</span>
-              <span class="render-option-desc">Slower, less memory</span>
-            </button>
+        <div class="settings-grid">
+          <div class="setting-block setting-block--full">
+            <h3 class="setting-label">Access mode</h3>
+            <div class="mode-segment" role="radiogroup" aria-label="Access mode">
+              <button
+                v-for="mode in accessModes"
+                :key="mode.value"
+                type="button"
+                class="mode-option"
+                :class="{ 'is-active': selectedMode === mode.value }"
+                role="radio"
+                :aria-checked="selectedMode === mode.value"
+                @click="selectedMode = mode.value"
+              >
+                <span class="option-title">{{ mode.label }}</span>
+                <span class="option-desc">{{ mode.description }}</span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div class="setting-block">
-          <h2 class="setting-label">Non-plottable layers</h2>
-          <div
-            class="render-segment"
-            role="radiogroup"
-            aria-label="Non-plottable layers"
-          >
-            <button
-              type="button"
-              class="render-option"
-              :class="{ 'is-active': !drawNoPlotLayers }"
-              role="radio"
-              :aria-checked="!drawNoPlotLayers"
-              @click="drawNoPlotLayers = false"
+          <div class="setting-block">
+            <h3 class="setting-label">Text rendering</h3>
+            <div
+              class="pill-segment"
+              role="radiogroup"
+              aria-label="Text rendering"
             >
-              <span class="render-option-title">Hide</span>
-              <span class="render-option-desc">Web viewer default</span>
-            </button>
-            <button
-              type="button"
-              class="render-option"
-              :class="{ 'is-active': drawNoPlotLayers }"
-              role="radio"
-              :aria-checked="drawNoPlotLayers"
-              @click="drawNoPlotLayers = true"
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': !useMainThreadDraw }"
+                role="radio"
+                :aria-checked="!useMainThreadDraw"
+                @click="useMainThreadDraw = false"
+              >
+                Web worker
+              </button>
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': useMainThreadDraw }"
+                role="radio"
+                :aria-checked="useMainThreadDraw"
+                @click="useMainThreadDraw = true"
+              >
+                Main thread
+              </button>
+            </div>
+            <p class="setting-hint">
+              {{
+                useMainThreadDraw
+                  ? 'Slower, less memory'
+                  : 'Faster, more memory'
+              }}
+            </p>
+          </div>
+
+          <div class="setting-block">
+            <h3 class="setting-label">Progressive rendering</h3>
+            <div
+              class="pill-segment"
+              role="radiogroup"
+              aria-label="Progressive rendering"
             >
-              <span class="render-option-title">Show</span>
-              <span class="render-option-desc">AutoCAD editor semantics</span>
-            </button>
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': progressiveRendering }"
+                role="radio"
+                :aria-checked="progressiveRendering"
+                @click="progressiveRendering = true"
+              >
+                Enabled
+              </button>
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': !progressiveRendering }"
+                role="radio"
+                :aria-checked="!progressiveRendering"
+                @click="progressiveRendering = false"
+              >
+                Disabled
+              </button>
+            </div>
+            <p class="setting-hint">
+              {{
+                progressiveRendering
+                  ? 'Show geometry while loading'
+                  : 'Wait until fully converted'
+              }}
+            </p>
+          </div>
+
+          <div class="setting-block">
+            <h3 class="setting-label">Non-plottable layers</h3>
+            <div
+              class="pill-segment"
+              role="radiogroup"
+              aria-label="Non-plottable layers"
+            >
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': !drawNoPlotLayers }"
+                role="radio"
+                :aria-checked="!drawNoPlotLayers"
+                @click="drawNoPlotLayers = false"
+              >
+                Hide
+              </button>
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': drawNoPlotLayers }"
+                role="radio"
+                :aria-checked="drawNoPlotLayers"
+                @click="drawNoPlotLayers = true"
+              >
+                Show
+              </button>
+            </div>
+            <p class="setting-hint">
+              {{
+                drawNoPlotLayers
+                  ? 'AutoCAD editor semantics'
+                  : 'Web viewer default'
+              }}
+            </p>
           </div>
         </div>
       </section>
@@ -132,7 +192,8 @@ interface Props {
     file: File,
     mode: AcEdOpenMode,
     useMainThreadDraw: boolean,
-    drawNoPlotLayers: boolean
+    drawNoPlotLayers: boolean,
+    progressiveRendering: boolean
   ) => void
 }
 
@@ -141,6 +202,7 @@ const props = defineProps<Props>()
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Read)
 const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
+const progressiveRendering = ref(true)
 
 const accessModes = [
   {
@@ -167,7 +229,8 @@ const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
         uploadFile.raw,
         selectedMode.value,
         useMainThreadDraw.value,
-        drawNoPlotLayers.value
+        drawNoPlotLayers.value,
+        progressiveRendering.value
       )
     }
   }
@@ -192,63 +255,70 @@ const isValidFile = (file: File): boolean => {
 .file-upload-container {
   display: flex;
   justify-content: center;
-  align-items: center;
   width: 100%;
-  max-width: 560px;
-  padding: 24px;
+  max-width: 640px;
+  padding: 20px 24px;
+  box-sizing: border-box;
 }
 
 .upload-panel {
   display: flex;
   flex-direction: column;
   width: 100%;
-  border-radius: 20px;
+  border-radius: 16px;
   background: #ffffff;
   box-shadow:
-    0 24px 48px rgba(15, 23, 42, 0.18),
+    0 20px 40px rgba(15, 23, 42, 0.16),
     0 0 0 1px rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
+.upload-main {
+  padding: 24px 24px 20px;
+}
+
 .upload-hero {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 36px 32px 8px;
-  text-align: center;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
 .upload-icon {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #667eea 0%, #5b6fd6 100%);
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+}
+
+.upload-hero-text {
+  min-width: 0;
 }
 
 .upload-title {
-  margin: 8px 0 0;
-  font-size: 24px;
+  margin: 0;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: #0f172a;
+  line-height: 1.3;
 }
 
 .upload-subtitle {
-  margin: 0;
-  font-size: 14px;
+  margin: 4px 0 0;
+  font-size: 13px;
   color: #64748b;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .upload-dropzone {
   width: 100%;
-  padding: 0 28px;
   box-sizing: border-box;
 }
 
@@ -263,9 +333,9 @@ const isValidFile = (file: File): boolean => {
   justify-content: center;
   width: 100%;
   box-sizing: border-box;
-  padding: 28px 20px;
+  padding: 20px 16px;
   border: 1.5px dashed #c7d2fe;
-  border-radius: 14px;
+  border-radius: 12px;
   background: #f8faff;
   transition:
     border-color 0.2s ease,
@@ -283,12 +353,12 @@ const isValidFile = (file: File): boolean => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .dropzone-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #1e293b;
 }
@@ -306,112 +376,166 @@ const isValidFile = (file: File): boolean => {
 
 .format-tags {
   display: flex;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .format-tag {
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: #e8edff;
   color: #4f5fd0;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
 
 .settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-top: 24px;
-  padding: 24px 28px 28px;
+  padding: 16px 24px 20px;
   background: #f8fafc;
   border-top: 1px solid #e8edf5;
+}
+
+.settings-header {
+  margin-bottom: 14px;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.settings-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
 }
 
 .setting-block {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
+}
+
+.setting-block--full {
+  grid-column: 1 / -1;
 }
 
 .setting-label {
   margin: 0;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #94a3b8;
 }
 
-.mode-segment,
-.render-segment {
-  display: grid;
-  gap: 8px;
+.setting-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.35;
 }
 
 .mode-segment {
-  grid-template-columns: repeat(3, 1fr);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
-.render-segment {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.mode-option,
-.render-option {
+.mode-option {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 12px 14px;
+  align-items: center;
+  gap: 1px;
+  padding: 8px 6px;
   border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #ffffff;
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   transition:
     border-color 0.2s ease,
     background-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-.mode-option:hover,
-.render-option:hover {
+.mode-option:hover {
   border-color: #c7d2fe;
   background: #fafbff;
 }
 
-.mode-option.is-active,
-.render-option.is-active {
+.mode-option.is-active {
   border-color: #667eea;
   background: #f1f5ff;
-  box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.15);
+  box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.12);
 }
 
-.mode-option-title,
-.render-option-title {
-  font-size: 14px;
+.option-title {
+  font-size: 13px;
   font-weight: 600;
   color: #1e293b;
+  line-height: 1.3;
 }
 
-.mode-option.is-active .mode-option-title,
-.render-option.is-active .render-option-title {
+.mode-option.is-active .option-title {
   color: #4f5fd0;
 }
 
-.mode-option-desc,
-.render-option-desc {
-  font-size: 12px;
+.option-desc {
+  font-size: 10px;
   color: #94a3b8;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
-.mode-option.is-active .mode-option-desc,
-.render-option.is-active .render-option-desc {
+.mode-option.is-active .option-desc {
   color: #64748b;
+}
+
+.pill-segment {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.pill-option {
+  flex: 1;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pill-option:not(:last-child) {
+  border-right: 1px solid #e2e8f0;
+}
+
+.pill-option:hover:not(.is-active) {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.pill-option.is-active {
+  background: #f1f5ff;
+  color: #4f5fd0;
 }
 
 @media (max-width: 520px) {
@@ -419,18 +543,29 @@ const isValidFile = (file: File): boolean => {
     padding: 16px;
   }
 
-  .upload-hero {
-    padding: 28px 20px 8px;
+  .upload-main,
+  .settings-section {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
-  .upload-dropzone,
-  .settings-section {
-    padding-left: 20px;
-    padding-right: 20px;
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setting-block--full {
+    grid-column: auto;
   }
 
   .mode-segment {
     grid-template-columns: 1fr;
+  }
+
+  .mode-option {
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
   }
 }
 </style>
