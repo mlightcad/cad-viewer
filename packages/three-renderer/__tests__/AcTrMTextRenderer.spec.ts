@@ -45,6 +45,40 @@ describe('AcTrMTextRenderer', () => {
     expect(mockRendererInstances[0].setFontUrl).toHaveBeenCalledWith(fontUrl)
   })
 
+  it('creates the unified renderer in main mode without eagerly spawning workers', () => {
+    const renderer = AcTrMTextRenderer.getInstance()
+
+    renderer.setRenderMode('main')
+    renderer.initialize('./assets/mtext-renderer-worker.js')
+
+    expect(mockUnifiedRenderer).toHaveBeenCalledWith('main', {
+      workerUrl: './assets/mtext-renderer-worker.js'
+    })
+    expect(mockRendererInstances[0].setDefaultMode).toHaveBeenCalledWith('main')
+  })
+
+  it('creates the unified renderer in worker mode when requested', () => {
+    const renderer = AcTrMTextRenderer.getInstance()
+
+    renderer.setRenderMode('worker')
+    renderer.initialize('./assets/mtext-renderer-worker.js')
+
+    expect(mockUnifiedRenderer).toHaveBeenCalledWith('worker', {
+      workerUrl: './assets/mtext-renderer-worker.js'
+    })
+    expect(mockRendererInstances[0].setDefaultMode).toHaveBeenCalledWith('worker')
+  })
+
+  it('destroys the previous unified renderer before re-initializing', () => {
+    const renderer = AcTrMTextRenderer.getInstance()
+
+    renderer.initialize('./assets/mtext-renderer-worker.js')
+    renderer.initialize('./assets/mtext-renderer-worker.js')
+
+    expect(mockRendererInstances).toHaveLength(2)
+    expect(mockRendererInstances[0].destroy).toHaveBeenCalledTimes(1)
+  })
+
   it('applies a pending custom font URL after restoring the render mode', () => {
     const renderer = AcTrMTextRenderer.getInstance()
     const fontUrl = 'https://cdn.example.com/cad/fonts/'
@@ -54,11 +88,10 @@ describe('AcTrMTextRenderer', () => {
     renderer.initialize('./assets/mtext-renderer-worker.js')
 
     const rendererInstance = mockRendererInstances[0]
-    expect(rendererInstance.setDefaultMode).toHaveBeenCalledWith('main')
+    expect(mockUnifiedRenderer).toHaveBeenCalledWith('main', {
+      workerUrl: './assets/mtext-renderer-worker.js'
+    })
     expect(rendererInstance.setFontUrl).toHaveBeenCalledWith(fontUrl)
-    expect(
-      rendererInstance.setDefaultMode.mock.invocationCallOrder[0]
-    ).toBeLessThan(rendererInstance.setFontUrl.mock.invocationCallOrder[0])
   })
 
   it('forwards a custom font URL to an initialized renderer immediately', () => {

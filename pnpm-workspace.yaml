@@ -10,8 +10,8 @@ allowBuilds:
 overrides:
   '@mlightcad/data-model': '^1.8.4'
   '@mlightcad/libredwg-converter': '^3.6.4'
-  '@mlightcad/mtext-input-box': '^0.2.16'
-  '@mlightcad/mtext-renderer': '^0.11.2'
+  '@mlightcad/mtext-input-box': '^0.2.17'
+  '@mlightcad/mtext-renderer': '^0.11.3'
   '@mlightcad/ribbon': '^0.1.10'
   element-plus: '^2.12.0'
   glob: '^13.0.6'

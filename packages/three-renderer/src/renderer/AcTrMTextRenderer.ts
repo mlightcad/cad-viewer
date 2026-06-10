@@ -177,15 +177,42 @@ export class AcTrMTextRenderer {
   }
 
   /**
-   * Initialize the renderer with worker URL
-   * @param workerUrl - URL to the worker script
+   * Initialize the renderer.
+   *
+   * When render mode is `main`, the unified renderer is created without
+   * eagerly spawning web workers. The worker URL is still stored so worker
+   * mode can be enabled later if needed.
+   *
+   * @param workerUrl - URL to the worker script used when render mode is `worker`
    */
-  initialize(workerUrl: string | URL): void {
-    this._workerUrl = workerUrl
-    this._renderer = new UnifiedRenderer('worker', { workerUrl })
+  initialize(workerUrl?: string | URL): void {
+    if (workerUrl !== undefined) {
+      this._workerUrl = workerUrl
+    }
+
+    if (this._renderer) {
+      this._renderer.destroy()
+      this._renderer = undefined
+    }
+
+    const mode = this._renderMode ?? 'worker'
+    const workerConfig = this._workerUrl ? { workerUrl: this._workerUrl } : {}
+
+    if (mode === 'worker') {
+      if (!this._workerUrl) {
+        throw new Error(
+          'AcTrMTextRenderer worker URL is required for worker render mode'
+        )
+      }
+      this._renderer = new UnifiedRenderer('worker', workerConfig)
+    } else {
+      this._renderer = new UnifiedRenderer('main', workerConfig)
+    }
+
     if (this._renderMode) {
       this._renderer.setDefaultMode(this._renderMode)
     }
+
     this.applyFontUrl()
     void this.applyDefaultFonts()
     if (this._styleManager) {
@@ -195,14 +222,24 @@ export class AcTrMTextRenderer {
   }
 
   /**
-   * Dispose of the renderer and reset the singleton
+   * Dispose of the renderer and reset cached configuration.
    */
   dispose(): void {
     if (this._renderer) {
       this._renderer.destroy()
       this._renderer = undefined
     }
-    // AcTrMTextRenderer._instance = null
+    this._workerUrl = undefined
+    this._renderMode = undefined
+    this._defaultFonts = undefined
+  }
+
+  /**
+   * Dispose and discard the singleton instance.
+   */
+  public static resetInstance(): void {
+    AcTrMTextRenderer.getInstance().dispose()
+    AcTrMTextRenderer._instance = null
   }
 
   private ensureRendererCreated() {
