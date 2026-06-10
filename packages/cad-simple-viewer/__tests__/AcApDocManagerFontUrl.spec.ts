@@ -32,7 +32,8 @@ jest.mock('@mlightcad/three-renderer', () => ({
       initialize: mockInitialize,
       setRenderMode: mockSetRenderMode,
       setDefaultFonts: mockSetDefaultFonts
-    }))
+    })),
+    resetInstance: jest.fn()
   }
 }))
 
@@ -250,5 +251,18 @@ describe('AcApDocManager font URL configuration', () => {
 
     expect(mockInitialize).toHaveBeenCalled()
     expect(mockSetDefaultFonts).toHaveBeenCalledWith('modern')
+  })
+
+  it('configures main-thread mtext rendering before initializing workers', () => {
+    AcApDocManager.createInstance({
+      useMainThreadDraw: true,
+      notLoadDefaultFonts: true
+    })
+
+    expect(mockSetRenderMode).toHaveBeenCalledWith('main')
+    expect(mockInitialize).toHaveBeenCalled()
+    expect(mockSetRenderMode.mock.invocationCallOrder[0]).toBeLessThan(
+      mockInitialize.mock.invocationCallOrder[0]
+    )
   })
 })

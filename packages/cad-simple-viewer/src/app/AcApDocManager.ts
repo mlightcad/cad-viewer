@@ -498,6 +498,7 @@ export class AcApDocManager {
    */
   async destroy() {
     await this._pluginManager.unloadAllPlugins()
+    AcTrMTextRenderer.resetInstance()
     AcApDocManager._instance = undefined
   }
 
