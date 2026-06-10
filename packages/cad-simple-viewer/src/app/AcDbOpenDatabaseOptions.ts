@@ -9,6 +9,9 @@ import { AcEdOpenMode } from '../editor/view'
  * the `readOnly` property with a `mode` property that provides more granular
  * access control.
  *
+ * Inherits {@link AcDbOpenDatabaseOptions.drawNoPlotLayers} from the data model.
+ * {@link AcApDocManager} defaults it to `false` (web viewer semantics) when omitted.
+ *
  * @example
  * ```typescript
  * const options: AcApOpenDatabaseOptions = {
