@@ -176,6 +176,11 @@ export class AcTrView2d extends AcEdBaseView {
   private _externallyFramedLayouts: Set<AcDbObjectId> = new Set()
   /** Progressive camera framing while entities batch-convert at document open. */
   private readonly _progressiveOpenFit: AcTrProgressiveOpenFitController
+  /**
+   * When true, entity conversion during document open is deferred across
+   * event-loop turns so geometry appears incrementally.
+   */
+  private _progressiveRendering = true
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -528,6 +533,16 @@ export class AcTrView2d extends AcEdBaseView {
    */
   get isProcessingEntities() {
     return this._numOfEntitiesToProcess > 0
+  }
+
+  /**
+   * Whether entity conversion during document open is deferred for progressive display.
+   */
+  get progressiveRendering() {
+    return this._progressiveRendering
+  }
+  set progressiveRendering(value: boolean) {
+    this._progressiveRendering = value
   }
 
   /**
@@ -1147,10 +1162,15 @@ export class AcTrView2d extends AcEdBaseView {
   addEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
     this._numOfEntitiesToProcess += entities.length
-    setTimeout(async () => {
+    const convert = async () => {
       await this.batchConvert(entities)
-    })
-    this._isDirty = true
+    }
+    if (this._progressiveRendering) {
+      setTimeout(convert)
+      this._isDirty = true
+    } else {
+      void convert()
+    }
   }
 
   /**
@@ -1442,14 +1462,18 @@ export class AcTrView2d extends AcEdBaseView {
     })
 
     const stillLoading = this._numOfEntitiesToProcess > 0
+    const deferRenderWhileLoading =
+      stillLoading && !this._progressiveRendering
     if (!this._isDirty && !stillLoading) return
+    if (deferRenderWhileLoading) return
 
     const needsRedraw = this._layoutViewManager.render(this._scene)
     if (this.internalCamera) {
       this._css2dRenderer.render(this._scene.internalScene, this.internalCamera)
     }
     this._stats?.update()
-    this._isDirty = stillLoading || needsRedraw
+    this._isDirty =
+      (this._progressiveRendering && stillLoading) || needsRedraw
   }
 
   private startAnimationLoop() {
@@ -1588,10 +1612,10 @@ export class AcTrView2d extends AcEdBaseView {
         return
       }
 
-      // Load entities asynchronously
+      // Load entities asynchronously when progressive rendering is enabled.
       this._loadingLayouts.add(layoutBtrId)
       this._numOfEntitiesToProcess += entities.length
-      setTimeout(async () => {
+      const convert = async () => {
         try {
           await this.batchConvert(entities)
           const layout = this._scene.layouts.get(layoutBtrId)
@@ -1601,7 +1625,12 @@ export class AcTrView2d extends AcEdBaseView {
         } finally {
           this._loadingLayouts.delete(layoutBtrId)
         }
-      })
+      }
+      if (this._progressiveRendering) {
+        setTimeout(convert)
+      } else {
+        void convert()
+      }
     } catch (error) {
       log.error('[AcTrView2d] Error loading layout entities:', error)
     }
@@ -1631,6 +1660,28 @@ export class AcTrView2d extends AcEdBaseView {
 
   private drawEntity(entity: AcDbEntity, delay?: boolean) {
     return entity.worldDraw(this._renderer, delay) as AcTrEntity | null
+  }
+
+  /**
+   * Finishes geometry for a converted entity. Progressive mode defers MTEXT/SHAPE
+   * to async workers; non-progressive mode uses synchronous drawing from
+   * {@link drawEntity}(..., false).
+   */
+  private async finishEntityGeometry(threeEntity: AcTrEntity, progressive: boolean) {
+    if (progressive) {
+      await threeEntity.draw()
+      return
+    }
+    if (this.entityUsedSyncDraw(threeEntity)) {
+      return
+    }
+    await threeEntity.draw()
+  }
+
+  /** MTEXT/SHAPE entities expose syncDraw and render synchronously when delay=false. */
+  private entityUsedSyncDraw(threeEntity: AcTrEntity) {
+    return typeof (threeEntity as { syncDraw?: () => unknown }).syncDraw ===
+      'function'
   }
 
   /**
@@ -1674,6 +1725,7 @@ export class AcTrView2d extends AcEdBaseView {
    * @returns The converted three entities
    */
   private async batchConvert(entities: AcDbEntity[]) {
+    const progressive = this._progressiveRendering
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
       try {
@@ -1699,7 +1751,7 @@ export class AcTrView2d extends AcEdBaseView {
           continue
         }
 
-        const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
+        const threeEntity: AcTrEntity | null = this.drawEntity(entity, progressive)
         // Viewports may produce no border geometry (e.g. on a no-plot layer) while
         // still needing an AcTrViewportView for model content below.
         if (!threeEntity && !(entity instanceof AcDbViewport)) continue
@@ -1731,16 +1783,18 @@ export class AcTrView2d extends AcEdBaseView {
               entity instanceof AcDbRay || entity instanceof AcDbXline
             )
 
-            await threeEntity.draw()
+            await this.finishEntityGeometry(threeEntity, progressive)
             this._scene.addEntity(threeEntity, isExtendBbox)
             this.applySessionHiddenObjectState(entity.objectId)
             // Release memory occupied by this entity
             threeEntity.dispose()
-            this._isDirty = true
-            await this._progressiveOpenFit.afterGeometryBatch(
-              () => this.resolveLayoutFitBox(),
-              i
-            )
+            if (progressive) {
+              this._isDirty = true
+              await this._progressiveOpenFit.afterGeometryBatch(
+                () => this.resolveLayoutFitBox(),
+                i
+              )
+            }
           }
         }
 
@@ -1877,10 +1931,12 @@ export class AcTrView2d extends AcEdBaseView {
     })
     group.dispose()
 
-    this._isDirty = true
-    void this._progressiveOpenFit.afterGeometryBatch(() =>
-      this.resolveLayoutFitBox()
-    )
+    if (this._progressiveRendering) {
+      this._isDirty = true
+      void this._progressiveOpenFit.afterGeometryBatch(() =>
+        this.resolveLayoutFitBox()
+      )
+    }
   }
 
   /**
@@ -1988,6 +2044,11 @@ export class AcTrView2d extends AcEdBaseView {
       log.warn(
         'Something wrong! The number of entities to process should not be less than 0.'
       )
+    } else if (
+      this._numOfEntitiesToProcess === 0 &&
+      !this._progressiveRendering
+    ) {
+      this._isDirty = true
     }
   }
 }

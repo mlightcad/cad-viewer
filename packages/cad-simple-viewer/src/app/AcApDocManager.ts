@@ -1149,6 +1149,8 @@ export class AcApDocManager {
       doc: this.context.doc,
       mode: this.getDocumentEventMode(options)
     })
+    ;(this.curView as AcTrView2d).progressiveRendering =
+      options?.progressiveRendering ?? true
     this.curView.clear()
   }
 
@@ -1202,10 +1204,16 @@ export class AcApDocManager {
       const layoutLimits = activeLayout?.limits
 
       const view = this.curView as AcTrView2d
+      const progressiveRendering = options?.progressiveRendering ?? true
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
         view.zoomTo(layoutLimits)
       } else {
-        view.beginProgressiveOpenFit(this.resolveModelSpaceExtentsBox(db))
+        const extentsBox = this.resolveModelSpaceExtentsBox(db)
+        if (progressiveRendering) {
+          view.beginProgressiveOpenFit(extentsBox)
+        } else if (extentsBox && !extentsBox.isEmpty()) {
+          view.zoomTo(extentsBox)
+        }
         view.zoomToFitDrawing()
       }
 
@@ -1234,7 +1242,8 @@ export class AcApDocManager {
     if (options == null) {
       options = {
         fontLoader: this._fontLoader,
-        drawNoPlotLayers: false
+        drawNoPlotLayers: false,
+        progressiveRendering: true
       }
     } else {
       if (options.fontLoader == null) {
@@ -1242,6 +1251,9 @@ export class AcApDocManager {
       }
       if (options.drawNoPlotLayers == null) {
         options.drawNoPlotLayers = false
+      }
+      if (options.progressiveRendering == null) {
+        options.progressiveRendering = true
       }
     }
     return options

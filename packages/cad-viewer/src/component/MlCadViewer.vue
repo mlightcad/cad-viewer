@@ -172,6 +172,11 @@ interface Props {
    * When omitted, {@link AcApDocManager} defaults to `false` (web viewer semantics).
    */
   drawNoPlotLayers?: boolean
+  /**
+   * Whether to render entities incrementally while a drawing is opening.
+   * When omitted, {@link AcApDocManager} defaults to `true`.
+   */
+  progressiveRendering?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -183,7 +188,8 @@ const props = withDefaults(defineProps<Props>(), {
   htmlViewerRuntimeUrl: './assets/viewer-runtime.iife.js',
   useMainThreadDraw: true,
   theme: 'dark',
-  mode: AcEdOpenMode.Write
+  mode: AcEdOpenMode.Write,
+  progressiveRendering: true
 })
 
 const { t } = useI18n()
@@ -305,7 +311,8 @@ const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
   const options: AcApOpenDatabaseOptions = {
     minimumChunkSize: 1000,
     mode: props.mode,
-    drawNoPlotLayers: props.drawNoPlotLayers
+    drawNoPlotLayers: props.drawNoPlotLayers,
+    progressiveRendering: props.progressiveRendering
   }
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
@@ -335,7 +342,8 @@ const openFileFromUrl = async (url: string) => {
   const options: AcApOpenDatabaseOptions = {
     minimumChunkSize: 1000,
     mode: props.mode,
-    drawNoPlotLayers: props.drawNoPlotLayers
+    drawNoPlotLayers: props.drawNoPlotLayers,
+    progressiveRendering: props.progressiveRendering
   }
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
@@ -366,7 +374,8 @@ const openLocalFile = async (file: File) => {
   const options: AcApOpenDatabaseOptions = {
     minimumChunkSize: 1000,
     mode: props.mode,
-    drawNoPlotLayers: props.drawNoPlotLayers
+    drawNoPlotLayers: props.drawNoPlotLayers,
+    progressiveRendering: props.progressiveRendering
   }
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
