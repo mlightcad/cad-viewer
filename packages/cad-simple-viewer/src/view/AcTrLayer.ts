@@ -68,6 +68,16 @@ export type AcTrLayerStats = AcTrBatchedGroupStats & {
  */
 export class AcTrLayer {
   /**
+   * Resolves whether a layer should be visible in the view.
+   *
+   * Non-plottable layer suppression is handled in {@link AcDbEntity.worldDraw};
+   * only freeze/off state is reflected here.
+   */
+  static isLayerVisible(info: AcEdLayerInfo): boolean {
+    return !(info.isFrozen || info.isOff)
+  }
+
+  /**
    * Layer name
    */
   private _name: string
@@ -91,7 +101,7 @@ export class AcTrLayer {
     this._name = layer.name
     this._cachedBox = new THREE.Box3()
     this._boxDirty = true
-    this._group.visible = !(layer.isFrozen || layer.isOff)
+    this._group.visible = AcTrLayer.isLayerVisible(layer)
   }
 
   /**
@@ -169,7 +179,7 @@ export class AcTrLayer {
   update(value: AcEdLayerInfo) {
     const wasVisible = this.visible
     this._name = value.name
-    this._group.visible = !(value.isFrozen || value.isOff)
+    this._group.visible = AcTrLayer.isLayerVisible(value)
     if (wasVisible !== this.visible) {
       this._boxDirty = true
     }

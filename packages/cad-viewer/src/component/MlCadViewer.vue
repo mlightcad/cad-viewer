@@ -167,6 +167,11 @@ interface Props {
    * - Write (8): Full read/write access, compatible with Review and Read
    */
   mode?: AcEdOpenMode
+  /**
+   * Whether entities on non-plottable ("no-plot") layers are drawn.
+   * When omitted, {@link AcApDocManager} defaults to `false` (web viewer semantics).
+   */
+  drawNoPlotLayers?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -299,7 +304,8 @@ const endPendingOpen = () => {
 const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
   const options: AcApOpenDatabaseOptions = {
     minimumChunkSize: 1000,
-    mode: props.mode
+    mode: props.mode,
+    drawNoPlotLayers: props.drawNoPlotLayers
   }
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
@@ -328,7 +334,8 @@ const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
 const openFileFromUrl = async (url: string) => {
   const options: AcApOpenDatabaseOptions = {
     minimumChunkSize: 1000,
-    mode: props.mode
+    mode: props.mode,
+    drawNoPlotLayers: props.drawNoPlotLayers
   }
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
@@ -358,7 +365,8 @@ const openFileFromUrl = async (url: string) => {
 const openLocalFile = async (file: File) => {
   const options: AcApOpenDatabaseOptions = {
     minimumChunkSize: 1000,
-    mode: props.mode
+    mode: props.mode,
+    drawNoPlotLayers: props.drawNoPlotLayers
   }
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)

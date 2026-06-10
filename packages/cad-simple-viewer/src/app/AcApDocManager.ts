@@ -1231,9 +1231,17 @@ export class AcApDocManager {
    */
   private setOptions(options?: AcApOpenDatabaseOptions) {
     if (options == null) {
-      options = { fontLoader: this._fontLoader }
-    } else if (options.fontLoader == null) {
-      options.fontLoader = this._fontLoader
+      options = {
+        fontLoader: this._fontLoader,
+        drawNoPlotLayers: false
+      }
+    } else {
+      if (options.fontLoader == null) {
+        options.fontLoader = this._fontLoader
+      }
+      if (options.drawNoPlotLayers == null) {
+        options.drawNoPlotLayers = false
+      }
     }
     return options
   }

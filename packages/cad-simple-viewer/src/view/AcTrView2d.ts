@@ -1061,12 +1061,7 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   addLayer(layer: AcDbLayerTableRecord) {
-    const updatedLayers = this._scene.addLayer({
-      name: layer.name,
-      isFrozen: layer.isFrozen,
-      isOff: layer.isOff,
-      color: layer.color
-    })
+    const updatedLayers = this._scene.addLayer(this.toLayerInfo(layer))
 
     const traits: Partial<AcGiSubEntityTraits> = {
       layer: layer.name,
@@ -1093,12 +1088,7 @@ export class AcTrView2d extends AcEdBaseView {
     layer: AcDbLayerTableRecord,
     changes: Partial<AcDbLayerTableRecordAttrs>
   ) {
-    const updatedLayers = this._scene.updateLayer({
-      name: layer.name,
-      isFrozen: layer.isFrozen,
-      isOff: layer.isOff,
-      color: layer.color
-    })
+    const updatedLayers = this._scene.updateLayer(this.toLayerInfo(layer))
     const traits: Record<string, unknown> = {}
     if (changes.color) {
       traits.color = changes.color.clone()
@@ -1630,6 +1620,15 @@ export class AcTrView2d extends AcEdBaseView {
     }
   }
 
+  private toLayerInfo(layer: AcDbLayerTableRecord) {
+    return {
+      name: layer.name,
+      isFrozen: layer.isFrozen,
+      isOff: layer.isOff,
+      color: layer.color
+    }
+  }
+
   private drawEntity(entity: AcDbEntity, delay?: boolean) {
     return entity.worldDraw(this._renderer, delay) as AcTrEntity | null
   }
@@ -1701,44 +1700,48 @@ export class AcTrView2d extends AcEdBaseView {
         }
 
         const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
-        if (!threeEntity) continue
+        // Viewports may produce no border geometry (e.g. on a no-plot layer) while
+        // still needing an AcTrViewportView for model content below.
+        if (!threeEntity && !(entity instanceof AcDbViewport)) continue
 
-        threeEntity.objectId = entity.objectId
-        threeEntity.ownerId = entity.ownerId
-        threeEntity.layerName = entity.layer
-        threeEntity.visible = entity.visibility
-        if (
-          threeEntity instanceof AcTrGroup &&
-          (threeEntity as AcTrGroup).isOnTheSameLayer
-        ) {
-          // Even when a block expands to a single layer bucket, children authored on
-          // layer "0" still inherit the INSERT layer for ByLayer traits (color, etc.).
-          this.remapInheritedLayerObjects(
-            (threeEntity as AcTrGroup).children,
-            '0',
-            threeEntity.layerName
-          )
-        }
-        if (
-          threeEntity instanceof AcTrGroup &&
-          !(threeEntity as AcTrGroup).isOnTheSameLayer
-        ) {
-          this.handleGroup(threeEntity as AcTrGroup)
-        } else {
-          const isExtendBbox = !(
-            entity instanceof AcDbRay || entity instanceof AcDbXline
-          )
+        if (threeEntity) {
+          threeEntity.objectId = entity.objectId
+          threeEntity.ownerId = entity.ownerId
+          threeEntity.layerName = entity.layer
+          threeEntity.visible = entity.visibility
+          if (
+            threeEntity instanceof AcTrGroup &&
+            (threeEntity as AcTrGroup).isOnTheSameLayer
+          ) {
+            // Even when a block expands to a single layer bucket, children authored on
+            // layer "0" still inherit the INSERT layer for ByLayer traits (color, etc.).
+            this.remapInheritedLayerObjects(
+              (threeEntity as AcTrGroup).children,
+              '0',
+              threeEntity.layerName
+            )
+          }
+          if (
+            threeEntity instanceof AcTrGroup &&
+            !(threeEntity as AcTrGroup).isOnTheSameLayer
+          ) {
+            this.handleGroup(threeEntity as AcTrGroup)
+          } else {
+            const isExtendBbox = !(
+              entity instanceof AcDbRay || entity instanceof AcDbXline
+            )
 
-          await threeEntity.draw()
-          this._scene.addEntity(threeEntity, isExtendBbox)
-          this.applySessionHiddenObjectState(entity.objectId)
-          // Release memory occupied by this entity
-          threeEntity.dispose()
-          this._isDirty = true
-          await this._progressiveOpenFit.afterGeometryBatch(
-            () => this.resolveLayoutFitBox(),
-            i
-          )
+            await threeEntity.draw()
+            this._scene.addEntity(threeEntity, isExtendBbox)
+            this.applySessionHiddenObjectState(entity.objectId)
+            // Release memory occupied by this entity
+            threeEntity.dispose()
+            this._isDirty = true
+            await this._progressiveOpenFit.afterGeometryBatch(
+              () => this.resolveLayoutFitBox(),
+              i
+            )
+          }
         }
 
         if (entity instanceof AcDbViewport) {
