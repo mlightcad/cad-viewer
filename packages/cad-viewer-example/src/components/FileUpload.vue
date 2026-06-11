@@ -199,10 +199,10 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Read)
+const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
 const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
-const progressiveRendering = ref(true)
+const progressiveRendering = ref(false)
 
 const accessModes = [
   {

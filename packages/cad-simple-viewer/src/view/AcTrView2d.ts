@@ -180,7 +180,7 @@ export class AcTrView2d extends AcEdBaseView {
    * When true, entity conversion during document open is deferred across
    * event-loop turns so geometry appears incrementally.
    */
-  private _progressiveRendering = true
+  private _progressiveRendering = false
 
   /**
    * Creates a new 2D CAD viewer instance.

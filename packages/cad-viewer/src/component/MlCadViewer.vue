@@ -174,7 +174,7 @@ interface Props {
   drawNoPlotLayers?: boolean
   /**
    * Whether to render entities incrementally while a drawing is opening.
-   * When omitted, {@link AcApDocManager} defaults to `true`.
+   * When omitted, {@link AcApDocManager} defaults to `false`.
    */
   progressiveRendering?: boolean
 }
@@ -189,7 +189,7 @@ const props = withDefaults(defineProps<Props>(), {
   useMainThreadDraw: true,
   theme: 'dark',
   mode: AcEdOpenMode.Write,
-  progressiveRendering: true
+  progressiveRendering: false
 })
 
 const { t } = useI18n()
