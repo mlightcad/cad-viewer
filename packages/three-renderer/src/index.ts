@@ -3,6 +3,7 @@ export {
   isBatchGeometryActive,
   isBatchGeometryVisible
 } from './batch/AcTrBatchedGeometryInfo'
+export * from './draw'
 export { AcTrBatchedLine } from './batch/AcTrBatchedLine'
 export { AcTrBatchedMesh } from './batch/AcTrBatchedMesh'
 export { AcTrBatchedPoint } from './batch/AcTrBatchedPoint'

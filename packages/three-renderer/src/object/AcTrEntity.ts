@@ -1,7 +1,9 @@
 import { AcGeMatrix3d, AcGePoint3d, AcGiEntity } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import {
   AcTrMaterialUtil,
   AcTrMatrixUtil,
@@ -9,7 +11,8 @@ import {
 } from '../util'
 import {
   type AcTrEntityUserData,
-  getObjectUserData
+  getObjectUserData,
+  getSceneDrawableUserData
 } from '../util/AcTrObjectUserData'
 import { AcTrObject } from './AcTrObject'
 
@@ -21,9 +24,25 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   protected _box: THREE.Box3
   protected _basePoint?: AcGePoint3d
 
-  constructor(styleManager: AcTrStyleManager) {
-    super(styleManager)
+  constructor(context: AcTrRenderContext) {
+    super(context)
     this._box = new THREE.Box3()
+  }
+
+  /**
+   * Shared batch/unbatch policy from the owning {@link AcTrRenderContext}.
+   */
+  protected get batchDrawPolicy(): AcTrBatchDrawPolicy {
+    return this.renderContext.batchDrawPolicy
+  }
+
+  /**
+   * Resolves how this entity should enter the scene graph. Subclasses override
+   * this to return `'unbatch'` when they cannot batch, or delegate to
+   * {@link AcTrBatchDrawPolicy} for coordinate-based rules.
+   */
+  resolveDrawMode(): AcTrDrawMode {
+    return 'batch'
   }
 
   /**
@@ -266,6 +285,39 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   }
 
   /**
+   * Marks one drawable or placement container for the unbatched scene path.
+   */
+  protected markDrawableUnbatched(object: THREE.Object3D) {
+    getSceneDrawableUserData(object).noBatch = true
+  }
+
+  /**
+   * Marks every geometry leaf currently under this entity as unbatched.
+   *
+   * Only render leaves (objects with both geometry and material) are tagged.
+   * Entity containers such as {@link AcTrLine} also store a geometry reference
+   * for bounds/metadata and must not enter the unbatched clone path themselves.
+   */
+  protected markUnbatchedLeaves() {
+    this.traverse(object => {
+      if (
+        !('geometry' in object) ||
+        !('material' in object) ||
+        !(object.geometry instanceof THREE.BufferGeometry)
+      ) {
+        return
+      }
+      this.markDrawableUnbatched(object)
+    })
+  }
+
+  protected finalizeLeafDrawables() {
+    if (this.resolveDrawMode() === 'unbatch') {
+      this.markUnbatchedLeaves()
+    }
+  }
+
+  /**
    * Remove this object from its parent and release geometry and material resource used by this object.
    */
   dispose() {
@@ -358,7 +410,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * @inheritdoc
    */
   fastDeepClone() {
-    const cloned = new AcTrEntity(this.styleManager)
+    const cloned = new AcTrEntity(this.renderContext)
     cloned.copy(this, false)
     this.copyGeometry(this, cloned)
     return cloned

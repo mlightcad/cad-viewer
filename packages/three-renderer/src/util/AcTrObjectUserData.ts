@@ -172,6 +172,27 @@ export function getBatchedContainerUserData(
 export function markSplitTranslationFlag(_object: THREE.Object3D): void {}
 
 /**
+ * Resolves the Object3D that carries MTEXT insertion/rotation from the renderer.
+ * Worker output is already the placement root; sync output wraps it under `MText`.
+ */
+export function resolveMTextRenderRoot(mtext: THREE.Object3D): THREE.Object3D {
+  if (mtext.children.length !== 1) {
+    return mtext
+  }
+
+  const child = mtext.children[0]
+  if (
+    child instanceof THREE.Mesh ||
+    child instanceof THREE.Line ||
+    child instanceof THREE.LineSegments
+  ) {
+    return mtext
+  }
+
+  return child
+}
+
+/**
  * Copies RTE / no-batch flags from a source drawable onto a highlight clone.
  */
 export function copyHighlightObjectFlags(

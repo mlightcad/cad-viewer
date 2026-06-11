@@ -5,8 +5,9 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
 import { AcTrEntity } from './AcTrEntity'
@@ -18,14 +19,16 @@ export class AcTrPoint extends AcTrEntity {
    * The flag whether to use one point using THREE.Points
    */
   isShowPoint: boolean
+  private _point: AcGePoint3dLike
 
   constructor(
     point: AcGePoint3dLike,
     traits: AcGiSubEntityTraits,
     style: AcGiPointStyle,
-    styleManager: AcTrStyleManager
+    context: AcTrRenderContext
   ) {
-    super(styleManager)
+    super(context)
+    this._point = point
     const pointSymbol = AcTrPointSymbolCreator.instance.create(
       style.displayMode,
       point
@@ -60,5 +63,12 @@ export class AcTrPoint extends AcTrEntity {
       lineDrawable.position = { x: point.x, y: point.y, z: point.z }
       this.add(lineSegmentsObj)
     }
+    this.finalizeLeafDrawables()
+  }
+
+  override resolveDrawMode(): AcTrDrawMode {
+    return this.batchDrawPolicy.resolveDrawMode({
+      position: this._point
+    })
   }
 }

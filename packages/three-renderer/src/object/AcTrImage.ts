@@ -1,17 +1,17 @@
 import { AcGiImageStyle } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrImage extends AcTrEntity {
   constructor(
     blob: Blob,
     style: AcGiImageStyle,
-    styleManager: AcTrStyleManager
+    context: AcTrRenderContext
   ) {
-    super(styleManager)
+    super(context)
     const blobUrl = URL.createObjectURL(blob)
     const textureLoader = new THREE.TextureLoader()
     const texture = textureLoader.load(
@@ -31,8 +31,12 @@ export class AcTrImage extends AcTrEntity {
     this.generateUVs(geometry)
 
     const mesh = new THREE.Mesh(geometry, material)
-    getSceneDrawableUserData(mesh).noBatch = true
     this.add(mesh)
+    this.finalizeLeafDrawables()
+  }
+
+  override resolveDrawMode(): AcTrDrawMode {
+    return 'unbatch'
   }
 
   /**

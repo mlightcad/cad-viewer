@@ -1,7 +1,7 @@
 import { AcDbObjectId, AcGeMatrix3d } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrMatrixUtil } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 export interface AcTrEntityBox {
@@ -20,12 +20,12 @@ export class AcTrGroup extends AcTrEntity {
   private _isOnTheSameLayer: boolean
   private _boxes: AcTrEntityBox[] = []
 
-  constructor(entities: AcTrEntity[], styleManager: AcTrStyleManager) {
-    super(styleManager)
+  constructor(entities: AcTrEntity[], context: AcTrRenderContext) {
+    super(context)
     entities.forEach(entity => {
       // FIXME: It looks like that code within 'Array.isArray(entity)' condition is useless.
       if (Array.isArray(entity)) {
-        const subGroup = new AcTrEntity(styleManager)
+        const subGroup = new AcTrEntity(context)
         this.add(subGroup)
         this.box.union(subGroup.box)
       } else {
@@ -116,7 +116,7 @@ export class AcTrGroup extends AcTrEntity {
    * @inheritdoc
    */
   fastDeepClone() {
-    const cloned = new AcTrGroup([], this.styleManager)
+    const cloned = new AcTrGroup([], this.renderContext)
     cloned.copy(this, false)
     this.copyGeometry(this, cloned)
     return cloned

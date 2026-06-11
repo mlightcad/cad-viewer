@@ -97,11 +97,11 @@ const handleFileSelect = (
   width: 100vw;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: safe center;
   overflow-y: auto;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   margin: 0;
-  padding: 24px 0;
+  padding: 24px;
   box-sizing: border-box;
   position: absolute;
   top: 0;

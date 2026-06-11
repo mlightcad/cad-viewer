@@ -7,7 +7,15 @@ jest.mock('../src/renderer', () => ({
   }
 }))
 
+import type { AcTrBatchDrawPolicy } from '../src/draw/AcTrBatchDrawPolicy'
+import { RTE_REBASE_THRESHOLD } from '../src/draw/AcTrBatchDrawPolicy'
 import { AcTrMText } from '../src/object/AcTrMText'
+import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
+import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
+import {
+  getSceneDrawableUserData,
+  resolveMTextRenderRoot
+} from '../src/util/AcTrObjectUserData'
 
 type GeometryHost = THREE.Object3D & {
   box: THREE.Box3
@@ -21,6 +29,7 @@ type RaycastHost = THREE.Object3D & {
 }
 
 const privateMethods = AcTrMText.prototype as unknown as {
+  attachMText(this: AcTrMText, mtext: MTextObject): void
   computeGeometryBox(this: GeometryHost): THREE.Box3
   updateSelectionBox(this: GeometryHost, mtext: MTextObject): void
   hasGeometry(object: THREE.Object3D): boolean
@@ -31,7 +40,15 @@ const privateMethods = AcTrMText.prototype as unknown as {
   ): void
 }
 
-describe('AcTrMText selection geometry', () => {
+const unbatchPolicy: AcTrBatchDrawPolicy = {
+  resolveDrawMode: () => 'unbatch'
+}
+
+const batchPolicy: AcTrBatchDrawPolicy = {
+  resolveDrawMode: () => 'batch'
+}
+
+describe('AcTrMText', () => {
   it('computes the selection box from transformed rendered child geometry', () => {
     const host = createGeometryHost()
     host.add(createBoxMesh({ x: 10, y: 20, z: 0 }))
@@ -139,6 +156,63 @@ describe('AcTrMText selection geometry', () => {
 
     expect(intersects).toHaveLength(0)
   })
+
+  it('returns the placement group for sync renderer output', () => {
+    const placementRoot = createPlacementRoot({ x: 0, y: 0, z: 0 }, [0, 8])
+    const wrapper = createSyncMTextObject(placementRoot)
+
+    expect(resolveMTextRenderRoot(wrapper)).toBe(placementRoot)
+  })
+
+  it('keeps the wrapper when it already contains render leaves', () => {
+    const wrapper = new THREE.Object3D()
+    wrapper.add(createGlyphMesh(0))
+
+    expect(resolveMTextRenderRoot(wrapper)).toBe(wrapper)
+  })
+
+  it('keeps renderer hierarchy when resolveDrawMode returns unbatch', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), unbatchPolicy)
+    const entity = new AcTrMText(
+      { text: 'AB' } as never,
+      { layer: '0', color: 7 } as never,
+      {} as never,
+      context,
+      true
+    )
+    const placementRoot = createPlacementRoot(
+      { x: RTE_REBASE_THRESHOLD + 500, y: 2_000_000, z: 0 },
+      [0, 8]
+    )
+    const mtext = createSyncMTextObject(placementRoot)
+
+    privateMethods.attachMText.call(entity, mtext)
+
+    expect(getSceneDrawableUserData(placementRoot).noBatch).toBe(true)
+    expect(entity.children).toHaveLength(1)
+    expect(placementRoot.children).toHaveLength(2)
+  })
+
+  it('flattens render leaves when resolveDrawMode returns batch', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+    const entity = new AcTrMText(
+      { text: 'AB' } as never,
+      { layer: '0', color: 7 } as never,
+      {} as never,
+      context,
+      true
+    )
+    const placementRoot = createPlacementRoot({ x: 10, y: 20, z: 0 }, [0, 8])
+    const mtext = createSyncMTextObject(placementRoot)
+
+    privateMethods.attachMText.call(entity, mtext)
+
+    expect(getSceneDrawableUserData(placementRoot).noBatch).toBeUndefined()
+    expect(entity.children).toHaveLength(2)
+    expect(entity.children.every(child => child instanceof THREE.Mesh)).toBe(
+      true
+    )
+  })
 })
 
 function createGeometryHost(): GeometryHost {
@@ -197,4 +271,51 @@ function createSelectableBox() {
     new THREE.Vector3(-1, -1, -0.1),
     new THREE.Vector3(1, 1, 0.1)
   )
+}
+
+function createGlyphMesh(localMinX: number, width = 4, height = 2) {
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(
+      [
+        localMinX,
+        0,
+        0,
+        localMinX + width,
+        0,
+        0,
+        localMinX + width,
+        height,
+        0,
+        localMinX,
+        height,
+        0
+      ],
+      3
+    )
+  )
+  geometry.setIndex([0, 1, 2, 0, 2, 3])
+  return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial())
+}
+
+function createPlacementRoot(
+  insertion: THREE.Vector3Like,
+  glyphOffsets: number[]
+) {
+  const placementRoot = new THREE.Group()
+  placementRoot.position.set(insertion.x, insertion.y, insertion.z ?? 0)
+  for (const offset of glyphOffsets) {
+    placementRoot.add(createGlyphMesh(offset))
+  }
+  placementRoot.updateMatrixWorld(true)
+  return placementRoot
+}
+
+function createSyncMTextObject(placementRoot: THREE.Object3D): MTextObject {
+  const wrapper = new THREE.Object3D() as MTextObject
+  wrapper.box = new THREE.Box3()
+  wrapper.createLayoutData = () => ({ lines: [], chars: [] })
+  wrapper.add(placementRoot)
+  return wrapper
 }

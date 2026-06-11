@@ -1857,7 +1857,7 @@ export class AcTrView2d extends AcEdBaseView {
       child.parent = null
     }
 
-    const styleManager = group.styleManager
+    const renderContext = group.renderContext
     const groupObjectId = group.objectId
     const groupLayerName = group.layerName
     const worldGroupBox = group.box.clone()
@@ -1906,7 +1906,7 @@ export class AcTrView2d extends AcEdBaseView {
       // render entity per layer bucket but preserve the INSERT object id for all
       // buckets, so selection/highlight still maps back to the same database object.
       // Within each layer bucket, the object id remains unique in scene indexing.
-      const entity = new AcTrEntity(styleManager)
+      const entity = new AcTrEntity(renderContext)
       entity.applyMatrix4(group.matrix)
       entity.objectId = groupObjectId
       entity.ownerId = group.ownerId
