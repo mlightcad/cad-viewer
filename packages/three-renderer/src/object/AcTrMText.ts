@@ -11,11 +11,15 @@ import {
 } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrMTextRenderer } from '../renderer'
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrMTextColorUtil } from '../util'
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
+import {
+  getSceneDrawableUserData,
+  resolveMTextRenderRoot
+} from '../util/AcTrObjectUserData'
 import { AcTrEntity } from './AcTrEntity'
 
 // Reuse scratch objects during hover/pick hit-testing; raycast can run very
@@ -34,10 +38,10 @@ export class AcTrMText extends AcTrEntity {
     text: AcGiMTextData,
     traits: AcGiSubEntityTraits,
     style: AcGiTextStyle,
-    styleManager: AcTrStyleManager,
+    context: AcTrRenderContext,
     delay: boolean = false
   ) {
-    super(styleManager)
+    super(context)
     this._text = text
     this._style = { ...style }
     this._colorSettings = {
@@ -151,9 +155,20 @@ export class AcTrMText extends AcTrEntity {
    *
    * @param mtext Rendered MTEXT object returned by the shared MTEXT renderer.
    */
+  override resolveDrawMode(): AcTrDrawMode {
+    return this.batchDrawPolicy.resolveDrawMode({
+      position: this._text.position
+    })
+  }
+
   private attachMText(mtext: MTextObject) {
     this.add(mtext)
-    this.flatten()
+    const renderRoot = resolveMTextRenderRoot(mtext)
+    if (this.resolveDrawMode() === 'unbatch') {
+      this.markDrawableUnbatched(renderRoot)
+    } else {
+      this.flatten()
+    }
     this.removeInvalidGeometryLeaves()
     this.traverse(object => {
       // Text picking should behave like CAD object picking: the visible glyph

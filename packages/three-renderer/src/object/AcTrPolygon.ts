@@ -11,9 +11,10 @@ import { GeometryEpsilon, PolyBool, Segments } from '@velipso/polybool'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
 import { AcTrEntity } from './AcTrEntity'
 
 function toVector2(points: AcGePoint2dLike[]): THREE.Vector2[] {
@@ -31,12 +32,15 @@ function hasFillVertices(geometry: THREE.BufferGeometry | undefined): boolean {
 }
 
 export class AcTrPolygon extends AcTrEntity {
+  private _traits: AcGiSubEntityTraits
+
   constructor(
     area: AcGeArea2d,
     traits: AcGiSubEntityTraits,
-    styleManager: AcTrStyleManager
+    context: AcTrRenderContext
   ) {
-    super(styleManager)
+    super(context)
+    this._traits = traits
 
     const pointBoundaries = area.getPoints(100)
     const hierarchy = area.buildHierarchy()
@@ -78,13 +82,20 @@ export class AcTrPolygon extends AcTrEntity {
         gradientBounds
       )
       const mesh = new THREE.Mesh(geometry, material)
-      if (this.isPatternedHatch(traits)) {
-        getSceneDrawableUserData(mesh).noBatch = true
-      }
       this.add(mesh)
+      this.finalizeLeafDrawables()
     } else if (hasRenderableBoundaries) {
       log.warn('Failed to convert hatch boundaries!')
     }
+  }
+
+  override resolveDrawMode(): AcTrDrawMode {
+    if (this.isPatternedHatch(this._traits)) {
+      return 'unbatch'
+    }
+    return this.batchDrawPolicy.resolveDrawMode({
+      anchor: resolveAnchorFromBox(this.box)
+    })
   }
 
   private isPatternedHatch(traits: AcGiSubEntityTraits) {

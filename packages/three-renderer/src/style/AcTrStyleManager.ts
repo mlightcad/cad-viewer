@@ -45,7 +45,7 @@ export class AcTrStyleManager {
     this.fillMgr = new AcTrFillMaterialManager(this.options)
   }
 
-  /** Stores unsupported text styles mapped by name → usage count. */
+  /** Unsupported text styles mapped by name → usage count. */
   public unsupportedTextStyles: Record<string, number> = {}
 
   /**

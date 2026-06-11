@@ -11,11 +11,15 @@ import {
 } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrMTextRenderer } from '../renderer'
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrMTextColorUtil } from '../util'
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
+import {
+  getSceneDrawableUserData,
+  resolveMTextRenderRoot
+} from '../util/AcTrObjectUserData'
 import { AcTrEntity } from './AcTrEntity'
 
 const _raycastBox = /*@__PURE__*/ new THREE.Box3()
@@ -31,10 +35,10 @@ export class AcTrShape extends AcTrEntity {
     shape: AcGiShapeData,
     traits: AcGiSubEntityTraits,
     style: AcGiTextStyle,
-    styleManager: AcTrStyleManager,
+    context: AcTrRenderContext,
     delay: boolean = false
   ) {
-    super(styleManager)
+    super(context)
     this._shape = shape
     this._style = { ...style }
     this._colorSettings = {
@@ -109,9 +113,20 @@ export class AcTrShape extends AcTrEntity {
     return this._shape.name?.trim() || String(this._shape.shapeNumber ?? '')
   }
 
+  override resolveDrawMode(): AcTrDrawMode {
+    return this.batchDrawPolicy.resolveDrawMode({
+      position: this._shape.position
+    })
+  }
+
   private attachRendered(rendered: MTextObject) {
     this.add(rendered)
-    this.flatten()
+    const renderRoot = resolveMTextRenderRoot(rendered)
+    if (this.resolveDrawMode() === 'unbatch') {
+      this.markDrawableUnbatched(renderRoot)
+    } else {
+      this.flatten()
+    }
     this.removeInvalidGeometryLeaves()
     this.traverse(object => {
       getSceneDrawableUserData(object).bboxIntersectionCheck = true

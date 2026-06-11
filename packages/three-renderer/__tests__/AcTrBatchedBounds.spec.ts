@@ -2,7 +2,10 @@ import * as THREE from 'three'
 
 import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
 import { AcTrBatchedLine } from '../src/batch/AcTrBatchedLine'
+import { AcTrBatchedMesh } from '../src/batch/AcTrBatchedMesh'
+import { RTE_REBASE_THRESHOLD } from '../src/draw/AcTrBatchDrawPolicy'
 import { AcTrEntity } from '../src/object/AcTrEntity'
+import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import { getSceneDrawableUserData } from '../src/util/AcTrObjectUserData'
 
@@ -56,7 +59,7 @@ function createEntity(
   objectId: string,
   ...drawables: THREE.Object3D[]
 ): AcTrEntity {
-  const entity = new AcTrEntity(new AcTrStyleManager())
+  const entity = new AcTrEntity(new AcTrRenderContext())
   entity.objectId = objectId
   entity.visible = true
   for (const drawable of drawables) {
@@ -65,7 +68,81 @@ function createEntity(
   return entity
 }
 
-describe('AcTrBatchedLine batch bounds', () => {
+function createGlyphMesh(localMinX: number, width = 4, height = 2) {
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(
+      [
+        localMinX,
+        0,
+        0,
+        localMinX + width,
+        0,
+        0,
+        localMinX + width,
+        height,
+        0,
+        localMinX,
+        height,
+        0
+      ],
+      3
+    )
+  )
+  geometry.setIndex([0, 1, 2, 0, 2, 3])
+  return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial())
+}
+
+function createPlacementRoot(
+  insertion: THREE.Vector3Like,
+  glyphOffsets: number[]
+) {
+  const placementRoot = new THREE.Group()
+  placementRoot.position.set(insertion.x, insertion.y, insertion.z ?? 0)
+  for (const offset of glyphOffsets) {
+    placementRoot.add(createGlyphMesh(offset))
+  }
+  placementRoot.updateMatrixWorld(true)
+  return placementRoot
+}
+
+function getLocalGeometrySpan(mesh: THREE.Mesh) {
+  const position = mesh.geometry.getAttribute('position')
+  let minX = Infinity
+  let maxX = -Infinity
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i)
+    minX = Math.min(minX, x)
+    maxX = Math.max(maxX, x)
+  }
+  return maxX - minX
+}
+
+function findUnbatchedPlacementClone(group: AcTrBatchedGroup) {
+  let clone: THREE.Object3D | undefined
+  group.traverse(child => {
+    if (clone || !(child instanceof THREE.Group)) {
+      return
+    }
+    const meshChildren = child.children.filter(
+      grandchild => grandchild instanceof THREE.Mesh
+    )
+    if (meshChildren.length < 2) {
+      return
+    }
+    if (
+      Math.max(Math.abs(child.position.x), Math.abs(child.position.y)) <
+      RTE_REBASE_THRESHOLD
+    ) {
+      return
+    }
+    clone = child
+  })
+  return clone
+}
+
+describe('AcTrBatchedLine', () => {
   it('unionActiveVisibleBoundingBoxInto returns world-space bounds after origin rebase', () => {
     const worldOffset = new THREE.Vector3(1_000_000, 2_000_000, 0)
     const geometry = new THREE.BufferGeometry()
@@ -90,7 +167,7 @@ describe('AcTrBatchedLine batch bounds', () => {
   })
 })
 
-describe('AcTrBatchedGroup.computeBoundingBox', () => {
+describe('AcTrBatchedGroup', () => {
   it('returns world-space bounds for batched line entities', () => {
     const group = new AcTrBatchedGroup()
     const worldOffset = new THREE.Vector3(1_000_000, 2_000_000, 0)
@@ -128,6 +205,41 @@ describe('AcTrBatchedGroup.computeBoundingBox', () => {
       { x: 300_000, y: 400_000, z: 0 },
       { x: 300_050, y: 400_025, z: 0 }
     )
+  })
+
+  it('keeps local line geometry when cloning large-world unbatched drawables', () => {
+    const group = new AcTrBatchedGroup()
+    const worldOffset = new THREE.Vector3(1_200_000, 3_000_000, 0)
+    const line = createLineSegments(
+      { x: -10, y: 0, z: 0 },
+      { x: 10, y: 0, z: 0 },
+      worldOffset,
+      { noBatch: true }
+    )
+
+    group.addEntity(createEntity('line-large-unbatched', line))
+
+    let clonedLine: THREE.LineSegments | undefined
+    group.traverse(child => {
+      if (clonedLine || !(child instanceof THREE.LineSegments)) {
+        return
+      }
+      if (Math.abs(child.position.x - worldOffset.x) > 1) {
+        return
+      }
+      clonedLine = child
+    })
+
+    expect(clonedLine).toBeDefined()
+    if (!clonedLine) {
+      return
+    }
+
+    const position = clonedLine.geometry.getAttribute('position')
+    expect(position.getX(0)).toBeCloseTo(-10, 5)
+    expect(position.getX(1)).toBeCloseTo(10, 5)
+    expect(clonedLine.position.x).toBeCloseTo(worldOffset.x, 3)
+    expect(clonedLine.position.y).toBeCloseTo(worldOffset.y, 3)
   })
 
   it('unions batched and unbatched entity bounds', () => {
@@ -193,5 +305,60 @@ describe('AcTrBatchedGroup.computeBoundingBox', () => {
       { x: 300_000, y: 400_000, z: 0 },
       { x: 300_050, y: 400_025, z: 0 }
     )
+  })
+
+  it('clones a noBatch MTEXT placement root once and preserves glyph spacing', () => {
+    const group = new AcTrBatchedGroup()
+    const placementRoot = createPlacementRoot(
+      { x: RTE_REBASE_THRESHOLD + 100, y: 3_000_000, z: 0 },
+      [0, 8]
+    )
+    getSceneDrawableUserData(placementRoot).noBatch = true
+    getSceneDrawableUserData(placementRoot).bboxIntersectionCheck = true
+
+    const entity = createEntity('mtext-1', placementRoot)
+    group.addEntity(entity)
+
+    expect(group.stats.unbatched.count).toBe(1)
+
+    const clonedRoot = findUnbatchedPlacementClone(group)
+    expect(clonedRoot).toBeDefined()
+    if (!clonedRoot) {
+      return
+    }
+    expect(
+      clonedRoot.children.filter(child => child instanceof THREE.Mesh)
+    ).toHaveLength(2)
+
+    const [firstMesh, secondMesh] = clonedRoot.children as THREE.Mesh[]
+    expect(getLocalGeometrySpan(firstMesh)).toBeCloseTo(4, 3)
+    expect(getLocalGeometrySpan(secondMesh)).toBeCloseTo(4, 3)
+    expect(secondMesh.geometry.getAttribute('position').getX(0)).toBeCloseTo(
+      8,
+      3
+    )
+    expect(clonedRoot.position.x).toBeCloseTo(RTE_REBASE_THRESHOLD + 100, 3)
+    expect(clonedRoot.position.y).toBeCloseTo(3_000_000, 3)
+
+    const batchedMeshes = group.children.filter(
+      child => child instanceof AcTrBatchedMesh
+    )
+    expect(batchedMeshes).toHaveLength(0)
+  })
+
+  it('still batches small-coordinate flattened MTEXT leaves', () => {
+    const group = new AcTrBatchedGroup()
+    const entity = createEntity(
+      'mtext-small',
+      createGlyphMesh(0),
+      createGlyphMesh(8)
+    )
+
+    group.addEntity(entity)
+
+    expect(group.stats.unbatched.count).toBe(0)
+    expect(
+      group.children.some(child => child instanceof AcTrBatchedMesh)
+    ).toBe(true)
   })
 })

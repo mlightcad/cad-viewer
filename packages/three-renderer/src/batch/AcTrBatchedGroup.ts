@@ -160,6 +160,9 @@ export class AcTrBatchedGroup extends THREE.Group {
    */
   private _entitiesMap: Map<string, AcTrEntityInBatchedObject[]>
 
+  /**
+   * Creates an empty batched group with highlight and unbatched child containers.
+   */
   constructor() {
     super()
     this._pointBatches = new Map()
@@ -322,14 +325,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       }
       for (const child of objects) {
         if (!child.visible) continue
-        const geometry = (
-          child as THREE.Mesh | THREE.LineSegments | THREE.Points
-        ).geometry
-        if (!geometry) continue
-        AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-        if (!geometry.boundingBox) continue
-        scratch.copy(geometry.boundingBox).applyMatrix4(child.matrixWorld)
-        target.union(scratch)
+        this.unionUnbatchedObjectBounds(child, target, scratch)
       }
     })
 
@@ -480,7 +476,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     const styleManager = entity.styleManager
 
     entity.updateMatrixWorld(true)
-    entity.traverse(object => {
+    const visitDrawable = (object: THREE.Object3D) => {
       // traverse() visits descendants even when an intermediate AcTrEntity is invisible.
       if (!isObjectHierarchyVisible(object)) {
         return
@@ -488,16 +484,6 @@ export class AcTrBatchedGroup extends THREE.Group {
 
       const drawableUserData = getSceneDrawableUserData(object)
       const bboxIntersectionCheck = !!drawableUserData.bboxIntersectionCheck
-
-      if (object instanceof LineSegments2) {
-        const item = this.addLine2(object, {
-          objectId,
-          bboxIntersectionCheck: bboxIntersectionCheck
-        })
-        entityInfo.push(item)
-        this.applyBatchSlotVisibility(item, entityVisible && object.visible)
-        return
-      }
 
       if (drawableUserData.noBatch) {
         const cloned = this.cloneUnbatchedObject(object)
@@ -509,6 +495,17 @@ export class AcTrBatchedGroup extends THREE.Group {
         hasUnbatched = true
         return
       }
+
+      if (object instanceof LineSegments2) {
+        const item = this.addLine2(object, {
+          objectId,
+          bboxIntersectionCheck: bboxIntersectionCheck
+        })
+        entityInfo.push(item)
+        this.applyBatchSlotVisibility(item, entityVisible && object.visible)
+        return
+      }
+
       if (object instanceof THREE.LineSegments) {
         const item = this.addLine(object, {
           position: drawableUserData.position,
@@ -536,7 +533,12 @@ export class AcTrBatchedGroup extends THREE.Group {
         entityInfo.push(item)
         this.applyBatchSlotVisibility(item, entityVisible && object.visible)
       }
-    })
+
+      for (const child of object.children) {
+        visitDrawable(child)
+      }
+    }
+    visitDrawable(entity)
 
     if (hasUnbatched) {
       this._unbatchedEntities.set(objectId, unbatchedObjects)
@@ -604,9 +606,9 @@ export class AcTrBatchedGroup extends THREE.Group {
     const unbatchedObjects = this._unbatchedEntities.get(objectId)
     if (unbatchedObjects) {
       for (let i = 0; i < unbatchedObjects.length; i++) {
-        const object = unbatchedObjects[i]
-        const intersects = raycaster.intersectObject(object, true)
-        if (intersects.length > 0) return true
+        if (this.isUnbatchedDrawableIntersecting(unbatchedObjects[i], raycaster)) {
+          return true
+        }
       }
     }
     return result
@@ -692,6 +694,9 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
   }
 
+  /**
+   * Recursively clones and recolors materials on a highlight object subtree.
+   */
   private applyHighlightMaterial(object: THREE.Object3D) {
     if (this.hasMaterial(object)) {
       const clonedMaterial = AcTrMaterialUtil.cloneMaterial(object.material)
@@ -702,6 +707,9 @@ export class AcTrBatchedGroup extends THREE.Group {
     object.children.forEach(child => this.applyHighlightMaterial(child))
   }
 
+  /**
+   * Copies highlight-related user-data flags from source to target object.
+   */
   private copyHighlightMetadata(
     source: THREE.Object3D,
     target: THREE.Object3D
@@ -737,6 +745,9 @@ export class AcTrBatchedGroup extends THREE.Group {
     batchedObject?.setVisibleAt(item.batchId, visible)
   }
 
+  /**
+   * Returns visibility state for one batched geometry slot.
+   */
   private getBatchItemVisible(item: AcTrEntityInBatchedObject): boolean {
     const batchedObject = this.getObjectById(item.batchedObjectId) as
       | (AcTrBatchedObject & { getVisibleAt(geometryId: number): boolean })
@@ -1052,28 +1063,114 @@ export class AcTrBatchedGroup extends THREE.Group {
 
   /**
    * Clones an unbatched object into world space for group ownership.
+   *
+   * Leaf drawables keep local geometry buffers and receive the source world
+   * transform on the clone root. This preserves precision for entities that
+   * rebase vertices around a local origin (lines, wide lines) instead of baking
+   * large world coordinates into float32 attributes.
    */
   private cloneUnbatchedObject(source: THREE.Object3D) {
-    const cloned = source.clone() as THREE.Object3D
-    if (this.hasGeometry(source) && this.hasGeometry(cloned)) {
-      const geometry = source.geometry
-      const clonedGeometry = geometry.clone()
-      clonedGeometry.applyMatrix4(source.matrixWorld)
-      cloned.geometry = clonedGeometry
+    if (this.shouldCloneUnbatchedSubtree(source)) {
+      return this.cloneUnbatchedSubtree(source)
     }
+
+    const cloned = source.clone() as THREE.Object3D
+    source.updateMatrixWorld(true)
+    source.matrixWorld.decompose(_v1, _unbatchedQuaternion, _unbatchedScale)
+    cloned.position.copy(_v1)
+    cloned.quaternion.copy(_unbatchedQuaternion)
+    cloned.scale.copy(_unbatchedScale)
     if (this.hasMaterial(source) && this.hasMaterial(cloned)) {
       cloned.material = source.material
       const sourceDrawable = getSceneDrawableUserData(source)
       const clonedDrawable = getSceneDrawableUserData(cloned)
       clonedDrawable.styleMaterialId =
         sourceDrawable.styleMaterialId ?? this.getMaterialId(source.material)
+      clonedDrawable.bboxIntersectionCheck = sourceDrawable.bboxIntersectionCheck
       clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray()
     }
-    cloned.position.set(0, 0, 0)
-    cloned.rotation.set(0, 0, 0)
-    cloned.scale.set(1, 1, 1)
     cloned.updateMatrix()
     cloned.updateMatrixWorld(true)
+    this.finalizeUnbatchedLineClone(cloned)
+    return cloned
+  }
+
+  /**
+   * Applies line-specific setup so unbatched wide/basic lines render reliably
+   * at large world coordinates (matches batched line frustum-culling behavior).
+   */
+  private finalizeUnbatchedLineClone(cloned: THREE.Object3D) {
+    if (!this.isLineObject(cloned)) {
+      return
+    }
+
+    cloned.frustumCulled = false
+    const geometry = this.getDrawableGeometry(cloned)
+    if (!geometry) {
+      return
+    }
+    AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+    geometry.computeBoundingSphere()
+  }
+
+  /**
+   * Resolves drawable geometry from supported line/mesh/point object types.
+   */
+  private getDrawableGeometry(
+    object: THREE.Object3D
+  ): THREE.BufferGeometry | undefined {
+    if (object instanceof LineSegments2) {
+      return object.geometry as THREE.BufferGeometry
+    }
+    if (
+      object instanceof THREE.Mesh ||
+      object instanceof THREE.LineSegments ||
+      object instanceof THREE.Line ||
+      object instanceof THREE.Points
+    ) {
+      return object.geometry
+    }
+    return undefined
+  }
+
+  /**
+   * Returns true when an unbatched source is a placement root with child drawables.
+   */
+  private shouldCloneUnbatchedSubtree(source: THREE.Object3D) {
+    return source.children.length > 0 && !this.hasGeometry(source)
+  }
+
+  /**
+   * Clones a no-batch placement root together with its render children. MTEXT
+   * keeps merged glyph geometry in local space under one insertion transform.
+   */
+  private cloneUnbatchedSubtree(source: THREE.Object3D) {
+    const cloned = source.clone(true) as THREE.Object3D
+    source.updateMatrixWorld(true)
+    source.matrixWorld.decompose(_v1, _unbatchedQuaternion, _unbatchedScale)
+    cloned.position.copy(_v1)
+    cloned.quaternion.copy(_unbatchedQuaternion)
+    cloned.scale.copy(_unbatchedScale)
+    cloned.updateMatrix()
+    cloned.updateMatrixWorld(true)
+
+    const sourceDrawable = getSceneDrawableUserData(source)
+    const clonedDrawable = getSceneDrawableUserData(cloned)
+    clonedDrawable.bboxIntersectionCheck = sourceDrawable.bboxIntersectionCheck
+    clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray()
+
+    cloned.traverse(child => {
+      if (!this.hasMaterial(child)) {
+        return
+      }
+      const childDrawable = getSceneDrawableUserData(child)
+      if (childDrawable.styleMaterialId == null) {
+        childDrawable.styleMaterialId = this.getMaterialId(
+          (child as THREE.Mesh).material as THREE.Material
+        )
+      }
+    })
+
     return cloned
   }
 
@@ -1142,6 +1239,7 @@ export class AcTrBatchedGroup extends THREE.Group {
    * Disposes highlight object resources (cloned material and optional geometry).
    */
   private disposeHighlightObject(object: THREE.Object3D) {
+    object.children.forEach(child => this.disposeHighlightObject(child))
     if (this.hasMaterial(object)) {
       const material = object.material as THREE.Material | THREE.Material[]
       if (Array.isArray(material)) {
@@ -1156,6 +1254,71 @@ export class AcTrBatchedGroup extends THREE.Group {
     ) {
       object.geometry.dispose()
     }
+  }
+
+  /**
+   * Unions world-space bounds from one unbatched drawable or its geometry leaves.
+   */
+  private unionUnbatchedObjectBounds(
+    object: THREE.Object3D,
+    target: THREE.Box3,
+    scratch: THREE.Box3
+  ) {
+    const geometry = this.getDrawableGeometry(object)
+    if (geometry) {
+      AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+      if (!geometry.boundingBox) {
+        return
+      }
+      scratch.copy(geometry.boundingBox).applyMatrix4(object.matrixWorld)
+      target.union(scratch)
+      return
+    }
+
+    for (const child of object.children) {
+      if (!child.visible) continue
+      this.unionUnbatchedObjectBounds(child, target, scratch)
+    }
+  }
+
+  /**
+   * Ray-tests one unbatched drawable, honoring bbox-only pick metadata.
+   */
+  private isUnbatchedDrawableIntersecting(
+    object: THREE.Object3D,
+    raycaster: THREE.Raycaster
+  ) {
+    if (getSceneDrawableUserData(object).bboxIntersectionCheck) {
+      return this.isUnbatchedBboxIntersecting(object, raycaster)
+    }
+    return raycaster.intersectObject(object, true).length > 0
+  }
+
+  /**
+   * Tests ray intersection against the world-space bounds of one unbatched drawable.
+   */
+  private isUnbatchedBboxIntersecting(
+    object: THREE.Object3D,
+    raycaster: THREE.Raycaster
+  ) {
+    object.updateMatrixWorld(true)
+    _intersectBox.makeEmpty()
+
+    const geometry = this.getDrawableGeometry(object)
+    if (geometry) {
+      AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+      if (!geometry.boundingBox) {
+        return false
+      }
+      _intersectBox.copy(geometry.boundingBox).applyMatrix4(object.matrixWorld)
+    } else {
+      this.unionUnbatchedObjectBounds(object, _intersectBox, _intersectScratchBox)
+      if (_intersectBox.isEmpty()) {
+        return false
+      }
+    }
+
+    return raycaster.ray.intersectBox(_intersectBox, _v1) !== null
   }
 
   /**
@@ -1215,3 +1378,7 @@ export class AcTrBatchedGroup extends THREE.Group {
 
 const _v1 = /*@__PURE__*/ new THREE.Vector3()
 const _v2 = /*@__PURE__*/ new THREE.Vector3()
+const _unbatchedQuaternion = /*@__PURE__*/ new THREE.Quaternion()
+const _unbatchedScale = /*@__PURE__*/ new THREE.Vector3()
+const _intersectBox = /*@__PURE__*/ new THREE.Box3()
+const _intersectScratchBox = /*@__PURE__*/ new THREE.Box3()
