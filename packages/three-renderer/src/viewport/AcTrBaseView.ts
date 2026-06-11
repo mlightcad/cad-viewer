@@ -9,6 +9,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import { AcTrRenderer } from '../renderer'
+import { AcTrRelativeToEyeUtil } from '../util/AcTrRelativeToEyeUtil'
 import { AcTrCamera } from './AcTrCamera'
 
 export interface AcTrBaseViewEventArgs {
@@ -151,6 +152,10 @@ export class AcTrBaseView {
     )
     this._raycaster.params.Line.threshold = threshold
     this._raycaster.params.Points.threshold = threshold
+    AcTrRelativeToEyeUtil.prepareRaycaster(
+      this._raycaster,
+      this._camera.internalCamera
+    )
 
     return this._raycaster
   }
@@ -243,6 +248,7 @@ export class AcTrBaseView {
 
     if (scale != null) this._camera.zoom = scale
     this._camera.updateProjectionMatrix()
+    this._cameraControls.update()
   }
 
   protected updateCameraFrustum(width?: number, height?: number) {

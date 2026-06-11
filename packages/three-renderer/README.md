@@ -3,6 +3,7 @@
 This package implements the **high-performance** THREE.js-based rendering engine for MLightCAD. It renders DWG/DXF entities as interactive 2D/3D graphics using advanced THREE.js optimization techniques to deliver exceptional performance for large CAD files.
 
 ## Key Features
+
 - **High-performance** rendering of CAD entities as THREE.js objects with 60+ FPS
 - Advanced batch rendering for optimal GPU utilization
 - Custom GPU-accelerated shaders for complex line types and hatch patterns
@@ -22,7 +23,12 @@ The THREE.js renderer employs cutting-edge rendering technologies for exceptiona
 - **WebGL Optimization**: Leverages modern WebGL features for hardware-accelerated rendering
 - **Rendering MText in Web Workers**: Renders mtext entities in multiple web workers
 
+## Technical Notes
+
+- [Large Coordinate Rendering Precision](./LARGE_COORDINATE_RENDERING.md)
+
 ## Directory Structure (partial)
+
 - `src/batch/` – Advanced batched geometry and group rendering optimizations
 - `src/geometry/` – Optimized geometry helpers (arrows, points, etc.)
 - `src/object/` – Efficient THREE.js object wrappers for CAD entities
@@ -32,7 +38,9 @@ The THREE.js renderer employs cutting-edge rendering technologies for exceptiona
 - `src/util/` – Performance-focused utility functions
 
 ## Usage
+
 Import and use `AcTrRenderer` to render entities using optimized THREE.js rendering with exceptional performance.
 
 ## Role in MLightCAD
+
 This package provides the **high-performance** 2D/3D rendering backend for the main application, enabling smooth interactive graphics and advanced visualization for large CAD files.

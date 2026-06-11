@@ -21,15 +21,7 @@ export class AcTrLineSegments extends AcTrEntity {
     super(context)
 
     const material = this.styleManager.getLineMaterial(traits)
-    const box = new THREE.Box3()
-
-    for (let i = 0; i < array.length; i += itemSize) {
-      box.expandByPoint(
-        _point.set(array[i], array[i + 1], array[i + 2] ?? 0)
-      )
-    }
-
-    const localOrigin = box.getCenter(new THREE.Vector3())
+    const localOrigin = this.computeLocalOrigin(array, itemSize)
 
     if (material instanceof LineMaterial) {
       const segmentCount = Math.floor(indices.length / 2)
@@ -41,10 +33,12 @@ export class AcTrLineSegments extends AcTrEntity {
         const base2 = i2 * itemSize
         segmentPositions[pos++] = array[base1] - localOrigin.x
         segmentPositions[pos++] = array[base1 + 1] - localOrigin.y
-        segmentPositions[pos++] = (array[base1 + 2] ?? 0) - localOrigin.z
+        segmentPositions[pos++] =
+          this.getZ(array, base1, itemSize) - localOrigin.z
         segmentPositions[pos++] = array[base2] - localOrigin.x
         segmentPositions[pos++] = array[base2 + 1] - localOrigin.y
-        segmentPositions[pos++] = (array[base2 + 2] ?? 0) - localOrigin.z
+        segmentPositions[pos++] =
+          this.getZ(array, base2, itemSize) - localOrigin.z
       }
 
       const lineGeometry = new LineSegmentsGeometry()
@@ -57,30 +51,32 @@ export class AcTrLineSegments extends AcTrEntity {
       )
 
       const line = new LineSegments2(lineGeometry, material)
-      line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
+      line.position.copy(localOrigin)
       getSceneDrawableUserData(line).styleMaterialId = material.id
       this.add(line)
       this.finalizeLeafDrawables()
       return
     }
 
-    const rebased = new Float32Array(array.length)
+    const localArray = new Float32Array(array.length)
     for (let i = 0; i < array.length; i += itemSize) {
-      rebased[i] = array[i] - localOrigin.x
-      rebased[i + 1] = array[i + 1] - localOrigin.y
-      rebased[i + 2] = (array[i + 2] ?? 0) - localOrigin.z
+      localArray[i] = array[i] - localOrigin.x
+      localArray[i + 1] = array[i + 1] - localOrigin.y
+      if (itemSize > 2) {
+        localArray[i + 2] = this.getZ(array, i, itemSize) - localOrigin.z
+      }
     }
 
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
       'position',
-      new THREE.BufferAttribute(rebased, itemSize)
+      new THREE.BufferAttribute(localArray, itemSize)
     )
     geometry.setIndex(new THREE.BufferAttribute(indices, 1))
     this.setBoundingBox(geometry, localOrigin)
 
     const line = new THREE.LineSegments(geometry, material)
-    line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
+    line.position.copy(localOrigin)
     AcTrBufferGeometryUtil.computeLineDistances(line)
     this.add(line)
     this.finalizeLeafDrawables()
@@ -92,15 +88,29 @@ export class AcTrLineSegments extends AcTrEntity {
     })
   }
 
+  private computeLocalOrigin(array: Float32Array, itemSize: number) {
+    const box = new THREE.Box3()
+    for (let i = 0; i < array.length; i += itemSize) {
+      box.expandByPoint(
+        _point.set(array[i], array[i + 1], this.getZ(array, i, itemSize))
+      )
+    }
+    return box.getCenter(new THREE.Vector3())
+  }
+
+  private getZ(array: Float32Array, base: number, itemSize: number) {
+    return itemSize > 2 ? array[base + 2] : 0
+  }
+
   private setBoundingBox(
     geometry: THREE.BufferGeometry,
     localOrigin: THREE.Vector3
   ) {
-    const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-    if (!boundingBox) {
+    const localBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+    if (!localBox) {
       return
     }
-    const worldBox = boundingBox.clone()
+    const worldBox = localBox.clone()
     worldBox.translate(localOrigin)
     this.box = worldBox
   }

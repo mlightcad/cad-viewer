@@ -31,7 +31,7 @@ import {
   AcTrShape
 } from '../object'
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
-import { AcTrSubEntityTraitsUtil } from '../util'
+import { AcTrRelativeToEyeUtil, AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport'
 import { AcTrMTextRenderer } from './AcTrMTextRenderer'
 import { AcTrRenderContext } from './AcTrRenderContext'
@@ -133,9 +133,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   render(scene: THREE.Object3D, camera: AcTrCamera): boolean {
     this.updateCameraZoomUniform(camera.zoom)
+    const needsRedraw = AcTrRelativeToEyeUtil.prepareScene(scene)
     this._renderer.render(scene, camera.internalCamera)
-    // RTE frame scheduling is added in the large-coordinate feature branch.
-    return false
+    return needsRedraw
   }
 
   /**

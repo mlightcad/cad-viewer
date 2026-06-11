@@ -12,6 +12,7 @@ import {
   getHighlightUserData,
   getSceneDrawableUserData
 } from '../util/AcTrObjectUserData'
+import { AcTrRelativeToEyeUtil } from '../util/AcTrRelativeToEyeUtil'
 import { isObjectHierarchyVisible } from '../util/AcTrVisibility'
 import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
 import { AcTrBatchedLine } from './AcTrBatchedLine'
@@ -671,9 +672,9 @@ export class AcTrBatchedGroup extends THREE.Group {
           item.batchedObjectId
         ) as AcTrBatchedObject
         const object = batchedObject.getObjectAt(item.batchId)
-
         this.copyHighlightMetadata(batchedObject, object)
         this.applyHighlightMaterial(object)
+        AcTrRelativeToEyeUtil.enableForObject(object)
         const highlightUserData = getHighlightUserData(object)
         highlightUserData.objectId = objectId
         highlightUserData.disposeGeometryOnRemove =
@@ -688,6 +689,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         const highlightObj = obj.clone()
         this.copyHighlightMetadata(obj, highlightObj)
         this.applyHighlightMaterial(highlightObj)
+        AcTrRelativeToEyeUtil.enableForObject(highlightObj)
         getHighlightUserData(highlightObj).objectId = objectId
         containerGroup.add(highlightObj)
       })
@@ -1288,10 +1290,19 @@ export class AcTrBatchedGroup extends THREE.Group {
     object: THREE.Object3D,
     raycaster: THREE.Raycaster
   ) {
-    if (getSceneDrawableUserData(object).bboxIntersectionCheck) {
-      return this.isUnbatchedBboxIntersecting(object, raycaster)
+    const offset = AcTrRelativeToEyeUtil.getRayOriginOffset(raycaster)
+    if (offset) {
+      object.position.sub(offset)
+      object.updateMatrixWorld(true)
     }
-    return raycaster.intersectObject(object, true).length > 0
+    const intersects = getSceneDrawableUserData(object).bboxIntersectionCheck
+      ? this.isUnbatchedBboxIntersecting(object, raycaster)
+      : raycaster.intersectObject(object, true).length > 0
+    if (offset) {
+      object.position.add(offset)
+      object.updateMatrixWorld(true)
+    }
+    return intersects
   }
 
   /**

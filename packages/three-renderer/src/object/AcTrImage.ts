@@ -3,7 +3,10 @@ import * as THREE from 'three'
 
 import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import { getSceneDrawableUserData } from '../util'
 import { AcTrEntity } from './AcTrEntity'
+
+const _origin3 = /*@__PURE__*/ new THREE.Vector3()
 
 export class AcTrImage extends AcTrEntity {
   constructor(
@@ -26,17 +29,39 @@ export class AcTrImage extends AcTrEntity {
       map: texture
     })
 
-    const shape = new THREE.Shape(style.boundary as unknown as THREE.Vector2[])
+    const boundary = style.boundary as unknown as THREE.Vector2[]
+    const localOrigin = this.computeLocalOrigin(boundary)
+    const localBoundary = boundary.map(
+      point =>
+        new THREE.Vector2(point.x - localOrigin.x, point.y - localOrigin.y)
+    )
+    const shape = new THREE.Shape(localBoundary)
     const geometry = new THREE.ShapeGeometry(shape)
     this.generateUVs(geometry)
+    geometry.computeBoundingBox()
+    if (geometry.boundingBox) {
+      this.box = geometry.boundingBox
+        .clone()
+        .translate(_origin3.set(localOrigin.x, localOrigin.y, 0))
+    }
 
     const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(localOrigin.x, localOrigin.y, 0)
+    getSceneDrawableUserData(mesh).noBatch = true
     this.add(mesh)
     this.finalizeLeafDrawables()
   }
 
   override resolveDrawMode(): AcTrDrawMode {
     return 'unbatch'
+  }
+
+  private computeLocalOrigin(boundary: THREE.Vector2[]) {
+    const box = new THREE.Box2()
+    boundary.forEach(point => box.expandByPoint(point))
+    return box.isEmpty()
+      ? new THREE.Vector2()
+      : box.getCenter(new THREE.Vector2())
   }
 
   /**

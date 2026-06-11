@@ -5,6 +5,8 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
+import { markSplitTranslationFlag } from '../util/AcTrObjectUserData'
+import { AcTrRelativeToEyeUtil } from '../util/AcTrRelativeToEyeUtil'
 import {
   AcTrBatchGeometryUserData,
   AcTrVertexBatchGeometryInfo,
@@ -65,6 +67,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
   constructor(maxSegmentCount: number = 1000, material?: THREE.Material) {
     super(new LineSegmentsGeometry(), material)
     this.frustumCulled = false
+    AcTrRelativeToEyeUtil.enableForObject(this)
     this._maxSegmentCount = maxSegmentCount
   }
 
@@ -223,6 +226,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
         : new THREE.Vector3()
       this._origin = center.add(worldOffset.clone())
       this.position.copy(this._origin)
+      markSplitTranslationFlag(this)
     }
 
     const origin = this._origin
@@ -509,7 +513,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
 
     if (geometryInfo.bboxIntersectionCheck) {
       this.getBoundingBoxAt(geometryId, _box)
-      _box.applyMatrix4(this.matrixWorld)
+      AcTrRelativeToEyeUtil.applyPickBoundingBox(_box, this, raycaster)
       if (raycaster.ray.intersectBox(_box, _vector)) {
         const distance = raycaster.ray.origin.distanceTo(_vector)
         ;(
@@ -537,7 +541,11 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     )
     _raycastObject.geometry = geometry
     _raycastObject.material = this.material as LineMaterial
-    _raycastObject.position.copy(this.position)
+    AcTrRelativeToEyeUtil.copyRelativePosition(
+      this.position,
+      raycaster,
+      _raycastObject.position
+    )
     _raycastObject.quaternion.copy(this.quaternion)
     _raycastObject.scale.copy(this.scale)
     _raycastObject.updateMatrix()
@@ -550,7 +558,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     // to a bounding-box intersection check when the precise raycast misses.
     if (_batchIntersects.length === 0) {
       this.getBoundingBoxAt(geometryId, _box)
-      _box.applyMatrix4(this.matrixWorld)
+      AcTrRelativeToEyeUtil.applyPickBoundingBox(_box, this, raycaster)
       const threshold = raycaster.params.Line.threshold
       if (threshold > 0) {
         _box.expandByScalar(threshold)
