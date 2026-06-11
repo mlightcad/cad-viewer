@@ -65,10 +65,10 @@ const initialize = () => {
 // AcApSettingManager.instance.isShowStats = false
 // AcApSettingManager.instance.isShowCoordinate = false
 
-const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Read)
+const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
 const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
-const progressiveRendering = ref(true)
+const progressiveRendering = ref(false)
 
 // Handle file selection from upload component
 const handleFileSelect = (
