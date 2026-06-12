@@ -671,10 +671,7 @@ export class AcEdCommandLine {
           const handled = this.activeSession.handleEnter(this.getInputText())
           if (!handled) {
             this.showMessage(
-              this.localize(
-                'main.commandLine.invalidInput',
-                'Invalid input.'
-              ),
+              this.localize('main.commandLine.invalidInput', 'Invalid input.'),
               'warning'
             )
           }

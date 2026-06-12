@@ -22,7 +22,8 @@ import {
   AcEdPromptState,
   AcEdPromptStateMachine,
   AcEdPromptStateStep,
-  AcEdPromptStatus} from '../../editor'
+  AcEdPromptStatus
+} from '../../editor'
 import { AcApI18n } from '../../i18n'
 
 /**
@@ -437,10 +438,7 @@ export class AcApOffsetCmd extends AcEdCommand {
           new AcGePoint3d(result.value)
         )
         if (offsetCurves.length === 0) {
-          showCommandMessage(
-            AcApI18n.t('jig.offset.offsetFailed'),
-            'warning'
-          )
+          showCommandMessage(AcApI18n.t('jig.offset.offsetFailed'), 'warning')
         } else {
           blockTable.modelSpace.appendEntity(offsetCurves)
         }

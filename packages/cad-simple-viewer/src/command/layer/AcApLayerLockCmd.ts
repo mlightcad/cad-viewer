@@ -105,6 +105,9 @@ export class AcApLayerLockCmd extends AcEdCommand {
 
     this.setLayerLocked(layer, true)
     context.view.selectionSet.clear()
-    this.showMessage(`${AcApI18n.t('jig.laylck.locked')}: ${layer.name}`, 'success')
+    this.showMessage(
+      `${AcApI18n.t('jig.laylck.locked')}: ${layer.name}`,
+      'success'
+    )
   }
 }

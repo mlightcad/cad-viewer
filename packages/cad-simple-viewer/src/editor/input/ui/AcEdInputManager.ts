@@ -498,10 +498,9 @@ export class AcEdInputManager {
     return {
       promise: this._commandLine.getPromptInput(
         keywordOptions,
-        text =>
-          this.parseCommandLineInput(text, handler, inputCount, options),
+        text => this.parseCommandLineInput(text, handler, inputCount, options),
         {
-          mode: this.resolvePromptInputMode(handler, inputCount),
+          mode: this.resolvePromptInputMode(handler),
           allowNone,
           allowTyping
         }
@@ -514,14 +513,9 @@ export class AcEdInputManager {
    * Resolves command-line precedence rules for the active handler.
    */
   private resolvePromptInputMode(
-    handler: AcEdInputHandler<unknown>,
-    inputCount: AcEdFloatingInputBoxCount
+    handler: AcEdInputHandler<unknown>
   ): AcEdPromptInputMode {
-    if (handler instanceof AcEdStringHandler) return 'string'
-    if (inputCount === 2 || handler instanceof AcEdPointHandler) {
-      return 'geometric'
-    }
-    return 'geometric'
+    return handler instanceof AcEdStringHandler ? 'string' : 'geometric'
   }
 
   /**
@@ -1599,9 +1593,10 @@ export class AcEdInputManager {
     }
 
     const handler = new AcEdPointHandler(options)
-    const value = handler.parseCommandLine(token, {
-      referencePoint: this.resolvePointInputContext(options).referencePoint
-    })
+    const value = handler.parseCommandLine(
+      token,
+      this.resolvePointInputContext(options)
+    )
     if (value != null) {
       this.lastPoint = { x: value.x, y: value.y }
       return value
@@ -2016,7 +2011,11 @@ export class AcEdInputManager {
           case 'value':
             if (options.handler instanceof AcEdPointHandler) {
               const point = result.value as unknown as AcGePoint3dLike
-              if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+              if (
+                point &&
+                Number.isFinite(point.x) &&
+                Number.isFinite(point.y)
+              ) {
                 this.lastPoint = { x: point.x, y: point.y }
               }
             }

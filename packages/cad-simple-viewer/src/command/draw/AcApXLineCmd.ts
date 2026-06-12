@@ -88,10 +88,7 @@ export class AcApXLineCmd extends AcEdCommand {
           z: secondResult.value.z - startResult.value.z
         }
         if (!this.appendFiniteXLine(context, startResult.value, direction)) {
-          this.showMessage(
-            AcApI18n.t('jig.xline.invalidDirection'),
-            'warning'
-          )
+          this.showMessage(AcApI18n.t('jig.xline.invalidDirection'), 'warning')
         }
         continue
       } else {

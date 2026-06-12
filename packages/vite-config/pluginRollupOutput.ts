@@ -70,8 +70,7 @@ export function createLibEntryFileName(
   format: string,
   entryName = 'index'
 ): string {
-  const base =
-    entryName === 'register' ? `${packageId}-register` : packageId
+  const base = entryName === 'register' ? `${packageId}-register` : packageId
   return format === 'es' ? `${base}.js` : `${base}.umd.cjs`
 }
 

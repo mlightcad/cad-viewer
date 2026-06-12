@@ -27,10 +27,7 @@ function findUnbatchedLineDrawable(group: AcTrBatchedGroup) {
     if (drawable) {
       return
     }
-    if (
-      child instanceof THREE.LineSegments ||
-      child instanceof LineSegments2
-    ) {
+    if (child instanceof THREE.LineSegments || child instanceof LineSegments2) {
       if (Math.abs(child.position.x) >= RTE_REBASE_THRESHOLD) {
         drawable = child
       }
@@ -123,7 +120,12 @@ describe('AcTrLine', () => {
       drawable instanceof THREE.LineSegments ||
         drawable instanceof LineSegments2
     ).toBe(true)
-    if (!(drawable instanceof THREE.LineSegments || drawable instanceof LineSegments2)) {
+    if (
+      !(
+        drawable instanceof THREE.LineSegments ||
+        drawable instanceof LineSegments2
+      )
+    ) {
       return
     }
 

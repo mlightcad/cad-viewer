@@ -300,10 +300,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     const unionBatchMap = (
       map: Map<
         number,
-        | AcTrBatchedLine
-        | AcTrBatchedLine2
-        | AcTrBatchedMesh
-        | AcTrBatchedPoint
+        AcTrBatchedLine | AcTrBatchedLine2 | AcTrBatchedMesh | AcTrBatchedPoint
       >
     ) => {
       map.forEach(batch => {
@@ -606,7 +603,9 @@ export class AcTrBatchedGroup extends THREE.Group {
     const unbatchedObjects = this._unbatchedEntities.get(objectId)
     if (unbatchedObjects) {
       for (let i = 0; i < unbatchedObjects.length; i++) {
-        if (this.isUnbatchedDrawableIntersecting(unbatchedObjects[i], raycaster)) {
+        if (
+          this.isUnbatchedDrawableIntersecting(unbatchedObjects[i], raycaster)
+        ) {
           return true
         }
       }
@@ -1086,7 +1085,8 @@ export class AcTrBatchedGroup extends THREE.Group {
       const clonedDrawable = getSceneDrawableUserData(cloned)
       clonedDrawable.styleMaterialId =
         sourceDrawable.styleMaterialId ?? this.getMaterialId(source.material)
-      clonedDrawable.bboxIntersectionCheck = sourceDrawable.bboxIntersectionCheck
+      clonedDrawable.bboxIntersectionCheck =
+        sourceDrawable.bboxIntersectionCheck
       clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray()
     }
     cloned.updateMatrix()
@@ -1312,7 +1312,11 @@ export class AcTrBatchedGroup extends THREE.Group {
       }
       _intersectBox.copy(geometry.boundingBox).applyMatrix4(object.matrixWorld)
     } else {
-      this.unionUnbatchedObjectBounds(object, _intersectBox, _intersectScratchBox)
+      this.unionUnbatchedObjectBounds(
+        object,
+        _intersectBox,
+        _intersectScratchBox
+      )
       if (_intersectBox.isEmpty()) {
         return false
       }

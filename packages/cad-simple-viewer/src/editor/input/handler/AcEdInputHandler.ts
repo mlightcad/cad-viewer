@@ -31,8 +31,5 @@ export interface AcEdInputHandler<T> {
    *
    * Handlers that only accept a single value typically delegate to {@link parse}.
    */
-  parseCommandLine(
-    token: string,
-    context?: AcEdPointInputContext
-  ): T | null
+  parseCommandLine(token: string, context?: AcEdPointInputContext): T | null
 }

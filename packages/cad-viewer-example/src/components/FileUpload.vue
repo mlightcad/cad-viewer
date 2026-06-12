@@ -46,7 +46,11 @@
         <div class="settings-grid">
           <div class="setting-block setting-block--full">
             <h3 class="setting-label">Access mode</h3>
-            <div class="mode-segment" role="radiogroup" aria-label="Access mode">
+            <div
+              class="mode-segment"
+              role="radiogroup"
+              aria-label="Access mode"
+            >
               <button
                 v-for="mode in accessModes"
                 :key="mode.value"

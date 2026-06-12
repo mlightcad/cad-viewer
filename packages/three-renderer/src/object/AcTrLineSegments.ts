@@ -24,9 +24,7 @@ export class AcTrLineSegments extends AcTrEntity {
     const box = new THREE.Box3()
 
     for (let i = 0; i < array.length; i += itemSize) {
-      box.expandByPoint(
-        _point.set(array[i], array[i + 1], array[i + 2] ?? 0)
-      )
+      box.expandByPoint(_point.set(array[i], array[i + 1], array[i + 2] ?? 0))
     }
 
     const localOrigin = box.getCenter(new THREE.Vector3())

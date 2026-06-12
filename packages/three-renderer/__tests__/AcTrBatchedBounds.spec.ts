@@ -33,14 +33,7 @@ function createLineSegments(
   geometry.setAttribute(
     'position',
     new THREE.Float32BufferAttribute(
-      [
-        start.x,
-        start.y,
-        start.z ?? 0,
-        end.x,
-        end.y,
-        end.z ?? 0
-      ],
+      [start.x, start.y, start.z ?? 0, end.x, end.y, end.z ?? 0],
       3
     )
   )
@@ -286,20 +279,18 @@ describe('AcTrBatchedGroup', () => {
     group.addEntity(createEntity('line-1', batchedLine))
     group.addEntity(createEntity('ray-1', unbatchedLine))
 
-    const batchedOnly = group.computeBoundingBox(
-      new THREE.Box3(),
-      { excludeObjectIds: new Set(['ray-1']) }
-    )
+    const batchedOnly = group.computeBoundingBox(new THREE.Box3(), {
+      excludeObjectIds: new Set(['ray-1'])
+    })
     expectBox3CloseTo(
       batchedOnly,
       { x: 1_000_000, y: 2_000_000, z: 0 },
       { x: 1_000_100, y: 2_000_050, z: 0 }
     )
 
-    const unbatchedOnly = group.computeBoundingBox(
-      new THREE.Box3(),
-      { excludeObjectIds: new Set(['line-1']) }
-    )
+    const unbatchedOnly = group.computeBoundingBox(new THREE.Box3(), {
+      excludeObjectIds: new Set(['line-1'])
+    })
     expectBox3CloseTo(
       unbatchedOnly,
       { x: 300_000, y: 400_000, z: 0 },
@@ -357,8 +348,8 @@ describe('AcTrBatchedGroup', () => {
     group.addEntity(entity)
 
     expect(group.stats.unbatched.count).toBe(0)
-    expect(
-      group.children.some(child => child instanceof AcTrBatchedMesh)
-    ).toBe(true)
+    expect(group.children.some(child => child instanceof AcTrBatchedMesh)).toBe(
+      true
+    )
   })
 })

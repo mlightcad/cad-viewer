@@ -297,12 +297,17 @@ export class AcApLayerDelCmd extends AcEdCommand {
     const layer = db.tables.layerTable.getAt(layerName)
 
     if (!layer) {
-      this.showMessage(`${AcApI18n.t('jig.laydel.layerNotFound')}: ${layerName}`)
+      this.showMessage(
+        `${AcApI18n.t('jig.laydel.layerNotFound')}: ${layerName}`
+      )
       return
     }
 
     if (layer.name === '0') {
-      this.showMessage(AcApI18n.t('jig.laydel.cannotDeleteZeroLayer'), 'warning')
+      this.showMessage(
+        AcApI18n.t('jig.laydel.cannotDeleteZeroLayer'),
+        'warning'
+      )
       return
     }
 
@@ -325,7 +330,10 @@ export class AcApLayerDelCmd extends AcEdCommand {
 
     context.view.selectionSet.clear()
     AcApDocManager.instance.regen()
-    this.showMessage(`${AcApI18n.t('jig.laydel.deleted')}: ${layer.name}`, 'success')
+    this.showMessage(
+      `${AcApI18n.t('jig.laydel.deleted')}: ${layer.name}`,
+      'success'
+    )
   }
 
   /**

@@ -391,7 +391,10 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
 
     this.setLayerFrozen(layer, true)
     context.view.selectionSet.clear()
-    this.showMessage(`${AcApI18n.t('jig.layfrz.frozen')}: ${layer.name}`, 'success')
+    this.showMessage(
+      `${AcApI18n.t('jig.layfrz.frozen')}: ${layer.name}`,
+      'success'
+    )
   }
 
   /**

@@ -4,9 +4,15 @@ import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
 import { RTE_REBASE_THRESHOLD } from '../src/draw/AcTrBatchDrawPolicy'
 import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
-import { getHighlightUserData, getSceneDrawableUserData } from '../src/util/AcTrObjectUserData'
+import {
+  getHighlightUserData,
+  getSceneDrawableUserData
+} from '../src/util/AcTrObjectUserData'
 
-function createEntity(objectId: string, ...drawables: THREE.Object3D[]): AcTrEntity {
+function createEntity(
+  objectId: string,
+  ...drawables: THREE.Object3D[]
+): AcTrEntity {
   const entity = new AcTrEntity(new AcTrRenderContext())
   entity.objectId = objectId
   entity.visible = true
@@ -171,9 +177,7 @@ describe('AcTrBatchedGroup unbatched operations', () => {
       new THREE.Vector3(0, 0, -1)
     )
 
-    expect(
-      raycaster.intersectObject(clonedRoot, true)
-    ).toHaveLength(0)
+    expect(raycaster.intersectObject(clonedRoot, true)).toHaveLength(0)
     expect(group.isIntersectWith('mtext-1', raycaster)).toBe(true)
   })
 
@@ -202,16 +206,10 @@ function createUnbatchedLine() {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute(
     'position',
-    new THREE.Float32BufferAttribute(
-      [-10, 0, 0, 10, 0, 0],
-      3
-    )
+    new THREE.Float32BufferAttribute([-10, 0, 0, 10, 0, 0], 3)
   )
   geometry.setIndex([0, 1])
-  const line = new THREE.LineSegments(
-    geometry,
-    new THREE.LineBasicMaterial()
-  )
+  const line = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial())
   line.position.set(RTE_REBASE_THRESHOLD + 500, 2_000_000, 0)
   getSceneDrawableUserData(line).noBatch = true
   line.updateMatrixWorld(true)

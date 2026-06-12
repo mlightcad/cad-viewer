@@ -21,7 +21,6 @@ async function installWorkerSpy(page: import('@playwright/test').Page) {
         super(scriptURL, options)
       }
     } as typeof Worker
-
     ;(
       window as Window & { __createdWorkerUrls?: string[] }
     ).__createdWorkerUrls = createdWorkerUrls

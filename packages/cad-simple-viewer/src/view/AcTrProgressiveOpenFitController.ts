@@ -104,7 +104,10 @@ export class AcTrProgressiveOpenFitController {
    * paint converted geometry during document open.
    */
   async yieldForRender(entityIndex: number) {
-    if (!this.active || entityIndex % AcTrProgressiveOpenFitController.YIELD_EVERY !== 0) {
+    if (
+      !this.active ||
+      entityIndex % AcTrProgressiveOpenFitController.YIELD_EVERY !== 0
+    ) {
       return
     }
 
@@ -119,7 +122,10 @@ export class AcTrProgressiveOpenFitController {
     }
 
     const now = performance.now()
-    if (now - this.lastZoomAt < AcTrProgressiveOpenFitController.FIT_INTERVAL_MS) {
+    if (
+      now - this.lastZoomAt <
+      AcTrProgressiveOpenFitController.FIT_INTERVAL_MS
+    ) {
       return
     }
 

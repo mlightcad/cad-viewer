@@ -347,7 +347,10 @@ export class AcApLayerCmd extends AcEdCommand {
     })
 
     if (created > 0) {
-      this.showMessage(`${AcApI18n.t('jig.layer.created')}: ${created}`, 'success')
+      this.showMessage(
+        `${AcApI18n.t('jig.layer.created')}: ${created}`,
+        'success'
+      )
     }
     if (existed.length > 0) {
       this.showMessage(
@@ -374,7 +377,10 @@ export class AcApLayerCmd extends AcEdCommand {
 
     const layer = context.doc.database.tables.layerTable.getAt(name)
     if (!layer) {
-      this.showMessage(`${AcApI18n.t('jig.layer.notFound')}: ${name}`, 'warning')
+      this.showMessage(
+        `${AcApI18n.t('jig.layer.notFound')}: ${name}`,
+        'warning'
+      )
       return
     }
 
@@ -625,7 +631,10 @@ export class AcApLayerCmd extends AcEdCommand {
 
     const layer = context.doc.database.tables.layerTable.getAt(name)
     if (!layer) {
-      this.showMessage(`${AcApI18n.t('jig.layer.notFound')}: ${name}`, 'warning')
+      this.showMessage(
+        `${AcApI18n.t('jig.layer.notFound')}: ${name}`,
+        'warning'
+      )
       return
     }
 

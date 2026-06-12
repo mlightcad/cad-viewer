@@ -15,9 +15,7 @@ function createDbEntity(
   return { objectId, layer, visibility } as AcDbEntity
 }
 
-function createBlockTableRecord(
-  entities: AcDbEntity[]
-): AcDbBlockTableRecord {
+function createBlockTableRecord(entities: AcDbEntity[]): AcDbBlockTableRecord {
   return {
     newIterator: () => entities[Symbol.iterator]()
   } as unknown as AcDbBlockTableRecord
@@ -44,11 +42,7 @@ describe('AcTrEntityDisplayController', () => {
     }
 
     const controller = new AcTrEntityDisplayController(name =>
-      name === 'off'
-        ? offLayer
-        : name === 'frozen'
-          ? frozenLayer
-          : onLayer
+      name === 'off' ? offLayer : name === 'frozen' ? frozenLayer : onLayer
     )
 
     expect(controller.shouldConvert({ visibility: true, layer: 'off' })).toBe(
@@ -103,14 +97,13 @@ describe('AcTrEntityDisplayController', () => {
   it('detects layer visibility changes from isOff or standardFlags', () => {
     const controller = new AcTrEntityDisplayController(() => undefined)
 
-    expect(controller.layerVisibilityMayHaveChanged({ isOff: true })).toBe(
-      true
-    )
+    expect(controller.layerVisibilityMayHaveChanged({ isOff: true })).toBe(true)
     expect(controller.layerVisibilityMayHaveChanged({ standardFlags: 1 })).toBe(
       true
     )
-    expect(controller.layerVisibilityMayHaveChanged({ color: new AcCmColor() }))
-      .toBe(false)
+    expect(
+      controller.layerVisibilityMayHaveChanged({ color: new AcCmColor() })
+    ).toBe(false)
   })
 
   it('collectMissingEntitiesOnLayer returns drawable entities not yet in the scene', () => {

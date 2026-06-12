@@ -21,9 +21,6 @@ export class AcApUnisolateObjectsCmd extends AcEdCommand {
       return
     }
 
-    this.showMessage(
-      AcApI18n.t('jig.hideobjects.nothingToRestore'),
-      'info'
-    )
+    this.showMessage(AcApI18n.t('jig.hideobjects.nothingToRestore'), 'info')
   }
 }
