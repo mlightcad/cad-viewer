@@ -87,9 +87,10 @@ export class AcEdCommandLine {
 
   setPrompt(message?: string) {
     this.isPromptActive = true
-    this.promptEl.innerHTML = message ?? ''
+    const promptCore = message?.trim().replace(/[：:]\s*$/, '') ?? ''
+    this.promptEl.innerHTML = promptCore ? `${promptCore}: ` : ''
     this.textInput.placeholder = ''
-    this.recordRecentMessage(message)
+    this.recordRecentMessage(promptCore ? `${promptCore}:` : message)
   }
 
   clear() {
@@ -821,7 +822,8 @@ export class AcEdCommandLine {
     this.textInput.placeholder = ''
 
     if (options.message) {
-      this.promptEl.append(options.message.trim() + ' ')
+      const promptCore = options.message.trim().replace(/[：:]\s*$/, '')
+      this.promptEl.append(promptCore + ' ')
     }
 
     const promptFormat = options.getKeywordPromptFormat()
