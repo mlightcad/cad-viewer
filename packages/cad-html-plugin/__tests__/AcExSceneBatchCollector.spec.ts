@@ -288,8 +288,9 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     expect(lineBatches).toHaveLength(1)
 
     const exported = lineBatches[0]!
-    expect(exported.offset[0]).toBeCloseTo(1_000_000, 3)
-    expect(exported.offset[1]).toBeCloseTo(2_000_000, 3)
+    // Batch origin is the first geometry bbox center plus worldOffset.
+    expect(exported.offset[0]).toBeCloseTo(1_000_050, 3)
+    expect(exported.offset[1]).toBeCloseTo(2_000_025, 3)
     expect(
       toWcsCoord(exported.positions[0]!, exported.offset[0]!)
     ).toBeCloseTo(1_000_000, 3)
@@ -306,8 +307,8 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
 
   it('uses matrixWorld translation for rebased lines nested under a parent', () => {
     const line = createRebasedLineSegments(
-      [1_000_010, 2_000_020, 0],
-      [1_000_110, 2_000_070, 0]
+      [100_010, 200_020, 0],
+      [100_110, 200_070, 0]
     )
     const parent = new THREE.Group()
     parent.position.set(900_000, 1_800_000, 0)
