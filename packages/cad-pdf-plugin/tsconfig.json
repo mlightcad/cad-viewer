@@ -4,7 +4,9 @@
     "rootDir": "./src",
     "outDir": "./lib",
     "paths": {
-      "@mlightcad/cad-pdf-plugin": ["./src/index.ts"]
+      "@mlightcad/cad-pdf-plugin": [
+        "./src/index.ts"
+      ]
     }
   },
   "include": [

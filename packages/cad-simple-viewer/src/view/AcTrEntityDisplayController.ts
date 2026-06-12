@@ -87,10 +87,8 @@ export class AcTrEntityDisplayController {
     blockTableRecord: AcDbBlockTableRecord,
     hasEntity: (objectId: AcDbObjectId) => boolean
   ): AcDbEntity[] {
-    return this.collectMissingEntities(
-      blockTableRecord,
-      hasEntity,
-      entity => this.shouldConvertForExport(entity)
+    return this.collectMissingEntities(blockTableRecord, hasEntity, entity =>
+      this.shouldConvertForExport(entity)
     )
   }
 

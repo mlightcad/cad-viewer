@@ -189,10 +189,7 @@ export class AcApMLineCmd extends AcEdCommand {
         ([name]) => name
       )
       if (styleNames.length <= 0) {
-        this.showMessage(
-          AcApI18n.t('jig.mline.styleListEmpty'),
-          'warning'
-        )
+        this.showMessage(AcApI18n.t('jig.mline.styleListEmpty'), 'warning')
         return
       }
       this.showMessage(

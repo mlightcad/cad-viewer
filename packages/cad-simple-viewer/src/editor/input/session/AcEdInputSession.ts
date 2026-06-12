@@ -9,7 +9,9 @@ export interface AcEdCommandLineSessionControl {
   handleEscape(): void
 }
 
-export abstract class AcEdInputSession<T> implements AcEdCommandLineSessionControl {
+export abstract class AcEdInputSession<
+  T
+> implements AcEdCommandLineSessionControl {
   protected resolve!: (value: T) => void
 
   start(): Promise<T> {

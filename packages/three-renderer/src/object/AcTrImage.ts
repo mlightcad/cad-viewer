@@ -6,11 +6,7 @@ import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrImage extends AcTrEntity {
-  constructor(
-    blob: Blob,
-    style: AcGiImageStyle,
-    context: AcTrRenderContext
-  ) {
+  constructor(blob: Blob, style: AcGiImageStyle, context: AcTrRenderContext) {
     super(context)
     const blobUrl = URL.createObjectURL(blob)
     const textureLoader = new THREE.TextureLoader()

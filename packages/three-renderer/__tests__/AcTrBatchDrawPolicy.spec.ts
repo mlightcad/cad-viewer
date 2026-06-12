@@ -99,7 +99,9 @@ describe('AcTrBatchDrawPolicy', () => {
       { x: 30, y: 40, z: 50 }
     ]
     const box = new THREE.Box3()
-    points.forEach(point => box.expandByPoint(new THREE.Vector3(point.x, point.y, point.z)))
+    points.forEach(point =>
+      box.expandByPoint(new THREE.Vector3(point.x, point.y, point.z))
+    )
 
     expect(resolveAnchorFromBox(box)).toEqual(resolveAnchorFromPoints(points))
   })

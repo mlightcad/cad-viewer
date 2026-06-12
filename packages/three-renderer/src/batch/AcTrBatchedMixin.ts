@@ -808,9 +808,10 @@ export function createAcTrBatchedMixin<
         ) {
           continue
         }
-        const bounds = (
-          this as unknown as AcTrBatchBounds
-        ).getBoundingBoxAt(i, this._box)
+        const bounds = (this as unknown as AcTrBatchBounds).getBoundingBoxAt(
+          i,
+          this._box
+        )
         if (bounds) {
           // Per-slot boxes are in batch-local space; translate by batch origin.
           this._box.applyMatrix4(self.matrixWorld)

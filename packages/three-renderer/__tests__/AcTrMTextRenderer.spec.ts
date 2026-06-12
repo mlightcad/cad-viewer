@@ -66,7 +66,9 @@ describe('AcTrMTextRenderer', () => {
     expect(mockUnifiedRenderer).toHaveBeenCalledWith('worker', {
       workerUrl: './assets/mtext-renderer-worker.js'
     })
-    expect(mockRendererInstances[0].setDefaultMode).toHaveBeenCalledWith('worker')
+    expect(mockRendererInstances[0].setDefaultMode).toHaveBeenCalledWith(
+      'worker'
+    )
   })
 
   it('destroys the previous unified renderer before re-initializing', () => {

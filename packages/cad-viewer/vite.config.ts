@@ -10,9 +10,7 @@ import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import vue from '@vitejs/plugin-vue'
 import dts from 'vite-plugin-dts'
 import { libInjectCss } from 'vite-plugin-lib-inject-css'
-import {
-  createLibEntryFileName
-} from '../vite-config/pluginRollupOutput'
+import { createLibEntryFileName } from '../vite-config/pluginRollupOutput'
 
 const packageId = 'cad-viewer'
 

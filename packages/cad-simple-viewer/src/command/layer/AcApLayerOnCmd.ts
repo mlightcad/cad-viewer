@@ -41,6 +41,9 @@ export class AcApLayerOnCmd extends AcEdCommand {
       return
     }
 
-    this.showMessage(`${AcApI18n.t('jig.layon.turnedOn')}: ${turnedOn}`, 'success')
+    this.showMessage(
+      `${AcApI18n.t('jig.layon.turnedOn')}: ${turnedOn}`,
+      'success'
+    )
   }
 }

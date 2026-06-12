@@ -830,16 +830,11 @@ export class AcTrView2d extends AcEdBaseView {
     const waiter = new AcEdConditionWaiter(
       () => this._numOfEntitiesToProcess <= 0,
       () => {
-        if (
-          layoutBtrId &&
-          this._externallyFramedLayouts.delete(layoutBtrId)
-        ) {
+        if (layoutBtrId && this._externallyFramedLayouts.delete(layoutBtrId)) {
           this.endProgressiveOpenFit()
           return
         }
-        this._progressiveOpenFit.applyFinalFit(() =>
-          this.resolveLayoutFitBox()
-        )
+        this._progressiveOpenFit.applyFinalFit(() => this.resolveLayoutFitBox())
         this.endProgressiveOpenFit()
       },
       300, // check every 300 ms
@@ -1518,8 +1513,7 @@ export class AcTrView2d extends AcEdBaseView {
     })
 
     const stillLoading = this._numOfEntitiesToProcess > 0
-    const deferRenderWhileLoading =
-      stillLoading && !this._progressiveRendering
+    const deferRenderWhileLoading = stillLoading && !this._progressiveRendering
     if (!this._isDirty && !stillLoading) return
     if (deferRenderWhileLoading) return
 
@@ -1528,8 +1522,7 @@ export class AcTrView2d extends AcEdBaseView {
       this._css2dRenderer.render(this._scene.internalScene, this.internalCamera)
     }
     this._stats?.update()
-    this._isDirty =
-      (this._progressiveRendering && stillLoading) || needsRedraw
+    this._isDirty = (this._progressiveRendering && stillLoading) || needsRedraw
   }
 
   private startAnimationLoop() {
@@ -1765,7 +1758,10 @@ export class AcTrView2d extends AcEdBaseView {
    * to async workers; non-progressive mode uses synchronous drawing from
    * {@link drawEntity}(..., false).
    */
-  private async finishEntityGeometry(threeEntity: AcTrEntity, progressive: boolean) {
+  private async finishEntityGeometry(
+    threeEntity: AcTrEntity,
+    progressive: boolean
+  ) {
     if (progressive) {
       await threeEntity.draw()
       return
@@ -1778,8 +1774,10 @@ export class AcTrView2d extends AcEdBaseView {
 
   /** MTEXT/SHAPE entities expose syncDraw and render synchronously when delay=false. */
   private entityUsedSyncDraw(threeEntity: AcTrEntity) {
-    return typeof (threeEntity as { syncDraw?: () => unknown }).syncDraw ===
+    return (
+      typeof (threeEntity as { syncDraw?: () => unknown }).syncDraw ===
       'function'
+    )
   }
 
   /**
@@ -1855,7 +1853,10 @@ export class AcTrView2d extends AcEdBaseView {
           continue
         }
 
-        const threeEntity: AcTrEntity | null = this.drawEntity(entity, progressive)
+        const threeEntity: AcTrEntity | null = this.drawEntity(
+          entity,
+          progressive
+        )
         // Viewports may produce no border geometry (e.g. on a no-plot layer) while
         // still needing an AcTrViewportView for model content below.
         if (!threeEntity && !(entity instanceof AcDbViewport)) continue

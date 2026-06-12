@@ -1,9 +1,7 @@
 import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import { defineConfig, PluginOption } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
-import {
-  createLibEntryFileName
-} from '../vite-config/pluginRollupOutput'
+import { createLibEntryFileName } from '../vite-config/pluginRollupOutput'
 
 const packageId = 'cad-simple-viewer'
 
