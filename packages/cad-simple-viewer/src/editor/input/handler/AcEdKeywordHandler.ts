@@ -1,5 +1,5 @@
 import { AcEdPromptKeywordOptions } from '../prompt/AcEdPromptKeywordOptions'
-import { AcEdInputHandler } from './AcEdInputHandler'
+import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler'
 
 /**
  * Validates keyword input according to {@link AcEdPromptKeywordOptions}.
@@ -35,5 +35,9 @@ export class AcEdKeywordHandler implements AcEdInputHandler<string> {
 
     // 4. Invalid input
     return null
+  }
+
+  parseCommandLine(token: string, _context?: AcEdPointInputContext) {
+    return this.parse(token)
   }
 }

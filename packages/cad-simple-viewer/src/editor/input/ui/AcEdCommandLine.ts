@@ -1,7 +1,13 @@
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
 import { AcEdPromptKeywordOptions } from '../prompt'
-import { AcEdKeywordSession } from '../session'
+import {
+  AcEdCommandLineSessionControl,
+  AcEdKeywordSession,
+  AcEdPromptInputMode,
+  AcEdPromptInputResult,
+  AcEdPromptInputSession
+} from '../session'
 import { AcEdMessageType } from './AcEdMessageType'
 
 /**
@@ -41,7 +47,7 @@ export class AcEdCommandLine {
   private cmdPopup!: HTMLDivElement
   private msgPanel!: HTMLDivElement
   private autoCompleteIndex: number
-  private activeSession?: AcEdKeywordSession
+  private activeSession?: AcEdCommandLineSessionControl
   private resizeObserver?: ResizeObserver
   private isPromptActive: boolean = false
   private readonly recentMessages: string[] = []
@@ -136,10 +142,42 @@ export class AcEdCommandLine {
     options: AcEdPromptKeywordOptions,
     allowTyping: boolean = true
   ): Promise<string> {
-    this.activeSession = new AcEdKeywordSession(this, options, allowTyping)
-    const result = await this.activeSession.start()
-    this.activeSession = undefined
-    return result
+    const session = new AcEdKeywordSession(this, options, allowTyping)
+    this.activeSession = session
+    try {
+      return await session.start()
+    } finally {
+      this.activeSession = undefined
+    }
+  }
+
+  /**
+   * Runs a mixed prompt-input session that accepts typed geometric or textual
+   * values together with optional keywords.
+   */
+  async getPromptInput<T>(
+    options: AcEdPromptKeywordOptions,
+    parseValue: (text: string) => T | null,
+    config: {
+      mode: AcEdPromptInputMode
+      allowNone: boolean
+      allowTyping?: boolean
+    }
+  ): Promise<AcEdPromptInputResult<T>> {
+    const session = new AcEdPromptInputSession(
+      this,
+      options,
+      parseValue,
+      config.mode,
+      config.allowNone,
+      config.allowTyping ?? true
+    )
+    this.activeSession = session
+    try {
+      return await session.start()
+    } finally {
+      this.activeSession = undefined
+    }
   }
 
   /**
@@ -633,7 +671,10 @@ export class AcEdCommandLine {
           const handled = this.activeSession.handleEnter(this.getInputText())
           if (!handled) {
             this.showMessage(
-              this.localize('main.commandLine.invalidKeyword'),
+              this.localize(
+                'main.commandLine.invalidInput',
+                'Invalid input.'
+              ),
               'warning'
             )
           }
@@ -787,33 +828,33 @@ export class AcEdCommandLine {
     }
 
     const promptFormat = options.getKeywordPromptFormat()
-    if (!promptFormat.visibleKeywords.length) return
-    const keywords = options.keywords?.toArray().filter(k => k.visible)
-    if (!keywords?.length) return
+    const keywords = options.keywords?.toArray().filter(k => k.visible) ?? []
 
-    this.promptEl.append('[')
+    if (keywords.length) {
+      this.promptEl.append('[')
 
-    keywords.forEach((kw, i) => {
-      if (i > 0) this.promptEl.append('/')
+      keywords.forEach((kw, i) => {
+        if (i > 0) this.promptEl.append('/')
 
-      const span = document.createElement('span')
-      span.className = 'ml-cli-option'
-      span.textContent = kw.displayName
+        const span = document.createElement('span')
+        span.className = 'ml-cli-option'
+        span.textContent = kw.displayName
 
-      if (!kw.enabled) {
-        span.style.opacity = '0.45'
-        span.style.pointerEvents = 'none'
-      } else {
-        span.onclick = () => onClick(kw.globalName)
+        if (!kw.enabled) {
+          span.style.opacity = '0.45'
+          span.style.pointerEvents = 'none'
+        } else {
+          span.onclick = () => onClick(kw.globalName)
+        }
+
+        this.promptEl.append(span)
+      })
+
+      this.promptEl.append(']')
+
+      if (promptFormat.defaultKeyword) {
+        this.promptEl.append(` <${promptFormat.defaultKeyword}>`)
       }
-
-      this.promptEl.append(span)
-    })
-
-    this.promptEl.append(']')
-
-    if (promptFormat.defaultKeyword) {
-      this.promptEl.append(` <${promptFormat.defaultKeyword}>`)
     }
 
     this.promptEl.append(': ')
