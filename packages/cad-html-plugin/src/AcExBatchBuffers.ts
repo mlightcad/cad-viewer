@@ -1,3 +1,5 @@
+import * as THREE from 'three'
+
 /**
  * Copies a contiguous span from an array-like source into a {@link Float32Array}.
  *
@@ -80,4 +82,25 @@ export function compactIndexedSlice(
  */
 export function toWcsCoord(local: number, origin: number): number {
   return local + origin
+}
+
+const _worldOffset = /*@__PURE__*/ { x: 0, y: 0, z: 0 }
+
+/**
+ * Reads the world-space translation stored separately from rebased vertex data.
+ *
+ * Renderer drawables keep float32-friendly local geometry and place the entity in
+ * WCS via the object transform (or batch {@link AcTrBatchedLine.position}).
+ * Nested no-batch subtrees (MTEXT, block-like placement roots) carry insertion
+ * on ancestors, so the translation must come from {@link THREE.Object3D.matrixWorld}.
+ */
+export function readBatchWorldOffset(
+  object: THREE.Object3D
+): [number, number, number] {
+  object.updateMatrixWorld(true)
+  const position = object.matrixWorld.elements
+  _worldOffset.x = position[12]!
+  _worldOffset.y = position[13]!
+  _worldOffset.z = position[14]!
+  return [_worldOffset.x, _worldOffset.y, _worldOffset.z]
 }
