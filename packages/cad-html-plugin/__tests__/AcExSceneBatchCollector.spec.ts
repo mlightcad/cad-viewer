@@ -13,10 +13,12 @@ jest.mock('@mlightcad/three-renderer', () => ({
   isBatchGeometryVisible: (flags: number) => (flags & 3) === 3
 }))
 
+import { AcTrBatchedLine } from '../../three-renderer/src/batch/AcTrBatchedLine'
 import * as THREE from 'three'
 
-import { compactIndexedSlice } from '../src/AcExBatchBuffers'
+import { compactIndexedSlice, readBatchWorldOffset, toWcsCoord } from '../src/AcExBatchBuffers'
 import {
+  collectBatchesFromObject3D,
   exportActiveBatchedSlice,
   exportBufferGeometrySlice
 } from '../src/AcExSceneBatchCollector'
@@ -234,5 +236,115 @@ describe('compactIndexedSlice', () => {
 
     expect(Array.from(compact.positions)).toEqual([0, 0, 0, 1, 0, 0, 2, 0, 0])
     expect(Array.from(compact.indices)).toEqual([0, 1, 2])
+  })
+})
+
+function createRebasedLineSegments(
+  wcsStart: [number, number, number],
+  wcsEnd: [number, number, number]
+): THREE.LineSegments {
+  const cx = (wcsStart[0] + wcsEnd[0]) / 2
+  const cy = (wcsStart[1] + wcsEnd[1]) / 2
+  const cz = ((wcsStart[2] ?? 0) + (wcsEnd[2] ?? 0)) / 2
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(
+      new Float32Array([
+        wcsStart[0] - cx,
+        wcsStart[1] - cy,
+        (wcsStart[2] ?? 0) - cz,
+        wcsEnd[0] - cx,
+        wcsEnd[1] - cy,
+        (wcsEnd[2] ?? 0) - cz
+      ]),
+      3
+    )
+  )
+  const line = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial())
+  line.position.set(cx, cy, cz)
+  return line
+}
+
+describe('collectBatchesFromObject3D rebase offsets', () => {
+  it('exports batched line geometry with the batch origin offset', () => {
+    const worldOffset = new THREE.Vector3(1_000_000, 2_000_000, 0)
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 100, 50, 0], 3)
+    )
+    geometry.setIndex([0, 1])
+
+    const batch = new AcTrBatchedLine()
+    const geometryId = batch.addGeometry(geometry, -1, -1, worldOffset)
+    batch.setGeometryInfo(geometryId, { objectId: 'line-1' })
+
+    const root = new THREE.Group()
+    root.add(batch)
+    root.updateMatrixWorld(true)
+
+    const { lineBatches } = collectBatchesFromObject3D(root)
+    expect(lineBatches).toHaveLength(1)
+
+    const exported = lineBatches[0]!
+    expect(exported.offset[0]).toBeCloseTo(1_000_000, 3)
+    expect(exported.offset[1]).toBeCloseTo(2_000_000, 3)
+    expect(
+      toWcsCoord(exported.positions[0]!, exported.offset[0]!)
+    ).toBeCloseTo(1_000_000, 3)
+    expect(
+      toWcsCoord(exported.positions[1]!, exported.offset[1]!)
+    ).toBeCloseTo(2_000_000, 3)
+    expect(
+      toWcsCoord(exported.positions[3]!, exported.offset[0]!)
+    ).toBeCloseTo(1_000_100, 3)
+    expect(
+      toWcsCoord(exported.positions[4]!, exported.offset[1]!)
+    ).toBeCloseTo(2_000_050, 3)
+  })
+
+  it('uses matrixWorld translation for rebased lines nested under a parent', () => {
+    const line = createRebasedLineSegments(
+      [1_000_010, 2_000_020, 0],
+      [1_000_110, 2_000_070, 0]
+    )
+    const parent = new THREE.Group()
+    parent.position.set(900_000, 1_800_000, 0)
+    parent.add(line)
+    parent.updateMatrixWorld(true)
+
+    const { lineBatches } = collectBatchesFromObject3D(parent)
+    expect(lineBatches).toHaveLength(1)
+
+    const exported = lineBatches[0]!
+    expect(exported.offset[0]).toBeCloseTo(1_000_060, 3)
+    expect(exported.offset[1]).toBeCloseTo(2_000_045, 3)
+    expect(
+      toWcsCoord(exported.positions[0]!, exported.offset[0]!)
+    ).toBeCloseTo(1_000_010, 3)
+    expect(
+      toWcsCoord(exported.positions[1]!, exported.offset[1]!)
+    ).toBeCloseTo(2_000_020, 3)
+    expect(
+      toWcsCoord(exported.positions[3]!, exported.offset[0]!)
+    ).toBeCloseTo(1_000_110, 3)
+    expect(
+      toWcsCoord(exported.positions[4]!, exported.offset[1]!)
+    ).toBeCloseTo(2_000_070, 3)
+  })
+
+  it('reads world offset from matrixWorld for nested drawables', () => {
+    const line = createRebasedLineSegments([10, 20, 0], [110, 70, 0])
+    const parent = new THREE.Group()
+    parent.position.set(900_000, 1_800_000, 0)
+    parent.add(line)
+    parent.updateMatrixWorld(true)
+
+    expect(readBatchWorldOffset(line)).toEqual([
+      900_060,
+      1_800_045,
+      0
+    ])
   })
 })
