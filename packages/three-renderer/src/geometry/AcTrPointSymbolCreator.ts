@@ -452,12 +452,11 @@ export class AcTrPointSymbolCreator {
 
   create(
     displayMode: number | null = null,
-    point: AcGePoint3dLike = { x: 0, y: 0, z: 0 }
+    _point: AcGePoint3dLike = { x: 0, y: 0, z: 0 }
   ): AcTrPointSymbolGeometry {
     const result: AcTrPointSymbolGeometry = {}
     if (displayMode == null || displayMode == 0) {
-      _vector3.copy(point)
-      result.point = new THREE.BufferGeometry().setFromPoints([_vector3])
+      result.point = new THREE.BufferGeometry().setFromPoints([_originPoint])
     } else if (displayMode == 1) {
       // Display nothing if the pdmode is equal to 1
     } else {
@@ -467,13 +466,11 @@ export class AcTrPointSymbolCreator {
           `[AcTrPointSymbolCreator] Invalid point type value: '${displayMode}'!`
         )
       } else {
-        _vector3.copy(point)
-        _matrix.identity().makeTranslation(_vector3)
-        result.line = pointSymbolGeometry.clone().applyMatrix4(_matrix)
+        result.line = pointSymbolGeometry.clone()
 
         // For those display mode, there is one point at the center of point symbol
         if (displayMode == 32 || displayMode == 64 || displayMode == 96) {
-          result.point = new THREE.BufferGeometry().setFromPoints([_vector3])
+          result.point = new THREE.BufferGeometry().setFromPoints([_originPoint])
         }
       }
     }
@@ -495,5 +492,4 @@ export class AcTrPointSymbolCreator {
   }
 }
 
-const _matrix = /*@__PURE__*/ new THREE.Matrix4()
-const _vector3 = /*@__PURE__*/ new THREE.Vector3()
+const _originPoint = /*@__PURE__*/ new THREE.Vector3(0, 0, 0)
