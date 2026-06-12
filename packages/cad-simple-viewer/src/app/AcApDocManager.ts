@@ -1,14 +1,12 @@
 import {
   AcCmColor,
   AcCmEventManager,
-  AcDbDatabase,
   AcDbDatabaseConverterManager,
   AcDbDxfConverter,
   AcDbFileType,
   acdbHostApplicationServices,
   AcDbProgressdEventArgs,
   AcDbSysVarManager,
-  AcGeBox2d,
   log
 } from '@mlightcad/data-model'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
@@ -1189,7 +1187,10 @@ export class AcApDocManager {
       //    actual paper to a grain.
       //
       // 2. **Otherwise**: poll `zoomToFitDrawing` and frame batch-derived
-      //    geometry bounds once entities land.
+      //    geometry bounds once entities land. Do not use database
+      //    EXTMIN/EXTMAX for a provisional zoom — real-world DXFs often
+      //    carry stale header extents that diverge wildly from rendered
+      //    geometry (e.g. outlier entities at unrelated coordinates).
       //
       // The pre-fix code used `db.extmin/db.extmax` (always model-space
       // EXTMIN/EXTMAX sysvars) even when opening into paper, landing on
@@ -1208,11 +1209,8 @@ export class AcApDocManager {
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
         view.zoomTo(layoutLimits)
       } else {
-        const extentsBox = this.resolveModelSpaceExtentsBox(db)
         if (progressiveRendering) {
-          view.beginProgressiveOpenFit(extentsBox)
-        } else if (extentsBox && !extentsBox.isEmpty()) {
-          view.zoomTo(extentsBox)
+          view.beginProgressiveOpenFit()
         }
         view.zoomToFitDrawing()
       }
@@ -1289,26 +1287,6 @@ export class AcApDocManager {
   private resetOpenFileProgress() {
     this._openFileProgressPeak = 0
     this._openFileProgressStage = undefined
-  }
-
-  /**
-   * Builds a model-space extents box from database EXTMIN/EXTMAX sysvars.
-   *
-   * Used only for an immediate provisional zoom at document open so entities
-   * become visible while the view layer still batch-converts geometry.
-   */
-  private resolveModelSpaceExtentsBox(db: AcDbDatabase) {
-    const extmin = db.extmin
-    const extmax = db.extmax
-    if (!extmin || !extmax) {
-      return undefined
-    }
-
-    const box = new AcGeBox2d(
-      { x: extmin.x, y: extmin.y },
-      { x: extmax.x, y: extmax.y }
-    )
-    return box.isEmpty() ? undefined : box
   }
 
   /**
