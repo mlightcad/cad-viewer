@@ -565,12 +565,9 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * Enables progressive camera framing while entities are batch-converted at
    * document open. Pair with {@link zoomToFitDrawing} for the final accurate fit.
-   *
-   * @param initialBox - Optional provisional extents (e.g. EXTMIN/EXTMAX) applied
-   * before the first converted entities land.
    */
-  beginProgressiveOpenFit(initialBox?: AcGeBox2d) {
-    this._progressiveOpenFit.begin(initialBox, this._numOfEntitiesToProcess)
+  beginProgressiveOpenFit() {
+    this._progressiveOpenFit.begin(this._numOfEntitiesToProcess)
   }
 
   /**

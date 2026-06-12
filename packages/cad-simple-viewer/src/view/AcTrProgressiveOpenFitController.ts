@@ -11,9 +11,8 @@ export type AcTrProgressiveOpenFitZoomFn = (
  * being batch-converted into the scene.
  *
  * Responsibilities:
- * - Provisional fit from database extents (EXTMIN/EXTMAX)
- * - Throttled incremental fit for large drawings without authoritative extents
- * - Final fit once conversion completes
+ * - Throttled incremental fit for large drawings while entities convert
+ * - Final fit once conversion completes (always from batch geometry bounds)
  * - Stop auto-framing when the user pans or zooms manually
  * - Yield to the render loop so geometry appears progressively
  *
@@ -30,7 +29,6 @@ export class AcTrProgressiveOpenFitController {
   private userAdjusted = false
   private programmaticDepth = 0
   private incrementalEnabled = false
-  private usedInitialExtents = false
   private initialPendingCount = 0
   private lastFittedBox?: AcGeBox2d
   private lastZoomAt = 0
@@ -44,18 +42,13 @@ export class AcTrProgressiveOpenFitController {
   /**
    * Starts progressive open framing for the current document open operation.
    */
-  begin(initialBox: AcGeBox2d | undefined, pendingEntityCount: number) {
+  begin(pendingEntityCount: number) {
     this.active = true
     this.userAdjusted = false
     this.lastZoomAt = 0
     this.initialPendingCount = pendingEntityCount
-    this.usedInitialExtents = !!(initialBox && !initialBox.isEmpty())
     this.lastFittedBox = undefined
-    this.incrementalEnabled = this.shouldEnableIncrementalFit(initialBox)
-
-    if (initialBox && !initialBox.isEmpty()) {
-      this.applyZoom(initialBox)
-    }
+    this.incrementalEnabled = this.shouldEnableIncrementalFit()
   }
 
   /** Ends progressive open framing. */
@@ -67,10 +60,10 @@ export class AcTrProgressiveOpenFitController {
 
   /**
    * Applies the terminal fit after all entities are converted, unless the user
-   * already adjusted the view or a small drawing was framed by database extents.
+   * already adjusted the view manually.
    */
   applyFinalFit(resolveFitBox: () => AcGeBox2d | undefined) {
-    if (this.userAdjusted || this.shouldSkipFinalFit()) {
+    if (this.userAdjusted) {
       return
     }
 
@@ -139,21 +132,10 @@ export class AcTrProgressiveOpenFitController {
     this.applyZoom(box)
   }
 
-  private shouldEnableIncrementalFit(initialBox?: AcGeBox2d) {
-    if (initialBox && !initialBox.isEmpty()) {
-      return false
-    }
+  private shouldEnableIncrementalFit() {
     return (
       this.initialPendingCount >=
       AcTrProgressiveOpenFitController.SMALL_ENTITY_THRESHOLD
-    )
-  }
-
-  private shouldSkipFinalFit() {
-    return (
-      this.usedInitialExtents &&
-      this.initialPendingCount <
-        AcTrProgressiveOpenFitController.SMALL_ENTITY_THRESHOLD
     )
   }
 
