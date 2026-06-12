@@ -18,14 +18,14 @@ import {
 } from '../src/util/AcTrObjectUserData'
 
 type GeometryHost = THREE.Object3D & {
-  box: THREE.Box3
+  wcsBbox: THREE.Box3
   computeGeometryBox: () => THREE.Box3
   hasGeometry: (object: THREE.Object3D) => boolean
 }
 
 type RaycastHost = THREE.Object3D & {
   _mtext?: Pick<MTextObject, 'raycast'>
-  box: THREE.Box3
+  wcsBbox: THREE.Box3
 }
 
 const privateMethods = AcTrMText.prototype as unknown as {
@@ -48,7 +48,7 @@ const batchPolicy: AcTrBatchDrawPolicy = {
   resolveDrawMode: () => 'batch'
 }
 
-describe('AcTrMText', () => {
+describe('AcTrMText wcsBbox', () => {
   it('computes the selection box from transformed rendered child geometry', () => {
     const host = createGeometryHost()
     host.add(createBoxMesh({ x: 10, y: 20, z: 0 }))
@@ -72,8 +72,8 @@ describe('AcTrMText', () => {
       createMTextObject(logicalMTextBox)
     )
 
-    expect(host.box.min.toArray()).toEqual([10, 18, 0])
-    expect(host.box.max.toArray()).toEqual([14, 24, 0])
+    expect(host.wcsBbox.min.toArray()).toEqual([10, 18, 0])
+    expect(host.wcsBbox.max.toArray()).toEqual([14, 24, 0])
   })
 
   it('ignores a disjoint renderer-provided mtext box', () => {
@@ -89,8 +89,8 @@ describe('AcTrMText', () => {
       createMTextObject(offsetMTextBox)
     )
 
-    expect(host.box.min.toArray()).toEqual([10, 20, 0])
-    expect(host.box.max.toArray()).toEqual([14, 22, 0])
+    expect(host.wcsBbox.min.toArray()).toEqual([10, 20, 0])
+    expect(host.wcsBbox.max.toArray()).toEqual([14, 22, 0])
   })
 
   it('falls back to the renderer-provided mtext box when there is no child geometry', () => {
@@ -102,10 +102,12 @@ describe('AcTrMText', () => {
 
     privateMethods.updateSelectionBox.call(host, createMTextObject(fallbackBox))
 
-    expect(host.box.min.toArray()).toEqual([100, 100, 0])
-    expect(host.box.max.toArray()).toEqual([101, 101, 0])
+    expect(host.wcsBbox.min.toArray()).toEqual([100, 100, 0])
+    expect(host.wcsBbox.max.toArray()).toEqual([101, 101, 0])
   })
+})
 
+describe('AcTrMText', () => {
   it('keeps precise mtext raycast hits when the renderer reports an intersection', () => {
     const raycaster = createRaycaster()
     const hitPoint = new THREE.Vector3(0, 0, 0)
@@ -115,7 +117,7 @@ describe('AcTrMText', () => {
       object: new THREE.Object3D()
     }
     const host = createRaycastHost({
-      box: createSelectableBox(),
+      wcsBbox: createSelectableBox(),
       mtextRaycast: (_raycaster, intersects) => {
         intersects.push(rendererHit)
       }
@@ -130,7 +132,7 @@ describe('AcTrMText', () => {
   it('uses the entity selection box as a raycast fallback when mtext layout misses', () => {
     const raycaster = createRaycaster()
     const host = createRaycastHost({
-      box: createSelectableBox(),
+      wcsBbox: createSelectableBox(),
       mtextRaycast: jest.fn()
     })
     const intersects: THREE.Intersection[] = []
@@ -147,7 +149,7 @@ describe('AcTrMText', () => {
   it('does not report a fallback raycast hit when the selection box is empty', () => {
     const raycaster = createRaycaster()
     const host = createRaycastHost({
-      box: new THREE.Box3(),
+      wcsBbox: new THREE.Box3(),
       mtextRaycast: jest.fn()
     })
     const intersects: THREE.Intersection[] = []
@@ -217,18 +219,18 @@ describe('AcTrMText', () => {
 
 function createGeometryHost(): GeometryHost {
   const host = new THREE.Object3D() as GeometryHost
-  host.box = new THREE.Box3()
+  host.wcsBbox = new THREE.Box3()
   host.computeGeometryBox = privateMethods.computeGeometryBox
   host.hasGeometry = privateMethods.hasGeometry
   return host
 }
 
 function createRaycastHost(options: {
-  box: THREE.Box3
+  wcsBbox: THREE.Box3
   mtextRaycast: Pick<MTextObject, 'raycast'>['raycast']
 }): RaycastHost {
   const host = new THREE.Object3D() as RaycastHost
-  host.box = options.box
+  host.wcsBbox = options.wcsBbox
   host._mtext = {
     raycast: options.mtextRaycast
   }

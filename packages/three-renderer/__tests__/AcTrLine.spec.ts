@@ -4,6 +4,7 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
 import type { AcTrBatchDrawPolicy } from '../src/draw/AcTrBatchDrawPolicy'
 import { RTE_REBASE_THRESHOLD } from '../src/draw/AcTrBatchDrawPolicy'
+import { expectWcsBboxCloseTo } from './helpers/expectWcsBbox'
 import { AcTrLine } from '../src/object/AcTrLine'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
@@ -132,5 +133,39 @@ describe('AcTrLine', () => {
     expect(drawable.frustumCulled).toBe(false)
     expect(getMaxAbsPositionComponent(drawable.geometry)).toBeLessThan(1000)
     expect(drawable.position.x).toBeCloseTo(largeX + 50, 0)
+  })
+})
+
+describe('AcTrLine wcsBbox', () => {
+  it('stores endpoint bounds in world coordinates', () => {
+    const line = new AcTrLine(
+      [
+        { x: 3, y: 4, z: 0 },
+        { x: 13, y: 14, z: 0 }
+      ],
+      defaultTraits,
+      new AcTrRenderContext(),
+      false
+    )
+
+    expectWcsBboxCloseTo(line.wcsBbox, [3, 4, 0], [13, 14, 0])
+  })
+
+  it('keeps wcsBbox in world coordinates when geometry is rebased locally', () => {
+    const line = new AcTrLine(
+      [
+        { x: largeX, y: 2_000_000, z: 0 },
+        { x: largeX + 100, y: 2_000_050, z: 0 }
+      ],
+      defaultTraits,
+      new AcTrRenderContext()
+    )
+
+    expectWcsBboxCloseTo(
+      line.wcsBbox,
+      [largeX, 2_000_000, 0],
+      [largeX + 100, 2_000_050, 0],
+      0
+    )
   })
 })

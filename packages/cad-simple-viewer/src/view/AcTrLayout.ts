@@ -119,7 +119,7 @@ export class AcTrLayout {
    * Gets the bounding box that contains all entities in this layout.
    *
    * Derived from packed batch vertex buffers (same source as GPU draw data),
-   * not from accumulated {@link AcTrEntity.box} metadata.
+   * not from accumulated {@link AcTrEntity.wcsBbox} metadata.
    *
    * @returns The layout's bounding box
    */
@@ -587,7 +587,7 @@ export class AcTrLayout {
   }
 
   private registerEntitySpatialIndex(entity: AcTrEntity) {
-    const box = entity.box
+    const box = entity.wcsBbox
     this._spatialIndex.insert({
       minX: box.min.x,
       minY: box.min.y,

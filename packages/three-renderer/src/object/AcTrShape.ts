@@ -94,9 +94,9 @@ export class AcTrShape extends AcTrEntity {
     const previousLength = intersects.length
 
     this._rendered?.raycast(raycaster, intersects)
-    if (intersects.length > previousLength || this.box.isEmpty()) return
+    if (intersects.length > previousLength || this.wcsBbox.isEmpty()) return
 
-    _raycastBox.copy(this.box).applyMatrix4(this.matrixWorld)
+    _raycastBox.copy(this.wcsBbox)
     if (raycaster.ray.intersectBox(_raycastBox, _raycastPoint)) {
       intersects.push({
         distance: raycaster.ray.origin.distanceTo(_raycastPoint),
@@ -137,14 +137,14 @@ export class AcTrShape extends AcTrEntity {
   private updateSelectionBox(rendered: MTextObject) {
     const geometryBox = this.computeGeometryBox()
     if (geometryBox.isEmpty()) {
-      this.box = rendered.box
+      this.wcsBbox = rendered.box
       return
     }
     if (!rendered.box.isEmpty() && rendered.box.intersectsBox(geometryBox)) {
-      this.box = geometryBox.clone().union(rendered.box)
+      this.wcsBbox = geometryBox.clone().union(rendered.box)
       return
     }
-    this.box = geometryBox
+    this.wcsBbox = geometryBox
   }
 
   private computeGeometryBox() {

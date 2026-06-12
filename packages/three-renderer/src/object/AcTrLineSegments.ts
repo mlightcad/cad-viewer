@@ -86,7 +86,7 @@ export class AcTrLineSegments extends AcTrEntity {
 
   override resolveDrawMode(): AcTrDrawMode {
     return this.batchDrawPolicy.resolveDrawMode({
-      anchor: resolveAnchorFromBox(this.box)
+      anchor: resolveAnchorFromBox(this.wcsBbox)
     })
   }
 
@@ -100,7 +100,7 @@ export class AcTrLineSegments extends AcTrEntity {
     }
     const worldBox = boundingBox.clone()
     worldBox.translate(localOrigin)
-    this.box = worldBox
+    this.wcsBbox = worldBox
   }
 }
 

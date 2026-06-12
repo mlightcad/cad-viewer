@@ -143,8 +143,7 @@ export function resolveAnchorFromPoints(
  * Empty boxes yield `undefined`, which causes coordinate-based policies to
  * fall back to `'batch'`.
  *
- * @param box - Entity geometry bounds in drawing/world coordinates (without
- *   entity transform applied).
+ * @param box - Entity WCS bounding box.
  * @returns Bounding-box center, or `undefined` when `box` is empty.
  */
 export function resolveAnchorFromBox(

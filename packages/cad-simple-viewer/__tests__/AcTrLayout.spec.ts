@@ -104,14 +104,14 @@ function createLayerInfo(name = '0') {
 function createEntity(
   objectId: string,
   layerName = '0'
-): AcTrEntity & { box: THREE.Box3 } {
+): AcTrEntity & { wcsBbox: THREE.Box3 } {
   return {
     objectId,
     layerName,
     ownerId: 'layout-1',
     userData: {},
-    box: new THREE.Box3(new THREE.Vector3(1, 1, 0), new THREE.Vector3(2, 2, 0))
-  } as AcTrEntity & { box: THREE.Box3 }
+    wcsBbox: new THREE.Box3(new THREE.Vector3(1, 1, 0), new THREE.Vector3(2, 2, 0))
+  } as AcTrEntity & { wcsBbox: THREE.Box3 }
 }
 
 describe('AcTrLayout bounding box', () => {

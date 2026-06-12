@@ -124,12 +124,12 @@ export class AcTrMText extends AcTrEntity {
     // a hit, keep that result because it is usually more precise than the
     // entity-level fallback below.
     this._mtext?.raycast(raycaster, intersects)
-    if (intersects.length > previousLength || this.box.isEmpty()) return
+    if (intersects.length > previousLength || this.wcsBbox.isEmpty()) return
 
     // Fallback path: use the selection box derived from rendered geometry.  This
     // is what protects point selection when the renderer's logical MTEXT box is
     // shifted by attachment/alignment handling.
-    _raycastBox.copy(this.box).applyMatrix4(this.matrixWorld)
+    _raycastBox.copy(this.wcsBbox)
     if (raycaster.ray.intersectBox(_raycastBox, _raycastPoint)) {
       intersects.push({
         distance: raycaster.ray.origin.distanceTo(_raycastPoint),
@@ -198,14 +198,14 @@ export class AcTrMText extends AcTrEntity {
   private updateSelectionBox(mtext: MTextObject) {
     const geometryBox = this.computeGeometryBox()
     if (geometryBox.isEmpty()) {
-      this.box = mtext.box
+      this.wcsBbox = mtext.box
       return
     }
     if (!mtext.box.isEmpty() && mtext.box.intersectsBox(geometryBox)) {
-      this.box = geometryBox.clone().union(mtext.box)
+      this.wcsBbox = geometryBox.clone().union(mtext.box)
       return
     }
-    this.box = geometryBox
+    this.wcsBbox = geometryBox
   }
 
   /**
