@@ -163,6 +163,33 @@ export function resolveAnchorFromBox(
 }
 
 /**
+ * Batch-draw policy that always returns `'batch'`.
+ *
+ * Use when every policy-delegating entity should merge in
+ * {@link AcTrBatchedGroup}, regardless of world coordinates. Entity types
+ * that must never batch (images, pattern hatches, …) still return `'unbatch'`
+ * from their own {@link AcTrEntity.resolveDrawMode}.
+ */
+export const alwaysBatchDrawPolicy: AcTrBatchDrawPolicy = {
+  resolveDrawMode() {
+    return 'batch'
+  }
+}
+
+/**
+ * Batch-draw policy that always returns `'unbatch'`.
+ *
+ * Use when every policy-delegating entity should stay on the unbatched draw
+ * path. Entity types that must never batch behave the same; this policy only
+ * affects coordinate-based delegates that would otherwise batch.
+ */
+export const alwaysUnbatchDrawPolicy: AcTrBatchDrawPolicy = {
+  resolveDrawMode() {
+    return 'unbatch'
+  }
+}
+
+/**
  * Default batch-draw policy used by {@link AcTrEntity} when none is injected.
  *
  * Evaluates `context.anchor ?? context.position` with

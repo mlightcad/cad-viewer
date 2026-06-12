@@ -1,5 +1,7 @@
 import {
   AcApDocManager,
+  AcEdBaseView,
+  AcTrView2d,
   getDrawingExportBaseName,
   resolveExportDownloadName,
   yieldToMain
@@ -31,6 +33,31 @@ export class AcApHtmlConvertor {
   private readonly _snapshotBuilder = new AcApHtmlSnapshotBuilder()
 
   /**
+   * Prepares the active 2D view for HTML snapshot export.
+   *
+   * Ensures drawable entities skipped during interactive viewing (for example on
+   * off layers) are converted into the scene. Converted geometry remains in the
+   * live scene after export completes.
+   */
+  async prepareAcTrView2dForHtmlExport(
+    view: AcEdBaseView | null | undefined
+  ): Promise<AcTrView2d> {
+    if (!view || !('cadScene' in view) || !view.cadScene) {
+      throw new Error(
+        'CAD scene is not available. Open a drawing before exporting to HTML.'
+      )
+    }
+    if (!(view instanceof AcTrView2d)) {
+      throw new Error(
+        'HTML export requires a 2D CAD view. Open a drawing before exporting.'
+      )
+    }
+    await view.ensureEntitiesConvertedForExport()
+    await yieldToMain()
+    return view
+  }
+
+  /**
    * Exports the document currently open in {@link AcApDocManager}.
    *
    * @param fileName - Optional base name for the download (without extension).
@@ -46,12 +73,8 @@ export class AcApHtmlConvertor {
       await yieldToMain()
 
       const document = docManager.curDocument
-      const view = docManager.curView
-      if (!view?.cadScene) {
-        throw new Error(
-          'CAD scene is not available. Open a drawing before exporting to HTML.'
-        )
-      }
+      const view = await this.prepareAcTrView2dForHtmlExport(docManager.curView)
+
       const sourceName = fileName || document.fileName || document.docTitle
       const snapshot = await this._snapshotBuilder.buildAsync(
         view.cadScene,

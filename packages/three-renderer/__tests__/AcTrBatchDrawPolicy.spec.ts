@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 
 import {
+  alwaysBatchDrawPolicy,
+  alwaysUnbatchDrawPolicy,
   defaultBatchDrawPolicy,
   isLargeWorldCoordinatePoint,
   resolveAnchorFromBox,
@@ -31,6 +33,32 @@ describe('AcTrBatchDrawPolicy', () => {
         anchor: { x: 0, y: 0, z: 0 }
       })
     ).toBe('batch')
+  })
+
+  it('always batches regardless of coordinates', () => {
+    expect(
+      alwaysBatchDrawPolicy.resolveDrawMode({
+        position: { x: RTE_REBASE_THRESHOLD + 500, y: 0, z: 0 }
+      })
+    ).toBe('batch')
+    expect(
+      alwaysBatchDrawPolicy.resolveDrawMode({
+        anchor: { x: 0, y: 0, z: 0 }
+      })
+    ).toBe('batch')
+  })
+
+  it('always unbatches regardless of coordinates', () => {
+    expect(
+      alwaysUnbatchDrawPolicy.resolveDrawMode({
+        position: { x: 10, y: 20, z: 0 }
+      })
+    ).toBe('unbatch')
+    expect(
+      alwaysUnbatchDrawPolicy.resolveDrawMode({
+        anchor: { x: 0, y: 0, z: 0 }
+      })
+    ).toBe('unbatch')
   })
 
   it('defaults to unbatch at large coordinates', () => {

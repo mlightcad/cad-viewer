@@ -55,6 +55,8 @@ import {
   readLayoutBackgroundColor
 } from '../editor/global/AcEdUiColor'
 import { AcTrGeometryUtil } from '../util'
+import { AcTrEntityDisplayController } from './AcTrEntityDisplayController'
+import { AcTrLayer } from './AcTrLayer'
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
 import { sortPickResults } from './AcTrPickResultUtil'
@@ -176,6 +178,18 @@ export class AcTrView2d extends AcEdBaseView {
   private _externallyFramedLayouts: Set<AcDbObjectId> = new Set()
   /** Progressive camera framing while entities batch-convert at document open. */
   private readonly _progressiveOpenFit: AcTrProgressiveOpenFitController
+  /** Entity display policy for layer-aware conversion skipping. */
+  private readonly _entityDisplay: AcTrEntityDisplayController
+  /**
+   * Layer names with an in-flight {@link convertMissingEntitiesOnLayer} pass.
+   *
+   * {@link updateLayer} triggers that conversion fire-and-forget when a layer
+   * becomes visible again. Rapid or repeated layer-on events for the same name
+   * would otherwise start parallel {@link batchConvert} runs over the same
+   * pending entities. `hasEntity` prevents duplicate scene entries, but not the
+   * wasted conversion work — this set skips re-entry until the current pass ends.
+   */
+  private readonly _convertingLayers = new Set<string>()
   /**
    * When true, entity conversion during document open is deferred across
    * event-loop turns so geometry appears incrementally.
@@ -461,6 +475,9 @@ export class AcTrView2d extends AcEdBaseView {
         this._isDirty = true
       }
     )
+    this._entityDisplay = new AcTrEntityDisplayController(layerName =>
+      this.resolveLayerInfo(layerName)
+    )
     this.initialize()
     this.onWindowResize()
     this._isDirty = true
@@ -698,6 +715,40 @@ export class AcTrView2d extends AcEdBaseView {
    */
   get cadScene() {
     return this._scene
+  }
+
+  /**
+   * Converts every drawable entity into the scene before offline export.
+   *
+   * Interactive viewing skips off/frozen layers for performance; HTML snapshots
+   * store layer visibility separately and need full geometry so the exported
+   * layer panel can toggle layers on later.
+   *
+   * Converted geometry remains in the live scene after this call completes.
+   */
+  async ensureEntitiesConvertedForExport() {
+    const db = AcApDocManager.instance.curDocument.database
+    const pending: AcDbEntity[] = []
+
+    for (const [layoutBtrId] of this._scene.layouts) {
+      const blockTableRecord = db.tables.blockTable.getIdAt(layoutBtrId)
+      if (!blockTableRecord) {
+        continue
+      }
+      pending.push(
+        ...this._entityDisplay.collectMissingEntitiesForExport(
+          blockTableRecord,
+          objectId => this.hasEntity(objectId)
+        )
+      )
+    }
+
+    if (pending.length === 0) {
+      return
+    }
+
+    this._numOfEntitiesToProcess += pending.length
+    await this.batchConvert(pending, { forExport: true })
   }
 
   /**
@@ -1127,6 +1178,14 @@ export class AcTrView2d extends AcEdBaseView {
         layer.updateMaterial(Number(id), material)
       }
     })
+
+    if (
+      this._entityDisplay.layerVisibilityMayHaveChanged(changes) &&
+      AcTrLayer.isLayerVisible(this.toLayerInfo(layer))
+    ) {
+      void this.convertMissingEntitiesOnLayer(layer.name)
+    }
+
     this._isDirty = true
   }
 
@@ -1658,6 +1717,48 @@ export class AcTrView2d extends AcEdBaseView {
     }
   }
 
+  private resolveLayerInfo(layerName: string) {
+    const layer =
+      AcApDocManager.instance.curDocument.database.tables.layerTable.getAt(
+        layerName
+      )
+    return layer ? this.toLayerInfo(layer) : undefined
+  }
+
+  /**
+   * Converts entities on the given layer that were skipped while the layer was
+   * off/frozen and therefore are not yet present in the scene.
+   */
+  private async convertMissingEntitiesOnLayer(layerName: string) {
+    if (this._convertingLayers.has(layerName)) {
+      return
+    }
+    this._convertingLayers.add(layerName)
+    try {
+      const db = AcApDocManager.instance.curDocument.database
+      const blockTableRecord = db.tables.blockTable.getIdAt(
+        this.activeLayoutBtrId
+      )
+      if (!blockTableRecord) {
+        return
+      }
+
+      const pending = this._entityDisplay.collectMissingEntitiesOnLayer(
+        layerName,
+        blockTableRecord,
+        objectId => this.hasEntity(objectId)
+      )
+      if (pending.length === 0) {
+        return
+      }
+
+      this._numOfEntitiesToProcess += pending.length
+      await this.batchConvert(pending)
+    } finally {
+      this._convertingLayers.delete(layerName)
+    }
+  }
+
   private drawEntity(entity: AcDbEntity, delay?: boolean) {
     return entity.worldDraw(this._renderer, delay) as AcTrEntity | null
   }
@@ -1724,8 +1825,11 @@ export class AcTrView2d extends AcEdBaseView {
    * @param entities - The database entities
    * @returns The converted three entities
    */
-  private async batchConvert(entities: AcDbEntity[]) {
-    const progressive = this._progressiveRendering
+  private async batchConvert(
+    entities: AcDbEntity[],
+    options: { forExport?: boolean } = {}
+  ) {
+    const progressive = this._progressiveRendering && !options.forExport
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
       try {
@@ -1747,7 +1851,10 @@ export class AcTrView2d extends AcEdBaseView {
           continue
         }
 
-        if (!entity.visibility) {
+        const shouldConvert = options.forExport
+          ? this._entityDisplay.shouldConvertForExport(entity)
+          : this._entityDisplay.shouldConvert(entity)
+        if (!shouldConvert) {
           continue
         }
 

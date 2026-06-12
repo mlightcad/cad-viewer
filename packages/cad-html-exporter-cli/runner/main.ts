@@ -1,4 +1,8 @@
-import { packHtml, AcApHtmlSnapshotBuilder } from '@mlightcad/cad-html-plugin'
+import {
+  AcApHtmlConvertor,
+  packHtml,
+  AcApHtmlSnapshotBuilder
+} from '@mlightcad/cad-html-plugin'
 import { AcApDocManager, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
 declare global {
@@ -52,7 +56,10 @@ window.exportCadToHtml = async (fileName, bytes, options = {}) => {
   await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
   await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
 
-  const view = docManager.curView
+  const view = await new AcApHtmlConvertor().prepareAcTrView2dForHtmlExport(
+    docManager.curView
+  )
+
   const snapshot = await new AcApHtmlSnapshotBuilder().buildAsync(
     view.cadScene,
     docManager.curDocument.database,
