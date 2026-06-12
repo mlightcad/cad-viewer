@@ -1,5 +1,5 @@
 import { AcEdPromptStringOptions } from '../prompt/AcEdPromptStringOptions'
-import { AcEdInputHandler } from './AcEdInputHandler'
+import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler'
 
 /**
  * Validates string input according to {@link AcEdPromptStringOptions}.
@@ -26,5 +26,9 @@ export class AcEdStringHandler implements AcEdInputHandler<string> {
     }
 
     return value
+  }
+
+  parseCommandLine(token: string, _context?: AcEdPointInputContext) {
+    return this.parse(token)
   }
 }

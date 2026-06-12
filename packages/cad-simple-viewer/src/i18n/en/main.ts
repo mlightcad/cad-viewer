@@ -8,6 +8,7 @@ export default {
     showMessages: 'Show message history',
     canceled: '*Canceled*',
     noHistory: '(no history)',
+    invalidInput: 'Invalid input.',
     close: 'Close command line'
   },
   inputManager: {

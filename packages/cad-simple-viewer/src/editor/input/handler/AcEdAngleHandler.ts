@@ -1,5 +1,5 @@
 import { AcEdPromptAngleOptions } from '../prompt/AcEdPromptAngleOptions'
-import { AcEdInputHandler } from './AcEdInputHandler'
+import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler'
 
 /**
  * Validates angular numeric input.
@@ -28,5 +28,11 @@ export class AcEdAngleHandler implements AcEdInputHandler<number> {
     }
 
     return n
+  }
+
+  parseCommandLine(token: string, _context?: AcEdPointInputContext) {
+    const trimmed = token.trim()
+    if (!trimmed) return null
+    return this.parse(trimmed)
   }
 }

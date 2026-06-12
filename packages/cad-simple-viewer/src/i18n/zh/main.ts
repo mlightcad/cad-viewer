@@ -8,6 +8,7 @@ export default {
     showMessages: '显示消息历史',
     canceled: '*已取消*',
     noHistory: '(无历史记录)',
+    invalidInput: '输入无效。',
     close: '关闭命令行'
   },
   inputManager: {
