@@ -90,7 +90,7 @@ export class AcTrLine extends AcTrEntity {
 
   override resolveDrawMode(): AcTrDrawMode {
     return this.batchDrawPolicy.resolveDrawMode({
-      anchor: resolveAnchorFromBox(this.box)
+      anchor: resolveAnchorFromBox(this.wcsBbox)
     })
   }
 
@@ -104,7 +104,7 @@ export class AcTrLine extends AcTrEntity {
     }
     const worldBox = boundingBox.clone()
     worldBox.translate(localOrigin)
-    this.box = worldBox
+    this.wcsBbox = worldBox
   }
 
   private computeLocalOrigin(points: AcGePoint3dLike[]) {

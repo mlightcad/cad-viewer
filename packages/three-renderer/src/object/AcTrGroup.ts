@@ -18,7 +18,7 @@ export interface AcTrEntityBox {
  */
 export class AcTrGroup extends AcTrEntity {
   private _isOnTheSameLayer: boolean
-  private _boxes: AcTrEntityBox[] = []
+  private _wcsChildBoxes: AcTrEntityBox[] = []
 
   constructor(entities: AcTrEntity[], context: AcTrRenderContext) {
     super(context)
@@ -27,10 +27,10 @@ export class AcTrGroup extends AcTrEntity {
       if (Array.isArray(entity)) {
         const subGroup = new AcTrEntity(context)
         this.add(subGroup)
-        this.box.union(subGroup.box)
+        this.wcsBbox.union(subGroup.wcsBbox)
       } else {
         this.add(entity)
-        this.box.union(entity.box)
+        this.wcsBbox.union(entity.wcsBbox)
       }
       this.storeBoxes(entity)
     })
@@ -89,8 +89,9 @@ export class AcTrGroup extends AcTrEntity {
     return this._isOnTheSameLayer
   }
 
-  get boxes() {
-    return this._boxes
+  /** Per-child WCS bounding boxes used by the spatial index. */
+  get wcsChildBoxes() {
+    return this._wcsChildBoxes
   }
 
   /**
@@ -98,7 +99,9 @@ export class AcTrGroup extends AcTrEntity {
    */
   applyMatrix(matrix: AcGeMatrix3d) {
     const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
-    this._boxes.forEach(box => this.applyMatrixToEntityBox(box, threeMatrix))
+    this._wcsChildBoxes.forEach(box =>
+      this.applyMatrixToEntityBox(box, threeMatrix)
+    )
     super.applyMatrix(matrix)
   }
 
@@ -107,8 +110,8 @@ export class AcTrGroup extends AcTrEntity {
    */
   copy(object: AcTrGroup, recursive?: boolean) {
     this._isOnTheSameLayer = object._isOnTheSameLayer
-    this._boxes = []
-    object.boxes.forEach(box => this._boxes.push({ ...box }))
+    this._wcsChildBoxes = []
+    object.wcsChildBoxes.forEach(box => this._wcsChildBoxes.push({ ...box }))
     return super.copy(object, recursive)
   }
 
@@ -124,14 +127,14 @@ export class AcTrGroup extends AcTrEntity {
 
   private storeBoxes(object: THREE.Object3D) {
     if (object instanceof AcTrGroup) {
-      object._boxes.forEach(box => this._boxes.push(box))
+      object._wcsChildBoxes.forEach(box => this._wcsChildBoxes.push(box))
     } else if (object instanceof AcTrEntity) {
-      // only leaf entities should contribute to _boxes
-      this._boxes.push({
-        minX: object.box.min.x,
-        minY: object.box.min.y,
-        maxX: object.box.max.x,
-        maxY: object.box.max.y,
+      // only leaf entities should contribute to _wcsChildBoxes
+      this._wcsChildBoxes.push({
+        minX: object.wcsBbox.min.x,
+        minY: object.wcsBbox.min.y,
+        maxX: object.wcsBbox.max.x,
+        maxY: object.wcsBbox.max.y,
         id: object.objectId
       })
     }

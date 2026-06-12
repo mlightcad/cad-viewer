@@ -21,12 +21,12 @@ import { AcTrObject } from './AcTrObject'
  */
 export class AcTrEntity extends AcTrObject implements AcGiEntity {
   declare userData: AcTrEntityUserData
-  protected _box: THREE.Box3
+  protected _wcsBbox: THREE.Box3
   protected _basePoint?: AcGePoint3d
 
   constructor(context: AcTrRenderContext) {
     super(context)
-    this._box = new THREE.Box3()
+    this._wcsBbox = new THREE.Box3()
   }
 
   /**
@@ -46,15 +46,17 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   }
 
   /**
-   * The bounding box without considering transformation matrix applied on this object.
-   * If you want to get bounding box with transformation matrix, please call `applyMatrix4`
-   * for this box.
+   * Axis-aligned bounding box in world (WCS) coordinates.
+   *
+   * Used for spatial indexing, selection, and raycast fallback. Subclasses must
+   * populate this in WCS when geometry is built; {@link applyMatrix} updates it
+   * when a block or insert transform is applied.
    */
-  get box() {
-    return this._box
+  get wcsBbox() {
+    return this._wcsBbox
   }
-  set box(box: THREE.Box3) {
-    this._box.copy(box)
+  set wcsBbox(box: THREE.Box3) {
+    this._wcsBbox.copy(box)
   }
 
   /**
@@ -342,7 +344,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
     this.applyMatrix4(threeMatrix)
     this.updateMatrixWorld(true)
-    this._box.applyMatrix4(threeMatrix)
+    this._wcsBbox.applyMatrix4(threeMatrix)
   }
 
   /**
@@ -423,7 +425,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     this.objectId = object.objectId
     this.ownerId = object.ownerId
     this.layerName = object.layerName
-    this.box = object.box
+    this.wcsBbox = object.wcsBbox
     return super.copy(object, recursive)
   }
 

@@ -266,13 +266,13 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
    * Creates or retrieves the child index for a group object.
    *
    * This is a convenience wrapper around `ensureChildIndex`, using the group's
-   * `objectId` and `boxes` as id and initialization data.
+   * `objectId` and {@link AcTrGroup.wcsChildBoxes} as id and initialization data.
    *
    * @param group Group providing id and child box items.
    * @returns Existing or newly created child index, or `undefined` when empty.
    */
   createChildIndex(group: AcTrGroup) {
-    return this.ensureChildIndex(group.objectId, group.boxes)
+    return this.ensureChildIndex(group.objectId, group.wcsChildBoxes)
   }
 
   /**

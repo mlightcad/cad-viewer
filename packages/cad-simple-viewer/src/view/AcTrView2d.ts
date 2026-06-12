@@ -56,6 +56,7 @@ import {
 } from '../editor/global/AcEdUiColor'
 import { AcTrGeometryUtil } from '../util'
 import { AcTrEntityDisplayController } from './AcTrEntityDisplayController'
+import { assertAcTrGroupWcsBboxesConsistent } from './AcTrGroupWcsBboxAssert'
 import { AcTrLayer } from './AcTrLayer'
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
@@ -1965,37 +1966,22 @@ export class AcTrView2d extends AcEdBaseView {
     const renderContext = group.renderContext
     const groupObjectId = group.objectId
     const groupLayerName = group.layerName
-    const worldGroupBox = group.box.clone()
-    worldGroupBox.applyMatrix4(group.matrix)
-    const groupChildBoxes: AcEdSpatialQueryResultItem[] = group.boxes.map(
-      box => {
-        const points = [
-          new THREE.Vector3(box.minX, box.minY, 0),
-          new THREE.Vector3(box.maxX, box.minY, 0),
-          new THREE.Vector3(box.maxX, box.maxY, 0),
-          new THREE.Vector3(box.minX, box.maxY, 0)
-        ]
-        for (const point of points) {
-          point.applyMatrix4(group.matrix)
-        }
-        let minX = Infinity
-        let minY = Infinity
-        let maxX = -Infinity
-        let maxY = -Infinity
-        for (const point of points) {
-          minX = Math.min(minX, point.x)
-          minY = Math.min(minY, point.y)
-          maxX = Math.max(maxX, point.x)
-          maxY = Math.max(maxY, point.y)
-        }
-        return {
-          minX,
-          minY,
-          maxX,
-          maxY,
-          id: box.id
-        }
-      }
+
+    // AcDbRenderingCache.draw (and similar paths such as AcDbTable) already call
+    // applyMatrix on the group, which updates wcsBbbox and wcsChildBoxes to WCS.
+    // Do not multiply group.matrix here — that would double-transform spatial bounds.
+    if (process.env.NODE_ENV !== 'production') {
+      assertAcTrGroupWcsBboxesConsistent(group)
+    }
+
+    const groupChildBoxes: AcEdSpatialQueryResultItem[] = group.wcsChildBoxes.map(
+      box => ({
+        minX: box.minX,
+        minY: box.minY,
+        maxX: box.maxX,
+        maxY: box.maxY,
+        id: box.id
+      })
     )
     objectsGroupByLayer.forEach((objects, layerName) => {
       // AutoCAD block rule: entities authored on layer "0" inherit the INSERT's layer.
@@ -2018,7 +2004,7 @@ export class AcTrView2d extends AcEdBaseView {
       // If block-definition entities are on layer "0", this bucket now uses the layer
       // of the block reference itself (effectiveLayerName).
       entity.layerName = effectiveLayerName
-      entity.box = worldGroupBox
+      entity.wcsBbox = group.wcsBbox.clone()
       const entityUserData = entity.userData as {
         spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
       }

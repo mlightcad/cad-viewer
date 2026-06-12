@@ -41,7 +41,7 @@ export class AcTrPoint extends AcTrEntity {
       pointSymbol.point ??
       new THREE.BufferGeometry().setFromPoints([_vector3.copy(point)])
     AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-    if (geometry.boundingBox) this.box.union(geometry.boundingBox)
+    if (geometry.boundingBox) this.wcsBbox.union(geometry.boundingBox)
     const material = this.styleManager.getPointsMaterial(traits)
     const pointObj = new THREE.Points(geometry, material)
     // Add the flag to check intersection using bounding box of the mesh
@@ -52,7 +52,7 @@ export class AcTrPoint extends AcTrEntity {
     if (pointSymbol.line) {
       const geometry = pointSymbol.line
       AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-      if (geometry.boundingBox) this.box.union(geometry.boundingBox)
+      if (geometry.boundingBox) this.wcsBbox.union(geometry.boundingBox)
       const material = this.styleManager.getLineMaterial(traits, true)
       const lineSegmentsObj = new THREE.LineSegments(geometry, material)
       const lineDrawable = getSceneDrawableUserData(lineSegmentsObj)

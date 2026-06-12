@@ -66,15 +66,15 @@ export class AcTrPolygon extends AcTrEntity {
         geometry.dispose()
         return
       }
-      this.box = boundingBox
+      this.wcsBbox = boundingBox
 
       this.addGradientPositionAttribute(geometry, traits)
 
       const gradientBounds = {
-        minX: this.box.min.x,
-        minY: this.box.min.y,
-        maxX: this.box.max.x,
-        maxY: this.box.max.y
+        minX: this.wcsBbox.min.x,
+        minY: this.wcsBbox.min.y,
+        maxX: this.wcsBbox.max.x,
+        maxY: this.wcsBbox.max.y
       }
       const material = this.styleManager.getFillMaterial(
         traits,
@@ -94,7 +94,7 @@ export class AcTrPolygon extends AcTrEntity {
       return 'unbatch'
     }
     return this.batchDrawPolicy.resolveDrawMode({
-      anchor: resolveAnchorFromBox(this.box)
+      anchor: resolveAnchorFromBox(this.wcsBbox)
     })
   }
 
