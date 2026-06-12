@@ -31,14 +31,8 @@ export class AcApSysVarCmd extends AcEdCommand {
       context.doc.database
     )
     const basePrompt = AcApI18n.t('jig.sysvar.prompt').trim()
-    const match = basePrompt.match(/([：:])\s*$/)
-    // Preserve the existing trailing colon style (Chinese or ASCII) if present.
-    const colon = match?.[1] ?? ':'
-    const promptCore = match
-      ? basePrompt.slice(0, match.index).trimEnd()
-      : basePrompt
     const suffix = currentValue == null ? '' : ` <${String(currentValue)}>`
-    const promptMessage = `${promptCore}${suffix}${colon}`
+    const promptMessage = `${basePrompt}${suffix}`
     const prompt = new AcEdPromptStringOptions(promptMessage)
     const result = await AcApDocManager.instance.editor.getString(prompt)
     if (result.status !== AcEdPromptStatus.OK || !result.stringResult) return
