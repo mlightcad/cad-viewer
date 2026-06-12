@@ -261,9 +261,19 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     const creator = AcTrPointSymbolCreator.instance
     userData.forEach(item => {
       if (item.position) {
-        const geometry = creator.create(displayMode, item.position)
+        const geometry = creator.create(displayMode)
         if (geometry.line) {
-          const geometryId = this.addGeometry(geometry.line)
+          const worldOffset = new THREE.Vector3(
+            item.position.x,
+            item.position.y,
+            item.position.z ?? 0
+          )
+          const geometryId = this.addGeometry(
+            geometry.line,
+            -1,
+            -1,
+            worldOffset
+          )
           this.setGeometryInfo(geometryId, item)
         }
       }
