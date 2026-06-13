@@ -5,6 +5,7 @@ export {
 } from './batch/AcTrBatchedGeometryInfo'
 export * from './draw'
 export { AcTrBatchedLine } from './batch/AcTrBatchedLine'
+export { AcTrBatchedLine2 } from './batch/AcTrBatchedLine2'
 export { AcTrBatchedMesh } from './batch/AcTrBatchedMesh'
 export { AcTrBatchedPoint } from './batch/AcTrBatchedPoint'
 export * from './object/AcTrObject'

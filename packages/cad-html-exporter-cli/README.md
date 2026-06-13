@@ -1,5 +1,8 @@
 # @mlightcad/cad-html-exporter-cli
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/@mlightcad/cad-html-exporter-cli.svg)](https://www.npmjs.com/package/@mlightcad/cad-html-exporter-cli)
+
 Node.js command-line example that converts a **DXF** or **DWG** file into a **self-contained offline HTML** viewer (same pipeline as the browser **Export HTML** command).
 
 The CLI drives a headless **Chromium** instance (Playwright) that runs the same viewer code path as `cad-simple-viewer-example`, then writes the packaged HTML to disk.

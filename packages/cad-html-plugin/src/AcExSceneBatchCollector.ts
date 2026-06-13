@@ -1,5 +1,6 @@
 import {
   AcTrBatchedLine,
+  AcTrBatchedLine2,
   AcTrBatchedMesh,
   AcTrBatchedPoint,
   getMaterialMetadata,
@@ -7,6 +8,8 @@ import {
   isBatchGeometryVisible
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 
 import {
   compactIndexedSlice,
@@ -224,6 +227,92 @@ export function exportActiveBatchedSlice(
   return { positions: new Float32Array(activeFloats) }
 }
 
+function appendSegmentFromAttribute(
+  target: number[],
+  attr: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
+  segmentIndex: number
+) {
+  target.push(attr.getX(segmentIndex), attr.getY(segmentIndex), attr.getZ(segmentIndex))
+}
+
+/**
+ * Extracts active wide-line segment data from a batched `LineSegments2` buffer.
+ * Each segment is exported as `[startX, startY, startZ, endX, endY, endZ]`.
+ */
+export function exportActiveBatchedLine2Slice(
+  batch: AcTrBatchedExportSource,
+  geometry: THREE.BufferGeometry
+): AcExBufferGeometrySlice {
+  const startAttr = geometry.getAttribute('instanceStart') as
+    | THREE.BufferAttribute
+    | THREE.InterleavedBufferAttribute
+    | undefined
+  const endAttr = geometry.getAttribute('instanceEnd') as
+    | THREE.BufferAttribute
+    | THREE.InterleavedBufferAttribute
+    | undefined
+  if (!startAttr || !endAttr) {
+    return { positions: new Float32Array(0) }
+  }
+
+  const { count } = batch.mappingStats
+  const activeFloats: number[] = []
+
+  for (let geometryId = 0; geometryId < count; geometryId++) {
+    let info: AcTrPackedGeometryInfo
+    try {
+      info = batch.getGeometryRangeAt(geometryId)
+    } catch {
+      continue
+    }
+    if (
+      !isBatchGeometryActive(info.flags) ||
+      !isBatchGeometryVisible(info.flags) ||
+      info.vertexCount <= 0
+    ) {
+      continue
+    }
+    const segmentStart = info.vertexStart
+    const segmentEnd = segmentStart + info.vertexCount
+    for (let segment = segmentStart; segment < segmentEnd; segment++) {
+      appendSegmentFromAttribute(activeFloats, startAttr, segment)
+      appendSegmentFromAttribute(activeFloats, endAttr, segment)
+    }
+  }
+
+  return { positions: new Float32Array(activeFloats) }
+}
+
+function exportLineSegments2Slice(
+  geometry: THREE.BufferGeometry
+): AcExBufferGeometrySlice {
+  const startAttr = geometry.getAttribute('instanceStart') as
+    | THREE.BufferAttribute
+    | THREE.InterleavedBufferAttribute
+    | undefined
+  const endAttr = geometry.getAttribute('instanceEnd') as
+    | THREE.BufferAttribute
+    | THREE.InterleavedBufferAttribute
+    | undefined
+  if (!startAttr || !endAttr || startAttr.count === 0) {
+    return { positions: new Float32Array(0) }
+  }
+
+  const activeFloats: number[] = []
+  for (let segment = 0; segment < startAttr.count; segment++) {
+    appendSegmentFromAttribute(activeFloats, startAttr, segment)
+    appendSegmentFromAttribute(activeFloats, endAttr, segment)
+  }
+  return { positions: new Float32Array(activeFloats) }
+}
+
+function readLineWidth(material: THREE.Material): number | undefined {
+  if (material instanceof LineMaterial) {
+    return material.linewidth
+  }
+  return undefined
+}
+
 function readMaterialStyle(material: THREE.Material): {
   color: number
   layer: string
@@ -311,6 +400,24 @@ function buildMeshBatch(
   }
 }
 
+function exportBatchedLine2(
+  batch: AcTrBatchedLine2
+): AcExLineBatch | undefined {
+  const slice = exportActiveBatchedLine2Slice(batch, batch.geometry)
+  if (slice.positions.length === 0) {
+    return undefined
+  }
+  const { color, layer } = readMaterialStyle(batch.material as THREE.Material)
+  const lineWidth = readLineWidth(batch.material as THREE.Material)
+  return {
+    layer,
+    color,
+    offset: readWorldOffset(batch),
+    lineWidth,
+    ...slice
+  }
+}
+
 function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
   const slice = exportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
@@ -365,8 +472,9 @@ function exportBatchedPoint(
 
 /**
  * Walks a THREE object subtree and collects line/mesh batches for HTML export.
- * Recognizes `AcTrBatchedLine`, `AcTrBatchedMesh`, `AcTrBatchedPoint`, and plain
- * `THREE.LineSegments` / `THREE.Mesh` nodes.
+ * Recognizes `AcTrBatchedLine`, `AcTrBatchedLine2`, `AcTrBatchedMesh`,
+ * `AcTrBatchedPoint`, and plain `THREE.LineSegments` / `LineSegments2` /
+ * `THREE.Mesh` nodes.
  *
  * @param root - Layout or scene root to traverse.
  * @returns Batches grouped by geometry kind, ready to attach to {@link AcExLayoutSnapshot}.
@@ -383,6 +491,11 @@ export function collectBatchesFromObject3D(
       if (batch) lineBatches.push(batch)
       return
     }
+    if (child instanceof AcTrBatchedLine2) {
+      const batch = exportBatchedLine2(child)
+      if (batch) lineBatches.push(batch)
+      return
+    }
     if (child instanceof AcTrBatchedMesh) {
       const batch = exportBatchedMesh(child)
       if (batch) meshBatches.push(batch)
@@ -393,7 +506,19 @@ export function collectBatchesFromObject3D(
       if (batch) meshBatches.push(batch)
       return
     }
-    if (
+    if (child instanceof LineSegments2) {
+      const slice = exportLineSegments2Slice(child.geometry)
+      if (slice.positions.length === 0) return
+      const material = child.material as THREE.Material
+      const { color, layer } = readMaterialStyle(material)
+      lineBatches.push({
+        layer,
+        color,
+        offset: readWorldOffset(child),
+        lineWidth: readLineWidth(material),
+        ...slice
+      })
+    } else if (
       child instanceof THREE.LineSegments &&
       !(child instanceof AcTrBatchedLine)
     ) {

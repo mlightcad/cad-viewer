@@ -18,6 +18,8 @@ class LineMaterial {
 
   constructor(parameters = {}) {
     this.id = LineMaterial._nextId++
+    this.type = 'LineMaterial'
+    this.isLineMaterial = true
     this.userData = {}
     this.color = new MockColor(parameters.color ?? 0xffffff)
     this.linewidth = parameters.linewidth ?? 1

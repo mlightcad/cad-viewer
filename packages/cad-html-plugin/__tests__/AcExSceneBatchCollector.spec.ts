@@ -1,28 +1,48 @@
-jest.mock('@mlightcad/three-renderer', () => ({
-  AcTrBatchedLine: class AcTrBatchedLine {
-    optimize() {}
-  },
-  AcTrBatchedMesh: class AcTrBatchedMesh {
-    optimize() {}
-  },
-  AcTrBatchedPoint: class AcTrBatchedPoint {
-    optimize() {}
-  },
-  getMaterialMetadata: () => ({ layer: '0' }),
-  isBatchGeometryActive: (flags: number) => (flags & 1) !== 0,
-  isBatchGeometryVisible: (flags: number) => (flags & 3) === 3
-}))
+jest.mock('@mlightcad/three-renderer', () => {
+  const { AcTrBatchedLine } = jest.requireActual(
+    '../../three-renderer/src/batch/AcTrBatchedLine'
+  )
+  const { AcTrBatchedLine2 } = jest.requireActual(
+    '../../three-renderer/src/batch/AcTrBatchedLine2'
+  )
+  const { AcTrBatchedMesh } = jest.requireActual(
+    '../../three-renderer/src/batch/AcTrBatchedMesh'
+  )
+  const { AcTrBatchedPoint } = jest.requireActual(
+    '../../three-renderer/src/batch/AcTrBatchedPoint'
+  )
+  const {
+    getMaterialMetadata,
+    isBatchGeometryActive,
+    isBatchGeometryVisible
+  } = jest.requireActual('../../three-renderer/src')
+
+  return {
+    AcTrBatchedLine,
+    AcTrBatchedLine2,
+    AcTrBatchedMesh,
+    AcTrBatchedPoint,
+    getMaterialMetadata,
+    isBatchGeometryActive,
+    isBatchGeometryVisible
+  }
+})
 
 import { AcTrBatchedGroup } from '../../three-renderer/src/batch/AcTrBatchedGroup'
 import { AcTrBatchedLine } from '../../three-renderer/src/batch/AcTrBatchedLine'
+import { AcTrBatchedLine2 } from '../../three-renderer/src/batch/AcTrBatchedLine2'
 import { RTE_REBASE_THRESHOLD } from '../../three-renderer/src/draw/AcTrBatchDrawPolicy'
 import { AcTrEntity } from '../../three-renderer/src/object/AcTrEntity'
 import { AcTrRenderContext } from '../../three-renderer/src/renderer/AcTrRenderContext'
 import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import { compactIndexedSlice, readBatchWorldOffset, toWcsCoord } from '../src/AcExBatchBuffers'
 import {
   collectBatchesFromObject3D,
+  exportActiveBatchedLine2Slice,
   exportActiveBatchedSlice,
   exportBufferGeometrySlice
 } from '../src/AcExSceneBatchCollector'
@@ -30,6 +50,17 @@ import {
 const BATCH_SLOT_ACTIVE = 0b11
 const BATCH_SLOT_HIDDEN = 0b01
 const BATCH_SLOT_INACTIVE = 0
+
+function createWideLineSegmentGeometry(
+  start: [number, number, number],
+  end: [number, number, number]
+): LineSegmentsGeometry {
+  const geometry = new LineSegmentsGeometry()
+  geometry.setPositions(
+    new Float32Array([start[0], start[1], start[2], end[0], end[1], end[2]])
+  )
+  return geometry
+}
 
 function createMockBatch(
   slots: Array<{
@@ -231,6 +262,67 @@ describe('exportActiveBatchedSlice', () => {
   })
 })
 
+describe('exportActiveBatchedLine2Slice', () => {
+  it('exports active wide-line segments as start/end position pairs', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'instanceStart',
+      new THREE.Float32BufferAttribute(
+        [0, 0, 0, 0, 10, 0, 99, 99, 99],
+        3
+      )
+    )
+    geometry.setAttribute(
+      'instanceEnd',
+      new THREE.Float32BufferAttribute(
+        [10, 0, 0, 10, 10, 0, 99, 99, 99],
+        3
+      )
+    )
+
+    const slice = exportActiveBatchedLine2Slice(
+      createMockBatch([
+        {
+          flags: BATCH_SLOT_ACTIVE,
+          vertexStart: 0,
+          vertexCount: 2,
+          indexStart: -1,
+          indexCount: 0
+        }
+      ]),
+      geometry
+    )
+
+    expect(Array.from(slice.positions)).toEqual([
+      0, 0, 0, 10, 0, 0, 0, 10, 0, 10, 10, 0
+    ])
+  })
+
+  it('reads interleaved LineSegmentsGeometry buffers by segment index', () => {
+    const geometry = new LineSegmentsGeometry()
+    geometry.setPositions(
+      new Float32Array([0, 0, 0, 10, 0, 0, 0, 10, 0, 10, 10, 0])
+    )
+
+    const slice = exportActiveBatchedLine2Slice(
+      createMockBatch([
+        {
+          flags: BATCH_SLOT_ACTIVE,
+          vertexStart: 0,
+          vertexCount: 2,
+          indexStart: -1,
+          indexCount: 0
+        }
+      ]),
+      geometry
+    )
+
+    expect(Array.from(slice.positions)).toEqual([
+      0, 0, 0, 10, 0, 0, 0, 10, 0, 10, 10, 0
+    ])
+  })
+})
+
 describe('compactIndexedSlice', () => {
   it('keeps positions referenced by the index buffer', () => {
     const positions = new Float32Array([0, 0, 0, 1, 0, 0, 2, 0, 0, 99, 99, 99])
@@ -427,5 +519,53 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
         expect(Math.abs(batch.positions[i]!)).toBeLessThan(RTE_REBASE_THRESHOLD)
       }
     }
+  })
+
+  it('exports batched wide lines from AcTrBatchedLine2 with line width', () => {
+    const material = new LineMaterial({ color: 0x00ff00, linewidth: 2.5 })
+    const batch = new AcTrBatchedLine2(16, material)
+    const worldOffset = new THREE.Vector3(100_000, 2_000_000, 0)
+    const segmentGeometry = createWideLineSegmentGeometry(
+      [0, 0, 0],
+      [100, 50, 0]
+    )
+    const geometryId = batch.addGeometry(segmentGeometry, -1, worldOffset)
+    batch.setGeometryInfo(geometryId, { objectId: 'wide-line' })
+
+    const root = new THREE.Group()
+    root.add(batch)
+    root.updateMatrixWorld(true)
+
+    const { lineBatches } = collectBatchesFromObject3D(root)
+    expect(lineBatches).toHaveLength(1)
+
+    const exported = lineBatches[0]!
+    expect(exported.lineWidth).toBe(2.5)
+    expect(exported.color).toBe(0x00ff00)
+    expect(
+      toWcsCoord(exported.positions[0]!, exported.offset[0]!)
+    ).toBeCloseTo(100_000, 0)
+    expect(
+      toWcsCoord(exported.positions[1]!, exported.offset[1]!)
+    ).toBeCloseTo(2_000_000, 0)
+    expect(
+      toWcsCoord(exported.positions[3]!, exported.offset[0]!)
+    ).toBeCloseTo(100_100, 0)
+    expect(
+      toWcsCoord(exported.positions[4]!, exported.offset[1]!)
+    ).toBeCloseTo(2_000_050, 0)
+  })
+
+  it('exports unbatched LineSegments2 drawables with line width', () => {
+    const geometry = createWideLineSegmentGeometry([0, 0, 0], [100, 50, 0])
+    const material = new LineMaterial({ color: 0xff0000, linewidth: 2.5 })
+    const line = new LineSegments2(geometry, material)
+    line.position.set(100_000, 2_000_000, 0)
+    line.updateMatrixWorld(true)
+
+    const { lineBatches } = collectBatchesFromObject3D(line)
+    expect(lineBatches).toHaveLength(1)
+    expect(lineBatches[0]!.lineWidth).toBe(2.5)
+    expect(lineBatches[0]!.color).toBe(0xff0000)
   })
 })

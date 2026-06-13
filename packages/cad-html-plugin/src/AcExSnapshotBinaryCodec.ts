@@ -13,6 +13,7 @@ const MAGIC = 0x58454341 // 'ACEX' little-endian
 const F_LINE_INDICES = 1
 const F_LINE_PATTERN = 2
 const F_LINE_DISTANCES = 4
+const F_LINE_WIDTH = 8
 
 const F_MESH_INDICES = 1
 const F_MESH_HATCH = 2
@@ -143,6 +144,9 @@ function writeLineBatch(writer: BinaryWriter, batch: AcExLineBatch): void {
   if (batch.lineDistances && batch.lineDistances.length > 0) {
     flags |= F_LINE_DISTANCES
   }
+  if (batch.lineWidth != null && batch.lineWidth > 0) {
+    flags |= F_LINE_WIDTH
+  }
   writer.writeU8(flags)
 
   if (flags & F_LINE_INDICES) {
@@ -153,6 +157,9 @@ function writeLineBatch(writer: BinaryWriter, batch: AcExLineBatch): void {
   }
   if (flags & F_LINE_DISTANCES) {
     writer.writeFloat32Array(batch.lineDistances!)
+  }
+  if (flags & F_LINE_WIDTH) {
+    writer.writeF32(batch.lineWidth!)
   }
 }
 
@@ -177,6 +184,9 @@ function readLineBatch(reader: BinaryReader): AcExLineBatch {
   }
   if (flags & F_LINE_DISTANCES) {
     batch.lineDistances = reader.readFloat32Array()
+  }
+  if (flags & F_LINE_WIDTH) {
+    batch.lineWidth = reader.readF32()
   }
   return batch
 }

@@ -39,7 +39,11 @@ function copy(from, to) {
 mkdirSync(workersDir, { recursive: true })
 
 copy(
-  join(pkgRoot('@mlightcad/data-model'), 'dist', 'dxf-parser-worker.js'),
+  join(
+    pkgRoot('@mlightcad/dxf-json-converter'),
+    'dist',
+    'dxf-parser-worker.js'
+  ),
   join(workersDir, 'dxf-parser-worker.js')
 )
 copy(

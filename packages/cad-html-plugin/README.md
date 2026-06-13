@@ -1,5 +1,8 @@
 # @mlightcad/cad-html-plugin
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/@mlightcad/cad-html-plugin.svg)](https://www.npmjs.com/package/@mlightcad/cad-html-plugin)
+
 HTML **export** for [`@mlightcad/cad-simple-viewer`](../cad-simple-viewer): snapshot format, offline viewer runtime, and optional plugin integration.
 
 | Command | Description |

@@ -1,4 +1,7 @@
 import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import {
   canReleaseActiveLayoutBatches,
@@ -154,5 +157,25 @@ describe('AcExViewerMemory', () => {
 
     const position = geometry.getAttribute('position') as THREE.BufferAttribute
     expect(position.array).toHaveLength(0)
+  })
+
+  it('releaseLayerGroupsGeometryCpuArrays empties LineSegments2 geometry buffers', () => {
+    const group = new THREE.Group()
+    const geometry = new LineSegmentsGeometry()
+    geometry.setPositions(f32([0, 0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 0]))
+    const material = new LineMaterial({ linewidth: 2, color: 0xffffff })
+    group.add(new LineSegments2(geometry, material))
+
+    releaseLayerGroupsGeometryCpuArrays(new Map([['0', group]]))
+
+    const instanceStart = geometry.getAttribute(
+      'instanceStart'
+    ) as THREE.InterleavedBufferAttribute
+    const instanceEnd = geometry.getAttribute(
+      'instanceEnd'
+    ) as THREE.InterleavedBufferAttribute
+    expect(instanceStart.count).toBe(2)
+    expect(instanceEnd.count).toBe(2)
+    expect(instanceStart.data.array).toHaveLength(0)
   })
 })
