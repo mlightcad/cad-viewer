@@ -76,6 +76,11 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     return this._maxSegmentCount - this._nextSegmentStart
   }
 
+  /** World-space origin used when rebasing packed segment data, if established. */
+  get origin() {
+    return this._origin
+  }
+
   private _initializeGeometry(reference: LineSegmentsGeometry) {
     if (this._geometryInitialized) {
       return

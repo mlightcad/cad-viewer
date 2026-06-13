@@ -11,7 +11,7 @@ import { AcTrSubEntityTraitsUtil } from '../src/util'
 const defaultTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
 const largeX = RTE_REBASE_THRESHOLD + 500_000
 
-function findUnbatchedLineDrawable(group: AcTrBatchedGroup) {
+function findLargeCoordinateLineDrawable(group: AcTrBatchedGroup) {
   let drawable: THREE.Object3D | undefined
   group.traverse(child => {
     if (drawable) {
@@ -52,7 +52,7 @@ function getMaxAbsPositionComponent(geometry: THREE.BufferGeometry) {
 }
 
 describe('AcTrLineSegments', () => {
-  it('keeps geometry local and visible in the unbatched group at large coordinates', () => {
+  it('keeps geometry local and visible in a rebased batch at large coordinates', () => {
     const context = new AcTrRenderContext()
     const array = new Float32Array([
       largeX,
@@ -72,12 +72,12 @@ describe('AcTrLineSegments', () => {
     lineEntity.objectId = 'lineseg-large'
     lineEntity.visible = true
 
-    expect(lineEntity.resolveDrawMode()).toBe('unbatch')
+    expect(lineEntity.resolveDrawMode()).toBe('batch')
 
     const group = new AcTrBatchedGroup()
     group.addEntity(lineEntity)
 
-    const drawable = findUnbatchedLineDrawable(group)
+    const drawable = findLargeCoordinateLineDrawable(group)
     expect(
       drawable instanceof THREE.LineSegments ||
         drawable instanceof LineSegments2

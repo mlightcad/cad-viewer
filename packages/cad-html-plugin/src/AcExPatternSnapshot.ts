@@ -284,8 +284,8 @@ export function createViewerPointsMaterial(
 }
 
 /**
- * Re-aligns hatch pattern coordinates after unbatched geometry was baked
- * into world space during batch-group cloning.
+ * Re-aligns hatch pattern coordinates after hatch meshes were world-baked
+ * during batch-group cloning (pattern fills stay on the unbatched draw path).
  */
 export function transformHatchPatternToWorldSpace(
   pattern: AcExHatchPattern,

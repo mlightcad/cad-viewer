@@ -22,7 +22,7 @@ const batchPolicy: AcTrBatchDrawPolicy = {
   resolveDrawMode: () => 'batch'
 }
 
-function findUnbatchedLineDrawable(group: AcTrBatchedGroup) {
+function findLargeCoordinateLineDrawable(group: AcTrBatchedGroup) {
   let drawable: THREE.Object3D | undefined
   group.traverse(child => {
     if (drawable) {
@@ -98,7 +98,7 @@ describe('AcTrLine', () => {
     expect(getSceneDrawableUserData(drawable).noBatch).toBeUndefined()
   })
 
-  it('keeps geometry local and visible in the unbatched group at large coordinates', () => {
+  it('keeps geometry local and visible in a rebased batch at large coordinates', () => {
     const context = new AcTrRenderContext()
     const lineEntity = new AcTrLine(
       [
@@ -111,12 +111,12 @@ describe('AcTrLine', () => {
     lineEntity.objectId = 'line-large'
     lineEntity.visible = true
 
-    expect(lineEntity.resolveDrawMode()).toBe('unbatch')
+    expect(lineEntity.resolveDrawMode()).toBe('batch')
 
     const group = new AcTrBatchedGroup()
     group.addEntity(lineEntity)
 
-    const drawable = findUnbatchedLineDrawable(group)
+    const drawable = findLargeCoordinateLineDrawable(group)
     expect(
       drawable instanceof THREE.LineSegments ||
         drawable instanceof LineSegments2

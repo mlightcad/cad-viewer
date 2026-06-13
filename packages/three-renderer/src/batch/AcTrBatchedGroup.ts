@@ -2,6 +2,10 @@ import * as THREE from 'three'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
+import {
+  batchOriginOffsetDistance,
+  canMergeIntoBatchOrigin
+} from '../draw/AcTrBatchDrawPolicy'
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
 import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
@@ -19,15 +23,77 @@ import { AcTrBatchedLine2 } from './AcTrBatchedLine2'
 import { AcTrBatchedMesh } from './AcTrBatchedMesh'
 import { AcTrBatchedPoint } from './AcTrBatchedPoint'
 
+/**
+ * Union of batch container classes resolved by {@link THREE.Object3D.getObjectById}
+ * when {@link AcTrBatchedGroup} performs entity-level operations.
+ *
+ * Covers line, wide-line, and mesh render paths. Each container packs many
+ * entity geometries into shared GPU buffers and exposes per-slot APIs such as
+ * {@link AcTrBatchedLine.setVisibleAt | setVisibleAt},
+ * {@link AcTrBatchedLine.deleteGeometry | deleteGeometry}, and
+ * {@link AcTrBatchedLine.intersectWith | intersectWith}.
+ *
+ * Point batches ({@link AcTrBatchedPoint}) use the same slot-addressing model but
+ * are typed separately where the group needs point-specific behavior.
+ *
+ * @see {@link AcTrOriginBatch} for the superset used in internal batch maps.
+ */
 export type AcTrBatchedObject =
   | AcTrBatchedLine
   | AcTrBatchedLine2
   | AcTrBatchedMesh
 
+/**
+ * Any batch container stored in an origin-split batch map inside
+ * {@link AcTrBatchedGroup}.
+ *
+ * Extends {@link AcTrBatchedObject} with {@link AcTrBatchedPoint}, which renders
+ * CAD point entities as `THREE.Points`. All variants share a stable world-space
+ * {@link AcTrBatchedLine.origin | origin} so vertex data can be rebased for
+ * float32 precision on large-coordinate drawings.
+ */
+type AcTrOriginBatch =
+  | AcTrBatchedLine
+  | AcTrBatchedLine2
+  | AcTrBatchedMesh
+  | AcTrBatchedPoint
+
+/**
+ * Material-keyed registry of batch containers that may be split by world origin.
+ *
+ * - **Key** — Three.js material id (`Material.id`). Geometries with the same
+ *   material are candidates for the same draw call.
+ * - **Value** — One or more batch containers for that material. When geometry
+ *   from distant world regions cannot safely share one rebasing origin, the group
+ *   creates additional containers via {@link AcTrBatchedGroup.resolveOriginBatch}.
+ *
+ * @typeParam T - Concrete batch container type (line, mesh, point, etc.).
+ */
+type AcTrOriginBatchMap<T extends AcTrOriginBatch> = Map<number, T[]>
+
+/**
+ * Reverse lookup from one logical CAD entity to a single geometry slot inside a
+ * batched container.
+ *
+ * A decomposed entity (for example an INSERT or multi-pass layer bucket) may
+ * occupy several slots; {@link AcTrBatchedGroup} stores an array of these entries
+ * per entity object id in `_entitiesMap`.
+ */
 export interface AcTrEntityInBatchedObject {
-  /** Three.js object id of the target batched container. */
+  /**
+   * Three.js object id (`Object3D.id`) of the batched container that owns the slot.
+   *
+   * Used with {@link THREE.Object3D.getObjectById} to retrieve the container
+   * before calling per-slot batch APIs.
+   */
   batchedObjectId: number
-  /** Geometry id inside that batched container. */
+  /**
+   * Stable geometry slot id assigned by the batch container when the entity
+   * geometry was appended.
+   *
+   * Identifies the sub-range inside the packed buffer for visibility toggles,
+   * deletion, raycast filtering, and highlight cloning.
+   */
   batchId: number
 }
 
@@ -88,8 +154,9 @@ export interface AcTrBatchedGroupStats {
  * layer/layout group.
  *
  * Entities are distributed into per-material batch containers (line/mesh/point
- * and wide-line variants), while unsupported render paths are stored in a
- * dedicated unbatched group.
+ * and wide-line variants). Multiple containers may share one material when their
+ * world-space origins are too far apart for safe float32 rebasing. Unsupported
+ * render paths are stored in a dedicated unbatched group.
  */
 export class AcTrBatchedGroup extends THREE.Group {
   private static readonly INITIAL_LINE_VERTEX_CAPACITY = 128
@@ -100,45 +167,45 @@ export class AcTrBatchedGroup extends THREE.Group {
   /**
    * Batched line map for line segments without vertex index.
    * - the key is material id
-   * - the value is one batched line
+   * - the value is one or more batched lines split by world origin
    */
-  private _lineBatches: Map<number, AcTrBatchedLine>
+  private _lineBatches: AcTrOriginBatchMap<AcTrBatchedLine>
   /**
    * Batched line map for lines with vertex index.
    * - the key is material id
-   * - the value is one batched map
+   * - the value is one or more batched lines split by world origin
    */
-  private _lineWithIndexBatches: Map<number, AcTrBatchedLine>
+  private _lineWithIndexBatches: AcTrOriginBatchMap<AcTrBatchedLine>
   /**
    * Batched line map for wide lines rendered as THREE.LineSegments2.
    * - the key is material id
-   * - the value is one batched line2
+   * - the value is one or more batched line2 containers split by world origin
    */
-  private _line2Batches: Map<number, AcTrBatchedLine2>
+  private _line2Batches: AcTrOriginBatchMap<AcTrBatchedLine2>
   /**
    * Batched mesh map for meshes without vertex index.
    * - the key is material id
-   * - the value is one batched map
+   * - the value is one or more batched meshes split by world origin
    */
-  private _meshBatches: Map<number, AcTrBatchedMesh>
+  private _meshBatches: AcTrOriginBatchMap<AcTrBatchedMesh>
   /**
    * Batched mesh map for meshes with vertex index.
    * - the key is material id
-   * - the value is one batched map
+   * - the value is one or more batched meshes split by world origin
    */
-  private _meshWithIndexBatches: Map<number, AcTrBatchedMesh>
+  private _meshWithIndexBatches: AcTrOriginBatchMap<AcTrBatchedMesh>
   /**
    * Batched mesh map for points rendered as THREE.Points
    * - the key is material id
-   * - the value is one batched map
+   * - the value is one or more batched point containers split by world origin
    */
-  private _pointBatches: Map<number, AcTrBatchedPoint>
+  private _pointBatches: AcTrOriginBatchMap<AcTrBatchedPoint>
   /**
    * Batched mesh map for points rendered as THREE.LineSegments
    * - the key is material id
-   * - the value is one batched map
+   * - the value is one or more batched lines split by world origin
    */
-  private _pointSymbolBatches: Map<number, AcTrBatchedLine>
+  private _pointSymbolBatches: AcTrOriginBatchMap<AcTrBatchedLine>
   /**
    * The group to store all of selected entities
    */
@@ -202,28 +269,30 @@ export class AcTrBatchedGroup extends THREE.Group {
       },
       mesh: {
         indexed: {
-          count: this._meshWithIndexBatches.size,
+          count: this.countBatchContainers(this._meshWithIndexBatches),
           geometrySize: this.getBatchedGeometrySize(this._meshWithIndexBatches),
           mappingSize: this.getBatchedGeometryMappingSize(
             this._meshWithIndexBatches
           )
         },
         nonIndexed: {
-          count: this._meshBatches.size,
+          count: this.countBatchContainers(this._meshBatches),
           geometrySize: this.getBatchedGeometrySize(this._meshBatches),
           mappingSize: this.getBatchedGeometryMappingSize(this._meshBatches)
         }
       },
       line: {
         indexed: {
-          count: this._lineWithIndexBatches.size,
+          count: this.countBatchContainers(this._lineWithIndexBatches),
           geometrySize: this.getBatchedGeometrySize(this._lineWithIndexBatches),
           mappingSize: this.getBatchedGeometryMappingSize(
             this._lineWithIndexBatches
           )
         },
         nonIndexed: {
-          count: this._lineBatches.size + this._line2Batches.size,
+          count:
+            this.countBatchContainers(this._lineBatches) +
+            this.countBatchContainers(this._line2Batches),
           geometrySize:
             this.getBatchedGeometrySize(this._lineBatches) +
             this.getBatchedGeometrySize(this._line2Batches),
@@ -234,14 +303,14 @@ export class AcTrBatchedGroup extends THREE.Group {
       },
       point: {
         indexed: {
-          count: this._pointSymbolBatches.size,
+          count: this.countBatchContainers(this._pointSymbolBatches),
           geometrySize: this.getBatchedGeometrySize(this._pointSymbolBatches),
           mappingSize: this.getBatchedGeometryMappingSize(
             this._pointSymbolBatches
           )
         },
         nonIndexed: {
-          count: this._pointBatches.size,
+          count: this.countBatchContainers(this._pointBatches),
           geometrySize: this.getBatchedGeometrySize(this._pointBatches),
           mappingSize: this.getBatchedGeometryMappingSize(this._pointBatches)
         }
@@ -274,14 +343,18 @@ export class AcTrBatchedGroup extends THREE.Group {
     const pointSymbol = creator.create(displayMode)
 
     if (pointSymbol.line) {
-      this._pointSymbolBatches.forEach(item => {
-        item.resetGeometry(displayMode)
+      this._pointSymbolBatches.forEach(batches => {
+        batches.forEach(item => {
+          item.resetGeometry(displayMode)
+        })
       })
     }
 
     const isShowPoint = pointSymbol.point != null
-    this._pointBatches.forEach(item => {
-      item.visible = isShowPoint
+    this._pointBatches.forEach(batches => {
+      batches.forEach(item => {
+        item.visible = isShowPoint
+      })
     })
   }
 
@@ -297,14 +370,11 @@ export class AcTrBatchedGroup extends THREE.Group {
     target.makeEmpty()
     const scratch = new THREE.Box3()
 
-    const unionBatchMap = (
-      map: Map<
-        number,
-        AcTrBatchedLine | AcTrBatchedLine2 | AcTrBatchedMesh | AcTrBatchedPoint
-      >
-    ) => {
-      map.forEach(batch => {
-        batch.unionActiveVisibleBoundingBoxInto(target, options)
+    const unionBatchMap = (map: AcTrOriginBatchMap<AcTrOriginBatch>) => {
+      map.forEach(batches => {
+        batches.forEach(batch => {
+          batch.unionActiveVisibleBoundingBoxInto(target, options)
+        })
       })
     }
 
@@ -334,9 +404,11 @@ export class AcTrBatchedGroup extends THREE.Group {
    */
   clear() {
     this.groups.forEach(group => {
-      group.forEach(value => {
-        value.dispose()
-        value.removeFromParent()
+      group.forEach(batches => {
+        batches.forEach(batch => {
+          batch.dispose()
+          batch.removeFromParent()
+        })
       })
       group.clear()
     })
@@ -357,14 +429,24 @@ export class AcTrBatchedGroup extends THREE.Group {
    * @param material - The new material associated with the batch object
    */
   updateMaterial(oldId: number, material: THREE.Material) {
-    this.groups.forEach(group => {
-      const batch = group.get(oldId)
-      if (batch) {
-        batch.material = material
-        // @ts-expect-error batch is from group and it must be type-safe.
-        group.set(material.id, batch)
+    for (const group of this.groups) {
+      const batches = group.get(oldId)
+      if (!batches) {
+        continue
       }
-    })
+      for (const batch of batches) {
+        batch.material = material
+      }
+      if (material.id !== oldId) {
+        group.delete(oldId)
+        const existing = group.get(material.id)
+        if (existing) {
+          existing.push(...batches)
+        } else {
+          group.set(material.id, batches)
+        }
+      }
+    }
     this._unbatchedObjects.traverse(object => {
       if (!('material' in object)) return
       const drawableUserData = getSceneDrawableUserData(object)
@@ -644,7 +726,7 @@ export class AcTrBatchedGroup extends THREE.Group {
   /**
    * Returns all batch maps managed by this group.
    */
-  protected get groups() {
+  protected get groups(): AcTrOriginBatchMap<AcTrOriginBatch>[] {
     return [
       this._lineBatches,
       this._lineWithIndexBatches,
@@ -764,24 +846,25 @@ export class AcTrBatchedGroup extends THREE.Group {
   ): AcTrEntityInBatchedObject {
     const material = object.material as THREE.Material
     const batches = this.getMatchedLineBatches(object)
-    let batchedLine = batches.get(material.id)
-    if (batchedLine == null) {
-      batchedLine = new AcTrBatchedLine(
-        AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
-        AcTrBatchedGroup.INITIAL_LINE_INDEX_CAPACITY,
-        material
-      )
-      batches.set(material.id, batchedLine)
-      this.add(batchedLine)
-    }
+    const worldOffset = new THREE.Vector3().setFromMatrixPosition(
+      object.matrixWorld
+    )
+    const batchedLine = this.resolveOriginBatch(
+      batches,
+      material.id,
+      worldOffset,
+      () =>
+        new AcTrBatchedLine(
+          AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
+          AcTrBatchedGroup.INITIAL_LINE_INDEX_CAPACITY,
+          material
+        )
+    )
 
     // Bake rotation/scale into geometry, but keep world translation as offset.
     // This preserves block reference transforms while avoiding large Float32 coords.
     const geometry = object.geometry.clone()
     const matrixNoTranslation = object.matrixWorld.clone()
-    const worldOffset = new THREE.Vector3().setFromMatrixPosition(
-      object.matrixWorld
-    )
     matrixNoTranslation.setPosition(0, 0, 0)
     geometry.applyMatrix4(matrixNoTranslation)
     const geometryId = batchedLine.addGeometry(geometry, -1, -1, worldOffset)
@@ -802,20 +885,21 @@ export class AcTrBatchedGroup extends THREE.Group {
     userData: AcTrBatchGeometryUserData
   ): AcTrEntityInBatchedObject {
     const material = object.material as THREE.Material
-    let batchedLine = this._line2Batches.get(material.id)
-    if (batchedLine == null) {
-      batchedLine = new AcTrBatchedLine2(
-        AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
-        material
-      )
-      this._line2Batches.set(material.id, batchedLine)
-      this.add(batchedLine)
-    }
-
-    const matrixNoTranslation = object.matrixWorld.clone()
     const worldOffset = new THREE.Vector3().setFromMatrixPosition(
       object.matrixWorld
     )
+    const batchedLine = this.resolveOriginBatch(
+      this._line2Batches,
+      material.id,
+      worldOffset,
+      () =>
+        new AcTrBatchedLine2(
+          AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
+          material
+        )
+    )
+
+    const matrixNoTranslation = object.matrixWorld.clone()
     matrixNoTranslation.setPosition(0, 0, 0)
     const geometry = this.cloneLineSegments2Geometry(
       object,
@@ -864,30 +948,33 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     const batches = this.getMatchedMeshBatches(object)
-    let batchedMesh = batches.get(material.id)
-    if (batchedMesh == null) {
-      const metadata = getMaterialMetadata(material)
-      const drawOrder = metadata.drawOrder ?? 0
-      batchedMesh = new AcTrBatchedMesh(
-        AcTrBatchedGroup.INITIAL_MESH_VERTEX_CAPACITY,
-        AcTrBatchedGroup.INITIAL_MESH_INDEX_CAPACITY,
-        material
-      )
-      // All CAD geometry lives on the same Z plane, so depth test alone
-      // cannot decide which primitive wins on a shared pixel. Use the
-      // material's explicit draw-order tier, derived from
-      // `AcGiSubEntityTraits.drawOrder`, so hatch fills sit below
-      // linework while wide polylines and text glyph meshes stay at the
-      // normal linework tier.
-      batchedMesh.renderOrder = drawOrder
-      batches.set(material.id, batchedMesh)
-      this.add(batchedMesh)
-    }
-    const geometry = object.geometry.clone()
-    const matrixNoTranslation = object.matrixWorld.clone()
     const worldOffset = new THREE.Vector3().setFromMatrixPosition(
       object.matrixWorld
     )
+    const batchedMesh = this.resolveOriginBatch(
+      batches,
+      material.id,
+      worldOffset,
+      () => {
+        const metadata = getMaterialMetadata(material)
+        const drawOrder = metadata.drawOrder ?? 0
+        const batch = new AcTrBatchedMesh(
+          AcTrBatchedGroup.INITIAL_MESH_VERTEX_CAPACITY,
+          AcTrBatchedGroup.INITIAL_MESH_INDEX_CAPACITY,
+          material
+        )
+        // All CAD geometry lives on the same Z plane, so depth test alone
+        // cannot decide which primitive wins on a shared pixel. Use the
+        // material's explicit draw-order tier, derived from
+        // `AcGiSubEntityTraits.drawOrder`, so hatch fills sit below
+        // linework while wide polylines and text glyph meshes stay at the
+        // normal linework tier.
+        batch.renderOrder = drawOrder
+        return batch
+      }
+    )
+    const geometry = object.geometry.clone()
+    const matrixNoTranslation = object.matrixWorld.clone()
     matrixNoTranslation.setPosition(0, 0, 0)
     geometry.applyMatrix4(matrixNoTranslation)
     const geometryId = batchedMesh.addGeometry(geometry, -1, -1, worldOffset)
@@ -908,21 +995,24 @@ export class AcTrBatchedGroup extends THREE.Group {
     userData: AcTrBatchGeometryUserData
   ): AcTrEntityInBatchedObject {
     const material = object.material as THREE.Material
-    let batchedPoint = this._pointBatches.get(material.id)
-    if (batchedPoint == null) {
-      batchedPoint = new AcTrBatchedPoint(
-        AcTrBatchedGroup.INITIAL_POINT_VERTEX_CAPACITY,
-        material
-      )
-      batchedPoint.visible = object.visible
-      this._pointBatches.set(material.id, batchedPoint)
-      this.add(batchedPoint)
-    }
-    const geometry = object.geometry.clone()
-    const matrixNoTranslation = object.matrixWorld.clone()
     const worldOffset = new THREE.Vector3().setFromMatrixPosition(
       object.matrixWorld
     )
+    const batchedPoint = this.resolveOriginBatch(
+      this._pointBatches,
+      material.id,
+      worldOffset,
+      () => {
+        const batch = new AcTrBatchedPoint(
+          AcTrBatchedGroup.INITIAL_POINT_VERTEX_CAPACITY,
+          material
+        )
+        batch.visible = object.visible
+        return batch
+      }
+    )
+    const geometry = object.geometry.clone()
+    const matrixNoTranslation = object.matrixWorld.clone()
     matrixNoTranslation.setPosition(0, 0, 0)
     geometry.applyMatrix4(matrixNoTranslation)
     const geometryId = batchedPoint.addGeometry(geometry, -1, worldOffset)
@@ -933,6 +1023,98 @@ export class AcTrBatchedGroup extends THREE.Group {
       batchedObjectId: batchedPoint.id,
       batchId: geometryId
     }
+  }
+
+  /**
+   * Resolves an existing batch container for one material and world offset, or
+   * creates a new container when every existing origin is too far away.
+   *
+   * When multiple containers are eligible, picks the one whose established
+   * origin is closest to `worldOffset` so rebased vertex magnitudes stay small.
+   */
+  private resolveOriginBatch<T extends AcTrOriginBatch>(
+    batches: AcTrOriginBatchMap<T>,
+    materialId: number,
+    worldOffset: THREE.Vector3,
+    create: () => T
+  ): T {
+    let list = batches.get(materialId)
+    if (list == null) {
+      list = []
+      batches.set(materialId, list)
+    }
+
+    let best: T | undefined
+    let bestDistance = Infinity
+
+    for (const batch of list) {
+      if (!canMergeIntoBatchOrigin(batch.origin, worldOffset)) {
+        continue
+      }
+
+      const origin = batch.origin
+      if (origin == null) {
+        return batch
+      }
+
+      const distance = batchOriginOffsetDistance(origin, worldOffset)
+      if (distance < bestDistance) {
+        bestDistance = distance
+        best = batch
+      }
+    }
+
+    if (best) {
+      return best
+    }
+
+    const batch = create()
+    list.push(batch)
+    this.add(batch)
+    return batch
+  }
+
+  /**
+   * Counts batch containers across all material keys in one batch map.
+   */
+  private countBatchContainers<T extends AcTrOriginBatch>(
+    map: AcTrOriginBatchMap<T>
+  ) {
+    let count = 0
+    map.forEach(batches => {
+      count += batches.length
+    })
+    return count
+  }
+
+  /**
+   * Estimates geometry memory size for all objects in one batch map.
+   */
+  private getBatchedGeometrySize<T extends AcTrOriginBatch>(
+    batch: AcTrOriginBatchMap<T>
+  ) {
+    let memory = 0
+    batch.forEach(batches => {
+      batches.forEach(value => {
+        memory += this.getGeometrySize(value)
+      })
+    })
+    return memory
+  }
+
+  /**
+   * Estimates mapping metadata memory size for all objects in one batch map.
+   */
+  private getBatchedGeometryMappingSize<T extends AcTrOriginBatch>(
+    batch: AcTrOriginBatchMap<T>
+  ) {
+    let memory = 0
+    batch.forEach(batches => {
+      batches.forEach(item => {
+        memory += item.mappingStats.size
+      })
+    })
+    return memory
   }
 
   /**
@@ -961,40 +1143,6 @@ export class AcTrBatchedGroup extends THREE.Group {
       batches = this._meshWithIndexBatches
     }
     return batches
-  }
-
-  /**
-   * Estimates geometry memory size for all objects in one batch map.
-   */
-  private getBatchedGeometrySize(
-    batch:
-      | Map<number, AcTrBatchedPoint>
-      | Map<number, AcTrBatchedLine>
-      | Map<number, AcTrBatchedLine2>
-      | Map<number, AcTrBatchedMesh>
-  ) {
-    let memory = 0
-    batch.forEach(value => {
-      memory += this.getGeometrySize(value)
-    })
-    return memory
-  }
-
-  /**
-   * Estimates mapping metadata memory size for all objects in one batch map.
-   */
-  private getBatchedGeometryMappingSize(
-    batch:
-      | Map<number, AcTrBatchedPoint>
-      | Map<number, AcTrBatchedLine>
-      | Map<number, AcTrBatchedLine2>
-      | Map<number, AcTrBatchedMesh>
-  ) {
-    let memory = 0
-    batch.forEach(item => {
-      memory += item.mappingStats.size
-    })
-    return memory
   }
 
   /**

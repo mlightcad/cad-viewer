@@ -135,6 +135,11 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     return this._maxIndexCount - this._nextIndexStart
   }
 
+  /** World-space origin used when rebasing packed vertex data, if established. */
+  get origin() {
+    return this._origin
+  }
+
   /**
    * Allocates packed attribute/index buffers on first geometry insertion.
    *

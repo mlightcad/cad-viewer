@@ -3,7 +3,10 @@ import * as THREE from 'three'
 import {
   alwaysBatchDrawPolicy,
   alwaysUnbatchDrawPolicy,
+  canMergeIntoBatchOrigin,
+  batchOriginOffsetDistance,
   defaultBatchDrawPolicy,
+  exceedsBatchOriginOffset,
   isLargeWorldCoordinatePoint,
   resolveAnchorFromBox,
   resolveAnchorFromPoints,
@@ -104,5 +107,35 @@ describe('AcTrBatchDrawPolicy', () => {
     )
 
     expect(resolveAnchorFromBox(box)).toEqual(resolveAnchorFromPoints(points))
+  })
+
+  it('detects batch origin offsets that exceed the rebase threshold', () => {
+    const origin = new THREE.Vector3(100_000, 0, 0)
+    expect(
+      exceedsBatchOriginOffset(origin, new THREE.Vector3(100_500, 0, 0))
+    ).toBe(false)
+    expect(batchOriginOffsetDistance(origin, new THREE.Vector3(100_500, 0, 0))).toBe(
+      500
+    )
+    expect(
+      exceedsBatchOriginOffset(
+        origin,
+        new THREE.Vector3(100_000 + RTE_REBASE_THRESHOLD, 0, 0)
+      )
+    ).toBe(true)
+  })
+
+  it('allows merging into empty batches and rejects far offsets', () => {
+    const origin = new THREE.Vector3(100_000, 0, 0)
+    expect(canMergeIntoBatchOrigin(undefined, origin)).toBe(true)
+    expect(canMergeIntoBatchOrigin(origin, new THREE.Vector3(100_500, 0, 0))).toBe(
+      true
+    )
+    expect(
+      canMergeIntoBatchOrigin(
+        origin,
+        new THREE.Vector3(100_000 + RTE_REBASE_THRESHOLD, 0, 0)
+      )
+    ).toBe(false)
   })
 })
