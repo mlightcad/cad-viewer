@@ -66,16 +66,17 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       `${AcApI18n.t('jig.chtml.exportInvisibleLayers')} <${current}>`
     )
     prompt.allowNone = true
-    prompt.keywords.add(
+    const yes = prompt.keywords.add(
       AcApI18n.t('jig.chtml.keywords.yes.display'),
       AcApI18n.t('jig.chtml.keywords.yes.global'),
       AcApI18n.t('jig.chtml.keywords.yes.local')
     )
-    prompt.keywords.add(
+    const no = prompt.keywords.add(
       AcApI18n.t('jig.chtml.keywords.no.display'),
       AcApI18n.t('jig.chtml.keywords.no.global'),
       AcApI18n.t('jig.chtml.keywords.no.local')
     )
+    prompt.keywords.default = defaults.exportInvisibleLayers ? yes : no
 
     const result = await AcApDocManager.instance.editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.Cancel) {
@@ -108,16 +109,18 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       `${AcApI18n.t('jig.chtml.initialView')} <${current}>`
     )
     prompt.allowNone = true
-    prompt.keywords.add(
+    const extents = prompt.keywords.add(
       AcApI18n.t('jig.chtml.keywords.extents.display'),
       AcApI18n.t('jig.chtml.keywords.extents.global'),
       AcApI18n.t('jig.chtml.keywords.extents.local')
     )
-    prompt.keywords.add(
+    const currentView = prompt.keywords.add(
       AcApI18n.t('jig.chtml.keywords.current.display'),
       AcApI18n.t('jig.chtml.keywords.current.global'),
       AcApI18n.t('jig.chtml.keywords.current.local')
     )
+    prompt.keywords.default =
+      defaults.initialView === 'current' ? currentView : extents
 
     const result = await AcApDocManager.instance.editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.Cancel) {

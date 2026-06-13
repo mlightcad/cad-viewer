@@ -1031,15 +1031,16 @@ export class AcEdInputManager {
   async getKeywords(
     options: AcEdPromptKeywordOptions
   ): Promise<AcEdPromptResult> {
-    const scriptedValue = this.tryGetScriptedValue(
-      new AcEdKeywordHandler(options)
-    )
-    if (scriptedValue != null) {
-      return new AcEdPromptResult(AcEdPromptStatus.OK, scriptedValue)
-    }
-
     return this.executePrompt(
       async () => {
+        const scriptedValue = this.tryGetScriptedValue(
+          new AcEdKeywordHandler(options),
+          options
+        )
+        if (scriptedValue != null) {
+          return scriptedValue
+        }
+
         const result = await this._commandLine.getKeywords(options, true)
         if (!result) {
           if (options.allowNone) {
