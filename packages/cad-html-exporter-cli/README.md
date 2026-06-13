@@ -37,6 +37,8 @@ pnpm exec cad-html-exporter drawing.dxf --locale zh -o drawing.html
 | `-o, --output <path>` | Output HTML file (default: input name with `.html`) |
 | `--locale <code>` | Embedded viewer locale (`en`, `zh`, …) |
 | `--title <text>` | Title in snapshot metadata / `<title>` |
+| `--no-export-invisible-layers` | Exclude off/frozen layer geometry (default: included) |
+| `--initial-view <fit\|current>` | Initial view when opening HTML (`fit` = zoom extents, default) |
 
 ## How it works
 

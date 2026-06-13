@@ -46,6 +46,9 @@ describe('AcApHtmlConvertor', () => {
 
       expect(prepared).toBe(view)
       expect(ensureEntitiesConvertedForExport).toHaveBeenCalledTimes(1)
+      expect(ensureEntitiesConvertedForExport).toHaveBeenCalledWith({
+        includeInvisibleLayers: true
+      })
     })
   })
 })

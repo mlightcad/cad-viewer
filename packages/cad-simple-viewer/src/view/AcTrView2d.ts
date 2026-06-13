@@ -724,7 +724,10 @@ export class AcTrView2d extends AcEdBaseView {
    *
    * Converted geometry remains in the live scene after this call completes.
    */
-  async ensureEntitiesConvertedForExport() {
+  async ensureEntitiesConvertedForExport(options?: {
+    includeInvisibleLayers?: boolean
+  }) {
+    const includeInvisibleLayers = options?.includeInvisibleLayers !== false
     const db = AcApDocManager.instance.curDocument.database
     const pending: AcDbEntity[] = []
 
@@ -736,7 +739,8 @@ export class AcTrView2d extends AcEdBaseView {
       pending.push(
         ...this._entityDisplay.collectMissingEntitiesForExport(
           blockTableRecord,
-          objectId => this.hasEntity(objectId)
+          objectId => this.hasEntity(objectId),
+          includeInvisibleLayers
         )
       )
     }

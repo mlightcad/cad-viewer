@@ -10,11 +10,13 @@ import { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
 import { collectBatchesFromObject3D } from './AcExSceneBatchCollector'
 import {
   ACEX_SNAPSHOT_VERSION,
+  type AcExInitialViewMode,
   type AcExLayerSnapshot,
   type AcExLayoutSnapshot,
   type AcExLineBatch,
   type AcExMeshBatch,
-  type AcExSnapshot
+  type AcExSnapshot,
+  type AcExViewState
 } from './AcExSnapshotTypes'
 import { buildViewerMetadata } from './AcExViewerMetadata'
 
@@ -37,6 +39,20 @@ export interface AcApHtmlSnapshotBuilderOptions {
    * Defaults to {@link AcApI18n.currentLocale} when omitted.
    */
   locale?: string
+  /**
+   * When `false`, geometry and layer-table entries for off/frozen layers are
+   * omitted from the snapshot. Defaults to `true`.
+   */
+  exportInvisibleLayers?: boolean
+  /**
+   * Initial framing when the exported HTML is opened. Defaults to `'fit'`.
+   */
+  initialView?: AcExInitialViewMode
+  /**
+   * Saved view center and zoom when {@link AcApHtmlSnapshotBuilderOptions.initialView}
+   * is `'current'`.
+   */
+  viewState?: AcExViewState
 }
 
 /**
@@ -83,6 +99,11 @@ export class AcApHtmlSnapshotBuilder {
   ): Promise<AcExSnapshot> {
     await yieldToMain()
 
+    const exportInvisibleLayers = options.exportInvisibleLayers !== false
+    const includeLayer = exportInvisibleLayers
+      ? undefined
+      : (layerName: string) =>
+          shouldExportLayer(scene, layerName, exportInvisibleLayers)
     const meta = buildViewerMetadata(database, {
       title: options.title,
       background: options.background
@@ -90,6 +111,9 @@ export class AcApHtmlSnapshotBuilder {
 
     const layers: AcExLayerSnapshot[] = []
     scene.layers.forEach(layer => {
+      if (!shouldExportLayer(scene, layer.name, exportInvisibleLayers)) {
+        return
+      }
       layers.push({
         name: layer.name,
         color: layer.color.RGB ?? 0xffffff,
@@ -102,6 +126,9 @@ export class AcApHtmlSnapshotBuilder {
       const lineBatches: AcExLineBatch[] = []
       const meshBatches: AcExMeshBatch[] = []
       for (const [, layer] of layout.layers) {
+        if (!shouldExportLayer(scene, layer.name, exportInvisibleLayers)) {
+          continue
+        }
         const collected = collectBatchesFromObject3D(layer.internalObject)
         lineBatches.push(...collected.lineBatches)
         meshBatches.push(...collected.meshBatches)
@@ -113,7 +140,7 @@ export class AcApHtmlSnapshotBuilder {
         isModelSpace: btrId === scene.modelSpaceBtrId,
         lineBatches,
         meshBatches,
-        osnap: buildOsnapCatalog(database, btrId)
+        osnap: buildOsnapCatalog(database, btrId, { includeLayer })
       })
       await yieldToMain()
     }
@@ -145,6 +172,11 @@ export class AcApHtmlSnapshotBuilder {
     database: AcDbDatabase,
     options: AcApHtmlSnapshotBuilderOptions
   ): AcExSnapshot {
+    const exportInvisibleLayers = options.exportInvisibleLayers !== false
+    const includeLayer = exportInvisibleLayers
+      ? undefined
+      : (layerName: string) =>
+          shouldExportLayer(scene, layerName, exportInvisibleLayers)
     const meta = buildViewerMetadata(database, {
       title: options.title,
       background: options.background
@@ -152,6 +184,9 @@ export class AcApHtmlSnapshotBuilder {
 
     const layers: AcExLayerSnapshot[] = []
     scene.layers.forEach(layer => {
+      if (!shouldExportLayer(scene, layer.name, exportInvisibleLayers)) {
+        return
+      }
       layers.push({
         name: layer.name,
         color: layer.color.RGB ?? 0xffffff,
@@ -161,16 +196,23 @@ export class AcApHtmlSnapshotBuilder {
 
     const layouts: AcExLayoutSnapshot[] = []
     scene.layouts.forEach((layout, btrId) => {
-      const { lineBatches, meshBatches } = collectBatchesFromObject3D(
-        layout.internalObject
-      )
+      const lineBatches: AcExLineBatch[] = []
+      const meshBatches: AcExMeshBatch[] = []
+      for (const [, layer] of layout.layers) {
+        if (!shouldExportLayer(scene, layer.name, exportInvisibleLayers)) {
+          continue
+        }
+        const collected = collectBatchesFromObject3D(layer.internalObject)
+        lineBatches.push(...collected.lineBatches)
+        meshBatches.push(...collected.meshBatches)
+      }
       layouts.push({
         btrId,
         name: resolveLayoutName(database, btrId),
         isModelSpace: btrId === scene.modelSpaceBtrId,
         lineBatches,
         meshBatches,
-        osnap: buildOsnapCatalog(database, btrId)
+        osnap: buildOsnapCatalog(database, btrId, { includeLayer })
       })
     })
 
@@ -209,6 +251,7 @@ function buildSnapshotMeta(
   const viewExtents = activeLayout
     ? computeLayoutExtents(activeLayout.lineBatches, activeLayout.meshBatches)
     : null
+  const initialView = options.initialView ?? 'fit'
 
   return {
     title: meta.title,
@@ -217,8 +260,27 @@ function buildSnapshotMeta(
     viewExtents: viewExtents ?? undefined,
     units: meta.units,
     background: meta.background,
-    locale: options.locale ?? AcApI18n.currentLocale
+    locale: options.locale ?? AcApI18n.currentLocale,
+    initialView,
+    viewState: initialView === 'current' ? options.viewState : undefined
   }
+}
+
+function shouldExportLayer(
+  scene: AcTrScene,
+  layerName: string,
+  exportInvisibleLayers: boolean
+): boolean {
+  if (exportInvisibleLayers) {
+    return true
+  }
+
+  const layer = scene.layers.get(layerName)
+  if (!layer) {
+    return true
+  }
+
+  return !layer.isOff && !layer.isFrozen
 }
 
 /**

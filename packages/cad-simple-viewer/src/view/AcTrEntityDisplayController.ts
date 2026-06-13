@@ -50,8 +50,24 @@ export class AcTrEntityDisplayController {
    * Export snapshots carry layer on/off state separately; geometry for off layers
    * must still be present so the HTML layer panel can toggle visibility.
    */
-  shouldConvertForExport(entity: AcTrEntityDisplayCandidate): boolean {
-    return entity.visibility
+  shouldConvertForExport(
+    entity: AcTrEntityDisplayCandidate,
+    includeInvisibleLayers = true
+  ): boolean {
+    if (!entity.visibility) {
+      return false
+    }
+
+    if (includeInvisibleLayers) {
+      return true
+    }
+
+    const layer = this.getLayerInfo(entity.layer)
+    if (!layer) {
+      return true
+    }
+
+    return AcTrLayer.isLayerVisible(layer)
   }
 
   /**
@@ -85,10 +101,11 @@ export class AcTrEntityDisplayController {
    */
   collectMissingEntitiesForExport(
     blockTableRecord: AcDbBlockTableRecord,
-    hasEntity: (objectId: AcDbObjectId) => boolean
+    hasEntity: (objectId: AcDbObjectId) => boolean,
+    includeInvisibleLayers = true
   ): AcDbEntity[] {
     return this.collectMissingEntities(blockTableRecord, hasEntity, entity =>
-      this.shouldConvertForExport(entity)
+      this.shouldConvertForExport(entity, includeInvisibleLayers)
     )
   }
 

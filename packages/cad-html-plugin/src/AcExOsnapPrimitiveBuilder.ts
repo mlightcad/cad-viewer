@@ -1025,14 +1025,18 @@ function visitTableEntity(
   insertLayer: string,
   out: AcExOsnapPrimitive[],
   blockStack: Set<AcDbObjectId>,
-  database: AcDbDatabase
+  database: AcDbDatabase,
+  includeLayer?: (layerName: string) => boolean
 ) {
   const layer = effectiveLayer(entity.layer, insertLayer)
+  if (includeLayer && !includeLayer(layer)) {
+    return
+  }
   const block = resolveTableBlock(entity, database)
   if (block && !blockStack.has(block.objectId) && blockHasEntities(block)) {
     blockStack.add(block.objectId)
     const nested = composeTransforms(matrix, blockInsertTransform(entity))
-    visitBlock(block, nested, layer, out, blockStack, database)
+    visitBlock(block, nested, layer, out, blockStack, database, includeLayer)
     blockStack.delete(block.objectId)
     return
   }
@@ -1101,14 +1105,26 @@ function visitEntity(
   insertLayer: string,
   out: AcExOsnapPrimitive[],
   blockStack: Set<AcDbObjectId>,
-  database: AcDbDatabase
+  database: AcDbDatabase,
+  includeLayer?: (layerName: string) => boolean
 ) {
   if (!entity.visibility) return
 
   const layer = effectiveLayer(entity.layer, insertLayer)
+  if (includeLayer && !includeLayer(layer)) {
+    return
+  }
 
   if (entity instanceof AcDbTable) {
-    visitTableEntity(entity, matrix, insertLayer, out, blockStack, database)
+    visitTableEntity(
+      entity,
+      matrix,
+      insertLayer,
+      out,
+      blockStack,
+      database,
+      includeLayer
+    )
     return
   }
 
@@ -1118,7 +1134,15 @@ function visitEntity(
     blockStack.add(block.objectId)
     const nested = composeTransforms(matrix, entity.getFullInsertionTransform())
     const blockInsertLayer = effectiveLayer(entity.layer, insertLayer)
-    visitBlock(block, nested, blockInsertLayer, out, blockStack, database)
+    visitBlock(
+      block,
+      nested,
+      blockInsertLayer,
+      out,
+      blockStack,
+      database,
+      includeLayer
+    )
     blockStack.delete(block.objectId)
     return
   }
@@ -1132,7 +1156,7 @@ function visitEntity(
       matrix,
       dimension.getFullDimBlockTransform()
     )
-    visitBlock(block, nested, layer, out, blockStack, database)
+    visitBlock(block, nested, layer, out, blockStack, database, includeLayer)
     blockStack.delete(block.objectId)
     return
   }
@@ -1285,10 +1309,19 @@ function visitBlock(
   insertLayer: string,
   out: AcExOsnapPrimitive[],
   blockStack: Set<AcDbObjectId>,
-  database: AcDbDatabase
+  database: AcDbDatabase,
+  includeLayer?: (layerName: string) => boolean
 ) {
   for (const entity of block.newIterator()) {
-    visitEntity(entity, matrix, insertLayer, out, blockStack, database)
+    visitEntity(
+      entity,
+      matrix,
+      insertLayer,
+      out,
+      blockStack,
+      database,
+      includeLayer
+    )
   }
 }
 
@@ -1344,9 +1377,15 @@ function ellipseFromArc(entity: AcDbArc): AcDbEllipse {
  * layoutSnapshot.osnap = osnap
  * ```
  */
+export interface AcExOsnapCatalogOptions {
+  /** When set, only entities on layers for which this returns `true` are exported. */
+  includeLayer?: (layerName: string) => boolean
+}
+
 export function buildOsnapCatalog(
   database: AcDbDatabase,
-  layoutBtrId: string
+  layoutBtrId: string,
+  options: AcExOsnapCatalogOptions = {}
 ): AcExOsnapCatalog {
   const block = resolveLayoutBlock(database, layoutBtrId)
   if (!block) {
@@ -1355,6 +1394,14 @@ export function buildOsnapCatalog(
 
   const primitives: AcExOsnapPrimitive[] = []
   const identity = new THREE.Matrix4()
-  visitBlock(block, identity, '0', primitives, new Set(), database)
+  visitBlock(
+    block,
+    identity,
+    '0',
+    primitives,
+    new Set(),
+    database,
+    options.includeLayer
+  )
   return { primitives }
 }

@@ -1,7 +1,9 @@
 import {
   AcApHtmlConvertor,
   packHtml,
-  AcApHtmlSnapshotBuilder
+  AcApHtmlSnapshotBuilder,
+  captureAcApHtmlViewState,
+  resolveAcApHtmlExportOptions
 } from '@mlightcad/cad-html-plugin'
 import { AcApDocManager, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
@@ -10,7 +12,12 @@ declare global {
     exportCadToHtml: (
       fileName: string,
       bytes: Uint8Array,
-      options?: { locale?: string; title?: string }
+      options?: {
+        locale?: string
+        title?: string
+        exportInvisibleLayers?: boolean
+        initialView?: 'fit' | 'current'
+      }
     ) => Promise<string>
   }
 }
@@ -57,16 +64,24 @@ window.exportCadToHtml = async (fileName, bytes, options = {}) => {
   await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
 
   const view = await new AcApHtmlConvertor().prepareAcTrView2dForHtmlExport(
-    docManager.curView
+    docManager.curView,
+    resolveAcApHtmlExportOptions(options)
   )
 
+  const resolved = resolveAcApHtmlExportOptions(options)
   const snapshot = await new AcApHtmlSnapshotBuilder().buildAsync(
     view.cadScene,
     docManager.curDocument.database,
     {
       title: options.title ?? fileName,
       background: view.backgroundColor,
-      locale: options.locale
+      locale: options.locale,
+      exportInvisibleLayers: resolved.exportInvisibleLayers,
+      initialView: resolved.initialView,
+      viewState:
+        resolved.initialView === 'current'
+          ? captureAcApHtmlViewState(view)
+          : undefined
     }
   )
 
