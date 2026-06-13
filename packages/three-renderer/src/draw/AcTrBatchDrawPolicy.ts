@@ -98,6 +98,51 @@ export function isLargeWorldCoordinatePoint(
 }
 
 /**
+ * Returns whether a world-space offset is too far from an established batch
+ * origin to keep float32 vertex precision when rebasing into shared buffers.
+ *
+ * @param origin - World-space origin already assigned to a batch container.
+ * @param worldOffset - World-space translation for the geometry being appended.
+ * @param threshold - Maximum allowed per-axis delta; defaults to
+ *   {@link RTE_REBASE_THRESHOLD}.
+ */
+/**
+ * Maximum per-axis absolute delta between a batch origin and a world offset.
+ */
+export function batchOriginOffsetDistance(
+  origin: THREE.Vector3,
+  worldOffset: THREE.Vector3
+): number {
+  return Math.max(
+    Math.abs(worldOffset.x - origin.x),
+    Math.abs(worldOffset.y - origin.y),
+    Math.abs(worldOffset.z - origin.z)
+  )
+}
+
+export function exceedsBatchOriginOffset(
+  origin: THREE.Vector3,
+  worldOffset: THREE.Vector3,
+  threshold = RTE_REBASE_THRESHOLD
+): boolean {
+  return batchOriginOffsetDistance(origin, worldOffset) >= threshold
+}
+
+/**
+ * Returns whether geometry with the given world offset can be merged into a
+ * batch that already has (or has not yet established) the supplied origin.
+ *
+ * Empty batches (`origin == null`) always accept the next geometry so it can
+ * define the origin from its bounding-box center.
+ */
+export function canMergeIntoBatchOrigin(
+  origin: THREE.Vector3 | undefined,
+  worldOffset: THREE.Vector3
+): boolean {
+  return origin == null || !exceedsBatchOriginOffset(origin, worldOffset)
+}
+
+/**
  * Computes a representative anchor point from a list of world-space vertices.
  *
  * The anchor is the center of the axis-aligned bounding box that contains all

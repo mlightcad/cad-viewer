@@ -13,7 +13,11 @@ jest.mock('@mlightcad/three-renderer', () => ({
   isBatchGeometryVisible: (flags: number) => (flags & 3) === 3
 }))
 
+import { AcTrBatchedGroup } from '../../three-renderer/src/batch/AcTrBatchedGroup'
 import { AcTrBatchedLine } from '../../three-renderer/src/batch/AcTrBatchedLine'
+import { RTE_REBASE_THRESHOLD } from '../../three-renderer/src/draw/AcTrBatchDrawPolicy'
+import { AcTrEntity } from '../../three-renderer/src/object/AcTrEntity'
+import { AcTrRenderContext } from '../../three-renderer/src/renderer/AcTrRenderContext'
 import * as THREE from 'three'
 
 import { compactIndexedSlice, readBatchWorldOffset, toWcsCoord } from '../src/AcExBatchBuffers'
@@ -347,5 +351,81 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
       1_800_045,
       0
     ])
+  })
+
+  it('exports multiple origin-split batched lines with reconstructable WCS', () => {
+    const group = new AcTrBatchedGroup()
+    const material = new THREE.LineBasicMaterial()
+    const farX = 100_000 + RTE_REBASE_THRESHOLD + 100
+
+    const createPositionedLine = (x: number, y: number) => {
+      const geometry = new THREE.BufferGeometry()
+      geometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute([0, 0, 0, 100, 50, 0], 3)
+      )
+      geometry.setIndex([0, 1])
+      const line = new THREE.LineSegments(geometry, material)
+      line.position.set(x, y, 0)
+      line.updateMatrixWorld(true)
+      return line
+    }
+
+    const createEntity = (objectId: string, ...drawables: THREE.Object3D[]) => {
+      const entity = new AcTrEntity(new AcTrRenderContext())
+      entity.objectId = objectId
+      entity.visible = true
+      for (const drawable of drawables) {
+        entity.add(drawable)
+      }
+      return entity
+    }
+
+    group.addEntity(
+      createEntity('line-near-a', createPositionedLine(100_000, 2_000_000))
+    )
+    group.addEntity(
+      createEntity('line-near-b', createPositionedLine(100_500, 2_000_050))
+    )
+    group.addEntity(createEntity('line-far', createPositionedLine(farX, 3_000_000)))
+
+    expect(
+      group.children.filter(child => child instanceof AcTrBatchedLine)
+    ).toHaveLength(2)
+
+    const { lineBatches } = collectBatchesFromObject3D(group)
+    expect(lineBatches).toHaveLength(2)
+
+    lineBatches.sort((a, b) => a.offset[0] - b.offset[0])
+    const nearExport = lineBatches[0]!
+    const farExport = lineBatches[1]!
+
+    expect(
+      toWcsCoord(nearExport.positions[0]!, nearExport.offset[0]!)
+    ).toBeCloseTo(100_000, 0)
+    expect(
+      toWcsCoord(nearExport.positions[1]!, nearExport.offset[1]!)
+    ).toBeCloseTo(2_000_000, 0)
+    expect(
+      toWcsCoord(nearExport.positions[3]!, nearExport.offset[0]!)
+    ).toBeCloseTo(100_100, 0)
+    expect(
+      toWcsCoord(nearExport.positions[4]!, nearExport.offset[1]!)
+    ).toBeCloseTo(2_000_050, 0)
+
+    expect(toWcsCoord(farExport.positions[0]!, farExport.offset[0]!)).toBeCloseTo(
+      farX,
+      0
+    )
+    expect(toWcsCoord(farExport.positions[1]!, farExport.offset[1]!)).toBeCloseTo(
+      3_000_000,
+      0
+    )
+
+    for (const batch of lineBatches) {
+      for (let i = 0; i < batch.positions.length; i++) {
+        expect(Math.abs(batch.positions[i]!)).toBeLessThan(RTE_REBASE_THRESHOLD)
+      }
+    }
   })
 })

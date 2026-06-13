@@ -352,4 +352,128 @@ describe('AcTrBatchedGroup', () => {
       true
     )
   })
+
+  it('splits mesh batches when geometry world offsets are too far apart', () => {
+    const group = new AcTrBatchedGroup()
+    const material = new THREE.MeshBasicMaterial()
+
+    const createPositionedGlyph = (x: number) => {
+      const mesh = createGlyphMesh(0)
+      mesh.material = material
+      mesh.position.set(x, 0, 0)
+      mesh.updateMatrixWorld(true)
+      return mesh
+    }
+
+    group.addEntity(
+      createEntity(
+        'glyph-near',
+        createPositionedGlyph(100_000),
+        createPositionedGlyph(100_500)
+      )
+    )
+    group.addEntity(
+      createEntity(
+        'glyph-far',
+        createPositionedGlyph(100_000 + RTE_REBASE_THRESHOLD + 100)
+      )
+    )
+
+    const batchedMeshes = group.children.filter(
+      child => child instanceof AcTrBatchedMesh
+    )
+    expect(batchedMeshes).toHaveLength(2)
+
+    for (const batch of batchedMeshes) {
+      const positions = batch.geometry.getAttribute('position')
+        .array as Float32Array
+      for (let i = 0; i < positions.length; i += 3) {
+        expect(Math.abs(positions[i])).toBeLessThan(RTE_REBASE_THRESHOLD)
+        expect(Math.abs(positions[i + 1])).toBeLessThan(RTE_REBASE_THRESHOLD)
+      }
+    }
+  })
+
+  it('splits line batches when geometry world offsets are too far apart', () => {
+    const group = new AcTrBatchedGroup()
+    const material = new THREE.LineBasicMaterial()
+
+    const createPositionedLine = (x: number) => {
+      const line = createLineSegments(
+        { x: 0, y: 0, z: 0 },
+        { x: 10, y: 0, z: 0 },
+        new THREE.Vector3(x, 0, 0)
+      )
+      line.material = material
+      return line
+    }
+
+    group.addEntity(
+      createEntity(
+        'line-near',
+        createPositionedLine(100_000),
+        createPositionedLine(100_500)
+      )
+    )
+    group.addEntity(
+      createEntity(
+        'line-far',
+        createPositionedLine(100_000 + RTE_REBASE_THRESHOLD + 100)
+      )
+    )
+
+    const batchedLines = group.children.filter(
+      child => child instanceof AcTrBatchedLine
+    )
+    expect(batchedLines).toHaveLength(2)
+
+    for (const batch of batchedLines) {
+      const positions = batch.geometry.getAttribute('position')
+        .array as Float32Array
+      for (let i = 0; i < positions.length; i += 3) {
+        expect(Math.abs(positions[i])).toBeLessThan(RTE_REBASE_THRESHOLD)
+      }
+    }
+  })
+
+  it('merges geometry into the nearest origin batch when multiple are eligible', () => {
+    const group = new AcTrBatchedGroup()
+    const material = new THREE.LineBasicMaterial()
+    const farX = 100_000 + RTE_REBASE_THRESHOLD + 100
+
+    const createPositionedLine = (x: number) => {
+      const line = createLineSegments(
+        { x: 0, y: 0, z: 0 },
+        { x: 10, y: 0, z: 0 },
+        new THREE.Vector3(x, 0, 0)
+      )
+      line.material = material
+      return line
+    }
+
+    group.addEntity(createEntity('line-near', createPositionedLine(100_000)))
+    group.addEntity(createEntity('line-far', createPositionedLine(farX)))
+
+    const batchedLines = group.children
+      .filter(child => child instanceof AcTrBatchedLine)
+      .sort((a, b) => a.position.x - b.position.x) as AcTrBatchedLine[]
+    expect(batchedLines).toHaveLength(2)
+    const nearBatch = batchedLines[0]
+    const farBatch = batchedLines[1]
+    expect(nearBatch.geometryCount).toBe(1)
+    expect(farBatch.geometryCount).toBe(1)
+
+    group.addEntity(
+      createEntity('line-between', createPositionedLine(farX - 50_000))
+    )
+
+    expect(nearBatch.geometryCount).toBe(1)
+    expect(farBatch.geometryCount).toBe(2)
+
+    const positions = farBatch.geometry.getAttribute('position')
+      .array as Float32Array
+    for (let i = 0; i < positions.length; i += 3) {
+      expect(Math.abs(positions[i])).toBeLessThan(RTE_REBASE_THRESHOLD)
+    }
+  })
 })

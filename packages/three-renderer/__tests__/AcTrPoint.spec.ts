@@ -32,7 +32,7 @@ function getMaxAbsPositionComponent(geometry: THREE.BufferGeometry) {
   return maxAbs
 }
 
-function findPointSymbolDrawable(group: AcTrBatchedGroup) {
+function findLargeCoordinatePointSymbolDrawable(group: AcTrBatchedGroup) {
   let drawable: THREE.LineSegments | undefined
   group.traverse(child => {
     if (drawable) {
@@ -110,7 +110,7 @@ describe('AcTrPoint large coordinates', () => {
     expect(point.wcsBbox.max.y).toBeGreaterThanOrEqual(2_000_000)
   })
 
-  it('renders large point symbols correctly in the unbatched group', () => {
+  it('renders large point symbols correctly in a rebased batch', () => {
     const pointEntity = new AcTrPoint(
       largePoint,
       defaultTraits,
@@ -120,12 +120,12 @@ describe('AcTrPoint large coordinates', () => {
     pointEntity.objectId = 'point-large'
     pointEntity.visible = true
 
-    expect(pointEntity.resolveDrawMode()).toBe('unbatch')
+    expect(pointEntity.resolveDrawMode()).toBe('batch')
 
     const group = new AcTrBatchedGroup()
     group.addEntity(pointEntity)
 
-    const drawable = findPointSymbolDrawable(group)
+    const drawable = findLargeCoordinatePointSymbolDrawable(group)
     expect(drawable).toBeDefined()
     expect(getMaxAbsPositionComponent(drawable!.geometry)).toBeLessThan(2)
     expect(drawable!.position.x).toBeCloseTo(largePoint.x, 6)
