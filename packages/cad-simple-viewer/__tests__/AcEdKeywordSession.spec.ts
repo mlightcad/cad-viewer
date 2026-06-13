@@ -43,15 +43,17 @@ describe('KeywordSession Enter behavior', () => {
     expect(resolved).toEqual([''])
   })
 
-  test('Enter with no default and allowNone=false is invalid', () => {
-    const options = new AcEdPromptKeywordOptions('pick')
-    options.keywords.add('First', 'First', 'First')
-    options.allowNone = false
+  test('Enter with default keyword takes precedence over allowNone', () => {
+    const options = new AcEdPromptKeywordOptions('export invisible layers <Yes>')
+    const yes = options.keywords.add('Yes(Y)', 'Yes', 'Yes')
+    options.keywords.add('No(N)', 'No', 'No')
+    options.keywords.default = yes
+    options.allowNone = true
 
     const { session, resolved } = createSession(options)
     const handled = session.handleEnter('')
 
-    expect(handled).toBe(false)
-    expect(resolved).toEqual([])
+    expect(handled).toBe(true)
+    expect(resolved).toEqual(['Yes'])
   })
 })
