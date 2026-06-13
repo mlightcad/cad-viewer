@@ -7,6 +7,11 @@ import {
   yieldToMain
 } from '@mlightcad/cad-simple-viewer'
 
+import {
+  type AcApHtmlExportOptions,
+  captureAcApHtmlViewState,
+  resolveAcApHtmlExportOptions
+} from './AcApHtmlExportOptions'
 import { AcApHtmlSnapshotBuilder } from './AcApHtmlSnapshotBuilder'
 import { packHtml } from './AcExHtmlPackager'
 import type { AcExSnapshot } from './AcExSnapshotTypes'
@@ -40,7 +45,8 @@ export class AcApHtmlConvertor {
    * live scene after export completes.
    */
   async prepareAcTrView2dForHtmlExport(
-    view: AcEdBaseView | null | undefined
+    view: AcEdBaseView | null | undefined,
+    options: Pick<AcApHtmlExportOptions, 'exportInvisibleLayers'> = {}
   ): Promise<AcTrView2d> {
     if (!view || !('cadScene' in view) || !view.cadScene) {
       throw new Error(
@@ -52,7 +58,10 @@ export class AcApHtmlConvertor {
         'HTML export requires a 2D CAD view. Open a drawing before exporting.'
       )
     }
-    await view.ensureEntitiesConvertedForExport()
+    const resolved = resolveAcApHtmlExportOptions(options)
+    await view.ensureEntitiesConvertedForExport({
+      includeInvisibleLayers: resolved.exportInvisibleLayers
+    })
     await yieldToMain()
     return view
   }
@@ -63,25 +72,41 @@ export class AcApHtmlConvertor {
    * @param fileName - Optional base name for the download (without extension).
    *   When omitted, the active document's `fileName` is used. A `.html` suffix
    *   is always applied; `.dwg` / `.dxf` suffixes on the input are stripped.
+   * @param options - Export options such as invisible-layer inclusion and initial view.
+   * @param view - Optional view to export from. Defaults to the active view.
    * @returns Resolves when packaging and download complete.
    */
-  async convert(fileName?: string) {
+  async convert(
+    fileName?: string,
+    options: AcApHtmlExportOptions = {},
+    view?: AcEdBaseView | null
+  ) {
     const docManager = AcApDocManager.instance
+    const resolved = resolveAcApHtmlExportOptions(options)
     docManager.showBusyIndicator()
 
     try {
       await yieldToMain()
 
       const document = docManager.curDocument
-      const view = await this.prepareAcTrView2dForHtmlExport(docManager.curView)
+      const exportView = await this.prepareAcTrView2dForHtmlExport(
+        view ?? docManager.curView,
+        resolved
+      )
 
       const sourceName = fileName || document.fileName || document.docTitle
       const snapshot = await this._snapshotBuilder.buildAsync(
-        view.cadScene,
+        exportView.cadScene,
         document.database,
         {
           title: getDrawingExportBaseName(sourceName),
-          background: view.backgroundColor
+          background: exportView.backgroundColor,
+          exportInvisibleLayers: resolved.exportInvisibleLayers,
+          initialView: resolved.initialView,
+          viewState:
+            resolved.initialView === 'current'
+              ? captureAcApHtmlViewState(exportView)
+              : undefined
         }
       )
 

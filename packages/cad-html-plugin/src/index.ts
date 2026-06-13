@@ -54,6 +54,11 @@ export const HTML_VIEWER_RUNTIME_FILE = 'viewer-runtime.iife.js'
 export { AcApExportHtmlCmd } from './AcApExportHtmlCmd'
 export { AcApHtmlConvertor } from './AcApHtmlConvertor'
 export {
+  type AcApHtmlExportOptions,
+  captureAcApHtmlViewState,
+  resolveAcApHtmlExportOptions
+} from './AcApHtmlExportOptions'
+export {
   AcApHtmlSnapshotBuilder,
   type AcApHtmlSnapshotBuilderOptions
 } from './AcApHtmlSnapshotBuilder'

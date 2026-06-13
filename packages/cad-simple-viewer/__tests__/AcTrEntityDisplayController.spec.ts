@@ -189,4 +189,35 @@ describe('AcTrEntityDisplayController', () => {
 
     expect(pending.map(entity => entity.objectId)).toEqual(['line-off'])
   })
+
+  it('collectMissingEntitiesForExport skips off-layer entities when invisible layers are excluded', () => {
+    const offLayer = {
+      name: 'off',
+      isOff: true,
+      isFrozen: false,
+      color: new AcCmColor()
+    }
+    const onLayer = {
+      name: '0',
+      isOff: false,
+      isFrozen: false,
+      color: new AcCmColor()
+    }
+    const controller = new AcTrEntityDisplayController(name =>
+      name === 'off' ? offLayer : onLayer
+    )
+    const blockTableRecord = createBlockTableRecord([
+      createDbEntity('line-off', 'off'),
+      createDbEntity('line-visible', '0')
+    ])
+    const rendered = new Set<string>()
+
+    const pending = controller.collectMissingEntitiesForExport(
+      blockTableRecord,
+      objectId => rendered.has(objectId),
+      false
+    )
+
+    expect(pending.map(entity => entity.objectId)).toEqual(['line-visible'])
+  })
 })

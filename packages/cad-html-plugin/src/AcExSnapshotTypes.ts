@@ -220,6 +220,19 @@ export interface AcExLayoutSnapshot {
   osnap?: AcExOsnapCatalog
 }
 
+/** Camera state for restoring the export-time view in the offline HTML viewer. */
+export interface AcExViewState {
+  /** View center X in world coordinates. */
+  centerX: number
+  /** View center Y in world coordinates. */
+  centerY: number
+  /** Orthographic zoom scaled for the offline viewer frustum. */
+  zoom: number
+}
+
+/** How the offline HTML viewer frames the drawing on first open. */
+export type AcExInitialViewMode = 'fit' | 'current'
+
 /**
  * Display-only snapshot embedded in exported HTML.
  * Does not contain DXF/DWG bytes, `AcDb` entity records, or editable drawing state.
@@ -250,6 +263,16 @@ export interface AcExSnapshot {
     background: number
     /** Export-time UI locale from the CAD app (informational; runtime uses browser language). */
     locale?: string
+    /**
+     * Initial framing when the HTML file opens. Defaults to `'fit'` when omitted
+     * for snapshots produced before this option existed.
+     */
+    initialView?: AcExInitialViewMode
+    /**
+     * Saved view center and zoom when {@link AcExSnapshot.meta.initialView} is
+     * `'current'`.
+     */
+    viewState?: AcExViewState
   }
   /** Layer table used by the layer drawer (visibility toggles, swatches). */
   layers: AcExLayerSnapshot[]

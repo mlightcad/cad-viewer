@@ -974,5 +974,31 @@ export default {
         global: 'Window'
       }
     }
+  },
+  chtml: {
+    exportInvisibleLayers: '是否导出不可见图层',
+    initialView: '打开 HTML 时的初始视图',
+    keywords: {
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      },
+      extents: {
+        display: '范围(E)',
+        local: '范围',
+        global: 'Extents'
+      },
+      current: {
+        display: '当前(C)',
+        local: '当前',
+        global: 'Current'
+      }
+    }
   }
 }

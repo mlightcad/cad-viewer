@@ -19,12 +19,26 @@ program
   )
   .option('--locale <code>', 'UI locale embedded in HTML (e.g. en, zh)', 'en')
   .option('--title <text>', 'Drawing title in exported metadata')
+  .option(
+    '--no-export-invisible-layers',
+    'Exclude off/frozen layer geometry from the exported HTML'
+  )
+  .option(
+    '--initial-view <mode>',
+    'Initial view when opening HTML: fit (zoom extents) or current',
+    'fit'
+  )
   .action(async (input: string, opts) => {
     try {
+      const initialView =
+        opts.initialView === 'current' ? 'current' : ('fit' as const)
       const outputPath = await exportToHtml(path.resolve(input), {
         outputPath: opts.output ? path.resolve(opts.output) : undefined,
         locale: opts.locale,
-        title: opts.title
+        title: opts.title,
+        exportInvisibleLayers:
+          opts.exportInvisibleLayers === false ? false : undefined,
+        initialView
       })
       console.log(`Wrote ${outputPath}`)
     } catch (error) {

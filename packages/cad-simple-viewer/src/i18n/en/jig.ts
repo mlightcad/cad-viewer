@@ -985,5 +985,31 @@ export default {
         global: 'Window'
       }
     }
+  },
+  chtml: {
+    exportInvisibleLayers: 'Export invisible layers',
+    initialView: 'Initial view when opening HTML',
+    keywords: {
+      yes: {
+        display: 'Yes(Y)',
+        local: 'Yes',
+        global: 'Yes'
+      },
+      no: {
+        display: 'No(N)',
+        local: 'No',
+        global: 'No'
+      },
+      extents: {
+        display: 'Extents(E)',
+        local: 'Extents',
+        global: 'Extents'
+      },
+      current: {
+        display: 'Current(C)',
+        local: 'Current',
+        global: 'Current'
+      }
+    }
   }
 }

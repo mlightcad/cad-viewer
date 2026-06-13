@@ -387,7 +387,13 @@ function startViewer(): void {
   })
 
   resize()
-  fit()
+  if (snapshot.meta.initialView === 'current' && snapshot.meta.viewState) {
+    const { centerX, centerY, zoom } = snapshot.meta.viewState
+    flyTo(centerX, centerY, zoom)
+    render()
+  } else {
+    fit()
+  }
   releaseLayerGroupsGeometryCpuArrays(layerGroups)
   measure.refreshIdleStatus()
   hideLoading()
