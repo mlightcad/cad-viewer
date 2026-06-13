@@ -1,5 +1,6 @@
 import { AcTrLinePatternShaders } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 import {
   computeLineDistancesForSegments,
@@ -94,6 +95,26 @@ describe('AcExPatternSnapshot', () => {
       shift: 0.25,
       gradientType: 1
     })
+  })
+
+  it('recreates wide-line viewer materials from snapshot batches', () => {
+    const resolution = new THREE.Vector2(1280, 720)
+    const lineMaterial = createViewerLineMaterial(
+      {
+        layer: '0',
+        color: 0x00ff00,
+        offset: [0, 0, 0],
+        positions: Float32Array.from([0, 0, 0, 100, 50, 0]),
+        lineWidth: 2.5
+      },
+      resolution
+    )
+
+    expect(lineMaterial).toBeInstanceOf(LineMaterial)
+    expect((lineMaterial as LineMaterial).linewidth).toBe(2.5)
+    expect((lineMaterial as LineMaterial).color.getHex()).toBe(0x00ff00)
+    expect((lineMaterial as LineMaterial).resolution.x).toBe(1280)
+    expect((lineMaterial as LineMaterial).resolution.y).toBe(720)
   })
 
   it('recreates patterned viewer materials from snapshot batches', () => {

@@ -94,17 +94,46 @@ function clearLayoutBatchBuffers(layout: AcExLayoutSnapshot): void {
 }
 
 function releaseBufferGeometryCpuArrays(geometry: THREE.BufferGeometry): void {
+  const releasedInterleaved = new Set<THREE.InterleavedBuffer>()
   for (const key in geometry.attributes) {
-    const attr = geometry.attributes[key] as THREE.BufferAttribute
-    attr.array = new Float32Array(0)
-    attr.clearUpdateRanges()
-    attr.needsUpdate = false
+    releaseAttributeCpuArray(geometry.attributes[key], releasedInterleaved)
   }
 
   const index = geometry.getIndex()
   if (index) {
-    index.array = new Uint32Array(0)
-    index.clearUpdateRanges()
-    index.needsUpdate = false
+    releaseAttributeCpuArray(index, releasedInterleaved)
   }
+}
+
+type AcExCpuReleasableAttribute =
+  | THREE.BufferAttribute
+  | THREE.InterleavedBufferAttribute
+
+function releaseAttributeCpuArray(
+  attr: AcExCpuReleasableAttribute,
+  releasedInterleaved: Set<THREE.InterleavedBuffer>
+): void {
+  const candidate = attr as THREE.InterleavedBufferAttribute & {
+    isInterleavedBufferAttribute?: boolean
+    isBufferAttribute?: boolean
+  }
+  if (candidate.isInterleavedBufferAttribute === true) {
+    const data = candidate.data
+    if (data && !releasedInterleaved.has(data)) {
+      releasedInterleaved.add(data)
+      data.array = new Float32Array(0)
+      data.needsUpdate = false
+    }
+    candidate.needsUpdate = false
+    return
+  }
+
+  if (candidate.isBufferAttribute !== true) {
+    return
+  }
+
+  const bufferAttr = candidate as unknown as THREE.BufferAttribute
+  bufferAttr.array = new Float32Array(0) as typeof bufferAttr.array
+  bufferAttr.clearUpdateRanges()
+  bufferAttr.needsUpdate = false
 }

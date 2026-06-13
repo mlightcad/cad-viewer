@@ -2,13 +2,13 @@ import {
   AcCmColor,
   AcCmEventManager,
   AcDbDatabaseConverterManager,
-  AcDbDxfConverter,
   AcDbFileType,
   acdbHostApplicationServices,
   AcDbProgressdEventArgs,
   AcDbSysVarManager,
   log
 } from '@mlightcad/data-model'
+import { AcDbDxfConverter } from '@mlightcad/dxf-json-converter'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 import { FontManager } from '@mlightcad/mtext-renderer'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'

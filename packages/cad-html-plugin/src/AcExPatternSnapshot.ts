@@ -5,6 +5,7 @@ import {
   createHatchPatternShaderMaterial
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 import { copyFloat32Range } from './AcExBatchBuffers'
 import type {
@@ -257,7 +258,20 @@ export function exportVertexAttributeSlice(
 /**
  * Creates a viewer material for one exported line batch.
  */
-export function createViewerLineMaterial(batch: AcExLineBatch): THREE.Material {
+export function createViewerLineMaterial(
+  batch: AcExLineBatch,
+  resolution?: THREE.Vector2
+): THREE.Material {
+  if (batch.lineWidth != null && batch.lineWidth > 0) {
+    const material = new LineMaterial({
+      color: batch.color,
+      linewidth: batch.lineWidth
+    })
+    if (resolution) {
+      material.resolution.copy(resolution)
+    }
+    return material
+  }
   if (batch.linePattern) {
     return AcTrLinePatternShaders.createLineShaderMaterialFromScaledPattern(
       batch.linePattern.pattern,

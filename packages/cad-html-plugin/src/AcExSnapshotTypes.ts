@@ -131,6 +131,11 @@ export interface AcExLineBatch {
    * {@link AcExLineBatch.linePattern} is set.
    */
   lineDistances?: Float32Array
+  /**
+   * Screen-space line width in pixels for wide lines rendered with
+   * `LineSegments2` / `LineMaterial`. Omitted for 1px `THREE.LineSegments`.
+   */
+  lineWidth?: number
 }
 
 /**

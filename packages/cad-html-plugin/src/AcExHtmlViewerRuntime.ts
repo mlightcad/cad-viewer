@@ -1,6 +1,9 @@
 import { FLOAT_TOL } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
@@ -117,6 +120,8 @@ function startViewer(): void {
   const controls = createOrbitControls(camera, renderer.domElement)
 
   const layerGroups = new Map<string, THREE.Group>()
+  const wideLineMaterials: LineMaterial[] = []
+  const wideLineResolution = new THREE.Vector2(initialWidth, initialHeight)
 
   const getLayerGroup = (layerName: string): THREE.Group => {
     let group = layerGroups.get(layerName)
@@ -131,7 +136,7 @@ function startViewer(): void {
   }
 
   for (const batch of layout.lineBatches) {
-    const object = createLineObject(batch)
+    const object = createLineObject(batch, wideLineMaterials, wideLineResolution)
     if (object) getLayerGroup(batch.layer).add(object)
   }
   for (const batch of layout.meshBatches) {
@@ -191,6 +196,10 @@ function startViewer(): void {
   const resize = () => {
     const { width, height } = getCanvasSize()
     renderer.setSize(width, height)
+    wideLineResolution.set(width, height)
+    for (const material of wideLineMaterials) {
+      material.resolution.copy(wideLineResolution)
+    }
     updateCameraFrustum(width, height)
   }
 
@@ -644,8 +653,26 @@ function setupLayerPanel(
   }
 }
 
-function createLineObject(batch: AcExLineBatch): THREE.LineSegments | null {
+function createLineObject(
+  batch: AcExLineBatch,
+  wideLineMaterials: LineMaterial[],
+  wideLineResolution: THREE.Vector2
+): THREE.Object3D | null {
   if (batch.positions.length < 6) return null
+
+  if (batch.lineWidth != null && batch.lineWidth > 0) {
+    const geometry = new LineSegmentsGeometry()
+    geometry.setPositions(copyFloat32Buffer(batch.positions))
+    const material = createViewerLineMaterial(
+      batch,
+      wideLineResolution
+    ) as LineMaterial
+    wideLineMaterials.push(material)
+    const object = new LineSegments2(geometry, material)
+    object.position.set(batch.offset[0], batch.offset[1], batch.offset[2])
+    return object
+  }
+
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute(
     'position',

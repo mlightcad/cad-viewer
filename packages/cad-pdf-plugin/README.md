@@ -1,5 +1,8 @@
 # @mlightcad/cad-pdf-plugin
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/@mlightcad/cad-pdf-plugin.svg)](https://www.npmjs.com/package/@mlightcad/cad-pdf-plugin)
+
 PDF **export** and **import** plugin for [`@mlightcad/cad-simple-viewer`](../cad-simple-viewer). Registers two system commands:
 
 | Command | Description |

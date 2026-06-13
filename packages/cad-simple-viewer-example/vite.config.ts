@@ -39,10 +39,6 @@ export default defineConfig(() => {
       viteStaticCopy({
         targets: [
           {
-            src: './node_modules/@mlightcad/data-model/dist/dxf-parser-worker.js',
-            dest: 'workers'
-          },
-          {
             src: './node_modules/@mlightcad/cad-simple-viewer/dist/*-worker.js',
             dest: 'workers'
           },

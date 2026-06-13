@@ -1,5 +1,8 @@
 # @mlightcad/cad-svg-plugin
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/@mlightcad/cad-svg-plugin.svg)](https://www.npmjs.com/package/@mlightcad/cad-svg-plugin)
+
 SVG **export** plugin and rendering engine for [`@mlightcad/cad-simple-viewer`](../cad-simple-viewer). Registers one system command:
 
 | Command | Description |

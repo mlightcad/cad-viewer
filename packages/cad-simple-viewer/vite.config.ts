@@ -26,6 +26,10 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
+          src: './node_modules/@mlightcad/dxf-json-converter/dist/dxf-parser-worker.js',
+          dest: ''
+        },
+        {
           src: './node_modules/@mlightcad/libredwg-converter/dist/libredwg-parser-worker.js',
           dest: ''
         },
