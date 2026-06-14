@@ -6,7 +6,9 @@ import {
   getMaterialMetadata,
   isBatchGeometryActive,
   isBatchGeometryVisible,
-  isHighlightOverlayDescendant
+  isHighlightCloneDrawable,
+  isHighlightOverlayDescendant,
+  isObjectHierarchyVisible
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
@@ -47,6 +49,15 @@ export interface AcExCollectedBatches {
   lineBatches: AcExLineBatch[]
   /** Mesh and point batches extracted from the subtree. */
   meshBatches: AcExMeshBatch[]
+}
+
+/** Per-slot geometry range metadata from {@link AcTrBatchedExportSource}. */
+type AcTrPackedGeometryInfo = {
+  flags: number
+  vertexStart: number
+  vertexCount: number
+  indexStart?: number
+  indexCount?: number
 }
 
 /**
@@ -131,19 +142,16 @@ export function exportBufferGeometrySlice(
   return { positions }
 }
 
-/** Per-slot geometry range metadata from {@link AcTrBatchedExportSource}. */
-type AcTrPackedGeometryInfo = {
-  flags: number
-  vertexStart: number
-  vertexCount: number
-  indexStart?: number
-  indexCount?: number
-}
-
 /** Batched object that exposes packed geometry slot metadata for HTML export. */
 type AcTrBatchedExportSource = {
   mappingStats: { count: number }
   getGeometryRangeAt(geometryId: number): AcTrPackedGeometryInfo
+}
+
+function shouldExportBatchedSlot(info: AcTrPackedGeometryInfo): boolean {
+  return (
+    isBatchGeometryActive(info.flags) && isBatchGeometryVisible(info.flags)
+  )
 }
 
 /**
@@ -184,11 +192,7 @@ export function exportActiveBatchedSlice(
       }
       const indexStart = info.indexStart ?? 0
       const indexCount = info.indexCount ?? 0
-      if (
-        !isBatchGeometryActive(info.flags) ||
-        !isBatchGeometryVisible(info.flags) ||
-        indexCount <= 0
-      ) {
+      if (!shouldExportBatchedSlot(info) || indexCount <= 0) {
         continue
       }
       for (let i = 0; i < indexCount; i++) {
@@ -211,11 +215,7 @@ export function exportActiveBatchedSlice(
     } catch {
       continue
     }
-    if (
-      !isBatchGeometryActive(info.flags) ||
-      !isBatchGeometryVisible(info.flags) ||
-      info.vertexCount <= 0
-    ) {
+    if (!shouldExportBatchedSlot(info) || info.vertexCount <= 0) {
       continue
     }
     const start = info.vertexStart * itemSize
@@ -270,11 +270,7 @@ export function exportActiveBatchedLine2Slice(
     } catch {
       continue
     }
-    if (
-      !isBatchGeometryActive(info.flags) ||
-      !isBatchGeometryVisible(info.flags) ||
-      info.vertexCount <= 0
-    ) {
+    if (!shouldExportBatchedSlot(info) || info.vertexCount <= 0) {
       continue
     }
     const segmentStart = info.vertexStart
@@ -286,6 +282,21 @@ export function exportActiveBatchedLine2Slice(
   }
 
   return { positions: new Float32Array(activeFloats) }
+}
+
+function resolveLineSegments2SegmentCount(
+  geometry: THREE.BufferGeometry,
+  segmentCapacity: number
+): number {
+  const instanced = geometry as THREE.InstancedBufferGeometry
+  const instanceCount = instanced.instanceCount
+  if (Number.isFinite(instanceCount) && instanceCount >= 0) {
+    return Math.min(Math.floor(instanceCount), segmentCapacity)
+  }
+
+  const drawRange = geometry.drawRange
+  const rangeStart = clampRangeStart(drawRange.start, segmentCapacity)
+  return resolveRangeCount(drawRange.count, segmentCapacity, rangeStart)
 }
 
 function exportLineSegments2Slice(
@@ -303,12 +314,24 @@ function exportLineSegments2Slice(
     return { positions: new Float32Array(0) }
   }
 
+  const segmentCount = resolveLineSegments2SegmentCount(
+    geometry,
+    startAttr.count
+  )
+  if (segmentCount <= 0) {
+    return { positions: new Float32Array(0) }
+  }
+
   const activeFloats: number[] = []
-  for (let segment = 0; segment < startAttr.count; segment++) {
+  for (let segment = 0; segment < segmentCount; segment++) {
     appendSegmentFromAttribute(activeFloats, startAttr, segment)
     appendSegmentFromAttribute(activeFloats, endAttr, segment)
   }
   return { positions: new Float32Array(activeFloats) }
+}
+
+function shouldExportPlainDrawable(object: THREE.Object3D): boolean {
+  return isObjectHierarchyVisible(object)
 }
 
 function readLineWidth(material: THREE.Material): number | undefined {
@@ -436,7 +459,9 @@ function exportBatchedLine2(
   }
 }
 
-function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
+function exportBatchedLine(
+  batch: AcTrBatchedLine
+): AcExLineBatch | undefined {
   const slice = exportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
@@ -457,7 +482,9 @@ function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
   }
 }
 
-function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
+function exportBatchedMesh(
+  batch: AcTrBatchedMesh
+): AcExMeshBatch | undefined {
   const slice = exportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
@@ -506,7 +533,10 @@ export function collectBatchesFromObject3D(
   const meshBatches: AcExMeshBatch[] = []
 
   root.traverse(child => {
-    if (isHighlightOverlayDescendant(child)) {
+    if (
+      isHighlightOverlayDescendant(child) ||
+      isHighlightCloneDrawable(child)
+    ) {
       return
     }
     if (child instanceof AcTrBatchedLine) {
@@ -530,6 +560,7 @@ export function collectBatchesFromObject3D(
       return
     }
     if (child instanceof LineSegments2) {
+      if (!shouldExportPlainDrawable(child)) return
       const rawSlice = exportLineSegments2Slice(child.geometry)
       if (rawSlice.positions.length === 0) return
       const material = child.material as THREE.Material
@@ -546,6 +577,7 @@ export function collectBatchesFromObject3D(
       child instanceof THREE.LineSegments &&
       !(child instanceof AcTrBatchedLine)
     ) {
+      if (!shouldExportPlainDrawable(child)) return
       const rawSlice = exportBufferGeometrySlice(child.geometry)
       if (rawSlice.positions.length === 0) return
       const material = child.material as THREE.Material
@@ -566,6 +598,7 @@ export function collectBatchesFromObject3D(
       child instanceof THREE.Mesh &&
       !(child instanceof AcTrBatchedMesh)
     ) {
+      if (!shouldExportPlainDrawable(child)) return
       const rawSlice = exportBufferGeometrySlice(child.geometry)
       if (rawSlice.positions.length === 0) return
       const material = child.material as THREE.Material

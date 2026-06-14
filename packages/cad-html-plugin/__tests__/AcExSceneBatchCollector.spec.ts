@@ -15,7 +15,9 @@ jest.mock('@mlightcad/three-renderer', () => {
     getMaterialMetadata,
     isBatchGeometryActive,
     isBatchGeometryVisible,
-    isHighlightOverlayDescendant
+    isHighlightCloneDrawable,
+    isHighlightOverlayDescendant,
+    isObjectHierarchyVisible
   } = jest.requireActual('../../three-renderer/src')
 
   return {
@@ -26,7 +28,9 @@ jest.mock('@mlightcad/three-renderer', () => {
     getMaterialMetadata,
     isBatchGeometryActive,
     isBatchGeometryVisible,
-    isHighlightOverlayDescendant
+    isHighlightCloneDrawable,
+    isHighlightOverlayDescendant,
+    isObjectHierarchyVisible
   }
 })
 
@@ -53,6 +57,7 @@ import {
   exportActiveBatchedSlice,
   exportBufferGeometrySlice
 } from '../src/AcExSceneBatchCollector'
+import { getHighlightUserData } from '../../three-renderer/src/util/AcTrObjectUserData'
 
 const BATCH_SLOT_ACTIVE = 0b11
 const BATCH_SLOT_HIDDEN = 0b01
@@ -602,5 +607,94 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     const { lineBatches } = collectBatchesFromObject3D(group)
     expect(lineBatches).toHaveLength(1)
     expect(lineBatches[0]!.color).toBe(0xffffff)
+  })
+
+  it('skips highlight clone drawables even without overlay group markers', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    const source = new THREE.LineSegments(
+      geometry,
+      new THREE.LineBasicMaterial({ color: 0xffffff })
+    )
+    source.position.set(100, 200, 0)
+
+    const highlightClone = source.clone() as THREE.LineSegments
+    getHighlightUserData(highlightClone).objectId = 'line-1'
+
+    const root = new THREE.Group()
+    root.add(source)
+    root.add(highlightClone)
+
+    const { lineBatches } = collectBatchesFromObject3D(root)
+    expect(lineBatches).toHaveLength(1)
+    expect(lineBatches[0]!.color).toBe(0xffffff)
+  })
+
+  it('skips scene-hidden unbatched drawables during export', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    const visible = new THREE.LineSegments(
+      geometry,
+      new THREE.LineBasicMaterial({ color: 0xffffff })
+    )
+    const hidden = visible.clone() as THREE.LineSegments
+    hidden.visible = false
+
+    const root = new THREE.Group()
+    root.add(visible)
+    root.add(hidden)
+
+    const { lineBatches } = collectBatchesFromObject3D(root)
+    expect(lineBatches).toHaveLength(1)
+  })
+
+  it('skips drawables hidden by an invisible ancestor during export', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    const line = new THREE.LineSegments(
+      geometry,
+      new THREE.LineBasicMaterial({ color: 0xffffff })
+    )
+    const hiddenGroup = new THREE.Group()
+    hiddenGroup.visible = false
+    hiddenGroup.add(line)
+
+    const visible = new THREE.LineSegments(
+      geometry.clone(),
+      new THREE.LineBasicMaterial({ color: 0xffffff })
+    )
+
+    const root = new THREE.Group()
+    root.add(hiddenGroup)
+    root.add(visible)
+
+    const { lineBatches } = collectBatchesFromObject3D(root)
+    expect(lineBatches).toHaveLength(1)
+  })
+
+  it('exports only active LineSegments2 instanceCount segments', () => {
+    const geometry = new LineSegmentsGeometry()
+    geometry.setPositions(
+      new Float32Array([
+        0, 0, 0, 10, 0, 0, 0, 10, 0, 10, 10, 0, 99, 99, 99, 88, 88, 88
+      ])
+    )
+    ;(geometry as THREE.InstancedBufferGeometry).instanceCount = 2
+
+    const material = new LineMaterial({ color: 0xff0000, linewidth: 2.5 })
+    const line = new LineSegments2(geometry, material)
+
+    const { lineBatches } = collectBatchesFromObject3D(line)
+    expect(lineBatches).toHaveLength(1)
+    expect(lineBatches[0]!.positions.length).toBe(12)
   })
 })

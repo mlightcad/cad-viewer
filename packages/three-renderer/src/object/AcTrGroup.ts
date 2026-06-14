@@ -83,6 +83,12 @@ export class AcTrGroup extends AcTrEntity {
     // hovering over one entity. For example, when hovering on one character in one
     // block reference, its bounding box is used to check intersection instead of its
     // real shape. After merging, there is no way to do this kind of check.
+
+    // wcsChildBoxes is the source of truth for spatial indexing. The aggregate
+    // wcsBbox union taken during construction (or Box3.applyMatrix4 after INSERT)
+    // can be slightly larger than the union of per-child boxes when transforms
+    // include rotation or when nested groups carry mismatched metadata.
+    this.syncWcsBboxFromChildBoxes()
   }
 
   get isOnTheSameLayer() {
@@ -103,6 +109,7 @@ export class AcTrGroup extends AcTrEntity {
       this.applyMatrixToEntityBox(box, threeMatrix)
     )
     super.applyMatrix(matrix)
+    this.syncWcsBboxFromChildBoxes()
   }
 
   /**
@@ -123,6 +130,23 @@ export class AcTrGroup extends AcTrEntity {
     cloned.copy(this, false)
     this.copyGeometry(this, cloned)
     return cloned
+  }
+
+  private syncWcsBboxFromChildBoxes() {
+    if (this._wcsChildBoxes.length === 0) {
+      return
+    }
+
+    const union = new THREE.Box3()
+    for (const box of this._wcsChildBoxes) {
+      union.union(
+        new THREE.Box3(
+          new THREE.Vector3(box.minX, box.minY, 0),
+          new THREE.Vector3(box.maxX, box.maxY, 0)
+        )
+      )
+    }
+    this.wcsBbox = union
   }
 
   private storeBoxes(object: THREE.Object3D) {

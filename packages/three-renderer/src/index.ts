@@ -29,8 +29,10 @@ export {
 } from './style/AcTrHatchPatternShaders'
 export * from './util/AcTrMTextColorUtil'
 export {
+  isHighlightCloneDrawable,
   isHighlightOverlayDescendant,
   markHighlightOverlayGroup,
   type AcTrHighlightOverlayGroup,
   type AcTrHighlightOverlayGroupUserData
 } from './util/AcTrObjectUserData'
+export { isObjectHierarchyVisible } from './util/AcTrVisibility'
