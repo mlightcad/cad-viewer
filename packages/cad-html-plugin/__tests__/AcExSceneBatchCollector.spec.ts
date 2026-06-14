@@ -14,7 +14,8 @@ jest.mock('@mlightcad/three-renderer', () => {
   const {
     getMaterialMetadata,
     isBatchGeometryActive,
-    isBatchGeometryVisible
+    isBatchGeometryVisible,
+    isHighlightOverlayDescendant
   } = jest.requireActual('../../three-renderer/src')
 
   return {
@@ -24,7 +25,8 @@ jest.mock('@mlightcad/three-renderer', () => {
     AcTrBatchedPoint,
     getMaterialMetadata,
     isBatchGeometryActive,
-    isBatchGeometryVisible
+    isBatchGeometryVisible,
+    isHighlightOverlayDescendant
   }
 })
 
@@ -34,6 +36,7 @@ import { AcTrBatchedLine2 } from '../../three-renderer/src/batch/AcTrBatchedLine
 import { RTE_REBASE_THRESHOLD } from '../../three-renderer/src/draw/AcTrBatchDrawPolicy'
 import { AcTrEntity } from '../../three-renderer/src/object/AcTrEntity'
 import { AcTrRenderContext } from '../../three-renderer/src/renderer/AcTrRenderContext'
+import { getSceneDrawableUserData } from '../../three-renderer/src/util/AcTrObjectUserData'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
@@ -567,5 +570,31 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     expect(lineBatches).toHaveLength(1)
     expect(lineBatches[0]!.lineWidth).toBe(2.5)
     expect(lineBatches[0]!.color).toBe(0xff0000)
+  })
+
+  it('skips selection and hover highlight overlays during export', () => {
+    const group = new AcTrBatchedGroup()
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    const line = new THREE.LineSegments(
+      geometry,
+      new THREE.LineBasicMaterial({ color: 0xffffff })
+    )
+    line.position.set(100, 200, 0)
+    getSceneDrawableUserData(line).noBatch = true
+
+    const entity = new AcTrEntity(new AcTrRenderContext())
+    entity.objectId = 'line-1'
+    entity.visible = true
+    entity.add(line)
+    group.addEntity(entity)
+    group.select('line-1')
+
+    const { lineBatches } = collectBatchesFromObject3D(group)
+    expect(lineBatches).toHaveLength(1)
+    expect(lineBatches[0]!.color).toBe(0xffffff)
   })
 })

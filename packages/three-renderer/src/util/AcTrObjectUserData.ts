@@ -90,6 +90,21 @@ export interface AcTrHighlightUserData {
 }
 
 /**
+ * Marks a {@link THREE.Group} that holds transient selection/hover highlight
+ * clones instead of source drawing geometry.
+ */
+export interface AcTrHighlightOverlayGroupUserData {
+  highlightOverlayGroup?: true
+}
+
+/**
+ * Selection or hover overlay container inside {@link AcTrBatchedGroup}.
+ */
+export type AcTrHighlightOverlayGroup = THREE.Group & {
+  userData: AcTrHighlightOverlayGroupUserData
+}
+
+/**
  * Temporary highlight clones attached to hover/selection overlay groups.
  */
 export type AcTrHighlightObjectUserData = AcTrHighlightUserData &
@@ -113,7 +128,8 @@ export interface AcTrObjectUserDataFields
     AcTrStyledDrawableUserData,
     AcTrRteObjectUserData,
     AcTrNoBatchUserData,
-    AcTrHighlightUserData {
+    AcTrHighlightUserData,
+    AcTrHighlightOverlayGroupUserData {
   originalMaterial?: THREE.Material | THREE.Material[]
 }
 
@@ -157,6 +173,37 @@ export function getHighlightUserData(
   object: THREE.Object3D
 ): AcTrHighlightObjectUserData {
   return getObjectUserData(object) as AcTrHighlightObjectUserData
+}
+
+export function getHighlightOverlayGroupUserData(
+  object: THREE.Object3D
+): AcTrHighlightOverlayGroupUserData {
+  return getObjectUserData(object) as AcTrHighlightOverlayGroupUserData
+}
+
+/**
+ * Tags one group as a selection/hover highlight overlay container.
+ */
+export function markHighlightOverlayGroup(
+  group: THREE.Group
+): AcTrHighlightOverlayGroup {
+  const overlay = group as AcTrHighlightOverlayGroup
+  overlay.userData.highlightOverlayGroup = true
+  return overlay
+}
+
+/**
+ * Returns whether `object` or any ancestor is a highlight overlay container.
+ */
+export function isHighlightOverlayDescendant(object: THREE.Object3D): boolean {
+  let node: THREE.Object3D | null = object
+  while (node) {
+    if (getHighlightOverlayGroupUserData(node).highlightOverlayGroup) {
+      return true
+    }
+    node = node.parent
+  }
+  return false
 }
 
 export function getBatchedContainerUserData(

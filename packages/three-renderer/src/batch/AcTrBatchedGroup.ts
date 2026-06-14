@@ -12,9 +12,11 @@ import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrBufferGeometryUtil, AcTrMaterialUtil } from '../util'
 import {
+  type AcTrHighlightOverlayGroup,
   copyHighlightObjectFlags,
   getHighlightUserData,
-  getSceneDrawableUserData
+  getSceneDrawableUserData,
+  markHighlightOverlayGroup
 } from '../util/AcTrObjectUserData'
 import { isObjectHierarchyVisible } from '../util/AcTrVisibility'
 import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
@@ -209,11 +211,11 @@ export class AcTrBatchedGroup extends THREE.Group {
   /**
    * The group to store all of selected entities
    */
-  private _selectedObjects: THREE.Group
+  private _selectedObjects: AcTrHighlightOverlayGroup
   /**
    * The group to store all of entities hovering on them
    */
-  private _hoverObjects: THREE.Group
+  private _hoverObjects: AcTrHighlightOverlayGroup
   /**
    * Non-batched objects (for render paths that cannot be merged, e.g. fat lines).
    */
@@ -242,8 +244,8 @@ export class AcTrBatchedGroup extends THREE.Group {
     this._entitiesMap = new Map()
     this._unbatchedEntities = new Map()
     this._unbatchedObjects = new THREE.Group()
-    this._selectedObjects = new THREE.Group()
-    this._hoverObjects = new THREE.Group()
+    this._selectedObjects = markHighlightOverlayGroup(new THREE.Group())
+    this._hoverObjects = markHighlightOverlayGroup(new THREE.Group())
     this.add(this._unbatchedObjects)
     this.add(this._selectedObjects)
     this.add(this._hoverObjects)

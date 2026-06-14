@@ -104,3 +104,115 @@ export function readBatchWorldOffset(
   _worldOffset.z = position[14]!
   return [_worldOffset.x, _worldOffset.y, _worldOffset.z]
 }
+
+/** Minimal geometry slice used while rebasing plain drawables for HTML export. */
+export interface AcExPlainDrawableSlice {
+  positions: Float32Array
+  indices?: Uint32Array
+}
+
+/**
+ * Applies a world matrix to every vertex in a geometry slice using double precision.
+ */
+export function bakePlainDrawableSlice(
+  slice: AcExPlainDrawableSlice,
+  matrix: THREE.Matrix4
+): AcExPlainDrawableSlice {
+  const elements = matrix.elements
+  const source = slice.positions
+  if (source.length === 0) {
+    return { positions: new Float32Array(0), indices: slice.indices }
+  }
+
+  const transformed = new Float32Array(source.length)
+  for (let i = 0; i < source.length; i += 3) {
+    const x = source[i]!
+    const y = source[i + 1]!
+    const z = source[i + 2]!
+    transformed[i] =
+      elements[0]! * x + elements[4]! * y + elements[8]! * z + elements[12]!
+    transformed[i + 1] =
+      elements[1]! * x + elements[5]! * y + elements[9]! * z + elements[13]!
+    transformed[i + 2] =
+      elements[2]! * x + elements[6]! * y + elements[10]! * z + elements[14]!
+  }
+
+  return {
+    positions: transformed,
+    indices: slice.indices ? new Uint32Array(slice.indices) : undefined
+  }
+}
+
+/**
+ * Rebases a world-space slice around its axis-aligned center so HTML playback can
+ * keep float32-friendly local vertices with a separate float64 origin.
+ */
+export function rebasePlainDrawableSliceAroundCentroid(
+  slice: AcExPlainDrawableSlice
+): { slice: AcExPlainDrawableSlice; offset: [number, number, number] } {
+  const source = slice.positions
+  if (source.length < 3) {
+    return { slice, offset: [0, 0, 0] }
+  }
+
+  let minX = Infinity
+  let minY = Infinity
+  let minZ = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  let maxZ = -Infinity
+
+  for (let i = 0; i < source.length; i += 3) {
+    const x = source[i]!
+    const y = source[i + 1]!
+    const z = source[i + 2]!
+    minX = Math.min(minX, x)
+    minY = Math.min(minY, y)
+    minZ = Math.min(minZ, z)
+    maxX = Math.max(maxX, x)
+    maxY = Math.max(maxY, y)
+    maxZ = Math.max(maxZ, z)
+  }
+
+  const offset: [number, number, number] = [
+    (minX + maxX) / 2,
+    (minY + maxY) / 2,
+    (minZ + maxZ) / 2
+  ]
+  const rebased = new Float32Array(source.length)
+  for (let i = 0; i < source.length; i += 3) {
+    rebased[i] = source[i]! - offset[0]
+    rebased[i + 1] = source[i + 1]! - offset[1]
+    rebased[i + 2] = source[i + 2]! - offset[2]
+  }
+
+  return {
+    slice: {
+      positions: rebased,
+      indices: slice.indices ? new Uint32Array(slice.indices) : undefined
+    },
+    offset
+  }
+}
+
+/**
+ * Converts one plain scene-graph drawable into the local+offset representation
+ * expected by the offline HTML viewer.
+ *
+ * Pattern-fill meshes stay world-baked with a zero offset so their hatch pattern
+ * metadata (transformed via `bakedWorldMatrix`) stays aligned with the fill boundary.
+ */
+export function exportPlainDrawableSlice(
+  object: THREE.Object3D,
+  slice: AcExPlainDrawableSlice,
+  options: { preserveWorldSpaceForPatternFill?: boolean } = {}
+): { slice: AcExPlainDrawableSlice; offset: [number, number, number] } {
+  object.updateMatrixWorld(true)
+  const worldSlice = bakePlainDrawableSlice(slice, object.matrixWorld)
+
+  if (options.preserveWorldSpaceForPatternFill) {
+    return { slice: worldSlice, offset: [0, 0, 0] }
+  }
+
+  return rebasePlainDrawableSliceAroundCentroid(worldSlice)
+}
