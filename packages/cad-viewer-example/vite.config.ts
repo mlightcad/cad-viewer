@@ -10,6 +10,19 @@ import { exampleRollupOutput } from '../vite-config/pluginRollupOutput'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const VIEWER_RUNTIME_SRC = '../cad-html-plugin/dist/viewer-runtime.iife.js'
+const LOCAL_DATA_MODEL_LIB = resolve(
+  __dirname,
+  '../../../realdwg-web/packages/data-model/lib'
+)
+const LOCAL_DATA_MODEL_ENTRY = resolve(LOCAL_DATA_MODEL_LIB, 'index.js')
+
+function useLocalDataModel(mode: string): boolean {
+  if (mode === 'local-data-model') {
+    return true
+  }
+  const flag = process.env.CAD_VIEWER_USE_LOCAL_DATA_MODEL
+  return flag === '1' || flag?.toLowerCase() === 'true'
+}
 
 export default defineConfig(({ command, mode }) => {
   if (!existsSync(resolve(__dirname, VIEWER_RUNTIME_SRC))) {
@@ -24,23 +37,25 @@ export default defineConfig(({ command, mode }) => {
     'cad-simple-viewer',
     'cad-viewer'
   ]
-  const realdwgDataModelEntry = resolve(
-    __dirname,
-    '../../../realdwg-web/packages/data-model/lib/index.js'
-  )
+  const linkLocalDataModel =
+    command === 'serve' &&
+    useLocalDataModel(mode) &&
+    existsSync(LOCAL_DATA_MODEL_ENTRY)
   if (command === 'serve') {
     aliases.push({
       find: /^@mlightcad\/(cad-svg-plugin|three-renderer|cad-simple-viewer|cad-viewer)$/,
       replacement: resolve(__dirname, '../$1/src')
     })
-    if (existsSync(realdwgDataModelEntry)) {
+    if (linkLocalDataModel) {
       aliases.push({
         find: '@mlightcad/data-model',
-        replacement: resolve(
-          __dirname,
-          '../../../realdwg-web/packages/data-model/lib'
-        )
+        replacement: LOCAL_DATA_MODEL_LIB
       })
+    } else if (useLocalDataModel(mode) && !existsSync(LOCAL_DATA_MODEL_ENTRY)) {
+      console.warn(
+        '[cad-viewer-example] Local data-model alias requested but not found at:',
+        LOCAL_DATA_MODEL_ENTRY
+      )
     }
   }
 
@@ -77,9 +92,7 @@ export default defineConfig(({ command, mode }) => {
         command === 'serve'
           ? [
               ...devSourcePackages.map(name => `@mlightcad/${name}`),
-              ...(existsSync(realdwgDataModelEntry)
-                ? ['@mlightcad/data-model']
-                : [])
+              ...(linkLocalDataModel ? ['@mlightcad/data-model'] : [])
             ]
           : []
     },
