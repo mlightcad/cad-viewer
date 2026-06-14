@@ -8,6 +8,13 @@ import {
   distSq
 } from './AcExOsnapGeometry'
 import {
+  ACEX_MAX_INTERSECTION_SOURCES,
+  intersectionToleranceForExtent,
+  intersectLineSegments,
+  intersectPrimitivePair,
+  isIntersectionCapablePrimitive
+} from './AcExOsnapIntersections'
+import {
   type AcExOsnapAcGeCurve,
   primitiveToAcGeCurve
 } from './AcExOsnapPrimitiveToAcGe'
@@ -42,6 +49,7 @@ function modePriority(mode: AcExOsnapMode): number {
     case 'endpoint':
     case 'midpoint':
     case 'center':
+    case 'intersection':
       return 0
     case 'quadrant':
     case 'node':
@@ -472,13 +480,13 @@ interface AcExIndexedSnapPoint {
   layer: string
 }
 
-/** Source geometry for nearest snap queries. @internal */
+/** Source geometry for nearest snap and intersection queries. @internal */
 type AcExNearestSource =
   | {
       kind: 'primitive'
       index: number
       layer: string
-      geo: AcExOsnapAcGeCurve
+      geo?: AcExOsnapAcGeCurve
     }
   | { kind: 'segment'; index: number; layer: string }
 
@@ -644,12 +652,15 @@ export class AcExOsnapIndex {
 
     const discreteModes = new Set(this.modes)
     discreteModes.delete('nearest')
+    discreteModes.delete('intersection')
     const wantsNearest = this.modes.has('nearest')
+    const wantsIntersection = this.modes.has('intersection')
+    const wantsGeometryTree = wantsNearest || wantsIntersection
 
     for (let i = 0; i < this.primitives.length; i++) {
       const prim = this.primitives[i]!
       const geo = wantsNearest ? primitiveToAcGeCurve(prim) : undefined
-      if (wantsNearest && geo && geo.kind !== 'point') {
+      if (wantsGeometryTree && prim.kind !== 'point') {
         this.nearestSources.push({
           kind: 'primitive',
           index: i,
@@ -676,7 +687,7 @@ export class AcExOsnapIndex {
     for (let i = 0; i < this.segments.length; i++) {
       const seg = this.segments[i]!
       const layer = this.segmentLayers[i]!
-      if (wantsNearest) {
+      if (wantsGeometryTree) {
         this.nearestSources.push({ kind: 'segment', index: i, layer })
       }
       if (discreteModes.has('endpoint')) {
@@ -757,8 +768,15 @@ export class AcExOsnapIndex {
     }
 
     const discrete = this.findDiscreteSnap(px, py, threshold)
-    if (discrete) {
-      return discrete
+    const intersection = this.modes.has('intersection')
+      ? this.findIntersectionSnap(px, py, threshold)
+      : undefined
+    const bestDiscrete = this.pickBestSnapPoint(px, py, threshold, [
+      discrete,
+      intersection
+    ])
+    if (bestDiscrete) {
+      return bestDiscrete
     }
 
     if (!this.modes.has('nearest')) {
@@ -766,6 +784,131 @@ export class AcExOsnapIndex {
     }
 
     return this.findNearestSnap(px, py, threshold)
+  }
+
+  private pickBestSnapPoint(
+    px: number,
+    py: number,
+    threshold: number,
+    candidates: Array<AcExOsnapPoint | undefined>
+  ): AcExOsnapPoint | undefined {
+    const threshSq = threshold * threshold
+    let bestPriority = Number.MAX_VALUE
+    let bestDistSq = Number.MAX_VALUE
+    let best: AcExOsnapPoint | undefined
+
+    for (const candidate of candidates) {
+      if (!candidate) continue
+      const d2 = distSq(px, py, candidate.x, candidate.y)
+      if (d2 > threshSq) continue
+      const priority = modePriority(candidate.mode)
+      if (
+        priority < bestPriority ||
+        (priority === bestPriority && d2 < bestDistSq)
+      ) {
+        bestPriority = priority
+        bestDistSq = d2
+        best = candidate
+      }
+    }
+
+    return best
+  }
+
+  /**
+   * Finds an intersection snap near the cursor by testing pairs of geometry
+   * sources whose bounds overlap the osnap aperture (RBush-filtered).
+   */
+  private findIntersectionSnap(
+    px: number,
+    py: number,
+    threshold: number
+  ): AcExOsnapPoint | undefined {
+    if (this.nearestSources.length === 0) return undefined
+
+    const box = searchBox(px, py, threshold)
+    const hits = this.nearestTree.search(box)
+    if (hits.length === 0) return undefined
+
+    const threshSq = threshold * threshold
+    const extent = Math.max(box.maxX - box.minX, box.maxY - box.minY, 1)
+    const tol = intersectionToleranceForExtent(extent)
+
+    const primIndices: number[] = []
+    const segIndices: number[] = []
+    const primSeen = new Set<number>()
+    const segSeen = new Set<number>()
+
+    for (const hit of hits) {
+      const source = this.nearestSources[hit.index]!
+      if (this.hiddenLayers.has(source.layer)) continue
+
+      if (source.kind === 'primitive') {
+        const prim = this.primitives[source.index]!
+        if (!isIntersectionCapablePrimitive(prim)) continue
+        if (primSeen.has(source.index)) continue
+        if (primIndices.length >= ACEX_MAX_INTERSECTION_SOURCES) continue
+        primSeen.add(source.index)
+        primIndices.push(source.index)
+        continue
+      }
+
+      if (segSeen.has(source.index)) continue
+      if (segIndices.length >= ACEX_MAX_INTERSECTION_SOURCES) continue
+      segSeen.add(source.index)
+      segIndices.push(source.index)
+    }
+
+    let bestDistSq = threshSq
+    let best: AcExOsnapPoint | undefined
+
+    for (let i = 0; i < primIndices.length; i++) {
+      const indexA = primIndices[i]!
+      const primA = this.primitives[indexA]!
+      for (let j = i + 1; j < primIndices.length; j++) {
+        const indexB = primIndices[j]!
+        const primB = this.primitives[indexB]!
+        if (
+          this.hiddenLayers.has(primA.layer) ||
+          this.hiddenLayers.has(primB.layer)
+        ) {
+          continue
+        }
+        for (const point of intersectPrimitivePair(primA, primB, tol)) {
+          const d2 = distSq(px, py, point.x, point.y)
+          if (d2 <= bestDistSq) {
+            bestDistSq = d2
+            best = { x: point.x, y: point.y, mode: 'intersection' }
+          }
+        }
+      }
+    }
+
+    for (let i = 0; i < segIndices.length; i++) {
+      const indexA = segIndices[i]!
+      const segA = this.segments[indexA]!
+      const layerA = this.segmentLayers[indexA]!
+      for (let j = i + 1; j < segIndices.length; j++) {
+        const indexB = segIndices[j]!
+        const segB = this.segments[indexB]!
+        const layerB = this.segmentLayers[indexB]!
+        if (
+          this.hiddenLayers.has(layerA) ||
+          this.hiddenLayers.has(layerB)
+        ) {
+          continue
+        }
+        const point = intersectLineSegments(segA, segB, tol)
+        if (!point) continue
+        const d2 = distSq(px, py, point.x, point.y)
+        if (d2 <= bestDistSq) {
+          bestDistSq = d2
+          best = { x: point.x, y: point.y, mode: 'intersection' }
+        }
+      }
+    }
+
+    return best
   }
 
   private findDiscreteSnap(
@@ -828,11 +971,13 @@ export class AcExOsnapIndex {
       if (this.hiddenLayers.has(source.layer)) continue
 
       if (source.kind === 'primitive') {
+        const prim = this.primitives[source.index]!
+        const geo = source.geo ?? primitiveToAcGeCurve(prim)
         const nearest = collectPrimitiveNearestSnapCandidate(
-          this.primitives[source.index]!,
+          prim,
           px,
           py,
-          source.geo
+          geo
         )
         if (!nearest) continue
         const d2 = distSq(px, py, nearest.x, nearest.y)
@@ -884,7 +1029,7 @@ function segmentBounds(seg: AcExOsnapSegment): {
  */
 export function acExOsnapModeToMarkerType(
   mode: AcExOsnapMode
-): 'rect' | 'triangle' | 'x' | 'circle' | 'diamond' {
+): 'rect' | 'triangle' | 'x' | 'circle' | 'diamond' | 'intersection' {
   switch (mode) {
     case 'endpoint':
       return 'rect'
@@ -896,6 +1041,8 @@ export function acExOsnapModeToMarkerType(
       return 'diamond'
     case 'nearest':
       return 'x'
+    case 'intersection':
+      return 'intersection'
     case 'node':
     default:
       return 'rect'

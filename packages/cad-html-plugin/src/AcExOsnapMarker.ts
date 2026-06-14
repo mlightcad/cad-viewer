@@ -10,6 +10,7 @@ import { acExOsnapModeToMarkerType } from './AcExOsnap'
  * - `circle` — center
  * - `diamond` — quadrant
  * - `x` — nearest
+ * - `intersection` — curve intersection (square with X)
  */
 export type AcExOsnapMarkerShape =
   | 'rect'
@@ -17,6 +18,7 @@ export type AcExOsnapMarkerShape =
   | 'x'
   | 'circle'
   | 'diamond'
+  | 'intersection'
 
 /**
  * Screen-space object snap marker for the offline HTML viewer.
@@ -131,6 +133,26 @@ export class AcExOsnapMarker {
         transform: translate(-50%, -50%) rotate(45deg);
       }
       .mlcad-osnap-marker--x::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+      }
+      .mlcad-osnap-marker--intersection {
+        width: 12px; height: 12px;
+        border: 2px solid currentColor;
+        background: transparent;
+      }
+      .mlcad-osnap-marker--intersection::before,
+      .mlcad-osnap-marker--intersection::after {
+        content: '';
+        position: absolute;
+        top: 50%; left: 50%;
+        width: 70%; height: 2px;
+        background: currentColor;
+        transform-origin: center;
+      }
+      .mlcad-osnap-marker--intersection::before {
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+      .mlcad-osnap-marker--intersection::after {
         transform: translate(-50%, -50%) rotate(-45deg);
       }
     `

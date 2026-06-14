@@ -742,6 +742,7 @@ export class AcExMeasureController {
     const previewGeometry = new THREE.BufferGeometry()
     this._previewLine = new THREE.Line(previewGeometry, previewMaterial)
     this._previewLine.visible = false
+    this._previewLine.frustumCulled = false
     this._previewLine.renderOrder = 15
     this._scene.add(this._previewLine)
   }
@@ -1183,6 +1184,7 @@ export class AcExMeasureController {
         existing.setXYZ(i, points[i]!.x, points[i]!.y, 0)
       }
       existing.needsUpdate = true
+      geometry.computeBoundingSphere()
     } else {
       const positions = new Float32Array(points.length * 3)
       for (let i = 0; i < points.length; i++) {
@@ -1192,6 +1194,7 @@ export class AcExMeasureController {
       geometry.dispose()
       const next = new THREE.BufferGeometry()
       next.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+      next.computeBoundingSphere()
       this._previewLine.geometry = next
     }
     this._previewLine.visible = true

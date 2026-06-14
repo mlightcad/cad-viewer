@@ -24,6 +24,7 @@
  * - `quadrant` — 0° / 90° / 180° / 270° on circles; arc-limited on arcs; axis crossings on closed ellipses.
  * - `nearest` — Closest point on the curve or segment to the pick point (not tessellated).
  * - `node` — Spline knot locations; also used for `AcDbPoint` entities.
+ * - `intersection` — Intersection of two nearby curves (computed on pointer query).
  *
  * Tangent snap is not implemented in the offline viewer.
  */
@@ -34,6 +35,7 @@ export type AcExOsnapMode =
   | 'quadrant'
   | 'nearest'
   | 'node'
+  | 'intersection'
 
 /**
  * A single object snap candidate returned to the measurement UI.
@@ -61,6 +63,7 @@ export const ACEX_DEFAULT_OSNAP_MODES: readonly AcExOsnapMode[] = [
   'midpoint',
   'center',
   'quadrant',
+  'intersection',
   'nearest'
 ] as const
 
