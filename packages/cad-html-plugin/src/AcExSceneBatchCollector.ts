@@ -233,7 +233,11 @@ function appendSegmentFromAttribute(
   attr: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
   segmentIndex: number
 ) {
-  target.push(attr.getX(segmentIndex), attr.getY(segmentIndex), attr.getZ(segmentIndex))
+  target.push(
+    attr.getX(segmentIndex),
+    attr.getY(segmentIndex),
+    attr.getZ(segmentIndex)
+  )
 }
 
 /**
@@ -570,13 +574,7 @@ export function collectBatchesFromObject3D(
         preserveWorldSpaceForPatternFill: !!style.hatchPattern
       })
       meshBatches.push(
-        buildMeshBatch(
-          child.geometry,
-          material,
-          child,
-          slice,
-          offset
-        )
+        buildMeshBatch(child.geometry, material, child, slice, offset)
       )
     }
   })

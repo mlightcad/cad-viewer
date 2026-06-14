@@ -134,7 +134,14 @@ export async function exportToHtml(
     await page.goto(`${server.url}/index.html`, { waitUntil: 'networkidle' })
 
     const html = await page.evaluate(
-      async ({ name, data, locale, title, exportInvisibleLayers, initialView }) => {
+      async ({
+        name,
+        data,
+        locale,
+        title,
+        exportInvisibleLayers,
+        initialView
+      }) => {
         const binary = atob(data)
         const bytes = new Uint8Array(binary.length)
         for (let i = 0; i < binary.length; i++) {

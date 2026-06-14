@@ -16,7 +16,9 @@ export interface AcTrGroupWcsBboxLike {
 /**
  * Unions per-child WCS boxes into one axis-aligned WCS box.
  */
-export function unionGroupWcsChildBoxes(group: AcTrGroupWcsBboxLike): THREE.Box3 {
+export function unionGroupWcsChildBoxes(
+  group: AcTrGroupWcsBboxLike
+): THREE.Box3 {
   const union = new THREE.Box3()
   for (const box of group.wcsChildBoxes) {
     union.union(
@@ -37,7 +39,9 @@ export function unionGroupWcsChildBoxes(group: AcTrGroupWcsBboxLike): THREE.Box3
  * {@link AcDbRenderingCache.draw} applies the INSERT transform via
  * `applyMatrix`, both fields must stay in sync for spatial indexing.
  */
-export function assertGroupWcsBboxesConsistent(group: AcTrGroupWcsBboxLike): void {
+export function assertGroupWcsBboxesConsistent(
+  group: AcTrGroupWcsBboxLike
+): void {
   if (group.wcsChildBoxes.length === 0) {
     return
   }

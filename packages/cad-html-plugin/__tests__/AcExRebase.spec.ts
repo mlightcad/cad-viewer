@@ -77,10 +77,6 @@ describe('rebase and measurement precision', () => {
     parent.add(line)
     parent.updateMatrixWorld(true)
 
-    expect(readBatchWorldOffset(line)).toEqual([
-      1_000_060,
-      2_000_045,
-      0
-    ])
+    expect(readBatchWorldOffset(line)).toEqual([1_000_060, 2_000_045, 0])
   })
 })

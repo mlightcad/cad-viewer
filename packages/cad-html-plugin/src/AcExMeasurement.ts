@@ -700,15 +700,13 @@ export class AcExMeasureController {
   /** Last view key used for committed overlay layout/redraw. @internal */
   private _lastOverlaySyncKey = -1
   /** Cached object-snap resolution for the current pointer sample. @internal */
-  private _osnapCache:
-    | {
-        clientX: number
-        clientY: number
-        cacheKey: number
-        point: THREE.Vector2
-        snap: AcExOsnapPoint | null
-      }
-    | null = null
+  private _osnapCache: {
+    clientX: number
+    clientY: number
+    cacheKey: number
+    point: THREE.Vector2
+    snap: AcExOsnapPoint | null
+  } | null = null
 
   /**
    * Creates overlay layers in `root` and registers preview geometry in `scene`.
@@ -1163,8 +1161,7 @@ export class AcExMeasureController {
    * @internal
    */
   private _showLiveLabel(text: string, clientX: number, clientY: number): void {
-    const rootRect =
-      this._overlayRootRect ?? this._root.getBoundingClientRect()
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     this._liveLabel.textContent = text
     this._liveLabel.style.display = 'block'
     this._liveLabel.style.left = `${clientX - rootRect.left}px`
@@ -1876,8 +1873,7 @@ export class AcExMeasureController {
 
   /** Projects `data-wcs-*` DOM overlays to root-local screen coordinates. @internal */
   private _positionDomOverlays(): void {
-    const rootRect =
-      this._overlayRootRect ?? this._root.getBoundingClientRect()
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     this._overlayLayer
       .querySelectorAll<HTMLElement>('.mlcad-measure-dot, .mlcad-measure-badge')
       .forEach(el => {
@@ -1901,8 +1897,7 @@ export class AcExMeasureController {
     h: number
     dpr: number
   } | null {
-    const rect =
-      this._overlayRootRect ?? this._root.getBoundingClientRect()
+    const rect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const w = Math.round(rect.width)
     const h = Math.round(rect.height)
@@ -1921,8 +1916,7 @@ export class AcExMeasureController {
 
   /** Root-local offset for overlay canvases during {@link syncOverlays}. @internal */
   private _overlayRootOffset(): { left: number; top: number } {
-    const rootRect =
-      this._overlayRootRect ?? this._root.getBoundingClientRect()
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     return { left: rootRect.left, top: rootRect.top }
   }
 

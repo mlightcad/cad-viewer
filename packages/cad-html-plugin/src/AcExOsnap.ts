@@ -7,7 +7,10 @@ import {
   collectPrimitiveNearestSnapCandidate,
   distSq
 } from './AcExOsnapGeometry'
-import { primitiveToAcGeCurve, type AcExOsnapAcGeCurve } from './AcExOsnapPrimitiveToAcGe'
+import {
+  type AcExOsnapAcGeCurve,
+  primitiveToAcGeCurve
+} from './AcExOsnapPrimitiveToAcGe'
 import type {
   AcExOsnapMode,
   AcExOsnapPoint,
@@ -559,7 +562,7 @@ function primitiveBounds(prim: AcExOsnapPrimitive): {
  * Spatial index for object snap in the offline HTML viewer.
  *
  * Discrete snap points (endpoint, midpoint, center, quadrant, node) are indexed
- * in a point grid at {@link AcExOsnapIndex.rebuild} so pointer queries avoid
+ * in an RBush tree at {@link AcExOsnapIndex.rebuild} so pointer queries avoid
  * rebuilding `AcGe*` curves. Nearest snap runs only when no discrete candidate
  * lies within the aperture.
  */
@@ -711,7 +714,9 @@ export class AcExOsnapIndex {
       this.snapPointTree.load(snapEntries)
     }
 
-    const nearestEntries: AcExRbushEntry[] = new Array(this.nearestSources.length)
+    const nearestEntries: AcExRbushEntry[] = new Array(
+      this.nearestSources.length
+    )
     for (let i = 0; i < this.nearestSources.length; i++) {
       const source = this.nearestSources[i]!
       const b =
@@ -812,7 +817,10 @@ export class AcExOsnapIndex {
     let best: AcExOsnapPoint | undefined
 
     for (const hit of hits) {
-      if (distSqToBounds(px, py, hit.minX, hit.minY, hit.maxX, hit.maxY) > threshSq) {
+      if (
+        distSqToBounds(px, py, hit.minX, hit.minY, hit.maxX, hit.maxY) >
+        threshSq
+      ) {
         continue
       }
 
@@ -850,7 +858,8 @@ export class AcExOsnapIndex {
  * Axis-aligned bounds of one tessellated snap segment in WCS.
  *
  * @param seg - Segment whose endpoints define the bounding box.
- * @returns `{ minX, minY, maxX, maxY }` used by the spatial grid in {@link AcExOsnapIndex.rebuild}.
+ * @returns `{ minX, minY, maxX, maxY }` used by the nearest-source RBush in
+ *   {@link AcExOsnapIndex.rebuild}.
  * @internal
  */
 function segmentBounds(seg: AcExOsnapSegment): {

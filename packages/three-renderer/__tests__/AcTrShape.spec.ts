@@ -27,7 +27,10 @@ describe('AcTrShape wcsBbox', () => {
     const host = createGeometryHost()
     host.add(createBoxMesh({ x: 20, y: 30, z: 0 }))
 
-    privateMethods.updateSelectionBox.call(host, createShapeObject(new THREE.Box3()))
+    privateMethods.updateSelectionBox.call(
+      host,
+      createShapeObject(new THREE.Box3())
+    )
 
     expectWcsBboxCloseTo(host.wcsBbox, [20, 30, 0], [24, 32, 0])
   })

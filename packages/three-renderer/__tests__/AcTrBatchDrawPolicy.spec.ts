@@ -114,9 +114,9 @@ describe('AcTrBatchDrawPolicy', () => {
     expect(
       exceedsBatchOriginOffset(origin, new THREE.Vector3(100_500, 0, 0))
     ).toBe(false)
-    expect(batchOriginOffsetDistance(origin, new THREE.Vector3(100_500, 0, 0))).toBe(
-      500
-    )
+    expect(
+      batchOriginOffsetDistance(origin, new THREE.Vector3(100_500, 0, 0))
+    ).toBe(500)
     expect(
       exceedsBatchOriginOffset(
         origin,
@@ -128,9 +128,9 @@ describe('AcTrBatchDrawPolicy', () => {
   it('allows merging into empty batches and rejects far offsets', () => {
     const origin = new THREE.Vector3(100_000, 0, 0)
     expect(canMergeIntoBatchOrigin(undefined, origin)).toBe(true)
-    expect(canMergeIntoBatchOrigin(origin, new THREE.Vector3(100_500, 0, 0))).toBe(
-      true
-    )
+    expect(
+      canMergeIntoBatchOrigin(origin, new THREE.Vector3(100_500, 0, 0))
+    ).toBe(true)
     expect(
       canMergeIntoBatchOrigin(
         origin,

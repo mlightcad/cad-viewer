@@ -74,7 +74,13 @@ describe('AcTrGroup wcsBbox', () => {
 
   it('keeps wcsBbbox aligned with wcsChildBoxes union after insert transform', () => {
     const context = new AcTrRenderContext()
-    const line0 = createLine('line-0', { x: 0, y: 0 }, { x: 10, y: 0 }, context, '0')
+    const line0 = createLine(
+      'line-0',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      context,
+      '0'
+    )
     const lineL2 = createLine(
       'line-l2',
       { x: 5, y: 5 },
@@ -103,10 +109,10 @@ describe('AcTrGroup wcsBbox', () => {
         )
       )
     }
-    expectWcsBboxCloseTo(group.wcsBbox, [union.min.x, union.min.y, 0], [
-      union.max.x,
-      union.max.y,
-      0
-    ])
+    expectWcsBboxCloseTo(
+      group.wcsBbox,
+      [union.min.x, union.min.y, 0],
+      [union.max.x, union.max.y, 0]
+    )
   })
 })

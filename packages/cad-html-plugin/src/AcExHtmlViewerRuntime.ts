@@ -136,7 +136,11 @@ function startViewer(): void {
   }
 
   for (const batch of layout.lineBatches) {
-    const object = createLineObject(batch, wideLineMaterials, wideLineResolution)
+    const object = createLineObject(
+      batch,
+      wideLineMaterials,
+      wideLineResolution
+    )
     if (object) getLayerGroup(batch.layer).add(object)
   }
   for (const batch of layout.meshBatches) {
