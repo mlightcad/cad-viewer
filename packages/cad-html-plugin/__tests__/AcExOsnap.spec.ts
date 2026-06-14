@@ -186,6 +186,152 @@ describe('AcExOsnapIndex', () => {
     expect(snap).toEqual({ x: 0, y: 0, mode: 'endpoint' })
   })
 
+  it('snaps to line-line intersection from analytic primitives', () => {
+    const crossLayout = {
+      ...layout,
+      osnap: {
+        primitives: [
+          {
+            kind: 'line' as const,
+            layer: '0',
+            x0: 0,
+            y0: 5,
+            x1: 10,
+            y1: 5
+          },
+          {
+            kind: 'line' as const,
+            layer: '0',
+            x0: 5,
+            y0: 0,
+            x1: 5,
+            y1: 10
+          }
+        ]
+      }
+    }
+    const index = new AcExOsnapIndex(['intersection'])
+    index.rebuild(crossLayout)
+    const snap = index.findSnap(5.1, 4.9, 1)
+    expect(snap).toEqual({ x: 5, y: 5, mode: 'intersection' })
+  })
+
+  it('prefers intersection over nearest at a crossing', () => {
+    const crossLayout = {
+      ...layout,
+      osnap: {
+        primitives: [
+          {
+            kind: 'line' as const,
+            layer: '0',
+            x0: 0,
+            y0: 5,
+            x1: 10,
+            y1: 5
+          },
+          {
+            kind: 'line' as const,
+            layer: '0',
+            x0: 5,
+            y0: 0,
+            x1: 5,
+            y1: 10
+          }
+        ]
+      }
+    }
+    const index = new AcExOsnapIndex(['intersection', 'nearest'])
+    index.rebuild(crossLayout)
+    const snap = index.findSnap(5.05, 5.05, 1)
+    expect(snap?.mode).toBe('intersection')
+    expect(snap?.x).toBeCloseTo(5, 10)
+    expect(snap?.y).toBeCloseTo(5, 10)
+  })
+
+  it('hides intersection when either source layer is hidden', () => {
+    const crossLayout = {
+      ...layout,
+      osnap: {
+        primitives: [
+          {
+            kind: 'line' as const,
+            layer: 'A',
+            x0: 0,
+            y0: 5,
+            x1: 10,
+            y1: 5
+          },
+          {
+            kind: 'line' as const,
+            layer: 'B',
+            x0: 5,
+            y0: 0,
+            x1: 5,
+            y1: 10
+          }
+        ]
+      }
+    }
+    const index = new AcExOsnapIndex(['intersection'])
+    index.rebuild(crossLayout)
+    expect(index.findSnap(5.1, 4.9, 1)?.mode).toBe('intersection')
+    index.setLayerHidden('A', true)
+    expect(index.findSnap(5.1, 4.9, 1)).toBeUndefined()
+    index.setLayerHidden('A', false)
+    index.setLayerHidden('B', true)
+    expect(index.findSnap(5.1, 4.9, 1)).toBeUndefined()
+  })
+
+  it('does not snap to parallel line intersections', () => {
+    const parallelLayout = {
+      ...layout,
+      osnap: {
+        primitives: [
+          {
+            kind: 'line' as const,
+            layer: '0',
+            x0: 0,
+            y0: 0,
+            x1: 10,
+            y1: 0
+          },
+          {
+            kind: 'line' as const,
+            layer: '0',
+            x0: 0,
+            y0: 2,
+            x1: 10,
+            y1: 2
+          }
+        ]
+      }
+    }
+    const index = new AcExOsnapIndex(['intersection'])
+    index.rebuild(parallelLayout)
+    expect(index.findSnap(5, 1, 2)).toBeUndefined()
+  })
+
+  it('snaps to segment intersection in tessellated fallback layout', () => {
+    const crossLayout = {
+      btrId: 'model',
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [
+        {
+          layer: '0',
+          color: 0xffffff,
+          offset: [0, 0, 0] as [number, number, number],
+          positions: f32([0, 5, 0, 10, 5, 0, 5, 0, 0, 5, 10, 0])
+        }
+      ],
+      meshBatches: []
+    }
+    const index = new AcExOsnapIndex(['intersection'])
+    index.rebuild(crossLayout)
+    const snap = index.findSnap(5.1, 4.9, 1)
+    expect(snap).toEqual({ x: 5, y: 5, mode: 'intersection' })
+  })
+
   it('rebuilds large tessellated layouts without blowing the call stack', () => {
     const positions = new Float32Array(200_000 * 6)
     for (let i = 0; i < 200_000; i++) {
