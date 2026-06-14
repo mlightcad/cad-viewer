@@ -9,8 +9,9 @@ import {
 } from './AcExOsnapGeometry'
 import {
   ACEX_MAX_INTERSECTION_SOURCES,
+  intersectionGeomToleranceForSnap,
   intersectionToleranceForExtent,
-  intersectLineSegments,
+  intersectLineSegmentPoints,
   intersectPrimitivePair,
   isIntersectionCapablePrimitive
 } from './AcExOsnapIntersections'
@@ -832,7 +833,8 @@ export class AcExOsnapIndex {
 
     const threshSq = threshold * threshold
     const extent = Math.max(box.maxX - box.minX, box.maxY - box.minY, 1)
-    const tol = intersectionToleranceForExtent(extent)
+    const paramTol = intersectionToleranceForExtent(extent)
+    const geomTol = intersectionGeomToleranceForSnap(extent, threshold)
 
     const primIndices: number[] = []
     const segIndices: number[] = []
@@ -874,7 +876,12 @@ export class AcExOsnapIndex {
         ) {
           continue
         }
-        for (const point of intersectPrimitivePair(primA, primB, tol)) {
+        for (const point of intersectPrimitivePair(
+          primA,
+          primB,
+          paramTol,
+          geomTol
+        )) {
           const d2 = distSq(px, py, point.x, point.y)
           if (d2 <= bestDistSq) {
             bestDistSq = d2
@@ -898,12 +905,17 @@ export class AcExOsnapIndex {
         ) {
           continue
         }
-        const point = intersectLineSegments(segA, segB, tol)
-        if (!point) continue
-        const d2 = distSq(px, py, point.x, point.y)
-        if (d2 <= bestDistSq) {
-          bestDistSq = d2
-          best = { x: point.x, y: point.y, mode: 'intersection' }
+        for (const point of intersectLineSegmentPoints(
+          segA,
+          segB,
+          paramTol,
+          geomTol
+        )) {
+          const d2 = distSq(px, py, point.x, point.y)
+          if (d2 <= bestDistSq) {
+            bestDistSq = d2
+            best = { x: point.x, y: point.y, mode: 'intersection' }
+          }
         }
       }
     }

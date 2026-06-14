@@ -35,25 +35,148 @@ export function intersectionToleranceForExtent(extent: number): number {
   return Math.max(FLOAT_TOL, Math.max(extent, 1) * 1e-9)
 }
 
-export function intersectLineSegments(
+/**
+ * Geometric tolerance for T-junction and near-miss intersection snap.
+ *
+ * Parametric segment intersection uses {@link intersectionToleranceForExtent};
+ * endpoint-on-segment checks also scale with the osnap aperture so stem endpoints
+ * that sit slightly off a crossbar still snap like AutoCAD.
+ */
+export function intersectionGeomToleranceForSnap(
+  extent: number,
+  threshold: number
+): number {
+  return (
+    Math.max(intersectionToleranceForExtent(extent), threshold * 1e-3) +
+    FLOAT_TOL
+  )
+}
+
+function withinGeomTolerance(distance: number, geomTol: number): boolean {
+  return distance <= geomTol
+}
+
+function closestPointOnSegmentLike(
+  px: number,
+  py: number,
+  seg: AcExOsnapSegmentLike
+): { x: number; y: number; t: number; dist: number } {
+  const dx = seg.x1 - seg.x0
+  const dy = seg.y1 - seg.y0
+  const lenSq = dx * dx + dy * dy
+  if (lenSq < 1e-18) {
+    const dist = Math.hypot(px - seg.x0, py - seg.y0)
+    return { x: seg.x0, y: seg.y0, t: 0, dist }
+  }
+  let t = ((px - seg.x0) * dx + (py - seg.y0) * dy) / lenSq
+  t = Math.max(0, Math.min(1, t))
+  const x = seg.x0 + t * dx
+  const y = seg.y0 + t * dy
+  return { x, y, t, dist: Math.hypot(px - x, py - y) }
+}
+
+function appendUniqueIntersectionPoint(
+  out: Array<{ x: number; y: number }>,
+  point: { x: number; y: number },
+  tol: number
+): void {
+  for (const existing of out) {
+    if (Math.hypot(existing.x - point.x, existing.y - point.y) <= tol) {
+      return
+    }
+  }
+  out.push(point)
+}
+
+function intersectLineSegmentsParametric(
   a: AcExOsnapSegmentLike,
   b: AcExOsnapSegmentLike,
-  tol: number
+  paramTol: number,
+  geomTol = paramTol
 ): { x: number; y: number } | undefined {
   const d1x = a.x1 - a.x0
   const d1y = a.y1 - a.y0
   const d2x = b.x1 - b.x0
   const d2y = b.y1 - b.y0
   const denom = d1x * d2y - d1y * d2x
-  if (Math.abs(denom) < tol) return undefined
+  if (Math.abs(denom) < paramTol) return undefined
 
   const dx = b.x0 - a.x0
   const dy = b.y0 - a.y0
   const t = (dx * d2y - dy * d2x) / denom
   const u = (dx * d1y - dy * d1x) / denom
-  if (t < -tol || t > 1 + tol || u < -tol || u > 1 + tol) return undefined
+  if (t < -geomTol || t > 1 + geomTol || u < -geomTol || u > 1 + geomTol) {
+    return undefined
+  }
 
   return { x: a.x0 + t * d1x, y: a.y0 + t * d1y }
+}
+
+/**
+ * T-junction snap: one segment endpoint lies on the interior (or boundary) of
+ * the other segment within `geomTol`, but parametric intersection can miss when
+ * the endpoint is only slightly off the host line.
+ */
+function intersectLineSegmentsEndpointJoin(
+  a: AcExOsnapSegmentLike,
+  b: AcExOsnapSegmentLike,
+  geomTol: number
+): Array<{ x: number; y: number }> {
+  const out: Array<{ x: number; y: number }> = []
+  const endpointsA = [
+    { x: a.x0, y: a.y0 },
+    { x: a.x1, y: a.y1 }
+  ]
+  const endpointsB = [
+    { x: b.x0, y: b.y0 },
+    { x: b.x1, y: b.y1 }
+  ]
+
+  for (const ep of endpointsA) {
+    const onB = closestPointOnSegmentLike(ep.x, ep.y, b)
+    if (withinGeomTolerance(onB.dist, geomTol)) {
+      appendUniqueIntersectionPoint(out, { x: onB.x, y: onB.y }, geomTol)
+    }
+  }
+  for (const ep of endpointsB) {
+    const onA = closestPointOnSegmentLike(ep.x, ep.y, a)
+    if (withinGeomTolerance(onA.dist, geomTol)) {
+      appendUniqueIntersectionPoint(out, { x: onA.x, y: onA.y }, geomTol)
+    }
+  }
+
+  return out
+}
+
+export function intersectLineSegments(
+  a: AcExOsnapSegmentLike,
+  b: AcExOsnapSegmentLike,
+  paramTol: number,
+  geomTol = paramTol
+): { x: number; y: number } | undefined {
+  const parametric = intersectLineSegmentsParametric(a, b, paramTol, geomTol)
+  if (parametric) return parametric
+
+  const endpointJoin = intersectLineSegmentsEndpointJoin(a, b, geomTol)
+  return endpointJoin[0]
+}
+
+/** All intersection points between two line segments (crossing and T-junction). */
+export function intersectLineSegmentPoints(
+  a: AcExOsnapSegmentLike,
+  b: AcExOsnapSegmentLike,
+  paramTol: number,
+  geomTol = paramTol
+): Array<{ x: number; y: number }> {
+  const out: Array<{ x: number; y: number }> = []
+  const parametric = intersectLineSegmentsParametric(a, b, paramTol, geomTol)
+  if (parametric) {
+    out.push(parametric)
+  }
+  for (const point of intersectLineSegmentsEndpointJoin(a, b, geomTol)) {
+    appendUniqueIntersectionPoint(out, point, geomTol)
+  }
+  return out
 }
 
 function isAngleInArcSweep(
@@ -89,33 +212,71 @@ function isPointOnCircArc(
   return isAngleInArcSweep(angle, prim, tol)
 }
 
+function lineEndpointsOnCircArc(
+  line: AcExOsnapLinePrimitive,
+  circ: AcExCircArcLike,
+  geomTol: number
+): Array<{ x: number; y: number }> {
+  const out: Array<{ x: number; y: number }> = []
+  for (const ep of [
+    { x: line.x0, y: line.y0 },
+    { x: line.x1, y: line.y1 }
+  ]) {
+    if (isPointOnCircArc(ep.x, ep.y, circ, geomTol)) {
+      appendUniqueIntersectionPoint(out, ep, geomTol)
+      continue
+    }
+    const dx = ep.x - circ.cx
+    const dy = ep.y - circ.cy
+    const dist = Math.hypot(dx, dy)
+    if (dist < geomTol) continue
+    const px = circ.cx + (dx / dist) * circ.r
+    const py = circ.cy + (dy / dist) * circ.r
+    if (
+      isPointOnCircArc(px, py, circ, geomTol) &&
+      withinGeomTolerance(Math.hypot(ep.x - px, ep.y - py), geomTol)
+    ) {
+      appendUniqueIntersectionPoint(out, { x: px, y: py }, geomTol)
+    }
+  }
+  return out
+}
+
 function intersectLineCircle(
   line: AcExOsnapLinePrimitive,
   circ: AcExCircArcLike,
-  tol: number
+  paramTol: number,
+  geomTol = paramTol
 ): Array<{ x: number; y: number }> {
   const dx = line.x1 - line.x0
   const dy = line.y1 - line.y0
   const fx = line.x0 - circ.cx
   const fy = line.y0 - circ.cy
   const a = dx * dx + dy * dy
-  if (a < tol * tol) return []
+  if (a < paramTol * paramTol) {
+    return lineEndpointsOnCircArc(line, circ, geomTol)
+  }
 
   const b = 2 * (fx * dx + fy * dy)
   const c = fx * fx + fy * fy - circ.r * circ.r
   const disc = b * b - 4 * a * c
-  if (disc < -tol) return []
+  if (disc < -paramTol) {
+    return lineEndpointsOnCircArc(line, circ, geomTol)
+  }
 
   const out: Array<{ x: number; y: number }> = []
   const sqrtDisc = Math.sqrt(Math.max(0, disc))
   for (const sign of [-1, 1] as const) {
     const t = (-b + sign * sqrtDisc) / (2 * a)
-    if (t < -tol || t > 1 + tol) continue
+    if (t < -paramTol || t > 1 + paramTol) continue
     const x = line.x0 + t * dx
     const y = line.y0 + t * dy
-    if (isPointOnCircArc(x, y, circ, tol)) {
-      out.push({ x, y })
+    if (isPointOnCircArc(x, y, circ, geomTol)) {
+      appendUniqueIntersectionPoint(out, { x, y }, geomTol)
     }
+  }
+  for (const point of lineEndpointsOnCircArc(line, circ, geomTol)) {
+    appendUniqueIntersectionPoint(out, point, geomTol)
   }
   return out
 }
@@ -168,23 +329,23 @@ function intersectCircles(
 export function intersectPrimitivePair(
   a: AcExOsnapPrimitive,
   b: AcExOsnapPrimitive,
-  tol: number
+  paramTol: number,
+  geomTol = paramTol
 ): Array<{ x: number; y: number }> {
   if (a.kind === 'line' && b.kind === 'line') {
-    const hit = intersectLineSegments(a, b, tol)
-    return hit ? [hit] : []
+    return intersectLineSegmentPoints(a, b, paramTol, geomTol)
   }
   if (a.kind === 'line' && (b.kind === 'circle' || b.kind === 'arc')) {
-    return intersectLineCircle(a, b, tol)
+    return intersectLineCircle(a, b, paramTol, geomTol)
   }
   if (b.kind === 'line' && (a.kind === 'circle' || a.kind === 'arc')) {
-    return intersectLineCircle(b, a, tol)
+    return intersectLineCircle(b, a, paramTol, geomTol)
   }
   if (
     (a.kind === 'circle' || a.kind === 'arc') &&
     (b.kind === 'circle' || b.kind === 'arc')
   ) {
-    return intersectCircles(a, b, tol)
+    return intersectCircles(a, b, paramTol)
   }
   return []
 }
