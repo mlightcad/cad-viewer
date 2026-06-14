@@ -191,6 +191,8 @@ function startViewer(): void {
     camera.updateProjectionMatrix()
     acexCameraZoomUniform.value = camera.zoom
     controls.update()
+    recomputeOsnapThresholdWcs()
+    bumpSnapCacheKey()
   }
 
   const resize = () => {
@@ -252,15 +254,22 @@ function startViewer(): void {
   }
 
   const osnapHitRadiusPx = 20
-  const osnapThresholdWcs = () => {
+  let osnapThresholdWcs = 0
+  const recomputeOsnapThresholdWcs = () => {
     const a = screenToWcs(0, 0)
     const b = screenToWcs(osnapHitRadiusPx, 0)
-    return Math.abs(b.x - a.x)
+    osnapThresholdWcs = Math.abs(b.x - a.x)
+  }
+  recomputeOsnapThresholdWcs()
+
+  let snapCacheKey = 0
+  const bumpSnapCacheKey = () => {
+    snapCacheKey++
   }
 
   const resolveMeasurePoint = (clientX: number, clientY: number) => {
     const raw = screenToWcs(clientX, clientY)
-    const snap = osnapIndex.findSnap(raw.x, raw.y, osnapThresholdWcs())
+    const snap = osnapIndex.findSnap(raw.x, raw.y, osnapThresholdWcs)
     const point = snap ? new THREE.Vector2(snap.x, snap.y) : raw
     return { point, snap: snap ?? null }
   }
@@ -293,6 +302,7 @@ function startViewer(): void {
       screenToWcs,
       wcsToScreen,
       render,
+      getSnapCacheKey: () => snapCacheKey,
       resolvePoint: resolveMeasurePoint,
       formatLength,
       formatAngle
@@ -345,6 +355,8 @@ function startViewer(): void {
 
   controls.addEventListener('change', () => {
     acexCameraZoomUniform.value = camera.zoom
+    recomputeOsnapThresholdWcs()
+    bumpSnapCacheKey()
     render()
   })
 
@@ -392,6 +404,8 @@ function startViewer(): void {
 
   window.addEventListener('resize', () => {
     resize()
+    recomputeOsnapThresholdWcs()
+    bumpSnapCacheKey()
     render()
   })
 
@@ -732,6 +746,20 @@ function setupMeasurePointerInput(
   getMeasure: () => AcExMeasureController,
   render: () => void
 ): void {
+  let pendingMove: { clientX: number; clientY: number } | null = null
+  let moveRaf = 0
+
+  const flushPointerMove = () => {
+    moveRaf = 0
+    const sample = pendingMove
+    pendingMove = null
+    if (!sample) return
+    const measure = getMeasure()
+    if (!measure.isActive) return
+    measure.handlePointerMove(sample.clientX, sample.clientY)
+    render()
+  }
+
   domElement.addEventListener('pointerdown', event => {
     if (event.button !== 0) return
     const measure = getMeasure()
@@ -748,8 +776,10 @@ function setupMeasurePointerInput(
   domElement.addEventListener('pointermove', event => {
     const measure = getMeasure()
     if (!measure.isActive) return
-    measure.handlePointerMove(event.clientX, event.clientY)
-    render()
+    pendingMove = { clientX: event.clientX, clientY: event.clientY }
+    if (moveRaf === 0) {
+      moveRaf = requestAnimationFrame(flushPointerMove)
+    }
   })
 }
 

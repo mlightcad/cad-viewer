@@ -161,12 +161,18 @@ importers:
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.14
+      '@types/rbush':
+        specifier: ^3.0.4
+        version: 3.0.4
       '@types/three':
         specifier: ^0.172.0
         version: 0.172.0
       fflate:
         specifier: ^0.8.2
         version: 0.8.2
+      rbush:
+        specifier: ^4.0.1
+        version: 4.0.1
       three:
         specifier: ^0.172.0
         version: 0.172.0
