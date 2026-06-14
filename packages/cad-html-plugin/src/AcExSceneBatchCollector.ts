@@ -5,7 +5,8 @@ import {
   AcTrBatchedPoint,
   getMaterialMetadata,
   isBatchGeometryActive,
-  isBatchGeometryVisible
+  isBatchGeometryVisible,
+  isHighlightOverlayDescendant
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
@@ -15,11 +16,11 @@ import {
   compactIndexedSlice,
   copyFloat32Range,
   copyUint32Range,
+  exportPlainDrawableSlice,
   readBatchWorldOffset
 } from './AcExBatchBuffers'
 import {
   computeLineDistancesForSegments,
-  exportLineDistanceSlice,
   exportVertexAttributeSlice,
   extractGradientFill,
   extractHatchPattern,
@@ -377,11 +378,24 @@ function readWorldOffset(object: THREE.Object3D): [number, number, number] {
   return readBatchWorldOffset(object)
 }
 
+function exportSceneDrawableSlice(
+  object: THREE.Object3D,
+  slice: AcExBufferGeometrySlice,
+  options: { preserveWorldSpaceForPatternFill?: boolean } = {}
+): AcExBufferGeometrySlice & { offset: [number, number, number] } {
+  const exported = exportPlainDrawableSlice(object, slice, options)
+  return {
+    ...exported.slice,
+    offset: exported.offset
+  }
+}
+
 function buildMeshBatch(
   geometry: THREE.BufferGeometry,
   material: THREE.Material,
   object: THREE.Object3D,
-  slice: AcExBufferGeometrySlice
+  slice: AcExBufferGeometrySlice,
+  offset: [number, number, number]
 ): AcExMeshBatch {
   const style = readMaterialStyle(material)
   const hatchPattern = resolveExportedHatchPattern(object, style.hatchPattern)
@@ -391,7 +405,7 @@ function buildMeshBatch(
   return {
     layer: style.layer,
     color: style.color,
-    offset: readWorldOffset(object),
+    offset,
     hatchPattern,
     gradientFill: style.gradientFill,
     gradientPositions,
@@ -448,7 +462,8 @@ function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
     batch.geometry,
     batch.material as THREE.Material,
     batch,
-    slice
+    slice,
+    readWorldOffset(batch)
   )
 }
 
@@ -465,7 +480,8 @@ function exportBatchedPoint(
       batch.geometry,
       batch.material as THREE.Material,
       batch,
-      slice
+      slice,
+      readWorldOffset(batch)
     )
   }
 }
@@ -486,6 +502,9 @@ export function collectBatchesFromObject3D(
   const meshBatches: AcExMeshBatch[] = []
 
   root.traverse(child => {
+    if (isHighlightOverlayDescendant(child)) {
+      return
+    }
     if (child instanceof AcTrBatchedLine) {
       const batch = exportBatchedLine(child)
       if (batch) lineBatches.push(batch)
@@ -507,14 +526,15 @@ export function collectBatchesFromObject3D(
       return
     }
     if (child instanceof LineSegments2) {
-      const slice = exportLineSegments2Slice(child.geometry)
-      if (slice.positions.length === 0) return
+      const rawSlice = exportLineSegments2Slice(child.geometry)
+      if (rawSlice.positions.length === 0) return
       const material = child.material as THREE.Material
       const { color, layer } = readMaterialStyle(material)
+      const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice)
       lineBatches.push({
         layer,
         color,
-        offset: readWorldOffset(child),
+        offset,
         lineWidth: readLineWidth(material),
         ...slice
       })
@@ -522,18 +542,18 @@ export function collectBatchesFromObject3D(
       child instanceof THREE.LineSegments &&
       !(child instanceof AcTrBatchedLine)
     ) {
-      const slice = exportBufferGeometrySlice(child.geometry)
-      if (slice.positions.length === 0) return
+      const rawSlice = exportBufferGeometrySlice(child.geometry)
+      if (rawSlice.positions.length === 0) return
       const material = child.material as THREE.Material
       const { color, layer, linePattern } = readMaterialStyle(material)
+      const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice)
       const lineDistances = linePattern
-        ? (exportLineDistanceSlice(child.geometry) ??
-          computeLineDistancesForSegments(slice.positions))
+        ? computeLineDistancesForSegments(slice.positions)
         : undefined
       lineBatches.push({
         layer,
         color,
-        offset: readWorldOffset(child),
+        offset,
         linePattern,
         lineDistances,
         ...slice
@@ -542,14 +562,20 @@ export function collectBatchesFromObject3D(
       child instanceof THREE.Mesh &&
       !(child instanceof AcTrBatchedMesh)
     ) {
-      const slice = exportBufferGeometrySlice(child.geometry)
-      if (slice.positions.length === 0) return
+      const rawSlice = exportBufferGeometrySlice(child.geometry)
+      if (rawSlice.positions.length === 0) return
+      const material = child.material as THREE.Material
+      const style = readMaterialStyle(material)
+      const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice, {
+        preserveWorldSpaceForPatternFill: !!style.hatchPattern
+      })
       meshBatches.push(
         buildMeshBatch(
           child.geometry,
-          child.material as THREE.Material,
+          material,
           child,
-          slice
+          slice,
+          offset
         )
       )
     }

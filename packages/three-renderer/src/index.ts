@@ -28,3 +28,9 @@ export {
   type AcTrPatternLine
 } from './style/AcTrHatchPatternShaders'
 export * from './util/AcTrMTextColorUtil'
+export {
+  isHighlightOverlayDescendant,
+  markHighlightOverlayGroup,
+  type AcTrHighlightOverlayGroup,
+  type AcTrHighlightOverlayGroupUserData
+} from './util/AcTrObjectUserData'
