@@ -12,6 +12,7 @@
 import type { AcGePoint2dLike } from '@mlightcad/data-model'
 
 import {
+  type AcExOsnapAcGeCurve,
   ellipsePointAtNormalized,
   primitiveToAcGeCurve
 } from './AcExOsnapPrimitiveToAcGe'
@@ -50,26 +51,23 @@ export interface AcExOsnapCandidate {
 }
 
 /**
- * Collects snap candidates for one primitive using `AcGe*` geometry.
+ * Collects discrete (non-nearest) snap points for one primitive at index build time.
  *
  * @param prim - Exported primitive in WCS.
- * @param px - Pick X in WCS.
- * @param py - Pick Y in WCS.
  * @param modes - Enabled OSNAP modes.
+ * @param geo - Optional pre-built curve from {@link primitiveToAcGeCurve}.
  */
-export function collectPrimitiveSnapCandidates(
+export function collectPrimitiveDiscreteSnapCandidates(
   prim: AcExOsnapPrimitive,
-  px: number,
-  py: number,
-  modes: Set<AcExOsnapMode>
+  modes: Set<AcExOsnapMode>,
+  geo?: AcExOsnapAcGeCurve
 ): AcExOsnapCandidate[] {
   const out: AcExOsnapCandidate[] = []
-  const pick = { x: px, y: py, z: 0 }
-  const geo = primitiveToAcGeCurve(prim)
+  const resolved = geo ?? primitiveToAcGeCurve(prim)
 
-  switch (geo.kind) {
+  switch (resolved.kind) {
     case 'line': {
-      const line = geo.curve
+      const line = resolved.curve
       if (modes.has('endpoint')) {
         pushPoint(out, line.startPoint, 'endpoint')
         pushPoint(out, line.endPoint, 'endpoint')
@@ -84,13 +82,10 @@ export function collectPrimitiveSnapCandidates(
           'midpoint'
         )
       }
-      if (modes.has('nearest')) {
-        pushPoint(out, line.nearestPoint(pick), 'nearest')
-      }
       break
     }
     case 'circArc': {
-      const arc = geo.curve
+      const arc = resolved.curve
       if (modes.has('endpoint') && !arc.closed) {
         pushPoint(out, arc.startPoint, 'endpoint')
         pushPoint(out, arc.endPoint, 'endpoint')
@@ -106,13 +101,10 @@ export function collectPrimitiveSnapCandidates(
           pushPoint(out, p, 'quadrant')
         }
       }
-      if (modes.has('nearest')) {
-        pushPoint(out, arc.nearestPoint(pick), 'nearest')
-      }
       break
     }
     case 'ellipse': {
-      const ellipse = geo.curve
+      const ellipse = resolved.curve
       if (prim.kind !== 'ellipse') break
       if (modes.has('endpoint') && !prim.closed) {
         pushPoint(out, ellipsePointAtNormalized(prim, 0), 'endpoint')
@@ -129,13 +121,10 @@ export function collectPrimitiveSnapCandidates(
           pushPoint(out, p, 'quadrant')
         }
       }
-      if (modes.has('nearest')) {
-        pushPoint(out, ellipse.nearestPoint(pick), 'nearest')
-      }
       break
     }
     case 'spline': {
-      const spline = geo.curve
+      const spline = resolved.curve
       const { start, end } = spline.getParameterRange()
       const startPt = spline.point(start)
       const endPt = spline.point(end)
@@ -152,18 +141,71 @@ export function collectPrimitiveSnapCandidates(
           pushPoint(out, { x: p[0]!, y: p[1]! }, 'node')
         }
       }
-      if (modes.has('nearest')) {
-        pushPoint(out, spline.nearestPoint(pick), 'nearest')
-      }
       break
     }
     case 'point': {
       if (modes.has('node') || modes.has('endpoint')) {
-        pushPoint(out, geo.point, 'node')
+        pushPoint(out, resolved.point, 'node')
       }
       break
     }
   }
 
+  return out
+}
+
+/**
+ * Nearest snap on one primitive; uses a pre-built curve when provided.
+ */
+export function collectPrimitiveNearestSnapCandidate(
+  prim: AcExOsnapPrimitive,
+  px: number,
+  py: number,
+  geo?: AcExOsnapAcGeCurve
+): AcExOsnapCandidate | undefined {
+  const pick = { x: px, y: py, z: 0 }
+  const resolved = geo ?? primitiveToAcGeCurve(prim)
+
+  switch (resolved.kind) {
+    case 'line': {
+      const p = resolved.curve.nearestPoint(pick)
+      return { x: p.x, y: p.y, mode: 'nearest' }
+    }
+    case 'circArc': {
+      const p = resolved.curve.nearestPoint(pick)
+      return { x: p.x, y: p.y, mode: 'nearest' }
+    }
+    case 'ellipse': {
+      const p = resolved.curve.nearestPoint(pick)
+      return { x: p.x, y: p.y, mode: 'nearest' }
+    }
+    case 'spline': {
+      const p = resolved.curve.nearestPoint(pick)
+      return { x: p.x, y: p.y, mode: 'nearest' }
+    }
+    default:
+      return undefined
+  }
+}
+
+/**
+ * Collects snap candidates for one primitive using `AcGe*` geometry.
+ *
+ * @param prim - Exported primitive in WCS.
+ * @param px - Pick X in WCS.
+ * @param py - Pick Y in WCS.
+ * @param modes - Enabled OSNAP modes.
+ */
+export function collectPrimitiveSnapCandidates(
+  prim: AcExOsnapPrimitive,
+  px: number,
+  py: number,
+  modes: Set<AcExOsnapMode>
+): AcExOsnapCandidate[] {
+  const out = collectPrimitiveDiscreteSnapCandidates(prim, modes)
+  if (modes.has('nearest')) {
+    const nearest = collectPrimitiveNearestSnapCandidate(prim, px, py)
+    if (nearest) out.push(nearest)
+  }
   return out
 }

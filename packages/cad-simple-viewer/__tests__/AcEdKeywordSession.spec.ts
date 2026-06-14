@@ -44,7 +44,9 @@ describe('KeywordSession Enter behavior', () => {
   })
 
   test('Enter with default keyword takes precedence over allowNone', () => {
-    const options = new AcEdPromptKeywordOptions('export invisible layers <Yes>')
+    const options = new AcEdPromptKeywordOptions(
+      'export invisible layers <Yes>'
+    )
     const yes = options.keywords.add('Yes(Y)', 'Yes', 'Yes')
     options.keywords.add('No(N)', 'No', 'No')
     options.keywords.default = yes

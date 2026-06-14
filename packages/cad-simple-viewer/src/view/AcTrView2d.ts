@@ -1978,15 +1978,14 @@ export class AcTrView2d extends AcEdBaseView {
       assertAcTrGroupWcsBboxesConsistent(group)
     }
 
-    const groupChildBoxes: AcEdSpatialQueryResultItem[] = group.wcsChildBoxes.map(
-      box => ({
+    const groupChildBoxes: AcEdSpatialQueryResultItem[] =
+      group.wcsChildBoxes.map(box => ({
         minX: box.minX,
         minY: box.minY,
         maxX: box.maxX,
         maxY: box.maxY,
         id: box.id
-      })
-    )
+      }))
     objectsGroupByLayer.forEach((objects, layerName) => {
       // AutoCAD block rule: entities authored on layer "0" inherit the INSERT's layer.
       // Non-zero layers keep their original layer name.

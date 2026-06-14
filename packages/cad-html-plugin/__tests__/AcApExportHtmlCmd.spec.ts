@@ -96,7 +96,10 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
 
   test('accepts default keyword (OK) for both prompts and exports', async () => {
     getKeywords
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.OK, stringResult: 'Yes' })
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
+        stringResult: 'Yes'
+      })
       .mockResolvedValueOnce({
         status: AcEdPromptStatus.OK,
         stringResult: 'Extents'

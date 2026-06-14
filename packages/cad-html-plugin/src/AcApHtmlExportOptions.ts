@@ -1,9 +1,6 @@
 import type { AcTrView2d } from '@mlightcad/cad-simple-viewer'
 
-import type {
-  AcExInitialViewMode,
-  AcExViewState
-} from './AcExSnapshotTypes'
+import type { AcExInitialViewMode, AcExViewState } from './AcExSnapshotTypes'
 
 /** Matches the offline HTML viewer orthographic half-height in world units. */
 const HTML_VIEWER_CAMERA_FRUSTUM = 400
@@ -43,8 +40,7 @@ export function captureAcApHtmlViewState(view: AcTrView2d): AcExViewState {
   const center = layoutView.center
   const zoomMain = layoutView.trCamera.zoom
   const height = Math.max(layoutView.height, 1)
-  const zoom =
-    (zoomMain * (2 * HTML_VIEWER_CAMERA_FRUSTUM)) / height
+  const zoom = (zoomMain * (2 * HTML_VIEWER_CAMERA_FRUSTUM)) / height
 
   return {
     centerX: center.x,

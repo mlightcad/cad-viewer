@@ -42,7 +42,11 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { compactIndexedSlice, readBatchWorldOffset, toWcsCoord } from '../src/AcExBatchBuffers'
+import {
+  compactIndexedSlice,
+  readBatchWorldOffset,
+  toWcsCoord
+} from '../src/AcExBatchBuffers'
 import {
   collectBatchesFromObject3D,
   exportActiveBatchedLine2Slice,
@@ -270,17 +274,11 @@ describe('exportActiveBatchedLine2Slice', () => {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
       'instanceStart',
-      new THREE.Float32BufferAttribute(
-        [0, 0, 0, 0, 10, 0, 99, 99, 99],
-        3
-      )
+      new THREE.Float32BufferAttribute([0, 0, 0, 0, 10, 0, 99, 99, 99], 3)
     )
     geometry.setAttribute(
       'instanceEnd',
-      new THREE.Float32BufferAttribute(
-        [10, 0, 0, 10, 10, 0, 99, 99, 99],
-        3
-      )
+      new THREE.Float32BufferAttribute([10, 0, 0, 10, 10, 0, 99, 99, 99], 3)
     )
 
     const slice = exportActiveBatchedLine2Slice(
@@ -390,18 +388,22 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     // Batch origin is the first geometry bbox center plus worldOffset.
     expect(exported.offset[0]).toBeCloseTo(1_000_050, 3)
     expect(exported.offset[1]).toBeCloseTo(2_000_025, 3)
-    expect(
-      toWcsCoord(exported.positions[0]!, exported.offset[0]!)
-    ).toBeCloseTo(1_000_000, 3)
-    expect(
-      toWcsCoord(exported.positions[1]!, exported.offset[1]!)
-    ).toBeCloseTo(2_000_000, 3)
-    expect(
-      toWcsCoord(exported.positions[3]!, exported.offset[0]!)
-    ).toBeCloseTo(1_000_100, 3)
-    expect(
-      toWcsCoord(exported.positions[4]!, exported.offset[1]!)
-    ).toBeCloseTo(2_000_050, 3)
+    expect(toWcsCoord(exported.positions[0]!, exported.offset[0]!)).toBeCloseTo(
+      1_000_000,
+      3
+    )
+    expect(toWcsCoord(exported.positions[1]!, exported.offset[1]!)).toBeCloseTo(
+      2_000_000,
+      3
+    )
+    expect(toWcsCoord(exported.positions[3]!, exported.offset[0]!)).toBeCloseTo(
+      1_000_100,
+      3
+    )
+    expect(toWcsCoord(exported.positions[4]!, exported.offset[1]!)).toBeCloseTo(
+      2_000_050,
+      3
+    )
   })
 
   it('uses matrixWorld translation for rebased lines nested under a parent', () => {
@@ -420,18 +422,22 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     const exported = lineBatches[0]!
     expect(exported.offset[0]).toBeCloseTo(1_000_060, 3)
     expect(exported.offset[1]).toBeCloseTo(2_000_045, 3)
-    expect(
-      toWcsCoord(exported.positions[0]!, exported.offset[0]!)
-    ).toBeCloseTo(1_000_010, 3)
-    expect(
-      toWcsCoord(exported.positions[1]!, exported.offset[1]!)
-    ).toBeCloseTo(2_000_020, 3)
-    expect(
-      toWcsCoord(exported.positions[3]!, exported.offset[0]!)
-    ).toBeCloseTo(1_000_110, 3)
-    expect(
-      toWcsCoord(exported.positions[4]!, exported.offset[1]!)
-    ).toBeCloseTo(2_000_070, 3)
+    expect(toWcsCoord(exported.positions[0]!, exported.offset[0]!)).toBeCloseTo(
+      1_000_010,
+      3
+    )
+    expect(toWcsCoord(exported.positions[1]!, exported.offset[1]!)).toBeCloseTo(
+      2_000_020,
+      3
+    )
+    expect(toWcsCoord(exported.positions[3]!, exported.offset[0]!)).toBeCloseTo(
+      1_000_110,
+      3
+    )
+    expect(toWcsCoord(exported.positions[4]!, exported.offset[1]!)).toBeCloseTo(
+      2_000_070,
+      3
+    )
   })
 
   it('reads world offset from matrixWorld for nested drawables', () => {
@@ -441,11 +447,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     parent.add(line)
     parent.updateMatrixWorld(true)
 
-    expect(readBatchWorldOffset(line)).toEqual([
-      900_060,
-      1_800_045,
-      0
-    ])
+    expect(readBatchWorldOffset(line)).toEqual([900_060, 1_800_045, 0])
   })
 
   it('exports multiple origin-split batched lines with reconstructable WCS', () => {
@@ -482,7 +484,9 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     group.addEntity(
       createEntity('line-near-b', createPositionedLine(100_500, 2_000_050))
     )
-    group.addEntity(createEntity('line-far', createPositionedLine(farX, 3_000_000)))
+    group.addEntity(
+      createEntity('line-far', createPositionedLine(farX, 3_000_000))
+    )
 
     expect(
       group.children.filter(child => child instanceof AcTrBatchedLine)
@@ -508,14 +512,12 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
       toWcsCoord(nearExport.positions[4]!, nearExport.offset[1]!)
     ).toBeCloseTo(2_000_050, 0)
 
-    expect(toWcsCoord(farExport.positions[0]!, farExport.offset[0]!)).toBeCloseTo(
-      farX,
-      0
-    )
-    expect(toWcsCoord(farExport.positions[1]!, farExport.offset[1]!)).toBeCloseTo(
-      3_000_000,
-      0
-    )
+    expect(
+      toWcsCoord(farExport.positions[0]!, farExport.offset[0]!)
+    ).toBeCloseTo(farX, 0)
+    expect(
+      toWcsCoord(farExport.positions[1]!, farExport.offset[1]!)
+    ).toBeCloseTo(3_000_000, 0)
 
     for (const batch of lineBatches) {
       for (let i = 0; i < batch.positions.length; i++) {
@@ -545,18 +547,22 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     const exported = lineBatches[0]!
     expect(exported.lineWidth).toBe(2.5)
     expect(exported.color).toBe(0x00ff00)
-    expect(
-      toWcsCoord(exported.positions[0]!, exported.offset[0]!)
-    ).toBeCloseTo(100_000, 0)
-    expect(
-      toWcsCoord(exported.positions[1]!, exported.offset[1]!)
-    ).toBeCloseTo(2_000_000, 0)
-    expect(
-      toWcsCoord(exported.positions[3]!, exported.offset[0]!)
-    ).toBeCloseTo(100_100, 0)
-    expect(
-      toWcsCoord(exported.positions[4]!, exported.offset[1]!)
-    ).toBeCloseTo(2_000_050, 0)
+    expect(toWcsCoord(exported.positions[0]!, exported.offset[0]!)).toBeCloseTo(
+      100_000,
+      0
+    )
+    expect(toWcsCoord(exported.positions[1]!, exported.offset[1]!)).toBeCloseTo(
+      2_000_000,
+      0
+    )
+    expect(toWcsCoord(exported.positions[3]!, exported.offset[0]!)).toBeCloseTo(
+      100_100,
+      0
+    )
+    expect(toWcsCoord(exported.positions[4]!, exported.offset[1]!)).toBeCloseTo(
+      2_000_050,
+      0
+    )
   })
 
   it('exports unbatched LineSegments2 drawables with line width', () => {

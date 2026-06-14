@@ -96,7 +96,10 @@ function createHandleGroupEntity(
 describe('AcTrGroupWcsBboxAssert', () => {
   it('passes when wcsBbox equals the union of wcsChildBoxes', () => {
     const group = {
-      wcsBbox: new THREE.Box3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(10, 15, 0)),
+      wcsBbox: new THREE.Box3(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(10, 15, 0)
+      ),
       wcsChildBoxes: [
         { minX: 0, minY: 0, maxX: 10, maxY: 0, id: 'line-a' },
         { minX: 2, minY: 5, maxX: 8, maxY: 15, id: 'line-b' }
@@ -109,7 +112,10 @@ describe('AcTrGroupWcsBboxAssert', () => {
 
   it('throws when wcsBbox diverges from wcsChildBoxes', () => {
     const group = {
-      wcsBbox: new THREE.Box3(new THREE.Vector3(999, 999, 0), new THREE.Vector3(10, 5, 0)),
+      wcsBbox: new THREE.Box3(
+        new THREE.Vector3(999, 999, 0),
+        new THREE.Vector3(10, 5, 0)
+      ),
       wcsChildBoxes: [{ minX: 0, minY: 0, maxX: 10, maxY: 5, id: 'line-a' }]
     }
 

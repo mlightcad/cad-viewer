@@ -110,7 +110,10 @@ function createEntity(
     layerName,
     ownerId: 'layout-1',
     userData: {},
-    wcsBbox: new THREE.Box3(new THREE.Vector3(1, 1, 0), new THREE.Vector3(2, 2, 0))
+    wcsBbox: new THREE.Box3(
+      new THREE.Vector3(1, 1, 0),
+      new THREE.Vector3(2, 2, 0)
+    )
   } as AcTrEntity & { wcsBbox: THREE.Box3 }
 }
 

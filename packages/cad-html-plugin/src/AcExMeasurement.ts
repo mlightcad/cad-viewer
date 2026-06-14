@@ -106,6 +106,11 @@ export interface AcExMeasureViewApi {
   render: () => void
 
   /**
+   * Monotonic value that changes when pan/zoom invalidates cached pointer picks.
+   */
+  getSnapCacheKey: () => number
+
+  /**
    * Resolves a pointer pick with object snap applied.
    * @param clientX - Pointer X in viewport pixels.
    * @param clientY - Pointer Y in viewport pixels.
@@ -690,6 +695,18 @@ export class AcExMeasureController {
   private _lastPointer: { x: number; y: number } | null = null
   /** Guards against re-entrant `render()` while {@link syncOverlays} refreshes preview. */
   private _inOverlaySync = false
+  /** Cached `#mlcad-root` rect for one {@link syncOverlays} pass. @internal */
+  private _overlayRootRect: DOMRect | null = null
+  /** Last view key used for committed overlay layout/redraw. @internal */
+  private _lastOverlaySyncKey = -1
+  /** Cached object-snap resolution for the current pointer sample. @internal */
+  private _osnapCache: {
+    clientX: number
+    clientY: number
+    cacheKey: number
+    point: THREE.Vector2
+    snap: AcExOsnapPoint | null
+  } | null = null
 
   /**
    * Creates overlay layers in `root` and registers preview geometry in `scene`.
@@ -810,6 +827,7 @@ export class AcExMeasureController {
     this._mode = null
     this._points = []
     this._lastPointer = null
+    this._osnapCache = null
     this._hidePreview()
     this._onOsnapMarker(null, null)
     this._updateToolbarActive()
@@ -845,11 +863,18 @@ export class AcExMeasureController {
   syncOverlays(): void {
     this._inOverlaySync = true
     try {
-      for (const fn of this._redrawListeners) fn()
-      this._positionDomOverlays()
+      this._overlayRootRect = this._root.getBoundingClientRect()
+      const overlayKey = this._view.getSnapCacheKey()
+      const cameraChanged = overlayKey !== this._lastOverlaySyncKey
+      if (cameraChanged) {
+        for (const fn of this._redrawListeners) fn()
+        this._positionDomOverlays()
+        this._lastOverlaySyncKey = overlayKey
+      }
       this._refreshActivePreview()
     } finally {
       this._inOverlaySync = false
+      this._overlayRootRect = null
     }
   }
 
@@ -891,25 +916,6 @@ export class AcExMeasureController {
   handlePointerMove(clientX: number, clientY: number): void {
     if (!this._mode) return
     this._lastPointer = { x: clientX, y: clientY }
-    const point = this._resolvePointerWithOsnap(clientX, clientY)
-
-    switch (this._mode) {
-      case 'distance':
-        this._previewDistance(point, clientX, clientY)
-        break
-      case 'angle':
-        this._previewAngle(point, clientX, clientY)
-        break
-      case 'arc':
-        this._previewArc(point, clientX, clientY)
-        break
-      case 'area':
-        this._previewArea(point, clientX, clientY)
-        break
-      case 'coordinate':
-        this._previewCoordinate(point, clientX, clientY)
-        break
-    }
   }
 
   /**
@@ -1072,6 +1078,21 @@ export class AcExMeasureController {
     clientX: number,
     clientY: number
   ): THREE.Vector2 {
+    const cacheKey = this._view.getSnapCacheKey()
+    const cached = this._osnapCache
+    if (
+      cached &&
+      cached.clientX === clientX &&
+      cached.clientY === clientY &&
+      cached.cacheKey === cacheKey
+    ) {
+      this._onOsnapMarker(
+        cached.snap,
+        cached.snap ? this._view.wcsToScreen(cached.point) : null
+      )
+      return cached.point
+    }
+
     const { point: rawPoint, snap } = this._view.resolvePoint(clientX, clientY)
     let point = rawPoint
     const tracking = this._getTrackingOptions?.()
@@ -1079,6 +1100,13 @@ export class AcExMeasureController {
     if (tracking && reference && (tracking.ortho || tracking.polar)) {
       const constrained = constrainToAcExTracking(point, reference, tracking)
       point = new THREE.Vector2(constrained.x, constrained.y)
+    }
+    this._osnapCache = {
+      clientX,
+      clientY,
+      cacheKey,
+      point: point.clone(),
+      snap
     }
     this._onOsnapMarker(snap, snap ? this._view.wcsToScreen(point) : null)
     return point
@@ -1133,7 +1161,7 @@ export class AcExMeasureController {
    * @internal
    */
   private _showLiveLabel(text: string, clientX: number, clientY: number): void {
-    const rootRect = this._root.getBoundingClientRect()
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     this._liveLabel.textContent = text
     this._liveLabel.style.display = 'block'
     this._liveLabel.style.left = `${clientX - rootRect.left}px`
@@ -1146,15 +1174,26 @@ export class AcExMeasureController {
       this._previewLine.visible = false
       return
     }
-    const positions = new Float32Array(points.length * 3)
-    for (let i = 0; i < points.length; i++) {
-      positions[i * 3] = points[i]!.x
-      positions[i * 3 + 1] = points[i]!.y
+    const geometry = this._previewLine.geometry
+    const existing = geometry.getAttribute('position') as
+      | THREE.BufferAttribute
+      | undefined
+    if (existing && existing.count === points.length) {
+      for (let i = 0; i < points.length; i++) {
+        existing.setXYZ(i, points[i]!.x, points[i]!.y, 0)
+      }
+      existing.needsUpdate = true
+    } else {
+      const positions = new Float32Array(points.length * 3)
+      for (let i = 0; i < points.length; i++) {
+        positions[i * 3] = points[i]!.x
+        positions[i * 3 + 1] = points[i]!.y
+      }
+      geometry.dispose()
+      const next = new THREE.BufferGeometry()
+      next.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+      this._previewLine.geometry = next
     }
-    this._previewLine.geometry.dispose()
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    this._previewLine.geometry = geometry
     this._previewLine.visible = true
   }
 
@@ -1834,7 +1873,7 @@ export class AcExMeasureController {
 
   /** Projects `data-wcs-*` DOM overlays to root-local screen coordinates. @internal */
   private _positionDomOverlays(): void {
-    const rootRect = this._root.getBoundingClientRect()
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     this._overlayLayer
       .querySelectorAll<HTMLElement>('.mlcad-measure-dot, .mlcad-measure-badge')
       .forEach(el => {
@@ -1858,7 +1897,7 @@ export class AcExMeasureController {
     h: number
     dpr: number
   } | null {
-    const rect = this._root.getBoundingClientRect()
+    const rect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const w = Math.round(rect.width)
     const h = Math.round(rect.height)
@@ -1873,6 +1912,12 @@ export class AcExMeasureController {
     const ctx = canvas.getContext('2d')
     if (!ctx) return null
     return { ctx, w, h, dpr }
+  }
+
+  /** Root-local offset for overlay canvases during {@link syncOverlays}. @internal */
+  private _overlayRootOffset(): { left: number; top: number } {
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    return { left: rootRect.left, top: rootRect.top }
   }
 
   /** Draws the interior angle arc on a synced overlay canvas. @internal */
@@ -1892,7 +1937,7 @@ export class AcExMeasureController {
     const arc = interiorAngleArcScreenMetrics(vertex, arm1, arm2, wcs =>
       this._view.wcsToScreen(wcs)
     )
-    const rootRect = this._root.getBoundingClientRect()
+    const rootRect = this._overlayRootOffset()
     const vx = arc.cx - rootRect.left
     const vy = arc.cy - rootRect.top
 
@@ -1935,7 +1980,7 @@ export class AcExMeasureController {
     ctx.save()
     ctx.scale(dpr, dpr)
 
-    const rootRect = this._root.getBoundingClientRect()
+    const rootRect = this._overlayRootOffset()
     const sc = this._view.wcsToScreen(new THREE.Vector2(g.cx, g.cy))
     const ss = this._view.wcsToScreen(start)
     const se = this._view.wcsToScreen(end)
@@ -1988,7 +2033,7 @@ export class AcExMeasureController {
     ctx.save()
     ctx.scale(dpr, dpr)
 
-    const rootRect = this._root.getBoundingClientRect()
+    const rootRect = this._overlayRootOffset()
     const spts = points.map(p => {
       const s = this._view.wcsToScreen(p)
       return { x: s.x - rootRect.left, y: s.y - rootRect.top }

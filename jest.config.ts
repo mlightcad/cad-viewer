@@ -21,7 +21,7 @@ const config: Config = {
     ]
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!.*mtext-parser)'
+    '/node_modules/(?!.*(mtext-parser|rbush|quickselect))'
   ],
   testPathIgnorePatterns: [
     '/e2e/',

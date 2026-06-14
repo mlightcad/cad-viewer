@@ -470,7 +470,9 @@ export class AcTrPointSymbolCreator {
 
         // For those display mode, there is one point at the center of point symbol
         if (displayMode == 32 || displayMode == 64 || displayMode == 96) {
-          result.point = new THREE.BufferGeometry().setFromPoints([_originPoint])
+          result.point = new THREE.BufferGeometry().setFromPoints([
+            _originPoint
+          ])
         }
       }
     }
