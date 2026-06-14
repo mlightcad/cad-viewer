@@ -206,6 +206,27 @@ export function isHighlightOverlayDescendant(object: THREE.Object3D): boolean {
   return false
 }
 
+/**
+ * Returns whether `object` is a transient selection/hover highlight clone rather
+ * than source drawing geometry.
+ *
+ * Highlight clones receive `userData.objectId` in
+ * {@link AcTrBatchedGroup.highlight}; leaf drawables in the normal scene graph do
+ * not. Entity containers also carry `objectId`, but they are excluded here.
+ */
+export function isHighlightCloneDrawable(object: THREE.Object3D): boolean {
+  if (getHighlightUserData(object).objectId == null) {
+    return false
+  }
+
+  const userData = getObjectUserData(object)
+  if (userData.layerName != null && object.children.length > 0) {
+    return false
+  }
+
+  return true
+}
+
 export function getBatchedContainerUserData(
   object: THREE.Object3D
 ): AcTrBatchedContainerUserData {

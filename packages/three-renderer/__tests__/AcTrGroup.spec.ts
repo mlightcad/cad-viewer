@@ -115,4 +115,28 @@ describe('AcTrGroup wcsBbox', () => {
       [union.max.x, union.max.y, 0]
     )
   })
+
+  it('keeps wcsBbox aligned with child-box union after rotated insert transform', () => {
+    const context = new AcTrRenderContext()
+    const lineA = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const lineB = createLine('line-b', { x: 0, y: 0 }, { x: 0, y: 10 }, context)
+    const group = new AcTrGroup([lineA, lineB], context)
+
+    group.applyMatrix(new AcGeMatrix3d().makeRotationZ(Math.PI / 4))
+
+    const union = new THREE.Box3()
+    for (const box of group.wcsChildBoxes) {
+      union.union(
+        new THREE.Box3(
+          new THREE.Vector3(box.minX, box.minY, 0),
+          new THREE.Vector3(box.maxX, box.maxY, 0)
+        )
+      )
+    }
+    expectWcsBboxCloseTo(
+      group.wcsBbox,
+      [union.min.x, union.min.y, 0],
+      [union.max.x, union.max.y, 0]
+    )
+  })
 })
