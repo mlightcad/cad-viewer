@@ -50,8 +50,8 @@ import {
   resolvePointerSelectionAction
 } from '../editor'
 import {
+  ACGI_MODEL_SPACE_BACKGROUND,
   isModelSpaceDatabase,
-  MODEL_SPACE_BACKGROUND,
   readLayoutBackgroundColor
 } from '../editor/global/AcEdUiColor'
 import { AcTrGeometryUtil } from '../util'
@@ -86,7 +86,7 @@ export interface AcTrView2dOptions {
  * Default view option values
  */
 export const DEFAULT_VIEW_2D_OPTIONS: AcTrView2dOptions = {
-  background: MODEL_SPACE_BACKGROUND
+  background: ACGI_MODEL_SPACE_BACKGROUND
 }
 
 /**
@@ -240,7 +240,7 @@ export class AcTrView2d extends AcEdBaseView {
 
     this._scene = this.createScene()
     // Initialize background color through setter to keep renderer/cursor in sync.
-    this.backgroundColor = mergedOptions.background ?? MODEL_SPACE_BACKGROUND
+    this.backgroundColor = mergedOptions.background ?? ACGI_MODEL_SPACE_BACKGROUND
     this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
 
     // Layout background sysvars drive the canvas clear colour and ACI-7
@@ -632,8 +632,9 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private applyCanvasBackground(value: number) {
     this._renderer.setClearColor(value)
+    // Updates style-manager background, repaints ACI-7 / bg-follow materials.
     this._renderer.currentBackgroundColor = value
-    this._renderer.changeBackground(value)
+    this.refreshTextMaterialsInObjectTree(this._scene.internalScene)
     this.editor.syncCursorBackground(value)
     this._isDirty = true
   }
@@ -1129,7 +1130,6 @@ export class AcTrView2d extends AcEdBaseView {
     const traits: Partial<AcGiSubEntityTraits> = {
       layer: layer.name,
       color: layer.color.clone(),
-      rgbColor: layer.color.RGB,
       lineType: layer.lineStyle,
       lineWeight: layer.lineWeight,
       transparency: layer.transparency
@@ -1155,7 +1155,6 @@ export class AcTrView2d extends AcEdBaseView {
     const traits: Record<string, unknown> = {}
     if (changes.color) {
       traits.color = changes.color.clone()
-      traits.rgbColor = changes.color.RGB
     }
     if (changes.lineStyle) {
       traits.lineType = layer.lineStyle
@@ -1302,7 +1301,7 @@ export class AcTrView2d extends AcEdBaseView {
         threeEntity.objectId = entity.objectId
         threeEntity.ownerId = entity.ownerId
         threeEntity.layerName = entity.layer
-        threeEntity.visible = entity.visibility
+        threeEntity.visible = entity.visibility !== false
         this._scene.updateEntity(threeEntity)
       }
     }
@@ -1777,12 +1776,40 @@ export class AcTrView2d extends AcEdBaseView {
     await threeEntity.draw()
   }
 
-  /** MTEXT/SHAPE entities expose syncDraw and render synchronously when delay=false. */
+  /**
+   * Returns true when an entity already produced drawable geometry via syncDraw.
+   * MText/Shape expose syncDraw even when delay=true left the entity empty.
+   */
   private entityUsedSyncDraw(threeEntity: AcTrEntity) {
     return (
       typeof (threeEntity as { syncDraw?: () => unknown }).syncDraw ===
-      'function'
+        'function' && threeEntity.children.length > 0
     )
+  }
+
+  /**
+   * Finishes deferred MText/Shape geometry inside a block group before it is
+   * split by layer. Block-reference attributes are created during INSERT
+   * worldDraw and can be left empty when progressive open passes delay=true.
+   */
+  private async ensureGroupDrawableGeometry(group: AcTrGroup) {
+    const pending: Promise<void>[] = []
+    group.traverse(child => {
+      if (!(child instanceof AcTrEntity)) {
+        return
+      }
+      if (this.entityUsedSyncDraw(child)) {
+        return
+      }
+      const drawable = child as AcTrEntity & {
+        syncDraw?: () => Promise<void> | void
+      }
+      if (typeof drawable.syncDraw !== 'function') {
+        return
+      }
+      pending.push(Promise.resolve(drawable.syncDraw()))
+    })
+    await Promise.all(pending)
   }
 
   /**
@@ -1870,7 +1897,7 @@ export class AcTrView2d extends AcEdBaseView {
           threeEntity.objectId = entity.objectId
           threeEntity.ownerId = entity.ownerId
           threeEntity.layerName = entity.layer
-          threeEntity.visible = entity.visibility
+          threeEntity.visible = entity.visibility !== false
           if (
             threeEntity instanceof AcTrGroup &&
             (threeEntity as AcTrGroup).isOnTheSameLayer
@@ -1887,7 +1914,7 @@ export class AcTrView2d extends AcEdBaseView {
             threeEntity instanceof AcTrGroup &&
             !(threeEntity as AcTrGroup).isOnTheSameLayer
           ) {
-            this.handleGroup(threeEntity as AcTrGroup)
+            await this.handleGroup(threeEntity as AcTrGroup)
           } else {
             const isExtendBbox = !(
               entity instanceof AcDbRay || entity instanceof AcDbXline
@@ -1940,11 +1967,13 @@ export class AcTrView2d extends AcEdBaseView {
     }
   }
 
-  private handleGroup(group: AcTrGroup) {
+  private async handleGroup(group: AcTrGroup) {
+    await this.ensureGroupDrawableGeometry(group)
+
     const children = group.children
     const objectsGroupByLayer: Map<string, THREE.Object3D[]> = new Map()
     children.forEach(child => {
-      if (!child.visible) {
+      if (child.visible === false) {
         return
       }
       const layerName = child.userData.layerName
@@ -2019,6 +2048,7 @@ export class AcTrView2d extends AcEdBaseView {
       for (let i = 0; i < objects.length; i++) {
         entity.add(objects[i])
       }
+      this.refreshTextMaterialsInObjectTree(entity)
       this._scene.addEntity(entity, true)
       this.applySessionHiddenObjectState(groupObjectId)
       entity.dispose()
@@ -2031,6 +2061,23 @@ export class AcTrView2d extends AcEdBaseView {
         this.resolveLayoutFitBox()
       )
     }
+  }
+
+  /**
+   * Rebinds text materials after INSERT groups are split/reparented by layer.
+   *
+   * Layer remapping can replace mesh materials; text must keep entity-trait
+   * colours (especially ACI-7 foreground on paper layouts).
+   */
+  private refreshTextMaterialsInObjectTree(root: THREE.Object3D) {
+    root.traverse(child => {
+      const refresh = (
+        child as { refreshTextMaterials?: () => void }
+      ).refreshTextMaterials
+      if (typeof refresh === 'function') {
+        refresh.call(child)
+      }
+    })
   }
 
   /**
@@ -2057,22 +2104,40 @@ export class AcTrView2d extends AcEdBaseView {
     const layerTraits = this.getEffectiveLayerTraits(effectiveLayerName)
     for (const object of objects) {
       object.traverse(child => {
-        if (child.userData.layerName === sourceLayerName) {
+        const inheritsInsertLayer = child.userData.layerName === sourceLayerName
+        if (inheritsInsertLayer) {
           child.userData.layerName = effectiveLayerName
         }
 
         if (!('material' in child)) return
+        // Only layer-"0" (or the current source bucket) inherits INSERT traits.
+        // Attributes/text on other layers must keep their own layer materials.
+        if (!inheritsInsertLayer) return
 
         const material = child.material
         if (Array.isArray(material)) {
           const materials = material as THREE.Material[]
-          child.material = materials.map(entry =>
-            renderer.getLayerBoundMaterial(
-              this.promoteLayerZeroByLayerColor(entry, sourceLayerName),
-              effectiveLayerName,
-              layerTraits
+          child.material = materials.map(entry => {
+            if (!this.shouldRemapInheritedLayerMaterial(entry, sourceLayerName)) {
+              return entry
+            }
+            return (
+              renderer.getLayerBoundMaterial(
+                this.promoteLayerZeroByLayerColor(entry, sourceLayerName),
+                effectiveLayerName,
+                layerTraits
+              ) ?? entry
             )
+          })
+          return
+        }
+
+        if (
+          !this.shouldRemapInheritedLayerMaterial(
+            material as THREE.Material,
+            sourceLayerName
           )
+        ) {
           return
         }
 
@@ -2084,10 +2149,36 @@ export class AcTrView2d extends AcEdBaseView {
           effectiveLayerName,
           layerTraits
         )
+        if (!remappedMaterial) {
+          return
+        }
         child.material = remappedMaterial
         child.userData.styleMaterialId = remappedMaterial.id
       })
     }
+  }
+
+  /**
+   * Layer-0 block contents with ByLayer color resolve to ACI-7 foreground materials before
+   * INSERT remapping. Those materials must still inherit the INSERT layer when their colour
+   * is layer-bound, while explicit ACI-7 entities on layer 0 stay untouched.
+   */
+  private shouldRemapInheritedLayerMaterial(
+    material: THREE.Material,
+    sourceLayerName: string
+  ): boolean {
+    const metadata = getMaterialMetadata(material)
+    if (metadata.isForeground !== true) {
+      return true
+    }
+    if (sourceLayerName !== '0') {
+      return false
+    }
+    if (metadata.isByLayerColor === true) {
+      return true
+    }
+    const promoted = this.promoteLayerZeroByLayerColor(material, sourceLayerName)
+    return getMaterialMetadata(promoted).isByLayerColor === true
   }
 
   /**
@@ -2124,7 +2215,6 @@ export class AcTrView2d extends AcEdBaseView {
     return {
       layer: layer.name,
       color: layer.color.clone(),
-      rgbColor: layer.color.RGB,
       lineType: layer.lineStyle,
       lineWeight: layer.lineWeight,
       transparency: layer.transparency

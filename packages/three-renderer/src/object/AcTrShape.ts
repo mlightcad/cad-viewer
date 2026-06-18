@@ -14,7 +14,11 @@ import * as THREE from 'three'
 import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrMTextRenderer } from '../renderer'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrMTextColorUtil } from '../util'
+import {
+  AcTrMTextColorUtil,
+  type AcTrMTextEntityTraits,
+  AcTrSubEntityTraitsUtil
+} from '../util'
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import {
   getSceneDrawableUserData,
@@ -30,6 +34,7 @@ export class AcTrShape extends AcTrEntity {
   private _shape: AcGiShapeData
   private _style: AcGiTextStyle
   private _colorSettings: ColorSettings
+  private _entityTraits: AcTrMTextEntityTraits
 
   constructor(
     shape: AcGiShapeData,
@@ -41,15 +46,31 @@ export class AcTrShape extends AcTrEntity {
     super(context)
     this._shape = shape
     this._style = { ...style }
-    this._colorSettings = {
-      layer: traits.layer,
-      color: AcTrMTextColorUtil.toMTextColor(traits.color),
-      byLayerColor: 0xffffff,
-      byBlockColor: 0xffffff
-    }
+    this._entityTraits = AcTrMTextColorUtil.snapshotEntityTraits(traits)
+    this._colorSettings = AcTrMTextColorUtil.buildColorSettingsFromTraits(
+      traits,
+      context.styleManager.currentBackgroundColor
+    )
     if (!delay) {
       this.syncDraw()
     }
+  }
+
+  /** Reapplies CAD text materials from the entity traits snapshot. */
+  refreshTextMaterials(): void {
+    this._colorSettings = AcTrMTextColorUtil.buildColorSettingsFromTraits(
+      {
+        ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+        color: this._entityTraits.color,
+        layer: this._entityTraits.layer
+      },
+      this.renderContext.styleManager.currentBackgroundColor
+    )
+    AcTrMTextColorUtil.rematerializeTextHierarchy(
+      this,
+      this._entityTraits,
+      this.renderContext.styleManager
+    )
   }
 
   syncDraw() {

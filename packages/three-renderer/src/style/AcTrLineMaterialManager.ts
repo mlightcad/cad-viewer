@@ -36,16 +36,17 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     const lineWidth = this.resolveLineWidth(traits.lineWeight)
     const mode = this.getMaterialMode(traits, options)
     const drawOrderSuffix = this.buildDrawOrderSuffix(traits)
+    const rgb = this.resolveTraitsRgb(traits)
 
     if (mode === 'shader') {
       return hasByLayerKeyTraits
-        ? `layer_${mode}_${traits.layer}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}_${lineWidth}${drawOrderSuffix}`
-        : `entity_${mode}_${traits.lineType.name}_${traits.rgbColor}_${traits.lineTypeScale}_${lineWidth}${drawOrderSuffix}`
+        ? `layer_${mode}_${traits.layer}_${traits.lineType.name}_${rgb}_${traits.lineTypeScale}_${lineWidth}${drawOrderSuffix}`
+        : `entity_${mode}_${traits.lineType.name}_${rgb}_${traits.lineTypeScale}_${lineWidth}${drawOrderSuffix}`
     }
 
     return hasByLayerKeyTraits
-      ? `layer_${mode}_${traits.layer}_${traits.rgbColor}_${lineWidth}${drawOrderSuffix}`
-      : `entity_${mode}_${traits.rgbColor}_${lineWidth}${drawOrderSuffix}`
+      ? `layer_${mode}_${traits.layer}_${rgb}_${lineWidth}${drawOrderSuffix}`
+      : `entity_${mode}_${rgb}_${lineWidth}${drawOrderSuffix}`
   }
 
   /** Returns true if a shader material is required. */
@@ -73,6 +74,7 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     options: AcTrLineMaterialOptions = {}
   ): THREE.Material {
     let material: THREE.Material
+    const rgb = this.resolveTraitsRgb(traits)
 
     const scales = this.getLineTypeScales()
     const scale = scales.ltscale * scales.celtscale * traits.lineTypeScale
@@ -80,18 +82,18 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     if (this.isShaderMaterial(traits, options)) {
       material = AcTrLinePatternShaders.createLineShaderMaterial(
         traits.lineType.pattern!,
-        traits.rgbColor,
+        rgb,
         scale,
         this.options.viewportScaleUniform,
         AcTrMaterialManager.CameraZoomUniform
       )
     } else if (options.basicMaterialOnly || traits.lineWeight < 0) {
       material = new THREE.LineBasicMaterial({
-        color: traits.rgbColor
+        color: rgb
       })
     } else {
       const fatLineMaterial = new LineMaterial({
-        color: traits.rgbColor,
+        color: rgb,
         linewidth: this.resolveLineWidth(traits.lineWeight)
       })
       fatLineMaterial.resolution.copy(this.options.resolution)

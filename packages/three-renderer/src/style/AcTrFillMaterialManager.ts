@@ -130,32 +130,20 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const style = traits.fillType
     const side = options.side ?? 'front'
     const threeSide = side === 'back' ? THREE.BackSide : THREE.FrontSide
-
-    // Background-follow fills must be BORN with the current canvas bg,
-    // not with their resolved trait RGB. Without this, opening a DWG
-    // in dark theme shows ACI 7 solid hatches as solid white on the
-    // first frame — `changeBackground` iterates only materials already
-    // in the cache, so it cannot fix materials created AFTER the theme
-    // was set. Overriding `rgbColor` here lets the existing
-    // `createMeshBasicMaterial` / `createHatchShaderMaterial` helpers
-    // stay untouched while the material still lands on the right
-    // `userData.isBackgroundFill` bucket for future repaints.
-    const effectiveTraits: AcGiSubEntityTraits = this.shouldTrackBackground(
-      traits,
-      options
-    )
-      ? { ...traits, rgbColor: this.options.currentBackgroundColor }
-      : traits
+    const rgb = this.shouldTrackBackground(traits, options)
+      ? this.options.currentBackgroundColor
+      : this.resolveTraitsRgb(traits)
 
     let material: THREE.Material
     if (style.gradient) {
       material = this.createGradientShaderMaterial(
-        effectiveTraits,
+        traits,
+        rgb,
         options,
         threeSide
       )
     } else if (!style.definitionLines || style.definitionLines.length < 1) {
-      material = this.createMeshBasicMaterial(effectiveTraits, threeSide)
+      material = this.createMeshBasicMaterial(rgb, threeSide)
     } else if (
       style.definitionLines.some(line => !this.isValidDefinitionLine(line))
     ) {
@@ -163,10 +151,11 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         'Invalid hatch pattern definition line, fallback to solid fill',
         style
       )
-      material = this.createMeshBasicMaterial(effectiveTraits, threeSide)
+      material = this.createMeshBasicMaterial(rgb, threeSide)
     } else {
       material = this.createHatchShaderMaterial(
-        effectiveTraits,
+        traits,
+        rgb,
         options,
         threeSide
       )
@@ -183,13 +172,14 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
   private createGradientShaderMaterial(
     traits: AcGiSubEntityTraits,
+    rgb: number,
     options: AcTrFillMaterialOptions,
     threeSide: THREE.Side
   ): THREE.Material {
     return createGradientHatchShaderMaterial(
       traits.fillType.gradient!,
       normalizeGradientBounds(options.gradientBounds),
-      new THREE.Color(traits.rgbColor),
+      new THREE.Color(rgb),
       threeSide
     )
   }
@@ -199,6 +189,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
    */
   private createHatchShaderMaterial(
     traits: AcGiSubEntityTraits,
+    rgb: number,
     options: AcTrFillMaterialOptions,
     threeSide: THREE.Side
   ): THREE.Material {
@@ -294,7 +285,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       patternLines,
       style.patternAngle,
       AcTrMaterialManager.CameraZoomUniform,
-      new THREE.Color(traits.rgbColor),
+      new THREE.Color(rgb),
       0,
       threeSide
     )
@@ -304,11 +295,8 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     return material
   }
 
-  private createMeshBasicMaterial(
-    traits: AcGiSubEntityTraits,
-    side: THREE.Side
-  ): THREE.Material {
-    return new THREE.MeshBasicMaterial({ color: traits.rgbColor, side })
+  private createMeshBasicMaterial(rgb: number, side: THREE.Side): THREE.Material {
+    return new THREE.MeshBasicMaterial({ color: rgb, side })
   }
 
   /**
@@ -342,6 +330,9 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const bgSuffix = this.shouldTrackBackground(traits, options)
       ? '_bgfill'
       : ''
+    const rgb = this.shouldTrackBackground(traits, options)
+      ? this.options.currentBackgroundColor
+      : this.resolveTraitsRgb(traits)
     // Use color + layer + rebaseOffset + pattern info for key
     if (style.gradient) {
       const gradient = style.gradient
@@ -349,7 +340,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       return [
         'gradient',
         traits.layer,
-        traits.rgbColor,
+        rgb,
         gradient.name || 'LINEAR',
         gradient.angle ?? 0,
         gradient.shift ?? 0,
@@ -368,7 +359,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
     const isSolid = !style.definitionLines || style.definitionLines.length === 0
     if (isSolid) {
-      return `solid_${traits.layer}_${traits.rgbColor}${sideSuffix}${drawOrderSuffix}${bgSuffix}`
+      return `solid_${traits.layer}_${rgb}${sideSuffix}${drawOrderSuffix}${bgSuffix}`
     }
 
     const patternHash = style.definitionLines
@@ -390,7 +381,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     return [
       'hatch',
       traits.layer,
-      traits.rgbColor,
+      rgb,
       style.patternAngle,
       options.rebaseOffset.x,
       options.rebaseOffset.y,

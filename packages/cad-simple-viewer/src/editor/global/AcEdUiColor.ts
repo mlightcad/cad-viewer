@@ -9,51 +9,49 @@
  * - **UI colour theme** — `COLORTHEME` only affects viewer chrome, not
  *   canvas or ACI-7 rendering.
  *
- * Shared colour constants and luminance helpers live in
- * `@mlightcad/three-renderer` (`AcTrDisplayColors`) and are re-exported
- * here for editor callers.
+ * Shared colour constants and luminance helpers are defined in
+ * `@mlightcad/graphic-interface` (`AcGiContext.ts`) and re-exported here
+ * for editor callers.
  */
 export {
-  contrastingForegroundColor,
-  DARK_THEME_FOREGROUND,
-  foregroundColorForBackground,
-  isLightBackground,
-  LIGHT_THEME_FOREGROUND,
-  MODEL_SPACE_BACKGROUND,
-  PAPER_SPACE_BACKGROUND
-} from '@mlightcad/three-renderer'
+  ACGI_DARK_THEME_FOREGROUND,
+  ACGI_LIGHT_THEME_FOREGROUND,
+  ACGI_MODEL_SPACE_BACKGROUND,
+  ACGI_PAPER_SPACE_BACKGROUND,
+  acgiContrastingForegroundColor,
+  acgiForegroundColorForBackground,
+  acgiIsLightBackground
+} from '@mlightcad/data-model'
 
 import {
   AcCmColor,
   AcCmColorMethod,
   AcDbDatabase,
   AcDbSystemVariables,
-  AcDbSysVarManager
+  AcDbSysVarManager,
+  ACGI_MODEL_SPACE_BACKGROUND,
+  ACGI_PAPER_SPACE_BACKGROUND,
+  acgiContrastingForegroundColor,
+  acgiIsLightBackground
 } from '@mlightcad/data-model'
-import {
-  contrastingForegroundColor,
-  isLightBackground,
-  MODEL_SPACE_BACKGROUND,
-  PAPER_SPACE_BACKGROUND
-} from '@mlightcad/three-renderer'
 
 /**
  * Returns the UI chrome foreground colour that matches `COLORTHEME`.
  *
  * This maps the UI light/dark theme flag to shared constants. It does
  * **not** drive ACI-7 drawing colours — use
- * {@link foregroundColorForBackground} for canvas-linked inversion.
+ * {@link acgiForegroundColorForBackground} for canvas-linked inversion.
  *
  * @param isLightTheme - `true` when `COLORTHEME` indicates a light UI theme
  *   (value `1`); `false` for a dark UI theme (value `0`).
- * @returns Packed RGB: {@link LIGHT_THEME_FOREGROUND} for light UI,
- *   {@link DARK_THEME_FOREGROUND} for dark UI.
+ * @returns Packed RGB: {@link ACGI_LIGHT_THEME_FOREGROUND} for light UI,
+ *   {@link ACGI_DARK_THEME_FOREGROUND} for dark UI.
  *
  * @see {@link isLightColorTheme} — normalises raw `COLORTHEME` sysvar values
- * @see {@link foregroundColorForBackground} — ACI-7 inversion from layout bg
+ * @see {@link acgiForegroundColorForBackground} — ACI-7 inversion from layout bg
  */
 export function foregroundColorFromColorTheme(isLightTheme: boolean): number {
-  return contrastingForegroundColor(isLightTheme)
+  return acgiContrastingForegroundColor(isLightTheme)
 }
 
 /**
@@ -145,8 +143,8 @@ export function layoutBackgroundSysVar(isModelSpace: boolean): string {
  *
  * When the sysvar holds a concrete RGB colour (`color.RGB` is defined), that
  * value is returned directly. Otherwise the AutoCAD defaults are used:
- * {@link MODEL_SPACE_BACKGROUND} (`0x000000`) for model space or
- * {@link PAPER_SPACE_BACKGROUND} (`0xffffff`) for paper space.
+ * {@link ACGI_MODEL_SPACE_BACKGROUND} (`0x000000`) for model space or
+ * {@link ACGI_PAPER_SPACE_BACKGROUND} (`0xffffff`) for paper space.
  *
  * @param color - Layout background colour from `MODELBKCOLOR` or
  *   `PAPERBKCOLOR`, or `undefined` when the sysvar is unset.
@@ -164,7 +162,9 @@ export function canvasBackgroundFromColor(
   if (rgb != null) {
     return rgb
   }
-  return isModelSpace ? MODEL_SPACE_BACKGROUND : PAPER_SPACE_BACKGROUND
+  return isModelSpace
+    ? ACGI_MODEL_SPACE_BACKGROUND
+    : ACGI_PAPER_SPACE_BACKGROUND
 }
 
 /**
@@ -204,10 +204,10 @@ export function readLayoutBackgroundColor(
  * Toggles a layout background colour between black and white.
  *
  * Inspects the current colour's perceived luminance via
- * {@link isLightBackground} and returns a new {@link AcCmColor} set to pure
+ * {@link acgiIsLightBackground} and returns a new {@link AcCmColor} set to pure
  * black (`RGB 0, 0, 0`) when the input is light, or pure white
  * (`RGB 255, 255, 255`) when the input is dark. If the source colour has no
- * RGB component, {@link MODEL_SPACE_BACKGROUND} is used as the luminance
+ * RGB component, {@link ACGI_MODEL_SPACE_BACKGROUND} is used as the luminance
  * reference.
  *
  * Used by {@link AcApSwitchBgCmd} to flip `MODELBKCOLOR` / `PAPERBKCOLOR`
@@ -226,9 +226,9 @@ export function readLayoutBackgroundColor(
  * @see {@link AcApSwitchBgCmd}
  */
 export function toggleBlackWhiteBackgroundColor(color: AcCmColor): AcCmColor {
-  const rgb = color.RGB ?? MODEL_SPACE_BACKGROUND
+  const rgb = color.RGB ?? ACGI_MODEL_SPACE_BACKGROUND
   const next = new AcCmColor(AcCmColorMethod.ByColor)
-  if (isLightBackground(rgb)) {
+  if (acgiIsLightBackground(rgb)) {
     next.setRGB(0, 0, 0)
   } else {
     next.setRGB(255, 255, 255)
@@ -241,7 +241,7 @@ export function toggleBlackWhiteBackgroundColor(color: AcCmColor): AcCmColor {
  *
  * Returns `'black'` on light backgrounds and `'white'` on dark backgrounds so
  * the crosshair and other SVG/CSS cursors remain visible. The decision is
- * delegated to {@link isLightBackground}.
+ * delegated to {@link acgiIsLightBackground}.
  *
  * @param backgroundColor - Current renderer clear colour as packed
  *   `0xRRGGBB` RGB.
@@ -258,5 +258,5 @@ export function toggleBlackWhiteBackgroundColor(color: AcCmColor): AcCmColor {
 export function cursorColorForBackground(
   backgroundColor: number
 ): 'white' | 'black' {
-  return isLightBackground(backgroundColor) ? 'black' : 'white'
+  return acgiIsLightBackground(backgroundColor) ? 'black' : 'white'
 }

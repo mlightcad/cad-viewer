@@ -16,7 +16,7 @@ function createPatternedHatchMaterial(
 ): THREE.ShaderMaterial {
   const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
   traits.layer = 'A-HATCH'
-  traits.rgbColor = 0x00ff00
+  traits.color.setRGB(0, 255, 0)
   traits.drawOrder = -1
   traits.fillType = {
     solidFill: false,

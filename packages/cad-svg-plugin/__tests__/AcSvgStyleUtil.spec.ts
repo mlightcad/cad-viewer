@@ -10,8 +10,11 @@ function createTraits(
   overrides: Partial<AcGiSubEntityTraits> = {}
 ): AcGiSubEntityTraits {
   return {
-    color: new AcCmColor(),
-    rgbColor: 0xff0000,
+    color: (() => {
+      const c = new AcCmColor()
+      c.setRGB(255, 0, 0)
+      return c
+    })(),
     lineType: {
       type: 'ByLayer',
       name: 'Continuous',
@@ -56,8 +59,7 @@ describe('AcSvgStyleUtil', () => {
   it('uses foreground colour for ACI 7 linework', () => {
     const attrs = AcSvgStyleUtil.strokeAttributes(
       createTraits({
-        color: new AcCmColor().setForeground(),
-        rgbColor: 0xffffff
+        color: new AcCmColor().setForeground()
       }),
       ctx
     )
@@ -68,7 +70,6 @@ describe('AcSvgStyleUtil', () => {
     const attrs = AcSvgStyleUtil.fillAttributes(
       createTraits({
         color: new AcCmColor().setForeground(),
-        rgbColor: 0xffffff,
         drawOrder: -1,
         fillType: {
           solidFill: true,

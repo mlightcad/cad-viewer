@@ -5,6 +5,7 @@ import {
   AcGeEllipseArc3d,
   AcGePoint3d,
   AcGePoint3dLike,
+  AcGiContext,
   AcGiFontMapping,
   AcGiImageStyle,
   AcGiMTextData,
@@ -14,6 +15,7 @@ import {
   AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
+import { acgiBuildContext } from '@mlightcad/data-model'
 import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
@@ -74,6 +76,17 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    */
   get subEntityTraits() {
     return this._subEntityTraits
+  }
+
+  /**
+   * Draw-time context for resolving semantic trait colours (for example ACI 7
+   * foreground) into pixel RGB values.
+   *
+   * Derived from {@link currentBackgroundColor} on each read — no separate
+   * sync is required when the canvas background changes.
+   */
+  get context(): AcGiContext {
+    return acgiBuildContext(this._context.styleManager.currentBackgroundColor)
   }
 
   /**

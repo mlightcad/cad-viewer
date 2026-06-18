@@ -72,6 +72,31 @@ describe('AcTrGroup wcsBbox', () => {
     })
   })
 
+  it('marks isOnTheSameLayer false when attributes are appended after construction', () => {
+    const context = new AcTrRenderContext()
+    const line0 = createLine(
+      'line-0',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      context,
+      '0'
+    )
+
+    const group = new AcTrGroup([line0], context)
+    expect(group.isOnTheSameLayer).toBe(true)
+
+    const attribute = createLine(
+      'attrib-1',
+      { x: 1, y: 1 },
+      { x: 5, y: 1 },
+      context,
+      'CARTOUCHE'
+    )
+    group.addChild(attribute)
+
+    expect(group.isOnTheSameLayer).toBe(false)
+  })
+
   it('keeps wcsBbbox aligned with wcsChildBoxes union after insert transform', () => {
     const context = new AcTrRenderContext()
     const line0 = createLine(

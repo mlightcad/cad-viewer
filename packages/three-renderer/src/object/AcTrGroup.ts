@@ -101,6 +101,29 @@ export class AcTrGroup extends AcTrEntity {
   }
 
   /**
+   * Block-reference attributes are appended after the group is constructed
+   * (see AcDbRenderingCache.draw). Register their bounds for spatial indexing.
+   */
+  addChild(entity: AcTrEntity) {
+    super.addChild(entity)
+    if (
+      entity.userData.layerName != null &&
+      entity.userData.layerName !== '0'
+    ) {
+      // Block-reference attributes are appended after the group is constructed
+      // (see AcDbRenderingCache.draw). Without this update, isOnTheSameLayer
+      // stays true and INSERT layer-0 inheritance is applied to every child,
+      // including attributes on their own layers such as title-block CARTOUCHE.
+      this._isOnTheSameLayer = false
+    }
+    this.storeBoxes(entity)
+    if (!entity.wcsBbox.isEmpty()) {
+      this.wcsBbox.union(entity.wcsBbox)
+    }
+    this.syncWcsBboxFromChildBoxes()
+  }
+
+  /**
    * @inheritdoc
    */
   applyMatrix(matrix: AcGeMatrix3d) {
