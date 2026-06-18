@@ -24,7 +24,10 @@ class AcTrMTextStyleManager implements StyleManager {
   }
 
   getMeshBasicMaterial(traits: ColorSettings): THREE.Material {
-    const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(traits)
+    const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(
+      traits,
+      this._styleManager.currentBackgroundColor
+    )
     // Route MText glyph fills through the dedicated helper so their
     // linework-tier `drawOrder` semantics stay explicit even though
     // they are rasterized as meshes.
@@ -32,7 +35,10 @@ class AcTrMTextStyleManager implements StyleManager {
   }
 
   getLineBasicMaterial(traits: ColorSettings): THREE.Material {
-    const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(traits)
+    const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(
+      traits,
+      this._styleManager.currentBackgroundColor
+    )
     return this._styleManager.getLineMaterial(entityTraits, true)
   }
 }

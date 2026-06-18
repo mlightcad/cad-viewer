@@ -15,7 +15,6 @@ export * from './object/AcTrHtmlTransientManager'
 export * from './object/AcTrTransientManager'
 export * from './renderer'
 export * from './viewport'
-export * from './style/AcTrDisplayColors'
 export * from './style/AcTrMaterialMetadata'
 export { AcTrLinePatternShaders } from './style/AcTrLinePatternShaders'
 export {

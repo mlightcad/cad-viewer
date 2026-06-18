@@ -1,12 +1,13 @@
 import {
+  acgiForegroundColorForBackground,
   AcGiLineWeight,
+  acgiResolveSubEntityTraitsRgbFromBackground,
   AcGiSubEntityTraits,
   deepClone
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrMaterialUtil } from '../util'
-import { foregroundColorForBackground } from './AcTrDisplayColors'
 import {
   AcTrByLayerBindingFlags,
   getMaterialMetadata,
@@ -293,15 +294,8 @@ export abstract class AcTrMaterialManager<T> {
     const isByLayerTransparency =
       byLayerBindings?.isByLayerTransparency === true
 
-    if (isByLayerColor) {
-      if (layerTraits.rgbColor != null) {
-        traits.rgbColor = layerTraits.rgbColor
-      } else if (layerTraits.color) {
-        const inheritedRgb = layerTraits.color.RGB
-        if (inheritedRgb != null) {
-          traits.rgbColor = inheritedRgb
-        }
-      }
+    if (isByLayerColor && layerTraits.color) {
+      traits.color = layerTraits.color.clone()
     }
 
     if (isByLayerLineType && layerTraits.lineType) {
@@ -376,7 +370,7 @@ export abstract class AcTrMaterialManager<T> {
       AcTrMaterialUtil.setMaterialColor(
         material,
         new THREE.Color(
-          foregroundColorForBackground(this.options.currentBackgroundColor)
+          acgiForegroundColorForBackground(this.options.currentBackgroundColor)
         )
       )
     }
@@ -460,6 +454,14 @@ export abstract class AcTrMaterialManager<T> {
    */
   protected buildDrawOrderSuffix(traits: AcGiSubEntityTraits): string {
     return traits.drawOrder === 0 ? '' : `_draw_${traits.drawOrder ?? 0}`
+  }
+
+  /** Resolves trait colour to pixel RGB using the current canvas background. */
+  protected resolveTraitsRgb(traits: AcGiSubEntityTraits): number {
+    return acgiResolveSubEntityTraitsRgbFromBackground(
+      traits,
+      this.options.currentBackgroundColor
+    )
   }
 
   /** Subclass must build stable key. */

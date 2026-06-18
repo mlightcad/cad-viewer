@@ -393,7 +393,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         return
       }
       for (const child of objects) {
-        if (!child.visible) continue
+        if (child.visible === false) continue
         this.unionUnbatchedObjectBounds(child, target, scratch)
       }
     })
@@ -536,7 +536,7 @@ export class AcTrBatchedGroup extends THREE.Group {
   addEntity(entity: AcTrEntity) {
     // Skip invisible entities on initial insert so invisible DWG/DXF content does
     // not allocate batch memory. Runtime visibility toggles use setEntityVisible.
-    if (!entity.visible) {
+    if (entity.visible === false) {
       return
     }
 
@@ -1426,7 +1426,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     for (const child of object.children) {
-      if (!child.visible) continue
+      if (child.visible === false) continue
       this.unionUnbatchedObjectBounds(child, target, scratch)
     }
   }

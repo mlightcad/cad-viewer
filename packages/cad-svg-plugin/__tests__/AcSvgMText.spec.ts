@@ -23,9 +23,10 @@ const ctx: AcSvgStyleContext = {
 }
 
 function createTraits(): AcGiSubEntityTraits {
+  const color = new AcCmColor()
+  color.setRGB(255, 0, 0)
   return {
-    color: new AcCmColor(),
-    rgbColor: 0xff0000,
+    color,
     lineType: {
       type: 'ByLayer',
       name: 'Continuous',

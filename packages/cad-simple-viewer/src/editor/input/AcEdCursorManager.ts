@@ -1,8 +1,8 @@
 import { AcDbSystemVariables, AcDbSysVarManager } from '@mlightcad/data-model'
 
 import {
-  cursorColorForBackground,
-  MODEL_SPACE_BACKGROUND
+  ACGI_MODEL_SPACE_BACKGROUND,
+  cursorColorForBackground
 } from '../global/AcEdUiColor'
 import { AcEdBaseView } from '../view'
 
@@ -78,7 +78,7 @@ export class AcEdCursorManager {
   /** Cache of cursor definitions mapped by cursor type */
   private _cursorMap: Map<AcEdCorsorType, string>
   /** The current background color */
-  private _backgroundColor: number = MODEL_SPACE_BACKGROUND
+  private _backgroundColor: number = ACGI_MODEL_SPACE_BACKGROUND
   /** Total length of the cursor crosshair */
   private readonly _totalLength: number = 20
 

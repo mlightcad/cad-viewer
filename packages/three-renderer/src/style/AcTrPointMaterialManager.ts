@@ -23,9 +23,10 @@ export class AcTrPointMaterialManager extends AcTrMaterialManager<AcTrPointMater
   ): string {
     const size = options.size ?? 1
     const drawOrderSuffix = this.buildDrawOrderSuffix(traits)
+    const rgb = this.resolveTraitsRgb(traits)
     return this.hasByLayerKeyTraits(traits)
-      ? `layer_${traits.layer}_${traits.rgbColor}_${size}${drawOrderSuffix}`
-      : `entity_${traits.rgbColor}_${size}${drawOrderSuffix}`
+      ? `layer_${traits.layer}_${rgb}_${size}${drawOrderSuffix}`
+      : `entity_${rgb}_${size}${drawOrderSuffix}`
   }
 
   /** Returns true if color is ByLayer. */
@@ -38,7 +39,7 @@ export class AcTrPointMaterialManager extends AcTrMaterialManager<AcTrPointMater
     options: AcTrPointMaterialOptions = {}
   ): THREE.Material {
     return new THREE.PointsMaterial({
-      color: traits.rgbColor,
+      color: this.resolveTraitsRgb(traits),
       size: options.size
     })
   }

@@ -12,7 +12,6 @@ export class AcTrSubEntityTraitsUtil {
   static createDefaultTraits(): AcGiSubEntityTraits {
     return {
       color: new AcCmColor(),
-      rgbColor: 0xffffff,
       lineType: {
         type: 'ByLayer',
         name: 'Continuous',
@@ -35,13 +34,12 @@ export class AcTrSubEntityTraitsUtil {
   }
 
   static createTraitsForMText(
-    colorSettings: ColorSettings
+    colorSettings: ColorSettings,
+    _backgroundColor?: number
   ): AcGiSubEntityTraits {
     const color = AcTrMTextColorUtil.toAcCmColor(colorSettings.color)
-    const rgbColor = AcTrMTextColorUtil.resolveRgbColor(colorSettings)
     return {
       color,
-      rgbColor,
       lineType: {
         type: 'ByLayer',
         name: 'Continuous',

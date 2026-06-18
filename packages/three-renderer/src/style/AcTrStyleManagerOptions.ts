@@ -44,8 +44,7 @@ export interface AcTrStyleManagerOptions {
    * Kept in sync with `AcTrView2d.backgroundColor` via
    * `AcTrStyleManager.currentBackgroundColor`.
    *
-   * Default is model-space dark gray (`MODEL_SPACE_BACKGROUND` in
-   * `@mlightcad/three-renderer`).
+   * Default is model-space dark background (`ACGI_MODEL_SPACE_BACKGROUND`).
    */
   currentBackgroundColor: number
 }

@@ -14,7 +14,7 @@ import * as THREE from 'three'
 
 import { AcApDocManager } from '../../../app'
 import { AcTrView2d } from '../../../view'
-import { isLightBackground } from '../../global/AcEdUiColor'
+import { acgiIsLightBackground } from '../../global/AcEdUiColor'
 
 function acGiAttachmentToMText(
   ap: AcGiMTextAttachmentPoint | undefined
@@ -398,7 +398,7 @@ export class AcEdMTextEditor {
       initialAttachmentPoint
     } = options
     const origin = new THREE.Vector3(location.x, location.y, location.z ?? 0)
-    const isLightBg = isLightBackground(view.backgroundColor)
+    const isLightBg = acgiIsLightBackground(view.backgroundColor)
     const cursorColor = isLightBg ? '#000000' : '#ffffff'
     const docManager = AcApDocManager.instance
     const database = docManager.curDocument.database

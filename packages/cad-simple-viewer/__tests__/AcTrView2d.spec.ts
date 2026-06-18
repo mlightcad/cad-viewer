@@ -84,13 +84,19 @@ function createHandleGroupEntity(
     id: string
   }>
 ): AcTrEntity {
-  return {
+  const group = new THREE.Group() as unknown as AcTrEntity
+  Object.assign(group.userData, {
+    objectId,
+    ownerId: 'layout-1',
+    spatialIndexChildBoxes
+  })
+  Object.assign(group, {
     objectId,
     ownerId: 'layout-1',
     layerName,
-    userData: { spatialIndexChildBoxes },
     wcsBbox
-  } as unknown as AcTrEntity
+  })
+  return group
 }
 
 describe('AcTrGroupWcsBboxAssert', () => {

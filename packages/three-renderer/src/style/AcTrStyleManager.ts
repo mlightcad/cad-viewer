@@ -1,10 +1,10 @@
 import { AcGiSubEntityTraits } from '@mlightcad/data-model'
+import {
+  ACGI_MODEL_SPACE_BACKGROUND,
+  acgiForegroundColorForBackground
+} from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import {
-  foregroundColorForBackground,
-  MODEL_SPACE_BACKGROUND
-} from './AcTrDisplayColors'
 import { AcTrFillMaterialManager } from './AcTrFillMaterialManager'
 import { AcTrLineMaterialManager } from './AcTrLineMaterialManager'
 import { AcTrPointMaterialManager } from './AcTrPointMaterialManager'
@@ -33,7 +33,7 @@ export class AcTrStyleManager {
     maxFragmentUniforms: 1024,
     resolution: new THREE.Vector2(1, 1),
     showLineWeight: false,
-    currentBackgroundColor: MODEL_SPACE_BACKGROUND
+    currentBackgroundColor: ACGI_MODEL_SPACE_BACKGROUND
   }
   private pointMgr: AcTrPointMaterialManager
   private lineMgr: AcTrLineMaterialManager
@@ -112,7 +112,7 @@ export class AcTrStyleManager {
   set currentBackgroundColor(value: number) {
     this.options.currentBackgroundColor = value
     this.changeBackground(value)
-    this.repaintForegroundMaterials(foregroundColorForBackground(value))
+    this.repaintForegroundMaterials(acgiForegroundColorForBackground(value))
   }
 
   /**
