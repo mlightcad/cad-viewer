@@ -17,7 +17,8 @@ import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import {
   AcTrMTextColorUtil,
   type AcTrMTextEntityTraits,
-  AcTrSubEntityTraitsUtil
+  AcTrSubEntityTraitsUtil,
+  resolveShapeTextStyle
 } from '../util'
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import {
@@ -39,13 +40,13 @@ export class AcTrShape extends AcTrEntity {
   constructor(
     shape: AcGiShapeData,
     traits: AcGiSubEntityTraits,
-    style: AcGiTextStyle,
+    style: AcGiTextStyle | null | undefined,
     context: AcTrRenderContext,
     delay: boolean = false
   ) {
     super(context)
     this._shape = shape
-    this._style = { ...style }
+    this._style = resolveShapeTextStyle(shape, style, context)
     this._entityTraits = AcTrMTextColorUtil.snapshotEntityTraits(traits)
     this._colorSettings = AcTrMTextColorUtil.buildColorSettingsFromTraits(
       traits,

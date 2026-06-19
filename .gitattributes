@@ -1,0 +1,4 @@
+pnpm-workspace.yaml text eol=lf
+pnpm-lock.yaml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf

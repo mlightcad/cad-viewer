@@ -15,7 +15,6 @@ import {
   AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
-import { acgiBuildContext } from '@mlightcad/data-model'
 import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
@@ -86,7 +85,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * sync is required when the canvas background changes.
    */
   get context(): AcGiContext {
-    return acgiBuildContext(this._context.styleManager.currentBackgroundColor)
+    this._context.syncBackgroundColor(
+      this._context.styleManager.currentBackgroundColor
+    )
+    return this._context
   }
 
   /**
@@ -381,7 +383,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   /**
    * @inheritdoc
    */
-  shape(shape: AcGiShapeData, style: AcGiTextStyle, delay?: boolean) {
+  shape(shape: AcGiShapeData, style?: AcGiTextStyle, delay?: boolean) {
     return new AcTrShape(
       shape,
       this._subEntityTraits,

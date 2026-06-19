@@ -1,10 +1,10 @@
 import {
   AcCmColor,
   ACGI_PAPER_SPACE_BACKGROUND,
-  acgiBuildContext,
+  AcGiContext,
   acgiForegroundColorForBackground,
-  acgiResolveSubEntityTraitsRgb,
-  AcGiSubEntityTraits} from '@mlightcad/data-model'
+  AcGiSubEntityTraits
+} from '@mlightcad/data-model'
 import { ColorSettings, MTextColor } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
@@ -21,16 +21,16 @@ export class AcTrMTextColorUtil {
   /**
    * Builds {@link ColorSettings} from entity traits produced by `worldDraw`.
    *
-   * Uses {@link acgiResolveSubEntityTraitsRgb} with the layout background so ByLayer /
+   * Uses {@link AcGiContext.resolveSubEntityTraitsRgb} with the layout background so ByLayer /
    * ByBlock branches and ACI 7 stay correct on light paper backgrounds.
    */
   static buildColorSettingsFromTraits(
     traits: AcGiSubEntityTraits,
     backgroundColor: number = ACGI_PAPER_SPACE_BACKGROUND
   ): ColorSettings {
-    const context = acgiBuildContext(backgroundColor)
+    const context = AcGiContext.fromBackgroundColor(backgroundColor)
     const color = this.normalizeEntityColor(traits.color)
-    const resolvedRgb = acgiResolveSubEntityTraitsRgb({ ...traits, color }, context)
+    const resolvedRgb = context.resolveSubEntityTraitsRgb({ ...traits, color })
     return {
       layer: traits.layer,
       color: this.toMTextColor(color),
@@ -181,14 +181,13 @@ export class AcTrMTextColorUtil {
     }
 
     const background = styleManager.currentBackgroundColor
-    const context = acgiBuildContext(background)
-    const expectedRgb = acgiResolveSubEntityTraitsRgb(
+    const context = AcGiContext.fromBackgroundColor(background)
+    const expectedRgb = context.resolveSubEntityTraitsRgb(
       {
         ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
         color: entityTraits.color,
         layer: entityTraits.layer
-      },
-      context
+      }
     )
     const materialRgb = AcTrMTextColorUtil.getMaterialDisplayRgb(material)
     if (

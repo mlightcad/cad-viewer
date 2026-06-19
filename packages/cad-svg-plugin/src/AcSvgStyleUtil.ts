@@ -1,8 +1,7 @@
 import {
-  acgiBuildContext,
+  AcGiContext,
   AcGiLineTypePatternElement,
   AcGiLineWeight,
-  acgiResolveSubEntityTraitsRgb,
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 
@@ -41,10 +40,9 @@ export class AcSvgStyleUtil {
     if (kind === 'fill' && traits.color.isForeground && this.isSolidBackgroundHatch(traits)) {
       return ctx.backgroundColor
     }
-    return acgiResolveSubEntityTraitsRgb(
-      traits,
-      acgiBuildContext(ctx.backgroundColor)
-    )
+    return AcGiContext.fromBackgroundColor(
+      ctx.backgroundColor
+    ).resolveSubEntityTraitsRgb(traits)
   }
 
   static strokeAttributes(

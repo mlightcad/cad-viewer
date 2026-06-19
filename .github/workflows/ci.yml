@@ -25,12 +25,14 @@ jobs:
           fetch-depth: 0
 
       - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.4
+          cache: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
           scope: '@mlightcad'
 

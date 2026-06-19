@@ -19,7 +19,6 @@ import {
   AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
-import { acgiBuildContext } from '@mlightcad/data-model'
 
 import { AcSvgArea } from './AcSvgArea'
 import { AcSvgCircArc } from './AcSvgCircArc'
@@ -98,7 +97,7 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
    * @inheritdoc
    */
   get context(): AcGiContext {
-    return acgiBuildContext(this._currentBackgroundColor)
+    return AcGiContext.fromBackgroundColor(this._currentBackgroundColor)
   }
 
   /**

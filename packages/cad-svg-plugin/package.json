@@ -44,14 +44,14 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.9.5",
+    "@mlightcad/data-model": "^1.9.6",
     "@mlightcad/mtext-parser": "^1.4.1",
-    "@mlightcad/mtext-renderer": "^0.11.4"
+    "@mlightcad/mtext-renderer": "^0.11.5"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.9.5",
+    "@mlightcad/data-model": "^1.9.6",
     "@mlightcad/mtext-parser": "^1.4.1",
-    "@mlightcad/mtext-renderer": "^0.11.4"
+    "@mlightcad/mtext-renderer": "^0.11.5"
   }
 }
