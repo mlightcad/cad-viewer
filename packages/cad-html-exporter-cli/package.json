@@ -1,1 +1,40 @@
-{   "name": "@mlightcad/cad-html-exporter-cli",   "version": "1.5.5",   "description": "CLI example: convert DXF/DWG drawings to offline HTML",   "type": "module",   "bin": {     "cad-html-exporter": "./dist/cli.js"   },   "repository": {     "type": "git",     "url": "https://github.com/mlightcad/cad-viewer.git"   },   "scripts": {     "build": "tsc && vite build --config vite.runner.config.ts && node scripts/copy-runner-assets.mjs",     "install-browser": "playwright install chromium",     "clean": "rimraf dist dist-runner tsconfig.tsbuildinfo",     "export": "node ./dist/cli.js",     "lint": "eslint src/",     "lint:fix": "eslint --fix --quiet src/"   },   "dependencies": {     "@mlightcad/cad-html-plugin": "workspace:*",     "@mlightcad/cad-simple-viewer": "workspace:*",     "@mlightcad/data-model": "^1.9.6",     "@mlightcad/dxf-json-converter": "^1.9.6",     "@mlightcad/libredwg-converter": "^3.7.6",     "@mlightcad/mtext-renderer": "^0.11.5",     "commander": "^12.1.0",     "playwright": "^1.49.1"   },   "devDependencies": {     "@types/node": "^20.14.9",     "rimraf": "^6.0.1",     "typescript": "^5.5.2",     "vite": "^5.4.19"   },   "engines": {     "node": ">=20"   } }
+{
+  "name": "@mlightcad/cad-html-exporter-cli",
+  "version": "1.5.5",
+  "description": "CLI example: convert DXF/DWG drawings to offline HTML",
+  "type": "module",
+  "bin": {
+    "cad-html-exporter": "./dist/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "scripts": {
+    "build": "tsc && vite build --config vite.runner.config.ts && node scripts/copy-runner-assets.mjs",
+    "install-browser": "playwright install chromium",
+    "clean": "rimraf dist dist-runner tsconfig.tsbuildinfo",
+    "export": "node ./dist/cli.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "dependencies": {
+    "@mlightcad/cad-html-plugin": "workspace:*",
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.9.6",
+    "@mlightcad/dxf-json-converter": "^1.9.6",
+    "@mlightcad/libredwg-converter": "^3.7.6",
+    "@mlightcad/mtext-renderer": "^0.11.5",
+    "commander": "^12.1.0",
+    "playwright": "^1.49.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.5.2",
+    "vite": "^5.4.19"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
