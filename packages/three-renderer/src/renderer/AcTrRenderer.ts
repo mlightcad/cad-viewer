@@ -5,7 +5,6 @@ import {
   AcGeEllipseArc3d,
   AcGePoint3d,
   AcGePoint3dLike,
-  AcGiContext,
   AcGiFontMapping,
   AcGiImageStyle,
   AcGiMTextData,
@@ -84,7 +83,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * Derived from {@link currentBackgroundColor} on each read — no separate
    * sync is required when the canvas background changes.
    */
-  get context(): AcGiContext {
+  get context(): AcTrRenderContext {
     this._context.syncBackgroundColor(
       this._context.styleManager.currentBackgroundColor
     )
@@ -328,7 +327,6 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   circularArc(arc: AcGeCircArc3d) {
-    // TODO: Compute division based on current viewport size
     return this.linePoints(arc.getPoints(100))
   }
 
@@ -336,7 +334,6 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   ellipticalArc(ellipseArc: AcGeEllipseArc3d) {
-    // TODO: Compute division based on current viewport size
     return this.linePoints(ellipseArc.getPoints(100))
   }
 
@@ -409,7 +406,15 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   private linePoints(points: AcGePoint3dLike[]) {
-    return new AcTrLine(points, this._subEntityTraits, this._context, false)
+    if (points.length < 2) {
+      return this.createEntity()
+    }
+    return new AcTrLine(
+      points,
+      this._subEntityTraits,
+      this._context,
+      false
+    )
   }
 
   /**

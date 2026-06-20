@@ -21,6 +21,11 @@ export class AcTrLine extends AcTrEntity {
   ) {
     super(context)
 
+    if (points.length < 2) {
+      this.geometry = new THREE.BufferGeometry()
+      return
+    }
+
     const material = this.styleManager.getLineMaterial(
       traits,
       basicMaterialOnly
@@ -43,8 +48,12 @@ export class AcTrLine extends AcTrEntity {
 
       const lineGeometry = new LineSegmentsGeometry()
       lineGeometry.setPositions(segmentPositions)
-      lineGeometry.computeBoundingBox()
-      lineGeometry.computeBoundingSphere()
+      AcTrBufferGeometryUtil.safeComputeBoundingBox(
+        lineGeometry as unknown as THREE.BufferGeometry
+      )
+      AcTrBufferGeometryUtil.safeComputeBoundingSphere(
+        lineGeometry as unknown as THREE.BufferGeometry
+      )
       this.geometry = lineGeometry
       this.setBoundingBox(
         lineGeometry as unknown as THREE.BufferGeometry,

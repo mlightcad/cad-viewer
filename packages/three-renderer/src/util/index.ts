@@ -1,6 +1,7 @@
 export * from './AcTrBufferGeometryUtil'
 export * from './AcTrCommonUtil'
 export * from './AcTrEntityTraitsUtil'
+export * from './AcTrGeometrySanitizer'
 export * from './AcTrMaterialUtil'
 export * from './AcTrMTextColorUtil'
 export * from './AcTrShapeStyleUtil'

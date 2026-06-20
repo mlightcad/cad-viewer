@@ -582,8 +582,10 @@ export class AcTrBatchedGroup extends THREE.Group {
           objectId,
           bboxIntersectionCheck: bboxIntersectionCheck
         })
-        entityInfo.push(item)
-        this.applyBatchSlotVisibility(item, entityVisible && object.visible)
+        if (item) {
+          entityInfo.push(item)
+          this.applyBatchSlotVisibility(item, entityVisible && object.visible)
+        }
         return
       }
 
@@ -593,8 +595,10 @@ export class AcTrBatchedGroup extends THREE.Group {
           objectId,
           bboxIntersectionCheck: bboxIntersectionCheck
         })
-        entityInfo.push(item)
-        this.applyBatchSlotVisibility(item, entityVisible && object.visible)
+        if (item) {
+          entityInfo.push(item)
+          this.applyBatchSlotVisibility(item, entityVisible && object.visible)
+        }
       } else if (object instanceof THREE.Mesh) {
         const item = this.addMesh(
           object,
@@ -604,15 +608,19 @@ export class AcTrBatchedGroup extends THREE.Group {
           },
           styleManager
         )
-        entityInfo.push(item)
-        this.applyBatchSlotVisibility(item, entityVisible && object.visible)
+        if (item) {
+          entityInfo.push(item)
+          this.applyBatchSlotVisibility(item, entityVisible && object.visible)
+        }
       } else if (object instanceof THREE.Points) {
         const item = this.addPoint(object, {
           objectId,
           bboxIntersectionCheck: bboxIntersectionCheck
         })
-        entityInfo.push(item)
-        this.applyBatchSlotVisibility(item, entityVisible && object.visible)
+        if (item) {
+          entityInfo.push(item)
+          this.applyBatchSlotVisibility(item, entityVisible && object.visible)
+        }
       }
 
       for (const child of object.children) {
@@ -845,7 +853,7 @@ export class AcTrBatchedGroup extends THREE.Group {
   private addLine(
     object: THREE.LineSegments,
     userData: AcTrBatchGeometryUserData
-  ): AcTrEntityInBatchedObject {
+  ): AcTrEntityInBatchedObject | null {
     const material = object.material as THREE.Material
     const batches = this.getMatchedLineBatches(object)
     const worldOffset = new THREE.Vector3().setFromMatrixPosition(
@@ -868,7 +876,16 @@ export class AcTrBatchedGroup extends THREE.Group {
     const geometry = object.geometry.clone()
     const matrixNoTranslation = object.matrixWorld.clone()
     matrixNoTranslation.setPosition(0, 0, 0)
-    geometry.applyMatrix4(matrixNoTranslation)
+    if (
+      !AcTrBufferGeometryUtil.safeApplyMatrix4(
+        geometry,
+        matrixNoTranslation,
+        2
+      )
+    ) {
+      geometry.dispose()
+      return null
+    }
     const geometryId = batchedLine.addGeometry(geometry, -1, -1, worldOffset)
     batchedLine.setGeometryInfo(geometryId, userData)
     geometry.dispose()
@@ -885,7 +902,7 @@ export class AcTrBatchedGroup extends THREE.Group {
   private addLine2(
     object: LineSegments2,
     userData: AcTrBatchGeometryUserData
-  ): AcTrEntityInBatchedObject {
+  ): AcTrEntityInBatchedObject | null {
     const material = object.material as THREE.Material
     const worldOffset = new THREE.Vector3().setFromMatrixPosition(
       object.matrixWorld
@@ -907,6 +924,9 @@ export class AcTrBatchedGroup extends THREE.Group {
       object,
       matrixNoTranslation
     )
+    if (!geometry) {
+      return null
+    }
     const geometryId = batchedLine.addGeometry(geometry, -1, worldOffset)
     batchedLine.setGeometryInfo(geometryId, userData)
     geometry.dispose()
@@ -937,7 +957,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     object: THREE.Mesh,
     userData: AcTrBatchGeometryUserData,
     styleManager: AcTrStyleManager
-  ): AcTrEntityInBatchedObject {
+  ): AcTrEntityInBatchedObject | null {
     let material = object.material as THREE.Material
 
     // Detect mirrored transforms: a negative determinant means the
@@ -978,7 +998,16 @@ export class AcTrBatchedGroup extends THREE.Group {
     const geometry = object.geometry.clone()
     const matrixNoTranslation = object.matrixWorld.clone()
     matrixNoTranslation.setPosition(0, 0, 0)
-    geometry.applyMatrix4(matrixNoTranslation)
+    if (
+      !AcTrBufferGeometryUtil.safeApplyMatrix4(
+        geometry,
+        matrixNoTranslation,
+        3
+      )
+    ) {
+      geometry.dispose()
+      return null
+    }
     const geometryId = batchedMesh.addGeometry(geometry, -1, -1, worldOffset)
     batchedMesh.setGeometryInfo(geometryId, userData)
     geometry.dispose()
@@ -995,7 +1024,7 @@ export class AcTrBatchedGroup extends THREE.Group {
   private addPoint(
     object: THREE.Points,
     userData: AcTrBatchGeometryUserData
-  ): AcTrEntityInBatchedObject {
+  ): AcTrEntityInBatchedObject | null {
     const material = object.material as THREE.Material
     const worldOffset = new THREE.Vector3().setFromMatrixPosition(
       object.matrixWorld
@@ -1016,7 +1045,16 @@ export class AcTrBatchedGroup extends THREE.Group {
     const geometry = object.geometry.clone()
     const matrixNoTranslation = object.matrixWorld.clone()
     matrixNoTranslation.setPosition(0, 0, 0)
-    geometry.applyMatrix4(matrixNoTranslation)
+    if (
+      !AcTrBufferGeometryUtil.safeApplyMatrix4(
+        geometry,
+        matrixNoTranslation,
+        2
+      )
+    ) {
+      geometry.dispose()
+      return null
+    }
     const geometryId = batchedPoint.addGeometry(geometry, -1, worldOffset)
     batchedPoint.setGeometryInfo(geometryId, userData)
     geometry.dispose()
@@ -1260,7 +1298,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       return
     }
     AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-    geometry.computeBoundingSphere()
+    AcTrBufferGeometryUtil.safeComputeBoundingSphere(geometry)
   }
 
   /**
@@ -1330,26 +1368,42 @@ export class AcTrBatchedGroup extends THREE.Group {
   private cloneLineSegments2Geometry(
     object: LineSegments2,
     transform: THREE.Matrix4
-  ) {
+  ): LineSegmentsGeometry | null {
     const source = object.geometry as LineSegmentsGeometry
     const instanceStart = source.getAttribute('instanceStart')
     const instanceEnd = source.getAttribute('instanceEnd')
     const count = instanceStart.count
-    const segmentPositions = new Float32Array(count * 6)
+    const segmentPositions: number[] = []
 
-    for (let i = 0, p = 0; i < count; i++) {
+    for (let i = 0; i < count; i++) {
       _v1.fromBufferAttribute(instanceStart, i).applyMatrix4(transform)
       _v2.fromBufferAttribute(instanceEnd, i).applyMatrix4(transform)
-      segmentPositions[p++] = _v1.x
-      segmentPositions[p++] = _v1.y
-      segmentPositions[p++] = _v1.z
-      segmentPositions[p++] = _v2.x
-      segmentPositions[p++] = _v2.y
-      segmentPositions[p++] = _v2.z
+      if (
+        !Number.isFinite(_v1.x) ||
+        !Number.isFinite(_v1.y) ||
+        !Number.isFinite(_v1.z) ||
+        !Number.isFinite(_v2.x) ||
+        !Number.isFinite(_v2.y) ||
+        !Number.isFinite(_v2.z)
+      ) {
+        continue
+      }
+      segmentPositions.push(
+        _v1.x,
+        _v1.y,
+        _v1.z,
+        _v2.x,
+        _v2.y,
+        _v2.z
+      )
+    }
+
+    if (segmentPositions.length < 6) {
+      return null
     }
 
     const geometry = new LineSegmentsGeometry()
-    geometry.setPositions(segmentPositions)
+    geometry.setPositions(new Float32Array(segmentPositions))
     if (source.hasAttribute('instanceColorStart')) {
       geometry.setAttribute(
         'instanceColorStart',
@@ -1361,7 +1415,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       )
     }
     AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-    geometry.computeBoundingSphere()
+    AcTrBufferGeometryUtil.safeComputeBoundingSphere(geometry)
     return geometry
   }
 

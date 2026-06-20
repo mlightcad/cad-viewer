@@ -285,6 +285,17 @@ export class AcTrBufferGeometryUtil {
   }
 
   /**
+   * Returns true when all coordinates of a 3D point are finite.
+   */
+  static isFinitePoint(point: AcGePoint3dLike): boolean {
+    return (
+      Number.isFinite(point.x) &&
+      Number.isFinite(point.y) &&
+      Number.isFinite(point.z ?? 0)
+    )
+  }
+
+  /**
    * Returns true when every value in the geometry position attribute is finite.
    */
   static hasFinitePositions(
@@ -339,5 +350,137 @@ export class AcTrBufferGeometryUtil {
     }
 
     return box
+  }
+
+  /**
+   * Computes a bounding sphere only when position data is finite.
+   *
+   * Returns null for invalid geometry instead of letting THREE.js warn on NaN
+   * inputs during CAD file conversion.
+   */
+  static safeComputeBoundingSphere(
+    geometry: THREE.BufferGeometry,
+    target?: THREE.Sphere
+  ): THREE.Sphere | null {
+    const box = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+    if (!box) {
+      geometry.boundingSphere = null
+      return null
+    }
+
+    const sphere = target ?? new THREE.Sphere()
+    box.getBoundingSphere(sphere)
+    geometry.boundingSphere = sphere
+    return sphere
+  }
+
+  /**
+   * Drops indexed primitives that reference vertices with non-finite coordinates.
+   *
+   * @returns `true` when at least one primitive remains.
+   */
+  static sanitizeGeometryPositions(
+    geometry: THREE.BufferGeometry,
+    indexStride: 2 | 3 = 2
+  ): boolean {
+    const position = geometry.getAttribute('position') as
+      | THREE.BufferAttribute
+      | undefined
+    if (!position || position.count === 0) {
+      return false
+    }
+
+    if (AcTrBufferGeometryUtil.hasFinitePositions(geometry)) {
+      return true
+    }
+
+    const isFiniteVertex = (vertex: number) => {
+      const base = vertex * position.itemSize
+      for (let component = 0; component < position.itemSize; component++) {
+        if (!Number.isFinite(position.array[base + component])) {
+          return false
+        }
+      }
+      return true
+    }
+
+    const index = geometry.getIndex()
+    if (!index) {
+      const validVertices: number[] = []
+      for (let vertex = 0; vertex < position.count; vertex++) {
+        if (isFiniteVertex(vertex)) {
+          validVertices.push(vertex)
+        }
+      }
+      if (validVertices.length === 0) {
+        return false
+      }
+      const array = new Float32Array(validVertices.length * position.itemSize)
+      validVertices.forEach((vertex, targetVertex) => {
+        const sourceBase = vertex * position.itemSize
+        const targetBase = targetVertex * position.itemSize
+        for (let component = 0; component < position.itemSize; component++) {
+          array[targetBase + component] = position.array[sourceBase + component]
+        }
+      })
+      geometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(array, position.itemSize)
+      )
+      return true
+    }
+
+    const validIndices: number[] = []
+    for (let offset = 0; offset + indexStride <= index.count; offset += indexStride) {
+      let valid = true
+      for (let component = 0; component < indexStride; component++) {
+        if (!isFiniteVertex(index.getX(offset + component))) {
+          valid = false
+          break
+        }
+      }
+      if (valid) {
+        for (let component = 0; component < indexStride; component++) {
+          validIndices.push(index.getX(offset + component))
+        }
+      }
+    }
+
+    if (validIndices.length === 0) {
+      return false
+    }
+
+    const IndexArray = validIndices.some(index => index > 65535)
+      ? Uint32Array
+      : Uint16Array
+    geometry.setIndex(new THREE.BufferAttribute(new IndexArray(validIndices), 1))
+    return true
+  }
+
+  /**
+   * Applies a matrix to geometry positions without triggering THREE.js NaN
+   * bounding-box warnings on corrupt CAD vertex data.
+   *
+   * @returns `false` when no finite positions remain after sanitization.
+   */
+  static safeApplyMatrix4(
+    geometry: THREE.BufferGeometry,
+    matrix: THREE.Matrix4,
+    indexStride: 2 | 3 = 2
+  ): boolean {
+    geometry.boundingBox = null
+    geometry.boundingSphere = null
+    if (!AcTrBufferGeometryUtil.sanitizeGeometryPositions(geometry, indexStride)) {
+      return false
+    }
+
+    const position = geometry.getAttribute('position') as THREE.BufferAttribute
+    for (let vertex = 0; vertex < position.count; vertex++) {
+      _vector1.fromBufferAttribute(position, vertex)
+      _vector1.applyMatrix4(matrix)
+      position.setXYZ(vertex, _vector1.x, _vector1.y, _vector1.z)
+    }
+    position.needsUpdate = true
+    return true
   }
 }
