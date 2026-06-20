@@ -76,13 +76,34 @@ export class AcTrMText extends AcTrEntity {
     )
   }
 
+  /**
+   * Builds renderer input with Z flattened for the 2D plan-view camera.
+   *
+   * Orthographic views use a narrow near/far band around the camera. MTEXT
+   * often carries large DWG elevations while linework/symbols on the same
+   * layer may sit at Z=0, so preserving insertion Z would depth-clip glyphs
+   * even though the label's XY is inside the viewport.
+   */
+  private toPlanViewMTextData(): MTextData {
+    const source = this._text as MTextData
+    const position = source.position
+    return {
+      ...source,
+      position: {
+        x: position.x,
+        y: position.y,
+        z: 0
+      }
+    }
+  }
+
   async syncDraw() {
     const mtextRenderer = AcTrMTextRenderer.getInstance()
     if (!mtextRenderer) return
 
     try {
       const style = this._style
-      const mtextData = this._text as MTextData
+      const mtextData = this.toPlanViewMTextData()
 
       this._mtext = mtextRenderer.syncRenderMText(
         mtextData,
@@ -104,7 +125,7 @@ export class AcTrMText extends AcTrEntity {
 
     try {
       const style = this._style
-      const mtextData = this._text as MTextData
+      const mtextData = this.toPlanViewMTextData()
 
       const mtext = await mtextRenderer.asyncRenderMText(
         mtextData,

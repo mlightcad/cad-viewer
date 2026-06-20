@@ -7,7 +7,7 @@ import {
 import { FontManager } from '@mlightcad/mtext-renderer'
 
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
-import { resolveShapeTextStyle } from '../src/util/AcTrShapeStyleUtil'
+import { resolveShapeGlyphKey, resolveShapeTextStyle } from '../src/util/AcTrShapeStyleUtil'
 
 const EMPTY_TEXT_STYLE = {
   name: '',
@@ -149,6 +149,65 @@ describe('resolveShapeTextStyle', () => {
     )
   })
 
+  it('uses shape number only when shape name is absent', () => {
+    const style = makeStyle('Standard', 'ltypeshp')
+    jest.mocked(fontManager.getShapeByCode).mockImplementation(
+      (code, fontName) => {
+        if (code === 65 && fontName === 'ltypeshp') {
+          return { polylines: [[{ x: 0, y: 0 }, { x: 1, y: 0 }]] } as never
+        }
+        return undefined
+      }
+    )
+
+    const context = new AcTrRenderContext()
+    const resolved = resolveShapeTextStyle(
+      {
+        shapeNumber: 65,
+        size: 1,
+        position: { x: 0, y: 0, z: 0 }
+      },
+      style,
+      context
+    )
+
+    expect(resolved).toEqual(style)
+    expect(fontManager.getShapeByCode).toHaveBeenCalledWith(65, 'ltypeshp', 1)
+    expect(fontManager.getShapeByName).not.toHaveBeenCalled()
+  })
+
+  it('does not fall back to shape number when shape name is present', () => {
+    const style = makeStyle('Standard', 'ltypeshp')
+    jest.mocked(fontManager.getShapeByCode).mockImplementation(
+      (code, fontName) => {
+        if (code === 65 && fontName === 'ltypeshp') {
+          return { polylines: [[{ x: 0, y: 0 }, { x: 1, y: 0 }]] } as never
+        }
+        return undefined
+      }
+    )
+
+    const context = new AcTrRenderContext()
+    const resolved = resolveShapeTextStyle(
+      {
+        name: 'MISSING',
+        shapeNumber: 65,
+        size: 1,
+        position: { x: 0, y: 0, z: 0 }
+      },
+      style,
+      context
+    )
+
+    expect(resolved).toEqual(EMPTY_TEXT_STYLE)
+    expect(fontManager.getShapeByName).toHaveBeenCalledWith(
+      'MISSING',
+      'ltypeshp',
+      1
+    )
+    expect(fontManager.getShapeByCode).not.toHaveBeenCalled()
+  })
+
   it('returns an empty style when no shape file contains the glyph', () => {
     const db = new AcDbDatabase()
     acdbHostApplicationServices().workingDatabase = db
@@ -172,5 +231,28 @@ describe('resolveShapeTextStyle', () => {
     )
 
     expect(resolved).toEqual(EMPTY_TEXT_STYLE)
+  })
+})
+
+describe('resolveShapeGlyphKey', () => {
+  it('prefers shape name over shape number', () => {
+    expect(
+      resolveShapeGlyphKey({
+        name: 'ARROW',
+        shapeNumber: 65,
+        size: 1,
+        position: { x: 0, y: 0, z: 0 }
+      })
+    ).toEqual({ byName: 'ARROW' })
+  })
+
+  it('uses shape number when shape name is missing', () => {
+    expect(
+      resolveShapeGlyphKey({
+        shapeNumber: 65,
+        size: 1,
+        position: { x: 0, y: 0, z: 0 }
+      })
+    ).toEqual({ byCode: 65 })
   })
 })

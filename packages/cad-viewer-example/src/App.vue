@@ -14,6 +14,7 @@
         :use-main-thread-draw="useMainThreadDraw"
         :draw-no-plot-layers="drawNoPlotLayers"
         :progressive-rendering="progressiveRendering"
+        :open-view-mode="openViewMode"
         @create="initialize"
         base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
       />
@@ -25,6 +26,7 @@
 // import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 import {
   AcApDocManager,
+  AcApOpenViewMode,
   AcEdCommandStack,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
@@ -69,6 +71,7 @@ const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
 const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
+const openViewMode = ref<AcApOpenViewMode | undefined>(undefined)
 
 // Handle file selection from upload component
 const handleFileSelect = (
@@ -76,13 +79,15 @@ const handleFileSelect = (
   mode: AcEdOpenMode,
   mainThreadDraw: boolean,
   showNoPlotLayers: boolean,
-  enableProgressiveRendering: boolean
+  enableProgressiveRendering: boolean,
+  viewMode: AcApOpenViewMode | undefined
 ) => {
   store.selectedFile = file
   selectedMode.value = mode
   useMainThreadDraw.value = mainThreadDraw
   drawNoPlotLayers.value = showNoPlotLayers
   progressiveRendering.value = enableProgressiveRendering
+  openViewMode.value = viewMode
 }
 </script>
 

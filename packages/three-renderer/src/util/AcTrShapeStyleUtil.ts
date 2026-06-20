@@ -32,18 +32,38 @@ function normalizeCadFontName(fontName: string): string {
   return base.toLowerCase()
 }
 
+/**
+ * Resolves which SHX glyph key a SHAPE entity should use.
+ *
+ * Named shapes are looked up by name only; numeric codes are used only when
+ * the entity has no shape name.
+ */
+export function resolveShapeGlyphKey(shape: AcGiShapeData): {
+  byName?: string
+  byCode?: number
+} {
+  const name = shape.name?.trim()
+  if (name) {
+    return { byName: name }
+  }
+  const code = shape.shapeNumber
+  if (code != null && code !== 0) {
+    return { byCode: code }
+  }
+  return {}
+}
+
 function hasDrawableShapeInFont(shape: AcGiShapeData, fontName: string): boolean {
   const normalized = normalizeCadFontName(fontName)
   const size = shape.size
-  const name = shape.name?.trim()
-  const code = shape.shapeNumber
+  const { byName, byCode } = resolveShapeGlyphKey(shape)
   const fontManager = FontManager.instance
 
-  const fromManager =
-    (name && fontManager.getShapeByName(name, normalized, size)) ||
-    (code != null && code !== 0
-      ? fontManager.getShapeByCode(code, normalized, size)
-      : undefined)
+  const fromManager = byName
+    ? fontManager.getShapeByName(byName, normalized, size)
+    : byCode != null
+      ? fontManager.getShapeByCode(byCode, normalized, size)
+      : undefined
   if (fromManager) {
     return true
   }
@@ -55,9 +75,11 @@ function hasDrawableShapeInFont(shape: AcGiShapeData, fontName: string): boolean
 
   const parser = new ShxParserFont(font.data as ShxFontData)
   try {
-    const glyph =
-      (name && parser.getShapeByName(name, size)) ||
-      (code != null && code !== 0 ? parser.getCharShape(code, size) : undefined)
+    const glyph = byName
+      ? parser.getShapeByName(byName, size)
+      : byCode != null
+        ? parser.getCharShape(byCode, size)
+        : undefined
     const polylines = glyph?.polylines
     return !!polylines?.some(line => line.length >= 2)
   } finally {

@@ -45,6 +45,29 @@
 
         <div class="settings-grid">
           <div class="setting-block setting-block--full">
+            <h3 class="setting-label">Initial view</h3>
+            <div
+              class="mode-segment"
+              role="radiogroup"
+              aria-label="Initial view"
+            >
+              <button
+                v-for="option in openViewModes"
+                :key="option.value"
+                type="button"
+                class="mode-option"
+                :class="{ 'is-active': selectedOpenViewMode === option.value }"
+                role="radio"
+                :aria-checked="selectedOpenViewMode === option.value"
+                @click="selectedOpenViewMode = option.value"
+              >
+                <span class="option-title">{{ option.label }}</span>
+                <span class="option-desc">{{ option.description }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-block setting-block--full">
             <h3 class="setting-label">Access mode</h3>
             <div
               class="mode-segment"
@@ -185,7 +208,7 @@
 
 <script setup lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue'
-import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
+import { AcApOpenViewMode, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 import { log } from '@mlightcad/data-model'
 import type { UploadFile, UploadProps } from 'element-plus'
 import { ElIcon, ElUpload } from 'element-plus'
@@ -197,16 +220,43 @@ interface Props {
     mode: AcEdOpenMode,
     useMainThreadDraw: boolean,
     drawNoPlotLayers: boolean,
-    progressiveRendering: boolean
+    progressiveRendering: boolean,
+    openViewMode: AcApOpenViewMode | undefined
   ) => void
 }
 
 const props = defineProps<Props>()
 
+type OpenViewModeChoice = 'auto' | AcApOpenViewMode
+
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
+const selectedOpenViewMode = ref<OpenViewModeChoice>('auto')
 const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
+
+const openViewModes = [
+  {
+    value: 'auto' as const,
+    label: 'Auto',
+    description: 'Based on access mode'
+  },
+  {
+    value: AcApOpenViewMode.Extents,
+    label: 'Extents',
+    description: 'Fit drawing'
+  },
+  {
+    value: AcApOpenViewMode.Saved,
+    label: 'Saved',
+    description: 'AutoCAD saved view'
+  }
+] as const
+
+const resolveOpenViewMode = (): AcApOpenViewMode | undefined =>
+  selectedOpenViewMode.value === 'auto'
+    ? undefined
+    : selectedOpenViewMode.value
 
 const accessModes = [
   {
@@ -234,7 +284,8 @@ const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
         selectedMode.value,
         useMainThreadDraw.value,
         drawNoPlotLayers.value,
-        progressiveRendering.value
+        progressiveRendering.value,
+        resolveOpenViewMode()
       )
     }
   }

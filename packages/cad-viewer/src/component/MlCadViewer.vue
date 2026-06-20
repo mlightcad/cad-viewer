@@ -85,6 +85,7 @@ import {
   AcApDocManager,
   AcApFontUtil,
   AcApOpenDatabaseOptions,
+  AcApOpenViewMode,
   AcEdMTextEditor,
   AcEdOpenMode,
   eventBus
@@ -177,6 +178,12 @@ interface Props {
    * When omitted, {@link AcApDocManager} defaults to `false`.
    */
   progressiveRendering?: boolean
+  /**
+   * How to frame the view when the document finishes opening.
+   * When omitted, Read and Review use {@link AcApOpenViewMode.Extents};
+   * Write uses {@link AcApOpenViewMode.Saved}.
+   */
+  openViewMode?: AcApOpenViewMode
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -189,7 +196,16 @@ const props = withDefaults(defineProps<Props>(), {
   useMainThreadDraw: true,
   theme: 'dark',
   mode: AcEdOpenMode.Write,
-  progressiveRendering: false
+  progressiveRendering: false,
+  openViewMode: undefined
+})
+
+const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
+  minimumChunkSize: 1000,
+  mode: props.mode,
+  drawNoPlotLayers: props.drawNoPlotLayers,
+  progressiveRendering: props.progressiveRendering,
+  ...(props.openViewMode != null ? { openViewMode: props.openViewMode } : {})
 })
 
 const { t } = useI18n()
@@ -308,12 +324,7 @@ const endPendingOpen = () => {
  * @param fileContent - File content as string (DXF) or ArrayBuffer (DWG)
  */
 const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
-  const options: AcApOpenDatabaseOptions = {
-    minimumChunkSize: 1000,
-    mode: props.mode,
-    drawNoPlotLayers: props.drawNoPlotLayers,
-    progressiveRendering: props.progressiveRendering
-  }
+  const options = buildOpenOptions()
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
   try {
@@ -339,12 +350,7 @@ const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
  * @param url - Remote URL to the CAD file
  */
 const openFileFromUrl = async (url: string) => {
-  const options: AcApOpenDatabaseOptions = {
-    minimumChunkSize: 1000,
-    mode: props.mode,
-    drawNoPlotLayers: props.drawNoPlotLayers,
-    progressiveRendering: props.progressiveRendering
-  }
+  const options = buildOpenOptions()
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
   try {
@@ -371,12 +377,7 @@ const openFileFromUrl = async (url: string) => {
  * @param file - Local File object containing the CAD file
  */
 const openLocalFile = async (file: File) => {
-  const options: AcApOpenDatabaseOptions = {
-    minimumChunkSize: 1000,
-    mode: props.mode,
-    drawNoPlotLayers: props.drawNoPlotLayers,
-    progressiveRendering: props.progressiveRendering
-  }
+  const options = buildOpenOptions()
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
   try {
