@@ -2,6 +2,8 @@ import { expect, test, type Page } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
+import { uploadFixture } from '../helpers/fileUpload'
+
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const fixturePath = path.resolve(
   currentDir,
@@ -15,12 +17,6 @@ const blockColorFixturePath = path.resolve(
   'fixtures',
   'block-color.dxf'
 )
-
-async function uploadFixture(page: Page, filePath: string = fixturePath) {
-  const fileInput = page.locator('input[type="file"]').first()
-  await expect(fileInput).toBeAttached()
-  await fileInput.setInputFiles(filePath)
-}
 
 async function getInsertInheritedColorPixelCounts(page: Page) {
   const canvas = page.locator('.ml-cad-container canvas').first()
@@ -97,7 +93,7 @@ test('shows upload screen on first load', async ({ page }) => {
 
 test('loads local DXF and renders viewer shell', async ({ page }) => {
   await page.goto('/')
-  await uploadFixture(page)
+  await uploadFixture(page, fixturePath)
 
   await expect(page.locator('.ml-cad-viewer-container')).toBeVisible()
   await expect(page.locator('.ml-cad-container')).toBeVisible()
@@ -118,7 +114,7 @@ test('supports basic mouse interactions without runtime errors', async ({
   })
 
   await page.goto('/')
-  await uploadFixture(page)
+  await uploadFixture(page, fixturePath)
   await expect(page.locator('.ml-cad-container')).toBeVisible()
 
   const container = page.locator('.ml-cad-container')
