@@ -344,7 +344,9 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
     this.applyMatrix4(threeMatrix)
     this.updateMatrixWorld(true)
-    this._wcsBbox.applyMatrix4(threeMatrix)
+    if (!this._wcsBbox.isEmpty()) {
+      this._wcsBbox.applyMatrix4(threeMatrix)
+    }
   }
 
   /**

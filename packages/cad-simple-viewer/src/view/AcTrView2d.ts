@@ -1794,10 +1794,7 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private async ensureGroupDrawableGeometry(group: AcTrGroup) {
     const pending: Promise<void>[] = []
-    group.traverse(child => {
-      if (!(child instanceof AcTrEntity)) {
-        return
-      }
+    const finalizeDeferredEntity = (child: AcTrEntity) => {
       if (this.entityUsedSyncDraw(child)) {
         return
       }
@@ -1808,6 +1805,17 @@ export class AcTrView2d extends AcEdBaseView {
         return
       }
       pending.push(Promise.resolve(drawable.syncDraw()))
+    }
+
+    group.getSourceEntities().forEach(finalizeDeferredEntity)
+    group.traverse(child => {
+      if (!(child instanceof AcTrEntity)) {
+        return
+      }
+      if (group.getSourceEntities().includes(child)) {
+        return
+      }
+      finalizeDeferredEntity(child)
     })
     await Promise.all(pending)
   }
@@ -1920,7 +1928,13 @@ export class AcTrView2d extends AcEdBaseView {
               entity instanceof AcDbRay || entity instanceof AcDbXline
             )
 
+            if (threeEntity instanceof AcTrGroup) {
+              await this.ensureGroupDrawableGeometry(threeEntity as AcTrGroup)
+            }
             await this.finishEntityGeometry(threeEntity, progressive)
+            if (threeEntity instanceof AcTrGroup) {
+              ;(threeEntity as AcTrGroup).refreshWcsChildBoxesFromChildren()
+            }
             this._scene.addEntity(threeEntity, isExtendBbox)
             this.applySessionHiddenObjectState(entity.objectId)
             // Release memory occupied by this entity
@@ -1969,6 +1983,7 @@ export class AcTrView2d extends AcEdBaseView {
 
   private async handleGroup(group: AcTrGroup) {
     await this.ensureGroupDrawableGeometry(group)
+    group.refreshWcsChildBoxesFromChildren()
 
     const children = group.children
     const objectsGroupByLayer: Map<string, THREE.Object3D[]> = new Map()
