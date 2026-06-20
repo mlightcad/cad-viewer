@@ -47,8 +47,12 @@ export class AcTrLineSegments extends AcTrEntity {
 
       const lineGeometry = new LineSegmentsGeometry()
       lineGeometry.setPositions(segmentPositions)
-      lineGeometry.computeBoundingBox()
-      lineGeometry.computeBoundingSphere()
+      AcTrBufferGeometryUtil.safeComputeBoundingBox(
+        lineGeometry as unknown as THREE.BufferGeometry
+      )
+      AcTrBufferGeometryUtil.safeComputeBoundingSphere(
+        lineGeometry as unknown as THREE.BufferGeometry
+      )
       this.setBoundingBox(
         lineGeometry as unknown as THREE.BufferGeometry,
         localOrigin
