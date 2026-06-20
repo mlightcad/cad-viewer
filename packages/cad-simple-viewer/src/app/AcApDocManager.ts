@@ -6,6 +6,7 @@ import {
   acdbHostApplicationServices,
   AcDbProgressdEventArgs,
   AcDbSysVarManager,
+  AcGeBox2d,
   log
 } from '@mlightcad/data-model'
 import { AcDbDxfConverter } from '@mlightcad/dxf-json-converter'
@@ -86,7 +87,10 @@ import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
 import { AcApProgress } from './AcApProgress'
-import { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
+import {
+  AcApOpenDatabaseOptions,
+  AcApOpenViewMode
+} from './AcDbOpenDatabaseOptions'
 import { isOpenFileProgressComplete } from './openFileProgress'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
@@ -1176,7 +1180,7 @@ export class AcApDocManager {
       ;(this.curView as AcTrView2d).syncDisplaySysVars(doc.database)
       const db = doc.database
 
-      // Fit strategy at document open time:
+      // View framing at document open time (see `openViewMode`):
       //
       // 1. **Paper space + has LIMMIN/LIMMAX**: frame the authoritative
       //    paper sheet rectangle (`AcDbLayout.limits`). Real-world DWGs
@@ -1186,11 +1190,15 @@ export class AcApDocManager {
       //    dominated by the largest-scale outliers and shrinks the
       //    actual paper to a grain.
       //
-      // 2. **Otherwise**: poll `zoomToFitDrawing` and frame batch-derived
-      //    geometry bounds once entities land. Do not use database
-      //    EXTMIN/EXTMAX for a provisional zoom — real-world DXFs often
-      //    carry stale header extents that diverge wildly from rendered
-      //    geometry (e.g. outlier entities at unrelated coordinates).
+      // 2. **Extents** (Read/Review default): poll `zoomToFitDrawing`
+      //    and frame batch-derived geometry bounds once entities land.
+      //
+      // 3. **Saved** (Write default) in model space: restore VPORT
+      //    `*ACTIVE`, then frame EXTMIN/EXTMAX when no saved view exists.
+      //
+      // 4. **Fallback** (paper without limits, or model with empty
+      //    extents — typically DXF): poll `zoomToFitDrawing` and frame
+      //    the populated layout bounding box once entities land.
       //
       // The pre-fix code used `db.extmin/db.extmax` (always model-space
       // EXTMIN/EXTMAX sysvars) even when opening into paper, landing on
@@ -1203,11 +1211,35 @@ export class AcApDocManager {
       const activeLayout =
         acdbHostApplicationServices().layoutManager.getActiveLayout(db)
       const layoutLimits = activeLayout?.limits
+      const openViewMode = this.resolveOpenViewMode(options)
 
       const view = this.curView as AcTrView2d
       const progressiveRendering = options?.progressiveRendering ?? false
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
         view.zoomTo(layoutLimits)
+      } else if (openViewMode === AcApOpenViewMode.Extents) {
+        if (progressiveRendering) {
+          view.beginProgressiveOpenFit()
+        }
+        view.zoomToFitDrawing()
+      } else if (!isPaperSpaceActive) {
+        const canvasAspect = view.width / Math.max(view.height, 1)
+        const vport = db.tables.viewportTable.getActiveVport()
+        // Restore AutoCAD's saved *ACTIVE view without EXTMIN/EXTMAX heuristics.
+        // Many real drawings store a valid saved view far from $EXTMIN/$EXTMAX
+        // (e.g. title-block extents vs. model content at large coordinates).
+        const activeModelViewBox = vport?.modelViewBox(canvasAspect)
+
+        if (activeModelViewBox) {
+          view.zoomTo(activeModelViewBox)
+        } else if (!db.extents.isEmpty()) {
+          view.zoomTo(new AcGeBox2d(db.extmin, db.extmax))
+        } else {
+          if (progressiveRendering) {
+            view.beginProgressiveOpenFit()
+          }
+          view.zoomToFitDrawing()
+        }
       } else {
         if (progressiveRendering) {
           view.beginProgressiveOpenFit()
@@ -1264,6 +1296,24 @@ export class AcApDocManager {
    */
   private getDocumentEventMode(options?: AcApOpenDatabaseOptions) {
     return options?.mode ?? AcEdOpenMode.Read
+  }
+
+  /**
+   * Resolves how the view is framed when a document finishes opening.
+   *
+   * Explicit `openViewMode` wins; otherwise Read/Review zoom to the drawing and
+   * Write restores AutoCAD's saved view.
+   */
+  private resolveOpenViewMode(
+    options?: AcApOpenDatabaseOptions
+  ): AcApOpenViewMode {
+    if (options?.openViewMode != null) {
+      return options.openViewMode
+    }
+    const mode = this.getDocumentEventMode(options)
+    return mode === AcEdOpenMode.Write
+      ? AcApOpenViewMode.Saved
+      : AcApOpenViewMode.Extents
   }
 
   /**

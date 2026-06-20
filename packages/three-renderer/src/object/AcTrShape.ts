@@ -18,6 +18,7 @@ import {
   AcTrMTextColorUtil,
   type AcTrMTextEntityTraits,
   AcTrSubEntityTraitsUtil,
+  resolveShapeGlyphKey,
   resolveShapeTextStyle
 } from '../util'
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
@@ -74,13 +75,29 @@ export class AcTrShape extends AcTrEntity {
     )
   }
 
+  /**
+   * Builds renderer input with only the glyph key that should be resolved.
+   *
+   * mtext-renderer falls back from shape name to shape number when both are
+   * present; SHAPE entities should use the name exclusively when it is set.
+   */
+  private toRenderableShapeData(): ShapeData {
+    const source = this._shape as ShapeData
+    const { byName, byCode } = resolveShapeGlyphKey(this._shape)
+    return {
+      ...source,
+      name: byName,
+      shapeNumber: byCode
+    }
+  }
+
   syncDraw() {
     const mtextRenderer = AcTrMTextRenderer.getInstance()
     if (!mtextRenderer) return
 
     try {
       this._rendered = mtextRenderer.syncRenderShape(
-        this._shape as ShapeData,
+        this.toRenderableShapeData(),
         this._style,
         this._colorSettings
       )
@@ -99,7 +116,7 @@ export class AcTrShape extends AcTrEntity {
 
     try {
       this._rendered = await mtextRenderer.asyncRenderShape(
-        this._shape as ShapeData,
+        this.toRenderableShapeData(),
         this._style,
         this._colorSettings
       )

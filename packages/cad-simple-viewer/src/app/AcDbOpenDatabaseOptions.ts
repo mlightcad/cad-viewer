@@ -3,6 +3,16 @@ import { AcDbOpenDatabaseOptions } from '@mlightcad/data-model'
 import { AcEdOpenMode } from '../editor/view'
 
 /**
+ * Controls how the view is framed immediately after a document opens.
+ */
+export enum AcApOpenViewMode {
+  /** Poll converted geometry and frame the full drawing (`zoomToFitDrawing`). */
+  Extents = 'extents',
+  /** Restore AutoCAD's saved view (layout limits, VPORT `*ACTIVE`, EXTMIN/EXTMAX). */
+  Saved = 'saved'
+}
+
+/**
  * Options for opening a CAD database.
  *
  * This interface extends the base options from the data model but replaces
@@ -42,4 +52,12 @@ export interface AcApOpenDatabaseOptions extends Omit<
    * waits for conversion to finish.
    */
   progressiveRendering?: boolean
+
+  /**
+   * How to frame the view when the document finishes opening.
+   *
+   * When omitted, Read and Review modes use {@link AcApOpenViewMode.Extents};
+   * Write mode uses {@link AcApOpenViewMode.Saved} (AutoCAD VPORT behavior).
+   */
+  openViewMode?: AcApOpenViewMode
 }
