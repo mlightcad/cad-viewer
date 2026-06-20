@@ -2,6 +2,7 @@ import { AcGeMatrix3d } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { expectWcsBboxCloseTo } from './helpers/expectWcsBbox'
+import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrGroup } from '../src/object/AcTrGroup'
 import { AcTrLine } from '../src/object/AcTrLine'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
@@ -163,5 +164,127 @@ describe('AcTrGroup wcsBbox', () => {
       [union.min.x, union.min.y, 0],
       [union.max.x, union.max.y, 0]
     )
+  })
+
+  it('rebuilds WCS child boxes after deferred geometry is attached', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context, 'L2')
+    const deferred = createLine(
+      'line-deferred',
+      { x: 5, y: 5 },
+      { x: 15, y: 10 },
+      context,
+      'L3'
+    )
+    deferred.wcsBbox.makeEmpty()
+
+    const group = new AcTrGroup([line, deferred], context)
+    group.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 200, 0))
+
+    expect(group.wcsChildBoxes).toHaveLength(1)
+
+    deferred.wcsBbox.set(
+      new THREE.Vector3(5, 5, 0),
+      new THREE.Vector3(15, 10, 0)
+    )
+    group.refreshWcsChildBoxesFromChildren()
+
+    expect(group.wcsChildBoxes).toHaveLength(2)
+    expect(group.wcsChildBoxes[1]).toMatchObject({
+      minX: 105,
+      minY: 205,
+      maxX: 115,
+      maxY: 210,
+      id: 'line-deferred'
+    })
+    expectWcsBboxCloseTo(group.wcsBbox, [100, 200, 0], [115, 210, 0])
+  })
+
+  it('skips invalid child boxes when applying insert transform', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context, 'L2')
+    const group = new AcTrGroup([line], context)
+    group.wcsChildBoxes.push({
+      minX: Number.POSITIVE_INFINITY,
+      minY: Number.POSITIVE_INFINITY,
+      maxX: Number.NEGATIVE_INFINITY,
+      maxY: Number.NEGATIVE_INFINITY,
+      id: 'deferred-text'
+    })
+
+    group.applyMatrix(new AcGeMatrix3d().makeTranslation(50, 25, 0))
+
+    expect(group.wcsChildBoxes[0]).toMatchObject({
+      minX: 50,
+      minY: 25,
+      maxX: 60,
+      maxY: 25,
+      id: 'line-a'
+    })
+    expect(Number.isFinite(group.wcsChildBoxes[1].minX)).toBe(false)
+    expectWcsBboxCloseTo(group.wcsBbox, [50, 25, 0], [60, 25, 0])
+  })
+})
+
+describe('AcTrGroup dispose', () => {
+  it('clears detached source entities and disposes flattened render children', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const group = new AcTrGroup([line], context)
+
+    expect(group.getSourceEntities()).toHaveLength(1)
+    expect(group.getSourceEntities()[0]).toBe(line)
+    expect(group.children).toHaveLength(1)
+
+    const meshChild = group.children[0] as THREE.Object3D & {
+      geometry: THREE.BufferGeometry
+    }
+    const geometryDispose = jest.spyOn(meshChild.geometry, 'dispose')
+
+    group.dispose()
+
+    expect(group.getSourceEntities()).toHaveLength(0)
+    expect(geometryDispose).toHaveBeenCalledTimes(1)
+    expect(group.children).toHaveLength(0)
+  })
+
+  it('does not double-dispose attributes still attached as children', () => {
+    const context = new AcTrRenderContext()
+    const line0 = createLine(
+      'line-0',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      context,
+      '0'
+    )
+    const group = new AcTrGroup([line0], context)
+    const attribute = createLine(
+      'attrib-1',
+      { x: 1, y: 1 },
+      { x: 5, y: 1 },
+      context,
+      'CARTOUCHE'
+    )
+    group.addChild(attribute)
+
+    expect(group.getSourceEntities()).toContain(attribute)
+
+    const disposeObjectSpy = jest.spyOn(AcTrEntity, 'disposeObject')
+
+    group.dispose()
+
+    const attributeShellCalls = disposeObjectSpy.mock.calls.filter(
+      ([target, removeFromParent]) =>
+        target === attribute && removeFromParent === false
+    )
+    const attributeCalls = disposeObjectSpy.mock.calls.filter(
+      ([target]) => target === attribute
+    )
+
+    expect(attributeShellCalls).toHaveLength(0)
+    expect(attributeCalls.length).toBeLessThanOrEqual(1)
+    expect(group.getSourceEntities()).toHaveLength(0)
+
+    disposeObjectSpy.mockRestore()
   })
 })
