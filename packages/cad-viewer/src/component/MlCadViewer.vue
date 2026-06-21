@@ -102,8 +102,7 @@ import {
   provideViewerRect,
   setColorTheme,
   toggleDark,
-  useDocOpenMode,
-  useDocumentOpening,
+  useDocument,
   useEntityDrawStyle,
   useLocale,
   useNotificationCenter,
@@ -260,8 +259,12 @@ const viewerThemeClass = computed(() =>
 )
 
 const features = useSettings()
-const { beginDocumentOpening, endDocumentOpening } = useDocumentOpening()
-const docOpenMode = useDocOpenMode()
+const {
+  beginDocumentOpening,
+  endDocumentOpening,
+  openMode: docOpenMode,
+  displayName
+} = useDocument()
 const pendingOpenMode = ref<AcEdOpenMode>()
 const effectiveOpenMode = computed(
   () => pendingOpenMode.value ?? docOpenMode.value
@@ -336,7 +339,6 @@ const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
     if (!success) {
       throw new Error('Failed to open file')
     }
-    store.fileName = AcApDocManager.instance.curDocument.docTitle
   } finally {
     endDocumentOpening()
     endPendingOpen()
@@ -355,7 +357,6 @@ const openFileFromUrl = async (url: string) => {
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
   try {
     await AcApDocManager.instance.openUrl(url, options)
-    store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch (error) {
     log.error('Failed to open file from URL:', error)
     ElMessage({
@@ -406,7 +407,6 @@ const openLocalFile = async (file: File) => {
     if (!success) {
       throw new Error('Failed to open local file')
     }
-    store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch {
     ElMessage({
       message: t('main.message.failedToOpenFile', { fileName: file.name }),
@@ -689,7 +689,7 @@ const closeNotificationCenter = () => {
             "
             class="ml-file-name"
           >
-            {{ store.fileName }}
+            {{ displayName }}
           </div>
 
           <!-- Toolbar for entity draw style -->
