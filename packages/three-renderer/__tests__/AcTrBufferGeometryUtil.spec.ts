@@ -10,6 +10,8 @@ describe('AcTrBufferGeometryUtil finite coordinate helpers', () => {
     expect(
       AcTrBufferGeometryUtil.isFinitePoint({ x: Number.NaN, y: 1, z: 0 })
     ).toBe(false)
+    expect(AcTrBufferGeometryUtil.isFinitePoint(null)).toBe(false)
+    expect(AcTrBufferGeometryUtil.isFinitePoint(undefined)).toBe(false)
   })
 
   it('avoids THREE.js NaN warnings in safeComputeBoundingBox', () => {

@@ -44,6 +44,9 @@ class CadViewerApp {
   private viewerPane: HTMLElement
   private emptyState: HTMLDivElement
   private predefinedButtons: NodeListOf<HTMLButtonElement>
+  private fileSidebar: HTMLElement
+  private fileSidebarToggle: HTMLButtonElement
+  private fileSidebarSubtitle: HTMLSpanElement
   private isInitialized: boolean = false
   private hasOpenedFile: boolean = false
   private hasLoadedDocument: boolean = false
@@ -85,10 +88,18 @@ class CadViewerApp {
     this.predefinedButtons = document.querySelectorAll(
       '#predefinedFileList .file-list-item'
     ) as NodeListOf<HTMLButtonElement>
+    this.fileSidebar = document.getElementById('fileSidebar') as HTMLElement
+    this.fileSidebarToggle = document.getElementById(
+      'fileSidebarToggle'
+    ) as HTMLButtonElement
+    this.fileSidebarSubtitle = document.getElementById(
+      'fileSidebarSubtitle'
+    ) as HTMLSpanElement
 
     this.setupFileHandling()
     this.setupToolbarActions()
     this.setupPredefinedFileActions()
+    this.setupMobileSidebar()
     this.updateEmptyStateVisibility()
     this.updateToolbarButtonsState()
   }
@@ -233,9 +244,51 @@ class CadViewerApp {
         this.updateEmptyStateVisibility()
         this.predefinedButtons.forEach(item => item.classList.remove('active'))
         button.classList.add('active')
+        this.updateFileSidebarSubtitle(button.textContent?.trim() || '')
+        this.setFileSidebarExpanded(false)
         void this.loadPredefinedFile(url)
       })
     })
+  }
+
+  private setupMobileSidebar() {
+    this.fileSidebarToggle.addEventListener('click', () => {
+      this.setFileSidebarExpanded(!this.fileSidebar.classList.contains('expanded'))
+    })
+
+    document.addEventListener('click', event => {
+      if (!this.isMobileLayout() || !this.fileSidebar.classList.contains('expanded')) {
+        return
+      }
+
+      const target = event.target
+      if (!(target instanceof Node)) {
+        return
+      }
+
+      if (!this.fileSidebar.contains(target)) {
+        this.setFileSidebarExpanded(false)
+      }
+    })
+
+    window.addEventListener('resize', () => {
+      if (!this.isMobileLayout()) {
+        this.setFileSidebarExpanded(false)
+      }
+    })
+  }
+
+  private isMobileLayout() {
+    return window.matchMedia('(max-width: 960px)').matches
+  }
+
+  private setFileSidebarExpanded(expanded: boolean) {
+    this.fileSidebar.classList.toggle('expanded', expanded)
+    this.fileSidebarToggle.setAttribute('aria-expanded', String(expanded))
+  }
+
+  private updateFileSidebarSubtitle(label: string) {
+    this.fileSidebarSubtitle.textContent = label || 'Tap to browse sample files'
   }
 
   private async loadLocalFile(file: File) {
@@ -269,6 +322,7 @@ class CadViewerApp {
       if (success) {
         this.onFileOpened()
         this.predefinedButtons.forEach(item => item.classList.remove('active'))
+        this.updateFileSidebarSubtitle('Tap to browse sample files')
         this.showMessage(`Successfully loaded: ${file.name}`, 'success')
       } else {
         this.showMessage(`Failed to load: ${file.name}`, 'error')
