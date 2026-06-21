@@ -41,6 +41,7 @@ import {
   AcEdCalculateSizeCallback,
   AcEdConditionWaiter,
   AcEdCorsorType,
+  AcEdGripManager,
   AcEdMTextEditor,
   AcEdOpenMode,
   AcEdSpatialQueryResultItem,
@@ -196,6 +197,8 @@ export class AcTrView2d extends AcEdBaseView {
    * event-loop turns so geometry appears incrementally.
    */
   private _progressiveRendering = false
+  /** Grip point display and drag editing (Write mode only). */
+  private _gripManager: AcEdGripManager
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -221,6 +224,7 @@ export class AcTrView2d extends AcEdBaseView {
     container.appendChild(renderer.domElement)
 
     super(renderer.domElement, container)
+    this._gripManager = new AcEdGripManager(this)
     if (options.calculateSizeCallback) {
       this.setCalculateSizeCallback(options.calculateSizeCallback)
     }
@@ -280,7 +284,8 @@ export class AcTrView2d extends AcEdBaseView {
       return (
         this.mode === AcEdViewMode.SELECTION &&
         !this.editor.isActive &&
-        !AcEdMTextEditor.getActiveInputBox()
+        !AcEdMTextEditor.getActiveInputBox() &&
+        !this._gripManager.isDragging
       )
     }
 
@@ -531,6 +536,11 @@ export class AcTrView2d extends AcEdBaseView {
    */
   get renderer() {
     return this._renderer
+  }
+
+  /** Grip point manager for the view (Write mode only). */
+  get gripManager() {
+    return this._gripManager
   }
 
   /**

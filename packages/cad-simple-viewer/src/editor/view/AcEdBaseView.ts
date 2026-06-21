@@ -14,6 +14,7 @@ import { debounce } from 'lodash-es'
 
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
+import { AcEdOsnapResolver } from '../input/AcEdOsnapResolver'
 import { AcEdHoverController } from './AcEdHoverController'
 import {
   AcEdSelectionAction,
@@ -219,6 +220,9 @@ export abstract class AcEdBaseView {
    */
   private _hoverController: AcEdHoverController
 
+  /** Resolves object snap points using this view's pick and coordinate APIs. */
+  private _osnapResolver: AcEdOsnapResolver
+
   /** The HTML canvas element for rendering */
   protected _canvas: HTMLCanvasElement
 
@@ -262,6 +266,7 @@ export abstract class AcEdBaseView {
     this._curMousePos = new AcGePoint2d()
     this._selectionSet = new AcEdSelectionSet()
     this._editor = new AcEditor(this)
+    this._osnapResolver = new AcEdOsnapResolver(this)
     this._canvas.addEventListener('mousemove', event => this.onMouseMove(event))
     this._canvas.addEventListener('mousedown', event => {
       if (event.button === 1) {
@@ -898,6 +903,13 @@ export abstract class AcEdBaseView {
    */
   get selectionSet() {
     return this._selectionSet
+  }
+
+  /**
+   * Object snap resolver scoped to this view.
+   */
+  get osnapResolver() {
+    return this._osnapResolver
   }
 
   protected onWindowResize() {

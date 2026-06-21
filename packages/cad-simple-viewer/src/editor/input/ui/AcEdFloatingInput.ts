@@ -1,18 +1,12 @@
 import {
-  AcDbEntity,
-  acdbHostApplicationServices,
-  acdbMaskToOsnapModes,
-  AcDbObjectId,
-  AcDbOsnapMode,
   AcDbSystemVariables,
   AcDbSysVarManager,
   AcGePoint2d,
-  AcGePoint2dLike,
-  AcGePoint3dLike
+  AcGePoint2dLike
 } from '@mlightcad/data-model'
 
-import { AcApSettingManager } from '../../../app'
 import { AcEdBaseView } from '../../view'
+import { AcEdOsnapPoint, AcEdOsnapResolver } from '../AcEdOsnapResolver'
 import { constrainToTracking } from '../AcEdPolarTracking'
 import { AcEdMarkerManager } from '../marker'
 import { AcEdFloatingInputBoxes } from './AcEdFloatingInputBoxes'
@@ -28,10 +22,6 @@ import {
 } from './AcEdFloatingInputTypes'
 import { AcEdFloatingMessage } from './AcEdFloatingMessage'
 import { AcEdRubberBand } from './AcEdRubberBand'
-
-type AcEdOsnapPoint = AcGePoint3dLike & {
-  type: AcDbOsnapMode
-}
 
 /**
  * A UI component providing a small floating input box used inside CAD editing
@@ -364,7 +354,12 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     // Apply OSNAP
     if (this.osnapMarkerManager) {
       this.osnapMarkerManager.hideMarker()
-      this.lastOsnapPoint = this.getOsnapPoint()
+      this.lastOsnapPoint = this.view.osnapResolver.resolve({
+        cursorWcs: wcsPos,
+        lastPoint: this.lastPoint
+          ? { x: this.lastPoint.x, y: this.lastPoint.y, z: 0 }
+          : undefined
+      })
 
       if (this.lastOsnapPoint) {
         wcsPos.x = this.lastOsnapPoint.x
@@ -372,7 +367,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
         this.osnapMarkerManager.showMarker(
           this.lastOsnapPoint,
-          this.osnapMode2MarkerType(this.lastOsnapPoint.type)
+          AcEdOsnapResolver.osnapModeToMarkerType(this.lastOsnapPoint.type)
         )
       }
     }
@@ -422,136 +417,5 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
       return
     }
     this.label.style.display = show ? 'inline' : 'none'
-  }
-
-  private osnapMode2MarkerType(osnapMode: AcDbOsnapMode) {
-    switch (osnapMode) {
-      case AcDbOsnapMode.EndPoint:
-        return 'rect'
-      case AcDbOsnapMode.MidPoint:
-        return 'triangle'
-      case AcDbOsnapMode.Center:
-        return 'circle'
-      case AcDbOsnapMode.Quadrant:
-        return 'diamond'
-      case AcDbOsnapMode.Nearest:
-        return 'x'
-      default:
-        return 'rect'
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // OSNAP calculation
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Returns the priority tier for a given OSNAP mode.
-   * Lower number = higher priority. Matches AutoCAD behavior where
-   * Endpoint/Midpoint/Center take precedence over Nearest.
-   */
-  private osnapModePriority(mode: AcDbOsnapMode): number {
-    switch (mode) {
-      case AcDbOsnapMode.EndPoint:
-      case AcDbOsnapMode.MidPoint:
-      case AcDbOsnapMode.Center:
-        return 0
-      case AcDbOsnapMode.Quadrant:
-        return 1
-      case AcDbOsnapMode.Nearest:
-        return 2
-      default:
-        return 1
-    }
-  }
-
-  private getOsnapPoint(point?: AcGePoint2dLike, hitRadius = 20) {
-    const snapPoints = this.getOsnapPoints(point, hitRadius)
-    if (snapPoints.length === 0) return undefined
-
-    const p1 = this.view.screenToWorld({ x: 0, y: 0 })
-    const p2 = this.view.screenToWorld({ x: hitRadius, y: 0 })
-    const threshold = p2.x - p1.x
-
-    // Group candidates by priority tier, picking the nearest within each tier.
-    // Higher-priority modes (Endpoint, Midpoint, Center) always win over
-    // lower-priority ones (Nearest), matching AutoCAD behavior.
-    let bestPriority = Number.MAX_VALUE
-    let bestDist = Number.MAX_VALUE
-    let bestIndex = -1
-
-    for (let i = 0; i < snapPoints.length; i++) {
-      const d = this.view.curPos.distanceTo(snapPoints[i])
-      if (d >= threshold) continue
-
-      const priority = this.osnapModePriority(snapPoints[i].type)
-
-      if (
-        priority < bestPriority ||
-        (priority === bestPriority && d < bestDist)
-      ) {
-        bestPriority = priority
-        bestDist = d
-        bestIndex = i
-      }
-    }
-
-    return bestIndex !== -1 ? snapPoints[bestIndex] : undefined
-  }
-
-  private getOsnapPoints(point?: AcGePoint2dLike, hitRadius = 20) {
-    const results = this.view.pick(point, hitRadius)
-
-    const db = acdbHostApplicationServices().workingDatabase
-    const modelSpace = db.tables.blockTable.modelSpace
-    const osnapPoints: AcEdOsnapPoint[] = []
-
-    results.forEach(item => {
-      const entity = modelSpace.getIdAt(item.id)
-      if (!entity) return
-
-      if (item.children && item.children.length > 0) {
-        item.children.forEach(child =>
-          this.getOsnapPointsInAvailableModes(entity, osnapPoints, child.id)
-        )
-      } else {
-        this.getOsnapPointsInAvailableModes(entity, osnapPoints)
-      }
-    })
-
-    return osnapPoints
-  }
-
-  private getOsnapPointsInAvailableModes(
-    entity: AcDbEntity,
-    osnapPoints: AcEdOsnapPoint[],
-    gsMark?: AcDbObjectId
-  ) {
-    const modes = acdbMaskToOsnapModes(AcApSettingManager.instance.osnapModes)
-    modes.forEach(mode =>
-      this.getOsnapPointsByMode(entity, mode, osnapPoints, gsMark)
-    )
-  }
-
-  private getOsnapPointsByMode(
-    entity: AcDbEntity,
-    osnapMode: AcDbOsnapMode,
-    osnapPoints: AcEdOsnapPoint[],
-    gsMark?: AcDbObjectId
-  ) {
-    const start = osnapPoints.length
-    const pickPoint = { ...this.view.curPos, z: 0 }
-    const lastPoint = this.lastPoint ? { ...this.lastPoint, z: 0 } : pickPoint
-    entity.subGetOsnapPoints(
-      osnapMode,
-      pickPoint,
-      lastPoint,
-      osnapPoints,
-      gsMark
-    )
-
-    for (let i = start; i < osnapPoints.length; i++) {
-      osnapPoints[i].type = osnapMode
-    }
   }
 }
