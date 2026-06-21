@@ -86,7 +86,7 @@ import { useI18n } from 'vue-i18n'
 import {
   LayoutInfo,
   useCurrentPos,
-  useDocumentOpening,
+  useDocument,
   useIsMobile,
   useLayouts,
   useSettings
@@ -111,7 +111,7 @@ const props = defineProps<{
 const { text: posText } = useCurrentPos(AcApDocManager.instance.curView)
 const layouts = useLayouts(AcApDocManager.instance)
 const features = useSettings()
-const { isDocumentOpening } = useDocumentOpening()
+const { isDocumentOpening } = useDocument()
 const { isMobile } = useIsMobile()
 const { t } = useI18n()
 const isStatusBarDisabled = computed(() => isDocumentOpening.value)

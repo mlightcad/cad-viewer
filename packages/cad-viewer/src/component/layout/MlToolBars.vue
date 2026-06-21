@@ -5,11 +5,7 @@ import { MlButtonData, MlToolBar } from '@mlightcad/ui-components'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  useDocOpenMode,
-  useDocumentOpening,
-  useSettings
-} from '../../composable'
+import { useDocument, useSettings } from '../../composable'
 import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
 import {
   clearMeasurements,
@@ -32,8 +28,7 @@ import {
 
 const { t } = useI18n()
 const features = useSettings()
-const docOpenMode = useDocOpenMode()
-const { isDocumentOpening } = useDocumentOpening()
+const { isDocumentOpening, openMode: docOpenMode } = useDocument()
 const isToolbarDisabled = computed(() => isDocumentOpening.value)
 
 const verticalToolbarData = computed(() => {

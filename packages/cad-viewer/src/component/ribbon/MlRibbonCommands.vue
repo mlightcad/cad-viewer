@@ -38,8 +38,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { LayerStateSnapshot, LayerStateToggleKey } from '../../composable'
 import {
-  useDocOpenMode,
-  useDocumentOpening,
+  useDocument,
   useLayers,
   useSettings
 } from '../../composable'
@@ -103,6 +102,7 @@ import {
 } from '../../svg'
 import MlLayerSelect from '../common/MlLayerSelect.vue'
 import MlCharacterMapDialog from '../dialog/MlCharacterMapDialog.vue'
+import MlRibbonFileName from './MlRibbonFileName.vue'
 import MlRibbonLanguageSelector from './MlRibbonLanguageSelector.vue'
 import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
 import MlRibbonPropertyLineTypeSelect from './MlRibbonPropertyLineTypeSelect.vue'
@@ -129,8 +129,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const features = useSettings()
-const { isDocumentOpening } = useDocumentOpening()
-const docOpenMode = useDocOpenMode()
+const ribbonContainerRef = ref<HTMLElement>()
+const { isDocumentOpening, openMode: docOpenMode } = useDocument()
 const { t, locale } = useI18n()
 const isAnnotationVisible = ref(true)
 const isRibbonDisabled = computed(() => isDocumentOpening.value)
@@ -1584,6 +1584,7 @@ const handleFileMenuSelect = async (command: string) => {
 <template>
   <div
     v-if="features.isShowToolbar"
+    ref="ribbonContainerRef"
     :aria-disabled="isRibbonDisabled"
     class="ml-ribbon-toolbar-container"
   >
@@ -1609,6 +1610,10 @@ const handleFileMenuSelect = async (command: string) => {
         />
       </template>
     </ml-ribbon>
+    <ml-ribbon-file-name
+      v-if="features.isShowFileName"
+      :container-el="ribbonContainerRef"
+    />
     <ml-character-map-dialog
       v-model="mtextCharacterMapVisible"
       :font-options="mtextCharacterMapFontOptions"
@@ -1620,6 +1625,7 @@ const handleFileMenuSelect = async (command: string) => {
 
 <style>
 .ml-ribbon-toolbar-container {
+  position: relative;
   width: 100%;
   box-sizing: border-box;
   z-index: 6;
