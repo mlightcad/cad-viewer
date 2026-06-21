@@ -179,7 +179,7 @@ Legend:
 #### Display Controls
 
 * [x] Layer visibility on/off
-* [ ] Layer freeze / lock
+* [x] Layer freeze / lock
 * [x] Lineweight display
 * [ ] Linetype scaling
 * [x] Background / theme switching
@@ -197,12 +197,12 @@ Legend:
 
 #### Snapping (OSNAP)
 
-* [ ] ⏳ Endpoint: Now working for INSERT entity yet.
+* [ ] ⏳ Endpoint: Not working for INSERT entity yet.
 * [x] Midpoint
-* [ ] ⏳ Center
+* [x] Center
 * [ ] Intersection
 * [ ] Perpendicular / tangent
-* [ ] ⏳ Nearest
+* [x] Nearest
 * [ ] Snap tracking
 
 
@@ -211,20 +211,20 @@ Legend:
 #### Basic Editing
 
 * [x] Entity editing framework
-* [ ] Move
-* [ ] Copy
-* [ ] Rotate
+* [x] Move
+* [x] Copy
+* [x] Rotate
 * [ ] Scale
 * [x] Delete
 * [ ] Undo / redo
 
 #### Geometry Editing
 
-* [ ] Grip points
+* [x] Grip points
 * [ ] Stretch
 * [ ] Trim
 * [ ] Extend
-* [ ] Offset
+* [x] Offset
 * [ ] Explode
 * [ ] Join / fillet / chamfer (2D)
 
@@ -258,7 +258,7 @@ Legend:
 
 ### Dimension
 
-* [ ] Linear dimension
+* [x] Linear dimension
 * [ ] Angle dimension
 * [ ] Coordinate
 
@@ -275,12 +275,12 @@ Legend:
 * [x] Layer manager
 * [ ] Block manager
 * [x] Command history / console
-* [ ] ⏳ Status bar (snap, ortho, grid)
+* [x] Status bar (snap, ortho, grid)
 
 #### Command System
 
 * [x] Command registry
-* [ ] Command aliases
+* [x] Command aliases
 * [x] Command prompts (AutoCAD-style)
 
 ### Integration & Extensibility
@@ -303,8 +303,8 @@ Legend:
 
 #### Offline Editor
 
-* [ ] ⏳ Local editing in browser
-* [ ] ⏳ Save to DXF
+* [x] Local editing in browser
+* [x] Save to DXF
 * [ ] Save change set / diff
 * [ ] IndexedDB persistence
 
