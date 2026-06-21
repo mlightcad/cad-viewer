@@ -7,6 +7,8 @@ import {
   getOcsReferenceVector
 } from '@mlightcad/data-model'
 
+import { AcTrBufferGeometryUtil } from './AcTrBufferGeometryUtil'
+
 const FINITE_VECTOR_EPS = 1e-12
 const reportedIssues = new Set<string>()
 
@@ -23,12 +25,7 @@ export interface AcTrGeometrySanitizerContext {
  */
 export class AcTrGeometrySanitizer {
   static isFinitePoint(point: AcGePoint3dLike | null | undefined): boolean {
-    return (
-      !!point &&
-      Number.isFinite(point.x) &&
-      Number.isFinite(point.y) &&
-      Number.isFinite(point.z ?? 0)
-    )
+    return AcTrBufferGeometryUtil.isFinitePoint(point)
   }
 
   static filterFinitePoints(

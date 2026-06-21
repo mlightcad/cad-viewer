@@ -38,6 +38,10 @@
         overflow: auto;
       }
 
+      .file-sidebar-toggle {
+        display: none;
+      }
+
       .sidebar-title {
         font-size: 0.95rem;
         font-weight: 600;
@@ -172,23 +176,111 @@
           flex: 0 0 auto;
           max-width: none;
           min-width: 0;
-          height: 35%;
+          height: auto;
+          padding: 0;
+          overflow: visible;
           border-right: none;
           border-bottom: 1px solid #1f2937;
         }
 
+        .sidebar-title-desktop {
+          display: none;
+        }
+
+        .file-sidebar-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          gap: 0.75rem;
+          padding: 0.65rem 0.85rem;
+          border: none;
+          background: #0f172a;
+          color: inherit;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .file-sidebar-toggle:hover {
+          background: #111827;
+        }
+
+        .file-sidebar-toggle-label {
+          display: flex;
+          flex-direction: column;
+          gap: 0.15rem;
+          min-width: 0;
+        }
+
+        .file-sidebar-toggle-subtitle {
+          font-size: 0.75rem;
+          font-weight: 400;
+          color: #9ca3af;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .file-sidebar-chevron {
+          flex: 0 0 auto;
+          font-size: 0.7rem;
+          color: #9ca3af;
+          transition: transform 0.2s ease;
+        }
+
+        .file-sidebar.expanded .file-sidebar-chevron {
+          transform: rotate(180deg);
+        }
+
+        .file-sidebar-body {
+          display: none;
+          flex-direction: column;
+          gap: 0.65rem;
+          padding: 0 0.85rem 0.75rem;
+          max-height: min(42vh, 320px);
+          overflow: auto;
+        }
+
+        .file-sidebar.expanded .file-sidebar-body {
+          display: flex;
+        }
+
         .viewer-pane {
-          height: 65%;
+          flex: 1;
+          min-height: 0;
+        }
+
+        .viewer-toolbar {
+          flex-wrap: wrap;
+          height: auto;
+          min-height: 48px;
+          padding: 0.45rem 0.75rem;
         }
       }
     </style>
   </head>
   <body>
     <div class="app-shell">
-      <aside class="file-sidebar">
-        <h2 class="sidebar-title">Predefined Files</h2>
-        <p class="sidebar-help">Select one file below or open a local DXF/DWG file.</p>
-        <div class="file-list" id="predefinedFileList">
+      <aside class="file-sidebar" id="fileSidebar">
+        <h2 class="sidebar-title sidebar-title-desktop">Predefined Files</h2>
+        <button
+          type="button"
+          class="file-sidebar-toggle"
+          id="fileSidebarToggle"
+          aria-expanded="false"
+          aria-controls="fileSidebarBody"
+        >
+          <span class="file-sidebar-toggle-label">
+            <span class="sidebar-title">Predefined Files</span>
+            <span class="file-sidebar-toggle-subtitle" id="fileSidebarSubtitle">
+              Tap to browse sample files
+            </span>
+          </span>
+          <span class="file-sidebar-chevron" aria-hidden="true">▼</span>
+        </button>
+        <div class="file-sidebar-body" id="fileSidebarBody">
+          <p class="sidebar-help">Select one file below or open a local DXF/DWG file.</p>
+          <div class="file-list" id="predefinedFileList">
           <button
             type="button"
             class="file-list-item"
@@ -238,6 +330,7 @@
           >
             patient-chairs.dwg
           </button>
+          </div>
         </div>
       </aside>
 

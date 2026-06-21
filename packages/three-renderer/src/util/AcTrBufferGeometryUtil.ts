@@ -287,8 +287,11 @@ export class AcTrBufferGeometryUtil {
   /**
    * Returns true when all coordinates of a 3D point are finite.
    */
-  static isFinitePoint(point: AcGePoint3dLike): boolean {
+  static isFinitePoint(
+    point: AcGePoint3dLike | null | undefined
+  ): boolean {
     return (
+      !!point &&
       Number.isFinite(point.x) &&
       Number.isFinite(point.y) &&
       Number.isFinite(point.z ?? 0)
