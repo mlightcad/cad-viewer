@@ -1,5 +1,14 @@
 # @mlightcad/cad-html-exporter-cli
 
+## 1.5.6
+
+### Patch Changes
+
+- feat: major update featuring grip point editing, proxy entity support, enhanced HTML export, AutoCAD-style command input, improved large-drawing rendering, SHAPE and dimension support, mobile usability enhancements, and extensive performance, rendering, and stability improvements
+- Updated dependencies
+  - @mlightcad/cad-html-plugin@1.5.6
+  - @mlightcad/cad-simple-viewer@1.5.6
+
 ## 1.5.5
 
 ### Patch Changes

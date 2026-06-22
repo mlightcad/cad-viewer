@@ -1,7 +1,7 @@
 {
   "name": "@mlightcad/cad-simple-viewer-example",
   "private": true,
-  "version": "1.5.5",
+  "version": "1.5.6",
   "type": "module",
   "repository": {
     "type": "git",
@@ -20,7 +20,7 @@
     "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.9.8",
+    "@mlightcad/data-model": "^1.9.11",
     "lodash-es": "4.17.21",
     "three": "^0.172.0"
   }
