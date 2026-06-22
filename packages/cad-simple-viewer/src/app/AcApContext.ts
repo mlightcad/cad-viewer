@@ -1,4 +1,5 @@
 import {
+  AcDbEntity,
   AcDbLayout,
   AcDbSystemVariables,
   AcDbSysVarManager
@@ -11,6 +12,10 @@ import {
   type AcDbEntityModifiedEventArgs,
   canApplyVisibilityOnlySceneUpdate
 } from './AcApEntityUpdate'
+
+function asEntityList(entity: AcDbEntity | AcDbEntity[]): AcDbEntity[] {
+  return Array.isArray(entity) ? entity : [entity]
+}
 
 /**
  * Application context that binds a CAD document with its associated view.
@@ -59,7 +64,13 @@ export class AcApContext {
 
     // Add entity to scene
     doc.database.events.entityAppended.addEventListener(args => {
-      this.view.addEntity(args.entity)
+      const pending = asEntityList(args.entity).filter(
+        entity => !this.view.hasEntity(entity.objectId)
+      )
+      if (pending.length === 0) {
+        return
+      }
+      this.view.addEntity(pending.length === 1 ? pending[0] : pending)
     })
 
     // Update entity
@@ -85,7 +96,13 @@ export class AcApContext {
 
     // Erase entity
     doc.database.events.entityErased.addEventListener(args => {
-      this.view.removeEntity(args.entity)
+      const pending = asEntityList(args.entity).filter(entity =>
+        this.view.hasEntity(entity.objectId)
+      )
+      if (pending.length === 0) {
+        return
+      }
+      this.view.removeEntity(pending.length === 1 ? pending[0] : pending)
     })
 
     // Set layer visibility

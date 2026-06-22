@@ -271,6 +271,8 @@ export default {
       copy: '将选中的对象复制到新位置。',
       erase: '从图纸中删除选中的对象。',
       offset: '按指定距离创建对象的平行副本。',
+      undo: '撤销上一次编辑操作。',
+      redo: '重做上一次撤销的操作。',
       properties: '打开当前所选对象的属性面板。',
       quickSelect: '打开快速选择对话框，按条件筛选并选择图元。',
       drawingUnits: '打开图形单位对话框，设置坐标格式、精度与插入缩放单位。',
@@ -343,6 +345,8 @@ export default {
       copy: '复制',
       erase: '删除',
       offset: '偏移',
+      undo: '撤销',
+      redo: '重做',
       properties: '属性',
       quickSelect: '快速选择',
       drawingUnits: '图形单位'

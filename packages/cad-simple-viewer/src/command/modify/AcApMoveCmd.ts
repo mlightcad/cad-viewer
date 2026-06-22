@@ -20,6 +20,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { acapOpenEntityForWrite } from '../../util/AcApDatabaseEdit'
 
 /**
  * MOVE preview jig.
@@ -274,7 +275,7 @@ export class AcApMoveCmd extends AcEdCommand {
       displacement.z
     )
     ids.forEach(id => {
-      const entity = blockTable.getEntityById(id)
+      const entity = acapOpenEntityForWrite(context.doc.database, id)
       if (!entity) return
       entity.transformBy(matrix)
       entity.triggerModifiedEvent()

@@ -6,6 +6,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { acapEraseEntities } from '../../util/AcApDatabaseEdit'
 
 /**
  * Command to delete selected objects from the drawing.
@@ -30,7 +31,7 @@ export class AcApEraseCmd extends AcEdCommand {
         context.doc.openMode == AcEdOpenMode.Review
           ? annotation.filterAnnotationEntities(selectionSet.ids)
           : selectionSet.ids
-      context.doc.database.tables.blockTable.removeEntity(ids)
+      acapEraseEntities(context.doc.database, ids)
       selectionSet.clear()
     } else {
       const message = AcApI18n.sysCmdPrompt('erase')
@@ -47,7 +48,7 @@ export class AcApEraseCmd extends AcEdCommand {
         if (context.doc.openMode == AcEdOpenMode.Review) {
           ids = annotation.filterAnnotationEntities(ids)
         }
-        context.doc.database.tables.blockTable.removeEntity(ids)
+        acapEraseEntities(context.doc.database, ids)
         selectionSet.clear()
       }
     }

@@ -1,4 +1,5 @@
 import { AcApContext, AcApDocManager } from '../../app'
+import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import { eventBus } from '../global/eventBus'
 import { AcEdMessageType } from '../input/ui/AcEdMessageType'
 import { AcEdOpenMode } from '../view'
@@ -165,6 +166,11 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
   }
 
   /**
+   * When false, this command does not create its own undo record.
+   */
+  recordsUndoStack = true
+
+  /**
    * Called right before the command starts executing.
    *
    * This lifecycle hook is intended for subclasses that need to perform
@@ -218,14 +224,53 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
    * ```
    */
   async trigger(context: AcApContext) {
+    const db = context.doc.database
+    const tm = db.transactionManager
+    const recordUndo = this.shouldRecordUndoStack(context)
+    let undoTransactionActive = false
+
+    if (recordUndo) {
+      tm.startUndoMark(this.globalName || this.localName)
+      tm.startTransaction()
+      undoTransactionActive = true
+    }
+
     try {
       this.onCommandWillStart(context)
       context.view.editor.events.commandWillStart.dispatch({ command: this })
       await this.execute(context)
+    } catch (error) {
+      if (undoTransactionActive && tm.hasTransaction()) {
+        tm.abortTransaction()
+      }
+      if (undoTransactionActive) {
+        tm.cancelUndoMark()
+        undoTransactionActive = false
+      }
+      throw error
     } finally {
+      if (undoTransactionActive && tm.hasTransaction()) {
+        tm.commitTransaction()
+        tm.endUndoMark()
+        undoTransactionActive = false
+        acapNotifyUndoStackChanged()
+      }
       context.view.editor.events.commandEnded.dispatch({ command: this })
       this.onCommandEnded(context)
     }
+  }
+
+  /**
+   * Returns true when this command should be wrapped in an undo mark.
+   */
+  protected shouldRecordUndoStack(context: AcApContext): boolean {
+    if (!this.recordsUndoStack) {
+      return false
+    }
+    return (
+      context.doc.openMode >= AcEdOpenMode.Review &&
+      this.mode >= AcEdOpenMode.Review
+    )
   }
 
   /**
