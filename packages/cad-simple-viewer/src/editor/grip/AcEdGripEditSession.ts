@@ -4,6 +4,10 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
+import {
+  acapOpenEntityForWrite,
+  acapRunDatabaseEdit
+} from '../../util/AcApDatabaseEdit'
 import { AcEdOsnapResolver } from '../input/AcEdOsnapResolver'
 import { AcEdMarkerManager } from '../input/marker'
 import { AcEdBaseView } from '../view/AcEdBaseView'
@@ -63,8 +67,13 @@ export class AcEdGripEditSession {
     if (e.button !== 0) return
     const wcs = this.resolveWcs(e)
     const offset = this._jig.computeOffset(wcs)
-    this._entity.subMoveGripPointsAt([this._target.gripIndex], offset)
-    this._entity.triggerModifiedEvent()
+    const db = this._entity.database
+    acapRunDatabaseEdit(db, 'Grip Edit', () => {
+      const entity = acapOpenEntityForWrite(db, this._entity)
+      if (!entity) return
+      entity.subMoveGripPointsAt([this._target.gripIndex], offset)
+      entity.triggerModifiedEvent()
+    })
     this.finish()
   }
 

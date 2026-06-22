@@ -170,14 +170,37 @@ export class AcApI18n {
   }
 
   /**
+   * Build a dotted localization key for a command message entry.
+   *
+   * @param groupName - Command group name (e.g. `"ACAD"`, `"USER"`)
+   * @param cmdName - Global command name
+   * @param key - Message key under the command entry
+   * @returns dotted path, e.g. `"command.ACAD.undo.nothingToUndo"`
+   */
+  public static cmdKey(groupName: string, cmdName: string, key: string): string {
+    return `command.${groupName}.${cmdName.toLowerCase()}.${key}`
+  }
+
+  /**
+   * Get a localized command message by group, command name, and key.
+   *
+   * @param groupName - Command group name
+   * @param cmdName - Global command name
+   * @param key - Message key under the command entry
+   * @returns localized string
+   */
+  public static cmd(groupName: string, cmdName: string, key: string): string {
+    return this.t(this.cmdKey(groupName, cmdName, key))
+  }
+
+  /**
    * Get localized command description
    * @param groupName - Command group name
    * @param cmdName - Global command name
    * @returns - The localized command description.
    */
   public static cmdDescription(groupName: string, cmdName: string) {
-    const key = `command.${groupName}.${cmdName.toLowerCase()}.description`
-    return this.t(key)
+    return this.cmd(groupName, cmdName, 'description')
   }
 
   /**
@@ -187,8 +210,43 @@ export class AcApI18n {
    * @returns - The localized command prompt message.
    */
   public static cmdPrompt(groupName: string, cmdName: string) {
-    const key = `command.${groupName}.${cmdName.toLowerCase()}.prompt`
-    return this.t(key)
+    return this.cmd(groupName, cmdName, 'prompt')
+  }
+
+  /**
+   * Get a localized message for a system-group command entry.
+   *
+   * @param cmdName - Global command name
+   * @param key - Message key under the command entry
+   * @returns localized string
+   */
+  public static sysCmd(cmdName: string, key: string): string {
+    return this.cmd(AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME, cmdName, key)
+  }
+
+  /**
+   * Build the localization key for a system-group command message entry.
+   */
+  public static sysCmdKey(cmdName: string, key: string): string {
+    return this.cmdKey(AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME, cmdName, key)
+  }
+
+  /**
+   * Get a localized message for a user-group command entry.
+   *
+   * @param cmdName - Global command name
+   * @param key - Message key under the command entry
+   * @returns localized string
+   */
+  public static userCmd(cmdName: string, key: string): string {
+    return this.cmd(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, cmdName, key)
+  }
+
+  /**
+   * Build the localization key for a user-group command message entry.
+   */
+  public static userCmdKey(cmdName: string, key: string): string {
+    return this.cmdKey(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, cmdName, key)
   }
 
   /**

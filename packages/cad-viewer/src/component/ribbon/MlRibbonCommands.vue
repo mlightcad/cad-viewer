@@ -5,6 +5,7 @@ import {
   Delete,
   DocumentCopy,
   Hide,
+  RefreshLeft,
   RefreshRight,
   View
 } from '@element-plus/icons-vue'
@@ -13,9 +14,10 @@ import {
   AcApConvertToDxfCmd,
   AcApDocManager,
   AcApOpenCmd,
+  acapOpenEntityForWrite,
   AcApQNewCmd,
-  AcEdOpenMode
-} from '@mlightcad/cad-simple-viewer'
+  acapRunDatabaseEdit,
+  AcEdOpenMode} from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
   AcDbDatabase,
@@ -40,7 +42,8 @@ import type { LayerStateSnapshot, LayerStateToggleKey } from '../../composable'
 import {
   useDocument,
   useLayers,
-  useSettings
+  useSettings,
+  useUndoRedo
 } from '../../composable'
 import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
 import { LocaleProp } from '../../locale'
@@ -131,6 +134,7 @@ const props = withDefaults(defineProps<Props>(), {
 const features = useSettings()
 const ribbonContainerRef = ref<HTMLElement>()
 const { isDocumentOpening, openMode: docOpenMode } = useDocument()
+const { canUndo, canRedo } = useUndoRedo()
 const { t, locale } = useI18n()
 const isAnnotationVisible = ref(true)
 const isRibbonDisabled = computed(() => isDocumentOpening.value)
@@ -444,18 +448,14 @@ const handleDocumentActivated = () => {
  * @param mutator Mutation logic executed for each selected entity.
  */
 const applyToSelectedEntities = (
-  mutator: (
-    entity: NonNullable<
-      ReturnType<AcDbDatabase['tables']['blockTable']['getEntityById']>
-    >
-  ) => void
+  mutator: (entity: AcDbEntity) => void
 ) => {
   const db = getCurrentDatabase()
   const ids = AcApDocManager.instance?.curView?.selectionSet?.ids
   if (!db || !ids?.length) return
 
   ids.forEach(id => {
-    const entity = db.tables.blockTable.getEntityById(id)
+    const entity = acapOpenEntityForWrite(db, id)
     if (!entity) return
     mutator(entity)
     entity.triggerModifiedEvent()
@@ -516,10 +516,11 @@ const handleRibbonColorChange = (value?: AcCmColor) => {
   const db = getCurrentDatabase()
   if (!db || !value) return
 
-  db.cecolor = value
-  applyToSelectedEntities(entity => {
-    if (!entity) return
-    entity.color = value
+  acapRunDatabaseEdit(db, 'Color', () => {
+    db.cecolor = value
+    applyToSelectedEntities(entity => {
+      entity.color = value
+    })
   })
   syncRibbonProperties(db)
 }
@@ -533,10 +534,11 @@ const handleRibbonLineWeightChange = (value: AcGiLineWeight) => {
   const db = getCurrentDatabase()
   if (!db) return
 
-  db.celweight = value
-  applyToSelectedEntities(entity => {
-    if (!entity) return
-    entity.lineWeight = value
+  acapRunDatabaseEdit(db, 'Line Weight', () => {
+    db.celweight = value
+    applyToSelectedEntities(entity => {
+      entity.lineWeight = value
+    })
   })
   syncRibbonProperties(db)
 }
@@ -550,10 +552,11 @@ const handleRibbonLineTypeChange = (value: string) => {
   const db = getCurrentDatabase()
   if (!db) return
 
-  db.celtype = value
-  applyToSelectedEntities(entity => {
-    if (!entity) return
-    entity.lineType = value
+  acapRunDatabaseEdit(db, 'Line Type', () => {
+    db.celtype = value
+    applyToSelectedEntities(entity => {
+      entity.lineType = value
+    })
   })
   syncRibbonProperties(db)
 }
@@ -569,13 +572,17 @@ const handleRibbonLayerChange = (layerName: string) => {
 
   let changed = false
   if (selectedEntityIds.value.length > 0) {
-    applyToSelectedEntities(entity => {
-      if (entity.layer === layerName) return
-      entity.layer = layerName
-      changed = true
+    acapRunDatabaseEdit(db, 'Layer', () => {
+      applyToSelectedEntities(entity => {
+        if (entity.layer === layerName) return
+        entity.layer = layerName
+        changed = true
+      })
     })
   } else {
-    changed = setRibbonCurrentLayer(layerName)
+    acapRunDatabaseEdit(db, 'Layer', () => {
+      changed = setRibbonCurrentLayer(layerName)
+    })
   }
 
   if (!changed) return
@@ -600,7 +607,8 @@ const handleRibbonLayerStateToggle = (payload: {
 
 const buildBaseTabs = (
   openMode: AcEdOpenMode,
-  annotationVisible: boolean
+  annotationVisible: boolean,
+  undoRedoState: { canUndo: boolean; canRedo: boolean }
 ): RibbonTabModel[] => {
   const ribbonTooltips = {
     line: t('main.ribbon.tooltip.line'),
@@ -621,6 +629,8 @@ const buildBaseTabs = (
     copy: t('main.ribbon.tooltip.copy'),
     erase: t('main.ribbon.tooltip.erase'),
     offset: t('main.ribbon.tooltip.offset'),
+    undo: t('main.ribbon.tooltip.undo'),
+    redo: t('main.ribbon.tooltip.redo'),
     properties: t('main.ribbon.tooltip.properties'),
     quickSelect: t('main.ribbon.tooltip.quickSelect'),
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
@@ -1074,6 +1084,31 @@ const buildBaseTabs = (
           orientation: 'row',
           collections: [
             {
+              id: 'home-undo-redo',
+              layout: 'column',
+              rows: 2,
+              items: [
+                {
+                  id: 'cmd-undo',
+                  type: 'button',
+                  label: t('main.ribbon.command.undo'),
+                  tooltip: ribbonTooltips.undo,
+                  size: 'small',
+                  disabled: !undoRedoState.canUndo,
+                  props: { icon: RefreshLeft }
+                },
+                {
+                  id: 'cmd-redo',
+                  type: 'button',
+                  label: t('main.ribbon.command.redo'),
+                  tooltip: ribbonTooltips.redo,
+                  size: 'small',
+                  disabled: !undoRedoState.canRedo,
+                  props: { icon: RefreshRight }
+                }
+              ]
+            },
+            {
               id: 'home-modify-main',
               layout: 'column',
               rows: 3,
@@ -1444,6 +1479,8 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-copy', 'copy')
+  commandByItemId.set('cmd-undo', 'undo')
+  commandByItemId.set('cmd-redo', 'redo')
   commandByItemId.set('cmd-erase', 'erase')
   commandByItemId.set('cmd-offset', 'offset')
   commandByItemId.set('cmd-layer', 'layer')
@@ -1472,7 +1509,11 @@ const ribbonData = computed(() => {
   commandByItemId.set('layer-action-unlock', 'layulk')
   commandByItemId.set('layer-action-restore', 'layerp')
 
-  const tabs: RibbonTabModel[] = buildBaseTabs(openMode, annotationVisible)
+  const tabs: RibbonTabModel[] = buildBaseTabs(
+    openMode,
+    annotationVisible,
+    { canUndo: canUndo.value, canRedo: canRedo.value }
+  )
   return {
     tabs,
     commandByItemId

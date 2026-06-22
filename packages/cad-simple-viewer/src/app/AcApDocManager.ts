@@ -58,6 +58,7 @@ import {
   AcApQNewCmd,
   AcApRayCmd,
   AcApRectCmd,
+  AcApRedoCmd,
   AcApRegenCmd,
   AcApRevCircleCmd,
   AcApRevCloudCmd,
@@ -69,6 +70,7 @@ import {
   AcApSplineCmd,
   AcApSwitchBgCmd,
   AcApSysVarCmd,
+  AcApUndoCmd,
   AcApUnisolateObjectsCmd,
   AcApXLineCmd,
   AcApZoomCmd
@@ -137,7 +139,9 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   SELECT: ['SE'],
   SPLINE: ['SPL'],
   XLINE: ['XL'],
-  ZOOM: ['Z']
+  ZOOM: ['Z'],
+  UNDO: ['U'],
+  REDO: ['REDO']
 }
 
 /**
@@ -942,6 +946,8 @@ export class AcApDocManager {
       new AcApUnisolateObjectsCmd()
     )
     addSystemCommand('xline', 'xline', new AcApXLineCmd())
+    addSystemCommand('undo', 'undo', new AcApUndoCmd())
+    addSystemCommand('redo', 'redo', new AcApRedoCmd())
     addSystemCommand('zoom', 'zoom', new AcApZoomCmd())
 
     // Register system variables as commands

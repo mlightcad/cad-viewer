@@ -107,11 +107,16 @@ export class AcApLineCmd extends AcEdCommand {
       const segment = new AcDbLine(new AcGePoint3d(startPoint), endPoint)
       db.tables.blockTable.modelSpace.appendEntity(segment)
       createdSegments.push(segment)
+      context.view.addEntity(segment)
       appendPoint(endPoint)
     }
     const undoLastSegment = () => {
       if (createdSegments.length <= 0 || points.length <= 1) return
-      createdSegments.pop()?.erase()
+      const segment = createdSegments.pop()
+      segment?.erase()
+      if (segment) {
+        context.view.removeEntity(segment)
+      }
       points.pop()
     }
     const closeSegment = () => {

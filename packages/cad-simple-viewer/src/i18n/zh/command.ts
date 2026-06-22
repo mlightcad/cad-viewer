@@ -293,6 +293,14 @@ export default {
     unisolateobjects: {
       description: '重新显示 HIDEOBJECTS 隐藏的所有对象'
     },
+    undo: {
+      description: '撤销上一次数据库编辑操作',
+      nothingToUndo: '没有可撤销的操作。'
+    },
+    redo: {
+      description: '重做上一次撤销的操作',
+      nothingToRedo: '没有可重做的操作。'
+    },
     xline: {
       description: '创建在两个方向上无限延伸的构造线'
     },

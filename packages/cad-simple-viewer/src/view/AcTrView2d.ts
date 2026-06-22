@@ -56,6 +56,7 @@ import {
   readLayoutBackgroundColor
 } from '../editor/global/AcEdUiColor'
 import { AcTrGeometryUtil } from '../util'
+import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
 import { AcTrEntityDisplayController } from './AcTrEntityDisplayController'
 import { assertAcTrGroupWcsBboxesConsistent } from './AcTrGroupWcsBboxAssert'
 import { AcTrLayer } from './AcTrLayer'
@@ -199,6 +200,8 @@ export class AcTrView2d extends AcEdBaseView {
   private _progressiveRendering = false
   /** Grip point display and drag editing (Write mode only). */
   private _gripManager: AcEdGripManager
+  /** Global keyboard shortcuts for the view (undo/redo, erase, etc.). */
+  private _keyHandler: AcEdViewKeyHandler
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -225,6 +228,7 @@ export class AcTrView2d extends AcEdBaseView {
 
     super(renderer.domElement, container)
     this._gripManager = new AcEdGripManager(this)
+    this._keyHandler = new AcEdViewKeyHandler(this)
     if (options.calculateSizeCallback) {
       this.setCalculateSizeCallback(options.calculateSizeCallback)
     }
@@ -383,34 +387,7 @@ export class AcTrView2d extends AcEdBaseView {
     // such as the canvas or the entire document. This can interfere with other event listeners you
     // add, including the keydown event.
     document.addEventListener('keydown', (e: KeyboardEvent) => {
-      // Ignore global shortcuts while typing or during IME composition.
-      const target = e.target as HTMLElement | null
-      const isEditableTarget =
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target?.isContentEditable === true
-      // keyCode 229 is commonly reported by IME composing key events.
-      const isImeComposing = e.isComposing || e.keyCode === 229
-      if (isEditableTarget || isImeComposing) {
-        return
-      }
-
-      switch (e.code) {
-        case 'Escape':
-          this.selectionSet.clear()
-          break
-
-        case 'Delete':
-        case 'Backspace':
-          // Only dispatch erase when no command is currently active.
-          // Dispatching erase mid-command (e.g. while LINE awaits the next
-          // point) corrupts the active command's input pipeline because
-          // sendStringToExecute clears scripted inputs unconditionally.
-          if (!this.editor.isActive) {
-            AcApDocManager.instance.sendStringToExecute('erase')
-          }
-          break
-      }
+      this._keyHandler.handleKeyDown(e)
     })
     acdbHostApplicationServices().layoutManager.events.layoutSwitched.addEventListener(
       args => {

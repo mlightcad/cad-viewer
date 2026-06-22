@@ -70,6 +70,8 @@ export type AcEdEvents = {
   }
   /** Emitted after missing resource caches change and UI state should refresh */
   'missed-data-changed': {}
+  /** Emitted after the active document undo/redo stack changes */
+  'undo-stack-changed': {}
 }
 
 /**
