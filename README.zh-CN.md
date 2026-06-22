@@ -99,11 +99,17 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 ## 已知问题
 
 - **不支持的实体**：
-  - **表格（仅 DWG）**：当前使用的 [LibreDWG](https://github.com/LibreDWG/libredwg) 库尚不支持 DWG 表格实体；若表格由线段/多段线构成，则可正常显示。
-  - **外部参照（XRef）**：暂不支持显示。
+  - **外部参照（XRef）**：当前暂不支持显示。这主要是因为 Web 端访问文件的方式与桌面端 CAD 应用不一致，后续版本将提供支持。
 - **DWG 兼容性**：
   - 部分 DWG 图纸可能因 [LibreDWG](https://github.com/LibreDWG/libredwg) 的问题无法打开。若遇到此类问题，欢迎在 [CAD-Viewer 问题页](https://github.com/mlightcad/cad-viewer/issues) 或 [LibreDWG 问题页](https://github.com/LibreDWG/libredwg/issues) 反馈。
-  - 国内建筑行业大量使用`天正软件`来创建 CAD 图纸，但天正中的许多图元属于其自定义对象，且未提供公开的 API 用于解析其内部数据。因此，在使用 CAD-Viewer 打开此类图纸之前，需要先通过天正软件将图纸转换为 T3 格式。完成转换后，即可使用 CAD-Viewer 正常打开和查看图纸内容。
+  - 包含第三方自定义图元的图纸（例如天正软件绘制的图纸）可能无法正确显示。保存此类图纸时，请确保系统变量 `PROXYGRAPHICS` 已开启（设为 `1`）。若图纸中已保存了 proxy graphic，则 CAD-Viewer 也可以正常显示。
+
+  DWG 保存时是否写入 Proxy Graphics 由系统变量 `PROXYGRAPHICS` 控制：
+
+  | 取值 | 含义 |
+  |------|------|
+  | 0 | 不保存 Proxy Graphics |
+  | 1 | 保存 Proxy Graphics |
 
 上述限制将会在后续版本中逐步改进。
 
