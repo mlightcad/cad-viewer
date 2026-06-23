@@ -14,10 +14,10 @@ import {
   AcApConvertToDxfCmd,
   AcApDocManager,
   AcApOpenCmd,
-  acapOpenEntityForWrite,
   AcApQNewCmd,
   acapRunDatabaseEdit,
-  AcEdOpenMode} from '@mlightcad/cad-simple-viewer'
+  AcEdOpenMode
+} from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
   AcDbDatabase,
@@ -447,15 +447,13 @@ const handleDocumentActivated = () => {
  *
  * @param mutator Mutation logic executed for each selected entity.
  */
-const applyToSelectedEntities = (
-  mutator: (entity: AcDbEntity) => void
-) => {
+const applyToSelectedEntities = (mutator: (entity: AcDbEntity) => void) => {
   const db = getCurrentDatabase()
   const ids = AcApDocManager.instance?.curView?.selectionSet?.ids
   if (!db || !ids?.length) return
 
   ids.forEach(id => {
-    const entity = acapOpenEntityForWrite(db, id)
+    const entity = db.openEntityForWrite(id)
     if (!entity) return
     mutator(entity)
     entity.triggerModifiedEvent()
@@ -1509,11 +1507,10 @@ const ribbonData = computed(() => {
   commandByItemId.set('layer-action-unlock', 'layulk')
   commandByItemId.set('layer-action-restore', 'layerp')
 
-  const tabs: RibbonTabModel[] = buildBaseTabs(
-    openMode,
-    annotationVisible,
-    { canUndo: canUndo.value, canRedo: canRedo.value }
-  )
+  const tabs: RibbonTabModel[] = buildBaseTabs(openMode, annotationVisible, {
+    canUndo: canUndo.value,
+    canRedo: canRedo.value
+  })
   return {
     tabs,
     commandByItemId

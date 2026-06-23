@@ -25,7 +25,6 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { acapOpenEntityForRead } from '../../util/AcApDatabaseEdit'
 
 /**
  * Union of prompt option types used across the OFFSET state machine.
@@ -357,7 +356,7 @@ export class AcApOffsetCmd extends AcEdCommand {
           context.doc.openMode == AcEdOpenMode.Review
             ? annotation.filterAnnotationEntities([result.objectId])
             : [result.objectId]
-        const entity = acapOpenEntityForRead(context.doc.database, validIds[0])
+        const entity = context.doc.database.openEntityForRead(validIds[0])
         if (!isOffsettableCurve(entity)) {
           showCommandMessage(
             AcApI18n.t('jig.offset.invalidSelection'),

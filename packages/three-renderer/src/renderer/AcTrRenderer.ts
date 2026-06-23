@@ -409,12 +409,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     if (points.length < 2) {
       return this.createEntity()
     }
-    return new AcTrLine(
-      points,
-      this._subEntityTraits,
-      this._context,
-      false
-    )
+    return new AcTrLine(points, this._subEntityTraits, this._context, false)
   }
 
   /**

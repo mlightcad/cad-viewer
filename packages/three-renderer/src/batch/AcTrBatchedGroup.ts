@@ -877,11 +877,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     const matrixNoTranslation = object.matrixWorld.clone()
     matrixNoTranslation.setPosition(0, 0, 0)
     if (
-      !AcTrBufferGeometryUtil.safeApplyMatrix4(
-        geometry,
-        matrixNoTranslation,
-        2
-      )
+      !AcTrBufferGeometryUtil.safeApplyMatrix4(geometry, matrixNoTranslation, 2)
     ) {
       geometry.dispose()
       return null
@@ -999,11 +995,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     const matrixNoTranslation = object.matrixWorld.clone()
     matrixNoTranslation.setPosition(0, 0, 0)
     if (
-      !AcTrBufferGeometryUtil.safeApplyMatrix4(
-        geometry,
-        matrixNoTranslation,
-        3
-      )
+      !AcTrBufferGeometryUtil.safeApplyMatrix4(geometry, matrixNoTranslation, 3)
     ) {
       geometry.dispose()
       return null
@@ -1046,11 +1038,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     const matrixNoTranslation = object.matrixWorld.clone()
     matrixNoTranslation.setPosition(0, 0, 0)
     if (
-      !AcTrBufferGeometryUtil.safeApplyMatrix4(
-        geometry,
-        matrixNoTranslation,
-        2
-      )
+      !AcTrBufferGeometryUtil.safeApplyMatrix4(geometry, matrixNoTranslation, 2)
     ) {
       geometry.dispose()
       return null
@@ -1388,14 +1376,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       ) {
         continue
       }
-      segmentPositions.push(
-        _v1.x,
-        _v1.y,
-        _v1.z,
-        _v2.x,
-        _v2.y,
-        _v2.z
-      )
+      segmentPositions.push(_v1.x, _v1.y, _v1.z, _v2.x, _v2.y, _v2.z)
     }
 
     if (segmentPositions.length < 6) {

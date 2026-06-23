@@ -18,7 +18,11 @@ export class AcApRedoCmd extends AcEdCommand {
     const manager = context.doc.database.transactionManager
     if (!manager.redo()) {
       const msgKey = AcApI18n.sysCmdKey(this.globalName, 'nothingToRedo')
-      this.showMessage(AcApI18n.sysCmd(this.globalName, 'nothingToRedo'), 'info', msgKey)
+      this.showMessage(
+        AcApI18n.sysCmd(this.globalName, 'nothingToRedo'),
+        'info',
+        msgKey
+      )
       return
     }
     acapNotifyUndoStackChanged()

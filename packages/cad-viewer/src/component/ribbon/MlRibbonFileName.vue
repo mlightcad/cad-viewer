@@ -7,12 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  type CSSProperties,
-  onUnmounted,
-  ref,
-  watchEffect
-} from 'vue'
+import { type CSSProperties, onUnmounted, ref, watchEffect } from 'vue'
 
 import { useDocument } from '../../composable'
 

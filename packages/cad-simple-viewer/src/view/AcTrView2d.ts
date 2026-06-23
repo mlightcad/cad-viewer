@@ -248,7 +248,8 @@ export class AcTrView2d extends AcEdBaseView {
 
     this._scene = this.createScene()
     // Initialize background color through setter to keep renderer/cursor in sync.
-    this.backgroundColor = mergedOptions.background ?? ACGI_MODEL_SPACE_BACKGROUND
+    this.backgroundColor =
+      mergedOptions.background ?? ACGI_MODEL_SPACE_BACKGROUND
     this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
 
     // Layout background sysvars drive the canvas clear colour and ACI-7
@@ -1271,27 +1272,23 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * @inheritdoc
+   * Rebuilds scene geometry for entities whose shape or styling changed.
+   *
+   * Pure translations should use {@link translateEntity} instead.
    */
   updateEntity(entity: AcDbEntity | AcDbEntity[]) {
-    let entities: AcDbEntity[] = []
-    if (Array.isArray(entity)) {
-      entities = entity
-    } else {
-      entities.push(entity)
-    }
+    const entities = Array.isArray(entity) ? entity : [entity]
 
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
-      const threeEntity = entity.worldDraw(this._renderer) as AcTrEntity
-      if (threeEntity) {
-        threeEntity.objectId = entity.objectId
-        threeEntity.ownerId = entity.ownerId
-        threeEntity.layerName = entity.layer
-        threeEntity.visible = entity.visibility !== false
-        this._scene.updateEntity(threeEntity)
+      if (this._scene.hasEntity(entity.objectId)) {
+        this._scene.removeEntity(entity.objectId)
       }
     }
+
+    // Reconvert through the same path as initial load so block references are
+    // split by layer correctly and deferred MTEXT/SHAPE geometry is drawn.
+    void this.batchConvert(entities)
     this._isDirty = true
     // Not sure why texture for image entity isn't updated even if 'isDirty' flag is already set to true.
     // So add one timeout event to set 'isDirty' flag to true again to make it work
@@ -2073,9 +2070,8 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private refreshTextMaterialsInObjectTree(root: THREE.Object3D) {
     root.traverse(child => {
-      const refresh = (
-        child as { refreshTextMaterials?: () => void }
-      ).refreshTextMaterials
+      const refresh = (child as { refreshTextMaterials?: () => void })
+        .refreshTextMaterials
       if (typeof refresh === 'function') {
         refresh.call(child)
       }
@@ -2120,7 +2116,9 @@ export class AcTrView2d extends AcEdBaseView {
         if (Array.isArray(material)) {
           const materials = material as THREE.Material[]
           child.material = materials.map(entry => {
-            if (!this.shouldRemapInheritedLayerMaterial(entry, sourceLayerName)) {
+            if (
+              !this.shouldRemapInheritedLayerMaterial(entry, sourceLayerName)
+            ) {
               return entry
             }
             return (
@@ -2179,7 +2177,10 @@ export class AcTrView2d extends AcEdBaseView {
     if (metadata.isByLayerColor === true) {
       return true
     }
-    const promoted = this.promoteLayerZeroByLayerColor(material, sourceLayerName)
+    const promoted = this.promoteLayerZeroByLayerColor(
+      material,
+      sourceLayerName
+    )
     return getMaterialMetadata(promoted).isByLayerColor === true
   }
 

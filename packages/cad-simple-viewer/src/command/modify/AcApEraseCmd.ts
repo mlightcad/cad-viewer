@@ -1,3 +1,5 @@
+import { AcDbDatabase, AcDbObjectId } from '@mlightcad/data-model'
+
 import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
@@ -6,7 +8,6 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { acapEraseEntities } from '../../util/AcApDatabaseEdit'
 
 /**
  * Command to delete selected objects from the drawing.
@@ -31,7 +32,7 @@ export class AcApEraseCmd extends AcEdCommand {
         context.doc.openMode == AcEdOpenMode.Review
           ? annotation.filterAnnotationEntities(selectionSet.ids)
           : selectionSet.ids
-      acapEraseEntities(context.doc.database, ids)
+      this.eraseEntities(context.doc.database, ids)
       selectionSet.clear()
     } else {
       const message = AcApI18n.sysCmdPrompt('erase')
@@ -48,9 +49,19 @@ export class AcApEraseCmd extends AcEdCommand {
         if (context.doc.openMode == AcEdOpenMode.Review) {
           ids = annotation.filterAnnotationEntities(ids)
         }
-        acapEraseEntities(context.doc.database, ids)
+        this.eraseEntities(context.doc.database, ids)
         selectionSet.clear()
       }
     }
+  }
+
+  /**
+   * Erases entities through the active transaction when present.
+   */
+  private eraseEntities(db: AcDbDatabase, objectIds: AcDbObjectId[]): void {
+    objectIds.forEach(objectId => {
+      const entity = db.openEntityForWrite(objectId)
+      entity?.erase()
+    })
   }
 }

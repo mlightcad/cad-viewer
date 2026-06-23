@@ -177,7 +177,11 @@ export class AcApI18n {
    * @param key - Message key under the command entry
    * @returns dotted path, e.g. `"command.ACAD.undo.nothingToUndo"`
    */
-  public static cmdKey(groupName: string, cmdName: string, key: string): string {
+  public static cmdKey(
+    groupName: string,
+    cmdName: string,
+    key: string
+  ): string {
     return `command.${groupName}.${cmdName.toLowerCase()}.${key}`
   }
 
@@ -228,7 +232,11 @@ export class AcApI18n {
    * Build the localization key for a system-group command message entry.
    */
   public static sysCmdKey(cmdName: string, key: string): string {
-    return this.cmdKey(AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME, cmdName, key)
+    return this.cmdKey(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      cmdName,
+      key
+    )
   }
 
   /**

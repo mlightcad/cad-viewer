@@ -37,7 +37,11 @@ export class AcSvgStyleUtil {
     ctx: AcSvgStyleContext,
     kind: AcSvgPrimitiveKind
   ): number {
-    if (kind === 'fill' && traits.color.isForeground && this.isSolidBackgroundHatch(traits)) {
+    if (
+      kind === 'fill' &&
+      traits.color.isForeground &&
+      this.isSolidBackgroundHatch(traits)
+    ) {
       return ctx.backgroundColor
     }
     return AcGiContext.fromBackgroundColor(

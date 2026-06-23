@@ -23,7 +23,9 @@ describe('AcTrBufferGeometryUtil finite coordinate helpers', () => {
 
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
     expect(AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)).toBeNull()
-    expect(AcTrBufferGeometryUtil.safeComputeBoundingSphere(geometry)).toBeNull()
+    expect(
+      AcTrBufferGeometryUtil.safeComputeBoundingSphere(geometry)
+    ).toBeNull()
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
@@ -32,18 +34,15 @@ describe('AcTrBufferGeometryUtil finite coordinate helpers', () => {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
       'position',
-      new THREE.Float32BufferAttribute(
-        [0, 0, 0, Number.NaN, 1, 0, 2, 2, 0],
-        3
-      )
+      new THREE.Float32BufferAttribute([0, 0, 0, Number.NaN, 1, 0, 2, 2, 0], 3)
     )
     geometry.setIndex(new THREE.Uint16BufferAttribute([0, 1, 0, 2], 1))
 
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
     const matrix = new THREE.Matrix4().makeTranslation(10, 0, 0)
-    expect(
-      AcTrBufferGeometryUtil.safeApplyMatrix4(geometry, matrix, 2)
-    ).toBe(true)
+    expect(AcTrBufferGeometryUtil.safeApplyMatrix4(geometry, matrix, 2)).toBe(
+      true
+    )
     expect(Array.from(geometry.index!.array)).toEqual([0, 2])
     expect(geometry.getAttribute('position').getX(0)).toBe(10)
     expect(warn).not.toHaveBeenCalled()

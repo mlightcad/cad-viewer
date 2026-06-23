@@ -253,11 +253,16 @@ class CadViewerApp {
 
   private setupMobileSidebar() {
     this.fileSidebarToggle.addEventListener('click', () => {
-      this.setFileSidebarExpanded(!this.fileSidebar.classList.contains('expanded'))
+      this.setFileSidebarExpanded(
+        !this.fileSidebar.classList.contains('expanded')
+      )
     })
 
     document.addEventListener('click', event => {
-      if (!this.isMobileLayout() || !this.fileSidebar.classList.contains('expanded')) {
+      if (
+        !this.isMobileLayout() ||
+        !this.fileSidebar.classList.contains('expanded')
+      ) {
         return
       }
 

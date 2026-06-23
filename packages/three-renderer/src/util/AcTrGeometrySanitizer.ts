@@ -74,7 +74,8 @@ export class AcTrGeometrySanitizer {
       }
     }
 
-    const droppedVertices = vertexCount - vertexValid.reduce((sum, v) => sum + v, 0)
+    const droppedVertices =
+      vertexCount - vertexValid.reduce((sum, v) => sum + v, 0)
     const droppedSegments = indices.length / 2 - validIndices.length / 2
     if (droppedVertices > 0 || droppedSegments > 0) {
       AcTrGeometrySanitizer.reportIssue(

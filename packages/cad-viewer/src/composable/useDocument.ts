@@ -5,7 +5,15 @@ import {
   AcEdOpenMode,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
-import { computed, type ComputedRef, type DeepReadonly, onMounted, readonly, type Ref,ref } from 'vue'
+import {
+  computed,
+  type ComputedRef,
+  type DeepReadonly,
+  onMounted,
+  readonly,
+  type Ref,
+  ref
+} from 'vue'
 
 /**
  * Reactive view of the active CAD document and its open lifecycle.
