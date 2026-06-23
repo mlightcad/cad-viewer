@@ -7,7 +7,10 @@ import {
 import { FontManager } from '@mlightcad/mtext-renderer'
 
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
-import { resolveShapeGlyphKey, resolveShapeTextStyle } from '../src/util/AcTrShapeStyleUtil'
+import {
+  resolveShapeGlyphKey,
+  resolveShapeTextStyle
+} from '../src/util/AcTrShapeStyleUtil'
 
 const EMPTY_TEXT_STYLE = {
   name: '',
@@ -56,14 +59,21 @@ describe('resolveShapeTextStyle', () => {
 
   it('returns a copy of the provided style when it contains the glyph', () => {
     const style = makeStyle('Standard', 'txt')
-    jest.mocked(fontManager.getShapeByName).mockImplementation(
-      (name, fontName) => {
+    jest
+      .mocked(fontManager.getShapeByName)
+      .mockImplementation((name, fontName) => {
         if (name === 'ARROW' && fontName === 'txt') {
-          return { polylines: [[{ x: 0, y: 0 }, { x: 1, y: 0 }]] } as never
+          return {
+            polylines: [
+              [
+                { x: 0, y: 0 },
+                { x: 1, y: 0 }
+              ]
+            ]
+          } as never
         }
         return undefined
-      }
-    )
+      })
 
     const context = new AcTrRenderContext()
     const resolved = resolveShapeTextStyle(
@@ -85,14 +95,21 @@ describe('resolveShapeTextStyle', () => {
     )
     db.tables.textStyleTable.add(shapeDef)
 
-    jest.mocked(fontManager.getShapeByName).mockImplementation(
-      (name, fontName) => {
+    jest
+      .mocked(fontManager.getShapeByName)
+      .mockImplementation((name, fontName) => {
         if (name === '_GV_' && fontName === 'tecosymbol') {
-          return { polylines: [[{ x: 0, y: 0 }, { x: 1, y: 0 }]] } as never
+          return {
+            polylines: [
+              [
+                { x: 0, y: 0 },
+                { x: 1, y: 0 }
+              ]
+            ]
+          } as never
         }
         return undefined
-      }
-    )
+      })
 
     const context = new AcTrRenderContext()
     context.database = db
@@ -114,19 +131,24 @@ describe('resolveShapeTextStyle', () => {
     const db = new AcDbDatabase()
     acdbHostApplicationServices().workingDatabase = db
 
-    const shapeDef = new AcDbTextStyleTableRecord(
-      makeStyle('', 'ltypeshp', 1)
-    )
+    const shapeDef = new AcDbTextStyleTableRecord(makeStyle('', 'ltypeshp', 1))
     db.tables.textStyleTable.add(shapeDef)
 
-    jest.mocked(fontManager.getShapeByName).mockImplementation(
-      (name, fontName) => {
+    jest
+      .mocked(fontManager.getShapeByName)
+      .mockImplementation((name, fontName) => {
         if (name === 'ARROW' && fontName === 'ltypeshp') {
-          return { polylines: [[{ x: 0, y: 0 }, { x: 1, y: 0 }]] } as never
+          return {
+            polylines: [
+              [
+                { x: 0, y: 0 },
+                { x: 1, y: 0 }
+              ]
+            ]
+          } as never
         }
         return undefined
-      }
-    )
+      })
 
     const context = new AcTrRenderContext()
     context.database = db
@@ -151,14 +173,21 @@ describe('resolveShapeTextStyle', () => {
 
   it('uses shape number only when shape name is absent', () => {
     const style = makeStyle('Standard', 'ltypeshp')
-    jest.mocked(fontManager.getShapeByCode).mockImplementation(
-      (code, fontName) => {
+    jest
+      .mocked(fontManager.getShapeByCode)
+      .mockImplementation((code, fontName) => {
         if (code === 65 && fontName === 'ltypeshp') {
-          return { polylines: [[{ x: 0, y: 0 }, { x: 1, y: 0 }]] } as never
+          return {
+            polylines: [
+              [
+                { x: 0, y: 0 },
+                { x: 1, y: 0 }
+              ]
+            ]
+          } as never
         }
         return undefined
-      }
-    )
+      })
 
     const context = new AcTrRenderContext()
     const resolved = resolveShapeTextStyle(
@@ -178,14 +207,21 @@ describe('resolveShapeTextStyle', () => {
 
   it('does not fall back to shape number when shape name is present', () => {
     const style = makeStyle('Standard', 'ltypeshp')
-    jest.mocked(fontManager.getShapeByCode).mockImplementation(
-      (code, fontName) => {
+    jest
+      .mocked(fontManager.getShapeByCode)
+      .mockImplementation((code, fontName) => {
         if (code === 65 && fontName === 'ltypeshp') {
-          return { polylines: [[{ x: 0, y: 0 }, { x: 1, y: 0 }]] } as never
+          return {
+            polylines: [
+              [
+                { x: 0, y: 0 },
+                { x: 1, y: 0 }
+              ]
+            ]
+          } as never
         }
         return undefined
-      }
-    )
+      })
 
     const context = new AcTrRenderContext()
     const resolved = resolveShapeTextStyle(
@@ -212,9 +248,7 @@ describe('resolveShapeTextStyle', () => {
     const db = new AcDbDatabase()
     acdbHostApplicationServices().workingDatabase = db
 
-    const shapeDef = new AcDbTextStyleTableRecord(
-      makeStyle('', 'ltypeshp', 1)
-    )
+    const shapeDef = new AcDbTextStyleTableRecord(makeStyle('', 'ltypeshp', 1))
     db.tables.textStyleTable.add(shapeDef)
 
     const context = new AcTrRenderContext()

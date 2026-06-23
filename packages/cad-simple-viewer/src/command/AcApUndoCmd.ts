@@ -18,7 +18,11 @@ export class AcApUndoCmd extends AcEdCommand {
     const manager = context.doc.database.transactionManager
     if (!manager.undo()) {
       const msgKey = AcApI18n.sysCmdKey(this.globalName, 'nothingToUndo')
-      this.showMessage(AcApI18n.sysCmd(this.globalName, 'nothingToUndo'), 'info', msgKey)
+      this.showMessage(
+        AcApI18n.sysCmd(this.globalName, 'nothingToUndo'),
+        'info',
+        msgKey
+      )
       return
     }
     acapNotifyUndoStackChanged()

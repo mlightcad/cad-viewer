@@ -53,7 +53,10 @@ export function resolveShapeGlyphKey(shape: AcGiShapeData): {
   return {}
 }
 
-function hasDrawableShapeInFont(shape: AcGiShapeData, fontName: string): boolean {
+function hasDrawableShapeInFont(
+  shape: AcGiShapeData,
+  fontName: string
+): boolean {
   const normalized = normalizeCadFontName(fontName)
   const size = shape.size
   const { byName, byCode } = resolveShapeGlyphKey(shape)

@@ -108,10 +108,7 @@ describe('AcTrMTextColorUtil', () => {
     const inlineMaterial = styleManager.getMTextFillMaterial(inlineTraits)
 
     const root = new THREE.Group()
-    const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1),
-      inlineMaterial
-    )
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), inlineMaterial)
     root.add(mesh)
 
     AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)

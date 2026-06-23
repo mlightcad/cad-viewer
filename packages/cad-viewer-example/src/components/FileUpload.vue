@@ -254,9 +254,7 @@ const openViewModes = [
 ] as const
 
 const resolveOpenViewMode = (): AcApOpenViewMode | undefined =>
-  selectedOpenViewMode.value === 'auto'
-    ? undefined
-    : selectedOpenViewMode.value
+  selectedOpenViewMode.value === 'auto' ? undefined : selectedOpenViewMode.value
 
 const accessModes = [
   {

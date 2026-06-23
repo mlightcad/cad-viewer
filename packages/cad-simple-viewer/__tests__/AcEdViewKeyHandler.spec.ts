@@ -44,8 +44,7 @@ describe('AcEdViewKeyHandler', () => {
 
   test('handleKeyDown maps platform undo/redo keys to commands', () => {
     const handler = new AcEdViewKeyHandler(createMockView())
-    const sendCommand = AcApDocManager.instance
-      .sendStringToExecute as jest.Mock
+    const sendCommand = AcApDocManager.instance.sendStringToExecute as jest.Mock
 
     handler.handleKeyDown(
       keyboardEvent({ code: 'KeyZ', ctrlKey: true, shiftKey: false })
@@ -79,8 +78,7 @@ describe('AcEdViewKeyHandler', () => {
 
   test('handleKeyDown skips undo/redo while editor input is active', () => {
     const handler = new AcEdViewKeyHandler(createMockView(true))
-    const sendCommand = AcApDocManager.instance
-      .sendStringToExecute as jest.Mock
+    const sendCommand = AcApDocManager.instance.sendStringToExecute as jest.Mock
 
     const handled = handler.handleKeyDown(
       keyboardEvent({ code: 'KeyZ', ctrlKey: true })

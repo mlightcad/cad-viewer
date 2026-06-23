@@ -287,9 +287,7 @@ export class AcTrBufferGeometryUtil {
   /**
    * Returns true when all coordinates of a 3D point are finite.
    */
-  static isFinitePoint(
-    point: AcGePoint3dLike | null | undefined
-  ): boolean {
+  static isFinitePoint(point: AcGePoint3dLike | null | undefined): boolean {
     return (
       !!point &&
       Number.isFinite(point.x) &&
@@ -434,7 +432,11 @@ export class AcTrBufferGeometryUtil {
     }
 
     const validIndices: number[] = []
-    for (let offset = 0; offset + indexStride <= index.count; offset += indexStride) {
+    for (
+      let offset = 0;
+      offset + indexStride <= index.count;
+      offset += indexStride
+    ) {
       let valid = true
       for (let component = 0; component < indexStride; component++) {
         if (!isFiniteVertex(index.getX(offset + component))) {
@@ -456,7 +458,9 @@ export class AcTrBufferGeometryUtil {
     const IndexArray = validIndices.some(index => index > 65535)
       ? Uint32Array
       : Uint16Array
-    geometry.setIndex(new THREE.BufferAttribute(new IndexArray(validIndices), 1))
+    geometry.setIndex(
+      new THREE.BufferAttribute(new IndexArray(validIndices), 1)
+    )
     return true
   }
 
@@ -473,7 +477,9 @@ export class AcTrBufferGeometryUtil {
   ): boolean {
     geometry.boundingBox = null
     geometry.boundingSphere = null
-    if (!AcTrBufferGeometryUtil.sanitizeGeometryPositions(geometry, indexStride)) {
+    if (
+      !AcTrBufferGeometryUtil.sanitizeGeometryPositions(geometry, indexStride)
+    ) {
       return false
     }
 

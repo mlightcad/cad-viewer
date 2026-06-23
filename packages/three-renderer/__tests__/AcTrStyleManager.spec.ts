@@ -1,7 +1,10 @@
 import { AcCmColor } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { getMaterialMetadata, setMaterialMetadata } from '../src/style/AcTrMaterialMetadata'
+import {
+  getMaterialMetadata,
+  setMaterialMetadata
+} from '../src/style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../src/util/AcTrEntityTraitsUtil'
 

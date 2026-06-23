@@ -149,9 +149,7 @@ type AcTrBatchedExportSource = {
 }
 
 function shouldExportBatchedSlot(info: AcTrPackedGeometryInfo): boolean {
-  return (
-    isBatchGeometryActive(info.flags) && isBatchGeometryVisible(info.flags)
-  )
+  return isBatchGeometryActive(info.flags) && isBatchGeometryVisible(info.flags)
 }
 
 /**
@@ -459,9 +457,7 @@ function exportBatchedLine2(
   }
 }
 
-function exportBatchedLine(
-  batch: AcTrBatchedLine
-): AcExLineBatch | undefined {
+function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
   const slice = exportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
@@ -482,9 +478,7 @@ function exportBatchedLine(
   }
 }
 
-function exportBatchedMesh(
-  batch: AcTrBatchedMesh
-): AcExMeshBatch | undefined {
+function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
   const slice = exportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined

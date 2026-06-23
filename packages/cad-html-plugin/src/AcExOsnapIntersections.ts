@@ -314,7 +314,10 @@ function intersectCircles(
 
   const out: Array<{ x: number; y: number }> = []
   for (const p of points) {
-    if (isPointOnCircArc(p.x, p.y, a, tol) && isPointOnCircArc(p.x, p.y, b, tol)) {
+    if (
+      isPointOnCircArc(p.x, p.y, a, tol) &&
+      isPointOnCircArc(p.x, p.y, b, tol)
+    ) {
       out.push(p)
     }
   }
@@ -354,9 +357,5 @@ export function intersectPrimitivePair(
 export function isIntersectionCapablePrimitive(
   prim: AcExOsnapPrimitive
 ): boolean {
-  return (
-    prim.kind === 'line' ||
-    prim.kind === 'circle' ||
-    prim.kind === 'arc'
-  )
+  return prim.kind === 'line' || prim.kind === 'circle' || prim.kind === 'arc'
 }

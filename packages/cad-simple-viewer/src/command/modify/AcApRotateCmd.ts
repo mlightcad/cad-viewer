@@ -18,7 +18,6 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { acapOpenEntityForWrite } from '../../util/AcApDatabaseEdit'
 
 /**
  * Static preview jig used while ROTATE asks for supporting inputs such as
@@ -486,7 +485,7 @@ export class AcApRotateCmd extends AcEdCommand {
       }
     } else {
       sourceEntities.forEach(entity => {
-        const opened = acapOpenEntityForWrite(context.doc.database, entity)
+        const opened = context.doc.database.openEntityForWrite(entity)
         if (!opened) return
         opened.transformBy(matrix)
         opened.triggerModifiedEvent()

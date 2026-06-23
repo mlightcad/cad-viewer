@@ -153,12 +153,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       )
       material = this.createMeshBasicMaterial(rgb, threeSide)
     } else {
-      material = this.createHatchShaderMaterial(
-        traits,
-        rgb,
-        options,
-        threeSide
-      )
+      material = this.createHatchShaderMaterial(traits, rgb, options, threeSide)
     }
 
     // Store side in userData so getBackSideVariant can check idempotency.
@@ -295,7 +290,10 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     return material
   }
 
-  private createMeshBasicMaterial(rgb: number, side: THREE.Side): THREE.Material {
+  private createMeshBasicMaterial(
+    rgb: number,
+    side: THREE.Side
+  ): THREE.Material {
     return new THREE.MeshBasicMaterial({ color: rgb, side })
   }
 

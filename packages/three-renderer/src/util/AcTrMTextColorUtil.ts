@@ -182,13 +182,11 @@ export class AcTrMTextColorUtil {
 
     const background = styleManager.currentBackgroundColor
     const context = AcGiContext.fromBackgroundColor(background)
-    const expectedRgb = context.resolveSubEntityTraitsRgb(
-      {
-        ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
-        color: entityTraits.color,
-        layer: entityTraits.layer
-      }
-    )
+    const expectedRgb = context.resolveSubEntityTraitsRgb({
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color: entityTraits.color,
+      layer: entityTraits.layer
+    })
     const materialRgb = AcTrMTextColorUtil.getMaterialDisplayRgb(material)
     if (
       materialRgb === ACGI_PAPER_SPACE_BACKGROUND &&

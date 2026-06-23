@@ -1,10 +1,5 @@
 import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
-import {
-  type DeepReadonly,
-  readonly,
-  type Ref,
-  ref
-} from 'vue'
+import { type DeepReadonly, readonly, type Ref, ref } from 'vue'
 
 /**
  * Reactive undo/redo availability for the active document database.

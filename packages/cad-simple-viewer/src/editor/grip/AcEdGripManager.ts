@@ -8,10 +8,7 @@ import {
 import { AcApDocManager } from '../../app'
 import { AcEdMTextEditor } from '../input/ui/AcEdMTextEditor'
 import { AcEdBaseView } from '../view/AcEdBaseView'
-import {
-  AcEdGripEditSession,
-  AcEdGripEditTarget
-} from './AcEdGripEditSession'
+import { AcEdGripEditSession, AcEdGripEditTarget } from './AcEdGripEditSession'
 import { AcEdGripHandle } from './AcEdGripHandle'
 import { acedShouldShowGrips } from './AcEdGripPolicy'
 
@@ -254,9 +251,10 @@ export class AcEdGripManager {
    * @param entry - The grip entry that was activated by the user
    */
   private startEdit(entry: AcEdGripEntry) {
-    const entity = AcApDocManager.instance.curDocument.database.tables.blockTable.getEntityById(
-      entry.entityId
-    )
+    const entity =
+      AcApDocManager.instance.curDocument.database.tables.blockTable.getEntityById(
+        entry.entityId
+      )
     if (!entity) {
       this.endEdit()
       return

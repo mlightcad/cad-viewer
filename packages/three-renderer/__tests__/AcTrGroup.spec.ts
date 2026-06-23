@@ -168,7 +168,13 @@ describe('AcTrGroup wcsBbox', () => {
 
   it('rebuilds WCS child boxes after deferred geometry is attached', () => {
     const context = new AcTrRenderContext()
-    const line = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context, 'L2')
+    const line = createLine(
+      'line-a',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      context,
+      'L2'
+    )
     const deferred = createLine(
       'line-deferred',
       { x: 5, y: 5 },
@@ -202,7 +208,13 @@ describe('AcTrGroup wcsBbox', () => {
 
   it('skips invalid child boxes when applying insert transform', () => {
     const context = new AcTrRenderContext()
-    const line = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context, 'L2')
+    const line = createLine(
+      'line-a',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      context,
+      'L2'
+    )
     const group = new AcTrGroup([line], context)
     group.wcsChildBoxes.push({
       minX: Number.POSITIVE_INFINITY,

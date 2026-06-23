@@ -2,7 +2,8 @@ import {
   ACGI_DARK_THEME_FOREGROUND,
   ACGI_LIGHT_THEME_FOREGROUND,
   AcGiContext,
-  acgiIsLightBackground} from '@mlightcad/data-model'
+  acgiIsLightBackground
+} from '@mlightcad/data-model'
 
 import {
   AcTrBatchDrawPolicy,

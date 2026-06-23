@@ -413,7 +413,10 @@ export class AcTrGroup extends AcTrEntity {
    * @param scratch - Reusable {@link THREE.Box3} used to avoid per-entity
    *   allocations during refresh.
    */
-  private appendSourceEntityWcsChildBox(entity: AcTrEntity, scratch: THREE.Box3) {
+  private appendSourceEntityWcsChildBox(
+    entity: AcTrEntity,
+    scratch: THREE.Box3
+  ) {
     if (entity.wcsBbox.isEmpty()) {
       return
     }

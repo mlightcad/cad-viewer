@@ -899,10 +899,7 @@ export class AcExOsnapIndex {
         const indexB = segIndices[j]!
         const segB = this.segments[indexB]!
         const layerB = this.segmentLayers[indexB]!
-        if (
-          this.hiddenLayers.has(layerA) ||
-          this.hiddenLayers.has(layerB)
-        ) {
+        if (this.hiddenLayers.has(layerA) || this.hiddenLayers.has(layerB)) {
           continue
         }
         for (const point of intersectLineSegmentPoints(
@@ -985,12 +982,7 @@ export class AcExOsnapIndex {
       if (source.kind === 'primitive') {
         const prim = this.primitives[source.index]!
         const geo = source.geo ?? primitiveToAcGeCurve(prim)
-        const nearest = collectPrimitiveNearestSnapCandidate(
-          prim,
-          px,
-          py,
-          geo
-        )
+        const nearest = collectPrimitiveNearestSnapCandidate(prim, px, py, geo)
         if (!nearest) continue
         const d2 = distSq(px, py, nearest.x, nearest.y)
         if (d2 <= threshSq && d2 < bestDistSq) {

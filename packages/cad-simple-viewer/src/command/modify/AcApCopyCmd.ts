@@ -18,7 +18,6 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { acapOpenEntityForRead } from '../../util/AcApDatabaseEdit'
 
 type CopyMode = 'Single' | 'Multiple'
 
@@ -515,7 +514,7 @@ export class AcApCopyCmd extends AcEdCommand {
     }
 
     const sourceEntities = ids
-      .map(id => acapOpenEntityForRead(context.doc.database, id))
+      .map(id => context.doc.database.openEntityForRead(id))
       .filter((entity): entity is AcDbEntity => !!entity)
     if (sourceEntities.length === 0) {
       selectionSet.clear()
