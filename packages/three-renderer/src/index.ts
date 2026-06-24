@@ -13,6 +13,7 @@ export * from './object/AcTrEntity'
 export * from './object/AcTrGroup'
 export * from './object/AcTrHtmlTransientManager'
 export * from './object/AcTrTransientManager'
+export * from './object/AcTrPreviewOverlayManager'
 export * from './renderer'
 export * from './viewport'
 export * from './style/AcTrMaterialMetadata'
@@ -27,6 +28,7 @@ export {
   type AcTrPatternLine
 } from './style/AcTrHatchPatternShaders'
 export * from './util/AcTrMTextColorUtil'
+export { AcTrMatrixUtil } from './util/AcTrMatrixUtil'
 export {
   isHighlightCloneDrawable,
   isHighlightOverlayDescendant,

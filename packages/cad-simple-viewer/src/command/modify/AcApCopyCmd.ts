@@ -8,6 +8,7 @@ import {
 import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdBaseView,
+  AcEdBatchedPreview,
   AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
@@ -15,7 +16,8 @@ import {
   AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
   AcEdPromptSelectionOptions,
-  AcEdPromptStatus
+  AcEdPromptStatus,
+  scaleCopyDisplacement
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
@@ -36,26 +38,19 @@ interface CopyArrayPlacement {
 /**
  * COPY preview jig.
  *
- * It clones the source entities once and keeps those transient copies moving
- * with the cursor. For array previews, each clone batch uses a different
- * displacement multiplier so users can see the full result before committing.
+ * Reuses GPU-resident batched geometry when possible. Array previews create one
+ * overlay per copy placement, each with its own translation matrix. Legacy
+ * transient clones are used when batch preview creation fails.
  */
 class AcApCopyPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _view: AcEdBaseView
   private _basePoint: AcGePoint3d
   private _copyCount: number
   private _fitMode: boolean
-  private _previewItems: CopyPreviewItem[]
+  private _batchPreviews: AcEdBatchedPreview
+  private _previewItems: CopyPreviewItem[] = []
+  private _lastDisplacement: AcGePoint3d
 
-  /**
-   * Creates a transient COPY preview jig.
-   *
-   * @param view - Active editor view that owns transient preview entities.
-   * @param sourceEntities - Original entities used as clone sources.
-   * @param basePoint - Copy base point from which cursor displacement is measured.
-   * @param copyCount - Number of preview placements to show.
-   * @param fitMode - Whether copies should be evenly distributed between base and end points.
-   */
   constructor(
     view: AcEdBaseView,
     sourceEntities: AcDbEntity[],
@@ -68,42 +63,57 @@ class AcApCopyPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._basePoint = new AcGePoint3d(basePoint)
     this._copyCount = Math.max(0, copyCount)
     this._fitMode = fitMode
-    this._previewItems = []
+    this._lastDisplacement = new AcGePoint3d(0, 0, 0)
+    const entityIds = sourceEntities.map(entity => entity.objectId)
+    this._batchPreviews = new AcEdBatchedPreview(
+      view,
+      entityIds,
+      this._copyCount
+    )
 
-    for (let factor = 1; factor <= this._copyCount; factor++) {
-      sourceEntities
-        .map(entity => entity.clone())
-        .filter((entity): entity is AcDbEntity => !!entity)
-        .forEach(entity => {
-          this._previewItems.push({
-            entity,
-            factor,
-            lastDisplacement: new AcGePoint3d(0, 0, 0)
+    if (!this._batchPreviews.useBatchPreview) {
+      this._previewItems = []
+      for (let factor = 1; factor <= this._copyCount; factor++) {
+        sourceEntities
+          .map(entity => entity.clone())
+          .filter((entity): entity is AcDbEntity => !!entity)
+          .forEach(entity => {
+            this._previewItems.push({
+              entity,
+              factor,
+              lastDisplacement: new AcGePoint3d(0, 0, 0)
+            })
           })
-        })
+      }
     }
   }
 
-  /**
-   * Moves each transient clone to its latest preview displacement.
-   *
-   * The input point is interpreted as the current placement point. Each preview
-   * batch then applies either a direct multiple of the displacement or a
-   * normalized fit displacement, depending on the current array mode.
-   *
-   * @param point - Current cursor point supplied by the prompt/jig system.
-   */
   update(point: AcGePoint3dLike) {
-    if (this._previewItems.length === 0) return
-
     const displacement = new AcGePoint3d(
       point.x - this._basePoint.x,
       point.y - this._basePoint.y,
       point.z - this._basePoint.z
     )
 
+    if (this._batchPreviews.useBatchPreview) {
+      this._batchPreviews.updatePlacements(
+        this._view,
+        displacement,
+        this._fitMode
+      )
+      this._lastDisplacement = displacement
+      return
+    }
+
+    if (this._previewItems.length === 0) return
+
     this._previewItems.forEach(item => {
-      const desired = this.scaleDisplacement(displacement, item.factor)
+      const desired = scaleCopyDisplacement(
+        displacement,
+        item.factor,
+        this._copyCount,
+        this._fitMode
+      )
       const delta = new AcGePoint3d(
         desired.x - item.lastDisplacement.x,
         desired.y - item.lastDisplacement.y,
@@ -118,38 +128,23 @@ class AcApCopyPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
     })
   }
 
-  /**
-   * Adds all preview clones to the view as transient geometry.
-   */
   override render(): void {
+    if (this._batchPreviews.useBatchPreview) {
+      this._batchPreviews.updatePlacements(
+        this._view,
+        this._lastDisplacement,
+        this._fitMode
+      )
+      return
+    }
     if (this._previewItems.length === 0) return
     this._view.addTransientEntity(this._previewItems.map(item => item.entity))
   }
 
-  /**
-   * Removes every transient preview clone from the view.
-   */
   override end(): void {
+    this._batchPreviews.dispose(this._view)
     this._previewItems.forEach(item =>
       this._view.removeTransientEntity(item.entity.objectId)
-    )
-  }
-
-  /**
-   * Computes the displacement assigned to one preview copy.
-   *
-   * @param displacement - Raw cursor displacement from the base point.
-   * @param factor - One-based copy index used to scale the displacement.
-   * @returns Scaled displacement for the indexed preview clone.
-   */
-  private scaleDisplacement(displacement: AcGePoint3d, factor: number) {
-    const scale =
-      this._fitMode && this._copyCount > 0 ? factor / this._copyCount : factor
-
-    return new AcGePoint3d(
-      displacement.x * scale,
-      displacement.y * scale,
-      displacement.z * scale
     )
   }
 }
@@ -224,12 +219,26 @@ export class AcApCopyCmd extends AcEdCommand {
     copyCount: number,
     fitMode: boolean
   ) {
-    const scale = fitMode && copyCount > 0 ? factor / copyCount : factor
-    return new AcGePoint3d(
-      displacement.x * scale,
-      displacement.y * scale,
-      displacement.z * scale
-    )
+    return scaleCopyDisplacement(displacement, factor, copyCount, fitMode)
+  }
+
+  /**
+   * Appends cloned entities to model space and shows them immediately in the view.
+   *
+   * Database edits during an active command transaction may not reach the view
+   * until the command ends. Explicit {@link AcEdBaseView.addEntity} keeps each
+   * placement visible while the COPY loop continues. All placements still share
+   * one undo mark from {@link AcEdCommand.trigger}.
+   *
+   * @param context - Active command context with database and view access
+   * @param copies - Cloned entities to append and display
+   */
+  private appendCopies(context: AcApContext, copies: AcDbEntity[]) {
+    if (copies.length === 0) {
+      return
+    }
+    context.doc.database.tables.blockTable.modelSpace.appendEntity(copies)
+    context.view.addEntity(copies)
   }
 
   /**
@@ -408,8 +417,6 @@ export class AcApCopyCmd extends AcEdCommand {
     copyMode: CopyMode,
     useDisplacementPrompt: boolean = false
   ) {
-    const blockTable = context.doc.database.tables.blockTable
-
     while (true) {
       const pointPrompt = new AcEdPromptPointOptions(
         AcApI18n.t(
@@ -436,9 +443,7 @@ export class AcApCopyCmd extends AcEdCommand {
           sourceEntities,
           this.computeDisplacement(basePoint, pointResult.value!)
         )
-        if (copies.length > 0) {
-          blockTable.modelSpace.appendEntity(copies)
-        }
+        this.appendCopies(context, copies)
         if (copyMode === 'Single') return
         continue
       }
@@ -460,9 +465,7 @@ export class AcApCopyCmd extends AcEdCommand {
           placement.copyCount,
           placement.fitMode
         )
-        if (copies.length > 0) {
-          blockTable.modelSpace.appendEntity(copies)
-        }
+        this.appendCopies(context, copies)
         if (copyMode === 'Single') return
         continue
       }

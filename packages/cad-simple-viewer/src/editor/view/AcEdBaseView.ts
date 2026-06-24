@@ -7,6 +7,7 @@ import {
   AcDbObjectId,
   AcGeBox2d,
   AcGeBox3d,
+  AcGeMatrix3d,
   AcGePoint2d,
   AcGePoint2dLike
 } from '@mlightcad/data-model'
@@ -560,6 +561,39 @@ export abstract class AcEdBaseView {
    * @param entity Input the object id of one transient entity
    */
   abstract removeTransientEntity(objectId: AcDbObjectId): void
+
+  /**
+   * Returns true when batched GPU-resident preview can be created for all ids.
+   *
+   * @param entityIds - Database object ids to include in the preview overlay
+   */
+  abstract canCreateEntityPreview(entityIds: AcDbObjectId[]): boolean
+
+  /**
+   * Creates one batched preview overlay for command jigs.
+   *
+   * @param entityIds - Database object ids to include in the preview overlay
+   * @returns Preview handle id, or `null` when preview creation failed
+   */
+  abstract createEntityPreview(entityIds: AcDbObjectId[]): string | null
+
+  /**
+   * Updates the world transform of one batched preview overlay.
+   *
+   * @param handleId - Preview handle returned by {@link createEntityPreview}
+   * @param matrix - World transform to apply to the preview geometry
+   */
+  abstract updateEntityPreview(
+    handleId: string,
+    matrix: AcGeMatrix3d
+  ): void
+
+  /**
+   * Removes one batched preview overlay.
+   *
+   * @param handleId - Preview handle returned by {@link createEntityPreview}
+   */
+  abstract removeEntityPreview(handleId: string): void
 
   /**
    * Add the specified entity or entities in drawing database into the current scene

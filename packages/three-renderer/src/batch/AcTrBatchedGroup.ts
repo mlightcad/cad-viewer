@@ -152,6 +152,16 @@ export interface AcTrBatchedGroupStats {
 }
 
 /**
+ * Options for {@link AcTrBatchedGroup.createPreviewSubset}.
+ */
+export interface AcTrPreviewSubsetOptions {
+  /** Preview line style. Dashed rendering is best-effort in phase 1. */
+  style?: 'normal' | 'dashed'
+  /** Maximum number of drawable slots to extract. */
+  maxSlots?: number
+}
+
+/**
  * Aggregates and manages all batched render objects belonging to one CAD
  * layer/layout group.
  *
@@ -734,6 +744,50 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   /**
+   * Builds a standalone preview subset for the specified entity ids.
+   *
+   * Extracts batched slots via {@link AcTrBatchedLine.getObjectAt} and clones
+   * unbatched drawables without re-running entity conversion.
+   *
+   * @param entityIds - Database object ids to include in the preview subset.
+   * @param options - Optional preview style and slot limits.
+   * @returns A group containing preview drawables, or `null` when nothing matched.
+   */
+  createPreviewSubset(
+    entityIds: string[],
+    options?: AcTrPreviewSubsetOptions
+  ): THREE.Group | null {
+    if (entityIds.length === 0) {
+      return null
+    }
+
+    const maxSlots = options?.maxSlots ?? 10000
+    const container = new THREE.Group()
+    container.name = 'PreviewSubset'
+    container.userData.previewSubsetGroup = true
+
+    let slotCount = 0
+    for (const objectId of entityIds) {
+      if (slotCount >= maxSlots) {
+        disposePreviewSubset(container)
+        return null
+      }
+      const added = this.appendEntityOverlayDrawables(objectId, container, {
+        maxSlots: maxSlots - slotCount,
+        mode: 'preview',
+        previewStyle: options?.style ?? 'normal'
+      })
+      if (added === 0) {
+        disposePreviewSubset(container)
+        return null
+      }
+      slotCount += added
+    }
+
+    return container
+  }
+
+  /**
    * Returns all batch maps managed by this group.
    */
   protected get groups(): AcTrOriginBatchMap<AcTrOriginBatch>[] {
@@ -752,37 +806,112 @@ export class AcTrBatchedGroup extends THREE.Group {
    * Creates highlight draw objects for one entity id.
    */
   protected highlight(objectId: string, containerGroup: THREE.Group) {
-    const entityInfo = this._entitiesMap.get(objectId)
-    // TODO:
-    // If there are more than 1000 batched object to highlight, just ignore it due to
-    // performance reason. We will fix it in the future.
-    if (entityInfo && entityInfo.length < 1000) {
-      entityInfo.forEach(item => {
-        const batchedObject = this.getObjectById(
-          item.batchedObjectId
-        ) as AcTrBatchedObject
-        const object = batchedObject.getObjectAt(item.batchId)
+    this.appendEntityOverlayDrawables(objectId, containerGroup, {
+      maxSlots: 1000,
+      mode: 'highlight'
+    })
+  }
 
+  /**
+   * Appends batched or unbatched drawables for one entity into an overlay group.
+   *
+   * @param objectId - Database object id whose drawables should be extracted
+   * @param containerGroup - Overlay group receiving cloned or extracted drawables
+   * @param options - Slot limit, overlay mode, and optional preview style
+   * @returns Number of drawables appended
+   */
+  private appendEntityOverlayDrawables(
+    objectId: string,
+    containerGroup: THREE.Group,
+    options: {
+      maxSlots: number
+      mode: 'highlight' | 'preview'
+      previewStyle?: 'normal' | 'dashed'
+    }
+  ): number {
+    let added = 0
+    const entityInfo = this._entitiesMap.get(objectId)
+    if (entityInfo && added < options.maxSlots) {
+      const limit = Math.min(entityInfo.length, options.maxSlots)
+      for (let index = 0; index < limit; index++) {
+        const item = entityInfo[index]
+        const batchedObject = this.getObjectById(item.batchedObjectId) as
+          | AcTrOriginBatch
+          | undefined
+        if (!batchedObject || !this.hasBatchObjectAt(batchedObject)) {
+          continue
+        }
+
+        const object = batchedObject.getObjectAt(item.batchId)
         this.copyHighlightMetadata(batchedObject, object)
-        this.applyHighlightMaterial(object)
-        const highlightUserData = getHighlightUserData(object)
-        highlightUserData.objectId = objectId
-        highlightUserData.disposeGeometryOnRemove =
+        if (options.mode === 'highlight') {
+          this.applyHighlightMaterial(object)
+        } else {
+          this.applyPreviewMaterial(object, options.previewStyle ?? 'normal')
+        }
+
+        const overlayUserData = getHighlightUserData(object)
+        overlayUserData.objectId = objectId
+        overlayUserData.disposeGeometryOnRemove =
           batchedObject instanceof AcTrBatchedLine2
+        overlayUserData.previewDrawable = options.mode === 'preview'
         containerGroup.add(object)
-      })
+        added++
+      }
     }
 
     const unbatchedObjects = this._unbatchedEntities.get(objectId)
-    if (unbatchedObjects && unbatchedObjects.length < 1000) {
-      unbatchedObjects.forEach(obj => {
-        const highlightObj = obj.clone()
-        this.copyHighlightMetadata(obj, highlightObj)
-        this.applyHighlightMaterial(highlightObj)
-        getHighlightUserData(highlightObj).objectId = objectId
-        containerGroup.add(highlightObj)
-      })
+    if (unbatchedObjects && added < options.maxSlots) {
+      const limit = Math.min(unbatchedObjects.length, options.maxSlots - added)
+      for (let index = 0; index < limit; index++) {
+        const obj = unbatchedObjects[index]
+        const overlayObj = obj.clone()
+        this.copyHighlightMetadata(obj, overlayObj)
+        if (options.mode === 'highlight') {
+          this.applyHighlightMaterial(overlayObj)
+        } else {
+          this.applyPreviewMaterial(overlayObj, options.previewStyle ?? 'normal')
+        }
+
+        const overlayUserData = getHighlightUserData(overlayObj)
+        overlayUserData.objectId = objectId
+        overlayUserData.previewDrawable = options.mode === 'preview'
+        containerGroup.add(overlayObj)
+        added++
+      }
     }
+
+    return added
+  }
+
+  /**
+   * Returns true when a batch container exposes per-slot object extraction.
+   *
+   * @param batchedObject - Batch container candidate for drawable extraction
+   */
+  private hasBatchObjectAt(
+    batchedObject: AcTrOriginBatch
+  ): batchedObject is AcTrOriginBatch & {
+    getObjectAt(batchId: number): THREE.Object3D
+  } {
+    return typeof batchedObject.getObjectAt === 'function'
+  }
+
+  /**
+   * Clones materials for preview drawables without applying highlight tint.
+   *
+   * @param object - Drawable node or subtree root to receive cloned materials
+   * @param _style - Reserved preview line style; dashed rendering is best-effort
+   */
+  private applyPreviewMaterial(
+    object: THREE.Object3D,
+    _style: 'normal' | 'dashed'
+  ) {
+    if (this.hasMaterial(object)) {
+      object.material = AcTrMaterialUtil.cloneMaterial(object.material)
+    }
+
+    object.children.forEach(child => this.applyPreviewMaterial(child, _style))
   }
 
   /**
@@ -1424,21 +1553,7 @@ export class AcTrBatchedGroup extends THREE.Group {
    * Disposes highlight object resources (cloned material and optional geometry).
    */
   private disposeHighlightObject(object: THREE.Object3D) {
-    object.children.forEach(child => this.disposeHighlightObject(child))
-    if (this.hasMaterial(object)) {
-      const material = object.material as THREE.Material | THREE.Material[]
-      if (Array.isArray(material)) {
-        material.forEach(m => m.dispose())
-      } else {
-        material.dispose()
-      }
-    }
-    if (
-      this.hasGeometry(object) &&
-      getHighlightUserData(object).disposeGeometryOnRemove
-    ) {
-      object.geometry.dispose()
-    }
+    disposePreviewObjectTree(object)
   }
 
   /**
@@ -1563,6 +1678,74 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
     return material.id
   }
+}
+
+/**
+ * Disposes one preview subset tree created by {@link AcTrBatchedGroup.createPreviewSubset}.
+ *
+ * Shared batch geometry buffers are never disposed; cloned materials and
+ * Line2-owned geometry follow the same rules as highlight overlays.
+ *
+ * @param group - Preview subset root group to dispose
+ */
+export function disposePreviewSubset(group: THREE.Group): void {
+  disposePreviewObjectTree(group)
+}
+
+/**
+ * Recursively disposes preview overlay drawables without touching shared batch buffers.
+ *
+ * @param object - Preview subset root or descendant node
+ */
+function disposePreviewObjectTree(object: THREE.Object3D): void {
+  for (const child of [...object.children]) {
+    disposePreviewObjectTree(child)
+  }
+  disposePreviewObject(object)
+}
+
+/**
+ * Disposes cloned preview materials and optional Line2-owned geometry on one node.
+ *
+ * @param object - Preview drawable node to release
+ */
+function disposePreviewObject(object: THREE.Object3D): void {
+  if (hasPreviewDrawableMaterial(object)) {
+    const material = object.material
+    if (Array.isArray(material)) {
+      material.forEach(item => item.dispose())
+    } else {
+      material.dispose()
+    }
+  }
+  if (
+    hasPreviewDrawableGeometry(object) &&
+    getHighlightUserData(object).disposeGeometryOnRemove
+  ) {
+    object.geometry.dispose()
+  }
+}
+
+/**
+ * Type guard for drawable nodes that own preview-cloned materials.
+ *
+ * @param object - Candidate drawable node
+ */
+function hasPreviewDrawableMaterial(
+  object: THREE.Object3D
+): object is THREE.Object3D & { material: THREE.Material | THREE.Material[] } {
+  return 'material' in object && object.material != null
+}
+
+/**
+ * Type guard for drawable nodes that own disposable preview geometry.
+ *
+ * @param object - Candidate drawable node
+ */
+function hasPreviewDrawableGeometry(
+  object: THREE.Object3D
+): object is THREE.Object3D & { geometry: THREE.BufferGeometry } {
+  return 'geometry' in object && object.geometry != null
 }
 
 const _v1 = /*@__PURE__*/ new THREE.Vector3()

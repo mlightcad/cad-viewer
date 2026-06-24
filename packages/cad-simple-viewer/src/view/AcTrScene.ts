@@ -2,6 +2,7 @@ import { AcDbObjectId, AcGeBox2d, AcGeBox3d, log } from '@mlightcad/data-model'
 import {
   AcTrEntity,
   AcTrHtmlTransientManager,
+  AcTrPreviewOverlayManager,
   AcTrTransientManager
 } from '@mlightcad/three-renderer'
 import { AcEdLayerInfo } from 'editor'
@@ -89,6 +90,8 @@ export class AcTrScene {
   private _transientManager: AcTrTransientManager
   /** HTML transient elements manager */
   private _htmlTransientManager: AcTrHtmlTransientManager
+  /** Batched preview overlay manager */
+  private _previewOverlayManager: AcTrPreviewOverlayManager
 
   /**
    * Creates a new CAD scene instance.
@@ -99,6 +102,7 @@ export class AcTrScene {
     this._scene = new THREE.Scene()
     this._transientManager = new AcTrTransientManager(this._scene)
     this._htmlTransientManager = new AcTrHtmlTransientManager(this._scene)
+    this._previewOverlayManager = new AcTrPreviewOverlayManager(this._scene)
     this._layers = new Map()
     this._layouts = new Map()
     this._activeLayoutBtrId = ''
@@ -287,9 +291,11 @@ export class AcTrScene {
     this._layers.clear()
     this._transientManager.clear()
     this._htmlTransientManager.clear()
+    this._previewOverlayManager.clear()
     this._scene.clear()
     this._transientManager = new AcTrTransientManager(this._scene)
     this._htmlTransientManager = new AcTrHtmlTransientManager(this._scene)
+    this._previewOverlayManager = new AcTrPreviewOverlayManager(this._scene)
     return this
   }
 
@@ -395,6 +401,58 @@ export class AcTrScene {
    */
   removeTransientEntity(objectId: AcDbObjectId) {
     this._transientManager.remove(objectId)
+  }
+
+  /**
+   * Returns true when every requested entity exists in the active layout.
+   *
+   * @param entityIds - Database object ids required for preview creation
+   */
+  canCreatePreview(entityIds: AcDbObjectId[]): boolean {
+    const layout = this.activeLayout
+    if (!layout) {
+      return false
+    }
+    return layout.canCreateEntityPreview(entityIds)
+  }
+
+  /**
+   * Creates one batched preview overlay for command jigs.
+   *
+   * @param entityIds - Database object ids to include in the preview overlay
+   * @returns Preview handle id, or `null` when preview creation failed
+   */
+  createPreview(entityIds: AcDbObjectId[]): string | null {
+    const layout = this.activeLayout
+    if (!layout) {
+      return null
+    }
+    const root = layout.createEntityPreviewRoot(entityIds)
+    if (!root) {
+      return null
+    }
+    return this._previewOverlayManager.add(root).id
+  }
+
+  /**
+   * Updates the transform of one batched preview overlay.
+   *
+   * @param handleId - Preview handle returned by {@link createPreview}
+   * @param matrix - World transform copied onto the preview root
+   * @returns `true` when the handle exists and the transform was applied
+   */
+  updatePreview(handleId: string, matrix: THREE.Matrix4): boolean {
+    return this._previewOverlayManager.update(handleId, matrix)
+  }
+
+  /**
+   * Removes one batched preview overlay.
+   *
+   * @param handleId - Preview handle returned by {@link createPreview}
+   * @returns `true` when the handle existed and was removed
+   */
+  removePreview(handleId: string): boolean {
+    return this._previewOverlayManager.remove(handleId)
   }
 
   /**

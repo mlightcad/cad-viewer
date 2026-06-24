@@ -87,6 +87,24 @@ export type AcTrSceneDrawableUserData = AcTrPickableObjectUserData &
 export interface AcTrHighlightUserData {
   objectId?: string
   disposeGeometryOnRemove?: boolean
+  /** Marks geometry extracted for command preview overlays. */
+  previewDrawable?: boolean
+}
+
+/**
+ * Marks a preview subset container created by {@link AcTrBatchedGroup.createPreviewSubset}.
+ */
+export interface AcTrPreviewSubsetGroupUserData {
+  /** Set to `true` on the subset root group. */
+  previewSubsetGroup?: true
+}
+
+/**
+ * Marks the root group of one command preview overlay.
+ */
+export interface AcTrEntityPreviewRootUserData {
+  /** Set to `true` on preview roots registered with {@link AcTrPreviewOverlayManager}. */
+  entityPreviewRoot?: true
 }
 
 /**
@@ -129,7 +147,9 @@ export interface AcTrObjectUserDataFields
     AcTrRteObjectUserData,
     AcTrNoBatchUserData,
     AcTrHighlightUserData,
-    AcTrHighlightOverlayGroupUserData {
+    AcTrHighlightOverlayGroupUserData,
+    AcTrPreviewSubsetGroupUserData,
+    AcTrEntityPreviewRootUserData {
   originalMaterial?: THREE.Material | THREE.Material[]
 }
 
@@ -173,6 +193,17 @@ export function getHighlightUserData(
   object: THREE.Object3D
 ): AcTrHighlightObjectUserData {
   return getObjectUserData(object) as AcTrHighlightObjectUserData
+}
+
+/**
+ * Reads preview-root flags from one preview overlay group.
+ *
+ * @param object - Preview overlay root group
+ */
+export function getEntityPreviewRootUserData(
+  object: THREE.Object3D
+): AcTrEntityPreviewRootUserData {
+  return getObjectUserData(object) as AcTrEntityPreviewRootUserData
 }
 
 export function getHighlightOverlayGroupUserData(
