@@ -346,6 +346,12 @@ export class AcTrView2d extends AcEdBaseView {
     })
 
     this.canvas.addEventListener('mouseup', e => {
+      if (this._gripManager.isDragging) {
+        selectionStartWcs = null
+        selectionStartCanvas = null
+        clearSelectionPreview()
+        return
+      }
       if (!selectionStartWcs || !selectionStartCanvas) return
 
       const endCanvas = this.viewportToCanvas({
@@ -1184,6 +1190,7 @@ export class AcTrView2d extends AcEdBaseView {
       const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
       if (threeEntity) {
         threeEntity.objectId = entity.objectId
+        threeEntity.syncDraw()
         this._scene.addTransientEntity(threeEntity)
         this._isDirty = true
       }
@@ -1278,6 +1285,9 @@ export class AcTrView2d extends AcEdBaseView {
    */
   updateEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
+    const selectedIds = entities
+      .map(item => item.objectId)
+      .filter(objectId => this.selectionSet.has(objectId))
 
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
@@ -1288,7 +1298,12 @@ export class AcTrView2d extends AcEdBaseView {
 
     // Reconvert through the same path as initial load so block references are
     // split by layer correctly and deferred MTEXT/SHAPE geometry is drawn.
-    void this.batchConvert(entities)
+    void this.batchConvert(entities).then(() => {
+      if (selectedIds.length > 0) {
+        this.highlight(selectedIds)
+      }
+      this._gripManager.refresh()
+    })
     this._isDirty = true
     // Not sure why texture for image entity isn't updated even if 'isDirty' flag is already set to true.
     // So add one timeout event to set 'isDirty' flag to true again to make it work
@@ -1742,66 +1757,27 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Finishes geometry for a converted entity. Progressive mode defers MTEXT/SHAPE
-   * to async workers; non-progressive mode uses synchronous drawing from
-   * {@link drawEntity}(..., false).
+   * Finishes geometry for a converted entity. Block groups always use
+   * {@link AcTrGroup.syncDraw} to finalize deferred children. Progressive mode
+   * defers MTEXT/SHAPE to async workers; non-progressive mode uses
+   * {@link AcTrEntity.syncDraw}.
    */
   private async finishEntityGeometry(
     threeEntity: AcTrEntity,
     progressive: boolean
   ) {
+    if (threeEntity instanceof AcTrGroup) {
+      threeEntity.syncDraw()
+      return
+    }
     if (progressive) {
-      await threeEntity.draw()
+      await threeEntity.asyncDraw()
       return
     }
-    if (this.entityUsedSyncDraw(threeEntity)) {
+    if (threeEntity.hasDrawableGeometry()) {
       return
     }
-    await threeEntity.draw()
-  }
-
-  /**
-   * Returns true when an entity already produced drawable geometry via syncDraw.
-   * MText/Shape expose syncDraw even when delay=true left the entity empty.
-   */
-  private entityUsedSyncDraw(threeEntity: AcTrEntity) {
-    return (
-      typeof (threeEntity as { syncDraw?: () => unknown }).syncDraw ===
-        'function' && threeEntity.children.length > 0
-    )
-  }
-
-  /**
-   * Finishes deferred MText/Shape geometry inside a block group before it is
-   * split by layer. Block-reference attributes are created during INSERT
-   * worldDraw and can be left empty when progressive open passes delay=true.
-   */
-  private async ensureGroupDrawableGeometry(group: AcTrGroup) {
-    const pending: Promise<void>[] = []
-    const finalizeDeferredEntity = (child: AcTrEntity) => {
-      if (this.entityUsedSyncDraw(child)) {
-        return
-      }
-      const drawable = child as AcTrEntity & {
-        syncDraw?: () => Promise<void> | void
-      }
-      if (typeof drawable.syncDraw !== 'function') {
-        return
-      }
-      pending.push(Promise.resolve(drawable.syncDraw()))
-    }
-
-    group.getSourceEntities().forEach(finalizeDeferredEntity)
-    group.traverse(child => {
-      if (!(child instanceof AcTrEntity)) {
-        return
-      }
-      if (group.getSourceEntities().includes(child)) {
-        return
-      }
-      finalizeDeferredEntity(child)
-    })
-    await Promise.all(pending)
+    threeEntity.syncDraw()
   }
 
   /**
@@ -1906,19 +1882,13 @@ export class AcTrView2d extends AcEdBaseView {
             threeEntity instanceof AcTrGroup &&
             !(threeEntity as AcTrGroup).isOnTheSameLayer
           ) {
-            await this.handleGroup(threeEntity as AcTrGroup)
+            await this.handleGroup(threeEntity as AcTrGroup, progressive)
           } else {
             const isExtendBbox = !(
               entity instanceof AcDbRay || entity instanceof AcDbXline
             )
 
-            if (threeEntity instanceof AcTrGroup) {
-              await this.ensureGroupDrawableGeometry(threeEntity as AcTrGroup)
-            }
             await this.finishEntityGeometry(threeEntity, progressive)
-            if (threeEntity instanceof AcTrGroup) {
-              ;(threeEntity as AcTrGroup).refreshWcsChildBoxesFromChildren()
-            }
             this._scene.addEntity(threeEntity, isExtendBbox)
             this.applySessionHiddenObjectState(entity.objectId)
             // Release memory occupied by this entity
@@ -1965,9 +1935,8 @@ export class AcTrView2d extends AcEdBaseView {
     }
   }
 
-  private async handleGroup(group: AcTrGroup) {
-    await this.ensureGroupDrawableGeometry(group)
-    group.refreshWcsChildBoxesFromChildren()
+  private async handleGroup(group: AcTrGroup, progressive: boolean) {
+    await this.finishEntityGeometry(group, progressive)
 
     const children = group.children
     const objectsGroupByLayer: Map<string, THREE.Object3D[]> = new Map()

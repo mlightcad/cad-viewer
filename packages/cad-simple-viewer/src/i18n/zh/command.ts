@@ -93,6 +93,22 @@ export default {
       description: '临时隐藏所选对象的显示',
       prompt: '选择对象'
     },
+    gripcolor: {
+      description: '设置所选对象上未选中夹点的颜色'
+    },
+    griphot: {
+      description: '设置所选（热）夹点的颜色'
+    },
+    gripobjlimit: {
+      description:
+        '当选择集中的对象数超过指定值时不显示夹点（0 表示无限制）'
+    },
+    grips: {
+      description: '控制是否在所选对象上显示夹点'
+    },
+    gripsize: {
+      description: '设置夹点框的大小（像素）'
+    },
     hatch: {
       description: '用填充图案填充封闭区域或所选对象'
     },

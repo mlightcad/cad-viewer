@@ -43,15 +43,6 @@ class AcApRotateStaticJig<T> extends AcEdPreviewJig<T> {
   }
 
   /**
-   * Gets the first preview entity so the jig can integrate with the editor API.
-   *
-   * @returns First transient preview entity, or `null` when cloning failed.
-   */
-  get entity(): AcDbEntity | null {
-    return this._previewEntities[0] ?? null
-  }
-
-  /**
    * Accepts prompt updates without changing geometry because this preview is static.
    *
    * @param _value - Prompt value supplied by the editor, ignored by this jig.

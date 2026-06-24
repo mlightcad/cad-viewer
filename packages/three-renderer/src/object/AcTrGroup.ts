@@ -43,9 +43,8 @@ export class AcTrGroup extends AcTrEntity {
    * refresh.
    *
    * Consumers such as {@link getSourceEntities},
-   * {@link refreshWcsChildBoxesFromChildren}, and
-   * `AcTrView2d.ensureGroupDrawableGeometry` rely on this list because a
-   * post-flatten {@link THREE.Object3D.traverse} walk cannot recover the
+   * {@link refreshWcsChildBoxesFromChildren}, and {@link syncDraw} rely on this
+   * list because a post-flatten {@link THREE.Object3D.traverse} walk cannot recover the
    * detached entity containers.
    *
    * Entries are deep-cloned in {@link copy} so rendering-cache block instances
@@ -158,7 +157,7 @@ export class AcTrGroup extends AcTrEntity {
    * `AcTrView2d.handleGroup`.
    *
    * This method is intended to run **after** deferred geometry is finished
-   * (see `AcTrView2d.ensureGroupDrawableGeometry`). It:
+   * (see {@link syncDraw}). It:
    *
    * 1. Clears {@link _wcsChildBoxes}
    * 2. Recomputes one WCS axis-aligned box per tracked source entity via
@@ -196,6 +195,37 @@ export class AcTrGroup extends AcTrEntity {
       }
     })
     this.syncWcsBboxFromChildBoxes()
+  }
+
+  /**
+   * Finishes deferred geometry for block-definition entities and attributes,
+   * then refreshes spatial-index bounds.
+   *
+   * Block references may contain MTEXT/SHAPE children whose geometry is skipped
+   * when worldDraw is invoked with `delay=true`. This method walks tracked
+   * source entities (see {@link _sourceEntities}) plus any {@link AcTrEntity}
+   * children still present after {@link flatten}, and invokes {@link syncDraw}
+   * on each entity that has not yet produced drawable children.
+   */
+  override syncDraw(): void {
+    const finalizeDeferredEntity = (child: AcTrEntity) => {
+      if (child.hasDrawableGeometry()) {
+        return
+      }
+      child.syncDraw()
+    }
+
+    this.getSourceEntities().forEach(finalizeDeferredEntity)
+    this.traverse(child => {
+      if (!(child instanceof AcTrEntity)) {
+        return
+      }
+      if (this.getSourceEntities().includes(child)) {
+        return
+      }
+      finalizeDeferredEntity(child)
+    })
+    this.refreshWcsChildBoxesFromChildren()
   }
 
   /**
