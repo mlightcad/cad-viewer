@@ -8,6 +8,10 @@ import {
 import { AcApDocManager } from '../../app'
 import { AcEdMTextEditor } from '../input/ui/AcEdMTextEditor'
 import { AcEdBaseView } from '../view/AcEdBaseView'
+import {
+  isGripAppearanceSysVar,
+  readGripAppearance
+} from './AcEdGripAppearance'
 import { AcEdGripEditSession, AcEdGripEditTarget } from './AcEdGripEditSession'
 import { AcEdGripHandle } from './AcEdGripHandle'
 import { acedShouldShowGrips } from './AcEdGripPolicy'
@@ -34,7 +38,8 @@ interface AcEdGripEntry {
  *
  * Grip handles are shown for entities in the view's selection set when the
  * editor is idle, the document is writable, and selection count is within the
- * `GRIPOBJLIMIT` system variable. The manager listens for selection, view,
+ * `GRIPOBJLIMIT` system variable. Grip size and colours follow `GRIPSIZE`,
+ * `GRIPCOLOR`, and `GRIPHOT`. The manager listens for selection, view,
  * command, and system-variable changes to refresh or reposition handles.
  *
  * Clicking a grip starts an {@link AcEdGripEditSession} that previews and
@@ -67,6 +72,9 @@ export class AcEdGripManager {
   private readonly _boundRefresh = () => this.refresh()
   /** Stable listener reference for view pan/zoom/resize repositioning. */
   private readonly _boundReposition = () => this.repositionAll()
+  /** Stable listener reference for grip-related system variable changes. */
+  private readonly _boundSysVarChanged = (args: { name: string }) =>
+    this.onGripSysVarChanged(args.name)
 
   /**
    * Creates a grip manager bound to the given view.
@@ -120,6 +128,7 @@ export class AcEdGripManager {
 
     const doc = AcApDocManager.instance.curDocument
     const blockTable = doc.database.tables.blockTable
+    const appearance = readGripAppearance(doc.database)
 
     for (const entityId of this._view.selectionSet.ids) {
       const entity = blockTable.getEntityById(entityId)
@@ -128,7 +137,7 @@ export class AcEdGripManager {
       const gripPoints = entity.subGetGripPoints()
       for (let gripIndex = 0; gripIndex < gripPoints.length; ++gripIndex) {
         const wcsPoint = gripPoints[gripIndex]
-        const handle = new AcEdGripHandle(this._view.container)
+        const handle = new AcEdGripHandle(this._view.container, appearance)
         const entry: AcEdGripEntry = {
           entityId,
           gripIndex,
@@ -171,6 +180,7 @@ export class AcEdGripManager {
    *
    * Refresh triggers: selection added/removed, command start/end,
    * `GRIPOBJLIMIT` sysvar change. Reposition triggers: view changed, view resize.
+   * Appearance updates: `GRIPSIZE`, `GRIPCOLOR`, `GRIPHOT` sysvar changes.
    */
   private bindEvents() {
     const { selectionSet, editor, events } = this._view
@@ -182,11 +192,9 @@ export class AcEdGripManager {
     editor.events.commandWillStart.addEventListener(this._boundRefresh)
     editor.events.commandEnded.addEventListener(this._boundRefresh)
 
-    AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
-      if (args.name === AcDbSystemVariables.GRIPOBJLIMIT.toLowerCase()) {
-        this.refresh()
-      }
-    })
+    AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
+      this._boundSysVarChanged
+    )
   }
 
   /**
@@ -201,6 +209,40 @@ export class AcEdGripManager {
     events.viewResize.removeEventListener(this._boundReposition)
     editor.events.commandWillStart.removeEventListener(this._boundRefresh)
     editor.events.commandEnded.removeEventListener(this._boundRefresh)
+
+    AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
+      this._boundSysVarChanged
+    )
+  }
+
+  /**
+   * Reacts to grip-related system variable changes.
+   */
+  private onGripSysVarChanged(name: string) {
+    const normalized = name.toLowerCase()
+    if (normalized === AcDbSystemVariables.GRIPOBJLIMIT.toLowerCase()) {
+      this.refresh()
+      return
+    }
+    if (isGripAppearanceSysVar(normalized)) {
+      this.applyAppearance()
+    }
+  }
+
+  /**
+   * Updates size and colours on existing grip handles from current sysvars.
+   */
+  private applyAppearance() {
+    if (this._entries.length === 0) {
+      return
+    }
+
+    const appearance = readGripAppearance(
+      AcApDocManager.instance.curDocument.database
+    )
+    for (const entry of this._entries) {
+      entry.handle.applyAppearance(appearance)
+    }
   }
 
   /**

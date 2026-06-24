@@ -137,15 +137,6 @@ class AcApOffsetPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
   }
 
   /**
-   * Gets the first preview entity so the jig can satisfy the editor API contract.
-   *
-   * @returns First transient offset curve, or `null` when no preview exists yet.
-   */
-  get entity(): AcDbEntity | null {
-    return this._previewCurves[0] ?? null
-  }
-
-  /**
    * Rebuilds the transient offset curves for the current cursor side.
    *
    * Existing preview entities are removed from the view before new geometry is

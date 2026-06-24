@@ -89,9 +89,6 @@ export class AcApContext {
         return
       }
       this.view.updateEntity(eventArgs.entity)
-      if (view instanceof AcTrView2d) {
-        view.gripManager.refresh()
-      }
     })
 
     // Erase entity

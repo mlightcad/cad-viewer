@@ -85,15 +85,6 @@ class AcApCopyPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
   }
 
   /**
-   * Gets the first preview entity so the jig can satisfy the editor API contract.
-   *
-   * @returns First transient clone, or `null` when nothing could be cloned.
-   */
-  get entity(): AcDbEntity | null {
-    return this._previewItems[0]?.entity ?? null
-  }
-
-  /**
    * Moves each transient clone to its latest preview displacement.
    *
    * The input point is interpreted as the current placement point. Each preview

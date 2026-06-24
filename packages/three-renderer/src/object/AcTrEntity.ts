@@ -326,8 +326,28 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     AcTrEntity.disposeObject(this)
   }
 
-  async draw() {
-    // Do nothing for now
+  /**
+   * Builds drawable geometry asynchronously (for example via a worker).
+   *
+   * Progressive loading uses this path; interactive previews and non-progressive
+   * conversion prefer {@link syncDraw}.
+   */
+  async asyncDraw() {}
+
+  /**
+   * Builds or refreshes drawable geometry synchronously.
+   *
+   * Deferred entity types such as MTEXT and block references override this
+   * method. The default implementation is a no-op for entities whose geometry
+   * is fully produced during worldDraw conversion.
+   */
+  syncDraw(): void {}
+
+  /**
+   * Returns true when drawable child geometry is already attached.
+   */
+  hasDrawableGeometry(): boolean {
+    return this.children.length > 0
   }
 
   /**

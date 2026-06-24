@@ -1,5 +1,7 @@
 import { AcGePoint2dLike } from '@mlightcad/data-model'
 
+import { AcEdGripAppearance } from './AcEdGripAppearance'
+
 /** Visual state of a grip handle. */
 export type AcEdGripHandleState = 'normal' | 'hover' | 'hot'
 
@@ -12,7 +14,7 @@ export class AcEdGripHandle {
 
   constructor(
     private readonly _host: HTMLElement,
-    private readonly _size = 9
+    appearance: AcEdGripAppearance
   ) {
     AcEdGripHandle.injectCSS()
 
@@ -23,8 +25,7 @@ export class AcEdGripHandle {
 
     this._el = document.createElement('div')
     this._el.className = 'ml-grip-handle ml-grip-handle-normal'
-    this._el.style.width = `${this._size}px`
-    this._el.style.height = `${this._size}px`
+    this.applyAppearance(appearance)
     this._host.appendChild(this._el)
   }
 
@@ -47,6 +48,13 @@ export class AcEdGripHandle {
     this._el.style.top = `${pos.y}px`
   }
 
+  applyAppearance(appearance: AcEdGripAppearance) {
+    this._el.style.width = `${appearance.size}px`
+    this._el.style.height = `${appearance.size}px`
+    this._el.style.setProperty('--ml-ui-grip-normal', appearance.colorCss)
+    this._el.style.setProperty('--ml-ui-grip-hot', appearance.hotColorCss)
+  }
+
   destroy() {
     this._el.remove()
   }
@@ -67,17 +75,11 @@ export class AcEdGripHandle {
       }
 
       .ml-grip-handle-normal {
-        border: 1px solid var(--ml-ui-grip-normal, #0080ff);
-        background: transparent;
+        background: var(--ml-ui-grip-normal, #0080ff);
       }
 
-      .ml-grip-handle-hover {
-        border: 1px solid var(--ml-ui-grip-hover, #0080ff);
-        background: color-mix(in srgb, var(--ml-ui-grip-hover, #0080ff) 25%, transparent);
-      }
-
+      .ml-grip-handle-hover,
       .ml-grip-handle-hot {
-        border: 1px solid var(--ml-ui-grip-hot, #ff0000);
         background: var(--ml-ui-grip-hot, #ff0000);
       }
     `

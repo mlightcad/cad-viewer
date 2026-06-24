@@ -69,7 +69,9 @@ export abstract class AcEdPreviewJig<T> {
    *
    * @param ent The preview entity to display.
    */
-  abstract get entity(): AcDbEntity | null
+  get entity(): AcDbEntity | null {
+    return null
+  }
 
   /**
    * Update the preview entity based on incremental input.

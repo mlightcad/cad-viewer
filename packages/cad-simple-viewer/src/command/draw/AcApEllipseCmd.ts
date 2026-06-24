@@ -116,14 +116,16 @@ function buildEllipseDefinition(
     return undefined
   }
 
+  const normalizedAngles = normalizeFullEllipseAngles(startAngle, endAngle)
+
   if (firstAxisRadius >= secondAxisRadius) {
     return {
       center: { x: center.x, y: center.y, z: 0 },
       majorAxis: firstAxisUnit,
       majorRadius: firstAxisRadius,
       minorRadius: secondAxisRadius,
-      startAngle,
-      endAngle
+      startAngle: normalizedAngles.startAngle,
+      endAngle: normalizedAngles.endAngle
     }
   }
 
@@ -132,9 +134,20 @@ function buildEllipseDefinition(
     majorAxis: perpendicular2d(firstAxisUnit),
     majorRadius: secondAxisRadius,
     minorRadius: firstAxisRadius,
-    startAngle,
-    endAngle
+    startAngle: normalizedAngles.startAngle,
+    endAngle: normalizedAngles.endAngle
   }
+}
+
+function normalizeFullEllipseAngles(startAngle: number, endAngle: number) {
+  const span = Math.abs(endAngle - startAngle)
+  if (
+    Math.abs(span - TAU) < 1e-10 ||
+    Math.abs(span - 2 * TAU) < 1e-10
+  ) {
+    return { startAngle: 0, endAngle: 0 }
+  }
+  return { startAngle, endAngle }
 }
 
 function createFallbackEllipse(point: AcGePoint3dLike) {

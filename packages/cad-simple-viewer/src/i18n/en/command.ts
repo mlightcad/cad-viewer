@@ -101,6 +101,23 @@ export default {
       description: 'Temporarily suppresses the display of selected objects',
       prompt: 'Select objects'
     },
+    gripcolor: {
+      description:
+        'Sets the color of unselected grips displayed on selected objects'
+    },
+    griphot: {
+      description: 'Sets the color of selected (hot) grips'
+    },
+    gripobjlimit: {
+      description:
+        'Suppresses grip display when the selection set exceeds the specified number of objects (0 = no limit)'
+    },
+    grips: {
+      description: 'Controls whether grips are displayed on selected objects'
+    },
+    gripsize: {
+      description: 'Sets the size of grip boxes in pixels'
+    },
     hatch: {
       description:
         'Fills an enclosed area or selected objects with a hatch pattern'

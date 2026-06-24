@@ -97,7 +97,7 @@ export class AcTrMText extends AcTrEntity {
     }
   }
 
-  async syncDraw() {
+  override syncDraw(): void {
     const mtextRenderer = AcTrMTextRenderer.getInstance()
     if (!mtextRenderer) return
 
@@ -119,7 +119,7 @@ export class AcTrMText extends AcTrEntity {
     }
   }
 
-  async draw() {
+  override async asyncDraw() {
     const mtextRenderer = AcTrMTextRenderer.getInstance()
     if (!mtextRenderer) return
 

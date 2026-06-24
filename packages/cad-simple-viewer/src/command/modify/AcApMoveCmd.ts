@@ -48,10 +48,6 @@ class AcApMovePreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
       .filter((entity): entity is AcDbEntity => !!entity)
   }
 
-  get entity(): AcDbEntity | null {
-    return this._previewEntities[0] ?? null
-  }
-
   update(point: AcGePoint3dLike) {
     if (this._previewEntities.length === 0) return
 
