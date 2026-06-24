@@ -9,6 +9,7 @@ import {
 import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdBaseView,
+  AcEdBatchedPreview,
   AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
@@ -26,7 +27,8 @@ import { AcApI18n } from '../../i18n'
  */
 class AcApRotateStaticJig<T> extends AcEdPreviewJig<T> {
   private _view: AcEdBaseView
-  private _previewEntities: AcDbEntity[]
+  private _batchPreview: AcEdBatchedPreview
+  private _previewEntities: AcDbEntity[] = []
 
   /**
    * Creates a static transient preview for prompts that do not modify geometry.
@@ -37,9 +39,15 @@ class AcApRotateStaticJig<T> extends AcEdPreviewJig<T> {
   constructor(view: AcEdBaseView, sourceEntities: AcDbEntity[]) {
     super(view)
     this._view = view
-    this._previewEntities = sourceEntities
-      .map(entity => entity.clone())
-      .filter((entity): entity is AcDbEntity => !!entity)
+    this._batchPreview = new AcEdBatchedPreview(
+      view,
+      sourceEntities.map(entity => entity.objectId)
+    )
+    if (!this._batchPreview.useBatchPreview) {
+      this._previewEntities = sourceEntities
+        .map(entity => entity.clone())
+        .filter((entity): entity is AcDbEntity => !!entity)
+    }
   }
 
   /**
@@ -55,6 +63,7 @@ class AcApRotateStaticJig<T> extends AcEdPreviewJig<T> {
    * Adds the cloned entities to the view as transient preview graphics.
    */
   override render(): void {
+    if (this._batchPreview.useBatchPreview) return
     if (this._previewEntities.length === 0) return
     this._view.addTransientEntity(this._previewEntities)
   }
@@ -63,6 +72,7 @@ class AcApRotateStaticJig<T> extends AcEdPreviewJig<T> {
    * Removes every transient preview entity from the view.
    */
   override end(): void {
+    this._batchPreview.dispose(this._view)
     this._previewEntities.forEach(entity =>
       this._view.removeTransientEntity(entity.objectId)
     )
@@ -72,14 +82,14 @@ class AcApRotateStaticJig<T> extends AcEdPreviewJig<T> {
 /**
  * ROTATE preview jig.
  *
- * It clones source entities once and applies only the incremental delta angle
- * to those clones as the cursor moves, so database entities remain unchanged
- * until command commit.
+ * Large selections reuse GPU-resident batched geometry. Smaller selections keep
+ * the legacy transient clone path with incremental rotation updates.
  */
 class AcApRotatePreviewJig extends AcEdPreviewJig<number> {
   private _view: AcEdBaseView
   private _basePoint: AcGePoint3d
-  private _previewEntities: AcDbEntity[]
+  private _batchPreview: AcEdBatchedPreview
+  private _previewEntities: AcDbEntity[] = []
   private _lastAngleRad: number = 0
   private _referenceAngleDeg: number
 
@@ -101,9 +111,15 @@ class AcApRotatePreviewJig extends AcEdPreviewJig<number> {
     this._view = view
     this._basePoint = new AcGePoint3d(basePoint)
     this._referenceAngleDeg = referenceAngleDeg
-    this._previewEntities = sourceEntities
-      .map(entity => entity.clone())
-      .filter((entity): entity is AcDbEntity => !!entity)
+    this._batchPreview = new AcEdBatchedPreview(
+      view,
+      sourceEntities.map(entity => entity.objectId)
+    )
+    if (!this._batchPreview.useBatchPreview) {
+      this._previewEntities = sourceEntities
+        .map(entity => entity.clone())
+        .filter((entity): entity is AcDbEntity => !!entity)
+    }
   }
 
   /**
@@ -116,14 +132,23 @@ class AcApRotatePreviewJig extends AcEdPreviewJig<number> {
   }
 
   /**
-   * Applies only the incremental rotation delta to preview clones.
+   * Applies rotation to the preview overlay or transient clone set.
    *
    * @param angleDeg - Current angle input in degrees from the editor prompt.
    */
   update(angleDeg: number) {
+    const angleRad = ((angleDeg - this._referenceAngleDeg) * Math.PI) / 180
+
+    if (this._batchPreview.useBatchPreview) {
+      if (AcGeTol.equalToZero(angleRad - this._lastAngleRad)) return
+      const matrix = AcApRotateCmd.createRotationMatrix(this._basePoint, angleRad)
+      this._batchPreview.updateMatrix(this._view, matrix)
+      this._lastAngleRad = angleRad
+      return
+    }
+
     if (this._previewEntities.length === 0) return
 
-    const angleRad = ((angleDeg - this._referenceAngleDeg) * Math.PI) / 180
     const deltaRad = angleRad - this._lastAngleRad
     if (AcGeTol.equalToZero(deltaRad)) return
 
@@ -136,6 +161,13 @@ class AcApRotatePreviewJig extends AcEdPreviewJig<number> {
    * Adds rotated preview clones to the view as transient geometry.
    */
   override render(): void {
+    if (this._batchPreview.useBatchPreview) {
+      this._batchPreview.updateMatrix(
+        this._view,
+        AcApRotateCmd.createRotationMatrix(this._basePoint, this._lastAngleRad)
+      )
+      return
+    }
     if (this._previewEntities.length === 0) return
     this._view.addTransientEntity(this._previewEntities)
   }
@@ -144,6 +176,7 @@ class AcApRotatePreviewJig extends AcEdPreviewJig<number> {
    * Removes transient preview clones from the view.
    */
   override end(): void {
+    this._batchPreview.dispose(this._view)
     this._previewEntities.forEach(entity =>
       this._view.removeTransientEntity(entity.objectId)
     )

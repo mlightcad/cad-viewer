@@ -8,6 +8,7 @@ import {
 import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdBaseView,
+  AcEdBatchedPreview,
   AcEdCommand,
   AcEdOpenMode,
   AcEdPreviewJig,
@@ -24,14 +25,14 @@ import { AcApI18n } from '../../i18n'
 /**
  * MOVE preview jig.
  *
- * It clones source entities once in memory and updates those clones by
- * incremental translations during mouse move, so the database entities are
- * untouched until command commit.
+ * Large selections reuse GPU-resident batched geometry and update one preview
+ * transform per frame. Smaller selections keep the legacy transient clone path.
  */
 class AcApMovePreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _view: AcEdBaseView
   private _basePoint: AcGePoint3d
-  private _previewEntities: AcDbEntity[]
+  private _batchPreview: AcEdBatchedPreview
+  private _previewEntities: AcDbEntity[] = []
   private _lastDisplacement: AcGePoint3d
 
   constructor(
@@ -43,19 +44,37 @@ class AcApMovePreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._view = view
     this._basePoint = new AcGePoint3d(basePoint)
     this._lastDisplacement = new AcGePoint3d(0, 0, 0)
-    this._previewEntities = sourceEntities
-      .map(entity => this.cloneEntity(entity))
-      .filter((entity): entity is AcDbEntity => !!entity)
+    this._batchPreview = new AcEdBatchedPreview(
+      view,
+      sourceEntities.map(entity => entity.objectId)
+    )
+    if (!this._batchPreview.useBatchPreview) {
+      this._previewEntities = sourceEntities
+        .map(entity => entity.clone())
+        .filter((entity): entity is AcDbEntity => !!entity)
+    }
   }
 
   update(point: AcGePoint3dLike) {
-    if (this._previewEntities.length === 0) return
-
     const displacement = new AcGePoint3d(
       point.x - this._basePoint.x,
       point.y - this._basePoint.y,
       point.z - this._basePoint.z
     )
+
+    if (this._batchPreview.useBatchPreview) {
+      const matrix = new AcGeMatrix3d().makeTranslation(
+        displacement.x,
+        displacement.y,
+        displacement.z
+      )
+      this._batchPreview.updateMatrix(this._view, matrix)
+      this._lastDisplacement = displacement
+      return
+    }
+
+    if (this._previewEntities.length === 0) return
+
     const delta = new AcGePoint3d(
       displacement.x - this._lastDisplacement.x,
       displacement.y - this._lastDisplacement.y,
@@ -70,18 +89,26 @@ class AcApMovePreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
   }
 
   override render(): void {
+    if (this._batchPreview.useBatchPreview) {
+      this._batchPreview.updateMatrix(
+        this._view,
+        new AcGeMatrix3d().makeTranslation(
+          this._lastDisplacement.x,
+          this._lastDisplacement.y,
+          this._lastDisplacement.z
+        )
+      )
+      return
+    }
     if (this._previewEntities.length === 0) return
     this._view.addTransientEntity(this._previewEntities)
   }
 
   override end(): void {
+    this._batchPreview.dispose(this._view)
     this._previewEntities.forEach(entity =>
       this._view.removeTransientEntity(entity.objectId)
     )
-  }
-
-  private cloneEntity(entity: AcDbEntity) {
-    return entity.clone()
   }
 }
 
@@ -269,11 +296,11 @@ export class AcApMoveCmd extends AcEdCommand {
       displacement.y,
       displacement.z
     )
-    ids.forEach(id => {
-      const entity = context.doc.database.openEntityForWrite(id)
-      if (!entity) return
-      entity.transformBy(matrix)
-      entity.triggerModifiedEvent()
+    sourceEntities.forEach(entity => {
+      const opened = context.doc.database.openEntityForWrite(entity)
+      if (!opened) return
+      opened.transformBy(matrix)
+      opened.triggerModifiedEvent()
     })
     selectionSet.clear()
   }

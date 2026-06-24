@@ -2,7 +2,8 @@ import { AcDbObjectId } from '@mlightcad/data-model'
 import {
   AcTrBatchedGroup,
   AcTrBatchedGroupStats,
-  AcTrEntity
+  AcTrEntity,
+  AcTrPreviewSubsetOptions
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
@@ -224,6 +225,17 @@ export class AcTrLayer {
    */
   getEntityVisible(objectId: AcDbObjectId) {
     return this._group.getEntityVisible(objectId)
+  }
+
+  /**
+   * Builds a preview subset for entities stored in this layer group.
+   *
+   * @param entityIds - Database object ids to extract from this layer
+   * @param options - Optional preview style and slot limits
+   * @returns Preview subset group, or `null` when extraction failed
+   */
+  createPreviewSubset(entityIds: AcDbObjectId[], options?: AcTrPreviewSubsetOptions) {
+    return this._group.createPreviewSubset(entityIds, options)
   }
 
   /**

@@ -15,6 +15,7 @@ import {
   AcDbXline,
   AcGeBox2d,
   AcGeBox3d,
+  AcGeMatrix3d,
   AcGePoint2d,
   AcGePoint2dLike,
   AcGiSubEntityTraits,
@@ -31,6 +32,7 @@ import {
   hasByLayerBinding,
   setMaterialMetadata
 } from '@mlightcad/three-renderer'
+import { AcTrMatrixUtil } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
@@ -1204,6 +1206,47 @@ export class AcTrView2d extends AcEdBaseView {
   removeTransientEntity(objectId: AcDbObjectId) {
     this._scene.removeTransientEntity(objectId)
     this._isDirty = true
+  }
+
+  /**
+   * @inheritdoc
+   */
+  canCreateEntityPreview(entityIds: AcDbObjectId[]): boolean {
+    return this._scene.canCreatePreview(entityIds)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  createEntityPreview(entityIds: AcDbObjectId[]): string | null {
+    const handleId = this._scene.createPreview(entityIds)
+    if (handleId) {
+      this._isDirty = true
+    }
+    return handleId
+  }
+
+  /**
+   * @inheritdoc
+   */
+  updateEntityPreview(handleId: string, matrix: AcGeMatrix3d): void {
+    if (
+      this._scene.updatePreview(
+        handleId,
+        AcTrMatrixUtil.createMatrix4(matrix)
+      )
+    ) {
+      this._isDirty = true
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  removeEntityPreview(handleId: string): void {
+    if (this._scene.removePreview(handleId)) {
+      this._isDirty = true
+    }
   }
 
   /**

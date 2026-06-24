@@ -1,5 +1,9 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
-import { AcTrEntity, AcTrGroup } from '@mlightcad/three-renderer'
+import {
+  AcTrEntity,
+  AcTrGroup,
+  disposePreviewSubset
+} from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
 import { AcEdLayerInfo, AcEdSpatialQueryResultItem } from '../editor'
@@ -416,6 +420,61 @@ export class AcTrLayout {
       }
     }
     return undefined
+  }
+
+  /**
+   * Returns true when every requested entity is present in this layout.
+   *
+   * @param entityIds - Database object ids required for preview creation
+   */
+  canCreateEntityPreview(entityIds: AcDbObjectId[]): boolean {
+    if (entityIds.length === 0) {
+      return false
+    }
+    return entityIds.every(id => this.hasEntity(id))
+  }
+
+  /**
+   * Builds one preview root group by extracting GPU-resident geometry from layer batches.
+   *
+   * @param entityIds - Database object ids to include in the preview overlay
+   * @returns Preview root group, or `null` when any entity could not be extracted
+   */
+  createEntityPreviewRoot(entityIds: AcDbObjectId[]): THREE.Group | null {
+    const idsByLayer = new Map<AcTrLayer, AcDbObjectId[]>()
+
+    for (const id of entityIds) {
+      const layers = this.getLayersByObjectId(id)
+      if (layers.length === 0) {
+        return null
+      }
+      for (const layer of layers) {
+        let layerIds = idsByLayer.get(layer)
+        if (!layerIds) {
+          layerIds = []
+          idsByLayer.set(layer, layerIds)
+        }
+        if (!layerIds.includes(id)) {
+          layerIds.push(id)
+        }
+      }
+    }
+
+    const previewRoot = new THREE.Group()
+    previewRoot.name = 'EntityPreviewRoot'
+    for (const [layer, ids] of idsByLayer) {
+      const subset = layer.createPreviewSubset(ids)
+      if (!subset) {
+        disposePreviewSubset(previewRoot)
+        return null
+      }
+      previewRoot.add(subset)
+    }
+
+    if (previewRoot.children.length === 0) {
+      return null
+    }
+    return previewRoot
   }
 
   /**
