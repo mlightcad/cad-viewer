@@ -20,6 +20,9 @@ function createMockView(options: {
     canCreateEntityPreview: jest.fn(() => options.canCreate ?? true),
     createEntityPreview: jest.fn((entityIds: string[]) => {
       createdIds.push(entityIds)
+      if (entityIds.length === 0) {
+        return null
+      }
       if (options.handleId === null) {
         return null
       }
@@ -33,7 +36,8 @@ function createMockView(options: {
     }),
     removeEntityPreview: jest.fn((handleId: string) => {
       removedIds.push(handleId)
-    })
+    }),
+    updateTransientPreviewTransforms: jest.fn()
   } as unknown as AcEdBaseView
 
   return { view, createdIds, updatedMatrices, removedIds }
@@ -59,7 +63,7 @@ describe('AcEdBatchedPreview', () => {
   })
 
   it('falls back when selection is empty', () => {
-    const { view, createdIds } = createMockView({ canCreate: false })
+    const { view, createdIds } = createMockView({})
     const preview = new AcEdBatchedPreview(view, [])
     expect(preview.useBatchPreview).toBe(false)
     expect(createdIds).toHaveLength(0)

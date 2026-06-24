@@ -7,11 +7,8 @@ import {
 
 import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdBaseView,
-  AcEdBatchedPreview,
   AcEdCommand,
   AcEdOpenMode,
-  AcEdPreviewJig,
   AcEdPromptIntegerOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
@@ -20,133 +17,14 @@ import {
   scaleCopyDisplacement
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { AcApCopyPreviewJig } from './AcApCopyPreviewJig'
 
 type CopyMode = 'Single' | 'Multiple'
-
-interface CopyPreviewItem {
-  entity: AcDbEntity
-  factor: number
-  lastDisplacement: AcGePoint3d
-}
 
 interface CopyArrayPlacement {
   copyCount: number
   endPoint: AcGePoint3d
   fitMode: boolean
-}
-
-/**
- * COPY preview jig.
- *
- * Reuses GPU-resident batched geometry when possible. Array previews create one
- * overlay per copy placement, each with its own translation matrix. Legacy
- * transient clones are used when batch preview creation fails.
- */
-class AcApCopyPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private _view: AcEdBaseView
-  private _basePoint: AcGePoint3d
-  private _copyCount: number
-  private _fitMode: boolean
-  private _batchPreviews: AcEdBatchedPreview
-  private _previewItems: CopyPreviewItem[] = []
-  private _lastDisplacement: AcGePoint3d
-
-  constructor(
-    view: AcEdBaseView,
-    sourceEntities: AcDbEntity[],
-    basePoint: AcGePoint3dLike,
-    copyCount: number = 1,
-    fitMode: boolean = false
-  ) {
-    super(view)
-    this._view = view
-    this._basePoint = new AcGePoint3d(basePoint)
-    this._copyCount = Math.max(0, copyCount)
-    this._fitMode = fitMode
-    this._lastDisplacement = new AcGePoint3d(0, 0, 0)
-    const entityIds = sourceEntities.map(entity => entity.objectId)
-    this._batchPreviews = new AcEdBatchedPreview(
-      view,
-      entityIds,
-      this._copyCount
-    )
-
-    if (!this._batchPreviews.useBatchPreview) {
-      this._previewItems = []
-      for (let factor = 1; factor <= this._copyCount; factor++) {
-        sourceEntities
-          .map(entity => entity.clone())
-          .filter((entity): entity is AcDbEntity => !!entity)
-          .forEach(entity => {
-            this._previewItems.push({
-              entity,
-              factor,
-              lastDisplacement: new AcGePoint3d(0, 0, 0)
-            })
-          })
-      }
-    }
-  }
-
-  update(point: AcGePoint3dLike) {
-    const displacement = new AcGePoint3d(
-      point.x - this._basePoint.x,
-      point.y - this._basePoint.y,
-      point.z - this._basePoint.z
-    )
-
-    if (this._batchPreviews.useBatchPreview) {
-      this._batchPreviews.updatePlacements(
-        this._view,
-        displacement,
-        this._fitMode
-      )
-      this._lastDisplacement = displacement
-      return
-    }
-
-    if (this._previewItems.length === 0) return
-
-    this._previewItems.forEach(item => {
-      const desired = scaleCopyDisplacement(
-        displacement,
-        item.factor,
-        this._copyCount,
-        this._fitMode
-      )
-      const delta = new AcGePoint3d(
-        desired.x - item.lastDisplacement.x,
-        desired.y - item.lastDisplacement.y,
-        desired.z - item.lastDisplacement.z
-      )
-      if (delta.x === 0 && delta.y === 0 && delta.z === 0) return
-
-      item.entity.transformBy(
-        new AcGeMatrix3d().makeTranslation(delta.x, delta.y, delta.z)
-      )
-      item.lastDisplacement = desired
-    })
-  }
-
-  override render(): void {
-    if (this._batchPreviews.useBatchPreview) {
-      this._batchPreviews.updatePlacements(
-        this._view,
-        this._lastDisplacement,
-        this._fitMode
-      )
-      return
-    }
-    if (this._previewItems.length === 0) return
-    this._view.addTransientEntity(this._previewItems.map(item => item.entity))
-  }
-
-  override end(): void {
-    this._batchPreviews.dispose(this._view)
-    this._previewItems.forEach(item =>
-      this._view.removeTransientEntity(item.entity.objectId)
-    )
-  }
 }
 
 /**

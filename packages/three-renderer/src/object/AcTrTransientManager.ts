@@ -81,6 +81,30 @@ export class AcTrTransientManager {
   }
 
   /**
+   * Applies world transforms to existing transient entities without reconverting
+   * them or replacing GPU resources.
+   */
+  applyTransforms(
+    transforms: ReadonlyArray<{ id: string; matrix: THREE.Matrix4 }>
+  ): boolean {
+    let updated = false
+    for (const { id, matrix } of transforms) {
+      const ent = this.entities.get(id)
+      if (!ent) {
+        continue
+      }
+      if (ent.matrix.equals(matrix)) {
+        continue
+      }
+      ent.matrix.copy(matrix)
+      ent.matrixAutoUpdate = false
+      ent.updateMatrixWorld(true)
+      updated = true
+    }
+    return updated
+  }
+
+  /**
    * Retrieve a transient entity by ID.
    */
   get(id: string): AcTrEntity | undefined {

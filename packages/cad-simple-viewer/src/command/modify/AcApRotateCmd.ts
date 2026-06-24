@@ -1,6 +1,5 @@
 import {
   AcDbEntity,
-  AcGeMatrix3d,
   AcGePoint3d,
   AcGePoint3dLike,
   AcGeTol
@@ -8,180 +7,19 @@ import {
 
 import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdBaseView,
-  AcEdBatchedPreview,
   AcEdCommand,
   AcEdOpenMode,
-  AcEdPreviewJig,
   AcEdPromptAngleOptions,
   AcEdPromptPointOptions,
   AcEdPromptSelectionOptions,
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-
-/**
- * Static preview jig used while ROTATE asks for supporting inputs such as
- * reference points. It keeps cloned source entities visible without mutating
- * database entities.
- */
-class AcApRotateStaticJig<T> extends AcEdPreviewJig<T> {
-  private _view: AcEdBaseView
-  private _batchPreview: AcEdBatchedPreview
-  private _previewEntities: AcDbEntity[] = []
-
-  /**
-   * Creates a static transient preview for prompts that do not modify geometry.
-   *
-   * @param view - Active editor view that renders transient entities.
-   * @param sourceEntities - Original entities cloned for preview display.
-   */
-  constructor(view: AcEdBaseView, sourceEntities: AcDbEntity[]) {
-    super(view)
-    this._view = view
-    this._batchPreview = new AcEdBatchedPreview(
-      view,
-      sourceEntities.map(entity => entity.objectId)
-    )
-    if (!this._batchPreview.useBatchPreview) {
-      this._previewEntities = sourceEntities
-        .map(entity => entity.clone())
-        .filter((entity): entity is AcDbEntity => !!entity)
-    }
-  }
-
-  /**
-   * Accepts prompt updates without changing geometry because this preview is static.
-   *
-   * @param _value - Prompt value supplied by the editor, ignored by this jig.
-   */
-  update(_value: T) {
-    // Static preview only.
-  }
-
-  /**
-   * Adds the cloned entities to the view as transient preview graphics.
-   */
-  override render(): void {
-    if (this._batchPreview.useBatchPreview) return
-    if (this._previewEntities.length === 0) return
-    this._view.addTransientEntity(this._previewEntities)
-  }
-
-  /**
-   * Removes every transient preview entity from the view.
-   */
-  override end(): void {
-    this._batchPreview.dispose(this._view)
-    this._previewEntities.forEach(entity =>
-      this._view.removeTransientEntity(entity.objectId)
-    )
-  }
-}
-
-/**
- * ROTATE preview jig.
- *
- * Large selections reuse GPU-resident batched geometry. Smaller selections keep
- * the legacy transient clone path with incremental rotation updates.
- */
-class AcApRotatePreviewJig extends AcEdPreviewJig<number> {
-  private _view: AcEdBaseView
-  private _basePoint: AcGePoint3d
-  private _batchPreview: AcEdBatchedPreview
-  private _previewEntities: AcDbEntity[] = []
-  private _lastAngleRad: number = 0
-  private _referenceAngleDeg: number
-
-  /**
-   * Creates a dynamic ROTATE preview jig.
-   *
-   * @param view - Active editor view that renders transient entities.
-   * @param sourceEntities - Original entities cloned for preview display.
-   * @param basePoint - Rotation base point.
-   * @param referenceAngleDeg - Reference angle in degrees used for reference-based rotation prompts.
-   */
-  constructor(
-    view: AcEdBaseView,
-    sourceEntities: AcDbEntity[],
-    basePoint: AcGePoint3dLike,
-    referenceAngleDeg: number = 0
-  ) {
-    super(view)
-    this._view = view
-    this._basePoint = new AcGePoint3d(basePoint)
-    this._referenceAngleDeg = referenceAngleDeg
-    this._batchPreview = new AcEdBatchedPreview(
-      view,
-      sourceEntities.map(entity => entity.objectId)
-    )
-    if (!this._batchPreview.useBatchPreview) {
-      this._previewEntities = sourceEntities
-        .map(entity => entity.clone())
-        .filter((entity): entity is AcDbEntity => !!entity)
-    }
-  }
-
-  /**
-   * Gets the first transient preview entity required by the jig API.
-   *
-   * @returns First preview entity, or `null` when cloning failed.
-   */
-  get entity(): AcDbEntity | null {
-    return this._previewEntities[0] ?? null
-  }
-
-  /**
-   * Applies rotation to the preview overlay or transient clone set.
-   *
-   * @param angleDeg - Current angle input in degrees from the editor prompt.
-   */
-  update(angleDeg: number) {
-    const angleRad = ((angleDeg - this._referenceAngleDeg) * Math.PI) / 180
-
-    if (this._batchPreview.useBatchPreview) {
-      if (AcGeTol.equalToZero(angleRad - this._lastAngleRad)) return
-      const matrix = AcApRotateCmd.createRotationMatrix(this._basePoint, angleRad)
-      this._batchPreview.updateMatrix(this._view, matrix)
-      this._lastAngleRad = angleRad
-      return
-    }
-
-    if (this._previewEntities.length === 0) return
-
-    const deltaRad = angleRad - this._lastAngleRad
-    if (AcGeTol.equalToZero(deltaRad)) return
-
-    const matrix = AcApRotateCmd.createRotationMatrix(this._basePoint, deltaRad)
-    this._previewEntities.forEach(entity => entity.transformBy(matrix))
-    this._lastAngleRad = angleRad
-  }
-
-  /**
-   * Adds rotated preview clones to the view as transient geometry.
-   */
-  override render(): void {
-    if (this._batchPreview.useBatchPreview) {
-      this._batchPreview.updateMatrix(
-        this._view,
-        AcApRotateCmd.createRotationMatrix(this._basePoint, this._lastAngleRad)
-      )
-      return
-    }
-    if (this._previewEntities.length === 0) return
-    this._view.addTransientEntity(this._previewEntities)
-  }
-
-  /**
-   * Removes transient preview clones from the view.
-   */
-  override end(): void {
-    this._batchPreview.dispose(this._view)
-    this._previewEntities.forEach(entity =>
-      this._view.removeTransientEntity(entity.objectId)
-    )
-  }
-}
+import {
+  AcApRotatePreviewJig,
+  AcApRotateStaticJig,
+  createRotationMatrix
+} from './AcApRotatePreviewJig'
 
 /**
  * Command to rotate selected entities around a base point.
@@ -208,18 +46,7 @@ export class AcApRotateCmd extends AcEdCommand {
    * @param angleRad - Rotation angle in radians.
    * @returns Composite transform that rotates around `basePoint`.
    */
-  static createRotationMatrix(basePoint: AcGePoint3dLike, angleRad: number) {
-    return new AcGeMatrix3d()
-      .makeTranslation(basePoint.x, basePoint.y, basePoint.z)
-      .multiply(new AcGeMatrix3d().makeRotationZ(angleRad))
-      .multiply(
-        new AcGeMatrix3d().makeTranslation(
-          -basePoint.x,
-          -basePoint.y,
-          -basePoint.z
-        )
-      )
-  }
+  static createRotationMatrix = createRotationMatrix
 
   /**
    * Adds one localized ROTATE keyword to an angle prompt.
@@ -494,7 +321,7 @@ export class AcApRotateCmd extends AcEdCommand {
       return
     }
 
-    const matrix = AcApRotateCmd.createRotationMatrix(
+    const matrix = createRotationMatrix(
       basePoint,
       rotation.angleRad
     )

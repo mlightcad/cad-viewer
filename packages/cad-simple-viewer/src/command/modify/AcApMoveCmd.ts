@@ -1,17 +1,13 @@
 import {
   AcDbEntity,
   AcGeMatrix3d,
-  AcGePoint3d,
-  AcGePoint3dLike
+  AcGePoint3d
 } from '@mlightcad/data-model'
 
 import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdBaseView,
-  AcEdBatchedPreview,
   AcEdCommand,
   AcEdOpenMode,
-  AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptPointResult,
   AcEdPromptSelectionOptions,
@@ -21,96 +17,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-
-/**
- * MOVE preview jig.
- *
- * Large selections reuse GPU-resident batched geometry and update one preview
- * transform per frame. Smaller selections keep the legacy transient clone path.
- */
-class AcApMovePreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private _view: AcEdBaseView
-  private _basePoint: AcGePoint3d
-  private _batchPreview: AcEdBatchedPreview
-  private _previewEntities: AcDbEntity[] = []
-  private _lastDisplacement: AcGePoint3d
-
-  constructor(
-    view: AcEdBaseView,
-    sourceEntities: AcDbEntity[],
-    basePoint: AcGePoint3dLike
-  ) {
-    super(view)
-    this._view = view
-    this._basePoint = new AcGePoint3d(basePoint)
-    this._lastDisplacement = new AcGePoint3d(0, 0, 0)
-    this._batchPreview = new AcEdBatchedPreview(
-      view,
-      sourceEntities.map(entity => entity.objectId)
-    )
-    if (!this._batchPreview.useBatchPreview) {
-      this._previewEntities = sourceEntities
-        .map(entity => entity.clone())
-        .filter((entity): entity is AcDbEntity => !!entity)
-    }
-  }
-
-  update(point: AcGePoint3dLike) {
-    const displacement = new AcGePoint3d(
-      point.x - this._basePoint.x,
-      point.y - this._basePoint.y,
-      point.z - this._basePoint.z
-    )
-
-    if (this._batchPreview.useBatchPreview) {
-      const matrix = new AcGeMatrix3d().makeTranslation(
-        displacement.x,
-        displacement.y,
-        displacement.z
-      )
-      this._batchPreview.updateMatrix(this._view, matrix)
-      this._lastDisplacement = displacement
-      return
-    }
-
-    if (this._previewEntities.length === 0) return
-
-    const delta = new AcGePoint3d(
-      displacement.x - this._lastDisplacement.x,
-      displacement.y - this._lastDisplacement.y,
-      displacement.z - this._lastDisplacement.z
-    )
-    const hasDelta = delta.x !== 0 || delta.y !== 0 || delta.z !== 0
-    if (!hasDelta) return
-
-    const matrix = new AcGeMatrix3d().makeTranslation(delta.x, delta.y, delta.z)
-    this._previewEntities.forEach(entity => entity.transformBy(matrix))
-    this._lastDisplacement = displacement
-  }
-
-  override render(): void {
-    if (this._batchPreview.useBatchPreview) {
-      this._batchPreview.updateMatrix(
-        this._view,
-        new AcGeMatrix3d().makeTranslation(
-          this._lastDisplacement.x,
-          this._lastDisplacement.y,
-          this._lastDisplacement.z
-        )
-      )
-      return
-    }
-    if (this._previewEntities.length === 0) return
-    this._view.addTransientEntity(this._previewEntities)
-  }
-
-  override end(): void {
-    this._batchPreview.dispose(this._view)
-    this._previewEntities.forEach(entity =>
-      this._view.removeTransientEntity(entity.objectId)
-    )
-  }
-}
+import { AcApMovePreviewJig } from './AcApMovePreviewJig'
 
 /**
  * Command to move selected entities by a displacement vector.

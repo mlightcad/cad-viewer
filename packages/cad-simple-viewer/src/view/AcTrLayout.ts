@@ -431,7 +431,12 @@ export class AcTrLayout {
     if (entityIds.length === 0) {
       return false
     }
-    return entityIds.every(id => this.hasEntity(id))
+    const root = this.createEntityPreviewRoot(entityIds)
+    if (!root) {
+      return false
+    }
+    disposePreviewSubset(root)
+    return true
   }
 
   /**
