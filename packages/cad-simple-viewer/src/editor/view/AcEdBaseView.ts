@@ -596,6 +596,17 @@ export abstract class AcEdBaseView {
   abstract removeEntityPreview(handleId: string): void
 
   /**
+   * Updates world transforms on existing transient preview entities without
+   * reconverting database entities on every cursor move.
+   */
+  abstract updateTransientPreviewTransforms(
+    transforms: ReadonlyArray<{
+      objectId: AcDbObjectId
+      matrix: AcGeMatrix3d
+    }>
+  ): void
+
+  /**
    * Add the specified entity or entities in drawing database into the current scene
    * and draw it or them
    * @param entity Input one or multiple entities to add into the current scene

@@ -1252,6 +1252,27 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
+  updateTransientPreviewTransforms(
+    transforms: ReadonlyArray<{
+      objectId: AcDbObjectId
+      matrix: AcGeMatrix3d
+    }>
+  ): void {
+    if (
+      this._scene.updateTransientPreviewTransforms(
+        transforms.map(entry => ({
+          objectId: entry.objectId,
+          matrix: AcTrMatrixUtil.createMatrix4(entry.matrix)
+        }))
+      )
+    ) {
+      this._isDirty = true
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
   addEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
     this._numOfEntitiesToProcess += entities.length

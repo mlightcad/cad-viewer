@@ -404,6 +404,21 @@ export class AcTrScene {
   }
 
   /**
+   * Applies world transforms to existing transient entities without reconverting
+   * database entities on every cursor move.
+   */
+  updateTransientPreviewTransforms(
+    transforms: ReadonlyArray<{ objectId: AcDbObjectId; matrix: THREE.Matrix4 }>
+  ): boolean {
+    return this._transientManager.applyTransforms(
+      transforms.map(entry => ({
+        id: entry.objectId,
+        matrix: entry.matrix
+      }))
+    )
+  }
+
+  /**
    * Returns true when every requested entity exists in the active layout.
    *
    * @param entityIds - Database object ids required for preview creation

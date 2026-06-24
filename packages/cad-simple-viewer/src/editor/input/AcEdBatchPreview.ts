@@ -58,10 +58,7 @@ export class AcEdBatchedPreview {
     copyCount = 1
   ) {
     this.copyCount = Math.max(0, copyCount)
-    if (
-      this.copyCount === 0 ||
-      !view.canCreateEntityPreview(entityIds)
-    ) {
+    if (this.copyCount === 0 || entityIds.length === 0) {
       this.useBatchPreview = false
       return
     }

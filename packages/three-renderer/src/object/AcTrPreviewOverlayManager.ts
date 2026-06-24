@@ -70,6 +70,10 @@ export class AcTrPreviewOverlayManager {
       return false
     }
 
+    if (handle.root.matrix.equals(matrix)) {
+      return false
+    }
+
     handle.root.matrix.copy(matrix)
     handle.root.matrixAutoUpdate = false
     handle.root.updateMatrixWorld(true)
