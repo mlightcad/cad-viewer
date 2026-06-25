@@ -57,10 +57,15 @@ import {
   isModelSpaceDatabase,
   readLayoutBackgroundColor
 } from '../editor/global/AcEdUiColor'
+import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
+import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
 import { AcTrEntityDisplayController } from './AcTrEntityDisplayController'
-import { assertAcTrGroupWcsBboxesConsistent } from './AcTrGroupWcsBboxAssert'
+import {
+  assertAcTrGroupWcsBboxesConsistent,
+  unionGroupWcsChildBoxes
+} from './AcTrGroupWcsBboxAssert'
 import { AcTrLayer } from './AcTrLayer'
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
@@ -1026,6 +1031,7 @@ export class AcTrView2d extends AcEdBaseView {
     const raycaster = activeLayoutView.resetRaycaster(point, threshold)
     firstQueryResults.forEach(item => {
       if (drillThroughViewportIds.has(item.id)) return
+      if (!isEffectiveSpatialQueryHit(item)) return
       if (activeLayout.isIntersectWith(item.id, raycaster)) {
         results.push(item)
       }
@@ -1086,6 +1092,7 @@ export class AcTrView2d extends AcEdBaseView {
       const vpRaycaster = vpView.resetRaycaster(modelPt, modelRadius)
       const modelHits = modelLayout.search(modelBox)
       modelHits.forEach(item => {
+        if (!isEffectiveSpatialQueryHit(item)) return
         if (modelLayout.isIntersectWith(item.id, vpRaycaster)) {
           results.push(item)
         }
@@ -1096,8 +1103,8 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  search(box: AcGeBox2d | AcGeBox3d) {
-    return this._scene.search(box)
+  search(box: AcGeBox2d | AcGeBox3d, options?: AcTrSpatialSearchOptions) {
+    return this._scene.search(box, options)
   }
 
   /**
@@ -1953,6 +1960,9 @@ export class AcTrView2d extends AcEdBaseView {
             )
 
             await this.finishEntityGeometry(threeEntity, progressive)
+            if (threeEntity instanceof AcTrGroup) {
+              this.syncGroupSpatialBoundsForIndexing(threeEntity)
+            }
             this._scene.addEntity(threeEntity, isExtendBbox)
             this.applySessionHiddenObjectState(entity.objectId)
             // Release memory occupied by this entity
@@ -1999,8 +2009,36 @@ export class AcTrView2d extends AcEdBaseView {
     }
   }
 
+  /**
+   * Rebuilds block-reference child boxes and aligns aggregate {@link AcTrGroup.wcsBbox}
+   * with their union before spatial-index registration.
+   */
+  private syncGroupSpatialBoundsForIndexing(group: AcTrGroup) {
+    group.refreshWcsChildBoxesFromChildren()
+    if (group.wcsChildBoxes.length === 0) {
+      return
+    }
+
+    const childBoxes: AcEdSpatialQueryResultItem[] = group.wcsChildBoxes.map(
+      box => ({
+        minX: box.minX,
+        minY: box.minY,
+        maxX: box.maxX,
+        maxY: box.maxY,
+        id: box.id
+      })
+    )
+    group.wcsBbox = unionGroupWcsChildBoxes(group)
+
+    const userData = group.userData as {
+      spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
+    }
+    userData.spatialIndexChildBoxes = childBoxes
+  }
+
   private async handleGroup(group: AcTrGroup, progressive: boolean) {
     await this.finishEntityGeometry(group, progressive)
+    this.syncGroupSpatialBoundsForIndexing(group)
 
     const children = group.children
     const objectsGroupByLayer: Map<string, THREE.Object3D[]> = new Map()
@@ -2047,6 +2085,13 @@ export class AcTrView2d extends AcEdBaseView {
         maxY: box.maxY,
         id: box.id
       }))
+    const aggregateSpatialBbox =
+      groupChildBoxes.length > 0
+        ? unionGroupWcsChildBoxes(group)
+        : group.wcsBbox.clone()
+    if (groupChildBoxes.length > 0) {
+      group.wcsBbox = aggregateSpatialBbox.clone()
+    }
     objectsGroupByLayer.forEach((objects, layerName) => {
       // AutoCAD block rule: entities authored on layer "0" inherit the INSERT's layer.
       // Non-zero layers keep their original layer name.
@@ -2068,7 +2113,7 @@ export class AcTrView2d extends AcEdBaseView {
       // If block-definition entities are on layer "0", this bucket now uses the layer
       // of the block reference itself (effectiveLayerName).
       entity.layerName = effectiveLayerName
-      entity.wcsBbox = group.wcsBbox.clone()
+      entity.wcsBbox = aggregateSpatialBbox.clone()
       const entityUserData = entity.userData as {
         spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
       }

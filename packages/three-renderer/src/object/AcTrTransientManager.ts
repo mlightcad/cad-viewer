@@ -11,6 +11,9 @@ export class AcTrTransientManager {
 
   /** Mapping from transient ID → AcTrEntity */
   private readonly entities: Map<string, AcTrEntity>
+  /** World matrix captured when each transient was published. */
+  private readonly _baselineMatrices = new Map<string, THREE.Matrix4>()
+  private readonly _composedMatrix = new THREE.Matrix4()
 
   constructor(scene: THREE.Scene) {
     this.scene = scene
@@ -31,6 +34,7 @@ export class AcTrTransientManager {
     }
 
     this.entities.clear()
+    this._baselineMatrices.clear()
     this.transientGroup.clear()
   }
 
@@ -49,6 +53,7 @@ export class AcTrTransientManager {
     }
 
     this.entities.set(key, entity)
+    this._baselineMatrices.set(key, entity.matrix.clone())
     this.transientGroup.add(entity)
   }
 
@@ -65,6 +70,7 @@ export class AcTrTransientManager {
     }
 
     this.entities.set(newEntity.objectId, newEntity)
+    this._baselineMatrices.set(newEntity.objectId, newEntity.matrix.clone())
     this.transientGroup.add(newEntity)
   }
 
@@ -78,11 +84,17 @@ export class AcTrTransientManager {
     this.transientGroup.remove(ent)
     AcTrEntity.disposeObject(ent)
     this.entities.delete(id)
+    this._baselineMatrices.delete(id)
   }
 
   /**
    * Applies world transforms to existing transient entities without reconverting
    * them or replacing GPU resources.
+   *
+   * Preview jigs pass a delta transform (move, rotate, copy). When the transient
+   * already carries a block-reference INSERT matrix, compose
+   * `delta * baseline` instead of replacing the baseline so preview geometry
+   * stays in WCS.
    */
   applyTransforms(
     transforms: ReadonlyArray<{ id: string; matrix: THREE.Matrix4 }>
@@ -93,10 +105,15 @@ export class AcTrTransientManager {
       if (!ent) {
         continue
       }
-      if (ent.matrix.equals(matrix)) {
+      const baseline = this._baselineMatrices.get(id)
+      const composed = this._composedMatrix.copy(matrix)
+      if (baseline) {
+        composed.multiply(baseline)
+      }
+      if (ent.matrix.equals(composed)) {
         continue
       }
-      ent.matrix.copy(matrix)
+      ent.matrix.copy(composed)
       ent.matrixAutoUpdate = false
       ent.updateMatrixWorld(true)
       updated = true

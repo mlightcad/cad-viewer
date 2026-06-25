@@ -13,6 +13,7 @@ import {
 } from '@mlightcad/data-model'
 import { debounce } from 'lodash-es'
 
+import type { AcTrSpatialSearchOptions } from '../../spatialIndex/AcTrSpatialIndex'
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
 import { AcEdOsnapResolver } from '../input/AcEdOsnapResolver'
@@ -21,7 +22,10 @@ import {
   AcEdSelectionAction,
   resolveSelectionActionFromEvent
 } from './AcEdSelectionAction'
-import { AcEdSpatialQueryResultItemEx } from './AcEdSpatialQueryResult'
+import {
+  AcEdSpatialQueryResultItemEx,
+  isEffectiveSpatialQueryHit
+} from './AcEdSpatialQueryResult'
 
 /**
  * Interface to define arguments of mouse event events.
@@ -485,7 +489,10 @@ export abstract class AcEdBaseView {
    * @param box Input the query bounding box
    * @returns Return query results
    */
-  abstract search(box: AcGeBox2d | AcGeBox3d): AcEdSpatialQueryResultItemEx[]
+  abstract search(
+    box: AcGeBox2d | AcGeBox3d,
+    options?: AcTrSpatialSearchOptions
+  ): AcEdSpatialQueryResultItemEx[]
 
   /**
    * Picks entities that intersect a hit-region centered at the specified point
@@ -814,18 +821,13 @@ export abstract class AcEdBaseView {
    * Collects ids using window or crossing selection rules.
    */
   protected collectSelectionIdsByBox(box: AcGeBox2d, mode: AcEdSelectionMode) {
-    const results = this.search(box)
+    const results = this.search(box, { selectionMode: mode })
     const ids: AcDbObjectId[] = []
     results.forEach(item => {
-      if (
-        mode === 'crossing' ||
-        (item.minX >= box.min.x &&
-          item.maxX <= box.max.x &&
-          item.minY >= box.min.y &&
-          item.maxY <= box.max.y)
-      ) {
-        ids.push(item.id)
+      if (!isEffectiveSpatialQueryHit(item)) {
+        return
       }
+      ids.push(item.id)
     })
     return ids
   }

@@ -116,6 +116,28 @@ describe('AcTrGroupWcsBboxAssert', () => {
     expect(unionGroupWcsChildBoxes(group).min).toMatchObject({ x: 0, y: 0 })
   })
 
+  it('skips non-finite child boxes when unioning wcsChildBoxes', () => {
+    const group = {
+      wcsBbox: new THREE.Box3(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(10, 5, 0)
+      ),
+      wcsChildBoxes: [
+        { minX: 0, minY: 0, maxX: 10, maxY: 5, id: 'line-a' },
+        {
+          minX: Number.POSITIVE_INFINITY,
+          minY: Number.POSITIVE_INFINITY,
+          maxX: Number.NEGATIVE_INFINITY,
+          maxY: Number.NEGATIVE_INFINITY,
+          id: 'deferred-text'
+        }
+      ]
+    }
+
+    expect(unionGroupWcsChildBoxes(group).min).toMatchObject({ x: 0, y: 0 })
+    expect(unionGroupWcsChildBoxes(group).max).toMatchObject({ x: 10, y: 5 })
+  })
+
   it('throws when wcsBbox diverges from wcsChildBoxes', () => {
     const group = {
       wcsBbox: new THREE.Box3(

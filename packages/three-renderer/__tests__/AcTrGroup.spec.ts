@@ -206,6 +206,125 @@ describe('AcTrGroup wcsBbox', () => {
     expectWcsBboxCloseTo(group.wcsBbox, [100, 200, 0], [115, 210, 0])
   })
 
+  it('keeps WCS child boxes after applyMatrix and refreshWcsChildBoxesFromChildren', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine(
+      'line-title',
+      { x: -180, y: 28 },
+      { x: 0, y: 28 },
+      context
+    )
+    const group = new AcTrGroup([line], context)
+
+    group.applyMatrix(new AcGeMatrix3d().makeTranslation(574, 0, 0))
+    group.refreshWcsChildBoxesFromChildren()
+
+    expect(group.wcsChildBoxes[0]).toMatchObject({
+      minX: 394,
+      minY: 28,
+      maxX: 574,
+      maxY: 28,
+      id: 'line-title'
+    })
+    expectWcsBboxCloseTo(group.wcsBbox, [394, 28, 0], [574, 28, 0])
+  })
+
+  it('does not inflate aggregate wcsBbbox when block-local attributes are added after applyMatrix', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine(
+      'line-title',
+      { x: -180, y: 28 },
+      { x: 0, y: 28 },
+      context
+    )
+    const group = new AcTrGroup([line], context)
+
+    group.applyMatrix(new AcGeMatrix3d().makeTranslation(574, 0, 0))
+
+    // AcDbRenderingCache.draw converts WCS attribute geometry to block-local
+    // space before addChild while the INSERT transform remains on the group.
+    const attribute = createLine(
+      'attr-1',
+      { x: -180, y: 0 },
+      { x: -170, y: 10 },
+      context,
+      'CARTOUCHE'
+    )
+    group.addChild(attribute)
+
+    expect(group.wcsChildBoxes.find(box => box.id === 'line-title')).toMatchObject(
+      {
+        minX: 394,
+        minY: 28,
+        maxX: 574,
+        maxY: 28
+      }
+    )
+    expect(group.wcsChildBoxes.find(box => box.id === 'attr-1')).toMatchObject({
+      minX: 394,
+      minY: 0,
+      maxX: 404,
+      maxY: 10
+    })
+    expectWcsBboxCloseTo(group.wcsBbox, [394, 0, 0], [574, 28, 0])
+  })
+
+  it('preserves applyMatrix child boxes when refresh runs after deferred syncDraw', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine(
+      'line-a',
+      { x: 0, y: 0 },
+      { x: 10, y: 5 },
+      context
+    )
+    const group = new AcTrGroup([line], context)
+    group.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 200, 0))
+
+    // Block-local wcsBbbox can remain far from WCS after nested INSERT assembly.
+    // A full refresh from source entities would inflate spatial bounds again.
+    line.wcsBbox.set(
+      new THREE.Vector3(-4_000_000, 0, 0),
+      new THREE.Vector3(-3_999_990, 5, 0)
+    )
+
+    group.refreshWcsChildBoxesFromChildren()
+
+    expect(group.wcsChildBoxes[0]).toMatchObject({
+      minX: 100,
+      minY: 200,
+      maxX: 110,
+      maxY: 205,
+      id: 'line-a'
+    })
+    expectWcsBboxCloseTo(group.wcsBbox, [100, 200, 0], [110, 205, 0])
+  })
+
+  it('rebuilds nested insert child boxes after refreshWcsChildBoxesFromChildren', () => {
+    const context = new AcTrRenderContext()
+    const innerLine = createLine(
+      'inner-line',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      context
+    )
+    const innerGroup = new AcTrGroup([innerLine], context)
+    innerGroup.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 200, 0))
+
+    const outerGroup = new AcTrGroup([innerGroup], context)
+    outerGroup.applyMatrix(new AcGeMatrix3d().makeTranslation(574, 0, 0))
+    outerGroup.refreshWcsChildBoxesFromChildren()
+
+    expect(
+      outerGroup.wcsChildBoxes.find(box => box.id === 'inner-line')
+    ).toMatchObject({
+      minX: 674,
+      minY: 200,
+      maxX: 684,
+      maxY: 200
+    })
+    expectWcsBboxCloseTo(outerGroup.wcsBbox, [674, 200, 0], [684, 200, 0])
+  })
+
   it('skips invalid child boxes when applying insert transform', () => {
     const context = new AcTrRenderContext()
     const line = createLine(
@@ -298,5 +417,13 @@ describe('AcTrGroup dispose', () => {
     expect(group.getSourceEntities()).toHaveLength(0)
 
     disposeObjectSpy.mockRestore()
+  })
+
+  it('syncDraw does not recurse infinitely on empty nested groups', () => {
+    const context = new AcTrRenderContext()
+    const emptyInnerGroup = new AcTrGroup([], context)
+    const outerGroup = new AcTrGroup([emptyInnerGroup], context)
+
+    expect(() => outerGroup.syncDraw()).not.toThrow()
   })
 })

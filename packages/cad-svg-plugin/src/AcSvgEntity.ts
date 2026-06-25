@@ -151,8 +151,4 @@ export class AcSvgEntity implements AcGiEntity {
   addChild(_entity: AcGiEntity) {
     // Do nothing for now
   }
-
-  bakeTransformToChildren() {
-    // Do nothing for now
-  }
 }
