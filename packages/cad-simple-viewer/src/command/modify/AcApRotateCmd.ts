@@ -197,6 +197,8 @@ export class AcApRotateCmd extends AcEdCommand {
       prompt.basePoint = basePoint
       prompt.allowNegative = true
       prompt.allowZero = true
+      // AutoCAD ROTATE: Enter at angle prompt ends without rotating.
+      prompt.allowNone = true
       prompt.jig = new AcApRotatePreviewJig(
         context.view,
         sourceEntities,
@@ -236,6 +238,7 @@ export class AcApRotateCmd extends AcEdCommand {
       newAnglePrompt.basePoint = basePoint
       newAnglePrompt.allowNegative = true
       newAnglePrompt.allowZero = true
+      newAnglePrompt.allowNone = true
       newAnglePrompt.jig = new AcApRotatePreviewJig(
         context.view,
         sourceEntities,
@@ -303,6 +306,8 @@ export class AcApRotateCmd extends AcEdCommand {
       context.view,
       sourceEntities
     )
+    // AutoCAD ROTATE: Enter at base point cancels without rotating.
+    basePointPrompt.allowNone = true
     const basePointResult =
       await AcApDocManager.instance.editor.getPoint(basePointPrompt)
     if (basePointResult.status !== AcEdPromptStatus.OK) {

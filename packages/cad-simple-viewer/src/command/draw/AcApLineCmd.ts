@@ -194,6 +194,8 @@ export class AcApLineCmd extends AcEdCommand {
           prompt.basePoint = new AcGePoint3d(basePoint)
           prompt.jig = new AcApLineJig(context.view, basePoint)
         }
+        // AutoCAD LINE: Enter at "next point" ends the command without adding a segment.
+        prompt.allowNone = true
         return prompt
       }
 

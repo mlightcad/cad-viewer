@@ -307,7 +307,8 @@ export class AcApCopyCmd extends AcEdCommand {
       pointPrompt.useBasePoint = true
       pointPrompt.useDashedLine = true
       pointPrompt.basePoint = basePoint
-      pointPrompt.allowNone = copyMode === 'Multiple'
+      // AutoCAD COPY: Enter at placement prompt ends without adding another copy.
+      pointPrompt.allowNone = true
       pointPrompt.jig = new AcApCopyPreviewJig(
         context.view,
         sourceEntities,

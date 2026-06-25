@@ -297,6 +297,8 @@ export class AcApSplineCmd extends AcEdCommand {
         prompt.basePoint = new AcGePoint3d(basePoint)
       }
       prompt.jig = createPreviewJig()
+      // AutoCAD SPLINE: Enter at "next point" ends the command without adding a fit/CV point.
+      prompt.allowNone = true
     }
 
     /**
