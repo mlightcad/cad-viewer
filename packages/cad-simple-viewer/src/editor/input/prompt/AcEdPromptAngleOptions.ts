@@ -18,6 +18,7 @@ export class AcEdPromptAngleOptions extends AcEdPromptOptions<number> {
   private _useDefaultValue: boolean = false
   private _allowZero: boolean = true
   private _allowNegative: boolean = false
+  private _allowNone: boolean = false
 
   /**
    * Constructs a new `AcEdPromptAngleOptions` with a given prompt message.
@@ -150,6 +151,19 @@ export class AcEdPromptAngleOptions extends AcEdPromptOptions<number> {
   set allowNegative(flag: boolean) {
     if (!this.isReadOnly) {
       this._allowNegative = flag
+    }
+  }
+
+  /**
+   * Gets or sets whether pressing ENTER alone (no input) is accepted.
+   * Corresponds to `PromptAngleOptions.AllowNone` in AutoCAD .NET API.
+   */
+  get allowNone(): boolean {
+    return this._allowNone
+  }
+  set allowNone(flag: boolean) {
+    if (!this.isReadOnly) {
+      this._allowNone = flag
     }
   }
 }

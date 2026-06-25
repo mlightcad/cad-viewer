@@ -597,6 +597,8 @@ export class AcApPolylineCmd extends AcEdCommand {
           prompt.basePoint = new AcGePoint3d(basePoint)
         }
         prompt.jig = createPreviewJig(undefined)
+        // AutoCAD PLINE: Enter at "next point" ends the command without adding a vertex.
+        prompt.allowNone = true
         return prompt
       }
 
@@ -676,6 +678,7 @@ export class AcApPolylineCmd extends AcEdCommand {
         prompt.jig = createPreviewJig(undefined, end =>
           applyArcDirection(computeDefaultArcBulge(end))
         )
+        prompt.allowNone = true
         return prompt
       }
 

@@ -60,7 +60,12 @@ export class AcEdFloatingInputBox {
 
   /** Set value */
   set value(v: string) {
-    if (v !== undefined) this.input.value = v
+    if (v === undefined) return
+    const preserveSelection = this.focused && !this.userTyped
+    this.input.value = v
+    if (preserveSelection) {
+      this.input.select()
+    }
   }
 
   /** Read current text */
@@ -76,6 +81,9 @@ export class AcEdFloatingInputBox {
   /** Forwards focus() to the underlying element. */
   focus() {
     this.input.focus()
+    if (!this.userTyped) {
+      this.input.select()
+    }
   }
 
   /** Forwards blur() to the underlying element. */

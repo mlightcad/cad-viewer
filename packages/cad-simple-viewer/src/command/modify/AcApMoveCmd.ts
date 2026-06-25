@@ -96,6 +96,8 @@ export class AcApMoveCmd extends AcEdCommand {
           AcApI18n.t('jig.move.basePointOrDisplacement')
         )
         createDisplacementKeyword(prompt)
+        // AutoCAD MOVE: Enter at base point switches to displacement from origin.
+        prompt.allowNone = true
         return prompt
       }
 
@@ -103,6 +105,11 @@ export class AcApMoveCmd extends AcEdCommand {
         if (result.status === AcEdPromptStatus.OK) {
           basePoint = new AcGePoint3d(result.value!)
           this.machine.setState(new SecondPointState(this.machine))
+          return 'continue'
+        }
+
+        if (result.status === AcEdPromptStatus.None) {
+          this.machine.setState(new DisplacementState())
           return 'continue'
         }
 
@@ -136,6 +143,8 @@ export class AcApMoveCmd extends AcEdCommand {
             basePoint
           )
         }
+        // AutoCAD MOVE: Enter at second point ends without applying a move.
+        prompt.allowNone = true
         return prompt
       }
 
@@ -175,6 +184,8 @@ export class AcApMoveCmd extends AcEdCommand {
           sourceEntities,
           prompt.basePoint
         )
+        // AutoCAD MOVE: Enter at displacement prompt ends without applying a move.
+        prompt.allowNone = true
         return prompt
       }
 

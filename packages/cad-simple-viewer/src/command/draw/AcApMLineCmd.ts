@@ -306,6 +306,8 @@ export class AcApMLineCmd extends AcEdCommand {
           styleName,
           elementOffsets: resolveStyleElementOffsets()
         }))
+        // AutoCAD MLINE: Enter at "next point" ends the command without adding a vertex.
+        prompt.allowNone = true
         return prompt
       }
 
