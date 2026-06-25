@@ -38,9 +38,9 @@ export class AcTrGroup extends AcTrEntity {
    *
    * This list is also extended by {@link addChild} when
    * {@link AcDbRenderingCache.draw} appends block-reference attributes after
-   * the INSERT transform is applied. Those attributes stay attached to the
-   * group and are tracked here for both deferred drawing and spatial-index
-   * refresh.
+   * the INSERT transform is applied. Attributes are converted to block-local
+   * space before {@link addChild}; the group's INSERT transform then places
+   * them correctly in WCS for spatial indexing.
    *
    * Consumers such as {@link getSourceEntities},
    * {@link refreshWcsChildBoxesFromChildren}, and {@link syncDraw} rely on this
@@ -59,11 +59,9 @@ export class AcTrGroup extends AcTrEntity {
       if (Array.isArray(entity)) {
         const subGroup = new AcTrEntity(context)
         this.add(subGroup)
-        this.wcsBbox.union(subGroup.wcsBbox)
       } else {
         this.add(entity)
         this.registerSourceEntities(entity)
-        this.wcsBbox.union(entity.wcsBbox)
       }
       this.storeBoxes(entity)
     })
@@ -170,16 +168,15 @@ export class AcTrGroup extends AcTrEntity {
    *
    * Coordinate rules:
    *
-   * - **Insert not baked** (`matrixWorld` is not identity): source-entity
-   *   `wcsBbox` values are in block-local space; they are transformed by this
-   *   group's `matrixWorld`.
-   * - **Insert baked** (`bakeTransformToChildren` reset the group to
-   *   identity): each source entity's local `matrix` carries the baked INSERT
-   *   transform and is applied instead.
-   * - **Tree-resident entities** (attributes): already expressed relative to
-   *   the current scene graph; their full `matrixWorld` is used.
+   * - **Block-definition entities** and **attributes** tracked in
+   *   {@link _sourceEntities}: `wcsBbbox` stays in block-local space and is
+   *   transformed by this group's active INSERT `matrixWorld` (or the source
+   *   entity's local `matrix` when the group is at identity).
+   * - **Tree-resident entities** not listed in {@link _sourceEntities}: the
+   *   full entity `matrixWorld` is applied to `wcsBbbox`.
    */
   refreshWcsChildBoxesFromChildren() {
+    const previous = this._wcsChildBoxes.map(box => ({ ...box }))
     this._wcsChildBoxes.length = 0
     this.updateMatrixWorld(true)
     const scratch = new THREE.Box3()
@@ -194,6 +191,9 @@ export class AcTrGroup extends AcTrEntity {
         this.appendTreeEntityWcsChildBox(child, scratch)
       }
     })
+    if (this._wcsChildBoxes.length === 0 && previous.length > 0) {
+      previous.forEach(box => this._wcsChildBoxes.push({ ...box }))
+    }
     this.syncWcsBboxFromChildBoxes()
   }
 
@@ -229,7 +229,7 @@ export class AcTrGroup extends AcTrEntity {
   }
 
   /**
-   * Block-reference attributes are appended after the group is constructed
+   * Block-reference attributes are appended after {@link applyMatrix}
    * (see AcDbRenderingCache.draw). Register their bounds for spatial indexing.
    */
   addChild(entity: AcTrEntity) {
@@ -246,9 +246,6 @@ export class AcTrGroup extends AcTrEntity {
     }
     this.registerSourceEntities(entity)
     this.storeBoxes(entity)
-    if (!entity.wcsBbox.isEmpty()) {
-      this.wcsBbox.union(entity.wcsBbox)
-    }
     this.syncWcsBboxFromChildBoxes()
   }
 
@@ -262,7 +259,8 @@ export class AcTrGroup extends AcTrEntity {
         this.applyMatrixToEntityBox(box, threeMatrix)
       }
     })
-    super.applyMatrix(matrix)
+    this.applyMatrix4(threeMatrix)
+    this.updateMatrixWorld(true)
     this.syncWcsBboxFromChildBoxes()
   }
 
@@ -337,6 +335,9 @@ export class AcTrGroup extends AcTrEntity {
 
     const union = new THREE.Box3()
     for (const box of this._wcsChildBoxes) {
+      if (!AcTrGroup.isFiniteEntityBox(box)) {
+        continue
+      }
       union.union(
         new THREE.Box3(
           new THREE.Vector3(box.minX, box.minY, 0),
@@ -360,7 +361,9 @@ export class AcTrGroup extends AcTrEntity {
    * - **Nested {@link AcTrGroup}**: copies the inner group's existing
    *   {@link _wcsChildBoxes} entries instead of re-walking geometry, because
    *   the inner list is already normalized to leaf entities.
-   * - **Leaf {@link AcTrEntity}**: reads `wcsBbox` min/max corners directly.
+   * - **Leaf {@link AcTrEntity}**: converted to WCS through
+   *   {@link appendSourceEntityWcsChildBox} or
+   *   {@link appendTreeEntityWcsChildBox}.
    * - **Empty or non-finite boxes**: skipped via {@link isFiniteEntityBox} so
    *   deferred MText/Shape geometry cannot seed `±Infinity` values that later
    *   become `NaN` during {@link applyMatrix}.
@@ -372,26 +375,22 @@ export class AcTrGroup extends AcTrEntity {
     if (object instanceof AcTrGroup) {
       object._wcsChildBoxes.forEach(box => {
         if (AcTrGroup.isFiniteEntityBox(box)) {
-          this._wcsChildBoxes.push(box)
+          this._wcsChildBoxes.push({ ...box })
         }
       })
-    } else if (object instanceof AcTrEntity) {
-      if (object.wcsBbox.isEmpty()) {
-        return
-      }
-      const box = {
-        minX: object.wcsBbox.min.x,
-        minY: object.wcsBbox.min.y,
-        maxX: object.wcsBbox.max.x,
-        maxY: object.wcsBbox.max.y,
-        id: object.objectId
-      }
-      if (!AcTrGroup.isFiniteEntityBox(box)) {
-        return
-      }
-      // only leaf entities should contribute to _wcsChildBoxes
-      this._wcsChildBoxes.push(box)
+      return
     }
+
+    if (!(object instanceof AcTrEntity)) {
+      return
+    }
+
+    const scratch = new THREE.Box3()
+    if (this._sourceEntities.includes(object)) {
+      this.appendSourceEntityWcsChildBox(object, scratch)
+      return
+    }
+    this.appendTreeEntityWcsChildBox(object, scratch)
   }
 
   /**
@@ -429,11 +428,11 @@ export class AcTrGroup extends AcTrEntity {
    *
    * Transform selection mirrors the block-reference pipeline:
    *
-   * - When this group's `matrixWorld` is identity (INSERT transform baked into
-   *   children), the source entity's local {@link THREE.Object3D.matrix} is
-   *   applied.
-   * - Otherwise the group's `matrixWorld` (the active INSERT transform) is
-   *   applied to the block-local box.
+   * - Tracked source entities keep block-local `wcsBbbox` values even after
+   *   {@link applyMatrix}; the active INSERT transform lives on this group's
+   *   `matrixWorld`.
+   * - When the group is at identity, each source entity's local `matrix` is
+   *   applied instead.
    *
    * Entries with an empty or non-finite resulting box are skipped so
    * {@link _wcsChildBoxes} never receives `NaN` extents.
@@ -456,7 +455,9 @@ export class AcTrGroup extends AcTrEntity {
     const transform = AcTrGroup.isWorldMatrixIdentity(this.matrixWorld)
       ? entity.matrix
       : this.matrixWorld
-    scratch.applyMatrix4(transform)
+    if (!AcTrGroup.isWorldMatrixIdentity(transform)) {
+      scratch.applyMatrix4(transform)
+    }
     if (!Number.isFinite(scratch.min.x) || !Number.isFinite(scratch.max.x)) {
       return
     }
@@ -474,10 +475,10 @@ export class AcTrGroup extends AcTrEntity {
    * Appends one WCS child box for an {@link AcTrEntity} still present in this
    * group's flattened `children` list.
    *
-   * Block-reference **attributes** added through {@link addChild} after
-   * {@link AcDbRenderingCache.draw} are not removed by {@link flatten} and are
-   * typically already authored in WCS. For those entities the full
-   * `matrixWorld` transform is applied to `wcsBbox`.
+   * Block-reference **attributes** added through {@link addChild} are tracked
+   * in {@link _sourceEntities} with block-local `wcsBbbox` and converted via
+   * {@link appendSourceEntityWcsChildBox}. This path covers other
+   * {@link AcTrEntity} children still present in the flattened tree.
    *
    * This path is only used when the child is **not** already listed in
    * {@link _sourceEntities}, preventing duplicate spatial-index entries.
@@ -510,12 +511,9 @@ export class AcTrGroup extends AcTrEntity {
   /**
    * Tests whether a world matrix is effectively identity.
    *
-   * {@link AcDbRenderingCache.draw} calls {@link bakeTransformToChildren}
-   * when a block reference carries attributes. That path resets the group's
-   * transform to identity while baking the INSERT matrix into each child.
-   * {@link refreshWcsChildBoxesFromChildren} uses this helper to decide
-   * whether to apply the group `matrixWorld` or each source entity's local
-   * `matrix` when rebuilding {@link _wcsChildBoxes}.
+   * {@link appendSourceEntityWcsChildBox} uses this helper to decide whether
+   * to apply this group's `matrixWorld` (active INSERT transform) or each
+   * source entity's local `matrix` when converting block-local bounds to WCS.
    *
    * Comparison uses a fixed epsilon (`1e-6`) on all 16 matrix elements.
    *

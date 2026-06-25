@@ -91,6 +91,7 @@ jest.mock('@mlightcad/three-renderer', () => {
 })
 
 import { AcTrLayout } from '../src/view/AcTrLayout'
+import { isEffectiveSpatialQueryHit } from '../src/editor/view/AcEdSpatialQueryResult'
 
 function createLayerInfo(name = '0') {
   return {
@@ -242,5 +243,184 @@ describe('AcTrLayout bounding box', () => {
 
     layout.box
     expect(mockComputeBoundingBox).not.toHaveBeenCalled()
+  })
+})
+
+describe('AcTrLayout spatial index', () => {
+  function collectBoxSelectionIds(
+    layout: AcTrLayout,
+    pickBox: import('@mlightcad/data-model').AcGeBox2d,
+    mode: 'window' | 'crossing'
+  ) {
+    const results = layout.search(pickBox)
+    const ids: string[] = []
+    results.forEach(item => {
+      if (!isEffectiveSpatialQueryHit(item)) {
+        return
+      }
+      if (mode === 'crossing') {
+        ids.push(item.id)
+        return
+      }
+      const fullyInside =
+        item.minX >= pickBox.min.x &&
+        item.maxX <= pickBox.max.x &&
+        item.minY >= pickBox.min.y &&
+        item.maxY <= pickBox.max.y
+      if (fullyInside) {
+        ids.push(item.id)
+      }
+    })
+    return ids
+  }
+
+  it('indexes INSERT root bbox from child-box union when aggregate wcsBbox is stale', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+
+    const entity = createEntity('INSERT-1')
+    entity.wcsBbox = new THREE.Box3(
+      new THREE.Vector3(-180, 0, 0),
+      new THREE.Vector3(574, 56, 0)
+    )
+    ;(
+      entity.userData as {
+        spatialIndexChildBoxes?: Array<{
+          minX: number
+          minY: number
+          maxX: number
+          maxY: number
+          id: string
+        }>
+      }
+    ).spatialIndexChildBoxes = [
+      { minX: 394, minY: 0, maxX: 574, maxY: 56, id: 'line-1' }
+    ]
+
+    layout.addEntity(entity)
+
+    const hits = layout.search({
+      min: { x: -10, y: -72 },
+      max: { x: 584, y: 410 }
+    } as unknown as import('@mlightcad/data-model').AcGeBox2d)
+
+    expect(hits).toHaveLength(1)
+    expect(hits[0].id).toBe('INSERT-1')
+    expect(hits[0].minX).toBeCloseTo(394)
+    expect(hits[0].maxX).toBeCloseTo(574)
+  })
+
+  it('does not window-select INSERT when only part of its geometry fits the pick box', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+
+    const entity = createEntity('INSERT-2')
+    entity.wcsBbox = new THREE.Box3(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(300, 10, 0)
+    )
+    ;(
+      entity.userData as {
+        spatialIndexChildBoxes?: Array<{
+          minX: number
+          minY: number
+          maxX: number
+          maxY: number
+          id: string
+        }>
+      }
+    ).spatialIndexChildBoxes = [
+      { minX: 0, minY: 0, maxX: 100, maxY: 10, id: 'line-left' },
+      { minX: 200, minY: 0, maxX: 300, maxY: 10, id: 'line-right' }
+    ]
+
+    layout.addEntity(entity)
+
+    const pickBox = {
+      min: { x: 0, y: 0 },
+      max: { x: 100, y: 10 }
+    } as unknown as import('@mlightcad/data-model').AcGeBox2d
+
+    const hits = layout.search(pickBox)
+    expect(hits).toHaveLength(1)
+    expect(hits[0].maxX).toBeCloseTo(300)
+
+    const windowContained =
+      hits[0].minX >= pickBox.min.x &&
+      hits[0].maxX <= pickBox.max.x &&
+      hits[0].minY >= pickBox.min.y &&
+      hits[0].maxY <= pickBox.max.y
+
+    expect(windowContained).toBe(false)
+  })
+
+  it('crossing-selects INSERT when child geometry intersects the pick box', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+
+    const entity = createEntity('INSERT-cross')
+    entity.wcsBbox = new THREE.Box3(
+      new THREE.Vector3(-180, 0, 0),
+      new THREE.Vector3(574, 56, 0)
+    )
+    ;(
+      entity.userData as {
+        spatialIndexChildBoxes?: Array<{
+          minX: number
+          minY: number
+          maxX: number
+          maxY: number
+          id: string
+        }>
+      }
+    ).spatialIndexChildBoxes = [
+      { minX: 394, minY: 0, maxX: 574, maxY: 56, id: 'line-1' }
+    ]
+
+    layout.addEntity(entity)
+
+    const pickBox = {
+      min: { x: 400, y: 0 },
+      max: { x: 500, y: 56 }
+    } as unknown as import('@mlightcad/data-model').AcGeBox2d
+
+    expect(collectBoxSelectionIds(layout, pickBox, 'crossing')).toEqual([
+      'INSERT-cross'
+    ])
+  })
+
+  it('window-selects INSERT when the child union fits entirely inside the pick box', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+
+    const entity = createEntity('INSERT-window')
+    entity.wcsBbox = new THREE.Box3(
+      new THREE.Vector3(-180, 0, 0),
+      new THREE.Vector3(574, 56, 0)
+    )
+    ;(
+      entity.userData as {
+        spatialIndexChildBoxes?: Array<{
+          minX: number
+          minY: number
+          maxX: number
+          maxY: number
+          id: string
+        }>
+      }
+    ).spatialIndexChildBoxes = [
+      { minX: 394, minY: 0, maxX: 574, maxY: 56, id: 'line-1' }
+    ]
+
+    layout.addEntity(entity)
+
+    const pickBox = {
+      min: { x: 390, y: -5 },
+      max: { x: 580, y: 60 }
+    } as unknown as import('@mlightcad/data-model').AcGeBox2d
+
+    expect(collectBoxSelectionIds(layout, pickBox, 'window')).toEqual([
+      'INSERT-window'
+    ])
   })
 })

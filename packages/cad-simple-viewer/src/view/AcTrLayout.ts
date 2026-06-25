@@ -7,6 +7,7 @@ import {
 import * as THREE from 'three'
 
 import { AcEdLayerInfo, AcEdSpatialQueryResultItem } from '../editor'
+import { unionSpatialQueryItems } from '../editor/view/AcEdSpatialQueryResult'
 import { AcTrHierarchicalSpatialIndex } from '../spatialIndex'
 import { AcTrLayer, AcTrLayerStats } from './AcTrLayer'
 
@@ -650,20 +651,96 @@ export class AcTrLayout {
     return boxes
   }
 
+  /**
+   * Registers one render entity in the layout spatial index.
+   *
+   * Inserts a root bounding box for coarse queries and, when child geometry is
+   * available, builds a child-level index so snapping and fine-grained spatial
+   * queries can resolve sub-entities (for example block references).
+   *
+   * Root bounds are chosen in this order:
+   * 1. Union of {@link getSpatialIndexChildBoxes} when precomputed child boxes
+   *    are attached to `entity.userData`.
+   * 2. Union of `AcTrGroup.wcsChildBoxes` when the entity is a block group.
+   * 3. The entity's own `wcsBbox` as a fallback.
+   *
+   * Child indexing uses `ensureChildIndex` for userData child boxes (typical of
+   * INSERT paths split across layers) or `createChildIndex` for a single
+   * `AcTrGroup` hierarchy.
+   *
+   * @param entity - The render entity to index. Called from
+   *                 {@link addEntity} and {@link updateEntity} after layer
+   *                 membership is updated.
+   */
   private registerEntitySpatialIndex(entity: AcTrEntity) {
-    const box = entity.wcsBbox
+    const spatialIndexChildBoxes = this.getSpatialIndexChildBoxes(entity)
+
+    let rootBox: {
+      minX: number
+      minY: number
+      maxX: number
+      maxY: number
+      id: AcDbObjectId
+    }
+
+    if (spatialIndexChildBoxes && spatialIndexChildBoxes.length > 0) {
+      const union = unionSpatialQueryItems(spatialIndexChildBoxes)
+      rootBox = {
+        minX: union.minX,
+        minY: union.minY,
+        maxX: union.maxX,
+        maxY: union.maxY,
+        id: entity.objectId
+      }
+    } else if (
+      entity instanceof AcTrGroup &&
+      entity.wcsChildBoxes.length > 0
+    ) {
+      const union = unionSpatialQueryItems(
+        entity.wcsChildBoxes.map(box => ({
+          minX: box.minX,
+          minY: box.minY,
+          maxX: box.maxX,
+          maxY: box.maxY,
+          id: box.id
+        }))
+      )
+      rootBox = {
+        minX: union.minX,
+        minY: union.minY,
+        maxX: union.maxX,
+        maxY: union.maxY,
+        id: entity.objectId
+      }
+    } else {
+      rootBox = {
+        minX: entity.wcsBbox.min.x,
+        minY: entity.wcsBbox.min.y,
+        maxX: entity.wcsBbox.max.x,
+        maxY: entity.wcsBbox.max.y,
+        id: entity.objectId
+      }
+    }
+
     this._spatialIndex.insert({
-      minX: box.min.x,
-      minY: box.min.y,
-      maxX: box.max.x,
-      maxY: box.max.y,
+      minX: rootBox.minX,
+      minY: rootBox.minY,
+      maxX: rootBox.maxX,
+      maxY: rootBox.maxY,
       id: entity.objectId
     })
+
+    if (
+      spatialIndexChildBoxes &&
+      spatialIndexChildBoxes.length > 0
+    ) {
+      entity.wcsBbox.min.set(rootBox.minX, rootBox.minY, entity.wcsBbox.min.z)
+      entity.wcsBbox.max.set(rootBox.maxX, rootBox.maxY, entity.wcsBbox.max.z)
+    }
 
     // Some INSERT rendering paths split one block reference into multiple layer
     // groups (AcTrEntity instead of AcTrGroup). Keep child-box index via userData
     // so object snap can still resolve gsMark to sub-entities.
-    const spatialIndexChildBoxes = this.getSpatialIndexChildBoxes(entity)
     if (spatialIndexChildBoxes) {
       this._spatialIndex.ensureChildIndex(
         entity.objectId,

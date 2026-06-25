@@ -3,8 +3,10 @@ import { AcTrGroup } from '@mlightcad/three-renderer'
 
 import {
   AcEdSpatialQueryResultItem,
-  AcEdSpatialQueryResultItemEx
-} from '../editor/view'
+  AcEdSpatialQueryResultItemEx,
+  unionSpatialQueryItems
+} from '../editor/view/AcEdSpatialQueryResult'
+import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert'
 import { AcTrLinearSpatialIndex } from './AcTrLinearSpatialIndex'
 import { AcTrRBushSpatialIndex } from './AcTrRBushSpatialIndex'
 import { AcTrSpatialIndex, AcTrSpatialIndexBBox } from './AcTrSpatialIndex'
@@ -152,8 +154,11 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
    * 1. Search the root index for candidate hits.
    * 2. For each hit:
    *    - if no child index exists, return the root-level hit directly;
-   *    - if a child index exists, search the child and attach results under
-   *      `children`.
+   *    - if a child index exists, search the child and attach intersecting
+   *      results under `children`;
+   *    - when a child index exists but no child box intersects the query,
+   *      `children` is an empty array; callers that resolve selection or pick
+   *      should filter with {@link isEffectiveSpatialQueryHit}.
    *
    * @param bbox Query bounding box.
    * @returns Aggregated search results from both levels.
@@ -235,7 +240,8 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
    * Ensures a second-level index exists for a root id and optionally initializes it.
    *
    * Behavior:
-   * - if a child index already exists, it is returned as-is;
+   * - upserts the root index bbox to the union of `items`;
+   * - if a child index already exists, its items are replaced with `items`;
    * - otherwise an index type is selected by `items.length`;
    * - selected index is populated with `items`, stored, and returned.
    *
@@ -250,14 +256,27 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
     id: AcDbObjectId,
     items: readonly AcEdSpatialQueryResultItem[]
   ) {
-    if (this.hasChildIndex(id)) {
-      return this.childIndexes.get(id)
+    const finiteItems = items.filter(isFiniteSpatialBBox)
+    if (finiteItems.length === 0) {
+      return undefined
     }
 
-    const spatialIndex = this.createIndexBySize(items.length)
+    const rootBox = unionSpatialQueryItems(finiteItems, id)
+    if (isFiniteSpatialBBox(rootBox)) {
+      this.insert(rootBox)
+    }
+
+    const existing = this.childIndexes.get(id)
+    if (existing) {
+      existing.clear()
+      finiteItems.forEach(item => existing.insert({ ...item }))
+      return existing
+    }
+
+    const spatialIndex = this.createIndexBySize(finiteItems.length)
     if (!spatialIndex) return undefined
 
-    items.forEach(item => spatialIndex.insert(item))
+    finiteItems.forEach(item => spatialIndex.insert({ ...item }))
     this.setChildIndex(id, spatialIndex)
     return spatialIndex
   }
@@ -295,4 +314,5 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
     }
     return undefined
   }
+
 }

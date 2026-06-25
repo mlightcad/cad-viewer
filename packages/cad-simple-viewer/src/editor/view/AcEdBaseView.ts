@@ -21,7 +21,7 @@ import {
   AcEdSelectionAction,
   resolveSelectionActionFromEvent
 } from './AcEdSelectionAction'
-import { AcEdSpatialQueryResultItemEx } from './AcEdSpatialQueryResult'
+import { AcEdSpatialQueryResultItemEx, isEffectiveSpatialQueryHit } from './AcEdSpatialQueryResult'
 
 /**
  * Interface to define arguments of mouse event events.
@@ -817,6 +817,9 @@ export abstract class AcEdBaseView {
     const results = this.search(box)
     const ids: AcDbObjectId[] = []
     results.forEach(item => {
+      if (!isEffectiveSpatialQueryHit(item)) {
+        return
+      }
       if (
         mode === 'crossing' ||
         (item.minX >= box.min.x &&

@@ -206,6 +206,69 @@ describe('AcTrGroup wcsBbox', () => {
     expectWcsBboxCloseTo(group.wcsBbox, [100, 200, 0], [115, 210, 0])
   })
 
+  it('keeps WCS child boxes after applyMatrix and refreshWcsChildBoxesFromChildren', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine(
+      'line-title',
+      { x: -180, y: 28 },
+      { x: 0, y: 28 },
+      context
+    )
+    const group = new AcTrGroup([line], context)
+
+    group.applyMatrix(new AcGeMatrix3d().makeTranslation(574, 0, 0))
+    group.refreshWcsChildBoxesFromChildren()
+
+    expect(group.wcsChildBoxes[0]).toMatchObject({
+      minX: 394,
+      minY: 28,
+      maxX: 574,
+      maxY: 28,
+      id: 'line-title'
+    })
+    expectWcsBboxCloseTo(group.wcsBbox, [394, 28, 0], [574, 28, 0])
+  })
+
+  it('does not inflate aggregate wcsBbbox when block-local attributes are added after applyMatrix', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine(
+      'line-title',
+      { x: -180, y: 28 },
+      { x: 0, y: 28 },
+      context
+    )
+    const group = new AcTrGroup([line], context)
+
+    group.applyMatrix(new AcGeMatrix3d().makeTranslation(574, 0, 0))
+
+    // AcDbRenderingCache.draw converts WCS attribute geometry to block-local
+    // space before addChild while the INSERT transform remains on the group.
+    const attribute = createLine(
+      'attr-1',
+      { x: -180, y: 0 },
+      { x: -170, y: 10 },
+      context,
+      'CARTOUCHE'
+    )
+    group.addChild(attribute)
+
+    expect(group.wcsChildBoxes.find(box => box.id === 'line-title')).toMatchObject(
+      {
+        minX: 394,
+        minY: 28,
+        maxX: 574,
+        maxY: 28
+      }
+    )
+    expect(group.wcsChildBoxes.find(box => box.id === 'attr-1')).toMatchObject({
+      minX: 394,
+      minY: 0,
+      maxX: 404,
+      maxY: 10
+    })
+    expectWcsBboxCloseTo(group.wcsBbox, [394, 0, 0], [574, 28, 0])
+  })
+
   it('skips invalid child boxes when applying insert transform', () => {
     const context = new AcTrRenderContext()
     const line = createLine(

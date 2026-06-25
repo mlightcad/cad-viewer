@@ -14,10 +14,21 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
   }
 
   insert(item: AcEdSpatialQueryResultItem) {
-    if (!this.idMap.has(item.id)) {
-      this.tree.insert(item)
-      this.idMap.set(item.id, item)
+    const existing = this.idMap.get(item.id)
+    if (existing) {
+      if (
+        existing.minX === item.minX &&
+        existing.minY === item.minY &&
+        existing.maxX === item.maxX &&
+        existing.maxY === item.maxY
+      ) {
+        return
+      }
+      this.remove(existing, (a, b) => a.id === b.id)
+      this.idMap.delete(item.id)
     }
+    this.tree.insert(item)
+    this.idMap.set(item.id, item)
   }
 
   load(items: readonly AcEdSpatialQueryResultItem[]) {

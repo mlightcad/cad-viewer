@@ -54,6 +54,7 @@ jest.mock('rbush', () => {
 })
 
 import { AcTrHierarchicalSpatialIndex } from '../src/spatialIndex/AcTrHierarchicalSpatialIndex'
+import { isEffectiveSpatialQueryHit } from '../src/editor/view/AcEdSpatialQueryResult'
 
 describe('AcTrHierarchicalSpatialIndex', () => {
   test('does not pollute child index with root item when objectId is reused', () => {
@@ -90,5 +91,175 @@ describe('AcTrHierarchicalSpatialIndex', () => {
     expect(hits[0].children?.map((item: { id: string }) => item.id)).toEqual([
       'SUB_ENTITY_ID'
     ])
+  })
+
+  test('passes through the registered root bbox and attaches child hits', () => {
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const insertId = 'INSERT-7B33'
+
+    spatialIndex.insert({
+      minX: 394,
+      minY: 0,
+      maxX: 574,
+      maxY: 56,
+      id: insertId
+    })
+    spatialIndex.ensureChildIndex(insertId, [
+      { minX: 394, minY: 0, maxX: 574, maxY: 56, id: 'line-1' }
+    ])
+
+    const hits = spatialIndex.search({
+      minX: -10,
+      minY: -72,
+      maxX: 584,
+      maxY: 410
+    })
+
+    expect(hits).toHaveLength(1)
+    expect(hits[0].minX).toBeCloseTo(394)
+    expect(hits[0].maxX).toBeCloseTo(574)
+    expect(hits[0].children?.[0].id).toBe('line-1')
+  })
+
+  test('syncs root bbox when ensureChildIndex loads after stale insert', () => {
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const insertId = 'INSERT-stale'
+
+    spatialIndex.insert({
+      minX: -180,
+      minY: 0,
+      maxX: 574,
+      maxY: 56,
+      id: insertId
+    })
+    spatialIndex.ensureChildIndex(insertId, [
+      { minX: 394, minY: 0, maxX: 574, maxY: 56, id: 'line-1' }
+    ])
+
+    const hits = spatialIndex.search({
+      minX: 0,
+      minY: 0,
+      maxX: 50,
+      maxY: 50
+    })
+
+    expect(hits).toHaveLength(0)
+  })
+
+  test('surfaces stale root via empty children when insert overwrites synced root', () => {
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const insertId = 'INSERT-stale-after'
+
+    spatialIndex.ensureChildIndex(insertId, [
+      { minX: 394, minY: 0, maxX: 574, maxY: 56, id: 'line-1' }
+    ])
+    spatialIndex.insert({
+      minX: -180,
+      minY: 0,
+      maxX: 574,
+      maxY: 56,
+      id: insertId
+    })
+
+    const hits = spatialIndex.search({
+      minX: 0,
+      minY: 0,
+      maxX: 50,
+      maxY: 50
+    })
+
+    expect(hits).toHaveLength(1)
+    expect(hits[0].minX).toBeCloseTo(-180)
+    expect(hits[0].maxX).toBeCloseTo(574)
+    expect(hits[0].children).toEqual([])
+    expect(isEffectiveSpatialQueryHit(hits[0])).toBe(false)
+  })
+
+  test('isEffectiveSpatialQueryHit rejects empty child intersections', () => {
+    expect(
+      isEffectiveSpatialQueryHit({
+        minX: 0,
+        minY: 0,
+        maxX: 10,
+        maxY: 10,
+        id: 'INSERT-1',
+        children: []
+      })
+    ).toBe(false)
+    expect(
+      isEffectiveSpatialQueryHit({
+        minX: 0,
+        minY: 0,
+        maxX: 10,
+        maxY: 10,
+        id: 'LINE-1'
+      })
+    ).toBe(true)
+  })
+
+  test('syncs root bbox when ensureChildIndex reloads child items', () => {
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const insertId = 'INSERT-reload-root'
+
+    spatialIndex.insert({
+      minX: 0,
+      minY: 0,
+      maxX: 100,
+      maxY: 10,
+      id: insertId
+    })
+    spatialIndex.ensureChildIndex(insertId, [
+      { minX: 0, minY: 0, maxX: 50, maxY: 10, id: 'old-line' }
+    ])
+    spatialIndex.ensureChildIndex(insertId, [
+      { minX: 50, minY: 0, maxX: 100, maxY: 10, id: 'new-line' }
+    ])
+
+    const hits = spatialIndex.search({
+      minX: 60,
+      minY: 0,
+      maxX: 90,
+      maxY: 10
+    })
+
+    expect(hits).toHaveLength(1)
+    expect(hits[0].children?.map(item => item.id)).toEqual(['new-line'])
+
+    const miss = spatialIndex.search({
+      minX: 0,
+      minY: 0,
+      maxX: 40,
+      maxY: 10
+    })
+    expect(miss).toHaveLength(0)
+  })
+
+  test('reloads child items when ensureChildIndex is called again for the same id', () => {
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const insertId = 'INSERT-reload'
+
+    spatialIndex.insert({
+      minX: 0,
+      minY: 0,
+      maxX: 100,
+      maxY: 10,
+      id: insertId
+    })
+    spatialIndex.ensureChildIndex(insertId, [
+      { minX: 0, minY: 0, maxX: 50, maxY: 10, id: 'old-line' }
+    ])
+    spatialIndex.ensureChildIndex(insertId, [
+      { minX: 50, minY: 0, maxX: 100, maxY: 10, id: 'new-line' }
+    ])
+
+    const hits = spatialIndex.search({
+      minX: 60,
+      minY: 0,
+      maxX: 90,
+      maxY: 10
+    })
+
+    expect(hits).toHaveLength(1)
+    expect(hits[0].children?.map(item => item.id)).toEqual(['new-line'])
   })
 })
