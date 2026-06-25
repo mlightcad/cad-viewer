@@ -19,6 +19,11 @@ export interface AcTrEntityBox {
 export class AcTrGroup extends AcTrEntity {
   private _isOnTheSameLayer: boolean
   private _wcsChildBoxes: AcTrEntityBox[] = []
+  /** Per-source-entity INSERT chain from nested block references to this group's block. */
+  private _sourceEntitySpatialMatrices = new Map<
+    AcDbObjectId,
+    THREE.Matrix4
+  >()
 
   /**
    * Leaf {@link AcTrEntity} instances that contributed geometry to this group
@@ -145,6 +150,16 @@ export class AcTrGroup extends AcTrEntity {
   }
 
   /**
+   * Returns the accumulated nested-INSERT transform for one tracked source
+   * entity, used when rebuilding {@link wcsChildBoxes}.
+   */
+  getSourceEntitySpatialMatrix(
+    entityId: AcDbObjectId
+  ): THREE.Matrix4 | undefined {
+    return this._sourceEntitySpatialMatrices.get(entityId)
+  }
+
+  /**
    * Rebuilds {@link wcsChildBoxes} and the aggregate {@link wcsBbox} from
    * current entity geometry.
    *
@@ -176,6 +191,11 @@ export class AcTrGroup extends AcTrEntity {
    *   full entity `matrixWorld` is applied to `wcsBbbox`.
    */
   refreshWcsChildBoxesFromChildren() {
+    if (this._wcsChildBoxes.length > 0) {
+      this.reconcileDeferredChildBoxes()
+      return
+    }
+
     const previous = this._wcsChildBoxes.map(box => ({ ...box }))
     this._wcsChildBoxes.length = 0
     this.updateMatrixWorld(true)
@@ -194,6 +214,57 @@ export class AcTrGroup extends AcTrEntity {
     if (this._wcsChildBoxes.length === 0 && previous.length > 0) {
       previous.forEach(box => this._wcsChildBoxes.push({ ...box }))
     }
+    this.syncWcsBboxFromChildBoxes()
+  }
+
+  /**
+   * Fills in child boxes for deferred geometry without recomputing boxes that
+   * were already populated by {@link storeBoxes} and {@link applyMatrix}.
+   */
+  private reconcileDeferredChildBoxes() {
+    this.updateMatrixWorld(true)
+    const scratch = new THREE.Box3()
+    const boxById = new Map(this._wcsChildBoxes.map(box => [box.id, box]))
+
+    for (const entity of this._sourceEntities) {
+      const existing = boxById.get(entity.objectId)
+      if (existing && AcTrGroup.isFiniteEntityBox(existing)) {
+        continue
+      }
+      const computed = this.computeSourceEntityWcsChildBox(entity, scratch)
+      if (!computed) {
+        continue
+      }
+      if (existing) {
+        Object.assign(existing, computed)
+      } else {
+        this._wcsChildBoxes.push(computed)
+        boxById.set(entity.objectId, computed)
+      }
+    }
+
+    this.children.forEach(child => {
+      if (!(child instanceof AcTrEntity)) {
+        return
+      }
+      if (this._sourceEntities.includes(child)) {
+        return
+      }
+      const existing = boxById.get(child.objectId)
+      if (existing && AcTrGroup.isFiniteEntityBox(existing)) {
+        return
+      }
+      const computed = this.computeTreeEntityWcsChildBox(child, scratch)
+      if (!computed) {
+        return
+      }
+      if (existing) {
+        Object.assign(existing, computed)
+      } else {
+        this._wcsChildBoxes.push(computed)
+      }
+    })
+
     this.syncWcsBboxFromChildBoxes()
   }
 
@@ -271,6 +342,10 @@ export class AcTrGroup extends AcTrEntity {
     this._isOnTheSameLayer = object._isOnTheSameLayer
     this._wcsChildBoxes = []
     object.wcsChildBoxes.forEach(box => this._wcsChildBoxes.push({ ...box }))
+    this._sourceEntitySpatialMatrices = new Map()
+    object._sourceEntitySpatialMatrices.forEach((matrix, entityId) => {
+      this._sourceEntitySpatialMatrices.set(entityId, matrix.clone())
+    })
     this._sourceEntities = object._sourceEntities.map(
       entity => entity.fastDeepClone() as AcTrEntity
     )
@@ -409,7 +484,14 @@ export class AcTrGroup extends AcTrEntity {
    */
   private registerSourceEntities(object: THREE.Object3D) {
     if (object instanceof AcTrGroup) {
+      const innerMatrix = object.matrix.clone()
+      const identity = new THREE.Matrix4()
       object.getSourceEntities().forEach(entity => {
+        const parentNested =
+          object.getSourceEntitySpatialMatrix(entity.objectId) ??
+          this._sourceEntitySpatialMatrices.get(entity.objectId)
+        const composed = innerMatrix.clone().multiply(parentNested ?? identity)
+        this._sourceEntitySpatialMatrices.set(entity.objectId, composed)
         this._sourceEntities.push(entity)
       })
       return
@@ -446,29 +528,51 @@ export class AcTrGroup extends AcTrEntity {
     entity: AcTrEntity,
     scratch: THREE.Box3
   ) {
+    const computed = this.computeSourceEntityWcsChildBox(entity, scratch)
+    if (computed) {
+      this._wcsChildBoxes.push(computed)
+    }
+  }
+
+  private computeSourceEntityWcsChildBox(
+    entity: AcTrEntity,
+    scratch: THREE.Box3
+  ): AcTrEntityBox | undefined {
     if (entity.wcsBbox.isEmpty()) {
-      return
+      return undefined
     }
 
     scratch.copy(entity.wcsBbox)
     entity.updateMatrixWorld(true)
-    const transform = AcTrGroup.isWorldMatrixIdentity(this.matrixWorld)
-      ? entity.matrix
-      : this.matrixWorld
-    if (!AcTrGroup.isWorldMatrixIdentity(transform)) {
-      scratch.applyMatrix4(transform)
-    }
-    if (!Number.isFinite(scratch.min.x) || !Number.isFinite(scratch.max.x)) {
-      return
+
+    const nestedInsertMatrix =
+      this._sourceEntitySpatialMatrices.get(entity.objectId)
+    if (
+      nestedInsertMatrix &&
+      !AcTrGroup.isWorldMatrixIdentity(nestedInsertMatrix)
+    ) {
+      scratch.applyMatrix4(nestedInsertMatrix)
+    } else if (
+      AcTrGroup.isWorldMatrixIdentity(this.matrixWorld) &&
+      !AcTrGroup.isWorldMatrixIdentity(entity.matrix)
+    ) {
+      scratch.applyMatrix4(entity.matrix)
     }
 
-    this._wcsChildBoxes.push({
+    if (!AcTrGroup.isWorldMatrixIdentity(this.matrixWorld)) {
+      scratch.applyMatrix4(this.matrixWorld)
+    }
+    if (!Number.isFinite(scratch.min.x) || !Number.isFinite(scratch.max.x)) {
+      return undefined
+    }
+
+    return {
       minX: scratch.min.x,
       minY: scratch.min.y,
       maxX: scratch.max.x,
       maxY: scratch.max.y,
       id: entity.objectId
-    })
+    }
   }
 
   /**
@@ -488,24 +592,34 @@ export class AcTrGroup extends AcTrEntity {
    *   allocations during refresh.
    */
   private appendTreeEntityWcsChildBox(entity: AcTrEntity, scratch: THREE.Box3) {
+    const computed = this.computeTreeEntityWcsChildBox(entity, scratch)
+    if (computed) {
+      this._wcsChildBoxes.push(computed)
+    }
+  }
+
+  private computeTreeEntityWcsChildBox(
+    entity: AcTrEntity,
+    scratch: THREE.Box3
+  ): AcTrEntityBox | undefined {
     if (entity.wcsBbox.isEmpty()) {
-      return
+      return undefined
     }
 
     entity.updateMatrixWorld(true)
     scratch.copy(entity.wcsBbox)
     scratch.applyMatrix4(entity.matrixWorld)
     if (!Number.isFinite(scratch.min.x) || !Number.isFinite(scratch.max.x)) {
-      return
+      return undefined
     }
 
-    this._wcsChildBoxes.push({
+    return {
       minX: scratch.min.x,
       minY: scratch.min.y,
       maxX: scratch.max.x,
       maxY: scratch.max.y,
       id: entity.objectId
-    })
+    }
   }
 
   /**

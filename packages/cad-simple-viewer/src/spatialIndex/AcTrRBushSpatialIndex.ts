@@ -2,7 +2,7 @@ import { AcDbObjectId } from '@mlightcad/data-model'
 import RBush from 'rbush'
 
 import { AcEdSpatialQueryResultItem } from '../editor/view'
-import { AcTrSpatialIndex, AcTrSpatialIndexBBox } from './AcTrSpatialIndex'
+import { AcTrSpatialIndex, AcTrSpatialIndexBBox, AcTrSpatialSearchOptions, isSpatialBoxFullyInside } from './AcTrSpatialIndex'
 
 export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
   private readonly tree: RBush<AcEdSpatialQueryResultItem>
@@ -66,8 +66,15 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
     this.idMap.clear()
   }
 
-  search(bbox: AcTrSpatialIndexBBox): AcEdSpatialQueryResultItem[] {
-    return this.tree.search(bbox)
+  search(
+    bbox: AcTrSpatialIndexBBox,
+    options?: AcTrSpatialSearchOptions
+  ): AcEdSpatialQueryResultItem[] {
+    const hits = this.tree.search(bbox)
+    if (options?.selectionMode !== 'window') {
+      return hits
+    }
+    return hits.filter(item => isSpatialBoxFullyInside(item, bbox))
   }
 
   collides(bbox: AcTrSpatialIndexBBox): boolean {

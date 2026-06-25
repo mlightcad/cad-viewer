@@ -9,6 +9,7 @@ import * as THREE from 'three'
 import { AcEdLayerInfo, AcEdSpatialQueryResultItem } from '../editor'
 import { unionSpatialQueryItems } from '../editor/view/AcEdSpatialQueryResult'
 import { AcTrHierarchicalSpatialIndex } from '../spatialIndex'
+import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrLayer, AcTrLayerStats } from './AcTrLayer'
 
 /**
@@ -587,14 +588,16 @@ export class AcTrLayout {
    * @param box - Input the query bounding box (2D or 3D)
    * @returns Return query results containing entity IDs and their bounds
    */
-  search(box: AcGeBox2d | AcGeBox3d) {
-    const results = this._spatialIndex.search({
-      minX: box.min.x,
-      minY: box.min.y,
-      maxX: box.max.x,
-      maxY: box.max.y
-    })
-    return results
+  search(box: AcGeBox2d | AcGeBox3d, options?: AcTrSpatialSearchOptions) {
+    return this._spatialIndex.search(
+      {
+        minX: box.min.x,
+        minY: box.min.y,
+        maxX: box.max.x,
+        maxY: box.max.y
+      },
+      options
+    )
   }
 
   /**

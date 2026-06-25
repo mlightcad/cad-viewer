@@ -58,6 +58,7 @@ import {
   readLayoutBackgroundColor
 } from '../editor/global/AcEdUiColor'
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
+import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
 import { AcTrEntityDisplayController } from './AcTrEntityDisplayController'
@@ -1102,8 +1103,8 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  search(box: AcGeBox2d | AcGeBox3d) {
-    return this._scene.search(box)
+  search(box: AcGeBox2d | AcGeBox3d, options?: AcTrSpatialSearchOptions) {
+    return this._scene.search(box, options)
   }
 
   /**

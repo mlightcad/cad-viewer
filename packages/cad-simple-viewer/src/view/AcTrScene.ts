@@ -8,6 +8,7 @@ import {
 import { AcEdLayerInfo } from 'editor'
 import * as THREE from 'three'
 
+import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrLayer } from './AcTrLayer'
 import { AcTrLayout, AcTrLayoutStats } from './AcTrLayout'
 
@@ -362,9 +363,9 @@ export class AcTrScene {
    * @param box Input the query bounding box
    * @returns Return query results
    */
-  search(box: AcGeBox2d | AcGeBox3d) {
+  search(box: AcGeBox2d | AcGeBox3d, options?: AcTrSpatialSearchOptions) {
     const activeLayout = this.activeLayout
-    return activeLayout ? activeLayout?.search(box) : []
+    return activeLayout ? activeLayout.search(box, options) : []
   }
 
   addLayer(layer: AcEdLayerInfo) {

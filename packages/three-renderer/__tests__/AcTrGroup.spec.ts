@@ -269,6 +269,62 @@ describe('AcTrGroup wcsBbox', () => {
     expectWcsBboxCloseTo(group.wcsBbox, [394, 0, 0], [574, 28, 0])
   })
 
+  it('preserves applyMatrix child boxes when refresh runs after deferred syncDraw', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine(
+      'line-a',
+      { x: 0, y: 0 },
+      { x: 10, y: 5 },
+      context
+    )
+    const group = new AcTrGroup([line], context)
+    group.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 200, 0))
+
+    // Block-local wcsBbbox can remain far from WCS after nested INSERT assembly.
+    // A full refresh from source entities would inflate spatial bounds again.
+    line.wcsBbox.set(
+      new THREE.Vector3(-4_000_000, 0, 0),
+      new THREE.Vector3(-3_999_990, 5, 0)
+    )
+
+    group.refreshWcsChildBoxesFromChildren()
+
+    expect(group.wcsChildBoxes[0]).toMatchObject({
+      minX: 100,
+      minY: 200,
+      maxX: 110,
+      maxY: 205,
+      id: 'line-a'
+    })
+    expectWcsBboxCloseTo(group.wcsBbox, [100, 200, 0], [110, 205, 0])
+  })
+
+  it('rebuilds nested insert child boxes after refreshWcsChildBoxesFromChildren', () => {
+    const context = new AcTrRenderContext()
+    const innerLine = createLine(
+      'inner-line',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      context
+    )
+    const innerGroup = new AcTrGroup([innerLine], context)
+    innerGroup.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 200, 0))
+
+    const outerGroup = new AcTrGroup([innerGroup], context)
+    outerGroup.applyMatrix(new AcGeMatrix3d().makeTranslation(574, 0, 0))
+    outerGroup.refreshWcsChildBoxesFromChildren()
+
+    expect(
+      outerGroup.wcsChildBoxes.find(box => box.id === 'inner-line')
+    ).toMatchObject({
+      minX: 674,
+      minY: 200,
+      maxX: 684,
+      maxY: 200
+    })
+    expectWcsBboxCloseTo(outerGroup.wcsBbox, [674, 200, 0], [684, 200, 0])
+  })
+
   it('skips invalid child boxes when applying insert transform', () => {
     const context = new AcTrRenderContext()
     const line = createLine(

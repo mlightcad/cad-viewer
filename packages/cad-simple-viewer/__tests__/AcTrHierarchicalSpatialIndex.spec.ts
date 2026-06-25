@@ -262,4 +262,37 @@ describe('AcTrHierarchicalSpatialIndex', () => {
     expect(hits).toHaveLength(1)
     expect(hits[0].children?.map(item => item.id)).toEqual(['new-line'])
   })
+
+  test('window search requires every indexed child to fit inside the pick box', () => {
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const insertId = 'INSERT-window'
+
+    spatialIndex.insert({
+      minX: 0,
+      minY: 0,
+      maxX: 300,
+      maxY: 10,
+      id: insertId
+    })
+    spatialIndex.ensureChildIndex(insertId, [
+      { minX: 0, minY: 0, maxX: 100, maxY: 10, id: 'line-left' },
+      { minX: 200, minY: 0, maxX: 300, maxY: 10, id: 'line-right' }
+    ])
+
+    const pickBox = { minX: 0, minY: 0, maxX: 100, maxY: 10 }
+
+    const crossing = spatialIndex.search(pickBox, { selectionMode: 'crossing' })
+    expect(crossing).toHaveLength(1)
+    expect(crossing[0].children?.map(item => item.id)).toEqual(['line-left'])
+
+    const window = spatialIndex.search(pickBox, { selectionMode: 'window' })
+    expect(window).toHaveLength(0)
+
+    const windowAllInside = spatialIndex.search(
+      { minX: -5, minY: -5, maxX: 305, maxY: 15 },
+      { selectionMode: 'window' }
+    )
+    expect(windowAllInside).toHaveLength(1)
+    expect(windowAllInside[0].id).toBe(insertId)
+  })
 })

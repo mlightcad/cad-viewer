@@ -252,24 +252,13 @@ describe('AcTrLayout spatial index', () => {
     pickBox: import('@mlightcad/data-model').AcGeBox2d,
     mode: 'window' | 'crossing'
   ) {
-    const results = layout.search(pickBox)
+    const results = layout.search(pickBox, { selectionMode: mode })
     const ids: string[] = []
     results.forEach(item => {
       if (!isEffectiveSpatialQueryHit(item)) {
         return
       }
-      if (mode === 'crossing') {
-        ids.push(item.id)
-        return
-      }
-      const fullyInside =
-        item.minX >= pickBox.min.x &&
-        item.maxX <= pickBox.max.x &&
-        item.minY >= pickBox.min.y &&
-        item.maxY <= pickBox.max.y
-      if (fullyInside) {
-        ids.push(item.id)
-      }
+      ids.push(item.id)
     })
     return ids
   }

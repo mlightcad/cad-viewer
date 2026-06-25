@@ -9,7 +9,7 @@ import {
 import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert'
 import { AcTrLinearSpatialIndex } from './AcTrLinearSpatialIndex'
 import { AcTrRBushSpatialIndex } from './AcTrRBushSpatialIndex'
-import { AcTrSpatialIndex, AcTrSpatialIndexBBox } from './AcTrSpatialIndex'
+import { AcTrSpatialIndex, AcTrSpatialIndexBBox, AcTrSpatialSearchOptions, isSpatialBoxFullyInside } from './AcTrSpatialIndex'
 
 /**
  * A two-level (hierarchical) spatial index designed for complex CAD
@@ -161,27 +161,68 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
    *      should filter with {@link isEffectiveSpatialQueryHit}.
    *
    * @param bbox Query bounding box.
+   * @param options Optional query semantics. With `selectionMode: 'window'`,
+   *   block references that have a child index must have every indexed child
+   *   fully inside {@link bbox}; other hits must have their root box fully
+   *   inside {@link bbox}.
    * @returns Aggregated search results from both levels.
    */
-  search(bbox: AcTrSpatialIndexBBox): AcEdSpatialQueryResultItemEx[] {
+  search(
+    bbox: AcTrSpatialIndexBBox,
+    options?: AcTrSpatialSearchOptions
+  ): AcEdSpatialQueryResultItemEx[] {
     const level1 = this.rootIndex.search(bbox)
     const result: AcEdSpatialQueryResultItemEx[] = []
 
     for (const hit of level1) {
       const child = this.childIndexes.get(hit.id)
       if (!child) {
-        result.push(hit as AcEdSpatialQueryResultItem)
+        if (
+          options?.selectionMode !== 'window' ||
+          isSpatialBoxFullyInside(hit, bbox)
+        ) {
+          result.push(hit as AcEdSpatialQueryResultItem)
+        }
         continue
       }
 
       const level2 = child.search(bbox)
-      result.push({
+      const hitEx: AcEdSpatialQueryResultItemEx = {
         ...hit,
         children: level2
-      })
+      }
+      if (
+        options?.selectionMode !== 'window' ||
+        this.isWindowSelectionHit(hitEx, bbox)
+      ) {
+        result.push(hitEx)
+      }
     }
 
     return result
+  }
+
+  /**
+   * Window-selection containment for one hierarchical hit.
+   *
+   * INSERT entities with a child index are contained only when every finite
+   * indexed child lies inside the pick box, not when a coarse root bbox fits.
+   */
+  private isWindowSelectionHit(
+    hit: AcEdSpatialQueryResultItemEx,
+    bbox: AcTrSpatialIndexBBox
+  ): boolean {
+    const child = this.childIndexes.get(hit.id)
+    if (!child) {
+      return isSpatialBoxFullyInside(hit, bbox)
+    }
+
+    const allChildren = child.all().filter(isFiniteSpatialBBox)
+    if (allChildren.length === 0) {
+      return false
+    }
+
+    return allChildren.every(item => isSpatialBoxFullyInside(item, bbox))
   }
 
   /**
