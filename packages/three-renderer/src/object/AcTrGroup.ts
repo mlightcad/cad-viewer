@@ -288,6 +288,12 @@ export class AcTrGroup extends AcTrEntity {
 
     this.getSourceEntities().forEach(finalizeDeferredEntity)
     this.traverse(child => {
+      // THREE.Object3D.traverse invokes the callback on `this` first. An
+      // empty or all-deferred group has no drawable children yet, so
+      // finalizeDeferredEntity would call syncDraw() on itself indefinitely.
+      if (child === this) {
+        return
+      }
       if (!(child instanceof AcTrEntity)) {
         return
       }

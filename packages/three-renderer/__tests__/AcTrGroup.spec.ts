@@ -418,4 +418,12 @@ describe('AcTrGroup dispose', () => {
 
     disposeObjectSpy.mockRestore()
   })
+
+  it('syncDraw does not recurse infinitely on empty nested groups', () => {
+    const context = new AcTrRenderContext()
+    const emptyInnerGroup = new AcTrGroup([], context)
+    const outerGroup = new AcTrGroup([emptyInnerGroup], context)
+
+    expect(() => outerGroup.syncDraw()).not.toThrow()
+  })
 })
