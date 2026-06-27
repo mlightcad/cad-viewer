@@ -73,6 +73,7 @@ import { AcApLayerUnisoCmd } from '../src/command/layer/AcApLayerUnisoCmd'
 
 interface TestLayer {
   name: string
+  objectId: string
   isOff: boolean
   standardFlags?: number
   isFrozen: boolean
@@ -88,6 +89,7 @@ const createLayer = (
   standardFlags?: number
 ): TestLayer => ({
   name,
+  objectId: `layer:${name}`,
   isOff,
   standardFlags,
   get isFrozen() {
@@ -106,8 +108,13 @@ const createContext = (
 ) => {
   const clear = jest.fn()
   const layersByName = new Map(layers.map(layer => [layer.name, layer]))
+  const layersById = new Map(layers.map(layer => [layer.objectId, layer]))
+  const openObjectForWrite = jest.fn((objectId: string) =>
+    layersById.get(objectId)
+  )
   const database = {
     clayer: currentLayer,
+    openObjectForWrite,
     tables: {
       blockTable: {
         getEntityById: (objectId: string) => entitiesById[objectId]

@@ -69,7 +69,10 @@ export abstract class AcTrMaterialManager<T> {
 
     // cache original traits
     if (!this.keyToTraits[key]) {
-      this.keyToTraits[key] = { ...deepClone(traits), ...options }
+      this.keyToTraits[key] = this.cloneTraits({
+        ...traits,
+        ...options
+      } as AcGiSubEntityTraits & T)
     }
 
     // hit cache
@@ -121,7 +124,7 @@ export abstract class AcTrMaterialManager<T> {
       )
 
       // Step 1: merged traits (only mutate traits that are actually ByLayer)
-      const mergedTraits = deepClone(oldTraits)
+      const mergedTraits = this.cloneTraits(oldTraits)
       this.applyInheritedLayerTraits(mergedTraits, newTraits, byLayerBindings)
       if (newTraits.layer != null) {
         mergedTraits.layer = newTraits.layer
@@ -255,7 +258,7 @@ export abstract class AcTrMaterialManager<T> {
     }
 
     const remappedTraits: AcGiSubEntityTraits & T = {
-      ...deepClone(traits),
+      ...this.cloneTraits(traits),
       layer: layerName
     }
     const byLayerBindings = this.resolveByLayerBindings(traits, material)
@@ -273,6 +276,26 @@ export abstract class AcTrMaterialManager<T> {
       remappedTraits,
       byLayerBindings
     )
+  }
+
+  /**
+   * Clones render traits while preserving class-based color/transparency values.
+   *
+   * {@link deepClone} only copies enumerable fields, so `AcCmColor` /
+   * `AcCmTransparency` instances would degrade into plain objects and later
+   * resolve to white during material rebuilds.
+   */
+  protected cloneTraits<U extends AcGiSubEntityTraits & Partial<T>>(
+    traits: U
+  ): U {
+    const cloned = deepClone(traits) as U
+    if (traits.color?.clone) {
+      cloned.color = traits.color.clone()
+    }
+    if (traits.transparency?.clone) {
+      cloned.transparency = traits.transparency.clone()
+    }
+    return cloned
   }
 
   /**

@@ -1,4 +1,4 @@
-import { AcDbLayerTableRecord, AcDbObjectId } from '@mlightcad/data-model'
+import { AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
@@ -9,6 +9,11 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import {
+  openLayerForWrite,
+  setLayerFrozenState,
+  setLayerLockedState
+} from './AcApLayerEdit'
 import {
   AcApLayerIsoLayerSnapshot,
   AcApLayerIsoLayerState,
@@ -265,28 +270,6 @@ export class AcApLayerIsoCmd extends AcEdCommand {
   }
 
   /**
-   * Sets or clears the frozen bit while preserving other layer flags.
-   *
-   * @param layer - Target layer table record.
-   * @param frozen - Whether the layer should be marked frozen.
-   */
-  private setLayerFrozen(layer: AcDbLayerTableRecord, frozen: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = frozen ? flags | 0x01 : flags & ~0x01
-  }
-
-  /**
-   * Sets or clears the locked bit while preserving other layer flags.
-   *
-   * @param layer - Target layer table record.
-   * @param locked - Whether the layer should be marked locked.
-   */
-  private setLayerLocked(layer: AcDbLayerTableRecord, locked: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = locked ? flags | 0x04 : flags & ~0x04
-  }
-
-  /**
    * Resolves selected entities to layer names and applies isolation.
    *
    * @param context - Active application context containing database and view.
@@ -320,33 +303,36 @@ export class AcApLayerIsoCmd extends AcEdCommand {
     const affectedLayerNames = new Set<string>()
 
     for (const layer of table.newIterator()) {
-      if (targetNames.has(layer.name)) {
-        if (layer.isOff) {
-          layer.isOff = false
-          affectedLayerNames.add(layer.name)
+      const opened = openLayerForWrite(db, layer)
+      if (!opened) continue
+
+      if (targetNames.has(opened.name)) {
+        if (opened.isOff) {
+          opened.isOff = false
+          affectedLayerNames.add(opened.name)
         }
-        if (layer.isFrozen) {
-          this.setLayerFrozen(layer, false)
-          affectedLayerNames.add(layer.name)
+        if (opened.isFrozen) {
+          setLayerFrozenState(opened, false)
+          affectedLayerNames.add(opened.name)
         }
-        if (layer.isLocked) {
-          this.setLayerLocked(layer, false)
-          affectedLayerNames.add(layer.name)
+        if (opened.isLocked) {
+          setLayerLockedState(opened, false)
+          affectedLayerNames.add(opened.name)
         }
         continue
       }
 
       if (AcApLayerIsoCmd._settings.isolationMode === 'Off') {
-        if (!layer.isOff) {
-          layer.isOff = true
-          affectedLayerNames.add(layer.name)
+        if (!opened.isOff) {
+          opened.isOff = true
+          affectedLayerNames.add(opened.name)
         }
         continue
       }
 
-      if (!layer.isLocked) {
-        this.setLayerLocked(layer, true)
-        affectedLayerNames.add(layer.name)
+      if (!opened.isLocked) {
+        setLayerLockedState(opened, true)
+        affectedLayerNames.add(opened.name)
       }
     }
 

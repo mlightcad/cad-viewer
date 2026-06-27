@@ -1,4 +1,4 @@
-import { AcDbEntity, AcDbObjectId } from '@mlightcad/data-model'
+import { AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
@@ -76,7 +76,7 @@ export class AcApLayerCurCmd extends AcEdCommand {
       return
     }
 
-    const changedEntities: AcDbEntity[] = []
+    let changedCount = 0
     let alreadyCurrent = 0
     let missing = 0
 
@@ -92,11 +92,17 @@ export class AcApLayerCurCmd extends AcEdCommand {
         return
       }
 
-      entity.layer = currentLayer.name
-      changedEntities.push(entity)
+      const opened = db.openEntityForWrite(objectId)
+      if (!opened) {
+        missing++
+        return
+      }
+
+      opened.layer = currentLayer.name
+      changedCount++
     })
 
-    if (changedEntities.length === 0) {
+    if (changedCount === 0) {
       this.showMessage(
         alreadyCurrent > 0
           ? AcApI18n.t('jig.laycur.alreadyCurrent')
@@ -106,12 +112,11 @@ export class AcApLayerCurCmd extends AcEdCommand {
       return
     }
 
-    changedEntities.forEach(entity => entity.triggerModifiedEvent())
     context.view.selectionSet.clear()
     // Layer changes move entities between render buckets, so rebuild the view.
     AcApDocManager.instance.regen()
     this.showMessage(
-      `${AcApI18n.t('jig.laycur.changed')}: ${changedEntities.length} (${currentLayer.name})`,
+      `${AcApI18n.t('jig.laycur.changed')}: ${changedCount} (${currentLayer.name})`,
       'success'
     )
   }

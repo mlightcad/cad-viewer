@@ -1,7 +1,7 @@
 import {
   AcApDocManager,
-  AcDbDocumentEventArgs
-} from '@mlightcad/cad-simple-viewer'
+  acapRunDatabaseEdit,
+  AcDbDocumentEventArgs} from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
   AcDbDatabase,
@@ -40,6 +40,7 @@ export interface LayerStateSnapshot {
 export function useLayers(editor: AcApDocManager) {
   const layerFrozenFlag = 0x01
   const layerLockedFlag = 0x04
+  const layerEditLabel = 'Layer'
   const reactiveLayers = reactive<LayerInfo[]>([])
   const currentLayerNameState = ref('')
   let observedDatabase: AcDbDatabase | undefined
@@ -47,6 +48,27 @@ export function useLayers(editor: AcApDocManager) {
   const getCurrentDatabase = () => editor.curDocument?.database
   const syncCurrentLayerName = (db = getCurrentDatabase()) => {
     currentLayerNameState.value = db?.clayer || ''
+  }
+
+  const openLayerForWrite = (
+    db: AcDbDatabase,
+    layerName: string
+  ): AcDbLayerTableRecord | undefined => {
+    const layer = db.tables.layerTable.getAt(layerName)
+    if (!layer) return undefined
+    return db.openObjectForWrite<AcDbLayerTableRecord>(layer.objectId)
+  }
+
+  const runLayerEdit = (
+    db: AcDbDatabase | undefined,
+    fn: () => boolean
+  ): boolean => {
+    if (!db) return false
+    let result = false
+    acapRunDatabaseEdit(db, layerEditLabel, () => {
+      result = fn()
+    })
+    return result
   }
 
   const setLayerFrozenState = (
@@ -176,20 +198,24 @@ export function useLayers(editor: AcApDocManager) {
   ) {
     if (db.clayer !== targetLayerName) return true
 
-    let fallbackLayer: AcDbLayerTableRecord | undefined
-    let preferredLayer: AcDbLayerTableRecord | undefined
+    let fallbackLayerName: string | undefined
+    let preferredLayerName: string | undefined
 
     for (const layer of db.tables.layerTable.newIterator()) {
       if (layer.name === targetLayerName) continue
-      fallbackLayer ??= layer
+      fallbackLayerName ??= layer.name
       if (!layer.isOff && !layer.isFrozen) {
-        preferredLayer = layer
+        preferredLayerName = layer.name
         break
       }
     }
 
-    const nextCurrentLayer = preferredLayer ?? fallbackLayer
+    const nextLayerName = preferredLayerName ?? fallbackLayerName
+    if (!nextLayerName) return false
+
+    const nextCurrentLayer = openLayerForWrite(db, nextLayerName)
     if (!nextCurrentLayer) return false
+
     nextCurrentLayer.isOff = false
     setLayerFrozenState(nextCurrentLayer, false)
     db.clayer = nextCurrentLayer.name
@@ -200,27 +226,34 @@ export function useLayers(editor: AcApDocManager) {
   function setCurrentLayer(layerName: string) {
     const db = getCurrentDatabase()
     if (!db || !layerName) return false
+    if (!db.tables.layerTable.getAt(layerName)) return false
 
-    const layer = db.tables.layerTable.getAt(layerName)
-    if (!layer) return false
+    return runLayerEdit(db, () => {
+      const layer = openLayerForWrite(db, layerName)
+      if (!layer) return false
 
-    layer.isOff = false
-    setLayerFrozenState(layer, false)
-    db.clayer = layer.name
-    syncCurrentLayerName(db)
-    return true
+      layer.isOff = false
+      setLayerFrozenState(layer, false)
+      db.clayer = layer.name
+      syncCurrentLayerName(db)
+      return true
+    })
   }
 
   function setLayerOn(layerName: string, isOn: boolean) {
     const db = getCurrentDatabase()
     if (!db || !layerName) return false
+    if (!db.tables.layerTable.getAt(layerName)) return false
 
-    const layer = db.tables.layerTable.getAt(layerName)
-    if (!layer) return false
+    return runLayerEdit(db, () => {
+      if (!isOn && !switchCurrentLayerIfNeeded(db, layerName)) return false
 
-    if (!isOn && !switchCurrentLayerIfNeeded(db, layer.name)) return false
-    layer.isOff = !isOn
-    return true
+      const layer = openLayerForWrite(db, layerName)
+      if (!layer) return false
+
+      layer.isOff = !isOn
+      return true
+    })
   }
 
   function toggleLayerOn(layerName: string) {
@@ -234,13 +267,17 @@ export function useLayers(editor: AcApDocManager) {
   function setLayerFrozen(layerName: string, isFrozen: boolean) {
     const db = getCurrentDatabase()
     if (!db || !layerName) return false
+    if (!db.tables.layerTable.getAt(layerName)) return false
 
-    const layer = db.tables.layerTable.getAt(layerName)
-    if (!layer) return false
+    return runLayerEdit(db, () => {
+      if (isFrozen && !switchCurrentLayerIfNeeded(db, layerName)) return false
 
-    if (isFrozen && !switchCurrentLayerIfNeeded(db, layer.name)) return false
-    setLayerFrozenState(layer, isFrozen)
-    return true
+      const layer = openLayerForWrite(db, layerName)
+      if (!layer) return false
+
+      setLayerFrozenState(layer, isFrozen)
+      return true
+    })
   }
 
   function toggleLayerFrozen(layerName: string) {
@@ -254,12 +291,15 @@ export function useLayers(editor: AcApDocManager) {
   function setLayerLocked(layerName: string, isLocked: boolean) {
     const db = getCurrentDatabase()
     if (!db || !layerName) return false
+    if (!db.tables.layerTable.getAt(layerName)) return false
 
-    const layer = db.tables.layerTable.getAt(layerName)
-    if (!layer) return false
+    return runLayerEdit(db, () => {
+      const layer = openLayerForWrite(db, layerName)
+      if (!layer) return false
 
-    setLayerLockedState(layer, isLocked)
-    return true
+      setLayerLockedState(layer, isLocked)
+      return true
+    })
   }
 
   function toggleLayerLocked(layerName: string) {
@@ -286,57 +326,72 @@ export function useLayers(editor: AcApDocManager) {
   function isolateLayer(layerName: string) {
     const db = getCurrentDatabase()
     if (!db || !layerName) return false
+    if (!db.tables.layerTable.getAt(layerName)) return false
 
-    const targetLayer = db.tables.layerTable.getAt(layerName)
-    if (!targetLayer) return false
+    return runLayerEdit(db, () => {
+      for (const layer of db.tables.layerTable.newIterator()) {
+        const keepVisible = layer.name === layerName
+        const opened = openLayerForWrite(db, layer.name)
+        if (!opened) continue
 
-    for (const layer of db.tables.layerTable.newIterator()) {
-      const keepVisible = layer.name === targetLayer.name
-      layer.isOff = !keepVisible
-      if (keepVisible) {
-        setLayerFrozenState(layer, false)
+        opened.isOff = !keepVisible
+        if (keepVisible) {
+          setLayerFrozenState(opened, false)
+        }
       }
-    }
 
-    db.clayer = targetLayer.name
-    syncCurrentLayerName(db)
-    return true
+      db.clayer = layerName
+      syncCurrentLayerName(db)
+      return true
+    })
   }
 
   function setAllLayersOn() {
     const db = getCurrentDatabase()
     if (!db) return false
 
-    let changed = false
-    for (const layer of db.tables.layerTable.newIterator()) {
-      if (!layer.isOff) continue
-      layer.isOff = false
-      changed = true
-    }
+    return runLayerEdit(db, () => {
+      let changed = false
+      for (const layer of db.tables.layerTable.newIterator()) {
+        if (!layer.isOff) continue
 
-    return changed
+        const opened = openLayerForWrite(db, layer.name)
+        if (!opened) continue
+
+        opened.isOff = false
+        changed = true
+      }
+
+      return changed
+    })
   }
 
   function setLayerColor(layerName: string, color: AcCmColor) {
     const db = getCurrentDatabase()
     if (!db) return false
+    if (!db.tables.layerTable.getAt(layerName)) return false
 
-    const dbLayer = db.tables.layerTable.getAt(layerName)
-    if (!dbLayer) return false
+    return runLayerEdit(db, () => {
+      const layer = openLayerForWrite(db, layerName)
+      if (!layer) return false
 
-    dbLayer.color = color
-    return true
+      layer.color = color
+      return true
+    })
   }
 
   function setLayerLineWeight(layerName: string, lineWeight: number) {
     const db = getCurrentDatabase()
     if (!db) return false
+    if (!db.tables.layerTable.getAt(layerName)) return false
 
-    const dbLayer = db.tables.layerTable.getAt(layerName)
-    if (!dbLayer) return false
+    return runLayerEdit(db, () => {
+      const layer = openLayerForWrite(db, layerName)
+      if (!layer) return false
 
-    dbLayer.lineWeight = lineWeight
-    return true
+      layer.lineWeight = lineWeight
+      return true
+    })
   }
 
   function captureLayerSnapshot(
@@ -355,25 +410,28 @@ export function useLayers(editor: AcApDocManager) {
   ) {
     if (!db) return false
 
-    snapshot.states.forEach(state => {
-      const layer = db.tables.layerTable.getAt(state.name)
-      if (!layer) return
-      layer.isOff = !state.isOn
-      setLayerFrozenState(layer, state.isFrozen)
-      setLayerLockedState(layer, state.isLocked)
-    })
+    return runLayerEdit(db, () => {
+      snapshot.states.forEach(state => {
+        const layer = openLayerForWrite(db, state.name)
+        if (!layer) return
 
-    const currentLayer = db.tables.layerTable.getAt(snapshot.clayer)
-    if (currentLayer) {
-      currentLayer.isOff = false
-      setLayerFrozenState(currentLayer, false)
-      db.clayer = currentLayer.name
+        layer.isOff = !state.isOn
+        setLayerFrozenState(layer, state.isFrozen)
+        setLayerLockedState(layer, state.isLocked)
+      })
+
+      const currentLayer = openLayerForWrite(db, snapshot.clayer)
+      if (currentLayer) {
+        currentLayer.isOff = false
+        setLayerFrozenState(currentLayer, false)
+        db.clayer = currentLayer.name
+        syncCurrentLayerName(db)
+        return true
+      }
+
       syncCurrentLayerName(db)
-      return true
-    }
-
-    syncCurrentLayerName(db)
-    return false
+      return false
+    })
   }
 
   editor.events.documentActivated.addEventListener(handleDocumentActivated)

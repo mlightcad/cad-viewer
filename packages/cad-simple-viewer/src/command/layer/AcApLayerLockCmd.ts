@@ -1,4 +1,4 @@
-import { AcDbLayerTableRecord, AcDbObjectId } from '@mlightcad/data-model'
+import { AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
@@ -8,6 +8,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { openLayerForWrite, setLayerLockedState } from './AcApLayerEdit'
 
 /**
  * AutoCAD-like `LAYLCK` command.
@@ -60,17 +61,6 @@ export class AcApLayerLockCmd extends AcEdCommand {
   }
 
   /**
-   * Sets or clears the locked bit in `standardFlags`.
-   *
-   * @param layer - Target layer table record.
-   * @param locked - `true` to lock, `false` to unlock.
-   */
-  private setLayerLocked(layer: AcDbLayerTableRecord, locked: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = locked ? flags | 0x04 : flags & ~0x04
-  }
-
-  /**
    * Resolves the picked entity's layer and locks it when needed.
    *
    * @param context - Active application context containing the current database and view.
@@ -103,7 +93,10 @@ export class AcApLayerLockCmd extends AcEdCommand {
       return
     }
 
-    this.setLayerLocked(layer, true)
+    const opened = openLayerForWrite(db, layer)
+    if (!opened) return
+
+    setLayerLockedState(opened, true)
     context.view.selectionSet.clear()
     this.showMessage(
       `${AcApI18n.t('jig.laylck.locked')}: ${layer.name}`,

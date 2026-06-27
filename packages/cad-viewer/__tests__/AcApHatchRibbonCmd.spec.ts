@@ -48,6 +48,9 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     AcApI18n: {
       t: (key: string) => key
     },
+    acapRunDatabaseEdit: (_db: unknown, _label: string, fn: () => void) => {
+      fn()
+    },
     AcEdPromptEntityOptions,
     AcEdPromptStatus: {
       OK: 'OK',

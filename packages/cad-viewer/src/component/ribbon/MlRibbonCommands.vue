@@ -456,7 +456,6 @@ const applyToSelectedEntities = (mutator: (entity: AcDbEntity) => void) => {
     const entity = db.openEntityForWrite(id)
     if (!entity) return
     mutator(entity)
-    entity.triggerModifiedEvent()
   })
 }
 
