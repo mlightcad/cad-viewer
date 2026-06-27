@@ -4,14 +4,9 @@
     "resolveJsonModule": true,
     "rootDir": "./src",
     "outDir": "./lib",
-    "baseUrl": "./src",
     "paths": {
-      "@mlightcad/cad-svg-plugin": [
-        "./index.ts"
-      ]
+      "@mlightcad/cad-simple-ui-plugin": ["./src/index.ts"]
     }
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

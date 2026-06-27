@@ -4,6 +4,7 @@ import {
   AcEdCommandStack
 } from '@mlightcad/cad-simple-viewer'
 
+import packageJson from '../package.json'
 import { AcApExportHtmlCmd } from './AcApExportHtmlCmd'
 
 /**
@@ -16,7 +17,7 @@ export class AcApHtmlPlugin implements AcApPlugin {
   /** @inheritdoc */
   name = 'HtmlPlugin'
   /** @inheritdoc */
-  version = '1.0.0'
+  version = packageJson.version
   /** @inheritdoc */
   description = 'HTML export (chtml) command'
 

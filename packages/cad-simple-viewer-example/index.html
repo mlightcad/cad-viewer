@@ -92,36 +92,6 @@
         background: #111827;
       }
 
-      .viewer-toolbar {
-        height: 48px;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0 0.75rem;
-        border-bottom: 1px solid #1f2937;
-        background: #0b1220;
-      }
-
-      .toolbar-button {
-        border: 1px solid #374151;
-        border-radius: 6px;
-        background: #1f2937;
-        color: #e5e7eb;
-        padding: 0.35rem 0.7rem;
-        font-size: 0.82rem;
-        cursor: pointer;
-      }
-
-      .toolbar-button:hover {
-        background: #273447;
-      }
-
-      .toolbar-button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        background: #111827;
-      }
-
       .viewer-canvas-area {
         position: relative;
         flex: 1;
@@ -249,13 +219,6 @@
           flex: 1;
           min-height: 0;
         }
-
-        .viewer-toolbar {
-          flex-wrap: wrap;
-          height: auto;
-          min-height: 48px;
-          padding: 0.45rem 0.75rem;
-        }
       }
     </style>
   </head>
@@ -335,61 +298,6 @@
       </aside>
 
       <main class="viewer-pane" id="viewerPane">
-        <header class="viewer-toolbar">
-          <button type="button" class="toolbar-button" id="toolbarOpenButton">Open</button>
-          <button
-            type="button"
-            class="toolbar-button"
-            id="toolbarZoomButton"
-            disabled
-          >
-            Zoom Fit
-          </button>
-          <button
-            type="button"
-            class="toolbar-button"
-            id="toolbarZoomWindowButton"
-            disabled
-          >
-            Zoom to Window
-          </button>
-          <button type="button" class="toolbar-button" id="toolbarBgButton" disabled>
-            Switch BG
-          </button>
-          <button
-            type="button"
-            class="toolbar-button"
-            id="toolbarPickboxButton"
-            disabled
-          >
-            Set Pickbox
-          </button>
-          <button
-            type="button"
-            class="toolbar-button"
-            id="toolbarLineWeightButton"
-            disabled
-          >
-            LineWeight: On
-          </button>
-          <button
-            type="button"
-            class="toolbar-button"
-            id="toolbarExportHtmlButton"
-            disabled
-          >
-            Export HTML
-          </button>
-          <button
-            type="button"
-            class="toolbar-button"
-            id="toolbarExportPdfButton"
-            disabled
-          >
-            Export PDF
-          </button>
-        </header>
-
         <section class="viewer-canvas-area">
           <div class="empty-state" id="emptyState">
             <button type="button" class="open-main-button" id="centerOpenButton">Open File</button>

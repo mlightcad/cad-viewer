@@ -1,0 +1,52 @@
+/**
+ * Chinese UI strings for {@link registerSimpleUiI18n}.
+ *
+ * Keys use dot notation (for example `toolbar.select`) and are nested under
+ * the `simpleUi` namespace when registered.
+ */
+export const zh: Record<string, string> = {
+  'toolbar.select': '选择',
+  'toolbar.pan': '平移',
+  'toolbar.zoomExtent': '缩放至范围',
+  'toolbar.zoomWindow': '窗口缩放',
+  'toolbar.layer': '图层管理器',
+  'toolbar.measure': '测量',
+  'toolbar.measureDistance': '测量距离',
+  'toolbar.measureAngle': '测量角度',
+  'toolbar.measureArea': '测量面积',
+  'toolbar.measureArc': '测量弧长',
+  'toolbar.clearMeasurements': '清除测量',
+  'toolbar.switchBg': '切换背景',
+  'toolbar.annotation': '审阅标注',
+  'toolbar.revFreehand': '自由手绘',
+  'toolbar.revRect': '矩形标注',
+  'toolbar.revCloud': '修订云线',
+  'toolbar.revCircle': '圆形标注',
+  'toolbar.showAnnotation': '显示标注',
+  'toolbar.hideAnnotation': '隐藏标注',
+  'toolbar.export': '导出',
+  'toolbar.exportHtml': '导出 HTML',
+  'toolbar.exportPdf': '导出 PDF',
+  'toolbar.exportSvg': '导出 SVG',
+  'toolbar.placement': '工具栏位置',
+  'toolbar.placementTop': '上方',
+  'toolbar.placementBottom': '下方',
+  'toolbar.placementLeft': '左侧',
+  'toolbar.placementRight': '右侧',
+  'toolbar.themeLight': '切换为深色主题',
+  'toolbar.themeDark': '切换为浅色主题',
+  'toolbar.localeEn': 'English（切换为中文）',
+  'toolbar.localeZh': '中文（切换为 English）',
+  'layerManager.title': '图层管理器',
+  'layerManager.name': '名称',
+  'layerManager.on': '开',
+  'layerManager.color': '颜色',
+  'layerManager.zoomToLayer': '已缩放至图层：{layer}',
+  'colorPicker.title': '选择颜色',
+  'colorPicker.index': '颜色索引：',
+  'colorPicker.rgb': 'RGB：',
+  'colorPicker.input': '颜色',
+  'colorPicker.inputPlaceholder': '1-255 或 #RRGGBB',
+  'colorPicker.ok': '确定',
+  'colorPicker.cancel': '取消'
+}

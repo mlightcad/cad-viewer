@@ -2,8 +2,8 @@ import { resolve } from 'path'
 import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import { defineConfig, PluginOption } from 'vite'
 import {
-  createPluginEntryFileName,
-  createPluginLibRollupOutput
+  createLibEntryFileName,
+  createLibRollupOutput
 } from '../vite-config/pluginRollupOutput'
 
 const packageName = '@mlightcad/cad-html-plugin'
@@ -20,12 +20,12 @@ export default defineConfig({
       },
       name: pluginId,
       fileName: (format, entryName) =>
-        createPluginEntryFileName(pluginId, format, entryName)
+        createLibEntryFileName(pluginId, format, entryName)
     },
     minify: true,
     rollupOptions: {
       external: [packageName],
-      output: createPluginLibRollupOutput(pluginId)
+      output: createLibRollupOutput(pluginId)
     }
   },
   plugins: [peerDepsExternal() as PluginOption]

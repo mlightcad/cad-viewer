@@ -198,6 +198,15 @@ importers:
         specifier: ^2.7.0
         version: 2.7.0(jspdf@4.2.1)
 
+  packages/cad-simple-ui-plugin:
+    devDependencies:
+      '@mlightcad/cad-simple-viewer':
+        specifier: workspace:*
+        version: link:../cad-simple-viewer
+      '@mlightcad/data-model':
+        specifier: ^1.10.0
+        version: 1.10.0
+
   packages/cad-simple-viewer:
     devDependencies:
       '@mlightcad/data-model':
@@ -251,6 +260,9 @@ importers:
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin
+      '@mlightcad/cad-simple-ui-plugin':
+        specifier: workspace:*
+        version: link:../cad-simple-ui-plugin
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer

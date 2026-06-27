@@ -1,28 +1,14 @@
+import { registerSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
-  AcEdOpenMode
+  AcEdOpenMode,
+  applyUiTheme
 } from '@mlightcad/cad-simple-viewer'
-import {
-  AcDbSystemVariables,
-  AcDbSysVarManager,
-  log
-} from '@mlightcad/data-model'
+import { log } from '@mlightcad/data-model'
 
 import { registerLazyPlugins } from './register'
 
-/**
- * Demo-only command alias overrides used by the example app.
- *
- * Purpose:
- * - Provide visible alias differences from built-in defaults so the alias
- *   feature can be validated quickly in command line UI and execution flow.
- *
- * Behavior:
- * - This object is passed to `AcApDocManager.createInstance({ commandAliases })`.
- * - For commands listed here, these aliases replace the built-in defaults.
- * - Commands not listed keep their built-in alias set.
- */
 const EXAMPLE_COMMAND_ALIASES = {
   LINE: ['LX'],
   CIRCLE: ['CI'],
@@ -33,23 +19,14 @@ class CadViewerApp {
   private container: HTMLDivElement
   private fileInput: HTMLInputElement
   private centerOpenButton: HTMLButtonElement
-  private toolbarOpenButton: HTMLButtonElement
-  private toolbarZoomButton: HTMLButtonElement
-  private toolbarZoomWindowButton: HTMLButtonElement
-  private toolbarBgButton: HTMLButtonElement
-  private toolbarPickboxButton: HTMLButtonElement
-  private toolbarLineWeightButton: HTMLButtonElement
-  private toolbarExportHtmlButton: HTMLButtonElement
-  private toolbarExportPdfButton: HTMLButtonElement
   private viewerPane: HTMLElement
   private emptyState: HTMLDivElement
   private predefinedButtons: NodeListOf<HTMLButtonElement>
   private fileSidebar: HTMLElement
   private fileSidebarToggle: HTMLButtonElement
   private fileSidebarSubtitle: HTMLSpanElement
-  private isInitialized: boolean = false
-  private hasOpenedFile: boolean = false
-  private hasLoadedDocument: boolean = false
+  private isInitialized = false
+  private hasOpenedFile = false
 
   constructor() {
     this.container = document.getElementById('cad-container') as HTMLDivElement
@@ -58,30 +35,6 @@ class CadViewerApp {
     ) as HTMLInputElement
     this.centerOpenButton = document.getElementById(
       'centerOpenButton'
-    ) as HTMLButtonElement
-    this.toolbarOpenButton = document.getElementById(
-      'toolbarOpenButton'
-    ) as HTMLButtonElement
-    this.toolbarZoomButton = document.getElementById(
-      'toolbarZoomButton'
-    ) as HTMLButtonElement
-    this.toolbarZoomWindowButton = document.getElementById(
-      'toolbarZoomWindowButton'
-    ) as HTMLButtonElement
-    this.toolbarBgButton = document.getElementById(
-      'toolbarBgButton'
-    ) as HTMLButtonElement
-    this.toolbarPickboxButton = document.getElementById(
-      'toolbarPickboxButton'
-    ) as HTMLButtonElement
-    this.toolbarLineWeightButton = document.getElementById(
-      'toolbarLineWeightButton'
-    ) as HTMLButtonElement
-    this.toolbarExportHtmlButton = document.getElementById(
-      'toolbarExportHtmlButton'
-    ) as HTMLButtonElement
-    this.toolbarExportPdfButton = document.getElementById(
-      'toolbarExportPdfButton'
     ) as HTMLButtonElement
     this.viewerPane = document.getElementById('viewerPane') as HTMLElement
     this.emptyState = document.getElementById('emptyState') as HTMLDivElement
@@ -97,43 +50,52 @@ class CadViewerApp {
     ) as HTMLSpanElement
 
     this.setupFileHandling()
-    this.setupToolbarActions()
     this.setupPredefinedFileActions()
     this.setupMobileSidebar()
     this.updateEmptyStateVisibility()
-    this.updateToolbarButtonsState()
   }
 
-  private initialize() {
-    if (!this.isInitialized) {
-      try {
-        AcApDocManager.createInstance({
-          container: this.container,
-          busyIndicatorHost: this.viewerPane,
-          autoResize: true,
-          baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
-          commandAliases: EXAMPLE_COMMAND_ALIASES,
-          webworkerFileUrls: {
-            mtextRender: './workers/mtext-renderer-worker.js',
-            dxfParser: './workers/dxf-parser-worker.js',
-            dwgParser: './workers/libredwg-parser-worker.js'
-          },
-          htmlViewerRuntimeUrl: './viewer-runtime.iife.js'
-        })
+  private async initialize() {
+    if (this.isInitialized) return
 
-        registerLazyPlugins()
+    try {
+      applyUiTheme('dark', this.viewerPane)
 
-        AcApDocManager.instance.events.documentActivated.addEventListener(
-          args => {
-            document.title = args.doc.docTitle
-          }
-        )
+      AcApDocManager.createInstance({
+        container: this.container,
+        busyIndicatorHost: this.viewerPane,
+        autoResize: true,
+        baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
+        commandAliases: EXAMPLE_COMMAND_ALIASES,
+        webworkerFileUrls: {
+          mtextRender: './workers/mtext-renderer-worker.js',
+          dxfParser: './workers/dxf-parser-worker.js',
+          dwgParser: './workers/libredwg-parser-worker.js'
+        },
+        htmlViewerRuntimeUrl: './viewer-runtime.iife.js'
+      })
 
-        this.isInitialized = true
-      } catch (error) {
-        log.error('Failed to initialize CAD viewer:', error)
-        this.showMessage('Failed to initialize CAD viewer', 'error')
-      }
+      registerLazyPlugins()
+
+      await registerSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
+        host: this.viewerPane,
+        toolbar: {
+          placement: 'right',
+          items: 'default'
+        },
+        layerManager: { enabled: true }
+      })
+
+      AcApDocManager.instance.events.documentActivated.addEventListener(
+        args => {
+          document.title = args.doc.docTitle
+        }
+      )
+
+      this.isInitialized = true
+    } catch (error) {
+      log.error('Failed to initialize CAD viewer:', error)
+      this.showMessage('Failed to initialize CAD viewer', 'error')
     }
   }
 
@@ -149,97 +111,13 @@ class CadViewerApp {
     this.centerOpenButton.addEventListener('click', () => {
       this.fileInput.click()
     })
-
-    this.toolbarOpenButton.addEventListener('click', () => {
-      this.fileInput.click()
-    })
-  }
-
-  private setupToolbarActions() {
-    this.toolbarZoomButton.addEventListener('click', () => {
-      if (!this.hasLoadedDocument || !this.isInitialized) {
-        return
-      }
-      AcApDocManager.instance.sendStringToExecute('zoom\\nall')
-    })
-
-    this.toolbarZoomWindowButton.addEventListener('click', () => {
-      if (!this.hasLoadedDocument || !this.isInitialized) {
-        return
-      }
-      AcApDocManager.instance.sendStringToExecute('zoom\\nwindow')
-    })
-
-    this.toolbarBgButton.addEventListener('click', () => {
-      if (!this.hasLoadedDocument || !this.isInitialized) {
-        return
-      }
-      AcApDocManager.instance.sendStringToExecute('switchbg')
-    })
-
-    this.toolbarPickboxButton.addEventListener('click', () => {
-      if (!this.hasLoadedDocument || !this.isInitialized) {
-        return
-      }
-
-      const currentPickbox = AcDbSysVarManager.instance().getVar(
-        AcDbSystemVariables.PICKBOX,
-        AcApDocManager.instance.curDocument.database
-      )
-      const initialPickbox =
-        currentPickbox == null ? '10' : String(currentPickbox)
-      const valueText = window.prompt(
-        'Set pick box size (integer):',
-        initialPickbox
-      )
-      if (valueText == null) {
-        return
-      }
-
-      const pickboxValue = Number.parseInt(valueText, 10)
-      if (!Number.isFinite(pickboxValue) || pickboxValue <= 0) {
-        this.showMessage('Pickbox size must be a positive integer', 'error')
-        return
-      }
-
-      AcApDocManager.instance.sendStringToExecute(
-        `${AcDbSystemVariables.PICKBOX}\n${pickboxValue}`
-      )
-      this.showMessage(`Pickbox set to: ${pickboxValue}`, 'success')
-    })
-
-    this.toolbarLineWeightButton.addEventListener('click', () => {
-      if (!this.hasLoadedDocument || !this.isInitialized) {
-        return
-      }
-      const db = AcApDocManager.instance.curDocument.database
-      db.lwdisplay = !db.lwdisplay
-      this.updateLineWeightButtonLabel()
-    })
-
-    this.toolbarExportHtmlButton.addEventListener('click', () => {
-      if (!this.hasLoadedDocument || !this.isInitialized) {
-        return
-      }
-      AcApDocManager.instance.sendStringToExecute('chtml')
-    })
-
-    this.toolbarExportPdfButton.addEventListener('click', () => {
-      if (!this.hasLoadedDocument || !this.isInitialized) {
-        return
-      }
-      AcApDocManager.instance.sendStringToExecute('cpdf')
-    })
   }
 
   private setupPredefinedFileActions() {
     this.predefinedButtons.forEach(button => {
       button.addEventListener('click', () => {
         const url = button.dataset.fileUrl
-        if (!url) {
-          return
-        }
-        // Hide empty-state open button as soon as a predefined file is selected.
+        if (!url) return
         this.hasOpenedFile = true
         this.updateEmptyStateVisibility()
         this.predefinedButtons.forEach(item => item.classList.remove('active'))
@@ -267,10 +145,7 @@ class CadViewerApp {
       }
 
       const target = event.target
-      if (!(target instanceof Node)) {
-        return
-      }
-
+      if (!(target instanceof Node)) return
       if (!this.fileSidebar.contains(target)) {
         this.setFileSidebarExpanded(false)
       }
@@ -297,7 +172,7 @@ class CadViewerApp {
   }
 
   private async loadLocalFile(file: File) {
-    this.initialize()
+    await this.initialize()
 
     const fileName = file.name.toLowerCase()
     if (!fileName.endsWith('.dxf') && !fileName.endsWith('.dwg')) {
@@ -312,7 +187,6 @@ class CadViewerApp {
       const options: AcApOpenDatabaseOptions = {
         minimumChunkSize: 1000,
         mode: AcEdOpenMode.Write,
-        // Override line weight display setting to false so that line weights are not displayed by default
         sysVars: {
           lwdisplay: false
         }
@@ -339,7 +213,7 @@ class CadViewerApp {
   }
 
   private async loadPredefinedFile(url: string) {
-    this.initialize()
+    await this.initialize()
     this.clearMessages()
 
     try {
@@ -368,35 +242,11 @@ class CadViewerApp {
 
   private onFileOpened() {
     this.hasOpenedFile = true
-    this.hasLoadedDocument = true
     this.updateEmptyStateVisibility()
-    this.updateToolbarButtonsState()
   }
 
   private updateEmptyStateVisibility() {
     this.emptyState.classList.toggle('hidden', this.hasOpenedFile)
-  }
-
-  private updateToolbarButtonsState() {
-    this.toolbarZoomButton.disabled = !this.hasLoadedDocument
-    this.toolbarZoomWindowButton.disabled = !this.hasLoadedDocument
-    this.toolbarBgButton.disabled = !this.hasLoadedDocument
-    this.toolbarPickboxButton.disabled = !this.hasLoadedDocument
-    this.toolbarLineWeightButton.disabled = !this.hasLoadedDocument
-    this.toolbarExportHtmlButton.disabled = !this.hasLoadedDocument
-    this.toolbarExportPdfButton.disabled = !this.hasLoadedDocument
-    this.updateLineWeightButtonLabel()
-  }
-
-  private updateLineWeightButtonLabel() {
-    const showLineWeight =
-      this.hasLoadedDocument && this.isInitialized
-        ? AcApDocManager.instance.curDocument.database.lwdisplay
-        : false
-
-    this.toolbarLineWeightButton.textContent = showLineWeight
-      ? 'LineWeight: On'
-      : 'LineWeight: Off'
   }
 
   private getFileNameFromUrl(url: string) {
@@ -453,9 +303,7 @@ class CadViewerApp {
     setTimeout(() => {
       popup.style.opacity = '0'
       setTimeout(() => {
-        if (popup.parentNode) {
-          popup.parentNode.removeChild(popup)
-        }
+        popup.remove()
       }, 200)
     }, 1200)
   }

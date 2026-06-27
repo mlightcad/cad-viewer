@@ -18,6 +18,7 @@
   "dependencies": {
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
+    "@mlightcad/cad-simple-ui-plugin": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.9.14",

@@ -83,6 +83,47 @@ pnpm preview:simple
 - **缩放**：双指捏合放大/缩小
 - **平移**：双指拖动移动视图
 
+## 插件系统（Plugin System）
+
+CAD-Viewer 在 [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer) 中提供可扩展的**插件系统**。插件实现 `AcApPlugin` 接口，通过 `onLoad` / `onUnload` 接入查看器生命周期，常见用途包括注册命令、挂载 UI、或接入导出/导入流程。
+
+通过 `AcApDocManager.instance.pluginManager` 加载插件（`loadPlugin`、`registerLazyPlugin`，或在创建文档管理器时使用 `plugins.fromConfig`）。面向导出的插件支持**懒加载**：应用启动时只注册轻量 stub，用户首次执行相关命令（例如 `chtml`）时才下载完整 bundle。
+
+本 monorepo 内置多个官方插件，各司其职，可按需组合。**各插件的安装、注册方式与 API 说明请直接阅读对应包的 README**（见下方链接）。
+
+### 官方插件一览
+
+| 包名 | 作用 | 命令 / 能力 |
+|------|------|-------------|
+| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | 为 `cad-simple-viewer` 提供**工具栏与图层管理器 UI**（纯 DOM，不依赖 Vue/React） | `layer`、默认工具栏（视图、测量、导出、审阅、主题、语言） |
+| [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | 导出为**自包含离线 HTML** | `chtml` |
+| [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **PDF 导出与导入**（矢量管线） | `cpdf`、`ipdf` |
+| [`@mlightcad/cad-svg-plugin`](packages/cad-svg-plugin) | **SVG 导出**及共享矢量渲染器（PDF 导出也会用到） | `csvg` |
+
+### `@mlightcad/cad-simple-ui-plugin` — 简易查看器的 UI 层
+
+[`cad-simple-viewer`](packages/cad-simple-viewer) 有意只提供 **CAD 核心与画布**，不包含应用级界面。若你在自有 Web 应用中嵌入简易查看器，又不想引入完整 Vue 版 [`cad-viewer`](packages/cad-viewer) 外壳，**`cad-simple-ui-plugin` 即推荐的 UI 插件**。
+
+主要能力：
+
+- **可配置工具栏**（四边任意放置、内置 CAD 命令、嵌套菜单、自定义按钮）
+- **浮动图层管理器**（图层开关、ACI 颜色选择、双击缩放至图层）
+- **主题同步**：跟随 `COLORTHEME` 系统变量及 host 上的 `--ml-ui-*` CSS 变量
+- **语言同步**：跟随 `AcApI18n`（中/英）
+
+全部 UI 为框架无关的纯 DOM 实现。完整 Vue 版 [`cad-viewer`](packages/cad-viewer) 自带 Element Plus 界面，**不需要**此插件；仅在直接基于 `cad-simple-viewer` 集成时使用 `cad-simple-ui-plugin`。
+
+→ **快速开始、工具栏定制与配置项：** [packages/cad-simple-ui-plugin/README.md](packages/cad-simple-ui-plugin/README.md)
+
+### 导出类插件（HTML / PDF / SVG）
+
+以下插件向同一插件管理器注册导出（及 PDF 导入）命令，并采用**懒加载**以控制首屏体积。[`cad-simple-viewer-example`](packages/cad-simple-viewer-example) 示例会注册全部三个导出插件以及 `cad-simple-ui-plugin`；完整 [`cad-viewer`](packages/cad-viewer) 应用在启动时注册导出类插件。
+
+- **HTML** — 单文件离线查看器，便于分享与归档：[packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
+  （相同管线的无头 CLI：[packages/cad-html-exporter-cli/README.md](packages/cad-html-exporter-cli/README.md))
+- **PDF** — 矢量 PDF 导出与 PDF 导入 CAD：[packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
+- **SVG** — 矢量 SVG 导出：[packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
+
 ## 性能优化
 
 CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率的同时处理大规模 DXF/DWG 文件：

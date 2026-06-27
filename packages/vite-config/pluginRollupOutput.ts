@@ -4,7 +4,8 @@ import type { ManualChunksOption, OutputOptions } from 'rollup'
 export const PLUGIN_PACKAGE_IDS = [
   'cad-pdf-plugin',
   'cad-html-plugin',
-  'cad-svg-plugin'
+  'cad-svg-plugin',
+  'cad-simple-ui-plugin'
 ] as const
 
 /** Core viewer libraries shipped from this monorepo. */
@@ -74,15 +75,9 @@ export function createLibEntryFileName(
   return format === 'es' ? `${base}.js` : `${base}.umd.cjs`
 }
 
-/** @deprecated Use {@link createLibEntryFileName}. */
-export const createPluginEntryFileName = createLibEntryFileName
-
 export function createLibChunkFileName(packageId: string): string {
   return `${packageId}-[name]-[hash].js`
 }
-
-/** @deprecated Use {@link createLibChunkFileName}. */
-export const createPluginChunkFileName = createLibChunkFileName
 
 /**
  * Merges all code for a library entry into a single `{packageId}` chunk
@@ -97,15 +92,9 @@ export function createLibManualChunks(packageId: string): ManualChunksOption {
   }
 }
 
-/** @deprecated Use {@link createLibManualChunks}. */
-export const createPluginLibManualChunks = createLibManualChunks
-
 export function createLibRollupOutput(packageId: string): OutputOptions {
   return {
     manualChunks: createLibManualChunks(packageId),
     chunkFileNames: createLibChunkFileName(packageId)
   }
 }
-
-/** @deprecated Use {@link createLibRollupOutput}. */
-export const createPluginLibRollupOutput = createLibRollupOutput

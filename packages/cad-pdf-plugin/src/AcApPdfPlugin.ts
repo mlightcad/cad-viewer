@@ -4,6 +4,7 @@ import {
   AcEdCommandStack
 } from '@mlightcad/cad-simple-viewer'
 
+import packageJson from '../package.json'
 import { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd'
 import { AcApImportPdfCmd } from './AcApImportPdfCmd'
 
@@ -17,7 +18,7 @@ export class AcApPdfPlugin implements AcApPlugin {
   /** @inheritdoc */
   name = 'PdfPlugin'
   /** @inheritdoc */
-  version = '1.0.0'
+  version = packageJson.version
   /** @inheritdoc */
   description = 'PDF export (cpdf) and import (ipdf) commands'
 

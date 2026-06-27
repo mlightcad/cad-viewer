@@ -94,6 +94,47 @@ pnpm preview:simple
 - **Zoom**: Pinch with two fingers
 - **Pan**: Single-finger drag
 
+## Plugin System
+
+CAD-Viewer is built around a modular **plugin system** in [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer). Plugins implement the `AcApPlugin` interface and hook into viewer lifecycle via `onLoad` / `onUnload`—typically to register commands, add UI, or wire export/import pipelines.
+
+Load plugins through `AcApDocManager.instance.pluginManager` (`loadPlugin`, `registerLazyPlugin`, or `plugins.fromConfig` when creating the document manager). Export-oriented plugins support **lazy loading**: register a small stub up front and download the heavy bundle only when the user runs the related command (for example `chtml`).
+
+The monorepo ships several first-party plugins. Each focuses on one concern; combine them as needed. **Installation, registration, and API details live in each package’s README**—see the links below.
+
+### Official plugins
+
+| Package | Role | Commands / capabilities |
+|---------|------|-------------------------|
+| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **Toolbar & layer manager UI** for `cad-simple-viewer` (plain DOM, no Vue/React) | `layer`, default toolbar (view, measure, export, review, theme, locale) |
+| [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | Export drawings to **self-contained offline HTML** | `chtml` |
+| [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **PDF export and import** (vector pipeline) | `cpdf`, `ipdf` |
+| [`@mlightcad/cad-svg-plugin`](packages/cad-svg-plugin) | **SVG export** and shared vector renderer (also used by PDF export) | `csvg` |
+
+### `@mlightcad/cad-simple-ui-plugin` — UI chrome for the simple viewer
+
+[`cad-simple-viewer`](packages/cad-simple-viewer) deliberately ships **no application UI**—only the canvas and CAD core. If you embed the simple viewer in your own web app and want ready-made chrome without adopting the full Vue-based [`cad-viewer`](packages/cad-viewer) shell, **`cad-simple-ui-plugin` is the intended UI layer**.
+
+It provides:
+
+- A **configurable toolbar** (placement on any edge, default CAD commands, nested menus, custom items)
+- A **floating layer manager** (layer on/off, ACI color picker, zoom-to-layer on double-click)
+- **Theme sync** with the `COLORTHEME` sysvar and `--ml-ui-*` CSS tokens on your host element
+- **Locale sync** with `AcApI18n` (English / Chinese)
+
+All widgets are framework-agnostic (plain DOM). The full Vue [`cad-viewer`](packages/cad-viewer) app has its own Element Plus UI and does not require this plugin; use `cad-simple-ui-plugin` when you build on `cad-simple-viewer` directly.
+
+→ **Quick start, toolbar customization, and options:** [packages/cad-simple-ui-plugin/README.md](packages/cad-simple-ui-plugin/README.md)
+
+### Export plugins (HTML / PDF / SVG)
+
+These plugins add export (and PDF import) commands to the same plugin manager. They are **lazy-loaded** so initial page weight stays small. The [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) demo registers all three export plugins plus `cad-simple-ui-plugin`; the full [`cad-viewer`](packages/cad-viewer) app registers the export plugins in its bootstrap.
+
+- **HTML** — one-file offline viewer for sharing and archiving: [packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
+  (Headless CLI using the same pipeline: [packages/cad-html-exporter-cli/README.md](packages/cad-html-exporter-cli/README.md))
+- **PDF** — vector PDF export and PDF-to-CAD import: [packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
+- **SVG** — vector SVG export: [packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
+
 ## Performance
 
 CAD-Viewer is engineered for **exceptional performance** and can handle very large DXF/DWG files while maintaining high frame rates. It employs multiple advanced rendering technologies to optimize performance:

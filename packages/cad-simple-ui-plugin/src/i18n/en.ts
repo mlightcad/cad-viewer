@@ -1,0 +1,52 @@
+/**
+ * English UI strings for {@link registerSimpleUiI18n}.
+ *
+ * Keys use dot notation (for example `toolbar.select`) and are nested under
+ * the `simpleUi` namespace when registered.
+ */
+export const en: Record<string, string> = {
+  'toolbar.select': 'Select',
+  'toolbar.pan': 'Pan',
+  'toolbar.zoomExtent': 'Zoom Extents',
+  'toolbar.zoomWindow': 'Zoom Window',
+  'toolbar.layer': 'Layer Manager',
+  'toolbar.measure': 'Measure',
+  'toolbar.measureDistance': 'Measure Distance',
+  'toolbar.measureAngle': 'Measure Angle',
+  'toolbar.measureArea': 'Measure Area',
+  'toolbar.measureArc': 'Measure Arc Length',
+  'toolbar.clearMeasurements': 'Clear Measurements',
+  'toolbar.switchBg': 'Switch Background',
+  'toolbar.annotation': 'Annotation',
+  'toolbar.revFreehand': 'Freehand Sketch',
+  'toolbar.revRect': 'Rectangle Review',
+  'toolbar.revCloud': 'Revision Cloud',
+  'toolbar.revCircle': 'Circle Review',
+  'toolbar.showAnnotation': 'Show Annotations',
+  'toolbar.hideAnnotation': 'Hide Annotations',
+  'toolbar.export': 'Export',
+  'toolbar.exportHtml': 'Export HTML',
+  'toolbar.exportPdf': 'Export PDF',
+  'toolbar.exportSvg': 'Export SVG',
+  'toolbar.placement': 'Toolbar Position',
+  'toolbar.placementTop': 'Top',
+  'toolbar.placementBottom': 'Bottom',
+  'toolbar.placementLeft': 'Left',
+  'toolbar.placementRight': 'Right',
+  'toolbar.themeLight': 'Switch to Dark Theme',
+  'toolbar.themeDark': 'Switch to Light Theme',
+  'toolbar.localeEn': 'English (switch to Chinese)',
+  'toolbar.localeZh': '中文 (switch to English)',
+  'layerManager.title': 'Layer Manager',
+  'layerManager.name': 'Name',
+  'layerManager.on': 'On',
+  'layerManager.color': 'Color',
+  'layerManager.zoomToLayer': 'Zoomed to layer: {layer}',
+  'colorPicker.title': 'Select Color',
+  'colorPicker.index': 'Color Index: ',
+  'colorPicker.rgb': 'RGB: ',
+  'colorPicker.input': 'Color',
+  'colorPicker.inputPlaceholder': '1-255 or #RRGGBB',
+  'colorPicker.ok': 'OK',
+  'colorPicker.cancel': 'Cancel'
+}
