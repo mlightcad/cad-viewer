@@ -1,9 +1,12 @@
-import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApDocManager,
+  type AcApLayerInfo,
+  AcApLayerStore,
+  eventBus} from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
 
-import type { AcExLayerInfo, AcExToolbarPlacement } from '../config/types'
+import type { AcExToolbarPlacement } from '../config/types'
 import type { AcExI18n } from '../i18n'
-import type { AcExLayerService } from '../service/AcExLayerService'
 import { AcExColorPicker } from './AcExColorPicker'
 import { ensureUiStyles } from './styles'
 
@@ -16,8 +19,8 @@ const LAYER_MANAGER_MIN_HEIGHT = 120
 
 /** Constructor options for {@link AcExLayerManager}. */
 export interface AcExLayerManagerOptions {
-  /** Layer data service backing the table rows. */
-  layerService: AcExLayerService
+  /** Document manager used to resolve the active document's layer store. */
+  editor: AcApDocManager
   /** i18n helper for panel labels. */
   i18n: AcExI18n
   /** Viewer host used for containment and default positioning. */
@@ -46,8 +49,6 @@ export class AcExLayerManager {
   private onLabelEl!: HTMLSpanElement
   /** Color column header cell. */
   private colorHeaderEl!: HTMLTableCellElement
-  /** Unsubscribe function from {@link AcExLayerService.subscribe}. */
-  private unsubscribe?: () => void
   /** Active pointer drag state for header dragging. */
   private dragState?: {
     pointerId: number
@@ -64,8 +65,10 @@ export class AcExLayerManager {
   private readonly allowMoveOutsideCanvas: boolean
   /** Viewer host reference. */
   private readonly host: HTMLElement
-  /** Layer service providing row data and mutations. */
-  private readonly layerService: AcExLayerService
+  /** Document manager whose active document supplies layer data. */
+  private readonly editor: AcApDocManager
+  /** Layer store currently subscribed for change notifications. */
+  private subscribedLayerStore?: AcApLayerStore
   /** i18n helper for labels and toasts. */
   private readonly i18n: AcExI18n
   /** Toolbar placement for default horizontal positioning. */
@@ -81,10 +84,10 @@ export class AcExLayerManager {
   }
 
   /**
-   * @param options - Layer service, i18n, host, and placement options.
+   * @param options - Editor, i18n, host, and placement options.
    */
   constructor(options: AcExLayerManagerOptions) {
-    this.layerService = options.layerService
+    this.editor = options.editor
     this.i18n = options.i18n
     this.host = options.host
     this.toolbarPlacement = options.toolbarPlacement ?? 'right'
@@ -138,10 +141,12 @@ export class AcExLayerManager {
     this.masterCheckbox = document.createElement('input')
     this.masterCheckbox.type = 'checkbox'
     this.masterCheckbox.addEventListener('change', () => {
+      const store = this.activeLayerStore
+      if (!store) return
       if (this.masterCheckbox.checked) {
-        this.layerService.setAllLayersOn()
+        store.setAllLayersOn()
       } else {
-        this.layerService.setAllLayersOffExceptCurrent()
+        store.setAllLayersOffExceptCurrent()
       }
     })
     onHeader.appendChild(onLabel)
@@ -182,8 +187,37 @@ export class AcExLayerManager {
       this.host.appendChild(this.root)
     }
 
-    this.unsubscribe = this.layerService.subscribe(() => this.renderRows())
+    this.editor.events.documentActivated.addEventListener(
+      this.handleDocumentActivated
+    )
+    this.bindToActiveDocument()
     eventBus.on('close-layer-manager', this.handleCloseLayerManager)
+    this.renderRows()
+  }
+
+  /** Layer store for the active document, when one is open. */
+  private get activeLayerStore(): AcApLayerStore | undefined {
+    return this.editor.curDocument?.layerStore
+  }
+
+  /** Subscribes to the active document's layer store after document switches. */
+  private bindToActiveDocument() {
+    if (this.subscribedLayerStore) {
+      this.subscribedLayerStore.events.changed.removeEventListener(
+        this.handleLayersChanged
+      )
+    }
+
+    this.subscribedLayerStore = this.activeLayerStore
+    if (this.subscribedLayerStore) {
+      this.subscribedLayerStore.events.changed.addEventListener(
+        this.handleLayersChanged
+      )
+    }
+  }
+
+  private handleDocumentActivated = () => {
+    this.bindToActiveDocument()
     this.renderRows()
   }
 
@@ -235,18 +269,37 @@ export class AcExLayerManager {
     this.colorHeaderEl.textContent = this.i18n.t('layerManager.color')
   }
 
-  /** Unsubscribes from events and removes the panel from the DOM. */
+  /** Removes event listeners and removes the panel from the DOM. */
   destroy() {
     eventBus.off('close-layer-manager', this.handleCloseLayerManager)
-    this.unsubscribe?.()
+    this.editor.events.documentActivated.removeEventListener(
+      this.handleDocumentActivated
+    )
+    if (this.subscribedLayerStore) {
+      this.subscribedLayerStore.events.changed.removeEventListener(
+        this.handleLayersChanged
+      )
+    }
     this.root.remove()
   }
 
-  /** Rebuilds table body rows from {@link AcExLayerService} data. */
+  /** Rebuilds table body rows when {@link AcApLayerStore} data changes. */
+  private handleLayersChanged = () => {
+    this.renderRows()
+  }
+
+  /** Rebuilds table body rows from {@link AcApLayerStore} data. */
   private renderRows() {
-    const layers = this.layerService.getLayers()
-    const currentLayer = this.layerService.getCurrentLayerName()
+    const store = this.activeLayerStore
     this.tbody.replaceChildren()
+    if (!store) {
+      this.masterCheckbox.checked = false
+      this.masterCheckbox.indeterminate = false
+      return
+    }
+
+    const layers = store.getLayers()
+    const currentLayer = store.getCurrentLayerName()
 
     layers.forEach(layer => {
       this.tbody.appendChild(this.createRow(layer, currentLayer))
@@ -264,7 +317,7 @@ export class AcExLayerManager {
    * @param layer - Layer snapshot to display.
    * @param currentLayer - Name of the current drawing layer (`CLAYER`).
    */
-  private createRow(layer: AcExLayerInfo, currentLayer: string) {
+  private createRow(layer: AcApLayerInfo, currentLayer: string) {
     const row = document.createElement('tr')
     row.addEventListener('dblclick', () => {
       const success = AcApDocManager.instance.curView?.zoomToFitLayer(layer.name)
@@ -285,7 +338,7 @@ export class AcExLayerManager {
     checkbox.type = 'checkbox'
     checkbox.checked = layer.isOn
     checkbox.addEventListener('change', () => {
-      this.layerService.setLayerOn(layer.name, checkbox.checked)
+      this.activeLayerStore?.setLayerOn(layer.name, checkbox.checked)
     })
     onCell.appendChild(checkbox)
 
@@ -296,10 +349,14 @@ export class AcExLayerManager {
     swatch.style.background = layer.cssColor
     swatch.addEventListener('click', async () => {
       const initial = AcCmColor.fromString(layer.color)
-      const picker = new AcExColorPicker(this.i18n, initial ?? undefined)
+      const picker = new AcExColorPicker(
+        this.i18n,
+        this.host,
+        initial ?? undefined
+      )
       const selected = await picker.open()
       if (selected) {
-        this.layerService.setLayerColor(layer.name, selected)
+        this.activeLayerStore?.setLayerColor(layer.name, selected)
       }
     })
     colorCell.appendChild(swatch)

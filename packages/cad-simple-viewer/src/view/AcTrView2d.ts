@@ -1134,10 +1134,62 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Applies renderer material remaps to every scene layer group with `layerName`.
+   */
+  private applyLayerMaterialUpdates(
+    layerName: string,
+    materials: Record<number, THREE.Material>
+  ) {
+    if (Object.keys(materials).length === 0) {
+      return
+    }
+
+    this._scene.layouts.forEach(layout => {
+      const sceneLayer = layout.getLayer(layerName)
+      if (!sceneLayer) return
+
+      for (const id in materials) {
+        sceneLayer.updateMaterial(Number(id), materials[id])
+      }
+    })
+  }
+
+  /**
+   * Builds layer-style traits from the live layer record for material refresh.
+   */
+  private buildLayerStyleTraits(
+    layer: AcDbLayerTableRecord,
+    changes: Partial<AcDbLayerTableRecordAttrs>
+  ): Partial<AcGiSubEntityTraits> | undefined {
+    if (!this.layerStyleMayHaveChanged(changes)) {
+      return undefined
+    }
+
+    const traits: Partial<AcGiSubEntityTraits> = {
+      layer: layer.name
+    }
+
+    if (changes.color != null) {
+      traits.color = layer.color.clone()
+    }
+    if (changes.linetype != null) {
+      traits.lineType = layer.lineStyle
+    }
+    if (changes.lineWeight !== undefined) {
+      traits.lineWeight = layer.lineWeight
+    }
+    if (changes.transparency != null) {
+      traits.transparency = layer.transparency
+    }
+
+    return traits
+  }
+
+  /**
    * @inheritdoc
    */
   addLayer(layer: AcDbLayerTableRecord) {
-    const updatedLayers = this._scene.addLayer(this.toLayerInfo(layer))
+    this._scene.addLayer(this.toLayerInfo(layer))
 
     const traits: Partial<AcGiSubEntityTraits> = {
       layer: layer.name,
@@ -1147,12 +1199,7 @@ export class AcTrView2d extends AcEdBaseView {
       transparency: layer.transparency
     }
     const materials = this._renderer.updateLayerMaterial(layer.name, traits)
-    updatedLayers.forEach(updatedLayer => {
-      for (const id in materials) {
-        const material = materials[id]
-        updatedLayer.updateMaterial(Number(id), material)
-      }
-    })
+    this.applyLayerMaterialUpdates(layer.name, materials)
     this._isDirty = true
   }
 
@@ -1163,31 +1210,12 @@ export class AcTrView2d extends AcEdBaseView {
     layer: AcDbLayerTableRecord,
     changes: Partial<AcDbLayerTableRecordAttrs>
   ) {
-    const updatedLayers = this._scene.updateLayer(this.toLayerInfo(layer))
+    this._scene.updateLayer(this.toLayerInfo(layer))
 
-    if (this.layerStyleMayHaveChanged(changes)) {
-      const traits: Record<string, unknown> = {}
-      if (changes.color) {
-        traits.color = changes.color.clone()
-      }
-      if (changes.linetype != null) {
-        traits.lineType = layer.lineStyle
-      }
-      if (changes.lineWeight !== undefined) {
-        traits.lineWeight = changes.lineWeight
-      }
-      if (changes.transparency !== undefined) {
-        traits.transparency = changes.transparency
-      }
-      traits.layer = layer.name // always present
-
+    const traits = this.buildLayerStyleTraits(layer, changes)
+    if (traits) {
       const materials = this._renderer.updateLayerMaterial(layer.name, traits)
-      updatedLayers.forEach(layer => {
-        for (const id in materials) {
-          const material = materials[id]
-          layer.updateMaterial(Number(id), material)
-        }
-      })
+      this.applyLayerMaterialUpdates(layer.name, materials)
     }
 
     if (

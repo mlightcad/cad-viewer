@@ -2,14 +2,14 @@ import { AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdCommand,
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { openLayerForWrite, setLayerFrozenState } from './AcApLayerEdit'
+import { AcApLayerService } from '../../service'
+import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
 
 /**
  * Top-level keywords supported by the `LAYFRZ` entity selection prompt.
@@ -98,7 +98,7 @@ const DEFAULT_SETTINGS: LayfrzSettings = {
  *   selection setting is stored for future use but does not currently change
  *   the resolved target layer.
  */
-export class AcApLayerFreezeCmd extends AcEdCommand {
+export class AcApLayerFreezeCmd extends AcApLayerMutationCmd {
   private static _settings: LayfrzSettings = { ...DEFAULT_SETTINGS }
 
   private _history: LayfrzHistoryEntry[] = []
@@ -335,34 +335,30 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
    * @param objectId - Identifier of the entity selected by the user.
    */
   private freezeEntityLayer(context: AcApContext, objectId: AcDbObjectId) {
-    const db = context.doc.database
-    const entity = db.tables.blockTable.getEntityById(objectId)
-    const layerName = entity?.layer?.trim()
+    const service = new AcApLayerService(context.doc.database)
+    const result = service.freezeLayerByEntity(objectId)
 
-    if (!layerName) {
-      this.showMessage(AcApI18n.t('jig.layfrz.invalidSelection'), 'warning')
-      return
-    }
-
-    const layer = db.tables.layerTable.getAt(layerName)
-    if (!layer) {
-      this.showMessage(
-        `${AcApI18n.t('jig.layfrz.layerNotFound')}: ${layerName}`,
-        'warning'
-      )
-      return
-    }
-
-    if (layer.name === db.clayer) {
-      this.showMessage(AcApI18n.t('jig.layfrz.cannotFreezeCurrent'), 'warning')
-      return
-    }
-
-    if (layer.isFrozen) {
-      this.showMessage(
-        `${AcApI18n.t('jig.layfrz.alreadyFrozen')}: ${layer.name}`,
-        'info'
-      )
+    if (!result.ok) {
+      switch (result.reason) {
+        case 'invalid_selection':
+          this.showMessage(AcApI18n.t('jig.layfrz.invalidSelection'), 'warning')
+          return
+        case 'layer_not_found':
+          this.showMessage(
+            `${AcApI18n.t('jig.layfrz.layerNotFound')}: ${result.layerName}`,
+            'warning'
+          )
+          return
+        case 'cannot_change_current':
+          this.showMessage(AcApI18n.t('jig.layfrz.cannotFreezeCurrent'), 'warning')
+          return
+        case 'already_frozen':
+          this.showMessage(
+            `${AcApI18n.t('jig.layfrz.alreadyFrozen')}: ${result.layerName}`,
+            'info'
+          )
+          return
+      }
       return
     }
 
@@ -375,17 +371,13 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
     }
 
     this._history.push({
-      layerName: layer.name,
-      wasFrozen: layer.isFrozen
+      layerName: result.layerName,
+      wasFrozen: result.previousFrozen ?? false
     })
 
-    const opened = openLayerForWrite(db, layer)
-    if (!opened) return
-
-    setLayerFrozenState(opened, true)
     context.view.selectionSet.clear()
     this.showMessage(
-      `${AcApI18n.t('jig.layfrz.frozen')}: ${layer.name}`,
+      `${AcApI18n.t('jig.layfrz.frozen')}: ${result.layerName}`,
       'success'
     )
   }
@@ -402,10 +394,8 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
       return
     }
 
-    const layer = context.doc.database.tables.layerTable.getAt(
-      history.layerName
-    )
-    if (!layer) {
+    const service = new AcApLayerService(context.doc.database)
+    if (!service.setLayerFrozenByName(history.layerName, history.wasFrozen)) {
       this.showMessage(
         `${AcApI18n.t('jig.layfrz.layerNotFound')}: ${history.layerName}`,
         'warning'
@@ -413,13 +403,9 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
       return
     }
 
-    const opened = openLayerForWrite(context.doc.database, layer)
-    if (!opened) return
-
-    setLayerFrozenState(opened, history.wasFrozen)
     context.view.selectionSet.clear()
     this.showMessage(
-      `${AcApI18n.t('jig.layfrz.restored')}: ${layer.name}`,
+      `${AcApI18n.t('jig.layfrz.restored')}: ${history.layerName}`,
       'success'
     )
   }

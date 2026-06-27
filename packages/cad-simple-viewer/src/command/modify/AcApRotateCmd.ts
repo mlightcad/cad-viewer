@@ -5,20 +5,20 @@ import {
   AcGeTol
 } from '@mlightcad/data-model'
 
-import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptAngleOptions,
   AcEdPromptPointOptions,
-  AcEdPromptSelectionOptions,
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { AcApEntityService } from '../../service'
+import { createRotationMatrix } from '../../util/AcApGeTransform'
 import {
   AcApRotatePreviewJig,
-  AcApRotateStaticJig,
-  createRotationMatrix
+  AcApRotateStaticJig
 } from './AcApRotatePreviewJig'
 
 /**
@@ -268,36 +268,12 @@ export class AcApRotateCmd extends AcEdCommand {
    */
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
-    const annotation = new AcApAnnotation(context.doc.database)
-    const blockTable = context.doc.database.tables.blockTable
+    const resolved = await AcApEntityService.resolveSelectedEntities(context, {
+      promptKey: 'rotate'
+    })
+    if (!resolved) return
 
-    const selectionIds =
-      selectionSet.count > 0
-        ? selectionSet.ids
-        : ((
-            await AcApDocManager.instance.editor.getSelection(
-              new AcEdPromptSelectionOptions(AcApI18n.sysCmdPrompt('rotate'))
-            )
-          ).value?.ids ?? [])
-
-    if (selectionIds.length === 0) return
-
-    const ids =
-      context.doc.openMode == AcEdOpenMode.Review
-        ? annotation.filterAnnotationEntities(selectionIds)
-        : selectionIds
-    if (ids.length === 0) {
-      selectionSet.clear()
-      return
-    }
-
-    const sourceEntities = ids
-      .map(id => blockTable.getEntityById(id))
-      .filter((entity): entity is AcDbEntity => !!entity)
-    if (sourceEntities.length === 0) {
-      selectionSet.clear()
-      return
-    }
+    const { entities: sourceEntities } = resolved
 
     const basePointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.rotate.basePoint')
@@ -332,19 +308,13 @@ export class AcApRotateCmd extends AcEdCommand {
     )
 
     if (rotation.copyMode) {
-      const clones = sourceEntities
-        .map(entity => entity.clone())
-        .filter((entity): entity is AcDbEntity => !!entity)
-      clones.forEach(entity => entity.transformBy(matrix))
-      if (clones.length > 0) {
-        blockTable.modelSpace.appendEntity(clones)
-      }
+      AcApEntityService.cloneAndTransform(context, sourceEntities, matrix)
     } else {
-      sourceEntities.forEach(entity => {
-        const opened = context.doc.database.openEntityForWrite(entity)
-        if (!opened) return
-        opened.transformBy(matrix)
-      })
+      AcApEntityService.transformEntities(
+        context.doc.database,
+        sourceEntities,
+        matrix
+      )
     }
 
     selectionSet.clear()

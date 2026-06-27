@@ -2,36 +2,23 @@ import { AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdCommand,
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { openLayerForWrite, setLayerLockedState } from './AcApLayerEdit'
+import { AcApLayerService } from '../../service'
+import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
 
 /**
  * AutoCAD-like `LAYULK` command.
- *
- * The command repeatedly asks the user to pick an entity and unlocks the
- * corresponding layer. It intentionally works by selection instead of layer
- * name entry, matching AutoCAD's `LAYULK` workflow.
  */
-export class AcApLayerUnlockCmd extends AcEdCommand {
-  /**
-   * Creates a write-enabled `LAYULK` command instance.
-   */
+export class AcApLayerUnlockCmd extends AcApLayerMutationCmd {
   constructor() {
     super()
     this.mode = AcEdOpenMode.Write
   }
 
-  /**
-   * Runs the interactive unlock-layer workflow until the user cancels.
-   *
-   * @param context - Active application context used to read and update the current drawing.
-   * @returns Resolves when the command loop ends.
-   */
   async execute(context: AcApContext) {
     while (true) {
       const objectId = await this.promptSelection()
@@ -41,11 +28,6 @@ export class AcApLayerUnlockCmd extends AcEdCommand {
     }
   }
 
-  /**
-   * Prompts for one entity whose layer should be unlocked.
-   *
-   * @returns Picked entity identifier, or `undefined` when the user cancels.
-   */
   private async promptSelection(): Promise<AcDbObjectId | undefined> {
     const prompt = new AcEdPromptEntityOptions(AcApI18n.t('jig.layulk.prompt'))
     prompt.allowNone = true
@@ -60,46 +42,34 @@ export class AcApLayerUnlockCmd extends AcEdCommand {
     return undefined
   }
 
-  /**
-   * Resolves the picked entity's layer and unlocks it when needed.
-   *
-   * @param context - Active application context containing the current database and view.
-   * @param objectId - Identifier of the entity selected by the user.
-   */
   private unlockEntityLayer(context: AcApContext, objectId: AcDbObjectId) {
-    const db = context.doc.database
-    const entity = db.tables.blockTable.getEntityById(objectId)
-    const layerName = entity?.layer?.trim()
+    const result = new AcApLayerService(
+      context.doc.database
+    ).unlockLayerByEntity(objectId)
 
-    if (!layerName) {
-      this.showMessage(AcApI18n.t('jig.layulk.invalidSelection'), 'warning')
-      return
+    if (!result.ok) {
+      switch (result.reason) {
+        case 'invalid_selection':
+          this.showMessage(AcApI18n.t('jig.layulk.invalidSelection'), 'warning')
+          return
+        case 'layer_not_found':
+          this.showMessage(
+            `${AcApI18n.t('jig.layulk.layerNotFound')}: ${result.layerName}`,
+            'warning'
+          )
+          return
+        case 'already_unlocked':
+          this.showMessage(
+            `${AcApI18n.t('jig.layulk.alreadyUnlocked')}: ${result.layerName}`,
+            'info'
+          )
+          return
+      }
     }
 
-    const layer = db.tables.layerTable.getAt(layerName)
-    if (!layer) {
-      this.showMessage(
-        `${AcApI18n.t('jig.layulk.layerNotFound')}: ${layerName}`,
-        'warning'
-      )
-      return
-    }
-
-    if (!layer.isLocked) {
-      this.showMessage(
-        `${AcApI18n.t('jig.layulk.alreadyUnlocked')}: ${layer.name}`,
-        'info'
-      )
-      return
-    }
-
-    const opened = openLayerForWrite(db, layer)
-    if (!opened) return
-
-    setLayerLockedState(opened, false)
     context.view.selectionSet.clear()
     this.showMessage(
-      `${AcApI18n.t('jig.layulk.unlocked')}: ${layer.name}`,
+      `${AcApI18n.t('jig.layulk.unlocked')}: ${result.layerName}`,
       'success'
     )
   }

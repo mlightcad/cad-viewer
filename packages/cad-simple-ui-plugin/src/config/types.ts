@@ -123,19 +123,5 @@ export interface AcExSimpleUiPluginOptions {
   }
 }
 
-/**
- * Snapshot of a layer row shown in the layer manager UI.
- */
-export interface AcExLayerInfo {
-  /** Layer table record name. */
-  name: string
-  /** Serialized {@link AcCmColor} string. */
-  color: string
-  /** CSS color derived from the layer color for swatch display. */
-  cssColor: string
-  /** Whether the layer is on (not off). */
-  isOn: boolean
-}
-
 /** Plugin identifier registered with {@link AcApPluginManager}. */
 export const SIMPLE_UI_PLUGIN_NAME = 'SimpleUiPlugin'

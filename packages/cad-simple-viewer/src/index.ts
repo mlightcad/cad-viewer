@@ -1,5 +1,6 @@
 export * from './app'
 export * from './util'
+export * from './service'
 export * from './command'
 export * from './editor'
 export * from './i18n'

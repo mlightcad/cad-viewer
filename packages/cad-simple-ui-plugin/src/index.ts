@@ -2,13 +2,12 @@
  * Public entry point for {@link SIMPLE_UI_PLUGIN_NAME}.
  *
  * Re-exports the plugin factory, registration helper, configuration types,
- * i18n utilities, and layer service.
+ * i18n utilities, and layer store re-exports.
  */
 export { AcApSimpleUiPlugin, createSimpleUiPlugin } from './createSimpleUiPlugin'
 export { registerSimpleUiPlugin } from './register'
 export type {
   AcExDefaultToolbarContext,
-  AcExLayerInfo,
   AcExLocale,
   AcExSimpleUiPluginOptions,
   AcExToolbarItem,
@@ -25,4 +24,5 @@ export {
   toolbarPreset
 } from './config/toolbarItemUtils'
 export { AcExI18n, registerSimpleUiI18n } from './i18n'
-export { AcExLayerService } from './service/AcExLayerService'
+export type { AcApLayerInfo } from '@mlightcad/cad-simple-viewer'
+export { AcApLayerStore } from '@mlightcad/cad-simple-viewer'

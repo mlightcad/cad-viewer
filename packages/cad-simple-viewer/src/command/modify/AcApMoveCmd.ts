@@ -1,32 +1,22 @@
-import {
-  AcDbEntity,
-  AcGeMatrix3d,
-  AcGePoint3d
-} from '@mlightcad/data-model'
+import { AcGePoint3d } from '@mlightcad/data-model'
 
-import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptPointOptions,
   AcEdPromptPointResult,
-  AcEdPromptSelectionOptions,
   AcEdPromptState,
   AcEdPromptStateMachine,
   AcEdPromptStateStep,
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { AcApEntityService } from '../../service'
 import { AcApMovePreviewJig } from './AcApMovePreviewJig'
 
 /**
  * Command to move selected entities by a displacement vector.
- *
- * Behavior (AutoCAD-like):
- * 1) Select entities (or reuse preselection),
- * 2) Specify base point or choose `Displacement`,
- * 3) Specify second point (or displacement point),
- * 4) Apply translation to all selected entities.
  */
 export class AcApMoveCmd extends AcEdCommand {
   constructor() {
@@ -36,36 +26,12 @@ export class AcApMoveCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
-    const annotation = new AcApAnnotation(context.doc.database)
-    const blockTable = context.doc.database.tables.blockTable
+    const resolved = await AcApEntityService.resolveSelectedEntities(context, {
+      promptKey: 'move'
+    })
+    if (!resolved) return
 
-    const selectionIds =
-      selectionSet.count > 0
-        ? selectionSet.ids
-        : ((
-            await AcApDocManager.instance.editor.getSelection(
-              new AcEdPromptSelectionOptions(AcApI18n.sysCmdPrompt('move'))
-            )
-          ).value?.ids ?? [])
-
-    if (selectionIds.length === 0) return
-
-    const ids =
-      context.doc.openMode == AcEdOpenMode.Review
-        ? annotation.filterAnnotationEntities(selectionIds)
-        : selectionIds
-    if (ids.length === 0) {
-      selectionSet.clear()
-      return
-    }
-
-    const sourceEntities = ids
-      .map(id => blockTable.getEntityById(id))
-      .filter((entity): entity is AcDbEntity => !!entity)
-    if (sourceEntities.length === 0) {
-      selectionSet.clear()
-      return
-    }
+    const { entities: sourceEntities } = resolved
 
     let basePoint: AcGePoint3d | undefined
     let displacement: AcGePoint3d | undefined
@@ -96,7 +62,6 @@ export class AcApMoveCmd extends AcEdCommand {
           AcApI18n.t('jig.move.basePointOrDisplacement')
         )
         createDisplacementKeyword(prompt)
-        // AutoCAD MOVE: Enter at base point switches to displacement from origin.
         prompt.allowNone = true
         return prompt
       }
@@ -143,7 +108,6 @@ export class AcApMoveCmd extends AcEdCommand {
             basePoint
           )
         }
-        // AutoCAD MOVE: Enter at second point ends without applying a move.
         prompt.allowNone = true
         return prompt
       }
@@ -151,10 +115,9 @@ export class AcApMoveCmd extends AcEdCommand {
       async handleResult(result: AcEdPromptPointResult): Promise<MoveStep> {
         if (result.status === AcEdPromptStatus.OK && basePoint) {
           const secondPoint = new AcGePoint3d(result.value!)
-          displacement = new AcGePoint3d(
-            secondPoint.x - basePoint.x,
-            secondPoint.y - basePoint.y,
-            secondPoint.z - basePoint.z
+          displacement = AcApEntityService.computeDisplacement(
+            basePoint,
+            secondPoint
           )
           return 'finish'
         }
@@ -184,7 +147,6 @@ export class AcApMoveCmd extends AcEdCommand {
           sourceEntities,
           prompt.basePoint
         )
-        // AutoCAD MOVE: Enter at displacement prompt ends without applying a move.
         prompt.allowNone = true
         return prompt
       }
@@ -209,16 +171,11 @@ export class AcApMoveCmd extends AcEdCommand {
       return
     }
 
-    const matrix = new AcGeMatrix3d().makeTranslation(
-      displacement.x,
-      displacement.y,
-      displacement.z
+    AcApEntityService.translateEntities(
+      context.doc.database,
+      sourceEntities,
+      displacement
     )
-    sourceEntities.forEach(entity => {
-      const opened = context.doc.database.openEntityForWrite(entity)
-      if (!opened) return
-      opened.transformBy(matrix)
-    })
     selectionSet.clear()
   }
 }

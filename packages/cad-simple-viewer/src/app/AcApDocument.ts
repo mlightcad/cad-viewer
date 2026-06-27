@@ -8,6 +8,19 @@ import {
 
 import { eventBus } from '../editor'
 import { AcEdOpenMode } from '../editor/view'
+import type { AcApLayerIsoSnapshot } from '../service/AcApLayerIsoState'
+import {
+  AcApLayerService
+} from '../service/AcApLayerService'
+import type { AcApLayerStore } from '../service/AcApLayerStore'
+import { AcApLayerStore as AcApLayerStoreImpl } from '../service/AcApLayerStore'
+import { acapRunServiceEdit, LAYER_EDIT_LABEL } from '../service/AcApServiceEdit'
+import type {
+  AcApLayerIsolateResult,
+  AcApLayerIsolationMode
+} from '../service/types'
+import { LAYER_LOCKED_FLAG } from '../service/types'
+import type { AcApLayerPreviousSnapshot } from './AcApLayerSessionState'
 import { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
 
 /**
@@ -32,6 +45,14 @@ export class AcApDocument {
   private _openMode: AcEdOpenMode = AcEdOpenMode.Write
   /** Object ids temporarily hidden by HIDEOBJECTS in the current session */
   private _hiddenObjects = new Set<AcDbObjectId>()
+  /** Layer table snapshot captured before the last layer-modifying operation (`LAYERP`). */
+  private _layerPreviousSnapshot?: AcApLayerPreviousSnapshot
+  /** Isolation snapshot from the latest `LAYISO` run for `LAYUNISO`. */
+  private _layerIsoSnapshot?: AcApLayerIsoSnapshot
+  /** Lazily created layer service bound to this document's database. */
+  private _layerService?: AcApLayerService
+  /** Lazily created layer store bound to this document. */
+  private _layerStore?: AcApLayerStore
 
   /**
    * Creates a new document instance with an empty database.
@@ -203,6 +224,150 @@ export class AcApDocument {
     const hiddenIds = [...this._hiddenObjects]
     this._hiddenObjects.clear()
     return hiddenIds
+  }
+
+  /**
+   * Returns the layer service for this document's database.
+   */
+  get layerService(): AcApLayerService {
+    if (!this._layerService) {
+      this._layerService = new AcApLayerService(this._database)
+    }
+    return this._layerService
+  }
+
+  /**
+   * Returns the layer store for UI integrations observing this document.
+   */
+  get layerStore(): AcApLayerStore {
+    if (!this._layerStore) {
+      this._layerStore = new AcApLayerStoreImpl(this)
+    }
+    return this._layerStore
+  }
+
+  /**
+   * Releases the layer store and clears document-scoped layer session state.
+   *
+   * Call before replacing this document's drawing content or when tearing
+   * down the document. The store is recreated lazily on the next
+   * {@link layerStore} access.
+   */
+  releaseLayerResources(): void {
+    this._layerStore?.destroy()
+    this._layerStore = undefined
+    this._layerService = undefined
+    this.clearLayerPreviousState()
+    this.clearLayerIsoSnapshot()
+  }
+
+  /**
+   * Tears down document-scoped resources before the document is discarded.
+   */
+  destroy(): void {
+    this.releaseLayerResources()
+    this._hiddenObjects.clear()
+  }
+
+  /**
+   * Captures the current layer table state for {@link AcApLayerPCmd}.
+   */
+  captureLayerPreviousState(): void {
+    const db = this._database
+    this._layerPreviousSnapshot = {
+      clayer: db.clayer,
+      states: [...db.tables.layerTable.newIterator()].map(layer => ({
+        name: layer.name,
+        isOn: !layer.isOff,
+        isFrozen: layer.isFrozen,
+        isLocked: ((layer.standardFlags ?? 0) & LAYER_LOCKED_FLAG) !== 0
+      }))
+    }
+  }
+
+  /**
+   * Returns the stored `LAYERP` snapshot without clearing it.
+   */
+  getLayerPreviousSnapshot(): AcApLayerPreviousSnapshot | undefined {
+    return this._layerPreviousSnapshot
+  }
+
+  /**
+   * Clears the stored `LAYERP` snapshot without restoring it.
+   */
+  clearLayerPreviousState(): void {
+    this._layerPreviousSnapshot = undefined
+  }
+
+  /**
+   * Stores the latest `LAYISO` snapshot for {@link AcApLayerUnisoCmd}.
+   *
+   * @param snapshot - Isolation snapshot produced by `LAYISO`.
+   */
+  setLayerIsoSnapshot(snapshot: AcApLayerIsoSnapshot): void {
+    this._layerIsoSnapshot = snapshot
+  }
+
+  /**
+   * Consumes the stored `LAYISO` snapshot for a one-shot `LAYUNISO` restore.
+   */
+  consumeLayerIsoSnapshot(): AcApLayerIsoSnapshot | undefined {
+    const snapshot = this._layerIsoSnapshot
+    this._layerIsoSnapshot = undefined
+    return snapshot
+  }
+
+  /**
+   * Clears the stored `LAYISO` snapshot without restoring it.
+   */
+  clearLayerIsoSnapshot(): void {
+    this._layerIsoSnapshot = undefined
+  }
+
+  /**
+   * Restores the previously captured `LAYERP` layer table state.
+   *
+   * @returns `true` when a snapshot existed and was applied.
+   */
+  restoreLayerPreviousState(): boolean {
+    const snapshot = this._layerPreviousSnapshot
+    if (!snapshot) return false
+
+    return acapRunServiceEdit(this._database, LAYER_EDIT_LABEL, () =>
+      AcApLayerService.applyLayerPreviousSnapshot(this._database, snapshot)
+    )
+  }
+
+  /**
+   * Isolates layers using `LAYISO` semantics and stores an undo snapshot.
+   *
+   * @param layerNames - Names of layers to keep visible.
+   * @param isolationMode - How non-isolated layers are hidden.
+   * @returns Public isolation result, or `undefined` when `layerNames` is empty.
+   */
+  isolateLayers(
+    layerNames: string[],
+    isolationMode: AcApLayerIsolationMode
+  ): AcApLayerIsolateResult | undefined {
+    const result = this.layerService.isolateLayers(layerNames, isolationMode)
+    if (!result) return undefined
+
+    this._layerIsoSnapshot = result.isoSnapshot
+    return {
+      layerNames: result.layerNames,
+      affectedLayerCount: result.affectedLayerCount
+    }
+  }
+
+  /**
+   * Restores the latest `LAYISO` snapshot (`LAYUNISO`).
+   *
+   * @returns Number of restored layers, or `undefined` when no snapshot exists.
+   */
+  unisolateLayers(): number | undefined {
+    const snapshot = this.consumeLayerIsoSnapshot()
+    if (!snapshot) return undefined
+    return this.layerService.unisolateFromSnapshot(snapshot)
   }
 
   /**

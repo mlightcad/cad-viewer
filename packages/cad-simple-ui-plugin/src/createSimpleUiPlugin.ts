@@ -17,7 +17,6 @@ import {
   SIMPLE_UI_PLUGIN_NAME
 } from './config/types'
 import { AcExI18n, registerSimpleUiI18n } from './i18n'
-import { AcExLayerService } from './service/AcExLayerService'
 import { AcExUiThemeSync } from './theme/AcExUiThemeSync'
 import { AcExLayerManager } from './ui/AcExLayerManager'
 import { AcExToolbar } from './ui/AcExToolbar'
@@ -37,8 +36,6 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   /** Human-readable plugin summary. */
   description = 'Framework-agnostic toolbar and layer manager UI'
 
-  /** Layer table observer backing the layer manager panel. */
-  private layerService?: AcExLayerService
   /** Floating layer manager DOM panel. */
   private layerManager?: AcExLayerManager
   /** Configurable toolbar instance. */
@@ -87,9 +84,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     const layerEnabled = resolvedOptions.layerManager?.enabled !== false
     if (layerEnabled) {
-      this.layerService = new AcExLayerService()
       this.layerManager = new AcExLayerManager({
-        layerService: this.layerService,
+        editor: AcApDocManager.instance,
         i18n: this.i18n,
         host,
         toolbarPlacement: this.toolbarPlacement,
@@ -154,11 +150,9 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     this.toolbar?.destroy()
     this.layerManager?.destroy()
-    this.layerService?.destroy()
 
     this.toolbar = undefined
     this.layerManager = undefined
-    this.layerService = undefined
     this.i18n = undefined
     this.themeSync?.stop()
     this.themeSync = undefined

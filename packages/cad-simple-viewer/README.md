@@ -28,6 +28,7 @@ Use `cad-simple-viewer` if you need **core CAD logic only** (document management
 - `src/app/` – Document/context management, settings
 - `src/command/` – Command implementations (open, zoom, select, etc.)
 - `src/editor/` – Command stack, input handling, global functions
+- `src/service/` – Layer/entity services and UI layer store
 - `src/view/` – Layout and scene management
 - `src/util/` – Utilities
 
@@ -54,14 +55,36 @@ This capability makes `cad-simple-viewer` suitable for applications that need to
 
 In [cad-simple-viewer-example](https://github.com/mlight-lee/cad-simple-viewer-example) it demonstrates how to create one drawing with [**realdwg-web API**](https://mlight-lee.github.io/realdwg-web/).
 
+## Layer services
+
+Layer table mutations are centralized in `AcApLayerService`. UI integrations should use `AcApDocument.layerStore`, which observes that document's layer table and delegates mutations to its layer service.
+
+### Turning layers on/off from UI vs CLI
+
+`AcApLayerService.setLayerOn` accepts `{ switchCurrentLayer?: boolean }`:
+
+- **CLI commands** leave the default `false`. Batch helpers skip the current layer instead.
+- **UI callers** (`AcApLayerStore`, Vue `useLayers`) pass `true` so hiding or freezing the active layer moves `CLAYER` to another visible layer first.
+
+### LAYISO `LockAndFade` mode
+
+The `LockAndFade` isolation keyword matches AutoCAD naming but the viewer **locks** non-isolated layers only. It does not apply a visual fade; users are notified when selecting this mode in the `LAYISO` command.
+
 ## Available Exports
 
 ### Core Classes
 
 - `AcApContext` - Main application context
 - `AcApDocManager` - Document management
-- `AcApDocument` - Individual document handling
+- `AcApDocument` - Individual document handling (includes `layerService` and `layerStore`)
 - `AcApSettingManager` - Settings management
+
+### Services
+
+- `AcApLayerService` - Layer table mutations with undo
+- `AcApLayerStore` - Cached layer rows and UI-friendly mutations (via `AcApDocument.layerStore`)
+- `AcApEntityService` - Entity selection, transform, and edit helpers
+- `acapRunServiceEdit` - Undo-wrapped edits outside command transactions
 
 ### Commands
 

@@ -68,8 +68,8 @@ jest.mock('../src/i18n', () => ({
 
 import { AcApDocManager } from '../src/app'
 import { AcApLayerIsoCmd } from '../src/command/layer/AcApLayerIsoCmd'
-import { AcApLayerIsoState } from '../src/command/layer/AcApLayerIsoState'
 import { AcApLayerUnisoCmd } from '../src/command/layer/AcApLayerUnisoCmd'
+import { AcApLayerService } from '../src/service/AcApLayerService'
 
 interface TestLayer {
   name: string
@@ -126,13 +126,67 @@ const createContext = (
     }
   }
 
+  let layerIsoSnapshot: import('../src/service').AcApLayerIsoSnapshot | undefined
+  let layerPreviousSnapshot:
+    | import('../src/app/AcApLayerSessionState').AcApLayerPreviousSnapshot
+    | undefined
+
+  const doc = {
+    database,
+    captureLayerPreviousState() {
+      layerPreviousSnapshot = {
+        clayer: database.clayer,
+        states: layers.map(layer => ({
+          name: layer.name,
+          isOn: !layer.isOff,
+          isFrozen: layer.isFrozen,
+          isLocked: layer.isLocked
+        }))
+      }
+    },
+    getLayerPreviousSnapshot() {
+      return layerPreviousSnapshot
+    },
+    clearLayerPreviousState() {
+      layerPreviousSnapshot = undefined
+    },
+    restoreLayerPreviousState() {
+      if (!layerPreviousSnapshot) return false
+      return AcApLayerService.applyLayerPreviousSnapshot(
+        database as never,
+        layerPreviousSnapshot
+      )
+    },
+    isolateLayers(
+      layerNames: string[],
+      isolationMode: import('../src/service/types').AcApLayerIsolationMode
+    ) {
+      const result = new AcApLayerService(database as never).isolateLayers(
+        layerNames,
+        isolationMode
+      )
+      if (!result) return undefined
+      layerIsoSnapshot = result.isoSnapshot
+      return {
+        layerNames: result.layerNames,
+        affectedLayerCount: result.affectedLayerCount
+      }
+    },
+    unisolateLayers() {
+      if (!layerIsoSnapshot) return undefined
+      const snapshot = layerIsoSnapshot
+      layerIsoSnapshot = undefined
+      return new AcApLayerService(database as never).unisolateFromSnapshot(
+        snapshot
+      )
+    }
+  }
+
   return {
     clear,
     database,
     context: {
-      doc: {
-        database
-      },
+      doc,
       view: {
         selectionSet: {
           ids: selectedIds,
@@ -146,7 +200,6 @@ const createContext = (
 describe('AcApLayerUnisoCmd', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    AcApLayerIsoState.consume()
   })
 
   test('reports when no LAYISO state has been captured', async () => {
