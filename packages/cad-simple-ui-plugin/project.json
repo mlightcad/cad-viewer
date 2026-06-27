@@ -1,0 +1,46 @@
+{
+  "name": "@mlightcad/cad-simple-ui-plugin",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/cad-simple-ui-plugin/src",
+  "projectType": "library",
+  "tags": ["npm:private"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc && vite build",
+        "cwd": "packages/cad-simple-ui-plugin"
+      },
+      "dependsOn": ["^build"],
+      "cache": true
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "rimraf dist lib tsconfig.tsbuildinfo",
+        "cwd": "packages/cad-simple-ui-plugin"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint src/",
+        "cwd": "packages/cad-simple-ui-plugin"
+      }
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint --fix --quiet src/",
+        "cwd": "packages/cad-simple-ui-plugin"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "jest packages/cad-simple-ui-plugin/__tests__",
+        "cwd": "."
+      }
+    }
+  }
+}

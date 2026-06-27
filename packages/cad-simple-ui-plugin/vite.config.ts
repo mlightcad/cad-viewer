@@ -1,3 +1,4 @@
+/** Vite library build configuration for {@link packageName} dual entry bundles (`index`, `register`). */
 import { resolve } from 'path'
 import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import { defineConfig, PluginOption } from 'vite'
@@ -6,8 +7,8 @@ import {
   createLibRollupOutput
 } from '../vite-config/pluginRollupOutput'
 
-const packageName = '@mlightcad/cad-pdf-plugin'
-const pluginId = 'cad-pdf-plugin'
+const packageName = '@mlightcad/cad-simple-ui-plugin'
+const pluginId = 'cad-simple-ui-plugin'
 
 export default defineConfig({
   build: {
@@ -24,7 +25,7 @@ export default defineConfig({
     },
     minify: true,
     rollupOptions: {
-      external: [packageName],
+      external: [packageName, '@mlightcad/cad-simple-viewer', '@mlightcad/data-model'],
       output: createLibRollupOutput(pluginId)
     }
   },

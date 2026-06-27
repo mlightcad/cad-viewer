@@ -4,6 +4,7 @@ import {
   AcEdCommandStack
 } from '@mlightcad/cad-simple-viewer'
 
+import packageJson from '../package.json'
 import { AcApConvertToSvgCmd } from './AcApConvertToSvgCmd'
 
 /**
@@ -16,7 +17,7 @@ export class AcApSvgPlugin implements AcApPlugin {
   /** @inheritdoc */
   name = 'SvgPlugin'
   /** @inheritdoc */
-  version = '1.0.0'
+  version = packageJson.version
   /** @inheritdoc */
   description = 'SVG export (csvg) command'
 
