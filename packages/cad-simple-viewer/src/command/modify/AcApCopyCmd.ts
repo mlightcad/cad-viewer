@@ -16,7 +16,7 @@ import {
   scaleCopyDisplacement
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { AcApEntityService } from '../../service'
+import { resolveSelectedEntities } from '../../service'
 import { AcApCopyPreviewJig } from './AcApCopyPreviewJig'
 
 type CopyMode = 'Single' | 'Multiple'
@@ -75,11 +75,7 @@ export class AcApCopyCmd extends AcEdCommand {
     basePoint: AcGePoint3dLike,
     targetPoint: AcGePoint3dLike
   ) {
-    return new AcGePoint3d(
-      targetPoint.x - basePoint.x,
-      targetPoint.y - basePoint.y,
-      targetPoint.z - basePoint.z
-    )
+    return new AcGePoint3d(targetPoint).sub(basePoint)
   }
 
   /**
@@ -364,7 +360,7 @@ export class AcApCopyCmd extends AcEdCommand {
    */
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
-    const resolved = await AcApEntityService.resolveSelectedEntities(context, {
+    const resolved = await resolveSelectedEntities(context, {
       promptKey: 'copy'
     })
     if (!resolved) return

@@ -12,7 +12,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { AcApEntityService } from '../../service'
+import { resolveSelectedEntities } from '../../service'
 import { AcApMovePreviewJig } from './AcApMovePreviewJig'
 
 /**
@@ -26,7 +26,7 @@ export class AcApMoveCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
-    const resolved = await AcApEntityService.resolveSelectedEntities(context, {
+    const resolved = await resolveSelectedEntities(context, {
       promptKey: 'move'
     })
     if (!resolved) return
@@ -115,10 +115,7 @@ export class AcApMoveCmd extends AcEdCommand {
       async handleResult(result: AcEdPromptPointResult): Promise<MoveStep> {
         if (result.status === AcEdPromptStatus.OK && basePoint) {
           const secondPoint = new AcGePoint3d(result.value!)
-          displacement = AcApEntityService.computeDisplacement(
-            basePoint,
-            secondPoint
-          )
+          displacement = new AcGePoint3d(secondPoint).sub(basePoint)
           return 'finish'
         }
 
@@ -171,11 +168,7 @@ export class AcApMoveCmd extends AcEdCommand {
       return
     }
 
-    AcApEntityService.translateEntities(
-      context.doc.database,
-      sourceEntities,
-      displacement
-    )
+    context.doc.entityService.translateEntities(sourceEntities, displacement)
     selectionSet.clear()
   }
 }

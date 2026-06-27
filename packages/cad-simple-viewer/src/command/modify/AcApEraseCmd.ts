@@ -1,6 +1,6 @@
 import { AcApContext } from '../../app'
 import { AcEdCommand } from '../../editor'
-import { AcApEntityService } from '../../service'
+import { resolveSelectedIds } from '../../service'
 
 /**
  * Command to delete selected objects from the drawing.
@@ -8,10 +8,10 @@ import { AcApEntityService } from '../../service'
 export class AcApEraseCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
-    const ids = await AcApEntityService.resolveSelectedIds(context, 'erase')
+    const ids = await resolveSelectedIds(context, 'erase')
     if (!ids) return
 
-    AcApEntityService.eraseEntities(context.doc.database, ids)
+    context.doc.entityService.eraseEntities(ids)
     selectionSet.clear()
   }
 }

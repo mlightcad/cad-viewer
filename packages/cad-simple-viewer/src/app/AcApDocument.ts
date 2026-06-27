@@ -8,6 +8,7 @@ import {
 
 import { eventBus } from '../editor'
 import { AcEdOpenMode } from '../editor/view'
+import { AcApEntityService } from '../service/AcApEntityService'
 import type { AcApLayerIsoSnapshot } from '../service/AcApLayerIsoState'
 import {
   AcApLayerService
@@ -51,6 +52,8 @@ export class AcApDocument {
   private _layerIsoSnapshot?: AcApLayerIsoSnapshot
   /** Lazily created layer service bound to this document's database. */
   private _layerService?: AcApLayerService
+  /** Lazily created entity service bound to this document's database. */
+  private _entityService?: AcApEntityService
   /** Lazily created layer store bound to this document. */
   private _layerStore?: AcApLayerStore
 
@@ -237,6 +240,16 @@ export class AcApDocument {
   }
 
   /**
+   * Returns the entity service for this document's database.
+   */
+  get entityService(): AcApEntityService {
+    if (!this._entityService) {
+      this._entityService = new AcApEntityService(this._database)
+    }
+    return this._entityService
+  }
+
+  /**
    * Returns the layer store for UI integrations observing this document.
    */
   get layerStore(): AcApLayerStore {
@@ -247,25 +260,18 @@ export class AcApDocument {
   }
 
   /**
-   * Releases the layer store and clears document-scoped layer session state.
+   * Tears down document-scoped services and session state.
    *
-   * Call before replacing this document's drawing content or when tearing
-   * down the document. The store is recreated lazily on the next
-   * {@link layerStore} access.
+   * Call before replacing this document's drawing content or when discarding
+   * the document. Lazy services are recreated on the next access.
    */
-  releaseLayerResources(): void {
+  destroy(): void {
     this._layerStore?.destroy()
     this._layerStore = undefined
     this._layerService = undefined
+    this._entityService = undefined
     this.clearLayerPreviousState()
     this.clearLayerIsoSnapshot()
-  }
-
-  /**
-   * Tears down document-scoped resources before the document is discarded.
-   */
-  destroy(): void {
-    this.releaseLayerResources()
     this._hiddenObjects.clear()
   }
 

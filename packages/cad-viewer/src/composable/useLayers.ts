@@ -19,21 +19,9 @@ import { computed, onScopeDispose, reactive, ref } from 'vue'
  * Extends {@link AcApLayerInfo} with additional fields read from the layer table
  * record (linetype, line weight, plottable flag, etc.).
  */
-export interface LayerInfo {
-  /** Layer table record name. */
-  name: string
-  /** Serialized {@link AcCmColor} string from {@link AcCmColor.toString}. */
-  color: string
-  /** CSS color derived from the layer color for swatch display. */
-  cssColor: string
-  /** Whether the layer is locked (entities cannot be edited). */
-  isLocked: boolean
-  /** Whether the layer is frozen (entities are hidden and not selectable). */
-  isFrozen: boolean
+export interface LayerInfo extends AcApLayerInfo {
   /** Whether the layer contains at least one entity in the drawing database. */
   isInUse: boolean
-  /** Whether the layer is on (not off). */
-  isOn: boolean
   /** Whether the layer is included when the drawing is plotted. */
   isPlottable: boolean
   /** Layer transparency as a string (AutoCAD-style value). */
@@ -75,13 +63,8 @@ function enrichLayerInfo(
   const layer = db?.tables.layerTable.getAt(base.name)
   if (!layer) {
     return {
-      name: base.name,
-      color: base.color,
-      cssColor: base.cssColor,
-      isLocked: base.isLocked,
-      isFrozen: base.isFrozen,
+      ...base,
       isInUse: false,
-      isOn: base.isOn,
       isPlottable: true,
       transparency: '0',
       linetype: 'Continuous',
@@ -90,13 +73,8 @@ function enrichLayerInfo(
   }
 
   return {
-    name: base.name,
-    color: base.color,
-    cssColor: base.cssColor,
-    isLocked: base.isLocked,
-    isFrozen: base.isFrozen,
+    ...base,
     isInUse: layer.isInUse,
-    isOn: base.isOn,
     isPlottable: layer.isPlottable,
     transparency: layer.transparency.toString(),
     linetype: layer.linetype,

@@ -1178,7 +1178,7 @@ export class AcApDocManager {
     options?: AcApOpenDatabaseOptions
   ) {
     if (isSuccess) {
-      this.context.doc.releaseLayerResources()
+      this.context.doc.destroy()
       const doc = this.context.doc
       this.events.documentActivated.dispatch({
         doc,
