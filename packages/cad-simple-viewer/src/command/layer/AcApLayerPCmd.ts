@@ -1,8 +1,12 @@
-import { AcDbLayerTableRecord } from '@mlightcad/data-model'
-
 import { AcApContext } from '../../app'
 import { AcEdCommand, AcEdOpenMode } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import {
+  isLayerLocked,
+  openLayerForWrite,
+  setLayerFrozenState,
+  setLayerLockedState
+} from './AcApLayerEdit'
 
 /**
  * Snapshot of the layer state at a specific point in time.
@@ -37,7 +41,7 @@ class AcApLayerPreviousStateManager {
         name: layer.name,
         isOn: !layer.isOff,
         isFrozen: layer.isFrozen,
-        isLocked: this.isLayerLocked(layer)
+        isLocked: isLayerLocked(layer)
       }))
     }
   }
@@ -57,19 +61,18 @@ class AcApLayerPreviousStateManager {
 
     // Apply layer state changes
     snapshot.states.forEach(state => {
-      const layer = db.tables.layerTable.getAt(state.name)
+      const layer = openLayerForWrite(db, state.name)
       if (!layer) return
 
       layer.isOff = !state.isOn
-      this.setLayerFrozen(layer, state.isFrozen)
-      this.setLayerLocked(layer, state.isLocked)
+      setLayerFrozenState(layer, state.isFrozen)
+      setLayerLockedState(layer, state.isLocked)
     })
 
-    // Restore current layer
-    const currentLayer = db.tables.layerTable.getAt(snapshot.clayer)
+    const currentLayer = openLayerForWrite(db, snapshot.clayer)
     if (currentLayer) {
       currentLayer.isOff = false
-      this.setLayerFrozen(currentLayer, false)
+      setLayerFrozenState(currentLayer, false)
       db.clayer = currentLayer.name
       return true
     }
@@ -82,34 +85,6 @@ class AcApLayerPreviousStateManager {
    */
   clearPreviousState(): void {
     this.previousSnapshot = null
-  }
-
-  /**
-   * Checks if a layer is locked.
-   * @param layer - Layer table record
-   */
-  private isLayerLocked(layer: AcDbLayerTableRecord): boolean {
-    return ((layer.standardFlags ?? 0) & 0x04) !== 0
-  }
-
-  /**
-   * Sets or clears the locked bit in layer flags.
-   * @param layer - Layer table record
-   * @param locked - Whether the layer should be locked
-   */
-  private setLayerLocked(layer: AcDbLayerTableRecord, locked: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = locked ? flags | 0x04 : flags & ~0x04
-  }
-
-  /**
-   * Sets or clears the frozen bit in layer flags.
-   * @param layer - Layer table record
-   * @param frozen - Whether the layer should be frozen
-   */
-  private setLayerFrozen(layer: AcDbLayerTableRecord, frozen: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = frozen ? flags | 0x01 : flags & ~0x01
   }
 }
 

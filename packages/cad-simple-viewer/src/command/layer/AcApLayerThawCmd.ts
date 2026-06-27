@@ -1,8 +1,7 @@
-import { AcDbLayerTableRecord } from '@mlightcad/data-model'
-
 import { AcApContext } from '../../app'
 import { AcEdCommand, AcEdOpenMode } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { openLayerForWrite, setLayerFrozenState } from './AcApLayerEdit'
 
 /**
  * AutoCAD-like `LAYTHW` command.
@@ -27,12 +26,15 @@ export class AcApLayerThawCmd extends AcEdCommand {
    * @returns Resolves when all layer states have been processed.
    */
   async execute(context: AcApContext) {
-    const layers = [...context.doc.database.tables.layerTable.newIterator()]
+    const db = context.doc.database
+    const layers = [...db.tables.layerTable.newIterator()]
     let thawed = 0
 
     layers.forEach(layer => {
       if (!layer.isFrozen) return
-      this.setLayerFrozen(layer, false)
+      const opened = openLayerForWrite(db, layer)
+      if (!opened) return
+      setLayerFrozenState(opened, false)
       thawed++
     })
 
@@ -44,16 +46,5 @@ export class AcApLayerThawCmd extends AcEdCommand {
     }
 
     this.showMessage(`${AcApI18n.t('jig.laythw.thawed')}: ${thawed}`, 'success')
-  }
-
-  /**
-   * Clears or sets the frozen bit while preserving other layer flags.
-   *
-   * @param layer - Target layer table record.
-   * @param frozen - Whether the layer should be marked frozen.
-   */
-  private setLayerFrozen(layer: AcDbLayerTableRecord, frozen: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = frozen ? flags | 0x01 : flags & ~0x01
   }
 }

@@ -9,6 +9,26 @@ import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../src/util/AcTrEntityTraitsUtil'
 
 describe('AcTrStyleManager', () => {
+  it('preserves entity color when updateLayerMaterial receives layer name only', () => {
+    const styleManager = new AcTrStyleManager()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'ROAD'
+    traits.color.setRGB(255, 0, 0)
+
+    const original = styleManager.getLineMaterial(
+      traits
+    ) as THREE.LineBasicMaterial
+    expect(original.color.getHex()).toBe(0xff0000)
+
+    const updates = styleManager.updateLayerMaterial('ROAD', {
+      layer: 'ROAD'
+    })
+    const updated = updates[original.id] as THREE.LineBasicMaterial
+
+    expect(updated).toBeDefined()
+    expect(updated.color.getHex()).toBe(0xff0000)
+  })
+
   it('binds inherited materials onto the effective layer for later layer updates', () => {
     const styleManager = new AcTrStyleManager()
     const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()

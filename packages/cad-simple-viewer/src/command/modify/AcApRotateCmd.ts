@@ -344,7 +344,6 @@ export class AcApRotateCmd extends AcEdCommand {
         const opened = context.doc.database.openEntityForWrite(entity)
         if (!opened) return
         opened.transformBy(matrix)
-        opened.triggerModifiedEvent()
       })
     }
 

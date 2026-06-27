@@ -13,6 +13,11 @@ import {
   AcEdPromptStringOptions
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import {
+  openLayerForWrite,
+  setLayerFrozenState,
+  setLayerLockedState
+} from './AcApLayerEdit'
 
 /**
  * Top-level keywords accepted by the `-LAYER` command main prompt.
@@ -236,34 +241,6 @@ export class AcApLayerCmd extends AcEdCommand {
   }
 
   /**
-   * Sets or clears the frozen bit in `standardFlags`.
-   *
-   * The explicit bit operation is used to ensure both freeze and thaw are
-   * applied deterministically.
-   *
-   * @param layer - Target layer table record.
-   * @param frozen - `true` to freeze, `false` to thaw.
-   */
-  private setLayerFrozen(layer: AcDbLayerTableRecord, frozen: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = frozen ? flags | 0x01 : flags & ~0x01
-  }
-
-  /**
-   * Sets or clears the locked bit in `standardFlags`.
-   *
-   * The explicit bit operation is used to ensure both lock and unlock are
-   * applied deterministically.
-   *
-   * @param layer - Target layer table record.
-   * @param locked - `true` to lock, `false` to unlock.
-   */
-  private setLayerLocked(layer: AcDbLayerTableRecord, locked: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = locked ? flags | 0x04 : flags & ~0x04
-  }
-
-  /**
    * Prompts for one or more layer names and parses them into a list.
    *
    * This helper powers batch operations such as on/off/freeze/thaw/lock/unlock
@@ -384,9 +361,12 @@ export class AcApLayerCmd extends AcEdCommand {
       return
     }
 
-    layer.isOff = false
-    this.setLayerFrozen(layer, false)
-    context.doc.database.clayer = layer.name
+    const opened = openLayerForWrite(context.doc.database, layer)
+    if (!opened) return
+
+    opened.isOff = false
+    setLayerFrozenState(opened, false)
+    context.doc.database.clayer = opened.name
   }
 
   /**
@@ -417,9 +397,12 @@ export class AcApLayerCmd extends AcEdCommand {
       table.add(layer)
     }
 
-    layer.isOff = false
-    this.setLayerFrozen(layer, false)
-    context.doc.database.clayer = layer.name
+    const opened = openLayerForWrite(context.doc.database, layer)
+    if (!opened) return
+
+    opened.isOff = false
+    setLayerFrozenState(opened, false)
+    context.doc.database.clayer = opened.name
   }
 
   /**
@@ -456,7 +439,9 @@ export class AcApLayerCmd extends AcEdCommand {
         skippedCurrent.push(layer.name)
         return
       }
-      layer.isOff = off
+      const opened = openLayerForWrite(db, layer)
+      if (!opened) return
+      opened.isOff = off
     })
 
     if (skippedCurrent.length > 0) {
@@ -498,7 +483,9 @@ export class AcApLayerCmd extends AcEdCommand {
         skippedCurrent.push(layer.name)
         return
       }
-      this.setLayerFrozen(layer, freeze)
+      const opened = openLayerForWrite(db, layer)
+      if (!opened) return
+      setLayerFrozenState(opened, freeze)
     })
 
     if (skippedCurrent.length > 0) {
@@ -531,7 +518,11 @@ export class AcApLayerCmd extends AcEdCommand {
         'warning'
       )
     }
-    layers.forEach(layer => this.setLayerLocked(layer, lock))
+    layers.forEach(layer => {
+      const opened = openLayerForWrite(context.doc.database, layer)
+      if (!opened) return
+      setLayerLockedState(opened, lock)
+    })
   }
 
   /**
@@ -610,7 +601,9 @@ export class AcApLayerCmd extends AcEdCommand {
     }
 
     layers.forEach(layer => {
-      layer.color = color.clone()
+      const opened = openLayerForWrite(context.doc.database, layer)
+      if (!opened) return
+      opened.color = color.clone()
     })
   }
 
@@ -646,6 +639,9 @@ export class AcApLayerCmd extends AcEdCommand {
     const result = await AcApDocManager.instance.editor.getString(descPrompt)
     if (result.status !== AcEdPromptStatus.OK) return
 
-    layer.description = result.stringResult ?? ''
+    const opened = openLayerForWrite(context.doc.database, layer)
+    if (!opened) return
+
+    opened.description = result.stringResult ?? ''
   }
 }

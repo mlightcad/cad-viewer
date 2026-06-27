@@ -69,7 +69,6 @@ export class AcEdGripEditSession {
       const entity = db.openEntityForWrite(this._entity)
       if (!entity) return
       entity.subMoveGripPointsAt([this._target.gripIndex], offset)
-      entity.triggerModifiedEvent()
     })
     this.finish()
   }

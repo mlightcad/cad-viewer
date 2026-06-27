@@ -1,4 +1,4 @@
-import { AcDbLayerTableRecord, AcDbObjectId } from '@mlightcad/data-model'
+import { AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
@@ -9,6 +9,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { openLayerForWrite, setLayerFrozenState } from './AcApLayerEdit'
 
 /**
  * Top-level keywords supported by the `LAYFRZ` entity selection prompt.
@@ -325,17 +326,6 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
   }
 
   /**
-   * Toggles the frozen flag on a layer table record.
-   *
-   * @param layer - Layer record to update.
-   * @param frozen - Whether the layer should be marked frozen.
-   */
-  private setLayerFrozen(layer: AcDbLayerTableRecord, frozen: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = frozen ? flags | 0x01 : flags & ~0x01
-  }
-
-  /**
    * Resolves the picked entity's layer and freezes it when allowed.
    *
    * The method validates the selection, prevents freezing the current layer,
@@ -389,7 +379,10 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
       wasFrozen: layer.isFrozen
     })
 
-    this.setLayerFrozen(layer, true)
+    const opened = openLayerForWrite(db, layer)
+    if (!opened) return
+
+    setLayerFrozenState(opened, true)
     context.view.selectionSet.clear()
     this.showMessage(
       `${AcApI18n.t('jig.layfrz.frozen')}: ${layer.name}`,
@@ -420,7 +413,10 @@ export class AcApLayerFreezeCmd extends AcEdCommand {
       return
     }
 
-    this.setLayerFrozen(layer, history.wasFrozen)
+    const opened = openLayerForWrite(context.doc.database, layer)
+    if (!opened) return
+
+    setLayerFrozenState(opened, history.wasFrozen)
     context.view.selectionSet.clear()
     this.showMessage(
       `${AcApI18n.t('jig.layfrz.restored')}: ${layer.name}`,

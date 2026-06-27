@@ -1,6 +1,7 @@
 import { AcApContext } from '../../app'
 import { AcEdCommand, AcEdOpenMode } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { openLayerForWrite } from './AcApLayerEdit'
 
 /**
  * AutoCAD-like `LAYON` command.
@@ -25,12 +26,15 @@ export class AcApLayerOnCmd extends AcEdCommand {
    * @returns Resolves when all layer states have been processed.
    */
   async execute(context: AcApContext) {
-    const layers = [...context.doc.database.tables.layerTable.newIterator()]
+    const db = context.doc.database
+    const layers = [...db.tables.layerTable.newIterator()]
     let turnedOn = 0
 
     layers.forEach(layer => {
       if (!layer.isOff) return
-      layer.isOff = false
+      const opened = openLayerForWrite(db, layer)
+      if (!opened) return
+      opened.isOff = false
       turnedOn++
     })
 

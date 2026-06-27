@@ -1,8 +1,11 @@
-import { AcDbLayerTableRecord } from '@mlightcad/data-model'
-
 import { AcApContext } from '../../app'
 import { AcEdCommand, AcEdOpenMode } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import {
+  openLayerForWrite,
+  setLayerFrozenState,
+  setLayerLockedState
+} from './AcApLayerEdit'
 import {
   AcApLayerIsoLayerSnapshot,
   AcApLayerIsoState
@@ -42,8 +45,7 @@ export class AcApLayerUnisoCmd extends AcEdCommand {
     let restoredLayers = 0
 
     for (const entry of snapshot.layers) {
-      const layer = table.getAt(entry.name)
-      if (!layer) {
+      if (!table.getAt(entry.name)) {
         this.showMessage(
           `${AcApI18n.t('jig.layuniso.layerNotFound')}: ${entry.name}`,
           'warning'
@@ -51,7 +53,7 @@ export class AcApLayerUnisoCmd extends AcEdCommand {
         continue
       }
 
-      if (this.restoreLayerIfUnchanged(layer, entry)) {
+      if (this.restoreLayerIfUnchanged(db, entry)) {
         restoredLayers++
       }
     }
@@ -85,57 +87,41 @@ export class AcApLayerUnisoCmd extends AcEdCommand {
    * @returns `true` if any tracked flag was restored.
    */
   private restoreLayerIfUnchanged(
-    layer: AcDbLayerTableRecord,
+    db: AcApContext['doc']['database'],
     snapshot: AcApLayerIsoLayerSnapshot
   ) {
+    const layer = db.tables.layerTable.getAt(snapshot.name)
+    if (!layer) return false
+
+    const opened = openLayerForWrite(db, layer)
+    if (!opened) return false
+
     let restored = false
 
     if (
-      layer.isOff === snapshot.isolated.isOff &&
-      layer.isOff !== snapshot.before.isOff
+      opened.isOff === snapshot.isolated.isOff &&
+      opened.isOff !== snapshot.before.isOff
     ) {
-      layer.isOff = snapshot.before.isOff
+      opened.isOff = snapshot.before.isOff
       restored = true
     }
 
     if (
-      layer.isFrozen === snapshot.isolated.isFrozen &&
-      layer.isFrozen !== snapshot.before.isFrozen
+      opened.isFrozen === snapshot.isolated.isFrozen &&
+      opened.isFrozen !== snapshot.before.isFrozen
     ) {
-      this.setLayerFrozen(layer, snapshot.before.isFrozen)
+      setLayerFrozenState(opened, snapshot.before.isFrozen)
       restored = true
     }
 
     if (
-      layer.isLocked === snapshot.isolated.isLocked &&
-      layer.isLocked !== snapshot.before.isLocked
+      opened.isLocked === snapshot.isolated.isLocked &&
+      opened.isLocked !== snapshot.before.isLocked
     ) {
-      this.setLayerLocked(layer, snapshot.before.isLocked)
+      setLayerLockedState(opened, snapshot.before.isLocked)
       restored = true
     }
 
     return restored
-  }
-
-  /**
-   * Sets or clears the frozen bit while preserving other layer flags.
-   *
-   * @param layer - Target layer table record.
-   * @param frozen - Whether the layer should be marked frozen.
-   */
-  private setLayerFrozen(layer: AcDbLayerTableRecord, frozen: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = frozen ? flags | 0x01 : flags & ~0x01
-  }
-
-  /**
-   * Sets or clears the locked bit while preserving other layer flags.
-   *
-   * @param layer - Target layer table record.
-   * @param locked - Whether the layer should be marked locked.
-   */
-  private setLayerLocked(layer: AcDbLayerTableRecord, locked: boolean) {
-    const flags = layer.standardFlags ?? 0
-    layer.standardFlags = locked ? flags | 0x04 : flags & ~0x04
   }
 }

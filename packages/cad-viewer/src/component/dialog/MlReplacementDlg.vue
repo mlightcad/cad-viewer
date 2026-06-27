@@ -213,6 +213,7 @@ import {
   AcApCacheFontCmd,
   AcApDocManager,
   AcApFontUtil,
+  acapRunDatabaseEdit,
   AcApSettingManager,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
@@ -322,17 +323,17 @@ const handleConfirm = async () => {
   const docManager = AcApDocManager.instance
   const db = docManager.curDocument.database
   let replacedImage = false
-  imageTableData.forEach(item => {
-    if (item.file) {
-      item.ids.forEach(id => {
-        const image = db.tables.blockTable.modelSpace.getIdAt(
-          id
-        ) as AcDbRasterImage
-        image.image = item.file
-        image.triggerModifiedEvent()
-        replacedImage = true
-      })
-    }
+  acapRunDatabaseEdit(db, 'Replace Image', () => {
+    imageTableData.forEach(item => {
+      if (item.file) {
+        item.ids.forEach(id => {
+          const image = db.openEntityForWrite(id) as AcDbRasterImage | undefined
+          if (!image) return
+          image.image = item.file
+          replacedImage = true
+        })
+      }
+    })
   })
 
   const settingManager = AcApSettingManager.instance

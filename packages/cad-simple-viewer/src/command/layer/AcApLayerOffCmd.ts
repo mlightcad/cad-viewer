@@ -9,6 +9,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { openLayerForWrite } from './AcApLayerEdit'
 
 /**
  * Top-level keywords supported by the `LAYOFF` entity selection prompt.
@@ -375,7 +376,10 @@ export class AcApLayoffCmd extends AcEdCommand {
       wasOff: layer.isOff
     })
 
-    layer.isOff = true
+    const opened = openLayerForWrite(db, layer)
+    if (!opened) return
+
+    opened.isOff = true
     context.view.selectionSet.clear()
     this.showMessage(
       `${AcApI18n.t('jig.layoff.turnedOff')}: ${layer.name}`,
@@ -406,7 +410,10 @@ export class AcApLayoffCmd extends AcEdCommand {
       return
     }
 
-    layer.isOff = history.wasOff
+    const opened = openLayerForWrite(context.doc.database, layer)
+    if (!opened) return
+
+    opened.isOff = history.wasOff
     context.view.selectionSet.clear()
     this.showMessage(
       `${AcApI18n.t('jig.layoff.restored')}: ${layer.name}`,

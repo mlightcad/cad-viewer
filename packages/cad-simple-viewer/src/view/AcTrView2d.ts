@@ -60,6 +60,7 @@ import {
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
+import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
 import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
 import { AcTrEntityDisplayController } from './AcTrEntityDisplayController'
 import {
@@ -895,9 +896,14 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   private async editMTextEntity(mtext: AcDbMText) {
+    const db = mtext.database
+
     if (mtext.lineSpacingFactor !== AcEdMTextEditor.defaultLineSpacingFactor) {
-      mtext.lineSpacingFactor = AcEdMTextEditor.defaultLineSpacingFactor
-      mtext.triggerModifiedEvent()
+      acapRunDatabaseEdit(db, 'Edit MText', () => {
+        const opened = db.openEntityForWrite(mtext)
+        if (!(opened instanceof AcDbMText)) return
+        opened.lineSpacingFactor = AcEdMTextEditor.defaultLineSpacingFactor
+      })
     }
 
     // Hide the in-scene MTEXT while the inline editor renders its own copy; otherwise
@@ -919,13 +925,16 @@ export class AcTrView2d extends AcEdBaseView {
       })
       if (!result) return
 
-      mtext.location = result.location
-      mtext.contents = result.contents
-      mtext.width = result.width
-      mtext.height = result.height
-      mtext.lineSpacingFactor = result.lineSpacingFactor
-      mtext.attachmentPoint = result.attachmentPoint
-      mtext.triggerModifiedEvent()
+      acapRunDatabaseEdit(db, 'Edit MText', () => {
+        const opened = db.openEntityForWrite(mtext)
+        if (!(opened instanceof AcDbMText)) return
+        opened.location = result.location
+        opened.contents = result.contents
+        opened.width = result.width
+        opened.height = result.height
+        opened.lineSpacingFactor = result.lineSpacingFactor
+        opened.attachmentPoint = result.attachmentPoint
+      })
       applied = true
     } finally {
       if (!applied) {
@@ -1155,28 +1164,31 @@ export class AcTrView2d extends AcEdBaseView {
     changes: Partial<AcDbLayerTableRecordAttrs>
   ) {
     const updatedLayers = this._scene.updateLayer(this.toLayerInfo(layer))
-    const traits: Record<string, unknown> = {}
-    if (changes.color) {
-      traits.color = changes.color.clone()
-    }
-    if (changes.lineStyle) {
-      traits.lineType = layer.lineStyle
-    }
-    if (changes.lineWeight !== undefined) {
-      traits.lineWeight = changes.lineWeight
-    }
-    if (changes.transparency !== undefined) {
-      traits.transparency = changes.transparency
-    }
-    traits.layer = layer.name // always present
 
-    const materials = this._renderer.updateLayerMaterial(layer.name, traits)
-    updatedLayers.forEach(layer => {
-      for (const id in materials) {
-        const material = materials[id]
-        layer.updateMaterial(Number(id), material)
+    if (this.layerStyleMayHaveChanged(changes)) {
+      const traits: Record<string, unknown> = {}
+      if (changes.color) {
+        traits.color = changes.color.clone()
       }
-    })
+      if (changes.linetype != null) {
+        traits.lineType = layer.lineStyle
+      }
+      if (changes.lineWeight !== undefined) {
+        traits.lineWeight = changes.lineWeight
+      }
+      if (changes.transparency !== undefined) {
+        traits.transparency = changes.transparency
+      }
+      traits.layer = layer.name // always present
+
+      const materials = this._renderer.updateLayerMaterial(layer.name, traits)
+      updatedLayers.forEach(layer => {
+        for (const id in materials) {
+          const material = materials[id]
+          layer.updateMaterial(Number(id), material)
+        }
+      })
+    }
 
     if (
       this._entityDisplay.layerVisibilityMayHaveChanged(changes) &&
@@ -1770,6 +1782,17 @@ export class AcTrView2d extends AcEdBaseView {
     } else {
       stats.dom.style.display = 'none' // Hide the stats
     }
+  }
+
+  private layerStyleMayHaveChanged(
+    changes: Partial<AcDbLayerTableRecordAttrs>
+  ): boolean {
+    return (
+      changes.color != null ||
+      changes.linetype != null ||
+      changes.lineWeight !== undefined ||
+      changes.transparency != null
+    )
   }
 
   private toLayerInfo(layer: AcDbLayerTableRecord) {
