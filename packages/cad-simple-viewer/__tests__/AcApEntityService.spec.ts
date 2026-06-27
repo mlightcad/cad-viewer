@@ -1,30 +1,3 @@
-jest.mock('../src/app', () => ({
-  AcApAnnotation: jest.fn().mockImplementation(() => ({
-    filterAnnotationEntities: (ids: unknown[]) => ids
-  })),
-  AcApDocManager: {
-    instance: {
-      editor: {
-        getSelection: jest.fn()
-      }
-    }
-  }
-}))
-
-jest.mock('../src/i18n', () => ({
-  AcApI18n: {
-    sysCmdPrompt: (key: string) => key
-  }
-}))
-
-jest.mock('../src/editor', () => ({
-  AcEdOpenMode: { Review: 'Review' },
-  AcEdPromptSelectionOptions: class {
-    constructor(readonly message: string) {}
-  },
-  AcEdPromptStatus: { OK: 'OK' }
-}))
-
 import { AcApEntityService } from '../src/service/AcApEntityService'
 
 describe('AcApEntityService', () => {
@@ -54,17 +27,6 @@ describe('AcApEntityService', () => {
     expect(target.color).toEqual({ cloned: true })
   })
 
-  test('computeDisplacement returns vector from base to target', () => {
-    const displacement = AcApEntityService.computeDisplacement(
-      { x: 1, y: 2, z: 0 },
-      { x: 4, y: 6, z: 0 }
-    )
-
-    expect(displacement.x).toBe(3)
-    expect(displacement.y).toBe(4)
-    expect(displacement.z).toBe(0)
-  })
-
   test('eraseEntities returns the number of erased entities', () => {
     const erased = new Set<string>()
     const db = {
@@ -73,12 +35,9 @@ describe('AcApEntityService', () => {
         return { erase: () => erased.add(objectId) }
       })
     }
+    const service = new AcApEntityService(db as never)
 
-    const count = AcApEntityService.eraseEntities(db as never, [
-      'a',
-      'b',
-      'missing'
-    ])
+    const count = service.eraseEntities(['a', 'b', 'missing'])
 
     expect(count).toBe(2)
     expect(erased).toEqual(new Set(['a', 'b']))

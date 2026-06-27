@@ -51,6 +51,7 @@ jest.mock('../src/i18n', () => ({
 import { AcApDocManager } from '../src/app'
 import { AcApLayerCurCmd } from '../src/command/layer/AcApLayerCurCmd'
 import { AcEdPromptStatus } from '../src/editor'
+import { AcApEntityService } from '../src/service/AcApEntityService'
 
 interface TestEntity {
   layer: string
@@ -75,25 +76,26 @@ const createContext = (
     entities.get(objectId)
   )
 
+  const database = {
+    clayer: currentLayer,
+    openEntityForWrite,
+    tables: {
+      blockTable: {
+        getEntityById: jest.fn((objectId: string) => entities.get(objectId))
+      },
+      layerTable: {
+        getAt: jest.fn((name: string) => layers.get(name))
+      }
+    }
+  }
+
   return {
     clear,
     openEntityForWrite,
     context: {
       doc: {
-        database: {
-          clayer: currentLayer,
-          openEntityForWrite,
-          tables: {
-            blockTable: {
-              getEntityById: jest.fn((objectId: string) =>
-                entities.get(objectId)
-              )
-            },
-            layerTable: {
-              getAt: jest.fn((name: string) => layers.get(name))
-            }
-          }
-        }
+        database,
+        entityService: new AcApEntityService(database as never)
       },
       view: {
         selectionSet: {

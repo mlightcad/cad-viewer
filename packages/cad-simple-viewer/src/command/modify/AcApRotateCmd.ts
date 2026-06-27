@@ -14,7 +14,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { AcApEntityService } from '../../service'
+import { resolveSelectedEntities } from '../../service'
 import { createRotationMatrix } from '../../util/AcApGeTransform'
 import {
   AcApRotatePreviewJig,
@@ -268,7 +268,7 @@ export class AcApRotateCmd extends AcEdCommand {
    */
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
-    const resolved = await AcApEntityService.resolveSelectedEntities(context, {
+    const resolved = await resolveSelectedEntities(context, {
       promptKey: 'rotate'
     })
     if (!resolved) return
@@ -307,14 +307,11 @@ export class AcApRotateCmd extends AcEdCommand {
       rotation.angleRad
     )
 
+    const entityService = context.doc.entityService
     if (rotation.copyMode) {
-      AcApEntityService.cloneAndTransform(context, sourceEntities, matrix)
+      entityService.cloneAndTransform(sourceEntities, matrix)
     } else {
-      AcApEntityService.transformEntities(
-        context.doc.database,
-        sourceEntities,
-        matrix
-      )
+      entityService.transformEntities(sourceEntities, matrix)
     }
 
     selectionSet.clear()

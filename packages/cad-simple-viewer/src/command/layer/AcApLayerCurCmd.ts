@@ -7,7 +7,6 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { AcApEntityService } from '../../service'
 import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
 
 /**
@@ -26,10 +25,8 @@ export class AcApLayerCurCmd extends AcApLayerMutationCmd {
 
     if (!objectIds || objectIds.length === 0) return
 
-    const result = AcApEntityService.moveEntitiesToCurrentLayer(
-      context.doc.database,
-      objectIds
-    )
+    const result =
+      context.doc.entityService.moveEntitiesToCurrentLayer(objectIds)
 
     if (result.currentLayerMissing) {
       this.showMessage(AcApI18n.t('jig.laycur.currentLayerNotFound'), 'warning')
