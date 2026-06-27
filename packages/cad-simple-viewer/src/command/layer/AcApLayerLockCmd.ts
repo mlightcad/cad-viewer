@@ -2,36 +2,23 @@ import { AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdCommand,
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { openLayerForWrite, setLayerLockedState } from './AcApLayerEdit'
+import { AcApLayerService } from '../../service'
+import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
 
 /**
  * AutoCAD-like `LAYLCK` command.
- *
- * The command repeatedly asks the user to pick an entity and locks the
- * corresponding layer. It intentionally works by selection instead of layer
- * name entry, matching AutoCAD's `LAYLCK` workflow.
  */
-export class AcApLayerLockCmd extends AcEdCommand {
-  /**
-   * Creates a write-enabled `LAYLCK` command instance.
-   */
+export class AcApLayerLockCmd extends AcApLayerMutationCmd {
   constructor() {
     super()
     this.mode = AcEdOpenMode.Write
   }
 
-  /**
-   * Runs the interactive lock-layer workflow until the user cancels.
-   *
-   * @param context - Active application context used to read and update the current drawing.
-   * @returns Resolves when the command loop ends.
-   */
   async execute(context: AcApContext) {
     while (true) {
       const objectId = await this.promptSelection()
@@ -41,11 +28,6 @@ export class AcApLayerLockCmd extends AcEdCommand {
     }
   }
 
-  /**
-   * Prompts for one entity whose layer should be locked.
-   *
-   * @returns Picked entity identifier, or `undefined` when the user cancels.
-   */
   private async promptSelection(): Promise<AcDbObjectId | undefined> {
     const prompt = new AcEdPromptEntityOptions(AcApI18n.t('jig.laylck.prompt'))
     prompt.allowNone = true
@@ -60,46 +42,34 @@ export class AcApLayerLockCmd extends AcEdCommand {
     return undefined
   }
 
-  /**
-   * Resolves the picked entity's layer and locks it when needed.
-   *
-   * @param context - Active application context containing the current database and view.
-   * @param objectId - Identifier of the entity selected by the user.
-   */
   private lockEntityLayer(context: AcApContext, objectId: AcDbObjectId) {
-    const db = context.doc.database
-    const entity = db.tables.blockTable.getEntityById(objectId)
-    const layerName = entity?.layer?.trim()
+    const result = new AcApLayerService(context.doc.database).lockLayerByEntity(
+      objectId
+    )
 
-    if (!layerName) {
-      this.showMessage(AcApI18n.t('jig.laylck.invalidSelection'), 'warning')
-      return
+    if (!result.ok) {
+      switch (result.reason) {
+        case 'invalid_selection':
+          this.showMessage(AcApI18n.t('jig.laylck.invalidSelection'), 'warning')
+          return
+        case 'layer_not_found':
+          this.showMessage(
+            `${AcApI18n.t('jig.laylck.layerNotFound')}: ${result.layerName}`,
+            'warning'
+          )
+          return
+        case 'already_locked':
+          this.showMessage(
+            `${AcApI18n.t('jig.laylck.alreadyLocked')}: ${result.layerName}`,
+            'info'
+          )
+          return
+      }
     }
 
-    const layer = db.tables.layerTable.getAt(layerName)
-    if (!layer) {
-      this.showMessage(
-        `${AcApI18n.t('jig.laylck.layerNotFound')}: ${layerName}`,
-        'warning'
-      )
-      return
-    }
-
-    if (layer.isLocked) {
-      this.showMessage(
-        `${AcApI18n.t('jig.laylck.alreadyLocked')}: ${layer.name}`,
-        'info'
-      )
-      return
-    }
-
-    const opened = openLayerForWrite(db, layer)
-    if (!opened) return
-
-    setLayerLockedState(opened, true)
     context.view.selectionSet.clear()
     this.showMessage(
-      `${AcApI18n.t('jig.laylck.locked')}: ${layer.name}`,
+      `${AcApI18n.t('jig.laylck.locked')}: ${result.layerName}`,
       'success'
     )
   }

@@ -1,6 +1,5 @@
 import {
   AcDbEntity,
-  AcGeMatrix3d,
   AcGePoint3d,
   AcGePoint3dLike,
   AcGeTol
@@ -11,29 +10,7 @@ import {
   AcEdSelectionTransformPreviewJig
 } from '../../editor/input/AcEdSelectionPreviewJig'
 import { AcEdBaseView } from '../../editor/view/AcEdBaseView'
-
-/**
- * Builds a world-space rotation matrix around a given base point.
- *
- * @param basePoint - Rotation origin.
- * @param angleRad - Rotation angle in radians.
- * @returns Composite transform that rotates around `basePoint`.
- */
-export function createRotationMatrix(
-  basePoint: AcGePoint3dLike,
-  angleRad: number
-) {
-  return new AcGeMatrix3d()
-    .makeTranslation(basePoint.x, basePoint.y, basePoint.z)
-    .multiply(new AcGeMatrix3d().makeRotationZ(angleRad))
-    .multiply(
-      new AcGeMatrix3d().makeTranslation(
-        -basePoint.x,
-        -basePoint.y,
-        -basePoint.z
-      )
-    )
-}
+import { createRotationMatrix } from '../../util/AcApGeTransform'
 
 /**
  * Static preview jig used while ROTATE asks for supporting inputs such as

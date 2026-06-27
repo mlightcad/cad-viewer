@@ -504,6 +504,7 @@ export class AcApDocManager {
    */
   async destroy() {
     await this._pluginManager.unloadAllPlugins()
+    this.context.doc.destroy()
     AcTrMTextRenderer.resetInstance()
     AcApDocManager._instance = undefined
   }
@@ -1177,6 +1178,7 @@ export class AcApDocManager {
     options?: AcApOpenDatabaseOptions
   ) {
     if (isSuccess) {
+      this.context.doc.releaseLayerResources()
       const doc = this.context.doc
       this.events.documentActivated.dispatch({
         doc,

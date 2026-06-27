@@ -4,45 +4,34 @@ const acapRunDatabaseEdit = jest.fn(
   }
 )
 
-const documentActivatedListeners = new Set<(...args: unknown[]) => void>()
 const sysVarChangedListeners = new Set<(...args: unknown[]) => void>()
 
-jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  acapRunDatabaseEdit,
-  AcApDocManager: {
-    instance: {
-      curDocument: undefined,
-      events: {
-        documentActivated: {
-          addEventListener: (fn: (...args: unknown[]) => void) =>
-            documentActivatedListeners.add(fn),
-          removeEventListener: (fn: (...args: unknown[]) => void) =>
-            documentActivatedListeners.delete(fn)
+jest.mock('../src/util/AcApDatabaseEdit', () => ({
+  acapRunDatabaseEdit
+}))
+
+jest.mock('@mlightcad/data-model', () => {
+  const actual = jest.requireActual('@mlightcad/data-model')
+  return {
+    ...actual,
+    AcDbSysVarManager: {
+      instance: () => ({
+        events: {
+          sysVarChanged: {
+            addEventListener: (fn: (...args: unknown[]) => void) =>
+              sysVarChangedListeners.add(fn),
+            removeEventListener: (fn: (...args: unknown[]) => void) =>
+              sysVarChangedListeners.delete(fn)
+          }
         }
-      }
+      })
     }
   }
-}))
+})
 
-jest.mock('@mlightcad/data-model', () => ({
-  AcDbSysVarManager: {
-    instance: () => ({
-      events: {
-        sysVarChanged: {
-          addEventListener: (fn: (...args: unknown[]) => void) =>
-            sysVarChangedListeners.add(fn),
-          removeEventListener: (fn: (...args: unknown[]) => void) =>
-            sysVarChangedListeners.delete(fn)
-        }
-      }
-    })
-  },
-  AcCmColor: {
-    fromString: jest.fn()
-  }
-}))
-
-import { AcExLayerService } from '../src/service/AcExLayerService'
+import type { AcApDocument } from '../src/app/AcApDocument'
+import { AcApLayerService } from '../src/service/AcApLayerService'
+import { AcApLayerStore } from '../src/service/AcApLayerStore'
 
 interface TestLayer {
   name: string
@@ -89,6 +78,8 @@ const createDatabase = (layers: TestLayer[], currentLayer = layers[0]?.name) => 
   const db = {
     clayer: currentLayer,
     openObjectForWrite: jest.fn((objectId: string) => layersById.get(objectId)),
+    transactionManager: { hasTransaction: jest.fn(() => false) },
+    runDatabaseEdit: jest.fn((_label: string, fn: () => void) => fn()),
     tables: {
       layerTable: {
         getAt: jest.fn((name: string) => layersByName.get(name)),
@@ -113,22 +104,22 @@ const createDatabase = (layers: TestLayer[], currentLayer = layers[0]?.name) => 
   return { db, layersByName, layersById }
 }
 
-const createEditor = (database?: ReturnType<typeof createDatabase>['db']) => ({
-  curDocument: database ? { database } : undefined,
-  events: {
-    documentActivated: {
-      addEventListener: (fn: (...args: unknown[]) => void) =>
-        documentActivatedListeners.add(fn),
-      removeEventListener: (fn: (...args: unknown[]) => void) =>
-        documentActivatedListeners.delete(fn)
+const createDocument = (db: ReturnType<typeof createDatabase>['db']) => {
+  let layerService: AcApLayerService | undefined
+  return {
+    database: db,
+    get layerService() {
+      if (!layerService) {
+        layerService = new AcApLayerService(db as never)
+      }
+      return layerService
     }
-  }
-})
+  } as unknown as AcApDocument
+}
 
-describe('AcExLayerService', () => {
+describe('AcApLayerStore', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    documentActivatedListeners.clear()
     sysVarChangedListeners.clear()
   })
 
@@ -136,31 +127,69 @@ describe('AcExLayerService', () => {
     const layer0 = createLayer('0', false)
     const layer1 = createLayer('A', true)
     const { db } = createDatabase([layer0, layer1], '0')
-    const editor = createEditor(db)
-    const service = new AcExLayerService(editor as never)
+    const store = new AcApLayerStore(createDocument(db))
 
-    const snapshot = service.getLayers()
+    const snapshot = store.getLayers()
     snapshot.push({
       name: 'mutated',
       color: '7',
       cssColor: '#fff',
-      isOn: true
+      isOn: true,
+      isFrozen: false,
+      isLocked: false
     })
 
-    expect(service.getLayers().some(layer => layer.name === 'mutated')).toBe(
+    expect(store.getLayers().some(layer => layer.name === 'mutated')).toBe(
       false
     )
-    expect(service.getLayers()).toHaveLength(2)
+    expect(store.getLayers()).toHaveLength(2)
+  })
+
+  it('events.changed dispatches cached layer snapshots', () => {
+    const layer0 = createLayer('0', false)
+    const layer1 = createLayer('A', true)
+    const { db } = createDatabase([layer0, layer1], '0')
+    const store = new AcApLayerStore(createDocument(db))
+    const listener = jest.fn()
+
+    store.events.changed.addEventListener(listener)
+
+    layer1.isOff = false
+    db.events.layerModified.addEventListener.mock.calls[0][0]({
+      layer: layer1
+    })
+
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith({
+      layers: [
+        {
+          name: '0',
+          color: '7',
+          cssColor: '#FFFFFF',
+          isOn: true,
+          isFrozen: false,
+          isLocked: false
+        },
+        {
+          name: 'A',
+          color: '7',
+          cssColor: '#FFFFFF',
+          isOn: true,
+          isFrozen: false,
+          isLocked: false
+        }
+      ],
+      currentLayerName: '0'
+    })
   })
 
   it('setLayerOn turns a non-current layer off without changing clayer', () => {
     const layer0 = createLayer('0', false)
     const layer1 = createLayer('A', false)
     const { db } = createDatabase([layer0, layer1], '0')
-    const editor = createEditor(db)
-    const service = new AcExLayerService(editor as never)
+    const store = new AcApLayerStore(createDocument(db))
 
-    expect(service.setLayerOn('A', false)).toBe(true)
+    expect(store.setLayerOn('A', false)).toBe(true)
     expect(layer1.isOff).toBe(true)
     expect(db.clayer).toBe('0')
     expect(acapRunDatabaseEdit).toHaveBeenCalledTimes(1)
@@ -170,10 +199,9 @@ describe('AcExLayerService', () => {
     const layer0 = createLayer('0', false)
     const layer1 = createLayer('A', false)
     const { db } = createDatabase([layer0, layer1], '0')
-    const editor = createEditor(db)
-    const service = new AcExLayerService(editor as never)
+    const store = new AcApLayerStore(createDocument(db))
 
-    expect(service.setLayerOn('0', false)).toBe(true)
+    expect(store.setLayerOn('0', false)).toBe(true)
     expect(layer0.isOff).toBe(true)
     expect(db.clayer).toBe('A')
     expect(layer1.isOff).toBe(false)
@@ -183,10 +211,9 @@ describe('AcExLayerService', () => {
     const layer0 = createLayer('0', true)
     const layer1 = createLayer('A', true)
     const { db } = createDatabase([layer0, layer1], '0')
-    const editor = createEditor(db)
-    const service = new AcExLayerService(editor as never)
+    const store = new AcApLayerStore(createDocument(db))
 
-    expect(service.setAllLayersOn()).toBe(true)
+    expect(store.setAllLayersOn()).toBe(true)
     expect(layer0.isOff).toBe(false)
     expect(layer1.isOff).toBe(false)
     expect(acapRunDatabaseEdit).toHaveBeenCalledTimes(1)
@@ -197,10 +224,9 @@ describe('AcExLayerService', () => {
     const layer1 = createLayer('A', false)
     const layer2 = createLayer('B', false)
     const { db } = createDatabase([layer0, layer1, layer2], '0')
-    const editor = createEditor(db)
-    const service = new AcExLayerService(editor as never)
+    const store = new AcApLayerStore(createDocument(db))
 
-    expect(service.setAllLayersOffExceptCurrent()).toBe(true)
+    expect(store.setAllLayersOffExceptCurrent()).toBe(true)
     expect(layer0.isOff).toBe(false)
     expect(layer1.isOff).toBe(true)
     expect(layer2.isOff).toBe(true)
@@ -213,12 +239,34 @@ describe('AcExLayerService', () => {
     const layer1 = createLayer('A', true)
     const layer2 = createLayer('B', true)
     const { db } = createDatabase([layer0, layer1, layer2], '0')
-    const editor = createEditor(db)
-    const service = new AcExLayerService(editor as never)
+    const store = new AcApLayerStore(createDocument(db))
 
-    expect(service.setAllLayersOffExceptCurrent()).toBe(false)
+    expect(store.setAllLayersOffExceptCurrent()).toBe(false)
     expect(layer0.isOff).toBe(false)
     expect(layer1.isOff).toBe(true)
     expect(layer2.isOff).toBe(true)
+  })
+
+  it('getLayerService returns the owning document layer service', () => {
+    const layer0 = createLayer('0', false)
+    const { db } = createDatabase([layer0], '0')
+    const document = createDocument(db)
+    const store = new AcApLayerStore(document)
+
+    expect(store.getLayerService()).toBe(document.layerService)
+  })
+
+  it('destroy removes database listeners and clears cached layers', () => {
+    const layer0 = createLayer('0', false)
+    const { db } = createDatabase([layer0], '0')
+    const store = new AcApLayerStore(createDocument(db))
+
+    store.destroy()
+
+    expect(db.events.layerAppended.removeEventListener).toHaveBeenCalled()
+    expect(db.events.layerErased.removeEventListener).toHaveBeenCalled()
+    expect(db.events.layerModified.removeEventListener).toHaveBeenCalled()
+    expect(store.getLayers()).toEqual([])
+    expect(store.getCurrentLayerName()).toBe('')
   })
 })

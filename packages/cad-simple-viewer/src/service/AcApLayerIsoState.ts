@@ -1,5 +1,7 @@
 import { AcDbLayerTableRecord } from '@mlightcad/data-model'
 
+import { LAYER_LOCKED_FLAG } from './types'
+
 /**
  * Layer flags that can be changed by `LAYISO` and restored by `LAYUNISO`.
  */
@@ -43,37 +45,10 @@ export interface AcApLayerIsoSnapshot {
 }
 
 /**
- * Stores the most recent `LAYISO` snapshot for `LAYUNISO`.
- */
-export class AcApLayerIsoState {
-  private static _snapshot: AcApLayerIsoSnapshot | undefined
-
-  /**
-   * Replaces the previous isolation snapshot.
-   *
-   * @param snapshot - Snapshot captured by the latest `LAYISO` run.
-   */
-  static set(snapshot: AcApLayerIsoSnapshot) {
-    this._snapshot = snapshot
-  }
-
-  /**
-   * Consumes the current snapshot so `LAYUNISO` behaves as a one-shot restore.
-   *
-   * @returns Latest isolation snapshot, or `undefined` if `LAYISO` has not run.
-   */
-  static consume() {
-    const snapshot = this._snapshot
-    this._snapshot = undefined
-    return snapshot
-  }
-}
-
-/**
  * Captures the layer state relevant to isolation.
  *
- * @param layer - Layer table record to inspect.
- * @returns Snapshot of visibility, freeze, and lock flags.
+ * @param layer - Layer table record to snapshot.
+ * @returns Off, frozen, and locked flags for the layer.
  */
 export function getLayerIsoState(
   layer: AcDbLayerTableRecord
@@ -81,16 +56,16 @@ export function getLayerIsoState(
   return {
     isOff: layer.isOff,
     isFrozen: layer.isFrozen,
-    isLocked: layer.isLocked
+    isLocked: ((layer.standardFlags ?? 0) & LAYER_LOCKED_FLAG) !== 0
   }
 }
 
 /**
- * Compares two isolation layer states.
+ * Compares two isolation layer states for equality.
  *
- * @param a - First state.
- * @param b - Second state.
- * @returns `true` when all tracked flags match.
+ * @param a - First layer state.
+ * @param b - Second layer state.
+ * @returns `true` when off, frozen, and locked flags match.
  */
 export function isSameLayerIsoState(
   a: AcApLayerIsoLayerState,

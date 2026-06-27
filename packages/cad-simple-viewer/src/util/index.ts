@@ -1,4 +1,5 @@
 export * from './AcApDatabaseEdit'
+export * from './AcApGeTransform'
 export * from './AcApExportFileNameUtil'
 export * from './AcApFontUtil'
 export * from './AcApMeasurementElementGenerator'

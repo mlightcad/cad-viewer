@@ -295,47 +295,102 @@ export function ensureUiStyles() {
     }
 
     .ml-ex-ui-color-dialog {
-      width: min(520px, calc(100vw - 24px));
+      width: fit-content;
+      max-width: calc(100vw - 24px);
       background: var(--ml-ui-bg, #ffffff);
       border: 1px solid var(--ml-ui-border, #dcdfe6);
       border-radius: 8px;
       box-shadow: var(--ml-ui-shadow, 0 6px 18px rgba(0, 0, 0, 0.35));
       padding: 12px;
       color: var(--ml-ui-text, #303133);
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+
+    .ml-ex-ui-color-dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
     }
 
     .ml-ex-ui-color-dialog-title {
       font-weight: 600;
-      margin-bottom: 8px;
+    }
+
+    .ml-ex-ui-color-dialog-close {
+      border: none;
+      background: transparent;
+      color: var(--ml-ui-text-muted, #606266);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 2px 6px;
+    }
+
+    .ml-ex-ui-aci-picker {
+      --ml-ex-ui-aci-cell-size: 12px;
+      font-size: 12px;
+      font-family: Arial, sans-serif;
     }
 
     .ml-ex-ui-aci-palette-large {
       display: grid;
-      grid-template-columns: repeat(24, 1fr);
-      gap: 1px;
-      margin-bottom: 6px;
-    }
-
-    .ml-ex-ui-aci-palette-small,
-    .ml-ex-ui-aci-palette-gray {
-      display: grid;
+      grid-template-columns: repeat(24, var(--ml-ex-ui-aci-cell-size));
       gap: 1px;
       margin-bottom: 6px;
     }
 
     .ml-ex-ui-aci-palette-small {
-      grid-template-columns: repeat(9, 1fr);
+      display: grid;
+      grid-template-columns: repeat(9, var(--ml-ex-ui-aci-cell-size));
+      gap: 1px;
     }
 
     .ml-ex-ui-aci-palette-gray {
-      grid-template-columns: repeat(6, 1fr);
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    .ml-ex-ui-aci-small-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .ml-ex-ui-aci-small-actions {
+      display: flex;
+      flex-direction: row;
+      gap: 4px;
+      margin-left: auto;
+    }
+
+    .ml-ex-ui-aci-small-actions button {
+      font-size: 11px;
+      padding: 2px 6px;
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 4px;
+      background: var(--ml-ui-bg, #ffffff);
+      color: var(--ml-ui-text, #303133);
+      cursor: pointer;
     }
 
     .ml-ex-ui-aci-cell {
-      width: 100%;
-      aspect-ratio: 1;
-      border: 1px solid rgba(0, 0, 0, 0.15);
+      width: var(--ml-ex-ui-aci-cell-size);
+      height: var(--ml-ex-ui-aci-cell-size);
+      padding: 0;
+      border: 1px solid #999;
       cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .ml-ex-ui-aci-cell:hover {
+      outline: 1px solid #00a8ff;
     }
 
     .ml-ex-ui-aci-cell.selected {
@@ -343,33 +398,68 @@ export function ensureUiStyles() {
       outline-offset: -1px;
     }
 
-    .ml-ex-ui-aci-info {
+    .ml-ex-ui-aci-info-row {
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      margin: 8px 0;
+      margin: 4px 0;
       color: var(--ml-ui-text-muted, #606266);
+    }
+
+    .ml-ex-ui-aci-info-left {
+      text-align: left;
+    }
+
+    .ml-ex-ui-aci-info-right {
+      text-align: right;
+    }
+
+    .ml-ex-ui-aci-bottom-row {
+      display: flex;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .ml-ex-ui-aci-bottom-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .ml-ex-ui-aci-input-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
+      gap: 6px;
+      margin-top: 4px;
     }
 
     .ml-ex-ui-aci-input-row input {
       flex: 1;
-      padding: 4px 6px;
+      padding: 2px 6px;
       border: 1px solid var(--ml-ui-border, #dcdfe6);
       border-radius: 4px;
       background: var(--ml-ui-bg, #ffffff);
       color: var(--ml-ui-text, #303133);
+      font-size: 12px;
+      font-family: Arial, sans-serif;
+    }
+
+    .ml-ex-ui-aci-preview-box {
+      width: 32px;
+      min-width: 32px;
+      margin-left: auto;
+      align-self: stretch;
+      border: 1px solid #666;
     }
 
     .ml-ex-ui-dialog-actions {
       display: flex;
       justify-content: flex-end;
       gap: 8px;
+      margin-top: 8px;
     }
 
     .ml-ex-ui-btn {

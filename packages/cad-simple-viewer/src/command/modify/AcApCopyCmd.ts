@@ -5,18 +5,18 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdCommand,
   AcEdOpenMode,
   AcEdPromptIntegerOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
-  AcEdPromptSelectionOptions,
   AcEdPromptStatus,
   scaleCopyDisplacement
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { AcApEntityService } from '../../service'
 import { AcApCopyPreviewJig } from './AcApCopyPreviewJig'
 
 type CopyMode = 'Single' | 'Multiple'
@@ -364,30 +364,13 @@ export class AcApCopyCmd extends AcEdCommand {
    */
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
-    const annotation = new AcApAnnotation(context.doc.database)
+    const resolved = await AcApEntityService.resolveSelectedEntities(context, {
+      promptKey: 'copy'
+    })
+    if (!resolved) return
 
-    const selectionIds =
-      selectionSet.count > 0
-        ? selectionSet.ids
-        : ((
-            await AcApDocManager.instance.editor.getSelection(
-              new AcEdPromptSelectionOptions(AcApI18n.sysCmdPrompt('copy'))
-            )
-          ).value?.ids ?? [])
-
-    if (selectionIds.length === 0) return
-
-    const ids =
-      context.doc.openMode == AcEdOpenMode.Review
-        ? annotation.filterAnnotationEntities(selectionIds)
-        : selectionIds
-    if (ids.length === 0) {
-      selectionSet.clear()
-      return
-    }
-
-    const sourceEntities = ids
-      .map(id => context.doc.database.openEntityForRead(id))
+    const sourceEntities = resolved.entities
+      .map(entity => context.doc.database.openEntityForRead(entity.objectId))
       .filter((entity): entity is AcDbEntity => !!entity)
     if (sourceEntities.length === 0) {
       selectionSet.clear()

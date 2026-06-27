@@ -6,6 +6,10 @@ import {
 import type { AcExI18n } from '../i18n'
 import { ensureUiStyles } from './styles'
 
+const SMALL_COLORS = Array.from({ length: 9 }, (_, i) => i + 1)
+const LARGE_COLORS = Array.from({ length: 240 }, (_, i) => i + 10)
+const GRAY_COLORS = Array.from({ length: 6 }, (_, i) => i + 250)
+
 /**
  * Modal ACI color picker dialog for layer color selection.
  *
@@ -18,15 +22,25 @@ export class AcExColorPicker {
   private selectedIndex: number | null = null
   /** Promise resolver set by {@link open}. */
   private resolve?: (color: AcCmColor | null) => void
+  /** Preview swatch element. */
+  private previewBox!: HTMLDivElement
+  /** Color index label element. */
+  private indexLabel!: HTMLSpanElement
+  /** RGB label element. */
+  private rgbLabel!: HTMLSpanElement
+  /** Manual color index input. */
+  private input!: HTMLInputElement
 
   /**
-   * Builds the dialog DOM and appends it to `document.body`.
+   * Builds the dialog DOM and appends it to the theme host.
    *
    * @param i18n - i18n helper for dialog labels.
+   * @param themeHost - Viewer host so `--ml-ui-*` CSS variables are inherited.
    * @param initialColor - Optional initial selection.
    */
   constructor(
     private i18n: AcExI18n,
+    themeHost: HTMLElement,
     initialColor?: AcCmColor
   ) {
     ensureUiStyles()
@@ -42,49 +56,97 @@ export class AcExColorPicker {
     dialog.className = 'ml-ex-ui-color-dialog'
     dialog.addEventListener('mousedown', event => event.stopPropagation())
 
+    const header = document.createElement('div')
+    header.className = 'ml-ex-ui-color-dialog-header'
+
     const title = document.createElement('div')
     title.className = 'ml-ex-ui-color-dialog-title'
     title.textContent = this.i18n.t('colorPicker.title')
-    dialog.appendChild(title)
 
-    const largePalette = this.createPalette(
-      Array.from({ length: 240 }, (_, i) => i + 10),
-      'ml-ex-ui-aci-palette-large'
-    )
-    dialog.appendChild(largePalette)
+    const closeBtn = document.createElement('button')
+    closeBtn.type = 'button'
+    closeBtn.className = 'ml-ex-ui-color-dialog-close'
+    closeBtn.setAttribute('aria-label', 'Close')
+    closeBtn.textContent = '×'
+    closeBtn.addEventListener('click', () => this.finish(null))
 
-    const smallPalette = this.createPalette(
-      Array.from({ length: 9 }, (_, i) => i + 1),
-      'ml-ex-ui-aci-palette-small'
-    )
-    dialog.appendChild(smallPalette)
+    header.appendChild(title)
+    header.appendChild(closeBtn)
+    dialog.appendChild(header)
 
-    const grayPalette = this.createPalette(
-      Array.from({ length: 6 }, (_, i) => i + 250),
-      'ml-ex-ui-aci-palette-gray'
+    const picker = document.createElement('div')
+    picker.className = 'ml-ex-ui-aci-picker'
+
+    picker.appendChild(
+      this.createPalette(LARGE_COLORS, 'ml-ex-ui-aci-palette-large')
     )
-    dialog.appendChild(grayPalette)
+
+    const smallRow = document.createElement('div')
+    smallRow.className = 'ml-ex-ui-aci-small-row'
+    smallRow.appendChild(
+      this.createPalette(SMALL_COLORS, 'ml-ex-ui-aci-palette-small')
+    )
+
+    const smallActions = document.createElement('div')
+    smallActions.className = 'ml-ex-ui-aci-small-actions'
+    const byLayerBtn = document.createElement('button')
+    byLayerBtn.type = 'button'
+    byLayerBtn.textContent = 'ByLayer'
+    byLayerBtn.addEventListener('click', () => this.selectIndex(256))
+    const byBlockBtn = document.createElement('button')
+    byBlockBtn.type = 'button'
+    byBlockBtn.textContent = 'ByBlock'
+    byBlockBtn.addEventListener('click', () => this.selectIndex(0))
+    smallActions.appendChild(byLayerBtn)
+    smallActions.appendChild(byBlockBtn)
+    smallRow.appendChild(smallActions)
+    picker.appendChild(smallRow)
+
+    picker.appendChild(
+      this.createPalette(GRAY_COLORS, 'ml-ex-ui-aci-palette-gray')
+    )
+
+    const bottomRow = document.createElement('div')
+    bottomRow.className = 'ml-ex-ui-aci-bottom-row'
+
+    const bottomLeft = document.createElement('div')
+    bottomLeft.className = 'ml-ex-ui-aci-bottom-left'
 
     const info = document.createElement('div')
-    info.className = 'ml-ex-ui-aci-info'
-    const indexLabel = document.createElement('span')
-    const rgbLabel = document.createElement('span')
-    info.appendChild(indexLabel)
-    info.appendChild(rgbLabel)
-    dialog.appendChild(info)
+    info.className = 'ml-ex-ui-aci-info-row'
+    this.indexLabel = document.createElement('span')
+    this.indexLabel.className = 'ml-ex-ui-aci-info-left'
+    this.rgbLabel = document.createElement('span')
+    this.rgbLabel.className = 'ml-ex-ui-aci-info-right'
+    info.appendChild(this.indexLabel)
+    info.appendChild(this.rgbLabel)
+    bottomLeft.appendChild(info)
 
     const inputRow = document.createElement('div')
     inputRow.className = 'ml-ex-ui-aci-input-row'
     const inputLabel = document.createElement('span')
     inputLabel.textContent = this.i18n.t('colorPicker.input')
-    const input = document.createElement('input')
-    input.placeholder = this.i18n.t('colorPicker.inputPlaceholder')
+    this.input = document.createElement('input')
+    this.input.placeholder = this.i18n.t('colorPicker.inputPlaceholder')
     if (this.selectedIndex != null) {
-      input.value = String(this.selectedIndex)
+      this.input.value = String(this.selectedIndex)
     }
+    this.input.addEventListener('blur', () => this.applyInput())
+    this.input.addEventListener('keydown', event => {
+      if (event.key === 'Enter') this.applyInput()
+    })
     inputRow.appendChild(inputLabel)
-    inputRow.appendChild(input)
-    dialog.appendChild(inputRow)
+    inputRow.appendChild(this.input)
+    bottomLeft.appendChild(inputRow)
+
+    this.previewBox = document.createElement('div')
+    this.previewBox.className = 'ml-ex-ui-aci-preview-box'
+
+    bottomRow.appendChild(bottomLeft)
+    bottomRow.appendChild(this.previewBox)
+    picker.appendChild(bottomRow)
+
+    dialog.appendChild(picker)
 
     const actions = document.createElement('div')
     actions.className = 'ml-ex-ui-dialog-actions'
@@ -102,46 +164,15 @@ export class AcExColorPicker {
     actions.appendChild(okBtn)
     dialog.appendChild(actions)
 
-    const updateInfo = () => {
-      if (this.selectedIndex == null) {
-        indexLabel.textContent = this.i18n.t('colorPicker.index')
-        rgbLabel.textContent = this.i18n.t('colorPicker.rgb')
-        return
-      }
-      const color = new AcCmColor()
-      color.colorIndex = this.selectedIndex
-      indexLabel.textContent = `${this.i18n.t('colorPicker.index')}${this.selectedIndex}`
-      rgbLabel.textContent = `${this.i18n.t('colorPicker.rgb')}${color.red}, ${color.green}, ${color.blue}`
-    }
-
-    const selectIndex = (index: number) => {
-      this.selectedIndex = index
-      input.value = String(index)
-      dialog.querySelectorAll('.ml-ex-ui-aci-cell').forEach(cell => {
-        cell.classList.toggle(
-          'selected',
-          Number((cell as HTMLElement).dataset.index) === index
-        )
-      })
-      updateInfo()
-    }
-
     dialog.querySelectorAll('.ml-ex-ui-aci-cell').forEach(cell => {
       cell.addEventListener('click', () => {
-        selectIndex(Number((cell as HTMLElement).dataset.index))
+        this.selectIndex(Number((cell as HTMLElement).dataset.index))
       })
     })
 
-    input.addEventListener('keydown', event => {
-      if (event.key !== 'Enter') return
-      const parsed = this.parseInput(input.value)
-      if (parsed == null) return
-      selectIndex(parsed)
-    })
-
-    updateInfo()
+    this.updateInfo()
     this.backdrop.appendChild(dialog)
-    document.body.appendChild(this.backdrop)
+    themeHost.appendChild(this.backdrop)
   }
 
   /**
@@ -164,6 +195,61 @@ export class AcExColorPicker {
     this.backdrop.remove()
     this.resolve?.(color)
     this.resolve = undefined
+  }
+
+  /**
+   * Selects an ACI index and refreshes the UI.
+   *
+   * @param index - ACI color index (0, 1–255, or 256).
+   */
+  private selectIndex(index: number) {
+    this.selectedIndex = index
+    this.input.value = String(index)
+    this.backdrop.querySelectorAll('.ml-ex-ui-aci-cell').forEach(cell => {
+      cell.classList.toggle(
+        'selected',
+        Number((cell as HTMLElement).dataset.index) === index
+      )
+    })
+    this.updateInfo()
+  }
+
+  /**
+   * Applies manual color input from the text field.
+   */
+  private applyInput() {
+    const parsed = this.parseInput(this.input.value)
+    if (parsed == null) {
+      this.input.value =
+        this.selectedIndex != null ? String(this.selectedIndex) : ''
+      return
+    }
+    this.selectIndex(parsed)
+  }
+
+  /**
+   * Updates index, RGB, and preview display for the current selection.
+   */
+  private updateInfo() {
+    if (this.selectedIndex == null) {
+      this.indexLabel.textContent = this.i18n.t('colorPicker.index')
+      this.rgbLabel.textContent = this.i18n.t('colorPicker.rgb')
+      this.previewBox.style.background = '#000'
+      return
+    }
+
+    this.indexLabel.textContent = `${this.i18n.t('colorPicker.index')}${this.selectedIndex}`
+
+    if (this.selectedIndex === 0 || this.selectedIndex === 256) {
+      this.rgbLabel.textContent = this.i18n.t('colorPicker.rgb')
+      this.previewBox.style.background = '#000'
+      return
+    }
+
+    const color = new AcCmColor()
+    color.colorIndex = this.selectedIndex
+    this.rgbLabel.textContent = `${this.i18n.t('colorPicker.rgb')}${color.red}, ${color.green}, ${color.blue}`
+    this.previewBox.style.background = this.rgb(this.selectedIndex)
   }
 
   /**
@@ -207,6 +293,8 @@ export class AcExColorPicker {
    */
   private toColorIndex(color?: AcCmColor): number | null {
     if (!color) return null
+    if (color.isByLayer) return 256
+    if (color.isByBlock) return 0
     if (color.isByACI && color.colorIndex != null) return color.colorIndex
     return null
   }
@@ -214,17 +302,22 @@ export class AcExColorPicker {
   /**
    * Parses manual color input as an ACI index or convertible color string.
    *
-   * @param value - User input (1–255, or a color string).
+   * @param value - User input (0–256, BYLAYER, BYBLOCK, or a color string).
    */
   private parseInput(value: string): number | null {
-    const trimmed = value.trim()
+    const trimmed = value.trim().toUpperCase()
+    if (trimmed === 'BYLAYER') return 256
+    if (trimmed === 'BYBLOCK') return 0
+
     if (/^\d+$/.test(trimmed)) {
       const index = Number(trimmed)
-      if (index >= 1 && index <= 255) return index
+      if (index >= 0 && index <= 256) return index
       return null
     }
+
     const color = AcCmColor.fromString(trimmed)
-    if (!color || color.isByLayer || color.isByBlock) return null
+    if (!color || color.isByLayer) return 256
+    if (color.isByBlock) return 0
     if (color.isByACI && color.colorIndex != null) return color.colorIndex
     return null
   }
@@ -234,6 +327,16 @@ export class AcExColorPicker {
    */
   private toSelectedColor(): AcCmColor | null {
     if (this.selectedIndex == null) return null
+    if (this.selectedIndex === 256) {
+      const color = new AcCmColor()
+      color.setByLayer()
+      return color
+    }
+    if (this.selectedIndex === 0) {
+      const color = new AcCmColor()
+      color.setByBlock()
+      return color
+    }
     return new AcCmColor(AcCmColorMethod.ByACI, this.selectedIndex)
   }
 }

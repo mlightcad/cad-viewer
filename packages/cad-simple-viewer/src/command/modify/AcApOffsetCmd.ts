@@ -25,6 +25,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { AcApEntityService } from '../../service'
 
 /**
  * Union of prompt option types used across the OFFSET state machine.
@@ -63,25 +64,6 @@ function isOffsettableCurve(
 }
 
 /**
- * Copies display and layer traits from a source entity onto an offset result.
- *
- * Offset geometry is created as new curve instances, so this helper ensures
- * the generated curves inherit the visual properties of the original.
- *
- * @param source - Original curve selected for offsetting.
- * @param target - Newly created offset curve that should match `source`.
- */
-function copyEntityTraits(source: AcDbEntity, target: AcDbEntity) {
-  target.layer = source.layer
-  target.color = source.color.clone()
-  target.lineType = source.lineType
-  target.lineWeight = source.lineWeight
-  target.linetypeScale = source.linetypeScale
-  target.transparency = source.transparency
-  target.visibility = source.visibility
-}
-
-/**
  * Builds one or more offset curves on the side indicated by a pick point.
  *
  * The side is resolved from the source curve geometry, the absolute distance is
@@ -101,7 +83,9 @@ function buildOffsetCurves(
   try {
     const side = curve.getOffsetSideAtPoint(sidePoint)
     const offsetCurves = curve.getOffsetCurves(offsetDistance * side)
-    offsetCurves.forEach(offsetCurve => copyEntityTraits(curve, offsetCurve))
+    offsetCurves.forEach(offsetCurve =>
+      AcApEntityService.copyDisplayTraits(curve, offsetCurve)
+    )
     return offsetCurves
   } catch {
     return []

@@ -392,7 +392,7 @@ Double-click a layer row to zoom to that layer.
 |--------|-------------|
 | `createSimpleUiPlugin(options)` | Returns an `AcApPlugin` instance |
 | `registerSimpleUiPlugin(pluginManager, options)` | Eager-load helper |
-| `AcExLayerService` | Headless layer operations |
+| `AcApLayerStore` | Document-scoped layer observer and UI mutations |
 | `AcExSimpleUiPluginOptions` | Plugin configuration type |
 | `AcExToolbarItem` | Single toolbar button definition |
 | `AcExToolbarItemConfig` | Button, separator, or preset reference in toolbar config |
