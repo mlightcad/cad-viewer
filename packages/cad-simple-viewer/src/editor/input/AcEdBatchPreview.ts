@@ -52,11 +52,7 @@ export class AcEdBatchedPreview {
    * @param entityIds - Object ids of entities to include in each overlay
    * @param copyCount - Number of overlays to create (default `1`)
    */
-  constructor(
-    view: AcEdBaseView,
-    entityIds: AcDbObjectId[],
-    copyCount = 1
-  ) {
+  constructor(view: AcEdBaseView, entityIds: AcDbObjectId[], copyCount = 1) {
     this.copyCount = Math.max(0, copyCount)
     if (this.copyCount === 0 || entityIds.length === 0) {
       this.useBatchPreview = false

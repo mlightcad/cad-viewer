@@ -26,10 +26,7 @@ function aciIndexToCss(index: number): string {
  */
 export function readGripAppearance(database: AcDbDatabase): AcEdGripAppearance {
   const manager = AcDbSysVarManager.instance()
-  const size = manager.getVar(
-    AcDbSystemVariables.GRIPSIZE,
-    database
-  ) as number
+  const size = manager.getVar(AcDbSystemVariables.GRIPSIZE, database) as number
   const gripColor = manager.getVar(
     AcDbSystemVariables.GRIPCOLOR,
     database

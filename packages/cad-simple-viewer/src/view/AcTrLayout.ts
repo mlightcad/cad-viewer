@@ -695,10 +695,7 @@ export class AcTrLayout {
         maxY: union.maxY,
         id: entity.objectId
       }
-    } else if (
-      entity instanceof AcTrGroup &&
-      entity.wcsChildBoxes.length > 0
-    ) {
+    } else if (entity instanceof AcTrGroup && entity.wcsChildBoxes.length > 0) {
       const union = unionSpatialQueryItems(
         entity.wcsChildBoxes.map(box => ({
           minX: box.minX,
@@ -733,10 +730,7 @@ export class AcTrLayout {
       id: entity.objectId
     })
 
-    if (
-      spatialIndexChildBoxes &&
-      spatialIndexChildBoxes.length > 0
-    ) {
+    if (spatialIndexChildBoxes && spatialIndexChildBoxes.length > 0) {
       entity.wcsBbox.min.set(rootBox.minX, rootBox.minY, entity.wcsBbox.min.z)
       entity.wcsBbox.max.set(rootBox.maxX, rootBox.maxY, entity.wcsBbox.max.z)
     }

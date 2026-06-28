@@ -45,14 +45,14 @@
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
-    "@mlightcad/data-model": "^1.9.14",
+    "@mlightcad/data-model": "^1.10.0",
     "jspdf": "^4.2.1",
     "pdfjs-dist": "^5.6.205",
     "svg2pdf.js": "^2.7.0"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.9.14",
+    "@mlightcad/data-model": "^1.10.0",
     "@mlightcad/cad-svg-plugin": "workspace:*"
   }
 }

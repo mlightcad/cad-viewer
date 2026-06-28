@@ -49,10 +49,7 @@ interface TestLayer {
 const frozenFlag = 0x01
 const lockedFlag = 0x04
 
-const createLayer = (
-  objectId: string,
-  standardFlags?: number
-): TestLayer => ({
+const createLayer = (objectId: string, standardFlags?: number): TestLayer => ({
   objectId,
   standardFlags,
   get isFrozen() {

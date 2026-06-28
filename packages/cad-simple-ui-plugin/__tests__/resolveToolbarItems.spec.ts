@@ -153,7 +153,9 @@ describe('default toolbar items', () => {
   it('uses selected child icon only for toolbar placement', () => {
     const items = createDefaultToolbarItems()
     expect(items.find(item => item.id === 'export')?.childIcon).toBeUndefined()
-    expect(items.find(item => item.id === 'annotation')?.childIcon).toBeUndefined()
+    expect(
+      items.find(item => item.id === 'annotation')?.childIcon
+    ).toBeUndefined()
     expect(items.find(item => item.id === 'toolbar-placement')?.childIcon).toBe(
       'selected'
     )
@@ -162,8 +164,12 @@ describe('default toolbar items', () => {
 
   it('uses dedicated parent icons for export and annotation', () => {
     const items = createDefaultToolbarItems()
-    expect(items.find(item => item.id === 'export')?.icon).toContain('M11 4h5v5')
-    expect(items.find(item => item.id === 'annotation')?.icon).toContain('M7 14.5')
+    expect(items.find(item => item.id === 'export')?.icon).toContain(
+      'M11 4h5v5'
+    )
+    expect(items.find(item => item.id === 'annotation')?.icon).toContain(
+      'M7 14.5'
+    )
   })
 })
 
@@ -223,12 +229,9 @@ describe('toolbar presets and separators', () => {
         { preset: 'measure' }
       ]
     })
-    expect(items.map(item => ('preset' in item ? item.preset : item.id))).toEqual([
-      'select',
-      'pan',
-      'sep-tools',
-      'measure'
-    ])
+    expect(
+      items.map(item => ('preset' in item ? item.preset : item.id))
+    ).toEqual(['select', 'pan', 'sep-tools', 'measure'])
     expect(items[3].children?.length).toBeGreaterThan(0)
   })
 

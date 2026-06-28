@@ -35,7 +35,12 @@ describe('AcTrTransientManager.applyTransforms', () => {
     const scene = new THREE.Scene()
     const manager = new AcTrTransientManager(scene)
     const context = new AcTrRenderContext()
-    const line = createLine('line-title', { x: -180, y: 28 }, { x: 0, y: 28 }, context)
+    const line = createLine(
+      'line-title',
+      { x: -180, y: 28 },
+      { x: 0, y: 28 },
+      context
+    )
     const group = new AcTrGroup([line], context)
     group.applyMatrix(new AcGeMatrix3d().makeTranslation(574, 0, 0))
     group.objectId = 'INSERT-7B33'

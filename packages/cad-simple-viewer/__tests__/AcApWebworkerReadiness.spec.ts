@@ -42,7 +42,9 @@ describe('checkWebworkerReadiness', () => {
     global.fetch = mockFetch(() =>
       Promise.resolve({ ok: true, status: 200 } as Response)
     )
-    ;(global.fetch as jest.Mock).mockRejectedValueOnce(new Error('network error'))
+    ;(global.fetch as jest.Mock).mockRejectedValueOnce(
+      new Error('network error')
+    )
 
     const urls = {
       dxfParser: '/workers/dxf-parser-worker.js',

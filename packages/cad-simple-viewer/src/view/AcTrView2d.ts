@@ -1244,10 +1244,7 @@ export class AcTrView2d extends AcEdBaseView {
    */
   updateEntityPreview(handleId: string, matrix: AcGeMatrix3d): void {
     if (
-      this._scene.updatePreview(
-        handleId,
-        AcTrMatrixUtil.createMatrix4(matrix)
-      )
+      this._scene.updatePreview(handleId, AcTrMatrixUtil.createMatrix4(matrix))
     ) {
       this._isDirty = true
     }

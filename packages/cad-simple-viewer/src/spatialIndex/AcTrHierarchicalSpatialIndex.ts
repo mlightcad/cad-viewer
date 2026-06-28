@@ -9,7 +9,12 @@ import {
 import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert'
 import { AcTrLinearSpatialIndex } from './AcTrLinearSpatialIndex'
 import { AcTrRBushSpatialIndex } from './AcTrRBushSpatialIndex'
-import { AcTrSpatialIndex, AcTrSpatialIndexBBox, AcTrSpatialSearchOptions, isSpatialBoxFullyInside } from './AcTrSpatialIndex'
+import {
+  AcTrSpatialIndex,
+  AcTrSpatialIndexBBox,
+  AcTrSpatialSearchOptions,
+  isSpatialBoxFullyInside
+} from './AcTrSpatialIndex'
 
 /**
  * A two-level (hierarchical) spatial index designed for complex CAD
@@ -355,5 +360,4 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
     }
     return undefined
   }
-
 }

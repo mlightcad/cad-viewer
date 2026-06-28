@@ -347,7 +347,10 @@ export class AcApLayoffCmd extends AcApLayerMutationCmd {
           )
           return
         case 'cannot_change_current':
-          this.showMessage(AcApI18n.t('jig.layoff.cannotTurnOffCurrent'), 'warning')
+          this.showMessage(
+            AcApI18n.t('jig.layoff.cannotTurnOffCurrent'),
+            'warning'
+          )
           return
         case 'already_off':
           this.showMessage(

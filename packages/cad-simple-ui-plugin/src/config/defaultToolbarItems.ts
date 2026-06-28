@@ -37,7 +37,11 @@ import {
   ICON_ZOOM_EXTENT,
   ICON_ZOOM_WINDOW
 } from '../assets/icons'
-import type { AcExDefaultToolbarContext, AcExToolbarItem, AcExToolbarPlacement } from './types'
+import type {
+  AcExDefaultToolbarContext,
+  AcExToolbarItem,
+  AcExToolbarPlacement
+} from './types'
 
 const TOOLBAR_PLACEMENTS: AcExToolbarPlacement[] = [
   'top',

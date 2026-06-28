@@ -7,10 +7,7 @@ import {
   AcDbDocumentEventArgs,
   LAYER_EDIT_LABEL
 } from '@mlightcad/cad-simple-viewer'
-import {
-  AcCmColor,
-  AcDbDatabase
-} from '@mlightcad/data-model'
+import { AcCmColor, AcDbDatabase } from '@mlightcad/data-model'
 import { computed, onScopeDispose, reactive, ref } from 'vue'
 
 /**
@@ -182,7 +179,9 @@ export function useLayers(editor: AcApDocManager) {
    */
   const bindToActiveDocument = (doc = editor.curDocument) => {
     if (subscribedLayerStore) {
-      subscribedLayerStore.events.changed.removeEventListener(handleLayersChanged)
+      subscribedLayerStore.events.changed.removeEventListener(
+        handleLayersChanged
+      )
     }
 
     subscribedLayerStore = doc?.layerStore
@@ -399,7 +398,9 @@ export function useLayers(editor: AcApDocManager) {
   onScopeDispose(() => {
     editor.events.documentActivated.removeEventListener(handleDocumentActivated)
     if (subscribedLayerStore) {
-      subscribedLayerStore.events.changed.removeEventListener(handleLayersChanged)
+      subscribedLayerStore.events.changed.removeEventListener(
+        handleLayersChanged
+      )
     }
   })
 

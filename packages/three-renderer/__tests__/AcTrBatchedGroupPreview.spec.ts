@@ -137,7 +137,10 @@ describe('AcTrBatchedGroup preview subset', () => {
     const subset = group.createPreviewSubset(['line-1'])
     expect(subset).not.toBeNull()
 
-    const geometryDisposeSpy = jest.spyOn(THREE.BufferGeometry.prototype, 'dispose')
+    const geometryDisposeSpy = jest.spyOn(
+      THREE.BufferGeometry.prototype,
+      'dispose'
+    )
     disposePreviewSubset(subset!)
     expect(geometryDisposeSpy).not.toHaveBeenCalled()
     geometryDisposeSpy.mockRestore()

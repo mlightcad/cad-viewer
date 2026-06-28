@@ -594,10 +594,7 @@ export abstract class AcEdBaseView {
    * @param handleId - Preview handle returned by {@link createEntityPreview}
    * @param matrix - World transform to apply to the preview geometry
    */
-  abstract updateEntityPreview(
-    handleId: string,
-    matrix: AcGeMatrix3d
-  ): void
+  abstract updateEntityPreview(handleId: string, matrix: AcGeMatrix3d): void
 
   /**
    * Removes one batched preview overlay.

@@ -76,7 +76,9 @@ function createMockDatabase() {
 
 function createMockDocument(db: ReturnType<typeof createMockDatabase>) {
   let layerPreviousSnapshot: AcApLayerPreviousSnapshot | undefined
-  let layerIsoSnapshot: import('../src/service').AcApLayerIsoSnapshot | undefined
+  let layerIsoSnapshot:
+    | import('../src/service').AcApLayerIsoSnapshot
+    | undefined
 
   return {
     captureLayerPreviousState() {

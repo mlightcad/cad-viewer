@@ -324,9 +324,13 @@ export class AcApLayerStore {
     this.currentLayerName = this.database.clayer || ''
     this.notify()
 
-    this.database.events.layerAppended.addEventListener(this.handleLayerAppended)
+    this.database.events.layerAppended.addEventListener(
+      this.handleLayerAppended
+    )
     this.database.events.layerErased.addEventListener(this.handleLayerErased)
-    this.database.events.layerModified.addEventListener(this.handleLayerModified)
+    this.database.events.layerModified.addEventListener(
+      this.handleLayerModified
+    )
   }
 
   /** Detaches layer-table event listeners. */

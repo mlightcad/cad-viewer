@@ -100,8 +100,7 @@ export default {
       description: '设置所选（热）夹点的颜色'
     },
     gripobjlimit: {
-      description:
-        '当选择集中的对象数超过指定值时不显示夹点（0 表示无限制）'
+      description: '当选择集中的对象数超过指定值时不显示夹点（0 表示无限制）'
     },
     grips: {
       description: '控制是否在所选对象上显示夹点'

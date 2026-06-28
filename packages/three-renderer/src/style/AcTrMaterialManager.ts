@@ -123,11 +123,7 @@ export abstract class AcTrMaterialManager<T> {
         metadata.layer === layerName &&
         (hasByLayerBinding(metadata) ||
           hasByLayerBinding(byLayerBindings) ||
-          this.shouldInheritLayerColor(
-            oldTraits,
-            byLayerBindings,
-            oldMaterial
-          ))
+          this.shouldInheritLayerColor(oldTraits, byLayerBindings, oldMaterial))
       if (!isTarget) continue
 
       // Step 1: merged traits (only mutate traits that are actually ByLayer)

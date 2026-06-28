@@ -204,8 +204,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
   /** Toggles {@link AcApI18n.currentLocale} between English and Chinese. */
   private toggleLocale() {
-    const next: AcApLocale =
-      AcApI18n.currentLocale === 'en' ? 'zh' : 'en'
+    const next: AcApLocale = AcApI18n.currentLocale === 'en' ? 'zh' : 'en'
     AcApI18n.setCurrentLocale(next)
   }
 

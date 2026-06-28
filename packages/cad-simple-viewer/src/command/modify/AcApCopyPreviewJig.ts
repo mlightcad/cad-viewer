@@ -70,11 +70,7 @@ export class AcApCopyPreviewJig extends AcEdSelectionTransformPreviewJig<AcGePoi
       )
       return {
         objectId: entry.entity.objectId,
-        matrix: new AcGeMatrix3d().makeTranslation(
-          scaled.x,
-          scaled.y,
-          scaled.z
-        )
+        matrix: new AcGeMatrix3d().makeTranslation(scaled.x, scaled.y, scaled.z)
       }
     })
   }

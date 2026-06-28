@@ -72,7 +72,10 @@ const createLayer = (
   color: createColor()
 })
 
-const createDatabase = (layers: TestLayer[], currentLayer = layers[0]?.name) => {
+const createDatabase = (
+  layers: TestLayer[],
+  currentLayer = layers[0]?.name
+) => {
   const layersByName = new Map(layers.map(layer => [layer.name, layer]))
   const layersById = new Map(layers.map(layer => [layer.objectId, layer]))
   const db = {

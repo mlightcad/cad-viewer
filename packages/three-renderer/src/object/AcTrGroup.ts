@@ -20,10 +20,7 @@ export class AcTrGroup extends AcTrEntity {
   private _isOnTheSameLayer: boolean
   private _wcsChildBoxes: AcTrEntityBox[] = []
   /** Per-source-entity INSERT chain from nested block references to this group's block. */
-  private _sourceEntitySpatialMatrices = new Map<
-    AcDbObjectId,
-    THREE.Matrix4
-  >()
+  private _sourceEntitySpatialMatrices = new Map<AcDbObjectId, THREE.Matrix4>()
 
   /**
    * Leaf {@link AcTrEntity} instances that contributed geometry to this group
@@ -551,8 +548,9 @@ export class AcTrGroup extends AcTrEntity {
     scratch.copy(entity.wcsBbox)
     entity.updateMatrixWorld(true)
 
-    const nestedInsertMatrix =
-      this._sourceEntitySpatialMatrices.get(entity.objectId)
+    const nestedInsertMatrix = this._sourceEntitySpatialMatrices.get(
+      entity.objectId
+    )
     if (
       nestedInsertMatrix &&
       !AcTrGroup.isWorldMatrixIdentity(nestedInsertMatrix)

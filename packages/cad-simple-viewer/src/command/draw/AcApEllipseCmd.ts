@@ -141,10 +141,7 @@ function buildEllipseDefinition(
 
 function normalizeFullEllipseAngles(startAngle: number, endAngle: number) {
   const span = Math.abs(endAngle - startAngle)
-  if (
-    Math.abs(span - TAU) < 1e-10 ||
-    Math.abs(span - 2 * TAU) < 1e-10
-  ) {
+  if (Math.abs(span - TAU) < 1e-10 || Math.abs(span - 2 * TAU) < 1e-10) {
     return { startAngle: 0, endAngle: 0 }
   }
   return { startAngle, endAngle }

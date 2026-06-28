@@ -302,10 +302,7 @@ export class AcApRotateCmd extends AcEdCommand {
       return
     }
 
-    const matrix = createRotationMatrix(
-      basePoint,
-      rotation.angleRad
-    )
+    const matrix = createRotationMatrix(basePoint, rotation.angleRad)
 
     const entityService = context.doc.entityService
     if (rotation.copyMode) {

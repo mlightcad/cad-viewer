@@ -129,12 +129,12 @@ describe('AcTrStyleManager', () => {
     })
 
     expect(updates[byLayerMaterial.id]).toBe(byLayerMaterial)
-    expect(
-      (byLayerMaterial as THREE.LineBasicMaterial).color.getHex()
-    ).toBe(0xff0000)
-    expect(
-      (explicitMaterial as THREE.LineBasicMaterial).color.getHex()
-    ).toBe(0xff0000)
+    expect((byLayerMaterial as THREE.LineBasicMaterial).color.getHex()).toBe(
+      0xff0000
+    )
+    expect((explicitMaterial as THREE.LineBasicMaterial).color.getHex()).toBe(
+      0xff0000
+    )
   })
 
   it('does not share materials across layers for the same explicit colour', () => {

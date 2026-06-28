@@ -328,7 +328,12 @@ export class AcApLayerCmd extends AcApLayerMutationCmd {
     const result = await AcApDocManager.instance.editor.getString(descPrompt)
     if (result.status !== AcEdPromptStatus.OK) return
 
-    if (!this.layerService(context).setLayerDescription(name, result.stringResult ?? '')) {
+    if (
+      !this.layerService(context).setLayerDescription(
+        name,
+        result.stringResult ?? ''
+      )
+    ) {
       this.showMessage(
         `${AcApI18n.t('jig.layer.notFound')}: ${name}`,
         'warning'

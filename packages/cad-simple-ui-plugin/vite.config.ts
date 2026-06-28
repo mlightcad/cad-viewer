@@ -25,7 +25,11 @@ export default defineConfig({
     },
     minify: true,
     rollupOptions: {
-      external: [packageName, '@mlightcad/cad-simple-viewer', '@mlightcad/data-model'],
+      external: [
+        packageName,
+        '@mlightcad/cad-simple-viewer',
+        '@mlightcad/data-model'
+      ],
       output: createLibRollupOutput(pluginId)
     }
   },

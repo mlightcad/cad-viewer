@@ -130,7 +130,10 @@ export class AcExToolbar {
   setPlacement(placement: AcExToolbarPlacement) {
     if (this.options.placement === placement) return
     this.options.placement = placement
-    this.selectedChildByParent.set('toolbar-placement', `placement-${placement}`)
+    this.selectedChildByParent.set(
+      'toolbar-placement',
+      `placement-${placement}`
+    )
     this.syncRootClasses()
     this.renderButtons()
   }

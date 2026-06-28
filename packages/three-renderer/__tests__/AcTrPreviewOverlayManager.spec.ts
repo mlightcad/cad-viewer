@@ -6,9 +6,9 @@ describe('AcTrPreviewOverlayManager', () => {
   it('keeps the preview overlay attached to the scene across manager recreation', () => {
     const scene = new THREE.Scene()
     let manager = new AcTrPreviewOverlayManager(scene)
-    expect(scene.children.some(child => child.name === 'Entity_Preview_Group')).toBe(
-      true
-    )
+    expect(
+      scene.children.some(child => child.name === 'Entity_Preview_Group')
+    ).toBe(true)
 
     manager.clear()
     scene.clear()

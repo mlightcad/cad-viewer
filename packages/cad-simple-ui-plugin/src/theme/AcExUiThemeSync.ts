@@ -17,7 +17,9 @@ import {
  * @param host - Viewer host element.
  * @returns `'light'`, `'dark'`, or `undefined` when unset or invalid.
  */
-export function readUiThemeFromHost(host: HTMLElement): AcEdUiTheme | undefined {
+export function readUiThemeFromHost(
+  host: HTMLElement
+): AcEdUiTheme | undefined {
   const attr = host.getAttribute('data-ml-ui-theme')
   if (attr === 'light' || attr === 'dark') return attr
   return undefined
@@ -45,8 +47,7 @@ export class AcExUiThemeSync {
     const database = AcApDocManager.instance.curDocument?.database
     if (!database || args.database !== database) return
     if (
-      args.name.toLowerCase() !==
-      AcDbSystemVariables.COLORTHEME.toLowerCase()
+      args.name.toLowerCase() !== AcDbSystemVariables.COLORTHEME.toLowerCase()
     ) {
       return
     }

@@ -1,8 +1,4 @@
-import {
-  AcDbEntity,
-  AcDbObjectId,
-  AcGeMatrix3d
-} from '@mlightcad/data-model'
+import { AcDbEntity, AcDbObjectId, AcGeMatrix3d } from '@mlightcad/data-model'
 
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdBatchedPreview } from './AcEdBatchPreview'
@@ -110,11 +106,7 @@ export abstract class AcEdSelectionTransformPreviewJig<
    * @param sourceEntities - Original entities cloned for preview display.
    * @param copyCount - Number of copy placements for array previews (default `1`).
    */
-  constructor(
-    view: AcEdBaseView,
-    sourceEntities: AcDbEntity[],
-    copyCount = 1
-  ) {
+  constructor(view: AcEdBaseView, sourceEntities: AcDbEntity[], copyCount = 1) {
     super(view)
     this._view = view
     this.copyCount = copyCount
@@ -143,9 +135,7 @@ export abstract class AcEdSelectionTransformPreviewJig<
    *
    * @param value - Current prompt input sampled by the editor.
    */
-  protected abstract buildTransforms(
-    value: T
-  ): AcEdSelectionPreviewTransform[]
+  protected abstract buildTransforms(value: T): AcEdSelectionPreviewTransform[]
 
   /**
    * Applies the latest transform to batch overlays or caches transforms for

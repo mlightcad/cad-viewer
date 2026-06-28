@@ -315,7 +315,10 @@ export class AcTrLayer {
    * @param options - Optional preview style and slot limits
    * @returns Preview subset group, or `null` when extraction failed
    */
-  createPreviewSubset(entityIds: AcDbObjectId[], options?: AcTrPreviewSubsetOptions) {
+  createPreviewSubset(
+    entityIds: AcDbObjectId[],
+    options?: AcTrPreviewSubsetOptions
+  ) {
     return this._group.createPreviewSubset(entityIds, options)
   }
 

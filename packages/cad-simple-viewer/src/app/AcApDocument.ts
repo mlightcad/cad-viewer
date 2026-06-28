@@ -10,12 +10,13 @@ import { eventBus } from '../editor'
 import { AcEdOpenMode } from '../editor/view'
 import { AcApEntityService } from '../service/AcApEntityService'
 import type { AcApLayerIsoSnapshot } from '../service/AcApLayerIsoState'
-import {
-  AcApLayerService
-} from '../service/AcApLayerService'
+import { AcApLayerService } from '../service/AcApLayerService'
 import type { AcApLayerStore } from '../service/AcApLayerStore'
 import { AcApLayerStore as AcApLayerStoreImpl } from '../service/AcApLayerStore'
-import { acapRunServiceEdit, LAYER_EDIT_LABEL } from '../service/AcApServiceEdit'
+import {
+  acapRunServiceEdit,
+  LAYER_EDIT_LABEL
+} from '../service/AcApServiceEdit'
 import type {
   AcApLayerIsolateResult,
   AcApLayerIsolationMode

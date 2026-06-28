@@ -112,7 +112,9 @@ const props = defineProps<Props>()
  * layers: reactive array of LayerInfo retrieved from editor.
  * This composable also updates automatically when CAD document changes.
  */
-const { layers, currentLayerName, setLayerOn, setLayerColor } = useLayers(props.editor)
+const { layers, currentLayerName, setLayerOn, setLayerColor } = useLayers(
+  props.editor
+)
 
 const getRowClassName = ({ row }: { row: LayerInfo }) =>
   row.name === currentLayerName.value ? 'ml-layer-list-row--current' : ''

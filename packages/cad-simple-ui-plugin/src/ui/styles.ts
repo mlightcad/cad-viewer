@@ -540,6 +540,7 @@ export function ensureUiStyles() {
  * Removes injected UI styles when no toolbar or layer manager remains in the DOM.
  */
 export function removeUiStylesIfUnused() {
-  if (document.querySelector('.ml-ex-ui-toolbar, .ml-ex-ui-layer-manager')) return
+  if (document.querySelector('.ml-ex-ui-toolbar, .ml-ex-ui-layer-manager'))
+    return
   document.getElementById(STYLE_ID)?.remove()
 }

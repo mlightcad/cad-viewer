@@ -1,7 +1,12 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcEdSpatialQueryResultItem } from '../editor/view'
-import { AcTrSpatialIndex, AcTrSpatialIndexBBox, AcTrSpatialSearchOptions, isSpatialBoxFullyInside } from './AcTrSpatialIndex'
+import {
+  AcTrSpatialIndex,
+  AcTrSpatialIndexBBox,
+  AcTrSpatialSearchOptions,
+  isSpatialBoxFullyInside
+} from './AcTrSpatialIndex'
 
 /**
  * A simple spatial index implementation that performs linear scanning

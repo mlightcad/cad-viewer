@@ -33,9 +33,7 @@ describe('layer material remap fan-out', () => {
     const updateMaterial = jest.spyOn(wallLayer, 'updateMaterial')
 
     const renderer = {
-      getLayerBoundMaterial: jest.fn(
-        (material: THREE.Material) => material
-      ),
+      getLayerBoundMaterial: jest.fn((material: THREE.Material) => material),
       styleManager: {
         getLineMaterial: jest.fn(),
         getMTextFillMaterial: jest.fn()
@@ -131,10 +129,7 @@ describe('layer material remap fan-out', () => {
 
     const scene = {
       forEachSceneLayer: jest.fn(
-        (
-          layerName: string,
-          fn: (sceneLayer: AcTrLayer) => void
-        ) => {
+        (layerName: string, fn: (sceneLayer: AcTrLayer) => void) => {
           expect(layerName).toBe('WALL')
           fn(sceneLayerA)
           fn(sceneLayerB)

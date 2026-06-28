@@ -1542,8 +1542,7 @@ export class AcApDocManager {
     this.registerConverters(webworkerFileUrls)
     const mtextRenderer = AcTrMTextRenderer.getInstance()
     mtextRenderer.initialize(
-      webworkerFileUrls?.mtextRender ??
-        DEFAULT_WEBWORKER_FILE_URLS.mtextRender
+      webworkerFileUrls?.mtextRender ?? DEFAULT_WEBWORKER_FILE_URLS.mtextRender
     )
     void mtextRenderer.setDefaultFonts(DEFAULT_FONTS_PRESET)
   }

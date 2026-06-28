@@ -29,10 +29,7 @@ describe('AcTrBatchedGroup layer style rebind', () => {
       isByLayerColor: true
     })
 
-    const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1),
-      sourceMaterial
-    )
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), sourceMaterial)
     mesh.userData.layerName = 'INSERT'
     getSceneDrawableUserData(mesh).noBatch = true
 
@@ -40,11 +37,7 @@ describe('AcTrBatchedGroup layer style rebind', () => {
 
     let targetMesh: THREE.Mesh | undefined
     group.traverse(child => {
-      if (
-        targetMesh ||
-        !(child instanceof THREE.Mesh) ||
-        child === mesh
-      ) {
+      if (targetMesh || !(child instanceof THREE.Mesh) || child === mesh) {
         return
       }
       if (child.geometry instanceof THREE.PlaneGeometry) {
@@ -84,10 +77,7 @@ describe('AcTrBatchedGroup layer style rebind', () => {
       isByLayerColor: true
     })
 
-    const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1),
-      sourceMaterial
-    )
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), sourceMaterial)
     mesh.userData.layerName = 'INSERT'
     getSceneDrawableUserData(mesh).noBatch = true
 

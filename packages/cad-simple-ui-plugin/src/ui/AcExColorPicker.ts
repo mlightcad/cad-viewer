@@ -1,7 +1,4 @@
-import {
-  AcCmColor,
-  AcCmColorMethod
-} from '@mlightcad/data-model'
+import { AcCmColor, AcCmColorMethod } from '@mlightcad/data-model'
 
 import type { AcExI18n } from '../i18n'
 import { ensureUiStyles } from './styles'

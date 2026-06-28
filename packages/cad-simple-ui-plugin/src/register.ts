@@ -15,6 +15,7 @@ export async function registerSimpleUiPlugin(
   pluginManager: AcApPluginManager,
   options: AcExSimpleUiPluginOptions = {}
 ): Promise<void> {
-  const { createSimpleUiPlugin } = await import('@mlightcad/cad-simple-ui-plugin')
+  const { createSimpleUiPlugin } =
+    await import('@mlightcad/cad-simple-ui-plugin')
   await pluginManager.loadPlugin(createSimpleUiPlugin(options))
 }

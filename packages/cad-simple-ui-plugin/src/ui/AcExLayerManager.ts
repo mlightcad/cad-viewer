@@ -257,7 +257,11 @@ export class AcExLayerManager {
     this.root.classList.remove('is-hidden')
     this.positionNear(anchor)
     this.renderRows()
-    document.addEventListener('pointerdown', this.handleDocumentPointerDown, true)
+    document.addEventListener(
+      'pointerdown',
+      this.handleDocumentPointerDown,
+      true
+    )
     document.addEventListener('keydown', this.handleDocumentKeyDown, true)
     this.focusInitialControl()
   }
@@ -391,7 +395,9 @@ export class AcExLayerManager {
   private createRow(layer: AcApLayerInfo, currentLayer: string) {
     const row = document.createElement('tr')
     row.addEventListener('dblclick', () => {
-      const success = AcApDocManager.instance.curView?.zoomToFitLayer(layer.name)
+      const success = AcApDocManager.instance.curView?.zoomToFitLayer(
+        layer.name
+      )
       if (success) {
         this.showToast(
           this.i18n.t('layerManager.zoomToLayer', { layer: layer.name })
@@ -488,7 +494,10 @@ export class AcExLayerManager {
     let panelHeight: number
 
     if (verticalToolbar && toolbarRect) {
-      const preferredHeight = Math.max(LAYER_POPOVER_MIN_HEIGHT, toolbarRect.height)
+      const preferredHeight = Math.max(
+        LAYER_POPOVER_MIN_HEIGHT,
+        toolbarRect.height
+      )
       panelHeight = this.applyPopoverHeight(preferredHeight)
 
       if (panelHeight >= toolbarRect.height) {

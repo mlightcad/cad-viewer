@@ -950,7 +950,10 @@ export class AcApLayerService {
       const targetNames = new Set(layerNames)
       const targetLayer = table.getAt(layerNames[0])
       const currentLayerBefore = this.db.clayer
-      const beforeStates = new Map<string, ReturnType<typeof getLayerIsoState>>()
+      const beforeStates = new Map<
+        string,
+        ReturnType<typeof getLayerIsoState>
+      >()
 
       for (const layer of table.newIterator()) {
         beforeStates.set(layer.name, getLayerIsoState(layer))
@@ -1202,8 +1205,7 @@ export class AcApLayerService {
     }
 
     if (
-      AcApLayerService.isLayerLocked(opened) ===
-        snapshot.isolated.isLocked &&
+      AcApLayerService.isLayerLocked(opened) === snapshot.isolated.isLocked &&
       AcApLayerService.isLayerLocked(opened) !== snapshot.before.isLocked
     ) {
       AcApLayerService.setLayerLockedState(opened, snapshot.before.isLocked)

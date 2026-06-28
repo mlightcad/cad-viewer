@@ -2,7 +2,12 @@ import { AcDbObjectId } from '@mlightcad/data-model'
 import RBush from 'rbush'
 
 import { AcEdSpatialQueryResultItem } from '../editor/view'
-import { AcTrSpatialIndex, AcTrSpatialIndexBBox, AcTrSpatialSearchOptions, isSpatialBoxFullyInside } from './AcTrSpatialIndex'
+import {
+  AcTrSpatialIndex,
+  AcTrSpatialIndexBBox,
+  AcTrSpatialSearchOptions,
+  isSpatialBoxFullyInside
+} from './AcTrSpatialIndex'
 
 export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
   private readonly tree: RBush<AcEdSpatialQueryResultItem>

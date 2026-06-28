@@ -1204,7 +1204,10 @@ export class AcTrBatchedGroup extends THREE.Group {
         if (options.mode === 'highlight') {
           this.applyHighlightMaterial(overlayObj)
         } else {
-          this.applyPreviewMaterial(overlayObj, options.previewStyle ?? 'normal')
+          this.applyPreviewMaterial(
+            overlayObj,
+            options.previewStyle ?? 'normal'
+          )
         }
 
         const overlayUserData = getHighlightUserData(overlayObj)

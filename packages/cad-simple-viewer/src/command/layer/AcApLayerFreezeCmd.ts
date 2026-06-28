@@ -350,7 +350,10 @@ export class AcApLayerFreezeCmd extends AcApLayerMutationCmd {
           )
           return
         case 'cannot_change_current':
-          this.showMessage(AcApI18n.t('jig.layfrz.cannotFreezeCurrent'), 'warning')
+          this.showMessage(
+            AcApI18n.t('jig.layfrz.cannotFreezeCurrent'),
+            'warning'
+          )
           return
         case 'already_frozen':
           this.showMessage(

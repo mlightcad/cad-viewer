@@ -252,14 +252,14 @@ describe('AcTrGroup wcsBbox', () => {
     )
     group.addChild(attribute)
 
-    expect(group.wcsChildBoxes.find(box => box.id === 'line-title')).toMatchObject(
-      {
-        minX: 394,
-        minY: 28,
-        maxX: 574,
-        maxY: 28
-      }
-    )
+    expect(
+      group.wcsChildBoxes.find(box => box.id === 'line-title')
+    ).toMatchObject({
+      minX: 394,
+      minY: 28,
+      maxX: 574,
+      maxY: 28
+    })
     expect(group.wcsChildBoxes.find(box => box.id === 'attr-1')).toMatchObject({
       minX: 394,
       minY: 0,
@@ -271,12 +271,7 @@ describe('AcTrGroup wcsBbox', () => {
 
   it('preserves applyMatrix child boxes when refresh runs after deferred syncDraw', () => {
     const context = new AcTrRenderContext()
-    const line = createLine(
-      'line-a',
-      { x: 0, y: 0 },
-      { x: 10, y: 5 },
-      context
-    )
+    const line = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 5 }, context)
     const group = new AcTrGroup([line], context)
     group.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 200, 0))
 

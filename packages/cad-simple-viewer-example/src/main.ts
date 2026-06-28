@@ -97,11 +97,9 @@ class CadViewerApp {
         }
       )
 
-      AcApDocManager.instance.events.documentToBeOpened.addEventListener(
-        () => {
-          this.setLoadingState(true)
-        }
-      )
+      AcApDocManager.instance.events.documentToBeOpened.addEventListener(() => {
+        this.setLoadingState(true)
+      })
 
       this.isInitialized = true
     } catch (error) {
@@ -207,7 +205,11 @@ class CadViewerApp {
     const top = rect.bottom + gap
     const maxHeight = Math.max(
       120,
-      Math.min(window.innerHeight * 0.5, 360, window.innerHeight - top - viewportInset)
+      Math.min(
+        window.innerHeight * 0.5,
+        360,
+        window.innerHeight - top - viewportInset
+      )
     )
 
     this.fileSidebarBody.style.top = `${top}px`

@@ -5,10 +5,7 @@ import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
 import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
-import {
-  AcTrMTextColorUtil,
-  AcTrSubEntityTraitsUtil
-} from '../src/util'
+import { AcTrMTextColorUtil, AcTrSubEntityTraitsUtil } from '../src/util'
 import { getSceneDrawableUserData } from '../src/util/AcTrObjectUserData'
 
 function createEntity(

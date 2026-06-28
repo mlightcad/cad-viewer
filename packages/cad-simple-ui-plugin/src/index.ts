@@ -4,7 +4,10 @@
  * Re-exports the plugin factory, registration helper, configuration types,
  * i18n utilities, and layer store re-exports.
  */
-export { AcApSimpleUiPlugin, createSimpleUiPlugin } from './createSimpleUiPlugin'
+export {
+  AcApSimpleUiPlugin,
+  createSimpleUiPlugin
+} from './createSimpleUiPlugin'
 export { registerSimpleUiPlugin } from './register'
 export type {
   AcExDefaultToolbarContext,
