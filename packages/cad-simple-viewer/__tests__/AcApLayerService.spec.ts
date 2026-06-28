@@ -221,4 +221,32 @@ describe('AcApLayerService', () => {
     expect(docB.restoreLayerPreviousState()).toBe(true)
     expect(dbB.layers.get('0')?.isOff).toBe(false)
   })
+
+  test('resolveLayerTraits returns sub-entity traits from the layer table', () => {
+    const db = createMockDatabase()
+    db.layers.set('WALL', {
+      name: 'WALL',
+      isOff: false,
+      isFrozen: false,
+      standardFlags: 0,
+      color: { clone: () => new AcCmColor(AcCmColorMethod.ByACI, 3) },
+      lineStyle: 'DASHED',
+      lineWeight: 50,
+      transparency: 0.5
+    } as never)
+
+    const service = new AcApLayerService(db as never)
+    const traits = service.getEffectiveLayerTraits('WALL')
+
+    expect(traits).toEqual({
+      layer: 'WALL',
+      color: expect.any(AcCmColor),
+      lineType: 'DASHED',
+      lineWeight: 50,
+      transparency: 0.5
+    })
+    expect(AcApLayerService.resolveLayerTraits(db as never, 'MISSING')).toBe(
+      undefined
+    )
+  })
 })

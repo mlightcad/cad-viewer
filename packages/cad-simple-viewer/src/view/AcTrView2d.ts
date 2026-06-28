@@ -18,7 +18,6 @@ import {
   AcGeMatrix3d,
   AcGePoint2d,
   AcGePoint2dLike,
-  AcGiSubEntityTraits,
   log
 } from '@mlightcad/data-model'
 import { AcDbSystemVariables } from '@mlightcad/data-model'
@@ -27,11 +26,7 @@ import {
   AcTrGroup,
   AcTrHtmlTransientManager,
   AcTrRenderer,
-  AcTrViewportView,
-  getMaterialMetadata,
-  getSceneDrawableUserData,
-  hasByLayerBinding,
-  setMaterialMetadata
+  AcTrViewportView
 } from '@mlightcad/three-renderer'
 import { AcTrMatrixUtil } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
@@ -68,7 +63,9 @@ import {
   assertAcTrGroupWcsBboxesConsistent,
   unionGroupWcsChildBoxes
 } from './AcTrGroupWcsBboxAssert'
+import { AcTrInheritedLayerMaterialMapper } from './AcTrInheritedLayerMaterialMapper'
 import { AcTrLayer } from './AcTrLayer'
+import { AcTrLayerAppearanceController } from './AcTrLayerAppearanceController'
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
 import { sortPickResults } from './AcTrPickResultUtil'
@@ -192,6 +189,10 @@ export class AcTrView2d extends AcEdBaseView {
   private readonly _progressiveOpenFit: AcTrProgressiveOpenFitController
   /** Entity display policy for layer-aware conversion skipping. */
   private readonly _entityDisplay: AcTrEntityDisplayController
+  /** Layer appearance sync for style-table changes and text refresh. */
+  private readonly _layerAppearance: AcTrLayerAppearanceController
+  /** INSERT layer-0 inheritance material remapping. */
+  private readonly _inheritedLayerMaterialMapper: AcTrInheritedLayerMaterialMapper
   /**
    * Layer names with an in-flight {@link convertMissingEntitiesOnLayer} pass.
    *
@@ -256,6 +257,14 @@ export class AcTrView2d extends AcEdBaseView {
     })
 
     this._scene = this.createScene()
+    this._layerAppearance = new AcTrLayerAppearanceController(
+      this._scene,
+      this._renderer
+    )
+    this._inheritedLayerMaterialMapper = new AcTrInheritedLayerMaterialMapper(
+      layerName => this._layerAppearance.getEffectiveLayerTraits(layerName),
+      this._renderer
+    )
     // Initialize background color through setter to keep renderer/cursor in sync.
     this.backgroundColor =
       mergedOptions.background ?? ACGI_MODEL_SPACE_BACKGROUND
@@ -637,7 +646,9 @@ export class AcTrView2d extends AcEdBaseView {
     this._renderer.setClearColor(value)
     // Updates style-manager background, repaints ACI-7 / bg-follow materials.
     this._renderer.currentBackgroundColor = value
-    this.refreshTextMaterialsInObjectTree(this._scene.internalScene)
+    this._layerAppearance.refreshTextMaterialsInObjectTree(
+      this._scene.internalScene
+    )
     this.editor.syncCursorBackground(value)
     this._isDirty = true
   }
@@ -650,10 +661,21 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Binds the active drawing database on the renderer draw context.
+   *
+   * Called before document read so layer-table traits are available while layers
+   * are appended during open, and again after open to refresh display sysvars.
+   */
+  bindDrawDatabase(database: AcDbDatabase | undefined): void {
+    this._renderer.context.database = database
+  }
+
+  /**
    * Re-reads layout background sysvars from the active database. Called after
    * a document is opened so DWG-stored values take effect.
    */
   syncDisplaySysVars(database: AcDbDatabase) {
+    this.bindDrawDatabase(database)
     this.applyCanvasBackground(
       readLayoutBackgroundColor(database, this.isModelSpaceLayout(database))
     )
@@ -1135,180 +1157,11 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Applies renderer material remaps to every scene layer group with `layerName`.
-   */
-  private applyLayerMaterialUpdates(
-    layerName: string,
-    materials: Record<number, THREE.Material>
-  ) {
-    if (!this.hasRemappedLayerMaterials(materials)) {
-      return
-    }
-
-    this._scene.layouts.forEach(layout => {
-      const sceneLayer = layout.getLayer(layerName)
-      if (!sceneLayer) return
-
-      for (const id in materials) {
-        const oldId = Number(id)
-        const material = materials[id]
-        if (material.id === oldId) {
-          continue
-        }
-        sceneLayer.updateMaterial(oldId, material)
-      }
-    })
-  }
-
-  /** True when at least one cached material was replaced with a new instance. */
-  private hasRemappedLayerMaterials(
-    materials: Record<number, THREE.Material>
-  ): boolean {
-    return Object.entries(materials).some(
-      ([oldId, material]) => material.id !== Number(oldId)
-    )
-  }
-
-  /**
-   * Refreshes cached layer materials from the live layer-table record and
-   * propagates the result to batched drawables and text hierarchies.
-   *
-   * ByLayer colour keys stay symbolic, so a colour-only layer edit usually
-   * repaints cache entries in place. Remap/patch paths run only when a material
-   * id actually changes; clone/unbatched text paths still rebind afterward.
-   */
-  private syncLayerAppearanceFromLiveRecord(layer: AcDbLayerTableRecord) {
-    const layerTraits = this.getEffectiveLayerTraits(layer.name)
-    if (!layerTraits) {
-      return
-    }
-
-    const materials = this._renderer.updateLayerMaterial(layer.name, layerTraits)
-    const needsIdPatch = this.hasRemappedLayerMaterials(materials)
-
-    this.applyLayerMaterialUpdates(layer.name, materials)
-
-    this._scene.layouts.forEach(layout => {
-      const sceneLayer = layout.getLayer(layer.name)
-      if (!sceneLayer) {
-        return
-      }
-
-      this.syncLayerSceneDrawables(
-        sceneLayer,
-        layer.name,
-        layerTraits,
-        materials,
-        needsIdPatch
-      )
-      sceneLayer.rebindMaterialsForLayer(
-        layer.name,
-        layerTraits,
-        (material, boundLayerName, boundLayerTraits) =>
-          this._renderer.getLayerBoundMaterial(
-            material,
-            boundLayerName,
-            boundLayerTraits
-          ),
-        this._renderer.styleManager
-      )
-      sceneLayer.rematerializeLayerTextDrawables(
-        layer.name,
-        this._renderer.styleManager,
-        layerTraits
-      )
-    })
-  }
-
-  /**
-   * Patches remapped materials, rebinds layer-bound drawables, and refreshes
-   * text entity wrappers in one scene traversal per layout.
-   */
-  private syncLayerSceneDrawables(
-    sceneLayer: AcTrLayer,
-    layerName: string,
-    layerTraits: Partial<AcGiSubEntityTraits>,
-    materials: Record<number, THREE.Material>,
-    needsIdPatch: boolean
-  ) {
-    sceneLayer.internalObject.traverse(object => {
-      const refresh = (
-        object as {
-          refreshTextMaterials?: (
-            layerTraits?: Partial<AcGiSubEntityTraits>
-          ) => void
-        }
-      ).refreshTextMaterials
-      if (typeof refresh === 'function') {
-        refresh.call(object, layerTraits)
-      }
-
-      if (!('material' in object)) {
-        return
-      }
-
-      const drawable = object as THREE.Mesh | THREE.Line | THREE.LineSegments
-      let material = drawable.material as THREE.Material
-
-      if (needsIdPatch) {
-        const remapped =
-          materials[material.id] ??
-          (getSceneDrawableUserData(object).styleMaterialId != null
-            ? materials[getSceneDrawableUserData(object).styleMaterialId!]
-            : undefined)
-        if (remapped && remapped !== material) {
-          drawable.material = remapped
-          getSceneDrawableUserData(object).styleMaterialId = remapped.id
-          material = remapped
-        }
-      }
-
-      if (
-        !this.shouldRebindLayerDrawableMaterial(material, layerName, object)
-      ) {
-        return
-      }
-
-      const rebound = this._renderer.getLayerBoundMaterial(
-        material,
-        layerName,
-        layerTraits
-      )
-      if (!rebound || rebound === material) {
-        return
-      }
-
-      drawable.material = rebound
-      getSceneDrawableUserData(object).styleMaterialId = rebound.id
-    })
-  }
-
-  private shouldRebindLayerDrawableMaterial(
-    material: THREE.Material,
-    layerName: string,
-    object: THREE.Object3D
-  ): boolean {
-    const metadata = getMaterialMetadata(material)
-    const objectLayerName = object.userData.layerName as string | undefined
-
-    if (metadata.layer !== layerName && objectLayerName !== layerName) {
-      return false
-    }
-    if (metadata.isByLayerColor === true) {
-      return true
-    }
-    if (metadata.isForeground === true) {
-      return false
-    }
-    return hasByLayerBinding(metadata)
-  }
-
-  /**
    * @inheritdoc
    */
   addLayer(layer: AcDbLayerTableRecord) {
     this._scene.addLayer(this.toLayerInfo(layer))
-    this.syncLayerAppearanceFromLiveRecord(layer)
+    this._layerAppearance.syncFromLiveRecord(layer)
     this._isDirty = true
   }
 
@@ -1321,8 +1174,8 @@ export class AcTrView2d extends AcEdBaseView {
   ) {
     this._scene.updateLayer(this.toLayerInfo(layer))
 
-    if (this.layerStyleMayHaveChanged(changes)) {
-      this.syncLayerAppearanceFromLiveRecord(layer)
+    if (this._layerAppearance.layerStyleMayHaveChanged(changes)) {
+      this._layerAppearance.syncFromLiveRecord(layer)
     }
 
     if (
@@ -1919,17 +1772,6 @@ export class AcTrView2d extends AcEdBaseView {
     }
   }
 
-  private layerStyleMayHaveChanged(
-    changes: Partial<AcDbLayerTableRecordAttrs>
-  ): boolean {
-    return (
-      changes.color != null ||
-      changes.linetype != null ||
-      changes.lineWeight !== undefined ||
-      changes.transparency != null
-    )
-  }
-
   private toLayerInfo(layer: AcDbLayerTableRecord) {
     return {
       name: layer.name,
@@ -2101,7 +1943,7 @@ export class AcTrView2d extends AcEdBaseView {
           ) {
             // Even when a block expands to a single layer bucket, children authored on
             // layer "0" still inherit the INSERT layer for ByLayer traits (color, etc.).
-            this.remapInheritedLayerObjects(
+            this._inheritedLayerMaterialMapper.remap(
               (threeEntity as AcTrGroup).children,
               '0',
               threeEntity.layerName
@@ -2258,7 +2100,11 @@ export class AcTrView2d extends AcEdBaseView {
       // Keep runtime layer metadata/material cache aligned with the inherited layer so
       // later layer style edits (color, linetype, lineweight, transparency) target this
       // object set correctly.
-      this.remapInheritedLayerObjects(objects, layerName, effectiveLayerName)
+      this._inheritedLayerMaterialMapper.remap(
+        objects,
+        layerName,
+        effectiveLayerName
+      )
 
       // One INSERT can expand to children from multiple layers. Here we create one
       // render entity per layer bucket but preserve the INSERT object id for all
@@ -2283,7 +2129,7 @@ export class AcTrView2d extends AcEdBaseView {
       for (let i = 0; i < objects.length; i++) {
         entity.add(objects[i])
       }
-      this.refreshTextMaterialsInObjectTree(entity)
+      this._layerAppearance.refreshTextMaterialsInObjectTree(entity)
       this._scene.addEntity(entity, true)
       this.applySessionHiddenObjectState(groupObjectId)
       entity.dispose()
@@ -2295,176 +2141,6 @@ export class AcTrView2d extends AcEdBaseView {
       void this._progressiveOpenFit.afterGeometryBatch(() =>
         this.resolveLayoutFitBox()
       )
-    }
-  }
-
-  /**
-   * Rebinds text materials after INSERT groups are split/reparented by layer.
-   *
-   * Layer remapping can replace mesh materials; text must keep entity-trait
-   * colours (especially ACI-7 foreground on paper layouts).
-   */
-  private refreshTextMaterialsInObjectTree(
-    root: THREE.Object3D,
-    layerTraits?: Partial<AcGiSubEntityTraits>
-  ) {
-    root.traverse(child => {
-      const refresh = (
-        child as {
-          refreshTextMaterials?: (
-            layerTraits?: Partial<AcGiSubEntityTraits>
-          ) => void
-        }
-      ).refreshTextMaterials
-      if (typeof refresh === 'function') {
-        refresh.call(child, layerTraits)
-      }
-    })
-  }
-
-  /**
-   * Remaps layer metadata/material bindings from a source layer to the effective render layer.
-   *
-   * During block decomposition, one INSERT may be split into multiple layer buckets. For
-   * children authored on layer "0", AutoCAD requires inheriting the INSERT's own layer.
-   * This method applies that inheritance by mutating each child's `userData.layerName` and
-   * re-binding materials via renderer cache, so subsequent layer-level style changes still
-   * hit the correct material instances.
-   *
-   * @param objects - Root objects in the current layer bucket to traverse and remap.
-   * @param sourceLayerName - Layer name found in block definition before inheritance.
-   * @param effectiveLayerName - Final layer name used by rendering and style updates.
-   */
-  private remapInheritedLayerObjects(
-    objects: THREE.Object3D[],
-    sourceLayerName: string,
-    effectiveLayerName: string
-  ) {
-    if (sourceLayerName === effectiveLayerName) return
-
-    const renderer = this._renderer
-    const layerTraits = this.getEffectiveLayerTraits(effectiveLayerName)
-    for (const object of objects) {
-      object.traverse(child => {
-        const inheritsInsertLayer = child.userData.layerName === sourceLayerName
-        if (inheritsInsertLayer) {
-          child.userData.layerName = effectiveLayerName
-        }
-
-        if (!('material' in child)) return
-        // Only layer-"0" (or the current source bucket) inherits INSERT traits.
-        // Attributes/text on other layers must keep their own layer materials.
-        if (!inheritsInsertLayer) return
-
-        const material = child.material
-        if (Array.isArray(material)) {
-          const materials = material as THREE.Material[]
-          child.material = materials.map(entry => {
-            if (
-              !this.shouldRemapInheritedLayerMaterial(entry, sourceLayerName)
-            ) {
-              return entry
-            }
-            return (
-              renderer.getLayerBoundMaterial(
-                this.promoteLayerZeroByLayerColor(entry, sourceLayerName),
-                effectiveLayerName,
-                layerTraits
-              ) ?? entry
-            )
-          })
-          return
-        }
-
-        if (
-          !this.shouldRemapInheritedLayerMaterial(
-            material as THREE.Material,
-            sourceLayerName
-          )
-        ) {
-          return
-        }
-
-        const remappedMaterial = renderer.getLayerBoundMaterial(
-          this.promoteLayerZeroByLayerColor(
-            material as THREE.Material,
-            sourceLayerName
-          ),
-          effectiveLayerName,
-          layerTraits
-        )
-        if (!remappedMaterial) {
-          return
-        }
-        child.material = remappedMaterial
-        child.userData.styleMaterialId = remappedMaterial.id
-      })
-    }
-  }
-
-  /**
-   * Layer-0 block contents with ByLayer color resolve to ACI-7 foreground materials before
-   * INSERT remapping. Those materials must still inherit the INSERT layer when their colour
-   * is layer-bound, while explicit ACI-7 entities on layer 0 stay untouched.
-   */
-  private shouldRemapInheritedLayerMaterial(
-    material: THREE.Material,
-    sourceLayerName: string
-  ): boolean {
-    const metadata = getMaterialMetadata(material)
-    if (metadata.isForeground !== true) {
-      return true
-    }
-    if (sourceLayerName !== '0') {
-      return false
-    }
-    if (metadata.isByLayerColor === true) {
-      return true
-    }
-    const promoted = this.promoteLayerZeroByLayerColor(
-      material,
-      sourceLayerName
-    )
-    return getMaterialMetadata(promoted).isByLayerColor === true
-  }
-
-  /**
-   * Some DXF conversion paths lose `isByLayerColor` on layer-0 block contents while still
-   * retaining other ByLayer markers (lineType/lineWeight/transparency). For AutoCAD-compatible
-   * INSERT inheritance, treat such colors as inheritable when remapping from layer "0".
-   */
-  private promoteLayerZeroByLayerColor(
-    material: THREE.Material,
-    sourceLayerName: string
-  ): THREE.Material {
-    const metadata = getMaterialMetadata(material)
-    const hasAnyOtherByLayerBinding =
-      hasByLayerBinding(metadata) && metadata.isByLayerColor !== true
-
-    if (sourceLayerName === '0' && hasAnyOtherByLayerBinding) {
-      setMaterialMetadata(material, { isByLayerColor: true })
-    }
-    return material
-  }
-
-  /**
-   * Builds the resolved layer traits used when layer-0 block content inherits an INSERT layer.
-   */
-  private getEffectiveLayerTraits(
-    layerName: string
-  ): Partial<AcGiSubEntityTraits> | undefined {
-    const layer =
-      AcApDocManager.instance.curDocument.database.tables.layerTable.getAt(
-        layerName
-      )
-    if (!layer) return undefined
-
-    return {
-      layer: layer.name,
-      color: layer.color.clone(),
-      lineType: layer.lineStyle,
-      lineWeight: layer.lineWeight,
-      transparency: layer.transparency
     }
   }
 

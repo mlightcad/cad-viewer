@@ -4,6 +4,7 @@ import {
   AcTrBatchedGroupStats,
   AcTrEntity,
   AcTrPreviewSubsetOptions,
+  AcTrRenderer,
   AcTrStyleManager
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
@@ -194,6 +195,53 @@ export class AcTrLayer {
    */
   updateMaterial(oldId: number, material: THREE.Material) {
     this._group.updateMaterial(oldId, material)
+  }
+
+  /**
+   * Refreshes drawable materials after a layer-table style change.
+   *
+   * Updates batched material ids when the style cache remaps instances, patches
+   * unbatched drawables, and rematerializes text glyph hierarchies.
+   *
+   * @param layerName - Target layer whose drawables should be refreshed.
+   * @param layerTraits - Resolved layer traits from the live layer-table record.
+   * @param materials - Style-cache material map, keyed by previous material id.
+   * @param renderer - Renderer used to rebind layer-bound materials.
+   */
+  syncAppearanceFromRecord(
+    layerName: string,
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    materials: Record<number, THREE.Material>,
+    renderer: AcTrRenderer
+  ): void {
+    const needsIdPatch = Object.entries(materials).some(
+      ([oldId, material]) => material.id !== Number(oldId)
+    )
+
+    if (needsIdPatch) {
+      for (const id in materials) {
+        const oldId = Number(id)
+        const material = materials[id]
+        if (material.id === oldId) {
+          continue
+        }
+        this.updateMaterial(oldId, material)
+      }
+    }
+
+    this._group.syncAppearanceFromRecord(
+      layerName,
+      layerTraits,
+      materials,
+      needsIdPatch,
+      (material, boundLayerName, boundLayerTraits) =>
+        renderer.getLayerBoundMaterial(
+          material,
+          boundLayerName,
+          boundLayerTraits
+        ),
+      renderer.styleManager
+    )
   }
 
   /** Rebinds batched drawables whose materials follow live layer-table style. */

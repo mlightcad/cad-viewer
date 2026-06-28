@@ -1,4 +1,5 @@
 import {
+  AcDbDatabase,
   ACGI_DARK_THEME_FOREGROUND,
   ACGI_LIGHT_THEME_FOREGROUND,
   AcGiContext,
@@ -28,6 +29,12 @@ import { AcTrStyleManager } from '../style/AcTrStyleManager'
 export class AcTrRenderContext extends AcGiContext {
   readonly styleManager: AcTrStyleManager
   batchDrawPolicy: AcTrBatchDrawPolicy
+
+  /**
+   * Database being drawn. Narrows {@link AcGiContext.database} from `unknown`
+   * to {@link AcDbDatabase} for three-renderer consumers.
+   */
+  database: AcDbDatabase | undefined = undefined
 
   constructor(
     styleManager: AcTrStyleManager = new AcTrStyleManager(),
