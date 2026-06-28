@@ -1,5 +1,16 @@
 # @mlightcad/cad-viewer
 
+## 1.5.7
+
+### Patch Changes
+
+- feat: added file open dialog, web worker readiness, collapsible toolbar UI, layer/entity refactors, undo/redo, GPU batch previews, and synchronization fixes
+- Updated dependencies
+  - @mlightcad/cad-html-plugin@1.5.7
+  - @mlightcad/cad-pdf-plugin@1.5.7
+  - @mlightcad/cad-simple-viewer@1.5.7
+  - @mlightcad/cad-svg-plugin@1.5.7
+
 ## 1.5.6
 
 ### Patch Changes

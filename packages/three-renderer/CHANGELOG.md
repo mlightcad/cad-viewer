@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.5.7
+
+### Patch Changes
+
+- feat: added file open dialog, web worker readiness, collapsible toolbar UI, layer/entity refactors, undo/redo, GPU batch previews, and synchronization fixes
+
 ## 1.5.6
 
 ### Patch Changes
