@@ -32,8 +32,11 @@ export class AcTrMText extends AcTrGlyphEntity {
     context: AcTrRenderContext,
     delay: boolean = false
   ) {
-    super(context, traits, { ...style }, delay)
+    super(context, traits, { ...style })
     this._text = text
+    if (!delay) {
+      this.syncDraw()
+    }
   }
 
   /**

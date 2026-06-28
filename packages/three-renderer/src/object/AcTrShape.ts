@@ -33,13 +33,11 @@ export class AcTrShape extends AcTrGlyphEntity {
     context: AcTrRenderContext,
     delay: boolean = false
   ) {
-    super(
-      context,
-      traits,
-      resolveShapeTextStyle(shape, style, context),
-      delay
-    )
+    super(context, traits, resolveShapeTextStyle(shape, style, context))
     this._shape = shape
+    if (!delay) {
+      this.syncDraw()
+    }
   }
 
   /**

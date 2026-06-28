@@ -46,19 +46,20 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
   protected _entityTraits: AcTrMTextEntityTraits
 
   /**
-   * Creates a glyph entity and optionally draws it immediately.
+   * Creates a glyph entity with shared trait and color state.
+   *
+   * Subclasses must assign entity-specific fields before calling {@link syncDraw}.
+   * The base constructor intentionally does not draw so subclass fields are
+   * available to {@link renderSync} and {@link describeRenderFailure}.
    *
    * @param context Active renderer context that owns style and batching policy.
    * @param traits CAD sub-entity traits used to resolve color and layer behavior.
    * @param style Resolved text style for the mtext-renderer.
-   * @param delay When `true`, skips the initial {@link syncDraw} call so callers can
-   *   finish setup before geometry is built.
    */
   protected constructor(
     context: AcTrRenderContext,
     traits: AcGiSubEntityTraits,
-    style: AcGiTextStyle,
-    delay: boolean = false
+    style: AcGiTextStyle
   ) {
     super(context)
     this._style = style
@@ -67,9 +68,6 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
       traits,
       context.styleManager.currentBackgroundColor
     )
-    if (!delay) {
-      this.syncDraw()
-    }
   }
 
   /**
