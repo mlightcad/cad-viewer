@@ -109,7 +109,7 @@ import {
   useSettings
 } from '../composable'
 import { LocaleProp } from '../locale'
-import { MlDialogManager, MlFileReader, MlFontFileReader } from './common'
+import { MlDialogManager, MlFontFileReader } from './common'
 import {
   MlEntityDrawStyleToolbar,
   MlEntityInfo,
@@ -262,6 +262,7 @@ const features = useSettings()
 const {
   beginDocumentOpening,
   endDocumentOpening,
+  isDocumentOpening,
   openMode: docOpenMode,
   displayName
 } = useDocument()
@@ -314,36 +315,11 @@ const endPendingOpen = () => {
   pendingOpenMode.value = undefined
 }
 
-/**
- * Handles file read events from the file reader component
- * Opens the file content using the document manager
- *
- * This function is called when a user selects a local file through:
- * - The main menu "Open" option (triggers file dialog)
- * - Drag and drop functionality (if implemented)
- * - Any other local file selection method
- *
- * @param fileName - Name of the uploaded file
- * @param fileContent - File content as string (DXF) or ArrayBuffer (DWG)
- */
-const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
-  const options = buildOpenOptions()
-  beginDocumentOpening()
-  beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
-  try {
-    const success = await AcApDocManager.instance.openDocument(
-      fileName,
-      fileContent,
-      options
-    )
-    if (!success) {
-      throw new Error('Failed to open file')
-    }
-  } finally {
-    endDocumentOpening()
+watch(isDocumentOpening, (opening, wasOpening) => {
+  if (wasOpening && !opening) {
     endPendingOpen()
   }
-}
+})
 
 /**
  * Fetches and opens a CAD file from a remote URL
@@ -452,6 +428,20 @@ watch(
   }
 )
 
+watch(
+  () => [
+    props.mode,
+    props.drawNoPlotLayers,
+    props.progressiveRendering,
+    props.openViewMode
+  ],
+  () => {
+    if (editorRef.value) {
+      AcApDocManager.instance.setOpenDocumentDefaults(buildOpenOptions)
+    }
+  }
+)
+
 // Watch for theme changes and apply to the view
 watch(
   () => props.theme,
@@ -475,7 +465,8 @@ onMounted(async () => {
       baseUrl: props.baseUrl,
       htmlViewerRuntimeUrl: props.htmlViewerRuntimeUrl,
       autoResize: true,
-      useMainThreadDraw: props.useMainThreadDraw
+      useMainThreadDraw: props.useMainThreadDraw,
+      openDocumentDefaults: buildOpenOptions
     })
     // AcApDocManager.instance is guaranteed only after viewer initialization.
     editorRef.value = AcApDocManager.instance
@@ -615,8 +606,14 @@ eventBus.on('failed-to-get-avaiable-fonts', params => {
   })
 })
 
+// Restore pending open mode for files opened through the built-in OPEN dialog
+eventBus.on('open-local-file-started', ({ mode }) => {
+  beginPendingOpen(mode)
+})
+
 // Handle file opening failures with user-friendly error messages
 eventBus.on('failed-to-open-file', params => {
+  endPendingOpen()
   const message = t('main.message.failedToOpenFile', {
     fileName: params.fileName
   })
@@ -721,8 +718,6 @@ const closeNotificationCenter = () => {
       </div>
 
       <!-- Hidden components for file handling and entity information -->
-      <!-- File reader for local file uploads -->
-      <ml-file-reader v-if="editorRef" @file-read="handleFileRead" />
       <ml-font-file-reader v-if="editorRef" />
 
       <!-- Entity info panel for displaying object properties -->
