@@ -1,43 +1,31 @@
 import {
   AcGiShapeData,
   AcGiSubEntityTraits,
-  AcGiTextStyle,
-  log
+  AcGiTextStyle
 } from '@mlightcad/data-model'
-import {
-  ColorSettings,
-  MTextObject,
-  ShapeData
-} from '@mlightcad/mtext-renderer'
-import * as THREE from 'three'
+import { ShapeData } from '@mlightcad/mtext-renderer'
 
-import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrMTextRenderer } from '../renderer'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import {
-  AcTrMTextColorUtil,
-  type AcTrMTextEntityTraits,
-  AcTrSubEntityTraitsUtil,
-  resolveShapeGlyphKey,
-  resolveShapeTextStyle
-} from '../util'
-import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
-import {
-  getSceneDrawableUserData,
-  resolveMTextRenderRoot
-} from '../util/AcTrObjectUserData'
-import { AcTrEntity } from './AcTrEntity'
+import { resolveShapeGlyphKey, resolveShapeTextStyle } from '../util'
+import { AcTrGlyphEntity } from './AcTrGlyphEntity'
 
-const _raycastBox = /*@__PURE__*/ new THREE.Box3()
-const _raycastPoint = /*@__PURE__*/ new THREE.Vector3()
-
-export class AcTrShape extends AcTrEntity {
-  private _rendered?: MTextObject
+/**
+ * Display object for a CAD SHAPE entity rendered through the mtext-renderer.
+ */
+export class AcTrShape extends AcTrGlyphEntity {
+  /** Source SHAPE data from the CAD database. */
   private _shape: AcGiShapeData
-  private _style: AcGiTextStyle
-  private _colorSettings: ColorSettings
-  private _entityTraits: AcTrMTextEntityTraits
 
+  /**
+   * Creates a SHAPE display object.
+   *
+   * @param shape SHAPE definition and placement from the CAD database.
+   * @param traits CAD sub-entity traits used to resolve color and layer behavior.
+   * @param style Optional text style override; resolved against shape and context when omitted.
+   * @param context Active renderer context that owns style and batching policy.
+   * @param delay When `true`, skips the initial draw so callers can finish setup first.
+   */
   constructor(
     shape: AcGiShapeData,
     traits: AcGiSubEntityTraits,
@@ -45,40 +33,13 @@ export class AcTrShape extends AcTrEntity {
     context: AcTrRenderContext,
     delay: boolean = false
   ) {
-    super(context)
-    this._shape = shape
-    this._style = resolveShapeTextStyle(shape, style, context)
-    this._entityTraits = AcTrMTextColorUtil.snapshotEntityTraits(traits)
-    this._colorSettings = AcTrMTextColorUtil.buildColorSettingsFromTraits(
+    super(
+      context,
       traits,
-      context.styleManager.currentBackgroundColor
+      resolveShapeTextStyle(shape, style, context),
+      delay
     )
-    if (!delay) {
-      this.syncDraw()
-    }
-  }
-
-  /** Reapplies CAD text materials from the entity traits snapshot. */
-  refreshTextMaterials(layerTraits?: Partial<AcGiSubEntityTraits>): void {
-    this._colorSettings = AcTrMTextColorUtil.buildColorSettingsFromTraits(
-      {
-        ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
-        color: this._entityTraits.color,
-        layer: this._entityTraits.layer
-      },
-      this.renderContext.styleManager.currentBackgroundColor
-    )
-    if (layerTraits?.color && this._entityTraits.color.isByLayer) {
-      const rgb = layerTraits.color.RGB
-      if (typeof rgb === 'number') {
-        this._colorSettings.byLayerColor = rgb
-      }
-    }
-    AcTrMTextColorUtil.rematerializeTextHierarchy(
-      this,
-      this._entityTraits,
-      this.renderContext.styleManager
-    )
+    this._shape = shape
   }
 
   /**
@@ -86,6 +47,8 @@ export class AcTrShape extends AcTrEntity {
    *
    * mtext-renderer falls back from shape name to shape number when both are
    * present; SHAPE entities should use the name exclusively when it is set.
+   *
+   * @returns SHAPE payload suitable for the mtext-renderer.
    */
   private toRenderableShapeData(): ShapeData {
     const source = this._shape as ShapeData
@@ -97,147 +60,41 @@ export class AcTrShape extends AcTrEntity {
     }
   }
 
-  override syncDraw() {
-    const mtextRenderer = AcTrMTextRenderer.getInstance()
-    if (!mtextRenderer) return
-
-    try {
-      this._rendered = mtextRenderer.syncRenderShape(
-        this.toRenderableShapeData(),
-        this._style,
-        this._colorSettings
-      )
-      this.attachRendered(this._rendered)
-    } catch (error) {
-      log.info(
-        `Failed to render shape '${this.describeShape()}' with the following error:\n`,
-        error
-      )
-    }
+  /**
+   * @inheritdoc
+   */
+  protected override getDrawPosition() {
+    return this._shape.position
   }
 
-  override async asyncDraw() {
-    const mtextRenderer = AcTrMTextRenderer.getInstance()
-    if (!mtextRenderer) return
-
-    try {
-      this._rendered = await mtextRenderer.asyncRenderShape(
-        this.toRenderableShapeData(),
-        this._style,
-        this._colorSettings
-      )
-      this.attachRendered(this._rendered)
-    } catch (error) {
-      log.info(
-        `Failed to render shape '${this.describeShape()}' with the following error:\n`,
-        error
-      )
-    }
-  }
-
-  raycast(raycaster: THREE.Raycaster, intersects: THREE.Intersection[]) {
-    const previousLength = intersects.length
-
-    this._rendered?.raycast(raycaster, intersects)
-    if (intersects.length > previousLength || this.wcsBbox.isEmpty()) return
-
-    _raycastBox.copy(this.wcsBbox)
-    if (raycaster.ray.intersectBox(_raycastBox, _raycastPoint)) {
-      intersects.push({
-        distance: raycaster.ray.origin.distanceTo(_raycastPoint),
-        point: _raycastPoint.clone(),
-        object: this,
-        face: null,
-        faceIndex: undefined,
-        uv: undefined
-      })
-    }
-  }
-
-  private describeShape() {
-    return this._shape.name?.trim() || String(this._shape.shapeNumber ?? '')
-  }
-
-  override resolveDrawMode(): AcTrDrawMode {
-    return this.batchDrawPolicy.resolveDrawMode({
-      position: this._shape.position
-    })
-  }
-
-  private attachRendered(rendered: MTextObject) {
-    this.add(rendered)
-    const renderRoot = resolveMTextRenderRoot(rendered)
-    if (this.resolveDrawMode() === 'unbatch') {
-      this.markDrawableUnbatched(renderRoot)
-      AcTrMTextColorUtil.storeTextEntityTraitsOnDrawable(
-        renderRoot,
-        this._entityTraits
-      )
-    } else {
-      this.flatten()
-    }
-    this.removeInvalidGeometryLeaves()
-    this.traverse(object => {
-      getSceneDrawableUserData(object).bboxIntersectionCheck = true
-    })
-    this.updateSelectionBox(rendered)
-  }
-
-  private updateSelectionBox(rendered: MTextObject) {
-    const geometryBox = this.computeGeometryBox()
-    if (geometryBox.isEmpty()) {
-      this.wcsBbox = rendered.box
-      return
-    }
-    if (!rendered.box.isEmpty() && rendered.box.intersectsBox(geometryBox)) {
-      this.wcsBbox = geometryBox.clone().union(rendered.box)
-      return
-    }
-    this.wcsBbox = geometryBox
-  }
-
-  private computeGeometryBox() {
-    const box = new THREE.Box3()
-    const childBox = new THREE.Box3()
-
-    this.updateMatrixWorld(true)
-    this.traverse(object => {
-      if (!this.hasGeometry(object)) return
-
-      const geometry = object.geometry
-      const boundingBox =
-        AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-      if (boundingBox == null) return
-
-      object.updateMatrixWorld(true)
-      childBox.copy(boundingBox).applyMatrix4(object.matrixWorld)
-      box.union(childBox)
-    })
-
-    return box
-  }
-
-  private removeInvalidGeometryLeaves() {
-    const invalidObjects: THREE.Object3D[] = []
-    this.traverse(object => {
-      if (!this.hasGeometry(object)) return
-      if (AcTrBufferGeometryUtil.hasFinitePositions(object.geometry)) return
-      invalidObjects.push(object)
-    })
-
-    for (const object of invalidObjects) {
-      object.parent?.remove(object)
-      if (this.hasGeometry(object)) {
-        object.geometry.dispose()
-      }
-    }
-  }
-
-  private hasGeometry(
-    object: THREE.Object3D
-  ): object is THREE.Mesh | THREE.Line | THREE.Points {
-    return (
-      'geometry' in object && object.geometry instanceof THREE.BufferGeometry
+  /**
+   * @inheritdoc
+   */
+  protected override renderSync(renderer: AcTrMTextRenderer) {
+    return renderer.syncRenderShape(
+      this.toRenderableShapeData(),
+      this._style,
+      this._colorSettings
     )
+  }
+
+  /**
+   * @inheritdoc
+   */
+  protected override async renderAsync(renderer: AcTrMTextRenderer) {
+    return renderer.asyncRenderShape(
+      this.toRenderableShapeData(),
+      this._style,
+      this._colorSettings
+    )
+  }
+
+  /**
+   * @inheritdoc
+   */
+  protected override describeRenderFailure() {
+    const label =
+      this._shape.name?.trim() || String(this._shape.shapeNumber ?? '')
+    return `shape '${label}'`
   }
 }
