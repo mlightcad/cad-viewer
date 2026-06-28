@@ -41,6 +41,7 @@ export const en: Record<string, string> = {
   'layerManager.name': 'Name',
   'layerManager.on': 'On',
   'layerManager.color': 'Color',
+  'layerManager.currentLayer': 'Current layer',
   'layerManager.zoomToLayer': 'Zoomed to layer: {layer}',
   'colorPicker.title': 'Select Color',
   'colorPicker.index': 'Color Index: ',

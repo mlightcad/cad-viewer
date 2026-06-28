@@ -329,8 +329,18 @@ export class AcExLayerManager {
     })
 
     const nameCell = document.createElement('td')
-    nameCell.textContent =
-      layer.name === currentLayer ? `${layer.name} *` : layer.name
+    const nameEl = document.createElement('span')
+    nameEl.className = 'ml-ex-ui-layer-name'
+    nameEl.textContent = layer.name
+    if (layer.name === currentLayer) {
+      const marker = document.createElement('span')
+      marker.className = 'ml-ex-ui-layer-current-marker'
+      marker.textContent = '*'
+      marker.title = this.i18n.t('layerManager.currentLayer')
+      marker.setAttribute('aria-hidden', 'true')
+      nameEl.appendChild(marker)
+    }
+    nameCell.appendChild(nameEl)
 
     const onCell = document.createElement('td')
     onCell.className = 'center'
