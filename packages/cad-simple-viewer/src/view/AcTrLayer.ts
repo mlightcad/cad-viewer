@@ -1,9 +1,10 @@
-import { AcDbObjectId } from '@mlightcad/data-model'
+import { AcDbObjectId, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import {
   AcTrBatchedGroup,
   AcTrBatchedGroupStats,
   AcTrEntity,
-  AcTrPreviewSubsetOptions
+  AcTrPreviewSubsetOptions,
+  AcTrStyleManager
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
@@ -193,6 +194,38 @@ export class AcTrLayer {
    */
   updateMaterial(oldId: number, material: THREE.Material) {
     this._group.updateMaterial(oldId, material)
+  }
+
+  /** Rebinds batched drawables whose materials follow live layer-table style. */
+  rebindMaterialsForLayer(
+    layerName: string,
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    getLayerBoundMaterial: (
+      material: THREE.Material,
+      layerName: string,
+      layerTraits?: Partial<AcGiSubEntityTraits>
+    ) => THREE.Material | undefined,
+    styleManager?: AcTrStyleManager
+  ) {
+    this._group.rebindMaterialsForLayer(
+      layerName,
+      layerTraits,
+      getLayerBoundMaterial,
+      styleManager
+    )
+  }
+
+  /** Rematerializes MTEXT/TEXT drawables stored as unbatched glyph subtrees. */
+  rematerializeLayerTextDrawables(
+    layerName: string,
+    styleManager: AcTrStyleManager,
+    layerTraits?: Partial<AcGiSubEntityTraits>
+  ) {
+    this._group.rematerializeLayerTextDrawables(
+      layerName,
+      styleManager,
+      layerTraits
+    )
   }
 
   /**

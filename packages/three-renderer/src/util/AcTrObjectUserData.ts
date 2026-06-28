@@ -1,6 +1,8 @@
 import { AcGePoint3dLike } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
+import type { AcTrMTextEntityTraits } from './AcTrMTextColorUtil'
+
 /**
  * Relative-to-eye flags stored on {@link THREE.Object3D.userData}.
  *
@@ -48,6 +50,8 @@ export interface AcTrPickableObjectUserData {
  */
 export interface AcTrStyledDrawableUserData {
   styleMaterialId?: number
+  /** Entity colour/layer snapshot for unbatched MTEXT/TEXT placement roots. */
+  textEntityTraits?: AcTrMTextEntityTraits
 }
 
 /**

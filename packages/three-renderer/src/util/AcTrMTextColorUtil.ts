@@ -11,6 +11,7 @@ import * as THREE from 'three'
 import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from './AcTrEntityTraitsUtil'
+import { getSceneDrawableUserData } from './AcTrObjectUserData'
 
 export type AcTrMTextEntityTraits = Pick<AcGiSubEntityTraits, 'color' | 'layer'>
 
@@ -50,6 +51,25 @@ export class AcTrMTextColorUtil {
       color: this.normalizeEntityColor(traits.color),
       layer: traits.layer
     }
+  }
+
+  /** Clones a text-entity traits snapshot for storage on scene drawables. */
+  static cloneEntityTraits(
+    traits: AcTrMTextEntityTraits
+  ): AcTrMTextEntityTraits {
+    return {
+      color: traits.color.clone(),
+      layer: traits.layer
+    }
+  }
+
+  /** Stores a text traits snapshot on one drawable for later rematerialization. */
+  static storeTextEntityTraitsOnDrawable(
+    object: THREE.Object3D,
+    traits: AcTrMTextEntityTraits
+  ): void {
+    getSceneDrawableUserData(object).textEntityTraits =
+      AcTrMTextColorUtil.cloneEntityTraits(traits)
   }
 
   /**
@@ -193,6 +213,18 @@ export class AcTrMTextColorUtil {
       expectedRgb !== ACGI_PAPER_SPACE_BACKGROUND &&
       metadata.isForeground !== true &&
       (entityTraits.color.isByLayer || entityTraits.color.isByBlock)
+    ) {
+      return true
+    }
+
+    if (entityTraits.color.isByLayer && metadata.isByLayerColor === true) {
+      return true
+    }
+    if (
+      entityTraits.color.isByLayer &&
+      metadata.isByLayerColor !== false &&
+      metadata.isForeground !== true &&
+      (metadata.layer == null || metadata.layer === entityTraits.layer)
     ) {
       return true
     }

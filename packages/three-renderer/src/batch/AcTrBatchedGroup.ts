@@ -1,3 +1,4 @@
+import { AcCmColor, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
@@ -8,9 +9,17 @@ import {
 } from '../draw/AcTrBatchDrawPolicy'
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
-import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
+import {
+  getMaterialMetadata,
+  hasByLayerBinding
+} from '../style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrBufferGeometryUtil, AcTrMaterialUtil } from '../util'
+import {
+  AcTrBufferGeometryUtil,
+  AcTrMaterialUtil,
+  AcTrMTextColorUtil,
+  AcTrSubEntityTraitsUtil
+} from '../util'
 import {
   type AcTrHighlightOverlayGroup,
   copyHighlightObjectFlags,
@@ -467,6 +476,226 @@ export class AcTrBatchedGroup extends THREE.Group {
         drawableUserData.styleMaterialId = material.id
       }
     })
+  }
+
+  /**
+   * Rebinds layer-bound batch materials after a layer-table style change.
+   *
+   * Batched MTEXT/TEXT glyphs and cloned unbatched drawables may not share the
+   * same material instance as the style-manager cache entry updated by
+   * {@link AcTrStyleManager.updateLayerMaterial}.
+   */
+  rebindMaterialsForLayer(
+    layerName: string,
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    getLayerBoundMaterial: (
+      material: THREE.Material,
+      layerName: string,
+      layerTraits?: Partial<AcGiSubEntityTraits>
+    ) => THREE.Material | undefined,
+    styleManager?: AcTrStyleManager
+  ) {
+    const reboundByOldId = new Map<number, THREE.Material>()
+
+    for (const group of this.groups) {
+      for (const materialId of [...group.keys()]) {
+        const batches = group.get(materialId)
+        const material = batches?.[0]?.material as THREE.Material | undefined
+        if (!material || reboundByOldId.has(materialId)) {
+          continue
+        }
+        if (!this.shouldFollowLayerStyle(material, layerName)) {
+          continue
+        }
+
+        const rebound = this.resolveLayerBoundMaterial(
+          material,
+          layerName,
+          layerTraits,
+          getLayerBoundMaterial,
+          styleManager
+        )
+        if (!rebound) {
+          continue
+        }
+
+        if (rebound === material) {
+          this.refreshLayerBoundMaterialColor(material, layerTraits)
+          continue
+        }
+
+        reboundByOldId.set(materialId, rebound)
+        this.updateMaterial(materialId, rebound)
+      }
+    }
+
+    this._unbatchedObjects.traverse(object => {
+      if (!('material' in object)) {
+        return
+      }
+
+      const material = object.material as THREE.Material
+      if (!this.shouldFollowLayerStyle(material, layerName)) {
+        return
+      }
+
+      const rebound = this.resolveLayerBoundMaterial(
+        material,
+        layerName,
+        layerTraits,
+        getLayerBoundMaterial,
+        styleManager
+      )
+      if (!rebound) {
+        return
+      }
+
+      if (rebound === material) {
+        this.refreshLayerBoundMaterialColor(material, layerTraits)
+        return
+      }
+
+      object.material = rebound
+      getSceneDrawableUserData(object).styleMaterialId = rebound.id
+    })
+  }
+
+  /**
+   * Rebinds MTEXT/TEXT glyph materials under unbatched placement roots.
+   *
+   * Entity wrappers are not kept in the scene tree after batching, so layer
+   * colour updates must rematerialize the cloned glyph subtrees directly.
+   */
+  rematerializeLayerTextDrawables(
+    layerName: string,
+    styleManager: AcTrStyleManager,
+    layerTraits?: Partial<AcGiSubEntityTraits>
+  ) {
+    const fallbackTraits = AcTrMTextColorUtil.snapshotEntityTraits({
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color: (() => {
+        const color = new AcCmColor()
+        color.setByLayer()
+        return color
+      })(),
+      layer: layerName
+    })
+
+    for (const root of this._unbatchedObjects.children) {
+      const storedTraits = getSceneDrawableUserData(root).textEntityTraits
+      const traits =
+        storedTraits != null
+          ? AcTrMTextColorUtil.cloneEntityTraits(storedTraits)
+          : fallbackTraits
+      AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
+    }
+
+    if (!layerTraits?.color) {
+      return
+    }
+
+    for (const group of this.groups) {
+      for (const materialId of [...group.keys()]) {
+        const batches = group.get(materialId)
+        const material = batches?.[0]?.material as THREE.Material | undefined
+        if (!material || !this.shouldFollowLayerStyle(material, layerName)) {
+          continue
+        }
+        this.refreshLayerBoundMaterialColor(material, layerTraits)
+      }
+    }
+  }
+
+  private resolveLayerBoundMaterial(
+    material: THREE.Material,
+    layerName: string,
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    getLayerBoundMaterial: (
+      material: THREE.Material,
+      layerName: string,
+      layerTraits?: Partial<AcGiSubEntityTraits>
+    ) => THREE.Material | undefined,
+    styleManager?: AcTrStyleManager
+  ): THREE.Material | undefined {
+    const rebound = getLayerBoundMaterial(material, layerName, layerTraits)
+    if (rebound) {
+      return rebound
+    }
+    if (!styleManager) {
+      return undefined
+    }
+    return this.resolveLayerBoundReplacement(material, layerName, styleManager)
+  }
+
+  private resolveLayerBoundReplacement(
+    material: THREE.Material,
+    layerName: string,
+    styleManager: AcTrStyleManager
+  ): THREE.Material | undefined {
+    if (!this.shouldFollowLayerStyle(material, layerName)) {
+      return undefined
+    }
+
+    const metadata = getMaterialMetadata(material)
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = layerName
+    traits.color.setByLayer()
+    traits.drawOrder = metadata.drawOrder ?? 0
+
+    if (metadata.drawOrder === 0 && metadata.isForeground !== true) {
+      return styleManager.getMTextFillMaterial(traits)
+    }
+
+    return styleManager.getLineMaterial(traits, true)
+  }
+
+  private refreshLayerBoundMaterialColor(
+    material: THREE.Material,
+    layerTraits: Partial<AcGiSubEntityTraits>
+  ) {
+    const rgb = layerTraits.color?.RGB
+    if (typeof rgb !== 'number') {
+      return
+    }
+    const currentRgb = this.getMaterialDisplayRgb(material)
+    if (currentRgb === rgb) {
+      return
+    }
+    AcTrMaterialUtil.setMaterialColor(material, new THREE.Color(rgb))
+  }
+
+  private getMaterialDisplayRgb(material: THREE.Material): number | undefined {
+    if (
+      material instanceof THREE.MeshBasicMaterial ||
+      material instanceof THREE.LineBasicMaterial
+    ) {
+      return material.color.getHex()
+    }
+
+    const shaderMaterial = material as THREE.ShaderMaterial
+    const uniformColor = shaderMaterial.uniforms?.u_color?.value
+    if (uniformColor instanceof THREE.Color) {
+      return uniformColor.getHex()
+    }
+
+    return undefined
+  }
+
+  private shouldFollowLayerStyle(
+    material: THREE.Material,
+    layerName: string
+  ): boolean {
+    const metadata = getMaterialMetadata(material)
+    if (metadata.layer !== layerName) {
+      return false
+    }
+    if (metadata.isByLayerColor === true) {
+      return true
+    }
+    if (metadata.isForeground === true) {
+      return false
+    }
+    return hasByLayerBinding(metadata)
   }
 
   /**
@@ -1393,6 +1622,11 @@ export class AcTrBatchedGroup extends THREE.Group {
       clonedDrawable.bboxIntersectionCheck =
         sourceDrawable.bboxIntersectionCheck
       clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray()
+      if (sourceDrawable.textEntityTraits) {
+        clonedDrawable.textEntityTraits = AcTrMTextColorUtil.cloneEntityTraits(
+          sourceDrawable.textEntityTraits
+        )
+      }
     }
     cloned.updateMatrix()
     cloned.updateMatrixWorld(true)
@@ -1463,6 +1697,11 @@ export class AcTrBatchedGroup extends THREE.Group {
     const clonedDrawable = getSceneDrawableUserData(cloned)
     clonedDrawable.bboxIntersectionCheck = sourceDrawable.bboxIntersectionCheck
     clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray()
+    if (sourceDrawable.textEntityTraits) {
+      clonedDrawable.textEntityTraits = AcTrMTextColorUtil.cloneEntityTraits(
+        sourceDrawable.textEntityTraits
+      )
+    }
 
     cloned.traverse(child => {
       if (!this.hasMaterial(child)) {

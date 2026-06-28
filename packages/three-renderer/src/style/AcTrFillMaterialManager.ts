@@ -125,14 +125,15 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
    */
   protected createMaterialImpl(
     traits: AcGiSubEntityTraits,
-    options: AcTrFillMaterialOptions
+    options: AcTrFillMaterialOptions,
+    layerColorRgb?: number
   ): THREE.Material {
     const style = traits.fillType
     const side = options.side ?? 'front'
     const threeSide = side === 'back' ? THREE.BackSide : THREE.FrontSide
     const rgb = this.shouldTrackBackground(traits, options)
       ? this.options.currentBackgroundColor
-      : this.resolveTraitsRgb(traits)
+      : this.resolveMaterialRgb(traits, layerColorRgb)
 
     let material: THREE.Material
     if (style.gradient) {
@@ -328,17 +329,17 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const bgSuffix = this.shouldTrackBackground(traits, options)
       ? '_bgfill'
       : ''
-    const rgb = this.shouldTrackBackground(traits, options)
-      ? this.options.currentBackgroundColor
-      : this.resolveTraitsRgb(traits)
-    // Use color + layer + rebaseOffset + pattern info for key
+    const colorKey = this.shouldTrackBackground(traits, options)
+      ? String(this.options.currentBackgroundColor)
+      : this.buildKeyColorSegment(traits)
+    // Use colour semantics + layer + rebaseOffset + pattern info for key
     if (style.gradient) {
       const gradient = style.gradient
       const bounds = normalizeGradientBounds(options.gradientBounds)
       return [
         'gradient',
         traits.layer,
-        rgb,
+        colorKey,
         gradient.name || 'LINEAR',
         gradient.angle ?? 0,
         gradient.shift ?? 0,
@@ -357,7 +358,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
     const isSolid = !style.definitionLines || style.definitionLines.length === 0
     if (isSolid) {
-      return `solid_${traits.layer}_${rgb}${sideSuffix}${drawOrderSuffix}${bgSuffix}`
+      return `solid_${traits.layer}_${colorKey}${sideSuffix}${drawOrderSuffix}${bgSuffix}`
     }
 
     const patternHash = style.definitionLines
@@ -379,7 +380,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     return [
       'hatch',
       traits.layer,
-      rgb,
+      colorKey,
       style.patternAngle,
       options.rebaseOffset.x,
       options.rebaseOffset.y,

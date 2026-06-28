@@ -59,7 +59,7 @@ export class AcTrShape extends AcTrEntity {
   }
 
   /** Reapplies CAD text materials from the entity traits snapshot. */
-  refreshTextMaterials(): void {
+  refreshTextMaterials(layerTraits?: Partial<AcGiSubEntityTraits>): void {
     this._colorSettings = AcTrMTextColorUtil.buildColorSettingsFromTraits(
       {
         ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
@@ -68,6 +68,12 @@ export class AcTrShape extends AcTrEntity {
       },
       this.renderContext.styleManager.currentBackgroundColor
     )
+    if (layerTraits?.color && this._entityTraits.color.isByLayer) {
+      const rgb = layerTraits.color.RGB
+      if (typeof rgb === 'number') {
+        this._colorSettings.byLayerColor = rgb
+      }
+    }
     AcTrMTextColorUtil.rematerializeTextHierarchy(
       this,
       this._entityTraits,
@@ -163,6 +169,10 @@ export class AcTrShape extends AcTrEntity {
     const renderRoot = resolveMTextRenderRoot(rendered)
     if (this.resolveDrawMode() === 'unbatch') {
       this.markDrawableUnbatched(renderRoot)
+      AcTrMTextColorUtil.storeTextEntityTraitsOnDrawable(
+        renderRoot,
+        this._entityTraits
+      )
     } else {
       this.flatten()
     }
