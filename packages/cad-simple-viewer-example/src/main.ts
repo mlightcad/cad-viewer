@@ -98,6 +98,12 @@ class CadViewerApp {
         }
       })
 
+      const { registerAnnotationPlugin } =
+        await import('@mlightcad/cad-annotation-plugin/register')
+      await registerAnnotationPlugin(AcApDocManager.instance.pluginManager, {
+        host: this.viewerPane
+      })
+
       AcApDocManager.instance.events.documentActivated.addEventListener(
         args => {
           document.title = args.doc.docTitle

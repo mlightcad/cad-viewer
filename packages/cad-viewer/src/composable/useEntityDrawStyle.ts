@@ -1,6 +1,5 @@
 import {
   AcApAnnotation,
-  AcApBaseRevCmd,
   AcApDocManager,
   AcEdCommandEventArgs
 } from '@mlightcad/cad-simple-viewer'
@@ -83,12 +82,9 @@ export function useEntityDrawStyle(editorRef: Ref<AcApDocManager | null>) {
         return
       }
 
-      const willStart = (args: AcEdCommandEventArgs) => {
-        const command = args.command
-        if (command instanceof AcApBaseRevCmd) {
-          isShowToolbar.value = command.isShowEntityDrawStyleToolbar
-          syncToDatabase()
-        }
+      const willStart = (_args: AcEdCommandEventArgs) => {
+        // Draw style during annotation is handled by cad-annotation-plugin
+        // (AcExAnnotationPropertyBar). Legacy review commands were removed from core.
       }
 
       const ended = () => {

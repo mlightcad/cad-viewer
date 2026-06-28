@@ -153,22 +153,16 @@ describe('default toolbar items', () => {
   it('uses selected child icon only for toolbar placement', () => {
     const items = createDefaultToolbarItems()
     expect(items.find(item => item.id === 'export')?.childIcon).toBeUndefined()
-    expect(
-      items.find(item => item.id === 'annotation')?.childIcon
-    ).toBeUndefined()
     expect(items.find(item => item.id === 'toolbar-placement')?.childIcon).toBe(
       'selected'
     )
     expect(items.find(item => item.id === 'measure')?.childIcon).toBeUndefined()
   })
 
-  it('uses dedicated parent icons for export and annotation', () => {
+  it('uses dedicated parent icon for export menu', () => {
     const items = createDefaultToolbarItems()
     expect(items.find(item => item.id === 'export')?.icon).toContain(
       'M11 4h5v5'
-    )
-    expect(items.find(item => item.id === 'annotation')?.icon).toContain(
-      'M7 14.5'
     )
   })
 })

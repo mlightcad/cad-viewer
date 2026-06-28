@@ -1,3 +1,4 @@
+import { registerAnnotationPlugin } from '@mlightcad/cad-annotation-plugin/register'
 import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin/register'
 import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin/register'
 import {
@@ -126,6 +127,20 @@ export const registerMTextColorPicker = () => {
     )
     isMTextColorPickerRegistered = true
   }
+}
+
+let isAnnotationPluginRegistered = false
+
+/**
+ * Registers the annotation plugin (toolbar + panel UI).
+ */
+export const registerAnnotationUiPlugin = async () => {
+  if (isAnnotationPluginRegistered) {
+    return
+  }
+  const pluginManager = AcApDocManager.instance.pluginManager
+  await registerAnnotationPlugin(pluginManager)
+  isAnnotationPluginRegistered = true
 }
 
 let isLazyPluginRegistered = false

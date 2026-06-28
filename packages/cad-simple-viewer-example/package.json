@@ -16,6 +16,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mlightcad/cad-annotation-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/cad-simple-ui-plugin": "workspace:*",

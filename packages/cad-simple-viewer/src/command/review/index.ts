@@ -1,6 +1,0 @@
-export * from './AcApBaseRevCmd'
-export * from './AcApRevCloudCmd'
-export * from './AcApRevCircleCmd'
-export * from './AcApRevRectCmd'
-export * from './AcApRevVisibilityCmd'
-export * from './AcApSketchCmd'

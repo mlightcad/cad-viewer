@@ -60,13 +60,8 @@ import {
   AcApRectCmd,
   AcApRedoCmd,
   AcApRegenCmd,
-  AcApRevCircleCmd,
-  AcApRevCloudCmd,
-  AcApRevRectCmd,
-  AcApRevVisibilityCmd,
   AcApRotateCmd,
   AcApSelectCmd,
-  AcApSketchCmd,
   AcApSplineCmd,
   AcApSwitchBgCmd,
   AcApSysVarCmd,
@@ -1071,12 +1066,7 @@ export class AcApDocManager {
     addSystemCommand('ray', 'ray', new AcApRayCmd())
     addSystemCommand('rectang', 'rectang', new AcApRectCmd())
     addSystemCommand('regen', 'regen', new AcApRegenCmd())
-    addSystemCommand('revcircle', 'revcircle', new AcApRevCircleCmd())
-    addSystemCommand('revcloud', 'revcloud', new AcApRevCloudCmd())
-    addSystemCommand('revrect', 'revrect', new AcApRevRectCmd())
-    addSystemCommand('revvis', 'revvis', new AcApRevVisibilityCmd())
     addSystemCommand('select', 'select', new AcApSelectCmd())
-    addSystemCommand('sketch', 'sketch', new AcApSketchCmd())
     addSystemCommand('spline', 'spline', new AcApSplineCmd())
     addSystemCommand('switchbg', 'switchbg', new AcApSwitchBgCmd())
     addSystemCommand(
