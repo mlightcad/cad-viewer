@@ -291,7 +291,11 @@ export abstract class AcEdBaseView {
       trailing: true
     })
     const resizeObserver = new ResizeObserver(debouncedWindowResize)
-    resizeObserver.observe(this._canvas.parentElement as Element)
+    resizeObserver.observe(this._container)
+    const containerParent = this._container.parentElement
+    if (containerParent) {
+      resizeObserver.observe(containerParent)
+    }
 
     this._selectionBoxSize = 4
 
@@ -962,11 +966,11 @@ export abstract class AcEdBaseView {
   protected onWindowResize() {
     if (this._calculateSizeCallback) {
       const { width, height } = this._calculateSizeCallback()
-      this._width = width
-      this._height = height
+      this._width = Math.max(1, Math.floor(width))
+      this._height = Math.max(1, Math.floor(height))
     } else {
-      this._width = this._canvas.clientWidth
-      this._height = this._canvas.clientHeight
+      this._width = Math.max(1, Math.floor(this._canvas.clientWidth))
+      this._height = Math.max(1, Math.floor(this._canvas.clientHeight))
     }
     this.events.viewResize.dispatch({
       width: this._width,

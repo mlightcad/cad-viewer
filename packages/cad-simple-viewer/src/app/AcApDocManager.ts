@@ -427,10 +427,17 @@ export class AcApDocManager {
     }
     const callback: AcEdCalculateSizeCallback = () => {
       if (options.autoResize) {
+        const container = options.container
+        if (container) {
+          return {
+            width: Math.max(1, Math.floor(container.clientWidth)),
+            height: Math.max(1, Math.floor(container.clientHeight))
+          }
+        }
         const box = options.container?.getBoundingClientRect()
         return {
-          width: box?.width ?? initialSize.width,
-          height: box?.height ?? initialSize.height
+          width: Math.max(1, Math.floor(box?.width ?? initialSize.width)),
+          height: Math.max(1, Math.floor(box?.height ?? initialSize.height))
         }
       } else {
         return {

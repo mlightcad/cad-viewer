@@ -37,6 +37,8 @@ export const zh: Record<string, string> = {
   'toolbar.themeDark': '切换为浅色主题',
   'toolbar.localeEn': 'English（切换为中文）',
   'toolbar.localeZh': '中文（切换为 English）',
+  'toolbar.collapse': '收起工具栏',
+  'toolbar.expand': '展开工具栏',
   'layerManager.title': '图层管理器',
   'layerManager.name': '名称',
   'layerManager.on': '开',

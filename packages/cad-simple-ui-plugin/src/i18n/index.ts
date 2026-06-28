@@ -1,5 +1,7 @@
 import { AcApI18n } from '@mlightcad/cad-simple-viewer'
 
+import { commandEn } from './command-en'
+import { commandZh } from './command-zh'
 import { en } from './en'
 import { zh } from './zh'
 
@@ -45,9 +47,11 @@ function flatToNested(flat: Record<string, string>): LocaleMessageTree {
 export function registerSimpleUiI18n(): void {
   if (isRegistered) return
   AcApI18n.mergeLocaleMessage('en', {
+    command: commandEn,
     [MESSAGE_PREFIX]: flatToNested(en)
   })
   AcApI18n.mergeLocaleMessage('zh', {
+    command: commandZh,
     [MESSAGE_PREFIX]: flatToNested(zh)
   })
   isRegistered = true

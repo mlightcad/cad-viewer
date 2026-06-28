@@ -1,6 +1,12 @@
 import { AcApDocManager, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
-import { createIconElement } from '../assets/icons'
+import {
+  createIconElement,
+  ICON_CHEVRON_DOWN,
+  ICON_CHEVRON_LEFT,
+  ICON_CHEVRON_RIGHT,
+  ICON_CHEVRON_UP
+} from '../assets/icons'
 import {
   filterVisibleToolbarItems,
   isToolbarItemDisabled,
@@ -25,6 +31,12 @@ export interface AcExToolbarOptions {
   i18n: AcExI18n
   /** Invoked when a leaf item with a `command` is activated. */
   onCommand: (command: string) => void
+  /** When true, append a collapse/expand toggle at the end of the toolbar. */
+  collapsible?: boolean
+  /** Initial collapsed state when {@link collapsible} is true. */
+  defaultCollapsed?: boolean
+  /** Invoked when the toolbar is collapsed (e.g. close anchored popovers). */
+  onCollapse?: () => void
 }
 
 /**
@@ -48,12 +60,14 @@ export class AcExToolbar {
   private items: AcExToolbarItem[]
   /** Runtime submenu selection for parents with {@link AcExToolbarItem.childIcon} `'selected'`. */
   private selectedChildByParent = new Map<string, string>()
+  /** Whether the toolbar is collapsed to show only the toggle button. */
+  private collapsed: boolean
 
   /** Re-renders buttons when a document becomes active. */
   private handleDocumentActivated = () => {
     this.hasDocument = Boolean(AcApDocManager.instance.curDocument)
     this.isDisabled = false
-    this.root.classList.remove('is-disabled')
+    this.syncRootClasses()
     this.openMode =
       AcApDocManager.instance.curDocument?.openMode ?? AcEdOpenMode.Read
     this.renderButtons()
@@ -62,7 +76,7 @@ export class AcExToolbar {
   /** Disables the toolbar while a document is opening. */
   private handleDocumentToBeOpened = () => {
     this.isDisabled = true
-    this.root.classList.add('is-disabled')
+    this.syncRootClasses()
   }
 
   /**
@@ -71,10 +85,12 @@ export class AcExToolbar {
   constructor(private options: AcExToolbarOptions) {
     ensureUiStyles()
     this.items = options.items
+    this.collapsed =
+      Boolean(options.collapsible) && Boolean(options.defaultCollapsed)
     this.seedSelectedChildren(options.items)
 
     this.root = document.createElement('div')
-    this.root.className = `ml-ex-ui-toolbar is-${this.getOrientationClass()} is-${options.placement}`
+    this.syncRootClasses()
     this.root.setAttribute('role', 'toolbar')
     options.host.appendChild(this.root)
 
@@ -115,7 +131,7 @@ export class AcExToolbar {
     if (this.options.placement === placement) return
     this.options.placement = placement
     this.selectedChildByParent.set('toolbar-placement', `placement-${placement}`)
-    this.root.className = `ml-ex-ui-toolbar is-${this.getOrientationClass()} is-${placement}`
+    this.syncRootClasses()
     this.renderButtons()
   }
 
@@ -132,6 +148,41 @@ export class AcExToolbar {
   /** Current toolbar edge placement. */
   get placement() {
     return this.options.placement
+  }
+
+  /** Whether the toolbar is collapsed to the toggle button only. */
+  get isCollapsed() {
+    return this.collapsed
+  }
+
+  /**
+   * Returns the layer toolbar button, expanding a collapsed toolbar first.
+   */
+  getLayerButtonAnchor(): HTMLElement | undefined {
+    if (this.options.collapsible && this.collapsed) {
+      this.setCollapsed(false)
+    }
+    return (
+      this.root.querySelector<HTMLElement>('[data-toolbar-item-id="layer"]') ??
+      undefined
+    )
+  }
+
+  /**
+   * Sets collapsed state without toggling.
+   *
+   * @param collapsed - Target collapsed state.
+   */
+  setCollapsed(collapsed: boolean) {
+    if (!this.options.collapsible || this.collapsed === collapsed) return
+    this.collapsed = collapsed
+    if (collapsed) {
+      this.openDropdown?.close()
+      this.openDropdown = undefined
+      this.options.onCollapse?.()
+    }
+    this.syncRootClasses()
+    this.syncCollapseToggleButton()
   }
 
   /** Removes listeners, closes dropdowns, and detaches the toolbar DOM. */
@@ -156,6 +207,73 @@ export class AcExToolbar {
       this.options.placement === 'right'
       ? 'vertical'
       : 'horizontal'
+  }
+
+  /** Applies placement, collapsed, and disabled classes on the root element. */
+  private syncRootClasses() {
+    const classes = [
+      'ml-ex-ui-toolbar',
+      `is-${this.getOrientationClass()}`,
+      `is-${this.options.placement}`
+    ]
+    if (this.collapsed) classes.push('is-collapsed')
+    if (this.isDisabled) classes.push('is-disabled')
+    this.root.className = classes.join(' ')
+  }
+
+  /** Toggles collapsed state when {@link AcExToolbarOptions.collapsible} is enabled. */
+  private toggleCollapsed() {
+    this.setCollapsed(!this.collapsed)
+  }
+
+  /**
+   * Chevron for the collapse toggle: vertical placements use up/down;
+   * horizontal placements (top/bottom) use left/right.
+   */
+  private getCollapseToggleIcon() {
+    const horizontal =
+      this.options.placement === 'top' || this.options.placement === 'bottom'
+    if (horizontal) {
+      return this.collapsed ? ICON_CHEVRON_RIGHT : ICON_CHEVRON_LEFT
+    }
+    return this.collapsed ? ICON_CHEVRON_DOWN : ICON_CHEVRON_UP
+  }
+
+  /** Updates collapse toggle icon and labels after locale or state changes. */
+  private syncCollapseToggleButton(button?: HTMLButtonElement) {
+    const target =
+      button ??
+      this.root.querySelector<HTMLButtonElement>(
+        '[data-toolbar-item-id="toolbar-collapse"]'
+      )
+    if (!target) return
+
+    const labelKey = this.collapsed ? 'toolbar.expand' : 'toolbar.collapse'
+    target.replaceChildren(createIconElement(this.getCollapseToggleIcon()))
+    target.title = this.options.i18n.t(labelKey)
+    target.setAttribute('aria-label', target.title)
+    target.setAttribute('aria-expanded', String(!this.collapsed))
+  }
+
+  /** Appends separator and collapse toggle when collapsible mode is enabled. */
+  private appendCollapseToggle() {
+    if (!this.options.collapsible) return
+
+    const separator = document.createElement('div')
+    separator.className = 'ml-ex-ui-toolbar-separator'
+    separator.setAttribute('role', 'separator')
+    this.root.appendChild(separator)
+
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'ml-ex-ui-toolbar-btn ml-ex-ui-toolbar-collapse-btn'
+    button.dataset.toolbarItemId = 'toolbar-collapse'
+    this.syncCollapseToggleButton(button)
+    button.addEventListener('click', event => {
+      event.stopPropagation()
+      this.toggleCollapsed()
+    })
+    this.root.appendChild(button)
   }
 
   /** Rebuilds all toolbar buttons from {@link items}. */
@@ -188,6 +306,7 @@ export class AcExToolbar {
         ? this.options.i18n.t(effective.label)
         : effective.id
       button.setAttribute('aria-label', button.title)
+      button.dataset.toolbarItemId = effective.id
 
       if (effective.children?.length) {
         button.classList.add('has-children')
@@ -249,7 +368,9 @@ export class AcExToolbar {
           return
         }
 
-        if (effective.action) {
+        if (effective.anchorAction) {
+          effective.anchorAction(button)
+        } else if (effective.action) {
           effective.action()
         } else if (effective.command) {
           this.options.onCommand(effective.command)
@@ -261,6 +382,8 @@ export class AcExToolbar {
 
       this.root.appendChild(button)
     })
+
+    this.appendCollapseToggle()
   }
 
   /** Seeds submenu selection from {@link AcExToolbarItem.selectedChildId}. */

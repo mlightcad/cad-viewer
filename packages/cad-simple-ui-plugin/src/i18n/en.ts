@@ -37,6 +37,8 @@ export const en: Record<string, string> = {
   'toolbar.themeDark': 'Switch to Light Theme',
   'toolbar.localeEn': 'English (switch to Chinese)',
   'toolbar.localeZh': '中文 (switch to English)',
+  'toolbar.collapse': 'Collapse toolbar',
+  'toolbar.expand': 'Expand toolbar',
   'layerManager.title': 'Layer Manager',
   'layerManager.name': 'Name',
   'layerManager.on': 'On',

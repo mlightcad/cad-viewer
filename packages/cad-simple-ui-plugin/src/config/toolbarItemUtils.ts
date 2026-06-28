@@ -37,6 +37,20 @@ export function toolbarPreset(preset: string): AcExToolbarPresetRef {
   return { preset }
 }
 
+/** Returns whether a resolved toolbar item list includes the given button id. */
+export function toolbarItemsIncludeItem(
+  items: AcExToolbarItem[],
+  itemId: string
+): boolean {
+  return items.some(item => {
+    if (isToolbarSeparatorItem(item)) return false
+    if (item.id === itemId) return true
+    return item.children
+      ? toolbarItemsIncludeItem(item.children, itemId)
+      : false
+  })
+}
+
 /** Registers button items (and nested children) in a preset lookup map. */
 export function indexToolbarItems(
   items: AcExToolbarItem[],

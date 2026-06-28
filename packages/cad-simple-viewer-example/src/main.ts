@@ -23,6 +23,7 @@ class CadViewerApp {
   private emptyState: HTMLDivElement
   private predefinedButtons: NodeListOf<HTMLButtonElement>
   private fileSidebar: HTMLElement
+  private fileSidebarBody: HTMLElement
   private fileSidebarToggle: HTMLButtonElement
   private fileSidebarSubtitle: HTMLSpanElement
   private isInitialized = false
@@ -42,6 +43,9 @@ class CadViewerApp {
       '#predefinedFileList .file-list-item'
     ) as NodeListOf<HTMLButtonElement>
     this.fileSidebar = document.getElementById('fileSidebar') as HTMLElement
+    this.fileSidebarBody = document.getElementById(
+      'fileSidebarBody'
+    ) as HTMLElement
     this.fileSidebarToggle = document.getElementById(
       'fileSidebarToggle'
     ) as HTMLButtonElement
@@ -81,9 +85,9 @@ class CadViewerApp {
         host: this.viewerPane,
         toolbar: {
           placement: 'right',
-          items: 'default'
-        },
-        layerManager: { enabled: true }
+          items: 'default',
+          collapsible: true
+        }
       })
 
       AcApDocManager.instance.events.documentActivated.addEventListener(
@@ -131,29 +135,32 @@ class CadViewerApp {
 
   private setupMobileSidebar() {
     this.fileSidebarToggle.addEventListener('click', () => {
-      this.setFileSidebarExpanded(
-        !this.fileSidebar.classList.contains('expanded')
-      )
+      this.setFileSidebarExpanded(!this.isFileSidebarOpen())
     })
 
-    document.addEventListener('click', event => {
-      if (
-        !this.isMobileLayout() ||
-        !this.fileSidebar.classList.contains('expanded')
-      ) {
+    document.addEventListener('pointerdown', event => {
+      if (!this.isMobileLayout() || !this.isFileSidebarOpen()) {
         return
       }
 
       const target = event.target
       if (!(target instanceof Node)) return
-      if (!this.fileSidebar.contains(target)) {
-        this.setFileSidebarExpanded(false)
+      if (
+        this.fileSidebarToggle.contains(target) ||
+        this.fileSidebarBody.contains(target)
+      ) {
+        return
       }
+      this.setFileSidebarExpanded(false)
     })
 
     window.addEventListener('resize', () => {
       if (!this.isMobileLayout()) {
         this.setFileSidebarExpanded(false)
+        return
+      }
+      if (this.isFileSidebarOpen()) {
+        this.positionMobileFilePopover()
       }
     })
   }
@@ -162,9 +169,42 @@ class CadViewerApp {
     return window.matchMedia('(max-width: 960px)').matches
   }
 
+  private isFileSidebarOpen(): boolean {
+    return this.isMobileLayout()
+      ? this.fileSidebarBody.classList.contains('file-sidebar-popover')
+      : this.fileSidebar.classList.contains('expanded')
+  }
+
   private setFileSidebarExpanded(expanded: boolean) {
+    if (this.isMobileLayout()) {
+      this.fileSidebar.classList.toggle('expanded', expanded)
+      this.fileSidebarToggle.setAttribute('aria-expanded', String(expanded))
+      this.fileSidebarBody.classList.toggle('file-sidebar-popover', expanded)
+      if (expanded) {
+        this.positionMobileFilePopover()
+      } else {
+        this.fileSidebarBody.style.top = ''
+        this.fileSidebarBody.style.maxHeight = ''
+      }
+      return
+    }
+
     this.fileSidebar.classList.toggle('expanded', expanded)
     this.fileSidebarToggle.setAttribute('aria-expanded', String(expanded))
+  }
+
+  private positionMobileFilePopover() {
+    const rect = this.fileSidebarToggle.getBoundingClientRect()
+    const gap = 4
+    const viewportInset = 8
+    const top = rect.bottom + gap
+    const maxHeight = Math.max(
+      120,
+      Math.min(window.innerHeight * 0.5, 360, window.innerHeight - top - viewportInset)
+    )
+
+    this.fileSidebarBody.style.top = `${top}px`
+    this.fileSidebarBody.style.maxHeight = `${maxHeight}px`
   }
 
   private updateFileSidebarSubtitle(label: string) {

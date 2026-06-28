@@ -12,9 +12,10 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 - Default toolbar includes view/review tools, export submenu, toolbar placement, theme and locale toggles
 - UI theme follows `COLORTHEME` sysvar and `--ml-ui-*` tokens on `host` automatically
 - Locale follows `AcApI18n.currentLocale` automatically
-- Floating layer manager (name, visibility, color)
+- Layer list popover anchored to the toolbar layer button (name, visibility, color)
 - ACI color picker for layer colors
-- `layer` command opens the layer manager panel
+- Layer popover opens from the toolbar button or the `layer` command; closes on outside click
+- Optional collapsible toolbar (like HTML export viewer): hide tool buttons and show only a chevron toggle
 
 ## Install
 
@@ -42,8 +43,7 @@ await AcApDocManager.instance.pluginManager.loadPlugin(
     toolbar: {
       placement: 'right',
       items: 'default'
-    },
-    layerManager: { enabled: true }
+    }
   })
 )
 ```
@@ -57,8 +57,7 @@ import { registerSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register
 
 await registerSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
   host,
-  toolbar: { placement: 'right', items: 'default' },
-  layerManager: { enabled: true }
+  toolbar: { placement: 'right', items: 'default' }
 })
 ```
 
@@ -96,23 +95,31 @@ toolbar: {
 
 The built-in theme toggle button updates `COLORTHEME` when a document is open, or applies `applyUiTheme` on `host` when no document is loaded.
 
-### Layer manager bounds
+### Layer popover
 
-By default the layer manager stays inside `host` and cannot be dragged outside the canvas:
+The layer list is a **popover** (not a floating panel). It is enabled automatically when the resolved toolbar includes a layer button (`id: 'layer'` or `{ preset: 'layer' }`). No separate `layerManager` option is required.
+
+Behavior:
+
+- Click the layer toolbar button to open or close the popover
+- Click the canvas or other UI outside the popover to dismiss it
+- On vertical toolbars (`left` / `right`), popover height aligns with the toolbar (minimum 320px)
+- On narrow hosts (≤640px width), the popover uses a bottom-sheet layout sized for mobile
+
+The built-in `layerclose` command emits `close-layer-manager`, which the plugin listens for.
+
+### Collapsible toolbar
+
+Set `toolbar.collapsible: true` to append a chevron toggle at the end of the toolbar (same behavior as the HTML export viewer). When collapsed, only the toggle button is shown; anchored popovers such as the layer list are closed automatically.
 
 ```typescript
-layerManager: {
-  enabled: true,
-  allowMoveOutsideCanvas: false // default
+toolbar: {
+  placement: 'right',
+  items: 'default',
+  collapsible: true,
+  defaultCollapsed: false // optional, default false
 }
 ```
-
-The panel height can be adjusted by dragging the handle at the bottom edge.
-
-Default placement:
-
-- Vertically centered in the canvas, with 150px margin from the top and bottom edges
-- Horizontally on the side opposite the toolbar (`right` toolbar → panel on the left; `left`/`top`/`bottom` toolbar → panel on the right)
 
 ## Custom toolbar
 
@@ -127,6 +134,7 @@ Toolbar buttons are configured through `toolbar.items`. You can start from the b
 | `icon` | Inline SVG string, DOM element, or factory `() => HTMLElement` |
 | `command` | Passed to `AcApDocManager.sendStringToExecute` (supports `\n`, e.g. `'zoom\nall'`) |
 | `action` | Custom click handler (e.g. open a dialog). Used when no `command` is set |
+| `anchorAction` | Popover-style handler that receives the anchor button element. Takes precedence over `command` and `action` |
 | `requiresDocument` | When `false`, button stays enabled before a drawing is opened |
 | `minOpenMode` | Hide below Review/Write (`AcEdOpenMode.Review`) |
 | `children` | Submenu items (parent shows a flyout arrow) |
@@ -323,10 +331,11 @@ Submenu flyout direction follows toolbar placement (e.g. arrow points left when 
 
 ```typescript
 createSimpleUiPlugin({
-  toolbar: { enabled: false },
-  layerManager: { enabled: true }
+  toolbar: { enabled: false }
 })
 ```
+
+Disabling the toolbar also disables the layer popover, because the layer UI is tied to the layer toolbar button.
 
 ### Complete example
 
@@ -365,10 +374,6 @@ await AcApDocManager.instance.pluginManager.loadPlugin(
           ]
         }
       ]
-    },
-    layerManager: {
-      enabled: true,
-      allowMoveOutsideCanvas: false
     }
   })
 )
@@ -376,7 +381,7 @@ await AcApDocManager.instance.pluginManager.loadPlugin(
 
 ## Layer manager
 
-When enabled, the plugin registers a `layer` command that opens the layer manager palette. The built-in `layerclose` command emits `close-layer-manager`, which the plugin listens for.
+When the toolbar includes a layer button, the plugin registers a `layer` command and wires the button to the layer popover automatically.
 
 Supported columns in v1:
 
@@ -385,6 +390,17 @@ Supported columns in v1:
 - Color (ACI picker)
 
 Double-click a layer row to zoom to that layer.
+
+To use the layer UI in a custom toolbar, include the built-in preset or a button with `id: 'layer'`:
+
+```typescript
+items: [
+  toolbarPreset('select'),
+  toolbarPreset('layer')
+]
+```
+
+Omit the layer button from `items` if you do not want the layer popover or `layer` command.
 
 ## API
 

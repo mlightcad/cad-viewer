@@ -229,12 +229,16 @@ export class AcTrView2d extends AcEdBaseView {
 
     const container = mergedOptions.container ?? document.createElement('div')
     mergedOptions.container = container
+    container.style.overflow = 'hidden'
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true
     })
     container.appendChild(renderer.domElement)
+    renderer.domElement.style.display = 'block'
+    renderer.domElement.style.maxWidth = '100%'
+    renderer.domElement.style.maxHeight = '100%'
 
     super(renderer.domElement, container)
     this._gripManager = new AcEdGripManager(this)
@@ -473,6 +477,8 @@ export class AcTrView2d extends AcEdBaseView {
     this._css2dRenderer.domElement.style.left = '0px'
     this._css2dRenderer.domElement.style.pointerEvents = 'none'
     this._css2dRenderer.domElement.style.zIndex = '99998'
+    this._css2dRenderer.domElement.style.maxWidth = '100%'
+    this._css2dRenderer.domElement.style.maxHeight = '100%'
     container.appendChild(this._css2dRenderer.domElement)
 
     this._missedImages = new Map()

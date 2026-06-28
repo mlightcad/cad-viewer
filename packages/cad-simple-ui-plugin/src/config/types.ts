@@ -43,6 +43,11 @@ export interface AcExToolbarItem {
   /** Custom click handler. Used when no command is set (e.g. theme toggle). */
   action?: () => void
   /**
+   * Popover-style click handler that receives the anchor button element.
+   * When set, takes precedence over `command` and `action`.
+   */
+  anchorAction?: (anchor: HTMLElement) => void
+  /**
    * When false, the button stays enabled without an open document.
    * Defaults to true when `command` is set, otherwise false.
    */
@@ -113,13 +118,10 @@ export interface AcExSimpleUiPluginOptions {
     items?: AcExToolbarItemConfig[] | 'default'
     /** Extra items appended after `items`. */
     appendItems?: AcExToolbarItemConfig[]
-  }
-  /** Layer manager panel configuration. Enabled by default. */
-  layerManager?: {
-    /** When false, the layer manager and `layer` command are not registered. */
-    enabled?: boolean
-    /** When false (default), the panel is clamped inside `host`. */
-    allowMoveOutsideCanvas?: boolean
+    /** When true, show a collapse/expand toggle at the end of the toolbar. */
+    collapsible?: boolean
+    /** Initial collapsed state when {@link collapsible} is true. */
+    defaultCollapsed?: boolean
   }
 }
 
