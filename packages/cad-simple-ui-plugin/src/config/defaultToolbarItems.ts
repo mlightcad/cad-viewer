@@ -1,14 +1,6 @@
-import {
-  AcApAnnotation,
-  AcApDocManager,
-  AcEdOpenMode,
-  type AcEdUiTheme
-} from '@mlightcad/cad-simple-viewer'
+import { AcEdOpenMode, type AcEdUiTheme } from '@mlightcad/cad-simple-viewer'
 
 import {
-  ICON_ANNOTATION,
-  ICON_ANNOTATION_HIDE,
-  ICON_ANNOTATION_SHOW,
   ICON_CLEAR_MEASUREMENTS,
   ICON_EXPORT,
   ICON_EXPORT_HTML,
@@ -25,10 +17,6 @@ import {
   ICON_PLACEMENT_LEFT,
   ICON_PLACEMENT_RIGHT,
   ICON_PLACEMENT_TOP,
-  ICON_REV_CIRCLE,
-  ICON_REV_CLOUD,
-  ICON_REV_FREEDRAW,
-  ICON_REV_RECT,
   ICON_SELECT,
   ICON_SWITCH_BG,
   ICON_THEME_DARK,
@@ -82,20 +70,6 @@ function createToolbarPlacementItem(
       action: () => context?.setPlacement(placement)
     }))
   }
-}
-
-/**
- * Returns whether the annotation layer is currently visible in the active document.
- *
- * @returns `true` when the annotation layer is on or no document is open.
- */
-function isAnnotationVisible(): boolean {
-  const db = AcApDocManager.instance.curDocument?.database
-  if (!db) return true
-  const annotation = new AcApAnnotation(db)
-  const layerName = annotation.getAnnotationLayer()
-  const layer = db.tables.layerTable.getAt(layerName)
-  return layer ? !layer.isOff : true
 }
 
 /**
@@ -205,55 +179,6 @@ export function createDefaultToolbarItems(
           command: 'csvg'
         }
       ]
-    },
-    {
-      id: 'annotation',
-      label: 'toolbar.annotation',
-      icon: ICON_ANNOTATION,
-      minOpenMode: AcEdOpenMode.Review,
-      children: [
-        {
-          id: 'rev-freedraw',
-          label: 'toolbar.revFreehand',
-          icon: ICON_REV_FREEDRAW,
-          command: 'sketch'
-        },
-        {
-          id: 'rev-rect',
-          label: 'toolbar.revRect',
-          icon: ICON_REV_RECT,
-          command: 'revrect'
-        },
-        {
-          id: 'rev-cloud',
-          label: 'toolbar.revCloud',
-          icon: ICON_REV_CLOUD,
-          command: 'revcloud'
-        },
-        {
-          id: 'rev-circle',
-          label: 'toolbar.revCircle',
-          icon: ICON_REV_CIRCLE,
-          command: 'revcircle'
-        }
-      ]
-    },
-    {
-      id: 'rev-vis',
-      minOpenMode: AcEdOpenMode.Review,
-      toggle: {
-        getValue: isAnnotationVisible,
-        on: {
-          label: 'toolbar.showAnnotation',
-          icon: ICON_ANNOTATION_SHOW,
-          command: 'revvis'
-        },
-        off: {
-          label: 'toolbar.hideAnnotation',
-          icon: ICON_ANNOTATION_HIDE,
-          command: 'revvis'
-        }
-      }
     },
     {
       type: 'separator',

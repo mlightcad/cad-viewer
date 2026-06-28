@@ -1,0 +1,39 @@
+{
+  "name": "@mlightcad/cad-annotation-plugin",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/cad-annotation-plugin/src",
+  "projectType": "library",
+  "tags": ["npm:private"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc && vite build",
+        "cwd": "packages/cad-annotation-plugin"
+      },
+      "dependsOn": ["^build"],
+      "cache": true
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "rimraf dist lib tsconfig.tsbuildinfo",
+        "cwd": "packages/cad-annotation-plugin"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint src/",
+        "cwd": "packages/cad-annotation-plugin"
+      }
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint --fix --quiet src/",
+        "cwd": "packages/cad-annotation-plugin"
+      }
+    }
+  }
+}
