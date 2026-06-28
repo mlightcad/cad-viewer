@@ -29,6 +29,7 @@ import {
   AcTrRenderer,
   AcTrViewportView,
   getMaterialMetadata,
+  getSceneDrawableUserData,
   hasByLayerBinding,
   setMaterialMetadata
 } from '@mlightcad/three-renderer'
@@ -1140,7 +1141,7 @@ export class AcTrView2d extends AcEdBaseView {
     layerName: string,
     materials: Record<number, THREE.Material>
   ) {
-    if (Object.keys(materials).length === 0) {
+    if (!this.hasRemappedLayerMaterials(materials)) {
       return
     }
 
@@ -1149,40 +1150,157 @@ export class AcTrView2d extends AcEdBaseView {
       if (!sceneLayer) return
 
       for (const id in materials) {
-        sceneLayer.updateMaterial(Number(id), materials[id])
+        const oldId = Number(id)
+        const material = materials[id]
+        if (material.id === oldId) {
+          continue
+        }
+        sceneLayer.updateMaterial(oldId, material)
       }
     })
   }
 
+  /** True when at least one cached material was replaced with a new instance. */
+  private hasRemappedLayerMaterials(
+    materials: Record<number, THREE.Material>
+  ): boolean {
+    return Object.entries(materials).some(
+      ([oldId, material]) => material.id !== Number(oldId)
+    )
+  }
+
   /**
-   * Builds layer-style traits from the live layer record for material refresh.
+   * Refreshes cached layer materials from the live layer-table record and
+   * propagates the result to batched drawables and text hierarchies.
+   *
+   * ByLayer colour keys stay symbolic, so a colour-only layer edit usually
+   * repaints cache entries in place. Remap/patch paths run only when a material
+   * id actually changes; clone/unbatched text paths still rebind afterward.
    */
-  private buildLayerStyleTraits(
-    layer: AcDbLayerTableRecord,
-    changes: Partial<AcDbLayerTableRecordAttrs>
-  ): Partial<AcGiSubEntityTraits> | undefined {
-    if (!this.layerStyleMayHaveChanged(changes)) {
-      return undefined
+  private syncLayerAppearanceFromLiveRecord(layer: AcDbLayerTableRecord) {
+    const layerTraits = this.getEffectiveLayerTraits(layer.name)
+    if (!layerTraits) {
+      return
     }
 
-    const traits: Partial<AcGiSubEntityTraits> = {
-      layer: layer.name
-    }
+    const materials = this._renderer.updateLayerMaterial(layer.name, layerTraits)
+    const needsIdPatch = this.hasRemappedLayerMaterials(materials)
 
-    if (changes.color != null) {
-      traits.color = layer.color.clone()
-    }
-    if (changes.linetype != null) {
-      traits.lineType = layer.lineStyle
-    }
-    if (changes.lineWeight !== undefined) {
-      traits.lineWeight = layer.lineWeight
-    }
-    if (changes.transparency != null) {
-      traits.transparency = layer.transparency
-    }
+    this.applyLayerMaterialUpdates(layer.name, materials)
 
-    return traits
+    this._scene.layouts.forEach(layout => {
+      const sceneLayer = layout.getLayer(layer.name)
+      if (!sceneLayer) {
+        return
+      }
+
+      this.syncLayerSceneDrawables(
+        sceneLayer,
+        layer.name,
+        layerTraits,
+        materials,
+        needsIdPatch
+      )
+      sceneLayer.rebindMaterialsForLayer(
+        layer.name,
+        layerTraits,
+        (material, boundLayerName, boundLayerTraits) =>
+          this._renderer.getLayerBoundMaterial(
+            material,
+            boundLayerName,
+            boundLayerTraits
+          ),
+        this._renderer.styleManager
+      )
+      sceneLayer.rematerializeLayerTextDrawables(
+        layer.name,
+        this._renderer.styleManager,
+        layerTraits
+      )
+    })
+  }
+
+  /**
+   * Patches remapped materials, rebinds layer-bound drawables, and refreshes
+   * text entity wrappers in one scene traversal per layout.
+   */
+  private syncLayerSceneDrawables(
+    sceneLayer: AcTrLayer,
+    layerName: string,
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    materials: Record<number, THREE.Material>,
+    needsIdPatch: boolean
+  ) {
+    sceneLayer.internalObject.traverse(object => {
+      const refresh = (
+        object as {
+          refreshTextMaterials?: (
+            layerTraits?: Partial<AcGiSubEntityTraits>
+          ) => void
+        }
+      ).refreshTextMaterials
+      if (typeof refresh === 'function') {
+        refresh.call(object, layerTraits)
+      }
+
+      if (!('material' in object)) {
+        return
+      }
+
+      const drawable = object as THREE.Mesh | THREE.Line | THREE.LineSegments
+      let material = drawable.material as THREE.Material
+
+      if (needsIdPatch) {
+        const remapped =
+          materials[material.id] ??
+          (getSceneDrawableUserData(object).styleMaterialId != null
+            ? materials[getSceneDrawableUserData(object).styleMaterialId!]
+            : undefined)
+        if (remapped && remapped !== material) {
+          drawable.material = remapped
+          getSceneDrawableUserData(object).styleMaterialId = remapped.id
+          material = remapped
+        }
+      }
+
+      if (
+        !this.shouldRebindLayerDrawableMaterial(material, layerName, object)
+      ) {
+        return
+      }
+
+      const rebound = this._renderer.getLayerBoundMaterial(
+        material,
+        layerName,
+        layerTraits
+      )
+      if (!rebound || rebound === material) {
+        return
+      }
+
+      drawable.material = rebound
+      getSceneDrawableUserData(object).styleMaterialId = rebound.id
+    })
+  }
+
+  private shouldRebindLayerDrawableMaterial(
+    material: THREE.Material,
+    layerName: string,
+    object: THREE.Object3D
+  ): boolean {
+    const metadata = getMaterialMetadata(material)
+    const objectLayerName = object.userData.layerName as string | undefined
+
+    if (metadata.layer !== layerName && objectLayerName !== layerName) {
+      return false
+    }
+    if (metadata.isByLayerColor === true) {
+      return true
+    }
+    if (metadata.isForeground === true) {
+      return false
+    }
+    return hasByLayerBinding(metadata)
   }
 
   /**
@@ -1190,16 +1308,7 @@ export class AcTrView2d extends AcEdBaseView {
    */
   addLayer(layer: AcDbLayerTableRecord) {
     this._scene.addLayer(this.toLayerInfo(layer))
-
-    const traits: Partial<AcGiSubEntityTraits> = {
-      layer: layer.name,
-      color: layer.color.clone(),
-      lineType: layer.lineStyle,
-      lineWeight: layer.lineWeight,
-      transparency: layer.transparency
-    }
-    const materials = this._renderer.updateLayerMaterial(layer.name, traits)
-    this.applyLayerMaterialUpdates(layer.name, materials)
+    this.syncLayerAppearanceFromLiveRecord(layer)
     this._isDirty = true
   }
 
@@ -1212,10 +1321,8 @@ export class AcTrView2d extends AcEdBaseView {
   ) {
     this._scene.updateLayer(this.toLayerInfo(layer))
 
-    const traits = this.buildLayerStyleTraits(layer, changes)
-    if (traits) {
-      const materials = this._renderer.updateLayerMaterial(layer.name, traits)
-      this.applyLayerMaterialUpdates(layer.name, materials)
+    if (this.layerStyleMayHaveChanged(changes)) {
+      this.syncLayerAppearanceFromLiveRecord(layer)
     }
 
     if (
@@ -2197,12 +2304,20 @@ export class AcTrView2d extends AcEdBaseView {
    * Layer remapping can replace mesh materials; text must keep entity-trait
    * colours (especially ACI-7 foreground on paper layouts).
    */
-  private refreshTextMaterialsInObjectTree(root: THREE.Object3D) {
+  private refreshTextMaterialsInObjectTree(
+    root: THREE.Object3D,
+    layerTraits?: Partial<AcGiSubEntityTraits>
+  ) {
     root.traverse(child => {
-      const refresh = (child as { refreshTextMaterials?: () => void })
-        .refreshTextMaterials
+      const refresh = (
+        child as {
+          refreshTextMaterials?: (
+            layerTraits?: Partial<AcGiSubEntityTraits>
+          ) => void
+        }
+      ).refreshTextMaterials
       if (typeof refresh === 'function') {
-        refresh.call(child)
+        refresh.call(child, layerTraits)
       }
     })
   }

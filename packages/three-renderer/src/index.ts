@@ -18,6 +18,7 @@ export * from './renderer'
 export * from './viewport'
 export * from './style/AcTrMaterialMetadata'
 export { AcTrLinePatternShaders } from './style/AcTrLinePatternShaders'
+export { AcTrStyleManager } from './style/AcTrStyleManager'
 export {
   createGradientHatchShaderMaterial,
   createGradientHatchShaderMaterialFromUniforms,
@@ -30,6 +31,7 @@ export {
 export * from './util/AcTrMTextColorUtil'
 export { AcTrMatrixUtil } from './util/AcTrMatrixUtil'
 export {
+  getSceneDrawableUserData,
   isHighlightCloneDrawable,
   isHighlightOverlayDescendant,
   markHighlightOverlayGroup,

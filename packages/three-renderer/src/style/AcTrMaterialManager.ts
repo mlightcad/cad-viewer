@@ -95,8 +95,9 @@ export abstract class AcTrMaterialManager<T> {
    * For each qualifying material:
    * 1. Rebuild merged traits (old traits + new layer-level traits)
    * 2. Compute a NEW material key
-   * 3. Dispose old material
-   * 4. Create the new material
+   * 3. When the key is unchanged (typical for ByLayer colour-only updates),
+   *    refresh the cached material colour in place and keep the same id
+   * 4. Otherwise dispose the old material, create a new one, and remap ids
    * 5. Update cache/keyToTraits
    * 6. Return mapping { oldMaterialId → newMaterial }
    */
@@ -110,11 +111,6 @@ export abstract class AcTrMaterialManager<T> {
     for (const oldKey of Object.keys(this.cache)) {
       const oldMaterial = this.cache[oldKey]
       const metadata = getMaterialMetadata(oldMaterial)
-
-      const isTarget =
-        metadata.layer === layerName && hasByLayerBinding(metadata)
-      if (!isTarget) continue
-
       const oldTraits = this.keyToTraits[oldKey]
       if (!oldTraits) continue
 
@@ -123,9 +119,25 @@ export abstract class AcTrMaterialManager<T> {
         oldMaterial
       )
 
+      const isTarget =
+        metadata.layer === layerName &&
+        (hasByLayerBinding(metadata) ||
+          hasByLayerBinding(byLayerBindings) ||
+          this.shouldInheritLayerColor(
+            oldTraits,
+            byLayerBindings,
+            oldMaterial
+          ))
+      if (!isTarget) continue
+
       // Step 1: merged traits (only mutate traits that are actually ByLayer)
       const mergedTraits = this.cloneTraits(oldTraits)
-      this.applyInheritedLayerTraits(mergedTraits, newTraits, byLayerBindings)
+      this.applyInheritedLayerTraits(
+        mergedTraits,
+        newTraits,
+        byLayerBindings,
+        oldMaterial
+      )
       if (newTraits.layer != null) {
         mergedTraits.layer = newTraits.layer
       }
@@ -135,17 +147,28 @@ export abstract class AcTrMaterialManager<T> {
 
       const oldMaterialId = oldMaterial.id
 
+      if (newKey === oldKey) {
+        if (byLayerBindings.isByLayerColor && newTraits.color) {
+          this.refreshMaterialResolvedColor(oldMaterial, newTraits)
+        }
+        this.keyToTraits[oldKey] = mergedTraits
+        idMap[oldMaterialId] = oldMaterial
+        continue
+      }
+
       // Step 3: dispose old
       oldMaterial.dispose()
       delete this.cache[oldKey]
       delete this.keyToTraits[oldKey]
 
       // Step 4: create new material
+      const layerRgb = newTraits.color?.RGB
       const newMaterial = this.createMaterial(
         newKey,
         mergedTraits,
         mergedTraits,
-        byLayerBindings
+        byLayerBindings,
+        typeof layerRgb === 'number' ? layerRgb : undefined
       )
 
       // Step 5: store merged traits
@@ -262,19 +285,34 @@ export abstract class AcTrMaterialManager<T> {
       layer: layerName
     }
     const byLayerBindings = this.resolveByLayerBindings(traits, material)
-    this.applyInheritedLayerTraits(remappedTraits, layerTraits, byLayerBindings)
+    this.applyInheritedLayerTraits(
+      remappedTraits,
+      layerTraits,
+      byLayerBindings,
+      material
+    )
     const remappedKey = this.buildKey(remappedTraits, remappedTraits)
 
     if (this.cache[remappedKey]) {
-      return this.cache[remappedKey]
+      const cached = this.cache[remappedKey]
+      if (
+        remappedTraits.color.isByLayer &&
+        layerTraits?.color &&
+        getMaterialMetadata(cached).isByLayerColor
+      ) {
+        this.refreshMaterialResolvedColor(cached, layerTraits)
+      }
+      return cached
     }
 
     this.keyToTraits[remappedKey] = remappedTraits
+    const layerRgb = layerTraits?.color?.RGB
     return this.createMaterial(
       remappedKey,
       remappedTraits,
       remappedTraits,
-      byLayerBindings
+      byLayerBindings,
+      typeof layerRgb === 'number' ? layerRgb : undefined
     )
   }
 
@@ -307,17 +345,21 @@ export abstract class AcTrMaterialManager<T> {
   private applyInheritedLayerTraits(
     traits: AcGiSubEntityTraits & T,
     layerTraits?: Partial<AcGiSubEntityTraits>,
-    byLayerBindings?: AcTrByLayerBindingFlags
+    byLayerBindings?: AcTrByLayerBindingFlags,
+    material?: THREE.Material
   ) {
     if (!layerTraits) return
 
-    const isByLayerColor = byLayerBindings?.isByLayerColor === true
     const isByLayerLineType = byLayerBindings?.isByLayerLineType === true
     const isByLayerLineWeight = byLayerBindings?.isByLayerLineWeight === true
     const isByLayerTransparency =
       byLayerBindings?.isByLayerTransparency === true
 
-    if (isByLayerColor && layerTraits.color) {
+    if (
+      this.shouldInheritLayerColor(traits, byLayerBindings, material) &&
+      layerTraits.color &&
+      !traits.color.isByLayer
+    ) {
       traits.color = layerTraits.color.clone()
     }
 
@@ -335,6 +377,34 @@ export abstract class AcTrMaterialManager<T> {
   }
 
   /**
+   * Returns whether a cached material should follow live layer colour updates.
+   */
+  protected shouldInheritLayerColor(
+    traits: AcGiSubEntityTraits,
+    byLayerBindings?: AcTrByLayerBindingFlags,
+    material?: THREE.Material
+  ): boolean {
+    const metadata = material ? getMaterialMetadata(material) : undefined
+
+    if (byLayerBindings?.isByLayerColor === true) {
+      return true
+    }
+    if (traits.color?.isByLayer === true) {
+      return true
+    }
+    if (metadata?.isByLayerColor === true) {
+      return true
+    }
+    if (metadata?.isByLayerColor === false) {
+      return !!traits.color?.isByLayer
+    }
+    if (metadata?.isForeground === true) {
+      return false
+    }
+    return this.hasByLayerKeyTraits(traits)
+  }
+
+  /**
    * Resolves ByLayer binding flags from explicit metadata first, then falls back
    * to symbolic traits when metadata is unavailable.
    */
@@ -349,7 +419,8 @@ export abstract class AcTrMaterialManager<T> {
 
     return {
       isByLayerColor:
-        metadata?.isByLayerColor ?? traits.color.isByLayer === true,
+        metadata?.isByLayerColor === true ||
+        (traits.color.isByLayer === true && metadata?.isForeground !== true),
       isByLayerLineType:
         metadata?.isByLayerLineType ?? traits.lineType.type === 'ByLayer',
       isByLayerLineWeight:
@@ -379,9 +450,10 @@ export abstract class AcTrMaterialManager<T> {
     key: string,
     traits: AcGiSubEntityTraits,
     options: T,
-    byLayerBindings?: AcTrByLayerBindingFlags
+    byLayerBindings?: AcTrByLayerBindingFlags,
+    layerColorRgb?: number
   ): THREE.Material {
-    const material = this.createMaterialImpl(traits, options)
+    const material = this.createMaterialImpl(traits, options, layerColorRgb)
     const isForeground = this.shouldTrackForeground(traits, options)
     const isBackgroundFill = this.shouldTrackBackground(traits, options)
 
@@ -487,12 +559,48 @@ export abstract class AcTrMaterialManager<T> {
     )
   }
 
+  /**
+   * Resolves the RGB written into a Three.js material.
+   *
+   * Cache keys stay symbolic (`color.toString()`), but materials still carry
+   * the current layer-table swatch when it is available.
+   */
+  protected resolveMaterialRgb(
+    traits: AcGiSubEntityTraits,
+    layerColorRgb?: number
+  ): number {
+    if (traits.color.isByLayer && typeof layerColorRgb === 'number') {
+      return layerColorRgb
+    }
+    return this.resolveTraitsRgb(traits)
+  }
+
+  /**
+   * Builds the colour portion of a material cache key from symbolic CAD colour.
+   */
+  protected buildKeyColorSegment(traits: AcGiSubEntityTraits): string {
+    return traits.color.toString()
+  }
+
+  /** Repaints one cached material from resolved layer-table colour. */
+  protected refreshMaterialResolvedColor(
+    material: THREE.Material,
+    layerTraits: Partial<AcGiSubEntityTraits>
+  ): void {
+    const rgb = layerTraits.color?.RGB
+    if (typeof rgb !== 'number') {
+      return
+    }
+    AcTrMaterialUtil.setMaterialColor(material, new THREE.Color(rgb))
+  }
+
   /** Subclass must build stable key. */
   protected abstract buildKey(traits: AcGiSubEntityTraits, options: T): string
 
   /** Subclass must create material. */
   protected abstract createMaterialImpl(
     traits: AcGiSubEntityTraits,
-    options: T
+    options: T,
+    layerColorRgb?: number
   ): THREE.Material
 }

@@ -179,6 +179,11 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     this._context.styleManager.currentBackgroundColor = value
   }
 
+  /** Shared style/material cache used by entity conversion and layer updates. */
+  get styleManager() {
+    return this._context.styleManager
+  }
+
   /**
    * Sets the clear color used when clearing the canvas.
    *

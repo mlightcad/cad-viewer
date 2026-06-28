@@ -1,4 +1,4 @@
-import { AcCmColor } from '@mlightcad/data-model'
+import { AcCmColor, AcGiLineWeight } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import {
@@ -104,6 +104,140 @@ describe('AcTrStyleManager', () => {
     }) as THREE.LineBasicMaterial
 
     expect(refreshed.color.getHex()).toBe(0xffff00)
+  })
+
+  it('does not share materials between ByLayer and explicit colours that resolve to the same rgb', () => {
+    const styleManager = new AcTrStyleManager()
+    const byLayerTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    byLayerTraits.layer = 'ROAD'
+    byLayerTraits.color.setByLayer()
+
+    const explicitTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    explicitTraits.layer = 'ROAD'
+    explicitTraits.color.setRGB(255, 0, 0)
+
+    const byLayerMaterial = styleManager.getLineMaterial(byLayerTraits)
+    const explicitMaterial = styleManager.getLineMaterial(explicitTraits)
+
+    expect(byLayerMaterial).not.toBe(explicitMaterial)
+
+    const layerColor = new AcCmColor()
+    layerColor.setRGB(255, 0, 0)
+    const updates = styleManager.updateLayerMaterial('ROAD', {
+      layer: 'ROAD',
+      color: layerColor
+    })
+
+    expect(updates[byLayerMaterial.id]).toBe(byLayerMaterial)
+    expect(
+      (byLayerMaterial as THREE.LineBasicMaterial).color.getHex()
+    ).toBe(0xff0000)
+    expect(
+      (explicitMaterial as THREE.LineBasicMaterial).color.getHex()
+    ).toBe(0xff0000)
+  })
+
+  it('does not share materials across layers for the same explicit colour', () => {
+    const styleManager = new AcTrStyleManager()
+    const roadTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    roadTraits.layer = 'ROAD'
+    roadTraits.color.setRGB(255, 0, 0)
+
+    const wallTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    wallTraits.layer = 'WALL'
+    wallTraits.color.setRGB(255, 0, 0)
+
+    const roadMaterial = styleManager.getLineMaterial(roadTraits)
+    const wallMaterial = styleManager.getLineMaterial(wallTraits)
+
+    expect(roadMaterial).not.toBe(wallMaterial)
+  })
+
+  it('refreshes ByLayer line materials in place when the layer colour changes', () => {
+    const styleManager = new AcTrStyleManager()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'Wall'
+    traits.color.setByLayer()
+
+    const original = styleManager.getLineMaterial(
+      traits
+    ) as THREE.LineBasicMaterial
+
+    const red = new AcCmColor()
+    red.setRGB(255, 0, 0)
+    const updates = styleManager.updateLayerMaterial('Wall', {
+      layer: 'Wall',
+      color: red
+    })
+    const refreshed = updates[original.id] as THREE.LineBasicMaterial
+
+    expect(refreshed).toBe(original)
+    expect(refreshed.color.getHex()).toBe(0xff0000)
+
+    const green = new AcCmColor()
+    green.setRGB(0, 255, 0)
+    const secondUpdates = styleManager.updateLayerMaterial('Wall', {
+      layer: 'Wall',
+      color: green
+    })
+
+    expect(secondUpdates[original.id]).toBe(original)
+    expect(refreshed.color.getHex()).toBe(0x00ff00)
+  })
+
+  it('updates layer materials when traits still carry ByLayer color but metadata lost the flag', () => {
+    const styleManager = new AcTrStyleManager()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'ROAD'
+    traits.color.setByLayer()
+
+    const original = styleManager.getLineMaterial(
+      traits
+    ) as THREE.LineBasicMaterial
+    setMaterialMetadata(original, { isByLayerColor: false })
+
+    const green = new AcCmColor()
+    green.setRGB(0, 255, 0)
+    const updates = styleManager.updateLayerMaterial('ROAD', {
+      layer: 'ROAD',
+      color: green
+    })
+    const updated = updates[original.id] as THREE.LineBasicMaterial
+
+    expect(updated).toBeDefined()
+    expect(updated.color.getHex()).toBe(0x00ff00)
+  })
+
+  it('preserves ByLayer resolved colour when lineweight change remaps the material key', () => {
+    const styleManager = new AcTrStyleManager()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'Wall'
+    traits.color.setByLayer()
+
+    const original = styleManager.getLineMaterial(
+      traits
+    ) as THREE.LineBasicMaterial
+
+    const red = new AcCmColor()
+    red.setRGB(255, 0, 0)
+    const colorUpdates = styleManager.updateLayerMaterial('Wall', {
+      layer: 'Wall',
+      color: red
+    })
+    expect(
+      (colorUpdates[original.id] as THREE.LineBasicMaterial).color.getHex()
+    ).toBe(0xff0000)
+
+    const weightUpdates = styleManager.updateLayerMaterial('Wall', {
+      layer: 'Wall',
+      color: red.clone(),
+      lineWeight: AcGiLineWeight.LineWeight070
+    })
+    const remapped = weightUpdates[original.id] as THREE.LineBasicMaterial
+
+    expect(remapped).toBeDefined()
+    expect(remapped).not.toBe(original)
+    expect(remapped.color.getHex()).toBe(0xff0000)
   })
 
   it('remaps layer-0 foreground ByLayer materials to inherited INSERT layer color', () => {

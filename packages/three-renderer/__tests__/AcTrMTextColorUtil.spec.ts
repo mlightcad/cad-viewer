@@ -160,6 +160,92 @@ describe('AcTrMTextColorUtil', () => {
     expect(material.userData.layer).toBe('CARTOUCHE')
   })
 
+  it('rematerializes ByLayer text when layer colour changes and material rgb is stale', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = ACGI_PAPER_SPACE_BACKGROUND
+
+    const color = new AcCmColor()
+    color.setByLayer()
+    const entityTraits = {
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color,
+      layer: 'txt'
+    }
+    const traits = AcTrMTextColorUtil.snapshotEntityTraits(entityTraits)
+
+    styleManager.getMTextFillMaterial(entityTraits)
+    const yellow = new AcCmColor()
+    yellow.setRGB(255, 255, 0)
+    styleManager.updateLayerMaterial('txt', {
+      layer: 'txt',
+      color: yellow
+    })
+
+    const staleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
+    setMaterialMetadata(staleMaterial, {
+      layer: 'txt',
+      materialKey: 'stale-by-layer',
+      isForeground: false,
+      isByLayerColor: true,
+      isByLayerLineType: false,
+      isByLayerLineWeight: false,
+      isByLayerTransparency: false
+    })
+
+    const root = new THREE.Group()
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), staleMaterial)
+    root.add(mesh)
+
+    AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
+
+    const material = mesh.material as THREE.MeshBasicMaterial
+    expect(material).not.toBe(staleMaterial)
+    expect(material.color.getHex()).toBe(0xffff00)
+    expect(material.userData.layer).toBe('txt')
+  })
+
+  it('rematerializes ByLayer text when metadata lost the ByLayer flag but traits are ByLayer', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = ACGI_PAPER_SPACE_BACKGROUND
+
+    const color = new AcCmColor()
+    color.setByLayer()
+    const entityTraits = {
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color,
+      layer: 'txt'
+    }
+    const traits = AcTrMTextColorUtil.snapshotEntityTraits(entityTraits)
+
+    styleManager.getMTextFillMaterial(entityTraits)
+    const yellow = new AcCmColor()
+    yellow.setRGB(255, 255, 0)
+    styleManager.updateLayerMaterial('txt', {
+      layer: 'txt',
+      color: yellow
+    })
+
+    const staleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
+    setMaterialMetadata(staleMaterial, {
+      layer: 'txt',
+      materialKey: 'stale-inferred-by-layer',
+      isForeground: false,
+      isByLayerLineType: false,
+      isByLayerLineWeight: false,
+      isByLayerTransparency: false
+    })
+
+    const root = new THREE.Group()
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), staleMaterial)
+    root.add(mesh)
+
+    AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
+
+    const material = mesh.material as THREE.MeshBasicMaterial
+    expect(material).not.toBe(staleMaterial)
+    expect(material.color.getHex()).toBe(0xffff00)
+  })
+
   it('normalizes numeric trait colours when snapshotting entity traits', () => {
     const traits = AcTrMTextColorUtil.snapshotEntityTraits({
       ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
