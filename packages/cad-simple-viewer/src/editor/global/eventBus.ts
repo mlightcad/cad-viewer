@@ -2,6 +2,7 @@ import { AcDbProgressdEventArgs } from '@mlightcad/data-model'
 import mitt, { type Emitter } from 'mitt'
 
 import { AcEdMessageType } from '../input/ui/AcEdMessageType'
+import { AcEdOpenMode } from '../view/AcEdOpenMode'
 
 export interface AcEdFontNotLoadedInfo {
   /** Font name */
@@ -17,15 +18,20 @@ export interface AcEdFontNotLoadedInfo {
  * type safety for event emission and listening throughout the application.
  *
  * ## Event Categories
- * - **File Operations**: `open-file`, `open-file-progress`, `failed-to-open-file`, `cache-font`, `font-file-selected`
+ * - **File Operations**: `open-file`, `open-local-file-started`, `open-file-progress`, `failed-to-open-file`, `cache-font`, `font-file-selected`
  * - **Palette Control**: `close-layer-manager`
  * - **Font Management**: `fonts-not-loaded`, `failed-to-get-avaiable-fonts`, `font-not-found`
  * - **Missing Resources**: `missed-data-changed`
  * - **User Messages**: `message`
  */
 export type AcEdEvents = {
-  /** Emitted to request opening a file dialog (handled by {@link installAcApOpenFileDialog}) */
+  /** Emitted to request opening a file dialog (handled by {@link acapInstallOpenFileDialog}) */
   'open-file': {}
+  /** Emitted when a local file is about to be opened through the built-in OPEN dialog */
+  'open-local-file-started': {
+    /** Requested document access mode for the pending open operation */
+    mode: AcEdOpenMode
+  }
   /** Emitted to request opening a font file dialog for IndexedDB caching */
   'cache-font': {}
   /** Emitted when the user selects a font file in the cache-font dialog */

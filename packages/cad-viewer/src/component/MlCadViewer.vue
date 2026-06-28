@@ -262,6 +262,7 @@ const features = useSettings()
 const {
   beginDocumentOpening,
   endDocumentOpening,
+  isDocumentOpening,
   openMode: docOpenMode,
   displayName
 } = useDocument()
@@ -313,6 +314,12 @@ const beginPendingOpen = (mode: AcEdOpenMode) => {
 const endPendingOpen = () => {
   pendingOpenMode.value = undefined
 }
+
+watch(isDocumentOpening, (opening, wasOpening) => {
+  if (wasOpening && !opening) {
+    endPendingOpen()
+  }
+})
 
 /**
  * Fetches and opens a CAD file from a remote URL
@@ -599,8 +606,14 @@ eventBus.on('failed-to-get-avaiable-fonts', params => {
   })
 })
 
+// Restore pending open mode for files opened through the built-in OPEN dialog
+eventBus.on('open-local-file-started', ({ mode }) => {
+  beginPendingOpen(mode)
+})
+
 // Handle file opening failures with user-friendly error messages
 eventBus.on('failed-to-open-file', params => {
+  endPendingOpen()
   const message = t('main.message.failedToOpenFile', {
     fileName: params.fileName
   })

@@ -1,6 +1,7 @@
 import { log } from '@mlightcad/data-model'
 
 import { eventBus } from '../editor/global/eventBus'
+import { AcEdOpenMode } from '../editor/view/AcEdOpenMode'
 import type { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
 
 /** File extensions accepted by the built-in OPEN file dialog. */
@@ -120,6 +121,9 @@ const onFileChange = async (event: Event) => {
     const options = await resolveOpenDocumentDefaults(
       currentOptions.getOpenDocumentDefaults
     )
+    eventBus.emit('open-local-file-started', {
+      mode: options.mode ?? AcEdOpenMode.Read
+    })
     await AcApDocManager.instance.openDocument(file.name, content, options)
   } catch (error) {
     log.error('Failed to open selected file:', error)
