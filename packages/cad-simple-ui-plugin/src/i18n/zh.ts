@@ -41,6 +41,7 @@ export const zh: Record<string, string> = {
   'layerManager.name': '名称',
   'layerManager.on': '开',
   'layerManager.color': '颜色',
+  'layerManager.currentLayer': '当前图层',
   'layerManager.zoomToLayer': '已缩放至图层：{layer}',
   'colorPicker.title': '选择颜色',
   'colorPicker.index': '颜色索引：',

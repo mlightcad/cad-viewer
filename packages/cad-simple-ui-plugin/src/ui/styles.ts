@@ -275,6 +275,17 @@ export function ensureUiStyles() {
       background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
     }
 
+    .ml-ex-ui-layer-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .ml-ex-ui-layer-current-marker {
+      color: var(--ml-ui-accent, #409eff);
+      font-weight: 600;
+    }
+
     .ml-ex-ui-layer-color {
       display: inline-block;
       width: 20px;

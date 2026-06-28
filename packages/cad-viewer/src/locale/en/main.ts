@@ -547,6 +547,7 @@ export default {
         name: 'Name',
         on: 'On',
         color: 'Color',
+        currentLayer: 'Current layer',
         zoomToLayer: 'Zoomed to the clicked layer "{layer}"'
       }
     }
