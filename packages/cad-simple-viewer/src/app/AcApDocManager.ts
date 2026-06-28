@@ -76,11 +76,6 @@ import {
   AcApZoomCmd
 } from '../command'
 import {
-  checkWebworkerReadiness,
-  DEFAULT_WEBWORKER_FILE_URLS,
-  resetWebworkerReadinessCache
-} from './AcApWebworkerReadiness'
-import {
   AcEdCalculateSizeCallback,
   AcEdCommand,
   AcEdCommandStack,
@@ -94,6 +89,11 @@ import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
 import { AcApProgress } from './AcApProgress'
+import {
+  checkWebworkerReadiness,
+  DEFAULT_WEBWORKER_FILE_URLS,
+  resetWebworkerReadinessCache
+} from './AcApWebworkerReadiness'
 import {
   AcApOpenDatabaseOptions,
   AcApOpenViewMode
@@ -375,7 +375,7 @@ export class AcApDocManager {
   private static _instance?: AcApDocManager
   /** Worker URLs configured at initialization */
   private _webworkerFileUrls?: AcApWebworkerFiles
-  /** Cached worker readiness; null until checked, true when all workers are reachable */
+  /** Cached worker readiness; null until checked, then true or false */
   private _workersReady: boolean | null = null
   /** In-flight worker readiness check */
   private _workersReadyCheckPromise?: Promise<boolean>
@@ -561,9 +561,10 @@ export class AcApDocManager {
   /**
    * Returns true when all configured worker files are reachable.
    *
-   * Uses HEAD requests internally and caches a successful result for the
-   * current page lifecycle. Failures are not cached so transient network
-   * errors can be retried.
+   * Uses HEAD requests internally. A successful result is cached on this
+   * instance for fast subsequent calls; failures update {@link workersReady}
+   * to false but can be retried. The underlying URL probe does not cache
+   * failures, so transient network errors can recover on a later call.
    */
   areWorkersReady(): Promise<boolean> {
     if (this._workersReady === true) {
@@ -575,14 +576,13 @@ export class AcApDocManager {
         this._webworkerFileUrls
       )
         .then(ready => {
-          if (ready) {
-            this._workersReady = true
-          }
+          this._workersReady = ready
           this._workersReadyCheckPromise = undefined
           this.events.workersReady.dispatch({ ready })
           return ready
         })
         .catch(() => {
+          this._workersReady = false
           this._workersReadyCheckPromise = undefined
           this.events.workersReady.dispatch({ ready: false })
           return false

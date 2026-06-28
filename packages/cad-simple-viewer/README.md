@@ -97,7 +97,7 @@ if (!(await manager.areWorkersReady())) {
 }
 ```
 
-`areWorkersReady()` and `checkWebworkerReadiness()` use HEAD requests internally. A successful result is cached for the current page lifecycle; failures are not cached, so a transient network error does not permanently block CAD opening.
+`areWorkersReady()` and `checkWebworkerReadiness()` use HEAD requests internally. Successful URL probes are cached for the current page lifecycle; failures are not cached at the probe layer, so a transient network error can succeed on a later `areWorkersReady()` call. After each check, `manager.workersReady` is `true` or `false` (`null` only before the first check).
 
 You can also enable automatic checks during initialization:
 
