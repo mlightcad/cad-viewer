@@ -72,6 +72,13 @@ class CadViewerApp {
         autoResize: true,
         baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
         commandAliases: EXAMPLE_COMMAND_ALIASES,
+        openDocumentDefaults: {
+          minimumChunkSize: 1000,
+          mode: AcEdOpenMode.Write,
+          sysVars: {
+            lwdisplay: false
+          }
+        },
         webworkerFileUrls: {
           mtextRender: './workers/mtext-renderer-worker.js',
           dxfParser: './workers/dxf-parser-worker.js',

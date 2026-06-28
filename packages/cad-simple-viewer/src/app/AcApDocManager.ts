@@ -88,6 +88,12 @@ import { AcTrView2d } from '../view'
 import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
+import {
+  acapInstallOpenFileDialog,
+  type AcApOpenDocumentDefaultsResolver,
+  acapUninstallOpenFileDialog,
+  acapUpdateOpenFileDialogOptions
+} from './AcApOpenFileDialog'
 import { AcApProgress } from './AcApProgress'
 import {
   checkWebworkerReadiness,
@@ -325,6 +331,19 @@ export interface AcApDocManagerOptions {
    * ```
    */
   commandAliases?: Record<string, string | string[]>
+
+  /**
+   * When false, the built-in OPEN command file picker is not installed.
+   * Defaults to true.
+   */
+  builtinOpenFileDialog?: boolean
+
+  /**
+   * Default options for files opened through the built-in OPEN command dialog.
+   *
+   * Can be updated later via {@link AcApDocManager.setOpenDocumentDefaults}.
+   */
+  openDocumentDefaults?: AcApOpenDocumentDefaultsResolver
 }
 
 /**
@@ -367,6 +386,8 @@ export class AcApDocManager {
    * registering built-in and system-variable commands.
    */
   private _commandAliasOverrides: Map<string, string[]>
+  /** Default options for the built-in OPEN file dialog */
+  private _openDocumentDefaults?: AcApOpenDocumentDefaultsResolver
   /** Peak open-file percentage for the current open operation (monotonic) */
   private _openFileProgressPeak = 0
   /** Last open-file progress stage (FETCH_FILE or CONVERSION) */
@@ -407,6 +428,7 @@ export class AcApDocManager {
     this._commandAliasOverrides = this.normalizeCommandAliasConfig(
       options.commandAliases
     )
+    this._openDocumentDefaults = options.openDocumentDefaults
     if (options.useMainThreadDraw) {
       AcTrMTextRenderer.getInstance().setRenderMode('main')
     } else {
@@ -499,6 +521,11 @@ export class AcApDocManager {
     this.loadPlugins(options.plugins).catch(error => {
       log.error('[AcApDocManager] Error loading plugins:', error)
     })
+
+    acapInstallOpenFileDialog({
+      enabled: options.builtinOpenFileDialog !== false,
+      getOpenDocumentDefaults: () => this.resolveOpenDocumentDefaults()
+    })
   }
 
   /**
@@ -546,6 +573,7 @@ export class AcApDocManager {
   async destroy() {
     await this._pluginManager.unloadAllPlugins()
     this.context.doc.destroy()
+    acapUninstallOpenFileDialog()
     AcTrMTextRenderer.resetInstance()
     resetWebworkerReadinessCache()
     AcApDocManager._instance = undefined
@@ -848,6 +876,33 @@ export class AcApDocManager {
     )
     this.onAfterOpenDocument(isSuccess, options)
     return isSuccess
+  }
+
+  /**
+   * Sets default options applied when opening files through the built-in OPEN dialog.
+   */
+  setOpenDocumentDefaults(
+    defaults?: AcApOpenDocumentDefaultsResolver
+  ) {
+    this._openDocumentDefaults = defaults
+    acapUpdateOpenFileDialogOptions({
+      enabled: true,
+      getOpenDocumentDefaults: () => this.resolveOpenDocumentDefaults()
+    })
+  }
+
+  /**
+   * Resolves default open options for the built-in OPEN file dialog.
+   */
+  resolveOpenDocumentDefaults(): AcApOpenDatabaseOptions | Promise<AcApOpenDatabaseOptions> {
+    const defaults = this._openDocumentDefaults
+    if (defaults == null) {
+      return { minimumChunkSize: 1000 }
+    }
+    if (typeof defaults === 'function') {
+      return defaults()
+    }
+    return defaults
   }
 
   /**

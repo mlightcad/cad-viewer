@@ -24,7 +24,7 @@ export interface AcEdFontNotLoadedInfo {
  * - **User Messages**: `message`
  */
 export type AcEdEvents = {
-  /** Emitted to request opening a file dialog */
+  /** Emitted to request opening a file dialog (handled by {@link installAcApOpenFileDialog}) */
   'open-file': {}
   /** Emitted to request opening a font file dialog for IndexedDB caching */
   'cache-font': {}
