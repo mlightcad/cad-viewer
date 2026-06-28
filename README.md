@@ -164,8 +164,9 @@ CAD-Viewer has some known limitations that users should be aware of:
   |-------|---------|
   | 0 | Do not save proxy graphics |
   | 1 | Save proxy graphics |
-
-These issues are being tracked and will be addressed in future releases.
+- **DWG File Size Limits**:
+  - Parsing DWG files with LibreDWG is memory-intensive and can easily exceed 2 GB of RAM. `libredwg-web` therefore enforces WASM heap memory limits; very large DWG files may fail to parse.
+  - We have developed a proprietary DWG parser with significantly lower memory usage, support for larger DWG files, and more accurate parsing. If the open-source `libredwg-web` stack cannot meet your requirements, please email [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) to discuss licensing the proprietary parser.
 
 ## Roadmap
 
