@@ -12,7 +12,12 @@ import packageJson from '../package.json'
 import { AcApLayerUiCmd } from './command/AcApLayerUiCmd'
 import { resolveToolbarItems } from './config/resolveToolbarItems'
 import {
+  isToolbarSeparatorItem,
+  toolbarItemsIncludeItem
+} from './config/toolbarItemUtils'
+import {
   AcExSimpleUiPluginOptions,
+  AcExToolbarItem,
   AcExToolbarPlacement,
   SIMPLE_UI_PLUGIN_NAME
 } from './config/types'
@@ -25,8 +30,9 @@ import { removeUiStylesIfUnused } from './ui/styles'
 /**
  * CAD viewer plugin that adds a framework-agnostic toolbar and layer manager.
  *
- * Registers the `layer` command, injects shared UI styles, and keeps theme and
- * locale in sync with {@link AcApI18n} and the `COLORTHEME` system variable.
+ * Registers the `layer` command when the toolbar includes a layer button, injects
+ * shared UI styles, and keeps theme and locale in sync with {@link AcApI18n} and
+ * the `COLORTHEME` system variable.
  */
 export class AcApSimpleUiPlugin implements AcApPlugin {
   /** {@link SIMPLE_UI_PLUGIN_NAME} */
@@ -36,7 +42,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   /** Human-readable plugin summary. */
   description = 'Framework-agnostic toolbar and layer manager UI'
 
-  /** Floating layer manager DOM panel. */
+  /** Layer list popover anchored to the toolbar layer button. */
   private layerManager?: AcExLayerManager
   /** Configurable toolbar instance. */
   private toolbar?: AcExToolbar
@@ -82,15 +88,27 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.i18n = new AcExI18n()
     AcApI18n.events.localeChanged.addEventListener(this.handleLocaleChanged)
 
-    const layerEnabled = resolvedOptions.layerManager?.enabled !== false
-    if (layerEnabled) {
+    const toolbarEnabled = resolvedOptions.toolbar?.enabled !== false
+    const toolbarContext = {
+      getTheme: () => this.themeSync?.getTheme() ?? 'dark',
+      setTheme: (theme: AcEdUiTheme) => this.themeSync?.setTheme(theme),
+      getLocale: () => AcApI18n.currentLocale,
+      toggleLocale: () => this.toggleLocale(),
+      getPlacement: () => this.toolbarPlacement,
+      setPlacement: (placement: AcExToolbarPlacement) =>
+        this.setToolbarPlacement(placement)
+    }
+    const toolbarItems = toolbarEnabled
+      ? resolveToolbarItems(resolvedOptions.toolbar, toolbarContext)
+      : []
+
+    if (toolbarItemsIncludeItem(toolbarItems, 'layer')) {
       this.layerManager = new AcExLayerManager({
         editor: AcApDocManager.instance,
         i18n: this.i18n,
         host,
         toolbarPlacement: this.toolbarPlacement,
-        allowMoveOutsideCanvas:
-          resolvedOptions.layerManager?.allowMoveOutsideCanvas ?? false
+        resolveLayerAnchor: () => this.toolbar?.getLayerButtonAnchor()
       })
 
       const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
@@ -103,28 +121,52 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       this.registeredCommands.push({ group, name: 'layer' })
     }
 
-    const toolbarEnabled = resolvedOptions.toolbar?.enabled !== false
     if (toolbarEnabled) {
-      const toolbarContext = {
-        getTheme: () => this.themeSync?.getTheme() ?? 'dark',
-        setTheme: (theme: AcEdUiTheme) => this.themeSync?.setTheme(theme),
-        getLocale: () => AcApI18n.currentLocale,
-        toggleLocale: () => this.toggleLocale(),
-        getPlacement: () => this.toolbarPlacement,
-        setPlacement: (placement: AcExToolbarPlacement) =>
-          this.setToolbarPlacement(placement)
-      }
-      const items = resolveToolbarItems(resolvedOptions.toolbar, toolbarContext)
+      const items = this.withLayerPopoverAction(toolbarItems)
       this.toolbar = new AcExToolbar({
         host,
         placement: this.toolbarPlacement,
         items,
         i18n: this.i18n,
+        collapsible: resolvedOptions.toolbar?.collapsible ?? false,
+        defaultCollapsed: resolvedOptions.toolbar?.defaultCollapsed ?? false,
+        onCollapse: () => {
+          this.layerManager?.hide()
+        },
         onCommand: command => {
           AcApDocManager.instance.sendStringToExecute(command)
         }
       })
     }
+  }
+
+  /**
+   * Wires the built-in layer toolbar button to the layer manager popover.
+   *
+   * @param items - Resolved toolbar items.
+   */
+  private withLayerPopoverAction(items: AcExToolbarItem[]): AcExToolbarItem[] {
+    if (!this.layerManager) return items
+
+    return items.map(item => {
+      if (isToolbarSeparatorItem(item)) return item
+
+      let next = item
+      if (item.id === 'layer') {
+        next = {
+          ...item,
+          command: undefined,
+          anchorAction: anchor => this.layerManager!.toggle(anchor)
+        }
+      }
+      if (next.children?.length) {
+        next = {
+          ...next,
+          children: this.withLayerPopoverAction(next.children)
+        }
+      }
+      return next
+    })
   }
 
   /** Updates toolbar placement and repositions the layer manager when applicable. */
@@ -168,7 +210,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   }
 
   /**
-   * Fills in default option values for toolbar and layer manager sections.
+   * Fills in default option values for the toolbar section.
    *
    * @returns Resolved options with explicit boolean defaults.
    */
@@ -183,12 +225,9 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
         enabled: this.options.toolbar?.enabled ?? true,
         placement: this.options.toolbar?.placement ?? 'right',
         items: this.options.toolbar?.items ?? 'default',
-        appendItems: this.options.toolbar?.appendItems
-      },
-      layerManager: {
-        enabled: this.options.layerManager?.enabled ?? true,
-        allowMoveOutsideCanvas:
-          this.options.layerManager?.allowMoveOutsideCanvas ?? false
+        appendItems: this.options.toolbar?.appendItems,
+        collapsible: this.options.toolbar?.collapsible ?? false,
+        defaultCollapsed: this.options.toolbar?.defaultCollapsed ?? false
       }
     }
   }

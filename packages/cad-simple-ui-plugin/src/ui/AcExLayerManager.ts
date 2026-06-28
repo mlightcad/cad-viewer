@@ -2,7 +2,8 @@ import {
   AcApDocManager,
   type AcApLayerInfo,
   AcApLayerStore,
-  eventBus} from '@mlightcad/cad-simple-viewer'
+  eventBus
+} from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
 
 import type { AcExToolbarPlacement } from '../config/types'
@@ -10,12 +11,23 @@ import type { AcExI18n } from '../i18n'
 import { AcExColorPicker } from './AcExColorPicker'
 import { ensureUiStyles } from './styles'
 
-/** Minimum top/bottom margin for default panel placement and height. */
-const LAYER_MANAGER_VERTICAL_MARGIN = 150
-/** Horizontal inset from the host edge for default placement. */
-const LAYER_MANAGER_HORIZONTAL_MARGIN = 8
-/** Minimum panel height (px). */
-const LAYER_MANAGER_MIN_HEIGHT = 120
+/** Minimum popover height on desktop (px); also used when the toolbar is shorter. */
+const LAYER_POPOVER_MIN_HEIGHT = 320
+/** Absolute minimum popover height (px). */
+const LAYER_POPOVER_ABSOLUTE_MIN_HEIGHT = 120
+/** Gap between anchor button and popover (px). */
+const LAYER_POPOVER_GAP = 4
+/** Viewport edge inset when clamping position (px). */
+const LAYER_POPOVER_VIEWPORT_INSET = 8
+/** Host width at or below which compact (mobile) layout is used (px). */
+const LAYER_POPOVER_COMPACT_BREAKPOINT = 640
+/** Preferred height ratio for compact layout relative to the host height. */
+const LAYER_POPOVER_COMPACT_HEIGHT_RATIO = 0.55
+/** Maximum height for compact layout (px). */
+const LAYER_POPOVER_COMPACT_MAX_HEIGHT = 420
+
+/** Stable id for the popover title element (used by aria-labelledby). */
+const LAYER_MANAGER_TITLE_ID = 'ml-ex-ui-layer-manager-title'
 
 /** Constructor options for {@link AcExLayerManager}. */
 export interface AcExLayerManagerOptions {
@@ -23,19 +35,24 @@ export interface AcExLayerManagerOptions {
   editor: AcApDocManager
   /** i18n helper for panel labels. */
   i18n: AcExI18n
-  /** Viewer host used for containment and default positioning. */
+  /** Viewer host used for containment and theme CSS variables. */
   host: HTMLElement
-  /** Toolbar placement used to pick the opposite side for the panel. */
+  /** Toolbar placement used to position the popover relative to the anchor. */
   toolbarPlacement?: AcExToolbarPlacement
-  /** When false, the panel is clamped inside `host`. */
-  allowMoveOutsideCanvas?: boolean
+  /**
+   * Resolves the layer toolbar button, expanding a collapsed toolbar when needed.
+   * Falls back to querying the host when not provided.
+   */
+  resolveLayerAnchor?: () => HTMLElement | undefined
 }
 
 /**
- * Draggable, resizable floating panel for layer visibility and color editing.
+ * Layer list popover anchored to the toolbar layer button.
+ *
+ * Opens on layer button click and closes on outside interaction (canvas, other UI).
  */
 export class AcExLayerManager {
-  /** Root panel element. */
+  /** Root popover element. */
   private root: HTMLDivElement
   /** Layer table body receiving row nodes. */
   private tbody!: HTMLTableSectionElement
@@ -49,20 +66,6 @@ export class AcExLayerManager {
   private onLabelEl!: HTMLSpanElement
   /** Color column header cell. */
   private colorHeaderEl!: HTMLTableCellElement
-  /** Active pointer drag state for header dragging. */
-  private dragState?: {
-    pointerId: number
-    offsetX: number
-    offsetY: number
-  }
-  /** Active pointer resize state for the bottom handle. */
-  private resizeState?: {
-    pointerId: number
-    startY: number
-    startHeight: number
-  }
-  /** Whether the panel may be positioned outside the host bounds. */
-  private readonly allowMoveOutsideCanvas: boolean
   /** Viewer host reference. */
   private readonly host: HTMLElement
   /** Document manager whose active document supplies layer data. */
@@ -71,15 +74,42 @@ export class AcExLayerManager {
   private subscribedLayerStore?: AcApLayerStore
   /** i18n helper for labels and toasts. */
   private readonly i18n: AcExI18n
-  /** Toolbar placement for default horizontal positioning. */
+  /** Toolbar placement for popover positioning. */
   private toolbarPlacement: AcExToolbarPlacement
-  /** Whether the user has manually dragged the panel. */
-  private hasUserPosition = false
-  /** Whether the user has manually resized the panel height. */
-  private hasUserResize = false
+  /** Button element the popover is anchored to, when visible. */
+  private anchor?: HTMLElement
+  /** Element focused before the popover opened. */
+  private previousFocus?: HTMLElement
+  /** Re-positions the popover when the viewer host is resized. */
+  private readonly resizeObserver: ResizeObserver
+  /** Resolves the layer toolbar button when invoked from the `layer` command. */
+  private readonly resolveLayerAnchor?: () => HTMLElement | undefined
 
-  /** Hides the panel when the global `close-layer-manager` event fires. */
+  /** Hides the popover when the global `close-layer-manager` event fires. */
   private handleCloseLayerManager = () => {
+    this.hide()
+  }
+
+  /** Closes the popover when the user interacts outside it and the anchor. */
+  private handleDocumentPointerDown = (event: PointerEvent) => {
+    if (!this.visible) return
+    if (!(event.target instanceof Node)) return
+    if (this.root.contains(event.target)) return
+    if (this.anchor?.contains(event.target)) return
+    if (
+      event.target instanceof Element &&
+      event.target.closest('.ml-ex-ui-color-dialog-backdrop')
+    ) {
+      return
+    }
+    this.hide()
+  }
+
+  /** Closes the popover when the user presses Escape. */
+  private handleDocumentKeyDown = (event: KeyboardEvent) => {
+    if (!this.visible || event.key !== 'Escape') return
+    event.preventDefault()
+    event.stopPropagation()
     this.hide()
   }
 
@@ -91,32 +121,25 @@ export class AcExLayerManager {
     this.i18n = options.i18n
     this.host = options.host
     this.toolbarPlacement = options.toolbarPlacement ?? 'right'
-    this.allowMoveOutsideCanvas = options.allowMoveOutsideCanvas ?? false
+    this.resolveLayerAnchor = options.resolveLayerAnchor
     ensureUiStyles()
 
     this.root = document.createElement('div')
     this.root.className = 'ml-ex-ui-layer-manager is-hidden'
-    if (!this.allowMoveOutsideCanvas) {
-      this.root.classList.add('is-contained')
-    }
+    this.root.setAttribute('role', 'dialog')
+    this.root.setAttribute('aria-modal', 'false')
+    this.root.setAttribute('aria-labelledby', LAYER_MANAGER_TITLE_ID)
 
     const header = document.createElement('div')
     header.className = 'ml-ex-ui-layer-manager-header'
 
     const title = document.createElement('span')
     this.titleEl = title
+    title.id = LAYER_MANAGER_TITLE_ID
     title.textContent = options.i18n.t('layerManager.title')
 
-    const closeBtn = document.createElement('button')
-    closeBtn.type = 'button'
-    closeBtn.className = 'ml-ex-ui-layer-manager-close'
-    closeBtn.setAttribute('aria-label', 'Close')
-    closeBtn.textContent = '×'
-    closeBtn.addEventListener('click', () => this.hide())
-
     header.appendChild(title)
-    header.appendChild(closeBtn)
-    this.bindDrag(header)
+    this.bindPopoverPointerGuard(header)
 
     const tableWrap = document.createElement('div')
     tableWrap.className = 'ml-ex-ui-layer-table-wrap'
@@ -171,21 +194,13 @@ export class AcExLayerManager {
 
     this.root.appendChild(header)
     this.root.appendChild(tableWrap)
+    this.bindPopoverPointerGuard(tableWrap)
 
-    const resizeHandle = document.createElement('div')
-    resizeHandle.className = 'ml-ex-ui-layer-manager-resize'
-    resizeHandle.setAttribute('aria-label', 'Resize')
-    this.bindResize(resizeHandle)
-    this.root.appendChild(resizeHandle)
-
-    if (this.allowMoveOutsideCanvas) {
-      document.body.appendChild(this.root)
-    } else {
-      if (getComputedStyle(this.host).position === 'static') {
-        this.host.style.position = 'relative'
-      }
-      this.host.appendChild(this.root)
+    if (getComputedStyle(this.host).position === 'static') {
+      this.host.style.position = 'relative'
     }
+
+    this.host.appendChild(this.root)
 
     this.editor.events.documentActivated.addEventListener(
       this.handleDocumentActivated
@@ -193,6 +208,13 @@ export class AcExLayerManager {
     this.bindToActiveDocument()
     eventBus.on('close-layer-manager', this.handleCloseLayerManager)
     this.renderRows()
+
+    this.resizeObserver = new ResizeObserver(() => {
+      if (this.visible && this.anchor) {
+        this.positionNear(this.anchor)
+      }
+    })
+    this.resizeObserver.observe(this.host)
   }
 
   /** Layer store for the active document, when one is open. */
@@ -221,43 +243,85 @@ export class AcExLayerManager {
     this.renderRows()
   }
 
-  /** Shows the panel and applies default position when not yet user-placed. */
-  show() {
+  /**
+   * Shows the popover anchored to the given toolbar button.
+   *
+   * @param anchor - Layer toolbar button used for positioning.
+   */
+  show(anchor: HTMLElement) {
+    this.previousFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : undefined
+    this.anchor = anchor
     this.root.classList.remove('is-hidden')
-    if (!this.hasUserPosition) {
-      this.applyDefaultPosition()
-    }
+    this.positionNear(anchor)
     this.renderRows()
+    document.addEventListener('pointerdown', this.handleDocumentPointerDown, true)
+    document.addEventListener('keydown', this.handleDocumentKeyDown, true)
+    this.focusInitialControl()
   }
 
-  /** Hides the panel without destroying it. */
+  /** Hides the popover without destroying it. */
   hide() {
     this.root.classList.add('is-hidden')
+    document.removeEventListener(
+      'pointerdown',
+      this.handleDocumentPointerDown,
+      true
+    )
+    document.removeEventListener('keydown', this.handleDocumentKeyDown, true)
+    const restoreFocus = this.anchor ?? this.previousFocus
+    this.anchor = undefined
+    this.previousFocus = undefined
+    if (restoreFocus?.isConnected) {
+      restoreFocus.focus()
+    }
   }
 
-  /** Shows the panel if hidden, otherwise hides it. */
-  toggle() {
-    if (this.root.classList.contains('is-hidden')) {
-      this.show()
-    } else {
+  /**
+   * Shows the popover if hidden, otherwise hides it.
+   *
+   * @param anchor - Layer toolbar button used for positioning.
+   */
+  toggle(anchor: HTMLElement) {
+    if (this.visible && this.anchor === anchor) {
+      this.hide()
+      return
+    }
+    this.show(anchor)
+  }
+
+  /**
+   * Toggles the popover using the layer toolbar button when available.
+   *
+   * Used by the `layer` CAD command when invoked without a direct anchor.
+   */
+  toggleFromCommand() {
+    const anchor = this.findLayerButtonAnchor()
+    if (anchor) {
+      this.toggle(anchor)
+      return
+    }
+    if (this.visible) {
       this.hide()
     }
   }
 
-  /** Whether the panel is currently visible. */
+  /** Whether the popover is currently visible. */
   get visible() {
     return !this.root.classList.contains('is-hidden')
   }
 
   /**
-   * Updates toolbar placement used for default horizontal positioning.
+   * Updates toolbar placement used for popover positioning.
    *
    * @param placement - Current toolbar edge placement.
    */
   setToolbarPlacement(placement: AcExToolbarPlacement) {
     this.toolbarPlacement = placement
-    if (!this.hasUserPosition && this.visible) {
-      this.applyDefaultPosition()
+    if (this.visible && this.anchor) {
+      this.positionNear(this.anchor)
     }
   }
 
@@ -269,9 +333,16 @@ export class AcExLayerManager {
     this.colorHeaderEl.textContent = this.i18n.t('layerManager.color')
   }
 
-  /** Removes event listeners and removes the panel from the DOM. */
+  /** Removes event listeners and removes the popover from the DOM. */
   destroy() {
+    this.resizeObserver.disconnect()
     eventBus.off('close-layer-manager', this.handleCloseLayerManager)
+    document.removeEventListener(
+      'pointerdown',
+      this.handleDocumentPointerDown,
+      true
+    )
+    document.removeEventListener('keydown', this.handleDocumentKeyDown, true)
     this.editor.events.documentActivated.removeEventListener(
       this.handleDocumentActivated
     )
@@ -378,174 +449,230 @@ export class AcExLayerManager {
   }
 
   /**
-   * Enables drag-to-move on the panel header.
+   * Positions the popover adjacent to the anchor, flipping when near viewport edges.
+   * On compact (mobile) layouts, uses a bottom sheet within the viewer host.
    *
-   * @param header - Header element receiving pointer events.
+   * @param anchor - Reference button bounding box.
    */
-  private bindDrag(header: HTMLElement) {
-    header.addEventListener('pointerdown', event => {
-      if (!(event.target instanceof HTMLElement)) return
-      if (event.target.closest('.ml-ex-ui-layer-manager-close')) return
-
-      const rect = this.root.getBoundingClientRect()
-      this.dragState = {
-        pointerId: event.pointerId,
-        offsetX: event.clientX - rect.left,
-        offsetY: event.clientY - rect.top
-      }
-      header.setPointerCapture(event.pointerId)
-    })
-
-    header.addEventListener('pointermove', event => {
-      if (!this.dragState || event.pointerId !== this.dragState.pointerId) return
-      this.hasUserPosition = true
-      this.setPosition(
-        event.clientX - this.dragState.offsetX,
-        event.clientY - this.dragState.offsetY
-      )
-    })
-
-    const endDrag = (event: PointerEvent) => {
-      if (!this.dragState || event.pointerId !== this.dragState.pointerId) return
-      this.dragState = undefined
-      header.releasePointerCapture(event.pointerId)
+  private positionNear(anchor: HTMLElement) {
+    this.resetPopoverInlineSize()
+    if (this.isCompactLayout()) {
+      this.root.classList.add('is-compact')
+      this.positionCompact()
+      return
     }
 
-    header.addEventListener('pointerup', endDrag)
-    header.addEventListener('pointercancel', endDrag)
+    this.root.classList.remove('is-compact')
+    this.positionNearAnchor(anchor)
   }
 
   /**
-   * Enables vertical resize via the bottom handle.
+   * Positions the popover beside the toolbar anchor on desktop layouts.
    *
-   * @param handle - Resize handle element.
+   * For vertical toolbars, height and vertical edges align with the toolbar;
+   * {@link LAYER_POPOVER_MIN_HEIGHT} applies when the toolbar is shorter.
+   *
+   * @param anchor - Reference button bounding box.
    */
-  private bindResize(handle: HTMLElement) {
-    handle.addEventListener('pointerdown', event => {
-      event.preventDefault()
-      this.resizeState = {
-        pointerId: event.pointerId,
-        startY: event.clientY,
-        startHeight: this.root.offsetHeight
-      }
-      handle.setPointerCapture(event.pointerId)
-    })
+  private positionNearAnchor(anchor: HTMLElement) {
+    const inset = LAYER_POPOVER_VIEWPORT_INSET
+    const rect = anchor.getBoundingClientRect()
+    const hostRect = this.host.getBoundingClientRect()
+    const panelWidth = this.constrainPopoverWidth(inset)
+    const toolbarRect = this.getToolbarRect()
+    const verticalToolbar =
+      this.toolbarPlacement === 'left' || this.toolbarPlacement === 'right'
 
-    handle.addEventListener('pointermove', event => {
-      if (!this.resizeState || event.pointerId !== this.resizeState.pointerId) {
-        return
-      }
-      const delta = event.clientY - this.resizeState.startY
-      const maxHeight = this.getResizeMaxPanelHeight()
-      const nextHeight = Math.max(
-        LAYER_MANAGER_MIN_HEIGHT,
-        Math.min(maxHeight, this.resizeState.startHeight + delta)
-      )
-      this.hasUserResize = true
-      this.root.style.height = `${nextHeight}px`
-      this.root.style.maxHeight = `${nextHeight}px`
-    })
+    let top: number
+    let left: number
+    let panelHeight: number
 
-    const endResize = (event: PointerEvent) => {
-      if (!this.resizeState || event.pointerId !== this.resizeState.pointerId) {
-        return
+    if (verticalToolbar && toolbarRect) {
+      const preferredHeight = Math.max(LAYER_POPOVER_MIN_HEIGHT, toolbarRect.height)
+      panelHeight = this.applyPopoverHeight(preferredHeight)
+
+      if (panelHeight >= toolbarRect.height) {
+        top = toolbarRect.top + (toolbarRect.height - panelHeight) / 2
+      } else {
+        top = toolbarRect.top
       }
-      this.resizeState = undefined
-      handle.releasePointerCapture(event.pointerId)
+
+      if (this.toolbarPlacement === 'right') {
+        left = rect.left - panelWidth - LAYER_POPOVER_GAP
+      } else {
+        left = rect.right + LAYER_POPOVER_GAP
+      }
+    } else {
+      panelHeight = this.applyPopoverHeight(LAYER_POPOVER_MIN_HEIGHT)
+
+      if (this.toolbarPlacement === 'right') {
+        left = rect.left - panelWidth - LAYER_POPOVER_GAP
+        top = rect.top
+      } else if (this.toolbarPlacement === 'left') {
+        left = rect.right + LAYER_POPOVER_GAP
+        top = rect.top
+      } else if (this.toolbarPlacement === 'top') {
+        top = rect.bottom + LAYER_POPOVER_GAP
+        left = rect.left
+      } else {
+        top = rect.top - panelHeight - LAYER_POPOVER_GAP
+        left = rect.left
+      }
     }
 
-    handle.addEventListener('pointerup', endResize)
-    handle.addEventListener('pointercancel', endResize)
+    if (left + panelWidth > hostRect.right - inset) {
+      left = hostRect.right - panelWidth - inset
+    }
+    if (left < hostRect.left + inset) {
+      left = hostRect.left + inset
+    }
+
+    ;({ top, panelHeight } = this.clampPopoverVerticalBounds(
+      top,
+      panelHeight,
+      hostRect,
+      inset
+    ))
+
+    this.root.style.top = `${top - hostRect.top}px`
+    this.root.style.left = `${left - hostRect.left}px`
+  }
+
+  /** Positions the popover as a bottom sheet on compact layouts. */
+  private positionCompact() {
+    const inset = LAYER_POPOVER_VIEWPORT_INSET
+    const width = Math.max(0, this.host.clientWidth - inset * 2)
+    const maxHeight = this.getMaxPopoverHeight()
+    const preferredHeight = Math.min(
+      LAYER_POPOVER_COMPACT_MAX_HEIGHT,
+      Math.max(
+        LAYER_POPOVER_ABSOLUTE_MIN_HEIGHT,
+        Math.round(this.host.clientHeight * LAYER_POPOVER_COMPACT_HEIGHT_RATIO)
+      )
+    )
+    const height = this.applyPopoverHeight(preferredHeight, maxHeight)
+
+    this.root.style.width = `${width}px`
+    this.root.style.left = `${inset}px`
+    this.root.style.top = `${Math.max(
+      inset,
+      this.host.clientHeight - height - inset
+    )}px`
   }
 
   /**
-   * Default panel height: canvas height minus 150px top and bottom margins.
+   * Applies popover height constraints and returns the resolved height.
+   *
+   * @param preferredHeight - Desired height before clamping.
+   * @param maxHeight - Optional maximum height override.
    */
-  private getDefaultPanelHeight(): number {
-    if (this.allowMoveOutsideCanvas) {
-      return Math.max(
-        LAYER_MANAGER_MIN_HEIGHT,
-        window.innerHeight - LAYER_MANAGER_VERTICAL_MARGIN * 2
-      )
+  private applyPopoverHeight(
+    preferredHeight: number,
+    maxHeight = this.getMaxPopoverHeight()
+  ): number {
+    const height = Math.min(preferredHeight, maxHeight)
+    this.root.style.maxHeight = `${maxHeight}px`
+    this.root.style.height = `${height}px`
+    return height
+  }
+
+  /** Clears inline size overrides so CSS defaults can apply on desktop. */
+  private resetPopoverInlineSize() {
+    this.root.style.width = ''
+    this.root.style.height = ''
+    this.root.style.maxHeight = ''
+  }
+
+  /**
+   * Clamps popover width so it never exceeds the viewer host.
+   *
+   * @param inset - Edge inset used for width calculation.
+   */
+  private constrainPopoverWidth(inset: number): number {
+    const maxWidth = Math.max(0, this.host.clientWidth - inset * 2)
+    if (maxWidth > 0 && this.root.offsetWidth > maxWidth) {
+      this.root.style.width = `${maxWidth}px`
     }
+    return this.root.offsetWidth || maxWidth
+  }
+
+  /** Whether the viewer host is narrow enough to use compact layout. */
+  private isCompactLayout(): boolean {
+    return this.host.clientWidth <= LAYER_POPOVER_COMPACT_BREAKPOINT
+  }
+
+  /**
+   * Clamps popover vertical position and height within the host.
+   */
+  private clampPopoverVerticalBounds(
+    top: number,
+    panelHeight: number,
+    hostRect: DOMRect,
+    inset: number
+  ): { top: number; panelHeight: number } {
+    const maxBottom = hostRect.bottom - inset
+    const minTop = hostRect.top + inset
+
+    if (top + panelHeight > maxBottom) {
+      top = maxBottom - panelHeight
+    }
+    if (top < minTop) {
+      top = minTop
+      const availableHeight = maxBottom - top
+      if (availableHeight < panelHeight) {
+        panelHeight = this.applyPopoverHeight(
+          Math.max(LAYER_POPOVER_ABSOLUTE_MIN_HEIGHT, availableHeight)
+        )
+      }
+    }
+    return { top, panelHeight }
+  }
+
+  /** Maximum popover height based on the viewer host size. */
+  private getMaxPopoverHeight(): number {
     return Math.max(
-      LAYER_MANAGER_MIN_HEIGHT,
-      this.host.clientHeight - LAYER_MANAGER_VERTICAL_MARGIN * 2
+      LAYER_POPOVER_ABSOLUTE_MIN_HEIGHT,
+      this.host.clientHeight - LAYER_POPOVER_VIEWPORT_INSET * 2
     )
   }
 
-  /**
-   * Maximum height while the user is resizing (full canvas; no 150px margin).
-   */
-  private getResizeMaxPanelHeight(): number {
-    if (this.allowMoveOutsideCanvas) {
-      return Math.max(LAYER_MANAGER_MIN_HEIGHT, window.innerHeight)
-    }
-    return Math.max(LAYER_MANAGER_MIN_HEIGHT, this.host.clientHeight)
+  /** Returns the toolbar bounding box in viewport coordinates, when present. */
+  private getToolbarRect(): DOMRect | undefined {
+    const toolbar = this.host.querySelector<HTMLElement>('.ml-ex-ui-toolbar')
+    return toolbar?.getBoundingClientRect()
   }
 
-  /**
-   * Centers the panel vertically and places it on the side opposite the toolbar.
-   */
-  private applyDefaultPosition() {
-    if (!this.hasUserResize) {
-      const defaultHeight = this.getDefaultPanelHeight()
-      this.root.style.height = `${defaultHeight}px`
-      this.root.style.maxHeight = `${defaultHeight}px`
-    }
+  /** Finds the layer toolbar button in the host, when the toolbar is present. */
+  private findLayerButtonAnchor(): HTMLElement | undefined {
+    return this.resolveLayerAnchor?.() ?? this.queryLayerButtonAnchor()
+  }
 
-    const hostWidth = this.host.clientWidth
-    const hostHeight = this.host.clientHeight
-    const panelWidth = this.root.offsetWidth
-    const panelHeight = this.root.offsetHeight
-    const availableHeight = hostHeight - LAYER_MANAGER_VERTICAL_MARGIN * 2
-    const top =
-      LAYER_MANAGER_VERTICAL_MARGIN +
-      Math.max(0, (availableHeight - panelHeight) / 2)
+  /** Queries the host for the layer toolbar button without expanding the toolbar. */
+  private queryLayerButtonAnchor(): HTMLElement | undefined {
+    const button = this.host.querySelector<HTMLElement>(
+      '[data-toolbar-item-id="layer"]'
+    )
+    return button ?? undefined
+  }
 
-    let left: number
-    if (this.toolbarPlacement === 'right') {
-      left = LAYER_MANAGER_HORIZONTAL_MARGIN
-    } else {
-      left = Math.max(
-        LAYER_MANAGER_HORIZONTAL_MARGIN,
-        hostWidth - panelWidth - LAYER_MANAGER_HORIZONTAL_MARGIN
+  /** Moves focus to the first interactive control inside the popover. */
+  private focusInitialControl() {
+    requestAnimationFrame(() => {
+      if (!this.visible) return
+      const focusable = this.root.querySelector<HTMLElement>(
+        'input:not([disabled]), button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
       )
-    }
-
-    if (this.allowMoveOutsideCanvas) {
-      const hostRect = this.host.getBoundingClientRect()
-      this.root.style.left = `${hostRect.left + left}px`
-      this.root.style.top = `${hostRect.top + top}px`
-      return
-    }
-
-    this.root.style.left = `${left}px`
-    this.root.style.top = `${top}px`
+      focusable?.focus()
+    })
   }
 
   /**
-   * Sets panel position in viewport or host-local coordinates.
+   * Stops pointer events from bubbling so canvas handlers do not close the popover.
    *
-   * @param clientLeft - Desired left edge in viewport coordinates.
-   * @param clientTop - Desired top edge in viewport coordinates.
+   * @param element - Popover section to guard.
    */
-  private setPosition(clientLeft: number, clientTop: number) {
-    if (this.allowMoveOutsideCanvas) {
-      this.root.style.left = `${clientLeft}px`
-      this.root.style.top = `${clientTop}px`
-      return
-    }
-
-    const hostRect = this.host.getBoundingClientRect()
-    let left = clientLeft - hostRect.left
-    let top = clientTop - hostRect.top
-    const maxLeft = Math.max(0, this.host.clientWidth - this.root.offsetWidth)
-    const maxTop = Math.max(0, this.host.clientHeight - this.root.offsetHeight)
-    left = Math.max(0, Math.min(left, maxLeft))
-    top = Math.max(0, Math.min(top, maxTop))
-    this.root.style.left = `${left}px`
-    this.root.style.top = `${top}px`
+  private bindPopoverPointerGuard(element: HTMLElement) {
+    element.addEventListener('pointerdown', event => event.stopPropagation())
   }
 
   /**

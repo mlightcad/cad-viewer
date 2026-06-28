@@ -99,6 +99,22 @@ export const ICON_PLACEMENT_LEFT =
 export const ICON_PLACEMENT_RIGHT =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="5" y="5" width="9" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="14" y="3" width="3" height="14" rx=".5" fill="currentColor"/></svg>'
 
+/** Collapse toolbar (chevron toward compact edge). */
+export const ICON_CHEVRON_UP =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 6.5 5.5 11h9L10 6.5Z"/></svg>'
+
+/** Expand toolbar (chevron toward expanded edge). */
+export const ICON_CHEVRON_DOWN =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 13.5 14.5 9h-9L10 13.5Z"/></svg>'
+
+/** Collapse horizontal toolbar (chevron toward compact edge). */
+export const ICON_CHEVRON_RIGHT =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M13.5 10 9 14.5V5.5L13.5 10Z"/></svg>'
+
+/** Expand horizontal toolbar (chevron toward expanded edge). */
+export const ICON_CHEVRON_LEFT =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M6.5 10 11 14.5V5.5L6.5 10Z"/></svg>'
+
 /**
  * Creates a DOM icon element from an SVG string, element, or factory.
  *

@@ -22,6 +22,7 @@ export function ensureUiStyles() {
       box-shadow: var(--ml-ui-shadow, 0 2px 6px rgba(0, 0, 0, 0.12));
       border-radius: 6px;
       box-sizing: border-box;
+      --ml-ex-ui-toolbar-btn-size: 32px;
     }
 
     .ml-ex-ui-toolbar.is-horizontal {
@@ -42,6 +43,40 @@ export function ensureUiStyles() {
     .ml-ex-ui-toolbar.is-disabled {
       opacity: 0.55;
       pointer-events: none;
+    }
+
+    .ml-ex-ui-toolbar.is-collapsed .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-collapse-btn),
+    .ml-ex-ui-toolbar.is-collapsed .ml-ex-ui-toolbar-separator {
+      display: none;
+    }
+
+    .ml-ex-ui-toolbar-collapse-btn {
+      box-sizing: border-box;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .ml-ex-ui-toolbar.is-vertical .ml-ex-ui-toolbar-collapse-btn {
+      min-width: var(--ml-ex-ui-toolbar-btn-size);
+      width: auto;
+      min-height: calc(var(--ml-ex-ui-toolbar-btn-size) / 2);
+      height: calc(var(--ml-ex-ui-toolbar-btn-size) / 2);
+      margin-top: -4px;
+      margin-bottom: -4px;
+    }
+
+    .ml-ex-ui-toolbar.is-horizontal .ml-ex-ui-toolbar-collapse-btn {
+      min-height: var(--ml-ex-ui-toolbar-btn-size);
+      height: auto;
+      min-width: calc(var(--ml-ex-ui-toolbar-btn-size) / 2);
+      width: calc(var(--ml-ex-ui-toolbar-btn-size) / 2);
+      margin-left: -4px;
+      margin-right: -4px;
+    }
+
+    .ml-ex-ui-toolbar-collapse-btn .ml-ex-ui-icon svg {
+      width: calc(var(--ml-ex-ui-toolbar-btn-size) / 2);
+      height: calc(var(--ml-ex-ui-toolbar-btn-size) / 2);
     }
 
     .ml-ex-ui-toolbar-separator {
@@ -68,8 +103,9 @@ export function ensureUiStyles() {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 32px;
-      min-height: 32px;
+      box-sizing: border-box;
+      min-width: var(--ml-ex-ui-toolbar-btn-size);
+      min-height: var(--ml-ex-ui-toolbar-btn-size);
       padding: 4px;
       border: 1px solid var(--ml-ui-border, #dcdfe6);
       border-radius: 4px;
@@ -173,10 +209,12 @@ export function ensureUiStyles() {
     }
 
     .ml-ex-ui-layer-manager {
-      position: fixed;
-      z-index: 90;
-      width: min(280px, calc(100vw - 24px));
+      position: absolute;
+      z-index: 100;
+      width: min(280px, calc(100% - 16px));
+      max-width: calc(100% - 16px);
       min-height: 120px;
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       background: var(--ml-ui-bg, #ffffff);
@@ -188,10 +226,23 @@ export function ensureUiStyles() {
       font-size: 12px;
     }
 
-    .ml-ex-ui-layer-manager.is-contained {
-      position: absolute;
-      width: min(280px, calc(100% - 16px));
-      max-height: 100%;
+    .ml-ex-ui-layer-manager.is-compact {
+      width: calc(100% - 16px);
+      max-width: none;
+      border-radius: 12px 12px 8px 8px;
+    }
+
+    .ml-ex-ui-layer-manager.is-compact .ml-ex-ui-layer-table th:first-child,
+    .ml-ex-ui-layer-manager.is-compact .ml-ex-ui-layer-table td:first-child {
+      width: 100%;
+      max-width: 0;
+    }
+
+    .ml-ex-ui-layer-manager.is-compact .ml-ex-ui-layer-name {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .ml-ex-ui-layer-manager.is-hidden {
@@ -204,19 +255,9 @@ export function ensureUiStyles() {
       justify-content: space-between;
       padding: 8px 10px;
       border-bottom: 1px solid var(--ml-ui-border, #dcdfe6);
-      cursor: move;
       user-select: none;
       font-weight: 600;
-    }
-
-    .ml-ex-ui-layer-manager-close {
-      border: none;
-      background: transparent;
-      color: var(--ml-ui-text-muted, #606266);
-      cursor: pointer;
-      font-size: 16px;
-      line-height: 1;
-      padding: 2px 6px;
+      flex: 0 0 auto;
     }
 
     .ml-ex-ui-layer-table-wrap {
@@ -262,17 +303,6 @@ export function ensureUiStyles() {
 
     .ml-ex-ui-layer-header-on input[type='checkbox'] {
       margin: 0;
-    }
-
-    .ml-ex-ui-layer-manager-resize {
-      flex: 0 0 auto;
-      height: 6px;
-      cursor: ns-resize;
-      background: transparent;
-    }
-
-    .ml-ex-ui-layer-manager-resize:hover {
-      background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
     }
 
     .ml-ex-ui-layer-name {

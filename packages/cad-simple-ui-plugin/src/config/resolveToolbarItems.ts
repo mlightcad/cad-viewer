@@ -155,7 +155,7 @@ export function resolveParentToolbarDisplay(
 export function itemRequiresDocument(item: AcExToolbarItem): boolean {
   if (isToolbarSeparatorItem(item)) return false
   if (item.requiresDocument != null) return item.requiresDocument
-  return Boolean(item.command)
+  return Boolean(item.command || item.anchorAction)
 }
 
 /**
@@ -198,6 +198,7 @@ export function filterVisibleToolbarItems(
         item.children.length > 0 ||
         item.command ||
         item.action ||
+        item.anchorAction ||
         item.toggle
       )
     })
