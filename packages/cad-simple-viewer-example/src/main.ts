@@ -28,6 +28,7 @@ class CadViewerApp {
   private fileSidebarSubtitle: HTMLSpanElement
   private isInitialized = false
   private hasOpenedFile = false
+  private isLoadingFile = false
 
   constructor() {
     this.container = document.getElementById('cad-container') as HTMLDivElement
@@ -93,6 +94,12 @@ class CadViewerApp {
       AcApDocManager.instance.events.documentActivated.addEventListener(
         args => {
           document.title = args.doc.docTitle
+        }
+      )
+
+      AcApDocManager.instance.events.documentToBeOpened.addEventListener(
+        () => {
+          this.setLoadingState(true)
         }
       )
 
@@ -249,6 +256,8 @@ class CadViewerApp {
     } catch (error) {
       log.error('Error loading file:', error)
       this.showMessage(`Error loading file: ${error}`, 'error')
+    } finally {
+      this.finishLoadingState()
     }
   }
 
@@ -277,6 +286,8 @@ class CadViewerApp {
     } catch (error) {
       log.error('Error loading predefined file:', error)
       this.showMessage(`Error loading file: ${error}`, 'error')
+    } finally {
+      this.finishLoadingState()
     }
   }
 
@@ -285,8 +296,21 @@ class CadViewerApp {
     this.updateEmptyStateVisibility()
   }
 
+  private setLoadingState(loading: boolean) {
+    this.isLoadingFile = loading
+    this.updateEmptyStateVisibility()
+  }
+
+  private finishLoadingState() {
+    this.isLoadingFile = false
+    this.updateEmptyStateVisibility()
+  }
+
   private updateEmptyStateVisibility() {
-    this.emptyState.classList.toggle('hidden', this.hasOpenedFile)
+    this.emptyState.classList.toggle(
+      'hidden',
+      this.hasOpenedFile || this.isLoadingFile
+    )
   }
 
   private getFileNameFromUrl(url: string) {

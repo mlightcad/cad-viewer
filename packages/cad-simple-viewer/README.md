@@ -70,6 +70,48 @@ Layer table mutations are centralized in `AcApLayerService`. UI integrations sho
 
 The `LockAndFade` isolation keyword matches AutoCAD naming but the viewer **locks** non-isolated layers only. It does not apply a visual fade; users are notified when selecting this mode in the `LAYISO` command.
 
+## Web Worker deployment
+
+The viewer loads three worker scripts for DXF parsing, DWG parsing, and MTEXT rendering. Host applications must deploy these files and point to them via `webworkerFileUrls` in `AcApDocManager.createInstance()`.
+
+Before calling `openDocument()`, verify that the workers are reachable. Use the built-in readiness API rather than downloading worker bodies with a plain GET request (the LibreDWG worker alone is ~12 MB):
+
+```typescript
+const workerUrls = {
+  dxfParser: './workers/dxf-parser-worker.js',
+  dwgParser: './workers/libredwg-parser-worker.js',
+  mtextRender: './workers/mtext-renderer-worker.js'
+}
+
+// Option 1: check before creating the manager
+const ready = await AcApDocManager.checkWebworkerReadiness(workerUrls)
+if (!ready) {
+  throw new Error('CAD worker scripts are missing or blocked')
+}
+
+const manager = AcApDocManager.createInstance({ webworkerFileUrls: workerUrls })
+
+// Option 2: check on an existing manager instance
+if (!(await manager.areWorkersReady())) {
+  throw new Error('CAD worker scripts are missing or blocked')
+}
+```
+
+`areWorkersReady()` and `checkWebworkerReadiness()` use HEAD requests internally. A successful result is cached for the current page lifecycle; failures are not cached, so a transient network error does not permanently block CAD opening.
+
+You can also enable automatic checks during initialization:
+
+```typescript
+AcApDocManager.createInstance({
+  webworkerFileUrls: workerUrls,
+  checkWorkersOnInit: true
+})
+
+manager.events.workersReady.addEventListener(({ ready }) => {
+  if (!ready) console.error('CAD workers are not reachable')
+})
+```
+
 ## Available Exports
 
 ### Core Classes

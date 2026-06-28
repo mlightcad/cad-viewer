@@ -151,8 +151,9 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
   |------|------|
   | 0 | 不保存 Proxy Graphics |
   | 1 | 保存 Proxy Graphics |
-
-上述限制将会在后续版本中逐步改进。
+- **DWG 文件大小限制**：
+  - 使用 LibreDWG 解析 DWG 文件时内存开销较大，很容易占用超过 2 GB 内存。因此 `libredwg-web` 对 WASM 堆内存做了限制，过大的 DWG 文件可能无法解析。
+  - 我们已开发闭源 DWG 解析器，具有更低的内存开销，支持解析更大的 DWG 文件，且解析结果更加正确。若开源项目 `libredwg-web` 无法满足您的需求，请发送邮件至 [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) 协商闭源 DWG 解析器授权。
 
 ## 路线图（Roadmap）
 

@@ -76,6 +76,11 @@ import {
   AcApZoomCmd
 } from '../command'
 import {
+  checkWebworkerReadiness,
+  DEFAULT_WEBWORKER_FILE_URLS,
+  resetWebworkerReadinessCache
+} from './AcApWebworkerReadiness'
+import {
   AcEdCalculateSizeCallback,
   AcEdCommand,
   AcEdCommandStack,
@@ -233,6 +238,13 @@ export interface AcApDocManagerOptions {
   webworkerFileUrls?: AcApWebworkerFiles
 
   /**
+   * When true, verify worker script URLs via HEAD requests after initialization.
+   * The result is exposed through {@link AcApDocManager.workersReady} and the
+   * `workersReady` event. Defaults to false.
+   */
+  checkWorkersOnInit?: boolean
+
+  /**
    * URL of the offline HTML viewer runtime bundle (`viewer-runtime.iife.js`).
    * Used by the HTML export plugin when packaging standalone HTML files.
    */
@@ -361,6 +373,12 @@ export class AcApDocManager {
   private _openFileProgressStage?: AcDbProgressdEventArgs['stage']
   /** Singleton instance */
   private static _instance?: AcApDocManager
+  /** Worker URLs configured at initialization */
+  private _webworkerFileUrls?: AcApWebworkerFiles
+  /** Cached worker readiness; null until checked, true when all workers are reachable */
+  private _workersReady: boolean | null = null
+  /** In-flight worker readiness check */
+  private _workersReadyCheckPromise?: Promise<boolean>
 
   /** Events fired during document lifecycle */
   public readonly events = {
@@ -369,7 +387,9 @@ export class AcApDocManager {
     /** Fired when a new document is created */
     documentCreated: new AcCmEventManager<AcDbDocumentEventArgs>(),
     /** Fired when a document becomes active */
-    documentActivated: new AcCmEventManager<AcDbDocumentEventArgs>()
+    documentActivated: new AcCmEventManager<AcDbDocumentEventArgs>(),
+    /** Fired when a worker readiness check completes */
+    workersReady: new AcCmEventManager<{ ready: boolean }>()
   }
 
   /**
@@ -470,7 +490,11 @@ export class AcApDocManager {
     if (!options.notLoadDefaultFonts) {
       this.loadDefaultFonts()
     }
+    this._webworkerFileUrls = options.webworkerFileUrls
     this.registerWorkers(options.webworkerFileUrls)
+    if (options.checkWorkersOnInit) {
+      void this.areWorkersReady()
+    }
     // Load plugins asynchronously (don't await to avoid blocking initialization)
     this.loadPlugins(options.plugins).catch(error => {
       log.error('[AcApDocManager] Error loading plugins:', error)
@@ -494,6 +518,16 @@ export class AcApDocManager {
   }
 
   /**
+   * Checks whether configured worker scripts are reachable without creating an
+   * {@link AcApDocManager} instance.
+   */
+  static checkWebworkerReadiness(
+    webworkerFileUrls?: AcApWebworkerFiles
+  ): Promise<boolean> {
+    return checkWebworkerReadiness(webworkerFileUrls)
+  }
+
+  /**
    * Gets the singleton instance of the document manager.
    * Throw one exception if the instance isn't created yet.
    *
@@ -513,7 +547,49 @@ export class AcApDocManager {
     await this._pluginManager.unloadAllPlugins()
     this.context.doc.destroy()
     AcTrMTextRenderer.resetInstance()
+    resetWebworkerReadinessCache()
     AcApDocManager._instance = undefined
+  }
+
+  /**
+   * Last worker readiness result for this manager, or null if not checked yet.
+   */
+  get workersReady(): boolean | null {
+    return this._workersReady
+  }
+
+  /**
+   * Returns true when all configured worker files are reachable.
+   *
+   * Uses HEAD requests internally and caches a successful result for the
+   * current page lifecycle. Failures are not cached so transient network
+   * errors can be retried.
+   */
+  areWorkersReady(): Promise<boolean> {
+    if (this._workersReady === true) {
+      return Promise.resolve(true)
+    }
+
+    if (!this._workersReadyCheckPromise) {
+      this._workersReadyCheckPromise = checkWebworkerReadiness(
+        this._webworkerFileUrls
+      )
+        .then(ready => {
+          if (ready) {
+            this._workersReady = true
+          }
+          this._workersReadyCheckPromise = undefined
+          this.events.workersReady.dispatch({ ready })
+          return ready
+        })
+        .catch(() => {
+          this._workersReadyCheckPromise = undefined
+          this.events.workersReady.dispatch({ ready: false })
+          return false
+        })
+    }
+
+    return this._workersReadyCheckPromise
   }
 
   /**
@@ -1423,9 +1499,7 @@ export class AcApDocManager {
         convertByEntityType: false,
         useWorker: true,
         parserWorkerUrl:
-          webworkerFileUrls && webworkerFileUrls.dxfParser
-            ? webworkerFileUrls.dxfParser
-            : './assets/dxf-parser-worker.js'
+          webworkerFileUrls?.dxfParser ?? DEFAULT_WEBWORKER_FILE_URLS.dxfParser
       })
       AcDbDatabaseConverterManager.instance.register(
         AcDbFileType.DXF,
@@ -1441,9 +1515,7 @@ export class AcApDocManager {
         convertByEntityType: false,
         useWorker: true,
         parserWorkerUrl:
-          webworkerFileUrls && webworkerFileUrls.dwgParser
-            ? webworkerFileUrls.dwgParser
-            : './assets/libredwg-parser-worker.js'
+          webworkerFileUrls?.dwgParser ?? DEFAULT_WEBWORKER_FILE_URLS.dwgParser
       })
       AcDbDatabaseConverterManager.instance.register(
         AcDbFileType.DWG,
@@ -1470,9 +1542,8 @@ export class AcApDocManager {
     this.registerConverters(webworkerFileUrls)
     const mtextRenderer = AcTrMTextRenderer.getInstance()
     mtextRenderer.initialize(
-      webworkerFileUrls && webworkerFileUrls.mtextRender
-        ? webworkerFileUrls.mtextRender
-        : './assets/mtext-renderer-worker.js'
+      webworkerFileUrls?.mtextRender ??
+        DEFAULT_WEBWORKER_FILE_URLS.mtextRender
     )
     void mtextRenderer.setDefaultFonts(DEFAULT_FONTS_PRESET)
   }
