@@ -4,7 +4,8 @@ import {
   AcDbDatabase,
   AcDbEntity,
   AcDbLayerTableRecord,
-  AcDbObjectId
+  AcDbObjectId,
+  AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 
 import type { AcApLayerPreviousSnapshot } from '../app/AcApLayerSessionState'
@@ -1210,5 +1211,42 @@ export class AcApLayerService {
     }
 
     return restored
+  }
+
+  /**
+   * Resolves live layer-table traits for rendering and style synchronization.
+   *
+   * @param layerName - Name of the layer to resolve from the layer table.
+   * @returns Resolved sub-entity traits, or undefined when the layer is missing.
+   */
+  getEffectiveLayerTraits(
+    layerName: string
+  ): Partial<AcGiSubEntityTraits> | undefined {
+    return AcApLayerService.resolveLayerTraits(this.db, layerName)
+  }
+
+  /**
+   * Resolves live layer-table traits from the given database.
+   *
+   * @param db - Database whose layer table supplies the record.
+   * @param layerName - Name of the layer to resolve.
+   * @returns Resolved sub-entity traits, or undefined when the layer is missing.
+   */
+  static resolveLayerTraits(
+    db: AcDbDatabase,
+    layerName: string
+  ): Partial<AcGiSubEntityTraits> | undefined {
+    const layer = db.tables.layerTable.getAt(layerName)
+    if (!layer) {
+      return undefined
+    }
+
+    return {
+      layer: layer.name,
+      color: layer.color.clone(),
+      lineType: layer.lineStyle,
+      lineWeight: layer.lineWeight,
+      transparency: layer.transparency
+    }
   }
 }

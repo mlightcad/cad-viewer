@@ -1,5 +1,4 @@
 import {
-  AcDbDatabase,
   AcGiShapeData,
   AcGiTextStyle
 } from '@mlightcad/data-model'
@@ -108,7 +107,7 @@ export function resolveShapeTextStyle(
     }
   }
 
-  const database = context.database as AcDbDatabase | undefined
+  const database = context.database
   if (!database) {
     return { ...EMPTY_TEXT_STYLE }
   }

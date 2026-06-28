@@ -1,4 +1,4 @@
-import { AcCmColor, AcGiSubEntityTraits } from '@mlightcad/data-model'
+import { AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
@@ -10,8 +10,8 @@ import {
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
 import {
-  getMaterialMetadata,
-  hasByLayerBinding
+  followsLayerStyle,
+  getMaterialMetadata
 } from '../style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import {
@@ -25,7 +25,9 @@ import {
   copyHighlightObjectFlags,
   getHighlightUserData,
   getSceneDrawableUserData,
-  markHighlightOverlayGroup
+  markHighlightOverlayGroup,
+  patchDrawableMaterialFromCache,
+  syncStyleMaterialIdFromMaterials
 } from '../util/AcTrObjectUserData'
 import { isObjectHierarchyVisible } from '../util/AcTrVisibility'
 import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
@@ -479,6 +481,66 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   /**
+   * Refreshes batched and unbatched drawables after a layer-table style change.
+   *
+   * Runs one unbatched-object traversal for text refresh, cache id patching, and
+   * layer-bound remapping instead of scanning the full batched geometry tree.
+   */
+  syncAppearanceFromRecord(
+    layerName: string,
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    materials: Record<number, THREE.Material>,
+    needsIdPatch: boolean,
+    getLayerBoundMaterial: (
+      material: THREE.Material,
+      layerName: string,
+      layerTraits?: Partial<AcGiSubEntityTraits>
+    ) => THREE.Material | undefined,
+    styleManager?: AcTrStyleManager
+  ) {
+    this.rebindBatchedMaterialsForLayer(
+      layerName,
+      layerTraits,
+      getLayerBoundMaterial,
+      styleManager
+    )
+
+    this._unbatchedObjects.traverse(object => {
+      const refresh = (
+        object as {
+          refreshTextMaterials?: (
+            layerTraits?: Partial<AcGiSubEntityTraits>
+          ) => void
+        }
+      ).refreshTextMaterials
+      if (typeof refresh === 'function') {
+        refresh.call(object, layerTraits)
+      }
+
+      if (!('material' in object)) {
+        return
+      }
+
+      const drawable = object as THREE.Mesh | THREE.Line | THREE.LineSegments
+      if (needsIdPatch) {
+        patchDrawableMaterialFromCache(drawable, materials)
+      }
+
+      this.rebindUnbatchedDrawableMaterial(
+        drawable,
+        layerName,
+        layerTraits,
+        getLayerBoundMaterial,
+        styleManager
+      )
+    })
+
+    if (styleManager) {
+      this.rematerializeLayerTextDrawables(layerName, styleManager, layerTraits)
+    }
+  }
+
+  /**
    * Rebinds layer-bound batch materials after a layer-table style change.
    *
    * Batched MTEXT/TEXT glyphs and cloned unbatched drawables may not share the
@@ -486,6 +548,38 @@ export class AcTrBatchedGroup extends THREE.Group {
    * {@link AcTrStyleManager.updateLayerMaterial}.
    */
   rebindMaterialsForLayer(
+    layerName: string,
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    getLayerBoundMaterial: (
+      material: THREE.Material,
+      layerName: string,
+      layerTraits?: Partial<AcGiSubEntityTraits>
+    ) => THREE.Material | undefined,
+    styleManager?: AcTrStyleManager
+  ) {
+    this.rebindBatchedMaterialsForLayer(
+      layerName,
+      layerTraits,
+      getLayerBoundMaterial,
+      styleManager
+    )
+
+    this._unbatchedObjects.traverse(object => {
+      if (!('material' in object)) {
+        return
+      }
+
+      this.rebindUnbatchedDrawableMaterial(
+        object as THREE.Mesh | THREE.Line | THREE.LineSegments,
+        layerName,
+        layerTraits,
+        getLayerBoundMaterial,
+        styleManager
+      )
+    })
+  }
+
+  private rebindBatchedMaterialsForLayer(
     layerName: string,
     layerTraits: Partial<AcGiSubEntityTraits>,
     getLayerBoundMaterial: (
@@ -504,7 +598,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         if (!material || reboundByOldId.has(materialId)) {
           continue
         }
-        if (!this.shouldFollowLayerStyle(material, layerName)) {
+        if (!followsLayerStyle(material, layerName, layerName)) {
           continue
         }
 
@@ -513,7 +607,8 @@ export class AcTrBatchedGroup extends THREE.Group {
           layerName,
           layerTraits,
           getLayerBoundMaterial,
-          styleManager
+          styleManager,
+          layerName
         )
         if (!rebound) {
           continue
@@ -528,15 +623,26 @@ export class AcTrBatchedGroup extends THREE.Group {
         this.updateMaterial(materialId, rebound)
       }
     }
+  }
 
-    this._unbatchedObjects.traverse(object => {
-      if (!('material' in object)) {
-        return
-      }
+  private rebindUnbatchedDrawableMaterial(
+    drawable: THREE.Mesh | THREE.Line | THREE.LineSegments,
+    layerName: string,
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    getLayerBoundMaterial: (
+      material: THREE.Material,
+      layerName: string,
+      layerTraits?: Partial<AcGiSubEntityTraits>
+    ) => THREE.Material | undefined,
+    styleManager?: AcTrStyleManager
+  ) {
+    const objectLayerName = drawable.userData.layerName as string | undefined
+    const effectiveObjectLayerName = objectLayerName ?? layerName
+    const drawableUserData = getSceneDrawableUserData(drawable)
 
-      const material = object.material as THREE.Material
-      if (!this.shouldFollowLayerStyle(material, layerName)) {
-        return
+    const rebindSingle = (material: THREE.Material): THREE.Material => {
+      if (!followsLayerStyle(material, layerName, effectiveObjectLayerName)) {
+        return material
       }
 
       const rebound = this.resolveLayerBoundMaterial(
@@ -544,20 +650,35 @@ export class AcTrBatchedGroup extends THREE.Group {
         layerName,
         layerTraits,
         getLayerBoundMaterial,
-        styleManager
+        styleManager,
+        effectiveObjectLayerName
       )
       if (!rebound) {
-        return
+        return material
       }
 
       if (rebound === material) {
         this.refreshLayerBoundMaterialColor(material, layerTraits)
-        return
+        return material
       }
 
-      object.material = rebound
-      getSceneDrawableUserData(object).styleMaterialId = rebound.id
-    })
+      return rebound
+    }
+
+    const currentMaterial = drawable.material
+    if (Array.isArray(currentMaterial)) {
+      drawable.material = currentMaterial.map(rebindSingle)
+      syncStyleMaterialIdFromMaterials(drawableUserData, drawable.material)
+      return
+    }
+
+    const rebound = rebindSingle(currentMaterial)
+    if (rebound === currentMaterial) {
+      return
+    }
+
+    drawable.material = rebound
+    syncStyleMaterialIdFromMaterials(drawableUserData, rebound)
   }
 
   /**
@@ -571,23 +692,17 @@ export class AcTrBatchedGroup extends THREE.Group {
     styleManager: AcTrStyleManager,
     layerTraits?: Partial<AcGiSubEntityTraits>
   ) {
-    const fallbackTraits = AcTrMTextColorUtil.snapshotEntityTraits({
-      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
-      color: (() => {
-        const color = new AcCmColor()
-        color.setByLayer()
-        return color
-      })(),
-      layer: layerName
-    })
-
     for (const root of this._unbatchedObjects.children) {
       const storedTraits = getSceneDrawableUserData(root).textEntityTraits
-      const traits =
-        storedTraits != null
-          ? AcTrMTextColorUtil.cloneEntityTraits(storedTraits)
-          : fallbackTraits
-      AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
+      if (storedTraits == null) {
+        continue
+      }
+
+      AcTrMTextColorUtil.rematerializeTextHierarchy(
+        root,
+        AcTrMTextColorUtil.cloneEntityTraits(storedTraits),
+        styleManager
+      )
     }
 
     if (!layerTraits?.color) {
@@ -598,7 +713,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       for (const materialId of [...group.keys()]) {
         const batches = group.get(materialId)
         const material = batches?.[0]?.material as THREE.Material | undefined
-        if (!material || !this.shouldFollowLayerStyle(material, layerName)) {
+        if (!material || !followsLayerStyle(material, layerName, layerName)) {
           continue
         }
         this.refreshLayerBoundMaterialColor(material, layerTraits)
@@ -615,7 +730,8 @@ export class AcTrBatchedGroup extends THREE.Group {
       layerName: string,
       layerTraits?: Partial<AcGiSubEntityTraits>
     ) => THREE.Material | undefined,
-    styleManager?: AcTrStyleManager
+    styleManager?: AcTrStyleManager,
+    objectLayerName?: string
   ): THREE.Material | undefined {
     const rebound = getLayerBoundMaterial(material, layerName, layerTraits)
     if (rebound) {
@@ -624,15 +740,21 @@ export class AcTrBatchedGroup extends THREE.Group {
     if (!styleManager) {
       return undefined
     }
-    return this.resolveLayerBoundReplacement(material, layerName, styleManager)
+    return this.resolveLayerBoundReplacement(
+      material,
+      layerName,
+      styleManager,
+      objectLayerName ?? layerName
+    )
   }
 
   private resolveLayerBoundReplacement(
     material: THREE.Material,
     layerName: string,
-    styleManager: AcTrStyleManager
+    styleManager: AcTrStyleManager,
+    objectLayerName: string
   ): THREE.Material | undefined {
-    if (!this.shouldFollowLayerStyle(material, layerName)) {
+    if (!followsLayerStyle(material, layerName, objectLayerName)) {
       return undefined
     }
 
@@ -679,23 +801,6 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     return undefined
-  }
-
-  private shouldFollowLayerStyle(
-    material: THREE.Material,
-    layerName: string
-  ): boolean {
-    const metadata = getMaterialMetadata(material)
-    if (metadata.layer !== layerName) {
-      return false
-    }
-    if (metadata.isByLayerColor === true) {
-      return true
-    }
-    if (metadata.isForeground === true) {
-      return false
-    }
-    return hasByLayerBinding(metadata)
   }
 
   /**

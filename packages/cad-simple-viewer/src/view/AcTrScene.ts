@@ -389,6 +389,24 @@ export class AcTrScene {
   }
 
   /**
+   * Invokes a callback for every scene layer group with the given name across layouts.
+   *
+   * @param layerName - Layer name shared by each layout's {@link AcTrLayer} bucket.
+   * @param fn - Callback invoked with the scene layer and owning layout.
+   */
+  forEachSceneLayer(
+    layerName: string,
+    fn: (sceneLayer: AcTrLayer, layout: AcTrLayout) => void
+  ): void {
+    this._layouts.forEach(layout => {
+      const sceneLayer = layout.getLayer(layerName)
+      if (sceneLayer) {
+        fn(sceneLayer, layout)
+      }
+    })
+  }
+
+  /**
    * Add the specified transient entity into this scene
    * @param entity Input one transient entity
    */

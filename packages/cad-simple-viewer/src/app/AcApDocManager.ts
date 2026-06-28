@@ -1158,6 +1158,7 @@ export class AcApDocManager {
       doc: this.context.doc,
       mode: this.getDocumentEventMode(options)
     })
+    ;(this.curView as AcTrView2d).bindDrawDatabase(this.context.doc.database)
     ;(this.curView as AcTrView2d).progressiveRendering =
       options?.progressiveRendering ?? false
     this.curView.clear()

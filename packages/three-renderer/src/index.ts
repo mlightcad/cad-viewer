@@ -35,6 +35,9 @@ export {
   isHighlightCloneDrawable,
   isHighlightOverlayDescendant,
   markHighlightOverlayGroup,
+  patchDrawableMaterialFromCache,
+  resolveCachedMaterialRemap,
+  syncStyleMaterialIdFromMaterials,
   type AcTrHighlightOverlayGroup,
   type AcTrHighlightOverlayGroupUserData
 } from './util/AcTrObjectUserData'
