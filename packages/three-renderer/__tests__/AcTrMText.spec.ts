@@ -9,6 +9,7 @@ jest.mock('../src/renderer', () => ({
 
 import type { AcTrBatchDrawPolicy } from '../src/draw/AcTrBatchDrawPolicy'
 import { RTE_REBASE_THRESHOLD } from '../src/draw/AcTrBatchDrawPolicy'
+import { AcTrGlyphEntity } from '../src/object/AcTrGlyphEntity'
 import { AcTrMText } from '../src/object/AcTrMText'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
@@ -24,14 +25,14 @@ type GeometryHost = THREE.Object3D & {
 }
 
 type RaycastHost = THREE.Object3D & {
-  _mtext?: Pick<MTextObject, 'raycast'>
+  _rendered?: Pick<MTextObject, 'raycast'>
   wcsBbox: THREE.Box3
 }
 
-const privateMethods = AcTrMText.prototype as unknown as {
-  attachMText(this: AcTrMText, mtext: MTextObject): void
+const privateMethods = AcTrGlyphEntity.prototype as unknown as {
+  attachRendered(this: AcTrMText, rendered: MTextObject): void
   computeGeometryBox(this: GeometryHost): THREE.Box3
-  updateSelectionBox(this: GeometryHost, mtext: MTextObject): void
+  updateSelectionBox(this: GeometryHost, rendered: MTextObject): void
   hasGeometry(object: THREE.Object3D): boolean
   raycast(
     this: RaycastHost,
@@ -188,7 +189,7 @@ describe('AcTrMText', () => {
     )
     const mtext = createSyncMTextObject(placementRoot)
 
-    privateMethods.attachMText.call(entity, mtext)
+    privateMethods.attachRendered.call(entity, mtext)
 
     expect(getSceneDrawableUserData(placementRoot).noBatch).toBe(true)
     expect(entity.children).toHaveLength(1)
@@ -207,7 +208,7 @@ describe('AcTrMText', () => {
     const placementRoot = createPlacementRoot({ x: 10, y: 20, z: 0 }, [0, 8])
     const mtext = createSyncMTextObject(placementRoot)
 
-    privateMethods.attachMText.call(entity, mtext)
+    privateMethods.attachRendered.call(entity, mtext)
 
     expect(getSceneDrawableUserData(placementRoot).noBatch).toBeUndefined()
     expect(entity.children).toHaveLength(2)
@@ -231,7 +232,7 @@ function createRaycastHost(options: {
 }): RaycastHost {
   const host = new THREE.Object3D() as RaycastHost
   host.wcsBbox = options.wcsBbox
-  host._mtext = {
+  host._rendered = {
     raycast: options.mtextRaycast
   }
   host.updateMatrixWorld(true)
