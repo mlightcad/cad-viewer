@@ -8,9 +8,9 @@ allowBuilds:
   unrs-resolver: true
   vue-demi: true
 overrides:
-  '@mlightcad/data-model': '^1.10.0'
-  '@mlightcad/dxf-json-converter': '^1.10.0'
-  '@mlightcad/libredwg-converter': '^3.10.0'
+  '@mlightcad/data-model': '../../../realdwg-web/packages/data-model'
+  '@mlightcad/dxf-json-converter': '../../../realdwg-web/packages/dxf-json-converter'
+  '@mlightcad/libredwg-converter': '../../../realdwg-web/packages/libredwg-converter'
   '@mlightcad/mtext-input-box': '^0.2.19'
   '@mlightcad/mtext-renderer': '^0.11.5'
   '@mlightcad/ribbon': '^0.1.10'

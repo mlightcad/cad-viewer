@@ -120,6 +120,14 @@ export const ICON_PLACEMENT_LEFT =
 export const ICON_PLACEMENT_RIGHT =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="5" y="5" width="9" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="14" y="3" width="3" height="14" rx=".5" fill="currentColor"/></svg>'
 
+/** Dock panel close button icon. */
+export const ICON_DOCK_CLOSE =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5l10 10M15 5 5 15"/></svg>'
+
+/** Dock panel side menu button icon. */
+export const ICON_DOCK_SIDE_MENU =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg>'
+
 /** Collapse toolbar (chevron toward compact edge). */
 export const ICON_CHEVRON_UP =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 6.5 5.5 11h9L10 6.5Z"/></svg>'

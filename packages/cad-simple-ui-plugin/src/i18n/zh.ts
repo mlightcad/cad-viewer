@@ -51,5 +51,13 @@ export const zh: Record<string, string> = {
   'colorPicker.input': '颜色',
   'colorPicker.inputPlaceholder': '1-255 或 #RRGGBB',
   'colorPicker.ok': '确定',
-  'colorPicker.cancel': '取消'
+  'colorPicker.cancel': '取消',
+  'dockPanel.close': '关闭面板',
+  'dockPanel.dockSide': '停靠位置',
+  'dockPanel.dockTop': '停靠在顶部',
+  'dockPanel.dockBottom': '停靠在底部',
+  'dockPanel.dockLeft': '停靠在左侧',
+  'dockPanel.dockRight': '停靠在右侧',
+  'dockPanel.moreTabs': '更多标签页',
+  'dockPanel.tab.layers': '图层'
 }

@@ -1,12 +1,25 @@
 import { registerSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
+  SIMPLE_UI_PLUGIN_NAME,
+  type AcApSimpleUiPlugin,
+  type AcExDockPanelSide,
+  type AcExToolbarPlacement
+} from '@mlightcad/cad-simple-ui-plugin'
+import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
+  AcApSettingManager,
   AcEdOpenMode,
   applyUiTheme
 } from '@mlightcad/cad-simple-viewer'
-import { log } from '@mlightcad/data-model'
+import { AcDbSysVarManager, log } from '@mlightcad/data-model'
 
+import {
+  applyDemoToolbarLayout,
+  DEMO_TOOLBAR_LAYOUTS,
+  getCurrentDemoToolbarLayoutId
+} from './demoToolbarPresets'
+import { createDemoDockTabPanel } from './demoDockTabPanel'
 import { registerLazyPlugins } from './register'
 
 const EXAMPLE_COMMAND_ALIASES = {
@@ -26,6 +39,28 @@ class CadViewerApp {
   private fileSidebarBody: HTMLElement
   private fileSidebarToggle: HTMLButtonElement
   private fileSidebarSubtitle: HTMLSpanElement
+  private displayButton: HTMLButtonElement
+  private displayMenu: HTMLDivElement
+  private displayLineWeightCheckbox: HTMLInputElement
+  private displayCommandLineCheckbox: HTMLInputElement
+  private dockButton: HTMLButtonElement
+  private dockMenu: HTMLDivElement
+  private dockOpenToggle: HTMLButtonElement
+  private dockAddTabButton: HTMLButtonElement
+  private dockSizeInput: HTMLInputElement
+  private dockSizeLabel: HTMLSpanElement
+  private toolbarLayoutSelect: HTMLSelectElement
+  private viewerToolbarButton: HTMLButtonElement
+  private viewerToolbarMenu: HTMLDivElement
+  private viewerToolbarVisibilityToggle: HTMLButtonElement
+  private viewerToolbarCollapseToggle: HTMLButtonElement
+  private viewerToolbarEdgeOffsetInput: HTMLInputElement
+  private viewerToolbarPlacementButtons: NodeListOf<HTMLButtonElement>
+  private devToolbar: HTMLElement
+  private displayMenuOpen = false
+  private dockMenuOpen = false
+  private demoDockTabCount = 0
+  private viewerToolbarMenuOpen = false
   private isInitialized = false
   private hasOpenedFile = false
   private isLoadingFile = false
@@ -53,11 +88,594 @@ class CadViewerApp {
     this.fileSidebarSubtitle = document.getElementById(
       'fileSidebarSubtitle'
     ) as HTMLSpanElement
+    this.displayButton = document.getElementById(
+      'devDisplayButton'
+    ) as HTMLButtonElement
+    this.displayMenu = document.getElementById('devDisplayMenu') as HTMLDivElement
+    this.displayLineWeightCheckbox = document.getElementById(
+      'devDisplayLineWeight'
+    ) as HTMLInputElement
+    this.displayCommandLineCheckbox = document.getElementById(
+      'devDisplayCommandLine'
+    ) as HTMLInputElement
+    this.dockButton = document.getElementById('devDockButton') as HTMLButtonElement
+    this.dockMenu = document.getElementById('devDockMenu') as HTMLDivElement
+    this.dockOpenToggle = document.getElementById(
+      'devDockOpenToggle'
+    ) as HTMLButtonElement
+    this.dockAddTabButton = document.getElementById(
+      'devDockAddTab'
+    ) as HTMLButtonElement
+    this.dockSizeInput = document.getElementById(
+      'devDockSizeInput'
+    ) as HTMLInputElement
+    this.dockSizeLabel = document.getElementById(
+      'devDockSizeLabel'
+    ) as HTMLSpanElement
+    this.toolbarLayoutSelect = document.getElementById(
+      'devToolbarLayoutSelect'
+    ) as HTMLSelectElement
+    this.viewerToolbarButton = document.getElementById(
+      'devViewerToolbarButton'
+    ) as HTMLButtonElement
+    this.viewerToolbarMenu = document.getElementById(
+      'devViewerToolbarMenu'
+    ) as HTMLDivElement
+    this.viewerToolbarVisibilityToggle = document.getElementById(
+      'devViewerToolbarVisibilityToggle'
+    ) as HTMLButtonElement
+    this.viewerToolbarCollapseToggle = document.getElementById(
+      'devViewerToolbarCollapseToggle'
+    ) as HTMLButtonElement
+    this.viewerToolbarEdgeOffsetInput = document.getElementById(
+      'devViewerToolbarEdgeOffset'
+    ) as HTMLInputElement
+    this.viewerToolbarPlacementButtons = document.querySelectorAll(
+      '[data-viewer-toolbar-placement]'
+    ) as NodeListOf<HTMLButtonElement>
+    this.devToolbar = document.getElementById('devToolbar') as HTMLElement
 
     this.setupFileHandling()
     this.setupPredefinedFileActions()
     this.setupMobileSidebar()
+    this.setupDevToolbar()
+    this.setupDisplayMenu()
+    this.setupDockMenu()
+    this.setupViewerToolbarMenu()
     this.updateEmptyStateVisibility()
+  }
+
+  private setupDisplayMenu() {
+    this.displayButton.addEventListener('click', event => {
+      event.stopPropagation()
+      void this.toggleDisplayMenu()
+    })
+
+    this.displayLineWeightCheckbox.addEventListener('click', event => {
+      event.stopPropagation()
+    })
+    this.displayLineWeightCheckbox.addEventListener('change', event => {
+      event.stopPropagation()
+      void this.applyLineWeightDisplay(this.displayLineWeightCheckbox.checked)
+    })
+
+    this.displayCommandLineCheckbox.addEventListener('click', event => {
+      event.stopPropagation()
+    })
+    this.displayCommandLineCheckbox.addEventListener('change', event => {
+      event.stopPropagation()
+      void this.applyCommandLineDisplay(this.displayCommandLineCheckbox.checked)
+    })
+
+    AcApSettingManager.instance.events.modified.addEventListener(args => {
+      if (args.key !== 'isShowCommandLine' || !this.displayMenuOpen) return
+      this.syncDisplayMenuState()
+    })
+
+    document.addEventListener('pointerdown', event => {
+      if (!this.displayMenuOpen) return
+      if (!(event.target instanceof Node)) return
+      if (
+        this.displayMenu.contains(event.target) ||
+        this.displayButton.contains(event.target)
+      ) {
+        return
+      }
+      this.closeDisplayMenu()
+    })
+  }
+
+  private async toggleDisplayMenu() {
+    if (this.displayMenuOpen) {
+      this.closeDisplayMenu()
+      return
+    }
+    this.closeDockMenu()
+    this.closeViewerToolbarMenu()
+    await this.initialize()
+    if (!this.isDevToolbarEnabled()) return
+    this.openDisplayMenu()
+  }
+
+  private openDisplayMenu() {
+    this.syncDisplayMenuState()
+    this.displayMenu.hidden = false
+    this.displayMenuOpen = true
+    this.displayButton.setAttribute('aria-expanded', 'true')
+  }
+
+  private closeDisplayMenu() {
+    this.displayMenu.hidden = true
+    this.displayMenuOpen = false
+    this.displayButton.setAttribute('aria-expanded', 'false')
+  }
+
+  private async applyLineWeightDisplay(enabled: boolean) {
+    await this.initialize()
+
+    const doc = AcApDocManager.instance.curDocument
+    if (!doc) {
+      this.syncDisplayMenuState()
+      this.showMessage('Open a drawing first to toggle line weight', 'info')
+      return
+    }
+
+    AcDbSysVarManager.instance().setVar('LWDISPLAY', enabled ? 1 : 0, doc.database)
+    this.syncDisplayMenuState()
+    this.showMessage(
+      `Line weight display ${enabled ? 'enabled' : 'disabled'}`,
+      'success'
+    )
+  }
+
+  private async applyCommandLineDisplay(visible: boolean) {
+    await this.initialize()
+
+    AcApSettingManager.instance.isShowCommandLine = visible
+    this.syncDisplayMenuState()
+    this.showMessage(
+      visible ? 'Command line shown' : 'Command line hidden',
+      'success'
+    )
+  }
+
+  private syncDisplayMenuState() {
+    const enabled = this.isDevToolbarEnabled()
+    const lineWeightOn = enabled && this.isLineWeightEnabled()
+    const commandLineOn = AcApSettingManager.instance.isShowCommandLine
+
+    this.displayButton.disabled = !enabled
+    this.displayLineWeightCheckbox.disabled = !enabled
+    this.displayCommandLineCheckbox.disabled = !enabled
+    this.displayLineWeightCheckbox.checked = lineWeightOn
+    this.displayCommandLineCheckbox.checked = commandLineOn
+    this.displayButton.textContent = 'Display'
+  }
+
+  private setupDockMenu() {
+    this.dockButton.addEventListener('click', event => {
+      event.stopPropagation()
+      void this.toggleDockMenu()
+    })
+
+    this.dockOpenToggle.addEventListener('click', event => {
+      event.stopPropagation()
+      void this.toggleDockPanelOpen()
+    })
+
+    this.dockAddTabButton.addEventListener('click', event => {
+      event.stopPropagation()
+      void this.addDemoDockTab()
+    })
+
+    this.dockSizeInput.addEventListener('change', () => {
+      void this.applyDockPanelSize()
+    })
+
+    document.addEventListener('pointerdown', event => {
+      if (!this.dockMenuOpen) return
+      if (!(event.target instanceof Node)) return
+      if (
+        this.dockMenu.contains(event.target) ||
+        this.dockButton.contains(event.target)
+      ) {
+        return
+      }
+      this.closeDockMenu()
+    })
+  }
+
+  private async toggleDockMenu() {
+    if (this.dockMenuOpen) {
+      this.closeDockMenu()
+      return
+    }
+    this.closeViewerToolbarMenu()
+    this.closeDisplayMenu()
+    await this.initialize()
+    if (!this.isDevToolbarEnabled()) return
+    this.openDockMenu()
+  }
+
+  private openDockMenu() {
+    this.syncDockMenuState()
+    this.dockMenu.hidden = false
+    this.dockMenuOpen = true
+    this.dockButton.setAttribute('aria-expanded', 'true')
+  }
+
+  private closeDockMenu() {
+    this.dockMenu.hidden = true
+    this.dockMenuOpen = false
+    this.dockButton.setAttribute('aria-expanded', 'false')
+  }
+
+  private isDockSizeVertical(side: AcExDockPanelSide | undefined): boolean {
+    return side === 'top' || side === 'bottom'
+  }
+
+  private async toggleDockPanelOpen() {
+    await this.initialize()
+
+    const plugin = this.getSimpleUiPlugin()
+    if (!plugin) {
+      this.showMessage('Simple UI plugin is not loaded', 'error')
+      return
+    }
+
+    const nextOpen = !plugin.isDockPanelOpen()
+    if (nextOpen) {
+      if (!plugin.setDockPanelOpen(true)) {
+        this.showMessage('Dock panel is not available', 'error')
+        return
+      }
+    } else if (!plugin.setDockPanelOpen(false)) {
+      this.showMessage('Dock panel is not available', 'error')
+      return
+    }
+
+    this.syncDockMenuState()
+    this.showMessage(nextOpen ? 'Dock panel opened' : 'Dock panel closed', 'success')
+  }
+
+  private async addDemoDockTab() {
+    await this.initialize()
+
+    const plugin = this.getSimpleUiPlugin()
+    if (!plugin) {
+      this.showMessage('Simple UI plugin is not loaded', 'error')
+      return
+    }
+
+    this.demoDockTabCount += 1
+    const tabNumber = this.demoDockTabCount
+    const tabId = `demo-${tabNumber}`
+
+    const added = plugin.addDockPanelTab({
+      id: tabId,
+      label: `Demo ${tabNumber}`,
+      content: createDemoDockTabPanel(tabNumber)
+    })
+
+    if (!added) {
+      this.demoDockTabCount -= 1
+      this.showMessage('Failed to add dock tab', 'error')
+      return
+    }
+
+    this.syncDockMenuState()
+    this.showMessage(`Added dock tab: Demo ${tabNumber}`, 'success')
+  }
+
+  private async applyDockPanelSize() {
+    await this.initialize()
+
+    const plugin = this.getSimpleUiPlugin()
+    if (!plugin) {
+      this.showMessage('Simple UI plugin is not loaded', 'error')
+      return
+    }
+
+    const size = Number.parseInt(this.dockSizeInput.value, 10)
+    if (!Number.isFinite(size) || size < 120) {
+      this.syncDockMenuState()
+      this.showMessage('Dock size must be at least 120px', 'error')
+      return
+    }
+
+    if (!plugin.setDockPanelSize(size)) {
+      this.showMessage('Dock panel is not available', 'error')
+      return
+    }
+
+    this.syncDockMenuState()
+    const side = plugin.getDockPanelSide()
+    const dimension = this.isDockSizeVertical(side) ? 'height' : 'width'
+    this.showMessage(`Dock ${dimension}: ${size}px`, 'success')
+  }
+
+  private syncDockMenuState() {
+    const plugin = this.getSimpleUiPlugin()
+    const enabled = this.isDevToolbarEnabled() && Boolean(plugin)
+    const isOpen = plugin?.isDockPanelOpen() ?? false
+    const side = plugin?.getDockPanelSide()
+    const size = plugin?.getDockPanelSize() ?? (this.isDockSizeVertical(side) ? 240 : 280)
+
+    this.dockButton.disabled = !enabled
+    this.dockOpenToggle.disabled = !enabled
+    this.dockAddTabButton.disabled = !enabled
+    this.dockOpenToggle.textContent = isOpen ? 'Close Dock' : 'Open Dock'
+    this.dockSizeInput.disabled = !enabled
+    this.dockSizeInput.value = String(size)
+    this.dockSizeLabel.textContent = this.isDockSizeVertical(side)
+      ? 'Height (px)'
+      : 'Width (px)'
+    this.dockButton.textContent = 'Dock'
+  }
+
+  private setupViewerToolbarMenu() {
+    this.toolbarLayoutSelect.innerHTML = ''
+    for (const layout of DEMO_TOOLBAR_LAYOUTS) {
+      const option = document.createElement('option')
+      option.value = layout.id
+      option.textContent = layout.label
+      this.toolbarLayoutSelect.appendChild(option)
+    }
+
+    this.toolbarLayoutSelect.addEventListener('click', event => {
+      event.stopPropagation()
+    })
+    this.toolbarLayoutSelect.addEventListener('change', event => {
+      event.stopPropagation()
+      void this.applyToolbarLayout(this.toolbarLayoutSelect.value)
+    })
+
+    this.viewerToolbarButton.addEventListener('click', event => {
+      event.stopPropagation()
+      void this.toggleViewerToolbarMenu()
+    })
+
+    this.viewerToolbarPlacementButtons.forEach(button => {
+      button.addEventListener('click', event => {
+        event.stopPropagation()
+        const placement = button.dataset.viewerToolbarPlacement as
+          | AcExToolbarPlacement
+          | undefined
+        if (!placement) return
+        void this.applyViewerToolbarPlacement(placement)
+      })
+    })
+
+    this.viewerToolbarVisibilityToggle.addEventListener('click', event => {
+      event.stopPropagation()
+      void this.toggleViewerToolbarVisibility()
+    })
+
+    this.viewerToolbarCollapseToggle.addEventListener('click', event => {
+      event.stopPropagation()
+      void this.toggleViewerToolbarCollapsed()
+    })
+
+    this.viewerToolbarEdgeOffsetInput.addEventListener('change', () => {
+      void this.applyViewerToolbarEdgeOffset()
+    })
+
+    document.addEventListener('pointerdown', event => {
+      if (!this.viewerToolbarMenuOpen) return
+      if (!(event.target instanceof Node)) return
+      if (
+        this.viewerToolbarMenu.contains(event.target) ||
+        this.viewerToolbarButton.contains(event.target)
+      ) {
+        return
+      }
+      this.closeViewerToolbarMenu()
+    })
+  }
+
+  private async toggleViewerToolbarMenu() {
+    if (this.viewerToolbarMenuOpen) {
+      this.closeViewerToolbarMenu()
+      return
+    }
+    this.closeDockMenu()
+    this.closeDisplayMenu()
+    await this.initialize()
+    if (!this.isDevToolbarEnabled()) return
+    this.openViewerToolbarMenu()
+  }
+
+  private openViewerToolbarMenu() {
+    this.syncViewerToolbarMenuState()
+    this.viewerToolbarMenu.hidden = false
+    this.viewerToolbarMenuOpen = true
+    this.viewerToolbarButton.setAttribute('aria-expanded', 'true')
+  }
+
+  private closeViewerToolbarMenu() {
+    this.viewerToolbarMenu.hidden = true
+    this.viewerToolbarMenuOpen = false
+    this.viewerToolbarButton.setAttribute('aria-expanded', 'false')
+  }
+
+  private async applyViewerToolbarPlacement(placement: AcExToolbarPlacement) {
+    await this.initialize()
+
+    const plugin = this.getSimpleUiPlugin()
+    if (!plugin) {
+      this.showMessage('Simple UI plugin is not loaded', 'error')
+      return
+    }
+
+    if (!plugin.setToolbarPlacement(placement)) {
+      this.showMessage('Viewer toolbar is not available', 'error')
+      return
+    }
+
+    this.syncViewerToolbarMenuState()
+    this.showMessage(`Viewer toolbar position: ${placement}`, 'success')
+  }
+
+  private async toggleViewerToolbarVisibility() {
+    await this.initialize()
+
+    const plugin = this.getSimpleUiPlugin()
+    if (!plugin) {
+      this.showMessage('Simple UI plugin is not loaded', 'error')
+      return
+    }
+
+    const nextVisible = !plugin.isToolbarVisible()
+    if (!plugin.setToolbarVisible(nextVisible)) {
+      this.showMessage('Viewer toolbar is not available', 'error')
+      return
+    }
+
+    this.syncViewerToolbarMenuState()
+    this.showMessage(
+      nextVisible ? 'Viewer toolbar shown' : 'Viewer toolbar hidden',
+      'success'
+    )
+  }
+
+  private async toggleViewerToolbarCollapsed() {
+    await this.initialize()
+
+    const plugin = this.getSimpleUiPlugin()
+    if (!plugin) {
+      this.showMessage('Simple UI plugin is not loaded', 'error')
+      return
+    }
+
+    const nextCollapsed = !plugin.isToolbarCollapsed()
+    if (!plugin.setToolbarCollapsed(nextCollapsed)) {
+      this.showMessage('Viewer toolbar collapse is not available', 'error')
+      return
+    }
+
+    this.syncViewerToolbarMenuState()
+    this.showMessage(
+      nextCollapsed ? 'Viewer toolbar collapsed' : 'Viewer toolbar expanded',
+      'success'
+    )
+  }
+
+  private async applyViewerToolbarEdgeOffset() {
+    await this.initialize()
+
+    const plugin = this.getSimpleUiPlugin()
+    if (!plugin) {
+      this.showMessage('Simple UI plugin is not loaded', 'error')
+      return
+    }
+
+    const offset = Number.parseInt(this.viewerToolbarEdgeOffsetInput.value, 10)
+    if (!Number.isFinite(offset) || offset < 0) {
+      this.syncViewerToolbarMenuState()
+      this.showMessage('Edge inset must be a non-negative number', 'error')
+      return
+    }
+
+    if (!plugin.setToolbarEdgeOffset(offset)) {
+      this.showMessage('Viewer toolbar is not available', 'error')
+      return
+    }
+
+    this.syncViewerToolbarMenuState()
+    this.showMessage(`Toolbar edge inset: ${offset}px`, 'success')
+  }
+
+  private syncViewerToolbarMenuState() {
+    const plugin = this.getSimpleUiPlugin()
+    const enabled = this.isDevToolbarEnabled() && Boolean(plugin)
+    const placement = plugin?.getToolbarPlacement() ?? 'right'
+    const visible = plugin?.isToolbarVisible() ?? true
+    const collapsed = plugin?.isToolbarCollapsed() ?? false
+    const edgeOffset = plugin?.getToolbarEdgeOffset() ?? 8
+
+    this.viewerToolbarPlacementButtons.forEach(button => {
+      const isSelected = button.dataset.viewerToolbarPlacement === placement
+      button.classList.toggle('is-selected', enabled && isSelected)
+      button.disabled = !enabled
+    })
+
+    this.viewerToolbarVisibilityToggle.disabled = !enabled
+    this.viewerToolbarVisibilityToggle.textContent = visible
+      ? 'Hide Toolbar'
+      : 'Show Toolbar'
+
+    this.viewerToolbarCollapseToggle.disabled = !enabled
+    this.viewerToolbarCollapseToggle.textContent = collapsed
+      ? 'Expand Toolbar'
+      : 'Collapse Toolbar'
+
+    this.viewerToolbarEdgeOffsetInput.disabled = !enabled
+    this.viewerToolbarEdgeOffsetInput.value = String(edgeOffset)
+
+    this.toolbarLayoutSelect.disabled = !enabled
+    if (enabled) {
+      this.toolbarLayoutSelect.value = getCurrentDemoToolbarLayoutId()
+    }
+
+    this.viewerToolbarButton.textContent = 'Toolbar'
+  }
+
+  private setupDevToolbar() {
+    this.updateDevToolbarLabels()
+  }
+
+  private async applyToolbarLayout(presetId: string) {
+    await this.initialize()
+
+    const plugin = this.getSimpleUiPlugin()
+    if (!plugin) {
+      this.showMessage('Simple UI plugin is not loaded', 'error')
+      return
+    }
+
+    applyDemoToolbarLayout(plugin, presetId)
+    this.syncViewerToolbarMenuState()
+
+    const label =
+      DEMO_TOOLBAR_LAYOUTS.find(layout => layout.id === presetId)?.label ??
+      presetId
+    this.showMessage(`Toolbar layout: ${label}`, 'success')
+  }
+
+  private updateDevToolbarLabels() {
+    const enabled = this.isDevToolbarEnabled()
+
+    this.viewerToolbarButton.disabled = !enabled
+    if (!enabled) {
+      this.closeViewerToolbarMenu()
+      this.closeDockMenu()
+      this.closeDisplayMenu()
+    }
+
+    this.devToolbar.classList.toggle('is-disabled', !enabled)
+    this.syncViewerToolbarMenuState()
+    this.syncDockMenuState()
+    this.syncDisplayMenuState()
+  }
+
+  private getSimpleUiPlugin(): AcApSimpleUiPlugin | undefined {
+    if (!this.isInitialized) return undefined
+    return AcApDocManager.instance.pluginManager.getPlugin(
+      SIMPLE_UI_PLUGIN_NAME
+    ) as AcApSimpleUiPlugin | undefined
+  }
+
+  private isLineWeightEnabled(): boolean {
+    if (!this.isInitialized) return false
+    const doc = AcApDocManager.instance.curDocument
+    if (!doc) return false
+    return Boolean(
+      AcDbSysVarManager.instance().getVar('LWDISPLAY', doc.database)
+    )
+  }
+
+  private isDevToolbarEnabled(): boolean {
+    return this.hasOpenedFile
   }
 
   private async initialize() {
@@ -91,6 +709,11 @@ class CadViewerApp {
 
       await registerSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
         host: this.viewerPane,
+        dockPanel: {
+          defaultOpen: false,
+          defaultHeight: 240,
+          defaultWidth: 280
+        },
         toolbar: {
           placement: 'right',
           items: 'default',
@@ -98,9 +721,15 @@ class CadViewerApp {
         }
       })
 
+      const plugin = AcApDocManager.instance.pluginManager.getPlugin(
+        SIMPLE_UI_PLUGIN_NAME
+      ) as AcApSimpleUiPlugin
+      applyDemoToolbarLayout(plugin, 'default')
+
       AcApDocManager.instance.events.documentActivated.addEventListener(
         args => {
           document.title = args.doc.docTitle
+          this.updateDevToolbarLabels()
         }
       )
 
@@ -109,6 +738,7 @@ class CadViewerApp {
       })
 
       this.isInitialized = true
+      this.updateDevToolbarLabels()
     } catch (error) {
       log.error('Failed to initialize CAD viewer:', error)
       this.showMessage('Failed to initialize CAD viewer', 'error')
@@ -134,8 +764,6 @@ class CadViewerApp {
       button.addEventListener('click', () => {
         const url = button.dataset.fileUrl
         if (!url) return
-        this.hasOpenedFile = true
-        this.updateEmptyStateVisibility()
         this.predefinedButtons.forEach(item => item.classList.remove('active'))
         button.classList.add('active')
         this.updateFileSidebarSubtitle(button.textContent?.trim() || '')
@@ -303,6 +931,7 @@ class CadViewerApp {
   private onFileOpened() {
     this.hasOpenedFile = true
     this.updateEmptyStateVisibility()
+    this.updateDevToolbarLabels()
   }
 
   private setLoadingState(loading: boolean) {

@@ -8,13 +8,24 @@ export {
   AcApSimpleUiPlugin,
   createSimpleUiPlugin
 } from './createSimpleUiPlugin'
+export type { AcExDockPanelTab } from './ui/AcExDockPanel'
 export { registerSimpleUiPlugin } from './register'
+export {
+  createToolbarLayoutSwitcher,
+  prependToolbarLayoutSwitcher
+} from './config/createToolbarLayoutSwitcher'
+export type {
+  AcExToolbarLayoutPreset,
+  AcExToolbarLayoutSwitcherOptions
+} from './config/createToolbarLayoutSwitcher'
 export type {
   AcExDefaultToolbarContext,
+  AcExDockPanelSide,
   AcExLocale,
   AcExSimpleUiPluginOptions,
   AcExToolbarItem,
   AcExToolbarItemConfig,
+  AcExToolbarItemsInput,
   AcExToolbarChildIconMode,
   AcExToolbarPresetRef,
   AcExToolbarSeparator,

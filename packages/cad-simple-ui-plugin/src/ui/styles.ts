@@ -25,6 +25,10 @@ export function ensureUiStyles() {
       --ml-ex-ui-toolbar-btn-size: 32px;
     }
 
+    .ml-ex-ui-toolbar-host {
+      position: relative;
+    }
+
     .ml-ex-ui-toolbar.is-horizontal {
       flex-direction: row;
       align-items: center;
@@ -35,14 +39,13 @@ export function ensureUiStyles() {
       align-items: stretch;
     }
 
-    .ml-ex-ui-toolbar.is-top { top: 8px; left: 50%; transform: translateX(-50%); }
-    .ml-ex-ui-toolbar.is-bottom { bottom: 8px; left: 50%; transform: translateX(-50%); }
-    .ml-ex-ui-toolbar.is-left { left: 8px; top: 50%; transform: translateY(-50%); }
-    .ml-ex-ui-toolbar.is-right { right: 8px; top: 50%; transform: translateY(-50%); }
-
     .ml-ex-ui-toolbar.is-disabled {
       opacity: 0.55;
       pointer-events: none;
+    }
+
+    .ml-ex-ui-toolbar[hidden] {
+      display: none !important;
     }
 
     .ml-ex-ui-toolbar.is-collapsed .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-collapse-btn),
@@ -247,6 +250,11 @@ export function ensureUiStyles() {
 
     .ml-ex-ui-layer-manager.is-hidden {
       display: none;
+    }
+
+    .ml-ex-ui-layer-manager .ml-ex-ui-layer-list {
+      flex: 1;
+      min-height: 0;
     }
 
     .ml-ex-ui-layer-manager-header {
@@ -532,6 +540,349 @@ export function ensureUiStyles() {
       border: 1px solid var(--ml-ui-border, #dcdfe6);
       box-shadow: var(--ml-ui-shadow, 0 2px 6px rgba(0, 0, 0, 0.12));
     }
+
+    .ml-ex-ui-layer-list {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .ml-ex-ui-layer-list .ml-ex-ui-layer-table-wrap {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .ml-ex-ui-host-dock {
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .ml-ex-ui-host-dock:not([class*='ml-ex-ui-host-dock-']) {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ml-ex-ui-host-dock-top,
+    .ml-ex-ui-host-dock-bottom {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .ml-ex-ui-host-dock-left,
+    .ml-ex-ui-host-dock-right {
+      display: flex;
+      flex-direction: row;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .ml-ex-ui-dock-main {
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ml-ex-ui-dock-panel {
+      --ml-ex-ui-dock-size: 240px;
+      display: flex;
+      flex-direction: column;
+      flex: 0 0 auto;
+      background: var(--ml-ui-bg, #ffffff);
+      color: var(--ml-ui-text, #303133);
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      font-size: 12px;
+      z-index: 25;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .ml-ex-ui-dock-panel[data-open='false'] {
+      display: none;
+    }
+
+    .ml-ex-ui-dock-panel[data-side='bottom'],
+    .ml-ex-ui-dock-panel[data-side='top'] {
+      width: 100%;
+      height: var(--ml-ex-ui-dock-size);
+      border-left: none;
+      border-right: none;
+    }
+
+    .ml-ex-ui-dock-panel[data-side='bottom'] {
+      border-bottom: none;
+      border-top: none;
+    }
+
+    .ml-ex-ui-dock-panel[data-side='top'] {
+      border-top: none;
+      border-bottom: none;
+    }
+
+    .ml-ex-ui-dock-panel[data-side='left'],
+    .ml-ex-ui-dock-panel[data-side='right'] {
+      flex-direction: row;
+      height: 100%;
+      width: var(--ml-ex-ui-dock-size);
+      border-top: none;
+      border-bottom: none;
+    }
+
+    .ml-ex-ui-dock-content {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .ml-ex-ui-dock-panel[data-side='left'] {
+      border-left: none;
+      border-right: none;
+    }
+
+    .ml-ex-ui-dock-panel[data-side='right'] {
+      border-right: none;
+      border-left: none;
+    }
+
+    .ml-ex-ui-dock-resize-handle {
+      flex: 0 0 auto;
+      background: transparent;
+      touch-action: none;
+      z-index: 1;
+    }
+
+    .ml-ex-ui-dock-resize-handle:hover,
+    .ml-ex-ui-dock-resize-handle:active {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.08));
+    }
+
+    .ml-ex-ui-dock-panel[data-side='bottom'] .ml-ex-ui-dock-resize-handle {
+      order: -1;
+      width: 100%;
+      height: 6px;
+      cursor: ns-resize;
+      border-top: 1px solid var(--ml-ui-border, #dcdfe6);
+    }
+
+    .ml-ex-ui-dock-panel[data-side='top'] .ml-ex-ui-dock-resize-handle {
+      order: 2;
+      width: 100%;
+      height: 6px;
+      cursor: ns-resize;
+      border-bottom: 1px solid var(--ml-ui-border, #dcdfe6);
+    }
+
+    .ml-ex-ui-dock-panel[data-side='left'] .ml-ex-ui-dock-resize-handle {
+      order: 2;
+      align-self: stretch;
+      width: 6px;
+      cursor: ew-resize;
+      border-right: 1px solid var(--ml-ui-border, #dcdfe6);
+    }
+
+    .ml-ex-ui-dock-panel[data-side='right'] .ml-ex-ui-dock-resize-handle {
+      order: -1;
+      align-self: stretch;
+      width: 6px;
+      cursor: ew-resize;
+      border-left: 1px solid var(--ml-ui-border, #dcdfe6);
+    }
+
+    .ml-ex-ui-dock-header {
+      display: flex;
+      align-items: stretch;
+      flex: 0 0 auto;
+      border-bottom: 1px solid var(--ml-ui-border, #dcdfe6);
+      background: var(--ml-ui-bg, #ffffff);
+      min-height: 28px;
+    }
+
+    .ml-ex-ui-dock-tabs-wrap {
+      display: flex;
+      align-items: stretch;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .ml-ex-ui-dock-tabs {
+      display: flex;
+      align-items: stretch;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .ml-ex-ui-dock-tab-overflow-btn {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--ml-ui-text-muted, #606266);
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .ml-ex-ui-dock-tab-overflow-btn[hidden] {
+      display: none !important;
+    }
+
+    .ml-ex-ui-dock-tab-overflow-btn:hover,
+    .ml-ex-ui-dock-tab-overflow-btn.is-active {
+      color: var(--ml-ui-text, #303133);
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.04));
+    }
+
+    .ml-ex-ui-dock-tab-overflow-btn.is-active {
+      border-bottom-color: var(--ml-ui-accent, #409eff);
+    }
+
+    .ml-ex-ui-dock-tab[hidden] {
+      display: none;
+    }
+
+    .ml-ex-ui-dock-tab {
+      flex: 0 0 auto;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--ml-ui-text-muted, #606266);
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .ml-ex-ui-dock-tab:hover {
+      color: var(--ml-ui-text, #303133);
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.04));
+    }
+
+    .ml-ex-ui-dock-tab.is-active {
+      color: var(--ml-ui-text, #303133);
+      border-bottom-color: var(--ml-ui-accent, #409eff);
+    }
+
+    .ml-ex-ui-dock-actions {
+      display: flex;
+      align-items: center;
+      flex: 0 0 auto;
+      gap: 2px;
+      padding: 0 4px;
+    }
+
+    .ml-ex-ui-dock-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--ml-ui-text-muted, #606266);
+      cursor: pointer;
+    }
+
+    .ml-ex-ui-dock-action-btn:hover {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
+      color: var(--ml-ui-text, #303133);
+    }
+
+    .ml-ex-ui-dock-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ml-ex-ui-dock-tab-panel {
+      position: absolute;
+      inset: 0;
+      overflow: auto;
+    }
+
+    .ml-ex-ui-dock-tab-panel[hidden] {
+      display: none;
+    }
+
+    .ml-ex-ui-dock-side-menu {
+      position: fixed;
+      z-index: 110;
+      min-width: 160px;
+      padding: 4px 0;
+      background: var(--ml-ui-bg, #ffffff);
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 6px;
+      box-shadow: var(--ml-ui-shadow, 0 6px 18px rgba(0, 0, 0, 0.35));
+    }
+
+    .ml-ex-ui-dock-side-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--ml-ui-text, #303133);
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .ml-ex-ui-dock-side-menu-item:hover {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
+    }
+
+    .ml-ex-ui-dock-side-menu-item.is-selected {
+      color: var(--ml-ui-accent, #409eff);
+    }
+
+    .ml-ex-ui-dock-tab-overflow-menu {
+      position: fixed;
+      z-index: 110;
+      min-width: 160px;
+      padding: 4px 0;
+      background: var(--ml-ui-bg, #ffffff);
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 6px;
+      box-shadow: var(--ml-ui-shadow, 0 6px 18px rgba(0, 0, 0, 0.35));
+    }
+
+    .ml-ex-ui-dock-tab-overflow-menu-item {
+      display: block;
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--ml-ui-text, #303133);
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .ml-ex-ui-dock-tab-overflow-menu-item:hover {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
+    }
+
+    .ml-ex-ui-dock-tab-overflow-menu-item.is-selected {
+      color: var(--ml-ui-accent, #409eff);
+    }
   `
   document.head.appendChild(style)
 }
@@ -540,7 +891,11 @@ export function ensureUiStyles() {
  * Removes injected UI styles when no toolbar or layer manager remains in the DOM.
  */
 export function removeUiStylesIfUnused() {
-  if (document.querySelector('.ml-ex-ui-toolbar, .ml-ex-ui-layer-manager'))
+  if (
+    document.querySelector(
+      '.ml-ex-ui-toolbar, .ml-ex-ui-layer-manager, .ml-ex-ui-dock-panel'
+    )
+  )
     return
   document.getElementById(STYLE_ID)?.remove()
 }
