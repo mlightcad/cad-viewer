@@ -25,8 +25,18 @@ function createEventStub() {
   }
 }
 
-jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  AcApContext: class {},
+jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const layout = jest.requireActual(
+    '../../cad-simple-viewer/src/editor/global/AcEdUiLayout'
+  ) as typeof import('../../cad-simple-viewer/src/editor/global/AcEdUiLayout')
+
+  return {
+    ...layout,
+    isMobileUiLayout: () =>
+      window.matchMedia?.(layout.ML_UI_MOBILE_MEDIA_QUERY).matches ?? false,
+    isCompactUiLayout: () =>
+      window.matchMedia?.(layout.ML_UI_COMPACT_MEDIA_QUERY).matches ?? false,
+    AcApContext: class {},
   AcApDocManager: {
     instance: {
       get curView() {
@@ -91,7 +101,8 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
     on: jest.fn(),
     off: jest.fn()
   }
-}))
+  }
+})
 
 jest.mock('@mlightcad/data-model', () => ({
   AcCmColor: {

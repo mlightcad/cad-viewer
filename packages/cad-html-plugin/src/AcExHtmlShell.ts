@@ -1,3 +1,5 @@
+import { ML_UI_MOBILE_MAX_WIDTH } from '@mlightcad/cad-simple-viewer'
+
 import { acExHtmlIcons, acExToolbarButton } from './AcExHtmlIcons'
 import { buildAcExHtmlSettingsStrip } from './AcExHtmlMeasureSettings'
 
@@ -382,7 +384,7 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   @keyframes mlcad-spin { to { transform: rotate(360deg); } }
 
-  @media (max-width: 600px) {
+  @media (max-width: ${ML_UI_MOBILE_MAX_WIDTH}px) {
     :root {
       --mlcad-drawer-width: min(200px, calc(100vw - 2 * var(--mlcad-ui-inset) - var(--mlcad-toolbar-width) - var(--mlcad-drawer-gap)));
       --mlcad-ui-inset: 8px;

@@ -1,9 +1,10 @@
+import { ML_UI_MOBILE_MEDIA_QUERY } from '@mlightcad/cad-simple-viewer'
 import { useMediaQuery } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 // Heuristic mobile detection combining viewport, touch capability, and user agent
 export function useIsMobile() {
-  const isSmallViewport = useMediaQuery('(max-width: 768px)')
+  const isSmallViewport = useMediaQuery(ML_UI_MOBILE_MEDIA_QUERY)
 
   const hasTouchCapability = ref(false)
   const isMobileUserAgent = ref(false)

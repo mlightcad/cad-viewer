@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import { ML_UI_MOBILE_MEDIA_QUERY } from '@mlightcad/cad-simple-viewer'
+
 import { AcExI18n, registerSimpleUiI18n } from '../src/i18n'
 import { AcExDockPanel } from '../src/ui/AcExDockPanel'
 
@@ -14,19 +16,30 @@ beforeAll(() => {
     ResizeObserverMock as unknown as typeof ResizeObserver
 })
 
-jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  AcApI18n: {
-    t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-    mergeLocaleMessage: jest.fn(),
-    events: {
-      localeChanged: {
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn()
-      }
-    },
-    currentLocale: 'en'
+jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const layout = jest.requireActual(
+    '../../cad-simple-viewer/src/editor/global/AcEdUiLayout'
+  ) as typeof import('../../cad-simple-viewer/src/editor/global/AcEdUiLayout')
+
+  return {
+    ...layout,
+    isMobileUiLayout: () =>
+      window.matchMedia?.(layout.ML_UI_MOBILE_MEDIA_QUERY).matches ?? false,
+    isCompactUiLayout: () =>
+      window.matchMedia?.(layout.ML_UI_COMPACT_MEDIA_QUERY).matches ?? false,
+    AcApI18n: {
+      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
+      mergeLocaleMessage: jest.fn(),
+      events: {
+        localeChanged: {
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn()
+        }
+      },
+      currentLocale: 'en'
+    }
   }
-}))
+})
 
 function createPanel(options?: Partial<ConstructorParameters<typeof AcExDockPanel>[0]>) {
   registerSimpleUiI18n()
@@ -388,5 +401,53 @@ describe('AcExDockPanel', () => {
     panel.destroy()
     expect(host.querySelector('.ml-ex-ui-dock-panel')).toBeNull()
     expect(host.querySelector('.ml-ex-ui-dock-main')).toBeNull()
+  })
+
+  it('uses full host width as max size for horizontal docks on mobile', () => {
+    const matchMediaDescriptor = Object.getOwnPropertyDescriptor(
+      window,
+      'matchMedia'
+    )
+    const clientWidthDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'clientWidth'
+    )
+
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => ({
+        matches: query === ML_UI_MOBILE_MEDIA_QUERY,
+        media: query,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      })
+    })
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get() {
+        if (this.classList?.contains('ml-ex-ui-host-dock')) {
+          return 390
+        }
+        return 0
+      }
+    })
+
+    const { panel } = createPanel({ defaultSide: 'left' })
+    panel.addTab({
+      id: 'layers',
+      label: 'Layers',
+      content: createTabContent()
+    })
+    panel.open('layers')
+
+    panel.setPanelSize(500)
+    expect(panel.getSize()).toBe(390)
+
+    if (matchMediaDescriptor) {
+      Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)
+    }
+    if (clientWidthDescriptor) {
+      Object.defineProperty(HTMLElement.prototype, 'clientWidth', clientWidthDescriptor)
+    }
   })
 })

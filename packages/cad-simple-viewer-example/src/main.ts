@@ -9,10 +9,12 @@ import {
   AcApOpenDatabaseOptions,
   AcApSettingManager,
   AcEdOpenMode,
-  applyUiTheme
+  applyUiTheme,
+  isCompactUiLayout
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbSysVarManager, log } from '@mlightcad/data-model'
 
+import { injectAppShellResponsiveStyles } from './appShellResponsiveStyles'
 import { createDemoDockTabPanel } from './demoDockTabPanel'
 import {
   applyDemoToolbarLayout,
@@ -805,7 +807,7 @@ class CadViewerApp {
   }
 
   private isMobileLayout() {
-    return window.matchMedia('(max-width: 960px)').matches
+    return isCompactUiLayout()
   }
 
   private isFileSidebarOpen(): boolean {
@@ -1016,8 +1018,10 @@ class CadViewerApp {
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
+    injectAppShellResponsiveStyles()
     new CadViewerApp()
   })
 } else {
+  injectAppShellResponsiveStyles()
   new CadViewerApp()
 }
