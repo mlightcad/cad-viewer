@@ -1,3 +1,5 @@
+import { ML_UI_MOBILE_MAX_WIDTH } from '@mlightcad/cad-simple-viewer'
+
 const STYLE_ID = 'ml-ex-ui-styles'
 
 /**
@@ -882,6 +884,22 @@ export function ensureUiStyles() {
 
     .ml-ex-ui-dock-tab-overflow-menu-item.is-selected {
       color: var(--ml-ui-accent, #409eff);
+    }
+
+    @media (max-width: ${ML_UI_MOBILE_MAX_WIDTH}px) {
+      .ml-ex-ui-host-dock-left .ml-ex-ui-dock-panel[data-open='true'][data-side='left'],
+      .ml-ex-ui-host-dock-right .ml-ex-ui-dock-panel[data-open='true'][data-side='right'] {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 40;
+      }
+
+      .ml-ex-ui-host-dock-left .ml-ex-ui-dock-panel[data-side='left'] .ml-ex-ui-dock-resize-handle,
+      .ml-ex-ui-host-dock-right .ml-ex-ui-dock-panel[data-side='right'] .ml-ex-ui-dock-resize-handle {
+        display: none;
+      }
     }
   `
   document.head.appendChild(style)

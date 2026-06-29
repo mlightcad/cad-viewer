@@ -1,3 +1,5 @@
+import { isMobileUiLayout } from '@mlightcad/cad-simple-viewer'
+
 import {
   createIconElement,
   ICON_DOCK_CLOSE,
@@ -86,7 +88,7 @@ export class AcExDockPanel {
   private dockMainWrapper?: HTMLDivElement
 
   private handleResizePointerDown = (event: PointerEvent) => {
-    if (event.button !== 0 || !this.isPanelOpen) return
+    if (event.button !== 0 || !this.isPanelOpen || this.isMobileHorizontalDock()) return
     event.preventDefault()
     this.resizePointerId = event.pointerId
     this.resizeStartPos =
@@ -649,7 +651,18 @@ export class AcExDockPanel {
     if (this.side === 'bottom' || this.side === 'top') {
       return Math.max(DOCK_MIN_SIZE, this.host.clientHeight * DOCK_MAX_SIZE_RATIO)
     }
+    if (this.isMobileHorizontalDock()) {
+      return Math.max(DOCK_MIN_SIZE, this.host.clientWidth)
+    }
     return Math.max(DOCK_MIN_SIZE, this.host.clientWidth * DOCK_MAX_SIZE_RATIO)
+  }
+
+  /** Whether the dock uses full-width overlay layout on narrow viewports. */
+  private isMobileHorizontalDock(): boolean {
+    if (this.side !== 'left' && this.side !== 'right') {
+      return false
+    }
+    return isMobileUiLayout()
   }
 
   private toggleSideMenu() {
