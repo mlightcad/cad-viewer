@@ -37,7 +37,7 @@ export interface AcExToolbarOptions {
   collapsible?: boolean
   /** Initial collapsed state when {@link collapsible} is true. */
   defaultCollapsed?: boolean
-  /** Invoked when the toolbar is collapsed (e.g. close anchored popovers). */
+  /** Invoked when the toolbar is collapsed (e.g. close the dock panel). */
   onCollapse?: () => void
   /** Distance from the canvas edge in px. @default 8 */
   edgeOffset?: number

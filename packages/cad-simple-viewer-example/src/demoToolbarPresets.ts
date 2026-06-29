@@ -1,4 +1,3 @@
-import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import type {
   AcApSimpleUiPlugin,
   AcExToolbarItemsInput,
@@ -9,6 +8,7 @@ import {
   createToolbarSeparator,
   toolbarPreset
 } from '@mlightcad/cad-simple-ui-plugin'
+import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 
 const ICON_DEMO_INFO =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" d="M9 9h2v5H9zm0-3h2v2H9z"/></svg>'

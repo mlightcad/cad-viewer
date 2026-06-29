@@ -6,7 +6,7 @@ import {
 
 import type { AcExDockPanel } from '../ui/AcExDockPanel'
 
-/** Shared interface for layer UI controllers (popover and dock panel modes). */
+/** Shared interface for layer UI controllers. */
 export interface AcExLayerUiController {
   /** Toggles layer UI from the `layer` CAD command. */
   toggleFromCommand(): void

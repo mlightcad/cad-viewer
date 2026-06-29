@@ -1,10 +1,9 @@
-import { registerSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
-  SIMPLE_UI_PLUGIN_NAME,
   type AcApSimpleUiPlugin,
   type AcExDockPanelSide,
-  type AcExToolbarPlacement
-} from '@mlightcad/cad-simple-ui-plugin'
+  type AcExToolbarPlacement,
+  SIMPLE_UI_PLUGIN_NAME} from '@mlightcad/cad-simple-ui-plugin'
+import { registerSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
@@ -14,12 +13,12 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbSysVarManager, log } from '@mlightcad/data-model'
 
+import { createDemoDockTabPanel } from './demoDockTabPanel'
 import {
   applyDemoToolbarLayout,
   DEMO_TOOLBAR_LAYOUTS,
   getCurrentDemoToolbarLayoutId
 } from './demoToolbarPresets'
-import { createDemoDockTabPanel } from './demoDockTabPanel'
 import { registerLazyPlugins } from './register'
 
 const EXAMPLE_COMMAND_ALIASES = {

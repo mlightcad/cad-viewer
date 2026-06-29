@@ -17,14 +17,14 @@ export interface AcExLayerListViewOptions {
   i18n: AcExI18n
   /** Viewer host used for theme CSS variables and color picker. */
   host: HTMLElement
-  /** When true, renders a title header above the table (popover mode). */
+  /** When true, renders a title header above the table. */
   showHeader?: boolean
 }
 
 /**
  * Reusable layer table view (name, visibility, color).
  *
- * Used by {@link AcExLayerManager} popover and dock panel tabs.
+ * Used in dock panel tabs (for example the layers tab).
  */
 export class AcExLayerListView {
   /** Root element containing optional header and table. */

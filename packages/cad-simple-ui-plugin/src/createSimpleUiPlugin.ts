@@ -14,11 +14,11 @@ import {
   AcExLayerDockController,
   AcExLayerUiControllerHolder
 } from './command/AcApLayerUiCmd'
-import { normalizePluginOptions } from './config/normalizePluginOptions'
 import { prependToolbarLayoutSwitcher } from './config/createToolbarLayoutSwitcher'
+import { normalizePluginOptions } from './config/normalizePluginOptions'
 import { resolveDockMountTarget } from './config/resolveDockMountTarget'
-import { resolveToolbarMountTarget } from './config/resolveToolbarMountTarget'
 import { resolveToolbarItems } from './config/resolveToolbarItems'
+import { resolveToolbarMountTarget } from './config/resolveToolbarMountTarget'
 import {
   toolbarItemsIncludeItem
 } from './config/toolbarItemUtils'

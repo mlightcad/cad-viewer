@@ -4,7 +4,7 @@
 export const commandEn = {
   ACAD: {
     layer: {
-      description: 'Opens or closes the layer manager popover'
+      description: 'Opens or closes the layer manager dock panel'
     }
   }
 }

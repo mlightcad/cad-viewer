@@ -1,4 +1,3 @@
-import type { AcExDockPanelSide } from '../config/types'
 import {
   createIconElement,
   ICON_DOCK_CLOSE,
@@ -8,6 +7,7 @@ import {
   ICON_PLACEMENT_RIGHT,
   ICON_PLACEMENT_TOP
 } from '../assets/icons'
+import type { AcExDockPanelSide } from '../config/types'
 import type { AcExI18n } from '../i18n'
 import { ensureUiStyles } from './styles'
 
