@@ -3,6 +3,9 @@ import type { AcEdOpenMode, AcEdUiTheme } from '@mlightcad/cad-simple-viewer'
 /** Toolbar edge placement relative to the viewer host element. */
 export type AcExToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
 
+/** Dock panel edge placement relative to the viewer host element. */
+export type AcExDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
+
 /** Supported UI locale codes for plugin strings. */
 export type AcExLocale = 'en' | 'zh'
 
@@ -82,6 +85,9 @@ export type AcExToolbarItemConfig =
   | AcExToolbarSeparator
   | AcExToolbarPresetRef
 
+/** Toolbar item list passed to {@link AcApSimpleUiPlugin.setToolbarItems}. */
+export type AcExToolbarItemsInput = AcExToolbarItemConfig[] | 'default'
+
 /**
  * Callbacks supplied when building the default toolbar (theme and locale toggles).
  */
@@ -108,6 +114,24 @@ export interface AcExSimpleUiPluginOptions {
   host?: HTMLElement
   /** @deprecated Locale follows {@link AcApI18n.currentLocale} automatically. */
   locale?: AcExLocale
+  /** Chrome DevTools-style dock panel configuration. */
+  dockPanel?: {
+    /** Explicitly enable the dock panel container. */
+    enabled?: boolean
+    /** @default false */
+    defaultOpen?: boolean
+    /** @default 'left' */
+    defaultSide?: AcExDockPanelSide
+    /** Bottom dock default height in px. @default 240 */
+    defaultHeight?: number
+    /** Left/right dock default width in px. @default 280 */
+    defaultWidth?: number
+    /**
+     * Element that receives the dock panel and canvas shrink layout.
+     * Defaults to the viewer canvas parent when it is inside `host`.
+     */
+    mountTarget?: HTMLElement
+  }
   /** Toolbar configuration. Enabled by default. */
   toolbar?: {
     /** When false, the toolbar is not created. */
@@ -122,6 +146,13 @@ export interface AcExSimpleUiPluginOptions {
     collapsible?: boolean
     /** Initial collapsed state when {@link collapsible} is true. */
     defaultCollapsed?: boolean
+    /**
+     * Canvas element that receives the floating toolbar.
+     * Defaults to the active view container when it is inside `host`.
+     */
+    mountTarget?: HTMLElement
+    /** Inset from the canvas edge in px. @default 8 */
+    edgeOffset?: number
   }
 }
 

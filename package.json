@@ -58,6 +58,7 @@
     "eslint-plugin-vue": "^9.28.0",
     "globals": "^15.9.0",
     "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "lint-staged": "^15.2.7",
     "nx": "20.0.4",
     "prettier": "^3.3.3",

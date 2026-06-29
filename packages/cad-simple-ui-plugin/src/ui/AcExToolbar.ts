@@ -21,8 +21,10 @@ import { ensureUiStyles } from './styles'
 
 /** Constructor options for {@link AcExToolbar}. */
 export interface AcExToolbarOptions {
-  /** Viewer host element that receives the toolbar root node. */
+  /** Viewer canvas element that receives the toolbar root node. */
   host: HTMLElement
+  /** Theme host for dropdown menus; defaults to {@link host}. */
+  themeHost?: HTMLElement
   /** Edge placement of the toolbar. */
   placement: AcExToolbarPlacement
   /** Toolbar item definitions to render. */
@@ -35,8 +37,10 @@ export interface AcExToolbarOptions {
   collapsible?: boolean
   /** Initial collapsed state when {@link collapsible} is true. */
   defaultCollapsed?: boolean
-  /** Invoked when the toolbar is collapsed (e.g. close anchored popovers). */
+  /** Invoked when the toolbar is collapsed (e.g. close the dock panel). */
   onCollapse?: () => void
+  /** Distance from the canvas edge in px. @default 8 */
+  edgeOffset?: number
 }
 
 /**
@@ -46,7 +50,11 @@ export interface AcExToolbarOptions {
  * document open mode.
  */
 export class AcExToolbar {
-  /** Root toolbar container appended to the host. */
+  /** Canvas element receiving the toolbar root node. */
+  private mountHost: HTMLElement
+  /** Host element used for themed dropdown menus. */
+  private themeHost: HTMLElement
+  /** Root toolbar container appended to the mount host. */
   private root: HTMLDivElement
   /** Currently open submenu, if any. */
   private openDropdown?: AcExDropdownMenu
@@ -62,6 +70,13 @@ export class AcExToolbar {
   private selectedChildByParent = new Map<string, string>()
   /** Whether the toolbar is collapsed to show only the toggle button. */
   private collapsed: boolean
+  /** Whether the toolbar root is shown. */
+  private visible = true
+  /** Inset from the canvas edge in px. */
+  private edgeOffset: number
+  /** Keeps the toolbar inside the canvas when the host is resized. */
+  private resizeObserver?: ResizeObserver
+  private layoutFrame?: number
 
   /** Re-renders buttons when a document becomes active. */
   private handleDocumentActivated = () => {
@@ -84,15 +99,20 @@ export class AcExToolbar {
    */
   constructor(private options: AcExToolbarOptions) {
     ensureUiStyles()
+    this.mountHost = options.host
+    this.themeHost = options.themeHost ?? options.host
+    this.edgeOffset = options.edgeOffset ?? 8
     this.items = options.items
     this.collapsed =
       Boolean(options.collapsible) && Boolean(options.defaultCollapsed)
     this.seedSelectedChildren(options.items)
+    this.ensureMountHostLayout()
 
     this.root = document.createElement('div')
     this.syncRootClasses()
     this.root.setAttribute('role', 'toolbar')
-    options.host.appendChild(this.root)
+    this.mountHost.appendChild(this.root)
+    this.setupResizeObserver()
 
     AcApDocManager.instance.events.documentActivated.addEventListener(
       this.handleDocumentActivated
@@ -138,6 +158,38 @@ export class AcExToolbar {
     this.renderButtons()
   }
 
+  /** Current inset from the canvas edge in px. */
+  getEdgeOffset() {
+    return this.edgeOffset
+  }
+
+  /**
+   * Sets the inset from the canvas edge and reclamps toolbar position.
+   *
+   * @param offset - Distance in px (clamped to >= 0).
+   */
+  setEdgeOffset(offset: number) {
+    this.edgeOffset = Math.max(0, offset)
+    this.scheduleSyncPosition()
+  }
+
+  /**
+   * Moves the toolbar to another canvas mount element.
+   *
+   * @param newHost - New canvas container.
+   */
+  reparentTo(newHost: HTMLElement) {
+    if (this.mountHost === newHost) return
+
+    this.resizeObserver?.disconnect()
+    this.root.remove()
+    this.mountHost = newHost
+    this.ensureMountHostLayout()
+    this.mountHost.appendChild(this.root)
+    this.setupResizeObserver()
+    this.scheduleSyncPosition()
+  }
+
   /**
    * Sets the active submenu child for a parent button.
    *
@@ -156,6 +208,27 @@ export class AcExToolbar {
   /** Whether the toolbar is collapsed to the toggle button only. */
   get isCollapsed() {
     return this.collapsed
+  }
+
+  /** Whether the toolbar root is visible. */
+  get isVisible() {
+    return this.visible
+  }
+
+  /**
+   * Shows or hides the entire toolbar.
+   *
+   * @param visible - Target visibility.
+   */
+  setVisible(visible: boolean) {
+    if (this.visible === visible) return
+    this.visible = visible
+    this.root.hidden = !visible
+    if (!visible) {
+      this.openDropdown?.close()
+      this.openDropdown = undefined
+      this.options.onCollapse?.()
+    }
   }
 
   /**
@@ -186,10 +259,17 @@ export class AcExToolbar {
     }
     this.syncRootClasses()
     this.syncCollapseToggleButton()
+    this.scheduleSyncPosition()
   }
 
   /** Removes listeners, closes dropdowns, and detaches the toolbar DOM. */
   destroy() {
+    if (this.layoutFrame !== undefined) {
+      cancelAnimationFrame(this.layoutFrame)
+      this.layoutFrame = undefined
+    }
+    this.resizeObserver?.disconnect()
+    this.resizeObserver = undefined
     this.openDropdown?.close()
     AcApDocManager.instance.events.documentActivated.removeEventListener(
       this.handleDocumentActivated
@@ -347,7 +427,7 @@ export class AcExToolbar {
             this.options.i18n,
             visibleChildren,
             button,
-            this.options.host
+            this.themeHost
           )
           dropdown.setOnSelect(child => {
             if (item.childIcon === 'selected') {
@@ -387,6 +467,77 @@ export class AcExToolbar {
     })
 
     this.appendCollapseToggle()
+    this.scheduleSyncPosition()
+  }
+
+  private ensureMountHostLayout() {
+    if (getComputedStyle(this.mountHost).position === 'static') {
+      this.mountHost.style.position = 'relative'
+    }
+    this.mountHost.classList.add('ml-ex-ui-toolbar-host')
+  }
+
+  private setupResizeObserver() {
+    this.resizeObserver?.disconnect()
+    this.resizeObserver = new ResizeObserver(() => {
+      this.scheduleSyncPosition()
+    })
+    this.resizeObserver.observe(this.mountHost)
+  }
+
+  private scheduleSyncPosition() {
+    if (this.layoutFrame !== undefined) return
+    this.layoutFrame = requestAnimationFrame(() => {
+      this.layoutFrame = undefined
+      this.syncPosition()
+    })
+  }
+
+  /** Positions the toolbar inside the canvas, clamped to the current host bounds. */
+  private syncPosition() {
+    if (!this.root.isConnected || this.root.hidden) return
+
+    const offset = this.edgeOffset
+    const hostWidth = this.mountHost.clientWidth
+    const hostHeight = this.mountHost.clientHeight
+    if (hostWidth <= 0 || hostHeight <= 0) return
+
+    this.root.style.top = ''
+    this.root.style.bottom = ''
+    this.root.style.left = ''
+    this.root.style.right = ''
+    this.root.style.transform = ''
+    this.root.style.maxWidth = ''
+    this.root.style.maxHeight = ''
+
+    const toolbarWidth = this.root.offsetWidth
+    const toolbarHeight = this.root.offsetHeight
+    const placement = this.options.placement
+
+    if (placement === 'top' || placement === 'bottom') {
+      const maxLeft = Math.max(offset, hostWidth - toolbarWidth - offset)
+      const idealLeft = (hostWidth - toolbarWidth) / 2
+      const left = Math.min(maxLeft, Math.max(offset, idealLeft))
+      this.root.style.left = `${left}px`
+      this.root.style.maxWidth = `${Math.max(0, hostWidth - offset * 2)}px`
+      if (placement === 'top') {
+        this.root.style.top = `${offset}px`
+      } else {
+        this.root.style.bottom = `${offset}px`
+      }
+      return
+    }
+
+    const maxTop = Math.max(offset, hostHeight - toolbarHeight - offset)
+    const idealTop = (hostHeight - toolbarHeight) / 2
+    const top = Math.min(maxTop, Math.max(offset, idealTop))
+    this.root.style.top = `${top}px`
+    this.root.style.maxHeight = `${Math.max(0, hostHeight - offset * 2)}px`
+    if (placement === 'left') {
+      this.root.style.left = `${offset}px`
+    } else {
+      this.root.style.right = `${offset}px`
+    }
   }
 
   /** Seeds submenu selection from {@link AcExToolbarItem.selectedChildId}. */

@@ -51,5 +51,13 @@ export const en: Record<string, string> = {
   'colorPicker.input': 'Color',
   'colorPicker.inputPlaceholder': '1-255 or #RRGGBB',
   'colorPicker.ok': 'OK',
-  'colorPicker.cancel': 'Cancel'
+  'colorPicker.cancel': 'Cancel',
+  'dockPanel.close': 'Close panel',
+  'dockPanel.dockSide': 'Dock side',
+  'dockPanel.dockTop': 'Dock to top',
+  'dockPanel.dockBottom': 'Dock to bottom',
+  'dockPanel.dockLeft': 'Dock to left',
+  'dockPanel.dockRight': 'Dock to right',
+  'dockPanel.moreTabs': 'More tabs',
+  'dockPanel.tab.layers': 'Layers'
 }

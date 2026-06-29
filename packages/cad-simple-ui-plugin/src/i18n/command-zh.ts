@@ -4,7 +4,7 @@
 export const commandZh = {
   ACAD: {
     layer: {
-      description: '打开或关闭图层管理器弹出面板'
+      description: '打开或关闭图层管理器停靠面板'
     }
   }
 }

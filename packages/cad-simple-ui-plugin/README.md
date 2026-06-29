@@ -12,9 +12,11 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 - Default toolbar includes view/review tools, export submenu, toolbar placement, theme and locale toggles
 - UI theme follows `COLORTHEME` sysvar and `--ml-ui-*` tokens on `host` automatically
 - Locale follows `AcApI18n.currentLocale` automatically
-- Layer list popover anchored to the toolbar layer button (name, visibility, color)
+- Layer list in a dock panel tab (name, visibility, color), opened from the toolbar layer button
+- Chrome DevTools-style **dock panel** with tabs, open/close, dock side (bottom/left/right), and resize handle
 - ACI color picker for layer colors
-- Layer popover opens from the toolbar button or the `layer` command; closes on outside click
+- Layer UI opens from the toolbar button or the `layer` command (opens dock when closed, switches to layers tab when open)
+- Dock panel closes via the close button or `close-layer-manager` event
 - Optional collapsible toolbar (like HTML export viewer): hide tool buttons and show only a chevron toggle
 
 ## Install
@@ -95,22 +97,63 @@ toolbar: {
 
 The built-in theme toggle button updates `COLORTHEME` when a document is open, or applies `applyUiTheme` on `host` when no document is loaded.
 
-### Layer popover
+### Layer manager (dock panel)
 
-The layer list is a **popover** (not a floating panel). It is enabled automatically when the resolved toolbar includes a layer button (`id: 'layer'` or `{ preset: 'layer' }`). No separate `layerManager` option is required.
+The layer list is enabled automatically when the resolved toolbar includes a layer button (`id: 'layer'` or `{ preset: 'layer' }`). Layers always render as a tab in the dock panel.
 
-Behavior:
+```typescript
+createSimpleUiPlugin({
+  host,
+  dockPanel: {
+    defaultSide: 'left', // 'top' | 'bottom' | 'left' | 'right' (default: 'left')
+    defaultOpen: false,
+    defaultHeight: 240,
+    defaultWidth: 280
+  }
+})
+```
 
-- Click the layer toolbar button to open or close the popover
-- Click the canvas or other UI outside the popover to dismiss it
-- On vertical toolbars (`left` / `right`), popover height aligns with the toolbar (minimum 320px)
-- On narrow hosts (≤640px width), the popover uses a bottom-sheet layout sized for mobile
+Dock panel behavior:
+
+- Click the layer toolbar button (runs the `layer` command) to open the dock panel when it is closed, or switch to the layers tab when it is already open
+- Open or focus layers via the `layer` command or `AcApDocManager.sendStringToExecute('layer')`
+- Close via the panel close button or `setDockPanelOpen(false)`
+- `setDockPanelOpen(true)` opens the dock without changing the active tab
+- Default dock side is **left**; override with `dockPanel.defaultSide`
+- By default the dock mounts on the viewer canvas parent (inside `host`), so sibling header toolbars are not stretched
+- Override mount element with `dockPanel.mountTarget` when needed
+- Drag the resize handle on the panel edge to adjust height or width
+- Multiple tabs supported (layers tab registered automatically)
+- Canvas area shrinks when the panel is open (flex layout on `host`)
+
+Runtime dock panel controls:
+
+```typescript
+const plugin = docManager.pluginManager.getPlugin(
+  SIMPLE_UI_PLUGIN_NAME
+) as AcApSimpleUiPlugin
+
+plugin.isDockPanelOpen()
+plugin.setDockPanelOpen(true)
+plugin.getDockPanelSide() // 'left' | 'right' | 'top' | 'bottom'
+plugin.getDockPanelSize()
+plugin.setDockPanelSize(320)
+```
+
+You can enable an empty dock panel for future tabs without a layer button:
+
+```typescript
+createSimpleUiPlugin({
+  host,
+  dockPanel: { enabled: true }
+})
+```
 
 The built-in `layerclose` command emits `close-layer-manager`, which the plugin listens for.
 
 ### Collapsible toolbar
 
-Set `toolbar.collapsible: true` to append a chevron toggle at the end of the toolbar (same behavior as the HTML export viewer). When collapsed, only the toggle button is shown; anchored popovers such as the layer list are closed automatically.
+Set `toolbar.collapsible: true` to append a chevron toggle at the end of the toolbar (same behavior as the HTML export viewer). When collapsed, only the toggle button is shown; the dock panel is closed automatically.
 
 ```typescript
 toolbar: {
@@ -124,6 +167,47 @@ toolbar: {
 ## Custom toolbar
 
 Toolbar buttons are configured through `toolbar.items`. You can start from the built-in set, extend it, or replace it entirely.
+
+### Replace the full toolbar at runtime
+
+Use `appendItems` only when you want to keep the built-in default and add a few buttons. To **replace the entire toolbar**, call `setToolbarItems` on the loaded plugin:
+
+```typescript
+import {
+  SIMPLE_UI_PLUGIN_NAME,
+  type AcApSimpleUiPlugin,
+  createToolbarLayoutSwitcher,
+  toolbarPreset
+} from '@mlightcad/cad-simple-ui-plugin'
+
+const plugin = docManager.pluginManager.getPlugin(
+  SIMPLE_UI_PLUGIN_NAME
+) as AcApSimpleUiPlugin
+
+plugin.setToolbarItems([
+  toolbarPreset('select'),
+  toolbarPreset('pan'),
+  toolbarPreset('layer')
+])
+
+// Optional: prepend a submenu button that switches between full layouts
+plugin.setToolbarItems(
+  [
+    toolbarPreset('select'),
+    { id: 'line', label: 'Line', command: 'line', requiresDocument: true }
+  ],
+  createToolbarLayoutSwitcher({
+    presets: [
+      { id: 'view', label: 'View tools' },
+      { id: 'draw', label: 'Draw tools' }
+    ],
+    currentId: 'draw',
+    onSelect: presetId => applyLayout(presetId)
+  })
+)
+```
+
+See `cad-simple-viewer-example` (`demoToolbarPresets.ts`) for a working layout switcher prepended to the **viewer toolbar** (via `createToolbarLayoutSwitcher` + `setToolbarItems`). The example dev toolbar also includes a layout dropdown that calls the same preset helpers.
 
 ### `AcExToolbarItem` fields
 
@@ -335,7 +419,7 @@ createSimpleUiPlugin({
 })
 ```
 
-Disabling the toolbar also disables the layer popover, because the layer UI is tied to the layer toolbar button.
+Disabling the toolbar also disables the layer dock UI, because the layer list is tied to the layer toolbar button.
 
 ### Complete example
 
@@ -381,7 +465,7 @@ await AcApDocManager.instance.pluginManager.loadPlugin(
 
 ## Layer manager
 
-When the toolbar includes a layer button, the plugin registers a `layer` command and wires the button to the layer popover automatically.
+When the toolbar includes a layer button, the plugin registers a `layer` command. The button opens the dock when closed, or activates the layers tab when the dock is already open.
 
 Supported columns in v1:
 
@@ -400,7 +484,7 @@ items: [
 ]
 ```
 
-Omit the layer button from `items` if you do not want the layer popover or `layer` command.
+Omit the layer button from `items` if you do not want the layer dock UI or `layer` command.
 
 ## API
 
