@@ -32,6 +32,8 @@ export function normalizePluginOptions(
       placement: options.toolbar?.placement ?? 'right',
       items: options.toolbar?.items ?? 'default',
       appendItems: options.toolbar?.appendItems,
+      appendItemsAfter: options.toolbar?.appendItemsAfter,
+      appendItemsBefore: options.toolbar?.appendItemsBefore,
       collapsible: options.toolbar?.collapsible ?? false,
       defaultCollapsed: options.toolbar?.defaultCollapsed ?? false,
       edgeOffset: options.toolbar?.edgeOffset ?? 8

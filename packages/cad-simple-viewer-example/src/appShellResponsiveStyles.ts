@@ -19,6 +19,17 @@ export function injectAppShellResponsiveStyles() {
         min-height: 0;
       }
 
+      .file-sidebar-column {
+        flex: 0 0 auto;
+        flex-shrink: 0;
+        width: 100% !important;
+        min-width: 0;
+      }
+
+      .file-sidebar-resize-handle {
+        display: none;
+      }
+
       .file-sidebar {
         flex: 0 0 auto;
         flex-shrink: 0;

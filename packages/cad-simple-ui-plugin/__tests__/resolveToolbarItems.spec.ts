@@ -48,6 +48,49 @@ describe('resolveToolbarItems', () => {
     expect(items[items.length - 1].id).toBe('custom')
   })
 
+  it('inserts appendItems after a root toolbar item id', () => {
+    const items = resolveToolbarItems({
+      items: 'default',
+      appendItems: [{ id: 'agent', command: 'agent' }],
+      appendItemsAfter: 'layer'
+    })
+    const layerIndex = items.findIndex(item => item.id === 'layer')
+    expect(items[layerIndex + 1]?.id).toBe('agent')
+  })
+
+  it('inserts appendItems before a root toolbar item id', () => {
+    const items = resolveToolbarItems({
+      items: 'default',
+      appendItems: [{ id: 'agent', command: 'agent' }],
+      appendItemsBefore: 'measure'
+    })
+    const measureIndex = items.findIndex(item => item.id === 'measure')
+    expect(items[measureIndex - 1]?.id).toBe('agent')
+  })
+
+  it('prefers appendItemsBefore over appendItemsAfter', () => {
+    const items = resolveToolbarItems({
+      items: 'default',
+      appendItems: [{ id: 'agent', command: 'agent' }],
+      appendItemsAfter: 'select',
+      appendItemsBefore: 'measure'
+    })
+    const measureIndex = items.findIndex(item => item.id === 'measure')
+    expect(items[measureIndex - 1]?.id).toBe('agent')
+    expect(items.findIndex(item => item.id === 'select') + 1).not.toBe(
+      items.findIndex(item => item.id === 'agent')
+    )
+  })
+
+  it('falls back to the end when the append anchor is missing', () => {
+    const items = resolveToolbarItems({
+      items: 'default',
+      appendItems: [{ id: 'custom', command: 'test' }],
+      appendItemsAfter: 'missing-item'
+    })
+    expect(items[items.length - 1].id).toBe('custom')
+  })
+
   it('uses custom item list when provided', () => {
     const items = resolveToolbarItems({
       items: [{ id: 'only', command: 'only' }]

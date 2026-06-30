@@ -14,6 +14,8 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbSysVarManager, log } from '@mlightcad/data-model'
 
+import { setupAgentIntegration } from './agentIntegration'
+import { AGENT_TOOLBAR_ITEM } from './agentToolbarItem'
 import { injectAppShellResponsiveStyles } from './appShellResponsiveStyles'
 import { createDemoDockTabPanel } from './demoDockTabPanel'
 import {
@@ -21,6 +23,7 @@ import {
   DEMO_TOOLBAR_LAYOUTS,
   getCurrentDemoToolbarLayoutId
 } from './demoToolbarPresets'
+import { setupFileSidebarResize } from './fileSidebarResize'
 import { registerLazyPlugins } from './register'
 
 const EXAMPLE_COMMAND_ALIASES = {
@@ -36,6 +39,7 @@ class CadViewerApp {
   private viewerPane: HTMLElement
   private emptyState: HTMLDivElement
   private predefinedButtons: NodeListOf<HTMLButtonElement>
+  private fileSidebarColumn: HTMLElement
   private fileSidebar: HTMLElement
   private fileSidebarBody: HTMLElement
   private fileSidebarToggle: HTMLButtonElement
@@ -44,6 +48,7 @@ class CadViewerApp {
   private displayMenu: HTMLDivElement
   private displayLineWeightCheckbox: HTMLInputElement
   private displayCommandLineCheckbox: HTMLInputElement
+  private displaySidebarCheckbox: HTMLInputElement
   private dockButton: HTMLButtonElement
   private dockMenu: HTMLDivElement
   private dockOpenToggle: HTMLButtonElement
@@ -79,6 +84,9 @@ class CadViewerApp {
     this.predefinedButtons = document.querySelectorAll(
       '#predefinedFileList .file-list-item'
     ) as NodeListOf<HTMLButtonElement>
+    this.fileSidebarColumn = document.getElementById(
+      'fileSidebarColumn'
+    ) as HTMLElement
     this.fileSidebar = document.getElementById('fileSidebar') as HTMLElement
     this.fileSidebarBody = document.getElementById(
       'fileSidebarBody'
@@ -98,6 +106,9 @@ class CadViewerApp {
     ) as HTMLInputElement
     this.displayCommandLineCheckbox = document.getElementById(
       'devDisplayCommandLine'
+    ) as HTMLInputElement
+    this.displaySidebarCheckbox = document.getElementById(
+      'devDisplaySidebar'
     ) as HTMLInputElement
     this.dockButton = document.getElementById('devDockButton') as HTMLButtonElement
     this.dockMenu = document.getElementById('devDockMenu') as HTMLDivElement
@@ -139,6 +150,12 @@ class CadViewerApp {
     this.setupFileHandling()
     this.setupPredefinedFileActions()
     this.setupMobileSidebar()
+    const fileSidebarResizeHandle = document.getElementById(
+      'fileSidebarResizeHandle'
+    )
+    if (fileSidebarResizeHandle) {
+      setupFileSidebarResize(this.fileSidebarColumn, fileSidebarResizeHandle)
+    }
     this.setupDevToolbar()
     this.setupDisplayMenu()
     this.setupDockMenu()
@@ -166,6 +183,14 @@ class CadViewerApp {
     this.displayCommandLineCheckbox.addEventListener('change', event => {
       event.stopPropagation()
       void this.applyCommandLineDisplay(this.displayCommandLineCheckbox.checked)
+    })
+
+    this.displaySidebarCheckbox.addEventListener('click', event => {
+      event.stopPropagation()
+    })
+    this.displaySidebarCheckbox.addEventListener('change', event => {
+      event.stopPropagation()
+      this.applySidebarDisplay(this.displaySidebarCheckbox.checked)
     })
 
     AcApSettingManager.instance.events.modified.addEventListener(args => {
@@ -240,16 +265,29 @@ class CadViewerApp {
     )
   }
 
+  private applySidebarDisplay(visible: boolean) {
+    this.fileSidebarColumn.classList.toggle('is-hidden', !visible)
+    this.syncDisplayMenuState()
+    this.showMessage(visible ? 'Sidebar shown' : 'Sidebar hidden', 'success')
+  }
+
+  private isFileSidebarVisible(): boolean {
+    return !this.fileSidebarColumn.classList.contains('is-hidden')
+  }
+
   private syncDisplayMenuState() {
     const enabled = this.isDevToolbarEnabled()
     const lineWeightOn = enabled && this.isLineWeightEnabled()
     const commandLineOn = AcApSettingManager.instance.isShowCommandLine
+    const sidebarOn = this.isFileSidebarVisible()
 
     this.displayButton.disabled = !enabled
     this.displayLineWeightCheckbox.disabled = !enabled
     this.displayCommandLineCheckbox.disabled = !enabled
+    this.displaySidebarCheckbox.disabled = !enabled
     this.displayLineWeightCheckbox.checked = lineWeightOn
     this.displayCommandLineCheckbox.checked = commandLineOn
+    this.displaySidebarCheckbox.checked = sidebarOn
     this.displayButton.textContent = 'Display'
   }
 
@@ -718,6 +756,8 @@ class CadViewerApp {
         toolbar: {
           placement: 'right',
           items: 'default',
+          appendItems: [AGENT_TOOLBAR_ITEM],
+          appendItemsAfter: 'layer',
           collapsible: true
         }
       })
@@ -725,7 +765,7 @@ class CadViewerApp {
       const plugin = AcApDocManager.instance.pluginManager.getPlugin(
         SIMPLE_UI_PLUGIN_NAME
       ) as AcApSimpleUiPlugin
-      applyDemoToolbarLayout(plugin, 'default')
+      setupAgentIntegration(plugin)
 
       AcApDocManager.instance.events.documentActivated.addEventListener(
         args => {

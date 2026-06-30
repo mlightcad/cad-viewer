@@ -374,6 +374,40 @@ describe('AcApSimpleUiPlugin', () => {
     expect(host.querySelector('.ml-ex-ui-dock-tab[data-tab-id="demo-2"]')).not.toBeNull()
   })
 
+  it('toggleDockPanelTab opens, focuses, and closes a tab via the plugin API', () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: [toolbarPreset('layer')]
+      }
+    })
+
+    expect(plugin.hasDockPanelTab('demo')).toBe(false)
+    expect(plugin.toggleDockPanelTab('demo')).toBe(false)
+
+    expect(
+      plugin.addDockPanelTab({
+        id: 'demo',
+        label: 'Demo',
+        content: document.createElement('div')
+      })
+    ).toBe(true)
+    expect(plugin.hasDockPanelTab('demo')).toBe(true)
+    expect(plugin.isDockPanelOpen()).toBe(true)
+
+    expect(plugin.toggleDockPanelTab('demo')).toBe(true)
+    expect(plugin.isDockPanelOpen()).toBe(false)
+
+    expect(plugin.toggleDockPanelTab('demo')).toBe(true)
+    expect(plugin.isDockPanelOpen()).toBe(true)
+    expect(
+      host.querySelector('.ml-ex-ui-dock-tab[data-tab-id="demo"]')?.classList.contains(
+        'is-active'
+      )
+    ).toBe(true)
+  })
+
   it('setDockPanelOpen(true) preserves the active tab when reopening', () => {
     const { host } = createHostTree()
     const { plugin } = loadPlugin({

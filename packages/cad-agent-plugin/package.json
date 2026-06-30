@@ -10,6 +10,7 @@
   "files": [
     "dist",
     "lib",
+    "typings",
     "README.md",
     "package.json"
   ],
@@ -18,22 +19,22 @@
   "sideEffects": [
     "**/*.css"
   ],
-  "types": "./lib/index.d.ts",
+  "types": "./typings/index.d.ts",
   "typesVersions": {
     "*": {
       "register": [
-        "lib/register.d.ts"
+        "typings/register.d.ts"
       ]
     }
   },
   "exports": {
     ".": {
-      "types": "./lib/index.d.ts",
+      "types": "./typings/index.d.ts",
       "import": "./dist/cad-agent-plugin.js",
       "require": "./dist/cad-agent-plugin.umd.cjs"
     },
     "./register": {
-      "types": "./lib/register.d.ts",
+      "types": "./typings/register.d.ts",
       "import": "./dist/cad-agent-plugin-register.js",
       "require": "./dist/cad-agent-plugin-register.umd.cjs"
     },

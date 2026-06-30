@@ -140,8 +140,18 @@ export interface AcExSimpleUiPluginOptions {
     placement?: AcExToolbarPlacement
     /** Toolbar items, `'default'`, or a custom list (may include presets and separators). */
     items?: AcExToolbarItemConfig[] | 'default'
-    /** Extra items appended after `items`. */
+    /** Extra items merged into `items` (default: appended at the end). */
     appendItems?: AcExToolbarItemConfig[]
+    /**
+     * Insert `appendItems` after the root toolbar item with this id.
+     * Ignored when {@link appendItemsBefore} is set.
+     */
+    appendItemsAfter?: string
+    /**
+     * Insert `appendItems` before the root toolbar item with this id.
+     * Takes precedence over {@link appendItemsAfter}.
+     */
+    appendItemsBefore?: string
     /** When true, show a collapse/expand toggle at the end of the toolbar. */
     collapsible?: boolean
     /** Initial collapsed state when {@link collapsible} is true. */
