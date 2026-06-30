@@ -19,6 +19,11 @@
       <template #tab-entityProperties>
         <ml-entity-properties :entity-props-list="properties" />
       </template>
+      <template v-if="store.features.agentPlugin" #tab-agent>
+        <div class="ml-agent-palette-wrapper">
+          <agent-chat-panel embedded />
+        </div>
+      </template>
     </ml-tool-palette>
   </el-config-provider>
 </template>
@@ -28,13 +33,20 @@ import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntityProperties } from '@mlightcad/data-model'
 import { MlToolPalette, MlToolPaletteTab } from '@mlightcad/ui-components'
 import { ElConfigProvider } from 'element-plus'
-import { computed, nextTick, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, watch } from 'vue'
 
 import { store } from '../../app'
 import { useSelectionSet, useViewerRect } from '../../composable'
 import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
 import MlEntityProperties from './MlEntityProperties.vue'
 import MlLayerList from './MlLayerList.vue'
+
+const AgentChatPanel = defineAsyncComponent(() =>
+  Promise.all([
+    import('@mlightcad/cad-agent-plugin/style.css'),
+    import('@mlightcad/cad-agent-plugin')
+  ]).then(([, module]) => module.AgentChatPanel)
+)
 
 /**
  * Properties of palette manager component
@@ -121,9 +133,16 @@ const syncPaletteToContainer = () => {
   paletteElement.style.maxWidth = `${containerWidth}px`
 }
 
-const tabNames = ['layerManager', 'entityProperties']
+const baseTabNames = ['layerManager', 'entityProperties'] as const
+const tabNames = computed((): readonly string[] => {
+  if (store.features.agentPlugin) {
+    return [...baseTabNames, 'agent']
+  }
+  return baseTabNames
+})
+
 const tabs = computed<MlToolPaletteTab[]>(() => {
-  return tabNames.map(name => {
+  return tabNames.value.map(name => {
     return {
       name,
       label: toolPaletteTabName(name),
@@ -133,10 +152,10 @@ const tabs = computed<MlToolPaletteTab[]>(() => {
 })
 
 watch(
-  () => store.dialogs.activePaletteTab,
-  activeTab => {
-    if (!tabNames.includes(activeTab)) {
-      store.dialogs.activePaletteTab = tabNames[0]
+  [() => store.dialogs.activePaletteTab, tabNames],
+  ([activeTab, names]) => {
+    if (!names.includes(activeTab)) {
+      store.dialogs.activePaletteTab = names[0]
     }
   },
   { immediate: true }
@@ -182,5 +201,19 @@ const properties = computed(() => {
   display: flex;
   align-items: flex-start; /* Align items at the top */
   justify-content: flex-start; /* Align items to the left */
+}
+
+.ml-agent-palette-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-agent-palette-wrapper :deep(.cad-agent-panel-root) {
+  flex: 1;
+  min-height: 0;
 }
 </style>

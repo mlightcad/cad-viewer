@@ -5,7 +5,8 @@ export const PLUGIN_PACKAGE_IDS = [
   'cad-pdf-plugin',
   'cad-html-plugin',
   'cad-svg-plugin',
-  'cad-simple-ui-plugin'
+  'cad-simple-ui-plugin',
+  'cad-agent-plugin'
 ] as const
 
 /** Core viewer libraries shipped from this monorepo. */

@@ -282,6 +282,8 @@ export default {
         'Open Quick Select to filter and select entities by criteria.',
       drawingUnits:
         'Open Drawing Units to set coordinate formats, precision, and insertion scale.',
+      agent:
+        'Open the CAD Agent palette tab to draw geometry using natural language.',
       propertyColor:
         'Set the color for newly created objects or selected entities.',
       propertyLineType:
@@ -378,7 +380,8 @@ export default {
       redo: 'Redo',
       properties: 'Properties',
       quickSelect: 'Quick Select',
-      drawingUnits: 'Drawing Units'
+      drawingUnits: 'Drawing Units',
+      agent: 'CAD Agent'
     }
   },
   verticalToolbar: {

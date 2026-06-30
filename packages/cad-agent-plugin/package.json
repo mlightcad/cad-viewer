@@ -1,0 +1,68 @@
+{
+  "name": "@mlightcad/cad-agent-plugin",
+  "version": "1.5.7",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/cad-agent-plugin.umd.cjs",
+  "module": "./dist/cad-agent-plugin.js",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "register": [
+        "lib/register.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./dist/cad-agent-plugin.js",
+      "require": "./dist/cad-agent-plugin.umd.cjs"
+    },
+    "./register": {
+      "types": "./lib/register.d.ts",
+      "import": "./dist/cad-agent-plugin-register.js",
+      "require": "./dist/cad-agent-plugin-register.umd.cjs"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build:types": "node scripts/copy-typings.mjs",
+    "build": "pnpm build:types && vite build",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.0",
+    "@ai-sdk/openai": "^2.0.0",
+    "@ai-sdk/vue": "^2.0.0",
+    "ai": "^5.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.10.0",
+    "@vitejs/plugin-vue": "^5.1.3",
+    "vue": "^3.4.21",
+    "vue-tsc": "^2.1.6"
+  },
+  "peerDependencies": {
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.10.0",
+    "vue": "^3.4.21"
+  }
+}
