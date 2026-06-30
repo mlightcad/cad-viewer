@@ -1407,7 +1407,7 @@ const buildBaseTabs = (
                   label: t('main.ribbon.command.quickSelect'),
                   tooltip: ribbonTooltips.quickSelect,
                   size: 'large',
-                  props: { icon: qselect }
+                  props: { icon: qselect, labelWrapLines: 2, labelWrapWidth: 'max-content' }
                 },
                 {
                   id: 'cmd-drawing-units',
@@ -1415,7 +1415,7 @@ const buildBaseTabs = (
                   label: t('main.ribbon.command.drawingUnits'),
                   tooltip: ribbonTooltips.drawingUnits,
                   size: 'large',
-                  props: { icon: setting }
+                  props: { icon: setting, labelWrapLines: 2, labelWrapWidth: 'max-content' }
                 },
                 ...(agentPluginEnabled
                   ? [
@@ -1425,7 +1425,11 @@ const buildBaseTabs = (
                         label: t('main.ribbon.command.agent'),
                         tooltip: ribbonTooltips.agent,
                         size: 'large' as const,
-                        props: { icon: ChatDotRound }
+                        props: {
+                          icon: ChatDotRound,
+                          labelWrapLines: 2,
+                          labelWrapWidth: 'max-content'
+                        }
                       }
                     ]
                   : [])
@@ -1690,5 +1694,11 @@ const handleFileMenuSelect = async (command: string) => {
   width: 100%;
   box-sizing: border-box;
   z-index: 6;
+}
+
+.ml-ribbon-toolbar-container
+  .ml-ribbon-item-host.is-large.type-button.is-label-wrap
+  .ml-ribbon-item-host__label {
+  white-space: pre-line;
 }
 </style>

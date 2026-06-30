@@ -379,9 +379,9 @@ export default {
       undo: 'Undo',
       redo: 'Redo',
       properties: 'Properties',
-      quickSelect: 'Quick Select',
-      drawingUnits: 'Drawing Units',
-      agent: 'CAD Agent'
+      quickSelect: 'Quick\nSelect',
+      drawingUnits: 'Drawing\nUnits',
+      agent: 'CAD\nAgent'
     }
   },
   verticalToolbar: {

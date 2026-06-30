@@ -783,7 +783,7 @@ export class AcApDocManager {
    *
    * This method loads either the specified fonts or the configured default font
    * fallback chains ({@link DEFAULT_FONTS_PRESET}, currently `modern`: text
-   * `hztxt` → `simsun`, symbol `amgdt`) if no fonts are provided. The loaded
+   * `hztxt` 鈫?`simsun`, symbol `amgdt`) if no fonts are provided. The loaded
    * fonts are used for rendering CAD text entities like MText and Text in the viewer.
    *
    * It is better to load default fonts when viewer is initialized so that the viewer can
@@ -1333,7 +1333,7 @@ export class AcApDocManager {
       //    paper sheet rectangle (`AcDbLayout.limits`). Real-world DWGs
       //    frequently mix scales inside paper space (e.g. a title block
       //    authored in mm alongside viewport rectangles authored in m),
-      //    so the entity bounding box is unreliable here — it gets
+      //    so the entity bounding box is unreliable here 鈥?it gets
       //    dominated by the largest-scale outliers and shrinks the
       //    actual paper to a grain.
       //
@@ -1344,13 +1344,13 @@ export class AcApDocManager {
       //    `*ACTIVE`, then frame EXTMIN/EXTMAX when no saved view exists.
       //
       // 4. **Fallback** (paper without limits, or model with empty
-      //    extents — typically DXF): poll `zoomToFitDrawing` and frame
+      //    extents 鈥?typically DXF): poll `zoomToFitDrawing` and frame
       //    the populated layout bounding box once entities land.
       //
       // The pre-fix code used `db.extmin/db.extmax` (always model-space
       // EXTMIN/EXTMAX sysvars) even when opening into paper, landing on
       // coordinates that don't exist in paper WCS. Paper layout would
-      // render zoomed into a random quadrant — title block looking
+      // render zoomed into a random quadrant 鈥?title block looking
       // giant, viewport collapsed to pixels. See
       // `next_14_viewports_full.md` Bug C-open.
       const modelSpaceId = db.tables.blockTable.modelSpace.objectId
@@ -1401,6 +1401,8 @@ export class AcApDocManager {
       // above relies on `curView` being an `AcTrView2d`, and the
       // markLayoutAsInitialized method is part of that contract.
       ;(this.curView as AcTrView2d).markLayoutAsInitialized(db.currentSpaceId)
+    } else {
+      this.regen()
     }
   }
 
@@ -1489,7 +1491,7 @@ export class AcApDocManager {
   /**
    * Returns monotonic open-file progress for UI display.
    *
-   * Entity conversion reports 0–100% within the ENTITY sub-stage while the
+   * Entity conversion reports 0鈥?00% within the ENTITY sub-stage while the
    * pipeline accumulator is still ~33%; sub-stage END callbacks can therefore
    * briefly report a lower percentage after IN-PROGRESS already reached 100%.
    */
