@@ -33,17 +33,42 @@
         overflow: hidden;
       }
 
+      .file-sidebar-column {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: row;
+        min-width: 0;
+        width: 180px;
+      }
+
+      .file-sidebar-column.is-hidden {
+        display: none;
+      }
+
       .file-sidebar {
-        flex: 0 0 20%;
-        min-width: 220px;
-        max-width: 360px;
+        flex: 1 1 auto;
+        min-width: 0;
         background: #0f172a;
-        border-right: 1px solid #1f2937;
+        border-right: none;
         padding: 1rem;
         display: flex;
         flex-direction: column;
         gap: 0.8rem;
         overflow: auto;
+      }
+
+      .file-sidebar-resize-handle {
+        flex: 0 0 6px;
+        width: 6px;
+        cursor: ew-resize;
+        background: transparent;
+        touch-action: none;
+        border-right: 1px solid #1f2937;
+      }
+
+      .file-sidebar-resize-handle:hover,
+      .file-sidebar-resize-handle:active {
+        background: #374151;
       }
 
       .file-sidebar-toggle {
@@ -438,6 +463,7 @@
   </head>
   <body>
     <div class="app-shell">
+      <div class="file-sidebar-column" id="fileSidebarColumn">
       <aside class="file-sidebar" id="fileSidebar">
         <h2 class="sidebar-title sidebar-title-desktop">Predefined Files</h2>
         <button
@@ -510,6 +536,15 @@
           </div>
         </div>
       </aside>
+      <div
+        class="file-sidebar-resize-handle"
+        id="fileSidebarResizeHandle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize predefined files panel"
+        tabindex="-1"
+      ></div>
+      </div>
 
       <main class="viewer-pane" id="viewerPane">
         <div class="dev-toolbar is-disabled" id="devToolbar" role="toolbar" aria-label="Viewer demo controls">
@@ -607,6 +642,12 @@
                 <label class="dev-toolbar-menu-check" for="devDisplayCommandLine">
                   <input type="checkbox" id="devDisplayCommandLine" disabled />
                   <span>Command line</span>
+                </label>
+              </div>
+              <div class="dev-toolbar-menu-section">
+                <label class="dev-toolbar-menu-check" for="devDisplaySidebar">
+                  <input type="checkbox" id="devDisplaySidebar" disabled />
+                  <span>Sidebar</span>
                 </label>
               </div>
             </div>

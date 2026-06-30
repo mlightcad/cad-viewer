@@ -95,6 +95,16 @@ toolbar: {
 }
 ```
 
+By default `appendItems` are added at the end of the toolbar. Use `appendItemsAfter` or `appendItemsBefore` to insert next to an existing root item id (for example after `layer`). When both are set, `appendItemsBefore` takes precedence.
+
+```typescript
+toolbar: {
+  items: 'default',
+  appendItems: [{ id: 'agent', label: 'Agent', command: 'agent' }],
+  appendItemsAfter: 'layer'
+}
+```
+
 The built-in theme toggle button updates `COLORTHEME` when a document is open, or applies `applyUiTheme` on `host` when no document is loaded.
 
 ### Layer manager (dock panel)

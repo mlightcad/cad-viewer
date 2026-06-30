@@ -1,6 +1,7 @@
 import { existsSync } from 'fs'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
+import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import { exampleRollupOutput } from '../vite-config/pluginRollupOutput'
@@ -36,6 +37,7 @@ export default defineConfig(() => {
       }
     },
     plugins: [
+      vue(),
       viteStaticCopy({
         targets: [
           {

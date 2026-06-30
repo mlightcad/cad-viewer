@@ -291,6 +291,9 @@ importers:
 
   packages/cad-simple-viewer-example:
     dependencies:
+      '@mlightcad/cad-agent-plugin':
+        specifier: workspace:*
+        version: link:../cad-agent-plugin
       '@mlightcad/cad-html-plugin':
         specifier: workspace:*
         version: link:../cad-html-plugin
@@ -315,6 +318,13 @@ importers:
       three:
         specifier: ^0.172.0
         version: 0.172.0
+      vue:
+        specifier: ^3.4.21
+        version: 3.5.31(typescript@5.9.3)
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: ^5.1.3
+        version: 5.2.4(vite@5.4.21(@types/node@24.12.4)(sass@1.98.0))(vue@3.5.31(typescript@5.9.3))
 
   packages/cad-svg-plugin:
     devDependencies:

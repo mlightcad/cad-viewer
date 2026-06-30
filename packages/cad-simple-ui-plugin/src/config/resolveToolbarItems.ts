@@ -26,11 +26,46 @@ export function createDefaultToolbarPresetMap(
 }
 
 /**
+ * Inserts toolbar items at the configured position relative to a root item id.
+ *
+ * @param items - Base toolbar items.
+ * @param toInsert - Items to insert from `appendItems`.
+ * @param position - Optional anchor id (`after` or `before`); omitted means end.
+ * @returns New item array with `toInsert` merged in.
+ */
+export function insertToolbarItemsAt(
+  items: AcExToolbarItem[],
+  toInsert: AcExToolbarItem[],
+  position?: { after?: string; before?: string }
+): AcExToolbarItem[] {
+  if (!toInsert.length) return items
+
+  const anchorId = position?.before ?? position?.after
+  if (!anchorId) {
+    return [...items, ...toInsert]
+  }
+
+  const anchorIndex = items.findIndex(item => item.id === anchorId)
+  if (anchorIndex === -1) {
+    return [...items, ...toInsert]
+  }
+
+  const insertAt = position?.before ? anchorIndex : anchorIndex + 1
+  return [
+    ...items.slice(0, insertAt),
+    ...toInsert,
+    ...items.slice(insertAt)
+  ]
+}
+
+/**
  * Resolves the final toolbar item list from plugin options.
  *
- * Uses the default set when `items` is `'default'` or omitted, then appends
- * `appendItems` when present. Preset references in custom lists are expanded
- * from the built-in item map.
+ * Uses the default set when `items` is `'default'` or omitted, then merges
+ * `appendItems` when present. Use `appendItemsAfter` or `appendItemsBefore` to
+ * control insertion; otherwise items are appended at the end. When both anchor
+ * options are set, `appendItemsBefore` takes precedence. Preset references
+ * in custom lists are expanded from the built-in item map.
  *
  * @param options - Toolbar subsection of plugin options.
  * @param context - Context for default theme/locale toggle items.
@@ -51,10 +86,14 @@ export function resolveToolbarItems(
   }
 
   if (toolbar.appendItems?.length) {
-    items = [
-      ...items,
-      ...expandToolbarItemConfigs(toolbar.appendItems, presets)
-    ]
+    items = insertToolbarItemsAt(
+      items,
+      expandToolbarItemConfigs(toolbar.appendItems, presets),
+      {
+        after: toolbar.appendItemsAfter,
+        before: toolbar.appendItemsBefore
+      }
+    )
   }
 
   return items

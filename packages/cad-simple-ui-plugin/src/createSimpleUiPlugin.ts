@@ -146,6 +146,32 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     return this.dockPanel?.isOpen ?? false
   }
 
+  /** Whether a dock panel tab with the given id is registered. */
+  hasDockPanelTab(tabId: string): boolean {
+    return this.dockPanel?.hasTab(tabId) ?? false
+  }
+
+  /**
+   * Opens the dock panel and activates a tab, or closes the panel when that tab
+   * is already active.
+   *
+   * @param tabId - Tab to toggle.
+   * @returns `true` when applied; `false` when the tab or dock panel is unavailable.
+   */
+  toggleDockPanelTab(tabId: string): boolean {
+    if (!this.dockPanel?.hasTab(tabId)) {
+      return false
+    }
+
+    this.ensureDockReady()
+    if (!this.dockPanel) {
+      return false
+    }
+
+    this.dockPanel.toggle(tabId)
+    return true
+  }
+
   /**
    * Opens or closes the dock panel.
    *
