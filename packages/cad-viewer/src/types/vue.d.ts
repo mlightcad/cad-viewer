@@ -4,3 +4,8 @@ declare module '*.vue' {
   const component: DefineComponent<Record<string, any>, any, any>
   export default component
 }
+
+declare module '@mlightcad/cad-agent-plugin/style.css' {
+  const css: string
+  export default css
+}

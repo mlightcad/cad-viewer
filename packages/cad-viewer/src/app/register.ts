@@ -2,9 +2,9 @@ import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin/register'
 import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin/register'
 import {
   AcApDocManager,
+  type AcApPluginManager,
   AcEdCommandStack,
-  AcEdMTextEditor
-} from '@mlightcad/cad-simple-viewer'
+  AcEdMTextEditor} from '@mlightcad/cad-simple-viewer'
 import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
 import { markRaw } from 'vue'
 
@@ -27,6 +27,8 @@ import {
   MlTextStyleDlg
 } from '../component'
 import { useDialogManager } from '../composable'
+import { i18n } from '../locale'
+import { store } from './store'
 
 let isCommandRegistered = false
 export const registerCmds = () => {
@@ -129,13 +131,43 @@ export const registerMTextColorPicker = () => {
 }
 
 let isLazyPluginRegistered = false
+let isAgentIntegrationStarted = false
+
+const registerAgentIntegration = async (pluginManager: AcApPluginManager) => {
+  try {
+    await import('@mlightcad/cad-agent-plugin/style.css')
+    const agentRegister = await import('@mlightcad/cad-agent-plugin/register')
+
+    agentRegister.setAgentPaletteOpener(() => {
+      if (
+        store.dialogs.layerManager &&
+        store.dialogs.activePaletteTab === 'agent'
+      ) {
+        store.dialogs.layerManager = false
+        return
+      }
+
+      store.dialogs.activePaletteTab = 'agent'
+      store.dialogs.layerManager = true
+    })
+
+    agentRegister.mergeAgentI18nIntoVueI18n((locale, messages) => {
+      i18n.global.mergeLocaleMessage(locale, messages)
+    })
+
+    agentRegister.registerLazyAgentPlugin(pluginManager)
+    store.features.agentPlugin = true
+  } catch {
+    // Optional peer `@mlightcad/cad-agent-plugin` is not installed.
+  }
+}
 
 /**
  * Registers lazy plugins that load on first use of their trigger commands.
  *
  * Currently registers the PDF plugin (`cpdf`, `ipdf`), the HTML export
- * plugin (`chtml`), and the SVG export plugin (`csvg`), which are fetched
- * only when one of those commands runs.
+ * plugin (`chtml`), the SVG export plugin (`csvg`), and optionally the CAD
+ * Agent plugin (`agent`) when `@mlightcad/cad-agent-plugin` is installed.
  * Safe to call multiple times; registration runs once per application lifetime.
  */
 export const registerLazyPlugins = () => {
@@ -147,5 +179,11 @@ export const registerLazyPlugins = () => {
   registerLazyPdfPlugin(pluginManager)
   registerLazyHtmlPlugin(pluginManager)
   registerLazySvgPlugin(pluginManager)
+
+  if (!isAgentIntegrationStarted) {
+    isAgentIntegrationStarted = true
+    void registerAgentIntegration(pluginManager)
+  }
+
   isLazyPluginRegistered = true
 }

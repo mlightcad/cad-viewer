@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "rootDir": "./src",
+    "outDir": "./lib",
+    "paths": {
+      "@mlightcad/cad-agent-plugin": ["./src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

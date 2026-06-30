@@ -43,6 +43,7 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
+    "@mlightcad/cad-agent-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
@@ -68,6 +69,7 @@
     "vue-tsc": "^2.1.6"
   },
   "peerDependencies": {
+    "@mlightcad/cad-agent-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
@@ -81,6 +83,9 @@
     "vue-i18n": "^11.4.4"
   },
   "peerDependenciesMeta": {
+    "@mlightcad/cad-agent-plugin": {
+      "optional": true
+    },
     "@mlightcad/cad-html-plugin": {
       "optional": true
     },
