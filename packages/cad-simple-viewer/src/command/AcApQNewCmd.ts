@@ -1,5 +1,5 @@
 import { AcApContext, AcApDocManager } from '../app'
-import { AcEdCommand } from '../editor'
+import { AcEdCommand, AcEdOpenMode } from '../editor'
 
 /**
  * Command for creating a new CAD document from a template.
@@ -29,7 +29,17 @@ export class AcApQNewCmd extends AcEdCommand {
    * @param _context - The application context (unused in this command)
    */
   async execute(_context: AcApContext) {
-    const baseUrl = AcApDocManager.instance.baseUrl
-    AcApDocManager.instance.openUrl(baseUrl + 'templates/acadiso.dxf')
+    const manager = AcApDocManager.instance
+    const baseUrl = manager.baseUrl.endsWith('/')
+      ? manager.baseUrl
+      : `${manager.baseUrl}/`
+    const defaults = await Promise.resolve(manager.resolveOpenDocumentDefaults())
+    const success = await manager.openUrl(`${baseUrl}templates/acadiso.dxf`, {
+      ...defaults,
+      mode: AcEdOpenMode.Write
+    })
+    if (!success) {
+      throw new Error('Failed to open new drawing template')
+    }
   }
 }

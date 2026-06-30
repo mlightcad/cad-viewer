@@ -182,6 +182,7 @@ function onDocumentActivated(args: AcDbDocumentEventArgs) {
  */
 function onFailedToOpenFile() {
   endDocumentOpening()
+  syncFromDocument()
 }
 
 /**

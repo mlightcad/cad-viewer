@@ -1,6 +1,6 @@
 import type { AcExToolbarItemConfig } from '@mlightcad/cad-simple-ui-plugin'
 
-import { ICON_AGENT } from './icons/agentIcon'
+import { ICON_AGENT } from './icons'
 
 /** Toolbar button that runs the lazy-loaded `agent` command. */
 export const AGENT_TOOLBAR_ITEM: AcExToolbarItemConfig = {

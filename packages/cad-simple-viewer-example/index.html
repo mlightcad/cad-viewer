@@ -143,6 +143,10 @@
         opacity: 0.55;
       }
 
+      .dev-toolbar.is-disabled .dev-toolbar-primary {
+        opacity: 1;
+      }
+
       .dev-toolbar button {
         border: 1px solid #4b5563;
         border-radius: 6px;
@@ -479,7 +483,7 @@
               Tap to browse sample files
             </span>
           </span>
-          <span class="file-sidebar-chevron" aria-hidden="true">▼</span>
+          <span class="file-sidebar-chevron" aria-hidden="true">鈻?/span>
         </button>
         <div class="file-sidebar-body" id="fileSidebarBody">
           <p class="sidebar-help">Select one file below or open a local DXF/DWG file.</p>
@@ -548,6 +552,9 @@
 
       <main class="viewer-pane" id="viewerPane">
         <div class="dev-toolbar is-disabled" id="devToolbar" role="toolbar" aria-label="Viewer demo controls">
+          <button type="button" id="devNewButton" class="dev-toolbar-primary" aria-label="New drawing">
+            New
+          </button>
           <div class="dev-toolbar-menu-wrap">
             <button type="button" id="devDockButton" disabled aria-haspopup="menu" aria-expanded="false">
               Dock

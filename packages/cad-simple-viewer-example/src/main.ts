@@ -7,6 +7,7 @@ import { registerSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register
 import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
+  AcApQNewCmd,
   AcApSettingManager,
   AcEdOpenMode,
   applyUiTheme,
@@ -63,6 +64,7 @@ class CadViewerApp {
   private viewerToolbarEdgeOffsetInput: HTMLInputElement
   private viewerToolbarPlacementButtons: NodeListOf<HTMLButtonElement>
   private devToolbar: HTMLElement
+  private devNewButton: HTMLButtonElement
   private displayMenuOpen = false
   private dockMenuOpen = false
   private demoDockTabCount = 0
@@ -146,6 +148,9 @@ class CadViewerApp {
       '[data-viewer-toolbar-placement]'
     ) as NodeListOf<HTMLButtonElement>
     this.devToolbar = document.getElementById('devToolbar') as HTMLElement
+    this.devNewButton = document.getElementById(
+      'devNewButton'
+    ) as HTMLButtonElement
 
     this.setupFileHandling()
     this.setupPredefinedFileActions()
@@ -660,6 +665,9 @@ class CadViewerApp {
   }
 
   private setupDevToolbar() {
+    this.devNewButton.addEventListener('click', () => {
+      void this.createNewDrawing()
+    })
     this.updateDevToolbarLabels()
   }
 
@@ -770,6 +778,8 @@ class CadViewerApp {
       AcApDocManager.instance.events.documentActivated.addEventListener(
         args => {
           document.title = args.doc.docTitle
+          this.onFileOpened()
+          this.finishLoadingState()
           this.updateDevToolbarLabels()
         }
       )
@@ -896,6 +906,26 @@ class CadViewerApp {
     this.fileSidebarSubtitle.textContent = label || 'Tap to browse sample files'
   }
 
+  private async createNewDrawing() {
+    await this.initialize()
+
+    if (!this.isInitialized) return
+
+    this.clearMessages()
+
+    try {
+      const cmd = new AcApQNewCmd()
+      await cmd.execute(AcApDocManager.instance.context)
+      this.predefinedButtons.forEach(item => item.classList.remove('active'))
+      this.updateFileSidebarSubtitle('Tap to browse sample files')
+      this.showMessage('New drawing created', 'success')
+    } catch (error) {
+      log.error('Error creating new drawing:', error)
+      this.showMessage(`Error creating new drawing: ${error}`, 'error')
+      this.finishLoadingState()
+    }
+  }
+
   private async loadLocalFile(file: File) {
     await this.initialize()
 
@@ -924,7 +954,6 @@ class CadViewerApp {
       )
 
       if (success) {
-        this.onFileOpened()
         this.predefinedButtons.forEach(item => item.classList.remove('active'))
         this.updateFileSidebarSubtitle('Tap to browse sample files')
         this.showMessage(`Successfully loaded: ${file.name}`, 'success')
@@ -952,7 +981,6 @@ class CadViewerApp {
       const success = await AcApDocManager.instance.openUrl(url, options)
 
       if (success) {
-        this.onFileOpened()
         const fileName = this.getFileNameFromUrl(url)
         this.showMessage(`Successfully loaded: ${fileName}`, 'success')
       } else {

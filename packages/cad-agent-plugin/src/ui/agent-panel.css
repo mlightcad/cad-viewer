@@ -44,8 +44,8 @@
 .cad-agent-panel-toolbar {
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
-  padding: 8px 10px;
+  gap: 4px;
+  padding: 6px 8px;
   border-bottom: 1px solid #3a3a3a;
   background: #252526;
   flex-shrink: 0;
@@ -67,7 +67,20 @@
 
 .cad-agent-panel-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+}
+
+.cad-agent-panel-toolbar .cad-agent-icon-btn,
+.cad-agent-panel-actions .cad-agent-icon-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.cad-agent-panel-toolbar .cad-agent-icon-btn svg,
+.cad-agent-panel-actions .cad-agent-icon-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .cad-agent-panel-btn {
@@ -105,6 +118,12 @@
 
 .cad-agent-icon-btn:hover:not(:disabled) {
   background: #3a3a3a;
+}
+
+.cad-agent-icon-btn.is-active {
+  background: #094771;
+  border-color: #007acc;
+  color: #ffffff;
 }
 
 .cad-agent-icon-btn:disabled {
@@ -241,12 +260,102 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.cad-agent-panel-input-actions {
+.cad-agent-panel-input-left {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.cad-agent-panel-input-right {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.cad-agent-model-select {
+  width: 100%;
+  max-width: 128px;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  background: #2d2d2d;
+  color: #e8e8e8;
+  padding: 5px 24px 5px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.cad-agent-model-select:hover:not(:disabled) {
+  background: #333;
+}
+
+.cad-agent-model-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cad-agent-attach-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #b0b0b0;
+  border-radius: 6px;
+}
+
+.cad-agent-attach-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8e8e8;
+}
+
+.cad-agent-attach-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cad-agent-send-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #cccccc;
+  color: #1a1a1a;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cad-agent-send-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cad-agent-send-btn:hover:not(:disabled) {
+  background: #e8e8e8;
+}
+
+.cad-agent-send-btn:disabled {
+  background: #3a3a3a;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.cad-agent-send-spinner {
+  animation: cad-agent-spin 0.8s linear infinite;
+}
+
+@keyframes cad-agent-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .cad-agent-attachments {

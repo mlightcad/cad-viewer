@@ -134,6 +134,19 @@ const visionModelOptions = computed(() =>
 const textModelOptions = computed(() =>
   modelOptionsForProvider(settings.value.provider, false)
 )
+const activeVisionModelOptions = computed(() =>
+  modelOptionsForProvider(activeSettings.value.provider, true)
+)
+const activeTextModelOptions = computed(() =>
+  modelOptionsForProvider(activeSettings.value.provider, false)
+)
+const isActiveCustomModel = computed(
+  () =>
+    resolveModelSelection(
+      activeSettings.value.provider,
+      activeSettings.value.model
+    ) === CUSTOM_MODEL_VALUE
+)
 const supportsVision = computed(() =>
   modelSupportsVision(
     activeSettings.value.provider,
@@ -147,6 +160,14 @@ watch(supportsVision, supported => {
 
 const isBusy = computed(
   () => status.value === 'streaming' || status.value === 'submitted'
+)
+
+const modelSelectDisabled = computed(
+  () => !settingsReady.value || isBusy.value || settingsDirty.value
+)
+
+const modelSelectTitle = computed(() =>
+  settingsDirty.value ? labels.value.unsavedSettings : labels.value.model
 )
 
 const canSend = computed(
@@ -188,6 +209,22 @@ async function applySettings() {
   activeSettings.value = { ...settings.value }
   showSettings.value = false
   resetChat()
+}
+
+/** Switches the active model from the input bar and persists the change. */
+async function applyActiveModel(model: string) {
+  if (!model || model === activeSettings.value.model) return
+
+  settings.value = { ...settings.value, model }
+  modelSelection.value = resolveModelSelection(settings.value.provider, model)
+  activeSettings.value = { ...activeSettings.value, model }
+  await saveLlmSettings(activeSettings.value)
+}
+
+/** Handles model selection changes in the input bar dropdown. */
+async function onInputModelChange(event: Event) {
+  const model = (event.target as HTMLSelectElement).value
+  await applyActiveModel(model)
 }
 
 /** Opens the hidden file input for image attachments. */
@@ -283,13 +320,32 @@ function toolParts(message: UIMessage): string[] {
       <div class="cad-agent-panel-actions">
         <button
           type="button"
-          class="cad-agent-panel-btn"
+          class="cad-agent-icon-btn"
+          :class="{ 'is-active': showSettings }"
+          :title="labels.settings"
+          :aria-label="labels.settings"
           @click="showSettings = !showSettings"
         >
-          {{ labels.settings }}
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+            />
+          </svg>
         </button>
-        <button type="button" class="cad-agent-panel-btn" @click="clearChat">
-          {{ labels.clear }}
+        <button
+          type="button"
+          class="cad-agent-icon-btn"
+          :title="labels.clear"
+          :aria-label="labels.clear"
+          @click="clearChat"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+            />
+          </svg>
         </button>
         <button type="button" class="cad-agent-panel-btn" @click="emit('close')">
           {{ labels.close }}
@@ -299,13 +355,32 @@ function toolParts(message: UIMessage): string[] {
     <div v-else class="cad-agent-panel-toolbar">
       <button
         type="button"
-        class="cad-agent-panel-btn"
+        class="cad-agent-icon-btn"
+        :class="{ 'is-active': showSettings }"
+        :title="labels.settings"
+        :aria-label="labels.settings"
         @click="showSettings = !showSettings"
       >
-        {{ labels.settings }}
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+          />
+        </svg>
       </button>
-      <button type="button" class="cad-agent-panel-btn" @click="clearChat">
-        {{ labels.clear }}
+      <button
+        type="button"
+        class="cad-agent-icon-btn"
+        :title="labels.clear"
+        :aria-label="labels.clear"
+        @click="clearChat"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+          />
+        </svg>
       </button>
     </div>
 
@@ -413,7 +488,7 @@ function toolParts(message: UIMessage): string[] {
             :title="labels.dismissError"
             @click="dismissError"
           >
-            ×
+            脳
           </button>
         </div>
       </div>
@@ -436,7 +511,7 @@ function toolParts(message: UIMessage): string[] {
             :title="labels.removeAttachment"
             @click="removePendingImage(index)"
           >
-            ×
+            脳
           </button>
         </div>
       </div>
@@ -455,10 +530,50 @@ function toolParts(message: UIMessage): string[] {
       />
       <p v-if="inputHint" class="cad-agent-input-hint">{{ inputHint }}</p>
       <div class="cad-agent-panel-input-row">
-        <div class="cad-agent-panel-input-actions">
+        <div class="cad-agent-panel-input-left">
+          <select
+            class="cad-agent-model-select"
+            :value="activeSettings.model"
+            :disabled="modelSelectDisabled"
+            :title="modelSelectTitle"
+            @change="onInputModelChange"
+          >
+            <optgroup
+              v-if="activeVisionModelOptions.length"
+              :label="labels.visionModels"
+            >
+              <option
+                v-for="option in activeVisionModelOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ modelLabel(option) }}
+              </option>
+            </optgroup>
+            <optgroup
+              v-if="activeTextModelOptions.length"
+              :label="labels.textModels"
+            >
+              <option
+                v-for="option in activeTextModelOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ modelLabel(option) }}
+              </option>
+            </optgroup>
+            <option
+              v-if="isActiveCustomModel"
+              :value="activeSettings.model"
+            >
+              {{ activeSettings.model }}
+            </option>
+          </select>
+        </div>
+        <div class="cad-agent-panel-input-right">
           <button
             type="button"
-            class="cad-agent-icon-btn"
+            class="cad-agent-icon-btn cad-agent-attach-btn"
             :disabled="isBusy || !supportsVision"
             :title="labels.attachImage"
             @click="openFilePicker"
@@ -466,19 +581,40 @@ function toolParts(message: UIMessage): string[] {
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 fill="currentColor"
-                d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+                d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.66 1.34-3 3-3s3 1.34 3 3v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6h-1.5v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.49-2.01-4.5-4.5-4.5S8 2.51 8 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6H16.5z"
               />
             </svg>
           </button>
+          <button
+            type="button"
+            class="cad-agent-send-btn"
+            :disabled="!canSend"
+            :title="isBusy ? labels.working : labels.send"
+            @click="sendMessage"
+          >
+            <svg
+              v-if="isBusy"
+              class="cad-agent-send-spinner"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-dasharray="42"
+                stroke-dashoffset="14"
+              />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M12 4l-7 7h4v9h6v-9h4z" />
+            </svg>
+          </button>
         </div>
-        <button
-          type="button"
-          class="cad-agent-panel-btn"
-          :disabled="!canSend"
-          @click="sendMessage"
-        >
-          {{ isBusy ? labels.working : labels.send }}
-        </button>
       </div>
     </div>
   </div>

@@ -110,7 +110,7 @@ export class CadActionExecutor {
   /**
    * Returns a snapshot of the active drawing for the `get_drawing_context` tool.
    *
-   * @returns Layer list, units, extents, and entity count.
+   * @returns Layer list, units, and extents.
    */
   getDrawingContext(): DrawingContextSnapshot | ToolResult {
     const accessError = requireDocument(false)

@@ -20,7 +20,7 @@ export function createCadTools() {
   return {
     get_drawing_context: tool({
       description:
-        'Get current drawing context: units, layers, extents, entity count',
+        'Get current drawing context: units, layers, and extents',
       inputSchema: z.object({}),
       execute: async () => cadActionExecutor.getDrawingContext()
     }),
