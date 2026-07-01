@@ -34,6 +34,7 @@ export {
   getSceneDrawableUserData,
   isHighlightCloneDrawable,
   isHighlightOverlayDescendant,
+  resolveDrawableExportMaterial,
   markHighlightOverlayGroup,
   patchDrawableMaterialFromCache,
   resolveCachedMaterialRemap,
