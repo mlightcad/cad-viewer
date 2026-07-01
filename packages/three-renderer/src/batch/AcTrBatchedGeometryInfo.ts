@@ -144,8 +144,12 @@ export function copyAttributeData(
       }
     }
   } else {
-    // faster copy approach using typed array set function
-    target.array.set(src.array, targetOffset * itemSize)
+    // Copy only active vertices (`src.count`), not the full backing store.
+    const srcLength = src.count * itemSize
+    target.array.set(
+      (src.array as THREE.TypedArray).subarray(0, srcLength),
+      targetOffset * itemSize
+    )
   }
 
   target.needsUpdate = true
