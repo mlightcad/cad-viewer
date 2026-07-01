@@ -7,7 +7,8 @@ import {
   canReleaseActiveLayoutBatches,
   copyFloat32Buffer,
   releaseLayerGroupsGeometryCpuArrays,
-  releaseSnapshotBatchBuffers
+  releaseSnapshotBatchBuffers,
+  releaseSnapshotOsnapCatalogs
 } from '../src/AcExViewerMemory'
 import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
 
@@ -90,7 +91,7 @@ describe('AcExViewerMemory', () => {
     expect(copy[0]).toBe(1)
   })
 
-  it('canReleaseActiveLayoutBatches requires analytic osnap catalog', () => {
+  it('canReleaseActiveLayoutBatches requires analytic osnap primitives', () => {
     const withOsnap = makeSnapshot().layouts[0]!
     expect(canReleaseActiveLayoutBatches(withOsnap)).toBe(true)
 
@@ -115,6 +116,19 @@ describe('AcExViewerMemory', () => {
 
     expect(snapshot.layouts[0]!.lineBatches).toHaveLength(0)
     expect(snapshot.layouts[1]!.lineBatches).toHaveLength(0)
+  })
+
+  it('releaseSnapshotOsnapCatalogs clears layout catalogs without dropping retained primitives', () => {
+    const snapshot = makeSnapshot()
+    const activeLayout = snapshot.layouts[0]!
+    const retained = activeLayout.osnap!.primitives
+
+    releaseSnapshotOsnapCatalogs(snapshot)
+
+    expect(activeLayout.osnap).toBeUndefined()
+    expect(snapshot.layouts[1]!.osnap).toBeUndefined()
+    expect(retained).toHaveLength(1)
+    expect(retained[0]).toMatchObject({ kind: 'line', x0: 0, y0: 0, x1: 1, y1: 0 })
   })
 
   it('releaseSnapshotBatchBuffers keeps active layout batches without osnap catalog', () => {

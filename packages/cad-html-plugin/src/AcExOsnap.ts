@@ -15,10 +15,7 @@ import {
   intersectPrimitivePair,
   isIntersectionCapablePrimitive
 } from './AcExOsnapIntersections'
-import {
-  type AcExOsnapAcGeCurve,
-  primitiveToAcGeCurve
-} from './AcExOsnapPrimitiveToAcGe'
+import { primitiveToAcGeCurve } from './AcExOsnapPrimitiveToAcGe'
 import type {
   AcExOsnapMode,
   AcExOsnapPoint,
@@ -473,24 +470,6 @@ interface AcExRbushEntry {
   index: number
 }
 
-/** One pre-indexed discrete snap point (endpoint, center, etc.). @internal */
-interface AcExIndexedSnapPoint {
-  x: number
-  y: number
-  mode: AcExOsnapMode
-  layer: string
-}
-
-/** Source geometry for nearest snap and intersection queries. @internal */
-type AcExNearestSource =
-  | {
-      kind: 'primitive'
-      index: number
-      layer: string
-      geo?: AcExOsnapAcGeCurve
-    }
-  | { kind: 'segment'; index: number; layer: string }
-
 /** Squared distance from a point to an axis-aligned box exterior (0 when inside). @internal */
 function distSqToBounds(
   px: number,
@@ -570,19 +549,16 @@ function primitiveBounds(prim: AcExOsnapPrimitive): {
 /**
  * Spatial index for object snap in the offline HTML viewer.
  *
- * Discrete snap points (endpoint, midpoint, center, quadrant, node) are indexed
- * in an RBush tree at {@link AcExOsnapIndex.rebuild} so pointer queries avoid
- * rebuilding `AcGe*` curves. Nearest snap runs only when no discrete candidate
- * lies within the aperture.
+ * {@link AcExOsnapIndex.rebuild} loads analytic primitives and tessellated
+ * segments into RBush trees only. Discrete snap points, nearest, and
+ * intersection candidates are computed on pointer query from nearby geometry.
  */
 export class AcExOsnapIndex {
   private segments: AcExOsnapSegment[] = []
   private segmentLayers: string[] = []
   private primitives: AcExOsnapPrimitive[] = []
-  private snapPoints: AcExIndexedSnapPoint[] = []
-  private snapPointTree = new RBush<AcExRbushEntry>()
-  private nearestSources: AcExNearestSource[] = []
-  private nearestTree = new RBush<AcExRbushEntry>()
+  private primitiveTree = new RBush<AcExRbushEntry>()
+  private segmentTree = new RBush<AcExRbushEntry>()
   private modes: Set<AcExOsnapMode>
   private hiddenLayers = new Set<string>()
 
@@ -625,120 +601,53 @@ export class AcExOsnapIndex {
   }
 
   /**
-   * Builds the snap index from the active layout snapshot.
+   * Builds spatial indexes from the active layout snapshot.
    *
-   * Indexes all analytic and tessellated geometry once. Layer visibility is
-   * applied at query time via {@link setLayerHidden}, {@link showAllLayers}, and
-   * {@link hideAllLayers} so toggling many layers stays O(1).
+   * Loads analytic primitives and tessellated segments into RBush trees.
+   * Snap candidates are computed lazily during {@link findSnap}.
    *
    * @param layout - Active layout snapshot (batches + optional {@link AcExLayoutSnapshot.osnap}).
    */
   rebuild(layout: AcExLayoutSnapshot): void {
-    const catalog = layout.osnap
-    this.primitives = catalog?.primitives ?? []
-    if (this.primitives.length > 0) {
-      this.segments = []
-      this.segmentLayers = []
-    } else {
+    this.primitiveTree.clear()
+    this.segmentTree.clear()
+    this.hiddenLayers.clear()
+    this.segments = []
+    this.segmentLayers = []
+
+    this.primitives = layout.osnap?.primitives ?? []
+    if (this.primitives.length === 0) {
       const collected = collectBatchSegments(layout)
       this.segments = collected.segments
       this.segmentLayers = collected.segmentLayers
     }
 
-    this.snapPoints = []
-    this.snapPointTree.clear()
-    this.nearestSources = []
-    this.nearestTree.clear()
-    this.hiddenLayers.clear()
-
-    const discreteModes = new Set(this.modes)
-    discreteModes.delete('nearest')
-    discreteModes.delete('intersection')
-    const wantsNearest = this.modes.has('nearest')
-    const wantsIntersection = this.modes.has('intersection')
-    const wantsGeometryTree = wantsNearest || wantsIntersection
-
-    for (let i = 0; i < this.primitives.length; i++) {
-      const prim = this.primitives[i]!
-      const geo = wantsNearest ? primitiveToAcGeCurve(prim) : undefined
-      if (wantsGeometryTree && prim.kind !== 'point') {
-        this.nearestSources.push({
-          kind: 'primitive',
-          index: i,
-          layer: prim.layer,
-          geo
-        })
-      }
-      if (discreteModes.size > 0) {
-        for (const candidate of collectPrimitiveDiscreteSnapCandidates(
-          prim,
-          discreteModes,
-          geo
-        )) {
-          this.snapPoints.push({
-            x: candidate.x,
-            y: candidate.y,
-            mode: candidate.mode,
-            layer: prim.layer
-          })
-        }
-      }
-    }
-
-    for (let i = 0; i < this.segments.length; i++) {
-      const seg = this.segments[i]!
-      const layer = this.segmentLayers[i]!
-      if (wantsGeometryTree) {
-        this.nearestSources.push({ kind: 'segment', index: i, layer })
-      }
-      if (discreteModes.has('endpoint')) {
-        this.snapPoints.push(
-          { x: seg.x0, y: seg.y0, mode: 'endpoint', layer },
-          { x: seg.x1, y: seg.y1, mode: 'endpoint', layer }
-        )
-      }
-      if (discreteModes.has('midpoint')) {
-        this.snapPoints.push({
-          x: (seg.x0 + seg.x1) * 0.5,
-          y: (seg.y0 + seg.y1) * 0.5,
-          mode: 'midpoint',
-          layer
-        })
-      }
-    }
-
-    if (this.snapPoints.length === 0 && this.nearestSources.length === 0) {
+    if (this.primitives.length === 0 && this.segments.length === 0) {
       return
     }
 
-    const snapEntries: AcExRbushEntry[] = new Array(this.snapPoints.length)
-    for (let i = 0; i < this.snapPoints.length; i++) {
-      const point = this.snapPoints[i]!
-      snapEntries[i] = {
-        minX: point.x,
-        minY: point.y,
-        maxX: point.x,
-        maxY: point.y,
-        index: i
+    if (this.primitives.length > 0) {
+      const primitiveEntries: AcExRbushEntry[] = new Array(
+        this.primitives.length
+      )
+      for (let i = 0; i < this.primitives.length; i++) {
+        primitiveEntries[i] = {
+          ...primitiveBounds(this.primitives[i]!),
+          index: i
+        }
       }
-    }
-    if (snapEntries.length > 0) {
-      this.snapPointTree.load(snapEntries)
+      this.primitiveTree.load(primitiveEntries)
     }
 
-    const nearestEntries: AcExRbushEntry[] = new Array(
-      this.nearestSources.length
-    )
-    for (let i = 0; i < this.nearestSources.length; i++) {
-      const source = this.nearestSources[i]!
-      const b =
-        source.kind === 'primitive'
-          ? primitiveBounds(this.primitives[source.index]!)
-          : segmentBounds(this.segments[source.index]!)
-      nearestEntries[i] = { ...b, index: i }
-    }
-    if (nearestEntries.length > 0) {
-      this.nearestTree.load(nearestEntries)
+    if (this.segments.length > 0) {
+      const segmentEntries: AcExRbushEntry[] = new Array(this.segments.length)
+      for (let i = 0; i < this.segments.length; i++) {
+        segmentEntries[i] = {
+          ...segmentBounds(this.segments[i]!),
+          index: i
+        }
+      }
+      this.segmentTree.load(segmentEntries)
     }
   }
 
@@ -764,7 +673,7 @@ export class AcExOsnapIndex {
     threshold: number
   ): AcExOsnapPoint | undefined {
     if (threshold <= 0) return undefined
-    if (this.snapPoints.length === 0 && this.nearestSources.length === 0) {
+    if (this.primitives.length === 0 && this.segments.length === 0) {
       return undefined
     }
 
@@ -825,11 +734,10 @@ export class AcExOsnapIndex {
     py: number,
     threshold: number
   ): AcExOsnapPoint | undefined {
-    if (this.nearestSources.length === 0) return undefined
-
     const box = searchBox(px, py, threshold)
-    const hits = this.nearestTree.search(box)
-    if (hits.length === 0) return undefined
+    const primHits = this.primitiveTree.search(box)
+    const segHits = this.segmentTree.search(box)
+    if (primHits.length === 0 && segHits.length === 0) return undefined
 
     const threshSq = threshold * threshold
     const extent = Math.max(box.maxX - box.minX, box.maxY - box.minY, 1)
@@ -841,24 +749,23 @@ export class AcExOsnapIndex {
     const primSeen = new Set<number>()
     const segSeen = new Set<number>()
 
-    for (const hit of hits) {
-      const source = this.nearestSources[hit.index]!
-      if (this.hiddenLayers.has(source.layer)) continue
+    for (const hit of primHits) {
+      const prim = this.primitives[hit.index]!
+      if (this.hiddenLayers.has(prim.layer)) continue
+      if (!isIntersectionCapablePrimitive(prim)) continue
+      if (primSeen.has(hit.index)) continue
+      if (primIndices.length >= ACEX_MAX_INTERSECTION_SOURCES) continue
+      primSeen.add(hit.index)
+      primIndices.push(hit.index)
+    }
 
-      if (source.kind === 'primitive') {
-        const prim = this.primitives[source.index]!
-        if (!isIntersectionCapablePrimitive(prim)) continue
-        if (primSeen.has(source.index)) continue
-        if (primIndices.length >= ACEX_MAX_INTERSECTION_SOURCES) continue
-        primSeen.add(source.index)
-        primIndices.push(source.index)
-        continue
-      }
-
-      if (segSeen.has(source.index)) continue
+    for (const hit of segHits) {
+      const layer = this.segmentLayers[hit.index]!
+      if (this.hiddenLayers.has(layer)) continue
+      if (segSeen.has(hit.index)) continue
       if (segIndices.length >= ACEX_MAX_INTERSECTION_SOURCES) continue
-      segSeen.add(source.index)
-      segIndices.push(source.index)
+      segSeen.add(hit.index)
+      segIndices.push(hit.index)
     }
 
     let bestDistSq = threshSq
@@ -920,39 +827,112 @@ export class AcExOsnapIndex {
     return best
   }
 
+  private discreteModes(): Set<AcExOsnapMode> {
+    const discreteModes = new Set(this.modes)
+    discreteModes.delete('nearest')
+    discreteModes.delete('intersection')
+    return discreteModes
+  }
+
+  private considerDiscreteCandidate(
+    px: number,
+    py: number,
+    threshSq: number,
+    candidate: AcExOsnapPoint,
+    layer: string,
+    state: {
+      bestPriority: number
+      bestDistSq: number
+      best: AcExOsnapPoint | undefined
+    }
+  ): void {
+    if (!this.modes.has(candidate.mode)) return
+    if (this.hiddenLayers.has(layer)) return
+
+    const d2 = distSq(px, py, candidate.x, candidate.y)
+    if (d2 > threshSq) return
+    const priority = modePriority(candidate.mode)
+    if (
+      priority < state.bestPriority ||
+      (priority === state.bestPriority && d2 < state.bestDistSq)
+    ) {
+      state.bestPriority = priority
+      state.bestDistSq = d2
+      state.best = candidate
+    }
+  }
+
   private findDiscreteSnap(
     px: number,
     py: number,
     threshold: number
   ): AcExOsnapPoint | undefined {
-    if (this.snapPoints.length === 0) return undefined
+    const discreteModes = this.discreteModes()
+    if (discreteModes.size === 0) return undefined
 
     const threshSq = threshold * threshold
-    const hits = this.snapPointTree.search(searchBox(px, py, threshold))
+    const box = searchBox(px, py, threshold)
+    const state = {
+      bestPriority: Number.MAX_VALUE,
+      bestDistSq: Number.MAX_VALUE,
+      best: undefined as AcExOsnapPoint | undefined
+    }
 
-    let bestPriority = Number.MAX_VALUE
-    let bestDistSq = Number.MAX_VALUE
-    let best: AcExOsnapPoint | undefined
-
-    for (const hit of hits) {
-      const point = this.snapPoints[hit.index]!
-      if (!this.modes.has(point.mode)) continue
-      if (this.hiddenLayers.has(point.layer)) continue
-
-      const d2 = distSq(px, py, point.x, point.y)
-      if (d2 > threshSq) continue
-      const priority = modePriority(point.mode)
-      if (
-        priority < bestPriority ||
-        (priority === bestPriority && d2 < bestDistSq)
-      ) {
-        bestPriority = priority
-        bestDistSq = d2
-        best = { x: point.x, y: point.y, mode: point.mode }
+    for (const hit of this.primitiveTree.search(box)) {
+      const prim = this.primitives[hit.index]!
+      for (const candidate of collectPrimitiveDiscreteSnapCandidates(
+        prim,
+        discreteModes
+      )) {
+        this.considerDiscreteCandidate(
+          px,
+          py,
+          threshSq,
+          candidate,
+          prim.layer,
+          state
+        )
       }
     }
 
-    return best
+    for (const hit of this.segmentTree.search(box)) {
+      const seg = this.segments[hit.index]!
+      const layer = this.segmentLayers[hit.index]!
+      if (discreteModes.has('endpoint')) {
+        this.considerDiscreteCandidate(
+          px,
+          py,
+          threshSq,
+          { x: seg.x0, y: seg.y0, mode: 'endpoint' },
+          layer,
+          state
+        )
+        this.considerDiscreteCandidate(
+          px,
+          py,
+          threshSq,
+          { x: seg.x1, y: seg.y1, mode: 'endpoint' },
+          layer,
+          state
+        )
+      }
+      if (discreteModes.has('midpoint')) {
+        this.considerDiscreteCandidate(
+          px,
+          py,
+          threshSq,
+          {
+            x: (seg.x0 + seg.x1) * 0.5,
+            y: (seg.y0 + seg.y1) * 0.5,
+            mode: 'midpoint'
+          },
+          layer,
+          state
+        )
+      }
+    }
+
+    return state.best
   }
 
   private findNearestSnap(
@@ -960,15 +940,12 @@ export class AcExOsnapIndex {
     py: number,
     threshold: number
   ): AcExOsnapPoint | undefined {
-    if (this.nearestSources.length === 0) return undefined
-
     const threshSq = threshold * threshold
-    const hits = this.nearestTree.search(searchBox(px, py, threshold))
-
+    const box = searchBox(px, py, threshold)
     let bestDistSq = Number.MAX_VALUE
     let best: AcExOsnapPoint | undefined
 
-    for (const hit of hits) {
+    for (const hit of this.primitiveTree.search(box)) {
       if (
         distSqToBounds(px, py, hit.minX, hit.minY, hit.maxX, hit.maxY) >
         threshSq
@@ -976,23 +953,32 @@ export class AcExOsnapIndex {
         continue
       }
 
-      const source = this.nearestSources[hit.index]!
-      if (this.hiddenLayers.has(source.layer)) continue
+      const prim = this.primitives[hit.index]!
+      if (this.hiddenLayers.has(prim.layer)) continue
+      if (prim.kind === 'point') continue
 
-      if (source.kind === 'primitive') {
-        const prim = this.primitives[source.index]!
-        const geo = source.geo ?? primitiveToAcGeCurve(prim)
-        const nearest = collectPrimitiveNearestSnapCandidate(prim, px, py, geo)
-        if (!nearest) continue
-        const d2 = distSq(px, py, nearest.x, nearest.y)
-        if (d2 <= threshSq && d2 < bestDistSq) {
-          bestDistSq = d2
-          best = nearest
-        }
+      const geo = primitiveToAcGeCurve(prim)
+      const nearest = collectPrimitiveNearestSnapCandidate(prim, px, py, geo)
+      if (!nearest) continue
+      const d2 = distSq(px, py, nearest.x, nearest.y)
+      if (d2 <= threshSq && d2 < bestDistSq) {
+        bestDistSq = d2
+        best = nearest
+      }
+    }
+
+    for (const hit of this.segmentTree.search(box)) {
+      if (
+        distSqToBounds(px, py, hit.minX, hit.minY, hit.maxX, hit.maxY) >
+        threshSq
+      ) {
         continue
       }
 
-      const near = closestPointOnSegment(px, py, this.segments[source.index]!)
+      const layer = this.segmentLayers[hit.index]!
+      if (this.hiddenLayers.has(layer)) continue
+
+      const near = closestPointOnSegment(px, py, this.segments[hit.index]!)
       if (near.distSq <= threshSq && near.distSq < bestDistSq) {
         bestDistSq = near.distSq
         best = { x: near.x, y: near.y, mode: 'nearest' }
@@ -1007,7 +993,7 @@ export class AcExOsnapIndex {
  * Axis-aligned bounds of one tessellated snap segment in WCS.
  *
  * @param seg - Segment whose endpoints define the bounding box.
- * @returns `{ minX, minY, maxX, maxY }` used by the nearest-source RBush in
+ * @returns `{ minX, minY, maxX, maxY }` used by the segment RBush in
  *   {@link AcExOsnapIndex.rebuild}.
  * @internal
  */

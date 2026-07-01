@@ -252,15 +252,11 @@ export type AcExOsnapPrimitive =
  * Per-layout catalog of analytic geometry used for object snap.
  *
  * Embedded on {@link AcExLayoutSnapshot.osnap} when exporting HTML. When
- * {@link AcExOsnapCatalog.primitives} is non-empty, {@link AcExOsnapIndex} ignores
- * tessellated `lineBatches` / `meshBatches` for snapping.
+ * {@link AcExOsnapCatalog.primitives} is non-empty, {@link AcExOsnapIndex}
+ * ignores tessellated `lineBatches` / `meshBatches` for snapping and derives
+ * discrete snap points from primitives at query time.
  */
 export interface AcExOsnapCatalog {
-  /**
-   * All snap-capable primitives for this layout in WCS.
-   *
-   * Includes entities nested inside block references (INSERT), each with an
-   * effective {@link AcExOsnapPrimitiveBase.layer}.
-   */
+  /** Analytic OSNAP geometry serialized into the HTML snapshot. */
   primitives: AcExOsnapPrimitive[]
 }

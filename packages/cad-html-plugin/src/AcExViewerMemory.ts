@@ -22,7 +22,11 @@ export function copyUint32Buffer(source: Uint32Array): Uint32Array {
 export function canReleaseActiveLayoutBatches(
   layout: AcExLayoutSnapshot
 ): boolean {
-  return (layout.osnap?.primitives.length ?? 0) > 0
+  const osnap = layout.osnap
+  if (!osnap) {
+    return false
+  }
+  return (osnap.primitives?.length ?? 0) > 0
 }
 
 /**
@@ -41,6 +45,22 @@ export function releaseSnapshotBatchBuffers(
     if (!isActive || canReleaseActiveLayoutBatches(layout)) {
       clearLayoutBatchBuffers(layout)
     }
+  }
+}
+
+/**
+ * Drops {@link AcExLayoutSnapshot.osnap} from every layout after
+ * {@link AcExOsnapIndex.rebuild}.
+ *
+ * Call only after the index has copied or retained the catalog's
+ * `primitives` array (the runtime keeps that reference internally).
+ * Inactive layout catalogs become fully reclaimable; the active layout
+ * catalog wrapper is removed from the snapshot while primitive data
+ * remains alive for nearest / intersection snap queries.
+ */
+export function releaseSnapshotOsnapCatalogs(snapshot: AcExSnapshot): void {
+  for (const layout of snapshot.layouts) {
+    layout.osnap = undefined
   }
 }
 
