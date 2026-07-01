@@ -17,7 +17,7 @@
         </section>
 
         <button type="button" class="new-drawing-button" @click="handleNewDrawing">
-          New
+          New Drawing
         </button>
 
         <p class="upload-divider" aria-hidden="true">

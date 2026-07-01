@@ -20,7 +20,7 @@
         :progressive-rendering="progressiveRendering"
         :open-view-mode="openViewMode"
         @create="initialize"
-        base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
+        :base-url="BASE_URL"
       />
     </div>
   </div>
