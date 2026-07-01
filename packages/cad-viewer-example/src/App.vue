@@ -1,15 +1,19 @@
 <template>
   <div id="app-root">
-    <!-- Upload screen when no file is selected -->
-    <div v-if="!store.selectedFile" class="upload-screen">
-      <FileUpload @file-select="handleFileSelect" />
+    <!-- Upload screen when no drawing is open -->
+    <div v-if="!showViewer" class="upload-screen">
+      <FileUpload
+        @file-select="handleFileSelect"
+        @new-drawing="handleNewDrawing"
+      />
     </div>
 
-    <!-- CAD viewer when file is selected -->
+    <!-- CAD viewer when a file is selected or a new drawing is created -->
     <div v-else>
       <MlCadViewer
         locale="en"
-        :local-file="store.selectedFile"
+        :url="newDrawingUrl"
+        :local-file="store.selectedFile ?? undefined"
         :mode="selectedMode"
         :use-main-thread-draw="useMainThreadDraw"
         :draw-no-plot-layers="drawNoPlotLayers"
@@ -31,7 +35,7 @@ import {
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
 import { MlCadViewer } from '@mlightcad/cad-viewer'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { AcApQuitCmd } from './commands'
 import FileUpload from './components/FileUpload.vue'
@@ -67,11 +71,38 @@ const initialize = () => {
 // AcApSettingManager.instance.isShowStats = false
 // AcApSettingManager.instance.isShowCoordinate = false
 
+const BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
+const NEW_DRAWING_TEMPLATE_URL = `${BASE_URL}templates/acadiso.dxf`
+
+const showViewer = computed(
+  () => store.selectedFile != null || store.isNewDrawing
+)
+
+const newDrawingUrl = computed(() =>
+  store.isNewDrawing && store.selectedFile == null
+    ? NEW_DRAWING_TEMPLATE_URL
+    : undefined
+)
+
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
 const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
 const openViewMode = ref<AcApOpenViewMode | undefined>(undefined)
+
+const applyOpenOptions = (
+  mode: AcEdOpenMode,
+  mainThreadDraw: boolean,
+  showNoPlotLayers: boolean,
+  enableProgressiveRendering: boolean,
+  viewMode: AcApOpenViewMode | undefined
+) => {
+  selectedMode.value = mode
+  useMainThreadDraw.value = mainThreadDraw
+  drawNoPlotLayers.value = showNoPlotLayers
+  progressiveRendering.value = enableProgressiveRendering
+  openViewMode.value = viewMode
+}
 
 // Handle file selection from upload component
 const handleFileSelect = (
@@ -82,12 +113,33 @@ const handleFileSelect = (
   enableProgressiveRendering: boolean,
   viewMode: AcApOpenViewMode | undefined
 ) => {
+  store.isNewDrawing = false
   store.selectedFile = file
-  selectedMode.value = mode
-  useMainThreadDraw.value = mainThreadDraw
-  drawNoPlotLayers.value = showNoPlotLayers
-  progressiveRendering.value = enableProgressiveRendering
-  openViewMode.value = viewMode
+  applyOpenOptions(
+    mode,
+    mainThreadDraw,
+    showNoPlotLayers,
+    enableProgressiveRendering,
+    viewMode
+  )
+}
+
+const handleNewDrawing = (
+  mode: AcEdOpenMode,
+  mainThreadDraw: boolean,
+  showNoPlotLayers: boolean,
+  enableProgressiveRendering: boolean,
+  viewMode: AcApOpenViewMode | undefined
+) => {
+  store.selectedFile = null
+  store.isNewDrawing = true
+  applyOpenOptions(
+    mode,
+    mainThreadDraw,
+    showNoPlotLayers,
+    enableProgressiveRendering,
+    viewMode
+  )
 }
 </script>
 
