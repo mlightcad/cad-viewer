@@ -33,6 +33,7 @@ import {
   copyUint32Buffer,
   releaseLayerGroupsGeometryCpuArrays,
   releaseSnapshotBatchBuffers,
+  releaseSnapshotOsnapCatalogs,
   removeSnapshotElement
 } from './AcExViewerMemory'
 
@@ -169,6 +170,7 @@ function startViewer(): void {
   }
 
   releaseSnapshotBatchBuffers(snapshot, snapshot.activeLayoutBtrId)
+  releaseSnapshotOsnapCatalogs(snapshot)
   removeSnapshotElement(snapshotEl)
 
   const updateCameraFrustum = (width?: number, height?: number) => {

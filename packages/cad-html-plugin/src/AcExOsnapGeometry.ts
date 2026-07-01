@@ -51,7 +51,7 @@ export interface AcExOsnapCandidate {
 }
 
 /**
- * Collects discrete (non-nearest) snap points for one primitive at index build time.
+ * Collects discrete (non-nearest) snap points for one primitive during a snap query.
  *
  * @param prim - Exported primitive in WCS.
  * @param modes - Enabled OSNAP modes.

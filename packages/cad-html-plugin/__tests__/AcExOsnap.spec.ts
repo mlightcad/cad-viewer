@@ -87,6 +87,67 @@ describe('AcExOsnapIndex', () => {
     expect(snap).toEqual({ x: 0, y: 0, mode: 'endpoint' })
   })
 
+  it('derives endpoint snap points from catalog primitives', () => {
+    const index = new AcExOsnapIndex(['endpoint', 'nearest'])
+    index.rebuild({
+      ...layout,
+      lineBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'line',
+            layer: '0',
+            x0: 0,
+            y0: 0,
+            x1: 10,
+            y1: 0
+          }
+        ]
+      }
+    })
+    expect(index.findSnap(0.2, 0.1, 1)).toEqual({
+      x: 0,
+      y: 0,
+      mode: 'endpoint'
+    })
+    expect(index.findSnap(5, 0.1, 1)?.mode).toBe('nearest')
+  })
+
+  it('snaps to intersection from catalog primitives', () => {
+    const index = new AcExOsnapIndex(['intersection', 'endpoint'])
+    index.rebuild({
+      ...layout,
+      lineBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'line',
+            layer: '0',
+            x0: 0,
+            y0: 0,
+            x1: 10,
+            y1: 10
+          },
+          {
+            kind: 'line',
+            layer: '0',
+            x0: 0,
+            y0: 10,
+            x1: 10,
+            y1: 0
+          }
+        ]
+      }
+    })
+    const snap = index.findSnap(5.1, 4.9, 1)
+    expect(snap).toEqual({ x: 5, y: 5, mode: 'intersection' })
+    expect(index.findSnap(0.2, 0.1, 1)).toEqual({
+      x: 0,
+      y: 0,
+      mode: 'endpoint'
+    })
+  })
+
   it('snaps to segment midpoint', () => {
     const index = new AcExOsnapIndex(['midpoint'])
     index.rebuild(layout)

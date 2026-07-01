@@ -4,6 +4,7 @@ import {
   AcDbBlockTableRecord,
   AcDbDatabase,
   AcDbDataGenerator,
+  AcDbEllipse,
   AcDbHatch,
   AcDbLeader,
   AcDbLine,
@@ -11,6 +12,7 @@ import {
   AcDbMLeaderContentType,
   AcDbMLine,
   AcDbPoint,
+  AcDbPolyline,
   AcDbRasterImage,
   AcDbRay,
   AcDbTable,
@@ -79,6 +81,43 @@ describe('buildOsnapCatalog', () => {
     expect(line?.y0).toBeCloseTo(0, 5)
     expect(line?.x1).toBeCloseTo(0, 5)
     expect(line?.y1).toBeCloseTo(10, 5)
+  })
+
+  it('exports all snap-capable primitives', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+    modelSpace.appendEntity(
+      new AcDbLine(new AcGePoint3d(0, 0, 0), new AcGePoint3d(10, 0, 0))
+    )
+    modelSpace.appendEntity(
+      new AcDbEllipse(
+        new AcGePoint3d(20, 0, 0),
+        AcGeVector3d.Z_AXIS,
+        new AcGeVector3d(4, 0, 0),
+        4,
+        2,
+        0,
+        Math.PI * 2
+      )
+    )
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+
+    expect(catalog.primitives.some(prim => prim.kind === 'line')).toBe(true)
+    expect(catalog.primitives.some(prim => prim.kind === 'ellipse')).toBe(true)
+  })
+
+  it('exports polyline segments as line primitives', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+    const polyline = new AcDbPolyline()
+    polyline.addVertexAt(0, new AcGePoint2d(0, 0))
+    polyline.addVertexAt(1, new AcGePoint2d(10, 0))
+    polyline.addVertexAt(2, new AcGePoint2d(10, 10))
+    modelSpace.appendEntity(polyline)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    expect(catalog.primitives.filter(p => p.kind === 'line').length).toBe(2)
   })
 
   it('exports snap primitives for dimension anonymous blocks', () => {
