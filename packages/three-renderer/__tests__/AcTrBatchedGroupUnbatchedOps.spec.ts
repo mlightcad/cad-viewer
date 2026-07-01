@@ -4,8 +4,9 @@ import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
 import { RTE_REBASE_THRESHOLD } from '../src/draw/AcTrBatchDrawPolicy'
 import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
+import { HIGHLIGHT_SELECT_COLOR } from '../src/util/AcTrMaterialUtil'
 import {
-  getHighlightUserData,
+  getObjectUserData,
   getSceneDrawableUserData
 } from '../src/util/AcTrObjectUserData'
 
@@ -85,7 +86,7 @@ function findUnbatchedPlacementClone(group: AcTrBatchedGroup) {
 }
 
 describe('AcTrBatchedGroup unbatched operations', () => {
-  it('selects and unselects an unbatched placement root', () => {
+  it('selects and unselects an unbatched placement root in place', () => {
     const group = new AcTrBatchedGroup()
     const placementRoot = createPlacementRoot(
       { x: RTE_REBASE_THRESHOLD + 100, y: 3_000_000, z: 0 },
@@ -98,16 +99,21 @@ describe('AcTrBatchedGroup unbatched operations', () => {
     group.select('mtext-1')
 
     const selectedGroup = group.children[1] as THREE.Group
-    expect(selectedGroup.children).toHaveLength(1)
-    expect(getHighlightUserData(selectedGroup.children[0]).objectId).toBe(
-      'mtext-1'
+    expect(selectedGroup.children).toHaveLength(0)
+    const clonedRoot = findUnbatchedPlacementClone(group)
+    expect(clonedRoot).toBeDefined()
+    const mesh = clonedRoot!.children[0] as THREE.Mesh
+    expect(getObjectUserData(mesh).originalMaterial).toBeDefined()
+    expect((mesh.material as THREE.MeshBasicMaterial).color.getHex()).toBe(
+      HIGHLIGHT_SELECT_COLOR.getHex()
     )
 
     group.unselect('mtext-1')
     expect(selectedGroup.children).toHaveLength(0)
+    expect(getObjectUserData(mesh).originalMaterial).toBeUndefined()
   })
 
-  it('disposes highlight materials for unbatched subtree children on unselect', () => {
+  it('restores unbatched materials on unselect without disposing shared highlight materials', () => {
     const group = new AcTrBatchedGroup()
     const placementRoot = createPlacementRoot(
       { x: RTE_REBASE_THRESHOLD + 100, y: 3_000_000, z: 0 },
@@ -118,20 +124,15 @@ describe('AcTrBatchedGroup unbatched operations', () => {
     group.addEntity(createEntity('mtext-1', placementRoot))
     group.select('mtext-1')
 
-    const selectedGroup = group.children[1] as THREE.Group
-    const highlightRoot = selectedGroup.children[0]
-    const highlightMeshes = highlightRoot.children.filter(
-      child => child instanceof THREE.Mesh
-    ) as THREE.Mesh[]
-    expect(highlightMeshes.length).toBeGreaterThan(0)
+    const clonedRoot = findUnbatchedPlacementClone(group)
+    const mesh = clonedRoot!.children[0] as THREE.Mesh
+    const originalMaterial = getObjectUserData(mesh).originalMaterial as
+      | THREE.Material
+      | undefined
+    expect(originalMaterial).toBeDefined()
 
-    const disposeSpy = jest.spyOn(THREE.Material.prototype, 'dispose')
     group.unselect('mtext-1')
-
-    expect(disposeSpy.mock.calls.length).toBeGreaterThanOrEqual(
-      highlightMeshes.length
-    )
-    disposeSpy.mockRestore()
+    expect(mesh.material).toBe(originalMaterial)
   })
 
   it('removes unbatched entities and clears selection highlights', () => {

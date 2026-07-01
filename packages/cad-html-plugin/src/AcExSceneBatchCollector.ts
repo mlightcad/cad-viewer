@@ -339,6 +339,20 @@ function readLineWidth(material: THREE.Material): number | undefined {
   return undefined
 }
 
+function readExportMaterial(object: THREE.Object3D): THREE.Material {
+  if ('material' in object) {
+    const originalMaterial = (
+      object.userData as { originalMaterial?: THREE.Material | THREE.Material[] }
+    ).originalMaterial
+    const material = originalMaterial ?? object.material
+    if (Array.isArray(material)) {
+      return material[0]!
+    }
+    return material as THREE.Material
+  }
+  return (object as THREE.Mesh).material as THREE.Material
+}
+
 function readMaterialStyle(material: THREE.Material): {
   color: number
   layer: string
@@ -557,7 +571,7 @@ export function collectBatchesFromObject3D(
       if (!shouldExportPlainDrawable(child)) return
       const rawSlice = exportLineSegments2Slice(child.geometry)
       if (rawSlice.positions.length === 0) return
-      const material = child.material as THREE.Material
+      const material = readExportMaterial(child)
       const { color, layer } = readMaterialStyle(material)
       const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice)
       lineBatches.push({
@@ -574,7 +588,7 @@ export function collectBatchesFromObject3D(
       if (!shouldExportPlainDrawable(child)) return
       const rawSlice = exportBufferGeometrySlice(child.geometry)
       if (rawSlice.positions.length === 0) return
-      const material = child.material as THREE.Material
+      const material = readExportMaterial(child)
       const { color, layer, linePattern } = readMaterialStyle(material)
       const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice)
       const lineDistances = linePattern
@@ -595,7 +609,7 @@ export function collectBatchesFromObject3D(
       if (!shouldExportPlainDrawable(child)) return
       const rawSlice = exportBufferGeometrySlice(child.geometry)
       if (rawSlice.positions.length === 0) return
-      const material = child.material as THREE.Material
+      const material = readExportMaterial(child)
       const style = readMaterialStyle(material)
       const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice, {
         preserveWorldSpaceForPatternFill: !!style.hatchPattern

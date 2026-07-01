@@ -451,7 +451,7 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
 
     const batchGeometry = this.geometry
     const geometryInfo = this._geometryInfo[geometryId]
-    applyGeometryAt(geometryInfo, batchGeometry, geometry, 'AcTrBatchedLine')
+    applyGeometryAt(geometryInfo, batchGeometry, geometry, 'AcTrBatchedLine', geometryId)
 
     return geometryId
   }

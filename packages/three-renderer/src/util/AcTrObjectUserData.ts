@@ -27,6 +27,10 @@ export interface AcTrMaterialRuntimeUserData {
   relativeToEyePatchVersion?: string
   /** Compiled shader instance from the latest `onBeforeCompile`. */
   relativeToEyeCompiledShader?: unknown
+  /** Batch slot-mask highlight shader patch installed on this material. */
+  batchHighlightPatched?: boolean
+  /** Persistent highlight uniform bag shared by compiled shader programs. */
+  batchHighlightUniforms?: Record<string, { value: unknown }>
 }
 
 /**
@@ -332,6 +336,27 @@ export function isHighlightCloneDrawable(object: THREE.Object3D): boolean {
   }
 
   return true
+}
+
+/**
+ * Returns the drawable material to use for HTML/export snapshots.
+ *
+ * Unbatched selection and hover tinting swaps materials in place while
+ * preserving the source material on {@link AcTrObjectUserDataFields.originalMaterial}.
+ */
+export function resolveDrawableExportMaterial(
+  object: THREE.Object3D
+): THREE.Material | THREE.Material[] | undefined {
+  if (!('material' in object)) {
+    return undefined
+  }
+
+  const originalMaterial = getObjectUserData(object).originalMaterial
+  if (originalMaterial != null) {
+    return originalMaterial
+  }
+
+  return object.material as THREE.Material | THREE.Material[]
 }
 
 export function getBatchedContainerUserData(

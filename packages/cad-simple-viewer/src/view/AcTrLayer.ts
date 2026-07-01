@@ -392,35 +392,55 @@ export class AcTrLayer {
    * Hover the specified entities
    */
   hover(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      this._group.hover(id)
-    })
+    if (ids.length === 0) {
+      return
+    }
+    if (ids.length === 1) {
+      this._group.hover(ids[0]!)
+      return
+    }
+    this._group.hoverMany(ids)
   }
 
   /**
    * Unhover the specified entities
    */
   unhover(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      this._group.unhover(id)
-    })
+    if (ids.length === 0) {
+      return
+    }
+    if (ids.length === 1) {
+      this._group.unhover(ids[0]!)
+      return
+    }
+    this._group.unhoverMany(ids)
   }
 
   /**
    * Select the specified entities
    */
   select(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      this._group.select(id)
-    })
+    if (ids.length === 0) {
+      return
+    }
+    if (ids.length === 1) {
+      this._group.select(ids[0]!)
+      return
+    }
+    this._group.selectMany(ids)
   }
 
   /**
    * Unselect the specified entities
    */
   unselect(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      this._group.unselect(id)
-    })
+    if (ids.length === 0) {
+      return
+    }
+    if (ids.length === 1) {
+      this._group.unselect(ids[0]!)
+      return
+    }
+    this._group.unselectMany(ids)
   }
 }
