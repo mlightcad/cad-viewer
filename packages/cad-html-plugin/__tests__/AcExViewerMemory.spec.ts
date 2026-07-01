@@ -4,8 +4,6 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import {
-  canReleaseActiveLayoutBatches,
-  copyFloat32Buffer,
   releaseLayerGroupsGeometryCpuArrays,
   releaseSnapshotBatchBuffers,
   releaseSnapshotOsnapCatalogs
@@ -84,35 +82,10 @@ function makeSnapshot(overrides: Record<string, unknown> = {}) {
 }
 
 describe('AcExViewerMemory', () => {
-  it('copyFloat32Buffer creates an independent array', () => {
-    const source = f32([1, 2, 3])
-    const copy = copyFloat32Buffer(source)
-    source[0] = 99
-    expect(copy[0]).toBe(1)
-  })
-
-  it('canReleaseActiveLayoutBatches requires analytic osnap primitives', () => {
-    const withOsnap = makeSnapshot().layouts[0]!
-    expect(canReleaseActiveLayoutBatches(withOsnap)).toBe(true)
-
-    const withoutOsnap = makeSnapshot({
-      layouts: [
-        {
-          btrId: 'ms',
-          name: 'Model',
-          isModelSpace: true,
-          lineBatches: [],
-          meshBatches: []
-        }
-      ]
-    }).layouts[0]!
-    expect(canReleaseActiveLayoutBatches(withoutOsnap)).toBe(false)
-  })
-
-  it('releaseSnapshotBatchBuffers clears inactive layouts always', () => {
+  it('releaseSnapshotBatchBuffers clears every layout', () => {
     const snapshot = makeSnapshot()
 
-    releaseSnapshotBatchBuffers(snapshot, 'ms')
+    releaseSnapshotBatchBuffers(snapshot)
 
     expect(snapshot.layouts[0]!.lineBatches).toHaveLength(0)
     expect(snapshot.layouts[1]!.lineBatches).toHaveLength(0)
@@ -129,33 +102,6 @@ describe('AcExViewerMemory', () => {
     expect(snapshot.layouts[1]!.osnap).toBeUndefined()
     expect(retained).toHaveLength(1)
     expect(retained[0]).toMatchObject({ kind: 'line', x0: 0, y0: 0, x1: 1, y1: 0 })
-  })
-
-  it('releaseSnapshotBatchBuffers keeps active layout batches without osnap catalog', () => {
-    const snapshot = makeSnapshot({
-      layouts: [
-        {
-          btrId: 'ms',
-          name: 'Model',
-          isModelSpace: true,
-          lineBatches: [
-            {
-              layer: '0',
-              color: 0xffffff,
-              offset: [0, 0, 0] as [number, number, number],
-              positions: f32([0, 0, 0, 1, 0, 0])
-            }
-          ],
-          meshBatches: []
-        }
-      ],
-      activeLayoutBtrId: 'ms'
-    })
-
-    releaseSnapshotBatchBuffers(snapshot, 'ms')
-
-    expect(snapshot.layouts[0]!.lineBatches).toHaveLength(1)
-    expect(snapshot.layouts[0]!.lineBatches[0]!.positions).toHaveLength(6)
   })
 
   it('releaseLayerGroupsGeometryCpuArrays empties geometry attribute arrays', () => {

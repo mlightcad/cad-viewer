@@ -2,49 +2,15 @@ import * as THREE from 'three'
 
 import type { AcExLayoutSnapshot, AcExSnapshot } from './AcExSnapshotTypes'
 
-/** Returns a shallow copy of a float vertex buffer. */
-export function copyFloat32Buffer(source: Float32Array): Float32Array {
-  return new Float32Array(source)
-}
-
-/** Returns a shallow copy of an index buffer. */
-export function copyUint32Buffer(source: Uint32Array): Uint32Array {
-  return new Uint32Array(source)
-}
-
 /**
- * Whether tessellated batch buffers on the active layout can be dropped after
- * the THREE scene is built.
+ * Clears tessellated batch typed arrays on every snapshot layout.
  *
- * When an analytic OSNAP catalog exists, layer visibility toggles filter
- * primitives only and never re-read {@link AcExLayoutSnapshot.lineBatches}.
+ * Call only after the THREE scene has uploaded geometry to the GPU and any
+ * OSNAP index has been built from analytic primitives or tessellated segments.
  */
-export function canReleaseActiveLayoutBatches(
-  layout: AcExLayoutSnapshot
-): boolean {
-  const osnap = layout.osnap
-  if (!osnap) {
-    return false
-  }
-  return (osnap.primitives?.length ?? 0) > 0
-}
-
-/**
- * Clears tessellated batch typed arrays on snapshot layouts to reclaim CPU memory.
- *
- * Inactive layouts are always cleared. The active layout is cleared only when
- * {@link canReleaseActiveLayoutBatches} is true so OSNAP can still fall back to
- * tessellated segments when no analytic catalog was exported.
- */
-export function releaseSnapshotBatchBuffers(
-  snapshot: AcExSnapshot,
-  activeLayoutBtrId: string
-): void {
+export function releaseSnapshotBatchBuffers(snapshot: AcExSnapshot): void {
   for (const layout of snapshot.layouts) {
-    const isActive = layout.btrId === activeLayoutBtrId
-    if (!isActive || canReleaseActiveLayoutBatches(layout)) {
-      clearLayoutBatchBuffers(layout)
-    }
+    clearLayoutBatchBuffers(layout)
   }
 }
 
@@ -67,7 +33,7 @@ export function releaseSnapshotOsnapCatalogs(snapshot: AcExSnapshot): void {
 /**
  * Removes the embedded snapshot script from the DOM after decode.
  *
- * The gzip/base64 payload is often the largest resident string in memory.
+ * The compressed/base64 payload is often the largest resident string in memory.
  */
 export function removeSnapshotElement(element: HTMLElement): void {
   element.textContent = ''

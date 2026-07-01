@@ -140,6 +140,16 @@ function savePersistedSettings(state: AcExMeasureSettingsState): void {
 }
 
 /**
+ * Language toggle button shared by view-mode toolbar and measure settings strip.
+ */
+export function buildAcExLanguageToolbarButton(): string {
+  return `<button type="button" class="mlcad-tool-btn mlcad-lang-btn" id="mlcad-lang-btn" data-i18n-key="toolbar.languageSwitch" data-i18n-attr="title aria-label" title="Switch language" aria-label="Switch language">
+            ${acExHtmlIcons.language}
+            <span class="mlcad-lang-badge" id="mlcad-lang-badge">EN</span>
+          </button>`
+}
+
+/**
  * Builds the settings strip markup inserted beside the toolbar in {@link buildAcExHtmlShellBody}.
  */
 export function buildAcExHtmlSettingsStrip(): string {
@@ -167,10 +177,7 @@ export function buildAcExHtmlSettingsStrip(): string {
             'data-i18n-key': 'settings.polar',
             'data-i18n-attr': 'title aria-label'
           })}
-          <button type="button" class="mlcad-tool-btn mlcad-lang-btn" id="mlcad-lang-btn" data-i18n-key="toolbar.languageSwitch" data-i18n-attr="title aria-label" title="Switch language" aria-label="Switch language">
-            ${acExHtmlIcons.language}
-            <span class="mlcad-lang-badge" id="mlcad-lang-badge">EN</span>
-          </button>
+          ${buildAcExLanguageToolbarButton()}
         </div>
         <div id="mlcad-polar-angles" role="group" data-i18n-attr="aria-label" data-i18n-key="settings.polarAngles" aria-label="Polar tracking angles" hidden>
           ${polarAngleButtons}

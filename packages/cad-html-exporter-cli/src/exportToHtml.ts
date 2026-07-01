@@ -16,6 +16,7 @@ declare global {
         title?: string
         exportInvisibleLayers?: boolean
         initialView?: 'fit' | 'current'
+        viewerMode?: 'view' | 'measure'
       }
     ) => Promise<string>
   }
@@ -27,6 +28,7 @@ export interface ExportToHtmlOptions {
   title?: string
   exportInvisibleLayers?: boolean
   initialView?: 'fit' | 'current'
+  viewerMode?: 'view' | 'measure'
 }
 
 function runnerDistDir(): string {
@@ -140,7 +142,8 @@ export async function exportToHtml(
         locale,
         title,
         exportInvisibleLayers,
-        initialView
+        initialView,
+        viewerMode
       }) => {
         const binary = atob(data)
         const bytes = new Uint8Array(binary.length)
@@ -151,7 +154,8 @@ export async function exportToHtml(
           locale,
           title,
           exportInvisibleLayers,
-          initialView
+          initialView,
+          viewerMode
         })
       },
       {
@@ -160,7 +164,8 @@ export async function exportToHtml(
         locale: options.locale,
         title: options.title ?? fileName,
         exportInvisibleLayers: options.exportInvisibleLayers,
-        initialView: options.initialView
+        initialView: options.initialView,
+        viewerMode: options.viewerMode
       }
     )
 

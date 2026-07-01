@@ -978,6 +978,7 @@ export default {
   chtml: {
     exportInvisibleLayers: '是否导出不可见图层',
     initialView: '打开 HTML 时的初始视图',
+    viewerMode: '离线查看器模式',
     keywords: {
       yes: {
         display: '是(Y)',
@@ -998,6 +999,16 @@ export default {
         display: '当前(C)',
         local: '当前',
         global: 'Current'
+      },
+      view: {
+        display: '查看(V)',
+        local: '查看',
+        global: 'View'
+      },
+      measure: {
+        display: '测量(M)',
+        local: '测量',
+        global: 'Measure'
       }
     }
   }

@@ -989,6 +989,7 @@ export default {
   chtml: {
     exportInvisibleLayers: 'Export invisible layers',
     initialView: 'Initial view when opening HTML',
+    viewerMode: 'Offline viewer mode',
     keywords: {
       yes: {
         display: 'Yes(Y)',
@@ -1009,6 +1010,16 @@ export default {
         display: 'Current(C)',
         local: 'Current',
         global: 'Current'
+      },
+      view: {
+        display: 'View(V)',
+        local: 'View',
+        global: 'View'
+      },
+      measure: {
+        display: 'Measure(M)',
+        local: 'Measure',
+        global: 'Measure'
       }
     }
   }

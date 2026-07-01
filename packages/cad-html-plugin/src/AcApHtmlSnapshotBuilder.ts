@@ -16,6 +16,7 @@ import {
   type AcExLineBatch,
   type AcExMeshBatch,
   type AcExSnapshot,
+  type AcExViewerMode,
   type AcExViewState
 } from './AcExSnapshotTypes'
 import { buildViewerMetadata } from './AcExViewerMetadata'
@@ -53,6 +54,10 @@ export interface AcApHtmlSnapshotBuilderOptions {
    * is `'current'`.
    */
   viewState?: AcExViewState
+  /**
+   * Offline viewer capability profile. When `'view'`, OSNAP catalogs are omitted.
+   */
+  viewerMode?: AcExViewerMode
 }
 
 /**
@@ -140,7 +145,9 @@ export class AcApHtmlSnapshotBuilder {
         isModelSpace: btrId === scene.modelSpaceBtrId,
         lineBatches,
         meshBatches,
-        osnap: buildOsnapCatalog(database, btrId, { includeLayer })
+        osnap: shouldExportOsnap(options)
+          ? buildOsnapCatalog(database, btrId, { includeLayer })
+          : undefined
       })
       await yieldToMain()
     }
@@ -212,7 +219,9 @@ export class AcApHtmlSnapshotBuilder {
         isModelSpace: btrId === scene.modelSpaceBtrId,
         lineBatches,
         meshBatches,
-        osnap: buildOsnapCatalog(database, btrId, { includeLayer })
+        osnap: shouldExportOsnap(options)
+          ? buildOsnapCatalog(database, btrId, { includeLayer })
+          : undefined
       })
     })
 
@@ -262,8 +271,13 @@ function buildSnapshotMeta(
     background: meta.background,
     locale: options.locale ?? AcApI18n.currentLocale,
     initialView,
-    viewState: initialView === 'current' ? options.viewState : undefined
+    viewState: initialView === 'current' ? options.viewState : undefined,
+    viewerMode: options.viewerMode ?? 'measure'
   }
+}
+
+function shouldExportOsnap(options: AcApHtmlSnapshotBuilderOptions): boolean {
+  return (options.viewerMode ?? 'measure') === 'measure'
 }
 
 function shouldExportLayer(

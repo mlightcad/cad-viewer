@@ -38,7 +38,8 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
     const encoded = encodeSnapshot(snapshot)
-    const decoded = decodeSnapshot(encoded)
+    expect(encoded.compression).toBe('gzip')
+    const decoded = decodeSnapshot(encoded.payload)
     expect(decoded.meta.extents.maxX).toBe(10)
     expect(decoded.layers[0]?.name).toBe('0')
   })
@@ -93,7 +94,8 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const decoded = decodeSnapshot(encodeSnapshot(snapshot))
+    const encoded = encodeSnapshot(snapshot)
+    const decoded = decodeSnapshot(encoded.payload)
     const line = decoded.layouts[0]!.lineBatches[0]!
     expect(Array.from(line.positions)).toEqual([0, 0, 0, 10, 0, 0])
     expect(Array.from(line.indices!)).toEqual([0, 1])
@@ -154,8 +156,8 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const line = decodeSnapshot(encodeSnapshot(snapshot)).layouts[0]!
-      .lineBatches[0]!
+    const encoded = encodeSnapshot(snapshot)
+    const line = decodeSnapshot(encoded.payload).layouts[0]!.lineBatches[0]!
     expect(line.offset[0]).toBe(largeOrigin)
     expect(line.offset[1]).toBe(largeOrigin + 100)
     expect(Array.from(line.positions)).toEqual([0.5, 1.25, 0, 10.5, 2.75, 0])
@@ -201,8 +203,8 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const line = decodeSnapshot(encodeSnapshot(snapshot)).layouts[0]!
-      .lineBatches[0]!
+    const encoded = encodeSnapshot(snapshot)
+    const line = decodeSnapshot(encoded.payload).layouts[0]!.lineBatches[0]!
     expect(line.lineWidth).toBe(2.5)
     expect(line.color).toBe(0x00ff00)
     expect(Array.from(line.positions)).toEqual([0, 0, 0, 100, 50, 0])
