@@ -206,6 +206,9 @@
 }
 
 .cad-agent-error-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   width: 24px;
   height: 24px;
@@ -214,9 +217,12 @@
   border-radius: 4px;
   background: transparent;
   color: #f48771;
-  font-size: 18px;
-  line-height: 1;
   cursor: pointer;
+}
+
+.cad-agent-error-dismiss svg {
+  width: 16px;
+  height: 16px;
 }
 
 .cad-agent-error-dismiss:hover {
@@ -382,6 +388,9 @@
 }
 
 .cad-agent-attachment-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   position: absolute;
   top: 2px;
   right: 2px;
@@ -392,9 +401,12 @@
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.65);
   color: #fff;
-  font-size: 14px;
-  line-height: 1;
   cursor: pointer;
+}
+
+.cad-agent-attachment-remove svg {
+  width: 14px;
+  height: 14px;
 }
 
 .cad-agent-attachment-remove:hover {

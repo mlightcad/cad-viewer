@@ -253,6 +253,15 @@ function clearPendingImages() {
   pendingImages.value = []
 }
 
+/** Builds a {@link FileList} so the AI SDK can convert attachments to file UI parts. */
+function toFileList(files: File[]): FileList {
+  const dataTransfer = new DataTransfer()
+  for (const file of files) {
+    dataTransfer.items.add(file)
+  }
+  return dataTransfer.files
+}
+
 /** Sends the current text and optional images to the CAD agent. */
 async function sendMessage() {
   const text = input.value.trim()
@@ -265,7 +274,7 @@ async function sendMessage() {
   try {
     await chat.value.sendMessage({
       ...(text ? { text } : {}),
-      ...(files.length > 0 ? { files } : {})
+      ...(files.length > 0 ? { files: toFileList(files) } : {})
     })
   } catch {
     // error surfaced via chat.error
@@ -389,6 +398,7 @@ function toolParts(message: UIMessage): string[] {
         {{ labels.provider }}
         <select v-model="settings.provider">
           <option value="deepseek">{{ labels.providerDeepseek }}</option>
+          <option value="deepseek-vl">{{ labels.providerDeepseekVl }}</option>
           <option value="openai">{{ labels.providerOpenai }}</option>
           <option value="anthropic">{{ labels.providerAnthropic }}</option>
           <option value="openai-compatible">
@@ -400,6 +410,9 @@ function toolParts(message: UIMessage): string[] {
         {{ labels.baseUrl }}
         <input v-model="settings.baseUrl" type="text" />
       </label>
+      <p v-if="settings.provider === 'deepseek-vl'" class="cad-agent-model-hint">
+        {{ labels.providerDeepseekVlHint }}
+      </p>
       <label>
         {{ labels.model }}
         <select v-model="modelSelection">
@@ -486,9 +499,15 @@ function toolParts(message: UIMessage): string[] {
             type="button"
             class="cad-agent-error-dismiss"
             :title="labels.dismissError"
+            :aria-label="labels.dismissError"
             @click="dismissError"
           >
-            脳
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+              />
+            </svg>
           </button>
         </div>
       </div>
@@ -509,9 +528,15 @@ function toolParts(message: UIMessage): string[] {
             type="button"
             class="cad-agent-attachment-remove"
             :title="labels.removeAttachment"
+            :aria-label="labels.removeAttachment"
             @click="removePendingImage(index)"
           >
-            脳
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+              />
+            </svg>
           </button>
         </div>
       </div>
