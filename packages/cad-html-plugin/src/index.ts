@@ -6,7 +6,9 @@
 
 /** Snapshot schema types, version constant, and geometry batch shapes. */
 export * from './AcExSnapshotTypes'
-/** Gzip/base64 encode and decode for embedded snapshot payloads. */
+/** Gzip encode and decode for embedded snapshot payloads. */
+export * from './AcExSnapshotCompression'
+/** Compressed/base64 encode and decode for embedded snapshot payloads. */
 export * from './AcExSnapshotCodec'
 /** Binary snapshot serialization used by {@link encodeSnapshot}. */
 export {

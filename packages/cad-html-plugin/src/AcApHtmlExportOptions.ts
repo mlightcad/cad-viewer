@@ -1,6 +1,10 @@
 import type { AcTrView2d } from '@mlightcad/cad-simple-viewer'
 
-import type { AcExInitialViewMode, AcExViewState } from './AcExSnapshotTypes'
+import type {
+  AcExInitialViewMode,
+  AcExViewerMode,
+  AcExViewState
+} from './AcExSnapshotTypes'
 
 /** Matches the offline HTML viewer orthographic half-height in world units. */
 const HTML_VIEWER_CAMERA_FRUSTUM = 400
@@ -18,6 +22,11 @@ export interface AcApHtmlExportOptions {
    * Initial framing when the exported HTML is opened. Defaults to `'fit'`.
    */
   initialView?: AcExInitialViewMode
+  /**
+   * Offline viewer capability profile. `'view'` omits OSNAP data and measurement
+   * UI for a smaller, faster HTML file. Defaults to `'measure'`.
+   */
+  viewerMode?: AcExViewerMode
 }
 
 /**
@@ -28,10 +37,10 @@ export function resolveAcApHtmlExportOptions(
 ): Required<AcApHtmlExportOptions> {
   return {
     exportInvisibleLayers: options.exportInvisibleLayers !== false,
-    initialView: options.initialView ?? 'fit'
+    initialView: options.initialView ?? 'fit',
+    viewerMode: options.viewerMode ?? 'measure'
   }
 }
-
 /**
  * Captures the active 2D view as camera state understood by the offline viewer.
  */

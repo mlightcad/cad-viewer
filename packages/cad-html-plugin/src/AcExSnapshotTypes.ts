@@ -239,6 +239,14 @@ export interface AcExViewState {
 export type AcExInitialViewMode = 'fit' | 'current'
 
 /**
+ * Offline viewer capability profile embedded at export time.
+ *
+ * - `view` — pan/zoom and layer visibility only (no measurement or OSNAP data).
+ * - `measure` — full viewer with measurement tools and analytic OSNAP catalog.
+ */
+export type AcExViewerMode = 'view' | 'measure'
+
+/**
  * Display-only snapshot embedded in exported HTML.
  * Does not contain DXF/DWG bytes, `AcDb` entity records, or editable drawing state.
  *
@@ -278,6 +286,11 @@ export interface AcExSnapshot {
      * `'current'`.
      */
     viewState?: AcExViewState
+    /**
+     * Viewer capability profile. Defaults to `'measure'` when omitted for
+     * snapshots produced before this option existed.
+     */
+    viewerMode?: AcExViewerMode
   }
   /** Layer table used by the layer drawer (visibility toggles, swatches). */
   layers: AcExLayerSnapshot[]

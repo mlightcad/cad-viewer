@@ -1,7 +1,11 @@
 import { ML_UI_MOBILE_MAX_WIDTH } from '@mlightcad/cad-simple-viewer'
 
 import { acExHtmlIcons, acExToolbarButton } from './AcExHtmlIcons'
-import { buildAcExHtmlSettingsStrip } from './AcExHtmlMeasureSettings'
+import {
+  buildAcExHtmlSettingsStrip,
+  buildAcExLanguageToolbarButton
+} from './AcExHtmlMeasureSettings'
+import type { AcExViewerMode } from './AcExSnapshotTypes'
 
 /**
  * Shared CSS for the offline HTML viewer chrome (toolbar, layer drawer, status bar).
@@ -99,9 +103,10 @@ export const ACEX_HTML_SHELL_CSS = `
     width: calc(var(--mlcad-toolbar-width) / 2);
     height: calc(var(--mlcad-toolbar-width) / 2);
   }
-  #mlcad-toolbar > .mlcad-tool-separator:last-of-type {
-    margin-top: 0;
-    margin-bottom: 0;
+  .mlcad-tool-separator {
+    height: 1px;
+    margin: 4px 8px;
+    background: var(--mlcad-ui-border);
   }
   .mlcad-lang-btn { position: relative; }
   .mlcad-lang-badge {
@@ -211,17 +216,14 @@ export const ACEX_HTML_SHELL_CSS = `
     backdrop-filter: blur(10px);
     pointer-events: none;
   }
-  .mlcad-tool-separator {
-    height: 1px;
-    margin: 4px 8px;
-    background: var(--mlcad-ui-border);
-  }
 
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-settings-wrap,
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-layer-drawer {
     display: none !important;
   }
-  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-toolbar .mlcad-tool-btn:not(#mlcad-toolbar-toggle),
+  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-toolbar .mlcad-tool-btn:not(#mlcad-toolbar-toggle) {
+    display: none;
+  }
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-toolbar .mlcad-tool-separator {
     display: none;
   }
@@ -421,9 +423,20 @@ export const ACEX_HTML_SHELL_CSS = `
  * Excludes snapshot and runtime `<script>` tags — those are appended by {@link packHtml}.
  *
  * @param loadingBg - CSS color for the initial loading screen (matches drawing background).
+ * @param viewerMode - `'view'` shows pan/zoom/layers only; `'measure'` adds measurement tools.
  * @returns HTML fragment inserted inside `<body>`.
  */
-export function buildAcExHtmlShellBody(loadingBg: string): string {
+export function buildAcExHtmlShellBody(
+  loadingBg: string,
+  viewerMode: AcExViewerMode = 'measure'
+): string {
+  const measureToolbar =
+    viewerMode === 'measure' ? buildAcExMeasureToolbarSection() : ''
+  const settingsToolbar =
+    viewerMode === 'measure' ? buildAcExMeasureSettingsToolbarButton() : ''
+  const languageToolbar =
+    viewerMode === 'view' ? buildAcExLanguageToolbarButton() : ''
+
   return `
   <div id="mlcad-loading" aria-hidden="true" style="background:${loadingBg}">
     <div class="mlcad-loading-spinner"></div>
@@ -436,6 +449,52 @@ export function buildAcExHtmlShellBody(loadingBg: string): string {
           'data-i18n-key': 'toolbar.zoomExtents',
           'data-i18n-attr': 'title aria-label'
         })}
+        ${viewerMode === 'measure' ? buildAcExToolbarSeparator() : ''}
+        ${measureToolbar}
+        ${viewerMode === 'measure' ? buildAcExToolbarSeparator() : ''}
+        ${acExToolbarButton(acExHtmlIcons.layer, 'Layers', {
+          id: 'mlcad-layers-btn',
+          'aria-haspopup': 'dialog',
+          'aria-expanded': 'false',
+          'data-i18n-key': 'toolbar.layers',
+          'data-i18n-attr': 'title aria-label'
+        })}
+        ${settingsToolbar}
+        ${languageToolbar}
+        ${acExToolbarButton(acExHtmlIcons.chevronUp, 'Collapse toolbar', {
+          id: 'mlcad-toolbar-toggle',
+          'aria-expanded': 'true',
+          'data-i18n-key': 'toolbar.collapse',
+          'data-i18n-attr': 'title aria-label'
+        })}
+      </nav>
+      ${viewerMode === 'measure' ? buildAcExHtmlSettingsStrip() : ''}
+      <div id="mlcad-layer-drawer" role="dialog" data-i18n-attr="aria-label" data-i18n-key="layers.title" aria-label="Layers" hidden>
+        <div class="mlcad-drawer-header">
+          <span data-i18n-key="layers.title" data-i18n-text>Layers</span>
+          <button type="button" class="mlcad-drawer-close" id="mlcad-layer-close" data-i18n-key="layers.close" data-i18n-attr="aria-label" aria-label="Close layers">×</button>
+        </div>
+        <div class="mlcad-layer-actions">
+          <button type="button" class="mlcad-layer-action-btn" id="mlcad-layer-show-all">
+            ${acExHtmlIcons.layerOn}<span data-i18n-key="layers.showAll" data-i18n-text>Show all</span>
+          </button>
+          <button type="button" class="mlcad-layer-action-btn" id="mlcad-layer-hide-all">
+            ${acExHtmlIcons.layerOff}<span data-i18n-key="layers.hideAll" data-i18n-text>Hide all</span>
+          </button>
+        </div>
+        <div id="mlcad-layer-list"></div>
+      </div>
+    </aside>
+    ${viewerMode === 'measure' ? '<footer id="mlcad-status-bar" aria-live="polite"></footer>' : ''}
+  </div>`
+}
+
+function buildAcExToolbarSeparator(): string {
+  return '<div class="mlcad-tool-separator" aria-hidden="true"></div>'
+}
+
+function buildAcExMeasureToolbarSection(): string {
+  return `
         ${acExToolbarButton(acExHtmlIcons.measureDistance, 'Measure distance', {
           'data-action': 'measure',
           'data-measure-mode': 'distance',
@@ -478,47 +537,15 @@ export function buildAcExHtmlShellBody(loadingBg: string): string {
             'data-i18n-key': 'toolbar.clearMeasurements',
             'data-i18n-attr': 'title aria-label'
           }
-        )}
-        <div class="mlcad-tool-separator" aria-hidden="true"></div>
-        ${acExToolbarButton(acExHtmlIcons.layer, 'Layers', {
-          id: 'mlcad-layers-btn',
-          'aria-haspopup': 'dialog',
-          'aria-expanded': 'false',
-          'data-i18n-key': 'toolbar.layers',
-          'data-i18n-attr': 'title aria-label'
-        })}
-        ${acExToolbarButton(acExHtmlIcons.setting, 'Measure settings', {
-          id: 'mlcad-settings-btn',
-          'aria-haspopup': 'true',
-          'aria-expanded': 'false',
-          'data-i18n-key': 'toolbar.settings',
-          'data-i18n-attr': 'title aria-label'
-        })}
-        <div class="mlcad-tool-separator" aria-hidden="true"></div>
-        ${acExToolbarButton(acExHtmlIcons.chevronUp, 'Collapse toolbar', {
-          id: 'mlcad-toolbar-toggle',
-          'aria-expanded': 'true',
-          'data-i18n-key': 'toolbar.collapse',
-          'data-i18n-attr': 'title aria-label'
-        })}
-      </nav>
-      ${buildAcExHtmlSettingsStrip()}
-      <div id="mlcad-layer-drawer" role="dialog" data-i18n-attr="aria-label" data-i18n-key="layers.title" aria-label="Layers" hidden>
-        <div class="mlcad-drawer-header">
-          <span data-i18n-key="layers.title" data-i18n-text>Layers</span>
-          <button type="button" class="mlcad-drawer-close" id="mlcad-layer-close" data-i18n-key="layers.close" data-i18n-attr="aria-label" aria-label="Close layers">×</button>
-        </div>
-        <div class="mlcad-layer-actions">
-          <button type="button" class="mlcad-layer-action-btn" id="mlcad-layer-show-all">
-            ${acExHtmlIcons.layerOn}<span data-i18n-key="layers.showAll" data-i18n-text>Show all</span>
-          </button>
-          <button type="button" class="mlcad-layer-action-btn" id="mlcad-layer-hide-all">
-            ${acExHtmlIcons.layerOff}<span data-i18n-key="layers.hideAll" data-i18n-text>Hide all</span>
-          </button>
-        </div>
-        <div id="mlcad-layer-list"></div>
-      </div>
-    </aside>
-    <footer id="mlcad-status-bar" aria-live="polite"></footer>
-  </div>`
+        )}`
+}
+
+function buildAcExMeasureSettingsToolbarButton(): string {
+  return acExToolbarButton(acExHtmlIcons.setting, 'Measure settings', {
+    id: 'mlcad-settings-btn',
+    'aria-haspopup': 'true',
+    'aria-expanded': 'false',
+    'data-i18n-key': 'toolbar.settings',
+    'data-i18n-attr': 'title aria-label'
+  })
 }

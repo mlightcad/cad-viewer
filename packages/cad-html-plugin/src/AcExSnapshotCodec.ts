@@ -1,28 +1,36 @@
-import { gunzipSync, gzipSync } from 'fflate'
-
 import {
   decodeSnapshotBinary,
   encodeSnapshotBinary
 } from './AcExSnapshotBinaryCodec'
+import {
+  type AcExEncodedSnapshot,
+  type AcExSnapshotCompression,
+  compressSnapshotBinary,
+  decompressSnapshotBinary} from './AcExSnapshotCompression'
 import { ACEX_SNAPSHOT_VERSION, type AcExSnapshot } from './AcExSnapshotTypes'
 
 const SNAPSHOT_MIME = 'application/vnd.mlightcad.acex-snapshot+binary'
+
+export type { AcExEncodedSnapshot, AcExSnapshotCompression }
 
 /**
  * Serializes a snapshot to a gzip-compressed base64 string for HTML embedding.
  *
  * @param snapshot - Snapshot to encode; {@link AcExSnapshot.version} must match
  *   {@link ACEX_SNAPSHOT_VERSION}.
- * @returns Base64-encoded gzip payload (no data-URL prefix).
+ * @returns Base64 payload and the compression format written into the HTML.
  * @throws When the snapshot version is unsupported.
  */
-export function encodeSnapshot(snapshot: AcExSnapshot): string {
+export function encodeSnapshot(snapshot: AcExSnapshot): AcExEncodedSnapshot {
   if (snapshot.version !== ACEX_SNAPSHOT_VERSION) {
     throw new Error(`Unsupported snapshot version: ${snapshot.version}`)
   }
   const binary = encodeSnapshotBinary(snapshot)
-  const compressed = gzipSync(binary)
-  return uint8ToBase64(compressed)
+  const compressed = compressSnapshotBinary(binary)
+  return {
+    payload: uint8ToBase64(compressed.bytes),
+    compression: compressed.compression
+  }
 }
 
 /**
@@ -34,7 +42,7 @@ export function encodeSnapshot(snapshot: AcExSnapshot): string {
  */
 export function decodeSnapshot(payload: string): AcExSnapshot {
   const bytes = base64ToUint8(payload.trim())
-  const binary = gunzipSync(bytes)
+  const binary = decompressSnapshotBinary(bytes)
   return decodeSnapshotBinary(binary)
 }
 

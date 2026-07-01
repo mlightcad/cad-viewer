@@ -26,11 +26,10 @@ import type {
   AcExExtents,
   AcExLineBatch,
   AcExMeshBatch,
-  AcExSnapshot
+  AcExSnapshot,
+  AcExViewerMode
 } from './AcExSnapshotTypes'
 import {
-  copyFloat32Buffer,
-  copyUint32Buffer,
   releaseLayerGroupsGeometryCpuArrays,
   releaseSnapshotBatchBuffers,
   releaseSnapshotOsnapCatalogs,
@@ -50,6 +49,20 @@ function hideLoading(): void {
   })
 }
 
+function showViewerError(message: string): void {
+  const loading = document.getElementById('mlcad-loading')
+  if (!loading) return
+  loading.innerHTML = `<div style="padding:24px;color:#e8eaed;text-align:center;max-width:480px;line-height:1.5">${message}</div>`
+}
+
+/** Fallback when view mode omits the footer status bar. */
+function createHiddenStatusSink(): HTMLElement {
+  const el = document.createElement('div')
+  el.hidden = true
+  el.setAttribute('aria-hidden', 'true')
+  return el
+}
+
 function bootstrap(): void {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => startViewer())
@@ -58,12 +71,14 @@ function bootstrap(): void {
 
 function startViewer(): void {
   const root = document.getElementById('mlcad-root')
-  const statusEl = document.getElementById('mlcad-status-bar')
   const snapshotEl = document.getElementById('mlcad-snapshot')
-  if (!root || !statusEl || !snapshotEl) {
+  if (!root || !snapshotEl) {
     hideLoading()
     return
   }
+
+  const statusEl =
+    document.getElementById('mlcad-status-bar') ?? createHiddenStatusSink()
 
   const payload = snapshotEl.textContent?.trim() ?? ''
   let snapshot: AcExSnapshot
@@ -72,10 +87,12 @@ function startViewer(): void {
   } catch (error) {
     const i18n = new AcExHtmlI18n(detectAcExHtmlLocale())
     i18n.applyToDocument()
-    statusEl.textContent = i18n.t('status.loadFailed', { error: String(error) })
-    hideLoading()
+    showViewerError(i18n.t('status.loadFailed', { error: String(error) }))
     return
   }
+
+  const viewerMode: AcExViewerMode = snapshot.meta.viewerMode ?? 'measure'
+  const measureEnabled = viewerMode === 'measure'
 
   const i18n = new AcExHtmlI18n(detectAcExHtmlLocale())
   i18n.applyToDocument()
@@ -84,8 +101,7 @@ function startViewer(): void {
     snapshot.layouts.find(l => l.btrId === snapshot.activeLayoutBtrId) ??
     snapshot.layouts[0]
   if (!layout) {
-    statusEl.textContent = i18n.t('status.noLayout')
-    hideLoading()
+    showViewerError(i18n.t('status.noLayout'))
     return
   }
 
@@ -160,17 +176,32 @@ function startViewer(): void {
     snapshot.meta.viewExtents ?? snapshot.meta.extents
   )
 
-  const osnapIndex = new AcExOsnapIndex()
-  const osnapMarker = new AcExOsnapMarker(root)
-  osnapIndex.rebuild(layout)
-  for (const layer of snapshot.layers) {
-    if (!layer.visible) {
-      osnapIndex.setLayerHidden(layer.name, true)
-    }
+  let osnapIndex: AcExOsnapIndex | null = null
+  let osnapMarker: AcExOsnapMarker | null = null
+  let osnapThresholdWcs = 0
+  let snapCacheKey = 0
+  const recomputeOsnapThresholdWcs = () => {
+    if (!measureEnabled) return
+    const a = screenToWcs(0, 0)
+    const b = screenToWcs(osnapHitRadiusPx, 0)
+    osnapThresholdWcs = Math.abs(b.x - a.x)
+  }
+  const bumpSnapCacheKey = () => {
+    snapCacheKey++
   }
 
-  releaseSnapshotBatchBuffers(snapshot, snapshot.activeLayoutBtrId)
-  releaseSnapshotOsnapCatalogs(snapshot)
+  if (measureEnabled) {
+    osnapIndex = new AcExOsnapIndex()
+    osnapMarker = new AcExOsnapMarker(root)
+    osnapIndex.rebuild(layout)
+    for (const layer of snapshot.layers) {
+      if (!layer.visible) {
+        osnapIndex.setLayerHidden(layer.name, true)
+      }
+    }
+    releaseSnapshotOsnapCatalogs(snapshot)
+  }
+
   removeSnapshotElement(snapshotEl)
 
   const updateCameraFrustum = (width?: number, height?: number) => {
@@ -260,67 +291,64 @@ function startViewer(): void {
   }
 
   const osnapHitRadiusPx = 20
-  let osnapThresholdWcs = 0
-  const recomputeOsnapThresholdWcs = () => {
-    const a = screenToWcs(0, 0)
-    const b = screenToWcs(osnapHitRadiusPx, 0)
-    osnapThresholdWcs = Math.abs(b.x - a.x)
-  }
-  recomputeOsnapThresholdWcs()
-
-  let snapCacheKey = 0
-  const bumpSnapCacheKey = () => {
-    snapCacheKey++
+  if (measureEnabled) {
+    recomputeOsnapThresholdWcs()
   }
 
   const resolveMeasurePoint = (clientX: number, clientY: number) => {
     const raw = screenToWcs(clientX, clientY)
+    if (!osnapIndex) {
+      return { point: raw, snap: null }
+    }
     const snap = osnapIndex.findSnap(raw.x, raw.y, osnapThresholdWcs)
     const point = snap ? new THREE.Vector2(snap.x, snap.y) : raw
     return { point, snap: snap ?? null }
   }
 
-  const render = () => {
-    measure.syncOverlays()
-    renderer.render(scene, camera)
-  }
-
+  let measure: AcExMeasureController | null = null
   const measureSettingsRef: {
     current: ReturnType<typeof setupAcExHtmlMeasureSettings> | null
   } = { current: null }
 
-  const measure = new AcExMeasureController({
-    root,
-    scene,
-    i18n,
-    statusEl,
-    getReadyStatus: () => readyStatus,
-    onOsnapMarker: (snap, screen) => {
-      if (snap && screen) {
-        osnapMarker.show(screen.x, screen.y, snap.mode)
-      } else {
-        osnapMarker.hide()
-      }
-    },
-    getTrackingOptions: () =>
-      measureSettingsRef.current?.getTrackingOptions() ?? null,
-    view: {
-      screenToWcs,
-      wcsToScreen,
-      render,
-      getSnapCacheKey: () => snapCacheKey,
-      resolvePoint: resolveMeasurePoint,
-      formatLength,
-      formatAngle
-    }
-  })
+  const render = () => {
+    measure?.syncOverlays()
+    renderer.render(scene, camera)
+  }
 
-  measureSettingsRef.current = setupAcExHtmlMeasureSettings({
-    i18n,
-    measure,
-    angbase: snapshot.meta.units.angbase,
-    angdir: snapshot.meta.units.angdir
-  })
+  if (measureEnabled) {
+    measure = new AcExMeasureController({
+      root,
+      scene,
+      i18n,
+      statusEl,
+      getReadyStatus: () => readyStatus,
+      onOsnapMarker: (snap, screen) => {
+        if (snap && screen) {
+          osnapMarker?.show(screen.x, screen.y, snap.mode)
+        } else {
+          osnapMarker?.hide()
+        }
+      },
+      getTrackingOptions: () =>
+        measureSettingsRef.current?.getTrackingOptions() ?? null,
+      view: {
+        screenToWcs,
+        wcsToScreen,
+        render,
+        getSnapCacheKey: () => snapCacheKey,
+        resolvePoint: resolveMeasurePoint,
+        formatLength,
+        formatAngle
+      }
+    })
+
+    measureSettingsRef.current = setupAcExHtmlMeasureSettings({
+      i18n,
+      measure,
+      angbase: snapshot.meta.units.angbase,
+      angdir: snapshot.meta.units.angdir
+    })
+  }
 
   const toolbarCollapse = setupToolbarCollapse(i18n)
 
@@ -344,8 +372,8 @@ function startViewer(): void {
 
   i18n.setOnChange(() => {
     readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
-    if (!measure.isActive) {
-      measure.refreshIdleStatus()
+    if (!measure?.isActive) {
+      measure?.refreshIdleStatus()
     }
     layerPanel?.refreshLayerLabels()
     measureSettingsRef.current?.refreshLabels()
@@ -366,7 +394,9 @@ function startViewer(): void {
     render()
   })
 
-  setupMeasurePointerInput(renderer.domElement, () => measure, render)
+  if (measureEnabled && measure) {
+    setupMeasurePointerInput(renderer.domElement, () => measure!, render)
+  }
 
   renderer.domElement.addEventListener('mousedown', event => {
     if (event.button === 1) renderer.domElement.style.cursor = 'grabbing'
@@ -386,27 +416,29 @@ function startViewer(): void {
         if (action === 'fit') {
           fit()
         } else if (action === 'clear-measurements') {
-          measure.clearAll()
+          measure?.clearAll()
         } else if (action === 'measure') {
           const mode = button.getAttribute(
             'data-measure-mode'
           ) as AcExMeasureMode | null
           if (mode) {
-            measure.setMode(mode)
+            measure?.setMode(mode)
           }
         }
       })
     })
 
-  window.addEventListener('keydown', event => {
-    if (measure.handleKeyDown(event.key)) {
-      event.preventDefault()
-      return
-    }
-    if (measure.handleSelectionKeyDown(event.key, event)) {
-      event.preventDefault()
-    }
-  })
+  if (measureEnabled && measure) {
+    window.addEventListener('keydown', event => {
+      if (measure!.handleKeyDown(event.key)) {
+        event.preventDefault()
+        return
+      }
+      if (measure!.handleSelectionKeyDown(event.key, event)) {
+        event.preventDefault()
+      }
+    })
+  }
 
   window.addEventListener('resize', () => {
     resize()
@@ -424,11 +456,11 @@ function startViewer(): void {
     fit()
   }
   releaseLayerGroupsGeometryCpuArrays(layerGroups)
-  measure.refreshIdleStatus()
+  releaseSnapshotBatchBuffers(snapshot)
+  measure?.refreshIdleStatus()
   hideLoading()
 }
 
-/** DOM handles for one layer row in the drawer (used when locale changes). */
 interface AcExLayerRowRefs {
   /** Layer name shown in the row. */
   name: string
@@ -510,7 +542,7 @@ interface AcExLayerPanelContext {
   layerGroups: Map<string, THREE.Group>
   /** Precomputed XY extents per layer for zoom-to-layer. */
   layerExtents: Map<string, AcExExtents | null>
-  /** Footer status bar element. */
+  /** Footer status bar element (hidden sink in view mode). */
   statusEl: HTMLElement
   /** I18n instance for drawer strings. */
   i18n: AcExHtmlI18n
@@ -519,7 +551,7 @@ interface AcExLayerPanelContext {
   /** Fits the camera to the given extents and redraws. */
   zoomToExtents: (extents: AcExExtents) => void
   /** Object-snap index updated when layer visibility changes. */
-  osnapIndex: AcExOsnapIndex
+  osnapIndex: AcExOsnapIndex | null
   /** Sorted layer names for bulk show/hide actions. */
   sortedLayerNames: string[]
 }
@@ -566,7 +598,7 @@ function setupLayerPanel(
     layerVisible.set(name, visible)
     const group = layerGroups.get(name)
     if (group) group.visible = visible
-    osnapIndex.setLayerHidden(name, !visible)
+    osnapIndex?.setLayerHidden(name, !visible)
   }
 
   const setAllLayersVisible = (visible: boolean) => {
@@ -576,9 +608,9 @@ function setupLayerPanel(
       if (group) group.visible = visible
     }
     if (visible) {
-      osnapIndex.showAllLayers()
+      osnapIndex?.showAllLayers()
     } else {
-      osnapIndex.hideAllLayers(sortedLayers)
+      osnapIndex?.hideAllLayers(sortedLayers)
     }
     for (const checkbox of checkboxes) {
       checkbox.checked = visible
@@ -682,7 +714,7 @@ function createLineObject(
 
   if (batch.lineWidth != null && batch.lineWidth > 0) {
     const geometry = new LineSegmentsGeometry()
-    geometry.setPositions(copyFloat32Buffer(batch.positions))
+    geometry.setPositions(batch.positions)
     const material = createViewerLineMaterial(
       batch,
       wideLineResolution
@@ -696,12 +728,10 @@ function createLineObject(
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(copyFloat32Buffer(batch.positions), 3)
+    new THREE.BufferAttribute(batch.positions, 3)
   )
   if (batch.indices && batch.indices.length > 0) {
-    geometry.setIndex(
-      new THREE.BufferAttribute(copyUint32Buffer(batch.indices), 1)
-    )
+    geometry.setIndex(new THREE.BufferAttribute(batch.indices, 1))
   }
   if (
     batch.linePattern &&
@@ -710,10 +740,7 @@ function createLineObject(
   ) {
     geometry.setAttribute(
       'lineDistance',
-      new THREE.Float32BufferAttribute(
-        copyFloat32Buffer(batch.lineDistances),
-        1
-      )
+      new THREE.BufferAttribute(batch.lineDistances, 1)
     )
   }
   const material = createViewerLineMaterial(batch)
@@ -794,7 +821,7 @@ function createPointObject(batch: AcExMeshBatch): THREE.Points | null {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(copyFloat32Buffer(batch.positions), 3)
+    new THREE.BufferAttribute(batch.positions, 3)
   )
   const material = createViewerPointsMaterial(batch)
   const object = new THREE.Points(geometry, material)
@@ -809,11 +836,9 @@ function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(copyFloat32Buffer(batch.positions), 3)
+    new THREE.BufferAttribute(batch.positions, 3)
   )
-  geometry.setIndex(
-    new THREE.BufferAttribute(copyUint32Buffer(batch.indices), 1)
-  )
+  geometry.setIndex(new THREE.BufferAttribute(batch.indices, 1))
   if (
     batch.gradientFill &&
     batch.gradientPositions &&
@@ -821,10 +846,7 @@ function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
   ) {
     geometry.setAttribute(
       'gradientPosition',
-      new THREE.Float32BufferAttribute(
-        copyFloat32Buffer(batch.gradientPositions),
-        2
-      )
+      new THREE.BufferAttribute(batch.gradientPositions, 2)
     )
   }
   const material = createViewerMeshMaterial(batch)

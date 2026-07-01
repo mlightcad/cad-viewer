@@ -20,7 +20,7 @@ export interface AcExPackHtmlOptions {
 }
 
 /**
- * Builds a self-contained HTML document with an embedded gzip-compressed snapshot
+ * Builds a self-contained HTML document with an embedded compressed snapshot
  * and inline viewer runtime.
  *
  * @param snapshot - Display snapshot to embed in a `<script id="mlcad-snapshot">` tag.
@@ -32,11 +32,13 @@ export function packHtml(
   options: AcExPackHtmlOptions
 ): string {
   const title = options.title ?? snapshot.meta.title ?? 'CAD Drawing'
-  const payload = encodeSnapshot(snapshot)
+  const encoded = encodeSnapshot(snapshot)
   const runtime = options.viewerRuntime
   const mime = snapshotMimeType()
+  const compression = encoded.compression
   const loadingBg = `#${snapshot.meta.background.toString(16).padStart(6, '0')}`
   const htmlLang = resolveAcExHtmlLocale(snapshot.meta.locale) ?? 'en'
+  const viewerMode = snapshot.meta.viewerMode ?? 'measure'
 
   return `<!DOCTYPE html>
 <html lang="${htmlLang}">
@@ -48,8 +50,8 @@ export function packHtml(
   <style>${ACEX_HTML_SHELL_CSS}</style>
 </head>
 <body>
-${buildAcExHtmlShellBody(loadingBg)}
-  <script id="mlcad-snapshot" type="${mime}+gzip;base64">${payload}</script>
+${buildAcExHtmlShellBody(loadingBg, viewerMode)}
+  <script id="mlcad-snapshot" type="${mime}+${compression};base64">${encoded.payload}</script>
   <script>${escapeInlineScript(runtime)}</script>
 </body>
 </html>`

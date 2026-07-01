@@ -17,6 +17,7 @@ declare global {
         title?: string
         exportInvisibleLayers?: boolean
         initialView?: 'fit' | 'current'
+        viewerMode?: 'view' | 'measure'
       }
     ) => Promise<string>
   }
@@ -78,6 +79,7 @@ window.exportCadToHtml = async (fileName, bytes, options = {}) => {
       locale: options.locale,
       exportInvisibleLayers: resolved.exportInvisibleLayers,
       initialView: resolved.initialView,
+      viewerMode: resolved.viewerMode,
       viewState:
         resolved.initialView === 'current'
           ? captureAcApHtmlViewState(view)

@@ -310,6 +310,7 @@ class BinaryWriter {
   }
 
   writeFloat32Array(array: Float32Array): void {
+    this.alignTo(4)
     const bytes = new Uint8Array(
       array.buffer,
       array.byteOffset,
@@ -320,6 +321,7 @@ class BinaryWriter {
   }
 
   writeUint32Array(array: Uint32Array): void {
+    this.alignTo(4)
     const bytes = new Uint8Array(
       array.buffer,
       array.byteOffset,
@@ -327,6 +329,17 @@ class BinaryWriter {
     )
     this.writeU32(bytes.length)
     this.writeBytes(bytes)
+  }
+
+  private alignTo(alignment: number): void {
+    const remainder = this.length % alignment
+    if (remainder === 0) {
+      return
+    }
+    const pad = alignment - remainder
+    for (let i = 0; i < pad; i++) {
+      this.writeU8(0)
+    }
   }
 
   toUint8Array(): Uint8Array {
@@ -404,25 +417,55 @@ class BinaryReader {
     return JSON.parse(text) as T
   }
 
+  private alignTo(alignment: number): void {
+    const remainder = this.offset % alignment
+    if (remainder === 0) {
+      return
+    }
+    this.offset += alignment - remainder
+  }
+
   readFloat32Array(): Float32Array {
+    this.alignTo(4)
     const byteLength = this.readU32()
     if (byteLength === 0) {
       return new Float32Array(0)
     }
+    if (byteLength % 4 !== 0) {
+      throw new Error('Invalid float32 buffer length')
+    }
     const bytes = this.readBytes(byteLength)
-    const buffer = new ArrayBuffer(byteLength)
-    new Uint8Array(buffer).set(bytes)
-    return new Float32Array(buffer)
+    if (bytes.byteOffset % 4 === 0) {
+      return new Float32Array(
+        bytes.buffer,
+        bytes.byteOffset,
+        byteLength / 4
+      )
+    }
+    const copy = new ArrayBuffer(byteLength)
+    new Uint8Array(copy).set(bytes)
+    return new Float32Array(copy)
   }
 
   readUint32Array(): Uint32Array {
+    this.alignTo(4)
     const byteLength = this.readU32()
     if (byteLength === 0) {
       return new Uint32Array(0)
     }
+    if (byteLength % 4 !== 0) {
+      throw new Error('Invalid uint32 buffer length')
+    }
     const bytes = this.readBytes(byteLength)
-    const buffer = new ArrayBuffer(byteLength)
-    new Uint8Array(buffer).set(bytes)
-    return new Uint32Array(buffer)
+    if (bytes.byteOffset % 4 === 0) {
+      return new Uint32Array(
+        bytes.buffer,
+        bytes.byteOffset,
+        byteLength / 4
+      )
+    }
+    const copy = new ArrayBuffer(byteLength)
+    new Uint8Array(copy).set(bytes)
+    return new Uint32Array(copy)
   }
 }

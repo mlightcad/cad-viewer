@@ -103,6 +103,7 @@ export class AcApHtmlConvertor {
           background: exportView.backgroundColor,
           exportInvisibleLayers: resolved.exportInvisibleLayers,
           initialView: resolved.initialView,
+          viewerMode: resolved.viewerMode,
           viewState:
             resolved.initialView === 'current'
               ? captureAcApHtmlViewState(exportView)

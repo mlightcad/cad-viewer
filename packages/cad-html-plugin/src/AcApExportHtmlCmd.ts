@@ -53,9 +53,15 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       return undefined
     }
 
+    const viewerMode = await this.promptViewerMode()
+    if (viewerMode === undefined) {
+      return undefined
+    }
+
     return resolveAcApHtmlExportOptions({
       exportInvisibleLayers,
-      initialView
+      initialView,
+      viewerMode
     })
   }
 
@@ -137,6 +143,50 @@ export class AcApExportHtmlCmd extends AcEdCommand {
         return defaults.initialView
       }
       return result.stringResult === 'Current' ? 'current' : 'fit'
+    }
+    return undefined
+  }
+
+  private async promptViewerMode(): Promise<
+    AcApHtmlExportOptions['viewerMode'] | undefined
+  > {
+    const defaults = resolveAcApHtmlExportOptions()
+    const current =
+      defaults.viewerMode === 'view'
+        ? AcApI18n.t('jig.chtml.keywords.view.global')
+        : AcApI18n.t('jig.chtml.keywords.measure.global')
+    const prompt = new AcEdPromptKeywordOptions(
+      `${AcApI18n.t('jig.chtml.viewerMode')} <${current}>`
+    )
+    prompt.allowNone = true
+    const view = prompt.keywords.add(
+      AcApI18n.t('jig.chtml.keywords.view.display'),
+      AcApI18n.t('jig.chtml.keywords.view.global'),
+      AcApI18n.t('jig.chtml.keywords.view.local')
+    )
+    const measure = prompt.keywords.add(
+      AcApI18n.t('jig.chtml.keywords.measure.display'),
+      AcApI18n.t('jig.chtml.keywords.measure.global'),
+      AcApI18n.t('jig.chtml.keywords.measure.local')
+    )
+    prompt.keywords.default =
+      defaults.viewerMode === 'view' ? view : measure
+
+    const result = await AcApDocManager.instance.editor.getKeywords(prompt)
+    if (result.status === AcEdPromptStatus.Cancel) {
+      return undefined
+    }
+    if (result.status === AcEdPromptStatus.None) {
+      return defaults.viewerMode
+    }
+    if (
+      result.status === AcEdPromptStatus.OK ||
+      result.status === AcEdPromptStatus.Keyword
+    ) {
+      if (!result.stringResult) {
+        return defaults.viewerMode
+      }
+      return result.stringResult === 'View' ? 'view' : 'measure'
     }
     return undefined
   }

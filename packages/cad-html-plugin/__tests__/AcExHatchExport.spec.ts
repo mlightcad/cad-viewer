@@ -148,7 +148,8 @@ describe('patterned hatch HTML export', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const decoded = decodeSnapshot(encodeSnapshot(snapshot))
+    const encoded = encodeSnapshot(snapshot)
+    const decoded = decodeSnapshot(encoded.payload)
     const decodedBatch = decoded.layouts[0]!.meshBatches[0]!
     expect(decodedBatch.hatchPattern).toEqual(batch.hatchPattern)
 
