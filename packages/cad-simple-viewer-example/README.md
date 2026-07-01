@@ -7,7 +7,7 @@ A vanilla TypeScript demo that shows how to embed [`@mlightcad/cad-simple-viewer
 - **Local files** — Open `.dxf` / `.dwg` via file picker (toolbar **Open** or center **Open File**)
 - **Sample drawings** — Sidebar loads predefined files from the [cad-data](https://github.com/mlightcad/cad-data) CDN
 - **Viewer toolbar** — Zoom fit, zoom window, background toggle, pickbox size, line-weight display, export HTML/PDF
-- **Lazy plugins** — registered from `@mlightcad/cad-*-plugin/register` in `src/register.ts`; `chtml` / `cpdf` / `csvg` load plugin chunks on demand
+- **Lazy plugins** — registered from `@mlightcad/cad-*-plugin/register` in `src/register.ts`; `-chtml` / `cpdf` / `csvg` load plugin chunks on demand (`chtml` runs the same command-line export when no dialog command is registered)
 - **Browser-only** — Parsing and rendering run in the browser (Web Workers + WebAssembly for DWG)
 - **Responsive layout** — Sidebar + viewer pane; stacks vertically on narrow screens
 
@@ -70,7 +70,7 @@ The build copies parser workers and `viewer-runtime.iife.js` into `dist/` (see `
    - **Switch BG** — Toggle drawing background
    - **Set Pickbox** — Prompt to set `PICKBOX` system variable
    - **LineWeight: On/Off** — Toggle `lwdisplay` on the current database
-   - **Export HTML** / **Export PDF** — Run `chtml` / `cpdf` (plugins must be registered; see `src/main.ts`)
+   - **Export HTML** / **Export PDF** — Run `chtml` / `cpdf` from the toolbar (`chtml` uses command-line prompts here; `-chtml` is equivalent). Plugins must be registered; see `src/main.ts`.
 
 Toast messages at the top report success or errors. The window title updates when a document is activated.
 
@@ -90,7 +90,7 @@ Integration patterns useful when building your own host app (not a full CAD UI l
 | Document manager | `AcApDocManager.createInstance({ container, baseUrl, webworkerFileUrls, commandAliases, … })` |
 | Local open | `openDocument(name, ArrayBuffer, options)` with `AcApOpenDatabaseOptions` |
 | Remote open | `openUrl(url, options)` for CDN sample files |
-| Commands | `sendStringToExecute('zoom\\nall')`, `switchbg`, plugin commands `chtml` / `cpdf` |
+| Commands | `sendStringToExecute('zoom\\nall')`, `switchbg`, plugin commands `chtml` / `-chtml` / `cpdf` |
 | System variables | `AcDbSysVarManager` + `sendStringToExecute` (e.g. `PICKBOX`) |
 | Plugins | Lazy registration via `@mlightcad/*/register` in `src/register.ts` (only needed plugins) |
 | Command aliases | Demo overrides (`LINE` → `LX`, etc.) via `commandAliases` |
@@ -114,7 +114,7 @@ Lazy initialization: `AcApDocManager` is created on first file open, not at page
 |---------|------|
 | `@mlightcad/cad-simple-viewer` | Core viewer, `AcApDocManager`, commands |
 | `@mlightcad/data-model` | Database, system variables, logging |
-| `@mlightcad/cad-html-plugin` | Offline HTML export (`chtml`) |
+| `@mlightcad/cad-html-plugin` | Offline HTML export (`-chtml`; toolbar uses `chtml` as alias when no dialog is registered) |
 | `@mlightcad/cad-pdf-plugin` | PDF export (`cpdf`) |
 | `three` | Peer of the viewer render stack |
 

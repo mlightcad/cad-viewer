@@ -387,7 +387,7 @@ When the parent icon should reflect the active submenu item:
   childIcon: 'selected',
   selectedChildId: 'export-pdf',
   children: [
-    { id: 'export-html', label: 'HTML', icon: htmlIcon, command: 'chtml' },
+    { id: 'export-html', label: 'HTML', icon: htmlIcon, command: 'chtml' }, // dialog in cad-viewer; command-line in cad-simple-viewer-only hosts
     { id: 'export-pdf', label: 'PDF', icon: pdfIcon, command: 'cpdf' }
   ]
 }

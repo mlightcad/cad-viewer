@@ -14,7 +14,8 @@ import {
 } from './AcApHtmlExportOptions'
 
 /**
- * Editor command that exports the active drawing as a self-contained HTML file.
+ * Editor command that exports the active drawing as a self-contained HTML file
+ * using command-line prompts (`-chtml`).
  *
  * The command delegates to {@link AcApHtmlConvertor}, which serializes the
  * current Three.js scene into an {@link AcExSnapshot} HTML snapshot,

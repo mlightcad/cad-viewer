@@ -78,6 +78,24 @@ export default {
     aciTabTitle: '颜色索引',
     rgbTabTitle: '真彩色'
   },
+  exportHtmlDlg: {
+    title: '导出为 HTML',
+    layersSection: '图层',
+    exportInvisibleLayers: '导出不可见图层',
+    exportInvisibleLayersHint: '将关闭或冻结图层上的几何图形包含在导出文件中',
+    yes: '是',
+    no: '否',
+    initialView: '初始视图',
+    initialViewExtents: '范围',
+    initialViewExtentsHint: '打开 HTML 时缩放至图形范围',
+    initialViewCurrent: '当前',
+    initialViewCurrentHint: '保留当前视图的中心与缩放比例',
+    viewerMode: '查看器模式',
+    viewerModeView: '查看',
+    viewerModeViewHint: '仅平移、缩放与图层控制',
+    viewerModeMeasure: '测量',
+    viewerModeMeasureHint: '查看工具及距离测量'
+  },
   quickSelectDlg: {
     title: '快速选择',
     applyTo: '应用到',

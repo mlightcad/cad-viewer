@@ -6,9 +6,10 @@ export const HTML_PLUGIN_NAME = 'HtmlPlugin'
 /**
  * Trigger command handled by {@link HTML_PLUGIN_NAME}.
  *
- * - `chtml` — export drawing to standalone offline HTML
+ * - `-chtml` — export drawing to standalone offline HTML (command-line)
+ * - `chtml` — same as `-chtml` when no UI command is registered (e.g. without cad-viewer)
  */
-export const HTML_PLUGIN_TRIGGERS = ['chtml'] as const
+export const HTML_PLUGIN_TRIGGERS = ['-chtml', 'chtml'] as const
 
 /**
  * Registers the HTML export plugin for lazy loading.

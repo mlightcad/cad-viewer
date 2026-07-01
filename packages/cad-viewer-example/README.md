@@ -10,7 +10,7 @@ A Vue 3 demo that embeds [`@mlightcad/cad-viewer`](https://github.com/mlightcad/
 - **Internationalization** — Built-in English/Chinese UI via `vue-i18n`; host app can merge custom messages
 - **Custom commands** — Example `quit` / `exit` commands return to the upload screen
 - **CDN assets** — Fonts and templates loaded from [cad-data](https://github.com/mlightcad/cad-data)
-- **Export plugins** — HTML (`chtml`) and PDF (`cpdf`) via lazy-loaded workspace plugins
+- **Export plugins** — HTML (`chtml` dialog, `-chtml` command-line) and PDF (`cpdf`) via lazy-loaded workspace plugins
 - **E2E tests** — Playwright smoke and rendering checks against local fixtures
 
 ## Prerequisites
