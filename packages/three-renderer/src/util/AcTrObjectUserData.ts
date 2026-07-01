@@ -27,6 +27,10 @@ export interface AcTrMaterialRuntimeUserData {
   relativeToEyePatchVersion?: string
   /** Compiled shader instance from the latest `onBeforeCompile`. */
   relativeToEyeCompiledShader?: unknown
+  /** Batch slot-mask highlight shader patch installed on this material. */
+  batchHighlightPatched?: boolean
+  /** Persistent highlight uniform bag shared by compiled shader programs. */
+  batchHighlightUniforms?: Record<string, { value: unknown }>
 }
 
 /**

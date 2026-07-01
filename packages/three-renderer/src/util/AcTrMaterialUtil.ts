@@ -3,9 +3,23 @@ import * as THREE from 'three'
 import { getMaterialRuntimeUserData } from './AcTrObjectUserData'
 
 /**
- * Highlight color.
+ * Selection highlight color.
+ *
+ * Replace with a system-variable-driven value when CAD sysvars are wired in.
  */
-export const HIGHLIGHT_COLOR = new THREE.Color(0x08e8de)
+export const HIGHLIGHT_SELECT_COLOR = new THREE.Color(0x08e8de)
+
+/**
+ * Hover highlight color.
+ *
+ * Replace with a system-variable-driven value when CAD sysvars are wired in.
+ */
+export const HIGHLIGHT_HOVER_COLOR = new THREE.Color(0x66fff8)
+
+/**
+ * @deprecated Use {@link HIGHLIGHT_SELECT_COLOR} instead.
+ */
+export const HIGHLIGHT_COLOR = HIGHLIGHT_SELECT_COLOR
 
 /**
  * Type for materials that have color property
@@ -49,7 +63,7 @@ export class AcTrMaterialUtil {
 
   public static setMaterialColor(
     material: THREE.Material | THREE.Material[],
-    color: THREE.Color = HIGHLIGHT_COLOR
+    color: THREE.Color = HIGHLIGHT_SELECT_COLOR
   ) {
     if (Array.isArray(material)) {
       material.forEach(mat => this.setMaterialColor(mat, color))
@@ -115,6 +129,8 @@ export class AcTrMaterialUtil {
     const materialData = getMaterialRuntimeUserData(material)
     delete materialData.relativeToEyePatchVersion
     delete materialData.relativeToEyeCompiledShader
+    delete materialData.batchHighlightPatched
+    delete materialData.batchHighlightUniforms
     material.onBeforeCompile = THREE.Material.prototype.onBeforeCompile
     material.customProgramCacheKey =
       THREE.Material.prototype.customProgramCacheKey

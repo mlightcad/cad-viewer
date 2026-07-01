@@ -22,6 +22,7 @@ import {
   resolveReservedCount
 } from './AcTrBatchedMixin'
 import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility'
+import { ensureSlotIdAttribute, writeSlotIdRange } from './highlight'
 
 type AcTrBatchedLine2GeometryInfo = AcTrVertexBatchGeometryInfo
 
@@ -88,6 +89,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     ;(this.geometry as LineSegmentsGeometry).setPositions(
       new Float32Array(this._maxSegmentCount * 6)
     )
+    ensureSlotIdAttribute(this.geometry, this._maxSegmentCount)
     this._copyStaticAttributes(reference)
     this._geometryInitialized = true
   }
@@ -103,7 +105,13 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     }
 
     for (const key in reference.attributes) {
-      if (key === 'instanceStart' || key === 'instanceEnd') continue
+      if (
+        key === 'instanceStart' ||
+        key === 'instanceEnd' ||
+        key === 'slotId'
+      ) {
+        continue
+      }
       dstGeometry.setAttribute(key, reference.getAttribute(key).clone())
     }
   }
@@ -310,6 +318,13 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     geometryInfo.vertexCount = segmentCount
     geometryInfo.boundingBox = null
 
+    writeSlotIdRange(
+      this.geometry,
+      segmentStart,
+      geometryInfo.reservedVertexCount,
+      geometryId
+    )
+
     return geometryId
   }
 
@@ -334,6 +349,18 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
           oldStart * 6,
           (oldStart + count) * 6
         )
+        const slotIdAttr = this.geometry.getAttribute('slotId') as
+          | THREE.BufferAttribute
+          | undefined
+        if (slotIdAttr) {
+          slotIdAttr.array.copyWithin(
+            nextSegmentStart,
+            oldStart,
+            oldStart + count
+          )
+          slotIdAttr.addUpdateRange(nextSegmentStart, count)
+          slotIdAttr.needsUpdate = true
+        }
       }
       info.vertexStart = nextSegmentStart
       nextSegmentStart += count

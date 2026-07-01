@@ -536,10 +536,7 @@ export class AcTrLayout {
    * @param ids - Array of entity object IDs to hover
    */
   hover(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      const layers = this.getLayersByObjectId(id)
-      layers.forEach(layer => layer.hover([id]))
-    })
+    this.applyHighlightToLayers(ids, (layer, entityIds) => layer.hover(entityIds))
   }
 
   /**
@@ -549,10 +546,9 @@ export class AcTrLayout {
    * @param ids - Array of entity object IDs to unhover
    */
   unhover(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      const layers = this.getLayersByObjectId(id)
-      layers.forEach(layer => layer.unhover([id]))
-    })
+    this.applyHighlightToLayers(ids, (layer, entityIds) =>
+      layer.unhover(entityIds)
+    )
   }
 
   /**
@@ -562,10 +558,9 @@ export class AcTrLayout {
    * @param ids - Array of entity object IDs to select
    */
   select(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      const layers = this.getLayersByObjectId(id)
-      layers.forEach(layer => layer.select([id]))
-    })
+    this.applyHighlightToLayers(ids, (layer, entityIds) =>
+      layer.select(entityIds)
+    )
   }
 
   /**
@@ -575,10 +570,34 @@ export class AcTrLayout {
    * @param ids - Array of entity object IDs to unselect
    */
   unselect(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
+    this.applyHighlightToLayers(ids, (layer, entityIds) =>
+      layer.unselect(entityIds)
+    )
+  }
+
+  /**
+   * Groups entity ids by render layer and applies one bulk highlight call per layer.
+   *
+   * @param ids - Entity object ids whose highlight state should change.
+   * @param apply - Layer callback invoked once per layer with its grouped entity ids.
+   */
+  private applyHighlightToLayers(
+    ids: AcDbObjectId[],
+    apply: (layer: AcTrLayer, entityIds: AcDbObjectId[]) => void
+  ) {
+    const layerToIds = new Map<AcTrLayer, AcDbObjectId[]>()
+    for (const id of ids) {
       const layers = this.getLayersByObjectId(id)
-      layers.forEach(layer => layer.unselect([id]))
-    })
+      for (const layer of layers) {
+        const bucket = layerToIds.get(layer)
+        if (bucket) {
+          bucket.push(id)
+        } else {
+          layerToIds.set(layer, [id])
+        }
+      }
+    }
+    layerToIds.forEach((entityIds, layer) => apply(layer, entityIds))
   }
 
   /**

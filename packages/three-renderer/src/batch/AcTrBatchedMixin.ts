@@ -16,6 +16,15 @@ import {
   type AcTrBatchDrawVisibilityInfo,
   applyBatchSlotDrawVisibility
 } from './drawVisibility'
+import {
+  type AcTrBatchHighlightKind,
+  AcTrBatchHighlightState,
+  BATCH_SLOT_ID_ATTRIBUTE,
+  bindBatchHighlightUniforms,
+  ensureSlotIdAttribute,
+  installBatchHighlightRenderer,
+  writeSlotIdRange
+} from './highlight'
 
 /**
  * Generic constructor type used to parameterize the batched mixin factory.
@@ -118,6 +127,9 @@ export function initializeGeometry(
   maxIndexCount: number | null
 ) {
   for (const attributeName in reference.attributes) {
+    if (attributeName === BATCH_SLOT_ID_ATTRIBUTE) {
+      continue
+    }
     const srcAttribute = reference.getAttribute(attributeName)
     const { array, itemSize, normalized } = srcAttribute
 
@@ -130,6 +142,8 @@ export function initializeGeometry(
     )
     geometry.setAttribute(attributeName, dstAttribute)
   }
+
+  ensureSlotIdAttribute(geometry, maxVertexCount)
 
   if (maxIndexCount != null && reference.getIndex() !== null) {
     const indexArray =
@@ -170,6 +184,9 @@ export function validateGeometry(
   }
 
   for (const attributeName in batchGeometry.attributes) {
+    if (attributeName === BATCH_SLOT_ID_ATTRIBUTE) {
+      continue
+    }
     if (!geometry.hasAttribute(attributeName)) {
       throw new Error(
         `${typeName}: Added geometry missing "${attributeName}". All geometries must have consistent attributes.`
@@ -402,6 +419,9 @@ export function copyGeometryAttributes(
   reservedVertexCount: number
 ) {
   for (const attributeName in batchGeometry.attributes) {
+    if (attributeName === BATCH_SLOT_ID_ATTRIBUTE) {
+      continue
+    }
     const srcAttribute = geometry.getAttribute(attributeName)
     const dstAttribute = batchGeometry.getAttribute(
       attributeName
@@ -474,13 +494,15 @@ export function copyGeometryIndices(
  * @param batchGeometry - Combined destination geometry.
  * @param geometry - Source geometry payload to write.
  * @param typeName - Batch class name included in error messages.
+ * @param slotId - Geometry slot id written into the `slotId` vertex attribute.
  * @throws {Error} When the source geometry exceeds the slot's reserved capacity.
  */
 export function applyGeometryAt<T extends AcTrBatchGeometryLike>(
   geometryInfo: T,
   batchGeometry: THREE.BufferGeometry,
   geometry: THREE.BufferGeometry,
-  typeName: string
+  typeName: string,
+  slotId: number
 ) {
   const hasIndex = batchGeometry.getIndex() !== null
   const srcIndex = geometry.getIndex()
@@ -532,6 +554,13 @@ export function applyGeometryAt<T extends AcTrBatchGeometryLike>(
       )
     }
   }
+
+  writeSlotIdRange(
+    batchGeometry,
+    vertexStart,
+    reservedVertexCount,
+    slotId
+  )
 }
 
 /**
@@ -741,6 +770,8 @@ export function createAcTrBatchedMixin<
     > = this._batchIntersects as Array<
       THREE.Intersection & { batchId?: number; objectId?: string }
     >
+    /** CPU/GPU highlight mask for packed geometry slots in this batch. */
+    readonly _highlightState = new AcTrBatchHighlightState()
 
     /**
      * Estimated memory footprint and slot count of `_geometryInfo` records.
@@ -882,6 +913,77 @@ export function createAcTrBatchedMixin<
     }
 
     /**
+     * Marks one geometry slot as selected or hovered without copying geometry.
+     *
+     * @param geometryId - Slot index within the batch container.
+     * @param kind - Whether to update selection or hover state.
+     * @param enabled - `true` to highlight the slot, `false` to clear it.
+     * @returns `true` when the slot mask changed.
+     */
+    setHighlightAt(
+      geometryId: number,
+      kind: AcTrBatchHighlightKind,
+      enabled: boolean
+    ) {
+      try {
+        this.validateGeometryId(geometryId)
+      } catch {
+        return false
+      }
+
+      const changed = this._highlightState.setHighlight(
+        geometryId,
+        kind,
+        enabled
+      )
+      if (changed) {
+        installBatchHighlightRenderer(this, this._highlightState)
+      }
+      return changed
+    }
+
+    /**
+     * Uploads the batch highlight mask texture after bulk selection updates.
+     *
+     * @returns This instance for chaining.
+     */
+    flushHighlightMask() {
+      this._highlightState.setAddressableSlotCount(this._geometryInfo.length)
+      if (this._highlightState.dirty) {
+        this._highlightState.uploadMaskTexture()
+      }
+      if (this._highlightState.hasAnyHighlight() && this.material) {
+        bindBatchHighlightUniforms(this.material, this._highlightState)
+      }
+      return this
+    }
+
+    /**
+     * Clears highlight state for one geometry slot.
+     *
+     * @param geometryId - Slot index whose selection and hover flags are cleared.
+     * @returns This instance for chaining.
+     */
+    clearHighlightSlot(geometryId: number) {
+      if (this._highlightState.clearSlot(geometryId)) {
+        installBatchHighlightRenderer(this, this._highlightState)
+      }
+      return this
+    }
+
+    /**
+     * Clears all highlight state owned by this batch.
+     *
+     * @returns This instance for chaining.
+     */
+    clearHighlightState() {
+      if (this._highlightState.clearAll()) {
+        installBatchHighlightRenderer(this, this._highlightState)
+      }
+      return this
+    }
+
+    /**
      * Soft-deletes one geometry slot and registers its id for reuse.
      *
      * Does not compact buffer memory; call `optimize()` on the concrete batch
@@ -900,6 +1002,7 @@ export function createAcTrBatchedMixin<
         return this
       }
 
+      this.clearHighlightSlot(geometryId)
       return this
     }
 
