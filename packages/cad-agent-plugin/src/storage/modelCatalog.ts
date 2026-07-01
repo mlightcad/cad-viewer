@@ -72,16 +72,54 @@ export const PROVIDER_MODEL_OPTIONS: Record<
   ],
   deepseek: [
     {
+      value: 'deepseek-v4-flash',
+      labelEn: 'DeepSeek V4 Flash',
+      labelZh: 'DeepSeek V4 Flash',
+      supportsVision: false
+    },
+    {
+      value: 'deepseek-v4-pro',
+      labelEn: 'DeepSeek V4 Pro',
+      labelZh: 'DeepSeek V4 Pro',
+      supportsVision: false
+    },
+    {
       value: 'deepseek-chat',
-      labelEn: 'DeepSeek Chat',
-      labelZh: 'DeepSeek Chat',
+      labelEn: 'DeepSeek Chat (legacy)',
+      labelZh: 'DeepSeek Chat（旧版别名）',
       supportsVision: false
     },
     {
       value: 'deepseek-reasoner',
-      labelEn: 'DeepSeek Reasoner',
-      labelZh: 'DeepSeek Reasoner',
+      labelEn: 'DeepSeek Reasoner (legacy)',
+      labelZh: 'DeepSeek Reasoner（旧版别名）',
       supportsVision: false
+    }
+  ],
+  'deepseek-vl': [
+    {
+      value: 'deepseek-vl2',
+      labelEn: 'DeepSeek VL2',
+      labelZh: 'DeepSeek VL2',
+      supportsVision: true
+    },
+    {
+      value: 'deepseek-ai/deepseek-vl2-small',
+      labelEn: 'DeepSeek VL2 Small',
+      labelZh: 'DeepSeek VL2 Small',
+      supportsVision: true
+    },
+    {
+      value: 'deepseek-ai/deepseek-vl2-tiny',
+      labelEn: 'DeepSeek VL2 Tiny',
+      labelZh: 'DeepSeek VL2 Tiny',
+      supportsVision: true
+    },
+    {
+      value: 'deepseek-ai/deepseek-vl2',
+      labelEn: 'DeepSeek VL2 (HuggingFace id)',
+      labelZh: 'DeepSeek VL2（HuggingFace 路径）',
+      supportsVision: true
     }
   ],
   'openai-compatible': [

@@ -12,6 +12,9 @@ export const agentEn = {
   close: 'Close',
   provider: 'Provider',
   providerDeepseek: 'DeepSeek',
+  providerDeepseekVl: 'DeepSeek VL (vision)',
+  providerDeepseekVlHint:
+    'Uses an OpenAI-compatible vision endpoint (default: SiliconFlow). For self-hosted vLLM, set Base URL to your server, e.g. http://127.0.0.1:8000/v1.',
   providerOpenai: 'OpenAI',
   providerAnthropic: 'Anthropic',
   providerOpenaiCompatible: 'OpenAI Compatible',

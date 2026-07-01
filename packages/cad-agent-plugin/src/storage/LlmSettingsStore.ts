@@ -9,6 +9,7 @@ export type LlmProviderId =
   | 'anthropic'
   | 'openai-compatible'
   | 'deepseek'
+  | 'deepseek-vl'
 
 /**
  * Persisted LLM configuration for the CAD agent chat panel.
@@ -59,7 +60,11 @@ export const PROVIDER_DEFAULTS: Record<
   },
   deepseek: {
     baseUrl: 'https://api.deepseek.com/v1',
-    model: 'deepseek-chat'
+    model: 'deepseek-v4-flash'
+  },
+  'deepseek-vl': {
+    baseUrl: 'https://api.siliconflow.cn/v1',
+    model: 'deepseek-vl2'
   }
 }
 

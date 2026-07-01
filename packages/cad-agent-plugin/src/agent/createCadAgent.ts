@@ -9,6 +9,7 @@ import {
 
 import type { LlmSettings } from '../storage/LlmSettingsStore'
 import { createCadTools } from '../tools/cadTools'
+import { formatChatError } from '../ui/formatChatError'
 import { createModelFromSettings } from './createModel'
 import { CAD_AGENT_SYSTEM_PROMPT } from './systemPrompt'
 
@@ -56,7 +57,9 @@ export function createAgentChatTransport(
       })
       // Return UI message chunks directly — not HTTP SSE from respond().body.
       return result.toUIMessageStream({
-        originalMessages: validatedMessages
+        originalMessages: validatedMessages,
+        onError: error =>
+          error instanceof Error ? formatChatError(error) : String(error)
       })
     },
     /** In-process transport does not support stream reconnection. */

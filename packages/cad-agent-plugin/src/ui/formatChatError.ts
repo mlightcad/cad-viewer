@@ -1,3 +1,5 @@
+import { APICallError } from 'ai'
+
 /**
  * Extracts a human-readable message from a provider error payload.
  *
@@ -33,6 +35,11 @@ function extractApiMessage(value: unknown): string | undefined {
  * @returns A concise message suitable for the chat error banner.
  */
 export function formatChatError(error: Error): string {
+  if (APICallError.isInstance(error)) {
+    const fromBody = extractApiMessage(error.responseBody)
+    if (fromBody) return fromBody
+  }
+
   const responseBody = (error as Error & { responseBody?: unknown }).responseBody
   const fromBody = extractApiMessage(responseBody)
   if (fromBody) return fromBody

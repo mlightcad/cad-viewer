@@ -37,8 +37,8 @@ export function createModelFromSettings(settings: LlmSettings): LanguageModel {
     return openai.chat(settings.model)
   }
 
-  // DeepSeek and other OpenAI-compatible endpoints use /chat/completions
-  // and reject the `developer` role that AI SDK 5 may emit for system prompts.
+  // DeepSeek text API, DeepSeek VL, and other OpenAI-compatible endpoints use
+  // /chat/completions and reject the `developer` role that AI SDK 5 may emit.
   const openai = createOpenAI({
     apiKey: settings.apiKey,
     baseURL: settings.baseUrl || undefined,
