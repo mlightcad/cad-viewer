@@ -10,7 +10,7 @@ import type {
 const HTML_VIEWER_CAMERA_FRUSTUM = 400
 
 /**
- * User-configurable options for HTML export (`chtml` and CLI).
+ * User-configurable options for HTML export (`-chtml`, dialog, and CLI).
  */
 export interface AcApHtmlExportOptions {
   /**

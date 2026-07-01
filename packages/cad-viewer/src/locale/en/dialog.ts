@@ -79,6 +79,25 @@ export default {
     aciTabTitle: 'Color Index',
     rgbTabTitle: 'True Color'
   },
+  exportHtmlDlg: {
+    title: 'Export to HTML',
+    layersSection: 'Layers',
+    exportInvisibleLayers: 'Export invisible layers',
+    exportInvisibleLayersHint:
+      'Include geometry on off or frozen layers in the exported file',
+    yes: 'Yes',
+    no: 'No',
+    initialView: 'Initial view',
+    initialViewExtents: 'Extents',
+    initialViewExtentsHint: 'Zoom to drawing extents when the HTML is opened',
+    initialViewCurrent: 'Current',
+    initialViewCurrentHint: 'Preserve the current view center and zoom',
+    viewerMode: 'Viewer mode',
+    viewerModeView: 'View',
+    viewerModeViewHint: 'Pan, zoom, and layer controls only',
+    viewerModeMeasure: 'Measure',
+    viewerModeMeasureHint: 'View tools plus distance measurement'
+  },
   quickSelectDlg: {
     title: 'Quick Select',
     applyTo: 'Apply to',

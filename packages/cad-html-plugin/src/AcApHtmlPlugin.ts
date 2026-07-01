@@ -10,7 +10,7 @@ import { AcApExportHtmlCmd } from './AcApExportHtmlCmd'
 /**
  * HTML export plugin for cad-simple-viewer.
  *
- * Registers `chtml` when loaded. Register this plugin lazily via
+ * Registers `-chtml` when loaded. Register this plugin lazily via
  * {@link registerLazyHtmlPlugin} so the export bundle is fetched on demand.
  */
 export class AcApHtmlPlugin implements AcApPlugin {
@@ -19,21 +19,33 @@ export class AcApHtmlPlugin implements AcApPlugin {
   /** @inheritdoc */
   version = packageJson.version
   /** @inheritdoc */
-  description = 'HTML export (chtml) command'
+  description = 'HTML export (-chtml) command'
 
   /** Commands registered in {@link onLoad} for cleanup in {@link onUnload}. */
   private registeredCommands: Array<{ group: string; name: string }> = []
 
   /**
-   * Registers the `chtml` system command.
+   * Registers the `-chtml` system command (command-line, no dialog).
    *
    * @param _context - Application context (unused)
    * @param commandManager - Command stack used to register the HTML export command
    */
   onLoad(_context: AcApContext, commandManager: AcEdCommandStack): void {
     const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
-    commandManager.addCommand(group, 'chtml', 'chtml', new AcApExportHtmlCmd())
-    this.registeredCommands.push({ group, name: 'chtml' })
+    const exportCmd = new AcApExportHtmlCmd()
+
+    commandManager.addCommand(
+      group,
+      '-chtml',
+      '-chtml',
+      exportCmd
+    )
+    this.registeredCommands.push({ group, name: '-chtml' })
+
+    if (!commandManager.lookupGlobalCmd('chtml')) {
+      commandManager.addCommand(group, 'chtml', 'chtml', exportCmd)
+      this.registeredCommands.push({ group, name: 'chtml' })
+    }
   }
 
   /**

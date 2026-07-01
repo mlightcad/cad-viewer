@@ -10,6 +10,7 @@ import { markRaw } from 'vue'
 
 import {
   AcApDrawingUnitsCmd,
+  AcApExportHtmlDlgCmd,
   AcApLayerStateCmd,
   AcApMissedDataCmd,
   AcApPointStyleCmd,
@@ -21,6 +22,7 @@ import {
 import {
   createMlColorIndexPickerToolbarFactory,
   MlDrawingUnitsDlg,
+  MlExportHtmlDlg,
   MlPointStyleDlg,
   MlQuickSelectDlg,
   MlReplacementDlg,
@@ -66,6 +68,12 @@ export const registerCmds = () => {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'chtml',
+      'chtml',
+      new AcApExportHtmlDlgCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'units',
       'units',
       new AcApDrawingUnitsCmd()
@@ -104,6 +112,11 @@ export const registerDialogs = () => {
     registerDialog({
       name: 'QuickSelectDlg',
       component: markRaw(MlQuickSelectDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'ExportHtmlDlg',
+      component: markRaw(MlExportHtmlDlg),
       props: {}
     })
     registerDialog({
@@ -166,7 +179,7 @@ const registerAgentIntegration = async (pluginManager: AcApPluginManager) => {
  * Registers lazy plugins that load on first use of their trigger commands.
  *
  * Currently registers the PDF plugin (`cpdf`, `ipdf`), the HTML export
- * plugin (`chtml`), the SVG export plugin (`csvg`), and optionally the CAD
+ * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally the CAD
  * Agent plugin (`agent`) when `@mlightcad/cad-agent-plugin` is installed.
  * Safe to call multiple times; registration runs once per application lifetime.
  */

@@ -7,9 +7,10 @@ HTML **export** for [`@mlightcad/cad-simple-viewer`](../cad-simple-viewer): snap
 
 | Command | Description |
 |---------|-------------|
-| `chtml` | Export the current drawing to a self-contained offline HTML file |
+| `-chtml` | Export via **command-line prompts** (no dialog; AutoCAD-style `-` prefix) |
+| `chtml` | Same as `-chtml` when no UI command is registered (e.g. `cad-simple-viewer` only). In [`cad-viewer`](../cad-viewer), `chtml` opens an **export options dialog** instead |
 
-The plugin path is designed for **lazy loading** so the export bundle is only downloaded when a user runs `chtml`. Low-level APIs (`packHtml`, snapshot types, scene collectors) are also exported for custom pipelines and the headless CLI [`@mlightcad/cad-html-exporter-cli`](../cad-html-exporter-cli).
+The plugin path is designed for **lazy loading** so the export bundle is only downloaded when a user runs `-chtml` or confirms export from the `chtml` dialog (or runs `chtml` in a host that has no dialog command). Low-level APIs (`packHtml`, snapshot types, scene collectors) are also exported for custom pipelines and the headless CLI [`@mlightcad/cad-html-exporter-cli`](../cad-html-exporter-cli).
 
 ## Key features
 
@@ -28,7 +29,7 @@ pnpm add @mlightcad/cad-html-plugin
 
 Peer dependencies:
 
-- `@mlightcad/cad-simple-viewer` (for `chtml` / scene snapshot builder)
+- `@mlightcad/cad-simple-viewer` (for `-chtml` / scene snapshot builder)
 - `@mlightcad/data-model`
 - `@mlightcad/three-renderer`
 - `three`
@@ -57,7 +58,7 @@ Copy or serve `viewer-runtime.iife.js` from your app assets when using the brows
 
 ### Lazy registration (recommended)
 
-Register the plugin with the document manager's plugin manager. Import from the `/register` subpath so only the registration stub enters your initial bundle; the main plugin chunk loads on first use of `chtml`:
+Register the plugin with the document manager's plugin manager. Import from the `/register` subpath so only the registration stub enters your initial bundle; the main plugin chunk loads on first use of `-chtml` or `chtml` (see command table above):
 
 ```typescript
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
@@ -73,15 +74,17 @@ registerLazyHtmlPlugin(AcApDocManager.instance.pluginManager)
 
 Do **not** import `registerLazyHtmlPlugin` from the package root (`@mlightcad/cad-html-plugin`) in application code — that resolves to the full library build and defeats lazy loading.
 
-After registration:
+After registration (command-line export):
 
 ```typescript
-await AcApDocManager.instance.editor.executeCommand('chtml')
+await AcApDocManager.instance.editor.executeCommand('-chtml')
 // or
-AcApDocManager.instance.sendStringToExecute('chtml')
+AcApDocManager.instance.sendStringToExecute('-chtml')
 ```
 
-`cad-viewer` registers this plugin automatically via `registerLazyPlugins()` in its app bootstrap.
+In [`cad-viewer`](../cad-viewer), use `chtml` to open the export options dialog; `-chtml` remains available on the command line for prompt-based export.
+
+`cad-viewer` registers this plugin automatically via `registerLazyPlugins()` in its app bootstrap and registers the `chtml` dialog command separately.
 
 ### End-to-end export (command or convertor)
 
@@ -154,7 +157,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `createHtmlPlugin` | Async factory used by the lazy loader |
 | `HTML_PLUGIN_NAME`, `HTML_PLUGIN_TRIGGERS` | Plugin id and command triggers |
 | `@mlightcad/cad-html-plugin/register` | `registerLazyHtmlPlugin` and registration constants |
-| `AcApExportHtmlCmd`, `AcApHtmlConvertor` | `chtml` command and full export workflow |
+| `AcApExportHtmlCmd`, `AcApHtmlConvertor` | `-chtml` command and full export workflow |
 | `AcApHtmlSnapshotBuilder` | Live Three.js scene → `AcExSnapshotV1` |
 | `packHtml`, `AcExPackHtmlOptions` | Assemble HTML from snapshot + runtime source |
 | `HTML_VIEWER_RUNTIME_FILE` | Default runtime filename (`viewer-runtime.iife.js`) |
@@ -171,7 +174,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 |------|------|
 | `src/register.ts` | Lazy plugin registration (`/register` entry) and `createHtmlPlugin` |
 | `src/AcApHtmlPlugin.ts` | Plugin lifecycle (`onLoad` / `onUnload`) |
-| `src/AcApExportHtmlCmd.ts` | `chtml` command |
+| `src/AcApExportHtmlCmd.ts` | `-chtml` command (command-line prompts) |
 | `src/AcApHtmlConvertor.ts` | Export orchestration (snapshot, runtime fetch, download) |
 | `src/AcApHtmlSnapshotBuilder.ts` | Three.js scene → snapshot builder |
 | `src/AcExSnapshotTypes.ts` | Snapshot schema (v1) |
@@ -186,7 +189,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 
 ## Role in MLightCAD
 
-This package combines the **export format / offline viewer runtime** with **viewer integration** (plugin, snapshot builder, `chtml` command). `@mlightcad/cad-simple-viewer` stays free of HTML export code; heavy export logic can be lazy-loaded. `@mlightcad/cad-html-exporter-cli` provides a Node/Playwright entry point for batch conversion.
+This package combines the **export format / offline viewer runtime** with **viewer integration** (plugin, snapshot builder, `-chtml` command). `@mlightcad/cad-simple-viewer` stays free of HTML export code; heavy export logic can be lazy-loaded. [`cad-viewer`](../cad-viewer) adds a `chtml` dialog command on top. `@mlightcad/cad-html-exporter-cli` provides a Node/Playwright entry point for batch conversion.
 
 ## License
 

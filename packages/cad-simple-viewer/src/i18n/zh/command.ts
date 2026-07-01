@@ -73,6 +73,9 @@ export default {
     chtml: {
       description: '将当前图纸导出为可离线打开的 HTML 文件'
     },
+    '-chtml': {
+      description: '通过命令行选项将当前图纸导出为 HTML 文件'
+    },
     dimlinear: {
       description: '创建线性尺寸标注'
     },
