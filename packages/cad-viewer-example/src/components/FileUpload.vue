@@ -16,6 +16,14 @@
           </div>
         </section>
 
+        <button type="button" class="new-drawing-button" @click="handleNewDrawing">
+          New Drawing
+        </button>
+
+        <p class="upload-divider" aria-hidden="true">
+          <span>or</span>
+        </p>
+
         <el-upload
           class="upload-dropzone"
           drag
@@ -223,6 +231,13 @@ interface Props {
     progressiveRendering: boolean,
     openViewMode: AcApOpenViewMode | undefined
   ) => void
+  onNewDrawing?: (
+    mode: AcEdOpenMode,
+    useMainThreadDraw: boolean,
+    drawNoPlotLayers: boolean,
+    progressiveRendering: boolean,
+    openViewMode: AcApOpenViewMode | undefined
+  ) => void
 }
 
 const props = defineProps<Props>()
@@ -287,6 +302,16 @@ const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
       )
     }
   }
+}
+
+const handleNewDrawing = () => {
+  props.onNewDrawing?.(
+    selectedMode.value,
+    useMainThreadDraw.value,
+    drawNoPlotLayers.value,
+    progressiveRendering.value,
+    resolveOpenViewMode()
+  )
 }
 
 const beforeUpload: UploadProps['beforeUpload'] = (rawFile: File) => {
@@ -368,6 +393,55 @@ const isValidFile = (file: File): boolean => {
   font-size: 13px;
   color: #64748b;
   line-height: 1.4;
+}
+
+.new-drawing-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #5b6fd6 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(102, 126, 234, 0.28);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.new-drawing-button:hover {
+  filter: brightness(1.03);
+  box-shadow: 0 10px 22px rgba(102, 126, 234, 0.34);
+}
+
+.new-drawing-button:active {
+  transform: translateY(1px);
+}
+
+.upload-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.upload-divider::before,
+.upload-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
 }
 
 .upload-dropzone {

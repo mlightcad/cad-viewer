@@ -2,6 +2,8 @@ import { reactive } from 'vue'
 
 export const store = reactive<{
   selectedFile: File | null
+  isNewDrawing: boolean
 }>({
-  selectedFile: null
+  selectedFile: null,
+  isNewDrawing: false
 })
