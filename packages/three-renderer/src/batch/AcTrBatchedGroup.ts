@@ -1596,6 +1596,9 @@ export class AcTrBatchedGroup extends THREE.Group {
       geometry.dispose()
       return null
     }
+    if (geometry.hasAttribute('lineDistance')) {
+      AcTrBufferGeometryUtil.recomputeLineDistanceForLineSegments(geometry)
+    }
     const geometryId = batchedLine.addGeometry(geometry, -1, -1, worldOffset)
     batchedLine.setGeometryInfo(geometryId, userData)
     geometry.dispose()

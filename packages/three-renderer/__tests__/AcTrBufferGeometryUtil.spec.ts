@@ -48,4 +48,44 @@ describe('AcTrBufferGeometryUtil finite coordinate helpers', () => {
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
+
+  it('rebuilds lineDistance when sanitizing dashed line segments', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(
+        [0, 0, 0, Number.NaN, 1, 0, 2, 2, 0, 3, 3, 0],
+        3
+      )
+    )
+    geometry.setAttribute(
+      'lineDistance',
+      new THREE.Float32BufferAttribute([0, 1, 2, 3, 4, 5], 1)
+    )
+
+    const matrix = new THREE.Matrix4().makeTranslation(5, 0, 0)
+    expect(AcTrBufferGeometryUtil.safeApplyMatrix4(geometry, matrix, 2)).toBe(
+      true
+    )
+
+    const position = geometry.getAttribute('position')
+    const lineDistance = geometry.getAttribute('lineDistance')
+    expect(position.count).toBe(2)
+    expect(lineDistance.count).toBe(2)
+    expect(lineDistance.getX(0)).toBe(0)
+    expect(lineDistance.getX(1)).toBeGreaterThan(0)
+  })
+
+  it('keeps lineDistance length aligned for odd segment vertex counts', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 2, 0, 0], 3)
+    )
+
+    AcTrBufferGeometryUtil.recomputeLineDistanceForLineSegments(geometry)
+
+    expect(geometry.getAttribute('position').count).toBe(2)
+    expect(geometry.getAttribute('lineDistance').count).toBe(2)
+  })
 })

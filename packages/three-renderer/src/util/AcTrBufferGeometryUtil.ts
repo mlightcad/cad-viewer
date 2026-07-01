@@ -107,6 +107,69 @@ export class AcTrBufferGeometryUtil {
     return geometry
   }
 
+  /**
+   * Rebuilds `lineDistance` for non-indexed {@link THREE.LineSegments} geometry.
+   *
+   * Uses only complete vertex pairs so the attribute length always matches
+   * `position.count`. Call after sanitizing or rebasing segment positions.
+   */
+  static recomputeLineDistanceForLineSegments(
+    geometry: THREE.BufferGeometry,
+    worldMatrix?: THREE.Matrix4
+  ) {
+    let positionAttribute = geometry.getAttribute(
+      'position'
+    ) as THREE.BufferAttribute
+    if (!positionAttribute || positionAttribute.count < 2) {
+      geometry.deleteAttribute('lineDistance')
+      return
+    }
+
+    const vertexCount = positionAttribute.count - (positionAttribute.count % 2)
+    if (vertexCount === 0) {
+      geometry.deleteAttribute('lineDistance')
+      return
+    }
+
+    if (vertexCount < positionAttribute.count) {
+      const trimmed = new Float32Array(vertexCount * positionAttribute.itemSize)
+      trimmed.set(
+        (positionAttribute.array as THREE.TypedArray).subarray(0, trimmed.length)
+      )
+      geometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(trimmed, positionAttribute.itemSize)
+      )
+      positionAttribute = geometry.getAttribute(
+        'position'
+      ) as THREE.BufferAttribute
+    }
+
+    const lineDistances = new Float32Array(vertexCount)
+    for (let i = 0; i < vertexCount; i += 2) {
+      if (worldMatrix) {
+        _vector1
+          .fromBufferAttribute(positionAttribute, i)
+          .applyMatrix4(worldMatrix)
+        _vector2
+          .fromBufferAttribute(positionAttribute, i + 1)
+          .applyMatrix4(worldMatrix)
+      } else {
+        _vector1.fromBufferAttribute(positionAttribute, i)
+        _vector2.fromBufferAttribute(positionAttribute, i + 1)
+      }
+
+      lineDistances[i] = i === 0 ? 0 : lineDistances[i - 1]
+      lineDistances[i + 1] =
+        lineDistances[i] + _vector1.distanceTo(_vector2)
+    }
+
+    geometry.setAttribute(
+      'lineDistance',
+      new THREE.Float32BufferAttribute(lineDistances, 1)
+    )
+  }
+
   // Calculates line distances in world space
   static computeLineDistance(line: THREE.Line) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -125,22 +188,14 @@ export class AcTrBufferGeometryUtil {
       if (!positionAttribute || positionAttribute.count === 0) {
         return
       }
-      const lineDistances: number[] = []
 
       if (isLineSegments) {
-        for (let i = 0, l = positionAttribute.count; i < l; i += 2) {
-          _vector1
-            .fromBufferAttribute(positionAttribute, i)
-            .applyMatrix4(worldMatrix)
-          _vector2
-            .fromBufferAttribute(positionAttribute, i + 1)
-            .applyMatrix4(worldMatrix)
-
-          lineDistances[i] = i === 0 ? 0 : lineDistances[i - 1]
-          lineDistances[i + 1] =
-            lineDistances[i] + _vector1.distanceTo(_vector2)
-        }
+        AcTrBufferGeometryUtil.recomputeLineDistanceForLineSegments(
+          geometry,
+          worldMatrix
+        )
       } else {
+        const lineDistances: number[] = []
         lineDistances[0] = 0
         for (let i = 1, l = positionAttribute.count; i < l; i++) {
           _vector1
@@ -153,12 +208,13 @@ export class AcTrBufferGeometryUtil {
           lineDistances[i] = lineDistances[i - 1]
           lineDistances[i] += _vector1.distanceTo(_vector2)
         }
+
+        geometry.setAttribute(
+          'lineDistance',
+          new THREE.Float32BufferAttribute(lineDistances, 1)
+        )
       }
 
-      geometry.setAttribute(
-        'lineDistance',
-        new THREE.Float32BufferAttribute(lineDistances, 1)
-      )
       line.geometry.dispose()
       line.geometry = geometry
     }
@@ -407,6 +463,32 @@ export class AcTrBufferGeometryUtil {
 
     const index = geometry.getIndex()
     if (!index) {
+      if (geometry.hasAttribute('lineDistance')) {
+        const segmentPositions: number[] = []
+        for (let vertex = 0; vertex + 1 < position.count; vertex += 2) {
+          if (!isFiniteVertex(vertex) || !isFiniteVertex(vertex + 1)) {
+            continue
+          }
+          const base1 = vertex * position.itemSize
+          const base2 = (vertex + 1) * position.itemSize
+          for (let component = 0; component < position.itemSize; component++) {
+            segmentPositions.push(position.array[base1 + component])
+          }
+          for (let component = 0; component < position.itemSize; component++) {
+            segmentPositions.push(position.array[base2 + component])
+          }
+        }
+        if (segmentPositions.length === 0) {
+          return false
+        }
+        geometry.setAttribute(
+          'position',
+          new THREE.Float32BufferAttribute(segmentPositions, position.itemSize)
+        )
+        AcTrBufferGeometryUtil.recomputeLineDistanceForLineSegments(geometry)
+        return true
+      }
+
       const validVertices: number[] = []
       for (let vertex = 0; vertex < position.count; vertex++) {
         if (isFiniteVertex(vertex)) {
