@@ -1,4 +1,8 @@
-import type { AcEdOpenMode, AcEdUiTheme } from '@mlightcad/cad-simple-viewer'
+import type {
+  AcApLocale,
+  AcEdOpenMode,
+  AcEdUiTheme
+} from '@mlightcad/cad-simple-viewer'
 
 /** Toolbar edge placement relative to the viewer host element. */
 export type AcExToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
@@ -97,8 +101,8 @@ export interface AcExDefaultToolbarContext {
   /** Applies a UI theme change. */
   setTheme: (theme: AcEdUiTheme) => void
   /** Returns the active application locale. */
-  getLocale: () => 'en' | 'zh'
-  /** Switches between English and Chinese. */
+  getLocale: () => AcApLocale
+  /** Switches between English and Chinese (leaves other locales unchanged when toggled to). */
   toggleLocale: () => void
   /** Returns the current toolbar edge placement. */
   getPlacement: () => AcExToolbarPlacement
