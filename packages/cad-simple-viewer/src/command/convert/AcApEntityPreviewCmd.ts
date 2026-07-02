@@ -73,7 +73,10 @@ export class AcApEntityPreviewCmd extends AcEdCommand {
     const view = AcApDocManager.instance.curView as AcTrView2d
     this.syncActiveLayoutViewSize(view)
 
-    const result = new AcApEntityPreviewConvertor().export(objectIds, longSide)
+    const result = await this.withBusyIndicator(
+      () => new AcApEntityPreviewConvertor().export(objectIds, longSide),
+      AcApI18n.t('main.message.exportingEntityPreview')
+    )
     if (result.ok) {
       let message = `${result.exportedCount} ${AcApI18n.t('jig.entout.exported')}`
       if (result.skippedCount > 0) {

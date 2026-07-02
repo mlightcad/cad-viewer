@@ -23,7 +23,15 @@ export interface AcEdFontNotLoadedInfo {
  * - **Font Management**: `fonts-not-loaded`, `failed-to-get-avaiable-fonts`, `font-not-found`
  * - **Missing Resources**: `missed-data-changed`
  * - **User Messages**: `message`
+ * - **Busy Indicator**: `busy-indicator`
  */
+export type AcEdBusyIndicatorEventArgs = {
+  /** Whether the busy overlay should be visible */
+  visible: boolean
+  /** Optional message text displayed with the spinner */
+  message?: string
+}
+
 export type AcEdEvents = {
   /** Emitted to request opening a file dialog (handled by {@link acapInstallOpenFileDialog}) */
   'open-file': {}
@@ -78,6 +86,8 @@ export type AcEdEvents = {
   'missed-data-changed': {}
   /** Emitted after the active document undo/redo stack changes */
   'undo-stack-changed': {}
+  /** Emitted when the application busy indicator is shown or hidden */
+  'busy-indicator': AcEdBusyIndicatorEventArgs
 }
 
 /**

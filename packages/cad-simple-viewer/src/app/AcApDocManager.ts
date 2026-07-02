@@ -4,7 +4,6 @@ import {
   AcDbDatabaseConverterManager,
   AcDbFileType,
   acdbHostApplicationServices,
-  AcDbProgressdEventArgs,
   AcDbSysVarManager,
   AcGeBox2d,
   log
@@ -80,12 +79,11 @@ import {
   AcEdCalculateSizeCallback,
   AcEdCommand,
   AcEdCommandStack,
-  AcEdOpenMode,
-  eventBus
+  AcEdOpenMode
 } from '../editor'
-import { AcApI18n } from '../i18n'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { AcTrView2d } from '../view'
+import { AcApBusyIndicator } from './AcApBusyIndicator'
 import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
@@ -95,7 +93,7 @@ import {
   acapUninstallOpenFileDialog,
   acapUpdateOpenFileDialogOptions
 } from './AcApOpenFileDialog'
-import { AcApProgress } from './AcApProgress'
+import { AcApOpenFileProgressController } from './AcApOpenFileProgressController'
 import {
   checkWebworkerReadiness,
   DEFAULT_WEBWORKER_FILE_URLS,
@@ -105,7 +103,6 @@ import {
   AcApOpenDatabaseOptions,
   AcApOpenViewMode
 } from './AcDbOpenDatabaseOptions'
-import { isOpenFileProgressComplete } from './openFileProgress'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
 /**
@@ -368,10 +365,10 @@ export class AcApDocManager {
   private _baseUrl: string
   /** URL of the HTML viewer runtime bundle for export */
   private _htmlViewerRuntimeUrl?: string | URL
-  /** Progress animation while opening/parsing files */
-  private _progress: AcApProgress
-  /** Full-viewer busy overlay (e.g. HTML export) */
-  private _busyProgress: AcApProgress
+  /** Busy overlay for long-running command operations */
+  private _busyIndicator: AcApBusyIndicator
+  /** Open-file progress overlay and event normalization */
+  private _openFileProgress: AcApOpenFileProgressController
   /** Command manager */
   private _commandManager: AcEdCommandStack
   /** Plugin manager */
@@ -389,10 +386,6 @@ export class AcApDocManager {
   private _commandAliasOverrides: Map<string, string[]>
   /** Default options for the built-in OPEN file dialog */
   private _openDocumentDefaults?: AcApOpenDocumentDefaultsResolver
-  /** Peak open-file percentage for the current open operation (monotonic) */
-  private _openFileProgressPeak = 0
-  /** Last open-file progress stage (FETCH_FILE or CONVERSION) */
-  private _openFileProgressStage?: AcDbProgressdEventArgs['stage']
   /** Singleton instance */
   private static _instance?: AcApDocManager
   /** Worker URLs configured at initialization */
@@ -437,32 +430,8 @@ export class AcApDocManager {
     }
     FontManager.instance.setDefaultFonts(DEFAULT_FONTS_PRESET)
 
-    this.events.documentToBeOpened.addEventListener(() => {
-      this.resetOpenFileProgress()
-    })
-
     // Create one empty drawing
     const doc = new AcApDocument()
-    doc.database.events.openProgress.addEventListener(args => {
-      const progress = this.normalizeOpenFileProgress({
-        database: doc.database,
-        percentage: args.percentage,
-        stage: args.stage,
-        subStage: args.subStage,
-        subStageStatus: args.subStageStatus,
-        data: args.data
-      })
-      eventBus.emit('open-file-progress', progress)
-      this.updateProgress(progress)
-
-      // After doc header is loaded, need to set global ltscale and celtscale
-      // It's too late when subStage is 'END'
-      if (args.subStage === 'HEADER') {
-        this.curView.ltscale = doc.database.ltscale
-        this.curView.celtscale = doc.database.celtscale
-        this.curView.renderer.showLineWeight = doc.database.lwdisplay
-      }
-    })
 
     const initialSize = options.container?.getBoundingClientRect() ?? {
       width: 300,
@@ -505,11 +474,32 @@ export class AcApDocManager {
       this._context,
       this._commandManager
     )
-    this._progress = new AcApProgress({ host: view.container })
-    this._progress.hide()
     const busyHost = options.busyIndicatorHost ?? view.container
-    this._busyProgress = new AcApProgress({ host: busyHost })
-    this._busyProgress.hide()
+    this._openFileProgress = new AcApOpenFileProgressController(busyHost)
+    this._busyIndicator = new AcApBusyIndicator(busyHost)
+
+    this.events.documentToBeOpened.addEventListener(() => {
+      this._openFileProgress.reset()
+    })
+    doc.database.events.openProgress.addEventListener(args => {
+      this._openFileProgress.handle({
+        database: doc.database,
+        percentage: args.percentage,
+        stage: args.stage,
+        subStage: args.subStage,
+        subStageStatus: args.subStageStatus,
+        data: args.data
+      })
+
+      // After doc header is loaded, need to set global ltscale and celtscale
+      // It's too late when subStage is 'END'
+      if (args.subStage === 'HEADER') {
+        this.curView.ltscale = doc.database.ltscale
+        this.curView.celtscale = doc.database.celtscale
+        this.curView.renderer.showLineWeight = doc.database.lwdisplay
+      }
+    })
+
     if (!options.notLoadDefaultFonts) {
       this.loadDefaultFonts()
     }
@@ -1468,76 +1458,44 @@ export class AcApDocManager {
   }
 
   /**
-   * Shows a spinner overlay without text (e.g. HTML export).
+   * Shows a spinner overlay, optionally with a message (e.g. HTML export).
+   *
+   * Supports nested calls via an internal reference count; the overlay stays
+   * visible until the outermost matching {@link hideBusyIndicator} runs.
    */
-  showBusyIndicator(): void {
-    this._busyProgress.setMessage('')
-    this._busyProgress.show()
+  showBusyIndicator(message?: string): void {
+    this._busyIndicator.show(message)
   }
 
   /**
    * Hides the spinner overlay shown by {@link showBusyIndicator}.
+   *
+   * No-op when the reference count is already zero.
    */
   hideBusyIndicator(): void {
-    this._busyProgress.hide()
+    this._busyIndicator.hide()
   }
 
   /**
-   * Resets tracked open-file progress for a new open operation.
-   */
-  private resetOpenFileProgress() {
-    this._openFileProgressPeak = 0
-    this._openFileProgressStage = undefined
-  }
-
-  /**
-   * Returns monotonic open-file progress for UI display.
+   * Updates the message on the active busy overlay.
    *
-   * Entity conversion reports 0鈥?00% within the ENTITY sub-stage while the
-   * pipeline accumulator is still ~33%; sub-stage END callbacks can therefore
-   * briefly report a lower percentage after IN-PROGRESS already reached 100%.
+   * @param message - New message text; pass an empty string to hide the label
    */
-  private normalizeOpenFileProgress(
-    data: AcDbProgressdEventArgs
-  ): AcDbProgressdEventArgs {
-    const stage = data.stage
-    if (stage !== this._openFileProgressStage) {
-      if (
-        this._openFileProgressStage === 'FETCH_FILE' &&
-        stage === 'CONVERSION'
-      ) {
-        this._openFileProgressPeak = 0
-      }
-      this._openFileProgressStage = stage
-    }
-    this._openFileProgressPeak = Math.max(
-      this._openFileProgressPeak,
-      data.percentage
-    )
-    return { ...data, percentage: this._openFileProgressPeak }
+  setBusyIndicatorMessage(message: string): void {
+    this._busyIndicator.setMessage(message)
   }
 
   /**
-   * Shows progress animation and progress message
-   * @param data - Progress data
+   * Runs {@link work} while the busy overlay is visible.
+   *
+   * The overlay is always hidden in a `finally` block, even when {@link work}
+   * throws.
    */
-  private updateProgress(data: AcDbProgressdEventArgs) {
-    if (data.stage === 'CONVERSION') {
-      if (data.subStage) {
-        const key =
-          'main.progress.' + data.subStage.replace(/_/g, '').toLowerCase()
-        this._progress.setMessage(AcApI18n.t(key))
-      }
-    } else if (data.stage === 'FETCH_FILE') {
-      this._progress.setMessage(AcApI18n.t('main.message.fetchingDrawingFile'))
-    }
-
-    if (isOpenFileProgressComplete(data)) {
-      this._progress.hide()
-      this.resetOpenFileProgress()
-    } else {
-      this._progress.show()
-    }
+  async withBusyIndicator<T>(
+    work: () => T | Promise<T>,
+    message?: string
+  ): Promise<T> {
+    return this._busyIndicator.withBusyIndicator(work, message)
   }
 
   /**

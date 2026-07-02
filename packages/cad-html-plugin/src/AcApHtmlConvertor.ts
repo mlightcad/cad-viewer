@@ -83,9 +83,8 @@ export class AcApHtmlConvertor {
   ) {
     const docManager = AcApDocManager.instance
     const resolved = resolveAcApHtmlExportOptions(options)
-    docManager.showBusyIndicator()
 
-    try {
+    await docManager.withBusyIndicator(async () => {
       await yieldToMain()
 
       const document = docManager.curDocument
@@ -127,9 +126,7 @@ export class AcApHtmlConvertor {
       await yieldToMain()
 
       this.downloadHtml(html, resolveExportDownloadName(sourceName, 'html'))
-    } finally {
-      docManager.hideBusyIndicator()
-    }
+    })
   }
 
   /**
@@ -145,9 +142,8 @@ export class AcApHtmlConvertor {
    */
   async packSnapshot(snapshot: AcExSnapshot, downloadName: string) {
     const docManager = AcApDocManager.instance
-    docManager.showBusyIndicator()
 
-    try {
+    await docManager.withBusyIndicator(async () => {
       await yieldToMain()
       const viewerRuntime = await this.loadViewerRuntime(
         docManager.htmlViewerRuntimeUrl
@@ -159,9 +155,7 @@ export class AcApHtmlConvertor {
       })
       await yieldToMain()
       this.downloadHtml(html, downloadName)
-    } finally {
-      docManager.hideBusyIndicator()
-    }
+    })
   }
 
   /**

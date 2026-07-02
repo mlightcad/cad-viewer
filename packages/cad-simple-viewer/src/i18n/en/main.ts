@@ -17,6 +17,8 @@ export default {
   },
   message: {
     fetchingDrawingFile: 'Fetching file ...',
+    exportingDxf: 'Exporting DXF ...',
+    exportingEntityPreview: 'Exporting image ...',
     fontCached: 'Font cached successfully',
     fontCacheFailed: 'Failed to cache font'
   },
