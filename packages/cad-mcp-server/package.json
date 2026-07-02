@@ -1,0 +1,41 @@
+{
+  "name": "@mlightcad/cad-mcp-server",
+  "version": "1.5.7",
+  "description": "MCP server exposing cad-viewer drawing tools to Claude Code, Codex, and other MCP clients",
+  "type": "module",
+  "bin": {
+    "cad-mcp-server": "./dist/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "scripts": {
+    "build": "node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc && vite build --config vite.runner.config.ts && node scripts/copy-runner-assets.mjs",
+    "install-browser": "playwright install chromium",
+    "clean": "rimraf dist dist-runner tsconfig.tsbuildinfo",
+    "start": "node ./dist/cli.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "dependencies": {
+    "@mlightcad/cad-agent-plugin": "workspace:*",
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.10.0",
+    "@mlightcad/dxf-json-converter": "^1.10.0",
+    "@mlightcad/libredwg-converter": "^3.10.0",
+    "@mlightcad/mtext-renderer": "^0.11.5",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "playwright": "^1.49.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.5.2",
+    "vite": "^5.4.19"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
