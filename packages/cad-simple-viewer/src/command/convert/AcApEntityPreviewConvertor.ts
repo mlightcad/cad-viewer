@@ -12,7 +12,7 @@ export type AcApEntityPreviewExportFailure =
   | 'download-failed'
 
 export type AcApEntityPreviewExportResult =
-  | { ok: true }
+  | { ok: true; exportedCount: number; skippedCount: number }
   | { ok: false; reason: AcApEntityPreviewExportFailure }
 
 /**
@@ -34,6 +34,9 @@ export class AcApEntityPreviewConvertor {
   ): AcApEntityPreviewExportResult {
     const view = AcApDocManager.instance.curView as AcTrView2d
     const scene = view.cadScene
+    const previewableIds = scene.findPreviewableEntityIds(entityIds, 'all')
+    const exportedCount = previewableIds.length
+    const skippedCount = entityIds.length - exportedCount
 
     const bounds =
       scene.computeEntityPreviewBounds2d(entityIds, 1.1, 'all') ?? null
@@ -92,7 +95,7 @@ export class AcApEntityPreviewConvertor {
       return { ok: false, reason: 'download-failed' }
     }
 
-    return { ok: true }
+    return { ok: true, exportedCount, skippedCount }
   }
 
   /**

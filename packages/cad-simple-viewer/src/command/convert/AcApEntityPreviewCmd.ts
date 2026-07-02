@@ -75,10 +75,11 @@ export class AcApEntityPreviewCmd extends AcEdCommand {
 
     const result = new AcApEntityPreviewConvertor().export(objectIds, longSide)
     if (result.ok) {
-      this.showMessage(
-        `${objectIds.length} ${AcApI18n.t('jig.entout.exported')}`,
-        'success'
-      )
+      let message = `${result.exportedCount} ${AcApI18n.t('jig.entout.exported')}`
+      if (result.skippedCount > 0) {
+        message += `, ${result.skippedCount} ${AcApI18n.t('jig.entout.skipped')}`
+      }
+      this.showMessage(message, 'success')
       return
     }
 

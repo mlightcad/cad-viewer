@@ -142,6 +142,26 @@ describe('AcTrScene entity preview layout policy', () => {
     )
   })
 
+  it('findPreviewableEntityIds reports skipped ids across layouts', () => {
+    const scene = new AcTrScene()
+    const active = createStubLayout({
+      'line-1': { min: [0, 0, 0], max: [10, 10, 0] }
+    })
+    const model = createStubLayout({
+      'line-2': { min: [50, 0, 0], max: [60, 10, 0] }
+    })
+
+    registerLayout(scene, 'active', active, { active: true })
+    registerLayout(scene, 'model', model, { model: true })
+
+    expect(
+      scene.findPreviewableEntityIds(
+        ['line-1', 'line-2', 'missing'],
+        'all'
+      )
+    ).toEqual(['line-1', 'line-2'])
+  })
+
   it('createPreview only uses the active layout with strict entity policy', () => {
     const scene = new AcTrScene()
     const active = createStubLayout({

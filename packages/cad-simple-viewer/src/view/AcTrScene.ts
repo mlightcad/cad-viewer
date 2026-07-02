@@ -476,6 +476,51 @@ export class AcTrScene {
   }
 
   /**
+   * Returns entity ids that can be previewed using the same layout policy as
+   * {@link createEntityPreviewRoot}.
+   *
+   * @param entityIds - Database object ids to check
+   * @param scope - Layout search order; defaults to {@link AcTrEntityPreviewScope active-first}
+   */
+  findPreviewableEntityIds(
+    entityIds: AcDbObjectId[],
+    scope: AcTrEntityPreviewScope = 'active-first'
+  ): AcDbObjectId[] {
+    if (entityIds.length === 0) {
+      return []
+    }
+
+    if (scope === 'all') {
+      const previewable: AcDbObjectId[] = []
+      const pending = new Set(entityIds)
+      for (const layout of this.getOrderedLayouts('all')) {
+        if (pending.size === 0) {
+          break
+        }
+
+        const claimable = layout.findPreviewableEntityIds([...pending])
+        if (claimable.length === 0) {
+          continue
+        }
+
+        previewable.push(...claimable)
+        for (const id of claimable) {
+          pending.delete(id)
+        }
+      }
+      return previewable
+    }
+
+    for (const layout of this.getOrderedLayouts('active-first')) {
+      const claimable = layout.findPreviewableEntityIds(entityIds)
+      if (claimable.length > 0) {
+        return claimable
+      }
+    }
+    return []
+  }
+
+  /**
    * Builds one merged preview root, searching layouts in priority order.
    *
    * Entities that are missing from a layout or cannot be extracted are skipped.

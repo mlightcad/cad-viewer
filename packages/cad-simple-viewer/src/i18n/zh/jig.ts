@@ -247,6 +247,7 @@ export default {
   entout: {
     longSidePrompt: '输入预览图长边像素尺寸',
     exported: '个对象预览已导出',
+    skipped: '个对象已跳过',
     failed: {
       'no-preview-root': '无法为所选对象构建预览几何',
       'no-bounds': '无法计算所选对象的预览范围',

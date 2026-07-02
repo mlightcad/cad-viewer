@@ -255,6 +255,7 @@ export default {
   entout: {
     longSidePrompt: 'Enter preview long side size in pixels',
     exported: 'object preview(s) exported',
+    skipped: 'object(s) skipped',
     failed: {
       'no-preview-root': 'Unable to build preview geometry for the selection',
       'no-bounds': 'Unable to compute preview bounds for the selection',
