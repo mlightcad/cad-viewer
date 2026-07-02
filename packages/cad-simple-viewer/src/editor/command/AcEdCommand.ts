@@ -325,4 +325,33 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
   protected notify(message: string, type: AcEdMessageType = 'info'): void {
     eventBus.emit('message', { message, type })
   }
+
+  /**
+   * Shows the application busy overlay while a long-running operation executes.
+   *
+   * @param message - Optional message displayed under the spinner
+   */
+  protected showBusyIndicator(message?: string): void {
+    AcApDocManager.instance.showBusyIndicator(message)
+  }
+
+  /**
+   * Hides the application busy overlay started by {@link showBusyIndicator}.
+   */
+  protected hideBusyIndicator(): void {
+    AcApDocManager.instance.hideBusyIndicator()
+  }
+
+  /**
+   * Runs {@link work} while the application busy overlay is visible.
+   *
+   * @param work - Synchronous or asynchronous operation to execute
+   * @param message - Optional message displayed under the spinner
+   */
+  protected async withBusyIndicator<T>(
+    work: () => T | Promise<T>,
+    message?: string
+  ): Promise<T> {
+    return AcApDocManager.instance.withBusyIndicator(work, message)
+  }
 }
