@@ -6,6 +6,10 @@ import enCommand from './en/command'
 import enDialog from './en/dialog'
 import enEntity from './en/entity'
 import enMain from './en/main'
+import trCommand from './tr/command'
+import trDialog from './tr/dialog'
+import trEntity from './tr/entity'
+import trMain from './tr/main'
 import zhCommand from './zh/command'
 import zhDialog from './zh/dialog'
 import zhEnity from './zh/entity'
@@ -14,11 +18,13 @@ import zhMain from './zh/main'
 // Get language of browser - use same logic as useLocale
 const getInitialLocale = (): string => {
   const stored = localStorage.getItem('preferred_lang')
-  if (stored === 'en' || stored === 'zh') return stored
+  if (stored === 'en' || stored === 'zh' || stored === 'tr') return stored
 
   const browserLang = navigator.language.toLowerCase()
   const browserLocale = browserLang.substring(0, 2)
-  return browserLocale === 'zh' ? 'zh' : 'en'
+  if (browserLocale === 'zh') return 'zh'
+  if (browserLocale === 'tr') return 'tr'
+  return 'en'
 }
 
 const messages = {
@@ -33,11 +39,18 @@ const messages = {
     command: zhCommand,
     dialog: zhDialog,
     entity: zhEnity
+  },
+  tr: {
+    main: trMain,
+    command: trCommand,
+    dialog: trDialog,
+    entity: trEntity
   }
 }
 
 AcApI18n.mergeLocaleMessage('en', messages.en)
 AcApI18n.mergeLocaleMessage('zh', messages.zh)
+AcApI18n.mergeLocaleMessage('tr', messages.tr)
 
 export const i18n = createI18n({
   legacy: false,
