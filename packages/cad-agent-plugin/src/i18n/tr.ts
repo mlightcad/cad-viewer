@@ -62,5 +62,6 @@ export const agentTr = {
   referenceImages: 'Referans görsel(ler)',
   drawingScreenshot: 'Mevcut çizim ekran görüntüsü',
   unsavedSettings: 'Mesaj göndermeden önce ayarları kaydedin.',
-  missingApiKey: 'Mesaj göndermeden önce ayarlardan bir API anahtarı yapılandırın.'
+  missingApiKey:
+    'Mesaj göndermeden önce ayarlardan bir API anahtarı yapılandırın.'
 } as const

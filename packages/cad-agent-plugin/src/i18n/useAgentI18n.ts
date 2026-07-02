@@ -1,10 +1,7 @@
 import { AcApI18n } from '@mlightcad/cad-simple-viewer'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import {
-  type AgentChatLabelKey,
-  agentT,
-  buildAgentLabels} from './index'
+import { type AgentChatLabelKey, agentT, buildAgentLabels } from './index'
 
 /**
  * Reactive agent UI strings that follow {@link AcApI18n} locale changes.

@@ -134,7 +134,10 @@ export class AcTrBufferGeometryUtil {
     if (vertexCount < positionAttribute.count) {
       const trimmed = new Float32Array(vertexCount * positionAttribute.itemSize)
       trimmed.set(
-        (positionAttribute.array as THREE.TypedArray).subarray(0, trimmed.length)
+        (positionAttribute.array as THREE.TypedArray).subarray(
+          0,
+          trimmed.length
+        )
       )
       geometry.setAttribute(
         'position',
@@ -160,8 +163,7 @@ export class AcTrBufferGeometryUtil {
       }
 
       lineDistances[i] = i === 0 ? 0 : lineDistances[i - 1]
-      lineDistances[i + 1] =
-        lineDistances[i] + _vector1.distanceTo(_vector2)
+      lineDistances[i + 1] = lineDistances[i] + _vector1.distanceTo(_vector2)
     }
 
     geometry.setAttribute(

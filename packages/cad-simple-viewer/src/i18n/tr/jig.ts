@@ -53,8 +53,7 @@ export default {
         'Geçersiz açı girişi: iç açı 0 dereceden büyük ve 360 dereceden küçük olmalıdır.',
       chordLength:
         'Geçersiz kiriş uzunluğu: değer mevcut yarıçap için geçerli aralığın dışında.',
-      direction:
-        'Geçersiz yön: bu teğet yönünden bir yay oluşturulamıyor.',
+      direction: 'Geçersiz yön: bu teğet yönünden bir yay oluşturulamıyor.',
       radius:
         'Geçersiz yarıçap: belirtilen yarıçap başlangıç ve bitiş noktalarını birleştiremiyor.'
     }
@@ -93,8 +92,7 @@ export default {
     displacementOrArray: 'Yer değiştirmeyi belirtin veya',
     secondPointOrArray: 'İkinci noktayı belirtin veya',
     modePrompt: 'Kopyalama modu seçeneğini girin',
-    arrayItemCount:
-      'Orijinal dahil dizideki öğe sayısını girin',
+    arrayItemCount: 'Orijinal dahil dizideki öğe sayısını girin',
     arraySecondPointOrFit: 'İkinci noktayı belirtin veya',
     arrayFitSecondPoint: 'İkinci noktayı belirtin',
     keywords: {
@@ -260,7 +258,8 @@ export default {
       'no-preview-root': 'Seçim için önizleme geometrisi oluşturulamadı',
       'no-bounds': 'Seçim için önizleme sınırları hesaplanamadı',
       'capture-failed': 'Nesne önizleme görüntüsü oluşturulamadı',
-      'download-failed': 'Önizleme oluşturuldu ancak PNG indirmesi başarısız oldu'
+      'download-failed':
+        'Önizleme oluşturuldu ancak PNG indirmesi başarısız oldu'
     }
   },
   layer: {

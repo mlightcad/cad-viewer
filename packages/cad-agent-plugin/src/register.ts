@@ -12,7 +12,9 @@ export const AGENT_PLUGIN_TRIGGERS = ['agent'] as const
  * Import from `@mlightcad/cad-agent-plugin/register` so the main bundle
  * is not pulled into the application entry chunk.
  */
-export function registerLazyAgentPlugin(pluginManager: AcApPluginManager): void {
+export function registerLazyAgentPlugin(
+  pluginManager: AcApPluginManager
+): void {
   registerAgentI18n()
 
   pluginManager.registerLazyPlugin({

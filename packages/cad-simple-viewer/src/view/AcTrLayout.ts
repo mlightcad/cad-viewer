@@ -661,7 +661,9 @@ export class AcTrLayout {
    * @param ids - Array of entity object IDs to hover
    */
   hover(ids: AcDbObjectId[]) {
-    this.applyHighlightToLayers(ids, (layer, entityIds) => layer.hover(entityIds))
+    this.applyHighlightToLayers(ids, (layer, entityIds) =>
+      layer.hover(entityIds)
+    )
   }
 
   /**

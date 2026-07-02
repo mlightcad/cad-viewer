@@ -555,12 +555,7 @@ export function applyGeometryAt<T extends AcTrBatchGeometryLike>(
     }
   }
 
-  writeSlotIdRange(
-    batchGeometry,
-    vertexStart,
-    reservedVertexCount,
-    slotId
-  )
+  writeSlotIdRange(batchGeometry, vertexStart, reservedVertexCount, slotId)
 }
 
 /**

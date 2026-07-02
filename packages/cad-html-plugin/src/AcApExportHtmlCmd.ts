@@ -170,8 +170,7 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       AcApI18n.t('jig.chtml.keywords.measure.global'),
       AcApI18n.t('jig.chtml.keywords.measure.local')
     )
-    prompt.keywords.default =
-      defaults.viewerMode === 'view' ? view : measure
+    prompt.keywords.default = defaults.viewerMode === 'view' ? view : measure
 
     const result = await AcApDocManager.instance.editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.Cancel) {

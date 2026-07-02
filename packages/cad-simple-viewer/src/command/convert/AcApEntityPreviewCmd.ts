@@ -86,10 +86,7 @@ export class AcApEntityPreviewCmd extends AcEdCommand {
       return
     }
 
-    this.showMessage(
-      AcApI18n.t(`jig.entout.failed.${result.reason}`),
-      'error'
-    )
+    this.showMessage(AcApI18n.t(`jig.entout.failed.${result.reason}`), 'error')
   }
 
   /**

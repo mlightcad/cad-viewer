@@ -134,7 +134,8 @@ export default {
         toggleCase: 'Seçili metni büyük ve küçük harf arasında değiştirin.',
         font: 'Geçerli metin yazı tipini ayarlayın.',
         color: 'Geçerli metin rengini ayarlayın.',
-        height: 'Geçerli metin yüksekliğini ayarlayın. Özel değerlere izin verilir.',
+        height:
+          'Geçerli metin yüksekliğini ayarlayın. Özel değerlere izin verilir.',
         obliqueAngle:
           'Seçili karakterler için eğim açısını derece cinsinden ayarlayın (negatif değer diğer yöne eğer).',
         tracking:
@@ -259,10 +260,12 @@ export default {
       line: 'Tek bir düz çizgi parçası çizin.',
       polyline:
         'Bağlı bir dizi çizgi veya yay parçasını tek bir nesne olarak çizin.',
-      spline: 'Uyum veya kontrol noktaları üzerinden düzgün bir spline eğrisi çizin.',
+      spline:
+        'Uyum veya kontrol noktaları üzerinden düzgün bir spline eğrisi çizin.',
       circle: 'Birden fazla oluşturma yöntemiyle bir daire çizin.',
       arc: 'Birden fazla oluşturma yöntemiyle bir yay çizin.',
-      mline: 'Birden fazla paralel çizgiyi tek bir çoklu çizgi nesnesi olarak çizin.',
+      mline:
+        'Birden fazla paralel çizgiyi tek bir çoklu çizgi nesnesi olarak çizin.',
       ray: 'Bir başlangıç noktasından yarı sonsuz bir yardımcı ışın çizin.',
       xline: 'Sonsuz bir yardımcı çizgi çizin.',
       ellipse: 'Bir elips veya eliptik yay çizin.',
@@ -274,7 +277,8 @@ export default {
       rotate: 'Seçili nesneleri bir taban noktası etrafında döndürün.',
       copy: 'Seçili nesneleri yeni bir konuma kopyalayın.',
       erase: 'Seçili nesneleri çizimden silin.',
-      offset: 'Bir nesnenin belirtilen mesafede paralel bir kopyasını oluşturun.',
+      offset:
+        'Bir nesnenin belirtilen mesafede paralel bir kopyasını oluşturun.',
       undo: 'Son düzenleme işlemini geri alın.',
       redo: 'Son geri alınan düzenleme işlemini yineleyin.',
       properties: 'Geçerli seçim için Özellikler panelini açın.',
@@ -310,10 +314,8 @@ export default {
           'Bu şeritteki en son katman işleminden önceki katman durumunu geri yükler.'
       },
       circleOption: {
-        centerRadius:
-          'Bir merkez nokta ve yarıçap belirterek daire oluşturun.',
-        centerDiameter:
-          'Bir merkez nokta ve çap belirterek daire oluşturun.',
+        centerRadius: 'Bir merkez nokta ve yarıçap belirterek daire oluşturun.',
+        centerDiameter: 'Bir merkez nokta ve çap belirterek daire oluşturun.',
         twoPoint: 'Çapı iki nokta ile tanımlanan bir daire oluşturun.',
         threePoint: 'Üç noktadan geçen bir daire oluşturun.',
         tanTanRadius:
@@ -395,8 +397,7 @@ export default {
     },
     measureAngle: {
       text: 'Açı',
-      description:
-        'Ortak bir köşeyi paylaşan iki çizgi arasındaki açıyı ölçer'
+      description: 'Ortak bir köşeyi paylaşan iki çizgi arasındaki açıyı ölçer'
     },
     measureArea: {
       text: 'Alan',
@@ -430,7 +431,8 @@ export default {
     },
     revCircle: {
       text: 'Daire',
-      description: 'Çizimde alanları vurgulamak ve açıklamak için daireler kullanır'
+      description:
+        'Çizimde alanları vurgulamak ve açıklamak için daireler kullanır'
     },
     revLine: {
       text: 'Çizgi',
@@ -466,11 +468,13 @@ export default {
     },
     zoomToExtent: {
       text: 'Tümünü Yakınlaştır',
-      description: 'Tüm varlıkların maksimum sınırlarını görüntülemek için yakınlaştırır'
+      description:
+        'Tüm varlıkların maksimum sınırlarını görüntülemek için yakınlaştırır'
     },
     zoomToBox: {
       text: 'Pencereyi Yakınlaştır',
-      description: 'Dikdörtgen bir pencereyle belirtilen alanı görüntülemek için yakınlaştırır'
+      description:
+        'Dikdörtgen bir pencereyle belirtilen alanı görüntülemek için yakınlaştırır'
     }
   },
   statusBar: {
@@ -607,7 +611,8 @@ export default {
     fontMissedReplacement: '"{font}" ("{replacement}" ile gösteriliyor)',
     fontCached: '"{font}" yazı tipi başarıyla önbelleğe alındı.',
     fontCacheFailed: '"{fileName}" yazı tipi önbelleğe alınamadı.',
-    failedToGetAvaiableFonts: '"{url}" adresinden kullanılabilir yazı tipleri alınamadı!',
+    failedToGetAvaiableFonts:
+      '"{url}" adresinden kullanılabilir yazı tipleri alınamadı!',
     failedToOpenFile: '"{fileName}" dosyası açılamadı!',
     fetchingDrawingFile: 'Dosya alınıyor ...',
     unknownEntities:

@@ -69,7 +69,10 @@ describe('AcApOpenFileProgressController', () => {
 
     expect(first.percentage).toBe(40)
     expect(second.percentage).toBe(40)
-    expect(mockEventBusEmit).toHaveBeenLastCalledWith('open-file-progress', second)
+    expect(mockEventBusEmit).toHaveBeenLastCalledWith(
+      'open-file-progress',
+      second
+    )
     expect(progress.show).toHaveBeenCalled()
   })
 

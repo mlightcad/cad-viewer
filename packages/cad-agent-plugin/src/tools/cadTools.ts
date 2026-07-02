@@ -19,8 +19,7 @@ const pointSchema = z.object({
 export function createCadTools() {
   return {
     get_drawing_context: tool({
-      description:
-        'Get current drawing context: units, layers, and extents',
+      description: 'Get current drawing context: units, layers, and extents',
       inputSchema: z.object({}),
       execute: async () => cadActionExecutor.getDrawingContext()
     }),
@@ -43,7 +42,8 @@ export function createCadTools() {
       execute: async input => cadActionExecutor.drawCircle(input)
     }),
     draw_arc: tool({
-      description: 'Draw an arc by center, radius, and start/end angles in degrees',
+      description:
+        'Draw an arc by center, radius, and start/end angles in degrees',
       inputSchema: z.object({
         center: pointSchema,
         radius: z.number().positive(),
@@ -149,8 +149,7 @@ export function createCadTools() {
       inputSchema: z.object({
         layerName: z.string().min(1)
       }),
-      execute: async input =>
-        cadActionExecutor.setCurrentLayer(input.layerName)
+      execute: async input => cadActionExecutor.setCurrentLayer(input.layerName)
     }),
     create_layer: tool({
       description: 'Create a new layer if it does not exist',

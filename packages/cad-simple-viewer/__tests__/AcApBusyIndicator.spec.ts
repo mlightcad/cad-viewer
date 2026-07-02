@@ -108,7 +108,10 @@ describe('AcApBusyIndicator', () => {
   })
 
   it('returns the work result from withBusyIndicator', async () => {
-    const result = await indicator.withBusyIndicator(async () => 'done', 'Working ...')
+    const result = await indicator.withBusyIndicator(
+      async () => 'done',
+      'Working ...'
+    )
 
     expect(result).toBe('done')
     expect(progress.hide).toHaveBeenCalledTimes(1)

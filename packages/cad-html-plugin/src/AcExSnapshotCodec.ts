@@ -6,7 +6,8 @@ import {
   type AcExEncodedSnapshot,
   type AcExSnapshotCompression,
   compressSnapshotBinary,
-  decompressSnapshotBinary} from './AcExSnapshotCompression'
+  decompressSnapshotBinary
+} from './AcExSnapshotCompression'
 import { ACEX_SNAPSHOT_VERSION, type AcExSnapshot } from './AcExSnapshotTypes'
 
 const SNAPSHOT_MIME = 'application/vnd.mlightcad.acex-snapshot+binary'

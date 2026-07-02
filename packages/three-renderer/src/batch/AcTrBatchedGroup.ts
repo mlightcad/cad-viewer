@@ -1300,8 +1300,7 @@ export class AcTrBatchedGroup extends THREE.Group {
   ): THREE.Material | THREE.Material[] {
     if (Array.isArray(material)) {
       return material.map(
-        entry =>
-          this.getSharedHighlightMaterial(entry, kind) as THREE.Material
+        entry => this.getSharedHighlightMaterial(entry, kind) as THREE.Material
       )
     }
 

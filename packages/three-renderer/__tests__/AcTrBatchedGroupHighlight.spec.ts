@@ -2,13 +2,14 @@ import * as THREE from 'three'
 
 import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
 import { AcTrBatchedLine } from '../src/batch/AcTrBatchedLine'
-import { AcTrBatchHighlightState, BATCH_SLOT_ID_ATTRIBUTE } from '../src/batch/highlight'
+import {
+  AcTrBatchHighlightState,
+  BATCH_SLOT_ID_ATTRIBUTE
+} from '../src/batch/highlight'
 import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrLine } from '../src/object/AcTrLine'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
-import {
-  AcTrSubEntityTraitsUtil
-} from '../src/util'
+import { AcTrSubEntityTraitsUtil } from '../src/util'
 import {
   HIGHLIGHT_HOVER_COLOR,
   HIGHLIGHT_SELECT_COLOR
@@ -153,9 +154,9 @@ describe('AcTrBatchedGroup slot-mask highlight', () => {
     const clonedLine = [...group.children[0].children].find(
       child => child instanceof THREE.Line
     ) as THREE.Line
-    expect((clonedLine.material as THREE.LineBasicMaterial).color.getHex()).toBe(
-      HIGHLIGHT_HOVER_COLOR.getHex()
-    )
+    expect(
+      (clonedLine.material as THREE.LineBasicMaterial).color.getHex()
+    ).toBe(HIGHLIGHT_HOVER_COLOR.getHex())
   })
 
   it('keeps hover highlight after unselect when both were active', () => {
@@ -182,9 +183,9 @@ describe('AcTrBatchedGroup slot-mask highlight', () => {
     const clonedLine = [...group.children[0].children].find(
       child => child instanceof THREE.Line
     ) as THREE.Line
-    expect((clonedLine.material as THREE.LineBasicMaterial).color.getHex()).toBe(
-      HIGHLIGHT_HOVER_COLOR.getHex()
-    )
+    expect(
+      (clonedLine.material as THREE.LineBasicMaterial).color.getHex()
+    ).toBe(HIGHLIGHT_HOVER_COLOR.getHex())
   })
 
   it('uses in-place material swap for unbatched drawables', () => {
@@ -214,9 +215,9 @@ describe('AcTrBatchedGroup slot-mask highlight', () => {
     ) as THREE.Line
     expect(clonedLine).toBeDefined()
     expect(getObjectUserData(clonedLine).originalMaterial).toBe(material)
-    expect((clonedLine.material as THREE.LineBasicMaterial).color.getHex()).toBe(
-      HIGHLIGHT_SELECT_COLOR.getHex()
-    )
+    expect(
+      (clonedLine.material as THREE.LineBasicMaterial).color.getHex()
+    ).toBe(HIGHLIGHT_SELECT_COLOR.getHex())
 
     group.unselect('unbatched-1')
     expect(clonedLine.material).toBe(material)

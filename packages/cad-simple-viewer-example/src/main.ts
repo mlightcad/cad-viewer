@@ -2,7 +2,8 @@ import {
   type AcApSimpleUiPlugin,
   type AcExDockPanelSide,
   type AcExToolbarPlacement,
-  SIMPLE_UI_PLUGIN_NAME} from '@mlightcad/cad-simple-ui-plugin'
+  SIMPLE_UI_PLUGIN_NAME
+} from '@mlightcad/cad-simple-ui-plugin'
 import { registerSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
   AcApDocManager,
@@ -102,7 +103,9 @@ class CadViewerApp {
     this.displayButton = document.getElementById(
       'devDisplayButton'
     ) as HTMLButtonElement
-    this.displayMenu = document.getElementById('devDisplayMenu') as HTMLDivElement
+    this.displayMenu = document.getElementById(
+      'devDisplayMenu'
+    ) as HTMLDivElement
     this.displayLineWeightCheckbox = document.getElementById(
       'devDisplayLineWeight'
     ) as HTMLInputElement
@@ -112,7 +115,9 @@ class CadViewerApp {
     this.displaySidebarCheckbox = document.getElementById(
       'devDisplaySidebar'
     ) as HTMLInputElement
-    this.dockButton = document.getElementById('devDockButton') as HTMLButtonElement
+    this.dockButton = document.getElementById(
+      'devDockButton'
+    ) as HTMLButtonElement
     this.dockMenu = document.getElementById('devDockMenu') as HTMLDivElement
     this.dockOpenToggle = document.getElementById(
       'devDockOpenToggle'
@@ -251,7 +256,11 @@ class CadViewerApp {
       return
     }
 
-    AcDbSysVarManager.instance().setVar('LWDISPLAY', enabled ? 1 : 0, doc.database)
+    AcDbSysVarManager.instance().setVar(
+      'LWDISPLAY',
+      enabled ? 1 : 0,
+      doc.database
+    )
     this.syncDisplayMenuState()
     this.showMessage(
       `Line weight display ${enabled ? 'enabled' : 'disabled'}`,
@@ -379,7 +388,10 @@ class CadViewerApp {
     }
 
     this.syncDockMenuState()
-    this.showMessage(nextOpen ? 'Dock panel opened' : 'Dock panel closed', 'success')
+    this.showMessage(
+      nextOpen ? 'Dock panel opened' : 'Dock panel closed',
+      'success'
+    )
   }
 
   private async addDemoDockTab() {
@@ -443,7 +455,8 @@ class CadViewerApp {
     const enabled = this.isDevToolbarEnabled() && Boolean(plugin)
     const isOpen = plugin?.isDockPanelOpen() ?? false
     const side = plugin?.getDockPanelSide()
-    const size = plugin?.getDockPanelSize() ?? (this.isDockSizeVertical(side) ? 240 : 280)
+    const size =
+      plugin?.getDockPanelSize() ?? (this.isDockSizeVertical(side) ? 240 : 280)
 
     this.dockButton.disabled = !enabled
     this.dockOpenToggle.disabled = !enabled

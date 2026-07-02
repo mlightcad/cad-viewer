@@ -872,9 +872,7 @@ export class AcApDocManager {
   /**
    * Sets default options applied when opening files through the built-in OPEN dialog.
    */
-  setOpenDocumentDefaults(
-    defaults?: AcApOpenDocumentDefaultsResolver
-  ) {
+  setOpenDocumentDefaults(defaults?: AcApOpenDocumentDefaultsResolver) {
     this._openDocumentDefaults = defaults
     acapUpdateOpenFileDialogOptions({
       enabled: true,
@@ -885,7 +883,9 @@ export class AcApDocManager {
   /**
    * Resolves default open options for the built-in OPEN file dialog.
    */
-  resolveOpenDocumentDefaults(): AcApOpenDatabaseOptions | Promise<AcApOpenDatabaseOptions> {
+  resolveOpenDocumentDefaults():
+    | AcApOpenDatabaseOptions
+    | Promise<AcApOpenDatabaseOptions> {
     const defaults = this._openDocumentDefaults
     if (defaults == null) {
       return { minimumChunkSize: 1000 }

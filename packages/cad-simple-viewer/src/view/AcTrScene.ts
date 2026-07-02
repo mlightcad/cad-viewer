@@ -14,7 +14,8 @@ import { AcTrLayer } from './AcTrLayer'
 import {
   type AcTrEntityPreviewRootOptions,
   AcTrLayout,
-  AcTrLayoutStats} from './AcTrLayout'
+  AcTrLayoutStats
+} from './AcTrLayout'
 
 /** Layout search order when building entity preview geometry. */
 export type AcTrEntityPreviewScope = 'active-first' | 'all'
@@ -456,7 +457,9 @@ export class AcTrScene {
     if (!layout) {
       return false
     }
-    return layout.canCreateEntityPreview(entityIds, { requireAllEntities: true })
+    return layout.canCreateEntityPreview(entityIds, {
+      requireAllEntities: true
+    })
   }
 
   /**
@@ -589,7 +592,10 @@ export class AcTrScene {
         continue
       }
 
-      const layoutRoot = layout.createEntityPreviewRoot(claimable, layoutOptions)
+      const layoutRoot = layout.createEntityPreviewRoot(
+        claimable,
+        layoutOptions
+      )
       if (!layoutRoot) {
         continue
       }

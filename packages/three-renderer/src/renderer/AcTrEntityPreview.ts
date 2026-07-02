@@ -1,8 +1,4 @@
-import {
-  AcGeBox2d,
-  AcGePoint2d,
-  AcGeVector2d
-} from '@mlightcad/data-model'
+import { AcGeBox2d, AcGePoint2d, AcGeVector2d } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 

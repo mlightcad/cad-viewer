@@ -1,4 +1,4 @@
-import { gunzipSync,gzipSync } from 'fflate'
+import { gunzipSync, gzipSync } from 'fflate'
 
 /** Snapshot payload compression stored on the HTML script `type` attribute. */
 export const ACEX_SNAPSHOT_COMPRESSION = 'gzip' as const

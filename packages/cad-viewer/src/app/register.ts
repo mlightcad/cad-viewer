@@ -4,7 +4,8 @@ import {
   AcApDocManager,
   type AcApPluginManager,
   AcEdCommandStack,
-  AcEdMTextEditor} from '@mlightcad/cad-simple-viewer'
+  AcEdMTextEditor
+} from '@mlightcad/cad-simple-viewer'
 import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
 import { markRaw } from 'vue'
 

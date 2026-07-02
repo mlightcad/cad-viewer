@@ -34,12 +34,7 @@ export class AcApHtmlPlugin implements AcApPlugin {
     const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
     const exportCmd = new AcApExportHtmlCmd()
 
-    commandManager.addCommand(
-      group,
-      '-chtml',
-      '-chtml',
-      exportCmd
-    )
+    commandManager.addCommand(group, '-chtml', '-chtml', exportCmd)
     this.registeredCommands.push({ group, name: '-chtml' })
 
     if (!commandManager.lookupGlobalCmd('chtml')) {

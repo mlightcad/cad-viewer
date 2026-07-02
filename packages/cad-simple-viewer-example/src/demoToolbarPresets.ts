@@ -27,87 +27,93 @@ export const DEMO_TOOLBAR_LAYOUTS: AcExToolbarLayoutPreset[] = [
 ]
 
 /** Full toolbar `items` for each demo layout preset. */
-export const DEMO_TOOLBAR_PRESET_ITEMS: Record<string, AcExToolbarItemsInput> = {
-  default: 'default',
-  minimal: [
-    toolbarPreset('select'),
-    toolbarPreset('pan'),
-    toolbarPreset('zoomExtent'),
-    toolbarPreset('layer')
-  ],
-  draw: [
-    toolbarPreset('select'),
-    { id: 'draw-line', label: 'Line', command: 'line', requiresDocument: true },
-    {
-      id: 'draw-circle',
-      label: 'Circle',
-      command: 'circle',
-      requiresDocument: true
-    },
-    toolbarPreset('layer'),
-    createToolbarSeparator('draw-separator'),
-    toolbarPreset('zoomWindow')
-  ],
-  custom: [
-    toolbarPreset('select'),
-    toolbarPreset('pan'),
-    {
-      id: 'demo-info',
-      label: 'Demo Info',
-      icon: ICON_DEMO_INFO,
-      requiresDocument: false,
-      action: () => {
-        window.alert(
-          'Custom toolbar action works.\nThis layout fully replaces toolbar items.'
-        )
-      }
-    },
-    {
-      id: 'demo-zoom-menu',
-      label: 'Demo Zoom',
-      icon: ICON_DEMO_ZOOM,
-      requiresDocument: true,
-      children: [
-        { id: 'demo-zoom-all', label: 'Zoom All', command: 'zoom\nall' },
-        { id: 'demo-zoom-window', label: 'Zoom Window', command: 'zoom\nw' }
-      ]
-    },
-    {
-      id: 'demo-toggle-tools',
-      label: 'Demo Tools',
-      icon: ICON_DEMO_INFO,
-      requiresDocument: false,
-      toggle: {
-        getValue: () => demoCustomToolsVisible,
-        on: {
-          label: 'Hide Demo Tools',
-          action: () => {
-            demoCustomToolsVisible = false
-          }
-        },
-        off: {
-          label: 'Show Demo Tools',
-          action: () => {
-            demoCustomToolsVisible = true
+export const DEMO_TOOLBAR_PRESET_ITEMS: Record<string, AcExToolbarItemsInput> =
+  {
+    default: 'default',
+    minimal: [
+      toolbarPreset('select'),
+      toolbarPreset('pan'),
+      toolbarPreset('zoomExtent'),
+      toolbarPreset('layer')
+    ],
+    draw: [
+      toolbarPreset('select'),
+      {
+        id: 'draw-line',
+        label: 'Line',
+        command: 'line',
+        requiresDocument: true
+      },
+      {
+        id: 'draw-circle',
+        label: 'Circle',
+        command: 'circle',
+        requiresDocument: true
+      },
+      toolbarPreset('layer'),
+      createToolbarSeparator('draw-separator'),
+      toolbarPreset('zoomWindow')
+    ],
+    custom: [
+      toolbarPreset('select'),
+      toolbarPreset('pan'),
+      {
+        id: 'demo-info',
+        label: 'Demo Info',
+        icon: ICON_DEMO_INFO,
+        requiresDocument: false,
+        action: () => {
+          window.alert(
+            'Custom toolbar action works.\nThis layout fully replaces toolbar items.'
+          )
+        }
+      },
+      {
+        id: 'demo-zoom-menu',
+        label: 'Demo Zoom',
+        icon: ICON_DEMO_ZOOM,
+        requiresDocument: true,
+        children: [
+          { id: 'demo-zoom-all', label: 'Zoom All', command: 'zoom\nall' },
+          { id: 'demo-zoom-window', label: 'Zoom Window', command: 'zoom\nw' }
+        ]
+      },
+      {
+        id: 'demo-toggle-tools',
+        label: 'Demo Tools',
+        icon: ICON_DEMO_INFO,
+        requiresDocument: false,
+        toggle: {
+          getValue: () => demoCustomToolsVisible,
+          on: {
+            label: 'Hide Demo Tools',
+            action: () => {
+              demoCustomToolsVisible = false
+            }
+          },
+          off: {
+            label: 'Show Demo Tools',
+            action: () => {
+              demoCustomToolsVisible = true
+            }
           }
         }
-      }
-    },
-    {
-      id: 'demo-layer-count',
-      label: 'Layer Count',
-      icon: ICON_DEMO_INFO,
-      requiresDocument: true,
-      disabled: () => !AcApDocManager.instance.curDocument,
-      action: () => {
-        const doc = AcApDocManager.instance.curDocument
-        const count = doc?.layerStore.getLayers().length ?? 0
-        window.alert(`Layer count: ${count}`)
-      }
-    },
-    toolbarPreset('layer')
-  ]
-}
+      },
+      {
+        id: 'demo-layer-count',
+        label: 'Layer Count',
+        icon: ICON_DEMO_INFO,
+        requiresDocument: true,
+        disabled: () => !AcApDocManager.instance.curDocument,
+        action: () => {
+          const doc = AcApDocManager.instance.curDocument
+          const count = doc?.layerStore.getLayers().length ?? 0
+          window.alert(`Layer count: ${count}`)
+        }
+      },
+      toolbarPreset('layer')
+    ]
+  }
 
 let currentDemoToolbarLayoutId = 'default'
 

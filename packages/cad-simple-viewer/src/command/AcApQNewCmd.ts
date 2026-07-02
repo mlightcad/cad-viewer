@@ -33,7 +33,9 @@ export class AcApQNewCmd extends AcEdCommand {
     const baseUrl = manager.baseUrl.endsWith('/')
       ? manager.baseUrl
       : `${manager.baseUrl}/`
-    const defaults = await Promise.resolve(manager.resolveOpenDocumentDefaults())
+    const defaults = await Promise.resolve(
+      manager.resolveOpenDocumentDefaults()
+    )
     const success = await manager.openUrl(`${baseUrl}templates/acadiso.dxf`, {
       ...defaults,
       mode: AcEdOpenMode.Write

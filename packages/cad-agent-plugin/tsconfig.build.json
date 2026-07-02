@@ -9,8 +9,13 @@
     "emitDeclarationOnly": true,
     "skipLibCheck": true,
     "paths": {
-      "@mlightcad/cad-agent-plugin": ["./src/index.ts"]
+      "@mlightcad/cad-agent-plugin": [
+        "./src/index.ts"
+      ]
     }
   },
-  "include": ["src/**/*.ts", "src/vue-shim.d.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/vue-shim.d.ts"
+  ]
 }

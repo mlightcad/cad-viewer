@@ -423,7 +423,8 @@ describe('AcTrLayout entity preview helpers', () => {
 
   it('canCreateEntityPreview requires every entity when requireAllEntities is true', () => {
     const layout = new AcTrLayout()
-    const group = layout.addLayer(createLayerInfo()).internalObject as unknown as {
+    const group = layout.addLayer(createLayerInfo())
+      .internalObject as unknown as {
       hasEntity: jest.Mock
       computeBoundingBox: jest.Mock
     }
@@ -462,7 +463,8 @@ describe('AcTrLayout entity preview helpers', () => {
 
   it('findPreviewableEntityIds returns only ids with batch bounds in this layout', () => {
     const layout = new AcTrLayout()
-    const group = layout.addLayer(createLayerInfo()).internalObject as unknown as {
+    const group = layout.addLayer(createLayerInfo())
+      .internalObject as unknown as {
       hasEntity: jest.Mock
       computeBoundingBox: jest.Mock
     }
@@ -483,8 +485,8 @@ describe('AcTrLayout entity preview helpers', () => {
       }
     )
 
-    expect(layout.findPreviewableEntityIds(['line-1', 'line-2', 'missing'])).toEqual(
-      ['line-1']
-    )
+    expect(
+      layout.findPreviewableEntityIds(['line-1', 'line-2', 'missing'])
+    ).toEqual(['line-1'])
   })
 })

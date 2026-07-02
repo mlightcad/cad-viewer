@@ -40,7 +40,8 @@ export function formatChatError(error: Error): string {
     if (fromBody) return fromBody
   }
 
-  const responseBody = (error as Error & { responseBody?: unknown }).responseBody
+  const responseBody = (error as Error & { responseBody?: unknown })
+    .responseBody
   const fromBody = extractApiMessage(responseBody)
   if (fromBody) return fromBody
 

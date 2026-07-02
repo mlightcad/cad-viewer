@@ -8,8 +8,7 @@ export default {
       description: 'Komut satırı seçenekleriyle katmanları yönetir'
     },
     angbase: {
-      description:
-        'Geçerli KKS\'ye göre 0 açı temel yönünü ayarlar'
+      description: 'Geçerli KKS\'ye göre 0 açı temel yönünü ayarlar'
     },
     angdir: {
       description:
@@ -32,7 +31,8 @@ export default {
       description: 'Geçerli çizimi PDF olarak dışa aktarır'
     },
     cecolor: {
-      description: 'Yeni oluşturulan nesneler için geçerli varsayılan rengi ayarlar'
+      description:
+        'Yeni oluşturulan nesneler için geçerli varsayılan rengi ayarlar'
     },
     celtscale: {
       description:
@@ -42,13 +42,15 @@ export default {
       description: 'Yeni oluşturulan nesneler için çizgi tipini ayarlar'
     },
     celweight: {
-      description: 'Yeni oluşturulan nesneler için varsayılan çizgi kalınlığını ayarlar'
+      description:
+        'Yeni oluşturulan nesneler için varsayılan çizgi kalınlığını ayarlar'
     },
     cetranparency: {
       description: 'Yeni oluşturulan nesneler için saydamlığı ayarlar'
     },
     cachefont: {
-      description: 'Metin işleme için yerel bir yazı tipi dosyasını IndexedDB\'ye önbelleğe alır'
+      description:
+        'Metin işleme için yerel bir yazı tipi dosyasını IndexedDB\'ye önbelleğe alır'
     },
     circle: {
       description: 'Merkez ve yarıçapa göre bir daire oluşturur'
@@ -92,7 +94,8 @@ export default {
       description: 'İmleçteki Dinamik Girdi ayarlarını denetler'
     },
     dynprompt: {
-      description: 'Dinamik Girdi araç ipuçlarında istemlerin görüntülenmesini denetler'
+      description:
+        'Dinamik Girdi araç ipuçlarında istemlerin görüntülenmesini denetler'
     },
     ellipse: {
       description:
@@ -103,7 +106,8 @@ export default {
       prompt: 'Varlıkları seçin'
     },
     entout: {
-      description: 'Seçili varlıklar için birleştirilmiş bir önizleme görüntüsü dışa aktarır',
+      description:
+        'Seçili varlıklar için birleştirilmiş bir önizleme görüntüsü dışa aktarır',
       prompt: 'Varlıkları seçin'
     },
     hideobjects: {
@@ -122,7 +126,8 @@ export default {
         'Seçim kümesi belirtilen nesne sayısını aştığında tutamaç görüntülenmesini engeller (0 = sınır yok)'
     },
     grips: {
-      description: 'Seçili nesnelerde tutamaçların görüntülenip görüntülenmeyeceğini denetler'
+      description:
+        'Seçili nesnelerde tutamaçların görüntülenip görüntülenmeyeceğini denetler'
     },
     gripsize: {
       description: 'Tutamaç kutularının piksel cinsinden boyutunu ayarlar'
@@ -139,7 +144,8 @@ export default {
         'Yeni oluşturulan tarama desenleri için varsayılan açıyı radyan cinsinden ayarlar'
     },
     hpassoc: {
-      description: 'Yeni oluşturulan taramaların ilişkisel olup olmayacağını denetler'
+      description:
+        'Yeni oluşturulan taramaların ilişkisel olup olmayacağını denetler'
     },
     hpbackgroundcolor: {
       description:
@@ -149,14 +155,16 @@ export default {
       description: 'Yeni oluşturulan taramalar için varsayılan rengi ayarlar'
     },
     hpdouble: {
-      description: 'Kullanıcı tanımlı tarama desenlerinin ikiye katlanıp katlanmayacağını denetler'
+      description:
+        'Kullanıcı tanımlı tarama desenlerinin ikiye katlanıp katlanmayacağını denetler'
     },
     hpislanddetection: {
       description:
         'Yeni oluşturulan tarama sınırları içindeki adaların nasıl işleneceğini denetler'
     },
     hplayer: {
-      description: 'Yeni oluşturulan taramalar ve dolgular için varsayılan katmanı ayarlar'
+      description:
+        'Yeni oluşturulan taramalar ve dolgular için varsayılan katmanı ayarlar'
     },
     hpname: {
       description:
@@ -220,7 +228,8 @@ export default {
       prompt: 'Kilidi açılacak katmandaki nesneyi seçin'
     },
     layuniso: {
-      description: 'LAYISO tarafından gizlenen veya kilitlenen katmanları geri yükler'
+      description:
+        'LAYISO tarafından gizlenen veya kilitlenen katmanları geri yükler'
     },
     line: {
       description: 'Noktalar arasında düz çizgi parçaları çizer'
@@ -236,7 +245,8 @@ export default {
         'LUNITS ile birlikte kullanılan, doğrusal birimler için görüntüleme hassasiyetini ayarlar'
     },
     lwdisplay: {
-      description: 'Çizgi kalınlıklarının çizimde görüntülenip görüntülenmeyeceğini denetler'
+      description:
+        'Çizgi kalınlıklarının çizimde görüntülenip görüntülenmeyeceğini denetler'
     },
     clearmeasurements: {
       description: 'Görünümdeki tüm etkin ölçümleri kaldırır'
@@ -262,7 +272,8 @@ export default {
       description: 'Ölçüm katmanları için kullanılan rengi ayarlar'
     },
     mline: {
-      description: 'Tek bir çoklu çizgi nesnesi olarak birden çok paralel çizgi oluşturur'
+      description:
+        'Tek bir çoklu çizgi nesnesi olarak birden çok paralel çizgi oluşturur'
     },
     move: {
       description: 'Seçili varlıkları bir yer değiştirme vektörüne göre taşır',
@@ -279,7 +290,8 @@ export default {
       description: 'Mevcut bir çizim dosyasını açar'
     },
     osmode: {
-      description: 'Bit kodu değeri kullanarak çalışan Nesne Yakalama modlarını ayarlar'
+      description:
+        'Bit kodu değeri kullanarak çalışan Nesne Yakalama modlarını ayarlar'
     },
     pan: {
       description:
@@ -306,8 +318,7 @@ export default {
       description: 'Yeni bir çizim başlatır'
     },
     ray: {
-      description:
-        'Bir noktadan başlayıp sonsuza uzanan bir ışın oluşturur'
+      description: 'Bir noktadan başlayıp sonsuza uzanan bir ışın oluşturur'
     },
     rectang: {
       description: 'İki karşıt köşe belirterek bir dikdörtgen oluşturur'
@@ -316,7 +327,8 @@ export default {
       description: 'Geçerli çizimi yeniden çizer'
     },
     revcloud: {
-      description: 'Dikdörtgen şeklinde bir revizyon bulutu (bulut çizgisi) oluşturur'
+      description:
+        'Dikdörtgen şeklinde bir revizyon bulutu (bulut çizgisi) oluşturur'
     },
     rotate: {
       description: 'Seçili varlıkları bir taban noktası etrafında döndürür',
@@ -334,7 +346,8 @@ export default {
         'Fare hareketini izleyen çoklu çizgi kullanarak bir taslak çizgi oluşturur'
     },
     spline: {
-      description: 'Kontrol noktaları belirterek düzgün bir spline eğrisi oluşturur'
+      description:
+        'Kontrol noktaları belirterek düzgün bir spline eğrisi oluşturur'
     },
     textstyle: {
       description: 'Geçerli metin stilinin adını ayarlar'
@@ -347,7 +360,8 @@ export default {
       description: 'Çizim alanı arka planını beyaz ve siyah arasında değiştirir'
     },
     unisolateobjects: {
-      description: 'HIDEOBJECTS tarafından gizlenen tüm nesneleri yeniden görüntüler'
+      description:
+        'HIDEOBJECTS tarafından gizlenen tüm nesneleri yeniden görüntüler'
     },
     undo: {
       description: 'Son veritabanı düzenleme işlemini geri alır',
@@ -358,11 +372,11 @@ export default {
       nothingToRedo: 'Yinelenecek işlem yok.'
     },
     xline: {
-      description:
-        'Her iki yönde de sonsuza uzanan bir yapı çizgisi oluşturur'
+      description: 'Her iki yönde de sonsuza uzanan bir yapı çizgisi oluşturur'
     },
     zoom: {
-      description: 'Tüm varlıkların maksimum sınırlarını görüntülemek için yakınlaştırır'
+      description:
+        'Tüm varlıkların maksimum sınırlarını görüntülemek için yakınlaştırır'
     }
   },
   USER: {}

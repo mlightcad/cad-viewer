@@ -101,7 +101,13 @@ describe('AcExViewerMemory', () => {
     expect(activeLayout.osnap).toBeUndefined()
     expect(snapshot.layouts[1]!.osnap).toBeUndefined()
     expect(retained).toHaveLength(1)
-    expect(retained[0]).toMatchObject({ kind: 'line', x0: 0, y0: 0, x1: 1, y1: 0 })
+    expect(retained[0]).toMatchObject({
+      kind: 'line',
+      x0: 0,
+      y0: 0,
+      x1: 1,
+      y1: 0
+    })
   })
 
   it('releaseLayerGroupsGeometryCpuArrays empties geometry attribute arrays', () => {

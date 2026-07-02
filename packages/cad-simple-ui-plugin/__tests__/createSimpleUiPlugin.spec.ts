@@ -9,8 +9,7 @@ class ResizeObserverMock {
 }
 
 beforeAll(() => {
-  global.ResizeObserver =
-    ResizeObserverMock as unknown as typeof ResizeObserver
+  global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver
 })
 
 const mockCommands = new Map<string, unknown>()
@@ -37,70 +36,75 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     isCompactUiLayout: () =>
       window.matchMedia?.(layout.ML_UI_COMPACT_MEDIA_QUERY).matches ?? false,
     AcApContext: class {},
-  AcApDocManager: {
-    instance: {
-      get curView() {
-        return mockCurView.container
-          ? { container: mockCurView.container }
-          : undefined
-      },
-      get curDocument() {
-        return mockCurDocument
-      },
-      events: {
-        documentActivated: {
-          addEventListener: (listener: (args?: unknown) => void) => {
-            mockDocumentActivatedListeners.add(listener)
-          },
-          removeEventListener: (listener: (args?: unknown) => void) => {
-            mockDocumentActivatedListeners.delete(listener)
-          }
+    AcApDocManager: {
+      instance: {
+        get curView() {
+          return mockCurView.container
+            ? { container: mockCurView.container }
+            : undefined
         },
-        documentToBeOpened: createEventStub()
-      },
-      sendStringToExecute: jest.fn()
-    }
-  },
-  AcApI18n: {
-    t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-    mergeLocaleMessage: jest.fn(),
-    events: {
-      localeChanged: {
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn()
+        get curDocument() {
+          return mockCurDocument
+        },
+        events: {
+          documentActivated: {
+            addEventListener: (listener: (args?: unknown) => void) => {
+              mockDocumentActivatedListeners.add(listener)
+            },
+            removeEventListener: (listener: (args?: unknown) => void) => {
+              mockDocumentActivatedListeners.delete(listener)
+            }
+          },
+          documentToBeOpened: createEventStub()
+        },
+        sendStringToExecute: jest.fn()
       }
     },
-    currentLocale: 'en',
-    setCurrentLocale: jest.fn()
-  },
-  AcApPlugin: class {},
-  AcApAnnotation: class {
-    getAnnotationLayer() {
-      return 'annotation'
+    AcApI18n: {
+      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
+      mergeLocaleMessage: jest.fn(),
+      events: {
+        localeChanged: {
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn()
+        }
+      },
+      currentLocale: 'en',
+      setCurrentLocale: jest.fn()
+    },
+    AcApPlugin: class {},
+    AcApAnnotation: class {
+      getAnnotationLayer() {
+        return 'annotation'
+      }
+    },
+    AcEdCommand: class {},
+    AcEdCommandStack: class {
+      static SYSTEMT_COMMAND_GROUP_NAME = 'SYSTEM'
+      addCommand(
+        group: string,
+        name: string,
+        _globalName: string,
+        command: unknown
+      ) {
+        mockCommands.set(`${group}:${name}`, command)
+      }
+      removeCmd(group: string, name: string) {
+        mockCommands.delete(`${group}:${name}`)
+      }
+    },
+    AcEdOpenMode: {
+      Read: 0,
+      Review: 4,
+      Write: 8
+    },
+    AcEdUiTheme: {},
+    applyUiTheme: jest.fn(),
+    isLightColorTheme: jest.fn(() => false),
+    eventBus: {
+      on: jest.fn(),
+      off: jest.fn()
     }
-  },
-  AcEdCommand: class {},
-  AcEdCommandStack: class {
-    static SYSTEMT_COMMAND_GROUP_NAME = 'SYSTEM'
-    addCommand(group: string, name: string, _globalName: string, command: unknown) {
-      mockCommands.set(`${group}:${name}`, command)
-    }
-    removeCmd(group: string, name: string) {
-      mockCommands.delete(`${group}:${name}`)
-    }
-  },
-  AcEdOpenMode: {
-    Read: 0,
-    Review: 4,
-    Write: 8
-  },
-  AcEdUiTheme: {},
-  applyUiTheme: jest.fn(),
-  isLightColorTheme: jest.fn(() => false),
-  eventBus: {
-    on: jest.fn(),
-    off: jest.fn()
-  }
   }
 })
 
@@ -160,7 +164,9 @@ function executeMockCommand(command: string) {
   void cmd?.execute({})
 }
 
-function loadPlugin(options: ConstructorParameters<typeof AcApSimpleUiPlugin>[0] = {}) {
+function loadPlugin(
+  options: ConstructorParameters<typeof AcApSimpleUiPlugin>[0] = {}
+) {
   AcApDocManager.instance.sendStringToExecute = jest.fn(executeMockCommand)
   const commandManager = new AcEdCommandStack()
   const plugin = new AcApSimpleUiPlugin(options)
@@ -255,7 +261,9 @@ describe('AcApSimpleUiPlugin', () => {
     expect(plugin.setDockPanelOpen(true)).toBe(true)
     expect(plugin.isDockPanelOpen()).toBe(true)
 
-    const dockPanel = canvasParent.querySelector('.ml-ex-ui-dock-panel') as HTMLElement
+    const dockPanel = canvasParent.querySelector(
+      '.ml-ex-ui-dock-panel'
+    ) as HTMLElement
     expect(dockPanel).not.toBeNull()
     expect(dockPanel.dataset.open).toBe('true')
     expect(canvasParent.contains(dockPanel)).toBe(true)
@@ -318,7 +326,9 @@ describe('AcApSimpleUiPlugin', () => {
     expect(plugin.setDockPanelOpen(true)).toBe(true)
     expect(plugin.isDockPanelOpen()).toBe(true)
     expect(
-      canvasParent.querySelector('.ml-ex-ui-dock-panel')?.getAttribute('data-open')
+      canvasParent
+        .querySelector('.ml-ex-ui-dock-panel')
+        ?.getAttribute('data-open')
     ).toBe('true')
   })
 
@@ -369,9 +379,15 @@ describe('AcApSimpleUiPlugin', () => {
       })
     ).toBe(true)
 
-    expect(host.querySelector('.ml-ex-ui-dock-tab[data-tab-id="layers"]')).not.toBeNull()
-    expect(host.querySelector('.ml-ex-ui-dock-tab[data-tab-id="demo-1"]')).not.toBeNull()
-    expect(host.querySelector('.ml-ex-ui-dock-tab[data-tab-id="demo-2"]')).not.toBeNull()
+    expect(
+      host.querySelector('.ml-ex-ui-dock-tab[data-tab-id="layers"]')
+    ).not.toBeNull()
+    expect(
+      host.querySelector('.ml-ex-ui-dock-tab[data-tab-id="demo-1"]')
+    ).not.toBeNull()
+    expect(
+      host.querySelector('.ml-ex-ui-dock-tab[data-tab-id="demo-2"]')
+    ).not.toBeNull()
   })
 
   it('toggleDockPanelTab opens, focuses, and closes a tab via the plugin API', () => {
@@ -402,9 +418,9 @@ describe('AcApSimpleUiPlugin', () => {
     expect(plugin.toggleDockPanelTab('demo')).toBe(true)
     expect(plugin.isDockPanelOpen()).toBe(true)
     expect(
-      host.querySelector('.ml-ex-ui-dock-tab[data-tab-id="demo"]')?.classList.contains(
-        'is-active'
-      )
+      host
+        .querySelector('.ml-ex-ui-dock-tab[data-tab-id="demo"]')
+        ?.classList.contains('is-active')
     ).toBe(true)
   })
 

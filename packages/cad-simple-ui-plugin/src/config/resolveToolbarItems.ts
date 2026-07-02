@@ -51,11 +51,7 @@ export function insertToolbarItemsAt(
   }
 
   const insertAt = position?.before ? anchorIndex : anchorIndex + 1
-  return [
-    ...items.slice(0, insertAt),
-    ...toInsert,
-    ...items.slice(insertAt)
-  ]
+  return [...items.slice(0, insertAt), ...toInsert, ...items.slice(insertAt)]
 }
 
 /**

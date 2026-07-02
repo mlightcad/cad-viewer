@@ -88,7 +88,12 @@ export class AcExDockPanel {
   private dockMainWrapper?: HTMLDivElement
 
   private handleResizePointerDown = (event: PointerEvent) => {
-    if (event.button !== 0 || !this.isPanelOpen || this.isMobileHorizontalDock()) return
+    if (
+      event.button !== 0 ||
+      !this.isPanelOpen ||
+      this.isMobileHorizontalDock()
+    )
+      return
     event.preventDefault()
     this.resizePointerId = event.pointerId
     this.resizeStartPos =
@@ -174,7 +179,10 @@ export class AcExDockPanel {
 
     this.resizeHandle = document.createElement('div')
     this.resizeHandle.className = 'ml-ex-ui-dock-resize-handle'
-    this.resizeHandle.addEventListener('pointerdown', this.handleResizePointerDown)
+    this.resizeHandle.addEventListener(
+      'pointerdown',
+      this.handleResizePointerDown
+    )
 
     this.contentEl = document.createElement('div')
     this.contentEl.className = 'ml-ex-ui-dock-content'
@@ -195,7 +203,10 @@ export class AcExDockPanel {
     this.overflowButton.hidden = true
     this.overflowButton.textContent = '»'
     this.overflowButton.title = this.i18n.t('dockPanel.moreTabs')
-    this.overflowButton.setAttribute('aria-label', this.i18n.t('dockPanel.moreTabs'))
+    this.overflowButton.setAttribute(
+      'aria-label',
+      this.i18n.t('dockPanel.moreTabs')
+    )
     this.overflowButton.addEventListener('click', event => {
       event.stopPropagation()
       this.toggleOverflowMenu()
@@ -216,7 +227,10 @@ export class AcExDockPanel {
     this.sideMenuButton.type = 'button'
     this.sideMenuButton.className = 'ml-ex-ui-dock-action-btn'
     this.sideMenuButton.title = this.i18n.t('dockPanel.dockSide')
-    this.sideMenuButton.setAttribute('aria-label', this.i18n.t('dockPanel.dockSide'))
+    this.sideMenuButton.setAttribute(
+      'aria-label',
+      this.i18n.t('dockPanel.dockSide')
+    )
     this.sideMenuButton.appendChild(createIconElement(ICON_DOCK_SIDE_MENU))
     this.sideMenuButton.addEventListener('click', event => {
       event.stopPropagation()
@@ -513,7 +527,11 @@ export class AcExDockPanel {
 
   /** Removes the panel from the DOM and cleans up listeners. */
   destroy() {
-    document.removeEventListener('pointerdown', this.handleDocumentPointerDown, true)
+    document.removeEventListener(
+      'pointerdown',
+      this.handleDocumentPointerDown,
+      true
+    )
     document.removeEventListener('pointermove', this.handleResizePointerMove)
     document.removeEventListener('pointerup', this.handleResizePointerUp)
     document.removeEventListener('pointercancel', this.handleResizePointerUp)
@@ -596,7 +614,10 @@ export class AcExDockPanel {
     }
 
     while (this.dockMainWrapper.firstChild) {
-      this.host.insertBefore(this.dockMainWrapper.firstChild, this.dockMainWrapper)
+      this.host.insertBefore(
+        this.dockMainWrapper.firstChild,
+        this.dockMainWrapper
+      )
     }
     this.dockMainWrapper.remove()
     this.dockMainWrapper = undefined
@@ -649,7 +670,10 @@ export class AcExDockPanel {
 
   private getMaxSize(): number {
     if (this.side === 'bottom' || this.side === 'top') {
-      return Math.max(DOCK_MIN_SIZE, this.host.clientHeight * DOCK_MAX_SIZE_RATIO)
+      return Math.max(
+        DOCK_MIN_SIZE,
+        this.host.clientHeight * DOCK_MAX_SIZE_RATIO
+      )
     }
     if (this.isMobileHorizontalDock()) {
       return Math.max(DOCK_MIN_SIZE, this.host.clientWidth)
@@ -698,9 +722,21 @@ export class AcExDockPanel {
       icon: string
     }> = [
       { side: 'top', labelKey: 'dockPanel.dockTop', icon: ICON_PLACEMENT_TOP },
-      { side: 'bottom', labelKey: 'dockPanel.dockBottom', icon: ICON_PLACEMENT_BOTTOM },
-      { side: 'left', labelKey: 'dockPanel.dockLeft', icon: ICON_PLACEMENT_LEFT },
-      { side: 'right', labelKey: 'dockPanel.dockRight', icon: ICON_PLACEMENT_RIGHT }
+      {
+        side: 'bottom',
+        labelKey: 'dockPanel.dockBottom',
+        icon: ICON_PLACEMENT_BOTTOM
+      },
+      {
+        side: 'left',
+        labelKey: 'dockPanel.dockLeft',
+        icon: ICON_PLACEMENT_LEFT
+      },
+      {
+        side: 'right',
+        labelKey: 'dockPanel.dockRight',
+        icon: ICON_PLACEMENT_RIGHT
+      }
     ]
 
     sides.forEach(entry => {

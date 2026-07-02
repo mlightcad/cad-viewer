@@ -204,10 +204,7 @@ export class CadActionExecutor {
       const entityIds: string[] = []
       runEdit('Agent: draw_line', () => {
         const db = AcApDocManager.instance.curDocument.database
-        const line = new AcDbLine(
-          toPoint3d(input.start),
-          toPoint3d(input.end)
-        )
+        const line = new AcDbLine(toPoint3d(input.start), toPoint3d(input.end))
         applyLayer(line, input.layer)
         db.tables.blockTable.modelSpace.appendEntity(line)
         entityIds.push(line.objectId)
@@ -621,10 +618,7 @@ export class CadActionExecutor {
    * @param input - Position and optional layer.
    * @returns {@link ToolResult} with created entity ids on success.
    */
-  drawPoint(input: {
-    position: Point2dInput
-    layer?: string
-  }): ToolResult {
+  drawPoint(input: { position: Point2dInput; layer?: string }): ToolResult {
     const accessError = requireDocument(true)
     if (accessError) {
       return accessError

@@ -17,13 +17,15 @@ import {
   type LlmProviderId,
   type LlmSettings,
   loadLlmSettings,
-  saveLlmSettings} from '../storage/LlmSettingsStore'
+  saveLlmSettings
+} from '../storage/LlmSettingsStore'
 import {
   CUSTOM_MODEL_VALUE,
   type LlmModelOption,
   modelOptionsForProvider,
   modelSupportsVision,
-  resolveModelSelection} from '../storage/modelCatalog'
+  resolveModelSelection
+} from '../storage/modelCatalog'
 import { areLlmSettingsEqual } from '../storage/settingsEquality'
 import { formatChatError } from './formatChatError'
 import { createAgentChatOptions, useAgentChatRef } from './useAgentChat'
@@ -159,10 +161,7 @@ const isActiveCustomModel = computed(
     ) === CUSTOM_MODEL_VALUE
 )
 const supportsVision = computed(() =>
-  modelSupportsVision(
-    activeSettings.value.provider,
-    activeSettings.value.model
-  )
+  modelSupportsVision(activeSettings.value.provider, activeSettings.value.model)
 )
 
 const highInferenceActive = computed(() => agentMode.value === 'high-inference')
@@ -189,9 +188,7 @@ const modelSelectDisabled = computed(
   () => !settingsReady.value || isBusy.value || settingsDirty.value
 )
 
-const agentModeSelectDisabled = computed(
-  () => modelSelectDisabled.value
-)
+const agentModeSelectDisabled = computed(() => modelSelectDisabled.value)
 
 const modelSelectTitle = computed(() =>
   settingsDirty.value ? labels.value.unsavedSettings : labels.value.model
@@ -415,7 +412,11 @@ function isVerificationMessage(message: UIMessage): boolean {
             />
           </svg>
         </button>
-        <button type="button" class="cad-agent-panel-btn" @click="emit('close')">
+        <button
+          type="button"
+          class="cad-agent-panel-btn"
+          @click="emit('close')"
+        >
           {{ labels.close }}
         </button>
       </div>
@@ -469,13 +470,19 @@ function isVerificationMessage(message: UIMessage): boolean {
         {{ labels.baseUrl }}
         <input v-model="settings.baseUrl" type="text" />
       </label>
-      <p v-if="settings.provider === 'deepseek-vl'" class="cad-agent-model-hint">
+      <p
+        v-if="settings.provider === 'deepseek-vl'"
+        class="cad-agent-model-hint"
+      >
         {{ labels.providerDeepseekVlHint }}
       </p>
       <label>
         {{ labels.model }}
         <select v-model="modelSelection">
-          <optgroup v-if="visionModelOptions.length" :label="labels.visionModels">
+          <optgroup
+            v-if="visionModelOptions.length"
+            :label="labels.visionModels"
+          >
             <option
               v-for="option in visionModelOptions"
               :key="option.value"
@@ -501,9 +508,7 @@ function isVerificationMessage(message: UIMessage): boolean {
         <input v-model="settings.model" type="text" />
       </label>
       <p class="cad-agent-model-hint">
-        {{
-          supportsVision ? labels.modelSupportsVision : labels.modelTextOnly
-        }}
+        {{ supportsVision ? labels.modelSupportsVision : labels.modelTextOnly }}
       </p>
       <label>
         {{ labels.apiKey }}
@@ -547,7 +552,11 @@ function isVerificationMessage(message: UIMessage): boolean {
             />
           </figure>
         </div>
-        <div v-for="toolName in toolParts(message)" :key="toolName" class="cad-agent-tool">
+        <div
+          v-for="toolName in toolParts(message)"
+          :key="toolName"
+          class="cad-agent-tool"
+        >
           {{ labels.toolPrefix }}: {{ toolName }}
         </div>
       </div>
@@ -592,10 +601,7 @@ function isVerificationMessage(message: UIMessage): boolean {
           :key="`${file.name}-${file.lastModified}-${index}`"
           class="cad-agent-attachment"
         >
-          <img
-            :src="pendingPreviewUrls[index]"
-            :alt="file.name"
-          />
+          <img :src="pendingPreviewUrls[index]" :alt="file.name" />
           <button
             type="button"
             class="cad-agent-attachment-remove"
@@ -626,7 +632,9 @@ function isVerificationMessage(message: UIMessage): boolean {
         @change="onFilesSelected"
       />
       <p v-if="inputHint" class="cad-agent-input-hint">{{ inputHint }}</p>
-      <p v-else-if="agentModeHint" class="cad-agent-mode-hint">{{ agentModeHint }}</p>
+      <p v-else-if="agentModeHint" class="cad-agent-mode-hint">
+        {{ agentModeHint }}
+      </p>
       <div class="cad-agent-panel-input-row">
         <div class="cad-agent-panel-input-left">
           <select
@@ -672,10 +680,7 @@ function isVerificationMessage(message: UIMessage): boolean {
                 {{ modelLabel(option) }}
               </option>
             </optgroup>
-            <option
-              v-if="isActiveCustomModel"
-              :value="activeSettings.model"
-            >
+            <option v-if="isActiveCustomModel" :value="activeSettings.model">
               {{ activeSettings.model }}
             </option>
           </select>
@@ -704,11 +709,7 @@ function isVerificationMessage(message: UIMessage): boolean {
             :aria-label="isBusy ? labels.stop : labels.send"
             @click="isBusy ? stopAgent() : sendMessage()"
           >
-            <svg
-              v-if="isBusy"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
+            <svg v-if="isBusy" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M7 7h10v10H7z" />
             </svg>
             <svg v-else viewBox="0 0 24 24" aria-hidden="true">

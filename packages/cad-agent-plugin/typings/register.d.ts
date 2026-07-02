@@ -2,7 +2,10 @@
  * Public API types for `@mlightcad/cad-agent-plugin/register`.
  * Copied to `lib/` by `pnpm build:types`; keep in sync with `src/register.ts`.
  */
-import type { AcApLocale, AcApPluginManager } from '@mlightcad/cad-simple-viewer'
+import type {
+  AcApLocale,
+  AcApPluginManager
+} from '@mlightcad/cad-simple-viewer'
 
 /** Registered name of the CAD Agent plugin in the plugin manager. */
 export declare const AGENT_PLUGIN_NAME: 'AgentPlugin'

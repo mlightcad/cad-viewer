@@ -78,12 +78,10 @@ export default {
       description: 'Converts current drawing to SVG'
     },
     chtml: {
-      description:
-        'Exports current drawing to a standalone offline HTML file'
+      description: 'Exports current drawing to a standalone offline HTML file'
     },
     '-chtml': {
-      description:
-        'Exports current drawing to HTML using command-line options'
+      description: 'Exports current drawing to HTML using command-line options'
     },
     dimlinear: {
       description: 'Creates linear dimensions'

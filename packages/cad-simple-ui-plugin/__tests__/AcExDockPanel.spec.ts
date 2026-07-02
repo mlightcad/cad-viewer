@@ -12,8 +12,7 @@ class ResizeObserverMock {
 }
 
 beforeAll(() => {
-  global.ResizeObserver =
-    ResizeObserverMock as unknown as typeof ResizeObserver
+  global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver
 })
 
 jest.mock('@mlightcad/cad-simple-viewer', () => {
@@ -41,7 +40,9 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
   }
 })
 
-function createPanel(options?: Partial<ConstructorParameters<typeof AcExDockPanel>[0]>) {
+function createPanel(
+  options?: Partial<ConstructorParameters<typeof AcExDockPanel>[0]>
+) {
   registerSimpleUiI18n()
   const host = document.createElement('div')
   document.body.appendChild(host)
@@ -159,14 +160,14 @@ describe('AcExDockPanel', () => {
 
     panel.setSide('right')
     expect(
-      (host.querySelector('.ml-ex-ui-dock-panel') as HTMLElement | null)?.dataset
-        .side
+      (host.querySelector('.ml-ex-ui-dock-panel') as HTMLElement | null)
+        ?.dataset.side
     ).toBe('right')
 
     panel.setSide('bottom')
     expect(
-      (host.querySelector('.ml-ex-ui-dock-panel') as HTMLElement | null)?.dataset
-        .side
+      (host.querySelector('.ml-ex-ui-dock-panel') as HTMLElement | null)
+        ?.dataset.side
     ).toBe('bottom')
   })
 
@@ -353,7 +354,9 @@ describe('AcExDockPanel', () => {
     expect(panel.isOpen).toBe(true)
     expect(canvasParent.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
     expect(
-      canvasParent.querySelector('.ml-ex-ui-dock-panel')?.getAttribute('data-open')
+      canvasParent
+        .querySelector('.ml-ex-ui-dock-panel')
+        ?.getAttribute('data-open')
     ).toBe('true')
     expect(host.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
   })
@@ -447,7 +450,11 @@ describe('AcExDockPanel', () => {
       Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)
     }
     if (clientWidthDescriptor) {
-      Object.defineProperty(HTMLElement.prototype, 'clientWidth', clientWidthDescriptor)
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'clientWidth',
+        clientWidthDescriptor
+      )
     }
   })
 })

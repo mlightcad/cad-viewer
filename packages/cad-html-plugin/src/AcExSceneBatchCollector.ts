@@ -342,7 +342,9 @@ function readLineWidth(material: THREE.Material): number | undefined {
 function readExportMaterial(object: THREE.Object3D): THREE.Material {
   if ('material' in object) {
     const originalMaterial = (
-      object.userData as { originalMaterial?: THREE.Material | THREE.Material[] }
+      object.userData as {
+        originalMaterial?: THREE.Material | THREE.Material[]
+      }
     ).originalMaterial
     const material = originalMaterial ?? object.material
     if (Array.isArray(material)) {

@@ -50,8 +50,7 @@ export async function verifyDrawing(
 ): Promise<DrawingVerificationResult> {
   const model = createModelFromSettings(settings)
   const userContent: Array<
-    | { type: 'text'; text: string }
-    | { type: 'image'; image: string }
+    { type: 'text'; text: string } | { type: 'image'; image: string }
   > = [
     {
       type: 'text',

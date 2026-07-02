@@ -94,7 +94,8 @@ export default {
     initialViewCurrentHint: 'Mevcut görünüm merkezini ve yakınlaştırmayı koru',
     viewerMode: 'Görüntüleyici modu',
     viewerModeView: 'Görüntüle',
-    viewerModeViewHint: 'Yalnızca kaydırma, yakınlaştırma ve katman kontrolleri',
+    viewerModeViewHint:
+      'Yalnızca kaydırma, yakınlaştırma ve katman kontrolleri',
     viewerModeMeasure: 'Ölçüm',
     viewerModeMeasureHint: 'Görüntüleme araçlarına ek olarak mesafe ölçümü'
   },

@@ -197,10 +197,7 @@ export function createAgentChatTransport(
               if (abortSignal?.aborted) break
 
               if (verification.passed) {
-                appendAssistantText(
-                  write,
-                  `\n${agentT('verificationPassed')}`
-                )
+                appendAssistantText(write, `\n${agentT('verificationPassed')}`)
                 break
               }
 
@@ -240,9 +237,7 @@ export function createAgentChatTransport(
             controller.enqueue({
               type: 'error',
               errorText:
-                error instanceof Error
-                  ? formatChatError(error)
-                  : String(error)
+                error instanceof Error ? formatChatError(error) : String(error)
             })
           } finally {
             controller.close()

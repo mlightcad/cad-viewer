@@ -44,9 +44,9 @@ describe('AcTrBatchedGroup lineDistance alignment', () => {
 
     const matrix = new THREE.Matrix4().makeTranslation(100, 0, 0)
     const cloned = geometry.clone()
-    expect(
-      AcTrBufferGeometryUtil.safeApplyMatrix4(cloned, matrix, 2)
-    ).toBe(true)
+    expect(AcTrBufferGeometryUtil.safeApplyMatrix4(cloned, matrix, 2)).toBe(
+      true
+    )
     AcTrBufferGeometryUtil.recomputeLineDistanceForLineSegments(cloned)
 
     const position = cloned.getAttribute('position')

@@ -19,9 +19,7 @@ import { normalizePluginOptions } from './config/normalizePluginOptions'
 import { resolveDockMountTarget } from './config/resolveDockMountTarget'
 import { resolveToolbarItems } from './config/resolveToolbarItems'
 import { resolveToolbarMountTarget } from './config/resolveToolbarMountTarget'
-import {
-  toolbarItemsIncludeItem
-} from './config/toolbarItemUtils'
+import { toolbarItemsIncludeItem } from './config/toolbarItemUtils'
 import {
   AcExDockPanelSide,
   AcExSimpleUiPluginOptions,
@@ -480,8 +478,13 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   }
 
   /** Resolves raw toolbar input into concrete toolbar items. */
-  private resolveBaseToolbarItems(items: AcExToolbarItemsInput): AcExToolbarItem[] {
-    return resolveToolbarItems({ items, appendItems: undefined }, this.getToolbarContext())
+  private resolveBaseToolbarItems(
+    items: AcExToolbarItemsInput
+  ): AcExToolbarItem[] {
+    return resolveToolbarItems(
+      { items, appendItems: undefined },
+      this.getToolbarContext()
+    )
   }
 
   /** Applies {@link baseToolbarItems} to the toolbar. */
@@ -556,10 +559,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       return
     }
 
-    if (
-      this.hasLayerToolbarItem &&
-      !this.dockPanel.hasTab(LAYERS_TAB_ID)
-    ) {
+    if (this.hasLayerToolbarItem && !this.dockPanel.hasTab(LAYERS_TAB_ID)) {
       this.mountLayerDockUi()
     }
 

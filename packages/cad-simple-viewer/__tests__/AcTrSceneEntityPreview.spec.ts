@@ -17,9 +17,7 @@ type StubLayoutConfig = Record<
   { min: [number, number, number]; max: [number, number, number] } | 'missing'
 >
 
-function createStubLayout(
-  previewableIds: StubLayoutConfig
-): AcTrLayout {
+function createStubLayout(previewableIds: StubLayoutConfig): AcTrLayout {
   const layout = {
     computeEntityPreviewBoundsBox: jest.fn(
       (entityIds: string[], target = new THREE.Box3()) => {
@@ -114,7 +112,7 @@ describe('AcTrScene entity preview layout policy', () => {
   it('scope all deduplicates entities across layouts', () => {
     const scene = new AcTrScene()
     const active = createStubLayout({
-      'shared': { min: [0, 0, 0], max: [10, 10, 0] },
+      shared: { min: [0, 0, 0], max: [10, 10, 0] },
       'only-active': { min: [20, 0, 0], max: [30, 10, 0] }
     })
     const model = createStubLayout({
@@ -155,10 +153,7 @@ describe('AcTrScene entity preview layout policy', () => {
     registerLayout(scene, 'model', model, { model: true })
 
     expect(
-      scene.findPreviewableEntityIds(
-        ['line-1', 'line-2', 'missing'],
-        'all'
-      )
+      scene.findPreviewableEntityIds(['line-1', 'line-2', 'missing'], 'all')
     ).toEqual(['line-1', 'line-2'])
   })
 

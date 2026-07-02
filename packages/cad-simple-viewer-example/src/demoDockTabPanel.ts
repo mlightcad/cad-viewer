@@ -22,20 +22,14 @@ export function createDemoDockTabPanel(tabNumber: number): HTMLElement {
   header.appendChild(description)
   root.appendChild(header)
 
-  const nameField = createField(
-    'Name',
-    document.createElement('input')
-  )
+  const nameField = createField('Name', document.createElement('input'))
   const nameInput = nameField.control as HTMLInputElement
   nameInput.type = 'text'
   nameInput.placeholder = 'Enter a label'
   nameInput.value = `Widget ${tabNumber}`
   root.appendChild(nameField.field)
 
-  const enabledField = createField(
-    'Enabled',
-    document.createElement('input')
-  )
+  const enabledField = createField('Enabled', document.createElement('input'))
   const enabledInput = enabledField.control as HTMLInputElement
   enabledInput.type = 'checkbox'
   enabledInput.checked = true

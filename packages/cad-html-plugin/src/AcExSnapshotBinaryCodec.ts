@@ -436,11 +436,7 @@ class BinaryReader {
     }
     const bytes = this.readBytes(byteLength)
     if (bytes.byteOffset % 4 === 0) {
-      return new Float32Array(
-        bytes.buffer,
-        bytes.byteOffset,
-        byteLength / 4
-      )
+      return new Float32Array(bytes.buffer, bytes.byteOffset, byteLength / 4)
     }
     const copy = new ArrayBuffer(byteLength)
     new Uint8Array(copy).set(bytes)
@@ -458,11 +454,7 @@ class BinaryReader {
     }
     const bytes = this.readBytes(byteLength)
     if (bytes.byteOffset % 4 === 0) {
-      return new Uint32Array(
-        bytes.buffer,
-        bytes.byteOffset,
-        byteLength / 4
-      )
+      return new Uint32Array(bytes.buffer, bytes.byteOffset, byteLength / 4)
     }
     const copy = new ArrayBuffer(byteLength)
     new Uint8Array(copy).set(bytes)

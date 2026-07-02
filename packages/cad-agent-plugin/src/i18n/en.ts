@@ -49,7 +49,8 @@ export const agentEn = {
   highInferenceRequiresVision:
     'High inference mode requires a vision-capable model.',
   verificationTitle: 'Drawing verification',
-  verifying: 'Comparing the drawing screenshot with your request and reference images…',
+  verifying:
+    'Comparing the drawing screenshot with your request and reference images…',
   verificationPassed: 'Verification passed — the drawing matches the request.',
   verificationFailed: 'Verification failed — issues found:',
   verificationSkipped: 'Verification skipped',

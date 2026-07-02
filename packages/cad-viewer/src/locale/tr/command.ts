@@ -1,7 +1,8 @@
 export default {
   ACAD: {
     hatch: {
-      description: 'Şerit tabanlı bağlamsal iş akışıyla tarama dolgusu oluşturur'
+      description:
+        'Şerit tabanlı bağlamsal iş akışıyla tarama dolgusu oluşturur'
     },
     layer: {
       description: 'Katman özellikleri yöneticisi'

@@ -1,7 +1,4 @@
-import {
-  decryptApiKey,
-  encryptApiKey
-} from './apiKeyCrypto'
+import { decryptApiKey, encryptApiKey } from './apiKeyCrypto'
 
 /** Supported LLM API backends for the CAD agent. */
 export type LlmProviderId =
@@ -93,9 +90,7 @@ export function getProviderDefaults(
  * @param persisted - Parsed JSON from `localStorage`.
  * @returns Decrypted or legacy plaintext API key.
  */
-async function restoreApiKey(
-  persisted: PersistedLlmSettings
-): Promise<string> {
+async function restoreApiKey(persisted: PersistedLlmSettings): Promise<string> {
   if (persisted.apiKeyEnc) {
     return decryptApiKey(persisted.apiKeyEnc)
   }
@@ -134,9 +129,7 @@ export async function loadLlmSettings(): Promise<LlmSettings> {
  * @param settings - Full settings object to serialize.
  */
 export async function saveLlmSettings(settings: LlmSettings): Promise<void> {
-  const apiKeyEnc = settings.apiKey
-    ? await encryptApiKey(settings.apiKey)
-    : ''
+  const apiKeyEnc = settings.apiKey ? await encryptApiKey(settings.apiKey) : ''
 
   const persisted: PersistedLlmSettings = {
     provider: settings.provider,

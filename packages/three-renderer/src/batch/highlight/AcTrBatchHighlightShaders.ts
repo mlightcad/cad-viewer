@@ -46,7 +46,12 @@ vec3 applyBatchHighlight(vec3 color) {
 `
 
 const EMPTY_HIGHLIGHT_MASK = /*@__PURE__*/ (() => {
-  const texture = new THREE.DataTexture(new Uint8Array(4), 1, 1, THREE.RGBAFormat)
+  const texture = new THREE.DataTexture(
+    new Uint8Array(4),
+    1,
+    1,
+    THREE.RGBAFormat
+  )
   texture.minFilter = THREE.NearestFilter
   texture.magFilter = THREE.NearestFilter
   texture.needsUpdate = true
@@ -150,7 +155,8 @@ function injectFragmentHighlight(source: string): {
     ? source
     : HIGHLIGHT_FRAGMENT_DECL + source
 
-  const applySnippet = 'gl_FragColor.rgb = applyBatchHighlight(gl_FragColor.rgb);'
+  const applySnippet =
+    'gl_FragColor.rgb = applyBatchHighlight(gl_FragColor.rgb);'
 
   if (fragmentShader.includes('#include <dithering_fragment>')) {
     return {
@@ -184,7 +190,9 @@ function injectFragmentHighlight(source: string): {
     }
   }
 
-  if (fragmentShader.includes('gl_FragColor = vec4( diffuseColor.rgb, alpha );')) {
+  if (
+    fragmentShader.includes('gl_FragColor = vec4( diffuseColor.rgb, alpha );')
+  ) {
     return {
       source: fragmentShader.replace(
         'gl_FragColor = vec4( diffuseColor.rgb, alpha );',
@@ -194,7 +202,9 @@ function injectFragmentHighlight(source: string): {
     }
   }
 
-  if (fragmentShader.includes('gl_FragColor = vec4( diffuseColor.rgb, opacity );')) {
+  if (
+    fragmentShader.includes('gl_FragColor = vec4( diffuseColor.rgb, opacity );')
+  ) {
     return {
       source: fragmentShader.replace(
         'gl_FragColor = vec4( diffuseColor.rgb, opacity );',
@@ -213,7 +223,10 @@ function injectFragmentHighlight(source: string): {
  * @param material - Material whose fragment shader could not be patched.
  */
 function warnUnpatchedHighlightMaterial(material: THREE.Material) {
-  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') {
+  if (
+    typeof process !== 'undefined' &&
+    process.env?.NODE_ENV === 'production'
+  ) {
     return
   }
 
@@ -357,7 +370,9 @@ export function installBatchHighlightRenderer(
   object: THREE.Object3D,
   state: AcTrBatchHighlightState
 ) {
-  const runtime = object.userData as { batchHighlightRendererInstalled?: boolean }
+  const runtime = object.userData as {
+    batchHighlightRendererInstalled?: boolean
+  }
   if (runtime.batchHighlightRendererInstalled) {
     return
   }
@@ -372,14 +387,7 @@ export function installBatchHighlightRenderer(
     material,
     group
   ) => {
-    previousOnBeforeRender?.(
-      renderer,
-      scene,
-      camera,
-      geometry,
-      material,
-      group
-    )
+    previousOnBeforeRender?.(renderer, scene, camera, geometry, material, group)
     if (!state.hasAnyHighlight() || !material) {
       return
     }

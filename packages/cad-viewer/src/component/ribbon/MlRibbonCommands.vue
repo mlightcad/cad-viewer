@@ -1407,7 +1407,11 @@ const buildBaseTabs = (
                   label: t('main.ribbon.command.quickSelect'),
                   tooltip: ribbonTooltips.quickSelect,
                   size: 'large',
-                  props: { icon: qselect, labelWrapLines: 2, labelWrapWidth: 'max-content' }
+                  props: {
+                    icon: qselect,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
                 },
                 {
                   id: 'cmd-drawing-units',
@@ -1415,7 +1419,11 @@ const buildBaseTabs = (
                   label: t('main.ribbon.command.drawingUnits'),
                   tooltip: ribbonTooltips.drawingUnits,
                   size: 'large',
-                  props: { icon: setting, labelWrapLines: 2, labelWrapWidth: 'max-content' }
+                  props: {
+                    icon: setting,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
                 },
                 ...(agentPluginEnabled
                   ? [
@@ -1530,10 +1538,15 @@ const ribbonData = computed(() => {
   commandByItemId.set('layer-action-unlock', 'layulk')
   commandByItemId.set('layer-action-restore', 'layerp')
 
-  const tabs: RibbonTabModel[] = buildBaseTabs(openMode, annotationVisible, {
-    canUndo: canUndo.value,
-    canRedo: canRedo.value
-  }, store.features.agentPlugin)
+  const tabs: RibbonTabModel[] = buildBaseTabs(
+    openMode,
+    annotationVisible,
+    {
+      canUndo: canUndo.value,
+      canRedo: canRedo.value
+    },
+    store.features.agentPlugin
+  )
   return {
     tabs,
     commandByItemId
