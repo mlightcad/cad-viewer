@@ -823,7 +823,10 @@ export function createAcTrBatchedMixin<
      */
     unionActiveVisibleBoundingBoxInto(
       target: THREE.Box3,
-      options?: { excludeObjectIds?: ReadonlySet<string> }
+      options?: {
+        excludeObjectIds?: ReadonlySet<string>
+        includeObjectIds?: ReadonlySet<string>
+      }
     ) {
       const self = this as unknown as THREE.Object3D
       self.updateMatrixWorld(true)
@@ -836,6 +839,13 @@ export function createAcTrBatchedMixin<
           options?.excludeObjectIds &&
           info.objectId &&
           options.excludeObjectIds.has(info.objectId)
+        ) {
+          continue
+        }
+        if (
+          options?.includeObjectIds &&
+          info.objectId &&
+          !options.includeObjectIds.has(info.objectId)
         ) {
           continue
         }

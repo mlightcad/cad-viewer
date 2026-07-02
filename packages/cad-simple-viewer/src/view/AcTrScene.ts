@@ -1,16 +1,23 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d, log } from '@mlightcad/data-model'
 import {
   AcTrEntity,
+  AcTrEntityPreview,
   AcTrHtmlTransientManager,
   AcTrPreviewOverlayManager,
   AcTrTransientManager
 } from '@mlightcad/three-renderer'
-import { AcEdLayerInfo } from 'editor'
 import * as THREE from 'three'
 
+import { AcEdLayerInfo } from '../editor'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrLayer } from './AcTrLayer'
-import { AcTrLayout, AcTrLayoutStats } from './AcTrLayout'
+import {
+  type AcTrEntityPreviewRootOptions,
+  AcTrLayout,
+  AcTrLayoutStats} from './AcTrLayout'
+
+/** Layout search order when building entity preview geometry. */
+export type AcTrEntityPreviewScope = 'active-first' | 'all'
 
 export interface AcTrSceneStats {
   layouts: AcTrLayoutStats[]
@@ -438,7 +445,9 @@ export class AcTrScene {
   }
 
   /**
-   * Returns true when every requested entity exists in the active layout.
+   * Returns true when every requested entity can be previewed in the active layout.
+   *
+   * Uses batch bounds only and does not clone preview geometry.
    *
    * @param entityIds - Database object ids required for preview creation
    */
@@ -447,11 +456,184 @@ export class AcTrScene {
     if (!layout) {
       return false
     }
-    return layout.canCreateEntityPreview(entityIds)
+    return layout.canCreateEntityPreview(entityIds, { requireAllEntities: true })
+  }
+
+  /**
+   * Computes a 2D framing box for preview export without cloning drawables.
+   *
+   * @param entityIds - Database object ids to measure
+   * @param margin - Margin multiplier applied around the raw bounds
+   * @param scope - Layout search order; defaults to {@link AcTrEntityPreviewScope active-first}
+   */
+  computeEntityPreviewBounds2d(
+    entityIds: AcDbObjectId[],
+    margin = 1.1,
+    scope: AcTrEntityPreviewScope = 'active-first'
+  ): AcGeBox2d | null {
+    const box = this.computeEntityPreviewBoundsBox(entityIds, scope)
+    return AcTrEntityPreview.box3ToBounds2d(box, margin)
+  }
+
+  /**
+   * Builds one merged preview root, searching layouts in priority order.
+   *
+   * Entities that are missing from a layout or cannot be extracted are skipped.
+   * With {@link AcTrEntityPreviewScope.all}, each entity is taken from the first
+   * layout that can preview it so geometry is not duplicated.
+   *
+   * @param entityIds - Database object ids to include in the preview overlay
+   * @param options - Optional layout search order and per-layout extraction policy
+   * @returns Preview root group, or `null` when no preview geometry was extracted
+   */
+  createEntityPreviewRoot(
+    entityIds: AcDbObjectId[],
+    options?: {
+      scope?: AcTrEntityPreviewScope
+      layoutOptions?: AcTrEntityPreviewRootOptions
+    }
+  ): THREE.Group | null {
+    if (entityIds.length === 0) {
+      return null
+    }
+
+    const scope = options?.scope ?? 'active-first'
+    const layoutOptions: AcTrEntityPreviewRootOptions = {
+      missingEntity: 'skip',
+      ...options?.layoutOptions
+    }
+
+    if (scope === 'all') {
+      return this.mergeEntityPreviewRoots(
+        entityIds,
+        this.getOrderedLayouts('all'),
+        layoutOptions
+      )
+    }
+
+    for (const layout of this.getOrderedLayouts('active-first')) {
+      const root = layout.createEntityPreviewRoot(entityIds, layoutOptions)
+      if (root) {
+        return root
+      }
+    }
+    return null
+  }
+
+  /**
+   * Merges preview roots from the given layouts into one group.
+   *
+   * Each entity id is assigned to the first layout that can preview it.
+   */
+  private mergeEntityPreviewRoots(
+    entityIds: AcDbObjectId[],
+    layouts: Iterable<AcTrLayout>,
+    layoutOptions: AcTrEntityPreviewRootOptions
+  ): THREE.Group | null {
+    const pending = new Set(entityIds)
+    const previewRoot = new THREE.Group()
+    previewRoot.name = 'EntityPreviewRoot'
+
+    for (const layout of layouts) {
+      if (pending.size === 0) {
+        break
+      }
+
+      const claimable = layout.findPreviewableEntityIds([...pending])
+      if (claimable.length === 0) {
+        continue
+      }
+
+      const layoutRoot = layout.createEntityPreviewRoot(claimable, layoutOptions)
+      if (!layoutRoot) {
+        continue
+      }
+
+      previewRoot.add(layoutRoot)
+      for (const id of claimable) {
+        pending.delete(id)
+      }
+    }
+
+    return previewRoot.children.length > 0 ? previewRoot : null
+  }
+
+  /**
+   * Returns layouts in priority order for preview lookup.
+   */
+  private getOrderedLayouts(scope: AcTrEntityPreviewScope): AcTrLayout[] {
+    if (scope === 'all') {
+      return [...this._layouts.values()]
+    }
+
+    const ordered: AcTrLayout[] = []
+    const active = this.activeLayout
+    const model = this.modelSpaceLayout
+
+    if (active) {
+      ordered.push(active)
+    }
+    if (model && model !== active) {
+      ordered.push(model)
+    }
+    for (const layout of this._layouts.values()) {
+      if (layout !== active && layout !== model) {
+        ordered.push(layout)
+      }
+    }
+    return ordered
+  }
+
+  /**
+   * Computes batch bounds for requested entities using the same layout policy as
+   * {@link createEntityPreviewRoot}.
+   */
+  private computeEntityPreviewBoundsBox(
+    entityIds: AcDbObjectId[],
+    scope: AcTrEntityPreviewScope = 'active-first'
+  ) {
+    const target = new THREE.Box3()
+    const scratch = new THREE.Box3()
+
+    if (scope === 'all') {
+      const pending = new Set(entityIds)
+      for (const layout of this.getOrderedLayouts('all')) {
+        if (pending.size === 0) {
+          break
+        }
+
+        const claimable = layout.findPreviewableEntityIds([...pending])
+        if (claimable.length === 0) {
+          continue
+        }
+
+        layout.computeEntityPreviewBoundsBox(claimable, scratch)
+        if (!scratch.isEmpty()) {
+          target.union(scratch)
+        }
+        for (const id of claimable) {
+          pending.delete(id)
+        }
+      }
+      return target
+    }
+
+    for (const layout of this.getOrderedLayouts('active-first')) {
+      layout.computeEntityPreviewBoundsBox(entityIds, scratch)
+      if (!scratch.isEmpty()) {
+        target.copy(scratch)
+        return target
+      }
+    }
+
+    target.makeEmpty()
+    return target
   }
 
   /**
    * Creates one batched preview overlay for command jigs.
+   *
+   * Only the active layout is searched and every requested entity must be present.
    *
    * @param entityIds - Database object ids to include in the preview overlay
    * @returns Preview handle id, or `null` when preview creation failed
@@ -461,7 +643,11 @@ export class AcTrScene {
     if (!layout) {
       return null
     }
-    const root = layout.createEntityPreviewRoot(entityIds)
+
+    const root = layout.createEntityPreviewRoot(entityIds, {
+      missingEntity: 'fail',
+      requireAllEntities: true
+    })
     if (!root) {
       return null
     }

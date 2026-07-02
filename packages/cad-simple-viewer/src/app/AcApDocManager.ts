@@ -24,6 +24,7 @@ import {
   AcApCopyCmd,
   AcApDimLinearCmd,
   AcApEllipseCmd,
+  AcApEntityPreviewCmd,
   AcApEraseCmd,
   AcApHatchCmd,
   AcApHideObjectsCmd,
@@ -1023,6 +1024,7 @@ export class AcApDocManager {
     addSystemCommand('circle', 'circle', new AcApCircleCmd())
     addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
     addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
+    addSystemCommand('entout', 'entout', new AcApEntityPreviewCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
     addSystemCommand('hideobjects', 'hideobjects', new AcApHideObjectsCmd())

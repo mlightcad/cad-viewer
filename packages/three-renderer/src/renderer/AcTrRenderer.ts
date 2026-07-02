@@ -33,6 +33,11 @@ import {
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport'
+import {
+  AcTrEntityPreview,
+  type AcTrEntityPreviewOptions,
+  type AcTrEntityPreviewResult
+} from './AcTrEntityPreview'
 import { AcTrMTextRenderer } from './AcTrMTextRenderer'
 import { AcTrRenderContext } from './AcTrRenderContext'
 
@@ -400,6 +405,34 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    */
   image(blob: Blob, style: AcGiImageStyle) {
     return new AcTrImage(blob, style, this._context)
+  }
+
+  /**
+   * Renders one or more entities (or a block preview root) to an offscreen canvas.
+   *
+   * Pass a detached preview root such as the group returned by
+   * {@link AcTrBatchedGroup.createPreviewSubset} or an {@link AcTrGroup} built
+   * for a block definition. When the object is already attached to a scene, a
+   * deep clone is rendered internally.
+   *
+   * @param object - Drawable root to preview
+   * @param options - Output size and optional framing overrides
+   * @returns Preview canvas and framing bounds, or `null` when bounds cannot be resolved
+   *
+   * @example
+   * ```ts
+   * const subset = batchGroup.createPreviewSubset(['line-1', 'arc-2'])
+   * if (subset) {
+   *   const preview = renderer.renderEntityPreview(subset, { width: 128, height: 128 })
+   *   disposePreviewSubset(subset)
+   * }
+   * ```
+   */
+  renderEntityPreview(
+    object: THREE.Object3D,
+    options: AcTrEntityPreviewOptions
+  ): AcTrEntityPreviewResult | null {
+    return new AcTrEntityPreview(this).capture(object, options)
   }
 
   /**

@@ -114,6 +114,25 @@ describe('AcTrBatchedGroup preview subset', () => {
     expect(group.hasEntity('line-1')).toBe(true)
   })
 
+  it('skips entity ids that cannot be extracted when missingEntity is skip', () => {
+    const group = new AcTrBatchedGroup()
+    group.addEntity(
+      createEntity(
+        'line-1',
+        createLineSegments({ x: 0, y: 0, z: 0 }, { x: 5, y: 0, z: 0 })
+      )
+    )
+
+    const subset = group.createPreviewSubset(['line-1', 'missing-id'], {
+      missingEntity: 'skip'
+    })
+    expect(subset).not.toBeNull()
+    expect(subset!.children.length).toBe(1)
+    expect(group.hasEntity('line-1')).toBe(true)
+
+    disposePreviewSubset(subset!)
+  })
+
   it('disposes each cloned material only once', () => {
     const group = new AcTrBatchedGroup()
     const line = createLineSegments({ x: 0, y: 0, z: 0 }, { x: 10, y: 0, z: 0 })

@@ -137,13 +137,17 @@ export class AcTrLayer {
    */
   computeBatchBoundingBox(
     target = new THREE.Box3(),
-    excludeObjectIds?: ReadonlySet<string>
+    excludeObjectIds?: ReadonlySet<string>,
+    includeObjectIds?: ReadonlySet<string>
   ) {
     if (!this.visible) {
       target.makeEmpty()
       return target
     }
-    return this._group.computeBoundingBox(target, { excludeObjectIds })
+    return this._group.computeBoundingBox(target, {
+      excludeObjectIds,
+      includeObjectIds
+    })
   }
 
   get visible() {
@@ -312,7 +316,7 @@ export class AcTrLayer {
    * Builds a preview subset for entities stored in this layer group.
    *
    * @param entityIds - Database object ids to extract from this layer
-   * @param options - Optional preview style and slot limits
+   * @param options - Optional preview style, slot limits, and missing-entity policy
    * @returns Preview subset group, or `null` when extraction failed
    */
   createPreviewSubset(
