@@ -1301,6 +1301,13 @@ export class AcApDocManager {
    * If the document was successfully opened, it dispatches the documentActivated event,
    * sets up layout information, and zooms the view to fit the content.
    *
+   * A large DWG/DXF parse can fail (e.g. a worker timeout) after entities have already
+   * been committed to the database in earlier pipeline stages, leaving `isSuccess` false
+   * while the database already has valid, non-empty extents. Without this check the view
+   * never initializes and the user is left with a blank canvas despite the data being in
+   * memory. When that happens, treat it as a recovered partial open so the view still
+   * activates and frames whatever content did land.
+   *
    * @param isSuccess - Whether the document was successfully opened
    * @protected
    */
@@ -1308,7 +1315,9 @@ export class AcApDocManager {
     isSuccess: boolean,
     options?: AcApOpenDatabaseOptions
   ) {
-    if (isSuccess) {
+    const recoveredPartialContent =
+      !isSuccess && this.hasRecoverablePartialContent()
+    if (isSuccess || recoveredPartialContent) {
       this.context.doc.destroy()
       const doc = this.context.doc
       this.events.documentActivated.dispatch({
@@ -1396,6 +1405,18 @@ export class AcApDocManager {
     } else {
       this.regen()
     }
+  }
+
+  /**
+   * Checks whether the current document's database already has usable content
+   * (non-empty extents) even though the open operation reported failure.
+   *
+   * @returns True when the database has recoverable partial content.
+   * @protected
+   */
+  protected hasRecoverablePartialContent(): boolean {
+    const db = this.context.doc.database
+    return !db.extents.isEmpty()
   }
 
   /**
