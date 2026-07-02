@@ -59,7 +59,7 @@ test('creates mtext renderer workers when web worker mode is selected', async ({
   await installWorkerSpy(page)
   await page.goto('/')
 
-  await page.getByRole('radio', { name: 'Web worker' }).click()
+  await page.getByRole('radio', { name: 'Worker' }).click()
   await page.locator('input[type="file"]').first().setInputFiles(fixturePath)
 
   await expect(page.locator('.ml-cad-container')).toBeVisible()
@@ -79,7 +79,7 @@ test('web worker mode loads the worker script and renders linework', async ({
   })
 
   await page.goto('/')
-  await page.getByRole('radio', { name: 'Web worker' }).click()
+  await page.getByRole('radio', { name: 'Worker' }).click()
   await page.locator('input[type="file"]').first().setInputFiles(fixturePath)
 
   await expect(page.locator('.ml-cad-container canvas').first()).toBeVisible()
