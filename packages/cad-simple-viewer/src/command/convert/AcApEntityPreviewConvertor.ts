@@ -15,6 +15,15 @@ export type AcApEntityPreviewExportResult =
   | { ok: true; exportedCount: number; skippedCount: number }
   | { ok: false; reason: AcApEntityPreviewExportFailure }
 
+export type AcApEntityPreviewCaptureResult =
+  | {
+      ok: true
+      dataUrl: string
+      exportedCount: number
+      skippedCount: number
+    }
+  | { ok: false; reason: AcApEntityPreviewExportFailure | 'no-entities' }
+
 /**
  * Exports one merged preview image for the specified entity ids.
  *
@@ -32,6 +41,43 @@ export class AcApEntityPreviewConvertor {
     entityIds: AcDbObjectId[],
     longSide: number
   ): AcApEntityPreviewExportResult {
+    const capture = this.capture(entityIds, longSide)
+    if (!capture.ok) {
+      if (capture.reason === 'no-entities') {
+        return { ok: false, reason: 'no-bounds' }
+      }
+      if (capture.reason === 'download-failed') {
+        return { ok: false, reason: 'capture-failed' }
+      }
+      return { ok: false, reason: capture.reason }
+    }
+
+    const downloaded = this.downloadDataUrl(capture.dataUrl)
+    if (!downloaded) {
+      return { ok: false, reason: 'download-failed' }
+    }
+
+    return {
+      ok: true,
+      exportedCount: capture.exportedCount,
+      skippedCount: capture.skippedCount
+    }
+  }
+
+  /**
+   * Renders selected entities into one PNG and returns a data URL.
+   *
+   * @param entityIds - Database object ids to include in the preview
+   * @param longSide - Maximum output width or height in pixels
+   */
+  capture(
+    entityIds: AcDbObjectId[],
+    longSide: number
+  ): AcApEntityPreviewCaptureResult {
+    if (entityIds.length === 0) {
+      return { ok: false, reason: 'no-entities' }
+    }
+
     const view = AcApDocManager.instance.curView as AcTrView2d
     const scene = view.cadScene
     const previewableIds = scene.findPreviewableEntityIds(entityIds, 'all')
@@ -64,7 +110,6 @@ export class AcApEntityPreviewConvertor {
     }
 
     const rendererWrapper = view.renderer
-    let downloaded = false
 
     try {
       const capture = rendererWrapper.renderEntityPreview(previewRoot, {
@@ -83,19 +128,18 @@ export class AcApEntityPreviewConvertor {
         return { ok: false, reason: 'capture-failed' }
       }
 
-      downloaded = this.downloadCanvas(capture.canvas)
+      return {
+        ok: true,
+        dataUrl: capture.canvas.toDataURL('image/png'),
+        exportedCount,
+        skippedCount
+      }
     } catch (error) {
       console.error('[ENTPREVIEW] Failed to render preview image', error)
       return { ok: false, reason: 'capture-failed' }
     } finally {
       disposePreviewSubset(previewRoot)
     }
-
-    if (!downloaded) {
-      return { ok: false, reason: 'download-failed' }
-    }
-
-    return { ok: true, exportedCount, skippedCount }
   }
 
   /**
@@ -133,7 +177,7 @@ export class AcApEntityPreviewConvertor {
   /**
    * Creates a downloadable PNG file and triggers the download.
    */
-  private downloadCanvas(canvas: HTMLCanvasElement) {
+  private downloadDataUrl(dataUrl: string) {
     try {
       const doc = AcApDocManager.instance.curDocument
       const downloadName = resolveExportDownloadName(
@@ -141,7 +185,6 @@ export class AcApEntityPreviewConvertor {
         'png',
         'entity-preview'
       )
-      const dataUrl = canvas.toDataURL('image/png')
       const downloadLink = document.createElement('a')
       downloadLink.href = dataUrl
       downloadLink.download = downloadName
