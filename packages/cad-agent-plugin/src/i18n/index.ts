@@ -1,6 +1,7 @@
 import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
 
 import { agentEn } from './en'
+import { agentTr } from './tr'
 import { agentZh } from './zh'
 
 /** Vue i18n key prefix for all agent UI strings (`main.toolPalette.agent`). */
@@ -15,7 +16,8 @@ export type AgentChatLabels = Record<AgentChatLabelKey, string>
 /** Locale-specific flat message tables before nesting under `main.toolPalette.agent`. */
 const agentMessagesByLocale = {
   en: agentEn,
-  zh: agentZh
+  zh: agentZh,
+  tr: agentTr
 } as const satisfies Record<AcApLocale, AgentChatLabels>
 
 /** Guards {@link registerAgentI18n} against duplicate merges. */
@@ -46,6 +48,7 @@ export function registerAgentI18n(): void {
 
   AcApI18n.mergeLocaleMessage('en', buildVueMessages('en'))
   AcApI18n.mergeLocaleMessage('zh', buildVueMessages('zh'))
+  AcApI18n.mergeLocaleMessage('tr', buildVueMessages('tr'))
   isRegistered = true
 }
 
@@ -60,6 +63,7 @@ export function mergeAgentI18nIntoVueI18n(
   registerAgentI18n()
   mergeLocaleMessage('en', buildVueMessages('en'))
   mergeLocaleMessage('zh', buildVueMessages('zh'))
+  mergeLocaleMessage('tr', buildVueMessages('tr'))
 }
 
 /**
