@@ -38,7 +38,29 @@ export const agentTr = {
   errorTitle: 'Bir şeyler ters gitti',
   dismissError: 'Kapat',
   send: 'Gönder',
+  stop: 'Durdur',
   working: 'Çalışıyor…',
+  agentMode: 'Ajan modu',
+  agentModeSimple: 'Basit',
+  agentModeHighInference: 'Yüksek akıl yürütme',
+  agentModeSimpleHint:
+    'Hızlı — çizimden sonra ekran görüntüsü doğrulaması yapılmaz.',
+  agentModeHighInferenceHint:
+    'Çizimden sonra ekran görüntüsü + görsel model ile doğrular (en fazla 5 tur). Görsel destekli model gerekir.',
+  highInferenceRequiresVision:
+    'Yüksek akıl yürütme modu görsel destekli bir model gerektirir.',
+  verificationTitle: 'Çizim doğrulaması',
+  verifying:
+    'Çizim ekran görüntüsü isteğiniz ve referans görsellerle karşılaştırılıyor…',
+  verificationPassed: 'Doğrulama başarılı — çizim isteğe uyuyor.',
+  verificationFailed: 'Doğrulama başarısız — bulunan sorunlar:',
+  verificationSkipped: 'Doğrulama atlandı',
+  verificationError: 'Doğrulama hatası',
+  verificationContinuing: 'Çizim optimize edilmeye devam ediliyor…',
+  verificationMaxAttempts:
+    'Maksimum doğrulama denemesi aşıldı, doğrulama geçilemedi.',
+  referenceImages: 'Referans görsel(ler)',
+  drawingScreenshot: 'Mevcut çizim ekran görüntüsü',
   unsavedSettings: 'Mesaj göndermeden önce ayarları kaydedin.',
   missingApiKey: 'Mesaj göndermeden önce ayarlardan bir API anahtarı yapılandırın.'
 } as const

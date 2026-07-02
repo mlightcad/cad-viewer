@@ -38,7 +38,27 @@ export const agentEn = {
   errorTitle: 'Something went wrong',
   dismissError: 'Dismiss',
   send: 'Send',
+  stop: 'Stop',
   working: 'Working…',
+  agentMode: 'Agent mode',
+  agentModeSimple: 'Simple',
+  agentModeHighInference: 'High inference',
+  agentModeSimpleHint: 'Fast — no screenshot verification after drawing.',
+  agentModeHighInferenceHint:
+    'Verifies the drawing with screenshot + vision model (up to 5 rounds). Requires a vision model.',
+  highInferenceRequiresVision:
+    'High inference mode requires a vision-capable model.',
+  verificationTitle: 'Drawing verification',
+  verifying: 'Comparing the drawing screenshot with your request and reference images…',
+  verificationPassed: 'Verification passed — the drawing matches the request.',
+  verificationFailed: 'Verification failed — issues found:',
+  verificationSkipped: 'Verification skipped',
+  verificationError: 'Verification error',
+  verificationContinuing: 'Continuing to optimize the drawing…',
+  verificationMaxAttempts:
+    'Verification did not pass within the maximum number of attempts.',
+  referenceImages: 'Reference image(s)',
+  drawingScreenshot: 'Current drawing screenshot',
   unsavedSettings: 'Save settings before sending messages.',
   missingApiKey: 'Configure an API key in settings before sending messages.'
 } as const

@@ -5,7 +5,13 @@ import { AcApI18n } from '@mlightcad/cad-simple-viewer'
 import type { UIMessage } from 'ai'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { agentT } from '../i18n'
 import { useAgentI18n } from '../i18n/useAgentI18n'
+import {
+  type AgentMode,
+  loadAgentMode,
+  saveAgentMode
+} from '../storage/AgentModeStore'
 import {
   getProviderDefaults,
   type LlmProviderId,
@@ -20,7 +26,7 @@ import {
   resolveModelSelection} from '../storage/modelCatalog'
 import { areLlmSettingsEqual } from '../storage/settingsEquality'
 import { formatChatError } from './formatChatError'
-import { useAgentChatRef } from './useAgentChat'
+import { createAgentChatOptions, useAgentChatRef } from './useAgentChat'
 
 /** Image file part on a {@link UIMessage} from the AI SDK. */
 type FilePart = {
@@ -76,6 +82,7 @@ const pendingPreviewUrls = ref<string[]>([])
 const modelSelection = ref(
   resolveModelSelection(settings.value.provider, settings.value.model)
 )
+const agentMode = ref<AgentMode>('high-inference')
 
 watch(
   () => settings.value.provider,
@@ -106,12 +113,16 @@ onUnmounted(() => {
   pendingPreviewUrls.value.forEach(url => URL.revokeObjectURL(url))
 })
 
-const { chat, resetChat } = useAgentChatRef(() => ({ ...activeSettings.value }))
+const { chat, resetChat } = useAgentChatRef(() => ({
+  settings: { ...activeSettings.value },
+  options: createAgentChatOptions(agentMode.value)
+}))
 
 onMounted(async () => {
   const loaded = await loadLlmSettings()
   settings.value = { ...loaded }
   activeSettings.value = { ...loaded }
+  agentMode.value = loadAgentMode()
   modelSelection.value = resolveModelSelection(loaded.provider, loaded.model)
   settingsReady.value = true
   resetChat()
@@ -154,6 +165,18 @@ const supportsVision = computed(() =>
   )
 )
 
+const highInferenceActive = computed(() => agentMode.value === 'high-inference')
+
+const agentModeHint = computed(() =>
+  highInferenceActive.value
+    ? labels.value.agentModeHighInferenceHint
+    : labels.value.agentModeSimpleHint
+)
+
+const highInferenceBlocked = computed(
+  () => highInferenceActive.value && !supportsVision.value
+)
+
 watch(supportsVision, supported => {
   if (!supported) clearPendingImages()
 })
@@ -166,6 +189,10 @@ const modelSelectDisabled = computed(
   () => !settingsReady.value || isBusy.value || settingsDirty.value
 )
 
+const agentModeSelectDisabled = computed(
+  () => modelSelectDisabled.value
+)
+
 const modelSelectTitle = computed(() =>
   settingsDirty.value ? labels.value.unsavedSettings : labels.value.model
 )
@@ -174,6 +201,7 @@ const canSend = computed(
   () =>
     settingsReady.value &&
     !settingsDirty.value &&
+    !highInferenceBlocked.value &&
     activeSettings.value.apiKey.trim().length > 0 &&
     !isBusy.value &&
     (input.value.trim().length > 0 ||
@@ -186,6 +214,9 @@ const inputHint = computed(() => {
   }
   if (settingsDirty.value) {
     return labels.value.unsavedSettings
+  }
+  if (highInferenceBlocked.value) {
+    return labels.value.highInferenceRequiresVision
   }
   if (!activeSettings.value.apiKey.trim()) {
     return labels.value.missingApiKey
@@ -225,6 +256,14 @@ async function applyActiveModel(model: string) {
 async function onInputModelChange(event: Event) {
   const model = (event.target as HTMLSelectElement).value
   await applyActiveModel(model)
+}
+
+/** Persists agent mode when the input bar dropdown changes. */
+function onAgentModeChange(event: Event) {
+  const mode = (event.target as HTMLSelectElement).value as AgentMode
+  if (mode !== 'simple' && mode !== 'high-inference') return
+  agentMode.value = mode
+  saveAgentMode(mode)
 }
 
 /** Opens the hidden file input for image attachments. */
@@ -281,6 +320,17 @@ async function sendMessage() {
   }
 }
 
+/** Stops the in-flight agent response while keeping partial output. */
+async function stopAgent() {
+  if (!isBusy.value) return
+
+  try {
+    await chat.value.stop()
+  } catch {
+    // ignore stop errors
+  }
+}
+
 /** Discards the conversation and starts a fresh agent session. */
 function clearChat() {
   resetChat()
@@ -313,6 +363,15 @@ function toolParts(message: UIMessage): string[] {
         typeof part?.type === 'string' && part.type.startsWith('tool-')
     )
     .map(part => part.type.replace(/^tool-/, ''))
+}
+
+/** True when the message contains a high-inference verification review block. */
+function isVerificationMessage(message: UIMessage): boolean {
+  return (
+    message.role === 'assistant' &&
+    imageParts(message).length > 0 &&
+    partText(message).includes(`--- ${agentT('verificationTitle')}`)
+  )
 }
 </script>
 
@@ -463,17 +522,30 @@ function toolParts(message: UIMessage): string[] {
         v-for="message in messages"
         :key="message.id"
         class="cad-agent-msg"
-        :class="message.role"
+        :class="[
+          message.role,
+          { 'cad-agent-msg--verification': isVerificationMessage(message) }
+        ]"
       >
-        <div>{{ partText(message) }}</div>
-        <div v-if="imageParts(message).length" class="cad-agent-msg-images">
-          <img
+        <div class="cad-agent-msg-text">{{ partText(message) }}</div>
+        <div
+          v-if="imageParts(message).length"
+          class="cad-agent-msg-images"
+          :class="{
+            'cad-agent-msg-images--verification': isVerificationMessage(message)
+          }"
+        >
+          <figure
             v-for="(part, index) in imageParts(message)"
             :key="`${message.id}-img-${index}`"
-            class="cad-agent-msg-image"
-            :src="part.url"
-            :alt="part.filename ?? labels.imageAlt"
-          />
+            class="cad-agent-msg-image-wrap"
+          >
+            <img
+              class="cad-agent-msg-image"
+              :src="part.url"
+              :alt="part.filename ?? labels.imageAlt"
+            />
+          </figure>
         </div>
         <div v-for="toolName in toolParts(message)" :key="toolName" class="cad-agent-tool">
           {{ labels.toolPrefix }}: {{ toolName }}
@@ -554,8 +626,21 @@ function toolParts(message: UIMessage): string[] {
         @change="onFilesSelected"
       />
       <p v-if="inputHint" class="cad-agent-input-hint">{{ inputHint }}</p>
+      <p v-else-if="agentModeHint" class="cad-agent-mode-hint">{{ agentModeHint }}</p>
       <div class="cad-agent-panel-input-row">
         <div class="cad-agent-panel-input-left">
+          <select
+            class="cad-agent-mode-select"
+            :value="agentMode"
+            :disabled="agentModeSelectDisabled"
+            :title="labels.agentMode"
+            @change="onAgentModeChange"
+          >
+            <option value="simple">{{ labels.agentModeSimple }}</option>
+            <option value="high-inference">
+              {{ labels.agentModeHighInference }}
+            </option>
+          </select>
           <select
             class="cad-agent-model-select"
             :value="activeSettings.model"
@@ -613,27 +698,18 @@ function toolParts(message: UIMessage): string[] {
           <button
             type="button"
             class="cad-agent-send-btn"
-            :disabled="!canSend"
-            :title="isBusy ? labels.working : labels.send"
-            @click="sendMessage"
+            :class="{ 'cad-agent-send-btn--stop': isBusy }"
+            :disabled="!isBusy && !canSend"
+            :title="isBusy ? labels.stop : labels.send"
+            :aria-label="isBusy ? labels.stop : labels.send"
+            @click="isBusy ? stopAgent() : sendMessage()"
           >
             <svg
               v-if="isBusy"
-              class="cad-agent-send-spinner"
               viewBox="0 0 24 24"
               aria-hidden="true"
             >
-              <circle
-                cx="12"
-                cy="12"
-                r="9"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-dasharray="42"
-                stroke-dashoffset="14"
-              />
+              <path fill="currentColor" d="M7 7h10v10H7z" />
             </svg>
             <svg v-else viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M12 4l-7 7h4v9h6v-9h4z" />

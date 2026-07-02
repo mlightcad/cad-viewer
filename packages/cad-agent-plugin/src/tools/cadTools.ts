@@ -71,6 +71,69 @@ export function createCadTools() {
       }),
       execute: async input => cadActionExecutor.drawPolyline(input)
     }),
+    draw_ellipse: tool({
+      description:
+        'Draw an ellipse or elliptical arc by center, major/minor radii, optional rotation (degrees), and optional start/end angles (degrees)',
+      inputSchema: z.object({
+        center: pointSchema,
+        majorRadius: z.number().positive(),
+        minorRadius: z.number().positive(),
+        rotationDeg: z.number().optional(),
+        startAngleDeg: z.number().optional(),
+        endAngleDeg: z.number().optional(),
+        layer: z.string().optional()
+      }),
+      execute: async input => cadActionExecutor.drawEllipse(input)
+    }),
+    draw_hatch: tool({
+      description:
+        'Draw a hatch fill inside a closed polygon boundary. Use patternName "SOLID" for solid fill, or a predefined pattern name such as ANSI31',
+      inputSchema: z.object({
+        boundary: z.array(pointSchema).min(3),
+        patternName: z.string().optional(),
+        patternScale: z.number().positive().optional(),
+        patternAngleDeg: z.number().optional(),
+        layer: z.string().optional()
+      }),
+      execute: async input => cadActionExecutor.drawHatch(input)
+    }),
+    draw_point: tool({
+      description: 'Draw a point entity at a position',
+      inputSchema: z.object({
+        position: pointSchema,
+        layer: z.string().optional()
+      }),
+      execute: async input => cadActionExecutor.drawPoint(input)
+    }),
+    draw_ray: tool({
+      description:
+        'Draw a ray (half-line) from a start point through another point',
+      inputSchema: z.object({
+        start: pointSchema,
+        through: pointSchema,
+        layer: z.string().optional()
+      }),
+      execute: async input => cadActionExecutor.drawRay(input)
+    }),
+    draw_xline: tool({
+      description:
+        'Draw a construction line (xline) through two points, extending infinitely both ways',
+      inputSchema: z.object({
+        start: pointSchema,
+        through: pointSchema,
+        layer: z.string().optional()
+      }),
+      execute: async input => cadActionExecutor.drawXline(input)
+    }),
+    draw_spline: tool({
+      description: 'Draw a smooth spline curve through a list of fit points',
+      inputSchema: z.object({
+        points: z.array(pointSchema).min(2),
+        closed: z.boolean().optional(),
+        layer: z.string().optional()
+      }),
+      execute: async input => cadActionExecutor.drawSpline(input)
+    }),
     draw_text: tool({
       description: 'Draw single-line MTEXT at a position',
       inputSchema: z.object({
@@ -95,6 +158,14 @@ export function createCadTools() {
         layerName: z.string().min(1)
       }),
       execute: async input => cadActionExecutor.createLayer(input.layerName)
+    }),
+    delete_entities: tool({
+      description:
+        'Delete one or more entities by object id. Use entityIds returned from previous drawing tool calls to remove incorrect geometry before redrawing.',
+      inputSchema: z.object({
+        entityIds: z.array(z.string().min(1)).min(1)
+      }),
+      execute: async input => cadActionExecutor.deleteEntities(input)
     }),
     zoom_extents: tool({
       description: 'Zoom the view to show the full drawing extents',

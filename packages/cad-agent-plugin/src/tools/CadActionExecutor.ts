@@ -5,12 +5,25 @@ import {
 import {
   AcDbArc,
   AcDbCircle,
+  AcDbDatabase,
+  AcDbEllipse,
   AcDbEntity,
+  AcDbHatch,
+  AcDbHatchPatternType,
+  AcDbHatchStyle,
   AcDbLine,
   AcDbMText,
+  AcDbPoint,
   AcDbPolyline,
+  AcDbRay,
+  AcDbSpline,
+  AcDbXline,
+  AcGeLine2d,
+  AcGeLoop2d,
   AcGePoint2d,
-  AcGePoint3d
+  AcGePoint3d,
+  AcGeTol,
+  HATCH_PATTERN_SOLID
 } from '@mlightcad/data-model'
 
 import { requireDocument, requireView } from './documentAccess'
@@ -60,6 +73,46 @@ function applyLayer(entity: AcDbEntity, layer?: string): void {
   if (layer) {
     entity.layer = layer
   }
+}
+
+const POSITIVE_NORMAL = { x: 0, y: 0, z: 1 }
+
+function degToRad(degrees: number): number {
+  return (degrees * Math.PI) / 180
+}
+
+/**
+ * Builds a unit direction vector from `start` toward `through`, or `undefined` if degenerate.
+ */
+function resolveUnitDirection(
+  start: Point2dInput,
+  through: Point2dInput
+): AcGePoint3d | undefined {
+  const direction = new AcGePoint3d(through.x, through.y, 0).sub(
+    new AcGePoint3d(start.x, start.y, 0)
+  )
+  if (!AcGeTol.isPositive(direction.length())) {
+    return undefined
+  }
+  return direction.normalize()
+}
+
+/**
+ * Creates a closed polyline hatch boundary loop from WCS vertices.
+ */
+function createClosedBoundaryLoop(points: Point2dInput[]): AcGeLoop2d {
+  const loop = new AcGeLoop2d()
+  for (let index = 0; index < points.length; index++) {
+    const start = points[index]
+    const end = points[(index + 1) % points.length]
+    loop.add(
+      new AcGeLine2d(
+        new AcGePoint2d(start.x, start.y),
+        new AcGePoint2d(end.x, end.y)
+      )
+    )
+  }
+  return loop
 }
 
 /**
@@ -422,6 +475,345 @@ export class CadActionExecutor {
   }
 
   /**
+   * Creates an ellipse or elliptical arc by center, radii, and optional rotation.
+   *
+   * @param input - Ellipse parameters and optional layer.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawEllipse(input: {
+    center: Point2dInput
+    majorRadius: number
+    minorRadius: number
+    rotationDeg?: number
+    startAngleDeg?: number
+    endAngleDeg?: number
+    layer?: string
+  }): ToolResult {
+    const accessError = requireDocument(true)
+    if (accessError) {
+      return accessError
+    }
+    if (
+      !Number.isFinite(input.majorRadius) ||
+      !Number.isFinite(input.minorRadius) ||
+      input.majorRadius <= 0 ||
+      input.minorRadius <= 0
+    ) {
+      return {
+        success: false,
+        message: 'Ellipse requires positive major and minor radii',
+        error: 'invalid_radii'
+      }
+    }
+    const layerError = validateLayer(input.layer)
+    if (layerError) {
+      return layerError
+    }
+    try {
+      const entityIds: string[] = []
+      runEdit('Agent: draw_ellipse', () => {
+        const db = AcApDocManager.instance.curDocument.database
+        const rotationRad = degToRad(input.rotationDeg ?? 0)
+        const majorAxis = {
+          x: Math.cos(rotationRad),
+          y: Math.sin(rotationRad),
+          z: 0
+        }
+        const hasArcAngles =
+          input.startAngleDeg !== undefined && input.endAngleDeg !== undefined
+        const startAngle = hasArcAngles ? degToRad(input.startAngleDeg!) : 0
+        const endAngle = hasArcAngles ? degToRad(input.endAngleDeg!) : 0
+        const ellipse = new AcDbEllipse(
+          toPoint3d(input.center),
+          POSITIVE_NORMAL,
+          majorAxis,
+          input.majorRadius,
+          input.minorRadius,
+          startAngle,
+          endAngle
+        )
+        applyLayer(ellipse, input.layer)
+        db.tables.blockTable.modelSpace.appendEntity(ellipse)
+        entityIds.push(ellipse.objectId)
+      })
+      const isArc =
+        input.startAngleDeg !== undefined && input.endAngleDeg !== undefined
+      return {
+        success: true,
+        message: isArc ? 'Elliptical arc created' : 'Ellipse created',
+        entityIds
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to draw ellipse',
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  }
+
+  /**
+   * Creates a hatch fill inside a closed polygon boundary.
+   *
+   * @param input - Boundary vertices, optional pattern settings, and optional layer.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawHatch(input: {
+    boundary: Point2dInput[]
+    patternName?: string
+    patternScale?: number
+    patternAngleDeg?: number
+    layer?: string
+  }): ToolResult {
+    const accessError = requireDocument(true)
+    if (accessError) {
+      return accessError
+    }
+    if (input.boundary.length < 3) {
+      return {
+        success: false,
+        message: 'Hatch boundary requires at least 3 points',
+        error: 'invalid_boundary'
+      }
+    }
+    const layerError = validateLayer(input.layer)
+    if (layerError) {
+      return layerError
+    }
+    try {
+      const entityIds: string[] = []
+      runEdit('Agent: draw_hatch', () => {
+        const db = AcApDocManager.instance.curDocument.database
+        const hatch = new AcDbHatch()
+        if (db instanceof AcDbDatabase) {
+          hatch.database = db
+        }
+        const patternName = input.patternName?.trim() || HATCH_PATTERN_SOLID
+        const isSolidFill = patternName === HATCH_PATTERN_SOLID
+        hatch.patternName = patternName
+        hatch.patternType = AcDbHatchPatternType.Predefined
+        hatch.patternScale = input.patternScale ?? 1
+        hatch.patternAngle = degToRad(input.patternAngleDeg ?? 0)
+        hatch.hatchStyle = AcDbHatchStyle.Normal
+        hatch.isSolidFill = isSolidFill
+        hatch.add(createClosedBoundaryLoop(input.boundary))
+        applyLayer(hatch, input.layer)
+        db.tables.blockTable.modelSpace.appendEntity(hatch)
+        entityIds.push(hatch.objectId)
+      })
+      return {
+        success: true,
+        message: 'Hatch created',
+        entityIds
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to draw hatch',
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  }
+
+  /**
+   * Creates a point entity at a WCS position.
+   *
+   * @param input - Position and optional layer.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawPoint(input: {
+    position: Point2dInput
+    layer?: string
+  }): ToolResult {
+    const accessError = requireDocument(true)
+    if (accessError) {
+      return accessError
+    }
+    const layerError = validateLayer(input.layer)
+    if (layerError) {
+      return layerError
+    }
+    try {
+      const entityIds: string[] = []
+      runEdit('Agent: draw_point', () => {
+        const db = AcApDocManager.instance.curDocument.database
+        const point = new AcDbPoint()
+        point.position = toPoint3d(input.position)
+        applyLayer(point, input.layer)
+        db.tables.blockTable.modelSpace.appendEntity(point)
+        entityIds.push(point.objectId)
+      })
+      return {
+        success: true,
+        message: 'Point created',
+        entityIds
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to draw point',
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  }
+
+  /**
+   * Creates a ray from a start point through another point.
+   *
+   * @param input - Start point, through point, and optional layer.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawRay(input: {
+    start: Point2dInput
+    through: Point2dInput
+    layer?: string
+  }): ToolResult {
+    const accessError = requireDocument(true)
+    if (accessError) {
+      return accessError
+    }
+    const unitDir = resolveUnitDirection(input.start, input.through)
+    if (!unitDir) {
+      return {
+        success: false,
+        message: 'Ray requires distinct start and through points',
+        error: 'invalid_direction'
+      }
+    }
+    const layerError = validateLayer(input.layer)
+    if (layerError) {
+      return layerError
+    }
+    try {
+      const entityIds: string[] = []
+      runEdit('Agent: draw_ray', () => {
+        const db = AcApDocManager.instance.curDocument.database
+        const ray = new AcDbRay()
+        ray.basePoint = toPoint3d(input.start)
+        ray.unitDir = unitDir
+        applyLayer(ray, input.layer)
+        db.tables.blockTable.modelSpace.appendEntity(ray)
+        entityIds.push(ray.objectId)
+      })
+      return {
+        success: true,
+        message: 'Ray created',
+        entityIds
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to draw ray',
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  }
+
+  /**
+   * Creates a construction line (xline) from a start point through another point.
+   *
+   * @param input - Start point, through point, and optional layer.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawXline(input: {
+    start: Point2dInput
+    through: Point2dInput
+    layer?: string
+  }): ToolResult {
+    const accessError = requireDocument(true)
+    if (accessError) {
+      return accessError
+    }
+    const unitDir = resolveUnitDirection(input.start, input.through)
+    if (!unitDir) {
+      return {
+        success: false,
+        message: 'Xline requires distinct start and through points',
+        error: 'invalid_direction'
+      }
+    }
+    const layerError = validateLayer(input.layer)
+    if (layerError) {
+      return layerError
+    }
+    try {
+      const entityIds: string[] = []
+      runEdit('Agent: draw_xline', () => {
+        const db = AcApDocManager.instance.curDocument.database
+        const xline = new AcDbXline()
+        xline.basePoint = toPoint3d(input.start)
+        xline.unitDir = unitDir
+        applyLayer(xline, input.layer)
+        db.tables.blockTable.modelSpace.appendEntity(xline)
+        entityIds.push(xline.objectId)
+      })
+      return {
+        success: true,
+        message: 'Xline created',
+        entityIds
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to draw xline',
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  }
+
+  /**
+   * Creates a fit spline through an ordered list of control/fit points.
+   *
+   * @param input - Vertices, optional closed flag, and optional layer.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawSpline(input: {
+    points: Point2dInput[]
+    closed?: boolean
+    layer?: string
+  }): ToolResult {
+    const accessError = requireDocument(true)
+    if (accessError) {
+      return accessError
+    }
+    if (input.points.length < 2) {
+      return {
+        success: false,
+        message: 'Spline requires at least 2 points',
+        error: 'invalid_points'
+      }
+    }
+    const layerError = validateLayer(input.layer)
+    if (layerError) {
+      return layerError
+    }
+    try {
+      const entityIds: string[] = []
+      runEdit('Agent: draw_spline', () => {
+        const db = AcApDocManager.instance.curDocument.database
+        const points3d = input.points.map(point => toPoint3d(point))
+        const degree = Math.min(3, Math.max(1, points3d.length - 1))
+        const isClosed = Boolean(input.closed && points3d.length >= 3)
+        const spline = new AcDbSpline(points3d, 'Chord', degree, isClosed)
+        applyLayer(spline, input.layer)
+        db.tables.blockTable.modelSpace.appendEntity(spline)
+        entityIds.push(spline.objectId)
+      })
+      return {
+        success: true,
+        message: 'Spline created',
+        entityIds
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to draw spline',
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  }
+
+  /**
    * Sets the document current layer (CLAYER).
    *
    * @param layerName - Existing layer name.
@@ -489,6 +881,58 @@ export class CadActionExecutor {
       return {
         success: false,
         message: 'Failed to create layer',
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  }
+
+  /**
+   * Erases entities by object id.
+   *
+   * @param input - Entity ids previously returned by drawing tools.
+   * @returns {@link ToolResult} with the number of deleted entities on success.
+   */
+  deleteEntities(input: { entityIds: string[] }): ToolResult {
+    const accessError = requireDocument(true)
+    if (accessError) {
+      return accessError
+    }
+    if (input.entityIds.length === 0) {
+      return {
+        success: false,
+        message: 'At least one entity id is required',
+        error: 'invalid_entity_ids'
+      }
+    }
+    try {
+      const requestedIds = [...new Set(input.entityIds)]
+      let erasedCount = 0
+      runEdit('Agent: delete_entities', () => {
+        erasedCount =
+          AcApDocManager.instance.curDocument.entityService.eraseEntities(
+            requestedIds
+          )
+      })
+      if (erasedCount === 0) {
+        return {
+          success: false,
+          message: 'No entities found for the given ids',
+          error: 'entity_not_found'
+        }
+      }
+      const notFoundCount = requestedIds.length - erasedCount
+      const message =
+        notFoundCount > 0
+          ? `Deleted ${erasedCount} entity(ies); ${notFoundCount} id(s) not found`
+          : `Deleted ${erasedCount} entity(ies)`
+      return {
+        success: true,
+        message
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to delete entities',
         error: error instanceof Error ? error.message : String(error)
       }
     }

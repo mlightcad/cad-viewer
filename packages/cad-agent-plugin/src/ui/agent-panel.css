@@ -270,21 +270,16 @@
 }
 
 .cad-agent-panel-input-left {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
-}
-
-.cad-agent-panel-input-right {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  margin-left: auto;
+  gap: 6px;
 }
 
+.cad-agent-mode-select,
 .cad-agent-model-select {
-  width: 100%;
-  max-width: 128px;
+  min-width: 0;
   border: 1px solid #4a4a4a;
   border-radius: 6px;
   background: #2d2d2d;
@@ -296,13 +291,40 @@
   text-overflow: ellipsis;
 }
 
+.cad-agent-mode-select {
+  flex: 0 1 38%;
+  max-width: 108px;
+}
+
+.cad-agent-model-select {
+  flex: 1 1 62%;
+  max-width: 128px;
+}
+
+.cad-agent-mode-select:hover:not(:disabled),
 .cad-agent-model-select:hover:not(:disabled) {
   background: #333;
 }
 
+.cad-agent-mode-select:disabled,
 .cad-agent-model-select:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.cad-agent-mode-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #9a9a9a;
+  line-height: 1.4;
+}
+
+.cad-agent-panel-input-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .cad-agent-attach-btn {
@@ -346,6 +368,15 @@
 
 .cad-agent-send-btn:hover:not(:disabled) {
   background: #e8e8e8;
+}
+
+.cad-agent-send-btn--stop {
+  background: #c75050;
+  color: #fff;
+}
+
+.cad-agent-send-btn--stop:hover:not(:disabled) {
+  background: #d96a6a;
 }
 
 .cad-agent-send-btn:disabled {
@@ -420,12 +451,43 @@
   margin-top: 6px;
 }
 
+.cad-agent-msg-images--verification {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.cad-agent-msg--verification {
+  border-left: 3px solid #4a9eff;
+  padding-left: 10px;
+}
+
+.cad-agent-msg-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cad-agent-msg-image-wrap {
+  margin: 0;
+  min-width: 0;
+}
+
 .cad-agent-msg-image {
   max-width: 100%;
   max-height: 200px;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   object-fit: contain;
+  display: block;
+  background: #111;
+}
+
+.cad-agent-msg-images--verification .cad-agent-msg-image {
+  width: 100%;
+  max-height: 220px;
 }
 
 .cad-agent-file-input {
