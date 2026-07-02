@@ -339,7 +339,9 @@ export class AcTrLayout {
       throw new Error('Layer name is required to add one entity!')
     }
 
-    const layer = this._layers.get(entity.layerName)
+    const layer = this._layers.get(
+      AcTrLayout.normalizeLayerName(entity.layerName)
+    )
     if (!layer) {
       throw new Error(`layer '${entity.layerName}' doesn't exist!`)
     }
@@ -615,7 +617,7 @@ export class AcTrLayout {
    * @returns - The layer with the specified name in this layout
    */
   getLayer(name: string) {
-    return this._layers.get(name)
+    return this._layers.get(AcTrLayout.normalizeLayerName(name))
   }
 
   /**
@@ -626,11 +628,11 @@ export class AcTrLayout {
    * group already exists in this layout.
    */
   addLayer(info: AcEdLayerInfo) {
-    const name = info.name
-    let layer = this._layers.get(name)
+    const key = AcTrLayout.normalizeLayerName(info.name)
+    let layer = this._layers.get(key)
     if (layer === undefined) {
       layer = new AcTrLayer(info)
-      this._layers.set(name, layer)
+      this._layers.set(key, layer)
       this._group.add(layer.internalObject)
     }
     return layer
@@ -642,7 +644,7 @@ export class AcTrLayout {
    * @returns Returns the updated layer group.
    */
   updateLayer(info: AcEdLayerInfo) {
-    const layer = this._layers.get(info.name)
+    const layer = this._layers.get(AcTrLayout.normalizeLayerName(info.name))
     if (layer) {
       // TODO: Handle layer name changes
       const wasVisible = layer.visible
@@ -652,6 +654,22 @@ export class AcTrLayout {
       }
     }
     return layer
+  }
+
+  /**
+   * Normalizes a layer name for use as a lookup key.
+   *
+   * AutoCAD/DXF layer names are case-insensitive, and some DXF sources (e.g.
+   * merged blocks/xrefs) emit the same logical layer with inconsistent casing
+   * or stray whitespace. Without this, such variants create separate
+   * {@link AcTrLayer} groups, so toggling one leaves entities on the other
+   * unaffected — the layer's visibility checkbox then appears to do nothing.
+   *
+   * @param name - Input layer name
+   * @returns Normalized key used for {@link AcTrLayout._layers}
+   */
+  private static normalizeLayerName(name: string) {
+    return name.trim().toUpperCase()
   }
 
   /**
