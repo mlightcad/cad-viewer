@@ -9,6 +9,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import { AcTrRenderer } from '../renderer'
+import { AcTrEntityPreview } from '../renderer/AcTrEntityPreview'
 import { AcTrCamera } from './AcTrCamera'
 
 export interface AcTrBaseViewEventArgs {
@@ -182,28 +183,12 @@ export class AcTrBaseView {
    * Does not update OrbitControls target so interactive pan/zoom stay intact.
    */
   applyExportCamera(box: AcGeBox2d, pixelWidth: number, pixelHeight: number) {
-    const size = new AcGeVector2d()
-    box.getSize(size)
-
-    const center = new AcGeVector2d()
-    box.getCenter(center)
-
-    const fitWidth = Math.max(Math.abs(size.x), Number.EPSILON)
-    const fitHeight = Math.max(Math.abs(size.y), Number.EPSILON)
-    const aspect = pixelWidth / Math.max(pixelHeight, 1)
-    const frustum = pixelHeight / 2
-    const scale = Math.min(
-      (2 * aspect * frustum) / fitWidth,
-      (2 * frustum) / fitHeight
+    AcTrEntityPreview.fitExportCamera(
+      this._camera.internalCamera,
+      box,
+      pixelWidth,
+      pixelHeight
     )
-
-    this._camera.left = -aspect * frustum
-    this._camera.right = aspect * frustum
-    this._camera.top = frustum
-    this._camera.bottom = -frustum
-    this._camera.position.set(center.x, center.y, this._camera.position.z)
-    this._camera.zoom = scale
-    this._camera.updateProjectionMatrix()
   }
 
   zoomTo(box: AcGeBox2d, margin: number = 1.1) {

@@ -176,6 +176,13 @@ export interface AcTrPreviewSubsetOptions {
   style?: 'normal' | 'dashed'
   /** Maximum number of drawable slots to extract. */
   maxSlots?: number
+  /**
+   * Behavior when one entity id cannot be extracted from this batch group.
+   *
+   * - `fail` (default): dispose the partial subset and return `null`
+   * - `skip`: ignore that id and continue with the remaining ids
+   */
+  missingEntity?: 'fail' | 'skip'
 }
 
 /**
@@ -416,7 +423,10 @@ export class AcTrBatchedGroup extends THREE.Group {
    */
   computeBoundingBox(
     target = new THREE.Box3(),
-    options?: { excludeObjectIds?: ReadonlySet<string> }
+    options?: {
+      excludeObjectIds?: ReadonlySet<string>
+      includeObjectIds?: ReadonlySet<string>
+    }
   ) {
     target.makeEmpty()
     const scratch = new THREE.Box3()
@@ -439,6 +449,12 @@ export class AcTrBatchedGroup extends THREE.Group {
 
     this._unbatchedEntities.forEach((objects, objectId) => {
       if (options?.excludeObjectIds?.has(objectId)) {
+        return
+      }
+      if (
+        options?.includeObjectIds &&
+        !options.includeObjectIds.has(objectId)
+      ) {
         return
       }
       for (const child of objects) {
@@ -1350,6 +1366,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     const maxSlots = options?.maxSlots ?? 10000
+    const missingEntity = options?.missingEntity ?? 'fail'
     const container = new THREE.Group()
     container.name = 'PreviewSubset'
     container.userData.previewSubsetGroup = true
@@ -1366,13 +1383,16 @@ export class AcTrBatchedGroup extends THREE.Group {
         previewStyle: options?.style ?? 'normal'
       })
       if (added === 0) {
+        if (missingEntity === 'skip') {
+          continue
+        }
         disposePreviewSubset(container)
         return null
       }
       slotCount += added
     }
 
-    return container
+    return slotCount > 0 ? container : null
   }
 
   /**

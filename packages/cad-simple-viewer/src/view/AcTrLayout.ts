@@ -1,6 +1,7 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
 import {
   AcTrEntity,
+  AcTrEntityPreview,
   AcTrGroup,
   disposePreviewSubset
 } from '@mlightcad/three-renderer'
@@ -11,6 +12,19 @@ import { unionSpatialQueryItems } from '../editor/view/AcEdSpatialQueryResult'
 import { AcTrHierarchicalSpatialIndex } from '../spatialIndex'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrLayer, AcTrLayerStats } from './AcTrLayer'
+
+/** Options for {@link AcTrLayout.createEntityPreviewRoot}. */
+export interface AcTrEntityPreviewRootOptions {
+  /**
+   * Behavior when one entity id cannot be extracted from a layer batch group.
+   *
+   * - `fail` (default): dispose the partial preview and return `null`
+   * - `skip`: ignore that id and continue with the remaining ids
+   */
+  missingEntity?: 'fail' | 'skip'
+  /** When true, every requested id must exist in this layout. */
+  requireAllEntities?: boolean
+}
 
 /**
  * Interface representing statistics for a layout.
@@ -425,55 +439,166 @@ export class AcTrLayout {
   }
 
   /**
-   * Returns true when every requested entity is present in this layout.
+   * Returns true when requested entities can be previewed in this layout.
+   *
+   * Uses batch bounds only and does not clone preview geometry.
    *
    * @param entityIds - Database object ids required for preview creation
+   * @param options - When {@link AcTrEntityPreviewRootOptions.requireAllEntities} is
+   *   true (default), every id must be present; otherwise at least one id is enough
    */
-  canCreateEntityPreview(entityIds: AcDbObjectId[]): boolean {
+  canCreateEntityPreview(
+    entityIds: AcDbObjectId[],
+    options?: Pick<AcTrEntityPreviewRootOptions, 'requireAllEntities'>
+  ): boolean {
     if (entityIds.length === 0) {
       return false
     }
-    const root = this.createEntityPreviewRoot(entityIds)
-    if (!root) {
-      return false
+
+    const requireAllEntities = options?.requireAllEntities ?? true
+    if (requireAllEntities) {
+      for (const id of entityIds) {
+        if (!this.hasEntity(id)) {
+          return false
+        }
+        const scratch = new THREE.Box3()
+        this.computeEntityPreviewBoundsBox([id], scratch)
+        if (scratch.isEmpty()) {
+          return false
+        }
+      }
+      return true
     }
-    disposePreviewSubset(root)
-    return true
+
+    return !this.computeEntityPreviewBoundsBox(entityIds).isEmpty()
+  }
+
+  /**
+   * Returns entity ids that have drawable batch bounds in this layout.
+   *
+   * @param entityIds - Database object ids to check
+   */
+  findPreviewableEntityIds(entityIds: AcDbObjectId[]): AcDbObjectId[] {
+    const previewable: AcDbObjectId[] = []
+    for (const id of entityIds) {
+      if (!this.hasEntity(id)) {
+        continue
+      }
+      const scratch = new THREE.Box3()
+      this.computeEntityPreviewBoundsBox([id], scratch)
+      if (!scratch.isEmpty()) {
+        previewable.push(id)
+      }
+    }
+    return previewable
+  }
+
+  /**
+   * Computes world-space bounds for the requested entities from packed batch data.
+   *
+   * This avoids building a preview subset or traversing cloned drawables.
+   *
+   * @param entityIds - Database object ids to measure
+   * @param target - Optional output box
+   * @returns Axis-aligned bounds box, empty when nothing matched
+   */
+  computeEntityPreviewBoundsBox(
+    entityIds: AcDbObjectId[],
+    target = new THREE.Box3()
+  ) {
+    target.makeEmpty()
+    if (entityIds.length === 0) {
+      return target
+    }
+
+    const includeObjectIds = new Set(entityIds)
+    const scratch = new THREE.Box3()
+    for (const layer of this._layers.values()) {
+      layer.computeBatchBoundingBox(scratch, undefined, includeObjectIds)
+      if (!scratch.isEmpty()) {
+        target.union(scratch)
+      }
+    }
+    return target
+  }
+
+  /**
+   * Computes a 2D preview framing box for the requested entities in this layout.
+   *
+   * @param entityIds - Database object ids to measure
+   * @param margin - Margin multiplier applied around the raw bounds
+   */
+  computeEntityPreviewBounds2d(
+    entityIds: AcDbObjectId[],
+    margin = 1.1
+  ): AcGeBox2d | null {
+    const box = this.computeEntityPreviewBoundsBox(entityIds)
+    return AcTrEntityPreview.box3ToBounds2d(box, margin)
   }
 
   /**
    * Builds one preview root group by extracting GPU-resident geometry from layer batches.
    *
+   * Entities that are missing from this layout or cannot be extracted are skipped.
+   * Returns `null` only when no drawable geometry could be collected.
+   *
    * @param entityIds - Database object ids to include in the preview overlay
-   * @returns Preview root group, or `null` when any entity could not be extracted
+   * @returns Preview root group, or `null` when no preview geometry was extracted
    */
-  createEntityPreviewRoot(entityIds: AcDbObjectId[]): THREE.Group | null {
-    const idsByLayer = new Map<AcTrLayer, AcDbObjectId[]>()
+  createEntityPreviewRoot(
+    entityIds: AcDbObjectId[],
+    options?: AcTrEntityPreviewRootOptions
+  ): THREE.Group | null {
+    const missingEntity = options?.missingEntity ?? 'fail'
+    const requireAllEntities = options?.requireAllEntities ?? false
+
+    if (requireAllEntities) {
+      for (const id of entityIds) {
+        if (!this.hasEntity(id)) {
+          return null
+        }
+      }
+    }
+
+    const idsByLayer = new Map<AcTrLayer, Set<AcDbObjectId>>()
 
     for (const id of entityIds) {
       const layers = this.getLayersByObjectId(id)
       if (layers.length === 0) {
-        return null
+        if (requireAllEntities || missingEntity === 'fail') {
+          return null
+        }
+        continue
       }
       for (const layer of layers) {
         let layerIds = idsByLayer.get(layer)
         if (!layerIds) {
-          layerIds = []
+          layerIds = new Set()
           idsByLayer.set(layer, layerIds)
         }
-        if (!layerIds.includes(id)) {
-          layerIds.push(id)
-        }
+        layerIds.add(id)
       }
+    }
+
+    if (idsByLayer.size === 0) {
+      return null
     }
 
     const previewRoot = new THREE.Group()
     previewRoot.name = 'EntityPreviewRoot'
     for (const [layer, ids] of idsByLayer) {
-      const subset = layer.createPreviewSubset(ids)
-      if (!subset) {
-        disposePreviewSubset(previewRoot)
-        return null
+      const idList = [...ids]
+      const subset = layer.createPreviewSubset(idList, {
+        // Complex blocks/hatches may need several drawable slots per entity.
+        maxSlots: Math.max(10000, idList.length * 8),
+        missingEntity
+      })
+      if (!subset || subset.children.length === 0) {
+        if (missingEntity === 'fail') {
+          disposePreviewSubset(previewRoot)
+          return null
+        }
+        continue
       }
       previewRoot.add(subset)
     }

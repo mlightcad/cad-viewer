@@ -252,6 +252,17 @@ export default {
     restored: 'object(s) restored',
     nothingToRestore: 'No hidden objects to restore'
   },
+  entout: {
+    longSidePrompt: 'Enter preview long side size in pixels',
+    exported: 'object preview(s) exported',
+    skipped: 'object(s) skipped',
+    failed: {
+      'no-preview-root': 'Unable to build preview geometry for the selection',
+      'no-bounds': 'Unable to compute preview bounds for the selection',
+      'capture-failed': 'Unable to render the entity preview image',
+      'download-failed': 'Preview rendered but the PNG download failed'
+    }
+  },
   layer: {
     main: 'Enter option',
     listSummary: 'Layer list was printed to browser console',

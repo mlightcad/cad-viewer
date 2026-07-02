@@ -413,3 +413,78 @@ describe('AcTrLayout spatial index', () => {
     ])
   })
 })
+
+describe('AcTrLayout entity preview helpers', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockRemoveEntity.mockReturnValue(false)
+    lastCapturedExclude = undefined
+  })
+
+  it('canCreateEntityPreview requires every entity when requireAllEntities is true', () => {
+    const layout = new AcTrLayout()
+    const group = layout.addLayer(createLayerInfo()).internalObject as unknown as {
+      hasEntity: jest.Mock
+      computeBoundingBox: jest.Mock
+    }
+    group.hasEntity = jest
+      .fn()
+      .mockImplementation((id: string) => id === 'line-1' || id === 'line-2')
+    group.computeBoundingBox = jest.fn(
+      (
+        target: THREE.Box3,
+        options?: { includeObjectIds?: ReadonlySet<string> }
+      ) => {
+        target.makeEmpty()
+        if (options?.includeObjectIds?.has('line-1')) {
+          target.min.set(0, 0, 0)
+          target.max.set(10, 10, 0)
+        }
+        if (options?.includeObjectIds?.has('line-2')) {
+          target.min.set(20, 0, 0)
+          target.max.set(30, 10, 0)
+        }
+        return target
+      }
+    )
+
+    expect(
+      layout.canCreateEntityPreview(['line-1', 'line-2'], {
+        requireAllEntities: true
+      })
+    ).toBe(true)
+    expect(
+      layout.canCreateEntityPreview(['line-1', 'missing'], {
+        requireAllEntities: true
+      })
+    ).toBe(false)
+  })
+
+  it('findPreviewableEntityIds returns only ids with batch bounds in this layout', () => {
+    const layout = new AcTrLayout()
+    const group = layout.addLayer(createLayerInfo()).internalObject as unknown as {
+      hasEntity: jest.Mock
+      computeBoundingBox: jest.Mock
+    }
+    group.hasEntity = jest
+      .fn()
+      .mockImplementation((id: string) => id === 'line-1' || id === 'line-2')
+    group.computeBoundingBox = jest.fn(
+      (
+        target: THREE.Box3,
+        options?: { includeObjectIds?: ReadonlySet<string> }
+      ) => {
+        target.makeEmpty()
+        if (options?.includeObjectIds?.has('line-1')) {
+          target.min.set(0, 0, 0)
+          target.max.set(10, 10, 0)
+        }
+        return target
+      }
+    )
+
+    expect(layout.findPreviewableEntityIds(['line-1', 'line-2', 'missing'])).toEqual(
+      ['line-1']
+    )
+  })
+})

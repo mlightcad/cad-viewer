@@ -92,6 +92,10 @@ export default {
       description: '从图纸中删除所选对象',
       prompt: '选择对象'
     },
+    entout: {
+      description: '导出所选对象的合并预览图',
+      prompt: '选择对象'
+    },
     hideobjects: {
       description: '临时隐藏所选对象的显示',
       prompt: '选择对象'
