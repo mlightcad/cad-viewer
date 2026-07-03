@@ -105,6 +105,8 @@ import {
 } from './AcDbOpenDatabaseOptions'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
+/** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */
+const DEFAULT_NEW_DRAWING_TEMPLATE = 'templates/acadiso.dxf'
 /**
  * Built-in command alias table used when users do not provide explicit alias overrides.
  *
@@ -866,6 +868,38 @@ export class AcApDocManager {
       options
     )
     this.onAfterOpenDocument(isSuccess, options)
+    return isSuccess
+  }
+
+  /**
+   * Creates a new CAD document from the default ISO drawing template.
+   *
+   * This method loads the predefined template (`acadiso.dxf`) from {@link baseUrl}
+   * and replaces the current document in write mode with default open options.
+   *
+   * @param options - Optional database opening options merged with write mode
+   * @returns Promise that resolves to true if the document was successfully created
+   *
+   * @example
+   * ```typescript
+   * const success = await docManager.newDocument();
+   * ```
+   */
+  async newDocument(options?: AcApOpenDatabaseOptions) {
+    const baseUrl = this.baseUrl.endsWith('/')
+      ? this.baseUrl
+      : `${this.baseUrl}/`
+    const templateUrl = `${baseUrl}${DEFAULT_NEW_DRAWING_TEMPLATE}`
+    const openOptions = this.setOptions({
+      mode: AcEdOpenMode.Write,
+      ...options
+    })
+    this.onBeforeOpenDocument(openOptions)
+    const isSuccess = await this.context.doc.openUri(templateUrl, openOptions)
+    if (isSuccess) {
+      this.context.doc.resetNewDocumentIdentity()
+    }
+    this.onAfterOpenDocument(isSuccess, openOptions)
     return isSuccess
   }
 

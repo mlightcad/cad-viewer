@@ -148,6 +148,18 @@ export class AcApDocument {
   }
 
   /**
+   * Clears file identity after creating a document from a template.
+   *
+   * Template content remains in the database; only URI, file name, and title
+   * are reset so the document presents as a new unsaved drawing.
+   */
+  resetNewDocumentIdentity() {
+    this._uri = undefined
+    this._fileName = ''
+    this.docTitle = 'Untitled'
+  }
+
+  /**
    * Gets the URI of the document if opened from a URI.
    *
    * @returns The document URI, or undefined if not opened from URI
