@@ -452,9 +452,10 @@ watch(
 
 // Component lifecycle: Initialize and load initial file if URL or localFile is provided
 onMounted(async () => {
+  beginPendingOpen(props.mode)
+
   if (props.url || props.localFile) {
     beginDocumentOpening()
-    beginPendingOpen(props.mode)
   }
 
   // Initialize the CAD viewer with the internal canvas

@@ -1,131 +1,27 @@
 <template>
-  <Teleport v-if="headerEl && displayName" :to="headerEl">
-    <div class="ml-ribbon-file-name" :style="overlayStyle">
-      {{ displayName }}
-    </div>
-  </Teleport>
+  <div v-if="displayName" class="ml-ribbon-file-name">
+    {{ displayName }}
+  </div>
 </template>
 
 <script setup lang="ts">
-import { type CSSProperties, onUnmounted, ref, watchEffect } from 'vue'
-
 import { useDocument } from '../../composable'
 
-interface Props {
-  containerEl?: HTMLElement | null
-}
-
-const props = defineProps<Props>()
-
 const { displayName } = useDocument()
-
-const headerEl = ref<HTMLElement>()
-const overlayStyle = ref<CSSProperties>()
-
-let resizeObserver: ResizeObserver | undefined
-let rafId = 0
-let layoutRetryCount = 0
-const MAX_LAYOUT_RETRIES = 30
-
-const updatePosition = () => {
-  const container = props.containerEl
-  if (!container) {
-    headerEl.value = undefined
-    overlayStyle.value = undefined
-    layoutRetryCount = 0
-    return
-  }
-
-  const header = container.querySelector('.ml-ribbon__header')
-  const headLeft = container.querySelector('.ml-ribbon__head-left')
-  const headRight = container.querySelector('.ml-ribbon__head-right')
-  if (
-    !(header instanceof HTMLElement) ||
-    !(headLeft instanceof HTMLElement) ||
-    !(headRight instanceof HTMLElement)
-  ) {
-    headerEl.value = undefined
-    overlayStyle.value = undefined
-    if (displayName.value && layoutRetryCount < MAX_LAYOUT_RETRIES) {
-      layoutRetryCount += 1
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(updatePosition)
-    }
-    return
-  }
-
-  layoutRetryCount = 0
-  headerEl.value = header
-
-  const headerRect = header.getBoundingClientRect()
-  const leftRect = headLeft.getBoundingClientRect()
-  const rightRect = headRight.getBoundingClientRect()
-  const gapLeft = leftRect.right - headerRect.left
-  const gapWidth = Math.max(0, rightRect.left - leftRect.right)
-
-  overlayStyle.value = {
-    left: `${gapLeft}px`,
-    width: `${gapWidth}px`,
-    height: `${headerRect.height}px`
-  }
-}
-
-const scheduleUpdate = () => {
-  cancelAnimationFrame(rafId)
-  layoutRetryCount = 0
-  rafId = requestAnimationFrame(updatePosition)
-}
-
-watchEffect(onCleanup => {
-  const container = props.containerEl
-  if (!container) {
-    headerEl.value = undefined
-    overlayStyle.value = undefined
-    return
-  }
-
-  scheduleUpdate()
-
-  if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver(scheduleUpdate)
-    resizeObserver.observe(container)
-    for (const selector of [
-      '.ml-ribbon__header',
-      '.ml-ribbon__head-left',
-      '.ml-ribbon__head-right'
-    ]) {
-      const element = container.querySelector(selector)
-      if (element) resizeObserver.observe(element)
-    }
-  }
-
-  onCleanup(() => {
-    cancelAnimationFrame(rafId)
-    resizeObserver?.disconnect()
-    resizeObserver = undefined
-  })
-})
-
-watchEffect(() => {
-  displayName.value
-  scheduleUpdate()
-})
-
-onUnmounted(() => {
-  cancelAnimationFrame(rafId)
-  resizeObserver?.disconnect()
-})
 </script>
 
 <style scoped>
 .ml-ribbon-file-name {
   position: absolute;
   top: 0;
+  left: 50%;
   z-index: 11;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  max-width: min(40%, 320px);
+  height: 40px;
   padding: 0 8px;
   color: var(--el-text-color-regular);
   font-size: var(--el-font-size-small);
@@ -135,5 +31,6 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transform: translateX(-50%);
 }
 </style>

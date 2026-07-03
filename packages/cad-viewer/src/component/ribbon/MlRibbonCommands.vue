@@ -1688,10 +1688,7 @@ const handleFileMenuSelect = async (command: string) => {
         />
       </template>
     </ml-ribbon>
-    <ml-ribbon-file-name
-      v-if="features.isShowFileName"
-      :container-el="ribbonContainerRef"
-    />
+    <ml-ribbon-file-name v-if="features.isShowFileName" />
     <ml-character-map-dialog
       v-model="mtextCharacterMapVisible"
       :font-options="mtextCharacterMapFontOptions"

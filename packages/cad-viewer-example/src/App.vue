@@ -35,7 +35,7 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { MlCadViewer } from '@mlightcad/cad-viewer'
 import { log } from '@mlightcad/data-model'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { AcApQuitCmd } from './commands'
 import FileUpload from './components/FileUpload.vue'
@@ -97,10 +97,11 @@ const createNewDrawing = async () => {
   }
 }
 
-const onViewerCreate = () => {
+const onViewerCreate = async () => {
   initialize()
   if (store.isNewDrawing) {
-    void createNewDrawing()
+    await nextTick()
+    await createNewDrawing()
   }
 }
 

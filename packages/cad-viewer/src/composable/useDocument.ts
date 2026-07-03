@@ -214,7 +214,10 @@ function tryBind() {
   }
 
   if (!manager) return false
-  if (isBound) return true
+  if (isBound) {
+    syncFromDocument(manager.curDocument)
+    return true
+  }
 
   try {
     syncFromDocument(manager.curDocument)
