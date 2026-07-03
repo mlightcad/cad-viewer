@@ -22,11 +22,17 @@ const { displayName } = useDocument()
 const headerEl = ref<HTMLElement>()
 const overlayStyle = ref<CSSProperties>()
 
+let resizeObserver: ResizeObserver | undefined
+let rafId = 0
+let layoutRetryCount = 0
+const MAX_LAYOUT_RETRIES = 30
+
 const updatePosition = () => {
   const container = props.containerEl
   if (!container) {
     headerEl.value = undefined
     overlayStyle.value = undefined
+    layoutRetryCount = 0
     return
   }
 
@@ -40,9 +46,15 @@ const updatePosition = () => {
   ) {
     headerEl.value = undefined
     overlayStyle.value = undefined
+    if (displayName.value && layoutRetryCount < MAX_LAYOUT_RETRIES) {
+      layoutRetryCount += 1
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(updatePosition)
+    }
     return
   }
 
+  layoutRetryCount = 0
   headerEl.value = header
 
   const headerRect = header.getBoundingClientRect()
@@ -58,11 +70,9 @@ const updatePosition = () => {
   }
 }
 
-let resizeObserver: ResizeObserver | undefined
-let rafId = 0
-
 const scheduleUpdate = () => {
   cancelAnimationFrame(rafId)
+  layoutRetryCount = 0
   rafId = requestAnimationFrame(updatePosition)
 }
 

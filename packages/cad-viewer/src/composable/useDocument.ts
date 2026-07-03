@@ -102,6 +102,9 @@ const displayName = computed(() => docTitle.value || fileName.value)
 /** Whether lifecycle listeners have already been attached to the doc manager. */
 let isBound = false
 
+/** Manager instance that {@link isBound} listeners are attached to. */
+let boundManager: AcApDocManager | null = null
+
 /** Polling timer used while waiting for {@link AcApDocManager.instance}. */
 let retryTimer: ReturnType<typeof setInterval> | undefined
 
@@ -203,14 +206,22 @@ function stopRetryTimer() {
  * @returns `true` when binding succeeded; otherwise `false`
  */
 function tryBind() {
+  const manager = getExistingDocManager()
+
+  if (isBound && (!manager || boundManager !== manager)) {
+    isBound = false
+    boundManager = null
+  }
+
+  if (!manager) return false
   if (isBound) return true
 
   try {
-    const manager = AcApDocManager.instance
     syncFromDocument(manager.curDocument)
     manager.events.documentToBeOpened.addEventListener(onDocumentToBeOpened)
     manager.events.documentActivated.addEventListener(onDocumentActivated)
     eventBus.on('failed-to-open-file', onFailedToOpenFile)
+    boundManager = manager
     isBound = true
     stopRetryTimer()
     return true
