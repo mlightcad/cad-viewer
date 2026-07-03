@@ -331,6 +331,7 @@ const isValidFile = (file: File): boolean => {
 .upload-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto;
   width: 100%;
   border-radius: 14px;
   background: #ffffff;
@@ -591,14 +592,16 @@ const isValidFile = (file: File): boolean => {
   color: #4f5fd0;
 }
 
-@media (max-width: 680px) {
+/* Narrow viewports: stack upload + settings as two vertical rows */
+@media (max-width: 768px) {
   .file-upload-container {
-    max-width: 420px;
+    max-width: 100%;
     padding: 12px;
   }
 
   .upload-panel {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
   }
 
   .settings-section {

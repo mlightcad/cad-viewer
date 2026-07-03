@@ -12,14 +12,13 @@
     <div v-else>
       <MlCadViewer
         locale="en"
-        :url="newDrawingUrl"
         :local-file="store.selectedFile ?? undefined"
         :mode="selectedMode"
         :use-main-thread-draw="useMainThreadDraw"
         :draw-no-plot-layers="drawNoPlotLayers"
         :progressive-rendering="progressiveRendering"
         :open-view-mode="openViewMode"
-        @create="initialize"
+        @create="onViewerCreate"
         :base-url="BASE_URL"
       />
     </div>
@@ -35,7 +34,8 @@ import {
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
 import { MlCadViewer } from '@mlightcad/cad-viewer'
-import { computed, ref } from 'vue'
+import { log } from '@mlightcad/data-model'
+import { computed, nextTick, ref } from 'vue'
 
 import { AcApQuitCmd } from './commands'
 import FileUpload from './components/FileUpload.vue'
@@ -72,16 +72,9 @@ const initialize = () => {
 // AcApSettingManager.instance.isShowCoordinate = false
 
 const BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
-const NEW_DRAWING_TEMPLATE_URL = `${BASE_URL}templates/acadiso.dxf`
 
 const showViewer = computed(
   () => store.selectedFile != null || store.isNewDrawing
-)
-
-const newDrawingUrl = computed(() =>
-  store.isNewDrawing && store.selectedFile == null
-    ? NEW_DRAWING_TEMPLATE_URL
-    : undefined
 )
 
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
@@ -89,6 +82,28 @@ const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
 const openViewMode = ref<AcApOpenViewMode | undefined>(undefined)
+
+const createNewDrawing = async () => {
+  const success = await AcApDocManager.instance.newDocument({
+    mode: selectedMode.value,
+    drawNoPlotLayers: drawNoPlotLayers.value,
+    progressiveRendering: progressiveRendering.value,
+    ...(openViewMode.value != null
+      ? { openViewMode: openViewMode.value }
+      : {})
+  })
+  if (!success) {
+    log.error('Failed to create new drawing')
+  }
+}
+
+const onViewerCreate = async () => {
+  initialize()
+  if (store.isNewDrawing) {
+    await nextTick()
+    await createNewDrawing()
+  }
+}
 
 const applyOpenOptions = (
   mode: AcEdOpenMode,

@@ -1,9 +1,11 @@
 <template>
-  <Teleport v-if="headerEl && displayName" :to="headerEl">
-    <div class="ml-ribbon-file-name" :style="overlayStyle">
-      {{ displayName }}
-    </div>
-  </Teleport>
+  <div
+    v-if="displayName && overlayStyle"
+    class="ml-ribbon-file-name"
+    :style="overlayStyle"
+  >
+    {{ displayName }}
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -19,14 +21,18 @@ const props = defineProps<Props>()
 
 const { displayName } = useDocument()
 
-const headerEl = ref<HTMLElement>()
 const overlayStyle = ref<CSSProperties>()
+
+let resizeObserver: ResizeObserver | undefined
+let rafId = 0
+let layoutRetryCount = 0
+const MAX_LAYOUT_RETRIES = 30
 
 const updatePosition = () => {
   const container = props.containerEl
   if (!container) {
-    headerEl.value = undefined
     overlayStyle.value = undefined
+    layoutRetryCount = 0
     return
   }
 
@@ -38,38 +44,41 @@ const updatePosition = () => {
     !(headLeft instanceof HTMLElement) ||
     !(headRight instanceof HTMLElement)
   ) {
-    headerEl.value = undefined
     overlayStyle.value = undefined
+    if (displayName.value && layoutRetryCount < MAX_LAYOUT_RETRIES) {
+      layoutRetryCount += 1
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(updatePosition)
+    }
     return
   }
 
-  headerEl.value = header
+  layoutRetryCount = 0
 
+  const containerRect = container.getBoundingClientRect()
   const headerRect = header.getBoundingClientRect()
   const leftRect = headLeft.getBoundingClientRect()
   const rightRect = headRight.getBoundingClientRect()
-  const gapLeft = leftRect.right - headerRect.left
+  const gapLeft = leftRect.right - containerRect.left
   const gapWidth = Math.max(0, rightRect.left - leftRect.right)
 
   overlayStyle.value = {
+    top: `${headerRect.top - containerRect.top}px`,
     left: `${gapLeft}px`,
     width: `${gapWidth}px`,
     height: `${headerRect.height}px`
   }
 }
 
-let resizeObserver: ResizeObserver | undefined
-let rafId = 0
-
 const scheduleUpdate = () => {
   cancelAnimationFrame(rafId)
+  layoutRetryCount = 0
   rafId = requestAnimationFrame(updatePosition)
 }
 
 watchEffect(onCleanup => {
   const container = props.containerEl
   if (!container) {
-    headerEl.value = undefined
     overlayStyle.value = undefined
     return
   }
@@ -110,7 +119,6 @@ onUnmounted(() => {
 <style scoped>
 .ml-ribbon-file-name {
   position: absolute;
-  top: 0;
   z-index: 11;
   display: flex;
   align-items: center;
