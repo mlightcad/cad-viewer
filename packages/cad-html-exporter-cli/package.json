@@ -24,7 +24,7 @@
     "@mlightcad/data-model": "^1.10.2",
     "@mlightcad/dxf-json-converter": "^1.10.2",
     "@mlightcad/libredwg-converter": "^3.10.2",
-    "@mlightcad/mtext-renderer": "^0.11.5",
+    "@mlightcad/mtext-renderer": "^0.11.6",
     "commander": "^12.1.0",
     "playwright": "^1.49.1"
   },
