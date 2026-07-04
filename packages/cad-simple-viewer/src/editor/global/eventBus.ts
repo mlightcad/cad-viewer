@@ -1,4 +1,7 @@
-import { AcDbProgressdEventArgs } from '@mlightcad/data-model'
+import {
+  AcDbOpenDatabaseErrorCode,
+  AcDbProgressdEventArgs
+} from '@mlightcad/data-model'
 import mitt, { type Emitter } from 'mitt'
 
 import { AcEdMessageType } from '../input/ui/AcEdMessageType'
@@ -74,6 +77,10 @@ export type AcEdEvents = {
   'failed-to-open-file': {
     /** Name/path of the file that failed to open */
     fileName: string
+    /** Structured failure category from {@link AcDbDatabase.lastOpenError} */
+    errorCode?: AcDbOpenDatabaseErrorCode
+    /** Human-readable failure description */
+    errorMessage?: string
   }
   /** Emitted when a required font is not found */
   'font-not-found': {

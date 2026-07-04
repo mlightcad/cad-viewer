@@ -1,6 +1,6 @@
 import { AcDbProgressdEventArgs } from '@mlightcad/data-model'
 
-import { eventBus } from '../editor'
+import { AcEdFontNotLoadedInfo, eventBus } from '../editor'
 import { AcApI18n } from '../i18n'
 import { AcApProgress } from './AcApProgress'
 import { isOpenFileProgressComplete } from './openFileProgress'
@@ -40,9 +40,46 @@ export class AcApOpenFileProgressController {
    */
   handle(data: AcDbProgressdEventArgs): AcDbProgressdEventArgs {
     const progress = this.normalize(data)
+    this.notifyFontLoadFailure(progress)
     eventBus.emit('open-file-progress', progress)
     this.updateOverlay(progress)
     return progress
+  }
+
+  /**
+   * Emits `fonts-not-loaded` when the data model continues parsing after a
+   * catastrophic font load failure (`failOnFontLoadError` defaults to `false`).
+   */
+  private notifyFontLoadFailure(data: AcDbProgressdEventArgs): void {
+    if (
+      data.stage !== 'CONVERSION' ||
+      data.subStage !== 'FONT' ||
+      data.subStageStatus !== 'ERROR' ||
+      data.data == null ||
+      typeof data.data !== 'object'
+    ) {
+      return
+    }
+
+    const payload = data.data as {
+      fonts?: string[]
+      error?: string
+      code?: string
+    }
+    if (payload.code !== 'font_load_failed') {
+      return
+    }
+
+    const fonts = payload.fonts ?? []
+    if (fonts.length === 0) {
+      return
+    }
+
+    const failedFonts: AcEdFontNotLoadedInfo[] = fonts.map(fontName => ({
+      fontName,
+      url: ''
+    }))
+    eventBus.emit('fonts-not-loaded', { fonts: failedFonts })
   }
 
   /**

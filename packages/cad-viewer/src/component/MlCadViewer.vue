@@ -109,6 +109,10 @@ import {
   useSettings
 } from '../composable'
 import { LocaleProp } from '../locale'
+import {
+  resolveOpenFileErrorMessage,
+  resolveOpenFileErrorTitle
+} from '../util/openFileErrorMessage'
 import { MlDialogManager, MlFontFileReader } from './common'
 import {
   MlEntityDrawStyleToolbar,
@@ -183,6 +187,11 @@ interface Props {
    * Write uses {@link AcApOpenViewMode.Saved}.
    */
   openViewMode?: AcApOpenViewMode
+  /**
+   * When `true`, aborts opening if required fonts cannot be loaded.
+   * Defaults to `false` so unreachable font CDNs do not block entity parsing.
+   */
+  failOnFontLoadError?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -204,7 +213,10 @@ const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
   mode: props.mode,
   drawNoPlotLayers: props.drawNoPlotLayers,
   progressiveRendering: props.progressiveRendering,
-  ...(props.openViewMode != null ? { openViewMode: props.openViewMode } : {})
+  ...(props.openViewMode != null ? { openViewMode: props.openViewMode } : {}),
+  ...(props.failOnFontLoadError != null
+    ? { failOnFontLoadError: props.failOnFontLoadError }
+    : {})
 })
 
 const { t } = useI18n()
@@ -336,7 +348,7 @@ const openFileFromUrl = async (url: string) => {
   } catch (error) {
     log.error('Failed to open file from URL:', error)
     ElMessage({
-      message: t('main.message.failedToOpenFile', { fileName: url }),
+      message: resolveOpenFileErrorMessage(t, { fileName: url }),
       grouping: true,
       type: 'error',
       showClose: true
@@ -381,11 +393,11 @@ const openLocalFile = async (file: File) => {
       options
     )
     if (!success) {
-      throw new Error('Failed to open local file')
+      return
     }
   } catch {
     ElMessage({
-      message: t('main.message.failedToOpenFile', { fileName: file.name }),
+      message: resolveOpenFileErrorMessage(t, { fileName: file.name }),
       grouping: true,
       type: 'error',
       showClose: true
@@ -615,16 +627,14 @@ eventBus.on('open-local-file-started', ({ mode }) => {
 // Handle file opening failures with user-friendly error messages
 eventBus.on('failed-to-open-file', params => {
   endPendingOpen()
-  const message = t('main.message.failedToOpenFile', {
-    fileName: params.fileName
-  })
+  const message = resolveOpenFileErrorMessage(t, params)
   ElMessage({
     message,
     grouping: true,
     type: 'error',
     showClose: true
   })
-  error('File Opening Failed', message)
+  error(resolveOpenFileErrorTitle(t, params.errorCode), message)
 })
 
 // Mirror AutoCAD's LAYERCLOSE behavior: only close when the layer tab is open.

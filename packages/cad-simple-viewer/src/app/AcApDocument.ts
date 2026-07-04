@@ -2,6 +2,7 @@ import {
   AcDbDatabase,
   AcDbFileType,
   AcDbObjectId,
+  AcDbOpenDatabaseError,
   AcDbOpenDatabaseOptions,
   log
 } from '@mlightcad/data-model'
@@ -87,6 +88,7 @@ export class AcApDocument {
     this._uri = uri
     this._openMode = options?.mode ?? AcEdOpenMode.Read
     this._fileName = this.getFileNameFromUri(uri)
+    const openErrorBefore = this._database.lastOpenError
     let isSuccess = true
     try {
       // Convert to base options for database method
@@ -96,9 +98,9 @@ export class AcApDocument {
       }
       await this._database.openUri(uri, baseOptions)
       this.docTitle = this._fileName
-    } catch (_) {
+    } catch {
       isSuccess = false
-      eventBus.emit('failed-to-open-file', { fileName: uri })
+      this.emitOpenFileFailed(uri, openErrorBefore)
     }
     return isSuccess
   }
@@ -127,6 +129,7 @@ export class AcApDocument {
     let isSuccess = true
     this._fileName = fileName
     this._openMode = options?.mode ?? AcEdOpenMode.Read
+    const openErrorBefore = this._database.lastOpenError
     try {
       const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
       // Convert to base options for database method
@@ -142,7 +145,7 @@ export class AcApDocument {
       this.docTitle = this._fileName
     } catch {
       isSuccess = false
-      eventBus.emit('failed-to-open-file', { fileName: fileName })
+      this.emitOpenFileFailed(fileName, openErrorBefore)
     }
     return isSuccess
   }
@@ -387,6 +390,25 @@ export class AcApDocument {
     const snapshot = this.consumeLayerIsoSnapshot()
     if (!snapshot) return undefined
     return this.layerService.unisolateFromSnapshot(snapshot)
+  }
+
+  /**
+   * Emits `failed-to-open-file` with structured error details from the database.
+   */
+  private emitOpenFileFailed(
+    fileName: string,
+    openErrorBefore: AcDbOpenDatabaseError | null = null
+  ): void {
+    const openError = this._database.lastOpenError
+    const isFreshOpenError =
+      openError != null && openError !== openErrorBefore
+    eventBus.emit('failed-to-open-file', {
+      fileName,
+      ...(isFreshOpenError && {
+        errorCode: openError.code,
+        errorMessage: openError.message
+      })
+    })
   }
 
   /**

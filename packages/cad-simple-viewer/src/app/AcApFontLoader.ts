@@ -1,4 +1,8 @@
-import { AcDbFontInfo, AcDbFontLoader } from '@mlightcad/data-model'
+import {
+  AcDbFontInfo,
+  AcDbFontLoader,
+  AcDbOpenDatabaseError
+} from '@mlightcad/data-model'
 import { AcTrFontLoader } from '@mlightcad/three-renderer'
 
 import { AcEdFontNotLoadedInfo, eventBus } from '../editor'
@@ -69,7 +73,16 @@ export class AcApFontLoader implements AcDbFontLoader {
    * @inheritdoc
    */
   async load(fontNames: string[]) {
-    const loadStatus = await this._loader.load(fontNames)
+    let loadStatus
+    try {
+      loadStatus = await this._loader.load(fontNames)
+    } catch (error) {
+      throw new AcDbOpenDatabaseError(
+        error instanceof Error ? error.message : String(error),
+        'font_load_failed',
+        { stage: 'FONT', cause: error }
+      )
+    }
     const fontsNotFound: string[] = []
     const fontsNotLoaded: AcEdFontNotLoadedInfo[] = []
     loadStatus.forEach(item => {
