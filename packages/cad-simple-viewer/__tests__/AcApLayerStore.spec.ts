@@ -81,6 +81,7 @@ const createDatabase = (
   const db = {
     clayer: currentLayer,
     openObjectForWrite: jest.fn((objectId: string) => layersById.get(objectId)),
+    getObjectById: jest.fn((objectId: string) => layersById.get(objectId)),
     transactionManager: { hasTransaction: jest.fn(() => false) },
     runDatabaseEdit: jest.fn((_label: string, fn: () => void) => fn()),
     tables: {
