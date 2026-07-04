@@ -614,6 +614,12 @@ export default {
     failedToGetAvaiableFonts:
       '"{url}" adresinden kullanılabilir yazı tipleri alınamadı!',
     failedToOpenFile: '"{fileName}" dosyası açılamadı!',
+    failedToOpenFileWorkerOom:
+      '"{fileName}" açılamadı. Çizim mevcut bellek için çok büyük.',
+    failedToOpenFileWorkerTimeout:
+      '"{fileName}" açılamadı. Çizim ayrıştırılırken işlem zaman aşımına uğradı.',
+    failedToOpenFileFontLoadFailed:
+      '"{fileName}" açılamadı. Gerekli yazı tipleri yüklenemedi.',
     fetchingDrawingFile: 'Dosya alınıyor ...',
     unknownEntities:
       'Bu çizim {count} bilinmeyen veya desteklenmeyen varlık içeriyor! Bu varlıklar gösterilmeyecek.'
@@ -632,6 +638,9 @@ export default {
     },
     title: {
       failedToOpenFile: 'Dosya Açılamadı',
+      failedToOpenFileWorkerOom: 'Çizim Çok Büyük',
+      failedToOpenFileWorkerTimeout: 'Açma Zaman Aşımı',
+      failedToOpenFileFontLoadFailed: 'Yazı Tipi Yüklenemedi',
       fontNotFound: 'Yazı Tipi Bulunamadı',
       fontNotLoaded: 'Yazı Tipi Yüklenemedi',
       parsingWarning: 'Çizim Ayrıştırma Sorunları'

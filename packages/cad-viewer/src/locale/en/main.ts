@@ -609,6 +609,12 @@ export default {
     fontCacheFailed: 'Failed to cache font "{fileName}".',
     failedToGetAvaiableFonts: 'Failed to get avaiable fonts from "{url}"!',
     failedToOpenFile: 'Failed to open file "{fileName}"!',
+    failedToOpenFileWorkerOom:
+      'Failed to open "{fileName}". The drawing is too large for available memory.',
+    failedToOpenFileWorkerTimeout:
+      'Failed to open "{fileName}". The operation timed out while parsing the drawing.',
+    failedToOpenFileFontLoadFailed:
+      'Failed to open "{fileName}". Required fonts could not be loaded.',
     fetchingDrawingFile: 'Fetching file ...',
     unknownEntities:
       'This drawing contains {count} unknown or unsupported entities! Those entities will not be shown.'
@@ -627,6 +633,9 @@ export default {
     },
     title: {
       failedToOpenFile: 'Failed to Open File',
+      failedToOpenFileWorkerOom: 'Drawing Too Large',
+      failedToOpenFileWorkerTimeout: 'Open Timed Out',
+      failedToOpenFileFontLoadFailed: 'Font Load Failed',
       fontNotFound: 'Font Not Found',
       fontNotLoaded: 'Font Not Loaded',
       parsingWarning: 'Issues on Parsing Drawing'

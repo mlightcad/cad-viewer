@@ -4,6 +4,7 @@ import {
   AcDbDatabase,
   AcDbEntity,
   AcDbLayerTableRecord,
+  AcDbLayerTableRecordAttrs,
   AcDbObjectId,
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
@@ -27,6 +28,30 @@ import {
   LAYER_FROZEN_FLAG,
   LAYER_LOCKED_FLAG
 } from './types'
+
+/** Modify entry shape used by the database transaction recorder. */
+type AcApLayerModifyChange = {
+  kind: 'modify'
+  objectId: string
+  before?: { name?: string }
+  after?: unknown
+}
+
+/** Transaction recorder surface used for layer-table undo fixes. */
+type AcApLayerTransactionRecorder = {
+  hasModify: (objectId: string) => boolean
+  recordModify: (object: AcDbLayerTableRecord) => void
+  finalize: (database: AcDbDatabase) => void
+  getChanges: () => AcApLayerModifyChange[]
+  __layerFinalizePatched?: boolean
+}
+
+/** Active transaction surface used when opening layer records for write. */
+type AcApLayerTransaction = {
+  openedObjects: Map<string, unknown>
+  originalStates: Map<string, unknown>
+  recorder: AcApLayerTransactionRecorder
+}
 
 /** Summary row for layer listing commands and UI. */
 export interface AcApLayerSummary {
@@ -78,6 +103,7 @@ export interface AcApLayerIsolateLayersResult extends AcApLayerIsolateResult {
  */
 export class AcApLayerService {
   private readonly db: AcDbDatabase
+  private static readonly patchedChangeAppliers = new WeakSet<object>()
 
   /**
    * Creates a layer service bound to a database.
@@ -89,6 +115,12 @@ export class AcApLayerService {
   }
 
   /** Opens an existing layer table record for write.
+   *
+   * Returns the layer-table instance from {@link AcDbLayerTable.getAt}, not the
+   * result of {@link AcDbDatabase.openObjectForWrite}. Some drawings reuse the
+   * same handle in different symbol tables (for example layer `PLATE` and text
+   * style `Standard` both using id `11`); global id lookup would open the wrong
+   * record and layer visibility edits would silently no-op.
    *
    * @param db - Database containing the layer table.
    * @param layerOrName - Layer record or name to open.
@@ -103,7 +135,169 @@ export class AcApLayerService {
         ? db.tables.layerTable.getAt(layerOrName)
         : layerOrName
     if (!layer) return undefined
-    return db.openObjectForWrite<AcDbLayerTableRecord>(layer.objectId)
+
+    AcApLayerService.registerLayerTableRecordForWrite(db, layer)
+    return layer
+  }
+
+  /**
+   * Registers a layer-table record for write in the active transaction.
+   *
+   * Uses the record instance already resolved from {@link AcDbLayerTable} so
+   * undo/write tracking targets the correct object when handles collide across
+   * symbol tables.
+   */
+  private static registerLayerTableRecordForWrite(
+    db: AcDbDatabase,
+    layer: AcDbLayerTableRecord
+  ): void {
+    const manager = db.transactionManager
+    if (!manager?.isRecording?.()) {
+      return
+    }
+
+    const transaction = manager.currentTransaction?.() as
+      | AcApLayerTransaction
+      | undefined
+    if (!transaction) {
+      return
+    }
+
+    AcApLayerService.ensureLayerUndoHooks(db)
+
+    const objectId = layer.objectId
+    transaction.openedObjects.set(objectId, layer)
+
+    if (!transaction.recorder.hasModify(objectId)) {
+      transaction.originalStates.set(objectId, layer.clonePreservingIdentity())
+      transaction.recorder.recordModify(layer)
+    }
+
+    if (db.getObjectById(objectId) !== layer) {
+      AcApLayerService.ensureLayerFinalizeHook(transaction)
+    }
+  }
+
+  /**
+   * Resolves a layer-table record when global handle lookup would return a
+   * different symbol-table object with the same {@link AcDbObject.objectId}.
+   */
+  private static resolveLayerForHandleCollision(
+    db: AcDbDatabase,
+    change: Pick<AcApLayerModifyChange, 'objectId' | 'before'>
+  ): AcDbLayerTableRecord | undefined {
+    const layerName = change.before?.name
+    if (typeof layerName !== 'string') {
+      return undefined
+    }
+
+    const layer = db.tables.layerTable.getAt(layerName)
+    if (!layer || db.getObjectById(change.objectId) === layer) {
+      return undefined
+    }
+
+    return layer
+  }
+
+  /**
+   * Ensures undo/redo replays layer modify snapshots on the layer-table
+   * instance rather than the globally registered handle owner.
+   */
+  private static ensureLayerUndoHooks(db: AcDbDatabase): void {
+    const manager = db.transactionManager as unknown as {
+      changeApplier?: {
+        applyModify: (
+          change: AcApLayerModifyChange & {
+            before?: unknown
+            after?: unknown
+          },
+          forward: boolean
+        ) => void
+      }
+    }
+    const applier = manager.changeApplier
+    if (!applier || AcApLayerService.patchedChangeAppliers.has(applier)) {
+      return
+    }
+
+    const originalApplyModify = applier.applyModify.bind(applier)
+    applier.applyModify = (change, forward) => {
+      const layer = AcApLayerService.resolveLayerForHandleCollision(db, change)
+      if (layer) {
+        const snapshot = forward ? change.after : change.before
+        if (snapshot) {
+          layer.restoreFrom(snapshot as AcDbLayerTableRecord)
+          return
+        }
+      }
+
+      originalApplyModify(change, forward)
+    }
+    AcApLayerService.patchedChangeAppliers.add(applier)
+  }
+
+  /**
+   * Captures post-commit modify snapshots from the opened layer-table instance
+   * when {@link AcDbDatabase.getObjectById} would finalize the wrong record.
+   */
+  private static ensureLayerFinalizeHook(
+    transaction: AcApLayerTransaction
+  ): void {
+    const recorder = transaction.recorder
+    if (
+      recorder.__layerFinalizePatched ||
+      typeof recorder.finalize !== 'function'
+    ) {
+      return
+    }
+
+    const originalFinalize = recorder.finalize.bind(recorder)
+    recorder.finalize = (database: AcDbDatabase) => {
+      originalFinalize(database)
+
+      for (const change of recorder.getChanges()) {
+        if (change.kind !== 'modify') {
+          continue
+        }
+
+        const opened = transaction.openedObjects.get(change.objectId)
+        if (!opened || database.getObjectById(change.objectId) === opened) {
+          continue
+        }
+
+        const layer = AcApLayerService.resolveLayerForHandleCollision(
+          database,
+          change
+        )
+        if (layer) {
+          change.after = layer.clonePreservingIdentity()
+        }
+      }
+    }
+    recorder.__layerFinalizePatched = true
+  }
+
+  /**
+   * Dispatches {@link AcDbDatabase.events.layerModified} when global object-id
+   * lookup would resolve a different symbol-table record than the layer-table
+   * instance that was edited (see {@link openLayerForWrite}).
+   */
+  private static syncLayerModifiedEvent(
+    db: AcDbDatabase,
+    layer: AcDbLayerTableRecord,
+    changes: Partial<AcDbLayerTableRecordAttrs>
+  ): void {
+    if (Object.keys(changes).length === 0) {
+      return
+    }
+    if (db.getObjectById(layer.objectId) === layer) {
+      return
+    }
+    db.events.layerModified.dispatch({
+      database: db,
+      layer,
+      changes
+    })
   }
 
   /** Sets or clears the frozen bit on a layer record.
@@ -349,6 +543,9 @@ export class AcApLayerService {
       if (!layer) return false
 
       layer.isOff = !isOn
+      AcApLayerService.syncLayerModifiedEvent(this.db, layer, {
+        isOff: layer.isOff
+      })
       return true
     })
   }
@@ -388,6 +585,9 @@ export class AcApLayerService {
       if (!layer) return false
 
       AcApLayerService.setLayerFrozenState(layer, frozen)
+      AcApLayerService.syncLayerModifiedEvent(this.db, layer, {
+        standardFlags: layer.standardFlags
+      })
       return true
     })
   }
@@ -409,6 +609,9 @@ export class AcApLayerService {
       if (!layer) return false
 
       AcApLayerService.setLayerLockedState(layer, locked)
+      AcApLayerService.syncLayerModifiedEvent(this.db, layer, {
+        standardFlags: layer.standardFlags
+      })
       return true
     })
   }
@@ -487,6 +690,9 @@ export class AcApLayerService {
         const opened = AcApLayerService.openLayerForWrite(this.db, layer)
         if (!opened) return
         opened.isOff = off
+        AcApLayerService.syncLayerModifiedEvent(this.db, opened, {
+          isOff: opened.isOff
+        })
       })
     })
 
@@ -558,6 +764,9 @@ export class AcApLayerService {
         const opened = AcApLayerService.openLayerForWrite(this.db, layer)
         if (!opened) return
         AcApLayerService.setLayerFrozenState(opened, freeze)
+        AcApLayerService.syncLayerModifiedEvent(this.db, opened, {
+          standardFlags: opened.standardFlags
+        })
       })
     })
 
@@ -577,6 +786,9 @@ export class AcApLayerService {
         const opened = AcApLayerService.openLayerForWrite(this.db, layer)
         if (!opened) continue
         AcApLayerService.setLayerFrozenState(opened, false)
+        AcApLayerService.syncLayerModifiedEvent(this.db, opened, {
+          standardFlags: opened.standardFlags
+        })
         thawed++
       }
       return thawed
@@ -596,6 +808,9 @@ export class AcApLayerService {
         const opened = AcApLayerService.openLayerForWrite(this.db, layer)
         if (!opened) return
         AcApLayerService.setLayerLockedState(opened, lock)
+        AcApLayerService.syncLayerModifiedEvent(this.db, opened, {
+          standardFlags: opened.standardFlags
+        })
       })
     })
   }

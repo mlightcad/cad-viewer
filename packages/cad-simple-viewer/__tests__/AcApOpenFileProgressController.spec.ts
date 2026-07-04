@@ -129,4 +129,26 @@ describe('AcApOpenFileProgressController', () => {
 
     expect(next.percentage).toBe(20)
   })
+
+  it('emits fonts-not-loaded when font loading fails but parsing continues', () => {
+    controller.handle({
+      database: {},
+      percentage: 5,
+      stage: 'CONVERSION',
+      subStage: 'FONT',
+      subStageStatus: 'ERROR',
+      data: {
+        code: 'font_load_failed',
+        error: 'Failed to fetch',
+        fonts: ['arial', 'simkai']
+      }
+    })
+
+    expect(mockEventBusEmit).toHaveBeenCalledWith('fonts-not-loaded', {
+      fonts: [
+        { fontName: 'arial', url: '' },
+        { fontName: 'simkai', url: '' }
+      ]
+    })
+  })
 })

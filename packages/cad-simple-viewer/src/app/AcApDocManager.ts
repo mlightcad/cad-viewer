@@ -891,8 +891,8 @@ export class AcApDocManager {
       : `${this.baseUrl}/`
     const templateUrl = `${baseUrl}${DEFAULT_NEW_DRAWING_TEMPLATE}`
     const openOptions = this.setOptions({
-      mode: AcEdOpenMode.Write,
-      ...options
+      ...options,
+      mode: AcEdOpenMode.Write
     })
     this.onBeforeOpenDocument(openOptions)
     const isSuccess = await this.context.doc.openUri(templateUrl, openOptions)
