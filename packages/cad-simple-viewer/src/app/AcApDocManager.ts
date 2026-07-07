@@ -1443,13 +1443,21 @@ export class AcApDocManager {
 
   /**
    * Checks whether the current document's database already has usable content
-   * (non-empty extents) even though the open operation reported failure.
+   * even though the open operation reported failure.
    *
    * @returns True when the database has recoverable partial content.
    * @protected
    */
   protected hasRecoverablePartialContent(): boolean {
     const db = this.context.doc.database
+    // `db.extents` comes from the DWG/DXF header, and some DXF files omit it
+    // entirely, leaving it empty even when entities parsed successfully. Check
+    // for actual entities in model space first, and only fall back to the
+    // (unreliable) header extents when model space itself is unavailable.
+    const modelSpace = db.tables.blockTable.modelSpace
+    if (modelSpace) {
+      return modelSpace.newIterator().count > 0
+    }
     return !db.extents.isEmpty()
   }
 
