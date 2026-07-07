@@ -574,8 +574,7 @@ export default {
     failedToOpenFile: '无法打开文件"{fileName}"！',
     failedToOpenFileWorkerOom:
       '无法打开"{fileName}"。图纸过大，超出当前可用内存。',
-    failedToOpenFileWorkerTimeout:
-      '无法打开"{fileName}"。解析图纸时操作超时。',
+    failedToOpenFileWorkerTimeout: '无法打开"{fileName}"。解析图纸时操作超时。',
     failedToOpenFileFontLoadFailed:
       '无法打开"{fileName}"。无法加载图纸所需的字体。',
     fetchingDrawingFile: '正在加载图纸文件...',

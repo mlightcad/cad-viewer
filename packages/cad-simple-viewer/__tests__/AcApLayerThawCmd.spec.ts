@@ -71,7 +71,9 @@ const createContext = (layers: TestLayer[]) => {
       doc: {
         database: {
           openObjectForWrite,
-          getObjectById: jest.fn((objectId: string) => layersById.get(objectId)),
+          getObjectById: jest.fn((objectId: string) =>
+            layersById.get(objectId)
+          ),
           tables: {
             layerTable: {
               newIterator: () => layers

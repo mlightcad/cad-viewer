@@ -22,7 +22,7 @@
     "@mlightcad/cad-simple-ui-plugin": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.10.2",
+    "@mlightcad/data-model": "^1.10.3",
     "lodash-es": "4.17.21",
     "three": "^0.172.0",
     "vue": "^3.4.21"

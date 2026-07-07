@@ -31,7 +31,9 @@ async function readPlateSceneState(page: Page) {
               database: {
                 tables: {
                   layerTable: {
-                    getAt: (name: string) => { isOff: boolean; name: string } | null
+                    getAt: (
+                      name: string
+                    ) => { isOff: boolean; name: string } | null
                   }
                 }
               }
@@ -42,10 +44,12 @@ async function readPlateSceneState(page: Page) {
             curView: {
               cadScene: {
                 activeLayout: {
-                  getLayer: (name: string) => {
-                    visible: boolean
-                    entityCount: number
-                  } | undefined
+                  getLayer: (name: string) =>
+                    | {
+                        visible: boolean
+                        entityCount: number
+                      }
+                    | undefined
                 } | null
               }
             }
@@ -81,9 +85,8 @@ test('PLATE layer visibility toggles database and scene layer group', async ({
   expect(before?.sceneVisible).toBe(true)
 
   const toggledOff = await page.evaluate(() => {
-    const mgr = (
-      window as Window & { AcApDocManager?: { instance: unknown } }
-    ).AcApDocManager?.instance as {
+    const mgr = (window as Window & { AcApDocManager?: { instance: unknown } })
+      .AcApDocManager?.instance as {
       curDocument: {
         layerStore: { setLayerOn: (name: string, on: boolean) => boolean }
       }
@@ -99,9 +102,8 @@ test('PLATE layer visibility toggles database and scene layer group', async ({
   expect(afterOff?.sceneVisible).toBe(false)
 
   const toggledOn = await page.evaluate(() => {
-    const mgr = (
-      window as Window & { AcApDocManager?: { instance: unknown } }
-    ).AcApDocManager?.instance as {
+    const mgr = (window as Window & { AcApDocManager?: { instance: unknown } })
+      .AcApDocManager?.instance as {
       curDocument: {
         layerStore: { setLayerOn: (name: string, on: boolean) => boolean }
       }

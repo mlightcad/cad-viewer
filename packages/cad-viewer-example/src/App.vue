@@ -88,9 +88,7 @@ const createNewDrawing = async () => {
     mode: selectedMode.value,
     drawNoPlotLayers: drawNoPlotLayers.value,
     progressiveRendering: progressiveRendering.value,
-    ...(openViewMode.value != null
-      ? { openViewMode: openViewMode.value }
-      : {})
+    ...(openViewMode.value != null ? { openViewMode: openViewMode.value } : {})
   })
   if (!success) {
     log.error('Failed to create new drawing')

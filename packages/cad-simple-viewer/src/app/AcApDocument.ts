@@ -400,8 +400,7 @@ export class AcApDocument {
     openErrorBefore: AcDbOpenDatabaseError | null = null
   ): void {
     const openError = this._database.lastOpenError
-    const isFreshOpenError =
-      openError != null && openError !== openErrorBefore
+    const isFreshOpenError = openError != null && openError !== openErrorBefore
     eventBus.emit('failed-to-open-file', {
       fileName,
       ...(isFreshOpenError && {

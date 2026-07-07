@@ -3,10 +3,7 @@ import type { AcDbOpenDatabaseErrorCode } from '@mlightcad/data-model'
 
 export type OpenFileErrorParams = AcEdEvents['failed-to-open-file']
 
-type TranslateFn = (
-  key: string,
-  params?: Record<string, string>
-) => string
+type TranslateFn = (key: string, params?: Record<string, string>) => string
 
 /**
  * Resolves a user-facing open-file failure message from structured error metadata.

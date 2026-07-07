@@ -301,13 +301,20 @@ describe('AcApLayerService', () => {
     const openedObjects = new Map<string, unknown>()
     const originalStates = new Map<string, unknown>()
     const recorder = {
-      changes: [] as Array<{ kind: string; objectId: string; before?: unknown }>,
+      changes: [] as Array<{
+        kind: string
+        objectId: string
+        before?: unknown
+      }>,
       hasModify(objectId: string) {
         return this.changes.some(
           change => change.kind === 'modify' && change.objectId === objectId
         )
       },
-      recordModify(object: { objectId: string; clonePreservingIdentity: () => unknown }) {
+      recordModify(object: {
+        objectId: string
+        clonePreservingIdentity: () => unknown
+      }) {
         if (this.hasModify(object.objectId)) return
         this.changes.push({
           kind: 'modify',
@@ -487,10 +494,7 @@ describe('AcApLayerService', () => {
         isRecording: jest.fn(() => true),
         currentTransaction: () => transaction,
         changeApplier: {
-          applyModify(
-            change: (typeof changes)[number],
-            forward: boolean
-          ) {
+          applyModify(change: (typeof changes)[number], forward: boolean) {
             const object = db.getObjectById()
             const snapshot = forward ? change.after : change.before
             if (object && snapshot) {
