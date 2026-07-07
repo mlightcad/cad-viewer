@@ -1,9 +1,11 @@
 import {
   AcCmColor,
   AcCmEventManager,
+  AcDbDatabase,
   AcDbDatabaseConverterManager,
   AcDbFileType,
   acdbHostApplicationServices,
+  AcDbOpenDatabaseOptions,
   AcDbSysVarManager,
   AcGeBox2d,
   log
@@ -83,6 +85,7 @@ import {
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { AcTrView2d } from '../view'
+import type { AcTrLayout } from '../view/AcTrLayout'
 import { AcApBusyIndicator } from './AcApBusyIndicator'
 import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
@@ -396,6 +399,13 @@ export class AcApDocManager {
   private _workersReady: boolean | null = null
   /** In-flight worker readiness check */
   private _workersReadyCheckPromise?: Promise<boolean>
+  /** Loaded overlay (reference/base drawing) state, keyed by overlay id */
+  private _overlays = new Map<
+    string,
+    { db: AcDbDatabase; layout: AcTrLayout }
+  >()
+  /** Monotonically increasing counter used to generate overlay ids */
+  private _nextOverlayId = 1
 
   /** Events fired during document lifecycle */
   public readonly events = {
@@ -869,6 +879,91 @@ export class AcApDocManager {
     )
     this.onAfterOpenDocument(isSuccess, options)
     return isSuccess
+  }
+
+  /**
+   * Loads a DWG/DXF file as a read-only overlay (base drawing/reference)
+   * rendered alongside the currently open document in the same WCS
+   * coordinate system, without replacing it.
+   *
+   * Unlike {@link openDocument}, this parses the file into a standalone
+   * {@link AcDbDatabase} that never becomes `curDocument` — it isn't touched
+   * by undo, the layer panel/table, or selection. Overlay geometry currently
+   * covers top-level entities (lines, arcs, polylines, text, hatch, etc.);
+   * block (INSERT) expansion, viewports, and dimensions are not yet
+   * supported and are skipped.
+   *
+   * @param fileName - Input file name, used to determine DWG vs DXF from its extension.
+   * @param content - Input file content as an `ArrayBuffer`.
+   * @param options - Input options forwarded to the underlying database read.
+   * @returns The generated overlay id, used with {@link removeOverlay} and
+   * {@link setOverlayVisible}.
+   *
+   * @example
+   * ```typescript
+   * const fileContent = await file.arrayBuffer();
+   * const overlayId = await docManager.loadOverlay('base.dwg', fileContent);
+   * docManager.setOverlayVisible(overlayId, false); // hide it later
+   * docManager.removeOverlay(overlayId); // or remove it entirely
+   * ```
+   */
+  async loadOverlay(
+    fileName: string,
+    content: ArrayBuffer,
+    options: AcDbOpenDatabaseOptions = {}
+  ): Promise<string> {
+    const db = new AcDbDatabase()
+    const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
+    await db.read(
+      content,
+      { fontLoader: this._fontLoader, readOnly: true, ...options },
+      fileExtension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
+    )
+
+    const layout = await (this.curView as AcTrView2d).addOverlayEntities(db)
+    const overlayId = `overlay-${this._nextOverlayId++}`
+    this._overlays.set(overlayId, { db, layout })
+    return overlayId
+  }
+
+  /**
+   * Removes a previously loaded overlay and disposes its rendered geometry.
+   *
+   * @param overlayId - Input the id returned by {@link loadOverlay}.
+   * @returns True when an overlay with the given id was found and removed.
+   */
+  removeOverlay(overlayId: string): boolean {
+    const overlay = this._overlays.get(overlayId)
+    if (!overlay) return false
+
+    ;(this.curView as AcTrView2d).cadScene.internalScene.remove(
+      overlay.layout.internalObject
+    )
+    overlay.layout.clear()
+    this._overlays.delete(overlayId)
+    return true
+  }
+
+  /**
+   * Shows or hides a previously loaded overlay without removing it.
+   *
+   * @param overlayId - Input the id returned by {@link loadOverlay}.
+   * @param visible - Input whether the overlay should be visible.
+   * @returns True when an overlay with the given id was found.
+   */
+  setOverlayVisible(overlayId: string, visible: boolean): boolean {
+    const overlay = this._overlays.get(overlayId)
+    if (!overlay) return false
+
+    overlay.layout.visible = visible
+    return true
+  }
+
+  /**
+   * Ids of all currently loaded overlays.
+   */
+  get overlayIds(): string[] {
+    return Array.from(this._overlays.keys())
   }
 
   /**
