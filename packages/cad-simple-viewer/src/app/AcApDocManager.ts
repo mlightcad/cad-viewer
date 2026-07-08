@@ -1509,7 +1509,7 @@ export class AcApDocManager {
 
         if (activeModelViewBox) {
           view.zoomTo(activeModelViewBox)
-        } else if (!db.extents.isEmpty()) {
+        } else if (this.hasUsableDrawingExtents(db)) {
           view.zoomTo(new AcGeBox2d(db.extmin, db.extmax))
         } else {
           if (progressiveRendering) {
@@ -1534,6 +1534,36 @@ export class AcApDocManager {
     } else {
       this.regen()
     }
+  }
+
+  /**
+   * Checks whether EXTMIN/EXTMAX describe a real drawing area usable for
+   * view framing.
+   *
+   * AutoCAD marks unsaved/invalid extents with ±1e20 sentinel values (and
+   * some writers emit other degenerate near-zero/huge pairs). Framing such
+   * a box zooms the camera out to effectively infinity and the drawing
+   * renders as a black canvas, so those sentinels must fall through to
+   * `zoomToFitDrawing()` instead.
+   *
+   * @param db - Input database whose header extents are checked.
+   * @returns True when EXTMIN/EXTMAX are finite, sane and span a real area.
+   * @private
+   */
+  private hasUsableDrawingExtents(db: AcDbDatabase): boolean {
+    if (db.extents.isEmpty()) return false
+
+    // Anything at or beyond this magnitude is a "no saved extents"
+    // sentinel, not a coordinate a real drawing occupies.
+    const SENTINEL_LIMIT = 1e15
+    const values = [db.extmin.x, db.extmin.y, db.extmax.x, db.extmax.y]
+    if (
+      values.some(value => !Number.isFinite(value)) ||
+      values.some(value => Math.abs(value) >= SENTINEL_LIMIT)
+    ) {
+      return false
+    }
+    return db.extmax.x > db.extmin.x && db.extmax.y > db.extmin.y
   }
 
   /**
