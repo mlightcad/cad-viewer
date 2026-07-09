@@ -73,51 +73,23 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
    * MText glyphs and wide polylines — meshes that are rasterized as
    * fill but represent linework.
    *
-   * Patterned hatches at the hatch tier (`drawOrder < 0` with non-empty
-   * `definitionLines`) also invert: their visible component is the
-   * pattern lines themselves, which must stay legible against both
-   * light and dark canvases.
-   *
-   * Solid foreground hatches are deliberately excluded from this
-   * branch — they go through `shouldTrackBackground` instead so they
-   * fuse with the canvas bg (matching AutoCAD's reference rendering;
-   * see `images-ex/hatch-bg-bug-refact-lee/autocad/tower-*.png`).
+   * Hatch-tier fills (`drawOrder < 0`, including solid and patterned
+   * hatches) also invert with the theme so ACI 7 stays visible against
+   * both light and dark canvases, matching AutoCAD model-space behaviour.
    */
   protected shouldTrackForeground(
     traits: AcGiSubEntityTraits,
     _options: AcTrFillMaterialOptions
   ): boolean {
-    if (!traits.color.isForeground) return false
-    const drawOrder = traits.drawOrder ?? 0
-    if (drawOrder >= 0) return true
     const style = traits.fillType
-    const isPatterned = !style.gradient && !!style.definitionLines?.length
-    return isPatterned
-  }
-
-  /**
-   * Solid foreground hatch fills (ACI 7, `drawOrder < 0`, no pattern,
-   * no gradient) follow the canvas background colour rather than carry
-   * an absolute RGB. AutoCAD renders them as if they were painted with
-   * the paper colour, so they fuse into both light and dark canvases
-   * and only the overlaid wireframe remains visible.
-   *
-   * Hatches with an explicit RGB (including a literal truecolor white
-   * 0xFFFFFF) fall outside this rule — `traits.color.isForeground` is
-   * only true for the ACI 7 / foreground pseudo-colour, so a DWG
-   * author who picked `255,255,255` via the truecolor picker still
-   * gets a literal white hatch.
-   */
-  protected shouldTrackBackground(
-    traits: AcGiSubEntityTraits,
-    _options: AcTrFillMaterialOptions
-  ): boolean {
-    if (!traits.color.isForeground) return false
-    if ((traits.drawOrder ?? 0) >= 0) return false
-    const style = traits.fillType
-    if (style.gradient) return false
-    const isSolid = !style.definitionLines || style.definitionLines.length === 0
-    return isSolid
+    const isVisibleHatch =
+      (traits.drawOrder ?? 0) < 0 &&
+      !style.gradient &&
+      (style.solidFill || !!style.definitionLines?.length)
+    return (
+      traits.color.isForeground &&
+      ((traits.drawOrder ?? 0) >= 0 || isVisibleHatch)
+    )
   }
 
   /**
@@ -131,9 +103,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const style = traits.fillType
     const side = options.side ?? 'front'
     const threeSide = side === 'back' ? THREE.BackSide : THREE.FrontSide
-    const rgb = this.shouldTrackBackground(traits, options)
-      ? this.options.currentBackgroundColor
-      : this.resolveMaterialRgb(traits, layerColorRgb)
+    const rgb = this.resolveMaterialRgb(traits, layerColorRgb)
 
     let material: THREE.Material
     if (style.gradient) {
@@ -309,11 +279,6 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
    *   line-like fill meshes (wide polylines, text glyphs) because the
    *   batcher groups by material id and applies one `renderOrder` tier
    *   per batch.
-   * - `_bgfill`: background-tracked fills (solid foreground hatches)
-   *   get their own partition so `changeBackground` can mutate them
-   *   in place without affecting any literal-RGB hatch that happens
-   *   to share layer + colour (e.g. a truecolor 0xFFFFFF hatch on the
-   *   same layer as an ACI 7 hatch).
    *
    * All suffixes are appended only when they differ from the default,
    * keeping existing keys stable and avoiding unnecessary cache
@@ -326,12 +291,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const style = traits.fillType
     const sideSuffix = options.side === 'back' ? '_back' : ''
     const drawOrderSuffix = this.buildDrawOrderSuffix(traits)
-    const bgSuffix = this.shouldTrackBackground(traits, options)
-      ? '_bgfill'
-      : ''
-    const colorKey = this.shouldTrackBackground(traits, options)
-      ? String(this.options.currentBackgroundColor)
-      : this.buildKeyColorSegment(traits)
+    const colorKey = this.buildKeyColorSegment(traits)
     // Use colour semantics + layer + rebaseOffset + pattern info for key
     if (style.gradient) {
       const gradient = style.gradient
@@ -358,7 +318,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
     const isSolid = !style.definitionLines || style.definitionLines.length === 0
     if (isSolid) {
-      return `solid_${traits.layer}_${colorKey}${sideSuffix}${drawOrderSuffix}${bgSuffix}`
+      return `solid_${traits.layer}_${colorKey}${sideSuffix}${drawOrderSuffix}`
     }
 
     const patternHash = style.definitionLines
