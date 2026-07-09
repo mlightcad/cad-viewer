@@ -1,4 +1,5 @@
 import {
+  ACAP_UNTITLED_DOC_TITLE,
   AcApDocManager,
   AcApDocument,
   AcDbDocumentEventArgs,
@@ -16,6 +17,8 @@ import {
   type Ref,
   ref
 } from 'vue'
+
+import { i18n } from '../locale'
 
 /**
  * Reactive view of the active CAD document and its open lifecycle.
@@ -55,7 +58,7 @@ export interface UseDocumentReturn {
    * Display title of the active document.
    *
    * Mirrors {@link AcApDocument.docTitle}. For a new document this is
-   * typically `"Untitled"` until a file is opened.
+   * {@link ACAP_UNTITLED_DOC_TITLE} until a file is opened.
    */
   docTitle: DeepReadonly<Ref<string>>
 
@@ -63,7 +66,8 @@ export interface UseDocumentReturn {
    * User-facing document label for UI display.
    *
    * Resolves to {@link docTitle} when present, otherwise falls back to
-   * {@link fileName}.
+   * {@link fileName}. When the document is unsaved, localizes
+   * {@link ACAP_UNTITLED_DOC_TITLE} via `main.document.untitled`.
    */
   displayName: ComputedRef<string>
 
@@ -104,8 +108,24 @@ const fileName = ref('')
 /** Shared active document title sourced from {@link AcApDocument.docTitle}. */
 const docTitle = ref('')
 
+/**
+ * Resolves the user-facing document label from raw title and file name.
+ *
+ * @param title - {@link AcApDocument.docTitle}
+ * @param name - {@link AcApDocument.fileName}
+ */
+function resolveDisplayName(title: string, name: string): string {
+  if (title === ACAP_UNTITLED_DOC_TITLE && !name) {
+    return i18n.global.t('main.document.untitled')
+  }
+  return title || name
+}
+
 /** Shared computed label for UI surfaces that show the current document name. */
-const displayName = computed(() => docTitle.value || fileName.value)
+const displayName = computed(() => {
+  void i18n.global.locale.value
+  return resolveDisplayName(docTitle.value, fileName.value)
+})
 
 /** Structured error code from the latest failed open attempt. */
 const lastOpenErrorCode = ref<AcDbOpenDatabaseErrorCode>()

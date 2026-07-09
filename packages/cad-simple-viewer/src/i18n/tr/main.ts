@@ -1,4 +1,7 @@
 export default {
+  document: {
+    untitled: 'Adsız'
+  },
   commandLine: {
     noLast: '(önceki komut yok)',
     unknownCommand: 'Bilinmeyen komut',
