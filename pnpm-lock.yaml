@@ -9,7 +9,7 @@ overrides:
   '@mlightcad/dxf-json-converter': ^1.10.3
   '@mlightcad/libredwg-converter': ^3.10.3
   '@mlightcad/mtext-input-box': ^0.2.20
-  '@mlightcad/mtext-renderer': ^0.11.6
+  '@mlightcad/mtext-renderer': ^0.11.9
   '@mlightcad/ribbon': ^0.1.10
   element-plus: ^2.12.0
   glob: ^13.0.6
@@ -162,8 +162,8 @@ importers:
         specifier: ^3.10.3
         version: 3.10.3(@mlightcad/data-model@1.10.3)
       '@mlightcad/mtext-renderer':
-        specifier: ^0.11.6
-        version: 0.11.6(three@0.172.0)
+        specifier: ^0.11.9
+        version: 0.11.9(three@0.172.0)
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -257,10 +257,10 @@ importers:
         version: 3.10.3(@mlightcad/data-model@1.10.3)
       '@mlightcad/mtext-input-box':
         specifier: ^0.2.20
-        version: 0.2.20(@mlightcad/mtext-renderer@0.11.6(three@0.172.0))(three@0.172.0)
+        version: 0.2.20(@mlightcad/mtext-renderer@0.11.9(three@0.172.0))(three@0.172.0)
       '@mlightcad/mtext-renderer':
-        specifier: ^0.11.6
-        version: 0.11.6(three@0.172.0)
+        specifier: ^0.11.9
+        version: 0.11.9(three@0.172.0)
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
@@ -338,8 +338,8 @@ importers:
         specifier: ^1.4.1
         version: 1.4.1
       '@mlightcad/mtext-renderer':
-        specifier: ^0.11.6
-        version: 0.11.6(three@0.172.0)
+        specifier: ^0.11.9
+        version: 0.11.9(three@0.172.0)
 
   packages/cad-viewer:
     devDependencies:
@@ -505,8 +505,8 @@ importers:
         specifier: ^1.10.3
         version: 1.10.3
       '@mlightcad/mtext-renderer':
-        specifier: ^0.11.6
-        version: 0.11.6(three@0.172.0)
+        specifier: ^0.11.9
+        version: 0.11.9(three@0.172.0)
       '@types/three':
         specifier: ^0.172.0
         version: 0.172.0
@@ -1718,7 +1718,7 @@ packages:
   '@mlightcad/mtext-input-box@0.2.20':
     resolution: {integrity: sha512-hCRu7s0W6qTTZx18Ftx6teY4zATNl7iQBVRjjfERTRHiPtgJxUdVG9AHYhUCnWaMI8yC+xZGL/0Pl4u7Q+wy1w==}
     peerDependencies:
-      '@mlightcad/mtext-renderer': ^0.11.6
+      '@mlightcad/mtext-renderer': ^0.11.9
       three: ^0.172.0
 
   '@mlightcad/mtext-parser@1.4.1':
@@ -1727,8 +1727,8 @@ packages:
   '@mlightcad/mtext-parser@1.5.0':
     resolution: {integrity: sha512-Yl/IQmSIGV1UUl/TyUptoOpNBunywcEE7yh4k9SFDXljHDTTI92VmqkVFxf4eYzhoWF4MNXIl4qgQV1P1Rbn6g==}
 
-  '@mlightcad/mtext-renderer@0.11.6':
-    resolution: {integrity: sha512-jE1MQB2LeG50+mf5SLtjebMl0pqb8OUD+Q/tpdKoD67PuK+MvCnU7ffqJGx+2uar6YRg/rJNT9dpmsMpECjmgQ==}
+  '@mlightcad/mtext-renderer@0.11.9':
+    resolution: {integrity: sha512-Suw909aN9AFr/4pWyXzWcW+wY1iOnDvbaFaR3FtnchltrcJhF9vRep7hcavMVtFLm35TcHnCGXSndq9R9J9kqQ==}
     peerDependencies:
       three: ^0.172.0
 
@@ -1739,8 +1739,8 @@ packages:
       element-plus: ^2.12.0
       vue: ^3.4.21
 
-  '@mlightcad/shx-parser@1.3.6':
-    resolution: {integrity: sha512-bhDihtil0O/toQcTdV6dL1G61cPNKXTtIN+fCYroW5V87NQKlXdh0b0GpQoPL/VM5J5Bdn1ELPUw9IwrVvFxUg==}
+  '@mlightcad/shx-parser@1.4.5':
+    resolution: {integrity: sha512-wFY0X7vnuq1IYdP6JRggb7LHcKho1P8zmcWGtXa6XYthwyKZCUoZCswTXr7J26pbzyhBB7KsiCcCL48iwIevdQ==}
 
   '@mlightcad/text-box-cursor@0.1.1':
     resolution: {integrity: sha512-Q3uLz+FXG6mLInq/Q1jUNdyjGFdMWZduWA2WO6d+jUqFbWeh4xsn5M/HY+vy1Rs0bvLWZvdRgJeEFVe6nhIihQ==}
@@ -7061,9 +7061,9 @@ snapshots:
 
   '@mlightcad/libredwg-web@0.7.7': {}
 
-  '@mlightcad/mtext-input-box@0.2.20(@mlightcad/mtext-renderer@0.11.6(three@0.172.0))(three@0.172.0)':
+  '@mlightcad/mtext-input-box@0.2.20(@mlightcad/mtext-renderer@0.11.9(three@0.172.0))(three@0.172.0)':
     dependencies:
-      '@mlightcad/mtext-renderer': 0.11.6(three@0.172.0)
+      '@mlightcad/mtext-renderer': 0.11.9(three@0.172.0)
       '@mlightcad/text-box-cursor': 0.1.1(three@0.172.0)
       three: 0.172.0
 
@@ -7071,10 +7071,10 @@ snapshots:
 
   '@mlightcad/mtext-parser@1.5.0': {}
 
-  '@mlightcad/mtext-renderer@0.11.6(three@0.172.0)':
+  '@mlightcad/mtext-renderer@0.11.9(three@0.172.0)':
     dependencies:
       '@mlightcad/mtext-parser': 1.5.0
-      '@mlightcad/shx-parser': 1.3.6
+      '@mlightcad/shx-parser': 1.4.5
       iconv-lite: 0.7.2
       idb: 8.0.3
       opentype.js: 2.0.0
@@ -7086,7 +7086,7 @@ snapshots:
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
       vue: 3.5.31(typescript@5.9.3)
 
-  '@mlightcad/shx-parser@1.3.6': {}
+  '@mlightcad/shx-parser@1.4.5': {}
 
   '@mlightcad/text-box-cursor@0.1.1(three@0.172.0)':
     dependencies:

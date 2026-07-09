@@ -250,7 +250,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 #### 捕捉（OSNAP）
 
--   [ ] ⏳ 端点（Endpoint）：当前尚未支持 INSERT 实体
+-   [x] 端点（Endpoint）
 -   [x] 中点（Midpoint）
 -   [x] 圆心（Center）
 -   [ ] 交点（Intersection）
@@ -268,7 +268,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 -   [x] 旋转（Rotate）
 -   [ ] 缩放（Scale）
 -   [x] 删除（Delete）
--   [ ] 撤销 / 重做（Undo / Redo）
+-   [x] 撤销 / 重做（Undo / Redo）
 
 #### 几何编辑
 

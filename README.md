@@ -262,7 +262,7 @@ Legend:
 
 #### Snapping (OSNAP)
 
-* [ ] ⏳ Endpoint: Not working for INSERT entity yet.
+* [x] Endpoint
 * [x] Midpoint
 * [x] Center
 * [ ] Intersection
@@ -281,7 +281,7 @@ Legend:
 * [x] Rotate
 * [ ] Scale
 * [x] Delete
-* [ ] Undo / redo
+* [x] Undo / redo
 
 #### Geometry Editing
 
