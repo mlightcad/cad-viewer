@@ -920,9 +920,11 @@ export class AcApDocManager {
       fileExtension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
     )
 
-    const layout = await (this.curView as AcTrView2d).addOverlayEntities(db)
+    const view = this.curView as AcTrView2d
+    const layout = await view.addOverlayEntities(db)
     const overlayId = `overlay-${this._nextOverlayId++}`
     this._overlays.set(overlayId, { db, layout })
+    view.isDirty = true
     return overlayId
   }
 
@@ -936,11 +938,11 @@ export class AcApDocManager {
     const overlay = this._overlays.get(overlayId)
     if (!overlay) return false
 
-    ;(this.curView as AcTrView2d).cadScene.internalScene.remove(
-      overlay.layout.internalObject
-    )
+    const view = this.curView as AcTrView2d
+    view.cadScene.internalScene.remove(overlay.layout.internalObject)
     overlay.layout.clear()
     this._overlays.delete(overlayId)
+    view.isDirty = true
     return true
   }
 
@@ -956,6 +958,7 @@ export class AcApDocManager {
     if (!overlay) return false
 
     overlay.layout.visible = visible
+    ;(this.curView as AcTrView2d).isDirty = true
     return true
   }
 
