@@ -183,7 +183,7 @@ CAD-Viewer has some known limitations that users should be aware of:
   | 1 | Save proxy graphics |
 - **DWG File Size Limits**:
   - Parsing DWG files with LibreDWG is memory-intensive and can easily exceed 2 GB of RAM. `libredwg-web` therefore enforces WASM heap memory limits; very large DWG files may fail to parse.
-  - We have developed a proprietary DWG parser with significantly lower memory usage, support for larger DWG files, and more accurate parsing. If the open-source `libredwg-web` stack cannot meet your requirements, please email [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) to discuss licensing the proprietary parser.
+  - We offer a [**proprietary DWG/DXF parser**](./PROPRIETARY-PARSER.md) with significantly lower memory usage, support for larger files, and more accurate parsing. It integrates with the same `@mlightcad/data-model` as the open-source converters and can replace the GPL-based `dxf-json-converter` and `libredwg-converter` stack for closed-source commercial products. See the [commercial license document](./PROPRIETARY-PARSER.md) for scope, pricing, GPL compliance, and support terms.
 
 ## Roadmap
 
@@ -403,4 +403,8 @@ Contributions are welcome! Please open issues or pull requests for bug fixes, ne
 
 ## License
 
-[MIT](LICENSE)
+The cad-viewer monorepo is primarily [MIT](LICENSE) licensed.
+
+The **default DXF/DWG loading path** in `@mlightcad/cad-simple-viewer` depends on GPL-3.0 packages (`dxf-json` / `@mlightcad/dxf-json-converter` for DXF, `libredwg-web` / `@mlightcad/libredwg-converter` for DWG). If you ship a closed-source product and cannot distribute GPL code to your customers, use the [**proprietary DWG/DXF parser**](./PROPRIETARY-PARSER.md) instead — it replaces those converters and lets the rest of the stack remain MIT-only.
+
+→ **Commercial parser:** [PROPRIETARY-PARSER.md](./PROPRIETARY-PARSER.md) (scope, licensing, pricing, integration, GPL compliance, support)

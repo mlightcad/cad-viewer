@@ -170,7 +170,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
   | 1 | 保存 Proxy Graphics |
 - **DWG 文件大小限制**：
   - 使用 LibreDWG 解析 DWG 文件时内存开销较大，很容易占用超过 2 GB 内存。因此 `libredwg-web` 对 WASM 堆内存做了限制，过大的 DWG 文件可能无法解析。
-  - 我们已开发闭源 DWG 解析器，具有更低的内存开销，支持解析更大的 DWG 文件，且解析结果更加正确。若开源项目 `libredwg-web` 无法满足您的需求，请发送邮件至 [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) 协商闭源 DWG 解析器授权。
+  - 我们提供 [**专有 DWG/DXF 解析器**](./PROPRIETARY-PARSER.zh-CN.md)，具有更低的内存开销，支持更大的文件，且解析结果更加准确。它与开源 converter 一样接入 `@mlightcad/data-model`，并可在闭源商业产品中替换基于 GPL 的 `dxf-json-converter` 与 `libredwg-converter`。详见 [商业授权说明](./PROPRIETARY-PARSER.zh-CN.md)（支持范围、价格、GPL 合规、支持维护等）。
 
 ## 路线图（Roadmap）
 
@@ -391,6 +391,10 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 ## 许可证
 
-[MIT](LICENSE)
+cad-viewer monorepo 主体采用 [MIT](LICENSE) 授权。
+
+`@mlightcad/cad-simple-viewer` 的**默认 DXF/DWG 加载路径**依赖 GPL-3.0 包（DXF：`dxf-json` / `@mlightcad/dxf-json-converter`；DWG：`libredwg-web` / `@mlightcad/libredwg-converter`）。若您交付闭源产品且无法向客户分发 GPL 代码，可使用 [**专有 DWG/DXF 解析器**](./PROPRIETARY-PARSER.zh-CN.md) 替换上述 converter，其余技术栈可保持纯 MIT。
+
+→ **专有解析器说明：** [PROPRIETARY-PARSER.zh-CN.md](./PROPRIETARY-PARSER.zh-CN.md)（支持范围、授权条款、价格、集成方式、GPL 合规、支持维护）
 
 
