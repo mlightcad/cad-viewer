@@ -9,7 +9,8 @@
   },
   "scripts": {
     "pre-serve": "node ./copyDist.js",
-    "serve": "npm run pre-serve && serve ./public/"
+    "export:demo-html": "node ./exportDemoHtml.js",
+    "serve": "node ./servePublic.js"
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer-example": "workspace:*",
