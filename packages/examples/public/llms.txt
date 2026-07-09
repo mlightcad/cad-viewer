@@ -6,6 +6,7 @@ Official links:
 - Project homepage: https://mlightcad.github.io/cad-viewer/
 - Live demo (full): https://mlightcad.github.io/cad-viewer/cad-viewer/
 - Live demo (simple): https://mlightcad.github.io/cad-viewer/cad-simple-viewer/
+- Offline HTML demo (self-contained): https://mlightcad.github.io/cad-viewer/self-contained-html/canteen.html
 - API docs: https://mlightcad.github.io/cad-viewer/docs/
 - GitHub repository: https://github.com/mlightcad/cad-viewer
 

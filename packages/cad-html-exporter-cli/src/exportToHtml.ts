@@ -129,7 +129,11 @@ export async function exportToHtml(
   const base64 = fileBytes.toString('base64')
 
   const server = await startStaticServer(runnerDir)
-  const browser = await chromium.launch({ headless: true })
+  const channel = process.env.PLAYWRIGHT_BROWSER_CHANNEL
+  const browser = await chromium.launch({
+    headless: true,
+    ...(channel ? { channel } : {})
+  })
 
   try {
     const page = await browser.newPage()

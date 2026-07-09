@@ -3,21 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="CAD Viewer examples and API docs for browser-based DXF/DWG viewing and editing with no backend required.">
+    <meta name="description" content="CAD Viewer examples: full and simple browser demos, self-contained offline HTML export, and API docs for DXF/DWG viewing with no backend required.">
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <link rel="canonical" href="https://mlightcad.github.io/cad-viewer/">
     <title>CAD Viewer Examples</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f4f6fb;
+        --card: #ffffff;
+        --text: #1a1f36;
+        --muted: #5b6478;
+        --accent: #2563eb;
+        --accent-soft: #dbeafe;
+        --border: #d8deea;
+        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1419;
+          --card: #171c24;
+          --text: #eef2ff;
+          --muted: #a6b0c3;
+          --accent: #60a5fa;
+          --accent-soft: #1e293b;
+          --border: #2a3344;
+          --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 28rem),
+          var(--bg);
+      }
+
+      .page {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      header {
+        margin-bottom: 2.5rem;
+      }
+
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        line-height: 1.15;
+      }
+
+      .lead {
+        margin: 0;
+        max-width: 42rem;
+        color: var(--muted);
+        font-size: 1.05rem;
+      }
+
+      section {
+        margin-bottom: 2.5rem;
+      }
+
+      section > h2 {
+        margin: 0 0 1rem;
+        font-size: 1.35rem;
+      }
+
+      .cards {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.25rem 1.35rem;
+        box-shadow: var(--shadow);
+      }
+
+      .card h3 {
+        margin: 0 0 0.35rem;
+        font-size: 1.15rem;
+      }
+
+      .card p {
+        margin: 0 0 0.85rem;
+        color: var(--muted);
+      }
+
+      .card ul {
+        margin: 0 0 1rem;
+        padding-left: 1.2rem;
+        color: var(--muted);
+      }
+
+      .card li + li {
+        margin-top: 0.25rem;
+      }
+
+      .card a.button {
+        display: inline-block;
+        padding: 0.55rem 0.95rem;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .card a.button:hover {
+        filter: brightness(1.05);
+      }
+
+      .card a.button.secondary {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.85rem;
+      }
+
+      .pill {
+        display: inline-block;
+        padding: 0.2rem 0.65rem;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+
+      .note {
+        margin-top: 0.75rem;
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .compare-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 1rem;
+        font-size: 0.95rem;
+      }
+
+      .compare-table th,
+      .compare-table td {
+        padding: 0.55rem 0.75rem;
+        border: 1px solid var(--border);
+        text-align: left;
+      }
+
+      .compare-table th {
+        background: var(--accent-soft);
+        color: var(--text);
+      }
+
+      .compare-table tr:last-child td,
+      .compare-table tr:nth-last-child(2) td {
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      .docs-list {
+        margin: 0;
+        padding-left: 1.2rem;
+      }
+
+      .docs-list a {
+        color: var(--accent);
+      }
+    </style>
 </head>
 <body>
-    <h1>Examples</h1>
-    <ol>
-      <li><a href="./cad-viewer/" target="_blank">CAD Viewer Demo</a></li>
-      <li><a href="./cad-simple-viewer/" target="_blank">CAD Simple Viewer Demo</a></li>
-    </ol>
-    <h1>API Docs</h1>
-    <ol>
-      <li><a href="./docs/modules/_mlightcad_cad-simple-viewer" target="_blank">CAD Simple Viewer</a></li>
-      <li><a href="./docs/modules/_mlightcad_cad-viewer" target="_blank">CAD Viewer</a></li>
-    </ol>
+    <div class="page">
+      <header>
+        <h1>CAD Viewer Examples</h1>
+        <p class="lead">
+          Live demos and reference implementations for browser-based DXF/DWG viewing and editing.
+          All examples run entirely in the browser — no backend server required.
+        </p>
+      </header>
+
+      <section aria-labelledby="interactive-demos">
+        <h2 id="interactive-demos">Interactive Demos</h2>
+        <div class="cards">
+          <article class="card">
+            <h3>CAD Viewer Demo</h3>
+            <div class="pill-row">
+              <span class="pill">Vue 3</span>
+              <span class="pill">Full UI</span>
+              <span class="pill">DXF / DWG</span>
+            </div>
+            <p>
+              A production-style CAD host built with Vue 3 and Element Plus. Start from an upload
+              screen, then open local drawings in a complete viewer with menus, ribbons, layer
+              manager, command line, and status bar.
+            </p>
+            <ul>
+              <li>Read, Review, and Write access modes when opening a file</li>
+              <li>Layer management, point styles, settings, and AutoCAD-style commands</li>
+              <li>Export to self-contained HTML or PDF from the running viewer</li>
+              <li>English and Chinese UI via built-in i18n</li>
+            </ul>
+            <a class="button" href="./cad-viewer/" target="_blank" rel="noopener">Open CAD Viewer Demo</a>
+          </article>
+
+          <article class="card">
+            <h3>CAD Simple Viewer Demo</h3>
+            <div class="pill-row">
+              <span class="pill">TypeScript</span>
+              <span class="pill">Minimal embed</span>
+              <span class="pill">High performance</span>
+            </div>
+            <p>
+              A lightweight reference app that shows how to embed <code>@mlightcad/cad-simple-viewer</code>
+              without a full UI framework. Ideal when you want a smaller integration surface and direct
+              control over layout and commands.
+            </p>
+            <ul>
+              <li>Sidebar with sample drawings loaded from the cad-data CDN</li>
+              <li>Toolbar for open, zoom fit, zoom window, background toggle, and export</li>
+              <li>Lazy-loaded HTML, PDF, and SVG export plugins</li>
+              <li>Responsive sidebar + canvas layout for desktop and mobile</li>
+            </ul>
+            <a class="button" href="./cad-simple-viewer/" target="_blank" rel="noopener">Open Simple Viewer Demo</a>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="offline-html">
+        <h2 id="offline-html">Self-Contained Offline HTML</h2>
+        <article class="card">
+          <h3>Canteen sample drawing (offline HTML export)</h3>
+          <div class="pill-row">
+            <span class="pill">Single file</span>
+            <span class="pill">No install</span>
+            <span class="pill">Low memory</span>
+          </div>
+          <p>
+            Export a DWG/DXF drawing into one portable <code>.html</code> file that embeds both the
+            drawing snapshot and a lightweight viewer runtime. Recipients can open it in any modern
+            browser — no CAD software, no server, and no cad-viewer deployment needed.
+          </p>
+          <ul>
+            <li><strong>Ultra-low memory footprint</strong> — far below desktop CAD viewers when opening the same drawing</li>
+            <li><strong>Works offline</strong> — email, archive, or host on any static file server</li>
+            <li><strong>Built-in tools</strong> — pan, zoom, zoom extents, layer toggle, and distance measurement</li>
+            <li><strong>Same pipeline as the live demos</strong> — generated with <code>cad-html-exporter-cli</code> from the sample <code>canteen.dwg</code> drawing</li>
+          </ul>
+          <p class="note">
+            Memory consumption measured with the sample drawing
+            <a href="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg"><code>canteen.dwg</code></a>:
+          </p>
+          <table class="compare-table" aria-label="Memory consumption comparison for canteen.dwg">
+            <thead>
+              <tr>
+                <th scope="col">Viewer</th>
+                <th scope="col">Memory consumption</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>AutoCAD 2020</td>
+                <td>320 MB</td>
+              </tr>
+              <tr>
+                <td>GstarCAD Viewer (浩辰看图王)</td>
+                <td>246 MB</td>
+              </tr>
+              <tr>
+                <td>Self-contained HTML (measure mode)</td>
+                <td>56 MB</td>
+              </tr>
+              <tr>
+                <td>Self-contained HTML (view mode)</td>
+                <td>33 MB</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note">
+            View mode uses about 83% less memory than AutoCAD 2020 and 77% less than GstarCAD Viewer,
+            while measure mode adds distance tools at 56 MB.
+          </p>
+          <a class="button" href="./self-contained-html/canteen.html" target="_blank" rel="noopener">Open offline HTML demo</a>
+          <a class="button secondary" href="https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-exporter-cli" target="_blank" rel="noopener">CLI docs</a>
+          <p class="note">
+            This file is produced automatically in CI on the <code>main</code> branch and published to GitHub Pages.
+            When serving locally with <code>pnpm serve</code>, run <code>pnpm export:demo-html</code> from
+            <code>packages/examples</code> to generate it.
+          </p>
+        </article>
+      </section>
+
+      <section aria-labelledby="api-docs">
+        <h2 id="api-docs">API Docs</h2>
+        <ol class="docs-list">
+          <li><a href="./docs/modules/_mlightcad_cad-simple-viewer" target="_blank" rel="noopener">CAD Simple Viewer</a></li>
+          <li><a href="./docs/modules/_mlightcad_cad-viewer" target="_blank" rel="noopener">CAD Viewer</a></li>
+        </ol>
+      </section>
+    </div>
 </body>
 </html>

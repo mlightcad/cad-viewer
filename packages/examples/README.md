@@ -40,6 +40,28 @@ A minimal, lightweight CAD viewer focusing on core functionality.
 - LibreDWG WebAssembly
 - Modern ES2020+ features
 
+### 3. Self-Contained Offline HTML (`/self-contained-html/canteen.html`)
+
+A single-file HTML export of the sample **canteen.dwg** drawing, produced by `cad-html-exporter-cli`.
+
+**Why it matters:**
+- One portable `.html` file — no CAD app, server, or cad-viewer install for recipients
+- Opens offline in any modern browser with pan, zoom, layers, and measurement
+- Very low memory usage compared with desktop CAD viewers when opening the same sample drawing [`canteen.dwg`](https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg):
+
+| Viewer | Memory consumption |
+|--------|-------------|
+| AutoCAD 2020 | 320 MB |
+| GstarCAD Viewer (浩辰看图王) | 246 MB |
+| Self-contained HTML (measure mode) | 56 MB |
+| Self-contained HTML (view mode) | 33 MB |
+
+View mode uses about **83% less memory than AutoCAD 2020** and **77% less than GstarCAD Viewer**.
+
+**How it is built:**
+- CI on `main` downloads `canteen.dwg` from cad-data and runs `exportDemoHtml.js`
+- Locally: `pnpm export:demo-html` from this package after `pnpm build`
+
 ## Getting Started
 
 ### Prerequisites
@@ -71,6 +93,20 @@ The examples will be available at:
 - Main index: `http://localhost:3000`
 - CAD Viewer Demo: `http://localhost:3000/cad-viewer/`
 - CAD Simple Viewer Demo: `http://localhost:3000/cad-simple-viewer/`
+- Self-contained HTML demo: `http://localhost:3000/self-contained-html/canteen.html` (generate first with `pnpm export:demo-html`)
+
+### Self-Contained HTML Demo
+
+The offline HTML example is built from the sample [`canteen.dwg`](https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg) using [`@mlightcad/cad-html-exporter-cli`](../cad-html-exporter-cli). GitHub Actions on the `main` branch runs this step automatically before deploying to GitHub Pages.
+
+To generate the file locally (requires a built workspace and Playwright Chromium or system Chrome via `PLAYWRIGHT_BROWSER_CHANNEL=chrome`):
+
+```bash
+pnpm build
+cd packages/examples
+pnpm export:demo-html
+pnpm serve
+```
 
 ## Development Workflow
 
@@ -102,8 +138,10 @@ packages/examples/
 │   ├── sitemap.xml             # Search engine sitemap
 │   ├── llms.txt                # LLM-friendly project summary
 │   ├── cad-viewer/             # Full CAD viewer demo
-│   └── cad-simple-viewer/      # Simple CAD viewer demo
+│   ├── cad-simple-viewer/      # Simple CAD viewer demo
+│   └── self-contained-html/    # Offline HTML export demo (CI / export:demo-html)
 ├── copyDist.js                 # Script to copy built examples
+├── exportDemoHtml.js           # Build offline HTML demo via cad-html-exporter-cli
 ├── package.json                # Package configuration
 └── README.md                   # This file
 ```
@@ -111,6 +149,7 @@ packages/examples/
 ## Scripts
 
 - `pre-serve`: Copies built examples from individual packages to the public directory
+- `export:demo-html`: Exports the canteen.dwg sample to a self-contained HTML file
 - `serve`: Starts a local server to serve the examples
 
 ## Use Cases

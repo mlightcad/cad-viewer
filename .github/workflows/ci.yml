@@ -107,6 +107,12 @@ jobs:
           name: Release ${{ github.ref_name }}
           generate_release_notes: true
 
+      - name: Export self-contained HTML demo
+        if: github.ref == 'refs/heads/main'
+        run: node packages/examples/exportDemoHtml.js
+        env:
+          PLAYWRIGHT_BROWSER_CHANNEL: chrome
+
       - name: Upload github pages artifact
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v4
