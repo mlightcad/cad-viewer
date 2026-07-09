@@ -1,4 +1,7 @@
 export default {
+  document: {
+    untitled: 'Untitled'
+  },
   commandLine: {
     noLast: '(no last command)',
     unknownCommand: 'Unknown command',

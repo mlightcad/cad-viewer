@@ -26,6 +26,9 @@ import { LAYER_LOCKED_FLAG } from '../service/types'
 import type { AcApLayerPreviousSnapshot } from './AcApLayerSessionState'
 import { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
 
+/** Sentinel stored in {@link AcApDocument.docTitle} for unsaved documents. */
+export const ACAP_UNTITLED_DOC_TITLE = 'Untitled'
+
 /**
  * Represents a CAD document that manages a drawing database and associated metadata.
  *
@@ -62,11 +65,11 @@ export class AcApDocument {
   /**
    * Creates a new document instance with an empty database.
    *
-   * The document is initialized with an "Untitled" title and write mode enabled.
+   * The document is initialized with {@link ACAP_UNTITLED_DOC_TITLE} and write mode enabled.
    */
   constructor() {
     this._database = new AcDbDatabase()
-    this.docTitle = 'Untitled'
+    this.docTitle = ACAP_UNTITLED_DOC_TITLE
     this._openMode = AcEdOpenMode.Write
   }
 
@@ -159,7 +162,7 @@ export class AcApDocument {
   resetNewDocumentIdentity() {
     this._uri = undefined
     this._fileName = ''
-    this.docTitle = 'Untitled'
+    this.docTitle = ACAP_UNTITLED_DOC_TITLE
   }
 
   /**
