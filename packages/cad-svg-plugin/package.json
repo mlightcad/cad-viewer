@@ -44,13 +44,13 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.10.3",
+    "@mlightcad/data-model": "^1.10.4",
     "@mlightcad/mtext-parser": "^1.4.1",
     "@mlightcad/mtext-renderer": "^0.11.9"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.10.3",
+    "@mlightcad/data-model": "^1.10.4",
     "@mlightcad/mtext-parser": "^1.4.1",
     "@mlightcad/mtext-renderer": "^0.11.9"
   }
