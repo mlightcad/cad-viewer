@@ -17,6 +17,7 @@ export const agentTr = {
     'OpenAI uyumlu bir görsel uç nokta kullanır (varsayılan: SiliconFlow). Kendi barındırdığınız vLLM için Taban URL alanını sunucunuza ayarlayın, ör. http://127.0.0.1:8000/v1.',
   providerOpenai: 'OpenAI',
   providerAnthropic: 'Anthropic',
+  providerGoogle: 'Google Gemini',
   providerOpenaiCompatible: 'OpenAI Uyumlu',
   baseUrl: 'Taban URL',
   model: 'Model',

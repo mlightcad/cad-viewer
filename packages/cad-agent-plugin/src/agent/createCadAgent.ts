@@ -54,7 +54,7 @@ export function createCadAgent(settings: LlmSettings) {
     model: createModelFromSettings(settings),
     system: CAD_AGENT_SYSTEM_PROMPT,
     tools: createCadTools(),
-    stopWhen: stepCountIs(10)
+    stopWhen: stepCountIs(20)
   })
 }
 
@@ -136,6 +136,13 @@ export function createAgentChatTransport(
             const { userRequest, referenceImages } =
               extractConversationContext(validatedMessages)
             let verificationAttempts = 0
+            // Verifier memory: feedback from every prior round and the screenshot
+            // taken before the latest edits, so review is progress-aware.
+            const feedbackHistory: string[] = []
+            let previousPreviewDataUrl: string | undefined
+            // Consecutive rounds whose feedback is unchanged from the round
+            // before — a stalled loop we stop early instead of burning attempts.
+            let noProgressRounds = 0
 
             while (!abortSignal?.aborted) {
               workingMessages = await streamAgentRound({
@@ -181,6 +188,10 @@ export function createAgentChatTransport(
                   userRequest,
                   referenceImages,
                   preview.dataUrl,
+                  {
+                    previousFeedback: feedbackHistory,
+                    previousDrawingImage: previousPreviewDataUrl
+                  },
                   abortSignal
                 )
               } catch (error) {
@@ -201,10 +212,33 @@ export function createAgentChatTransport(
                 break
               }
 
+              // Detect a stalled loop: feedback unchanged from the prior round.
+              const normalize = (text: string) =>
+                text.trim().toLowerCase().replace(/\s+/g, ' ')
+              const lastFeedback = feedbackHistory[feedbackHistory.length - 1]
+              if (
+                lastFeedback &&
+                normalize(verification.feedback) === normalize(lastFeedback)
+              ) {
+                noProgressRounds += 1
+              } else {
+                noProgressRounds = 0
+              }
+              feedbackHistory.push(verification.feedback)
+              previousPreviewDataUrl = preview.dataUrl
+
               if (verificationAttempts >= MAX_VERIFICATION_ATTEMPTS) {
                 appendAssistantText(
                   write,
                   `\n${agentT('verificationMaxAttempts')}\n\n${verification.feedback.trim()}`
+                )
+                break
+              }
+
+              if (noProgressRounds >= 2) {
+                appendAssistantText(
+                  write,
+                  `\n${agentT('verificationNoProgress')}\n\n${verification.feedback.trim()}`
                 )
                 break
               }

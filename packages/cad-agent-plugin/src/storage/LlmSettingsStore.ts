@@ -4,6 +4,7 @@ import { decryptApiKey, encryptApiKey } from './apiKeyCrypto'
 export type LlmProviderId =
   | 'openai'
   | 'anthropic'
+  | 'google'
   | 'openai-compatible'
   | 'deepseek'
   | 'deepseek-vl'
@@ -50,6 +51,10 @@ export const PROVIDER_DEFAULTS: Record<
   anthropic: {
     baseUrl: 'https://api.anthropic.com/v1',
     model: 'claude-3-5-haiku-latest'
+  },
+  google: {
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    model: 'gemini-2.5-flash'
   },
   'openai-compatible': {
     baseUrl: 'https://api.openai.com/v1',

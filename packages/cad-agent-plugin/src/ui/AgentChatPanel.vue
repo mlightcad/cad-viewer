@@ -461,6 +461,7 @@ function isVerificationMessage(message: UIMessage): boolean {
           <option value="deepseek-vl">{{ labels.providerDeepseekVl }}</option>
           <option value="openai">{{ labels.providerOpenai }}</option>
           <option value="anthropic">{{ labels.providerAnthropic }}</option>
+          <option value="google">{{ labels.providerGoogle }}</option>
           <option value="openai-compatible">
             {{ labels.providerOpenaiCompatible }}
           </option>

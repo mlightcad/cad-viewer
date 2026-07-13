@@ -1,4 +1,5 @@
 import { createAnthropic } from '@ai-sdk/anthropic'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
 import type { LanguageModel } from 'ai'
 
@@ -26,6 +27,14 @@ export function createModelFromSettings(settings: LlmSettings): LanguageModel {
       baseURL: settings.baseUrl || undefined
     })
     return anthropic(settings.model)
+  }
+
+  if (settings.provider === 'google') {
+    const google = createGoogleGenerativeAI({
+      apiKey: settings.apiKey,
+      baseURL: settings.baseUrl || undefined
+    })
+    return google(settings.model)
   }
 
   if (settings.provider === 'openai') {

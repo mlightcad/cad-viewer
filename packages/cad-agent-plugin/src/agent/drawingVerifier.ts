@@ -5,7 +5,7 @@ import type { LlmSettings } from '../storage/LlmSettingsStore'
 import { createModelFromSettings } from './createModel'
 
 /** Maximum number of screenshot verification rounds per user message. */
-export const MAX_VERIFICATION_ATTEMPTS = 5
+export const MAX_VERIFICATION_ATTEMPTS = 8
 
 const verificationSchema = z.object({
   passed: z
@@ -25,13 +25,33 @@ const VERIFICATION_SYSTEM_PROMPT = `You verify CAD drawings produced by an autom
 Compare the current drawing screenshot against the user's request and any reference images.
 Focus on overall geometry, topology, proportions, and layout — not exact pixel alignment.
 
-Rules:
-- Ignore dimensions, dimension lines, and dimension text in reference images. The drawing tools cannot create dimensions, so do not require them in the output drawing.
-- Ignore missing annotations or labels unless the user explicitly asked for text entities.
-- Pass when the drawing reasonably captures the requested shape and layout.
-- Fail only when important geometry is missing, wrong, or clearly misaligned.`
+Tool limitations — NEVER fail a drawing for any of these, they are impossible with the available tools:
+- The tools can only draw solid, continuous lines. They cannot produce dashed, dotted, or "hidden" line styles. Treat every edge as solid; do not ask for hidden or dashed lines.
+- The tools cannot create dimensions, dimension lines, extension lines, arrows, or tolerance/GD&T symbols. Ignore these entirely.
+- Ignore missing annotations, labels, hatching styles, or line weights unless the user explicitly asked for text entities.
+
+Memory and progress:
+- You may be shown the issues you reported in previous rounds and the previous screenshot (before the latest edits). Use them to judge PROGRESS.
+- Confirm whether each previously reported issue is now resolved. Do NOT re-raise an issue that has already been fixed.
+- Do NOT introduce new nitpicks each round to keep failing the drawing. Only report issues that genuinely remain and are fixable with the tools above.
+- If the only remaining differences are unfixable (line style, dimensions, cosmetic) or the drawing already captures the requested geometry and layout, set passed = true.
+
+Verdict:
+- Pass when the drawing reasonably captures the requested shape, features, and layout.
+- Fail only when important geometry is missing, wrong, or clearly misaligned AND it can be fixed with solid-line drawing tools.
+- In feedback, list only the concrete remaining issues and the specific fix for each. Keep it short.`
 
 export type DrawingVerificationResult = z.infer<typeof verificationSchema>
+
+/**
+ * Prior-round context that gives the verifier memory across verification rounds.
+ */
+export interface VerificationHistory {
+  /** Feedback strings reported in previous rounds, oldest first. */
+  previousFeedback: string[]
+  /** Screenshot data URL from before the latest round of edits, if available. */
+  previousDrawingImage?: string
+}
 
 /**
  * Sends the current drawing screenshot to the LLM for visual verification.
@@ -40,12 +60,14 @@ export type DrawingVerificationResult = z.infer<typeof verificationSchema>
  * @param userRequest - Original user drawing request text.
  * @param referenceImages - User-attached reference image data URLs, if any.
  * @param drawingImage - PNG data URL of the current drawing.
+ * @param history - Previous rounds' feedback and screenshot for progress-aware review.
  */
 export async function verifyDrawing(
   settings: LlmSettings,
   userRequest: string,
   referenceImages: string[],
   drawingImage: string,
+  history?: VerificationHistory,
   abortSignal?: AbortSignal
 ): Promise<DrawingVerificationResult> {
   const model = createModelFromSettings(settings)
@@ -66,6 +88,25 @@ export async function verifyDrawing(
     for (const image of referenceImages) {
       userContent.push({ type: 'image', image })
     }
+  }
+
+  if (history && history.previousFeedback.length > 0) {
+    userContent.push({
+      type: 'text',
+      text:
+        'Issues you reported in previous rounds (oldest first). Check whether each is now resolved and do not re-raise fixed or unfixable ones:\n' +
+        history.previousFeedback
+          .map((f, i) => `Round ${i + 1}: ${f.trim()}`)
+          .join('\n')
+    })
+  }
+
+  if (history?.previousDrawingImage) {
+    userContent.push({
+      type: 'text',
+      text: 'Previous drawing screenshot (before the latest edits), for comparing progress:'
+    })
+    userContent.push({ type: 'image', image: history.previousDrawingImage })
   }
 
   userContent.push({
@@ -97,9 +138,9 @@ export function buildVerificationFeedbackMessage(
   feedback: string
 ): string {
   return [
-    `Drawing verification failed (attempt ${attempt}/${maxAttempts}).`,
+    `Drawing verification (attempt ${attempt}/${maxAttempts}) found remaining issues:`,
     feedback.trim(),
-    'Please update the drawing to address these issues.'
+    'Fix ONLY these issues. Do not delete or redraw geometry that is already correct — modify or add just what is needed, using the entityIds you recorded. The tools draw solid continuous lines only, so do not attempt hidden, dashed, or dimension lines.'
   ]
     .filter(Boolean)
     .join('\n\n')

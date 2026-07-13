@@ -70,6 +70,38 @@ export const PROVIDER_MODEL_OPTIONS: Record<
       supportsVision: true
     }
   ],
+  google: [
+    {
+      value: 'gemini-2.5-pro',
+      labelEn: 'Gemini 2.5 Pro',
+      labelZh: 'Gemini 2.5 Pro',
+      supportsVision: true
+    },
+    {
+      value: 'gemini-2.5-flash',
+      labelEn: 'Gemini 2.5 Flash',
+      labelZh: 'Gemini 2.5 Flash',
+      supportsVision: true
+    },
+    {
+      value: 'gemini-2.0-flash',
+      labelEn: 'Gemini 2.0 Flash',
+      labelZh: 'Gemini 2.0 Flash',
+      supportsVision: true
+    },
+    {
+      value: 'gemini-1.5-pro',
+      labelEn: 'Gemini 1.5 Pro',
+      labelZh: 'Gemini 1.5 Pro',
+      supportsVision: true
+    },
+    {
+      value: 'gemini-1.5-flash',
+      labelEn: 'Gemini 1.5 Flash',
+      labelZh: 'Gemini 1.5 Flash',
+      supportsVision: true
+    }
+  ],
   deepseek: [
     {
       value: 'deepseek-v4-flash',

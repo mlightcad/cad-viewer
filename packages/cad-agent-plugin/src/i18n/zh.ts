@@ -17,6 +17,7 @@ export const agentZh = {
     '使用 OpenAI 兼容的视觉接口（默认：SiliconFlow）。自托管 vLLM 时请将接口地址改为本地服务，例如 http://127.0.0.1:8000/v1。',
   providerOpenai: 'OpenAI',
   providerAnthropic: 'Anthropic',
+  providerGoogle: 'Google Gemini',
   providerOpenaiCompatible: 'OpenAI 兼容',
   baseUrl: '接口地址',
   model: '模型',
