@@ -1,6 +1,7 @@
 export { default as arc } from './arc.svg'
 export { default as circle } from './circle.svg'
 export { default as color } from './color.svg'
+export { default as countlist } from './countlist.svg'
 export { default as dynamicInput } from './dynamicInput.svg'
 export { default as fullScreen } from './fullScreen.svg'
 export { default as language } from './language.svg'

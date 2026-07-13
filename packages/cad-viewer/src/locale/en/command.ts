@@ -12,6 +12,10 @@ export default {
     properties: {
       description: 'Entity properties palette'
     },
+    countlist: {
+      description:
+        'Opens the Count palette to display and manage counted blocks'
+    },
     pttype: {
       description: 'Specifies the display style and size of point objects'
     },

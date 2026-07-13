@@ -10,6 +10,7 @@ import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
 import { markRaw } from 'vue'
 
 import {
+  AcApCountListCmd,
   AcApDrawingUnitsCmd,
   AcApExportHtmlDlgCmd,
   AcApLayerStateCmd,
@@ -84,6 +85,12 @@ export const registerCmds = () => {
       'properties',
       'properties',
       new AcApPropertiesCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'countlist',
+      'countlist',
+      new AcApCountListCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

@@ -280,6 +280,7 @@ export default {
       properties: 'Open the Properties palette for the current selection.',
       quickSelect:
         'Open Quick Select to filter and select entities by criteria.',
+      countList: 'Open the Count palette to view and manage block counts.',
       drawingUnits:
         'Open Drawing Units to set coordinate formats, precision, and insertion scale.',
       agent:
@@ -380,6 +381,7 @@ export default {
       redo: 'Redo',
       properties: 'Properties',
       quickSelect: 'Quick\nSelect',
+      countList: 'Count',
       drawingUnits: 'Drawing\nUnits',
       agent: 'CAD\nAgent'
     }
@@ -552,6 +554,40 @@ export default {
         color: 'Color',
         currentLayer: 'Current layer',
         zoomToLayer: 'Zoomed to the clicked layer "{layer}"'
+      }
+    },
+    countList: {
+      tab: 'Count',
+      title: 'Count',
+      searchPlaceholder: 'Search block name',
+      countInArea: 'Count in Area',
+      clearArea: 'Clear Area',
+      refresh: 'Refresh',
+      expandBy: 'Expand by',
+      expand: {
+        layer: 'Layer',
+        scale: 'Scale',
+        mirror: 'Mirror',
+        attribute: 'Attributes'
+      },
+      areaActive: 'Counting within the specified area',
+      areaSet: 'Count area updated',
+      areaCleared: 'Counting entire model space',
+      blockName: 'Block',
+      count: 'Count',
+      empty: 'No visible blocks found',
+      activeCount: '{name}: {count}',
+      errorCount: '{count} issue(s)',
+      previous: 'Previous',
+      next: 'Next',
+      selectCounted: 'Select',
+      endCount: 'End Count',
+      errorsTitle: 'Count errors',
+      overlapError: 'Overlapping "{name}" ({count})',
+      prompt: {
+        firstCorner:
+          'Specify first corner of count area or [Entire]: ',
+        secondCorner: 'Specify opposite corner: '
       }
     }
   },

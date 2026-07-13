@@ -19,6 +19,11 @@
       <template #tab-entityProperties>
         <ml-entity-properties :entity-props-list="properties" />
       </template>
+      <template #tab-countList>
+        <div class="ml-count-list-wrapper">
+          <ml-count-list />
+        </div>
+      </template>
       <template v-if="store.features.agentPlugin" #tab-agent>
         <div class="ml-agent-palette-wrapper">
           <agent-chat-panel embedded />
@@ -38,6 +43,7 @@ import { computed, defineAsyncComponent, nextTick, watch } from 'vue'
 import { store } from '../../app'
 import { useSelectionSet, useViewerRect } from '../../composable'
 import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
+import MlCountList from './MlCountList.vue'
 import MlEntityProperties from './MlEntityProperties.vue'
 import MlLayerList from './MlLayerList.vue'
 
@@ -133,7 +139,11 @@ const syncPaletteToContainer = () => {
   paletteElement.style.maxWidth = `${containerWidth}px`
 }
 
-const baseTabNames = ['layerManager', 'entityProperties'] as const
+const baseTabNames = [
+  'layerManager',
+  'entityProperties',
+  'countList'
+] as const
 const tabNames = computed((): readonly string[] => {
   if (store.features.agentPlugin) {
     return [...baseTabNames, 'agent']
@@ -201,6 +211,15 @@ const properties = computed(() => {
   display: flex;
   align-items: flex-start; /* Align items at the top */
   justify-content: flex-start; /* Align items to the left */
+}
+
+.ml-count-list-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .ml-agent-palette-wrapper {

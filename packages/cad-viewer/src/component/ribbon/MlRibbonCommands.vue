@@ -67,6 +67,7 @@ import {
   circleThreePoints,
   circleTwoPoints,
   clearMeasurements,
+  countlist,
   ellipseArc,
   ellipseCenter,
   hatch,
@@ -633,6 +634,7 @@ const buildBaseTabs = (
     redo: t('main.ribbon.tooltip.redo'),
     properties: t('main.ribbon.tooltip.properties'),
     quickSelect: t('main.ribbon.tooltip.quickSelect'),
+    countList: t('main.ribbon.tooltip.countList'),
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
     agent: t('main.ribbon.tooltip.agent'),
     propertyColor: t('main.ribbon.tooltip.propertyColor'),
@@ -1414,6 +1416,18 @@ const buildBaseTabs = (
                   }
                 },
                 {
+                  id: 'cmd-countlist',
+                  type: 'button',
+                  label: t('main.ribbon.command.countList'),
+                  tooltip: ribbonTooltips.countList,
+                  size: 'large',
+                  props: {
+                    icon: countlist,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
+                },
+                {
                   id: 'cmd-drawing-units',
                   type: 'button',
                   label: t('main.ribbon.command.drawingUnits'),
@@ -1512,6 +1526,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')
   commandByItemId.set('cmd-qselect', 'qselect')
+  commandByItemId.set('cmd-countlist', 'countlist')
   commandByItemId.set('cmd-drawing-units', 'units')
   if (store.features.agentPlugin) {
     commandByItemId.set('cmd-agent', 'agent')
