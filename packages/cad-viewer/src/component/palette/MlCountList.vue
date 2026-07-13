@@ -65,9 +65,9 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
-  type MlCountListGroup,
   buildCountListGroups,
   collectCountListInstances,
+  type MlCountListGroup,
   promptCountListArea,
   selectCountListInstances,
   zoomToCountListInstances
