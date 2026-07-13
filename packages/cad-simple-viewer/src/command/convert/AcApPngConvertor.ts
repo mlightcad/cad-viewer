@@ -2,40 +2,31 @@ import { AcGeBox2d, AcGeVector2d } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcApDocManager } from '../../app'
+import { resolveExportDownloadName } from '../../util/AcApExportFileNameUtil'
 import { AcTrView2d } from '../../view'
 
 /**
  * Utility class for converting CAD drawings to PNG format.
  *
- * This class provides functionality to export the current CAD drawing
- * to PNG format and download it as a file. It renders the current view
- * using WebGLRenderTarget for optimal performance without requiring
- * preserveDrawingBuffer to be enabled on the renderer.
+ * Offscreen export temporarily adjusts the camera only. It does not resize
+ * the layout view or touch OrbitControls so the interactive view stays intact.
  */
 export class AcApPngConvertor {
   /**
    * Converts the current CAD drawing to PNG format and initiates download.
    *
-   * This method:
-   * - Retrieves the current view, renderer, scene, and camera
-   * - Creates a WebGLRenderTarget for offscreen rendering
-   * - Renders the scene to the render target
-   * - Reads pixel data and flips it vertically to correct WebGL's upside-down rendering
-   * - Creates a canvas with the pixel data
-   * - Exports as PNG and downloads with timestamp-based filename
-   *
    * @param bounds - Optional world coordinate bounding box to export.
-   *                 If provided, the camera will zoom to fit this region.
-   *                 If not provided, exports the current view.
    * @param longSide - Optional maximum dimension (width or height) in pixels.
    */
   convert(bounds?: AcGeBox2d, longSide?: number) {
     const view = AcApDocManager.instance.curView as AcTrView2d
-    const renderer = view.renderer.internalRenderer
+    const layoutView = view.activeLayoutView
+    const rendererWrapper = view.renderer
+    const renderer = rendererWrapper.internalRenderer
     const scene = view.internalScene
     const camera = view.internalCamera
 
-    if (!scene || !camera) {
+    if (!scene || !camera || !layoutView) {
       console.error('[PNGOUT] Scene or camera not available')
       return
     }
@@ -51,102 +42,108 @@ export class AcApPngConvertor {
       outputHeight = outputSize.height
     }
 
-    // Keep stable render path at view aspect, then center-crop to target aspect.
-    const renderSize = this.resolveRenderSizeForCenterCrop(
-      outputWidth,
-      outputHeight,
-      viewAspect
-    )
+    const renderSize = bounds
+      ? { width: outputWidth, height: outputHeight }
+      : this.resolveRenderSizeForCenterCrop(
+          outputWidth,
+          outputHeight,
+          viewAspect
+        )
     const renderWidth = renderSize.width
     const renderHeight = renderSize.height
     const needsCrop =
-      renderWidth !== outputWidth || renderHeight !== outputHeight
+      !bounds && (renderWidth !== outputWidth || renderHeight !== outputHeight)
 
-    // Save original camera state for restoration later (keep legacy fitting path).
     const originalZoom = camera.zoom
     const originalPosition = camera.position.clone()
+    const originalLeft = camera.left
+    const originalRight = camera.right
+    const originalTop = camera.top
+    const originalBottom = camera.bottom
 
-    // Legacy zoom-based fitting; this path historically produced correct bounds.
-    if (bounds) {
-      const size = new AcGeVector2d()
-      bounds.getSize(size)
+    const savedScissorTest = renderer.getScissorTest()
+    const savedPixelRatio = renderer.getPixelRatio()
+    const originalRenderTarget = renderer.getRenderTarget()
 
-      const center = new AcGeVector2d()
-      bounds.getCenter(center)
+    let renderTarget: THREE.WebGLRenderTarget | undefined
 
-      const boundsWidth = Math.max(Math.abs(size.x), Number.EPSILON)
-      const boundsHeight = Math.max(Math.abs(size.y), Number.EPSILON)
-      const widthRatio = view.width / boundsWidth
-      const heightRatio = view.height / boundsHeight
-      const scale = Math.min(widthRatio, heightRatio)
+    try {
+      if (bounds) {
+        layoutView.applyExportCamera(bounds, renderWidth, renderHeight)
+      }
 
-      // Set camera position to center of bounds and adjust zoom
-      camera.position.set(center.x, center.y, camera.position.z)
-      camera.zoom = scale
-      camera.updateProjectionMatrix()
-    }
+      // Viewport is multiplied by pixelRatio internally; force 1:1 for RT export.
+      renderer.setPixelRatio(1)
+      rendererWrapper.updateLineResolution(renderWidth, renderHeight)
 
-    const renderTarget = new THREE.WebGLRenderTarget(
-      renderWidth,
-      renderHeight,
-      {
+      renderTarget = new THREE.WebGLRenderTarget(renderWidth, renderHeight, {
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,
         format: THREE.RGBAFormat,
         type: THREE.UnsignedByteType
-      }
-    )
+      })
 
-    const originalRenderTarget = renderer.getRenderTarget()
+      renderer.setRenderTarget(renderTarget)
+      renderer.setViewport(0, 0, renderWidth, renderHeight)
+      renderer.setScissorTest(false)
 
-    renderer.setRenderTarget(renderTarget)
+      layoutView.renderObject(scene)
 
-    renderer.render(scene, camera)
+      const pixels = new Uint8Array(renderWidth * renderHeight * 4)
+      renderer.readRenderTargetPixels(
+        renderTarget,
+        0,
+        0,
+        renderWidth,
+        renderHeight,
+        pixels
+      )
 
-    const pixels = new Uint8Array(renderWidth * renderHeight * 4)
-    renderer.readRenderTargetPixels(
-      renderTarget,
-      0,
-      0,
-      renderWidth,
-      renderHeight,
-      pixels
-    )
+      const flippedPixels = this.flipPixelsVertically(
+        pixels,
+        renderWidth,
+        renderHeight
+      )
+      const finalPixels = needsCrop
+        ? this.cropPixelsCentered(
+            flippedPixels,
+            renderWidth,
+            renderHeight,
+            outputWidth,
+            outputHeight
+          )
+        : flippedPixels
 
-    renderer.setRenderTarget(originalRenderTarget)
-    renderTarget.dispose()
+      const canvas = this.createCanvasFromPixels(
+        finalPixels,
+        outputWidth,
+        outputHeight
+      )
 
-    camera.zoom = originalZoom
-    camera.position.copy(originalPosition)
-    camera.updateProjectionMatrix()
+      this.createFileAndDownloadIt(canvas)
+    } finally {
+      renderer.setRenderTarget(originalRenderTarget)
+      renderTarget?.dispose()
 
-    const flippedPixels = this.flipPixelsVertically(
-      pixels,
-      renderWidth,
-      renderHeight
-    )
-    const finalPixels = needsCrop
-      ? this.cropPixelsCentered(
-          flippedPixels,
-          renderWidth,
-          renderHeight,
-          outputWidth,
-          outputHeight
-        )
-      : flippedPixels
+      camera.zoom = originalZoom
+      camera.position.copy(originalPosition)
+      camera.left = originalLeft
+      camera.right = originalRight
+      camera.top = originalTop
+      camera.bottom = originalBottom
+      camera.updateProjectionMatrix()
 
-    const canvas = this.createCanvasFromPixels(
-      finalPixels,
-      outputWidth,
-      outputHeight
-    )
+      renderer.setPixelRatio(savedPixelRatio)
+      rendererWrapper.setSize(view.width, view.height)
+      renderer.setScissorTest(savedScissorTest)
+      rendererWrapper.syncCameraZoom(originalZoom)
 
-    this.createFileAndDownloadIt(canvas)
+      // pixelRatio / render-target changes resize the canvas buffer; redraw now.
+      layoutView.render(view.cadScene)
+      view.isDirty = true
+    }
   }
 
-  /**
-   * Resolves a pixel output size from a long-side target and aspect ratio.
-   */
   private resolveOutputSize(
     longSide: number,
     aspect: number
@@ -300,20 +297,26 @@ export class AcApPngConvertor {
    *
    * This method:
    * - Exports the canvas to a PNG data URL
-   * - Generates a timestamped filename
+   * - Uses the drawing file name as the download file name
    * - Creates and triggers a download link
    *
    * @param canvas - The canvas element containing the image
    * @private
    */
   private createFileAndDownloadIt(canvas: HTMLCanvasElement) {
+    const doc = AcApDocManager.instance.curDocument
+    const downloadName = resolveExportDownloadName(
+      doc.fileName || doc.docTitle,
+      'png'
+    )
+
     // Export canvas to PNG data URL
     const dataURL = canvas.toDataURL('image/png')
 
     // Create a download link and trigger the download
     const downloadLink = document.createElement('a')
     downloadLink.href = dataURL
-    downloadLink.download = `cad-export-${Date.now()}.png`
+    downloadLink.download = downloadName
 
     // Trigger the download
     document.body.appendChild(downloadLink)

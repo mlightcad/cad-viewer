@@ -98,6 +98,37 @@ describe('FloatingInputBoxes Enter priority', () => {
     expect(boxes.onNone).not.toHaveBeenCalled()
     expect(boxes.xInput.markInvalid).toHaveBeenCalledTimes(1)
   })
+
+  test('dynamic preview coordinates are not committed when user did not type', () => {
+    const boxes = createBoxes({
+      userTyped: false,
+      useDefaultValue: false,
+      allowNone: true
+    })
+    boxes.xInput.value = '123.45'
+    boxes.yInput = {
+      userTyped: false,
+      value: '67.89',
+      focused: false,
+      markValid: jest.fn(),
+      markInvalid: jest.fn(),
+      focus: jest.fn(),
+      select: jest.fn(),
+      isEventTarget: () => false
+    } as any
+    boxes.twoInputs = true
+    boxes.validateFn = jest.fn(() => ({
+      isValid: true,
+      value: { x: 123.45, y: 67.89, z: 0 }
+    }))
+    const e = createEnterEvent()
+
+    ;(boxes as any).handleKeyDown(e)
+
+    expect(boxes.onNone).toHaveBeenCalledTimes(1)
+    expect(boxes.onCommit).not.toHaveBeenCalled()
+    expect(boxes.validateFn).not.toHaveBeenCalled()
+  })
 })
 
 describe('Prompt option classes behavior matrix', () => {

@@ -2,9 +2,11 @@
 import '@mlightcad/ribbon/style.css'
 
 import {
+  ChatDotRound,
   Delete,
   DocumentCopy,
   Hide,
+  RefreshLeft,
   RefreshRight,
   View
 } from '@element-plus/icons-vue'
@@ -14,6 +16,7 @@ import {
   AcApDocManager,
   AcApOpenCmd,
   AcApQNewCmd,
+  acapRunDatabaseEdit,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
 import {
@@ -36,12 +39,13 @@ import {
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { store } from '../../app'
 import type { LayerStateSnapshot, LayerStateToggleKey } from '../../composable'
 import {
-  useDocOpenMode,
-  useDocumentOpening,
+  useDocument,
   useLayers,
-  useSettings
+  useSettings,
+  useUndoRedo
 } from '../../composable'
 import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
 import { LocaleProp } from '../../locale'
@@ -103,6 +107,7 @@ import {
 } from '../../svg'
 import MlLayerSelect from '../common/MlLayerSelect.vue'
 import MlCharacterMapDialog from '../dialog/MlCharacterMapDialog.vue'
+import MlRibbonFileName from './MlRibbonFileName.vue'
 import MlRibbonLanguageSelector from './MlRibbonLanguageSelector.vue'
 import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
 import MlRibbonPropertyLineTypeSelect from './MlRibbonPropertyLineTypeSelect.vue'
@@ -129,8 +134,9 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const features = useSettings()
-const { isDocumentOpening } = useDocumentOpening()
-const docOpenMode = useDocOpenMode()
+const ribbonContainerRef = ref<HTMLElement>()
+const { isDocumentOpening, openMode: docOpenMode } = useDocument()
+const { canUndo, canRedo } = useUndoRedo()
 const { t, locale } = useI18n()
 const isAnnotationVisible = ref(true)
 const isRibbonDisabled = computed(() => isDocumentOpening.value)
@@ -443,22 +449,15 @@ const handleDocumentActivated = () => {
  *
  * @param mutator Mutation logic executed for each selected entity.
  */
-const applyToSelectedEntities = (
-  mutator: (
-    entity: NonNullable<
-      ReturnType<AcDbDatabase['tables']['blockTable']['getEntityById']>
-    >
-  ) => void
-) => {
+const applyToSelectedEntities = (mutator: (entity: AcDbEntity) => void) => {
   const db = getCurrentDatabase()
   const ids = AcApDocManager.instance?.curView?.selectionSet?.ids
   if (!db || !ids?.length) return
 
   ids.forEach(id => {
-    const entity = db.tables.blockTable.getEntityById(id)
+    const entity = db.openEntityForWrite(id)
     if (!entity) return
     mutator(entity)
-    entity.triggerModifiedEvent()
   })
 }
 
@@ -516,10 +515,11 @@ const handleRibbonColorChange = (value?: AcCmColor) => {
   const db = getCurrentDatabase()
   if (!db || !value) return
 
-  db.cecolor = value
-  applyToSelectedEntities(entity => {
-    if (!entity) return
-    entity.color = value
+  acapRunDatabaseEdit(db, 'Color', () => {
+    db.cecolor = value
+    applyToSelectedEntities(entity => {
+      entity.color = value
+    })
   })
   syncRibbonProperties(db)
 }
@@ -533,10 +533,11 @@ const handleRibbonLineWeightChange = (value: AcGiLineWeight) => {
   const db = getCurrentDatabase()
   if (!db) return
 
-  db.celweight = value
-  applyToSelectedEntities(entity => {
-    if (!entity) return
-    entity.lineWeight = value
+  acapRunDatabaseEdit(db, 'Line Weight', () => {
+    db.celweight = value
+    applyToSelectedEntities(entity => {
+      entity.lineWeight = value
+    })
   })
   syncRibbonProperties(db)
 }
@@ -550,10 +551,11 @@ const handleRibbonLineTypeChange = (value: string) => {
   const db = getCurrentDatabase()
   if (!db) return
 
-  db.celtype = value
-  applyToSelectedEntities(entity => {
-    if (!entity) return
-    entity.lineType = value
+  acapRunDatabaseEdit(db, 'Line Type', () => {
+    db.celtype = value
+    applyToSelectedEntities(entity => {
+      entity.lineType = value
+    })
   })
   syncRibbonProperties(db)
 }
@@ -569,13 +571,17 @@ const handleRibbonLayerChange = (layerName: string) => {
 
   let changed = false
   if (selectedEntityIds.value.length > 0) {
-    applyToSelectedEntities(entity => {
-      if (entity.layer === layerName) return
-      entity.layer = layerName
-      changed = true
+    acapRunDatabaseEdit(db, 'Layer', () => {
+      applyToSelectedEntities(entity => {
+        if (entity.layer === layerName) return
+        entity.layer = layerName
+        changed = true
+      })
     })
   } else {
-    changed = setRibbonCurrentLayer(layerName)
+    acapRunDatabaseEdit(db, 'Layer', () => {
+      changed = setRibbonCurrentLayer(layerName)
+    })
   }
 
   if (!changed) return
@@ -600,7 +606,9 @@ const handleRibbonLayerStateToggle = (payload: {
 
 const buildBaseTabs = (
   openMode: AcEdOpenMode,
-  annotationVisible: boolean
+  annotationVisible: boolean,
+  undoRedoState: { canUndo: boolean; canRedo: boolean },
+  agentPluginEnabled: boolean
 ): RibbonTabModel[] => {
   const ribbonTooltips = {
     line: t('main.ribbon.tooltip.line'),
@@ -621,9 +629,12 @@ const buildBaseTabs = (
     copy: t('main.ribbon.tooltip.copy'),
     erase: t('main.ribbon.tooltip.erase'),
     offset: t('main.ribbon.tooltip.offset'),
+    undo: t('main.ribbon.tooltip.undo'),
+    redo: t('main.ribbon.tooltip.redo'),
     properties: t('main.ribbon.tooltip.properties'),
     quickSelect: t('main.ribbon.tooltip.quickSelect'),
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
+    agent: t('main.ribbon.tooltip.agent'),
     propertyColor: t('main.ribbon.tooltip.propertyColor'),
     propertyLineType: t('main.ribbon.tooltip.propertyLineType'),
     propertyLineWeight: t('main.ribbon.tooltip.propertyLineWeight')
@@ -1074,6 +1085,31 @@ const buildBaseTabs = (
           orientation: 'row',
           collections: [
             {
+              id: 'home-undo-redo',
+              layout: 'column',
+              rows: 2,
+              items: [
+                {
+                  id: 'cmd-undo',
+                  type: 'button',
+                  label: t('main.ribbon.command.undo'),
+                  tooltip: ribbonTooltips.undo,
+                  size: 'small',
+                  disabled: !undoRedoState.canUndo,
+                  props: { icon: RefreshLeft }
+                },
+                {
+                  id: 'cmd-redo',
+                  type: 'button',
+                  label: t('main.ribbon.command.redo'),
+                  tooltip: ribbonTooltips.redo,
+                  size: 'small',
+                  disabled: !undoRedoState.canRedo,
+                  props: { icon: RefreshRight }
+                }
+              ]
+            },
+            {
               id: 'home-modify-main',
               layout: 'column',
               rows: 3,
@@ -1371,7 +1407,11 @@ const buildBaseTabs = (
                   label: t('main.ribbon.command.quickSelect'),
                   tooltip: ribbonTooltips.quickSelect,
                   size: 'large',
-                  props: { icon: qselect }
+                  props: {
+                    icon: qselect,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
                 },
                 {
                   id: 'cmd-drawing-units',
@@ -1379,8 +1419,28 @@ const buildBaseTabs = (
                   label: t('main.ribbon.command.drawingUnits'),
                   tooltip: ribbonTooltips.drawingUnits,
                   size: 'large',
-                  props: { icon: setting }
-                }
+                  props: {
+                    icon: setting,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
+                },
+                ...(agentPluginEnabled
+                  ? [
+                      {
+                        id: 'cmd-agent',
+                        type: 'button' as const,
+                        label: t('main.ribbon.command.agent'),
+                        tooltip: ribbonTooltips.agent,
+                        size: 'large' as const,
+                        props: {
+                          icon: ChatDotRound,
+                          labelWrapLines: 2,
+                          labelWrapWidth: 'max-content'
+                        }
+                      }
+                    ]
+                  : [])
               ]
             }
           ]
@@ -1399,6 +1459,7 @@ const buildBaseTabs = (
 
 const ribbonData = computed(() => {
   locale.value
+  store.features.agentPlugin
   const openMode = docOpenMode.value
   const annotationVisible = isAnnotationVisible.value
   const commandByItemId = new Map<string, string>()
@@ -1444,12 +1505,17 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-copy', 'copy')
+  commandByItemId.set('cmd-undo', 'undo')
+  commandByItemId.set('cmd-redo', 'redo')
   commandByItemId.set('cmd-erase', 'erase')
   commandByItemId.set('cmd-offset', 'offset')
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')
   commandByItemId.set('cmd-qselect', 'qselect')
   commandByItemId.set('cmd-drawing-units', 'units')
+  if (store.features.agentPlugin) {
+    commandByItemId.set('cmd-agent', 'agent')
+  }
   commandByItemId.set('cmd-tool-rev-freehand', 'sketch')
   commandByItemId.set('cmd-tool-rev-rect', 'revrect')
   commandByItemId.set('cmd-tool-rev-cloud', 'revcloud')
@@ -1472,7 +1538,15 @@ const ribbonData = computed(() => {
   commandByItemId.set('layer-action-unlock', 'layulk')
   commandByItemId.set('layer-action-restore', 'layerp')
 
-  const tabs: RibbonTabModel[] = buildBaseTabs(openMode, annotationVisible)
+  const tabs: RibbonTabModel[] = buildBaseTabs(
+    openMode,
+    annotationVisible,
+    {
+      canUndo: canUndo.value,
+      canRedo: canRedo.value
+    },
+    store.features.agentPlugin
+  )
   return {
     tabs,
     commandByItemId
@@ -1495,16 +1569,30 @@ const fileMenuItems = computed<FileMenuItemModel[]>(() => {
       label: t('main.mainMenu.drawingUnits')
     },
     {
-      id: 'Convert',
-      label: t('main.mainMenu.export')
-    },
-    {
-      id: 'ExportHtml',
-      label: t('main.mainMenu.exportHtml')
-    },
-    {
-      id: 'PngOut',
-      label: t('main.mainMenu.exportImage')
+      id: 'Export',
+      label: t('main.mainMenu.exportMenu'),
+      children: [
+        {
+          id: 'Convert',
+          label: t('main.mainMenu.export')
+        },
+        {
+          id: 'ExportHtml',
+          label: t('main.mainMenu.exportHtml')
+        },
+        {
+          id: 'ExportPdf',
+          label: t('main.mainMenu.exportPdf')
+        },
+        {
+          id: 'ExportSvg',
+          label: t('main.mainMenu.exportSvg')
+        },
+        {
+          id: 'PngOut',
+          label: t('main.mainMenu.exportImage')
+        }
+      ]
     }
   ]
 })
@@ -1533,16 +1621,30 @@ const handleRibbonItemClick = (payload: {
   }
   const command = ribbonData.value.commandByItemId.get(payload.itemId)
   if (!command) return
+  if (command === 'agent') {
+    void runLazyCommand('agent')
+    return
+  }
   AcApDocManager.instance.sendStringToExecute(command)
 }
 
-const handleFileMenuSelect = (command: string) => {
+const runLazyCommand = async (command: string) => {
+  const pluginManager = AcApDocManager.instance.pluginManager
+  await pluginManager.loadByTrigger(command)
+  AcApDocManager.instance.sendStringToExecute(command)
+}
+
+const handleFileMenuSelect = async (command: string) => {
   if (isRibbonDisabled.value) return
   if (command === 'Convert') {
     const cmd = new AcApConvertToDxfCmd()
     cmd.trigger(AcApDocManager.instance.context)
   } else if (command === 'ExportHtml') {
     AcApDocManager.instance.sendStringToExecute('chtml')
+  } else if (command === 'ExportPdf') {
+    await runLazyCommand('cpdf')
+  } else if (command === 'ExportSvg') {
+    AcApDocManager.instance.sendStringToExecute('csvg')
   } else if (command === 'PngOut') {
     AcApDocManager.instance.sendStringToExecute('pngout')
   } else if (command === 'QNew') {
@@ -1560,6 +1662,7 @@ const handleFileMenuSelect = (command: string) => {
 <template>
   <div
     v-if="features.isShowToolbar"
+    ref="ribbonContainerRef"
     :aria-disabled="isRibbonDisabled"
     class="ml-ribbon-toolbar-container"
   >
@@ -1585,6 +1688,10 @@ const handleFileMenuSelect = (command: string) => {
         />
       </template>
     </ml-ribbon>
+    <ml-ribbon-file-name
+      v-if="features.isShowFileName"
+      :container-el="ribbonContainerRef"
+    />
     <ml-character-map-dialog
       v-model="mtextCharacterMapVisible"
       :font-options="mtextCharacterMapFontOptions"
@@ -1596,8 +1703,15 @@ const handleFileMenuSelect = (command: string) => {
 
 <style>
 .ml-ribbon-toolbar-container {
+  position: relative;
   width: 100%;
   box-sizing: border-box;
   z-index: 6;
+}
+
+.ml-ribbon-toolbar-container
+  .ml-ribbon-item-host.is-large.type-button.is-label-wrap
+  .ml-ribbon-item-host__label {
+  white-space: pre-line;
 }
 </style>

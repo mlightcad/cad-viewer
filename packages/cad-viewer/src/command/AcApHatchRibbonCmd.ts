@@ -3,6 +3,7 @@ import {
   AcApDocManager,
   AcApHatchCmd,
   AcApI18n,
+  acapRunDatabaseEdit,
   AcEdPromptEntityOptions,
   AcEdPromptStatus,
   type HatchSettings
@@ -394,13 +395,23 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
   }
 
   private applyStateToSelectedHatches() {
+    const docManager = AcApDocManager.instance
+    const db = docManager.curDocument?.database
+    if (!db) return
+
     const hatches = this.getSelectedHatches()
     if (hatches.length === 0) return
 
-    hatches.forEach(hatch => this.applyStateToHatch(hatch, true))
+    acapRunDatabaseEdit(db, 'Hatch Properties', () => {
+      hatches.forEach(hatch => {
+        const opened = db.openEntityForWrite(hatch)
+        if (!opened || !(opened instanceof AcDbHatch)) return
+        this.applyStateToHatch(opened)
+      })
+    })
   }
 
-  private applyStateToHatch(hatch: AcDbHatch, triggerModified: boolean) {
+  private applyStateToHatch(hatch: AcDbHatch) {
     const fillColor = this.toAcCmColor(this._state.fillColor)
     const opacity = Math.max(0, Math.min(90, this._state.opacity))
 
@@ -437,10 +448,6 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
         ? this.toAcCmColor(this._state.backgroundColor)
         : undefined
     hatch.transparency = this.createTransparency(opacity)
-
-    if (triggerModified) {
-      hatch.triggerModifiedEvent()
-    }
   }
 
   setPatternName(value: string) {
@@ -622,7 +629,7 @@ export class AcApHatchRibbonCmd extends AcApHatchCmd {
   }
 
   protected override configureHatch(hatch: AcDbHatch) {
-    this.applyStateToHatch(hatch, false)
+    this.applyStateToHatch(hatch)
   }
 
   async execute(context: AcApContext) {

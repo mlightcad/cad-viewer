@@ -9,6 +9,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import { AcTrRenderer } from '../renderer'
+import { AcTrEntityPreview } from '../renderer/AcTrEntityPreview'
 import { AcTrCamera } from './AcTrCamera'
 
 export interface AcTrBaseViewEventArgs {
@@ -19,7 +20,7 @@ export interface AcTrBaseViewEventArgs {
  * The base class for all kinds of views.
  */
 export class AcTrBaseView {
-  protected _frustum = 400
+  protected _frustum: number
   protected _width: number
   protected _height: number
   protected _renderer: AcTrRenderer
@@ -41,6 +42,7 @@ export class AcTrBaseView {
     this._renderer = renderer
     this._width = width
     this._height = height
+    this._frustum = height / 2
     const camera = this.createCamera()
     this._camera = new AcTrCamera(camera)
     this._cameraControls = this.createCameraControls()
@@ -154,6 +156,41 @@ export class AcTrBaseView {
     return this._raycaster
   }
 
+  /**
+   * The internal THREE camera used by this layout view.
+   */
+  get internalCamera() {
+    return this._camera.internalCamera
+  }
+
+  /**
+   * The camera wrapper used by the renderer pipeline.
+   */
+  get trCamera() {
+    return this._camera
+  }
+
+  /**
+   * Renders a THREE scene with this view's camera and renderer-side uniforms.
+   */
+  renderObject(scene: THREE.Object3D) {
+    this._renderer.render(scene, this._camera)
+  }
+
+  /**
+   * Fits the camera to a world box using export pixel dimensions.
+   *
+   * Does not update OrbitControls target so interactive pan/zoom stay intact.
+   */
+  applyExportCamera(box: AcGeBox2d, pixelWidth: number, pixelHeight: number) {
+    AcTrEntityPreview.fitExportCamera(
+      this._camera.internalCamera,
+      box,
+      pixelWidth,
+      pixelHeight
+    )
+  }
+
   zoomTo(box: AcGeBox2d, margin: number = 1.1) {
     const size = new AcGeVector2d()
     box.getSize(size)
@@ -161,11 +198,13 @@ export class AcTrBaseView {
     const center = new AcGeVector2d()
     box.getCenter(center)
 
-    const width = size.x * margin
-    const height = size.y * margin
-    const widthRatio = this._width / width
-    const heightRatio = this._height / height
-    const scale = Math.min(widthRatio, heightRatio)
+    const fitWidth = Math.max(Math.abs(size.x) * margin, Number.EPSILON)
+    const fitHeight = Math.max(Math.abs(size.y) * margin, Number.EPSILON)
+    const aspect = this._width / Math.max(this._height, 1)
+    const scale = Math.min(
+      (2 * aspect * this._frustum) / fitWidth,
+      (2 * this._frustum) / fitHeight
+    )
 
     this.flyTo(center, scale)
     this.updateCameraFrustum()

@@ -14,8 +14,8 @@ describe('cad-viewer ESM import support', () => {
 
     expect(pkgJson.exports).toBeDefined()
     expect(pkgJson.exports['.']).toEqual({
-      types: './dist/index.d.ts',
-      import: './dist/index.js'
+      types: './dist/cad-viewer.d.ts',
+      import: './dist/cad-viewer.js'
     })
   })
 
@@ -53,7 +53,7 @@ describe('cad-viewer ESM import support', () => {
       ).trim()
 
       const resolvedPath = fileURLToPath(output)
-      const expectedPath = path.join(cadViewerRoot, 'dist', 'index.js')
+      const expectedPath = path.join(cadViewerRoot, 'dist', 'cad-viewer.js')
 
       expect(path.normalize(resolvedPath)).toBe(path.normalize(expectedPath))
     } finally {

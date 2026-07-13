@@ -1,5 +1,6 @@
 import {
   type FontInfo,
+  type FontLoadStatus,
   FontManager,
   type FontType,
   type ShxFontData,
@@ -8,7 +9,12 @@ import {
 
 import { AcApDocManager } from '../app/AcApDocManager'
 
-export type { FontInfo, FontType, ShxFontData } from '@mlightcad/mtext-renderer'
+export type {
+  FontInfo,
+  FontLoadStatus,
+  FontType,
+  ShxFontData
+} from '@mlightcad/mtext-renderer'
 export { ShxParserFont } from '@mlightcad/mtext-renderer'
 
 /**
@@ -33,6 +39,19 @@ export class AcApFontUtil {
    */
   static getFontType(fontName: string): FontType | undefined {
     return FontManager.instance.getFontType(fontName)
+  }
+
+  /**
+   * Font name used at render time when the requested font is missing.
+   *
+   * Checks user {@link FontManager.setFontMapping | font mapping} first, then falls
+   * back to {@link FontManager.defaultFonts}.
+   *
+   * @param fontName - Original font name referenced by the drawing.
+   * @returns The loaded font name if available; otherwise the mapped or default replacement.
+   */
+  static getReplacementFontName(fontName: string): string {
+    return FontManager.instance.findAndReplaceFont(fontName)
   }
 
   /**
@@ -114,5 +133,25 @@ export class AcApFontUtil {
     if (!dm) return
     if (AcApFontUtil.isFontLoaded(fontName)) return
     await dm.loadFonts([fontName])
+  }
+
+  /**
+   * Parses a user-uploaded font file, registers it for rendering, and stores it
+   * in IndexedDB when font caching is enabled.
+   *
+   * Supported formats: `.shx`, `.ttf`, `.otf`, `.woff`.
+   *
+   * @param data - Font file contents or a browser `File` selected by the user
+   * @param fileName - Font file name when `data` is an `ArrayBuffer`
+   * @param aliases - Optional alias names (e.g. missed drawing font names)
+   * @param encoding - Optional character encoding for SHX bigfonts
+   */
+  static async cacheFont(
+    data: ArrayBuffer | File,
+    fileName?: string,
+    aliases?: string[],
+    encoding?: string
+  ): Promise<FontLoadStatus> {
+    return FontManager.instance.cacheFont(data, fileName, aliases, encoding)
   }
 }

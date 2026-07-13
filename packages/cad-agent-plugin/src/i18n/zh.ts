@@ -1,0 +1,61 @@
+/**
+ * Chinese UI strings for the CAD Agent panel.
+ *
+ * Flat keys under `main.toolPalette.agent` (merged into {@link AcApI18n}).
+ * Keys must stay in sync with {@link agentEn}.
+ */
+export const agentZh = {
+  tab: '智能助手',
+  title: 'CAD 智能助手',
+  settings: '设置',
+  clear: '清空',
+  close: '关闭',
+  provider: '服务商',
+  providerDeepseek: 'DeepSeek',
+  providerDeepseekVl: 'DeepSeek VL（视觉）',
+  providerDeepseekVlHint:
+    '使用 OpenAI 兼容的视觉接口（默认：SiliconFlow）。自托管 vLLM 时请将接口地址改为本地服务，例如 http://127.0.0.1:8000/v1。',
+  providerOpenai: 'OpenAI',
+  providerAnthropic: 'Anthropic',
+  providerOpenaiCompatible: 'OpenAI 兼容',
+  baseUrl: '接口地址',
+  model: '模型',
+  visionModels: '视觉模型',
+  textModels: '纯文本模型',
+  customModel: '自定义模型…',
+  customModelName: '自定义模型名称',
+  modelSupportsVision: '支持图片输入',
+  modelTextOnly: '仅文本 — 已禁用图片附件',
+  apiKey: 'API 密钥',
+  saveSettings: '保存设置',
+  emptyHint: '描述要绘制的内容，或附加参考图片（草图、截图、平面图等）。',
+  toolPrefix: '工具',
+  inputPlaceholder: '描述要创建的几何图形…',
+  attachImage: '添加图片',
+  removeAttachment: '移除',
+  imageAlt: '附加图片',
+  errorTitle: '请求出错',
+  dismissError: '关闭',
+  send: '发送',
+  stop: '停止',
+  working: '处理中…',
+  agentMode: 'Agent 模式',
+  agentModeSimple: '简单模式',
+  agentModeHighInference: '高推理模式',
+  agentModeSimpleHint: '速度快 — 生成后不做截图验证。',
+  agentModeHighInferenceHint:
+    '生成后用截图 + 视觉模型验证（最多 5 轮）。需使用支持视觉的模型。',
+  highInferenceRequiresVision: '高推理模式需要使用支持视觉的模型。',
+  verificationTitle: '图纸验证',
+  verifying: '正在将图纸截图与您的需求和参考图进行比对…',
+  verificationPassed: '验证通过 — 图纸符合需求。',
+  verificationFailed: '验证未通过 — 发现以下问题：',
+  verificationSkipped: '已跳过验证',
+  verificationError: '验证出错',
+  verificationContinuing: '继续优化图纸…',
+  verificationMaxAttempts: '已达到最大验证次数，仍未通过验证。',
+  referenceImages: '参考图片',
+  drawingScreenshot: '当前图纸截图',
+  unsavedSettings: '请先保存设置后再发送消息。',
+  missingApiKey: '请先在设置中配置 API Key 后再发送消息。'
+} as const

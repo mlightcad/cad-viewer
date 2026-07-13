@@ -11,8 +11,18 @@ jest.mock('../src/app', () => ({
 }))
 
 jest.mock('../src/editor', () => {
+  const { AcApDocManager } = jest.requireMock('../src/app')
+
   class AcEdCommand {
     mode: unknown
+
+    showMessage(message: string, type: string = 'info') {
+      AcApDocManager.instance.editor.showMessage(message, type)
+    }
+
+    notify(message: string, type: string = 'info') {
+      AcApDocManager.instance.editor.showMessage(message, type)
+    }
   }
 
   class MockKeywordCollection {
@@ -58,11 +68,12 @@ jest.mock('../src/i18n', () => ({
 
 import { AcApDocManager } from '../src/app'
 import { AcApLayerIsoCmd } from '../src/command/layer/AcApLayerIsoCmd'
-import { AcApLayerIsoState } from '../src/command/layer/AcApLayerIsoState'
 import { AcApLayerUnisoCmd } from '../src/command/layer/AcApLayerUnisoCmd'
+import { AcApLayerService } from '../src/service/AcApLayerService'
 
 interface TestLayer {
   name: string
+  objectId: string
   isOff: boolean
   standardFlags?: number
   isFrozen: boolean
@@ -78,6 +89,7 @@ const createLayer = (
   standardFlags?: number
 ): TestLayer => ({
   name,
+  objectId: `layer:${name}`,
   isOff,
   standardFlags,
   get isFrozen() {
@@ -96,8 +108,13 @@ const createContext = (
 ) => {
   const clear = jest.fn()
   const layersByName = new Map(layers.map(layer => [layer.name, layer]))
+  const layersById = new Map(layers.map(layer => [layer.objectId, layer]))
+  const openObjectForWrite = jest.fn((objectId: string) =>
+    layersById.get(objectId)
+  )
   const database = {
     clayer: currentLayer,
+    openObjectForWrite,
     tables: {
       blockTable: {
         getEntityById: (objectId: string) => entitiesById[objectId]
@@ -109,13 +126,69 @@ const createContext = (
     }
   }
 
+  let layerIsoSnapshot:
+    | import('../src/service').AcApLayerIsoSnapshot
+    | undefined
+  let layerPreviousSnapshot:
+    | import('../src/app/AcApLayerSessionState').AcApLayerPreviousSnapshot
+    | undefined
+
+  const doc = {
+    database,
+    captureLayerPreviousState() {
+      layerPreviousSnapshot = {
+        clayer: database.clayer,
+        states: layers.map(layer => ({
+          name: layer.name,
+          isOn: !layer.isOff,
+          isFrozen: layer.isFrozen,
+          isLocked: layer.isLocked
+        }))
+      }
+    },
+    getLayerPreviousSnapshot() {
+      return layerPreviousSnapshot
+    },
+    clearLayerPreviousState() {
+      layerPreviousSnapshot = undefined
+    },
+    restoreLayerPreviousState() {
+      if (!layerPreviousSnapshot) return false
+      return AcApLayerService.applyLayerPreviousSnapshot(
+        database as never,
+        layerPreviousSnapshot
+      )
+    },
+    isolateLayers(
+      layerNames: string[],
+      isolationMode: import('../src/service/types').AcApLayerIsolationMode
+    ) {
+      const result = new AcApLayerService(database as never).isolateLayers(
+        layerNames,
+        isolationMode
+      )
+      if (!result) return undefined
+      layerIsoSnapshot = result.isoSnapshot
+      return {
+        layerNames: result.layerNames,
+        affectedLayerCount: result.affectedLayerCount
+      }
+    },
+    unisolateLayers() {
+      if (!layerIsoSnapshot) return undefined
+      const snapshot = layerIsoSnapshot
+      layerIsoSnapshot = undefined
+      return new AcApLayerService(database as never).unisolateFromSnapshot(
+        snapshot
+      )
+    }
+  }
+
   return {
     clear,
     database,
     context: {
-      doc: {
-        database
-      },
+      doc,
       view: {
         selectionSet: {
           ids: selectedIds,
@@ -129,7 +202,6 @@ const createContext = (
 describe('AcApLayerUnisoCmd', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    AcApLayerIsoState.consume()
   })
 
   test('reports when no LAYISO state has been captured', async () => {

@@ -16,8 +16,7 @@ import {
   AcEdPromptAngleOptions,
   AcEdPromptDoubleOptions,
   AcEdPromptPointOptions,
-  AcEdPromptStatus,
-  eventBus
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import { AcApLineJig } from './AcApLineCmd'
@@ -49,7 +48,8 @@ function midpoint2d(p1: AcGePoint3dLike, p2: AcGePoint3dLike): AcGePoint3dLike {
 
 function normalizeVector2d(x: number, y: number): AcGeVector3dLike | undefined {
   const length = Math.hypot(x, y)
-  if (!Number.isFinite(length) || AcGeTol.isNonPositive(length)) return undefined
+  if (!Number.isFinite(length) || AcGeTol.isNonPositive(length))
+    return undefined
   return { x: x / length, y: y / length, z: 0 }
 }
 
@@ -116,14 +116,16 @@ function buildEllipseDefinition(
     return undefined
   }
 
+  const normalizedAngles = normalizeFullEllipseAngles(startAngle, endAngle)
+
   if (firstAxisRadius >= secondAxisRadius) {
     return {
       center: { x: center.x, y: center.y, z: 0 },
       majorAxis: firstAxisUnit,
       majorRadius: firstAxisRadius,
       minorRadius: secondAxisRadius,
-      startAngle,
-      endAngle
+      startAngle: normalizedAngles.startAngle,
+      endAngle: normalizedAngles.endAngle
     }
   }
 
@@ -132,9 +134,17 @@ function buildEllipseDefinition(
     majorAxis: perpendicular2d(firstAxisUnit),
     majorRadius: secondAxisRadius,
     minorRadius: firstAxisRadius,
-    startAngle,
-    endAngle
+    startAngle: normalizedAngles.startAngle,
+    endAngle: normalizedAngles.endAngle
   }
+}
+
+function normalizeFullEllipseAngles(startAngle: number, endAngle: number) {
+  const span = Math.abs(endAngle - startAngle)
+  if (Math.abs(span - TAU) < 1e-10 || Math.abs(span - 2 * TAU) < 1e-10) {
+    return { startAngle: 0, endAngle: 0 }
+  }
+  return { startAngle, endAngle }
 }
 
 function createFallbackEllipse(point: AcGePoint3dLike) {
@@ -350,10 +360,7 @@ export class AcApEllipseCmd extends AcEdCommand {
    * @param key - Invalid-input category key.
    */
   private warnInvalidInput(key: 'axis' | 'otherAxis' | 'rotation') {
-    eventBus.emit('message', {
-      message: AcApI18n.t(`jig.ellipse.invalid.${key}`),
-      type: 'warning'
-    })
+    this.notify(AcApI18n.t(`jig.ellipse.invalid.${key}`), 'warning')
   }
 
   /**

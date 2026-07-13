@@ -26,6 +26,7 @@
 </template>
 
 <script setup lang="ts">
+import { ML_UI_MOBILE_MAX_WIDTH } from '@mlightcad/cad-simple-viewer'
 import { computed } from 'vue'
 
 import {
@@ -33,6 +34,8 @@ import {
   type HatchPatternOption,
   resolveHatchPatternSwatchStyle
 } from './hatchPatternPreview'
+
+const mobileMaxWidth = `${ML_UI_MOBILE_MAX_WIDTH}px`
 
 /**
  * Props accepted by the hatch pattern panel.
@@ -148,7 +151,7 @@ function handleSelect(value: string) {
   letter-spacing: 0.2px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: v-bind(mobileMaxWidth)) {
   .ml-hatch-pattern-panel {
     width: 286px;
     grid-template-columns: repeat(2, minmax(0, 1fr));

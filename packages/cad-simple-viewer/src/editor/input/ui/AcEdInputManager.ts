@@ -24,6 +24,7 @@ import {
   AcEdPointHandler,
   AcEdStringHandler
 } from '../handler'
+import { AcEdPointInputContext } from '../handler/AcEdInputHandler'
 import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler'
 import {
   AcEdPromptAngleOptions,
@@ -47,6 +48,7 @@ import {
   AcEdPromptStatus,
   AcEdPromptStringOptions
 } from '../prompt'
+import { AcEdPromptInputMode } from '../session/AcEdPromptInputSession'
 import { AcEdCommandLine } from './AcEdCommandLine'
 import { AcEdFloatingInput } from './AcEdFloatingInput'
 import {
@@ -278,7 +280,7 @@ export class AcEdInputManager {
         border: 1px dashed var(--line-color, var(--ml-ui-canvas-line, #0f0));
         background: var(--ml-ui-canvas-fill-mix, var(--ml-ui-canvas-fill, rgba(64, 158, 255, 0.12)));
         pointer-events: none;
-        z-index: 9999;
+        z-index: 1;
       }
       .ml-jig-preview-line {
         position: absolute;
@@ -286,7 +288,7 @@ export class AcEdInputManager {
         background: var(--line-color, var(--ml-ui-canvas-line, #0f0));
         transform-origin: 0 0;
         pointer-events: none;
-        z-index: 9999;
+        z-index: 1;
       }
     `
     document.head.appendChild(style)
@@ -485,17 +487,8 @@ export class AcEdInputManager {
   }
 
   /**
-   * Starts a command-line keyword session for the given prompt when needed.
-   *
-   * Many interactive prompts accept both mouse-driven input and typed keywords
-   * at the same time. This helper lazily creates the command-line keyword
-   * session only when keywords are actually configured, and returns a small
-   * control object that lets callers await or cancel that session.
-   *
-   * @param options - Prompt options that may define keywords
-   * @param allowTyping - Whether arbitrary typing is allowed alongside keyword completion
-   * @returns An object containing the keyword promise and cancel callback, or
-   * `undefined` when the prompt has no keywords
+   * Starts a keyword-only command-line session for prompts that do not accept
+   * typed geometric values (selection, entity pick, etc.).
    */
   private startKeywordSession(
     options: AcEdPromptOptions<unknown>,
@@ -507,6 +500,88 @@ export class AcEdInputManager {
       promise: this._commandLine.getKeywords(keywordOptions, allowTyping),
       cancel: () => this._commandLine.cancelActiveSession()
     }
+  }
+
+  /**
+   * Starts a mixed command-line session for floating-input prompts.
+   *
+   * AutoCAD-style precedence is applied: geometric or numeric values are parsed
+   * before keywords for point/distance/angle/number prompts; string prompts try
+   * keywords first because arbitrary text is otherwise always valid.
+   */
+  private startPromptInputSession<T>(
+    options: AcEdPromptOptions<T>,
+    handler: AcEdInputHandler<T>,
+    inputCount: AcEdFloatingInputBoxCount,
+    allowTyping: boolean
+  ) {
+    const keywordOptions = this.buildKeywordOptions(options)
+    const allowNone =
+      'allowNone' in options
+        ? (options as { allowNone: boolean }).allowNone
+        : false
+
+    return {
+      promise: this._commandLine.getPromptInput(
+        keywordOptions,
+        text => this.parseCommandLineInput(text, handler, inputCount, options),
+        {
+          mode: this.resolvePromptInputMode(handler),
+          allowNone,
+          allowTyping
+        }
+      ),
+      cancel: () => this._commandLine.cancelActiveSession()
+    }
+  }
+
+  /**
+   * Resolves command-line precedence rules for the active handler.
+   */
+  private resolvePromptInputMode(
+    handler: AcEdInputHandler<unknown>
+  ): AcEdPromptInputMode {
+    return handler instanceof AcEdStringHandler ? 'string' : 'geometric'
+  }
+
+  /**
+   * Builds command-line point context for {@link AcEdPointHandler.parseCommandLine}.
+   */
+  private resolvePointInputContext(
+    promptOptions: AcEdPromptOptions<unknown>
+  ): AcEdPointInputContext {
+    const promptDefaults = this.resolvePromptDefaults(promptOptions)
+    const referencePoint =
+      promptDefaults.useBasePoint && promptDefaults.basePoint
+        ? promptDefaults.basePoint
+        : (this.lastPoint ?? undefined)
+
+    return {
+      referencePoint,
+      cursorPoint: this.view.screenToWorld(
+        this.view.viewportToCanvas(this.view.curMousePos)
+      )
+    }
+  }
+
+  /**
+   * Parses one command-line token into the value expected by the active prompt.
+   */
+  private parseCommandLineInput<T>(
+    text: string,
+    handler: AcEdInputHandler<T>,
+    inputCount: AcEdFloatingInputBoxCount,
+    promptOptions: AcEdPromptOptions<T>
+  ): T | null {
+    const trimmed = text.trim()
+    if (!trimmed) return null
+
+    const pointContext =
+      handler instanceof AcEdPointHandler || inputCount === 2
+        ? this.resolvePointInputContext(promptOptions)
+        : undefined
+
+    return handler.parseCommandLine(trimmed, pointContext)
   }
 
   /**
@@ -790,7 +865,7 @@ export class AcEdInputManager {
     options: AcEdPromptDistanceOptions
   ): Promise<AcEdPromptDoubleResult> {
     const handler = new AcEdDistanceHandler(options)
-    const scriptedValue = this.tryGetScriptedNumber(handler)
+    const scriptedValue = this.tryGetScriptedNumber(handler, options)
     if (scriptedValue != null) {
       return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
     }
@@ -829,7 +904,7 @@ export class AcEdInputManager {
     options: AcEdPromptAngleOptions
   ): Promise<AcEdPromptDoubleResult> {
     const handler = new AcEdAngleHandler(options)
-    const scriptedValue = this.tryGetScriptedNumber(handler)
+    const scriptedValue = this.tryGetScriptedNumber(handler, options)
     if (scriptedValue != null) {
       return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
     }
@@ -889,7 +964,7 @@ export class AcEdInputManager {
     options: AcEdPromptDoubleOptions
   ): Promise<AcEdPromptDoubleResult> {
     const handler = new AcEdDoubleHandler(options)
-    const scriptedValue = this.tryGetScriptedNumber(handler)
+    const scriptedValue = this.tryGetScriptedNumber(handler, options)
     if (scriptedValue != null) {
       return new AcEdPromptDoubleResult(AcEdPromptStatus.OK, scriptedValue)
     }
@@ -914,7 +989,8 @@ export class AcEdInputManager {
     options: AcEdPromptIntegerOptions
   ): Promise<AcEdPromptIntegerResult> {
     const scriptedValue = this.tryGetScriptedNumber(
-      new AcEdIntegerHandler(options)
+      new AcEdIntegerHandler(options),
+      options
     )
     if (scriptedValue != null) {
       return new AcEdPromptIntegerResult(AcEdPromptStatus.OK, scriptedValue)
@@ -939,7 +1015,8 @@ export class AcEdInputManager {
    */
   async getString(options: AcEdPromptStringOptions): Promise<AcEdPromptResult> {
     const scriptedValue = this.tryGetScriptedValue(
-      new AcEdStringHandler(options)
+      new AcEdStringHandler(options),
+      options
     )
     if (scriptedValue != null) {
       return new AcEdPromptResult(AcEdPromptStatus.OK, scriptedValue)
@@ -980,16 +1057,17 @@ export class AcEdInputManager {
   async getKeywords(
     options: AcEdPromptKeywordOptions
   ): Promise<AcEdPromptResult> {
-    const scriptedValue = this.tryGetScriptedValue(
-      new AcEdKeywordHandler(options)
-    )
-    if (scriptedValue != null) {
-      return new AcEdPromptResult(AcEdPromptStatus.OK, scriptedValue)
-    }
-
     return this.executePrompt(
-      () =>
-        new Promise<string>((resolve, reject) => {
+      async () => {
+        const scriptedValue = this.tryGetScriptedValue(
+          new AcEdKeywordHandler(options),
+          options
+        )
+        if (scriptedValue != null) {
+          return scriptedValue
+        }
+
+        return new Promise<string>((resolve, reject) => {
           // Register a rejector so `cancelActiveInput()` (called by the
           // command dispatcher when a new command pre-empts the running one)
           // can abort this keyword-only prompt the same way ESC would.
@@ -1026,7 +1104,8 @@ export class AcEdInputManager {
               reject(err)
             }
           )
-        }),
+        })
+      },
       value => new AcEdPromptResult(AcEdPromptStatus.OK, value),
       status => new AcEdPromptResult(status),
       { keyword: false }
@@ -1083,6 +1162,45 @@ export class AcEdInputManager {
           let startWcs: AcGePoint2dLike | null = null
           let startCanvas: AcGePoint2dLike | null = null
           let previewEl: HTMLDivElement | null = null
+          let lastDragEvent: MouseEvent | null = null
+
+          const updateSelectionPreview = (e: MouseEvent) => {
+            if (!startWcs || !previewEl || !startCanvas) return
+
+            const curWcs = this.view.screenToWorld(
+              this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
+            )
+            const curCanvas = this.view.viewportToCanvas({
+              x: e.clientX,
+              y: e.clientY
+            })
+            const p1 = this.view.worldToScreen(startWcs)
+            const p2 = this.view.worldToScreen(curWcs)
+
+            const left = Math.min(p1.x, p2.x)
+            const top = Math.min(p1.y, p2.y)
+            const width = Math.abs(p1.x - p2.x)
+            const height = Math.abs(p1.y - p2.y)
+            const mode = this.view.getSelectionMode(startCanvas, curCanvas)
+            const action = this.view.getSelectionActionFromEvent(e, 'add')
+            const style = this.view.getSelectionPreviewStyle(mode, action)
+
+            Object.assign(previewEl.style, {
+              left: `${left}px`,
+              top: `${top}px`,
+              width: `${width}px`,
+              height: `${height}px`,
+              borderStyle: style.borderStyle,
+              background: style.background
+            })
+            previewEl.style.setProperty('--line-color', style.lineColor)
+          }
+
+          const onViewChanged = () => {
+            if (lastDragEvent) {
+              updateSelectionPreview(lastDragEvent)
+            }
+          }
 
           let settled = false
           const rejector = (err?: Error) => {
@@ -1110,6 +1228,8 @@ export class AcEdInputManager {
               'contextmenu',
               contextMenuHandler
             )
+            this.view.events.viewChanged.removeEventListener(onViewChanged)
+            this.view.events.viewResize.removeEventListener(onViewChanged)
           }
           this._activeRejector = rejector
 
@@ -1169,33 +1289,8 @@ export class AcEdInputManager {
             if (e.buttons !== 1) return
             if (!startWcs || !previewEl || !startCanvas) return
 
-            const curWcs = this.view.screenToWorld(
-              this.view.viewportToCanvas({ x: e.clientX, y: e.clientY })
-            )
-            const curCanvas = this.view.viewportToCanvas({
-              x: e.clientX,
-              y: e.clientY
-            })
-            const p1 = this.view.worldToScreen(startWcs)
-            const p2 = this.view.worldToScreen(curWcs)
-
-            const left = Math.min(p1.x, p2.x)
-            const top = Math.min(p1.y, p2.y)
-            const width = Math.abs(p1.x - p2.x)
-            const height = Math.abs(p1.y - p2.y)
-            const mode = this.view.getSelectionMode(startCanvas, curCanvas)
-            const action = this.view.getSelectionActionFromEvent(e, 'add')
-            const style = this.view.getSelectionPreviewStyle(mode, action)
-
-            Object.assign(previewEl.style, {
-              left: `${left}px`,
-              top: `${top}px`,
-              width: `${width}px`,
-              height: `${height}px`,
-              borderStyle: style.borderStyle,
-              background: style.background
-            })
-            previewEl.style.setProperty('--line-color', style.lineColor)
+            lastDragEvent = e
+            updateSelectionPreview(e)
           }
 
           const mouseUp = (e: MouseEvent) => {
@@ -1211,6 +1306,7 @@ export class AcEdInputManager {
             })
             previewEl?.remove()
             previewEl = null
+            lastDragEvent = null
 
             // Click selection
             const action = this.view.getSelectionActionFromEvent(e, 'add')
@@ -1252,6 +1348,8 @@ export class AcEdInputManager {
           this.view.canvas.addEventListener('mousemove', mouseMove)
           this.view.canvas.addEventListener('mouseup', mouseUp)
           this.view.canvas.addEventListener('contextmenu', contextMenuHandler)
+          this.view.events.viewChanged.addEventListener(onViewChanged)
+          this.view.events.viewResize.addEventListener(onViewChanged)
         }),
       value =>
         new AcEdPromptSelectionResult(
@@ -1561,23 +1659,32 @@ export class AcEdInputManager {
       throw new AcEdNoneInputError()
     }
 
-    const keyword = options.keywords.findByName(trimmed)
+    const handler = new AcEdPointHandler(options)
+    const value = handler.parseCommandLine(
+      token,
+      this.resolvePointInputContext(options)
+    )
+    if (value != null) {
+      this.lastPoint = { x: value.x, y: value.y }
+      return value
+    }
+
+    this.tryResolveScriptedKeyword(trimmed, options)
+    throw new Error(`Invalid point input '${token}'`)
+  }
+
+  /**
+   * Throws {@link AcEdKeywordInputError} when a scripted token matches a keyword.
+   */
+  private tryResolveScriptedKeyword(
+    token: string,
+    options?: AcEdPromptOptions<unknown>
+  ) {
+    if (!token || !options?.keywords) return
+    const keyword = options.keywords.findByName(token)
     if (keyword) {
       throw new AcEdKeywordInputError(keyword.globalName)
     }
-
-    const parsed = this.splitScriptedPoint(token)
-    if (!parsed) {
-      throw new Error(`Invalid point input '${token}'`)
-    }
-
-    const value = new AcEdPointHandler(options).parse(parsed.x, parsed.y)
-    if (value == null) {
-      throw new Error(`Invalid point input '${token}'`)
-    }
-
-    this.lastPoint = { x: value.x, y: value.y }
-    return value
   }
 
   /**
@@ -1593,15 +1700,42 @@ export class AcEdInputManager {
    * @returns Parsed value, or `undefined` when no scripted token is available
    * @throws Error if a queued token exists but fails validation
    */
-  private tryGetScriptedValue<T>(handler: AcEdInputHandler<T>): T | undefined {
+  private tryGetScriptedValue<T>(
+    handler: AcEdInputHandler<T>,
+    options?: AcEdPromptOptions<unknown>
+  ): T | undefined {
     const token = this.dequeueScriptInput()
     if (token === undefined) return undefined
 
-    const value = handler.parse(token)
-    if (value == null) {
+    const trimmed = token.trim()
+    if (
+      !trimmed &&
+      options &&
+      'allowNone' in options &&
+      (options as { allowNone: boolean }).allowNone
+    ) {
+      throw new AcEdNoneInputError()
+    }
+
+    if (handler instanceof AcEdStringHandler) {
+      this.tryResolveScriptedKeyword(trimmed, options)
+      const stringValue = handler.parse(token)
+      if (stringValue != null) return stringValue
       throw new Error(`Invalid scripted input '${token}'`)
     }
-    return value
+
+    const value = this.parseCommandLineInput(
+      token,
+      handler,
+      handler instanceof AcEdPointHandler ? 2 : 1,
+      (options ?? new AcEdPromptOptions('')) as AcEdPromptOptions<T>
+    )
+    if (value != null) {
+      return value as T
+    }
+
+    this.tryResolveScriptedKeyword(trimmed, options)
+    throw new Error(`Invalid scripted input '${token}'`)
   }
 
   /**
@@ -1614,9 +1748,10 @@ export class AcEdInputManager {
    * @returns Parsed numeric value, or `undefined` when no scripted token is queued
    */
   private tryGetScriptedNumber(
-    handler: AcEdNumericalHandler | AcEdAngleHandler
+    handler: AcEdNumericalHandler | AcEdAngleHandler,
+    options?: AcEdPromptOptions<unknown>
   ): number | undefined {
-    return this.tryGetScriptedValue(handler)
+    return this.tryGetScriptedValue(handler, options)
   }
 
   /**
@@ -1627,35 +1762,6 @@ export class AcEdInputManager {
   private dequeueScriptInput() {
     if (!this._scriptInputs.length) return undefined
     return this._scriptInputs.shift()
-  }
-
-  /**
-   * Splits a scripted point token into x/y coordinate components.
-   *
-   * The accepted formats intentionally mirror common CAD command-line point
-   * entry conventions, including comma-separated coordinates and whitespace-
-   * separated coordinates. An optional third `z` component is tolerated for
-   * compatibility, but only the `x` and `y` values are used by 2D prompts.
-   *
-   * @param token - Raw scripted point token
-   * @returns Extracted x/y string pair, or `undefined` if the token is malformed
-   */
-  private splitScriptedPoint(
-    token: string
-  ): { x: string; y: string } | undefined {
-    const trimmed = token.trim()
-    if (!trimmed) return undefined
-
-    if (trimmed.includes(',')) {
-      const parts = trimmed.split(',').map(v => v.trim())
-      if (parts.length !== 2 && parts.length !== 3) return undefined
-      if (parts.length === 3 && Number.isNaN(Number(parts[2]))) return undefined
-      return { x: parts[0], y: parts[1] }
-    }
-
-    const parts = trimmed.split(/\s+/)
-    if (parts.length < 2) return undefined
-    return { x: parts[0], y: parts[1] }
   }
 
   /**
@@ -1844,8 +1950,10 @@ export class AcEdInputManager {
       }
 
       const promptDefaults = this.resolvePromptDefaults(options.promptOptions)
-      const keywordSession = this.startKeywordSession(
+      const promptInputSession = this.startPromptInputSession(
         options.promptOptions,
+        options.handler,
+        options.inputCount ?? 1,
         true
       )
 
@@ -1854,10 +1962,10 @@ export class AcEdInputManager {
         basePoint = promptDefaults.basePoint
       }
 
-      const commandLineMessage = promptDefaults.message
-      if (!keywordSession) {
-        this._commandLine.setPrompt(commandLineMessage)
-      }
+      const orthoReferencePoint =
+        promptDefaults.useBasePoint && promptDefaults.basePoint
+          ? promptDefaults.basePoint
+          : (this.lastPoint ?? undefined)
       const allowNone =
         'allowNone' in options.promptOptions
           ? (options.promptOptions as { allowNone: boolean }).allowNone
@@ -1872,6 +1980,7 @@ export class AcEdInputManager {
         disableOSnap: options.disableOSnap,
         showBaseLineOnly: promptDefaults.showBaseLineOnly,
         basePoint,
+        orthoReferencePoint,
         baseAngle: promptDefaults.baseAngle,
         allowPrompt: options.allowPrompt !== false,
         allowNone,
@@ -1920,7 +2029,7 @@ export class AcEdInputManager {
         document.removeEventListener('keyup', modifierHandler)
         this.view.canvas.removeEventListener('contextmenu', contextMenuHandler)
         floatingInput.dispose()
-        keywordSession?.cancel()
+        promptInputSession.cancel()
         this._commandLine.clear()
       }
 
@@ -1968,13 +2077,33 @@ export class AcEdInputManager {
       // showAt() expects viewport coordinates; curMousePos is canvas-local.
       floatingInput.showAt(this.view.canvasToViewport(this.view.curMousePos))
 
-      keywordSession?.promise.then(keyword => {
+      promptInputSession.promise.then(result => {
         if (settled) return
-        if (!keyword) {
-          rejector()
-          return
+        switch (result.kind) {
+          case 'value':
+            if (options.handler instanceof AcEdPointHandler) {
+              const point = result.value as unknown as AcGePoint3dLike
+              if (
+                point &&
+                Number.isFinite(point.x) &&
+                Number.isFinite(point.y)
+              ) {
+                this.lastPoint = { x: point.x, y: point.y }
+              }
+            }
+            resolver(result.value)
+            break
+          case 'keyword':
+            keywordRejector(result.keyword)
+            break
+          case 'none':
+            if (allowNone) {
+              noneRejector()
+            } else {
+              rejector()
+            }
+            break
         }
-        keywordRejector(keyword)
       })
     })
   }

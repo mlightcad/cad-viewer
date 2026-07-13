@@ -1,0 +1,58 @@
+{
+  "name": "@mlightcad/cad-pdf-plugin",
+  "version": "1.5.7",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/cad-pdf-plugin.umd.cjs",
+  "module": "./dist/cad-pdf-plugin.js",
+  "sideEffects": false,
+  "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "register": [
+        "lib/register.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./dist/cad-pdf-plugin.js",
+      "require": "./dist/cad-pdf-plugin.umd.cjs"
+    },
+    "./register": {
+      "types": "./lib/register.d.ts",
+      "import": "./dist/cad-pdf-plugin-register.js",
+      "require": "./dist/cad-pdf-plugin-register.umd.cjs"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "devDependencies": {
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/cad-svg-plugin": "workspace:*",
+    "@mlightcad/data-model": "^1.10.4",
+    "jspdf": "^4.2.1",
+    "pdfjs-dist": "^5.6.205",
+    "svg2pdf.js": "^2.7.0"
+  },
+  "peerDependencies": {
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.10.4",
+    "@mlightcad/cad-svg-plugin": "workspace:*"
+  }
+}

@@ -5,9 +5,28 @@ const config: Config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest'
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        tsconfig: '<rootDir>/tsconfig.jest.json'
+      }
+    ],
+    '^.+\\.js$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          allowJs: true
+        }
+      }
+    ]
   },
-  testPathIgnorePatterns: ['packages/dxf-json/', '/e2e/'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!.*(mtext-parser|rbush|quickselect))'
+  ],
+  testPathIgnorePatterns: [
+    '/e2e/',
+    '/__tests__/helpers/'
+  ],
   moduleNameMapper: {
     '^lodash-es$': 'lodash',
     '^three/examples/jsm/lines/LineMaterial\\.js$':
@@ -19,7 +38,9 @@ const config: Config = {
     '^three/examples/jsm/renderers/CSS2DRenderer\\.js$':
       '<rootDir>/test/mocks/three/CSS2DRenderer.js',
     '^three/examples/jsm/utils/BufferGeometryUtils\\.js$':
-      '<rootDir>/test/mocks/three/BufferGeometryUtils.js'
+      '<rootDir>/test/mocks/three/BufferGeometryUtils.js',
+    '^three/examples/jsm/controls/OrbitControls(\\.js)?$':
+      '<rootDir>/test/mocks/three/OrbitControls.js'
   }
 }
 

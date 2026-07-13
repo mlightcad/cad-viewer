@@ -5,162 +5,26 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdBaseView,
   AcEdCommand,
   AcEdOpenMode,
-  AcEdPreviewJig,
   AcEdPromptIntegerOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
-  AcEdPromptSelectionOptions,
-  AcEdPromptStatus
+  AcEdPromptStatus,
+  scaleCopyDisplacement
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { resolveSelectedEntities } from '../../service'
+import { AcApCopyPreviewJig } from './AcApCopyPreviewJig'
 
 type CopyMode = 'Single' | 'Multiple'
-
-interface CopyPreviewItem {
-  entity: AcDbEntity
-  factor: number
-  lastDisplacement: AcGePoint3d
-}
 
 interface CopyArrayPlacement {
   copyCount: number
   endPoint: AcGePoint3d
   fitMode: boolean
-}
-
-/**
- * COPY preview jig.
- *
- * It clones the source entities once and keeps those transient copies moving
- * with the cursor. For array previews, each clone batch uses a different
- * displacement multiplier so users can see the full result before committing.
- */
-class AcApCopyPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private _view: AcEdBaseView
-  private _basePoint: AcGePoint3d
-  private _copyCount: number
-  private _fitMode: boolean
-  private _previewItems: CopyPreviewItem[]
-
-  /**
-   * Creates a transient COPY preview jig.
-   *
-   * @param view - Active editor view that owns transient preview entities.
-   * @param sourceEntities - Original entities used as clone sources.
-   * @param basePoint - Copy base point from which cursor displacement is measured.
-   * @param copyCount - Number of preview placements to show.
-   * @param fitMode - Whether copies should be evenly distributed between base and end points.
-   */
-  constructor(
-    view: AcEdBaseView,
-    sourceEntities: AcDbEntity[],
-    basePoint: AcGePoint3dLike,
-    copyCount: number = 1,
-    fitMode: boolean = false
-  ) {
-    super(view)
-    this._view = view
-    this._basePoint = new AcGePoint3d(basePoint)
-    this._copyCount = Math.max(0, copyCount)
-    this._fitMode = fitMode
-    this._previewItems = []
-
-    for (let factor = 1; factor <= this._copyCount; factor++) {
-      sourceEntities
-        .map(entity => entity.clone())
-        .filter((entity): entity is AcDbEntity => !!entity)
-        .forEach(entity => {
-          this._previewItems.push({
-            entity,
-            factor,
-            lastDisplacement: new AcGePoint3d(0, 0, 0)
-          })
-        })
-    }
-  }
-
-  /**
-   * Gets the first preview entity so the jig can satisfy the editor API contract.
-   *
-   * @returns First transient clone, or `null` when nothing could be cloned.
-   */
-  get entity(): AcDbEntity | null {
-    return this._previewItems[0]?.entity ?? null
-  }
-
-  /**
-   * Moves each transient clone to its latest preview displacement.
-   *
-   * The input point is interpreted as the current placement point. Each preview
-   * batch then applies either a direct multiple of the displacement or a
-   * normalized fit displacement, depending on the current array mode.
-   *
-   * @param point - Current cursor point supplied by the prompt/jig system.
-   */
-  update(point: AcGePoint3dLike) {
-    if (this._previewItems.length === 0) return
-
-    const displacement = new AcGePoint3d(
-      point.x - this._basePoint.x,
-      point.y - this._basePoint.y,
-      point.z - this._basePoint.z
-    )
-
-    this._previewItems.forEach(item => {
-      const desired = this.scaleDisplacement(displacement, item.factor)
-      const delta = new AcGePoint3d(
-        desired.x - item.lastDisplacement.x,
-        desired.y - item.lastDisplacement.y,
-        desired.z - item.lastDisplacement.z
-      )
-      if (delta.x === 0 && delta.y === 0 && delta.z === 0) return
-
-      item.entity.transformBy(
-        new AcGeMatrix3d().makeTranslation(delta.x, delta.y, delta.z)
-      )
-      item.lastDisplacement = desired
-    })
-  }
-
-  /**
-   * Adds all preview clones to the view as transient geometry.
-   */
-  override render(): void {
-    if (this._previewItems.length === 0) return
-    this._view.addTransientEntity(this._previewItems.map(item => item.entity))
-  }
-
-  /**
-   * Removes every transient preview clone from the view.
-   */
-  override end(): void {
-    this._previewItems.forEach(item =>
-      this._view.removeTransientEntity(item.entity.objectId)
-    )
-  }
-
-  /**
-   * Computes the displacement assigned to one preview copy.
-   *
-   * @param displacement - Raw cursor displacement from the base point.
-   * @param factor - One-based copy index used to scale the displacement.
-   * @returns Scaled displacement for the indexed preview clone.
-   */
-  private scaleDisplacement(displacement: AcGePoint3d, factor: number) {
-    const scale =
-      this._fitMode && this._copyCount > 0 ? factor / this._copyCount : factor
-
-    return new AcGePoint3d(
-      displacement.x * scale,
-      displacement.y * scale,
-      displacement.z * scale
-    )
-  }
 }
 
 /**
@@ -211,11 +75,7 @@ export class AcApCopyCmd extends AcEdCommand {
     basePoint: AcGePoint3dLike,
     targetPoint: AcGePoint3dLike
   ) {
-    return new AcGePoint3d(
-      targetPoint.x - basePoint.x,
-      targetPoint.y - basePoint.y,
-      targetPoint.z - basePoint.z
-    )
+    return new AcGePoint3d(targetPoint).sub(basePoint)
   }
 
   /**
@@ -233,12 +93,26 @@ export class AcApCopyCmd extends AcEdCommand {
     copyCount: number,
     fitMode: boolean
   ) {
-    const scale = fitMode && copyCount > 0 ? factor / copyCount : factor
-    return new AcGePoint3d(
-      displacement.x * scale,
-      displacement.y * scale,
-      displacement.z * scale
-    )
+    return scaleCopyDisplacement(displacement, factor, copyCount, fitMode)
+  }
+
+  /**
+   * Appends cloned entities to model space and shows them immediately in the view.
+   *
+   * Database edits during an active command transaction may not reach the view
+   * until the command ends. Explicit {@link AcEdBaseView.addEntity} keeps each
+   * placement visible while the COPY loop continues. All placements still share
+   * one undo mark from {@link AcEdCommand.trigger}.
+   *
+   * @param context - Active command context with database and view access
+   * @param copies - Cloned entities to append and display
+   */
+  private appendCopies(context: AcApContext, copies: AcDbEntity[]) {
+    if (copies.length === 0) {
+      return
+    }
+    context.doc.database.tables.blockTable.modelSpace.appendEntity(copies)
+    context.view.addEntity(copies)
   }
 
   /**
@@ -417,8 +291,6 @@ export class AcApCopyCmd extends AcEdCommand {
     copyMode: CopyMode,
     useDisplacementPrompt: boolean = false
   ) {
-    const blockTable = context.doc.database.tables.blockTable
-
     while (true) {
       const pointPrompt = new AcEdPromptPointOptions(
         AcApI18n.t(
@@ -431,7 +303,8 @@ export class AcApCopyCmd extends AcEdCommand {
       pointPrompt.useBasePoint = true
       pointPrompt.useDashedLine = true
       pointPrompt.basePoint = basePoint
-      pointPrompt.allowNone = copyMode === 'Multiple'
+      // AutoCAD COPY: Enter at placement prompt ends without adding another copy.
+      pointPrompt.allowNone = true
       pointPrompt.jig = new AcApCopyPreviewJig(
         context.view,
         sourceEntities,
@@ -445,9 +318,7 @@ export class AcApCopyCmd extends AcEdCommand {
           sourceEntities,
           this.computeDisplacement(basePoint, pointResult.value!)
         )
-        if (copies.length > 0) {
-          blockTable.modelSpace.appendEntity(copies)
-        }
+        this.appendCopies(context, copies)
         if (copyMode === 'Single') return
         continue
       }
@@ -469,9 +340,7 @@ export class AcApCopyCmd extends AcEdCommand {
           placement.copyCount,
           placement.fitMode
         )
-        if (copies.length > 0) {
-          blockTable.modelSpace.appendEntity(copies)
-        }
+        this.appendCopies(context, copies)
         if (copyMode === 'Single') return
         continue
       }
@@ -491,31 +360,13 @@ export class AcApCopyCmd extends AcEdCommand {
    */
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
-    const annotation = new AcApAnnotation(context.doc.database)
-    const blockTable = context.doc.database.tables.blockTable
+    const resolved = await resolveSelectedEntities(context, {
+      promptKey: 'copy'
+    })
+    if (!resolved) return
 
-    const selectionIds =
-      selectionSet.count > 0
-        ? selectionSet.ids
-        : ((
-            await AcApDocManager.instance.editor.getSelection(
-              new AcEdPromptSelectionOptions(AcApI18n.sysCmdPrompt('copy'))
-            )
-          ).value?.ids ?? [])
-
-    if (selectionIds.length === 0) return
-
-    const ids =
-      context.doc.openMode == AcEdOpenMode.Review
-        ? annotation.filterAnnotationEntities(selectionIds)
-        : selectionIds
-    if (ids.length === 0) {
-      selectionSet.clear()
-      return
-    }
-
-    const sourceEntities = ids
-      .map(id => blockTable.getEntityById(id))
+    const sourceEntities = resolved.entities
+      .map(entity => context.doc.database.openEntityForRead(entity.objectId))
       .filter((entity): entity is AcDbEntity => !!entity)
     if (sourceEntities.length === 0) {
       selectionSet.clear()

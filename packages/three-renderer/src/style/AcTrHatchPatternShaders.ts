@@ -39,6 +39,10 @@ export function createHatchPatternShaderMaterial(
   fixedThicknessInWorldCoord = 0,
   side: THREE.Side = THREE.FrontSide
 ): THREE.Material {
+  const maxPatternSegmentCount = Math.max(
+    2,
+    ...patternLines.map(line => line.dashLengths.length)
+  )
   const uniforms = {
     u_cameraZoom: cameraZoomUniform,
     u_patternLines: { value: patternLines },
@@ -263,6 +267,9 @@ export function createHatchPatternShaderMaterial(
     vertexShader,
     fragmentShader,
     clipping: true,
-    side
+    side,
+    defines: {
+      MAX_PATTERN_SEGMENT_COUNT: maxPatternSegmentCount
+    }
   })
 }

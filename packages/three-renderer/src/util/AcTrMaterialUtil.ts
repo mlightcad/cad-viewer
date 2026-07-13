@@ -1,9 +1,25 @@
 import * as THREE from 'three'
 
+import { getMaterialRuntimeUserData } from './AcTrObjectUserData'
+
 /**
- * Highlight color.
+ * Selection highlight color.
+ *
+ * Replace with a system-variable-driven value when CAD sysvars are wired in.
  */
-export const HIGHLIGHT_COLOR = new THREE.Color(0x08e8de)
+export const HIGHLIGHT_SELECT_COLOR = new THREE.Color(0x08e8de)
+
+/**
+ * Hover highlight color.
+ *
+ * Replace with a system-variable-driven value when CAD sysvars are wired in.
+ */
+export const HIGHLIGHT_HOVER_COLOR = new THREE.Color(0x66fff8)
+
+/**
+ * @deprecated Use {@link HIGHLIGHT_SELECT_COLOR} instead.
+ */
+export const HIGHLIGHT_COLOR = HIGHLIGHT_SELECT_COLOR
 
 /**
  * Type for materials that have color property
@@ -38,16 +54,16 @@ export class AcTrMaterialUtil {
     if (Array.isArray(material)) {
       const materials: THREE.Material[] = []
       material.forEach(mat => {
-        materials.push(mat.clone())
+        materials.push(this.cloneSingleMaterial(mat))
       })
       return materials
     }
-    return (material as THREE.Material).clone()
+    return this.cloneSingleMaterial(material as THREE.Material)
   }
 
   public static setMaterialColor(
     material: THREE.Material | THREE.Material[],
-    color: THREE.Color = HIGHLIGHT_COLOR
+    color: THREE.Color = HIGHLIGHT_SELECT_COLOR
   ) {
     if (Array.isArray(material)) {
       material.forEach(mat => this.setMaterialColor(mat, color))
@@ -96,5 +112,28 @@ export class AcTrMaterialUtil {
     material: THREE.Material
   ): material is MaterialWithUniforms {
     return 'uniforms' in material && material.uniforms !== undefined
+  }
+
+  private static cloneSingleMaterial(material: THREE.Material) {
+    const clonedMaterial = material.clone()
+    this.resetRuntimeShaderState(clonedMaterial)
+    return clonedMaterial
+  }
+
+  /**
+   * Cloned highlight materials must not inherit runtime-only shader state from
+   * the source instance, otherwise the clone can keep using stale RTE shader
+   * uniforms/program keys bound to another render object.
+   */
+  private static resetRuntimeShaderState(material: THREE.Material) {
+    const materialData = getMaterialRuntimeUserData(material)
+    delete materialData.relativeToEyePatchVersion
+    delete materialData.relativeToEyeCompiledShader
+    delete materialData.batchHighlightPatched
+    delete materialData.batchHighlightUniforms
+    material.onBeforeCompile = THREE.Material.prototype.onBeforeCompile
+    material.customProgramCacheKey =
+      THREE.Material.prototype.customProgramCacheKey
+    material.needsUpdate = true
   }
 }

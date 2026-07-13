@@ -182,7 +182,7 @@ export class AcEdFloatingMessage {
         border-radius: 4px;
         font-size: 12px;
         pointer-events: none;
-        z-index: 10000;
+        z-index: 2;
       }
       .ml-floating-input-label {
         white-space: nowrap;

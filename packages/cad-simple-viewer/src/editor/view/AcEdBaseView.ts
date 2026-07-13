@@ -7,19 +7,25 @@ import {
   AcDbObjectId,
   AcGeBox2d,
   AcGeBox3d,
+  AcGeMatrix3d,
   AcGePoint2d,
   AcGePoint2dLike
 } from '@mlightcad/data-model'
 import { debounce } from 'lodash-es'
 
+import type { AcTrSpatialSearchOptions } from '../../spatialIndex/AcTrSpatialIndex'
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
+import { AcEdOsnapResolver } from '../input/AcEdOsnapResolver'
 import { AcEdHoverController } from './AcEdHoverController'
 import {
   AcEdSelectionAction,
   resolveSelectionActionFromEvent
 } from './AcEdSelectionAction'
-import { AcEdSpatialQueryResultItemEx } from './AcEdSpatialQueryResult'
+import {
+  AcEdSpatialQueryResultItemEx,
+  isEffectiveSpatialQueryHit
+} from './AcEdSpatialQueryResult'
 
 /**
  * Interface to define arguments of mouse event events.
@@ -219,6 +225,9 @@ export abstract class AcEdBaseView {
    */
   private _hoverController: AcEdHoverController
 
+  /** Resolves object snap points using this view's pick and coordinate APIs. */
+  private _osnapResolver: AcEdOsnapResolver
+
   /** The HTML canvas element for rendering */
   protected _canvas: HTMLCanvasElement
 
@@ -262,6 +271,7 @@ export abstract class AcEdBaseView {
     this._curMousePos = new AcGePoint2d()
     this._selectionSet = new AcEdSelectionSet()
     this._editor = new AcEditor(this)
+    this._osnapResolver = new AcEdOsnapResolver(this)
     this._canvas.addEventListener('mousemove', event => this.onMouseMove(event))
     this._canvas.addEventListener('mousedown', event => {
       if (event.button === 1) {
@@ -281,7 +291,11 @@ export abstract class AcEdBaseView {
       trailing: true
     })
     const resizeObserver = new ResizeObserver(debouncedWindowResize)
-    resizeObserver.observe(this._canvas.parentElement as Element)
+    resizeObserver.observe(this._container)
+    const containerParent = this._container.parentElement
+    if (containerParent) {
+      resizeObserver.observe(containerParent)
+    }
 
     this._selectionBoxSize = 4
 
@@ -479,7 +493,10 @@ export abstract class AcEdBaseView {
    * @param box Input the query bounding box
    * @returns Return query results
    */
-  abstract search(box: AcGeBox2d | AcGeBox3d): AcEdSpatialQueryResultItemEx[]
+  abstract search(
+    box: AcGeBox2d | AcGeBox3d,
+    options?: AcTrSpatialSearchOptions
+  ): AcEdSpatialQueryResultItemEx[]
 
   /**
    * Picks entities that intersect a hit-region centered at the specified point
@@ -557,6 +574,47 @@ export abstract class AcEdBaseView {
   abstract removeTransientEntity(objectId: AcDbObjectId): void
 
   /**
+   * Returns true when batched GPU-resident preview can be created for all ids.
+   *
+   * @param entityIds - Database object ids to include in the preview overlay
+   */
+  abstract canCreateEntityPreview(entityIds: AcDbObjectId[]): boolean
+
+  /**
+   * Creates one batched preview overlay for command jigs.
+   *
+   * @param entityIds - Database object ids to include in the preview overlay
+   * @returns Preview handle id, or `null` when preview creation failed
+   */
+  abstract createEntityPreview(entityIds: AcDbObjectId[]): string | null
+
+  /**
+   * Updates the world transform of one batched preview overlay.
+   *
+   * @param handleId - Preview handle returned by {@link createEntityPreview}
+   * @param matrix - World transform to apply to the preview geometry
+   */
+  abstract updateEntityPreview(handleId: string, matrix: AcGeMatrix3d): void
+
+  /**
+   * Removes one batched preview overlay.
+   *
+   * @param handleId - Preview handle returned by {@link createEntityPreview}
+   */
+  abstract removeEntityPreview(handleId: string): void
+
+  /**
+   * Updates world transforms on existing transient preview entities without
+   * reconverting database entities on every cursor move.
+   */
+  abstract updateTransientPreviewTransforms(
+    transforms: ReadonlyArray<{
+      objectId: AcDbObjectId
+      matrix: AcGeMatrix3d
+    }>
+  ): void
+
+  /**
    * Add the specified entity or entities in drawing database into the current scene
    * and draw it or them
    * @param entity Input one or multiple entities to add into the current scene
@@ -575,6 +633,34 @@ export abstract class AcEdBaseView {
    * @param entity Input the entity or entities to update
    */
   abstract updateEntity(entity: AcDbEntity | AcDbEntity[]): void
+
+  /**
+   * Returns true when the entity is already present in the scene.
+   */
+  hasEntity(_objectId: AcDbObjectId): boolean {
+    return false
+  }
+
+  /**
+   * Applies a visibility-only scene update without rebuilding geometry.
+   */
+  updateEntityVisibility(_entity: AcDbEntity): boolean {
+    return false
+  }
+
+  /**
+   * Updates scene visibility for one entity without changing the database.
+   */
+  setEntitySceneVisible(_objectId: AcDbObjectId, _visible: boolean): boolean {
+    return false
+  }
+
+  /**
+   * Returns the current scene visibility for one entity.
+   */
+  getEntityVisible(_objectId: AcDbObjectId): boolean | undefined {
+    return undefined
+  }
 
   /**
    * Add the specified layout in drawing database into the current scene
@@ -736,18 +822,13 @@ export abstract class AcEdBaseView {
    * Collects ids using window or crossing selection rules.
    */
   protected collectSelectionIdsByBox(box: AcGeBox2d, mode: AcEdSelectionMode) {
-    const results = this.search(box)
+    const results = this.search(box, { selectionMode: mode })
     const ids: AcDbObjectId[] = []
     results.forEach(item => {
-      if (
-        mode === 'crossing' ||
-        (item.minX >= box.min.x &&
-          item.maxX <= box.max.x &&
-          item.minY >= box.min.y &&
-          item.maxY <= box.max.y)
-      ) {
-        ids.push(item.id)
+      if (!isEffectiveSpatialQueryHit(item)) {
+        return
       }
+      ids.push(item.id)
     })
     return ids
   }
@@ -872,14 +953,21 @@ export abstract class AcEdBaseView {
     return this._selectionSet
   }
 
+  /**
+   * Object snap resolver scoped to this view.
+   */
+  get osnapResolver() {
+    return this._osnapResolver
+  }
+
   protected onWindowResize() {
     if (this._calculateSizeCallback) {
       const { width, height } = this._calculateSizeCallback()
-      this._width = width
-      this._height = height
+      this._width = Math.max(1, Math.floor(width))
+      this._height = Math.max(1, Math.floor(height))
     } else {
-      this._width = this._canvas.clientWidth
-      this._height = this._canvas.clientHeight
+      this._width = Math.max(1, Math.floor(this._canvas.clientWidth))
+      this._height = Math.max(1, Math.floor(this._canvas.clientHeight))
     }
     this.events.viewResize.dispatch({
       width: this._width,

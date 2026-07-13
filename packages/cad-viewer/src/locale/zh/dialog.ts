@@ -11,7 +11,9 @@ export default {
     replace: '替换',
     missedFont: '缺失字体',
     replacedFont: '替换字体',
-    selectFont: '选择要替换的字体'
+    selectFont: '选择要替换的字体',
+    selectLocalFont: '选择本地字体文件',
+    matchFontType: '使用相同类型的字体进行替换（SHX 替换 SHX，mesh 替换 mesh）'
   },
   pointStyleDlg: {
     title: '点样式',
@@ -76,6 +78,24 @@ export default {
     aciTabTitle: '颜色索引',
     rgbTabTitle: '真彩色'
   },
+  exportHtmlDlg: {
+    title: '导出为 HTML',
+    layersSection: '图层',
+    exportInvisibleLayers: '导出不可见图层',
+    exportInvisibleLayersHint: '将关闭或冻结图层上的几何图形包含在导出文件中',
+    yes: '是',
+    no: '否',
+    initialView: '初始视图',
+    initialViewExtents: '范围',
+    initialViewExtentsHint: '打开 HTML 时缩放至图形范围',
+    initialViewCurrent: '当前',
+    initialViewCurrentHint: '保留当前视图的中心与缩放比例',
+    viewerMode: '查看器模式',
+    viewerModeView: '查看',
+    viewerModeViewHint: '仅平移、缩放与图层控制',
+    viewerModeMeasure: '测量',
+    viewerModeMeasureHint: '查看工具及距离测量'
+  },
   quickSelectDlg: {
     title: '快速选择',
     applyTo: '应用到',
@@ -104,5 +124,37 @@ export default {
     previewResult: '匹配对象: {count} / 候选对象: {total}',
     valueRequired: '请先设置筛选值',
     selectionResult: '已匹配 {count} 个对象并应用到选择集'
+  },
+  textStyleDlg: {
+    title: '文字样式',
+    currentStyle: '当前文字样式: {name}',
+    styles: '样式',
+    fontSection: '字体',
+    fontName: '字体名(F):',
+    fontStyle: '字体样式(Y):',
+    useBigFont: '使用大字体(U)',
+    bigFontName: '大字体:',
+    sizeSection: '大小',
+    textHeight: '高度(T):',
+    effectsSection: '效果',
+    upsideDown: '颠倒(E)',
+    backwards: '反向(K)',
+    vertical: '垂直(V)',
+    widthFactor: '宽度因子(W):',
+    obliqueAngle: '倾斜角度(O):',
+    setCurrent: '置为当前(C)',
+    new: '新建(N)...',
+    delete: '删除(D)',
+    newTitle: '新建文字样式',
+    newStyleName: '样式名称:',
+    newPrompt: '输入新文字样式名称:',
+    newNameRequired: '请输入文字样式名称。',
+    deleteTitle: '删除文字样式',
+    deleteConfirm: '是否删除文字样式 "{name}"？',
+    invalidName: '样式名称不能包含 ;=<>`\\/,',
+    duplicateName: '已存在同名的文字样式。',
+    created: '已创建文字样式 "{name}"。',
+    deleted: '已删除文字样式 "{name}"。',
+    setCurrentDone: '当前文字样式已设为 "{name}"。'
   }
 }

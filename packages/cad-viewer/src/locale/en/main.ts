@@ -3,8 +3,11 @@ export default {
     new: 'New Drawing',
     open: 'Open Drawing',
     drawingUnits: 'Drawing Units',
+    exportMenu: 'Export',
     export: 'Export to DXF',
     exportHtml: 'Export to HTML',
+    exportPdf: 'Export to PDF',
+    exportSvg: 'Export to SVG',
     exportImage: 'Export to Image'
   },
   ribbon: {
@@ -272,11 +275,15 @@ export default {
       copy: 'Copy selected objects to a new location.',
       erase: 'Delete selected objects from the drawing.',
       offset: 'Create a parallel copy of an object at a specified distance.',
+      undo: 'Undo the last editing operation.',
+      redo: 'Redo the last undone editing operation.',
       properties: 'Open the Properties palette for the current selection.',
       quickSelect:
         'Open Quick Select to filter and select entities by criteria.',
       drawingUnits:
         'Open Drawing Units to set coordinate formats, precision, and insertion scale.',
+      agent:
+        'Open the CAD Agent palette tab to draw geometry using natural language.',
       propertyColor:
         'Set the color for newly created objects or selected entities.',
       propertyLineType:
@@ -369,9 +376,12 @@ export default {
       copy: 'Copy',
       erase: 'Erase',
       offset: 'Offset',
+      undo: 'Undo',
+      redo: 'Redo',
       properties: 'Properties',
-      quickSelect: 'Quick Select',
-      drawingUnits: 'Drawing Units'
+      quickSelect: 'Quick\nSelect',
+      drawingUnits: 'Drawing\nUnits',
+      agent: 'CAD\nAgent'
     }
   },
   verticalToolbar: {
@@ -500,6 +510,14 @@ export default {
       on: 'Hide line widths',
       off: 'Show line widths'
     },
+    orthoMode: {
+      on: 'Turn off ortho mode',
+      off: 'Turn on ortho mode'
+    },
+    polarTracking: {
+      on: 'Turn off polar tracking',
+      off: 'Turn on polar tracking'
+    },
     theme: {
       dark: 'Switch to light light',
       light: 'Switch to dark theme'
@@ -532,6 +550,7 @@ export default {
         name: 'Name',
         on: 'On',
         color: 'Color',
+        currentLayer: 'Current layer',
         zoomToLayer: 'Zoomed to the clicked layer "{layer}"'
       }
     }
@@ -581,10 +600,21 @@ export default {
   message: {
     loadingFonts: 'Loading fonts ...',
     loadingDwgConverter: 'Loading DWG converter...',
-    fontsNotFound: 'Fonts "{fonts}" can not be found in font repository!',
-    fontsNotLoaded: 'Fonts "{fonts}" can not be loaded!',
+    fontsNotFound: 'Fonts {fonts} can not be found in font repository!',
+    fontsNotLoaded: 'Fonts {fonts} can not be loaded!',
+    fontMissedInDrawing:
+      'Font "{font}" is required by {count} text object(s) but is not available. Displaying with "{replacementFont}".',
+    fontMissedReplacement: '"{font}" (displaying with "{replacement}")',
+    fontCached: 'Font "{font}" cached successfully.',
+    fontCacheFailed: 'Failed to cache font "{fileName}".',
     failedToGetAvaiableFonts: 'Failed to get avaiable fonts from "{url}"!',
     failedToOpenFile: 'Failed to open file "{fileName}"!',
+    failedToOpenFileWorkerOom:
+      'Failed to open "{fileName}". The drawing is too large for available memory.',
+    failedToOpenFileWorkerTimeout:
+      'Failed to open "{fileName}". The operation timed out while parsing the drawing.',
+    failedToOpenFileFontLoadFailed:
+      'Failed to open "{fileName}". Required fonts could not be loaded.',
     fetchingDrawingFile: 'Fetching file ...',
     unknownEntities:
       'This drawing contains {count} unknown or unsupported entities! Those entities will not be shown.'
@@ -603,6 +633,9 @@ export default {
     },
     title: {
       failedToOpenFile: 'Failed to Open File',
+      failedToOpenFileWorkerOom: 'Drawing Too Large',
+      failedToOpenFileWorkerTimeout: 'Open Timed Out',
+      failedToOpenFileFontLoadFailed: 'Font Load Failed',
       fontNotFound: 'Font Not Found',
       fontNotLoaded: 'Font Not Loaded',
       parsingWarning: 'Issues on Parsing Drawing'

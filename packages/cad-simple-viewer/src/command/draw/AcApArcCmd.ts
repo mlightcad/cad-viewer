@@ -18,8 +18,7 @@ import {
   AcEdPromptDistanceOptions,
   AcEdPromptDoubleOptions,
   AcEdPromptPointOptions,
-  AcEdPromptStatus,
-  eventBus
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 
@@ -277,7 +276,8 @@ function createArcFromThreePoints(
 
   const center = { x: ux, y: uy, z: 0 }
   const radius = distance2d(center, start)
-  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius)) return undefined
+  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius))
+    return undefined
 
   // By default, choose the arc that actually passes through the second point.
   // Ctrl toggle can reverse this selection to the complementary direction.
@@ -311,7 +311,10 @@ function createArcFromCenterStartEnd(
 ) {
   const radiusFromStart = distance2d(center, start)
   const radiusFromEnd = distance2d(center, end)
-  if (AcGeTol.isNonPositive(radiusFromStart) || AcGeTol.isNonPositive(radiusFromEnd)) {
+  if (
+    AcGeTol.isNonPositive(radiusFromStart) ||
+    AcGeTol.isNonPositive(radiusFromEnd)
+  ) {
     return undefined
   }
   // Start/end must lie on the same circle (small tolerance for picked input).
@@ -971,10 +974,7 @@ export class AcApArcCmd extends AcEdCommand {
    * @param key - Invalid-input category key.
    */
   private warnInvalidGeometry(key: ArcInvalidKey) {
-    eventBus.emit('message', {
-      message: AcApI18n.t(`jig.arc.invalid.${key}`),
-      type: 'warning'
-    })
+    this.notify(AcApI18n.t(`jig.arc.invalid.${key}`), 'warning')
   }
 
   /**

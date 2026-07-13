@@ -1,33 +1,62 @@
 import { AcGeMatrix3d, AcGePoint3d, AcGiEntity } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrMaterialUtil, AcTrMatrixUtil } from '../util'
+import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import {
+  AcTrMaterialUtil,
+  AcTrMatrixUtil,
+  isObjectHierarchyVisible
+} from '../util'
+import {
+  type AcTrEntityUserData,
+  getObjectUserData,
+  getSceneDrawableUserData
+} from '../util/AcTrObjectUserData'
 import { AcTrObject } from './AcTrObject'
 
 /**
  * Represent the display object of one drawing entity.
  */
 export class AcTrEntity extends AcTrObject implements AcGiEntity {
-  static readonly NO_BATCH_FLAG = 'noBatch'
-  protected _box: THREE.Box3
+  declare userData: AcTrEntityUserData
+  protected _wcsBbox: THREE.Box3
   protected _basePoint?: AcGePoint3d
 
-  constructor(styleManager: AcTrStyleManager) {
-    super(styleManager)
-    this._box = new THREE.Box3()
+  constructor(context: AcTrRenderContext) {
+    super(context)
+    this._wcsBbox = new THREE.Box3()
   }
 
   /**
-   * The bounding box without considering transformation matrix applied on this object.
-   * If you want to get bounding box with transformation matrix, please call `applyMatrix4`
-   * for this box.
+   * Shared batch/unbatch policy from the owning {@link AcTrRenderContext}.
    */
-  get box() {
-    return this._box
+  protected get batchDrawPolicy(): AcTrBatchDrawPolicy {
+    return this.renderContext.batchDrawPolicy
   }
-  set box(box: THREE.Box3) {
-    this._box.copy(box)
+
+  /**
+   * Resolves how this entity should enter the scene graph. Subclasses override
+   * this to return `'unbatch'` when they cannot batch, or delegate to
+   * {@link AcTrBatchDrawPolicy} for coordinate-based rules.
+   */
+  resolveDrawMode(): AcTrDrawMode {
+    return 'batch'
+  }
+
+  /**
+   * Axis-aligned bounding box in world (WCS) coordinates.
+   *
+   * Used for spatial indexing, selection, and raycast fallback. Subclasses must
+   * populate this in WCS when geometry is built; {@link applyMatrix} updates it
+   * when a block or insert transform is applied.
+   */
+  get wcsBbox() {
+    return this._wcsBbox
+  }
+  set wcsBbox(box: THREE.Box3) {
+    this._wcsBbox.copy(box)
   }
 
   /**
@@ -57,7 +86,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * @inheritdoc
    */
   get objectId() {
-    return this.userData.objectId as string
+    return this.userData.objectId!
   }
   set objectId(value: string) {
     this.userData.objectId = value
@@ -67,7 +96,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * @inheritdoc
    */
   get ownerId() {
-    return this.userData.ownerId as string
+    return this.userData.ownerId!
   }
   set ownerId(value: string) {
     this.userData.ownerId = value
@@ -77,7 +106,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * @inheritdoc
    */
   get layerName() {
-    return this.userData.layerName as string
+    return this.userData.layerName!
   }
   set layerName(value: string) {
     this.userData.layerName = value
@@ -142,8 +171,10 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
       const children = [...object.children]
       for (const child of children) {
         // Propagate layer information downward when the leaf itself does not define one.
-        if (!child.userData.layerName && object.userData.layerName) {
-          child.userData.layerName = object.userData.layerName
+        const objectData = getObjectUserData(object)
+        const childData = getObjectUserData(child)
+        if (!childData.layerName && objectData.layerName) {
+          childData.layerName = objectData.layerName
         }
 
         if (child.children.length > 0) {
@@ -157,6 +188,9 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
           //   relative = inverse(rootWorld) * childWorld
           // This preserves the final rendered placement after the child is re-parented
           // directly under `root`.
+          // flatten() removes intermediate AcTrEntity nodes; bake entity visibility onto
+          // render leaves so batched drawing still honors DXF group code 60.
+          child.visible = isObjectHierarchyVisible(child)
           objectsToReparent.push({
             object: child,
             relativeMatrix: rootMatrixWorldInverse
@@ -253,14 +287,67 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   }
 
   /**
+   * Marks one drawable or placement container for the unbatched scene path.
+   */
+  protected markDrawableUnbatched(object: THREE.Object3D) {
+    getSceneDrawableUserData(object).noBatch = true
+  }
+
+  /**
+   * Marks every geometry leaf currently under this entity as unbatched.
+   *
+   * Only render leaves (objects with both geometry and material) are tagged.
+   * Entity containers such as {@link AcTrLine} also store a geometry reference
+   * for bounds/metadata and must not enter the unbatched clone path themselves.
+   */
+  protected markUnbatchedLeaves() {
+    this.traverse(object => {
+      if (
+        !('geometry' in object) ||
+        !('material' in object) ||
+        !(object.geometry instanceof THREE.BufferGeometry)
+      ) {
+        return
+      }
+      this.markDrawableUnbatched(object)
+    })
+  }
+
+  protected finalizeLeafDrawables() {
+    if (this.resolveDrawMode() === 'unbatch') {
+      this.markUnbatchedLeaves()
+    }
+  }
+
+  /**
    * Remove this object from its parent and release geometry and material resource used by this object.
    */
   dispose() {
     AcTrEntity.disposeObject(this)
   }
 
-  async draw() {
-    // Do nothing for now
+  /**
+   * Builds drawable geometry asynchronously (for example via a worker).
+   *
+   * Progressive loading uses this path; interactive previews and non-progressive
+   * conversion prefer {@link syncDraw}.
+   */
+  async asyncDraw() {}
+
+  /**
+   * Builds or refreshes drawable geometry synchronously.
+   *
+   * Deferred entity types such as MTEXT and block references override this
+   * method. The default implementation is a no-op for entities whose geometry
+   * is fully produced during worldDraw conversion.
+   */
+  syncDraw(): void {}
+
+  /**
+   * Returns true when drawable child geometry is already attached.
+   */
+  hasDrawableGeometry(): boolean {
+    return this.children.length > 0
   }
 
   /**
@@ -277,33 +364,9 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
     this.applyMatrix4(threeMatrix)
     this.updateMatrixWorld(true)
-    this._box.applyMatrix4(threeMatrix)
-  }
-
-  /**
-   * @inheritdoc
-   */
-  bakeTransformToChildren(): void {
-    // Ensure the object's world matrix is up to date
-    this.updateWorldMatrix(true, false)
-
-    // Cache the object's current world matrix
-    const objectWorldMatrix = this.matrixWorld.clone()
-
-    // Bake the object's world transform into all direct children
-    this.children.forEach(child => {
-      // Ensure the child's local matrix is up to date
-      child.updateMatrix()
-
-      // child.localMatrix = objectWorldMatrix * child.localMatrix
-      child.applyMatrix4(objectWorldMatrix)
-    })
-
-    // Reset the object to an identity transform
-    this.position.set(0, 0, 0)
-    this.rotation.set(0, 0, 0)
-    this.scale.set(1, 1, 1)
-    this.updateMatrix()
+    if (!this._wcsBbox.isEmpty()) {
+      this._wcsBbox.applyMatrix4(threeMatrix)
+    }
   }
 
   /**
@@ -319,11 +382,12 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   protected highlightObject(object: THREE.Object3D) {
     if ('material' in object) {
       const material = object.material as THREE.Material | THREE.Material[]
+      const objectData = getObjectUserData(object)
       // If 'originalMaterial' isn't null, this object is already highlighted
-      if (object.userData.originalMaterial == null) {
+      if (objectData.originalMaterial == null) {
         const clonedMaterial = AcTrMaterialUtil.cloneMaterial(material)
         AcTrMaterialUtil.setMaterialColor(clonedMaterial)
-        object.userData.originalMaterial = object.material
+        objectData.originalMaterial = material
         object.material = clonedMaterial
       }
     } else if (object.children.length > 0) {
@@ -344,7 +408,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * @inheritdoc
    */
   fastDeepClone() {
-    const cloned = new AcTrEntity(this.styleManager)
+    const cloned = new AcTrEntity(this.renderContext)
     cloned.copy(this, false)
     this.copyGeometry(this, cloned)
     return cloned
@@ -357,7 +421,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     this.objectId = object.objectId
     this.ownerId = object.ownerId
     this.layerName = object.layerName
-    this.box = object.box
+    this.wcsBbox = object.wcsBbox
     return super.copy(object, recursive)
   }
 
@@ -391,8 +455,9 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   protected unhighlightObject(object: THREE.Object3D) {
     if ('material' in object) {
       const material = object.material as THREE.Material | THREE.Material[]
-      object.material = object.userData.originalMaterial
-      delete object.userData.originalMaterial
+      const objectData = getObjectUserData(object)
+      object.material = objectData.originalMaterial!
+      delete objectData.originalMaterial
 
       // clean up
       if (Array.isArray(material)) {

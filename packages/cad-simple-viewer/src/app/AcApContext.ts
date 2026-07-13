@@ -1,4 +1,5 @@
 import {
+  AcDbEntity,
   AcDbLayout,
   AcDbSystemVariables,
   AcDbSysVarManager
@@ -7,6 +8,14 @@ import {
 import { AcEdBaseView } from '../editor/view/AcEdBaseView'
 import { AcTrView2d } from '../view'
 import { AcApDocument } from './AcApDocument'
+import {
+  type AcDbEntityModifiedEventArgs,
+  canApplyVisibilityOnlySceneUpdate
+} from './AcApEntityUpdate'
+
+function asEntityList(entity: AcDbEntity | AcDbEntity[]): AcDbEntity[] {
+  return Array.isArray(entity) ? entity : [entity]
+}
 
 /**
  * Application context that binds a CAD document with its associated view.
@@ -55,17 +64,42 @@ export class AcApContext {
 
     // Add entity to scene
     doc.database.events.entityAppended.addEventListener(args => {
-      this.view.addEntity(args.entity)
+      const pending = asEntityList(args.entity).filter(
+        entity => !this.view.hasEntity(entity.objectId)
+      )
+      if (pending.length === 0) {
+        return
+      }
+      this.view.addEntity(pending.length === 1 ? pending[0] : pending)
     })
 
     // Update entity
     doc.database.events.entityModified.addEventListener(args => {
-      this.view.updateEntity(args.entity)
+      const eventArgs = args as AcDbEntityModifiedEventArgs
+      const view = this.view
+      if (
+        view instanceof AcTrView2d &&
+        canApplyVisibilityOnlySceneUpdate(
+          eventArgs,
+          objectId => view.hasEntity(objectId),
+          objectId => view.getEntityVisible(objectId)
+        ) &&
+        view.updateEntityVisibility(eventArgs.entity)
+      ) {
+        return
+      }
+      this.view.updateEntity(eventArgs.entity)
     })
 
     // Erase entity
     doc.database.events.entityErased.addEventListener(args => {
-      this.view.removeEntity(args.entity)
+      const pending = asEntityList(args.entity).filter(entity =>
+        this.view.hasEntity(entity.objectId)
+      )
+      if (pending.length === 0) {
+        return
+      }
+      this.view.removeEntity(pending.length === 1 ? pending[0] : pending)
     })
 
     // Set layer visibility

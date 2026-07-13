@@ -7,6 +7,15 @@ import { exportToHtml } from './exportToHtml.js'
 
 const program = new Command()
 
+function parseViewerMode(value: string): 'view' | 'measure' {
+  if (value === 'view' || value === 'measure') {
+    return value
+  }
+  throw new Error(
+    `Invalid --viewer-mode "${value}". Expected "view" or "measure".`
+  )
+}
+
 program
   .name('cad-html-exporter')
   .description(
@@ -19,12 +28,33 @@ program
   )
   .option('--locale <code>', 'UI locale embedded in HTML (e.g. en, zh)', 'en')
   .option('--title <text>', 'Drawing title in exported metadata')
+  .option(
+    '--no-export-invisible-layers',
+    'Exclude off/frozen layer geometry from the exported HTML'
+  )
+  .option(
+    '--initial-view <mode>',
+    'Initial view when opening HTML: fit (zoom extents) or current',
+    'fit'
+  )
+  .option(
+    '--viewer-mode <mode>',
+    'Offline viewer mode: view (pan/zoom/layers only) or measure (includes measurement tools)',
+    'measure'
+  )
   .action(async (input: string, opts) => {
     try {
+      const initialView =
+        opts.initialView === 'current' ? 'current' : ('fit' as const)
+      const viewerMode = parseViewerMode(opts.viewerMode)
       const outputPath = await exportToHtml(path.resolve(input), {
         outputPath: opts.output ? path.resolve(opts.output) : undefined,
         locale: opts.locale,
-        title: opts.title
+        title: opts.title,
+        exportInvisibleLayers:
+          opts.exportInvisibleLayers === false ? false : undefined,
+        initialView,
+        viewerMode
       })
       console.log(`Wrote ${outputPath}`)
     } catch (error) {

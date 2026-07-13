@@ -64,7 +64,9 @@ test('drawn lines appear immediately without panning the view', async ({
 }) => {
   await page.goto('/')
   await uploadFixture(page)
-  await expect(page.locator('.ml-cad-container')).toBeVisible({ timeout: 30000 })
+  await expect(page.locator('.ml-cad-container')).toBeVisible({
+    timeout: 30000
+  })
   await page.waitForTimeout(1500)
 
   const beforeDraw = await countNonBackgroundPixels(page)

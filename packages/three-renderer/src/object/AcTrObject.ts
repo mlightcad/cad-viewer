@@ -1,27 +1,32 @@
 import * as THREE from 'three'
 
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 
 /**
  * Base class for all drawable object
  */
 export class AcTrObject extends THREE.Object3D {
-  private _styleManager: AcTrStyleManager
+  private _context: AcTrRenderContext
 
-  constructor(styleManager: AcTrStyleManager) {
+  constructor(context: AcTrRenderContext) {
     super()
-    this._styleManager = styleManager
+    this._context = context
   }
 
-  get styleManager() {
-    return this._styleManager
+  get renderContext() {
+    return this._context
+  }
+
+  get styleManager(): AcTrStyleManager {
+    return this._context.styleManager
   }
 
   /**
    * @inheritdoc
    */
   copy(object: AcTrObject, recursive?: boolean) {
-    this._styleManager = object._styleManager
+    this._context = object._context
     return super.copy(object, recursive)
   }
 }

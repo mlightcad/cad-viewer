@@ -3,11 +3,18 @@ import { AcTrGroup } from '@mlightcad/three-renderer'
 
 import {
   AcEdSpatialQueryResultItem,
-  AcEdSpatialQueryResultItemEx
-} from '../editor/view'
+  AcEdSpatialQueryResultItemEx,
+  unionSpatialQueryItems
+} from '../editor/view/AcEdSpatialQueryResult'
+import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert'
 import { AcTrLinearSpatialIndex } from './AcTrLinearSpatialIndex'
 import { AcTrRBushSpatialIndex } from './AcTrRBushSpatialIndex'
-import { AcTrSpatialIndex, AcTrSpatialIndexBBox } from './AcTrSpatialIndex'
+import {
+  AcTrSpatialIndex,
+  AcTrSpatialIndexBBox,
+  AcTrSpatialSearchOptions,
+  isSpatialBoxFullyInside
+} from './AcTrSpatialIndex'
 
 /**
  * A two-level (hierarchical) spatial index designed for complex CAD
@@ -152,31 +159,75 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
    * 1. Search the root index for candidate hits.
    * 2. For each hit:
    *    - if no child index exists, return the root-level hit directly;
-   *    - if a child index exists, search the child and attach results under
-   *      `children`.
+   *    - if a child index exists, search the child and attach intersecting
+   *      results under `children`;
+   *    - when a child index exists but no child box intersects the query,
+   *      `children` is an empty array; callers that resolve selection or pick
+   *      should filter with {@link isEffectiveSpatialQueryHit}.
    *
    * @param bbox Query bounding box.
+   * @param options Optional query semantics. With `selectionMode: 'window'`,
+   *   block references that have a child index must have every indexed child
+   *   fully inside {@link bbox}; other hits must have their root box fully
+   *   inside {@link bbox}.
    * @returns Aggregated search results from both levels.
    */
-  search(bbox: AcTrSpatialIndexBBox): AcEdSpatialQueryResultItemEx[] {
+  search(
+    bbox: AcTrSpatialIndexBBox,
+    options?: AcTrSpatialSearchOptions
+  ): AcEdSpatialQueryResultItemEx[] {
     const level1 = this.rootIndex.search(bbox)
     const result: AcEdSpatialQueryResultItemEx[] = []
 
     for (const hit of level1) {
       const child = this.childIndexes.get(hit.id)
       if (!child) {
-        result.push(hit as AcEdSpatialQueryResultItem)
+        if (
+          options?.selectionMode !== 'window' ||
+          isSpatialBoxFullyInside(hit, bbox)
+        ) {
+          result.push(hit as AcEdSpatialQueryResultItem)
+        }
         continue
       }
 
       const level2 = child.search(bbox)
-      result.push({
+      const hitEx: AcEdSpatialQueryResultItemEx = {
         ...hit,
         children: level2
-      })
+      }
+      if (
+        options?.selectionMode !== 'window' ||
+        this.isWindowSelectionHit(hitEx, bbox)
+      ) {
+        result.push(hitEx)
+      }
     }
 
     return result
+  }
+
+  /**
+   * Window-selection containment for one hierarchical hit.
+   *
+   * INSERT entities with a child index are contained only when every finite
+   * indexed child lies inside the pick box, not when a coarse root bbox fits.
+   */
+  private isWindowSelectionHit(
+    hit: AcEdSpatialQueryResultItemEx,
+    bbox: AcTrSpatialIndexBBox
+  ): boolean {
+    const child = this.childIndexes.get(hit.id)
+    if (!child) {
+      return isSpatialBoxFullyInside(hit, bbox)
+    }
+
+    const allChildren = child.all().filter(isFiniteSpatialBBox)
+    if (allChildren.length === 0) {
+      return false
+    }
+
+    return allChildren.every(item => isSpatialBoxFullyInside(item, bbox))
   }
 
   /**
@@ -235,7 +286,8 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
    * Ensures a second-level index exists for a root id and optionally initializes it.
    *
    * Behavior:
-   * - if a child index already exists, it is returned as-is;
+   * - upserts the root index bbox to the union of `items`;
+   * - if a child index already exists, its items are replaced with `items`;
    * - otherwise an index type is selected by `items.length`;
    * - selected index is populated with `items`, stored, and returned.
    *
@@ -250,14 +302,27 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
     id: AcDbObjectId,
     items: readonly AcEdSpatialQueryResultItem[]
   ) {
-    if (this.hasChildIndex(id)) {
-      return this.childIndexes.get(id)
+    const finiteItems = items.filter(isFiniteSpatialBBox)
+    if (finiteItems.length === 0) {
+      return undefined
     }
 
-    const spatialIndex = this.createIndexBySize(items.length)
+    const rootBox = unionSpatialQueryItems(finiteItems, id)
+    if (isFiniteSpatialBBox(rootBox)) {
+      this.insert(rootBox)
+    }
+
+    const existing = this.childIndexes.get(id)
+    if (existing) {
+      existing.clear()
+      finiteItems.forEach(item => existing.insert({ ...item }))
+      return existing
+    }
+
+    const spatialIndex = this.createIndexBySize(finiteItems.length)
     if (!spatialIndex) return undefined
 
-    items.forEach(item => spatialIndex.insert(item))
+    finiteItems.forEach(item => spatialIndex.insert({ ...item }))
     this.setChildIndex(id, spatialIndex)
     return spatialIndex
   }
@@ -266,13 +331,13 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
    * Creates or retrieves the child index for a group object.
    *
    * This is a convenience wrapper around `ensureChildIndex`, using the group's
-   * `objectId` and `boxes` as id and initialization data.
+   * `objectId` and {@link AcTrGroup.wcsChildBoxes} as id and initialization data.
    *
    * @param group Group providing id and child box items.
    * @returns Existing or newly created child index, or `undefined` when empty.
    */
   createChildIndex(group: AcTrGroup) {
-    return this.ensureChildIndex(group.objectId, group.boxes)
+    return this.ensureChildIndex(group.objectId, group.wcsChildBoxes)
   }
 
   /**

@@ -1,5 +1,6 @@
 import { AcApContext } from '../../app'
 import { AcEdCommand } from '../../editor'
+import { AcApI18n } from '../../i18n'
 import { AcApDxfConvertor } from './AcApDxfConvertor'
 
 /**
@@ -7,7 +8,9 @@ import { AcApDxfConvertor } from './AcApDxfConvertor'
  */
 export class AcApConvertToDxfCmd extends AcEdCommand {
   async execute(_context: AcApContext) {
-    const converter = new AcApDxfConvertor()
-    converter.convert()
+    await this.withBusyIndicator(() => {
+      const converter = new AcApDxfConvertor()
+      converter.convert()
+    }, AcApI18n.t('main.message.exportingDxf'))
   }
 }

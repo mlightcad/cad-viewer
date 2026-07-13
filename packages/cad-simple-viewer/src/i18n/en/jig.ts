@@ -2,16 +2,16 @@ export default {
   arc: {
     startPointOrCenter: 'Specify start point of arc or',
     secondPointOrOptions: 'Specify second point of arc or',
-    secondPoint: 'Specify second point of arc:',
-    startPoint: 'Specify start point of arc:',
-    centerPoint: 'Specify center point of arc:',
-    endPoint: 'Specify end point of arc:',
+    secondPoint: 'Specify second point of arc',
+    startPoint: 'Specify start point of arc',
+    centerPoint: 'Specify center point of arc',
+    endPoint: 'Specify end point of arc',
     endPointOrOptions: 'Specify end point of arc or',
     centerPointOrOptions: 'Specify center point of arc',
-    includedAngle: 'Specify included angle:',
-    chordLength: 'Specify chord length:',
-    tangentDirection: 'Specify tangent direction for start point of arc:',
-    radius: 'Specify radius of arc:',
+    includedAngle: 'Specify included angle',
+    chordLength: 'Specify chord length',
+    tangentDirection: 'Specify tangent direction for start point of arc',
+    radius: 'Specify radius of arc',
     keywords: {
       center: {
         display: 'Center(C)',
@@ -60,16 +60,16 @@ export default {
     }
   },
   circle: {
-    center: 'Specify the center of circle:',
+    center: 'Specify the center of circle',
     centerOrOptions: 'Specify center point of circle or',
-    radius: 'Specify the radius of circle:',
+    radius: 'Specify the radius of circle',
     radiusOrDiameter: 'Specify radius of circle or',
-    diameter: 'Specify diameter of circle:',
-    twoPointFirst: 'Specify first endpoint of circle diameter:',
-    twoPointSecond: 'Specify second endpoint of circle diameter:',
-    threePointFirst: 'Specify first point on circle:',
-    threePointSecond: 'Specify second point on circle:',
-    threePointThird: 'Specify third point on circle:',
+    diameter: 'Specify diameter of circle',
+    twoPointFirst: 'Specify first endpoint of circle diameter',
+    twoPointSecond: 'Specify second endpoint of circle diameter',
+    threePointFirst: 'Specify first point on circle',
+    threePointSecond: 'Specify second point on circle',
+    threePointThird: 'Specify third point on circle',
     keywords: {
       threeP: {
         display: '3P(3P)',
@@ -94,9 +94,9 @@ export default {
     secondPointOrArray: 'Specify second point or',
     modePrompt: 'Enter copy mode option',
     arrayItemCount:
-      'Enter the number of items in the array including the original:',
+      'Enter the number of items in the array including the original',
     arraySecondPointOrFit: 'Specify second point or',
-    arrayFitSecondPoint: 'Specify second point:',
+    arrayFitSecondPoint: 'Specify second point',
     keywords: {
       displacement: {
         display: 'Displacement(D)',
@@ -131,20 +131,20 @@ export default {
     }
   },
   dimlinear: {
-    xLine1Point: 'Specify the first extension line origin:',
-    xLine2Point: 'Specify the second extension line origin:',
-    dimLinePoint: 'Specify dimension line location:'
+    xLine1Point: 'Specify the first extension line origin',
+    xLine2Point: 'Specify the second extension line origin',
+    dimLinePoint: 'Specify dimension line location'
   },
   ellipse: {
     axisEndpointOrOptions: 'Specify axis endpoint of ellipse or',
     arcAxisEndpointOrCenter: 'Specify axis endpoint of elliptical arc or',
-    center: 'Specify center of ellipse:',
-    firstAxisEndpoint: 'Specify endpoint of axis:',
-    secondAxisEndpoint: 'Specify other endpoint of axis:',
+    center: 'Specify center of ellipse',
+    firstAxisEndpoint: 'Specify endpoint of axis',
+    secondAxisEndpoint: 'Specify other endpoint of axis',
     otherAxisOrRotation: 'Specify distance to other axis or',
-    rotationAngle: 'Specify rotation angle around major axis:',
-    arcStartAngle: 'Specify start angle of elliptical arc:',
-    arcEndAngle: 'Specify end angle of elliptical arc:',
+    rotationAngle: 'Specify rotation angle around major axis',
+    arcStartAngle: 'Specify start angle of elliptical arc',
+    arcEndAngle: 'Specify end angle of elliptical arc',
     keywords: {
       arc: {
         display: 'Arc(A)',
@@ -171,11 +171,11 @@ export default {
   },
   hatch: {
     prompt: 'Select boundary object or',
-    pickPoint: 'Specify internal point (or press Enter to finish):',
-    select: 'Select objects to hatch:',
-    patternName: 'Enter hatch pattern name:',
-    scale: 'Specify hatch pattern scale:',
-    angle: 'Specify hatch pattern angle:',
+    pickPoint: 'Specify internal point (or press Enter to finish)',
+    select: 'Select objects to hatch',
+    patternName: 'Enter hatch pattern name',
+    scale: 'Specify hatch pattern scale',
+    angle: 'Specify hatch pattern angle',
     style: 'Enter hatch style',
     associative: 'Specify associativity',
     invalidBoundary: 'Selected objects do not form a closed boundary.',
@@ -247,25 +247,41 @@ export default {
       }
     }
   },
+  hideobjects: {
+    hidden: 'object(s) hidden',
+    restored: 'object(s) restored',
+    nothingToRestore: 'No hidden objects to restore'
+  },
+  entout: {
+    longSidePrompt: 'Enter preview long side size in pixels',
+    exported: 'object preview(s) exported',
+    skipped: 'object(s) skipped',
+    failed: {
+      'no-preview-root': 'Unable to build preview geometry for the selection',
+      'no-bounds': 'Unable to compute preview bounds for the selection',
+      'capture-failed': 'Unable to render the entity preview image',
+      'download-failed': 'Preview rendered but the PNG download failed'
+    }
+  },
   layer: {
     main: 'Enter option',
     listSummary: 'Layer list was printed to browser console',
     emptyInput: 'No layer name was entered.',
-    newPrompt: 'Enter name for new layer(s):',
-    makePrompt: 'Enter name of layer to make current:',
-    setPrompt: 'Enter name of layer to set current:',
-    onPrompt: 'Enter layer name(s) to turn on:',
-    offPrompt: 'Enter layer name(s) to turn off:',
-    freezePrompt: 'Enter layer name(s) to freeze:',
-    thawPrompt: 'Enter layer name(s) to thaw:',
-    lockPrompt: 'Enter layer name(s) to lock:',
-    unlockPrompt: 'Enter layer name(s) to unlock:',
-    colorLayerPrompt: 'Enter layer name(s) to change color:',
+    newPrompt: 'Enter name for new layer(s)',
+    makePrompt: 'Enter name of layer to make current',
+    setPrompt: 'Enter name of layer to set current',
+    onPrompt: 'Enter layer name(s) to turn on',
+    offPrompt: 'Enter layer name(s) to turn off',
+    freezePrompt: 'Enter layer name(s) to freeze',
+    thawPrompt: 'Enter layer name(s) to thaw',
+    lockPrompt: 'Enter layer name(s) to lock',
+    unlockPrompt: 'Enter layer name(s) to unlock',
+    colorLayerPrompt: 'Enter layer name(s) to change color',
     colorValuePrompt:
-      'Enter color (ACI 1-255, RGB like 255,0,0, or CSS color name):',
+      'Enter color (ACI 1-255, RGB like 255,0,0, or CSS color name)',
     invalidColor: 'Invalid color input.',
-    descriptionLayerPrompt: 'Enter layer name to edit description:',
-    descriptionValuePrompt: 'Enter new layer description:',
+    descriptionLayerPrompt: 'Enter layer name to edit description',
+    descriptionValuePrompt: 'Enter new layer description',
     created: 'Created layer count',
     alreadyExists: 'Layer already exists',
     notFound: 'Layer not found',
@@ -536,9 +552,9 @@ export default {
     noPreviousState: 'There is no previous layer state to restore.'
   },
   line: {
-    firstPoint: 'Specify the first point:',
+    firstPoint: 'Specify the first point',
     firstPointOrContinue: 'Specify first point or',
-    nextPoint: 'Specify the next point:',
+    nextPoint: 'Specify the next point',
     nextPointWithOptions: 'Specify next point or',
     keywords: {
       continue: {
@@ -560,9 +576,9 @@ export default {
   },
   xline: {
     firstPointOrOptions: 'Specify a point or',
-    secondPoint: 'Specify second point:',
-    throughPoint: 'Specify through point:',
-    angle: 'Enter angle of xline:',
+    secondPoint: 'Specify second point',
+    throughPoint: 'Specify through point',
+    angle: 'Enter angle of xline',
     invalidDirection: 'Invalid direction for XLINE.',
     keywords: {
       hor: {
@@ -583,17 +599,17 @@ export default {
     }
   },
   ray: {
-    startPoint: 'Specify start point:',
-    throughPoint: 'Specify through point:'
+    startPoint: 'Specify start point',
+    throughPoint: 'Specify through point'
   },
   mline: {
     startPointWithOptions: 'Specify start point or',
     nextPointWithOptions: 'Specify next point or',
     justificationPrompt: 'Enter justification type',
-    scalePrompt: 'Specify mline scale:',
-    stylePrompt: 'Enter mline style name or [?] for list:',
+    scalePrompt: 'Specify mline scale',
+    stylePrompt: 'Enter mline style name or [?] for list',
     styleNotFound: 'Mline style not found',
-    styleListHeader: 'Loaded mline styles:',
+    styleListHeader: 'Loaded mline styles',
     styleListEmpty: 'No mline style is loaded in current drawing.',
     keywords: {
       justification: {
@@ -639,27 +655,27 @@ export default {
     }
   },
   measureAngle: {
-    vertex: 'Specify vertex point:',
-    arm1: 'Specify point on first arm:',
-    arm2: 'Specify point on second arm:'
+    vertex: 'Specify vertex point',
+    arm1: 'Specify point on first arm',
+    arm2: 'Specify point on second arm'
   },
   measureArc: {
-    startPoint: 'Specify arc start point:',
-    throughPoint: 'Specify a point on the arc:',
-    endPoint: 'Specify arc end point:'
+    startPoint: 'Specify arc start point',
+    throughPoint: 'Specify a point on the arc',
+    endPoint: 'Specify arc end point'
   },
   measureArea: {
-    firstPoint: 'Specify first point:',
-    nextPoint: 'Specify next point (or press Enter to finish):'
+    firstPoint: 'Specify first point',
+    nextPoint: 'Specify next point (or press Enter to finish)'
   },
   measureDistance: {
-    firstPoint: 'Specify first point:',
-    secondPoint: 'Specify second point:'
+    firstPoint: 'Specify first point',
+    secondPoint: 'Specify second point'
   },
   move: {
     basePointOrDisplacement: 'Specify base point or',
     secondPointOrDisplacement: 'Specify second point or',
-    displacement: 'Specify displacement:',
+    displacement: 'Specify displacement',
     keywords: {
       displacement: {
         display: 'Displacement(D)',
@@ -669,15 +685,15 @@ export default {
     }
   },
   offset: {
-    distance: 'Specify offset distance:',
-    selectObject: 'Select object to offset or press Enter to finish:',
-    sidePoint: 'Specify point on side to offset:',
+    distance: 'Specify offset distance',
+    selectObject: 'Select object to offset or press Enter to finish',
+    sidePoint: 'Specify point on side to offset',
     invalidDistance: 'Offset distance must be greater than 0.',
     invalidSelection: 'Selected object cannot be offset.',
     offsetFailed: 'Unable to create an offset curve for the specified side.'
   },
   mtext: {
-    point: 'Specify mtext insertion point:'
+    point: 'Specify mtext insertion point'
   },
   pngout: {
     boundsFirstCorner: 'Specify first corner of bounds',
@@ -688,11 +704,11 @@ export default {
     point: 'Specify a point'
   },
   polygon: {
-    numberOfSides: 'Enter number of sides:',
+    numberOfSides: 'Enter number of sides',
     centerOrEdge: 'Specify center of polygon or',
     radiusOrType: 'Enter options',
-    edgeStart: 'Specify first endpoint of edge:',
-    edgeEnd: 'Specify second endpoint of edge:',
+    edgeStart: 'Specify first endpoint of edge',
+    edgeEnd: 'Specify second endpoint of edge',
     keywords: {
       edge: {
         display: 'Edge(E)',
@@ -717,8 +733,8 @@ export default {
     }
   },
   polyline: {
-    firstPoint: 'Specify the first point:',
-    nextPoint: 'Specify the next point (or press Enter to finish):',
+    firstPoint: 'Specify the first point',
+    nextPoint: 'Specify the next point (or press Enter to finish)',
     nextPointWithOptions: 'Specify next point or',
     nextPointWithArcOptions: 'Specify next point or',
     keywords: {
@@ -763,29 +779,29 @@ export default {
         global: 'Radius'
       }
     },
-    arcAngle: 'Specify arc angle:',
-    arcCenter: 'Specify center point:',
-    arcSecondPoint: 'Specify second point on arc:',
-    arcEndPoint: 'Specify arc end point:',
-    arcRadius: 'Specify arc radius:'
+    arcAngle: 'Specify arc angle',
+    arcCenter: 'Specify center point',
+    arcSecondPoint: 'Specify second point on arc',
+    arcEndPoint: 'Specify arc end point',
+    arcRadius: 'Specify arc radius'
   },
   rect: {
-    firstPoint: 'Specify first corner point:',
-    nextPoint: 'Specify other corner point:',
+    firstPoint: 'Specify first corner point',
+    nextPoint: 'Specify other corner point',
     firstPointWithOptions: 'Specify first corner point or',
     otherCornerWithOptions: 'Specify other corner point or',
-    chamferFirst: 'Specify first chamfer distance:',
-    chamferSecond: 'Specify second chamfer distance:',
-    filletRadius: 'Specify fillet radius:',
-    segmentWidth: 'Specify rectangle line width:',
-    elevationValue: 'Specify elevation:',
-    thicknessValue: 'Specify thickness:',
-    rotationAngle: 'Specify rectangle rotation angle:',
-    dimensionLength: 'Specify rectangle length:',
-    dimensionWidth: 'Specify rectangle width:',
-    areaValue: 'Specify rectangle area:',
+    chamferFirst: 'Specify first chamfer distance',
+    chamferSecond: 'Specify second chamfer distance',
+    filletRadius: 'Specify fillet radius',
+    segmentWidth: 'Specify rectangle line width',
+    elevationValue: 'Specify elevation',
+    thicknessValue: 'Specify thickness',
+    rotationAngle: 'Specify rectangle rotation angle',
+    dimensionLength: 'Specify rectangle length',
+    dimensionWidth: 'Specify rectangle width',
+    areaValue: 'Specify rectangle area',
     areaLengthOrWidth: 'Specify rectangle length',
-    areaSpecifyWidth: 'Specify rectangle width:',
+    areaSpecifyWidth: 'Specify rectangle width',
     invalidPositive: 'Invalid input. Please enter a value greater than 0.',
     invalidRect:
       'Unable to create rectangle. Please specify valid corners or dimensions.',
@@ -845,12 +861,12 @@ export default {
     }
   },
   rotate: {
-    basePoint: 'Specify base point:',
+    basePoint: 'Specify base point',
     rotationAngleOrOptions: 'Specify rotation angle or',
     referenceAngleOrPoints: 'Specify reference angle or',
-    firstReferencePoint: 'Specify first point of reference angle:',
-    secondReferencePoint: 'Specify second point:',
-    newAngle: 'Specify new angle:',
+    firstReferencePoint: 'Specify first point of reference angle',
+    secondReferencePoint: 'Specify second point',
+    newAngle: 'Specify new angle',
     keywords: {
       copy: {
         display: 'Copy(C)',
@@ -873,18 +889,18 @@ export default {
     }
   },
   sketch: {
-    firstPoint: 'Specify the first point:',
-    nextPoint: 'Specify the end point:'
+    firstPoint: 'Specify the first point',
+    nextPoint: 'Specify the end point'
   },
   spline: {
-    firstPoint: 'Specify the first point:',
-    nextPoint: 'Specify the next point (or press Enter to finish):',
+    firstPoint: 'Specify the first point',
+    nextPoint: 'Specify the next point (or press Enter to finish)',
     firstPointWithOptions: 'Specify first point or',
     nextPointWithFitOptions: 'Specify next point or',
     nextPointWithCvOptions: 'Specify next control vertex or',
     methodPrompt: 'Enter spline creation method',
     knotsPrompt: 'Enter knot parameterization',
-    degreePrompt: 'Specify spline degree:',
+    degreePrompt: 'Specify spline degree',
     keywords: {
       method: {
         display: 'Method(M)',
@@ -939,15 +955,15 @@ export default {
     }
   },
   sysvar: {
-    prompt: 'Please input new value:'
+    prompt: 'Please input new value'
   },
   zoom: {
     mainPrompt: 'Specify corner of window or',
-    firstCorner: 'Specify first corner:',
-    secondCorner: 'Specify opposite corner:',
-    centerPoint: 'Specify center point:',
-    heightOrScale: 'Enter height or scale factor (nX or nXP):',
-    scaleFactor: 'Enter scale factor (nX or nXP):',
+    firstCorner: 'Specify first corner',
+    secondCorner: 'Specify opposite corner',
+    centerPoint: 'Specify center point',
+    heightOrScale: 'Enter height or scale factor (nX or nXP)',
+    scaleFactor: 'Enter scale factor (nX or nXP)',
     keywords: {
       all: {
         display: 'All(A)',
@@ -978,6 +994,43 @@ export default {
         display: 'Window(W)',
         local: 'Window',
         global: 'Window'
+      }
+    }
+  },
+  chtml: {
+    exportInvisibleLayers: 'Export invisible layers',
+    initialView: 'Initial view when opening HTML',
+    viewerMode: 'Offline viewer mode',
+    keywords: {
+      yes: {
+        display: 'Yes(Y)',
+        local: 'Yes',
+        global: 'Yes'
+      },
+      no: {
+        display: 'No(N)',
+        local: 'No',
+        global: 'No'
+      },
+      extents: {
+        display: 'Extents(E)',
+        local: 'Extents',
+        global: 'Extents'
+      },
+      current: {
+        display: 'Current(C)',
+        local: 'Current',
+        global: 'Current'
+      },
+      view: {
+        display: 'View(V)',
+        local: 'View',
+        global: 'View'
+      },
+      measure: {
+        display: 'Measure(M)',
+        local: 'Measure',
+        global: 'Measure'
       }
     }
   }

@@ -9,8 +9,18 @@ jest.mock('../src/app', () => ({
 }))
 
 jest.mock('../src/editor', () => {
+  const { AcApDocManager } = jest.requireMock('../src/app')
+
   class AcEdCommand {
     mode: unknown
+
+    showMessage(message: string, type: string = 'info') {
+      AcApDocManager.instance.editor.showMessage(message, type)
+    }
+
+    notify(message: string, type: string = 'info') {
+      AcApDocManager.instance.editor.showMessage(message, type)
+    }
   }
 
   return {
@@ -31,6 +41,7 @@ import { AcApDocManager } from '../src/app'
 import { AcApLayerThawCmd } from '../src/command/layer/AcApLayerThawCmd'
 
 interface TestLayer {
+  objectId: string
   standardFlags?: number
   isFrozen: boolean
 }
@@ -38,7 +49,8 @@ interface TestLayer {
 const frozenFlag = 0x01
 const lockedFlag = 0x04
 
-const createLayer = (standardFlags?: number): TestLayer => ({
+const createLayer = (objectId: string, standardFlags?: number): TestLayer => ({
+  objectId,
   standardFlags,
   get isFrozen() {
     return !!((this.standardFlags ?? 0) & frozenFlag)
@@ -47,12 +59,21 @@ const createLayer = (standardFlags?: number): TestLayer => ({
 
 const createContext = (layers: TestLayer[]) => {
   const clear = jest.fn()
+  const layersById = new Map(layers.map(layer => [layer.objectId, layer]))
+  const openObjectForWrite = jest.fn((objectId: string) =>
+    layersById.get(objectId)
+  )
 
   return {
     clear,
+    openObjectForWrite,
     context: {
       doc: {
         database: {
+          openObjectForWrite,
+          getObjectById: jest.fn((objectId: string) =>
+            layersById.get(objectId)
+          ),
           tables: {
             layerTable: {
               newIterator: () => layers
@@ -76,9 +97,9 @@ describe('AcApLayerThawCmd', () => {
 
   test('thaws frozen layers and preserves other layer flags', async () => {
     const layers = [
-      createLayer(frozenFlag | lockedFlag),
-      createLayer(frozenFlag),
-      createLayer(lockedFlag)
+      createLayer('layer-0', frozenFlag | lockedFlag),
+      createLayer('layer-1', frozenFlag),
+      createLayer('layer-2', lockedFlag)
     ]
     const { clear, context } = createContext(layers)
     const cmd = new AcApLayerThawCmd()
@@ -97,8 +118,8 @@ describe('AcApLayerThawCmd', () => {
 
   test('reports when every layer is already thawed', async () => {
     const { clear, context } = createContext([
-      createLayer(0),
-      createLayer(lockedFlag)
+      createLayer('layer-0', 0),
+      createLayer('layer-1', lockedFlag)
     ])
     const cmd = new AcApLayerThawCmd()
 

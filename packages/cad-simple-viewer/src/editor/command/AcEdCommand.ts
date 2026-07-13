@@ -1,8 +1,26 @@
-// Type-only import — AcApContext is referenced only in method signatures and
-// JSDoc examples, never instantiated here. Avoids dragging the entire app
-// barrel into command-stack unit tests that run in plain Node.
+// Type-only / direct-file imports keep the command layer free of the app and
+// view barrels (which transitively pull DOM-heavy input UI). That lets command
+// stack unit tests run in the Node Jest environment.
 import type { AcApContext } from '../../app/AcApContext'
+import type { AcApDocManager } from '../../app/AcApDocManager'
+import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
+import { eventBus } from '../global/eventBus'
+import { AcEdMessageType } from '../input/ui/AcEdMessageType'
 import { AcEdOpenMode } from '../view/AcEdOpenMode'
+
+/**
+ * Lazily resolves the document manager singleton.
+ *
+ * A runtime require (instead of a static import) avoids loading AcApDocManager
+ * — and its circular editor/app graph — when unit tests only exercise
+ * AcEdCommand / AcEdCommandStack scaffolding.
+ */
+function getDocManager(): AcApDocManager {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { AcApDocManager: DocManager } =
+    require('../../app/AcApDocManager') as typeof import('../../app/AcApDocManager')
+  return DocManager.instance
+}
 
 /**
  * Abstract base class for all CAD commands.
@@ -166,6 +184,11 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
   }
 
   /**
+   * When false, this command does not create its own undo record.
+   */
+  recordsUndoStack = true
+
+  /**
    * Called right before the command starts executing.
    *
    * This lifecycle hook is intended for subclasses that need to perform
@@ -219,14 +242,53 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
    * ```
    */
   async trigger(context: AcApContext) {
+    const db = context.doc.database
+    const tm = db.transactionManager
+    const recordUndo = this.shouldRecordUndoStack(context)
+    let undoTransactionActive = false
+
+    if (recordUndo) {
+      tm.startUndoMark(this.globalName || this.localName)
+      tm.startTransaction()
+      undoTransactionActive = true
+    }
+
     try {
       this.onCommandWillStart(context)
       context.view.editor.events.commandWillStart.dispatch({ command: this })
       await this.execute(context)
+    } catch (error) {
+      if (undoTransactionActive && tm.hasTransaction()) {
+        tm.abortTransaction()
+      }
+      if (undoTransactionActive) {
+        tm.cancelUndoMark()
+        undoTransactionActive = false
+      }
+      throw error
     } finally {
+      if (undoTransactionActive && tm.hasTransaction()) {
+        tm.commitTransaction()
+        tm.endUndoMark()
+        undoTransactionActive = false
+        acapNotifyUndoStackChanged()
+      }
       context.view.editor.events.commandEnded.dispatch({ command: this })
       this.onCommandEnded(context)
     }
+  }
+
+  /**
+   * Returns true when this command should be wrapped in an undo mark.
+   */
+  protected shouldRecordUndoStack(context: AcApContext): boolean {
+    if (!this.recordsUndoStack) {
+      return false
+    }
+    return (
+      context.doc.openMode >= AcEdOpenMode.Review &&
+      this.mode >= AcEdOpenMode.Review
+    )
   }
 
   /**
@@ -255,5 +317,59 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
    */
   async execute(_context: AcApContext) {
     // Do nothing - subclasses should override this method
+  }
+
+  /**
+   * Displays a message in the command-line output.
+   *
+   * @param message - Message text to render
+   * @param type - Message severity controlling the rendered style
+   * @param msgKey - Optional localization key associated with the message
+   */
+  protected showMessage(
+    message: string,
+    type: AcEdMessageType = 'info',
+    msgKey?: string
+  ): void {
+    getDocManager().editor.showMessage(message, type, msgKey)
+  }
+
+  /**
+   * Sends a message to the UI module through the global event bus.
+   *
+   * @param message - Message text to display
+   * @param type - Message severity controlling the rendered style
+   */
+  protected notify(message: string, type: AcEdMessageType = 'info'): void {
+    eventBus.emit('message', { message, type })
+  }
+
+  /**
+   * Shows the application busy overlay while a long-running operation executes.
+   *
+   * @param message - Optional message displayed under the spinner
+   */
+  protected showBusyIndicator(message?: string): void {
+    getDocManager().showBusyIndicator(message)
+  }
+
+  /**
+   * Hides the application busy overlay started by {@link showBusyIndicator}.
+   */
+  protected hideBusyIndicator(): void {
+    getDocManager().hideBusyIndicator()
+  }
+
+  /**
+   * Runs {@link work} while the application busy overlay is visible.
+   *
+   * @param work - Synchronous or asynchronous operation to execute
+   * @param message - Optional message displayed under the spinner
+   */
+  protected async withBusyIndicator<T>(
+    work: () => T | Promise<T>,
+    message?: string
+  ): Promise<T> {
+    return getDocManager().withBusyIndicator(work, message)
   }
 }

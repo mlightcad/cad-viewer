@@ -11,11 +11,16 @@ import { GeometryEpsilon, PolyBool, Segments } from '@velipso/polybool'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import { AcTrEntity } from './AcTrEntity'
 
 function toVector2(points: AcGePoint2dLike[]): THREE.Vector2[] {
-  return points.map(point => new THREE.Vector2(point.x, point.y))
+  return points
+    .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y))
+    .map(point => new THREE.Vector2(point.x, point.y))
 }
 
 function hasFillVertices(geometry: THREE.BufferGeometry | undefined): boolean {
@@ -27,16 +32,21 @@ function hasFillVertices(geometry: THREE.BufferGeometry | undefined): boolean {
 }
 
 export class AcTrPolygon extends AcTrEntity {
+  private _traits: AcGiSubEntityTraits
+
   constructor(
     area: AcGeArea2d,
     traits: AcGiSubEntityTraits,
-    styleManager: AcTrStyleManager
+    context: AcTrRenderContext
   ) {
-    super(styleManager)
+    super(context)
+    this._traits = traits
 
     const pointBoundaries = area.getPoints(100)
     const hierarchy = area.buildHierarchy()
-    const hasRenderableBoundaries = pointBoundaries.some(loop => loop.length >= 3)
+    const hasRenderableBoundaries = pointBoundaries.some(
+      loop => loop.length >= 3
+    )
 
     const geometries: THREE.BufferGeometry[] = []
     this.buildHatchGeometry(pointBoundaries, hierarchy, geometries)
@@ -49,26 +59,48 @@ export class AcTrPolygon extends AcTrEntity {
     }
 
     if (geometry && hasFillVertices(geometry)) {
-      geometry.computeBoundingBox()
-      this.box = geometry.boundingBox!
+      const boundingBox =
+        AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+      if (!boundingBox) {
+        log.warn('Skipped hatch fill with invalid geometry coordinates')
+        geometry.dispose()
+        return
+      }
+      this.wcsBbox = boundingBox
 
       this.addGradientPositionAttribute(geometry, traits)
 
       const gradientBounds = {
-        minX: this.box.min.x,
-        minY: this.box.min.y,
-        maxX: this.box.max.x,
-        maxY: this.box.max.y
+        minX: this.wcsBbox.min.x,
+        minY: this.wcsBbox.min.y,
+        maxX: this.wcsBbox.max.x,
+        maxY: this.wcsBbox.max.y
       }
       const material = this.styleManager.getFillMaterial(
         traits,
         undefined,
         gradientBounds
       )
-      this.add(new THREE.Mesh(geometry, material))
+      const mesh = new THREE.Mesh(geometry, material)
+      this.add(mesh)
+      this.finalizeLeafDrawables()
     } else if (hasRenderableBoundaries) {
       log.warn('Failed to convert hatch boundaries!')
     }
+  }
+
+  override resolveDrawMode(): AcTrDrawMode {
+    if (this.isPatternedHatch(this._traits)) {
+      return 'unbatch'
+    }
+    return this.batchDrawPolicy.resolveDrawMode({
+      anchor: resolveAnchorFromBox(this.wcsBbox)
+    })
+  }
+
+  private isPatternedHatch(traits: AcGiSubEntityTraits) {
+    const style = traits.fillType
+    return !style.gradient && !!style.definitionLines?.length
   }
 
   private addGradientPositionAttribute(
@@ -126,6 +158,10 @@ export class AcTrPolygon extends AcTrEntity {
     const createGeometry = (shape: THREE.Shape) => {
       try {
         const geom = new THREE.ShapeGeometry(shape)
+        if (!AcTrBufferGeometryUtil.hasFinitePositions(geom)) {
+          geom.dispose()
+          return
+        }
         if (geom.hasAttribute('uv')) {
           geom.deleteAttribute('uv')
         }

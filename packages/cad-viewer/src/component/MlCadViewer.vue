@@ -83,7 +83,9 @@
  */
 import {
   AcApDocManager,
+  AcApFontUtil,
   AcApOpenDatabaseOptions,
+  AcApOpenViewMode,
   AcEdMTextEditor,
   AcEdOpenMode,
   eventBus
@@ -100,15 +102,18 @@ import {
   provideViewerRect,
   setColorTheme,
   toggleDark,
-  useDocOpenMode,
-  useDocumentOpening,
+  useDocument,
   useEntityDrawStyle,
   useLocale,
   useNotificationCenter,
   useSettings
 } from '../composable'
 import { LocaleProp } from '../locale'
-import { MlDialogManager, MlFileReader } from './common'
+import {
+  resolveOpenFileErrorMessage,
+  resolveOpenFileErrorTitle
+} from '../util/openFileErrorMessage'
+import { MlDialogManager, MlFontFileReader } from './common'
 import {
   MlEntityDrawStyleToolbar,
   MlEntityInfo,
@@ -148,7 +153,7 @@ interface Props {
   /**
    * URL of the offline HTML viewer runtime (`viewer-runtime.iife.js`).
    * Required for File menu “Export to HTML”; copy the file from
-   * `@mlightcad/cad-html-exporter` build output into your app assets.
+   * `@mlightcad/cad-html-plugin` build output into your app assets.
    */
   htmlViewerRuntimeUrl?: string | URL
   /**
@@ -166,6 +171,27 @@ interface Props {
    * - Write (8): Full read/write access, compatible with Review and Read
    */
   mode?: AcEdOpenMode
+  /**
+   * Whether entities on non-plottable ("no-plot") layers are drawn.
+   * When omitted, {@link AcApDocManager} defaults to `false` (web viewer semantics).
+   */
+  drawNoPlotLayers?: boolean
+  /**
+   * Whether to render entities incrementally while a drawing is opening.
+   * When omitted, {@link AcApDocManager} defaults to `false`.
+   */
+  progressiveRendering?: boolean
+  /**
+   * How to frame the view when the document finishes opening.
+   * When omitted, Read and Review use {@link AcApOpenViewMode.Extents};
+   * Write uses {@link AcApOpenViewMode.Saved}.
+   */
+  openViewMode?: AcApOpenViewMode
+  /**
+   * When `true`, aborts opening if required fonts cannot be loaded.
+   * Defaults to `false` so unreachable font CDNs do not block entity parsing.
+   */
+  failOnFontLoadError?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -177,12 +203,53 @@ const props = withDefaults(defineProps<Props>(), {
   htmlViewerRuntimeUrl: './assets/viewer-runtime.iife.js',
   useMainThreadDraw: true,
   theme: 'dark',
-  mode: AcEdOpenMode.Write
+  mode: AcEdOpenMode.Write,
+  progressiveRendering: false,
+  openViewMode: undefined
+})
+
+const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
+  minimumChunkSize: 1000,
+  mode: props.mode,
+  drawNoPlotLayers: props.drawNoPlotLayers,
+  progressiveRendering: props.progressiveRendering,
+  ...(props.openViewMode != null ? { openViewMode: props.openViewMode } : {}),
+  ...(props.failOnFontLoadError != null
+    ? { failOnFontLoadError: props.failOnFontLoadError }
+    : {})
 })
 
 const { t } = useI18n()
 const { effectiveLocale, elementPlusLocale } = useLocale(props.locale)
-const { info, warning, error, success } = useNotificationCenter()
+const {
+  info,
+  warning,
+  error,
+  success,
+  removeWhere,
+  removeResolvedFontMissedNotifications
+} = useNotificationCenter()
+
+const fontMissedNotificationOptions = (fontNames: string[]) => ({
+  source: 'font-missed' as const,
+  fontNames
+})
+
+const formatFontWithReplacement = (fontName: string) =>
+  t('main.message.fontMissedReplacement', {
+    font: fontName,
+    replacement: AcApFontUtil.getReplacementFontName(fontName)
+  })
+
+const formatFontsWithReplacement = (fontNames: string[]) =>
+  fontNames.map(formatFontWithReplacement).join(', ')
+
+const syncFontMissedNotifications = () => {
+  const missedFonts = Object.keys(
+    AcApDocManager.instance.curView.missedData.fonts
+  )
+  removeResolvedFontMissedNotifications(missedFonts)
+}
 
 // Canvas element reference
 const containerRef = ref<HTMLDivElement>()
@@ -204,8 +271,13 @@ const viewerThemeClass = computed(() =>
 )
 
 const features = useSettings()
-const { beginDocumentOpening, endDocumentOpening } = useDocumentOpening()
-const docOpenMode = useDocOpenMode()
+const {
+  beginDocumentOpening,
+  endDocumentOpening,
+  isDocumentOpening,
+  openMode: docOpenMode,
+  displayName
+} = useDocument()
 const pendingOpenMode = ref<AcEdOpenMode>()
 const effectiveOpenMode = computed(
   () => pendingOpenMode.value ?? docOpenMode.value
@@ -255,40 +327,11 @@ const endPendingOpen = () => {
   pendingOpenMode.value = undefined
 }
 
-/**
- * Handles file read events from the file reader component
- * Opens the file content using the document manager
- *
- * This function is called when a user selects a local file through:
- * - The main menu "Open" option (triggers file dialog)
- * - Drag and drop functionality (if implemented)
- * - Any other local file selection method
- *
- * @param fileName - Name of the uploaded file
- * @param fileContent - File content as string (DXF) or ArrayBuffer (DWG)
- */
-const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
-  const options: AcApOpenDatabaseOptions = {
-    minimumChunkSize: 1000,
-    mode: props.mode
-  }
-  beginDocumentOpening()
-  beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
-  try {
-    const success = await AcApDocManager.instance.openDocument(
-      fileName,
-      fileContent,
-      options
-    )
-    if (!success) {
-      throw new Error('Failed to open file')
-    }
-    store.fileName = AcApDocManager.instance.curDocument.docTitle
-  } finally {
-    endDocumentOpening()
+watch(isDocumentOpening, (opening, wasOpening) => {
+  if (wasOpening && !opening) {
     endPendingOpen()
   }
-}
+})
 
 /**
  * Fetches and opens a CAD file from a remote URL
@@ -297,19 +340,15 @@ const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
  * @param url - Remote URL to the CAD file
  */
 const openFileFromUrl = async (url: string) => {
-  const options: AcApOpenDatabaseOptions = {
-    minimumChunkSize: 1000,
-    mode: props.mode
-  }
+  const options = buildOpenOptions()
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
   try {
     await AcApDocManager.instance.openUrl(url, options)
-    store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch (error) {
     log.error('Failed to open file from URL:', error)
     ElMessage({
-      message: t('main.message.failedToOpenFile', { fileName: url }),
+      message: resolveOpenFileErrorMessage(t, { fileName: url }),
       grouping: true,
       type: 'error',
       showClose: true
@@ -327,10 +366,7 @@ const openFileFromUrl = async (url: string) => {
  * @param file - Local File object containing the CAD file
  */
 const openLocalFile = async (file: File) => {
-  const options: AcApOpenDatabaseOptions = {
-    minimumChunkSize: 1000,
-    mode: props.mode
-  }
+  const options = buildOpenOptions()
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
   try {
@@ -357,12 +393,11 @@ const openLocalFile = async (file: File) => {
       options
     )
     if (!success) {
-      throw new Error('Failed to open local file')
+      return
     }
-    store.fileName = AcApDocManager.instance.curDocument.docTitle
   } catch {
     ElMessage({
-      message: t('main.message.failedToOpenFile', { fileName: file.name }),
+      message: resolveOpenFileErrorMessage(t, { fileName: file.name }),
       grouping: true,
       type: 'error',
       showClose: true
@@ -405,6 +440,20 @@ watch(
   }
 )
 
+watch(
+  () => [
+    props.mode,
+    props.drawNoPlotLayers,
+    props.progressiveRendering,
+    props.openViewMode
+  ],
+  () => {
+    if (editorRef.value) {
+      AcApDocManager.instance.setOpenDocumentDefaults(buildOpenOptions)
+    }
+  }
+)
+
 // Watch for theme changes and apply to the view
 watch(
   () => props.theme,
@@ -415,9 +464,10 @@ watch(
 
 // Component lifecycle: Initialize and load initial file if URL or localFile is provided
 onMounted(async () => {
+  beginPendingOpen(props.mode)
+
   if (props.url || props.localFile) {
     beginDocumentOpening()
-    beginPendingOpen(props.mode)
   }
 
   // Initialize the CAD viewer with the internal canvas
@@ -428,7 +478,8 @@ onMounted(async () => {
       baseUrl: props.baseUrl,
       htmlViewerRuntimeUrl: props.htmlViewerRuntimeUrl,
       autoResize: true,
-      useMainThreadDraw: props.useMainThreadDraw
+      useMainThreadDraw: props.useMainThreadDraw,
+      openDocumentDefaults: buildOpenOptions
     })
     // AcApDocManager.instance is guaranteed only after viewer initialization.
     editorRef.value = AcApDocManager.instance
@@ -512,17 +563,50 @@ eventBus.on('message', params => {
 
 // Handle failure that fonts can't be loaded from remote font repository
 eventBus.on('fonts-not-loaded', params => {
-  const fonts = params.fonts.map(font => font.fontName).join(', ')
-  const message = t('main.message.fontsNotLoaded', { fonts })
-  error(t('main.notification.title.fontNotFound'), message)
+  const fontNames = params.fonts.map(font => font.fontName)
+  const message = t('main.message.fontsNotLoaded', {
+    fonts: formatFontsWithReplacement(fontNames)
+  })
+  error(t('main.notification.title.fontNotFound'), message, {
+    ...fontMissedNotificationOptions(fontNames),
+    persistent: true
+  })
 })
 
 // Handle failure that fonts can't be found in remote font repository
 eventBus.on('fonts-not-found', params => {
   const message = t('main.message.fontsNotFound', {
-    fonts: params.fonts.join(', ')
+    fonts: formatFontsWithReplacement(params.fonts)
   })
-  warning(t('main.notification.title.fontNotFound'), message)
+  warning(t('main.notification.title.fontNotFound'), message, {
+    ...fontMissedNotificationOptions(params.fonts)
+  })
+})
+
+// Handle fonts required by the drawing that are not available during rendering
+eventBus.on('font-not-found', params => {
+  const fontName = params.fontName.trim()
+  if (!fontName) return
+
+  removeWhere(
+    notification =>
+      notification.source === 'font-missed' &&
+      notification.fontNames?.includes(fontName) === true
+  )
+
+  warning(
+    t('main.notification.title.fontNotFound'),
+    t('main.message.fontMissedInDrawing', {
+      font: fontName,
+      count: params.count,
+      replacementFont: AcApFontUtil.getReplacementFontName(fontName)
+    }),
+    fontMissedNotificationOptions([fontName])
+  )
+})
+
+eventBus.on('missed-data-changed', () => {
+  syncFontMissedNotifications()
 })
 
 // Handle failures when trying to get available fonts from the system
@@ -535,18 +619,22 @@ eventBus.on('failed-to-get-avaiable-fonts', params => {
   })
 })
 
+// Restore pending open mode for files opened through the built-in OPEN dialog
+eventBus.on('open-local-file-started', ({ mode }) => {
+  beginPendingOpen(mode)
+})
+
 // Handle file opening failures with user-friendly error messages
 eventBus.on('failed-to-open-file', params => {
-  const message = t('main.message.failedToOpenFile', {
-    fileName: params.fileName
-  })
+  endPendingOpen()
+  const message = resolveOpenFileErrorMessage(t, params)
   ElMessage({
     message,
     grouping: true,
     type: 'error',
     showClose: true
   })
-  error('File Opening Failed', message)
+  error(resolveOpenFileErrorTitle(t, params.errorCode), message)
 })
 
 // Mirror AutoCAD's LAYERCLOSE behavior: only close when the layer tab is open.
@@ -609,7 +697,7 @@ const closeNotificationCenter = () => {
             "
             class="ml-file-name"
           >
-            {{ store.fileName }}
+            {{ displayName }}
           </div>
 
           <!-- Toolbar for entity draw style -->
@@ -641,8 +729,7 @@ const closeNotificationCenter = () => {
       </div>
 
       <!-- Hidden components for file handling and entity information -->
-      <!-- File reader for local file uploads -->
-      <ml-file-reader v-if="editorRef" @file-read="handleFileRead" />
+      <ml-font-file-reader v-if="editorRef" />
 
       <!-- Entity info panel for displaying object properties -->
       <ml-entity-info v-if="editorRef" />

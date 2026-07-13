@@ -29,9 +29,10 @@
     "preview": "nx run @mlightcad/cad-viewer-example:preview",
     "preview:simple": "nx run @mlightcad/cad-simple-viewer-example:preview",
     "pre-serve": "nx run @mlightcad/cad-viewer-examples:pre-serve",
-    "publish:viewer": "pnpm -r publish --filter cad-viewer --filter cad-simple-viewer --no-git-checks",
+    "publish:viewer": "pnpm -r publish --access public --no-git-checks",
     "release": "node tools/release.mjs",
     "sync:versions": "node tools/sync-versions.mjs",
+    "sync:versions:check": "node tools/sync-versions.mjs --check",
     "serve": "nx run @mlightcad/cad-viewer-examples:serve",
     "test": "jest",
     "test:e2e": "pnpm --filter @mlightcad/cad-viewer-example test:e2e"
@@ -39,27 +40,6 @@
   "engines": {
     "node": ">=24",
     "pnpm": ">=10"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "esbuild",
-      "nx",
-      "unrs-resolver",
-      "vue-demi"
-    ],
-    "overrides": {
-      "@mlightcad/data-model": "^1.7.40",
-      "@mlightcad/libredwg-converter": "^3.5.40",
-      "@mlightcad/mtext-input-box": "^0.2.12",
-      "@mlightcad/mtext-renderer": "^0.10.15",
-      "@mlightcad/ribbon": "^0.1.9",
-      "element-plus": "^2.12.0",
-      "three": "^0.172.0",
-      "vue": "^3.4.21",
-      "vue-i18n": "^11.4.4",
-      "glob": "^13.0.6"
-    }
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.5",
@@ -78,6 +58,7 @@
     "eslint-plugin-vue": "^9.28.0",
     "globals": "^15.9.0",
     "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "lint-staged": "^15.2.7",
     "nx": "20.0.4",
     "prettier": "^3.3.3",

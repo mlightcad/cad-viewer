@@ -289,6 +289,13 @@ export class AcEditor {
   }
 
   /**
+   * Syncs crosshair colour with the canvas background.
+   */
+  syncCursorBackground(backgroundColor: number) {
+    this._cursorManager.syncBackgroundColor(backgroundColor)
+  }
+
+  /**
    * Prompts the user to input a point by clicking on the view or inputting
    * one coordinate value.
    *

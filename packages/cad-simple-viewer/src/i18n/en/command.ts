@@ -28,6 +28,9 @@ export default {
     cdxf: {
       description: 'Exports current drawing to DXF'
     },
+    cpdf: {
+      description: 'Exports current drawing to PDF'
+    },
     cecolor: {
       description: 'Sets the current default color for newly created objects'
     },
@@ -43,6 +46,9 @@ export default {
     },
     cetranparency: {
       description: 'Sets the transparency for newly created objects'
+    },
+    cachefont: {
+      description: 'Caches a local font file into IndexedDB for text rendering'
     },
     circle: {
       description: 'Creates one circle by center and radius'
@@ -74,6 +80,9 @@ export default {
     chtml: {
       description: 'Exports current drawing to a standalone offline HTML file'
     },
+    '-chtml': {
+      description: 'Exports current drawing to HTML using command-line options'
+    },
     dimlinear: {
       description: 'Creates linear dimensions'
     },
@@ -91,9 +100,37 @@ export default {
       description: 'Deletes selected entities from the drawing',
       prompt: 'Select entities'
     },
+    entout: {
+      description: 'Exports a merged preview image for selected entities',
+      prompt: 'Select entities'
+    },
+    hideobjects: {
+      description: 'Temporarily suppresses the display of selected objects',
+      prompt: 'Select objects'
+    },
+    gripcolor: {
+      description:
+        'Sets the color of unselected grips displayed on selected objects'
+    },
+    griphot: {
+      description: 'Sets the color of selected (hot) grips'
+    },
+    gripobjlimit: {
+      description:
+        'Suppresses grip display when the selection set exceeds the specified number of objects (0 = no limit)'
+    },
+    grips: {
+      description: 'Controls whether grips are displayed on selected objects'
+    },
+    gripsize: {
+      description: 'Sets the size of grip boxes in pixels'
+    },
     hatch: {
       description:
         'Fills an enclosed area or selected objects with a hatch pattern'
+    },
+    ipdf: {
+      description: 'Imports vector geometry from a PDF file'
     },
     hpang: {
       description:
@@ -199,6 +236,9 @@ export default {
     lwdisplay: {
       description: 'Controls whether lineweights are displayed in the drawing'
     },
+    clearmeasurements: {
+      description: 'Removes all active measurements from the view'
+    },
     measurearea: {
       description:
         'Calculates the area and perimeter of selected objects or points'
@@ -301,8 +341,19 @@ export default {
       description:
         'Controls fractional display of coordinates when LUNITS is Architectural or Fractional'
     },
-    whitebkcolor: {
+    switchbg: {
       description: 'Toggles the drawing area background between white and black'
+    },
+    unisolateobjects: {
+      description: 'Redisplay all objects hidden by HIDEOBJECTS'
+    },
+    undo: {
+      description: 'Undoes the last database editing operation',
+      nothingToUndo: 'Nothing to undo.'
+    },
+    redo: {
+      description: 'Redoes the last undone database editing operation',
+      nothingToRedo: 'Nothing to redo.'
     },
     xline: {
       description:

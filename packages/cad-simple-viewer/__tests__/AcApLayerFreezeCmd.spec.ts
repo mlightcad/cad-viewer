@@ -10,8 +10,18 @@ jest.mock('../src/app', () => ({
 }))
 
 jest.mock('../src/editor', () => {
+  const { AcApDocManager } = jest.requireMock('../src/app')
+
   class AcEdCommand {
     mode: unknown
+
+    showMessage(message: string, type: string = 'info') {
+      AcApDocManager.instance.editor.showMessage(message, type)
+    }
+
+    notify(message: string, type: string = 'info') {
+      AcApDocManager.instance.editor.showMessage(message, type)
+    }
   }
 
   class MockKeywordCollection {
@@ -68,6 +78,7 @@ import { AcEdPromptStatus } from '../src/editor'
 
 interface TestLayer {
   name: string
+  objectId: string
   standardFlags?: number
   isFrozen: boolean
 }
@@ -77,6 +88,7 @@ const lockedFlag = 0x04
 
 const createLayer = (name: string, standardFlags?: number): TestLayer => ({
   name,
+  objectId: `layer:${name}`,
   standardFlags,
   get isFrozen() {
     return !!((this.standardFlags ?? 0) & frozenFlag)
@@ -90,13 +102,19 @@ const createContext = (
 ) => {
   const clear = jest.fn()
   const layersByName = new Map(layers.map(layer => [layer.name, layer]))
+  const layersById = new Map(layers.map(layer => [layer.objectId, layer]))
+  const openObjectForWrite = jest.fn((objectId: string) =>
+    layersById.get(objectId)
+  )
 
   return {
     clear,
+    openObjectForWrite,
     context: {
       doc: {
         database: {
           clayer: currentLayer,
+          openObjectForWrite,
           tables: {
             blockTable: {
               getEntityById: (objectId: string) => entitiesById[objectId]

@@ -1,4 +1,7 @@
 export default {
+  document: {
+    untitled: '未命名'
+  },
   commandLine: {
     noLast: '(无上一次命令)',
     unknownCommand: '未知命令',
@@ -8,6 +11,7 @@ export default {
     showMessages: '显示消息历史',
     canceled: '*已取消*',
     noHistory: '(无历史记录)',
+    invalidInput: '输入无效。',
     close: '关闭命令行'
   },
   inputManager: {
@@ -15,7 +19,11 @@ export default {
     secondCorner: '指定第二个角点或'
   },
   message: {
-    fetchingDrawingFile: '正在加载图纸文件...'
+    fetchingDrawingFile: '正在加载图纸文件...',
+    exportingDxf: '正在导出 DXF ...',
+    exportingEntityPreview: '正在导出图片 ...',
+    fontCached: '字体已成功缓存',
+    fontCacheFailed: '缓存字体失败'
   },
   progress: {
     start: '开始解析文件...',

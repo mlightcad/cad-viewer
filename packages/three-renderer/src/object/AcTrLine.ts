@@ -4,8 +4,10 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrBufferGeometryUtil } from '../util'
+import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy'
+import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrLine extends AcTrEntity {
@@ -14,10 +16,15 @@ export class AcTrLine extends AcTrEntity {
   constructor(
     points: AcGePoint3dLike[],
     traits: AcGiSubEntityTraits,
-    styleManager: AcTrStyleManager,
+    context: AcTrRenderContext,
     basicMaterialOnly: boolean = false
   ) {
-    super(styleManager)
+    super(context)
+
+    if (points.length < 2) {
+      this.geometry = new THREE.BufferGeometry()
+      return
+    }
 
     const material = this.styleManager.getLineMaterial(
       traits,
@@ -41,8 +48,12 @@ export class AcTrLine extends AcTrEntity {
 
       const lineGeometry = new LineSegmentsGeometry()
       lineGeometry.setPositions(segmentPositions)
-      lineGeometry.computeBoundingBox()
-      lineGeometry.computeBoundingSphere()
+      AcTrBufferGeometryUtil.safeComputeBoundingBox(
+        lineGeometry as unknown as THREE.BufferGeometry
+      )
+      AcTrBufferGeometryUtil.safeComputeBoundingSphere(
+        lineGeometry as unknown as THREE.BufferGeometry
+      )
       this.geometry = lineGeometry
       this.setBoundingBox(
         lineGeometry as unknown as THREE.BufferGeometry,
@@ -51,8 +62,9 @@ export class AcTrLine extends AcTrEntity {
 
       const line = new LineSegments2(lineGeometry, material)
       line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
-      line.userData.styleMaterialId = material.id
+      getSceneDrawableUserData(line).styleMaterialId = material.id
       this.add(line)
+      this.finalizeLeafDrawables()
       return
     }
 
@@ -82,16 +94,26 @@ export class AcTrLine extends AcTrEntity {
     line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
     AcTrBufferGeometryUtil.computeLineDistances(line)
     this.add(line)
+    this.finalizeLeafDrawables()
+  }
+
+  override resolveDrawMode(): AcTrDrawMode {
+    return this.batchDrawPolicy.resolveDrawMode({
+      anchor: resolveAnchorFromBox(this.wcsBbox)
+    })
   }
 
   private setBoundingBox(
     geometry: THREE.BufferGeometry,
     localOrigin: THREE.Vector3
   ) {
-    geometry.computeBoundingBox()
-    const worldBox = geometry.boundingBox!.clone()
+    const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+    if (!boundingBox) {
+      return
+    }
+    const worldBox = boundingBox.clone()
     worldBox.translate(localOrigin)
-    this.box = worldBox
+    this.wcsBbox = worldBox
   }
 
   private computeLocalOrigin(points: AcGePoint3dLike[]) {

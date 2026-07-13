@@ -1,7 +1,12 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcEdSpatialQueryResultItem } from '../editor/view'
-import { AcTrSpatialIndex, AcTrSpatialIndexBBox } from './AcTrSpatialIndex'
+import {
+  AcTrSpatialIndex,
+  AcTrSpatialIndexBBox,
+  AcTrSpatialSearchOptions,
+  isSpatialBoxFullyInside
+} from './AcTrSpatialIndex'
 
 /**
  * A simple spatial index implementation that performs linear scanning
@@ -50,13 +55,23 @@ export class AcTrLinearSpatialIndex implements AcTrSpatialIndex {
     this.items.clear()
   }
 
-  search(bbox: AcTrSpatialIndexBBox): AcEdSpatialQueryResultItem[] {
+  search(
+    bbox: AcTrSpatialIndexBBox,
+    options?: AcTrSpatialSearchOptions
+  ): AcEdSpatialQueryResultItem[] {
     const result: AcEdSpatialQueryResultItem[] = []
 
     for (const item of this.items.values()) {
-      if (intersects(item, bbox)) {
-        result.push(item)
+      if (!intersects(item, bbox)) {
+        continue
       }
+      if (
+        options?.selectionMode === 'window' &&
+        !isSpatialBoxFullyInside(item, bbox)
+      ) {
+        continue
+      }
+      result.push(item)
     }
 
     return result

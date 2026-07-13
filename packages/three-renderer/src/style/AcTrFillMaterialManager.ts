@@ -69,55 +69,27 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
   /**
    * Fill meshes at the linework tier (`drawOrder >= 0`) follow
-   * COLORTHEME inversion so ACI 7 content stays legible. This covers
+   * layout-background ACI-7 inversion so content stays legible. This covers
    * MText glyphs and wide polylines — meshes that are rasterized as
    * fill but represent linework.
    *
-   * Patterned hatches at the hatch tier (`drawOrder < 0` with non-empty
-   * `definitionLines`) also invert: their visible component is the
-   * pattern lines themselves, which must stay legible against both
-   * light and dark canvases.
-   *
-   * Solid foreground hatches are deliberately excluded from this
-   * branch — they go through `shouldTrackBackground` instead so they
-   * fuse with the canvas bg (matching AutoCAD's reference rendering;
-   * see `images-ex/hatch-bg-bug-refact-lee/autocad/tower-*.png`).
+   * Hatch-tier fills (`drawOrder < 0`, including solid and patterned
+   * hatches) also invert with the theme so ACI 7 stays visible against
+   * both light and dark canvases, matching AutoCAD model-space behaviour.
    */
   protected shouldTrackForeground(
     traits: AcGiSubEntityTraits,
     _options: AcTrFillMaterialOptions
   ): boolean {
-    if (!traits.color.isForeground) return false
-    const drawOrder = traits.drawOrder ?? 0
-    if (drawOrder >= 0) return true
     const style = traits.fillType
-    const isPatterned = !style.gradient && !!style.definitionLines?.length
-    return isPatterned
-  }
-
-  /**
-   * Solid foreground hatch fills (ACI 7, `drawOrder < 0`, no pattern,
-   * no gradient) follow the canvas background colour rather than carry
-   * an absolute RGB. AutoCAD renders them as if they were painted with
-   * the paper colour, so they fuse into both light and dark canvases
-   * and only the overlaid wireframe remains visible.
-   *
-   * Hatches with an explicit RGB (including a literal truecolor white
-   * 0xFFFFFF) fall outside this rule — `traits.color.isForeground` is
-   * only true for the ACI 7 / foreground pseudo-colour, so a DWG
-   * author who picked `255,255,255` via the truecolor picker still
-   * gets a literal white hatch.
-   */
-  protected shouldTrackBackground(
-    traits: AcGiSubEntityTraits,
-    _options: AcTrFillMaterialOptions
-  ): boolean {
-    if (!traits.color.isForeground) return false
-    if ((traits.drawOrder ?? 0) >= 0) return false
-    const style = traits.fillType
-    if (style.gradient) return false
-    const isSolid = !style.definitionLines || style.definitionLines.length === 0
-    return isSolid
+    const isVisibleHatch =
+      (traits.drawOrder ?? 0) < 0 &&
+      !style.gradient &&
+      (style.solidFill || !!style.definitionLines?.length)
+    return (
+      traits.color.isForeground &&
+      ((traits.drawOrder ?? 0) >= 0 || isVisibleHatch)
+    )
   }
 
   /**
@@ -125,37 +97,24 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
    */
   protected createMaterialImpl(
     traits: AcGiSubEntityTraits,
-    options: AcTrFillMaterialOptions
+    options: AcTrFillMaterialOptions,
+    layerColorRgb?: number
   ): THREE.Material {
     const style = traits.fillType
     const side = options.side ?? 'front'
     const threeSide = side === 'back' ? THREE.BackSide : THREE.FrontSide
-
-    // Background-follow fills must be BORN with the current canvas bg,
-    // not with their resolved trait RGB. Without this, opening a DWG
-    // in dark theme shows ACI 7 solid hatches as solid white on the
-    // first frame — `changeBackground` iterates only materials already
-    // in the cache, so it cannot fix materials created AFTER the theme
-    // was set. Overriding `rgbColor` here lets the existing
-    // `createMeshBasicMaterial` / `createHatchShaderMaterial` helpers
-    // stay untouched while the material still lands on the right
-    // `userData.isBackgroundFill` bucket for future repaints.
-    const effectiveTraits: AcGiSubEntityTraits = this.shouldTrackBackground(
-      traits,
-      options
-    )
-      ? { ...traits, rgbColor: this.options.currentBackgroundColor }
-      : traits
+    const rgb = this.resolveMaterialRgb(traits, layerColorRgb)
 
     let material: THREE.Material
     if (style.gradient) {
       material = this.createGradientShaderMaterial(
-        effectiveTraits,
+        traits,
+        rgb,
         options,
         threeSide
       )
     } else if (!style.definitionLines || style.definitionLines.length < 1) {
-      material = this.createMeshBasicMaterial(effectiveTraits, threeSide)
+      material = this.createMeshBasicMaterial(rgb, threeSide)
     } else if (
       style.definitionLines.some(line => !this.isValidDefinitionLine(line))
     ) {
@@ -163,13 +122,9 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         'Invalid hatch pattern definition line, fallback to solid fill',
         style
       )
-      material = this.createMeshBasicMaterial(effectiveTraits, threeSide)
+      material = this.createMeshBasicMaterial(rgb, threeSide)
     } else {
-      material = this.createHatchShaderMaterial(
-        effectiveTraits,
-        options,
-        threeSide
-      )
+      material = this.createHatchShaderMaterial(traits, rgb, options, threeSide)
     }
 
     // Store side in userData so getBackSideVariant can check idempotency.
@@ -183,13 +138,14 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
   private createGradientShaderMaterial(
     traits: AcGiSubEntityTraits,
+    rgb: number,
     options: AcTrFillMaterialOptions,
     threeSide: THREE.Side
   ): THREE.Material {
     return createGradientHatchShaderMaterial(
       traits.fillType.gradient!,
       normalizeGradientBounds(options.gradientBounds),
-      new THREE.Color(traits.rgbColor),
+      new THREE.Color(rgb),
       threeSide
     )
   }
@@ -199,6 +155,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
    */
   private createHatchShaderMaterial(
     traits: AcGiSubEntityTraits,
+    rgb: number,
     options: AcTrFillMaterialOptions,
     threeSide: THREE.Side
   ): THREE.Material {
@@ -294,7 +251,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       patternLines,
       style.patternAngle,
       AcTrMaterialManager.CameraZoomUniform,
-      new THREE.Color(traits.rgbColor),
+      new THREE.Color(rgb),
       0,
       threeSide
     )
@@ -305,10 +262,10 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
   }
 
   private createMeshBasicMaterial(
-    traits: AcGiSubEntityTraits,
+    rgb: number,
     side: THREE.Side
   ): THREE.Material {
-    return new THREE.MeshBasicMaterial({ color: traits.rgbColor, side })
+    return new THREE.MeshBasicMaterial({ color: rgb, side })
   }
 
   /**
@@ -322,11 +279,6 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
    *   line-like fill meshes (wide polylines, text glyphs) because the
    *   batcher groups by material id and applies one `renderOrder` tier
    *   per batch.
-   * - `_bgfill`: background-tracked fills (solid foreground hatches)
-   *   get their own partition so `changeBackground` can mutate them
-   *   in place without affecting any literal-RGB hatch that happens
-   *   to share layer + colour (e.g. a truecolor 0xFFFFFF hatch on the
-   *   same layer as an ACI 7 hatch).
    *
    * All suffixes are appended only when they differ from the default,
    * keeping existing keys stable and avoiding unnecessary cache
@@ -339,17 +291,15 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const style = traits.fillType
     const sideSuffix = options.side === 'back' ? '_back' : ''
     const drawOrderSuffix = this.buildDrawOrderSuffix(traits)
-    const bgSuffix = this.shouldTrackBackground(traits, options)
-      ? '_bgfill'
-      : ''
-    // Use color + layer + rebaseOffset + pattern info for key
+    const colorKey = this.buildKeyColorSegment(traits)
+    // Use colour semantics + layer + rebaseOffset + pattern info for key
     if (style.gradient) {
       const gradient = style.gradient
       const bounds = normalizeGradientBounds(options.gradientBounds)
       return [
         'gradient',
         traits.layer,
-        traits.rgbColor,
+        colorKey,
         gradient.name || 'LINEAR',
         gradient.angle ?? 0,
         gradient.shift ?? 0,
@@ -368,7 +318,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
 
     const isSolid = !style.definitionLines || style.definitionLines.length === 0
     if (isSolid) {
-      return `solid_${traits.layer}_${traits.rgbColor}${sideSuffix}${drawOrderSuffix}${bgSuffix}`
+      return `solid_${traits.layer}_${colorKey}${sideSuffix}${drawOrderSuffix}`
     }
 
     const patternHash = style.definitionLines
@@ -387,7 +337,17 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       })
       .join('|')
 
-    return `hatch_${traits.layer}_${traits.rgbColor}_${style.patternAngle}_${patternHash}${sideSuffix}${drawOrderSuffix}`
+    return [
+      'hatch',
+      traits.layer,
+      colorKey,
+      style.patternAngle,
+      options.rebaseOffset.x,
+      options.rebaseOffset.y,
+      patternHash,
+      sideSuffix,
+      drawOrderSuffix
+    ].join('_')
   }
 
   /**

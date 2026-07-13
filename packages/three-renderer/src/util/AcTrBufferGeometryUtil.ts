@@ -107,6 +107,71 @@ export class AcTrBufferGeometryUtil {
     return geometry
   }
 
+  /**
+   * Rebuilds `lineDistance` for non-indexed {@link THREE.LineSegments} geometry.
+   *
+   * Uses only complete vertex pairs so the attribute length always matches
+   * `position.count`. Call after sanitizing or rebasing segment positions.
+   */
+  static recomputeLineDistanceForLineSegments(
+    geometry: THREE.BufferGeometry,
+    worldMatrix?: THREE.Matrix4
+  ) {
+    let positionAttribute = geometry.getAttribute(
+      'position'
+    ) as THREE.BufferAttribute
+    if (!positionAttribute || positionAttribute.count < 2) {
+      geometry.deleteAttribute('lineDistance')
+      return
+    }
+
+    const vertexCount = positionAttribute.count - (positionAttribute.count % 2)
+    if (vertexCount === 0) {
+      geometry.deleteAttribute('lineDistance')
+      return
+    }
+
+    if (vertexCount < positionAttribute.count) {
+      const trimmed = new Float32Array(vertexCount * positionAttribute.itemSize)
+      trimmed.set(
+        (positionAttribute.array as THREE.TypedArray).subarray(
+          0,
+          trimmed.length
+        )
+      )
+      geometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(trimmed, positionAttribute.itemSize)
+      )
+      positionAttribute = geometry.getAttribute(
+        'position'
+      ) as THREE.BufferAttribute
+    }
+
+    const lineDistances = new Float32Array(vertexCount)
+    for (let i = 0; i < vertexCount; i += 2) {
+      if (worldMatrix) {
+        _vector1
+          .fromBufferAttribute(positionAttribute, i)
+          .applyMatrix4(worldMatrix)
+        _vector2
+          .fromBufferAttribute(positionAttribute, i + 1)
+          .applyMatrix4(worldMatrix)
+      } else {
+        _vector1.fromBufferAttribute(positionAttribute, i)
+        _vector2.fromBufferAttribute(positionAttribute, i + 1)
+      }
+
+      lineDistances[i] = i === 0 ? 0 : lineDistances[i - 1]
+      lineDistances[i + 1] = lineDistances[i] + _vector1.distanceTo(_vector2)
+    }
+
+    geometry.setAttribute(
+      'lineDistance',
+      new THREE.Float32BufferAttribute(lineDistances, 1)
+    )
+  }
+
   // Calculates line distances in world space
   static computeLineDistance(line: THREE.Line) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -125,22 +190,14 @@ export class AcTrBufferGeometryUtil {
       if (!positionAttribute || positionAttribute.count === 0) {
         return
       }
-      const lineDistances: number[] = []
 
       if (isLineSegments) {
-        for (let i = 0, l = positionAttribute.count; i < l; i += 2) {
-          _vector1
-            .fromBufferAttribute(positionAttribute, i)
-            .applyMatrix4(worldMatrix)
-          _vector2
-            .fromBufferAttribute(positionAttribute, i + 1)
-            .applyMatrix4(worldMatrix)
-
-          lineDistances[i] = i === 0 ? 0 : lineDistances[i - 1]
-          lineDistances[i + 1] =
-            lineDistances[i] + _vector1.distanceTo(_vector2)
-        }
+        AcTrBufferGeometryUtil.recomputeLineDistanceForLineSegments(
+          geometry,
+          worldMatrix
+        )
       } else {
+        const lineDistances: number[] = []
         lineDistances[0] = 0
         for (let i = 1, l = positionAttribute.count; i < l; i++) {
           _vector1
@@ -153,12 +210,13 @@ export class AcTrBufferGeometryUtil {
           lineDistances[i] = lineDistances[i - 1]
           lineDistances[i] += _vector1.distanceTo(_vector2)
         }
+
+        geometry.setAttribute(
+          'lineDistance',
+          new THREE.Float32BufferAttribute(lineDistances, 1)
+        )
       }
 
-      geometry.setAttribute(
-        'lineDistance',
-        new THREE.Float32BufferAttribute(lineDistances, 1)
-      )
       line.geometry.dispose()
       line.geometry = geometry
     }
@@ -282,5 +340,240 @@ export class AcTrBufferGeometryUtil {
     positionAttribute.needsUpdate = true
 
     return geometry
+  }
+
+  /**
+   * Returns true when all coordinates of a 3D point are finite.
+   */
+  static isFinitePoint(point: AcGePoint3dLike | null | undefined): boolean {
+    return (
+      !!point &&
+      Number.isFinite(point.x) &&
+      Number.isFinite(point.y) &&
+      Number.isFinite(point.z ?? 0)
+    )
+  }
+
+  /**
+   * Returns true when every value in the geometry position attribute is finite.
+   */
+  static hasFinitePositions(
+    geometry: THREE.BufferGeometry | null | undefined
+  ): boolean {
+    const position = geometry?.getAttribute('position')
+    if (!position || position.count === 0) {
+      return true
+    }
+
+    const array = position.array as ArrayLike<number>
+    for (let index = 0; index < array.length; index++) {
+      if (!Number.isFinite(array[index])) {
+        return false
+      }
+    }
+    return true
+  }
+
+  /**
+   * Computes a bounding box only when position data is finite.
+   *
+   * Returns null for invalid geometry instead of letting THREE.js warn on NaN
+   * inputs during CAD file conversion.
+   */
+  static safeComputeBoundingBox(
+    geometry: THREE.BufferGeometry,
+    target?: THREE.Box3
+  ): THREE.Box3 | null {
+    if (!AcTrBufferGeometryUtil.hasFinitePositions(geometry)) {
+      geometry.boundingBox = null
+      return null
+    }
+
+    if (target) {
+      geometry.boundingBox = target
+    }
+    geometry.computeBoundingBox()
+
+    const box = geometry.boundingBox
+    if (
+      !box ||
+      !Number.isFinite(box.min.x) ||
+      !Number.isFinite(box.min.y) ||
+      !Number.isFinite(box.min.z) ||
+      !Number.isFinite(box.max.x) ||
+      !Number.isFinite(box.max.y) ||
+      !Number.isFinite(box.max.z)
+    ) {
+      geometry.boundingBox = null
+      return null
+    }
+
+    return box
+  }
+
+  /**
+   * Computes a bounding sphere only when position data is finite.
+   *
+   * Returns null for invalid geometry instead of letting THREE.js warn on NaN
+   * inputs during CAD file conversion.
+   */
+  static safeComputeBoundingSphere(
+    geometry: THREE.BufferGeometry,
+    target?: THREE.Sphere
+  ): THREE.Sphere | null {
+    const box = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+    if (!box) {
+      geometry.boundingSphere = null
+      return null
+    }
+
+    const sphere = target ?? new THREE.Sphere()
+    box.getBoundingSphere(sphere)
+    geometry.boundingSphere = sphere
+    return sphere
+  }
+
+  /**
+   * Drops indexed primitives that reference vertices with non-finite coordinates.
+   *
+   * @returns `true` when at least one primitive remains.
+   */
+  static sanitizeGeometryPositions(
+    geometry: THREE.BufferGeometry,
+    indexStride: 2 | 3 = 2
+  ): boolean {
+    const position = geometry.getAttribute('position') as
+      | THREE.BufferAttribute
+      | undefined
+    if (!position || position.count === 0) {
+      return false
+    }
+
+    if (AcTrBufferGeometryUtil.hasFinitePositions(geometry)) {
+      return true
+    }
+
+    const isFiniteVertex = (vertex: number) => {
+      const base = vertex * position.itemSize
+      for (let component = 0; component < position.itemSize; component++) {
+        if (!Number.isFinite(position.array[base + component])) {
+          return false
+        }
+      }
+      return true
+    }
+
+    const index = geometry.getIndex()
+    if (!index) {
+      if (geometry.hasAttribute('lineDistance')) {
+        const segmentPositions: number[] = []
+        for (let vertex = 0; vertex + 1 < position.count; vertex += 2) {
+          if (!isFiniteVertex(vertex) || !isFiniteVertex(vertex + 1)) {
+            continue
+          }
+          const base1 = vertex * position.itemSize
+          const base2 = (vertex + 1) * position.itemSize
+          for (let component = 0; component < position.itemSize; component++) {
+            segmentPositions.push(position.array[base1 + component])
+          }
+          for (let component = 0; component < position.itemSize; component++) {
+            segmentPositions.push(position.array[base2 + component])
+          }
+        }
+        if (segmentPositions.length === 0) {
+          return false
+        }
+        geometry.setAttribute(
+          'position',
+          new THREE.Float32BufferAttribute(segmentPositions, position.itemSize)
+        )
+        AcTrBufferGeometryUtil.recomputeLineDistanceForLineSegments(geometry)
+        return true
+      }
+
+      const validVertices: number[] = []
+      for (let vertex = 0; vertex < position.count; vertex++) {
+        if (isFiniteVertex(vertex)) {
+          validVertices.push(vertex)
+        }
+      }
+      if (validVertices.length === 0) {
+        return false
+      }
+      const array = new Float32Array(validVertices.length * position.itemSize)
+      validVertices.forEach((vertex, targetVertex) => {
+        const sourceBase = vertex * position.itemSize
+        const targetBase = targetVertex * position.itemSize
+        for (let component = 0; component < position.itemSize; component++) {
+          array[targetBase + component] = position.array[sourceBase + component]
+        }
+      })
+      geometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(array, position.itemSize)
+      )
+      return true
+    }
+
+    const validIndices: number[] = []
+    for (
+      let offset = 0;
+      offset + indexStride <= index.count;
+      offset += indexStride
+    ) {
+      let valid = true
+      for (let component = 0; component < indexStride; component++) {
+        if (!isFiniteVertex(index.getX(offset + component))) {
+          valid = false
+          break
+        }
+      }
+      if (valid) {
+        for (let component = 0; component < indexStride; component++) {
+          validIndices.push(index.getX(offset + component))
+        }
+      }
+    }
+
+    if (validIndices.length === 0) {
+      return false
+    }
+
+    const IndexArray = validIndices.some(index => index > 65535)
+      ? Uint32Array
+      : Uint16Array
+    geometry.setIndex(
+      new THREE.BufferAttribute(new IndexArray(validIndices), 1)
+    )
+    return true
+  }
+
+  /**
+   * Applies a matrix to geometry positions without triggering THREE.js NaN
+   * bounding-box warnings on corrupt CAD vertex data.
+   *
+   * @returns `false` when no finite positions remain after sanitization.
+   */
+  static safeApplyMatrix4(
+    geometry: THREE.BufferGeometry,
+    matrix: THREE.Matrix4,
+    indexStride: 2 | 3 = 2
+  ): boolean {
+    geometry.boundingBox = null
+    geometry.boundingSphere = null
+    if (
+      !AcTrBufferGeometryUtil.sanitizeGeometryPositions(geometry, indexStride)
+    ) {
+      return false
+    }
+
+    const position = geometry.getAttribute('position') as THREE.BufferAttribute
+    for (let vertex = 0; vertex < position.count; vertex++) {
+      _vector1.fromBufferAttribute(position, vertex)
+      _vector1.applyMatrix4(matrix)
+      position.setXYZ(vertex, _vector1.x, _vector1.y, _vector1.z)
+    }
+    position.needsUpdate = true
+    return true
   }
 }

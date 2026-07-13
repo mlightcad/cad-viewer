@@ -1,4 +1,17 @@
-export abstract class AcEdInputSession<T> {
+/**
+ * Minimal command-line session surface used while a prompt is active.
+ *
+ * Stored without a result-type parameter so keyword and mixed-input sessions
+ * can share the same active-session slot.
+ */
+export interface AcEdCommandLineSessionControl {
+  handleEnter(value: string): boolean
+  handleEscape(): void
+}
+
+export abstract class AcEdInputSession<
+  T
+> implements AcEdCommandLineSessionControl {
   protected resolve!: (value: T) => void
 
   start(): Promise<T> {

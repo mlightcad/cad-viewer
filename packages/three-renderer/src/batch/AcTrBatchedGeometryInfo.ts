@@ -2,10 +2,12 @@ import { AcGePoint3dLike } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 /**
- * Per-sub-geometry metadata stored in batched objects.
+ * Per-sub-geometry slot metadata for packed batch buffers.
  *
- * These fields are copied into each batched geometry record and are later used
- * by hit-testing / highlighting workflows.
+ * This is **not** {@link THREE.Object3D.userData}; it is copied into each
+ * `AcTrBatchedGeometryInfo` record via `setGeometryInfo()` and used by
+ * hit-testing / highlighting workflows. For typed `Object3D.userData`, see
+ * {@link AcTrObjectUserData} in `util/AcTrObjectUserData.ts`.
  */
 export interface AcTrBatchGeometryUserData {
   objectId?: string
@@ -19,13 +21,65 @@ export interface AcTrBatchGeometryUserData {
   position?: AcGePoint3dLike
 }
 
+/**
+ * Cached GPU buffer slices used to restore geometry after draw-time collapse.
+ */
+export type AcTrBatchDrawSnapshot = {
+  positions?: Float32Array
+  indices?: THREE.TypedArray
+  instanceStart?: Float32Array
+  instanceEnd?: Float32Array
+}
+
+/** Bit flags describing per-slot geometry state in packed batch buffers. */
+export const enum AcTrBatchGeometryFlags {
+  /** Slot is inactive (soft-deleted) and excluded from bounds aggregation. */
+  None = 0,
+  /** Slot occupies a live geometry id and may participate in batch operations. */
+  Active = 1 << 0,
+  /** Slot is drawn and eligible for raycast when combined with {@link Active}. */
+  Visible = 1 << 1
+}
+
+/** Default flags assigned when a geometry slot is first inserted. */
+export const AcTrBatchGeometryDefaultFlags =
+  AcTrBatchGeometryFlags.Active | AcTrBatchGeometryFlags.Visible
+
+/** Returns true when the slot is active (not soft-deleted). */
+export function isBatchGeometryActive(flags: number) {
+  return (flags & AcTrBatchGeometryFlags.Active) !== 0
+}
+
+/** Returns true when the slot is active and marked visible. */
+export function isBatchGeometryVisible(flags: number) {
+  return (
+    (flags & AcTrBatchGeometryFlags.Active) !== 0 &&
+    (flags & AcTrBatchGeometryFlags.Visible) !== 0
+  )
+}
+
+/** Updates the visible bit while preserving all other flag bits. */
+export function setBatchGeometryVisible(flags: number, visible: boolean) {
+  return visible
+    ? flags | AcTrBatchGeometryFlags.Visible
+    : flags & ~AcTrBatchGeometryFlags.Visible
+}
+
 export interface AcTrBatchGeometryState {
   /** Lazily computed per-geometry bounds used for culling/hit tests. */
   boundingBox: THREE.Box3 | null
-  /** Whether this geometry slot is active (not deleted). */
-  active: boolean
-  /** Per-geometry visibility toggle. */
-  visible: boolean
+  /**
+   * Per-slot state encoded with {@link AcTrBatchGeometryFlags}.
+   *
+   * New slots start as {@link AcTrBatchGeometryDefaultFlags}. Soft-deleted
+   * slots are cleared to {@link AcTrBatchGeometryFlags.None}.
+   */
+  flags: number
+  /**
+   * Cached GPU buffer slices used to restore geometry after draw-time collapse.
+   * Populated when a slot is hidden via {@link setVisibleAt}.
+   */
+  hiddenDrawSnapshot?: AcTrBatchDrawSnapshot
 }
 
 /**
@@ -90,8 +144,12 @@ export function copyAttributeData(
       }
     }
   } else {
-    // faster copy approach using typed array set function
-    target.array.set(src.array, targetOffset * itemSize)
+    // Copy only active vertices (`src.count`), not the full backing store.
+    const srcLength = src.count * itemSize
+    target.array.set(
+      (src.array as THREE.TypedArray).subarray(0, srcLength),
+      targetOffset * itemSize
+    )
   }
 
   target.needsUpdate = true

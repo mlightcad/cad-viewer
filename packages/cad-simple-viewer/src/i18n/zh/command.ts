@@ -24,6 +24,9 @@ export default {
     cdxf: {
       description: '导出当前图纸为DXF格式'
     },
+    cpdf: {
+      description: '导出当前图纸为PDF格式'
+    },
     cecolor: {
       description: '设置新创建对象的当前默认颜色'
     },
@@ -38,6 +41,9 @@ export default {
     },
     cetranparency: {
       description: '设置新创建对象的透明度'
+    },
+    cachefont: {
+      description: '将本地字体文件缓存到 IndexedDB 以供文字渲染使用'
     },
     circle: {
       description: '使用圆心和半径创建圆'
@@ -67,6 +73,9 @@ export default {
     chtml: {
       description: '将当前图纸导出为可离线打开的 HTML 文件'
     },
+    '-chtml': {
+      description: '通过命令行选项将当前图纸导出为 HTML 文件'
+    },
     dimlinear: {
       description: '创建线性尺寸标注'
     },
@@ -83,8 +92,34 @@ export default {
       description: '从图纸中删除所选对象',
       prompt: '选择对象'
     },
+    entout: {
+      description: '导出所选对象的合并预览图',
+      prompt: '选择对象'
+    },
+    hideobjects: {
+      description: '临时隐藏所选对象的显示',
+      prompt: '选择对象'
+    },
+    gripcolor: {
+      description: '设置所选对象上未选中夹点的颜色'
+    },
+    griphot: {
+      description: '设置所选（热）夹点的颜色'
+    },
+    gripobjlimit: {
+      description: '当选择集中的对象数超过指定值时不显示夹点（0 表示无限制）'
+    },
+    grips: {
+      description: '控制是否在所选对象上显示夹点'
+    },
+    gripsize: {
+      description: '设置夹点框的大小（像素）'
+    },
     hatch: {
       description: '用填充图案填充封闭区域或所选对象'
+    },
+    ipdf: {
+      description: '从 PDF 文件导入矢量几何'
     },
     hpang: {
       description: '设置新创建填充图案的默认角度（弧度）'
@@ -179,6 +214,9 @@ export default {
     lwdisplay: {
       description: '用于控制是否在图纸中显示线宽效果'
     },
+    clearmeasurements: {
+      description: '清除视图中的所有测量标注'
+    },
     measurearea: {
       description: '计算所选对象或点定义区域的面积和周长'
     },
@@ -271,8 +309,19 @@ export default {
     unitmode: {
       description: '当 LUNITS 为建筑或分数格式时，控制坐标的分数显示格式'
     },
-    whitebkcolor: {
+    switchbg: {
       description: '切换绘图区域背景颜色，在白色和黑色背景之间切换'
+    },
+    unisolateobjects: {
+      description: '重新显示 HIDEOBJECTS 隐藏的所有对象'
+    },
+    undo: {
+      description: '撤销上一次数据库编辑操作',
+      nothingToUndo: '没有可撤销的操作。'
+    },
+    redo: {
+      description: '重做上一次撤销的操作',
+      nothingToRedo: '没有可重做的操作。'
     },
     xline: {
       description: '创建在两个方向上无限延伸的构造线'

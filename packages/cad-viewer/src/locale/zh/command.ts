@@ -21,6 +21,9 @@ export default {
     units: {
       description:
         '设置长度与角度单位格式、精度、角度方向及插入内容缩放所用单位'
+    },
+    style: {
+      description: '创建、修改或指定文字与多行文字的文字样式'
     }
   },
   USER: {}

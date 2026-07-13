@@ -1,129 +1,148 @@
 # CAD Simple Viewer Example
 
-A minimal web application demonstrating how to use the `@mlightcad/cad-simple-viewer` package to display DXF and DWG files in a web browser with a clean, modern interface.
+A vanilla TypeScript demo that shows how to embed [`@mlightcad/cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) in a web page: open DXF/DWG files, drive viewer commands from a small toolbar, and lazy-load HTML/PDF export plugins.
 
 ## Features
 
-- 📁 **File Selection**: Click to browse or drag & drop DXF/DWG files
-- 🖥️ **Canvas Rendering**: High-performance rendering using the CAD Simple Viewer
-- 🔍 **Zoom Controls**: Zoom to fit and reset view functionality
-- 📱 **Responsive Design**: Clean, modern interface that works on different screen sizes
-- ⚡ **No Backend Required**: Files are processed entirely in the browser
-- 🎯 **DWG Support**: Full DWG file support via LibreDWG WebAssembly
-- 🚀 **Modern Build**: Optimized production builds with code splitting
+- **Local files** — Open `.dxf` / `.dwg` via file picker (toolbar **Open** or center **Open File**)
+- **Sample drawings** — Sidebar loads predefined files from the [cad-data](https://github.com/mlightcad/cad-data) CDN
+- **Viewer toolbar** — Zoom fit, zoom window, background toggle, pickbox size, line-weight display, export HTML/PDF
+- **Lazy plugins** — registered from `@mlightcad/cad-*-plugin/register` in `src/register.ts`; `-chtml` / `cpdf` / `csvg` load plugin chunks on demand (`chtml` runs the same command-line export when no dialog command is registered)
+- **Browser-only** — Parsing and rendering run in the browser (Web Workers + WebAssembly for DWG)
+- **Responsive layout** — Sidebar + viewer pane; stacks vertically on narrow screens
+
+## Prerequisites
+
+- Node.js **≥ 24** and pnpm **≥ 10** (monorepo workspace)
+- Built dependencies before **dev** or **build**:
+  - `@mlightcad/cad-simple-viewer`
+  - `@mlightcad/cad-html-plugin` (produces `viewer-runtime.iife.js`, copied into the example dist)
+
+From the repo root, a full workspace build satisfies this:
+
+```bash
+pnpm install
+pnpm build
+```
+
+Or build only what this example needs:
+
+```bash
+pnpm --filter @mlightcad/cad-simple-viewer build
+pnpm --filter @mlightcad/cad-html-plugin build
+```
 
 ## Getting Started
 
-### Prerequisites
+### Development
 
-Make sure you have Node.js and pnpm installed. This project is part of a monorepo workspace.
-
-### Installation
-
-From the project root:
+From the monorepo root:
 
 ```bash
-# Install dependencies
-pnpm install
+pnpm dev:simple
+```
 
-# Navigate to the example directory
+Or from this package:
+
+```bash
 cd packages/cad-simple-viewer-example
-
-# Start the development server
 pnpm dev
 ```
 
-The application will be available at `http://localhost:3000`.
+Vite prints the local URL (default `http://localhost:5173`).
 
-### Building for Production
+### Production
 
 ```bash
 pnpm build
 pnpm preview
 ```
+
+The build copies parser workers and `viewer-runtime.iife.js` into `dist/` (see `vite.config.ts`).
 
 ## Usage
 
-1. **Open the Application**: Navigate to `http://localhost:3000` in your web browser
-2. **Load a File**: 
-   - Click the file input area to browse for a DXF or DWG file
-   - Or drag and drop a file directly onto the input area
-3. **View the Drawing**: The CAD file will be rendered on the canvas
+1. Start the dev server and open the URL shown in the terminal.
+2. **Predefined files** — Click a name in the left sidebar to load a sample from the CDN.
+3. **Your own file** — Click **Open File** (empty state) or **Open** (toolbar), then choose a `.dxf` or `.dwg` file.
+4. After a drawing loads, use the toolbar:
+   - **Zoom Fit** / **Zoom to Window** — `ZOOM` commands
+   - **Switch BG** — Toggle drawing background
+   - **Set Pickbox** — Prompt to set `PICKBOX` system variable
+   - **LineWeight: On/Off** — Toggle `lwdisplay` on the current database
+   - **Export HTML** / **Export PDF** — Run `chtml` / `cpdf` from the toolbar (`chtml` uses command-line prompts here; `-chtml` is equivalent). Plugins must be registered; see `src/main.ts`.
 
-## Supported File Formats
+Toast messages at the top report success or errors. The window title updates when a document is activated.
 
-- **DXF**: AutoCAD Drawing Exchange Format
-- **DWG**: AutoCAD Drawing Database (via LibreDWG WebAssembly)
+## Supported formats
 
-## Technical Details
+| Format | Notes |
+|--------|--------|
+| **DXF** | Parsed in a Web Worker (`dxf-parser-worker.js`) |
+| **DWG** | LibreDWG WebAssembly via `libredwg-parser-worker.js` |
 
-This example demonstrates:
+## What this example demonstrates
 
-- Using `AcApDocManager` to manage CAD documents
-- Loading files using `openDocument()` method with ArrayBuffer
-- Setting up a canvas for rendering
-- Basic view controls (zoom to fit, reset view)
-- File drag & drop functionality
-- Error handling and user feedback
-- Dynamic DWG converter loading for production/development
+Integration patterns useful when building your own host app (not a full CAD UI like `@mlightcad/cad-viewer`):
 
-## Code Structure
+| Topic | Implementation |
+|-------|----------------|
+| Document manager | `AcApDocManager.createInstance({ container, baseUrl, webworkerFileUrls, commandAliases, … })` |
+| Local open | `openDocument(name, ArrayBuffer, options)` with `AcApOpenDatabaseOptions` |
+| Remote open | `openUrl(url, options)` for CDN sample files |
+| Commands | `sendStringToExecute('zoom\\nall')`, `switchbg`, plugin commands `chtml` / `-chtml` / `cpdf` |
+| System variables | `AcDbSysVarManager` + `sendStringToExecute` (e.g. `PICKBOX`) |
+| Plugins | Lazy registration via `@mlightcad/*/register` in `src/register.ts` (only needed plugins) |
+| Command aliases | Demo overrides (`LINE` → `LX`, etc.) via `commandAliases` |
+| Workers & assets | `webworkerFileUrls`, `htmlViewerRuntimeUrl`, static copy in Vite |
 
-- `index.html`: Main HTML page with UI structure and styles
-- `src/main.ts`: Main application logic and CAD viewer integration
-- `package.json`: Project dependencies and scripts
-- `vite.config.ts`: Vite build configuration
-- `tsconfig.json`: TypeScript configuration
+Lazy initialization: `AcApDocManager` is created on first file open, not at page load.
+
+## Project structure
+
+| Path | Role |
+|------|------|
+| `index.html` | Layout: sidebar, toolbar, canvas container, styles |
+| `src/main.ts` | `CadViewerApp` — wiring UI to `AcApDocManager` |
+| `src/register.ts` | Registers export plugins from `@mlightcad/cad-*-plugin/register` |
+| `vite.config.ts` | `base: './'`, copies workers + `viewer-runtime.iife.js` |
+| `package.json` | Scripts and workspace dependencies |
 
 ## Dependencies
 
-- `@mlightcad/cad-simple-viewer`: Core CAD viewer functionality
-- `@mlightcad/data-model`: CAD data model and database
+| Package | Role |
+|---------|------|
+| `@mlightcad/cad-simple-viewer` | Core viewer, `AcApDocManager`, commands |
+| `@mlightcad/data-model` | Database, system variables, logging |
+| `@mlightcad/cad-html-plugin` | Offline HTML export (`-chtml`; toolbar uses `chtml` as alias when no dialog is registered) |
+| `@mlightcad/cad-pdf-plugin` | PDF export (`cpdf`) |
+| `three` | Peer of the viewer render stack |
 
-## Key Features
-
-- **Converter Registration**: Dynamic loading of DWG converters
-- **File Validation**: Proper file type checking and error handling
-- **Loading States**: Visual feedback during file processing
-- **Error Handling**: Graceful error messages and recovery
-- **Modern JavaScript**: ES2020+ features with TypeScript
-
-## Browser Support
-
-- Modern browsers with WebGL support
-- WebAssembly support required for DWG files
-- ES2020+ JavaScript features
-
-## Development Scripts
+## Scripts
 
 ```bash
-# Development
-pnpm dev
-
-# Build for production
-pnpm build
-
-# Preview production build
-pnpm preview
-
-# Clean build artifacts
-pnpm clean
-
-# Lint code
-pnpm lint
-
-# Fix linting issues
-pnpm lint:fix
+pnpm dev          # Vite dev server
+pnpm build        # Typecheck + production build
+pnpm preview      # Serve `dist/`
+pnpm clean        # Remove `dist/`, `lib/`, tsbuildinfo
+pnpm lint         # ESLint on `src/`
+pnpm lint:fix     # ESLint with auto-fix
 ```
 
-## Notes
+From the monorepo root: `pnpm dev:simple`, `pnpm preview:simple`.
 
-- This is a minimal example focusing on the core functionality
-- For more advanced features, consider using the full `@mlightcad/cad-viewer` package
-- DWG file support requires WebAssembly support in the browser
-- The viewer uses WebGL for hardware-accelerated rendering
-- Production builds include optimized code splitting for better performance
+## Browser requirements
+
+- Modern browser with **WebGL**
+- **WebAssembly** for DWG
+- **Web Workers** for DXF/DWG parsing and MTEXT rendering
+
+## Related packages
+
+- [`@mlightcad/cad-viewer`](../cad-viewer) + [`cad-viewer-example`](../cad-viewer-example) — Full Vue UI, i18n, ribbons, dialogs
+- [`@mlightcad/cad-html-plugin`](../cad-html-plugin) — HTML export details and `viewer-runtime.iife.js`
+- [`@mlightcad/cad-html-exporter-cli`](../cad-html-exporter-cli) — Headless HTML export (same viewer path as this example)
 
 ## License
 
-MIT License - see the main project LICENSE file for details.
+MIT — see the repository root `LICENSE`.

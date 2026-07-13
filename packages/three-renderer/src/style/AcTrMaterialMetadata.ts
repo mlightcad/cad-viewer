@@ -93,3 +93,34 @@ export function hasByLayerBinding(
     metadata.isByLayerTransparency === true
   )
 }
+
+/**
+ * Returns whether a drawable material should follow live layer-table style updates.
+ *
+ * When {@link objectLayerName} is supplied, drawables remapped to another layer
+ * (for example layer-0 INSERT inheritance) still participate in layer sync even
+ * if cached metadata still references the source layer name.
+ *
+ * @param material - Drawable material whose metadata drives the decision.
+ * @param layerName - Layer name targeted by the current sync pass.
+ * @param objectLayerName - Optional runtime layer name on the drawable after INSERT remapping.
+ * @returns True when the material should receive live layer-table style updates.
+ */
+export function followsLayerStyle(
+  material: THREE.Material,
+  layerName: string,
+  objectLayerName?: string
+): boolean {
+  const metadata = getMaterialMetadata(material)
+
+  if (metadata.layer !== layerName && objectLayerName !== layerName) {
+    return false
+  }
+  if (metadata.isByLayerColor === true) {
+    return true
+  }
+  if (metadata.isForeground === true) {
+    return false
+  }
+  return hasByLayerBinding(metadata)
+}

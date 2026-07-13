@@ -1,102 +1,22 @@
-import {
-  AcDbEntity,
-  AcGeMatrix3d,
-  AcGePoint3d,
-  AcGePoint3dLike
-} from '@mlightcad/data-model'
+import { AcGePoint3d } from '@mlightcad/data-model'
 
-import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdBaseView,
   AcEdCommand,
   AcEdOpenMode,
-  AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptPointResult,
-  AcEdPromptSelectionOptions,
   AcEdPromptState,
   AcEdPromptStateMachine,
   AcEdPromptStateStep,
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-
-/**
- * MOVE preview jig.
- *
- * It clones source entities once in memory and updates those clones by
- * incremental translations during mouse move, so the database entities are
- * untouched until command commit.
- */
-class AcApMovePreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private _view: AcEdBaseView
-  private _basePoint: AcGePoint3d
-  private _previewEntities: AcDbEntity[]
-  private _lastDisplacement: AcGePoint3d
-
-  constructor(
-    view: AcEdBaseView,
-    sourceEntities: AcDbEntity[],
-    basePoint: AcGePoint3dLike
-  ) {
-    super(view)
-    this._view = view
-    this._basePoint = new AcGePoint3d(basePoint)
-    this._lastDisplacement = new AcGePoint3d(0, 0, 0)
-    this._previewEntities = sourceEntities
-      .map(entity => this.cloneEntity(entity))
-      .filter((entity): entity is AcDbEntity => !!entity)
-  }
-
-  get entity(): AcDbEntity | null {
-    return this._previewEntities[0] ?? null
-  }
-
-  update(point: AcGePoint3dLike) {
-    if (this._previewEntities.length === 0) return
-
-    const displacement = new AcGePoint3d(
-      point.x - this._basePoint.x,
-      point.y - this._basePoint.y,
-      point.z - this._basePoint.z
-    )
-    const delta = new AcGePoint3d(
-      displacement.x - this._lastDisplacement.x,
-      displacement.y - this._lastDisplacement.y,
-      displacement.z - this._lastDisplacement.z
-    )
-    const hasDelta = delta.x !== 0 || delta.y !== 0 || delta.z !== 0
-    if (!hasDelta) return
-
-    const matrix = new AcGeMatrix3d().makeTranslation(delta.x, delta.y, delta.z)
-    this._previewEntities.forEach(entity => entity.transformBy(matrix))
-    this._lastDisplacement = displacement
-  }
-
-  override render(): void {
-    if (this._previewEntities.length === 0) return
-    this._view.addTransientEntity(this._previewEntities)
-  }
-
-  override end(): void {
-    this._previewEntities.forEach(entity =>
-      this._view.removeTransientEntity(entity.objectId)
-    )
-  }
-
-  private cloneEntity(entity: AcDbEntity) {
-    return entity.clone()
-  }
-}
+import { resolveSelectedEntities } from '../../service'
+import { AcApMovePreviewJig } from './AcApMovePreviewJig'
 
 /**
  * Command to move selected entities by a displacement vector.
- *
- * Behavior (AutoCAD-like):
- * 1) Select entities (or reuse preselection),
- * 2) Specify base point or choose `Displacement`,
- * 3) Specify second point (or displacement point),
- * 4) Apply translation to all selected entities.
  */
 export class AcApMoveCmd extends AcEdCommand {
   constructor() {
@@ -106,36 +26,12 @@ export class AcApMoveCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
-    const annotation = new AcApAnnotation(context.doc.database)
-    const blockTable = context.doc.database.tables.blockTable
+    const resolved = await resolveSelectedEntities(context, {
+      promptKey: 'move'
+    })
+    if (!resolved) return
 
-    const selectionIds =
-      selectionSet.count > 0
-        ? selectionSet.ids
-        : ((
-            await AcApDocManager.instance.editor.getSelection(
-              new AcEdPromptSelectionOptions(AcApI18n.sysCmdPrompt('move'))
-            )
-          ).value?.ids ?? [])
-
-    if (selectionIds.length === 0) return
-
-    const ids =
-      context.doc.openMode == AcEdOpenMode.Review
-        ? annotation.filterAnnotationEntities(selectionIds)
-        : selectionIds
-    if (ids.length === 0) {
-      selectionSet.clear()
-      return
-    }
-
-    const sourceEntities = ids
-      .map(id => blockTable.getEntityById(id))
-      .filter((entity): entity is AcDbEntity => !!entity)
-    if (sourceEntities.length === 0) {
-      selectionSet.clear()
-      return
-    }
+    const { entities: sourceEntities } = resolved
 
     let basePoint: AcGePoint3d | undefined
     let displacement: AcGePoint3d | undefined
@@ -166,6 +62,7 @@ export class AcApMoveCmd extends AcEdCommand {
           AcApI18n.t('jig.move.basePointOrDisplacement')
         )
         createDisplacementKeyword(prompt)
+        prompt.allowNone = true
         return prompt
       }
 
@@ -173,6 +70,11 @@ export class AcApMoveCmd extends AcEdCommand {
         if (result.status === AcEdPromptStatus.OK) {
           basePoint = new AcGePoint3d(result.value!)
           this.machine.setState(new SecondPointState(this.machine))
+          return 'continue'
+        }
+
+        if (result.status === AcEdPromptStatus.None) {
+          this.machine.setState(new DisplacementState())
           return 'continue'
         }
 
@@ -206,17 +108,14 @@ export class AcApMoveCmd extends AcEdCommand {
             basePoint
           )
         }
+        prompt.allowNone = true
         return prompt
       }
 
       async handleResult(result: AcEdPromptPointResult): Promise<MoveStep> {
         if (result.status === AcEdPromptStatus.OK && basePoint) {
           const secondPoint = new AcGePoint3d(result.value!)
-          displacement = new AcGePoint3d(
-            secondPoint.x - basePoint.x,
-            secondPoint.y - basePoint.y,
-            secondPoint.z - basePoint.z
-          )
+          displacement = new AcGePoint3d(secondPoint).sub(basePoint)
           return 'finish'
         }
 
@@ -245,6 +144,7 @@ export class AcApMoveCmd extends AcEdCommand {
           sourceEntities,
           prompt.basePoint
         )
+        prompt.allowNone = true
         return prompt
       }
 
@@ -268,17 +168,7 @@ export class AcApMoveCmd extends AcEdCommand {
       return
     }
 
-    const matrix = new AcGeMatrix3d().makeTranslation(
-      displacement.x,
-      displacement.y,
-      displacement.z
-    )
-    ids.forEach(id => {
-      const entity = blockTable.getEntityById(id)
-      if (!entity) return
-      entity.transformBy(matrix)
-      entity.triggerModifiedEvent()
-    })
+    context.doc.entityService.translateEntities(sourceEntities, displacement)
     selectionSet.clear()
   }
 }

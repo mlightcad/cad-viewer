@@ -10,12 +10,14 @@ import {
   AcGiMTextData,
   AcGiPointStyle,
   AcGiRenderer,
+  AcGiShapeData,
   AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
-import { FontManager, FontManagerEventArgs } from '@mlightcad/mtext-renderer'
+import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
+import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy'
 import {
   AcTrEntity,
   AcTrGroup,
@@ -25,29 +27,47 @@ import {
   AcTrMText,
   AcTrObject,
   AcTrPoint,
-  AcTrPolygon
+  AcTrPolygon,
+  AcTrShape
 } from '../object'
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
-import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport'
+import {
+  AcTrEntityPreview,
+  type AcTrEntityPreviewOptions,
+  type AcTrEntityPreviewResult
+} from './AcTrEntityPreview'
 import { AcTrMTextRenderer } from './AcTrMTextRenderer'
+import { AcTrRenderContext } from './AcTrRenderContext'
+
+/** Event payload when a mapped font cannot be resolved during rendering. */
+export interface AcTrFontNotFoundEventArgs {
+  /** Name of the font that could not be found. */
+  fontName: string
+  /** Number of characters using this font; set when the font is missing. */
+  count?: number
+}
 
 export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
-  private _styleManager: AcTrStyleManager
+  private _context: AcTrRenderContext
   private _renderer: THREE.WebGLRenderer
   private _subEntityTraits: AcGiSubEntityTraits
 
-  public readonly events = {
-    fontNotFound: new AcCmEventManager<FontManagerEventArgs>()
+  public readonly events: {
+    fontNotFound: AcCmEventManager<AcTrFontNotFoundEventArgs>
+  } = {
+    fontNotFound: new AcCmEventManager<AcTrFontNotFoundEventArgs>()
   }
 
   constructor(renderer: THREE.WebGLRenderer) {
     this._renderer = renderer
-    this._styleManager = new AcTrStyleManager()
+    this._context = new AcTrRenderContext()
     const size = renderer.getSize(new THREE.Vector2())
-    this._styleManager.updateLineResolution(size.x, size.y)
-    AcTrMTextRenderer.getInstance().overrideStyleManager(this._styleManager)
+    this._context.styleManager.updateLineResolution(size.x, size.y)
+    AcTrMTextRenderer.getInstance().overrideStyleManager(
+      this._context.styleManager
+    )
     FontManager.instance.events.fontNotFound.addEventListener(args => {
       this.events.fontNotFound.dispatch(args)
     })
@@ -59,6 +79,30 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    */
   get subEntityTraits() {
     return this._subEntityTraits
+  }
+
+  /**
+   * Draw-time context for resolving semantic trait colours (for example ACI 7
+   * foreground) into pixel RGB values.
+   *
+   * Derived from {@link currentBackgroundColor} on each read — no separate
+   * sync is required when the canvas background changes.
+   */
+  get context(): AcTrRenderContext {
+    this._context.syncBackgroundColor(
+      this._context.styleManager.currentBackgroundColor
+    )
+    return this._context
+  }
+
+  /**
+   * Strategy that decides whether converted entities should batch or stay unbatched.
+   */
+  get batchDrawPolicy(): AcTrBatchDrawPolicy {
+    return this._context.batchDrawPolicy
+  }
+  set batchDrawPolicy(policy: AcTrBatchDrawPolicy) {
+    this._context.batchDrawPolicy = policy
   }
 
   get autoClear() {
@@ -74,7 +118,21 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   setSize(width: number, height: number) {
     this._renderer.setSize(width, height)
-    this._styleManager.updateLineResolution(width, height)
+    this._context.styleManager.updateLineResolution(width, height)
+  }
+
+  /**
+   * Updates wide-line shader resolution without resizing the canvas.
+   */
+  updateLineResolution(width: number, height: number) {
+    this._context.styleManager.updateLineResolution(width, height)
+  }
+
+  /**
+   * Syncs shader uniforms that depend on the active camera zoom.
+   */
+  syncCameraZoom(zoom: number) {
+    this.updateCameraZoomUniform(zoom)
   }
 
   getViewport(target: THREE.Vector4) {
@@ -92,17 +150,11 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     this._renderer.clearDepth()
   }
 
-  render(scene: THREE.Object3D, camera: AcTrCamera) {
+  render(scene: THREE.Object3D, camera: AcTrCamera): boolean {
     this.updateCameraZoomUniform(camera.zoom)
     this._renderer.render(scene, camera.internalCamera)
-  }
-
-  /**
-   * Changes rendering color to the specified color for entities whose color is ACI 7.
-   * @param color - New rendering color for ACI 7.
-   */
-  changeForeground(color: number) {
-    this._styleManager.changeForeground(color)
+    // RTE frame scheduling is added in the large-coordinate feature branch.
+    return false
   }
 
   /**
@@ -114,7 +166,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @param color - New background color (typically the canvas bg).
    */
   changeBackground(color: number) {
-    this._styleManager.changeBackground(color)
+    this._context.styleManager.changeBackground(color)
   }
 
   /**
@@ -126,10 +178,15 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * every background-follow material already in the cache.
    */
   get currentBackgroundColor(): number {
-    return this._styleManager.currentBackgroundColor
+    return this._context.styleManager.currentBackgroundColor
   }
   set currentBackgroundColor(value: number) {
-    this._styleManager.currentBackgroundColor = value
+    this._context.styleManager.currentBackgroundColor = value
+  }
+
+  /** Shared style/material cache used by entity conversion and layer updates. */
+  get styleManager() {
+    return this._context.styleManager
   }
 
   /**
@@ -185,14 +242,14 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * Sets global ltscale
    */
   set ltscale(scale: number) {
-    this._styleManager.options.ltscale = scale
+    this._context.styleManager.options.ltscale = scale
   }
 
   /**
    * Sets global celtscale
    */
   set celtscale(scale: number) {
-    this._styleManager.options.celtscale = scale
+    this._context.styleManager.options.celtscale = scale
   }
 
   /**
@@ -206,7 +263,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * Gets whether entity lineweights are displayed.
    */
   get showLineWeight() {
-    return this._styleManager.showLineWeight
+    return this._context.styleManager.showLineWeight
   }
 
   /**
@@ -215,14 +272,14 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * When disabled, line entities are rendered with basic 1px materials.
    */
   set showLineWeight(value: boolean) {
-    this._styleManager.showLineWeight = value
+    this._context.styleManager.showLineWeight = value
   }
 
   updateLayerMaterial(
     layerName: string,
     newTraits: Partial<AcGiSubEntityTraits>
   ): Record<number, THREE.Material> {
-    return this._styleManager.updateLayerMaterial(layerName, newTraits)
+    return this._context.styleManager.updateLayerMaterial(layerName, newTraits)
   }
 
   /**
@@ -235,7 +292,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     layerName: string,
     layerTraits?: Partial<AcGiSubEntityTraits>
   ) {
-    return this._styleManager.getLayerBoundMaterial(
+    return this._context.styleManager.getLayerBoundMaterial(
       material,
       layerName,
       layerTraits
@@ -246,21 +303,21 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * Create one empty drawable object
    */
   createObject() {
-    return new AcTrObject(this._styleManager)
+    return new AcTrObject(this._context)
   }
 
   /**
    * Create one empty entity
    */
   createEntity() {
-    return new AcTrEntity(this._styleManager)
+    return new AcTrEntity(this._context)
   }
 
   /**
    * @inheritdoc
    */
   group(entities: AcTrEntity[]) {
-    return new AcTrGroup(entities, this._styleManager)
+    return new AcTrGroup(entities, this._context)
   }
 
   /**
@@ -271,7 +328,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
       point,
       this._subEntityTraits,
       style,
-      this._styleManager
+      this._context
     )
     return geometry
   }
@@ -280,7 +337,6 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   circularArc(arc: AcGeCircArc3d) {
-    // TODO: Compute division based on current viewport size
     return this.linePoints(arc.getPoints(100))
   }
 
@@ -288,7 +344,6 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   ellipticalArc(ellipseArc: AcGeEllipseArc3d) {
-    // TODO: Compute division based on current viewport size
     return this.linePoints(ellipseArc.getPoints(100))
   }
 
@@ -308,7 +363,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
       itemSize,
       indices,
       this._subEntityTraits,
-      this._styleManager
+      this._context
     )
   }
 
@@ -316,7 +371,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   area(area: AcGeArea2d) {
-    return new AcTrPolygon(area, this._subEntityTraits, this._styleManager)
+    return new AcTrPolygon(area, this._subEntityTraits, this._context)
   }
 
   /**
@@ -327,7 +382,20 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
       mtext,
       this._subEntityTraits,
       style,
-      this._styleManager,
+      this._context,
+      delay
+    )
+  }
+
+  /**
+   * @inheritdoc
+   */
+  shape(shape: AcGiShapeData, style?: AcGiTextStyle, delay?: boolean) {
+    return new AcTrShape(
+      shape,
+      this._subEntityTraits,
+      style,
+      this._context,
       delay
     )
   }
@@ -336,19 +404,50 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   image(blob: Blob, style: AcGiImageStyle) {
-    return new AcTrImage(blob, style, this._styleManager)
+    return new AcTrImage(blob, style, this._context)
+  }
+
+  /**
+   * Renders one or more entities (or a block preview root) to an offscreen canvas.
+   *
+   * Pass a detached preview root such as the group returned by
+   * {@link AcTrBatchedGroup.createPreviewSubset} or an {@link AcTrGroup} built
+   * for a block definition. When the object is already attached to a scene, a
+   * deep clone is rendered internally.
+   *
+   * @param object - Drawable root to preview
+   * @param options - Output size and optional framing overrides
+   * @returns Preview canvas and framing bounds, or `null` when bounds cannot be resolved
+   *
+   * @example
+   * ```ts
+   * const subset = batchGroup.createPreviewSubset(['line-1', 'arc-2'])
+   * if (subset) {
+   *   const preview = renderer.renderEntityPreview(subset, { width: 128, height: 128 })
+   *   disposePreviewSubset(subset)
+   * }
+   * ```
+   */
+  renderEntityPreview(
+    object: THREE.Object3D,
+    options: AcTrEntityPreviewOptions
+  ): AcTrEntityPreviewResult | null {
+    return new AcTrEntityPreview(this).capture(object, options)
   }
 
   /**
    * Clears all cached materials and releases its memory
    */
   dispose() {
-    this._styleManager.dispose()
+    this._context.styleManager.dispose()
     FontManager.instance.missedFonts = {}
   }
 
   private linePoints(points: AcGePoint3dLike[]) {
-    return new AcTrLine(points, this._subEntityTraits, this._styleManager)
+    if (points.length < 2) {
+      return this.createEntity()
+    }
+    return new AcTrLine(points, this._subEntityTraits, this._context, false)
   }
 
   /**

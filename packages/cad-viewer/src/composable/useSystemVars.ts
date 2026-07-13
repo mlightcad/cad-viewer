@@ -10,6 +10,10 @@ import { reactive } from 'vue'
 export const COLOR_THEME_SYSVAR_NAME = AcDbSystemVariables.COLORTHEME
 export const DYNAMIC_MODE_SYSVAR_NAME = AcDbSystemVariables.DYNMODE
 export const LINEWIDTH_DISPLAY_SYSVAR_NAME = AcDbSystemVariables.LWDISPLAY
+export const ORTHO_MODE_SYSVAR_NAME = AcDbSystemVariables.ORTHOMODE
+export const POLAR_MODE_SYSVAR_NAME = AcDbSystemVariables.POLARMODE
+export const POLAR_ANGLE_SYSVAR_NAME = AcDbSystemVariables.POLARANG
+export const POLAR_ADD_ANGLE_SYSVAR_NAME = AcDbSystemVariables.POLARADDANG
 
 export interface SystemVariables {
   pdmode?: number
@@ -17,6 +21,10 @@ export interface SystemVariables {
   colortheme?: AcDbColorTheme
   dynmode?: number
   lwdisplay?: number
+  orthomode?: number
+  polarmode?: number
+  polarang?: number
+  polaraddang?: string
 }
 
 function getDatabaseSysVarValue(database: AcDbDatabase, name: string): unknown {
@@ -71,6 +79,32 @@ export function normalizeLineWidthDisplay(value: unknown): number {
   return normalized === 0 ? 0 : 1
 }
 
+export function normalizeOrthoMode(value: unknown): number {
+  const normalized = Number(value)
+  if (Number.isNaN(normalized)) return 0
+
+  return normalized === 0 ? 0 : 1
+}
+
+export function normalizePolarmode(value: unknown): number {
+  const normalized = Number(value)
+  if (Number.isNaN(normalized)) return 0
+
+  return Math.trunc(normalized)
+}
+
+export function normalizePolarang(value: unknown): number {
+  const normalized = Number(value)
+  if (Number.isNaN(normalized)) return 90
+
+  return normalized
+}
+
+export function normalizePolaraddang(value: unknown): string {
+  if (value == null) return ''
+  return String(value)
+}
+
 export function setColorThemeForDatabase(
   database: AcDbDatabase,
   theme: AcDbColorTheme
@@ -96,6 +130,16 @@ export function useSystemVars(editor: AcApDocManager) {
     reactiveSystemVars.lwdisplay = AcDbSysVarManager.instance().getDefaultValue(
       LINEWIDTH_DISPLAY_SYSVAR_NAME
     ) as number
+    reactiveSystemVars.orthomode = normalizeOrthoMode(doc.orthomode)
+    reactiveSystemVars.polarmode = normalizePolarmode(
+      getDatabaseSysVarValue(doc, POLAR_MODE_SYSVAR_NAME)
+    )
+    reactiveSystemVars.polarang = normalizePolarang(
+      getDatabaseSysVarValue(doc, POLAR_ANGLE_SYSVAR_NAME)
+    )
+    reactiveSystemVars.polaraddang = normalizePolaraddang(
+      getDatabaseSysVarValue(doc, POLAR_ADD_ANGLE_SYSVAR_NAME)
+    )
   }
   reset(doc.database)
 
@@ -113,6 +157,26 @@ export function useSystemVars(editor: AcApDocManager) {
 
     if (name === LINEWIDTH_DISPLAY_SYSVAR_NAME.toLowerCase()) {
       reactiveSystemVars.lwdisplay = normalizeLineWidthDisplay(args.newVal)
+      return
+    }
+
+    if (name === ORTHO_MODE_SYSVAR_NAME.toLowerCase()) {
+      reactiveSystemVars.orthomode = normalizeOrthoMode(args.newVal)
+      return
+    }
+
+    if (name === POLAR_MODE_SYSVAR_NAME.toLowerCase()) {
+      reactiveSystemVars.polarmode = normalizePolarmode(args.newVal)
+      return
+    }
+
+    if (name === POLAR_ANGLE_SYSVAR_NAME.toLowerCase()) {
+      reactiveSystemVars.polarang = normalizePolarang(args.newVal)
+      return
+    }
+
+    if (name === POLAR_ADD_ANGLE_SYSVAR_NAME.toLowerCase()) {
+      reactiveSystemVars.polaraddang = normalizePolaraddang(args.newVal)
       return
     }
 

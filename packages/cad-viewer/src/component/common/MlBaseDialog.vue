@@ -1,5 +1,11 @@
 <template>
-  <div v-if="modelValue" class="ml-base-dialog" role="dialog" aria-modal="true">
+  <div
+    v-if="modelValue"
+    class="ml-base-dialog"
+    role="dialog"
+    aria-modal="true"
+    :style="{ zIndex }"
+  >
     <!-- Overlay -->
     <div class="ml-base-dialog-overlay" @click="handleCancel"></div>
 
@@ -57,7 +63,10 @@ const props = defineProps({
   modelValue: { type: Boolean, required: true },
   title: { type: String, required: true },
   width: { type: [Number, String], default: 400 },
-  icon: { type: Object as () => Component | null, default: null }
+  icon: { type: Object as () => Component | null, default: null },
+  /** When false, OK emits but leaves the dialog open (caller closes on success). */
+  autoClose: { type: Boolean, default: true },
+  zIndex: { type: Number, default: 2100 }
 })
 
 const emits = defineEmits([
@@ -87,7 +96,9 @@ watch(
 
 function handleOk() {
   emits('ok')
-  emits('update:modelValue', false)
+  if (props.autoClose) {
+    emits('update:modelValue', false)
+  }
 }
 
 function handleCancel() {
@@ -101,7 +112,6 @@ function handleCancel() {
 .ml-base-dialog {
   position: fixed;
   inset: 0;
-  z-index: 2100;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,6 +129,8 @@ function handleCancel() {
   position: relative;
   z-index: 1;
   --ml-dialog-font-size: 12px;
+  --ml-dialog-body-padding-x: 16px;
+  --ml-dialog-body-padding-y: 16px;
   --el-font-size-base: 12px;
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color);
@@ -184,9 +196,9 @@ function handleCancel() {
   justify-content: center;
 }
 
-/* Body */
+/* Body — horizontal/vertical content inset is shared by all dialogs */
 .ml-base-dialog-body {
-  padding: 16px;
+  padding: var(--ml-dialog-body-padding-y) var(--ml-dialog-body-padding-x);
   overflow-y: auto;
   flex: 1;
   font-size: var(--ml-dialog-font-size);

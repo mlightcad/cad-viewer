@@ -1,4 +1,9 @@
-import { AcGeBox2d, AcGePoint2d, AcGePoint2dLike, AcGiViewport } from '@mlightcad/data-model'
+import {
+  AcGeBox2d,
+  AcGePoint2d,
+  AcGePoint2dLike,
+  AcGiViewport
+} from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrRenderer } from '../renderer'
@@ -31,23 +36,31 @@ export class AcTrViewportView extends AcTrBaseView {
    * that exists in every paper-space layout and does not correspond to a
    * user-created viewport.
    *
-   * The legacy heuristic was "`number === 1`", but that fails on files
-   * parsed by libredwg-web: its
-   * `bindings/javascript/src/converter/converter.ts` reassigns
-   * `viewportId` by sorting all VIEWPORT entities on objectId and
-   * indexing from 1. Files whose default viewport's handle sorts after
-   * a user viewport end up with the default getting `number = 2` (or
-   * higher). In `test-file-tower.dwg` the default lands on `2` and gets
-   * rendered as if it were a real viewport — a 12×9 (drawing-unit)
-   * rectangle that stretches the paper layout's bounding box, ruins
-   * `zoomToFitDrawing`, and squeezes the actual user viewports into
-   * ~5% of the canvas.
+   * The legacy heuristic was "`number === 1`", but `number` is **not a
+   * reliable signal at all** on files parsed by libredwg-web: it reassigns
+   * `viewportId` by sorting all VIEWPORT entities on objectId and indexing
+   * from 1. This breaks the numeric assumption in **both** directions:
    *
-   * The **structural** fingerprint is much more reliable than the
-   * numeric one: the default viewport "looks at itself" in paper space,
-   * so its `centerPoint` (paper WCS) coincides with its `viewCenter`
-   * (model DCS). Real user viewports always pan the model view to a
-   * different center.
+   * - **The default gets `number ≠ 1`** — when the template default's
+   *   handle sorts after a real viewport it lands on `2` (or higher). The
+   *   old `number === 1` check missed it, so it rendered as a 12×9
+   *   (drawing-unit) rectangle that stretched the layout's bounding box,
+   *   ruined `zoomToFitDrawing`, and squeezed the real viewports into a
+   *   sliver of the canvas.
+   * - **A real viewport gets `number === 1`** — when a genuine user
+   *   viewport's handle sorts first it receives `number = 1`. The old
+   *   shortcut then **false-positived** it and skipped rendering its
+   *   content entirely, leaving a large empty area where AutoCAD shows the
+   *   viewport's model content (e.g. a large site-plan viewport whose paper
+   *   box spans most of the sheet).
+   *
+   * Because `number` misfires both ways, we rely **solely** on the
+   * structural fingerprint: the default viewport "looks at itself" in
+   * paper space, so its `centerPoint` (paper WCS) coincides with its
+   * `viewCenter` (model DCS). The genuine template default is the
+   * `(0,0)-(12,9)` viewport with `centerPoint == viewCenter == (6,4.5)`,
+   * while every real viewport pans the model view to a `viewCenter`
+   * tens-to-hundreds of units away from its paper `centerPoint`.
    *
    * @param viewport the viewport read from `AcDbViewport.toGiViewport()`
    *                 (or the database entity, which exposes the same
@@ -58,7 +71,6 @@ export class AcTrViewportView extends AcTrBaseView {
     centerPoint: { x: number; y: number }
     viewCenter: { x: number; y: number }
   }): boolean {
-    if (viewport.number === 1) return true
     // Tolerance ~1µ in drawing units — generous enough to absorb
     // floating-point round-tripping through the parser, tight enough
     // that no real user viewport (even one panned to (0,0) of model

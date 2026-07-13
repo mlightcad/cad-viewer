@@ -4,8 +4,8 @@ import { AcEdCommand } from '../editor'
 /**
  * Command for creating a new CAD document from a template.
  *
- * This command opens a predefined template drawing (acadiso.dxf) from
- * a CDN to create a new document. The template provides:
+ * This command uses {@link AcApDocManager.newDocument} to create a new document
+ * from the default ISO template (`acadiso.dxf`), which provides:
  * - Standard ISO drawing settings
  * - Predefined layers and styles
  * - Default drawing setup
@@ -23,13 +23,15 @@ export class AcApQNewCmd extends AcEdCommand {
   /**
    * Executes the quick new command.
    *
-   * Opens the ISO template from the CDN to create a new document
-   * with standard drawing settings.
+   * Creates a new document from the default ISO template with standard
+   * drawing settings.
    *
    * @param _context - The application context (unused in this command)
    */
   async execute(_context: AcApContext) {
-    const baseUrl = AcApDocManager.instance.baseUrl
-    AcApDocManager.instance.openUrl(baseUrl + 'templates/acadiso.dxf')
+    const success = await AcApDocManager.instance.newDocument()
+    if (!success) {
+      throw new Error('Failed to create new drawing')
+    }
   }
 }

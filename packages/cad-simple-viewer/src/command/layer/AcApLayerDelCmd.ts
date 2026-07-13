@@ -1,19 +1,15 @@
-import {
-  AcDbEntity,
-  AcDbLayerTableRecord,
-  AcDbObjectId
-} from '@mlightcad/data-model'
+import { AcDbLayerTableRecord, AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdCommand,
-  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { AcApLaydelEntitySnapshot, AcApLayerService } from '../../service'
+import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
 
 /**
  * Top-level keywords supported by the main `LAYDEL` entity selection prompt.
@@ -66,32 +62,9 @@ type LaydelNameAction =
       keyword: LaydelNameKeyword
     }
 
-/**
- * Snapshot of an entity removed as part of deleting a layer.
- *
- * The snapshot stores both ownership information and a cloned entity so the
- * command can rebuild the original structure during `Undo`.
- */
-interface LaydelDeletedEntitySnapshot {
-  /** Object id of the owning block table record. */
-  ownerId: AcDbObjectId
-
-  /** Original object id of the removed entity. */
-  objectId: AcDbObjectId
-
-  /** Cloned entity payload used for undo restoration. */
-  entity: AcDbEntity
-}
-
-/**
- * Undo snapshot for a single successful `LAYDEL` operation.
- */
 interface LaydelHistoryEntry {
-  /** Cloned layer table record that was removed from the database. */
   layer: AcDbLayerTableRecord
-
-  /** Cloned entities that were removed together with the layer. */
-  entities: LaydelDeletedEntitySnapshot[]
+  entities: AcApLaydelEntitySnapshot[]
 }
 
 /**
@@ -103,7 +76,7 @@ interface LaydelHistoryEntry {
  * - Use `Undo` to restore the most recently deleted layer in the current
  *   command session.
  */
-export class AcApLayerDelCmd extends AcEdCommand {
+export class AcApLayerDelCmd extends AcApLayerMutationCmd {
   private _history: LaydelHistoryEntry[] = []
 
   /**
@@ -141,16 +114,6 @@ export class AcApLayerDelCmd extends AcEdCommand {
 
       this.deleteLayerByEntity(context, action.objectId)
     }
-  }
-
-  /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
   }
 
   /**
@@ -263,16 +226,9 @@ export class AcApLayerDelCmd extends AcEdCommand {
    * @param context - Active application context providing access to the layer table.
    */
   private listLayers(context: AcApContext) {
-    const db = context.doc.database
-    const rows = [...db.tables.layerTable.newIterator()].map(layer => ({
-      name: layer.name,
-      current: db.clayer === layer.name ? '*' : '',
-      on: layer.isOff ? 'No' : 'Yes',
-      frozen: layer.isFrozen ? 'Yes' : 'No',
-      locked: layer.isLocked ? 'Yes' : 'No'
-    }))
+    const rows = new AcApLayerService(context.doc.database).getLayerSummaries()
     console.table(rows)
-    this.notify(AcApI18n.t('jig.laydel.layerListSummary'), 'info')
+    this.showMessage(AcApI18n.t('jig.laydel.layerListSummary'), 'info')
   }
 
   /**
@@ -287,7 +243,7 @@ export class AcApLayerDelCmd extends AcEdCommand {
     const layerName = entity?.layer?.trim()
 
     if (!layerName) {
-      this.notify(AcApI18n.t('jig.laydel.invalidSelection'), 'warning')
+      this.showMessage(AcApI18n.t('jig.laydel.invalidSelection'), 'warning')
       return
     }
 
@@ -304,127 +260,60 @@ export class AcApLayerDelCmd extends AcEdCommand {
    * @param layerName - Name of the layer to remove.
    */
   private deleteLayerByName(context: AcApContext, layerName: string) {
-    const db = context.doc.database
-    const layer = db.tables.layerTable.getAt(layerName)
+    const result = new AcApLayerService(context.doc.database).deleteLayer(
+      layerName
+    )
 
-    if (!layer) {
-      this.notify(`${AcApI18n.t('jig.laydel.layerNotFound')}: ${layerName}`)
-      return
-    }
-
-    if (layer.name === '0') {
-      this.notify(AcApI18n.t('jig.laydel.cannotDeleteZeroLayer'), 'warning')
-      return
-    }
-
-    if (layer.name === db.clayer) {
-      this.notify(AcApI18n.t('jig.laydel.cannotDeleteCurrent'), 'warning')
-      return
-    }
-
-    const deletedEntities = this.collectLayerEntities(context, layer.name)
-    this.removeLayerEntities(context, deletedEntities)
-
-    const deletedLayer = layer.clone()
-    db.tables.layerTable.remove(layer.name)
-    db.events.layerErased.dispatch({ database: db, layer })
-
-    this._history.push({
-      layer: deletedLayer,
-      entities: deletedEntities
-    })
-
-    context.view.selectionSet.clear()
-    AcApDocManager.instance.regen()
-    this.notify(`${AcApI18n.t('jig.laydel.deleted')}: ${layer.name}`, 'success')
-  }
-
-  /**
-   * Captures clones of every entity that belongs to the specified layer.
-   *
-   * Each snapshot also records the owning block record so undo can restore the
-   * entities to the correct container.
-   *
-   * @param context - Active application context containing the current database.
-   * @param layerName - Layer whose entities should be collected.
-   * @returns Cloned entity snapshots grouped later by owner during deletion or undo.
-   */
-  private collectLayerEntities(
-    context: AcApContext,
-    layerName: string
-  ): LaydelDeletedEntitySnapshot[] {
-    const snapshots: LaydelDeletedEntitySnapshot[] = []
-
-    for (const blockRecord of context.doc.database.tables.blockTable.newIterator()) {
-      for (const entity of blockRecord.newIterator()) {
-        if (entity.layer !== layerName) continue
-        snapshots.push({
-          ownerId: blockRecord.objectId,
-          objectId: entity.objectId,
-          entity: entity.clone()
-        })
+    if (!result.ok) {
+      switch (result.reason) {
+        case 'not_found':
+          this.showMessage(
+            `${AcApI18n.t('jig.laydel.layerNotFound')}: ${layerName}`
+          )
+          return
+        case 'layer_0':
+          this.showMessage(
+            AcApI18n.t('jig.laydel.cannotDeleteZeroLayer'),
+            'warning'
+          )
+          return
+        case 'current_layer':
+          this.showMessage(
+            AcApI18n.t('jig.laydel.cannotDeleteCurrent'),
+            'warning'
+          )
+          return
       }
     }
 
-    return snapshots
-  }
-
-  /**
-   * Removes the captured entities from their owning block records.
-   *
-   * @param context - Active application context containing the current database.
-   * @param deletedEntities - Entity snapshots to remove from the drawing.
-   */
-  private removeLayerEntities(
-    context: AcApContext,
-    deletedEntities: LaydelDeletedEntitySnapshot[]
-  ) {
-    const idsByOwner = new Map<AcDbObjectId, AcDbObjectId[]>()
-
-    deletedEntities.forEach(({ ownerId, objectId }) => {
-      const ids = idsByOwner.get(ownerId) ?? []
-      ids.push(objectId)
-      idsByOwner.set(ownerId, ids)
-    })
-
-    idsByOwner.forEach((ids, ownerId) => {
-      context.doc.database.tables.blockTable.getIdAt(ownerId)?.removeEntity(ids)
-    })
-  }
-
-  /**
-   * Restores the most recently deleted layer and its entities.
-   *
-   * @param context - Active application context containing the current database and view.
-   */
-  private runUndo(context: AcApContext) {
-    const entry = this._history.pop()
-    if (!entry) {
-      this.notify(AcApI18n.t('jig.laydel.nothingToUndo'), 'warning')
-      return
-    }
-
-    const db = context.doc.database
-    if (!db.tables.layerTable.has(entry.layer.name)) {
-      db.tables.layerTable.add(entry.layer.clone())
-    }
-
-    const entitiesByOwner = new Map<AcDbObjectId, AcDbEntity[]>()
-    entry.entities.forEach(({ ownerId, entity }) => {
-      const entities = entitiesByOwner.get(ownerId) ?? []
-      entities.push(entity.clone())
-      entitiesByOwner.set(ownerId, entities)
-    })
-
-    entitiesByOwner.forEach((entities, ownerId) => {
-      const owner =
-        db.tables.blockTable.getIdAt(ownerId) ?? db.tables.blockTable.modelSpace
-      owner.appendEntity(entities)
+    this._history.push({
+      layer: result.layer,
+      entities: result.entities
     })
 
     context.view.selectionSet.clear()
     AcApDocManager.instance.regen()
-    this.notify(
+    this.showMessage(
+      `${AcApI18n.t('jig.laydel.deleted')}: ${result.layerName}`,
+      'success'
+    )
+  }
+
+  private runUndo(context: AcApContext) {
+    const entry = this._history.pop()
+    if (!entry) {
+      this.showMessage(AcApI18n.t('jig.laydel.nothingToUndo'), 'warning')
+      return
+    }
+
+    new AcApLayerService(context.doc.database).restoreDeletedLayer(
+      entry.layer,
+      entry.entities
+    )
+
+    context.view.selectionSet.clear()
+    AcApDocManager.instance.regen()
+    this.showMessage(
       `${AcApI18n.t('jig.laydel.restored')}: ${entry.layer.name}`,
       'success'
     )

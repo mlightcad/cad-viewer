@@ -1,5 +1,8 @@
 # CAD Viewer Component
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/@mlightcad/cad-viewer.svg)](https://www.npmjs.com/package/@mlightcad/cad-viewer)
+
 CAD Viewer is a **high-performance** Vue 3 component for viewing and editing CAD files (DXF, DWG) **entirely in the browser without requiring any backend server**. It provides a modern user interface, state management, and seamless integration with optimized rendering engines for smooth browser-based CAD workflows with exceptional performance.
 
 ## Key Features
@@ -259,7 +262,7 @@ The `baseUrl` property allows you to customize where the CAD viewer loads fonts,
 - **Custom branding**: Use your own templates and fonts
 
 #### Default Behavior
-If no `baseUrl` is provided, the viewer uses the default URL: `https://mlightcad.gitlab.io/cad-data/`
+If no `baseUrl` is provided, the viewer uses the default URL: `https://cdn.jsdelivr.net/gh/mlightcad/cad-data`
 
 #### Resource Structure
 When using a custom `baseUrl`, ensure your server has the following structure:

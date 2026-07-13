@@ -1,4 +1,9 @@
-import { AcDbCircle, AcGePoint3d, AcGePoint3dLike, AcGeTol } from '@mlightcad/data-model'
+import {
+  AcDbCircle,
+  AcGePoint3d,
+  AcGePoint3dLike,
+  AcGeTol
+} from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
@@ -53,7 +58,8 @@ function createCircleFromCenterRadius(
   center: AcGePoint3dLike,
   radius: number
 ): CircleDefinition | undefined {
-  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius)) return undefined
+  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius))
+    return undefined
   return {
     center: { x: center.x, y: center.y, z: 0 },
     radius
@@ -105,7 +111,8 @@ function createCircleFromThreePoints(
     d
 
   const radius = Math.hypot(ux - x1, uy - y1)
-  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius)) return undefined
+  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius))
+    return undefined
   return {
     center: { x: ux, y: uy, z: 0 },
     radius

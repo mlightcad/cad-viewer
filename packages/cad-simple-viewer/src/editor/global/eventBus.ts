@@ -1,7 +1,11 @@
-import { AcDbProgressdEventArgs } from '@mlightcad/data-model'
+import {
+  AcDbOpenDatabaseErrorCode,
+  AcDbProgressdEventArgs
+} from '@mlightcad/data-model'
 import mitt, { type Emitter } from 'mitt'
 
 import { AcEdMessageType } from '../input/ui/AcEdMessageType'
+import { AcEdOpenMode } from '../view/AcEdOpenMode'
 
 export interface AcEdFontNotLoadedInfo {
   /** Font name */
@@ -17,14 +21,34 @@ export interface AcEdFontNotLoadedInfo {
  * type safety for event emission and listening throughout the application.
  *
  * ## Event Categories
- * - **File Operations**: `open-file`, `open-file-progress`, `failed-to-open-file`
+ * - **File Operations**: `open-file`, `open-local-file-started`, `open-file-progress`, `failed-to-open-file`, `cache-font`, `font-file-selected`
  * - **Palette Control**: `close-layer-manager`
  * - **Font Management**: `fonts-not-loaded`, `failed-to-get-avaiable-fonts`, `font-not-found`
+ * - **Missing Resources**: `missed-data-changed`
  * - **User Messages**: `message`
+ * - **Busy Indicator**: `busy-indicator`
  */
+export type AcEdBusyIndicatorEventArgs = {
+  /** Whether the busy overlay should be visible */
+  visible: boolean
+  /** Optional message text displayed with the spinner */
+  message?: string
+}
+
 export type AcEdEvents = {
-  /** Emitted to request opening a file dialog */
+  /** Emitted to request opening a file dialog (handled by {@link acapInstallOpenFileDialog}) */
   'open-file': {}
+  /** Emitted when a local file is about to be opened through the built-in OPEN dialog */
+  'open-local-file-started': {
+    /** Requested document access mode for the pending open operation */
+    mode: AcEdOpenMode
+  }
+  /** Emitted to request opening a font file dialog for IndexedDB caching */
+  'cache-font': {}
+  /** Emitted when the user selects a font file in the cache-font dialog */
+  'font-file-selected': {
+    file?: File
+  }
   /** Emitted to request closing the layer properties manager */
   'close-layer-manager': {}
   /** Emitted during file opening to report progress */
@@ -53,6 +77,10 @@ export type AcEdEvents = {
   'failed-to-open-file': {
     /** Name/path of the file that failed to open */
     fileName: string
+    /** Structured failure category from {@link AcDbDatabase.lastOpenError} */
+    errorCode?: AcDbOpenDatabaseErrorCode
+    /** Human-readable failure description */
+    errorMessage?: string
   }
   /** Emitted when a required font is not found */
   'font-not-found': {
@@ -61,6 +89,12 @@ export type AcEdEvents = {
     /** Number of entities that require this font */
     count: number
   }
+  /** Emitted after missing resource caches change and UI state should refresh */
+  'missed-data-changed': {}
+  /** Emitted after the active document undo/redo stack changes */
+  'undo-stack-changed': {}
+  /** Emitted when the application busy indicator is shown or hidden */
+  'busy-indicator': AcEdBusyIndicatorEventArgs
 }
 
 /**

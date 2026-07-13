@@ -1,5 +1,7 @@
 import {
+  acgiForegroundColorForBackground,
   AcGiLineWeight,
+  acgiResolveSubEntityTraitsRgbFromBackground,
   AcGiSubEntityTraits,
   deepClone
 } from '@mlightcad/data-model'
@@ -67,7 +69,10 @@ export abstract class AcTrMaterialManager<T> {
 
     // cache original traits
     if (!this.keyToTraits[key]) {
-      this.keyToTraits[key] = { ...deepClone(traits), ...options }
+      this.keyToTraits[key] = this.cloneTraits({
+        ...traits,
+        ...options
+      } as AcGiSubEntityTraits & T)
     }
 
     // hit cache
@@ -90,8 +95,9 @@ export abstract class AcTrMaterialManager<T> {
    * For each qualifying material:
    * 1. Rebuild merged traits (old traits + new layer-level traits)
    * 2. Compute a NEW material key
-   * 3. Dispose old material
-   * 4. Create the new material
+   * 3. When the key is unchanged (typical for ByLayer colour-only updates),
+   *    refresh the cached material colour in place and keep the same id
+   * 4. Otherwise dispose the old material, create a new one, and remap ids
    * 5. Update cache/keyToTraits
    * 6. Return mapping { oldMaterialId → newMaterial }
    */
@@ -105,11 +111,6 @@ export abstract class AcTrMaterialManager<T> {
     for (const oldKey of Object.keys(this.cache)) {
       const oldMaterial = this.cache[oldKey]
       const metadata = getMaterialMetadata(oldMaterial)
-
-      const isTarget =
-        metadata.layer === layerName && hasByLayerBinding(metadata)
-      if (!isTarget) continue
-
       const oldTraits = this.keyToTraits[oldKey]
       if (!oldTraits) continue
 
@@ -118,9 +119,21 @@ export abstract class AcTrMaterialManager<T> {
         oldMaterial
       )
 
+      const isTarget =
+        metadata.layer === layerName &&
+        (hasByLayerBinding(metadata) ||
+          hasByLayerBinding(byLayerBindings) ||
+          this.shouldInheritLayerColor(oldTraits, byLayerBindings, oldMaterial))
+      if (!isTarget) continue
+
       // Step 1: merged traits (only mutate traits that are actually ByLayer)
-      const mergedTraits = deepClone(oldTraits)
-      this.applyInheritedLayerTraits(mergedTraits, newTraits, byLayerBindings)
+      const mergedTraits = this.cloneTraits(oldTraits)
+      this.applyInheritedLayerTraits(
+        mergedTraits,
+        newTraits,
+        byLayerBindings,
+        oldMaterial
+      )
       if (newTraits.layer != null) {
         mergedTraits.layer = newTraits.layer
       }
@@ -130,17 +143,28 @@ export abstract class AcTrMaterialManager<T> {
 
       const oldMaterialId = oldMaterial.id
 
+      if (newKey === oldKey) {
+        if (byLayerBindings.isByLayerColor && newTraits.color) {
+          this.refreshMaterialResolvedColor(oldMaterial, newTraits)
+        }
+        this.keyToTraits[oldKey] = mergedTraits
+        idMap[oldMaterialId] = oldMaterial
+        continue
+      }
+
       // Step 3: dispose old
       oldMaterial.dispose()
       delete this.cache[oldKey]
       delete this.keyToTraits[oldKey]
 
       // Step 4: create new material
+      const layerRgb = newTraits.color?.RGB
       const newMaterial = this.createMaterial(
         newKey,
         mergedTraits,
         mergedTraits,
-        byLayerBindings
+        byLayerBindings,
+        typeof layerRgb === 'number' ? layerRgb : undefined
       )
 
       // Step 5: store merged traits
@@ -253,24 +277,59 @@ export abstract class AcTrMaterialManager<T> {
     }
 
     const remappedTraits: AcGiSubEntityTraits & T = {
-      ...deepClone(traits),
+      ...this.cloneTraits(traits),
       layer: layerName
     }
     const byLayerBindings = this.resolveByLayerBindings(traits, material)
-    this.applyInheritedLayerTraits(remappedTraits, layerTraits, byLayerBindings)
+    this.applyInheritedLayerTraits(
+      remappedTraits,
+      layerTraits,
+      byLayerBindings,
+      material
+    )
     const remappedKey = this.buildKey(remappedTraits, remappedTraits)
 
     if (this.cache[remappedKey]) {
-      return this.cache[remappedKey]
+      const cached = this.cache[remappedKey]
+      if (
+        remappedTraits.color.isByLayer &&
+        layerTraits?.color &&
+        getMaterialMetadata(cached).isByLayerColor
+      ) {
+        this.refreshMaterialResolvedColor(cached, layerTraits)
+      }
+      return cached
     }
 
     this.keyToTraits[remappedKey] = remappedTraits
+    const layerRgb = layerTraits?.color?.RGB
     return this.createMaterial(
       remappedKey,
       remappedTraits,
       remappedTraits,
-      byLayerBindings
+      byLayerBindings,
+      typeof layerRgb === 'number' ? layerRgb : undefined
     )
+  }
+
+  /**
+   * Clones render traits while preserving class-based color/transparency values.
+   *
+   * {@link deepClone} only copies enumerable fields, so `AcCmColor` /
+   * `AcCmTransparency` instances would degrade into plain objects and later
+   * resolve to white during material rebuilds.
+   */
+  protected cloneTraits<U extends AcGiSubEntityTraits & Partial<T>>(
+    traits: U
+  ): U {
+    const cloned = deepClone(traits) as U
+    if (traits.color?.clone) {
+      cloned.color = traits.color.clone()
+    }
+    if (traits.transparency?.clone) {
+      cloned.transparency = traits.transparency.clone()
+    }
+    return cloned
   }
 
   /**
@@ -282,25 +341,22 @@ export abstract class AcTrMaterialManager<T> {
   private applyInheritedLayerTraits(
     traits: AcGiSubEntityTraits & T,
     layerTraits?: Partial<AcGiSubEntityTraits>,
-    byLayerBindings?: AcTrByLayerBindingFlags
+    byLayerBindings?: AcTrByLayerBindingFlags,
+    material?: THREE.Material
   ) {
     if (!layerTraits) return
 
-    const isByLayerColor = byLayerBindings?.isByLayerColor === true
     const isByLayerLineType = byLayerBindings?.isByLayerLineType === true
     const isByLayerLineWeight = byLayerBindings?.isByLayerLineWeight === true
     const isByLayerTransparency =
       byLayerBindings?.isByLayerTransparency === true
 
-    if (isByLayerColor) {
-      if (layerTraits.rgbColor != null) {
-        traits.rgbColor = layerTraits.rgbColor
-      } else if (layerTraits.color) {
-        const inheritedRgb = layerTraits.color.RGB
-        if (inheritedRgb != null) {
-          traits.rgbColor = inheritedRgb
-        }
-      }
+    if (
+      this.shouldInheritLayerColor(traits, byLayerBindings, material) &&
+      layerTraits.color &&
+      !traits.color.isByLayer
+    ) {
+      traits.color = layerTraits.color.clone()
     }
 
     if (isByLayerLineType && layerTraits.lineType) {
@@ -314,6 +370,34 @@ export abstract class AcTrMaterialManager<T> {
     if (isByLayerTransparency && layerTraits.transparency) {
       traits.transparency = deepClone(layerTraits.transparency)
     }
+  }
+
+  /**
+   * Returns whether a cached material should follow live layer colour updates.
+   */
+  protected shouldInheritLayerColor(
+    traits: AcGiSubEntityTraits,
+    byLayerBindings?: AcTrByLayerBindingFlags,
+    material?: THREE.Material
+  ): boolean {
+    const metadata = material ? getMaterialMetadata(material) : undefined
+
+    if (byLayerBindings?.isByLayerColor === true) {
+      return true
+    }
+    if (traits.color?.isByLayer === true) {
+      return true
+    }
+    if (metadata?.isByLayerColor === true) {
+      return true
+    }
+    if (metadata?.isByLayerColor === false) {
+      return !!traits.color?.isByLayer
+    }
+    if (metadata?.isForeground === true) {
+      return false
+    }
+    return this.hasByLayerKeyTraits(traits)
   }
 
   /**
@@ -331,7 +415,8 @@ export abstract class AcTrMaterialManager<T> {
 
     return {
       isByLayerColor:
-        metadata?.isByLayerColor ?? traits.color.isByLayer === true,
+        metadata?.isByLayerColor === true ||
+        (traits.color.isByLayer === true && metadata?.isForeground !== true),
       isByLayerLineType:
         metadata?.isByLayerLineType ?? traits.lineType.type === 'ByLayer',
       isByLayerLineWeight:
@@ -346,7 +431,7 @@ export abstract class AcTrMaterialManager<T> {
    * Creates a THREE.js material and stores metadata in userData:
    *   - layer
    *   - isByLayerColor/isByLayerLineType/isByLayerLineWeight/isByLayerTransparency
-   *   - isForeground      (inverts with COLORTHEME when tracked by manager)
+   *   - isForeground      (inverts with layout background when tracked)
    *   - isBackgroundFill  (follows canvas bg when tracked by manager)
    *   - drawOrder         (batch/render-order tier for same-plane meshes)
    *   - materialKey (cache key, used by getBackSideVariant for reverse lookup)
@@ -361,22 +446,23 @@ export abstract class AcTrMaterialManager<T> {
     key: string,
     traits: AcGiSubEntityTraits,
     options: T,
-    byLayerBindings?: AcTrByLayerBindingFlags
+    byLayerBindings?: AcTrByLayerBindingFlags,
+    layerColorRgb?: number
   ): THREE.Material {
-    const material = this.createMaterialImpl(traits, options)
+    const material = this.createMaterialImpl(traits, options, layerColorRgb)
     const isForeground = this.shouldTrackForeground(traits, options)
     const isBackgroundFill = this.shouldTrackBackground(traits, options)
 
     // Foreground-follow materials (typically ACI 7 lines/text) must be
-    // initialized against the current canvas background color, otherwise
-    // they can be created with stale white color on a light background
-    // before any theme-change repaint occurs.
+    // initialized from the current layout background, not from trait RGB,
+    // otherwise they can be created with stale white before the first
+    // background-driven repaint occurs.
     if (isForeground) {
-      const foregroundColor =
-        this.options.currentBackgroundColor === 0 ? 0xffffff : 0x000000
       AcTrMaterialUtil.setMaterialColor(
         material,
-        new THREE.Color(foregroundColor)
+        new THREE.Color(
+          acgiForegroundColorForBackground(this.options.currentBackgroundColor)
+        )
       )
     }
 
@@ -411,8 +497,8 @@ export abstract class AcTrMaterialManager<T> {
   }
 
   /**
-   * Whether materials from this manager should follow COLORTHEME
-   * inversion (i.e. be flipped by `changeForeground`).
+   * Whether materials from this manager should follow layout-background
+   * ACI-7 inversion (i.e. be flipped by `changeForeground`).
    *
    * The default implementation delegates to `AcCmColor.isForeground`,
    * so lines, points and text glyph fills keep inverting ACI 7 with
@@ -461,12 +547,56 @@ export abstract class AcTrMaterialManager<T> {
     return traits.drawOrder === 0 ? '' : `_draw_${traits.drawOrder ?? 0}`
   }
 
+  /** Resolves trait colour to pixel RGB using the current canvas background. */
+  protected resolveTraitsRgb(traits: AcGiSubEntityTraits): number {
+    return acgiResolveSubEntityTraitsRgbFromBackground(
+      traits,
+      this.options.currentBackgroundColor
+    )
+  }
+
+  /**
+   * Resolves the RGB written into a Three.js material.
+   *
+   * Cache keys stay symbolic (`color.toString()`), but materials still carry
+   * the current layer-table swatch when it is available.
+   */
+  protected resolveMaterialRgb(
+    traits: AcGiSubEntityTraits,
+    layerColorRgb?: number
+  ): number {
+    if (traits.color.isByLayer && typeof layerColorRgb === 'number') {
+      return layerColorRgb
+    }
+    return this.resolveTraitsRgb(traits)
+  }
+
+  /**
+   * Builds the colour portion of a material cache key from symbolic CAD colour.
+   */
+  protected buildKeyColorSegment(traits: AcGiSubEntityTraits): string {
+    return traits.color.toString()
+  }
+
+  /** Repaints one cached material from resolved layer-table colour. */
+  protected refreshMaterialResolvedColor(
+    material: THREE.Material,
+    layerTraits: Partial<AcGiSubEntityTraits>
+  ): void {
+    const rgb = layerTraits.color?.RGB
+    if (typeof rgb !== 'number') {
+      return
+    }
+    AcTrMaterialUtil.setMaterialColor(material, new THREE.Color(rgb))
+  }
+
   /** Subclass must build stable key. */
   protected abstract buildKey(traits: AcGiSubEntityTraits, options: T): string
 
   /** Subclass must create material. */
   protected abstract createMaterialImpl(
     traits: AcGiSubEntityTraits,
-    options: T
+    options: T,
+    layerColorRgb?: number
   ): THREE.Material
 }

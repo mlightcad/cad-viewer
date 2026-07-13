@@ -1,5 +1,5 @@
 import { AcEdPromptNumericalOptions } from '../prompt/AcEdPromptNumericalOptions'
-import { AcEdInputHandler } from './AcEdInputHandler'
+import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler'
 
 /**
  * Handles validation and parsing of numerical user input.
@@ -27,5 +27,11 @@ export class AcEdNumericalHandler implements AcEdInputHandler<number> {
     }
 
     return n
+  }
+
+  parseCommandLine(token: string, _context?: AcEdPointInputContext) {
+    const trimmed = token.trim()
+    if (!trimmed) return null
+    return this.parse(trimmed)
   }
 }

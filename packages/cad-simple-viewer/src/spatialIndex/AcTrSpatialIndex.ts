@@ -9,6 +9,27 @@ export type AcTrSpatialIndexBBox = {
   maxY: number
 }
 
+/** AutoCAD-style box selection semantics applied during spatial search. */
+export type AcTrSpatialSelectionMode = 'window' | 'crossing'
+
+export interface AcTrSpatialSearchOptions {
+  /** Defaults to crossing (intersection). Window requires full containment. */
+  selectionMode?: AcTrSpatialSelectionMode
+}
+
+/** Returns whether one axis-aligned box lies fully inside another. */
+export function isSpatialBoxFullyInside(
+  item: AcTrSpatialIndexBBox,
+  box: AcTrSpatialIndexBBox
+): boolean {
+  return (
+    item.minX >= box.minX &&
+    item.maxX <= box.maxX &&
+    item.minY >= box.minY &&
+    item.maxY <= box.maxY
+  )
+}
+
 export interface AcTrSpatialIndex<
   T extends AcEdSpatialQueryResultItem = AcEdSpatialQueryResultItem
 > {
@@ -70,8 +91,9 @@ export interface AcTrSpatialIndex<
    * maxY}` format regardless of the data format.
    *
    * @param box The bounding box in which to search.
+   * @param options Optional query semantics (for example window selection).
    */
-  search(box: AcTrSpatialIndexBBox): T[]
+  search(box: AcTrSpatialIndexBBox, options?: AcTrSpatialSearchOptions): T[]
 
   /**
    * Returns all items contained in the tree.

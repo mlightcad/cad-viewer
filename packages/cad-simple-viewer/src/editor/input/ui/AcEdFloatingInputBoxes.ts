@@ -244,10 +244,14 @@ export class AcEdFloatingInputBoxes<T> {
         return
       }
 
-      // When allowNone is set and the user has not manually typed coordinates,
-      // treat Enter as PromptStatus.None so commands can finish naturally.
-      if (this.allowNone && !this.userTyped) {
-        this.onNone?.()
+      // Dynamic preview fills the inputs via setValue(); only manually typed
+      // coordinates should be committed on Enter.
+      if (!this.userTyped) {
+        if (this.allowNone) {
+          this.onNone?.()
+        } else {
+          currentInput.markInvalid()
+        }
       } else {
         const state = this.validate()
         if (state.isValid && state.value != null) {

@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-viewer-examples",
-  "version": "1.5.1",
+  "version": "1.5.7",
   "private": true,
   "type": "module",
   "repository": {
@@ -9,7 +9,8 @@
   },
   "scripts": {
     "pre-serve": "node ./copyDist.js",
-    "serve": "npm run pre-serve && serve ./public/"
+    "export:demo-html": "node ./exportDemoHtml.js",
+    "serve": "node ./servePublic.js"
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer-example": "workspace:*",

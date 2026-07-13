@@ -1,164 +1,25 @@
 import {
   AcDbEntity,
-  AcGeMatrix3d,
   AcGePoint3d,
   AcGePoint3dLike,
   AcGeTol
 } from '@mlightcad/data-model'
 
-import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdBaseView,
   AcEdCommand,
   AcEdOpenMode,
-  AcEdPreviewJig,
   AcEdPromptAngleOptions,
   AcEdPromptPointOptions,
-  AcEdPromptSelectionOptions,
-  AcEdPromptStatus,
-  eventBus
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-
-/**
- * Static preview jig used while ROTATE asks for supporting inputs such as
- * reference points. It keeps cloned source entities visible without mutating
- * database entities.
- */
-class AcApRotateStaticJig<T> extends AcEdPreviewJig<T> {
-  private _view: AcEdBaseView
-  private _previewEntities: AcDbEntity[]
-
-  /**
-   * Creates a static transient preview for prompts that do not modify geometry.
-   *
-   * @param view - Active editor view that renders transient entities.
-   * @param sourceEntities - Original entities cloned for preview display.
-   */
-  constructor(view: AcEdBaseView, sourceEntities: AcDbEntity[]) {
-    super(view)
-    this._view = view
-    this._previewEntities = sourceEntities
-      .map(entity => entity.clone())
-      .filter((entity): entity is AcDbEntity => !!entity)
-  }
-
-  /**
-   * Gets the first preview entity so the jig can integrate with the editor API.
-   *
-   * @returns First transient preview entity, or `null` when cloning failed.
-   */
-  get entity(): AcDbEntity | null {
-    return this._previewEntities[0] ?? null
-  }
-
-  /**
-   * Accepts prompt updates without changing geometry because this preview is static.
-   *
-   * @param _value - Prompt value supplied by the editor, ignored by this jig.
-   */
-  update(_value: T) {
-    // Static preview only.
-  }
-
-  /**
-   * Adds the cloned entities to the view as transient preview graphics.
-   */
-  override render(): void {
-    if (this._previewEntities.length === 0) return
-    this._view.addTransientEntity(this._previewEntities)
-  }
-
-  /**
-   * Removes every transient preview entity from the view.
-   */
-  override end(): void {
-    this._previewEntities.forEach(entity =>
-      this._view.removeTransientEntity(entity.objectId)
-    )
-  }
-}
-
-/**
- * ROTATE preview jig.
- *
- * It clones source entities once and applies only the incremental delta angle
- * to those clones as the cursor moves, so database entities remain unchanged
- * until command commit.
- */
-class AcApRotatePreviewJig extends AcEdPreviewJig<number> {
-  private _view: AcEdBaseView
-  private _basePoint: AcGePoint3d
-  private _previewEntities: AcDbEntity[]
-  private _lastAngleRad: number = 0
-  private _referenceAngleDeg: number
-
-  /**
-   * Creates a dynamic ROTATE preview jig.
-   *
-   * @param view - Active editor view that renders transient entities.
-   * @param sourceEntities - Original entities cloned for preview display.
-   * @param basePoint - Rotation base point.
-   * @param referenceAngleDeg - Reference angle in degrees used for reference-based rotation prompts.
-   */
-  constructor(
-    view: AcEdBaseView,
-    sourceEntities: AcDbEntity[],
-    basePoint: AcGePoint3dLike,
-    referenceAngleDeg: number = 0
-  ) {
-    super(view)
-    this._view = view
-    this._basePoint = new AcGePoint3d(basePoint)
-    this._referenceAngleDeg = referenceAngleDeg
-    this._previewEntities = sourceEntities
-      .map(entity => entity.clone())
-      .filter((entity): entity is AcDbEntity => !!entity)
-  }
-
-  /**
-   * Gets the first transient preview entity required by the jig API.
-   *
-   * @returns First preview entity, or `null` when cloning failed.
-   */
-  get entity(): AcDbEntity | null {
-    return this._previewEntities[0] ?? null
-  }
-
-  /**
-   * Applies only the incremental rotation delta to preview clones.
-   *
-   * @param angleDeg - Current angle input in degrees from the editor prompt.
-   */
-  update(angleDeg: number) {
-    if (this._previewEntities.length === 0) return
-
-    const angleRad = ((angleDeg - this._referenceAngleDeg) * Math.PI) / 180
-    const deltaRad = angleRad - this._lastAngleRad
-    if (AcGeTol.equalToZero(deltaRad)) return
-
-    const matrix = AcApRotateCmd.createRotationMatrix(this._basePoint, deltaRad)
-    this._previewEntities.forEach(entity => entity.transformBy(matrix))
-    this._lastAngleRad = angleRad
-  }
-
-  /**
-   * Adds rotated preview clones to the view as transient geometry.
-   */
-  override render(): void {
-    if (this._previewEntities.length === 0) return
-    this._view.addTransientEntity(this._previewEntities)
-  }
-
-  /**
-   * Removes transient preview clones from the view.
-   */
-  override end(): void {
-    this._previewEntities.forEach(entity =>
-      this._view.removeTransientEntity(entity.objectId)
-    )
-  }
-}
+import { resolveSelectedEntities } from '../../service'
+import { createRotationMatrix } from '../../util/AcApGeTransform'
+import {
+  AcApRotatePreviewJig,
+  AcApRotateStaticJig
+} from './AcApRotatePreviewJig'
 
 /**
  * Command to rotate selected entities around a base point.
@@ -185,18 +46,7 @@ export class AcApRotateCmd extends AcEdCommand {
    * @param angleRad - Rotation angle in radians.
    * @returns Composite transform that rotates around `basePoint`.
    */
-  static createRotationMatrix(basePoint: AcGePoint3dLike, angleRad: number) {
-    return new AcGeMatrix3d()
-      .makeTranslation(basePoint.x, basePoint.y, basePoint.z)
-      .multiply(new AcGeMatrix3d().makeRotationZ(angleRad))
-      .multiply(
-        new AcGeMatrix3d().makeTranslation(
-          -basePoint.x,
-          -basePoint.y,
-          -basePoint.z
-        )
-      )
-  }
+  static createRotationMatrix = createRotationMatrix
 
   /**
    * Adds one localized ROTATE keyword to an angle prompt.
@@ -221,10 +71,7 @@ export class AcApRotateCmd extends AcEdCommand {
    * @param key - Warning message key suffix.
    */
   private warnInvalidInput(key: 'referencePoints') {
-    eventBus.emit('message', {
-      message: AcApI18n.t(`jig.rotate.invalid.${key}`),
-      type: 'warning'
-    })
+    this.notify(AcApI18n.t(`jig.rotate.invalid.${key}`), 'warning')
   }
 
   /**
@@ -350,6 +197,8 @@ export class AcApRotateCmd extends AcEdCommand {
       prompt.basePoint = basePoint
       prompt.allowNegative = true
       prompt.allowZero = true
+      // AutoCAD ROTATE: Enter at angle prompt ends without rotating.
+      prompt.allowNone = true
       prompt.jig = new AcApRotatePreviewJig(
         context.view,
         sourceEntities,
@@ -389,6 +238,7 @@ export class AcApRotateCmd extends AcEdCommand {
       newAnglePrompt.basePoint = basePoint
       newAnglePrompt.allowNegative = true
       newAnglePrompt.allowZero = true
+      newAnglePrompt.allowNone = true
       newAnglePrompt.jig = new AcApRotatePreviewJig(
         context.view,
         sourceEntities,
@@ -418,36 +268,12 @@ export class AcApRotateCmd extends AcEdCommand {
    */
   async execute(context: AcApContext) {
     const selectionSet = context.view.selectionSet
-    const annotation = new AcApAnnotation(context.doc.database)
-    const blockTable = context.doc.database.tables.blockTable
+    const resolved = await resolveSelectedEntities(context, {
+      promptKey: 'rotate'
+    })
+    if (!resolved) return
 
-    const selectionIds =
-      selectionSet.count > 0
-        ? selectionSet.ids
-        : ((
-            await AcApDocManager.instance.editor.getSelection(
-              new AcEdPromptSelectionOptions(AcApI18n.sysCmdPrompt('rotate'))
-            )
-          ).value?.ids ?? [])
-
-    if (selectionIds.length === 0) return
-
-    const ids =
-      context.doc.openMode == AcEdOpenMode.Review
-        ? annotation.filterAnnotationEntities(selectionIds)
-        : selectionIds
-    if (ids.length === 0) {
-      selectionSet.clear()
-      return
-    }
-
-    const sourceEntities = ids
-      .map(id => blockTable.getEntityById(id))
-      .filter((entity): entity is AcDbEntity => !!entity)
-    if (sourceEntities.length === 0) {
-      selectionSet.clear()
-      return
-    }
+    const { entities: sourceEntities } = resolved
 
     const basePointPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.rotate.basePoint')
@@ -456,6 +282,8 @@ export class AcApRotateCmd extends AcEdCommand {
       context.view,
       sourceEntities
     )
+    // AutoCAD ROTATE: Enter at base point cancels without rotating.
+    basePointPrompt.allowNone = true
     const basePointResult =
       await AcApDocManager.instance.editor.getPoint(basePointPrompt)
     if (basePointResult.status !== AcEdPromptStatus.OK) {
@@ -474,24 +302,13 @@ export class AcApRotateCmd extends AcEdCommand {
       return
     }
 
-    const matrix = AcApRotateCmd.createRotationMatrix(
-      basePoint,
-      rotation.angleRad
-    )
+    const matrix = createRotationMatrix(basePoint, rotation.angleRad)
 
+    const entityService = context.doc.entityService
     if (rotation.copyMode) {
-      const clones = sourceEntities
-        .map(entity => entity.clone())
-        .filter((entity): entity is AcDbEntity => !!entity)
-      clones.forEach(entity => entity.transformBy(matrix))
-      if (clones.length > 0) {
-        blockTable.modelSpace.appendEntity(clones)
-      }
+      entityService.cloneAndTransform(sourceEntities, matrix)
     } else {
-      sourceEntities.forEach(entity => {
-        entity.transformBy(matrix)
-        entity.triggerModifiedEvent()
-      })
+      entityService.transformEntities(sourceEntities, matrix)
     }
 
     selectionSet.clear()

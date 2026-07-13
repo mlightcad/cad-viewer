@@ -3,8 +3,11 @@ export default {
     new: '新建图纸',
     open: '打开图纸',
     drawingUnits: '图形单位',
+    exportMenu: '导出',
     export: '导出为DXF',
     exportHtml: '导出为 HTML',
+    exportPdf: '导出为PDF',
+    exportSvg: '导出为 SVG',
     exportImage: '导出图片'
   },
   ribbon: {
@@ -268,9 +271,12 @@ export default {
       copy: '将选中的对象复制到新位置。',
       erase: '从图纸中删除选中的对象。',
       offset: '按指定距离创建对象的平行副本。',
+      undo: '撤销上一次编辑操作。',
+      redo: '重做上一次撤销的操作。',
       properties: '打开当前所选对象的属性面板。',
       quickSelect: '打开快速选择对话框，按条件筛选并选择图元。',
       drawingUnits: '打开图形单位对话框，设置坐标格式、精度与插入缩放单位。',
+      agent: '打开 CAD Agent 工具面板，使用自然语言描述并绘制图形。',
       propertyColor: '设置新建对象或当前选中对象使用的颜色。',
       propertyLineType: '设置新建对象或当前选中对象使用的线型。',
       propertyLineWeight: '设置新建对象或当前选中对象使用的线宽。',
@@ -340,9 +346,12 @@ export default {
       copy: '复制',
       erase: '删除',
       offset: '偏移',
+      undo: '撤销',
+      redo: '重做',
       properties: '属性',
       quickSelect: '快速选择',
-      drawingUnits: '图形单位'
+      drawingUnits: '图形单位',
+      agent: 'CAD Agent'
     }
   },
   verticalToolbar: {
@@ -464,6 +473,14 @@ export default {
       on: '隐藏线宽',
       off: '显示线宽'
     },
+    orthoMode: {
+      on: '关闭正交模式',
+      off: '打开正交模式'
+    },
+    polarTracking: {
+      on: '关闭极轴追踪',
+      off: '打开极轴追踪'
+    },
     theme: {
       dark: '切换到暗黑主题',
       light: '切换到明亮主题'
@@ -496,6 +513,7 @@ export default {
         name: '名称',
         on: '可见',
         color: '颜色',
+        currentLayer: '当前图层',
         zoomToLayer: '已缩放到所点击的图层"{layer}"'
       }
     }
@@ -547,8 +565,18 @@ export default {
     loadingDwgConverter: '正在加载DWG转换器...',
     fontsNotFound: '在字体库中找不到字体：{fonts}。',
     fontsNotLoaded: '无法加载字体：{fonts}。',
+    fontMissedInDrawing:
+      '字体 "{font}" 被 {count} 个文字对象使用，但不可用，已使用 "{replacementFont}" 显示。',
+    fontMissedReplacement: '"{font}"（已用 "{replacement}" 显示）',
+    fontCached: '字体 "{font}" 已成功缓存。',
+    fontCacheFailed: '缓存字体 "{fileName}" 失败。',
     failedToGetAvaiableFonts: '无法从"{url}"获取可用的字体信息！',
     failedToOpenFile: '无法打开文件"{fileName}"！',
+    failedToOpenFileWorkerOom:
+      '无法打开"{fileName}"。图纸过大，超出当前可用内存。',
+    failedToOpenFileWorkerTimeout: '无法打开"{fileName}"。解析图纸时操作超时。',
+    failedToOpenFileFontLoadFailed:
+      '无法打开"{fileName}"。无法加载图纸所需的字体。',
     fetchingDrawingFile: '正在加载图纸文件...',
     unknownEntities:
       '这张图纸中包含了{count}个未知或不支持的实体，这些实体将无法显示！'
@@ -567,6 +595,9 @@ export default {
     },
     title: {
       failedToOpenFile: '无法打开文件',
+      failedToOpenFileWorkerOom: '图纸过大',
+      failedToOpenFileWorkerTimeout: '打开超时',
+      failedToOpenFileFontLoadFailed: '字体加载失败',
       fontNotFound: '找不到字体',
       fontNotLoaded: '无法加载字体',
       parsingWarning: '解析图纸问题'

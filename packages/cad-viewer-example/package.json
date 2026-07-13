@@ -1,7 +1,7 @@
 {
   "name": "@mlightcad/cad-viewer-example",
   "private": true,
-  "version": "1.5.1",
+  "version": "1.5.7",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -10,10 +10,10 @@
   },
   "scripts": {
     "analyze": "vite build --mode analyze",
-    "prebuild": "pnpm --filter @mlightcad/cad-html-exporter build",
     "build": "vue-tsc && vite build",
     "clean": "rimraf dist lib tsconfig.tsbuildinfo",
     "dev": "vite",
+    "dev:local-data-model": "vite --mode local-data-model",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
@@ -32,11 +32,14 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
-    "@mlightcad/cad-html-exporter": "workspace:*",
+    "@mlightcad/cad-agent-plugin": "workspace:*",
+    "@mlightcad/cad-html-plugin": "workspace:*",
+    "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/cad-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.7.40",
+    "@mlightcad/data-model": "^1.10.4",
     "element-plus": "^2.12.0",
+    "lodash-es": "4.17.21",
     "three": "^0.172.0",
     "vue": "^3.4.21",
     "vue-i18n": "^11.4.4"

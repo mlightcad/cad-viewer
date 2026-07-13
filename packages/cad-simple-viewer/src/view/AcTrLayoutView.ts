@@ -176,6 +176,7 @@ export class AcTrLayoutView extends AcTrBaseView {
   resize(width: number, height: number) {
     this._height = height
     this._width = width
+    this._frustum = height / 2
     this.updateCameraFrustum()
     this._viewportViews.forEach(viewportView => {
       viewportView.update()
@@ -191,12 +192,13 @@ export class AcTrLayoutView extends AcTrBaseView {
    */
   render(scene: AcTrScene) {
     this._renderer.clear()
-    this._renderer.render(scene.internalScene, this._camera)
+    const needsRedraw = this._renderer.render(scene.internalScene, this._camera)
     const modelSpaceLayout = scene.modelSpaceLayout
     if (modelSpaceLayout) {
       this.drawViewports(modelSpaceLayout.internalObject)
     }
     this._axesGizmo?.update()
+    return needsRedraw
   }
 
   /**

@@ -1,9 +1,12 @@
 import * as THREE from 'three'
 
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
+import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchGeometryUserData,
   AcTrVertexBatchGeometryInfo,
-  copyArrayContents
+  copyArrayContents,
+  isBatchGeometryActive
 } from './AcTrBatchedGeometryInfo'
 import {
   applyGeometryAt,
@@ -16,12 +19,26 @@ import {
   resolveReservedCount,
   validateGeometry
 } from './AcTrBatchedMixin'
+import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility'
 
+/**
+ * Per-slot geometry-info type used by {@link AcTrBatchedPoint}.
+ *
+ * Point batches are non-indexed; this alias omits index-range fields present
+ * on {@link AcTrBatchedGeometryInfo}.
+ */
 export type AcTrBatchedGeometryInfo = AcTrVertexBatchGeometryInfo
 
+/** Reusable scratch box for bounds queries. */
 const _box = /*@__PURE__*/ new THREE.Box3()
+/** Reusable scratch vector for bounds expansion. */
 const _vector = /*@__PURE__*/ new THREE.Vector3()
 
+/**
+ * Mixin base produced by {@link createAcTrBatchedMixin} for non-indexed point batches.
+ *
+ * @internal Not exported; extended by {@link AcTrBatchedPoint}.
+ */
 const AcTrBatchedPointBase = createAcTrBatchedMixin<AcTrBatchedGeometryInfo>(
   THREE.Points,
   {
@@ -35,24 +52,46 @@ const AcTrBatchedPointBase = createAcTrBatchedMixin<AcTrBatchedGeometryInfo>(
 )
 
 /**
- * Batched renderer for `THREE.Points`.
+ * Batched renderer for {@link THREE.Points}.
  *
- * Point geometries are packed into a shared non-indexed attribute buffer.
+ * Point geometries are packed into a shared non-indexed attribute buffer to
+ * reduce draw calls. Each point entity receives a stable geometry id for
+ * updates, visibility toggles, and hit-testing.
+ *
+ * @see {@link AcTrBatchedMesh} for mesh batching.
+ * @see {@link AcTrBatchedLine} for line segment batching.
  */
 export class AcTrBatchedPoint extends AcTrBatchedPointBase {
+  /** Typed container metadata attached to the batch object. */
+  declare userData: AcTrBatchedContainerUserData
+
+  /** Multiplier applied when auto-growing vertex buffer capacity. */
   private static readonly GROWTH_FACTOR = 1.25
-  /** Stable world origin for this batch. */
+
+  /**
+   * Stable world-space origin for this batch.
+   *
+   * Set from the first appended geometry's bounding-box center plus offset.
+   * Vertex positions are stored relative to this origin to improve floating-point
+   * precision for large-coordinate CAD data.
+   */
   private _origin?: THREE.Vector3
 
-  /** Current allocated vertex capacity. */
+  /** Current allocated vertex capacity of the packed attribute buffer. */
   private _maxVertexCount: number
 
   /** Next free vertex offset for appended geometries. */
   private _nextVertexStart = 0
 
-  /** Whether packed geometry buffers have been allocated. */
+  /** Whether packed geometry buffers have been allocated from a reference layout. */
   private _geometryInitialized = false
 
+  /**
+   * Creates a new point batch with preallocated vertex capacity.
+   *
+   * @param maxVertexCount - Initial vertex capacity; defaults to `1000`.
+   * @param material - Optional shared material for all sub-geometries in this batch.
+   */
   constructor(maxVertexCount: number = 1000, material?: THREE.Material) {
     super(new THREE.BufferGeometry(), material)
     this.frustumCulled = false
@@ -61,14 +100,36 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
     this._maxVertexCount = maxVertexCount
   }
 
+  /**
+   * Total number of geometry ids ever allocated in this batch.
+   *
+   * @returns Current `_geometryCount` value.
+   */
   get geometryCount() {
     return this._geometryCount
   }
 
+  /**
+   * Number of unused vertex slots remaining before the next buffer resize.
+   *
+   * @returns Remaining vertex capacity (`maxVertexCount - nextVertexStart`).
+   */
   get unusedVertexCount() {
     return this._maxVertexCount - this._nextVertexStart
   }
 
+  /** World-space origin used when rebasing packed vertex data, if established. */
+  get origin() {
+    return this._origin
+  }
+
+  /**
+   * Allocates packed attribute buffers on first geometry insertion.
+   *
+   * Point batches are non-indexed; `maxIndexCount` is passed as `null`.
+   *
+   * @param reference - First (or representative) geometry defining batch layout.
+   */
   private _initializeGeometry(reference: THREE.BufferGeometry) {
     if (this._geometryInitialized === false) {
       initializeGeometry(this.geometry, reference, this._maxVertexCount, null)
@@ -76,11 +137,23 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
     }
   }
 
-  // Make sure the geometry is compatible with the existing combined geometry attributes
+  /**
+   * Ensures the incoming geometry matches the batch attribute layout.
+   *
+   * Index buffers are not required or validated for point batches.
+   *
+   * @param geometry - Candidate geometry to append or update.
+   * @throws {Error} When attribute layout is incompatible with the existing batch.
+   */
   private _validateGeometry(geometry: THREE.BufferGeometry) {
     validateGeometry(this.geometry, geometry, 'AcTrBatchedPoint', false)
   }
 
+  /**
+   * Grows vertex buffer capacity when the next append would overflow.
+   *
+   * @param geometry - Incoming geometry whose vertex count drives the growth calculation.
+   */
   private _resizeSpaceIfNeeded(geometry: THREE.BufferGeometry) {
     const positionAttribute = geometry.getAttribute('position')
     const newMaxVertexCount =
@@ -100,6 +173,9 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
 
   /**
    * Clears all packed point ranges and resets internal cursor state.
+   *
+   * Disposes GPU buffers, clears geometry-info records, resets the batch origin
+   * and world position, and marks buffers as uninitialized for the next insert.
    */
   reset() {
     this.boundingBox = null
@@ -119,7 +195,16 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
   }
 
   /**
-   * Appends one point geometry into packed buffers.
+   * Appends one point geometry into the packed vertex buffer.
+   *
+   * Rebases vertices to the batch origin, reserves a geometry id, and copies
+   * attribute data into the shared buffer.
+   *
+   * @param geometry - Source point geometry to pack. Mutated in place (rebase).
+   * @param reservedVertexCount - Reserved vertex span for in-place updates; `-1` uses actual count.
+   * @param worldOffset - World-space offset applied before rebasing to the batch origin.
+   * @returns The assigned geometry id for subsequent updates and metadata binding.
+   * @throws {Error} When reserved space exceeds buffer capacity or layout is incompatible.
    */
   addGeometry(
     geometry: THREE.BufferGeometry,
@@ -175,6 +260,12 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
     return geometryId
   }
 
+  /**
+   * Rebases geometry vertex positions into the batch's local coordinate frame.
+   *
+   * @param geometry - Geometry whose `position` attribute is mutated in place.
+   * @param worldOffset - World-space placement offset for the geometry.
+   */
   private rebaseGeometryInPlace(
     geometry: THREE.BufferGeometry,
     worldOffset: THREE.Vector3
@@ -187,7 +278,7 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
     }
 
     if (!this._origin) {
-      geometry.computeBoundingBox()
+      AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
       const center = geometry.boundingBox
         ? geometry.boundingBox.getCenter(new THREE.Vector3())
         : new THREE.Vector3()
@@ -224,6 +315,12 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
 
   /**
    * Assigns entity metadata for one packed geometry id.
+   *
+   * Copies optional source point `position` for symbol regeneration workflows.
+   *
+   * @param geometryId - Target slot index returned by {@link addGeometry}.
+   * @param userData - Entity metadata including optional source point position.
+   * @throws {Error} When `geometryId` is out of range.
    */
   setGeometryInfo(geometryId: number, userData: AcTrBatchGeometryUserData) {
     if (geometryId >= this._geometryCount) {
@@ -237,7 +334,13 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
   }
 
   /**
-   * Rewrites geometry payload for one packed geometry id.
+   * Rewrites geometry payload for one existing packed geometry id.
+   *
+   * @param geometryId - Target slot index.
+   * @param geometry - New geometry payload to copy into the packed buffers.
+   * @returns The same `geometryId` for chaining.
+   * @throws {Error} When the id is out of range, layout is incompatible, or
+   *   the source exceeds reserved capacity.
    */
   setGeometryAt(geometryId: number, geometry: THREE.BufferGeometry) {
     if (geometryId >= this._geometryCount) {
@@ -249,13 +352,24 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
     const batchGeometry = this.geometry
     const geometryInfo = this._geometryInfo[geometryId]
 
-    applyGeometryAt(geometryInfo, batchGeometry, geometry, 'AcTrBatchedPoint')
+    applyGeometryAt(
+      geometryInfo,
+      batchGeometry,
+      geometry,
+      'AcTrBatchedPoint',
+      geometryId
+    )
 
     return geometryId
   }
 
   /**
-   * Compacts active geometry ranges to reclaim deleted-space gaps.
+   * Compacts active geometry ranges to reclaim gaps left by deletions.
+   *
+   * Moves vertex attributes so active slots are contiguous. Advances cursors by
+   * **reserved** vertex spans to preserve in-place update capacity.
+   *
+   * @returns This instance for chaining.
    */
   optimize() {
     let nextVertexStart = 0
@@ -265,7 +379,7 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
     // Sort ACTIVE geometries by original buffer order
     const indices = geometryInfoList
       .map((_g, i) => i)
-      .filter(i => geometryInfoList[i].active)
+      .filter(i => isBatchGeometryActive(geometryInfoList[i].flags))
       .sort(
         (a, b) =>
           geometryInfoList[a].vertexStart - geometryInfoList[b].vertexStart
@@ -309,11 +423,19 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
     // ---- reset reusable ids ----
     this._availableGeometryIds.length = 0
 
+    syncBatchDrawVisibilityAfterOptimize(geometry, geometryInfoList)
+
     return this
   }
 
   /**
-   * Returns cached bounds for one geometry id, computing lazily on first use.
+   * Returns cached axis-aligned bounds for one geometry id.
+   *
+   * Iterates the slot's vertex range in the non-indexed position buffer.
+   *
+   * @param geometryId - Slot index to query.
+   * @param target - Reusable {@link THREE.Box3} that receives the result.
+   * @returns `target` when the id is valid, otherwise `null`.
    */
   getBoundingBoxAt(geometryId: number, target: THREE.Box3) {
     if (geometryId >= this._geometryCount) {
@@ -350,6 +472,10 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
 
   /**
    * Returns cached bounding sphere for one geometry id.
+   *
+   * @param geometryId - Slot index to query.
+   * @param target - Reusable {@link THREE.Sphere} that receives the result.
+   * @returns `target` when the id is valid, otherwise `null`.
    */
   getBoundingSphereAt(geometryId: number, target: THREE.Sphere) {
     if (geometryId >= this._geometryCount) {
@@ -360,6 +486,13 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
     return target
   }
 
+  /**
+   * Returns the geometry-info record for one slot after validation.
+   *
+   * @param geometryId - Slot index to query.
+   * @returns The internal {@link AcTrBatchedGeometryInfo} record.
+   * @throws {Error} When the id is invalid or the slot has been deleted.
+   */
   getGeometryAt(geometryId: number) {
     this.validateGeometryId(geometryId)
     return this._geometryInfo[geometryId]
@@ -367,6 +500,8 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
 
   /**
    * Resizes packed point buffers while preserving existing data.
+   *
+   * @param maxVertexCount - New vertex capacity.
    */
   setGeometrySize(maxVertexCount: number) {
     // dispose of the previous geometry
@@ -399,15 +534,19 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
   }
 
   /**
-   * Keeps geometry.drawRange in sync with active vertex data.
-   * Call after add / optimize / resize.
+   * Keeps `geometry.drawRange` in sync with the packed active vertex extent.
+   *
+   * Call after `addGeometry`, `optimize`, or `setGeometrySize`.
    */
   private _syncDrawRange() {
     this.geometry.setDrawRange(0, this._nextVertexStart)
   }
 
   /**
-   * Deep-copies batched point state.
+   * Deep-copies batched point state from another instance.
+   *
+   * @param source - Batch instance to copy from.
+   * @returns This instance for chaining.
    */
   copy(source: AcTrBatchedPoint) {
     super.copy(source)

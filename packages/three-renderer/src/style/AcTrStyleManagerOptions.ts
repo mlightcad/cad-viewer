@@ -44,8 +44,7 @@ export interface AcTrStyleManagerOptions {
    * Kept in sync with `AcTrView2d.backgroundColor` via
    * `AcTrStyleManager.currentBackgroundColor`.
    *
-   * Default is `0x000000` (matches the default view bg in
-   * `DEFAULT_VIEW_2D_OPTIONS`).
+   * Default is model-space dark background (`ACGI_MODEL_SPACE_BACKGROUND`).
    */
   currentBackgroundColor: number
 }

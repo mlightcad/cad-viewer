@@ -3,11 +3,15 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
+import type { AcTrBatchedContainerUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchGeometryUserData,
   AcTrVertexBatchGeometryInfo,
   copyArrayContents,
-  copyAttributeData
+  copyAttributeData,
+  isBatchGeometryActive,
+  isBatchGeometryVisible
 } from './AcTrBatchedGeometryInfo'
 import {
   assertReservedCapacity,
@@ -17,6 +21,8 @@ import {
   reserveGeometryId,
   resolveReservedCount
 } from './AcTrBatchedMixin'
+import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility'
+import { ensureSlotIdAttribute, writeSlotIdRange } from './highlight'
 
 type AcTrBatchedLine2GeometryInfo = AcTrVertexBatchGeometryInfo
 
@@ -45,6 +51,7 @@ const AcTrBatchedLine2Base =
  * GPU buffer and renders them via one `LineSegments2` object per material.
  */
 export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
+  declare userData: AcTrBatchedContainerUserData
   private static readonly GROWTH_FACTOR = 1.25
   /** Stable world origin for this batch. */
   private _origin?: THREE.Vector3
@@ -70,6 +77,11 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     return this._maxSegmentCount - this._nextSegmentStart
   }
 
+  /** World-space origin used when rebasing packed segment data, if established. */
+  get origin() {
+    return this._origin
+  }
+
   private _initializeGeometry(reference: LineSegmentsGeometry) {
     if (this._geometryInitialized) {
       return
@@ -77,6 +89,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     ;(this.geometry as LineSegmentsGeometry).setPositions(
       new Float32Array(this._maxSegmentCount * 6)
     )
+    ensureSlotIdAttribute(this.geometry, this._maxSegmentCount)
     this._copyStaticAttributes(reference)
     this._geometryInitialized = true
   }
@@ -92,7 +105,13 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     }
 
     for (const key in reference.attributes) {
-      if (key === 'instanceStart' || key === 'instanceEnd') continue
+      if (
+        key === 'instanceStart' ||
+        key === 'instanceEnd' ||
+        key === 'slotId'
+      ) {
+        continue
+      }
       dstGeometry.setAttribute(key, reference.getAttribute(key).clone())
     }
   }
@@ -211,7 +230,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     }
 
     if (!this._origin) {
-      geometry.computeBoundingBox()
+      AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
       const center = geometry.boundingBox
         ? geometry.boundingBox.getCenter(new THREE.Vector3())
         : new THREE.Vector3()
@@ -299,6 +318,13 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     geometryInfo.vertexCount = segmentCount
     geometryInfo.boundingBox = null
 
+    writeSlotIdRange(
+      this.geometry,
+      segmentStart,
+      geometryInfo.reservedVertexCount,
+      geometryId
+    )
+
     return geometryId
   }
 
@@ -311,7 +337,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
 
     const entries = this._geometryInfo
       .map((info, id) => ({ info, id }))
-      .filter(e => e.info.active)
+      .filter(e => isBatchGeometryActive(e.info.flags))
       .sort((a, b) => a.info.vertexStart - b.info.vertexStart)
 
     for (const { info } of entries) {
@@ -323,6 +349,18 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
           oldStart * 6,
           (oldStart + count) * 6
         )
+        const slotIdAttr = this.geometry.getAttribute('slotId') as
+          | THREE.BufferAttribute
+          | undefined
+        if (slotIdAttr) {
+          slotIdAttr.array.copyWithin(
+            nextSegmentStart,
+            oldStart,
+            oldStart + count
+          )
+          slotIdAttr.addUpdateRange(nextSegmentStart, count)
+          slotIdAttr.needsUpdate = true
+        }
       }
       info.vertexStart = nextSegmentStart
       nextSegmentStart += count
@@ -340,6 +378,8 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     const instanceEnd = this.geometry.getAttribute('instanceEnd')
     instanceStart.needsUpdate = true
     instanceEnd.needsUpdate = true
+
+    syncBatchDrawVisibilityAfterOptimize(this.geometry, this._geometryInfo)
 
     return this
   }
@@ -495,7 +535,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     intersects: THREE.Intersection[]
   ) {
     const geometryInfo = this._geometryInfo[geometryId]
-    if (!geometryInfo.active || !geometryInfo.visible) {
+    if (!isBatchGeometryVisible(geometryInfo.flags)) {
       return
     }
 

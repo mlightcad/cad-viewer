@@ -1,4 +1,9 @@
-import { AcDbRay, AcGePoint3d, AcGePoint3dLike, AcGeTol } from '@mlightcad/data-model'
+import {
+  AcDbRay,
+  AcGePoint3d,
+  AcGePoint3dLike,
+  AcGeTol
+} from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {

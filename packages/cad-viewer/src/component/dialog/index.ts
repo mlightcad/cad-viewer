@@ -1,5 +1,7 @@
+export { default as MlExportHtmlDlg } from './MlExportHtmlDlg.vue'
 export { default as MlDrawingUnitsDlg } from './MlDrawingUnitsDlg.vue'
 export { default as MlColorPickerDlg } from './MlColorPickerDlg.vue'
 export { default as MlPointStyleDlg } from './MlPointStyleDlg.vue'
 export { default as MlQuickSelectDlg } from './MlQuickSelectDlg.vue'
 export { default as MlReplacementDlg } from './MlReplacementDlg.vue'
+export { default as MlTextStyleDlg } from './MlTextStyleDlg.vue'

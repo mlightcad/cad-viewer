@@ -11,7 +11,10 @@ export default {
     replace: 'Replace',
     missedFont: 'Missed Font',
     replacedFont: 'Replaced Font',
-    selectFont: 'Select font to replace'
+    selectFont: 'Select font to replace',
+    selectLocalFont: 'Select local font file',
+    matchFontType:
+      'Use the same font type (SHX replaces SHX, mesh replaces mesh)'
   },
   pointStyleDlg: {
     title: 'Point Style',
@@ -76,6 +79,25 @@ export default {
     aciTabTitle: 'Color Index',
     rgbTabTitle: 'True Color'
   },
+  exportHtmlDlg: {
+    title: 'Export to HTML',
+    layersSection: 'Layers',
+    exportInvisibleLayers: 'Export invisible layers',
+    exportInvisibleLayersHint:
+      'Include geometry on off or frozen layers in the exported file',
+    yes: 'Yes',
+    no: 'No',
+    initialView: 'Initial view',
+    initialViewExtents: 'Extents',
+    initialViewExtentsHint: 'Zoom to drawing extents when the HTML is opened',
+    initialViewCurrent: 'Current',
+    initialViewCurrentHint: 'Preserve the current view center and zoom',
+    viewerMode: 'Viewer mode',
+    viewerModeView: 'View',
+    viewerModeViewHint: 'Pan, zoom, and layer controls only',
+    viewerModeMeasure: 'Measure',
+    viewerModeMeasureHint: 'View tools plus distance measurement'
+  },
   quickSelectDlg: {
     title: 'Quick Select',
     applyTo: 'Apply to',
@@ -104,5 +126,37 @@ export default {
     previewResult: 'Matched objects: {count} / Source objects: {total}',
     valueRequired: 'Please specify a value for filtering',
     selectionResult: '{count} object(s) matched and applied to selection'
+  },
+  textStyleDlg: {
+    title: 'Text Style',
+    currentStyle: 'Current text style: {name}',
+    styles: 'Styles',
+    fontSection: 'Font',
+    fontName: 'Font name:',
+    fontStyle: 'Font style:',
+    useBigFont: 'Use big font',
+    bigFontName: 'Big font:',
+    sizeSection: 'Size',
+    textHeight: 'Height:',
+    effectsSection: 'Effects',
+    upsideDown: 'Upside down',
+    backwards: 'Backwards',
+    vertical: 'Vertical',
+    widthFactor: 'Width factor:',
+    obliqueAngle: 'Oblique angle:',
+    setCurrent: 'Set Current',
+    new: 'New...',
+    delete: 'Delete',
+    newTitle: 'New Text Style',
+    newStyleName: 'Style name:',
+    newPrompt: 'Enter new text style name:',
+    newNameRequired: 'Please enter a text style name.',
+    deleteTitle: 'Delete Text Style',
+    deleteConfirm: 'Delete text style "{name}"?',
+    invalidName: 'Style name cannot contain ;=<>`\\/,',
+    duplicateName: 'A text style with this name already exists.',
+    created: 'Text style "{name}" created.',
+    deleted: 'Text style "{name}" deleted.',
+    setCurrentDone: 'Current text style set to "{name}".'
   }
 }

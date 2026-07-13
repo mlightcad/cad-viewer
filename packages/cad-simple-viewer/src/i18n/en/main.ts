@@ -1,4 +1,7 @@
 export default {
+  document: {
+    untitled: 'Untitled'
+  },
   commandLine: {
     noLast: '(no last command)',
     unknownCommand: 'Unknown command',
@@ -8,6 +11,7 @@ export default {
     showMessages: 'Show message history',
     canceled: '*Canceled*',
     noHistory: '(no history)',
+    invalidInput: 'Invalid input.',
     close: 'Close command line'
   },
   inputManager: {
@@ -15,7 +19,11 @@ export default {
     secondCorner: 'Specify the second corner or'
   },
   message: {
-    fetchingDrawingFile: 'Fetching file ...'
+    fetchingDrawingFile: 'Fetching file ...',
+    exportingDxf: 'Exporting DXF ...',
+    exportingEntityPreview: 'Exporting image ...',
+    fontCached: 'Font cached successfully',
+    fontCacheFailed: 'Failed to cache font'
   },
   progress: {
     start: 'Start parsing file ...',

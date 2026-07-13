@@ -11,8 +11,18 @@ jest.mock('../src/app', () => ({
 }))
 
 jest.mock('../src/editor', () => {
+  const { AcApDocManager } = jest.requireMock('../src/app')
+
   class AcEdCommand {
     mode: unknown
+
+    showMessage(message: string, type: string = 'info') {
+      AcApDocManager.instance.editor.showMessage(message, type)
+    }
+
+    notify(message: string, type: string = 'info') {
+      AcApDocManager.instance.editor.showMessage(message, type)
+    }
   }
 
   class AcEdPromptSelectionOptions {
@@ -41,10 +51,10 @@ jest.mock('../src/i18n', () => ({
 import { AcApDocManager } from '../src/app'
 import { AcApLayerCurCmd } from '../src/command/layer/AcApLayerCurCmd'
 import { AcEdPromptStatus } from '../src/editor'
+import { AcApEntityService } from '../src/service/AcApEntityService'
 
 interface TestEntity {
   layer: string
-  triggerModifiedEvent: jest.Mock
 }
 
 interface TestLayer {
@@ -52,8 +62,7 @@ interface TestLayer {
 }
 
 const createEntity = (layer: string): TestEntity => ({
-  layer,
-  triggerModifiedEvent: jest.fn()
+  layer
 })
 
 const createContext = (
@@ -63,24 +72,30 @@ const createContext = (
   currentLayer = 'Current'
 ) => {
   const clear = jest.fn()
+  const openEntityForWrite = jest.fn((objectId: string) =>
+    entities.get(objectId)
+  )
+
+  const database = {
+    clayer: currentLayer,
+    openEntityForWrite,
+    tables: {
+      blockTable: {
+        getEntityById: jest.fn((objectId: string) => entities.get(objectId))
+      },
+      layerTable: {
+        getAt: jest.fn((name: string) => layers.get(name))
+      }
+    }
+  }
 
   return {
     clear,
+    openEntityForWrite,
     context: {
       doc: {
-        database: {
-          clayer: currentLayer,
-          tables: {
-            blockTable: {
-              getEntityById: jest.fn((objectId: string) =>
-                entities.get(objectId)
-              )
-            },
-            layerTable: {
-              getAt: jest.fn((name: string) => layers.get(name))
-            }
-          }
-        }
+        database,
+        entityService: new AcApEntityService(database as never)
       },
       view: {
         selectionSet: {
@@ -101,7 +116,7 @@ describe('AcApLayerCurCmd', () => {
   test('changes preselected objects to the current layer', async () => {
     const line = createEntity('Old')
     const alreadyCurrent = createEntity('Current')
-    const { clear, context } = createContext(
+    const { clear, openEntityForWrite, context } = createContext(
       new Map([
         ['line', line],
         ['already-current', alreadyCurrent]
@@ -115,8 +130,8 @@ describe('AcApLayerCurCmd', () => {
 
     expect(AcApDocManager.instance.editor.getSelection).not.toHaveBeenCalled()
     expect(line.layer).toBe('Current')
-    expect(line.triggerModifiedEvent).toHaveBeenCalledTimes(1)
-    expect(alreadyCurrent.triggerModifiedEvent).not.toHaveBeenCalled()
+    expect(openEntityForWrite).toHaveBeenCalledTimes(1)
+    expect(openEntityForWrite).toHaveBeenCalledWith('line')
     expect(clear).toHaveBeenCalledTimes(1)
     expect(AcApDocManager.instance.regen).toHaveBeenCalledTimes(1)
     expect(AcApDocManager.instance.editor.showMessage).toHaveBeenCalledWith(
@@ -127,7 +142,7 @@ describe('AcApLayerCurCmd', () => {
 
   test('prompts for selection when no objects are preselected', async () => {
     const line = createEntity('Old')
-    const { context } = createContext(
+    const { openEntityForWrite, context } = createContext(
       new Map([['line', line]]),
       new Map([['Current', { name: 'Current' }]])
     )
@@ -145,13 +160,13 @@ describe('AcApLayerCurCmd', () => {
     const prompt = getSelection.mock.calls[0][0]
     expect(prompt.message).toBe('jig.laycur.prompt')
     expect(line.layer).toBe('Current')
-    expect(line.triggerModifiedEvent).toHaveBeenCalledTimes(1)
+    expect(openEntityForWrite).toHaveBeenCalledTimes(1)
     expect(AcApDocManager.instance.regen).toHaveBeenCalledTimes(1)
   })
 
   test('does not modify objects when the current layer cannot be resolved', async () => {
     const line = createEntity('Old')
-    const { clear, context } = createContext(
+    const { clear, openEntityForWrite, context } = createContext(
       new Map([['line', line]]),
       new Map(),
       ['line']
@@ -161,7 +176,7 @@ describe('AcApLayerCurCmd', () => {
     await cmd.execute(context as never)
 
     expect(line.layer).toBe('Old')
-    expect(line.triggerModifiedEvent).not.toHaveBeenCalled()
+    expect(openEntityForWrite).not.toHaveBeenCalled()
     expect(clear).not.toHaveBeenCalled()
     expect(AcApDocManager.instance.regen).not.toHaveBeenCalled()
     expect(AcApDocManager.instance.editor.showMessage).toHaveBeenCalledWith(
@@ -172,7 +187,7 @@ describe('AcApLayerCurCmd', () => {
 
   test('reports when selected objects are already on the current layer', async () => {
     const line = createEntity('Current')
-    const { clear, context } = createContext(
+    const { clear, openEntityForWrite, context } = createContext(
       new Map([['line', line]]),
       new Map([['Current', { name: 'Current' }]]),
       ['line']
@@ -181,7 +196,7 @@ describe('AcApLayerCurCmd', () => {
     const cmd = new AcApLayerCurCmd()
     await cmd.execute(context as never)
 
-    expect(line.triggerModifiedEvent).not.toHaveBeenCalled()
+    expect(openEntityForWrite).not.toHaveBeenCalled()
     expect(clear).not.toHaveBeenCalled()
     expect(AcApDocManager.instance.regen).not.toHaveBeenCalled()
     expect(AcApDocManager.instance.editor.showMessage).toHaveBeenCalledWith(

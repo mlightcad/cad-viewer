@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "rootDir": "./src",
+    "outDir": "./lib",
+    "baseUrl": "./src",
+    "paths": {
+      "@mlightcad/cad-svg-plugin": [
+        "./index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src"
+  ]
+}

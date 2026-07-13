@@ -11,7 +11,13 @@ declare global {
     exportCadToHtml: (
       fileName: string,
       bytes: Uint8Array,
-      options?: { locale?: string; title?: string }
+      options?: {
+        locale?: string
+        title?: string
+        exportInvisibleLayers?: boolean
+        initialView?: 'fit' | 'current'
+        viewerMode?: 'view' | 'measure'
+      }
     ) => Promise<string>
   }
 }
@@ -20,6 +26,9 @@ export interface ExportToHtmlOptions {
   outputPath?: string
   locale?: string
   title?: string
+  exportInvisibleLayers?: boolean
+  initialView?: 'fit' | 'current'
+  viewerMode?: 'view' | 'measure'
 }
 
 function runnerDistDir(): string {
@@ -120,26 +129,47 @@ export async function exportToHtml(
   const base64 = fileBytes.toString('base64')
 
   const server = await startStaticServer(runnerDir)
-  const browser = await chromium.launch({ headless: true })
+  const channel = process.env.PLAYWRIGHT_BROWSER_CHANNEL
+  const browser = await chromium.launch({
+    headless: true,
+    ...(channel ? { channel } : {})
+  })
 
   try {
     const page = await browser.newPage()
     await page.goto(`${server.url}/index.html`, { waitUntil: 'networkidle' })
 
     const html = await page.evaluate(
-      async ({ name, data, locale, title }) => {
+      async ({
+        name,
+        data,
+        locale,
+        title,
+        exportInvisibleLayers,
+        initialView,
+        viewerMode
+      }) => {
         const binary = atob(data)
         const bytes = new Uint8Array(binary.length)
         for (let i = 0; i < binary.length; i++) {
           bytes[i] = binary.charCodeAt(i)
         }
-        return window.exportCadToHtml(name, bytes, { locale, title })
+        return window.exportCadToHtml(name, bytes, {
+          locale,
+          title,
+          exportInvisibleLayers,
+          initialView,
+          viewerMode
+        })
       },
       {
         name: fileName,
         data: base64,
         locale: options.locale,
-        title: options.title ?? fileName
+        title: options.title ?? fileName,
+        exportInvisibleLayers: options.exportInvisibleLayers,
+        initialView: options.initialView,
+        viewerMode: options.viewerMode
       }
     )
 

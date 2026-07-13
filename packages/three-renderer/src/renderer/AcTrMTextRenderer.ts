@@ -1,9 +1,11 @@
 import {
   ColorSettings,
   createDefaultColorSettings,
+  DefaultFontsPreset,
   MTextData,
   MTextObject,
   RenderMode,
+  ShapeData,
   StyleManager,
   TextStyle,
   UnifiedRenderer
@@ -22,7 +24,10 @@ class AcTrMTextStyleManager implements StyleManager {
   }
 
   getMeshBasicMaterial(traits: ColorSettings): THREE.Material {
-    const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(traits)
+    const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(
+      traits,
+      this._styleManager.currentBackgroundColor
+    )
     // Route MText glyph fills through the dedicated helper so their
     // linework-tier `drawOrder` semantics stay explicit even though
     // they are rasterized as meshes.
@@ -30,7 +35,10 @@ class AcTrMTextStyleManager implements StyleManager {
   }
 
   getLineBasicMaterial(traits: ColorSettings): THREE.Material {
-    const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(traits)
+    const entityTraits = AcTrSubEntityTraitsUtil.createTraitsForMText(
+      traits,
+      this._styleManager.currentBackgroundColor
+    )
     return this._styleManager.getLineMaterial(entityTraits, true)
   }
 }
@@ -45,6 +53,7 @@ export class AcTrMTextRenderer {
   private _fontUrl?: string
   private _renderMode?: RenderMode
   private _styleManager?: AcTrStyleManager
+  private _defaultFonts?: DefaultFontsPreset | string | readonly string[]
 
   private constructor() {
     // Do nothing for now
@@ -91,6 +100,19 @@ export class AcTrMTextRenderer {
   }
 
   /**
+   * Sets the default text and symbol font fallback chains on the active renderer
+   * and syncs them to Web Workers.
+   *
+   * @param fonts - A preset name, a single font name, or an ordered list of font names
+   */
+  async setDefaultFonts(
+    fonts: DefaultFontsPreset | string | readonly string[]
+  ): Promise<void> {
+    this._defaultFonts = fonts
+    await this.applyDefaultFonts()
+  }
+
+  /**
    * Render MText using the current mode asynchronously
    */
   async asyncRenderMText(
@@ -129,17 +151,76 @@ export class AcTrMTextRenderer {
     return mtext
   }
 
+  async asyncRenderShape(
+    shapeContent: ShapeData,
+    textStyle: TextStyle,
+    colorSettings: ColorSettings = createDefaultColorSettings()
+  ): Promise<MTextObject> {
+    if (!this._renderer) {
+      throw new Error('AcTrMTextRenderer not initialized!')
+    }
+    return this._renderer.asyncRenderShape(
+      shapeContent,
+      textStyle,
+      colorSettings
+    )
+  }
+
+  syncRenderShape(
+    shapeContent: ShapeData,
+    textStyle: TextStyle,
+    colorSettings: ColorSettings = createDefaultColorSettings()
+  ): MTextObject {
+    this.ensureRendererCreated()
+    if (!this._renderer) {
+      throw new Error('AcTrMTextRenderer not initialized!')
+    }
+    return this._renderer.syncRenderShape(
+      shapeContent,
+      textStyle,
+      colorSettings
+    )
+  }
+
   /**
-   * Initialize the renderer with worker URL
-   * @param workerUrl - URL to the worker script
+   * Initialize the renderer.
+   *
+   * When render mode is `main`, the unified renderer is created without
+   * eagerly spawning web workers. The worker URL is still stored so worker
+   * mode can be enabled later if needed.
+   *
+   * @param workerUrl - URL to the worker script used when render mode is `worker`
    */
-  initialize(workerUrl: string | URL): void {
-    this._workerUrl = workerUrl
-    this._renderer = new UnifiedRenderer('worker', { workerUrl })
+  initialize(workerUrl?: string | URL): void {
+    if (workerUrl !== undefined) {
+      this._workerUrl = workerUrl
+    }
+
+    if (this._renderer) {
+      this._renderer.destroy()
+      this._renderer = undefined
+    }
+
+    const mode = this._renderMode ?? 'worker'
+    const workerConfig = this._workerUrl ? { workerUrl: this._workerUrl } : {}
+
+    if (mode === 'worker') {
+      if (!this._workerUrl) {
+        throw new Error(
+          'AcTrMTextRenderer worker URL is required for worker render mode'
+        )
+      }
+      this._renderer = new UnifiedRenderer('worker', workerConfig)
+    } else {
+      this._renderer = new UnifiedRenderer('main', workerConfig)
+    }
+
     if (this._renderMode) {
       this._renderer.setDefaultMode(this._renderMode)
     }
+
     this.applyFontUrl()
+    void this.applyDefaultFonts()
     if (this._styleManager) {
       const styleManager = new AcTrMTextStyleManager(this._styleManager)
       this._renderer.setStyleManager(styleManager)
@@ -147,14 +228,24 @@ export class AcTrMTextRenderer {
   }
 
   /**
-   * Dispose of the renderer and reset the singleton
+   * Dispose of the renderer and reset cached configuration.
    */
   dispose(): void {
     if (this._renderer) {
       this._renderer.destroy()
       this._renderer = undefined
     }
-    // AcTrMTextRenderer._instance = null
+    this._workerUrl = undefined
+    this._renderMode = undefined
+    this._defaultFonts = undefined
+  }
+
+  /**
+   * Dispose and discard the singleton instance.
+   */
+  public static resetInstance(): void {
+    AcTrMTextRenderer.getInstance().dispose()
+    AcTrMTextRenderer._instance = null
   }
 
   private ensureRendererCreated() {
@@ -166,6 +257,12 @@ export class AcTrMTextRenderer {
   private applyFontUrl() {
     if (this._renderer && this._fontUrl) {
       this._renderer.setFontUrl(this._fontUrl)
+    }
+  }
+
+  private async applyDefaultFonts() {
+    if (this._renderer && this._defaultFonts !== undefined) {
+      await this._renderer.setDefaultFonts(this._defaultFonts)
     }
   }
 }

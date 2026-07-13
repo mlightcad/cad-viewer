@@ -20,6 +20,7 @@ class MockAcApFontLoader {
 
 const mockInitialize = jest.fn()
 const mockSetRenderMode = jest.fn()
+const mockSetDefaultFonts = jest.fn(() => Promise.resolve())
 
 jest.mock('../src/app/AcApFontLoader', () => ({
   AcApFontLoader: MockAcApFontLoader
@@ -29,8 +30,10 @@ jest.mock('@mlightcad/three-renderer', () => ({
   AcTrMTextRenderer: {
     getInstance: jest.fn(() => ({
       initialize: mockInitialize,
-      setRenderMode: mockSetRenderMode
-    }))
+      setRenderMode: mockSetRenderMode,
+      setDefaultFonts: mockSetDefaultFonts
+    })),
+    resetInstance: jest.fn()
   }
 }))
 
@@ -117,16 +120,17 @@ jest.mock('../src/editor', () => ({
 jest.mock('../src/command', () => {
   const commandNames = [
     'AcApArcCmd',
+    'AcApCacheFontCmd',
     'AcApCircleCmd',
     'AcApClearMeasurementsCmd',
     'AcApConvertToDxfCmd',
     'AcApConvertToPngCmd',
-    'AcApConvertToSvgCmd',
-    'AcApExportHtmlCmd',
+    'AcApEntityPreviewCmd',
     'AcApCopyCmd',
     'AcApDimLinearCmd',
     'AcApEllipseCmd',
     'AcApEraseCmd',
+    'AcApHideObjectsCmd',
     'AcApHatchCmd',
     'AcApLayerCloseCmd',
     'AcApLayerCmd',
@@ -164,12 +168,15 @@ jest.mock('../src/command', () => {
     'AcApRevCloudCmd',
     'AcApRevRectCmd',
     'AcApRevVisibilityCmd',
+    'AcApRedoCmd',
     'AcApRotateCmd',
     'AcApSelectCmd',
     'AcApSketchCmd',
     'AcApSplineCmd',
     'AcApSwitchBgCmd',
     'AcApSysVarCmd',
+    'AcApUndoCmd',
+    'AcApUnisolateObjectsCmd',
     'AcApXLineCmd',
     'AcApZoomCmd'
   ]
@@ -192,7 +199,6 @@ jest.mock('@mlightcad/data-model', () => ({
       register: jest.fn()
     }
   },
-  AcDbDxfConverter: jest.fn(),
   AcDbFileType: {
     DXF: 'DXF',
     DWG: 'DWG'
@@ -211,6 +217,10 @@ jest.mock('@mlightcad/data-model', () => ({
   }
 }))
 
+jest.mock('@mlightcad/dxf-json-converter', () => ({
+  AcDbDxfConverter: jest.fn()
+}))
+
 jest.mock('@mlightcad/libredwg-converter', () => ({
   AcDbLibreDwgConverter: jest.fn()
 }))
@@ -223,6 +233,7 @@ describe('AcApDocManager font URL configuration', () => {
     mockFontLoaderInstances.length = 0
     mockInitialize.mockClear()
     mockSetRenderMode.mockClear()
+    mockSetDefaultFonts.mockClear()
   })
 
   it('configures the font loader to download fonts from the custom base URL', async () => {
@@ -237,5 +248,27 @@ describe('AcApDocManager font URL configuration', () => {
 
     expect(mockFontLoaderInstances[0].baseUrl).toBe(`${baseUrl}fonts/`)
     expect(mockFontLoaderInstances[0].load).toHaveBeenCalledWith(['simkai'])
+  })
+
+  it('syncs the default fonts preset to the mtext renderer after worker init', () => {
+    AcApDocManager.createInstance({
+      notLoadDefaultFonts: true
+    })
+
+    expect(mockInitialize).toHaveBeenCalled()
+    expect(mockSetDefaultFonts).toHaveBeenCalledWith('modern')
+  })
+
+  it('configures main-thread mtext rendering before initializing workers', () => {
+    AcApDocManager.createInstance({
+      useMainThreadDraw: true,
+      notLoadDefaultFonts: true
+    })
+
+    expect(mockSetRenderMode).toHaveBeenCalledWith('main')
+    expect(mockInitialize).toHaveBeenCalled()
+    expect(mockSetRenderMode.mock.invocationCallOrder[0]).toBeLessThan(
+      mockInitialize.mock.invocationCallOrder[0]
+    )
   })
 })

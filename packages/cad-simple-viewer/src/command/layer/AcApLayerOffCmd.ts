@@ -2,14 +2,14 @@ import { AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
-  AcEdCommand,
-  AcEdMessageType,
   AcEdOpenMode,
   AcEdPromptEntityOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { AcApLayerService } from '../../service'
+import { AcApLayerMutationCmd } from './AcApLayerMutationCmd'
 
 /**
  * Top-level keywords supported by the `LAYOFF` entity selection prompt.
@@ -97,7 +97,7 @@ const DEFAULT_SETTINGS: LayoffSettings = {
  *   selection setting is stored for future use but does not currently change
  *   the resolved target layer.
  */
-export class AcApLayoffCmd extends AcEdCommand {
+export class AcApLayoffCmd extends AcApLayerMutationCmd {
   private static _settings: LayoffSettings = { ...DEFAULT_SETTINGS }
 
   private _history: LayoffHistoryEntry[] = []
@@ -140,16 +140,6 @@ export class AcApLayoffCmd extends AcEdCommand {
 
       this.turnOffEntityLayer(context, action.objectId)
     }
-  }
-
-  /**
-   * Sends a localized status message through the command-line output.
-   *
-   * @param message - Text to display to the user.
-   * @param type - Visual severity mapped to command-line message styles.
-   */
-  private notify(message: string, type: AcEdMessageType = 'info') {
-    AcApDocManager.instance.editor.showMessage(message, type)
   }
 
   /**
@@ -279,7 +269,7 @@ export class AcApLayoffCmd extends AcEdCommand {
     AcApLayoffCmd._settings.viewportMode = keyword
     if (keyword === 'Vpfreeze') {
       this._vpfreezeHintShown = true
-      this.notify(AcApI18n.t('jig.layoff.vpfreezeFallback'))
+      this.showMessage(AcApI18n.t('jig.layoff.vpfreezeFallback'))
     } else {
       this._vpfreezeHintShown = false
     }
@@ -329,7 +319,7 @@ export class AcApLayoffCmd extends AcEdCommand {
     if (!keyword) return
 
     AcApLayoffCmd._settings.blockSelectionMode = keyword
-    this.notify(AcApI18n.t('jig.layoff.nestedSelectionLimited'))
+    this.showMessage(AcApI18n.t('jig.layoff.nestedSelectionLimited'))
   }
 
   /**
@@ -342,34 +332,33 @@ export class AcApLayoffCmd extends AcEdCommand {
    * @param objectId - Identifier of the entity selected by the user.
    */
   private turnOffEntityLayer(context: AcApContext, objectId: AcDbObjectId) {
-    const db = context.doc.database
-    const entity = db.tables.blockTable.getEntityById(objectId)
-    const layerName = entity?.layer?.trim()
+    const service = new AcApLayerService(context.doc.database)
+    const result = service.turnOffLayerByEntity(objectId)
 
-    if (!layerName) {
-      this.notify(AcApI18n.t('jig.layoff.invalidSelection'), 'warning')
-      return
-    }
-
-    const layer = db.tables.layerTable.getAt(layerName)
-    if (!layer) {
-      this.notify(
-        `${AcApI18n.t('jig.layoff.layerNotFound')}: ${layerName}`,
-        'warning'
-      )
-      return
-    }
-
-    if (layer.name === db.clayer) {
-      this.notify(AcApI18n.t('jig.layoff.cannotTurnOffCurrent'), 'warning')
-      return
-    }
-
-    if (layer.isOff) {
-      this.notify(
-        `${AcApI18n.t('jig.layoff.alreadyOff')}: ${layer.name}`,
-        'info'
-      )
+    if (!result.ok) {
+      switch (result.reason) {
+        case 'invalid_selection':
+          this.showMessage(AcApI18n.t('jig.layoff.invalidSelection'), 'warning')
+          return
+        case 'layer_not_found':
+          this.showMessage(
+            `${AcApI18n.t('jig.layoff.layerNotFound')}: ${result.layerName}`,
+            'warning'
+          )
+          return
+        case 'cannot_change_current':
+          this.showMessage(
+            AcApI18n.t('jig.layoff.cannotTurnOffCurrent'),
+            'warning'
+          )
+          return
+        case 'already_off':
+          this.showMessage(
+            `${AcApI18n.t('jig.layoff.alreadyOff')}: ${result.layerName}`,
+            'info'
+          )
+          return
+      }
       return
     }
 
@@ -377,19 +366,18 @@ export class AcApLayoffCmd extends AcEdCommand {
       AcApLayoffCmd._settings.viewportMode === 'Vpfreeze' &&
       !this._vpfreezeHintShown
     ) {
-      this.notify(AcApI18n.t('jig.layoff.vpfreezeFallback'))
+      this.showMessage(AcApI18n.t('jig.layoff.vpfreezeFallback'))
       this._vpfreezeHintShown = true
     }
 
     this._history.push({
-      layerName: layer.name,
-      wasOff: layer.isOff
+      layerName: result.layerName,
+      wasOff: result.previousOff ?? false
     })
 
-    layer.isOff = true
     context.view.selectionSet.clear()
-    this.notify(
-      `${AcApI18n.t('jig.layoff.turnedOff')}: ${layer.name}`,
+    this.showMessage(
+      `${AcApI18n.t('jig.layoff.turnedOff')}: ${result.layerName}`,
       'success'
     )
   }
@@ -402,25 +390,22 @@ export class AcApLayoffCmd extends AcEdCommand {
   private runUndo(context: AcApContext) {
     const history = this._history.pop()
     if (!history) {
-      this.notify(AcApI18n.t('jig.layoff.nothingToUndo'), 'warning')
+      this.showMessage(AcApI18n.t('jig.layoff.nothingToUndo'), 'warning')
       return
     }
 
-    const layer = context.doc.database.tables.layerTable.getAt(
-      history.layerName
-    )
-    if (!layer) {
-      this.notify(
+    const service = new AcApLayerService(context.doc.database)
+    if (!service.setLayerOffByName(history.layerName, history.wasOff)) {
+      this.showMessage(
         `${AcApI18n.t('jig.layoff.layerNotFound')}: ${history.layerName}`,
         'warning'
       )
       return
     }
 
-    layer.isOff = history.wasOff
     context.view.selectionSet.clear()
-    this.notify(
-      `${AcApI18n.t('jig.layoff.restored')}: ${layer.name}`,
+    this.showMessage(
+      `${AcApI18n.t('jig.layoff.restored')}: ${history.layerName}`,
       'success'
     )
   }

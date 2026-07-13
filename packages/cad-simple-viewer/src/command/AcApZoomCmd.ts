@@ -1,4 +1,9 @@
-import { AcGeBox2d, AcGePoint2dLike, AcGePoint3d, FLOAT_TOL } from '@mlightcad/data-model'
+import {
+  AcGeBox2d,
+  AcGePoint2dLike,
+  AcGePoint3d,
+  FLOAT_TOL
+} from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
 import {

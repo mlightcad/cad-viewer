@@ -92,6 +92,12 @@ jest.mock('@mlightcad/data-model', () => ({
         sysVarChanged: mockSysVarChanged
       }
     }))
+  },
+  acgiIsLightBackground: (color: number) => {
+    const r = (color >> 16) & 0xff
+    const g = (color >> 8) & 0xff
+    const b = color & 0xff
+    return 0.299 * r + 0.587 * g + 0.114 * b > 128
   }
 }))
 

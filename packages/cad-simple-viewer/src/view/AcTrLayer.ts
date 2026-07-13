@@ -1,8 +1,11 @@
-import { AcDbObjectId } from '@mlightcad/data-model'
+import { AcDbObjectId, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import {
   AcTrBatchedGroup,
   AcTrBatchedGroupStats,
-  AcTrEntity
+  AcTrEntity,
+  AcTrPreviewSubsetOptions,
+  AcTrRenderer,
+  AcTrStyleManager
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
@@ -68,6 +71,16 @@ export type AcTrLayerStats = AcTrBatchedGroupStats & {
  */
 export class AcTrLayer {
   /**
+   * Resolves whether a layer should be visible in the view.
+   *
+   * Non-plottable layer suppression is handled in {@link AcDbEntity.worldDraw};
+   * only freeze/off state is reflected here.
+   */
+  static isLayerVisible(info: AcEdLayerInfo): boolean {
+    return !(info.isFrozen || info.isOff)
+  }
+
+  /**
    * Layer name
    */
   private _name: string
@@ -79,7 +92,8 @@ export class AcTrLayer {
   /**
    * Bounding box containing all entities in this layer
    */
-  private _box: THREE.Box3
+  private _cachedBox: THREE.Box3
+  private _boxDirty: boolean
 
   /**
    * Construct one instance of this class
@@ -88,8 +102,9 @@ export class AcTrLayer {
   constructor(layer: AcEdLayerInfo) {
     this._group = new AcTrBatchedGroup()
     this._name = layer.name
-    this._box = new THREE.Box3()
-    this._group.visible = !(layer.isFrozen || layer.isOff)
+    this._cachedBox = new THREE.Box3()
+    this._boxDirty = true
+    this._group.visible = AcTrLayer.isLayerVisible(layer)
   }
 
   /**
@@ -105,10 +120,34 @@ export class AcTrLayer {
   /**
    * Gets the bounding box that contains all entities in this layer.
    *
+   * Derived from packed batch vertex buffers, not entity metadata boxes.
+   *
    * @returns The layer's bounding box
    */
   get box() {
-    return this._box
+    if (this._boxDirty) {
+      this.computeBatchBoundingBox(this._cachedBox)
+      this._boxDirty = false
+    }
+    return this._cachedBox
+  }
+
+  /**
+   * Recomputes bounds from packed batch vertex buffers in this layer.
+   */
+  computeBatchBoundingBox(
+    target = new THREE.Box3(),
+    excludeObjectIds?: ReadonlySet<string>,
+    includeObjectIds?: ReadonlySet<string>
+  ) {
+    if (!this.visible) {
+      target.makeEmpty()
+      return target
+    }
+    return this._group.computeBoundingBox(target, {
+      excludeObjectIds,
+      includeObjectIds
+    })
   }
 
   get visible() {
@@ -145,8 +184,12 @@ export class AcTrLayer {
    * @param value - New layer information
    */
   update(value: AcEdLayerInfo) {
+    const wasVisible = this.visible
     this._name = value.name
-    this._group.visible = !(value.isFrozen || value.isOff)
+    this._group.visible = AcTrLayer.isLayerVisible(value)
+    if (wasVisible !== this.visible) {
+      this._boxDirty = true
+    }
   }
 
   /**
@@ -156,6 +199,85 @@ export class AcTrLayer {
    */
   updateMaterial(oldId: number, material: THREE.Material) {
     this._group.updateMaterial(oldId, material)
+  }
+
+  /**
+   * Refreshes drawable materials after a layer-table style change.
+   *
+   * Updates batched material ids when the style cache remaps instances, patches
+   * unbatched drawables, and rematerializes text glyph hierarchies.
+   *
+   * @param layerName - Target layer whose drawables should be refreshed.
+   * @param layerTraits - Resolved layer traits from the live layer-table record.
+   * @param materials - Style-cache material map, keyed by previous material id.
+   * @param renderer - Renderer used to rebind layer-bound materials.
+   */
+  syncAppearanceFromRecord(
+    layerName: string,
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    materials: Record<number, THREE.Material>,
+    renderer: AcTrRenderer
+  ): void {
+    const needsIdPatch = Object.entries(materials).some(
+      ([oldId, material]) => material.id !== Number(oldId)
+    )
+
+    if (needsIdPatch) {
+      for (const id in materials) {
+        const oldId = Number(id)
+        const material = materials[id]
+        if (material.id === oldId) {
+          continue
+        }
+        this.updateMaterial(oldId, material)
+      }
+    }
+
+    this._group.syncAppearanceFromRecord(
+      layerName,
+      layerTraits,
+      materials,
+      needsIdPatch,
+      (material, boundLayerName, boundLayerTraits) =>
+        renderer.getLayerBoundMaterial(
+          material,
+          boundLayerName,
+          boundLayerTraits
+        ),
+      renderer.styleManager
+    )
+  }
+
+  /** Rebinds batched drawables whose materials follow live layer-table style. */
+  rebindMaterialsForLayer(
+    layerName: string,
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    getLayerBoundMaterial: (
+      material: THREE.Material,
+      layerName: string,
+      layerTraits?: Partial<AcGiSubEntityTraits>
+    ) => THREE.Material | undefined,
+    styleManager?: AcTrStyleManager
+  ) {
+    this._group.rebindMaterialsForLayer(
+      layerName,
+      layerTraits,
+      getLayerBoundMaterial,
+      styleManager
+    )
+  }
+
+  /** Rematerializes MTEXT/TEXT drawables stored as unbatched glyph subtrees. */
+  rematerializeLayerTextDrawables(
+    layerName: string,
+    styleManager: AcTrStyleManager,
+    layerTraits?: Partial<AcGiSubEntityTraits>
+  ) {
+    this._group.rematerializeLayerTextDrawables(
+      layerName,
+      styleManager,
+      layerTraits
+    )
   }
 
   /**
@@ -177,16 +299,42 @@ export class AcTrLayer {
   }
 
   /**
+   * Updates visibility for one entity without rebuilding batched geometry.
+   */
+  setEntityVisible(objectId: AcDbObjectId, visible: boolean) {
+    return this._group.setEntityVisible(objectId, visible)
+  }
+
+  /**
+   * Returns the current scene visibility for one entity.
+   */
+  getEntityVisible(objectId: AcDbObjectId) {
+    return this._group.getEntityVisible(objectId)
+  }
+
+  /**
+   * Builds a preview subset for entities stored in this layer group.
+   *
+   * @param entityIds - Database object ids to extract from this layer
+   * @param options - Optional preview style, slot limits, and missing-entity policy
+   * @returns Preview subset group, or `null` when extraction failed
+   */
+  createPreviewSubset(
+    entityIds: AcDbObjectId[],
+    options?: AcTrPreviewSubsetOptions
+  ) {
+    return this._group.createPreviewSubset(entityIds, options)
+  }
+
+  /**
    * Add one AutoCAD entity into this layer.
    * @param entity Input AutoCAD entity to be added into this layer.
    * @param extendBbox - Input the flag whether to extend the bounding box of the scene by union the bounding box
    * of the specified entity. Defaults to true.
    */
-  addEntity(entity: AcTrEntity, extendBbox: boolean = true) {
+  addEntity(entity: AcTrEntity, _extendBbox: boolean = true) {
     this._group.addEntity(entity)
-    const box = entity.box
-    // For infinitive line such as ray and xline, they are not used to extend box
-    if (extendBbox) this._box.union(box)
+    this._boxDirty = true
   }
 
   /**
@@ -204,7 +352,11 @@ export class AcTrLayer {
    * @returns Return true if remove the specified entity successfully. Otherwise, return false.
    */
   removeEntity(objectId: AcDbObjectId): boolean {
-    return this._group.removeEntity(objectId)
+    const removed = this._group.removeEntity(objectId)
+    if (removed) {
+      this._boxDirty = true
+    }
+    return removed
   }
 
   /**
@@ -219,8 +371,15 @@ export class AcTrLayer {
     const isRemoved = this._group.removeEntity(entity.objectId)
     if (isRemoved) {
       this._group.addEntity(entity)
+      this._boxDirty = true
+      return true
     }
-    return isRemoved
+    if (entity.visible) {
+      this._group.addEntity(entity)
+      this._boxDirty = true
+      return true
+    }
+    return false
   }
 
   /**
@@ -228,7 +387,8 @@ export class AcTrLayer {
    */
   clear() {
     this._group.clear()
-    this._box.makeEmpty()
+    this._cachedBox.makeEmpty()
+    this._boxDirty = true
     this._group.removeFromParent()
   }
 
@@ -236,35 +396,55 @@ export class AcTrLayer {
    * Hover the specified entities
    */
   hover(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      this._group.hover(id)
-    })
+    if (ids.length === 0) {
+      return
+    }
+    if (ids.length === 1) {
+      this._group.hover(ids[0]!)
+      return
+    }
+    this._group.hoverMany(ids)
   }
 
   /**
    * Unhover the specified entities
    */
   unhover(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      this._group.unhover(id)
-    })
+    if (ids.length === 0) {
+      return
+    }
+    if (ids.length === 1) {
+      this._group.unhover(ids[0]!)
+      return
+    }
+    this._group.unhoverMany(ids)
   }
 
   /**
    * Select the specified entities
    */
   select(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      this._group.select(id)
-    })
+    if (ids.length === 0) {
+      return
+    }
+    if (ids.length === 1) {
+      this._group.select(ids[0]!)
+      return
+    }
+    this._group.selectMany(ids)
   }
 
   /**
    * Unselect the specified entities
    */
   unselect(ids: AcDbObjectId[]) {
-    ids.forEach(id => {
-      this._group.unselect(id)
-    })
+    if (ids.length === 0) {
+      return
+    }
+    if (ids.length === 1) {
+      this._group.unselect(ids[0]!)
+      return
+    }
+    this._group.unselectMany(ids)
   }
 }

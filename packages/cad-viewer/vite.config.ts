@@ -10,6 +10,9 @@ import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import vue from '@vitejs/plugin-vue'
 import dts from 'vite-plugin-dts'
 import { libInjectCss } from 'vite-plugin-lib-inject-css'
+import { createLibEntryFileName } from '../vite-config/pluginRollupOutput'
+
+const packageId = 'cad-viewer'
 
 export default defineConfig(({ mode }: ConfigEnv) => {
   const plugins: PluginOption[] = [
@@ -19,7 +22,19 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     peerDepsExternal() as PluginOption,
     dts({
       include: ['src/**/*.ts', 'src/**/*.vue'],
-      exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts']
+      exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
+      beforeWriteFile: (filePath, content) => {
+        const normalized = filePath.replace(/\\/g, '/')
+        if (normalized.endsWith('/dist/index.d.ts')) {
+          return {
+            filePath: filePath.replace(/index\.d\.ts$/, `${packageId}.d.ts`),
+            content: content.replace(
+              '//# sourceMappingURL=index.d.ts.map',
+              `//# sourceMappingURL=${packageId}.d.ts.map`
+            )
+          }
+        }
+      }
     }) as PluginOption
   ]
 
@@ -32,11 +47,26 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     build: {
       lib: {
         entry: 'src/index.ts',
-        name: 'cad-viewer',
-        fileName: 'index',
+        name: packageId,
+        fileName: format => createLibEntryFileName(packageId, format),
         formats: ['es'] as LibraryFormats[]
       },
-      minify: true
+      minify: true,
+      rollupOptions: {
+        // PDF/HTML/SVG/Agent plugins are peers; loaded at runtime via dynamic import
+        external: [
+          '@mlightcad/cad-pdf-plugin',
+          '@mlightcad/cad-html-plugin',
+          '@mlightcad/cad-svg-plugin',
+          '@mlightcad/cad-agent-plugin',
+          '@mlightcad/cad-agent-plugin/register',
+          '@mlightcad/cad-agent-plugin/style.css'
+        ],
+        output: {
+          chunkFileNames: `${packageId}-[name]-[hash].js`,
+          assetFileNames: `${packageId}[extname]`
+        }
+      }
     },
     plugins
   }

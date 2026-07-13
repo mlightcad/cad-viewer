@@ -2,6 +2,7 @@
   <el-table
     :data="layers"
     class="ml-layer-list"
+    :row-class-name="getRowClassName"
     @row-dblclick="handleRowDbClick"
   >
     <el-table-column
@@ -10,7 +11,21 @@
       min-width="120"
       sortable
       show-overflow-tooltip
-    />
+    >
+      <template #default="scope">
+        <span class="ml-layer-list-name">
+          {{ scope.row.name }}
+          <span
+            v-if="scope.row.name === currentLayerName"
+            class="ml-layer-list-current-marker"
+            :title="t('main.toolPalette.layerManager.layerList.currentLayer')"
+            aria-hidden="true"
+          >
+            *
+          </span>
+        </span>
+      </template>
+    </el-table-column>
     <el-table-column
       property="isOn"
       :label="t('main.toolPalette.layerManager.layerList.on')"
@@ -97,7 +112,12 @@ const props = defineProps<Props>()
  * layers: reactive array of LayerInfo retrieved from editor.
  * This composable also updates automatically when CAD document changes.
  */
-const { layers, setLayerOn, setLayerColor } = useLayers(props.editor)
+const { layers, currentLayerName, setLayerOn, setLayerColor } = useLayers(
+  props.editor
+)
+
+const getRowClassName = ({ row }: { row: LayerInfo }) =>
+  row.name === currentLayerName.value ? 'ml-layer-list-row--current' : ''
 
 /**
  * ===== Master Layer Visibility Toggle =====
@@ -242,5 +262,20 @@ const handleColorDialogCancel = () => {
 .ml-layer-list-color {
   width: 20px;
   height: 20px;
+}
+
+.ml-layer-list-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ml-layer-list-current-marker {
+  color: var(--el-color-primary);
+  font-weight: 600;
+}
+
+.ml-layer-list .ml-layer-list-row--current > td.el-table__cell {
+  font-weight: 600;
 }
 </style>
