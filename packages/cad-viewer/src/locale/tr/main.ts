@@ -284,6 +284,7 @@ export default {
       properties: 'Geçerli seçim için Özellikler panelini açın.',
       quickSelect:
         'Ölçütlere göre varlıkları filtrelemek ve seçmek için Hızlı Seçimi açın.',
+      countList: 'Blok sayılarını görüntülemek ve yönetmek için Sayım paletini açın.',
       drawingUnits:
         'Koordinat biçimlerini, hassasiyeti ve ekleme ölçeğini ayarlamak için Çizim Birimlerini açın.',
       agent:
@@ -382,6 +383,7 @@ export default {
       redo: 'Yinele',
       properties: 'Özellikler',
       quickSelect: 'Hızlı\nSeçim',
+      countList: 'Sayım',
       drawingUnits: 'Çizim\nBirimleri',
       agent: 'CAD\nAjanı'
     }
@@ -556,6 +558,22 @@ export default {
         color: 'Renk',
         currentLayer: 'Geçerli katman',
         zoomToLayer: 'Tıklanan "{layer}" katmanına yakınlaştırıldı'
+      }
+    },
+    countList: {
+      tab: 'Sayım',
+      title: 'Sayım',
+      searchPlaceholder: 'Blok adı ara',
+      countInArea: 'Alanda say',
+      areaSet: 'Sayım alanı güncellendi',
+      areaCleared: 'Tüm model alanı sayılıyor',
+      blockName: 'Blok',
+      count: 'Adet',
+      empty: 'Görünür blok bulunamadı',
+      prompt: {
+        firstCorner:
+          'Sayım alanının ilk köşesini belirtin veya [Entire]: ',
+        secondCorner: 'Karşı köşeyi belirtin: '
       }
     }
   },

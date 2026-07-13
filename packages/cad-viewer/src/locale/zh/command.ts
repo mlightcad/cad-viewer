@@ -12,6 +12,9 @@ export default {
     properties: {
       description: '图元属性面板'
     },
+    countlist: {
+      description: '打开计数面板以显示并管理块计数'
+    },
     pttype: {
       description: '设置点的显示样式和尺寸'
     },

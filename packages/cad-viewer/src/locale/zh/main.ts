@@ -275,6 +275,7 @@ export default {
       redo: '重做上一次撤销的操作。',
       properties: '打开当前所选对象的属性面板。',
       quickSelect: '打开快速选择对话框，按条件筛选并选择图元。',
+      countList: '打开计数面板以查看并管理块计数。',
       drawingUnits: '打开图形单位对话框，设置坐标格式、精度与插入缩放单位。',
       agent: '打开 CAD Agent 工具面板，使用自然语言描述并绘制图形。',
       propertyColor: '设置新建对象或当前选中对象使用的颜色。',
@@ -350,6 +351,7 @@ export default {
       redo: '重做',
       properties: '属性',
       quickSelect: '快速选择',
+      countList: '计数',
       drawingUnits: '图形单位',
       agent: 'CAD Agent'
     }
@@ -515,6 +517,21 @@ export default {
         color: '颜色',
         currentLayer: '当前图层',
         zoomToLayer: '已缩放到所点击的图层"{layer}"'
+      }
+    },
+    countList: {
+      tab: '计数',
+      title: '计数',
+      searchPlaceholder: '搜索块名称',
+      countInArea: '指定区域计数',
+      areaSet: '计数区域已更新',
+      areaCleared: '正在对整个模型空间计数',
+      blockName: '块',
+      count: '数量',
+      empty: '未找到可见块',
+      prompt: {
+        firstCorner: '指定计数区域的第一个角点或 [Entire(整个)]: ',
+        secondCorner: '指定对角点: '
       }
     }
   },

@@ -13,6 +13,10 @@ export default {
     properties: {
       description: 'Varlık özellikleri paleti'
     },
+    countlist: {
+      description:
+        'Sayılan blokları görüntülemek ve yönetmek için Sayım paletini açar'
+    },
     pttype: {
       description: 'Nokta nesnelerinin görüntü stilini ve boyutunu belirler'
     },
