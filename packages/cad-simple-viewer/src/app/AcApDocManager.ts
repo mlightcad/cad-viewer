@@ -84,6 +84,7 @@ import {
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { AcTrView2d } from '../view'
 import { AcApBusyIndicator } from './AcApBusyIndicator'
+import { acapBindCommandServices } from './AcApCommandServices'
 import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
@@ -479,6 +480,14 @@ export class AcApDocManager {
     const busyHost = options.busyIndicatorHost ?? view.container
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
     this._busyIndicator = new AcApBusyIndicator(busyHost)
+    acapBindCommandServices({
+      showMessage: (message, type, msgKey) =>
+        this.editor.showMessage(message, type, msgKey),
+      showBusyIndicator: message => this.showBusyIndicator(message),
+      hideBusyIndicator: () => this.hideBusyIndicator(),
+      withBusyIndicator: (work, message) =>
+        this.withBusyIndicator(work, message)
+    })
 
     this.events.documentToBeOpened.addEventListener(() => {
       this._openFileProgress.reset()

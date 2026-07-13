@@ -1,5 +1,6 @@
 export * from './AcApAnnotation'
 export * from './AcApContext'
+export * from './AcApCommandServices'
 export * from './AcApDocument'
 export * from './AcApDocManager'
 export * from './AcApObjectDisplay'
