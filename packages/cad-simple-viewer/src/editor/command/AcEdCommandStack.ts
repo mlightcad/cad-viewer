@@ -1,4 +1,9 @@
-import { AcEdOpenMode } from '../view'
+// Use direct file imports rather than the `../view` barrel so the command
+// stack does not transitively pull in the editor's DOM-heavy input UI through
+// AcEdBaseView. Keeps unit tests for the stack runnable in the Node Jest env.
+// Type-only import — needed solely for typing markActive/cancelActive parameters.
+import type { AcEdBaseView } from '../view/AcEdBaseView'
+import { AcEdOpenMode } from '../view/AcEdOpenMode'
 import { AcEdCommand } from './AcEdCommand'
 import {
   AcEdCommandIterator,
@@ -59,6 +64,26 @@ export class AcEdCommandStack {
   private _systemCommandGroup: AcEdCommandGroup
   /** Reference to the default user command group */
   private _defaultCommandGroup: AcEdCommandGroup
+  /**
+   * The command currently executing (between `commandWillStart` and the
+   * fulfilment of its `trigger()` promise). `null` when no command is active.
+   *
+   * Tracked so that {@link cancelActive} can abort an in-flight command before
+   * a new one starts, enforcing AutoCAD-style command exclusivity.
+   */
+  private _activeCommand: AcEdCommand | null = null
+  /**
+   * View bound to the active command's execution context. Required so that
+   * {@link cancelActive} can reach the right editor's input manager to
+   * programmatically abort any pending prompt.
+   */
+  private _activeView: AcEdBaseView | null = null
+  /**
+   * Promise returned by the active command's `trigger()` call. Awaited inside
+   * {@link cancelActive} so the previous command finishes its cleanup phase
+   * (event dispatch, jig teardown, etc.) before a new command begins.
+   */
+  private _activePromise: Promise<void> | null = null
 
   /**
    * Private constructor to enforce singleton pattern.
@@ -351,6 +376,85 @@ export class AcEdCommandStack {
       return true
     }
     return false
+  }
+
+  /**
+   * The command currently executing, or `null` when no command is active.
+   *
+   * A command is considered active from the moment {@link markActive} is
+   * called by the dispatcher up until its `trigger()` promise settles and
+   * {@link clearActive} releases the slot.
+   */
+  get activeCommand(): AcEdCommand | null {
+    return this._activeCommand
+  }
+
+  /**
+   * Records the command that is about to begin executing.
+   *
+   * Called by the dispatcher immediately after invoking `cmd.trigger(context)`.
+   * The supplied view is used to reach the editor's input manager when an
+   * outside caller requests cancellation via {@link cancelActive}.
+   *
+   * @param command - Command that just started executing
+   * @param view - View bound to the command's execution context
+   * @param promise - Promise returned by the command's `trigger()` call
+   */
+  markActive(
+    command: AcEdCommand,
+    view: AcEdBaseView,
+    promise: Promise<void>
+  ) {
+    this._activeCommand = command
+    this._activeView = view
+    this._activePromise = promise
+  }
+
+  /**
+   * Releases the active slot if it currently belongs to the supplied command.
+   *
+   * Guarded by an identity check so that out-of-order callbacks (for example,
+   * a late cleanup after the slot has already been taken by a successor
+   * command) cannot clear unrelated state.
+   *
+   * @param command - Command whose active slot should be released
+   */
+  clearActive(command: AcEdCommand) {
+    if (this._activeCommand === command) {
+      this._activeCommand = null
+      this._activeView = null
+      this._activePromise = null
+    }
+  }
+
+  /**
+   * Cancels the currently active command, if any, and waits for it to settle.
+   *
+   * Mirrors AutoCAD's behavior of cancelling the running command when a new
+   * one starts: the active prompt is rejected via
+   * {@link AcEditor.cancelActiveInput} (which maps to `AcEdPromptStatus.Cancel`
+   * inside the prompt result), and the command's `trigger()` promise is awaited
+   * so its `commandEnded` lifecycle hook completes before the caller proceeds.
+   *
+   * Calling this method when no command is active is a no-op.
+   */
+  async cancelActive(): Promise<void> {
+    const view = this._activeView
+    const promise = this._activePromise
+    if (!this._activeCommand) return
+
+    view?.editor.cancelActiveInput()
+
+    if (promise) {
+      try {
+        await promise
+      } catch {
+        // Swallow errors from the cancelled command's trigger() — callers of
+        // cancelActive() must not be punished for the previous command's
+        // failure. Well-behaved commands check the prompt status and return
+        // cleanly on Cancel, so this only fires for genuine runtime errors.
+      }
+    }
   }
 
   /**

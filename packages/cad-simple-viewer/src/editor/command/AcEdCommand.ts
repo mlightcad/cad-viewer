@@ -1,8 +1,16 @@
-import { AcApContext, AcApDocManager } from '../../app'
+// Type-only / direct-file imports keep the command layer free of the app and
+// view barrels (which transitively pull DOM-heavy input UI). That lets command
+// stack unit tests run in the Node Jest environment.
+//
+// App runtime services (busy indicator, command-line messages) are reached via
+// {@link acapCommandServices} instead of importing AcApDocManager, which would
+// create a circular init cycle with concrete command classes.
+import { acapCommandServices } from '../../app/AcApCommandServices'
+import type { AcApContext } from '../../app/AcApContext'
 import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import { eventBus } from '../global/eventBus'
 import { AcEdMessageType } from '../input/ui/AcEdMessageType'
-import { AcEdOpenMode } from '../view'
+import { AcEdOpenMode } from '../view/AcEdOpenMode'
 
 /**
  * Abstract base class for all CAD commands.
@@ -313,7 +321,7 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
     type: AcEdMessageType = 'info',
     msgKey?: string
   ): void {
-    AcApDocManager.instance.editor.showMessage(message, type, msgKey)
+    acapCommandServices().showMessage(message, type, msgKey)
   }
 
   /**
@@ -332,14 +340,14 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
    * @param message - Optional message displayed under the spinner
    */
   protected showBusyIndicator(message?: string): void {
-    AcApDocManager.instance.showBusyIndicator(message)
+    acapCommandServices().showBusyIndicator(message)
   }
 
   /**
    * Hides the application busy overlay started by {@link showBusyIndicator}.
    */
   protected hideBusyIndicator(): void {
-    AcApDocManager.instance.hideBusyIndicator()
+    acapCommandServices().hideBusyIndicator()
   }
 
   /**
@@ -352,6 +360,6 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
     work: () => T | Promise<T>,
     message?: string
   ): Promise<T> {
-    return AcApDocManager.instance.withBusyIndicator(work, message)
+    return acapCommandServices().withBusyIndicator(work, message)
   }
 }
