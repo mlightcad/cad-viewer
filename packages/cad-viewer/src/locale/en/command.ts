@@ -16,6 +16,10 @@ export default {
       description:
         'Opens the Count palette to display and manage counted blocks'
     },
+    mem: {
+      description:
+        'Opens the Memory profile palette to analyze drawing memory usage'
+    },
     pttype: {
       description: 'Specifies the display style and size of point objects'
     },

@@ -7,8 +7,20 @@ import * as THREE from 'three'
 
 import { AcTrFillMaterialManager } from './AcTrFillMaterialManager'
 import { AcTrLineMaterialManager } from './AcTrLineMaterialManager'
+import {
+  AcTrMaterialCacheStats
+} from './AcTrMaterialManager'
 import { AcTrPointMaterialManager } from './AcTrPointMaterialManager'
 import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
+
+/** Aggregated material-cache stats across point / line / fill managers. */
+export interface AcTrStyleManagerStats {
+  point: AcTrMaterialCacheStats
+  line: AcTrMaterialCacheStats
+  fill: AcTrMaterialCacheStats
+  totalCount: number
+  totalEstimatedBytes: number
+}
 
 /**
  * Central style/material access point for the CAD viewer.
@@ -251,6 +263,23 @@ export class AcTrStyleManager {
     this.lineMgr.dispose()
     this.pointMgr.dispose()
     this.fillMgr.dispose()
+  }
+
+  /**
+   * Returns aggregated material-cache stats for memory diagnostics.
+   */
+  getStats(): AcTrStyleManagerStats {
+    const point = this.pointMgr.getStats()
+    const line = this.lineMgr.getStats()
+    const fill = this.fillMgr.getStats()
+    return {
+      point,
+      line,
+      fill,
+      totalCount: point.count + line.count + fill.count,
+      totalEstimatedBytes:
+        point.estimatedBytes + line.estimatedBytes + fill.estimatedBytes
+    }
   }
 
   updateLineResolution(width: number, height: number): void {

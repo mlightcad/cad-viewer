@@ -30,6 +30,33 @@ export function isSpatialBoxFullyInside(
   )
 }
 
+/** Implementation kind reported by {@link AcTrSpatialIndex.getStats}. */
+export type AcTrSpatialIndexKind = 'rbush' | 'linear' | 'hierarchical'
+
+/**
+ * Estimated memory footprint of one spatial index instance.
+ *
+ * Byte totals are approximate (object overhead + sampled item payloads) and
+ * are intended for diagnostics, not exact heap accounting.
+ */
+export interface AcTrSpatialIndexStats {
+  kind: AcTrSpatialIndexKind
+  /** Number of items stored at this index level (root only for hierarchical). */
+  itemCount: number
+  /** Approximate memory usage in bytes. */
+  estimatedBytes: number
+  /** Hierarchical: number of items in the root index. */
+  rootItemCount?: number
+  /** Hierarchical: number of registered child indexes. */
+  childIndexCount?: number
+  /** Hierarchical: sum of items across all child indexes. */
+  childItemCount?: number
+  /** Hierarchical: child indexes backed by RBush. */
+  rbushChildCount?: number
+  /** Hierarchical: child indexes backed by linear scan. */
+  linearChildCount?: number
+}
+
 export interface AcTrSpatialIndex<
   T extends AcEdSpatialQueryResultItem = AcEdSpatialQueryResultItem
 > {
@@ -107,4 +134,38 @@ export interface AcTrSpatialIndex<
    * @param box The bounding box in which to search.
    */
   collides(box: AcTrSpatialIndexBBox): boolean
+
+  /**
+   * Returns an approximate memory / cardinality snapshot for diagnostics.
+   */
+  getStats(): AcTrSpatialIndexStats
+}
+
+/**
+ * Estimates the JS heap bytes of one spatial-query item (bbox + id string).
+ *
+ * Uses a fixed object overhead plus UTF-16 string cost for `id`.
+ */
+export function estimateSpatialQueryItemBytes(
+  item: AcEdSpatialQueryResultItem
+): number {
+  // 4× float64 fields + shallow object overhead + id string.
+  return 4 * 8 + 48 + (item.id?.length ?? 0) * 2
+}
+
+/**
+ * Estimates total item payload bytes from a sample of spatial-query items.
+ */
+export function estimateSpatialItemsBytes(
+  items: readonly AcEdSpatialQueryResultItem[],
+  sampleSize = 32
+): number {
+  const count = items.length
+  if (count === 0) return 0
+  const sampleCount = Math.min(count, sampleSize)
+  let sampleBytes = 0
+  for (let i = 0; i < sampleCount; i++) {
+    sampleBytes += estimateSpatialQueryItemBytes(items[i])
+  }
+  return Math.round((sampleBytes / sampleCount) * count)
 }

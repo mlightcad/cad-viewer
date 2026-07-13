@@ -14,6 +14,7 @@ import {
   AcApDrawingUnitsCmd,
   AcApExportHtmlDlgCmd,
   AcApLayerStateCmd,
+  AcApMemCmd,
   AcApMissedDataCmd,
   AcApPointStyleCmd,
   AcApPropertiesCmd,
@@ -91,6 +92,13 @@ export const registerCmds = () => {
       'countlist',
       'countlist',
       new AcApCountListCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'mem',
+      'mem',
+      new AcApMemCmd(),
+      'memstat'
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

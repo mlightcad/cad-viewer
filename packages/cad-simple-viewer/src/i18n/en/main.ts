@@ -22,6 +22,7 @@ export default {
     fetchingDrawingFile: 'Fetching file ...',
     exportingDxf: 'Exporting DXF ...',
     exportingEntityPreview: 'Exporting image ...',
+    collectingMemoryProfile: 'Analyzing memory ...',
     fontCached: 'Font cached successfully',
     fontCacheFailed: 'Failed to cache font'
   },

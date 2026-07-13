@@ -22,6 +22,7 @@ export default {
     fetchingDrawingFile: '正在加载图纸文件...',
     exportingDxf: '正在导出 DXF ...',
     exportingEntityPreview: '正在导出图片 ...',
+    collectingMemoryProfile: '正在分析内存 ...',
     fontCached: '字体已成功缓存',
     fontCacheFailed: '缓存字体失败'
   },

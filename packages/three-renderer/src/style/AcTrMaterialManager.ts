@@ -7,7 +7,7 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrMaterialUtil } from '../util'
+import { AcTrCommonUtil, AcTrMaterialUtil } from '../util'
 import {
   AcTrByLayerBindingFlags,
   getMaterialMetadata,
@@ -15,6 +15,14 @@ import {
   setMaterialMetadata
 } from './AcTrMaterialMetadata'
 import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
+
+/** Diagnostic snapshot of one material cache. */
+export interface AcTrMaterialCacheStats {
+  /** Number of cached materials. */
+  count: number
+  /** Approximate JS-heap bytes (sampled × count). */
+  estimatedBytes: number
+}
 
 /**
  * Valid material side values for cache partitioning.
@@ -58,6 +66,26 @@ export abstract class AcTrMaterialManager<T> {
 
   constructor(options: AcTrStyleManagerOptions) {
     this.options = options
+  }
+
+  /**
+   * Returns cache cardinality and a sampled memory estimate for diagnostics.
+   */
+  getStats(): AcTrMaterialCacheStats {
+    const keys = Object.keys(this.cache)
+    const count = keys.length
+    if (count === 0) {
+      return { count: 0, estimatedBytes: 0 }
+    }
+    const sampleKey = keys[0]
+    const sampleBytes = AcTrCommonUtil.estimateObjectSize(this.cache[sampleKey])
+    const traitsBytes = AcTrCommonUtil.estimateObjectSize(
+      this.keyToTraits[sampleKey]
+    )
+    return {
+      count,
+      estimatedBytes: (sampleBytes + traitsBytes) * count
+    }
   }
 
   /**
