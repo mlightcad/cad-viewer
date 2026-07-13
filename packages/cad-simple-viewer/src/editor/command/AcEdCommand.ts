@@ -1,26 +1,14 @@
 // Type-only / direct-file imports keep the command layer free of the app and
 // view barrels (which transitively pull DOM-heavy input UI). That lets command
-// stack unit tests run in the Node Jest environment.
+// stack unit tests run in the Node Jest environment — tests that import this
+// module must mock `../../app/AcApDocManager` so the DocManager graph is not
+// loaded.
 import type { AcApContext } from '../../app/AcApContext'
-import type { AcApDocManager } from '../../app/AcApDocManager'
+import { AcApDocManager } from '../../app/AcApDocManager'
 import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import { eventBus } from '../global/eventBus'
 import { AcEdMessageType } from '../input/ui/AcEdMessageType'
 import { AcEdOpenMode } from '../view/AcEdOpenMode'
-
-/**
- * Lazily resolves the document manager singleton.
- *
- * A runtime require (instead of a static import) avoids loading AcApDocManager
- * — and its circular editor/app graph — when unit tests only exercise
- * AcEdCommand / AcEdCommandStack scaffolding.
- */
-function getDocManager(): AcApDocManager {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { AcApDocManager: DocManager } =
-    require('../../app/AcApDocManager') as typeof import('../../app/AcApDocManager')
-  return DocManager.instance
-}
 
 /**
  * Abstract base class for all CAD commands.
@@ -331,7 +319,7 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
     type: AcEdMessageType = 'info',
     msgKey?: string
   ): void {
-    getDocManager().editor.showMessage(message, type, msgKey)
+    AcApDocManager.instance.editor.showMessage(message, type, msgKey)
   }
 
   /**
@@ -350,14 +338,14 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
    * @param message - Optional message displayed under the spinner
    */
   protected showBusyIndicator(message?: string): void {
-    getDocManager().showBusyIndicator(message)
+    AcApDocManager.instance.showBusyIndicator(message)
   }
 
   /**
    * Hides the application busy overlay started by {@link showBusyIndicator}.
    */
   protected hideBusyIndicator(): void {
-    getDocManager().hideBusyIndicator()
+    AcApDocManager.instance.hideBusyIndicator()
   }
 
   /**
@@ -370,6 +358,6 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
     work: () => T | Promise<T>,
     message?: string
   ): Promise<T> {
-    return getDocManager().withBusyIndicator(work, message)
+    return AcApDocManager.instance.withBusyIndicator(work, message)
   }
 }

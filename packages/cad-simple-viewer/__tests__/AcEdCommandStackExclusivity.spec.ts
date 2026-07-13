@@ -1,3 +1,14 @@
+jest.mock('../src/app/AcApDocManager', () => ({
+  AcApDocManager: {
+    instance: {
+      editor: { showMessage: jest.fn() },
+      showBusyIndicator: jest.fn(),
+      hideBusyIndicator: jest.fn(),
+      withBusyIndicator: jest.fn(async (work: () => unknown) => work())
+    }
+  }
+}))
+
 import { AcEdCommand } from '../src/editor/command/AcEdCommand'
 import { AcEdCommandStack } from '../src/editor/command/AcEdCommandStack'
 import { AcEdBaseView } from '../src/editor/view/AcEdBaseView'
