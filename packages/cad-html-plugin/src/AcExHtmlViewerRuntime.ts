@@ -331,6 +331,9 @@ function startViewer(): void {
       },
       getTrackingOptions: () =>
         measureSettingsRef.current?.getTrackingOptions() ?? null,
+      onActiveChange: active => {
+        setOrbitLeftButtonPan(controls, !active)
+      },
       view: {
         screenToWcs,
         wcsToScreen,
@@ -398,12 +401,8 @@ function startViewer(): void {
     setupMeasurePointerInput(renderer.domElement, () => measure!, render)
   }
 
-  renderer.domElement.addEventListener('mousedown', event => {
-    if (event.button === 1) renderer.domElement.style.cursor = 'grabbing'
-  })
-  renderer.domElement.addEventListener('mouseup', event => {
-    if (event.button === 1) renderer.domElement.style.cursor = ''
-  })
+  setupPanCursorFeedback(renderer.domElement, () => measure?.isActive === true)
+
   renderer.domElement.addEventListener('contextmenu', event => {
     event.preventDefault()
   })
@@ -749,7 +748,8 @@ function createLineObject(
   return object
 }
 
-/** Same defaults as {@link AcTrBaseView#createCameraControls}. */
+/** Same defaults as {@link AcTrBaseView#createCameraControls}, plus left-button pan
+ * for mouse and macOS trackpad three-finger drag. */
 function createOrbitControls(
   camera: THREE.OrthographicCamera,
   domElement: HTMLElement
@@ -760,9 +760,7 @@ function createOrbitControls(
   controls.enableRotate = false
   controls.zoomSpeed = 5
   controls.zoomToCursor = true
-  controls.mouseButtons = {
-    MIDDLE: THREE.MOUSE.PAN
-  }
+  setOrbitLeftButtonPan(controls, true)
   controls.touches = {
     ONE: THREE.TOUCH.PAN,
     TWO: THREE.TOUCH.DOLLY_PAN
@@ -772,7 +770,51 @@ function createOrbitControls(
 }
 
 /**
- * Left-button picking while a measure tool is active; pan/zoom stay on OrbitControls.
+ * Idle: left + middle pan (trackpad / mouse). Measuring: middle only so left-click
+ * picking does not fight OrbitControls — matches {@link AcTrLayoutView} mode switch.
+ */
+function setOrbitLeftButtonPan(
+  controls: OrbitControls,
+  enableLeftPan: boolean
+): void {
+  controls.mouseButtons = enableLeftPan
+    ? {
+        LEFT: THREE.MOUSE.PAN,
+        MIDDLE: THREE.MOUSE.PAN
+      }
+    : {
+        MIDDLE: THREE.MOUSE.PAN
+      }
+}
+
+/** Grabbing cursor while middle-button or idle left-button pan is held. */
+function setupPanCursorFeedback(
+  domElement: HTMLElement,
+  isMeasureActive: () => boolean
+): void {
+  let panPointerId: number | null = null
+
+  const clearPanCursor = (event: PointerEvent) => {
+    if (panPointerId === null || event.pointerId !== panPointerId) return
+    panPointerId = null
+    domElement.style.cursor = ''
+  }
+
+  domElement.addEventListener('pointerdown', event => {
+    const isMiddlePan = event.button === 1
+    const isLeftPan = event.button === 0 && !isMeasureActive()
+    if (!isMiddlePan && !isLeftPan) return
+    panPointerId = event.pointerId
+    domElement.style.cursor = 'grabbing'
+  })
+  // Capture release even when the pointer leaves the canvas.
+  window.addEventListener('pointerup', clearPanCursor)
+  window.addEventListener('pointercancel', clearPanCursor)
+}
+
+/**
+ * Left-button measure picking / selection on capture so selection can block
+ * OrbitControls pan; while a tool is active left pan is already toggled off.
  */
 function setupMeasurePointerInput(
   domElement: HTMLElement,
@@ -793,19 +835,25 @@ function setupMeasurePointerInput(
     render()
   }
 
-  domElement.addEventListener('pointerdown', event => {
-    if (event.button !== 0) return
-    const measure = getMeasure()
-    if (measure.isActive) {
-      if (measure.handlePointerDown(event.clientX, event.clientY)) {
+  domElement.addEventListener(
+    'pointerdown',
+    event => {
+      if (event.button !== 0) return
+      const measure = getMeasure()
+      if (measure.isActive) {
+        if (measure.handlePointerDown(event.clientX, event.clientY)) {
+          render()
+        }
+        return
+      }
+      // Capture phase: stop before OrbitControls starts left-button pan.
+      if (measure.handleSelectionPointerDown(event.clientX, event.clientY)) {
+        event.stopImmediatePropagation()
         render()
       }
-      return
-    }
-    if (measure.handleSelectionPointerDown(event.clientX, event.clientY)) {
-      render()
-    }
-  })
+    },
+    true
+  )
   domElement.addEventListener('pointermove', event => {
     const measure = getMeasure()
     if (!measure.isActive) return
