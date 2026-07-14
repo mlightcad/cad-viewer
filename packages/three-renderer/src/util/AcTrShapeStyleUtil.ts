@@ -31,8 +31,10 @@ function normalizeCadFontName(fontName: string): string {
 /**
  * Resolves which SHX glyph key a SHAPE entity should use.
  *
- * Named shapes are looked up by name only; numeric codes are used only when
- * the entity has no shape name.
+ * Non-numeric names are looked up by name only. Purely numeric names (common
+ * when DWG shape indices are written as DXF group 2) are treated as shape
+ * codes. Explicit {@link AcGiShapeData.shapeNumber} is used when no usable
+ * name is present.
  */
 export function resolveShapeGlyphKey(shape: AcGiShapeData): {
   byName?: string
@@ -40,6 +42,14 @@ export function resolveShapeGlyphKey(shape: AcGiShapeData): {
 } {
   const name = shape.name?.trim()
   if (name) {
+    const asNumber = Number(name)
+    if (
+      Number.isInteger(asNumber) &&
+      asNumber !== 0 &&
+      String(asNumber) === name
+    ) {
+      return { byCode: asNumber }
+    }
     return { byName: name }
   }
   const code = shape.shapeNumber

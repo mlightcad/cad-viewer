@@ -289,4 +289,15 @@ describe('resolveShapeGlyphKey', () => {
       })
     ).toEqual({ byCode: 65 })
   })
+
+  it('treats a purely numeric shape name as a shape code', () => {
+    expect(
+      resolveShapeGlyphKey({
+        name: '9',
+        shapeNumber: 9,
+        size: 1,
+        position: { x: 0, y: 0, z: 0 }
+      })
+    ).toEqual({ byCode: 9 })
+  })
 })

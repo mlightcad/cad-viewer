@@ -43,8 +43,9 @@ export class AcTrShape extends AcTrGlyphEntity {
   /**
    * Builds renderer input with only the glyph key that should be resolved.
    *
-   * mtext-renderer falls back from shape name to shape number when both are
-   * present; SHAPE entities should use the name exclusively when it is set.
+   * Chooses either a non-numeric name or a shape code via
+   * {@link resolveShapeGlyphKey}, then clears the unused field so mtext-renderer
+   * does not incorrectly fall back between them.
    *
    * @returns SHAPE payload suitable for the mtext-renderer.
    */
