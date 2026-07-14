@@ -157,6 +157,11 @@ export interface AcExMeasureControllerOptions {
   ) => void
   /** Returns ortho/polar tracking options while measuring; omit to disable tracking. */
   getTrackingOptions?: () => AcExTrackingOptions | null
+  /**
+   * Called when a measurement tool becomes active or returns to idle
+   * (for example to toggle left-button pan on OrbitControls).
+   */
+  onActiveChange?: (active: boolean) => void
 }
 
 /** Teardown callback registered when a measurement overlay is created. @internal */
@@ -664,6 +669,10 @@ export class AcExMeasureController {
   private readonly _getTrackingOptions:
     | (() => AcExTrackingOptions | null)
     | null
+  /** Notifies the viewer when measure-tool activity starts or stops. */
+  private readonly _onActiveChange:
+    | ((active: boolean) => void)
+    | null
   /** Accent color for lines, labels, and canvas overlays. */
   private _measureColor = ACEX_MEASURE_COLOR
   /** Parent group for committed THREE line geometry. */
@@ -721,6 +730,7 @@ export class AcExMeasureController {
     this._getReadyStatus = options.getReadyStatus
     this._onOsnapMarker = options.onOsnapMarker
     this._getTrackingOptions = options.getTrackingOptions ?? null
+    this._onActiveChange = options.onActiveChange ?? null
 
     this._measureGroup = new THREE.Group()
     this._measureGroup.name = 'measurements'
@@ -818,6 +828,7 @@ export class AcExMeasureController {
     this._points = []
     this._updateToolbarActive()
     this._statusEl.textContent = this._hintForMode(mode)
+    this._onActiveChange?.(true)
   }
 
   /**
@@ -825,6 +836,7 @@ export class AcExMeasureController {
    * Does not remove committed measurement graphics (use {@link clearAll}).
    */
   cancelMode(): void {
+    const wasActive = this._mode !== null
     this._mode = null
     this._points = []
     this._lastPointer = null
@@ -834,6 +846,7 @@ export class AcExMeasureController {
     this._updateToolbarActive()
     this._updateIdleStatus()
     this._view.render()
+    if (wasActive) this._onActiveChange?.(false)
   }
 
   /**
