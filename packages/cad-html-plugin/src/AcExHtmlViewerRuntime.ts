@@ -400,9 +400,12 @@ function startViewer(): void {
 
   renderer.domElement.addEventListener('mousedown', event => {
     if (event.button === 1) renderer.domElement.style.cursor = 'grabbing'
+    if (event.button === 0 && !measure?.isActive)
+      renderer.domElement.style.cursor = 'grabbing'
   })
   renderer.domElement.addEventListener('mouseup', event => {
-    if (event.button === 1) renderer.domElement.style.cursor = ''
+    if (event.button === 1 || event.button === 0)
+      renderer.domElement.style.cursor = ''
   })
   renderer.domElement.addEventListener('contextmenu', event => {
     event.preventDefault()
@@ -761,6 +764,7 @@ function createOrbitControls(
   controls.zoomSpeed = 5
   controls.zoomToCursor = true
   controls.mouseButtons = {
+    LEFT: THREE.MOUSE.PAN,
     MIDDLE: THREE.MOUSE.PAN
   }
   controls.touches = {
@@ -797,12 +801,16 @@ function setupMeasurePointerInput(
     if (event.button !== 0) return
     const measure = getMeasure()
     if (measure.isActive) {
+      // Stop the event from reaching OrbitControls so left-click pan
+      // does not conflict with the active measurement tool.
+      event.stopImmediatePropagation()
       if (measure.handlePointerDown(event.clientX, event.clientY)) {
         render()
       }
       return
     }
     if (measure.handleSelectionPointerDown(event.clientX, event.clientY)) {
+      event.stopImmediatePropagation()
       render()
     }
   })
