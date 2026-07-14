@@ -571,6 +571,64 @@ export default {
           'Specify first corner of count area or [Entire]: ',
         secondCorner: 'Specify opposite corner: '
       }
+    },
+    memoryProfile: {
+      tab: 'Memory',
+      title: 'Memory Profile',
+      refresh: 'Refresh',
+      collecting: 'Analyzing memory ...',
+      showPie: 'Show summary chart',
+      hidePie: 'Hide summary chart',
+      collectedAt: 'Collected at {time}',
+      heapUsed: 'JS heap {used} / {total}',
+      estimateNote:
+        'Geometry sizes come from buffer byteLength. Other categories are estimated.',
+      estimated: 'est.',
+      pieTotal: 'Accounted',
+      pieAriaLabel: 'Memory breakdown by category',
+      empty: 'No data',
+      missedFonts: 'Missed fonts',
+      fontMemory: 'Font / mtext memory',
+      fontMemorySummary: 'Memory {live} (main {main} · workers {workers})',
+      fontStorage: 'IndexedDB storage (not memory)',
+      fontStorageSummary: '{count} cached fonts · {size}',
+      materialPoint: 'Point',
+      materialLine: 'Line',
+      materialFill: 'Fill',
+      materialTotal: 'Total',
+      dataModelCounts: '{entities} entities · {objects} objects · {total}',
+      dataModelCategories: 'By category',
+      dataModelEntityTypes: 'By entity type',
+      categories: {
+        heap: 'JS Heap',
+        geometry: 'Geometry',
+        mapping: 'Mapping',
+        spatial: 'Spatial Index',
+        dataModel: 'Data Model',
+        materials: 'Materials',
+        fonts: 'Fonts'
+      },
+      tabs: {
+        geometry: 'Geometry',
+        spatial: 'Spatial',
+        dataModel: 'Data Model',
+        materials: 'Materials',
+        fonts: 'Fonts'
+      },
+      columns: {
+        layout: 'Layout',
+        layer: 'Layer',
+        geometry: 'Geometry',
+        mapping: 'Mapping',
+        entities: 'Entities',
+        rootItems: 'Root',
+        childItems: 'Children',
+        estimated: 'Est. size',
+        type: 'Type',
+        count: 'Count',
+        category: 'Category',
+        font: 'Font'
+      }
     }
   },
   colorDropdown: {

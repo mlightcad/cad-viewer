@@ -216,6 +216,13 @@ export class AcTrLayout {
   }
 
   /**
+   * Approximate spatial-index memory / cardinality stats for this layout.
+   */
+  get spatialIndexStats() {
+    return this._spatialIndex.getStats()
+  }
+
+  /**
    * The statistics of this layout.
    * Provides detailed information about memory usage and entity counts.
    */

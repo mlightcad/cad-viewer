@@ -4,9 +4,14 @@ import { AcEdSpatialQueryResultItem } from '../editor/view'
 import {
   AcTrSpatialIndex,
   AcTrSpatialIndexBBox,
+  AcTrSpatialIndexStats,
   AcTrSpatialSearchOptions,
+  estimateSpatialItemsBytes,
   isSpatialBoxFullyInside
 } from './AcTrSpatialIndex'
+
+/** Approx. Map entry overhead (key pointer + value pointer + slot). */
+const MAP_ENTRY_BYTES = 40
 
 /**
  * A simple spatial index implementation that performs linear scanning
@@ -88,6 +93,17 @@ export class AcTrLinearSpatialIndex implements AcTrSpatialIndex {
 
   all(): AcEdSpatialQueryResultItem[] {
     return Array.from(this.items.values())
+  }
+
+  getStats(): AcTrSpatialIndexStats {
+    const items = this.all()
+    const itemCount = items.length
+    return {
+      kind: 'linear',
+      itemCount,
+      estimatedBytes:
+        estimateSpatialItemsBytes(items) + itemCount * MAP_ENTRY_BYTES
+    }
   }
 }
 

@@ -12,6 +12,7 @@ import { AcTrRBushSpatialIndex } from './AcTrRBushSpatialIndex'
 import {
   AcTrSpatialIndex,
   AcTrSpatialIndexBBox,
+  AcTrSpatialIndexStats,
   AcTrSpatialSearchOptions,
   isSpatialBoxFullyInside
 } from './AcTrSpatialIndex'
@@ -280,6 +281,39 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
    */
   hasChildIndex(id: AcDbObjectId) {
     return this.childIndexes.has(id)
+  }
+
+  /**
+   * Aggregates memory / cardinality stats from the root index and all children.
+   */
+  getStats(): AcTrSpatialIndexStats {
+    const rootStats = this.rootIndex.getStats()
+    let childItemCount = 0
+    let childBytes = 0
+    let rbushChildCount = 0
+    let linearChildCount = 0
+
+    for (const child of this.childIndexes.values()) {
+      const childStats = child.getStats()
+      childItemCount += childStats.itemCount
+      childBytes += childStats.estimatedBytes
+      if (childStats.kind === 'rbush') rbushChildCount++
+      else if (childStats.kind === 'linear') linearChildCount++
+    }
+
+    // Child-index Map overhead (string id keys + pointers).
+    const childMapBytes = this.childIndexes.size * 64
+
+    return {
+      kind: 'hierarchical',
+      itemCount: rootStats.itemCount,
+      estimatedBytes: rootStats.estimatedBytes + childBytes + childMapBytes,
+      rootItemCount: rootStats.itemCount,
+      childIndexCount: this.childIndexes.size,
+      childItemCount,
+      rbushChildCount,
+      linearChildCount
+    }
   }
 
   /**

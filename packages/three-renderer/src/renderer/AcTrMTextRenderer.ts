@@ -2,6 +2,8 @@ import {
   ColorSettings,
   createDefaultColorSettings,
   DefaultFontsPreset,
+  FontManager,
+  type MemoryUsageReport,
   MTextData,
   MTextObject,
   RenderMode,
@@ -224,6 +226,31 @@ export class AcTrMTextRenderer {
     if (this._styleManager) {
       const styleManager = new AcTrMTextStyleManager(this._styleManager)
       this._renderer.setStyleManager(styleManager)
+    }
+  }
+
+  /**
+   * Estimates memory used by mtext-renderer (loaded fonts, caches, workers).
+   *
+   * Prefers {@link UnifiedRenderer.estimateMemoryUsage} when the renderer is
+   * initialized; otherwise falls back to the main-thread {@link FontManager}.
+   */
+  async estimateMemoryUsage(): Promise<MemoryUsageReport> {
+    if (this._renderer) {
+      return this._renderer.estimateMemoryUsage()
+    }
+
+    const mainThread = FontManager.instance.estimateMemoryUsage({ id: 'main' })
+    return {
+      collectedAt: Date.now(),
+      totalEstimatedBytes: mainThread.totalEstimatedBytes,
+      mainThread,
+      workers: [],
+      indexedDbFontCache: {
+        fontCount: 0,
+        totalBytes: 0,
+        fonts: []
+      }
     }
   }
 

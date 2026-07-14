@@ -575,6 +575,64 @@ export default {
           'Sayım alanının ilk köşesini belirtin veya [Entire]: ',
         secondCorner: 'Karşı köşeyi belirtin: '
       }
+    },
+    memoryProfile: {
+      tab: 'Bellek',
+      title: 'Bellek Profili',
+      refresh: 'Yenile',
+      collecting: 'Bellek analiz ediliyor ...',
+      showPie: 'Özet grafiği göster',
+      hidePie: 'Özet grafiği gizle',
+      collectedAt: 'Toplama zamanı {time}',
+      heapUsed: 'JS yığını {used} / {total}',
+      estimateNote:
+        'Geometri boyutları tampon byteLength değerinden gelir. Diğer kategoriler tahmindir.',
+      estimated: 'tah.',
+      pieTotal: 'Hesaplanan',
+      pieAriaLabel: 'Kategoriye göre bellek dağılımı',
+      empty: 'Veri yok',
+      missedFonts: 'Eksik yazı tipleri',
+      fontMemory: 'Yazı tipi / mtext belleği',
+      fontMemorySummary: 'Bellek {live} (ana {main} · worker {workers})',
+      fontStorage: 'IndexedDB depolama (belleğe dahil değil)',
+      fontStorageSummary: '{count} önbellek yazı tipi · {size}',
+      materialPoint: 'Nokta',
+      materialLine: 'Çizgi',
+      materialFill: 'Dolgu',
+      materialTotal: 'Toplam',
+      dataModelCounts: '{entities} varlık · {objects} nesne · {total}',
+      dataModelCategories: 'Kategoriye göre',
+      dataModelEntityTypes: 'Varlık türüne göre',
+      categories: {
+        heap: 'JS Yığını',
+        geometry: 'Geometri',
+        mapping: 'Eşleme',
+        spatial: 'Uzamsal Dizin',
+        dataModel: 'Veri Modeli',
+        materials: 'Malzemeler',
+        fonts: 'Yazı Tipleri'
+      },
+      tabs: {
+        geometry: 'Geometri',
+        spatial: 'Uzamsal',
+        dataModel: 'Veri Modeli',
+        materials: 'Malzemeler',
+        fonts: 'Yazı Tipleri'
+      },
+      columns: {
+        layout: 'Düzen',
+        layer: 'Katman',
+        geometry: 'Geometri',
+        mapping: 'Eşleme',
+        entities: 'Varlıklar',
+        rootItems: 'Kök',
+        childItems: 'Alt',
+        estimated: 'Tah. boyut',
+        type: 'Tür',
+        count: 'Adet',
+        category: 'Kategori',
+        font: 'Yazı tipi'
+      }
     }
   },
   colorDropdown: {

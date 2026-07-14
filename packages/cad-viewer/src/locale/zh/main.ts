@@ -533,6 +533,64 @@ export default {
         firstCorner: '指定计数区域的第一个角点或 [Entire(整个)]: ',
         secondCorner: '指定对角点: '
       }
+    },
+    memoryProfile: {
+      tab: '内存',
+      title: '内存分析',
+      refresh: '刷新',
+      collecting: '正在分析内存 ...',
+      showPie: '显示汇总图表',
+      hidePie: '隐藏汇总图表',
+      collectedAt: '采集时间 {time}',
+      heapUsed: 'JS 堆 {used} / {total}',
+      estimateNote:
+        '几何体大小来自缓冲区 byteLength，其余类别为估算值。',
+      estimated: '估',
+      pieTotal: '已统计',
+      pieAriaLabel: '按类别划分的内存占用',
+      empty: '暂无数据',
+      missedFonts: '缺失字体',
+      fontMemory: '字体 / 文字渲染内存',
+      fontMemorySummary: '内存 {live}（主线程 {main} · Worker {workers}）',
+      fontStorage: 'IndexedDB 存储（不计入内存）',
+      fontStorageSummary: '{count} 个缓存字体 · {size}',
+      materialPoint: '点',
+      materialLine: '线',
+      materialFill: '填充',
+      materialTotal: '合计',
+      dataModelCounts: '{entities} 个图元 · {objects} 个对象 · {total}',
+      dataModelCategories: '按类别',
+      dataModelEntityTypes: '按图元类型',
+      categories: {
+        heap: 'JS 堆',
+        geometry: '几何体',
+        mapping: '映射元数据',
+        spatial: '空间索引',
+        dataModel: '数据模型',
+        materials: '材质缓存',
+        fonts: '字体'
+      },
+      tabs: {
+        geometry: '几何体',
+        spatial: '空间索引',
+        dataModel: '数据模型',
+        materials: '材质',
+        fonts: '字体'
+      },
+      columns: {
+        layout: '布局',
+        layer: '图层',
+        geometry: '几何体',
+        mapping: '映射',
+        entities: '图元',
+        rootItems: '根项',
+        childItems: '子项',
+        estimated: '估计大小',
+        type: '类型',
+        count: '数量',
+        category: '类别',
+        font: '字体'
+      }
     }
   },
   colorDropdown: {

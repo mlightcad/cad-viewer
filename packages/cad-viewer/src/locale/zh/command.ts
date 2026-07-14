@@ -15,6 +15,9 @@ export default {
     countlist: {
       description: '打开计数面板以显示并管理块计数'
     },
+    mem: {
+      description: '打开内存分析面板以排查图纸内存占用'
+    },
     pttype: {
       description: '设置点的显示样式和尺寸'
     },

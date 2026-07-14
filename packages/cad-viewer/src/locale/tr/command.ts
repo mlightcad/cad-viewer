@@ -17,6 +17,10 @@ export default {
       description:
         'Sayılan blokları görüntülemek ve yönetmek için Sayım paletini açar'
     },
+    mem: {
+      description:
+        'Çizim bellek kullanımını analiz etmek için Bellek profili paletini açar'
+    },
     pttype: {
       description: 'Nokta nesnelerinin görüntü stilini ve boyutunu belirler'
     },

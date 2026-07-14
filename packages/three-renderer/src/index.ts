@@ -18,7 +18,10 @@ export * from './renderer'
 export * from './viewport'
 export * from './style/AcTrMaterialMetadata'
 export { AcTrLinePatternShaders } from './style/AcTrLinePatternShaders'
-export { AcTrStyleManager } from './style/AcTrStyleManager'
+export { AcTrStyleManager, type AcTrStyleManagerStats } from './style/AcTrStyleManager'
+export {
+  type AcTrMaterialCacheStats
+} from './style/AcTrMaterialManager'
 export {
   createGradientHatchShaderMaterial,
   createGradientHatchShaderMaterialFromUniforms,

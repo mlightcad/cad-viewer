@@ -12,20 +12,40 @@
       :bottom-offset="paletteOffsets.bottom"
     >
       <template #tab-layerManager>
-        <div class="ml-layer-list-wrapper">
+        <div
+          v-if="store.dialogs.activePaletteTab === 'layerManager'"
+          class="ml-layer-list-wrapper"
+        >
           <ml-layer-list :editor="props.editor" />
         </div>
       </template>
       <template #tab-entityProperties>
-        <ml-entity-properties :entity-props-list="properties" />
+        <ml-entity-properties
+          v-if="store.dialogs.activePaletteTab === 'entityProperties'"
+          :entity-props-list="properties"
+        />
       </template>
       <template #tab-countList>
-        <div class="ml-count-list-wrapper">
+        <div
+          v-if="store.dialogs.activePaletteTab === 'countList'"
+          class="ml-count-list-wrapper"
+        >
           <ml-count-list />
         </div>
       </template>
+      <template #tab-memoryProfile>
+        <div
+          v-if="store.dialogs.activePaletteTab === 'memoryProfile'"
+          class="ml-memory-profile-wrapper"
+        >
+          <ml-memory-profile />
+        </div>
+      </template>
       <template v-if="store.features.agentPlugin" #tab-agent>
-        <div class="ml-agent-palette-wrapper">
+        <div
+          v-if="store.dialogs.activePaletteTab === 'agent'"
+          class="ml-agent-palette-wrapper"
+        >
           <agent-chat-panel embedded />
         </div>
       </template>
@@ -46,6 +66,7 @@ import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
 import MlCountList from './MlCountList.vue'
 import MlEntityProperties from './MlEntityProperties.vue'
 import MlLayerList from './MlLayerList.vue'
+import MlMemoryProfile from './MlMemoryProfile.vue'
 
 const AgentChatPanel = defineAsyncComponent(() =>
   Promise.all([
@@ -142,7 +163,8 @@ const syncPaletteToContainer = () => {
 const baseTabNames = [
   'layerManager',
   'entityProperties',
-  'countList'
+  'countList',
+  'memoryProfile'
 ] as const
 const tabNames = computed((): readonly string[] => {
   if (store.features.agentPlugin) {
@@ -214,6 +236,15 @@ const properties = computed(() => {
 }
 
 .ml-count-list-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-memory-profile-wrapper {
   overflow: hidden;
   width: 100%;
   height: 100%;

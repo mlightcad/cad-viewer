@@ -20,6 +20,7 @@ export default {
   },
   message: {
     fetchingDrawingFile: 'Dosya alınıyor ...',
+    collectingMemoryProfile: 'Bellek analiz ediliyor ...',
     fontCached: 'Yazı tipi başarıyla önbelleğe alındı',
     fontCacheFailed: 'Yazı tipi önbelleğe alınamadı'
   },

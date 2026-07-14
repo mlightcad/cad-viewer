@@ -5,9 +5,16 @@ import { AcEdSpatialQueryResultItem } from '../editor/view'
 import {
   AcTrSpatialIndex,
   AcTrSpatialIndexBBox,
+  AcTrSpatialIndexStats,
   AcTrSpatialSearchOptions,
+  estimateSpatialItemsBytes,
   isSpatialBoxFullyInside
 } from './AcTrSpatialIndex'
+
+/** Approx. Map entry overhead (key pointer + value pointer + slot). */
+const ID_MAP_ENTRY_BYTES = 40
+/** Rough R-tree node overhead relative to leaf item payload. */
+const RBUSH_TREE_OVERHEAD_FACTOR = 1.4
 
 export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
   private readonly tree: RBush<AcEdSpatialQueryResultItem>
@@ -88,5 +95,19 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
 
   all(): AcEdSpatialQueryResultItem[] {
     return this.tree.all()
+  }
+
+  getStats(): AcTrSpatialIndexStats {
+    const items = this.tree.all()
+    const itemCount = items.length
+    const itemBytes = estimateSpatialItemsBytes(items)
+    const idMapBytes = this.idMap.size * ID_MAP_ENTRY_BYTES
+    return {
+      kind: 'rbush',
+      itemCount,
+      estimatedBytes: Math.round(
+        itemBytes * RBUSH_TREE_OVERHEAD_FACTOR + idMapBytes
+      )
+    }
   }
 }

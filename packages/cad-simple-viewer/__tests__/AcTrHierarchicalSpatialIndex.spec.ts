@@ -295,4 +295,39 @@ describe('AcTrHierarchicalSpatialIndex', () => {
     expect(windowAllInside).toHaveLength(1)
     expect(windowAllInside[0].id).toBe(insertId)
   })
+
+  test('getStats aggregates root and child item counts with estimated bytes', () => {
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const insertId = 'INSERT-stats'
+
+    spatialIndex.insert({
+      minX: 0,
+      minY: 0,
+      maxX: 100,
+      maxY: 100,
+      id: insertId
+    })
+    spatialIndex.insert({
+      minX: 200,
+      minY: 200,
+      maxX: 220,
+      maxY: 220,
+      id: 'SIMPLE'
+    })
+    spatialIndex.ensureChildIndex(insertId, [
+      { minX: 0, minY: 0, maxX: 10, maxY: 10, id: 'c1' },
+      { minX: 20, minY: 20, maxX: 30, maxY: 30, id: 'c2' }
+    ])
+
+    const stats = spatialIndex.getStats()
+    expect(stats.kind).toBe('hierarchical')
+    expect(stats.rootItemCount).toBe(2)
+    expect(stats.itemCount).toBe(2)
+    expect(stats.childIndexCount).toBe(1)
+    expect(stats.childItemCount).toBe(2)
+    expect(stats.estimatedBytes).toBeGreaterThan(0)
+    expect(
+      (stats.rbushChildCount ?? 0) + (stats.linearChildCount ?? 0)
+    ).toBe(1)
+  })
 })
