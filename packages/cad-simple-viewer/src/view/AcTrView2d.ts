@@ -66,6 +66,7 @@ import {
 import { AcTrInheritedLayerMaterialMapper } from './AcTrInheritedLayerMaterialMapper'
 import { AcTrLayer } from './AcTrLayer'
 import { AcTrLayerAppearanceController } from './AcTrLayerAppearanceController'
+import { AcTrLayout } from './AcTrLayout'
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
 import { sortPickResults } from './AcTrPickResultUtil'
@@ -685,6 +686,63 @@ export class AcTrView2d extends AcEdBaseView {
     this.applyCanvasBackground(
       readLayoutBackgroundColor(database, this.isModelSpaceLayout(database))
     )
+  }
+
+  /**
+   * Converts and renders model-space entities from a standalone, independently
+   * parsed database (an overlay/reference drawing) into a dedicated
+   * {@link AcTrLayout} added directly to the THREE scene.
+   *
+   * The returned layout is intentionally **not** registered in
+   * {@link AcTrScene}'s owner-id-keyed layout map, so it never participates in
+   * layout-tab switching, the primary document's layer table/panel, undo
+   * stack, or selection set. Toggle visibility via the returned layout's
+   * `visible` property, and tear it down by removing `internalObject` from
+   * `cadScene.internalScene` and calling `clear()`.
+   *
+   * Scope: draws top-level geometry, text, and hatch entities. Block (INSERT)
+   * expansion, viewports, and dimensions are not supported for overlays yet
+   * and are skipped.
+   *
+   * @param overlayDb - Input a database parsed independently of the active
+   * document (e.g. via `new AcDbDatabase().read(...)`).
+   * @returns The layout containing the converted overlay entities.
+   */
+  async addOverlayEntities(overlayDb: AcDbDatabase): Promise<AcTrLayout> {
+    const layout = new AcTrLayout()
+    this._scene.internalScene.add(layout.internalObject)
+
+    for (const layer of overlayDb.tables.layerTable.newIterator()) {
+      layout.addLayer({
+        name: layer.name,
+        isOff: layer.isOff,
+        isFrozen: layer.isFrozen,
+        color: layer.color
+      })
+    }
+
+    const previousDatabase = this._renderer.context.database
+    this._renderer.context.database = overlayDb
+    try {
+      const modelSpace = overlayDb.tables.blockTable.modelSpace
+      for (const entity of modelSpace.newIterator()) {
+        if (entity instanceof AcDbViewport) continue
+        const threeEntity = this.drawEntity(entity, false)
+        if (!threeEntity || threeEntity instanceof AcTrGroup) continue
+
+        threeEntity.objectId = entity.objectId
+        threeEntity.ownerId = entity.ownerId
+        threeEntity.layerName = entity.layer
+        threeEntity.visible = entity.visibility !== false
+        await this.finishEntityGeometry(threeEntity, false)
+        layout.addEntity(threeEntity)
+        threeEntity.dispose()
+      }
+    } finally {
+      this._renderer.context.database = previousDatabase
+    }
+
+    return layout
   }
 
   /**

@@ -1,9 +1,11 @@
 import {
   AcCmColor,
   AcCmEventManager,
+  AcDbDatabase,
   AcDbDatabaseConverterManager,
   AcDbFileType,
   acdbHostApplicationServices,
+  AcDbOpenDatabaseOptions,
   AcDbSysVarManager,
   AcGeBox2d,
   log
@@ -83,6 +85,7 @@ import {
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { AcTrView2d } from '../view'
+import type { AcTrLayout } from '../view/AcTrLayout'
 import { AcApBusyIndicator } from './AcApBusyIndicator'
 import { acapBindCommandServices } from './AcApCommandServices'
 import { AcApContext } from './AcApContext'
@@ -397,6 +400,13 @@ export class AcApDocManager {
   private _workersReady: boolean | null = null
   /** In-flight worker readiness check */
   private _workersReadyCheckPromise?: Promise<boolean>
+  /** Loaded overlay (reference/base drawing) state, keyed by overlay id */
+  private _overlays = new Map<
+    string,
+    { db: AcDbDatabase; layout: AcTrLayout }
+  >()
+  /** Monotonically increasing counter used to generate overlay ids */
+  private _nextOverlayId = 1
 
   /** Events fired during document lifecycle */
   public readonly events = {
@@ -878,6 +888,94 @@ export class AcApDocManager {
     )
     this.onAfterOpenDocument(isSuccess, options)
     return isSuccess
+  }
+
+  /**
+   * Loads a DWG/DXF file as a read-only overlay (base drawing/reference)
+   * rendered alongside the currently open document in the same WCS
+   * coordinate system, without replacing it.
+   *
+   * Unlike {@link openDocument}, this parses the file into a standalone
+   * {@link AcDbDatabase} that never becomes `curDocument` — it isn't touched
+   * by undo, the layer panel/table, or selection. Overlay geometry currently
+   * covers top-level entities (lines, arcs, polylines, text, hatch, etc.);
+   * block (INSERT) expansion, viewports, and dimensions are not yet
+   * supported and are skipped.
+   *
+   * @param fileName - Input file name, used to determine DWG vs DXF from its extension.
+   * @param content - Input file content as an `ArrayBuffer`.
+   * @param options - Input options forwarded to the underlying database read.
+   * @returns The generated overlay id, used with {@link removeOverlay} and
+   * {@link setOverlayVisible}.
+   *
+   * @example
+   * ```typescript
+   * const fileContent = await file.arrayBuffer();
+   * const overlayId = await docManager.loadOverlay('base.dwg', fileContent);
+   * docManager.setOverlayVisible(overlayId, false); // hide it later
+   * docManager.removeOverlay(overlayId); // or remove it entirely
+   * ```
+   */
+  async loadOverlay(
+    fileName: string,
+    content: ArrayBuffer,
+    options: AcDbOpenDatabaseOptions = {}
+  ): Promise<string> {
+    const db = new AcDbDatabase()
+    const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
+    await db.read(
+      content,
+      { fontLoader: this._fontLoader, readOnly: true, ...options },
+      fileExtension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
+    )
+
+    const view = this.curView as AcTrView2d
+    const layout = await view.addOverlayEntities(db)
+    const overlayId = `overlay-${this._nextOverlayId++}`
+    this._overlays.set(overlayId, { db, layout })
+    view.isDirty = true
+    return overlayId
+  }
+
+  /**
+   * Removes a previously loaded overlay and disposes its rendered geometry.
+   *
+   * @param overlayId - Input the id returned by {@link loadOverlay}.
+   * @returns True when an overlay with the given id was found and removed.
+   */
+  removeOverlay(overlayId: string): boolean {
+    const overlay = this._overlays.get(overlayId)
+    if (!overlay) return false
+
+    const view = this.curView as AcTrView2d
+    view.cadScene.internalScene.remove(overlay.layout.internalObject)
+    overlay.layout.clear()
+    this._overlays.delete(overlayId)
+    view.isDirty = true
+    return true
+  }
+
+  /**
+   * Shows or hides a previously loaded overlay without removing it.
+   *
+   * @param overlayId - Input the id returned by {@link loadOverlay}.
+   * @param visible - Input whether the overlay should be visible.
+   * @returns True when an overlay with the given id was found.
+   */
+  setOverlayVisible(overlayId: string, visible: boolean): boolean {
+    const overlay = this._overlays.get(overlayId)
+    if (!overlay) return false
+
+    overlay.layout.visible = visible
+    ;(this.curView as AcTrView2d).isDirty = true
+    return true
+  }
+
+  /**
+   * Ids of all currently loaded overlays.
+   */
+  get overlayIds(): string[] {
+    return Array.from(this._overlays.keys())
   }
 
   /**
@@ -1434,7 +1532,7 @@ export class AcApDocManager {
 
         if (activeModelViewBox) {
           view.zoomTo(activeModelViewBox)
-        } else if (!db.extents.isEmpty()) {
+        } else if (this.hasUsableDrawingExtents(db)) {
           view.zoomTo(new AcGeBox2d(db.extmin, db.extmax))
         } else {
           if (progressiveRendering) {
@@ -1459,6 +1557,36 @@ export class AcApDocManager {
     } else {
       this.regen()
     }
+  }
+
+  /**
+   * Checks whether EXTMIN/EXTMAX describe a real drawing area usable for
+   * view framing.
+   *
+   * AutoCAD marks unsaved/invalid extents with ±1e20 sentinel values (and
+   * some writers emit other degenerate near-zero/huge pairs). Framing such
+   * a box zooms the camera out to effectively infinity and the drawing
+   * renders as a black canvas, so those sentinels must fall through to
+   * `zoomToFitDrawing()` instead.
+   *
+   * @param db - Input database whose header extents are checked.
+   * @returns True when EXTMIN/EXTMAX are finite, sane and span a real area.
+   * @private
+   */
+  private hasUsableDrawingExtents(db: AcDbDatabase): boolean {
+    if (db.extents.isEmpty()) return false
+
+    // Anything at or beyond this magnitude is a "no saved extents"
+    // sentinel, not a coordinate a real drawing occupies.
+    const SENTINEL_LIMIT = 1e15
+    const values = [db.extmin.x, db.extmin.y, db.extmax.x, db.extmax.y]
+    if (
+      values.some(value => !Number.isFinite(value)) ||
+      values.some(value => Math.abs(value) >= SENTINEL_LIMIT)
+    ) {
+      return false
+    }
+    return db.extmax.x > db.extmin.x && db.extmax.y > db.extmin.y
   }
 
   /**
