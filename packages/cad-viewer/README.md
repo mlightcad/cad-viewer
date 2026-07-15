@@ -336,7 +336,6 @@ Please refer to [readme of cad-simple-viewer](../cad-simple-viewer/README.md) to
 ### Components
 
 - `MlPointStyleDlg` - Point style dialog
-- `MlReplacementDlg` - Replacement dialog
 - Various layout and UI components
 
 ### Composables

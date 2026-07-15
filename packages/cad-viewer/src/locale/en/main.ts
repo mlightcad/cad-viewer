@@ -281,6 +281,8 @@ export default {
       quickSelect:
         'Open Quick Select to filter and select entities by criteria.',
       countList: 'Open the Count palette to view and manage block counts.',
+      missingResources:
+        'Open the Missing / External Resources palette for fonts, images, and xrefs.',
       drawingUnits:
         'Open Drawing Units to set coordinate formats, precision, and insertion scale.',
       agent:
@@ -572,6 +574,39 @@ export default {
           'Specify first corner of count area or [Entire]: ',
         secondCorner: 'Specify opposite corner: '
       }
+    },
+    missingResources: {
+      tab: 'Resources',
+      title: 'Missing / External Resources',
+      fontTab: 'Font',
+      imageTab: 'Image',
+      xrefTab: 'Xrefs',
+      apply: 'Apply',
+      applyDone: 'Replacements applied',
+      emptyFonts: 'No missing fonts',
+      emptyImages: 'No missing images',
+      matchFontType: 'Match font type (SHX / mesh)',
+      missedFont: 'Missed Font',
+      replacedFont: 'Replaced Font',
+      selectFont: 'Select font to replace',
+      selectLocalFont: 'Select local font file',
+      file: 'File',
+      replace: 'Replace',
+      name: 'Name',
+      path: 'Saved path',
+      status: 'Status',
+      statusMissing: 'Missing',
+      statusLoaded: 'Loaded',
+      actions: 'Actions',
+      visible: 'Visible',
+      browse: 'Browse…',
+      fromUrl: 'URL…',
+      unload: 'Unload',
+      load: 'Load',
+      empty: 'No external references in this drawing',
+      urlPrompt: 'Enter a URL to a DWG or DXF file',
+      urlRequired: 'Please enter a URL',
+      loadFailed: 'Failed to load reference "{name}"'
     },
     memoryProfile: {
       tab: 'Memory',

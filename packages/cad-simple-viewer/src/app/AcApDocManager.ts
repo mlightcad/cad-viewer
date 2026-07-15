@@ -972,6 +972,15 @@ export class AcApDocManager {
   }
 
   /**
+   * Removes all loaded overlays and disposes their geometry.
+   */
+  clearOverlays(): void {
+    for (const overlayId of [...this._overlays.keys()]) {
+      this.removeOverlay(overlayId)
+    }
+  }
+
+  /**
    * Ids of all currently loaded overlays.
    */
   get overlayIds(): string[] {
@@ -1440,6 +1449,7 @@ export class AcApDocManager {
       doc: this.context.doc,
       mode: this.getDocumentEventMode(options)
     })
+    this.clearOverlays()
     ;(this.curView as AcTrView2d).bindDrawDatabase(this.context.doc.database)
     ;(this.curView as AcTrView2d).progressiveRendering =
       options?.progressiveRendering ?? false

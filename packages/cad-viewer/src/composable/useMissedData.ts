@@ -9,38 +9,22 @@ import { reactive } from 'vue'
 /**
  * Missed Data Composable
  *
- * Tracks fonts and raster images that the current drawing references but that are
- * missing on disk or unavailable to the renderer. State is shared module-wide so
- * every caller sees the same reactive maps (for example the status-bar warning
- * button and the replacement dialog).
- *
- * Data is synchronized from {@link AcApDocManager.instance.curView.missedData}
- * and persisted font substitutions from
- * {@link AcApSettingManager.instance.fontMapping}. Consumers may mutate the
- * returned maps (choose replacement fonts, attach image files) before applying
- * changes through the replacement dialog.
- *
- * @example
- * ```typescript
- * import { useMissedData } from '@mlightcad/cad-viewer'
- *
- * const { fonts, images } = useMissedData()
- *
- * if (fonts.size > 0) {
- *   console.log('Missing fonts:', [...fonts.keys()])
- * }
- *
- * images.forEach((row, fileName) => {
- *   console.log(fileName, 'affects', row.ids.size, 'entities')
- * })
- * ```
+ * Tracks fonts, raster images, and unresolved xrefs that the current drawing
+ * references but that are missing. State is shared module-wide so every caller
+ * sees the same reactive maps (status-bar warning, replacement dialog, xref palette).
  */
 
 /**
+ * One unresolved external reference reported by the viewer.
+ */
+export interface MissedXrefInfo {
+  name: string
+  pathName: string
+  isOverlay: boolean
+}
+
+/**
  * One row in the missed-image replacement table.
- *
- * Multiple drawing entities can reference the same missing image file; they are
- * grouped under a single row keyed by {@link fileName}.
  */
 export interface ImageMappingData {
   /** File name reported by the viewer for the missing image resource. */
@@ -55,40 +39,33 @@ export interface ImageMappingData {
 }
 
 /**
+ * Loaded overlay state keyed by xref block name.
+ */
+export interface XrefOverlayState {
+  overlayId: string
+  visible: boolean
+  sourceName: string
+}
+
+/**
  * Reactive state returned by {@link useMissedData}.
  */
 export interface UseMissedDataReturn {
-  /**
-   * Missed font name → replacement font name.
-   *
-   * Keys come from the active view's missed-font list. Values are initialized from
-   * application settings; an empty string means no replacement has been chosen yet.
-   */
   fonts: Map<string, string>
-  /**
-   * Missed image file name → grouped mapping row.
-   *
-   * Keys are image resource names from the drawing. Values aggregate all entities
-   * that reference that resource.
-   */
   images: Map<string, ImageMappingData>
+  /** Unresolved xrefs from the active drawing */
+  xrefs: MissedXrefInfo[]
+  /** Overlay load state per xref block name */
+  xrefOverlays: Map<string, XrefOverlayState>
 }
 
-/** Shared reactive font substitutions (missed name → replacement name). */
 const fontMapping = reactive(new Map<string, string>())
-
-/** Shared reactive missed-image rows keyed by file name. */
 const imageData = reactive(new Map<string, ImageMappingData>())
+const xrefList = reactive<MissedXrefInfo[]>([])
+const xrefOverlays = reactive(new Map<string, XrefOverlayState>())
 
-/** Whether document and event-bus listeners have been registered. */
 let initialized = false
 
-/**
- * Builds image table rows from the view's missed-image map.
- *
- * @param missedImages - Map from entity object id to image file name (as reported by the renderer).
- * @returns New map keyed by file name with entity ids grouped per file.
- */
 function buildImageMapping(
   missedImages: Map<AcDbObjectId, string>
 ): Map<string, ImageMappingData> {
@@ -109,40 +86,58 @@ function buildImageMapping(
   return next
 }
 
-/**
- * Replaces module state with missed data from the active document view.
- *
- * Clears and repopulates {@link fontMapping} and {@link imageData}. Font values
- * prefer entries in {@link AcApSettingManager.instance.fontMapping}; otherwise
- * they default to an empty string.
- */
+function readMissedXrefs(missedData: {
+  fonts: Record<string, number>
+  images: Map<string, string>
+  xrefs?: MissedXrefInfo[]
+}): MissedXrefInfo[] {
+  return missedData.xrefs ?? []
+}
+
 function syncFromCurrentView(): void {
-  const missedData = AcApDocManager.instance.curView.missedData
-  const storedFontMapping = AcApSettingManager.instance.fontMapping
+  try {
+    const view = AcApDocManager.instance?.curView
+    if (!view) return
 
-  fontMapping.clear()
-  for (const missedFont of Object.keys(missedData.fonts)) {
-    fontMapping.set(missedFont, storedFontMapping[missedFont] ?? '')
-  }
+    const missedData = view.missedData as {
+      fonts: Record<string, number>
+      images: Map<string, string>
+      xrefs?: MissedXrefInfo[]
+    }
+    const storedFontMapping = AcApSettingManager.instance.fontMapping
 
-  imageData.clear()
-  const grouped = buildImageMapping(missedData.images)
-  for (const [fileName, row] of grouped) {
-    imageData.set(fileName, row)
+    fontMapping.clear()
+    for (const missedFont of Object.keys(missedData.fonts ?? {})) {
+      fontMapping.set(missedFont, storedFontMapping[missedFont] ?? '')
+    }
+
+    imageData.clear()
+    const grouped = buildImageMapping(missedData.images ?? new Map())
+    for (const [fileName, row] of grouped) {
+      imageData.set(fileName, row)
+    }
+
+    const nextXrefs = readMissedXrefs(missedData)
+    xrefList.splice(0, xrefList.length, ...nextXrefs)
+
+    // Drop overlay state for xrefs that no longer exist in the drawing
+    const names = new Set(nextXrefs.map(x => x.name))
+    for (const name of [...xrefOverlays.keys()]) {
+      if (!names.has(name)) {
+        xrefOverlays.delete(name)
+      }
+    }
+  } catch {
+    // Viewer may not be fully initialized yet; keep previous state.
   }
 }
 
-/**
- * Registers one-time listeners and performs the initial sync.
- *
- * Listens for document activation, {@link eventBus} `font-not-found`, and
- * `missed-data-changed` so UI stays aligned with the renderer and user replacements.
- */
 function ensureInitialized(): void {
   if (initialized) return
   initialized = true
 
   AcApDocManager.instance.events.documentActivated.addEventListener(() => {
+    xrefOverlays.clear()
     syncFromCurrentView()
   })
 
@@ -158,17 +153,15 @@ function ensureInitialized(): void {
 }
 
 /**
- * Access shared reactive state for missing fonts and images in the current drawing.
- *
- * Safe to call from multiple components; initialization and event wiring run once.
- *
- * @returns Reactive maps for the replacement dialog and warning affordances.
+ * Access shared reactive state for missing fonts, images, and xrefs.
  */
 export function useMissedData(): UseMissedDataReturn {
   ensureInitialized()
 
   return {
     fonts: fontMapping,
-    images: imageData
+    images: imageData,
+    xrefs: xrefList,
+    xrefOverlays
   }
 }

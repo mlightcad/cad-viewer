@@ -285,6 +285,8 @@ export default {
       quickSelect:
         'Ölçütlere göre varlıkları filtrelemek ve seçmek için Hızlı Seçimi açın.',
       countList: 'Blok sayılarını görüntülemek ve yönetmek için Sayım paletini açın.',
+      missingResources:
+        'Yazı tipleri, görseller ve xref’ler için Eksik / Harici Kaynaklar paletini açın.',
       drawingUnits:
         'Koordinat biçimlerini, hassasiyeti ve ekleme ölçeğini ayarlamak için Çizim Birimlerini açın.',
       agent:
@@ -576,6 +578,39 @@ export default {
           'Sayım alanının ilk köşesini belirtin veya [Entire]: ',
         secondCorner: 'Karşı köşeyi belirtin: '
       }
+    },
+    missingResources: {
+      tab: 'Kaynaklar',
+      title: 'Eksik / Harici Kaynaklar',
+      fontTab: 'Yazı tipi',
+      imageTab: 'Görsel',
+      xrefTab: 'Xref',
+      apply: 'Uygula',
+      applyDone: 'Değiştirmeler uygulandı',
+      emptyFonts: 'Eksik yazı tipi yok',
+      emptyImages: 'Eksik görsel yok',
+      matchFontType: 'Yazı tipi türünü eşleştir (SHX / mesh)',
+      missedFont: 'Eksik yazı tipi',
+      replacedFont: 'Yerine kullanılan yazı tipi',
+      selectFont: 'Yerine kullanılacak yazı tipini seçin',
+      selectLocalFont: 'Yerel yazı tipi dosyası seçin',
+      file: 'Dosya',
+      replace: 'Değiştir',
+      name: 'Ad',
+      path: 'Kayıtlı yol',
+      status: 'Durum',
+      statusMissing: 'Eksik',
+      statusLoaded: 'Yüklendi',
+      actions: 'İşlemler',
+      visible: 'Görünür',
+      browse: 'Gözat…',
+      fromUrl: 'URL…',
+      unload: 'Kaldır',
+      load: 'Yükle',
+      empty: 'Bu çizimde harici referans yok',
+      urlPrompt: 'DWG veya DXF dosyasının URL’sini girin',
+      urlRequired: 'Lütfen bir URL girin',
+      loadFailed: '"{name}" referansı yüklenemedi'
     },
     memoryProfile: {
       tab: 'Bellek',

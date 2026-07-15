@@ -3,19 +3,6 @@ export default {
     ok: 'OK',
     cancel: 'Cancel'
   },
-  replacementDlg: {
-    title: 'Replace Missed Data',
-    fontTabName: 'Font',
-    imageTabName: 'Image',
-    file: 'File',
-    replace: 'Replace',
-    missedFont: 'Missed Font',
-    replacedFont: 'Replaced Font',
-    selectFont: 'Select font to replace',
-    selectLocalFont: 'Select local font file',
-    matchFontType:
-      'Use the same font type (SHX replaces SHX, mesh replaces mesh)'
-  },
   pointStyleDlg: {
     title: 'Point Style',
     pointSize: 'Point Size:'

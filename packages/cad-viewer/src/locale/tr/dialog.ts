@@ -3,19 +3,6 @@ export default {
     ok: 'Tamam',
     cancel: 'İptal'
   },
-  replacementDlg: {
-    title: 'Eksik Verileri Değiştir',
-    fontTabName: 'Yazı Tipi',
-    imageTabName: 'Resim',
-    file: 'Dosya',
-    replace: 'Değiştir',
-    missedFont: 'Eksik Yazı Tipi',
-    replacedFont: 'Değiştirilen Yazı Tipi',
-    selectFont: 'Değiştirilecek yazı tipini seçin',
-    selectLocalFont: 'Yerel yazı tipi dosyasını seçin',
-    matchFontType:
-      'Aynı yazı tipi türünü kullan (SHX, SHX ile; mesh, mesh ile değiştirilir)'
-  },
   pointStyleDlg: {
     title: 'Nokta Stili',
     pointSize: 'Nokta Boyutu:'

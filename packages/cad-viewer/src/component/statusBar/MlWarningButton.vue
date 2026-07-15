@@ -1,6 +1,6 @@
 <template>
   <el-button
-    v-if="dialogVisible"
+    v-if="hasMissing"
     class="ml-warning-button"
     type="warning"
     :icon="Warning"
@@ -10,20 +10,20 @@
 
 <script lang="ts" setup>
 import { Warning } from '@element-plus/icons-vue'
-import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { ElButton } from 'element-plus'
 import { computed } from 'vue'
 
-import { useMissedData } from '../../composable'
+import { openMissingResourcesPalette, useMissedData } from '../../composable'
+
+const { fonts, images, xrefs } = useMissedData()
+
+const hasMissing = computed(() => {
+  return images.size > 0 || fonts.size > 0 || xrefs.length > 0
+})
 
 const click = () => {
-  AcApDocManager.instance.sendStringToExecute('md')
+  openMissingResourcesPalette()
 }
-
-const { fonts, images } = useMissedData()
-const dialogVisible = computed(() => {
-  return images.size > 0 || fonts.size > 0
-})
 </script>
 
 <style scoped>

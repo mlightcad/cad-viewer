@@ -7,7 +7,10 @@ export default {
       description: '图层属性管理器'
     },
     md: {
-      description: '替换缺失的字体和图片'
+      description: '打开缺失/外部资源面板以处理字体、图片和外部参照'
+    },
+    xref: {
+      description: '打开缺失/外部资源面板并定位到外部参照标签'
     },
     properties: {
       description: '图元属性面板'
