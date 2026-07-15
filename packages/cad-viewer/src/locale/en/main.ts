@@ -535,6 +535,7 @@ export default {
     }
   },
   toolPalette: {
+    moreTabs: 'More tabs',
     entityProperties: {
       tab: 'Properties',
       title: 'Entity Properties',

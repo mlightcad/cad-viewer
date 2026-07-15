@@ -498,6 +498,7 @@ export default {
     }
   },
   toolPalette: {
+    moreTabs: '更多标签页',
     entityProperties: {
       tab: '属性',
       title: '图元属性',

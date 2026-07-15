@@ -4,51 +4,45 @@
       class="ml-layer-manager"
       :style="paletteStyle"
       v-model="store.dialogs.layerManager"
-      v-model:active-tab="store.dialogs.activePaletteTab"
-      :tabs="tabs"
+      :title="activeTabTitle"
       :left-offset="paletteOffsets.left"
       :right-offset="paletteOffsets.right"
       :top-offset="paletteOffsets.top"
       :bottom-offset="paletteOffsets.bottom"
     >
-      <template #tab-layerManager>
+      <ml-overflow-tabs v-model="store.dialogs.activePaletteTab" :tabs="tabs">
         <div
           v-if="store.dialogs.activePaletteTab === 'layerManager'"
           class="ml-layer-list-wrapper"
         >
           <ml-layer-list :editor="props.editor" />
         </div>
-      </template>
-      <template #tab-entityProperties>
         <ml-entity-properties
-          v-if="store.dialogs.activePaletteTab === 'entityProperties'"
+          v-else-if="store.dialogs.activePaletteTab === 'entityProperties'"
           :entity-props-list="properties"
         />
-      </template>
-      <template #tab-countList>
         <div
-          v-if="store.dialogs.activePaletteTab === 'countList'"
+          v-else-if="store.dialogs.activePaletteTab === 'countList'"
           class="ml-count-list-wrapper"
         >
           <ml-count-list />
         </div>
-      </template>
-      <template #tab-memoryProfile>
         <div
-          v-if="store.dialogs.activePaletteTab === 'memoryProfile'"
+          v-else-if="store.dialogs.activePaletteTab === 'memoryProfile'"
           class="ml-memory-profile-wrapper"
         >
           <ml-memory-profile />
         </div>
-      </template>
-      <template v-if="store.features.agentPlugin" #tab-agent>
         <div
-          v-if="store.dialogs.activePaletteTab === 'agent'"
+          v-else-if="
+            store.features.agentPlugin &&
+            store.dialogs.activePaletteTab === 'agent'
+          "
           class="ml-agent-palette-wrapper"
         >
           <agent-chat-panel embedded />
         </div>
-      </template>
+      </ml-overflow-tabs>
     </ml-tool-palette>
   </el-config-provider>
 </template>
@@ -56,13 +50,15 @@
 <script setup lang="ts">
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntityProperties } from '@mlightcad/data-model'
-import { MlToolPalette, MlToolPaletteTab } from '@mlightcad/ui-components'
+import { MlToolPalette } from '@mlightcad/ui-components'
 import { ElConfigProvider } from 'element-plus'
 import { computed, defineAsyncComponent, nextTick, watch } from 'vue'
 
 import { store } from '../../app'
 import { useSelectionSet, useViewerRect } from '../../composable'
 import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
+import type { MlOverflowTab } from '../common/MlOverflowTab'
+import MlOverflowTabs from '../common/MlOverflowTabs.vue'
 import MlCountList from './MlCountList.vue'
 import MlEntityProperties from './MlEntityProperties.vue'
 import MlLayerList from './MlLayerList.vue'
@@ -173,14 +169,17 @@ const tabNames = computed((): readonly string[] => {
   return baseTabNames
 })
 
-const tabs = computed<MlToolPaletteTab[]>(() => {
+const tabs = computed<MlOverflowTab[]>(() => {
   return tabNames.value.map(name => {
     return {
       name,
-      label: toolPaletteTabName(name),
-      title: toolPaletteTitle(name)
+      label: toolPaletteTabName(name)
     }
   })
+})
+
+const activeTabTitle = computed(() => {
+  return toolPaletteTitle(store.dialogs.activePaletteTab)
 })
 
 watch(

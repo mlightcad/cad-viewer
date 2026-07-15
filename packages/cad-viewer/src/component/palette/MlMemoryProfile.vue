@@ -163,10 +163,14 @@
       </div>
     </div>
 
-    <el-tabs v-model="activeTab" class="ml-memory-profile-tabs" stretch>
-      <el-tab-pane
-        :label="t('main.toolPalette.memoryProfile.tabs.geometry')"
-        name="geometry"
+    <ml-overflow-tabs
+      v-model="activeTab"
+      :tabs="detailTabs"
+      class="ml-memory-profile-tabs"
+    >
+      <div
+        v-if="activeTab === 'geometry'"
+        class="ml-memory-profile-pane"
       >
         <el-table
           :data="snapshot?.geometry.layers ?? []"
@@ -215,11 +219,11 @@
             header-align="right"
           />
         </el-table>
-      </el-tab-pane>
+      </div>
 
-      <el-tab-pane
-        :label="t('main.toolPalette.memoryProfile.tabs.spatial')"
-        name="spatial"
+      <div
+        v-else-if="activeTab === 'spatial'"
+        class="ml-memory-profile-pane"
       >
         <el-table
           :data="snapshot?.spatial.layouts ?? []"
@@ -265,11 +269,11 @@
             </template>
           </el-table-column>
         </el-table>
-      </el-tab-pane>
+      </div>
 
-      <el-tab-pane
-        :label="t('main.toolPalette.memoryProfile.tabs.dataModel')"
-        name="dataModel"
+      <div
+        v-else-if="activeTab === 'dataModel'"
+        class="ml-memory-profile-pane ml-memory-profile-pane-data-model"
       >
         <div class="ml-memory-profile-dm-section">
           <button
@@ -369,11 +373,11 @@
             </el-table-column>
           </el-table>
         </div>
-      </el-tab-pane>
+      </div>
 
-      <el-tab-pane
-        :label="t('main.toolPalette.memoryProfile.tabs.materials')"
-        name="materials"
+      <div
+        v-else-if="activeTab === 'materials'"
+        class="ml-memory-profile-pane"
       >
         <el-table
           :data="materialRows"
@@ -405,11 +409,11 @@
             </template>
           </el-table-column>
         </el-table>
-      </el-tab-pane>
+      </div>
 
-      <el-tab-pane
-        :label="t('main.toolPalette.memoryProfile.tabs.fonts')"
-        name="fonts"
+      <div
+        v-else-if="activeTab === 'fonts'"
+        class="ml-memory-profile-pane"
       >
         <div class="ml-memory-profile-fonts" v-if="snapshot">
           <div class="ml-memory-profile-fonts-meta">
@@ -478,8 +482,8 @@
             </div>
           </div>
         </div>
-      </el-tab-pane>
-    </el-tabs>
+      </div>
+    </ml-overflow-tabs>
   </div>
 </template>
 
@@ -491,8 +495,6 @@ import {
   ElIcon,
   ElTable,
   ElTableColumn,
-  ElTabPane,
-  ElTabs,
   ElTooltip
 } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -503,6 +505,8 @@ import {
   formatMemoryBytes,
   useMemoryProfile
 } from '../../composable/useMemoryProfile'
+import type { MlOverflowTab } from '../common/MlOverflowTab'
+import MlOverflowTabs from '../common/MlOverflowTabs.vue'
 
 const { t } = useI18n()
 const {
@@ -522,6 +526,29 @@ const activeTab = ref('geometry')
 const showPie = ref(true)
 const dmCategoriesExpanded = ref(true)
 const dmEntityTypesExpanded = ref(true)
+
+const detailTabs = computed<MlOverflowTab[]>(() => [
+  {
+    name: 'geometry',
+    label: t('main.toolPalette.memoryProfile.tabs.geometry')
+  },
+  {
+    name: 'spatial',
+    label: t('main.toolPalette.memoryProfile.tabs.spatial')
+  },
+  {
+    name: 'dataModel',
+    label: t('main.toolPalette.memoryProfile.tabs.dataModel')
+  },
+  {
+    name: 'materials',
+    label: t('main.toolPalette.memoryProfile.tabs.materials')
+  },
+  {
+    name: 'fonts',
+    label: t('main.toolPalette.memoryProfile.tabs.fonts')
+  }
+])
 
 /** Donut geometry in viewBox units. */
 const PIE_RADIUS = 34
@@ -812,30 +839,17 @@ onMounted(() => {
 .ml-memory-profile-tabs {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
-.ml-memory-profile-tabs :deep(.el-tabs__header) {
-  flex-shrink: 0;
-  margin-bottom: 6px;
-}
-
-.ml-memory-profile-tabs :deep(.el-tabs__content) {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.ml-memory-profile-tabs :deep(.el-tab-pane) {
+.ml-memory-profile-pane {
   height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
-.ml-memory-profile-tabs :deep(.el-tab-pane[aria-labelledby*='dataModel']),
-.ml-memory-profile-tabs :deep(#pane-dataModel) {
+.ml-memory-profile-pane-data-model {
   overflow: hidden;
 }
 
@@ -904,7 +918,6 @@ onMounted(() => {
 }
 
 .ml-memory-profile-fonts {
-  margin-top: 8px;
   font-size: 12px;
   flex: 1;
   min-height: 0;

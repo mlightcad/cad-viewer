@@ -539,6 +539,7 @@ export default {
     }
   },
   toolPalette: {
+    moreTabs: 'Diğer sekmeler',
     entityProperties: {
       tab: 'Özellikler',
       title: 'Varlık Özellikleri',
