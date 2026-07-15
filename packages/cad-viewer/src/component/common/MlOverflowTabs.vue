@@ -73,13 +73,9 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-/** Tab definition for {@link MlOverflowTabs}. */
-export interface MlOverflowTab {
-  /** Stable tab identifier. */
-  name: string
-  /** Display label. */
-  label: string
-}
+import type { MlOverflowTab } from './MlOverflowTab'
+
+export type { MlOverflowTab } from './MlOverflowTab'
 
 const OVERFLOW_BTN_WIDTH = 28
 

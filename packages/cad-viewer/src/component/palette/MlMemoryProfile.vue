@@ -505,9 +505,8 @@ import {
   formatMemoryBytes,
   useMemoryProfile
 } from '../../composable/useMemoryProfile'
-import MlOverflowTabs, {
-  type MlOverflowTab
-} from '../common/MlOverflowTabs.vue'
+import type { MlOverflowTab } from '../common/MlOverflowTab'
+import MlOverflowTabs from '../common/MlOverflowTabs.vue'
 
 const { t } = useI18n()
 const {

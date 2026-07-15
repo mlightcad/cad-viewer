@@ -57,9 +57,8 @@ import { computed, defineAsyncComponent, nextTick, watch } from 'vue'
 import { store } from '../../app'
 import { useSelectionSet, useViewerRect } from '../../composable'
 import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
-import MlOverflowTabs, {
-  type MlOverflowTab
-} from '../common/MlOverflowTabs.vue'
+import type { MlOverflowTab } from '../common/MlOverflowTab'
+import MlOverflowTabs from '../common/MlOverflowTabs.vue'
 import MlCountList from './MlCountList.vue'
 import MlEntityProperties from './MlEntityProperties.vue'
 import MlLayerList from './MlLayerList.vue'
