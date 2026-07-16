@@ -11,7 +11,7 @@ import { reactive } from 'vue'
  *
  * Tracks fonts, raster images, and unresolved xrefs that the current drawing
  * references but that are missing. State is shared module-wide so every caller
- * sees the same reactive maps (status-bar warning, replacement dialog, xref palette).
+ * sees the same reactive maps (status-bar warning, Resources palette).
  */
 
 /**
@@ -120,12 +120,16 @@ function syncFromCurrentView(): void {
     const nextXrefs = readMissedXrefs(missedData)
     xrefList.splice(0, xrefList.length, ...nextXrefs)
 
-    // Drop overlay state for xrefs that no longer exist in the drawing
+    // Drop overlay geometry + state for xrefs that no longer exist in the drawing
     const names = new Set(nextXrefs.map(x => x.name))
+    const docManager = AcApDocManager.instance
     for (const name of [...xrefOverlays.keys()]) {
-      if (!names.has(name)) {
-        xrefOverlays.delete(name)
+      if (names.has(name)) continue
+      const state = xrefOverlays.get(name)
+      if (state?.overlayId) {
+        docManager.removeOverlay(state.overlayId)
       }
+      xrefOverlays.delete(name)
     }
   } catch {
     // Viewer may not be fully initialized yet; keep previous state.

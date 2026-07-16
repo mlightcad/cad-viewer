@@ -22,6 +22,19 @@
         </template>
       </el-table-column>
       <el-table-column
+        prop="isOverlay"
+        :label="t('main.toolPalette.missingResources.type')"
+        width="88"
+      >
+        <template #default="{ row }">
+          {{
+            row.isOverlay
+              ? t('main.toolPalette.missingResources.typeOverlay')
+              : t('main.toolPalette.missingResources.typeAttach')
+          }}
+        </template>
+      </el-table-column>
+      <el-table-column
         prop="status"
         :label="t('main.toolPalette.missingResources.status')"
         width="88"
