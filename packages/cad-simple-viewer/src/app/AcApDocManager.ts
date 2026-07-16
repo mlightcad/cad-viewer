@@ -29,6 +29,7 @@ import {
   AcApEraseCmd,
   AcApHatchCmd,
   AcApHideObjectsCmd,
+  AcApImageAttachCmd,
   AcApLayerCloseCmd,
   AcApLayerCmd,
   AcApLayerCurCmd,
@@ -74,6 +75,7 @@ import {
   AcApSysVarCmd,
   AcApUndoCmd,
   AcApUnisolateObjectsCmd,
+  AcApXAttachCmd,
   AcApXLineCmd,
   AcApZoomCmd
 } from '../command'
@@ -134,6 +136,8 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   MEASUREAREA: ['AA', 'AREA'],
   MEASUREANGLE: ['ANG'],
   '-HATCH': ['-H'],
+  IMAGEATTACH: ['IAT'],
+  XATTACH: ['XA'],
   LAYER: ['LA'],
   '-LAYER': ['-LA'],
   LINE: ['L'],
@@ -1183,6 +1187,8 @@ export class AcApDocManager {
       new AcApClearMeasurementsCmd()
     )
     addSystemCommand('-hatch', '-hatch', new AcApHatchCmd())
+    addSystemCommand('imageattach', 'imageattach', new AcApImageAttachCmd())
+    addSystemCommand('xattach', 'xattach', new AcApXAttachCmd())
     addSystemCommand('-layer', '-layer', new AcApLayerCmd())
     addSystemCommand('laycur', 'laycur', new AcApLayerCurCmd())
     addSystemCommand('laydel', 'laydel', new AcApLayerDelCmd())

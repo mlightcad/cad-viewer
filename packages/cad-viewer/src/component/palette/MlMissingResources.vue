@@ -82,48 +82,6 @@
       </div>
 
       <div
-        v-else-if="store.dialogs.activeMissingResourceTab === 'image'"
-        class="ml-missing-resources__panel"
-      >
-        <el-table
-          :data="imageRows"
-          class="ml-missing-resources__table"
-          :empty-text="t('main.toolPalette.missingResources.emptyImages')"
-        >
-          <el-table-column
-            prop="fileName"
-            :label="t('main.toolPalette.missingResources.file')"
-            min-width="120"
-            show-overflow-tooltip
-          >
-            <template #default="{ row }">
-              <span :title="row.file?.name || row.fileName">
-                {{ row.file?.name || row.fileName }}
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            :label="t('main.toolPalette.missingResources.replace')"
-            width="72"
-            header-align="left"
-            align="center"
-          >
-            <template #default="{ row }">
-              <el-button
-                link
-                type="primary"
-                size="small"
-                :title="t('main.toolPalette.missingResources.replace')"
-                @click="handleSelectImage(row)"
-              >
-                ...
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-
-      <div
         v-else-if="store.dialogs.activeMissingResourceTab === 'xref'"
         class="ml-missing-resources__panel"
       >
@@ -144,13 +102,6 @@
     </div>
 
     <input
-      ref="fileInput"
-      type="file"
-      accept=".png,.jpg,.jpeg"
-      style="display: none"
-      @change="handleFileChange"
-    />
-    <input
       ref="fontFileInput"
       type="file"
       accept=".shx,.ttf,.otf,.woff"
@@ -165,11 +116,10 @@ import {
   AcApCacheFontCmd,
   AcApDocManager,
   AcApFontUtil,
-  acapRunDatabaseEdit,
   AcApSettingManager,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
-import { AcDbFontInfo, AcDbRasterImage } from '@mlightcad/data-model'
+import { AcDbFontInfo } from '@mlightcad/data-model'
 import {
   ElButton,
   ElCheckbox,
@@ -183,7 +133,6 @@ import { useI18n } from 'vue-i18n'
 
 import { store } from '../../app'
 import {
-  ImageMappingData,
   type MissingResourceTab,
   useMissedData
 } from '../../composable'
@@ -193,12 +142,10 @@ import MlExternalReferences from './MlExternalReferences.vue'
 const { t } = useI18n()
 const { fonts: fontMapping, images: imageTableData, xrefs } = useMissedData()
 
-const fileInput = ref<HTMLInputElement | null>(null)
 const fontFileInput = ref<HTMLInputElement | null>(null)
 const availableFontInfos = ref<AcDbFontInfo[]>([])
 const matchFontType = ref(true)
 const applying = ref(false)
-const pendingImageRow = ref<ImageMappingData | null>(null)
 const pendingFontMissed = ref<string | null>(null)
 
 interface LocalCachedFont {
@@ -215,17 +162,11 @@ const fontRows = computed(() => {
   }))
 })
 
-const imageRows = computed(() => Array.from(imageTableData.values()))
-
 const subTabs = computed<MlOverflowTab[]>(() => {
   return [
     {
       name: 'font',
       label: t('main.toolPalette.missingResources.fontTab')
-    },
-    {
-      name: 'image',
-      label: t('main.toolPalette.missingResources.imageTab')
     },
     {
       name: 'xref',
@@ -267,17 +208,15 @@ watch(
   [() => fontMapping.size, () => imageTableData.size, () => xrefs.length],
   () => {
     const tab = store.dialogs.activeMissingResourceTab as MissingResourceTab
+    const hasXrefs = imageTableData.size > 0 || xrefs.length > 0
     const valid =
       (tab === 'font' && fontMapping.size > 0) ||
-      (tab === 'image' && imageTableData.size > 0) ||
-      (tab === 'xref' && xrefs.length > 0) ||
-      (fontMapping.size === 0 && imageTableData.size === 0 && xrefs.length === 0)
+      (tab === 'xref' && hasXrefs) ||
+      (fontMapping.size === 0 && !hasXrefs)
     if (valid) return
     if (fontMapping.size > 0) {
       store.dialogs.activeMissingResourceTab = 'font'
-    } else if (imageTableData.size > 0) {
-      store.dialogs.activeMissingResourceTab = 'image'
-    } else if (xrefs.length > 0) {
+    } else if (hasXrefs) {
       store.dialogs.activeMissingResourceTab = 'xref'
     }
   }
@@ -335,43 +274,6 @@ const getReplacementFontsFor = (missedFont: string): string[] => {
 
 const updateMappedFont = (missedFont: string, mappedFont: string) => {
   fontMapping.set(missedFont, mappedFont)
-}
-
-const handleSelectImage = (row: ImageMappingData) => {
-  pendingImageRow.value = row
-  fileInput.value?.click()
-}
-
-const applyImageReplacement = (item: ImageMappingData, file: File) => {
-  const db = AcApDocManager.instance.curDocument.database
-  let replaced = false
-  acapRunDatabaseEdit(db, 'Replace Image', () => {
-    item.ids.forEach(id => {
-      const image = db.openEntityForWrite(id) as AcDbRasterImage | undefined
-      if (!image) return
-      image.image = file
-      replaced = true
-    })
-  })
-  if (!replaced) return
-  item.file = file
-  eventBus.emit('missed-data-changed', {})
-  eventBus.emit('message', {
-    message: t('main.toolPalette.missingResources.applyDone'),
-    type: 'success'
-  })
-}
-
-const handleFileChange = () => {
-  const file = fileInput.value?.files?.[0]
-  const row = pendingImageRow.value
-  pendingImageRow.value = null
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
-  if (file && row) {
-    applyImageReplacement(row, file)
-  }
 }
 
 const handleSelectLocalFont = (missedFont: string) => {

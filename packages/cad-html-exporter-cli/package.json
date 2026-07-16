@@ -21,10 +21,10 @@
   "dependencies": {
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.10.4",
-    "@mlightcad/dxf-json-converter": "^1.10.4",
-    "@mlightcad/libredwg-converter": "^3.10.4",
-    "@mlightcad/mtext-renderer": "^0.11.9",
+    "@mlightcad/data-model": "^1.10.7",
+    "@mlightcad/dxf-json-converter": "^1.10.7",
+    "@mlightcad/libredwg-converter": "^3.10.7",
+    "@mlightcad/mtext-renderer": "^0.11.10",
     "commander": "^12.1.0",
     "playwright": "^1.49.1"
   },

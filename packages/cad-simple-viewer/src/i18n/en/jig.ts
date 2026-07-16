@@ -700,6 +700,22 @@ export default {
     boundsSecondCorner: 'Specify opposite corner',
     longSidePrompt: 'Enter long side size in pixels'
   },
+  imageattach: {
+    insertionPoint: 'Specify insertion point:',
+    scale: 'Specify scale factor:',
+    rotation: 'Specify rotation angle:',
+    invalidScale: 'Scale factor must be greater than 0.',
+    decodeFailed: 'Failed to read the selected image file.'
+  },
+  xattach: {
+    insertionPoint: 'Specify insertion point:',
+    scale: 'Specify scale factor:',
+    rotation: 'Specify rotation angle:',
+    invalidScale: 'Scale factor must be greater than 0.',
+    unsupportedFile: 'Please select a DWG or DXF file.',
+    loading: 'Loading external reference...',
+    loadFailed: 'Failed to read the selected drawing file.'
+  },
   point: {
     point: 'Specify a point'
   },

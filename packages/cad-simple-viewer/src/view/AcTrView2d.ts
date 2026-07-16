@@ -2083,8 +2083,11 @@ export class AcTrView2d extends AcEdBaseView {
             }
           }
         } else if (entity instanceof AcDbRasterImage) {
+          // Only track images whose pixel data is still unresolved.
           const fileName = entity.imageFileName
-          if (fileName) this._missedImages.set(entity.objectId, fileName)
+          if (fileName && !entity.image) {
+            this._missedImages.set(entity.objectId, fileName)
+          }
         }
       } catch (error) {
         log.error(

@@ -699,6 +699,22 @@ export default {
     boundsSecondCorner: 'Karşı köşeyi belirtin',
     longSidePrompt: 'Uzun kenar boyutunu piksel olarak girin'
   },
+  imageattach: {
+    insertionPoint: 'Ekleme noktasını belirtin:',
+    scale: 'Ölçek faktörünü belirtin:',
+    rotation: 'Döndürme açısını belirtin:',
+    invalidScale: 'Ölçek faktörü 0 dan büyük olmalıdır.',
+    decodeFailed: 'Seçilen görüntü dosyası okunamadı.'
+  },
+  xattach: {
+    insertionPoint: 'Ekleme noktasını belirtin:',
+    scale: 'Ölçek faktörünü belirtin:',
+    rotation: 'Döndürme açısını belirtin:',
+    invalidScale: 'Ölçek faktörü 0 dan büyük olmalıdır.',
+    unsupportedFile: 'Lütfen bir DWG veya DXF dosyası seçin.',
+    loading: 'Harici referans yükleniyor...',
+    loadFailed: 'Seçilen çizim dosyası okunamadı.'
+  },
   point: {
     point: 'Bir nokta belirtin'
   },
