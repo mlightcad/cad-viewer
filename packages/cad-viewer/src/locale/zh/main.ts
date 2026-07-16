@@ -13,6 +13,7 @@ export default {
   ribbon: {
     tab: {
       home: '常用',
+      insert: '插入',
       tools: '工具',
       hatchContext: '填充',
       mtextEditorContext: '文字编辑器'
@@ -208,7 +209,8 @@ export default {
       properties: '属性',
       utilities: '实用工具',
       annotation: '批注',
-      measurement: '测量'
+      measurement: '测量',
+      reference: '参照'
     },
     property: {
       color: '颜色',
@@ -278,6 +280,8 @@ export default {
       countList: '打开计数面板以查看并管理块计数。',
       missingResources: '打开缺失/外部资源面板以处理字体、图片和外部参照。',
       drawingUnits: '打开图形单位对话框，设置坐标格式、精度与插入缩放单位。',
+      attachDwg: '将 DWG 或 DXF 图纸作为外部参照附着（XATTACH）。',
+      attachImage: '将光栅图像作为外部参照附着（IMAGEATTACH）。',
       agent: '打开 CAD Agent 工具面板，使用自然语言描述并绘制图形。',
       propertyColor: '设置新建对象或当前选中对象使用的颜色。',
       propertyLineType: '设置新建对象或当前选中对象使用的线型。',
@@ -354,6 +358,8 @@ export default {
       quickSelect: '快速选择',
       countList: '计数',
       drawingUnits: '图形单位',
+      attachDwg: '附着\nDWG',
+      attachImage: '附着\n图像',
       agent: 'CAD Agent'
     }
   },

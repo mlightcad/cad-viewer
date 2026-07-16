@@ -103,6 +103,12 @@ export class AcTrLayout {
   private _layers: Map<string, AcTrLayer>
   /** The flag indicating whether the layout is loaded/activated */
   private _isLoaded: boolean
+  /**
+   * True when this layout renders a read-only reference/overlay drawing.
+   * Reference layouts are not registered in {@link AcTrScene}'s layout map
+   * and must not participate in selection, grips, or host edits.
+   */
+  isReference = false
 
   /**
    * Creates a new layout instance.

@@ -93,6 +93,7 @@ import { acapBindCommandServices } from './AcApCommandServices'
 import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
+import { AcApXrefManager } from './AcApXrefManager'
 import {
   acapInstallOpenFileDialog,
   type AcApOpenDocumentDefaultsResolver,
@@ -109,6 +110,7 @@ import {
   AcApOpenDatabaseOptions,
   AcApOpenViewMode
 } from './AcDbOpenDatabaseOptions'
+import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
 /** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */
@@ -927,12 +929,23 @@ export class AcApDocManager {
   ): Promise<string> {
     const db = new AcDbDatabase()
     const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
-    await db.read(
-      content,
-      { fontLoader: this._fontLoader, readOnly: true, ...options },
-      fileExtension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
-    )
+    await acapWithSecondaryDatabase(db, async () => {
+      await db.read(
+        content,
+        { fontLoader: this._fontLoader, readOnly: true, ...options },
+        fileExtension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
+      )
+    })
+    return this.registerOverlayDatabase(db)
+  }
 
+  /**
+   * Registers an already-parsed read-only database as an overlay.
+   *
+   * Prefer this when the caller already loaded the secondary database (e.g.
+   * XATTACH extents preview) to avoid reading the same file twice.
+   */
+  async registerOverlayDatabase(db: AcDbDatabase): Promise<string> {
     const view = this.curView as AcTrView2d
     const layout = await view.addOverlayEntities(db)
     const overlayId = `overlay-${this._nextOverlayId++}`
@@ -989,6 +1002,16 @@ export class AcApDocManager {
    */
   get overlayIds(): string[] {
     return Array.from(this._overlays.keys())
+  }
+
+  /**
+   * Returns the rendered layout for a loaded overlay, if any.
+   *
+   * Used by {@link AcApXrefManager} to apply INSERT transforms to reference
+   * geometry without registering the layout in {@link AcTrScene}.
+   */
+  getOverlayLayout(overlayId: string): AcTrLayout | undefined {
+    return this._overlays.get(overlayId)?.layout
   }
 
   /**
@@ -1455,6 +1478,8 @@ export class AcApDocManager {
       doc: this.context.doc,
       mode: this.getDocumentEventMode(options)
     })
+    // Drop xref sessions first so their overlay ids are removed via unload.
+    AcApXrefManager.instance.clearAll()
     this.clearOverlays()
     ;(this.curView as AcTrView2d).bindDrawDatabase(this.context.doc.database)
     ;(this.curView as AcTrView2d).progressiveRendering =

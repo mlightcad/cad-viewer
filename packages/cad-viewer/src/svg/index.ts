@@ -1,4 +1,6 @@
 export { default as arc } from './arc.svg'
+export { default as attachDwg } from './attachDwg.svg'
+export { default as attachImage } from './attachImage.svg'
 export { default as circle } from './circle.svg'
 export { default as color } from './color.svg'
 export { default as countlist } from './countlist.svg'

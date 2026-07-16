@@ -737,6 +737,8 @@ export class AcTrView2d extends AcEdBaseView {
    */
   async addOverlayEntities(overlayDb: AcDbDatabase): Promise<AcTrLayout> {
     const layout = new AcTrLayout()
+    layout.isReference = true
+    layout.internalObject.userData.isReference = true
     this._scene.internalScene.add(layout.internalObject)
 
     for (const layer of overlayDb.tables.layerTable.newIterator()) {

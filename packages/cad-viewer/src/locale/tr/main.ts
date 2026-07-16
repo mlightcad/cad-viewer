@@ -13,6 +13,7 @@ export default {
   ribbon: {
     tab: {
       home: 'Ana Sayfa',
+      insert: 'Ekle',
       tools: 'Araçlar',
       hatchContext: 'Tarama',
       mtextEditorContext: 'Metin Düzenleyici'
@@ -212,7 +213,8 @@ export default {
       properties: 'Özellikler',
       utilities: 'Yardımcı Araçlar',
       annotation: 'Açıklama',
-      measurement: 'Ölçüm'
+      measurement: 'Ölçüm',
+      reference: 'Referans'
     },
     property: {
       color: 'Renk',
@@ -289,6 +291,10 @@ export default {
         'Yazı tipleri, görseller ve xref’ler için Eksik / Harici Kaynaklar paletini açın.',
       drawingUnits:
         'Koordinat biçimlerini, hassasiyeti ve ekleme ölçeğini ayarlamak için Çizim Birimlerini açın.',
+      attachDwg:
+        'Bir DWG veya DXF çizimini harici referans olarak ekleyin (XATTACH).',
+      attachImage:
+        'Bir raster görüntüyü harici referans olarak ekleyin (IMAGEATTACH).',
       agent:
         'Doğal dil kullanarak geometri çizmek için CAD Ajanı panel sekmesini açın.',
       propertyColor:
@@ -387,6 +393,8 @@ export default {
       quickSelect: 'Hızlı\nSeçim',
       countList: 'Sayım',
       drawingUnits: 'Çizim\nBirimleri',
+      attachDwg: 'DWG\nEkle',
+      attachImage: 'Görüntü\nEkle',
       agent: 'CAD\nAjanı'
     }
   },
