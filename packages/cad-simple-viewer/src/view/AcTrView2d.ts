@@ -607,14 +607,41 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Gets information about missing data during rendering (fonts and images).
+   * Gets information about missing data during rendering (fonts, images, xrefs).
    *
-   * @returns Object containing maps of missing fonts and images
+   * @returns Object containing maps of missing fonts/images and unresolved xrefs
    */
   get missedData() {
     return {
       fonts: this._renderer.missedFonts,
-      images: this._missedImages
+      images: this._missedImages,
+      xrefs: this.collectUnresolvedXrefs()
+    }
+  }
+
+  private collectUnresolvedXrefs() {
+    try {
+      const db = AcApDocManager.instance?.curDocument?.database
+      if (!db) return []
+      // Available once @mlightcad/data-model exports getUnresolvedXrefs on the
+      // block table (realdwg-web). Soft-detect so older package versions still run.
+      const blockTable = db.tables.blockTable as {
+        getUnresolvedXrefs?: () => Array<{
+          name: string
+          pathName: string
+          isOverlayReference: boolean
+        }>
+      }
+      if (typeof blockTable.getUnresolvedXrefs !== 'function') {
+        return []
+      }
+      return blockTable.getUnresolvedXrefs().map(btr => ({
+        name: btr.name,
+        pathName: btr.pathName,
+        isOverlay: btr.isOverlayReference
+      }))
+    } catch {
+      return []
     }
   }
 
@@ -2056,8 +2083,11 @@ export class AcTrView2d extends AcEdBaseView {
             }
           }
         } else if (entity instanceof AcDbRasterImage) {
+          // Only track images whose pixel data is still unresolved.
           const fileName = entity.imageFileName
-          if (fileName) this._missedImages.set(entity.objectId, fileName)
+          if (fileName && !entity.image) {
+            this._missedImages.set(entity.objectId, fileName)
+          }
         }
       } catch (error) {
         log.error(

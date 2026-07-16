@@ -3,7 +3,9 @@ import { reactive } from 'vue'
 export const store = reactive({
   dialogs: {
     layerManager: false,
-    activePaletteTab: 'layerManager'
+    activePaletteTab: 'layerManager',
+    /** Sub-tab inside Missing / External Resources palette */
+    activeMissingResourceTab: 'font' as 'font' | 'xref'
   },
   features: {
     /** Set when `@mlightcad/cad-agent-plugin` is installed and registered. */

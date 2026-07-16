@@ -114,6 +114,14 @@ export default {
       description: 'Seçili nesnelerin görüntülenmesini geçici olarak gizler',
       prompt: 'Nesneleri seçin'
     },
+    imageattach: {
+      description:
+        'Geçerli çizime harici başvuru olarak bir raster görüntü ekler'
+    },
+    xattach: {
+      description:
+        'Geçerli çizime harici başvuru olarak bir DWG veya DXF çizimi ekler'
+    },
     gripcolor: {
       description:
         'Seçili nesneler üzerinde görüntülenen seçilmemiş tutamaçların rengini ayarlar'

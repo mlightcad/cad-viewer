@@ -136,11 +136,25 @@ export {
 } from './AcEdSelectionAction'
 
 /**
+ * One unresolved external reference reported by the viewer.
+ */
+export interface AcEdMissedXref {
+  /** Block table record name of the xref */
+  name: string
+  /** Saved path from the drawing (may be empty if the converter did not provide it) */
+  pathName: string
+  /** True when the xref is an overlay reference */
+  isOverlay: boolean
+}
+
+/**
  * Represents missed data when rendering entities in the drawing
  */
 export interface AcEdMissedData {
   fonts: Record<string, number>
   images: Map<string, string>
+  /** Unresolved external references in the current database */
+  xrefs: AcEdMissedXref[]
 }
 
 /**
@@ -174,7 +188,7 @@ export type AcEdCalculateSizeCallback = () => { width: number; height: number }
  * ```typescript
  * class MyView extends AcEdBaseView {
  *   // Implement required abstract methods
- *   get missedData() { return { fonts: {}, images: new Map() }; }
+ *   get missedData() { return { fonts: {}, images: new Map(), xrefs: [] }; }
  *   get mode() { return this._mode; }
  *   set mode(value) { this._mode = value; }
  *   // ... other abstract methods

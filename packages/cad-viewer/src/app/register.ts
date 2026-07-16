@@ -20,6 +20,7 @@ import {
   AcApPropertiesCmd,
   AcApQSelectCmd,
   AcApTextStyleCmd,
+  AcApXrefCmd,
   hatchRibbonCommand
 } from '../command'
 import {
@@ -28,7 +29,6 @@ import {
   MlExportHtmlDlg,
   MlPointStyleDlg,
   MlQuickSelectDlg,
-  MlReplacementDlg,
   MlTextStyleDlg
 } from '../component'
 import { useDialogManager } from '../composable'
@@ -56,6 +56,12 @@ export const registerCmds = () => {
       'md',
       'md',
       new AcApMissedDataCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'xref',
+      'xref',
+      new AcApXrefCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
@@ -115,11 +121,6 @@ let isDialogRegistered = false
 export const registerDialogs = () => {
   if (!isDialogRegistered) {
     const { registerDialog } = useDialogManager()
-    registerDialog({
-      name: 'ReplacementDlg',
-      component: markRaw(MlReplacementDlg),
-      props: {}
-    })
     registerDialog({
       name: 'PointStyleDlg',
       component: markRaw(MlPointStyleDlg),

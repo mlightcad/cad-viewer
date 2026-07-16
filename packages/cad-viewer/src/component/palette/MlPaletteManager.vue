@@ -28,6 +28,12 @@
           <ml-count-list />
         </div>
         <div
+          v-else-if="store.dialogs.activePaletteTab === 'missingResources'"
+          class="ml-missing-resources-wrapper"
+        >
+          <ml-missing-resources />
+        </div>
+        <div
           v-else-if="store.dialogs.activePaletteTab === 'memoryProfile'"
           class="ml-memory-profile-wrapper"
         >
@@ -63,6 +69,7 @@ import MlCountList from './MlCountList.vue'
 import MlEntityProperties from './MlEntityProperties.vue'
 import MlLayerList from './MlLayerList.vue'
 import MlMemoryProfile from './MlMemoryProfile.vue'
+import MlMissingResources from './MlMissingResources.vue'
 
 const AgentChatPanel = defineAsyncComponent(() =>
   Promise.all([
@@ -160,6 +167,7 @@ const baseTabNames = [
   'layerManager',
   'entityProperties',
   'countList',
+  'missingResources',
   'memoryProfile'
 ] as const
 const tabNames = computed((): readonly string[] => {
@@ -235,6 +243,15 @@ const properties = computed(() => {
 }
 
 .ml-count-list-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-missing-resources-wrapper {
   overflow: hidden;
   width: 100%;
   height: 100%;

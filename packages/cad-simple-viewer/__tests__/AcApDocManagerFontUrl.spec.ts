@@ -132,6 +132,7 @@ jest.mock('../src/command', () => {
     'AcApEraseCmd',
     'AcApHideObjectsCmd',
     'AcApHatchCmd',
+    'AcApImageAttachCmd',
     'AcApLayerCloseCmd',
     'AcApLayerCmd',
     'AcApLayerCurCmd',
@@ -177,6 +178,7 @@ jest.mock('../src/command', () => {
     'AcApSysVarCmd',
     'AcApUndoCmd',
     'AcApUnisolateObjectsCmd',
+    'AcApXAttachCmd',
     'AcApXLineCmd',
     'AcApZoomCmd'
   ]

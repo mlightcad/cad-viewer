@@ -29,6 +29,7 @@ import {
   AcApEraseCmd,
   AcApHatchCmd,
   AcApHideObjectsCmd,
+  AcApImageAttachCmd,
   AcApLayerCloseCmd,
   AcApLayerCmd,
   AcApLayerCurCmd,
@@ -74,6 +75,7 @@ import {
   AcApSysVarCmd,
   AcApUndoCmd,
   AcApUnisolateObjectsCmd,
+  AcApXAttachCmd,
   AcApXLineCmd,
   AcApZoomCmd
 } from '../command'
@@ -134,6 +136,8 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   MEASUREAREA: ['AA', 'AREA'],
   MEASUREANGLE: ['ANG'],
   '-HATCH': ['-H'],
+  IMAGEATTACH: ['IAT'],
+  XATTACH: ['XA'],
   LAYER: ['LA'],
   '-LAYER': ['-LA'],
   LINE: ['L'],
@@ -972,6 +976,15 @@ export class AcApDocManager {
   }
 
   /**
+   * Removes all loaded overlays and disposes their geometry.
+   */
+  clearOverlays(): void {
+    for (const overlayId of [...this._overlays.keys()]) {
+      this.removeOverlay(overlayId)
+    }
+  }
+
+  /**
    * Ids of all currently loaded overlays.
    */
   get overlayIds(): string[] {
@@ -1174,6 +1187,8 @@ export class AcApDocManager {
       new AcApClearMeasurementsCmd()
     )
     addSystemCommand('-hatch', '-hatch', new AcApHatchCmd())
+    addSystemCommand('imageattach', 'imageattach', new AcApImageAttachCmd())
+    addSystemCommand('xattach', 'xattach', new AcApXAttachCmd())
     addSystemCommand('-layer', '-layer', new AcApLayerCmd())
     addSystemCommand('laycur', 'laycur', new AcApLayerCurCmd())
     addSystemCommand('laydel', 'laydel', new AcApLayerDelCmd())
@@ -1440,6 +1455,7 @@ export class AcApDocManager {
       doc: this.context.doc,
       mode: this.getDocumentEventMode(options)
     })
+    this.clearOverlays()
     ;(this.curView as AcTrView2d).bindDrawDatabase(this.context.doc.database)
     ;(this.curView as AcTrView2d).progressiveRendering =
       options?.progressiveRendering ?? false
