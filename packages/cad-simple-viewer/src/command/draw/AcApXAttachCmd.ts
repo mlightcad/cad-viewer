@@ -22,12 +22,12 @@ import {
   AcEdPromptAngleOptions,
   AcEdPromptDoubleOptions,
   AcEdPromptPointOptions,
-  AcEdPromptStatus
+  AcEdPromptStatus,
+  eventBus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import { acapRunDatabaseEdit } from '../../util/AcApDatabaseEdit'
 import { acapWithSecondaryDatabase } from '../../util/AcApSecondaryDatabase'
-import { eventBus } from '../../editor'
 
 /** Accept list for drawing file pickers (AutoCAD XATTACH formats). */
 const XREF_FILE_ACCEPT = '.dwg,.dxf'
@@ -350,28 +350,31 @@ export class AcApXAttachCmd extends AcEdCommand {
         rotationRad
       }
 
-      let insertId: string | undefined
-      acapRunDatabaseEdit(db, 'XATTACH', () => {
-        const { insert } = AcApXrefManager.createHostXrefInsert(
-          db,
-          blockName,
-          filePath,
-          transform,
-          sourceDb.tables.blockTable.modelSpace.origin
-        )
-        insertId = insert.objectId
-      })
-
-      // Geometry is display-only: reuse the already-parsed sourceDb as an
-      // overlay so we do not bind entities into the host xref block.
-      await AcApXrefManager.instance.attachOverlay({
+      // Attach overlay first so a failed display load never leaves host
+      // BTR/INSERT metadata without geometry. If host metadata write fails,
+      // unload the overlay to keep display and database in sync.
+      const session = await AcApXrefManager.instance.attachOverlay({
         blockName,
         fileName: file.name,
         sourceDb,
         sourcePath: filePath,
-        transform,
-        insertId
+        transform
       })
+      try {
+        acapRunDatabaseEdit(db, 'XATTACH', () => {
+          const { insert } = AcApXrefManager.createHostXrefInsert(
+            db,
+            blockName,
+            filePath,
+            transform,
+            sourceDb.tables.blockTable.modelSpace.origin
+          )
+          session.insertId = insert.objectId
+        })
+      } catch (error) {
+        AcApXrefManager.instance.unload(session.id)
+        throw error
+      }
       eventBus.emit('missed-data-changed', {})
     } finally {
       jig.end()
