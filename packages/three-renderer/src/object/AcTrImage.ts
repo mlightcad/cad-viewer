@@ -3,6 +3,7 @@ import * as THREE from 'three'
 
 import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrImage extends AcTrEntity {
@@ -25,6 +26,14 @@ export class AcTrImage extends AcTrEntity {
     const shape = new THREE.Shape(style.boundary as unknown as THREE.Vector2[])
     const geometry = new THREE.ShapeGeometry(shape)
     this.generateUVs(geometry)
+
+    // Spatial pick / box selection index entities via wcsBbox. Without this,
+    // filled RasterImage / Ole2Frame meshes never enter the pick candidates
+    // even though their interior is raycastable.
+    const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+    if (boundingBox) {
+      this.wcsBbox = boundingBox
+    }
 
     const mesh = new THREE.Mesh(geometry, material)
     this.add(mesh)

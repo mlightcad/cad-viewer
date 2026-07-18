@@ -513,6 +513,46 @@ export default {
     layerManager: {
       tab: '图层',
       title: '图层管理器',
+      currentLayerLabel: '当前图层: {name}',
+      searchPlaceholder: '搜索图层',
+      filters: '过滤器',
+      collapseFilters: '收起过滤器',
+      expandFilters: '展开过滤器',
+      filterAll: '全部',
+      filterAllUsed: '所有使用的图层',
+      toolbar: {
+        showFilters: '图层过滤器',
+        newFilter: '新建过滤器',
+        newFilterGroup: '新建过滤器组',
+        newLayer: '新建图层',
+        deleteLayer: '删除图层',
+        setCurrent: '置为当前'
+      },
+      prompts: {
+        newFilterTitle: '新建过滤器',
+        newFilterName: '请输入过滤器名称',
+        newFilterGroupTitle: '新建过滤器组',
+        newFilterGroupName: '请输入过滤器组名称',
+        newLayerTitle: '新建图层',
+        newLayerName: '请输入图层名称',
+        confirm: '确定',
+        cancel: '取消'
+      },
+      messages: {
+        filterCreated: '已创建过滤器 "{name}"',
+        filterExists: '过滤器 "{name}" 已存在',
+        filterCreateFailed: '创建过滤器失败',
+        layerCreated: '已创建图层 "{name}"',
+        layerExists: '图层 "{name}" 已存在',
+        layerCreateFailed: '创建图层失败',
+        layerDeleted: '已删除图层 "{name}"',
+        layerDeleteFailed: '删除图层 "{name}" 失败',
+        cannotDeleteLayer0: '无法删除图层 "0"',
+        cannotDeleteCurrent: '无法删除当前图层',
+        selectLayerFirst: '请先选择一个图层',
+        setCurrentSuccess: '当前图层已设为 "{name}"',
+        setCurrentFailed: '设置当前图层失败'
+      },
       layerList: {
         name: '名称',
         on: '可见',
