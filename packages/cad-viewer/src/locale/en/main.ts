@@ -551,6 +551,46 @@ export default {
     layerManager: {
       tab: 'Layers',
       title: 'Layer Manager',
+      currentLayerLabel: 'Current layer: {name}',
+      searchPlaceholder: 'Search layers',
+      filters: 'Filters',
+      collapseFilters: 'Collapse filters',
+      expandFilters: 'Expand filters',
+      filterAll: 'All',
+      filterAllUsed: 'All Used Layers',
+      toolbar: {
+        showFilters: 'Layer Filters',
+        newFilter: 'New Filter',
+        newFilterGroup: 'New Group Filter',
+        newLayer: 'New Layer',
+        deleteLayer: 'Delete Layer',
+        setCurrent: 'Set Current'
+      },
+      prompts: {
+        newFilterTitle: 'New Filter',
+        newFilterName: 'Enter filter name',
+        newFilterGroupTitle: 'New Group Filter',
+        newFilterGroupName: 'Enter group filter name',
+        newLayerTitle: 'New Layer',
+        newLayerName: 'Enter layer name',
+        confirm: 'OK',
+        cancel: 'Cancel'
+      },
+      messages: {
+        filterCreated: 'Filter "{name}" created',
+        filterExists: 'A filter named "{name}" already exists',
+        filterCreateFailed: 'Failed to create filter',
+        layerCreated: 'Layer "{name}" created',
+        layerExists: 'Layer "{name}" already exists',
+        layerCreateFailed: 'Failed to create layer',
+        layerDeleted: 'Layer "{name}" deleted',
+        layerDeleteFailed: 'Failed to delete layer "{name}"',
+        cannotDeleteLayer0: 'Layer "0" cannot be deleted',
+        cannotDeleteCurrent: 'The current layer cannot be deleted',
+        selectLayerFirst: 'Select a layer first',
+        setCurrentSuccess: 'Current layer set to "{name}"',
+        setCurrentFailed: 'Failed to set current layer'
+      },
       layerList: {
         name: 'Name',
         on: 'On',

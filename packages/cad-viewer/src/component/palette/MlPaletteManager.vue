@@ -91,7 +91,7 @@ interface Props {
 const props = defineProps<Props>()
 const containerRect = useViewerRect()
 
-const DEFAULT_WIDTH = 400
+const DEFAULT_WIDTH = 520
 const DEFAULT_HEIGHT = 500
 const FLOATING_LEFT_OFFSET = 2
 const FLOATING_TOP_OFFSET = 2
@@ -233,13 +233,12 @@ const properties = computed(() => {
 }
 
 .ml-layer-list-wrapper {
-  overflow: auto;
+  overflow: hidden;
   width: 100%;
   height: 100%;
   min-height: 0;
   display: flex;
-  align-items: flex-start; /* Align items at the top */
-  justify-content: flex-start; /* Align items to the left */
+  flex-direction: column;
 }
 
 .ml-count-list-wrapper {

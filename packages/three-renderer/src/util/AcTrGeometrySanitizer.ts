@@ -2,9 +2,9 @@ import {
   AcDbEntity,
   AcGeCircArc3d,
   AcGeEllipseArc3d,
+  acgeGetOcsReferenceVector,
   AcGePoint3dLike,
-  AcGeVector3d,
-  getOcsReferenceVector
+  AcGeVector3d
 } from '@mlightcad/data-model'
 
 import { AcTrBufferGeometryUtil } from './AcTrBufferGeometryUtil'
@@ -143,7 +143,7 @@ export class AcTrGeometrySanitizer {
       )
     }
     if (needsRefRepair || needsNormalRepair) {
-      repaired.refVec = getOcsReferenceVector(repaired.normal)
+      repaired.refVec = acgeGetOcsReferenceVector(repaired.normal)
       if (needsRefRepair && !needsNormalRepair) {
         AcTrGeometrySanitizer.reportIssue(
           context,
@@ -218,7 +218,7 @@ export class AcTrGeometrySanitizer {
       )
     }
     if (needsMajorRepair) {
-      repaired.majorAxis = getOcsReferenceVector(repaired.normal)
+      repaired.majorAxis = acgeGetOcsReferenceVector(repaired.normal)
       AcTrGeometrySanitizer.reportIssue(
         context,
         'ellipticalArc',

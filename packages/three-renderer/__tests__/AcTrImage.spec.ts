@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import { expectWcsBboxEmpty } from './helpers/expectWcsBbox'
+import { expectWcsBboxCloseTo } from './helpers/expectWcsBbox'
 import { AcTrImage } from '../src/object/AcTrImage'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
 
@@ -16,16 +16,14 @@ describe('AcTrImage wcsBbox', () => {
     jest.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
     jest
       .spyOn(THREE.TextureLoader.prototype, 'load')
-      .mockImplementation(function load(this: THREE.TextureLoader) {
-        return new THREE.Texture()
-      })
+      .mockImplementation(() => new THREE.Texture())
   })
 
   afterEach(() => {
     jest.restoreAllMocks()
   })
 
-  it('leaves wcsBbox empty because raster bounds are tracked separately', () => {
+  it('stores boundary bounds in wcsBbox for spatial picking', () => {
     const image = new AcTrImage(
       new Blob(['image-bytes'], { type: 'image/png' }),
       {
@@ -39,6 +37,6 @@ describe('AcTrImage wcsBbox', () => {
       new AcTrRenderContext()
     )
 
-    expectWcsBboxEmpty(image.wcsBbox)
+    expectWcsBboxCloseTo(image.wcsBbox, [0, 0, 0], [10, 5, 0])
   })
 })

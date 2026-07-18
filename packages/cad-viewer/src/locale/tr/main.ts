@@ -555,6 +555,46 @@ export default {
     layerManager: {
       tab: 'Katmanlar',
       title: 'Katman Yöneticisi',
+      currentLayerLabel: 'Geçerli katman: {name}',
+      searchPlaceholder: 'Katman ara',
+      filters: 'Filtreler',
+      collapseFilters: 'Filtreleri daralt',
+      expandFilters: 'Filtreleri genişlet',
+      filterAll: 'Tümü',
+      filterAllUsed: 'Kullanılan Tüm Katmanlar',
+      toolbar: {
+        showFilters: 'Katman Filtreleri',
+        newFilter: 'Yeni Filtre',
+        newFilterGroup: 'Yeni Grup Filtresi',
+        newLayer: 'Yeni Katman',
+        deleteLayer: 'Katmanı Sil',
+        setCurrent: 'Geçerli Yap'
+      },
+      prompts: {
+        newFilterTitle: 'Yeni Filtre',
+        newFilterName: 'Filtre adını girin',
+        newFilterGroupTitle: 'Yeni Grup Filtresi',
+        newFilterGroupName: 'Grup filtresi adını girin',
+        newLayerTitle: 'Yeni Katman',
+        newLayerName: 'Katman adını girin',
+        confirm: 'Tamam',
+        cancel: 'İptal'
+      },
+      messages: {
+        filterCreated: '"{name}" filtresi oluşturuldu',
+        filterExists: '"{name}" adlı filtre zaten var',
+        filterCreateFailed: 'Filtre oluşturulamadı',
+        layerCreated: '"{name}" katmanı oluşturuldu',
+        layerExists: '"{name}" katmanı zaten var',
+        layerCreateFailed: 'Katman oluşturulamadı',
+        layerDeleted: '"{name}" katmanı silindi',
+        layerDeleteFailed: '"{name}" katmanı silinemedi',
+        cannotDeleteLayer0: '"0" katmanı silinemez',
+        cannotDeleteCurrent: 'Geçerli katman silinemez',
+        selectLayerFirst: 'Önce bir katman seçin',
+        setCurrentSuccess: 'Geçerli katman "{name}" olarak ayarlandı',
+        setCurrentFailed: 'Geçerli katman ayarlanamadı'
+      },
       layerList: {
         name: 'Ad',
         on: 'Açık',
