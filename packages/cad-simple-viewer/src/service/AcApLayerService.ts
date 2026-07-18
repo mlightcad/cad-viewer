@@ -1,6 +1,7 @@
 import {
   AcCmColor,
   AcCmColorMethod,
+  AcCmTransparency,
   AcDbDatabase,
   AcDbEntity,
   AcDbLayerTableRecord,
@@ -631,6 +632,66 @@ export class AcApLayerService {
       if (!layer) return false
 
       layer.lineWeight = lineWeight
+      return true
+    })
+  }
+
+  /**
+   * Sets whether a layer is included when plotting.
+   *
+   * @param layerName - Target layer name.
+   * @param isPlottable - `true` to plot the layer; `false` to exclude it.
+   * @returns `true` when the layer exists and was updated.
+   */
+  setLayerPlottable(layerName: string, isPlottable: boolean): boolean {
+    if (!this.db.tables.layerTable.getAt(layerName)) return false
+
+    return acapRunServiceEdit(this.db, LAYER_EDIT_LABEL, () => {
+      const layer = AcApLayerService.openLayerForWrite(this.db, layerName)
+      if (!layer) return false
+
+      layer.isPlottable = isPlottable
+      return true
+    })
+  }
+
+  /**
+   * Assigns a linetype name to a single layer.
+   *
+   * @param layerName - Target layer name.
+   * @param linetype - Linetype table record name.
+   * @returns `true` when the layer exists and linetype was set.
+   */
+  setLayerLinetype(layerName: string, linetype: string): boolean {
+    if (!linetype || !this.db.tables.layerTable.getAt(layerName)) return false
+
+    return acapRunServiceEdit(this.db, LAYER_EDIT_LABEL, () => {
+      const layer = AcApLayerService.openLayerForWrite(this.db, layerName)
+      if (!layer) return false
+
+      layer.linetype = linetype
+      return true
+    })
+  }
+
+  /**
+   * Assigns transparency to a single layer.
+   *
+   * @param layerName - Target layer name.
+   * @param transparency - Transparency value to assign.
+   * @returns `true` when the layer exists and transparency was set.
+   */
+  setLayerTransparency(
+    layerName: string,
+    transparency: AcCmTransparency
+  ): boolean {
+    if (!this.db.tables.layerTable.getAt(layerName)) return false
+
+    return acapRunServiceEdit(this.db, LAYER_EDIT_LABEL, () => {
+      const layer = AcApLayerService.openLayerForWrite(this.db, layerName)
+      if (!layer) return false
+
+      layer.transparency = transparency
       return true
     })
   }

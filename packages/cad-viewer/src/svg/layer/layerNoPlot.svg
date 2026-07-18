@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+  <!-- Printer body -->
+  <path d="M6,3H14V6H6ZM5,7H15a2,2,0,0,1,2,2v4H14v3H6V13H3V9A2,2,0,0,1,5,7Zm1,7h8V13H6Zm10-2V9a1,1,0,0,0-1-1H5A1,1,0,0,0,4,9v3H6V11h8v1Z" />
+  <!-- Slash -->
+  <rect
+    x="9.2"
+    y="1.2"
+    width="1.6"
+    height="17.6"
+    rx="0.6"
+    transform="rotate(-45 10 10)"
+  />
+</svg>

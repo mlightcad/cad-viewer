@@ -1,6 +1,7 @@
 import {
   AcCmColor,
   AcCmEventManager,
+  AcCmTransparency,
   AcDbDatabase,
   AcDbLayerEventArgs,
   AcDbLayerModifiedEventArgs,
@@ -143,7 +144,14 @@ export class AcApLayerStore {
    * @returns `true` when the layer exists and was set current.
    */
   setCurrentLayer(layerName: string): boolean {
-    return this.getLayerService().setCurrentLayer(layerName)
+    const ok = this.getLayerService().setCurrentLayer(layerName)
+    // Sync immediately from `db.clayer`. Sysvar change events are deferred until
+    // transaction commit, so UI consumers (layer palette, etc.) would otherwise
+    // keep showing a stale current-layer marker until that event arrives.
+    if (ok) {
+      this.syncCurrentLayerName()
+    }
+    return ok
   }
 
   /**
@@ -179,6 +187,50 @@ export class AcApLayerStore {
    */
   setLayerLineWeight(layerName: string, lineWeight: number): boolean {
     return this.getLayerService().setLayerLineWeight(layerName, lineWeight)
+  }
+
+  /**
+   * Sets whether a layer is included when plotting.
+   *
+   * @param layerName - Target layer name.
+   * @param isPlottable - Desired plottable state.
+   * @returns `true` when the layer exists and was updated.
+   */
+  setLayerPlottable(layerName: string, isPlottable: boolean): boolean {
+    return this.getLayerService().setLayerPlottable(layerName, isPlottable)
+  }
+
+  /**
+   * Assigns a linetype name to a layer in this document.
+   *
+   * @param layerName - Target layer name.
+   * @param linetype - Linetype table record name.
+   * @returns `true` when the layer exists and was updated.
+   */
+  setLayerLinetype(layerName: string, linetype: string): boolean {
+    return this.getLayerService().setLayerLinetype(layerName, linetype)
+  }
+
+  /**
+   * Assigns transparency to a layer in this document.
+   *
+   * @param layerName - Target layer name.
+   * @param transparency - Transparency value to assign.
+   * @returns `true` when the layer exists and was updated.
+   */
+  setLayerTransparency(layerName: string, transparency: AcCmTransparency): boolean {
+    return this.getLayerService().setLayerTransparency(layerName, transparency)
+  }
+
+  /**
+   * Updates a layer description in this document.
+   *
+   * @param layerName - Target layer name.
+   * @param description - New description text.
+   * @returns `true` when the layer exists and was updated.
+   */
+  setLayerDescription(layerName: string, description: string): boolean {
+    return this.getLayerService().setLayerDescription(layerName, description)
   }
 
   /**

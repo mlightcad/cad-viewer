@@ -187,6 +187,18 @@ describe('AcApLayerStore', () => {
     })
   })
 
+  it('setCurrentLayer updates cached current layer name immediately', () => {
+    const layer0 = createLayer('0', false)
+    const layer1 = createLayer('A', false)
+    const { db } = createDatabase([layer0, layer1], '0')
+    const store = new AcApLayerStore(createDocument(db))
+
+    expect(store.getCurrentLayerName()).toBe('0')
+    expect(store.setCurrentLayer('A')).toBe(true)
+    expect(db.clayer).toBe('A')
+    expect(store.getCurrentLayerName()).toBe('A')
+  })
+
   it('setLayerOn turns a non-current layer off without changing clayer', () => {
     const layer0 = createLayer('0', false)
     const layer1 = createLayer('A', false)

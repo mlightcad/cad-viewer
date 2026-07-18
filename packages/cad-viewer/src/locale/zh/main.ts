@@ -561,10 +561,19 @@ export default {
       },
       layerList: {
         name: '名称',
-        on: '可见',
+        on: '开',
+        freeze: '冻结',
+        lock: '锁定',
+        plot: '打印',
         color: '颜色',
+        linetype: '线型',
+        lineweight: '线宽',
+        transparency: '透明度',
+        description: '说明',
         currentLayer: '当前图层',
-        zoomToLayer: '已缩放到所点击的图层"{layer}"'
+        newLayerPlaceholder: '图层名称',
+        zoomToLayer: '已缩放到所点击的图层"{layer}"',
+        lineWeightDefault: '默认'
       }
     },
     countList: {

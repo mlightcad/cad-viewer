@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <!-- Layer stack (from layerOn), shifted slightly left -->
+  <g transform="translate(-1.2,0)" fill="currentColor">
+    <path d="M10.09,3.53L16.09,6.97L10.09,10.29L4.18,7L10.09,3.56M10.09,2.4L2.17,7L3.31,7.65L10.09,11.45L17,7.62L18.17,7L10.08,2.37L10.09,2.4Z"/>
+    <path d="M10.25,14.83L18.17,10.22L17,9.57L10.22,13.57L3.32,9.59L2.17,10.22L10.25,14.83Z"/>
+    <path d="M10.25,17.63L18.17,13L17,12.37L10.22,16.37L3.32,12.38L2.17,13L10.25,17.63Z"/>
+  </g>
+  <!-- Orange new / sparkle badge (top-right), 1.5x -->
+  <g fill="#E67E22" transform="translate(15.2,5.2) scale(1.5) translate(-15.2,-5.2)">
+    <path d="M15.5,2.2L16.05,4.35L18.2,4.9L16.05,5.45L15.5,7.6L14.95,5.45L12.8,4.9L14.95,4.35Z"/>
+    <path d="M17.6,6.4L17.85,7.35L18.8,7.6L17.85,7.85L17.6,8.8L17.35,7.85L16.4,7.6L17.35,7.35Z"/>
+  </g>
+</svg>

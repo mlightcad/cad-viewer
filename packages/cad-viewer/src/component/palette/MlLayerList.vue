@@ -18,19 +18,74 @@
     </div>
 
     <div class="ml-layer-manager-toolbar">
-      <el-popover
-        v-model:visible="filterTreeVisible"
-        placement="bottom-start"
-        trigger="click"
-        :width="220"
-        :teleported="true"
-        popper-class="ml-layer-manager-filter-popper"
+      <el-button
+        text
+        size="small"
+        class="ml-layer-manager-toolbar-btn"
+        :class="{
+          'ml-layer-manager-toolbar-btn--active': filterPanelVisible
+        }"
+        :title="t('main.toolPalette.layerManager.toolbar.showFilters')"
+        :aria-label="t('main.toolPalette.layerManager.toolbar.showFilters')"
+        :aria-pressed="filterPanelVisible"
+        @click="filterPanelVisible = !filterPanelVisible"
       >
-        <div class="ml-layer-manager-filter-popover">
-          <div class="ml-layer-manager-filter-popover-header">
-            <span class="ml-layer-manager-filters-title">
-              {{ t('main.toolPalette.layerManager.filters') }}
-            </span>
+        <el-icon :size="16"><Filter /></el-icon>
+      </el-button>
+      <span class="ml-layer-manager-toolbar-sep" aria-hidden="true" />
+      <div class="ml-layer-manager-toolbar-layer-actions">
+        <el-button
+          text
+          size="small"
+          class="ml-layer-manager-toolbar-btn"
+          :title="t('main.toolPalette.layerManager.toolbar.newLayer')"
+          :aria-label="t('main.toolPalette.layerManager.toolbar.newLayer')"
+          :disabled="isDraftingNewLayer"
+          @click="handleNewLayer"
+        >
+          <span class="ml-layer-manager-toolbar-icon" aria-hidden="true">
+            <component :is="layerNew" />
+          </span>
+        </el-button>
+        <el-button
+          text
+          size="small"
+          class="ml-layer-manager-toolbar-btn"
+          :title="t('main.toolPalette.layerManager.toolbar.deleteLayer')"
+          :aria-label="t('main.toolPalette.layerManager.toolbar.deleteLayer')"
+          :disabled="!selectedLayer || isDraftingNewLayer"
+          @click="handleDeleteLayer"
+        >
+          <span class="ml-layer-manager-toolbar-icon" aria-hidden="true">
+            <component :is="layerDelete" />
+          </span>
+        </el-button>
+        <el-button
+          text
+          size="small"
+          class="ml-layer-manager-toolbar-btn"
+          :title="t('main.toolPalette.layerManager.toolbar.setCurrent')"
+          :aria-label="t('main.toolPalette.layerManager.toolbar.setCurrent')"
+          :disabled="!selectedLayer || isDraftingNewLayer"
+          @click="handleSetCurrent"
+        >
+          <span class="ml-layer-manager-toolbar-icon" aria-hidden="true">
+            <component :is="layerSetCurrent" />
+          </span>
+        </el-button>
+      </div>
+    </div>
+
+    <div class="ml-layer-manager-body">
+      <div
+        v-show="filterPanelVisible"
+        class="ml-layer-manager-filter-panel"
+      >
+        <div class="ml-layer-manager-filter-panel-header">
+          <span class="ml-layer-manager-filters-title">
+            {{ t('main.toolPalette.layerManager.filters') }}
+          </span>
+          <div class="ml-layer-manager-filter-panel-actions">
             <el-button
               text
               size="small"
@@ -41,171 +96,54 @@
             >
               <el-icon :size="16"><Plus /></el-icon>
             </el-button>
+            <el-button
+              text
+              size="small"
+              class="ml-layer-manager-toolbar-btn"
+              :title="t('main.toolPalette.layerManager.toolbar.newFilterGroup')"
+              :aria-label="
+                t('main.toolPalette.layerManager.toolbar.newFilterGroup')
+              "
+              @click="handleNewFilterGroup"
+            >
+              <el-icon :size="16"><FolderAdd /></el-icon>
+            </el-button>
           </div>
-          <el-tree
-            ref="filterTreeRef"
-            class="ml-layer-manager-filter-tree"
-            :data="filterTreeData"
-            node-key="id"
-            highlight-current
-            default-expand-all
-            :expand-on-click-node="false"
-            :current-node-key="selectedFilterId"
-            @node-click="handleFilterNodeClick"
-          />
         </div>
-        <template #reference>
-          <el-button
-            text
-            size="small"
-            class="ml-layer-manager-toolbar-btn"
-            :class="{
-              'ml-layer-manager-toolbar-btn--active': filterTreeVisible
-            }"
-            :title="t('main.toolPalette.layerManager.toolbar.showFilters')"
-            :aria-label="t('main.toolPalette.layerManager.toolbar.showFilters')"
-            :aria-expanded="filterTreeVisible"
-          >
-            <el-icon :size="16"><Filter /></el-icon>
-          </el-button>
-        </template>
-      </el-popover>
-      <el-button
-        text
-        size="small"
-        class="ml-layer-manager-toolbar-btn"
-        :title="t('main.toolPalette.layerManager.toolbar.newFilterGroup')"
-        :aria-label="t('main.toolPalette.layerManager.toolbar.newFilterGroup')"
-        @click="handleNewFilterGroup"
-      >
-        <el-icon :size="16"><FolderAdd /></el-icon>
-      </el-button>
-      <span class="ml-layer-manager-toolbar-sep" aria-hidden="true" />
-      <el-button
-        text
-        size="small"
-        class="ml-layer-manager-toolbar-btn"
-        :title="t('main.toolPalette.layerManager.toolbar.newLayer')"
-        :aria-label="t('main.toolPalette.layerManager.toolbar.newLayer')"
-        @click="handleNewLayer"
-      >
-        <el-icon :size="16"><Plus /></el-icon>
-      </el-button>
-      <el-button
-        text
-        size="small"
-        class="ml-layer-manager-toolbar-btn"
-        :title="t('main.toolPalette.layerManager.toolbar.deleteLayer')"
-        :aria-label="t('main.toolPalette.layerManager.toolbar.deleteLayer')"
-        :disabled="!selectedLayer"
-        @click="handleDeleteLayer"
-      >
-        <el-icon :size="16"><Delete /></el-icon>
-      </el-button>
-      <el-button
-        text
-        size="small"
-        class="ml-layer-manager-toolbar-btn"
-        :title="t('main.toolPalette.layerManager.toolbar.setCurrent')"
-        :aria-label="t('main.toolPalette.layerManager.toolbar.setCurrent')"
-        :disabled="!selectedLayer"
-        @click="handleSetCurrent"
-      >
-        <span class="ml-layer-manager-toolbar-icon" aria-hidden="true">
-          <component :is="layerCurrent" />
-        </span>
-      </el-button>
-    </div>
+        <el-tree
+          ref="filterTreeRef"
+          class="ml-layer-manager-filter-tree"
+          :data="filterTreeData"
+          node-key="id"
+          highlight-current
+          default-expand-all
+          :expand-on-click-node="false"
+          :current-node-key="selectedFilterId"
+          @node-click="handleFilterNodeClick"
+        />
+      </div>
 
-    <div class="ml-layer-manager-body">
       <div class="ml-layer-manager-list">
-        <el-table
-          :data="displayedLayers"
-          class="ml-layer-list"
-          highlight-current-row
-          :row-class-name="getRowClassName"
-          @current-change="handleCurrentRowChange"
+        <MlLayerTable
+          ref="layerTableRef"
+          :layers="displayedLayers"
+          :current-layer-name="currentLayerName"
+          v-model:selected-layer-name="selectedLayerName"
+          v-model:draft-layer-name="draftLayerName"
           @row-dblclick="handleRowDbClick"
-        >
-          <el-table-column
-            property="name"
-            :label="t('main.toolPalette.layerManager.layerList.name')"
-            min-width="120"
-            sortable
-            show-overflow-tooltip
-          >
-            <template #default="scope">
-              <span class="ml-layer-list-name">
-                {{ scope.row.name }}
-                <span
-                  v-if="scope.row.name === currentLayerName"
-                  class="ml-layer-list-current-marker"
-                  :title="
-                    t('main.toolPalette.layerManager.layerList.currentLayer')
-                  "
-                  aria-hidden="true"
-                >
-                  *
-                </span>
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            property="isOn"
-            :label="t('main.toolPalette.layerManager.layerList.on')"
-            width="50"
-          >
-            <template #header>
-              <div class="ml-layer-list-header-toggle">
-                <el-checkbox
-                  :model-value="isAllOn"
-                  :indeterminate="isSomeOn"
-                  :aria-label="t('main.toolPalette.layerManager.layerList.on')"
-                  @change="handleToggleAll"
-                />
-              </div>
-            </template>
-            <template #default="scope">
-              <div class="ml-layer-list-cell">
-                <el-checkbox
-                  :model-value="scope.row.isOn"
-                  @change="handleLayerVisibility(scope.row, $event)"
-                />
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column
-            property="color"
-            :label="t('main.toolPalette.layerManager.layerList.color')"
-            width="70"
-          >
-            <template #default="scope">
-              <div class="ml-layer-list-cell">
-                <el-tag
-                  :color="scope.row.cssColor"
-                  class="ml-layer-list-color"
-                  @click.stop="openColorPicker(scope.row)"
-                />
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
+          @draft-commit="commitDraftLayer"
+          @draft-cancel="cancelDraftLayer"
+          @toggle-all-on="handleToggleAll"
+          @change="handleLayerChange"
+          @change-color="handleLayerColorChange"
+        />
       </div>
     </div>
-
-    <ml-color-picker-dlg
-      v-model="colorDialogVisible"
-      :title="t('dialog.colorPickerDlg.title')"
-      :color="oldColor"
-      @ok="handleColorDialogOk"
-      @cancel="handleColorDialogCancel"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
 import {
-  Delete,
   Filter,
   FolderAdd,
   Plus,
@@ -215,18 +153,13 @@ import {
   AcApDocManager,
   AcApLayerService
 } from '@mlightcad/cad-simple-viewer'
-import { AcCmColor } from '@mlightcad/data-model'
+import { AcCmColor, AcCmTransparency } from '@mlightcad/data-model'
 import {
   ElButton,
-  ElCheckbox,
   ElIcon,
   ElInput,
   ElMessage,
   ElMessageBox,
-  ElPopover,
-  ElTable,
-  ElTableColumn,
-  ElTag,
   ElTree
 } from 'element-plus'
 import { computed, nextTick, ref, watch } from 'vue'
@@ -235,12 +168,15 @@ import { useI18n } from 'vue-i18n'
 import {
   LAYER_FILTER_ALL,
   LAYER_FILTER_ALL_USED,
-  LayerInfo,
   useLayerFilters,
   useLayers
 } from '../../composable'
-import { layerCurrent } from '../../svg'
-import { MlColorPickerDlg } from '../dialog'
+import { layerDelete, layerNew, layerSetCurrent } from '../../svg'
+import type {
+  MlLayerTableChangeField,
+  MlLayerTableRow
+} from '../common/MlLayerTable'
+import MlLayerTable from '../common/MlLayerTable.vue'
 
 const { t } = useI18n()
 
@@ -261,13 +197,22 @@ interface FilterTreeNode {
   children?: FilterTreeNode[]
 }
 
+const DRAFT_CSS_COLOR = '#FFFFFF'
+
 const props = defineProps<Props>()
 
 const {
   layers,
   currentLayerName,
   setLayerOn,
+  setLayerFrozen,
+  setLayerLocked,
+  setLayerPlottable,
   setLayerColor,
+  setLayerLinetype,
+  setLayerLineWeight,
+  setLayerTransparency,
+  setLayerDescription,
   setCurrentLayer
 } = useLayers(props.editor)
 
@@ -280,9 +225,18 @@ const {
 } = useLayerFilters(props.editor)
 
 const searchText = ref('')
-const filterTreeVisible = ref(false)
-const selectedLayer = ref<LayerInfo | null>(null)
+const filterPanelVisible = ref(false)
+/** Selected layer name (stable across table row identity refreshes). */
+const selectedLayerName = ref<string | null>(null)
 const filterTreeRef = ref<InstanceType<typeof ElTree>>()
+const layerTableRef = ref<InstanceType<typeof MlLayerTable>>()
+/** When true, an inline new-layer row is shown below the current layer. */
+const isDraftingNewLayer = ref(false)
+const draftLayerName = ref('')
+/** Suppresses blur-commit when Escape cancels the draft. */
+let cancellingDraft = false
+/** Prevents re-entrant commit while creating the layer. */
+let committingDraft = false
 
 const syncFilterTreeSelection = async () => {
   await nextTick()
@@ -293,7 +247,7 @@ watch(selectedFilterId, () => {
   void syncFilterTreeSelection()
 })
 
-watch(filterTreeVisible, visible => {
+watch(filterPanelVisible, visible => {
   if (visible) void syncFilterTreeSelection()
 })
 
@@ -327,9 +281,25 @@ const filterTreeData = computed<FilterTreeNode[]>(() => [
   }
 ])
 
-const displayedLayers = computed(() => {
+const buildDraftRow = (): MlLayerTableRow => ({
+  name: draftLayerName.value,
+  color: 'ACI:7',
+  cssColor: DRAFT_CSS_COLOR,
+  isOn: true,
+  isFrozen: false,
+  isLocked: false,
+  isInUse: false,
+  isPlottable: true,
+  transparency: '0',
+  linetype: 'Continuous',
+  lineWeight: -1,
+  description: '',
+  isDraft: true
+})
+
+const displayedLayers = computed<MlLayerTableRow[]>(() => {
   const db = props.editor.curDocument?.database
-  let result = [...layers]
+  let result: MlLayerTableRow[] = [...layers]
 
   if (selectedFilterId.value !== LAYER_FILTER_ALL && db) {
     result = result.filter(layerInfo => {
@@ -343,53 +313,47 @@ const displayedLayers = computed(() => {
     result = result.filter(layer => layer.name.toLowerCase().includes(query))
   }
 
+  if (isDraftingNewLayer.value) {
+    const draftRow = buildDraftRow()
+    const insertAfter = currentLayerName.value
+    const insertIndex = result.findIndex(layer => layer.name === insertAfter)
+    if (insertIndex >= 0) {
+      result = [
+        ...result.slice(0, insertIndex + 1),
+        draftRow,
+        ...result.slice(insertIndex + 1)
+      ]
+    } else {
+      result = [draftRow, ...result]
+    }
+  }
+
   return result
 })
 
+const selectedLayer = computed(
+  () =>
+    displayedLayers.value.find(
+      layer => !layer.isDraft && layer.name === selectedLayerName.value
+    ) ?? null
+)
+
 watch(displayedLayers, rows => {
   if (
-    selectedLayer.value &&
-    !rows.some(row => row.name === selectedLayer.value?.name)
+    selectedLayerName.value &&
+    !rows.some(
+      row => !row.isDraft && row.name === selectedLayerName.value
+    )
   ) {
-    selectedLayer.value = null
+    selectedLayerName.value = null
   }
 })
 
-const getRowClassName = ({ row }: { row: LayerInfo }) =>
-  row.name === currentLayerName.value ? 'ml-layer-list-row--current' : ''
-
-const isAllOn = computed(() => {
-  if (!displayedLayers.value.length) return false
-  return displayedLayers.value.every(layer => layer.isOn)
-})
-
-const isSomeOn = computed(() => {
-  if (!displayedLayers.value.length) return false
-  const anyOn = displayedLayers.value.some(layer => layer.isOn)
-  return anyOn && !isAllOn.value
-})
-
-const setLayerVisibility = (row: LayerInfo, isOn: boolean) => {
-  setLayerOn(row.name, isOn)
-}
-
-const handleToggleAll = (isOn: boolean) => {
-  displayedLayers.value.forEach(row => {
-    if (row.isOn === isOn) return
-    setLayerVisibility(row, isOn)
-  })
-}
-
 const handleFilterNodeClick = (node: FilterTreeNode) => {
   selectedFilterId.value = node.id
-  filterTreeVisible.value = false
 }
 
-const handleCurrentRowChange = (row: LayerInfo | undefined) => {
-  selectedLayer.value = row ?? null
-}
-
-const handleRowDbClick = (row: LayerInfo) => {
+const handleRowDbClick = (row: MlLayerTableRow) => {
   const isSuccess = props.editor.curView.zoomToFitLayer(row.name)
   if (isSuccess) {
     ElMessage({
@@ -402,36 +366,62 @@ const handleRowDbClick = (row: LayerInfo) => {
   }
 }
 
-const handleLayerVisibility = (row: LayerInfo, isOn: boolean) => {
-  setLayerVisibility(row, isOn)
+const handleToggleAll = (isOn: boolean) => {
+  displayedLayers.value.forEach(row => {
+    if (row.isDraft) return
+    if (row.isOn === isOn) return
+    setLayerOn(row.name, isOn)
+  })
 }
 
-const colorDialogVisible = ref(false)
-const colorTargetLayer = ref<LayerInfo | null>(null)
-const oldColor = ref<string | undefined>(undefined)
-
-const openColorPicker = (row: LayerInfo) => {
-  colorTargetLayer.value = row
-  oldColor.value = row.color
-  colorDialogVisible.value = true
+const handleLayerChange = (payload: {
+  layerName: string
+  field: MlLayerTableChangeField
+  value: boolean | string | number
+}) => {
+  const { layerName, field, value } = payload
+  switch (field) {
+    case 'on':
+      setLayerOn(layerName, Boolean(value))
+      break
+    case 'frozen':
+      setLayerFrozen(layerName, Boolean(value))
+      break
+    case 'locked':
+      setLayerLocked(layerName, Boolean(value))
+      break
+    case 'plottable':
+      setLayerPlottable(layerName, Boolean(value))
+      break
+    case 'linetype':
+      setLayerLinetype(layerName, String(value))
+      break
+    case 'lineWeight':
+      setLayerLineWeight(layerName, Number(value))
+      break
+    case 'transparency': {
+      const transparency = AcCmTransparency.fromString(String(value).trim())
+      setLayerTransparency(layerName, transparency)
+      break
+    }
+    case 'description':
+      setLayerDescription(layerName, String(value ?? ''))
+      break
+  }
 }
 
-const applySelectedColor = (color: AcCmColor) => {
-  if (!colorTargetLayer.value) return
-  setLayerColor(colorTargetLayer.value.name, color)
-}
-
-const handleColorDialogOk = (color: AcCmColor) => {
-  applySelectedColor(color)
-}
-
-const handleColorDialogCancel = () => {
-  // Discard temporary selection
+const handleLayerColorChange = (payload: {
+  layerName: string
+  color: AcCmColor
+}) => {
+  setLayerColor(payload.layerName, payload.color)
 }
 
 const selectedLayerNamesForFilter = () => {
   if (selectedLayer.value) return [selectedLayer.value.name]
-  return displayedLayers.value.map(layer => layer.name)
+  return displayedLayers.value
+    .filter(layer => !layer.isDraft)
+    .map(layer => layer.name)
 }
 
 const promptName = async (
@@ -505,12 +495,37 @@ const handleNewFilterGroup = async () => {
   })
 }
 
-const handleNewLayer = async () => {
-  const name = await promptName(
-    t('main.toolPalette.layerManager.prompts.newLayerTitle'),
-    t('main.toolPalette.layerManager.prompts.newLayerName')
-  )
-  if (!name) return
+const suggestNewLayerName = () => {
+  const existing = new Set(layers.map(layer => layer.name.toLowerCase()))
+  let index = 1
+  while (existing.has(`layer${index}`)) {
+    index++
+  }
+  return `Layer${index}`
+}
+
+const focusDraftInput = async () => {
+  await layerTableRef.value?.focusDraftInput()
+}
+
+const cancelDraftLayer = () => {
+  if (!isDraftingNewLayer.value) return
+  cancellingDraft = true
+  isDraftingNewLayer.value = false
+  draftLayerName.value = ''
+  void nextTick(() => {
+    cancellingDraft = false
+  })
+}
+
+const commitDraftLayer = () => {
+  if (cancellingDraft || committingDraft || !isDraftingNewLayer.value) return
+
+  const name = draftLayerName.value.trim()
+  if (!name) {
+    cancelDraftLayer()
+    return
+  }
 
   const db = props.editor.curDocument?.database
   if (!db) {
@@ -518,18 +533,53 @@ const handleNewLayer = async () => {
       message: t('main.toolPalette.layerManager.messages.layerCreateFailed'),
       type: 'error'
     })
+    cancelDraftLayer()
     return
   }
 
-  const result = new AcApLayerService(db).createLayers([name])
-  if (result.existed.includes(name)) {
+  committingDraft = true
+  try {
+    const result = new AcApLayerService(db).createLayers([name])
+    if (result.existed.includes(name)) {
+      ElMessage({
+        message: t('main.toolPalette.layerManager.messages.layerExists', {
+          name
+        }),
+        type: 'warning'
+      })
+      void focusDraftInput()
+      return
+    }
+    if (result.created <= 0) {
+      ElMessage({
+        message: t('main.toolPalette.layerManager.messages.layerCreateFailed'),
+        type: 'error'
+      })
+      cancelDraftLayer()
+      return
+    }
+
+    isDraftingNewLayer.value = false
+    draftLayerName.value = ''
+    selectedLayerName.value = name
     ElMessage({
-      message: t('main.toolPalette.layerManager.messages.layerExists', { name }),
-      type: 'warning'
+      message: t('main.toolPalette.layerManager.messages.layerCreated', {
+        name
+      }),
+      type: 'success'
     })
+  } finally {
+    committingDraft = false
+  }
+}
+
+const handleNewLayer = () => {
+  if (isDraftingNewLayer.value) {
+    void focusDraftInput()
     return
   }
-  if (result.created <= 0) {
+
+  if (!props.editor.curDocument?.database) {
     ElMessage({
       message: t('main.toolPalette.layerManager.messages.layerCreateFailed'),
       type: 'error'
@@ -537,10 +587,10 @@ const handleNewLayer = async () => {
     return
   }
 
-  ElMessage({
-    message: t('main.toolPalette.layerManager.messages.layerCreated', { name }),
-    type: 'success'
-  })
+  draftLayerName.value = suggestNewLayerName()
+  isDraftingNewLayer.value = true
+  selectedLayerName.value = null
+  void focusDraftInput()
 }
 
 const handleDeleteLayer = () => {
@@ -581,7 +631,7 @@ const handleDeleteLayer = () => {
     return
   }
 
-  selectedLayer.value = null
+  selectedLayerName.value = null
   ElMessage({
     message: t('main.toolPalette.layerManager.messages.layerDeleted', {
       name: layer.name
@@ -591,8 +641,8 @@ const handleDeleteLayer = () => {
 }
 
 const handleSetCurrent = () => {
-  const layer = selectedLayer.value
-  if (!layer) {
+  const layerName = selectedLayerName.value
+  if (!layerName) {
     ElMessage({
       message: t('main.toolPalette.layerManager.messages.selectLayerFirst'),
       type: 'warning'
@@ -600,14 +650,17 @@ const handleSetCurrent = () => {
     return
   }
 
-  const ok = setCurrentLayer(layer.name)
+  // Same path as the Home ribbon layer dropdown: mutate via useLayers /
+  // AcApLayerStore.setCurrentLayer (undo is handled inside the service).
+  const ok = setCurrentLayer(layerName)
+
   ElMessage({
     message: ok
       ? t('main.toolPalette.layerManager.messages.setCurrentSuccess', {
-          name: layer.name
+          name: layerName
         })
       : t('main.toolPalette.layerManager.messages.setCurrentFailed', {
-          name: layer.name
+          name: layerName
         }),
     type: ok ? 'success' : 'error'
   })
@@ -652,7 +705,7 @@ const handleSetCurrent = () => {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 2px 6px 6px;
+  padding: 2px 2px 2px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--el-border-color-lighter);
 }
@@ -661,6 +714,18 @@ const handleSetCurrent = () => {
   padding: 4px;
   margin: 0;
   min-height: 24px;
+}
+
+.ml-layer-manager-toolbar-layer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ml-layer-manager-toolbar-layer-actions
+  .ml-layer-manager-toolbar-btn
+  + .ml-layer-manager-toolbar-btn {
+  margin-left: 0 !important;
 }
 
 .ml-layer-manager-toolbar-btn--active {
@@ -694,6 +759,33 @@ const handleSetCurrent = () => {
   overflow: hidden;
 }
 
+.ml-layer-manager-filter-panel {
+  display: flex;
+  flex-direction: column;
+  width: 180px;
+  flex-shrink: 0;
+  min-height: 0;
+  border-right: 1px solid var(--el-border-color-lighter);
+  overflow: hidden;
+}
+
+.ml-layer-manager-filter-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 4px 6px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.ml-layer-manager-filter-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
 .ml-layer-manager-filters-title {
   font-size: 12px;
   color: var(--el-text-color-secondary);
@@ -702,26 +794,11 @@ const handleSetCurrent = () => {
   white-space: nowrap;
 }
 
-.ml-layer-manager-filter-popover {
-  display: flex;
-  flex-direction: column;
-  max-height: 280px;
-  min-height: 0;
-}
-
-.ml-layer-manager-filter-popover-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  padding: 0 0 4px;
-  flex-shrink: 0;
-}
-
 .ml-layer-manager-filter-tree {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  padding: 4px 0;
   background: transparent;
   font-size: 12px;
 }
@@ -730,67 +807,10 @@ const handleSetCurrent = () => {
   height: 26px;
 }
 
-.ml-layer-manager-filter-popper {
-  padding: 8px;
-}
-
 .ml-layer-manager-list {
   flex: 1;
   min-width: 0;
   min-height: 0;
   overflow: auto;
-}
-
-.ml-layer-list {
-  width: 100%;
-  font-size: small;
-  min-width: 100%;
-}
-
-.ml-layer-list .el-table__cell {
-  padding-top: 2px;
-  padding-bottom: 2px;
-}
-
-.ml-layer-list .el-table__header .el-table__cell {
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
-.ml-layer-list .el-table__header,
-.ml-layer-list .el-table__body {
-  border-bottom: 1px solid var(--el-border-color);
-}
-
-.ml-layer-list-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ml-layer-list-header-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ml-layer-list-color {
-  width: 20px;
-  height: 20px;
-}
-
-.ml-layer-list-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.ml-layer-list-current-marker {
-  color: var(--el-color-primary);
-  font-weight: 600;
-}
-
-.ml-layer-list .ml-layer-list-row--current > td.el-table__cell {
-  font-weight: 600;
 }
 </style>
