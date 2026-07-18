@@ -137,7 +137,7 @@ It provides:
 - A **Vue chat panel** (`AgentChatPanel`) built on the Vercel AI SDK (`Experimental_Agent` + `@ai-sdk/vue`)
 - **Browser-side LLM configuration** — API keys for OpenAI, Anthropic, or OpenAI-compatible endpoints stay in the client (encrypted in `localStorage`)
 - **Phase 1 CAD tools** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
-- **English / Chinese** UI strings via the plugin i18n layer
+- **English / Chinese / Turkish / Czech** UI strings via the plugin i18n layer
 
 The full Vue [`cad-viewer`](packages/cad-viewer) app registers the agent automatically when the package is installed (palette tab). [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) wires it into a dock tab via `cad-simple-ui-plugin`. Host apps call `registerLazyAgentPlugin` and `setAgentPaletteOpener` to mount the panel where they want.
 
