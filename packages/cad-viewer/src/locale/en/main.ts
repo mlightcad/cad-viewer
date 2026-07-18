@@ -213,7 +213,8 @@ export default {
       utilities: 'Utilities',
       annotation: 'Annotation',
       measurement: 'Measurement',
-      reference: 'Reference'
+      reference: 'Reference',
+      block: 'Block'
     },
     property: {
       color: 'Color',
@@ -290,6 +291,8 @@ export default {
       attachDwg:
         'Attach a DWG or DXF drawing as an external reference (XATTACH).',
       attachImage: 'Attach a raster image as an external reference (IMAGEATTACH).',
+      editAttributes:
+        'Open the Enhanced Attribute Editor to edit block attribute values and display properties (ATTEDIT).',
       agent:
         'Open the CAD Agent palette tab to draw geometry using natural language.',
       propertyColor:
@@ -392,6 +395,7 @@ export default {
       drawingUnits: 'Drawing\nUnits',
       attachDwg: 'Attach\nDWG',
       attachImage: 'Attach\nImage',
+      editAttributes: 'Edit\nAttributes',
       agent: 'CAD\nAgent'
     }
   },

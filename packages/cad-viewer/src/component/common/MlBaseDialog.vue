@@ -35,6 +35,13 @@
         <!-- Footer -->
         <div class="ml-base-dialog-footer">
           <div class="ml-base-dialog-footer-actions">
+            <el-button
+              v-if="showApply"
+              :disabled="applyDisabled"
+              @click="handleApply"
+            >
+              {{ t('dialog.baseDialog.apply') }}
+            </el-button>
             <el-button @click="handleCancel">
               {{ t('dialog.baseDialog.cancel') }}
             </el-button>
@@ -66,6 +73,10 @@ const props = defineProps({
   icon: { type: Object as () => Component | null, default: null },
   /** When false, OK emits but leaves the dialog open (caller closes on success). */
   autoClose: { type: Boolean, default: true },
+  /** Shows an Apply button before OK/Cancel (AutoCAD-style dialogs). */
+  showApply: { type: Boolean, default: false },
+  /** Disables Apply when there are no pending changes. */
+  applyDisabled: { type: Boolean, default: false },
   zIndex: { type: Number, default: 2100 }
 })
 
@@ -73,6 +84,7 @@ const emits = defineEmits([
   'update:modelValue',
   'ok',
   'cancel',
+  'apply',
   'open',
   'opened'
 ])
@@ -99,6 +111,10 @@ function handleOk() {
   if (props.autoClose) {
     emits('update:modelValue', false)
   }
+}
+
+function handleApply() {
+  emits('apply')
 }
 
 function handleCancel() {

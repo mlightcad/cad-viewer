@@ -1,7 +1,8 @@
 export default {
   baseDialog: {
     ok: '确定',
-    cancel: '取消'
+    cancel: '取消',
+    apply: '应用'
   },
   pointStyleDlg: {
     title: '点样式',
@@ -144,5 +145,53 @@ export default {
     created: '已创建文字样式 "{name}"。',
     deleted: '已删除文字样式 "{name}"。',
     setCurrentDone: '当前文字样式已设为 "{name}"。'
+  },
+  attEditDlg: {
+    title: '增强属性编辑器',
+    block: '块:',
+    tag: '标记:',
+    selectBlock: '选择块',
+    tabAttribute: '属性',
+    tabTextOptions: '文字选项',
+    tabProperties: '特性',
+    colTag: '标记',
+    colPrompt: '提示',
+    colValue: '值',
+    value: '值:',
+    textStyle: '文字样式:',
+    justification: '对正:',
+    backwards: '反向',
+    upsideDown: '倒置',
+    height: '高度:',
+    widthFactor: '宽度因子:',
+    rotation: '旋转:',
+    obliqueAngle: '倾斜角度:',
+    annotative: '注释性',
+    boundaryWidth: '边界宽度:',
+    layer: '图层:',
+    linetype: '线型:',
+    color: '颜色:',
+    lineweight: '线宽:',
+    plotStyle: '打印样式:',
+    promptSelectBlock: '选择带有属性的块:',
+    rejectSelectBlock: '对象必须是带有属性的块。',
+    noAttributes: '所选块没有属性。',
+    justify: {
+      left: '左',
+      center: '居中',
+      right: '右',
+      align: '对齐',
+      middle: '中间',
+      fit: '拟合',
+      topLeft: '左上',
+      topCenter: '正上',
+      topRight: '右上',
+      middleLeft: '左中',
+      middleCenter: '正中',
+      middleRight: '右中',
+      bottomLeft: '左下',
+      bottomCenter: '正下',
+      bottomRight: '右下'
+    }
   }
 }

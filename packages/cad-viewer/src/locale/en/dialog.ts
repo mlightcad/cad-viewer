@@ -1,7 +1,8 @@
 export default {
   baseDialog: {
     ok: 'OK',
-    cancel: 'Cancel'
+    cancel: 'Cancel',
+    apply: 'Apply'
   },
   pointStyleDlg: {
     title: 'Point Style',
@@ -145,5 +146,53 @@ export default {
     created: 'Text style "{name}" created.',
     deleted: 'Text style "{name}" deleted.',
     setCurrentDone: 'Current text style set to "{name}".'
+  },
+  attEditDlg: {
+    title: 'Enhanced Attribute Editor',
+    block: 'Block:',
+    tag: 'Tag:',
+    selectBlock: 'Select block',
+    tabAttribute: 'Attribute',
+    tabTextOptions: 'Text Options',
+    tabProperties: 'Properties',
+    colTag: 'Tag',
+    colPrompt: 'Prompt',
+    colValue: 'Value',
+    value: 'Value:',
+    textStyle: 'Text style:',
+    justification: 'Justification:',
+    backwards: 'Backwards',
+    upsideDown: 'Upside down',
+    height: 'Height:',
+    widthFactor: 'Width factor:',
+    rotation: 'Rotation:',
+    obliqueAngle: 'Oblique angle:',
+    annotative: 'Annotative',
+    boundaryWidth: 'Boundary width:',
+    layer: 'Layer:',
+    linetype: 'Linetype:',
+    color: 'Color:',
+    lineweight: 'Lineweight:',
+    plotStyle: 'Plot style:',
+    promptSelectBlock: 'Select a block with attributes:',
+    rejectSelectBlock: 'Object must be a block with attributes.',
+    noAttributes: 'The selected block has no attributes.',
+    justify: {
+      left: 'Left',
+      center: 'Center',
+      right: 'Right',
+      align: 'Align',
+      middle: 'Middle',
+      fit: 'Fit',
+      topLeft: 'Top left',
+      topCenter: 'Top center',
+      topRight: 'Top right',
+      middleLeft: 'Middle left',
+      middleCenter: 'Middle center',
+      middleRight: 'Middle right',
+      bottomLeft: 'Bottom left',
+      bottomCenter: 'Bottom center',
+      bottomRight: 'Bottom right'
+    }
   }
 }

@@ -1,7 +1,8 @@
 export default {
   baseDialog: {
     ok: 'Tamam',
-    cancel: 'İptal'
+    cancel: 'İptal',
+    apply: 'Uygula'
   },
   pointStyleDlg: {
     title: 'Nokta Stili',
@@ -146,5 +147,53 @@ export default {
     created: '"{name}" metin stili oluşturuldu.',
     deleted: '"{name}" metin stili silindi.',
     setCurrentDone: 'Geçerli metin stili "{name}" olarak ayarlandı.'
+  },
+  attEditDlg: {
+    title: 'Gelişmiş Öznitelik Düzenleyici',
+    block: 'Blok:',
+    tag: 'Etiket:',
+    selectBlock: 'Blok seç',
+    tabAttribute: 'Öznitelik',
+    tabTextOptions: 'Metin Seçenekleri',
+    tabProperties: 'Özellikler',
+    colTag: 'Etiket',
+    colPrompt: 'İstem',
+    colValue: 'Değer',
+    value: 'Değer:',
+    textStyle: 'Metin stili:',
+    justification: 'Hizalama:',
+    backwards: 'Geriye',
+    upsideDown: 'Ters',
+    height: 'Yükseklik:',
+    widthFactor: 'Genişlik faktörü:',
+    rotation: 'Döndürme:',
+    obliqueAngle: 'Eğik açı:',
+    annotative: 'Açıklamalı',
+    boundaryWidth: 'Sınır genişliği:',
+    layer: 'Katman:',
+    linetype: 'Çizgi tipi:',
+    color: 'Renk:',
+    lineweight: 'Çizgi kalınlığı:',
+    plotStyle: 'Çizim stili:',
+    promptSelectBlock: 'Öznitelikli bir blok seçin:',
+    rejectSelectBlock: 'Nesne öznitelikli bir blok olmalıdır.',
+    noAttributes: 'Seçilen blokta öznitelik yok.',
+    justify: {
+      left: 'Sol',
+      center: 'Orta',
+      right: 'Sağ',
+      align: 'Hizala',
+      middle: 'Orta',
+      fit: 'Sığdır',
+      topLeft: 'Sol üst',
+      topCenter: 'Üst orta',
+      topRight: 'Sağ üst',
+      middleLeft: 'Sol orta',
+      middleCenter: 'Tam orta',
+      middleRight: 'Sağ orta',
+      bottomLeft: 'Sol alt',
+      bottomCenter: 'Alt orta',
+      bottomRight: 'Sağ alt'
+    }
   }
 }
