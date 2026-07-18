@@ -1,3 +1,4 @@
+export * from './useAttEdit'
 export * from './useCommands'
 export * from './useCurrentPos'
 export * from './useDark'

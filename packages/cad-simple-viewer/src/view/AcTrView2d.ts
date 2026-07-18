@@ -1,5 +1,7 @@
 import {
+  AcDbAttribute,
   AcDbBlockTableRecord,
+  AcDbBlockReference,
   AcDbDatabase,
   AcDbEntity,
   acdbHostApplicationServices,
@@ -411,7 +413,7 @@ export class AcTrView2d extends AcEdBaseView {
       if (AcApDocManager.instance.curDocument.openMode !== AcEdOpenMode.Write) {
         return
       }
-      void this.openPickedMTextEditor(e)
+      void this.openPickedEntityEditor(e)
     })
     // When using OrbitControls in THREE.js, it attaches its own event listeners to the DOM elements,
     // such as the canvas or the entire document. This can interfere with other event listeners you
@@ -992,7 +994,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._isDirty = true
   }
 
-  private async openPickedMTextEditor(e: MouseEvent) {
+  private async openPickedEntityEditor(e: MouseEvent) {
     const point = this.viewportToCanvas({
       x: e.clientX,
       y: e.clientY
@@ -1005,10 +1007,48 @@ export class AcTrView2d extends AcEdBaseView {
       AcApDocManager.instance.curDocument.database.tables.blockTable.getEntityById(
         picked[0].id
       )
+    if (!entity) return
+
+    const attributedBlock = this.resolveAttributedBlockReference(entity)
+    if (attributedBlock) {
+      e.preventDefault()
+      this.selectionSet.clear()
+      this.selectionSet.add(attributedBlock.objectId)
+      AcApDocManager.instance.sendStringToExecute('attedit')
+      return
+    }
+
     if (!(entity instanceof AcDbMText)) return
 
     e.preventDefault()
     await this.editMTextEntity(entity)
+  }
+
+  /**
+   * Resolves an attributed INSERT from a picked block reference or attribute.
+   */
+  private resolveAttributedBlockReference(
+    entity: AcDbEntity
+  ): AcDbBlockReference | undefined {
+    if (entity instanceof AcDbBlockReference) {
+      if (entity.attributeIterator().count > 0) return entity
+      return undefined
+    }
+
+    if (entity instanceof AcDbAttribute) {
+      const owner =
+        AcApDocManager.instance.curDocument.database.tables.blockTable.getEntityById(
+          entity.ownerId
+        )
+      if (
+        owner instanceof AcDbBlockReference &&
+        owner.attributeIterator().count > 0
+      ) {
+        return owner
+      }
+    }
+
+    return undefined
   }
 
   private async editMTextEntity(mtext: AcDbMText) {
@@ -1443,17 +1483,25 @@ export class AcTrView2d extends AcEdBaseView {
    * Rebuilds scene geometry for entities whose shape or styling changed.
    *
    * Pure translations should use {@link translateEntity} instead.
+   *
+   * Attribute entities are drawn as part of their owning INSERT, so attribute
+   * edits are remapped to the parent {@link AcDbBlockReference} before the
+   * scene is updated.
    */
   updateEntity(entity: AcDbEntity | AcDbEntity[]) {
-    const entities = Array.isArray(entity) ? entity : [entity]
+    const entities = this.resolveSceneUpdateEntities(
+      Array.isArray(entity) ? entity : [entity]
+    )
+    if (entities.length === 0) return
+
     const selectedIds = entities
       .map(item => item.objectId)
       .filter(objectId => this.selectionSet.has(objectId))
 
     for (let i = 0; i < entities.length; ++i) {
-      const entity = entities[i]
-      if (this._scene.hasEntity(entity.objectId)) {
-        this._scene.removeEntity(entity.objectId)
+      const item = entities[i]
+      if (this._scene.hasEntity(item.objectId)) {
+        this._scene.removeEntity(item.objectId)
       }
     }
 
@@ -1471,6 +1519,33 @@ export class AcTrView2d extends AcEdBaseView {
     setTimeout(() => {
       this._isDirty = true
     }, 100)
+  }
+
+  /**
+   * Maps entities that are not independently drawn in the scene to the
+   * drawable entity that must be rebuilt (for example ATTRIB → INSERT).
+   */
+  private resolveSceneUpdateEntities(entities: AcDbEntity[]): AcDbEntity[] {
+    const db = AcApDocManager.instance.curDocument?.database
+    const resolved: AcDbEntity[] = []
+    const seen = new Set<AcDbObjectId>()
+
+    for (const entity of entities) {
+      let target: AcDbEntity = entity
+      if (entity instanceof AcDbAttribute) {
+        const owner = db?.tables.blockTable.getEntityById(entity.ownerId)
+        if (!(owner instanceof AcDbBlockReference)) {
+          continue
+        }
+        target = owner
+      }
+
+      if (seen.has(target.objectId)) continue
+      seen.add(target.objectId)
+      resolved.push(target)
+    }
+
+    return resolved
   }
 
   /**

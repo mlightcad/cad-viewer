@@ -72,6 +72,7 @@ import {
   circleTwoPoints,
   clearMeasurements,
   countlist,
+  editAttribute,
   ellipseArc,
   ellipseCenter,
   hatch,
@@ -681,6 +682,7 @@ const buildBaseTabs = (
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
     attachDwg: t('main.ribbon.tooltip.attachDwg'),
     attachImage: t('main.ribbon.tooltip.attachImage'),
+    editAttributes: t('main.ribbon.tooltip.editAttributes'),
     agent: t('main.ribbon.tooltip.agent'),
     propertyColor: t('main.ribbon.tooltip.propertyColor'),
     propertyLineType: t('main.ribbon.tooltip.propertyLineType'),
@@ -1513,6 +1515,31 @@ const buildBaseTabs = (
       title: t('main.ribbon.tab.insert'),
       groups: [
         {
+          id: 'insert-block',
+          title: t('main.ribbon.group.block'),
+          orientation: 'row',
+          collections: [
+            {
+              id: 'insert-block-main',
+              layout: 'row',
+              items: [
+                {
+                  id: 'cmd-attedit',
+                  type: 'button',
+                  label: t('main.ribbon.command.editAttributes'),
+                  tooltip: ribbonTooltips.editAttributes,
+                  size: 'large',
+                  props: {
+                    icon: editAttribute,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           id: 'insert-reference',
           title: t('main.ribbon.group.reference'),
           orientation: 'row',
@@ -1618,6 +1645,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-drawing-units', 'units')
   commandByItemId.set('cmd-xattach', 'xattach')
   commandByItemId.set('cmd-imageattach', 'imageattach')
+  commandByItemId.set('cmd-attedit', 'attedit')
   if (store.features.agentPlugin) {
     commandByItemId.set('cmd-agent', 'agent')
   }

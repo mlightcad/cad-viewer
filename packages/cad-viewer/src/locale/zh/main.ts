@@ -210,7 +210,8 @@ export default {
       utilities: '实用工具',
       annotation: '批注',
       measurement: '测量',
-      reference: '参照'
+      reference: '参照',
+      block: '块'
     },
     property: {
       color: '颜色',
@@ -282,6 +283,7 @@ export default {
       drawingUnits: '打开图形单位对话框，设置坐标格式、精度与插入缩放单位。',
       attachDwg: '将 DWG 或 DXF 图纸作为外部参照附着（XATTACH）。',
       attachImage: '将光栅图像作为外部参照附着（IMAGEATTACH）。',
+      editAttributes: '打开增强属性编辑器，编辑块属性值与显示特性（ATTEDIT）。',
       agent: '打开 CAD Agent 工具面板，使用自然语言描述并绘制图形。',
       propertyColor: '设置新建对象或当前选中对象使用的颜色。',
       propertyLineType: '设置新建对象或当前选中对象使用的线型。',
@@ -360,6 +362,7 @@ export default {
       drawingUnits: '图形单位',
       attachDwg: '附着\nDWG',
       attachImage: '附着\n图像',
+      editAttributes: '编辑属性',
       agent: 'CAD Agent'
     }
   },

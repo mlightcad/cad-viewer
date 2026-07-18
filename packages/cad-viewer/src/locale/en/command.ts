@@ -39,6 +39,10 @@ export default {
     style: {
       description:
         'Creates, modifies, or specifies text styles for text and multiline text'
+    },
+    attedit: {
+      description:
+        'Edits attribute values and display properties of a block reference'
     }
   },
   USER: {}

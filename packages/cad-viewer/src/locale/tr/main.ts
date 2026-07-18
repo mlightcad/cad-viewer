@@ -214,7 +214,8 @@ export default {
       utilities: 'Yardımcı Araçlar',
       annotation: 'Açıklama',
       measurement: 'Ölçüm',
-      reference: 'Referans'
+      reference: 'Referans',
+      block: 'Blok'
     },
     property: {
       color: 'Renk',
@@ -295,6 +296,8 @@ export default {
         'Bir DWG veya DXF çizimini harici referans olarak ekleyin (XATTACH).',
       attachImage:
         'Bir raster görüntüyü harici referans olarak ekleyin (IMAGEATTACH).',
+      editAttributes:
+        'Blok öznitelik değerlerini ve görüntü özelliklerini düzenlemek için Gelişmiş Öznitelik Düzenleyiciyi açın (ATTEDIT).',
       agent:
         'Doğal dil kullanarak geometri çizmek için CAD Ajanı panel sekmesini açın.',
       propertyColor:
@@ -395,6 +398,7 @@ export default {
       drawingUnits: 'Çizim\nBirimleri',
       attachDwg: 'DWG\nEkle',
       attachImage: 'Görüntü\nEkle',
+      editAttributes: 'Öznitelikleri\nDüzenle',
       agent: 'CAD\nAjanı'
     }
   },
