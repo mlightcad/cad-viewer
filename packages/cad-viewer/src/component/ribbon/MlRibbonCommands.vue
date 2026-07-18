@@ -36,13 +36,15 @@ import {
   RibbonLocaleTexts,
   RibbonTabModel
 } from '@mlightcad/ribbon'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { store } from '../../app'
 import type { LayerStateSnapshot, LayerStateToggleKey } from '../../composable'
 import {
+  LAYER_FILTER_ALL,
   useDocument,
+  useLayerFilters,
   useLayers,
   useSettings,
   useUndoRedo
@@ -173,21 +175,36 @@ const {
 })
 const {
   layers: ribbonLayers,
+  currentLayerName: ribbonStoreCurrentLayerName,
   setCurrentLayer: setRibbonCurrentLayer,
   toggleLayerState: toggleRibbonLayerState,
   captureLayerSnapshot: captureRibbonLayerSnapshot
 } = useLayers(AcApDocManager.instance)
-const ribbonLayerOptions = computed(() =>
-  ribbonLayers.map(layer => ({
-    value: layer.name,
-    name: layer.name,
-    cssColor: layer.cssColor || '#7b8794',
-    isOn: layer.isOn,
-    isLocked: layer.isLocked,
-    isFrozen: layer.isFrozen,
-    lineType: layer.linetype
-  }))
+const { selectedFilterId, matchesSelectedFilter } = useLayerFilters(
+  AcApDocManager.instance
 )
+const ribbonLayerOptions = computed(() => {
+  const db = AcApDocManager.instance?.curDocument?.database
+  const filterId = selectedFilterId.value
+  const currentName = ribbonDisplayedLayerName.value
+
+  return ribbonLayers
+    .filter(layer => {
+      if (layer.name === currentName) return true
+      if (filterId === LAYER_FILTER_ALL || !db) return true
+      const record = db.tables.layerTable.getAt(layer.name)
+      return record ? matchesSelectedFilter(record) : false
+    })
+    .map(layer => ({
+      value: layer.name,
+      name: layer.name,
+      cssColor: layer.cssColor || '#7b8794',
+      isOn: layer.isOn,
+      isLocked: layer.isLocked,
+      isFrozen: layer.isFrozen,
+      lineType: layer.linetype
+    }))
+})
 const ribbonLayerIsolationSnapshot = ref<LayerStateSnapshot | null>(null)
 const ribbonLayerPreviousSnapshot = ref<LayerStateSnapshot | null>(null)
 
@@ -375,6 +392,13 @@ const handleSysVarChange = (args: RibbonSysVarChangeEvent) => {
       break
   }
 }
+
+// Palette (and other useLayers consumers) update CLAYER via AcApLayerStore, which
+// may notify before the deferred sysVarChanged event. Keep the Home layer dropdown
+// in sync with the store's current layer.
+watch(ribbonStoreCurrentLayerName, () => {
+  syncRibbonProperties(getCurrentDatabase())
+})
 
 const bindSelectionEvents = (selectionSet = getCurrentSelectionSet()) => {
   if (observedSelectionSet === selectionSet) return
@@ -587,6 +611,23 @@ const handleRibbonLayerChange = (layerName: string) => {
     })
   }
 
+  if (!changed) return
+  syncRibbonProperties(db)
+}
+
+/**
+ * Makes the layer currently shown in the ribbon layer selector the drawing's
+ * current layer (`CLAYER`).
+ */
+const handleRibbonSetCurrentLayer = () => {
+  const db = getCurrentDatabase()
+  const layerName = ribbonDisplayedLayerName.value
+  if (!db || !layerName) return
+
+  let changed = false
+  acapRunDatabaseEdit(db, 'Layer', () => {
+    changed = setRibbonCurrentLayer(layerName)
+  })
   if (!changed) return
   syncRibbonProperties(db)
 }
@@ -1595,7 +1636,6 @@ const ribbonData = computed(() => {
   commandByItemId.set('layer-action-isolate', 'layiso')
   commandByItemId.set('layer-action-freeze', 'layfrz')
   commandByItemId.set('layer-action-lock', 'laylck')
-  commandByItemId.set('layer-action-current', 'laycur')
   commandByItemId.set('layer-action-all-on', 'layon')
   commandByItemId.set('layer-action-unisolate', 'layuniso')
   commandByItemId.set('layer-action-thaw', 'laythw')
@@ -1681,6 +1721,10 @@ const handleRibbonItemClick = (payload: {
     ribbonLayerOptions.value.some(item => item.value === payload.itemId)
   ) {
     handleRibbonLayerChange(payload.itemId)
+    return
+  }
+  if (payload.itemId === 'layer-action-current') {
+    handleRibbonSetCurrentLayer()
     return
   }
   const command = ribbonData.value.commandByItemId.get(payload.itemId)

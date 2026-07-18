@@ -7,7 +7,7 @@ import {
   AcDbDocumentEventArgs,
   LAYER_EDIT_LABEL
 } from '@mlightcad/cad-simple-viewer'
-import { AcCmColor, AcDbDatabase } from '@mlightcad/data-model'
+import { AcCmColor, AcCmTransparency, AcDbDatabase } from '@mlightcad/data-model'
 import { computed, onScopeDispose, reactive, ref } from 'vue'
 
 /**
@@ -21,12 +21,14 @@ export interface LayerInfo extends AcApLayerInfo {
   isInUse: boolean
   /** Whether the layer is included when the drawing is plotted. */
   isPlottable: boolean
-  /** Layer transparency as a string (AutoCAD-style value). */
+  /** Layer transparency as an AutoCAD-style percentage string (for example `0`). */
   transparency: string
   /** Assigned linetype name (for example `Continuous`). */
   linetype: string
   /** Line weight in hundredths of a millimeter; `-1` means default/by-layer. */
   lineWeight: number
+  /** Optional layer description text. */
+  description: string
 }
 
 /**
@@ -65,17 +67,23 @@ function enrichLayerInfo(
       isPlottable: true,
       transparency: '0',
       linetype: 'Continuous',
-      lineWeight: -1
+      lineWeight: -1,
+      description: ''
     }
   }
 
+  const transparencyPercentage = layer.transparency.percentage
   return {
     ...base,
     isInUse: layer.isInUse,
     isPlottable: layer.isPlottable,
-    transparency: layer.transparency.toString(),
+    transparency:
+      transparencyPercentage != null
+        ? String(transparencyPercentage)
+        : layer.transparency.toString(),
     linetype: layer.linetype,
-    lineWeight: layer.lineWeight
+    lineWeight: layer.lineWeight,
+    description: layer.description ?? ''
   }
 }
 
@@ -365,6 +373,55 @@ export function useLayers(editor: AcApDocManager) {
   }
 
   /**
+   * Sets whether a layer is included when plotting.
+   *
+   * @param layerName - Layer table record name.
+   * @param isPlottable - `true` to plot; `false` to exclude from plots.
+   * @returns `true` when the layer store accepts the change.
+   */
+  function setLayerPlottable(layerName: string, isPlottable: boolean) {
+    return getLayerStore()?.setLayerPlottable(layerName, isPlottable) ?? false
+  }
+
+  /**
+   * Assigns a linetype name to a layer.
+   *
+   * @param layerName - Layer table record name.
+   * @param linetype - Linetype table record name.
+   * @returns `true` when the layer store accepts the change.
+   */
+  function setLayerLinetype(layerName: string, linetype: string) {
+    return getLayerStore()?.setLayerLinetype(layerName, linetype) ?? false
+  }
+
+  /**
+   * Assigns transparency to a layer.
+   *
+   * @param layerName - Layer table record name.
+   * @param transparency - Transparency value to assign.
+   * @returns `true` when the layer store accepts the change.
+   */
+  function setLayerTransparency(
+    layerName: string,
+    transparency: AcCmTransparency
+  ) {
+    return (
+      getLayerStore()?.setLayerTransparency(layerName, transparency) ?? false
+    )
+  }
+
+  /**
+   * Updates a layer description.
+   *
+   * @param layerName - Layer table record name.
+   * @param description - New description text.
+   * @returns `true` when the layer store accepts the change.
+   */
+  function setLayerDescription(layerName: string, description: string) {
+    return getLayerStore()?.setLayerDescription(layerName, description) ?? false
+  }
+
+  /**
    * Captures the current layer list and `CLAYER` as a {@link LayerStateSnapshot}.
    *
    * @param db - Database to read `CLAYER` from; defaults to the active document.
@@ -438,6 +495,14 @@ export function useLayers(editor: AcApDocManager) {
     /** Sets layer color. See {@link setLayerColor}. */
     setLayerColor,
     /** Sets layer line weight. See {@link setLayerLineWeight}. */
-    setLayerLineWeight
+    setLayerLineWeight,
+    /** Sets layer plottable flag. See {@link setLayerPlottable}. */
+    setLayerPlottable,
+    /** Sets layer linetype. See {@link setLayerLinetype}. */
+    setLayerLinetype,
+    /** Sets layer transparency. See {@link setLayerTransparency}. */
+    setLayerTransparency,
+    /** Sets layer description. See {@link setLayerDescription}. */
+    setLayerDescription
   }
 }

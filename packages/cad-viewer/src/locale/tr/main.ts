@@ -606,9 +606,18 @@ export default {
       layerList: {
         name: 'Ad',
         on: 'Açık',
+        freeze: 'Dondur',
+        lock: 'Kilitle',
+        plot: 'Çizdir',
         color: 'Renk',
+        linetype: 'Çizgi tipi',
+        lineweight: 'Çizgi kalınlığı',
+        transparency: 'Saydamlık',
+        description: 'Açıklama',
         currentLayer: 'Geçerli katman',
-        zoomToLayer: 'Tıklanan "{layer}" katmanına yakınlaştırıldı'
+        newLayerPlaceholder: 'Katman adı',
+        zoomToLayer: 'Tıklanan "{layer}" katmanına yakınlaştırıldı',
+        lineWeightDefault: 'Varsayılan'
       }
     },
     countList: {

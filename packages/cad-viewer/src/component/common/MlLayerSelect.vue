@@ -5,7 +5,7 @@
       :disabled="props.disabled || !props.options.length"
       :placeholder="props.placeholder ?? t('main.ribbonProperty.layer')"
       class="ml-layer-select__control"
-      popper-class="ml-layer-select-popper"
+      :popper-class="popperClass"
       style="width: 100%"
       @change="onSelect"
       @visible-change="onVisibleChange"
@@ -51,7 +51,8 @@
               :class="selectedOption.isFrozen ? 'is-frozen' : 'is-unfrozen'"
               aria-hidden="true"
             >
-              <component :is="layerSnow" />
+              <component :is="layerSnow" v-if="selectedOption.isFrozen" />
+              <component :is="layerThawed" v-else />
             </span>
           </button>
           <button
@@ -70,7 +71,8 @@
               :class="selectedOption.isLocked ? 'is-locked' : 'is-unlocked'"
               aria-hidden="true"
             >
-              <component :is="layerLocker" />
+              <component :is="layerLocker" v-if="selectedOption.isLocked" />
+              <component :is="layerUnlocked" v-else />
             </span>
           </button>
           <span
@@ -144,7 +146,8 @@
               :class="item.isFrozen ? 'is-frozen' : 'is-unfrozen'"
               aria-hidden="true"
             >
-              <component :is="layerSnow" />
+              <component :is="layerSnow" v-if="item.isFrozen" />
+              <component :is="layerThawed" v-else />
             </span>
           </button>
           <button
@@ -163,7 +166,8 @@
               :class="item.isLocked ? 'is-locked' : 'is-unlocked'"
               aria-hidden="true"
             >
-              <component :is="layerLocker" />
+              <component :is="layerLocker" v-if="item.isLocked" />
+              <component :is="layerUnlocked" v-else />
             </span>
           </button>
           <span
@@ -189,11 +193,11 @@
 
 <script setup lang="ts">
 import { Search } from '@element-plus/icons-vue'
-import { ElIcon, ElInput, ElOption, ElSelect } from 'element-plus'
+import { ElIcon, ElInput, ElOption, ElSelect, useGlobalConfig } from 'element-plus'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { layerLight, layerLocker, layerSnow } from '../../svg'
+import { layerLight, layerLocker, layerSnow, layerThawed, layerUnlocked } from '../../svg'
 
 defineOptions({
   inheritAttrs: false
@@ -235,6 +239,19 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const searchQuery = ref('')
 const searchInputRef = ref<InstanceType<typeof ElInput>>()
+
+/** Ribbon / ConfigProvider size (`small` | `default` | `large`). */
+const globalSize = useGlobalConfig('size', '')
+const ribbonUiSize = computed(() => globalSize.value || 'default')
+
+/**
+ * Match built-in ribbon selects: attach ribbon popper size classes so teleported
+ * dropdown typography follows `ml-ribbon--size-*` / `--ml-rb-popper-scale`.
+ */
+const popperClass = computed(
+  () =>
+    `ml-layer-select-popper ml-ribbon-select-dropdown ml-ribbon-popper ml-ribbon-popper--size-${ribbonUiSize.value}`
+)
 
 const selectedOption = computed(() =>
   props.options.find(item => item.value === props.modelValue)
@@ -333,6 +350,11 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
   display: flex;
   width: 100%;
   min-width: 0;
+  font-family: inherit;
+  font-size: var(
+    --ml-rb-font-sm,
+    calc(var(--el-font-size-small) * var(--ml-rb-scale, 1))
+  );
 }
 
 .ml-layer-select__control {
@@ -346,6 +368,8 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
 .ml-layer-select :deep(.el-select__placeholder) {
   width: 100%;
   min-width: 0;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .ml-layer-select-trigger {
@@ -360,6 +384,8 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: inherit;
+  font-family: inherit;
 }
 
 .ml-layer-select-option {
@@ -375,13 +401,15 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: inherit;
+  font-family: inherit;
 }
 
 .ml-layer-select-state-icon {
   display: inline-flex;
   width: 16px;
   height: 16px;
-  color: var(--el-text-color-disabled);
+  color: var(--el-text-color-regular);
 }
 
 .ml-layer-select-state-button {
@@ -400,20 +428,31 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
   color: var(--el-color-primary);
 }
 
+.ml-layer-select-state-icon.is-off {
+  color: var(--el-text-color-disabled);
+}
+
 .ml-layer-select-state-icon.is-frozen,
 .ml-layer-select-state-icon.is-locked {
+  color: var(--el-text-color-primary);
+}
+
+.ml-layer-select-state-icon.is-unfrozen,
+.ml-layer-select-state-icon.is-unlocked {
   color: var(--el-text-color-regular);
 }
 
 .ml-layer-select-state-icon :deep(svg) {
   width: 16px;
   height: 16px;
+  fill: currentColor;
 }
 
 .ml-layer-select-state-icon :deep(path),
 .ml-layer-select-state-icon :deep(rect),
 .ml-layer-select-state-icon :deep(polygon),
-.ml-layer-select-state-icon :deep(ellipse) {
+.ml-layer-select-state-icon :deep(ellipse),
+.ml-layer-select-state-icon :deep(circle) {
   fill: currentColor;
   stroke: currentColor;
 }
@@ -438,7 +477,16 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
 }
 
 :global(.ml-layer-select-popper) {
+  /*
+   * Teleported dropdown is outside `.ml-ribbon`, so use `--ml-rb-popper-scale`
+   * from `ml-ribbon-popper--size-*` (same as built-in ribbon selects).
+   */
+  --ml-layer-select-font-size: calc(
+    var(--el-font-size-small) * var(--ml-rb-popper-scale, 1)
+  );
   width: 340px;
+  font-family: inherit;
+  font-size: var(--ml-layer-select-font-size);
 }
 
 :global(.ml-layer-select-popper .el-select-dropdown__wrap) {
@@ -446,8 +494,17 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
 }
 
 :global(.ml-layer-select-popper .el-select-dropdown__item) {
-  height: 36px;
-  line-height: 36px;
+  height: calc(36px * var(--ml-rb-popper-scale, 1));
+  line-height: calc(36px * var(--ml-rb-popper-scale, 1));
+  font-family: inherit;
+  font-size: var(--ml-layer-select-font-size);
+}
+
+:global(.ml-layer-select-popper .el-input),
+:global(.ml-layer-select-popper .ml-layer-select-text),
+:global(.ml-layer-select-popper .ml-layer-select-empty) {
+  font-family: inherit;
+  font-size: var(--ml-layer-select-font-size);
 }
 
 .ml-layer-select-header {

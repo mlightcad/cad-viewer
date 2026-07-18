@@ -111,23 +111,55 @@ function buildNameExpression(layerNames: readonly string[]): string {
 }
 
 /**
- * Layer-filter composable for the Layer Manager palette.
+ * Removes duplicate nested filters under {@link filter} (same name + kind).
+ *
+ * Some drawings expose nested ACLYDICTIONARY entries twice when reading
+ * Layer Manager filters, which otherwise shows each child twice in the UI.
+ */
+function dedupeNestedFilters(filter: AcLyLayerFilter): void {
+  const nested = [...filter.getNestedFilters()]
+  const seen = new Set<string>()
+  for (const child of nested) {
+    const key = `${child.isIdFilter() ? 'g' : 'f'}:${child.name.toLowerCase()}`
+    if (seen.has(key)) {
+      filter.removeNested(child)
+      continue
+    }
+    seen.add(key)
+    dedupeNestedFilters(child)
+  }
+}
+
+/**
+ * Currently selected layer-filter tree node id.
+ *
+ * Shared module-wide so Layer Manager, ribbon Layer panel, and other
+ * consumers apply the same filter.
+ */
+const selectedFilterId = ref<string>(LAYER_FILTER_ALL)
+
+/**
+ * Layer-filter composable for Layer Manager and other layer pickers.
  *
  * Reads the AutoCAD Layer Properties Manager tree from
  * {@link AcDbDatabase.layerFilters} (`AcLyLayerFilter` / `AcLyLayerGroup`),
  * not the flat {@link AcDbDatabase.objects.layerFilter} index dictionary.
  *
+ * The selected filter is shared globally; the filter tree snapshot is per caller.
+ *
  * @param editor - Application document manager that owns the active drawing.
  */
 export function useLayerFilters(editor: AcApDocManager) {
   const filterTree = reactive<LayerFilterTreeNodeInfo[]>([])
-  const selectedFilterId = ref<string>(LAYER_FILTER_ALL)
 
   const getCurrentDatabase = () => editor.curDocument?.database
 
   const syncFromDatabase = () => {
     const db = getCurrentDatabase()
     const root = db?.layerFilters.root
+    if (root) {
+      dedupeNestedFilters(root)
+    }
     const nested = root
       ? root
           .getNestedFilters()
@@ -294,7 +326,7 @@ export function useLayerFilters(editor: AcApDocManager) {
   return {
     /** Nested filter nodes under the synthetic `All` root (excluding built-ins). */
     filterTree,
-    /** Currently selected filter tree node id. */
+    /** Currently selected filter tree node id (shared globally). */
     selectedFilterId,
     /** Whether the selected filter accepts the given layer record. */
     matchesSelectedFilter,

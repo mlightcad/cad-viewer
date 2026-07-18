@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+  <!-- Lock body (hollow rectangle) -->
+  <path d="M3.75,9.25H16.25V17.75H3.75Zm1.5,1.5v5.5h9.5v-5.5Z" />
+  <!-- Keyhole stem -->
+  <rect x="9.25" y="11.6" width="1.5" height="2.9" rx="0.4" />
+  <!-- Open shackle: attached on left, open and tilted on right -->
+  <path
+    d="M6.25,9.25V6.6A3.75,3.75,0,0,1,13.4,5.05l1.2-1.35A5.25,5.25,0,0,0,4.75,6.6V9.25Z"
+  />
+</svg>

@@ -601,9 +601,18 @@ export default {
       layerList: {
         name: 'Name',
         on: 'On',
+        freeze: 'Freeze',
+        lock: 'Lock',
+        plot: 'Plot',
         color: 'Color',
+        linetype: 'Linetype',
+        lineweight: 'Lineweight',
+        transparency: 'Transparency',
+        description: 'Description',
         currentLayer: 'Current layer',
-        zoomToLayer: 'Zoomed to the clicked layer "{layer}"'
+        newLayerPlaceholder: 'Layer name',
+        zoomToLayer: 'Zoomed to the clicked layer "{layer}"',
+        lineWeightDefault: 'Default'
       }
     },
     countList: {
