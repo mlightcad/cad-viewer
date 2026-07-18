@@ -291,9 +291,9 @@ import {
   ElInputNumber,
   ElOption,
   ElSelect,
-  ElTabPane,
   ElTable,
   ElTableColumn,
+  ElTabPane,
   ElTabs
 } from 'element-plus'
 import { computed, nextTick, reactive, ref, shallowRef, watch } from 'vue'
@@ -308,12 +308,12 @@ import {
   useLayers
 } from '../../composable'
 import { select as selectIcon } from '../../svg'
-import MlBaseDialog from '../common/MlBaseDialog.vue'
-import MlColorDropdown from '../common/MlColorDropdown.vue'
 import {
   buildLineTypeOptions,
   type LineTypeOption
 } from '../common/lineTypeOptions'
+import MlBaseDialog from '../common/MlBaseDialog.vue'
+import MlColorDropdown from '../common/MlColorDropdown.vue'
 import MlLineTypeSelect from '../common/MlLineTypeSelect.vue'
 import MlLineWeightSelect from '../common/MlLineWeightSelect.vue'
 
