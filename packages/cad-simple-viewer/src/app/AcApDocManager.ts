@@ -86,6 +86,7 @@ import {
   AcEdOpenMode
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
+import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 import { AcTrView2d } from '../view'
 import type { AcTrLayout } from '../view/AcTrLayout'
 import { AcApBusyIndicator } from './AcApBusyIndicator'
@@ -93,7 +94,6 @@ import { acapBindCommandServices } from './AcApCommandServices'
 import { AcApContext } from './AcApContext'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
-import { AcApXrefManager } from './AcApXrefManager'
 import {
   acapInstallOpenFileDialog,
   type AcApOpenDocumentDefaultsResolver,
@@ -106,11 +106,11 @@ import {
   DEFAULT_WEBWORKER_FILE_URLS,
   resetWebworkerReadinessCache
 } from './AcApWebworkerReadiness'
+import { AcApXrefManager } from './AcApXrefManager'
 import {
   AcApOpenDatabaseOptions,
   AcApOpenViewMode
 } from './AcDbOpenDatabaseOptions'
-import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
 /** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */
