@@ -337,8 +337,8 @@
 
 <script setup lang="ts">
 import { AcCmColor, AcGiLineWeight } from '@mlightcad/data-model'
-import { ElCheckbox, ElInput, ElTable, ElTableColumn } from 'element-plus'
 import type { InputInstance } from 'element-plus'
+import { ElCheckbox, ElInput, ElTable, ElTableColumn } from 'element-plus'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -353,9 +353,9 @@ import {
   layerThawed,
   layerUnlocked
 } from '../../svg'
+import { MlColorPickerDlg } from '../dialog'
 import MlLineTypeSelect from './MlLineTypeSelect.vue'
 import MlLineWeightSelect from './MlLineWeightSelect.vue'
-import { MlColorPickerDlg } from '../dialog'
 
 /** Layer table row: real layer or an in-progress new-layer draft. */
 export interface MlLayerTableRow extends LayerInfo {

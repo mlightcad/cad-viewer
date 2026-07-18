@@ -172,11 +172,11 @@ import {
   useLayers
 } from '../../composable'
 import { layerDelete, layerNew, layerSetCurrent } from '../../svg'
-import MlLayerTable from '../common/MlLayerTable.vue'
 import type {
   MlLayerTableChangeField,
   MlLayerTableRow
 } from '../common/MlLayerTable.vue'
+import MlLayerTable from '../common/MlLayerTable.vue'
 
 const { t } = useI18n()
 
