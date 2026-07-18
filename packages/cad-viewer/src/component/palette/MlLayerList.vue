@@ -175,7 +175,7 @@ import { layerDelete, layerNew, layerSetCurrent } from '../../svg'
 import type {
   MlLayerTableChangeField,
   MlLayerTableRow
-} from '../common/MlLayerTable.vue'
+} from '../common/MlLayerTable'
 import MlLayerTable from '../common/MlLayerTable.vue'
 
 const { t } = useI18n()

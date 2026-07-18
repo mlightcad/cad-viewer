@@ -342,7 +342,6 @@ import { ElCheckbox, ElInput, ElTable, ElTableColumn } from 'element-plus'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LayerInfo } from '../../composable'
 import { colorName } from '../../locale'
 import {
   layerLight,
@@ -354,23 +353,11 @@ import {
   layerUnlocked
 } from '../../svg'
 import { MlColorPickerDlg } from '../dialog'
+import type { MlLayerTableChangeField, MlLayerTableRow } from './MlLayerTable'
 import MlLineTypeSelect from './MlLineTypeSelect.vue'
 import MlLineWeightSelect from './MlLineWeightSelect.vue'
 
-/** Layer table row: real layer or an in-progress new-layer draft. */
-export interface MlLayerTableRow extends LayerInfo {
-  isDraft?: boolean
-}
-
-export type MlLayerTableChangeField =
-  | 'on'
-  | 'frozen'
-  | 'locked'
-  | 'plottable'
-  | 'linetype'
-  | 'lineWeight'
-  | 'transparency'
-  | 'description'
+export type { MlLayerTableChangeField, MlLayerTableRow } from './MlLayerTable'
 
 const DRAFT_ROW_KEY = '__ml_draft_new_layer__'
 
