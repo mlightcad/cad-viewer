@@ -13,6 +13,7 @@ export default {
   ribbon: {
     tab: {
       home: 'Home',
+      insert: 'Insert',
       tools: 'Tools',
       hatchContext: 'Hatch',
       mtextEditorContext: 'Text Editor'
@@ -211,7 +212,8 @@ export default {
       properties: 'Properties',
       utilities: 'Utilities',
       annotation: 'Annotation',
-      measurement: 'Measurement'
+      measurement: 'Measurement',
+      reference: 'Reference'
     },
     property: {
       color: 'Color',
@@ -285,6 +287,9 @@ export default {
         'Open the Missing / External Resources palette for fonts, images, and xrefs.',
       drawingUnits:
         'Open Drawing Units to set coordinate formats, precision, and insertion scale.',
+      attachDwg:
+        'Attach a DWG or DXF drawing as an external reference (XATTACH).',
+      attachImage: 'Attach a raster image as an external reference (IMAGEATTACH).',
       agent:
         'Open the CAD Agent palette tab to draw geometry using natural language.',
       propertyColor:
@@ -385,6 +390,8 @@ export default {
       quickSelect: 'Quick\nSelect',
       countList: 'Count',
       drawingUnits: 'Drawing\nUnits',
+      attachDwg: 'Attach\nDWG',
+      attachImage: 'Attach\nImage',
       agent: 'CAD\nAgent'
     }
   },

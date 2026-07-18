@@ -227,6 +227,7 @@ import { ArrowDown, Paperclip } from '@element-plus/icons-vue'
 import {
   AcApDocManager,
   acapRunDatabaseEdit,
+  AcApXrefManager,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbRasterImage } from '@mlightcad/data-model'
@@ -402,15 +403,16 @@ const loadBufferAsOverlay = async (
   sourcePath?: string
 ) => {
   try {
-    const existing = xrefOverlays.get(xrefName)
-    if (existing?.overlayId) {
-      AcApDocManager.instance.removeOverlay(existing.overlayId)
-    }
-    const overlayId = await AcApDocManager.instance.loadOverlay(fileName, buffer)
+    const session = await AcApXrefManager.instance.attachOverlay({
+      blockName: xrefName,
+      fileName,
+      content: buffer,
+      sourcePath: sourcePath?.trim() || fileName
+    })
     setOverlayState(xrefName, {
-      overlayId,
-      visible: true,
-      sourceName: sourcePath?.trim() || fileName
+      overlayId: session.overlayId,
+      visible: session.visible,
+      sourceName: session.sourcePath
     })
     selectedKey.value = `xref:${xrefName}`
     eventBus.emit('missed-data-changed', {})
@@ -562,7 +564,7 @@ const handleUrlXref = async (row: ExternalRefRow) => {
 const handleXrefVisibility = (row: ExternalRefRow, value: CheckboxValueType) => {
   if (!row.overlayId) return
   const visible = value === true
-  AcApDocManager.instance.setOverlayVisible(row.overlayId, visible)
+  AcApXrefManager.instance.setVisibleByBlockName(row.name, visible)
   const state = xrefOverlays.get(row.name)
   if (state) {
     state.visible = visible
@@ -571,7 +573,7 @@ const handleXrefVisibility = (row: ExternalRefRow, value: CheckboxValueType) => 
 
 const handleUnloadXref = (row: ExternalRefRow) => {
   if (!row.overlayId) return
-  AcApDocManager.instance.removeOverlay(row.overlayId)
+  AcApXrefManager.instance.unloadByBlockName(row.name)
   setOverlayState(row.name, undefined)
   eventBus.emit('missed-data-changed', {})
 }

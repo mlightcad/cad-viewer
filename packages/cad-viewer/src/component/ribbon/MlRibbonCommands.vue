@@ -60,6 +60,8 @@ import {
   arcStartEndDirection,
   arcStartEndRadius,
   arcThreePoints,
+  attachDwg,
+  attachImage,
   circleCenterDiameter,
   circleCenterRadius,
   circleTanTanRadius,
@@ -636,6 +638,8 @@ const buildBaseTabs = (
     quickSelect: t('main.ribbon.tooltip.quickSelect'),
     countList: t('main.ribbon.tooltip.countList'),
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
+    attachDwg: t('main.ribbon.tooltip.attachDwg'),
+    attachImage: t('main.ribbon.tooltip.attachImage'),
     agent: t('main.ribbon.tooltip.agent'),
     propertyColor: t('main.ribbon.tooltip.propertyColor'),
     propertyLineType: t('main.ribbon.tooltip.propertyLineType'),
@@ -1464,6 +1468,49 @@ const buildBaseTabs = (
     buildHatchContextualTab(t),
     buildMTextContextualTab(t),
     {
+      id: 'insert',
+      title: t('main.ribbon.tab.insert'),
+      groups: [
+        {
+          id: 'insert-reference',
+          title: t('main.ribbon.group.reference'),
+          orientation: 'row',
+          collections: [
+            {
+              id: 'insert-reference-main',
+              layout: 'row',
+              items: [
+                {
+                  id: 'cmd-xattach',
+                  type: 'button',
+                  label: t('main.ribbon.command.attachDwg'),
+                  tooltip: ribbonTooltips.attachDwg,
+                  size: 'large',
+                  props: {
+                    icon: attachDwg,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
+                },
+                {
+                  id: 'cmd-imageattach',
+                  type: 'button',
+                  label: t('main.ribbon.command.attachImage'),
+                  tooltip: ribbonTooltips.attachImage,
+                  size: 'large',
+                  props: {
+                    icon: attachImage,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       id: 'tools',
       title: t('main.ribbon.tab.tools'),
       groups: toolGroups
@@ -1528,6 +1575,8 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-qselect', 'qselect')
   commandByItemId.set('cmd-countlist', 'countlist')
   commandByItemId.set('cmd-drawing-units', 'units')
+  commandByItemId.set('cmd-xattach', 'xattach')
+  commandByItemId.set('cmd-imageattach', 'imageattach')
   if (store.features.agentPlugin) {
     commandByItemId.set('cmd-agent', 'agent')
   }

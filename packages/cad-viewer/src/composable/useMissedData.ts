@@ -1,6 +1,7 @@
 import {
   AcApDocManager,
   AcApSettingManager,
+  AcApXrefManager,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbObjectId } from '@mlightcad/data-model'
@@ -153,16 +154,22 @@ function syncFromCurrentView(): void {
     const nextXrefs = readMissedXrefs(missedData)
     xrefList.splice(0, xrefList.length, ...nextXrefs)
 
-    // Drop overlay geometry + state for xrefs that no longer exist in the drawing
+    // Drop overlay UI state for xrefs that no longer exist and have no session.
+    // XATTACH / toolbar sessions live in AcApXrefManager even when not "missed".
     const names = new Set(nextXrefs.map(x => x.name))
-    const docManager = AcApDocManager.instance
     for (const name of [...xrefOverlays.keys()]) {
       if (names.has(name)) continue
-      const state = xrefOverlays.get(name)
-      if (state?.overlayId) {
-        docManager.removeOverlay(state.overlayId)
-      }
+      if (AcApXrefManager.instance.getSessionByBlockName(name)) continue
       xrefOverlays.delete(name)
+    }
+
+    // Mirror manager sessions into reactive UI state (XATTACH + palette resolve).
+    for (const session of AcApXrefManager.instance.sessions) {
+      xrefOverlays.set(session.blockName, {
+        overlayId: session.overlayId,
+        visible: session.visible,
+        sourceName: session.sourcePath
+      })
     }
   } catch {
     // Viewer may not be fully initialized yet; keep previous state.

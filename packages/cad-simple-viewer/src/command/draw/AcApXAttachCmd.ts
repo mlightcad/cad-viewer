@@ -1,11 +1,6 @@
 import {
-  AcDbBlockReference,
-  AcDbBlockTableRecord,
-  AcDbBlockTableRecordFlag,
   AcDbDatabase,
-  AcDbEntity,
   AcDbFileType,
-  AcDbLayerTableRecord,
   AcDbPolyline,
   AcDbViewport,
   AcGeBox3d,
@@ -14,7 +9,11 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../../app'
+import {
+  AcApContext,
+  AcApDocManager,
+  AcApXrefManager
+} from '../../app'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -23,10 +22,12 @@ import {
   AcEdPromptAngleOptions,
   AcEdPromptDoubleOptions,
   AcEdPromptPointOptions,
-  AcEdPromptStatus
+  AcEdPromptStatus,
+  eventBus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import { acapRunDatabaseEdit } from '../../util/AcApDatabaseEdit'
+import { acapWithSecondaryDatabase } from '../../util/AcApSecondaryDatabase'
 
 /** Accept list for drawing file pickers (AutoCAD XATTACH formats). */
 const XREF_FILE_ACCEPT = '.dwg,.dxf'
@@ -109,7 +110,6 @@ function resolveSourceExtents(sourceDb: AcDbDatabase): AcGeBox3d {
   const extents = sourceDb.extents?.clone?.() ?? new AcGeBox3d()
   if (!extents.isEmpty()) return extents
 
-  // Fallback: union geometric extents of top-level model-space entities.
   const box = new AcGeBox3d()
   for (const entity of sourceDb.tables.blockTable.modelSpace.newIterator()) {
     if (entity instanceof AcDbViewport) continue
@@ -129,37 +129,6 @@ function resolveSourceExtents(sourceDb: AcDbDatabase): AcGeBox3d {
     new AcGePoint3d(0, 0, 0),
     new AcGePoint3d(DEFAULT_EXTENT_SIZE, DEFAULT_EXTENT_SIZE, 0)
   )
-}
-
-function ensureLayersFromSource(hostDb: AcDbDatabase, sourceDb: AcDbDatabase) {
-  const hostLayers = hostDb.tables.layerTable
-  for (const layer of sourceDb.tables.layerTable.newIterator()) {
-    if (hostLayers.has(layer.name)) continue
-    const clone = layer.clone() as AcDbLayerTableRecord
-    hostLayers.add(clone)
-  }
-}
-
-function shouldBindEntity(entity: AcDbEntity): boolean {
-  // Match overlay attach scope: top-level geometry only. Nested INSERT
-  // expansion and viewports are skipped until full xref bind is available.
-  if (entity instanceof AcDbViewport) return false
-  if (entity instanceof AcDbBlockReference) return false
-  return true
-}
-
-function bindXrefContent(
-  xrefRecord: AcDbBlockTableRecord,
-  sourceDb: AcDbDatabase
-) {
-  const entities: AcDbEntity[] = []
-  for (const entity of sourceDb.tables.blockTable.modelSpace.newIterator()) {
-    if (!shouldBindEntity(entity)) continue
-    entities.push(entity.clone() as AcDbEntity)
-  }
-  if (entities.length > 0) {
-    xrefRecord.appendEntity(entities)
-  }
 }
 
 /**
@@ -225,7 +194,6 @@ class AcApXAttachJig extends AcEdPreviewJig<AcGePoint3dLike | number> {
       return
     }
     if (this._mode === 'rotation') {
-      // Angle prompts provide degrees.
       this.setRotationRad((value * Math.PI) / 180)
     }
   }
@@ -258,8 +226,8 @@ class AcApXAttachJig extends AcEdPreviewJig<AcGePoint3dLike | number> {
  * 2. Specify insertion point
  * 3. Specify scale factor (default 1)
  * 4. Specify rotation angle (default 0)
- * 5. Create an xref {@link AcDbBlockTableRecord} (with bound model-space content)
- *    and append an {@link AcDbBlockReference} INSERT
+ * 5. Create an empty xref {@link AcDbBlockTableRecord} + INSERT on the host
+ *    (metadata only), and render source geometry as a read-only overlay.
  */
 export class AcApXAttachCmd extends AcEdCommand {
   constructor() {
@@ -282,11 +250,13 @@ export class AcApXAttachCmd extends AcEdCommand {
       const buffer = await file.arrayBuffer()
       sourceDb = await AcApDocManager.instance.withBusyIndicator(async () => {
         const db = new AcDbDatabase()
-        await db.read(
-          buffer,
-          { readOnly: true },
-          extension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
-        )
+        await acapWithSecondaryDatabase(db, async () => {
+          await db.read(
+            buffer,
+            { readOnly: true },
+            extension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
+          )
+        })
         return db
       }, AcApI18n.t('jig.xattach.loading'))
     } catch {
@@ -374,28 +344,38 @@ export class AcApXAttachCmd extends AcEdCommand {
       const db = context.doc.database
       const blockName = uniqueXrefName(db, file.name)
       const filePath = resolveLocalFilePath(file)
+      const transform = {
+        position: insertionPoint,
+        scale,
+        rotationRad
+      }
 
-      acapRunDatabaseEdit(db, 'XATTACH', () => {
-        ensureLayersFromSource(db, sourceDb)
-
-        const xrefRecord = new AcDbBlockTableRecord()
-        xrefRecord.name = blockName
-        xrefRecord.pathName = filePath
-        xrefRecord.flags =
-          AcDbBlockTableRecordFlag.Xref |
-          AcDbBlockTableRecordFlag.Resolved |
-          AcDbBlockTableRecordFlag.Referenced
-        xrefRecord.origin =
-          sourceDb.tables.blockTable.modelSpace.origin.clone()
-        db.tables.blockTable.add(xrefRecord)
-        bindXrefContent(xrefRecord, sourceDb)
-
-        const insert = new AcDbBlockReference(blockName)
-        insert.position = insertionPoint
-        insert.scaleFactors = new AcGePoint3d(scale, scale, scale)
-        insert.rotation = rotationRad
-        db.tables.blockTable.modelSpace.appendEntity(insert)
+      // Attach overlay first so a failed display load never leaves host
+      // BTR/INSERT metadata without geometry. If host metadata write fails,
+      // unload the overlay to keep display and database in sync.
+      const session = await AcApXrefManager.instance.attachOverlay({
+        blockName,
+        fileName: file.name,
+        sourceDb,
+        sourcePath: filePath,
+        transform
       })
+      try {
+        acapRunDatabaseEdit(db, 'XATTACH', () => {
+          const { insert } = AcApXrefManager.createHostXrefInsert(
+            db,
+            blockName,
+            filePath,
+            transform,
+            sourceDb.tables.blockTable.modelSpace.origin
+          )
+          session.insertId = insert.objectId
+        })
+      } catch (error) {
+        AcApXrefManager.instance.unload(session.id)
+        throw error
+      }
+      eventBus.emit('missed-data-changed', {})
     } finally {
       jig.end()
     }
