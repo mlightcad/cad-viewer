@@ -2,9 +2,9 @@ import {
   AcDbEntity,
   AcGeCircArc3d,
   AcGeEllipseArc3d,
+  acgeGetOcsReferenceVector,
   AcGePoint3dLike,
-  AcGeVector3d,
-  acgeGetOcsReferenceVector
+  AcGeVector3d
 } from '@mlightcad/data-model'
 
 import { AcTrBufferGeometryUtil } from './AcTrBufferGeometryUtil'

@@ -435,17 +435,17 @@ const selectedLayerNamesForFilter = () => {
 }
 
 const promptName = async (
-  titleKey: string,
-  messageKey: string,
+  title: string,
+  message: string,
   defaultValue = ''
 ) => {
   try {
-    const { value } = await ElMessageBox.prompt(t(messageKey), t(titleKey), {
+    const { value } = await ElMessageBox.prompt(message, title, {
       confirmButtonText: t('main.toolPalette.layerManager.prompts.confirm'),
       cancelButtonText: t('main.toolPalette.layerManager.prompts.cancel'),
       inputValue: defaultValue,
       inputPattern: /\S+/,
-      inputErrorMessage: t(messageKey)
+      inputErrorMessage: message
     })
     return value.trim()
   } catch {
@@ -455,8 +455,8 @@ const promptName = async (
 
 const handleNewFilter = async () => {
   const name = await promptName(
-    'main.toolPalette.layerManager.prompts.newFilterTitle',
-    'main.toolPalette.layerManager.prompts.newFilterName'
+    t('main.toolPalette.layerManager.prompts.newFilterTitle'),
+    t('main.toolPalette.layerManager.prompts.newFilterName')
   )
   if (!name) return
 
@@ -481,8 +481,8 @@ const handleNewFilter = async () => {
 
 const handleNewFilterGroup = async () => {
   const name = await promptName(
-    'main.toolPalette.layerManager.prompts.newFilterGroupTitle',
-    'main.toolPalette.layerManager.prompts.newFilterGroupName'
+    t('main.toolPalette.layerManager.prompts.newFilterGroupTitle'),
+    t('main.toolPalette.layerManager.prompts.newFilterGroupName')
   )
   if (!name) return
 
@@ -507,8 +507,8 @@ const handleNewFilterGroup = async () => {
 
 const handleNewLayer = async () => {
   const name = await promptName(
-    'main.toolPalette.layerManager.prompts.newLayerTitle',
-    'main.toolPalette.layerManager.prompts.newLayerName'
+    t('main.toolPalette.layerManager.prompts.newLayerTitle'),
+    t('main.toolPalette.layerManager.prompts.newLayerName')
   )
   if (!name) return
 
@@ -566,14 +566,16 @@ const handleDeleteLayer = () => {
 
   const result = new AcApLayerService(db).deleteLayer(layer.name)
   if (!result.ok) {
-    const messageKey =
-      result.reason === 'layer_0'
-        ? 'main.toolPalette.layerManager.messages.cannotDeleteLayer0'
-        : result.reason === 'current_layer'
-          ? 'main.toolPalette.layerManager.messages.cannotDeleteCurrent'
-          : 'main.toolPalette.layerManager.messages.layerDeleteFailed'
+    let message = t('main.toolPalette.layerManager.messages.layerDeleteFailed', {
+      name: layer.name
+    })
+    if (result.reason === 'layer_0') {
+      message = t('main.toolPalette.layerManager.messages.cannotDeleteLayer0')
+    } else if (result.reason === 'current_layer') {
+      message = t('main.toolPalette.layerManager.messages.cannotDeleteCurrent')
+    }
     ElMessage({
-      message: t(messageKey, { name: layer.name }),
+      message,
       type: 'warning'
     })
     return
@@ -600,12 +602,13 @@ const handleSetCurrent = () => {
 
   const ok = setCurrentLayer(layer.name)
   ElMessage({
-    message: t(
-      ok
-        ? 'main.toolPalette.layerManager.messages.setCurrentSuccess'
-        : 'main.toolPalette.layerManager.messages.setCurrentFailed',
-      { name: layer.name }
-    ),
+    message: ok
+      ? t('main.toolPalette.layerManager.messages.setCurrentSuccess', {
+          name: layer.name
+        })
+      : t('main.toolPalette.layerManager.messages.setCurrentFailed', {
+          name: layer.name
+        }),
     type: ok ? 'success' : 'error'
   })
 }
