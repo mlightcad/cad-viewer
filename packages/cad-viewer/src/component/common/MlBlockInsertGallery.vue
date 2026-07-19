@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ArrowDown, ArrowUp } from '@element-plus/icons-vue'
+import {
+  AcApBlockInsertSession,
+  AcApDocManager
+} from '@mlightcad/cad-simple-viewer'
 import {
   ElButton,
   ElDropdown,
   ElIcon,
   useGlobalConfig
 } from 'element-plus'
-import {
-  AcApBlockInsertSession,
-  AcApDocManager
-} from '@mlightcad/cad-simple-viewer'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { insertBlock } from '../../svg'
 import {
   isInsertableBlockName,
   rememberRecentBlock,
   useInsertableBlocks
 } from '../../composable/useInsertableBlocks'
+import { insertBlock } from '../../svg'
 
 defineOptions({
   name: 'MlBlockInsertGallery'
