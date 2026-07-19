@@ -66,11 +66,13 @@ export default defineConfig(({ command, mode }) => {
       targets: [
         {
           src: './node_modules/@mlightcad/cad-simple-viewer/dist/*-worker.js',
-          dest: 'assets'
+          dest: 'assets',
+          rename: { stripBase: true }
         },
         {
           src: VIEWER_RUNTIME_SRC,
-          dest: 'assets'
+          dest: 'assets',
+          rename: { stripBase: true }
         }
       ]
     })

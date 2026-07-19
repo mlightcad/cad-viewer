@@ -1,10 +1,10 @@
-import { ref } from 'vue'
 import {
   AcApBlockPreviewConvertor,
   AcApDocManager,
   isInsertableBlockName,
   yieldToMain
 } from '@mlightcad/cad-simple-viewer'
+import { ref } from 'vue'
 
 export interface InsertableBlockItem {
   name: string
