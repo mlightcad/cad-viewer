@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-simple-viewer",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -41,9 +41,9 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "^1.11.0",
-    "@mlightcad/dxf-json-converter": "^1.11.0",
-    "@mlightcad/libredwg-converter": "^3.11.0",
+    "@mlightcad/data-model": "^1.11.1",
+    "@mlightcad/dxf-json-converter": "^1.11.1",
+    "@mlightcad/libredwg-converter": "^3.11.1",
     "@mlightcad/mtext-input-box": "^0.2.21",
     "@mlightcad/mtext-renderer": "^0.11.10",
     "@mlightcad/three-renderer": "workspace:*",
@@ -57,8 +57,8 @@
     "three": "^0.172.0"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.11.0",
-    "@mlightcad/dxf-json-converter": "^1.11.0",
+    "@mlightcad/data-model": "^1.11.1",
+    "@mlightcad/dxf-json-converter": "^1.11.1",
     "lodash-es": "4.17.21",
     "three": "^0.172.0"
   }

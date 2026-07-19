@@ -1,4 +1,4 @@
-# @mlightcad/cad-simple-ui-plugin
+# @mlightcad/cad-agent-plugin
 
 ## 1.5.8
 
@@ -7,11 +7,3 @@
 - feat: expanded the CAD Viewer with Blocks, Layer Manager, Attribute Editor, Count, Memory, and Missing Resources palettes, plus -INSERT support, Xref overlays, overlay drawing support, and numerous rendering, interaction, and workflow improvements
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.5.8
-
-## 1.5.7
-
-### Patch Changes
-
-- feat: added file open dialog, web worker readiness, collapsible toolbar UI, layer/entity refactors, undo/redo, GPU batch previews, and synchronization fixes
-- Updated dependencies
-  - @mlightcad/cad-simple-viewer@1.5.7
