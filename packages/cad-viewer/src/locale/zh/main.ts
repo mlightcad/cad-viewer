@@ -213,6 +213,11 @@ export default {
       reference: '参照',
       block: '块'
     },
+    insertBlock: {
+      empty: '没有可用的块',
+      currentDrawing: '当前图形',
+      previewMenu: '块预览画廊'
+    },
     property: {
       color: '颜色',
       lineType: '线型',
@@ -283,6 +288,7 @@ export default {
       drawingUnits: '打开图形单位对话框，设置坐标格式、精度与插入缩放单位。',
       attachDwg: '将 DWG 或 DXF 图纸作为外部参照附着（XATTACH）。',
       attachImage: '将光栅图像作为外部参照附着（IMAGEATTACH）。',
+      insert: '打开块工具选项板以浏览并插入块定义（INSERT）。',
       editAttributes: '打开增强属性编辑器，编辑块属性值与显示特性（ATTEDIT）。',
       agent: '打开 CAD Agent 工具面板，使用自然语言描述并绘制图形。',
       propertyColor: '设置新建对象或当前选中对象使用的颜色。',
@@ -362,6 +368,7 @@ export default {
       drawingUnits: '图形单位',
       attachDwg: '附着\nDWG',
       attachImage: '附着\n图像',
+      insert: '插入',
       editAttributes: '编辑属性',
       agent: 'CAD Agent'
     }
@@ -698,6 +705,32 @@ export default {
         category: '类别',
         font: '字体'
       }
+    },
+    blocks: {
+      tab: '块',
+      title: '块',
+      tabCurrentDrawing: '当前图形',
+      tabRecent: '最近使用',
+      tabFavorites: '收藏夹',
+      tabLibraries: '库',
+      sectionCurrentDrawing: '当前图形中的块',
+      sectionRecent: '最近使用的块',
+      sectionFavorites: '收藏的块',
+      sectionLibraries: '块库',
+      filterPlaceholder: '过滤器...',
+      empty: '没有可用的块',
+      emptyRecent: '没有最近插入的块',
+      emptyFavorites: '没有收藏的块',
+      emptyLibraries: '尚未配置块库',
+      toggleFavorite: '切换收藏',
+      options: '选项',
+      insertionPoint: '插入点',
+      scale: '比例',
+      rotation: '旋转',
+      angle: '角度',
+      autoPlacement: '自动放置',
+      repeatPlacement: '重复放置',
+      explode: '分解'
     }
   },
   colorDropdown: {

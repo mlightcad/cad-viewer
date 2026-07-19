@@ -697,6 +697,16 @@ export default {
     invalidScale: '比例因子必须大于 0。',
     decodeFailed: '无法读取所选图像文件。'
   },
+  insert: {
+    blockName: '输入块名：',
+    insertionPoint: '指定插入点：',
+    scale: '指定比例因子：',
+    rotation: '指定旋转角度：',
+    invalidScale: '比例因子必须大于 0。',
+    invalidBlockName: '无效的块名。',
+    blockNotFound: '未找到块',
+    xrefNotAllowed: '不能使用 -INSERT 插入外部参照。'
+  },
   xattach: {
     insertionPoint: '指定插入点：',
     scale: '指定比例因子：',

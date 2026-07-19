@@ -103,6 +103,9 @@ export default {
     imageattach: {
       description: '将光栅图像作为外部参照附着到当前图形'
     },
+    '-insert': {
+      description: '将块定义插入到当前图形（命令行）'
+    },
     xattach: {
       description: '将 DWG 或 DXF 图形作为外部参照附着到当前图形'
     },

@@ -111,6 +111,7 @@ import {
   splineFitPoints,
   xline
 } from '../../svg'
+import MlBlockInsertGallery from '../common/MlBlockInsertGallery.vue'
 import MlLayerSelect from '../common/MlLayerSelect.vue'
 import MlCharacterMapDialog from '../dialog/MlCharacterMapDialog.vue'
 import MlRibbonFileName from './MlRibbonFileName.vue'
@@ -682,6 +683,7 @@ const buildBaseTabs = (
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
     attachDwg: t('main.ribbon.tooltip.attachDwg'),
     attachImage: t('main.ribbon.tooltip.attachImage'),
+    insert: t('main.ribbon.tooltip.insert'),
     editAttributes: t('main.ribbon.tooltip.editAttributes'),
     agent: t('main.ribbon.tooltip.agent'),
     propertyColor: t('main.ribbon.tooltip.propertyColor'),
@@ -1523,6 +1525,20 @@ const buildBaseTabs = (
               id: 'insert-block-main',
               layout: 'row',
               items: [
+                {
+                  id: 'cmd-insert-block',
+                  type: 'custom',
+                  label: t('main.ribbon.command.insert'),
+                  tooltip: ribbonTooltips.insert,
+                  size: 'large',
+                  props: {
+                    component: MlBlockInsertGallery,
+                    componentProps: {
+                      label: t('main.ribbon.command.insert'),
+                      tooltip: ribbonTooltips.insert
+                    }
+                  }
+                },
                 {
                   id: 'cmd-attedit',
                   type: 'button',

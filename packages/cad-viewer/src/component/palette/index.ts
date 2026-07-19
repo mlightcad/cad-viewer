@@ -1,3 +1,4 @@
+export { default as MlBlocksPalette } from './MlBlocksPalette.vue'
 export { default as MlCountList } from './MlCountList.vue'
 export { default as MlExternalReferences } from './MlExternalReferences.vue'
 export { default as MlMemoryProfile } from './MlMemoryProfile.vue'

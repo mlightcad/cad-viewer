@@ -707,6 +707,16 @@ export default {
     invalidScale: 'Scale factor must be greater than 0.',
     decodeFailed: 'Failed to read the selected image file.'
   },
+  insert: {
+    blockName: 'Enter block name:',
+    insertionPoint: 'Specify insertion point:',
+    scale: 'Specify scale factor:',
+    rotation: 'Specify rotation angle:',
+    invalidScale: 'Scale factor must be greater than 0.',
+    invalidBlockName: 'Invalid block name.',
+    blockNotFound: 'Block not found',
+    xrefNotAllowed: 'Cannot insert an external reference with -INSERT.'
+  },
   xattach: {
     insertionPoint: 'Specify insertion point:',
     scale: 'Specify scale factor:',

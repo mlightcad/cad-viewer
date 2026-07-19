@@ -42,11 +42,13 @@ export default defineConfig(() => {
         targets: [
           {
             src: './node_modules/@mlightcad/cad-simple-viewer/dist/*-worker.js',
-            dest: 'workers'
+            dest: 'workers',
+            rename: { stripBase: true }
           },
           {
             src: VIEWER_RUNTIME_SRC,
-            dest: ''
+            dest: '',
+            rename: { stripBase: true }
           }
         ]
       })

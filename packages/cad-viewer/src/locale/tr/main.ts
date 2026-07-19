@@ -217,6 +217,11 @@ export default {
       reference: 'Referans',
       block: 'Blok'
     },
+    insertBlock: {
+      empty: 'Kullanılabilir blok yok',
+      currentDrawing: 'Geçerli Çizim',
+      previewMenu: 'Blok önizleme galerisi'
+    },
     property: {
       color: 'Renk',
       lineType: 'Çizgi Tipi',
@@ -296,6 +301,8 @@ export default {
         'Bir DWG veya DXF çizimini harici referans olarak ekleyin (XATTACH).',
       attachImage:
         'Bir raster görüntüyü harici referans olarak ekleyin (IMAGEATTACH).',
+      insert:
+        'Blok tanımlarını göz atmak ve eklemek için Bloklar paletini açın (INSERT).',
       editAttributes:
         'Blok öznitelik değerlerini ve görüntü özelliklerini düzenlemek için Gelişmiş Öznitelik Düzenleyiciyi açın (ATTEDIT).',
       agent:
@@ -398,6 +405,7 @@ export default {
       drawingUnits: 'Çizim\nBirimleri',
       attachDwg: 'DWG\nEkle',
       attachImage: 'Görüntü\nEkle',
+      insert: 'Ekle',
       editAttributes: 'Öznitelikleri\nDüzenle',
       agent: 'CAD\nAjanı'
     }
@@ -744,6 +752,32 @@ export default {
         category: 'Kategori',
         font: 'Yazı tipi'
       }
+    },
+    blocks: {
+      tab: 'Bloklar',
+      title: 'Bloklar',
+      tabCurrentDrawing: 'Geçerli Çizim',
+      tabRecent: 'Son Kullanılanlar',
+      tabFavorites: 'Favoriler',
+      tabLibraries: 'Kitaplıklar',
+      sectionCurrentDrawing: 'Geçerli Çizim Blokları',
+      sectionRecent: 'Son Kullanılan Bloklar',
+      sectionFavorites: 'Favori Bloklar',
+      sectionLibraries: 'Blok Kitaplıkları',
+      filterPlaceholder: 'Filtrele...',
+      empty: 'Kullanılabilir blok yok',
+      emptyRecent: 'Son eklenen blok yok',
+      emptyFavorites: 'Favori blok yok',
+      emptyLibraries: 'Yapılandırılmış kitaplık yok',
+      toggleFavorite: 'Favoriyi değiştir',
+      options: 'Seçenekler',
+      insertionPoint: 'Ekleme Noktası',
+      scale: 'Ölçek',
+      rotation: 'Döndürme',
+      angle: 'Açı',
+      autoPlacement: 'Otomatik Yerleştirme',
+      repeatPlacement: 'Yerleştirmeyi Tekrarla',
+      explode: 'Patlat'
     }
   },
   colorDropdown: {

@@ -1,6 +1,7 @@
 export * from './AcApAttEditCmd'
 export * from './AcApCountListCmd'
 export * from './AcApHatchRibbonCmd'
+export * from './AcApInsertPaletteCmd'
 export * from './AcApLayerStateCmd'
 export * from './AcApMemCmd'
 export * from './AcApMissedDataCmd'

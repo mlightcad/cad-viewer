@@ -706,6 +706,16 @@ export default {
     invalidScale: 'Ölçek faktörü 0 dan büyük olmalıdır.',
     decodeFailed: 'Seçilen görüntü dosyası okunamadı.'
   },
+  insert: {
+    blockName: 'Blok adını girin:',
+    insertionPoint: 'Ekleme noktasını belirtin:',
+    scale: 'Ölçek faktörünü belirtin:',
+    rotation: 'Döndürme açısını belirtin:',
+    invalidScale: 'Ölçek faktörü 0 dan büyük olmalıdır.',
+    invalidBlockName: 'Geçersiz blok adı.',
+    blockNotFound: 'Blok bulunamadı',
+    xrefNotAllowed: 'Harici referans -INSERT ile eklenemez.'
+  },
   xattach: {
     insertionPoint: 'Ekleme noktasını belirtin:',
     scale: 'Ölçek faktörünü belirtin:',

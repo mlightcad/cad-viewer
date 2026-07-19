@@ -118,6 +118,10 @@ export default {
       description:
         'Geçerli çizime harici başvuru olarak bir raster görüntü ekler'
     },
+    '-insert': {
+      description:
+        'Bir blok tanımını geçerli çizime ekler (komut satırı)'
+    },
     xattach: {
       description:
         'Geçerli çizime harici başvuru olarak bir DWG veya DXF çizimi ekler'

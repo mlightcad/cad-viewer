@@ -14,6 +14,7 @@ import {
   AcApCountListCmd,
   AcApDrawingUnitsCmd,
   AcApExportHtmlDlgCmd,
+  AcApInsertPaletteCmd,
   AcApLayerStateCmd,
   AcApMemCmd,
   AcApMissedDataCmd,
@@ -94,6 +95,13 @@ export const registerCmds = () => {
       'properties',
       'properties',
       new AcApPropertiesCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'insert',
+      'insert',
+      new AcApInsertPaletteCmd(),
+      'blockspalette'
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

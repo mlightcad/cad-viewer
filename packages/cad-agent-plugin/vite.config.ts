@@ -24,7 +24,12 @@ export default defineConfig({
     },
     minify: true,
     rollupOptions: {
-      output: createLibRollupOutput(packageId)
+      output: {
+        ...createLibRollupOutput(packageId),
+        // Keep `style.css` so `@mlightcad/cad-agent-plugin/style.css` resolves
+        // (Vite 6 lib mode defaults to `{name}.css` instead of `style.css`).
+        assetFileNames: 'style[extname]'
+      }
     }
   },
   plugins: [vue(), peerDepsExternal() as PluginOption]

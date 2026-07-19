@@ -112,6 +112,10 @@ export default {
       description:
         'Attaches a raster image as an external reference to the current drawing'
     },
+    '-insert': {
+      description:
+        'Inserts a block definition into the current drawing (command-line)'
+    },
     xattach: {
       description:
         'Attaches a DWG or DXF drawing as an external reference to the current drawing'

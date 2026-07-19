@@ -1,3 +1,4 @@
+export * from './AcApBlockPreviewConvertor'
 export * from './AcApConvertToDxfCmd'
 export * from './AcApConvertToPngCmd'
 export * from './AcApEntityPreviewCmd'
