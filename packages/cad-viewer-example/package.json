@@ -23,10 +23,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
-    "@vitejs/plugin-vue": "^5.1.3",
-    "vite": "^5.4.19",
-    "vite-plugin-static-copy": "^3.1.1",
-    "vite-svg-loader": "^5.1.0",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "vite": "^6.4.3",
+    "vite-plugin-static-copy": "^4.1.1",
+    "vite-svg-loader": "^5.1.1",
     "vue-eslint-parser": "^10.4.0",
     "vue-tsc": "^2.1.6"
   },

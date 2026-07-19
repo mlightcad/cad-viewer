@@ -216,6 +216,11 @@ export default {
       reference: 'Reference',
       block: 'Block'
     },
+    insertBlock: {
+      empty: 'No blocks available',
+      currentDrawing: 'Current Drawing',
+      previewMenu: 'Block preview gallery'
+    },
     property: {
       color: 'Color',
       lineType: 'Linetype',
@@ -291,6 +296,8 @@ export default {
       attachDwg:
         'Attach a DWG or DXF drawing as an external reference (XATTACH).',
       attachImage: 'Attach a raster image as an external reference (IMAGEATTACH).',
+      insert:
+        'Open the Blocks palette to browse and insert block definitions (INSERT).',
       editAttributes:
         'Open the Enhanced Attribute Editor to edit block attribute values and display properties (ATTEDIT).',
       agent:
@@ -395,6 +402,7 @@ export default {
       drawingUnits: 'Drawing\nUnits',
       attachDwg: 'Attach\nDWG',
       attachImage: 'Attach\nImage',
+      insert: 'Insert',
       editAttributes: 'Edit\nAttributes',
       agent: 'CAD\nAgent'
     }
@@ -739,6 +747,32 @@ export default {
         category: 'Category',
         font: 'Font'
       }
+    },
+    blocks: {
+      tab: 'Blocks',
+      title: 'Blocks',
+      tabCurrentDrawing: 'Current Drawing',
+      tabRecent: 'Recent',
+      tabFavorites: 'Favorites',
+      tabLibraries: 'Libraries',
+      sectionCurrentDrawing: 'Current Drawing Blocks',
+      sectionRecent: 'Recent Blocks',
+      sectionFavorites: 'Favorite Blocks',
+      sectionLibraries: 'Block Libraries',
+      filterPlaceholder: 'Filter...',
+      empty: 'No blocks available',
+      emptyRecent: 'No recently inserted blocks',
+      emptyFavorites: 'No favorite blocks',
+      emptyLibraries: 'No libraries configured',
+      toggleFavorite: 'Toggle favorite',
+      options: 'Options',
+      insertionPoint: 'Insertion Point',
+      scale: 'Scale',
+      rotation: 'Rotation',
+      angle: 'Angle',
+      autoPlacement: 'Auto-Placement',
+      repeatPlacement: 'Repeat Placement',
+      explode: 'Explode'
     }
   },
   colorDropdown: {

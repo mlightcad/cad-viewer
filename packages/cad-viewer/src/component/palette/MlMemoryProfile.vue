@@ -166,6 +166,7 @@
     <ml-overflow-tabs
       v-model="activeTab"
       :tabs="detailTabs"
+      :more-tabs-label="t('main.toolPalette.moreTabs')"
       class="ml-memory-profile-tabs"
     >
       <div
@@ -490,6 +491,10 @@
 <script setup lang="ts">
 import { ArrowRight, InfoFilled, PieChart } from '@element-plus/icons-vue'
 import {
+  type MlOverflowTab,
+  MlOverflowTabs
+} from '@mlightcad/ui-components'
+import {
   ElAlert,
   ElButton,
   ElIcon,
@@ -505,8 +510,6 @@ import {
   formatMemoryBytes,
   useMemoryProfile
 } from '../../composable/useMemoryProfile'
-import type { MlOverflowTab } from '../common/MlOverflowTab'
-import MlOverflowTabs from '../common/MlOverflowTabs.vue'
 
 const { t } = useI18n()
 const {

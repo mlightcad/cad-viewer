@@ -30,6 +30,7 @@ import {
   AcApHatchCmd,
   AcApHideObjectsCmd,
   AcApImageAttachCmd,
+  AcApInsertCmd,
   AcApLayerCloseCmd,
   AcApLayerCmd,
   AcApLayerCurCmd,
@@ -139,6 +140,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   MEASUREANGLE: ['ANG'],
   '-HATCH': ['-H'],
   IMAGEATTACH: ['IAT'],
+  '-INSERT': ['I'],
   XATTACH: ['XA'],
   LAYER: ['LA'],
   '-LAYER': ['-LA'],
@@ -1211,6 +1213,7 @@ export class AcApDocManager {
     )
     addSystemCommand('-hatch', '-hatch', new AcApHatchCmd())
     addSystemCommand('imageattach', 'imageattach', new AcApImageAttachCmd())
+    addSystemCommand('-insert', '-insert', new AcApInsertCmd())
     addSystemCommand('xattach', 'xattach', new AcApXAttachCmd())
     addSystemCommand('-layer', '-layer', new AcApLayerCmd())
     addSystemCommand('laycur', 'laycur', new AcApLayerCurCmd())

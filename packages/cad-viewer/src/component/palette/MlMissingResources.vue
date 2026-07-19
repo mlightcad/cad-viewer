@@ -120,6 +120,7 @@ import {
   eventBus
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbFontInfo } from '@mlightcad/data-model'
+import type { MlOverflowTab } from '@mlightcad/ui-components'
 import {
   ElButton,
   ElCheckbox,
@@ -136,7 +137,6 @@ import {
   type MissingResourceTab,
   useMissedData
 } from '../../composable'
-import type { MlOverflowTab } from '../common/MlOverflowTab'
 import MlExternalReferences from './MlExternalReferences.vue'
 
 const { t } = useI18n()
