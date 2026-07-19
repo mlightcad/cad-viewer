@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import {
   ArrowDown,
   ArrowUp,
@@ -7,18 +8,18 @@ import {
   StarFilled
 } from '@element-plus/icons-vue'
 import {
-  AcApBlockInsertSession,
-  AcApDocManager
-} from '@mlightcad/cad-simple-viewer'
-import {
   ElCheckbox,
   ElIcon,
   ElInput,
   ElInputNumber
 } from 'element-plus'
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import {
+  AcApBlockInsertSession,
+  AcApDocManager
+} from '@mlightcad/cad-simple-viewer'
 import { useI18n } from 'vue-i18n'
 
+import { insertBlock } from '../../svg'
 import {
   isFavoriteBlock,
   isInsertableBlockName,
@@ -28,7 +29,6 @@ import {
   toggleFavoriteBlock,
   useInsertableBlocks
 } from '../../composable/useInsertableBlocks'
-import { insertBlock } from '../../svg'
 
 defineOptions({
   name: 'MlBlocksPalette'

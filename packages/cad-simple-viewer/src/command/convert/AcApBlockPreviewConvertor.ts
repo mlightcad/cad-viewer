@@ -2,8 +2,9 @@ import {
   AcCmColor,
   AcDbBlockReference,
   AcDbBlockTableRecord,
-  acdbPreviewIconToDataUrl,
-  AcDbRenderingCache} from '@mlightcad/data-model'
+  AcDbRenderingCache,
+  acdbPreviewIconToDataUrl
+} from '@mlightcad/data-model'
 import { AcTrEntity, type AcTrRenderer } from '@mlightcad/three-renderer'
 
 import { AcApDocManager } from '../../app'
