@@ -36,6 +36,9 @@ export default {
     },
     attedit: {
       description: '编辑块参照的属性值及其显示特性'
+    },
+    attdef: {
+      description: '创建用于块的属性定义'
     }
   },
   USER: {}

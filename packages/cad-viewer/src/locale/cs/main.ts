@@ -213,7 +213,13 @@ export default {
       utilities: 'Nástroje',
       annotation: 'Poznámky',
       measurement: 'Měření',
-      reference: 'Reference'
+      reference: 'Reference',
+      block: 'Blok'
+    },
+    insertBlock: {
+      empty: 'Žádné bloky nejsou k dispozici',
+      currentDrawing: 'Aktuální výkres',
+      previewMenu: 'Galerie náhledů bloků'
     },
     property: {
       color: 'Barva',
@@ -290,6 +296,12 @@ export default {
         'Připojí výkres DWG nebo DXF jako externí referenci (XATTACH).',
       attachImage:
         'Připojí rastrový obrázek jako externí referenci (IMAGEATTACH).',
+      insert:
+        'Otevře paletu Bloky pro procházení a vkládání definic bloků (INSERT).',
+      editAttributes:
+        'Otevře Rozšířený editor atributů pro úpravu hodnot a zobrazovacích vlastností atributů bloku (ATTEDIT).',
+      defineAttribute:
+        'Vytvoří definici atributu pro použití v bloku (ATTDEF).',
       agent:
         'Otevře kartu palety CAD Agent pro kreslení geometrie přirozeným jazykem.',
       propertyColor: 'Nastaví barvu nových nebo vybraných objektů.',
@@ -387,6 +399,9 @@ export default {
       drawingUnits: 'Jednotky\nvýkresu',
       attachDwg: 'Připojit\nDWG',
       attachImage: 'Připojit\nobrázek',
+      insert: 'Vložit',
+      editAttributes: 'Upravit\natributy',
+      defineAttribute: 'Definovat\natribut',
       agent: 'CAD\nAgent'
     }
   },

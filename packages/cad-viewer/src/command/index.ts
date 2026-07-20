@@ -1,3 +1,4 @@
+export * from './AcApAttDefCmd'
 export * from './AcApAttEditCmd'
 export * from './AcApCountListCmd'
 export * from './AcApHatchRibbonCmd'

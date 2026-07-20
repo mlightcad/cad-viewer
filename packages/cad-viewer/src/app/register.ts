@@ -10,6 +10,7 @@ import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
 import { markRaw } from 'vue'
 
 import {
+  AcApAttDefCmd,
   AcApAttEditCmd,
   AcApCountListCmd,
   AcApDrawingUnitsCmd,
@@ -27,6 +28,7 @@ import {
 } from '../command'
 import {
   createMlColorIndexPickerToolbarFactory,
+  MlAttDefDlg,
   MlAttEditDlg,
   MlDrawingUnitsDlg,
   MlExportHtmlDlg,
@@ -130,6 +132,13 @@ export const registerCmds = () => {
       new AcApAttEditCmd(),
       ['eattedit', 'ate']
     )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'attdef',
+      'attdef',
+      new AcApAttDefCmd(),
+      'ddattdef'
+    )
     isCommandRegistered = true
   }
 }
@@ -166,6 +175,11 @@ export const registerDialogs = () => {
     registerDialog({
       name: 'AttEditDlg',
       component: markRaw(MlAttEditDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'AttDefDlg',
+      component: markRaw(MlAttDefDlg),
       props: {}
     })
     isDialogRegistered = true
