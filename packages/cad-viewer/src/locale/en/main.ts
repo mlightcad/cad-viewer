@@ -300,6 +300,8 @@ export default {
         'Open the Blocks palette to browse and insert block definitions (INSERT).',
       editAttributes:
         'Open the Enhanced Attribute Editor to edit block attribute values and display properties (ATTEDIT).',
+      defineAttribute:
+        'Create an attribute definition for use in a block (ATTDEF).',
       agent:
         'Open the CAD Agent palette tab to draw geometry using natural language.',
       propertyColor:
@@ -404,6 +406,7 @@ export default {
       attachImage: 'Attach\nImage',
       insert: 'Insert',
       editAttributes: 'Edit\nAttributes',
+      defineAttribute: 'Define\nAttribute',
       agent: 'CAD\nAgent'
     }
   },

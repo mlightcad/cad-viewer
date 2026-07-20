@@ -305,6 +305,8 @@ export default {
         'Blok tanımlarını göz atmak ve eklemek için Bloklar paletini açın (INSERT).',
       editAttributes:
         'Blok öznitelik değerlerini ve görüntü özelliklerini düzenlemek için Gelişmiş Öznitelik Düzenleyiciyi açın (ATTEDIT).',
+      defineAttribute:
+        'Bir blokta kullanılacak öznitelik tanımı oluşturun (ATTDEF).',
       agent:
         'Doğal dil kullanarak geometri çizmek için CAD Ajanı panel sekmesini açın.',
       propertyColor:
@@ -407,6 +409,7 @@ export default {
       attachImage: 'Görüntü\nEkle',
       insert: 'Ekle',
       editAttributes: 'Öznitelikleri\nDüzenle',
+      defineAttribute: 'Öznitelik\nTanımla',
       agent: 'CAD\nAjanı'
     }
   },

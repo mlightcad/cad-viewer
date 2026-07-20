@@ -43,6 +43,9 @@ export default {
     attedit: {
       description:
         'Edits attribute values and display properties of a block reference'
+    },
+    attdef: {
+      description: 'Creates an attribute definition for a block'
     }
   },
   USER: {}

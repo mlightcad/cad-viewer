@@ -290,6 +290,7 @@ export default {
       attachImage: '将光栅图像作为外部参照附着（IMAGEATTACH）。',
       insert: '打开块工具选项板以浏览并插入块定义（INSERT）。',
       editAttributes: '打开增强属性编辑器，编辑块属性值与显示特性（ATTEDIT）。',
+      defineAttribute: '创建用于块的属性定义（ATTDEF）。',
       agent: '打开 CAD Agent 工具面板，使用自然语言描述并绘制图形。',
       propertyColor: '设置新建对象或当前选中对象使用的颜色。',
       propertyLineType: '设置新建对象或当前选中对象使用的线型。',
@@ -370,6 +371,7 @@ export default {
       attachImage: '附着\n图像',
       insert: '插入',
       editAttributes: '编辑属性',
+      defineAttribute: '定义属性',
       agent: 'CAD Agent'
     }
   },

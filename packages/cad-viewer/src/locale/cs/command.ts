@@ -38,6 +38,13 @@ export default {
     style: {
       description:
         'Vytváří, upravuje nebo určuje textové styly pro text a víceřádkový text'
+    },
+    attedit: {
+      description:
+        'Upravuje hodnoty atributů a zobrazovací vlastnosti vloženého bloku'
+    },
+    attdef: {
+      description: 'Vytvoří definici atributu pro blok'
     }
   },
   USER: {}

@@ -72,6 +72,7 @@ import {
   circleTwoPoints,
   clearMeasurements,
   countlist,
+  defineAttribute,
   editAttribute,
   ellipseArc,
   ellipseCenter,
@@ -685,6 +686,7 @@ const buildBaseTabs = (
     attachImage: t('main.ribbon.tooltip.attachImage'),
     insert: t('main.ribbon.tooltip.insert'),
     editAttributes: t('main.ribbon.tooltip.editAttributes'),
+    defineAttribute: t('main.ribbon.tooltip.defineAttribute'),
     agent: t('main.ribbon.tooltip.agent'),
     propertyColor: t('main.ribbon.tooltip.propertyColor'),
     propertyLineType: t('main.ribbon.tooltip.propertyLineType'),
@@ -1540,6 +1542,18 @@ const buildBaseTabs = (
                   }
                 },
                 {
+                  id: 'cmd-attdef',
+                  type: 'button',
+                  label: t('main.ribbon.command.defineAttribute'),
+                  tooltip: ribbonTooltips.defineAttribute,
+                  size: 'large',
+                  props: {
+                    icon: defineAttribute,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
+                },
+                {
                   id: 'cmd-attedit',
                   type: 'button',
                   label: t('main.ribbon.command.editAttributes'),
@@ -1662,6 +1676,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-xattach', 'xattach')
   commandByItemId.set('cmd-imageattach', 'imageattach')
   commandByItemId.set('cmd-attedit', 'attedit')
+  commandByItemId.set('cmd-attdef', 'attdef')
   if (store.features.agentPlugin) {
     commandByItemId.set('cmd-agent', 'agent')
   }

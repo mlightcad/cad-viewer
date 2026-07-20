@@ -44,6 +44,9 @@ export default {
     attedit: {
       description:
         'Bir blok referansının öznitelik değerlerini ve görüntü özelliklerini düzenler'
+    },
+    attdef: {
+      description: 'Bir blok için öznitelik tanımı oluşturur'
     }
   },
   USER: {}

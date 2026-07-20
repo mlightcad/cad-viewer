@@ -1,3 +1,4 @@
+export { default as MlAttDefDlg } from './MlAttDefDlg.vue'
 export { default as MlAttEditDlg } from './MlAttEditDlg.vue'
 export { default as MlExportHtmlDlg } from './MlExportHtmlDlg.vue'
 export { default as MlDrawingUnitsDlg } from './MlDrawingUnitsDlg.vue'
