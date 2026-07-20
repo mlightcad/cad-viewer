@@ -1,0 +1,16 @@
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    nodejs: "24"
+    python: "3.12"
+  commands:
+    - corepack enable && corepack prepare pnpm@10.33.4 --activate
+    - corepack pnpm --version
+    - corepack pnpm install --frozen-lockfile
+    - corepack pnpm build
+    - corepack pnpm docs:build
+    - corepack pnpm docs:site:prepare
+    - mkdir -p "$READTHEDOCS_OUTPUT/html"
+    - cp -R docs/. "$READTHEDOCS_OUTPUT/html/"

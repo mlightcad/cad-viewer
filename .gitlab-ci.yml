@@ -49,7 +49,7 @@ deploy:
   script:
     - pnpm install --frozen-lockfile
     - pnpm build
-    - pnpm doc
+    - pnpm docs:build
     - pnpm pre-serve
     - mkdir -p public
     - cp -r ./packages/examples/public/* public/

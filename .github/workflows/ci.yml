@@ -78,7 +78,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Build docs
-        run: pnpm doc
+        run: pnpm docs:build
 
       - name: Pre-serve
         run: pnpm pre-serve
