@@ -320,6 +320,33 @@ describe('AcTrGroup wcsBbox', () => {
     expectWcsBboxCloseTo(outerGroup.wcsBbox, [674, 200, 0], [684, 200, 0])
   })
 
+  it('resolves nested layer-0 to the nested INSERT layer, not the outer INSERT', () => {
+    const context = new AcTrRenderContext()
+    // Entity C authored on layer 0 inside nested block B.
+    const entityC = createLine(
+      'entity-c',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      context,
+      '0'
+    )
+    const insertB = new AcTrGroup([entityC], context)
+    // Nested INSERT B lives on DIM (set after worldDraw by AcDbRenderingCache).
+    insertB.layerName = 'DIM'
+
+    const insertA = new AcTrGroup([insertB], context)
+    insertA.layerName = 'Wall'
+
+    expect(insertA.isOnTheSameLayer).toBe(false)
+    expect(
+      insertA.children.map(child => child.userData.layerName)
+    ).toEqual(['DIM'])
+    expect(
+      insertA.children.map(child => child.userData.authoredLayerName)
+    ).toEqual(['0'])
+    expect(insertA.getSourceEntities()[0]?.layerName).toBe('DIM')
+  })
+
   it('skips invalid child boxes when applying insert transform', () => {
     const context = new AcTrRenderContext()
     const line = createLine(

@@ -2,7 +2,7 @@ import { AcDbObjectId, AcGeMatrix3d } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
-import { AcTrMatrixUtil } from '../util'
+import { AcTrMatrixUtil, effectiveLayer } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 export interface AcTrEntityBox {
   minX: number
@@ -69,8 +69,8 @@ export class AcTrGroup extends AcTrEntity {
     })
     this.flatten()
 
-    // It is a little tricky that how AutoCAD handles block references (inserts), their
-    // own layer, and the layers of entities inside the block.
+    // AutoCAD handles block references (INSERTs), their own layer, and the
+    // layers of entities inside the block as follows.
     //
     // Assuming block B contains:
     // - E1 on layer 0
@@ -79,17 +79,22 @@ export class AcTrGroup extends AcTrEntity {
     //
     // You insert block B onto layer L2 (the block reference layer).
     //
-    // Case 1: Turn off layer L2
+    // Case 1: Freeze layer L2
     // - The block reference itself is on L2.
-    // - When you turn off L2, the entire block reference disappears, regardless of what
-    // layers its contents are on. Result is block reference will NOT be visible.
+    // - Freezing L2 hides the entire block reference, regardless of what
+    //   layers its contents are on.
     //
-    // Case 2: Turn off layer L3
+    // Case 1b: Turn off (not freeze) layer L2
+    // - Geometry whose effective layer is L2 is hidden (including E1 on 0,
+    //   which inherits L2).
+    // - Contents on other layers (E3 on L3) remain visible.
+    //
+    // Case 2: Turn off or freeze layer L3
     // - The block reference is still on L2, which remains on.
     // - Inside the block:
     //   - E1 (on 0) → inherits from the block’s layer (L2), so it is still visible.
     //   - E2 (on L2) → visible (since L2 is still on).
-    //   - E3 (on L3) → hidden (since L3 is turned off).
+    //   - E3 (on L3) → hidden (since L3 is turned off / frozen).
     // - Result is that the block reference will still be visible, but E3 inside it will not.
     //
     // If all of entities are on layer '0', we can merge them together so that it looks
@@ -487,6 +492,24 @@ export class AcTrGroup extends AcTrEntity {
    */
   private registerSourceEntities(object: THREE.Object3D) {
     if (object instanceof AcTrGroup) {
+      // Nested INSERT layer is attached before this outer group is built
+      // (AcDbRenderingCache.attachEntityInfo). Resolve layer-0 on tracked
+      // source entities so metadata matches flattened leaf layerNames.
+      const insertLayer = object.layerName
+      if (insertLayer) {
+        for (const entity of object.getSourceEntities()) {
+          const current = entity.layerName
+          if (current == null) continue
+          const resolved = effectiveLayer(current, insertLayer)
+          if (resolved !== current) {
+            if (current === '0') {
+              entity.userData.authoredLayerName = '0'
+            }
+            entity.layerName = resolved
+          }
+        }
+      }
+
       const innerMatrix = object.matrix.clone()
       const identity = new THREE.Matrix4()
       object.getSourceEntities().forEach(entity => {
