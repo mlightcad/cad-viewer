@@ -9,6 +9,9 @@ import type { AcExI18n } from '../i18n'
 import { AcExColorPicker } from './AcExColorPicker'
 import { ensureUiStyles } from './styles'
 
+/** Sort direction for the layer name column. */
+export type AcExLayerNameSortOrder = 'none' | 'asc' | 'desc'
+
 /** Constructor options for {@link AcExLayerListView}. */
 export interface AcExLayerListViewOptions {
   /** Document manager used to resolve the active document's layer store. */
@@ -37,6 +40,10 @@ export class AcExLayerListView {
   private titleEl?: HTMLSpanElement
   /** Name column header cell. */
   private nameHeaderEl!: HTMLTableCellElement
+  /** Name column header label text. */
+  private nameHeaderLabelEl!: HTMLSpanElement
+  /** Name column sort indicator. */
+  private nameSortIndicatorEl!: HTMLSpanElement
   /** On column header label. */
   private onLabelEl!: HTMLSpanElement
   /** Color column header cell. */
@@ -51,6 +58,8 @@ export class AcExLayerListView {
   private readonly host: HTMLElement
   /** Whether a title header is rendered above the table. */
   private readonly showHeader: boolean
+  /** Current sort direction for the name column. */
+  private nameSortOrder: AcExLayerNameSortOrder = 'none'
 
   /**
    * @param options - Editor, i18n, host, and display options.
@@ -87,7 +96,26 @@ export class AcExLayerListView {
 
     const nameTh = document.createElement('th')
     this.nameHeaderEl = nameTh
-    nameTh.textContent = options.i18n.t('layerManager.name')
+    nameTh.className = 'ml-ex-ui-layer-name-header is-sortable'
+    nameTh.setAttribute('role', 'columnheader')
+    nameTh.setAttribute('aria-sort', 'none')
+    const nameHeaderContent = document.createElement('button')
+    nameHeaderContent.type = 'button'
+    nameHeaderContent.className = 'ml-ex-ui-layer-name-sort'
+    const nameLabel = document.createElement('span')
+    this.nameHeaderLabelEl = nameLabel
+    nameLabel.textContent = options.i18n.t('layerManager.name')
+    const sortIndicator = document.createElement('span')
+    this.nameSortIndicatorEl = sortIndicator
+    sortIndicator.className = 'ml-ex-ui-layer-sort-indicator'
+    sortIndicator.setAttribute('aria-hidden', 'true')
+    nameHeaderContent.appendChild(nameLabel)
+    nameHeaderContent.appendChild(sortIndicator)
+    nameHeaderContent.addEventListener('click', () => {
+      this.cycleNameSortOrder()
+    })
+    nameTh.appendChild(nameHeaderContent)
+    this.updateNameSortHeader()
 
     const onTh = document.createElement('th')
     onTh.className = 'center'
@@ -166,9 +194,80 @@ export class AcExLayerListView {
     if (this.titleEl) {
       this.titleEl.textContent = this.i18n.t('layerManager.title')
     }
-    this.nameHeaderEl.textContent = this.i18n.t('layerManager.name')
+    this.nameHeaderLabelEl.textContent = this.i18n.t('layerManager.name')
     this.onLabelEl.textContent = this.i18n.t('layerManager.on')
     this.colorHeaderEl.textContent = this.i18n.t('layerManager.color')
+    this.updateNameSortHeader()
+  }
+
+  /** Cycles name-column sort: none → ascending → descending → none. */
+  private cycleNameSortOrder() {
+    if (this.nameSortOrder === 'none') {
+      this.nameSortOrder = 'asc'
+    } else if (this.nameSortOrder === 'asc') {
+      this.nameSortOrder = 'desc'
+    } else {
+      this.nameSortOrder = 'none'
+    }
+    this.updateNameSortHeader()
+    this.renderRows()
+  }
+
+  /** Syncs name-header aria/title/indicator with {@link nameSortOrder}. */
+  private updateNameSortHeader() {
+    const sortTitleKey =
+      this.nameSortOrder === 'asc'
+        ? 'layerManager.sortByNameDesc'
+        : this.nameSortOrder === 'desc'
+          ? 'layerManager.sortByNameNone'
+          : 'layerManager.sortByNameAsc'
+    const title = this.i18n.t(sortTitleKey)
+    this.nameHeaderEl.title = title
+    this.nameHeaderEl
+      .querySelector('button')
+      ?.setAttribute('aria-label', title)
+    this.nameHeaderEl.setAttribute(
+      'aria-sort',
+      this.nameSortOrder === 'asc'
+        ? 'ascending'
+        : this.nameSortOrder === 'desc'
+          ? 'descending'
+          : 'none'
+    )
+    this.nameHeaderEl.classList.toggle(
+      'is-sorted-asc',
+      this.nameSortOrder === 'asc'
+    )
+    this.nameHeaderEl.classList.toggle(
+      'is-sorted-desc',
+      this.nameSortOrder === 'desc'
+    )
+    this.nameSortIndicatorEl.textContent =
+      this.nameSortOrder === 'asc'
+        ? '▲'
+        : this.nameSortOrder === 'desc'
+          ? '▼'
+          : ''
+  }
+
+  /**
+   * Returns layers ordered by the current name sort setting.
+   *
+   * @param layers - Layer snapshots from the store.
+   */
+  private getSortedLayers(layers: AcApLayerInfo[]): AcApLayerInfo[] {
+    if (this.nameSortOrder === 'none') {
+      return layers
+    }
+    const direction = this.nameSortOrder === 'asc' ? 1 : -1
+    return [...layers].sort(
+      (a, b) =>
+        direction *
+        a.name.localeCompare(b.name, undefined, {
+          numeric: true,
+          sensitivity: 'base'
+        })
+    )
   }
 
   /** Removes event listeners. Does not remove DOM (caller owns mount point). */
@@ -198,7 +297,7 @@ export class AcExLayerListView {
       return
     }
 
-    const layers = store.getLayers()
+    const layers = this.getSortedLayers(store.getLayers())
     const currentLayer = store.getCurrentLayerName()
 
     layers.forEach(layer => {
