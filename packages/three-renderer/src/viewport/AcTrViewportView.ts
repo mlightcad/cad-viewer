@@ -54,13 +54,22 @@ export class AcTrViewportView extends AcTrBaseView {
    *   viewport's model content (e.g. a large site-plan viewport whose paper
    *   box spans most of the sheet).
    *
-   * Because `number` misfires both ways, we rely **solely** on the
-   * structural fingerprint: the default viewport "looks at itself" in
-   * paper space, so its `centerPoint` (paper WCS) coincides with its
-   * `viewCenter` (model DCS). The genuine template default is the
-   * `(0,0)-(12,9)` viewport with `centerPoint == viewCenter == (6,4.5)`,
-   * while every real viewport pans the model view to a `viewCenter`
-   * tens-to-hundreds of units away from its paper `centerPoint`.
+   * Because `number` misfires both ways, we rely on structural fingerprints:
+   *
+   * 1. The default viewport "looks at itself" in paper space, so its
+   *    `centerPoint` (paper WCS) coincides with its `viewCenter` (model DCS).
+   *    The genuine template default is the `(0,0)-(12,9)` viewport with
+   *    `centerPoint == viewCenter == (6,4.5)`.
+   * 2. Some LibreDWG parses leave the default's paper `centerPoint` at the
+   *    origin `(0,0)` while still storing a sheet-local `viewCenter` and a
+   *    1:1 `viewHeight == height` with a zero `viewTarget`. That broken
+   *    default must also be filtered: otherwise it draws a large empty
+   *    rectangle near the origin and stretches first-visit zoom far away
+   *    from the real sheet content.
+   *
+   * Real user viewports pan/zoom the model (`viewCenter`/`viewTarget` away
+   * from the paper rectangle, `viewHeight` unrelated to paper `height`), so
+   * they do not match either fingerprint.
    *
    * @param viewport the viewport read from `AcDbViewport.toGiViewport()`
    *                 (or the database entity, which exposes the same
@@ -70,16 +79,45 @@ export class AcTrViewportView extends AcTrBaseView {
     number: number
     centerPoint: { x: number; y: number }
     viewCenter: { x: number; y: number }
+    height?: number
+    viewHeight?: number
+    viewTarget?: { x: number; y: number }
   }): boolean {
     // Tolerance ~1µ in drawing units — generous enough to absorb
     // floating-point round-tripping through the parser, tight enough
     // that no real user viewport (even one panned to (0,0) of model
     // space) collides with the paper rectangle's center by accident.
     const eps = 1e-6
-    return (
+    const looksAtItself =
       Math.abs(viewport.centerPoint.x - viewport.viewCenter.x) < eps &&
       Math.abs(viewport.centerPoint.y - viewport.viewCenter.y) < eps
-    )
+    if (looksAtItself) return true
+
+    // Broken LibreDWG default: paper center collapsed to origin, but the
+    // viewport still "looks at paper" (1:1 height, zero view target).
+    const centerAtOrigin =
+      Math.abs(viewport.centerPoint.x) < eps &&
+      Math.abs(viewport.centerPoint.y) < eps
+    if (!centerAtOrigin) return false
+
+    const height = viewport.height
+    const viewHeight = viewport.viewHeight
+    if (
+      height == null ||
+      viewHeight == null ||
+      !Number.isFinite(height) ||
+      !Number.isFinite(viewHeight) ||
+      Math.abs(viewHeight - height) >= eps
+    ) {
+      return false
+    }
+
+    // Missing viewTarget is treated as (0,0): older converters did not
+    // surface DXF group 17, but these broken defaults still have a zero
+    // target in the DWG.
+    const target = viewport.viewTarget
+    if (!target) return true
+    return Math.abs(target.x) < eps && Math.abs(target.y) < eps
   }
 
   /**

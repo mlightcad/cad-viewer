@@ -556,7 +556,8 @@ export default {
     },
     export: {
       tooltip: 'Export image as PNG'
-    }
+    },
+    moreLayouts: 'More layouts'
   },
   toolPalette: {
     moreTabs: 'More tabs',

@@ -547,7 +547,8 @@ export default {
     },
     export: {
       tooltip: 'Exportovat obrázek jako PNG'
-    }
+    },
+    moreLayouts: 'Další rozvržení'
   },
   toolPalette: {
     moreTabs: 'Další karty',

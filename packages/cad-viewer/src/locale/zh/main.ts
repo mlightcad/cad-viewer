@@ -514,7 +514,8 @@ export default {
     },
     export: {
       tooltip: '导出图片为 PNG'
-    }
+    },
+    moreLayouts: '更多布局'
   },
   toolPalette: {
     moreTabs: '更多标签页',
