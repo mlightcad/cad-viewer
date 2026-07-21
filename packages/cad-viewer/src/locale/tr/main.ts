@@ -561,7 +561,8 @@ export default {
     },
     export: {
       tooltip: 'Görüntüyü PNG olarak dışa aktar'
-    }
+    },
+    moreLayouts: 'Diğer düzenler'
   },
   toolPalette: {
     moreTabs: 'Diğer sekmeler',
