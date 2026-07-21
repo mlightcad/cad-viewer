@@ -52,6 +52,7 @@ describe('AcExHtmlI18n', () => {
   it('resolves locale codes', () => {
     expect(resolveAcExHtmlLocale('zh-CN')).toBe('zh')
     expect(resolveAcExHtmlLocale('en-US')).toBe('en')
+    expect(resolveAcExHtmlLocale('cs-CZ')).toBe('cs')
     expect(resolveAcExHtmlLocale('fr')).toBeNull()
   })
 
@@ -83,11 +84,20 @@ describe('AcExHtmlI18n', () => {
     expect(formatAcExHtmlMessage('Zoom: {name}', { name: '0' })).toBe('Zoom: 0')
   })
 
-  it('toggles between en and zh', () => {
+  it('cycles the locale through en -> zh -> cs -> en', () => {
     const i18n = new AcExHtmlI18n('en')
     expect(i18n.t('layers.title')).toBe('Layers')
-    i18n.toggleLocale()
-    expect(i18n.locale).toBe('zh')
+    expect(i18n.localeBadge).toBe('EN')
+
+    expect(i18n.toggleLocale()).toBe('zh')
     expect(i18n.t('layers.title')).toBe('图层')
+    expect(i18n.localeBadge).toBe('中')
+
+    expect(i18n.toggleLocale()).toBe('cs')
+    expect(i18n.t('layers.title')).toBe('Hladiny')
+    expect(i18n.localeBadge).toBe('CS')
+
+    expect(i18n.toggleLocale()).toBe('en')
+    expect(i18n.locale).toBe('en')
   })
 })
