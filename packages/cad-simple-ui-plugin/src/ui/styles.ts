@@ -300,6 +300,42 @@ export function ensureUiStyles() {
       vertical-align: middle;
     }
 
+    .ml-ex-ui-layer-name-header.is-sortable {
+      padding: 0;
+    }
+
+    .ml-ex-ui-layer-name-sort {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+      margin: 0;
+      padding: 4px 8px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .ml-ex-ui-layer-name-sort:hover {
+      color: var(--ml-ui-accent, #409eff);
+    }
+
+    .ml-ex-ui-layer-name-header.is-sorted-asc .ml-ex-ui-layer-name-sort,
+    .ml-ex-ui-layer-name-header.is-sorted-desc .ml-ex-ui-layer-name-sort {
+      color: var(--ml-ui-accent, #409eff);
+    }
+
+    .ml-ex-ui-layer-sort-indicator {
+      display: inline-block;
+      min-width: 0.75em;
+      font-size: 10px;
+      line-height: 1;
+      opacity: 0.85;
+    }
+
     .ml-ex-ui-layer-header-on {
       display: inline-flex;
       align-items: center;
