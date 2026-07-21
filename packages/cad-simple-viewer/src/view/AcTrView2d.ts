@@ -1305,17 +1305,26 @@ export class AcTrView2d extends AcEdBaseView {
     layer: AcDbLayerTableRecord,
     changes: Partial<AcDbLayerTableRecordAttrs>
   ) {
-    this._scene.updateLayer(this.toLayerInfo(layer))
+    const { touchedObjectIds } = this._scene.updateLayer(this.toLayerInfo(layer))
 
     if (this._layerAppearance.layerStyleMayHaveChanged(changes)) {
       this._layerAppearance.syncFromLiveRecord(layer)
     }
 
-    if (
-      this._entityDisplay.layerVisibilityMayHaveChanged(changes) &&
-      AcTrLayer.isLayerVisible(this.toLayerInfo(layer))
-    ) {
-      void this.convertMissingEntitiesOnLayer(layer.name)
+    if (this._entityDisplay.layerVisibilityMayHaveChanged(changes)) {
+      const layerInfo = this.toLayerInfo(layer)
+      // Normal entities convert when the layer is on and thawed. INSERTs also
+      // convert when thawed while still off (Off must not skip multi-layer
+      // block contents).
+      if (AcTrLayer.isLayerVisible(layerInfo) || !layerInfo.isFrozen) {
+        void this.convertMissingEntitiesOnLayer(layer.name)
+      }
+    }
+
+    // Thawing an INSERT layer may restore cross-layer fragments that were
+    // session-hidden; reapply that state.
+    for (const objectId of touchedObjectIds) {
+      this.applySessionHiddenObjectState(objectId)
     }
 
     this._isDirty = true
@@ -2113,6 +2122,7 @@ export class AcTrView2d extends AcEdBaseView {
               '0',
               threeEntity.layerName
             )
+            threeEntity.userData.insertLayerName = threeEntity.layerName
           }
           if (
             threeEntity instanceof AcTrGroup &&
@@ -2261,16 +2271,28 @@ export class AcTrView2d extends AcEdBaseView {
       group.wcsBbox = aggregateSpatialBbox.clone()
     }
     objectsGroupByLayer.forEach((objects, layerName) => {
-      // AutoCAD block rule: entities authored on layer "0" inherit the INSERT's layer.
-      // Non-zero layers keep their original layer name.
+      // Nested layer-0 may already be resolved to an inner INSERT layer during
+      // flatten. Remaining "0" buckets inherit this (outermost) INSERT layer.
       const effectiveLayerName = layerName === '0' ? groupLayerName : layerName
+
+      // Material remap must still treat authored layer-0 drawables as layer-0
+      // ByLayer even when nest resolution already rewrote layerName.
+      const sourceLayerForMaterials = objects.some(object => {
+        const data = object.userData as {
+          authoredLayerName?: string
+          layerName?: string
+        }
+        return (data.authoredLayerName ?? layerName) === '0'
+      })
+        ? '0'
+        : layerName
 
       // Keep runtime layer metadata/material cache aligned with the inherited layer so
       // later layer style edits (color, linetype, lineweight, transparency) target this
       // object set correctly.
       this._inheritedLayerMaterialMapper.remap(
         objects,
-        layerName,
+        sourceLayerForMaterials,
         effectiveLayerName
       )
 
@@ -2285,6 +2307,7 @@ export class AcTrView2d extends AcEdBaseView {
       // If block-definition entities are on layer "0", this bucket now uses the layer
       // of the block reference itself (effectiveLayerName).
       entity.layerName = effectiveLayerName
+      entity.userData.insertLayerName = groupLayerName
       entity.wcsBbox = aggregateSpatialBbox.clone()
       const entityUserData = entity.userData as {
         spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]

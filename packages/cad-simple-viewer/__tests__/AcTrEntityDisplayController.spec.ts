@@ -1,5 +1,6 @@
 import {
   AcCmColor,
+  AcDbBlockReference,
   type AcDbBlockTableRecord,
   type AcDbEntity
 } from '@mlightcad/data-model'
@@ -13,6 +14,21 @@ function createDbEntity(
   visibility = true
 ): AcDbEntity {
   return { objectId, layer, visibility } as AcDbEntity
+}
+
+function createBlockReference(
+  objectId: string,
+  layer: string,
+  visibility = true
+): AcDbBlockReference {
+  // Avoid AcDbObject setters that require a working database in unit tests.
+  const insert = Object.create(AcDbBlockReference.prototype) as AcDbBlockReference
+  Object.defineProperties(insert, {
+    objectId: { value: objectId, writable: true, configurable: true },
+    layer: { value: layer, writable: true, configurable: true },
+    visibility: { value: visibility, writable: true, configurable: true }
+  })
+  return insert
 }
 
 function createBlockTableRecord(entities: AcDbEntity[]): AcDbBlockTableRecord {
@@ -57,6 +73,28 @@ describe('AcTrEntityDisplayController', () => {
     expect(controller.shouldConvert({ visibility: true, layer: 'on' })).toBe(
       true
     )
+  })
+
+  it('converts INSERTs when their layer is off but skips when frozen', () => {
+    const offLayer = {
+      name: 'Wall',
+      isOff: true,
+      isFrozen: false,
+      color: new AcCmColor()
+    }
+    const frozenLayer = {
+      name: 'Wall',
+      isOff: false,
+      isFrozen: true,
+      color: new AcCmColor()
+    }
+    const controllerOff = new AcTrEntityDisplayController(() => offLayer)
+    const controllerFrozen = new AcTrEntityDisplayController(() => frozenLayer)
+
+    const insert = createBlockReference('insert-a', 'Wall')
+
+    expect(controllerOff.shouldConvert(insert)).toBe(true)
+    expect(controllerFrozen.shouldConvert(insert)).toBe(false)
   })
 
   it('matches AcTrLayer visibility resolution for drawable layers', () => {
@@ -165,6 +203,42 @@ describe('AcTrEntityDisplayController', () => {
     )
 
     expect(pending.map(entity => entity.objectId)).toEqual(['line-off'])
+  })
+
+  it('collectMissingEntitiesOnLayer includes thawed INSERTs even when still off', () => {
+    const frozenOff = {
+      name: 'Wall',
+      isOff: true,
+      isFrozen: true,
+      color: new AcCmColor()
+    }
+    const offOnly = {
+      name: 'Wall',
+      isOff: true,
+      isFrozen: false,
+      color: new AcCmColor()
+    }
+    let layerInfo = frozenOff
+    const controller = new AcTrEntityDisplayController(() => layerInfo)
+    const insert = createBlockReference('insert-a', 'Wall')
+    const blockTableRecord = createBlockTableRecord([insert])
+
+    expect(
+      controller.collectMissingEntitiesOnLayer(
+        'Wall',
+        blockTableRecord,
+        () => false
+      )
+    ).toEqual([])
+
+    layerInfo = offOnly
+    const pending = controller.collectMissingEntitiesOnLayer(
+      'Wall',
+      blockTableRecord,
+      () => false
+    )
+
+    expect(pending.map(entity => entity.objectId)).toEqual(['insert-a'])
   })
 
   it('collectMissingEntitiesForExport includes off-layer entities missing from the scene', () => {

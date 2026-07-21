@@ -387,13 +387,25 @@ export class AcTrScene {
   }
 
   updateLayer(layer: AcEdLayerInfo) {
+    const previous = this._layers.get(layer.name)
+    const wasFrozen = previous?.isFrozen ?? false
     const updatedLayers: AcTrLayer[] = []
     this._layers.set(layer.name, layer)
+    const touchedObjectIds = new Set<string>()
     this._layouts.forEach(layout => {
       const updatedLayer = layout.updateLayer(layer)
       if (updatedLayer) updatedLayers.push(updatedLayer)
+      if (layer.isFrozen && !wasFrozen) {
+        for (const id of layout.applyInsertLayerFreeze(layer.name, true)) {
+          touchedObjectIds.add(id)
+        }
+      } else if (!layer.isFrozen && wasFrozen) {
+        for (const id of layout.applyInsertLayerFreeze(layer.name, false)) {
+          touchedObjectIds.add(id)
+        }
+      }
     })
-    return updatedLayers
+    return { updatedLayers, touchedObjectIds }
   }
 
   /**

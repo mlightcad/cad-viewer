@@ -7,6 +7,7 @@ import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import {
   AcTrMaterialUtil,
   AcTrMatrixUtil,
+  effectiveLayer,
   isObjectHierarchyVisible
 } from '../util'
 import {
@@ -170,11 +171,26 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
       // Copy first because we will mutate the hierarchy during traversal.
       const children = [...object.children]
       for (const child of children) {
-        // Propagate layer information downward when the leaf itself does not define one.
+        // Propagate INSERT layer-0 inheritance downward. Nested AcTrGroup nodes
+        // already carry the nested INSERT layer (set by AcDbRenderingCache
+        // attachEntityInfo) before the outer group flattens them.
         const objectData = getObjectUserData(object)
         const childData = getObjectUserData(child)
-        if (!childData.layerName && objectData.layerName) {
-          childData.layerName = objectData.layerName
+        if (objectData.layerName) {
+          if (!childData.layerName) {
+            childData.layerName = objectData.layerName
+          } else {
+            const resolved = effectiveLayer(
+              childData.layerName,
+              objectData.layerName
+            )
+            if (resolved !== childData.layerName) {
+              if (childData.layerName === '0') {
+                childData.authoredLayerName = '0'
+              }
+              childData.layerName = resolved
+            }
+          }
         }
 
         if (child.children.length > 0) {

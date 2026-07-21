@@ -65,6 +65,17 @@ export interface AcTrEntityIdentityUserData {
   objectId?: string
   ownerId?: string
   layerName?: string
+  /**
+   * Layer name authored in the block definition before layer-0 inheritance.
+   * Set when {@link layerName} is remapped from `"0"` to an INSERT layer so
+   * material remapping can still treat the drawable as layer-0 ByLayer.
+   */
+  authoredLayerName?: string
+  /**
+   * Layer of the outermost (or owning) INSERT that produced this drawable.
+   * Used to hide all INSERT fragments when that INSERT layer is frozen.
+   */
+  insertLayerName?: string
 }
 
 /**

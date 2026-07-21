@@ -46,3 +46,4 @@ export {
   type AcTrHighlightOverlayGroupUserData
 } from './util/AcTrObjectUserData'
 export { isObjectHierarchyVisible } from './util/AcTrVisibility'
+export { effectiveLayer } from './util/AcTrEffectiveLayer'

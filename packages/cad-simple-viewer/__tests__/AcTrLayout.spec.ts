@@ -490,3 +490,108 @@ describe('AcTrLayout entity preview helpers', () => {
     ).toEqual(['line-1'])
   })
 })
+
+describe('AcTrLayout insert layer freeze', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockRemoveEntity.mockReturnValue(false)
+  })
+
+  it('hides other-layer INSERT fragments when the INSERT layer is frozen', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo('Wall'))
+    layout.addLayer(createLayerInfo('DIM'))
+
+    const onWall = createEntity('insert-a', 'Wall')
+    onWall.userData.insertLayerName = 'Wall'
+    const onDim = createEntity('insert-a', 'DIM')
+    onDim.userData.insertLayerName = 'Wall'
+    layout.addEntity(onWall)
+    layout.addEntity(onDim)
+
+    const wall = layout.getLayer('Wall')!
+    const dim = layout.getLayer('DIM')!
+    jest.spyOn(wall, 'hasEntity').mockReturnValue(true)
+    jest.spyOn(dim, 'hasEntity').mockReturnValue(true)
+    const dimSetVisible = jest
+      .spyOn(dim, 'setEntityVisible')
+      .mockReturnValue(true)
+    const wallSetVisible = jest
+      .spyOn(wall, 'setEntityVisible')
+      .mockReturnValue(true)
+
+    expect(layout.applyInsertLayerFreeze('Wall', true)).toEqual(['insert-a'])
+    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', false)
+    expect(wallSetVisible).not.toHaveBeenCalled()
+
+    dimSetVisible.mockClear()
+    expect(layout.applyInsertLayerFreeze('Wall', false)).toEqual(['insert-a'])
+    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', true)
+  })
+
+  it('does not hide fragments when freezing a content layer that is not the INSERT layer', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo('Wall'))
+    layout.addLayer(createLayerInfo('DIM'))
+
+    const onWall = createEntity('insert-a', 'Wall')
+    onWall.userData.insertLayerName = 'Wall'
+    const onDim = createEntity('insert-a', 'DIM')
+    onDim.userData.insertLayerName = 'Wall'
+    layout.addEntity(onWall)
+    layout.addEntity(onDim)
+
+    const wall = layout.getLayer('Wall')!
+    const dim = layout.getLayer('DIM')!
+    jest.spyOn(wall, 'hasEntity').mockReturnValue(true)
+    jest.spyOn(dim, 'hasEntity').mockReturnValue(true)
+    const wallSetVisible = jest
+      .spyOn(wall, 'setEntityVisible')
+      .mockReturnValue(true)
+
+    expect(layout.applyInsertLayerFreeze('DIM', true)).toEqual([])
+    expect(wallSetVisible).not.toHaveBeenCalled()
+  })
+
+  it('hides a sole other-layer INSERT fragment when the INSERT layer is frozen', () => {
+    // INSERT on Wall with nested content only on DIM (no Wall bucket).
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo('Wall'))
+    layout.addLayer(createLayerInfo('DIM'))
+
+    const onDim = createEntity('insert-a', 'DIM')
+    onDim.userData.insertLayerName = 'Wall'
+    layout.addEntity(onDim)
+
+    const dim = layout.getLayer('DIM')!
+    jest.spyOn(dim, 'hasEntity').mockReturnValue(true)
+    const dimSetVisible = jest
+      .spyOn(dim, 'setEntityVisible')
+      .mockReturnValue(true)
+
+    expect(layout.applyInsertLayerFreeze('Wall', true)).toEqual(['insert-a'])
+    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', false)
+
+    dimSetVisible.mockClear()
+    expect(layout.applyInsertLayerFreeze('Wall', false)).toEqual(['insert-a'])
+    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', true)
+  })
+
+  it('no-ops when the INSERT only has a fragment on its own layer', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo('Wall'))
+
+    const onWall = createEntity('insert-a', 'Wall')
+    onWall.userData.insertLayerName = 'Wall'
+    layout.addEntity(onWall)
+
+    const wall = layout.getLayer('Wall')!
+    jest.spyOn(wall, 'hasEntity').mockReturnValue(true)
+    const wallSetVisible = jest
+      .spyOn(wall, 'setEntityVisible')
+      .mockReturnValue(true)
+
+    expect(layout.applyInsertLayerFreeze('Wall', true)).toEqual([])
+    expect(wallSetVisible).not.toHaveBeenCalled()
+  })
+})

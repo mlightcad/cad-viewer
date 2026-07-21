@@ -101,6 +101,11 @@ export class AcTrLayout {
   private _extentExcludedObjectIds: Set<AcDbObjectId>
   /** Map of layers indexed by layer name */
   private _layers: Map<string, AcTrLayer>
+  /**
+   * INSERT object id → INSERT's own layer name. Used when freezing an INSERT
+   * layer to hide fragments that were bucketed onto other layers.
+   */
+  private _insertLayerByObjectId: Map<AcDbObjectId, string>
   /** The flag indicating whether the layout is loaded/activated */
   private _isLoaded: boolean
   /**
@@ -121,6 +126,7 @@ export class AcTrLayout {
     this._boxDirty = true
     this._extentExcludedObjectIds = new Set()
     this._layers = new Map()
+    this._insertLayerByObjectId = new Map()
     this._isLoaded = false
   }
 
@@ -297,6 +303,7 @@ export class AcTrLayout {
     this._cachedBox.makeEmpty()
     this._boxDirty = true
     this._extentExcludedObjectIds.clear()
+    this._insertLayerByObjectId.clear()
     this._spatialIndex.clear()
     return this
   }
@@ -359,6 +366,11 @@ export class AcTrLayout {
 
     layer.addEntity(entity)
 
+    const insertLayerName = entity.userData.insertLayerName
+    if (insertLayerName) {
+      this._insertLayerByObjectId.set(entity.objectId, insertLayerName)
+    }
+
     if (!extendBbox) {
       this._extentExcludedObjectIds.add(entity.objectId)
     } else {
@@ -387,6 +399,7 @@ export class AcTrLayout {
     if (result) {
       this._spatialIndex.removeById(objectId)
       this._extentExcludedObjectIds.delete(objectId)
+      this._insertLayerByObjectId.delete(objectId)
       this.invalidateBox()
     }
     return result
@@ -401,6 +414,10 @@ export class AcTrLayout {
   updateEntity(entity: AcTrEntity) {
     for (const [_, layer] of this._layers) {
       if (layer.updateEntity(entity)) {
+        const insertLayerName = entity.userData.insertLayerName
+        if (insertLayerName) {
+          this._insertLayerByObjectId.set(entity.objectId, insertLayerName)
+        }
         this._spatialIndex.removeById(entity.objectId)
         this.registerEntitySpatialIndex(entity)
         this.invalidateBox()
@@ -665,6 +682,48 @@ export class AcTrLayout {
       }
     }
     return layer
+  }
+
+  /**
+   * Applies AutoCAD INSERT-layer freeze semantics across decomposed fragments.
+   *
+   * Freezing the INSERT's own layer hides every scene bucket that shares that
+   * INSERT object id, including geometry bucketed onto other layers — even when
+   * the INSERT has no fragment on its own layer (only other-layer buckets).
+   * Thawing restores those other-layer buckets (the INSERT layer group
+   * visibility is handled separately by {@link updateLayer}).
+   *
+   * @param insertLayerName - Layer being frozen or thawed.
+   * @param frozen - True when the layer is now frozen.
+   * @returns Object ids whose cross-layer visibility was changed.
+   */
+  applyInsertLayerFreeze(
+    insertLayerName: string,
+    frozen: boolean
+  ): AcDbObjectId[] {
+    const touched: AcDbObjectId[] = []
+    for (const [objectId, layerName] of this._insertLayerByObjectId) {
+      if (layerName !== insertLayerName) {
+        continue
+      }
+      let changed = false
+      for (const layer of this.getLayersByObjectId(objectId)) {
+        // INSERT-layer bucket visibility comes from the layer group itself.
+        if (layer.name === insertLayerName) {
+          continue
+        }
+        if (layer.setEntityVisible(objectId, !frozen)) {
+          changed = true
+        }
+      }
+      if (changed) {
+        touched.push(objectId)
+      }
+    }
+    if (touched.length > 0) {
+      this.invalidateBox()
+    }
+    return touched
   }
 
   /**

@@ -1,4 +1,5 @@
 import {
+  AcDbBlockReference,
   AcDbBlockTableRecord,
   AcDbEntity,
   AcDbLayerTableRecordAttrs,
@@ -17,6 +18,11 @@ type AcTrEntityDisplayCandidate = Pick<AcDbEntity, 'visibility' | 'layer'>
  * (DXF code 60). Layer off/frozen state is tracked separately on the layer table
  * so off-layer content can be skipped at open time and converted later when the
  * layer becomes visible again.
+ *
+ * Block references (INSERTs) are special: freezing the INSERT layer hides the
+ * entire reference, but turning the INSERT layer **off** must still convert the
+ * block so nested geometry on other layers can remain visible (AutoCAD Off vs
+ * Freeze semantics).
  *
  * The host view ({@link AcTrView2d}) supplies layer metadata and performs batch
  * conversion through its existing entity pipeline.
@@ -41,6 +47,12 @@ export class AcTrEntityDisplayController {
       return true
     }
 
+    if (this.isBlockReference(entity)) {
+      // INSERT: skip only when frozen. Off still converts so multi-layer
+      // contents on other layers can show.
+      return !layer.isFrozen
+    }
+
     return AcTrLayer.isLayerVisible(layer)
   }
 
@@ -62,12 +74,7 @@ export class AcTrEntityDisplayController {
       return true
     }
 
-    const layer = this.getLayerInfo(entity.layer)
-    if (!layer) {
-      return true
-    }
-
-    return AcTrLayer.isLayerVisible(layer)
+    return this.shouldConvert(entity)
   }
 
   /**
@@ -82,6 +89,9 @@ export class AcTrEntityDisplayController {
   /**
    * Collects entities on the given layer that were skipped while the layer was
    * off/frozen and therefore are not yet present in the scene.
+   *
+   * For INSERTs, entities are collected when the INSERT layer is no longer
+   * frozen (Off alone does not skip conversion).
    */
   collectMissingEntitiesOnLayer(
     layerName: string,
@@ -107,6 +117,10 @@ export class AcTrEntityDisplayController {
     return this.collectMissingEntities(blockTableRecord, hasEntity, entity =>
       this.shouldConvertForExport(entity, includeInvisibleLayers)
     )
+  }
+
+  private isBlockReference(entity: AcTrEntityDisplayCandidate): boolean {
+    return entity instanceof AcDbBlockReference
   }
 
   private collectMissingEntities(
