@@ -41,5 +41,16 @@ export default {
     entity: 'Načítám objekty…',
     object: 'Načítám pojmenované slovníky…',
     end: 'Hotovo!'
+  },
+  about: {
+    title: 'O aplikaci',
+    close: 'Zavřít',
+    product: 'CAD Viewer',
+    tagline: 'Vysokovýkonný webový CAD prohlížeč pro výkresy DWG a DXF.',
+    website: 'Web',
+    docs: 'Dokumentace',
+    repository: 'GitHub',
+    copyright: '© {year} mlightcad. Všechna práva vyhrazena.',
+    ok: 'OK'
   }
 }

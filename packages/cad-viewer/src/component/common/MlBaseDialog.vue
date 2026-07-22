@@ -195,6 +195,12 @@ function handleCancel() {
   color: var(--el-color-primary);
 }
 
+.ml-base-dialog-icon :deep(svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .ml-base-dialog-actions {
   display: flex;
   align-items: center;

@@ -6,6 +6,7 @@ export * from './editor'
 export * from './i18n'
 export * from './plugin'
 export * from './view'
+export * from './ui'
 export {
   MTextColor,
   MTextParagraphAlignment,

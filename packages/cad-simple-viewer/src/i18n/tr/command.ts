@@ -7,6 +7,9 @@ export default {
     '-layer': {
       description: 'Komut satırı seçenekleriyle katmanları yönetir'
     },
+    about: {
+      description: 'mlightcad hakkında bilgi gösterir'
+    },
     angbase: {
       description: 'Geçerli KKS\'ye göre 0 açı temel yönünü ayarlar'
     },
