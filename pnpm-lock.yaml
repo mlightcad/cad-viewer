@@ -10,7 +10,7 @@ overrides:
   '@mlightcad/libredwg-converter': ^3.11.3
   '@mlightcad/mtext-input-box': ^0.2.21
   '@mlightcad/mtext-renderer': ^0.11.10
-  '@mlightcad/ribbon': ^0.1.10
+  '@mlightcad/ribbon': ^0.1.11
   '@mlightcad/ui-components': ^0.1.7
   element-plus: ^2.12.0
   glob: ^13.0.6
@@ -366,8 +366,8 @@ importers:
         specifier: ^1.11.3
         version: 1.11.3
       '@mlightcad/ribbon':
-        specifier: ^0.1.10
-        version: 0.1.10(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
+        specifier: ^0.1.11
+        version: 0.1.11(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
@@ -1813,8 +1813,8 @@ packages:
     peerDependencies:
       three: ^0.172.0
 
-  '@mlightcad/ribbon@0.1.10':
-    resolution: {integrity: sha512-bAAatX3zIqpyrRphbEqe5mVgxX63jJJ9vHu4FYbIJnsWzrPAg07lGZS9xs/2eZOtYWj11uQB5WOuGbh113BthQ==}
+  '@mlightcad/ribbon@0.1.11':
+    resolution: {integrity: sha512-onOfx1NZQ2QHZ9HOpVDaUrXV66LM97E2kpCUC7DASCMtVDC5Ydy1J6lq32ID69PSoWvDqQ9mkrvJc4nYm7Ja4A==}
     peerDependencies:
       '@element-plus/icons-vue': ^2.3.2
       element-plus: ^2.12.0
@@ -7260,7 +7260,7 @@ snapshots:
       opentype.js: 2.0.0
       three: 0.172.0
 
-  '@mlightcad/ribbon@0.1.10(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
+  '@mlightcad/ribbon@0.1.11(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
     dependencies:
       '@element-plus/icons-vue': 2.3.2(vue@3.5.31(typescript@5.9.3))
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))

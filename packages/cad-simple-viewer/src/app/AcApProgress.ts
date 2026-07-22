@@ -1,3 +1,5 @@
+import { acapCreateMlightcadIcon } from './AcApBrand'
+
 /**
  * Configuration options for {@link AcApProgress}.
  */
@@ -12,14 +14,14 @@ export interface AcApProgressOptions {
   /**
    * Size of the circular loader (width & height).
    * Accepts any valid CSS length value (e.g. "48px", "3rem", "25%").
-   * @defaultValue `"48px"`
+   * @defaultValue `"72px"` when {@link showBrand} is true, otherwise `"48px"`
    */
   size?: string
 
   /**
    * Width of the spinner border stroke.
    * Should be a valid CSS length value.
-   * @defaultValue `"5px"`
+   * @defaultValue `"4px"`
    */
   borderWidth?: string
 
@@ -48,6 +50,13 @@ export interface AcApProgressOptions {
    * @defaultValue `""`
    */
   message?: string
+
+  /**
+   * Whether to show the mlightcad icon inside the spinner ring and the
+   * brand wordmark beneath it.
+   * @defaultValue `true`
+   */
+  showBrand?: boolean
 }
 
 /**
@@ -58,6 +67,7 @@ export interface AcApProgressOptions {
  * - Auto-injects required CSS once per document
  * - Shows/hides without removing DOM
  * - Dynamically update message text
+ * - Optional mlightcad icon centered inside the spinner ring
  * - Safe for multiple instances
  *
  * @example
@@ -111,15 +121,17 @@ export class AcApProgress {
    * @param options - Optional {@link AcApProgressOptions} controlling appearance & behavior
    */
   constructor(options: AcApProgressOptions = {}) {
+    const showBrand = options.showBrand ?? true
     this.options = {
-      size: options.size ?? '48px',
-      borderWidth: options.borderWidth ?? '5px',
+      size: options.size ?? (showBrand ? '72px' : '48px'),
+      borderWidth: options.borderWidth ?? (showBrand ? '4px' : '5px'),
       color: options.color ?? 'var(--ml-ui-accent, #0b84ff)',
       host: options.host ?? document.body,
       overlay: options.overlay ?? true,
       overlayColor:
         options.overlayColor ?? 'var(--ml-ui-overlay, rgba(0,0,0,0.5))',
-      message: options.message ?? ''
+      message: options.message ?? '',
+      showBrand
     }
 
     if (!AcApProgress.stylesInjected) {
@@ -192,12 +204,42 @@ export class AcApProgress {
       ? this.options.overlayColor
       : 'transparent'
 
+    const stage = document.createElement('div')
+    stage.className = 'ml-ccl-spinner-stage'
+    stage.style.width = this.options.size
+    stage.style.height = this.options.size
+
     const spinner = document.createElement('div')
     spinner.className = 'ml-ccl-spinner'
-    spinner.style.width = this.options.size
-    spinner.style.height = this.options.size
     spinner.style.borderWidth = this.options.borderWidth
     spinner.style.borderTopColor = this.options.color
+    stage.appendChild(spinner)
+
+    if (this.options.showBrand) {
+      const icon = acapCreateMlightcadIcon({
+        className: 'ml-ccl-spinner-icon',
+        size: '60%'
+      })
+      stage.appendChild(icon)
+
+      const message = document.createElement('div')
+      message.className = 'ml-ccl-message'
+      message.textContent = this.options.message
+      message.style.display = this.options.message ? 'block' : 'none'
+
+      const wrapper = document.createElement('div')
+      wrapper.className = 'ml-ccl-wrapper'
+      wrapper.appendChild(stage)
+      wrapper.appendChild(message)
+
+      root.appendChild(wrapper)
+      host.appendChild(root)
+
+      this.root = root
+      this.spinner = spinner
+      this.messageEl = message
+      return
+    }
 
     const message = document.createElement('div')
     message.className = 'ml-ccl-message'
@@ -206,7 +248,7 @@ export class AcApProgress {
 
     const wrapper = document.createElement('div')
     wrapper.className = 'ml-ccl-wrapper'
-    wrapper.appendChild(spinner)
+    wrapper.appendChild(stage)
     wrapper.appendChild(message)
 
     root.appendChild(wrapper)
@@ -244,8 +286,15 @@ export class AcApProgress {
     flex-direction: column;
     align-items: center;
   }
-  
+
+  .ml-ccl-spinner-stage {
+    position: relative;
+    flex-shrink: 0;
+  }
+
   .ml-ccl-spinner {
+    position: absolute;
+    inset: 0;
     border-radius: 50%;
     border-style: solid;
     border-color: var(--ml-ui-border, rgba(0,0,0,0.25));
@@ -253,9 +302,25 @@ export class AcApProgress {
     animation: ml-ccl-rotate 0.85s linear infinite;
     box-sizing: border-box;
   }
-  
+
+  .ml-ccl-spinner-icon {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    display: inline-flex;
+    color: var(--ml-ui-accent, #0b84ff);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .ml-ccl-spinner-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
   .ml-ccl-message {
-    margin-top: 12px;
+    margin-top: 10px;
     font-size: 14px;
     color: var(--ml-ui-text, #FFF);
     text-align: center;

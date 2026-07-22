@@ -41,5 +41,16 @@ export default {
     entity: 'Parsing entities ...',
     object: 'Parsing named dictionaries ...',
     end: 'Finished!'
+  },
+  about: {
+    title: 'About',
+    close: 'Close',
+    product: 'CAD Viewer',
+    tagline: 'High-performance web CAD viewer for DWG and DXF drawings.',
+    website: 'Website',
+    docs: 'Documentation',
+    repository: 'GitHub',
+    copyright: '© {year} mlightcad. All rights reserved.',
+    ok: 'OK'
   }
 }

@@ -6,6 +6,9 @@ export default {
     '-layer': {
       description: '通过命令行选项管理图层'
     },
+    about: {
+      description: '显示 mlightcad 产品信息'
+    },
     angbase: {
       description: '设置当前 UCS 中 0 度的基准角方向'
     },

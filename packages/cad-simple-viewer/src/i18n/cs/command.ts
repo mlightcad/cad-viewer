@@ -7,6 +7,9 @@ export default {
     '-layer': {
       description: 'Spravuje hladiny pomocí voleb příkazového řádku'
     },
+    about: {
+      description: 'Zobrazí informace o mlightcad'
+    },
     angbase: {
       description: 'Nastaví směr základního úhlu 0 vzhledem k aktuálnímu USS'
     },

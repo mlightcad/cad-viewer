@@ -8,7 +8,8 @@ export default {
     exportHtml: '导出为 HTML',
     exportPdf: '导出为PDF',
     exportSvg: '导出为 SVG',
-    exportImage: '导出图片'
+    exportImage: '导出图片',
+    about: '关于'
   },
   ribbon: {
     tab: {

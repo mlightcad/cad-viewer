@@ -7,6 +7,9 @@ export default {
     '-layer': {
       description: 'Manages layers through command-line options'
     },
+    about: {
+      description: 'Displays information about mlightcad'
+    },
     angbase: {
       description:
         'Sets the base angle 0 direction with respect to the current UCS'

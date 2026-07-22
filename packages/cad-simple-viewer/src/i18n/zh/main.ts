@@ -41,5 +41,16 @@ export default {
     entity: '正在解析图元...',
     object: '正在解析NODs...',
     end: '完成！'
+  },
+  about: {
+    title: '关于',
+    close: '关闭',
+    product: 'CAD 查看器',
+    tagline: '面向 DWG/DXF 图纸的高性能 Web CAD 查看器。',
+    website: '官网',
+    docs: '文档',
+    repository: 'GitHub',
+    copyright: '© {year} mlightcad。保留所有权利。',
+    ok: '确定'
   }
 }

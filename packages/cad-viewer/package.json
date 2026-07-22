@@ -49,7 +49,7 @@
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.11.1",
-    "@mlightcad/ribbon": "^0.1.10",
+    "@mlightcad/ribbon": "^0.1.11",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",
     "@mlightcad/ui-components": "^0.1.7",

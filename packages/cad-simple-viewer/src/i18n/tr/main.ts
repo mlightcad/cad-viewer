@@ -39,5 +39,16 @@ export default {
     entity: 'Nesneler ayrıştırılıyor ...',
     object: 'Adlandırılmış sözlükler ayrıştırılıyor ...',
     end: 'Tamamlandı!'
+  },
+  about: {
+    title: 'Hakkında',
+    close: 'Kapat',
+    product: 'CAD Viewer',
+    tagline: 'DWG ve DXF çizimleri için yüksek performanslı web CAD görüntüleyici.',
+    website: 'Web sitesi',
+    docs: 'Belgeler',
+    repository: 'GitHub',
+    copyright: '© {year} mlightcad. Tüm hakları saklıdır.',
+    ok: 'Tamam'
   }
 }

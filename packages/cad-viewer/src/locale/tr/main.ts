@@ -8,7 +8,8 @@ export default {
     exportHtml: 'HTML\'e Dışa Aktar',
     exportPdf: 'PDF\'e Dışa Aktar',
     exportSvg: 'SVG\'e Dışa Aktar',
-    exportImage: 'Görüntüye Dışa Aktar'
+    exportImage: 'Görüntüye Dışa Aktar',
+    about: 'Hakkında'
   },
   ribbon: {
     tab: {

@@ -1734,6 +1734,7 @@ const fileMenuItems = computed<FileMenuItemModel[]>(() => {
     {
       id: 'Export',
       label: t('main.mainMenu.exportMenu'),
+      divided: true,
       children: [
         {
           id: 'Convert',
@@ -1756,6 +1757,11 @@ const fileMenuItems = computed<FileMenuItemModel[]>(() => {
           label: t('main.mainMenu.exportImage')
         }
       ]
+    },
+    {
+      id: 'About',
+      label: t('main.mainMenu.about'),
+      divided: true
     }
   ]
 })
@@ -1822,6 +1828,8 @@ const handleFileMenuSelect = async (command: string) => {
     cmd.trigger(AcApDocManager.instance.context)
   } else if (command === 'DrawingUnits') {
     AcApDocManager.instance.sendStringToExecute('units')
+  } else if (command === 'About') {
+    AcApDocManager.instance.sendStringToExecute('about')
   }
 }
 </script>
