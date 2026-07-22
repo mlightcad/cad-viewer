@@ -1,18 +1,19 @@
 /** Supported locales in the offline HTML viewer. */
-export type AcExHtmlLocale = 'en' | 'zh' | 'cs'
+export type AcExHtmlLocale = 'en' | 'zh' | 'cs' | 'tr'
 
 /**
  * All locales accepted by the offline viewer, in display order.
  * The language button cycles through this list; add a locale here plus a
  * {@link LOCALE_BADGES} entry and a `MESSAGES` tree to support it.
  */
-export const ACEX_HTML_LOCALES: AcExHtmlLocale[] = ['en', 'zh', 'cs']
+export const ACEX_HTML_LOCALES: AcExHtmlLocale[] = ['en', 'zh', 'cs', 'tr']
 
 /** Short button badge per locale (shown on the language toolbar button). */
 const LOCALE_BADGES: Record<AcExHtmlLocale, string> = {
   en: 'EN',
   zh: '中',
-  cs: 'CS'
+  cs: 'CS',
+  tr: 'TR'
 }
 
 /**
@@ -234,6 +235,61 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       zoomLayer: 'Zoom: {name}',
       loadFailed: 'Nepodařilo se načíst výkres: {error}',
       noLayout: 'Snímek neobsahuje data rozvržení.'
+    }
+  },
+  tr: {
+    toolbar: {
+      viewerTools: 'Görüntüleyici araçları',
+      zoomExtents: 'Sınırlara yakınlaştır',
+      measureDistance: 'Mesafe ölç',
+      measureAngle: 'Açı ölç',
+      measureArc: 'Yay uzunluğu ölç',
+      measureArea: 'Alan ölç',
+      measureCoordinate: 'Koordinat ölç',
+      clearMeasurements: 'Ölçümleri temizle',
+      settings: 'Ölçüm ayarları',
+      layers: 'Katmanlar',
+      language: 'Dil',
+      languageSwitch: 'Dili değiştir',
+      collapse: 'Araç çubuğunu daralt',
+      expand: 'Araç çubuğunu genişlet'
+    },
+    settings: {
+      toolbar: 'Ölçüm ayarları',
+      measureColor: 'Ölçüm rengi',
+      ortho: 'Dik modu aç/kapat',
+      polar: 'Kutupsal izleme açıları',
+      polarAngles: 'Kutupsal izleme açıları'
+    },
+    layers: {
+      title: 'Katmanlar',
+      close: 'Katmanları kapat',
+      showAll: 'Tümünü göster',
+      hideAll: 'Tümünü gizle',
+      zoomTo: '{name} katmanına yakınlaştır'
+    },
+    status: {
+      ready: 'Hazır',
+      measureDistanceHint:
+        'Mesafe ölçmek için iki nokta tıklayın (nesne yakalama etkin).',
+      measureAngleHint:
+        'Önce köşe noktasını, sonra her koldan birer nokta tıklayın (nesne yakalama etkin).',
+      measureArcHint:
+        'Yay başlangıcını, yay üzerinde bir noktayı ve yay sonunu tıklayın (nesne yakalama etkin).',
+      measureAreaHint:
+        'Çokgen köşelerini tıklayın; bitirmek için ilk noktanın yakınına tıklayın veya Enter’a basın.',
+      measureCoordinateHint:
+        'X/Y koordinatlarını okumak için bir nokta tıklayın (nesne yakalama etkin).',
+      distance: 'Mesafe: {value}',
+      coordinates: 'X: {x}  Y: {y}',
+      angle: 'Açı: {value}',
+      arcLength: 'Yay uzunluğu: {value}',
+      area: 'Alan: {value}',
+      lengthTotal: 'Toplam uzunluk: {value}',
+      areaTotal: 'Toplam alan: {value}',
+      zoomLayer: 'Yakınlaştır: {name}',
+      loadFailed: 'Çizim yüklenemedi: {error}',
+      noLayout: 'Anlık görüntüde yerleşim verisi yok.'
     }
   }
 }
