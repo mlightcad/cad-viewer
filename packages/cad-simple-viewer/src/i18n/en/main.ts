@@ -50,7 +50,7 @@ export default {
     website: 'Website',
     docs: 'Documentation',
     repository: 'GitHub',
-    copyright: '© {year} mlightcad',
+    copyright: '© {year} mlightcad. All rights reserved.',
     ok: 'OK'
   }
 }

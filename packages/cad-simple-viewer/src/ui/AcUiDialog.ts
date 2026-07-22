@@ -1,6 +1,6 @@
 import {
-  applyUiTheme,
   type AcEdUiTheme,
+  applyUiTheme,
   resolveUiTheme
 } from '../editor/global/AcEdUiTheme'
 
@@ -82,6 +82,7 @@ export class AcUiDialog {
 
   private readonly onKeyDown: (event: KeyboardEvent) => void
   private readonly closeOnEscape: boolean
+  private readonly previouslyFocused: HTMLElement | null
   private resolve?: () => void
   private openPromise?: Promise<void>
   private disposed = false
@@ -98,6 +99,10 @@ export class AcUiDialog {
     const titleId =
       options.titleId ?? `ml-ui-dialog-title-${AcUiDialog.nextTitleId++}`
     this.closeOnEscape = options.closeOnEscape ?? true
+    this.previouslyFocused =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
 
     this.backdrop = document.createElement('div')
     this.backdrop.className = 'ml-ui-dialog-backdrop'
@@ -115,6 +120,7 @@ export class AcUiDialog {
     this.dialog.setAttribute('role', 'dialog')
     this.dialog.setAttribute('aria-modal', 'true')
     this.dialog.setAttribute('aria-labelledby', titleId)
+    this.dialog.tabIndex = -1
     this.dialog.addEventListener('mousedown', event => event.stopPropagation())
 
     const header = document.createElement('div')
@@ -148,10 +154,14 @@ export class AcUiDialog {
     host.appendChild(this.backdrop)
 
     this.onKeyDown = (event: KeyboardEvent) => {
-      if (!this.closeOnEscape) return
       if (event.key === 'Escape') {
+        if (!this.closeOnEscape) return
         event.preventDefault()
         this.close()
+        return
+      }
+      if (event.key === 'Tab') {
+        this.trapFocus(event)
       }
     }
     window.addEventListener('keydown', this.onKeyDown)
@@ -182,6 +192,7 @@ export class AcUiDialog {
     if (this.backdrop.parentNode) {
       this.backdrop.parentNode.removeChild(this.backdrop)
     }
+    this.previouslyFocused?.focus()
     this.resolve?.()
     this.resolve = undefined
   }
@@ -193,6 +204,54 @@ export class AcUiDialog {
    */
   protected focusAfterOpen(element: HTMLElement): void {
     queueMicrotask(() => element.focus())
+  }
+
+  /**
+   * Keeps Tab / Shift+Tab focus cycling inside the dialog panel.
+   */
+  private trapFocus(event: KeyboardEvent): void {
+    const focusable = this.getFocusableElements()
+    if (focusable.length === 0) {
+      event.preventDefault()
+      this.dialog.focus()
+      return
+    }
+
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    const active = document.activeElement
+
+    if (event.shiftKey) {
+      if (active === first || !this.dialog.contains(active)) {
+        event.preventDefault()
+        last.focus()
+      }
+      return
+    }
+
+    if (active === last || !this.dialog.contains(active)) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  private getFocusableElements(): HTMLElement[] {
+    const selector = [
+      'a[href]',
+      'button:not([disabled])',
+      'textarea:not([disabled])',
+      'input:not([disabled]):not([type="hidden"])',
+      'select:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])'
+    ].join(',')
+
+    return Array.from(this.dialog.querySelectorAll<HTMLElement>(selector)).filter(
+      el =>
+        !el.hasAttribute('disabled') &&
+        el.getAttribute('aria-hidden') !== 'true' &&
+        el.tabIndex >= 0 &&
+        el.offsetParent !== null
+    )
   }
 
   /**

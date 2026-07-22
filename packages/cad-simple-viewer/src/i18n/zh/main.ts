@@ -50,7 +50,7 @@ export default {
     website: '官网',
     docs: '文档',
     repository: 'GitHub',
-    copyright: '© {year} mlightcad',
+    copyright: '© {year} mlightcad。保留所有权利。',
     ok: '确定'
   }
 }
