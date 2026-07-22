@@ -17,7 +17,7 @@ The plugin path is designed for **lazy loading** so the export bundle is only do
 - **Display-only snapshot** — layers, layouts, line/mesh batches, extents, and drawing units (no editable DXF/DWG payload)
 - **Self-contained HTML** — gzip/base64 snapshot + inline viewer runtime; opens offline in any modern browser
 - **Offline viewer** — pan/zoom (OrbitControls), layer panel, layout switching, measurement, object snap (OSNAP)
-- **i18n** — embedded English / Chinese UI; initial language follows the browser (`zh*` → Chinese, otherwise English), with manual switch persisted in `localStorage`
+- **i18n** — embedded English / Chinese / Czech UI; initial language follows the browser (`zh*` → Chinese, `cs*` → Czech, otherwise English); the toolbar language button cycles through the supported locales, and the choice persists in `localStorage`
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyHtmlPlugin`
 - **Composable API** — build snapshots from your own pipeline or call `packHtml` with a pre-built snapshot
 
@@ -185,7 +185,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `src/AcExHtmlShell.ts` | Static HTML/CSS shell markup |
 | `src/AcExOsnap*.ts` | Object snap index and primitives |
 | `src/AcExMeasurement.ts` | Distance/area measurement in the offline viewer |
-| `src/AcExHtmlI18n.ts` | English / Chinese UI messages |
+| `src/AcExHtmlI18n.ts` | English / Chinese / Czech UI messages |
 
 ## Role in MLightCAD
 

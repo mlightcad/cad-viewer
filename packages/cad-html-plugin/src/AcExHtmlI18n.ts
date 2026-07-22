@@ -1,8 +1,19 @@
 /** Supported locales in the offline HTML viewer. */
-export type AcExHtmlLocale = 'en' | 'zh'
+export type AcExHtmlLocale = 'en' | 'zh' | 'cs'
 
-/** All locales accepted by the offline viewer, in display order. */
-export const ACEX_HTML_LOCALES: AcExHtmlLocale[] = ['en', 'zh']
+/**
+ * All locales accepted by the offline viewer, in display order.
+ * The language button cycles through this list; add a locale here plus a
+ * {@link LOCALE_BADGES} entry and a `MESSAGES` tree to support it.
+ */
+export const ACEX_HTML_LOCALES: AcExHtmlLocale[] = ['en', 'zh', 'cs']
+
+/** Short button badge per locale (shown on the language toolbar button). */
+const LOCALE_BADGES: Record<AcExHtmlLocale, string> = {
+  en: 'EN',
+  zh: '中',
+  cs: 'CS'
+}
 
 /**
  * `localStorage` key used to persist the user's language choice
@@ -78,7 +89,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       settings: 'Measure settings',
       layers: 'Layers',
       language: 'Language',
-      languageSwitch: 'Switch to Chinese',
+      languageSwitch: 'Switch language',
       collapse: 'Collapse toolbar',
       expand: 'Expand toolbar'
     },
@@ -133,7 +144,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       settings: '测量设置',
       layers: '图层',
       language: '语言',
-      languageSwitch: '切换到 English',
+      languageSwitch: '切换语言',
       collapse: '收起工具栏',
       expand: '展开工具栏'
     },
@@ -169,6 +180,61 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       loadFailed: '无法加载图纸：{error}',
       noLayout: '快照中没有布局数据。'
     }
+  },
+  cs: {
+    toolbar: {
+      viewerTools: 'Nástroje prohlížeče',
+      zoomExtents: 'Zoom na rozsah',
+      measureDistance: 'Změřit vzdálenost',
+      measureAngle: 'Změřit úhel',
+      measureArc: 'Změřit délku oblouku',
+      measureArea: 'Změřit plochu',
+      measureCoordinate: 'Změřit souřadnice',
+      clearMeasurements: 'Vymazat měření',
+      settings: 'Nastavení měření',
+      layers: 'Hladiny',
+      language: 'Jazyk',
+      languageSwitch: 'Přepnout jazyk',
+      collapse: 'Sbalit panel nástrojů',
+      expand: 'Rozbalit panel nástrojů'
+    },
+    settings: {
+      toolbar: 'Nastavení měření',
+      measureColor: 'Barva měření',
+      ortho: 'Přepnout ortogonální režim',
+      polar: 'Úhly polárního trasování',
+      polarAngles: 'Úhly polárního trasování'
+    },
+    layers: {
+      title: 'Hladiny',
+      close: 'Zavřít hladiny',
+      showAll: 'Zobrazit vše',
+      hideAll: 'Skrýt vše',
+      zoomTo: 'Přiblížit na {name}'
+    },
+    status: {
+      ready: 'Připraveno',
+      measureDistanceHint:
+        'Klikněte na dva body pro změření vzdálenosti (uchopení objektů zapnuto).',
+      measureAngleHint:
+        'Klikněte na vrchol, poté na dva body na každém rameni (uchopení objektů zapnuto).',
+      measureArcHint:
+        'Klikněte na začátek oblouku, bod na oblouku a poté na konec oblouku (uchopení objektů zapnuto).',
+      measureAreaHint:
+        'Klikejte na vrcholy mnohoúhelníku; dokončete kliknutím poblíž prvního bodu nebo stiskem Enter.',
+      measureCoordinateHint:
+        'Klikněte na bod pro zobrazení jeho souřadnic X/Y (uchopení objektů zapnuto).',
+      distance: 'Vzdálenost: {value}',
+      coordinates: 'X: {x}  Y: {y}',
+      angle: 'Úhel: {value}',
+      arcLength: 'Délka oblouku: {value}',
+      area: 'Plocha: {value}',
+      lengthTotal: 'Celková délka: {value}',
+      areaTotal: 'Celková plocha: {value}',
+      zoomLayer: 'Zoom: {name}',
+      loadFailed: 'Nepodařilo se načíst výkres: {error}',
+      noLayout: 'Snímek neobsahuje data rozvržení.'
+    }
   }
 }
 
@@ -176,33 +242,35 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
  * Type guard for {@link AcExHtmlLocale}.
  *
  * @param value - Arbitrary string to test.
- * @returns `true` when `value` is `'en'` or `'zh'`.
+ * @returns `true` when `value` is one of {@link ACEX_HTML_LOCALES}.
  */
 export function isAcExHtmlLocale(value: string): value is AcExHtmlLocale {
-  return value === 'en' || value === 'zh'
+  return (ACEX_HTML_LOCALES as readonly string[]).includes(value)
 }
 
 /**
  * Normalizes a BCP 47 or short locale tag to a supported {@link AcExHtmlLocale}.
  *
  * @param value - Locale string from snapshot meta, `<html lang>`, or `navigator.language`.
- * @returns `'en'`, `'zh'`, or `null` when unrecognized.
+ * @returns a supported locale, or `null` when unrecognized.
  */
 export function resolveAcExHtmlLocale(
   value?: string | null
 ): AcExHtmlLocale | null {
   if (value == null || value === '') return null
   const normalized = value.toLowerCase().replace('_', '-')
-  if (normalized === 'en' || normalized.startsWith('en-')) return 'en'
-  if (normalized === 'zh' || normalized.startsWith('zh')) return 'zh'
+  for (const locale of ACEX_HTML_LOCALES) {
+    if (normalized === locale || normalized.startsWith(`${locale}-`)) {
+      return locale
+    }
+  }
   return null
 }
 
 /**
  * Detects locale from the browser's language preferences.
- * Chinese (`zh*`) maps to `'zh'`; all other languages default to `'en'`.
- *
- * @returns `'zh'` when a preferred browser language is Chinese, otherwise `'en'`.
+ * Returns the first preferred language that maps to a supported locale;
+ * defaults to `'en'`.
  */
 export function detectBrowserAcExHtmlLocale(): AcExHtmlLocale {
   if (typeof navigator === 'undefined') return 'en'
@@ -214,8 +282,7 @@ export function detectBrowserAcExHtmlLocale(): AcExHtmlLocale {
 
   for (const candidate of candidates) {
     const resolved = resolveAcExHtmlLocale(candidate)
-    if (resolved === 'zh') return 'zh'
-    if (resolved === 'en') return 'en'
+    if (resolved) return resolved
   }
 
   return 'en'
@@ -289,9 +356,9 @@ export class AcExHtmlI18n {
     return this._locale
   }
 
-  /** Short badge text shown on the language toolbar button (`EN` or `中`). */
+  /** Short badge text shown on the language toolbar button (e.g. `EN`, `中`, `CS`). */
   get localeBadge(): string {
-    return this._locale === 'zh' ? '中' : 'EN'
+    return LOCALE_BADGES[this._locale]
   }
 
   /**
@@ -319,12 +386,15 @@ export class AcExHtmlI18n {
   }
 
   /**
-   * Switches between English and Chinese, persists the choice, and refreshes the DOM.
+   * Advances to the next locale in {@link ACEX_HTML_LOCALES} (wrapping around),
+   * persists the choice, and refreshes the DOM. Drives the language button,
+   * which cycles through all supported locales on each click.
    *
-   * @returns The locale after toggling.
+   * @returns The locale after switching.
    */
   toggleLocale(): AcExHtmlLocale {
-    const next: AcExHtmlLocale = this._locale === 'en' ? 'zh' : 'en'
+    const index = ACEX_HTML_LOCALES.indexOf(this._locale)
+    const next = ACEX_HTML_LOCALES[(index + 1) % ACEX_HTML_LOCALES.length]
     this.setLocale(next)
     return next
   }
