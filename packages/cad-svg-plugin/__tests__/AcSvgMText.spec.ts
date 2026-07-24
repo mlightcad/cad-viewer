@@ -134,7 +134,8 @@ describe('buildSvgMText', () => {
     )
     expect(dyValues.filter(value => value > 0).length).toBeGreaterThan(0)
     expect(localSvg).toMatch(/<tspan[^>]*x="0"[^>]*dy="0"/)
-    expect(localSvg).toMatch(/<tspan[^>]*x="0"[^>]*dy="14\.1/)
+    // Default line advance is height * (5/3) with lineSpaceFactor 1.0.
+    expect(localSvg).toMatch(/<tspan[^>]*x="0"[^>]*dy="16\.6/)
   })
 
   it('wraps continuous latin text without spaces', () => {
