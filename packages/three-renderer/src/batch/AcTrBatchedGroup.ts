@@ -740,7 +740,7 @@ export class AcTrBatchedGroup extends THREE.Group {
   ) {
     for (const root of this._unbatchedObjects.children) {
       const storedTraits = getSceneDrawableUserData(root).textEntityTraits
-      if (storedTraits == null) {
+      if (storedTraits == null || storedTraits.layer !== layerName) {
         continue
       }
 

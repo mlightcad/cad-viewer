@@ -72,13 +72,15 @@ The `LockAndFade` isolation keyword matches AutoCAD naming but the viewer **lock
 
 ## Web Worker deployment
 
-The viewer loads three worker scripts for DXF parsing, DWG parsing, and MTEXT rendering. Host applications must deploy these files and point to them via `webworkerFileUrls` in `AcApDocManager.createInstance()`.
+The viewer loads worker scripts for DWG parsing and MTEXT rendering. DXF is
+parsed by the built-in converter in `@mlightcad/data-model` (no separate worker).
+Host applications must deploy the DWG/MTEXT worker files and point to them via
+`webworkerFileUrls` in `AcApDocManager.createInstance()`.
 
 Before calling `openDocument()`, verify that the workers are reachable. Use the built-in readiness API rather than downloading worker bodies with a plain GET request (the LibreDWG worker alone is ~12 MB):
 
 ```typescript
 const workerUrls = {
-  dxfParser: './workers/dxf-parser-worker.js',
   dwgParser: './workers/libredwg-parser-worker.js',
   mtextRender: './workers/mtext-renderer-worker.js'
 }

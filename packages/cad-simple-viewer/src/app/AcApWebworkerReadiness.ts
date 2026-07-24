@@ -2,7 +2,6 @@ import type { AcApWebworkerFiles } from './AcApDocManager'
 
 /** Default worker script URLs used when `webworkerFileUrls` is omitted. */
 export const DEFAULT_WEBWORKER_FILE_URLS: Required<AcApWebworkerFiles> = {
-  dxfParser: './assets/dxf-parser-worker.js',
   dwgParser: './assets/libredwg-parser-worker.js',
   mtextRender: './assets/mtext-renderer-worker.js'
 }
@@ -14,7 +13,6 @@ export function resolveWebworkerFileUrls(
   webworkerFileUrls?: AcApWebworkerFiles
 ): string[] {
   return [
-    webworkerFileUrls?.dxfParser ?? DEFAULT_WEBWORKER_FILE_URLS.dxfParser,
     webworkerFileUrls?.dwgParser ?? DEFAULT_WEBWORKER_FILE_URLS.dwgParser,
     webworkerFileUrls?.mtextRender ?? DEFAULT_WEBWORKER_FILE_URLS.mtextRender
   ].map(url => String(url))

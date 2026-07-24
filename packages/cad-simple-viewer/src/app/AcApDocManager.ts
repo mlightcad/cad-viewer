@@ -10,7 +10,6 @@ import {
   AcGeBox2d,
   log
 } from '@mlightcad/data-model'
-import { AcDbDxfConverter } from '@mlightcad/dxf-json-converter'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 import { FontManager } from '@mlightcad/mtext-renderer'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
@@ -185,14 +184,6 @@ export interface AcDbDocumentEventArgs {
  * off-main-thread processing such as file parsing or text rendering.
  */
 export interface AcApWebworkerFiles {
-  /**
-   * URL of the Web Worker bundle responsible for parsing DXF files.
-   *
-   * This worker performs DXF decoding and entity extraction in a
-   * background thread to avoid blocking the UI.
-   */
-  dxfParser?: string | URL
-
   /**
    * URL of the Web Worker bundle responsible for parsing DWG files.
    *
@@ -858,6 +849,7 @@ export class AcApDocManager {
   async openUrl(url: string, options?: AcApOpenDatabaseOptions) {
     options = this.setOptions(options)
     this.onBeforeOpenDocument(options)
+    await this._openFileProgress.beginOpen(this.context.doc.database)
     // TODO: The correct way is to create one new context instead of using old context and document
     const isSuccess = await this.context.doc.openUri(url, options)
     this.onAfterOpenDocument(isSuccess, options)
@@ -889,6 +881,7 @@ export class AcApDocManager {
   ) {
     options = this.setOptions(options)
     this.onBeforeOpenDocument(options)
+    await this._openFileProgress.beginOpen(this.context.doc.database)
     // TODO: The correct way is to create one new context instead of using old context and document
     const isSuccess = await this.context.doc.openDocument(
       fileName,
@@ -1041,6 +1034,7 @@ export class AcApDocManager {
       mode: AcEdOpenMode.Write
     })
     this.onBeforeOpenDocument(openOptions)
+    await this._openFileProgress.beginOpen(this.context.doc.database)
     const isSuccess = await this.context.doc.openUri(templateUrl, openOptions)
     if (isSuccess) {
       this.context.doc.resetNewDocumentIdentity()
@@ -1758,32 +1752,15 @@ export class AcApDocManager {
   /**
    * Registers file format converters for CAD file processing.
    *
-   * This function initializes and registers both DXF and DWG converters with the
-   * global database converter manager. Each converter is configured to use web workers
-   * for improved performance during file parsing operations.
+   * DXF uses the built-in converter from `@mlightcad/data-model`
+   * (`AcDbNativeDxfConverter`), registered automatically on import.
+   * This method registers the DWG converter (`@mlightcad/libredwg-converter`)
+   * with a worker URL.
    *
-   * The function handles registration errors gracefully by logging them to the console
-   * without throwing exceptions, ensuring that the application can continue to function
-   * even if one or more converters fail to register.
+   * Registration errors are logged without throwing so the application can
+   * continue if registration fails.
    */
   private registerConverters(webworkerFileUrls?: AcApWebworkerFiles) {
-    // Register DXF converter
-    try {
-      const converter = new AcDbDxfConverter({
-        convertByEntityType: false,
-        useWorker: true,
-        parserWorkerUrl:
-          webworkerFileUrls?.dxfParser ?? DEFAULT_WEBWORKER_FILE_URLS.dxfParser
-      })
-      AcDbDatabaseConverterManager.instance.register(
-        AcDbFileType.DXF,
-        converter
-      )
-    } catch (error) {
-      log.error('Failed to register dxf converter: ', error)
-    }
-
-    // Register DWG converter
     try {
       const converter = new AcDbLibreDwgConverter({
         convertByEntityType: false,
@@ -1804,8 +1781,8 @@ export class AcApDocManager {
    * Initializes background workers used by the viewer runtime.
    *
    * This function performs two tasks:
-   * - Ensures DXF/DWG converters are registered with worker-based parsers for
-   *   off-main-thread file processing.
+   * - Registers the DWG converter with a worker-based parser. DXF uses the
+   *   built-in `@mlightcad/data-model` converter (no separate worker).
    * - Initializes the MText renderer by pointing it to its dedicated Web Worker
    *   script for text layout and shaping.
    *

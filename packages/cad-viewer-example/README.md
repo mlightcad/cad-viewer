@@ -74,7 +74,7 @@ The build runs `vue-tsc`, then copies parser workers and `viewer-runtime.iife.js
 
 | Format | Notes |
 |--------|--------|
-| **DXF** | Parsed in a Web Worker (`dxf-parser-worker.js`) |
+| **DXF** | Built-in parser in `@mlightcad/data-model` |
 | **DWG** | LibreDWG WebAssembly via `libredwg-parser-worker.js` |
 
 ## What this example demonstrates

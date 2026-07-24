@@ -76,11 +76,14 @@ describe('AcTrMTextColorUtil', () => {
       layer: 'Viewport'
     })
 
+    // Start from a ByLayer-bound CAD material that lost foreground tracking.
+    const byLayerTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    byLayerTraits.color.setByLayer()
+    byLayerTraits.layer = 'Viewport'
+    const byLayerMaterial = styleManager.getMTextFillMaterial(byLayerTraits)
+
     const root = new THREE.Group()
-    const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1),
-      new THREE.MeshBasicMaterial({ color: 0xffffff })
-    )
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), byLayerMaterial)
     root.add(mesh)
 
     AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
@@ -88,6 +91,29 @@ describe('AcTrMTextColorUtil', () => {
     const material = mesh.material as THREE.MeshBasicMaterial
     expect(material.color.getHex()).toBe(ACGI_LIGHT_THEME_FOREGROUND)
     expect(material.userData.isForeground).toBe(true)
+  })
+
+  it('does not rematerialize bare mtext-renderer meshes when entity is ACI 7', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = ACGI_PAPER_SPACE_BACKGROUND
+
+    const color = new AcCmColor()
+    color.setForeground()
+    const traits = AcTrMTextColorUtil.snapshotEntityTraits({
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color,
+      layer: 'Viewport'
+    })
+
+    const root = new THREE.Group()
+    const inlineMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), inlineMaterial)
+    root.add(mesh)
+
+    AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
+
+    expect(mesh.material).toBe(inlineMaterial)
+    expect(inlineMaterial.color.getHex()).toBe(0x00ff00)
   })
 
   it('preserves inline ACI materials that differ from entity base traits', () => {

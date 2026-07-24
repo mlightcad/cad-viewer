@@ -25,8 +25,8 @@ import {
 } from './AcSvgFontMap'
 import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
 
-const DEFAULT_LINE_SPACE_FACTOR = 0.25
-const LINE_SPACING_SCALE_FACTOR = 1.666666
+const DEFAULT_LINE_SPACE_FACTOR = 1.0
+const LINE_SPACING_SCALE_FACTOR = 5 / 3
 const STACK_VERTICAL_SHIFT_FACTOR = 0.3
 const LATIN_CHAR_WIDTH_FACTOR = 0.6
 const WIDE_CHAR_WIDTH_FACTOR = 1
@@ -101,7 +101,7 @@ function resolveLineAdvance(baseHeight: number, mtext: AcGiMTextData): number {
     typeof mtext.lineSpaceFactor === 'number'
       ? mtext.lineSpaceFactor
       : DEFAULT_LINE_SPACE_FACTOR
-  return baseHeight * (1 + factor * LINE_SPACING_SCALE_FACTOR)
+  return baseHeight * Math.max(factor, 0) * LINE_SPACING_SCALE_FACTOR
 }
 
 function resolveWrapWidth(mtext: AcGiMTextData): number | null {

@@ -2,6 +2,7 @@ import { AcDbProgressdEventArgs } from '@mlightcad/data-model'
 
 import { AcEdFontNotLoadedInfo, eventBus } from '../editor'
 import { AcApI18n } from '../i18n'
+import { yieldToMain } from '../util/yieldToMain'
 import { AcApProgress } from './AcApProgress'
 import { isOpenFileProgressComplete } from './openFileProgress'
 
@@ -31,6 +32,21 @@ export class AcApOpenFileProgressController {
   reset(): void {
     this._peak = 0
     this._stage = undefined
+  }
+
+  /**
+   * Shows the open-file overlay immediately and yields so it can paint before
+   * main-thread DXF parse work blocks the UI (native converter path).
+   */
+  async beginOpen(database: AcDbProgressdEventArgs['database']): Promise<void> {
+    this.handle({
+      database,
+      percentage: 0,
+      stage: 'CONVERSION',
+      subStage: 'START',
+      subStageStatus: 'START'
+    })
+    await yieldToMain()
   }
 
   /**

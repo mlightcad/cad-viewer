@@ -40,14 +40,6 @@ mkdirSync(workersDir, { recursive: true })
 
 copy(
   join(
-    pkgRoot('@mlightcad/dxf-json-converter'),
-    'dist',
-    'dxf-parser-worker.js'
-  ),
-  join(workersDir, 'dxf-parser-worker.js')
-)
-copy(
-  join(
     pkgRoot('@mlightcad/libredwg-converter'),
     'dist',
     'libredwg-parser-worker.js'
