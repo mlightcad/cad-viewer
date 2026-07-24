@@ -1,8 +1,8 @@
-# Proprietary DWG/DXF Parser — Commercial License
+# Proprietary DWG Parser — Commercial License
 
 [简体中文](./PROPRIETARY-PARSER.zh-CN.md)
 
-This document describes the **proprietary DWG/DXF parser** offered as a commercial alternative to the open-source `dxf-json` / `dxf-json-converter` and `libredwg-web` / `libredwg-converter` stack shipped with [cad-viewer](https://github.com/mlightcad/cad-viewer).
+This document describes the **proprietary DWG parser** offered as a commercial alternative to the open-source `libredwg-web` / `libredwg-converter` stack shipped with [cad-viewer](https://github.com/mlightcad/cad-viewer).
 
 If you are building a **closed-source commercial product**, a **white-labeled deployment**, or a **SaaS / on-premise CAD viewer** and cannot distribute GPL-3.0 code to your customers, this parser is designed for your use case.
 
@@ -15,9 +15,8 @@ For purchase inquiries, email [mlight.lee@outlook.com](mailto:mlight.lee@outlook
 | Format | Supported |
 |--------|-----------|
 | **DWG** | Yes |
-| **DXF** | Yes |
 
-The proprietary parser covers **both DWG and DXF**. It is intended as a drop-in replacement for the default open-source converters, with:
+The proprietary parser covers **DWG**. It is intended as a drop-in replacement for the default open-source DWG converter, with:
 
 - **Lower memory usage** than the LibreDWG-based stack
 - **Support for larger DWG files** (not constrained by the WASM heap limits of `libredwg-web`)
@@ -44,7 +43,7 @@ You may:
 
 You may **not**:
 
-- **Redistribute or resell the parser as a standalone DWG/DXF parsing library or SDK.** The license is for use inside your own application or service, not for offering a competing parser product. This restriction avoids a direct commercial conflict with the parser itself.
+- **Redistribute or resell the parser as a standalone DWG parsing library or SDK.** The license is for use inside your own application or service, not for offering a competing parser product. This restriction avoids a direct commercial conflict with the parser itself.
 
 If your use case does not fit the above (for example, you plan to ship a parser SDK to third parties), contact us to discuss terms.
 
@@ -71,7 +70,7 @@ There are **no royalties**, **no per-seat fees**, and **no usage caps**.
 The proprietary parser is delivered as a **registerable converter** that plugs into the same pipeline as the open-source stack.
 
 - Output conforms to the MIT-licensed **`@mlightcad/data-model`**: `AcDbDatabase`, `AcDb*` entities, layer tables, blocks, and related structures.
-- You register it via **`AcDbDatabaseConverterManager`**, the same mechanism used by `AcDbDxfConverter` and `AcDbLibreDwgConverter` today.
+- You register it via **`AcDbDatabaseConverterManager`**, the same mechanism used by `AcDbLibreDwgConverter` today.
 - After parsing, your existing **MIT rendering, layer, selection, and interaction pipeline** (`cad-simple-viewer`, `cad-viewer`, plugins, etc.) works unchanged.
 
 Typical integration (conceptual):
@@ -83,25 +82,25 @@ import { AcDbProprietaryConverter } from '@mlightcad/proprietary-converter' // p
 
 const converter = new AcDbProprietaryConverter({ /* options */ })
 AcDbDatabaseConverterManager.instance.register(AcDbFileType.DWG, converter)
-AcDbDatabaseConverterManager.instance.register(AcDbFileType.DXF, converter)
 ```
 
-Do **not** register the GPL-based `dxf-json-converter` or `libredwg-converter` if you rely on the proprietary parser for compliance.
+Do **not** register the GPL-based `libredwg-converter` if you rely on the proprietary parser for compliance.
 
 ---
 
 ## GPL Compliance
 
-The default cad-viewer file-loading path uses GPL-3.0 packages:
+The default cad-viewer DWG loading path uses GPL-3.0 packages:
 
 | Package | License | Role |
 |---------|---------|------|
-| `dxf-json` / `@mlightcad/dxf-json-converter` | GPL-3.0 | DXF parsing |
 | `libredwg-web` / `@mlightcad/libredwg-converter` | GPL-3.0 | DWG parsing |
 
-If you **replace both converters** with the proprietary parser and **remove those GPL dependencies** from your build, your application can rely on the **MIT-licensed** cad-viewer stack only (`data-model`, `cad-simple-viewer`, renderers, plugins, etc.).
+DXF loading uses the built-in MIT parser in `@mlightcad/data-model` and does not require the proprietary parser.
 
-**You can fully remove GPL packages from your dependency graph** — including `dxf-json`, `dxf-json-converter`, and LibreDWG-related packages — so that **no GPL code is distributed** to your customers, provided you use the proprietary parser for all DWG/DXF ingestion.
+If you **replace the LibreDWG converter** with the proprietary parser and **remove those GPL dependencies** from your build, your application can rely on the **MIT-licensed** cad-viewer stack only (`data-model`, `cad-simple-viewer`, renderers, plugins, etc.).
+
+**You can fully remove GPL packages from your dependency graph** — including LibreDWG-related packages — so that **no GPL code is distributed** to your customers, provided you use the proprietary parser for all DWG ingestion.
 
 ---
 
@@ -113,7 +112,7 @@ cad-viewer is currently maintained as a **personal open-source project** (not op
 |------|----------|
 | **Bug fixes** | Yes — reported issues are addressed as quickly as possible |
 | **Parser updates / upgrade packages** | First year included; thereafter with annual donation |
-| **New DWG/DXF version compatibility** | Delivered via upgrade packages |
+| **New DWG version compatibility** | Delivered via upgrade packages |
 | **Technical integration support** | Reasonable email support for integrating the converter |
 | **Response time** | Typically **within one business day** for reported bugs |
 

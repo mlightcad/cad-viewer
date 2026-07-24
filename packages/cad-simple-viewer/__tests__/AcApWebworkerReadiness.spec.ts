@@ -26,16 +26,16 @@ describe('checkWebworkerReadiness', () => {
     )
 
     const ready = await checkWebworkerReadiness({
-      dxfParser: '/workers/dxf-parser-worker.js',
       dwgParser: '/workers/libredwg-parser-worker.js',
       mtextRender: '/workers/mtext-renderer-worker.js'
     })
 
     expect(ready).toBe(true)
-    expect(global.fetch).toHaveBeenCalledTimes(3)
-    expect(global.fetch).toHaveBeenCalledWith('/workers/dxf-parser-worker.js', {
-      method: 'HEAD'
-    })
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/workers/libredwg-parser-worker.js',
+      { method: 'HEAD' }
+    )
   })
 
   it('does not cache failures so a later retry can succeed', async () => {
@@ -47,14 +47,13 @@ describe('checkWebworkerReadiness', () => {
     )
 
     const urls = {
-      dxfParser: '/workers/dxf-parser-worker.js',
       dwgParser: '/workers/libredwg-parser-worker.js',
       mtextRender: '/workers/mtext-renderer-worker.js'
     }
 
     expect(await checkWebworkerReadiness(urls)).toBe(false)
     expect(await checkWebworkerReadiness(urls)).toBe(true)
-    expect(global.fetch).toHaveBeenCalledTimes(6)
+    expect(global.fetch).toHaveBeenCalledTimes(4)
   })
 
   it('caches a successful result for the current page lifecycle', async () => {
@@ -63,14 +62,13 @@ describe('checkWebworkerReadiness', () => {
     )
 
     const urls = {
-      dxfParser: '/workers/dxf-parser-worker.js',
       dwgParser: '/workers/libredwg-parser-worker.js',
       mtextRender: '/workers/mtext-renderer-worker.js'
     }
 
     expect(await checkWebworkerReadiness(urls)).toBe(true)
     expect(await checkWebworkerReadiness(urls)).toBe(true)
-    expect(global.fetch).toHaveBeenCalledTimes(3)
+    expect(global.fetch).toHaveBeenCalledTimes(2)
   })
 
   it('falls back to a ranged GET when HEAD returns 405', async () => {
@@ -82,15 +80,17 @@ describe('checkWebworkerReadiness', () => {
       .mockResolvedValueOnce({ ok: true, status: 206 } as Response)
 
     const ready = await checkWebworkerReadiness({
-      dxfParser: '/workers/dxf-parser-worker.js'
+      dwgParser: '/workers/libredwg-parser-worker.js'
     })
 
     expect(ready).toBe(true)
-    expect(global.fetch).toHaveBeenCalledWith('/workers/dxf-parser-worker.js', {
-      method: 'HEAD'
-    })
-    expect(global.fetch).toHaveBeenCalledWith('/workers/dxf-parser-worker.js', {
-      headers: { Range: 'bytes=0-0' }
-    })
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/workers/libredwg-parser-worker.js',
+      { method: 'HEAD' }
+    )
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/workers/libredwg-parser-worker.js',
+      { headers: { Range: 'bytes=0-0' } }
+    )
   })
 })

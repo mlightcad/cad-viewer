@@ -189,7 +189,24 @@ export class AcTrMTextColorUtil {
     const metadata = getMaterialMetadata(material)
 
     if (entityTraits.color.isForeground) {
-      return metadata.isForeground !== true
+      // Keep materials that already track ACI-7 foreground.
+      if (metadata.isForeground === true) {
+        return false
+      }
+      // Rematerialize ByLayer-bound materials that should follow entity ACI 7.
+      if (metadata.isByLayerColor === true) {
+        return true
+      }
+      // mtext-renderer inline `\C` segments usually have no CAD metadata.
+      // Do not paint them with the entity colour (that used to wipe \C90/\C255).
+      if (
+        metadata.isByLayerColor == null &&
+        metadata.isForeground == null &&
+        metadata.materialKey == null
+      ) {
+        return false
+      }
+      return true
     }
 
     if (
@@ -307,6 +324,13 @@ export class AcTrMTextColorUtil {
 
     if (color.isByBlock) {
       resolved.aci = 0
+      return resolved
+    }
+
+    // ACI 7 must stay an explicit index so the renderer can treat it as
+    // canvas foreground — do not fall through to RGB / ByLayer.
+    if (color.isForeground) {
+      resolved.aci = 7
       return resolved
     }
 

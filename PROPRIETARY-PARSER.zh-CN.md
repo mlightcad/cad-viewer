@@ -1,8 +1,8 @@
-# 专有 DWG/DXF 解析器 — 商业授权说明
+# 专有 DWG 解析器 — 商业授权说明
 
 [English](./PROPRIETARY-PARSER.md)
 
-本文档介绍 [cad-viewer](https://github.com/mlightcad/cad-viewer) 提供的**专有 DWG/DXF 解析器**。它是开源方案 `dxf-json` / `dxf-json-converter` 与 `libredwg-web` / `libredwg-converter` 的商业替代选项。
+本文档介绍 [cad-viewer](https://github.com/mlightcad/cad-viewer) 提供的**专有 DWG 解析器**。它是开源方案 `libredwg-web` / `libredwg-converter` 的商业替代选项。
 
 若您正在构建**闭源商业产品**、**白标部署**，或 **SaaS / 本地部署 CAD 查看器**，且无法向客户分发 GPL-3.0 代码，本解析器适用于您的场景。
 
@@ -15,9 +15,8 @@
 | 格式 | 是否支持 |
 |------|----------|
 | **DWG** | 是 |
-| **DXF** | 是 |
 
-专有解析器**同时支持 DWG 与 DXF**，可作为默认开源解析器的直接替换，并提供：
+专有解析器支持 **DWG**，可作为默认开源 DWG 解析器的直接替换，并提供：
 
 - 相比基于 LibreDWG 的方案，**内存占用更低**
 - **支持更大的 DWG 文件**（不受 `libredwg-web` WASM 堆内存限制）
@@ -44,7 +43,7 @@
 
 您**不得**：
 
-- **将解析器作为独立的 DWG/DXF 解析库或 SDK 二次分发或单独售卖。** 授权范围是在您自己的应用或服务中使用，而非对外提供 competing 的解析器产品。此限制用于避免与解析器本身的商业冲突。
+- **将解析器作为独立的 DWG 解析库或 SDK 二次分发或单独售卖。** 授权范围是在您自己的应用或服务中使用，而非对外提供 competing 的解析器产品。此限制用于避免与解析器本身的商业冲突。
 
 若您的场景不符合上述说明（例如计划向第三方提供解析器 SDK），请联系我们单独协商。
 
@@ -71,7 +70,7 @@
 专有解析器以**可注册的 converter** 形式提供，与开源解析器接入同一套流程。
 
 - 输出符合 MIT 授权的 **`@mlightcad/data-model`**：`AcDbDatabase`、`AcDb*` 实体、图层表、块等结构。
-- 通过 **`AcDbDatabaseConverterManager`** 注册，与当前的 `AcDbDxfConverter`、`AcDbLibreDwgConverter` 机制相同。
+- 通过 **`AcDbDatabaseConverterManager`** 注册，与当前的 `AcDbLibreDwgConverter` 机制相同。
 - 解析完成后，现有 **MIT 渲染、图层、选择与交互管线**（`cad-simple-viewer`、`cad-viewer`、各插件等）**无需改动**。
 
 典型集成方式（示意）：
@@ -83,25 +82,25 @@ import { AcDbProprietaryConverter } from '@mlightcad/proprietary-converter'
 
 const converter = new AcDbProprietaryConverter({ /* options */ })
 AcDbDatabaseConverterManager.instance.register(AcDbFileType.DWG, converter)
-AcDbDatabaseConverterManager.instance.register(AcDbFileType.DXF, converter)
 ```
 
-若使用专有解析器以满足合规要求，请**不要**再注册基于 GPL 的 `dxf-json-converter` 或 `libredwg-converter`。
+若使用专有解析器以满足合规要求，请**不要**再注册基于 GPL 的 `libredwg-converter`。
 
 ---
 
 ## GPL 合规
 
-cad-viewer 默认文件加载路径使用 GPL-3.0 包：
+cad-viewer 默认 DWG 加载路径使用 GPL-3.0 包：
 
 | 包 | 许可证 | 作用 |
 |----|--------|------|
-| `dxf-json` / `@mlightcad/dxf-json-converter` | GPL-3.0 | DXF 解析 |
 | `libredwg-web` / `@mlightcad/libredwg-converter` | GPL-3.0 | DWG 解析 |
 
-若您**用专有解析器替换上述 converter**，并从构建中**移除 GPL 依赖**，应用可仅依赖 **MIT 授权**的 cad-viewer 技术栈（`data-model`、`cad-simple-viewer`、渲染器、插件等）。
+DXF 加载使用 `@mlightcad/data-model` 中内置的 MIT 解析器，无需专有解析器。
 
-**您可以从依赖图中完全移除 GPL 包** — 包括 `dxf-json`、`dxf-json-converter` 及 LibreDWG 相关包 — 从而**不向客户分发任何 GPL 代码**，前提是所有 DWG/DXF 摄入均通过专有解析器完成。
+若您**用专有解析器替换 LibreDWG converter**，并从构建中**移除 GPL 依赖**，应用可仅依赖 **MIT 授权**的 cad-viewer 技术栈（`data-model`、`cad-simple-viewer`、渲染器、插件等）。
+
+**您可以从依赖图中完全移除 GPL 包** — 包括 LibreDWG 相关包 — 从而**不向客户分发任何 GPL 代码**，前提是所有 DWG 摄入均通过专有解析器完成。
 
 ---
 
@@ -113,7 +112,7 @@ cad-viewer 目前为**个人开源项目**（非公司运营），作者**全职
 |------|------|
 | **缺陷修复** | 包含 — 报告的问题会尽快处理 |
 | **解析器更新 / 升级包** | 首年包含；之后需年度捐赠 |
-| **新 DWG/DXF 版本兼容** | 通过升级包提供 |
+| **新 DWG 版本兼容** | 通过升级包提供 |
 | **集成技术支持** | 合理的邮件支持，协助接入 converter |
 | **响应时间** | 一般**一个工作日内**响应已报告的缺陷 |
 

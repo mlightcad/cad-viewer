@@ -14,8 +14,13 @@ export class AcApDxfConvertor {
     this.createFileAndDownloadIt(dxfContent, `${baseName}.dxf`)
   }
 
-  private createFileAndDownloadIt(dxfContent: string, fileName: string) {
-    const dxfBlob = new Blob([dxfContent], {
+  private createFileAndDownloadIt(
+    dxfContent: string | Uint8Array,
+    fileName: string
+  ) {
+    const blobPart: BlobPart =
+      typeof dxfContent === 'string' ? dxfContent : new Uint8Array(dxfContent)
+    const dxfBlob = new Blob([blobPart], {
       type: 'application/dxf;charset=utf-8'
     })
     const url = URL.createObjectURL(dxfBlob)

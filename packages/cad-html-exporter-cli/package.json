@@ -22,7 +22,6 @@
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.11.1",
-    "@mlightcad/dxf-json-converter": "^1.11.1",
     "@mlightcad/libredwg-converter": "^3.11.1",
     "@mlightcad/mtext-renderer": "^0.11.10",
     "commander": "^12.1.0",

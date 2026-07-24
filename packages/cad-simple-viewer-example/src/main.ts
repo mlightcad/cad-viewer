@@ -759,7 +759,6 @@ class CadViewerApp {
         },
         webworkerFileUrls: {
           mtextRender: './workers/mtext-renderer-worker.js',
-          dxfParser: './workers/dxf-parser-worker.js',
           dwgParser: './workers/libredwg-parser-worker.js'
         },
         htmlViewerRuntimeUrl: './viewer-runtime.iife.js'

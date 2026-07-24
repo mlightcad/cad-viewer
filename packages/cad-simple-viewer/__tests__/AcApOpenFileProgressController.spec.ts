@@ -31,6 +31,11 @@ jest.mock('../src/i18n', () => ({
   }
 }))
 
+jest.mock('../src/util/yieldToMain', () => ({
+  yieldToMain: jest.fn(() => Promise.resolve())
+}))
+
+import { yieldToMain } from '../src/util/yieldToMain'
 import { AcApOpenFileProgressController } from '../src/app/AcApOpenFileProgressController'
 
 describe('AcApOpenFileProgressController', () => {
@@ -44,6 +49,7 @@ describe('AcApOpenFileProgressController', () => {
   beforeEach(() => {
     mockProgressInstances.length = 0
     mockEventBusEmit.mockClear()
+    ;(yieldToMain as jest.Mock).mockClear()
     controller = new AcApOpenFileProgressController({} as HTMLElement)
     progress = mockProgressInstances[0]
     progress.hide.mockClear()
@@ -81,20 +87,19 @@ describe('AcApOpenFileProgressController', () => {
 
     controller.handle({
       database,
-      percentage: 80,
+      percentage: 100,
       stage: 'FETCH_FILE',
-      subStageStatus: 'IN-PROGRESS'
+      subStageStatus: 'END'
     })
-
-    const conversion = controller.handle({
+    const next = controller.handle({
       database,
-      percentage: 10,
+      percentage: 5,
       stage: 'CONVERSION',
-      subStage: 'ENTITY',
-      subStageStatus: 'IN-PROGRESS'
+      subStage: 'PARSE',
+      subStageStatus: 'START'
     })
 
-    expect(conversion.percentage).toBe(10)
+    expect(next.percentage).toBe(5)
   })
 
   it('hides the overlay when open-file progress completes', () => {
@@ -128,6 +133,22 @@ describe('AcApOpenFileProgressController', () => {
     })
 
     expect(next.percentage).toBe(20)
+  })
+
+  it('beginOpen shows the overlay and yields for paint', async () => {
+    await controller.beginOpen({})
+
+    expect(progress.show).toHaveBeenCalled()
+    expect(yieldToMain).toHaveBeenCalled()
+    expect(mockEventBusEmit).toHaveBeenCalledWith(
+      'open-file-progress',
+      expect.objectContaining({
+        percentage: 0,
+        stage: 'CONVERSION',
+        subStage: 'START',
+        subStageStatus: 'START'
+      })
+    )
   })
 
   it('emits fonts-not-loaded when font loading fails but parsing continues', () => {

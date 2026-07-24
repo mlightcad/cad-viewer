@@ -26,13 +26,6 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: './node_modules/@mlightcad/dxf-json-converter/dist/dxf-parser-worker.js',
-          dest: '',
-          // v4 preserves source dir structure; flatten so consumers find
-          // `dist/*-worker.js` (see cad-*-viewer-example static-copy globs).
-          rename: { stripBase: true }
-        },
-        {
           src: './node_modules/@mlightcad/libredwg-converter/dist/libredwg-parser-worker.js',
           dest: '',
           rename: { stripBase: true }

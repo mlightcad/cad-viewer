@@ -38,7 +38,6 @@ async function ensureViewer(): Promise<void> {
     baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
     useMainThreadDraw: true,
     webworkerFileUrls: {
-      dxfParser: './workers/dxf-parser-worker.js',
       dwgParser: './workers/libredwg-parser-worker.js',
       mtextRender: './workers/mtext-renderer-worker.js'
     }

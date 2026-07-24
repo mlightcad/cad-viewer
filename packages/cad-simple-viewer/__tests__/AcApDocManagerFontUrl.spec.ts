@@ -221,10 +221,6 @@ jest.mock('@mlightcad/data-model', () => ({
   }
 }))
 
-jest.mock('@mlightcad/dxf-json-converter', () => ({
-  AcDbDxfConverter: jest.fn()
-}))
-
 jest.mock('@mlightcad/libredwg-converter', () => ({
   AcDbLibreDwgConverter: jest.fn()
 }))
