@@ -949,8 +949,9 @@ class CadViewerApp {
 
     this.clearMessages()
 
+    let fileContent: ArrayBuffer | null = null
     try {
-      const fileContent = await this.readFile(file)
+      fileContent = await this.readFile(file)
       const options: AcApOpenDatabaseOptions = {
         minimumChunkSize: 1000,
         mode: AcEdOpenMode.Write,
@@ -976,6 +977,7 @@ class CadViewerApp {
       log.error('Error loading file:', error)
       this.showMessage(`Error loading file: ${error}`, 'error')
     } finally {
+      fileContent = null
       this.finishLoadingState()
     }
   }

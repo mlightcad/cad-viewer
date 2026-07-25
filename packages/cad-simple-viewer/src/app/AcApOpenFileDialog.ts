@@ -116,8 +116,9 @@ const onFileChange = async (event: Event) => {
     return
   }
 
+  let content: ArrayBuffer | null = null
   try {
-    const content = await readFileAsArrayBuffer(file)
+    content = await readFileAsArrayBuffer(file)
     const { AcApDocManager } = await import('./AcApDocManager')
     const options = await resolveOpenDocumentDefaults(
       currentOptions.getOpenDocumentDefaults
@@ -128,6 +129,8 @@ const onFileChange = async (event: Event) => {
     await AcApDocManager.instance.openDocument(file.name, content, options)
   } catch (error) {
     log.error('Failed to open selected file:', error)
+  } finally {
+    content = null
   }
 }
 
