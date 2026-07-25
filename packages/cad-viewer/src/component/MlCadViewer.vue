@@ -369,12 +369,13 @@ const openLocalFile = async (file: File) => {
   const options = buildOpenOptions()
   beginDocumentOpening()
   beginPendingOpen(options.mode ?? AcEdOpenMode.Read)
+  let fileContent: ArrayBuffer | null = null
   try {
     const reader = new FileReader()
     reader.readAsArrayBuffer(file)
 
     // Wait for file reading to complete
-    const fileContent = await new Promise<ArrayBuffer>((resolve, reject) => {
+    fileContent = await new Promise<ArrayBuffer>((resolve, reject) => {
       reader.onload = event => {
         const result = event.target?.result
         if (result) {
@@ -403,6 +404,7 @@ const openLocalFile = async (file: File) => {
       showClose: true
     })
   } finally {
+    fileContent = null
     endDocumentOpening()
     endPendingOpen()
   }

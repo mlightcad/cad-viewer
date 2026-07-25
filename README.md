@@ -182,8 +182,6 @@ These optimizations enable CAD-Viewer to smoothly render complex CAD drawings wi
 
 CAD-Viewer has some known limitations that users should be aware of:
 
-- **Unsupported Entities**: 
-  - **XRefs**: External references (XRefs) are not currently supported. This is mainly because file access in the browser works differently from desktop CAD applications. Support for XRefs is planned for a future release.
 - **DWG File Compatibility**: 
   - Some DWG drawings may fail to open due to bugs in the underlying [LibreDWG](https://github.com/LibreDWG/libredwg) library. This is a known limitation of the current DWG parsing implementation. If you find those issues, please log one issue on [CAD-Viewer issues page](https://github.com/mlightcad/cad-viewer/issues) or [LibreDWG issues page](https://github.com/LibreDWG/libredwg/issues).
   - Drawings that contain third-party custom entities (e.g., Tianzheng drawings in the Chinese architecture and construction industry) may not display correctly unless proxy graphics are saved. When saving such drawings, ensure the system variable `PROXYGRAPHICS` is set to `1`. If proxy graphics are embedded in the file, CAD-Viewer can display them.
@@ -194,6 +192,7 @@ CAD-Viewer has some known limitations that users should be aware of:
   |-------|---------|
   | 0 | Do not save proxy graphics |
   | 1 | Save proxy graphics |
+  
 - **DWG File Size Limits**:
   - Parsing DWG files with LibreDWG is memory-intensive and can easily exceed 2 GB of RAM. `libredwg-web` therefore enforces WASM heap memory limits; very large DWG files may fail to parse.
   - We offer a [**proprietary DWG parser**](./PROPRIETARY-PARSER.md) with significantly lower memory usage, support for larger files, and more accurate parsing. It integrates with the same `@mlightcad/data-model` as the open-source converters and can replace the GPL-based `libredwg-converter` stack for closed-source commercial products. See the [commercial license document](./PROPRIETARY-PARSER.md) for scope, pricing, GPL compliance, and support terms.

@@ -5,6 +5,7 @@ import {
   AcDbDatabaseConverterManager,
   AcDbFileType,
   acdbHostApplicationServices,
+  AcDbNativeDxfConverter,
   AcDbOpenDatabaseOptions,
   AcDbSysVarManager,
   AcGeBox2d,
@@ -1752,15 +1753,28 @@ export class AcApDocManager {
   /**
    * Registers file format converters for CAD file processing.
    *
-   * DXF uses the built-in converter from `@mlightcad/data-model`
-   * (`AcDbNativeDxfConverter`), registered automatically on import.
-   * This method registers the DWG converter (`@mlightcad/libredwg-converter`)
-   * with a worker URL.
+   * DXF uses {@link AcDbNativeDxfConverter} from `@mlightcad/data-model`.
+   * Registration is done explicitly here (not only via the package import
+   * side effect) so the converter is bound to the same
+   * {@link AcDbDatabaseConverterManager} singleton this app imports — import
+   * side effects alone can be dropped by CJS/lib bundling or duplicated
+   * package instances.
+   *
+   * DWG uses `@mlightcad/libredwg-converter` with a worker URL.
    *
    * Registration errors are logged without throwing so the application can
    * continue if registration fails.
    */
   private registerConverters(webworkerFileUrls?: AcApWebworkerFiles) {
+    try {
+      AcDbDatabaseConverterManager.instance.register(
+        AcDbFileType.DXF,
+        new AcDbNativeDxfConverter()
+      )
+    } catch (error) {
+      log.error('Failed to register dxf converter: ', error)
+    }
+
     try {
       const converter = new AcDbLibreDwgConverter({
         convertByEntityType: false,
@@ -1781,8 +1795,8 @@ export class AcApDocManager {
    * Initializes background workers used by the viewer runtime.
    *
    * This function performs two tasks:
-   * - Registers the DWG converter with a worker-based parser. DXF uses the
-   *   built-in `@mlightcad/data-model` converter (no separate worker).
+   * - Registers DXF/DWG converters (native DXF on the main thread; LibreDWG
+   *   DWG parser in a worker).
    * - Initializes the MText renderer by pointing it to its dedicated Web Worker
    *   script for text layout and shaping.
    *
