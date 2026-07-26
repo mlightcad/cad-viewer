@@ -12,7 +12,9 @@ import {
   AcApSettingManager,
   AcEdOpenMode,
   applyUiTheme,
-  isCompactUiLayout
+  isCompactUiLayout,
+  LIBREDWG_PARSER_WORKER_FILE,
+  MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbSysVarManager, log } from '@mlightcad/data-model'
 
@@ -758,8 +760,8 @@ class CadViewerApp {
           }
         },
         webworkerFileUrls: {
-          mtextRender: './workers/mtext-renderer-worker.js',
-          dwgParser: './workers/libredwg-parser-worker.js'
+          mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`,
+          dwgParser: `./workers/${LIBREDWG_PARSER_WORKER_FILE}`
         },
         htmlViewerRuntimeUrl: './viewer-runtime.iife.js'
       })
