@@ -10,6 +10,9 @@ export default {
     about: {
       description: 'Displays information about mlightcad'
     },
+    acadver: {
+      description: 'Stores the drawing database version identifier (read-only)'
+    },
     angbase: {
       description:
         'Sets the base angle 0 direction with respect to the current UCS'
@@ -47,7 +50,7 @@ export default {
     celweight: {
       description: 'Sets the default lineweight for newly created objects'
     },
-    cetranparency: {
+    cetransparency: {
       description: 'Sets the transparency for newly created objects'
     },
     cachefont: {
@@ -89,6 +92,12 @@ export default {
     dimlinear: {
       description: 'Creates linear dimensions'
     },
+    dimstyle: {
+      description: 'Sets the name of the current dimension style'
+    },
+    dwgname: {
+      description: 'Stores the name of the current drawing file (read-only)'
+    },
     dynmode: {
       description: 'Controls Dynamic Input settings at the cursor'
     },
@@ -102,6 +111,14 @@ export default {
     erase: {
       description: 'Deletes selected entities from the drawing',
       prompt: 'Select entities'
+    },
+    extmax: {
+      description:
+        'Stores the upper-right corner of the model-space drawing extents (read-only)'
+    },
+    extmin: {
+      description:
+        'Stores the lower-left corner of the model-space drawing extents (read-only)'
     },
     entout: {
       description: 'Exports a merged preview image for selected entities',
@@ -241,6 +258,9 @@ export default {
     log: {
       description: 'Logs debug information in console'
     },
+    ltscale: {
+      description: 'Sets the global linetype scale factor for the drawing'
+    },
     lunits: {
       description: 'Sets the display format for coordinates and distances'
     },
@@ -274,6 +294,9 @@ export default {
     measurementcolor: {
       description: 'Sets the color used for measurement overlays'
     },
+    modelbkcolor: {
+      description: 'Sets the background color of the model-space drawing area'
+    },
     mline: {
       description: 'Creates multiple parallel lines as one multiline object'
     },
@@ -295,12 +318,26 @@ export default {
       description:
         'Controls whether open-file stage timing profiles are logged to the console'
     },
+    orthomode: {
+      description:
+        'Constrains cursor movement to the horizontal or vertical axis'
+    },
     osmode: {
       description: 'Sets running Object Snap modes using a bitcode value'
     },
     pan: {
       description:
         'Shifts the view without changing the viewing direction or magnification'
+    },
+    paperbkcolor: {
+      description:
+        'Sets the background color of the paper-space (layout) drawing area'
+    },
+    pdmode: {
+      description: 'Controls how POINT entities are displayed'
+    },
+    pdsize: {
+      description: 'Sets the display size for POINT entities'
     },
     pickbox: {
       description:
@@ -314,6 +351,16 @@ export default {
     },
     point: {
       description: 'Creates points'
+    },
+    polaraddang: {
+      description:
+        'Stores additional polar tracking angles as a semicolon-separated list'
+    },
+    polarang: {
+      description: 'Sets the polar angle increment for polar tracking'
+    },
+    polarmode: {
+      description: 'Controls polar and object snap tracking settings'
     },
     polygon: {
       description:

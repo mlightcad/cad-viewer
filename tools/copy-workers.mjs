@@ -19,6 +19,14 @@ import {
 } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
+import {
+  DWG_CONVERTER_PACKAGE,
+  DWG_PARSER_WORKER_FILE,
+  LIBREDWG_CONVERTER_PACKAGE,
+  LIBREDWG_PARSER_WORKER_FILE,
+  MTEXT_RENDERER_PACKAGE,
+  MTEXT_RENDERER_WORKER_FILE
+} from './worker-assets.mjs'
 
 const packageRoot = process.cwd()
 const require = createRequire(join(packageRoot, 'package.json'))
@@ -81,18 +89,15 @@ function copyOptionalWorker(pkgName, workerFile, outDir) {
 function copyProducerWorkers() {
   const outDir = join(packageRoot, 'dist')
   mkdirSync(outDir, { recursive: true })
-  copyOptionalWorker('@mlightcad/dwg-converter', 'dwg-parser-worker.js', outDir)
+  // Optional proprietary converter.
+  copyOptionalWorker(DWG_CONVERTER_PACKAGE, DWG_PARSER_WORKER_FILE, outDir)
   copy(
-    join(
-      pkgRoot('@mlightcad/mtext-renderer'),
-      'dist',
-      'mtext-renderer-worker.js'
-    ),
-    join(outDir, 'mtext-renderer-worker.js')
+    join(pkgRoot(MTEXT_RENDERER_PACKAGE), 'dist', MTEXT_RENDERER_WORKER_FILE),
+    join(outDir, MTEXT_RENDERER_WORKER_FILE)
   )
   copyOptionalWorker(
-    '@mlightcad/libredwg-converter',
-    'libredwg-parser-worker.js',
+    LIBREDWG_CONVERTER_PACKAGE,
+    LIBREDWG_PARSER_WORKER_FILE,
     outDir
   )
 }

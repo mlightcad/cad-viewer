@@ -2,6 +2,10 @@ import {
   checkWebworkerReadiness,
   resetWebworkerReadinessCache
 } from '../src/app/AcApWebworkerReadiness'
+import {
+  LIBREDWG_PARSER_WORKER_FILE,
+  MTEXT_RENDERER_WORKER_FILE
+} from '../src/app/AcApWorkerAssets'
 
 function mockFetch(
   implementation: (...args: unknown[]) => unknown
@@ -11,6 +15,8 @@ function mockFetch(
 
 describe('checkWebworkerReadiness', () => {
   const originalFetch = global.fetch
+  const dwgParserUrl = `/workers/${LIBREDWG_PARSER_WORKER_FILE}`
+  const mtextRenderUrl = `/workers/${MTEXT_RENDERER_WORKER_FILE}`
 
   beforeEach(() => {
     resetWebworkerReadinessCache()
@@ -26,16 +32,13 @@ describe('checkWebworkerReadiness', () => {
     )
 
     const ready = await checkWebworkerReadiness({
-      dwgParser: '/workers/libredwg-parser-worker.js',
-      mtextRender: '/workers/mtext-renderer-worker.js'
+      dwgParser: dwgParserUrl,
+      mtextRender: mtextRenderUrl
     })
 
     expect(ready).toBe(true)
     expect(global.fetch).toHaveBeenCalledTimes(2)
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/workers/libredwg-parser-worker.js',
-      { method: 'HEAD' }
-    )
+    expect(global.fetch).toHaveBeenCalledWith(dwgParserUrl, { method: 'HEAD' })
   })
 
   it('does not cache failures so a later retry can succeed', async () => {
@@ -47,8 +50,8 @@ describe('checkWebworkerReadiness', () => {
     )
 
     const urls = {
-      dwgParser: '/workers/libredwg-parser-worker.js',
-      mtextRender: '/workers/mtext-renderer-worker.js'
+      dwgParser: dwgParserUrl,
+      mtextRender: mtextRenderUrl
     }
 
     expect(await checkWebworkerReadiness(urls)).toBe(false)
@@ -62,8 +65,8 @@ describe('checkWebworkerReadiness', () => {
     )
 
     const urls = {
-      dwgParser: '/workers/libredwg-parser-worker.js',
-      mtextRender: '/workers/mtext-renderer-worker.js'
+      dwgParser: dwgParserUrl,
+      mtextRender: mtextRenderUrl
     }
 
     expect(await checkWebworkerReadiness(urls)).toBe(true)
@@ -80,17 +83,13 @@ describe('checkWebworkerReadiness', () => {
       .mockResolvedValueOnce({ ok: true, status: 206 } as Response)
 
     const ready = await checkWebworkerReadiness({
-      dwgParser: '/workers/libredwg-parser-worker.js'
+      dwgParser: dwgParserUrl
     })
 
     expect(ready).toBe(true)
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/workers/libredwg-parser-worker.js',
-      { method: 'HEAD' }
-    )
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/workers/libredwg-parser-worker.js',
-      { headers: { Range: 'bytes=0-0' } }
-    )
+    expect(global.fetch).toHaveBeenCalledWith(dwgParserUrl, { method: 'HEAD' })
+    expect(global.fetch).toHaveBeenCalledWith(dwgParserUrl, {
+      headers: { Range: 'bytes=0-0' }
+    })
   })
 })

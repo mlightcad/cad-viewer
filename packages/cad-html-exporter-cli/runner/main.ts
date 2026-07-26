@@ -5,7 +5,12 @@ import {
   captureAcApHtmlViewState,
   resolveAcApHtmlExportOptions
 } from '@mlightcad/cad-html-plugin'
-import { AcApDocManager, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApDocManager,
+  AcEdOpenMode,
+  LIBREDWG_PARSER_WORKER_FILE,
+  MTEXT_RENDERER_WORKER_FILE
+} from '@mlightcad/cad-simple-viewer'
 import { accmYieldForPaint } from '@mlightcad/data-model'
 
 declare global {
@@ -39,8 +44,8 @@ async function ensureViewer(): Promise<void> {
     baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
     useMainThreadDraw: true,
     webworkerFileUrls: {
-      dwgParser: './workers/libredwg-parser-worker.js',
-      mtextRender: './workers/mtext-renderer-worker.js'
+      dwgParser: `./workers/${LIBREDWG_PARSER_WORKER_FILE}`,
+      mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`
     }
   })
   ready = true

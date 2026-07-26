@@ -2,6 +2,12 @@ import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  LIBREDWG_CONVERTER_PACKAGE,
+  LIBREDWG_PARSER_WORKER_FILE,
+  MTEXT_RENDERER_PACKAGE,
+  MTEXT_RENDERER_WORKER_FILE
+} from '../../../tools/worker-assets.mjs'
 
 const require = createRequire(import.meta.url)
 const cliPackageRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -40,15 +46,15 @@ mkdirSync(workersDir, { recursive: true })
 
 copy(
   join(
-    pkgRoot('@mlightcad/libredwg-converter'),
+    pkgRoot(LIBREDWG_CONVERTER_PACKAGE),
     'dist',
-    'libredwg-parser-worker.js'
+    LIBREDWG_PARSER_WORKER_FILE
   ),
-  join(workersDir, 'libredwg-parser-worker.js')
+  join(workersDir, LIBREDWG_PARSER_WORKER_FILE)
 )
 copy(
-  join(pkgRoot('@mlightcad/mtext-renderer'), 'dist', 'mtext-renderer-worker.js'),
-  join(workersDir, 'mtext-renderer-worker.js')
+  join(pkgRoot(MTEXT_RENDERER_PACKAGE), 'dist', MTEXT_RENDERER_WORKER_FILE),
+  join(workersDir, MTEXT_RENDERER_WORKER_FILE)
 )
 copy(
   join(pkgRoot('@mlightcad/cad-html-plugin'), 'dist', 'viewer-runtime.iife.js'),

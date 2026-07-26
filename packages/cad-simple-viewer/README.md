@@ -80,9 +80,15 @@ Host applications must deploy the DWG/MTEXT worker files and point to them via
 Before calling `openDocument()`, verify that the workers are reachable. Use the built-in readiness API rather than downloading worker bodies with a plain GET request (the LibreDWG worker alone is ~12 MB):
 
 ```typescript
+import {
+  AcApDocManager,
+  LIBREDWG_PARSER_WORKER_FILE,
+  MTEXT_RENDERER_WORKER_FILE
+} from '@mlightcad/cad-simple-viewer'
+
 const workerUrls = {
-  dwgParser: './workers/libredwg-parser-worker.js',
-  mtextRender: './workers/mtext-renderer-worker.js'
+  dwgParser: `./workers/${LIBREDWG_PARSER_WORKER_FILE}`,
+  mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`
 }
 
 // Option 1: check before creating the manager
