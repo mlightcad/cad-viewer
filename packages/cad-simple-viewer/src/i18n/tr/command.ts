@@ -10,8 +10,11 @@ export default {
     about: {
       description: 'mlightcad hakkında bilgi gösterir'
     },
+    acadver: {
+      description: 'Çizim veritabanı sürüm tanımlayıcısını saklar (salt okunur)'
+    },
     angbase: {
-      description: 'Geçerli KKS\'ye göre 0 açı temel yönünü ayarlar'
+      description: "Geçerli KKS'ye göre 0 açı temel yönünü ayarlar"
     },
     angdir: {
       description:
@@ -48,12 +51,12 @@ export default {
       description:
         'Yeni oluşturulan nesneler için varsayılan çizgi kalınlığını ayarlar'
     },
-    cetranparency: {
+    cetransparency: {
       description: 'Yeni oluşturulan nesneler için saydamlığı ayarlar'
     },
     cachefont: {
       description:
-        'Metin işleme için yerel bir yazı tipi dosyasını IndexedDB\'ye önbelleğe alır'
+        "Metin işleme için yerel bir yazı tipi dosyasını IndexedDB'ye önbelleğe alır"
     },
     circle: {
       description: 'Merkez ve yarıçapa göre bir daire oluşturur'
@@ -80,7 +83,7 @@ export default {
       prompt: 'Varlıkları seçin'
     },
     csvg: {
-      description: 'Geçerli çizimi SVG\'ye dönüştürür'
+      description: "Geçerli çizimi SVG'ye dönüştürür"
     },
     chtml: {
       description:
@@ -88,10 +91,16 @@ export default {
     },
     '-chtml': {
       description:
-        'Komut satırı seçeneklerini kullanarak geçerli çizimi HTML\'e dışa aktarır'
+        "Komut satırı seçeneklerini kullanarak geçerli çizimi HTML'e dışa aktarır"
     },
     dimlinear: {
       description: 'Doğrusal ölçülendirmeler oluşturur'
+    },
+    dimstyle: {
+      description: 'Geçerli ölçülendirme stilinin adını ayarlar'
+    },
+    dwgname: {
+      description: 'Geçerli çizim dosyasının adını saklar (salt okunur)'
     },
     dynmode: {
       description: 'İmleçteki Dinamik Girdi ayarlarını denetler'
@@ -108,6 +117,14 @@ export default {
       description: 'Seçili varlıkları çizimden siler',
       prompt: 'Varlıkları seçin'
     },
+    extmax: {
+      description:
+        'Model alanı çizim kapsamının sağ üst köşesini saklar (salt okunur)'
+    },
+    extmin: {
+      description:
+        'Model alanı çizim kapsamının sol alt köşesini saklar (salt okunur)'
+    },
     entout: {
       description:
         'Seçili varlıklar için birleştirilmiş bir önizleme görüntüsü dışa aktarır',
@@ -122,8 +139,7 @@ export default {
         'Geçerli çizime harici başvuru olarak bir raster görüntü ekler'
     },
     '-insert': {
-      description:
-        'Bir blok tanımını geçerli çizime ekler (komut satırı)'
+      description: 'Bir blok tanımını geçerli çizime ekler (komut satırı)'
     },
     xattach: {
       description:
@@ -210,7 +226,7 @@ export default {
       description: 'Bir katmanı ve o katmandaki tüm nesneleri siler'
     },
     layerclose: {
-      description: 'Katman Özellikleri Yöneticisi\'ni kapatır'
+      description: "Katman Özellikleri Yöneticisi'ni kapatır"
     },
     layerp: {
       description:
@@ -252,6 +268,9 @@ export default {
     log: {
       description: 'Hata ayıklama bilgilerini konsola kaydeder'
     },
+    ltscale: {
+      description: 'Çizim için genel çizgi tipi ölçek faktörünü ayarlar'
+    },
     lunits: {
       description: 'Koordinatlar ve mesafeler için görüntüleme biçimini ayarlar'
     },
@@ -286,6 +305,9 @@ export default {
     measurementcolor: {
       description: 'Ölçüm katmanları için kullanılan rengi ayarlar'
     },
+    modelbkcolor: {
+      description: 'Model alanı çizim alanının arka plan rengini ayarlar'
+    },
     mline: {
       description:
         'Tek bir çoklu çizgi nesnesi olarak birden çok paralel çizgi oluşturur'
@@ -308,6 +330,9 @@ export default {
       description:
         'Dosya açma aşaması zamanlama profillerinin konsola kaydedilip kaydedilmeyeceğini denetler'
     },
+    orthomode: {
+      description: 'İmleç hareketini yatay veya dikey eksenle sınırlar'
+    },
     osmode: {
       description:
         'Bit kodu değeri kullanarak çalışan Nesne Yakalama modlarını ayarlar'
@@ -315,6 +340,16 @@ export default {
     pan: {
       description:
         'Görüntüleme yönünü veya büyütmeyi değiştirmeden görünümü kaydırır'
+    },
+    paperbkcolor: {
+      description:
+        'Kağıt alanı (düzen) çizim alanının arka plan rengini ayarlar'
+    },
+    pdmode: {
+      description: 'POINT varlıklarının nasıl görüntüleneceğini denetler'
+    },
+    pdsize: {
+      description: 'POINT varlıkları için görüntüleme boyutunu ayarlar'
     },
     pickbox: {
       description:
@@ -328,6 +363,16 @@ export default {
     },
     point: {
       description: 'Noktalar oluşturur'
+    },
+    polaraddang: {
+      description:
+        'Ek kutupsal izleme açılarını noktalı virgülle ayrılmış liste olarak saklar'
+    },
+    polarang: {
+      description: 'Kutupsal izleme için kutupsal açı artımını ayarlar'
+    },
+    polarmode: {
+      description: 'Kutupsal ve nesne yakalama izleme ayarlarını denetler'
     },
     polygon: {
       description:

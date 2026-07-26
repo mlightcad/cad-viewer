@@ -10,6 +10,10 @@ export default {
     about: {
       description: 'Zobrazí informace o mlightcad'
     },
+    acadver: {
+      description:
+        'Ukládá identifikátor verze databáze výkresu (pouze pro čtení)'
+    },
     angbase: {
       description: 'Nastaví směr základního úhlu 0 vzhledem k aktuálnímu USS'
     },
@@ -45,7 +49,7 @@ export default {
     celweight: {
       description: 'Nastaví výchozí tloušťku čáry pro nově vytvářené objekty'
     },
-    cetranparency: {
+    cetransparency: {
       description: 'Nastaví průhlednost pro nově vytvářené objekty'
     },
     cachefont: {
@@ -90,6 +94,12 @@ export default {
     dimlinear: {
       description: 'Vytvoří lineární kóty'
     },
+    dimstyle: {
+      description: 'Nastaví název aktuálního stylu kótování'
+    },
+    dwgname: {
+      description: 'Ukládá název aktuálního souboru výkresu (pouze pro čtení)'
+    },
     dynmode: {
       description: 'Řídí nastavení dynamického zadávání u kurzoru'
     },
@@ -103,6 +113,14 @@ export default {
     erase: {
       description: 'Odstraní vybrané objekty z výkresu',
       prompt: 'Vyberte objekty'
+    },
+    extmax: {
+      description:
+        'Ukládá pravý horní roh rozsahu výkresu v modelovém prostoru (pouze pro čtení)'
+    },
+    extmin: {
+      description:
+        'Ukládá levý dolní roh rozsahu výkresu v modelovém prostoru (pouze pro čtení)'
     },
     entout: {
       description: 'Exportuje sloučený náhledový obrázek vybraných objektů',
@@ -238,6 +256,9 @@ export default {
     log: {
       description: 'Zaznamenává ladicí informace do konzole'
     },
+    ltscale: {
+      description: 'Nastaví globální měřítko typu čáry pro výkres'
+    },
     lunits: {
       description: 'Nastaví formát zobrazení souřadnic a vzdáleností'
     },
@@ -270,6 +291,9 @@ export default {
     measurementcolor: {
       description: 'Nastaví barvu použitou pro překryvy měření'
     },
+    modelbkcolor: {
+      description: 'Nastaví barvu pozadí kreslicí oblasti modelového prostoru'
+    },
     mline: {
       description:
         'Vytvoří několik rovnoběžných čar jako jeden objekt multičáry'
@@ -292,12 +316,25 @@ export default {
       description:
         'Řídí, zda se do konzole zaznamenávají časové profily fází otevírání souboru'
     },
+    orthomode: {
+      description: 'Omezí pohyb kurzoru na vodorovnou nebo svislou osu'
+    },
     osmode: {
       description:
         'Nastaví trvalé režimy uchopení objektů pomocí bitové hodnoty'
     },
     pan: {
       description: 'Posune pohled beze změny směru pohledu nebo zvětšení'
+    },
+    paperbkcolor: {
+      description:
+        'Nastaví barvu pozadí kreslicí oblasti výkresového prostoru (rozvržení)'
+    },
+    pdmode: {
+      description: 'Řídí způsob zobrazení bodových entit POINT'
+    },
+    pdsize: {
+      description: 'Nastaví velikost zobrazení bodových entit POINT'
     },
     pickbox: {
       description:
@@ -311,6 +348,17 @@ export default {
     },
     point: {
       description: 'Vytvoří body'
+    },
+    polaraddang: {
+      description:
+        'Ukládá další úhly polárního sledování jako seznam oddělený středníky'
+    },
+    polarang: {
+      description: 'Nastaví přírůstek polárního úhlu pro polární sledování'
+    },
+    polarmode: {
+      description:
+        'Řídí nastavení polárního sledování a sledování uchopení objektů'
     },
     polygon: {
       description:

@@ -9,6 +9,9 @@ export default {
     about: {
       description: '显示 mlightcad 产品信息'
     },
+    acadver: {
+      description: '存储图形数据库版本标识符（只读）'
+    },
     angbase: {
       description: '设置当前 UCS 中 0 度的基准角方向'
     },
@@ -42,7 +45,7 @@ export default {
     celweight: {
       description: '设置新创建对象的默认线宽'
     },
-    cetranparency: {
+    cetransparency: {
       description: '设置新创建对象的透明度'
     },
     cachefont: {
@@ -82,6 +85,12 @@ export default {
     dimlinear: {
       description: '创建线性尺寸标注'
     },
+    dimstyle: {
+      description: '设置当前标注样式的名称'
+    },
+    dwgname: {
+      description: '存储当前图形文件的名称（只读）'
+    },
     dynmode: {
       description: '控制光标处的动态输入设置'
     },
@@ -94,6 +103,12 @@ export default {
     erase: {
       description: '从图纸中删除所选对象',
       prompt: '选择对象'
+    },
+    extmax: {
+      description: '存储模型空间图形范围的右上角（只读）'
+    },
+    extmin: {
+      description: '存储模型空间图形范围的左下角（只读）'
     },
     entout: {
       description: '导出所选对象的合并预览图',
@@ -217,6 +232,9 @@ export default {
     log: {
       description: '在控制台输出调试信息'
     },
+    ltscale: {
+      description: '设置图形的全局线型比例系数'
+    },
     lunits: {
       description: '设置坐标和距离的显示格式'
     },
@@ -247,6 +265,9 @@ export default {
     measurementcolor: {
       description: '设置测量标注覆盖图形使用的颜色'
     },
+    modelbkcolor: {
+      description: '设置模型空间绘图区域的背景颜色'
+    },
     mline: {
       description: '创建由多条平行线组成的多线对象'
     },
@@ -266,11 +287,23 @@ export default {
     openprof: {
       description: '控制是否在控制台记录文件打开阶段的耗时分析'
     },
+    orthomode: {
+      description: '将光标移动限制为水平或垂直方向'
+    },
     osmode: {
       description: '使用位码设置运行中的对象捕捉模式'
     },
     pan: {
       description: '平移视图'
+    },
+    paperbkcolor: {
+      description: '设置图纸空间（布局）绘图区域的背景颜色'
+    },
+    pdmode: {
+      description: '控制点对象的显示样式'
+    },
+    pdsize: {
+      description: '设置点对象的显示大小'
     },
     pickbox: {
       description: '控制用于选择对象的拾取框大小（像素）'
@@ -283,6 +316,15 @@ export default {
     },
     point: {
       description: '连续创建点'
+    },
+    polaraddang: {
+      description: '以分号分隔的列表存储附加极轴追踪角度'
+    },
+    polarang: {
+      description: '设置极轴追踪的极轴角增量'
+    },
+    polarmode: {
+      description: '控制极轴追踪和对象捕捉追踪设置'
     },
     polygon: {
       description: '通过中心和半径或指定一条边创建正多边形'
