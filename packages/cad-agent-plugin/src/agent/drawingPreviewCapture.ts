@@ -1,10 +1,11 @@
 import {
   AcApDocManager,
   AcApEntityPreviewConvertor,
-  AcTrView2d,
-  yieldToMain
+  AcTrView2d
 } from '@mlightcad/cad-simple-viewer'
-import type { AcDbObjectId } from '@mlightcad/data-model'
+import {
+  accmYieldForPaint,
+  type AcDbObjectId} from '@mlightcad/data-model'
 
 /** Default preview long side in pixels for drawing verification. */
 export const VERIFICATION_PREVIEW_LONG_SIDE_PX = 1024
@@ -36,11 +37,11 @@ export async function waitForDrawingSceneReady(
     if (Date.now() > deadline) {
       return false
     }
-    await yieldToMain()
+    await accmYieldForPaint()
     await new Promise(resolve => setTimeout(resolve, SCENE_READY_POLL_MS))
   }
 
-  await yieldToMain()
+  await accmYieldForPaint()
   return true
 }
 

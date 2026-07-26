@@ -1,4 +1,7 @@
-import { AcGeBox2d, AcGeVector2d } from '@mlightcad/data-model'
+import {
+  accmYieldToUi,
+  AcGeBox2d,
+  AcGeVector2d} from '@mlightcad/data-model'
 
 /** Callback that applies a zoom-to-fit in the host view. */
 export type AcTrProgressiveOpenFitZoomFn = (
@@ -99,10 +102,7 @@ export class AcTrProgressiveOpenFitController {
     }
   }
 
-  /**
-   * Yields to {@link requestAnimationFrame} periodically so the render loop can
-   * paint converted geometry during document open.
-   */
+  /** Yields periodically so the render loop can paint during document open. */
   async yieldForRender(entityIndex: number) {
     if (
       !this.active ||
@@ -111,9 +111,7 @@ export class AcTrProgressiveOpenFitController {
       return
     }
 
-    await new Promise<void>(resolve => {
-      requestAnimationFrame(() => resolve())
-    })
+    await accmYieldToUi()
   }
 
   private maybeIncrementalFit(resolveFitBox: () => AcGeBox2d | undefined) {

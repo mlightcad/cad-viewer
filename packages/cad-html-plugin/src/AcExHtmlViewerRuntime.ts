@@ -1,4 +1,4 @@
-import { FLOAT_TOL } from '@mlightcad/data-model'
+import { accmYieldForPaint,FLOAT_TOL } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
@@ -64,9 +64,7 @@ function createHiddenStatusSink(): HTMLElement {
 }
 
 function bootstrap(): void {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => startViewer())
-  })
+  void accmYieldForPaint().then(startViewer)
 }
 
 function startViewer(): void {

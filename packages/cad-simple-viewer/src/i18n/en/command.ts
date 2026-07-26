@@ -291,6 +291,10 @@ export default {
     open: {
       description: 'Opens an existing drawing file'
     },
+    openprof: {
+      description:
+        'Controls whether open-file stage timing profiles are logged to the console'
+    },
     osmode: {
       description: 'Sets running Object Snap modes using a bitcode value'
     },

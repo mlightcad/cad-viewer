@@ -3,9 +3,9 @@ import {
   AcEdBaseView,
   AcTrView2d,
   getDrawingExportBaseName,
-  resolveExportDownloadName,
-  yieldToMain
+  resolveExportDownloadName
 } from '@mlightcad/cad-simple-viewer'
+import { accmYieldForPaint } from '@mlightcad/data-model'
 
 import {
   type AcApHtmlExportOptions,
@@ -62,7 +62,7 @@ export class AcApHtmlConvertor {
     await view.ensureEntitiesConvertedForExport({
       includeInvisibleLayers: resolved.exportInvisibleLayers
     })
-    await yieldToMain()
+    await accmYieldForPaint()
     return view
   }
 
@@ -85,7 +85,7 @@ export class AcApHtmlConvertor {
     const resolved = resolveAcApHtmlExportOptions(options)
 
     await docManager.withBusyIndicator(async () => {
-      await yieldToMain()
+      await accmYieldForPaint()
 
       const document = docManager.curDocument
       const exportView = await this.prepareAcTrView2dForHtmlExport(
@@ -110,20 +110,20 @@ export class AcApHtmlConvertor {
         }
       )
 
-      await yieldToMain()
+      await accmYieldForPaint()
 
       const viewerRuntime = await this.loadViewerRuntime(
         docManager.htmlViewerRuntimeUrl
       )
 
-      await yieldToMain()
+      await accmYieldForPaint()
 
       const html = packHtml(snapshot, {
         title: snapshot.meta.title,
         viewerRuntime
       })
 
-      await yieldToMain()
+      await accmYieldForPaint()
 
       this.downloadHtml(html, resolveExportDownloadName(sourceName, 'html'))
     })
@@ -144,16 +144,16 @@ export class AcApHtmlConvertor {
     const docManager = AcApDocManager.instance
 
     await docManager.withBusyIndicator(async () => {
-      await yieldToMain()
+      await accmYieldForPaint()
       const viewerRuntime = await this.loadViewerRuntime(
         docManager.htmlViewerRuntimeUrl
       )
-      await yieldToMain()
+      await accmYieldForPaint()
       const html = packHtml(snapshot, {
         title: snapshot.meta.title,
         viewerRuntime
       })
-      await yieldToMain()
+      await accmYieldForPaint()
       this.downloadHtml(html, downloadName)
     })
   }

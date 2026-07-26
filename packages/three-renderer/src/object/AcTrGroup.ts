@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrMatrixUtil, effectiveLayer } from '../util'
 import { AcTrEntity } from './AcTrEntity'
+import { AcTrGroupCompactor } from './AcTrGroupCompactor'
 export interface AcTrEntityBox {
   minX: number
   minY: number
@@ -19,6 +20,22 @@ export interface AcTrEntityBox {
 export class AcTrGroup extends AcTrEntity {
   private _isOnTheSameLayer: boolean
   private _wcsChildBoxes: AcTrEntityBox[] = []
+  /**
+   * Shared template for lazy {@link wcsChildBoxes} materialization after
+   * {@link fastDeepClone}. When set, {@link _wcsChildBoxes} is empty until
+   * {@link materializeWcsChildBoxes} runs.
+   */
+  private _wcsChildBoxesTemplate: readonly AcTrEntityBox[] | null = null
+  /**
+   * Accumulated INSERT transform applied to {@link _wcsChildBoxesTemplate}
+   * when the child-box list is still lazy.
+   */
+  private _wcsChildBoxesPendingMatrix: THREE.Matrix4 | null = null
+  /**
+   * True after {@link compactForInstancing} successfully compacted drawable
+   * leaves and released the need to deep-clone {@link _sourceEntities}.
+   */
+  private _compacted = false
   /** Per-source-entity INSERT chain from nested block references to this group's block. */
   private _sourceEntitySpatialMatrices = new Map<AcDbObjectId, THREE.Matrix4>()
 
@@ -49,8 +66,8 @@ export class AcTrGroup extends AcTrEntity {
    * list because a post-flatten {@link THREE.Object3D.traverse} walk cannot recover the
    * detached entity containers.
    *
-   * Entries are deep-cloned in {@link copy} so rendering-cache block instances
-   * keep independent geometry state.
+   * Entries are deep-cloned in {@link copy} unless {@link _compacted} is set,
+   * in which case spatial indexing relies solely on {@link wcsChildBoxes}.
    */
   private _sourceEntities: AcTrEntity[] = []
 
@@ -117,10 +134,9 @@ export class AcTrGroup extends AcTrEntity {
     }
     this._isOnTheSameLayer = !hasEntityInNonZeroLayer
 
-    // Note: Don't merge children because the structure of is group is needed when
-    // hovering over one entity. For example, when hovering on one character in one
-    // block reference, its bounding box is used to check intersection instead of its
-    // real shape. After merging, there is no way to do this kind of check.
+    // Drawable leaves may later be compacted via compactForInstancing for
+    // block-template caching. Hover / spatial indexing still uses
+    // wcsChildBoxes (one box per source entity), not the merged leaf list.
 
     // wcsChildBoxes is the source of truth for spatial indexing. The aggregate
     // wcsBbox union taken during construction (or Box3.applyMatrix4 after INSERT)
@@ -133,9 +149,49 @@ export class AcTrGroup extends AcTrEntity {
     return this._isOnTheSameLayer
   }
 
-  /** Per-child WCS bounding boxes used by the spatial index. */
+  /**
+   * Whether {@link compactForInstancing} has compacted drawable leaves and
+   * released detached {@link _sourceEntities} shells.
+   *
+   * When `true`, {@link fastDeepClone} skips deep-cloning source entities and
+   * relies on {@link wcsChildBoxes} for spatial indexing.
+   */
+  get isCompacted() {
+    return this._compacted
+  }
+
+  /**
+   * Per-child WCS bounding boxes used by the spatial index.
+   *
+   * Materializes any lazy template (from {@link fastDeepClone}) before
+   * returning the live array.
+   */
   get wcsChildBoxes() {
+    this.materializeWcsChildBoxes()
     return this._wcsChildBoxes
+  }
+
+  /**
+   * Merges same-material drawable leaves so block-template clones copy far
+   * fewer geometries. Finalizes deferred MTEXT/SHAPE geometry first.
+   *
+   * After {@link flatten}, source-entity shells are empty even when their
+   * geometry was successfully produced — leaves live under {@link children}.
+   * Deferred MTEXT/SHAPE wrappers that still need {@link syncDraw} also remain
+   * as {@link AcTrEntity} children, so {@link _sourceEntities} is not required
+   * for later clone/sync. Detached source shells are released after compaction
+   * (their leaf buffers were already disposed or reparented) so a later
+   * {@link dispose} cannot touch dangling geometry aliases. Spatial indexing
+   * continues to use {@link wcsChildBoxes}.
+   *
+   * Must be called before the INSERT {@link applyMatrix} while this group is
+   * still at identity.
+   */
+  compactForInstancing() {
+    this.syncDraw()
+    AcTrGroupCompactor.compact(this)
+    this.releaseDetachedSourceShells()
+    this._compacted = true
   }
 
   /**
@@ -193,6 +249,7 @@ export class AcTrGroup extends AcTrEntity {
    *   full entity `matrixWorld` is applied to `wcsBbbox`.
    */
   refreshWcsChildBoxesFromChildren() {
+    this.materializeWcsChildBoxes()
     if (this._wcsChildBoxes.length > 0) {
       this.reconcileDeferredChildBoxes()
       return
@@ -310,6 +367,12 @@ export class AcTrGroup extends AcTrEntity {
   /**
    * Block-reference attributes are appended after {@link applyMatrix}
    * (see AcDbRenderingCache.draw). Register their bounds for spatial indexing.
+   *
+   * Materializes any lazy {@link wcsChildBoxes} template first so
+   * {@link storeBoxes} appends onto the live list instead of being wiped by a
+   * later materialization.
+   *
+   * @param entity - Attribute or other child entity to attach.
    */
   addChild(entity: AcTrEntity) {
     super.addChild(entity)
@@ -323,51 +386,154 @@ export class AcTrGroup extends AcTrEntity {
       // including attributes on their own layers such as title-block CARTOUCHE.
       this._isOnTheSameLayer = false
     }
+    // Materialize before storeBoxes so appended attribute boxes are not lost.
+    this.materializeWcsChildBoxes()
     this.registerSourceEntities(entity)
     this.storeBoxes(entity)
     this.syncWcsBboxFromChildBoxes()
   }
 
   /**
-   * @inheritdoc
+   * Applies an INSERT transform to this group and its spatial-index boxes.
+   *
+   * When child boxes are still lazy ({@link _wcsChildBoxesTemplate}), the
+   * matrix is accumulated into {@link _wcsChildBoxesPendingMatrix} and applied
+   * during the next materialization so copy+transform happens in one pass.
+   *
+   * @param matrix - INSERT transform in drawing coordinates.
    */
   applyMatrix(matrix: AcGeMatrix3d) {
     const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
-    this._wcsChildBoxes.forEach(box => {
-      if (AcTrGroup.isFiniteEntityBox(box)) {
-        this.applyMatrixToEntityBox(box, threeMatrix)
+    if (this._wcsChildBoxesTemplate) {
+      if (!this._wcsChildBoxesPendingMatrix) {
+        this._wcsChildBoxesPendingMatrix = threeMatrix.clone()
+      } else {
+        this._wcsChildBoxesPendingMatrix.premultiply(threeMatrix)
       }
-    })
+    } else {
+      this._wcsChildBoxes.forEach(box => {
+        if (AcTrGroup.isFiniteEntityBox(box)) {
+          this.applyMatrixToEntityBox(box, threeMatrix)
+        }
+      })
+    }
     this.applyMatrix4(threeMatrix)
     this.updateMatrixWorld(true)
     this.syncWcsBboxFromChildBoxes()
   }
 
   /**
-   * @inheritdoc
+   * Copies group metadata for {@link fastDeepClone}.
+   *
+   * Snapshots child boxes into an immutable template so the next
+   * {@link applyMatrix} can materialize copy+transform in one pass. When the
+   * source is {@link isCompacted}, source-entity shells are not deep-cloned.
+   *
+   * @param object - Source group to copy from.
+   * @param recursive - Forwarded to {@link THREE.Object3D.copy}; geometry is
+   *   copied separately by {@link fastDeepClone}.
+   * @returns This group.
    */
   copy(object: AcTrGroup, recursive?: boolean) {
     this._isOnTheSameLayer = object._isOnTheSameLayer
+    this._compacted = object._compacted
+
+    // Snapshot child boxes into an immutable template. applyMatrix accumulates
+    // a pending matrix and materializeWcsChildBoxes performs copy+transform in
+    // one pass. Struct copies are cheap compared to geometry / source-entity
+    // clones; the snapshot also prevents later in-place transforms on the
+    // source group from corrupting cached templates.
+    object.materializeWcsChildBoxes()
     this._wcsChildBoxes = []
-    object.wcsChildBoxes.forEach(box => this._wcsChildBoxes.push({ ...box }))
-    this._sourceEntitySpatialMatrices = new Map()
-    object._sourceEntitySpatialMatrices.forEach((matrix, entityId) => {
-      this._sourceEntitySpatialMatrices.set(entityId, matrix.clone())
-    })
-    this._sourceEntities = object._sourceEntities.map(
-      entity => entity.fastDeepClone() as AcTrEntity
-    )
+    this._wcsChildBoxesTemplate = object._wcsChildBoxes.map(box => ({ ...box }))
+    this._wcsChildBoxesPendingMatrix = null
+
+    if (object._compacted) {
+      this._sourceEntitySpatialMatrices = new Map()
+      this._sourceEntities = []
+    } else {
+      this._sourceEntitySpatialMatrices = new Map()
+      object._sourceEntitySpatialMatrices.forEach((matrix, entityId) => {
+        this._sourceEntitySpatialMatrices.set(entityId, matrix.clone())
+      })
+      this._sourceEntities = object._sourceEntities.map(
+        entity => entity.fastDeepClone() as AcTrEntity
+      )
+    }
     return super.copy(object, recursive)
   }
 
   /**
-   * @inheritdoc
+   * Returns a clone of this group and its direct drawable children.
+   *
+   * Geometry buffers are deep-cloned; materials are reused. When
+   * {@link isCompacted} is true, detached source-entity shells are not cloned.
+   *
+   * @returns Independent group instance suitable for one INSERT.
    */
   fastDeepClone() {
     const cloned = new AcTrGroup([], this.renderContext)
     cloned.copy(this, false)
     this.copyGeometry(this, cloned)
     return cloned
+  }
+
+  /**
+   * Materializes {@link _wcsChildBoxes} from a shared template, applying any
+   * pending INSERT transform in a single pass.
+   *
+   * Boxes already present in {@link _wcsChildBoxes} (for example attributes
+   * appended while the template was still lazy) are preserved and appended
+   * after the template entries.
+   */
+  private materializeWcsChildBoxes() {
+    if (!this._wcsChildBoxesTemplate) {
+      return
+    }
+
+    const template = this._wcsChildBoxesTemplate
+    const pending = this._wcsChildBoxesPendingMatrix
+    const appended = this._wcsChildBoxes
+    this._wcsChildBoxes = []
+    for (let i = 0; i < template.length; i++) {
+      const source = template[i]
+      const box: AcTrEntityBox = { ...source }
+      if (pending && AcTrGroup.isFiniteEntityBox(box)) {
+        this.applyMatrixToEntityBox(box, pending)
+      }
+      this._wcsChildBoxes.push(box)
+    }
+    for (let i = 0; i < appended.length; i++) {
+      this._wcsChildBoxes.push(appended[i])
+    }
+    this._wcsChildBoxesTemplate = null
+    this._wcsChildBoxesPendingMatrix = null
+  }
+
+  /**
+   * Drops detached {@link _sourceEntities} shells after compaction.
+   *
+   * Flattened source shells may still alias geometry buffers that compaction
+   * disposed on the leaf drawables. Clearing those aliases (without disposing
+   * shared materials) keeps a later {@link dispose} safe. Deferred MTEXT/SHAPE
+   * wrappers that remain in {@link children} are left alone.
+   */
+  private releaseDetachedSourceShells() {
+    const liveChildren = new Set(this.children)
+    for (const entity of this._sourceEntities) {
+      if (liveChildren.has(entity)) {
+        continue
+      }
+      // Null geometry aliases that may already have been disposed via the leaf.
+      // Do not dispose materials — they are shared with the style cache / merged
+      // leaves that still render.
+      if ('geometry' in entity) {
+        ;(entity as { geometry?: unknown }).geometry = null
+      }
+      entity.children = []
+    }
+    this._sourceEntities.length = 0
+    this._sourceEntitySpatialMatrices.clear()
   }
 
   /**
@@ -412,6 +578,7 @@ export class AcTrGroup extends AcTrEntity {
    * {@link storeBoxes} ingests new entries.
    */
   private syncWcsBboxFromChildBoxes() {
+    this.materializeWcsChildBoxes()
     if (this._wcsChildBoxes.length === 0) {
       return
     }
@@ -456,7 +623,8 @@ export class AcTrGroup extends AcTrEntity {
    */
   private storeBoxes(object: THREE.Object3D) {
     if (object instanceof AcTrGroup) {
-      object._wcsChildBoxes.forEach(box => {
+      // Use the public getter so a still-lazy nested group materializes first.
+      object.wcsChildBoxes.forEach(box => {
         if (AcTrGroup.isFiniteEntityBox(box)) {
           this._wcsChildBoxes.push({ ...box })
         }

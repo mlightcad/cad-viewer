@@ -5,7 +5,6 @@ import {
   AcDbDatabaseConverterManager,
   AcDbFileType,
   acdbHostApplicationServices,
-  AcDbNativeDxfConverter,
   AcDbOpenDatabaseOptions,
   AcDbSysVarManager,
   AcGeBox2d,
@@ -102,6 +101,7 @@ import {
   acapUninstallOpenFileDialog,
   acapUpdateOpenFileDialogOptions
 } from './AcApOpenFileDialog'
+import { AcApOpenFileProfiler } from './AcApOpenFileProfiler'
 import { AcApOpenFileProgressController } from './AcApOpenFileProgressController'
 import {
   checkWebworkerReadiness,
@@ -376,6 +376,8 @@ export class AcApDocManager {
   private _busyIndicator: AcApBusyIndicator
   /** Open-file progress overlay and event normalization */
   private _openFileProgress: AcApOpenFileProgressController
+  /** Optional OPENPROF session profiler (console stage timings) */
+  private _openFileProfiler = new AcApOpenFileProfiler()
   /** Command manager */
   private _commandManager: AcEdCommandStack
   /** Plugin manager */
@@ -850,11 +852,16 @@ export class AcApDocManager {
   async openUrl(url: string, options?: AcApOpenDatabaseOptions) {
     options = this.setOptions(options)
     this.onBeforeOpenDocument(options)
-    await this._openFileProgress.beginOpen(this.context.doc.database)
-    // TODO: The correct way is to create one new context instead of using old context and document
-    const isSuccess = await this.context.doc.openUri(url, options)
-    this.onAfterOpenDocument(isSuccess, options)
-    return isSuccess
+    try {
+      await this._openFileProgress.beginOpen(this.context.doc.database)
+      // TODO: The correct way is to create one new context instead of using old context and document
+      const isSuccess = await this.context.doc.openUri(url, options)
+      this.onAfterOpenDocument(isSuccess, options)
+      return isSuccess
+    } catch (error) {
+      this._openFileProfiler.cancel()
+      throw error
+    }
   }
 
   /**
@@ -882,15 +889,20 @@ export class AcApDocManager {
   ) {
     options = this.setOptions(options)
     this.onBeforeOpenDocument(options)
-    await this._openFileProgress.beginOpen(this.context.doc.database)
-    // TODO: The correct way is to create one new context instead of using old context and document
-    const isSuccess = await this.context.doc.openDocument(
-      fileName,
-      content,
-      options
-    )
-    this.onAfterOpenDocument(isSuccess, options)
-    return isSuccess
+    try {
+      await this._openFileProgress.beginOpen(this.context.doc.database)
+      // TODO: The correct way is to create one new context instead of using old context and document
+      const isSuccess = await this.context.doc.openDocument(
+        fileName,
+        content,
+        options
+      )
+      this.onAfterOpenDocument(isSuccess, options)
+      return isSuccess
+    } catch (error) {
+      this._openFileProfiler.cancel()
+      throw error
+    }
   }
 
   /**
@@ -1485,6 +1497,8 @@ export class AcApDocManager {
     ;(this.curView as AcTrView2d).progressiveRendering =
       options?.progressiveRendering ?? false
     this.curView.clear()
+    // OPENPROF: start stage timings before db.read / entity flush.
+    this._openFileProfiler.begin(this.context.doc.database)
   }
 
   /**
@@ -1595,7 +1609,10 @@ export class AcApDocManager {
       // above relies on `curView` being an `AcTrView2d`, and the
       // markLayoutAsInitialized method is part of that contract.
       ;(this.curView as AcTrView2d).markLayoutAsInitialized(db.currentSpaceId)
+      // OPENPROF: db.read is done; wait for batchConvert to drain, then print.
+      this._openFileProfiler.markReadCompleteAndScheduleReport(view)
     } else {
+      this._openFileProfiler.cancel()
       this.regen()
     }
   }
@@ -1753,12 +1770,9 @@ export class AcApDocManager {
   /**
    * Registers file format converters for CAD file processing.
    *
-   * DXF uses {@link AcDbNativeDxfConverter} from `@mlightcad/data-model`.
-   * Registration is done explicitly here (not only via the package import
-   * side effect) so the converter is bound to the same
-   * {@link AcDbDatabaseConverterManager} singleton this app imports — import
-   * side effects alone can be dropped by CJS/lib bundling or duplicated
-   * package instances.
+   * DXF needs no registration: the {@link AcDbDatabaseConverterManager}
+   * singleton binds the native DXF converter in its own constructor, so the
+   * converter is always attached to the same instance this app imports.
    *
    * DWG uses `@mlightcad/libredwg-converter` with a worker URL.
    *
@@ -1766,15 +1780,6 @@ export class AcApDocManager {
    * continue if registration fails.
    */
   private registerConverters(webworkerFileUrls?: AcApWebworkerFiles) {
-    try {
-      AcDbDatabaseConverterManager.instance.register(
-        AcDbFileType.DXF,
-        new AcDbNativeDxfConverter()
-      )
-    } catch (error) {
-      log.error('Failed to register dxf converter: ', error)
-    }
-
     try {
       const converter = new AcDbLibreDwgConverter({
         convertByEntityType: false,
@@ -1795,8 +1800,8 @@ export class AcApDocManager {
    * Initializes background workers used by the viewer runtime.
    *
    * This function performs two tasks:
-   * - Registers DXF/DWG converters (native DXF on the main thread; LibreDWG
-   *   DWG parser in a worker).
+   * - Registers the LibreDWG DWG converter (parser runs in a worker). DXF is
+   *   already handled by the converter manager's built-in native converter.
    * - Initializes the MText renderer by pointing it to its dedicated Web Worker
    *   script for text layout and shaping.
    *

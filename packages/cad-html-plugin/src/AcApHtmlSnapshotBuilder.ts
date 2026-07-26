@@ -1,9 +1,10 @@
 import {
   AcApI18n,
-  type AcTrScene,
-  yieldToMain
+  type AcTrScene
 } from '@mlightcad/cad-simple-viewer'
-import type { AcDbDatabase } from '@mlightcad/data-model'
+import {
+  accmYieldForPaint,
+  type AcDbDatabase} from '@mlightcad/data-model'
 
 import { computeLayoutExtents } from './AcExLayerExtents'
 import { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
@@ -102,7 +103,7 @@ export class AcApHtmlSnapshotBuilder {
     database: AcDbDatabase,
     options: AcApHtmlSnapshotBuilderOptions = {}
   ): Promise<AcExSnapshot> {
-    await yieldToMain()
+    await accmYieldForPaint()
 
     const exportInvisibleLayers = options.exportInvisibleLayers !== false
     const includeLayer = exportInvisibleLayers
@@ -137,7 +138,7 @@ export class AcApHtmlSnapshotBuilder {
         const collected = collectBatchesFromObject3D(layer.internalObject)
         lineBatches.push(...collected.lineBatches)
         meshBatches.push(...collected.meshBatches)
-        await yieldToMain()
+        await accmYieldForPaint()
       }
       layouts.push({
         btrId,
@@ -149,7 +150,7 @@ export class AcApHtmlSnapshotBuilder {
           ? buildOsnapCatalog(database, btrId, { includeLayer })
           : undefined
       })
-      await yieldToMain()
+      await accmYieldForPaint()
     }
 
     return {

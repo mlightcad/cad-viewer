@@ -288,6 +288,10 @@ export default {
     open: {
       description: 'Otevře existující soubor výkresu'
     },
+    openprof: {
+      description:
+        'Řídí, zda se do konzole zaznamenávají časové profily fází otevírání souboru'
+    },
     osmode: {
       description:
         'Nastaví trvalé režimy uchopení objektů pomocí bitové hodnoty'

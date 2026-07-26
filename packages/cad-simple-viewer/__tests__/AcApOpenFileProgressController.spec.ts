@@ -6,6 +6,12 @@ const mockProgressInstances: Array<{
 }> = []
 
 const mockEventBusEmit = jest.fn()
+const mockYieldForPaint = jest.fn(() => Promise.resolve())
+
+jest.mock('@mlightcad/data-model', () => ({
+  ...jest.requireActual('@mlightcad/data-model'),
+  accmYieldForPaint: mockYieldForPaint
+}))
 
 jest.mock('../src/app/AcApProgress', () => ({
   AcApProgress: jest.fn().mockImplementation(() => {
@@ -31,11 +37,6 @@ jest.mock('../src/i18n', () => ({
   }
 }))
 
-jest.mock('../src/util/yieldToMain', () => ({
-  yieldToMain: jest.fn(() => Promise.resolve())
-}))
-
-import { yieldToMain } from '../src/util/yieldToMain'
 import { AcApOpenFileProgressController } from '../src/app/AcApOpenFileProgressController'
 
 describe('AcApOpenFileProgressController', () => {
@@ -49,7 +50,7 @@ describe('AcApOpenFileProgressController', () => {
   beforeEach(() => {
     mockProgressInstances.length = 0
     mockEventBusEmit.mockClear()
-    ;(yieldToMain as jest.Mock).mockClear()
+    mockYieldForPaint.mockClear()
     controller = new AcApOpenFileProgressController({} as HTMLElement)
     progress = mockProgressInstances[0]
     progress.hide.mockClear()
@@ -139,7 +140,7 @@ describe('AcApOpenFileProgressController', () => {
     await controller.beginOpen({})
 
     expect(progress.show).toHaveBeenCalled()
-    expect(yieldToMain).toHaveBeenCalled()
+    expect(mockYieldForPaint).toHaveBeenCalled()
     expect(mockEventBusEmit).toHaveBeenCalledWith(
       'open-file-progress',
       expect.objectContaining({
@@ -149,6 +150,60 @@ describe('AcApOpenFileProgressController', () => {
         subStageStatus: 'START'
       })
     )
+  })
+
+  it('dedupes overlay show/setMessage while still emitting every progress event', () => {
+    const database = {}
+
+    controller.handle({
+      database,
+      percentage: 20,
+      stage: 'CONVERSION',
+      subStage: 'ENTITY',
+      subStageStatus: 'START'
+    })
+    controller.handle({
+      database,
+      percentage: 40,
+      stage: 'CONVERSION',
+      subStage: 'ENTITY',
+      subStageStatus: 'IN-PROGRESS'
+    })
+    controller.handle({
+      database,
+      percentage: 60,
+      stage: 'CONVERSION',
+      subStage: 'ENTITY',
+      subStageStatus: 'IN-PROGRESS'
+    })
+
+    expect(progress.show).toHaveBeenCalledTimes(1)
+    expect(progress.setMessage).toHaveBeenCalledTimes(1)
+    expect(progress.setMessage).toHaveBeenCalledWith('main.progress.entity')
+    expect(mockEventBusEmit).toHaveBeenCalledTimes(3)
+  })
+
+  it('updates overlay message when the conversion sub-stage changes', () => {
+    const database = {}
+
+    controller.handle({
+      database,
+      percentage: 5,
+      stage: 'CONVERSION',
+      subStage: 'PARSE',
+      subStageStatus: 'IN-PROGRESS'
+    })
+    controller.handle({
+      database,
+      percentage: 15,
+      stage: 'CONVERSION',
+      subStage: 'FONT',
+      subStageStatus: 'START'
+    })
+
+    expect(progress.setMessage).toHaveBeenNthCalledWith(1, 'main.progress.parse')
+    expect(progress.setMessage).toHaveBeenNthCalledWith(2, 'main.progress.font')
+    expect(progress.show).toHaveBeenCalledTimes(1)
   })
 
   it('emits fonts-not-loaded when font loading fails but parsing continues', () => {

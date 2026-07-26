@@ -6,6 +6,12 @@ const mockProgressInstances: Array<{
 }> = []
 
 const mockEventBusEmit = jest.fn()
+const mockYieldForPaint = jest.fn(() => Promise.resolve())
+
+jest.mock('@mlightcad/data-model', () => ({
+  ...jest.requireActual('@mlightcad/data-model'),
+  accmYieldForPaint: mockYieldForPaint
+}))
 
 jest.mock('../src/app/AcApProgress', () => ({
   AcApProgress: jest.fn().mockImplementation(() => {
@@ -19,10 +25,6 @@ jest.mock('../src/app/AcApProgress', () => ({
   })
 }))
 
-jest.mock('../src/util/yieldToMain', () => ({
-  yieldToMain: jest.fn(() => Promise.resolve())
-}))
-
 jest.mock('../src/editor', () => ({
   eventBus: {
     emit: mockEventBusEmit
@@ -30,7 +32,6 @@ jest.mock('../src/editor', () => ({
 }))
 
 import { AcApBusyIndicator } from '../src/app/AcApBusyIndicator'
-import { yieldToMain } from '../src/util/yieldToMain'
 
 describe('AcApBusyIndicator', () => {
   let indicator: AcApBusyIndicator
@@ -43,8 +44,8 @@ describe('AcApBusyIndicator', () => {
   beforeEach(() => {
     mockProgressInstances.length = 0
     mockEventBusEmit.mockClear()
-    ;(yieldToMain as jest.Mock).mockClear()
-    ;(yieldToMain as jest.Mock).mockImplementation(() => Promise.resolve())
+    mockYieldForPaint.mockClear()
+    mockYieldForPaint.mockImplementation(() => Promise.resolve())
     indicator = new AcApBusyIndicator({} as HTMLElement)
     progress = mockProgressInstances[0]
     progress.hide.mockClear()
@@ -119,7 +120,7 @@ describe('AcApBusyIndicator', () => {
 
   it('yields to the browser after show and before work runs', async () => {
     const order: string[] = []
-    ;(yieldToMain as jest.Mock).mockImplementation(async () => {
+    mockYieldForPaint.mockImplementation(async () => {
       order.push('yield')
     })
 
@@ -129,7 +130,7 @@ describe('AcApBusyIndicator', () => {
     })
 
     expect(order).toEqual(['yield', 'work'])
-    expect(yieldToMain).toHaveBeenCalledTimes(1)
+    expect(mockYieldForPaint).toHaveBeenCalledTimes(1)
     expect(progress.show).toHaveBeenCalledTimes(1)
   })
 

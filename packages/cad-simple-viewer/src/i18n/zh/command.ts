@@ -263,6 +263,9 @@ export default {
     open: {
       description: '打开图纸'
     },
+    openprof: {
+      description: '控制是否在控制台记录文件打开阶段的耗时分析'
+    },
     osmode: {
       description: '使用位码设置运行中的对象捕捉模式'
     },
