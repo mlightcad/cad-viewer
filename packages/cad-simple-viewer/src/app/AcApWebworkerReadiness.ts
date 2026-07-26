@@ -1,9 +1,13 @@
 import type { AcApWebworkerFiles } from './AcApDocManager'
+import {
+  LIBREDWG_PARSER_WORKER_FILE,
+  MTEXT_RENDERER_WORKER_FILE
+} from './AcApWorkerAssets'
 
 /** Default worker script URLs used when `webworkerFileUrls` is omitted. */
 export const DEFAULT_WEBWORKER_FILE_URLS: Required<AcApWebworkerFiles> = {
-  dwgParser: './assets/libredwg-parser-worker.js',
-  mtextRender: './assets/mtext-renderer-worker.js'
+  dwgParser: `./assets/${LIBREDWG_PARSER_WORKER_FILE}`,
+  mtextRender: `./assets/${MTEXT_RENDERER_WORKER_FILE}`
 }
 
 /**
