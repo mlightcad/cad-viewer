@@ -1,8 +1,9 @@
-import { AcDbProgressdEventArgs } from '@mlightcad/data-model'
+import {
+  accmYieldForPaint,
+  AcDbProgressdEventArgs} from '@mlightcad/data-model'
 
 import { AcEdFontNotLoadedInfo, eventBus } from '../editor'
 import { AcApI18n } from '../i18n'
-import { yieldToMain } from '../util/yieldToMain'
 import { AcApProgress } from './AcApProgress'
 import { isOpenFileProgressComplete } from './openFileProgress'
 
@@ -12,11 +13,17 @@ import { isOpenFileProgressComplete } from './openFileProgress'
  * Listens to database open progress callbacks (wired by {@link AcApDocManager}),
  * normalizes monotonic percentages, updates the canvas overlay, and emits
  * `open-file-progress` on the global event bus.
+ *
+ * Overlay DOM updates are deduplicated: `show()` runs once per open, and
+ * `setMessage` only when the localized stage text changes. Progress events
+ * still emit on every callback so listeners see fine-grained percentages.
  */
 export class AcApOpenFileProgressController {
   private readonly _progress: AcApProgress
   private _peak = 0
   private _stage?: AcDbProgressdEventArgs['stage']
+  private _overlayVisible = false
+  private _lastMessage = ''
 
   /**
    * @param host - Canvas container that receives the progress overlay
@@ -32,6 +39,8 @@ export class AcApOpenFileProgressController {
   reset(): void {
     this._peak = 0
     this._stage = undefined
+    this._overlayVisible = false
+    this._lastMessage = ''
   }
 
   /**
@@ -46,7 +55,7 @@ export class AcApOpenFileProgressController {
       subStage: 'START',
       subStageStatus: 'START'
     })
-    await yieldToMain()
+    await accmYieldForPaint()
   }
 
   /**
@@ -117,22 +126,37 @@ export class AcApOpenFileProgressController {
     return { ...data, percentage: this._peak }
   }
 
-  private updateOverlay(data: AcDbProgressdEventArgs): void {
+  private resolveMessage(data: AcDbProgressdEventArgs): string | undefined {
     if (data.stage === 'CONVERSION') {
       if (data.subStage) {
         const key =
           'main.progress.' + data.subStage.replace(/_/g, '').toLowerCase()
-        this._progress.setMessage(AcApI18n.t(key))
+        return AcApI18n.t(key)
       }
-    } else if (data.stage === 'FETCH_FILE') {
-      this._progress.setMessage(AcApI18n.t('main.message.fetchingDrawingFile'))
+      return undefined
     }
+    if (data.stage === 'FETCH_FILE') {
+      return AcApI18n.t('main.message.fetchingDrawingFile')
+    }
+    return undefined
+  }
 
+  private updateOverlay(data: AcDbProgressdEventArgs): void {
     if (isOpenFileProgressComplete(data)) {
       this._progress.hide()
       this.reset()
-    } else {
+      return
+    }
+
+    if (!this._overlayVisible) {
       this._progress.show()
+      this._overlayVisible = true
+    }
+
+    const message = this.resolveMessage(data)
+    if (message != null && message !== this._lastMessage) {
+      this._progress.setMessage(message)
+      this._lastMessage = message
     }
   }
 }

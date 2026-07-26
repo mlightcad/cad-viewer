@@ -6,6 +6,7 @@ import {
   resolveAcApHtmlExportOptions
 } from '@mlightcad/cad-html-plugin'
 import { AcApDocManager, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
+import { accmYieldForPaint } from '@mlightcad/data-model'
 
 declare global {
   interface Window {
@@ -60,8 +61,7 @@ window.exportCadToHtml = async (fileName, bytes, options = {}) => {
     throw new Error(`Failed to open "${fileName}".`)
   }
 
-  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
-  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+  await accmYieldForPaint()
 
   const view = await new AcApHtmlConvertor().prepareAcTrView2dForHtmlExport(
     docManager.curView,

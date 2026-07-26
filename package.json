@@ -17,6 +17,7 @@
     "analyze": "nx run-many -t analyze",
     "build": "nx run-many -t build",
     "clean": "nx run-many -t clean",
+    "copy:workers": "pnpm -r --filter \"./packages/**\" run copy:workers",
     "dev": "nx run @mlightcad/cad-viewer-example:dev",
     "dev:simple": "nx run @mlightcad/cad-simple-viewer-example:dev",
     "docs:build": "typedoc --skipErrorChecking",

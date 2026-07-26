@@ -1,9 +1,9 @@
 import {
   AcApBlockPreviewConvertor,
   AcApDocManager,
-  isInsertableBlockName,
-  yieldToMain
+  isInsertableBlockName
 } from '@mlightcad/cad-simple-viewer'
+import { accmYieldForPaint } from '@mlightcad/data-model'
 import { ref } from 'vue'
 
 export interface InsertableBlockItem {
@@ -169,7 +169,7 @@ export function useInsertableBlocks() {
         blocks.value = items.slice()
       }
       if (i % 4 === 3) {
-        await yieldToMain()
+        await accmYieldForPaint()
       }
     }
   }

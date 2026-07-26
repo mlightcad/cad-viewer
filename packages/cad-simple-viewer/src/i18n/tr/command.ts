@@ -304,6 +304,10 @@ export default {
     open: {
       description: 'Mevcut bir çizim dosyasını açar'
     },
+    openprof: {
+      description:
+        'Dosya açma aşaması zamanlama profillerinin konsola kaydedilip kaydedilmeyeceğini denetler'
+    },
     osmode: {
       description:
         'Bit kodu değeri kullanarak çalışan Nesne Yakalama modlarını ayarlar'

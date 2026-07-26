@@ -10,6 +10,7 @@
   "scripts": {
     "build": "tsc && vite build",
     "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "copy:workers": "node ../../tools/copy-workers.mjs dist/workers",
     "dev": "vite",
     "lint": "eslint src/",
     "lint:fix": "eslint --fix --quiet src/",
@@ -22,7 +23,7 @@
     "@mlightcad/cad-simple-ui-plugin": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.11.1",
+    "@mlightcad/data-model": "^1.12.1",
     "lodash-es": "4.17.21",
     "three": "^0.172.0",
     "vue": "^3.4.21"

@@ -1,5 +1,6 @@
+import { accmYieldForPaint } from '@mlightcad/data-model'
+
 import { eventBus } from '../editor'
-import { yieldToMain } from '../util/yieldToMain'
 import { AcApProgress } from './AcApProgress'
 
 /**
@@ -86,7 +87,7 @@ export class AcApBusyIndicator {
   ): Promise<T> {
     this.show(message)
     try {
-      await yieldToMain()
+      await accmYieldForPaint()
       return await work()
     } finally {
       this.hide()

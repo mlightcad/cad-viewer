@@ -1,6 +1,5 @@
 jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  AcTrView2d: class AcTrView2d {},
-  yieldToMain: jest.fn(() => Promise.resolve())
+  AcTrView2d: class AcTrView2d {}
 }))
 
 import { AcTrView2d } from '@mlightcad/cad-simple-viewer'

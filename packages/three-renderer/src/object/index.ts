@@ -1,6 +1,7 @@
 export * from './AcTrEntity'
 export * from './AcTrGlyphEntity'
 export * from './AcTrGroup'
+export * from './AcTrGroupCompactor'
 export * from './AcTrImage'
 export * from './AcTrLine'
 export * from './AcTrLineSegments'

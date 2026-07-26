@@ -448,4 +448,79 @@ describe('AcTrGroup dispose', () => {
 
     expect(() => outerGroup.syncDraw()).not.toThrow()
   })
+
+  it('skips deep-cloning source entities after compactForInstancing', () => {
+    const context = new AcTrRenderContext()
+    const lineA = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const lineB = createLine('line-b', { x: 0, y: 5 }, { x: 10, y: 5 }, context)
+    const group = new AcTrGroup([lineA, lineB], context)
+    expect(group.getSourceEntities().length).toBe(2)
+
+    group.compactForInstancing()
+    expect(group.isCompacted).toBe(true)
+
+    const cloned = group.fastDeepClone() as AcTrGroup
+    expect(cloned.isCompacted).toBe(true)
+    expect(cloned.getSourceEntities()).toHaveLength(0)
+    expect(cloned.wcsChildBoxes).toEqual(group.wcsChildBoxes)
+  })
+
+  it('lazily materializes wcsChildBoxes with INSERT transform on clone', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 5 }, context)
+    const group = new AcTrGroup([line], context)
+    group.compactForInstancing()
+
+    const cloned = group.fastDeepClone() as AcTrGroup
+    cloned.applyMatrix(new AcGeMatrix3d().makeTranslation(50, 25, 0))
+
+    expect(cloned.wcsChildBoxes[0]).toMatchObject({
+      minX: 50,
+      minY: 25,
+      maxX: 60,
+      maxY: 30,
+      id: 'line-a'
+    })
+    expectWcsBboxCloseTo(cloned.wcsBbox, [50, 25, 0], [60, 30, 0])
+    // Template source boxes remain block-local.
+    expect(group.wcsChildBoxes[0]).toMatchObject({
+      minX: 0,
+      minY: 0,
+      maxX: 10,
+      maxY: 5,
+      id: 'line-a'
+    })
+  })
+
+  it('preserves attribute boxes added before applyMatrix on a lazy clone', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const group = new AcTrGroup([line], context)
+    group.compactForInstancing()
+
+    const cloned = group.fastDeepClone() as AcTrGroup
+    const attribute = createLine(
+      'attr-1',
+      { x: 1, y: 1 },
+      { x: 5, y: 1 },
+      context,
+      'CARTOUCHE'
+    )
+    // addChild while still lazy (no applyMatrix yet).
+    cloned.addChild(attribute)
+    cloned.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 0, 0))
+
+    expect(cloned.wcsChildBoxes.find(box => box.id === 'line-a')).toMatchObject({
+      minX: 100,
+      minY: 0,
+      maxX: 110,
+      maxY: 0
+    })
+    expect(cloned.wcsChildBoxes.find(box => box.id === 'attr-1')).toMatchObject({
+      minX: 101,
+      minY: 1,
+      maxX: 105,
+      maxY: 1
+    })
+  })
 })
