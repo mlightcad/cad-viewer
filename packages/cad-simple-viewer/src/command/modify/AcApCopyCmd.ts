@@ -162,11 +162,15 @@ export class AcApCopyCmd extends AcEdCommand {
    */
   private async promptCopyMode(currentMode: CopyMode) {
     const prompt = new AcEdPromptKeywordOptions(
-      `${AcApI18n.t('jig.copy.modePrompt')} <${currentMode}>`
+      AcApI18n.t('jig.copy.modePrompt')
     )
     prompt.allowNone = true
     this.addKeyword(prompt, 'single')
     this.addKeyword(prompt, 'multiple')
+    const defaultKeyword = prompt.keywords.findByGlobalName(currentMode)
+    if (defaultKeyword) {
+      prompt.keywords.default = defaultKeyword
+    }
 
     const result = await AcApDocManager.instance.editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.None) {

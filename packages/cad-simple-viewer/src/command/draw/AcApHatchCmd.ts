@@ -670,25 +670,25 @@ export class AcApHatchCmd extends AcEdCommand {
   protected async promptStyle() {
     const settings = this.getActiveSettings()
     const current = this.styleToKeyword(settings.style)
-    const options = new AcEdPromptKeywordOptions(
-      `${AcApI18n.t('jig.hatch.style')} <${current}>`
-    )
+    const options = new AcEdPromptKeywordOptions(AcApI18n.t('jig.hatch.style'))
     options.allowNone = true
-    options.keywords.add(
+    const normal = options.keywords.add(
       AcApI18n.t('jig.hatch.keywords.normal.display'),
       AcApI18n.t('jig.hatch.keywords.normal.global'),
       AcApI18n.t('jig.hatch.keywords.normal.local')
     )
-    options.keywords.add(
+    const outer = options.keywords.add(
       AcApI18n.t('jig.hatch.keywords.outer.display'),
       AcApI18n.t('jig.hatch.keywords.outer.global'),
       AcApI18n.t('jig.hatch.keywords.outer.local')
     )
-    options.keywords.add(
+    const ignore = options.keywords.add(
       AcApI18n.t('jig.hatch.keywords.ignore.display'),
       AcApI18n.t('jig.hatch.keywords.ignore.global'),
       AcApI18n.t('jig.hatch.keywords.ignore.local')
     )
+    options.keywords.default =
+      current === 'Outer' ? outer : current === 'Ignore' ? ignore : normal
 
     const result = await AcApDocManager.instance.editor.getKeywords(options)
     if (
@@ -707,21 +707,21 @@ export class AcApHatchCmd extends AcEdCommand {
    */
   protected async promptAssociative() {
     const settings = this.getActiveSettings()
-    const current = settings.associative ? 'Yes' : 'No'
     const options = new AcEdPromptKeywordOptions(
-      `${AcApI18n.t('jig.hatch.associative')} <${current}>`
+      AcApI18n.t('jig.hatch.associative')
     )
     options.allowNone = true
-    options.keywords.add(
+    const yes = options.keywords.add(
       AcApI18n.t('jig.hatch.keywords.yes.display'),
       AcApI18n.t('jig.hatch.keywords.yes.global'),
       AcApI18n.t('jig.hatch.keywords.yes.local')
     )
-    options.keywords.add(
+    const no = options.keywords.add(
       AcApI18n.t('jig.hatch.keywords.no.display'),
       AcApI18n.t('jig.hatch.keywords.no.global'),
       AcApI18n.t('jig.hatch.keywords.no.local')
     )
+    options.keywords.default = settings.associative ? yes : no
     const result = await AcApDocManager.instance.editor.getKeywords(options)
     if (
       result.status === AcEdPromptStatus.OK ||

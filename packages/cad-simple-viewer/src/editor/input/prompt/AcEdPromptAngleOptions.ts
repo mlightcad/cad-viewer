@@ -127,6 +127,11 @@ export class AcEdPromptAngleOptions extends AcEdPromptOptions<number> {
     }
   }
 
+  override getDefaultValueDisplayText(): string | undefined {
+    if (!this._useDefaultValue) return undefined
+    return String(this._defaultValue)
+  }
+
   /**
    * Gets or sets whether zero-valued angles are accepted.
    * Corresponds to `PromptAngleOptions.AllowZero`.

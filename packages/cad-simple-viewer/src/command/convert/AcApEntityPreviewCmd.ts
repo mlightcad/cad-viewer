@@ -47,7 +47,7 @@ export class AcApEntityPreviewCmd extends AcEdCommand {
     }
 
     const longSidePrompt = new AcEdPromptDoubleOptions(
-      `${AcApI18n.t('jig.entout.longSidePrompt')} <${DEFAULT_LONG_SIDE_PX}>`
+      AcApI18n.t('jig.entout.longSidePrompt')
     )
     longSidePrompt.allowNone = true
     longSidePrompt.allowNegative = false

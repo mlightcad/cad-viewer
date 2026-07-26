@@ -360,6 +360,8 @@ export class AcEdInputManager {
   ): AcEdPromptKeywordOptions {
     const keywordOptions = new AcEdPromptKeywordOptions(options.message)
     keywordOptions.appendKeywordsToMessage = options.appendKeywordsToMessage
+    keywordOptions.valueDefaultDisplayText =
+      options.getDefaultValueDisplayText()
 
     const keywords = options.keywords?.toArray() ?? []
     keywords.forEach(kw => {
@@ -1902,7 +1904,7 @@ export class AcEdInputManager {
     const baseAngle = hasBaseAngle ? (options.baseAngle as number) : undefined
 
     return {
-      message: options.message,
+      message: options.getDisplayMessage(),
       jig: options.jig,
       basePoint,
       useBasePoint,

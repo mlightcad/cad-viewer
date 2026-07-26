@@ -31,9 +31,11 @@ export class AcApSysVarCmd extends AcEdCommand {
       context.doc.database
     )
     const basePrompt = AcApI18n.t('jig.sysvar.prompt').trim()
-    const suffix = currentValue == null ? '' : ` <${String(currentValue)}>`
-    const promptMessage = `${basePrompt}${suffix}`
-    const prompt = new AcEdPromptStringOptions(promptMessage)
+    const prompt = new AcEdPromptStringOptions(basePrompt)
+    if (currentValue != null) {
+      prompt.defaultValue = String(currentValue)
+      prompt.useDefaultValue = true
+    }
     const result = await AcApDocManager.instance.editor.getString(prompt)
     if (result.status !== AcEdPromptStatus.OK || !result.stringResult) return
     const value = result.stringResult
