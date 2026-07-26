@@ -217,7 +217,7 @@ export class AcApInsertCmd extends AcEdCommand {
     } else {
       jig.setMode('scale')
       const scalePrompt = new AcEdPromptDoubleOptions(
-        `${AcApI18n.t('jig.insert.scale')} <1>`
+        AcApI18n.t('jig.insert.scale')
       )
       scalePrompt.allowNone = true
       scalePrompt.allowNegative = false
@@ -256,7 +256,7 @@ export class AcApInsertCmd extends AcEdCommand {
     } else {
       jig.setMode('rotation')
       const rotationPrompt = new AcEdPromptAngleOptions(
-        `${AcApI18n.t('jig.insert.rotation')} <0>`
+        AcApI18n.t('jig.insert.rotation')
       )
       rotationPrompt.allowNone = true
       rotationPrompt.allowNegative = true

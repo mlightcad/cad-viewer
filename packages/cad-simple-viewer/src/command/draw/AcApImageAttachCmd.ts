@@ -230,7 +230,7 @@ export class AcApImageAttachCmd extends AcEdCommand {
 
       jig.setMode('scale')
       const scalePrompt = new AcEdPromptDoubleOptions(
-        `${AcApI18n.t('jig.imageattach.scale')} <1>`
+        AcApI18n.t('jig.imageattach.scale')
       )
       scalePrompt.allowNone = true
       scalePrompt.allowNegative = false
@@ -259,7 +259,7 @@ export class AcApImageAttachCmd extends AcEdCommand {
 
       jig.setMode('rotation')
       const rotationPrompt = new AcEdPromptAngleOptions(
-        `${AcApI18n.t('jig.imageattach.rotation')} <0>`
+        AcApI18n.t('jig.imageattach.rotation')
       )
       rotationPrompt.allowNone = true
       rotationPrompt.allowNegative = true

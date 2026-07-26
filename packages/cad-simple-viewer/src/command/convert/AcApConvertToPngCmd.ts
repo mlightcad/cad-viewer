@@ -69,7 +69,7 @@ export class AcApConvertToPngCmd extends AcEdCommand {
 
     // Prompt for long side value (optional - press Enter for default 1024)
     const longSidePrompt = new AcEdPromptDoubleOptions(
-      `${AcApI18n.t('jig.pngout.longSidePrompt')} <${DEFAULT_LONG_SIDE_PX}>`
+      AcApI18n.t('jig.pngout.longSidePrompt')
     )
     longSidePrompt.allowNone = true
     longSidePrompt.allowNegative = false

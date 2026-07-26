@@ -89,4 +89,9 @@ export class AcEdPromptStringOptions extends AcEdPromptOptions<string> {
       this._useDefaultValue = flag
     }
   }
+
+  override getDefaultValueDisplayText(): string | undefined {
+    if (!this._useDefaultValue) return undefined
+    return this._defaultValue
+  }
 }

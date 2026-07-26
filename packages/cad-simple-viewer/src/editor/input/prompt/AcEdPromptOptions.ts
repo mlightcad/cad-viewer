@@ -50,6 +50,9 @@ export class AcEdPromptOptions<T = number | string | AcGePoint3d> {
   /**
    * Gets or sets the message displayed in the prompt.
    * Corresponds to `PromptOptions.Message` in AutoCAD .NET API.
+   *
+   * This is the raw message without the AutoCAD-style `<default>` suffix.
+   * Use {@link getDisplayMessage} when rendering UI text.
    */
   get message(): string {
     return this._message
@@ -59,6 +62,34 @@ export class AcEdPromptOptions<T = number | string | AcGePoint3d> {
     if (!this._isReadOnly) {
       this._message = msg
     }
+  }
+
+  /**
+   * Returns the text shown inside AutoCAD-style angle brackets for the prompt
+   * default value, e.g. `10.5` in `Specify distance <10.5>:`.
+   *
+   * Subclasses that expose `UseDefaultValue` / `DefaultValue` override this.
+   * Keyword defaults are handled separately via {@link keywords}.default.
+   */
+  getDefaultValueDisplayText(): string | undefined {
+    return undefined
+  }
+
+  /**
+   * Returns the prompt message with an AutoCAD-style `<default>` suffix when a
+   * numeric/string/point default is active.
+   *
+   * Keyword lists and keyword defaults are still rendered by the command line
+   * (`[K1/K2] <Default>:`). Prefer this helper for floating prompts and other
+   * surfaces that show the message without the keyword tail.
+   */
+  getDisplayMessage(): string {
+    const defaultText = this.getDefaultValueDisplayText()
+    if (defaultText == null) {
+      return this._message
+    }
+    const core = this._message.trim().replace(/[：:]\s*$/, '')
+    return `${core} <${defaultText}>`
   }
 
   /**

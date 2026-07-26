@@ -68,9 +68,8 @@ export class AcApExportHtmlCmd extends AcEdCommand {
 
   private async promptExportInvisibleLayers(): Promise<boolean | undefined> {
     const defaults = resolveAcApHtmlExportOptions()
-    const current = defaults.exportInvisibleLayers ? 'Yes' : 'No'
     const prompt = new AcEdPromptKeywordOptions(
-      `${AcApI18n.t('jig.chtml.exportInvisibleLayers')} <${current}>`
+      AcApI18n.t('jig.chtml.exportInvisibleLayers')
     )
     prompt.allowNone = true
     const yes = prompt.keywords.add(
@@ -108,12 +107,8 @@ export class AcApExportHtmlCmd extends AcEdCommand {
     AcApHtmlExportOptions['initialView'] | undefined
   > {
     const defaults = resolveAcApHtmlExportOptions()
-    const current =
-      defaults.initialView === 'current'
-        ? AcApI18n.t('jig.chtml.keywords.current.global')
-        : AcApI18n.t('jig.chtml.keywords.extents.global')
     const prompt = new AcEdPromptKeywordOptions(
-      `${AcApI18n.t('jig.chtml.initialView')} <${current}>`
+      AcApI18n.t('jig.chtml.initialView')
     )
     prompt.allowNone = true
     const extents = prompt.keywords.add(
@@ -152,12 +147,8 @@ export class AcApExportHtmlCmd extends AcEdCommand {
     AcApHtmlExportOptions['viewerMode'] | undefined
   > {
     const defaults = resolveAcApHtmlExportOptions()
-    const current =
-      defaults.viewerMode === 'view'
-        ? AcApI18n.t('jig.chtml.keywords.view.global')
-        : AcApI18n.t('jig.chtml.keywords.measure.global')
     const prompt = new AcEdPromptKeywordOptions(
-      `${AcApI18n.t('jig.chtml.viewerMode')} <${current}>`
+      AcApI18n.t('jig.chtml.viewerMode')
     )
     prompt.allowNone = true
     const view = prompt.keywords.add(

@@ -850,10 +850,12 @@ export class AcEdCommandLine {
       })
 
       this.promptEl.append(']')
+    }
 
-      if (promptFormat.defaultKeyword) {
-        this.promptEl.append(` <${promptFormat.defaultKeyword}>`)
-      }
+    const defaultText =
+      promptFormat.defaultKeyword ?? options.valueDefaultDisplayText
+    if (defaultText) {
+      this.promptEl.append(` <${defaultText}>`)
     }
 
     this.promptEl.append(': ')

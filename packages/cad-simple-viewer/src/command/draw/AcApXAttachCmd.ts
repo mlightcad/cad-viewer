@@ -273,9 +273,11 @@ export class AcApXAttachCmd extends AcEdCommand {
       // source drawing that shares the host's coordinate system perfectly
       // aligned, so Enter accepts <0,0> instead of forcing an on-screen pick.
       const insertionPrompt = new AcEdPromptPointOptions(
-        `${AcApI18n.t('jig.xattach.insertionPoint')} <0,0>`
+        AcApI18n.t('jig.xattach.insertionPoint')
       )
       insertionPrompt.allowNone = true
+      insertionPrompt.useDefaultValue = true
+      insertionPrompt.defaultValue = new AcGePoint3d(0, 0, 0)
       insertionPrompt.jig = jig
       const insertionResult =
         await AcApDocManager.instance.editor.getPoint(insertionPrompt)
@@ -293,7 +295,7 @@ export class AcApXAttachCmd extends AcEdCommand {
 
       jig.setMode('scale')
       const scalePrompt = new AcEdPromptDoubleOptions(
-        `${AcApI18n.t('jig.xattach.scale')} <1>`
+        AcApI18n.t('jig.xattach.scale')
       )
       scalePrompt.allowNone = true
       scalePrompt.allowNegative = false
@@ -322,7 +324,7 @@ export class AcApXAttachCmd extends AcEdCommand {
 
       jig.setMode('rotation')
       const rotationPrompt = new AcEdPromptAngleOptions(
-        `${AcApI18n.t('jig.xattach.rotation')} <0>`
+        AcApI18n.t('jig.xattach.rotation')
       )
       rotationPrompt.allowNone = true
       rotationPrompt.allowNegative = true

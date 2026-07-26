@@ -49,6 +49,11 @@ export class AcEdPromptNumericalOptions extends AcEdPromptOptions<number> {
     }
   }
 
+  override getDefaultValueDisplayText(): string | undefined {
+    if (!this._useDefaultValue) return undefined
+    return String(this._defaultValue)
+  }
+
   /**
    * Gets or sets whether pressing ENTER alone (no input) is accepted.
    * Corresponds to `PromptNumericalOptions.AllowNone` in AutoCAD .NET API.

@@ -33,4 +33,13 @@ describe('AcEdKeywordCollection prompt format', () => {
     const format = options.getKeywordPromptFormat()
     expect(format.formattedTail).toBe('[Yes/No] <Yes>:')
   })
+
+  test('valueDefaultDisplayText is preferred after keywords when no keyword default', () => {
+    const options = new AcEdPromptKeywordOptions('Specify distance')
+    options.keywords.add('Through', 'Through', 'Through')
+    options.valueDefaultDisplayText = '10.5'
+
+    expect(options.getKeywordPromptFormat().defaultKeyword).toBeUndefined()
+    expect(options.valueDefaultDisplayText).toBe('10.5')
+  })
 })

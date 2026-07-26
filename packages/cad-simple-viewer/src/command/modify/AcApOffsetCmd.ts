@@ -234,11 +234,9 @@ export class AcApOffsetCmd extends AcEdCommand {
        */
       buildPrompt() {
         const lastDistance = AcApOffsetCmd._lastDistance
-        const message =
-          lastDistance != null
-            ? `${AcApI18n.t('jig.offset.distance')} <${lastDistance}>`
-            : AcApI18n.t('jig.offset.distance')
-        const prompt = new AcEdPromptDistanceOptions(message)
+        const prompt = new AcEdPromptDistanceOptions(
+          AcApI18n.t('jig.offset.distance')
+        )
         prompt.useBasePoint = false
         prompt.useDashedLine = true
         prompt.allowZero = false

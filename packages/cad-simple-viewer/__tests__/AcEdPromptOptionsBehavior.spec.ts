@@ -220,3 +220,31 @@ describe('Prompt option classes behavior matrix', () => {
     })
   })
 })
+
+describe('Prompt default display message', () => {
+  test('appends numeric default when useDefaultValue is true', () => {
+    const opt = new AcEdPromptDoubleOptions('Specify scale:')
+    expect(opt.getDisplayMessage()).toBe('Specify scale:')
+    expect(opt.getDefaultValueDisplayText()).toBeUndefined()
+
+    opt.useDefaultValue = true
+    opt.defaultValue = 1
+    expect(opt.getDefaultValueDisplayText()).toBe('1')
+    expect(opt.getDisplayMessage()).toBe('Specify scale <1>')
+  })
+
+  test('appends string default when useDefaultValue is true', () => {
+    const opt = new AcEdPromptStringOptions('Enter name')
+    opt.useDefaultValue = true
+    opt.defaultValue = 'ANSI31'
+    expect(opt.getDisplayMessage()).toBe('Enter name <ANSI31>')
+  })
+
+  test('leaves raw message unchanged so CLI can place default after keywords', () => {
+    const opt = new AcEdPromptDistanceOptions('Specify distance')
+    opt.useDefaultValue = true
+    opt.defaultValue = 10.5
+    expect(opt.message).toBe('Specify distance')
+    expect(opt.getDefaultValueDisplayText()).toBe('10.5')
+  })
+})

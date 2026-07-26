@@ -7,6 +7,7 @@ import { AcEdPromptOptions } from './AcEdPromptOptions'
 export class AcEdPromptKeywordOptions extends AcEdPromptOptions<string> {
   private _allowNone: boolean = false
   private _allowArbitraryInput: boolean = false
+  private _valueDefaultDisplayText?: string
 
   /**
    * Constructs a new `AcEdPromptKeywordOptions` with a given prompt message.
@@ -14,6 +15,22 @@ export class AcEdPromptKeywordOptions extends AcEdPromptOptions<string> {
    */
   constructor(message: string, globalKeywords?: string) {
     super(message, globalKeywords)
+  }
+
+  /**
+   * Optional numeric/string/point default display text transferred from mixed
+   * prompts (e.g. distance with keywords) so the command line can render
+   * AutoCAD-style `Message [K1/K2] <value>:` tails.
+   *
+   * Keyword defaults via {@link keywords}.default take precedence when both are set.
+   */
+  get valueDefaultDisplayText(): string | undefined {
+    return this._valueDefaultDisplayText
+  }
+  set valueDefaultDisplayText(text: string | undefined) {
+    if (!this.isReadOnly) {
+      this._valueDefaultDisplayText = text
+    }
   }
 
   /**

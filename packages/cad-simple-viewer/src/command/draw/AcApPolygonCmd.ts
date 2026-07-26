@@ -319,16 +319,19 @@ export class AcApPolygonCmd extends AcEdCommand {
     while (true) {
       const defaultSides = AcApPolygonCmd._lastSides
       const sidesPrompt = new AcEdPromptStringOptions(
-        `${AcApI18n.t('jig.polygon.numberOfSides')} <${defaultSides}>`
+        AcApI18n.t('jig.polygon.numberOfSides')
       )
       sidesPrompt.allowEmpty = true
       sidesPrompt.allowSpaces = false
+      sidesPrompt.defaultValue = String(defaultSides)
+      sidesPrompt.useDefaultValue = true
       const sidesResult =
         await AcApDocManager.instance.editor.getString(sidesPrompt)
       if (sidesResult.status !== AcEdPromptStatus.OK) return undefined
 
       const rawInput = (sidesResult.stringResult ?? '').trim()
-      const rawValue = rawInput === '' ? defaultSides : Number(rawInput)
+      const rawValue =
+        rawInput === '' ? defaultSides : Number(rawInput)
       if (
         Number.isInteger(rawValue) &&
         rawValue >= MIN_SIDES &&
