@@ -29,7 +29,6 @@ import {
 } from './worker-assets.mjs'
 
 const packageRoot = process.cwd()
-const workspaceRoot = resolve(packageRoot, '../..')
 const require = createRequire(join(packageRoot, 'package.json'))
 const destRelative = process.argv[2]
 
@@ -56,15 +55,11 @@ function pkgRoot(name) {
   return pkgRootFrom(require, name)
 }
 
-/**
- * Resolves an optional package from this package, sibling example apps, or the
- * local realdwg-web checkout used by pnpm-workspace overrides.
- */
+/** Resolves an optional package from this package or its sibling example app. */
 function tryPkgRoot(name) {
   const requireBases = [
     join(packageRoot, 'package.json'),
-    join(packageRoot, '../cad-simple-viewer-example/package.json'),
-    join(workspaceRoot, 'package.json')
+    join(packageRoot, '../cad-simple-viewer-example/package.json')
   ]
   for (const base of requireBases) {
     if (!existsSync(base)) continue
@@ -75,15 +70,6 @@ function tryPkgRoot(name) {
     }
   }
 
-  if (name === DWG_CONVERTER_PACKAGE) {
-    const local = resolve(
-      workspaceRoot,
-      '../realdwg-web/packages/dwg-converter'
-    )
-    if (existsSync(join(local, 'package.json'))) {
-      return local
-    }
-  }
   return null
 }
 
@@ -117,7 +103,7 @@ function copyOptionalWorker(pkgName, workerFile, outDir) {
 function copyProducerWorkers() {
   const outDir = join(packageRoot, 'dist')
   mkdirSync(outDir, { recursive: true })
-  // Optional proprietary converter — present when linked via pnpm-workspace override.
+  // Optional proprietary converter.
   copyOptionalWorker(DWG_CONVERTER_PACKAGE, DWG_PARSER_WORKER_FILE, outDir)
   copy(
     join(pkgRoot(MTEXT_RENDERER_PACKAGE), 'dist', MTEXT_RENDERER_WORKER_FILE),
