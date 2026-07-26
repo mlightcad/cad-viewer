@@ -269,19 +269,26 @@ export class AcApXAttachCmd extends AcEdCommand {
 
     try {
       jig.setMode('point')
+      // Match AutoCAD's XATTACH defaults: attaching at the origin keeps a
+      // source drawing that shares the host's coordinate system perfectly
+      // aligned, so Enter accepts <0,0> instead of forcing an on-screen pick.
       const insertionPrompt = new AcEdPromptPointOptions(
-        AcApI18n.t('jig.xattach.insertionPoint')
+        `${AcApI18n.t('jig.xattach.insertionPoint')} <0,0>`
       )
+      insertionPrompt.allowNone = true
       insertionPrompt.jig = jig
       const insertionResult =
         await AcApDocManager.instance.editor.getPoint(insertionPrompt)
       if (
-        insertionResult.status !== AcEdPromptStatus.OK ||
-        !insertionResult.value
+        insertionResult.status !== AcEdPromptStatus.OK &&
+        insertionResult.status !== AcEdPromptStatus.None
       ) {
         return
       }
-      const insertionPoint = new AcGePoint3d(insertionResult.value)
+      const insertionPoint =
+        insertionResult.status === AcEdPromptStatus.OK && insertionResult.value
+          ? new AcGePoint3d(insertionResult.value)
+          : new AcGePoint3d(0, 0, 0)
       jig.setPosition(insertionPoint)
 
       jig.setMode('scale')
