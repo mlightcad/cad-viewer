@@ -32,8 +32,8 @@ const packageRoot = process.cwd()
 const require = createRequire(join(packageRoot, 'package.json'))
 const destRelative = process.argv[2]
 
-function pkgRootFrom(requireFn, name) {
-  const entry = requireFn.resolve(name)
+function pkgRoot(name) {
+  const entry = require.resolve(name)
   let dir = dirname(entry)
   while (true) {
     const pkgPath = join(dir, 'package.json')
@@ -51,26 +51,12 @@ function pkgRootFrom(requireFn, name) {
   }
 }
 
-function pkgRoot(name) {
-  return pkgRootFrom(require, name)
-}
-
-/** Resolves an optional package from this package or its sibling example app. */
 function tryPkgRoot(name) {
-  const requireBases = [
-    join(packageRoot, 'package.json'),
-    join(packageRoot, '../cad-simple-viewer-example/package.json')
-  ]
-  for (const base of requireBases) {
-    if (!existsSync(base)) continue
-    try {
-      return pkgRootFrom(createRequire(base), name)
-    } catch {
-      // try next
-    }
+  try {
+    return pkgRoot(name)
+  } catch {
+    return null
   }
-
-  return null
 }
 
 function copy(from, to) {
