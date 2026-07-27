@@ -729,9 +729,12 @@ export class AcTrView2d extends AcEdBaseView {
    * `visible` property, and tear it down by removing `internalObject` from
    * `cadScene.internalScene` and calling `clear()`.
    *
-   * Scope: draws top-level geometry, text, and hatch entities. Block (INSERT)
-   * expansion, viewports, and dimensions are not supported for overlays yet
-   * and are skipped.
+   * Scope: draws top-level geometry, text, hatch, and block-reference
+   * (INSERT) entities, including entities that expand to multi-layer groups
+   * (dimensions, tables). A multi-layer group stays bucketed under its
+   * INSERT's layer — overlay layers are display-only, so per-fragment layer
+   * re-parenting (see `handleGroup`) is intentionally not replicated here.
+   * Viewports are not supported for overlays and are skipped.
    *
    * @param overlayDb - Input a database parsed independently of the active
    * document (e.g. via `new AcDbDatabase().read(...)`).
@@ -758,16 +761,36 @@ export class AcTrView2d extends AcEdBaseView {
       const modelSpace = overlayDb.tables.blockTable.modelSpace
       for (const entity of modelSpace.newIterator()) {
         if (entity instanceof AcDbViewport) continue
-        const threeEntity = this.drawEntity(entity, false)
-        if (!threeEntity || threeEntity instanceof AcTrGroup) continue
+        try {
+          const threeEntity = this.drawEntity(entity, false)
+          if (!threeEntity) continue
 
-        threeEntity.objectId = entity.objectId
-        threeEntity.ownerId = entity.ownerId
-        threeEntity.layerName = entity.layer
-        threeEntity.visible = entity.visibility !== false
-        await this.finishEntityGeometry(threeEntity, false)
-        layout.addEntity(threeEntity)
-        threeEntity.dispose()
+          threeEntity.objectId = entity.objectId
+          threeEntity.ownerId = entity.ownerId
+          threeEntity.layerName = entity.layer
+          threeEntity.visible = entity.visibility !== false
+          if (
+            threeEntity instanceof AcTrGroup &&
+            (threeEntity as AcTrGroup).isOnTheSameLayer
+          ) {
+            // Children authored on layer "0" inherit the INSERT layer for
+            // ByLayer traits (color, etc.), same as the primary-document path.
+            this._inheritedLayerMaterialMapper.remap(
+              (threeEntity as AcTrGroup).children,
+              '0',
+              threeEntity.layerName
+            )
+          }
+          await this.finishEntityGeometry(threeEntity, false)
+          layout.addEntity(threeEntity)
+          threeEntity.dispose()
+        } catch (error) {
+          // One unconvertible entity must not abort the whole overlay.
+          log.error(
+            `[AcTrView2d] Failed to convert overlay entity ${entity.objectId} (${entity.type}):`,
+            error
+          )
+        }
       }
     } finally {
       this._renderer.context.database = previousDatabase
