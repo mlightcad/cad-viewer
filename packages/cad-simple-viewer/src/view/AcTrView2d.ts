@@ -685,8 +685,35 @@ export class AcTrView2d extends AcEdBaseView {
     this._layerAppearance.refreshTextMaterialsInObjectTree(
       this._scene.internalScene
     )
+    this.resyncForegroundLayersForBackground()
     this.editor.syncCursorBackground(value)
     this._isDirty = true
+  }
+
+  /**
+   * Rebuilds byLayer materials on ACI-7 (foreground) layers after a canvas
+   * background change.
+   *
+   * The scene traversal above only reaches entity wrappers that still expose
+   * `refreshTextMaterials` — but `AcTrBatchedGroup.addEntity` flattens glyph
+   * entities into cloned drawable subtrees at add time, so for already-batched
+   * layouts it matches nothing and ACI-7 byLayer text kept its build-time
+   * colour (white text on a white canvas, #464). Entity-level ACI-7 materials
+   * are foreground-tracked and repainted by the style manager, but byLayer
+   * materials on an ACI-7 layer were created before the manager knew the
+   * layer colour and are not. Re-running the live layer sync — the same path
+   * a layer-table colour edit uses, which the #464 workaround exploited —
+   * rebuilds them against the background set just above, with foreground
+   * tracking attached for subsequent switches.
+   */
+  private resyncForegroundLayersForBackground() {
+    const database = this._renderer.context.database
+    if (!database) return
+    for (const layer of database.tables.layerTable.newIterator()) {
+      if (layer.color?.isForeground) {
+        this._layerAppearance.syncFromLiveRecord(layer)
+      }
+    }
   }
 
   private isModelSpaceLayout(database?: AcDbDatabase): boolean {

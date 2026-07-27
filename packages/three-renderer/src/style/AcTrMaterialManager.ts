@@ -1,4 +1,5 @@
 import {
+  AcCmColor,
   acgiForegroundColorForBackground,
   AcGiLineWeight,
   acgiResolveSubEntityTraitsRgbFromBackground,
@@ -192,7 +193,8 @@ export abstract class AcTrMaterialManager<T> {
         mergedTraits,
         mergedTraits,
         byLayerBindings,
-        typeof layerRgb === 'number' ? layerRgb : undefined
+        typeof layerRgb === 'number' ? layerRgb : undefined,
+        newTraits.color
       )
 
       // Step 5: store merged traits
@@ -336,7 +338,8 @@ export abstract class AcTrMaterialManager<T> {
       remappedTraits,
       remappedTraits,
       byLayerBindings,
-      typeof layerRgb === 'number' ? layerRgb : undefined
+      typeof layerRgb === 'number' ? layerRgb : undefined,
+      layerTraits?.color
     )
   }
 
@@ -475,10 +478,21 @@ export abstract class AcTrMaterialManager<T> {
     traits: AcGiSubEntityTraits,
     options: T,
     byLayerBindings?: AcTrByLayerBindingFlags,
-    layerColorRgb?: number
+    layerColorRgb?: number,
+    layerColor?: AcCmColor
   ): THREE.Material {
     const material = this.createMaterialImpl(traits, options, layerColorRgb)
-    const isForeground = this.shouldTrackForeground(traits, options)
+    // A ByLayer material on an ACI-7 layer must follow the foreground too:
+    // its resolved layer RGB is the theme-dependent white/black, not an
+    // absolute colour (#464). Re-consult shouldTrackForeground with the
+    // layer colour substituted so ByLayer-on-ACI-7 obeys the same
+    // subclass rules (e.g. gradient/empty-fill exclusions) as explicit
+    // ACI-7.
+    const isForeground =
+      this.shouldTrackForeground(traits, options) ||
+      (traits.color.isByLayer &&
+        layerColor?.isForeground === true &&
+        this.shouldTrackForeground({ ...traits, color: layerColor }, options))
     const isBackgroundFill = this.shouldTrackBackground(traits, options)
 
     // Foreground-follow materials (typically ACI 7 lines/text) must be
@@ -606,14 +620,38 @@ export abstract class AcTrMaterialManager<T> {
     return traits.color.toString()
   }
 
-  /** Repaints one cached material from resolved layer-table colour. */
+  /**
+   * Repaints one cached material from resolved layer-table colour.
+   *
+   * An ACI-7 (foreground) layer colour must not be applied as its raw RGB —
+   * that bakes white onto a light canvas (#464). Resolve it against the
+   * current background instead, and keep `isForeground` metadata in sync so
+   * `changeForeground` flips the material on subsequent background switches.
+   */
   protected refreshMaterialResolvedColor(
     material: THREE.Material,
     layerTraits: Partial<AcGiSubEntityTraits>
   ): void {
-    const rgb = layerTraits.color?.RGB
+    const color = layerTraits.color
+    if (!color) {
+      return
+    }
+    if (color.isForeground) {
+      setMaterialMetadata(material, { isForeground: true })
+      AcTrMaterialUtil.setMaterialColor(
+        material,
+        new THREE.Color(
+          acgiForegroundColorForBackground(this.options.currentBackgroundColor)
+        )
+      )
+      return
+    }
+    const rgb = color.RGB
     if (typeof rgb !== 'number') {
       return
+    }
+    if (getMaterialMetadata(material).isForeground === true) {
+      setMaterialMetadata(material, { isForeground: false })
     }
     AcTrMaterialUtil.setMaterialColor(material, new THREE.Color(rgb))
   }

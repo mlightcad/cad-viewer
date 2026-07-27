@@ -378,6 +378,126 @@ describe('AcTrStyleManager', () => {
     expect(material.color.getHex()).toBe(0x808080)
   })
 
+  /**
+   * Regression for #464: ByLayer entities on ACI-7 layers bake white at
+   * material-create time. A later layer sync (the background-change bridge)
+   * must mark them foreground-tracked and invert with the theme — without
+   * that, light canvases leave white-on-white text/hatches.
+   */
+  it('tracks ByLayer-on-ACI-7 line materials as foreground across theme flips (#464)', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0x000000
+
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'A-ANNO'
+    traits.color.setByLayer()
+
+    const material = styleManager.getLineMaterial(
+      traits
+    ) as THREE.LineBasicMaterial
+    expect(material.color.getHex()).toBe(0xffffff)
+    expect(getMaterialMetadata(material).isForeground).toBe(false)
+
+    const layerColor = new AcCmColor().setForeground()
+    styleManager.updateLayerMaterial('A-ANNO', {
+      layer: 'A-ANNO',
+      color: layerColor
+    })
+
+    expect(getMaterialMetadata(material).isForeground).toBe(true)
+    expect(material.color.getHex()).toBe(0xffffff)
+
+    styleManager.currentBackgroundColor = 0xffffff
+    expect(material.color.getHex()).toBe(0x000000)
+
+    styleManager.currentBackgroundColor = 0x000000
+    expect(material.color.getHex()).toBe(0xffffff)
+  })
+
+  it('tracks ByLayer-on-ACI-7 hatch fills as foreground across theme flips (#464)', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0x000000
+
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'A-HATCH'
+    traits.color.setByLayer()
+    traits.drawOrder = -1
+
+    const material = styleManager.getFillMaterial(
+      traits
+    ) as THREE.MeshBasicMaterial
+    expect(getMaterialMetadata(material).isForeground).toBe(false)
+
+    const layerColor = new AcCmColor().setForeground()
+    styleManager.updateLayerMaterial('A-HATCH', {
+      layer: 'A-HATCH',
+      color: layerColor
+    })
+
+    expect(getMaterialMetadata(material).isForeground).toBe(true)
+    expect(material.color.getHex()).toBe(0xffffff)
+
+    styleManager.currentBackgroundColor = 0xffffff
+    expect(material.color.getHex()).toBe(0x000000)
+
+    styleManager.currentBackgroundColor = 0x000000
+    expect(material.color.getHex()).toBe(0xffffff)
+  })
+
+  it('marks newly layer-bound ByLayer-on-ACI-7 materials as foreground (#464)', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0xffffff
+
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = '0'
+    traits.color.setByLayer()
+    const base = styleManager.getLineMaterial(traits)
+
+    const layerColor = new AcCmColor().setForeground()
+    const bound = styleManager.getLayerBoundMaterial(base, 'TXT', {
+      layer: 'TXT',
+      color: layerColor
+    }) as THREE.LineBasicMaterial
+
+    expect(bound).toBeDefined()
+    expect(getMaterialMetadata(bound!).isForeground).toBe(true)
+    expect(bound!.color.getHex()).toBe(0x000000)
+
+    styleManager.currentBackgroundColor = 0x000000
+    expect(bound!.color.getHex()).toBe(0xffffff)
+  })
+
+  it('clears foreground tracking when an ACI-7 layer becomes an absolute colour', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0x000000
+
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.layer = 'A-ANNO'
+    traits.color.setByLayer()
+    const material = styleManager.getLineMaterial(
+      traits
+    ) as THREE.LineBasicMaterial
+
+    styleManager.updateLayerMaterial('A-ANNO', {
+      layer: 'A-ANNO',
+      color: new AcCmColor().setForeground()
+    })
+    expect(getMaterialMetadata(material).isForeground).toBe(true)
+
+    const yellow = new AcCmColor()
+    yellow.setRGB(255, 255, 0)
+    styleManager.updateLayerMaterial('A-ANNO', {
+      layer: 'A-ANNO',
+      color: yellow
+    })
+
+    expect(getMaterialMetadata(material).isForeground).toBe(false)
+    expect(material.color.getHex()).toBe(0xffff00)
+
+    styleManager.currentBackgroundColor = 0xffffff
+    expect(material.color.getHex()).toBe(0xffff00)
+  })
+
   it('creates a new patterned hatch material when pattern offset changes', () => {
     const styleManager = new AcTrStyleManager()
     const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
