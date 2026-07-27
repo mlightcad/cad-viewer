@@ -1,4 +1,7 @@
-import { AcGiSubEntityTraits } from '@mlightcad/data-model'
+import {
+  acgiForegroundColorForBackground,
+  AcGiSubEntityTraits
+} from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
@@ -661,7 +664,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         }
 
         if (rebound === material) {
-          this.refreshLayerBoundMaterialColor(material, layerTraits)
+          this.refreshLayerBoundMaterialColor(material, layerTraits, styleManager)
           continue
         }
 
@@ -704,7 +707,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       }
 
       if (rebound === material) {
-        this.refreshLayerBoundMaterialColor(material, layerTraits)
+        this.refreshLayerBoundMaterialColor(material, layerTraits, styleManager)
         return material
       }
 
@@ -762,7 +765,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         if (!material || !followsLayerStyle(material, layerName, layerName)) {
           continue
         }
-        this.refreshLayerBoundMaterialColor(material, layerTraits)
+        this.refreshLayerBoundMaterialColor(material, layerTraits, styleManager)
       }
     }
   }
@@ -819,9 +822,16 @@ export class AcTrBatchedGroup extends THREE.Group {
 
   private refreshLayerBoundMaterialColor(
     material: THREE.Material,
-    layerTraits: Partial<AcGiSubEntityTraits>
+    layerTraits: Partial<AcGiSubEntityTraits>,
+    styleManager?: AcTrStyleManager
   ) {
-    const rgb = layerTraits.color?.RGB
+    // An ACI-7 (foreground) layer colour is theme-dependent: applying its raw
+    // RGB bakes white onto a light canvas (#464). Resolve it against the
+    // current background when the style manager is available.
+    const rgb =
+      layerTraits.color?.isForeground && styleManager
+        ? acgiForegroundColorForBackground(styleManager.currentBackgroundColor)
+        : layerTraits.color?.RGB
     if (typeof rgb !== 'number') {
       return
     }
