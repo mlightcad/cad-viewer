@@ -14,7 +14,8 @@ import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
 import {
   followsLayerStyle,
-  getMaterialMetadata
+  getMaterialMetadata,
+  setMaterialMetadata
 } from '../style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import {
@@ -827,9 +828,16 @@ export class AcTrBatchedGroup extends THREE.Group {
   ) {
     // An ACI-7 (foreground) layer colour is theme-dependent: applying its raw
     // RGB bakes white onto a light canvas (#464). Resolve it against the
-    // current background when the style manager is available.
+    // current background, and keep the clone's isForeground metadata in sync
+    // so later foreground-only repaints reach it too.
+    const isForegroundColor = layerTraits.color?.isForeground === true
+    setMaterialMetadata(material, { isForeground: isForegroundColor })
+    if (isForegroundColor && !styleManager) {
+      // Cannot resolve a theme-dependent colour without the background.
+      return
+    }
     const rgb =
-      layerTraits.color?.isForeground && styleManager
+      isForegroundColor && styleManager
         ? acgiForegroundColorForBackground(styleManager.currentBackgroundColor)
         : layerTraits.color?.RGB
     if (typeof rgb !== 'number') {

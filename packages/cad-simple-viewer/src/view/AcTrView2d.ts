@@ -685,7 +685,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._layerAppearance.refreshTextMaterialsInObjectTree(
       this._scene.internalScene
     )
-    this.rematerializeTextForBackground()
+    this.resyncForegroundLayersForBackground()
     this.editor.syncCursorBackground(value)
     this._isDirty = true
   }
@@ -706,7 +706,7 @@ export class AcTrView2d extends AcEdBaseView {
    * rebuilds them against the background set just above, with foreground
    * tracking attached for subsequent switches.
    */
-  private rematerializeTextForBackground() {
+  private resyncForegroundLayersForBackground() {
     const database = this._renderer.context.database
     if (!database) return
     for (const layer of database.tables.layerTable.newIterator()) {

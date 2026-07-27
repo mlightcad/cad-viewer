@@ -484,10 +484,15 @@ export abstract class AcTrMaterialManager<T> {
     const material = this.createMaterialImpl(traits, options, layerColorRgb)
     // A ByLayer material on an ACI-7 layer must follow the foreground too:
     // its resolved layer RGB is the theme-dependent white/black, not an
-    // absolute colour (#464).
+    // absolute colour (#464). Re-consult shouldTrackForeground with the
+    // layer colour substituted so ByLayer-on-ACI-7 obeys the same
+    // subclass rules (e.g. gradient/empty-fill exclusions) as explicit
+    // ACI-7.
     const isForeground =
       this.shouldTrackForeground(traits, options) ||
-      (traits.color.isByLayer && layerColor?.isForeground === true)
+      (traits.color.isByLayer &&
+        layerColor?.isForeground === true &&
+        this.shouldTrackForeground({ ...traits, color: layerColor }, options))
     const isBackgroundFill = this.shouldTrackBackground(traits, options)
 
     // Foreground-follow materials (typically ACI 7 lines/text) must be
