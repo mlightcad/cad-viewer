@@ -11,7 +11,8 @@ import { uploadFixture } from '../helpers/fileUpload'
  *
  * Also covers entity-colour ACI 7 MTEXT (handle-style case like #735): worker
  * reconstruct must keep `aci=7` as foreground so glyphs invert, while inline
- * `\C255` stays absolute white and `\C90` stays gray.
+ * `\C255` stays absolute white and `\C90` stays gray. The example app opens
+ * with main-thread MTEXT rendering so CI does not depend on worker startup.
  *
  * Fixture: thick ByLayer lines on ACI-7 layer `0`, one explicit red line,
  * plus one NOTES-layer MTEXT with entity ACI 7 and mixed inline colours.
@@ -44,7 +45,7 @@ async function waitForViewer(page: Page) {
     timeout: 60_000
   })
   await expect(page.locator('.ml-cad-container canvas').first()).toBeVisible()
-  // Allow sync linework to settle; MTEXT is worker-backed and polled separately.
+  // Allow sync linework to settle; MTEXT is polled separately.
   await page.waitForTimeout(1500)
 }
 
@@ -157,44 +158,92 @@ async function readSceneColorSummary(page: Page): Promise<SceneColorSummary> {
       notesForegroundFlags: []
     }
 
+    const collectMaterialColors = (
+      object: unknown,
+      onMaterial: (
+        hex: number,
+        isForeground: boolean,
+        materialLayer?: string
+      ) => void
+    ) => {
+      const material = (
+        object as {
+          material?:
+            | {
+                color?: { getHex?: () => number }
+                userData?: { isForeground?: boolean; layer?: string }
+                uniforms?: { u_color?: { value?: { getHex?: () => number } } }
+              }
+            | Array<{
+                color?: { getHex?: () => number }
+                userData?: { isForeground?: boolean; layer?: string }
+                uniforms?: { u_color?: { value?: { getHex?: () => number } } }
+              }>
+        }
+      ).material
+      if (!material) return
+
+      const mats = Array.isArray(material) ? material : [material]
+      for (const mat of mats) {
+        const hex =
+          mat.color?.getHex?.() ?? mat.uniforms?.u_color?.value?.getHex?.()
+        if (typeof hex === 'number') {
+          onMaterial(
+            hex,
+            mat.userData?.isForeground === true,
+            mat.userData?.layer
+          )
+        }
+      }
+    }
+
     const collect = (layerName: string, bucket: number[], flags?: boolean[]) => {
       const layer = mgr?.curView?.cadScene?.activeLayout?.getLayer(layerName)
       if (!layer) return
       layer.internalObject.traverse((obj: unknown) => {
-        const material = (
-          obj as {
-            material?:
-              | {
-                  color?: { getHex?: () => number }
-                  userData?: { isForeground?: boolean }
-                }
-              | Array<{
-                  color?: { getHex?: () => number }
-                  userData?: { isForeground?: boolean }
-                }>
-          }
-        ).material
-        if (!material) return
-        const mats = Array.isArray(material) ? material : [material]
-        for (const mat of mats) {
-          const hex =
-            mat.color?.getHex?.() ??
-            (
-              mat as {
-                uniforms?: { u_color?: { value?: { getHex?: () => number } } }
-              }
-            ).uniforms?.u_color?.value?.getHex?.()
-          if (typeof hex === 'number') {
-            bucket.push(hex)
-            flags?.push(mat.userData?.isForeground === true)
-          }
-        }
+        collectMaterialColors(obj, (hex, isForeground) => {
+          bucket.push(hex)
+          flags?.push(isForeground)
+        })
+      })
+    }
+
+    const collectNotesMaterials = () => {
+      const layout = mgr?.curView?.cadScene?.activeLayout
+      if (!layout) return
+
+      const pushNotesMaterial = (hex: number, isForeground: boolean) => {
+        summary.notesLayerColors.push(hex)
+        summary.notesForegroundFlags.push(isForeground)
+      }
+
+      for (const layerName of ['0', 'RED', 'NOTES']) {
+        const layer = layout.getLayer(layerName)
+        if (!layer) continue
+        layer.internalObject.traverse((obj: unknown) => {
+          collectMaterialColors(obj, (hex, isForeground, materialLayer) => {
+            if (materialLayer === 'NOTES') {
+              pushNotesMaterial(hex, isForeground)
+            }
+          })
+        })
+      }
+
+      if (summary.notesLayerColors.length > 0) {
+        return
+      }
+
+      const notesLayer = layout.getLayer('NOTES')
+      notesLayer?.internalObject.traverse((obj: unknown) => {
+        collectMaterialColors(obj, (hex, isForeground) => {
+          pushNotesMaterial(hex, isForeground)
+        })
       })
     }
 
     collect('0', summary.layer0Colors)
     collect('RED', summary.redLayerColors)
-    collect('NOTES', summary.notesLayerColors, summary.notesForegroundFlags)
+    collectNotesMaterials()
     return summary
   })
 }
@@ -222,6 +271,7 @@ test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)'
   page
 }) => {
   await page.goto('/')
+  await page.getByRole('radio', { name: 'Main thread' }).click()
   await uploadFixture(page, fixturePath)
   await waitForViewer(page)
 
