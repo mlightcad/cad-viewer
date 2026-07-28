@@ -44,7 +44,34 @@ async function waitForViewer(page: Page) {
     timeout: 60_000
   })
   await expect(page.locator('.ml-cad-container canvas').first()).toBeVisible()
-  await page.waitForTimeout(2500)
+  // Allow sync linework to settle; MTEXT is worker-backed and polled separately.
+  await page.waitForTimeout(1500)
+}
+
+async function waitForSceneColorSummary(
+  page: Page,
+  predicate: (summary: SceneColorSummary) => boolean,
+  timeout = 60_000
+): Promise<SceneColorSummary> {
+  let latest: SceneColorSummary = {
+    backgroundColor: null,
+    layer0Colors: [],
+    redLayerColors: [],
+    notesLayerColors: [],
+    notesForegroundFlags: []
+  }
+
+  await expect
+    .poll(
+      async () => {
+        latest = await readSceneColorSummary(page)
+        return predicate(latest)
+      },
+      { timeout }
+    )
+    .toBe(true)
+
+  return latest
 }
 
 async function getCanvasColorCounts(page: Page): Promise<ColorCounts> {
@@ -150,7 +177,13 @@ async function readSceneColorSummary(page: Page): Promise<SceneColorSummary> {
         if (!material) return
         const mats = Array.isArray(material) ? material : [material]
         for (const mat of mats) {
-          const hex = mat.color?.getHex?.()
+          const hex =
+            mat.color?.getHex?.() ??
+            (
+              mat as {
+                uniforms?: { u_color?: { value?: { getHex?: () => number } } }
+              }
+            ).uniforms?.u_color?.value?.getHex?.()
           if (typeof hex === 'number') {
             bucket.push(hex)
             flags?.push(mat.userData?.isForeground === true)
@@ -192,15 +225,17 @@ test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)'
   await uploadFixture(page, fixturePath)
   await waitForViewer(page)
 
-  const initial = await readSceneColorSummary(page)
-  expect(initial.backgroundColor).not.toBeNull()
-  expect(initial.layer0Colors.length).toBeGreaterThan(0)
-  expect(initial.redLayerColors.length).toBeGreaterThan(0)
-  expect(initial.notesLayerColors.length).toBeGreaterThan(0)
-  // Entity ACI 7 MTEXT must be foreground-tracked after worker reconstruct.
-  expect(initial.notesForegroundFlags.some(flag => flag)).toBe(true)
+  const initial = await waitForSceneColorSummary(
+    page,
+    summary =>
+      summary.layer0Colors.length > 0 &&
+      summary.redLayerColors.length > 0 &&
+      summary.notesLayerColors.length > 0 &&
+      summary.notesForegroundFlags.some(flag => flag)
+  )
 
   // Dark canvas: ByLayer-on-ACI-7 resolves to white; explicit red stays red.
+  expect(initial.backgroundColor).not.toBeNull()
   expect(initial.layer0Colors.every(hex => hex === 0xffffff)).toBe(true)
   expect(initial.redLayerColors.every(hex => hex === 0xff0000)).toBe(true)
   // NOTES MTEXT: entity ACI 7 (+ optional \C255) are white; \C90 is gray.
