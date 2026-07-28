@@ -78,6 +78,13 @@ export class AcTrMTextRenderer {
    */
   overrideStyleManager(value: AcTrStyleManager) {
     this._styleManager = value
+    // Apply immediately when the unified renderer already exists (e.g. re-init
+    // or late override). Otherwise reconstruct would keep DefaultStyleManager
+    // materials without `isForeground` tracking.
+    if (this._renderer) {
+      const styleManager = new AcTrMTextStyleManager(value)
+      this._renderer.setStyleManager(styleManager)
+    }
   }
 
   /**

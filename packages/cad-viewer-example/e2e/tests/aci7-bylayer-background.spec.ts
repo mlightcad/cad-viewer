@@ -9,10 +9,14 @@ import { uploadFixture } from '../helpers/fileUpload'
  * ByLayer entities on ACI-7 layers must invert with `switchbg`. Without the
  * material/cache + layer-sync bridge, content stays white on a light canvas.
  *
- * Fixture: thick ByLayer lines on ACI-7 layer `0`, plus one explicit red line
- * that must remain red across theme flips. Assertions prefer scene material
- * colours (stable across AA/clear-colour) and use canvas pixels as a
- * coarse visibility check for the ByLayer invert.
+ * Also covers entity-colour ACI 7 MTEXT (handle-style case like #735): worker
+ * reconstruct must keep `aci=7` as foreground so glyphs invert, while inline
+ * `\C255` stays absolute white and `\C90` stays gray.
+ *
+ * Fixture: thick ByLayer lines on ACI-7 layer `0`, one explicit red line,
+ * plus one NOTES-layer MTEXT with entity ACI 7 and mixed inline colours.
+ * Assertions prefer scene material colours (stable across AA/clear-colour)
+ * and use canvas pixels as a coarse visibility check for the ByLayer invert.
  */
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const fixturePath = path.resolve(
@@ -31,6 +35,8 @@ type SceneColorSummary = {
   backgroundColor: number | null
   layer0Colors: number[]
   redLayerColors: number[]
+  notesLayerColors: number[]
+  notesForegroundFlags: boolean[]
 }
 
 async function waitForViewer(page: Page) {
@@ -119,18 +125,26 @@ async function readSceneColorSummary(page: Page): Promise<SceneColorSummary> {
     const summary: SceneColorSummary = {
       backgroundColor: mgr?.curView?.backgroundColor ?? null,
       layer0Colors: [],
-      redLayerColors: []
+      redLayerColors: [],
+      notesLayerColors: [],
+      notesForegroundFlags: []
     }
 
-    const collect = (layerName: string, bucket: number[]) => {
+    const collect = (layerName: string, bucket: number[], flags?: boolean[]) => {
       const layer = mgr?.curView?.cadScene?.activeLayout?.getLayer(layerName)
       if (!layer) return
       layer.internalObject.traverse((obj: unknown) => {
         const material = (
           obj as {
             material?:
-              | { color?: { getHex?: () => number } }
-              | Array<{ color?: { getHex?: () => number } }>
+              | {
+                  color?: { getHex?: () => number }
+                  userData?: { isForeground?: boolean }
+                }
+              | Array<{
+                  color?: { getHex?: () => number }
+                  userData?: { isForeground?: boolean }
+                }>
           }
         ).material
         if (!material) return
@@ -139,6 +153,7 @@ async function readSceneColorSummary(page: Page): Promise<SceneColorSummary> {
           const hex = mat.color?.getHex?.()
           if (typeof hex === 'number') {
             bucket.push(hex)
+            flags?.push(mat.userData?.isForeground === true)
           }
         }
       })
@@ -146,6 +161,7 @@ async function readSceneColorSummary(page: Page): Promise<SceneColorSummary> {
 
     collect('0', summary.layer0Colors)
     collect('RED', summary.redLayerColors)
+    collect('NOTES', summary.notesLayerColors, summary.notesForegroundFlags)
     return summary
   })
 }
@@ -180,10 +196,16 @@ test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)'
   expect(initial.backgroundColor).not.toBeNull()
   expect(initial.layer0Colors.length).toBeGreaterThan(0)
   expect(initial.redLayerColors.length).toBeGreaterThan(0)
+  expect(initial.notesLayerColors.length).toBeGreaterThan(0)
+  // Entity ACI 7 MTEXT must be foreground-tracked after worker reconstruct.
+  expect(initial.notesForegroundFlags.some(flag => flag)).toBe(true)
 
   // Dark canvas: ByLayer-on-ACI-7 resolves to white; explicit red stays red.
   expect(initial.layer0Colors.every(hex => hex === 0xffffff)).toBe(true)
   expect(initial.redLayerColors.every(hex => hex === 0xff0000)).toBe(true)
+  // NOTES MTEXT: entity ACI 7 (+ optional \C255) are white; \C90 is gray.
+  expect(initial.notesLayerColors.some(hex => hex === 0xffffff)).toBe(true)
+  expect(initial.notesLayerColors.every(hex => hex === 0xff0000)).toBe(false)
 
   const darkCounts = await getCanvasColorCounts(page)
   expect(darkCounts.white).toBeGreaterThan(20)
@@ -197,6 +219,20 @@ test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)'
   // must not be rewritten by the theme.
   expect(light.layer0Colors.every(hex => hex === 0x000000)).toBe(true)
   expect(light.redLayerColors.every(hex => hex === 0xff0000)).toBe(true)
+  // Entity ACI 7 glyphs invert to black; \C255 stays white; \C90 stays gray.
+  const lightNotes = new Set(light.notesLayerColors)
+  expect(lightNotes.has(0x000000)).toBe(true)
+  expect(
+    light.notesForegroundFlags.every((flag, i) => {
+      if (!flag) return true
+      return light.notesLayerColors[i] === 0x000000
+    })
+  ).toBe(true)
+  expect(
+    light.notesLayerColors.some(
+      (hex, i) => light.notesForegroundFlags[i] !== true && hex === 0xffffff
+    )
+  ).toBe(true)
 
   const lightCounts = await getCanvasColorCounts(page)
   expect(lightCounts.black).toBeGreaterThan(20)
@@ -208,6 +244,12 @@ test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)'
   expect(restored.backgroundColor).toBe(initial.backgroundColor)
   expect(restored.layer0Colors.every(hex => hex === 0xffffff)).toBe(true)
   expect(restored.redLayerColors.every(hex => hex === 0xff0000)).toBe(true)
+  expect(
+    restored.notesForegroundFlags.every((flag, i) => {
+      if (!flag) return true
+      return restored.notesLayerColors[i] === 0xffffff
+    })
+  ).toBe(true)
 
   const restoredCounts = await getCanvasColorCounts(page)
   expect(restoredCounts.white).toBeGreaterThan(20)

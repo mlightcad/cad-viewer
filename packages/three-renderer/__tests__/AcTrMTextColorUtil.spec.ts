@@ -5,7 +5,7 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { setMaterialMetadata } from '../src/style/AcTrMaterialMetadata'
+import { setMaterialMetadata, getMaterialMetadata } from '../src/style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../src/util/AcTrEntityTraitsUtil'
 import { AcTrMTextColorUtil } from '../src/util/AcTrMTextColorUtil'
@@ -93,6 +93,146 @@ describe('AcTrMTextColorUtil', () => {
     expect(material.userData.isForeground).toBe(true)
   })
 
+  it('toAcCmColor maps ACI 7 to foreground tracking', () => {
+    const mtextColor = new MTextColor()
+    mtextColor.aci = 7
+
+    const color = AcTrMTextColorUtil.toAcCmColor(mtextColor)
+    expect(color.isForeground).toBe(true)
+    expect(color.colorIndex).toBe(7)
+  })
+
+  it('createTraitsForMText keeps worker-reconstructed ACI 7 as foreground material', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0x000000
+
+    // Mimic buildWorkerMaterialColorSettings after preserving entity ACI 7.
+    const colorSettings = {
+      layer: 'NOTES',
+      color: (() => {
+        const c = new MTextColor()
+        c.aci = 7
+        return c
+      })(),
+      byLayerColor: 0xffffff,
+      byBlockColor: 0xffffff
+    }
+    const traits = AcTrSubEntityTraitsUtil.createTraitsForMText(colorSettings)
+    expect(traits.color.isForeground).toBe(true)
+
+    const material = styleManager.getMTextFillMaterial(traits)
+    expect(getMaterialMetadata(material).isForeground).toBe(true)
+    expect((material as THREE.MeshBasicMaterial).color.getHex()).toBe(0xffffff)
+
+    styleManager.currentBackgroundColor = 0xffffff
+    expect((material as THREE.MeshBasicMaterial).color.getHex()).toBe(0x000000)
+  })
+
+  it('createTraitsForMText keeps worker-reconstructed ACI 255 as absolute white', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0x000000
+
+    const colorSettings = {
+      layer: 'NOTES',
+      color: (() => {
+        const c = new MTextColor()
+        c.aci = 255
+        return c
+      })(),
+      byLayerColor: 0xffffff,
+      byBlockColor: 0xffffff
+    }
+    const traits = AcTrSubEntityTraitsUtil.createTraitsForMText(colorSettings)
+    expect(traits.color.isForeground).toBe(false)
+
+    const material = styleManager.getMTextFillMaterial(traits)
+    expect(getMaterialMetadata(material).isForeground).toBe(false)
+    expect((material as THREE.MeshBasicMaterial).color.getHex()).toBe(0xffffff)
+
+    styleManager.currentBackgroundColor = 0xffffff
+    // Absolute white must not invert with the canvas.
+    expect((material as THREE.MeshBasicMaterial).color.getHex()).toBe(0xffffff)
+  })
+
+  it('rematerializes baked ACI-7 glyph meshes using stashed mtextColor', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0x000000
+
+    const color = new AcCmColor()
+    color.setForeground()
+    const traits = AcTrMTextColorUtil.snapshotEntityTraits({
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color,
+      layer: 'NOTES'
+    })
+
+    // Simulate worker reconstruct leaving absolute-white materials that still
+    // carry the segment ACI on userData.
+    const baked = new THREE.MeshBasicMaterial({ color: 0xffffff })
+    setMaterialMetadata(baked, {
+      layer: 'NOTES',
+      materialKey: 'baked-rgb',
+      isForeground: false,
+      isByLayerColor: false,
+      isByLayerLineType: false,
+      isByLayerLineWeight: false,
+      isByLayerTransparency: false
+    })
+    const root = new THREE.Group()
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), baked)
+    mesh.userData.mtextColor = (() => {
+      const c = new MTextColor()
+      c.aci = 7
+      return c
+    })()
+    root.add(mesh)
+
+    AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
+
+    const material = mesh.material as THREE.MeshBasicMaterial
+    expect(material).not.toBe(baked)
+    expect(material.userData.isForeground).toBe(true)
+    expect(material.color.getHex()).toBe(0xffffff)
+
+    styleManager.currentBackgroundColor = 0xffffff
+    expect(material.color.getHex()).toBe(0x000000)
+  })
+
+  it('does not rematerialize inline ACI 255 glyphs when entity is ACI 7', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0x000000
+
+    const color = new AcCmColor()
+    color.setForeground()
+    const traits = AcTrMTextColorUtil.snapshotEntityTraits({
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color,
+      layer: 'NOTES'
+    })
+
+    const inlineTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    inlineTraits.color.colorIndex = 255
+    inlineTraits.layer = 'NOTES'
+    const inlineMaterial = styleManager.getMTextFillMaterial(inlineTraits)
+
+    const root = new THREE.Group()
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), inlineMaterial)
+    mesh.userData.mtextColor = (() => {
+      const c = new MTextColor()
+      c.aci = 255
+      return c
+    })()
+    root.add(mesh)
+
+    AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
+
+    expect(mesh.material).toBe(inlineMaterial)
+    styleManager.currentBackgroundColor = 0xffffff
+    expect(
+      (mesh.material as THREE.MeshBasicMaterial).color.getHex()
+    ).toBe(0xffffff)
+  })
+
   it('does not rematerialize bare mtext-renderer meshes when entity is ACI 7', () => {
     const styleManager = new AcTrStyleManager()
     styleManager.currentBackgroundColor = ACGI_PAPER_SPACE_BACKGROUND
@@ -114,6 +254,67 @@ describe('AcTrMTextColorUtil', () => {
 
     expect(mesh.material).toBe(inlineMaterial)
     expect(inlineMaterial.color.getHex()).toBe(0x00ff00)
+  })
+
+  it('rematerializes baked ACI-7 glyphs using stashed mtextColor after reconstruct', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0x000000
+
+    const color = new AcCmColor()
+    color.setForeground()
+    const traits = AcTrMTextColorUtil.snapshotEntityTraits({
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color,
+      layer: 'NOTES'
+    })
+
+    // Absolute white material as produced by a baked worker reconstruct.
+    const baked = new THREE.MeshBasicMaterial({ color: 0xffffff })
+    setMaterialMetadata(baked, {
+      layer: 'NOTES',
+      materialKey: 'baked-white',
+      isForeground: false,
+      isByLayerColor: false,
+      isByLayerLineType: false,
+      isByLayerLineWeight: false,
+      isByLayerTransparency: false
+    })
+
+    const root = new THREE.Group()
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), baked)
+    mesh.userData.mtextColor = new MTextColor(7)
+    root.add(mesh)
+
+    const inline = new THREE.MeshBasicMaterial({ color: 0xffffff })
+    setMaterialMetadata(inline, {
+      layer: 'NOTES',
+      materialKey: 'inline-255',
+      isForeground: false,
+      isByLayerColor: false,
+      isByLayerLineType: false,
+      isByLayerLineWeight: false,
+      isByLayerTransparency: false
+    })
+    const inlineMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), inline)
+    inlineMesh.userData.mtextColor = new MTextColor(255)
+    root.add(inlineMesh)
+
+    AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
+
+    expect(getMaterialMetadata(mesh.material as THREE.Material).isForeground).toBe(
+      true
+    )
+    expect((mesh.material as THREE.MeshBasicMaterial).color.getHex()).toBe(
+      0xffffff
+    )
+    expect(inlineMesh.material).toBe(inline)
+    expect(inline.color.getHex()).toBe(0xffffff)
+
+    styleManager.currentBackgroundColor = 0xffffff
+    expect((mesh.material as THREE.MeshBasicMaterial).color.getHex()).toBe(
+      ACGI_LIGHT_THEME_FOREGROUND
+    )
+    expect(inline.color.getHex()).toBe(0xffffff)
   })
 
   it('preserves inline ACI materials that differ from entity base traits', () => {

@@ -105,11 +105,13 @@ export class AcTrMTextColorUtil {
       const materials = Array.isArray(drawable.material)
         ? drawable.material
         : [drawable.material as THREE.Material]
+      const glyphColor = AcTrMTextColorUtil.readGlyphMTextColor(drawable)
       const needsRematerialize = materials.some(material =>
         AcTrMTextColorUtil.shouldRematerializeMaterial(
           material,
           traits,
-          styleManager
+          styleManager,
+          glyphColor
         )
       )
       if (!needsRematerialize) {
@@ -184,7 +186,8 @@ export class AcTrMTextColorUtil {
   private static shouldRematerializeMaterial(
     material: THREE.Material,
     entityTraits: AcTrMTextEntityTraits,
-    styleManager: AcTrStyleManager
+    styleManager: AcTrStyleManager,
+    glyphColor?: MTextColor | null
   ): boolean {
     const metadata = getMaterialMetadata(material)
 
@@ -193,8 +196,43 @@ export class AcTrMTextColorUtil {
       if (metadata.isForeground === true) {
         return false
       }
+
+      // Reconstruct stashes per-glyph ACI. Preserve true inline `\C` overrides
+      // (e.g. 90/255) while recovering baked entity ACI 7.
+      const glyphAci = glyphColor?.aci
+      if (
+        typeof glyphAci === 'number' &&
+        glyphAci !== 7 &&
+        glyphAci !== 0 &&
+        glyphAci !== 256
+      ) {
+        return false
+      }
+      if (glyphColor?.isRgb && typeof glyphColor.rgbValue === 'number') {
+        const expectedFg = acgiForegroundColorForBackground(
+          styleManager.currentBackgroundColor
+        )
+        // Absolute RGB that differs from entity foreground is an inline override.
+        if (glyphColor.rgbValue !== expectedFg) {
+          return false
+        }
+      }
+
       // Rematerialize ByLayer-bound materials that should follow entity ACI 7.
       if (metadata.isByLayerColor === true) {
+        return true
+      }
+      // Glyph explicitly carries entity ACI 7 / ByLayer / ByBlock — recover it.
+      if (
+        glyphAci === 7 ||
+        glyphAci === 0 ||
+        glyphAci === 256 ||
+        (glyphColor?.isRgb &&
+          glyphColor.rgbValue ===
+            acgiForegroundColorForBackground(
+              styleManager.currentBackgroundColor
+            ))
+      ) {
         return true
       }
       // mtext-renderer inline `\C` segments usually have no CAD metadata.
@@ -247,6 +285,47 @@ export class AcTrMTextColorUtil {
     }
 
     return false
+  }
+
+  /** Reads reconstruct-time segment colour from a glyph drawable, if present. */
+  private static readGlyphMTextColor(
+    object: THREE.Object3D
+  ): MTextColor | null {
+    const raw = object.userData?.mtextColor
+    if (!raw) {
+      return null
+    }
+    if (raw instanceof MTextColor) {
+      return raw
+    }
+    if (typeof raw !== 'object') {
+      return null
+    }
+    const partial = raw as {
+      aci?: number | null
+      rgbValue?: number | null
+      _aci?: number | null
+      _rgbValue?: number | null
+      isRgb?: boolean
+    }
+    const color = new MTextColor()
+    if (typeof partial.rgbValue === 'number') {
+      color.rgbValue = partial.rgbValue
+      return color
+    }
+    if (typeof partial._rgbValue === 'number') {
+      color.rgbValue = partial._rgbValue
+      return color
+    }
+    if (typeof partial.aci === 'number') {
+      color.aci = partial.aci
+      return color
+    }
+    if (typeof partial._aci === 'number') {
+      color.aci = partial._aci
+      return color
+    }
+    return null
   }
 
   private static getMaterialDisplayRgb(
@@ -303,6 +382,10 @@ export class AcTrMTextColorUtil {
         resolved.setByLayer()
       } else if (color.aci === 0) {
         resolved.setByBlock()
+      } else if (color.aci === 7) {
+        // Worker reconstruct must keep ACI 7 as canvas foreground so
+        // background switches can repaint it (not literal white RGB).
+        resolved.setForeground()
       } else {
         resolved.colorIndex = color.aci
       }

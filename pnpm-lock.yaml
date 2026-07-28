@@ -7,8 +7,8 @@ settings:
 overrides:
   '@mlightcad/data-model': ^1.12.1
   '@mlightcad/libredwg-converter': ^3.12.1
-  '@mlightcad/mtext-input-box': ^0.2.21
-  '@mlightcad/mtext-renderer': ^0.12.0
+  '@mlightcad/mtext-input-box': ^0.2.22
+  '@mlightcad/mtext-renderer': ^0.12.1
   '@mlightcad/ribbon': ^0.1.11
   '@mlightcad/ui-components': ^0.1.7
   element-plus: ^2.12.0
@@ -159,8 +159,8 @@ importers:
         specifier: ^3.12.1
         version: 3.12.1(@mlightcad/data-model@1.12.1)
       '@mlightcad/mtext-renderer':
-        specifier: ^0.12.0
-        version: 0.12.0(three@0.172.0)
+        specifier: ^0.12.1
+        version: 0.12.1(three@0.172.0)
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -250,11 +250,11 @@ importers:
         specifier: ^3.12.1
         version: 3.12.1(@mlightcad/data-model@1.12.1)
       '@mlightcad/mtext-input-box':
-        specifier: ^0.2.21
-        version: 0.2.21(@mlightcad/mtext-renderer@0.12.0(three@0.172.0))(three@0.172.0)
+        specifier: ^0.2.22
+        version: 0.2.22(@mlightcad/mtext-renderer@0.12.1(three@0.172.0))(three@0.172.0)
       '@mlightcad/mtext-renderer':
-        specifier: ^0.12.0
-        version: 0.12.0(three@0.172.0)
+        specifier: ^0.12.1
+        version: 0.12.1(three@0.172.0)
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
@@ -332,8 +332,8 @@ importers:
         specifier: ^1.4.1
         version: 1.4.1
       '@mlightcad/mtext-renderer':
-        specifier: ^0.12.0
-        version: 0.12.0(three@0.172.0)
+        specifier: ^0.12.1
+        version: 0.12.1(three@0.172.0)
 
   packages/cad-viewer:
     devDependencies:
@@ -499,8 +499,8 @@ importers:
         specifier: ^1.12.1
         version: 1.12.1
       '@mlightcad/mtext-renderer':
-        specifier: ^0.12.0
-        version: 0.12.0(three@0.172.0)
+        specifier: ^0.12.1
+        version: 0.12.1(three@0.172.0)
       '@types/three':
         specifier: ^0.172.0
         version: 0.172.0
@@ -1778,10 +1778,10 @@ packages:
     resolution: {integrity: sha512-tqjx0eCiR0CNI3TyO3LVYzl4ptuzSFm7asGn/C1YiJaEk7Vneto+lRrVUco85qw+PZDihaFLwWqdYIEse1swbA==}
     engines: {node: '>=20'}
 
-  '@mlightcad/mtext-input-box@0.2.21':
-    resolution: {integrity: sha512-m5pRlqkwve7N6Ry/73Uz9mUs3gmhauuw0G4V3LRHOyze0Sd7f+e3+Fmu1qis8jjvLTX+IHPkZ7Vh0oiMAJ81+g==}
+  '@mlightcad/mtext-input-box@0.2.22':
+    resolution: {integrity: sha512-ouwjc1A45G5boJkBl5g7z77vjJUVcE97UKorFFCWzWP7kKJsUk/t/4O/jxIyrUGqEiqTHAsdjhe9lSVvZo9bZg==}
     peerDependencies:
-      '@mlightcad/mtext-renderer': ^0.12.0
+      '@mlightcad/mtext-renderer': ^0.12.1
       three: ^0.172.0
 
   '@mlightcad/mtext-parser@1.4.1':
@@ -1790,8 +1790,8 @@ packages:
   '@mlightcad/mtext-parser@1.5.0':
     resolution: {integrity: sha512-Yl/IQmSIGV1UUl/TyUptoOpNBunywcEE7yh4k9SFDXljHDTTI92VmqkVFxf4eYzhoWF4MNXIl4qgQV1P1Rbn6g==}
 
-  '@mlightcad/mtext-renderer@0.12.0':
-    resolution: {integrity: sha512-lo/j+5/quYFEnkB4iJ5ozqNzi0qMgpJlXu350ayQiuVYFt7vqXkJfjKzdtmdKHdIX6r8yqGqQ8Zj8Cp633DhYQ==}
+  '@mlightcad/mtext-renderer@0.12.1':
+    resolution: {integrity: sha512-LFLERm1vNOKJu1Orv3nNaApjheEwa5mr7MHUE2GB5xSvm048Nsv6BCoe/khbqmZUs+3qrSVHRZm4lGxqFXdkpw==}
     peerDependencies:
       three: ^0.172.0
 
@@ -7210,9 +7210,9 @@ snapshots:
 
   '@mlightcad/libredwg-web@0.7.9': {}
 
-  '@mlightcad/mtext-input-box@0.2.21(@mlightcad/mtext-renderer@0.12.0(three@0.172.0))(three@0.172.0)':
+  '@mlightcad/mtext-input-box@0.2.22(@mlightcad/mtext-renderer@0.12.1(three@0.172.0))(three@0.172.0)':
     dependencies:
-      '@mlightcad/mtext-renderer': 0.12.0(three@0.172.0)
+      '@mlightcad/mtext-renderer': 0.12.1(three@0.172.0)
       '@mlightcad/text-box-cursor': 0.1.1(three@0.172.0)
       three: 0.172.0
 
@@ -7220,7 +7220,7 @@ snapshots:
 
   '@mlightcad/mtext-parser@1.5.0': {}
 
-  '@mlightcad/mtext-renderer@0.12.0(three@0.172.0)':
+  '@mlightcad/mtext-renderer@0.12.1(three@0.172.0)':
     dependencies:
       '@mlightcad/mtext-parser': 1.5.0
       '@mlightcad/shx-parser': 1.4.5

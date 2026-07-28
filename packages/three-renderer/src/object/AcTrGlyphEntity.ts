@@ -242,6 +242,14 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
     } else {
       this.flatten()
     }
+    // Worker reconstruct can leave entity ACI-7 glyphs as absolute white.
+    // Rematerialize now (before batching consumes the wrapper) so materials
+    // gain `isForeground` and survive later switchbg repaints.
+    AcTrMTextColorUtil.rematerializeTextHierarchy(
+      this,
+      this._entityTraits,
+      this.renderContext.styleManager
+    )
     this.removeInvalidGeometryLeaves()
     this.traverse(object => {
       getSceneDrawableUserData(object).bboxIntersectionCheck = true
