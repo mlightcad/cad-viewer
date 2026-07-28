@@ -9,15 +9,15 @@ import { uploadFixture } from '../helpers/fileUpload'
  * ByLayer entities on ACI-7 layers must invert with `switchbg`. Without the
  * material/cache + layer-sync bridge, content stays white on a light canvas.
  *
- * Also covers entity-colour ACI 7 MTEXT (handle-style case like #735): worker
- * reconstruct must keep `aci=7` as foreground so glyphs invert, while inline
- * `\C255` stays absolute white and `\C90` stays gray. The example app opens
- * with main-thread MTEXT rendering so CI does not depend on worker startup.
+ * Fixture: thick ByLayer lines on ACI-7 layer `0`, plus one explicit red line
+ * that must remain red across theme flips. Assertions prefer scene material
+ * colours (stable across AA/clear-colour) and use canvas pixels as a
+ * coarse visibility check for the ByLayer invert.
  *
- * Fixture: thick ByLayer lines on ACI-7 layer `0`, one explicit red line,
- * plus one NOTES-layer MTEXT with entity ACI 7 and mixed inline colours.
- * Assertions prefer scene material colours (stable across AA/clear-colour)
- * and use canvas pixels as a coarse visibility check for the ByLayer invert.
+ * Entity-colour ACI-7 MTEXT foreground recovery is covered by unit tests in
+ * `packages/three-renderer/__tests__/AcTrMTextColorUtil.spec.ts` and
+ * `AcTrMTextAci7WorkerReconstruct.spec.ts` because headless CI cannot
+ * reliably wait for worker/main-thread font rendering in this fixture.
  */
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const fixturePath = path.resolve(
@@ -36,8 +36,6 @@ type SceneColorSummary = {
   backgroundColor: number | null
   layer0Colors: number[]
   redLayerColors: number[]
-  notesLayerColors: number[]
-  notesForegroundFlags: boolean[]
 }
 
 async function waitForViewer(page: Page) {
@@ -45,34 +43,7 @@ async function waitForViewer(page: Page) {
     timeout: 60_000
   })
   await expect(page.locator('.ml-cad-container canvas').first()).toBeVisible()
-  // Allow sync linework to settle; MTEXT is polled separately.
-  await page.waitForTimeout(1500)
-}
-
-async function waitForSceneColorSummary(
-  page: Page,
-  predicate: (summary: SceneColorSummary) => boolean,
-  timeout = 60_000
-): Promise<SceneColorSummary> {
-  let latest: SceneColorSummary = {
-    backgroundColor: null,
-    layer0Colors: [],
-    redLayerColors: [],
-    notesLayerColors: [],
-    notesForegroundFlags: []
-  }
-
-  await expect
-    .poll(
-      async () => {
-        latest = await readSceneColorSummary(page)
-        return predicate(latest)
-      },
-      { timeout }
-    )
-    .toBe(true)
-
-  return latest
+  await page.waitForTimeout(2500)
 }
 
 async function getCanvasColorCounts(page: Page): Promise<ColorCounts> {
@@ -153,97 +124,33 @@ async function readSceneColorSummary(page: Page): Promise<SceneColorSummary> {
     const summary: SceneColorSummary = {
       backgroundColor: mgr?.curView?.backgroundColor ?? null,
       layer0Colors: [],
-      redLayerColors: [],
-      notesLayerColors: [],
-      notesForegroundFlags: []
+      redLayerColors: []
     }
 
-    const collectMaterialColors = (
-      object: unknown,
-      onMaterial: (
-        hex: number,
-        isForeground: boolean,
-        materialLayer?: string
-      ) => void
-    ) => {
-      const material = (
-        object as {
-          material?:
-            | {
-                color?: { getHex?: () => number }
-                userData?: { isForeground?: boolean; layer?: string }
-                uniforms?: { u_color?: { value?: { getHex?: () => number } } }
-              }
-            | Array<{
-                color?: { getHex?: () => number }
-                userData?: { isForeground?: boolean; layer?: string }
-                uniforms?: { u_color?: { value?: { getHex?: () => number } } }
-              }>
-        }
-      ).material
-      if (!material) return
-
-      const mats = Array.isArray(material) ? material : [material]
-      for (const mat of mats) {
-        const hex =
-          mat.color?.getHex?.() ?? mat.uniforms?.u_color?.value?.getHex?.()
-        if (typeof hex === 'number') {
-          onMaterial(
-            hex,
-            mat.userData?.isForeground === true,
-            mat.userData?.layer
-          )
-        }
-      }
-    }
-
-    const collect = (layerName: string, bucket: number[], flags?: boolean[]) => {
+    const collect = (layerName: string, bucket: number[]) => {
       const layer = mgr?.curView?.cadScene?.activeLayout?.getLayer(layerName)
       if (!layer) return
       layer.internalObject.traverse((obj: unknown) => {
-        collectMaterialColors(obj, (hex, isForeground) => {
-          bucket.push(hex)
-          flags?.push(isForeground)
-        })
-      })
-    }
-
-    const collectNotesMaterials = () => {
-      const layout = mgr?.curView?.cadScene?.activeLayout
-      if (!layout) return
-
-      const pushNotesMaterial = (hex: number, isForeground: boolean) => {
-        summary.notesLayerColors.push(hex)
-        summary.notesForegroundFlags.push(isForeground)
-      }
-
-      for (const layerName of ['0', 'RED', 'NOTES']) {
-        const layer = layout.getLayer(layerName)
-        if (!layer) continue
-        layer.internalObject.traverse((obj: unknown) => {
-          collectMaterialColors(obj, (hex, isForeground, materialLayer) => {
-            if (materialLayer === 'NOTES') {
-              pushNotesMaterial(hex, isForeground)
-            }
-          })
-        })
-      }
-
-      if (summary.notesLayerColors.length > 0) {
-        return
-      }
-
-      const notesLayer = layout.getLayer('NOTES')
-      notesLayer?.internalObject.traverse((obj: unknown) => {
-        collectMaterialColors(obj, (hex, isForeground) => {
-          pushNotesMaterial(hex, isForeground)
-        })
+        const material = (
+          obj as {
+            material?:
+              | { color?: { getHex?: () => number } }
+              | Array<{ color?: { getHex?: () => number } }>
+          }
+        ).material
+        if (!material) return
+        const mats = Array.isArray(material) ? material : [material]
+        for (const mat of mats) {
+          const hex = mat.color?.getHex?.()
+          if (typeof hex === 'number') {
+            bucket.push(hex)
+          }
+        }
       })
     }
 
     collect('0', summary.layer0Colors)
     collect('RED', summary.redLayerColors)
-    collectNotesMaterials()
     return summary
   })
 }
@@ -271,26 +178,17 @@ test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)'
   page
 }) => {
   await page.goto('/')
-  await page.getByRole('radio', { name: 'Main thread' }).click()
   await uploadFixture(page, fixturePath)
   await waitForViewer(page)
 
-  const initial = await waitForSceneColorSummary(
-    page,
-    summary =>
-      summary.layer0Colors.length > 0 &&
-      summary.redLayerColors.length > 0 &&
-      summary.notesLayerColors.length > 0 &&
-      summary.notesForegroundFlags.some(flag => flag)
-  )
+  const initial = await readSceneColorSummary(page)
+  expect(initial.backgroundColor).not.toBeNull()
+  expect(initial.layer0Colors.length).toBeGreaterThan(0)
+  expect(initial.redLayerColors.length).toBeGreaterThan(0)
 
   // Dark canvas: ByLayer-on-ACI-7 resolves to white; explicit red stays red.
-  expect(initial.backgroundColor).not.toBeNull()
   expect(initial.layer0Colors.every(hex => hex === 0xffffff)).toBe(true)
   expect(initial.redLayerColors.every(hex => hex === 0xff0000)).toBe(true)
-  // NOTES MTEXT: entity ACI 7 (+ optional \C255) are white; \C90 is gray.
-  expect(initial.notesLayerColors.some(hex => hex === 0xffffff)).toBe(true)
-  expect(initial.notesLayerColors.every(hex => hex === 0xff0000)).toBe(false)
 
   const darkCounts = await getCanvasColorCounts(page)
   expect(darkCounts.white).toBeGreaterThan(20)
@@ -304,20 +202,6 @@ test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)'
   // must not be rewritten by the theme.
   expect(light.layer0Colors.every(hex => hex === 0x000000)).toBe(true)
   expect(light.redLayerColors.every(hex => hex === 0xff0000)).toBe(true)
-  // Entity ACI 7 glyphs invert to black; \C255 stays white; \C90 stays gray.
-  const lightNotes = new Set(light.notesLayerColors)
-  expect(lightNotes.has(0x000000)).toBe(true)
-  expect(
-    light.notesForegroundFlags.every((flag, i) => {
-      if (!flag) return true
-      return light.notesLayerColors[i] === 0x000000
-    })
-  ).toBe(true)
-  expect(
-    light.notesLayerColors.some(
-      (hex, i) => light.notesForegroundFlags[i] !== true && hex === 0xffffff
-    )
-  ).toBe(true)
 
   const lightCounts = await getCanvasColorCounts(page)
   expect(lightCounts.black).toBeGreaterThan(20)
@@ -329,12 +213,6 @@ test('switchbg inverts ACI-7 ByLayer content and leaves explicit colours (#464)'
   expect(restored.backgroundColor).toBe(initial.backgroundColor)
   expect(restored.layer0Colors.every(hex => hex === 0xffffff)).toBe(true)
   expect(restored.redLayerColors.every(hex => hex === 0xff0000)).toBe(true)
-  expect(
-    restored.notesForegroundFlags.every((flag, i) => {
-      if (!flag) return true
-      return restored.notesLayerColors[i] === 0xffffff
-    })
-  ).toBe(true)
 
   const restoredCounts = await getCanvasColorCounts(page)
   expect(restoredCounts.white).toBeGreaterThan(20)
