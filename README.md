@@ -180,22 +180,18 @@ These optimizations enable CAD-Viewer to smoothly render complex CAD drawings wi
 
 ## Known Issues
 
-CAD-Viewer has some known limitations that users should be aware of:
+The default open-source DWG path is based on [LibreDWG](https://github.com/LibreDWG/libredwg). It works well for many drawings, but its entity coverage is still limited, the WASM bundle is much larger, startup is slower, memory usage is high, and very large DWG files may hit out-of-memory errors. It also introduces GPL licensing considerations for commercial closed-source products.
 
-- **DWG File Compatibility**: 
-  - Some DWG drawings may fail to open due to bugs in the underlying [LibreDWG](https://github.com/LibreDWG/libredwg) library. This is a known limitation of the current DWG parsing implementation. If you find those issues, please log one issue on [CAD-Viewer issues page](https://github.com/mlightcad/cad-viewer/issues) or [LibreDWG issues page](https://github.com/LibreDWG/libredwg/issues).
-  - Drawings that contain third-party custom entities (e.g., Tianzheng drawings in the Chinese architecture and construction industry) may not display correctly unless proxy graphics are saved. When saving such drawings, ensure the system variable `PROXYGRAPHICS` is set to `1`. If proxy graphics are embedded in the file, CAD-Viewer can display them.
+If you need better compatibility, lower memory usage, large-file support, or a cleaner commercial licensing story, see our [**proprietary DWG parser**](./PROPRIETARY-PARSER.md).
 
-  Whether proxy graphics are written when saving a DWG is controlled by the system variable `PROXYGRAPHICS`:
-
-  | Value | Meaning |
-  |-------|---------|
-  | 0 | Do not save proxy graphics |
-  | 1 | Save proxy graphics |
-  
-- **DWG File Size Limits**:
-  - Parsing DWG files with LibreDWG is memory-intensive and can easily exceed 2 GB of RAM. `libredwg-web` therefore enforces WASM heap memory limits; very large DWG files may fail to parse.
-  - We offer a [**proprietary DWG parser**](./PROPRIETARY-PARSER.md) with significantly lower memory usage, support for larger files, and more accurate parsing. It integrates with the same `@mlightcad/data-model` as the open-source converters and can replace the GPL-based `libredwg-converter` stack for closed-source commercial products. See the [commercial license document](./PROPRIETARY-PARSER.md) for scope, pricing, GPL compliance, and support terms.
+| Item | LibreDWG-based parser | Proprietary DWG parser |
+|------|------------------------|------------------------|
+| Supported entities | Limited coverage | Broader coverage |
+| Bundle size | ~13 MB | ~437 KB |
+| Load speed | Slower startup | Much faster startup |
+| Memory usage | Higher | Lower |
+| Large DWG files | May OOM on large files | No such issue |
+| License | GPL propagation risk | No GPL propagation issue |
 
 ## Roadmap
 

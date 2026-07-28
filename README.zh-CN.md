@@ -169,20 +169,18 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 ## 已知问题
 
-- **DWG 兼容性**：
-  - 部分 DWG 图纸可能因 [LibreDWG](https://github.com/LibreDWG/libredwg) 的问题无法打开。若遇到此类问题，欢迎在 [CAD-Viewer 问题页](https://github.com/mlightcad/cad-viewer/issues) 或 [LibreDWG 问题页](https://github.com/LibreDWG/libredwg/issues) 反馈。
-  - 包含第三方自定义图元的图纸（例如天正软件绘制的图纸）可能无法正确显示。保存此类图纸时，请确保系统变量 `PROXYGRAPHICS` 已开启（设为 `1`）。若图纸中已保存了 proxy graphic，则 CAD-Viewer 也可以正常显示。
+默认的开源 DWG 方案基于 [LibreDWG](https://github.com/LibreDWG/libredwg)。它可以处理不少图纸，但支持的 entity 类型仍然比较少，WASM bundle 体积更大、启动更慢、内存占用更高，解析大型 DWG 时还可能出现内存溢出；另外，对于闭源商业产品还需要考虑 GPL license 的传导问题。
 
-  DWG 保存时是否写入 Proxy Graphics 由系统变量 `PROXYGRAPHICS` 控制：
+如果你需要更好的兼容性、更低的内存占用、更大的文件支持，或者更清晰的商业授权方案，请查看我们的 [**专有 DWG 解析器**](./PROPRIETARY-PARSER.zh-CN.md)。
 
-  | 取值 | 含义 |
-  |------|------|
-  | 0 | 不保存 Proxy Graphics |
-  | 1 | 保存 Proxy Graphics |
-  
-- **DWG 文件大小限制**：
-  - 使用 LibreDWG 解析 DWG 文件时内存开销较大，很容易占用超过 2 GB 内存。因此 `libredwg-web` 对 WASM 堆内存做了限制，过大的 DWG 文件可能无法解析。
-  - 我们提供 [**专有 DWG 解析器**](./PROPRIETARY-PARSER.zh-CN.md)，具有更低的内存开销，支持更大的文件，且解析结果更加准确。它与开源 converter 一样接入 `@mlightcad/data-model`，并可在闭源商业产品中替换基于 GPL 的 `libredwg-converter`。详见 [商业授权说明](./PROPRIETARY-PARSER.zh-CN.md)（支持范围、价格、GPL 合规、支持维护等）。
+| 项目 | 基于 LibreDWG 的解析器 | 专有 DWG 解析器 |
+|------|-------------------------|------------------|
+| 支持的 entities | 类型较少 | 覆盖更广 |
+| Bundle 体积 | ~13 MB | ~437 KB |
+| 加载速度 | 启动较慢 | 启动很快 |
+| 内存占用 | 更高 | 更低 |
+| 大型 DWG 文件 | 可能内存溢出 | 无此问题 |
+| License | 有 GPL 传导风险 | 无 GPL 传导问题 |
 
 ## 路线图（Roadmap）
 

@@ -13,6 +13,11 @@ import { uploadFixture } from '../helpers/fileUpload'
  * that must remain red across theme flips. Assertions prefer scene material
  * colours (stable across AA/clear-colour) and use canvas pixels as a
  * coarse visibility check for the ByLayer invert.
+ *
+ * Entity-colour ACI-7 MTEXT foreground recovery is covered by unit tests in
+ * `packages/three-renderer/__tests__/AcTrMTextColorUtil.spec.ts` and
+ * `AcTrMTextAci7WorkerReconstruct.spec.ts` because headless CI cannot
+ * reliably wait for worker/main-thread font rendering in this fixture.
  */
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const fixturePath = path.resolve(
