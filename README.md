@@ -1,6 +1,6 @@
 # CAD-Viewer
 
-[简体中文](./README.zh-CN.md)
+[English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md)
 
 cad-viewer is `the first web-based DXF/DWG viewer and editor in the world that operates entirely in browser, without relying on any backend services`.
 By performing DWG/DXF parsing, geometry processing, and rendering directly in the browser, cad-viewer enables true serverless CAD viewing and editing, ideal for cloud apps, offline usage, and privacy-sensitive workflows.
@@ -8,7 +8,7 @@ By performing DWG/DXF parsing, geometry processing, and rendering directly in th
 It also offers something you will rarely find in other CAD viewers—**one-click export to a single, self-contained HTML file**. The downloaded `.html` embeds the drawing snapshot and a lightweight viewer runtime, so recipients can open, pan, zoom, toggle layers, and measure distances in any modern browser with **no CAD app, no server, and no install**. Most desktop and web CAD viewers only let you view inside their own product; cad-viewer turns a live drawing into a portable, offline artifact you can email, archive, or drop on a static file host—ideal for sharing with clients, compliance archives, and air-gapped workflows. The offline viewer also uses far less memory than traditional desktop tools when opening the same drawing (see [memory comparison](#self-contained-html-memory-usage) below).
 
 - [**🌐 Live Demo**](https://mlightcad.github.io/cad-viewer/)
-- [**🌐 API Docs**](https://mlightcad.github.io/cad-viewer/docs/)
+- **🌐 API Docs**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versioned) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (latest/dev)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -25,6 +25,17 @@ The [Thingraph](https://cad.thingraph.site/) team builds production DWG/DXF view
   - [Cursor](https://open-vsx.org/extension/thingraph/dwg-viewer) — same extension via Open VSX
   - [Confluence](https://marketplace.atlassian.com/apps/2890472615/dwg-viewer-for-confluence) — embed DWG/DXF previews on pages
   - [Windows Explorer](https://cad.thingraph.site/install/windows) — thumbnail and preview in File Explorer
+
+Community apps & integrations:
+
+- [flyfish-dev/cad-viewer](https://github.com/flyfish-dev/cad-viewer) — Production-oriented browser CAD viewer for DWG, DXF, DWF, DWFx and XPS ([live demo](https://cad-viewer-iys.pages.dev))
+- [Nextcloud CAD Viewer](https://github.com/ashcoft/nextcloud-cad-viewer) — Native Nextcloud app for viewing DWG/DXF in the browser ([App Store](https://apps.nextcloud.com/apps/cad_viewer))
+
+Community Linux desktop packages:
+
+- [CAD Viewer AppImage](https://github.com/pass-wind/cad-viewer-appimage) — Electron-based AppImage for Linux (~114 MB), tested on Fedora
+- [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — Arch Linux source package using system Electron (~5.4 MB)
+- [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — Arch Linux binary package with bundled fonts/templates for fully offline drawing open
 
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 

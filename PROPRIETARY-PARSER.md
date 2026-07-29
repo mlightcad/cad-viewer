@@ -65,6 +65,57 @@ There are **no royalties**, **no per-seat fees**, and **no usage caps**.
 
 ---
 
+## Trial License
+
+If you want to evaluate the proprietary parser before purchase, you can apply for a **trial license**.
+
+### How to apply
+
+1. Send an email to [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) with your **company information** and **intended use case**.
+2. **Personal / individual applications are not accepted at this time** — trial licenses are available for **companies and organizations** only.
+3. Your email **must include a GitHub username**. We use this account to grant access to the private npm package **`@mlight-cad/dwg-converter`** via the GitHub organization [**mlight-cad**](https://github.com/mlight-cad).
+
+### Email template
+
+```
+Subject: Trial License Request — [Company Name] — Proprietary DWG Parser
+
+Dear cad-viewer team,
+
+We would like to apply for a trial license for the proprietary DWG parser to evaluate its fit for our product.
+
+Company information:
+- Company / organization name: [Your company name]
+- Website (optional): [URL]
+- Country / region: [Country or region]
+- Contact name: [Your name]
+- Contact email: [Your work email]
+- GitHub username (required): [your-github-username]
+
+Intended use:
+- Product / project name: [Brief name]
+- Deployment model: [e.g. SaaS, on-premise, desktop, white-label]
+- Brief description of use case: [1–3 sentences on how you plan to use the parser]
+
+We understand that trial licenses are currently offered to companies and organizations only, not to individual developers.
+
+Thank you,
+[Your name]
+[Company name]
+```
+
+### After approval
+
+If your application is approved:
+
+1. You will receive a **GitHub organization invitation** to join **mlight-cad**, sent to the GitHub account listed in your application.
+2. **Accept the invitation** in GitHub (via the email notification or under **Settings → Organizations**).
+3. Once you are a member of **mlight-cad**, you can install and use the **`@mlight-cad/dwg-converter`** package with that GitHub account (configure npm/pnpm/yarn to authenticate with GitHub Packages as described in the integration notes provided with access).
+
+For commercial production use after the trial, please refer to the [Licensing Terms](#licensing-terms) above and contact us to purchase a perpetual license.
+
+---
+
 ## Integration with the Existing Data Model
 
 The proprietary parser is delivered as a **registerable converter** that plugs into the same pipeline as the open-source stack.
@@ -141,6 +192,10 @@ You **keep perpetual rights** to the version(s) you already received. You simply
 ### How do we purchase?
 
 Email [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) with a brief description of your product and deployment model. We will arrange the donation and deliver the npm package and integration notes.
+
+### How do we apply for a trial license?
+
+See the [Trial License](#trial-license) section above. Send an application email with your company details, intended use, and a **GitHub username**. If approved, you will be invited to the **mlight-cad** GitHub organization to access **`@mlight-cad/dwg-converter`**.
 
 ---
 

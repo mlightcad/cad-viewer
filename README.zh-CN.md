@@ -1,6 +1,6 @@
 # CAD-Viewer（中文）
 
-[English](./README.md)
+[English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md)
 
 CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后端服务的 Web 版 DXF/DWG 查看与编辑器`。
 通过在浏览器中直接完成 DWG/DXF 解析、几何处理和渲染，CAD-Viewer 实现了真正的无服务器（serverless）CAD 查看与编辑，非常适合云应用、离线使用以及对隐私敏感的工作场景。
@@ -8,12 +8,34 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 此外，它还提供市面上 CAD 看图软件中极为少见的能力——**一键导出为单个自包含 HTML 文件**。下载的 `.html` 内嵌图纸快照与轻量查看器运行时，接收方只需用任意现代浏览器即可离线打开、平移缩放、切换图层并测量距离，**无需安装 CAD 软件、无需服务器、无需再打开 CAD-Viewer**。多数桌面或 Web CAD 看图工具只能在自家产品内查看；CAD-Viewer 则把当前图纸变成可邮件发送、可归档、可放到静态站点上的便携文件，非常适合对外分享、合规留档与内网隔离环境。离线查看器的内存占用也远低于传统桌面 CAD 看图软件（见下文[内存对比](#自包含-html-内存占用)）。
 
 - [**🌐 在线演示**](https://mlightcad.github.io/cad-viewer/)
-- [**🌐 API 文档**](https://mlightcad.github.io/cad-viewer/docs/)
+- **🌐 API 文档**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（支持版本切换）· [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/)（最新 /dev）
 - [**🌐 项目 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
 - Medium: [@mlightcad](https://medium.com/@mlightcad)
 - 稀土掘金: [@mlightcad](https://juejin.cn/column/7501992214283501579)
+
+### 基于 cad-viewer 构建的应用（Apps Built with cad-viewer）
+
+[Thingraph](https://cad.thingraph.site/) 团队在 cad-viewer 之上构建了面向生产环境的 DWG/DXF 查看器与平台集成，服务全球数万用户：
+
+- [DWG Viewer Web App](https://cad.thingraph.site/dwg-viewer) — 浏览器端 DWG/DXF 查看器，工程团队可快速、无服务器地访问图纸。各平台安装入口：
+  - [Google Drive](https://workspace.google.com/marketplace/app/dwg_viewer/641533811831) — 在 Drive 中通过 **Open with** 打开 DWG/DXF
+  - [VS Code](https://marketplace.visualstudio.com/items?itemName=thingraph.dwg-viewer) — `.dwg` / `.dxf` 只读自定义编辑器
+  - [Cursor](https://open-vsx.org/extension/thingraph/dwg-viewer) — 通过 Open VSX 安装同一扩展
+  - [Confluence](https://marketplace.atlassian.com/apps/2890472615/dwg-viewer-for-confluence) — 在页面中嵌入 DWG/DXF 预览
+  - [Windows Explorer](https://cad.thingraph.site/install/windows) — 在资源管理器中显示缩略图与预览
+
+社区应用与集成：
+
+- [flyfish-dev/cad-viewer](https://github.com/flyfish-dev/cad-viewer) — 面向生产的浏览器端 CAD 查看器，支持 DWG、DXF、DWF、DWFx 与 XPS（[在线演示](https://cad-viewer-iys.pages.dev)）
+- [Nextcloud CAD Viewer](https://github.com/ashcoft/nextcloud-cad-viewer) — Nextcloud 原生应用，可在浏览器中直接查看 DWG/DXF（[应用商店](https://apps.nextcloud.com/apps/cad_viewer)）
+
+社区 Linux 桌面包装：
+
+- [CAD Viewer AppImage](https://github.com/pass-wind/cad-viewer-appimage) — 基于 Electron 的 Linux AppImage（约 114 MB），已在 Fedora 上验证
+- [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — Arch Linux 源码包，使用系统 Electron（约 5.4 MB）
+- [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — Arch Linux 二进制包，内置字体/模板，支持完全离线打开图纸
 
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
