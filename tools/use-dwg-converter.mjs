@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Switch cad-simple-viewer from @mlightcad/libredwg-converter (GPL)
- * to the proprietary @mlightcad/dwg-converter (local realdwg-web path).
+ * to the proprietary @mlight-cad/dwg-converter (local realdwg-web path).
  * Also repoints the @mlightcad/data-model pnpm override to the local
  * realdwg-web checkout.
  *
@@ -48,16 +48,16 @@ const targets = [
     label: 'package.json',
     transform(content) {
       if (
-        content.includes('"@mlightcad/dwg-converter"') &&
+        content.includes('"@mlight-cad/dwg-converter"') &&
         !content.includes('"@mlightcad/libredwg-converter"')
       ) {
-        console.log('  already using @mlightcad/dwg-converter')
+        console.log('  already using @mlight-cad/dwg-converter')
         return null
       }
 
       const next = content.replace(
         /"@mlightcad\/libredwg-converter"\s*:\s*"[^"]*"/,
-        `"@mlightcad/dwg-converter": "${DWG_CONVERTER_VERSION}"`
+        `"@mlight-cad/dwg-converter": "${DWG_CONVERTER_VERSION}"`
       )
 
       if (next === content) {
@@ -113,12 +113,12 @@ const targets = [
       let next = content
       next = next.replaceAll(
         "from '@mlightcad/libredwg-converter'",
-        "from '@mlightcad/dwg-converter'"
+        "from '@mlight-cad/dwg-converter'"
       )
       next = next.replaceAll('AcDbLibreDwgConverter', 'AcDbDwgConverter')
       next = next.replaceAll(
         '`@mlightcad/libredwg-converter`',
-        '`@mlightcad/dwg-converter`'
+        '`@mlight-cad/dwg-converter`'
       )
 
       if (next === content) {
@@ -175,7 +175,7 @@ const targets = [
 ]
 
 function main() {
-  console.log('Switching cad-simple-viewer to @mlightcad/dwg-converter…')
+  console.log('Switching cad-simple-viewer to @mlight-cad/dwg-converter…')
 
   let changed = 0
   for (const target of targets) {

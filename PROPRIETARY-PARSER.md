@@ -128,12 +128,13 @@ Typical integration (conceptual):
 
 ```typescript
 import { AcDbDatabaseConverterManager, AcDbFileType } from '@mlightcad/data-model'
-// Import the proprietary converter from the licensed package
-import { AcDbProprietaryConverter } from '@mlightcad/proprietary-converter' // package name provided on purchase
+import { AcDbDwgConverter } from '@mlight-cad/dwg-converter'
 
-const converter = new AcDbProprietaryConverter({ /* options */ })
+const converter = new AcDbDwgConverter({ /* options */ })
 AcDbDatabaseConverterManager.instance.register(AcDbFileType.DWG, converter)
 ```
+
+For a complete working sample (authentication, worker assets, registration, and database browsing), see [realdwg-web-example](https://github.com/mlightcad/realdwg-web-example).
 
 Do **not** register the GPL-based `libredwg-converter` if you rely on the proprietary parser for compliance.
 
@@ -196,6 +197,25 @@ Email [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) with a brief descr
 ### How do we apply for a trial license?
 
 See the [Trial License](#trial-license) section above. Send an application email with your company details, intended use, and a **GitHub username**. If approved, you will be invited to the **mlight-cad** GitHub organization to access **`@mlight-cad/dwg-converter`**.
+
+### Does the proprietary parser support 3D entities in DWG?
+
+**Partially.** The parser can extract **3DSOLID** entities from DWG files and decode a portion of the embedded **ACIS SAB** payload. Full B-rep tessellation is not yet available; when SAB/SAT data is present, the data model exposes a best-effort wireframe (or a bounding-box fallback).
+
+For details, see:
+
+- [`AcDb3dSolid` API documentation](https://mlightcad.github.io/realdwg-web/classes/_mlightcad_data-model.AcDb3dSolid.html)
+- ACIS-related source under [`packages/data-model/src/acis`](https://github.com/mlightcad/realdwg-web/tree/main/packages/data-model/src/acis) in the [realdwg-web](https://github.com/mlightcad/realdwg-web) repository
+
+### Can we evaluate the proprietary parser without a trial license?
+
+**Yes.** You can explore the proprietary DWG parser’s capabilities through the public demo project [realdwg-web-example](https://github.com/mlightcad/realdwg-web-example), which demonstrates installation, worker asset deployment, converter registration, and browsing the resulting database after parse.
+
+For longer evaluation or production pilots, apply for a formal [trial license](#trial-license).
+
+### How do we use the proprietary DWG parser?
+
+The proprietary parser does **not** expose a standalone “parse DWG” API. Like the open-source [`libredwg-converter`](https://github.com/mlightcad/realdwg-web/tree/main/packages/libredwg-converter), it implements the **`AcDbDatabaseConverter`** interface and registers with **`AcDbDatabaseConverterManager`**. After conversion, you work with the resulting drawing through the MIT-licensed **`@mlightcad/data-model`** (`AcDbDatabase`, entities, symbol tables, and so on)—the same integration path described in [Integration with the Existing Data Model](#integration-with-the-existing-data-model).
 
 ---
 

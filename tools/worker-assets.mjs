@@ -13,7 +13,7 @@ export const LIBREDWG_PARSER_WORKER_FILE = 'libredwg-parser-worker.js'
 export const MTEXT_RENDERER_WORKER_FILE = 'mtext-renderer-worker.js'
 
 /**
- * Proprietary DWG parser worker from private package `@mlightcad/dwg-converter`.
+ * Proprietary DWG parser worker from private package `@mlight-cad/dwg-converter`.
  * Optional — copied only when that package is resolvable (e.g. via local
  * pnpm-workspace override).
  */
@@ -21,4 +21,4 @@ export const DWG_PARSER_WORKER_FILE = 'dwg-parser-worker.js'
 
 export const LIBREDWG_CONVERTER_PACKAGE = '@mlightcad/libredwg-converter'
 export const MTEXT_RENDERER_PACKAGE = '@mlightcad/mtext-renderer'
-export const DWG_CONVERTER_PACKAGE = '@mlightcad/dwg-converter'
+export const DWG_CONVERTER_PACKAGE = '@mlight-cad/dwg-converter'
