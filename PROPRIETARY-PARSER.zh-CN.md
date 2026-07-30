@@ -128,12 +128,13 @@
 
 ```typescript
 import { AcDbDatabaseConverterManager, AcDbFileType } from '@mlightcad/data-model'
-// 从授权包中导入专有 converter（购买后提供具体包名）
-import { AcDbProprietaryConverter } from '@mlightcad/proprietary-converter'
+import { AcDbDwgConverter } from '@mlight-cad/dwg-converter'
 
-const converter = new AcDbProprietaryConverter({ /* options */ })
+const converter = new AcDbDwgConverter({ /* options */ })
 AcDbDatabaseConverterManager.instance.register(AcDbFileType.DWG, converter)
 ```
+
+完整可运行示例（认证、Worker 资源、注册与数据库浏览）见 [realdwg-web-example](https://github.com/mlightcad/realdwg-web-example)。
 
 若使用专有解析器以满足合规要求，请**不要**再注册基于 GPL 的 `libredwg-converter`。
 
@@ -196,6 +197,25 @@ cad-viewer 目前为**个人开源项目**（非公司运营），作者**全职
 ### 如何申请试用授权？
 
 请参阅上文 [试用授权（Trial License）](#试用授权trial-license) 一节。发送申请邮件时需提供公司信息、预期用途及 **GitHub 用户名**。审批通过后，您将被邀请加入 **mlight-cad** GitHub 组织，以访问 **`@mlight-cad/dwg-converter`** 包。
+
+### 是否支持 DWG 中的三维实体（3D Entity）？
+
+**部分支持。** 专有解析器可从 DWG 中提取 **3DSOLID** 实体，并部分解码其中的 **ACIS SAB** 数据。完整 B-rep 细分（tessellation）尚不支持；在存在 SAB/SAT 数据时，数据模型会尽量生成线框预览，否则回退为基于包围盒的线框。
+
+详情请参阅：
+
+- [`AcDb3dSolid` API 文档](https://mlightcad.github.io/realdwg-web/classes/_mlightcad_data-model.AcDb3dSolid.html)
+- [realdwg-web](https://github.com/mlightcad/realdwg-web) 仓库中的 ACIS 相关实现：[`packages/data-model/src/acis`](https://github.com/mlightcad/realdwg-web/tree/main/packages/data-model/src/acis)
+
+### 在未获得试用授权的情况下，能否体验专有 DWG 解析器？
+
+**可以。** 公开示例项目 [realdwg-web-example](https://github.com/mlightcad/realdwg-web-example) 展示了专有 DWG 解析器的能力，包括安装认证、Worker 资源部署、converter 注册，以及解析后浏览数据库内容。
+
+如需更长时间评估或生产试点，请申请正式 [试用授权](#试用授权trial-license)。
+
+### 如何使用专有 DWG 解析器？
+
+专有解析器**不提供独立的“直接解析 DWG”API**。其接入方式与开源的 [`libredwg-converter`](https://github.com/mlightcad/realdwg-web/tree/main/packages/libredwg-converter) 相同：实现 **`AcDbDatabaseConverter`** 接口，并通过 **`AcDbDatabaseConverterManager`** 注册。解析完成后，您通过 MIT 授权的 **`@mlightcad/data-model`**（`AcDbDatabase`、各类实体、符号表等）访问 DWG 内容——与上文 [与现有数据模型的集成](#与现有数据模型的集成) 描述的路径一致。
 
 ---
 
