@@ -21,6 +21,7 @@ import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import {
   DWG_CONVERTER_PACKAGE,
+  DWG_PARSER_MAIN_FILE,
   DWG_PARSER_WORKER_FILE,
   LIBREDWG_CONVERTER_PACKAGE,
   LIBREDWG_PARSER_WORKER_FILE,
@@ -91,6 +92,7 @@ function copyProducerWorkers() {
   mkdirSync(outDir, { recursive: true })
   // Optional proprietary converter.
   copyOptionalWorker(DWG_CONVERTER_PACKAGE, DWG_PARSER_WORKER_FILE, outDir)
+  copyOptionalWorker(DWG_CONVERTER_PACKAGE, DWG_PARSER_MAIN_FILE, outDir)
   copy(
     join(pkgRoot(MTEXT_RENDERER_PACKAGE), 'dist', MTEXT_RENDERER_WORKER_FILE),
     join(outDir, MTEXT_RENDERER_WORKER_FILE)
@@ -110,8 +112,8 @@ function copyFromCadSimpleViewer(destRelativePath) {
     )
   }
 
-  const workers = readdirSync(srcDir).filter(name =>
-    name.endsWith('-worker.js')
+  const workers = readdirSync(srcDir).filter(
+    name => name.endsWith('-worker.js') || name === DWG_PARSER_MAIN_FILE
   )
   if (workers.length === 0) {
     throw new Error(
