@@ -7,6 +7,7 @@ By performing DWG/DXF parsing, geometry processing, and rendering directly in th
 
 It also offers something you will rarely find in other CAD viewers—**one-click export to a single, self-contained HTML file**. The downloaded `.html` embeds the drawing snapshot and a lightweight viewer runtime, so recipients can open, pan, zoom, toggle layers, and measure distances in any modern browser with **no CAD app, no server, and no install**. Most desktop and web CAD viewers only let you view inside their own product; cad-viewer turns a live drawing into a portable, offline artifact you can email, archive, or drop on a static file host—ideal for sharing with clients, compliance archives, and air-gapped workflows. The offline viewer also uses far less memory than traditional desktop tools when opening the same drawing (see [memory comparison](#self-contained-html-memory-usage) below).
 
+- [**🌐 Home Page**](https://mlightcad.com/)
 - [**🌐 Live Demo**](https://mlightcad.github.io/cad-viewer/)
 - **🌐 API Docs**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versioned) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (latest/dev)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)

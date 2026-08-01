@@ -7,6 +7,7 @@ DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 �
 
 또한 다른 CAD 뷰어에서는 거의 찾아볼 수 없는 기능을 제공합니다—**클릭 한 번으로 단일 자체 포함 HTML 파일로 내보내기**. 다운로드한 `.html`에는 도면 스냅샷과 경량 뷰어 런타임이 내장되어 있어, 수신자는 **CAD 앱, 서버, 설치 없이** 모든 최신 브라우저에서 열어 팬, 줌, 레이어 전환, 거리 측정을 할 수 있습니다. 대부분의 데스크톱 및 웹 CAD 뷰어는 자사 제품 내에서만 보기를 허용합니다. cad-viewer는 라이브 도면을 이메일로 보내거나, 보관하거나, 정적 파일 호스트에 올릴 수 있는 휴대용 오프라인 산출물로 바꿉니다—클라이언트 공유, 규정 준수 아카이브, 에어갭 워크플로에 이상적입니다. 오프라인 뷰어는 동일한 도면을 열 때 기존 데스크톱 도구보다 훨씬 적은 메모리를 사용합니다(아래 [메모리 비교](#자체-포함-html-메모리-사용량) 참조).
 
+- [**🌐 홈페이지**](https://mlightcad.com/)
 - [**🌐 라이브 데모**](https://mlightcad.github.io/cad-viewer/)
 - **🌐 API 문서**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (버전별) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (최신/dev)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
