@@ -36,4 +36,14 @@ describe('AcTrEntity wcsBbox', () => {
 
     expectWcsBboxCloseTo(cloned.wcsBbox, [3, 4, 0], [8, 9, 0])
   })
+
+  it('exposes childCount from the Object3D children list', () => {
+    const context = new AcTrRenderContext()
+    const parent = new AcTrEntity(context)
+    expect(parent.childCount).toBe(0)
+
+    parent.addChild(new AcTrEntity(context))
+    parent.addChild(new AcTrEntity(context))
+    expect(parent.childCount).toBe(2)
+  })
 })

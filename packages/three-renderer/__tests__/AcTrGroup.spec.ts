@@ -33,6 +33,17 @@ function createLine(
 }
 
 describe('AcTrGroup wcsBbox', () => {
+  it('reports childCount from post-flatten drawable children', () => {
+    const context = new AcTrRenderContext()
+    const lineA = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const lineB = createLine('line-b', { x: 2, y: 5 }, { x: 8, y: 15 }, context)
+
+    const group = new AcTrGroup([lineA, lineB], context)
+
+    expect(group.childCount).toBe(group.children.length)
+    expect(group.childCount).toBeGreaterThanOrEqual(2)
+  })
+
   it('unions child wcsBbox values into the group wcsBbox', () => {
     const context = new AcTrRenderContext()
     const lineA = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)

@@ -48,6 +48,7 @@ describe('AcSvgEntity transforms', () => {
       ctx
     )
     const group = new AcSvgGroup([child])
+    expect(group.childCount).toBe(1)
     group.applyMatrix(new AcGeMatrix3d().makeTranslation(50, 75, 0))
 
     const svg = group.renderSvg()

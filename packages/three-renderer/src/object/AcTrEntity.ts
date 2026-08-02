@@ -367,6 +367,17 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   }
 
   /**
+   * Direct child count for {@link AcGiEntity.childCount}.
+   *
+   * Used by {@link AcDbRenderingCache} to skip {@link compactForInstancing} on
+   * tiny block templates. For {@link AcTrGroup}, this is the post-flatten leaf
+   * count under this object.
+   */
+  get childCount() {
+    return this.children.length
+  }
+
+  /**
    * @inheritdoc
    */
   addChild(entity: AcTrEntity) {
