@@ -201,14 +201,18 @@ const baseTabNames = [
   'countList',
   'blocks',
   'missingResources',
-  'memoryProfile',
-  'openFileProfile'
+  'memoryProfile'
 ] as const
 const tabNames = computed((): readonly string[] => {
-  if (store.features.agentPlugin) {
-    return [...baseTabNames, 'agent']
+  const names: string[] = [...baseTabNames]
+  // Revealed by OPENPERF only — keep out of the default palette chrome.
+  if (store.dialogs.openFileProfileTabVisible) {
+    names.push('openFileProfile')
   }
-  return baseTabNames
+  if (store.features.agentPlugin) {
+    names.push('agent')
+  }
+  return names
 })
 
 const tabs = computed<MlOverflowTab[]>(() => {

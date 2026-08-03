@@ -17,6 +17,7 @@ export class AcApOpenPerfCmd extends AcEdCommand {
   async execute(_context: AcApContext) {
     publishOpenFileProfile(AcApOpenFileProfiler.getLastSnapshot())
     store.openFileProfileTick++
+    store.dialogs.openFileProfileTabVisible = true
     store.dialogs.activePaletteTab = 'openFileProfile'
     store.dialogs.layerManager = true
   }

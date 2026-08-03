@@ -5,7 +5,12 @@ export const store = reactive({
     layerManager: false,
     activePaletteTab: 'layerManager',
     /** Sub-tab inside Missing / External Resources palette */
-    activeMissingResourceTab: 'font' as 'font' | 'xref'
+    activeMissingResourceTab: 'font' as 'font' | 'xref',
+    /**
+     * Dev-oriented Open Performance tab. Hidden until OPENPERF runs so it
+     * does not clutter the palette for ordinary users.
+     */
+    openFileProfileTabVisible: false
   },
   features: {
     /** Set when `@mlightcad/cad-agent-plugin` is installed and registered. */

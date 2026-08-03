@@ -91,6 +91,45 @@
         </el-table>
       </div>
 
+      <div
+        v-if="progressiveRows.length > 0"
+        class="ml-open-file-profile-section"
+      >
+        <button
+          type="button"
+          class="ml-open-file-profile-section-title"
+          @click="progressiveExpanded = !progressiveExpanded"
+        >
+          <el-icon
+            class="ml-open-file-profile-caret"
+            :class="{ 'is-expanded': progressiveExpanded }"
+          >
+            <ArrowRight />
+          </el-icon>
+          {{ t('main.toolPalette.openFileProfile.progressive') }}
+        </button>
+        <el-table
+          v-show="progressiveExpanded"
+          :data="progressiveRows"
+          size="small"
+          class="ml-open-file-profile-table"
+          table-layout="fixed"
+        >
+          <el-table-column
+            prop="label"
+            :label="t('main.toolPalette.openFileProfile.columns.metric')"
+            min-width="160"
+          />
+          <el-table-column
+            prop="value"
+            :label="t('main.toolPalette.openFileProfile.columns.value')"
+            width="120"
+            align="right"
+            header-align="right"
+          />
+        </el-table>
+      </div>
+
       <div class="ml-open-file-profile-section">
         <button
           type="button"
@@ -207,6 +246,7 @@ const {
   snapshot,
   collectedAtLabel,
   timingRows,
+  progressiveRows,
   cacheRows,
   slowBlocks,
   adoptPublishedSnapshot,
@@ -216,6 +256,7 @@ const {
 } = useOpenFileProfile()
 
 const timingExpanded = ref(true)
+const progressiveExpanded = ref(true)
 const cacheExpanded = ref(true)
 const slowBlocksExpanded = ref(true)
 

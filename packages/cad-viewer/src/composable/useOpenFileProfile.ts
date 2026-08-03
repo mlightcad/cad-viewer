@@ -187,6 +187,30 @@ export function useOpenFileProfile() {
     ]
   })
 
+  const progressiveRows = computed(() => {
+    const progressive = snapshot.value?.progressive
+    if (!progressive) return []
+    return [
+      {
+        id: 'mode',
+        label: t('main.toolPalette.openFileProfile.progressiveMode'),
+        value: progressive.enabled
+          ? t('main.toolPalette.openFileProfile.progressiveOn')
+          : t('main.toolPalette.openFileProfile.progressiveOff')
+      },
+      {
+        id: 'paints',
+        label: t('main.toolPalette.openFileProfile.midOpenPaints'),
+        value: String(progressive.paintCount)
+      },
+      {
+        id: 'yields',
+        label: t('main.toolPalette.openFileProfile.yields'),
+        value: String(progressive.yieldCount)
+      }
+    ]
+  })
+
   const slowBlocks = computed(() => snapshot.value?.slowBlocks ?? [])
 
   const adoptPublishedSnapshot = (): boolean => {
@@ -218,6 +242,7 @@ export function useOpenFileProfile() {
     snapshot,
     collectedAtLabel,
     timingRows,
+    progressiveRows,
     cacheRows,
     slowBlocks,
     adoptPublishedSnapshot,
