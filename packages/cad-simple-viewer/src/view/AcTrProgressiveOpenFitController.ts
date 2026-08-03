@@ -1,7 +1,4 @@
-import {
-  accmYieldToUi,
-  AcGeBox2d,
-  AcGeVector2d} from '@mlightcad/data-model'
+import { AcGeBox2d, AcGeVector2d } from '@mlightcad/data-model'
 
 /** Callback that applies a zoom-to-fit in the host view. */
 export type AcTrProgressiveOpenFitZoomFn = (
@@ -17,7 +14,9 @@ export type AcTrProgressiveOpenFitZoomFn = (
  * - Throttled incremental fit for large drawings while entities convert
  * - Final fit once conversion completes (always from batch geometry bounds)
  * - Stop auto-framing when the user pans or zooms manually
- * - Yield to the render loop so geometry appears progressively
+ *
+ * UI yields during open are owned by {@link AcTrView2d.batchConvert} via
+ * {@link AcCmUiYieldGate}; this controller only manages camera framing.
  *
  * The host view ({@link AcTrView2d}) supplies layout fit boxes and performs
  * the actual camera updates through {@link AcTrProgressiveOpenFitZoomFn}.
@@ -26,13 +25,13 @@ export class AcTrProgressiveOpenFitController {
   private static readonly SMALL_ENTITY_THRESHOLD = 500
   private static readonly BBOX_GROWTH_RATIO = 1.5
   private static readonly FIT_INTERVAL_MS = 500
-  private static readonly YIELD_EVERY = 32
 
   private active = false
   private userAdjusted = false
   private programmaticDepth = 0
   private incrementalEnabled = false
   private initialPendingCount = 0
+  private convertedCount = 0
   private lastFittedBox?: AcGeBox2d
   private lastZoomAt = 0
 
@@ -44,14 +43,29 @@ export class AcTrProgressiveOpenFitController {
 
   /**
    * Starts progressive open framing for the current document open operation.
+   *
+   * Safe to call again while already active (e.g. once before `db.read` with an
+   * unknown count, then again after appends have started): refreshes the
+   * pending-count threshold without resetting user-adjusted / fit state.
    */
   begin(pendingEntityCount: number) {
+    if (this.active) {
+      this.initialPendingCount = Math.max(
+        this.initialPendingCount,
+        pendingEntityCount
+      )
+      this.maybeEnableIncrementalFit()
+      return
+    }
+
     this.active = true
     this.userAdjusted = false
     this.lastZoomAt = 0
     this.initialPendingCount = pendingEntityCount
+    this.convertedCount = 0
     this.lastFittedBox = undefined
-    this.incrementalEnabled = this.shouldEnableIncrementalFit()
+    this.incrementalEnabled = false
+    this.maybeEnableIncrementalFit()
   }
 
   /** Ends progressive open framing. */
@@ -59,6 +73,7 @@ export class AcTrProgressiveOpenFitController {
     this.active = false
     this.incrementalEnabled = false
     this.lastFittedBox = undefined
+    this.convertedCount = 0
   }
 
   /**
@@ -92,26 +107,31 @@ export class AcTrProgressiveOpenFitController {
   /**
    * Called after one entity (or group bucket) was added to the scene during open.
    */
-  async afterGeometryBatch(
+  afterGeometryBatch(
     resolveFitBox: () => AcGeBox2d | undefined,
-    entityIndex?: number
+    _entityIndex?: number
   ) {
-    this.maybeIncrementalFit(resolveFitBox)
-    if (entityIndex != null) {
-      await this.yieldForRender(entityIndex)
-    }
-  }
-
-  /** Yields periodically so the render loop can paint during document open. */
-  async yieldForRender(entityIndex: number) {
-    if (
-      !this.active ||
-      entityIndex % AcTrProgressiveOpenFitController.YIELD_EVERY !== 0
-    ) {
+    if (!this.active) {
       return
     }
 
-    await accmYieldToUi()
+    this.convertedCount++
+    this.maybeEnableIncrementalFit()
+    this.maybeIncrementalFit(resolveFitBox)
+  }
+
+  private maybeEnableIncrementalFit() {
+    if (this.incrementalEnabled) {
+      return
+    }
+    if (
+      this.initialPendingCount >=
+        AcTrProgressiveOpenFitController.SMALL_ENTITY_THRESHOLD ||
+      this.convertedCount >=
+        AcTrProgressiveOpenFitController.SMALL_ENTITY_THRESHOLD
+    ) {
+      this.incrementalEnabled = true
+    }
   }
 
   private maybeIncrementalFit(resolveFitBox: () => AcGeBox2d | undefined) {
@@ -134,13 +154,6 @@ export class AcTrProgressiveOpenFitController {
 
     this.lastZoomAt = now
     this.applyZoom(box)
-  }
-
-  private shouldEnableIncrementalFit() {
-    return (
-      this.initialPendingCount >=
-      AcTrProgressiveOpenFitController.SMALL_ENTITY_THRESHOLD
-    )
   }
 
   private shouldApplyIncrementalFit(box: AcGeBox2d) {

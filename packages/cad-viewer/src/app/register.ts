@@ -19,6 +19,7 @@ import {
   AcApLayerStateCmd,
   AcApMemCmd,
   AcApMissedDataCmd,
+  AcApOpenPerfCmd,
   AcApPointStyleCmd,
   AcApPropertiesCmd,
   AcApQSelectCmd,
@@ -117,6 +118,13 @@ export const registerCmds = () => {
       'mem',
       new AcApMemCmd(),
       'memstat'
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'openperf',
+      'openperf',
+      new AcApOpenPerfCmd(),
+      ['openprofile', 'openprofui']
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

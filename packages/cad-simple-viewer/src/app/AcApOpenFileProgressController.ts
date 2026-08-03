@@ -1,6 +1,7 @@
 import {
   accmYieldForPaint,
-  AcDbProgressdEventArgs} from '@mlightcad/data-model'
+  AcDbProgressdEventArgs
+} from '@mlightcad/data-model'
 
 import { AcEdFontNotLoadedInfo, eventBus } from '../editor'
 import { AcApI18n } from '../i18n'
@@ -17,6 +18,10 @@ import { isOpenFileProgressComplete } from './openFileProgress'
  * Overlay DOM updates are deduplicated: `show()` runs once per open, and
  * `setMessage` only when the localized stage text changes. Progress events
  * still emit on every callback so listeners see fine-grained percentages.
+ *
+ * When progressive scene convert is still draining after CONVERSION `END`,
+ * the overlay stays up (see-through) until {@link setSceneBusyGate} reports
+ * idle so geometry can appear under the spinner.
  */
 export class AcApOpenFileProgressController {
   private readonly _progress: AcApProgress
@@ -24,19 +29,50 @@ export class AcApOpenFileProgressController {
   private _stage?: AcDbProgressdEventArgs['stage']
   private _overlayVisible = false
   private _lastMessage = ''
+  private _seeThrough = false
+  private _sceneBusyGate?: () => boolean
+  private _holdPollId?: ReturnType<typeof setTimeout>
+
+  private static readonly OVERLAY_DEFAULT = 'rgba(0,0,0,0.45)'
+  private static readonly OVERLAY_SEE_THROUGH = 'rgba(0,0,0,0.16)'
 
   /**
    * @param host - Canvas container that receives the progress overlay
    */
   constructor(host: HTMLElement) {
-    this._progress = new AcApProgress({ host })
+    this._progress = new AcApProgress({
+      host,
+      overlayColor: AcApOpenFileProgressController.OVERLAY_DEFAULT
+    })
     this._progress.hide()
+  }
+
+  /**
+   * When true, uses a lighter overlay so progressive geometry is visible
+   * under the spinner during open.
+   */
+  setSeeThroughOverlay(enabled: boolean): void {
+    this._seeThrough = enabled
+    this._progress.setOverlayColor(
+      enabled
+        ? AcApOpenFileProgressController.OVERLAY_SEE_THROUGH
+        : AcApOpenFileProgressController.OVERLAY_DEFAULT
+    )
+  }
+
+  /**
+   * Gate that returns true while the view still has entities to convert.
+   * Used to keep the overlay until progressive scene convert finishes.
+   */
+  setSceneBusyGate(gate: (() => boolean) | undefined): void {
+    this._sceneBusyGate = gate
   }
 
   /**
    * Resets tracked progress for a new open operation.
    */
   reset(): void {
+    this.clearHoldPoll()
     this._peak = 0
     this._stage = undefined
     this._overlayVisible = false
@@ -143,20 +179,72 @@ export class AcApOpenFileProgressController {
 
   private updateOverlay(data: AcDbProgressdEventArgs): void {
     if (isOpenFileProgressComplete(data)) {
-      this._progress.hide()
-      this.reset()
+      if (this._sceneBusyGate?.()) {
+        this.holdUntilSceneIdle()
+        return
+      }
+      this.hideAndReset()
       return
     }
+
+    this.clearHoldPoll()
 
     if (!this._overlayVisible) {
       this._progress.show()
       this._overlayVisible = true
+      if (this._seeThrough) {
+        this._progress.setOverlayColor(
+          AcApOpenFileProgressController.OVERLAY_SEE_THROUGH
+        )
+      }
     }
 
     const message = this.resolveMessage(data)
     if (message != null && message !== this._lastMessage) {
       this._progress.setMessage(message)
       this._lastMessage = message
+    }
+  }
+
+  private holdUntilSceneIdle(): void {
+    if (!this._overlayVisible) {
+      this._progress.show()
+      this._overlayVisible = true
+    }
+    this._progress.setOverlayColor(
+      AcApOpenFileProgressController.OVERLAY_SEE_THROUGH
+    )
+    const message = AcApI18n.t('main.progress.rendering')
+    if (message !== this._lastMessage) {
+      this._progress.setMessage(message)
+      this._lastMessage = message
+    }
+
+    if (this._holdPollId != null) {
+      return
+    }
+
+    const poll = () => {
+      if (this._sceneBusyGate?.()) {
+        this._holdPollId = setTimeout(poll, 50)
+        return
+      }
+      this._holdPollId = undefined
+      this.hideAndReset()
+    }
+    this._holdPollId = setTimeout(poll, 50)
+  }
+
+  private hideAndReset(): void {
+    this.clearHoldPoll()
+    this._progress.hide()
+    this.reset()
+  }
+
+  private clearHoldPoll(): void {
+    if (this._holdPollId != null) {
+      clearTimeout(this._holdPollId)
+      this._holdPollId = undefined
     }
   }
 }

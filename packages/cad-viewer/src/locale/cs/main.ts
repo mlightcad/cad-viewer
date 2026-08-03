@@ -733,6 +733,42 @@ export default {
         category: 'Kategorie',
         font: 'Font'
       }
+    },
+    openFileProfile: {
+      tab: 'Otevření',
+      title: 'Výkon otevření',
+      refresh: 'Obnovit',
+      copy: 'Kopírovat',
+      copied: 'Data o výkonu zkopírována',
+      copyFailed: 'Kopírování dat o výkonu selhalo',
+      collectedAt: 'Shromážděno v {time}',
+      hint: 'Automaticky po posledním otevření výkresu. OPENPROF=1 také zapíše do konzole.',
+      noData: 'Zatím žádný profil. Nejprve otevřete výkres a spusťte OPENPERF.',
+      empty: 'Žádná data',
+      timing: 'Časování',
+      cache: 'Cache renderování INSERT (top-level)',
+      slowBlocks: 'Nejpomalejší miss šablon bloků',
+      total: 'Celkem',
+      read: 'db.read',
+      parse: 'PARSE',
+      font: 'FONT',
+      entity: 'ENTITY flush',
+      convert: 'Převod scény',
+      cacheHits: 'Zásahy cache',
+      cacheMisses: 'Miss cache',
+      cacheBuild: 'Miss build',
+      cacheCompact: 'Miss compact',
+      cacheHitPath: 'Hit path',
+      columns: {
+        stage: 'Fáze',
+        duration: 'Trvání',
+        share: 'Podíl',
+        metric: 'Metrika',
+        value: 'Hodnota',
+        block: 'Blok',
+        build: 'Build',
+        compact: 'Compact'
+      }
     }
   },
   colorDropdown: {

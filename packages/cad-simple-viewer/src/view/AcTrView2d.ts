@@ -1,4 +1,5 @@
 import {
+  AcCmUiYieldGate,
   AcDbAttribute,
   AcDbBlockReference,
   AcDbBlockTableRecord,
@@ -153,7 +154,7 @@ export class AcTrView2d extends AcEdBaseView {
    * Block table record ids of layouts whose entities are currently being
    * batch-converted into the scene. Used by
    * {@link AcTrView2d.loadLayoutEntitiesIfNeeded} to guard against
-   * re-entrant calls before the `setTimeout` callback flips
+   * re-entrant calls before the convert drain flips
    * `AcTrLayout.isLoaded` to `true`, which would otherwise duplicate
    * entities when the same layout tab is clicked twice in quick succession.
    */
@@ -207,14 +208,42 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private readonly _convertingLayers = new Set<string>()
   /**
-   * When true, entity conversion during document open is deferred across
-   * event-loop turns so geometry appears incrementally.
+   * When true, entity conversion during document open yields cooperatively so
+   * geometry paints incrementally while the open overlay is still visible.
    */
   private _progressiveRendering = false
+  /**
+   * Serial convert queue for progressive opens. Chunks from `entityAppended`
+   * enqueue here and a single drain loop runs {@link batchConvert}, so scene
+   * convert overlaps ENTITY flush instead of waiting for a post-open
+   * `setTimeout` storm after the loading overlay hides.
+   */
+  private _convertQueue: AcDbEntity[] = []
+  /** In-flight progressive convert drain; shared so awaiters wait for the queue. */
+  private _convertDrainPromise: Promise<void> | null = null
+  /** Last time progressive open marked the canvas dirty for paint. */
+  private _lastProgressivePaintAt = 0
+  /** Mid-open WebGL paints while progressive convert was still running. */
+  private _progressivePaintCount = 0
+  /** Cooperative yields taken inside progressive {@link batchConvert}. */
+  private _progressiveYieldCount = 0
   /** Grip point display and drag editing (Write mode only). */
   private _gripManager: AcEdGripManager
   /** Global keyboard shortcuts for the view (undo/redo, erase, etc.). */
   private _keyHandler: AcEdViewKeyHandler
+
+  /**
+   * Wall-time between cooperative yields during progressive open (ms).
+   * Kept relatively large so convert throughput stays close to the
+   * non-progressive path; smaller budgets made open 2–3× slower.
+   */
+  private static readonly PROGRESSIVE_OPEN_YIELD_BUDGET_MS = 300
+  /**
+   * Minimum interval between progressive mid-open paints (ms).
+   * Full-scene WebGL paints dominate open wall time on large drawings;
+   * paint much less often than we yield.
+   */
+  private static readonly PROGRESSIVE_OPEN_PAINT_INTERVAL_MS = 1000
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -582,6 +611,24 @@ export class AcTrView2d extends AcEdBaseView {
   }
   set progressiveRendering(value: boolean) {
     this._progressiveRendering = value
+    this.resetProgressiveOpenStats()
+  }
+
+  /**
+   * Progressive-open counters for OPENPROF / palette (paints while converting,
+   * cooperative yields). Reset when progressive mode is enabled for an open.
+   */
+  get progressiveOpenStats() {
+    return {
+      paintCount: this._progressivePaintCount,
+      yieldCount: this._progressiveYieldCount
+    }
+  }
+
+  private resetProgressiveOpenStats() {
+    this._progressivePaintCount = 0
+    this._progressiveYieldCount = 0
+    this._lastProgressivePaintAt = 0
   }
 
   /**
@@ -1472,14 +1519,11 @@ export class AcTrView2d extends AcEdBaseView {
   addEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
     this._numOfEntitiesToProcess += entities.length
-    const convert = async () => {
-      await this.batchConvert(entities)
-    }
     if (this._progressiveRendering) {
-      setTimeout(convert)
-      this._isDirty = true
+      this._convertQueue.push(...entities)
+      void this.drainConvertQueue()
     } else {
-      void convert()
+      void this.batchConvert(entities)
     }
   }
 
@@ -1675,7 +1719,8 @@ export class AcTrView2d extends AcEdBaseView {
    * **Critically, this runs through `AcEdConditionWaiter`**: at the
    * moment `layoutSwitched` fires, the layout's entities (including its
    * `AcDbViewport`s) have not yet been batch-converted into the scene
-   * — `loadLayoutEntitiesIfNeeded` chunked-converts via `setTimeout`.
+   * — `loadLayoutEntitiesIfNeeded` chunked-converts via the progressive
+   * convert queue (or direct `batchConvert`).
    * Without the waiter, `viewportsBoundingBox` returns undefined and
    * the strategy degrades into (1) zooming to garbage `limits`, or
    * (4) zooming to an empty scene box. The waiter polls
@@ -1735,10 +1780,55 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   clear() {
+    this._convertQueue.length = 0
     this._scene.clear()
     this._isDirty = true
     this._missedImages.clear()
     this._renderer.dispose()
+  }
+
+  /**
+   * Drains the progressive convert queue on a single serial worker so ENTITY
+   * flush chunks can enqueue while conversion overlaps the loading overlay.
+   *
+   * Concurrent callers share the same promise; if more entities are queued
+   * after a drain finishes, a follow-up drain is started.
+   */
+  private async drainConvertQueue(): Promise<void> {
+    if (this._convertDrainPromise) {
+      await this._convertDrainPromise
+      if (this._convertQueue.length > 0) {
+        await this.drainConvertQueue()
+      }
+      return
+    }
+
+    this._convertDrainPromise = (async () => {
+      while (this._convertQueue.length > 0) {
+        const batch = this._convertQueue.splice(0, this._convertQueue.length)
+        await this.batchConvert(batch)
+      }
+    })().finally(() => {
+      this._convertDrainPromise = null
+    })
+
+    await this._convertDrainPromise
+  }
+
+  /**
+   * Marks the canvas dirty for progressive open, throttled to avoid painting
+   * on every entity (which dominated total open time).
+   */
+  private markProgressiveDirty(force = false) {
+    const now = performance.now()
+    if (
+      force ||
+      now - this._lastProgressivePaintAt >=
+        AcTrView2d.PROGRESSIVE_OPEN_PAINT_INTERVAL_MS
+    ) {
+      this._isDirty = true
+      this._lastProgressivePaintAt = now
+    }
   }
 
   /**
@@ -1814,13 +1904,19 @@ export class AcTrView2d extends AcEdBaseView {
     const deferRenderWhileLoading = stillLoading && !this._progressiveRendering
     if (!this._isDirty && !stillLoading) return
     if (deferRenderWhileLoading) return
+    if (!this._isDirty) return
 
+    if (this._progressiveRendering && stillLoading) {
+      this._progressivePaintCount++
+    }
     const needsRedraw = this._layoutViewManager.render(this._scene)
     if (this.internalCamera) {
       this._css2dRenderer.render(this._scene.internalScene, this.internalCamera)
     }
     this._stats?.update()
-    this._isDirty = (this._progressiveRendering && stillLoading) || needsRedraw
+    // Do not re-dirty every frame during progressive open — paint is throttled
+    // from geometry batches to keep total open time down.
+    this._isDirty = needsRedraw
   }
 
   private startAnimationLoop() {
@@ -1865,7 +1961,7 @@ export class AcTrView2d extends AcEdBaseView {
    *    on it would silently miss layouts that are pre-loaded ahead of
    *    becoming active (e.g. background prefetch).
    * 2. The `_loadingLayouts` guard prevents re-entrance while the
-   *    `setTimeout` chunked-convert callback is still in flight. Without it,
+   *    convert drain is still in flight. Without it,
    *    clicking the same layout tab twice in quick succession (or
    *    `layoutSwitched` firing twice during the async window) would iterate
    *    the block table record again and duplicate every entity in the
@@ -1964,7 +2060,12 @@ export class AcTrView2d extends AcEdBaseView {
       this._numOfEntitiesToProcess += entities.length
       const convert = async () => {
         try {
-          await this.batchConvert(entities)
+          if (this._progressiveRendering) {
+            this._convertQueue.push(...entities)
+            await this.drainConvertQueue()
+          } else {
+            await this.batchConvert(entities)
+          }
           const layout = this._scene.layouts.get(layoutBtrId)
           if (layout) {
             layout.isLoaded = true
@@ -1973,11 +2074,7 @@ export class AcTrView2d extends AcEdBaseView {
           this._loadingLayouts.delete(layoutBtrId)
         }
       }
-      if (this._progressiveRendering) {
-        setTimeout(convert)
-      } else {
-        void convert()
-      }
+      void convert()
     } catch (error) {
       log.error('[AcTrView2d] Error loading layout entities:', error)
     }
@@ -2053,20 +2150,29 @@ export class AcTrView2d extends AcEdBaseView {
 
   /**
    * Finishes geometry for a converted entity. Block groups always use
-   * {@link AcTrGroup.syncDraw} to finalize deferred children. Progressive mode
-   * defers MTEXT/SHAPE to async workers; non-progressive mode uses
-   * {@link AcTrEntity.syncDraw}.
+   * {@link AcTrGroup.syncDraw} to finalize deferred children.
+   *
+   * Progressive open uses the same sync finalize path as non-progressive:
+   * per-entity `asyncDraw` added Promise/worker churn without helping
+   * INSERT-heavy drawings, and it inflated total open wall time. Incremental
+   * appearance comes from cooperative yields + throttled paints instead.
    */
   private async finishEntityGeometry(
     threeEntity: AcTrEntity,
-    progressive: boolean
+    _progressive: boolean
   ) {
     if (threeEntity instanceof AcTrGroup) {
+      // Compacted INSERT templates already ran syncDraw inside
+      // compactForInstancing. Skip a second full walk when there are no
+      // post-compact ATTRIB source entities left to finalize.
+      if (
+        threeEntity.isCompacted &&
+        threeEntity.getSourceEntities().length === 0 &&
+        threeEntity.hasDrawableGeometry()
+      ) {
+        return
+      }
       threeEntity.syncDraw()
-      return
-    }
-    if (progressive) {
-      await threeEntity.asyncDraw()
       return
     }
     if (threeEntity.hasDrawableGeometry()) {
@@ -2120,6 +2226,15 @@ export class AcTrView2d extends AcEdBaseView {
     options: { forExport?: boolean } = {}
   ) {
     const progressive = this._progressiveRendering && !options.forExport
+    // Time-budgeted yields keep the canvas painting during large open chunks
+    // (count-based yields alone stall on expensive INSERT / hatch batches).
+    // Prefer setTimeout(0) over rAF: waiting a full frame per yield inflated
+    // total open wall time without improving first-paint much.
+    const yieldGate = progressive
+      ? new AcCmUiYieldGate(AcTrView2d.PROGRESSIVE_OPEN_YIELD_BUDGET_MS)
+      : undefined
+    const yieldToEventLoop = () =>
+      new Promise<void>(resolve => setTimeout(resolve, 0))
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
       try {
@@ -2148,10 +2263,11 @@ export class AcTrView2d extends AcEdBaseView {
           continue
         }
 
-        const threeEntity: AcTrEntity | null = this.drawEntity(
-          entity,
-          progressive
-        )
+        // Always sync-construct geometry (no delay). Progressive open still
+        // yields between entities; deferring MTEXT via delay/asyncDraw made
+        // large opens much slower without improving first paint of INSERT-heavy
+        // drawings.
+        const threeEntity: AcTrEntity | null = this.drawEntity(entity, false)
         // Viewports may produce no border geometry (e.g. on a no-plot layer) while
         // still needing an AcTrViewportView for model content below.
         if (!threeEntity && !(entity instanceof AcDbViewport)) continue
@@ -2193,8 +2309,8 @@ export class AcTrView2d extends AcEdBaseView {
             // Release memory occupied by this entity
             threeEntity.dispose()
             if (progressive) {
-              this._isDirty = true
-              await this._progressiveOpenFit.afterGeometryBatch(
+              this.markProgressiveDirty()
+              this._progressiveOpenFit.afterGeometryBatch(
                 () => this.resolveLayoutFitBox(),
                 i
               )
@@ -2233,6 +2349,15 @@ export class AcTrView2d extends AcEdBaseView {
         )
       } finally {
         this.decreaseNumOfEntitiesToProcess()
+      }
+
+      if (yieldGate) {
+        // Yield for input/overlay, but do not force a full-scene paint here —
+        // paints are throttled separately via markProgressiveDirty().
+        const didYield = await yieldGate.maybeYield(yieldToEventLoop)
+        if (didYield) {
+          this._progressiveYieldCount++
+        }
       }
     }
   }
@@ -2377,9 +2502,9 @@ export class AcTrView2d extends AcEdBaseView {
     })
     group.dispose()
 
-    if (this._progressiveRendering) {
-      this._isDirty = true
-      void this._progressiveOpenFit.afterGeometryBatch(() =>
+    if (progressive) {
+      this.markProgressiveDirty()
+      this._progressiveOpenFit.afterGeometryBatch(() =>
         this.resolveLayoutFitBox()
       )
     }

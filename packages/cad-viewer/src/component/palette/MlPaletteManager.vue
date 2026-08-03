@@ -44,6 +44,12 @@
           <ml-memory-profile />
         </div>
         <div
+          v-else-if="store.dialogs.activePaletteTab === 'openFileProfile'"
+          class="ml-open-file-profile-wrapper"
+        >
+          <ml-open-file-profile />
+        </div>
+        <div
           v-else-if="store.dialogs.activePaletteTab === 'blocks'"
           class="ml-blocks-palette-wrapper"
         >
@@ -84,6 +90,7 @@ import MlEntityProperties from './MlEntityProperties.vue'
 import MlLayerList from './MlLayerList.vue'
 import MlMemoryProfile from './MlMemoryProfile.vue'
 import MlMissingResources from './MlMissingResources.vue'
+import MlOpenFileProfile from './MlOpenFileProfile.vue'
 
 const AgentChatPanel = defineAsyncComponent(() =>
   Promise.all([
@@ -194,7 +201,8 @@ const baseTabNames = [
   'countList',
   'blocks',
   'missingResources',
-  'memoryProfile'
+  'memoryProfile',
+  'openFileProfile'
 ] as const
 const tabNames = computed((): readonly string[] => {
   if (store.features.agentPlugin) {
@@ -286,6 +294,15 @@ const properties = computed(() => {
 }
 
 .ml-memory-profile-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-open-file-profile-wrapper {
   overflow: hidden;
   width: 100%;
   height: 100%;

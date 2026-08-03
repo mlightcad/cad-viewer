@@ -710,6 +710,42 @@ export default {
         font: '字体'
       }
     },
+    openFileProfile: {
+      tab: '打开性能',
+      title: '打开性能',
+      refresh: '刷新',
+      copy: '复制',
+      copied: '性能数据已复制',
+      copyFailed: '复制性能数据失败',
+      collectedAt: '采集时间 {time}',
+      hint: '每次打开图纸后自动采集。设置 OPENPROF=1 可同时输出到控制台。',
+      noData: '暂无打开性能数据。请先打开图纸，再运行 OPENPERF。',
+      empty: '暂无数据',
+      timing: '墙钟耗时',
+      cache: 'INSERT 渲染缓存（顶层）',
+      slowBlocks: '最慢块模板 miss',
+      total: '打开总计',
+      read: 'db.read',
+      parse: 'PARSE',
+      font: 'FONT',
+      entity: 'ENTITY 刷入',
+      convert: '场景转换',
+      cacheHits: '缓存命中',
+      cacheMisses: '缓存未命中',
+      cacheBuild: 'Miss 构建',
+      cacheCompact: 'Miss 压缩',
+      cacheHitPath: '命中路径',
+      columns: {
+        stage: '阶段',
+        duration: '耗时',
+        share: '占比',
+        metric: '指标',
+        value: '值',
+        block: '块',
+        build: '构建',
+        compact: '压缩'
+      }
+    },
     blocks: {
       tab: '块',
       title: '块',

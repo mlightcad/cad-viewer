@@ -758,6 +758,42 @@ export default {
         font: 'Yazı tipi'
       }
     },
+    openFileProfile: {
+      tab: 'Açılış',
+      title: 'Açılış Performansı',
+      refresh: 'Yenile',
+      copy: 'Kopyala',
+      copied: 'Performans verileri kopyalandı',
+      copyFailed: 'Performans verileri kopyalanamadı',
+      collectedAt: 'Toplama zamanı {time}',
+      hint: 'Son çizim açılışında otomatik toplanır. OPENPROF=1 konsola da yazar.',
+      noData: 'Henüz profil yok. Önce bir çizim açın, sonra OPENPERF çalıştırın.',
+      empty: 'Veri yok',
+      timing: 'Duvar saati zamanlaması',
+      cache: 'INSERT render önbelleği (üst düzey)',
+      slowBlocks: 'En yavaş blok şablon missleri',
+      total: 'Toplam açılış',
+      read: 'db.read',
+      parse: 'PARSE',
+      font: 'FONT',
+      entity: 'ENTITY flush',
+      convert: 'Sahne dönüşümü',
+      cacheHits: 'Önbellek isabet',
+      cacheMisses: 'Önbellek miss',
+      cacheBuild: 'Miss build',
+      cacheCompact: 'Miss compact',
+      cacheHitPath: 'Hit path',
+      columns: {
+        stage: 'Aşama',
+        duration: 'Süre',
+        share: 'Pay',
+        metric: 'Metrik',
+        value: 'Değer',
+        block: 'Blok',
+        build: 'Build',
+        compact: 'Compact'
+      }
+    },
     blocks: {
       tab: 'Bloklar',
       title: 'Bloklar',

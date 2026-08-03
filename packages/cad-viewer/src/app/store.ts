@@ -15,5 +15,9 @@ export const store = reactive({
    * Bumped by the MEM command after publishing a fresh snapshot so an already
    * mounted Memory palette can pick it up without remounting.
    */
-  memoryProfileTick: 0
+  memoryProfileTick: 0,
+  /**
+   * Bumped by the OPENPERF command after publishing the latest open profile.
+   */
+  openFileProfileTick: 0
 })

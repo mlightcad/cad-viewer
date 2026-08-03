@@ -237,7 +237,7 @@ const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
 const selectedOpenViewMode = ref<OpenViewModeChoice>('auto')
 const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
-const progressiveRendering = ref(false)
+const progressiveRendering = ref(true)
 
 const openViewModes = [
   {

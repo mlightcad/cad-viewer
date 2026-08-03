@@ -287,6 +287,9 @@ export default {
     openprof: {
       description: '控制是否在控制台记录文件打开阶段的耗时分析'
     },
+    openperf: {
+      description: '打开“打开性能”面板，显示最近一次打开图纸的关键耗时'
+    },
     orthomode: {
       description: '将光标移动限制为水平或垂直方向'
     },

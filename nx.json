@@ -5,7 +5,11 @@
       "dependsOn": [
         "^build"
       ],
-      "cache": true
+      "cache": true,
+      "outputs": [
+        "{projectRoot}/dist",
+        "{projectRoot}/lib"
+      ]
     },
     "dev": {
       "dependsOn": [

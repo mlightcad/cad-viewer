@@ -38,6 +38,7 @@ export default {
     block: 'Bloklar ayrıştırılıyor ...',
     entity: 'Nesneler ayrıştırılıyor ...',
     object: 'Adlandırılmış sözlükler ayrıştırılıyor ...',
+    rendering: 'Çizim render ediliyor ...',
     end: 'Tamamlandı!'
   },
   about: {

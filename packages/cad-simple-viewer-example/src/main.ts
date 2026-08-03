@@ -16,7 +16,11 @@ import {
   LIBREDWG_PARSER_WORKER_FILE,
   MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
-import { AcDbSysVarManager, log } from '@mlightcad/data-model'
+import {
+  AcDbSystemVariables,
+  AcDbSysVarManager,
+  log
+} from '@mlightcad/data-model'
 
 import { setupAgentIntegration } from './agentIntegration'
 import { AGENT_TOOLBAR_ITEM } from './agentToolbarItem'
@@ -34,6 +38,51 @@ const EXAMPLE_COMMAND_ALIASES = {
   LINE: ['LX'],
   CIRCLE: ['CI'],
   ZOOM: ['ZZ']
+}
+
+/** Query-gated open-file profiling (`?openprof=1`). */
+function isOpenProfMode(): boolean {
+  return new URLSearchParams(window.location.search).has('openprof')
+}
+
+/**
+ * Progressive open is on by default. Pass `progressive=0` (or `false`) to
+ * disable for A/B comparison with OPENPROF.
+ */
+function isProgressiveOpenMode(): boolean {
+  const params = new URLSearchParams(window.location.search)
+  if (!params.has('progressive')) {
+    return true
+  }
+  const value = params.get('progressive')
+  return value !== '0' && value !== 'false'
+}
+
+/**
+ * OPENPROF runs use main-thread MTEXT by default (skip worker transfer cost).
+ * Pass `worker=1` to measure the worker MTEXT path instead.
+ */
+function isWorkerOpenMode(): boolean {
+  return new URLSearchParams(window.location.search).has('worker')
+}
+
+function installOpenProfConsoleCapture(): void {
+  const w = window as Window & {
+    __OPENPROF_REPORT__?: string
+    __OPENPROF_DONE__?: boolean
+  }
+  w.__OPENPROF_DONE__ = false
+  const originalLog = console.log.bind(console)
+  console.log = (...args: unknown[]) => {
+    originalLog(...args)
+    const text = args
+      .map(arg => (typeof arg === 'string' ? arg : String(arg)))
+      .join(' ')
+    if (text.includes('OPENPROF (open-file profile)')) {
+      w.__OPENPROF_REPORT__ = text
+      w.__OPENPROF_DONE__ = true
+    }
+  }
 }
 
 class CadViewerApp {
@@ -746,15 +795,20 @@ class CadViewerApp {
     try {
       applyUiTheme('dark', this.viewerPane)
 
+      const openProf = isOpenProfMode()
+      const useWorkers = openProf ? isWorkerOpenMode() : true
       AcApDocManager.createInstance({
         container: this.container,
         busyIndicatorHost: this.viewerPane,
         autoResize: true,
         baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
         commandAliases: EXAMPLE_COMMAND_ALIASES,
+        // OPENPROF default: main-thread MTEXT (skip worker transfer cost).
+        useMainThreadDraw: openProf ? !useWorkers : false,
         openDocumentDefaults: {
           minimumChunkSize: 1000,
           mode: AcEdOpenMode.Write,
+          progressiveRendering: true,
           sysVars: {
             lwdisplay: false
           }
@@ -765,6 +819,11 @@ class CadViewerApp {
         },
         htmlViewerRuntimeUrl: './viewer-runtime.iife.js'
       })
+      if (openProf) {
+        const w = window as Window & { __OPEN_MODE__?: string }
+        w.__OPEN_MODE__ = useWorkers ? 'worker-mtext' : 'main-mtext'
+        console.log(`[openprof] mode=${w.__OPEN_MODE__}`)
+      }
 
       registerLazyPlugins()
 
@@ -954,19 +1013,60 @@ class CadViewerApp {
     let fileContent: ArrayBuffer | null = null
     try {
       fileContent = await this.readFile(file)
+      const openProf = isOpenProfMode()
+      if (openProf) {
+        installOpenProfConsoleCapture()
+        // OPENPROF is session-scoped (isDbVar: false). Must be set before
+        // onBeforeOpenDocument → AcApOpenFileProfiler.begin().
+        AcDbSysVarManager.instance().setVar(
+          AcDbSystemVariables.OPENPROF,
+          true,
+          AcApDocManager.instance.curDocument.database
+        )
+      }
       const options: AcApOpenDatabaseOptions = {
         minimumChunkSize: 1000,
         mode: AcEdOpenMode.Write,
+        progressiveRendering: isProgressiveOpenMode(),
         sysVars: {
           lwdisplay: false
         }
       }
 
+      const openStartedAt = performance.now()
       const success = await AcApDocManager.instance.openDocument(
         file.name,
         fileContent,
         options
       )
+      if (openProf) {
+        const w = window as Window & {
+          __OPEN_WALL_MS__?: number
+          __OPEN_SUCCESS__?: boolean
+          __OPEN_ENTITY_STATS__?: Record<string, number>
+        }
+        w.__OPEN_WALL_MS__ = performance.now() - openStartedAt
+        w.__OPEN_SUCCESS__ = success
+        try {
+          const db = AcApDocManager.instance.curDocument.database
+          const counts: Record<string, number> = {
+            modelSpace: 0,
+            paperLike: 0
+          }
+          const modelId = db.tables.blockTable.modelSpace.objectId
+          for (const btr of db.tables.blockTable.newIterator()) {
+            let n = 0
+            for (const _entity of btr.newIterator()) n++
+            if (btr.objectId === modelId || btr.isModelSapce) counts.modelSpace = n
+            else if (btr.isPaperSapce) counts.paperLike += n
+            counts.blocks = (counts.blocks ?? 0) + 1
+            counts.blockEntities = (counts.blockEntities ?? 0) + n
+          }
+          w.__OPEN_ENTITY_STATS__ = counts
+        } catch {
+          // optional diagnostics
+        }
+      }
 
       if (success) {
         this.predefinedButtons.forEach(item => item.classList.remove('active'))

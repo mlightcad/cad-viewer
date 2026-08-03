@@ -492,6 +492,9 @@ export class AcApDocManager {
     )
     const busyHost = options.busyIndicatorHost ?? view.container
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
+    this._openFileProgress.setSceneBusyGate(
+      () => (this.curView as AcTrView2d).isProcessingEntities
+    )
     this._busyIndicator = new AcApBusyIndicator(busyHost)
     acapBindCommandServices({
       showMessage: (message, type, msgKey) =>
@@ -1075,7 +1078,7 @@ export class AcApDocManager {
     | Promise<AcApOpenDatabaseOptions> {
     const defaults = this._openDocumentDefaults
     if (defaults == null) {
-      return { minimumChunkSize: 1000 }
+      return { minimumChunkSize: 1000, progressiveRendering: true }
     }
     if (typeof defaults === 'function') {
       return defaults()
@@ -1494,8 +1497,14 @@ export class AcApDocManager {
     AcApXrefManager.instance.clearAll()
     this.clearOverlays()
     ;(this.curView as AcTrView2d).bindDrawDatabase(this.context.doc.database)
+    // Progressive convert/paint is gated by this flag (time-sliced yields in
+    // batchConvert). Camera auto-fit is started separately in onAfter when the
+    // open view mode uses zoom-to-fit — not for restored VPORT/saved views.
     ;(this.curView as AcTrView2d).progressiveRendering =
-      options?.progressiveRendering ?? false
+      options?.progressiveRendering ?? true
+    this._openFileProgress.setSeeThroughOverlay(
+      options?.progressiveRendering ?? true
+    )
     this.curView.clear()
     // OPENPROF: start stage timings before db.read / entity flush.
     this._openFileProfiler.begin(this.context.doc.database)
@@ -1569,7 +1578,7 @@ export class AcApDocManager {
       const openViewMode = this.resolveOpenViewMode(options)
 
       const view = this.curView as AcTrView2d
-      const progressiveRendering = options?.progressiveRendering ?? false
+      const progressiveRendering = options?.progressiveRendering ?? true
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
         view.zoomTo(layoutLimits)
       } else if (openViewMode === AcApOpenViewMode.Extents) {
@@ -1613,6 +1622,7 @@ export class AcApDocManager {
       this._openFileProfiler.markReadCompleteAndScheduleReport(view)
     } else {
       this._openFileProfiler.cancel()
+      ;(this.curView as AcTrView2d).endProgressiveOpenFit()
       this.regen()
     }
   }
@@ -1683,7 +1693,7 @@ export class AcApDocManager {
       options = {
         fontLoader: this._fontLoader,
         drawNoPlotLayers: false,
-        progressiveRendering: false
+        progressiveRendering: true
       }
     } else {
       if (options.fontLoader == null) {
@@ -1693,7 +1703,7 @@ export class AcApDocManager {
         options.drawNoPlotLayers = false
       }
       if (options.progressiveRendering == null) {
-        options.progressiveRendering = false
+        options.progressiveRendering = true
       }
     }
     return options

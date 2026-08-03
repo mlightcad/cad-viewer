@@ -15,13 +15,57 @@ type StageStats = {
 }
 
 /**
- * Session open-file profiler gated by the {@link AcDbSystemVariables.OPENPROF}
- * system variable.
+ * Snapshot of the most recent document-open profile for palette / console use.
+ */
+export interface AcApOpenFileProfileSnapshot {
+  collectedAt: number
+  fileName?: string
+  totalMs: number
+  readMs: number
+  convertMs: number
+  parseMs: number
+  fontMs: number
+  entityMs: number
+  stages: { name: string; durationMs: number }[]
+  cache: {
+    hits: number
+    misses: number
+    hitMs: number
+    cloneMs: number
+    missBuildMs: number
+    missCompactMs: number
+    setCloneMs: number
+    applyMs: number
+    topLevel: {
+      hits: number
+      misses: number
+      hitMs: number
+      cloneMs: number
+      missBuildMs: number
+      missCompactMs: number
+      setCloneMs: number
+      applyMs: number
+    }
+  }
+  slowBlocks: {
+    blockName: string
+    buildMs: number
+    compactMs: number
+  }[]
+  progressive?: {
+    enabled: boolean
+    paintCount: number
+    yieldCount: number
+  }
+}
+
+/**
+ * Session open-file profiler.
  *
- * When enabled, records PARSE/FONT/ENTITY (and other `openProgress` sub-stages),
- * wall-clock read vs scene convert time, and {@link AcDbRenderingCache} hit/miss
- * counters, then prints a console summary once the view finishes converting
- * entities (`isProcessingEntities === false`).
+ * Always records PARSE/FONT/ENTITY (and other `openProgress` sub-stages),
+ * wall-clock read vs scene convert time, and {@link AcDbRenderingCache}
+ * hit/miss counters for the last open. Console output remains gated by the
+ * {@link AcDbSystemVariables.OPENPROF} system variable.
  *
  * Stage durations use **active-stage wall time**: from the first event of a
  * sub-stage until the first event of a different sub-stage. This matches the
@@ -29,7 +73,10 @@ type StageStats = {
  * `FONT`/`END` prematurely) better than START→END alone.
  */
 export class AcApOpenFileProfiler {
+  private static _lastSnapshot: AcApOpenFileProfileSnapshot | null = null
+
   private _active = false
+  private _printToConsole = false
   private _t0 = 0
   private _readEndMs = 0
   private _stages = new Map<string, StageStats>()
@@ -40,7 +87,14 @@ export class AcApOpenFileProfiler {
   private _finishScheduled = false
 
   /**
-   * Returns whether OPENPROF is currently enabled for `database`.
+   * Returns the most recent completed open-file profile, if any.
+   */
+  static getLastSnapshot(): AcApOpenFileProfileSnapshot | null {
+    return AcApOpenFileProfiler._lastSnapshot
+  }
+
+  /**
+   * Returns whether OPENPROF console logging is enabled for `database`.
    */
   static isEnabled(database: AcDbDatabase): boolean {
     try {
@@ -56,20 +110,18 @@ export class AcApOpenFileProfiler {
   }
 
   /**
-   * Starts a profiling session if OPENPROF is on.
+   * Starts a profiling session for the next document open.
    *
-   * Call from document-open start (before `db.read` / URI open). Safe to call
-   * when profiling is off — it becomes a no-op.
+   * Call from document-open start (before `db.read` / URI open). Always
+   * collects a snapshot; console printing follows OPENPROF.
    *
    * @param database - Database that will emit `openProgress` for this open.
    */
   begin(database: AcDbDatabase): void {
     this.cancel()
-    if (!AcApOpenFileProfiler.isEnabled(database)) {
-      return
-    }
 
     this._active = true
+    this._printToConsole = AcApOpenFileProfiler.isEnabled(database)
     this._finishScheduled = false
     this._t0 = performance.now()
     this._readEndMs = 0
@@ -88,8 +140,8 @@ export class AcApOpenFileProfiler {
   }
 
   /**
-   * Marks the end of `db.read` / document open await and schedules the console
-   * report once the view has finished converting entities.
+   * Marks the end of `db.read` / document open await and schedules the report
+   * once the view has finished converting entities.
    *
    * @param view - Active 2d view whose entity convert queue is drained.
    */
@@ -102,7 +154,7 @@ export class AcApOpenFileProfiler {
   }
 
   /**
-   * Aborts an in-flight session without printing (e.g. document replaced).
+   * Aborts an in-flight session without publishing (e.g. document replaced).
    */
   cancel(): void {
     this.detachProgressListener()
@@ -110,6 +162,7 @@ export class AcApOpenFileProfiler {
       AcDbRenderingCache.profiling = false
     }
     this._active = false
+    this._printToConsole = false
     this._finishScheduled = false
     this._database = undefined
     this._activeStage = undefined
@@ -154,7 +207,7 @@ export class AcApOpenFileProfiler {
         if (!this._active) {
           return
         }
-        this.printReport(performance.now())
+        this.publishReport(performance.now(), view)
         this.cancel()
       })
       .catch(error => {
@@ -181,7 +234,7 @@ export class AcApOpenFileProfiler {
     })
   }
 
-  private printReport(convertEndMs: number): void {
+  private publishReport(convertEndMs: number, view: AcTrView2d): void {
     // Close the last openProgress stage when read finished (usually END/ENTITY).
     this.closeActiveStage(this._readEndMs > 0 ? this._readEndMs : convertEndMs)
 
@@ -193,6 +246,56 @@ export class AcApOpenFileProfiler {
     const entityMs = this._stages.get('ENTITY')?.durationMs ?? 0
     const cache = { ...AcDbRenderingCache.profileStats }
     const tl = cache.topLevel
+    const progressiveStats = view.progressiveOpenStats
+    const progressiveEnabled = view.progressiveRendering
+
+    const slowBlocks = [...cache.blockMisses]
+      .sort((a, b) => b.buildMs + b.compactMs - (a.buildMs + a.compactMs))
+      .slice(0, 10)
+      .map(block => ({
+        blockName: block.blockName,
+        buildMs: block.buildMs,
+        compactMs: block.compactMs
+      }))
+
+    const stages = [...this._stages.entries()]
+      .filter(([, stats]) => stats.durationMs > 0)
+      .sort((a, b) => b[1].durationMs - a[1].durationMs)
+      .map(([name, stats]) => ({ name, durationMs: stats.durationMs }))
+
+    const snapshot: AcApOpenFileProfileSnapshot = {
+      collectedAt: Date.now(),
+      fileName: this._database?.dwgname,
+      totalMs,
+      readMs,
+      convertMs,
+      parseMs,
+      fontMs,
+      entityMs,
+      stages,
+      cache: {
+        hits: cache.hits,
+        misses: cache.misses,
+        hitMs: cache.hitMs,
+        cloneMs: cache.cloneMs,
+        missBuildMs: cache.missBuildMs,
+        missCompactMs: cache.missCompactMs,
+        setCloneMs: cache.setCloneMs,
+        applyMs: cache.applyMs,
+        topLevel: { ...tl }
+      },
+      slowBlocks,
+      progressive: {
+        enabled: progressiveEnabled,
+        paintCount: progressiveStats.paintCount,
+        yieldCount: progressiveStats.yieldCount
+      }
+    }
+    AcApOpenFileProfiler._lastSnapshot = snapshot
+
+    if (!this._printToConsole) {
+      return
+    }
 
     const pct = (part: number, total: number) =>
       total <= 0 ? '0%' : `${((part / total) * 100).toFixed(1)}%`
@@ -202,6 +305,7 @@ export class AcApOpenFileProfiler {
       '========== OPENPROF (open-file profile) ==========',
       'Note: progress-bar % weights (PARSE~12%, FONT~18%, ENTITY~98%) are not wall-time shares.',
       'Stage ms = active-stage wall time (first event of stage → first event of next stage).',
+      `progressive:          ${progressiveEnabled ? 'on' : 'off'} (mid-open paints=${progressiveStats.paintCount}, yields=${progressiveStats.yieldCount})`,
       `wall clock total:     ${totalMs.toFixed(0)} ms`,
       `  db.read:            ${readMs.toFixed(0)} ms  (${pct(readMs, totalMs)})`,
       `    PARSE:            ${parseMs.toFixed(0)} ms  (${pct(parseMs, readMs)} of read)`,
@@ -218,9 +322,6 @@ export class AcApOpenFileProfiler {
       `hit ${cache.hitMs.toFixed(0)} ms (clone ${cache.cloneMs.toFixed(0)}), build ${cache.missBuildMs.toFixed(0)}, compact ${cache.missCompactMs.toFixed(0)}, set ${cache.setCloneMs.toFixed(0)}, apply ${cache.applyMs.toFixed(0)}`
     ]
 
-    const slowBlocks = [...cache.blockMisses]
-      .sort((a, b) => b.buildMs + b.compactMs - (a.buildMs + a.compactMs))
-      .slice(0, 10)
     if (slowBlocks.length > 0) {
       lines.push('', '--- Slowest block template misses (build+compact) ---')
       for (const block of slowBlocks) {
@@ -234,17 +335,13 @@ export class AcApOpenFileProfiler {
       }
     }
 
-    const otherStages = [...this._stages.entries()]
-      .filter(
-        ([name, stats]) =>
-          !['PARSE', 'FONT', 'ENTITY', 'START', 'END'].includes(name) &&
-          stats.durationMs > 0
-      )
-      .sort((a, b) => b[1].durationMs - a[1].durationMs)
+    const otherStages = stages.filter(
+      stage => !['PARSE', 'FONT', 'ENTITY', 'START', 'END'].includes(stage.name)
+    )
     if (otherStages.length > 0) {
       lines.push('', '--- Other openProgress sub-stages ---')
-      for (const [name, stats] of otherStages) {
-        lines.push(`  ${name}: ${stats.durationMs.toFixed(0)} ms`)
+      for (const stage of otherStages) {
+        lines.push(`  ${stage.name}: ${stage.durationMs.toFixed(0)} ms`)
       }
     }
 
