@@ -1914,7 +1914,6 @@ export class AcTrView2d extends AcEdBaseView {
     const deferRenderWhileLoading = stillLoading && !this._progressiveRendering
     if (!this._isDirty && !stillLoading) return
     if (deferRenderWhileLoading) return
-    if (!this._isDirty) return
 
     if (this._progressiveRendering && stillLoading) {
       this._progressivePaintCount++
@@ -1924,9 +1923,9 @@ export class AcTrView2d extends AcEdBaseView {
       this._css2dRenderer.render(this._scene.internalScene, this.internalCamera)
     }
     this._stats?.update()
-    // Do not re-dirty every frame during progressive open — paint is throttled
-    // from geometry batches to keep total open time down.
-    this._isDirty = needsRedraw
+    // Keep dirty while progressive convert is still draining so late geometry
+    // is not stranded after a throttled markProgressiveDirty() window.
+    this._isDirty = (this._progressiveRendering && stillLoading) || needsRedraw
   }
 
   private startAnimationLoop() {
@@ -2160,29 +2159,20 @@ export class AcTrView2d extends AcEdBaseView {
 
   /**
    * Finishes geometry for a converted entity. Block groups always use
-   * {@link AcTrGroup.syncDraw} to finalize deferred children.
-   *
-   * Progressive open uses the same sync finalize path as non-progressive:
-   * per-entity `asyncDraw` added Promise/worker churn without helping
-   * INSERT-heavy drawings, and it inflated total open wall time. Incremental
-   * appearance comes from cooperative yields + throttled paints instead.
+   * {@link AcTrGroup.syncDraw} to finalize deferred children. Progressive mode
+   * defers MTEXT/SHAPE to async workers; non-progressive mode uses
+   * {@link AcTrEntity.syncDraw}.
    */
   private async finishEntityGeometry(
     threeEntity: AcTrEntity,
-    _progressive: boolean
+    progressive: boolean
   ) {
     if (threeEntity instanceof AcTrGroup) {
-      // Compacted INSERT templates already ran syncDraw inside
-      // compactForInstancing. Skip a second full walk when there are no
-      // post-compact ATTRIB source entities left to finalize.
-      if (
-        threeEntity.isCompacted &&
-        threeEntity.getSourceEntities().length === 0 &&
-        threeEntity.hasDrawableGeometry()
-      ) {
-        return
-      }
       threeEntity.syncDraw()
+      return
+    }
+    if (progressive) {
+      await threeEntity.asyncDraw()
       return
     }
     if (threeEntity.hasDrawableGeometry()) {
@@ -2278,11 +2268,10 @@ export class AcTrView2d extends AcEdBaseView {
           continue
         }
 
-        // Always sync-construct geometry (no delay). Progressive open still
-        // yields between entities; deferring MTEXT via delay/asyncDraw made
-        // large opens much slower without improving first paint of INSERT-heavy
-        // drawings.
-        const threeEntity: AcTrEntity | null = this.drawEntity(entity, false)
+        const threeEntity: AcTrEntity | null = this.drawEntity(
+          entity,
+          progressive
+        )
         // Viewports may produce no border geometry (e.g. on a no-plot layer) while
         // still needing an AcTrViewportView for model content below.
         if (!threeEntity && !(entity instanceof AcDbViewport)) continue

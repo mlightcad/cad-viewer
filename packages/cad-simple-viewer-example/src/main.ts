@@ -46,16 +46,16 @@ function isOpenProfMode(): boolean {
 }
 
 /**
- * Progressive open is on by default. Pass `progressive=0` (or `false`) to
- * disable for A/B comparison with OPENPROF.
+ * Progressive open is off by default. Pass `progressive=1` (or `true`) to
+ * enable for A/B comparison with OPENPROF.
  */
 function isProgressiveOpenMode(): boolean {
   const params = new URLSearchParams(window.location.search)
   if (!params.has('progressive')) {
-    return true
+    return false
   }
   const value = params.get('progressive')
-  return value !== '0' && value !== 'false'
+  return value === '1' || value === 'true'
 }
 
 /**
@@ -808,7 +808,7 @@ class CadViewerApp {
         openDocumentDefaults: {
           minimumChunkSize: 1000,
           mode: AcEdOpenMode.Write,
-          progressiveRendering: true,
+          progressiveRendering: false,
           sysVars: {
             lwdisplay: false
           }

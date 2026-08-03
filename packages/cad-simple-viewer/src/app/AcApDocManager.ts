@@ -1078,7 +1078,7 @@ export class AcApDocManager {
     | Promise<AcApOpenDatabaseOptions> {
     const defaults = this._openDocumentDefaults
     if (defaults == null) {
-      return { minimumChunkSize: 1000, progressiveRendering: true }
+      return { minimumChunkSize: 1000 }
     }
     if (typeof defaults === 'function') {
       return defaults()
@@ -1501,9 +1501,9 @@ export class AcApDocManager {
     // batchConvert). Camera auto-fit is started separately in onAfter when the
     // open view mode uses zoom-to-fit — not for restored VPORT/saved views.
     ;(this.curView as AcTrView2d).progressiveRendering =
-      options?.progressiveRendering ?? true
+      options?.progressiveRendering ?? false
     this._openFileProgress.setSeeThroughOverlay(
-      options?.progressiveRendering ?? true
+      options?.progressiveRendering ?? false
     )
     this.curView.clear()
     // OPENPROF: start stage timings before db.read / entity flush.
@@ -1578,7 +1578,7 @@ export class AcApDocManager {
       const openViewMode = this.resolveOpenViewMode(options)
 
       const view = this.curView as AcTrView2d
-      const progressiveRendering = options?.progressiveRendering ?? true
+      const progressiveRendering = options?.progressiveRendering ?? false
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
         view.zoomTo(layoutLimits)
       } else if (openViewMode === AcApOpenViewMode.Extents) {
@@ -1693,7 +1693,7 @@ export class AcApDocManager {
       options = {
         fontLoader: this._fontLoader,
         drawNoPlotLayers: false,
-        progressiveRendering: true
+        progressiveRendering: false
       }
     } else {
       if (options.fontLoader == null) {
@@ -1703,7 +1703,7 @@ export class AcApDocManager {
         options.drawNoPlotLayers = false
       }
       if (options.progressiveRendering == null) {
-        options.progressiveRendering = true
+        options.progressiveRendering = false
       }
     }
     return options

@@ -48,9 +48,9 @@ export interface AcApOpenDatabaseOptions extends Omit<
   /**
    * Whether to render entities incrementally while a drawing is opening.
    *
-   * When `true` (default), entity conversion is deferred across event-loop
-   * turns with time-budgeted yields so geometry appears progressively and the
-   * camera can reframe as batches land. When `false`, conversion still runs
+   * When `true`, entity conversion yields across event-loop turns with
+   * time-budgeted yields so geometry appears progressively and the camera can
+   * reframe as batches land. When `false` (default), conversion still runs
    * asynchronously but the canvas is not redrawn until every entity is
    * converted; zoom-to-fit also waits for conversion to finish.
    */
