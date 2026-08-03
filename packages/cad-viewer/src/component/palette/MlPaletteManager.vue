@@ -44,6 +44,12 @@
           <ml-memory-profile />
         </div>
         <div
+          v-else-if="store.dialogs.activePaletteTab === 'openFileProfile'"
+          class="ml-open-file-profile-wrapper"
+        >
+          <ml-open-file-profile />
+        </div>
+        <div
           v-else-if="store.dialogs.activePaletteTab === 'blocks'"
           class="ml-blocks-palette-wrapper"
         >
@@ -84,6 +90,7 @@ import MlEntityProperties from './MlEntityProperties.vue'
 import MlLayerList from './MlLayerList.vue'
 import MlMemoryProfile from './MlMemoryProfile.vue'
 import MlMissingResources from './MlMissingResources.vue'
+import MlOpenFileProfile from './MlOpenFileProfile.vue'
 
 const AgentChatPanel = defineAsyncComponent(() =>
   Promise.all([
@@ -197,10 +204,15 @@ const baseTabNames = [
   'memoryProfile'
 ] as const
 const tabNames = computed((): readonly string[] => {
-  if (store.features.agentPlugin) {
-    return [...baseTabNames, 'agent']
+  const names: string[] = [...baseTabNames]
+  // Revealed by OPENPERF only — keep out of the default palette chrome.
+  if (store.dialogs.openFileProfileTabVisible) {
+    names.push('openFileProfile')
   }
-  return baseTabNames
+  if (store.features.agentPlugin) {
+    names.push('agent')
+  }
+  return names
 })
 
 const tabs = computed<MlOverflowTab[]>(() => {
@@ -286,6 +298,15 @@ const properties = computed(() => {
 }
 
 .ml-memory-profile-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-open-file-profile-wrapper {
   overflow: hidden;
   width: 100%;
   height: 100%;

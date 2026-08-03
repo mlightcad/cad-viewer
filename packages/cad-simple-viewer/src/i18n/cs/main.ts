@@ -40,6 +40,7 @@ export default {
     block: 'Načítám bloky…',
     entity: 'Načítám objekty…',
     object: 'Načítám pojmenované slovníky…',
+    rendering: 'Vykreslování výkresu ...',
     end: 'Hotovo!'
   },
   about: {

@@ -177,6 +177,18 @@ export class AcApProgress {
   }
 
   /**
+   * Updates the fullscreen overlay background color when overlay mode is on.
+   *
+   * @param color - CSS color for the dimming layer
+   */
+  public setOverlayColor(color: string): this {
+    if (this.options.overlay && this.root) {
+      this.root.style.background = color
+    }
+    return this
+  }
+
+  /**
    * Completely removes the component from the DOM.
    * Safe to call multiple times.
    */

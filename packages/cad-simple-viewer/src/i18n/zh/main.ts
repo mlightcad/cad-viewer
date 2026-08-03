@@ -40,6 +40,7 @@ export default {
     block: '正在解析块..',
     entity: '正在解析图元...',
     object: '正在解析NODs...',
+    rendering: '正在渲染图纸 ...',
     end: '完成！'
   },
   about: {

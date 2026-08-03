@@ -316,6 +316,9 @@ export default {
       description:
         'Řídí, zda se do konzole zaznamenávají časové profily fází otevírání souboru'
     },
+    openperf: {
+      description: 'Otevře paletu výkonu otevření s časy z posledního otevření výkresu'
+    },
     orthomode: {
       description: 'Omezí pohyb kurzoru na vodorovnou nebo svislou osu'
     },

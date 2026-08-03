@@ -492,6 +492,9 @@ export class AcApDocManager {
     )
     const busyHost = options.busyIndicatorHost ?? view.container
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
+    this._openFileProgress.setSceneBusyGate(
+      () => (this.curView as AcTrView2d).isProcessingEntities
+    )
     this._busyIndicator = new AcApBusyIndicator(busyHost)
     acapBindCommandServices({
       showMessage: (message, type, msgKey) =>
@@ -1494,8 +1497,14 @@ export class AcApDocManager {
     AcApXrefManager.instance.clearAll()
     this.clearOverlays()
     ;(this.curView as AcTrView2d).bindDrawDatabase(this.context.doc.database)
+    // Progressive convert/paint is gated by this flag (time-sliced yields in
+    // batchConvert). Camera auto-fit is started separately in onAfter when the
+    // open view mode uses zoom-to-fit — not for restored VPORT/saved views.
     ;(this.curView as AcTrView2d).progressiveRendering =
       options?.progressiveRendering ?? false
+    this._openFileProgress.setSeeThroughOverlay(
+      options?.progressiveRendering ?? false
+    )
     this.curView.clear()
     // OPENPROF: start stage timings before db.read / entity flush.
     this._openFileProfiler.begin(this.context.doc.database)
@@ -1613,6 +1622,7 @@ export class AcApDocManager {
       this._openFileProfiler.markReadCompleteAndScheduleReport(view)
     } else {
       this._openFileProfiler.cancel()
+      ;(this.curView as AcTrView2d).endProgressiveOpenFit()
       this.regen()
     }
   }

@@ -330,6 +330,9 @@ export default {
       description:
         'Dosya açma aşaması zamanlama profillerinin konsola kaydedilip kaydedilmeyeceğini denetler'
     },
+    openperf: {
+      description: 'Son çizim açılışının zamanlamalarını Open Performance paletinde gösterir'
+    },
     orthomode: {
       description: 'İmleç hareketini yatay veya dikey eksenle sınırlar'
     },

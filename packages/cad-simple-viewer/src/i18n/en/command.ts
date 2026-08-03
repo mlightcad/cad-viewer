@@ -318,6 +318,10 @@ export default {
       description:
         'Controls whether open-file stage timing profiles are logged to the console'
     },
+    openperf: {
+      description:
+        'Opens the Open Performance palette with timings from the last drawing open'
+    },
     orthomode: {
       description:
         'Constrains cursor movement to the horizontal or vertical axis'

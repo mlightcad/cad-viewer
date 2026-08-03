@@ -40,6 +40,7 @@ export default {
     block: 'Parsing blocks ...',
     entity: 'Parsing entities ...',
     object: 'Parsing named dictionaries ...',
+    rendering: 'Rendering drawing ...',
     end: 'Finished!'
   },
   about: {
