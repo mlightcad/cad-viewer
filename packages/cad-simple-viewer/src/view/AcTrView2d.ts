@@ -221,6 +221,12 @@ export class AcTrView2d extends AcEdBaseView {
   private _convertQueue: AcDbEntity[] = []
   /** In-flight progressive convert drain; shared so awaiters wait for the queue. */
   private _convertDrainPromise: Promise<void> | null = null
+  /**
+   * Bumped by {@link clear} so an in-flight {@link batchConvert} abandons
+   * scene writes and counter updates after the view has been reset for a new
+   * document open.
+   */
+  private _convertEpoch = 0
   /** Last time progressive open marked the canvas dirty for paint. */
   private _lastProgressivePaintAt = 0
   /** Mid-open WebGL paints while progressive convert was still running. */
@@ -1780,7 +1786,11 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   clear() {
+    // Invalidate any in-flight progressive convert so it neither paints into
+    // the cleared scene nor double-decrements the processing counter.
+    this._convertEpoch++
     this._convertQueue.length = 0
+    this._numOfEntitiesToProcess = 0
     this._scene.clear()
     this._isDirty = true
     this._missedImages.clear()
@@ -2225,6 +2235,7 @@ export class AcTrView2d extends AcEdBaseView {
     entities: AcDbEntity[],
     options: { forExport?: boolean } = {}
   ) {
+    const epoch = this._convertEpoch
     const progressive = this._progressiveRendering && !options.forExport
     // Time-budgeted yields keep the canvas painting during large open chunks
     // (count-based yields alone stall on expensive INSERT / hatch batches).
@@ -2238,6 +2249,10 @@ export class AcTrView2d extends AcEdBaseView {
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
       try {
+        // Document was cleared / replaced while this batch was draining.
+        if (epoch !== this._convertEpoch) {
+          continue
+        }
         // Skip the default paper-space viewport (`*Paper_Space`) entirely:
         // it is an AutoCAD-internal viewport that exists in every paper
         // layout and must not be drawn (would render a giant rectangle in
@@ -2294,13 +2309,17 @@ export class AcTrView2d extends AcEdBaseView {
             threeEntity instanceof AcTrGroup &&
             !(threeEntity as AcTrGroup).isOnTheSameLayer
           ) {
-            await this.handleGroup(threeEntity as AcTrGroup, progressive)
+            await this.handleGroup(threeEntity as AcTrGroup, progressive, epoch)
           } else {
             const isExtendBbox = !(
               entity instanceof AcDbRay || entity instanceof AcDbXline
             )
 
             await this.finishEntityGeometry(threeEntity, progressive)
+            if (epoch !== this._convertEpoch) {
+              threeEntity.dispose()
+              continue
+            }
             if (threeEntity instanceof AcTrGroup) {
               this.syncGroupSpatialBoundsForIndexing(threeEntity)
             }
@@ -2316,6 +2335,10 @@ export class AcTrView2d extends AcEdBaseView {
               )
             }
           }
+        }
+
+        if (epoch !== this._convertEpoch) {
+          continue
         }
 
         if (entity instanceof AcDbViewport) {
@@ -2348,7 +2371,15 @@ export class AcTrView2d extends AcEdBaseView {
           error
         )
       } finally {
-        this.decreaseNumOfEntitiesToProcess()
+        // Counter was reset in clear() when the epoch advanced; do not
+        // decrease again or isProcessingEntities can go negative/warn.
+        if (epoch === this._convertEpoch) {
+          this.decreaseNumOfEntitiesToProcess()
+        }
+      }
+
+      if (epoch !== this._convertEpoch) {
+        continue
       }
 
       if (yieldGate) {
@@ -2389,8 +2420,16 @@ export class AcTrView2d extends AcEdBaseView {
     userData.spatialIndexChildBoxes = childBoxes
   }
 
-  private async handleGroup(group: AcTrGroup, progressive: boolean) {
+  private async handleGroup(
+    group: AcTrGroup,
+    progressive: boolean,
+    epoch: number = this._convertEpoch
+  ) {
     await this.finishEntityGeometry(group, progressive)
+    if (epoch !== this._convertEpoch) {
+      group.dispose()
+      return
+    }
     this.syncGroupSpatialBoundsForIndexing(group)
 
     const children = group.children
@@ -2517,10 +2556,10 @@ export class AcTrView2d extends AcEdBaseView {
       log.warn(
         'Something wrong! The number of entities to process should not be less than 0.'
       )
-    } else if (
-      this._numOfEntitiesToProcess === 0 &&
-      !this._progressiveRendering
-    ) {
+    } else if (this._numOfEntitiesToProcess === 0) {
+      // Always mark dirty when the queue drains. Progressive open throttles
+      // mid-open paints, so the last batch would otherwise never redraw until
+      // the user pans/zooms (animate bails when !_isDirty && !stillLoading).
       this._isDirty = true
     }
   }
