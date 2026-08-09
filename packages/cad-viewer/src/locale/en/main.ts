@@ -776,7 +776,6 @@ export default {
       total: 'Total open',
       read: 'db.read',
       parse: 'PARSE',
-      font: 'FONT',
       entity: 'ENTITY flush',
       convert: 'Scene convert',
       cacheHits: 'Cache hits',

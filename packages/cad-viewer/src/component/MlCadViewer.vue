@@ -187,11 +187,6 @@ interface Props {
    * Write uses {@link AcApOpenViewMode.Saved}.
    */
   openViewMode?: AcApOpenViewMode
-  /**
-   * When `true`, aborts opening if required fonts cannot be loaded.
-   * Defaults to `false` so unreachable font CDNs do not block entity parsing.
-   */
-  failOnFontLoadError?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -213,10 +208,7 @@ const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
   mode: props.mode,
   drawNoPlotLayers: props.drawNoPlotLayers,
   progressiveRendering: props.progressiveRendering,
-  ...(props.openViewMode != null ? { openViewMode: props.openViewMode } : {}),
-  ...(props.failOnFontLoadError != null
-    ? { failOnFontLoadError: props.failOnFontLoadError }
-    : {})
+  ...(props.openViewMode != null ? { openViewMode: props.openViewMode } : {})
 })
 
 const { t } = useI18n()

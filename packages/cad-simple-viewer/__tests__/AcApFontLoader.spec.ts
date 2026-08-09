@@ -28,12 +28,17 @@ jest.mock('../src/editor', () => ({
 }))
 
 import { eventBus } from '../src/editor'
-import { AcApFontLoader } from '../src/app/AcApFontLoader'
+import {
+  AcApFontLoader,
+  getLastFontLoadStats
+} from '../src/app/AcApFontLoader'
 
 describe('AcApFontLoader', () => {
   beforeEach(() => {
     mockLoad.mockReset()
     mockGetAvailableFonts.mockReset()
+    mockGetAvailableFonts.mockResolvedValue([])
+    mockLoad.mockResolvedValue([])
     jest.mocked(eventBus.emit).mockClear()
   })
 
@@ -92,5 +97,128 @@ describe('AcApFontLoader', () => {
         }
       ]
     })
+  })
+
+  it('awaits SHX fonts and defers mesh fonts for explicit multi-font loads', async () => {
+    const loader = new AcApFontLoader()
+    mockGetAvailableFonts.mockResolvedValue([
+      {
+        name: ['hztxt'],
+        file: 'hztxt.shx',
+        type: 'shx',
+        url: 'https://cdn.example.com/hztxt.shx'
+      },
+      {
+        name: ['simsun'],
+        file: 'simsun.woff',
+        type: 'mesh',
+        url: 'https://cdn.example.com/simsun.woff'
+      }
+    ])
+
+    let resolveMesh: (value: unknown) => void = () => undefined
+    const meshGate = new Promise(resolve => {
+      resolveMesh = resolve
+    })
+    mockLoad.mockImplementation((names: string[]) => {
+      if (names.includes('simsun')) {
+        return meshGate.then(() => [
+          {
+            fontName: 'simsun',
+            url: 'https://cdn.example.com/simsun.woff',
+            status: 'Success'
+          }
+        ])
+      }
+      return Promise.resolve([
+        {
+          fontName: 'hztxt',
+          url: 'https://cdn.example.com/hztxt.shx',
+          status: 'Success'
+        }
+      ])
+    })
+
+    await loader.load(['hztxt', 'simsun'])
+
+    expect(mockLoad).toHaveBeenCalledWith(['hztxt'])
+    expect(mockLoad).toHaveBeenCalledWith(['simsun'])
+    const stats = getLastFontLoadStats()
+    expect(stats?.criticalFonts).toEqual(['hztxt'])
+    expect(stats?.deferredFonts).toEqual(['simsun'])
+    expect(stats?.deferred).toBe(true)
+    // Fire-and-forget mesh load has not finished yet.
+    expect(stats?.deferredLoadMs).toBeNull()
+
+    resolveMesh([])
+    // meshGate → mockLoad then → stats update (nested microtasks)
+    await new Promise<void>(resolve => setTimeout(resolve, 0))
+    expect(getLastFontLoadStats()?.deferredLoadMs).toEqual(expect.any(Number))
+  })
+
+  it('can load mesh fonts synchronously when deferMeshFonts is false', async () => {
+    const loader = new AcApFontLoader()
+    loader.deferMeshFonts = false
+    mockGetAvailableFonts.mockResolvedValue([
+      {
+        name: ['simsun'],
+        file: 'simsun.woff',
+        type: 'mesh',
+        url: 'https://cdn.example.com/simsun.woff'
+      }
+    ])
+    mockLoad.mockResolvedValue([
+      {
+        fontName: 'simsun',
+        url: 'https://cdn.example.com/simsun.woff',
+        status: 'Success'
+      }
+    ])
+
+    await loader.load(['simsun'])
+
+    expect(mockLoad).toHaveBeenCalledWith(['simsun'])
+    expect(getLastFontLoadStats()?.deferred).toBe(false)
+  })
+
+  it('awaits mesh-only loads even when deferMeshFonts is true', async () => {
+    const loader = new AcApFontLoader()
+    mockGetAvailableFonts.mockResolvedValue([
+      {
+        name: ['simsun'],
+        file: 'simsun.woff',
+        type: 'mesh',
+        url: 'https://cdn.example.com/simsun.woff'
+      }
+    ])
+
+    let resolveMesh: (value: unknown) => void = () => undefined
+    const meshGate = new Promise(resolve => {
+      resolveMesh = resolve
+    })
+    mockLoad.mockImplementation(() =>
+      meshGate.then(() => [
+        {
+          fontName: 'simsun',
+          url: 'https://cdn.example.com/simsun.woff',
+          status: 'Success'
+        }
+      ])
+    )
+
+    let settled = false
+    const loadPromise = loader.load(['simsun']).then(() => {
+      settled = true
+    })
+
+    await Promise.resolve()
+    expect(settled).toBe(false)
+
+    resolveMesh([])
+    await loadPromise
+
+    expect(settled).toBe(true)
+    expect(getLastFontLoadStats()?.deferred).toBe(false)
+    expect(getLastFontLoadStats()?.deferredFonts).toEqual(['simsun'])
   })
 })

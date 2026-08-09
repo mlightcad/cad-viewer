@@ -1,13 +1,13 @@
 import type { MTextObject } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
-jest.mock('../src/renderer', () => ({
+jest.mock('../src/renderer/AcTrMTextRenderer', () => ({
   AcTrMTextRenderer: {
     getInstance: jest.fn()
   }
 }))
 
-import { AcTrMTextRenderer } from '../src/renderer'
+import { AcTrMTextRenderer } from '../src/renderer/AcTrMTextRenderer'
 import { expectWcsBboxCloseTo } from './helpers/expectWcsBbox'
 import { AcTrShape } from '../src/object/AcTrShape'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
@@ -48,6 +48,8 @@ describe('AcTrShape wcsBbox', () => {
       {} as never,
       new AcTrRenderContext(new AcTrStyleManager())
     )
+    // Constructors no longer auto-draw; geometry is finalized via syncDraw/asyncDraw.
+    shape.syncDraw()
 
     expectWcsBboxCloseTo(shape.wcsBbox, [5, 15, 0], [9, 17, 0])
   })

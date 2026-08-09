@@ -239,10 +239,11 @@ export interface AcApDocManagerOptions {
   useMainThreadDraw?: boolean
 
   /**
-   * The flag whether to load default fonts when initializing viewer. If no default font loaded,
-   * texts with fonts which can't be found in font repository will not be shown correctly.
+   * When `true`, eagerly preload the modern fallback font chain at viewer
+   * init via {@link AcApDocManager.loadDefaultFonts}. Default is `false`:
+   * fonts load on demand through {@link FontManager.lazyFontLoading}.
    */
-  notLoadDefaultFonts?: boolean
+  preloadDefaultFonts?: boolean
   /**
    * URLs for Web Worker JavaScript bundles used by the CAD viewer.
    */
@@ -445,6 +446,10 @@ export class AcApDocManager {
       AcTrMTextRenderer.getInstance().setRenderMode('worker')
     }
     FontManager.instance.setDefaultFonts(DEFAULT_FONTS_PRESET)
+    FontManager.instance.lazyFontLoading = true
+    FontManager.instance.awaitFontsBeforeDraw = true
+    void AcTrMTextRenderer.getInstance().setLazyFontLoading(true)
+    void AcTrMTextRenderer.getInstance().setAwaitFontsBeforeDraw(true)
 
     // Create one empty drawing
     const doc = new AcApDocument()
@@ -481,7 +486,10 @@ export class AcApDocManager {
     this._context = new AcApContext(view, doc)
 
     this._fontLoader = new AcApFontLoader()
-    this._fontLoader.baseUrl = this._baseUrl + 'fonts/'
+    const fontsUrl = this.resolveFontsBaseUrl()
+    this._fontLoader.baseUrl = fontsUrl
+    // On-demand loads go through FontManager's loader, not AcApFontLoader.
+    FontManager.instance.baseUrl = fontsUrl
     acdbHostApplicationServices().workingDatabase = doc.database
 
     this._commandManager = new AcEdCommandStack()
@@ -527,8 +535,8 @@ export class AcApDocManager {
       }
     })
 
-    if (!options.notLoadDefaultFonts) {
-      this.loadDefaultFonts()
+    if (options.preloadDefaultFonts) {
+      void this.loadDefaultFonts()
     }
     this._webworkerFileUrls = options.webworkerFileUrls
     this.registerWorkers(options.webworkerFileUrls)
@@ -944,7 +952,7 @@ export class AcApDocManager {
     await acapWithSecondaryDatabase(db, async () => {
       await db.read(
         content,
-        { fontLoader: this._fontLoader, readOnly: true, ...options },
+        { readOnly: true, ...options },
         fileExtension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
       )
     })
@@ -1093,6 +1101,16 @@ export class AcApDocManager {
   regen() {
     this.curView.clear()
     this.context.doc.database.regen()
+  }
+
+  /**
+   * Resolves the font repository URL from {@link baseUrl}.
+   */
+  private resolveFontsBaseUrl(): string {
+    const base = this._baseUrl.endsWith('/')
+      ? this._baseUrl
+      : `${this._baseUrl}/`
+    return `${base}fonts/`
   }
 
   /**
@@ -1680,25 +1698,21 @@ export class AcApDocManager {
   /**
    * Sets up or validates database opening options.
    *
-   * This private method ensures that the options object has a font loader configured.
-   * If no options are provided, creates new options with the font loader.
-   * If options are provided but missing a font loader, adds the font loader.
+   * Fonts are not loaded during open; {@link FontManager.lazyFontLoading}
+   * fetches them on demand while text is drawn.
    *
    * @param options - Optional database opening options to validate/modify
-   * @returns The validated options object with font loader configured
+   * @returns The validated options object
    * @private
    */
   private setOptions(options?: AcApOpenDatabaseOptions) {
     if (options == null) {
       options = {
-        fontLoader: this._fontLoader,
         drawNoPlotLayers: false,
         progressiveRendering: false
       }
     } else {
-      if (options.fontLoader == null) {
-        options.fontLoader = this._fontLoader
-      }
+      this.stripObsoleteFontOpenOptions(options)
       if (options.drawNoPlotLayers == null) {
         options.drawNoPlotLayers = false
       }
@@ -1707,6 +1721,34 @@ export class AcApDocManager {
       }
     }
     return options
+  }
+
+  /**
+   * Removes removed open-time font options that integrators may still pass via
+   * cast/spread so they cannot silently affect `db.read`.
+   */
+  private stripObsoleteFontOpenOptions(options: AcApOpenDatabaseOptions) {
+    const legacy = options as AcApOpenDatabaseOptions & {
+      fontLoader?: unknown
+      failOnFontLoadError?: unknown
+    }
+    const hadFontLoader = legacy.fontLoader != null
+    const hadFailOnFontLoadError = legacy.failOnFontLoadError != null
+    if (!hadFontLoader && !hadFailOnFontLoadError) {
+      return
+    }
+    delete legacy.fontLoader
+    delete legacy.failOnFontLoadError
+    console.warn(
+      '[AcApDocManager] Ignoring obsolete open options ' +
+        [
+          hadFontLoader ? 'fontLoader' : null,
+          hadFailOnFontLoadError ? 'failOnFontLoadError' : null
+        ]
+          .filter(Boolean)
+          .join(', ') +
+        '; fonts load on demand via FontManager.lazyFontLoading.'
+    )
   }
 
   /**

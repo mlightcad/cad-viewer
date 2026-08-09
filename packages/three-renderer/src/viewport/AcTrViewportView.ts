@@ -6,7 +6,7 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { AcTrRenderer } from '../renderer'
+import { AcTrRenderer } from '../renderer/AcTrRenderer'
 import { AcTrBaseView } from './AcTrBaseView'
 
 /**

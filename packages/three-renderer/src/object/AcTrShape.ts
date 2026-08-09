@@ -5,7 +5,7 @@ import {
 } from '@mlightcad/data-model'
 import { ShapeData } from '@mlightcad/mtext-renderer'
 
-import { AcTrMTextRenderer } from '../renderer'
+import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { resolveShapeGlyphKey, resolveShapeTextStyle } from '../util'
 import { AcTrGlyphEntity } from './AcTrGlyphEntity'
@@ -31,13 +31,12 @@ export class AcTrShape extends AcTrGlyphEntity {
     traits: AcGiSubEntityTraits,
     style: AcGiTextStyle | null | undefined,
     context: AcTrRenderContext,
-    delay: boolean = false
+    _delay: boolean = false
   ) {
     super(context, traits, resolveShapeTextStyle(shape, style, context))
     this._shape = shape
-    if (!delay) {
-      this.syncDraw()
-    }
+    // Geometry is built by syncDraw/asyncDraw in AcTrView2d / AcTrGroup so
+    // font-awaiting asyncDraw can run without blocking other entity converts.
   }
 
   /**
@@ -95,5 +94,26 @@ export class AcTrShape extends AcTrGlyphEntity {
     const label =
       this._shape.name?.trim() || String(this._shape.shapeNumber ?? '')
     return `shape '${label}'`
+  }
+
+  /**
+   * Preserves SHAPE payload across INSERT template clones.
+   *
+   * {@link AcTrEntity.fastDeepClone} would otherwise create a plain
+   * {@link AcTrEntity} shell that can no longer {@link asyncDraw} glyphs.
+   */
+  override fastDeepClone() {
+    const cloned = new AcTrShape(
+      {
+        ...this._shape,
+        position: { ...this._shape.position }
+      },
+      this.traitsForClone(),
+      { ...this._style },
+      this.renderContext
+    )
+    cloned.copyGlyphIdentity(this)
+    this.copyGeometry(this, cloned)
+    return cloned
   }
 }

@@ -115,11 +115,10 @@
 import {
   AcApCacheFontCmd,
   AcApDocManager,
+  type AcApFontInfo,
   AcApFontUtil,
   AcApSettingManager,
-  eventBus
-} from '@mlightcad/cad-simple-viewer'
-import { AcDbFontInfo } from '@mlightcad/data-model'
+  eventBus} from '@mlightcad/cad-simple-viewer'
 import type { MlOverflowTab } from '@mlightcad/ui-components'
 import {
   ElButton,
@@ -143,7 +142,7 @@ const { t } = useI18n()
 const { fonts: fontMapping, images: imageTableData, xrefs } = useMissedData()
 
 const fontFileInput = ref<HTMLInputElement | null>(null)
-const availableFontInfos = ref<AcDbFontInfo[]>([])
+const availableFontInfos = ref<AcApFontInfo[]>([])
 const matchFontType = ref(true)
 const applying = ref(false)
 const pendingFontMissed = ref<string | null>(null)

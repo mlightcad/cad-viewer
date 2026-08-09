@@ -1,4 +1,5 @@
 import { AcDbObjectId, AcGeMatrix3d } from '@mlightcad/data-model'
+import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
@@ -173,12 +174,17 @@ export class AcTrGroup extends AcTrEntity {
 
   /**
    * Merges same-material drawable leaves so block-template clones copy far
-   * fewer geometries. Finalizes deferred MTEXT/SHAPE geometry first.
+   * fewer geometries.
+   *
+   * When {@link FontManager.awaitFontsBeforeDraw} is off, finalizes deferred
+   * MTEXT/SHAPE geometry first via {@link syncDraw}. When it is on, empty
+   * glyph shells are left for later {@link asyncDraw} (fonts must be awaited
+   * before bake).
    *
    * After {@link flatten}, source-entity shells are empty even when their
    * geometry was successfully produced — leaves live under {@link children}.
-   * Deferred MTEXT/SHAPE wrappers that still need {@link syncDraw} also remain
-   * as {@link AcTrEntity} children, so {@link _sourceEntities} is not required
+   * Deferred MTEXT/SHAPE wrappers that still need drawing also remain as
+   * {@link AcTrEntity} children, so {@link _sourceEntities} is not required
    * for later clone/sync. Detached source shells are released after compaction
    * (their leaf buffers were already disposed or reparented) so a later
    * {@link dispose} cannot touch dangling geometry aliases. Spatial indexing
@@ -188,7 +194,12 @@ export class AcTrGroup extends AcTrEntity {
    * still at identity.
    */
   compactForInstancing() {
-    this.syncDraw()
+    // When awaitFontsBeforeDraw is on, skip syncDraw so empty glyph shells
+    // remain for AcTrView2d's asyncDraw path (which awaits fonts). Sync
+    // finalize here would bake fallback glyphs into the INSERT template.
+    if (!FontManager.instance.awaitFontsBeforeDraw) {
+      this.syncDraw()
+    }
     AcTrGroupCompactor.compact(this)
     this.releaseDetachedSourceShells()
     this._compacted = true
@@ -332,10 +343,9 @@ export class AcTrGroup extends AcTrEntity {
    * then refreshes spatial-index bounds.
    *
    * Block references may contain MTEXT/SHAPE children whose geometry is skipped
-   * when worldDraw is invoked with `delay=true`. This method walks tracked
-   * source entities (see {@link _sourceEntities}) plus any {@link AcTrEntity}
-   * children still present after {@link flatten}, and invokes {@link syncDraw}
-   * on each entity that has not yet produced drawable children.
+   * during construction. This method walks tracked source entities plus any
+   * {@link AcTrEntity} children still present after {@link flatten}, and invokes
+   * {@link syncDraw} on each entity that has not yet produced drawable children.
    */
   override syncDraw(): void {
     const finalizeDeferredEntity = (child: AcTrEntity) => {
@@ -347,9 +357,6 @@ export class AcTrGroup extends AcTrEntity {
 
     this.getSourceEntities().forEach(finalizeDeferredEntity)
     this.traverse(child => {
-      // THREE.Object3D.traverse invokes the callback on `this` first. An
-      // empty or all-deferred group has no drawable children yet, so
-      // finalizeDeferredEntity would call syncDraw() on itself indefinitely.
       if (child === this) {
         return
       }
@@ -361,6 +368,38 @@ export class AcTrGroup extends AcTrEntity {
       }
       finalizeDeferredEntity(child)
     })
+    this.refreshWcsChildBoxesFromChildren()
+  }
+
+  /**
+   * Like {@link syncDraw}, but uses {@link AcTrEntity.asyncDraw} so glyph
+   * children can wait for fonts without using the sync fallback path.
+   */
+  override async asyncDraw(): Promise<void> {
+    const tasks: Promise<void>[] = []
+    const finalizeDeferredEntity = (child: AcTrEntity) => {
+      if (child.hasDrawableGeometry()) {
+        return
+      }
+      tasks.push(child.asyncDraw())
+    }
+
+    this.getSourceEntities().forEach(finalizeDeferredEntity)
+    this.traverse(child => {
+      if (child === this) {
+        return
+      }
+      if (!(child instanceof AcTrEntity)) {
+        return
+      }
+      if (this.getSourceEntities().includes(child)) {
+        return
+      }
+      finalizeDeferredEntity(child)
+    })
+    if (tasks.length > 0) {
+      await Promise.all(tasks)
+    }
     this.refreshWcsChildBoxesFromChildren()
   }
 

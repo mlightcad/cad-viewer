@@ -1,7 +1,6 @@
-import { AcApDocManager, AcApFontUtil } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, type AcApFontInfo,AcApFontUtil } from '@mlightcad/cad-simple-viewer'
 import {
   type AcDbDatabase,
-  type AcDbFontInfo,
   AcDbSystemVariables,
   AcDbSysVarManager,
   AcDbTextStyleTableRecord,
@@ -40,7 +39,7 @@ export interface TextStyleFormState {
  * Select-option entry for font dropdowns in the Text Style dialog.
  */
 export interface FontOption {
-  /** Font identifier stored in the form (primary name from {@link AcDbFontInfo.name}). */
+  /** Font identifier stored in the form (primary name from {@link AcApFontInfo.name}). */
   value: string
   /** Display label, preferring the source file path when available. */
   label: string
@@ -221,12 +220,12 @@ function applyTextStyleForm(
  * Builds sorted font dropdown options from available drawing fonts.
  *
  * Deduplicates by primary name (case-insensitive) and uses the first non-empty
- * alias from {@link AcDbFontInfo.name} as the option value.
+ * alias from {@link AcApFontInfo.name} as the option value.
  *
  * @param fontInfos - Font catalog from the editor (`avaiableFonts`).
  * @returns Options sorted by display label.
  */
-function buildFontOptions(fontInfos: AcDbFontInfo[]): FontOption[] {
+function buildFontOptions(fontInfos: AcApFontInfo[]): FontOption[] {
   const options: FontOption[] = []
   const seen = new Set<string>()
 
@@ -254,7 +253,7 @@ function buildFontOptions(fontInfos: AcDbFontInfo[]): FontOption[] {
  * @param fontInfos - Font catalog from the editor.
  * @returns SHX font options suitable for the big-font selector.
  */
-function buildBigFontOptions(fontInfos: AcDbFontInfo[]): FontOption[] {
+function buildBigFontOptions(fontInfos: AcApFontInfo[]): FontOption[] {
   return buildFontOptions(fontInfos.filter(info => info.type === 'shx'))
 }
 
@@ -263,12 +262,12 @@ function buildBigFontOptions(fontInfos: AcDbFontInfo[]): FontOption[] {
  *
  * @param fontInfos - Font catalog from the editor.
  * @param fontName - Font name or alias to match (case-insensitive).
- * @returns Matching {@link AcDbFontInfo}, or `undefined` when not found.
+ * @returns Matching {@link AcApFontInfo}, or `undefined` when not found.
  */
 function findFontInfo(
-  fontInfos: AcDbFontInfo[],
+  fontInfos: AcApFontInfo[],
   fontName: string
-): AcDbFontInfo | undefined {
+): AcApFontInfo | undefined {
   const target = fontName.trim().toLowerCase()
   if (!target) return undefined
   return fontInfos.find(info =>
@@ -371,7 +370,7 @@ export function useTextStyle(editor: AcApDocManager = AcApDocManager.instance) {
   /** Name of the drawing's current TEXTSTYLE system variable. */
   const currentStyleName = ref('')
   /** Available fonts reported by the editor for dropdown population. */
-  const fontInfos = ref<AcDbFontInfo[]>([])
+  const fontInfos = ref<AcApFontInfo[]>([])
   /** Reactive edit form for the selected text style. */
   const form = reactive<TextStyleFormState>(createDefaultForm())
 

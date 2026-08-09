@@ -63,7 +63,6 @@ export function formatOpenFileProfileText(
     `wall clock total:     ${snapshot.totalMs.toFixed(0)} ms`,
     `  db.read:            ${snapshot.readMs.toFixed(0)} ms  (${pct(snapshot.readMs, snapshot.totalMs)})`,
     `    PARSE:            ${snapshot.parseMs.toFixed(0)} ms  (${pct(snapshot.parseMs, snapshot.readMs)} of read)`,
-    `    FONT:             ${snapshot.fontMs.toFixed(0)} ms  (${pct(snapshot.fontMs, snapshot.readMs)} of read)`,
     `    ENTITY flush:     ${snapshot.entityMs.toFixed(0)} ms  (${pct(snapshot.entityMs, snapshot.readMs)} of read)`,
     `  scene convert:      ${snapshot.convertMs.toFixed(0)} ms  (${pct(snapshot.convertMs, snapshot.totalMs)})`,
     '',
@@ -132,12 +131,6 @@ export function useOpenFileProfile() {
         label: t('main.toolPalette.openFileProfile.parse'),
         value: formatMs(s.parseMs),
         pct: formatPct(s.parseMs, s.readMs)
-      },
-      {
-        id: 'font',
-        label: t('main.toolPalette.openFileProfile.font'),
-        value: formatMs(s.fontMs),
-        pct: formatPct(s.fontMs, s.readMs)
       },
       {
         id: 'entity',

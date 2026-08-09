@@ -8,7 +8,7 @@ import { ColorSettings, MTextObject } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
-import { AcTrMTextRenderer } from '../renderer'
+import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import {
   AcTrMTextColorUtil,
@@ -171,6 +171,27 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
         error
       )
     }
+  }
+
+  /**
+   * Traits snapshot suitable for reconstructing this glyph via its constructor.
+   */
+  protected traitsForClone(): AcGiSubEntityTraits {
+    return {
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color: this._entityTraits.color,
+      layer: this._entityTraits.layer
+    }
+  }
+
+  /**
+   * Copies shared glyph state after a subclass constructs a typed clone shell.
+   */
+  protected copyGlyphIdentity(source: AcTrGlyphEntity) {
+    this.copy(source, false)
+    this._style = { ...source._style }
+    this._entityTraits = { ...source._entityTraits }
+    this._colorSettings = { ...source._colorSettings }
   }
 
   /**

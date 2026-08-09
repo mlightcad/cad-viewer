@@ -5,7 +5,7 @@ import {
 } from '@mlightcad/data-model'
 import { MTextData } from '@mlightcad/mtext-renderer'
 
-import { AcTrMTextRenderer } from '../renderer'
+import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrGlyphEntity } from './AcTrGlyphEntity'
 
@@ -30,13 +30,12 @@ export class AcTrMText extends AcTrGlyphEntity {
     traits: AcGiSubEntityTraits,
     style: AcGiTextStyle,
     context: AcTrRenderContext,
-    delay: boolean = false
+    _delay: boolean = false
   ) {
     super(context, traits, { ...style })
     this._text = text
-    if (!delay) {
-      this.syncDraw()
-    }
+    // Geometry is built by syncDraw/asyncDraw in AcTrView2d / AcTrGroup so
+    // font-awaiting asyncDraw can run without blocking other entity converts.
   }
 
   /**
@@ -96,5 +95,26 @@ export class AcTrMText extends AcTrGlyphEntity {
    */
   protected override describeRenderFailure() {
     return `mtext '${this._text.text}'`
+  }
+
+  /**
+   * Preserves MTEXT payload across INSERT template clones.
+   *
+   * {@link AcTrEntity.fastDeepClone} would otherwise create a plain
+   * {@link AcTrEntity} shell that can no longer {@link asyncDraw} glyphs.
+   */
+  override fastDeepClone() {
+    const cloned = new AcTrMText(
+      {
+        ...this._text,
+        position: { ...this._text.position }
+      },
+      this.traitsForClone(),
+      { ...this._style },
+      this.renderContext
+    )
+    cloned.copyGlyphIdentity(this)
+    this.copyGeometry(this, cloned)
+    return cloned
   }
 }

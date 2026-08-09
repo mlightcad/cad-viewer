@@ -19,17 +19,20 @@ export enum AcApOpenViewMode {
  * the `readOnly` property with a `mode` property that provides more granular
  * access control.
  *
- * Inherits {@link AcDbOpenDatabaseOptions.drawNoPlotLayers} and
- * {@link AcDbOpenDatabaseOptions.failOnFontLoadError} from the data model.
- * {@link AcApDocManager} defaults `drawNoPlotLayers` to `false` (web viewer semantics)
- * when omitted. Font load failures do not abort the read unless
- * `failOnFontLoadError` is `true`.
+ * Inherits {@link AcDbOpenDatabaseOptions.drawNoPlotLayers} from the data
+ * model. {@link AcApDocManager} defaults `drawNoPlotLayers` to `false`
+ * (web viewer semantics) when omitted.
+ *
+ * Fonts are not loaded during database open. They are fetched on demand by
+ * `@mlightcad/mtext-renderer` (`FontManager.lazyFontLoading`) while text is
+ * drawn. Legacy open options `fontLoader` and `failOnFontLoadError` are no
+ * longer part of this API (removed in data-model); if still passed at runtime
+ * they are stripped with a warning in {@link AcApDocManager}.
  *
  * @example
  * ```typescript
  * const options: AcApOpenDatabaseOptions = {
- *   mode: AcEdOpenMode.Write,
- *   fontLoader: myFontLoader
+ *   mode: AcEdOpenMode.Write
  * };
  * ```
  */

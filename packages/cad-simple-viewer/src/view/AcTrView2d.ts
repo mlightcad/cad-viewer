@@ -26,6 +26,7 @@ import {
 import { AcDbSystemVariables } from '@mlightcad/data-model'
 import {
   AcTrEntity,
+  AcTrGlyphEntity,
   AcTrGroup,
   AcTrHtmlTransientManager,
   AcTrRenderer,
@@ -233,6 +234,11 @@ export class AcTrView2d extends AcEdBaseView {
   private _progressivePaintCount = 0
   /** Cooperative yields taken inside progressive {@link batchConvert}. */
   private _progressiveYieldCount = 0
+  /**
+   * In-flight glyph/group geometry jobs that await fonts via asyncDraw.
+   * Counted separately so linework convert can continue while text waits.
+   */
+  private _pendingGeometryJobs = 0
   /** Grip point display and drag editing (Write mode only). */
   private _gripManager: AcEdGripManager
   /** Global keyboard shortcuts for the view (undo/redo, erase, etc.). */
@@ -535,6 +541,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._isDirty = true
     this.startAnimationLoop()
     this._numOfEntitiesToProcess = 0
+    this._pendingGeometryJobs = 0
   }
 
   private getPointerSelectionAction(e: MouseEvent) {
@@ -599,14 +606,15 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * True while {@link addEntity} batch-conversion callbacks are still running.
+   * True while batch conversion or deferred glyph/group geometry is still
+   * running.
    *
    * Parsing can report 100% before this reaches zero; callers opening files
    * should wait on this (as {@link zoomToFitDrawing} does) before hiding
    * progress UI or assuming the canvas is ready.
    */
   get isProcessingEntities() {
-    return this._numOfEntitiesToProcess > 0
+    return this._numOfEntitiesToProcess > 0 || this._pendingGeometryJobs > 0
   }
 
   /**
@@ -1057,7 +1065,8 @@ export class AcTrView2d extends AcEdBaseView {
    */
   zoomToFitDrawing(timeout: number = 0, layoutBtrId?: AcDbObjectId) {
     const waiter = new AcEdConditionWaiter(
-      () => this._numOfEntitiesToProcess <= 0,
+      // Include deferred glyph/group jobs so text extents land before final fit.
+      () => !this.isProcessingEntities,
       () => {
         if (layoutBtrId && this._externallyFramedLayouts.delete(layoutBtrId)) {
           this.endProgressiveOpenFit()
@@ -1439,14 +1448,30 @@ export class AcTrView2d extends AcEdBaseView {
    */
   addTransientEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
+    const epoch = this._convertEpoch
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
       const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
       if (threeEntity) {
         threeEntity.objectId = entity.objectId
-        threeEntity.syncDraw()
-        this._scene.addTransientEntity(threeEntity)
-        this._isDirty = true
+        void threeEntity
+          .asyncDraw()
+          .then(() => {
+            // Drop stale transients started before clear()/regen invalidated the view.
+            if (epoch !== this._convertEpoch) {
+              threeEntity.dispose()
+              return
+            }
+            this._scene.addTransientEntity(threeEntity)
+            this._isDirty = true
+          })
+          .catch(error => {
+            log.error(
+              '[AcTrView2d] Transient entity geometry failed:',
+              error
+            )
+            threeEntity.dispose()
+          })
       }
     }
   }
@@ -1616,12 +1641,14 @@ export class AcTrView2d extends AcEdBaseView {
 
     // Reconvert through the same path as initial load so block references are
     // split by layer correctly and deferred MTEXT/SHAPE geometry is drawn.
-    void this.batchConvert(entities).then(() => {
+    void (async () => {
+      await this.batchConvert(entities)
+      await this.waitUntilDeferredGeometryIdle()
       if (selectedIds.length > 0) {
         this.highlight(selectedIds)
       }
       this._gripManager.refresh()
-    })
+    })()
     this._isDirty = true
     // Not sure why texture for image entity isn't updated even if 'isDirty' flag is already set to true.
     // So add one timeout event to set 'isDirty' flag to true again to make it work
@@ -1730,12 +1757,12 @@ export class AcTrView2d extends AcEdBaseView {
    * Without the waiter, `viewportsBoundingBox` returns undefined and
    * the strategy degrades into (1) zooming to garbage `limits`, or
    * (4) zooming to an empty scene box. The waiter polls
-   * `_numOfEntitiesToProcess` and only fires the heuristic once the
-   * conversion is done.
+   * {@link isProcessingEntities} (convert queue + deferred glyph jobs)
+   * and only fires the heuristic once conversion and text geometry finish.
    */
   private applyInitialZoom(btrId: AcDbObjectId, layout: AcDbLayout) {
     const waiter = new AcEdConditionWaiter(
-      () => this._numOfEntitiesToProcess <= 0,
+      () => !this.isProcessingEntities,
       () => {
         if (this._externallyFramedLayouts.delete(btrId)) {
           return
@@ -1791,6 +1818,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertEpoch++
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
+    this._pendingGeometryJobs = 0
     this._scene.clear()
     this._isDirty = true
     this._missedImages.clear()
@@ -2160,36 +2188,104 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Finishes geometry for a converted entity. Block groups always use
-   * {@link AcTrGroup.syncDraw} to finalize deferred children.
+   * Finishes geometry for a converted entity.
    *
-   * Progressive open uses the same sync finalize path as non-progressive:
-   * per-entity `asyncDraw` added Promise/worker churn without helping
-   * INSERT-heavy drawings, and it inflated total open wall time. Incremental
-   * appearance comes from cooperative yields + throttled paints instead.
+   * Glyph entities and block groups use {@link AcTrEntity.asyncDraw} so
+   * {@link FontManager.awaitFontsBeforeDraw} can wait for fonts without
+   * relying on a full-scene regen. Other entities keep the sync finalize path.
    */
   private async finishEntityGeometry(
     threeEntity: AcTrEntity,
     _progressive: boolean
   ) {
     if (threeEntity instanceof AcTrGroup) {
-      // Compacted INSERT templates already ran syncDraw inside
-      // compactForInstancing. Skip a second full walk when there are no
-      // post-compact ATTRIB source entities left to finalize.
+      // Compacted INSERT templates may skip syncDraw when fonts are awaited
+      // later; still walk for empty glyph shells. Skip only when there is
+      // nothing left to finalize.
       if (
         threeEntity.isCompacted &&
         threeEntity.getSourceEntities().length === 0 &&
-        threeEntity.hasDrawableGeometry()
+        !this.groupHasPendingGlyphGeometry(threeEntity)
       ) {
         return
       }
-      threeEntity.syncDraw()
+      await threeEntity.asyncDraw()
       return
     }
     if (threeEntity.hasDrawableGeometry()) {
       return
     }
-    threeEntity.syncDraw()
+    await threeEntity.asyncDraw()
+  }
+
+  private needsDeferredFontGeometry(threeEntity: AcTrEntity): boolean {
+    return (
+      threeEntity instanceof AcTrGlyphEntity ||
+      threeEntity instanceof AcTrGroup
+    )
+  }
+
+  private groupHasPendingGlyphGeometry(group: AcTrGroup): boolean {
+    let pending = false
+    group.traverse(child => {
+      if (
+        child instanceof AcTrGlyphEntity &&
+        !child.hasDrawableGeometry()
+      ) {
+        pending = true
+      }
+    })
+    return pending
+  }
+
+  /**
+   * Runs glyph/group geometry finalize off the main convert loop so other
+   * entities keep converting while fonts download.
+   */
+  private enqueueDeferredGeometry(
+    run: () => Promise<void>,
+    epoch: number
+  ): void {
+    if (epoch !== this._convertEpoch) {
+      return
+    }
+    this._pendingGeometryJobs++
+    void run()
+      .then(() => {
+        // Convert counter often hits 0 before fonts finish; without this,
+        // text added later never paints until the user pans/zooms.
+        if (epoch === this._convertEpoch) {
+          this._isDirty = true
+        }
+      })
+      .catch(error => {
+        log.error('[AcTrView2d] Deferred entity geometry failed:', error)
+      })
+      .finally(() => {
+        if (epoch === this._convertEpoch) {
+          this._pendingGeometryJobs = Math.max(
+            0,
+            this._pendingGeometryJobs - 1
+          )
+          if (this._pendingGeometryJobs === 0) {
+            this._isDirty = true
+          }
+        }
+      })
+  }
+
+  /**
+   * Waits until side-pool glyph/group jobs for the current convert epoch finish.
+   * Used by entity updates that must highlight after text is in the scene.
+   */
+  private async waitUntilDeferredGeometryIdle(): Promise<void> {
+    const epoch = this._convertEpoch
+    while (
+      epoch === this._convertEpoch &&
+      this._pendingGeometryJobs > 0
+    ) {
+      await new Promise<void>(resolve => setTimeout(resolve, 0))
+    }
   }
 
   /**
@@ -2279,10 +2375,9 @@ export class AcTrView2d extends AcEdBaseView {
           continue
         }
 
-        // Always sync-construct geometry (no delay). Progressive open still
-        // yields between entities; deferring MTEXT via delay/asyncDraw made
-        // large opens much slower without improving first paint of INSERT-heavy
-        // drawings.
+        // Sync-construct the entity shell. Glyph geometry is finished via
+        // asyncDraw (awaits fonts when awaitFontsBeforeDraw is on). Text/group
+        // finalize runs in a side pool so linework convert is not blocked.
         const threeEntity: AcTrEntity | null = this.drawEntity(entity, false)
         // Viewports may produce no border geometry (e.g. on a no-plot layer) while
         // still needing an AcTrViewportView for model content below.
@@ -2306,34 +2401,59 @@ export class AcTrView2d extends AcEdBaseView {
             )
             threeEntity.userData.insertLayerName = threeEntity.layerName
           }
-          if (
+          const isMultiLayerGroup =
             threeEntity instanceof AcTrGroup &&
             !(threeEntity as AcTrGroup).isOnTheSameLayer
-          ) {
-            await this.handleGroup(threeEntity as AcTrGroup, progressive, epoch)
+          const deferGeometry =
+            !options.forExport && this.needsDeferredFontGeometry(threeEntity)
+
+          if (isMultiLayerGroup) {
+            if (deferGeometry) {
+              this.enqueueDeferredGeometry(
+                () =>
+                  this.handleGroup(
+                    threeEntity as AcTrGroup,
+                    progressive,
+                    epoch
+                  ),
+                epoch
+              )
+            } else {
+              await this.handleGroup(
+                threeEntity as AcTrGroup,
+                progressive,
+                epoch
+              )
+            }
           } else {
             const isExtendBbox = !(
               entity instanceof AcDbRay || entity instanceof AcDbXline
             )
-
-            await this.finishEntityGeometry(threeEntity, progressive)
-            if (epoch !== this._convertEpoch) {
+            const commitEntity = async () => {
+              await this.finishEntityGeometry(threeEntity, progressive)
+              if (epoch !== this._convertEpoch) {
+                threeEntity.dispose()
+                return
+              }
+              if (threeEntity instanceof AcTrGroup) {
+                this.syncGroupSpatialBoundsForIndexing(threeEntity)
+              }
+              this._scene.addEntity(threeEntity, isExtendBbox)
+              this.applySessionHiddenObjectState(entity.objectId)
+              // Release memory occupied by this entity
               threeEntity.dispose()
-              continue
+              if (progressive) {
+                this.markProgressiveDirty()
+                this._progressiveOpenFit.afterGeometryBatch(
+                  () => this.resolveLayoutFitBox(),
+                  i
+                )
+              }
             }
-            if (threeEntity instanceof AcTrGroup) {
-              this.syncGroupSpatialBoundsForIndexing(threeEntity)
-            }
-            this._scene.addEntity(threeEntity, isExtendBbox)
-            this.applySessionHiddenObjectState(entity.objectId)
-            // Release memory occupied by this entity
-            threeEntity.dispose()
-            if (progressive) {
-              this.markProgressiveDirty()
-              this._progressiveOpenFit.afterGeometryBatch(
-                () => this.resolveLayoutFitBox(),
-                i
-              )
+            if (deferGeometry) {
+              this.enqueueDeferredGeometry(commitEntity, epoch)
+            } else {
+              await commitEntity()
             }
           }
         }

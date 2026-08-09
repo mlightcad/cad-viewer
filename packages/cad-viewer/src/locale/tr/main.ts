@@ -781,7 +781,6 @@ export default {
       total: 'Toplam açılış',
       read: 'db.read',
       parse: 'PARSE',
-      font: 'FONT',
       entity: 'ENTITY flush',
       convert: 'Sahne dönüşümü',
       cacheHits: 'Önbellek isabet',
