@@ -53,8 +53,8 @@ jest.mock('rbush', () => {
   }
 })
 
-import { AcTrHierarchicalSpatialIndex } from '../src/spatialIndex/AcTrHierarchicalSpatialIndex'
 import { isEffectiveSpatialQueryHit } from '../src/editor/view/AcEdSpatialQueryResult'
+import { AcTrHierarchicalSpatialIndex } from '../src/spatialIndex/AcTrHierarchicalSpatialIndex'
 
 describe('AcTrHierarchicalSpatialIndex', () => {
   test('does not pollute child index with root item when objectId is reused', () => {
@@ -294,6 +294,53 @@ describe('AcTrHierarchicalSpatialIndex', () => {
     )
     expect(windowAllInside).toHaveLength(1)
     expect(windowAllInside[0].id).toBe(insertId)
+  })
+
+  test('keeps every multi-region hatch island pickable when child boxes share empty ids', () => {
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const hatchId = 'HATCH-82F'
+
+    // Multi-region hatches store one child AABB per filled island. Fill
+    // polygons usually have no objectId; child indexes must keep every empty-id
+    // box (and leave id empty for osnap gsMark) instead of collapsing to one.
+    spatialIndex.ensureChildIndex(hatchId, [
+      { minX: 0, minY: 40, maxX: 100, maxY: 50, id: '' },
+      { minX: 0, minY: 0, maxX: 100, maxY: 20, id: '' }
+    ])
+
+    const upper = spatialIndex.search({
+      minX: 40,
+      minY: 42,
+      maxX: 45,
+      maxY: 48
+    })
+    expect(upper).toHaveLength(1)
+    expect(upper[0].id).toBe(hatchId)
+    expect(upper[0].children).toHaveLength(1)
+    expect(upper[0].children?.[0]?.id).toBe('')
+    expect(isEffectiveSpatialQueryHit(upper[0])).toBe(true)
+
+    const lower = spatialIndex.search({
+      minX: 40,
+      minY: 5,
+      maxX: 45,
+      maxY: 15
+    })
+    expect(lower).toHaveLength(1)
+    expect(lower[0].id).toBe(hatchId)
+    expect(lower[0].children).toHaveLength(1)
+    expect(lower[0].children?.[0]?.id).toBe('')
+    expect(isEffectiveSpatialQueryHit(lower[0])).toBe(true)
+
+    const gap = spatialIndex.search({
+      minX: 40,
+      minY: 25,
+      maxX: 45,
+      maxY: 35
+    })
+    expect(gap).toHaveLength(1)
+    expect(gap[0].children).toEqual([])
+    expect(isEffectiveSpatialQueryHit(gap[0])).toBe(false)
   })
 
   test('getStats aggregates root and child item counts with estimated bytes', () => {

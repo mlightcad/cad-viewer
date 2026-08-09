@@ -29,6 +29,10 @@ type AcTrBatchedLine2GeometryInfo = AcTrVertexBatchGeometryInfo
 const _box = /*@__PURE__*/ new THREE.Box3()
 const _vector = /*@__PURE__*/ new THREE.Vector3()
 const _vector2 = /*@__PURE__*/ new THREE.Vector3()
+const _segmentStart = /*@__PURE__*/ new THREE.Vector3()
+const _segmentEnd = /*@__PURE__*/ new THREE.Vector3()
+const _pointOnRay = /*@__PURE__*/ new THREE.Vector3()
+const _pointOnSegment = /*@__PURE__*/ new THREE.Vector3()
 const _batchIntersects: THREE.Intersection[] = []
 const _raycastObject = /*@__PURE__*/ new LineSegments2(
   new LineSegmentsGeometry()
@@ -576,34 +580,23 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     _raycastObject.updateMatrixWorld(true)
     _raycastObject.raycast(raycaster, _batchIntersects)
 
-    // LineSegments2.raycast() ignores raycaster.params.Line.threshold and
-    // only uses the pixel-based LineMaterial.linewidth for hit detection.
-    // When linewidth is small the pick area can be too narrow, so fall back
-    // to a bounding-box intersection check when the precise raycast misses.
+    // LineSegments2.raycast() uses pixel LineMaterial.linewidth (plus optional
+    // params.Line2.threshold in px), not params.Line.threshold in WCS. When the
+    // screen-space pick misses, test distance to each segment against the WCS
+    // Line threshold. Do not fall back to the geometry AABB — that would make
+    // hollow rectangles / compacted INSERT linework selectable anywhere inside.
     if (_batchIntersects.length === 0) {
-      this.getBoundingBoxAt(geometryId, _box)
-      _box.applyMatrix4(this.matrixWorld)
-      const threshold = raycaster.params.Line.threshold
-      if (threshold > 0) {
-        _box.expandByScalar(threshold)
-      }
-      if (raycaster.ray.intersectBox(_box, _vector2)) {
-        const distance = raycaster.ray.origin.distanceTo(_vector2)
-        ;(
-          intersects as Array<
-            THREE.Intersection & { batchId?: number; objectId?: string }
-          >
-        ).push({
-          distance,
-          point: _vector2.clone(),
-          object: this,
-          face: null,
-          faceIndex: undefined,
-          uv: undefined,
-          batchId: geometryId,
-          objectId: geometryInfo.objectId
-        })
-      }
+      this._intersectSegmentsWithLineThreshold(
+        geometry,
+        // Use the batch world matrix (includes ancestors). `_raycastObject` is
+        // detached and only mirrors local TRS, so its matrixWorld is wrong when
+        // the batch sits under a transformed parent.
+        this.matrixWorld,
+        raycaster,
+        geometryId,
+        geometryInfo.objectId,
+        intersects
+      )
       geometry.dispose()
       return
     }
@@ -627,6 +620,73 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     }
     _batchIntersects.length = 0
     geometry.dispose()
+  }
+
+  /**
+   * Picks against packed segments using `raycaster.params.Line.threshold` (WCS).
+   *
+   * Used when {@link LineSegments2.raycast} misses because it only considers
+   * pixel linewidth. Matches {@link THREE.Line} segment-distance semantics so
+   * clicks inside a hollow shape's bounding box do not count as hits.
+   */
+  private _intersectSegmentsWithLineThreshold(
+    geometry: LineSegmentsGeometry,
+    matrixWorld: THREE.Matrix4,
+    raycaster: THREE.Raycaster,
+    geometryId: number,
+    objectId: string | undefined,
+    intersects: THREE.Intersection[]
+  ) {
+    const threshold = raycaster.params.Line?.threshold ?? 0
+    if (!(threshold > 0)) {
+      return
+    }
+
+    const instanceStart = geometry.getAttribute('instanceStart')
+    const instanceEnd = geometry.getAttribute('instanceEnd')
+    if (!instanceStart || !instanceEnd) {
+      return
+    }
+
+    const thresholdSq = threshold * threshold
+    const typedIntersects = intersects as Array<
+      THREE.Intersection & { batchId?: number; objectId?: string }
+    >
+
+    for (let i = 0, l = instanceStart.count; i < l; i++) {
+      _segmentStart
+        .fromBufferAttribute(instanceStart, i)
+        .applyMatrix4(matrixWorld)
+      _segmentEnd
+        .fromBufferAttribute(instanceEnd, i)
+        .applyMatrix4(matrixWorld)
+
+      const distSq = raycaster.ray.distanceSqToSegment(
+        _segmentStart,
+        _segmentEnd,
+        _pointOnRay,
+        _pointOnSegment
+      )
+      if (distSq > thresholdSq) {
+        continue
+      }
+
+      const distance = raycaster.ray.origin.distanceTo(_pointOnRay)
+      if (distance < raycaster.near || distance > raycaster.far) {
+        continue
+      }
+
+      typedIntersects.push({
+        distance,
+        point: _pointOnSegment.clone(),
+        object: this,
+        face: null,
+        faceIndex: i,
+        uv: undefined,
+        batchId: geometryId,
+        objectId
+      })
+    }
   }
 
   /**

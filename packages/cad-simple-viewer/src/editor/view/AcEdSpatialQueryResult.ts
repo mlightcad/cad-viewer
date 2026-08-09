@@ -76,3 +76,30 @@ export function isEffectiveSpatialQueryHit(
 ): boolean {
   return !(item.children !== undefined && item.children.length === 0)
 }
+
+/**
+ * Assigns distinct ids to spatial-query items that share a non-empty id before
+ * they are stored in Map-backed child indexes
+ * ({@link AcTrLinearSpatialIndex}, {@link AcTrRBushSpatialIndex}).
+ *
+ * Empty ids are left unchanged: those indexes store anonymous children under
+ * internal keys so multi-region hatch islands (fill polygons with no
+ * `objectId`) stay pickable without fabricating gsMark values for osnap.
+ */
+export function uniquifySpatialItemIds(
+  items: ReadonlyArray<AcEdSpatialQueryResultItem>
+): AcEdSpatialQueryResultItem[] {
+  const seen = new Map<string, number>()
+  return items.map(item => {
+    const raw = item.id
+    if (typeof raw !== 'string' || raw.length === 0) {
+      return item
+    }
+    const count = seen.get(raw) ?? 0
+    seen.set(raw, count + 1)
+    if (count === 0) {
+      return item
+    }
+    return { ...item, id: `${raw}#${count}` }
+  })
+}

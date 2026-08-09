@@ -7,8 +7,7 @@ import {
   AcTrBatchedGeometryInfo,
   AcTrBatchGeometryUserData,
   copyArrayContents,
-  isBatchGeometryActive,
-  isBatchGeometryVisible
+  isBatchGeometryActive
 } from './AcTrBatchedGeometryInfo'
 import {
   applyGeometryAt,
@@ -27,8 +26,6 @@ import { syncBatchDrawVisibilityAfterOptimize } from './drawVisibility'
 const _box = /*@__PURE__*/ new THREE.Box3()
 /** Reusable scratch vector for bounds expansion. */
 const _vector = /*@__PURE__*/ new THREE.Vector3()
-/** Reusable scratch vector for bbox fallback raycast hits. */
-const _vector2 = /*@__PURE__*/ new THREE.Vector3()
 
 /**
  * Mixin base produced by {@link createAcTrBatchedMixin} for indexed line batches.
@@ -52,7 +49,9 @@ const AcTrBatchedLineBase = createAcTrBatchedMixin<AcTrBatchedGeometryInfo>(
  *
  * Multiple line geometries that share compatible attribute layouts and a material
  * are packed into one combined vertex/index buffer to reduce draw calls. Supports
- * point-symbol line regeneration and bbox-expanded raycast fallback for thin lines.
+ * point-symbol line regeneration. Picking uses {@link THREE.LineSegments.raycast}
+ * with `raycaster.params.Line.threshold` (distance to segments), not the geometry
+ * AABB — hollow shapes must not be selectable via their bounding box interior.
  *
  * @see {@link AcTrBatchedMesh} for mesh batching.
  * @see {@link AcTrBatchedLine2} for wide-line (`Line2`) batching.
@@ -723,114 +722,6 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     } else {
       geometry.setDrawRange(0, this._nextVertexStart)
     }
-  }
-
-  /**
-   * Performs ray intersection for one line geometry slot with bbox fallback.
-   *
-   * Overrides the mixin default to improve pick reliability for thin lines:
-   *
-   * 1. When `bboxIntersectionCheck` is set, tests world-space bounding box only.
-   * 2. Otherwise delegates to {@link THREE.LineSegments.raycast} on the sub-range.
-   * 3. If the precise raycast misses, retests against the bounding box expanded by
-   *    `raycaster.params.Line.threshold`.
-   *
-   * @param geometryId - Slot index to test.
-   * @param raycaster - Configured THREE.js raycaster.
-   * @param intersects - Output array populated with intersection records extended
-   *   by `batchId` and `objectId`.
-   */
-  _intersectWith(
-    geometryId: number,
-    raycaster: THREE.Raycaster,
-    intersects: THREE.Intersection[]
-  ) {
-    const geometryInfo = this._geometryInfo[geometryId]
-    if (!isBatchGeometryVisible(geometryInfo.flags)) {
-      return
-    }
-
-    // Fast path: entities flagged for bbox-only intersection check
-    if (geometryInfo.bboxIntersectionCheck) {
-      this.getBoundingBoxAt(geometryId, this._box)
-      this._box.applyMatrix4(this.matrixWorld)
-      if (raycaster.ray.intersectBox(this._box, this._vector)) {
-        const distance = raycaster.ray.origin.distanceTo(this._vector)
-        ;(
-          intersects as Array<
-            THREE.Intersection & { batchId?: number; objectId?: string }
-          >
-        ).push({
-          distance,
-          point: this._vector.clone(),
-          object: this,
-          face: null,
-          faceIndex: undefined,
-          uv: undefined,
-          batchId: geometryId,
-          objectId: geometryInfo.objectId
-        })
-      }
-      return
-    }
-
-    // Standard raycast via THREE.LineSegments
-    const drawRange =
-      this.geometry.index != null
-        ? {
-            start: geometryInfo.indexStart,
-            count: geometryInfo.indexCount
-          }
-        : {
-            start: geometryInfo.vertexStart,
-            count: geometryInfo.vertexCount
-          }
-    this._setRaycastObjectInfo(
-      this._raycastObject,
-      geometryId,
-      drawRange.start,
-      drawRange.count
-    )
-    this._raycastObject.raycast(raycaster, this._batchIntersects)
-
-    // Fallback: when the precise raycast misses, test against the
-    // bounding box expanded by the Line threshold.
-    if (this._batchIntersects.length === 0) {
-      this.getBoundingBoxAt(geometryId, _box)
-      _box.applyMatrix4(this.matrixWorld)
-      const threshold = raycaster.params.Line.threshold
-      if (threshold > 0) {
-        _box.expandByScalar(threshold)
-      }
-      if (raycaster.ray.intersectBox(_box, _vector2)) {
-        const distance = raycaster.ray.origin.distanceTo(_vector2)
-        ;(
-          intersects as Array<
-            THREE.Intersection & { batchId?: number; objectId?: string }
-          >
-        ).push({
-          distance,
-          point: _vector2.clone(),
-          object: this,
-          face: null,
-          faceIndex: undefined,
-          uv: undefined,
-          batchId: geometryId,
-          objectId: geometryInfo.objectId
-        })
-      }
-      return
-    }
-
-    for (let j = 0, l = this._typedBatchIntersects.length; j < l; j++) {
-      const intersect = this._typedBatchIntersects[j]
-      intersect.object = this
-      intersect.batchId = geometryId
-      intersect.objectId = geometryInfo.objectId
-      intersects.push(intersect)
-    }
-
-    this._batchIntersects.length = 0
   }
 
   /**
