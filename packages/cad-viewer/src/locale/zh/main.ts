@@ -733,7 +733,6 @@ export default {
       total: '打开总计',
       read: 'db.read',
       parse: 'PARSE',
-      font: 'FONT',
       entity: 'ENTITY 刷入',
       convert: '场景转换',
       cacheHits: '缓存命中',

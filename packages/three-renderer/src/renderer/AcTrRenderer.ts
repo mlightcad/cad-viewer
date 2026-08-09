@@ -32,7 +32,7 @@ import {
 } from '../object'
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
-import { AcTrCamera } from '../viewport'
+import { AcTrCamera } from '../viewport/AcTrCamera'
 import {
   AcTrEntityPreview,
   type AcTrEntityPreviewOptions,
@@ -56,8 +56,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   public readonly events: {
     fontNotFound: AcCmEventManager<AcTrFontNotFoundEventArgs>
+    fontLoaded: AcCmEventManager<AcTrFontNotFoundEventArgs>
   } = {
-    fontNotFound: new AcCmEventManager<AcTrFontNotFoundEventArgs>()
+    fontNotFound: new AcCmEventManager<AcTrFontNotFoundEventArgs>(),
+    fontLoaded: new AcCmEventManager<AcTrFontNotFoundEventArgs>()
   }
 
   constructor(renderer: THREE.WebGLRenderer) {
@@ -70,6 +72,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     )
     FontManager.instance.events.fontNotFound.addEventListener(args => {
       this.events.fontNotFound.dispatch(args)
+    })
+    FontManager.instance.events.fontLoaded.addEventListener(args => {
+      this.events.fontLoaded.dispatch(args)
     })
     this._subEntityTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
   }

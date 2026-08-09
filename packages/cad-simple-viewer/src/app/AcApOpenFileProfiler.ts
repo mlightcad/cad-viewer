@@ -9,6 +9,7 @@ import {
 } from '@mlightcad/data-model'
 
 import type { AcTrView2d } from '../view/AcTrView2d'
+import { getLastFontLoadStats } from './AcApFontLoader'
 
 type StageStats = {
   durationMs: number
@@ -24,7 +25,6 @@ export interface AcApOpenFileProfileSnapshot {
   readMs: number
   convertMs: number
   parseMs: number
-  fontMs: number
   entityMs: number
   stages: { name: string; durationMs: number }[]
   cache: {
@@ -62,15 +62,17 @@ export interface AcApOpenFileProfileSnapshot {
 /**
  * Session open-file profiler.
  *
- * Always records PARSE/FONT/ENTITY (and other `openProgress` sub-stages),
+ * Always records PARSE/ENTITY (and other `openProgress` sub-stages),
  * wall-clock read vs scene convert time, and {@link AcDbRenderingCache}
  * hit/miss counters for the last open. Console output remains gated by the
  * {@link AcDbSystemVariables.OPENPROF} system variable.
  *
  * Stage durations use **active-stage wall time**: from the first event of a
- * sub-stage until the first event of a different sub-stage. This matches the
- * UI overlay (e.g. font download that continues after a converter emits
- * `FONT`/`END` prematurely) better than START→END alone.
+ * sub-stage until the first event of a different sub-stage.
+ *
+ * Drawing fonts are loaded on demand during text draw, not during `db.read`.
+ * Explicit {@link AcApFontLoader} loads still contribute via
+ * {@link getLastFontLoadStats} in the console report.
  */
 export class AcApOpenFileProfiler {
   private static _lastSnapshot: AcApOpenFileProfileSnapshot | null = null
@@ -242,7 +244,6 @@ export class AcApOpenFileProfiler {
     const convertMs = Math.max(0, convertEndMs - this._readEndMs)
     const totalMs = Math.max(0, convertEndMs - this._t0)
     const parseMs = this._stages.get('PARSE')?.durationMs ?? 0
-    const fontMs = this._stages.get('FONT')?.durationMs ?? 0
     const entityMs = this._stages.get('ENTITY')?.durationMs ?? 0
     const cache = { ...AcDbRenderingCache.profileStats }
     const tl = cache.topLevel
@@ -270,7 +271,6 @@ export class AcApOpenFileProfiler {
       readMs,
       convertMs,
       parseMs,
-      fontMs,
       entityMs,
       stages,
       cache: {
@@ -303,15 +303,27 @@ export class AcApOpenFileProfiler {
     const lines: string[] = [
       '',
       '========== OPENPROF (open-file profile) ==========',
-      'Note: progress-bar % weights (PARSE~12%, FONT~18%, ENTITY~98%) are not wall-time shares.',
+      'Note: progress-bar % weights (PARSE~12%, ENTITY~98%) are not wall-time shares.',
       'Stage ms = active-stage wall time (first event of stage → first event of next stage).',
       `progressive:          ${progressiveEnabled ? 'on' : 'off'} (mid-open paints=${progressiveStats.paintCount}, yields=${progressiveStats.yieldCount})`,
       `wall clock total:     ${totalMs.toFixed(0)} ms`,
       `  db.read:            ${readMs.toFixed(0)} ms  (${pct(readMs, totalMs)})`,
       `    PARSE:            ${parseMs.toFixed(0)} ms  (${pct(parseMs, readMs)} of read)`,
-      `    FONT:             ${fontMs.toFixed(0)} ms  (${pct(fontMs, readMs)} of read)`,
       `    ENTITY flush:     ${entityMs.toFixed(0)} ms  (${pct(entityMs, readMs)} of read)`,
-      `  scene convert:      ${convertMs.toFixed(0)} ms  (${pct(convertMs, totalMs)})`,
+      `  scene convert:      ${convertMs.toFixed(0)} ms  (${pct(convertMs, totalMs)})`
+    ]
+
+    const fontLoad = getLastFontLoadStats()
+    if (fontLoad) {
+      lines.push(
+        `  explicit font load: critical=${fontLoad.criticalLoadMs.toFixed(0)}ms meta=${fontLoad.metaMs.toFixed(0)}ms` +
+          ` deferredMesh=${fontLoad.deferred ? 'yes' : 'no'}` +
+          ` (critical=[${fontLoad.criticalFonts.join(',')}]` +
+          ` deferred=[${fontLoad.deferredFonts.join(',')}])`
+      )
+    }
+
+    lines.push(
       '',
       '--- AcDbRenderingCache (top-level INSERT draws) ---',
       `hits:   ${tl.hits}, hit path ${tl.hitMs.toFixed(0)} ms (clone ${tl.cloneMs.toFixed(0)} ms)`,
@@ -320,7 +332,7 @@ export class AcApOpenFileProfiler {
       '',
       `--- AcDbRenderingCache (all depths: hits=${cache.hits}, misses=${cache.misses}) ---`,
       `hit ${cache.hitMs.toFixed(0)} ms (clone ${cache.cloneMs.toFixed(0)}), build ${cache.missBuildMs.toFixed(0)}, compact ${cache.missCompactMs.toFixed(0)}, set ${cache.setCloneMs.toFixed(0)}, apply ${cache.applyMs.toFixed(0)}`
-    ]
+    )
 
     if (slowBlocks.length > 0) {
       lines.push('', '--- Slowest block template misses (build+compact) ---')

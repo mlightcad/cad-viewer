@@ -8,8 +8,8 @@ import {
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-import { AcTrRenderer } from '../renderer'
 import { AcTrEntityPreview } from '../renderer/AcTrEntityPreview'
+import { AcTrRenderer } from '../renderer/AcTrRenderer'
 import { AcTrCamera } from './AcTrCamera'
 
 export interface AcTrBaseViewEventArgs {

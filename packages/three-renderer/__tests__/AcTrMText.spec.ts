@@ -216,6 +216,23 @@ describe('AcTrMText', () => {
       true
     )
   })
+
+  it('fastDeepClone keeps AcTrMText so INSERT clones can still asyncDraw', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+    const entity = new AcTrMText(
+      { text: 'Hello', position: { x: 1, y: 2, z: 3 } } as never,
+      { layer: '0', color: 7 } as never,
+      { font: 'simsun' } as never,
+      context
+    )
+    entity.objectId = 'mtext-1'
+
+    const cloned = entity.fastDeepClone()
+
+    expect(cloned).toBeInstanceOf(AcTrMText)
+    expect(cloned.objectId).toBe('mtext-1')
+    expect(cloned.hasDrawableGeometry()).toBe(false)
+  })
 })
 
 function createGeometryHost(): GeometryHost {

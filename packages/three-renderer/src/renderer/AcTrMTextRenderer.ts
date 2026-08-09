@@ -56,6 +56,8 @@ export class AcTrMTextRenderer {
   private _renderMode?: RenderMode
   private _styleManager?: AcTrStyleManager
   private _defaultFonts?: DefaultFontsPreset | string | readonly string[]
+  private _lazyFontLoading?: boolean
+  private _awaitFontsBeforeDraw?: boolean
 
   private constructor() {
     // Do nothing for now
@@ -119,6 +121,25 @@ export class AcTrMTextRenderer {
   ): Promise<void> {
     this._defaultFonts = fonts
     await this.applyDefaultFonts()
+  }
+
+  /**
+   * Mirrors {@link FontManager.lazyFontLoading} onto the main thread and worker pool.
+   */
+  async setLazyFontLoading(enabled: boolean): Promise<void> {
+    this._lazyFontLoading = enabled
+    FontManager.instance.lazyFontLoading = enabled
+    await this.applyLazyFontLoading()
+  }
+
+  /**
+   * When true with lazy loading, {@link asyncRenderMText} / {@link asyncRenderShape}
+   * wait for referenced fonts before building glyph geometry.
+   */
+  async setAwaitFontsBeforeDraw(enabled: boolean): Promise<void> {
+    this._awaitFontsBeforeDraw = enabled
+    FontManager.instance.awaitFontsBeforeDraw = enabled
+    await this.applyAwaitFontsBeforeDraw()
   }
 
   /**
@@ -230,6 +251,8 @@ export class AcTrMTextRenderer {
 
     this.applyFontUrl()
     void this.applyDefaultFonts()
+    void this.applyLazyFontLoading()
+    void this.applyAwaitFontsBeforeDraw()
     if (this._styleManager) {
       const styleManager = new AcTrMTextStyleManager(this._styleManager)
       this._renderer.setStyleManager(styleManager)
@@ -272,6 +295,8 @@ export class AcTrMTextRenderer {
     this._workerUrl = undefined
     this._renderMode = undefined
     this._defaultFonts = undefined
+    this._lazyFontLoading = undefined
+    this._awaitFontsBeforeDraw = undefined
   }
 
   /**
@@ -297,6 +322,18 @@ export class AcTrMTextRenderer {
   private async applyDefaultFonts() {
     if (this._renderer && this._defaultFonts !== undefined) {
       await this._renderer.setDefaultFonts(this._defaultFonts)
+    }
+  }
+
+  private async applyLazyFontLoading() {
+    if (this._renderer && this._lazyFontLoading !== undefined) {
+      await this._renderer.setLazyFontLoading(this._lazyFontLoading)
+    }
+  }
+
+  private async applyAwaitFontsBeforeDraw() {
+    if (this._renderer && this._awaitFontsBeforeDraw !== undefined) {
+      await this._renderer.setAwaitFontsBeforeDraw(this._awaitFontsBeforeDraw)
     }
   }
 }

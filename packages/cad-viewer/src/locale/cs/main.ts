@@ -757,7 +757,6 @@ export default {
       total: 'Celkem',
       read: 'db.read',
       parse: 'PARSE',
-      font: 'FONT',
       entity: 'ENTITY flush',
       convert: 'Převod scény',
       cacheHits: 'Zásahy cache',
