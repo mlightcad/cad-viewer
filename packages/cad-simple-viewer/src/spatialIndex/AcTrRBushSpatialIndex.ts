@@ -26,25 +26,37 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
   }
 
   insert(item: AcEdSpatialQueryResultItem) {
-    const existing = this.idMap.get(item.id)
-    if (existing) {
-      if (
-        existing.minX === item.minX &&
-        existing.minY === item.minY &&
-        existing.maxX === item.maxX &&
-        existing.maxY === item.maxY
-      ) {
-        return
+    const hasId = typeof item.id === 'string' && item.id.length > 0
+    // Empty ids (hatch fill islands) must not share one Map slot — otherwise
+    // later inserts overwrite earlier islands and only the last stays pickable.
+    if (hasId) {
+      const existing = this.idMap.get(item.id)
+      if (existing) {
+        if (
+          existing.minX === item.minX &&
+          existing.minY === item.minY &&
+          existing.maxX === item.maxX &&
+          existing.maxY === item.maxY
+        ) {
+          return
+        }
+        this.remove(existing, (a, b) => a.id === b.id)
+        this.idMap.delete(item.id)
       }
-      this.remove(existing, (a, b) => a.id === b.id)
-      this.idMap.delete(item.id)
     }
     this.tree.insert(item)
-    this.idMap.set(item.id, item)
+    if (hasId) {
+      this.idMap.set(item.id, item)
+    }
   }
 
   load(items: readonly AcEdSpatialQueryResultItem[]) {
     this.tree.load(items)
+    for (const item of items) {
+      if (typeof item.id === 'string' && item.id.length > 0) {
+        this.idMap.set(item.id, item)
+      }
+    }
   }
 
   remove(
@@ -54,11 +66,26 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
       b: AcEdSpatialQueryResultItem
     ) => boolean
   ): void {
-    this.tree.remove(item, equals)
-    this.idMap.delete(item.id)
+    this.tree.remove(
+      item,
+      equals ??
+        ((a, b) =>
+          a === b ||
+          (a.id === b.id &&
+            a.minX === b.minX &&
+            a.minY === b.minY &&
+            a.maxX === b.maxX &&
+            a.maxY === b.maxY))
+    )
+    if (typeof item.id === 'string' && item.id.length > 0) {
+      this.idMap.delete(item.id)
+    }
   }
 
   removeById(id: AcDbObjectId): void {
+    if (!(typeof id === 'string' && id.length > 0)) {
+      return
+    }
     // Set minX, minY, maxX, and maxY to 0 in order to pass build
     this.tree.remove(
       {

@@ -4,7 +4,8 @@ import { AcTrGroup } from '@mlightcad/three-renderer'
 import {
   AcEdSpatialQueryResultItem,
   AcEdSpatialQueryResultItemEx,
-  unionSpatialQueryItems
+  unionSpatialQueryItems,
+  uniquifySpatialItemIds
 } from '../editor/view/AcEdSpatialQueryResult'
 import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert'
 import { AcTrLinearSpatialIndex } from './AcTrLinearSpatialIndex'
@@ -336,7 +337,9 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
     id: AcDbObjectId,
     items: readonly AcEdSpatialQueryResultItem[]
   ) {
-    const finiteItems = items.filter(isFiniteSpatialBBox)
+    const finiteItems = uniquifySpatialItemIds(
+      items.filter(isFiniteSpatialBBox)
+    )
     if (finiteItems.length === 0) {
       return undefined
     }
