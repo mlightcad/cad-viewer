@@ -1,5 +1,6 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d, log } from '@mlightcad/data-model'
 import {
+  AcTrDirectEntityMeta,
   AcTrEntity,
   AcTrEntityPreview,
   AcTrHtmlTransientManager,
@@ -760,6 +761,27 @@ export class AcTrScene {
     }
 
     return this
+  }
+
+  /**
+   * Adds an entity via direct batch append (no temporary drawable tree).
+   *
+   * @returns `true` when geometry was registered in the target layout.
+   */
+  addDirectEntity(
+    meta: AcTrDirectEntityMeta,
+    extendBbox: boolean = true
+  ): boolean {
+    const ownerId = meta.ownerId
+    if (!ownerId) {
+      log.warn('[AcTrSecene] The owner id of one entity cannot be empty!')
+      return false
+    }
+    let layout = this._layouts.get(ownerId)
+    if (!layout) {
+      layout = this.addEmptyLayout(ownerId)
+    }
+    return layout.addDirectEntity(meta, extendBbox)
   }
 
   /**

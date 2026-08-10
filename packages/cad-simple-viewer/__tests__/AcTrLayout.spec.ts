@@ -53,7 +53,7 @@ jest.mock('rbush', () => {
   }
 })
 
-import { AcCmColor } from '@mlightcad/data-model'
+import { AcCmColor, AcGeBox2d } from '@mlightcad/data-model'
 import type { AcTrEntity } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
@@ -72,6 +72,11 @@ const mockRemoveEntity = jest.fn()
 const mockAddEntity = jest.fn()
 let lastCapturedExclude: ReadonlySet<string> | undefined
 
+const mockAppendLineGeometry = jest.fn().mockReturnValue(true)
+const mockAppendLine2Geometry = jest.fn().mockReturnValue(true)
+const mockAppendPointGeometry = jest.fn().mockReturnValue(true)
+const mockAppendMeshGeometry = jest.fn().mockReturnValue(true)
+
 jest.mock('@mlightcad/three-renderer', () => {
   const THREE = require('three')
   return {
@@ -84,6 +89,10 @@ jest.mock('@mlightcad/three-renderer', () => {
       group.getEntityVisible = jest.fn()
       group.clear = jest.fn()
       group.computeBoundingBox = mockComputeBoundingBox
+      group.appendLineGeometry = mockAppendLineGeometry
+      group.appendLine2Geometry = mockAppendLine2Geometry
+      group.appendPointGeometry = mockAppendPointGeometry
+      group.appendMeshGeometry = mockAppendMeshGeometry
       return group
     }),
     AcTrGroup: class AcTrGroup {}
@@ -122,7 +131,50 @@ describe('AcTrLayout bounding box', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockRemoveEntity.mockReturnValue(false)
+    mockAppendLineGeometry.mockReturnValue(true)
+    mockAppendLine2Geometry.mockReturnValue(true)
+    mockAppendPointGeometry.mockReturnValue(true)
+    mockAppendMeshGeometry.mockReturnValue(true)
     lastCapturedExclude = undefined
+  })
+
+  it('registers spatial index for direct line entities', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    const material = new THREE.LineBasicMaterial()
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+
+    const added = layout.addDirectEntity({
+      objectId: 'direct-line-1',
+      ownerId: 'layout-1',
+      layerName: '0',
+      visible: true,
+      kind: 'lineBasic',
+      geometry,
+      material,
+      worldOffset: new THREE.Vector3(5, 0, 0),
+      wcsBbox: new THREE.Box3(
+        new THREE.Vector3(0, -1, 0),
+        new THREE.Vector3(10, 1, 0)
+      )
+    })
+
+    expect(added).toBe(true)
+    expect(mockAppendLineGeometry).toHaveBeenCalled()
+    const query = new AcGeBox2d().set({ x: -1, y: -2 }, { x: 11, y: 2 })
+    const hits = layout.search(query)
+    expect(hits.some(hit => hit.id === 'direct-line-1')).toBe(true)
+
+    mockRemoveEntity.mockReturnValue(true)
+    expect(layout.removeEntity('direct-line-1')).toBe(true)
+    const afterRemove = layout.search(query)
+    expect(afterRemove.some(hit => hit.id === 'direct-line-1')).toBe(false)
+    geometry.dispose()
+    material.dispose()
   })
 
   it('recomputes layout box when a layer is turned off', () => {

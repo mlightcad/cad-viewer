@@ -3,7 +3,14 @@ import {
   AcEdViewHoverEventArgs
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntity, AcDbObjectId } from '@mlightcad/data-model'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, type Ref,ref } from 'vue'
+
+export interface UseHoverResult {
+  hovered: Ref<boolean>
+  entity: Ref<AcDbEntity | null>
+  id: Ref<AcDbObjectId | null>
+  mouse: Ref<{ x: number; y: number }>
+}
 
 /**
  * Composable: useHover
@@ -64,7 +71,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
  * }}
  * Reactive state tracking the current hover context.
  */
-export function useHover() {
+export function useHover(): UseHoverResult {
   /** Whether an entity is currently hovered */
   const hovered = ref(false)
   /** The hovered CAD entity object (null if none) */
@@ -114,7 +121,9 @@ export function useHover() {
 
   return {
     hovered,
-    entity,
+    // Local realdwg-web link can resolve two AcDbEntity identities across packages;
+    // assert to the imported public type so vue-tsc can emit portable declarations.
+    entity: entity as UseHoverResult['entity'],
     id,
     mouse
   }

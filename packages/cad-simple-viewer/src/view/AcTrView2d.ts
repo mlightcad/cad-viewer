@@ -62,6 +62,10 @@ import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
 import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
+import {
+  shouldExtendBboxForDirectEntity,
+  tryBuildDirectEntityMeta
+} from './AcTrDirectBatch'
 import { AcTrEntityDisplayController } from './AcTrEntityDisplayController'
 import {
   assertAcTrGroupWcsBboxesConsistent,
@@ -2373,6 +2377,35 @@ export class AcTrView2d extends AcEdBaseView {
           : this._entityDisplay.shouldConvert(entity)
         if (!shouldConvert) {
           continue
+        }
+
+        // Fast path: entities that declare a single batchable primitive append
+        // directly into batches, skipping temporary drawable allocate → clone → dispose.
+        const directMeta = tryBuildDirectEntityMeta(entity, this._renderer)
+        if (directMeta) {
+          let added = false
+          try {
+            added = this._scene.addDirectEntity(
+              directMeta,
+              shouldExtendBboxForDirectEntity(entity)
+            )
+            if (added) {
+              this.applySessionHiddenObjectState(entity.objectId)
+              if (progressive) {
+                this.markProgressiveDirty()
+                this._progressiveOpenFit.afterGeometryBatch(
+                  () => this.resolveLayoutFitBox(),
+                  i
+                )
+              }
+            }
+          } finally {
+            directMeta.geometry.dispose()
+          }
+          if (added) {
+            continue
+          }
+          // Append refused (e.g. invisible) — fall through to the legacy path.
         }
 
         // Sync-construct the entity shell. Glyph geometry is finished via

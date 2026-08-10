@@ -2,12 +2,14 @@ import { AcDbObjectId, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import {
   AcTrBatchedGroup,
   AcTrBatchedGroupStats,
+  AcTrDirectEntityMeta,
   AcTrEntity,
   AcTrPreviewSubsetOptions,
   AcTrRenderer,
   AcTrStyleManager
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import { AcEdLayerInfo } from '../editor'
 
@@ -335,6 +337,53 @@ export class AcTrLayer {
   addEntity(entity: AcTrEntity, _extendBbox: boolean = true) {
     this._group.addEntity(entity)
     this._boxDirty = true
+  }
+
+  /**
+   * Appends pre-built geometry directly into the layer batch (line / point / mesh).
+   *
+   * @returns `true` when the geometry was registered in the batched group.
+   */
+  addDirectEntity(meta: AcTrDirectEntityMeta): boolean {
+    const options = {
+      objectId: meta.objectId,
+      visible: meta.visible,
+      position: meta.position
+    }
+    let appended = false
+    if (meta.kind === 'lineFat') {
+      appended = this._group.appendLine2Geometry(
+        meta.geometry as LineSegmentsGeometry,
+        meta.material,
+        meta.worldOffset,
+        options
+      )
+    } else if (meta.kind === 'lineBasic') {
+      appended = this._group.appendLineGeometry(
+        meta.geometry as THREE.BufferGeometry,
+        meta.material,
+        meta.worldOffset,
+        options
+      )
+    } else if (meta.kind === 'point') {
+      appended = this._group.appendPointGeometry(
+        meta.geometry as THREE.BufferGeometry,
+        meta.material,
+        meta.worldOffset,
+        options
+      )
+    } else if (meta.kind === 'mesh') {
+      appended = this._group.appendMeshGeometry(
+        meta.geometry as THREE.BufferGeometry,
+        meta.material,
+        meta.worldOffset,
+        options
+      )
+    }
+    if (appended) {
+      this._boxDirty = true
+    }
+    return appended
   }
 
   /**

@@ -1,4 +1,5 @@
 import {
+  AcGePoint3dLike,
   acgiForegroundColorForBackground,
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
@@ -118,6 +119,19 @@ export interface AcTrEntityInBatchedObject {
    * deletion, raycast filtering, and highlight cloning.
    */
   batchId: number
+}
+
+/**
+ * Options for {@link AcTrBatchedGroup.appendLineGeometry},
+ * {@link AcTrBatchedGroup.appendPointGeometry}, and related direct-append APIs.
+ */
+export interface AcTrDirectAppendOptions {
+  /** Database object id used for erase / visibility / highlight lookup. */
+  objectId: string
+  /** Initial slot visibility; defaults to `true`. */
+  visible?: boolean
+  /** Point entities: world position for bbox intersection. */
+  position?: AcGePoint3dLike
 }
 
 export interface AcTrGeometrySize {
@@ -1040,6 +1054,208 @@ export class AcTrBatchedGroup extends THREE.Group {
     if (hasUnbatched) {
       this._unbatchedEntities.set(objectId, unbatchedObjects)
     }
+  }
+
+  /**
+   * Appends pre-built indexed/non-indexed line geometry directly into a line
+   * batch without creating a temporary {@link THREE.LineSegments} / `AcTrLine`.
+   *
+   * Geometry must already be in local coordinates relative to `worldOffset`
+   * (bbox-center rebase). This method mutates the geometry during rebase into
+   * the batch origin; the caller must dispose it afterward.
+   *
+   * @returns `false` when `visible` is false or append fails.
+   */
+  appendLineGeometry(
+    geometry: THREE.BufferGeometry,
+    material: THREE.Material,
+    worldOffset: THREE.Vector3,
+    options: AcTrDirectAppendOptions
+  ): boolean {
+    if (options.visible === false) {
+      return false
+    }
+
+    const hasIndex = geometry.getIndex() !== null
+    const batches = hasIndex
+      ? this._lineWithIndexBatches
+      : this._lineBatches
+    const batchedLine = this.resolveOriginBatch(
+      batches,
+      material.id,
+      worldOffset,
+      () =>
+        new AcTrBatchedLine(
+          AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
+          AcTrBatchedGroup.INITIAL_LINE_INDEX_CAPACITY,
+          material
+        )
+    )
+
+    if (geometry.hasAttribute('lineDistance')) {
+      AcTrBufferGeometryUtil.recomputeLineDistanceForLineSegments(geometry)
+    }
+    const geometryId = batchedLine.addGeometry(geometry, -1, -1, worldOffset)
+    batchedLine.setGeometryInfo(geometryId, { objectId: options.objectId })
+
+    const item: AcTrEntityInBatchedObject = {
+      batchedObjectId: batchedLine.id,
+      batchId: geometryId
+    }
+    // Visible was already gated above; remaining cases are visible.
+    this.registerDirectAppend(options.objectId, item, true)
+    return true
+  }
+
+  /**
+   * Appends pre-built fat-line geometry directly into a `LineSegments2` batch
+   * without creating a temporary {@link LineSegments2} / `AcTrLine`.
+   *
+   * Geometry must already be in local coordinates relative to `worldOffset`.
+   * The caller must dispose the geometry afterward.
+   *
+   * @returns `false` when `visible` is false or append fails.
+   */
+  appendLine2Geometry(
+    geometry: LineSegmentsGeometry,
+    material: THREE.Material,
+    worldOffset: THREE.Vector3,
+    options: AcTrDirectAppendOptions
+  ): boolean {
+    if (options.visible === false) {
+      return false
+    }
+
+    const batchedLine = this.resolveOriginBatch(
+      this._line2Batches,
+      material.id,
+      worldOffset,
+      () =>
+        new AcTrBatchedLine2(
+          AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
+          material
+        )
+    )
+
+    const geometryId = batchedLine.addGeometry(geometry, -1, worldOffset)
+    batchedLine.setGeometryInfo(geometryId, { objectId: options.objectId })
+
+    const item: AcTrEntityInBatchedObject = {
+      batchedObjectId: batchedLine.id,
+      batchId: geometryId
+    }
+    // Visible was already gated above; remaining cases are visible.
+    this.registerDirectAppend(options.objectId, item, true)
+    return true
+  }
+
+  /**
+   * Appends pre-built point geometry directly into a point batch without
+   * creating a temporary {@link THREE.Points} / {@link AcTrPoint}.
+   *
+   * Geometry must already be in local coordinates relative to `worldOffset`.
+   * The caller must dispose the geometry afterward.
+   */
+  appendPointGeometry(
+    geometry: THREE.BufferGeometry,
+    material: THREE.Material,
+    worldOffset: THREE.Vector3,
+    options: AcTrDirectAppendOptions
+  ): boolean {
+    if (options.visible === false) {
+      return false
+    }
+
+    const batchedPoint = this.resolveOriginBatch(
+      this._pointBatches,
+      material.id,
+      worldOffset,
+      () =>
+        new AcTrBatchedPoint(
+          AcTrBatchedGroup.INITIAL_POINT_VERTEX_CAPACITY,
+          material
+        )
+    )
+
+    const geometryId = batchedPoint.addGeometry(geometry, -1, worldOffset)
+    batchedPoint.setGeometryInfo(geometryId, {
+      objectId: options.objectId,
+      bboxIntersectionCheck: true,
+      position: options.position
+    })
+
+    const item: AcTrEntityInBatchedObject = {
+      batchedObjectId: batchedPoint.id,
+      batchId: geometryId
+    }
+    this.registerDirectAppend(options.objectId, item, true)
+    return true
+  }
+
+  /**
+   * Appends pre-built mesh geometry directly into a mesh batch without
+   * creating a temporary {@link THREE.Mesh} / {@link AcTrPolygon}.
+   *
+   * Geometry must already be in local coordinates relative to `worldOffset`.
+   * The caller must dispose the geometry afterward.
+   */
+  appendMeshGeometry(
+    geometry: THREE.BufferGeometry,
+    material: THREE.Material,
+    worldOffset: THREE.Vector3,
+    options: AcTrDirectAppendOptions
+  ): boolean {
+    if (options.visible === false) {
+      return false
+    }
+
+    const hasIndex = geometry.getIndex() !== null
+    const batches = hasIndex
+      ? this._meshWithIndexBatches
+      : this._meshBatches
+    const batchedMesh = this.resolveOriginBatch(
+      batches,
+      material.id,
+      worldOffset,
+      () => {
+        const metadata = getMaterialMetadata(material)
+        const drawOrder = metadata.drawOrder ?? 0
+        const batch = new AcTrBatchedMesh(
+          AcTrBatchedGroup.INITIAL_MESH_VERTEX_CAPACITY,
+          AcTrBatchedGroup.INITIAL_MESH_INDEX_CAPACITY,
+          material
+        )
+        batch.renderOrder = drawOrder
+        return batch
+      }
+    )
+
+    const geometryId = batchedMesh.addGeometry(geometry, -1, -1, worldOffset)
+    batchedMesh.setGeometryInfo(geometryId, { objectId: options.objectId })
+
+    const item: AcTrEntityInBatchedObject = {
+      batchedObjectId: batchedMesh.id,
+      batchId: geometryId
+    }
+    this.registerDirectAppend(options.objectId, item, true)
+    return true
+  }
+
+  /**
+   * Records a direct-append slot in `_entitiesMap` and applies visibility.
+   */
+  private registerDirectAppend(
+    objectId: string,
+    item: AcTrEntityInBatchedObject,
+    visible: boolean
+  ) {
+    let entityInfo = this._entitiesMap.get(objectId)
+    if (!entityInfo) {
+      entityInfo = []
+      this._entitiesMap.set(objectId, entityInfo)
+    }
+    entityInfo.push(item)
+    this.applyBatchSlotVisibility(item, visible)
   }
 
   /**
