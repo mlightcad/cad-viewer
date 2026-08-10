@@ -43,7 +43,11 @@ export function tryBuildDirectEntityMeta(
     }
 
     const built = buildFromCapture(payload, renderer)
-    if (!built || built.wcsBbox.isEmpty()) {
+    if (!built) {
+      return null
+    }
+    if (built.wcsBbox.isEmpty()) {
+      built.geometry.dispose()
       return null
     }
 
