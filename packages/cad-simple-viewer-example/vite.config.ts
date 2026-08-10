@@ -24,8 +24,20 @@ function assertViewerRuntimeExists(): void {
 export default defineConfig(() => {
   assertViewerRuntimeExists()
 
+  const realdwgRoot = resolve(__dirname, '../../../realdwg-web')
+
   return {
     base: './',
+    server: {
+      // Local pnpm overrides point at sibling realdwg-web packages.
+      fs: {
+        allow: [resolve(__dirname, '../..'), realdwgRoot]
+      },
+      watch: {
+        // Avoid HMR reloads when realdwg-web rebuilds mid OPENPROF run.
+        ignored: ['**/realdwg-web/**']
+      }
+    },
     build: {
       modulePreload: false,
       minify: true,

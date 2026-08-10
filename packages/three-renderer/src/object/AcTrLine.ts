@@ -9,6 +9,7 @@ import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util'
 import { AcTrEntity } from './AcTrEntity'
+import { buildLineGeometry } from './AcTrLineGeometryBuilder'
 
 export class AcTrLine extends AcTrEntity {
   public geometry: THREE.BufferGeometry | LineSegmentsGeometry
@@ -30,68 +31,32 @@ export class AcTrLine extends AcTrEntity {
       traits,
       basicMaterialOnly
     )
-    const maxVertexCount = points.length
-    const localOrigin = this.computeLocalOrigin(points)
+    const built = buildLineGeometry(points, material)
+    if (!built) {
+      this.geometry = new THREE.BufferGeometry()
+      return
+    }
 
-    if (material instanceof LineMaterial) {
-      const segmentPositions = new Float32Array((maxVertexCount - 1) * 6)
-      for (let i = 0, pos = 0; i < maxVertexCount - 1; i++) {
-        const p1 = points[i]
-        const p2 = points[i + 1]
-        segmentPositions[pos++] = p1.x - localOrigin.x
-        segmentPositions[pos++] = p1.y - localOrigin.y
-        segmentPositions[pos++] = (p1.z ?? 0) - localOrigin.z
-        segmentPositions[pos++] = p2.x - localOrigin.x
-        segmentPositions[pos++] = p2.y - localOrigin.y
-        segmentPositions[pos++] = (p2.z ?? 0) - localOrigin.z
-      }
+    this.geometry = built.geometry
+    this.wcsBbox = built.wcsBbox
 
-      const lineGeometry = new LineSegmentsGeometry()
-      lineGeometry.setPositions(segmentPositions)
-      AcTrBufferGeometryUtil.safeComputeBoundingBox(
-        lineGeometry as unknown as THREE.BufferGeometry
+    if (built.kind === 'fat') {
+      const line = new LineSegments2(
+        built.geometry as LineSegmentsGeometry,
+        material as LineMaterial
       )
-      AcTrBufferGeometryUtil.safeComputeBoundingSphere(
-        lineGeometry as unknown as THREE.BufferGeometry
-      )
-      this.geometry = lineGeometry
-      this.setBoundingBox(
-        lineGeometry as unknown as THREE.BufferGeometry,
-        localOrigin
-      )
-
-      const line = new LineSegments2(lineGeometry, material)
-      line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
+      line.position.copy(built.worldOffset)
       getSceneDrawableUserData(line).styleMaterialId = material.id
       this.add(line)
       this.finalizeLeafDrawables()
       return
     }
 
-    const vertices = new Float32Array(maxVertexCount * 3)
-    const indices =
-      maxVertexCount * 2 > 65535
-        ? new Uint32Array(maxVertexCount * 2)
-        : new Uint16Array(maxVertexCount * 2)
-
-    for (let i = 0, pos = 0; i < maxVertexCount; i++) {
-      const point = points[i]
-      vertices[pos++] = point.x - localOrigin.x
-      vertices[pos++] = point.y - localOrigin.y
-      vertices[pos++] = (point.z ?? 0) - localOrigin.z
-    }
-    for (let i = 0, pos = 0; i < maxVertexCount - 1; i++) {
-      indices[pos++] = i
-      indices[pos++] = i + 1
-    }
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
-    geometry.setIndex(new THREE.BufferAttribute(indices, 1))
-    this.setBoundingBox(geometry, localOrigin)
-
-    this.geometry = geometry
-    const line = new THREE.LineSegments(geometry, material)
-    line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
+    const line = new THREE.LineSegments(
+      built.geometry as THREE.BufferGeometry,
+      material
+    )
+    line.position.copy(built.worldOffset)
     AcTrBufferGeometryUtil.computeLineDistances(line)
     this.add(line)
     this.finalizeLeafDrawables()
@@ -102,28 +67,4 @@ export class AcTrLine extends AcTrEntity {
       anchor: resolveAnchorFromBox(this.wcsBbox)
     })
   }
-
-  private setBoundingBox(
-    geometry: THREE.BufferGeometry,
-    localOrigin: THREE.Vector3
-  ) {
-    const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
-    if (!boundingBox) {
-      return
-    }
-    const worldBox = boundingBox.clone()
-    worldBox.translate(localOrigin)
-    this.wcsBbox = worldBox
-  }
-
-  private computeLocalOrigin(points: AcGePoint3dLike[]) {
-    const box = new THREE.Box3()
-    for (let i = 0; i < points.length; i++) {
-      const p = points[i]
-      box.expandByPoint(_point1.set(p.x, p.y, p.z ?? 0))
-    }
-    return box.getCenter(new THREE.Vector3())
-  }
 }
-
-const _point1 = /*@__PURE__*/ new THREE.Vector3()

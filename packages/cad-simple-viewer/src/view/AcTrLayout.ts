@@ -1,5 +1,6 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
 import {
+  AcTrDirectEntityMeta,
   AcTrEntity,
   AcTrEntityPreview,
   AcTrGroup,
@@ -381,6 +382,42 @@ export class AcTrLayout {
     this.registerEntitySpatialIndex(entity)
 
     return this
+  }
+
+  /**
+   * Adds an entity via direct batch append (no temporary drawable tree).
+   *
+   * @returns `true` when geometry and spatial index were registered.
+   */
+  addDirectEntity(
+    meta: AcTrDirectEntityMeta,
+    extendBbox: boolean = true
+  ): boolean {
+    if (!meta.objectId) {
+      throw new Error('Object id is required to add one entity!')
+    }
+    if (!meta.layerName) {
+      throw new Error('Layer name is required to add one entity!')
+    }
+
+    const layer = this._layers.get(meta.layerName)
+    if (!layer) {
+      throw new Error(`layer '${meta.layerName}' doesn't exist!`)
+    }
+
+    const appended = layer.addDirectEntity(meta)
+    if (!appended) {
+      return false
+    }
+
+    if (!extendBbox) {
+      this._extentExcludedObjectIds.add(meta.objectId)
+    } else {
+      this._extentExcludedObjectIds.delete(meta.objectId)
+    }
+    this.invalidateBox()
+    this.registerSpatialIndexBox(meta.objectId, meta.wcsBbox)
+    return true
   }
 
   /**
@@ -965,5 +1002,18 @@ export class AcTrLayout {
       // If it is one block group, build spatial index for entities in this block.
       this._spatialIndex.createChildIndex(entity)
     }
+  }
+
+  /**
+   * Registers a simple axis-aligned WCS box in the spatial index by object id.
+   */
+  private registerSpatialIndexBox(objectId: AcDbObjectId, wcsBbox: THREE.Box3) {
+    this._spatialIndex.insert({
+      minX: wcsBbox.min.x,
+      minY: wcsBbox.min.y,
+      maxX: wcsBbox.max.x,
+      maxY: wcsBbox.max.y,
+      id: objectId
+    })
   }
 }

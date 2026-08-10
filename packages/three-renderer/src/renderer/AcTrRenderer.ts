@@ -49,10 +49,80 @@ export interface AcTrFontNotFoundEventArgs {
   count?: number
 }
 
+/**
+ * Lifecycle state for the direct-batch draw-call capture session.
+ *
+ * - `'off'`: capture is inactive; draw methods build full entity geometry.
+ * - `'capturing'`: waiting for the first matching primitive draw call.
+ * - `'captured'`: exactly one compatible draw call was recorded.
+ * - `'missed'`: a second call, an incompatible call, or an empty primitive
+ *   aborted the session (caller should fall back to the legacy path).
+ *
+ * @see {@link AcTrRenderer.beginDirectCapture}
+ * @see {@link AcTrRenderer.takeDirectCapture}
+ */
+export type AcTrDirectCaptureState = 'off' | 'capturing' | 'captured' | 'missed'
+
+/**
+ * Primitive payload captured from a single `worldDraw` draw call for the
+ * direct-batch fast path (skip temporary drawable allocate → clone → dispose).
+ *
+ * Discriminated by `kind`:
+ * - `'lineStrip'`: connected polyline vertices from {@link AcTrRenderer.lines}
+ *   (and other paths that funnel through private `linePoints`).
+ * - `'point'`: a single point plus its display style.
+ * - `'area'`: a filled/hatched 2-D area.
+ * - `'lineSegments'`: raw interleaved segment buffer (positions + indices).
+ */
+export type AcTrDirectCapturePayload =
+  | {
+      /** Connected polyline captured from a line-strip draw. */
+      kind: 'lineStrip'
+      /** World-space vertices along the strip (at least two when captured). */
+      points: AcGePoint3dLike[]
+    }
+  | {
+      /** Single point primitive captured from {@link AcTrRenderer.point}. */
+      kind: 'point'
+      /** World-space point location. */
+      point: AcGePoint3d
+      /** Point display style (size, shape, etc.). */
+      style: AcGiPointStyle
+    }
+  | {
+      /** Filled/hatched area captured from {@link AcTrRenderer.area}. */
+      kind: 'area'
+      /** Area geometry in drawing coordinates. */
+      area: AcGeArea2d
+    }
+  | {
+      /** Indexed line segments captured from {@link AcTrRenderer.lineSegments}. */
+      kind: 'lineSegments'
+      /** Interleaved position (or other) attribute data. */
+      array: Float32Array
+      /** Components per vertex in `array`. */
+      itemSize: number
+      /** Index buffer pairing vertices into segments. */
+      indices: Uint16Array
+    }
+
 export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   private _context: AcTrRenderContext
   private _renderer: THREE.WebGLRenderer
   private _subEntityTraits: AcGiSubEntityTraits
+  /**
+   * Current direct-batch capture session state.
+   *
+   * When not `'off'`, the first matching draw call stores a payload instead of
+   * building full entity geometry. A second draw call or incompatible call
+   * marks the capture `'missed'`.
+   */
+  private _directCapture: AcTrDirectCaptureState = 'off'
+  /**
+   * Payload stored while `_directCapture` is `'captured'`; cleared on miss,
+   * cancel, or {@link takeDirectCapture}.
+   */
+  private _capturedDirectPayload: AcTrDirectCapturePayload | null = null
 
   public readonly events: {
     fontNotFound: AcCmEventManager<AcTrFontNotFoundEventArgs>
@@ -77,6 +147,86 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
       this.events.fontLoaded.dispatch(args)
     })
     this._subEntityTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+  }
+
+  /**
+   * Starts capturing the next direct-batch draw call from
+   * `AcDbEntity.worldDraw` without building full entity geometry.
+   *
+   * Resets any previous payload and sets the session to `'capturing'`.
+   * Call {@link takeDirectCapture} or {@link cancelDirectCapture} to end it.
+   */
+  beginDirectCapture() {
+    this._directCapture = 'capturing'
+    this._capturedDirectPayload = null
+  }
+
+  /**
+   * Ends the capture session and returns the stored payload when the draw path
+   * was a single matching call (`'captured'`).
+   *
+   * Always clears the session back to `'off'`, including on miss.
+   *
+   * @returns The captured primitive payload, or `null` when capture missed or
+   *   was never started successfully.
+   */
+  takeDirectCapture(): AcTrDirectCapturePayload | null {
+    const payload =
+      this._directCapture === 'captured' ? this._capturedDirectPayload : null
+    this._directCapture = 'off'
+    this._capturedDirectPayload = null
+    return payload
+  }
+
+  /**
+   * Aborts an in-flight direct capture without returning a payload.
+   *
+   * Clears both the session state and any stored payload. Prefer this when the
+   * caller abandons the fast path before `worldDraw` finishes.
+   */
+  cancelDirectCapture() {
+    this._directCapture = 'off'
+    this._capturedDirectPayload = null
+  }
+
+  /**
+   * Marks the current capture session as `'missed'` and drops any stored
+   * payload.
+   *
+   * No-op when capture is already `'off'`. Used when a second draw call,
+   * unsupported primitive, or empty geometry makes the entity ineligible for
+   * direct batching.
+   */
+  private missDirectCapture() {
+    if (this._directCapture !== 'off') {
+      this._directCapture = 'missed'
+      this._capturedDirectPayload = null
+    }
+  }
+
+  /**
+   * Attempts to store `payload` as the sole captured primitive for this
+   * session.
+   *
+   * Succeeds only while the session is `'capturing'` and no payload has been
+   * stored yet. Otherwise marks the session as missed via
+   * {@link missDirectCapture}.
+   *
+   * @param payload - Primitive data from the matching draw method.
+   * @returns `true` when the payload was stored and the state became
+   *   `'captured'`; `false` when the capture was marked missed.
+   */
+  private tryCaptureDirectPayload(payload: AcTrDirectCapturePayload) {
+    if (
+      this._directCapture !== 'capturing' ||
+      this._capturedDirectPayload != null
+    ) {
+      this.missDirectCapture()
+      return false
+    }
+    this._capturedDirectPayload = payload
+    this._directCapture = 'captured'
+    return true
   }
 
   /**
@@ -322,6 +472,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   group(entities: AcTrEntity[]) {
+    if (this._directCapture !== 'off') {
+      this.missDirectCapture()
+      return this.createEntity() as AcTrGroup
+    }
     return new AcTrGroup(entities, this._context)
   }
 
@@ -329,13 +483,13 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   point(point: AcGePoint3d, style: AcGiPointStyle) {
-    const geometry = new AcTrPoint(
-      point,
-      this._subEntityTraits,
-      style,
-      this._context
-    )
-    return geometry
+    if (this._directCapture !== 'off') {
+      if (this.tryCaptureDirectPayload({ kind: 'point', point, style })) {
+        return this.createEntity() as AcTrPoint
+      }
+      return this.createEntity() as AcTrPoint
+    }
+    return new AcTrPoint(point, this._subEntityTraits, style, this._context)
   }
 
   /**
@@ -363,6 +517,19 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   lineSegments(array: Float32Array, itemSize: number, indices: Uint16Array) {
+    if (this._directCapture !== 'off') {
+      if (
+        this.tryCaptureDirectPayload({
+          kind: 'lineSegments',
+          array,
+          itemSize,
+          indices
+        })
+      ) {
+        return this.createEntity() as AcTrLineSegments
+      }
+      return this.createEntity() as AcTrLineSegments
+    }
     return new AcTrLineSegments(
       array,
       itemSize,
@@ -376,6 +543,12 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   area(area: AcGeArea2d) {
+    if (this._directCapture !== 'off') {
+      if (this.tryCaptureDirectPayload({ kind: 'area', area })) {
+        return this.createEntity() as AcTrPolygon
+      }
+      return this.createEntity() as AcTrPolygon
+    }
     return new AcTrPolygon(area, this._subEntityTraits, this._context)
   }
 
@@ -383,6 +556,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   mtext(mtext: AcGiMTextData, style: AcGiTextStyle, delay?: boolean) {
+    if (this._directCapture !== 'off') {
+      this.missDirectCapture()
+      return this.createEntity() as AcTrMText
+    }
     return new AcTrMText(
       mtext,
       this._subEntityTraits,
@@ -396,6 +573,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   shape(shape: AcGiShapeData, style?: AcGiTextStyle, delay?: boolean) {
+    if (this._directCapture !== 'off') {
+      this.missDirectCapture()
+      return this.createEntity() as AcTrShape
+    }
     return new AcTrShape(
       shape,
       this._subEntityTraits,
@@ -409,6 +590,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   image(blob: Blob, style: AcGiImageStyle) {
+    if (this._directCapture !== 'off') {
+      this.missDirectCapture()
+      return this.createEntity() as AcTrImage
+    }
     return new AcTrImage(blob, style, this._context)
   }
 
@@ -449,6 +634,18 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   private linePoints(points: AcGePoint3dLike[]) {
+    if (this._directCapture !== 'off') {
+      if (points.length < 2) {
+        this.missDirectCapture()
+        return this.createEntity()
+      }
+      if (this.tryCaptureDirectPayload({ kind: 'lineStrip', points })) {
+        // Placeholder so worldDraw can attach objectId / layer metadata.
+        return this.createEntity()
+      }
+      return this.createEntity()
+    }
+
     if (points.length < 2) {
       return this.createEntity()
     }
