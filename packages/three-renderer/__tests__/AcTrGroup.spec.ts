@@ -7,6 +7,7 @@ import { AcTrGroup } from '../src/object/AcTrGroup'
 import { AcTrLine } from '../src/object/AcTrLine'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
 import { AcTrSubEntityTraitsUtil } from '../src/util'
+import { getSceneDrawableUserData } from '../src/util/AcTrObjectUserData'
 
 const defaultTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
 
@@ -474,6 +475,87 @@ describe('AcTrGroup dispose', () => {
     expect(cloned.isCompacted).toBe(true)
     expect(cloned.getSourceEntities()).toHaveLength(0)
     expect(cloned.wcsChildBoxes).toEqual(group.wcsChildBoxes)
+  })
+
+  it('shares leaf geometry buffers across fastDeepClone instances', () => {
+    const context = new AcTrRenderContext()
+    const lineA = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const lineB = createLine('line-b', { x: 0, y: 5 }, { x: 10, y: 5 }, context)
+    const group = new AcTrGroup([lineA, lineB], context)
+    group.compactForInstancing()
+
+    const cloned = group.fastDeepClone() as AcTrGroup
+    expect(cloned.children.length).toBe(group.children.length)
+    for (let i = 0; i < group.children.length; i++) {
+      const source = group.children[i] as THREE.Mesh
+      const instance = cloned.children[i] as THREE.Mesh
+      expect(instance).not.toBe(source)
+      expect(instance.geometry).toBe(source.geometry)
+      expect(getSceneDrawableUserData(instance).sharesTemplateGeometry).toBe(
+        true
+      )
+    }
+
+    AcTrEntity.disposeObject(cloned, false)
+    for (const child of group.children) {
+      const mesh = child as THREE.Mesh
+      const geometry = mesh.geometry
+      expect(geometry).toBeTruthy()
+      expect(() => geometry.getAttribute('position')).not.toThrow()
+      // Style-cache materials are shared with the template; dispose must not
+      // release them either.
+      expect(mesh.material).toBeTruthy()
+    }
+  })
+
+  it('prepareCacheTemplate does not drop source shells or merge leaves', () => {
+    const context = new AcTrRenderContext()
+    const lineA = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const lineB = createLine('line-b', { x: 0, y: 5 }, { x: 10, y: 5 }, context)
+    const group = new AcTrGroup([lineA, lineB], context)
+    const beforeChildren = group.children.length
+    const beforeSources = group.getSourceEntities().length
+
+    group.prepareCacheTemplate()
+    expect(group.isCompacted).toBe(false)
+    // Releasing shells here regresses scene convert; compact still drops them.
+    expect(group.getSourceEntities()).toHaveLength(beforeSources)
+    expect(group.children.length).toBe(beforeChildren)
+  })
+
+  it('does not share geometry until compactForInstancing (lazy-compact safe)', () => {
+    const context = new AcTrRenderContext()
+    const lineA = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const lineB = createLine('line-b', { x: 0, y: 5 }, { x: 10, y: 5 }, context)
+    const group = new AcTrGroup([lineA, lineB], context)
+    group.prepareCacheTemplate()
+
+    const first = group.fastDeepClone() as AcTrGroup
+    expect(first.children.length).toBe(group.children.length)
+    for (let i = 0; i < group.children.length; i++) {
+      const source = group.children[i] as THREE.Mesh
+      const instance = first.children[i] as THREE.Mesh
+      expect(instance.geometry).not.toBe(source.geometry)
+      expect(getSceneDrawableUserData(instance).sharesTemplateGeometry).toBeFalsy()
+    }
+
+    // Simulate cache-hit lazy compact: dispose template leaves after an
+    // earlier INSERT already cloned. Deep-cloned first instance must survive.
+    group.compactForInstancing()
+    for (const child of first.children) {
+      const geometry = (child as THREE.Mesh).geometry
+      expect(() => geometry.getAttribute('position')).not.toThrow()
+    }
+
+    const second = group.fastDeepClone() as AcTrGroup
+    for (let i = 0; i < group.children.length; i++) {
+      const source = group.children[i] as THREE.Mesh
+      const instance = second.children[i] as THREE.Mesh
+      expect(instance.geometry).toBe(source.geometry)
+      expect(getSceneDrawableUserData(instance).sharesTemplateGeometry).toBe(
+        true
+      )
+    }
   })
 
   it('lazily materializes wcsChildBoxes with INSERT transform on clone', () => {

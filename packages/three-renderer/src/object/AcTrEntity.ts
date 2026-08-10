@@ -251,22 +251,28 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
     // Step 1: Remove the object from the parent if it exists
     if (isRemoveFromParent) object.removeFromParent()
 
-    // Step 2: Dispose of geometry if it exists
+    // Step 2: Dispose of geometry if it exists. Skip buffers borrowed from an
+    // immutable block-template cache entry — batching already cloned what it
+    // needed, and disposing here would corrupt later INSERT hits.
+    const sharesTemplateGeometry =
+      getSceneDrawableUserData(object).sharesTemplateGeometry === true
     if (
       object instanceof THREE.Mesh ||
       object instanceof THREE.Line ||
       object instanceof THREE.Points
     ) {
-      if (object.geometry) {
+      if (object.geometry && !sharesTemplateGeometry) {
         object.geometry.dispose()
       }
     }
 
-    // Step 3: Dispose of material(s)
+    // Step 3: Dispose of material(s). Template-instance leaves also reuse style
+    // cache materials with the template; disposing them would break later hits.
     if (
-      object instanceof THREE.Mesh ||
-      object instanceof THREE.Line ||
-      object instanceof THREE.Points
+      !sharesTemplateGeometry &&
+      (object instanceof THREE.Mesh ||
+        object instanceof THREE.Line ||
+        object instanceof THREE.Points)
     ) {
       const materials = Array.isArray(object.material)
         ? object.material
@@ -433,11 +439,14 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
 
   /**
    * @inheritdoc
+   *
+   * @param shareGeometry - When true, leaf drawables alias source buffers
+   *   (see {@link copyGeometry}). Block-template clones pass true.
    */
-  fastDeepClone() {
+  fastDeepClone(shareGeometry: boolean = false) {
     const cloned = new AcTrEntity(this.renderContext)
     cloned.copy(this, false)
-    this.copyGeometry(this, cloned)
+    this.copyGeometry(this, cloned, shareGeometry)
     return cloned
   }
 
@@ -456,21 +465,35 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * Clone geometries in the source's direct children and copy them to the target
    * @param source Input the source entity
    * @param target Input the target entity
+   * @param shareGeometry When true, leaf drawables alias the source
+   *   {@link THREE.BufferGeometry} instead of deep-cloning buffers. Used for
+   *   immutable block-template instances; callers must not mutate shared
+   *   buffers in place (batching already clones before rebase).
    */
-  protected copyGeometry(source: AcTrEntity, target: AcTrEntity) {
+  protected copyGeometry(
+    source: AcTrEntity,
+    target: AcTrEntity,
+    shareGeometry: boolean = false
+  ) {
     for (let i = 0; i < source.children.length; i++) {
       const child = source.children[i]
 
       if (child instanceof AcTrEntity) {
-        target.add(child.fastDeepClone())
+        // Propagate shareGeometry so nested MTEXT/SHAPE/group leaves also
+        // alias template buffers instead of deep-cloning mid-tree.
+        target.add(child.fastDeepClone(shareGeometry))
         continue
       }
 
       const clonedChild = child.clone(false)
       if ('geometry' in clonedChild) {
-        clonedChild.geometry = (
-          clonedChild.geometry as THREE.BufferGeometry
-        ).clone()
+        if (shareGeometry) {
+          getSceneDrawableUserData(clonedChild).sharesTemplateGeometry = true
+        } else {
+          clonedChild.geometry = (
+            clonedChild.geometry as THREE.BufferGeometry
+          ).clone()
+        }
       }
       target.add(clonedChild)
     }

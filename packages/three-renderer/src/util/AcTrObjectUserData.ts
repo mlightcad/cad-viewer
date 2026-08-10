@@ -95,13 +95,27 @@ export type AcTrBakedWorldMatrixUserData = {
 }
 
 /**
+ * Marks drawable leaves whose {@link THREE.BufferGeometry} is borrowed from an
+ * immutable block-template cache entry. Instance dispose must not release it.
+ */
+export type AcTrSharedTemplateGeometryUserData = {
+  /**
+   * When `true`, this leaf aliases geometry owned by an
+   * {@link AcDbRenderingCache} template (or another shared source).
+   * {@link AcTrEntity.disposeObject} skips `geometry.dispose()` for the leaf.
+   */
+  sharesTemplateGeometry?: boolean
+}
+
+/**
  * Leaf line/mesh/point objects produced by entity conversion, prior to batching.
  */
 export type AcTrSceneDrawableUserData = AcTrPickableObjectUserData &
   AcTrStyledDrawableUserData &
   AcTrRteObjectUserData &
   AcTrNoBatchUserData &
-  AcTrBakedWorldMatrixUserData
+  AcTrBakedWorldMatrixUserData &
+  AcTrSharedTemplateGeometryUserData
 
 export interface AcTrHighlightUserData {
   objectId?: string

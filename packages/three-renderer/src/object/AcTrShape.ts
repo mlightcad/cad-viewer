@@ -102,7 +102,7 @@ export class AcTrShape extends AcTrGlyphEntity {
    * {@link AcTrEntity.fastDeepClone} would otherwise create a plain
    * {@link AcTrEntity} shell that can no longer {@link asyncDraw} glyphs.
    */
-  override fastDeepClone() {
+  override fastDeepClone(shareGeometry: boolean = false) {
     const cloned = new AcTrShape(
       {
         ...this._shape,
@@ -113,7 +113,7 @@ export class AcTrShape extends AcTrGlyphEntity {
       this.renderContext
     )
     cloned.copyGlyphIdentity(this)
-    this.copyGeometry(this, cloned)
+    this.copyGeometry(this, cloned, shareGeometry)
     return cloned
   }
 }
