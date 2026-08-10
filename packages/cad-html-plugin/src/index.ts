@@ -61,6 +61,13 @@ export {
   resolveAcApHtmlExportOptions
 } from './AcApHtmlExportOptions'
 export {
+  type AcApHtmlPluginOptions,
+  configureHtmlPlugin,
+  DEFAULT_HTML_VIEWER_RUNTIME_URL,
+  getHtmlPluginOptions,
+  resolveViewerRuntimeUrl
+} from './AcApHtmlPluginOptions'
+export {
   AcApHtmlSnapshotBuilder,
   type AcApHtmlSnapshotBuilderOptions
 } from './AcApHtmlSnapshotBuilder'

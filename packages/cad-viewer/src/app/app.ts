@@ -11,13 +11,33 @@ import {
   registerCmds,
   registerDialogs,
   registerLazyPlugins,
-  registerMTextColorPicker
-} from './register'
+  type RegisterLazyPluginsOptions,
+  registerMTextColorPicker} from './register'
 
-export const initializeCadViewer = (options: AcApDocManagerOptions = {}) => {
-  AcApDocManager.createInstance(options)
+/** Options for {@link initializeCadViewer}. */
+export type InitializeCadViewerOptions = AcApDocManagerOptions & {
+  /**
+   * URL of `viewer-runtime.iife.js` for HTML export (`chtml`).
+   * Forwarded to `@mlightcad/cad-html-plugin` — not required to open DXF/DWG.
+   * @default './assets/viewer-runtime.iife.js'
+   */
+  htmlViewerRuntimeUrl?: string | URL
+}
+
+export const initializeCadViewer = (
+  options: InitializeCadViewerOptions = {}
+) => {
+  const { htmlViewerRuntimeUrl, ...docOptions } = options
+  AcApDocManager.createInstance(docOptions)
   registerCmds()
   registerDialogs()
   registerMTextColorPicker()
-  registerLazyPlugins()
+
+  const lazyPluginOptions: RegisterLazyPluginsOptions = {
+    htmlPlugin: {
+      viewerRuntimeUrl:
+        htmlViewerRuntimeUrl ?? './assets/viewer-runtime.iife.js'
+    }
+  }
+  registerLazyPlugins(lazyPluginOptions)
 }

@@ -94,7 +94,7 @@ Integration patterns useful when building your own host app (not a full CAD UI l
 | System variables | `AcDbSysVarManager` + `sendStringToExecute` (e.g. `PICKBOX`) |
 | Plugins | Lazy registration via `@mlightcad/*/register` in `src/register.ts` (only needed plugins) |
 | Command aliases | Demo overrides (`LINE` → `LX`, etc.) via `commandAliases` |
-| Workers & assets | `webworkerFileUrls`, `htmlViewerRuntimeUrl`, static copy in Vite |
+| Workers & assets | `webworkerFileUrls`, static copy in Vite; HTML runtime via plugin options |
 
 Lazy initialization: `AcApDocManager` is created on first file open, not at page load.
 

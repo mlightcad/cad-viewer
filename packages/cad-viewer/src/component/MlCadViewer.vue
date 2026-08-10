@@ -152,8 +152,9 @@ interface Props {
   baseUrl?: string
   /**
    * URL of the offline HTML viewer runtime (`viewer-runtime.iife.js`).
-   * Required for File menu “Export to HTML”; copy the file from
-   * `@mlightcad/cad-html-plugin` build output into your app assets.
+   * Used only for File menu “Export to HTML”. Copy the file from
+   * `@mlightcad/cad-html-plugin` into your app assets when you need HTML export.
+   * Not required to open or view DXF/DWG.
    */
   htmlViewerRuntimeUrl?: string | URL
   /**

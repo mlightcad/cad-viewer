@@ -6,6 +6,7 @@ import {
 
 import packageJson from '../package.json'
 import { AcApExportHtmlCmd } from './AcApExportHtmlCmd'
+import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions'
 
 /**
  * HTML export plugin for cad-simple-viewer.
@@ -25,6 +26,11 @@ export class AcApHtmlPlugin implements AcApPlugin {
   private registeredCommands: Array<{ group: string; name: string }> = []
 
   /**
+   * @param options - HTML export options (e.g. where to fetch `viewer-runtime.iife.js`)
+   */
+  constructor(private readonly options: AcApHtmlPluginOptions = {}) {}
+
+  /**
    * Registers the `-chtml` system command (command-line, no dialog).
    *
    * @param _context - Application context (unused)
@@ -32,7 +38,7 @@ export class AcApHtmlPlugin implements AcApPlugin {
    */
   onLoad(_context: AcApContext, commandManager: AcEdCommandStack): void {
     const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
-    const exportCmd = new AcApExportHtmlCmd()
+    const exportCmd = new AcApExportHtmlCmd(this.options)
 
     commandManager.addCommand(group, '-chtml', '-chtml', exportCmd)
     this.registeredCommands.push({ group, name: '-chtml' })

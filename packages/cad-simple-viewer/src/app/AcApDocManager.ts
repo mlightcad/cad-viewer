@@ -257,12 +257,6 @@ export interface AcApDocManagerOptions {
   checkWorkersOnInit?: boolean
 
   /**
-   * URL of the offline HTML viewer runtime bundle (`viewer-runtime.iife.js`).
-   * Used by the HTML export plugin when packaging standalone HTML files.
-   */
-  htmlViewerRuntimeUrl?: string | URL
-
-  /**
    * Host element for the busy overlay (e.g. HTML export spinner).
    * Set to the viewer shell so the mask covers ribbon, toolbars, and status bar.
    * Defaults to the canvas container when omitted.
@@ -371,8 +365,6 @@ export class AcApDocManager {
   private _fontLoader: AcApFontLoader
   /** Base URL to get fonts, templates, and example files */
   private _baseUrl: string
-  /** URL of the HTML viewer runtime bundle for export */
-  private _htmlViewerRuntimeUrl?: string | URL
   /** Busy overlay for long-running command operations */
   private _busyIndicator: AcApBusyIndicator
   /** Open-file progress overlay and event normalization */
@@ -435,7 +427,6 @@ export class AcApDocManager {
    */
   private constructor(options: AcApDocManagerOptions = {}) {
     this._baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
-    this._htmlViewerRuntimeUrl = options.htmlViewerRuntimeUrl
     this._commandAliasOverrides = this.normalizeCommandAliasConfig(
       options.commandAliases
     )
@@ -719,13 +710,6 @@ export class AcApDocManager {
    */
   get baseUrl() {
     return this._baseUrl
-  }
-
-  /**
-   * URL of the offline HTML viewer runtime bundle used for HTML export.
-   */
-  get htmlViewerRuntimeUrl() {
-    return this._htmlViewerRuntimeUrl
   }
 
   /**

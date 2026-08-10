@@ -12,6 +12,7 @@ import {
   type AcApHtmlExportOptions,
   resolveAcApHtmlExportOptions
 } from './AcApHtmlExportOptions'
+import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions'
 
 /**
  * Editor command that exports the active drawing as a self-contained HTML file
@@ -22,6 +23,13 @@ import {
  * bundles the offline viewer runtime, and triggers a browser download.
  */
 export class AcApExportHtmlCmd extends AcEdCommand {
+  /**
+   * @param pluginOptions - HTML plugin options (e.g. `viewerRuntimeUrl`)
+   */
+  constructor(private readonly pluginOptions: AcApHtmlPluginOptions = {}) {
+    super()
+  }
+
   /**
    * Runs the HTML export workflow for the drawing in `context`.
    *
@@ -35,7 +43,7 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       return
     }
 
-    const converter = new AcApHtmlConvertor()
+    const converter = new AcApHtmlConvertor(this.pluginOptions)
     await converter.convert(
       context.doc.fileName || context.doc.docTitle,
       options,
