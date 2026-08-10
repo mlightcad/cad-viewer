@@ -39,15 +39,6 @@ import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
 import { AcApDocManager, AcApSettingManager } from '../app'
 import {
-  isDirectBatchCandidate,
-  // TODO(direct-batch-prof): remove before merge PR.
-  isDirectBatchEnabled,
-  recordDirectBatchHit,
-  recordDirectBatchLegacy,
-  shouldExtendBboxForDirectEntity,
-  tryBuildDirectEntityMeta
-} from './AcTrDirectBatch'
-import {
   AcEdBaseView,
   AcEdCalculateSizeCallback,
   AcEdConditionWaiter,
@@ -71,6 +62,10 @@ import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
 import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
+import {
+  shouldExtendBboxForDirectEntity,
+  tryBuildDirectEntityMeta
+} from './AcTrDirectBatch'
 import { AcTrEntityDisplayController } from './AcTrEntityDisplayController'
 import {
   assertAcTrGroupWcsBboxesConsistent,
@@ -2386,9 +2381,6 @@ export class AcTrView2d extends AcEdBaseView {
 
         // Fast path: entities that declare a single batchable primitive append
         // directly into batches, skipping temporary drawable allocate → clone → dispose.
-        // TODO(direct-batch-prof): drop isDirectCandidate / timing / record* before merge PR.
-        const isDirectCandidate = isDirectBatchCandidate(entity)
-        const candidateStartedAt = isDirectCandidate ? performance.now() : 0
         const directMeta = tryBuildDirectEntityMeta(entity, this._renderer)
         if (directMeta) {
           let added = false
@@ -2411,8 +2403,6 @@ export class AcTrView2d extends AcEdBaseView {
             directMeta.geometry.dispose()
           }
           if (added) {
-            // TODO(direct-batch-prof): remove before merge PR.
-            recordDirectBatchHit(performance.now() - candidateStartedAt)
             continue
           }
           // Append refused (e.g. invisible) — fall through to the legacy path.
@@ -2424,16 +2414,7 @@ export class AcTrView2d extends AcEdBaseView {
         const threeEntity: AcTrEntity | null = this.drawEntity(entity, false)
         // Viewports may produce no border geometry (e.g. on a no-plot layer) while
         // still needing an AcTrViewportView for model content below.
-        if (!threeEntity && !(entity instanceof AcDbViewport)) {
-          // TODO(direct-batch-prof): remove before merge PR.
-          if (isDirectCandidate) {
-            recordDirectBatchLegacy(
-              performance.now() - candidateStartedAt,
-              isDirectBatchEnabled()
-            )
-          }
-          continue
-        }
+        if (!threeEntity && !(entity instanceof AcDbViewport)) continue
 
         if (threeEntity) {
           threeEntity.objectId = entity.objectId
@@ -2537,15 +2518,6 @@ export class AcTrView2d extends AcEdBaseView {
           if (fileName && !entity.image) {
             this._missedImages.set(entity.objectId, fileName)
           }
-        }
-
-        // TODO(direct-batch-prof): remove before merge PR.
-        if (isDirectCandidate) {
-          // Feature off, or capture miss (wide poly / patterned linetype / …).
-          recordDirectBatchLegacy(
-            performance.now() - candidateStartedAt,
-            isDirectBatchEnabled()
-          )
         }
       } catch (error) {
         log.error(

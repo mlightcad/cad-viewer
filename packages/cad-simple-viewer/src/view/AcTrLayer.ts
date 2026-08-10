@@ -8,8 +8,8 @@ import {
   AcTrRenderer,
   AcTrStyleManager
 } from '@mlightcad/three-renderer'
-import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 import * as THREE from 'three'
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import { AcEdLayerInfo } from '../editor'
 

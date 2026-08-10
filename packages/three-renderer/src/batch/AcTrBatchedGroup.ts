@@ -1,6 +1,6 @@
 import {
-  acgiForegroundColorForBackground,
   AcGePoint3dLike,
+  acgiForegroundColorForBackground,
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 import * as THREE from 'three'

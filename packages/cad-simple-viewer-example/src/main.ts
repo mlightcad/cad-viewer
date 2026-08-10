@@ -12,13 +12,9 @@ import {
   AcApSettingManager,
   AcEdOpenMode,
   applyUiTheme,
-  // TODO(direct-batch-prof): remove before merge PR.
-  getDirectBatchStats,
   isCompactUiLayout,
   LIBREDWG_PARSER_WORKER_FILE,
-  MTEXT_RENDERER_WORKER_FILE,
-  resetDirectBatchStats,
-  setDirectBatchEnabled
+  MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
 import {
   AcDbSystemVariables,
@@ -60,21 +56,6 @@ function isProgressiveOpenMode(): boolean {
   }
   const value = params.get('progressive')
   return value === '1' || value === 'true'
-}
-
-/**
- * Direct-batch fast path is on by default. Pass `directbatch=0` (or `false`)
- * to measure the legacy worldDraw → drawable → clone path.
- *
- * TODO(direct-batch-prof): remove before merge PR.
- */
-function isDirectBatchOpenMode(): boolean {
-  const params = new URLSearchParams(window.location.search)
-  if (!params.has('directbatch')) {
-    return true
-  }
-  const value = params.get('directbatch')
-  return value !== '0' && value !== 'false'
 }
 
 /**
@@ -1051,13 +1032,6 @@ class CadViewerApp {
           lwdisplay: false
         }
       }
-      // TODO(direct-batch-prof): remove before merge PR.
-      const directBatch = isDirectBatchOpenMode()
-      setDirectBatchEnabled(directBatch)
-      resetDirectBatchStats()
-      if (openProf) {
-        console.log(`[openprof] directbatch=${directBatch ? 'on' : 'off'}`)
-      }
 
       const openStartedAt = performance.now()
       const success = await AcApDocManager.instance.openDocument(
@@ -1066,20 +1040,13 @@ class CadViewerApp {
         options
       )
       if (openProf) {
-        // TODO(direct-batch-prof): remove before merge PR.
-        const directBatchStats = getDirectBatchStats()
         const w = window as Window & {
           __OPEN_WALL_MS__?: number
           __OPEN_SUCCESS__?: boolean
           __OPEN_ENTITY_STATS__?: Record<string, number>
-          __DIRECT_BATCH_STATS__?: typeof directBatchStats
         }
         w.__OPEN_WALL_MS__ = performance.now() - openStartedAt
         w.__OPEN_SUCCESS__ = success
-        w.__DIRECT_BATCH_STATS__ = directBatchStats
-        console.log(
-          `[openprof] directBatchStats=${JSON.stringify(directBatchStats)}`
-        )
         try {
           const db = AcApDocManager.instance.curDocument.database
           const counts: Record<string, number> = {

@@ -1,105 +1,14 @@
 import { AcDbEntity, AcDbRay, AcDbXline } from '@mlightcad/data-model'
 import {
+  type AcTrDirectEntityMeta,
+  type AcTrEntity,
+  type AcTrRenderer,
   buildAreaGeometry,
   buildLineGeometry,
   buildLineSegmentsGeometry,
   buildPointGeometry,
   isDirectBatchRejectedMaterial,
-  resolveAnchorFromBox,
-  type AcTrDirectEntityMeta,
-  type AcTrEntity,
-  type AcTrRenderer
-} from '@mlightcad/three-renderer'
-
-// TODO(direct-batch-prof): remove A/B gate + stats before merge PR.
-/** Runtime gate for A/B open profiling (`directbatch=0` disables). */
-let directBatchEnabled = true
-
-/**
- * Open-session counters for A/B convert timing of direct-batch candidates.
- *
- * OPENPROF `scene convert` is often near-zero because streaming
- * `entityAppended` converts during ENTITY flush; these counters measure the
- * actual batchConvert work for entities that declare
- * {@link AcDbEntity.directBatchPrimitive}.
- *
- * TODO(direct-batch-prof): remove before merge PR.
- */
-export interface AcTrDirectBatchStats {
-  enabled: boolean
-  candidateCount: number
-  hitCount: number
-  hitMs: number
-  missCount: number
-  legacyCandidateMs: number
-}
-
-// TODO(direct-batch-prof): remove before merge PR.
-const stats: AcTrDirectBatchStats = {
-  enabled: true,
-  candidateCount: 0,
-  hitCount: 0,
-  hitMs: 0,
-  missCount: 0,
-  legacyCandidateMs: 0
-}
-
-/**
- * Enables or disables the open-time direct-batch fast path.
- *
- * Used by example OPENPROF A/B harnesses; production defaults to enabled.
- *
- * TODO(direct-batch-prof): remove before merge PR (keep path always on).
- */
-export function setDirectBatchEnabled(enabled: boolean) {
-  directBatchEnabled = enabled
-  stats.enabled = enabled
-}
-
-/** Returns whether the direct-batch fast path is currently enabled. */
-// TODO(direct-batch-prof): remove before merge PR.
-export function isDirectBatchEnabled() {
-  return directBatchEnabled
-}
-
-/** Returns a copy of the current direct-batch convert counters. */
-// TODO(direct-batch-prof): remove before merge PR.
-export function getDirectBatchStats(): AcTrDirectBatchStats {
-  return { ...stats }
-}
-
-/** Clears convert counters (call before each OPENPROF open). */
-// TODO(direct-batch-prof): remove before merge PR.
-export function resetDirectBatchStats() {
-  stats.enabled = directBatchEnabled
-  stats.candidateCount = 0
-  stats.hitCount = 0
-  stats.hitMs = 0
-  stats.missCount = 0
-  stats.legacyCandidateMs = 0
-}
-
-/** Records a successful direct-append convert for one candidate entity. */
-// TODO(direct-batch-prof): remove before merge PR.
-export function recordDirectBatchHit(durationMs: number) {
-  stats.candidateCount++
-  stats.hitCount++
-  stats.hitMs += durationMs
-}
-
-/**
- * Records a candidate that fell through to the legacy convert path
- * (capture miss, patterned linetype, feature disabled, etc.).
- *
- * TODO(direct-batch-prof): remove before merge PR.
- */
-export function recordDirectBatchLegacy(durationMs: number, missed: boolean) {
-  stats.candidateCount++
-  if (missed) {
-    stats.missCount++
-  }
-  stats.legacyCandidateMs += durationMs
-}
+  resolveAnchorFromBox} from '@mlightcad/three-renderer'
 
 /**
  * Whether the entity advertises a single batchable draw primitive.
@@ -120,8 +29,7 @@ export function tryBuildDirectEntityMeta(
   entity: AcDbEntity,
   renderer: AcTrRenderer
 ): AcTrDirectEntityMeta | null {
-  // TODO(direct-batch-prof): drop `!directBatchEnabled` once A/B gate is removed.
-  if (!directBatchEnabled || entity.directBatchPrimitive == null) {
+  if (entity.directBatchPrimitive == null) {
     return null
   }
 
