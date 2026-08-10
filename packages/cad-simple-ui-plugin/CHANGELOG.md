@@ -1,5 +1,13 @@
 # @mlightcad/cad-simple-ui-plugin
 
+## 1.5.10
+
+### Patch Changes
+
+- feat: speeds up drawing open with progressive loading by default, a direct-batch convert fast path, and smarter rendering-cache heuristics that share compacted INSERT template geometry. Fonts load on demand during text draw, and picking is fixed so hollow lines are not selected via bbox while hatch islands stay selectable
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.5.10
+
 ## 1.5.9
 
 ### Patch Changes
