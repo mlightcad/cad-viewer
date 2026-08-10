@@ -75,6 +75,7 @@
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.12.5",
+    "@mlightcad/three-renderer": "workspace:*",
     "@vueuse/core": "^11.1.0",
     "element-plus": "^2.12.0",
     "lodash-es": "4.17.21",
