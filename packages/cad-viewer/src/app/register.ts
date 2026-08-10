@@ -1,4 +1,7 @@
-import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin/register'
+import {
+  type AcApHtmlPluginOptions,
+  registerLazyHtmlPlugin
+} from '@mlightcad/cad-html-plugin/register'
 import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin/register'
 import {
   AcApDocManager,
@@ -237,21 +240,33 @@ const registerAgentIntegration = async (pluginManager: AcApPluginManager) => {
 }
 
 /**
+ * Options for {@link registerLazyPlugins}.
+ */
+export interface RegisterLazyPluginsOptions {
+  /** Options passed to {@link registerLazyHtmlPlugin} (HTML export only). */
+  htmlPlugin?: AcApHtmlPluginOptions
+}
+
+/**
  * Registers lazy plugins that load on first use of their trigger commands.
  *
  * Currently registers the PDF plugin (`cpdf`, `ipdf`), the HTML export
  * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally the CAD
  * Agent plugin (`agent`) when `@mlightcad/cad-agent-plugin` is installed.
  * Safe to call multiple times; registration runs once per application lifetime.
+ *
+ * @param options - Optional HTML plugin settings such as `viewerRuntimeUrl`
  */
-export const registerLazyPlugins = () => {
+export const registerLazyPlugins = (
+  options: RegisterLazyPluginsOptions = {}
+) => {
   if (isLazyPluginRegistered) {
     return
   }
 
   const pluginManager = AcApDocManager.instance.pluginManager
   registerLazyPdfPlugin(pluginManager)
-  registerLazyHtmlPlugin(pluginManager)
+  registerLazyHtmlPlugin(pluginManager, options.htmlPlugin)
   registerLazySvgPlugin(pluginManager)
 
   if (!isAgentIntegrationStarted) {

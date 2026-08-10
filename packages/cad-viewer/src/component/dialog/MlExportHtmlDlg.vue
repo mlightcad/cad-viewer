@@ -234,9 +234,9 @@ async function handleOk() {
       )
     }
 
-    const { AcApHtmlConvertor, resolveAcApHtmlExportOptions } =
+    const { AcApHtmlConvertor, getHtmlPluginOptions, resolveAcApHtmlExportOptions } =
       await import('@mlightcad/cad-html-plugin')
-    const converter = new AcApHtmlConvertor()
+    const converter = new AcApHtmlConvertor(getHtmlPluginOptions())
     await converter.convert(
       document.fileName || document.docTitle,
       resolveAcApHtmlExportOptions(options),

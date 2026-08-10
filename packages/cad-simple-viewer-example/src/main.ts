@@ -816,8 +816,7 @@ class CadViewerApp {
         webworkerFileUrls: {
           mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`,
           dwgParser: `./workers/${LIBREDWG_PARSER_WORKER_FILE}`
-        },
-        htmlViewerRuntimeUrl: './viewer-runtime.iife.js'
+        }
       })
       if (openProf) {
         const w = window as Window & { __OPEN_MODE__?: string }

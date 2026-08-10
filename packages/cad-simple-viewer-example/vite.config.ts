@@ -11,18 +11,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 /** Relative to this package root; works with vite-plugin-static-copy on Windows. */
 const VIEWER_RUNTIME_SRC = '../cad-html-plugin/dist/viewer-runtime.iife.js'
 
-function assertViewerRuntimeExists(): void {
+export default defineConfig(() => {
   const runtimePath = resolve(__dirname, VIEWER_RUNTIME_SRC)
-  if (!existsSync(runtimePath)) {
-    throw new Error(
-      'viewer-runtime.iife.js was not found. Build @mlightcad/cad-html-plugin first ' +
-        '(pnpm --filter @mlightcad/cad-html-plugin build, or nx run-many -t build).'
+  const hasViewerRuntime = existsSync(runtimePath)
+  if (!hasViewerRuntime) {
+    console.warn(
+      '[cad-simple-viewer-example] viewer-runtime.iife.js not found — HTML export (chtml) will be unavailable. ' +
+        'Build @mlightcad/cad-html-plugin to enable it. Opening DXF/DWG does not require this file.'
     )
   }
-}
-
-export default defineConfig(() => {
-  assertViewerRuntimeExists()
 
   const realdwgRoot = resolve(__dirname, '../../../realdwg-web')
 
@@ -57,11 +54,15 @@ export default defineConfig(() => {
             dest: 'workers',
             rename: { stripBase: true }
           },
-          {
-            src: VIEWER_RUNTIME_SRC,
-            dest: '',
-            rename: { stripBase: true }
-          }
+          ...(hasViewerRuntime
+            ? [
+                {
+                  src: VIEWER_RUNTIME_SRC,
+                  dest: '',
+                  rename: { stripBase: true }
+                }
+              ]
+            : [])
         ]
       })
     ]

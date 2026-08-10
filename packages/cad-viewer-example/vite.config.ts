@@ -25,9 +25,11 @@ function useLocalDataModel(mode: string): boolean {
 }
 
 export default defineConfig(({ command, mode }) => {
-  if (!existsSync(resolve(__dirname, VIEWER_RUNTIME_SRC))) {
-    throw new Error(
-      'viewer-runtime.iife.js not found. Build @mlightcad/cad-html-plugin before cad-viewer-example.'
+  const hasViewerRuntime = existsSync(resolve(__dirname, VIEWER_RUNTIME_SRC))
+  if (!hasViewerRuntime) {
+    console.warn(
+      '[cad-viewer-example] viewer-runtime.iife.js not found — HTML export will be unavailable. ' +
+        'Build @mlightcad/cad-html-plugin to enable it. Opening DXF/DWG does not require this file.'
     )
   }
   const aliases: Alias[] = []
@@ -69,11 +71,15 @@ export default defineConfig(({ command, mode }) => {
           dest: 'assets',
           rename: { stripBase: true }
         },
-        {
-          src: VIEWER_RUNTIME_SRC,
-          dest: 'assets',
-          rename: { stripBase: true }
-        }
+        ...(hasViewerRuntime
+          ? [
+              {
+                src: VIEWER_RUNTIME_SRC,
+                dest: 'assets',
+                rename: { stripBase: true }
+              }
+            ]
+          : [])
       ]
     })
   ]

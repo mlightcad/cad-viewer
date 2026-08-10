@@ -19,7 +19,9 @@ export const registerLazyPlugins = () => {
   }
 
   const pluginManager = AcApDocManager.instance.pluginManager
-  registerLazyHtmlPlugin(pluginManager)
+  registerLazyHtmlPlugin(pluginManager, {
+    viewerRuntimeUrl: './viewer-runtime.iife.js'
+  })
   registerLazyPdfPlugin(pluginManager)
   registerLazySvgPlugin(pluginManager)
   registerLazyAgentPlugin(pluginManager)

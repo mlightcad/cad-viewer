@@ -65,11 +65,13 @@ import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin/register'
 
 AcApDocManager.createInstance({
-  container: document.getElementById('cad-container')!,
-  htmlViewerRuntimeUrl: './viewer-runtime.iife.js'
+  container: document.getElementById('cad-container')!
 })
 
-registerLazyHtmlPlugin(AcApDocManager.instance.pluginManager)
+// viewerRuntimeUrl is HTML-export only — not required to open DXF/DWG
+registerLazyHtmlPlugin(AcApDocManager.instance.pluginManager, {
+  viewerRuntimeUrl: './viewer-runtime.iife.js'
+})
 ```
 
 Do **not** import `registerLazyHtmlPlugin` from the package root (`@mlightcad/cad-html-plugin`) in application code — that resolves to the full library build and defeats lazy loading.
@@ -136,9 +138,9 @@ For DXF/DWG → HTML without a browser UI, use [`@mlightcad/cad-html-exporter-cl
 
 When embedding HTML export in a web app:
 
-1. Build `@mlightcad/cad-html-plugin` and expose `viewer-runtime.iife.js` at a URL your app can `fetch` (e.g. Vite `public/` copy — see `cad-viewer-example` / `cad-simple-viewer-example` vite configs).
+1. Build `@mlightcad/cad-html-plugin` and expose `viewer-runtime.iife.js` at a URL your app can `fetch` (e.g. Vite `public/` copy — see `cad-viewer-example` / `cad-simple-viewer-example` vite configs). **Skip this step if you do not use HTML export** — opening DXF/DWG does not need this file or this package.
 2. Register via `@mlightcad/cad-html-plugin/register` (or load the plugin eagerly).
-3. Optionally set `htmlViewerRuntimeUrl` on `AcApDocManager.createInstance()` to override the default `./viewer-runtime.iife.js` path.
+3. Pass `viewerRuntimeUrl` to `registerLazyHtmlPlugin` / `createHtmlPlugin` / `AcApHtmlConvertor` (default `./viewer-runtime.iife.js`). Do **not** put this on `AcApDocManager.createInstance()`.
 4. Ensure fonts used by the drawing are reachable during export if you rely on web-font substitution.
 
 The generated HTML itself needs **no backend**; only the export step may fetch the runtime bundle and fonts.
