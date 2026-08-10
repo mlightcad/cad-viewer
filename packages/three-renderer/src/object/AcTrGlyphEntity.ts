@@ -350,7 +350,10 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
 
     for (const object of invalidObjects) {
       object.parent?.remove(object)
-      if (this.hasGeometry(object)) {
+      if (
+        this.hasGeometry(object) &&
+        !getSceneDrawableUserData(object).sharesTemplateGeometry
+      ) {
         object.geometry.dispose()
       }
     }

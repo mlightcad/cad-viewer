@@ -2205,9 +2205,8 @@ export class AcTrView2d extends AcEdBaseView {
     if (threeEntity instanceof AcTrGroup) {
       // Compacted INSERT templates may skip syncDraw when fonts are awaited
       // later; still walk for empty glyph shells. Skip only when there is
-      // nothing left to finalize.
+      // nothing left to finalize (incl. post-cache ATTRIBs).
       if (
-        threeEntity.isCompacted &&
         threeEntity.getSourceEntities().length === 0 &&
         !this.groupHasPendingGlyphGeometry(threeEntity)
       ) {

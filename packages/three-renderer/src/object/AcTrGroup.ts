@@ -505,16 +505,52 @@ export class AcTrGroup extends AcTrEntity {
   /**
    * Returns a clone of this group and its direct drawable children.
    *
-   * Geometry buffers are deep-cloned; materials are reused. When
-   * {@link isCompacted} is true, detached source-entity shells are not cloned.
+   * When the source {@link isCompacted}, leaf {@link THREE.BufferGeometry}
+   * buffers are shared by default so INSERT cache hits avoid deep copies.
+   * Uncompacted templates deep-clone buffers instead: {@link AcDbRenderingCache}
+   * may still run {@link compactForInstancing} on first reuse, which disposes
+   * template leaves — sharing beforehand would corrupt earlier INSERT instances
+   * and stall scene convert / batching.
    *
+   * Materials are reused. When compacted, detached source-entity shells are
+   * not cloned. Callers must treat compacted templates as immutable: batching
+   * clones buffers before rebase, and {@link AcTrEntity.disposeObject} skips
+   * shared geometries marked with `sharesTemplateGeometry`.
+   *
+   * @param shareGeometry - Override buffer sharing. Defaults to
+   *   {@link isCompacted} so lazy mid-size compact stays safe.
    * @returns Independent group instance suitable for one INSERT.
    */
-  fastDeepClone() {
+  fastDeepClone(shareGeometry: boolean = this._compacted) {
     const cloned = new AcTrGroup([], this.renderContext)
     cloned.copy(this, false)
-    this.copyGeometry(this, cloned)
+    this.copyGeometry(this, cloned, shareGeometry)
     return cloned
+  }
+
+  /**
+   * Prepares this group to be stored as an immutable block-template cache entry.
+   *
+   * Finalizes deferred drawable children when fonts are already available.
+   * Does **not** drop {@link _sourceEntities}: releasing shells here made
+   * INSERT `finishEntityGeometry` skip work that must stay overlapped with
+   * ENTITY flush, and moved tens of seconds into post-read scene convert on
+   * large drawings. Shells are still released by {@link compactForInstancing}.
+   *
+   * Does not merge leaves; call {@link compactForInstancing} when merge
+   * savings justify the cost.
+   *
+   * When {@link FontManager.awaitFontsBeforeDraw} is on, skips {@link syncDraw}
+   * so empty glyph shells remain for later {@link asyncDraw} (same rule as
+   * {@link compactForInstancing}).
+   */
+  prepareCacheTemplate() {
+    if (this._compacted) {
+      return
+    }
+    if (!FontManager.instance.awaitFontsBeforeDraw) {
+      this.syncDraw()
+    }
   }
 
   /**

@@ -2233,6 +2233,8 @@ export class AcTrBatchedGroup extends THREE.Group {
         sourceDrawable.styleMaterialId ?? this.getMaterialId(source.material)
       clonedDrawable.bboxIntersectionCheck =
         sourceDrawable.bboxIntersectionCheck
+      clonedDrawable.sharesTemplateGeometry =
+        sourceDrawable.sharesTemplateGeometry
       clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray()
       if (sourceDrawable.textEntityTraits) {
         clonedDrawable.textEntityTraits = AcTrMTextColorUtil.cloneEntityTraits(
@@ -2382,10 +2384,17 @@ export class AcTrBatchedGroup extends THREE.Group {
 
   /**
    * Recursively disposes one object subtree owned by this group.
+   *
+   * Skips {@link THREE.BufferGeometry} borrowed from an immutable block
+   * template (`sharesTemplateGeometry`); unbatched INSERT clones may alias
+   * those buffers via {@link THREE.Object3D.clone}.
    */
   private disposeObject(object: THREE.Object3D) {
     object.removeFromParent()
-    if (this.hasGeometry(object)) {
+    if (
+      this.hasGeometry(object) &&
+      !getSceneDrawableUserData(object).sharesTemplateGeometry
+    ) {
       object.geometry.dispose()
     }
     object.children.forEach(child => this.disposeObject(child))
