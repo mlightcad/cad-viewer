@@ -8,7 +8,7 @@ Ao realizar a análise de DWG/DXF, o processamento geométrico e a renderizaçã
 Ele também oferece algo que você raramente encontra em outros visualizadores CAD — **exportação com um clique para um único arquivo HTML autossuficiente**. O `.html` baixado incorpora o snapshot do desenho e um runtime leve de visualização, para que os destinatários possam abrir, aplicar pan, zoom, alternar camadas e medir distâncias em qualquer navegador moderno **sem app CAD, sem servidor e sem instalação**. A maioria dos visualizadores CAD desktop e web só permite visualizar dentro do próprio produto; o cad-viewer transforma um desenho ativo em um artefato portátil e offline que você pode enviar por e-mail, arquivar ou hospedar em um servidor de arquivos estáticos — ideal para compartilhar com clientes, arquivos de conformidade e fluxos de trabalho air-gapped. O visualizador offline também usa muito menos memória do que ferramentas desktop tradicionais ao abrir o mesmo desenho (veja a [comparação de memória](#uso-de-memória-do-html-autossuficiente) abaixo).
 
 - [**🌐 Página inicial**](https://mlightcad.com/)
-- [**🌐 Demo ao vivo**](https://mlightcad.github.io/cad-viewer/)
+- **🌐 Demo ao vivo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
 - **🌐 Documentação da API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (latest/dev)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
