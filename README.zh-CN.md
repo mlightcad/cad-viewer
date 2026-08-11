@@ -160,7 +160,7 @@ CAD-Viewer 在 [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer) 中�
 以下插件向同一插件管理器注册导出（及 PDF 导入）命令，并采用**懒加载**以控制首屏体积。[`cad-simple-viewer-example`](packages/cad-simple-viewer-example) 示例会注册全部三个导出插件、`cad-simple-ui-plugin` 以及 `cad-agent-plugin`；完整 [`cad-viewer`](packages/cad-viewer) 应用在启动时注册导出类插件，并在安装时注册智能体插件。
 
 - **HTML** — 单文件离线查看器，便于分享与归档：[packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
-  （相同管线的无头 CLI：[packages/cad-html-exporter-cli/README.md](packages/cad-html-exporter-cli/README.md))
+  （相同管线的无头 CLI：[packages/cad-simple-viewer-cli/README.md](packages/cad-simple-viewer-cli/README.md)）
 - **PDF** — 矢量 PDF 导出与 PDF 导入 CAD：[packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
 - **SVG** — 矢量 SVG 导出：[packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
 

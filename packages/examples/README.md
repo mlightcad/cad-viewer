@@ -42,7 +42,7 @@ A minimal, lightweight CAD viewer focusing on core functionality.
 
 ### 3. Self-Contained Offline HTML (`/self-contained-html/canteen.html`)
 
-A single-file HTML export of the sample **canteen.dwg** drawing, produced by `cad-html-exporter-cli`.
+A single-file HTML export of the sample **canteen.dwg** drawing, produced by `cad-simple-viewer-cli`.
 
 **Why it matters:**
 - One portable `.html` file — no CAD app, server, or cad-viewer install for recipients
@@ -97,7 +97,7 @@ The examples will be available at:
 
 ### Self-Contained HTML Demo
 
-The offline HTML example is built from the sample [`canteen.dwg`](https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg) using [`@mlightcad/cad-html-exporter-cli`](../cad-html-exporter-cli). GitHub Actions on the `main` branch runs this step automatically before deploying to GitHub Pages.
+The offline HTML example is built from the sample [`canteen.dwg`](https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg) using [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli). GitHub Actions on the `main` branch runs this step automatically before deploying to GitHub Pages.
 
 To generate the file locally (requires a built workspace and Playwright Chromium or system Chrome via `PLAYWRIGHT_BROWSER_CHANNEL=chrome`):
 
@@ -141,7 +141,7 @@ packages/examples/
 │   ├── cad-simple-viewer/      # Simple CAD viewer demo
 │   └── self-contained-html/    # Offline HTML export demo (CI / export:demo-html)
 ├── copyDist.js                 # Script to copy built examples
-├── exportDemoHtml.js           # Build offline HTML demo via cad-html-exporter-cli
+├── exportDemoHtml.js           # Build offline HTML demo via cad-simple-viewer-cli
 ├── package.json                # Package configuration
 └── README.md                   # This file
 ```

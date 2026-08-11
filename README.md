@@ -160,7 +160,7 @@ The full Vue [`cad-viewer`](packages/cad-viewer) app registers the agent automat
 These plugins add export (and PDF import) commands to the same plugin manager. They are **lazy-loaded** so initial page weight stays small. The [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) demo registers all three export plugins, `cad-simple-ui-plugin`, and `cad-agent-plugin`; the full [`cad-viewer`](packages/cad-viewer) app registers the export plugins and the agent plugin (when installed) in its bootstrap.
 
 - **HTML** — one-file offline viewer for sharing and archiving: [packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
-  (Headless CLI using the same pipeline: [packages/cad-html-exporter-cli/README.md](packages/cad-html-exporter-cli/README.md))
+  (Headless CLI using the same pipeline: [packages/cad-simple-viewer-cli/README.md](packages/cad-simple-viewer-cli/README.md))
 - **PDF** — vector PDF export and PDF-to-CAD import: [packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
 - **SVG** — vector SVG export: [packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
 

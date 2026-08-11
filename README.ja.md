@@ -160,7 +160,7 @@ CAD-Viewer は [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer) 内�
 これらのプラグインは、同一プラグインマネージャーにエクスポート（および PDF インポート）コマンドを追加します。**遅延読み込み** により初期ページ重量を抑えます。[`cad-simple-viewer-example`](packages/cad-simple-viewer-example) デモは 3 つのエクスポートプラグイン、`cad-simple-ui-plugin`、`cad-agent-plugin` をすべて登録します。フル [`cad-viewer`](packages/cad-viewer) アプリはブートストラップ時にエクスポートプラグインと（インストール時）エージェントプラグインを登録します。
 
 - **HTML** — 共有とアーカイブ向けの単一ファイルオフラインビューア：[packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
-  （同一パイプラインのヘッドレス CLI：[packages/cad-html-exporter-cli/README.md](packages/cad-html-exporter-cli/README.md)）
+  （同一パイプラインのヘッドレス CLI：[packages/cad-simple-viewer-cli/README.md](packages/cad-simple-viewer-cli/README.md)）
 - **PDF** — ベクター PDF エクスポートと PDF から CAD へのインポート：[packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
 - **SVG** — ベクター SVG エクスポート：[packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
 

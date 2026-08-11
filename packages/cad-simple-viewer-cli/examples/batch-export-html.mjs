@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Recursively scan a directory for .dwg / .dxf files and export each to HTML
- * via cad-simple-viewer-cli + export-html.scr (same pipeline as cad-html-exporter-cli).
+ * via cad-simple-viewer-cli + export-html.scr.
  *
  * Usage (from packages/cad-simple-viewer-cli after build):
  *   node examples/batch-export-html.mjs <inputDir> [outputDir]

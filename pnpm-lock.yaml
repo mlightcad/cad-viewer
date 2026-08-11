@@ -144,43 +144,6 @@ importers:
         specifier: ^2.1.6
         version: 2.2.12(typescript@5.9.3)
 
-  packages/cad-html-exporter-cli:
-    dependencies:
-      '@mlightcad/cad-html-plugin':
-        specifier: workspace:*
-        version: link:../cad-html-plugin
-      '@mlightcad/cad-simple-viewer':
-        specifier: workspace:*
-        version: link:../cad-simple-viewer
-      '@mlightcad/data-model':
-        specifier: ^1.12.5
-        version: 1.12.5
-      '@mlightcad/libredwg-converter':
-        specifier: ^3.12.5
-        version: 3.12.5(@mlightcad/data-model@1.12.5)
-      '@mlightcad/mtext-renderer':
-        specifier: ^0.12.4
-        version: 0.12.4(three@0.172.0)
-      commander:
-        specifier: ^12.1.0
-        version: 12.1.0
-      playwright:
-        specifier: ^1.49.1
-        version: 1.59.1
-    devDependencies:
-      '@types/node':
-        specifier: ^20.14.9
-        version: 20.19.37
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
-      typescript:
-        specifier: ^5.5.2
-        version: 5.9.3
-      vite:
-        specifier: ^6.4.3
-        version: 6.4.3(@types/node@20.19.37)(sass@1.98.0)(yaml@2.8.3)
-
   packages/cad-html-plugin:
     devDependencies:
       '@mlightcad/cad-simple-viewer':
