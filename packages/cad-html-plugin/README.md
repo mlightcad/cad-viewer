@@ -10,7 +10,7 @@ HTML **export** for [`@mlightcad/cad-simple-viewer`](../cad-simple-viewer): snap
 | `-chtml` | Export via **command-line prompts** (no dialog; AutoCAD-style `-` prefix) |
 | `chtml` | Same as `-chtml` when no UI command is registered (e.g. `cad-simple-viewer` only). In [`cad-viewer`](../cad-viewer), `chtml` opens an **export options dialog** instead |
 
-The plugin path is designed for **lazy loading** so the export bundle is only downloaded when a user runs `-chtml` or confirms export from the `chtml` dialog (or runs `chtml` in a host that has no dialog command). Low-level APIs (`packHtml`, snapshot types, scene collectors) are also exported for custom pipelines and the headless CLI [`@mlightcad/cad-html-exporter-cli`](../cad-html-exporter-cli).
+The plugin path is designed for **lazy loading** so the export bundle is only downloaded when a user runs `-chtml` or confirms export from the `chtml` dialog (or runs `chtml` in a host that has no dialog command). Low-level APIs (`packHtml`, snapshot types, scene collectors) are also exported for custom pipelines and the headless CLI [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli).
 
 ## Key features
 
@@ -132,7 +132,7 @@ const snapshot = await new AcApHtmlSnapshotBuilder().buildAsync(
 
 ### Headless / CLI
 
-For DXF/DWG → HTML without a browser UI, use [`@mlightcad/cad-html-exporter-cli`](../cad-html-exporter-cli). It runs the same snapshot + `packHtml` pipeline inside Playwright.
+For DXF/DWG → HTML without a browser UI, use [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli) with `examples/export-html.scr` (or your own `.scr` that runs `-chtml`). It runs the same snapshot + `packHtml` pipeline inside Playwright.
 
 ## Integration checklist
 
@@ -191,7 +191,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 
 ## Role in MLightCAD
 
-This package combines the **export format / offline viewer runtime** with **viewer integration** (plugin, snapshot builder, `-chtml` command). `@mlightcad/cad-simple-viewer` stays free of HTML export code; heavy export logic can be lazy-loaded. [`cad-viewer`](../cad-viewer) adds a `chtml` dialog command on top. `@mlightcad/cad-html-exporter-cli` provides a Node/Playwright entry point for batch conversion.
+This package combines the **export format / offline viewer runtime** with **viewer integration** (plugin, snapshot builder, `-chtml` command). `@mlightcad/cad-simple-viewer` stays free of HTML export code; heavy export logic can be lazy-loaded. [`cad-viewer`](../cad-viewer) adds a `chtml` dialog command on top. [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli) provides a Node/Playwright entry point for batch conversion via `.scr` scripts.
 
 ## License
 

@@ -160,7 +160,7 @@ La aplicación completa de Vue [`cad-viewer`](packages/cad-viewer) registra el a
 Estos plugins añaden comandos de exportación (e importación de PDF) al mismo administrador de plugins. Tienen **carga diferida** para que el peso inicial de la página se mantenga bajo. La demo [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) registra los tres plugins de exportación, `cad-simple-ui-plugin` y `cad-agent-plugin`; la aplicación completa [`cad-viewer`](packages/cad-viewer) registra los plugins de exportación y el plugin del agente (cuando está instalado) en su arranque.
 
 - **HTML** — visor sin conexión de un solo archivo para compartir y archivar: [packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
-  (CLI sin interfaz que utiliza el mismo canal: [packages/cad-html-exporter-cli/README.md](packages/cad-html-exporter-cli/README.md))
+  (CLI sin interfaz que utiliza el mismo canal: [packages/cad-simple-viewer-cli/README.md](packages/cad-simple-viewer-cli/README.md))
 - **PDF** — exportación vectorial a PDF e importación de PDF a CAD: [packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
 - **SVG** — exportación vectorial a SVG: [packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
 

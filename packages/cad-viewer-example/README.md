@@ -159,7 +159,7 @@ From the monorepo root: `pnpm dev`, `pnpm preview`, `pnpm test:e2e`.
 - [`@mlightcad/cad-viewer`](../cad-viewer) — Component API, props, and customization
 - [`cad-simple-viewer-example`](../cad-simple-viewer-example) — Minimal vanilla TypeScript host without the full Vue UI
 - [`@mlightcad/cad-html-plugin`](../cad-html-plugin) — HTML export and `viewer-runtime.iife.js`
-- [`@mlightcad/cad-html-exporter-cli`](../cad-html-exporter-cli) — Headless HTML export CLI
+- [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli) — Headless HTML export CLI (`-chtml` via `.scr`)
 
 ## License
 

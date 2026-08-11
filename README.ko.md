@@ -160,7 +160,7 @@ CAD-Viewer는 [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer)의 �
 이 플러그인들은 동일한 플러그인 관리자에 내보내기(및 PDF 가져오기) 명령을 추가합니다. **지연 로딩**되어 초기 페이지 용량을 작게 유지합니다. [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) 데모는 세 내보내기 플러그인, `cad-simple-ui-plugin`, `cad-agent-plugin`을 모두 등록합니다. 전체 [`cad-viewer`](packages/cad-viewer) 앱은 부트스트랩에서 내보내기 플러그인과(설치 시) 에이전트 플러그인을 등록합니다.
 
 - **HTML** — 공유 및 아카이브용 단일 파일 오프라인 뷰어: [packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
-  (동일 파이프라인의 헤드리스 CLI: [packages/cad-html-exporter-cli/README.md](packages/cad-html-exporter-cli/README.md))
+  (동일 파이프라인의 헤드리스 CLI: [packages/cad-simple-viewer-cli/README.md](packages/cad-simple-viewer-cli/README.md))
 - **PDF** — 벡터 PDF 내보내기 및 PDF-to-CAD 가져오기: [packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
 - **SVG** — 벡터 SVG 내보내기: [packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
 

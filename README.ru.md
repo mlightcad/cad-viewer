@@ -160,7 +160,7 @@ CAD-Viewer построен вокруг модульной **системы п�
 Эти плагины добавляют команды экспорта (и импорта PDF) в тот же менеджер плагинов. Они **лениво загружаются**, чтобы начальный вес страницы оставался небольшим. Демо [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) регистрирует все три плагина экспорта, `cad-simple-ui-plugin` и `cad-agent-plugin`; полное приложение [`cad-viewer`](packages/cad-viewer) регистрирует плагины экспорта и плагин агента (при установке) при bootstrap.
 
 - **HTML** — однофайловый офлайн-просмотрщик для обмена и архивирования: [packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
-  (Headless CLI с тем же конвейером: [packages/cad-html-exporter-cli/README.md](packages/cad-html-exporter-cli/README.md))
+  (Headless CLI с тем же конвейером: [packages/cad-simple-viewer-cli/README.md](packages/cad-simple-viewer-cli/README.md))
 - **PDF** — векторный экспорт PDF и импорт PDF в CAD: [packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
 - **SVG** — векторный экспорт SVG: [packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
 

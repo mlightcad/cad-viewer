@@ -8,7 +8,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '../..')
 const cliPath = path.resolve(
   rootDir,
-  'packages/cad-html-exporter-cli/dist/cli.js'
+  'packages/cad-simple-viewer-cli/dist/cli.js'
+)
+const scriptPath = path.resolve(
+  rootDir,
+  'packages/cad-simple-viewer-cli/examples/export-html.scr'
 )
 const outputDir = path.resolve(__dirname, './public/self-contained-html')
 const outputPath = path.join(outputDir, 'canteen.html')
@@ -18,8 +22,13 @@ const dwgPath = path.join(outputDir, 'canteen.dwg')
 
 if (!fs.existsSync(cliPath)) {
   console.error(
-    'cad-html-exporter-cli is not built. Run "pnpm build" from the repo root first.'
+    'cad-simple-viewer-cli is not built. Run "pnpm build" from the repo root first.'
   )
+  process.exit(1)
+}
+
+if (!fs.existsSync(scriptPath)) {
+  console.error(`Export script not found: ${scriptPath}`)
   process.exit(1)
 }
 
@@ -42,11 +51,14 @@ const { status, error } = spawnSync(
   process.execPath,
   [
     cliPath,
+    '-i',
     dwgPath,
+    '-s',
+    scriptPath,
     '-o',
-    outputPath,
-    '--title',
-    'Canteen (sample DWG)',
+    outputDir,
+    '--mode',
+    'read',
     '--locale',
     'en'
   ],
@@ -63,6 +75,11 @@ if (error) {
 
 if (status !== 0) {
   process.exit(status ?? 1)
+}
+
+if (!fs.existsSync(outputPath)) {
+  console.error(`Expected output missing: ${outputPath}`)
+  process.exit(1)
 }
 
 console.log(`Wrote ${outputPath}`)
