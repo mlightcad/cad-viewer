@@ -10,10 +10,25 @@ export class AcEdPromptBoxOptions extends AcEdPromptOptions<AcGeBox2d> {
   private _useBasePoint: boolean = false
   private _useDashedLine: boolean = false
   private _disableOSnap: boolean = false
+  private _allowNone: boolean = false
 
   constructor(firstCornerMessage: string, secondCornerMessage: string) {
     super(firstCornerMessage)
     this._secondCornerMessage = secondCornerMessage
+  }
+
+  /**
+   * When true, empty Enter on the first corner returns
+   * {@link AcEdPromptStatus.None} (used by export commands for "use extents").
+   */
+  get allowNone(): boolean {
+    return this._allowNone
+  }
+
+  set allowNone(flag: boolean) {
+    if (!this.isReadOnly) {
+      this._allowNone = flag
+    }
   }
 
   get firstCornerMessage(): string {

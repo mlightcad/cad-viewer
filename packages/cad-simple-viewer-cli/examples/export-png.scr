@@ -1,0 +1,9 @@
+; Zoom extents, then export the drawing extents as PNG (long side 2048px).
+; Usage:
+;   cad-simple-viewer-cli -i drawing.dwg -s examples/export-png.scr -o ./out
+zoom
+e
+pngout
+
+2048
+quit

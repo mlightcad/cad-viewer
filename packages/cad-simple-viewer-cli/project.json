@@ -1,0 +1,51 @@
+{
+  "name": "@mlightcad/cad-simple-viewer-cli",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/cad-simple-viewer-cli/src",
+  "projectType": "application",
+  "tags": [
+    "npm:private"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc && vite build --config vite.runner.config.ts && node scripts/copy-runner-assets.mjs",
+        "cwd": "packages/cad-simple-viewer-cli"
+      },
+      "dependsOn": [
+        "^build",
+        {
+          "projects": [
+            "@mlightcad/cad-html-plugin",
+            "@mlightcad/cad-pdf-plugin",
+            "@mlightcad/cad-svg-plugin"
+          ],
+          "target": "build"
+        }
+      ],
+      "cache": true
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "rimraf dist dist-runner tsconfig.tsbuildinfo",
+        "cwd": "packages/cad-simple-viewer-cli"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint src/",
+        "cwd": "packages/cad-simple-viewer-cli"
+      }
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint --fix --quiet src/",
+        "cwd": "packages/cad-simple-viewer-cli"
+      }
+    }
+  }
+}

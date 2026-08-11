@@ -8,10 +8,32 @@ import {
 import {
   AcApDocManager,
   AcEdOpenMode,
+  AcTrView2d,
   LIBREDWG_PARSER_WORKER_FILE,
   MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
 import { accmYieldForPaint } from '@mlightcad/data-model'
+
+/** Max wait for convert + deferred font/text geometry after open. */
+const SCENE_IDLE_TIMEOUT_MS = 120_000
+
+/**
+ * Waits until the active view finishes entity conversion and glyph geometry.
+ * Open can resolve before lazy fonts finish; snapshotting too early drops text.
+ */
+async function waitForSceneIdle(timeoutMs = SCENE_IDLE_TIMEOUT_MS) {
+  const view = AcApDocManager.instance.curView
+  if (!(view instanceof AcTrView2d)) {
+    return
+  }
+  const idle = await view.waitUntilIdle(timeoutMs)
+  if (!idle) {
+    console.warn(
+      '[cad-html-exporter-cli] Timed out waiting for scene idle; continuing'
+    )
+  }
+  await accmYieldForPaint()
+}
 
 declare global {
   interface Window {
@@ -66,7 +88,11 @@ window.exportCadToHtml = async (fileName, bytes, options = {}) => {
     throw new Error(`Failed to open "${fileName}".`)
   }
 
-  await accmYieldForPaint()
+  // Same race as cad-simple-viewer-cli: openDocument resolves before deferred
+  // text/font geometry finishes. prepareAcTrView2dForHtmlExport also waits via
+  // ensureEntitiesConvertedForExport → waitUntilIdle; this makes the runner
+  // explicit and covers the post-open settle before export prep.
+  await waitForSceneIdle()
 
   const view = await new AcApHtmlConvertor().prepareAcTrView2dForHtmlExport(
     docManager.curView,

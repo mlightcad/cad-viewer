@@ -1,0 +1,15 @@
+; Create a new ISO drawing, draw a closed rectangle with LINE, then export DXF.
+; No -i needed (CLI starts from a blank template; qnew refreshes from ISO).
+; Usage:
+;   cad-simple-viewer-cli -s examples/create-drawing-dxf.scr -o ./out --mode write
+qnew
+line
+0,0
+100,0
+100,60
+0,60
+c
+zoom
+e
+cdxf
+quit

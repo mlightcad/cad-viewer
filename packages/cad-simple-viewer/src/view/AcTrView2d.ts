@@ -622,6 +622,37 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Waits until batch conversion and deferred glyph/font geometry finish.
+   *
+   * Document open can resolve before text is drawable (`FontManager.lazyFontLoading`
+   * + deferred geometry jobs). Call this before raster/HTML export or scripted
+   * commands that assume a complete scene.
+   *
+   * @param timeoutMs - Maximum wait; returns `false` on timeout (default 60s).
+   * @returns `true` when idle, `false` if still busy after the timeout.
+   */
+  async waitUntilIdle(timeoutMs = 60_000): Promise<boolean> {
+    const deadline = Date.now() + Math.max(0, timeoutMs)
+    // Require two consecutive idle samples so a brief gap between convert
+    // batches / deferred jobs does not look like a finished scene.
+    let idleStreak = 0
+    for (;;) {
+      if (!this.isProcessingEntities) {
+        idleStreak++
+        if (idleStreak >= 2) {
+          return true
+        }
+      } else {
+        idleStreak = 0
+      }
+      if (Date.now() > deadline) {
+        return !this.isProcessingEntities
+      }
+      await new Promise<void>(resolve => setTimeout(resolve, 16))
+    }
+  }
+
+  /**
    * Whether entity conversion during document open is deferred for progressive display.
    */
   get progressiveRendering() {
@@ -981,12 +1012,19 @@ export class AcTrView2d extends AcEdBaseView {
       )
     }
 
-    if (pending.length === 0) {
-      return
+    if (pending.length > 0) {
+      this._numOfEntitiesToProcess += pending.length
+      await this.batchConvert(pending, { forExport: true })
     }
 
-    this._numOfEntitiesToProcess += pending.length
-    await this.batchConvert(pending, { forExport: true })
+    // Open-time deferred glyph jobs may still be draining even when every
+    // entity id is already present (or when nothing was missing for export).
+    const idle = await this.waitUntilIdle()
+    if (!idle) {
+      log.warn(
+        '[AcTrView2d] Timed out waiting for deferred geometry before export'
+      )
+    }
   }
 
   /**
