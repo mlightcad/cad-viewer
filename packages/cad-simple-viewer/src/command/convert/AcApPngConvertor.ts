@@ -15,11 +15,21 @@ export class AcApPngConvertor {
   /**
    * Converts the current CAD drawing to PNG format and initiates download.
    *
+   * Waits for entity conversion and deferred text/font geometry so scripted
+   * exports (e.g. CLI `pngout`) do not snapshot before glyphs are drawable.
+   *
    * @param bounds - Optional world coordinate bounding box to export.
    * @param longSide - Optional maximum dimension (width or height) in pixels.
    */
-  convert(bounds?: AcGeBox2d, longSide?: number) {
+  async convert(bounds?: AcGeBox2d, longSide?: number) {
     const view = AcApDocManager.instance.curView as AcTrView2d
+    const sceneReady = await view.waitUntilIdle()
+    if (!sceneReady) {
+      console.warn(
+        '[PNGOUT] Timed out waiting for scene idle; exporting current geometry'
+      )
+    }
+
     const layoutView = view.activeLayoutView
     const rendererWrapper = view.renderer
     const renderer = rendererWrapper.internalRenderer

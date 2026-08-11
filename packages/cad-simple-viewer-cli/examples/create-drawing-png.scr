@@ -1,0 +1,19 @@
+; Create a new drawing, then export PNG (no input file).
+; Usage:
+;   cad-simple-viewer-cli -s examples/create-drawing-png.scr -o ./out --mode write
+qnew
+line
+0,0
+80,0
+80,50
+0,50
+c
+circle
+40,25
+12
+zoom
+e
+pngout
+
+2048
+quit

@@ -1,0 +1,15 @@
+; Turn off a layer via -LAYER, then export PNG.
+; Requires --mode write (layer edits need Write open mode).
+; Replace LAYER_NAME below with a real layer in your drawing.
+; Usage:
+;   cad-simple-viewer-cli -i drawing.dwg -s examples/freeze-layer-png.scr -o ./out --mode write
+-layer
+Off
+LAYER_NAME
+
+zoom
+e
+pngout
+
+2048
+quit

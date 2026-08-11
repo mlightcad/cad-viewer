@@ -1,0 +1,5 @@
+; Export the current drawing to DXF (cdxf triggers a browser download).
+; Usage:
+;   cad-simple-viewer-cli -i drawing.dwg -s examples/export-dxf.scr -o ./out
+cdxf
+quit

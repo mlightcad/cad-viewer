@@ -232,6 +232,24 @@ export class AcEdInputManager {
     this._scriptInputs.length = 0
   }
 
+  /** Returns whether any scripted inputs remain queued. */
+  hasScriptInputs() {
+    return this._scriptInputs.length > 0
+  }
+
+  /**
+   * Removes and returns all remaining scripted inputs.
+   *
+   * Used by multi-command script runners that need to inspect leftovers after
+   * a command finishes without clearing the queue mid-run.
+   */
+  drainScriptInputs() {
+    if (!this._scriptInputs.length) {
+      return [] as string[]
+    }
+    return this._scriptInputs.splice(0, this._scriptInputs.length)
+  }
+
   /**
    * Displays a typed message in the command-line message panel.
    *
@@ -1538,6 +1556,7 @@ export class AcEdInputManager {
         options1.useDashedLine = options.useDashedLine
         options1.useBasePoint = options.useBasePoint
         options1.disableOSnap = options.disableOSnap
+        options1.allowNone = options.allowNone
         const p1Result = await this.getPoint(options1)
         if (p1Result.status !== AcEdPromptStatus.OK) {
           return new AcEdPromptBoxResult(

@@ -55,6 +55,8 @@ export class AcApConvertToPngCmd extends AcEdCommand {
     )
     // Export window corners should follow exact click positions.
     boxOptions.disableOSnap = true
+    // Empty Enter (script blank line) → use drawing extents.
+    boxOptions.allowNone = true
     const boxResult = await AcApDocManager.instance.editor.getBox(boxOptions)
 
     let bounds: AcGeBox2d
@@ -92,7 +94,7 @@ export class AcApConvertToPngCmd extends AcEdCommand {
         ? longSideResult.value
         : DEFAULT_LONG_SIDE_PX
 
-    converter.convert(bounds, longSide)
+    await converter.convert(bounds, longSide)
   }
 
   /**

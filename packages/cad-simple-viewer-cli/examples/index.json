@@ -1,0 +1,87 @@
+{
+  "fixtureDrawing": "https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg",
+  "defaultOutputDir": "tmp/examples-gallery",
+  "examples": [
+    {
+      "id": "create-drawing-dxf",
+      "title": "Create drawing -> DXF",
+      "description": "qnew, draw a closed rectangle with LINE, export DXF. No input file.",
+      "script": "create-drawing-dxf.scr",
+      "mode": "write",
+      "inputKind": "none",
+      "runnable": true
+    },
+    {
+      "id": "create-shapes-dxf",
+      "title": "Create shapes -> DXF",
+      "description": "qnew, draw a rectangle and a circle, export DXF.",
+      "script": "create-shapes-dxf.scr",
+      "mode": "write",
+      "inputKind": "none",
+      "runnable": true
+    },
+    {
+      "id": "create-drawing-png",
+      "title": "Create drawing -> PNG",
+      "description": "qnew, draw geometry, zoom extents, export PNG.",
+      "script": "create-drawing-png.scr",
+      "mode": "write",
+      "inputKind": "none",
+      "runnable": true
+    },
+    {
+      "id": "export-png",
+      "title": "Export PNG",
+      "description": "Zoom extents and export the drawing as PNG (long side 2048).",
+      "script": "export-png.scr",
+      "mode": "read",
+      "inputKind": "file",
+      "runnable": true
+    },
+    {
+      "id": "export-html",
+      "title": "Export HTML",
+      "description": "Export a self-contained offline HTML viewer (-chtml).",
+      "script": "export-html.scr",
+      "mode": "read",
+      "inputKind": "file",
+      "runnable": true
+    },
+    {
+      "id": "export-dxf",
+      "title": "Export DXF",
+      "description": "Convert the open drawing to DXF (cdxf).",
+      "script": "export-dxf.scr",
+      "mode": "read",
+      "inputKind": "file",
+      "runnable": true
+    },
+    {
+      "id": "freeze-layer-png",
+      "title": "Layer off -> PNG",
+      "description": "Turn off a layer with -LAYER, then export PNG. Edit LAYER_NAME in the script first.",
+      "script": "freeze-layer-png.scr",
+      "mode": "write",
+      "inputKind": "file",
+      "runnable": true
+    },
+    {
+      "id": "batch-export-png",
+      "title": "Batch export PNG",
+      "description": "Scan a folder of DWG/DXF files and export each to PNG.",
+      "script": "batch-export-png.mjs",
+      "kind": "batch",
+      "inputKind": "directory",
+      "runnable": true
+    },
+    {
+      "id": "batch-export-html",
+      "title": "Batch export HTML",
+      "description": "Scan a folder and export each drawing to HTML.",
+      "script": "batch-export-html.mjs",
+      "kind": "batch",
+      "inputKind": "directory",
+      "runnable": true
+    }
+  ]
+}

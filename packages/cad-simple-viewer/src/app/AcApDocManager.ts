@@ -87,6 +87,10 @@ import {
   AcEdOpenMode
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
+import {
+  isScriptQuitCommand,
+  parseScriptLines
+} from '../util/AcApScriptParser'
 import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 import { AcTrView2d } from '../view'
 import type { AcTrLayout } from '../view/AcTrLayout'
@@ -1393,20 +1397,68 @@ export class AcApDocManager {
   }
 
   /**
-   * Executes a command script, loading lazy plugins when needed.
+   * Executes a single command script and awaits completion.
    *
-   * When the command is missing from the command stack, {@link AcApPluginManager.loadByTrigger}
-   * is invoked so plugins registered via {@link AcApPluginManager.registerLazyPlugin} can load.
+   * The first line is the command name; remaining lines are queued as inputs for
+   * `getPoint` / `getKeywords` / etc. Lazy plugins are loaded via
+   * {@link AcApPluginManager.loadByTrigger} when needed.
+   *
+   * Unlike {@link runScript}, leftover script inputs are cleared when the command
+   * ends (interactive / one-shot behavior).
    *
    * @param cmdStr - Command script (first line is the command name)
    */
-  private async executeCommandString(cmdStr: string) {
+  async executeCommandString(cmdStr: string) {
     const lines = this.splitCommandScript(cmdStr)
     if (!lines.length) {
       throw new Error('Command string is empty')
     }
 
     const [cmdName, ...scriptInputs] = lines
+    this.editor.clearScriptInputs()
+    this.editor.enqueueScriptInputs(scriptInputs)
+    await this.executeNamedCommand(cmdName, { preserveScriptInputs: false })
+  }
+
+  /**
+   * Runs a multi-command AutoCAD-style `.scr` script and awaits completion.
+   *
+   * Lines are parsed with {@link parseScriptLines}. The first non-blank line of
+   * each command is the command name; subsequent lines feed prompts until the
+   * command ends. Remaining queued lines become the next command. `QUIT` /
+   * `EXIT` terminate the script.
+   *
+   * @param script - Full script text
+   */
+  async runScript(script: string) {
+    const lines = parseScriptLines(script)
+    this.editor.clearScriptInputs()
+    this.editor.enqueueScriptInputs(lines)
+
+    while (this.editor.hasScriptInputs()) {
+      const cmdName = this.consumeNextScriptCommandName()
+      if (cmdName == null) {
+        break
+      }
+      if (isScriptQuitCommand(cmdName)) {
+        this.editor.clearScriptInputs()
+        break
+      }
+      await this.executeNamedCommand(cmdName, { preserveScriptInputs: true })
+    }
+  }
+
+  /**
+   * Looks up and runs a registered command by name.
+   *
+   * When `preserveScriptInputs` is true (multi-command {@link runScript}), the
+   * script input queue is left intact so the next command can continue from the
+   * remaining lines. Otherwise the queue is cleared after the command finishes.
+   */
+  private async executeNamedCommand(
+    cmdName: string,
+    options: { preserveScriptInputs: boolean }
+  ) {
     const documentMode = this.context.doc.openMode
     let cmd =
       this._commandManager.lookupGlobalCmd(cmdName) ??
@@ -1438,11 +1490,10 @@ export class AcApDocManager {
     // so its `commandEnded` lifecycle finishes before the new one begins.
     await this._commandManager.cancelActive()
 
-    this.editor.clearScriptInputs()
-    this.editor.enqueueScriptInputs(scriptInputs)
-
     const promise = cmd.trigger(this.context).finally(() => {
-      this.editor.clearScriptInputs()
+      if (!options.preserveScriptInputs) {
+        this.editor.clearScriptInputs()
+      }
       this._commandManager.clearActive(cmd)
     })
     this._commandManager.markActive(cmd, this.curView, promise)
@@ -1451,22 +1502,40 @@ export class AcApDocManager {
   }
 
   /**
+   * Consumes blank lines, then returns the next non-blank script token as a
+   * command name. Returns `undefined` when the queue is exhausted.
+   */
+  private consumeNextScriptCommandName(): string | undefined {
+    while (this.editor.hasScriptInputs()) {
+      const token = this.editor.consumeScriptInput()
+      if (token == null) {
+        return undefined
+      }
+      const trimmed = token.trim()
+      if (trimmed) {
+        return trimmed
+      }
+    }
+    return undefined
+  }
+
+  /**
    * Splits command script into Enter-separated values.
    * First line is command name, remaining lines are queued inputs for getXXX.
    */
   private splitCommandScript(commandScript: string) {
-    const source =
-      commandScript.includes('\n') || commandScript.includes('\r')
-        ? commandScript
-        : commandScript.replace(/\\n/g, '\n')
-
-    const lines = source.replace(/\r\n/g, '\n').split('\n')
+    const lines = parseScriptLines(commandScript)
     if (!lines.length) return []
 
-    const cmdName = lines[0].trim()
-    if (!cmdName) return []
+    // Skip leading blank / comment-stripped empties to find the command name.
+    let start = 0
+    while (start < lines.length && !lines[start].trim()) {
+      start++
+    }
+    if (start >= lines.length) return []
 
-    return [cmdName, ...lines.slice(1)]
+    const cmdName = lines[start].trim()
+    return [cmdName, ...lines.slice(start + 1)]
   }
 
   /**

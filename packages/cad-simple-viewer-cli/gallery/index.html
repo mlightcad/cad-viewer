@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cad-simple-viewer-cli — headless script runner</title>
+    <link rel="stylesheet" href="/gallery/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <p class="brand">cad-simple-viewer-cli</p>
+        <div class="hero-title-row">
+          <h1>Headless command scripts</h1>
+          <button
+            type="button"
+            class="info-tip"
+            aria-describedby="hero-about"
+            aria-label="About this tool"
+          >
+            <span class="info-tip-icon" aria-hidden="true">i</span>
+            <span id="hero-about" class="info-tip-panel" role="tooltip">
+              An AcCoreConsole-style tool for MLight CAD Viewer: run AutoCAD-like
+              <code>.scr</code> scripts against DXF/DWG drawings
+              <strong>without opening the interactive viewer</strong>. Use it for
+              batch export (PNG, HTML, DXF), layer ops, and other automation.
+              Try a built-in example or write a
+              <strong>Custom script</strong>, set input / output paths, then run.
+            </span>
+          </button>
+        </div>
+        <p id="status" class="status" aria-live="polite"></p>
+      </header>
+
+      <main class="layout">
+        <section class="list-panel" aria-label="Example list">
+          <div id="list" class="list"></div>
+        </section>
+
+        <section class="detail-panel" aria-label="Example detail">
+          <div class="detail-scroll">
+            <div id="empty" class="empty">
+              Select a script on the left to preview and run — or open
+              <strong>Custom script</strong> to author your own.
+            </div>
+            <article id="detail" class="detail hidden">
+              <header class="detail-head">
+                <h2 id="title"></h2>
+                <p id="description" class="desc"></p>
+                <p id="meta" class="meta"></p>
+              </header>
+
+              <form id="params" class="params" autocomplete="off">
+                <label id="custom-kind-field" class="field hidden">
+                  <span class="field-label">Input kind</span>
+                  <select id="custom-input-kind" class="field-input">
+                    <option value="none">No input (blank drawing)</option>
+                    <option value="file">Open a DXF / DWG file</option>
+                  </select>
+                  <span class="field-hint"
+                    >Blank starts from an ISO template in write mode.</span
+                  >
+                </label>
+
+                <label id="custom-mode-field" class="field hidden">
+                  <span class="field-label">Open mode</span>
+                  <select id="custom-mode" class="field-input">
+                    <option value="write">write</option>
+                    <option value="read">read</option>
+                  </select>
+                </label>
+
+                <label id="input-field" class="field">
+                  <span id="input-label" class="field-label">Input drawing</span>
+                  <input
+                    id="input-path"
+                    class="field-input"
+                    type="text"
+                    spellcheck="false"
+                    placeholder="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg"
+                  />
+                  <span id="input-hint" class="field-hint"></span>
+                </label>
+
+                <label class="field">
+                  <span class="field-label">Output directory</span>
+                  <input
+                    id="output-path"
+                    class="field-input"
+                    type="text"
+                    spellcheck="false"
+                    placeholder="tmp/examples-gallery/export-png"
+                  />
+                  <span class="field-hint"
+                    >Relative to
+                    <code>packages/cad-simple-viewer-cli</code>, or absolute.</span
+                  >
+                </label>
+              </form>
+
+              <div class="script-block">
+                <div class="script-toolbar">
+                  <label id="script-label" class="field-label script-label"
+                    >Script</label
+                  >
+                  <div class="script-actions">
+                    <button
+                      id="run"
+                      type="button"
+                      class="icon-btn primary"
+                      title="Run with CLI"
+                      aria-label="Run with CLI"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fill="currentColor"
+                          d="M8 5.14v13.72L19 12 8 5.14z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      id="copy"
+                      type="button"
+                      class="icon-btn"
+                      title="Copy CLI command"
+                      aria-label="Copy CLI command"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fill="currentColor"
+                          d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <pre id="script" class="script" tabindex="0"></pre>
+                <textarea
+                  id="script-edit"
+                  class="script script-edit hidden"
+                  spellcheck="false"
+                  rows="16"
+                  placeholder="; AutoCAD-style .scr — one token / Enter per line"
+                ></textarea>
+              </div>
+
+              <pre id="log" class="log" hidden></pre>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/gallery/app.js"></script>
+  </body>
+</html>

@@ -172,6 +172,18 @@ export class AcEditor {
     this._inputManager.clearScriptInputs()
   }
 
+  /** Returns whether any scripted inputs remain queued. */
+  hasScriptInputs() {
+    return this._inputManager.hasScriptInputs()
+  }
+
+  /**
+   * Removes and returns all remaining scripted inputs.
+   */
+  drainScriptInputs() {
+    return this._inputManager.drainScriptInputs()
+  }
+
   /**
    * Displays a typed message in the command-line message panel.
    *

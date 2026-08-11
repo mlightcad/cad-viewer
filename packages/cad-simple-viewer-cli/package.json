@@ -1,0 +1,73 @@
+{
+  "name": "@mlightcad/cad-simple-viewer-cli",
+  "version": "1.5.10",
+  "description": "AcCoreConsole-style headless CLI: run .scr command scripts against DXF/DWG drawings",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "cad-simple-viewer-cli": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "dist-runner",
+    "examples",
+    "README.md",
+    "package.json"
+  ],
+  "exports": {
+    ".": "./dist/runHeadless.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git",
+    "directory": "packages/cad-simple-viewer-cli"
+  },
+  "homepage": "https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli",
+  "bugs": {
+    "url": "https://github.com/mlightcad/cad-viewer/issues"
+  },
+  "keywords": [
+    "autocad",
+    "cad",
+    "cad-viewer",
+    "cli",
+    "dwg",
+    "dxf",
+    "headless",
+    "mlight",
+    "mlightcad",
+    "script"
+  ],
+  "scripts": {
+    "build": "tsc && vite build --config vite.runner.config.ts && node scripts/copy-runner-assets.mjs",
+    "install-browser": "playwright install chromium",
+    "clean": "rimraf dist dist-runner tsconfig.tsbuildinfo",
+    "run:cli": "node ./dist/cli.js",
+    "examples": "tsc && node ./dist/examplesServer.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "dependencies": {
+    "@mlightcad/cad-html-plugin": "workspace:*",
+    "@mlightcad/cad-pdf-plugin": "workspace:*",
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/cad-svg-plugin": "workspace:*",
+    "@mlightcad/data-model": "^1.12.5",
+    "@mlightcad/libredwg-converter": "^3.12.5",
+    "@mlightcad/mtext-renderer": "^0.12.4",
+    "commander": "^12.1.0",
+    "playwright": "^1.49.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.5.2",
+    "vite": "^6.4.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
