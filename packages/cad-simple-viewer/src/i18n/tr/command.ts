@@ -298,6 +298,9 @@ export default {
     measuredistance: {
       description: 'İki nokta arasındaki mesafeyi ve delta değerlerini ölçer'
     },
+    measurepoint: {
+      description: 'Seçilen noktanın X/Y koordinatlarını ölçer'
+    },
     measurement: {
       description:
         'Çizimin İngiliz (emperyal) birimlerini mi yoksa metrik birimleri mi kullanacağını ayarlar'

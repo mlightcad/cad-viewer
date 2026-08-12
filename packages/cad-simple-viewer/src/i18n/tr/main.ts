@@ -20,6 +20,8 @@ export default {
   },
   message: {
     fetchingDrawingFile: 'Dosya alınıyor ...',
+    exportingDxf: 'DXF dışa aktarılıyor ...',
+    exportingEntityPreview: 'Görüntü dışa aktarılıyor ...',
     collectingMemoryProfile: 'Bellek analiz ediliyor ...',
     fontCached: 'Yazı tipi başarıyla önbelleğe alındı',
     fontCacheFailed: 'Yazı tipi önbelleğe alınamadı'

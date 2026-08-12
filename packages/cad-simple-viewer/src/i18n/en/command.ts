@@ -287,6 +287,9 @@ export default {
     measuredistance: {
       description: 'Measures the distance and delta values between two points'
     },
+    measurepoint: {
+      description: 'Measures the X/Y coordinates of a picked point'
+    },
     measurement: {
       description:
         'Sets whether the drawing uses English (imperial) or metric units'

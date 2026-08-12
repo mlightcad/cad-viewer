@@ -15,6 +15,7 @@ import {
   measureArc,
   measureArea,
   measureDistance,
+  measurePoint,
   pan,
   revCircle,
   revCloud,
@@ -92,6 +93,12 @@ const verticalToolbarData = computed(() => {
           text: t('main.verticalToolbar.measureArc.text'),
           command: 'measurearc',
           description: t('main.verticalToolbar.measureArc.description')
+        },
+        {
+          icon: measurePoint,
+          text: t('main.verticalToolbar.measurePoint.text'),
+          command: 'measurepoint',
+          description: t('main.verticalToolbar.measurePoint.description')
         },
         {
           icon: clearMeasurements,

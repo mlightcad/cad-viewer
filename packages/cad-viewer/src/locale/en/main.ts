@@ -433,6 +433,10 @@ export default {
       text: 'Arc',
       description: 'Measures the length of an arc defined by three points'
     },
+    measurePoint: {
+      text: 'Point',
+      description: 'Measures the X/Y coordinates of a picked point'
+    },
     clearMeasurements: {
       text: 'Clear',
       description: 'Removes all active measurements from the view'

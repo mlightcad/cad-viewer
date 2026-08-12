@@ -671,6 +671,9 @@ export default {
     firstPoint: 'İlk noktayı belirtin',
     secondPoint: 'İkinci noktayı belirtin'
   },
+  measurePoint: {
+    point: 'Noktayı belirtin'
+  },
   move: {
     basePointOrDisplacement: 'Temel noktayı belirtin veya',
     secondPointOrDisplacement: 'İkinci noktayı belirtin veya',

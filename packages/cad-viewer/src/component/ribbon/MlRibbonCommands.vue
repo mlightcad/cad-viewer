@@ -93,6 +93,7 @@ import {
   measureArc,
   measureArea,
   measureDistance,
+  measurePoint,
   mline,
   move,
   mtext,
@@ -737,6 +738,7 @@ const buildBaseTabs = (
     measureAngle: t('main.verticalToolbar.measureAngle.description'),
     measureArea: t('main.verticalToolbar.measureArea.description'),
     measureArc: t('main.verticalToolbar.measureArc.description'),
+    measurePoint: t('main.verticalToolbar.measurePoint.description'),
     clearMeasurements: t('main.verticalToolbar.clearMeasurements.description'),
     layer: t('main.verticalToolbar.layer.description')
   }
@@ -826,6 +828,14 @@ const buildBaseTabs = (
       tooltip: verticalToolbarDescriptions.measureArc,
       size: 'large',
       props: { icon: measureArc }
+    },
+    {
+      id: 'cmd-tool-measure-point',
+      type: 'button',
+      label: t('main.verticalToolbar.measurePoint.text'),
+      tooltip: verticalToolbarDescriptions.measurePoint,
+      size: 'large',
+      props: { icon: measurePoint }
     },
     {
       id: 'cmd-tool-clear-measurements',
@@ -1689,6 +1699,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-tool-measure-angle', 'measureangle')
   commandByItemId.set('cmd-tool-measure-area', 'measurearea')
   commandByItemId.set('cmd-tool-measure-arc', 'measurearc')
+  commandByItemId.set('cmd-tool-measure-point', 'measurepoint')
   commandByItemId.set('cmd-tool-clear-measurements', 'clearmeasurements')
   // Layer actions
   commandByItemId.set('layer-action-off', 'layoff')

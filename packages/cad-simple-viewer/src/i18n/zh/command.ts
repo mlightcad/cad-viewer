@@ -259,6 +259,9 @@ export default {
     measuredistance: {
       description: '测量两点之间的距离及坐标增量'
     },
+    measurepoint: {
+      description: '测量拾取点的 X/Y 坐标'
+    },
     measurement: {
       description: '设置图形使用英制或公制单位'
     },

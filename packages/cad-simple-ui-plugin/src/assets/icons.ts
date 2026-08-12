@@ -44,6 +44,10 @@ export const ICON_MEASURE_AREA =
 export const ICON_MEASURE_ARC =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M4 14a8 8 0 0 1 12-8"/></svg>'
 
+/** Measure point / coordinates icon (crosshair with center marker). */
+export const ICON_MEASURE_POINT =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" d="M9.25 2h1.5v5.25H16v1.5h-5.25V16h-1.5v-7.25H4v-1.5h5.25V2Z"/><circle fill="currentColor" cx="10" cy="10" r="1.75"/></svg>'
+
 /** Clear measurements icon (ruler with clear mark). */
 export const ICON_CLEAR_MEASUREMENTS =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M3 13h14"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M6 11v4M9.5 12v2M13 11v4M16.5 12v2"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M6.5 5.5 13.5 12.5M13.5 5.5 6.5 12.5"/></svg>'

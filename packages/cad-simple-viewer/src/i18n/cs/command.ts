@@ -134,6 +134,10 @@ export default {
       description:
         'Připojí rastrový obrázek jako externí referenci k aktuálnímu výkresu'
     },
+    '-insert': {
+      description:
+        'Vloží definici bloku do aktuálního výkresu (příkazový řádek)'
+    },
     xattach: {
       description:
         'Připojí výkres DWG nebo DXF jako externí referenci k aktuálnímu výkresu'
@@ -283,6 +287,9 @@ export default {
     },
     measuredistance: {
       description: 'Změří vzdálenost a přírůstky mezi dvěma body'
+    },
+    measurepoint: {
+      description: 'Změří souřadnice X/Y vybraného bodu'
     },
     measurement: {
       description:

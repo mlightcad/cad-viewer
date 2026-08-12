@@ -397,6 +397,10 @@ export default {
       text: '弧长',
       description: '测量由三点定义的弧长'
     },
+    measurePoint: {
+      text: '坐标',
+      description: '测量拾取点的 X/Y 坐标'
+    },
     clearMeasurements: {
       text: '清除',
       description: '清除视图中的所有测量标注'
