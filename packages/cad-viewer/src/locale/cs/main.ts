@@ -427,6 +427,10 @@ export default {
       text: 'Oblouk',
       description: 'Změří délku oblouku určeného třemi body'
     },
+    measurePoint: {
+      text: 'Bod',
+      description: 'Změří souřadnice X/Y vybraného bodu'
+    },
     clearMeasurements: {
       text: 'Vymazat',
       description: 'Odstraní z pohledu všechna aktivní měření'

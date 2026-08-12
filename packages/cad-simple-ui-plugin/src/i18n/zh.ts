@@ -15,6 +15,7 @@ export const zh: Record<string, string> = {
   'toolbar.measureAngle': '测量角度',
   'toolbar.measureArea': '测量面积',
   'toolbar.measureArc': '测量弧长',
+  'toolbar.measurePoint': '测量坐标点',
   'toolbar.clearMeasurements': '清除测量',
   'toolbar.switchBg': '切换背景',
   'toolbar.annotation': '审阅标注',

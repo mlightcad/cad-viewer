@@ -15,6 +15,7 @@ export const en: Record<string, string> = {
   'toolbar.measureAngle': 'Measure Angle',
   'toolbar.measureArea': 'Measure Area',
   'toolbar.measureArc': 'Measure Arc Length',
+  'toolbar.measurePoint': 'Measure Point',
   'toolbar.clearMeasurements': 'Clear Measurements',
   'toolbar.switchBg': 'Switch Background',
   'toolbar.annotation': 'Annotation',

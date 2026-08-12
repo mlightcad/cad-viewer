@@ -435,6 +435,10 @@ export default {
       text: 'Yay',
       description: 'Üç nokta ile tanımlanan bir yayın uzunluğunu ölçer'
     },
+    measurePoint: {
+      text: 'Nokta',
+      description: 'Seçilen noktanın X/Y koordinatlarını ölçer'
+    },
     clearMeasurements: {
       text: 'Temizle',
       description: 'Görünümden tüm etkin ölçümleri kaldırır'

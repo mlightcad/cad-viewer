@@ -672,6 +672,9 @@ export default {
     firstPoint: 'Specify first point',
     secondPoint: 'Specify second point'
   },
+  measurePoint: {
+    point: 'Specify point'
+  },
   move: {
     basePointOrDisplacement: 'Specify base point or',
     secondPointOrDisplacement: 'Specify second point or',

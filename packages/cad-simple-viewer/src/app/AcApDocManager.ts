@@ -50,6 +50,7 @@ import {
   AcApMeasureArcCmd,
   AcApMeasureAreaCmd,
   AcApMeasureDistanceCmd,
+  AcApMeasurePointCmd,
   AcApMLineCmd,
   AcApMoveCmd,
   AcApMTextCmd,
@@ -1224,6 +1225,7 @@ export class AcApDocManager {
     addSystemCommand('measurearea', 'measurearea', new AcApMeasureAreaCmd())
     addSystemCommand('measureangle', 'measureangle', new AcApMeasureAngleCmd())
     addSystemCommand('measurearc', 'measurearc', new AcApMeasureArcCmd())
+    addSystemCommand('measurepoint', 'measurepoint', new AcApMeasurePointCmd())
     addSystemCommand(
       'clearmeasurements',
       'clearmeasurements',

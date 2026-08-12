@@ -20,6 +20,7 @@ import {
   ICON_MEASURE_ARC,
   ICON_MEASURE_AREA,
   ICON_MEASURE_DISTANCE,
+  ICON_MEASURE_POINT,
   ICON_PAN,
   ICON_PLACEMENT_BOTTOM,
   ICON_PLACEMENT_LEFT,
@@ -172,6 +173,12 @@ export function createDefaultToolbarItems(
           label: 'toolbar.measureArc',
           icon: ICON_MEASURE_ARC,
           command: 'measurearc'
+        },
+        {
+          id: 'measure-point',
+          label: 'toolbar.measurePoint',
+          icon: ICON_MEASURE_POINT,
+          command: 'measurepoint'
         },
         {
           id: 'clear-measurements',

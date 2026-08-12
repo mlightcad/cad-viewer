@@ -284,6 +284,9 @@ export default {
     measuredistance: {
       description: 'Změří vzdálenost a přírůstky mezi dvěma body'
     },
+    measurepoint: {
+      description: 'Změří souřadnice X/Y vybraného bodu'
+    },
     measurement: {
       description:
         'Nastaví, zda výkres používá anglosaské (imperiální) nebo metrické jednotky'

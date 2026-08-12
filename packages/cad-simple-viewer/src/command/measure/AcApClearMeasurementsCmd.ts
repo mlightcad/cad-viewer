@@ -27,6 +27,9 @@ export function clearAllMeasurements(view: AcTrView2d): void {
   cleanups.forEach(fn => fn())
   cleanups.length = 0
   view.htmlTransientManager.clear('measurement')
+  // HTML overlays need a CSS2D render pass to disappear when no CAD
+  // transient entities were involved (e.g. measure point).
+  view.isDirty = true
 }
 
 export class AcApClearMeasurementsCmd extends AcEdCommand {

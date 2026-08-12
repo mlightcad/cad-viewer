@@ -662,6 +662,9 @@ export default {
     firstPoint: '指定第一个点',
     secondPoint: '指定第二个点'
   },
+  measurePoint: {
+    point: '指定点'
+  },
   move: {
     basePointOrDisplacement: '指定基点或',
     secondPointOrDisplacement: '指定第二个点或',
