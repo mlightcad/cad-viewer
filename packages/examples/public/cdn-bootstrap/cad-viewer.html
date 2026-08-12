@@ -216,7 +216,9 @@ const EXACT = {
   '@mlightcad/cad-agent-plugin/style.css': CSS_SHIM,
   '@mlightcad/cad-html-plugin': npm(`@mlightcad/cad-html-plugin@${VERSIONS.mlightcad}`, '/+esm'),
   '@mlightcad/cad-html-plugin/register': npm(`@mlightcad/cad-html-plugin@${VERSIONS.mlightcad}`, '/register/+esm'),
+  '@mlightcad/cad-pdf-plugin': npm(`@mlightcad/cad-pdf-plugin@${VERSIONS.mlightcad}`, '/+esm'),
   '@mlightcad/cad-pdf-plugin/register': npm(`@mlightcad/cad-pdf-plugin@${VERSIONS.mlightcad}`, '/register/+esm'),
+  '@mlightcad/cad-svg-plugin': npm(`@mlightcad/cad-svg-plugin@${VERSIONS.mlightcad}`, '/+esm'),
   '@mlightcad/cad-svg-plugin/register': npm(`@mlightcad/cad-svg-plugin@${VERSIONS.mlightcad}`, '/register/+esm'),
   './cad-viewer.css': CSS_SHIM
 }
@@ -294,7 +296,7 @@ function resolveSpec(spec) {
   }
   if (spec.startsWith('three/')) {
     let rest = spec.slice('three/'.length)
-    if (spec.startsWith('three/examples/jsm/') && !/\.[a-z0-9]+$/i.test(rest)) rest += '.js'
+    if (rest.startsWith('examples/jsm/') && !/\.[a-z0-9]+$/i.test(rest)) rest += '.js'
     return npm(`three@${VERSIONS.three}`, `/${rest}`)
   }
   if (spec.startsWith('lodash-es/')) {
