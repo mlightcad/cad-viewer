@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Zero-build CAD viewer bootstrap: load @mlightcad/cad-viewer from CDN with Vue 3, Element Plus, and Three.js — no Node or Vite required.">
+<title>CAD Viewer — CDN Bootstrap (single HTML)</title>
+
+<!--
+  Zero-build CDN bootstrap (all assets from cdn.jsdelivr.net).
+  Serve over HTTP(S) — file:// cannot load ES modules from a CDN.
+  Pin VERSIONS below when upgrading.
+  DWG worker: blob module that imports the CDN script (cross-origin Worker URLs are blocked).
+  MTEXT: main-thread rendering (no mtext-renderer-worker.js).
+-->
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.12.0/dist/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.5.11/dist/cad-viewer.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-agent-plugin@1.5.11/dist/style.css">
+
+<style>
+html,body,#app{margin:0;width:100%;height:100%;overflow:hidden}
+body{font-family:Arial,sans-serif}
+#app-root{height:100vh;position:fixed;inset:0}
+.upload-screen{
+  height:100vh;width:100vw;display:flex;justify-content:center;align-items:safe center;
+  overflow-y:auto;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  margin:0;padding:16px;box-sizing:border-box;position:absolute;inset:0;z-index:1000
+}
+.viewer-screen{position:absolute;inset:0}
+.spinner{width:40px;height:40px;border:4px solid #ccc;border-top-color:#409EFF;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;z-index:99999;padding:20px}
+.loader-card{width:min(900px,94vw);max-height:88vh;display:flex;flex-direction:column;border:1px solid #d7dee5;border-radius:10px;padding:18px;background:#fff;box-shadow:0 12px 35px rgba(0,0,0,.08)}
+.loader-row{display:flex;align-items:center;gap:12px}
+.loader-title{font-weight:700;color:#173858}
+.loader-status{margin-top:10px;font:12px/1.5 Consolas,monospace;color:#526274;white-space:pre-wrap;word-break:break-word;overflow:auto;max-height:58vh;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4}
+.loader-error{margin-top:12px;padding:10px;border:1px solid #efb2b2;background:#fff5f5;color:#8a1f1f;border-radius:6px;font:12px/1.45 Consolas,monospace;display:none;white-space:pre-wrap;word-break:break-word;overflow:auto;max-height:20vh}
+.loader-actions{display:none;margin-top:12px;gap:8px}
+.loader-actions button{border:1px solid #bfc9d3;background:#fff;border-radius:5px;padding:7px 10px;cursor:pointer}
+.badge{position:fixed;right:6px;bottom:6px;z-index:99998;font:10px/1.2 monospace;background:rgba(255,255,255,.78);border:1px solid #d9dfe6;border-radius:4px;padding:3px 5px;color:#687687;pointer-events:none}
+
+.file-upload-container{display:flex;justify-content:center;width:100%;max-width:820px;padding:12px 16px;box-sizing:border-box}
+.upload-panel{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);width:100%;border-radius:14px;background:#fff;
+  box-shadow:0 20px 40px rgba(15,23,42,.16),0 0 0 1px rgba(255,255,255,.08);overflow:hidden
+}
+.upload-main,.settings-section{display:flex;flex-direction:column;justify-content:center;padding:18px 20px}
+.settings-section{background:#f8fafc;border-left:1px solid #e8edf5}
+.upload-hero{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.upload-icon{
+  display:flex;flex-shrink:0;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#667eea 0%,#5b6fd6 100%);color:#fff;box-shadow:0 4px 12px rgba(102,126,234,.28)
+}
+.upload-title{margin:0;font-size:17px;font-weight:700;letter-spacing:-.02em;color:#0f172a;line-height:1.25}
+.upload-subtitle{margin:2px 0 0;font-size:12px;color:#64748b;line-height:1.35}
+.new-drawing-button{
+  display:block;width:100%;padding:10px 14px;border:none;border-radius:10px;cursor:pointer;
+  background:linear-gradient(135deg,#667eea 0%,#5b6fd6 100%);color:#fff;font-size:13px;font-weight:700;
+  box-shadow:0 6px 14px rgba(102,126,234,.26)
+}
+.new-drawing-button:hover{filter:brightness(1.03)}
+.upload-divider{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em}
+.upload-divider::before,.upload-divider::after{content:'';flex:1;height:1px;background:#e2e8f0}
+.upload-dropzone{width:100%;box-sizing:border-box}
+.upload-dropzone .el-upload{display:block;width:100%}
+.upload-dropzone .el-upload-dragger{
+  display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;padding:14px 12px;
+  border:1.5px dashed #c7d2fe;border-radius:10px;background:#f8faff
+}
+.upload-dropzone .el-upload-dragger:hover{border-color:#667eea;background:#f1f5ff}
+.dropzone-content{display:flex;flex-direction:column;align-items:center;gap:6px}
+.dropzone-title{margin:0;font-size:13px;font-weight:600;color:#1e293b}
+.dropzone-link{color:#667eea;font-weight:600}
+.format-tags{display:flex;gap:6px}
+.format-tag{padding:1px 7px;border-radius:999px;background:#e8edff;color:#4f5fd0;font-size:10px;font-weight:700;letter-spacing:.04em}
+.settings-header{margin-bottom:10px}
+.settings-title{margin:0;font-size:12px;font-weight:600;color:#334155}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.setting-block{display:flex;flex-direction:column;gap:4px}
+.setting-block--full{grid-column:1/-1}
+.setting-label{margin:0;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#94a3b8}
+.pill-segment{display:flex;border:1.5px solid #e2e8f0;border-radius:7px;background:#fff;overflow:hidden}
+.pill-option{flex:1;padding:6px 8px;border:none;background:transparent;font-size:11px;font-weight:600;color:#64748b;cursor:pointer;text-align:center;white-space:nowrap}
+.pill-option:not(:last-child){border-right:1px solid #e2e8f0}
+.pill-option:hover:not(.is-active){background:#f8fafc;color:#475569}
+.pill-option.is-active{background:#f1f5ff;color:#4f5fd0}
+@media (max-width:768px){
+  .file-upload-container{max-width:100%;padding:12px}
+  .upload-panel{grid-template-columns:1fr}
+  .settings-section{border-left:none;border-top:1px solid #e8edf5}
+}
+@media (max-width:400px){.settings-grid{grid-template-columns:1fr}.setting-block--full{grid-column:auto}}
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "vue": "https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.esm-browser.prod.js",
+    "vue-demi": "https://cdn.jsdelivr.net/npm/vue-demi@0.14.10/lib/index.mjs",
+    "vue-i18n": "https://cdn.jsdelivr.net/npm/vue-i18n@11.4.4/dist/vue-i18n.esm-browser.prod.js",
+    "element-plus": "https://cdn.jsdelivr.net/npm/element-plus@2.12.0/dist/index.full.mjs",
+    "element-plus/dist/index.css": "data:text/javascript,export%20default%20undefined;",
+    "element-plus/es/": "https://cdn.jsdelivr.net/npm/element-plus@2.12.0/es/",
+    "@element-plus/icons-vue": "https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/index.js",
+    "three": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.module.js",
+    "three/": "https://cdn.jsdelivr.net/npm/three@0.172.0/",
+    "lodash-es": "https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm",
+    "lodash-es/": "https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/",
+    "lodash-unified": "https://cdn.jsdelivr.net/npm/lodash-unified@1.0.3/import.js",
+    "@vue/shared": "https://cdn.jsdelivr.net/npm/@vue/shared@3.4.21/+esm",
+    "@vueuse/core": "https://cdn.jsdelivr.net/npm/@vueuse/core@11.1.0/index.mjs",
+    "@vueuse/shared": "https://cdn.jsdelivr.net/npm/@vueuse/shared@11.1.0/index.mjs",
+    "async-validator": "https://cdn.jsdelivr.net/npm/async-validator@4.2.5/dist-web/index.js",
+    "dayjs": "https://cdn.jsdelivr.net/npm/dayjs@1.11.13/+esm",
+    "dayjs/plugin/localeData.js": "https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/localeData.js/+esm",
+    "dayjs/plugin/customParseFormat.js": "https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/customParseFormat.js/+esm",
+    "dayjs/plugin/advancedFormat.js": "https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/advancedFormat.js/+esm",
+    "dayjs/plugin/weekOfYear.js": "https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/weekOfYear.js/+esm",
+    "dayjs/plugin/weekYear.js": "https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/weekYear.js/+esm",
+    "dayjs/plugin/dayOfYear.js": "https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/dayOfYear.js/+esm",
+    "dayjs/plugin/isSameOrAfter.js": "https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/isSameOrAfter.js/+esm",
+    "dayjs/plugin/isSameOrBefore.js": "https://cdn.jsdelivr.net/npm/dayjs@1.11.13/plugin/isSameOrBefore.js/+esm",
+    "escape-html": "https://cdn.jsdelivr.net/npm/escape-html@1.0.3/+esm",
+    "memoize-one": "https://cdn.jsdelivr.net/npm/memoize-one@6.0.0/dist/memoize-one.esm.js",
+    "normalize-wheel-es": "https://cdn.jsdelivr.net/npm/normalize-wheel-es@1.2.0/+esm",
+    "@ctrl/tinycolor": "https://cdn.jsdelivr.net/npm/@ctrl/tinycolor@4.1.0/dist/module/index.js",
+    "@floating-ui/dom": "https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.6.13/+esm",
+    "@popperjs/core": "https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/lib/index.js",
+    "@types/lodash": "data:text/javascript,export%20default%20undefined;",
+    "@mlightcad/cad-simple-viewer": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-simple-viewer@1.5.11/+esm",
+    "@mlightcad/cad-viewer": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.5.11/dist/cad-viewer.js",
+    "@mlightcad/data-model": "https://cdn.jsdelivr.net/npm/@mlightcad/data-model@1.12.5/+esm",
+    "@mlightcad/three-renderer": "https://cdn.jsdelivr.net/npm/@mlightcad/three-renderer@1.5.11/+esm",
+    "@mlightcad/cad-agent-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-agent-plugin@1.5.11/+esm",
+    "@mlightcad/cad-agent-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-agent-plugin@1.5.11/register/+esm",
+    "@mlightcad/cad-agent-plugin/style.css": "data:text/javascript,export%20default%20undefined;",
+    "@mlightcad/cad-html-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-html-plugin@1.5.11/+esm",
+    "@mlightcad/cad-html-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-html-plugin@1.5.11/register/+esm",
+    "@mlightcad/cad-pdf-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-pdf-plugin@1.5.11/+esm",
+    "@mlightcad/cad-pdf-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-pdf-plugin@1.5.11/register/+esm",
+    "@mlightcad/cad-svg-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-svg-plugin@1.5.11/+esm",
+    "@mlightcad/cad-svg-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-svg-plugin@1.5.11/register/+esm"
+  }
+}
+</script>
+</head>
+<body>
+<div id="loader">
+  <div class="loader-card">
+    <div class="loader-row">
+      <div class="spinner" id="loaderSpinner"></div>
+      <div class="loader-title">MLightCAD — loading</div>
+    </div>
+    <div class="loader-status" id="loaderStatus">Starting…</div>
+    <div class="loader-error" id="loaderError"></div>
+    <div class="loader-actions" id="loaderActions">
+      <button id="retryBtn">Retry</button>
+      <button id="copyDiagBtn">Copy all</button>
+      <button id="hideLoaderBtn">Hide</button>
+    </div>
+  </div>
+</div>
+<div id="app"></div>
+<div class="badge">CDN bootstrap · no Node · no Vite</div>
+
+<script type="module">
+const VERSIONS = {
+  vue: '3.4.21',
+  elementPlus: '2.12.0',
+  icons: '2.3.1',
+  three: '0.172.0',
+  dayjs: '1.11.13',
+  vueuse: '11.1.0',
+  mlightcad: '1.5.11',
+  dataModel: '1.12.5'
+}
+
+const npm = (pkg, path = '') => `https://cdn.jsdelivr.net/npm/${pkg}${path}`
+const CSS_SHIM = null // drop CSS imports from cad-viewer.js (already in <head>)
+
+const CAD_VIEWER_URL = npm(`@mlightcad/cad-viewer@${VERSIONS.mlightcad}`, '/dist/cad-viewer.js')
+const BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
+const LIBREDWG_WORKER = npm(
+  `@mlightcad/cad-simple-viewer@${VERSIONS.mlightcad}`,
+  '/dist/libredwg-parser-worker.js'
+)
+
+const EXACT = {
+  vue: npm(`vue@${VERSIONS.vue}`, '/dist/vue.esm-browser.prod.js'),
+  'vue-demi': npm('vue-demi@0.14.10', '/lib/index.mjs'),
+  'vue-i18n': npm('vue-i18n@11.4.4', '/dist/vue-i18n.esm-browser.prod.js'),
+  'element-plus': npm(`element-plus@${VERSIONS.elementPlus}`, '/dist/index.full.mjs'),
+  'element-plus/es': npm(`element-plus@${VERSIONS.elementPlus}`, '/es/index.mjs'),
+  'element-plus/dist/index.css': CSS_SHIM,
+  '@element-plus/icons-vue': npm(`@element-plus/icons-vue@${VERSIONS.icons}`, '/dist/index.js'),
+  three: npm(`three@${VERSIONS.three}`, '/build/three.module.js'),
+  'lodash-es': npm('lodash-es@4.17.21', '/+esm'),
+  'lodash-unified': npm('lodash-unified@1.0.3', '/import.js'),
+  '@vue/shared': npm(`@vue/shared@${VERSIONS.vue}`, '/+esm'),
+  '@vueuse/core': npm(`@vueuse/core@${VERSIONS.vueuse}`, '/index.mjs'),
+  '@vueuse/shared': npm(`@vueuse/shared@${VERSIONS.vueuse}`, '/index.mjs'),
+  'async-validator': npm('async-validator@4.2.5', '/dist-web/index.js'),
+  dayjs: npm(`dayjs@${VERSIONS.dayjs}`, '/+esm'),
+  'escape-html': npm('escape-html@1.0.3', '/+esm'),
+  'memoize-one': npm('memoize-one@6.0.0', '/dist/memoize-one.esm.js'),
+  'normalize-wheel-es': npm('normalize-wheel-es@1.2.0', '/+esm'),
+  '@ctrl/tinycolor': npm('@ctrl/tinycolor@4.1.0', '/dist/module/index.js'),
+  '@floating-ui/dom': npm('@floating-ui/dom@1.6.13', '/+esm'),
+  '@popperjs/core': npm('@popperjs/core@2.11.8', '/lib/index.js'),
+  '@mlightcad/cad-simple-viewer': npm(`@mlightcad/cad-simple-viewer@${VERSIONS.mlightcad}`, '/+esm'),
+  '@mlightcad/data-model': npm(`@mlightcad/data-model@${VERSIONS.dataModel}`, '/+esm'),
+  '@mlightcad/three-renderer': npm(`@mlightcad/three-renderer@${VERSIONS.mlightcad}`, '/+esm'),
+  '@mlightcad/cad-agent-plugin': npm(`@mlightcad/cad-agent-plugin@${VERSIONS.mlightcad}`, '/+esm'),
+  '@mlightcad/cad-agent-plugin/register': npm(`@mlightcad/cad-agent-plugin@${VERSIONS.mlightcad}`, '/register/+esm'),
+  '@mlightcad/cad-agent-plugin/style.css': CSS_SHIM,
+  '@mlightcad/cad-html-plugin': npm(`@mlightcad/cad-html-plugin@${VERSIONS.mlightcad}`, '/+esm'),
+  '@mlightcad/cad-html-plugin/register': npm(`@mlightcad/cad-html-plugin@${VERSIONS.mlightcad}`, '/register/+esm'),
+  '@mlightcad/cad-pdf-plugin/register': npm(`@mlightcad/cad-pdf-plugin@${VERSIONS.mlightcad}`, '/register/+esm'),
+  '@mlightcad/cad-svg-plugin/register': npm(`@mlightcad/cad-svg-plugin@${VERSIONS.mlightcad}`, '/register/+esm'),
+  './cad-viewer.css': CSS_SHIM
+}
+
+// ——— loader / diagnostics ———
+const startedAt = performance.now()
+const logLines = []
+const $ = (id) => document.getElementById(id)
+const loader = $('loader')
+const loaderStatus = $('loaderStatus')
+const loaderError = $('loaderError')
+const loaderActions = $('loaderActions')
+const loaderSpinner = $('loaderSpinner')
+
+const diag = (msg) => {
+  logLines.push(`[${((performance.now() - startedAt) / 1000).toFixed(2)}s] ${msg}`)
+  loaderStatus.textContent = logLines.join('\n')
+}
+
+const fail = (stage, err) => {
+  loaderSpinner.style.display = 'none'
+  loaderError.style.display = 'block'
+  loaderActions.style.display = 'flex'
+  loaderError.textContent =
+    `LOAD ERROR\nStage: ${stage}\n\n${err?.stack || err?.message || String(err)}\n\n` +
+    'If the network is slow or a CDN is unreachable, use "Retry".'
+}
+
+const withTimeout = (promise, ms, label) => {
+  let timer
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Timeout after ${Math.round(ms / 1000)}s: ${label}`)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+}
+
+$('retryBtn').onclick = () => location.reload()
+$('hideLoaderBtn').onclick = () => { loader.style.display = 'none' }
+$('copyDiagBtn').onclick = async () => {
+  const all = loaderStatus.textContent + (loaderError.textContent ? `\n\n${loaderError.textContent}` : '')
+  try {
+    await navigator.clipboard.writeText(all)
+  } catch {
+    const ta = document.createElement('textarea')
+    ta.value = all
+    document.body.appendChild(ta)
+    ta.select()
+    try { document.execCommand('copy') } catch {}
+    ta.remove()
+  }
+  const btn = $('copyDiagBtn')
+  btn.textContent = 'Copied ✓'
+  setTimeout(() => { btn.textContent = 'Copy all' }, 1500)
+}
+
+window.addEventListener('error', (e) => {
+  if (loader.style.display !== 'none') fail('global JavaScript error', e.error || e.message)
+})
+window.addEventListener('unhandledrejection', (e) => {
+  if (loader.style.display !== 'none') fail('unhandled Promise rejection', e.reason)
+})
+
+// ——— resolve bare imports inside published cad-viewer.js ———
+function resolveSpec(spec) {
+  if (Object.prototype.hasOwnProperty.call(EXACT, spec)) return EXACT[spec]
+  if (spec.endsWith('.css') || spec.endsWith('/style/css')) return CSS_SHIM
+
+  if (spec.startsWith('element-plus/es/locale/lang/')) {
+    return npm(`element-plus@${VERSIONS.elementPlus}`, `/es/locale/lang/${spec.slice('element-plus/es/locale/lang/'.length)}.mjs`)
+  }
+  if (spec.startsWith('element-plus/es/components/')) {
+    let rest = spec.slice('element-plus/es/'.length)
+    if (rest.endsWith('/index')) rest += '.mjs'
+    return npm(`element-plus@${VERSIONS.elementPlus}`, `/es/${rest}`)
+  }
+  if (spec.startsWith('three/')) {
+    let rest = spec.slice('three/'.length)
+    if (spec.startsWith('three/examples/jsm/') && !/\.[a-z0-9]+$/i.test(rest)) rest += '.js'
+    return npm(`three@${VERSIONS.three}`, `/${rest}`)
+  }
+  if (spec.startsWith('lodash-es/')) {
+    return npm('lodash-es@4.17.21', `/${spec.slice('lodash-es/'.length)}`)
+  }
+  if (spec.startsWith('dayjs/plugin/')) {
+    return npm(`dayjs@${VERSIONS.dayjs}`, `/plugin/${spec.slice('dayjs/plugin/'.length)}/+esm`)
+  }
+  if (spec.startsWith('dayjs/locale/')) {
+    let rest = spec.slice('dayjs/locale/'.length)
+    if (!/\.[a-z0-9]+$/i.test(rest)) rest += '.js'
+    return npm(`dayjs@${VERSIONS.dayjs}`, `/locale/${rest}/+esm`)
+  }
+  if (spec.startsWith('dayjs/')) {
+    return npm(`dayjs@${VERSIONS.dayjs}`, `/${spec.slice('dayjs/'.length)}/+esm`)
+  }
+  if (spec.startsWith('@vueuse/')) {
+    return npm(`${spec}@${VERSIONS.vueuse}`, '/index.mjs')
+  }
+  if (spec.startsWith('./') || spec.startsWith('../')) return new URL(spec, CAD_VIEWER_URL).href
+  if (/^https?:/.test(spec)) return spec
+  return undefined
+}
+
+function collectSpecs(source) {
+  const specs = new Set()
+  for (const re of [
+    /\bfrom\s*["']([^"']+)["']/g,
+    /\bimport\s*["']([^"']+)["']/g,
+    /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g
+  ]) {
+    let m
+    while ((m = re.exec(source))) {
+      if (m[1] && !m[1].includes('{') && !m[1].includes('}')) specs.add(m[1])
+    }
+  }
+  return specs
+}
+
+function rewriteCadViewer(source) {
+  const specs = collectSpecs(source)
+  const unresolved = [...specs].filter((s) => resolveSpec(s) === undefined)
+  if (unresolved.length) throw new Error(`Unresolved imports: ${unresolved.join(', ')}`)
+
+  let out = source
+  for (const spec of [...specs].filter((s) => resolveSpec(s) === CSS_SHIM)) {
+    const esc = spec.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    out = out
+      .replace(new RegExp(`\\bimport\\s*["']${esc}["']\\s*;?`, 'g'), '')
+      .replace(new RegExp(`\\bimport\\s+[^;\\n]*?\\s+from\\s*["']${esc}["']\\s*;?`, 'g'), '')
+  }
+
+  for (const spec of [...specs].sort((a, b) => b.length - a.length)) {
+    const resolved = resolveSpec(spec)
+    if (!resolved) continue
+    const esc = spec.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    out = out
+      .replace(new RegExp(`(from\\s*["'])${esc}(["'])`, 'g'), `$1${resolved}$2`)
+      .replace(new RegExp(`(import\\s*["'])${esc}(["'])`, 'g'), `$1${resolved}$2`)
+      .replace(new RegExp(`(import\\s*\\(\\s*["'])${esc}(["']\\s*\\))`, 'g'), `$1${resolved}$2`)
+  }
+
+  // Replace final `export { … }` with a global bridge (inline classic modules can't re-export to importers).
+  const exportMatches = [...out.matchAll(/\bexport\s*\{([\s\S]*?)\}\s*;?/g)]
+  if (!exportMatches.length) throw new Error('Final ESM export of cad-viewer.js not found.')
+  const last = exportMatches[exportMatches.length - 1]
+  const exportMap = new Map()
+  for (const raw of last[1].split(',')) {
+    const part = raw.trim()
+    if (!part) continue
+    const m = part.match(/^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/)
+    if (m) exportMap.set(m[2], m[1])
+    else if (/^[A-Za-z_$][\w$]*$/.test(part)) exportMap.set(part, part)
+  }
+  const MlCadViewer = exportMap.get('MlCadViewer')
+  const i18n = exportMap.get('i18n')
+  if (!MlCadViewer || !i18n) {
+    throw new Error(`MlCadViewer/i18n missing. Found: ${[...exportMap.keys()].slice(0, 40).join(', ')}`)
+  }
+  const bridge = `\n;globalThis.__MLIGHTCAD_INLINE_EXPORTS__={MlCadViewer:${MlCadViewer},i18n:${i18n}};\n`
+  out = out.slice(0, last.index) + bridge + out.slice(last.index + last[0].length)
+  return out
+}
+
+async function loadInlineCadViewer() {
+  diag('Downloading cad-viewer.js…')
+  const source = await withTimeout(
+    fetch(CAD_VIEWER_URL, { cache: 'no-store' }).then(async (r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status} downloading cad-viewer.js`)
+      return r.text()
+    }),
+    30000,
+    'cad-viewer.js'
+  )
+  diag(`cad-viewer.js ${(source.length / 1024 / 1024).toFixed(2)} MB — rewriting imports…`)
+  const rewritten = rewriteCadViewer(source)
+
+  delete globalThis.__MLIGHTCAD_INLINE_EXPORTS__
+  const script = document.createElement('script')
+  script.type = 'module'
+  script.textContent = rewritten
+
+  return withTimeout(new Promise((resolve, reject) => {
+    let settled = false
+    const done = (fn, value) => {
+      if (settled) return
+      settled = true
+      clearInterval(timer)
+      fn(value)
+    }
+    script.onerror = (ev) => done(reject, ev?.error || new Error('Inline module failed'))
+    const timer = setInterval(() => {
+      if (globalThis.__MLIGHTCAD_INLINE_EXPORTS__) done(resolve, globalThis.__MLIGHTCAD_INLINE_EXPORTS__)
+    }, 25)
+    document.head.appendChild(script)
+  }), 90000, 'inline cad-viewer')
+}
+
+function workerBlobUrl(cdnUrl) {
+  return URL.createObjectURL(new Blob([`import ${JSON.stringify(cdnUrl)};\n`], { type: 'text/javascript' }))
+}
+
+try {
+  if (!navigator.onLine) throw new Error('Browser is offline; this page needs CDN access.')
+
+  const [
+    vue,
+    element,
+    icons,
+    simpleViewer,
+    cadViewer,
+    dataModel
+  ] = await Promise.all([
+    import('vue').then((m) => (diag('Vue OK'), m)),
+    import('element-plus').then((m) => (diag('Element Plus OK'), m)),
+    import('@element-plus/icons-vue').then((m) => (diag('Icons OK'), m)),
+    import('@mlightcad/cad-simple-viewer').then((m) => (diag('simple-viewer OK'), m)),
+    loadInlineCadViewer().then((m) => (diag('cad-viewer OK'), m)),
+    import('@mlightcad/data-model').then((m) => (diag('data-model OK'), m))
+  ])
+
+  const { createApp, defineComponent, h, ref, computed, nextTick } = vue
+  const ElementPlus = element.default
+  const { ElUpload, ElIcon } = element
+  const { UploadFilled } = icons
+  const { AcApDocManager, AcApOpenViewMode, AcEdCommandStack, AcEdOpenMode } = simpleViewer
+  const { MlCadViewer, i18n } = cadViewer
+  const { log } = dataModel
+
+  // Published MlCadViewer has no webworkerFileUrls prop — patch createInstance.
+  const createInstance = AcApDocManager.createInstance.bind(AcApDocManager)
+  AcApDocManager.createInstance = (options = {}) => createInstance({
+    ...options,
+    useMainThreadDraw: options.useMainThreadDraw ?? true,
+    webworkerFileUrls: {
+      dwgParser: workerBlobUrl(LIBREDWG_WORKER),
+      ...options.webworkerFileUrls
+    }
+  })
+
+  class QuitCmd {
+    async execute() {
+      try {
+        const dm = AcApDocManager.instance
+        const doc = dm.curDocument ?? dm.currentDocument ?? dm.activeDocument
+        if (doc && typeof dm.closeDocument === 'function') await dm.closeDocument(doc)
+      } catch (e) { console.warn(e) }
+    }
+  }
+
+  const pill = (active, label, title, onClick) =>
+    h('button', {
+      type: 'button',
+      class: ['pill-option', active ? 'is-active' : ''],
+      role: 'radio',
+      'aria-checked': active,
+      title,
+      onClick
+    }, label)
+
+  const FileUpload = defineComponent({
+    name: 'FileUpload',
+    emits: ['file-select', 'new-drawing'],
+    setup(_, { emit }) {
+      const mode = ref(AcEdOpenMode.Write)
+      const viewMode = ref('auto')
+      const drawNoPlotLayers = ref(false)
+      const progressiveRendering = ref(false)
+      const resolvedView = () => (viewMode.value === 'auto' ? undefined : viewMode.value)
+      const valid = (file) => ['.dwg', '.dxf'].some((ext) => file.name.toLowerCase().endsWith(ext))
+
+      return () => h('div', { class: 'file-upload-container' }, [
+        h('div', { class: 'upload-panel' }, [
+          h('div', { class: 'upload-main' }, [
+            h('section', { class: 'upload-hero' }, [
+              h('div', { class: 'upload-icon' }, [h(ElIcon, { size: 20 }, () => h(UploadFilled))]),
+              h('div', {}, [
+                h('h1', { class: 'upload-title' }, 'Select CAD File to View'),
+                h('p', { class: 'upload-subtitle' }, 'Import DWG or DXF drawings into the viewer')
+              ])
+            ]),
+            h('button', {
+              type: 'button',
+              class: 'new-drawing-button',
+              onClick: () => emit('new-drawing', mode.value, drawNoPlotLayers.value, progressiveRendering.value, resolvedView())
+            }, 'New Drawing'),
+            h('p', { class: 'upload-divider' }, [h('span', null, 'or')]),
+            h(ElUpload, {
+              class: 'upload-dropzone',
+              drag: true,
+              autoUpload: false,
+              accept: '.dwg,.dxf',
+              beforeUpload: (raw) => {
+                if (!valid(raw)) {
+                  log.warn('Invalid file type. Please upload DWG or DXF files.')
+                  return false
+                }
+                return true
+              },
+              onChange: (f) => {
+                if (f.raw && valid(f.raw)) {
+                  emit('file-select', f.raw, mode.value, drawNoPlotLayers.value, progressiveRendering.value, resolvedView())
+                }
+              }
+            }, {
+              default: () => h('div', { class: 'dropzone-content' }, [
+                h('p', { class: 'dropzone-title' }, ['Drop file or ', h('span', { class: 'dropzone-link' }, 'browse')]),
+                h('div', { class: 'format-tags' }, [
+                  h('span', { class: 'format-tag' }, 'DWG'),
+                  h('span', { class: 'format-tag' }, 'DXF')
+                ])
+              ])
+            })
+          ]),
+          h('section', { class: 'settings-section' }, [
+            h('header', { class: 'settings-header' }, [h('h2', { class: 'settings-title' }, 'Open options')]),
+            h('div', { class: 'settings-grid' }, [
+              h('div', { class: 'setting-block setting-block--full' }, [
+                h('h3', { class: 'setting-label' }, 'Initial view'),
+                h('div', { class: 'pill-segment', role: 'radiogroup' }, [
+                  ['auto', 'Auto', 'Based on access mode'],
+                  [AcApOpenViewMode.Extents, 'Extents', 'Fit drawing'],
+                  [AcApOpenViewMode.Saved, 'Saved', 'AutoCAD saved view']
+                ].map(([v, label, title]) =>
+                  pill(viewMode.value === v, label, title, () => { viewMode.value = v })))
+              ]),
+              h('div', { class: 'setting-block setting-block--full' }, [
+                h('h3', { class: 'setting-label' }, 'Access mode'),
+                h('div', { class: 'pill-segment', role: 'radiogroup' }, [
+                  [AcEdOpenMode.Read, 'Read', 'View only'],
+                  [AcEdOpenMode.Review, 'Review', 'View & review'],
+                  [AcEdOpenMode.Write, 'Write', 'Full access']
+                ].map(([v, label, title]) =>
+                  pill(mode.value === v, label, title, () => { mode.value = v })))
+              ]),
+              h('div', { class: 'setting-block' }, [
+                h('h3', { class: 'setting-label' }, 'Progressive'),
+                h('div', { class: 'pill-segment' }, [
+                  pill(progressiveRendering.value, 'On', 'Show geometry while loading', () => { progressiveRendering.value = true }),
+                  pill(!progressiveRendering.value, 'Off', 'Wait until fully converted', () => { progressiveRendering.value = false })
+                ])
+              ]),
+              h('div', { class: 'setting-block' }, [
+                h('h3', { class: 'setting-label' }, 'Non-plottable'),
+                h('div', { class: 'pill-segment' }, [
+                  pill(!drawNoPlotLayers.value, 'Hide', 'Web viewer default', () => { drawNoPlotLayers.value = false }),
+                  pill(drawNoPlotLayers.value, 'Show', 'AutoCAD editor semantics', () => { drawNoPlotLayers.value = true })
+                ])
+              ])
+            ])
+          ])
+        ])
+      ])
+    }
+  })
+
+  const App = defineComponent({
+    name: 'App',
+    setup() {
+      const selectedFile = ref(null)
+      const isNewDrawing = ref(false)
+      const mode = ref(AcEdOpenMode.Write)
+      const drawNoPlotLayers = ref(false)
+      const progressiveRendering = ref(false)
+      const openViewMode = ref(undefined)
+      const showViewer = computed(() => selectedFile.value != null || isNewDrawing.value)
+
+      const applyOptions = (m, nonPlot, progressive, view) => {
+        mode.value = m
+        drawNoPlotLayers.value = nonPlot
+        progressiveRendering.value = progressive
+        openViewMode.value = view
+      }
+
+      const onViewerCreate = async () => {
+        try {
+          const cmds = AcApDocManager.instance.commandManager
+          const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
+          const quit = new QuitCmd()
+          cmds.addCommand(group, 'quit', 'quit', quit)
+          cmds.addCommand(group, 'exit', 'exit', quit)
+        } catch (e) { console.warn(e) }
+
+        if (isNewDrawing.value) {
+          await nextTick()
+          const ok = await AcApDocManager.instance.newDocument({
+            mode: mode.value,
+            drawNoPlotLayers: drawNoPlotLayers.value,
+            progressiveRendering: progressiveRendering.value,
+            ...(openViewMode.value != null ? { openViewMode: openViewMode.value } : {})
+          })
+          if (!ok) log.error('Failed to create new drawing')
+        }
+      }
+
+      return () => h('div', { id: 'app-root' }, [
+        !showViewer.value
+          ? h('div', { class: 'upload-screen' }, [
+              h(FileUpload, {
+                onFileSelect: (file, m, nonPlot, progressive, view) => {
+                  isNewDrawing.value = false
+                  selectedFile.value = file
+                  applyOptions(m, nonPlot, progressive, view)
+                },
+                onNewDrawing: (m, nonPlot, progressive, view) => {
+                  selectedFile.value = null
+                  isNewDrawing.value = true
+                  applyOptions(m, nonPlot, progressive, view)
+                }
+              })
+            ])
+          : h('div', { class: 'viewer-screen' }, [
+              h(MlCadViewer, {
+                locale: 'en',
+                localFile: selectedFile.value ?? undefined,
+                mode: mode.value,
+                useMainThreadDraw: true,
+                drawNoPlotLayers: drawNoPlotLayers.value,
+                progressiveRendering: progressiveRendering.value,
+                openViewMode: openViewMode.value,
+                baseUrl: BASE_URL,
+                htmlViewerRuntimeUrl: npm(
+                  `@mlightcad/cad-html-plugin@${VERSIONS.mlightcad}`,
+                  '/dist/viewer-runtime.iife.js'
+                ),
+                onCreate: onViewerCreate
+              })
+            ])
+      ])
+    }
+  })
+
+  diag('Mounting Vue…')
+  const app = createApp(App)
+  app.use(i18n)
+  app.use(ElementPlus)
+  app.mount('#app')
+  setTimeout(() => { loader.style.display = 'none' }, 200)
+} catch (err) {
+  fail('bootstrap', err)
+}
+</script>
+</body>
+</html>

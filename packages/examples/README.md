@@ -40,7 +40,20 @@ A minimal, lightweight CAD viewer focusing on core functionality.
 - LibreDWG WebAssembly
 - Modern ES2020+ features
 
-### 3. Self-Contained Offline HTML (`/self-contained-html/canteen.html`)
+### 3. Zero-build CDN Bootstrap (`/cdn-bootstrap/cad-viewer.html`)
+
+A single HTML file that loads Vue 3, Element Plus, Three.js, and `@mlightcad/cad-viewer` from jsDelivr — no Node, Vite, or local `node_modules`.
+
+**Features:**
+- Import map + in-browser rewrite of the published `cad-viewer.js` bundle
+- Upload / open-options UI aligned with the Vue demo (DWG/DXF, access mode, progressive rendering); MTEXT is forced to main-thread (no worker toggle)
+- LibreDWG DWG parser via a blob module worker that imports the jsDelivr script (cross-origin `Worker` URLs are blocked)
+- Loader diagnostics with retry if a CDN step fails
+- Useful as a drop-in host or as a reference for CDN ESM integration
+
+Serve over HTTP(S); `file://` will not work for ES module CDN imports.
+
+### 4. Self-Contained Offline HTML (`/self-contained-html/canteen.html`)
 
 A single-file HTML export of the sample **canteen.dwg** drawing, produced by `cad-simple-viewer-cli`.
 
@@ -93,6 +106,7 @@ The examples will be available at:
 - Main index: `http://localhost:3000`
 - CAD Viewer Demo: `http://localhost:3000/cad-viewer/`
 - CAD Simple Viewer Demo: `http://localhost:3000/cad-simple-viewer/`
+- CDN bootstrap (zero-build): `http://localhost:3000/cdn-bootstrap/cad-viewer.html`
 - Self-contained HTML demo: `http://localhost:3000/self-contained-html/canteen.html` (generate first with `pnpm export:demo-html`)
 
 ### Self-Contained HTML Demo
@@ -139,6 +153,7 @@ packages/examples/
 │   ├── llms.txt                # LLM-friendly project summary
 │   ├── cad-viewer/             # Full CAD viewer demo
 │   ├── cad-simple-viewer/      # Simple CAD viewer demo
+│   ├── cdn-bootstrap/          # Zero-build CDN single-HTML bootstrap
 │   └── self-contained-html/    # Offline HTML export demo (CI / export:demo-html)
 ├── copyDist.js                 # Script to copy built examples
 ├── exportDemoHtml.js           # Build offline HTML demo via cad-simple-viewer-cli
