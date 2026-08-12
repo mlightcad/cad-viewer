@@ -484,28 +484,13 @@ export class AcTrView2d extends AcEdBaseView {
         const isFirstVisit = !this._initializedLayouts.has(btrId)
         this._initializedLayouts.add(btrId)
 
-        // Clear measurement overlays before swapping layouts.
-        // Measurements are screen/coordinate-anchored — their dimension
-        // text, hatch indicators, and HTML overlays were laid out in
-        // the previous layout's WCS (paper coords, ~unit scale) and
-        // would render at nonsense positions in a different layout
-        // (model WCS is typically O(10^5) larger, paper layouts use
-        // their own sheet coords). Selection state is intentionally
-        // **not** cleared here: it is entity-id-based and the same
-        // entity stays selected wherever it is rendered (the model
-        // entity drilled through a paper viewport remains visually
-        // selected when the user returns to model space, matching
-        // AutoCAD desktop's behaviour).
-        //
-        // Dynamic import avoids a circular dependency: the cleanup
-        // module already imports `AcTrView2d` for its
-        // `htmlTransientManager` cast, so a static import here would
-        // create a cycle. The cost (one extra microtask) is
-        // negligible for a layout switch.
-        void import('../command/measure/AcApClearMeasurementsCmd').then(
-          ({ clearAllMeasurements }) => clearAllMeasurements(this)
-        )
-
+        // Measurement HTML overlays are layout-scoped via `layoutId`.
+        // Switching layouts only updates visibility (see
+        // {@link AcTrHtmlTransientManager.setActiveLayoutId} from the
+        // `activeLayoutBtrId` setter below) — overlays are not deleted, so
+        // returning to a layout restores its measurements. Entity selection
+        // is intentionally **not** cleared here: it is entity-id-based and
+        // the same entity stays selected wherever it is rendered.
         this.activeLayoutBtrId = btrId
         this.createLayoutViewIfNeeded(btrId)
         this.loadLayoutEntitiesIfNeeded(btrId)
@@ -958,6 +943,7 @@ export class AcTrView2d extends AcEdBaseView {
   set activeLayoutBtrId(value: string) {
     this._layoutViewManager.activeLayoutBtrId = value
     this._scene.activeLayoutBtrId = value
+    this.htmlTransientManager.setActiveLayoutId(value)
     this._isDirty = true
   }
 
@@ -1459,7 +1445,9 @@ export class AcTrView2d extends AcEdBaseView {
     layer: AcDbLayerTableRecord,
     changes: Partial<AcDbLayerTableRecordAttrs>
   ) {
-    const { touchedObjectIds } = this._scene.updateLayer(this.toLayerInfo(layer))
+    const { touchedObjectIds } = this._scene.updateLayer(
+      this.toLayerInfo(layer)
+    )
 
     if (this._layerAppearance.layerStyleMayHaveChanged(changes)) {
       this._layerAppearance.syncFromLiveRecord(layer)
@@ -1508,10 +1496,7 @@ export class AcTrView2d extends AcEdBaseView {
             this._isDirty = true
           })
           .catch(error => {
-            log.error(
-              '[AcTrView2d] Transient entity geometry failed:',
-              error
-            )
+            log.error('[AcTrView2d] Transient entity geometry failed:', error)
             threeEntity.dispose()
           })
       }
@@ -1525,6 +1510,16 @@ export class AcTrView2d extends AcEdBaseView {
   removeTransientEntity(objectId: AcDbObjectId) {
     this._scene.removeTransientEntity(objectId)
     this._isDirty = true
+  }
+
+  /**
+   * Show or hide a published CAD transient entity (e.g. when its measurement
+   * group is hidden by a layout switch).
+   */
+  setTransientEntityVisible(objectId: AcDbObjectId, visible: boolean): void {
+    if (this._scene.setTransientEntityVisible(objectId, visible)) {
+      this._isDirty = true
+    }
   }
 
   /**
@@ -2261,18 +2256,14 @@ export class AcTrView2d extends AcEdBaseView {
 
   private needsDeferredFontGeometry(threeEntity: AcTrEntity): boolean {
     return (
-      threeEntity instanceof AcTrGlyphEntity ||
-      threeEntity instanceof AcTrGroup
+      threeEntity instanceof AcTrGlyphEntity || threeEntity instanceof AcTrGroup
     )
   }
 
   private groupHasPendingGlyphGeometry(group: AcTrGroup): boolean {
     let pending = false
     group.traverse(child => {
-      if (
-        child instanceof AcTrGlyphEntity &&
-        !child.hasDrawableGeometry()
-      ) {
+      if (child instanceof AcTrGlyphEntity && !child.hasDrawableGeometry()) {
         pending = true
       }
     })
@@ -2304,10 +2295,7 @@ export class AcTrView2d extends AcEdBaseView {
       })
       .finally(() => {
         if (epoch === this._convertEpoch) {
-          this._pendingGeometryJobs = Math.max(
-            0,
-            this._pendingGeometryJobs - 1
-          )
+          this._pendingGeometryJobs = Math.max(0, this._pendingGeometryJobs - 1)
           if (this._pendingGeometryJobs === 0) {
             this._isDirty = true
           }
@@ -2321,10 +2309,7 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private async waitUntilDeferredGeometryIdle(): Promise<void> {
     const epoch = this._convertEpoch
-    while (
-      epoch === this._convertEpoch &&
-      this._pendingGeometryJobs > 0
-    ) {
+    while (epoch === this._convertEpoch && this._pendingGeometryJobs > 0) {
       await new Promise<void>(resolve => setTimeout(resolve, 0))
     }
   }

@@ -1,37 +1,34 @@
 import { AcApContext } from '../../app'
 import { AcEdCommand, AcEdOpenMode } from '../../editor'
 import { AcTrView2d } from '../../view'
+import {
+  MEASUREMENT_LAYER,
+  MEASUREMENT_LIVE_LAYER
+} from './AcApMeasurementStore'
 
-/** Cleanup callbacks registered by measurement commands. */
-const cleanups: (() => void)[] = []
+export {
+  MEASUREMENT_LAYER,
+  MEASUREMENT_LIVE_LAYER,
+  commitMeasurementGroup,
+  type AcApMeasurementGroupExtras
+} from './AcApMeasurementStore'
 
 /**
- * Registers a cleanup function to be called when the Clear Measurements command
- * runs. Used for CAD transient entities, canvas overlays, and viewChanged
- * listeners that are not managed by the htmlTransientManager.
- */
-export function registerMeasurementCleanup(fn: () => void): void {
-  cleanups.push(fn)
-}
-
-/**
- * Runs every measurement-cleanup callback registered via
- * `registerMeasurementCleanup` and clears the measurement HTML overlay
- * layer on the given view. Shared between the user-facing
- * `AcApClearMeasurementsCmd` command and internal lifecycle hooks
- * (e.g. clearing measurements when the user switches paper-space
- * layouts, where any pending measurement would otherwise leak across
- * layouts in coordinates that no longer make sense).
+ * Removes every measurement HTML overlay (committed + live) and clears
+ * selection. Group `onDispose` hooks release CAD / canvas resources.
  */
 export function clearAllMeasurements(view: AcTrView2d): void {
-  cleanups.forEach(fn => fn())
-  cleanups.length = 0
-  view.htmlTransientManager.clear('measurement')
-  // HTML overlays need a CSS2D render pass to disappear when no CAD
-  // transient entities were involved (e.g. measure point).
+  const ht = view.htmlTransientManager
+  ht.deselectAll()
+  ht.clear(MEASUREMENT_LAYER)
+  ht.clear(MEASUREMENT_LIVE_LAYER)
   view.isDirty = true
 }
 
+/**
+ * Command that clears every committed measurement overlay and its
+ * associated CAD transients / canvas helpers.
+ */
 export class AcApClearMeasurementsCmd extends AcEdCommand {
   constructor() {
     super()

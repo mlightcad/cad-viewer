@@ -5,6 +5,12 @@ import {
   AcGePoint3dLike,
   AcGiLineWeight
 } from '@mlightcad/data-model'
+import {
+  AcTrHtmlBadge,
+  AcTrHtmlDot,
+  AcTrHtmlGroup,
+  AcTrHtmlTransientManager
+} from '@mlightcad/three-renderer'
 
 import { AcApContext } from '../../app'
 import {
@@ -18,9 +24,13 @@ import {
   AcEdViewMode
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { makeBadge, makeDot, makeLiveBadge, measurementColor } from '../../util'
+import { measurementColor } from '../../util'
 import { AcTrView2d } from '../../view'
-import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
+import {
+  commitMeasurementGroup,
+  MEASUREMENT_LAYER,
+  MEASUREMENT_LIVE_LAYER
+} from './AcApMeasurementStore'
 
 /** Returns the 2D Euclidean distance between two world points. */
 function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {
@@ -40,9 +50,10 @@ function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {
 export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _line: AcDbLine
   private _p1: AcGePoint3dLike
-  private _view: AcEdBaseView
   private _db: AcDbDatabase
-  private _badge: HTMLDivElement
+  private _htManager: AcTrHtmlTransientManager
+  private _badge: AcTrHtmlBadge
+  private readonly _badgeId: string
 
   constructor(
     view: AcEdBaseView,
@@ -52,14 +63,22 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
   ) {
     super(view)
     this._p1 = p1
-    this._view = view
     this._db = db
     this._line = new AcDbLine(p1, p1)
     this._line.color = color
     this._line.lineWeight = AcGiLineWeight.LineWeight070
 
-    // Live badge — short-lived, cleaned up in end()
-    this._badge = makeLiveBadge(color)
+    this._badgeId = `live-dist-badge-${Date.now()}`
+    this._htManager = (view as AcTrView2d).htmlTransientManager
+    this._badge = new AcTrHtmlBadge({
+      id: this._badgeId,
+      color,
+      worldPosition: p1,
+      layer: MEASUREMENT_LIVE_LAYER,
+      layoutId: (view as AcTrView2d).activeLayoutBtrId
+    })
+    this._badge.object.visible = false
+    this._htManager.add(this._badge)
   }
 
   get entity(): AcDbLine {
@@ -71,26 +90,26 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
     const dist = calcDist(this._p1, p2)
     if (dist < 0.0001) {
-      this._badge.style.display = 'none'
+      this._badge.object.visible = false
       return
     }
 
-    this._badge.textContent = this._db.formatter.formatLength(dist, {
-      showUnits: true,
-      showApproximate: true
+    this._badge.setText(
+      this._db.formatter.formatLength(dist, {
+        showUnits: true,
+        showApproximate: true
+      })
+    )
+    this._badge.setPosition({
+      x: (this._p1.x + p2.x) / 2,
+      y: (this._p1.y + p2.y) / 2
     })
-    this._badge.style.display = 'block'
-
-    const mid = { x: (this._p1.x + p2.x) / 2, y: (this._p1.y + p2.y) / 2 }
-    const rect = this._view.canvas.getBoundingClientRect()
-    const s = this._view.worldToScreen(mid)
-    this._badge.style.left = `${s.x + rect.left}px`
-    this._badge.style.top = `${s.y + rect.top}px`
+    this._badge.object.visible = true
   }
 
   end() {
     super.end()
-    this._badge.remove()
+    this._htManager.remove(this._badgeId)
   }
 }
 
@@ -140,30 +159,44 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
         context.view.addTransientEntity(line)
 
         // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
-        const htManager = (context.view as AcTrView2d).htmlTransientManager
         const id = `dist-${Date.now()}`
         const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
 
-        htManager.add(`${id}-dot1`, makeDot(color), p1, 'measurement')
-        htManager.add(`${id}-dot2`, makeDot(color), p2, 'measurement')
-        htManager.add(
-          `${id}-badge`,
-          makeBadge(
+        const group = new AcTrHtmlGroup({
+          id,
+          layer: MEASUREMENT_LAYER,
+          layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
+          selectable: true
+        }).add(
+          new AcTrHtmlDot({
+            id: `${id}-dot1`,
             color,
-            db.formatter.formatLength(dist, {
+            worldPosition: p1,
+            layer: MEASUREMENT_LAYER
+          }),
+          new AcTrHtmlDot({
+            id: `${id}-dot2`,
+            color,
+            worldPosition: p2,
+            layer: MEASUREMENT_LAYER
+          }),
+          new AcTrHtmlBadge({
+            id: `${id}-badge`,
+            color,
+            text: db.formatter.formatLength(dist, {
               showUnits: true,
               showApproximate: true
-            })
-          ),
-          mid,
-          'measurement'
+            }),
+            worldPosition: mid,
+            layer: MEASUREMENT_LAYER
+          })
         )
 
-        registerMeasurementCleanup(() => {
-          context.view.removeTransientEntity(line.objectId)
-          htManager.remove(`${id}-dot1`)
-          htManager.remove(`${id}-dot2`)
-          htManager.remove(`${id}-badge`)
+        commitMeasurementGroup(context.view as AcTrView2d, group, {
+          entityIds: [line.objectId],
+          dispose: () => {
+            context.view.removeTransientEntity(line.objectId)
+          }
         })
       })
     )

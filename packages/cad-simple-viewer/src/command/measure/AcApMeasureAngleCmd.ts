@@ -5,6 +5,13 @@ import {
   AcGePoint3dLike,
   AcGiLineWeight
 } from '@mlightcad/data-model'
+import {
+  AcTrHtmlBadge,
+  AcTrHtmlCanvasOverlay,
+  AcTrHtmlDot,
+  AcTrHtmlGroup,
+  AcTrHtmlTransientManager
+} from '@mlightcad/three-renderer'
 
 import { AcApContext } from '../../app'
 import {
@@ -18,16 +25,13 @@ import {
   AcEdViewMode
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import {
-  cssColor,
-  makeBadge,
-  makeDot,
-  makeLiveBadge,
-  makeOverlayCanvas,
-  measurementColor
-} from '../../util'
+import { cssColor, measurementColor } from '../../util'
 import { AcTrView2d } from '../../view'
-import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
+import {
+  commitMeasurementGroup,
+  MEASUREMENT_LAYER,
+  MEASUREMENT_LIVE_LAYER
+} from './AcApMeasurementStore'
 
 /** Returns the angle in degrees between two arms sharing a common vertex. */
 function calcAngleDeg(
@@ -186,7 +190,9 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _vertex: AcGePoint3dLike
   private _arm1: AcGePoint3dLike
   private _view: AcEdBaseView
-  private _badge: HTMLDivElement
+  private _badge: AcTrHtmlBadge
+  private _htManager: AcTrHtmlTransientManager
+  private readonly _badgeId: string
   private _canvas: HTMLCanvasElement
   private _color: AcCmColor
   private _db: AcDbDatabase
@@ -210,7 +216,19 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._line.color = color
     this._line.lineWeight = AcGiLineWeight.LineWeight070
 
-    this._badge = makeLiveBadge(color)
+    this._badgeId = `live-angle-badge-${Date.now()}`
+    this._htManager = (view as AcTrView2d).htmlTransientManager
+    this._badge = new AcTrHtmlBadge({
+      id: this._badgeId,
+      color,
+      worldPosition: vertex,
+      layer: MEASUREMENT_LIVE_LAYER,
+      layoutId: (view as AcTrView2d).activeLayoutBtrId,
+      // Keep the label slightly above the vertex (was -30px screen offset).
+      transform: 'translate(-50%, calc(-50% - 30px))'
+    })
+    this._badge.object.visible = false
+    this._htManager.add(this._badge)
   }
 
   get entity(): AcDbLine {
@@ -230,25 +248,20 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     )
 
     const deg = calcAngleDeg(this._vertex, this._arm1, p)
-    this._badge.textContent = this._db.formatter.formatAngle(
-      (deg * Math.PI) / 180,
-      {
+    this._badge.setText(
+      this._db.formatter.formatAngle((deg * Math.PI) / 180, {
         showUnits: true,
         showApproximate: true,
         applyAngbaseAngdir: false
-      }
+      })
     )
-    this._badge.style.display = 'block'
-
-    const rect = this._view.canvas.getBoundingClientRect()
-    const sv = this._view.worldToScreen(this._vertex)
-    this._badge.style.left = `${sv.x + rect.left}px`
-    this._badge.style.top = `${sv.y + rect.top - 30}px`
+    this._badge.setPosition(this._vertex)
+    this._badge.object.visible = true
   }
 
   end() {
     super.end()
-    this._badge.remove()
+    this._htManager.remove(this._badgeId)
   }
 }
 
@@ -292,11 +305,24 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
         const arm1 = arm1Result.value!
 
         // Construction-phase canvas for the first arm dashed line
-        const armCanvas = makeOverlayCanvas(context.view.container)
-        drawArm1OnCanvas(armCanvas, context.view, vertex, arm1, color)
+        const armOverlay = new AcTrHtmlCanvasOverlay({
+          id: `live-angle-arm-${Date.now()}`,
+          container: context.view.container,
+          layer: MEASUREMENT_LIVE_LAYER,
+          layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+        })
+        const htLive = (context.view as AcTrView2d).htmlTransientManager
+        htLive.add(armOverlay)
+        drawArm1OnCanvas(armOverlay.canvas, context.view, vertex, arm1, color)
 
         const redrawOnViewChange = () =>
-          drawArm1OnCanvas(armCanvas, context.view, vertex, arm1, color)
+          drawArm1OnCanvas(
+            armOverlay.canvas,
+            context.view,
+            vertex,
+            arm1,
+            color
+          )
         context.view.events.viewChanged.addEventListener(redrawOnViewChange)
 
         // Pick second arm endpoint with live preview (jig provides line + angle badge)
@@ -308,7 +334,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
           db,
           vertex,
           arm1,
-          armCanvas,
+          armOverlay.canvas,
           color
         )
 
@@ -320,7 +346,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
             context.view.events.viewChanged.removeEventListener(
               redrawOnViewChange
             )
-            armCanvas.remove()
+            htLive.remove(armOverlay.id)
             return
           }
           arm2 = arm2Result.value!
@@ -329,13 +355,13 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
           context.view.events.viewChanged.removeEventListener(
             redrawOnViewChange
           )
-          armCanvas.remove()
+          htLive.remove(armOverlay.id)
           return
         }
 
         // Clean up construction-phase canvas
         context.view.events.viewChanged.removeEventListener(redrawOnViewChange)
-        armCanvas.remove()
+        htLive.remove(armOverlay.id)
 
         const degrees = calcAngleDeg(vertex, arm1, arm2)
 
@@ -351,9 +377,14 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
         context.view.addTransientEntity(line2)
 
         // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
-        const persistCanvas = makeOverlayCanvas(context.view.container)
+        const persistOverlay = new AcTrHtmlCanvasOverlay({
+          id: `angle-arc-${Date.now()}`,
+          container: context.view.container,
+          layer: MEASUREMENT_LAYER,
+          layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+        })
         drawAngleArcOnCanvas(
-          persistCanvas,
+          persistOverlay.canvas,
           context.view,
           vertex,
           arm1,
@@ -363,7 +394,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
 
         const redrawPersist = () =>
           drawAngleArcOnCanvas(
-            persistCanvas,
+            persistOverlay.canvas,
             context.view,
             vertex,
             arm1,
@@ -373,12 +404,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
         context.view.events.viewChanged.addEventListener(redrawPersist)
 
         // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
-        const htManager = (context.view as AcTrView2d).htmlTransientManager
         const id = `angle-${Date.now()}`
-
-        htManager.add(`${id}-dotV`, makeDot(color), vertex, 'measurement')
-        htManager.add(`${id}-dot1`, makeDot(color), arm1, 'measurement')
-        htManager.add(`${id}-dot2`, makeDot(color), arm2, 'measurement')
 
         // Place badge along the angle bisector in world space
         const dx1 = arm1.x - vertex.x
@@ -412,28 +438,52 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
           x: vertex.x + bx * badgeOffset,
           y: vertex.y + by * badgeOffset
         }
-        htManager.add(
-          `${id}-badge`,
-          makeBadge(
-            color,
-            db.formatter.formatAngle((degrees * Math.PI) / 180, {
-              showUnits: true,
-              applyAngbaseAngdir: false
-            })
-          ),
-          badgeWorld,
-          'measurement'
-        )
 
-        registerMeasurementCleanup(() => {
-          context.view.removeTransientEntity(line1.objectId)
-          context.view.removeTransientEntity(line2.objectId)
-          persistCanvas.remove()
-          context.view.events.viewChanged.removeEventListener(redrawPersist)
-          htManager.remove(`${id}-dotV`)
-          htManager.remove(`${id}-dot1`)
-          htManager.remove(`${id}-dot2`)
-          htManager.remove(`${id}-badge`)
+        const group = new AcTrHtmlGroup({
+          id,
+          layer: MEASUREMENT_LAYER,
+          layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
+          selectable: true
+        })
+          .add(
+            new AcTrHtmlDot({
+              id: `${id}-dotV`,
+              color,
+              worldPosition: vertex,
+              layer: MEASUREMENT_LAYER
+            }),
+            new AcTrHtmlDot({
+              id: `${id}-dot1`,
+              color,
+              worldPosition: arm1,
+              layer: MEASUREMENT_LAYER
+            }),
+            new AcTrHtmlDot({
+              id: `${id}-dot2`,
+              color,
+              worldPosition: arm2,
+              layer: MEASUREMENT_LAYER
+            }),
+            new AcTrHtmlBadge({
+              id: `${id}-badge`,
+              color,
+              text: db.formatter.formatAngle((degrees * Math.PI) / 180, {
+                showUnits: true,
+                applyAngbaseAngdir: false
+              }),
+              worldPosition: badgeWorld,
+              layer: MEASUREMENT_LAYER
+            })
+          )
+          .addCanvas(persistOverlay)
+
+        commitMeasurementGroup(context.view as AcTrView2d, group, {
+          entityIds: [line1.objectId, line2.objectId],
+          dispose: () => {
+            context.view.removeTransientEntity(line1.objectId)
+            context.view.removeTransientEntity(line2.objectId)
+            context.view.events.viewChanged.removeEventListener(redrawPersist)
+          }
         })
       })
     )
