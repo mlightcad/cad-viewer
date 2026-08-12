@@ -613,9 +613,18 @@ export default {
       layerList: {
         name: 'Název',
         on: 'Zapnuto',
+        freeze: 'Zmrazit',
+        lock: 'Zamknout',
+        plot: 'Tisk',
         color: 'Barva',
+        linetype: 'Typ čáry',
+        lineweight: 'Tloušťka čáry',
+        transparency: 'Průhlednost',
+        description: 'Popis',
         currentLayer: 'Aktuální hladina',
-        zoomToLayer: 'Přiblíženo na zvolenou hladinu „{layer}“'
+        newLayerPlaceholder: 'Název hladiny',
+        zoomToLayer: 'Přiblíženo na zvolenou hladinu „{layer}“',
+        lineWeightDefault: 'Výchozí'
       }
     },
     countList: {
@@ -778,6 +787,32 @@ export default {
         build: 'Build',
         compact: 'Compact'
       }
+    },
+    blocks: {
+      tab: 'Bloky',
+      title: 'Bloky',
+      tabCurrentDrawing: 'Aktuální výkres',
+      tabRecent: 'Nedávné',
+      tabFavorites: 'Oblíbené',
+      tabLibraries: 'Knihovny',
+      sectionCurrentDrawing: 'Bloky aktuálního výkresu',
+      sectionRecent: 'Nedávno vložené bloky',
+      sectionFavorites: 'Oblíbené bloky',
+      sectionLibraries: 'Knihovny bloků',
+      filterPlaceholder: 'Filtrovat…',
+      empty: 'Nejsou k dispozici žádné bloky',
+      emptyRecent: 'Žádné nedávno vložené bloky',
+      emptyFavorites: 'Žádné oblíbené bloky',
+      emptyLibraries: 'Nejsou nakonfigurovány žádné knihovny',
+      toggleFavorite: 'Přepnout oblíbené',
+      options: 'Možnosti',
+      insertionPoint: 'Vložení',
+      scale: 'Měřítko',
+      rotation: 'Otočení',
+      angle: 'Úhel',
+      autoPlacement: 'Automatické umístění',
+      repeatPlacement: 'Opakovat umístění',
+      explode: 'Rozložit'
     }
   },
   colorDropdown: {

@@ -11,7 +11,7 @@ export type AcExToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
 export type AcExDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
 
 /** Supported UI locale codes for plugin strings. */
-export type AcExLocale = 'en' | 'zh'
+export type AcExLocale = 'en' | 'zh' | 'cs' | 'tr'
 
 /**
  * Controls how a parent button icon relates to its submenu selection.
