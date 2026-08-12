@@ -1,4 +1,9 @@
 import { AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
+import {
+  AcTrHtmlBadge,
+  AcTrHtmlDot,
+  AcTrHtmlGroup
+} from '@mlightcad/three-renderer'
 
 import { AcApContext } from '../../app'
 import {
@@ -10,9 +15,12 @@ import {
   AcEdViewMode
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { makeBadge, makeDot, measurementColor } from '../../util'
+import { measurementColor } from '../../util'
 import { AcTrView2d } from '../../view'
-import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
+import {
+  commitMeasurementGroup,
+  MEASUREMENT_LAYER
+} from './AcApMeasurementStore'
 
 /** Formats an X/Y coordinate label using the drawing length formatter. */
 function formatCoordinateLabel(
@@ -30,7 +38,7 @@ function formatCoordinateLabel(
  *
  * Prompts the user to pick one world point, then places a persistent dot and
  * coordinate badge via {@link AcTrHtmlTransientManager}. The overlays are
- * cleared by {@link registerMeasurementCleanup}.
+ * cleared by {@link commitMeasurementGroup}.
  */
 export class AcApMeasurePointCmd extends AcEdCommand {
   constructor() {
@@ -52,25 +60,33 @@ export class AcApMeasurePointCmd extends AcEdCommand {
         if (pointResult.status !== AcEdPromptStatus.OK) return
         const point = pointResult.value!
 
-        const htManager = (context.view as AcTrView2d).htmlTransientManager
         const id = `point-${Date.now()}`
         const label = formatCoordinateLabel(db, point)
 
-        const badge = makeBadge(color, label)
-        // Offset the badge above the marker so it does not cover the dot.
-        badge.style.transform = 'translate(-50%, calc(-50% - 16px))'
+        const group = new AcTrHtmlGroup({
+          id,
+          layer: MEASUREMENT_LAYER,
+          layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
+          selectable: true
+        }).add(
+          new AcTrHtmlDot({
+            id: `${id}-dot`,
+            color,
+            worldPosition: point,
+            layer: MEASUREMENT_LAYER
+          }),
+          new AcTrHtmlBadge({
+            id: `${id}-badge`,
+            color,
+            text: label,
+            worldPosition: point,
+            layer: MEASUREMENT_LAYER,
+            // Offset the badge above the marker so it does not cover the dot.
+            transform: 'translate(-50%, calc(-50% - 16px))'
+          })
+        )
 
-        htManager.add(`${id}-dot`, makeDot(color), point, 'measurement')
-        htManager.add(`${id}-badge`, badge, point, 'measurement')
-        // CSS2D overlays only appear after a render pass; without a CAD
-        // transient entity nothing else dirties the view, so force one.
-        ;(context.view as AcTrView2d).isDirty = true
-
-        registerMeasurementCleanup(() => {
-          htManager.remove(`${id}-dot`)
-          htManager.remove(`${id}-badge`)
-          ;(context.view as AcTrView2d).isDirty = true
-        })
+        commitMeasurementGroup(context.view as AcTrView2d, group)
       })
     )
   }

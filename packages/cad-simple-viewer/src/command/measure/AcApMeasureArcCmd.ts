@@ -5,6 +5,14 @@ import {
   AcDbLine,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
+import {
+  AcTrHtmlBadge,
+  AcTrHtmlCanvasOverlay,
+  AcTrHtmlDot,
+  AcTrHtmlGroup,
+  AcTrHtmlSnapIndicator,
+  AcTrHtmlTransientManager
+} from '@mlightcad/three-renderer'
 
 import { AcApContext } from '../../app'
 import {
@@ -20,16 +28,14 @@ import {
 import { AcApI18n } from '../../i18n'
 import {
   cssColor,
-  makeBadge,
-  makeDot,
-  makeLiveBadge,
-  makeLiveDot,
-  makeOverlayCanvas,
-  makeSnapIndicator,
   measurementColor
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
+import {
+  commitMeasurementGroup,
+  MEASUREMENT_LAYER,
+  MEASUREMENT_LIVE_LAYER
+} from './AcApMeasurementStore'
 
 interface CircleGeom {
   cx: number
@@ -143,8 +149,10 @@ function drawArcOnCanvas(
  */
 class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _dummy: AcDbLine
-  private _indicator: HTMLDivElement
   private _ctx: AcApContext
+  private _indicator: AcTrHtmlSnapIndicator
+  private _htManager: AcTrHtmlTransientManager
+  private readonly _indicatorId: string
   private _onSnap: (
     geom: CircleGeom | null,
     snapped: AcGePoint3dLike | null
@@ -162,7 +170,17 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
     const o = { x: 0, y: 0, z: 0 }
     this._dummy = new AcDbLine(o, o)
 
-    this._indicator = makeSnapIndicator(color)
+    this._indicatorId = `live-arc-snap-${Date.now()}`
+    this._htManager = (context.view as AcTrView2d).htmlTransientManager
+    this._indicator = new AcTrHtmlSnapIndicator({
+      id: this._indicatorId,
+      color,
+      worldPosition: o,
+      layer: MEASUREMENT_LIVE_LAYER,
+      layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+    })
+    this._indicator.object.visible = false
+    this._htManager.add(this._indicator)
   }
 
   get entity(): AcDbLine {
@@ -213,22 +231,20 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
       )
 
       if (screenDist <= 20) {
-        const rect = this._ctx.view.canvas.getBoundingClientRect()
-        this._indicator.style.left = `${snapScreen.x + rect.left}px`
-        this._indicator.style.top = `${snapScreen.y + rect.top}px`
-        this._indicator.style.display = 'block'
+        this._indicator.setPosition(snapped)
+        this._indicator.object.visible = true
         this._onSnap(bestGeom, snapped)
         return
       }
     }
 
-    this._indicator.style.display = 'none'
+    this._indicator.object.visible = false
     this._onSnap(null, null)
   }
 
   end() {
     super.end()
-    this._indicator.remove()
+    this._htManager.remove(this._indicatorId)
   }
 }
 
@@ -238,27 +254,35 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
  */
 class AcApArcEndSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _dummy: AcDbLine
-  private _indicator: HTMLDivElement
-  private _ctx: AcApContext
   private _geom: CircleGeom
+  private _indicator: AcTrHtmlSnapIndicator
+  private _htManager: AcTrHtmlTransientManager
+  private readonly _indicatorId: string
   private _onMove: (snapped: AcGePoint3dLike) => void
 
   constructor(
-    context: AcApContext,
+    view: AcEdBaseView,
     geom: CircleGeom,
     color: AcCmColor,
     onMove: (snapped: AcGePoint3dLike) => void
   ) {
-    super(context.view)
-    this._ctx = context
+    super(view)
     this._geom = geom
     this._onMove = onMove
 
     const o = { x: 0, y: 0, z: 0 }
     this._dummy = new AcDbLine(o, o)
 
-    this._indicator = makeSnapIndicator(color)
-    this._indicator.style.display = 'block'
+    this._indicatorId = `live-arc-end-snap-${Date.now()}`
+    this._htManager = (view as AcTrView2d).htmlTransientManager
+    this._indicator = new AcTrHtmlSnapIndicator({
+      id: this._indicatorId,
+      color,
+      worldPosition: o,
+      layer: MEASUREMENT_LIVE_LAYER,
+      layoutId: (view as AcTrView2d).activeLayoutBtrId
+    })
+    this._htManager.add(this._indicator)
   }
 
   get entity(): AcDbLine {
@@ -267,16 +291,14 @@ class AcApArcEndSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   update(p: AcGePoint3dLike) {
     const snapped = snapToCircle(p, this._geom)
-    const rect = this._ctx.view.canvas.getBoundingClientRect()
-    const sp = this._ctx.view.worldToScreen(snapped)
-    this._indicator.style.left = `${sp.x + rect.left}px`
-    this._indicator.style.top = `${sp.y + rect.top}px`
+    this._indicator.setPosition(snapped)
+    this._indicator.object.visible = true
     this._onMove(snapped)
   }
 
   end() {
     super.end()
-    this._indicator.remove()
+    this._htManager.remove(this._indicatorId)
   }
 }
 
@@ -296,7 +318,7 @@ class AcApArcEndSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
  *
  * Persistent overlays are placed via {@link AcTrHtmlTransientManager} for dots
  * and badge. The arc canvas is managed with a viewChanged listener cleaned up
- * via {@link registerMeasurementCleanup}.
+ * via {@link commitMeasurementGroup}.
  */
 export class AcApMeasureArcCmd extends AcEdCommand {
   constructor() {
@@ -310,7 +332,15 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     const color = measurementColor(db)
 
     // Construction-phase canvas — removed before this method returns
-    const arcCanvas = makeOverlayCanvas(context.view.container)
+    const liveId = `live-arc-${Date.now()}`
+    const arcOverlay = new AcTrHtmlCanvasOverlay({
+      id: `${liveId}-canvas`,
+      container: context.view.container,
+      layer: MEASUREMENT_LIVE_LAYER,
+      layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+    })
+    const htManager = (context.view as AcTrView2d).htmlTransientManager
+    htManager.add(arcOverlay)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -331,16 +361,16 @@ export class AcApMeasureArcCmd extends AcEdCommand {
         try {
           const p1Result = await editor.getPoint(p1Prompt)
           if (p1Result.status !== AcEdPromptStatus.OK) {
-            arcCanvas.remove()
+            htManager.remove(arcOverlay.id)
             return
           }
         } catch {
-          arcCanvas.remove()
+          htManager.remove(arcOverlay.id)
           return
         }
 
         if (!snapGeom || !snappedStart) {
-          arcCanvas.remove()
+          htManager.remove(arcOverlay.id)
           return
         }
 
@@ -348,118 +378,161 @@ export class AcApMeasureArcCmd extends AcEdCommand {
         const start = snappedStart
 
         // ── Phase 2: end point with live arc preview ─────────────────────────────
-        // dot1 and liveBadge are short-lived during construction
-        const dot1 = makeLiveDot(color)
-        const liveBadge = makeLiveBadge(color)
-
-        const reposDot1 = () => {
-          const rect = context.view.canvas.getBoundingClientRect()
-          const sp = context.view.worldToScreen(start)
-          dot1.style.left = `${sp.x + rect.left}px`
-          dot1.style.top = `${sp.y + rect.top}px`
-        }
-        reposDot1()
+        // Start marker + length badge are short-lived CSS2D overlays
+        const liveDotId = `${liveId}-dot1`
+        const liveBadgeId = `${liveId}-badge`
+        htManager.add(
+          new AcTrHtmlDot({
+            id: liveDotId,
+            color,
+            worldPosition: start,
+            layer: MEASUREMENT_LIVE_LAYER,
+            layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+          })
+        )
+        const liveBadge = new AcTrHtmlBadge({
+          id: liveBadgeId,
+          color,
+          worldPosition: start,
+          layer: MEASUREMENT_LIVE_LAYER,
+          layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+        })
+        liveBadge.object.visible = false
+        htManager.add(liveBadge)
 
         const redrawPreview = () =>
-          drawArcOnCanvas(arcCanvas, context.view, geom, start, start, color)
-        const onViewChangedPreview = () => {
-          reposDot1()
-          redrawPreview()
-        }
+          drawArcOnCanvas(
+            arcOverlay.canvas,
+            context.view,
+            geom,
+            start,
+            start,
+            color
+          )
+        const onViewChangedPreview = () => redrawPreview()
         context.view.events.viewChanged.addEventListener(onViewChangedPreview)
 
+        const cleanupLivePreview = () => {
+          htManager.remove(liveDotId)
+          htManager.remove(liveBadgeId)
+          htManager.remove(arcOverlay.id)
+          context.view.events.viewChanged.removeEventListener(
+            onViewChangedPreview
+          )
+        }
+
         const onMove = (snapped: AcGePoint3dLike) => {
-          drawArcOnCanvas(arcCanvas, context.view, geom, start, snapped, color)
+          drawArcOnCanvas(
+            arcOverlay.canvas,
+            context.view,
+            geom,
+            start,
+            snapped,
+            color
+          )
 
           const len = shortArcLength(start, snapped, geom)
-          liveBadge.textContent = db.formatter.formatLength(len, {
-            showUnits: true,
-            showApproximate: true
-          })
-          liveBadge.style.display = ''
-
-          const mid = shortArcMid(start, snapped, geom)
-          const rect = context.view.canvas.getBoundingClientRect()
-          const sm = context.view.worldToScreen(mid)
-          liveBadge.style.left = `${sm.x + rect.left}px`
-          liveBadge.style.top = `${sm.y + rect.top}px`
-
-          reposDot1()
+          liveBadge.setText(
+            db.formatter.formatLength(len, {
+              showUnits: true,
+              showApproximate: true
+            })
+          )
+          liveBadge.setPosition(shortArcMid(start, snapped, geom))
+          liveBadge.object.visible = true
         }
 
         const p2Prompt = new AcEdPromptPointOptions(
           AcApI18n.t('jig.measureArc.endPoint')
         )
-        p2Prompt.jig = new AcApArcEndSnapJig(context, geom, color, onMove)
+        p2Prompt.jig = new AcApArcEndSnapJig(context.view, geom, color, onMove)
 
         let p2Raw: AcGePoint3dLike
         try {
           const p2Result = await editor.getPoint(p2Prompt)
           if (p2Result.status !== AcEdPromptStatus.OK) {
-            arcCanvas.remove()
-            dot1.remove()
-            liveBadge.remove()
-            context.view.events.viewChanged.removeEventListener(
-              onViewChangedPreview
-            )
+            cleanupLivePreview()
             return
           }
           p2Raw = p2Result.value!
         } catch {
-          arcCanvas.remove()
-          dot1.remove()
-          liveBadge.remove()
-          context.view.events.viewChanged.removeEventListener(
-            onViewChangedPreview
-          )
+          cleanupLivePreview()
           return
         }
 
         // Clean up construction-phase elements
-        liveBadge.remove()
-        dot1.remove()
-        context.view.events.viewChanged.removeEventListener(
-          onViewChangedPreview
-        )
-        arcCanvas.remove()
+        cleanupLivePreview()
 
         const end = snapToCircle(p2Raw, geom)
         const arcLen = shortArcLength(start, end, geom)
         const mid = shortArcMid(start, end, geom)
 
         // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
-        const persistCanvas = makeOverlayCanvas(context.view.container)
-        drawArcOnCanvas(persistCanvas, context.view, geom, start, end, color)
+        const persistOverlay = new AcTrHtmlCanvasOverlay({
+          id: `arc-canvas-${Date.now()}`,
+          container: context.view.container,
+          layer: MEASUREMENT_LAYER,
+          layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+        })
+        drawArcOnCanvas(
+          persistOverlay.canvas,
+          context.view,
+          geom,
+          start,
+          end,
+          color
+        )
 
         const redrawPersist = () =>
-          drawArcOnCanvas(persistCanvas, context.view, geom, start, end, color)
+          drawArcOnCanvas(
+            persistOverlay.canvas,
+            context.view,
+            geom,
+            start,
+            end,
+            color
+          )
         context.view.events.viewChanged.addEventListener(redrawPersist)
 
         // Persistent badge + dots via htmlTransientManager
-        const htManager = (context.view as AcTrView2d).htmlTransientManager
         const id = `arc-${Date.now()}`
 
-        htManager.add(`${id}-dot1`, makeDot(color), start, 'measurement')
-        htManager.add(`${id}-dot2`, makeDot(color), end, 'measurement')
-        htManager.add(
-          `${id}-badge`,
-          makeBadge(
-            color,
-            db.formatter.formatLength(arcLen, {
-              showUnits: true,
-              showApproximate: true
+        const group = new AcTrHtmlGroup({
+          id,
+          layer: MEASUREMENT_LAYER,
+          layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
+          selectable: true
+        })
+          .add(
+            new AcTrHtmlDot({
+              id: `${id}-dot1`,
+              color,
+              worldPosition: start,
+              layer: MEASUREMENT_LAYER
+            }),
+            new AcTrHtmlDot({
+              id: `${id}-dot2`,
+              color,
+              worldPosition: end,
+              layer: MEASUREMENT_LAYER
+            }),
+            new AcTrHtmlBadge({
+              id: `${id}-badge`,
+              color,
+              text: db.formatter.formatLength(arcLen, {
+                showUnits: true,
+                showApproximate: true
+              }),
+              worldPosition: mid,
+              layer: MEASUREMENT_LAYER
             })
-          ),
-          mid,
-          'measurement'
-        )
+          )
+          .addCanvas(persistOverlay)
 
-        registerMeasurementCleanup(() => {
-          persistCanvas.remove()
-          context.view.events.viewChanged.removeEventListener(redrawPersist)
-          htManager.remove(`${id}-dot1`)
-          htManager.remove(`${id}-dot2`)
-          htManager.remove(`${id}-badge`)
+        commitMeasurementGroup(context.view as AcTrView2d, group, {
+          dispose: () => {
+            context.view.events.viewChanged.removeEventListener(redrawPersist)
+          }
         })
       })
     )

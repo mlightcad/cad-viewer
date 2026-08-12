@@ -444,18 +444,37 @@ export class AcTrScene {
   }
 
   /**
+   * Show or hide one transient entity already published in this scene.
+   * @returns `true` when the entity exists and visibility was updated.
+   */
+  setTransientEntityVisible(
+    objectId: AcDbObjectId,
+    visible: boolean
+  ): boolean {
+    const entity = this._transientManager.get(objectId)
+    if (!entity) return false
+    if (entity.visible === visible) return false
+    entity.visible = visible
+    return true
+  }
+
+  /**
    * Applies world transforms to existing transient entities without reconverting
    * database entities on every cursor move.
+   *
+   * Also forwards matching ids to {@link AcTrHtmlTransientManager} so HTML
+   * overlays receive the same delta as WebGL transients.
    */
   updateTransientPreviewTransforms(
     transforms: ReadonlyArray<{ objectId: AcDbObjectId; matrix: THREE.Matrix4 }>
   ): boolean {
-    return this._transientManager.applyTransforms(
-      transforms.map(entry => ({
-        id: entry.objectId,
-        matrix: entry.matrix
-      }))
-    )
+    const mapped = transforms.map(entry => ({
+      id: entry.objectId,
+      matrix: entry.matrix
+    }))
+    const webglUpdated = this._transientManager.applyTransforms(mapped)
+    const htmlUpdated = this._htmlTransientManager.applyTransforms(mapped)
+    return webglUpdated || htmlUpdated
   }
 
   /**

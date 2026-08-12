@@ -4,6 +4,12 @@ import {
   AcGePoint3dLike,
   AcGiLineWeight
 } from '@mlightcad/data-model'
+import {
+  AcTrHtmlBadge,
+  AcTrHtmlCanvasOverlay,
+  AcTrHtmlDot,
+  AcTrHtmlGroup
+} from '@mlightcad/three-renderer'
 
 import { AcApContext } from '../../app'
 import {
@@ -20,14 +26,14 @@ import { AcApI18n } from '../../i18n'
 import {
   colorToCssAlpha,
   cssColor,
-  makeBadge,
-  makeDot,
-  makeLiveBadge,
-  makeOverlayCanvas,
   measurementColor
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { registerMeasurementCleanup } from './AcApClearMeasurementsCmd'
+import {
+  commitMeasurementGroup,
+  MEASUREMENT_LAYER,
+  MEASUREMENT_LIVE_LAYER
+} from './AcApMeasurementStore'
 
 /**
  * Rubber-band jig: shows a preview line from the last confirmed
@@ -159,7 +165,7 @@ function drawAreaOnCanvas(
  *
  * Persistent overlays are placed via {@link AcTrHtmlTransientManager} for dots
  * and badge. The filled area canvas is managed with a viewChanged listener
- * cleaned up via {@link registerMeasurementCleanup}.
+ * cleaned up via {@link commitMeasurementGroup}.
  */
 export class AcApMeasureAreaCmd extends AcEdCommand {
   constructor() {
@@ -175,194 +181,228 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     const points: AcGePoint3dLike[] = []
 
     // Construction-phase canvas overlay — removed before this method returns
-    const fillCanvas = makeOverlayCanvas(context.view.container)
+    const fillOverlay = new AcTrHtmlCanvasOverlay({
+      id: `live-area-canvas-${Date.now()}`,
+      container: context.view.container,
+      layer: MEASUREMENT_LIVE_LAYER,
+      layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+    })
+    const fillCanvas = fillOverlay.canvas
 
     // Live area badge shown while the jig is active — also removed before returning
-    const liveBadge = makeLiveBadge(color)
+    const htManagerLive = (context.view as AcTrView2d).htmlTransientManager
+    htManagerLive.add(fillOverlay)
+    const liveBadgeId = `live-area-badge-${Date.now()}`
+    const liveBadge = new AcTrHtmlBadge({
+      id: liveBadgeId,
+      color,
+      worldPosition: { x: 0, y: 0 },
+      layer: MEASUREMENT_LIVE_LAYER,
+      layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+    })
+    liveBadge.object.visible = false
+    htManagerLive.add(liveBadge)
 
-    await context.view.withMode(AcEdViewMode.SELECTION, () =>
-      editor.withCursor(AcEdCorsorType.Crosshair, async () => {
-        const drawPolygon = (cursor?: AcGePoint3dLike) => {
-          const rect = context.view.canvas.getBoundingClientRect()
-          const dpr = window.devicePixelRatio || 1
-          const w = Math.round(rect.width)
-          const h = Math.round(rect.height)
+    const drawPolygon = (cursor?: AcGePoint3dLike) => {
+      const rect = context.view.canvas.getBoundingClientRect()
+      const dpr = window.devicePixelRatio || 1
+      const w = Math.round(rect.width)
+      const h = Math.round(rect.height)
 
-          const origin = context.view.canvasToContainer({ x: 0, y: 0 })
-          fillCanvas.style.left = `${origin.x}px`
-          fillCanvas.style.top = `${origin.y}px`
-          fillCanvas.style.width = `${w}px`
-          fillCanvas.style.height = `${h}px`
+      const origin = context.view.canvasToContainer({ x: 0, y: 0 })
+      fillCanvas.style.left = `${origin.x}px`
+      fillCanvas.style.top = `${origin.y}px`
+      fillCanvas.style.width = `${w}px`
+      fillCanvas.style.height = `${h}px`
 
-          if (fillCanvas.width !== w * dpr || fillCanvas.height !== h * dpr) {
-            fillCanvas.width = w * dpr
-            fillCanvas.height = h * dpr
-          }
+      if (fillCanvas.width !== w * dpr || fillCanvas.height !== h * dpr) {
+        fillCanvas.width = w * dpr
+        fillCanvas.height = h * dpr
+      }
 
-          const ctx = fillCanvas.getContext('2d')
-          if (!ctx || points.length < 1) return
+      const ctx = fillCanvas.getContext('2d')
+      if (!ctx || points.length < 1) return
 
-          ctx.clearRect(0, 0, fillCanvas.width, fillCanvas.height)
-          ctx.save()
-          ctx.scale(dpr, dpr)
+      ctx.clearRect(0, 0, fillCanvas.width, fillCanvas.height)
+      ctx.save()
+      ctx.scale(dpr, dpr)
 
-          const confirmedSpts = points.map(p => context.view.worldToScreen(p))
-          const fillSpts = cursor
-            ? [...confirmedSpts, context.view.worldToScreen(cursor)]
-            : confirmedSpts
+      const confirmedSpts = points.map(p => context.view.worldToScreen(p))
+      const fillSpts = cursor
+        ? [...confirmedSpts, context.view.worldToScreen(cursor)]
+        : confirmedSpts
 
-          if (fillSpts.length >= 3) {
-            ctx.beginPath()
-            ctx.moveTo(fillSpts[0].x, fillSpts[0].y)
-            for (let i = 1; i < fillSpts.length; i++)
-              ctx.lineTo(fillSpts[i].x, fillSpts[i].y)
-            ctx.closePath()
-            ctx.fillStyle = colorToCssAlpha(color, 0.2)
-            ctx.fill()
-          }
+      if (fillSpts.length >= 3) {
+        ctx.beginPath()
+        ctx.moveTo(fillSpts[0].x, fillSpts[0].y)
+        for (let i = 1; i < fillSpts.length; i++)
+          ctx.lineTo(fillSpts[i].x, fillSpts[i].y)
+        ctx.closePath()
+        ctx.fillStyle = colorToCssAlpha(color, 0.2)
+        ctx.fill()
+      }
 
-          if (confirmedSpts.length >= 2) {
-            ctx.beginPath()
-            ctx.moveTo(confirmedSpts[0].x, confirmedSpts[0].y)
-            for (let i = 1; i < confirmedSpts.length; i++)
-              ctx.lineTo(confirmedSpts[i].x, confirmedSpts[i].y)
-            ctx.strokeStyle = cssColor(color)
-            ctx.lineWidth = 2.5
-            ctx.setLineDash([8, 5])
-            ctx.stroke()
-            ctx.setLineDash([])
-          }
+      if (confirmedSpts.length >= 2) {
+        ctx.beginPath()
+        ctx.moveTo(confirmedSpts[0].x, confirmedSpts[0].y)
+        for (let i = 1; i < confirmedSpts.length; i++)
+          ctx.lineTo(confirmedSpts[i].x, confirmedSpts[i].y)
+        ctx.strokeStyle = cssColor(color)
+        ctx.lineWidth = 2.5
+        ctx.setLineDash([8, 5])
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
 
-          ctx.restore()
-        }
+      ctx.restore()
+    }
 
-        const redrawOnViewChange = () => drawPolygon()
-        context.view.events.viewChanged.addEventListener(redrawOnViewChange)
+    const redrawOnViewChange = () => drawPolygon()
+    context.view.events.viewChanged.addEventListener(redrawOnViewChange)
 
-        const p1Result = await editor.getPoint(
-          new AcEdPromptPointOptions(AcApI18n.t('jig.measureArea.firstPoint'))
-        )
-        if (p1Result.status !== AcEdPromptStatus.OK) return
-        const p1 = p1Result.value!
-        points.push(p1)
-        drawPolygon()
+    const cleanupLive = () => {
+      htManagerLive.remove(liveBadgeId)
+      htManagerLive.remove(fillOverlay.id)
+      context.view.events.viewChanged.removeEventListener(redrawOnViewChange)
+    }
 
-        try {
-          while (points.length < 50) {
-            const prompt = new AcEdPromptPointOptions(
-              AcApI18n.t('jig.measureArea.nextPoint')
-            )
-            prompt.useBasePoint = true
-            // Allow the user to press Enter (without typing coordinates) to
-            // finish picking vertices and close the area polygon.
-            prompt.allowNone = true
+    try {
+      await context.view.withMode(AcEdViewMode.SELECTION, () =>
+        editor.withCursor(AcEdCorsorType.Crosshair, async () => {
+          const p1Result = await editor.getPoint(
+            new AcEdPromptPointOptions(AcApI18n.t('jig.measureArea.firstPoint'))
+          )
+          if (p1Result.status !== AcEdPromptStatus.OK) return
+          const p1 = p1Result.value!
+          points.push(p1)
+          drawPolygon()
 
-            const onMove = (cursor: AcGePoint3dLike) => {
-              if (points.length < 2) return
-              const tempPts = [...points, cursor]
-              const area = shoelaceArea(tempPts)
-              liveBadge.textContent = `${db.formatter.formatLength(area, {
-                showUnits: true,
-                showApproximate: true
-              })}²`
-              liveBadge.style.display = ''
-              const mid = centroid(tempPts)
-              const rect = context.view.canvas.getBoundingClientRect()
-              const sc = context.view.worldToScreen(mid)
-              liveBadge.style.left = `${sc.x + rect.left}px`
-              liveBadge.style.top = `${sc.y + rect.top}px`
-              drawPolygon(cursor)
-            }
+          try {
+            while (points.length < 50) {
+              const prompt = new AcEdPromptPointOptions(
+                AcApI18n.t('jig.measureArea.nextPoint')
+              )
+              prompt.useBasePoint = true
+              // Allow the user to press Enter (without typing coordinates) to
+              // finish picking vertices and close the area polygon.
+              prompt.allowNone = true
 
-            prompt.jig = new AcApMeasureAreaJig(
-              context.view,
-              points[points.length - 1],
-              color,
-              onMove
-            )
-
-            const pResult = await editor.getPoint(prompt)
-            if (pResult.status !== AcEdPromptStatus.OK) break
-            const p = pResult.value!
-            liveBadge.style.display = 'none'
-
-            if (points.length >= 3) {
-              const sp = context.view.worldToScreen(p)
-              const snap = (anchor: AcGePoint3dLike) => {
-                const sa = context.view.worldToScreen(anchor)
-                const dx = sp.x - sa.x
-                const dy = sp.y - sa.y
-                return dx * dx + dy * dy <= 14 * 14
+              const onMove = (cursor: AcGePoint3dLike) => {
+                if (points.length < 2) return
+                const tempPts = [...points, cursor]
+                const area = shoelaceArea(tempPts)
+                liveBadge.setText(
+                  `${db.formatter.formatLength(area, {
+                    showUnits: true,
+                    showApproximate: true
+                  })}²`
+                )
+                liveBadge.setPosition(centroid(tempPts))
+                liveBadge.object.visible = true
+                drawPolygon(cursor)
               }
-              if (snap(points[0]) || snap(points[points.length - 1])) break
-            }
 
-            if (points.length >= 3) {
-              const last = points[points.length - 1]
-              let crosses = false
-              for (let i = 0; i < points.length - 2; i++) {
-                if (segmentsIntersect(last, p, points[i], points[i + 1])) {
-                  crosses = true
-                  break
+              prompt.jig = new AcApMeasureAreaJig(
+                context.view,
+                points[points.length - 1],
+                color,
+                onMove
+              )
+
+              const pResult = await editor.getPoint(prompt)
+              if (pResult.status !== AcEdPromptStatus.OK) break
+              const p = pResult.value!
+              liveBadge.object.visible = false
+
+              if (points.length >= 3) {
+                const sp = context.view.worldToScreen(p)
+                const snap = (anchor: AcGePoint3dLike) => {
+                  const sa = context.view.worldToScreen(anchor)
+                  const dx = sp.x - sa.x
+                  const dy = sp.y - sa.y
+                  return dx * dx + dy * dy <= 14 * 14
                 }
+                if (snap(points[0]) || snap(points[points.length - 1])) break
               }
-              if (crosses) break
+
+              if (points.length >= 3) {
+                const last = points[points.length - 1]
+                let crosses = false
+                for (let i = 0; i < points.length - 2; i++) {
+                  if (segmentsIntersect(last, p, points[i], points[i + 1])) {
+                    crosses = true
+                    break
+                  }
+                }
+                if (crosses) break
+              }
+
+              points.push(p)
+              drawPolygon()
             }
-
-            points.push(p)
-            drawPolygon()
+          } catch {
+            // user pressed Enter/ESC to finish
           }
-        } catch {
-          // user pressed Enter/ESC to finish
-        }
+        })
+      )
+    } finally {
+      cleanupLive()
+    }
 
-        // Clean up construction-phase elements
-        liveBadge.remove()
-        context.view.events.viewChanged.removeEventListener(redrawOnViewChange)
-        fillCanvas.remove()
+    if (points.length < 3) return
 
-        if (points.length < 3) return
+    const area = shoelaceArea(points)
 
-        const area = shoelaceArea(points)
+    // Persistent fill canvas — redrawn on viewChanged, cleaned up by Clear
+    const persistOverlay = new AcTrHtmlCanvasOverlay({
+      id: `area-canvas-${Date.now()}`,
+      container: context.view.container,
+      layer: MEASUREMENT_LAYER,
+      layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+    })
+    drawAreaOnCanvas(persistOverlay.canvas, context.view, points, color)
 
-        // Persistent fill canvas — redrawn on viewChanged, cleaned up by Clear
-        const persistCanvas = makeOverlayCanvas(context.view.container)
-        drawAreaOnCanvas(persistCanvas, context.view, points, color)
+    const redrawPersist = () =>
+      drawAreaOnCanvas(persistOverlay.canvas, context.view, points, color)
+    context.view.events.viewChanged.addEventListener(redrawPersist)
 
-        const redrawPersist = () =>
-          drawAreaOnCanvas(persistCanvas, context.view, points, color)
-        context.view.events.viewChanged.addEventListener(redrawPersist)
+    // Persistent badge + dots via htmlTransientManager
+    const id = `area-${Date.now()}`
+    const mid = centroid(points)
 
-        // Persistent badge + dots via htmlTransientManager
-        const htManager = (context.view as AcTrView2d).htmlTransientManager
-        const id = `area-${Date.now()}`
-        const mid = centroid(points)
-
-        htManager.add(
-          `${id}-badge`,
-          makeBadge(
-            color,
-            `${db.formatter.formatLength(area, {
-              showUnits: true,
-              showApproximate: true
-            })}²`
-          ),
-          mid,
-          'measurement'
+    const group = new AcTrHtmlGroup({
+      id,
+      layer: MEASUREMENT_LAYER,
+      layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
+      selectable: true
+    })
+      .add(
+        new AcTrHtmlBadge({
+          id: `${id}-badge`,
+          color,
+          text: `${db.formatter.formatLength(area, {
+            showUnits: true,
+            showApproximate: true
+          })}²`,
+          worldPosition: mid,
+          layer: MEASUREMENT_LAYER
+        }),
+        ...points.map(
+          (p, i) =>
+            new AcTrHtmlDot({
+              id: `${id}-dot${i}`,
+              color,
+              worldPosition: p,
+              layer: MEASUREMENT_LAYER
+            })
         )
-        points.forEach((p, i) => {
-          htManager.add(`${id}-dot${i}`, makeDot(color), p, 'measurement')
-        })
+      )
+      .addCanvas(persistOverlay)
 
-        registerMeasurementCleanup(() => {
-          persistCanvas.remove()
-          context.view.events.viewChanged.removeEventListener(redrawPersist)
-          htManager.remove(`${id}-badge`)
-          points.forEach((_, i) => {
-            htManager.remove(`${id}-dot${i}`)
-          })
-        })
-      })
-    )
+    commitMeasurementGroup(context.view as AcTrView2d, group, {
+      dispose: () => {
+        context.view.events.viewChanged.removeEventListener(redrawPersist)
+      }
+    })
   }
 }

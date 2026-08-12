@@ -54,6 +54,8 @@ export class AcEdViewKeyHandler {
     switch (e.code) {
       case 'Escape':
         this.view.selectionSet.clear()
+        this.view.htmlTransientManager.deselectAll()
+        this.view.isDirty = true
         return false
 
       case 'Delete':
@@ -63,6 +65,11 @@ export class AcEdViewKeyHandler {
         // point) corrupts the active command's input pipeline because
         // sendStringToExecute clears scripted inputs unconditionally.
         if (!this.view.editor.isActive) {
+          if (this.view.htmlTransientManager.deleteSelected()) {
+            this.view.isDirty = true
+            e.preventDefault()
+            return true
+          }
           AcApDocManager.instance.sendStringToExecute('erase')
         }
         return false
