@@ -256,17 +256,15 @@
             <span class="pill">jsDelivr</span>
           </div>
           <p>
-            A self-contained integration reference that boots the full
-            <code>@mlightcad/cad-viewer</code> UI from CDN packages only — Vue 3, Element Plus,
-            Three.js, and MLightCAD modules — without a bundler or local <code>node_modules</code>.
-            Use it when you want a drop-in HTML host or need to understand how CDN ESM loading works.
+            A minimal single-HTML host that loads <code>@mlightcad/cad-viewer</code> and its peer
+            dependencies from jsDelivr — no Node, Vite, or local <code>node_modules</code>.
+            The landing page is plain HTML file upload; Vue is only used to mount the viewer.
           </p>
           <ul>
-            <li>Import map + runtime rewrite so the published <code>cad-viewer.js</code> bundle resolves in the browser</li>
-            <li>Same upload screen and open options as the Vue demo (DWG/DXF, access mode, progressive rendering)</li>
-            <li>LibreDWG parser via a blob module worker that imports the jsDelivr script (cross-origin <code>Worker</code> URLs are blocked); MTEXT on the main thread</li>
-            <li>Loader diagnostics with retry / copy-all if a CDN step times out</li>
-            <li>Pin package versions in one file — keep CSS links, import map, dynamic imports, and worker URLs in sync</li>
+            <li>Import map + in-browser rewrite so published <code>cad-viewer.js</code> resolves on a CDN</li>
+            <li>Simple DWG/DXF file picker (no open-options UI)</li>
+            <li>LibreDWG worker via blob + jsDelivr; MTEXT on the main thread</li>
+            <li>Pin versions in one file when you upgrade</li>
           </ul>
           <a class="button" href="./cdn-bootstrap/cad-viewer.html" target="_blank" rel="noopener">Open CDN Bootstrap</a>
           <p class="note">
