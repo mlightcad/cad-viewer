@@ -92,9 +92,9 @@ import {
   AcApUnisolateObjectsCmd,
   AcApXAttachCmd,
   AcApXLineCmd,
-  AcApZoomCmd
+  AcApZoomCmd,
+  resetMarkupSession
 } from '../command'
-import { resetMarkupSession } from '../command/markup'
 import {
   AcEdCalculateSizeCallback,
   AcEdCommand,
