@@ -288,6 +288,9 @@ export default {
     clearmeasurements: {
       description: 'Geçerli yerleşimdeki tüm ölçümleri kaldırır'
     },
+    measurementvis: {
+      description: 'Geçerli yerleşimdeki ölçümleri gösterir veya gizler'
+    },
     measurementexport: {
       description: 'Ölçümleri sidecar JSON dosyasına dışa aktarır'
     },
@@ -406,8 +409,7 @@ export default {
       description: 'Geçerli çizimi yeniden çizer'
     },
     revcloud: {
-      description:
-        'Dikdörtgen şeklinde bir revizyon bulutu (bulut çizgisi) oluşturur'
+      description: 'Revizyon bulutu oluşturur veya değiştirir'
     },
     markuptext: {
       description: 'Metin işareti yerleştirir'
@@ -464,8 +466,7 @@ export default {
         'Çizim alanındaki kısayol menülerinin kullanılabilirliğini denetler'
     },
     sketch: {
-      description:
-        'Fare hareketini izleyen çoklu çizgi kullanarak bir taslak çizgi oluşturur'
+      description: 'Bir dizi serbest el çizgi parçası oluşturur'
     },
     spline: {
       description:

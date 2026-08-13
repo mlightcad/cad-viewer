@@ -983,9 +983,120 @@ export default {
       referencePoints: 'Geçersiz referans noktaları: noktalar farklı olmalıdır.'
     }
   },
-  sketch: {
+  revcloud: {
+    firstCornerOrOptions: 'İlk köşe noktasını belirtin veya',
+    firstCorner: 'İlk köşe noktasını belirtin',
+    oppositeCorner: 'Karşı köşeyi belirtin',
+    startPoint: 'Başlangıç noktasını belirtin',
+    nextPoint: 'Sonraki noktayı belirtin',
+    nextPointOrUndo: 'Sonraki noktayı belirtin veya',
     firstPoint: 'İlk noktayı belirtin',
-    nextPoint: 'Bitiş noktasını belirtin'
+    guideCursor: 'İmleci bulut yolu boyunca götürün (bitirmek için Enter)',
+    arcLength: 'Yay uzunluğunu belirtin',
+    selectObject: 'Nesne seçin',
+    style: 'Revizyon bulutu yay stilini girin',
+    reverseDirection: 'Yönü ters çevir',
+    invalidArcLength: 'Yay uzunluğu 0\'dan büyük olmalıdır.',
+    invalidObject: 'Seçilen nesne revizyon bulutuna dönüştürülemez.',
+    keywords: {
+      arcLength: {
+        display: 'Yay uzunluğu(A)',
+        local: 'Yay uzunluğu',
+        global: 'ArcLength'
+      },
+      object: {
+        display: 'Nesne(O)',
+        local: 'Nesne',
+        global: 'Object'
+      },
+      rectangular: {
+        display: 'Dikdörtgen(R)',
+        local: 'Dikdörtgen',
+        global: 'Rectangular'
+      },
+      polygonal: {
+        display: 'Çokgen(P)',
+        local: 'Çokgen',
+        global: 'Polygonal'
+      },
+      freehand: {
+        display: 'Serbest(F)',
+        local: 'Serbest',
+        global: 'Freehand'
+      },
+      style: {
+        display: 'Stil(S)',
+        local: 'Stil',
+        global: 'Style'
+      },
+      normal: {
+        display: 'Normal(N)',
+        local: 'Normal',
+        global: 'Normal'
+      },
+      calligraphy: {
+        display: 'Kaligrafi(C)',
+        local: 'Kaligrafi',
+        global: 'Calligraphy'
+      },
+      undo: {
+        display: 'Geri al(U)',
+        local: 'Geri al',
+        global: 'Undo'
+      },
+      yes: {
+        display: 'Evet(Y)',
+        local: 'Evet',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Hayır(N)',
+        local: 'Hayır',
+        global: 'No'
+      }
+    }
+  },
+  sketch: {
+    specifySketch: 'Eskizi belirtin veya',
+    sketching:
+      'Eskiz için işaretçiyi hareket ettirin (durdurmak için tıklayın veya Enter)',
+    type: 'Eskiz türünü girin',
+    increment: 'Eskiz artışını belirtin',
+    tolerance: 'Spline toleransını belirtin',
+    firstPoint: 'İlk noktayı belirtin',
+    nextPoint: 'Bitiş noktasını belirtin',
+    keywords: {
+      type: {
+        display: 'Tür(T)',
+        local: 'Tür',
+        global: 'Type'
+      },
+      increment: {
+        display: 'Artış(I)',
+        local: 'Artış',
+        global: 'Increment'
+      },
+      tolerance: {
+        display: 'toLerance(L)',
+        local: 'toLerance',
+        global: 'Tolerance'
+      },
+      line: {
+        display: 'Çizgiler(L)',
+        local: 'Çizgiler',
+        global: 'Lines'
+      },
+      polyline: {
+        display: 'Çoklu çizgi(P)',
+        local: 'Çoklu çizgi',
+        global: 'Polyline'
+      },
+      spline: {
+        display: 'Spline(S)',
+        local: 'Spline',
+        global: 'Spline'
+      }
+    }
   },
   spline: {
     firstPoint: 'İlk noktayı belirtin',

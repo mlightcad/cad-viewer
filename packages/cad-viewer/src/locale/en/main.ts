@@ -274,6 +274,8 @@ export default {
       polyline:
         'Draw a connected series of line or arc segments as one object.',
       spline: 'Draw a smooth spline curve through fit or control points.',
+      sketch: 'Create a series of freehand line segments.',
+      revcloud: 'Create a revision cloud to highlight drawing areas.',
       circle: 'Draw a circle with multiple construction methods.',
       arc: 'Draw an arc with multiple construction methods.',
       mline: 'Draw multiple parallel lines as a single multiline object.',
@@ -301,7 +303,8 @@ export default {
         'Open Drawing Units to set coordinate formats, precision, and insertion scale.',
       attachDwg:
         'Attach a DWG or DXF drawing as an external reference (XATTACH).',
-      attachImage: 'Attach a raster image as an external reference (IMAGEATTACH).',
+      attachImage:
+        'Attach a raster image as an external reference (IMAGEATTACH).',
       insert:
         'Open the Blocks palette to browse and insert block definitions (INSERT).',
       editAttributes:
@@ -389,6 +392,8 @@ export default {
       xline: 'XLine',
       ellipse: 'Ellipse',
       spline: 'Spline',
+      sketch: 'Sketch',
+      revcloud: 'Revcloud',
       rect: 'Rect',
       rectangle: 'Rectangle',
       polygon: 'Polygon',
@@ -571,6 +576,14 @@ export default {
       text: 'Hide',
       description: 'Hides markups'
     },
+    showMeasurements: {
+      text: 'Show',
+      description: 'Shows measurements'
+    },
+    hideMeasurements: {
+      text: 'Hide',
+      description: 'Hides measurements'
+    },
     clearMarkups: {
       text: 'Clear',
       description: 'Clears all markups on the current layout'
@@ -739,8 +752,7 @@ export default {
       count: 'Count',
       empty: 'No visible blocks found',
       prompt: {
-        firstCorner:
-          'Specify first corner of count area or [Entire]: ',
+        firstCorner: 'Specify first corner of count area or [Entire]: ',
         secondCorner: 'Specify opposite corner: '
       }
     },

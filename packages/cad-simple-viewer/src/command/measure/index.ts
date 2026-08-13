@@ -1,5 +1,6 @@
 export * from './AcApClearMeasurementsCmd'
 export * from './AcApMeasurementHistory'
+export * from './AcApMeasurementVisibilityCmd'
 export * from './AcApMeasurementImportExportCmd'
 export * from './AcApMeasurementPlace'
 export * from './AcApMeasurementSidecar'

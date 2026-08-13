@@ -279,6 +279,9 @@ export default {
     clearmeasurements: {
       description: 'Odstraní všechna měření z aktuálního rozvržení'
     },
+    measurementvis: {
+      description: 'Zobrazí nebo skryje měření na aktuálním rozvržení'
+    },
     measurementexport: {
       description: 'Exportuje měření do sidecar JSON souboru'
     },
@@ -397,7 +400,7 @@ export default {
       description: 'Překreslí aktuální výkres'
     },
     revcloud: {
-      description: 'Vytvoří revizní obláček obdélníkového tvaru'
+      description: 'Vytvoří nebo upraví revizní obláček'
     },
     markuptext: {
       description: 'Umístí textovou poznámku'
@@ -453,8 +456,7 @@ export default {
       description: 'Řídí dostupnost místních nabídek v oblasti výkresu'
     },
     sketch: {
-      description:
-        'Vytvoří skicovací čáru pomocí křivky, která sleduje pohyb myši'
+      description: 'Vytvoří řadu úseček kreslených od ruky'
     },
     spline: {
       description: 'Vytvoří hladkou křivku splajn zadáním řídicích bodů'

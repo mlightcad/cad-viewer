@@ -22,6 +22,39 @@ export const MEASUREMENT_LAYER = 'measurement'
 /** HTML transient layer for in-progress jig / live preview overlays. */
 export const MEASUREMENT_LIVE_LAYER = 'measurement-live'
 
+/** Session visibility for measurement overlays on the active layout. */
+let measurementVisible = true
+
+/** Whether measurement overlays are currently shown. */
+export function isMeasurementVisible(): boolean {
+  return measurementVisible
+}
+
+/** Restore the default (shown) session flag after a document open / close. */
+export function resetMeasurementVisibility(): void {
+  measurementVisible = true
+}
+
+/**
+ * Show or hide committed measurement overlays on the active layout, plus live
+ * jig overlays.
+ */
+export function setMeasurementVisible(
+  view: AcTrView2d,
+  visible: boolean
+): void {
+  measurementVisible = visible
+  const layoutId = view.activeLayoutBtrId
+  const ht = view.htmlTransientManager
+  for (const group of ht.groupsOnLayer(MEASUREMENT_LAYER)) {
+    if (group.layoutId == null || group.layoutId === layoutId) {
+      group.setVisible(visible)
+    }
+  }
+  ht.setVisible(visible, MEASUREMENT_LIVE_LAYER)
+  view.isDirty = true
+}
+
 /**
  * Optional non-HTML resources attached to a measurement {@link AcTrHtmlGroup}.
  */
@@ -276,5 +309,11 @@ export function commitMeasurementGroup(
   runMeasurementEdit(view, 'Create Measurement', () => {
     view.htmlTransientManager.add(group)
   })
+  if (
+    !measurementVisible &&
+    (group.layoutId == null || group.layoutId === view.activeLayoutBtrId)
+  ) {
+    group.setVisible(false)
+  }
   view.isDirty = true
 }

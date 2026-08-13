@@ -65,6 +65,7 @@ import {
   AcApMeasureDistanceCmd,
   AcApMeasurementExportCmd,
   AcApMeasurementImportCmd,
+  AcApMeasurementVisibilityCmd,
   AcApMeasurePointCmd,
   AcApMLineCmd,
   AcApMoveCmd,
@@ -1247,6 +1248,11 @@ export class AcApDocManager {
       'clearmeasurements',
       'clearmeasurements',
       new AcApClearMeasurementsCmd()
+    )
+    addSystemCommand(
+      'measurementvis',
+      'measurementvis',
+      new AcApMeasurementVisibilityCmd()
     )
     addSystemCommand(
       'measurementexport',

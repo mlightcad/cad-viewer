@@ -173,6 +173,7 @@ jest.mock('../src/command', () => {
     'AcApMeasureDistanceCmd',
     'AcApMeasurementExportCmd',
     'AcApMeasurementImportCmd',
+    'AcApMeasurementVisibilityCmd',
     'AcApMeasurePointCmd',
     'AcApMLineCmd',
     'AcApMoveCmd',
