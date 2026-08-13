@@ -53,8 +53,7 @@ export default {
         'Neplatný vstup úhlu: středový úhel musí být větší než 0 a menší než 360 stupňů.',
       chordLength:
         'Neplatná délka tětivy: hodnota je mimo rozsah pro aktuální poloměr.',
-      direction:
-        'Neplatný směr: z tohoto směru tečny nelze sestrojit oblouk.',
+      direction: 'Neplatný směr: z tohoto směru tečny nelze sestrojit oblouk.',
       radius:
         'Neplatný poloměr: zadaný poloměr nemůže spojit počáteční a koncový bod.'
     }
@@ -93,8 +92,7 @@ export default {
     displacementOrArray: 'Zadejte přemístění nebo',
     secondPointOrArray: 'Zadejte druhý bod nebo',
     modePrompt: 'Zadejte volbu režimu kopírování',
-    arrayItemCount:
-      'Zadejte počet položek v poli včetně originálu',
+    arrayItemCount: 'Zadejte počet položek v poli včetně originálu',
     arraySecondPointOrFit: 'Zadejte druhý bod nebo',
     arrayFitSecondPoint: 'Zadejte druhý bod',
     keywords: {
@@ -899,8 +897,7 @@ export default {
     areaLengthOrWidth: 'Zadejte délku obdélníku',
     areaSpecifyWidth: 'Zadejte šířku obdélníku',
     invalidPositive: 'Neplatný vstup. Zadejte hodnotu větší než 0.',
-    invalidRect:
-      'Nelze vytvořit obdélník. Zadejte platné rohy nebo rozměry.',
+    invalidRect: 'Nelze vytvořit obdélník. Zadejte platné rohy nebo rozměry.',
     thicknessNotSupported:
       'Tloušťka obdélníku se aktuálně nezapisuje do dat entity. Nastavení tloušťky se ignoruje.',
     keywords: {
@@ -984,9 +981,119 @@ export default {
       referencePoints: 'Neplatné referenční body: body musí být různé.'
     }
   },
-  sketch: {
+  revcloud: {
+    firstCornerOrOptions: 'Zadejte první rohový bod nebo',
+    firstCorner: 'Zadejte první rohový bod',
+    oppositeCorner: 'Zadejte protilehlý roh',
+    startPoint: 'Zadejte počáteční bod',
+    nextPoint: 'Zadejte další bod',
+    nextPointOrUndo: 'Zadejte další bod nebo',
     firstPoint: 'Zadejte první bod',
-    nextPoint: 'Zadejte koncový bod'
+    guideCursor: 'Veďte kurzor podél obláčku (Enter dokončí)',
+    arcLength: 'Zadejte délku oblouku',
+    selectObject: 'Vyberte objekt',
+    style: 'Zadejte styl oblouků revizního obláčku',
+    reverseDirection: 'Obrátit směr',
+    invalidArcLength: 'Délka oblouku musí být větší než 0.',
+    invalidObject: 'Vybraný objekt nelze převést na revizní obláček.',
+    keywords: {
+      arcLength: {
+        display: 'Délka oblouku(A)',
+        local: 'Délka oblouku',
+        global: 'ArcLength'
+      },
+      object: {
+        display: 'Objekt(O)',
+        local: 'Objekt',
+        global: 'Object'
+      },
+      rectangular: {
+        display: 'Obdélníkový(R)',
+        local: 'Obdélníkový',
+        global: 'Rectangular'
+      },
+      polygonal: {
+        display: 'Mnohoúhelníkový(P)',
+        local: 'Mnohoúhelníkový',
+        global: 'Polygonal'
+      },
+      freehand: {
+        display: 'Od ruky(F)',
+        local: 'Od ruky',
+        global: 'Freehand'
+      },
+      style: {
+        display: 'Styl(S)',
+        local: 'Styl',
+        global: 'Style'
+      },
+      normal: {
+        display: 'Normální(N)',
+        local: 'Normální',
+        global: 'Normal'
+      },
+      calligraphy: {
+        display: 'Kaligrafie(C)',
+        local: 'Kaligrafie',
+        global: 'Calligraphy'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      yes: {
+        display: 'Ano(Y)',
+        local: 'Ano',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Ne(N)',
+        local: 'Ne',
+        global: 'No'
+      }
+    }
+  },
+  sketch: {
+    specifySketch: 'Zadejte skicu nebo',
+    sketching: 'Pohybem ukazatele kreslete (kliknutím nebo Enter zastavíte)',
+    type: 'Zadejte typ skici',
+    increment: 'Zadejte přírůstek skici',
+    tolerance: 'Zadejte toleranci splajnu',
+    firstPoint: 'Zadejte první bod',
+    nextPoint: 'Zadejte koncový bod',
+    keywords: {
+      type: {
+        display: 'Typ(T)',
+        local: 'Typ',
+        global: 'Type'
+      },
+      increment: {
+        display: 'Přírůstek(I)',
+        local: 'Přírůstek',
+        global: 'Increment'
+      },
+      tolerance: {
+        display: 'toLerance(L)',
+        local: 'toLerance',
+        global: 'Tolerance'
+      },
+      line: {
+        display: 'Úsečky(L)',
+        local: 'Úsečky',
+        global: 'Lines'
+      },
+      polyline: {
+        display: 'Křivka(P)',
+        local: 'Křivka',
+        global: 'Polyline'
+      },
+      spline: {
+        display: 'Splajn(S)',
+        local: 'Splajn',
+        global: 'Spline'
+      }
+    }
   },
   spline: {
     firstPoint: 'Zadejte první bod',

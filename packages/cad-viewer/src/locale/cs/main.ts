@@ -273,6 +273,8 @@ export default {
       line: 'Nakreslí jednu úsečku.',
       polyline: 'Nakreslí spojenou řadu úseček nebo oblouků jako jeden objekt.',
       spline: 'Nakreslí hladkou křivku splajn proložením nebo řídicími body.',
+      sketch: 'Vytvoří řadu úseček kreslených od ruky.',
+      revcloud: 'Vytvoří revizní obláček pro zvýraznění oblastí výkresu.',
       circle: 'Nakreslí kružnici několika způsoby konstrukce.',
       arc: 'Nakreslí oblouk několika způsoby konstrukce.',
       mline: 'Nakreslí několik rovnoběžných čar jako jeden objekt.',
@@ -384,6 +386,8 @@ export default {
       xline: 'Přímka',
       ellipse: 'Elipsa',
       spline: 'Splajn',
+      sketch: 'Skica',
+      revcloud: 'Revizní obláček',
       rect: 'Obdélník',
       rectangle: 'Obdélník',
       polygon: 'Mnohoúhelník',
@@ -561,6 +565,14 @@ export default {
     hideMarkup: {
       text: 'Skrýt',
       description: 'Skryje poznámky'
+    },
+    showMeasurements: {
+      text: 'Zobrazit',
+      description: 'Zobrazí měření'
+    },
+    hideMeasurements: {
+      text: 'Skrýt',
+      description: 'Skryje měření'
     },
     clearMarkups: {
       text: 'Vymazat',

@@ -250,6 +250,9 @@ export default {
     clearmeasurements: {
       description: '清除当前布局上的所有测量标注'
     },
+    measurementvis: {
+      description: '显示或隐藏当前布局上的测量标注'
+    },
     measurementexport: {
       description: '将测量标注导出为 sidecar JSON 文件'
     },
@@ -357,7 +360,7 @@ export default {
       description: '重绘图纸'
     },
     revcloud: {
-      description: '创建矩形修订云线'
+      description: '创建或修改修订云线'
     },
     markuptext: {
       description: '放置文字批注'
@@ -412,7 +415,7 @@ export default {
       description: '控制图形区域中快捷菜单的可用性'
     },
     sketch: {
-      description: '使用多段线创建手绘线，跟踪鼠标移动'
+      description: '创建一系列徒手线段'
     },
     spline: {
       description: '通过指定控制点创建平滑的样条曲线'

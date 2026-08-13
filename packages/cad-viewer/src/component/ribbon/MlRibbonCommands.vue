@@ -37,6 +37,7 @@ import {
   getMeasurementFontSize,
   getMeasurementLineWeight,
   isMarkupVisible,
+  isMeasurementVisible,
   markupColorToCss,
   measurementColor,
   refreshMeasurementValueLabels,
@@ -140,6 +141,7 @@ import {
   rect,
   revCircle,
   revCloud,
+  revFreeDraw,
   revRect,
   setting,
   splineFitPoints,
@@ -182,6 +184,7 @@ const { isDocumentOpening, openMode: docOpenMode } = useDocument()
 const { canUndo, canRedo } = useUndoRedo()
 const { t, locale } = useI18n()
 const isMarkupOverlayVisible = ref(true)
+const isMeasurementOverlayVisible = ref(true)
 const markupDrawColor = shallowRef(defaultMarkupColor())
 const markupDrawColorDisplay = ref(markupColorToCss(markupDrawColor.value))
 const markupDrawLineWeight = ref<AcGiLineWeight>(getMarkupLineWeight())
@@ -381,6 +384,10 @@ const syncMarkupVisibility = () => {
   isMarkupOverlayVisible.value = isMarkupVisible()
 }
 
+const syncMeasurementVisibility = () => {
+  isMeasurementOverlayVisible.value = isMeasurementVisible()
+}
+
 const handleAnnotationLayerChange = () => {
   syncRibbonProperties(observedDatabase)
 }
@@ -511,6 +518,7 @@ const handleDocumentActivated = () => {
   ribbonLayerIsolationSnapshot.value = null
   ribbonLayerPreviousSnapshot.value = null
   syncMarkupVisibility()
+  syncMeasurementVisibility()
   syncMarkupStyleControls()
   syncMeasurementStyleControls()
   syncMeasurementUnitControls()
@@ -557,6 +565,9 @@ onMounted(() => {
   AcApDocManager.instance.editor.events.commandEnded.addEventListener(
     syncMarkupVisibility
   )
+  AcApDocManager.instance.editor.events.commandEnded.addEventListener(
+    syncMeasurementVisibility
+  )
   AcApDocManager.instance.events.documentActivated.addEventListener(
     handleDocumentActivated
   )
@@ -591,6 +602,9 @@ onUnmounted(() => {
   )
   AcApDocManager.instance.editor.events.commandEnded.removeEventListener(
     syncMarkupVisibility
+  )
+  AcApDocManager.instance.editor.events.commandEnded.removeEventListener(
+    syncMeasurementVisibility
   )
   AcApDocManager.instance.events.documentActivated.removeEventListener(
     handleDocumentActivated
@@ -884,6 +898,7 @@ const handleRibbonLayerStateToggle = (payload: {
 const buildBaseTabs = (
   openMode: AcEdOpenMode,
   markupVisible: boolean,
+  measurementVisible: boolean,
   undoRedoState: { canUndo: boolean; canRedo: boolean },
   agentPluginEnabled: boolean
 ): RibbonTabModel[] => {
@@ -891,6 +906,8 @@ const buildBaseTabs = (
     line: t('main.ribbon.tooltip.line'),
     polyline: t('main.ribbon.tooltip.polyline'),
     spline: t('main.ribbon.tooltip.spline'),
+    sketch: t('main.ribbon.tooltip.sketch'),
+    revcloud: t('main.ribbon.tooltip.revcloud'),
     circle: t('main.ribbon.tooltip.circle'),
     arc: t('main.ribbon.tooltip.arc'),
     mline: t('main.ribbon.tooltip.mline'),
@@ -968,6 +985,8 @@ const buildBaseTabs = (
     layer: t('main.verticalToolbar.layer.description'),
     hideMarkup: t('main.verticalToolbar.hideMarkup.description'),
     showMarkup: t('main.verticalToolbar.showMarkup.description'),
+    hideMeasurements: t('main.verticalToolbar.hideMeasurements.description'),
+    showMeasurements: t('main.verticalToolbar.showMeasurements.description'),
     clearMarkups: t('main.verticalToolbar.clearMarkups.description'),
     markupImport: t('main.verticalToolbar.markupImport.description'),
     markupExport: t('main.verticalToolbar.markupExport.description')
@@ -1180,6 +1199,24 @@ const buildBaseTabs = (
       tooltip: verticalToolbarDescriptions.measurePoint,
       size: 'large',
       props: { icon: measurePoint }
+    },
+    {
+      id: 'cmd-tool-measurement-vis',
+      type: 'toggle',
+      label: t('main.verticalToolbar.showMeasurements.text'),
+      tooltip: measurementVisible
+        ? verticalToolbarDescriptions.hideMeasurements
+        : verticalToolbarDescriptions.showMeasurements,
+      size: 'large',
+      props: {
+        modelValue: measurementVisible,
+        activeIcon: View,
+        inactiveIcon: Hide,
+        activeLabel: t('main.verticalToolbar.showMeasurements.text'),
+        inactiveLabel: t('main.verticalToolbar.hideMeasurements.text'),
+        activeValue: 'cmd-tool-measurement-vis',
+        inactiveValue: 'cmd-tool-measurement-vis'
+      }
     }
   ]
 
@@ -1411,6 +1448,20 @@ const buildBaseTabs = (
               label: t('main.ribbon.command.spline'),
               tooltip: ribbonTooltips.spline,
               props: { icon: splineFitPoints }
+            },
+            {
+              id: 'cmd-sketch',
+              type: 'button',
+              label: t('main.ribbon.command.sketch'),
+              tooltip: ribbonTooltips.sketch,
+              props: { icon: revFreeDraw }
+            },
+            {
+              id: 'cmd-revcloud',
+              type: 'button',
+              label: t('main.ribbon.command.revcloud'),
+              tooltip: ribbonTooltips.revcloud,
+              props: { icon: revCloud }
             },
             {
               id: 'cmd-mline',
@@ -2160,6 +2211,7 @@ const ribbonData = computed(() => {
   store.features.agentPlugin
   const openMode = docOpenMode.value
   const markupVisible = isMarkupOverlayVisible.value
+  const measurementVisible = isMeasurementOverlayVisible.value
   // Track markup draw style so Review ribbon color / lineweight controls refresh.
   markupDrawColor.value
   markupDrawColorDisplay.value
@@ -2178,6 +2230,8 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-line', 'line')
   commandByItemId.set('cmd-polyline', 'pline')
   commandByItemId.set('cmd-spline', 'spline')
+  commandByItemId.set('cmd-sketch', 'sketch')
+  commandByItemId.set('cmd-revcloud', 'revcloud')
   commandByItemId.set('cmd-circle', 'circle')
   commandByItemId.set('circle-center-radius', 'circle')
   commandByItemId.set('circle-center-diameter', 'circle\\nDiameter')
@@ -2250,6 +2304,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-tool-measure-area', 'measurearea')
   commandByItemId.set('cmd-tool-measure-arc', 'measurearc')
   commandByItemId.set('cmd-tool-measure-point', 'measurepoint')
+  commandByItemId.set('cmd-tool-measurement-vis', 'measurementvis')
   commandByItemId.set('cmd-tool-measurement-import', 'measurementimport')
   commandByItemId.set('cmd-tool-measurement-export', 'measurementexport')
   commandByItemId.set('cmd-tool-clear-measurements', 'clearmeasurements')
@@ -2267,6 +2322,7 @@ const ribbonData = computed(() => {
   const tabs: RibbonTabModel[] = buildBaseTabs(
     openMode,
     markupVisible,
+    measurementVisible,
     {
       canUndo: canUndo.value,
       canRedo: canRedo.value

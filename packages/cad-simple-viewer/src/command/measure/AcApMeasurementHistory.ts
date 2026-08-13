@@ -16,7 +16,8 @@ import {
   applyMeasurementStyle,
   getMeasurementStyle,
   MEASUREMENT_LAYER,
-  resetMeasurementStyleState
+  resetMeasurementStyleState,
+  resetMeasurementVisibility
 } from './AcApMeasurementStore'
 
 /**
@@ -296,6 +297,7 @@ export function resetMeasurementSession(): void {
   getMeasurementHistory().clear()
   resetMeasurementStyleState()
   resetMeasurementUnitOverride()
+  resetMeasurementVisibility()
 }
 
 /** Bind this history into session undo (also runs at module load). */

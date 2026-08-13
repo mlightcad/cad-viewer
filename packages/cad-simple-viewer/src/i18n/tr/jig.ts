@@ -161,15 +161,15 @@ export default {
       }
     },
     invalid: {
-      axis: 'Geçersiz eksen girişi: eksen uzunluğu 0\'dan büyük olmalıdır.',
-      otherAxis: 'Geçersiz diğer eksen girişi: mesafe 0\'dan büyük olmalıdır.',
+      axis: "Geçersiz eksen girişi: eksen uzunluğu 0'dan büyük olmalıdır.",
+      otherAxis: "Geçersiz diğer eksen girişi: mesafe 0'dan büyük olmalıdır.",
       rotation:
-        'Geçersiz döndürme girişi: elde edilen küçük eksen 0\'dan büyük olmalıdır.'
+        "Geçersiz döndürme girişi: elde edilen küçük eksen 0'dan büyük olmalıdır."
     }
   },
   hatch: {
     prompt: 'Sınır nesnesini seçin veya',
-    pickPoint: 'İç noktayı belirtin (bitirmek için Enter\'a basın)',
+    pickPoint: "İç noktayı belirtin (bitirmek için Enter'a basın)",
     select: 'Tarama yapılacak nesneleri seçin',
     patternName: 'Tarama deseni adını girin',
     scale: 'Tarama deseni ölçeğini belirtin',
@@ -665,7 +665,7 @@ export default {
   },
   measureArea: {
     firstPoint: 'İlk noktayı belirtin',
-    nextPoint: 'Sonraki noktayı belirtin (bitirmek için Enter\'a basın)'
+    nextPoint: "Sonraki noktayı belirtin (bitirmek için Enter'a basın)"
   },
   measureDistance: {
     firstPoint: 'İlk noktayı belirtin',
@@ -755,9 +755,9 @@ export default {
   },
   offset: {
     distance: 'Öteleme mesafesini belirtin',
-    selectObject: 'Ötelenecek nesneyi seçin veya bitirmek için Enter\'a basın',
+    selectObject: "Ötelenecek nesneyi seçin veya bitirmek için Enter'a basın",
     sidePoint: 'Ötelenecek tarafta bir nokta belirtin',
-    invalidDistance: 'Öteleme mesafesi 0\'dan büyük olmalıdır.',
+    invalidDistance: "Öteleme mesafesi 0'dan büyük olmalıdır.",
     invalidSelection: 'Seçilen nesne ötelenemez.',
     offsetFailed: 'Belirtilen taraf için bir öteleme eğrisi oluşturulamadı.'
   },
@@ -823,13 +823,13 @@ export default {
     },
     invalid: {
       sides: 'Geçersiz kenar sayısı. 3 ile 1024 arasında bir tam sayı girin.',
-      radius: 'Geçersiz yarıçap. Yarıçap 0\'dan büyük olmalıdır.',
-      edge: 'Geçersiz kenar. Kenar uzunluğu 0\'dan büyük olmalıdır.'
+      radius: "Geçersiz yarıçap. Yarıçap 0'dan büyük olmalıdır.",
+      edge: "Geçersiz kenar. Kenar uzunluğu 0'dan büyük olmalıdır."
     }
   },
   polyline: {
     firstPoint: 'İlk noktayı belirtin',
-    nextPoint: 'Sonraki noktayı belirtin (bitirmek için Enter\'a basın)',
+    nextPoint: "Sonraki noktayı belirtin (bitirmek için Enter'a basın)",
     nextPointWithOptions: 'Sonraki noktayı belirtin veya',
     nextPointWithArcOptions: 'Sonraki noktayı belirtin veya',
     keywords: {
@@ -897,7 +897,7 @@ export default {
     areaValue: 'Dikdörtgen alanını belirtin',
     areaLengthOrWidth: 'Dikdörtgen uzunluğunu belirtin',
     areaSpecifyWidth: 'Dikdörtgen genişliğini belirtin',
-    invalidPositive: 'Geçersiz giriş. Lütfen 0\'dan büyük bir değer girin.',
+    invalidPositive: "Geçersiz giriş. Lütfen 0'dan büyük bir değer girin.",
     invalidRect:
       'Dikdörtgen oluşturulamadı. Lütfen geçerli köşeler veya boyutlar belirtin.',
     thicknessNotSupported:
@@ -983,13 +983,124 @@ export default {
       referencePoints: 'Geçersiz referans noktaları: noktalar farklı olmalıdır.'
     }
   },
-  sketch: {
+  revcloud: {
+    firstCornerOrOptions: 'İlk köşe noktasını belirtin veya',
+    firstCorner: 'İlk köşe noktasını belirtin',
+    oppositeCorner: 'Karşı köşeyi belirtin',
+    startPoint: 'Başlangıç noktasını belirtin',
+    nextPoint: 'Sonraki noktayı belirtin',
+    nextPointOrUndo: 'Sonraki noktayı belirtin veya',
     firstPoint: 'İlk noktayı belirtin',
-    nextPoint: 'Bitiş noktasını belirtin'
+    guideCursor: 'İmleci bulut yolu boyunca götürün (bitirmek için Enter)',
+    arcLength: 'Yay uzunluğunu belirtin',
+    selectObject: 'Nesne seçin',
+    style: 'Revizyon bulutu yay stilini girin',
+    reverseDirection: 'Yönü ters çevir',
+    invalidArcLength: "Yay uzunluğu 0'dan büyük olmalıdır.",
+    invalidObject: 'Seçilen nesne revizyon bulutuna dönüştürülemez.',
+    keywords: {
+      arcLength: {
+        display: 'Yay uzunluğu(A)',
+        local: 'Yay uzunluğu',
+        global: 'ArcLength'
+      },
+      object: {
+        display: 'Nesne(O)',
+        local: 'Nesne',
+        global: 'Object'
+      },
+      rectangular: {
+        display: 'Dikdörtgen(R)',
+        local: 'Dikdörtgen',
+        global: 'Rectangular'
+      },
+      polygonal: {
+        display: 'Çokgen(P)',
+        local: 'Çokgen',
+        global: 'Polygonal'
+      },
+      freehand: {
+        display: 'Serbest(F)',
+        local: 'Serbest',
+        global: 'Freehand'
+      },
+      style: {
+        display: 'Stil(S)',
+        local: 'Stil',
+        global: 'Style'
+      },
+      normal: {
+        display: 'Normal(N)',
+        local: 'Normal',
+        global: 'Normal'
+      },
+      calligraphy: {
+        display: 'Kaligrafi(C)',
+        local: 'Kaligrafi',
+        global: 'Calligraphy'
+      },
+      undo: {
+        display: 'Geri al(U)',
+        local: 'Geri al',
+        global: 'Undo'
+      },
+      yes: {
+        display: 'Evet(Y)',
+        local: 'Evet',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Hayır(N)',
+        local: 'Hayır',
+        global: 'No'
+      }
+    }
+  },
+  sketch: {
+    specifySketch: 'Eskizi belirtin veya',
+    sketching:
+      'Eskiz için işaretçiyi hareket ettirin (durdurmak için tıklayın veya Enter)',
+    type: 'Eskiz türünü girin',
+    increment: 'Eskiz artışını belirtin',
+    tolerance: 'Spline toleransını belirtin',
+    firstPoint: 'İlk noktayı belirtin',
+    nextPoint: 'Bitiş noktasını belirtin',
+    keywords: {
+      type: {
+        display: 'Tür(T)',
+        local: 'Tür',
+        global: 'Type'
+      },
+      increment: {
+        display: 'Artış(I)',
+        local: 'Artış',
+        global: 'Increment'
+      },
+      tolerance: {
+        display: 'toLerance(L)',
+        local: 'toLerance',
+        global: 'Tolerance'
+      },
+      line: {
+        display: 'Çizgiler(L)',
+        local: 'Çizgiler',
+        global: 'Lines'
+      },
+      polyline: {
+        display: 'Çoklu çizgi(P)',
+        local: 'Çoklu çizgi',
+        global: 'Polyline'
+      },
+      spline: {
+        display: 'Spline(S)',
+        local: 'Spline',
+        global: 'Spline'
+      }
+    }
   },
   spline: {
     firstPoint: 'İlk noktayı belirtin',
-    nextPoint: 'Sonraki noktayı belirtin (bitirmek için Enter\'a basın)',
+    nextPoint: "Sonraki noktayı belirtin (bitirmek için Enter'a basın)",
     firstPointWithOptions: 'İlk noktayı belirtin veya',
     nextPointWithFitOptions: 'Sonraki noktayı belirtin veya',
     nextPointWithCvOptions: 'Sonraki kontrol noktasını belirtin veya',

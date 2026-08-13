@@ -4,10 +4,10 @@ export default {
     open: 'Çizim Aç',
     drawingUnits: 'Çizim Birimleri',
     exportMenu: 'Dışa Aktar',
-    export: 'DXF\'e Dışa Aktar',
-    exportHtml: 'HTML\'e Dışa Aktar',
-    exportPdf: 'PDF\'e Dışa Aktar',
-    exportSvg: 'SVG\'e Dışa Aktar',
+    export: "DXF'e Dışa Aktar",
+    exportHtml: "HTML'e Dışa Aktar",
+    exportPdf: "PDF'e Dışa Aktar",
+    exportSvg: "SVG'e Dışa Aktar",
     exportImage: 'Görüntüye Dışa Aktar',
     about: 'Hakkında'
   },
@@ -142,9 +142,9 @@ export default {
         obliqueAngle:
           'Seçili karakterler için eğim açısını derece cinsinden ayarlayın (negatif değer diğer yöne eğer).',
         tracking:
-          'Seçili karakterler arasındaki boşluğu artırın veya azaltın (varsayılan 1\'dir).',
+          "Seçili karakterler arasındaki boşluğu artırın veya azaltın (varsayılan 1'dir).",
         widthFactor:
-          'Seçili karakterleri yatay olarak genişletin veya sıkıştırın (varsayılan 1\'dir).',
+          "Seçili karakterleri yatay olarak genişletin veya sıkıştırın (varsayılan 1'dir).",
         attachment: 'Çok satırlı metin bağlantı noktasını ayarlayın.',
         list: 'Madde işaretleri ve numaralandırma ekleyin veya yapılandırın.',
         lineSpacing: 'Satır aralığını ayarlayın.',
@@ -276,6 +276,9 @@ export default {
         'Bağlı bir dizi çizgi veya yay parçasını tek bir nesne olarak çizin.',
       spline:
         'Uyum veya kontrol noktaları üzerinden düzgün bir spline eğrisi çizin.',
+      sketch: 'Bir dizi serbest el çizgi parçası oluşturun.',
+      revcloud:
+        'Çizim alanlarını vurgulamak için bir revizyon bulutu oluşturun.',
       circle: 'Birden fazla oluşturma yöntemiyle bir daire çizin.',
       arc: 'Birden fazla oluşturma yöntemiyle bir yay çizin.',
       mline:
@@ -298,7 +301,8 @@ export default {
       properties: 'Geçerli seçim için Özellikler panelini açın.',
       quickSelect:
         'Ölçütlere göre varlıkları filtrelemek ve seçmek için Hızlı Seçimi açın.',
-      countList: 'Blok sayılarını görüntülemek ve yönetmek için Sayım paletini açın.',
+      countList:
+        'Blok sayılarını görüntülemek ve yönetmek için Sayım paletini açın.',
       missingResources:
         'Yazı tipleri, görseller ve xref’ler için Eksik / Harici Kaynaklar paletini açın.',
       drawingUnits:
@@ -392,6 +396,8 @@ export default {
       xline: 'Sonsuz Çizgi',
       ellipse: 'Elips',
       spline: 'Spline',
+      sketch: 'Eskiz',
+      revcloud: 'Revizyon Bulutu',
       rect: 'Dikdörtgen',
       rectangle: 'Dikdörtgen',
       polygon: 'Çokgen',
@@ -553,8 +559,7 @@ export default {
     },
     measurementColor: {
       text: 'Renk',
-      description:
-        'Seçili ölçümün veya sonraki ölçümlerin rengini ayarlar'
+      description: 'Seçili ölçümün veya sonraki ölçümlerin rengini ayarlar'
     },
     measurementLineWeight: {
       text: 'Çizgi Kalınlığı',
@@ -573,6 +578,14 @@ export default {
     hideMarkup: {
       text: 'Gizle',
       description: 'İşaretleri gizler'
+    },
+    showMeasurements: {
+      text: 'Göster',
+      description: 'Ölçümleri gösterir'
+    },
+    hideMeasurements: {
+      text: 'Gizle',
+      description: 'Ölçümleri gizler'
     },
     clearMarkups: {
       text: 'Temizle',
@@ -744,8 +757,7 @@ export default {
       count: 'Adet',
       empty: 'Görünür blok bulunamadı',
       prompt: {
-        firstCorner:
-          'Sayım alanının ilk köşesini belirtin veya [Entire]: ',
+        firstCorner: 'Sayım alanının ilk köşesini belirtin veya [Entire]: ',
         secondCorner: 'Karşı köşeyi belirtin: '
       }
     },
@@ -886,7 +898,8 @@ export default {
       copyFailed: 'Performans verileri kopyalanamadı',
       collectedAt: 'Toplama zamanı {time}',
       hint: 'Son çizim açılışında otomatik toplanır. OPENPROF=1 konsola da yazar.',
-      noData: 'Henüz profil yok. Önce bir çizim açın, sonra OPENPERF çalıştırın.',
+      noData:
+        'Henüz profil yok. Önce bir çizim açın, sonra OPENPERF çalıştırın.',
       empty: 'Veri yok',
       timing: 'Duvar saati zamanlaması',
       progressive: 'Kademeli açılış',

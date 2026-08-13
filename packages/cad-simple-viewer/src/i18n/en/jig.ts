@@ -984,9 +984,119 @@ export default {
       referencePoints: 'Invalid reference points: points must be different.'
     }
   },
+  revcloud: {
+    firstCornerOrOptions: 'Specify first corner point or',
+    firstCorner: 'Specify first corner point',
+    oppositeCorner: 'Specify opposite corner',
+    startPoint: 'Specify start point',
+    nextPoint: 'Specify next point',
+    nextPointOrUndo: 'Specify next point or',
+    firstPoint: 'Specify first point',
+    guideCursor: 'Guide cursor along cloud path (press Enter to finish)',
+    arcLength: 'Specify arc length',
+    selectObject: 'Select object',
+    style: 'Enter revision cloud arc style',
+    reverseDirection: 'Reverse direction',
+    invalidArcLength: 'Arc length must be greater than 0.',
+    invalidObject: 'Selected object cannot be converted to a revision cloud.',
+    keywords: {
+      arcLength: {
+        display: 'Arc length(A)',
+        local: 'Arc length',
+        global: 'ArcLength'
+      },
+      object: {
+        display: 'Object(O)',
+        local: 'Object',
+        global: 'Object'
+      },
+      rectangular: {
+        display: 'Rectangular(R)',
+        local: 'Rectangular',
+        global: 'Rectangular'
+      },
+      polygonal: {
+        display: 'Polygonal(P)',
+        local: 'Polygonal',
+        global: 'Polygonal'
+      },
+      freehand: {
+        display: 'Freehand(F)',
+        local: 'Freehand',
+        global: 'Freehand'
+      },
+      style: {
+        display: 'Style(S)',
+        local: 'Style',
+        global: 'Style'
+      },
+      normal: {
+        display: 'Normal(N)',
+        local: 'Normal',
+        global: 'Normal'
+      },
+      calligraphy: {
+        display: 'Calligraphy(C)',
+        local: 'Calligraphy',
+        global: 'Calligraphy'
+      },
+      undo: {
+        display: 'Undo(U)',
+        local: 'Undo',
+        global: 'Undo'
+      },
+      yes: {
+        display: 'Yes(Y)',
+        local: 'Yes',
+        global: 'Yes'
+      },
+      no: {
+        display: 'No(N)',
+        local: 'No',
+        global: 'No'
+      }
+    }
+  },
   sketch: {
+    specifySketch: 'Specify sketch or',
+    sketching: 'Move the pointer to sketch (click or press Enter to stop)',
+    type: 'Enter sketch type',
+    increment: 'Specify sketch increment',
+    tolerance: 'Specify spline tolerance',
     firstPoint: 'Specify the first point',
-    nextPoint: 'Specify the end point'
+    nextPoint: 'Specify the end point',
+    keywords: {
+      type: {
+        display: 'Type(T)',
+        local: 'Type',
+        global: 'Type'
+      },
+      increment: {
+        display: 'Increment(I)',
+        local: 'Increment',
+        global: 'Increment'
+      },
+      tolerance: {
+        display: 'toLerance(L)',
+        local: 'toLerance',
+        global: 'Tolerance'
+      },
+      line: {
+        display: 'Lines(L)',
+        local: 'Lines',
+        global: 'Lines'
+      },
+      polyline: {
+        display: 'Polyline(P)',
+        local: 'Polyline',
+        global: 'Polyline'
+      },
+      spline: {
+        display: 'Spline(S)',
+        local: 'Spline',
+        global: 'Spline'
+      }
+    }
   },
   spline: {
     firstPoint: 'Specify the first point',

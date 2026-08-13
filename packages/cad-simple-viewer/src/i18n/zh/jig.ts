@@ -973,9 +973,119 @@ export default {
       }
     }
   },
-  sketch: {
+  revcloud: {
+    firstCornerOrOptions: '指定第一个角点或',
+    firstCorner: '指定第一个角点',
+    oppositeCorner: '指定对角点',
+    startPoint: '指定起点',
+    nextPoint: '指定下一点',
+    nextPointOrUndo: '指定下一点或',
     firstPoint: '指定第一个点',
-    nextPoint: '指定结束点'
+    guideCursor: '沿云线路径移动光标（按 Enter 结束）',
+    arcLength: '指定圆弧长度',
+    selectObject: '选择对象',
+    style: '输入修订云线圆弧样式',
+    reverseDirection: '反转方向',
+    invalidArcLength: '圆弧长度必须大于 0。',
+    invalidObject: '所选对象无法转换为修订云线。',
+    keywords: {
+      arcLength: {
+        display: '圆弧长度(A)',
+        local: '圆弧长度',
+        global: 'ArcLength'
+      },
+      object: {
+        display: '对象(O)',
+        local: '对象',
+        global: 'Object'
+      },
+      rectangular: {
+        display: '矩形(R)',
+        local: '矩形',
+        global: 'Rectangular'
+      },
+      polygonal: {
+        display: '多边形(P)',
+        local: '多边形',
+        global: 'Polygonal'
+      },
+      freehand: {
+        display: '手绘(F)',
+        local: '手绘',
+        global: 'Freehand'
+      },
+      style: {
+        display: '样式(S)',
+        local: '样式',
+        global: 'Style'
+      },
+      normal: {
+        display: '普通(N)',
+        local: '普通',
+        global: 'Normal'
+      },
+      calligraphy: {
+        display: '书法(C)',
+        local: '书法',
+        global: 'Calligraphy'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      }
+    }
+  },
+  sketch: {
+    specifySketch: '指定草图或',
+    sketching: '移动指针进行草图绘制（单击或按 Enter 停止）',
+    type: '输入草图类型',
+    increment: '指定草图增量',
+    tolerance: '指定样条曲线公差',
+    firstPoint: '指定第一个点',
+    nextPoint: '指定结束点',
+    keywords: {
+      type: {
+        display: '类型(T)',
+        local: '类型',
+        global: 'Type'
+      },
+      increment: {
+        display: '增量(I)',
+        local: '增量',
+        global: 'Increment'
+      },
+      tolerance: {
+        display: '公差(L)',
+        local: '公差',
+        global: 'Tolerance'
+      },
+      line: {
+        display: '直线(L)',
+        local: '直线',
+        global: 'Lines'
+      },
+      polyline: {
+        display: '多段线(P)',
+        local: '多段线',
+        global: 'Polyline'
+      },
+      spline: {
+        display: '样条曲线(S)',
+        local: '样条曲线',
+        global: 'Spline'
+      }
+    }
   },
   spline: {
     firstPoint: '指定第一个点',

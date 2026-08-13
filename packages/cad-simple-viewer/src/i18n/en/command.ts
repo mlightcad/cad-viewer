@@ -277,6 +277,9 @@ export default {
     clearmeasurements: {
       description: 'Removes all measurements from the current layout'
     },
+    measurementvis: {
+      description: 'Shows or hides measurements on the current layout'
+    },
     measurementexport: {
       description: 'Exports measurements to a sidecar JSON file'
     },
@@ -396,7 +399,7 @@ export default {
       description: 'Redraws the current drawing'
     },
     revcloud: {
-      description: 'Creates a revision cloud (cloud line) in rectangular shape'
+      description: 'Creates or modifies a revision cloud'
     },
     markuptext: {
       description: 'Places a text markup label'
@@ -453,8 +456,7 @@ export default {
         'Controls the availability of shortcut menus in the drawing area'
     },
     sketch: {
-      description:
-        'Creates a sketch line using polyline that tracks mouse movement'
+      description: 'Creates a series of freehand line segments'
     },
     spline: {
       description: 'Creates a smooth spline curve by specifying control points'

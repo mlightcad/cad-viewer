@@ -270,6 +270,8 @@ export default {
       line: '绘制单段直线。',
       polyline: '以一个对象绘制由直线或圆弧组成的连续线段。',
       spline: '通过拟合点或控制点绘制平滑样条曲线。',
+      sketch: '创建一系列徒手线段。',
+      revcloud: '创建修订云线以突出显示图纸区域。',
       circle: '使用多种构造方式绘制圆。',
       arc: '使用多种构造方式绘制圆弧。',
       mline: '将多条平行线作为一个多线对象进行绘制。',
@@ -354,6 +356,8 @@ export default {
       xline: '构造线',
       ellipse: '椭圆',
       spline: '样条曲线',
+      sketch: '草图',
+      revcloud: '修订云线',
       rect: '矩形',
       rectangle: '矩形',
       polygon: '多边形',
@@ -525,6 +529,14 @@ export default {
     hideMarkup: {
       text: '隐藏批注',
       description: '隐藏批注'
+    },
+    showMeasurements: {
+      text: '显示测量',
+      description: '显示测量标注'
+    },
+    hideMeasurements: {
+      text: '隐藏测量',
+      description: '隐藏测量标注'
     },
     clearMarkups: {
       text: '清除',
@@ -777,8 +789,7 @@ export default {
       hidePie: '隐藏汇总图表',
       collectedAt: '采集时间 {time}',
       heapUsed: 'JS 堆 {used} / {total}',
-      estimateNote:
-        '几何体大小来自缓冲区 byteLength，其余类别为估算值。',
+      estimateNote: '几何体大小来自缓冲区 byteLength，其余类别为估算值。',
       estimated: '估',
       pieTotal: '已统计',
       pieAriaLabel: '按类别划分的内存占用',
