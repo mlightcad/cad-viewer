@@ -1338,29 +1338,54 @@ const buildBaseTabs = (
       ]
     },
     {
-      id: 'measurement-units',
-      title: t('main.ribbon.group.units'),
+      id: 'measurement-length-units',
+      title: t('main.ribbon.group.lengthUnits'),
       orientation: 'row',
       collections: [
         {
-          id: 'measurement-units-main',
+          id: 'measurement-length-units-main',
           layout: 'row',
           items: [
             {
-              id: 'measurement-units-panel',
+              id: 'measurement-length-units-panel',
               type: 'custom',
               size: 'small',
               props: {
                 component: MlRibbonMeasurementUnitsPanel,
                 componentProps: {
-                  lunits: measurementLunits.value,
-                  luprec: measurementLuprec.value,
-                  aunits: measurementAunits.value,
-                  auprec: measurementAuprec.value,
-                  'onUpdate:lunits': handleMeasurementLunitsChange,
-                  'onUpdate:luprec': handleMeasurementLuprecChange,
-                  'onUpdate:aunits': handleMeasurementAunitsChange,
-                  'onUpdate:auprec': handleMeasurementAuprecChange
+                  kind: 'length',
+                  unitType: measurementLunits.value,
+                  precision: measurementLuprec.value,
+                  'onUpdate:unitType': handleMeasurementLunitsChange,
+                  'onUpdate:precision': handleMeasurementLuprecChange
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'measurement-angle-units',
+      title: t('main.ribbon.group.angleUnits'),
+      orientation: 'row',
+      collections: [
+        {
+          id: 'measurement-angle-units-main',
+          layout: 'row',
+          items: [
+            {
+              id: 'measurement-angle-units-panel',
+              type: 'custom',
+              size: 'small',
+              props: {
+                component: MlRibbonMeasurementUnitsPanel,
+                componentProps: {
+                  kind: 'angle',
+                  unitType: measurementAunits.value,
+                  precision: measurementAuprec.value,
+                  'onUpdate:unitType': handleMeasurementAunitsChange,
+                  'onUpdate:precision': handleMeasurementAuprecChange
                 }
               }
             }

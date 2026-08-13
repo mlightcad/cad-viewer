@@ -217,7 +217,8 @@ export default {
       review: 'Kontrola',
       measurement: 'Měření',
       style: 'Styl',
-      units: 'Jednotky',
+      lengthUnits: 'Jednotky délky',
+      angleUnits: 'Jednotky úhlu',
       reference: 'Reference',
       block: 'Blok'
     },

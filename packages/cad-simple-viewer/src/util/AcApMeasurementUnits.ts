@@ -65,7 +65,7 @@ export function getEffectiveMeasurementUnits(
   }
 }
 
-/** Fields the user has overridden on the Measurement ribbon Units panel. */
+/** Fields the user has overridden on the Measurement ribbon unit panels. */
 export function getMeasurementUnitOverride(): Partial<AcApMeasurementUnits> {
   return { ...measurementUnitOverride }
 }

@@ -214,7 +214,8 @@ export default {
       review: '审阅',
       measurement: '测量',
       style: '样式',
-      units: '单位',
+      lengthUnits: '长度单位',
+      angleUnits: '角度单位',
       reference: '参照',
       block: '块'
     },

@@ -217,7 +217,8 @@ export default {
       review: 'Review',
       measurement: 'Measurement',
       style: 'Style',
-      units: 'Units',
+      lengthUnits: 'Length Units',
+      angleUnits: 'Angle Units',
       reference: 'Reference',
       block: 'Block'
     },

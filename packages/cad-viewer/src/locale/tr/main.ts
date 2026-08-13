@@ -218,7 +218,8 @@ export default {
       review: 'İnceleme',
       measurement: 'Ölçüm',
       style: 'Stil',
-      units: 'Birimler',
+      lengthUnits: 'Uzunluk Birimleri',
+      angleUnits: 'Açı Birimleri',
       reference: 'Referans',
       block: 'Blok'
     },
