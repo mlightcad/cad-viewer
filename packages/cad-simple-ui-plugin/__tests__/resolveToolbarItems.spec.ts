@@ -5,13 +5,15 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
       curDocument: undefined
     }
   },
-  /** Minimal mock used by {@link createDefaultToolbarItems} annotation visibility toggle. */
+  /** Minimal mock used by {@link createDefaultToolbarItems} markup visibility toggle. */
   AcApAnnotation: class {
     /** @returns Fixed annotation layer name for tests. */
     getAnnotationLayer() {
       return 'annotation'
     }
   },
+  isMarkupVisible: () => true,
+  isMeasurementVisible: () => true,
   AcEdOpenMode: {
     Read: 0,
     Review: 4,
@@ -104,13 +106,15 @@ describe('toolbar visibility', () => {
   it('hides review-only items in read mode', () => {
     const defaults = createDefaultToolbarItems()
     const visible = filterVisibleToolbarItems(defaults, AcEdOpenMode.Read)
-    expect(visible.some(item => item.id === 'switch-bg')).toBe(false)
+    expect(visible.some(item => item.id === 'annotation')).toBe(false)
+    expect(visible.some(item => item.id === 'switch-bg')).toBe(true)
     expect(visible.some(item => item.id === 'select')).toBe(true)
   })
 
   it('shows review-only items in review mode', () => {
     const defaults = createDefaultToolbarItems()
     const visible = filterVisibleToolbarItems(defaults, AcEdOpenMode.Review)
+    expect(visible.some(item => item.id === 'annotation')).toBe(true)
     expect(visible.some(item => item.id === 'switch-bg')).toBe(true)
   })
 
@@ -183,11 +187,19 @@ describe('default toolbar items', () => {
     expect(items[themeIndex - 1]?.id).toBe('toolbar-placement')
   })
 
+  it('places switch background next to the layer manager', () => {
+    const items = createDefaultToolbarItems()
+    const layerIndex = items.findIndex(item => item.id === 'layer')
+    expect(items[layerIndex + 1]?.id).toBe('switch-bg')
+  })
+
   it('includes a separator before settings buttons', () => {
     const items = createDefaultToolbarItems()
-    const switchBgIndex = items.findIndex(item => item.id === 'switch-bg')
-    expect(switchBgIndex).toBeGreaterThan(0)
-    expect(items[switchBgIndex - 1]).toEqual({
+    const placementIndex = items.findIndex(
+      item => item.id === 'toolbar-placement'
+    )
+    expect(placementIndex).toBeGreaterThan(0)
+    expect(items[placementIndex - 1]).toEqual({
       type: 'separator',
       id: 'sep-settings'
     })
@@ -203,6 +215,61 @@ describe('default toolbar items', () => {
       'selected'
     )
     expect(items.find(item => item.id === 'measure')?.childIcon).toBeUndefined()
+  })
+
+  it('uses markup commands from the review panel in the annotation submenu', () => {
+    const items = createDefaultToolbarItems()
+    const annotation = items.find(item => item.id === 'annotation')
+    expect(
+      annotation?.children?.map(child =>
+        child.type === 'separator'
+          ? 'separator'
+          : (child.command ?? child.toggle?.on.command)
+      )
+    ).toEqual([
+      'markupcloud',
+      'markupcallout',
+      'markuptext',
+      'markuprect',
+      'markupcircle',
+      'markuparrow',
+      'markupstamp',
+      'markupvis',
+      'clearmarkups',
+      'separator',
+      'markupimport',
+      'markupexport'
+    ])
+    expect(items.some(item => item.id === 'markup-vis')).toBe(false)
+    expect(
+      annotation?.children?.find(child => child.id === 'markup-vis')?.toggle
+    ).toBeDefined()
+  })
+
+  it('places measurement visibility in the measure submenu', () => {
+    const items = createDefaultToolbarItems()
+    const measure = items.find(item => item.id === 'measure')
+    expect(
+      measure?.children?.map(child =>
+        child.type === 'separator'
+          ? 'separator'
+          : (child.command ?? child.toggle?.on.command)
+      )
+    ).toEqual([
+      'measuredistance',
+      'measureangle',
+      'measurearea',
+      'measurearc',
+      'measurepoint',
+      'measurementvis',
+      'clearmeasurements',
+      'separator',
+      'measurementimport',
+      'measurementexport'
+    ])
+    expect(
+      measure?.children?.find(child => child.id === 'measurement-vis')?.toggle
+    ).toBeDefined()
   })
 
   it('uses dedicated parent icons for export and annotation', () => {
@@ -283,12 +350,12 @@ describe('toolbar presets and separators', () => {
       items: [
         { preset: 'select' },
         createToolbarSeparator(),
-        { preset: 'switch-bg' }
+        { preset: 'annotation' }
       ]
     })
     const visible = filterVisibleToolbarItems(items, AcEdOpenMode.Read)
     expect(visible.some(item => item.type === 'separator')).toBe(true)
     expect(visible.some(item => item.id === 'select')).toBe(true)
-    expect(visible.some(item => item.id === 'switch-bg')).toBe(false)
+    expect(visible.some(item => item.id === 'annotation')).toBe(false)
   })
 })

@@ -11,6 +11,7 @@ import {
   filterVisibleToolbarItems,
   isToolbarItemDisabled,
   itemRequiresDocument,
+  resolveEffectiveToolbarItem,
   resolveParentToolbarDisplay
 } from '../config/resolveToolbarItems'
 import { isToolbarSeparatorItem } from '../config/toolbarItemUtils'
@@ -419,7 +420,7 @@ export class AcExToolbar {
           const visibleChildren = filterVisibleToolbarItems(
             effective.children,
             this.openMode
-          )
+          ).map(resolveEffectiveToolbarItem)
           if (visibleChildren.length === 0) return
 
           this.openDropdown?.close()
@@ -430,6 +431,7 @@ export class AcExToolbar {
             this.themeHost
           )
           dropdown.setOnSelect(child => {
+            if (isToolbarSeparatorItem(child)) return
             if (item.childIcon === 'selected') {
               this.selectedChildByParent.set(item.id, child.id)
             }
@@ -438,7 +440,9 @@ export class AcExToolbar {
             } else if (child.command) {
               this.options.onCommand(child.command)
             }
-            if (item.childIcon === 'selected' || item.toggle) {
+            if (child.toggle) {
+              window.setTimeout(() => this.renderButtons(), 0)
+            } else if (item.childIcon === 'selected' || item.toggle) {
               this.renderButtons()
             }
           })

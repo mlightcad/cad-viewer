@@ -461,8 +461,7 @@ export default {
     },
     annotation: {
       text: 'Annotation',
-      description:
-        'Creates text or graphic annotations to explain and mark up drawing content'
+      description: 'Review tools'
     },
     hideAnnotation: {
       text: 'Hide',

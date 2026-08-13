@@ -32,7 +32,7 @@ import {
   isRevCloudCloseToStart,
   rectanglePath,
   sampleEntityPath
-} from './AcApRevCloudGeom'
+} from '../review/AcApRevCloudGeom'
 
 type RevCloudMode = 'rectangular' | 'polygonal' | 'freehand'
 type RevCloudKeywordKey =
@@ -80,12 +80,14 @@ function applyCloud(
   cloud: AcDbPolyline,
   path: AcGePoint2dLike[],
   closed: boolean,
-  settings: RevCloudSettings
+  settings: RevCloudSettings,
+  reverse = false
 ) {
   return buildRevCloud(cloud, path, closed, {
     arcLength: settings.arcLength ?? 1,
     style: settings.style,
-    variance: settings.variance
+    variance: settings.variance,
+    reverse
   })
 }
 
@@ -219,6 +221,63 @@ class AcApRevCloudFreehandJig extends AcEdPreviewJig<AcGePoint2dLike> {
       ? this._points
       : [...this._points, toPoint2d(current)]
     applyCloud(this._cloud, preview, this._closed, this._settings)
+  }
+}
+
+/**
+ * Static cloud preview used while prompting for Reverse direction.
+ *
+ * Keyword prompts do not drive jig updates, so this jig keeps the finished
+ * cloud visible and rebuilds it when the user toggles reverse.
+ */
+class AcApRevCloudStaticJig extends AcEdPreviewJig<string> {
+  private _cloud: AcDbPolyline
+  private _path: AcGePoint2dLike[]
+  private _closed: boolean
+  private _settings: RevCloudSettings
+  private _reverse = false
+  private _valid: boolean
+
+  constructor(
+    view: AcEdBaseView,
+    path: AcGePoint2dLike[],
+    closed: boolean,
+    settings: RevCloudSettings
+  ) {
+    super(view)
+    this._cloud = new AcDbPolyline()
+    this._path = path
+    this._closed = closed
+    this._settings = settings
+    this._valid = applyCloud(this._cloud, path, closed, settings)
+  }
+
+  get entity(): AcDbPolyline {
+    return this._cloud
+  }
+
+  get valid(): boolean {
+    return this._valid
+  }
+
+  get reverse(): boolean {
+    return this._reverse
+  }
+
+  update(_value: string) {
+    // Keyword prompt: geometry is rebuilt only when reverse is toggled.
+  }
+
+  toggleReverse() {
+    this._reverse = !this._reverse
+    this._valid = applyCloud(
+      this._cloud,
+      this._path,
+      this._closed,
+      this._settings,
+      this._reverse
+    )
+    this.render()
   }
 }
 
@@ -550,27 +609,40 @@ export class AcApRevCloudCmd extends AcEdCommand {
     closed: boolean,
     settings: RevCloudSettings
   ) {
-    const db = context.doc.database
-    const cloud = new AcDbPolyline()
-    if (!applyCloud(cloud, path, closed, settings)) return false
-    db.tables.blockTable.modelSpace.appendEntity(cloud)
+    const preview = new AcApRevCloudStaticJig(
+      context.view,
+      path,
+      closed,
+      settings
+    )
+    if (!preview.valid) return false
 
-    const reverse = await this.promptReverse()
-    if (reverse) {
-      buildRevCloud(cloud, path, closed, {
-        arcLength: settings.arcLength ?? 1,
-        style: settings.style,
-        variance: settings.variance,
-        reverse: true
-      })
+    try {
+      // Keep the finished cloud visible during Reverse direction. Keyword
+      // prompts do not refresh jigs, so render it explicitly and rebuild when
+      // the user chooses Yes.
+      while (true) {
+        preview.render()
+        if (!(await this.promptReverse(preview))) break
+        preview.toggleReverse()
+      }
+
+      const cloud = new AcDbPolyline()
+      if (!applyCloud(cloud, path, closed, settings, preview.reverse)) {
+        return false
+      }
+      context.doc.database.tables.blockTable.modelSpace.appendEntity(cloud)
+      return true
+    } finally {
+      preview.end()
     }
-    return true
   }
 
-  private async promptReverse() {
+  private async promptReverse(preview: AcApRevCloudStaticJig) {
     const prompt = new AcEdPromptKeywordOptions(
       AcApI18n.t('jig.revcloud.reverseDirection')
     )
+    prompt.jig = preview
     prompt.allowNone = true
     addKeyword(prompt, 'yes')
     const no = prompt.keywords.add(

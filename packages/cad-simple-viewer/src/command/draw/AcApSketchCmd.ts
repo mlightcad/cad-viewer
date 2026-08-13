@@ -1,4 +1,5 @@
 import {
+  AcDbEntity,
   AcDbLine,
   AcDbPolyline,
   AcDbSpline,
@@ -29,6 +30,12 @@ export interface AcApSketchSettings {
   /** SKETCHINC — minimum distance between successive sketch vertices. */
   increment: number
   /** SKTOLERANCE — how closely a spline fits the freehand points. */
+  tolerance: number
+}
+
+interface AcApSketchStroke {
+  points: AcGePoint2d[]
+  type: AcApSketchType
   tolerance: number
 }
 
@@ -153,6 +160,65 @@ export class AcApSketchJig extends AcEdPreviewJig<AcGePoint2dLike> {
 }
 
 /**
+ * Keeps completed sketch strokes visible while SKETCH is still running.
+ *
+ * The live stroke jig is torn down when a point prompt ends, and keyword
+ * prompts never refresh jigs. Without this overlay, returning to
+ * "Specify sketch or [Type/Increment/toLerance]" hides the sketch preview.
+ */
+class AcApSketchStrokePreview {
+  private readonly _entities: AcDbEntity[] = []
+
+  constructor(readonly view: AcEdBaseView) {}
+
+  addStroke(points: AcGePoint2dLike[]) {
+    if (points.length < 2) return
+    const polyline = new AcDbPolyline()
+    points.forEach((point, index) =>
+      polyline.addVertexAt(index, toPoint2d(point))
+    )
+    this._entities.push(polyline)
+    this.view.addTransientEntity(polyline)
+  }
+
+  /**
+   * Re-publishes transients. Keyword and distance prompts do not drive jigs.
+   */
+  render() {
+    this._entities.forEach(entity => this.view.addTransientEntity(entity))
+  }
+
+  dispose() {
+    this._entities.forEach(entity =>
+      this.view.removeTransientEntity(entity.objectId)
+    )
+    this._entities.length = 0
+  }
+}
+
+/**
+ * Point/distance prompt adapter that keeps {@link AcApSketchStrokePreview}
+ * visible. Prompt cleanup calls `end()`, but this jig has no owned entity, so
+ * completed strokes are not removed.
+ */
+class AcApSketchRetainJig<T> extends AcEdPreviewJig<T> {
+  constructor(
+    view: AcEdBaseView,
+    private readonly preview: AcApSketchStrokePreview
+  ) {
+    super(view)
+  }
+
+  update(_value: T) {
+    // Completed strokes are static; the preview is only re-published.
+  }
+
+  override render() {
+    this.preview.render()
+  }
+}
+
+/**
  * Command to create freehand sketches, aligned with AutoCAD SKETCH.
  *
  * Prompts: Specify sketch or [Type/Increment/toLerance]. Click to start a
@@ -168,53 +234,80 @@ export class AcApSketchCmd extends AcEdCommand {
 
   async execute(context: AcApContext) {
     const settings = AcApSketchCmd._settings
+    const strokes: AcApSketchStroke[] = []
+    const preview = new AcApSketchStrokePreview(context.view)
 
-    while (true) {
-      const prompt = new AcEdPromptPointOptions(
-        AcApI18n.t('jig.sketch.specifySketch')
-      )
-      addKeyword(prompt, 'type')
-      addKeyword(prompt, 'increment')
-      addKeyword(prompt, 'tolerance')
-      prompt.allowNone = true
-      prompt.disableOSnap = true
+    try {
+      while (true) {
+        preview.render()
+        const prompt = new AcEdPromptPointOptions(
+          AcApI18n.t('jig.sketch.specifySketch')
+        )
+        addKeyword(prompt, 'type')
+        addKeyword(prompt, 'increment')
+        addKeyword(prompt, 'tolerance')
+        prompt.allowNone = true
+        prompt.disableOSnap = true
+        prompt.jig = new AcApSketchRetainJig(context.view, preview)
 
-      const result = await AcApDocManager.instance.editor.getPoint(prompt)
-      if (result.status === AcEdPromptStatus.Keyword) {
-        const keyword = result.stringResult ?? ''
-        if (keyword === 'Type') {
-          const accepted = await this.promptType(settings)
-          if (!accepted) return
+        const result = await AcApDocManager.instance.editor.getPoint(prompt)
+        if (result.status === AcEdPromptStatus.Keyword) {
+          const keyword = result.stringResult ?? ''
+          if (keyword === 'Type') {
+            const accepted = await this.promptType(settings, preview)
+            if (!accepted) return
+            continue
+          }
+          if (keyword === 'Increment') {
+            const accepted = await this.promptIncrement(settings, preview)
+            if (!accepted) return
+            continue
+          }
+          if (keyword === 'Tolerance') {
+            const accepted = await this.promptTolerance(settings, preview)
+            if (!accepted) return
+            continue
+          }
           continue
         }
-        if (keyword === 'Increment') {
-          const accepted = await this.promptIncrement(settings)
-          if (!accepted) return
-          continue
+
+        if (result.status === AcEdPromptStatus.None) {
+          this.commitStrokes(context, strokes)
+          return
         }
-        if (keyword === 'Tolerance') {
-          const accepted = await this.promptTolerance(settings)
-          if (!accepted) return
-          continue
+        if (result.status !== AcEdPromptStatus.OK || !result.value) return
+
+        const points = await this.captureStroke(
+          context,
+          settings,
+          result.value,
+          preview
+        )
+        if (points === false) return
+        if (points.length >= 2) {
+          strokes.push({
+            points,
+            type: settings.type,
+            tolerance: settings.tolerance
+          })
+          preview.addStroke(points)
         }
-        continue
       }
-
-      if (result.status === AcEdPromptStatus.None) return
-      if (result.status !== AcEdPromptStatus.OK || !result.value) return
-
-      const committed = await this.captureStroke(
-        context,
-        settings,
-        result.value
-      )
-      if (!committed) return
+    } finally {
+      preview.dispose()
     }
   }
 
-  private async promptType(settings: AcApSketchSettings) {
+  private async promptType(
+    settings: AcApSketchSettings,
+    preview?: AcApSketchStrokePreview
+  ) {
+    preview?.render()
     const prompt = new AcEdPromptKeywordOptions(AcApI18n.t('jig.sketch.type'))
     prompt.allowNone = true
+    if (preview) {
+      prompt.jig = new AcApSketchRetainJig(preview.view, preview)
+    }
     const line = prompt.keywords.add(
       AcApI18n.t('jig.sketch.keywords.line.display'),
       AcApI18n.t('jig.sketch.keywords.line.global'),
@@ -254,7 +347,11 @@ export class AcApSketchCmd extends AcEdCommand {
     return true
   }
 
-  private async promptIncrement(settings: AcApSketchSettings) {
+  private async promptIncrement(
+    settings: AcApSketchSettings,
+    preview?: AcApSketchStrokePreview
+  ) {
+    preview?.render()
     const prompt = new AcEdPromptDistanceOptions(
       AcApI18n.t('jig.sketch.increment')
     )
@@ -262,6 +359,9 @@ export class AcApSketchCmd extends AcEdCommand {
     prompt.allowZero = false
     prompt.useDefaultValue = true
     prompt.defaultValue = settings.increment
+    if (preview) {
+      prompt.jig = new AcApSketchRetainJig(preview.view, preview)
+    }
     const result = await AcApDocManager.instance.editor.getDistance(prompt)
     if (result.status === AcEdPromptStatus.Cancel) return false
     const value = result.value ?? settings.increment
@@ -271,7 +371,11 @@ export class AcApSketchCmd extends AcEdCommand {
     return true
   }
 
-  private async promptTolerance(settings: AcApSketchSettings) {
+  private async promptTolerance(
+    settings: AcApSketchSettings,
+    preview?: AcApSketchStrokePreview
+  ) {
+    preview?.render()
     const prompt = new AcEdPromptDistanceOptions(
       AcApI18n.t('jig.sketch.tolerance')
     )
@@ -279,6 +383,9 @@ export class AcApSketchCmd extends AcEdCommand {
     prompt.allowZero = true
     prompt.useDefaultValue = true
     prompt.defaultValue = settings.tolerance
+    if (preview) {
+      prompt.jig = new AcApSketchRetainJig(preview.view, preview)
+    }
     const result = await AcApDocManager.instance.editor.getDistance(prompt)
     if (result.status === AcEdPromptStatus.Cancel) return false
     const value = result.value ?? settings.tolerance
@@ -291,13 +398,16 @@ export class AcApSketchCmd extends AcEdCommand {
   /**
    * Records one freehand stroke: click starts, move draws, click or Enter stops.
    *
-   * @returns `false` when the user cancels the command entirely.
+   * @returns `false` when the user cancels the command entirely; otherwise the
+   * captured points (possibly fewer than two if the stroke is too short).
    */
   private async captureStroke(
     context: AcApContext,
     settings: AcApSketchSettings,
-    start: AcGePoint2dLike
-  ) {
+    start: AcGePoint2dLike,
+    preview: AcApSketchStrokePreview
+  ): Promise<AcGePoint2d[] | false> {
+    preview.render()
     const jig = new AcApSketchJig(context.view, start, settings.increment)
     const prompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.sketch.sketching')
@@ -319,38 +429,43 @@ export class AcApSketchCmd extends AcEdCommand {
         points.push(toPoint2d(result.value))
       }
     }
-
-    if (points.length >= 2) {
-      this.appendStroke(context, settings, points)
-    }
-    return true
+    return points
   }
 
-  private appendStroke(
-    context: AcApContext,
-    settings: AcApSketchSettings,
-    points: AcGePoint2d[]
-  ) {
+  private commitStrokes(context: AcApContext, strokes: AcApSketchStroke[]) {
+    for (const stroke of strokes) {
+      this.appendStroke(context, stroke)
+    }
+  }
+
+  private appendStroke(context: AcApContext, stroke: AcApSketchStroke) {
     const modelSpace = context.doc.database.tables.blockTable.modelSpace
-    if (settings.type === 'line') {
+    const points = stroke.points
+    if (stroke.type === 'line') {
       for (let i = 1; i < points.length; i++) {
-        modelSpace.appendEntity(
-          new AcDbLine(toPoint3d(points[i - 1]), toPoint3d(points[i]))
+        const line = new AcDbLine(
+          toPoint3d(points[i - 1]),
+          toPoint3d(points[i])
         )
+        modelSpace.appendEntity(line)
+        context.view.addEntity(line)
       }
       return
     }
-    if (settings.type === 'spline') {
-      const fitPoints = simplifySketchPoints(points, settings.tolerance)
+    if (stroke.type === 'spline') {
+      const fitPoints = simplifySketchPoints(points, stroke.tolerance)
       if (fitPoints.length < 2) return
       const points3d = fitPoints.map(toPoint3d)
       const degree = Math.min(3, Math.max(1, points3d.length - 1))
-      modelSpace.appendEntity(new AcDbSpline(points3d, 'Chord', degree, false))
+      const spline = new AcDbSpline(points3d, 'Chord', degree, false)
+      modelSpace.appendEntity(spline)
+      context.view.addEntity(spline)
       return
     }
 
     const polyline = new AcDbPolyline()
     points.forEach((point, index) => polyline.addVertexAt(index, point))
     modelSpace.appendEntity(polyline)
+    context.view.addEntity(polyline)
   }
 }

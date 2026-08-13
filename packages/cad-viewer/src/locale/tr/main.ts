@@ -464,8 +464,7 @@ export default {
     },
     annotation: {
       text: 'Açıklama',
-      description:
-        'Çizim içeriğini açıklamak ve işaretlemek için metin veya grafik açıklamalar oluşturur'
+      description: 'İnceleme araçları'
     },
     hideAnnotation: {
       text: 'Gizle',

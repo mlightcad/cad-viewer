@@ -78,6 +78,8 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
         return 'annotation'
       }
     },
+    isMarkupVisible: () => true,
+    isMeasurementVisible: () => true,
     AcEdCommand: class {},
     AcEdCommandStack: class {
       static SYSTEMT_COMMAND_GROUP_NAME = 'SYSTEM'

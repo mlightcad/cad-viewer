@@ -60,27 +60,51 @@ export const ICON_SWITCH_BG =
 export const ICON_ANNOTATION =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="4" y="6" width="11" height="10" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" d="M7 14.5 13.5 8l1.5 1.5-6.5 6.5H7v-1.5Z"/><path fill="currentColor" d="M13.2 7.3 15 5.5l1.5 1.5-1.8 1.8-1.5-1.5Z"/></svg>'
 
-/** Freehand review sketch icon. */
-export const ICON_REV_FREEDRAW =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M4 14c2-4 4-6 8-8 2-1 4 0 4 2"/></svg>'
-
-/** Rectangle review icon. */
-export const ICON_REV_RECT =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="4" y="5" width="12" height="10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'
-
-/** Revision cloud icon. */
+/** Markup / revision cloud icon. */
 export const ICON_REV_CLOUD =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M5 12c0-2 1-4 4-4 1-2 4-2 5 0 2 0 3 2 3 4"/></svg>'
 
-/** Circle review icon. */
+/** Markup rectangle icon. */
+export const ICON_REV_RECT =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="4" y="5" width="12" height="10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'
+
+/** Markup circle icon. */
 export const ICON_REV_CIRCLE =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'
 
-/** Show annotations icon. */
+/** Markup callout icon. */
+export const ICON_MARKUP_CALLOUT =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M4 5h10v7H9l-3 3v-3H4V5z"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M7 8.5h4M7 11h2.5"/></svg>'
+
+/** Markup text icon. */
+export const ICON_MARKUP_TEXT =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M5 5h10M10 5v11M6.5 16h7"/></svg>'
+
+/** Markup arrow icon. */
+export const ICON_MARKUP_ARROW =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M5 15 15 5"/><path fill="currentColor" d="M15 5h-5l5 5V5Z"/></svg>'
+
+/** Markup stamp icon. */
+export const ICON_MARKUP_STAMP =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="3.5" y="6" width="13" height="8" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M7 10h6"/></svg>'
+
+/** Markup import icon. */
+export const ICON_MARKUP_IMPORT =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M10 3v9M6.5 8.5 10 12l3.5-3.5"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M4 16h12"/></svg>'
+
+/** Markup export icon. */
+export const ICON_MARKUP_EXPORT =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M10 12V3M6.5 6.5 10 3l3.5 3.5"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M4 16h12"/></svg>'
+
+/** Clear markups icon. */
+export const ICON_CLEAR_MARKUPS =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M5 6h10M8 6V5h4v1M6.5 6l.7 9h5.6l.7-9"/></svg>'
+
+/** Show markups icon. */
 export const ICON_ANNOTATION_SHOW =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" d="M10 4C5 4 1.73 7.11 1 10c.73 2.89 4 6 9 6s8.27-3.11 9-6c-.73-2.89-4-6-9-6Zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>'
 
-/** Hide annotations icon. */
+/** Hide markups icon. */
 export const ICON_ANNOTATION_HIDE =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" d="M2 2l16 16M10 6c3.5 0 6.5 2 7.8 4-1 1.6-3 3.4-5.8 4.1M6.2 6.3C3.8 7.4 2.2 9.1 1.2 10c1.3 2.9 5 6 8.8 6 1.2 0 2.3-.3 3.3-.7"/></svg>'
 

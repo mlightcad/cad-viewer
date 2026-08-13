@@ -454,8 +454,7 @@ export default {
     },
     annotation: {
       text: 'Poznámky',
-      description:
-        'Vytváří textové nebo grafické poznámky pro vysvětlení a označení výkresu'
+      description: 'Nástroje kontroly'
     },
     hideAnnotation: {
       text: 'Skrýt',

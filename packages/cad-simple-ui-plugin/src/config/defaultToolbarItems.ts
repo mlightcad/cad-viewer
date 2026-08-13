@@ -1,20 +1,27 @@
 import {
-  AcApAnnotation,
-  AcApDocManager,
   AcEdOpenMode,
-  type AcEdUiTheme
+  type AcEdUiTheme,
+  isMarkupVisible,
+  isMeasurementVisible
 } from '@mlightcad/cad-simple-viewer'
 
 import {
   ICON_ANNOTATION,
   ICON_ANNOTATION_HIDE,
   ICON_ANNOTATION_SHOW,
+  ICON_CLEAR_MARKUPS,
   ICON_CLEAR_MEASUREMENTS,
   ICON_EXPORT,
   ICON_EXPORT_HTML,
   ICON_EXPORT_PDF,
   ICON_EXPORT_SVG,
   ICON_LAYER,
+  ICON_MARKUP_ARROW,
+  ICON_MARKUP_CALLOUT,
+  ICON_MARKUP_EXPORT,
+  ICON_MARKUP_IMPORT,
+  ICON_MARKUP_STAMP,
+  ICON_MARKUP_TEXT,
   ICON_MEASURE,
   ICON_MEASURE_ANGLE,
   ICON_MEASURE_ARC,
@@ -28,7 +35,6 @@ import {
   ICON_PLACEMENT_TOP,
   ICON_REV_CIRCLE,
   ICON_REV_CLOUD,
-  ICON_REV_FREEDRAW,
   ICON_REV_RECT,
   ICON_SELECT,
   ICON_SWITCH_BG,
@@ -86,20 +92,6 @@ function createToolbarPlacementItem(
 }
 
 /**
- * Returns whether the annotation layer is currently visible in the active document.
- *
- * @returns `true` when the annotation layer is on or no document is open.
- */
-function isAnnotationVisible(): boolean {
-  const db = AcApDocManager.instance.curDocument?.database
-  if (!db) return true
-  const annotation = new AcApAnnotation(db)
-  const layerName = annotation.getAnnotationLayer()
-  const layer = db.tables.layerTable.getAt(layerName)
-  return layer ? !layer.isOff : true
-}
-
-/**
  * Builds the built-in toolbar item list (view, measure, export, review, theme, locale).
  *
  * @param context - Optional callbacks for theme and locale toggle items.
@@ -146,6 +138,12 @@ export function createDefaultToolbarItems(
       command: 'layer'
     },
     {
+      id: 'switch-bg',
+      label: 'toolbar.switchBg',
+      icon: ICON_SWITCH_BG,
+      command: 'switchbg'
+    },
+    {
       id: 'measure',
       label: 'toolbar.measure',
       icon: ICON_MEASURE,
@@ -181,10 +179,42 @@ export function createDefaultToolbarItems(
           command: 'measurepoint'
         },
         {
+          id: 'measurement-vis',
+          toggle: {
+            getValue: isMeasurementVisible,
+            on: {
+              label: 'toolbar.showMeasurements',
+              icon: ICON_ANNOTATION_SHOW,
+              command: 'measurementvis'
+            },
+            off: {
+              label: 'toolbar.hideMeasurements',
+              icon: ICON_ANNOTATION_HIDE,
+              command: 'measurementvis'
+            }
+          }
+        },
+        {
           id: 'clear-measurements',
           label: 'toolbar.clearMeasurements',
           icon: ICON_CLEAR_MEASUREMENTS,
           command: 'clearmeasurements'
+        },
+        {
+          type: 'separator',
+          id: 'sep-measure-import-export'
+        },
+        {
+          id: 'measurement-import',
+          label: 'toolbar.measurementImport',
+          icon: ICON_MARKUP_IMPORT,
+          command: 'measurementimport'
+        },
+        {
+          id: 'measurement-export',
+          label: 'toolbar.measurementExport',
+          icon: ICON_MARKUP_EXPORT,
+          command: 'measurementexport'
         }
       ]
     },
@@ -220,58 +250,90 @@ export function createDefaultToolbarItems(
       minOpenMode: AcEdOpenMode.Review,
       children: [
         {
-          id: 'rev-freedraw',
-          label: 'toolbar.revFreehand',
-          icon: ICON_REV_FREEDRAW,
-          command: 'sketch'
-        },
-        {
-          id: 'rev-rect',
-          label: 'toolbar.revRect',
-          icon: ICON_REV_RECT,
-          command: 'revrect'
-        },
-        {
-          id: 'rev-cloud',
-          label: 'toolbar.revCloud',
+          id: 'markup-cloud',
+          label: 'toolbar.markupCloud',
           icon: ICON_REV_CLOUD,
-          command: 'revcloud'
+          command: 'markupcloud'
         },
         {
-          id: 'rev-circle',
-          label: 'toolbar.revCircle',
+          id: 'markup-callout',
+          label: 'toolbar.markupCallout',
+          icon: ICON_MARKUP_CALLOUT,
+          command: 'markupcallout'
+        },
+        {
+          id: 'markup-text',
+          label: 'toolbar.markupText',
+          icon: ICON_MARKUP_TEXT,
+          command: 'markuptext'
+        },
+        {
+          id: 'markup-rect',
+          label: 'toolbar.markupRect',
+          icon: ICON_REV_RECT,
+          command: 'markuprect'
+        },
+        {
+          id: 'markup-circle',
+          label: 'toolbar.markupCircle',
           icon: ICON_REV_CIRCLE,
-          command: 'revcircle'
+          command: 'markupcircle'
+        },
+        {
+          id: 'markup-arrow',
+          label: 'toolbar.markupArrow',
+          icon: ICON_MARKUP_ARROW,
+          command: 'markuparrow'
+        },
+        {
+          id: 'markup-stamp',
+          label: 'toolbar.markupStamp',
+          icon: ICON_MARKUP_STAMP,
+          command: 'markupstamp'
+        },
+        {
+          id: 'markup-vis',
+          toggle: {
+            getValue: isMarkupVisible,
+            on: {
+              label: 'toolbar.showMarkup',
+              icon: ICON_ANNOTATION_SHOW,
+              command: 'markupvis'
+            },
+            off: {
+              label: 'toolbar.hideMarkup',
+              icon: ICON_ANNOTATION_HIDE,
+              command: 'markupvis'
+            }
+          }
+        },
+        {
+          id: 'clear-markups',
+          label: 'toolbar.clearMarkups',
+          icon: ICON_CLEAR_MARKUPS,
+          command: 'clearmarkups'
+        },
+        {
+          type: 'separator',
+          id: 'sep-markup-import-export'
+        },
+        {
+          id: 'markup-import',
+          label: 'toolbar.markupImport',
+          icon: ICON_MARKUP_IMPORT,
+          command: 'markupimport'
+        },
+        {
+          id: 'markup-export',
+          label: 'toolbar.markupExport',
+          icon: ICON_MARKUP_EXPORT,
+          command: 'markupexport'
         }
       ]
     },
     {
-      id: 'rev-vis',
-      minOpenMode: AcEdOpenMode.Review,
-      toggle: {
-        getValue: isAnnotationVisible,
-        on: {
-          label: 'toolbar.showAnnotation',
-          icon: ICON_ANNOTATION_SHOW,
-          command: 'revvis'
-        },
-        off: {
-          label: 'toolbar.hideAnnotation',
-          icon: ICON_ANNOTATION_HIDE,
-          command: 'revvis'
-        }
-      }
-    },
-    {
       type: 'separator',
       id: 'sep-settings'
-    },
-    {
-      id: 'switch-bg',
-      label: 'toolbar.switchBg',
-      icon: ICON_SWITCH_BG,
-      command: 'switchbg',
-      minOpenMode: AcEdOpenMode.Review
     },
     createToolbarPlacementItem(context),
     {

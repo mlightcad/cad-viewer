@@ -1,4 +1,5 @@
 import { createIconElement } from '../assets/icons'
+import { isToolbarSeparatorItem } from '../config/toolbarItemUtils'
 import type { AcExToolbarItem } from '../config/types'
 import type { AcExI18n } from '../i18n'
 
@@ -38,10 +39,26 @@ export class AcExDropdownMenu {
     this.root.setAttribute('role', 'menu')
 
     items.forEach(item => {
+      if (isToolbarSeparatorItem(item)) {
+        const separator = document.createElement('div')
+        separator.className = 'ml-ex-ui-dropdown-separator'
+        separator.setAttribute('role', 'separator')
+        if (item.id) {
+          separator.dataset.toolbarItemId = item.id
+        }
+        this.root.appendChild(separator)
+        return
+      }
+
       const button = document.createElement('button')
       button.type = 'button'
       button.className = 'ml-ex-ui-dropdown-item'
       button.setAttribute('role', 'menuitem')
+      if (item.toggle) {
+        const pressed = item.toggle.getValue()
+        button.setAttribute('aria-pressed', String(pressed))
+        button.classList.toggle('is-toggled', pressed)
+      }
       if (item.icon) {
         button.appendChild(createIconElement(item.icon))
       }
