@@ -19,6 +19,11 @@ export class AcTrHtmlDot extends AcTrHtmlElement {
     super(AcTrHtmlDot.createElement(options.color), options)
   }
 
+  /** Update the marker fill color. */
+  setColor(color: AcCmColor): void {
+    this.element.style.background = acTrHtmlCssColor(color)
+  }
+
   private static createElement(color: AcCmColor): HTMLDivElement {
     const el = document.createElement('div')
     el.className = 'ml-html-dot'

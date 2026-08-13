@@ -1,6 +1,7 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
 import {
+  bindOverlayHistory,
   getMarkupHistory,
   getSessionUndo
 } from '../src/command/markup/AcApMarkupHistory'
@@ -25,6 +26,7 @@ describe('AcApSessionUndo fallback', () => {
   beforeEach(() => {
     getMarkupHistory().clear()
     getSessionUndo().clear()
+    bindOverlayHistory(undefined)
     jest.restoreAllMocks()
   })
 
@@ -57,6 +59,32 @@ describe('AcApSessionUndo fallback', () => {
   it('returns db when leftover db undo succeeds', () => {
     expect(getSessionUndo().undo(mockDb({ canUndo: true, undo: true }))).toBe(
       'db'
+    )
+  })
+
+  it('returns overlay when leftover overlay undo succeeds', () => {
+    bindOverlayHistory({
+      canUndo: () => true,
+      canRedo: () => false,
+      undo: () => true,
+      redo: () => false,
+      clearRedo: () => {},
+      clear: () => {}
+    })
+    expect(getSessionUndo().undo(mockDb({}))).toBe('overlay')
+  })
+
+  it('returns false when leftover overlay undo fails', () => {
+    bindOverlayHistory({
+      canUndo: () => true,
+      canRedo: () => false,
+      undo: () => false,
+      redo: () => false,
+      clearRedo: () => {},
+      clear: () => {}
+    })
+    expect(getSessionUndo().undo(mockDb({ canUndo: true, undo: false }))).toBe(
+      false
     )
   })
 })

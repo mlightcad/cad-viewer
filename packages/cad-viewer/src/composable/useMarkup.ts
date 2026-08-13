@@ -5,7 +5,8 @@ import {
   getMarkupPresenter,
   getMarkupStore,
   MARKUP_STATUSES,
-  runMarkupEdit} from '@mlightcad/cad-simple-viewer'
+  runMarkupEdit
+} from '@mlightcad/cad-simple-viewer'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 /**
@@ -52,7 +53,7 @@ export function useMarkup() {
     runMarkupEdit(view, 'Edit Markup', () => {
       const updated = getMarkupStore().updateMeta(id, patch)
       if (!updated) return
-      if (patch.text != null) {
+      if (patch.text !== undefined || patch.comment !== undefined) {
         getMarkupPresenter().publish(view, updated)
       }
     })

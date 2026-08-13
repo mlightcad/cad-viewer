@@ -1,4 +1,5 @@
 export * from './AcApClearMeasurementsCmd'
+export * from './AcApMeasurementHistory'
 export * from './AcApMeasurementStore'
 export * from './AcApMeasureAngleCmd'
 export * from './AcApMeasureAreaCmd'

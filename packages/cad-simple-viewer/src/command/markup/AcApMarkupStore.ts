@@ -87,6 +87,10 @@ export class AcApMarkupStore {
     const next: AcApMarkupRecord = {
       ...existing,
       ...patch,
+      geometry:
+        patch.text !== undefined
+          ? withAttachedCalloutText(existing.geometry, patch.text)
+          : existing.geometry,
       updatedAt: new Date().toISOString()
     }
     this.records.set(id, next)
@@ -247,6 +251,27 @@ let sharedStore: AcApMarkupStore | undefined
 export function getMarkupStore(): AcApMarkupStore {
   if (!sharedStore) sharedStore = new AcApMarkupStore()
   return sharedStore
+}
+
+/**
+ * Keep shape-attached callout bubble text in sync with the record label.
+ */
+function withAttachedCalloutText(
+  geometry: AcApMarkupRecord['geometry'],
+  text: string | undefined
+): AcApMarkupRecord['geometry'] {
+  if (
+    (geometry.type === 'cloud' ||
+      geometry.type === 'rect' ||
+      geometry.type === 'circle') &&
+    geometry.callout
+  ) {
+    return {
+      ...geometry,
+      callout: { ...geometry.callout, text }
+    }
+  }
+  return geometry
 }
 
 /** Valid status values for UI / validation. */

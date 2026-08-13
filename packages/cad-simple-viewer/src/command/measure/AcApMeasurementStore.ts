@@ -1,7 +1,13 @@
-import type { AcDbObjectId } from '@mlightcad/data-model'
-import { AcTrHtmlGroup } from '@mlightcad/three-renderer'
+import type { AcCmColor, AcDbEntity, AcDbObjectId } from '@mlightcad/data-model'
+import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
+import {
+  type AcApMeasurementStyle,
+  cloneMeasurementStyle,
+  MEASUREMENT_FONT_SIZE,
+  MEASUREMENT_LINE_WEIGHT} from '../../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../../view'
+import { runMeasurementEdit } from './AcApMeasurementHistory'
 
 /** HTML transient layer for committed measurement overlays. */
 export const MEASUREMENT_LAYER = 'measurement'
@@ -15,12 +21,136 @@ export const MEASUREMENT_LIVE_LAYER = 'measurement-live'
 export interface AcApMeasurementGroupExtras {
   /** CAD transient entity object ids (lines, etc.). */
   entityIds?: AcDbObjectId[]
+  /** Live CAD entity refs so color / line weight can be updated in place. */
+  entities?: AcDbEntity[]
+  /** Style used when the group was committed (and after later style edits). */
+  style?: AcApMeasurementStyle
+  /** Redraw canvas overlays after a style change (color / line weight). */
+  redraw?: (style: AcApMeasurementStyle) => void
   /**
    * Removes non-HTML resources (CAD transients, viewChanged listeners).
-   * HTML children and group-owned canvas overlays are removed by the html
+   * HTML children and group-owned canvases are removed by the html
    * transient manager / group dispose.
    */
   dispose?: () => void
+}
+
+type MeasurementSelectionListener = () => void
+
+const extrasById = new Map<string, AcApMeasurementGroupExtras>()
+const stylesById = new Map<string, AcApMeasurementStyle>()
+const selectionListeners = new Set<MeasurementSelectionListener>()
+let selectedMeasurementId: string | undefined
+
+/** Style currently stored for a committed measurement group. */
+export function getMeasurementStyle(
+  id: string
+): AcApMeasurementStyle | undefined {
+  const style = stylesById.get(id)
+  return style ? cloneMeasurementStyle(style) : undefined
+}
+
+/** Style of the currently selected measurement, if any. */
+export function getActiveMeasurementStyle(): AcApMeasurementStyle | undefined {
+  return selectedMeasurementId
+    ? getMeasurementStyle(selectedMeasurementId)
+    : undefined
+}
+
+/** Notify when the selected measurement group changes. */
+export function subscribeMeasurementSelection(
+  listener: MeasurementSelectionListener
+): () => void {
+  selectionListeners.add(listener)
+  return () => {
+    selectionListeners.delete(listener)
+  }
+}
+
+function notifyMeasurementSelection(): void {
+  for (const listener of selectionListeners) listener()
+}
+
+function rememberStyle(id: string, style: AcApMeasurementStyle): void {
+  stylesById.set(id, cloneMeasurementStyle(style))
+}
+
+/**
+ * Apply a style patch to one measurement group (HTML, CAD transients, canvases).
+ * Does not record undo; wrap with {@link runMeasurementEdit} from UI.
+ */
+export function applyMeasurementStyle(
+  view: AcTrView2d,
+  group: AcTrHtmlGroup,
+  patch: Partial<AcApMeasurementStyle>
+): void {
+  const prev = stylesById.get(group.id)
+  const color = patch.color?.clone() ?? prev?.color.clone()
+  if (!color) return
+  const next: AcApMeasurementStyle = {
+    color,
+    lineWeight: patch.lineWeight ?? prev?.lineWeight ?? MEASUREMENT_LINE_WEIGHT,
+    fontSize: patch.fontSize ?? prev?.fontSize ?? MEASUREMENT_FONT_SIZE
+  }
+  rememberStyle(group.id, next)
+  const extras = extrasById.get(group.id)
+  if (extras) extras.style = cloneMeasurementStyle(next)
+  paintMeasurementGroup(view, group, next)
+}
+
+/**
+ * Apply a style patch to every selected measurement group (undoable).
+ */
+export function applyMeasurementStyleToSelection(
+  view: AcTrView2d,
+  patch: Partial<AcApMeasurementStyle>
+): void {
+  const groups = view.htmlTransientManager
+    .getSelectedGroups()
+    .filter(group => group.layer === MEASUREMENT_LAYER)
+  if (groups.length === 0) return
+  runMeasurementEdit(view, 'Measurement Style', () => {
+    for (const group of groups) {
+      applyMeasurementStyle(view, group, patch)
+    }
+  })
+}
+
+function paintMeasurementGroup(
+  view: AcTrView2d,
+  group: AcTrHtmlGroup,
+  style: AcApMeasurementStyle
+): void {
+  for (const child of group.children) {
+    const colorful = child as {
+      setColor?: (color: AcCmColor) => void
+      setFontSize?: (size: number) => void
+    }
+    colorful.setColor?.(style.color)
+    colorful.setFontSize?.(style.fontSize)
+  }
+
+  const extras = extrasById.get(group.id)
+  const selected = group.selected
+  for (const entity of extras?.entities ?? []) {
+    entity.color = style.color.clone()
+    entity.lineWeight = style.lineWeight
+    view.removeTransientEntity(entity.objectId)
+    view.addTransientEntity(entity)
+  }
+  if (selected && (extras?.entityIds?.length ?? 0) > 0) {
+    view.highlight(extras!.entityIds!)
+  }
+  extras?.redraw?.(style)
+  view.isDirty = true
+}
+
+/** Drop style / extras maps (document open). Attached groups are left for view.clear(). */
+export function resetMeasurementStyleState(): void {
+  extrasById.clear()
+  stylesById.clear()
+  selectedMeasurementId = undefined
+  notifyMeasurementSelection()
 }
 
 /**
@@ -36,15 +166,24 @@ export function commitMeasurementGroup(
   extras?: AcApMeasurementGroupExtras
 ): void {
   const entityIds = extras?.entityIds ?? []
+  extrasById.set(group.id, extras ?? {})
+  if (extras?.style) {
+    rememberStyle(group.id, extras.style)
+  }
 
   const prevSelectedChanged = group.onSelectedChanged
   group.onSelectedChanged = (selected, g) => {
     prevSelectedChanged?.(selected, g)
-    if (entityIds.length === 0) return
     if (selected) {
-      view.highlight(entityIds)
+      selectedMeasurementId = g.id
+      notifyMeasurementSelection()
+      if (entityIds.length > 0) view.highlight(entityIds)
     } else {
-      view.unhighlight(entityIds)
+      if (selectedMeasurementId === g.id) {
+        selectedMeasurementId = undefined
+        notifyMeasurementSelection()
+      }
+      if (entityIds.length > 0) view.unhighlight(entityIds)
     }
   }
 
@@ -59,7 +198,12 @@ export function commitMeasurementGroup(
   const prevDispose = group.onDispose
   group.onDispose = () => {
     prevDispose?.()
-    // Ensure CAD highlights are cleared even if deletion skipped deselect.
+    extrasById.delete(group.id)
+    stylesById.delete(group.id)
+    if (selectedMeasurementId === group.id) {
+      selectedMeasurementId = undefined
+      notifyMeasurementSelection()
+    }
     if (entityIds.length > 0) {
       view.unhighlight(entityIds)
     }
@@ -70,6 +214,8 @@ export function commitMeasurementGroup(
     }
   }
 
-  view.htmlTransientManager.add(group)
+  runMeasurementEdit(view, 'Create Measurement', () => {
+    view.htmlTransientManager.add(group)
+  })
   view.isDirty = true
 }

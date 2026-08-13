@@ -93,7 +93,8 @@ import {
   AcApXAttachCmd,
   AcApXLineCmd,
   AcApZoomCmd,
-  resetMarkupSession
+  resetMarkupSession,
+  resetMeasurementSession
 } from '../command'
 import {
   AcEdCalculateSizeCallback,
@@ -1609,7 +1610,8 @@ export class AcApDocManager {
     this._openFileProgress.setSeeThroughOverlay(
       options?.progressiveRendering ?? false
     )
-    // Drop markup records / history before view.clear() disposes HTML overlays.
+    // Drop overlay / markup history before view.clear() disposes HTML.
+    resetMeasurementSession()
     resetMarkupSession()
     this.curView.clear()
     // OPENPROF: start stage timings before db.read / entity flush.

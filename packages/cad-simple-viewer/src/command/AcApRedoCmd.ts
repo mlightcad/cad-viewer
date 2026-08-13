@@ -6,7 +6,7 @@ import { getSessionUndo } from './markup/AcApMarkupHistory'
 import { getMarkupPresenter } from './markup/AcApMarkupPresenter'
 
 /**
- * Redoes the last undone session editing operation (database or markup).
+ * Redoes the last undone session editing operation (database, markup, or measurement).
  */
 export class AcApRedoCmd extends AcEdCommand {
   constructor() {

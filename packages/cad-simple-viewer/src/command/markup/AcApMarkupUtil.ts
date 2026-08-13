@@ -50,6 +50,7 @@ export function setMarkupDrawColor(color: AcCmColor): void {
 
 /** Update the session markup draw line weight. */
 export function setMarkupDrawLineWeight(weight: AcGiLineWeight): void {
+  if (!(weight > 0)) return
   markupDrawLineWeight = weight
 }
 
@@ -57,6 +58,13 @@ export function setMarkupDrawLineWeight(weight: AcGiLineWeight): void {
 export function setMarkupDrawFontSize(size: number): void {
   if (!Number.isFinite(size) || size <= 0) return
   markupDrawFontSize = size
+}
+
+/** Map a CAD line weight to a canvas stroke width in CSS pixels. */
+export function markupCanvasLineWidth(weight: AcGiLineWeight | number): number {
+  const n = Number(weight)
+  if (!Number.isFinite(n) || n <= 0) return 2
+  return Math.max(1, n / 28)
 }
 
 /** Convert AcCmColor to a CSS color string for sidecar style. */

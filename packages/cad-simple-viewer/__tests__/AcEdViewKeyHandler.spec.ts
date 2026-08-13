@@ -32,7 +32,11 @@ function keyboardEvent(partial: Partial<KeyboardEvent>): KeyboardEvent {
 
 function createMockView(
   isEditorActive = false,
-  htmlSelection: { hasSelection?: boolean; deleted?: boolean } = {}
+  htmlSelection: {
+    hasSelection?: boolean
+    deleted?: boolean
+    groups?: { id: string; layer: string }[]
+  } = {}
 ): AcTrView2d {
   return {
     editor: { isActive: isEditorActive },
@@ -40,7 +44,11 @@ function createMockView(
     htmlTransientManager: {
       hasSelection: jest.fn(() => htmlSelection.hasSelection ?? false),
       deleteSelected: jest.fn(() => htmlSelection.deleted ?? false),
-      deselectAll: jest.fn()
+      deselectAll: jest.fn(),
+      getSelectedGroups: jest.fn(() => htmlSelection.groups ?? []),
+      detach: jest.fn((id: string) => ({ id })),
+      groupsOnLayer: jest.fn(() => []),
+      has: jest.fn(() => false)
     },
     isDirty: false
   } as unknown as AcTrView2d
@@ -95,6 +103,38 @@ describe('AcEdViewKeyHandler', () => {
 
     expect(handled).toBe(false)
     expect(sendCommand).not.toHaveBeenCalled()
+  })
+
+  test('Delete detaches a selected measurement overlay without dispatching erase', () => {
+    const view = createMockView(false, {
+      hasSelection: true,
+      groups: [{ id: 'm1', layer: 'measurement' }]
+    })
+    const handler = new AcEdViewKeyHandler(view)
+    const sendCommand = AcApDocManager.instance.sendStringToExecute as jest.Mock
+    const event = keyboardEvent({ code: 'Delete' })
+
+    expect(handler.handleKeyDown(event)).toBe(true)
+    expect(view.htmlTransientManager.detach).toHaveBeenCalledWith('m1')
+    expect(view.htmlTransientManager.deleteSelected).not.toHaveBeenCalled()
+    expect(sendCommand).not.toHaveBeenCalled()
+    expect(event.preventDefault).toHaveBeenCalled()
+  })
+
+  test('Backspace detaches a selected measurement overlay (macOS delete key)', () => {
+    const view = createMockView(false, {
+      hasSelection: true,
+      groups: [{ id: 'm1', layer: 'measurement' }]
+    })
+    const handler = new AcEdViewKeyHandler(view)
+    const sendCommand = AcApDocManager.instance.sendStringToExecute as jest.Mock
+    const event = keyboardEvent({ code: 'Backspace' })
+
+    expect(handler.handleKeyDown(event)).toBe(true)
+    expect(view.htmlTransientManager.detach).toHaveBeenCalledWith('m1')
+    expect(view.htmlTransientManager.deleteSelected).not.toHaveBeenCalled()
+    expect(sendCommand).not.toHaveBeenCalled()
+    expect(event.preventDefault).toHaveBeenCalled()
   })
 
   test('Delete removes a selected HTML overlay without dispatching erase', () => {

@@ -50,6 +50,12 @@ export class AcTrStyleManager {
   private pointMgr: AcTrPointMaterialManager
   private lineMgr: AcTrLineMaterialManager
   private fillMgr: AcTrFillMaterialManager
+  /**
+   * When true, fat-line materials are used even if {@link showLineWeight}
+   * (LWDISPLAY) is off. Overlay transients (markup / measurement) set this
+   * for the duration of conversion so ribbon lineweight is visible.
+   */
+  private _forceShowLineWeight = false
 
   constructor() {
     this.pointMgr = new AcTrPointMaterialManager(this.options)
@@ -85,7 +91,9 @@ export class AcTrStyleManager {
     const hasLinePattern = !!(
       traits.lineType.pattern && traits.lineType.pattern.length > 0
     )
-    const forceBasicMaterial = !this.options.showLineWeight && !hasLinePattern
+    const showLineWeight =
+      this.options.showLineWeight || this._forceShowLineWeight
+    const forceBasicMaterial = !showLineWeight && !hasLinePattern
     return this.lineMgr.getMaterial(traits, {
       basicMaterialOnly: basicMaterialOnly || forceBasicMaterial
     })!
@@ -103,6 +111,18 @@ export class AcTrStyleManager {
    */
   set showLineWeight(value: boolean) {
     this.options.showLineWeight = value
+  }
+
+  /**
+   * Whether overlay conversion should honor entity lineweights even when
+   * {@link showLineWeight} is false.
+   */
+  get forceShowLineWeight(): boolean {
+    return this._forceShowLineWeight
+  }
+
+  set forceShowLineWeight(value: boolean) {
+    this._forceShowLineWeight = value
   }
 
   /**

@@ -80,6 +80,8 @@ interface LineWeightSelectProps {
   disabled?: boolean
   /** Placeholder shown when no line weight can be resolved. */
   placeholder?: string
+  /** When true, hide ByLayer / ByBlock / Default (overlay style pickers). */
+  numericOnly?: boolean
 }
 
 const props = defineProps<LineWeightSelectProps>()
@@ -151,7 +153,9 @@ const lineWeightItems = computed<LineWeightItem[]>(() =>
     new Set(
       Object.values(AcGiLineWeight).filter(
         (v): v is AcGiLineWeight =>
-          typeof v === 'number' && v !== AcGiLineWeight.ByDIPs
+          typeof v === 'number' &&
+          v !== AcGiLineWeight.ByDIPs &&
+          (!props.numericOnly || v > 0)
       )
     )
   )

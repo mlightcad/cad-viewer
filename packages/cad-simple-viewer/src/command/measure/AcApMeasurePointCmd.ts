@@ -15,7 +15,7 @@ import {
   AcEdViewMode
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { measurementColor } from '../../util'
+import { currentMeasurementStyle, measurementColor } from '../../util'
 import { AcTrView2d } from '../../view'
 import {
   commitMeasurementGroup,
@@ -50,6 +50,7 @@ export class AcApMeasurePointCmd extends AcEdCommand {
     const editor = context.view.editor
     const db = context.doc.database
     const color = measurementColor(db)
+    const style = currentMeasurementStyle(db)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -81,12 +82,13 @@ export class AcApMeasurePointCmd extends AcEdCommand {
             text: label,
             worldPosition: point,
             layer: MEASUREMENT_LAYER,
+            fontSize: style.fontSize,
             // Offset the badge above the marker so it does not cover the dot.
             transform: 'translate(-50%, calc(-50% - 16px))'
           })
         )
 
-        commitMeasurementGroup(context.view as AcTrView2d, group)
+        commitMeasurementGroup(context.view as AcTrView2d, group, { style })
       })
     )
   }

@@ -1,5 +1,6 @@
 import { AcCmColor, AcGiLineWeight } from '@mlightcad/data-model'
 import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 import {
   getMaterialMetadata,
@@ -568,5 +569,19 @@ describe('AcTrStyleManager', () => {
     const metadata = getMaterialMetadata(material)
     expect(metadata.drawOrder).toBe(-1)
     expect(metadata.isBackgroundFill).toBe(false)
+  })
+
+  it('uses fat line materials when forceShowLineWeight is on even if LWDISPLAY is off', () => {
+    const styleManager = new AcTrStyleManager()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.lineWeight = AcGiLineWeight.LineWeight211
+
+    const hairline = styleManager.getLineMaterial(traits)
+    expect(hairline).toBeInstanceOf(THREE.LineBasicMaterial)
+
+    styleManager.forceShowLineWeight = true
+    const fat = styleManager.getLineMaterial(traits)
+    expect(fat).toBeInstanceOf(LineMaterial)
+    expect((fat as LineMaterial).linewidth).toBeCloseTo(211 / 40)
   })
 })

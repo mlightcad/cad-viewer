@@ -3,7 +3,7 @@ import { type DeepReadonly, readonly, type Ref, ref } from 'vue'
 
 /**
  * Reactive undo/redo availability for the active document session
- * (database edits + Design Review markups).
+ * (database edits, Design Review markups, and measurements).
  */
 export interface UseUndoRedoReturn {
   /** Whether the active session has undoable operations. */

@@ -1479,27 +1479,35 @@ export class AcTrView2d extends AcEdBaseView {
   addTransientEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
     const epoch = this._convertEpoch
-    for (let i = 0; i < entities.length; ++i) {
-      const entity = entities[i]
-      const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
-      if (threeEntity) {
-        threeEntity.objectId = entity.objectId
-        void threeEntity
-          .asyncDraw()
-          .then(() => {
-            // Drop stale transients started before clear()/regen invalidated the view.
-            if (epoch !== this._convertEpoch) {
+    // Overlay transients (markup / measurement / jigs) must honor entity
+    // lineweight even when LWDISPLAY is off; otherwise ribbon style is a no-op.
+    const previousForce = this._renderer.forceShowLineWeight
+    this._renderer.forceShowLineWeight = true
+    try {
+      for (let i = 0; i < entities.length; ++i) {
+        const entity = entities[i]
+        const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
+        if (threeEntity) {
+          threeEntity.objectId = entity.objectId
+          void threeEntity
+            .asyncDraw()
+            .then(() => {
+              // Drop stale transients started before clear()/regen invalidated the view.
+              if (epoch !== this._convertEpoch) {
+                threeEntity.dispose()
+                return
+              }
+              this._scene.addTransientEntity(threeEntity)
+              this._isDirty = true
+            })
+            .catch(error => {
+              log.error('[AcTrView2d] Transient entity geometry failed:', error)
               threeEntity.dispose()
-              return
-            }
-            this._scene.addTransientEntity(threeEntity)
-            this._isDirty = true
-          })
-          .catch(error => {
-            log.error('[AcTrView2d] Transient entity geometry failed:', error)
-            threeEntity.dispose()
-          })
+            })
+        }
       }
+    } finally {
+      this._renderer.forceShowLineWeight = previousForce
     }
   }
 

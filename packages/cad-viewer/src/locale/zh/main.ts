@@ -15,7 +15,8 @@ export default {
     tab: {
       home: '常用',
       insert: '插入',
-      tools: '工具',
+      review: '审阅',
+      measurement: '测量',
       hatchContext: '填充',
       mtextEditorContext: '文字编辑器'
     },
@@ -212,6 +213,7 @@ export default {
       annotation: '批注',
       review: '审阅',
       measurement: '测量',
+      style: '样式',
       reference: '参照',
       block: '块'
     },
@@ -494,6 +496,18 @@ export default {
       text: '字号',
       description: '设置文字与标注文本框的字号'
     },
+    measurementColor: {
+      text: '颜色',
+      description: '有选中测量标注时修改其颜色；未选中时用于后续添加的测量标注'
+    },
+    measurementLineWeight: {
+      text: '线宽',
+      description: '有选中测量标注时修改其线宽；未选中时用于后续添加的测量标注'
+    },
+    measurementFontSize: {
+      text: '字号',
+      description: '有选中测量标注时修改其字号；未选中时用于后续添加的测量标注'
+    },
     showMarkup: {
       text: '显示批注',
       description: '显示 Design Review 批注'
@@ -684,6 +698,7 @@ export default {
       author: '作者',
       summary: '摘要',
       details: '详情',
+      closeDetails: '关闭详情',
       label: '标签',
       comment: '评论',
       zoomTo: '缩放到',
