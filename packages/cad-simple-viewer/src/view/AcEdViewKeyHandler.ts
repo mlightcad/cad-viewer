@@ -66,16 +66,16 @@ export class AcEdViewKeyHandler {
         // point) corrupts the active command's input pipeline because
         // sendStringToExecute clears scripted inputs unconditionally.
         if (!this.view.editor.isActive) {
+          let removed = false
           if (this.view.htmlTransientManager.hasSelection()) {
-            let removed = false
             runMarkupEdit(this.view, 'Delete Markup', () => {
               removed = this.view.htmlTransientManager.deleteSelected()
             })
-            if (removed) {
-              this.view.isDirty = true
-              e.preventDefault()
-              return true
-            }
+          }
+          if (removed) {
+            this.view.isDirty = true
+            e.preventDefault()
+            return true
           }
           AcApDocManager.instance.sendStringToExecute('erase')
         }
