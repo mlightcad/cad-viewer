@@ -665,6 +665,68 @@ export default {
   measurePoint: {
     point: '指定点'
   },
+  markup: {
+    author: '指定批注作者（将保存供以后使用）',
+    text: {
+      point: '指定文字批注点',
+      content: '输入批注文字'
+    },
+    line: {
+      firstPoint: '指定直线批注的第一点',
+      secondPoint: '指定直线批注的第二点'
+    },
+    arrow: {
+      firstPoint: '指定箭头起点',
+      secondPoint: '指定箭头尖端'
+    },
+    cloud: {
+      firstCorner: '指定云线的第一个角点',
+      secondCorner: '指定云线的对角点'
+    },
+    rect: {
+      firstCorner: '指定矩形的第一个角点',
+      secondCorner: '指定矩形的对角点'
+    },
+    circle: {
+      center: '指定圆心',
+      radius: '指定圆的半径'
+    },
+    shape: {
+      calloutOn: '[标注开启]',
+      calloutOff: '[标注关闭]',
+      calloutAnchor: '指定标注文字框位置',
+      keywords: {
+        callout: {
+          display: '标注(C)',
+          local: '标注',
+          global: 'Callout'
+        },
+        noCallout: {
+          display: '无标注(N)',
+          local: '无标注',
+          global: 'NoCallout'
+        }
+      }
+    },
+    highlight: {
+      firstCorner: '指定高亮的第一个角点',
+      secondCorner: '指定高亮的对角点'
+    },
+    callout: {
+      tip: '指定引线尖端（箭头端）',
+      anchor: '指定标注文字框位置',
+      content: '输入标注文字'
+    },
+    stamp: {
+      kind: '输入图章类型 [approved/rejected/revised/for-review/custom]',
+      imageUrl: '输入自定义图章图片 URL（可选）',
+      caption: '输入图章说明文字（可选）',
+      point: '指定图章插入点'
+    },
+    import: {
+      chooseFile: '选择批注 sidecar JSON 文件'
+    }
+  },
   move: {
     basePointOrDisplacement: '指定基点或',
     secondPointOrDisplacement: '指定第二个点或',

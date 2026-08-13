@@ -32,6 +32,12 @@
           <ml-count-list />
         </div>
         <div
+          v-else-if="store.dialogs.activePaletteTab === 'designReview'"
+          class="ml-design-review-wrapper"
+        >
+          <ml-design-review-palette />
+        </div>
+        <div
           v-else-if="store.dialogs.activePaletteTab === 'missingResources'"
           class="ml-missing-resources-wrapper"
         >
@@ -86,6 +92,7 @@ import { useSelectionSet, useViewerRect } from '../../composable'
 import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
 import MlBlocksPalette from './MlBlocksPalette.vue'
 import MlCountList from './MlCountList.vue'
+import MlDesignReviewPalette from './MlDesignReviewPalette.vue'
 import MlEntityProperties from './MlEntityProperties.vue'
 import MlLayerList from './MlLayerList.vue'
 import MlMemoryProfile from './MlMemoryProfile.vue'
@@ -199,6 +206,7 @@ const baseTabNames = [
   'layerManager',
   'entityProperties',
   'countList',
+  'designReview',
   'blocks',
   'missingResources',
   'memoryProfile'
@@ -280,6 +288,15 @@ const properties = computed(() => {
 }
 
 .ml-count-list-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-design-review-wrapper {
   overflow: hidden;
   width: 100%;
   height: 100%;

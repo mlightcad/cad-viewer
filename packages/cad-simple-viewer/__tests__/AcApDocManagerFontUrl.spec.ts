@@ -127,6 +127,7 @@ jest.mock('../src/command', () => {
     'AcApArcCmd',
     'AcApCacheFontCmd',
     'AcApCircleCmd',
+    'AcApClearMarkupsCmd',
     'AcApClearMeasurementsCmd',
     'AcApConvertToDxfCmd',
     'AcApConvertToPngCmd',
@@ -154,6 +155,18 @@ jest.mock('../src/command', () => {
     'AcApLayoffCmd',
     'AcApLineCmd',
     'AcApLogCmd',
+    'AcApMarkupArrowCmd',
+    'AcApMarkupCalloutCmd',
+    'AcApMarkupCircleCmd',
+    'AcApMarkupCloudCmd',
+    'AcApMarkupExportCmd',
+    'AcApMarkupHighlightCmd',
+    'AcApMarkupImportCmd',
+    'AcApMarkupLineCmd',
+    'AcApMarkupRectCmd',
+    'AcApMarkupStampCmd',
+    'AcApMarkupTextCmd',
+    'AcApMarkupVisibilityCmd',
     'AcApMeasureAngleCmd',
     'AcApMeasureArcCmd',
     'AcApMeasureAreaCmd',
@@ -189,12 +202,15 @@ jest.mock('../src/command', () => {
     'AcApXLineCmd',
     'AcApZoomCmd'
   ]
-  return Object.fromEntries(
-    commandNames.map(name => [
-      name,
-      jest.fn().mockImplementation(() => ({ trigger: jest.fn() }))
-    ])
-  )
+  return {
+    ...Object.fromEntries(
+      commandNames.map(name => [
+        name,
+        jest.fn().mockImplementation(() => ({ trigger: jest.fn() }))
+      ])
+    ),
+    resetMarkupSession: jest.fn()
+  }
 })
 
 jest.mock('@mlightcad/data-model', () => ({

@@ -210,6 +210,7 @@ export default {
       properties: '属性',
       utilities: '实用工具',
       annotation: '批注',
+      review: '审阅',
       measurement: '测量',
       reference: '参照',
       block: '块'
@@ -441,6 +442,70 @@ export default {
       text: '云线',
       description: '在图纸中以云状线条标出修改或需要重点关注的区域'
     },
+    markupPanel: {
+      text: '批注面板',
+      description: '打开 Design Review 批注面板'
+    },
+    markupText: {
+      text: '文字',
+      description: '放置 Design Review 文字批注'
+    },
+    markupCloud: {
+      text: '云线',
+      description: '创建 Design Review 云线批注'
+    },
+    markupRect: {
+      text: '矩形',
+      description: '创建 Design Review 矩形批注'
+    },
+    markupCircle: {
+      text: '圆',
+      description: '创建 Design Review 圆形批注'
+    },
+    markupArrow: {
+      text: '箭头',
+      description: '创建 Design Review 箭头批注'
+    },
+    markupCallout: {
+      text: '标注',
+      description: '创建 Design Review 引线标注'
+    },
+    markupStamp: {
+      text: '图章',
+      description: '放置 Design Review 图章'
+    },
+    markupImport: {
+      text: '导入',
+      description: '从 sidecar JSON 文件导入 Design Review 批注'
+    },
+    markupExport: {
+      text: '导出',
+      description: '将 Design Review 批注导出为 sidecar JSON 文件'
+    },
+    markupColor: {
+      text: '颜色',
+      description: '设置新建批注的颜色'
+    },
+    markupLineWeight: {
+      text: '线宽',
+      description: '设置新建批注的线宽'
+    },
+    markupFontSize: {
+      text: '字号',
+      description: '设置文字与标注文本框的字号'
+    },
+    showMarkup: {
+      text: '显示批注',
+      description: '显示 Design Review 批注'
+    },
+    hideMarkup: {
+      text: '隐藏批注',
+      description: '隐藏 Design Review 批注'
+    },
+    clearMarkups: {
+      text: '清除',
+      description: '清除当前布局上的所有 Design Review 批注'
+    },
     select: {
       text: '选择',
       description: '选择图元'
@@ -607,6 +672,28 @@ export default {
       prompt: {
         firstCorner: '指定计数区域的第一个角点或 [Entire(整个)]: ',
         secondCorner: '指定对角点: '
+      }
+    },
+    designReview: {
+      tab: '批注',
+      title: 'Design Review',
+      searchPlaceholder: '搜索批注',
+      empty: '暂无批注',
+      type: '类型',
+      status: '状态',
+      author: '作者',
+      summary: '摘要',
+      details: '详情',
+      label: '标签',
+      comment: '评论',
+      zoomTo: '缩放到',
+      delete: '删除',
+      clear: '全部清除',
+      statusValues: {
+        open: '打开',
+        question: '疑问',
+        answered: '已答复',
+        closed: '已关闭'
       }
     },
     missingResources: {

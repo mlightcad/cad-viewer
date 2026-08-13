@@ -19,6 +19,7 @@ import {
   AcApArcCmd,
   AcApCacheFontCmd,
   AcApCircleCmd,
+  AcApClearMarkupsCmd,
   AcApClearMeasurementsCmd,
   AcApConvertToDxfCmd,
   AcApConvertToPngCmd,
@@ -46,6 +47,18 @@ import {
   AcApLayoffCmd,
   AcApLineCmd,
   AcApLogCmd,
+  AcApMarkupArrowCmd,
+  AcApMarkupCalloutCmd,
+  AcApMarkupCircleCmd,
+  AcApMarkupCloudCmd,
+  AcApMarkupExportCmd,
+  AcApMarkupHighlightCmd,
+  AcApMarkupImportCmd,
+  AcApMarkupLineCmd,
+  AcApMarkupRectCmd,
+  AcApMarkupStampCmd,
+  AcApMarkupTextCmd,
+  AcApMarkupVisibilityCmd,
   AcApMeasureAngleCmd,
   AcApMeasureArcCmd,
   AcApMeasureAreaCmd,
@@ -79,7 +92,8 @@ import {
   AcApUnisolateObjectsCmd,
   AcApXAttachCmd,
   AcApXLineCmd,
-  AcApZoomCmd
+  AcApZoomCmd,
+  resetMarkupSession
 } from '../command'
 import {
   AcEdCalculateSizeCallback,
@@ -1269,6 +1283,23 @@ export class AcApDocManager {
     addSystemCommand('revcloud', 'revcloud', new AcApRevCloudCmd())
     addSystemCommand('revrect', 'revrect', new AcApRevRectCmd())
     addSystemCommand('revvis', 'revvis', new AcApRevVisibilityCmd())
+    addSystemCommand('markuptext', 'markuptext', new AcApMarkupTextCmd())
+    addSystemCommand('markupline', 'markupline', new AcApMarkupLineCmd())
+    addSystemCommand('markuparrow', 'markuparrow', new AcApMarkupArrowCmd())
+    addSystemCommand('markupcloud', 'markupcloud', new AcApMarkupCloudCmd())
+    addSystemCommand('markuprect', 'markuprect', new AcApMarkupRectCmd())
+    addSystemCommand('markupcircle', 'markupcircle', new AcApMarkupCircleCmd())
+    addSystemCommand(
+      'markuphighlight',
+      'markuphighlight',
+      new AcApMarkupHighlightCmd()
+    )
+    addSystemCommand('markupcallout', 'markupcallout', new AcApMarkupCalloutCmd())
+    addSystemCommand('markupstamp', 'markupstamp', new AcApMarkupStampCmd())
+    addSystemCommand('markupvis', 'markupvis', new AcApMarkupVisibilityCmd())
+    addSystemCommand('clearmarkups', 'clearmarkups', new AcApClearMarkupsCmd())
+    addSystemCommand('markupexport', 'markupexport', new AcApMarkupExportCmd())
+    addSystemCommand('markupimport', 'markupimport', new AcApMarkupImportCmd())
     addSystemCommand('select', 'select', new AcApSelectCmd())
     addSystemCommand('sketch', 'sketch', new AcApSketchCmd())
     addSystemCommand('spline', 'spline', new AcApSplineCmd())
@@ -1578,6 +1609,8 @@ export class AcApDocManager {
     this._openFileProgress.setSeeThroughOverlay(
       options?.progressiveRendering ?? false
     )
+    // Drop markup records / history before view.clear() disposes HTML overlays.
+    resetMarkupSession()
     this.curView.clear()
     // OPENPROF: start stage timings before db.read / entity flush.
     this._openFileProfiler.begin(this.context.doc.database)

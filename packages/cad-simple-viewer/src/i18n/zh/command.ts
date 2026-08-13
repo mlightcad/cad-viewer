@@ -91,6 +91,9 @@ export default {
     dwgname: {
       description: '存储当前图形文件的名称（只读）'
     },
+    loginname: {
+      description: '显示当前用户的登录名（只读）'
+    },
     dynmode: {
       description: '控制光标处的动态输入设置'
     },
@@ -349,6 +352,48 @@ export default {
     },
     revcloud: {
       description: '创建矩形修订云线'
+    },
+    markuptext: {
+      description: '放置 Design Review 文字批注'
+    },
+    markupline: {
+      description: '创建 Design Review 直线批注'
+    },
+    markuparrow: {
+      description: '创建 Design Review 箭头批注'
+    },
+    markupcloud: {
+      description: '创建 Design Review 修订云线批注'
+    },
+    markuprect: {
+      description: '创建 Design Review 矩形批注'
+    },
+    markupcircle: {
+      description: '创建 Design Review 圆形批注'
+    },
+    markuphighlight: {
+      description: '创建 Design Review 高亮矩形批注'
+    },
+    markupcallout: {
+      description: '创建 Design Review 标注：先指定引线尖端，再放置文字框，最后输入文字'
+    },
+    markupstamp: {
+      description: '放置 Design Review 图章或自定义符号'
+    },
+    markupvis: {
+      description: '显示或隐藏 Design Review 批注'
+    },
+    clearmarkups: {
+      description: '清除当前布局上的所有 Design Review 批注'
+    },
+    markupexport: {
+      description: '将 Design Review 批注导出为 sidecar JSON 文件'
+    },
+    markupimport: {
+      description: '从 sidecar JSON 文件导入 Design Review 批注'
+    },
+    markuppanel: {
+      description: '打开 Design Review 批注面板'
     },
     rotate: {
       description: '绕基点旋转所选图元',

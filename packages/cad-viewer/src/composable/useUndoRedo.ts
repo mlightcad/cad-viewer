@@ -1,13 +1,14 @@
-import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, eventBus, getSessionUndo } from '@mlightcad/cad-simple-viewer'
 import { type DeepReadonly, readonly, type Ref, ref } from 'vue'
 
 /**
- * Reactive undo/redo availability for the active document database.
+ * Reactive undo/redo availability for the active document session
+ * (database edits + Design Review markups).
  */
 export interface UseUndoRedoReturn {
-  /** Whether the active database has undoable operations. */
+  /** Whether the active session has undoable operations. */
   canUndo: DeepReadonly<Ref<boolean>>
-  /** Whether the active database has redoable operations. */
+  /** Whether the active session has redoable operations. */
   canRedo: DeepReadonly<Ref<boolean>>
   /** Re-reads undo/redo state from the active document. */
   syncUndoRedoState: () => void
@@ -24,9 +25,14 @@ let isBound = false
 
 function syncUndoRedoState() {
   const db = AcApDocManager.instance?.curDocument?.database
-  const manager = db?.transactionManager
-  canUndo.value = manager?.canUndo() ?? false
-  canRedo.value = manager?.canRedo() ?? false
+  if (!db) {
+    canUndo.value = false
+    canRedo.value = false
+    return
+  }
+  const session = getSessionUndo()
+  canUndo.value = session.canUndo(db)
+  canRedo.value = session.canRedo(db)
 }
 
 /** Polling interval while waiting for {@link AcApDocManager.instance}. */

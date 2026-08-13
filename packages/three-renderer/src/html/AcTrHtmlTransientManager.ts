@@ -29,6 +29,12 @@ function ensureSelectionStyles(): void {
   box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.35),
     var(--ml-ui-shadow, 0 1px 4px rgba(0,0,0,0.2));
 }
+.ml-html-callout.${AC_TR_HTML_SELECTED_CLASS},
+.ml-html-stamp.${AC_TR_HTML_SELECTED_CLASS} {
+  outline: 2px solid rgba(255, 213, 79, 0.85);
+  box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.35),
+    var(--ml-ui-shadow, 0 1px 4px rgba(0,0,0,0.2));
+}
 .${AC_TR_HTML_CANVAS_CLASS}.${AC_TR_HTML_SELECTED_CLASS} {
   filter: drop-shadow(0 0 3px #ffd54f);
 }
@@ -252,12 +258,26 @@ export class AcTrHtmlTransientManager {
   setVisible(visible: boolean, layer?: string): void {
     if (layer == null) {
       this.htmlGroup.visible = visible
+      for (const group of this.groups.values()) {
+        group.setVisible(visible)
+      }
+      for (const entry of this.entries.values()) {
+        if (this.groupChildIds.has(entry.id)) continue
+        entry.object.visible = visible
+      }
       for (const canvas of this.canvases.values()) {
         canvas.setVisible(visible)
       }
       return
     }
+
+    for (const group of this.groups.values()) {
+      if (group.layer === layer) {
+        group.setVisible(visible)
+      }
+    }
     for (const entry of this.entries.values()) {
+      if (this.groupChildIds.has(entry.id)) continue
       if (entry.layer === layer) {
         entry.object.visible = visible
       }

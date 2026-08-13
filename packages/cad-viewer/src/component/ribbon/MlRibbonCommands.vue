@@ -3,11 +3,17 @@ import '@mlightcad/ribbon/style.css'
 
 import {
   ChatDotRound,
+  ChatLineSquare,
   Delete,
   DocumentCopy,
+  Download,
+  EditPen,
   Hide,
   RefreshLeft,
   RefreshRight,
+  Right,
+  Stamp,
+  Upload,
   View
 } from '@element-plus/icons-vue'
 import {
@@ -17,7 +23,19 @@ import {
   AcApOpenCmd,
   AcApQNewCmd,
   acapRunDatabaseEdit,
-  AcEdOpenMode
+  AcEdOpenMode,
+  cssToMarkupColor,
+  defaultMarkupColor,
+  getMarkupFontSize,
+  getMarkupLineWeight,
+  getMarkupPresenter,
+  getMarkupStore,
+  isMarkupVisible,
+  markupColorToCss,
+  runMarkupEdit,
+  setMarkupDrawColor,
+  setMarkupDrawFontSize,
+  setMarkupDrawLineWeight
 } from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
@@ -36,7 +54,7 @@ import {
   RibbonLocaleTexts,
   RibbonTabModel
 } from '@mlightcad/ribbon'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { store } from '../../app'
@@ -118,6 +136,7 @@ import MlLayerSelect from '../common/MlLayerSelect.vue'
 import MlCharacterMapDialog from '../dialog/MlCharacterMapDialog.vue'
 import MlRibbonFileName from './MlRibbonFileName.vue'
 import MlRibbonLanguageSelector from './MlRibbonLanguageSelector.vue'
+import MlRibbonMarkupFontSizeSelect from './MlRibbonMarkupFontSizeSelect.vue'
 import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
 import MlRibbonPropertyLineTypeSelect from './MlRibbonPropertyLineTypeSelect.vue'
 import MlRibbonPropertyLineWeightSelect from './MlRibbonPropertyLineWeightSelect.vue'
@@ -148,6 +167,11 @@ const { isDocumentOpening, openMode: docOpenMode } = useDocument()
 const { canUndo, canRedo } = useUndoRedo()
 const { t, locale } = useI18n()
 const isAnnotationVisible = ref(true)
+const isMarkupOverlayVisible = ref(true)
+const markupDrawColor = shallowRef(defaultMarkupColor())
+const markupDrawColorDisplay = ref(markupColorToCss(markupDrawColor.value))
+const markupDrawLineWeight = ref<AcGiLineWeight>(getMarkupLineWeight())
+const markupDrawFontSize = ref(getMarkupFontSize())
 const isRibbonDisabled = computed(() => isDocumentOpening.value)
 const ribbonColor = ref<AcCmColor | undefined>(new AcCmColor())
 const ribbonColorDisplay = ref('#7b8794')
@@ -349,6 +373,10 @@ const syncAnnotationVisibility = () => {
   isAnnotationVisible.value = true
 }
 
+const syncMarkupVisibility = () => {
+  isMarkupOverlayVisible.value = isMarkupVisible()
+}
+
 const handleAnnotationLayerChange = () => {
   syncAnnotationVisibility()
   syncRibbonProperties(observedDatabase)
@@ -471,6 +499,7 @@ const handleDocumentActivated = () => {
   ribbonLayerIsolationSnapshot.value = null
   ribbonLayerPreviousSnapshot.value = null
   syncAnnotationVisibility()
+  syncMarkupVisibility()
   syncRibbonProperties(AcApDocManager.instance?.curDocument?.database)
   syncHatchSelectionContext(AcApDocManager.instance?.curDocument?.database)
 }
@@ -492,6 +521,8 @@ const applyToSelectedEntities = (mutator: (entity: AcDbEntity) => void) => {
   })
 }
 
+let unsubscribeMarkupStore: (() => void) | undefined
+
 onMounted(() => {
   AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
     handleSysVarChange
@@ -508,13 +539,20 @@ onMounted(() => {
   AcApDocManager.instance.editor.events.commandEnded.addEventListener(
     handleMTextCommandEnded
   )
+  AcApDocManager.instance.editor.events.commandEnded.addEventListener(
+    syncMarkupVisibility
+  )
   AcApDocManager.instance.events.documentActivated.addEventListener(
     handleDocumentActivated
   )
+  unsubscribeMarkupStore = getMarkupStore().subscribe(syncMarkupStyleControls)
+  syncMarkupStyleControls()
   handleDocumentActivated()
 })
 
 onUnmounted(() => {
+  unsubscribeMarkupStore?.()
+  unsubscribeMarkupStore = undefined
   AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
     handleSysVarChange
   )
@@ -529,6 +567,9 @@ onUnmounted(() => {
   )
   AcApDocManager.instance.editor.events.commandEnded.removeEventListener(
     handleMTextCommandEnded
+  )
+  AcApDocManager.instance.editor.events.commandEnded.removeEventListener(
+    syncMarkupVisibility
   )
   AcApDocManager.instance.events.documentActivated.removeEventListener(
     handleDocumentActivated
@@ -571,6 +612,83 @@ const handleRibbonLineWeightChange = (value: AcGiLineWeight) => {
     })
   })
   syncRibbonProperties(db)
+}
+
+/**
+ * Push Review ribbon style controls from the selected markup (or session defaults).
+ */
+const syncMarkupStyleControls = () => {
+  const store = getMarkupStore()
+  const selected = store.selectedId
+    ? store.get(store.selectedId)
+    : undefined
+  if (selected) {
+    const color = cssToMarkupColor(selected.style.color)
+    markupDrawColor.value = color
+    markupDrawColorDisplay.value = selected.style.color
+    markupDrawLineWeight.value =
+      (selected.style.lineWeight as AcGiLineWeight | undefined) ??
+      getMarkupLineWeight()
+    markupDrawFontSize.value =
+      selected.style.fontSize != null && selected.style.fontSize > 0
+        ? selected.style.fontSize
+        : getMarkupFontSize()
+    return
+  }
+  markupDrawColor.value = defaultMarkupColor()
+  markupDrawColorDisplay.value = markupColorToCss(markupDrawColor.value)
+  markupDrawLineWeight.value = getMarkupLineWeight()
+  markupDrawFontSize.value = getMarkupFontSize()
+}
+
+/**
+ * Apply a style patch to the currently selected markup and republish it.
+ */
+const applyMarkupStyleToSelection = (
+  patch: Partial<{ color: string; lineWeight: number; fontSize: number }>
+) => {
+  const store = getMarkupStore()
+  const id = store.selectedId
+  if (!id) return
+  const view = AcApDocManager.instance?.curView
+  if (!view) return
+  runMarkupEdit(view, 'Markup Style', () => {
+    const updated = store.updateStyle(id, patch)
+    if (!updated) return
+    getMarkupPresenter().publish(view, updated)
+  })
+}
+
+/**
+ * Updates the session markup draw color used by subsequent markup commands.
+ * When a markup is selected, also updates that markup's color.
+ */
+const handleMarkupDrawColorChange = (value?: AcCmColor) => {
+  if (!value) return
+  setMarkupDrawColor(value)
+  markupDrawColor.value = value.clone()
+  markupDrawColorDisplay.value = markupColorToCss(value)
+  applyMarkupStyleToSelection({ color: markupColorToCss(value) })
+}
+
+/**
+ * Updates the session markup draw line weight used by subsequent markup commands.
+ * When a markup is selected, also updates that markup's line weight.
+ */
+const handleMarkupDrawLineWeightChange = (value: AcGiLineWeight) => {
+  setMarkupDrawLineWeight(value)
+  markupDrawLineWeight.value = value
+  applyMarkupStyleToSelection({ lineWeight: value })
+}
+
+/**
+ * Updates the session markup draw font size used by text / callout markups.
+ * When a markup is selected, also updates that markup's font size.
+ */
+const handleMarkupDrawFontSizeChange = (value: number) => {
+  setMarkupDrawFontSize(value)
+  markupDrawFontSize.value = getMarkupFontSize()
+  applyMarkupStyleToSelection({ fontSize: getMarkupFontSize() })
 }
 
 /**
@@ -655,6 +773,7 @@ const handleRibbonLayerStateToggle = (payload: {
 const buildBaseTabs = (
   openMode: AcEdOpenMode,
   annotationVisible: boolean,
+  markupVisible: boolean,
   undoRedoState: { canUndo: boolean; canRedo: boolean },
   agentPluginEnabled: boolean
 ): RibbonTabModel[] => {
@@ -740,8 +859,179 @@ const buildBaseTabs = (
     measureArc: t('main.verticalToolbar.measureArc.description'),
     measurePoint: t('main.verticalToolbar.measurePoint.description'),
     clearMeasurements: t('main.verticalToolbar.clearMeasurements.description'),
-    layer: t('main.verticalToolbar.layer.description')
+    layer: t('main.verticalToolbar.layer.description'),
+    hideMarkup: t('main.verticalToolbar.hideMarkup.description'),
+    showMarkup: t('main.verticalToolbar.showMarkup.description'),
+    clearMarkups: t('main.verticalToolbar.clearMarkups.description'),
+    markupImport: t('main.verticalToolbar.markupImport.description'),
+    markupExport: t('main.verticalToolbar.markupExport.description')
   }
+
+  const reviewPrimaryItems: RibbonItemModel[] = [
+    {
+      id: 'cmd-tool-markup-cloud',
+      type: 'button',
+      label: t('main.verticalToolbar.markupCloud.text'),
+      tooltip: t('main.verticalToolbar.markupCloud.description'),
+      size: 'large',
+      props: { icon: revCloud }
+    },
+    {
+      id: 'cmd-tool-markup-callout',
+      type: 'button',
+      label: t('main.verticalToolbar.markupCallout.text'),
+      tooltip: t('main.verticalToolbar.markupCallout.description'),
+      size: 'large',
+      props: { icon: ChatLineSquare }
+    },
+    {
+      id: 'cmd-tool-markup-text',
+      type: 'button',
+      label: t('main.verticalToolbar.markupText.text'),
+      tooltip: t('main.verticalToolbar.markupText.description'),
+      size: 'large',
+      props: { icon: EditPen }
+    }
+  ]
+
+  const reviewShapeItems: RibbonItemModel[] = [
+    {
+      id: 'cmd-tool-markup-rect',
+      type: 'button',
+      label: t('main.verticalToolbar.markupRect.text'),
+      tooltip: t('main.verticalToolbar.markupRect.description'),
+      size: 'small',
+      props: { icon: revRect }
+    },
+    {
+      id: 'cmd-tool-markup-circle',
+      type: 'button',
+      label: t('main.verticalToolbar.markupCircle.text'),
+      tooltip: t('main.verticalToolbar.markupCircle.description'),
+      size: 'small',
+      props: { icon: revCircle }
+    },
+    {
+      id: 'cmd-tool-markup-arrow',
+      type: 'button',
+      label: t('main.verticalToolbar.markupArrow.text'),
+      tooltip: t('main.verticalToolbar.markupArrow.description'),
+      size: 'small',
+      props: { icon: Right }
+    }
+  ]
+
+  const reviewMoreItems: RibbonItemModel[] = [
+    {
+      id: 'cmd-tool-markup-stamp',
+      type: 'button',
+      label: t('main.verticalToolbar.markupStamp.text'),
+      tooltip: t('main.verticalToolbar.markupStamp.description'),
+      size: 'small',
+      props: { icon: Stamp }
+    },
+    {
+      id: 'cmd-tool-markup-import',
+      type: 'button',
+      label: t('main.verticalToolbar.markupImport.text'),
+      tooltip: verticalToolbarDescriptions.markupImport,
+      size: 'small',
+      props: { icon: Upload }
+    },
+    {
+      id: 'cmd-tool-markup-export',
+      type: 'button',
+      label: t('main.verticalToolbar.markupExport.text'),
+      tooltip: verticalToolbarDescriptions.markupExport,
+      size: 'small',
+      props: { icon: Download }
+    }
+  ]
+
+  const reviewManageItems: RibbonItemModel[] = [
+    {
+      id: 'cmd-tool-markup-panel',
+      type: 'button',
+      label: t('main.verticalToolbar.markupPanel.text'),
+      tooltip: t('main.verticalToolbar.markupPanel.description'),
+      size: 'small',
+      props: { icon: ChatDotRound }
+    },
+    {
+      id: 'cmd-tool-markup-vis',
+      type: 'toggle',
+      label: t('main.verticalToolbar.showMarkup.text'),
+      tooltip: markupVisible
+        ? verticalToolbarDescriptions.hideMarkup
+        : verticalToolbarDescriptions.showMarkup,
+      size: 'small',
+      props: {
+        modelValue: markupVisible,
+        activeIcon: View,
+        inactiveIcon: Hide,
+        activeLabel: t('main.verticalToolbar.showMarkup.text'),
+        inactiveLabel: t('main.verticalToolbar.hideMarkup.text'),
+        activeValue: 'cmd-tool-markup-vis',
+        inactiveValue: 'cmd-tool-markup-vis'
+      }
+    },
+    {
+      id: 'cmd-tool-markup-clear',
+      type: 'button',
+      label: t('main.verticalToolbar.clearMarkups.text'),
+      tooltip: verticalToolbarDescriptions.clearMarkups,
+      size: 'small',
+      props: { icon: Delete }
+    }
+  ]
+
+  const reviewStyleItems: RibbonItemModel[] = [
+    {
+      id: 'markup-draw-color',
+      type: 'custom',
+      size: 'small',
+      tooltip: t('main.verticalToolbar.markupColor.description'),
+      props: {
+        component: MlRibbonPropertyColorDropdown,
+        componentProps: {
+          modelValue: markupDrawColor.value,
+          displayColor: markupDrawColorDisplay.value,
+          placeholder: t('main.ribbon.property.color'),
+          'onUpdate:modelValue': handleMarkupDrawColorChange
+        }
+      }
+    },
+    {
+      id: 'markup-draw-line-weight',
+      type: 'custom',
+      size: 'small',
+      tooltip: t('main.verticalToolbar.markupLineWeight.description'),
+      props: {
+        component: MlRibbonPropertyLineWeightSelect,
+        componentProps: {
+          modelValue: markupDrawLineWeight.value,
+          placeholder: t('main.ribbon.property.lineWeight'),
+          'onUpdate:modelValue': handleMarkupDrawLineWeightChange
+        }
+      }
+    },
+    {
+      id: 'markup-draw-font-size',
+      type: 'custom',
+      size: 'small',
+      tooltip: t('main.verticalToolbar.markupFontSize.description'),
+      props: {
+        component: MlRibbonMarkupFontSizeSelect,
+        componentProps: {
+          modelValue: markupDrawFontSize.value,
+          options: [10, 12, 14, 16, 18, 20, 24, 28, 32],
+          placeholder: t('main.verticalToolbar.markupFontSize.text'),
+          controlWidth: '108px',
+          'onUpdate:modelValue': handleMarkupDrawFontSizeChange
+        }
+      }
+    }
+  ]
 
   const annotationItems: RibbonItemModel[] = [
     {
@@ -850,6 +1140,42 @@ const buildBaseTabs = (
   const toolGroups: RibbonGroupModel[] = []
 
   if (openMode >= AcEdOpenMode.Review) {
+    toolGroups.push({
+      id: 'tools-review',
+      title: t('main.ribbon.group.review'),
+      orientation: 'row',
+      collections: [
+        {
+          id: 'tools-review-primary',
+          layout: 'row',
+          items: reviewPrimaryItems
+        },
+        {
+          id: 'tools-review-shapes',
+          layout: 'column',
+          rows: 3,
+          items: reviewShapeItems
+        },
+        {
+          id: 'tools-review-more',
+          layout: 'column',
+          rows: 3,
+          items: reviewMoreItems
+        },
+        {
+          id: 'tools-review-manage',
+          layout: 'column',
+          rows: 3,
+          items: reviewManageItems
+        },
+        {
+          id: 'tools-review-style',
+          layout: 'column',
+          rows: 3,
+          items: reviewStyleItems
+        }
+      ]
+    })
     toolGroups.push({
       id: 'tools-annotation',
       title: t('main.ribbon.group.annotation'),
@@ -1631,6 +1957,12 @@ const ribbonData = computed(() => {
   store.features.agentPlugin
   const openMode = docOpenMode.value
   const annotationVisible = isAnnotationVisible.value
+  const markupVisible = isMarkupOverlayVisible.value
+  // Track markup draw style so Review ribbon color / lineweight controls refresh.
+  markupDrawColor.value
+  markupDrawColorDisplay.value
+  markupDrawLineWeight.value
+  markupDrawFontSize.value
   const commandByItemId = new Map<string, string>()
   commandByItemId.set('cmd-line', 'line')
   commandByItemId.set('cmd-polyline', 'pline')
@@ -1690,6 +2022,18 @@ const ribbonData = computed(() => {
   if (store.features.agentPlugin) {
     commandByItemId.set('cmd-agent', 'agent')
   }
+  commandByItemId.set('cmd-tool-markup-panel', 'markuppanel')
+  commandByItemId.set('cmd-tool-markup-text', 'markuptext')
+  commandByItemId.set('cmd-tool-markup-cloud', 'markupcloud')
+  commandByItemId.set('cmd-tool-markup-rect', 'markuprect')
+  commandByItemId.set('cmd-tool-markup-circle', 'markupcircle')
+  commandByItemId.set('cmd-tool-markup-arrow', 'markuparrow')
+  commandByItemId.set('cmd-tool-markup-callout', 'markupcallout')
+  commandByItemId.set('cmd-tool-markup-stamp', 'markupstamp')
+  commandByItemId.set('cmd-tool-markup-import', 'markupimport')
+  commandByItemId.set('cmd-tool-markup-export', 'markupexport')
+  commandByItemId.set('cmd-tool-markup-vis', 'markupvis')
+  commandByItemId.set('cmd-tool-markup-clear', 'clearmarkups')
   commandByItemId.set('cmd-tool-rev-freehand', 'sketch')
   commandByItemId.set('cmd-tool-rev-rect', 'revrect')
   commandByItemId.set('cmd-tool-rev-cloud', 'revcloud')
@@ -1715,6 +2059,7 @@ const ribbonData = computed(() => {
   const tabs: RibbonTabModel[] = buildBaseTabs(
     openMode,
     annotationVisible,
+    markupVisible,
     {
       canUndo: canUndo.value,
       canRedo: canRedo.value

@@ -214,6 +214,7 @@ export default {
       properties: 'Özellikler',
       utilities: 'Yardımcı Araçlar',
       annotation: 'Açıklama',
+      review: 'İnceleme',
       measurement: 'Ölçüm',
       reference: 'Referans',
       block: 'Blok'
@@ -486,6 +487,70 @@ export default {
       description:
         'Çizimdeki alanları bulut şeklinde bir çerçeveyle vurgulamak için kullanılır'
     },
+    markupPanel: {
+      text: 'Review',
+      description: 'Open the Design Review markup palette'
+    },
+    markupText: {
+      text: 'Text',
+      description: 'Place a Design Review text markup'
+    },
+    markupCloud: {
+      text: 'Cloud',
+      description: 'Create a Design Review cloud markup'
+    },
+    markupRect: {
+      text: 'Rectangle',
+      description: 'Create a Design Review rectangle markup'
+    },
+    markupCircle: {
+      text: 'Circle',
+      description: 'Create a Design Review circle markup'
+    },
+    markupArrow: {
+      text: 'Arrow',
+      description: 'Create a Design Review arrow markup'
+    },
+    markupCallout: {
+      text: 'Callout',
+      description: 'Create a Design Review callout'
+    },
+    markupStamp: {
+      text: 'Stamp',
+      description: 'Place a Design Review stamp'
+    },
+    markupImport: {
+      text: 'Import',
+      description: 'Import Design Review markups from a sidecar JSON file'
+    },
+    markupExport: {
+      text: 'Export',
+      description: 'Export Design Review markups to a sidecar JSON file'
+    },
+    markupColor: {
+      text: 'Color',
+      description: 'Set the color for new markup drawings'
+    },
+    markupLineWeight: {
+      text: 'Lineweight',
+      description: 'Set the lineweight for new markup drawings'
+    },
+    markupFontSize: {
+      text: 'Font size',
+      description: 'Set the font size for text and callout markups'
+    },
+    showMarkup: {
+      text: 'Show',
+      description: 'Shows Design Review markups'
+    },
+    hideMarkup: {
+      text: 'Hide',
+      description: 'Hides Design Review markups'
+    },
+    clearMarkups: {
+      text: 'Clear',
+      description: 'Clears all Design Review markups on the current layout'
+    },
     select: {
       text: 'Seç',
       description: 'Varlıkları seçer'
@@ -655,6 +720,28 @@ export default {
         firstCorner:
           'Sayım alanının ilk köşesini belirtin veya [Entire]: ',
         secondCorner: 'Karşı köşeyi belirtin: '
+      }
+    },
+    designReview: {
+      tab: 'Review',
+      title: 'Design Review',
+      searchPlaceholder: 'Search markups',
+      empty: 'No markups yet',
+      type: 'Type',
+      status: 'Status',
+      author: 'Author',
+      summary: 'Summary',
+      details: 'Details',
+      label: 'Label',
+      comment: 'Comment',
+      zoomTo: 'Zoom to',
+      delete: 'Delete',
+      clear: 'Clear all',
+      statusValues: {
+        open: 'Open',
+        question: 'Question',
+        answered: 'Answered',
+        closed: 'Closed'
       }
     },
     missingResources: {

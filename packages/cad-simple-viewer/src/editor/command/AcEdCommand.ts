@@ -261,6 +261,7 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
         tm.commitTransaction()
         tm.endUndoMark()
         undoTransactionActive = false
+        eventBus.emit('session-db-edit-committed', {})
         acapNotifyUndoStackChanged()
       }
       context.view.editor.events.commandEnded.dispatch({ command: this })
