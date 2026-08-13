@@ -79,5 +79,7 @@ export function placeMeasurementRecord(
         id: newImportedId('point')
       })
       return true
+    default:
+      return false
   }
 }
