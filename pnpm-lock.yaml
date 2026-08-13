@@ -10,7 +10,7 @@ overrides:
   '@mlightcad/mtext-input-box': ^0.2.23
   '@mlightcad/mtext-renderer': ^0.12.4
   '@mlightcad/ribbon': ^0.1.11
-  '@mlightcad/ui-components': ^0.1.7
+  '@mlightcad/ui-components': ^0.1.8
   element-plus: ^2.12.0
   glob: ^13.0.6
   lodash-es: 4.17.21
@@ -380,8 +380,8 @@ importers:
         specifier: 0.0.9
         version: 0.0.9(three@0.172.0)
       '@mlightcad/ui-components':
-        specifier: ^0.1.7
-        version: 0.1.7(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
+        specifier: ^0.1.8
+        version: 0.1.8(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))
@@ -1833,8 +1833,8 @@ packages:
     peerDependencies:
       three: ^0.172.0
 
-  '@mlightcad/ui-components@0.1.7':
-    resolution: {integrity: sha512-ZIQcTL9oSmDG87EjjIPYlw4x6BmsIpilpK7ZUQHzyR3S5YeVKiDK2B2OzLN6pewtiNvrjlog0rO5L63R2uUCVg==}
+  '@mlightcad/ui-components@0.1.8':
+    resolution: {integrity: sha512-uwzNFUZE7JxZvuDuFZW91m6UScKSjw7377Z3vHaFgNr6oybS0xawmLdXThmCcFNO1oT6WmQWT4+BMMq2haVGtA==}
     peerDependencies:
       element-plus: ^2.12.0
       vue: ^3.4.21
@@ -7262,7 +7262,7 @@ snapshots:
     dependencies:
       three: 0.172.0
 
-  '@mlightcad/ui-components@0.1.7(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
+  '@mlightcad/ui-components@0.1.8(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
     dependencies:
       element-plus: 2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
       vue: 3.5.31(typescript@5.9.3)

@@ -15,6 +15,14 @@ const LOCAL_DATA_MODEL_LIB = resolve(
   '../../../realdwg-web/packages/data-model/lib'
 )
 const LOCAL_DATA_MODEL_ENTRY = resolve(LOCAL_DATA_MODEL_LIB, 'index.js')
+const LOCAL_UI_COMPONENTS_SRC = resolve(
+  __dirname,
+  '../../../ui-components/packages/ui-components/src'
+)
+const LOCAL_UI_COMPONENTS_ROOT = resolve(
+  __dirname,
+  '../../../ui-components'
+)
 
 function useLocalDataModel(mode: string): boolean {
   if (mode === 'local-data-model') {
@@ -43,6 +51,8 @@ export default defineConfig(({ command, mode }) => {
     command === 'serve' &&
     useLocalDataModel(mode) &&
     existsSync(LOCAL_DATA_MODEL_ENTRY)
+  const linkLocalUiComponents =
+    command === 'serve' && existsSync(LOCAL_UI_COMPONENTS_SRC)
   if (command === 'serve') {
     aliases.push({
       find: /^@mlightcad\/(cad-svg-plugin|three-renderer|cad-simple-viewer|cad-viewer)$/,
@@ -58,6 +68,12 @@ export default defineConfig(({ command, mode }) => {
         '[cad-viewer-example] Local data-model alias requested but not found at:',
         LOCAL_DATA_MODEL_ENTRY
       )
+    }
+    if (linkLocalUiComponents) {
+      aliases.push({
+        find: '@mlightcad/ui-components',
+        replacement: LOCAL_UI_COMPONENTS_SRC
+      })
     }
   }
 
@@ -100,9 +116,18 @@ export default defineConfig(({ command, mode }) => {
         command === 'serve'
           ? [
               ...devSourcePackages.map(name => `@mlightcad/${name}`),
-              ...(linkLocalDataModel ? ['@mlightcad/data-model'] : [])
+              ...(linkLocalDataModel ? ['@mlightcad/data-model'] : []),
+              ...(linkLocalUiComponents ? ['@mlightcad/ui-components'] : [])
             ]
           : []
+    },
+    server: {
+      fs: {
+        allow: [
+          resolve(__dirname, '../..'),
+          ...(linkLocalUiComponents ? [LOCAL_UI_COMPONENTS_ROOT] : [])
+        ]
+      }
     },
     build: {
       outDir: 'dist',

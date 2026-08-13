@@ -213,6 +213,17 @@ export function ensureUiStyles() {
       background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
     }
 
+    .ml-ex-ui-dropdown-separator {
+      height: 1px;
+      margin: 4px 6px;
+      background: var(--ml-ui-border, #dcdfe6);
+    }
+
+    .ml-ex-ui-dropdown-item.is-toggled {
+      color: var(--ml-ui-accent, #409eff);
+      background: var(--ml-ui-accent-soft, rgba(64, 158, 255, 0.12));
+    }
+
     .ml-ex-ui-layer-manager {
       position: absolute;
       z-index: 100;

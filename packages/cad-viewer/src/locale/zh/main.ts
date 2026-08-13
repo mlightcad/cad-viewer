@@ -424,7 +424,7 @@ export default {
     },
     annotation: {
       text: '批注',
-      description: '创建用于说明和标注图纸内容的文字或图形批注'
+      description: '审阅工具'
     },
     hideAnnotation: {
       text: '隐藏批注',

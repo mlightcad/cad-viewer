@@ -72,7 +72,7 @@ import {
 import {
   accumulateSketchPoint,
   simplifySketchPoints
-} from '../src/command/review/AcApSketchCmd'
+} from '../src/command/draw/AcApSketchCmd'
 
 describe('AcApRevCloudGeom', () => {
   test('rectanglePath is counterclockwise', () => {
