@@ -4,10 +4,10 @@ export default {
     open: 'Çizim Aç',
     drawingUnits: 'Çizim Birimleri',
     exportMenu: 'Dışa Aktar',
-    export: "DXF'e Dışa Aktar",
-    exportHtml: "HTML'e Dışa Aktar",
-    exportPdf: "PDF'e Dışa Aktar",
-    exportSvg: "SVG'e Dışa Aktar",
+    export: 'DXF\'e Dışa Aktar',
+    exportHtml: 'HTML\'e Dışa Aktar',
+    exportPdf: 'PDF\'e Dışa Aktar',
+    exportSvg: 'SVG\'e Dışa Aktar',
     exportImage: 'Görüntüye Dışa Aktar',
     about: 'Hakkında'
   },
@@ -142,9 +142,9 @@ export default {
         obliqueAngle:
           'Seçili karakterler için eğim açısını derece cinsinden ayarlayın (negatif değer diğer yöne eğer).',
         tracking:
-          "Seçili karakterler arasındaki boşluğu artırın veya azaltın (varsayılan 1'dir).",
+          'Seçili karakterler arasındaki boşluğu artırın veya azaltın (varsayılan 1\'dir).',
         widthFactor:
-          "Seçili karakterleri yatay olarak genişletin veya sıkıştırın (varsayılan 1'dir).",
+          'Seçili karakterleri yatay olarak genişletin veya sıkıştırın (varsayılan 1\'dir).',
         attachment: 'Çok satırlı metin bağlantı noktasını ayarlayın.',
         list: 'Madde işaretleri ve numaralandırma ekleyin veya yapılandırın.',
         lineSpacing: 'Satır aralığını ayarlayın.',
