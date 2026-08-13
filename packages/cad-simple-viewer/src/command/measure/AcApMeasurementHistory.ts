@@ -2,9 +2,11 @@ import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
 import type { AcEdBaseView } from '../../editor'
 import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
+import { resetMeasurementUnitOverride } from '../../util/AcApMeasurementUnits'
 import {
   type AcApMeasurementStyle,
-  cloneMeasurementStyle} from '../../util/AcApMeasurementUtil'
+  cloneMeasurementStyle
+} from '../../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../../view'
 import {
   bindOverlayHistory,
@@ -43,7 +45,7 @@ interface AcApMeasurementHistoryEntry {
 /**
  * Snapshot-based undo/redo for measurement HTML overlays.
  *
- * Measurements are not DWG objects and have no sidecar. Groups are
+ * Measurements are not DWG objects. Groups are
  * {@link AcTrHtmlTransientManager.detach}ed (kept alive) so undo can
  * {@link AcTrHtmlTransientManager.reattach} them.
  */
@@ -293,6 +295,7 @@ export function runMeasurementEdit(
 export function resetMeasurementSession(): void {
   getMeasurementHistory().clear()
   resetMeasurementStyleState()
+  resetMeasurementUnitOverride()
 }
 
 /** Bind this history into session undo (also runs at module load). */

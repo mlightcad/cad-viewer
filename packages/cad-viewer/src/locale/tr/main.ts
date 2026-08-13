@@ -218,6 +218,7 @@ export default {
       review: 'İnceleme',
       measurement: 'Ölçüm',
       style: 'Stil',
+      units: 'Birimler',
       reference: 'Referans',
       block: 'Blok'
     },
@@ -444,7 +445,15 @@ export default {
     },
     clearMeasurements: {
       text: 'Temizle',
-      description: 'Görünümden tüm etkin ölçümleri kaldırır'
+      description: 'Geçerli yerleşimdeki tüm ölçümleri kaldırır'
+    },
+    measurementImport: {
+      text: 'Import',
+      description: 'Import measurements from a sidecar JSON file'
+    },
+    measurementExport: {
+      text: 'Export',
+      description: 'Export measurements to a sidecar JSON file'
     },
     annotation: {
       text: 'Açıklama',

@@ -214,6 +214,7 @@ export default {
       review: '审阅',
       measurement: '测量',
       style: '样式',
+      units: '单位',
       reference: '参照',
       block: '块'
     },
@@ -406,7 +407,15 @@ export default {
     },
     clearMeasurements: {
       text: '清除',
-      description: '清除视图中的所有测量标注'
+      description: '清除当前布局上的所有测量标注'
+    },
+    measurementImport: {
+      text: '导入',
+      description: '从 sidecar JSON 文件导入测量标注'
+    },
+    measurementExport: {
+      text: '导出',
+      description: '将测量标注导出为 sidecar JSON 文件'
     },
     annotation: {
       text: '批注',

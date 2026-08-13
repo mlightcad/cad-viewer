@@ -277,7 +277,13 @@ export default {
       description: 'Řídí, zda se ve výkresu zobrazují tloušťky čar'
     },
     clearmeasurements: {
-      description: 'Odstraní z pohledu všechna aktivní měření'
+      description: 'Odstraní všechna měření z aktuálního rozvržení'
+    },
+    measurementexport: {
+      description: 'Exports measurements to a sidecar JSON file'
+    },
+    measurementimport: {
+      description: 'Imports measurements from a sidecar JSON file'
     },
     measurearea: {
       description: 'Vypočítá plochu a obvod vybraných objektů nebo bodů'

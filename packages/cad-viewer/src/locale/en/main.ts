@@ -217,6 +217,7 @@ export default {
       review: 'Review',
       measurement: 'Measurement',
       style: 'Style',
+      units: 'Units',
       reference: 'Reference',
       block: 'Block'
     },
@@ -442,7 +443,15 @@ export default {
     },
     clearMeasurements: {
       text: 'Clear',
-      description: 'Removes all active measurements from the view'
+      description: 'Removes all measurements from the current layout'
+    },
+    measurementImport: {
+      text: 'Import',
+      description: 'Import measurements from a sidecar JSON file'
+    },
+    measurementExport: {
+      text: 'Export',
+      description: 'Export measurements to a sidecar JSON file'
     },
     annotation: {
       text: 'Annotation',

@@ -248,7 +248,13 @@ export default {
       description: '用于控制是否在图纸中显示线宽效果'
     },
     clearmeasurements: {
-      description: '清除视图中的所有测量标注'
+      description: '清除当前布局上的所有测量标注'
+    },
+    measurementexport: {
+      description: '将测量标注导出为 sidecar JSON 文件'
+    },
+    measurementimport: {
+      description: '从 sidecar JSON 文件导入测量标注'
     },
     measurearea: {
       description: '计算所选对象或点定义区域的面积和周长'

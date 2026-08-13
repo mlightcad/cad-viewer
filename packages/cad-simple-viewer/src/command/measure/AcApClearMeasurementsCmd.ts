@@ -15,22 +15,26 @@ export {
 } from './AcApMeasurementStore'
 
 /**
- * Removes every committed measurement overlay (detached so Undo can restore
- * them) and disposes live jig overlays.
+ * Removes committed measurement overlays on the active layout (detached so
+ * Undo can restore them) and disposes live jig overlays.
  */
-export function clearAllMeasurements(view: AcTrView2d): void {
+export function clearLayoutMeasurements(view: AcTrView2d): void {
   const ht = view.htmlTransientManager
+  const layoutId = view.activeLayoutBtrId
   runMeasurementEdit(view, 'Clear Measurements', () => {
     ht.deselectAll()
-    ht.detachLayer(MEASUREMENT_LAYER)
+    for (const group of ht.groupsOnLayer(MEASUREMENT_LAYER)) {
+      if (group.layoutId == null || group.layoutId === layoutId) {
+        ht.detach(group.id)
+      }
+    }
   })
   ht.clear(MEASUREMENT_LIVE_LAYER)
   view.isDirty = true
 }
 
 /**
- * Command that clears every committed measurement overlay and its
- * associated CAD transients / canvas helpers.
+ * Command that clears committed measurement overlays on the current layout.
  */
 export class AcApClearMeasurementsCmd extends AcEdCommand {
   constructor() {
@@ -39,6 +43,6 @@ export class AcApClearMeasurementsCmd extends AcEdCommand {
   }
 
   async execute(context: AcApContext) {
-    clearAllMeasurements(context.view as AcTrView2d)
+    clearLayoutMeasurements(context.view as AcTrView2d)
   }
 }

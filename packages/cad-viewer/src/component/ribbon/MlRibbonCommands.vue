@@ -29,6 +29,7 @@ import {
   cssToMarkupColor,
   defaultMarkupColor,
   getActiveMeasurementStyle,
+  getEffectiveMeasurementUnits,
   getMarkupFontSize,
   getMarkupLineWeight,
   getMarkupPresenter,
@@ -38,6 +39,7 @@ import {
   isMarkupVisible,
   markupColorToCss,
   measurementColor,
+  refreshMeasurementValueLabels,
   runMarkupEdit,
   setMarkupDrawColor,
   setMarkupDrawFontSize,
@@ -45,12 +47,16 @@ import {
   setMeasurementDrawColor,
   setMeasurementDrawFontSize,
   setMeasurementDrawLineWeight,
-  subscribeMeasurementSelection} from '@mlightcad/cad-simple-viewer'
+  setMeasurementUnitOverride,
+  subscribeMeasurementSelection
+} from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
+  AcDbAngleUnits,
   AcDbDatabase,
   AcDbEntity,
   AcDbHatch,
+  AcDbLinearUnits,
   AcDbObjectId,
   AcDbSysVarManager,
   AcGiLineWeight
@@ -145,6 +151,7 @@ import MlCharacterMapDialog from '../dialog/MlCharacterMapDialog.vue'
 import MlRibbonFileName from './MlRibbonFileName.vue'
 import MlRibbonLanguageSelector from './MlRibbonLanguageSelector.vue'
 import MlRibbonMarkupFontSizeSelect from './MlRibbonMarkupFontSizeSelect.vue'
+import MlRibbonMeasurementUnitsPanel from './MlRibbonMeasurementUnitsPanel.vue'
 import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
 import MlRibbonPropertyLineTypeSelect from './MlRibbonPropertyLineTypeSelect.vue'
 import MlRibbonPropertyLineWeightSelect from './MlRibbonPropertyLineWeightSelect.vue'
@@ -183,6 +190,10 @@ const measurementDrawColor = shallowRef(new AcCmColor())
 const measurementDrawColorDisplay = ref('#7b8794')
 const measurementDrawLineWeight = ref<AcGiLineWeight>(getMeasurementLineWeight())
 const measurementDrawFontSize = ref(getMeasurementFontSize())
+const measurementLunits = ref(AcDbLinearUnits.Decimal)
+const measurementLuprec = ref(4)
+const measurementAunits = ref(AcDbAngleUnits.DecimalDegrees)
+const measurementAuprec = ref(0)
 const isRibbonDisabled = computed(() => isDocumentOpening.value)
 const ribbonColor = ref<AcCmColor | undefined>(new AcCmColor())
 const ribbonColorDisplay = ref('#7b8794')
@@ -412,6 +423,15 @@ const handleSysVarChange = (args: RibbonSysVarChangeEvent) => {
     case 'CLAYER':
       syncRibbonProperties(args.database)
       break
+    case 'LUNITS':
+    case 'LUPREC':
+    case 'AUNITS':
+    case 'AUPREC':
+    case 'INSUNITS':
+    case 'MEASUREMENT':
+      syncMeasurementUnitControls()
+      refreshCurrentMeasurementLabels()
+      break
     default:
       break
   }
@@ -493,6 +513,7 @@ const handleDocumentActivated = () => {
   syncMarkupVisibility()
   syncMarkupStyleControls()
   syncMeasurementStyleControls()
+  syncMeasurementUnitControls()
   syncRibbonProperties(AcApDocManager.instance?.curDocument?.database)
   syncHatchSelectionContext(AcApDocManager.instance?.curDocument?.database)
 }
@@ -735,6 +756,52 @@ const handleMeasurementDrawFontSizeChange = (value: number) => {
   }
 }
 
+const syncMeasurementUnitControls = () => {
+  const db = getCurrentDatabase()
+  if (!db) return
+  const units = getEffectiveMeasurementUnits(db)
+  measurementLunits.value = units.lunits
+  measurementLuprec.value = units.luprec
+  measurementAunits.value = units.aunits
+  measurementAuprec.value = units.auprec
+}
+
+const refreshCurrentMeasurementLabels = () => {
+  const db = getCurrentDatabase()
+  const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
+  if (!db || !view) return
+  refreshMeasurementValueLabels(view, db)
+}
+
+const applyMeasurementUnitOverride = (
+  patch: Partial<{
+    lunits: number
+    luprec: number
+    aunits: number
+    auprec: number
+  }>
+) => {
+  setMeasurementUnitOverride(patch)
+  syncMeasurementUnitControls()
+  refreshCurrentMeasurementLabels()
+}
+
+const handleMeasurementLunitsChange = (value: number) => {
+  applyMeasurementUnitOverride({ lunits: value })
+}
+
+const handleMeasurementLuprecChange = (value: number) => {
+  applyMeasurementUnitOverride({ luprec: value })
+}
+
+const handleMeasurementAunitsChange = (value: number) => {
+  applyMeasurementUnitOverride({ aunits: value })
+}
+
+const handleMeasurementAuprecChange = (value: number) => {
+  applyMeasurementUnitOverride({ auprec: value })
+}
+
 /**
  * Applies a newly selected ribbon line type to the active database defaults.
  *
@@ -896,6 +963,8 @@ const buildBaseTabs = (
     measureArc: t('main.verticalToolbar.measureArc.description'),
     measurePoint: t('main.verticalToolbar.measurePoint.description'),
     clearMeasurements: t('main.verticalToolbar.clearMeasurements.description'),
+    measurementImport: t('main.verticalToolbar.measurementImport.description'),
+    measurementExport: t('main.verticalToolbar.measurementExport.description'),
     layer: t('main.verticalToolbar.layer.description'),
     hideMarkup: t('main.verticalToolbar.hideMarkup.description'),
     showMarkup: t('main.verticalToolbar.showMarkup.description'),
@@ -1111,13 +1180,32 @@ const buildBaseTabs = (
       tooltip: verticalToolbarDescriptions.measurePoint,
       size: 'large',
       props: { icon: measurePoint }
+    }
+  ]
+
+  const measurementManageItems: RibbonItemModel[] = [
+    {
+      id: 'cmd-tool-measurement-import',
+      type: 'button',
+      label: t('main.verticalToolbar.measurementImport.text'),
+      tooltip: verticalToolbarDescriptions.measurementImport,
+      size: 'small',
+      props: { icon: Upload }
+    },
+    {
+      id: 'cmd-tool-measurement-export',
+      type: 'button',
+      label: t('main.verticalToolbar.measurementExport.text'),
+      tooltip: verticalToolbarDescriptions.measurementExport,
+      size: 'small',
+      props: { icon: Download }
     },
     {
       id: 'cmd-tool-clear-measurements',
       type: 'button',
       label: t('main.verticalToolbar.clearMeasurements.text'),
       tooltip: verticalToolbarDescriptions.clearMeasurements,
-      size: 'large',
+      size: 'small',
       props: { icon: clearMeasurements }
     }
   ]
@@ -1227,6 +1315,12 @@ const buildBaseTabs = (
           id: 'measurement-main',
           layout: 'row',
           items: measureItems
+        },
+        {
+          id: 'measurement-manage',
+          layout: 'column',
+          rows: 3,
+          items: measurementManageItems
         }
       ]
     },
@@ -1240,6 +1334,37 @@ const buildBaseTabs = (
           layout: 'column',
           rows: 3,
           items: measurementStyleItems
+        }
+      ]
+    },
+    {
+      id: 'measurement-units',
+      title: t('main.ribbon.group.units'),
+      orientation: 'row',
+      collections: [
+        {
+          id: 'measurement-units-main',
+          layout: 'row',
+          items: [
+            {
+              id: 'measurement-units-panel',
+              type: 'custom',
+              size: 'small',
+              props: {
+                component: MlRibbonMeasurementUnitsPanel,
+                componentProps: {
+                  lunits: measurementLunits.value,
+                  luprec: measurementLuprec.value,
+                  aunits: measurementAunits.value,
+                  auprec: measurementAuprec.value,
+                  'onUpdate:lunits': handleMeasurementLunitsChange,
+                  'onUpdate:luprec': handleMeasurementLuprecChange,
+                  'onUpdate:aunits': handleMeasurementAunitsChange,
+                  'onUpdate:auprec': handleMeasurementAuprecChange
+                }
+              }
+            }
+          ]
         }
       ]
     }
@@ -2020,6 +2145,10 @@ const ribbonData = computed(() => {
   measurementDrawColorDisplay.value
   measurementDrawLineWeight.value
   measurementDrawFontSize.value
+  measurementLunits.value
+  measurementLuprec.value
+  measurementAunits.value
+  measurementAuprec.value
   const commandByItemId = new Map<string, string>()
   commandByItemId.set('cmd-line', 'line')
   commandByItemId.set('cmd-polyline', 'pline')
@@ -2096,6 +2225,8 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-tool-measure-area', 'measurearea')
   commandByItemId.set('cmd-tool-measure-arc', 'measurearc')
   commandByItemId.set('cmd-tool-measure-point', 'measurepoint')
+  commandByItemId.set('cmd-tool-measurement-import', 'measurementimport')
+  commandByItemId.set('cmd-tool-measurement-export', 'measurementexport')
   commandByItemId.set('cmd-tool-clear-measurements', 'clearmeasurements')
   // Layer actions
   commandByItemId.set('layer-action-off', 'layoff')

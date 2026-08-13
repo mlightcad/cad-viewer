@@ -217,6 +217,7 @@ export default {
       review: 'Kontrola',
       measurement: 'Měření',
       style: 'Styl',
+      units: 'Jednotky',
       reference: 'Reference',
       block: 'Blok'
     },
@@ -436,7 +437,15 @@ export default {
     },
     clearMeasurements: {
       text: 'Vymazat',
-      description: 'Odstraní z pohledu všechna aktivní měření'
+      description: 'Odstraní všechna měření z aktuálního rozvržení'
+    },
+    measurementImport: {
+      text: 'Import',
+      description: 'Import measurements from a sidecar JSON file'
+    },
+    measurementExport: {
+      text: 'Export',
+      description: 'Export measurements to a sidecar JSON file'
     },
     annotation: {
       text: 'Poznámky',

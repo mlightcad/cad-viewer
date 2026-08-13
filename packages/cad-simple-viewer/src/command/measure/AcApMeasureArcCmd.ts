@@ -2,6 +2,7 @@ import {
   AcCmColor,
   AcDbArc,
   AcDbCircle,
+  AcDbDatabase,
   AcDbLine,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
@@ -27,12 +28,15 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  type AcApMeasurementStyle,
   cssColor,
   currentMeasurementStyle,
+  formatMeasurementLength,
   measurementCanvasLineWidth,
   measurementColor
 } from '../../util'
 import { AcTrView2d } from '../../view'
+import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
 import {
   commitMeasurementGroup,
   getMeasurementStyle,
@@ -145,6 +149,98 @@ function drawArcOnCanvas(
   ctx.stroke()
 
   ctx.restore()
+}
+
+/**
+ * Commit an arc-length measurement overlay (also used when importing a sidecar).
+ */
+export function placeArcMeasurement(
+  view: AcTrView2d,
+  db: AcDbDatabase,
+  geom: { cx: number; cy: number; r: number },
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  style: AcApMeasurementStyle,
+  options?: { id?: string; layoutId?: string }
+): void {
+  const color = style.color
+  const arcLen = shortArcLength(start, end, geom)
+  const mid = shortArcMid(start, end, geom)
+  const id = options?.id ?? `arc-${Date.now()}`
+  const layoutId = options?.layoutId ?? view.activeLayoutBtrId
+
+  const persistOverlay = new AcTrHtmlCanvasOverlay({
+    id: `arc-canvas-${id}`,
+    container: view.container,
+    layer: MEASUREMENT_LAYER,
+    layoutId
+  })
+  const paintArc = (paintStyle = style) =>
+    drawArcOnCanvas(
+      persistOverlay.canvas,
+      view,
+      geom,
+      start,
+      end,
+      paintStyle.color,
+      measurementCanvasLineWidth(paintStyle.lineWeight)
+    )
+  paintArc()
+
+  const redrawPersist = () => paintArc(getMeasurementStyle(id) ?? style)
+  view.events.viewChanged.addEventListener(redrawPersist)
+
+  const group = new AcTrHtmlGroup({
+    id,
+    layer: MEASUREMENT_LAYER,
+    layoutId,
+    selectable: true
+  })
+    .add(
+      new AcTrHtmlDot({
+        id: `${id}-dot1`,
+        color,
+        worldPosition: start,
+        layer: MEASUREMENT_LAYER
+      }),
+      new AcTrHtmlDot({
+        id: `${id}-dot2`,
+        color,
+        worldPosition: end,
+        layer: MEASUREMENT_LAYER
+      }),
+      new AcTrHtmlBadge({
+        id: `${id}-badge`,
+        color,
+        text: formatMeasurementLength(db, arcLen),
+        worldPosition: mid,
+        layer: MEASUREMENT_LAYER,
+        fontSize: style.fontSize
+      })
+    )
+    .addCanvas(persistOverlay)
+
+  commitMeasurementGroup(view, group, {
+    style,
+    value: { kind: 'length', value: arcLen },
+    snapshot: {
+      id,
+      type: 'arc',
+      layoutId,
+      style: serializeMeasurementStyle(style),
+      geometry: {
+        type: 'arc',
+        center: { x: geom.cx, y: geom.cy },
+        radius: geom.r,
+        start: { x: start.x, y: start.y },
+        end: { x: end.x, y: end.y }
+      }
+    },
+    redraw: paintArc,
+    dispose: () => {
+      view.events.viewChanged.removeEventListener(redrawPersist)
+    }
+  })
 }
 
 /**
@@ -441,12 +537,7 @@ export class AcApMeasureArcCmd extends AcEdCommand {
           )
 
           const len = shortArcLength(start, snapped, geom)
-          liveBadge.setText(
-            db.formatter.formatLength(len, {
-              showUnits: true,
-              showApproximate: true
-            })
-          )
+          liveBadge.setText(formatMeasurementLength(db, len))
           liveBadge.setPosition(shortArcMid(start, snapped, geom))
           liveBadge.object.visible = true
         }
@@ -473,73 +564,14 @@ export class AcApMeasureArcCmd extends AcEdCommand {
         cleanupLivePreview()
 
         const end = snapToCircle(p2Raw, geom)
-        const arcLen = shortArcLength(start, end, geom)
-        const mid = shortArcMid(start, end, geom)
-
-        const id = `arc-${Date.now()}`
-
-        // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
-        const persistOverlay = new AcTrHtmlCanvasOverlay({
-          id: `arc-canvas-${Date.now()}`,
-          container: context.view.container,
-          layer: MEASUREMENT_LAYER,
-          layoutId: (context.view as AcTrView2d).activeLayoutBtrId
-        })
-        const paintArc = (paintStyle = style) =>
-          drawArcOnCanvas(
-            persistOverlay.canvas,
-            context.view,
-            geom,
-            start,
-            end,
-            paintStyle.color,
-            measurementCanvasLineWidth(paintStyle.lineWeight)
-          )
-        paintArc()
-
-        const redrawPersist = () => paintArc(getMeasurementStyle(id) ?? style)
-        context.view.events.viewChanged.addEventListener(redrawPersist)
-
-        const group = new AcTrHtmlGroup({
-          id,
-          layer: MEASUREMENT_LAYER,
-          layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
-          selectable: true
-        })
-          .add(
-            new AcTrHtmlDot({
-              id: `${id}-dot1`,
-              color,
-              worldPosition: start,
-              layer: MEASUREMENT_LAYER
-            }),
-            new AcTrHtmlDot({
-              id: `${id}-dot2`,
-              color,
-              worldPosition: end,
-              layer: MEASUREMENT_LAYER
-            }),
-            new AcTrHtmlBadge({
-              id: `${id}-badge`,
-              color,
-              text: db.formatter.formatLength(arcLen, {
-                showUnits: true,
-                showApproximate: true
-              }),
-              worldPosition: mid,
-              layer: MEASUREMENT_LAYER,
-              fontSize: style.fontSize
-            })
-          )
-          .addCanvas(persistOverlay)
-
-        commitMeasurementGroup(context.view as AcTrView2d, group, {
-          style,
-          redraw: paintArc,
-          dispose: () => {
-            context.view.events.viewChanged.removeEventListener(redrawPersist)
-          }
-        })
+        placeArcMeasurement(
+          context.view as AcTrView2d,
+          db,
+          geom,
+          start,
+          end,
+          style
+        )
       })
     )
   }

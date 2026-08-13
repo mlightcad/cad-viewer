@@ -675,6 +675,11 @@ export default {
   measurePoint: {
     point: 'Zadejte bod'
   },
+  measurement: {
+    import: {
+      chooseFile: 'Choose a measurement sidecar JSON file'
+    }
+  },
   markup: {
     author: 'Specify review author (saved for later)',
     text: {

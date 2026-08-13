@@ -1,13 +1,20 @@
-import type { AcCmColor, AcDbEntity, AcDbObjectId } from '@mlightcad/data-model'
+import type { AcCmColor, AcDbDatabase, AcDbEntity, AcDbObjectId } from '@mlightcad/data-model'
 import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
+import {
+  type AcApMeasurementValue,
+  formatMeasurementValue
+} from '../../util/AcApMeasurementUnits'
 import {
   type AcApMeasurementStyle,
   cloneMeasurementStyle,
   MEASUREMENT_FONT_SIZE,
-  MEASUREMENT_LINE_WEIGHT} from '../../util/AcApMeasurementUtil'
+  MEASUREMENT_LINE_WEIGHT
+} from '../../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../../view'
 import { runMeasurementEdit } from './AcApMeasurementHistory'
+import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
+import type { AcApMeasurementRecord } from './AcApMeasurementTypes'
 
 /** HTML transient layer for committed measurement overlays. */
 export const MEASUREMENT_LAYER = 'measurement'
@@ -25,6 +32,10 @@ export interface AcApMeasurementGroupExtras {
   entities?: AcDbEntity[]
   /** Style used when the group was committed (and after later style edits). */
   style?: AcApMeasurementStyle
+  /** Raw measured value used to refresh the badge when display units change. */
+  value?: AcApMeasurementValue
+  /** Serializable snapshot used by measurement import / export. */
+  snapshot?: AcApMeasurementRecord
   /** Redraw canvas overlays after a style change (color / line weight). */
   redraw?: (style: AcApMeasurementStyle) => void
   /**
@@ -94,7 +105,15 @@ export function applyMeasurementStyle(
   }
   rememberStyle(group.id, next)
   const extras = extrasById.get(group.id)
-  if (extras) extras.style = cloneMeasurementStyle(next)
+  if (extras) {
+    extras.style = cloneMeasurementStyle(next)
+    if (extras.snapshot) {
+      extras.snapshot = {
+        ...extras.snapshot,
+        style: serializeMeasurementStyle(next)
+      }
+    }
+  }
   paintMeasurementGroup(view, group, next)
 }
 
@@ -143,6 +162,46 @@ function paintMeasurementGroup(
   }
   extras?.redraw?.(style)
   view.isDirty = true
+}
+
+/**
+ * Reformat committed measurement badges using the effective measurement units.
+ */
+export function refreshMeasurementValueLabels(
+  view: AcTrView2d,
+  db: AcDbDatabase
+): void {
+  for (const group of view.htmlTransientManager.groupsOnLayer(MEASUREMENT_LAYER)) {
+    const extras = extrasById.get(group.id)
+    if (!extras?.value) continue
+    const text = formatMeasurementValue(db, extras.value)
+    for (const child of group.children) {
+      const badge = child as { setText?: (next: string) => void }
+      badge.setText?.(text)
+    }
+  }
+  view.isDirty = true
+}
+
+/** Serializable snapshots of committed measurements currently on the view. */
+export function collectMeasurementRecords(
+  view: AcTrView2d
+): AcApMeasurementRecord[] {
+  const records: AcApMeasurementRecord[] = []
+  for (const group of view.htmlTransientManager.groupsOnLayer(MEASUREMENT_LAYER)) {
+    const extras = extrasById.get(group.id)
+    if (!extras?.snapshot) continue
+    const style = extras.style ?? stylesById.get(group.id)
+    records.push({
+      ...extras.snapshot,
+      id: group.id,
+      layoutId: group.layoutId,
+      style: style
+        ? serializeMeasurementStyle(style)
+        : extras.snapshot.style
+    })
+  }
+  return records
 }
 
 /** Drop style / extras maps (document open). Attached groups are left for view.clear(). */

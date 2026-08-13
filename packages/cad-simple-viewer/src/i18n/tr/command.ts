@@ -286,7 +286,13 @@ export default {
         'Çizgi kalınlıklarının çizimde görüntülenip görüntülenmeyeceğini denetler'
     },
     clearmeasurements: {
-      description: 'Görünümdeki tüm etkin ölçümleri kaldırır'
+      description: 'Geçerli yerleşimdeki tüm ölçümleri kaldırır'
+    },
+    measurementexport: {
+      description: 'Exports measurements to a sidecar JSON file'
+    },
+    measurementimport: {
+      description: 'Imports measurements from a sidecar JSON file'
     },
     measurearea: {
       description:

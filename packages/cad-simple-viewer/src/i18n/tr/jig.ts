@@ -674,6 +674,11 @@ export default {
   measurePoint: {
     point: 'Noktayı belirtin'
   },
+  measurement: {
+    import: {
+      chooseFile: 'Choose a measurement sidecar JSON file'
+    }
+  },
   markup: {
     author: 'Specify review author (saved for later)',
     text: {

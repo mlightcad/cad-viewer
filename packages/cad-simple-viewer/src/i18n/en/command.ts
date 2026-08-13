@@ -275,7 +275,13 @@ export default {
       description: 'Controls whether lineweights are displayed in the drawing'
     },
     clearmeasurements: {
-      description: 'Removes all active measurements from the view'
+      description: 'Removes all measurements from the current layout'
+    },
+    measurementexport: {
+      description: 'Exports measurements to a sidecar JSON file'
+    },
+    measurementimport: {
+      description: 'Imports measurements from a sidecar JSON file'
     },
     measurearea: {
       description:
