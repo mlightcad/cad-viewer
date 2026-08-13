@@ -399,47 +399,47 @@ export default {
       description: 'Creates a revision cloud (cloud line) in rectangular shape'
     },
     markuptext: {
-      description: 'Places a Design Review text markup label'
+      description: 'Places a text markup label'
     },
     markupline: {
-      description: 'Creates a Design Review line markup'
+      description: 'Creates a line markup'
     },
     markuparrow: {
-      description: 'Creates a Design Review arrow markup'
+      description: 'Creates an arrow markup'
     },
     markupcloud: {
-      description: 'Creates a Design Review revision cloud markup'
+      description: 'Creates a revision cloud markup'
     },
     markuprect: {
-      description: 'Creates a Design Review rectangle markup'
+      description: 'Creates a rectangle markup'
     },
     markupcircle: {
-      description: 'Creates a Design Review circle markup'
+      description: 'Creates a circle markup'
     },
     markuphighlight: {
-      description: 'Creates a Design Review highlight rectangle markup'
+      description: 'Creates a highlight rectangle markup'
     },
     markupcallout: {
       description:
-        'Creates a Design Review callout: pick leader tip, place text box, then enter text'
+        'Creates a callout: pick leader tip, place text box, then enter text'
     },
     markupstamp: {
-      description: 'Places a Design Review stamp or custom symbol'
+      description: 'Places a stamp or custom symbol'
     },
     markupvis: {
-      description: 'Shows or hides Design Review markups'
+      description: 'Shows or hides markups'
     },
     clearmarkups: {
-      description: 'Clears all Design Review markups on the current layout'
+      description: 'Clears all markups on the current layout'
     },
     markupexport: {
-      description: 'Exports Design Review markups to a sidecar JSON file'
+      description: 'Exports markups to a sidecar JSON file'
     },
     markupimport: {
-      description: 'Imports Design Review markups from a sidecar JSON file'
+      description: 'Imports markups from a sidecar JSON file'
     },
     markuppanel: {
-      description: 'Opens the Design Review markup palette'
+      description: 'Opens the markup palette'
     },
     rotate: {
       description: 'Rotates selected entities around a base point',

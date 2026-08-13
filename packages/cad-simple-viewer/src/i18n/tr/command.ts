@@ -410,47 +410,47 @@ export default {
         'Dikdörtgen şeklinde bir revizyon bulutu (bulut çizgisi) oluşturur'
     },
     markuptext: {
-      description: 'Design Review metin işareti yerleştirir'
+      description: 'Metin işareti yerleştirir'
     },
     markupline: {
-      description: 'Design Review çizgi işareti oluşturur'
+      description: 'Çizgi işareti oluşturur'
     },
     markuparrow: {
-      description: 'Design Review ok işareti oluşturur'
+      description: 'Ok işareti oluşturur'
     },
     markupcloud: {
-      description: 'Design Review revizyon bulutu işareti oluşturur'
+      description: 'Revizyon bulutu işareti oluşturur'
     },
     markuprect: {
-      description: 'Design Review dikdörtgen işareti oluşturur'
+      description: 'Dikdörtgen işareti oluşturur'
     },
     markupcircle: {
-      description: 'Design Review daire işareti oluşturur'
+      description: 'Daire işareti oluşturur'
     },
     markuphighlight: {
-      description: 'Design Review vurgu dikdörtgeni işareti oluşturur'
+      description: 'Vurgu dikdörtgeni işareti oluşturur'
     },
     markupcallout: {
       description:
-        'Design Review çağrısı oluşturur: önce lider ucunu, sonra metin kutusunu belirtin, ardından metni girin'
+        'Çağrı notu oluşturur: önce lider ucunu, sonra metin kutusunu belirtin, ardından metni girin'
     },
     markupstamp: {
-      description: 'Design Review damgası veya özel sembol yerleştirir'
+      description: 'Damga veya özel sembol yerleştirir'
     },
     markupvis: {
-      description: 'Design Review işaretlerini gösterir veya gizler'
+      description: 'İşaretleri gösterir veya gizler'
     },
     clearmarkups: {
-      description: 'Geçerli yerleşimdeki tüm Design Review işaretlerini temizler'
+      description: 'Geçerli yerleşimdeki tüm işaretleri temizler'
     },
     markupexport: {
-      description: 'Design Review işaretlerini sidecar JSON dosyasına dışa aktarır'
+      description: 'İşaretleri sidecar JSON dosyasına dışa aktarır'
     },
     markupimport: {
-      description: 'Design Review işaretlerini sidecar JSON dosyasından içe aktarır'
+      description: 'İşaretleri sidecar JSON dosyasından içe aktarır'
     },
     markuppanel: {
-      description: 'Design Review işaret paletini açar'
+      description: 'İşaret paletini açar'
     },
     rotate: {
       description: 'Seçili varlıkları bir taban noktası etrafında döndürür',

@@ -400,47 +400,47 @@ export default {
       description: 'Vytvoří revizní obláček obdélníkového tvaru'
     },
     markuptext: {
-      description: 'Umístí textovou poznámku Design Review'
+      description: 'Umístí textovou poznámku'
     },
     markupline: {
-      description: 'Vytvoří úsečkovou poznámku Design Review'
+      description: 'Vytvoří úsečkovou poznámku'
     },
     markuparrow: {
-      description: 'Vytvoří šipkovou poznámku Design Review'
+      description: 'Vytvoří šipkovou poznámku'
     },
     markupcloud: {
-      description: 'Vytvoří revizní obláček Design Review'
+      description: 'Vytvoří revizní obláček'
     },
     markuprect: {
-      description: 'Vytvoří obdélníkovou poznámku Design Review'
+      description: 'Vytvoří obdélníkovou poznámku'
     },
     markupcircle: {
-      description: 'Vytvoří kruhovou poznámku Design Review'
+      description: 'Vytvoří kruhovou poznámku'
     },
     markuphighlight: {
-      description: 'Vytvoří zvýrazňovací obdélník Design Review'
+      description: 'Vytvoří zvýrazňovací obdélník'
     },
     markupcallout: {
       description:
-        'Vytvoří odkazovou poznámku Design Review: zadejte hrot odkazu, umístěte textové pole a zadejte text'
+        'Vytvoří odkazovou poznámku: zadejte hrot odkazu, umístěte textové pole a zadejte text'
     },
     markupstamp: {
-      description: 'Umístí razítko Design Review nebo vlastní symbol'
+      description: 'Umístí razítko nebo vlastní symbol'
     },
     markupvis: {
-      description: 'Zobrazí nebo skryje poznámky Design Review'
+      description: 'Zobrazí nebo skryje poznámky'
     },
     clearmarkups: {
-      description: 'Vymaže všechny poznámky Design Review na aktuálním rozvržení'
+      description: 'Vymaže všechny poznámky na aktuálním rozvržení'
     },
     markupexport: {
-      description: 'Exportuje poznámky Design Review do sidecar JSON souboru'
+      description: 'Exportuje poznámky do sidecar JSON souboru'
     },
     markupimport: {
-      description: 'Importuje poznámky Design Review ze sidecar JSON souboru'
+      description: 'Importuje poznámky ze sidecar JSON souboru'
     },
     markuppanel: {
-      description: 'Otevře paletu poznámek Design Review'
+      description: 'Otevře paletu poznámek'
     },
     rotate: {
       description: 'Otočí vybrané objekty kolem základního bodu',

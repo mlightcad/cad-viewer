@@ -488,43 +488,43 @@ export default {
     },
     markupPanel: {
       text: 'Kontrola',
-      description: 'Otevře paletu poznámek Design Review'
+      description: 'Otevře paletu poznámek'
     },
     markupText: {
       text: 'Text',
-      description: 'Umístí textovou poznámku Design Review'
+      description: 'Umístí textovou poznámku'
     },
     markupCloud: {
       text: 'Obláček',
-      description: 'Vytvoří obláčkovou poznámku Design Review'
+      description: 'Vytvoří obláčkovou poznámku'
     },
     markupRect: {
       text: 'Obdélník',
-      description: 'Vytvoří obdélníkovou poznámku Design Review'
+      description: 'Vytvoří obdélníkovou poznámku'
     },
     markupCircle: {
       text: 'Kružnice',
-      description: 'Vytvoří kruhovou poznámku Design Review'
+      description: 'Vytvoří kruhovou poznámku'
     },
     markupArrow: {
       text: 'Šipka',
-      description: 'Vytvoří šipkovou poznámku Design Review'
+      description: 'Vytvoří šipkovou poznámku'
     },
     markupCallout: {
       text: 'Odkaz',
-      description: 'Vytvoří odkazovou poznámku Design Review'
+      description: 'Vytvoří odkazovou poznámku'
     },
     markupStamp: {
       text: 'Razítko',
-      description: 'Umístí razítko Design Review'
+      description: 'Umístí razítko'
     },
     markupImport: {
       text: 'Importovat',
-      description: 'Importuje poznámky Design Review ze sidecar JSON souboru'
+      description: 'Importuje poznámky ze sidecar JSON souboru'
     },
     markupExport: {
       text: 'Exportovat',
-      description: 'Exportuje poznámky Design Review do sidecar JSON souboru'
+      description: 'Exportuje poznámky do sidecar JSON souboru'
     },
     markupColor: {
       text: 'Barva',
@@ -555,15 +555,15 @@ export default {
     },
     showMarkup: {
       text: 'Zobrazit',
-      description: 'Zobrazí poznámky Design Review'
+      description: 'Zobrazí poznámky'
     },
     hideMarkup: {
       text: 'Skrýt',
-      description: 'Skryje poznámky Design Review'
+      description: 'Skryje poznámky'
     },
     clearMarkups: {
       text: 'Vymazat',
-      description: 'Vymaže všechny poznámky Design Review na aktuálním rozvržení'
+      description: 'Vymaže všechny poznámky na aktuálním rozvržení'
     },
     select: {
       text: 'Vybrat',
@@ -735,7 +735,7 @@ export default {
     },
     designReview: {
       tab: 'Kontrola',
-      title: 'Design Review',
+      title: 'Kontrola',
       searchPlaceholder: 'Hledat poznámky',
       empty: 'Zatím žádné poznámky',
       type: 'Typ',

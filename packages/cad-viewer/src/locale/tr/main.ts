@@ -500,43 +500,43 @@ export default {
     },
     markupPanel: {
       text: 'İnceleme',
-      description: 'Design Review işaret paletini açar'
+      description: 'İşaret paletini açar'
     },
     markupText: {
       text: 'Metin',
-      description: 'Design Review metin işareti yerleştirir'
+      description: 'Metin işareti yerleştirir'
     },
     markupCloud: {
       text: 'Bulut',
-      description: 'Design Review bulut işareti oluşturur'
+      description: 'Bulut işareti oluşturur'
     },
     markupRect: {
       text: 'Dikdörtgen',
-      description: 'Design Review dikdörtgen işareti oluşturur'
+      description: 'Dikdörtgen işareti oluşturur'
     },
     markupCircle: {
       text: 'Daire',
-      description: 'Design Review daire işareti oluşturur'
+      description: 'Daire işareti oluşturur'
     },
     markupArrow: {
       text: 'Ok',
-      description: 'Design Review ok işareti oluşturur'
+      description: 'Ok işareti oluşturur'
     },
     markupCallout: {
       text: 'Çağrı',
-      description: 'Design Review çağrı notu oluşturur'
+      description: 'Çağrı notu oluşturur'
     },
     markupStamp: {
       text: 'Damga',
-      description: 'Design Review damgası yerleştirir'
+      description: 'Damga yerleştirir'
     },
     markupImport: {
       text: 'İçe Aktar',
-      description: 'Design Review işaretlerini sidecar JSON dosyasından içe aktarır'
+      description: 'İşaretleri sidecar JSON dosyasından içe aktarır'
     },
     markupExport: {
       text: 'Dışa Aktar',
-      description: 'Design Review işaretlerini sidecar JSON dosyasına dışa aktarır'
+      description: 'İşaretleri sidecar JSON dosyasına dışa aktarır'
     },
     markupColor: {
       text: 'Renk',
@@ -567,15 +567,15 @@ export default {
     },
     showMarkup: {
       text: 'Göster',
-      description: 'Design Review işaretlerini gösterir'
+      description: 'İşaretleri gösterir'
     },
     hideMarkup: {
       text: 'Gizle',
-      description: 'Design Review işaretlerini gizler'
+      description: 'İşaretleri gizler'
     },
     clearMarkups: {
       text: 'Temizle',
-      description: 'Geçerli yerleşimdeki tüm Design Review işaretlerini temizler'
+      description: 'Geçerli yerleşimdeki tüm işaretleri temizler'
     },
     select: {
       text: 'Seç',
@@ -750,7 +750,7 @@ export default {
     },
     designReview: {
       tab: 'İnceleme',
-      title: 'Design Review',
+      title: 'İnceleme',
       searchPlaceholder: 'İşaretlerde ara',
       empty: 'Henüz işaret yok',
       type: 'Tür',

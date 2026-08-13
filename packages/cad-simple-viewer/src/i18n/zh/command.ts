@@ -360,46 +360,46 @@ export default {
       description: '创建矩形修订云线'
     },
     markuptext: {
-      description: '放置 Design Review 文字批注'
+      description: '放置文字批注'
     },
     markupline: {
-      description: '创建 Design Review 直线批注'
+      description: '创建直线批注'
     },
     markuparrow: {
-      description: '创建 Design Review 箭头批注'
+      description: '创建箭头批注'
     },
     markupcloud: {
-      description: '创建 Design Review 修订云线批注'
+      description: '创建修订云线批注'
     },
     markuprect: {
-      description: '创建 Design Review 矩形批注'
+      description: '创建矩形批注'
     },
     markupcircle: {
-      description: '创建 Design Review 圆形批注'
+      description: '创建圆形批注'
     },
     markuphighlight: {
-      description: '创建 Design Review 高亮矩形批注'
+      description: '创建高亮矩形批注'
     },
     markupcallout: {
-      description: '创建 Design Review 标注：先指定引线尖端，再放置文字框，最后输入文字'
+      description: '创建标注：先指定引线尖端，再放置文字框，最后输入文字'
     },
     markupstamp: {
-      description: '放置 Design Review 图章或自定义符号'
+      description: '放置图章或自定义符号'
     },
     markupvis: {
-      description: '显示或隐藏 Design Review 批注'
+      description: '显示或隐藏批注'
     },
     clearmarkups: {
-      description: '清除当前布局上的所有 Design Review 批注'
+      description: '清除当前布局上的所有批注'
     },
     markupexport: {
-      description: '将 Design Review 批注导出为 sidecar JSON 文件'
+      description: '将批注导出为 sidecar JSON 文件'
     },
     markupimport: {
-      description: '从 sidecar JSON 文件导入 Design Review 批注'
+      description: '从 sidecar JSON 文件导入批注'
     },
     markuppanel: {
-      description: '打开 Design Review 批注面板'
+      description: '打开批注面板'
     },
     rotate: {
       description: '绕基点旋转所选图元',
