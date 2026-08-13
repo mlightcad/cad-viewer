@@ -17,26 +17,35 @@ import {
   View
 } from '@element-plus/icons-vue'
 import {
-  AcApAnnotation,
   AcApConvertToDxfCmd,
   AcApDocManager,
   AcApOpenCmd,
   AcApQNewCmd,
   acapRunDatabaseEdit,
   AcEdOpenMode,
+  type AcTrView2d,
+  applyMeasurementStyleToSelection,
+  cssColor,
   cssToMarkupColor,
   defaultMarkupColor,
+  getActiveMeasurementStyle,
   getMarkupFontSize,
   getMarkupLineWeight,
   getMarkupPresenter,
   getMarkupStore,
+  getMeasurementFontSize,
+  getMeasurementLineWeight,
   isMarkupVisible,
   markupColorToCss,
+  measurementColor,
   runMarkupEdit,
   setMarkupDrawColor,
   setMarkupDrawFontSize,
-  setMarkupDrawLineWeight
-} from '@mlightcad/cad-simple-viewer'
+  setMarkupDrawLineWeight,
+  setMeasurementDrawColor,
+  setMeasurementDrawFontSize,
+  setMeasurementDrawLineWeight,
+  subscribeMeasurementSelection} from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
   AcDbDatabase,
@@ -125,7 +134,6 @@ import {
   rect,
   revCircle,
   revCloud,
-  revFreeDraw,
   revRect,
   setting,
   splineFitPoints,
@@ -166,12 +174,15 @@ const ribbonContainerRef = ref<HTMLElement>()
 const { isDocumentOpening, openMode: docOpenMode } = useDocument()
 const { canUndo, canRedo } = useUndoRedo()
 const { t, locale } = useI18n()
-const isAnnotationVisible = ref(true)
 const isMarkupOverlayVisible = ref(true)
 const markupDrawColor = shallowRef(defaultMarkupColor())
 const markupDrawColorDisplay = ref(markupColorToCss(markupDrawColor.value))
 const markupDrawLineWeight = ref<AcGiLineWeight>(getMarkupLineWeight())
 const markupDrawFontSize = ref(getMarkupFontSize())
+const measurementDrawColor = shallowRef(new AcCmColor())
+const measurementDrawColorDisplay = ref('#7b8794')
+const measurementDrawLineWeight = ref<AcGiLineWeight>(getMeasurementLineWeight())
+const measurementDrawFontSize = ref(getMeasurementFontSize())
 const isRibbonDisabled = computed(() => isDocumentOpening.value)
 const ribbonColor = ref<AcCmColor | undefined>(new AcCmColor())
 const ribbonColorDisplay = ref('#7b8794')
@@ -355,30 +366,11 @@ const syncRibbonProperties = (db = getCurrentDatabase()) => {
       : resolveRibbonColorDisplay(db.cecolor, db, db.clayer)
 }
 
-const syncAnnotationVisibility = () => {
-  const db = AcApDocManager.instance?.curDocument?.database
-  if (!db) {
-    isAnnotationVisible.value = true
-    return
-  }
-
-  const annotation = new AcApAnnotation(db)
-  for (const layer of db.tables.layerTable.newIterator()) {
-    if (annotation.hasAnnotationXData(layer)) {
-      isAnnotationVisible.value = !layer.isOff
-      return
-    }
-  }
-
-  isAnnotationVisible.value = true
-}
-
 const syncMarkupVisibility = () => {
   isMarkupOverlayVisible.value = isMarkupVisible()
 }
 
 const handleAnnotationLayerChange = () => {
-  syncAnnotationVisibility()
   syncRibbonProperties(observedDatabase)
 }
 
@@ -498,8 +490,9 @@ const handleDocumentActivated = () => {
   bindAnnotationVisibilityEvents(AcApDocManager.instance?.curDocument?.database)
   ribbonLayerIsolationSnapshot.value = null
   ribbonLayerPreviousSnapshot.value = null
-  syncAnnotationVisibility()
   syncMarkupVisibility()
+  syncMarkupStyleControls()
+  syncMeasurementStyleControls()
   syncRibbonProperties(AcApDocManager.instance?.curDocument?.database)
   syncHatchSelectionContext(AcApDocManager.instance?.curDocument?.database)
 }
@@ -522,6 +515,7 @@ const applyToSelectedEntities = (mutator: (entity: AcDbEntity) => void) => {
 }
 
 let unsubscribeMarkupStore: (() => void) | undefined
+let unsubscribeMeasurementSelection: (() => void) | undefined
 
 onMounted(() => {
   AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
@@ -547,12 +541,18 @@ onMounted(() => {
   )
   unsubscribeMarkupStore = getMarkupStore().subscribe(syncMarkupStyleControls)
   syncMarkupStyleControls()
+  unsubscribeMeasurementSelection = subscribeMeasurementSelection(
+    syncMeasurementStyleControls
+  )
+  syncMeasurementStyleControls()
   handleDocumentActivated()
 })
 
 onUnmounted(() => {
   unsubscribeMarkupStore?.()
   unsubscribeMarkupStore = undefined
+  unsubscribeMeasurementSelection?.()
+  unsubscribeMeasurementSelection = undefined
   AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
     handleSysVarChange
   )
@@ -691,6 +691,50 @@ const handleMarkupDrawFontSizeChange = (value: number) => {
   applyMarkupStyleToSelection({ fontSize: getMarkupFontSize() })
 }
 
+const syncMeasurementStyleControls = () => {
+  const selected = getActiveMeasurementStyle()
+  if (selected) {
+    measurementDrawColor.value = selected.color.clone()
+    measurementDrawColorDisplay.value = cssColor(selected.color)
+    measurementDrawLineWeight.value = selected.lineWeight
+    measurementDrawFontSize.value = selected.fontSize
+    return
+  }
+  const db = getCurrentDatabase()
+  if (db) {
+    const color = measurementColor(db)
+    measurementDrawColor.value = color.clone()
+    measurementDrawColorDisplay.value = cssColor(color)
+  }
+  measurementDrawLineWeight.value = getMeasurementLineWeight()
+  measurementDrawFontSize.value = getMeasurementFontSize()
+}
+
+const handleMeasurementDrawColorChange = (value?: AcCmColor) => {
+  if (!value) return
+  setMeasurementDrawColor(value)
+  measurementDrawColor.value = value.clone()
+  measurementDrawColorDisplay.value = cssColor(value)
+  const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
+  if (view) applyMeasurementStyleToSelection(view, { color: value })
+}
+
+const handleMeasurementDrawLineWeightChange = (value: AcGiLineWeight) => {
+  setMeasurementDrawLineWeight(value)
+  measurementDrawLineWeight.value = value
+  const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
+  if (view) applyMeasurementStyleToSelection(view, { lineWeight: value })
+}
+
+const handleMeasurementDrawFontSizeChange = (value: number) => {
+  setMeasurementDrawFontSize(value)
+  measurementDrawFontSize.value = getMeasurementFontSize()
+  const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
+  if (view) {
+    applyMeasurementStyleToSelection(view, { fontSize: getMeasurementFontSize() })
+  }
+}
+
 /**
  * Applies a newly selected ribbon line type to the active database defaults.
  *
@@ -772,7 +816,6 @@ const handleRibbonLayerStateToggle = (payload: {
 
 const buildBaseTabs = (
   openMode: AcEdOpenMode,
-  annotationVisible: boolean,
   markupVisible: boolean,
   undoRedoState: { canUndo: boolean; canRedo: boolean },
   agentPluginEnabled: boolean
@@ -847,12 +890,6 @@ const buildBaseTabs = (
     restore: t('main.ribbon.tooltip.layerAction.restore')
   }
   const verticalToolbarDescriptions = {
-    revFreehand: t('main.verticalToolbar.revFreehand.description'),
-    revRect: t('main.verticalToolbar.revRect.description'),
-    revCloud: t('main.verticalToolbar.revCloud.description'),
-    revCircle: t('main.verticalToolbar.revCircle.description'),
-    showAnnotation: t('main.verticalToolbar.showAnnotation.description'),
-    hideAnnotation: t('main.verticalToolbar.hideAnnotation.description'),
     measureDistance: t('main.verticalToolbar.measureDistance.description'),
     measureAngle: t('main.verticalToolbar.measureAngle.description'),
     measureArea: t('main.verticalToolbar.measureArea.description'),
@@ -1011,6 +1048,7 @@ const buildBaseTabs = (
         componentProps: {
           modelValue: markupDrawLineWeight.value,
           placeholder: t('main.ribbon.property.lineWeight'),
+          numericOnly: true,
           'onUpdate:modelValue': handleMarkupDrawLineWeightChange
         }
       }
@@ -1029,59 +1067,6 @@ const buildBaseTabs = (
           controlWidth: '108px',
           'onUpdate:modelValue': handleMarkupDrawFontSizeChange
         }
-      }
-    }
-  ]
-
-  const annotationItems: RibbonItemModel[] = [
-    {
-      id: 'cmd-tool-rev-freehand',
-      type: 'button',
-      label: t('main.verticalToolbar.revFreehand.text'),
-      tooltip: verticalToolbarDescriptions.revFreehand,
-      size: 'large',
-      props: { icon: revFreeDraw }
-    },
-    {
-      id: 'cmd-tool-rev-rect',
-      type: 'button',
-      label: t('main.verticalToolbar.revRect.text'),
-      tooltip: verticalToolbarDescriptions.revRect,
-      size: 'large',
-      props: { icon: revRect }
-    },
-    {
-      id: 'cmd-tool-rev-cloud',
-      type: 'button',
-      label: t('main.verticalToolbar.revCloud.text'),
-      tooltip: verticalToolbarDescriptions.revCloud,
-      size: 'large',
-      props: { icon: revCloud }
-    },
-    {
-      id: 'cmd-tool-rev-circle',
-      type: 'button',
-      label: t('main.verticalToolbar.revCircle.text'),
-      tooltip: verticalToolbarDescriptions.revCircle,
-      size: 'large',
-      props: { icon: revCircle }
-    },
-    {
-      id: 'cmd-tool-rev-vis',
-      type: 'toggle',
-      label: t('main.verticalToolbar.showAnnotation.text'),
-      tooltip: annotationVisible
-        ? verticalToolbarDescriptions.hideAnnotation
-        : verticalToolbarDescriptions.showAnnotation,
-      size: 'large',
-      props: {
-        modelValue: annotationVisible,
-        activeIcon: View,
-        inactiveIcon: Hide,
-        activeLabel: t('main.verticalToolbar.showAnnotation.text'),
-        inactiveLabel: t('main.verticalToolbar.hideAnnotation.text'),
-        activeValue: 'cmd-tool-rev-vis',
-        inactiveValue: 'cmd-tool-rev-vis'
       }
     }
   ]
@@ -1137,73 +1122,130 @@ const buildBaseTabs = (
     }
   ]
 
-  const toolGroups: RibbonGroupModel[] = []
-
-  if (openMode >= AcEdOpenMode.Review) {
-    toolGroups.push({
-      id: 'tools-review',
+  const reviewGroups: RibbonGroupModel[] = [
+    {
+      id: 'review-review',
       title: t('main.ribbon.group.review'),
       orientation: 'row',
       collections: [
         {
-          id: 'tools-review-primary',
+          id: 'review-primary',
           layout: 'row',
           items: reviewPrimaryItems
         },
         {
-          id: 'tools-review-shapes',
+          id: 'review-shapes',
           layout: 'column',
           rows: 3,
           items: reviewShapeItems
         },
         {
-          id: 'tools-review-more',
+          id: 'review-more',
           layout: 'column',
           rows: 3,
           items: reviewMoreItems
         },
         {
-          id: 'tools-review-manage',
+          id: 'review-manage',
           layout: 'column',
           rows: 3,
           items: reviewManageItems
-        },
+        }
+      ]
+    },
+    {
+      id: 'review-style',
+      title: t('main.ribbon.group.style'),
+      orientation: 'row',
+      collections: [
         {
-          id: 'tools-review-style',
+          id: 'review-style-main',
           layout: 'column',
           rows: 3,
           items: reviewStyleItems
         }
       ]
-    })
-    toolGroups.push({
-      id: 'tools-annotation',
-      title: t('main.ribbon.group.annotation'),
+    }
+  ]
+
+  const measurementStyleItems: RibbonItemModel[] = [
+    {
+      id: 'measurement-draw-color',
+      type: 'custom',
+      size: 'small',
+      tooltip: t('main.verticalToolbar.measurementColor.description'),
+      props: {
+        component: MlRibbonPropertyColorDropdown,
+        componentProps: {
+          modelValue: measurementDrawColor.value,
+          displayColor: measurementDrawColorDisplay.value,
+          placeholder: t('main.ribbon.property.color'),
+          'onUpdate:modelValue': handleMeasurementDrawColorChange
+        }
+      }
+    },
+    {
+      id: 'measurement-draw-line-weight',
+      type: 'custom',
+      size: 'small',
+      tooltip: t('main.verticalToolbar.measurementLineWeight.description'),
+      props: {
+        component: MlRibbonPropertyLineWeightSelect,
+        componentProps: {
+          modelValue: measurementDrawLineWeight.value,
+          placeholder: t('main.ribbon.property.lineWeight'),
+          numericOnly: true,
+          'onUpdate:modelValue': handleMeasurementDrawLineWeightChange
+        }
+      }
+    },
+    {
+      id: 'measurement-draw-font-size',
+      type: 'custom',
+      size: 'small',
+      tooltip: t('main.verticalToolbar.measurementFontSize.description'),
+      props: {
+        component: MlRibbonMarkupFontSizeSelect,
+        componentProps: {
+          modelValue: measurementDrawFontSize.value,
+          options: [10, 12, 13, 14, 16, 18, 20, 24, 28, 32],
+          placeholder: t('main.verticalToolbar.measurementFontSize.text'),
+          controlWidth: '108px',
+          'onUpdate:modelValue': handleMeasurementDrawFontSizeChange
+        }
+      }
+    }
+  ]
+
+  const measurementGroups: RibbonGroupModel[] = [
+    {
+      id: 'measurement-measure',
+      title: t('main.ribbon.group.measurement'),
       orientation: 'row',
       collections: [
         {
-          id: 'tools-annotation-main',
+          id: 'measurement-main',
           layout: 'row',
-          items: annotationItems
+          items: measureItems
         }
       ]
-    })
-  }
+    },
+    {
+      id: 'measurement-style',
+      title: t('main.ribbon.group.style'),
+      orientation: 'row',
+      collections: [
+        {
+          id: 'measurement-style-main',
+          layout: 'column',
+          rows: 3,
+          items: measurementStyleItems
+        }
+      ]
+    }
+  ]
 
-  toolGroups.push({
-    id: 'tools-measure',
-    title: t('main.ribbon.group.measurement'),
-    orientation: 'row',
-    collections: [
-      {
-        id: 'tools-measure-main',
-        layout: 'row',
-        items: measureItems
-      }
-    ]
-  })
-
-  return markComponentConfigRaw([
+  const tabs: RibbonTabModel[] = [
     {
       id: 'home',
       title: t('main.ribbon.tab.home'),
@@ -1943,26 +1985,41 @@ const buildBaseTabs = (
           ]
         }
       ]
-    },
-    {
-      id: 'tools',
-      title: t('main.ribbon.tab.tools'),
-      groups: toolGroups
     }
-  ])
+  ]
+
+  if (openMode >= AcEdOpenMode.Review) {
+    tabs.push({
+      id: 'review',
+      title: t('main.ribbon.tab.review'),
+      groups: reviewGroups
+    })
+  }
+
+  tabs.push({
+    id: 'measurement',
+    title: t('main.ribbon.tab.measurement'),
+    groups: measurementGroups
+  })
+
+  return markComponentConfigRaw(tabs)
 }
 
 const ribbonData = computed(() => {
   locale.value
   store.features.agentPlugin
   const openMode = docOpenMode.value
-  const annotationVisible = isAnnotationVisible.value
   const markupVisible = isMarkupOverlayVisible.value
   // Track markup draw style so Review ribbon color / lineweight controls refresh.
   markupDrawColor.value
   markupDrawColorDisplay.value
   markupDrawLineWeight.value
   markupDrawFontSize.value
+  // Track measurement draw style so Measurement ribbon controls refresh.
+  measurementDrawColor.value
+  measurementDrawColorDisplay.value
+  measurementDrawLineWeight.value
+  measurementDrawFontSize.value
   const commandByItemId = new Map<string, string>()
   commandByItemId.set('cmd-line', 'line')
   commandByItemId.set('cmd-polyline', 'pline')
@@ -2034,11 +2091,6 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-tool-markup-export', 'markupexport')
   commandByItemId.set('cmd-tool-markup-vis', 'markupvis')
   commandByItemId.set('cmd-tool-markup-clear', 'clearmarkups')
-  commandByItemId.set('cmd-tool-rev-freehand', 'sketch')
-  commandByItemId.set('cmd-tool-rev-rect', 'revrect')
-  commandByItemId.set('cmd-tool-rev-cloud', 'revcloud')
-  commandByItemId.set('cmd-tool-rev-circle', 'revcircle')
-  commandByItemId.set('cmd-tool-rev-vis', 'revvis')
   commandByItemId.set('cmd-tool-measure-distance', 'measuredistance')
   commandByItemId.set('cmd-tool-measure-angle', 'measureangle')
   commandByItemId.set('cmd-tool-measure-area', 'measurearea')
@@ -2058,7 +2110,6 @@ const ribbonData = computed(() => {
 
   const tabs: RibbonTabModel[] = buildBaseTabs(
     openMode,
-    annotationVisible,
     markupVisible,
     {
       canUndo: canUndo.value,

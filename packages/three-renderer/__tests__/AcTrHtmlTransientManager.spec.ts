@@ -315,4 +315,61 @@ describe('AcTrHtmlTransientManager', () => {
 
     manager.dispose()
   })
+
+  it('detaches a group without disposing children and reattaches it', () => {
+    const scene = new THREE.Scene()
+    const manager = new AcTrHtmlTransientManager(scene)
+    let disposed = false
+
+    const child = new AcTrHtmlElement(document.createElement('div'), {
+      id: 'g-detach-child',
+      worldPosition: { x: 0, y: 0 },
+      layer: 'measurement'
+    })
+    const dispose = child.dispose.bind(child)
+    child.dispose = () => {
+      disposed = true
+      dispose()
+    }
+
+    const group = new AcTrHtmlGroup({
+      id: 'g-detach',
+      layer: 'measurement',
+      selectable: true
+    }).add(child)
+
+    manager.add(group)
+    expect(manager.detach('g-detach')).toBe(group)
+    expect(manager.getGroup('g-detach')).toBeUndefined()
+    expect(manager.get('g-detach-child')).toBeUndefined()
+    expect(disposed).toBe(false)
+    expect(group.visible).toBe(false)
+
+    manager.reattach(group)
+    expect(manager.getGroup('g-detach')).toBe(group)
+    expect(manager.get('g-detach-child')).toBe(child)
+    expect(group.visible).toBe(true)
+    expect(disposed).toBe(false)
+
+    manager.dispose()
+  })
+
+  it('groupsOnLayer lists currently published groups', () => {
+    const scene = new THREE.Scene()
+    const manager = new AcTrHtmlTransientManager(scene)
+    const group = new AcTrHtmlGroup({
+      id: 'g-layer',
+      layer: 'measurement'
+    }).add(
+      new AcTrHtmlElement(document.createElement('div'), {
+        id: 'g-layer-child',
+        worldPosition: { x: 0, y: 0 },
+        layer: 'measurement'
+      })
+    )
+    manager.add(group)
+    expect(manager.groupsOnLayer('measurement')).toEqual([group])
+    expect(manager.groupsOnLayer('markup')).toEqual([])
+    manager.dispose()
+  })
 })

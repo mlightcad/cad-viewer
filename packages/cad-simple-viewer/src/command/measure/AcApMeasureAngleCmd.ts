@@ -2,8 +2,7 @@ import {
   AcCmColor,
   AcDbDatabase,
   AcDbLine,
-  AcGePoint3dLike,
-  AcGiLineWeight
+  AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
@@ -25,10 +24,18 @@ import {
   AcEdViewMode
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { cssColor, measurementColor } from '../../util'
+import {
+  cssColor,
+  currentMeasurementStyle,
+  getMeasurementFontSize,
+  getMeasurementLineWeight,
+  measurementCanvasLineWidth,
+  measurementColor
+} from '../../util'
 import { AcTrView2d } from '../../view'
 import {
   commitMeasurementGroup,
+  getMeasurementStyle,
   MEASUREMENT_LAYER,
   MEASUREMENT_LIVE_LAYER
 } from './AcApMeasurementStore'
@@ -62,7 +69,8 @@ function drawArm1OnCanvas(
   view: AcEdBaseView,
   vertex: AcGePoint3dLike,
   arm1: AcGePoint3dLike,
-  color: AcCmColor
+  color: AcCmColor,
+  lineWidth = 2
 ): void {
   const rect = view.canvas.getBoundingClientRect()
   const dpr = window.devicePixelRatio || 1
@@ -94,7 +102,7 @@ function drawArm1OnCanvas(
   ctx.moveTo(sv.x, sv.y)
   ctx.lineTo(sa.x, sa.y)
   ctx.strokeStyle = cssColor(color)
-  ctx.lineWidth = 2
+  ctx.lineWidth = lineWidth
   ctx.setLineDash([8, 5])
   ctx.stroke()
   ctx.setLineDash([])
@@ -112,7 +120,8 @@ function drawAngleArcOnCanvas(
   vertex: AcGePoint3dLike,
   arm1: AcGePoint3dLike,
   arm2: AcGePoint3dLike,
-  color: AcCmColor
+  color: AcCmColor,
+  lineWidth = 2
 ): void {
   const rect = view.canvas.getBoundingClientRect()
   const dpr = window.devicePixelRatio || 1
@@ -152,7 +161,7 @@ function drawAngleArcOnCanvas(
   ctx.beginPath()
   ctx.arc(sv.x, sv.y, arcR, startAngle, endAngle, antiClockwise)
   ctx.strokeStyle = cssColor(color)
-  ctx.lineWidth = 2
+  ctx.lineWidth = lineWidth
   ctx.stroke()
   ctx.restore()
 }
@@ -168,7 +177,7 @@ class AcApMeasureArm1Jig extends AcEdPreviewJig<AcGePoint3dLike> {
     super(view)
     this._line = new AcDbLine(vertex, vertex)
     this._line.color = color
-    this._line.lineWeight = AcGiLineWeight.LineWeight070
+    this._line.lineWeight = getMeasurementLineWeight()
   }
 
   get entity(): AcDbLine {
@@ -214,7 +223,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._db = db
     this._line = new AcDbLine(vertex, vertex)
     this._line.color = color
-    this._line.lineWeight = AcGiLineWeight.LineWeight070
+    this._line.lineWeight = getMeasurementLineWeight()
 
     this._badgeId = `live-angle-badge-${Date.now()}`
     this._htManager = (view as AcTrView2d).htmlTransientManager
@@ -224,6 +233,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
       worldPosition: vertex,
       layer: MEASUREMENT_LIVE_LAYER,
       layoutId: (view as AcTrView2d).activeLayoutBtrId,
+      fontSize: getMeasurementFontSize(),
       // Keep the label slightly above the vertex (was -30px screen offset).
       transform: 'translate(-50%, calc(-50% - 30px))'
     })
@@ -244,7 +254,8 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
       this._view,
       this._vertex,
       this._arm1,
-      this._color
+      this._color,
+      measurementCanvasLineWidth(getMeasurementLineWeight())
     )
 
     const deg = calcAngleDeg(this._vertex, this._arm1, p)
@@ -283,6 +294,8 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
     const editor = context.view.editor
     const db = context.doc.database
     const color = measurementColor(db)
+    const style = currentMeasurementStyle(db)
+    const canvasLineWidth = measurementCanvasLineWidth(style.lineWeight)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -313,7 +326,14 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
         })
         const htLive = (context.view as AcTrView2d).htmlTransientManager
         htLive.add(armOverlay)
-        drawArm1OnCanvas(armOverlay.canvas, context.view, vertex, arm1, color)
+        drawArm1OnCanvas(
+          armOverlay.canvas,
+          context.view,
+          vertex,
+          arm1,
+          color,
+          canvasLineWidth
+        )
 
         const redrawOnViewChange = () =>
           drawArm1OnCanvas(
@@ -321,7 +341,8 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
             context.view,
             vertex,
             arm1,
-            color
+            color,
+            canvasLineWidth
           )
         context.view.events.viewChanged.addEventListener(redrawOnViewChange)
 
@@ -368,13 +389,15 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
         // Persistent CAD transient lines for both arms (zoom/pan aware)
         const line1 = new AcDbLine(vertex, arm1)
         line1.color = color
-        line1.lineWeight = AcGiLineWeight.LineWeight070
+        line1.lineWeight = style.lineWeight
         context.view.addTransientEntity(line1)
 
         const line2 = new AcDbLine(vertex, arm2)
         line2.color = color
-        line2.lineWeight = AcGiLineWeight.LineWeight070
+        line2.lineWeight = style.lineWeight
         context.view.addTransientEntity(line2)
+
+        const id = `angle-${Date.now()}`
 
         // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
         const persistOverlay = new AcTrHtmlCanvasOverlay({
@@ -383,28 +406,22 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
           layer: MEASUREMENT_LAYER,
           layoutId: (context.view as AcTrView2d).activeLayoutBtrId
         })
-        drawAngleArcOnCanvas(
-          persistOverlay.canvas,
-          context.view,
-          vertex,
-          arm1,
-          arm2,
-          color
-        )
-
-        const redrawPersist = () =>
+        const paintArc = (paintStyle = style) =>
           drawAngleArcOnCanvas(
             persistOverlay.canvas,
             context.view,
             vertex,
             arm1,
             arm2,
-            color
+            paintStyle.color,
+            measurementCanvasLineWidth(paintStyle.lineWeight)
           )
+        paintArc()
+
+        const redrawPersist = () => paintArc(getMeasurementStyle(id) ?? style)
         context.view.events.viewChanged.addEventListener(redrawPersist)
 
         // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
-        const id = `angle-${Date.now()}`
 
         // Place badge along the angle bisector in world space
         const dx1 = arm1.x - vertex.x
@@ -472,13 +489,17 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
                 applyAngbaseAngdir: false
               }),
               worldPosition: badgeWorld,
-              layer: MEASUREMENT_LAYER
+              layer: MEASUREMENT_LAYER,
+              fontSize: style.fontSize
             })
           )
           .addCanvas(persistOverlay)
 
         commitMeasurementGroup(context.view as AcTrView2d, group, {
           entityIds: [line1.objectId, line2.objectId],
+          entities: [line1, line2],
+          style,
+          redraw: paintArc,
           dispose: () => {
             context.view.removeTransientEntity(line1.objectId)
             context.view.removeTransientEntity(line2.objectId)

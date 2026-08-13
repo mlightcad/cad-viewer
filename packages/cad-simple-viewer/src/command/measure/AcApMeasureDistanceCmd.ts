@@ -2,8 +2,7 @@ import {
   AcCmColor,
   AcDbDatabase,
   AcDbLine,
-  AcGePoint3dLike,
-  AcGiLineWeight
+  AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
@@ -24,7 +23,12 @@ import {
   AcEdViewMode
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { measurementColor } from '../../util'
+import {
+  currentMeasurementStyle,
+  getMeasurementFontSize,
+  getMeasurementLineWeight,
+  measurementColor
+} from '../../util'
 import { AcTrView2d } from '../../view'
 import {
   commitMeasurementGroup,
@@ -66,7 +70,7 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._db = db
     this._line = new AcDbLine(p1, p1)
     this._line.color = color
-    this._line.lineWeight = AcGiLineWeight.LineWeight070
+    this._line.lineWeight = getMeasurementLineWeight()
 
     this._badgeId = `live-dist-badge-${Date.now()}`
     this._htManager = (view as AcTrView2d).htmlTransientManager
@@ -75,7 +79,8 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
       color,
       worldPosition: p1,
       layer: MEASUREMENT_LIVE_LAYER,
-      layoutId: (view as AcTrView2d).activeLayoutBtrId
+      layoutId: (view as AcTrView2d).activeLayoutBtrId,
+      fontSize: getMeasurementFontSize()
     })
     this._badge.object.visible = false
     this._htManager.add(this._badge)
@@ -131,6 +136,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
     const editor = context.view.editor
     const db = context.doc.database
     const color = measurementColor(db)
+    const style = currentMeasurementStyle(db)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -155,7 +161,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
         // CAD transient line (zoom/pan aware, rendered by the engine)
         const line = new AcDbLine(p1, p2)
         line.color = color
-        line.lineWeight = AcGiLineWeight.LineWeight070
+        line.lineWeight = style.lineWeight
         context.view.addTransientEntity(line)
 
         // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
@@ -188,12 +194,15 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
               showApproximate: true
             }),
             worldPosition: mid,
-            layer: MEASUREMENT_LAYER
+            layer: MEASUREMENT_LAYER,
+            fontSize: style.fontSize
           })
         )
 
         commitMeasurementGroup(context.view as AcTrView2d, group, {
           entityIds: [line.objectId],
+          entities: [line],
+          style,
           dispose: () => {
             context.view.removeTransientEntity(line.objectId)
           }

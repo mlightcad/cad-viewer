@@ -55,11 +55,24 @@
       </el-table-column>
     </el-table>
 
-    <div v-if="selected" class="ml-design-review-detail">
-      <div class="ml-design-review-detail-title">
-        {{ t('main.toolPalette.designReview.details') }}
+    <div v-if="selected && detailsOpen" class="ml-design-review-detail">
+      <div class="ml-design-review-detail-header">
+        <div class="ml-design-review-detail-title">
+          {{ t('main.toolPalette.designReview.details') }}
+        </div>
+        <el-button
+          text
+          circle
+          size="small"
+          class="ml-design-review-detail-close"
+          :title="t('main.toolPalette.designReview.closeDetails')"
+          :aria-label="t('main.toolPalette.designReview.closeDetails')"
+          @click="closeDetails"
+        >
+          <el-icon><Close /></el-icon>
+        </el-button>
       </div>
-      <el-form label-position="top" size="small">
+      <el-form label-position="top" size="small" class="ml-design-review-detail-form">
         <el-form-item :label="t('main.toolPalette.designReview.status')">
           <el-select
             :model-value="selected.status"
@@ -78,16 +91,17 @@
         </el-form-item>
         <el-form-item :label="t('main.toolPalette.designReview.label')">
           <el-input
-            :model-value="selected.text ?? ''"
-            @change="(v: string) => updateMeta(selected!.id, { text: v })"
+            v-model="draftText"
+            @blur="commitText"
+            @keydown.enter="onLabelEnter"
           />
         </el-form-item>
         <el-form-item :label="t('main.toolPalette.designReview.comment')">
           <el-input
+            v-model="draftComment"
             type="textarea"
-            :rows="3"
-            :model-value="selected.comment"
-            @change="(v: string) => updateMeta(selected!.id, { comment: v })"
+            :rows="2"
+            @blur="commitComment"
           />
         </el-form-item>
         <div class="ml-design-review-detail-actions">
@@ -104,24 +118,29 @@
 </template>
 
 <script setup lang="ts">
+import { Close } from '@element-plus/icons-vue'
 import type { AcApMarkupStatus } from '@mlightcad/cad-simple-viewer'
 import {
   ElButton,
   ElForm,
   ElFormItem,
+  ElIcon,
   ElInput,
   ElOption,
   ElSelect,
   ElTable,
   ElTableColumn
 } from 'element-plus'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useMarkup } from '../../composable/useMarkup'
 
 const { t } = useI18n()
 const search = ref('')
+const draftText = ref('')
+const draftComment = ref('')
+const detailsOpen = ref(true)
 const {
   markups,
   selectedId,
@@ -146,8 +165,64 @@ const selected = computed(
   () => markups.value.find(m => m.id === selectedId.value) ?? null
 )
 
+watch(
+  selectedId,
+  (id, prevId) => {
+    if (prevId && prevId !== id) {
+      const prevRow = markups.value.find(m => m.id === prevId)
+      if (prevRow) {
+        if (draftText.value !== (prevRow.text ?? '')) {
+          updateMeta(prevId, { text: draftText.value })
+        }
+        if (draftComment.value !== (prevRow.comment ?? '')) {
+          updateMeta(prevId, { comment: draftComment.value })
+        }
+      }
+    }
+    const row = markups.value.find(m => m.id === id)
+    draftText.value = row?.text ?? ''
+    draftComment.value = row?.comment ?? ''
+    if (id) detailsOpen.value = true
+  },
+  { immediate: true }
+)
+
 const handleRowClick = (row: { id: string }) => {
+  detailsOpen.value = true
   select(row.id)
+}
+
+const closeDetails = () => {
+  commitText()
+  commitComment()
+  detailsOpen.value = false
+}
+
+const commitText = () => {
+  const id = selectedId.value
+  if (!id) return
+  const current = markups.value.find(m => m.id === id)
+  const next = draftText.value
+  const prev = current?.text ?? ''
+  if (next === prev) return
+  updateMeta(id, { text: next })
+}
+
+const commitComment = () => {
+  const id = selectedId.value
+  if (!id) return
+  const current = markups.value.find(m => m.id === id)
+  const next = draftComment.value
+  const prev = current?.comment ?? ''
+  if (next === prev) return
+  updateMeta(id, { comment: next })
+}
+
+const onLabelEnter = (event: KeyboardEvent) => {
+  if (event.isComposing || event.keyCode === 229) return
+  event.preventDefault()
+  commitText()
+  ;(event.target as HTMLInputElement | null)?.blur()
 }
 
 const patchStatus = (value: string) => {
@@ -197,18 +272,50 @@ const statusLabel = (status: AcApMarkupStatus) => {
 
 .ml-design-review-detail {
   border-top: 1px solid var(--el-border-color-lighter);
-  padding-top: 8px;
+  padding-top: 6px;
   max-height: 46%;
   overflow: auto;
 }
 
+.ml-design-review-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
 .ml-design-review-detail-title {
   font-weight: 600;
-  margin-bottom: 6px;
+}
+
+.ml-design-review-detail-close {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.ml-design-review-detail-form {
+  --el-form-item-margin-bottom: 4px;
+}
+
+.ml-design-review-detail-form :deep(.el-form-item) {
+  margin-bottom: 4px;
+}
+
+.ml-design-review-detail-form :deep(.el-form-item .el-form-item__label) {
+  margin-bottom: 2px;
+  line-height: 1.2;
+  height: auto;
+}
+
+.ml-design-review-detail-form :deep(.el-select),
+.ml-design-review-detail-form :deep(.el-input) {
+  width: 100%;
 }
 
 .ml-design-review-detail-actions {
   display: flex;
   gap: 8px;
+  margin-top: 4px;
 }
 </style>

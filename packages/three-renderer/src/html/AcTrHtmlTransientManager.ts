@@ -7,12 +7,21 @@ import {
 import { AC_TR_HTML_SELECTED_CLASS, AcTrHtmlElement } from './AcTrHtmlElement'
 import { AcTrHtmlGroup } from './AcTrHtmlGroup'
 
+/** Scratch vector reused when decomposing CSS2D object matrices. */
 const _position = /*@__PURE__*/ new THREE.Vector3()
+/** Scratch quaternion reused when decomposing CSS2D object matrices. */
 const _quaternion = /*@__PURE__*/ new THREE.Quaternion()
+/** Scratch scale vector reused when decomposing CSS2D object matrices. */
 const _scale = /*@__PURE__*/ new THREE.Vector3()
 
+/** Whether the shared HTML-selection stylesheet has been injected into `document.head`. */
 let selectionStylesInstalled = false
 
+/**
+ * Injects the CSS used to highlight selected HTML overlays.
+ *
+ * No-op after the first call, and when `document` is unavailable (SSR / workers).
+ */
 function ensureSelectionStyles(): void {
   if (selectionStylesInstalled || typeof document === 'undefined') return
   selectionStylesInstalled = true
@@ -58,25 +67,33 @@ function ensureSelectionStyles(): void {
  * categories of overlays (e.g. measurements, annotations).
  */
 export class AcTrHtmlTransientManager {
+  /** Scene that owns the HTML overlay container. */
   private readonly scene: THREE.Scene
+  /** Scene-graph group that holds every published CSS2D overlay. */
   private readonly htmlGroup: THREE.Group
 
-  /** Mapping from leaf element ID → element */
+  /** Mapping from leaf element ID to element. */
   private readonly entries: Map<string, AcTrHtmlElement>
-  /** Mapping from group ID → group */
+  /** Mapping from group ID to group. */
   private readonly groups: Map<string, AcTrHtmlGroup>
-  /** Mapping from standalone canvas overlay ID → overlay */
+  /** Mapping from standalone canvas overlay ID to overlay. */
   private readonly canvases: Map<string, AcTrHtmlCanvasOverlay>
   /** Leaf ids that belong to a group (visibility driven by the group). */
   private readonly groupChildIds = new Set<string>()
-  /** Currently selected group ids */
+  /** Currently selected group ids. */
   private readonly selectedGroupIds = new Set<string>()
   /** Active layout BTR id used to filter layout-scoped overlays. */
   private _activeLayoutId?: string
   /** World matrix captured when each leaf transient was published. */
   private readonly _baselineMatrices = new Map<string, THREE.Matrix4>()
+  /** Scratch matrix used to compose world transforms in {@link applyTransforms}. */
   private readonly _composedMatrix = new THREE.Matrix4()
 
+  /**
+   * Creates the HTML overlay group and attaches it to the scene.
+   *
+   * @param scene - Scene that owns the HTML overlay container
+   */
   constructor(scene: THREE.Scene) {
     this.scene = scene
 
@@ -100,6 +117,8 @@ export class AcTrHtmlTransientManager {
    * Overlays / groups with a matching {@link AcTrHtmlElement.layoutId} (or
    * no `layoutId`) stay visible; others are hidden. Selection on groups that
    * become hidden is cleared.
+   *
+   * @param layoutId - Layout block-table-record id to filter overlays against
    */
   setActiveLayoutId(layoutId: string): void {
     if (this._activeLayoutId === layoutId) return
@@ -111,6 +130,8 @@ export class AcTrHtmlTransientManager {
    * Add a leaf HTML overlay, a group, or a standalone canvas overlay.
    *
    * If an item with the same id already exists, it is replaced.
+   *
+   * @param item - Overlay, group, or canvas to publish
    */
   add(item: AcTrHtmlElement | AcTrHtmlGroup | AcTrHtmlCanvasOverlay): void {
     if (item instanceof AcTrHtmlGroup) {
@@ -124,6 +145,9 @@ export class AcTrHtmlTransientManager {
 
   /**
    * Update the world position of an existing leaf element.
+   *
+   * @param id - Leaf element id
+   * @param worldPosition - New world-space anchor; `z` defaults to `0`
    */
   updatePosition(
     id: string,
@@ -138,6 +162,9 @@ export class AcTrHtmlTransientManager {
 
   /**
    * Enable or disable view-synced scaling for an existing leaf element.
+   *
+   * @param id - Leaf element id
+   * @param scaleWithView - When `true`, the DOM node scales with orthographic zoom
    */
   setScaleWithView(id: string, scaleWithView: boolean): void {
     const entry = this.entries.get(id)
@@ -149,6 +176,9 @@ export class AcTrHtmlTransientManager {
   /**
    * Applies world transforms to existing leaf HTML transients without
    * recreating DOM.
+   *
+   * @param transforms - Per-leaf world matrices composed onto each published baseline
+   * @returns `true` when at least one overlay matrix changed
    */
   applyTransforms(
     transforms: ReadonlyArray<{ id: string; matrix: THREE.Matrix4 }>
@@ -176,7 +206,12 @@ export class AcTrHtmlTransientManager {
   }
 
   /**
-   * Remove a leaf element, canvas overlay, or an entire group by ID.
+   * Remove a leaf HTML overlay, a group, or a standalone canvas overlay.
+   *
+   * Groups are disposed. Use {@link detach} to take a group off the scene
+   * without destroying it (undo / redo).
+   *
+   * @param id - Leaf, group, or canvas id
    */
   remove(id: string): void {
     const group = this.groups.get(id)
@@ -192,11 +227,88 @@ export class AcTrHtmlTransientManager {
   }
 
   /**
+   * Take a group off the scene without disposing it or its children.
+   * CAD / canvas extras stay on the group and are hidden via `setVisible(false)`.
+   *
+   * @param id - Group id
+   * @returns The detached group, or `undefined` when `id` is not a group
+   */
+  detach(id: string): AcTrHtmlGroup | undefined {
+    const group = this.groups.get(id)
+    if (!group) return undefined
+    this.detachGroup(group)
+    return group
+  }
+
+  /**
+   * Detach every group on `layer` without disposing them.
+   * Loose leaf elements / canvases on that layer are not touched.
+   *
+   * @param layer - Layer name whose groups should be unpublished
+   * @returns Groups that were detached
+   */
+  detachLayer(layer: string): AcTrHtmlGroup[] {
+    const detached: AcTrHtmlGroup[] = []
+    for (const group of [...this.groups.values()]) {
+      if (group.layer !== layer) continue
+      this.detachGroup(group)
+      detached.push(group)
+    }
+    return detached
+  }
+
+  /**
+   * Publish a previously {@link detach}ed group back onto the scene.
+   *
+   * @param group - Group previously returned by {@link detach} or {@link detachLayer}
+   */
+  reattach(group: AcTrHtmlGroup): void {
+    this.add(group)
+    if (!group.visible) {
+      const visible =
+        group.layoutId == null ||
+        this._activeLayoutId == null ||
+        group.layoutId === this._activeLayoutId
+      group.setVisible(visible)
+    }
+  }
+
+  /**
+   * Groups currently marked selected.
+   *
+   * @returns Selected groups that are still published
+   */
+  getSelectedGroups(): AcTrHtmlGroup[] {
+    const groups: AcTrHtmlGroup[] = []
+    for (const id of this.selectedGroupIds) {
+      const group = this.groups.get(id)
+      if (group) groups.push(group)
+    }
+    return groups
+  }
+
+  /**
+   * Groups currently published on `layer`.
+   *
+   * @param layer - Layer name to match
+   * @returns Published groups whose {@link AcTrHtmlGroup.layer} equals `layer`
+   */
+  groupsOnLayer(layer: string): AcTrHtmlGroup[] {
+    const groups: AcTrHtmlGroup[] = []
+    for (const group of this.groups.values()) {
+      if (group.layer === layer) groups.push(group)
+    }
+    return groups
+  }
+
+  /**
    * Clear all items, or only items on a specific layer.
    *
    * Groups on the layer are removed first (with their children / canvases);
    * remaining loose leaf elements and standalone canvases are removed
    * afterwards.
+   *
+   * @param layer - When set, only items on this layer are removed
    */
   clear(layer?: string): void {
     for (const [id, group] of [...this.groups]) {
@@ -225,35 +337,66 @@ export class AcTrHtmlTransientManager {
     }
   }
 
-  /** Check whether a leaf element, canvas overlay, or group exists. */
+  /**
+   * Check whether a leaf element, canvas overlay, or group exists.
+   *
+   * @param id - Leaf, group, or canvas id
+   * @returns `true` when the id is currently published
+   */
   has(id: string): boolean {
     return (
       this.entries.has(id) || this.groups.has(id) || this.canvases.has(id)
     )
   }
 
-  /** Retrieve a leaf element by ID. */
+  /**
+   * Retrieve a leaf element by ID.
+   *
+   * @param id - Leaf element id
+   * @returns The published leaf, or `undefined` if it is not registered
+   */
   get(id: string): AcTrHtmlElement | undefined {
     return this.entries.get(id)
   }
 
-  /** Retrieve a group by ID. */
+  /**
+   * Retrieve a group by ID.
+   *
+   * @param id - Group id
+   * @returns The published group, or `undefined` if it is not registered
+   */
   getGroup(id: string): AcTrHtmlGroup | undefined {
     return this.groups.get(id)
   }
 
-  /** Retrieve a standalone canvas overlay by ID. */
+  /**
+   * Retrieve a standalone canvas overlay by ID.
+   *
+   * @param id - Canvas overlay id
+   * @returns The published canvas, or `undefined` if it is not registered
+   */
   getCanvas(id: string): AcTrHtmlCanvasOverlay | undefined {
     return this.canvases.get(id)
   }
 
-  /** Retrieve the DOM node for a leaf element. */
+  /**
+   * Retrieve the DOM node for a leaf element.
+   *
+   * @param id - Leaf element id
+   * @returns The wrapped HTML element, or `undefined` if the leaf is not registered
+   */
   getElement(id: string): HTMLElement | undefined {
     return this.entries.get(id)?.element
   }
 
   /**
    * Show or hide all items, or only items on a specific layer.
+   *
+   * Group children are skipped when iterating leaves; their visibility is
+   * driven by the owning group.
+   *
+   * @param visible - Target visibility
+   * @param layer - When set, only items on this layer are updated
    */
   setVisible(visible: boolean, layer?: string): void {
     if (layer == null) {
@@ -291,8 +434,11 @@ export class AcTrHtmlTransientManager {
 
   /**
    * Select a group by id.
-   * @param exclusive When `true` (default), clears any prior selection first.
+   *
+   * @param id - Group id
+   * @param exclusive - When `true` (default), clears any prior selection first.
    *   Pass `false` for additive multi-select.
+   * @returns `true` when the group was newly selected
    */
   selectGroup(id: string, exclusive = true): boolean {
     const group = this.groups.get(id)
@@ -323,18 +469,23 @@ export class AcTrHtmlTransientManager {
     this.selectedGroupIds.clear()
   }
 
-  /** Whether any group is currently selected. */
+  /**
+   * Whether any group is currently selected.
+   *
+   * @returns `true` when {@link selectedGroupIds} is non-empty
+   */
   hasSelection(): boolean {
     return this.selectedGroupIds.size > 0
   }
 
   /**
    * Remove every currently selected group.
-   * @returns `true` when at least one group was removed.
    *
    * Selection is cleared via {@link removeGroup} (which calls
    * `setSelected(false)`) so `onSelectedChanged` still runs for domain
    * cleanup such as CAD entity unhighlight.
+   *
+   * @returns `true` when at least one group was removed
    */
   deleteSelected(): boolean {
     if (this.selectedGroupIds.size === 0) return false
@@ -357,6 +508,11 @@ export class AcTrHtmlTransientManager {
     this.scene.remove(this.htmlGroup)
   }
 
+  /**
+   * Publish a group and its CSS2D children, replacing any item with the same id.
+   *
+   * @param group - Group to register
+   */
   private addGroup(group: AcTrHtmlGroup): void {
     this.remove(group.id)
     this.groups.set(group.id, group)
@@ -373,6 +529,11 @@ export class AcTrHtmlTransientManager {
     this.applyItemLayoutVisibility(group)
   }
 
+  /**
+   * Unpublish a group, dispose it, and remove its CSS2D children.
+   *
+   * @param group - Group currently registered in {@link groups}
+   */
   private removeGroup(group: AcTrHtmlGroup): void {
     if (this.selectedGroupIds.has(group.id)) {
       group.setSelected(false)
@@ -386,6 +547,30 @@ export class AcTrHtmlTransientManager {
     group.dispose()
   }
 
+  /**
+   * Unpublish a group without disposing HTML children, canvases, or `onDispose`.
+   *
+   * @param group - Group currently registered in {@link groups}
+   */
+  private detachGroup(group: AcTrHtmlGroup): void {
+    if (this.selectedGroupIds.has(group.id)) {
+      group.setSelected(false)
+      this.selectedGroupIds.delete(group.id)
+    }
+    this.groups.delete(group.id)
+    group.unbindSelection()
+    group.setVisible(false)
+    for (const child of [...group.children]) {
+      this.groupChildIds.delete(child.id)
+      this.unpublishElement(child.id)
+    }
+  }
+
+  /**
+   * Publish a leaf CSS2D overlay, replacing any leaf with the same id.
+   *
+   * @param element - Leaf overlay to attach to {@link htmlGroup}
+   */
   private addElement(element: AcTrHtmlElement): void {
     this.removeElement(element.id)
 
@@ -400,6 +585,11 @@ export class AcTrHtmlTransientManager {
     }
   }
 
+  /**
+   * Remove a leaf overlay from the scene and dispose its DOM node.
+   *
+   * @param id - Leaf element id
+   */
   private removeElement(id: string): void {
     const entry = this.entries.get(id)
     if (!entry) return
@@ -410,12 +600,35 @@ export class AcTrHtmlTransientManager {
     this._baselineMatrices.delete(id)
   }
 
+  /**
+   * Remove a leaf from the CSS2D scene without disposing the DOM node.
+   *
+   * @param id - Leaf element id
+   */
+  private unpublishElement(id: string): void {
+    const entry = this.entries.get(id)
+    if (!entry) return
+    this.htmlGroup.remove(entry.object)
+    this.entries.delete(id)
+    this._baselineMatrices.delete(id)
+  }
+
+  /**
+   * Register a standalone canvas overlay, replacing any item with the same id.
+   *
+   * @param canvas - Canvas overlay to register
+   */
   private addCanvas(canvas: AcTrHtmlCanvasOverlay): void {
     this.remove(canvas.id)
     this.canvases.set(canvas.id, canvas)
     this.applyItemLayoutVisibility(canvas)
   }
 
+  /**
+   * Unregister and dispose a standalone canvas overlay.
+   *
+   * @param id - Canvas overlay id
+   */
   private removeCanvas(id: string): void {
     const canvas = this.canvases.get(id)
     if (!canvas) return
@@ -423,6 +636,11 @@ export class AcTrHtmlTransientManager {
     canvas.dispose()
   }
 
+  /**
+   * Recompute visibility of every published overlay against {@link _activeLayoutId}.
+   *
+   * Groups whose layout no longer matches are also deselected.
+   */
   private applyLayoutVisibility(): void {
     for (const id of [...this.selectedGroupIds]) {
       const group = this.groups.get(id)
@@ -448,6 +666,13 @@ export class AcTrHtmlTransientManager {
     }
   }
 
+  /**
+   * Show or hide one overlay based on whether its `layoutId` matches the active layout.
+   *
+   * Items without a `layoutId`, or when no active layout is set, are left unchanged.
+   *
+   * @param item - Leaf, group, or canvas whose visibility should be updated
+   */
   private applyItemLayoutVisibility(
     item: AcTrHtmlElement | AcTrHtmlGroup | AcTrHtmlCanvasOverlay
   ): void {
@@ -468,6 +693,8 @@ export class AcTrHtmlTransientManager {
    * After CSS2DRenderer writes its translation-only transform, append scale
    * from {@link applyTransforms} and, when {@link AcTrHtmlElement.scaleWithView}
    * is set, from orthographic camera zoom relative to first paint.
+   *
+   * @param entry - Leaf overlay whose `onAfterRender` hook should be installed
    */
   private bindViewSyncedTransform(entry: AcTrHtmlElement): void {
     const object = entry.object

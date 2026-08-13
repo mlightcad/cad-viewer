@@ -1,8 +1,7 @@
 import {
   AcCmColor,
   AcDbLine,
-  AcGePoint3dLike,
-  AcGiLineWeight
+  AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
@@ -26,11 +25,15 @@ import { AcApI18n } from '../../i18n'
 import {
   colorToCssAlpha,
   cssColor,
+  currentMeasurementStyle,
+  getMeasurementLineWeight,
+  measurementCanvasLineWidth,
   measurementColor
 } from '../../util'
 import { AcTrView2d } from '../../view'
 import {
   commitMeasurementGroup,
+  getMeasurementStyle,
   MEASUREMENT_LAYER,
   MEASUREMENT_LIVE_LAYER
 } from './AcApMeasurementStore'
@@ -52,7 +55,7 @@ class AcApMeasureAreaJig extends AcEdPreviewJig<AcGePoint3dLike> {
     super(view)
     this._line = new AcDbLine(from, from)
     this._line.color = color
-    this._line.lineWeight = AcGiLineWeight.LineWeight070
+    this._line.lineWeight = getMeasurementLineWeight()
     this._onMove = onMove
   }
 
@@ -113,7 +116,8 @@ function drawAreaOnCanvas(
   canvas: HTMLCanvasElement,
   view: AcEdBaseView,
   points: AcGePoint3dLike[],
-  color: AcCmColor
+  color: AcCmColor,
+  lineWidth = 2.5
 ): void {
   const rect = view.canvas.getBoundingClientRect()
   const dpr = window.devicePixelRatio || 1
@@ -147,7 +151,7 @@ function drawAreaOnCanvas(
   ctx.fillStyle = colorToCssAlpha(color, 0.2)
   ctx.fill()
   ctx.strokeStyle = cssColor(color)
-  ctx.lineWidth = 2.5
+  ctx.lineWidth = lineWidth
   ctx.stroke()
 
   ctx.restore()
@@ -177,6 +181,8 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
     const editor = context.view.editor
     const db = context.doc.database
     const color = measurementColor(db)
+    const style = currentMeasurementStyle(db)
+    const canvasLineWidth = measurementCanvasLineWidth(style.lineWeight)
 
     const points: AcGePoint3dLike[] = []
 
@@ -198,7 +204,8 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
       color,
       worldPosition: { x: 0, y: 0 },
       layer: MEASUREMENT_LIVE_LAYER,
-      layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+      layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
+      fontSize: style.fontSize
     })
     liveBadge.object.visible = false
     htManagerLive.add(liveBadge)
@@ -248,7 +255,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         for (let i = 1; i < confirmedSpts.length; i++)
           ctx.lineTo(confirmedSpts[i].x, confirmedSpts[i].y)
         ctx.strokeStyle = cssColor(color)
-        ctx.lineWidth = 2.5
+        ctx.lineWidth = canvasLineWidth
         ctx.setLineDash([8, 5])
         ctx.stroke()
         ctx.setLineDash([])
@@ -353,6 +360,9 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
 
     const area = shoelaceArea(points)
 
+    const id = `area-${Date.now()}`
+    const mid = centroid(points)
+
     // Persistent fill canvas — redrawn on viewChanged, cleaned up by Clear
     const persistOverlay = new AcTrHtmlCanvasOverlay({
       id: `area-canvas-${Date.now()}`,
@@ -360,15 +370,18 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
       layer: MEASUREMENT_LAYER,
       layoutId: (context.view as AcTrView2d).activeLayoutBtrId
     })
-    drawAreaOnCanvas(persistOverlay.canvas, context.view, points, color)
+    const paintArea = (paintStyle = style) =>
+      drawAreaOnCanvas(
+        persistOverlay.canvas,
+        context.view,
+        points,
+        paintStyle.color,
+        measurementCanvasLineWidth(paintStyle.lineWeight)
+      )
+    paintArea()
 
-    const redrawPersist = () =>
-      drawAreaOnCanvas(persistOverlay.canvas, context.view, points, color)
+    const redrawPersist = () => paintArea(getMeasurementStyle(id) ?? style)
     context.view.events.viewChanged.addEventListener(redrawPersist)
-
-    // Persistent badge + dots via htmlTransientManager
-    const id = `area-${Date.now()}`
-    const mid = centroid(points)
 
     const group = new AcTrHtmlGroup({
       id,
@@ -385,7 +398,8 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
             showApproximate: true
           })}²`,
           worldPosition: mid,
-          layer: MEASUREMENT_LAYER
+          layer: MEASUREMENT_LAYER,
+          fontSize: style.fontSize
         }),
         ...points.map(
           (p, i) =>
@@ -400,6 +414,8 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
       .addCanvas(persistOverlay)
 
     commitMeasurementGroup(context.view as AcTrView2d, group, {
+      style,
+      redraw: paintArea,
       dispose: () => {
         context.view.events.viewChanged.removeEventListener(redrawPersist)
       }

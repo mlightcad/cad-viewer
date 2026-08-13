@@ -1,5 +1,7 @@
 import { AcApDocManager } from '../app'
 import { runMarkupEdit } from '../command/markup/AcApMarkupHistory'
+import { runMeasurementEdit } from '../command/measure/AcApMeasurementHistory'
+import { MEASUREMENT_LAYER } from '../command/measure/AcApMeasurementStore'
 import { AcEdMTextEditor } from '../editor/input/ui/AcEdMTextEditor'
 import type { AcTrView2d } from './AcTrView2d'
 
@@ -67,10 +69,27 @@ export class AcEdViewKeyHandler {
         // sendStringToExecute clears scripted inputs unconditionally.
         if (!this.view.editor.isActive) {
           let removed = false
-          if (this.view.htmlTransientManager.hasSelection()) {
-            runMarkupEdit(this.view, 'Delete Markup', () => {
-              removed = this.view.htmlTransientManager.deleteSelected()
-            })
+          const ht = this.view.htmlTransientManager
+          if (ht.hasSelection()) {
+            const selected = ht.getSelectedGroups()
+            const measurements = selected.filter(
+              group => group.layer === MEASUREMENT_LAYER
+            )
+            if (measurements.length > 0) {
+              runMeasurementEdit(this.view, 'Delete Measurement', () => {
+                for (const group of measurements) {
+                  if (ht.detach(group.id)) removed = true
+                }
+              })
+            }
+            const hasMarkupSelection =
+              selected.some(group => group.layer !== MEASUREMENT_LAYER) ||
+              (selected.length === 0 && ht.hasSelection())
+            if (hasMarkupSelection) {
+              runMarkupEdit(this.view, 'Delete Markup', () => {
+                removed = ht.deleteSelected() || removed
+              })
+            }
           }
           if (removed) {
             this.view.isDirty = true

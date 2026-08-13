@@ -8,6 +8,7 @@
       :model-value="modelValue"
       :disabled="disabled"
       :placeholder="placeholder"
+      :numeric-only="numericOnly"
       @update:modelValue="emit('update:modelValue', $event)"
     />
   </ml-ribbon-property-field>
@@ -30,6 +31,8 @@ interface RibbonPropertyLineWeightSelectProps {
   disabled?: boolean
   /** Placeholder shown when no line weight can be resolved. */
   placeholder?: string
+  /** When true, hide ByLayer / ByBlock / Default (overlay style pickers). */
+  numericOnly?: boolean
 }
 
 defineProps<RibbonPropertyLineWeightSelectProps>()

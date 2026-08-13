@@ -28,11 +28,14 @@ import {
 import { AcApI18n } from '../../i18n'
 import {
   cssColor,
+  currentMeasurementStyle,
+  measurementCanvasLineWidth,
   measurementColor
 } from '../../util'
 import { AcTrView2d } from '../../view'
 import {
   commitMeasurementGroup,
+  getMeasurementStyle,
   MEASUREMENT_LAYER,
   MEASUREMENT_LIVE_LAYER
 } from './AcApMeasurementStore'
@@ -96,7 +99,8 @@ function drawArcOnCanvas(
   g: CircleGeom,
   p1: { x: number; y: number },
   p2: { x: number; y: number },
-  color: AcCmColor
+  color: AcCmColor,
+  lineWidth = 4
 ) {
   const rect = view.canvas.getBoundingClientRect()
   const dpr = window.devicePixelRatio || 1
@@ -137,7 +141,7 @@ function drawArcOnCanvas(
   ctx.beginPath()
   ctx.arc(sc.x, sc.y, screenR, sa, ea, antiClockwise)
   ctx.strokeStyle = cssColor(color)
-  ctx.lineWidth = 4
+  ctx.lineWidth = lineWidth
   ctx.stroke()
 
   ctx.restore()
@@ -330,6 +334,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     const editor = context.view.editor
     const db = context.doc.database
     const color = measurementColor(db)
+    const style = currentMeasurementStyle(db)
+    const canvasLineWidth = measurementCanvasLineWidth(style.lineWeight)
 
     // Construction-phase canvas — removed before this method returns
     const liveId = `live-arc-${Date.now()}`
@@ -395,7 +401,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
           color,
           worldPosition: start,
           layer: MEASUREMENT_LIVE_LAYER,
-          layoutId: (context.view as AcTrView2d).activeLayoutBtrId
+          layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
+          fontSize: style.fontSize
         })
         liveBadge.object.visible = false
         htManager.add(liveBadge)
@@ -407,7 +414,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
             geom,
             start,
             start,
-            color
+            color,
+            canvasLineWidth
           )
         const onViewChangedPreview = () => redrawPreview()
         context.view.events.viewChanged.addEventListener(onViewChangedPreview)
@@ -428,7 +436,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
             geom,
             start,
             snapped,
-            color
+            color,
+            canvasLineWidth
           )
 
           const len = shortArcLength(start, snapped, geom)
@@ -467,6 +476,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
         const arcLen = shortArcLength(start, end, geom)
         const mid = shortArcMid(start, end, geom)
 
+        const id = `arc-${Date.now()}`
+
         // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
         const persistOverlay = new AcTrHtmlCanvasOverlay({
           id: `arc-canvas-${Date.now()}`,
@@ -474,28 +485,20 @@ export class AcApMeasureArcCmd extends AcEdCommand {
           layer: MEASUREMENT_LAYER,
           layoutId: (context.view as AcTrView2d).activeLayoutBtrId
         })
-        drawArcOnCanvas(
-          persistOverlay.canvas,
-          context.view,
-          geom,
-          start,
-          end,
-          color
-        )
-
-        const redrawPersist = () =>
+        const paintArc = (paintStyle = style) =>
           drawArcOnCanvas(
             persistOverlay.canvas,
             context.view,
             geom,
             start,
             end,
-            color
+            paintStyle.color,
+            measurementCanvasLineWidth(paintStyle.lineWeight)
           )
-        context.view.events.viewChanged.addEventListener(redrawPersist)
+        paintArc()
 
-        // Persistent badge + dots via htmlTransientManager
-        const id = `arc-${Date.now()}`
+        const redrawPersist = () => paintArc(getMeasurementStyle(id) ?? style)
+        context.view.events.viewChanged.addEventListener(redrawPersist)
 
         const group = new AcTrHtmlGroup({
           id,
@@ -524,12 +527,15 @@ export class AcApMeasureArcCmd extends AcEdCommand {
                 showApproximate: true
               }),
               worldPosition: mid,
-              layer: MEASUREMENT_LAYER
+              layer: MEASUREMENT_LAYER,
+              fontSize: style.fontSize
             })
           )
           .addCanvas(persistOverlay)
 
         commitMeasurementGroup(context.view as AcTrView2d, group, {
+          style,
+          redraw: paintArc,
           dispose: () => {
             context.view.events.viewChanged.removeEventListener(redrawPersist)
           }

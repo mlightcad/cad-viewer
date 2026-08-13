@@ -430,6 +430,18 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     this._context.styleManager.showLineWeight = value
   }
 
+  /**
+   * Whether the next line conversion should honor entity lineweights even
+   * when {@link showLineWeight} (LWDISPLAY) is off.
+   */
+  get forceShowLineWeight() {
+    return this._context.styleManager.forceShowLineWeight
+  }
+
+  set forceShowLineWeight(value: boolean) {
+    this._context.styleManager.forceShowLineWeight = value
+  }
+
   updateLayerMaterial(
     layerName: string,
     newTraits: Partial<AcGiSubEntityTraits>

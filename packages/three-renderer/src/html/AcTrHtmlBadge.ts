@@ -47,6 +47,11 @@ export class AcTrHtmlBadge extends AcTrHtmlElement {
     this.element.style.fontSize = `${fontSize}px`
   }
 
+  /** Update the badge text color. */
+  setColor(color: AcCmColor): void {
+    this.element.style.color = acTrHtmlCssColor(color)
+  }
+
   private static createElement(
     color: AcCmColor,
     text: string,

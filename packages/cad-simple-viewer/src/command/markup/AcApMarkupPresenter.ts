@@ -36,7 +36,8 @@ import type {
 } from './AcApMarkupTypes'
 import {
   cssToMarkupColor,
-  MARKUP_LINE_WEIGHT
+  MARKUP_LINE_WEIGHT,
+  markupCanvasLineWidth
 } from './AcApMarkupUtil'
 
 const CLOUD_DIAMETER_PIXELS = 8
@@ -184,10 +185,11 @@ function drawLeader(
   tip: { x: number; y: number },
   anchor: { x: number; y: number },
   color: string,
-  withArrow = true
+  withArrow = true,
+  lineWidth = 2
 ): void {
   ctx.strokeStyle = color
-  ctx.lineWidth = 2
+  ctx.lineWidth = lineWidth
   ctx.beginPath()
   ctx.moveTo(tip.x, tip.y)
   ctx.lineTo(anchor.x, anchor.y)
@@ -201,7 +203,8 @@ function drawHighlight(
   ctx: CanvasRenderingContext2D,
   a: { x: number; y: number },
   b: { x: number; y: number },
-  color: string
+  color: string,
+  lineWidth = 1.5
 ): void {
   const x = Math.min(a.x, b.x)
   const y = Math.min(a.y, b.y)
@@ -212,7 +215,7 @@ function drawHighlight(
   ctx.fillRect(x, y, w, h)
   ctx.globalAlpha = 1
   ctx.strokeStyle = color
-  ctx.lineWidth = 1.5
+  ctx.lineWidth = lineWidth
   ctx.strokeRect(x, y, w, h)
 }
 
@@ -253,7 +256,12 @@ function publishAttachedCallout(
       view2d.worldToScreen(live.tip),
       view2d.worldToScreen(live.anchor),
       record.style.color,
-      false
+      false,
+      markupCanvasLineWidth(
+        record.style.lineWeight != null && record.style.lineWeight > 0
+          ? record.style.lineWeight
+          : MARKUP_LINE_WEIGHT
+      )
     )
   }
   redraw()
@@ -344,14 +352,17 @@ export class AcApMarkupPresenter {
    */
   publish(view: AcEdBaseView, record: AcApMarkupRecord): void {
     const view2d = asView2d(view)
+    const restoreSelection = getMarkupStore().selectedId === record.id
     if (this.published.has(record.id)) {
       this.unpublish(view, record.id, { keepInStore: true })
     }
 
     const color = cssToMarkupColor(record.style.color)
     const lineWeight =
-      (record.style.lineWeight as AcGiLineWeight | undefined) ??
-      MARKUP_LINE_WEIGHT
+      record.style.lineWeight != null && record.style.lineWeight > 0
+        ? (record.style.lineWeight as AcGiLineWeight)
+        : MARKUP_LINE_WEIGHT
+    const canvasLineWidth = markupCanvasLineWidth(lineWeight)
     const layer = MARKUP_LAYER
     const layoutId = record.layoutId
     const extras: VisualExtras = { entityIds: [], dispose: () => undefined }
@@ -569,7 +580,8 @@ export class AcApMarkupPresenter {
             ctx,
             view2d.worldToScreen(geom.corner1),
             view2d.worldToScreen(geom.corner2),
-            record.style.color
+            record.style.color,
+            canvasLineWidth
           )
         }
         redraw()
@@ -612,7 +624,9 @@ export class AcApMarkupPresenter {
             ctx,
             view2d.worldToScreen(live.tip),
             view2d.worldToScreen(live.anchor),
-            record.style.color
+            record.style.color,
+            true,
+            canvasLineWidth
           )
         }
         redraw()
@@ -731,8 +745,10 @@ export class AcApMarkupPresenter {
     view2d.isDirty = true
     this.published.add(record.id)
 
-    // Preserve selection across republish (style edits / geometry commits).
-    if (getMarkupStore().selectedId === record.id) {
+    // Preserve selection across republish (style / label / geometry edits).
+    // Removing the previous group clears selection; restore it on the new one.
+    if (restoreSelection) {
+      getMarkupStore().setSelectedId(record.id)
       view2d.htmlTransientManager.selectGroup(record.id)
     }
   }

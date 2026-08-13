@@ -15,7 +15,8 @@ export default {
     tab: {
       home: 'Ana Sayfa',
       insert: 'Ekle',
-      tools: 'Araçlar',
+      review: 'İnceleme',
+      measurement: 'Ölçüm',
       hatchContext: 'Tarama',
       mtextEditorContext: 'Metin Düzenleyici'
     },
@@ -216,6 +217,7 @@ export default {
       annotation: 'Açıklama',
       review: 'İnceleme',
       measurement: 'Ölçüm',
+      style: 'Stil',
       reference: 'Referans',
       block: 'Blok'
     },
@@ -539,6 +541,21 @@ export default {
       text: 'Font size',
       description: 'Set the font size for text and callout markups'
     },
+    measurementColor: {
+      text: 'Color',
+      description:
+        'Set the color for the selected measurement, or for measurements you add next'
+    },
+    measurementLineWeight: {
+      text: 'Lineweight',
+      description:
+        'Set the lineweight for the selected measurement, or for measurements you add next'
+    },
+    measurementFontSize: {
+      text: 'Font size',
+      description:
+        'Set the font size for the selected measurement, or for measurements you add next'
+    },
     showMarkup: {
       text: 'Show',
       description: 'Shows Design Review markups'
@@ -732,6 +749,7 @@ export default {
       author: 'Author',
       summary: 'Summary',
       details: 'Details',
+      closeDetails: 'Close details',
       label: 'Label',
       comment: 'Comment',
       zoomTo: 'Zoom to',

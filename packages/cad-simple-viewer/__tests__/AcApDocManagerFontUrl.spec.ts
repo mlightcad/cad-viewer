@@ -209,7 +209,8 @@ jest.mock('../src/command', () => {
         jest.fn().mockImplementation(() => ({ trigger: jest.fn() }))
       ])
     ),
-    resetMarkupSession: jest.fn()
+    resetMarkupSession: jest.fn(),
+    resetMeasurementSession: jest.fn()
   }
 })
 
