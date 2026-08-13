@@ -179,13 +179,11 @@ export class AcApSessionUndo {
         }
         continue
       }
-      if (getMarkupHistory().canUndo()) {
-        getMarkupHistory().undo()
+      if (getMarkupHistory().undo()) {
         this.redoKinds.push('markup')
         return 'markup'
       }
-      if (db.transactionManager.canUndo()) {
-        db.transactionManager.undo()
+      if (db.transactionManager?.undo()) {
         this.redoKinds.push('db')
         return 'db'
       }
@@ -215,13 +213,11 @@ export class AcApSessionUndo {
         }
         continue
       }
-      if (getMarkupHistory().canRedo()) {
-        getMarkupHistory().redo()
+      if (getMarkupHistory().redo()) {
         this.undoKinds.push('markup')
         return 'markup'
       }
-      if (db.transactionManager.canRedo()) {
-        db.transactionManager.redo()
+      if (db.transactionManager?.redo()) {
         this.undoKinds.push('db')
         return 'db'
       }
