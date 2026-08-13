@@ -674,66 +674,71 @@ export default {
   measurePoint: {
     point: 'Noktayı belirtin'
   },
+  measurement: {
+    import: {
+      chooseFile: 'Bir ölçüm sidecar JSON dosyası seçin'
+    }
+  },
   markup: {
-    author: 'Specify review author (saved for later)',
+    author: 'İnceleme yazarını belirtin (sonraki kullanımlar için kaydedilir)',
     text: {
-      point: 'Specify text markup point',
-      content: 'Enter markup text'
+      point: 'Metin işaretinin noktasını belirtin',
+      content: 'İşaret metnini girin'
     },
     line: {
-      firstPoint: 'Specify first point of line markup',
-      secondPoint: 'Specify second point of line markup'
+      firstPoint: 'Çizgi işaretinin ilk noktasını belirtin',
+      secondPoint: 'Çizgi işaretinin ikinci noktasını belirtin'
     },
     arrow: {
-      firstPoint: 'Specify arrow start point',
-      secondPoint: 'Specify arrow tip'
+      firstPoint: 'Okun başlangıç noktasını belirtin',
+      secondPoint: 'Ok ucunu belirtin'
     },
     cloud: {
-      firstCorner: 'Specify first corner of cloud',
-      secondCorner: 'Specify opposite corner of cloud'
+      firstCorner: 'Bulutun ilk köşesini belirtin',
+      secondCorner: 'Bulutun karşı köşesini belirtin'
     },
     rect: {
-      firstCorner: 'Specify first corner of rectangle',
-      secondCorner: 'Specify opposite corner of rectangle'
+      firstCorner: 'Dikdörtgenin ilk köşesini belirtin',
+      secondCorner: 'Dikdörtgenin karşı köşesini belirtin'
     },
     circle: {
-      center: 'Specify center of circle',
-      radius: 'Specify radius of circle'
+      center: 'Dairenin merkezini belirtin',
+      radius: 'Dairenin yarıçapını belirtin'
     },
     shape: {
-      calloutOn: '[Callout on]',
-      calloutOff: '[Callout off]',
-      calloutAnchor: 'Specify callout text location',
+      calloutOn: '[Çağrı açık]',
+      calloutOff: '[Çağrı kapalı]',
+      calloutAnchor: 'Çağrı metninin konumunu belirtin',
       keywords: {
         callout: {
-          display: 'Callout(C)',
-          local: 'Callout',
+          display: 'Çağrı(C)',
+          local: 'Çağrı',
           global: 'Callout'
         },
         noCallout: {
-          display: 'NoCallout(N)',
-          local: 'NoCallout',
+          display: 'ÇağrıYok(N)',
+          local: 'ÇağrıYok',
           global: 'NoCallout'
         }
       }
     },
     highlight: {
-      firstCorner: 'Specify first corner of highlight',
-      secondCorner: 'Specify opposite corner of highlight'
+      firstCorner: 'Vurgu dikdörtgeninin ilk köşesini belirtin',
+      secondCorner: 'Vurgu dikdörtgeninin karşı köşesini belirtin'
     },
     callout: {
-      tip: 'Specify leader tip (arrow end)',
-      anchor: 'Specify callout text location',
-      content: 'Enter callout text'
+      tip: 'Lider ucunu belirtin (ok ucu)',
+      anchor: 'Çağrı metninin konumunu belirtin',
+      content: 'Çağrı metnini girin'
     },
     stamp: {
-      kind: 'Enter stamp id [approved/rejected/revised/for-review/custom]',
-      imageUrl: 'Enter custom stamp image URL (optional)',
-      caption: 'Enter stamp caption (optional)',
-      point: 'Specify stamp insertion point'
+      kind: 'Damga kimliğini girin [approved/rejected/revised/for-review/custom]',
+      imageUrl: 'Özel damga görüntüsü URL’sini girin (isteğe bağlı)',
+      caption: 'Damga açıklamasını girin (isteğe bağlı)',
+      point: 'Damga ekleme noktasını belirtin'
     },
     import: {
-      chooseFile: 'Choose a markup sidecar JSON file'
+      chooseFile: 'Bir işaret sidecar JSON dosyası seçin'
     }
   },
   move: {

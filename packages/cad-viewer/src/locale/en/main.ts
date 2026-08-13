@@ -217,6 +217,8 @@ export default {
       review: 'Review',
       measurement: 'Measurement',
       style: 'Style',
+      lengthUnits: 'Length Units',
+      angleUnits: 'Angle Units',
       reference: 'Reference',
       block: 'Block'
     },
@@ -442,7 +444,15 @@ export default {
     },
     clearMeasurements: {
       text: 'Clear',
-      description: 'Removes all active measurements from the view'
+      description: 'Removes all measurements from the current layout'
+    },
+    measurementImport: {
+      text: 'Import',
+      description: 'Import measurements from a sidecar JSON file'
+    },
+    measurementExport: {
+      text: 'Export',
+      description: 'Export measurements to a sidecar JSON file'
     },
     annotation: {
       text: 'Annotation',
@@ -488,43 +498,43 @@ export default {
     },
     markupPanel: {
       text: 'Review',
-      description: 'Open the Design Review markup palette'
+      description: 'Open the markup palette'
     },
     markupText: {
       text: 'Text',
-      description: 'Place a Design Review text markup'
+      description: 'Place a text markup'
     },
     markupCloud: {
       text: 'Cloud',
-      description: 'Create a Design Review cloud markup'
+      description: 'Create a cloud markup'
     },
     markupRect: {
       text: 'Rectangle',
-      description: 'Create a Design Review rectangle markup'
+      description: 'Create a rectangle markup'
     },
     markupCircle: {
       text: 'Circle',
-      description: 'Create a Design Review circle markup'
+      description: 'Create a circle markup'
     },
     markupArrow: {
       text: 'Arrow',
-      description: 'Create a Design Review arrow markup'
+      description: 'Create an arrow markup'
     },
     markupCallout: {
       text: 'Callout',
-      description: 'Create a Design Review callout'
+      description: 'Create a callout'
     },
     markupStamp: {
       text: 'Stamp',
-      description: 'Place a Design Review stamp'
+      description: 'Place a stamp'
     },
     markupImport: {
       text: 'Import',
-      description: 'Import Design Review markups from a sidecar JSON file'
+      description: 'Import markups from a sidecar JSON file'
     },
     markupExport: {
       text: 'Export',
-      description: 'Export Design Review markups to a sidecar JSON file'
+      description: 'Export markups to a sidecar JSON file'
     },
     markupColor: {
       text: 'Color',
@@ -555,15 +565,15 @@ export default {
     },
     showMarkup: {
       text: 'Show',
-      description: 'Shows Design Review markups'
+      description: 'Shows markups'
     },
     hideMarkup: {
       text: 'Hide',
-      description: 'Hides Design Review markups'
+      description: 'Hides markups'
     },
     clearMarkups: {
       text: 'Clear',
-      description: 'Clears all Design Review markups on the current layout'
+      description: 'Clears all markups on the current layout'
     },
     select: {
       text: 'Select',
@@ -736,7 +746,7 @@ export default {
     },
     designReview: {
       tab: 'Review',
-      title: 'Design Review',
+      title: 'Review',
       searchPlaceholder: 'Search markups',
       empty: 'No markups yet',
       type: 'Type',

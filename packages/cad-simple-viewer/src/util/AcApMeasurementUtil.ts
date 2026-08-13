@@ -111,3 +111,16 @@ export function colorToCssAlpha(c: AcCmColor, alpha: number): string {
 export function cssColor(c: AcCmColor): string {
   return c.cssColor ?? `rgb(${c.red}, ${c.green}, ${c.blue})`
 }
+
+/** Parse a CSS color string back into AcCmColor (best-effort). */
+export function cssToMeasurementColor(css: string): AcCmColor {
+  const fromString = AcCmColor.fromString(css)
+  if (fromString) return fromString
+  try {
+    return new AcCmColor().setRGBFromCss(css)
+  } catch {
+    const fallback = new AcCmColor()
+    fallback.setRGB(123, 135, 148)
+    return fallback
+  }
+}

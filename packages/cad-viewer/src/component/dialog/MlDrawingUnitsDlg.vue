@@ -28,14 +28,17 @@
               </el-select>
             </el-form-item>
             <el-form-item :label="t('dialog.drawingUnitsDlg.lengthPrecision')">
-              <el-input-number
+              <el-select
                 v-model="form.luprec"
-                :min="0"
-                :max="8"
-                :step="1"
-                controls-position="right"
                 class="ml-drawing-units-dlg__control"
-              />
+              >
+                <el-option
+                  v-for="opt in lengthPrecisionOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
             </el-form-item>
           </el-form>
         </ml-fieldset-group>
@@ -59,14 +62,17 @@
               </el-select>
             </el-form-item>
             <el-form-item :label="t('dialog.drawingUnitsDlg.anglePrecision')">
-              <el-input-number
+              <el-select
                 v-model="form.auprec"
-                :min="0"
-                :max="8"
-                :step="1"
-                controls-position="right"
                 class="ml-drawing-units-dlg__control"
-              />
+              >
+                <el-option
+                  v-for="opt in anglePrecisionOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
             </el-form-item>
             <el-form-item>
               <el-checkbox v-model="clockwiseChecked">{{
@@ -115,13 +121,13 @@ import {
   ElCheckbox,
   ElForm,
   ElFormItem,
-  ElInputNumber,
   ElOption,
   ElSelect
 } from 'element-plus'
 import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { drawingUnitPrecisionOptions } from '../../util/drawingUnitPrecision'
 import MlBaseDialog from '../common/MlBaseDialog.vue'
 import MlFieldsetGroup from '../common/MlFieldsetGroup.vue'
 
@@ -156,6 +162,14 @@ const clockwiseChecked = computed({
     form.angdir = v ? 1 : 0
   }
 })
+
+const lengthPrecisionOptions = computed(() =>
+  drawingUnitPrecisionOptions(form.luprec)
+)
+
+const anglePrecisionOptions = computed(() =>
+  drawingUnitPrecisionOptions(form.auprec)
+)
 
 const linearUnitOptions = computed(() => [
   {

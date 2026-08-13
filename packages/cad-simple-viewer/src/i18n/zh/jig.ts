@@ -665,6 +665,11 @@ export default {
   measurePoint: {
     point: '指定点'
   },
+  measurement: {
+    import: {
+      chooseFile: '选择测量 sidecar JSON 文件'
+    }
+  },
   markup: {
     author: '指定批注作者（将保存供以后使用）',
     text: {

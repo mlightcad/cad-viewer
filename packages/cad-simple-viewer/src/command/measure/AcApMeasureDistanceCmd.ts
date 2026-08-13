@@ -24,12 +24,15 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  type AcApMeasurementStyle,
   currentMeasurementStyle,
+  formatMeasurementLength,
   getMeasurementFontSize,
   getMeasurementLineWeight,
   measurementColor
 } from '../../util'
 import { AcTrView2d } from '../../view'
+import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
 import {
   commitMeasurementGroup,
   MEASUREMENT_LAYER,
@@ -41,6 +44,78 @@ function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {
   const dx = p2.x - p1.x
   const dy = p2.y - p1.y
   return Math.sqrt(dx * dx + dy * dy)
+}
+
+/**
+ * Commit a distance measurement overlay (also used when importing a sidecar).
+ */
+export function placeDistanceMeasurement(
+  view: AcTrView2d,
+  db: AcDbDatabase,
+  p1: AcGePoint3dLike,
+  p2: AcGePoint3dLike,
+  style: AcApMeasurementStyle,
+  options?: { id?: string; layoutId?: string }
+): void {
+  const dist = calcDist(p1, p2)
+  const color = style.color
+  const line = new AcDbLine(p1, p2)
+  line.color = color
+  line.lineWeight = style.lineWeight
+  view.addTransientEntity(line)
+
+  const id = options?.id ?? `dist-${Date.now()}`
+  const layoutId = options?.layoutId ?? view.activeLayoutBtrId
+  const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+
+  const group = new AcTrHtmlGroup({
+    id,
+    layer: MEASUREMENT_LAYER,
+    layoutId,
+    selectable: true
+  }).add(
+    new AcTrHtmlDot({
+      id: `${id}-dot1`,
+      color,
+      worldPosition: p1,
+      layer: MEASUREMENT_LAYER
+    }),
+    new AcTrHtmlDot({
+      id: `${id}-dot2`,
+      color,
+      worldPosition: p2,
+      layer: MEASUREMENT_LAYER
+    }),
+    new AcTrHtmlBadge({
+      id: `${id}-badge`,
+      color,
+      text: formatMeasurementLength(db, dist),
+      worldPosition: mid,
+      layer: MEASUREMENT_LAYER,
+      fontSize: style.fontSize
+    })
+  )
+
+  commitMeasurementGroup(view, group, {
+    entityIds: [line.objectId],
+    entities: [line],
+    style,
+    value: { kind: 'length', value: dist },
+    snapshot: {
+      id,
+      type: 'distance',
+      layoutId,
+      style: serializeMeasurementStyle(style),
+      geometry: {
+        type: 'distance',
+        start: { x: p1.x, y: p1.y },
+        end: { x: p2.x, y: p2.y }
+      }
+    },
+    dispose: () => {
+      view.removeTransientEntity(line.objectId)
+    }
+  })
 }
 
 /**
@@ -99,12 +174,7 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
       return
     }
 
-    this._badge.setText(
-      this._db.formatter.formatLength(dist, {
-        showUnits: true,
-        showApproximate: true
-      })
-    )
+    this._badge.setText(formatMeasurementLength(this._db, dist))
     this._badge.setPosition({
       x: (this._p1.x + p2.x) / 2,
       y: (this._p1.y + p2.y) / 2
@@ -156,57 +226,13 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
         if (p2Result.status !== AcEdPromptStatus.OK) return
         const p2 = p2Result.value!
 
-        const dist = calcDist(p1, p2)
-
-        // CAD transient line (zoom/pan aware, rendered by the engine)
-        const line = new AcDbLine(p1, p2)
-        line.color = color
-        line.lineWeight = style.lineWeight
-        context.view.addTransientEntity(line)
-
-        // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
-        const id = `dist-${Date.now()}`
-        const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
-
-        const group = new AcTrHtmlGroup({
-          id,
-          layer: MEASUREMENT_LAYER,
-          layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
-          selectable: true
-        }).add(
-          new AcTrHtmlDot({
-            id: `${id}-dot1`,
-            color,
-            worldPosition: p1,
-            layer: MEASUREMENT_LAYER
-          }),
-          new AcTrHtmlDot({
-            id: `${id}-dot2`,
-            color,
-            worldPosition: p2,
-            layer: MEASUREMENT_LAYER
-          }),
-          new AcTrHtmlBadge({
-            id: `${id}-badge`,
-            color,
-            text: db.formatter.formatLength(dist, {
-              showUnits: true,
-              showApproximate: true
-            }),
-            worldPosition: mid,
-            layer: MEASUREMENT_LAYER,
-            fontSize: style.fontSize
-          })
+        placeDistanceMeasurement(
+          context.view as AcTrView2d,
+          db,
+          p1,
+          p2,
+          style
         )
-
-        commitMeasurementGroup(context.view as AcTrView2d, group, {
-          entityIds: [line.objectId],
-          entities: [line],
-          style,
-          dispose: () => {
-            context.view.removeTransientEntity(line.objectId)
-          }
-        })
       })
     )
   }

@@ -25,14 +25,17 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  type AcApMeasurementStyle,
   cssColor,
   currentMeasurementStyle,
+  formatMeasurementAngle,
   getMeasurementFontSize,
   getMeasurementLineWeight,
   measurementCanvasLineWidth,
   measurementColor
 } from '../../util'
 import { AcTrView2d } from '../../view'
+import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
 import {
   commitMeasurementGroup,
   getMeasurementStyle,
@@ -167,6 +170,145 @@ function drawAngleArcOnCanvas(
 }
 
 /**
+ * Commit an angle measurement overlay (also used when importing a sidecar).
+ */
+export function placeAngleMeasurement(
+  view: AcTrView2d,
+  db: AcDbDatabase,
+  vertex: AcGePoint3dLike,
+  arm1: AcGePoint3dLike,
+  arm2: AcGePoint3dLike,
+  style: AcApMeasurementStyle,
+  options?: { id?: string; layoutId?: string }
+): void {
+  const color = style.color
+  const degrees = calcAngleDeg(vertex, arm1, arm2)
+
+  const line1 = new AcDbLine(vertex, arm1)
+  line1.color = color
+  line1.lineWeight = style.lineWeight
+  view.addTransientEntity(line1)
+
+  const line2 = new AcDbLine(vertex, arm2)
+  line2.color = color
+  line2.lineWeight = style.lineWeight
+  view.addTransientEntity(line2)
+
+  const id = options?.id ?? `angle-${Date.now()}`
+  const layoutId = options?.layoutId ?? view.activeLayoutBtrId
+  const persistOverlay = new AcTrHtmlCanvasOverlay({
+    id: `angle-arc-${id}`,
+    container: view.container,
+    layer: MEASUREMENT_LAYER,
+    layoutId
+  })
+  const paintArc = (paintStyle = style) =>
+    drawAngleArcOnCanvas(
+      persistOverlay.canvas,
+      view,
+      vertex,
+      arm1,
+      arm2,
+      paintStyle.color,
+      measurementCanvasLineWidth(paintStyle.lineWeight)
+    )
+  paintArc()
+
+  const redrawPersist = () => paintArc(getMeasurementStyle(id) ?? style)
+  view.events.viewChanged.addEventListener(redrawPersist)
+
+  const dx1 = arm1.x - vertex.x
+  const dy1 = arm1.y - vertex.y
+  const dx2 = arm2.x - vertex.x
+  const dy2 = arm2.y - vertex.y
+  const wLen1 = Math.hypot(dx1, dy1)
+  const wLen2 = Math.hypot(dx2, dy2)
+  const u1x = wLen1 > 0 ? dx1 / wLen1 : 1
+  const u1y = wLen1 > 0 ? dy1 / wLen1 : 0
+  const u2x = wLen2 > 0 ? dx2 / wLen2 : 1
+  const u2y = wLen2 > 0 ? dy2 / wLen2 : 0
+  let bx = u1x + u2x
+  let by = u1y + u2y
+  const bLen = Math.hypot(bx, by)
+  if (bLen > 0) {
+    bx /= bLen
+    by /= bLen
+  } else {
+    bx = -u1y
+    by = u1x
+  }
+  const badgeOffset = Math.max(
+    Math.min(wLen1, wLen2) * 0.4,
+    Math.max(wLen1, wLen2) * 0.15
+  )
+  const badgeWorld = {
+    x: vertex.x + bx * badgeOffset,
+    y: vertex.y + by * badgeOffset
+  }
+
+  const group = new AcTrHtmlGroup({
+    id,
+    layer: MEASUREMENT_LAYER,
+    layoutId,
+    selectable: true
+  })
+    .add(
+      new AcTrHtmlDot({
+        id: `${id}-dotV`,
+        color,
+        worldPosition: vertex,
+        layer: MEASUREMENT_LAYER
+      }),
+      new AcTrHtmlDot({
+        id: `${id}-dot1`,
+        color,
+        worldPosition: arm1,
+        layer: MEASUREMENT_LAYER
+      }),
+      new AcTrHtmlDot({
+        id: `${id}-dot2`,
+        color,
+        worldPosition: arm2,
+        layer: MEASUREMENT_LAYER
+      }),
+      new AcTrHtmlBadge({
+        id: `${id}-badge`,
+        color,
+        text: formatMeasurementAngle(db, (degrees * Math.PI) / 180),
+        worldPosition: badgeWorld,
+        layer: MEASUREMENT_LAYER,
+        fontSize: style.fontSize
+      })
+    )
+    .addCanvas(persistOverlay)
+
+  commitMeasurementGroup(view, group, {
+    entityIds: [line1.objectId, line2.objectId],
+    entities: [line1, line2],
+    style,
+    value: { kind: 'angle', radians: (degrees * Math.PI) / 180 },
+    snapshot: {
+      id,
+      type: 'angle',
+      layoutId,
+      style: serializeMeasurementStyle(style),
+      geometry: {
+        type: 'angle',
+        vertex: { x: vertex.x, y: vertex.y },
+        arm1: { x: arm1.x, y: arm1.y },
+        arm2: { x: arm2.x, y: arm2.y }
+      }
+    },
+    redraw: paintArc,
+    dispose: () => {
+      view.removeTransientEntity(line1.objectId)
+      view.removeTransientEntity(line2.objectId)
+      view.events.viewChanged.removeEventListener(redrawPersist)
+    }
+  })
+}
+
+/**
  * Simple rubber-band jig for picking arm1: draws a transient line
  * from vertex to cursor.
  */
@@ -260,11 +402,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
     const deg = calcAngleDeg(this._vertex, this._arm1, p)
     this._badge.setText(
-      this._db.formatter.formatAngle((deg * Math.PI) / 180, {
-        showUnits: true,
-        showApproximate: true,
-        applyAngbaseAngdir: false
-      })
+      formatMeasurementAngle(this._db, (deg * Math.PI) / 180)
     )
     this._badge.setPosition(this._vertex)
     this._badge.object.visible = true
@@ -384,128 +522,14 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
         context.view.events.viewChanged.removeEventListener(redrawOnViewChange)
         htLive.remove(armOverlay.id)
 
-        const degrees = calcAngleDeg(vertex, arm1, arm2)
-
-        // Persistent CAD transient lines for both arms (zoom/pan aware)
-        const line1 = new AcDbLine(vertex, arm1)
-        line1.color = color
-        line1.lineWeight = style.lineWeight
-        context.view.addTransientEntity(line1)
-
-        const line2 = new AcDbLine(vertex, arm2)
-        line2.color = color
-        line2.lineWeight = style.lineWeight
-        context.view.addTransientEntity(line2)
-
-        const id = `angle-${Date.now()}`
-
-        // Persistent arc canvas — redrawn on viewChanged, cleaned up by Clear
-        const persistOverlay = new AcTrHtmlCanvasOverlay({
-          id: `angle-arc-${Date.now()}`,
-          container: context.view.container,
-          layer: MEASUREMENT_LAYER,
-          layoutId: (context.view as AcTrView2d).activeLayoutBtrId
-        })
-        const paintArc = (paintStyle = style) =>
-          drawAngleArcOnCanvas(
-            persistOverlay.canvas,
-            context.view,
-            vertex,
-            arm1,
-            arm2,
-            paintStyle.color,
-            measurementCanvasLineWidth(paintStyle.lineWeight)
-          )
-        paintArc()
-
-        const redrawPersist = () => paintArc(getMeasurementStyle(id) ?? style)
-        context.view.events.viewChanged.addEventListener(redrawPersist)
-
-        // Persistent overlays via htmlTransientManager (auto-positioned by CSS2DRenderer)
-
-        // Place badge along the angle bisector in world space
-        const dx1 = arm1.x - vertex.x
-        const dy1 = arm1.y - vertex.y
-        const dx2 = arm2.x - vertex.x
-        const dy2 = arm2.y - vertex.y
-        const wLen1 = Math.hypot(dx1, dy1)
-        const wLen2 = Math.hypot(dx2, dy2)
-        // Unit vectors along each arm
-        const u1x = wLen1 > 0 ? dx1 / wLen1 : 1
-        const u1y = wLen1 > 0 ? dy1 / wLen1 : 0
-        const u2x = wLen2 > 0 ? dx2 / wLen2 : 1
-        const u2y = wLen2 > 0 ? dy2 / wLen2 : 0
-        // Bisector direction (sum of unit vectors)
-        let bx = u1x + u2x
-        let by = u1y + u2y
-        const bLen = Math.hypot(bx, by)
-        if (bLen > 0) {
-          bx /= bLen
-          by /= bLen
-        } else {
-          // Arms are exactly opposite — use perpendicular
-          bx = -u1y
-          by = u1x
-        }
-        const badgeOffset = Math.max(
-          Math.min(wLen1, wLen2) * 0.4,
-          Math.max(wLen1, wLen2) * 0.15
+        placeAngleMeasurement(
+          context.view as AcTrView2d,
+          db,
+          vertex,
+          arm1,
+          arm2,
+          style
         )
-        const badgeWorld = {
-          x: vertex.x + bx * badgeOffset,
-          y: vertex.y + by * badgeOffset
-        }
-
-        const group = new AcTrHtmlGroup({
-          id,
-          layer: MEASUREMENT_LAYER,
-          layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
-          selectable: true
-        })
-          .add(
-            new AcTrHtmlDot({
-              id: `${id}-dotV`,
-              color,
-              worldPosition: vertex,
-              layer: MEASUREMENT_LAYER
-            }),
-            new AcTrHtmlDot({
-              id: `${id}-dot1`,
-              color,
-              worldPosition: arm1,
-              layer: MEASUREMENT_LAYER
-            }),
-            new AcTrHtmlDot({
-              id: `${id}-dot2`,
-              color,
-              worldPosition: arm2,
-              layer: MEASUREMENT_LAYER
-            }),
-            new AcTrHtmlBadge({
-              id: `${id}-badge`,
-              color,
-              text: db.formatter.formatAngle((degrees * Math.PI) / 180, {
-                showUnits: true,
-                applyAngbaseAngdir: false
-              }),
-              worldPosition: badgeWorld,
-              layer: MEASUREMENT_LAYER,
-              fontSize: style.fontSize
-            })
-          )
-          .addCanvas(persistOverlay)
-
-        commitMeasurementGroup(context.view as AcTrView2d, group, {
-          entityIds: [line1.objectId, line2.objectId],
-          entities: [line1, line2],
-          style,
-          redraw: paintArc,
-          dispose: () => {
-            context.view.removeTransientEntity(line1.objectId)
-            context.view.removeTransientEntity(line2.objectId)
-            context.view.events.viewChanged.removeEventListener(redrawPersist)
-          }
-        })
       })
     )
   }

@@ -218,6 +218,8 @@ export default {
       review: 'İnceleme',
       measurement: 'Ölçüm',
       style: 'Stil',
+      lengthUnits: 'Uzunluk Birimleri',
+      angleUnits: 'Açı Birimleri',
       reference: 'Referans',
       block: 'Blok'
     },
@@ -444,7 +446,15 @@ export default {
     },
     clearMeasurements: {
       text: 'Temizle',
-      description: 'Görünümden tüm etkin ölçümleri kaldırır'
+      description: 'Geçerli yerleşimdeki tüm ölçümleri kaldırır'
+    },
+    measurementImport: {
+      text: 'İçe Aktar',
+      description: 'Ölçümleri sidecar JSON dosyasından içe aktarır'
+    },
+    measurementExport: {
+      text: 'Dışa Aktar',
+      description: 'Ölçümleri sidecar JSON dosyasına dışa aktarır'
     },
     annotation: {
       text: 'Açıklama',
@@ -490,83 +500,83 @@ export default {
         'Çizimdeki alanları bulut şeklinde bir çerçeveyle vurgulamak için kullanılır'
     },
     markupPanel: {
-      text: 'Review',
-      description: 'Open the Design Review markup palette'
+      text: 'İnceleme',
+      description: 'İşaret paletini açar'
     },
     markupText: {
-      text: 'Text',
-      description: 'Place a Design Review text markup'
+      text: 'Metin',
+      description: 'Metin işareti yerleştirir'
     },
     markupCloud: {
-      text: 'Cloud',
-      description: 'Create a Design Review cloud markup'
+      text: 'Bulut',
+      description: 'Bulut işareti oluşturur'
     },
     markupRect: {
-      text: 'Rectangle',
-      description: 'Create a Design Review rectangle markup'
+      text: 'Dikdörtgen',
+      description: 'Dikdörtgen işareti oluşturur'
     },
     markupCircle: {
-      text: 'Circle',
-      description: 'Create a Design Review circle markup'
+      text: 'Daire',
+      description: 'Daire işareti oluşturur'
     },
     markupArrow: {
-      text: 'Arrow',
-      description: 'Create a Design Review arrow markup'
+      text: 'Ok',
+      description: 'Ok işareti oluşturur'
     },
     markupCallout: {
-      text: 'Callout',
-      description: 'Create a Design Review callout'
+      text: 'Çağrı',
+      description: 'Çağrı notu oluşturur'
     },
     markupStamp: {
-      text: 'Stamp',
-      description: 'Place a Design Review stamp'
+      text: 'Damga',
+      description: 'Damga yerleştirir'
     },
     markupImport: {
-      text: 'Import',
-      description: 'Import Design Review markups from a sidecar JSON file'
+      text: 'İçe Aktar',
+      description: 'İşaretleri sidecar JSON dosyasından içe aktarır'
     },
     markupExport: {
-      text: 'Export',
-      description: 'Export Design Review markups to a sidecar JSON file'
+      text: 'Dışa Aktar',
+      description: 'İşaretleri sidecar JSON dosyasına dışa aktarır'
     },
     markupColor: {
-      text: 'Color',
-      description: 'Set the color for new markup drawings'
+      text: 'Renk',
+      description: 'Yeni işaret çizimleri için rengi ayarlar'
     },
     markupLineWeight: {
-      text: 'Lineweight',
-      description: 'Set the lineweight for new markup drawings'
+      text: 'Çizgi Kalınlığı',
+      description: 'Yeni işaret çizimleri için çizgi kalınlığını ayarlar'
     },
     markupFontSize: {
-      text: 'Font size',
-      description: 'Set the font size for text and callout markups'
+      text: 'Yazı Boyutu',
+      description: 'Metin ve çağrı işaretleri için yazı boyutunu ayarlar'
     },
     measurementColor: {
-      text: 'Color',
+      text: 'Renk',
       description:
-        'Set the color for the selected measurement, or for measurements you add next'
+        'Seçili ölçümün veya sonraki ölçümlerin rengini ayarlar'
     },
     measurementLineWeight: {
-      text: 'Lineweight',
+      text: 'Çizgi Kalınlığı',
       description:
-        'Set the lineweight for the selected measurement, or for measurements you add next'
+        'Seçili ölçümün veya sonraki ölçümlerin çizgi kalınlığını ayarlar'
     },
     measurementFontSize: {
-      text: 'Font size',
+      text: 'Yazı Boyutu',
       description:
-        'Set the font size for the selected measurement, or for measurements you add next'
+        'Seçili ölçümün veya sonraki ölçümlerin yazı boyutunu ayarlar'
     },
     showMarkup: {
-      text: 'Show',
-      description: 'Shows Design Review markups'
+      text: 'Göster',
+      description: 'İşaretleri gösterir'
     },
     hideMarkup: {
-      text: 'Hide',
-      description: 'Hides Design Review markups'
+      text: 'Gizle',
+      description: 'İşaretleri gizler'
     },
     clearMarkups: {
-      text: 'Clear',
-      description: 'Clears all Design Review markups on the current layout'
+      text: 'Temizle',
+      description: 'Geçerli yerleşimdeki tüm işaretleri temizler'
     },
     select: {
       text: 'Seç',
@@ -740,26 +750,26 @@ export default {
       }
     },
     designReview: {
-      tab: 'Review',
-      title: 'Design Review',
-      searchPlaceholder: 'Search markups',
-      empty: 'No markups yet',
-      type: 'Type',
-      status: 'Status',
-      author: 'Author',
-      summary: 'Summary',
-      details: 'Details',
-      closeDetails: 'Close details',
-      label: 'Label',
-      comment: 'Comment',
-      zoomTo: 'Zoom to',
-      delete: 'Delete',
-      clear: 'Clear all',
+      tab: 'İnceleme',
+      title: 'İnceleme',
+      searchPlaceholder: 'İşaretlerde ara',
+      empty: 'Henüz işaret yok',
+      type: 'Tür',
+      status: 'Durum',
+      author: 'Yazar',
+      summary: 'Özet',
+      details: 'Ayrıntılar',
+      closeDetails: 'Ayrıntıları kapat',
+      label: 'Etiket',
+      comment: 'Yorum',
+      zoomTo: 'Yakınlaştır',
+      delete: 'Sil',
+      clear: 'Tümünü temizle',
       statusValues: {
-        open: 'Open',
-        question: 'Question',
-        answered: 'Answered',
-        closed: 'Closed'
+        open: 'Açık',
+        question: 'Soru',
+        answered: 'Yanıtlandı',
+        closed: 'Kapalı'
       }
     },
     missingResources: {

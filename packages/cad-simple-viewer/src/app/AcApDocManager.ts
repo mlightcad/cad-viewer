@@ -63,6 +63,8 @@ import {
   AcApMeasureArcCmd,
   AcApMeasureAreaCmd,
   AcApMeasureDistanceCmd,
+  AcApMeasurementExportCmd,
+  AcApMeasurementImportCmd,
   AcApMeasurePointCmd,
   AcApMLineCmd,
   AcApMoveCmd,
@@ -1245,6 +1247,16 @@ export class AcApDocManager {
       'clearmeasurements',
       'clearmeasurements',
       new AcApClearMeasurementsCmd()
+    )
+    addSystemCommand(
+      'measurementexport',
+      'measurementexport',
+      new AcApMeasurementExportCmd()
+    )
+    addSystemCommand(
+      'measurementimport',
+      'measurementimport',
+      new AcApMeasurementImportCmd()
     )
     addSystemCommand('-hatch', '-hatch', new AcApHatchCmd())
     addSystemCommand('imageattach', 'imageattach', new AcApImageAttachCmd())

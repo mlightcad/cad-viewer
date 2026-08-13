@@ -103,7 +103,7 @@ export default {
       description: 'Geçerli çizim dosyasının adını saklar (salt okunur)'
     },
     loginname: {
-      description: 'Displays the user\'s login name (read-only)'
+      description: 'Kullanıcının oturum açma adını görüntüler (salt okunur)'
     },
     dynmode: {
       description: 'İmleçteki Dinamik Girdi ayarlarını denetler'
@@ -286,7 +286,13 @@ export default {
         'Çizgi kalınlıklarının çizimde görüntülenip görüntülenmeyeceğini denetler'
     },
     clearmeasurements: {
-      description: 'Görünümdeki tüm etkin ölçümleri kaldırır'
+      description: 'Geçerli yerleşimdeki tüm ölçümleri kaldırır'
+    },
+    measurementexport: {
+      description: 'Ölçümleri sidecar JSON dosyasına dışa aktarır'
+    },
+    measurementimport: {
+      description: 'Ölçümleri sidecar JSON dosyasından içe aktarır'
     },
     measurearea: {
       description:
@@ -403,38 +409,49 @@ export default {
       description:
         'Dikdörtgen şeklinde bir revizyon bulutu (bulut çizgisi) oluşturur'
     },
-    markuptext: { description: 'Places a Design Review text markup label' },
-    markupline: { description: 'Creates a Design Review line markup' },
-    markuparrow: { description: 'Creates a Design Review arrow markup' },
+    markuptext: {
+      description: 'Metin işareti yerleştirir'
+    },
+    markupline: {
+      description: 'Çizgi işareti oluşturur'
+    },
+    markuparrow: {
+      description: 'Ok işareti oluşturur'
+    },
     markupcloud: {
-      description: 'Creates a Design Review revision cloud markup'
+      description: 'Revizyon bulutu işareti oluşturur'
     },
     markuprect: {
-      description: 'Creates a Design Review rectangle markup'
+      description: 'Dikdörtgen işareti oluşturur'
     },
     markupcircle: {
-      description: 'Creates a Design Review circle markup'
+      description: 'Daire işareti oluşturur'
     },
     markuphighlight: {
-      description: 'Creates a Design Review highlight rectangle markup'
+      description: 'Vurgu dikdörtgeni işareti oluşturur'
     },
     markupcallout: {
-      description: 'Creates a Design Review callout with leader and text'
+      description:
+        'Çağrı notu oluşturur: önce lider ucunu, sonra metin kutusunu belirtin, ardından metni girin'
     },
     markupstamp: {
-      description: 'Places a Design Review stamp or custom symbol'
+      description: 'Damga veya özel sembol yerleştirir'
     },
     markupvis: {
-      description: 'Shows or hides Design Review markups'
+      description: 'İşaretleri gösterir veya gizler'
     },
-    clearmarkups: { description: 'Clears all Design Review markups on the current layout' },
+    clearmarkups: {
+      description: 'Geçerli yerleşimdeki tüm işaretleri temizler'
+    },
     markupexport: {
-      description: 'Exports Design Review markups to a sidecar JSON file'
+      description: 'İşaretleri sidecar JSON dosyasına dışa aktarır'
     },
     markupimport: {
-      description: 'Imports Design Review markups from a sidecar JSON file'
+      description: 'İşaretleri sidecar JSON dosyasından içe aktarır'
     },
-    markuppanel: { description: 'Opens the Design Review markup palette' },
+    markuppanel: {
+      description: 'İşaret paletini açar'
+    },
     rotate: {
       description: 'Seçili varlıkları bir taban noktası etrafında döndürür',
       prompt: 'Varlıkları seçin'

@@ -1,8 +1,4 @@
-import {
-  AcCmColor,
-  AcDbLine,
-  AcGePoint3dLike
-} from '@mlightcad/data-model'
+import { AcCmColor, AcDbDatabase, AcDbLine, AcGePoint3dLike } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
   AcTrHtmlCanvasOverlay,
@@ -23,14 +19,17 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  type AcApMeasurementStyle,
   colorToCssAlpha,
   cssColor,
   currentMeasurementStyle,
+  formatMeasurementLength,
   getMeasurementLineWeight,
   measurementCanvasLineWidth,
   measurementColor
 } from '../../util'
 import { AcTrView2d } from '../../view'
+import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
 import {
   commitMeasurementGroup,
   getMeasurementStyle,
@@ -155,6 +154,89 @@ function drawAreaOnCanvas(
   ctx.stroke()
 
   ctx.restore()
+}
+
+/**
+ * Commit an area measurement overlay (also used when importing a sidecar).
+ */
+export function placeAreaMeasurement(
+  view: AcTrView2d,
+  db: AcDbDatabase,
+  points: AcGePoint3dLike[],
+  style: AcApMeasurementStyle,
+  options?: { id?: string; layoutId?: string }
+): void {
+  if (points.length < 3) return
+  const color = style.color
+  const area = shoelaceArea(points)
+  const id = options?.id ?? `area-${Date.now()}`
+  const layoutId = options?.layoutId ?? view.activeLayoutBtrId
+  const mid = centroid(points)
+
+  const persistOverlay = new AcTrHtmlCanvasOverlay({
+    id: `area-canvas-${id}`,
+    container: view.container,
+    layer: MEASUREMENT_LAYER,
+    layoutId
+  })
+  const paintArea = (paintStyle = style) =>
+    drawAreaOnCanvas(
+      persistOverlay.canvas,
+      view,
+      points,
+      paintStyle.color,
+      measurementCanvasLineWidth(paintStyle.lineWeight)
+    )
+  paintArea()
+
+  const redrawPersist = () => paintArea(getMeasurementStyle(id) ?? style)
+  view.events.viewChanged.addEventListener(redrawPersist)
+
+  const group = new AcTrHtmlGroup({
+    id,
+    layer: MEASUREMENT_LAYER,
+    layoutId,
+    selectable: true
+  })
+    .add(
+      new AcTrHtmlBadge({
+        id: `${id}-badge`,
+        color,
+        text: `${formatMeasurementLength(db, area)}²`,
+        worldPosition: mid,
+        layer: MEASUREMENT_LAYER,
+        fontSize: style.fontSize
+      }),
+      ...points.map(
+        (p, i) =>
+          new AcTrHtmlDot({
+            id: `${id}-dot${i}`,
+            color,
+            worldPosition: p,
+            layer: MEASUREMENT_LAYER
+          })
+      )
+    )
+    .addCanvas(persistOverlay)
+
+  commitMeasurementGroup(view, group, {
+    style,
+    value: { kind: 'area', value: area },
+    snapshot: {
+      id,
+      type: 'area',
+      layoutId,
+      style: serializeMeasurementStyle(style),
+      geometry: {
+        type: 'area',
+        points: points.map(p => ({ x: p.x, y: p.y }))
+      }
+    },
+    redraw: paintArea,
+    dispose: () => {
+      view.events.viewChanged.removeEventListener(redrawPersist)
+    }
+  })
 }
 
 /**
@@ -299,10 +381,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
                 const tempPts = [...points, cursor]
                 const area = shoelaceArea(tempPts)
                 liveBadge.setText(
-                  `${db.formatter.formatLength(area, {
-                    showUnits: true,
-                    showApproximate: true
-                  })}²`
+                  `${formatMeasurementLength(db, area)}²`
                 )
                 liveBadge.setPosition(centroid(tempPts))
                 liveBadge.object.visible = true
@@ -358,67 +437,6 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
 
     if (points.length < 3) return
 
-    const area = shoelaceArea(points)
-
-    const id = `area-${Date.now()}`
-    const mid = centroid(points)
-
-    // Persistent fill canvas — redrawn on viewChanged, cleaned up by Clear
-    const persistOverlay = new AcTrHtmlCanvasOverlay({
-      id: `area-canvas-${Date.now()}`,
-      container: context.view.container,
-      layer: MEASUREMENT_LAYER,
-      layoutId: (context.view as AcTrView2d).activeLayoutBtrId
-    })
-    const paintArea = (paintStyle = style) =>
-      drawAreaOnCanvas(
-        persistOverlay.canvas,
-        context.view,
-        points,
-        paintStyle.color,
-        measurementCanvasLineWidth(paintStyle.lineWeight)
-      )
-    paintArea()
-
-    const redrawPersist = () => paintArea(getMeasurementStyle(id) ?? style)
-    context.view.events.viewChanged.addEventListener(redrawPersist)
-
-    const group = new AcTrHtmlGroup({
-      id,
-      layer: MEASUREMENT_LAYER,
-      layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
-      selectable: true
-    })
-      .add(
-        new AcTrHtmlBadge({
-          id: `${id}-badge`,
-          color,
-          text: `${db.formatter.formatLength(area, {
-            showUnits: true,
-            showApproximate: true
-          })}²`,
-          worldPosition: mid,
-          layer: MEASUREMENT_LAYER,
-          fontSize: style.fontSize
-        }),
-        ...points.map(
-          (p, i) =>
-            new AcTrHtmlDot({
-              id: `${id}-dot${i}`,
-              color,
-              worldPosition: p,
-              layer: MEASUREMENT_LAYER
-            })
-        )
-      )
-      .addCanvas(persistOverlay)
-
-    commitMeasurementGroup(context.view as AcTrView2d, group, {
-      style,
-      redraw: paintArea,
-      dispose: () => {
-        context.view.events.viewChanged.removeEventListener(redrawPersist)
-      }
-    })
+    placeAreaMeasurement(context.view as AcTrView2d, db, points, style)
   }
 }

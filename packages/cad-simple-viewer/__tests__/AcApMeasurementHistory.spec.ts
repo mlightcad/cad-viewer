@@ -14,7 +14,8 @@ import {
   applyMeasurementStyle,
   commitMeasurementGroup,
   getMeasurementStyle,
-  MEASUREMENT_LAYER
+  MEASUREMENT_LAYER,
+  refreshMeasurementValueLabels
 } from '../src/command/measure/AcApMeasurementStore'
 import {
   MEASUREMENT_FONT_SIZE,
@@ -145,5 +146,55 @@ describe('AcApMeasurementHistory', () => {
     expect(getMeasurementStyle('m-style')?.fontSize).toBe(MEASUREMENT_FONT_SIZE)
     expect(getSessionUndo().redo(mockDb())).toBe('overlay')
     expect(getMeasurementStyle('m-style')?.fontSize).toBe(20)
+  })
+
+  it('refreshes committed measurement badge text from the stored value', () => {
+    const { view, manager } = createView()
+    const setText = jest.fn()
+    const group = {
+      id: 'm-label',
+      layer: MEASUREMENT_LAYER,
+      children: [{ setText }],
+      dispose: jest.fn()
+    } as unknown as AcTrHtmlGroup
+    const color = new AcCmColor()
+    commitMeasurementGroup(view, group, {
+      style: {
+        color,
+        lineWeight: MEASUREMENT_LINE_WEIGHT,
+        fontSize: MEASUREMENT_FONT_SIZE
+      },
+      value: { kind: 'length', value: 12.3 }
+    })
+    expect(manager.getGroup('m-label')).toBe(group)
+
+    const db = {
+      _lunits: 2,
+      _luprec: 1,
+      _aunits: 0,
+      _auprec: 0,
+      get lunits() {
+        return this._lunits
+      },
+      get luprec() {
+        return this._luprec
+      },
+      get aunits() {
+        return this._aunits
+      },
+      get auprec() {
+        return this._auprec
+      },
+      formatter: {
+        formatLength(value: number) {
+          return Number(value).toFixed(
+            (db as { _luprec: number })._luprec
+          )
+        }
+      }
+    }
+
+    refreshMeasurementValueLabels(view, db as unknown as AcDbDatabase)
+    expect(setText).toHaveBeenCalledWith('12.3')
   })
 })

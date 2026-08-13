@@ -675,66 +675,71 @@ export default {
   measurePoint: {
     point: 'Zadejte bod'
   },
+  measurement: {
+    import: {
+      chooseFile: 'Vyberte sidecar JSON soubor měření'
+    }
+  },
   markup: {
-    author: 'Specify review author (saved for later)',
+    author: 'Zadejte autora kontroly (uloží se pro pozdější použití)',
     text: {
-      point: 'Specify text markup point',
-      content: 'Enter markup text'
+      point: 'Zadejte bod textové poznámky',
+      content: 'Zadejte text poznámky'
     },
     line: {
-      firstPoint: 'Specify first point of line markup',
-      secondPoint: 'Specify second point of line markup'
+      firstPoint: 'Zadejte první bod úsečkové poznámky',
+      secondPoint: 'Zadejte druhý bod úsečkové poznámky'
     },
     arrow: {
-      firstPoint: 'Specify arrow start point',
-      secondPoint: 'Specify arrow tip'
+      firstPoint: 'Zadejte počáteční bod šipky',
+      secondPoint: 'Zadejte hrot šipky'
     },
     cloud: {
-      firstCorner: 'Specify first corner of cloud',
-      secondCorner: 'Specify opposite corner of cloud'
+      firstCorner: 'Zadejte první roh obláčku',
+      secondCorner: 'Zadejte protilehlý roh obláčku'
     },
     rect: {
-      firstCorner: 'Specify first corner of rectangle',
-      secondCorner: 'Specify opposite corner of rectangle'
+      firstCorner: 'Zadejte první roh obdélníku',
+      secondCorner: 'Zadejte protilehlý roh obdélníku'
     },
     circle: {
-      center: 'Specify center of circle',
-      radius: 'Specify radius of circle'
+      center: 'Zadejte střed kružnice',
+      radius: 'Zadejte poloměr kružnice'
     },
     shape: {
-      calloutOn: '[Callout on]',
-      calloutOff: '[Callout off]',
-      calloutAnchor: 'Specify callout text location',
+      calloutOn: '[Odkaz zapnut]',
+      calloutOff: '[Odkaz vypnut]',
+      calloutAnchor: 'Zadejte umístění textu odkazu',
       keywords: {
         callout: {
-          display: 'Callout(C)',
-          local: 'Callout',
+          display: 'Odkaz(C)',
+          local: 'Odkaz',
           global: 'Callout'
         },
         noCallout: {
-          display: 'NoCallout(N)',
-          local: 'NoCallout',
+          display: 'BezOdkazu(N)',
+          local: 'BezOdkazu',
           global: 'NoCallout'
         }
       }
     },
     highlight: {
-      firstCorner: 'Specify first corner of highlight',
-      secondCorner: 'Specify opposite corner of highlight'
+      firstCorner: 'Zadejte první roh zvýraznění',
+      secondCorner: 'Zadejte protilehlý roh zvýraznění'
     },
     callout: {
-      tip: 'Specify leader tip (arrow end)',
-      anchor: 'Specify callout text location',
-      content: 'Enter callout text'
+      tip: 'Zadejte hrot odkazu (konec šipky)',
+      anchor: 'Zadejte umístění textu odkazu',
+      content: 'Zadejte text odkazu'
     },
     stamp: {
-      kind: 'Enter stamp id [approved/rejected/revised/for-review/custom]',
-      imageUrl: 'Enter custom stamp image URL (optional)',
-      caption: 'Enter stamp caption (optional)',
-      point: 'Specify stamp insertion point'
+      kind: 'Zadejte identifikátor razítka [approved/rejected/revised/for-review/custom]',
+      imageUrl: 'Zadejte URL vlastního obrázku razítka (volitelné)',
+      caption: 'Zadejte popisek razítka (volitelné)',
+      point: 'Zadejte bod vložení razítka'
     },
     import: {
-      chooseFile: 'Choose a markup sidecar JSON file'
+      chooseFile: 'Vyberte sidecar JSON soubor poznámek'
     }
   },
   move: {

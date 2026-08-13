@@ -101,7 +101,7 @@ export default {
       description: 'Ukládá název aktuálního souboru výkresu (pouze pro čtení)'
     },
     loginname: {
-      description: 'Displays the user\'s login name (read-only)'
+      description: 'Zobrazí přihlašovací jméno uživatele (pouze pro čtení)'
     },
     dynmode: {
       description: 'Řídí nastavení dynamického zadávání u kurzoru'
@@ -277,7 +277,13 @@ export default {
       description: 'Řídí, zda se ve výkresu zobrazují tloušťky čar'
     },
     clearmeasurements: {
-      description: 'Odstraní z pohledu všechna aktivní měření'
+      description: 'Odstraní všechna měření z aktuálního rozvržení'
+    },
+    measurementexport: {
+      description: 'Exportuje měření do sidecar JSON souboru'
+    },
+    measurementimport: {
+      description: 'Importuje měření ze sidecar JSON souboru'
     },
     measurearea: {
       description: 'Vypočítá plochu a obvod vybraných objektů nebo bodů'
@@ -393,38 +399,49 @@ export default {
     revcloud: {
       description: 'Vytvoří revizní obláček obdélníkového tvaru'
     },
-    markuptext: { description: 'Places a Design Review text markup label' },
-    markupline: { description: 'Creates a Design Review line markup' },
-    markuparrow: { description: 'Creates a Design Review arrow markup' },
+    markuptext: {
+      description: 'Umístí textovou poznámku'
+    },
+    markupline: {
+      description: 'Vytvoří úsečkovou poznámku'
+    },
+    markuparrow: {
+      description: 'Vytvoří šipkovou poznámku'
+    },
     markupcloud: {
-      description: 'Creates a Design Review revision cloud markup'
+      description: 'Vytvoří revizní obláček'
     },
     markuprect: {
-      description: 'Creates a Design Review rectangle markup'
+      description: 'Vytvoří obdélníkovou poznámku'
     },
     markupcircle: {
-      description: 'Creates a Design Review circle markup'
+      description: 'Vytvoří kruhovou poznámku'
     },
     markuphighlight: {
-      description: 'Creates a Design Review highlight rectangle markup'
+      description: 'Vytvoří zvýrazňovací obdélník'
     },
     markupcallout: {
-      description: 'Creates a Design Review callout with leader and text'
+      description:
+        'Vytvoří odkazovou poznámku: zadejte hrot odkazu, umístěte textové pole a zadejte text'
     },
     markupstamp: {
-      description: 'Places a Design Review stamp or custom symbol'
+      description: 'Umístí razítko nebo vlastní symbol'
     },
     markupvis: {
-      description: 'Shows or hides Design Review markups'
+      description: 'Zobrazí nebo skryje poznámky'
     },
-    clearmarkups: { description: 'Clears all Design Review markups on the current layout' },
+    clearmarkups: {
+      description: 'Vymaže všechny poznámky na aktuálním rozvržení'
+    },
     markupexport: {
-      description: 'Exports Design Review markups to a sidecar JSON file'
+      description: 'Exportuje poznámky do sidecar JSON souboru'
     },
     markupimport: {
-      description: 'Imports Design Review markups from a sidecar JSON file'
+      description: 'Importuje poznámky ze sidecar JSON souboru'
     },
-    markuppanel: { description: 'Opens the Design Review markup palette' },
+    markuppanel: {
+      description: 'Otevře paletu poznámek'
+    },
     rotate: {
       description: 'Otočí vybrané objekty kolem základního bodu',
       prompt: 'Vyberte objekty'
