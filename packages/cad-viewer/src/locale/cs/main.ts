@@ -440,12 +440,12 @@ export default {
       description: 'Odstraní všechna měření z aktuálního rozvržení'
     },
     measurementImport: {
-      text: 'Import',
-      description: 'Import measurements from a sidecar JSON file'
+      text: 'Importovat',
+      description: 'Importuje měření ze sidecar JSON souboru'
     },
     measurementExport: {
-      text: 'Export',
-      description: 'Export measurements to a sidecar JSON file'
+      text: 'Exportovat',
+      description: 'Exportuje měření do sidecar JSON souboru'
     },
     annotation: {
       text: 'Poznámky',
@@ -487,83 +487,83 @@ export default {
       description: 'Zvýrazní oblasti ve výkresu obláčkem'
     },
     markupPanel: {
-      text: 'Review',
-      description: 'Open the Design Review markup palette'
+      text: 'Kontrola',
+      description: 'Otevře paletu poznámek Design Review'
     },
     markupText: {
       text: 'Text',
-      description: 'Place a Design Review text markup'
+      description: 'Umístí textovou poznámku Design Review'
     },
     markupCloud: {
-      text: 'Cloud',
-      description: 'Create a Design Review cloud markup'
+      text: 'Obláček',
+      description: 'Vytvoří obláčkovou poznámku Design Review'
     },
     markupRect: {
-      text: 'Rectangle',
-      description: 'Create a Design Review rectangle markup'
+      text: 'Obdélník',
+      description: 'Vytvoří obdélníkovou poznámku Design Review'
     },
     markupCircle: {
-      text: 'Circle',
-      description: 'Create a Design Review circle markup'
+      text: 'Kružnice',
+      description: 'Vytvoří kruhovou poznámku Design Review'
     },
     markupArrow: {
-      text: 'Arrow',
-      description: 'Create a Design Review arrow markup'
+      text: 'Šipka',
+      description: 'Vytvoří šipkovou poznámku Design Review'
     },
     markupCallout: {
-      text: 'Callout',
-      description: 'Create a Design Review callout'
+      text: 'Odkaz',
+      description: 'Vytvoří odkazovou poznámku Design Review'
     },
     markupStamp: {
-      text: 'Stamp',
-      description: 'Place a Design Review stamp'
+      text: 'Razítko',
+      description: 'Umístí razítko Design Review'
     },
     markupImport: {
-      text: 'Import',
-      description: 'Import Design Review markups from a sidecar JSON file'
+      text: 'Importovat',
+      description: 'Importuje poznámky Design Review ze sidecar JSON souboru'
     },
     markupExport: {
-      text: 'Export',
-      description: 'Export Design Review markups to a sidecar JSON file'
+      text: 'Exportovat',
+      description: 'Exportuje poznámky Design Review do sidecar JSON souboru'
     },
     markupColor: {
-      text: 'Color',
-      description: 'Set the color for new markup drawings'
+      text: 'Barva',
+      description: 'Nastaví barvu nových poznámek'
     },
     markupLineWeight: {
-      text: 'Lineweight',
-      description: 'Set the lineweight for new markup drawings'
+      text: 'Tloušťka čáry',
+      description: 'Nastaví tloušťku čáry nových poznámek'
     },
     markupFontSize: {
-      text: 'Font size',
-      description: 'Set the font size for text and callout markups'
+      text: 'Velikost písma',
+      description: 'Nastaví velikost písma textových a odkazových poznámek'
     },
     measurementColor: {
-      text: 'Color',
+      text: 'Barva',
       description:
-        'Set the color for the selected measurement, or for measurements you add next'
+        'Nastaví barvu vybraného měření, nebo měření, která přidáte příště'
     },
     measurementLineWeight: {
-      text: 'Lineweight',
+      text: 'Tloušťka čáry',
       description:
-        'Set the lineweight for the selected measurement, or for measurements you add next'
+        'Nastaví tloušťku čáry vybraného měření, nebo měření, která přidáte příště'
     },
     measurementFontSize: {
-      text: 'Font size',
+      text: 'Velikost písma',
       description:
-        'Set the font size for the selected measurement, or for measurements you add next'
+        'Nastaví velikost písma vybraného měření, nebo měření, která přidáte příště'
     },
     showMarkup: {
-      text: 'Show',
-      description: 'Shows Design Review markups'
+      text: 'Zobrazit',
+      description: 'Zobrazí poznámky Design Review'
     },
     hideMarkup: {
-      text: 'Hide',
-      description: 'Hides Design Review markups'
+      text: 'Skrýt',
+      description: 'Skryje poznámky Design Review'
     },
     clearMarkups: {
-      text: 'Clear',
-      description: 'Clears all Design Review markups on the current layout'
+      text: 'Vymazat',
+      description: 'Vymaže všechny poznámky Design Review na aktuálním rozvržení'
     },
     select: {
       text: 'Vybrat',
@@ -734,26 +734,26 @@ export default {
       }
     },
     designReview: {
-      tab: 'Review',
+      tab: 'Kontrola',
       title: 'Design Review',
-      searchPlaceholder: 'Search markups',
-      empty: 'No markups yet',
-      type: 'Type',
-      status: 'Status',
-      author: 'Author',
-      summary: 'Summary',
-      details: 'Details',
-      closeDetails: 'Close details',
-      label: 'Label',
-      comment: 'Comment',
-      zoomTo: 'Zoom to',
-      delete: 'Delete',
-      clear: 'Clear all',
+      searchPlaceholder: 'Hledat poznámky',
+      empty: 'Zatím žádné poznámky',
+      type: 'Typ',
+      status: 'Stav',
+      author: 'Autor',
+      summary: 'Souhrn',
+      details: 'Podrobnosti',
+      closeDetails: 'Zavřít podrobnosti',
+      label: 'Popisek',
+      comment: 'Komentář',
+      zoomTo: 'Přiblížit na',
+      delete: 'Odstranit',
+      clear: 'Vymazat vše',
       statusValues: {
-        open: 'Open',
-        question: 'Question',
-        answered: 'Answered',
-        closed: 'Closed'
+        open: 'Otevřeno',
+        question: 'Otázka',
+        answered: 'Zodpovězeno',
+        closed: 'Uzavřeno'
       }
     },
     missingResources: {
