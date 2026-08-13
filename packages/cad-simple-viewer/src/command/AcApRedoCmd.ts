@@ -2,9 +2,11 @@ import { AcApContext } from '../app'
 import { AcEdCommand } from '../editor'
 import { AcApI18n } from '../i18n'
 import { acapNotifyUndoStackChanged } from '../util/AcApDatabaseEdit'
+import { getSessionUndo } from './markup/AcApMarkupHistory'
+import { getMarkupPresenter } from './markup/AcApMarkupPresenter'
 
 /**
- * Redoes the last undone database editing operation on the active document.
+ * Redoes the last undone session editing operation (database or markup).
  */
 export class AcApRedoCmd extends AcEdCommand {
   constructor() {
@@ -15,8 +17,8 @@ export class AcApRedoCmd extends AcEdCommand {
   }
 
   async execute(context: AcApContext) {
-    const manager = context.doc.database.transactionManager
-    if (!manager.redo()) {
+    const result = getSessionUndo().redo(context.doc.database)
+    if (!result) {
       const msgKey = AcApI18n.sysCmdKey(this.globalName, 'nothingToRedo')
       this.showMessage(
         AcApI18n.sysCmd(this.globalName, 'nothingToRedo'),
@@ -24,6 +26,9 @@ export class AcApRedoCmd extends AcEdCommand {
         msgKey
       )
       return
+    }
+    if (result === 'markup') {
+      getMarkupPresenter().republishAll(context.view)
     }
     acapNotifyUndoStackChanged()
   }

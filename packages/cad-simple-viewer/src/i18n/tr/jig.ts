@@ -674,6 +674,68 @@ export default {
   measurePoint: {
     point: 'Noktayı belirtin'
   },
+  markup: {
+    author: 'Specify review author (saved for later)',
+    text: {
+      point: 'Specify text markup point',
+      content: 'Enter markup text'
+    },
+    line: {
+      firstPoint: 'Specify first point of line markup',
+      secondPoint: 'Specify second point of line markup'
+    },
+    arrow: {
+      firstPoint: 'Specify arrow start point',
+      secondPoint: 'Specify arrow tip'
+    },
+    cloud: {
+      firstCorner: 'Specify first corner of cloud',
+      secondCorner: 'Specify opposite corner of cloud'
+    },
+    rect: {
+      firstCorner: 'Specify first corner of rectangle',
+      secondCorner: 'Specify opposite corner of rectangle'
+    },
+    circle: {
+      center: 'Specify center of circle',
+      radius: 'Specify radius of circle'
+    },
+    shape: {
+      calloutOn: '[Callout on]',
+      calloutOff: '[Callout off]',
+      calloutAnchor: 'Specify callout text location',
+      keywords: {
+        callout: {
+          display: 'Callout(C)',
+          local: 'Callout',
+          global: 'Callout'
+        },
+        noCallout: {
+          display: 'NoCallout(N)',
+          local: 'NoCallout',
+          global: 'NoCallout'
+        }
+      }
+    },
+    highlight: {
+      firstCorner: 'Specify first corner of highlight',
+      secondCorner: 'Specify opposite corner of highlight'
+    },
+    callout: {
+      tip: 'Specify leader tip (arrow end)',
+      anchor: 'Specify callout text location',
+      content: 'Enter callout text'
+    },
+    stamp: {
+      kind: 'Enter stamp id [approved/rejected/revised/for-review/custom]',
+      imageUrl: 'Enter custom stamp image URL (optional)',
+      caption: 'Enter stamp caption (optional)',
+      point: 'Specify stamp insertion point'
+    },
+    import: {
+      chooseFile: 'Choose a markup sidecar JSON file'
+    }
+  },
   move: {
     basePointOrDisplacement: 'Temel noktayı belirtin veya',
     secondPointOrDisplacement: 'İkinci noktayı belirtin veya',

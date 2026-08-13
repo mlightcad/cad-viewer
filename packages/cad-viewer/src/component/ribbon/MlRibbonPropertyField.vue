@@ -4,7 +4,8 @@
     :style="fieldStyle"
     :class="[
       variant ? `ml-ribbon-property-field--${variant}` : '',
-      { 'ml-ribbon-property-field--disabled': disabled }
+      { 'ml-ribbon-property-field--disabled': disabled },
+      { 'ml-ribbon-property-field--icon-end': iconPosition === 'end' }
     ]"
     :aria-disabled="disabled"
   >
@@ -38,9 +39,13 @@ interface RibbonPropertyFieldProps {
   variant?: RibbonPropertyFieldVariant
   /** Optional fixed width for the embedded control area. */
   controlWidth?: string
+  /** Place the icon before (start) or after (end) the control. */
+  iconPosition?: 'start' | 'end'
 }
 
-const props = defineProps<RibbonPropertyFieldProps>()
+const props = withDefaults(defineProps<RibbonPropertyFieldProps>(), {
+  iconPosition: 'start'
+})
 
 const fieldStyle = computed(() =>
   props.controlWidth
@@ -55,13 +60,18 @@ const fieldStyle = computed(() =>
   --ml-ribbon-property-gap: calc(6px * var(--ml-ribbon-property-scale));
   --ml-ribbon-property-icon-size: calc(18px * var(--ml-ribbon-property-scale));
   --ml-ribbon-property-column-width: calc(
-    188px * var(--ml-ribbon-property-scale)
+    188px * var(--ml-rb-scale, 1)
   );
   display: inline-flex;
   align-items: center;
   gap: var(--ml-ribbon-property-gap);
   width: 100%;
   min-height: var(--ml-rb-compact-height, 28px);
+}
+
+.ml-ribbon-property-field--icon-end {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
 }
 
 .ml-ribbon-property-field--disabled {

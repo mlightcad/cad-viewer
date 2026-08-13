@@ -1,4 +1,5 @@
 import { AcApDocManager } from '../app'
+import { runMarkupEdit } from '../command/markup/AcApMarkupHistory'
 import { AcEdMTextEditor } from '../editor/input/ui/AcEdMTextEditor'
 import type { AcTrView2d } from './AcTrView2d'
 
@@ -65,10 +66,16 @@ export class AcEdViewKeyHandler {
         // point) corrupts the active command's input pipeline because
         // sendStringToExecute clears scripted inputs unconditionally.
         if (!this.view.editor.isActive) {
-          if (this.view.htmlTransientManager.deleteSelected()) {
-            this.view.isDirty = true
-            e.preventDefault()
-            return true
+          if (this.view.htmlTransientManager.hasSelection()) {
+            let removed = false
+            runMarkupEdit(this.view, 'Delete Markup', () => {
+              removed = this.view.htmlTransientManager.deleteSelected()
+            })
+            if (removed) {
+              this.view.isDirty = true
+              e.preventDefault()
+              return true
+            }
           }
           AcApDocManager.instance.sendStringToExecute('erase')
         }

@@ -93,6 +93,11 @@ export type AcEdEvents = {
   'missed-data-changed': {}
   /** Emitted after the active document undo/redo stack changes */
   'undo-stack-changed': {}
+  /**
+   * Emitted when an outermost database undo mark is committed so session
+   * undo can interleave DB edits with Design Review markup history.
+   */
+  'session-db-edit-committed': {}
   /** Emitted when the application busy indicator is shown or hidden */
   'busy-indicator': AcEdBusyIndicatorEventArgs
 }
