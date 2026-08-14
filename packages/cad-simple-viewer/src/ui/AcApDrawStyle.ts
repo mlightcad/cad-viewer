@@ -35,6 +35,15 @@ const MARKUP_DRAW_COMMANDS = new Set([
 ])
 
 /**
+ * Host-level ribbon presence that does not touch persisted settings.
+ *
+ * `undefined` — use {@link AcApSettingManager.isShowRibbon}.
+ * `false` — shells without a ribbon (simple-ui) always show the overlay.
+ * `true` — force the overlay off even if the setting would show it.
+ */
+let hostHasRibbon: boolean | undefined
+
+/**
  * Whether the draw-style overlay is currently visible.
  */
 let toolbarVisible = false
@@ -61,6 +70,31 @@ export function drawStyleKindForCommand(
 }
 
 /**
+ * Tell the overlay whether this host has a command ribbon.
+ *
+ * Simple-ui has no ribbon and must not persist `isShowRibbon = false`,
+ * which would leak into cad-viewer on the same origin. Pass `undefined`
+ * to go back to the persisted setting.
+ *
+ * @param hasRibbon - Host ribbon presence, or `undefined` to clear.
+ */
+export function setDrawStyleHostHasRibbon(
+  hasRibbon: boolean | undefined
+): void {
+  hostHasRibbon = hasRibbon
+}
+
+/**
+ * Ribbon visibility used when {@link shouldShowDrawStyleToolbar} omits
+ * an explicit `showRibbon` argument.
+ *
+ * @returns `true` when the host ribbon is treated as visible.
+ */
+export function isDrawStyleHostRibbonVisible(): boolean {
+  return hostHasRibbon ?? AcApSettingManager.instance.isShowRibbon
+}
+
+/**
  * Whether the overlay should be shown for the given session.
  *
  * The overlay is only needed when the host ribbon is turned off;
@@ -72,7 +106,7 @@ export function drawStyleKindForCommand(
  */
 export function shouldShowDrawStyleToolbar(
   kind: AcApDrawStyleKind | undefined,
-  showRibbon: boolean = AcApSettingManager.instance.isShowRibbon
+  showRibbon: boolean = isDrawStyleHostRibbonVisible()
 ): boolean {
   return kind != null && !showRibbon
 }

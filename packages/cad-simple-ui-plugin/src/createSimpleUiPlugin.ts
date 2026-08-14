@@ -2,11 +2,11 @@ import {
   AcApContext,
   AcApDocManager,
   AcApI18n,
-  AcApSettingManager,
   type AcApLocale,
   AcApPlugin,
   AcEdCommandStack,
-  type AcEdUiTheme
+  type AcEdUiTheme,
+  setDrawStyleHostHasRibbon
 } from '@mlightcad/cad-simple-viewer'
 
 import packageJson from '../package.json'
@@ -379,8 +379,9 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   onLoad(_context: AcApContext, commandManager: AcEdCommandStack): void {
     registerSimpleUiI18n()
     this.commandManager = commandManager
-    // This shell has no command ribbon; keep the draw-style overlay available.
-    AcApSettingManager.instance.isShowRibbon = false
+    // This shell has no command ribbon; keep the draw-style overlay available
+    // without persisting isShowRibbon into shared localStorage.
+    setDrawStyleHostHasRibbon(false)
 
     const resolvedOptions = normalizePluginOptions(this.options)
     const host =
@@ -880,6 +881,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.i18n = undefined
     this.themeSync?.stop()
     this.themeSync = undefined
+    setDrawStyleHostHasRibbon(undefined)
 
     removeUiStylesIfUnused()
   }

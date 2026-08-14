@@ -22,6 +22,7 @@ import {
 import {
   drawStyleKindForCommand,
   isDrawStyleToolbarVisible,
+  setDrawStyleHostHasRibbon,
   setDrawStyleToolbarVisible,
   shouldShowDrawStyleToolbar,
   subscribeDrawStyleToolbarVisibility
@@ -80,6 +81,10 @@ describe('draw style toolbar visibility', () => {
 })
 
 describe('shouldShowDrawStyleToolbar', () => {
+  afterEach(() => {
+    setDrawStyleHostHasRibbon(undefined)
+  })
+
   it('shows the overlay when a draw command is active and the ribbon is hidden', () => {
     expect(shouldShowDrawStyleToolbar('measure', false)).toBe(true)
     expect(shouldShowDrawStyleToolbar('markup', false)).toBe(true)
@@ -93,6 +98,13 @@ describe('shouldShowDrawStyleToolbar', () => {
   it('hides the overlay when no draw command is active', () => {
     expect(shouldShowDrawStyleToolbar(undefined, false)).toBe(false)
     expect(shouldShowDrawStyleToolbar(undefined, true)).toBe(false)
+  })
+
+  it('shows the overlay for hosts without a ribbon without reading persisted settings', () => {
+    setDrawStyleHostHasRibbon(false)
+    expect(shouldShowDrawStyleToolbar('measure')).toBe(true)
+    expect(shouldShowDrawStyleToolbar('markup')).toBe(true)
+    expect(shouldShowDrawStyleToolbar(undefined)).toBe(false)
   })
 })
 

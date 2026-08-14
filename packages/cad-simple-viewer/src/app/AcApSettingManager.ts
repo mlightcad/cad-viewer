@@ -77,6 +77,32 @@ const DEFAULT_VALUES: AcApSettings = {
 const SETTINGS_LS_KEY = 'settings'
 
 /**
+ * Maps the pre-ribbon `isShowMainMenu` key onto `isShowRibbon`.
+ *
+ * Older builds persisted `isShowMainMenu`. After the main menu was replaced
+ * by the command ribbon, that preference should keep hiding (or showing)
+ * the ribbon for the same users.
+ *
+ * @param stored - Parsed localStorage object; not mutated.
+ * @returns A copy with `isShowRibbon` filled in and `isShowMainMenu` removed.
+ */
+export function migrateStoredSettings(
+  stored: Record<string, unknown>
+): { settings: Record<string, unknown>; migrated: boolean } {
+  const next = { ...stored }
+  let migrated = false
+  if (!('isShowRibbon' in next) && typeof next.isShowMainMenu === 'boolean') {
+    next.isShowRibbon = next.isShowMainMenu
+    migrated = true
+  }
+  if ('isShowMainMenu' in next) {
+    delete next.isShowMainMenu
+    migrated = true
+  }
+  return { settings: next, migrated }
+}
+
+/**
  * Event arguments for settings modification events.
  *
  * @template T - The settings type, defaults to AcApSettings
@@ -430,7 +456,16 @@ export class AcApSettingManager<T extends AcApSettings = AcApSettings> {
    */
   get settings() {
     const values = localStorage.getItem(SETTINGS_LS_KEY)
-    const results = (values == null ? {} : JSON.parse(values)) as T
-    return defaults(results, DEFAULT_VALUES)
+    const stored = (values == null ? {} : JSON.parse(values)) as Record<
+      string,
+      unknown
+    >
+    const { settings: migrated, migrated: didMigrate } =
+      migrateStoredSettings(stored)
+    const results = defaults(migrated, DEFAULT_VALUES) as T
+    if (didMigrate) {
+      localStorage.setItem(SETTINGS_LS_KEY, JSON.stringify(results))
+    }
+    return results
   }
 }

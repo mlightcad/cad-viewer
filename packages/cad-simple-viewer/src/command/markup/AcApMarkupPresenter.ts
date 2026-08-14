@@ -569,50 +569,61 @@ export class AcApMarkupPresenter {
           )
         }
 
-        if (geom.type === 'arrow') {
-          const refreshArrow = () => {
-            line.startPoint = { x: live.start.x, y: live.start.y, z: 0 }
-            line.endPoint = { x: live.end.x, y: live.end.y, z: 0 }
-            view2d.removeTransientEntity(line.objectId)
-            view2d.addTransientEntity(line)
-            redrawArrow?.()
-          }
-          const commitArrow = () => {
-            runMarkupEdit(view2d, 'Move Arrow', () => {
-              getMarkupStore().updateGeometry(record.id, {
-                type: 'arrow',
-                start: { ...live.start },
-                end: { ...live.end }
-              })
-            })
-          }
-          pendingGrips.push(() => {
-            cleanups.push(
-              bindMarkupPointerDrag({
-                view: view2d,
-                el: startDot.element,
-                onDragStart: () => selectMarkupGroup(view2d, record.id),
-                onMove: point => {
-                  live.start = point
-                  startDot.setPosition(point)
-                  refreshArrow()
-                },
-                onCommit: commitArrow
-              }),
-              bindMarkupPointerDrag({
-                view: view2d,
-                el: endDot.element,
-                onDragStart: () => selectMarkupGroup(view2d, record.id),
-                onMove: point => {
-                  live.end = point
-                  endDot.setPosition(point)
-                  refreshArrow()
-                },
-                onCommit: commitArrow
-              })
-            )
-          })
+        const refreshEndpoints = () => {
+          line.startPoint = { x: live.start.x, y: live.start.y, z: 0 }
+          line.endPoint = { x: live.end.x, y: live.end.y, z: 0 }
+          view2d.removeTransientEntity(line.objectId)
+          view2d.addTransientEntity(line)
+          redrawArrow?.()
         }
+        const commitEndpoints = () => {
+          runMarkupEdit(
+            view2d,
+            geom.type === 'arrow' ? 'Move Arrow' : 'Move Line',
+            () => {
+              getMarkupStore().updateGeometry(
+                record.id,
+                geom.type === 'arrow'
+                  ? {
+                      type: 'arrow',
+                      start: { ...live.start },
+                      end: { ...live.end }
+                    }
+                  : {
+                      type: 'line',
+                      start: { ...live.start },
+                      end: { ...live.end }
+                    }
+              )
+            }
+          )
+        }
+        pendingGrips.push(() => {
+          cleanups.push(
+            bindMarkupPointerDrag({
+              view: view2d,
+              el: startDot.element,
+              onDragStart: () => selectMarkupGroup(view2d, record.id),
+              onMove: point => {
+                live.start = point
+                startDot.setPosition(point)
+                refreshEndpoints()
+              },
+              onCommit: commitEndpoints
+            }),
+            bindMarkupPointerDrag({
+              view: view2d,
+              el: endDot.element,
+              onDragStart: () => selectMarkupGroup(view2d, record.id),
+              onMove: point => {
+                live.end = point
+                endDot.setPosition(point)
+                refreshEndpoints()
+              },
+              onCommit: commitEndpoints
+            })
+          )
+        })
         break
       }
       case 'cloud': {
