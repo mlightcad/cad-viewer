@@ -1,11 +1,11 @@
 import { AcCmColor, type AcDbDatabase, AcGiLineWeight } from '@mlightcad/data-model'
 
 import {
-  acapCurrentMeasurementStyle,
+  acapGetCurrentMeasurementStyle,
   acapGetMeasurementFontSize,
   acapGetMeasurementLineWeight,
   acapMeasurementCanvasLineWidth,
-  acapMeasurementColor,
+  acapGetMeasurementColor,
   acapResetMeasurementDrawStyle,
   acapSetMeasurementDrawColor,
   acapSetMeasurementDrawFontSize,
@@ -35,14 +35,14 @@ describe('AcApMeasurementUtil', () => {
     acapSetMeasurementDrawLineWeight(AcGiLineWeight.LineWeight013)
     acapSetMeasurementDrawFontSize(18)
 
-    const drawn = acapMeasurementColor(mockDb())
+    const drawn = acapGetMeasurementColor(mockDb())
     expect(drawn.red).toBe(10)
     expect(drawn.green).toBe(20)
     expect(drawn.blue).toBe(30)
     expect(acapGetMeasurementLineWeight()).toBe(AcGiLineWeight.LineWeight013)
     expect(acapGetMeasurementFontSize()).toBe(18)
 
-    const style = acapCurrentMeasurementStyle(mockDb())
+    const style = acapGetCurrentMeasurementStyle(mockDb())
     expect(style.fontSize).toBe(18)
     expect(style.lineWeight).toBe(AcGiLineWeight.LineWeight013)
     expect(style.color.red).toBe(10)

@@ -26,11 +26,11 @@ import {
 import { AcApI18n } from '../../i18n'
 import {
   acapCssColor,
-  acapCurrentMeasurementStyle,
+  acapGetCurrentMeasurementStyle,
+  acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapGetMeasurementLineWeight,
   acapMeasurementCanvasLineWidth,
-  acapMeasurementColor,
   type AcApMeasurementStyle,
   formatMeasurementAngle
 } from '../../util'
@@ -431,8 +431,8 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
-    const color = acapMeasurementColor(db)
-    const style = acapCurrentMeasurementStyle(db)
+    const color = acapGetMeasurementColor(db)
+    const style = acapGetCurrentMeasurementStyle(db)
     const canvasLineWidth = acapMeasurementCanvasLineWidth(style.lineWeight)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
@@ -528,7 +528,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
           vertex,
           arm1,
           arm2,
-          acapCurrentMeasurementStyle(db)
+          acapGetCurrentMeasurementStyle(db)
         )
       })
     )

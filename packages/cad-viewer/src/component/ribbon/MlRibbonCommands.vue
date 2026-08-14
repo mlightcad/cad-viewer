@@ -20,9 +20,9 @@ import {
   AcApConvertToDxfCmd,
   acapCssColor,
   AcApDocManager,
+  acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapGetMeasurementLineWeight,
-  acapMeasurementColor,
   AcApOpenCmd,
   AcApQNewCmd,
   acapRunDatabaseEdit,
@@ -730,7 +730,7 @@ const syncMeasurementStyleControls = () => {
   }
   const db = getCurrentDatabase()
   if (db) {
-    const color = acapMeasurementColor(db)
+    const color = acapGetMeasurementColor(db)
     measurementDrawColor.value = color.clone()
     measurementDrawColorDisplay.value = acapCssColor(color)
   }

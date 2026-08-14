@@ -8,6 +8,7 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
+import { editMarkupHtmlText } from './AcApMarkupTextEdit'
 import type {
   AcApMarkupMeta,
   AcApMarkupRecord,
@@ -73,6 +74,34 @@ export async function promptMarkupText(
   const result = await context.view.editor.getString(prompt)
   if (result.status !== AcEdPromptStatus.OK) return undefined
   return (result.stringResult ?? defaultValue).trim()
+}
+
+/**
+ * HTML overlay used as an in-place markup text host (callout bubble / badge).
+ */
+export interface AcApMarkupCapsuleHost {
+  /** Inner label that becomes content-editable. */
+  textElement: HTMLElement
+  /** Outer capsule that receives pointer events while editing. */
+  element: HTMLElement
+}
+
+/**
+ * Type markup text directly in a capsule, matching double-click edit.
+ *
+ * Escape cancels and returns an empty string (geometry is still committed).
+ */
+export async function promptMarkupCapsuleText(
+  host: AcApMarkupCapsuleHost,
+  options?: { multiline?: boolean; initialText?: string }
+): Promise<string> {
+  const text = await editMarkupHtmlText({
+    el: host.textElement,
+    listenOn: host.element,
+    multiline: options?.multiline ?? true,
+    initialText: options?.initialText ?? ''
+  })
+  return (text ?? '').trim()
 }
 
 /** Run a markup command body inside selection mode + crosshair cursor. */

@@ -29,7 +29,7 @@ export interface AcApMeasurementStyle {
 }
 
 /** Returns the current measurement overlay color (session override or MEASUREMENTCOLOR). */
-export function acapMeasurementColor(db: AcDbDatabase): AcCmColor {
+export function acapGetMeasurementColor(db: AcDbDatabase): AcCmColor {
   if (measurementDrawColor) return measurementDrawColor.clone()
   return AcDbSysVarManager.instance().getVar(
     AcDbSystemVariables.MEASUREMENTCOLOR,
@@ -72,11 +72,11 @@ export function acapResetMeasurementDrawStyle(): void {
 }
 
 /** Build a style object from the current measurement draw color / line weight / font size. */
-export function acapCurrentMeasurementStyle(
+export function acapGetCurrentMeasurementStyle(
   db: AcDbDatabase
 ): AcApMeasurementStyle {
   return {
-    color: acapMeasurementColor(db),
+    color: acapGetMeasurementColor(db),
     lineWeight: acapGetMeasurementLineWeight(),
     fontSize: acapGetMeasurementFontSize()
   }

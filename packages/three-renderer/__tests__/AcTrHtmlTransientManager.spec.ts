@@ -205,6 +205,11 @@ describe('AcTrHtmlTransientManager', () => {
     expect(groupA.selected).toBe(true)
     expect(groupB.selected).toBe(true)
 
+    expect(manager.deselectGroup('gb')).toBe(true)
+    expect(groupB.selected).toBe(false)
+    expect(groupA.selected).toBe(true)
+    expect(manager.deselectGroup('gb')).toBe(false)
+
     manager.dispose()
   })
 

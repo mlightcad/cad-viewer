@@ -21,10 +21,10 @@ import { AcApI18n } from '../../i18n'
 import {
   acapColorToCssAlpha,
   acapCssColor,
-  acapCurrentMeasurementStyle,
+  acapGetCurrentMeasurementStyle,
+  acapGetMeasurementColor,
   acapGetMeasurementLineWeight,
   acapMeasurementCanvasLineWidth,
-  acapMeasurementColor,
   type AcApMeasurementStyle,
   formatMeasurementLength
 } from '../../util'
@@ -262,8 +262,8 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
-    const color = acapMeasurementColor(db)
-    const style = acapCurrentMeasurementStyle(db)
+    const color = acapGetMeasurementColor(db)
+    const style = acapGetCurrentMeasurementStyle(db)
     const canvasLineWidth = acapMeasurementCanvasLineWidth(style.lineWeight)
 
     const points: AcGePoint3dLike[] = []
@@ -441,7 +441,7 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
       context.view as AcTrView2d,
       db,
       points,
-      acapCurrentMeasurementStyle(db)
+      acapGetCurrentMeasurementStyle(db)
     )
   }
 }

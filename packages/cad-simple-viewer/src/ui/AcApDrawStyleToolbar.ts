@@ -30,9 +30,9 @@ import { AcApI18n } from '../i18n'
 import {
   acapCssColor,
   acapCssToMeasurementColor,
+  acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapGetMeasurementLineWeight,
-  acapMeasurementColor,
   acapSetMeasurementDrawColor,
   acapSetMeasurementDrawFontSize,
   acapSetMeasurementDrawLineWeight
@@ -463,7 +463,7 @@ export class AcApDrawStyleToolbar {
       const db = acdbHostApplicationServices().workingDatabase
       const color =
         selected?.color ??
-        (db ? acapMeasurementColor(db) : acapCssToMeasurementColor('#7b8794'))
+        (db ? acapGetMeasurementColor(db) : acapCssToMeasurementColor('#7b8794'))
       const lineWeight = selected?.lineWeight ?? acapGetMeasurementLineWeight()
       const fontSize = selected?.fontSize ?? acapGetMeasurementFontSize()
       this.paint(color, lineWeight, fontSize)

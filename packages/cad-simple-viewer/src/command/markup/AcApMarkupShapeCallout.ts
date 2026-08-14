@@ -7,7 +7,7 @@
  * 1. Draw the shape
  * 2. Move the cursor to place the text box — leader tip is computed on the
  *    shape outline toward the cursor (user does not pick the tip)
- * 3. Enter text
+ * 3. Type text in the capsule
  */
 
 import {
@@ -33,7 +33,7 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
-import { promptMarkupText } from './AcApMarkupCmdUtil'
+import { promptMarkupCapsuleText } from './AcApMarkupCmdUtil'
 import {
   buildMarkupCloud,
   buildMarkupRect
@@ -286,6 +286,11 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._view.isDirty = true
   }
 
+  /** Capsule used for in-place text entry after the bubble is placed. */
+  get capsule(): AcTrHtmlCallout {
+    return this._bubble
+  }
+
   /**
    * Keep the shape + leader + bubble visible while the user enters text.
    * Cleanup is done by {@link disposePreview}.
@@ -353,8 +358,7 @@ export async function promptAttachedCallout(
       y: anchor.y
     })
 
-    const text =
-      (await promptMarkupText(context, 'jig.markup.callout.content', '')) ?? ''
+    const text = await promptMarkupCapsuleText(jig.capsule)
 
     return {
       tip,
