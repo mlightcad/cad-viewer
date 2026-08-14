@@ -130,44 +130,39 @@ export function ensureUiStyles() {
       cursor: not-allowed;
     }
 
+    /* Flyout mark: a small opaque right triangle in the corner toward the
+       submenu. It sits in the icon padding so the glyph stays clear. */
     .ml-ex-ui-toolbar-btn.has-children::after {
       content: '';
       position: absolute;
-      width: 0;
-      height: 0;
-      border-style: solid;
+      width: 6px;
+      height: 6px;
+      background: currentColor;
+      pointer-events: none;
     }
 
     .ml-ex-ui-toolbar.is-right .ml-ex-ui-toolbar-btn.has-children::after {
-      left: 2px;
-      top: 50%;
-      margin-top: -4px;
-      border-width: 4px 5px 4px 0;
-      border-color: transparent var(--ml-ui-text-muted, #606266) transparent transparent;
+      left: 1px;
+      bottom: 1px;
+      clip-path: polygon(0 100%, 0 0, 100% 100%);
     }
 
     .ml-ex-ui-toolbar.is-left .ml-ex-ui-toolbar-btn.has-children::after {
-      right: 2px;
-      top: 50%;
-      margin-top: -4px;
-      border-width: 4px 0 4px 5px;
-      border-color: transparent transparent transparent var(--ml-ui-text-muted, #606266);
+      right: 1px;
+      bottom: 1px;
+      clip-path: polygon(100% 100%, 0 100%, 100% 0);
     }
 
     .ml-ex-ui-toolbar.is-top .ml-ex-ui-toolbar-btn.has-children::after {
-      bottom: 2px;
-      left: 50%;
-      margin-left: -4px;
-      border-width: 5px 4px 0 4px;
-      border-color: var(--ml-ui-text-muted, #606266) transparent transparent transparent;
+      right: 1px;
+      bottom: 1px;
+      clip-path: polygon(100% 100%, 0 100%, 100% 0);
     }
 
     .ml-ex-ui-toolbar.is-bottom .ml-ex-ui-toolbar-btn.has-children::after {
-      top: 2px;
-      left: 50%;
-      margin-left: -4px;
-      border-width: 0 4px 5px 4px;
-      border-color: transparent transparent var(--ml-ui-text-muted, #606266) transparent;
+      right: 1px;
+      top: 1px;
+      clip-path: polygon(100% 0, 0 0, 100% 100%);
     }
 
     .ml-ex-ui-icon {
