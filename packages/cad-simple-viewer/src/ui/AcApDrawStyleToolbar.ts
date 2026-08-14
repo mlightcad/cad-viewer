@@ -28,21 +28,21 @@ import type { AcEdCommandEventArgs } from '../editor'
 import { applyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
 import { AcApI18n } from '../i18n'
 import {
-  cssColor,
-  cssToMeasurementColor,
-  getMeasurementFontSize,
-  getMeasurementLineWeight,
-  measurementColor,
-  setMeasurementDrawColor,
-  setMeasurementDrawFontSize,
-  setMeasurementDrawLineWeight
+  acapCssColor,
+  acapCssToMeasurementColor,
+  acapGetMeasurementFontSize,
+  acapGetMeasurementLineWeight,
+  acapMeasurementColor,
+  acapSetMeasurementDrawColor,
+  acapSetMeasurementDrawFontSize,
+  acapSetMeasurementDrawLineWeight
 } from '../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../view'
 import {
   type AcApDrawStyleKind,
-  drawStyleKindForCommand,
-  setDrawStyleToolbarVisible,
-  shouldShowDrawStyleToolbar
+  acapDrawStyleKindForCommand,
+  acapSetDrawStyleToolbarVisible,
+  acapShouldShowDrawStyleToolbar
 } from './AcApDrawStyle'
 
 /** Font-size choices shown in the overlay dropdown, in CSS pixels. */
@@ -374,7 +374,7 @@ export class AcApDrawStyleToolbar {
     document.addEventListener('pointerdown', this.onDocumentPointerDown, true)
 
     this.onCommandWillStart = (args: AcEdCommandEventArgs) => {
-      this.setKind(drawStyleKindForCommand(args.command.globalName))
+      this.setKind(acapDrawStyleKindForCommand(args.command.globalName))
     }
     this.onCommandEnded = () => this.setKind(undefined)
 
@@ -417,7 +417,7 @@ export class AcApDrawStyleToolbar {
       this.onSettingsModified
     )
     this.root.remove()
-    setDrawStyleToolbarVisible(false)
+    acapSetDrawStyleToolbarVisible(false)
   }
 
   /**
@@ -431,12 +431,12 @@ export class AcApDrawStyleToolbar {
   }
 
   /**
-   * Shows or hides the overlay based on {@link shouldShowDrawStyleToolbar}.
+   * Shows or hides the overlay based on {@link acapShouldShowDrawStyleToolbar}.
    */
   private refreshVisibility(): void {
-    const visible = shouldShowDrawStyleToolbar(this.kind)
+    const visible = acapShouldShowDrawStyleToolbar(this.kind)
     this.root.classList.toggle('is-visible', visible)
-    setDrawStyleToolbarVisible(visible)
+    acapSetDrawStyleToolbarVisible(visible)
     if (visible) {
       this.relabel()
       this.syncFromSession()
@@ -463,9 +463,9 @@ export class AcApDrawStyleToolbar {
       const db = acdbHostApplicationServices().workingDatabase
       const color =
         selected?.color ??
-        (db ? measurementColor(db) : cssToMeasurementColor('#7b8794'))
-      const lineWeight = selected?.lineWeight ?? getMeasurementLineWeight()
-      const fontSize = selected?.fontSize ?? getMeasurementFontSize()
+        (db ? acapMeasurementColor(db) : acapCssToMeasurementColor('#7b8794'))
+      const lineWeight = selected?.lineWeight ?? acapGetMeasurementLineWeight()
+      const fontSize = selected?.fontSize ?? acapGetMeasurementFontSize()
       this.paint(color, lineWeight, fontSize)
       return
     }
@@ -495,7 +495,7 @@ export class AcApDrawStyleToolbar {
     lineWeight: AcGiLineWeight,
     fontSize: number
   ): void {
-    const css = cssColor(color)
+    const css = acapCssColor(color)
     this.swatchFill.style.background = css
     this.markSelectedAci(aciIndexOf(color))
 
@@ -534,10 +534,10 @@ export class AcApDrawStyleToolbar {
    * @param color - Color chosen from the ACI panel.
    */
   private applyColor(color: AcCmColor): void {
-    this.swatchFill.style.background = cssColor(color)
+    this.swatchFill.style.background = acapCssColor(color)
     this.markSelectedAci(aciIndexOf(color))
     if (this.kind === 'measure') {
-      setMeasurementDrawColor(color)
+      acapSetMeasurementDrawColor(color)
       applyMeasurementStyleToSelection(this.view, { color })
       return
     }
@@ -632,7 +632,7 @@ export class AcApDrawStyleToolbar {
    */
   private applyLineWeight(weight: AcGiLineWeight): void {
     if (this.kind === 'measure') {
-      setMeasurementDrawLineWeight(weight)
+      acapSetMeasurementDrawLineWeight(weight)
       applyMeasurementStyleToSelection(this.view, { lineWeight: weight })
       return
     }
@@ -647,7 +647,7 @@ export class AcApDrawStyleToolbar {
    */
   private applyFontSize(size: number): void {
     if (this.kind === 'measure') {
-      setMeasurementDrawFontSize(size)
+      acapSetMeasurementDrawFontSize(size)
       applyMeasurementStyleToSelection(this.view, { fontSize: size })
       return
     }

@@ -49,7 +49,7 @@ let hostHasRibbon: boolean | undefined
 let toolbarVisible = false
 
 /**
- * Subscribers notified when {@link setDrawStyleToolbarVisible} changes.
+ * Subscribers notified when {@link acapSetDrawStyleToolbarVisible} changes.
  */
 const visibilityListeners = new Set<(visible: boolean) => void>()
 
@@ -59,7 +59,7 @@ const visibilityListeners = new Set<(visible: boolean) => void>()
  * @param commandName - Command global name; comparison is case-insensitive.
  * @returns `'measure'` or `'markup'`, or `undefined` if the command is unrelated.
  */
-export function drawStyleKindForCommand(
+export function acapDrawStyleKindForCommand(
   commandName: string | undefined
 ): AcApDrawStyleKind | undefined {
   const name = commandName?.trim().toLowerCase()
@@ -78,19 +78,19 @@ export function drawStyleKindForCommand(
  *
  * @param hasRibbon - Host ribbon presence, or `undefined` to clear.
  */
-export function setDrawStyleHostHasRibbon(
+export function acapSetDrawStyleHostHasRibbon(
   hasRibbon: boolean | undefined
 ): void {
   hostHasRibbon = hasRibbon
 }
 
 /**
- * Ribbon visibility used when {@link shouldShowDrawStyleToolbar} omits
+ * Ribbon visibility used when {@link acapShouldShowDrawStyleToolbar} omits
  * an explicit `showRibbon` argument.
  *
  * @returns `true` when the host ribbon is treated as visible.
  */
-export function isDrawStyleHostRibbonVisible(): boolean {
+export function acapIsDrawStyleHostRibbonVisible(): boolean {
   return hostHasRibbon ?? AcApSettingManager.instance.isShowRibbon
 }
 
@@ -104,9 +104,9 @@ export function isDrawStyleHostRibbonVisible(): boolean {
  * @param showRibbon - Whether the host ribbon is visible.
  * @returns `true` when the overlay should be displayed.
  */
-export function shouldShowDrawStyleToolbar(
+export function acapShouldShowDrawStyleToolbar(
   kind: AcApDrawStyleKind | undefined,
-  showRibbon: boolean = isDrawStyleHostRibbonVisible()
+  showRibbon: boolean = acapIsDrawStyleHostRibbonVisible()
 ): boolean {
   return kind != null && !showRibbon
 }
@@ -116,7 +116,7 @@ export function shouldShowDrawStyleToolbar(
  *
  * @returns `true` if the toolbar DOM is visible.
  */
-export function isDrawStyleToolbarVisible(): boolean {
+export function acapIsDrawStyleToolbarVisible(): boolean {
   return toolbarVisible
 }
 
@@ -126,7 +126,7 @@ export function isDrawStyleToolbarVisible(): boolean {
  * @param listener - Called with the new visibility flag.
  * @returns Function that removes this listener.
  */
-export function subscribeDrawStyleToolbarVisibility(
+export function acapSubscribeDrawStyleToolbarVisibility(
   listener: (visible: boolean) => void
 ): () => void {
   visibilityListeners.add(listener)
@@ -141,7 +141,7 @@ export function subscribeDrawStyleToolbarVisibility(
  * @param visible - Whether the overlay is shown.
  * @internal
  */
-export function setDrawStyleToolbarVisible(visible: boolean): void {
+export function acapSetDrawStyleToolbarVisible(visible: boolean): void {
   if (toolbarVisible === visible) return
   toolbarVisible = visible
   for (const listener of visibilityListeners) listener(visible)

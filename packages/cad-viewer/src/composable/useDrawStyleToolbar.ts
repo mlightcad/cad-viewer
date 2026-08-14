@@ -1,6 +1,6 @@
 import {
-  isDrawStyleToolbarVisible,
-  subscribeDrawStyleToolbarVisibility
+  acapIsDrawStyleToolbarVisible,
+  acapSubscribeDrawStyleToolbarVisibility
 } from '@mlightcad/cad-simple-viewer'
 import { onMounted, onUnmounted, ref } from 'vue'
 
@@ -9,12 +9,12 @@ import { onMounted, onUnmounted, ref } from 'vue'
  * Used to hide the filename while a drawing command is active.
  */
 export function useDrawStyleToolbarVisible() {
-  const visible = ref(isDrawStyleToolbarVisible())
+  const visible = ref(acapIsDrawStyleToolbarVisible())
   let unsubscribe: (() => void) | undefined
 
   onMounted(() => {
-    visible.value = isDrawStyleToolbarVisible()
-    unsubscribe = subscribeDrawStyleToolbarVisibility(next => {
+    visible.value = acapIsDrawStyleToolbarVisible()
+    unsubscribe = acapSubscribeDrawStyleToolbarVisibility(next => {
       visible.value = next
     })
   })

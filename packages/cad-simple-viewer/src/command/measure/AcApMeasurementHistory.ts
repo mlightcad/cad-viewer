@@ -4,8 +4,8 @@ import type { AcEdBaseView } from '../../editor'
 import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import { resetMeasurementUnitOverride } from '../../util/AcApMeasurementUnits'
 import {
-  type AcApMeasurementStyle,
-  cloneMeasurementStyle
+  acapCloneMeasurementStyle,
+  type AcApMeasurementStyle
 } from '../../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../../view'
 import {
@@ -221,7 +221,7 @@ function snapshotMeasurementStyles(
   const styles: Record<string, AcApMeasurementStyle> = {}
   for (const group of groups) {
     const style = getMeasurementStyle(group.id)
-    if (style) styles[group.id] = cloneMeasurementStyle(style)
+    if (style) styles[group.id] = acapCloneMeasurementStyle(style)
   }
   return styles
 }

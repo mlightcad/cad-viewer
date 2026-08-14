@@ -18,15 +18,21 @@ import {
 } from '@element-plus/icons-vue'
 import {
   AcApConvertToDxfCmd,
+  acapCssColor,
   AcApDocManager,
+  acapGetMeasurementFontSize,
+  acapGetMeasurementLineWeight,
+  acapMeasurementColor,
   AcApOpenCmd,
   AcApQNewCmd,
   acapRunDatabaseEdit,
+  acapSetMeasurementDrawColor,
+  acapSetMeasurementDrawFontSize,
+  acapSetMeasurementDrawLineWeight,
   AcEdOpenMode,
   type AcTrView2d,
   applyMarkupStyleToSelection,
   applyMeasurementStyleToSelection,
-  cssColor,
   cssToMarkupColor,
   defaultMarkupColor,
   getActiveMeasurementStyle,
@@ -34,19 +40,13 @@ import {
   getMarkupFontSize,
   getMarkupLineWeight,
   getMarkupStore,
-  getMeasurementFontSize,
-  getMeasurementLineWeight,
   isMarkupVisible,
   isMeasurementVisible,
   markupColorToCss,
-  measurementColor,
   refreshMeasurementValueLabels,
   setMarkupDrawColor,
   setMarkupDrawFontSize,
   setMarkupDrawLineWeight,
-  setMeasurementDrawColor,
-  setMeasurementDrawFontSize,
-  setMeasurementDrawLineWeight,
   setMeasurementUnitOverride,
   subscribeMeasurementSelection
 } from '@mlightcad/cad-simple-viewer'
@@ -192,8 +192,8 @@ const markupDrawLineWeight = ref<AcGiLineWeight>(getMarkupLineWeight())
 const markupDrawFontSize = ref(getMarkupFontSize())
 const measurementDrawColor = shallowRef(new AcCmColor())
 const measurementDrawColorDisplay = ref('#7b8794')
-const measurementDrawLineWeight = ref<AcGiLineWeight>(getMeasurementLineWeight())
-const measurementDrawFontSize = ref(getMeasurementFontSize())
+const measurementDrawLineWeight = ref<AcGiLineWeight>(acapGetMeasurementLineWeight())
+const measurementDrawFontSize = ref(acapGetMeasurementFontSize())
 const measurementLunits = ref(AcDbLinearUnits.Decimal)
 const measurementLuprec = ref(4)
 const measurementAunits = ref(AcDbAngleUnits.DecimalDegrees)
@@ -723,43 +723,43 @@ const syncMeasurementStyleControls = () => {
   const selected = getActiveMeasurementStyle()
   if (selected) {
     measurementDrawColor.value = selected.color.clone()
-    measurementDrawColorDisplay.value = cssColor(selected.color)
+    measurementDrawColorDisplay.value = acapCssColor(selected.color)
     measurementDrawLineWeight.value = selected.lineWeight
     measurementDrawFontSize.value = selected.fontSize
     return
   }
   const db = getCurrentDatabase()
   if (db) {
-    const color = measurementColor(db)
+    const color = acapMeasurementColor(db)
     measurementDrawColor.value = color.clone()
-    measurementDrawColorDisplay.value = cssColor(color)
+    measurementDrawColorDisplay.value = acapCssColor(color)
   }
-  measurementDrawLineWeight.value = getMeasurementLineWeight()
-  measurementDrawFontSize.value = getMeasurementFontSize()
+  measurementDrawLineWeight.value = acapGetMeasurementLineWeight()
+  measurementDrawFontSize.value = acapGetMeasurementFontSize()
 }
 
 const handleMeasurementDrawColorChange = (value?: AcCmColor) => {
   if (!value) return
-  setMeasurementDrawColor(value)
+  acapSetMeasurementDrawColor(value)
   measurementDrawColor.value = value.clone()
-  measurementDrawColorDisplay.value = cssColor(value)
+  measurementDrawColorDisplay.value = acapCssColor(value)
   const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
   if (view) applyMeasurementStyleToSelection(view, { color: value })
 }
 
 const handleMeasurementDrawLineWeightChange = (value: AcGiLineWeight) => {
-  setMeasurementDrawLineWeight(value)
+  acapSetMeasurementDrawLineWeight(value)
   measurementDrawLineWeight.value = value
   const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
   if (view) applyMeasurementStyleToSelection(view, { lineWeight: value })
 }
 
 const handleMeasurementDrawFontSizeChange = (value: number) => {
-  setMeasurementDrawFontSize(value)
-  measurementDrawFontSize.value = getMeasurementFontSize()
+  acapSetMeasurementDrawFontSize(value)
+  measurementDrawFontSize.value = acapGetMeasurementFontSize()
   const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
   if (view) {
-    applyMeasurementStyleToSelection(view, { fontSize: getMeasurementFontSize() })
+    applyMeasurementStyleToSelection(view, { fontSize: acapGetMeasurementFontSize() })
   }
 }
 

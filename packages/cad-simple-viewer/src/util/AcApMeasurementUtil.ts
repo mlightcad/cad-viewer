@@ -29,7 +29,7 @@ export interface AcApMeasurementStyle {
 }
 
 /** Returns the current measurement overlay color (session override or MEASUREMENTCOLOR). */
-export function measurementColor(db: AcDbDatabase): AcCmColor {
+export function acapMeasurementColor(db: AcDbDatabase): AcCmColor {
   if (measurementDrawColor) return measurementDrawColor.clone()
   return AcDbSysVarManager.instance().getVar(
     AcDbSystemVariables.MEASUREMENTCOLOR,
@@ -38,50 +38,52 @@ export function measurementColor(db: AcDbDatabase): AcCmColor {
 }
 
 /** Current line weight used when drawing measurements. */
-export function getMeasurementLineWeight(): AcGiLineWeight {
+export function acapGetMeasurementLineWeight(): AcGiLineWeight {
   return measurementDrawLineWeight
 }
 
 /** Current font size (CSS px) used when drawing measurement badges. */
-export function getMeasurementFontSize(): number {
+export function acapGetMeasurementFontSize(): number {
   return measurementDrawFontSize
 }
 
 /** Update the session measurement draw color (affects current/future measurements). */
-export function setMeasurementDrawColor(color: AcCmColor): void {
+export function acapSetMeasurementDrawColor(color: AcCmColor): void {
   measurementDrawColor = color.clone()
 }
 
 /** Update the session measurement draw line weight. */
-export function setMeasurementDrawLineWeight(weight: AcGiLineWeight): void {
+export function acapSetMeasurementDrawLineWeight(weight: AcGiLineWeight): void {
   if (!(weight > 0)) return
   measurementDrawLineWeight = weight
 }
 
 /** Update the session measurement draw font size (CSS px). */
-export function setMeasurementDrawFontSize(size: number): void {
+export function acapSetMeasurementDrawFontSize(size: number): void {
   if (!Number.isFinite(size) || size <= 0) return
   measurementDrawFontSize = size
 }
 
 /** Restore factory session measurement draw style (tests / document reset). */
-export function resetMeasurementDrawStyle(): void {
+export function acapResetMeasurementDrawStyle(): void {
   measurementDrawColor = undefined
   measurementDrawLineWeight = MEASUREMENT_LINE_WEIGHT
   measurementDrawFontSize = MEASUREMENT_FONT_SIZE
 }
 
 /** Build a style object from the current measurement draw color / line weight / font size. */
-export function currentMeasurementStyle(db: AcDbDatabase): AcApMeasurementStyle {
+export function acapCurrentMeasurementStyle(
+  db: AcDbDatabase
+): AcApMeasurementStyle {
   return {
-    color: measurementColor(db),
-    lineWeight: getMeasurementLineWeight(),
-    fontSize: getMeasurementFontSize()
+    color: acapMeasurementColor(db),
+    lineWeight: acapGetMeasurementLineWeight(),
+    fontSize: acapGetMeasurementFontSize()
   }
 }
 
 /** Clone a measurement style (color is cloned). */
-export function cloneMeasurementStyle(
+export function acapCloneMeasurementStyle(
   style: AcApMeasurementStyle
 ): AcApMeasurementStyle {
   return {
@@ -96,24 +98,24 @@ export function cloneMeasurementStyle(
  * {@link AcGiLineWeight.LineWeight070} (70) ≈ 2.5px, matching the previous
  * area-measurement default.
  */
-export function measurementCanvasLineWidth(weight: AcGiLineWeight): number {
+export function acapMeasurementCanvasLineWidth(weight: AcGiLineWeight): number {
   const n = Number(weight)
   if (!Number.isFinite(n) || n <= 0) return 2
   return Math.max(1, n / 28)
 }
 
 /** Converts an AcCmColor to a CSS rgba() string. */
-export function colorToCssAlpha(c: AcCmColor, alpha: number): string {
+export function acapColorToCssAlpha(c: AcCmColor, alpha: number): string {
   return `rgba(${c.red}, ${c.green}, ${c.blue}, ${alpha})`
 }
 
 /** Returns the CSS color string for a measurement color, with fallback. */
-export function cssColor(c: AcCmColor): string {
+export function acapCssColor(c: AcCmColor): string {
   return c.cssColor ?? `rgb(${c.red}, ${c.green}, ${c.blue})`
 }
 
 /** Parse a CSS color string back into AcCmColor (best-effort). */
-export function cssToMeasurementColor(css: string): AcCmColor {
+export function acapCssToMeasurementColor(css: string): AcCmColor {
   const fromString = AcCmColor.fromString(css)
   if (fromString) return fromString
   try {

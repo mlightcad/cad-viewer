@@ -28,12 +28,12 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  acapCssColor,
+  acapCurrentMeasurementStyle,
+  acapMeasurementCanvasLineWidth,
+  acapMeasurementColor,
   type AcApMeasurementStyle,
-  cssColor,
-  currentMeasurementStyle,
-  formatMeasurementLength,
-  measurementCanvasLineWidth,
-  measurementColor
+  formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
 import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
@@ -144,7 +144,7 @@ function drawArcOnCanvas(
 
   ctx.beginPath()
   ctx.arc(sc.x, sc.y, screenR, sa, ea, antiClockwise)
-  ctx.strokeStyle = cssColor(color)
+  ctx.strokeStyle = acapCssColor(color)
   ctx.lineWidth = lineWidth
   ctx.stroke()
 
@@ -183,7 +183,7 @@ export function placeArcMeasurement(
       start,
       end,
       paintStyle.color,
-      measurementCanvasLineWidth(paintStyle.lineWeight)
+      acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
     )
   paintArc()
 
@@ -429,9 +429,9 @@ export class AcApMeasureArcCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
-    const color = measurementColor(db)
-    const style = currentMeasurementStyle(db)
-    const canvasLineWidth = measurementCanvasLineWidth(style.lineWeight)
+    const color = acapMeasurementColor(db)
+    const style = acapCurrentMeasurementStyle(db)
+    const canvasLineWidth = acapMeasurementCanvasLineWidth(style.lineWeight)
 
     // Construction-phase canvas — removed before this method returns
     const liveId = `live-arc-${Date.now()}`
@@ -570,7 +570,7 @@ export class AcApMeasureArcCmd extends AcEdCommand {
           geom,
           start,
           end,
-          currentMeasurementStyle(db)
+          acapCurrentMeasurementStyle(db)
         )
       })
     )

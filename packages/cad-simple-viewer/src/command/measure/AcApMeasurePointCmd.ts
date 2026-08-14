@@ -16,8 +16,8 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  acapCurrentMeasurementStyle,
   type AcApMeasurementStyle,
-  currentMeasurementStyle,
   formatMeasurementValue
 } from '../../util'
 import { AcTrView2d } from '../../view'
@@ -110,7 +110,7 @@ export class AcApMeasurePointCmd extends AcEdCommand {
           context.view as AcTrView2d,
           db,
           point,
-          currentMeasurementStyle(db)
+          acapCurrentMeasurementStyle(db)
         )
       })
     )

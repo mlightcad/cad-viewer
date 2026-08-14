@@ -24,12 +24,12 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  acapCurrentMeasurementStyle,
+  acapGetMeasurementFontSize,
+  acapGetMeasurementLineWeight,
+  acapMeasurementColor,
   type AcApMeasurementStyle,
-  currentMeasurementStyle,
-  formatMeasurementLength,
-  getMeasurementFontSize,
-  getMeasurementLineWeight,
-  measurementColor
+  formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
 import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
@@ -145,7 +145,7 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._db = db
     this._line = new AcDbLine(p1, p1)
     this._line.color = color
-    this._line.lineWeight = getMeasurementLineWeight()
+    this._line.lineWeight = acapGetMeasurementLineWeight()
 
     this._badgeId = `live-dist-badge-${Date.now()}`
     this._htManager = (view as AcTrView2d).htmlTransientManager
@@ -155,7 +155,7 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
       worldPosition: p1,
       layer: MEASUREMENT_LIVE_LAYER,
       layoutId: (view as AcTrView2d).activeLayoutBtrId,
-      fontSize: getMeasurementFontSize()
+      fontSize: acapGetMeasurementFontSize()
     })
     this._badge.object.visible = false
     this._htManager.add(this._badge)
@@ -167,10 +167,10 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   update(p2: AcGePoint3dLike) {
     this._line.endPoint = p2
-    this._line.color = measurementColor(this._db)
-    this._line.lineWeight = getMeasurementLineWeight()
+    this._line.color = acapMeasurementColor(this._db)
+    this._line.lineWeight = acapGetMeasurementLineWeight()
     this._badge.setColor(this._line.color)
-    this._badge.setFontSize(getMeasurementFontSize())
+    this._badge.setFontSize(acapGetMeasurementFontSize())
 
     const dist = calcDist(this._p1, p2)
     if (dist < 0.0001) {
@@ -209,7 +209,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
-    const color = measurementColor(db)
+    const color = acapMeasurementColor(db)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -234,7 +234,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
           db,
           p1,
           p2,
-          currentMeasurementStyle(db)
+          acapCurrentMeasurementStyle(db)
         )
       })
     )

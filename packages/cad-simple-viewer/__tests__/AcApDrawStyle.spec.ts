@@ -20,12 +20,12 @@ import {
   subscribeMarkupDrawStyle
 } from '../src/command/markup/AcApMarkupUtil'
 import {
-  drawStyleKindForCommand,
-  isDrawStyleToolbarVisible,
-  setDrawStyleHostHasRibbon,
-  setDrawStyleToolbarVisible,
-  shouldShowDrawStyleToolbar,
-  subscribeDrawStyleToolbarVisibility
+  acapDrawStyleKindForCommand,
+  acapIsDrawStyleToolbarVisible,
+  acapSetDrawStyleHostHasRibbon,
+  acapSetDrawStyleToolbarVisible,
+  acapShouldShowDrawStyleToolbar,
+  acapSubscribeDrawStyleToolbarVisibility
 } from '../src/ui/AcApDrawStyle'
 
 describe('subscribeMarkupDrawStyle', () => {
@@ -43,68 +43,68 @@ describe('subscribeMarkupDrawStyle', () => {
   })
 })
 
-describe('drawStyleKindForCommand', () => {
+describe('acapDrawStyleKindForCommand', () => {
   it('classifies measurement drawing commands', () => {
-    expect(drawStyleKindForCommand('measuredistance')).toBe('measure')
-    expect(drawStyleKindForCommand('MEASUREANGLE')).toBe('measure')
+    expect(acapDrawStyleKindForCommand('measuredistance')).toBe('measure')
+    expect(acapDrawStyleKindForCommand('MEASUREANGLE')).toBe('measure')
   })
 
   it('classifies markup drawing commands', () => {
-    expect(drawStyleKindForCommand('markuparrow')).toBe('markup')
-    expect(drawStyleKindForCommand('markupcloud')).toBe('markup')
+    expect(acapDrawStyleKindForCommand('markuparrow')).toBe('markup')
+    expect(acapDrawStyleKindForCommand('markupcloud')).toBe('markup')
   })
 
   it('ignores visibility / import commands', () => {
-    expect(drawStyleKindForCommand('measurementvis')).toBeUndefined()
-    expect(drawStyleKindForCommand('markupvis')).toBeUndefined()
-    expect(drawStyleKindForCommand('line')).toBeUndefined()
+    expect(acapDrawStyleKindForCommand('measurementvis')).toBeUndefined()
+    expect(acapDrawStyleKindForCommand('markupvis')).toBeUndefined()
+    expect(acapDrawStyleKindForCommand('line')).toBeUndefined()
   })
 })
 
 describe('draw style toolbar visibility', () => {
   afterEach(() => {
-    setDrawStyleToolbarVisible(false)
+    acapSetDrawStyleToolbarVisible(false)
   })
 
   it('notifies subscribers when visibility changes', () => {
     const seen: boolean[] = []
-    const unsubscribe = subscribeDrawStyleToolbarVisibility(value => {
+    const unsubscribe = acapSubscribeDrawStyleToolbarVisibility(value => {
       seen.push(value)
     })
-    setDrawStyleToolbarVisible(true)
-    expect(isDrawStyleToolbarVisible()).toBe(true)
-    setDrawStyleToolbarVisible(true)
-    setDrawStyleToolbarVisible(false)
+    acapSetDrawStyleToolbarVisible(true)
+    expect(acapIsDrawStyleToolbarVisible()).toBe(true)
+    acapSetDrawStyleToolbarVisible(true)
+    acapSetDrawStyleToolbarVisible(false)
     unsubscribe()
     expect(seen).toEqual([true, false])
   })
 })
 
-describe('shouldShowDrawStyleToolbar', () => {
+describe('acapShouldShowDrawStyleToolbar', () => {
   afterEach(() => {
-    setDrawStyleHostHasRibbon(undefined)
+    acapSetDrawStyleHostHasRibbon(undefined)
   })
 
   it('shows the overlay when a draw command is active and the ribbon is hidden', () => {
-    expect(shouldShowDrawStyleToolbar('measure', false)).toBe(true)
-    expect(shouldShowDrawStyleToolbar('markup', false)).toBe(true)
+    expect(acapShouldShowDrawStyleToolbar('measure', false)).toBe(true)
+    expect(acapShouldShowDrawStyleToolbar('markup', false)).toBe(true)
   })
 
   it('hides the overlay when the ribbon is visible so ribbon style controls stay usable', () => {
-    expect(shouldShowDrawStyleToolbar('measure', true)).toBe(false)
-    expect(shouldShowDrawStyleToolbar('markup', true)).toBe(false)
+    expect(acapShouldShowDrawStyleToolbar('measure', true)).toBe(false)
+    expect(acapShouldShowDrawStyleToolbar('markup', true)).toBe(false)
   })
 
   it('hides the overlay when no draw command is active', () => {
-    expect(shouldShowDrawStyleToolbar(undefined, false)).toBe(false)
-    expect(shouldShowDrawStyleToolbar(undefined, true)).toBe(false)
+    expect(acapShouldShowDrawStyleToolbar(undefined, false)).toBe(false)
+    expect(acapShouldShowDrawStyleToolbar(undefined, true)).toBe(false)
   })
 
   it('shows the overlay for hosts without a ribbon without reading persisted settings', () => {
-    setDrawStyleHostHasRibbon(false)
-    expect(shouldShowDrawStyleToolbar('measure')).toBe(true)
-    expect(shouldShowDrawStyleToolbar('markup')).toBe(true)
-    expect(shouldShowDrawStyleToolbar(undefined)).toBe(false)
+    acapSetDrawStyleHostHasRibbon(false)
+    expect(acapShouldShowDrawStyleToolbar('measure')).toBe(true)
+    expect(acapShouldShowDrawStyleToolbar('markup')).toBe(true)
+    expect(acapShouldShowDrawStyleToolbar(undefined)).toBe(false)
   })
 })
 
