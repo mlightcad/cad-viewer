@@ -40,11 +40,11 @@ export class AcApCopyCmd extends AcEdCommand {
   private static _defaultMode: CopyMode = 'Multiple'
 
   /**
-   * Creates the COPY command and marks it as a review-mode command.
+   * Creates the COPY command. Drawing geometry may only be copied in Write mode.
    */
   constructor() {
     super()
-    this.mode = AcEdOpenMode.Review
+    this.mode = AcEdOpenMode.Write
   }
 
   /**

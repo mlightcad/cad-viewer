@@ -175,11 +175,11 @@ export class AcApOffsetCmd extends AcEdCommand {
   private static _lastDistance?: number
 
   /**
-   * Creates the OFFSET command and marks it as a review-mode command.
+   * Creates the OFFSET command. Drawing geometry may only be offset in Write mode.
    */
   constructor() {
     super()
-    this.mode = AcEdOpenMode.Review
+    this.mode = AcEdOpenMode.Write
   }
 
   /**
