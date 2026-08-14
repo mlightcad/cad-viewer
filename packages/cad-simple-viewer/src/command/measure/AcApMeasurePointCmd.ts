@@ -16,8 +16,8 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  acapCurrentMeasurementStyle,
   type AcApMeasurementStyle,
-  currentMeasurementStyle,
   formatMeasurementValue
 } from '../../util'
 import { AcTrView2d } from '../../view'
@@ -97,7 +97,6 @@ export class AcApMeasurePointCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
-    const style = currentMeasurementStyle(db)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -111,7 +110,7 @@ export class AcApMeasurePointCmd extends AcEdCommand {
           context.view as AcTrView2d,
           db,
           point,
-          style
+          acapCurrentMeasurementStyle(db)
         )
       })
     )

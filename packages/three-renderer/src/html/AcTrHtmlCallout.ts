@@ -45,6 +45,26 @@ export class AcTrHtmlCallout extends AcTrHtmlElement {
     body.style.fontSize = `${fontSize}px`
   }
 
+  /** The inner label node used for in-place text editing. */
+  get textElement(): HTMLElement {
+    return (
+      (this.element.querySelector(
+        '.ml-html-callout-text'
+      ) as HTMLElement | null) ?? this.element
+    )
+  }
+
+  /** Update the callout bubble accent and text color. */
+  setColor(color: AcCmColor): void {
+    const accent = acTrHtmlCssColor(color)
+    this.element.style.borderColor = accent
+    this.element.style.borderLeft = `4px solid ${accent}`
+    const body = this.element.querySelector(
+      '.ml-html-callout-text'
+    ) as HTMLElement | null
+    if (body) body.style.color = accent
+  }
+
   private static createElement(
     color: AcCmColor,
     text: string,
@@ -64,8 +84,7 @@ export class AcTrHtmlCallout extends AcTrHtmlElement {
 
     const textEl = document.createElement('div')
     textEl.className = 'ml-html-callout-text'
-    textEl.style.cssText =
-      `color:${accent};font-size:${size}px;font-weight:600;white-space:pre-wrap;word-break:break-word;`
+    textEl.style.cssText = `color:${accent};font-size:${size}px;font-weight:600;white-space:pre-wrap;word-break:break-word;`
     textEl.textContent = text
     el.appendChild(textEl)
     return el

@@ -1,9 +1,9 @@
 import { AcGiLineWeight } from '@mlightcad/data-model'
 
 import {
+  acapCssColor,
+  acapCssToMeasurementColor,
   type AcApMeasurementStyle,
-  cssColor,
-  cssToMeasurementColor,
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LINE_WEIGHT
 } from '../../util/AcApMeasurementUtil'
@@ -119,7 +119,7 @@ export function serializeMeasurementStyle(
   style: AcApMeasurementStyle
 ): AcApMeasurementSidecarStyle {
   return {
-    color: cssColor(style.color),
+    color: acapCssColor(style.color),
     lineWeight: style.lineWeight,
     fontSize: style.fontSize
   }
@@ -130,7 +130,7 @@ export function deserializeMeasurementStyle(
   style: AcApMeasurementSidecarStyle
 ): AcApMeasurementStyle {
   return {
-    color: cssToMeasurementColor(style.color),
+    color: acapCssToMeasurementColor(style.color),
     lineWeight:
       style.lineWeight > 0 ? style.lineWeight : MEASUREMENT_LINE_WEIGHT,
     fontSize: style.fontSize > 0 ? style.fontSize : MEASUREMENT_FONT_SIZE

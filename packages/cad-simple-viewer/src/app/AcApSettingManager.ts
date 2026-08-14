@@ -40,8 +40,8 @@ export interface AcApSettings {
   isShowFileName: boolean
   /** Whether language selector is visible */
   isShowLanguageSelector: boolean
-  /** Whether main menu is visible */
-  isShowMainMenu: boolean
+  /** Whether the command ribbon is visible */
+  isShowRibbon: boolean
   /** Whether the toolbar is visible */
   isShowToolbar: boolean
   /** Whether performance statistics are displayed */
@@ -60,7 +60,7 @@ const DEFAULT_VALUES: AcApSettings = {
   isShowEntityInfo: false,
   isShowFileName: true,
   isShowLanguageSelector: true,
-  isShowMainMenu: true,
+  isShowRibbon: true,
   isShowToolbar: true,
   isShowStats: false,
   fontMapping: {},
@@ -75,6 +75,32 @@ const DEFAULT_VALUES: AcApSettings = {
 
 /** Local storage key for persisting settings */
 const SETTINGS_LS_KEY = 'settings'
+
+/**
+ * Maps the pre-ribbon `isShowMainMenu` key onto `isShowRibbon`.
+ *
+ * Older builds persisted `isShowMainMenu`. After the main menu was replaced
+ * by the command ribbon, that preference should keep hiding (or showing)
+ * the ribbon for the same users.
+ *
+ * @param stored - Parsed localStorage object; not mutated.
+ * @returns A copy with `isShowRibbon` filled in and `isShowMainMenu` removed.
+ */
+export function migrateStoredSettings(
+  stored: Record<string, unknown>
+): { settings: Record<string, unknown>; migrated: boolean } {
+  const next = { ...stored }
+  let migrated = false
+  if (!('isShowRibbon' in next) && typeof next.isShowMainMenu === 'boolean') {
+    next.isShowRibbon = next.isShowMainMenu
+    migrated = true
+  }
+  if ('isShowMainMenu' in next) {
+    delete next.isShowMainMenu
+    migrated = true
+  }
+  return { settings: next, migrated }
+}
 
 /**
  * Event arguments for settings modification events.
@@ -320,21 +346,21 @@ export class AcApSettingManager<T extends AcApSettings = AcApSettings> {
   }
 
   /**
-   * Gets whether the main menu is visible.
+   * Gets whether the command ribbon is visible.
    *
-   * @returns True if the main menu should be displayed
+   * @returns True if the ribbon should be shown
    */
-  get isShowMainMenu() {
-    return this.get('isShowMainMenu')
+  get isShowRibbon() {
+    return this.get('isShowRibbon')
   }
 
   /**
-   * Sets whether the main menu is visible.
+   * Sets whether the command ribbon is visible.
    *
-   * @param value - True to show the main menu
+   * @param value - True to show the ribbon
    */
-  set isShowMainMenu(value: boolean) {
-    this.set('isShowMainMenu', value)
+  set isShowRibbon(value: boolean) {
+    this.set('isShowRibbon', value)
   }
 
   /**
@@ -430,7 +456,16 @@ export class AcApSettingManager<T extends AcApSettings = AcApSettings> {
    */
   get settings() {
     const values = localStorage.getItem(SETTINGS_LS_KEY)
-    const results = (values == null ? {} : JSON.parse(values)) as T
-    return defaults(results, DEFAULT_VALUES)
+    const stored = (values == null ? {} : JSON.parse(values)) as Record<
+      string,
+      unknown
+    >
+    const { settings: migrated, migrated: didMigrate } =
+      migrateStoredSettings(stored)
+    const results = defaults(migrated, DEFAULT_VALUES) as T
+    if (didMigrate) {
+      localStorage.setItem(SETTINGS_LS_KEY, JSON.stringify(results))
+    }
+    return results
   }
 }

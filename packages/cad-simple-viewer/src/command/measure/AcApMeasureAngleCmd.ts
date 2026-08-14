@@ -25,14 +25,14 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  acapCssColor,
+  acapCurrentMeasurementStyle,
+  acapGetMeasurementFontSize,
+  acapGetMeasurementLineWeight,
+  acapMeasurementCanvasLineWidth,
+  acapMeasurementColor,
   type AcApMeasurementStyle,
-  cssColor,
-  currentMeasurementStyle,
-  formatMeasurementAngle,
-  getMeasurementFontSize,
-  getMeasurementLineWeight,
-  measurementCanvasLineWidth,
-  measurementColor
+  formatMeasurementAngle
 } from '../../util'
 import { AcTrView2d } from '../../view'
 import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
@@ -104,7 +104,7 @@ function drawArm1OnCanvas(
   ctx.beginPath()
   ctx.moveTo(sv.x, sv.y)
   ctx.lineTo(sa.x, sa.y)
-  ctx.strokeStyle = cssColor(color)
+  ctx.strokeStyle = acapCssColor(color)
   ctx.lineWidth = lineWidth
   ctx.setLineDash([8, 5])
   ctx.stroke()
@@ -163,7 +163,7 @@ function drawAngleArcOnCanvas(
 
   ctx.beginPath()
   ctx.arc(sv.x, sv.y, arcR, startAngle, endAngle, antiClockwise)
-  ctx.strokeStyle = cssColor(color)
+  ctx.strokeStyle = acapCssColor(color)
   ctx.lineWidth = lineWidth
   ctx.stroke()
   ctx.restore()
@@ -210,7 +210,7 @@ export function placeAngleMeasurement(
       arm1,
       arm2,
       paintStyle.color,
-      measurementCanvasLineWidth(paintStyle.lineWeight)
+      acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
     )
   paintArc()
 
@@ -319,7 +319,7 @@ class AcApMeasureArm1Jig extends AcEdPreviewJig<AcGePoint3dLike> {
     super(view)
     this._line = new AcDbLine(vertex, vertex)
     this._line.color = color
-    this._line.lineWeight = getMeasurementLineWeight()
+    this._line.lineWeight = acapGetMeasurementLineWeight()
   }
 
   get entity(): AcDbLine {
@@ -365,7 +365,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._db = db
     this._line = new AcDbLine(vertex, vertex)
     this._line.color = color
-    this._line.lineWeight = getMeasurementLineWeight()
+    this._line.lineWeight = acapGetMeasurementLineWeight()
 
     this._badgeId = `live-angle-badge-${Date.now()}`
     this._htManager = (view as AcTrView2d).htmlTransientManager
@@ -375,7 +375,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
       worldPosition: vertex,
       layer: MEASUREMENT_LIVE_LAYER,
       layoutId: (view as AcTrView2d).activeLayoutBtrId,
-      fontSize: getMeasurementFontSize(),
+      fontSize: acapGetMeasurementFontSize(),
       // Keep the label slightly above the vertex (was -30px screen offset).
       transform: 'translate(-50%, calc(-50% - 30px))'
     })
@@ -397,7 +397,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
       this._vertex,
       this._arm1,
       this._color,
-      measurementCanvasLineWidth(getMeasurementLineWeight())
+      acapMeasurementCanvasLineWidth(acapGetMeasurementLineWeight())
     )
 
     const deg = calcAngleDeg(this._vertex, this._arm1, p)
@@ -431,9 +431,9 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
-    const color = measurementColor(db)
-    const style = currentMeasurementStyle(db)
-    const canvasLineWidth = measurementCanvasLineWidth(style.lineWeight)
+    const color = acapMeasurementColor(db)
+    const style = acapCurrentMeasurementStyle(db)
+    const canvasLineWidth = acapMeasurementCanvasLineWidth(style.lineWeight)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -528,7 +528,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
           vertex,
           arm1,
           arm2,
-          style
+          acapCurrentMeasurementStyle(db)
         )
       })
     )

@@ -34,7 +34,8 @@ import {
   defaultMarkupColor,
   getMarkupFontSize,
   getMarkupLineWeight,
-  markupColorToCss
+  markupColorToCss,
+  subscribeMarkupDrawStyle
 } from './AcApMarkupUtil'
 
 function fitCanvas(
@@ -94,14 +95,16 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private readonly _line: AcDbLine
   private readonly _view: AcTrView2d
   private readonly _ht: AcTrHtmlTransientManager
-  private readonly _colorCss: string
+  private readonly _tipDot: AcTrHtmlDot
+  private readonly _bubble: AcTrHtmlCallout
+  private readonly _overlay: AcTrHtmlCanvasOverlay
   private readonly _tipDotId: string
   private readonly _bubbleId: string
   private readonly _canvasId: string
-  private readonly _bubble: AcTrHtmlCallout
-  private readonly _overlay: AcTrHtmlCanvasOverlay
+  private _colorCss: string
   private _anchor: AcGePoint3dLike
   private _onViewChanged?: () => void
+  private _unsubDrawStyle?: () => void
 
   constructor(
     view: AcEdBaseView,
@@ -126,15 +129,14 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._bubbleId = `live-markup-callout-bubble-${stamp}`
     this._canvasId = `live-markup-callout-canvas-${stamp}`
 
-    this._ht.add(
-      new AcTrHtmlDot({
-        id: this._tipDotId,
-        color,
-        worldPosition: this._tip,
-        layer: MARKUP_LIVE_LAYER,
-        layoutId
-      })
-    )
+    this._tipDot = new AcTrHtmlDot({
+      id: this._tipDotId,
+      color,
+      worldPosition: this._tip,
+      layer: MARKUP_LIVE_LAYER,
+      layoutId
+    })
+    this._ht.add(this._tipDot)
 
     this._bubble = new AcTrHtmlCallout({
       id: this._bubbleId,
@@ -157,6 +159,9 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
     this._onViewChanged = () => this.paintArrow()
     this._view.events.viewChanged.addEventListener(this._onViewChanged)
+    this._unsubDrawStyle = subscribeMarkupDrawStyle(() =>
+      this.applyCurrentStyle()
+    )
 
     this._view.isDirty = true
   }
@@ -168,7 +173,10 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   update(anchor: AcGePoint3dLike) {
     this._anchor = { x: anchor.x, y: anchor.y, z: anchor.z ?? 0 }
     this._line.endPoint = this._anchor
+    this._line.color = defaultMarkupColor()
+    this._line.lineWeight = getMarkupLineWeight()
     this._bubble.setPosition(this._anchor)
+    this._bubble.setFontSize(getMarkupFontSize())
     this.paintArrow()
     this._view.isDirty = true
   }
@@ -189,6 +197,8 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   /** Remove frozen preview graphics after text entry (or cancel). */
   disposePreview() {
+    this._unsubDrawStyle?.()
+    this._unsubDrawStyle = undefined
     this._view.removeTransientEntity(this._line.objectId)
     if (this._onViewChanged) {
       this._view.events.viewChanged.removeEventListener(this._onViewChanged)
@@ -197,6 +207,21 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._ht.remove(this._tipDotId)
     this._ht.remove(this._bubbleId)
     this._ht.remove(this._canvasId)
+    this._view.isDirty = true
+  }
+
+  /** Apply session draw style to the frozen preview (including during text entry). */
+  private applyCurrentStyle(): void {
+    const color = defaultMarkupColor()
+    this._colorCss = markupColorToCss(color)
+    this._line.color = color
+    this._line.lineWeight = getMarkupLineWeight()
+    this._view.removeTransientEntity(this._line.objectId)
+    this._view.addTransientEntity(this._line)
+    this._tipDot.setColor(color)
+    this._bubble.setColor(color)
+    this._bubble.setFontSize(getMarkupFontSize())
+    this.paintArrow()
     this._view.isDirty = true
   }
 
@@ -269,11 +294,6 @@ export class AcApMarkupCalloutCmd extends AcEdCommand {
         const record: AcApMarkupRecord = {
           ...meta,
           type: 'callout',
-          style: {
-            color: markupColorToCss(color),
-            lineWeight: getMarkupLineWeight(),
-            fontSize: getMarkupFontSize()
-          },
           geometry: {
             type: 'callout',
             tip: { x: tip.x, y: tip.y },

@@ -18,36 +18,35 @@ import {
 } from '@element-plus/icons-vue'
 import {
   AcApConvertToDxfCmd,
+  acapCssColor,
   AcApDocManager,
+  acapGetMeasurementFontSize,
+  acapGetMeasurementLineWeight,
+  acapMeasurementColor,
   AcApOpenCmd,
   AcApQNewCmd,
   acapRunDatabaseEdit,
+  acapSetMeasurementDrawColor,
+  acapSetMeasurementDrawFontSize,
+  acapSetMeasurementDrawLineWeight,
   AcEdOpenMode,
   type AcTrView2d,
+  applyMarkupStyleToSelection,
   applyMeasurementStyleToSelection,
-  cssColor,
   cssToMarkupColor,
   defaultMarkupColor,
   getActiveMeasurementStyle,
   getEffectiveMeasurementUnits,
   getMarkupFontSize,
   getMarkupLineWeight,
-  getMarkupPresenter,
   getMarkupStore,
-  getMeasurementFontSize,
-  getMeasurementLineWeight,
   isMarkupVisible,
   isMeasurementVisible,
   markupColorToCss,
-  measurementColor,
   refreshMeasurementValueLabels,
-  runMarkupEdit,
   setMarkupDrawColor,
   setMarkupDrawFontSize,
   setMarkupDrawLineWeight,
-  setMeasurementDrawColor,
-  setMeasurementDrawFontSize,
-  setMeasurementDrawLineWeight,
   setMeasurementUnitOverride,
   subscribeMeasurementSelection
 } from '@mlightcad/cad-simple-viewer'
@@ -70,6 +69,7 @@ import {
   RibbonLocaleTexts,
   RibbonTabModel
 } from '@mlightcad/ribbon'
+import { ElButton, ElTooltip } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -192,8 +192,8 @@ const markupDrawLineWeight = ref<AcGiLineWeight>(getMarkupLineWeight())
 const markupDrawFontSize = ref(getMarkupFontSize())
 const measurementDrawColor = shallowRef(new AcCmColor())
 const measurementDrawColorDisplay = ref('#7b8794')
-const measurementDrawLineWeight = ref<AcGiLineWeight>(getMeasurementLineWeight())
-const measurementDrawFontSize = ref(getMeasurementFontSize())
+const measurementDrawLineWeight = ref<AcGiLineWeight>(acapGetMeasurementLineWeight())
+const measurementDrawFontSize = ref(acapGetMeasurementFontSize())
 const measurementLunits = ref(AcDbLinearUnits.Decimal)
 const measurementLuprec = ref(4)
 const measurementAunits = ref(AcDbAngleUnits.DecimalDegrees)
@@ -680,19 +680,11 @@ const syncMarkupStyleControls = () => {
 /**
  * Apply a style patch to the currently selected markup and republish it.
  */
-const applyMarkupStyleToSelection = (
+const patchSelectedMarkupStyle = (
   patch: Partial<{ color: string; lineWeight: number; fontSize: number }>
 ) => {
-  const store = getMarkupStore()
-  const id = store.selectedId
-  if (!id) return
   const view = AcApDocManager.instance?.curView
-  if (!view) return
-  runMarkupEdit(view, 'Markup Style', () => {
-    const updated = store.updateStyle(id, patch)
-    if (!updated) return
-    getMarkupPresenter().publish(view, updated)
-  })
+  if (view) applyMarkupStyleToSelection(view, patch)
 }
 
 /**
@@ -704,7 +696,7 @@ const handleMarkupDrawColorChange = (value?: AcCmColor) => {
   setMarkupDrawColor(value)
   markupDrawColor.value = value.clone()
   markupDrawColorDisplay.value = markupColorToCss(value)
-  applyMarkupStyleToSelection({ color: markupColorToCss(value) })
+  patchSelectedMarkupStyle({ color: markupColorToCss(value) })
 }
 
 /**
@@ -714,7 +706,7 @@ const handleMarkupDrawColorChange = (value?: AcCmColor) => {
 const handleMarkupDrawLineWeightChange = (value: AcGiLineWeight) => {
   setMarkupDrawLineWeight(value)
   markupDrawLineWeight.value = value
-  applyMarkupStyleToSelection({ lineWeight: value })
+  patchSelectedMarkupStyle({ lineWeight: value })
 }
 
 /**
@@ -724,50 +716,50 @@ const handleMarkupDrawLineWeightChange = (value: AcGiLineWeight) => {
 const handleMarkupDrawFontSizeChange = (value: number) => {
   setMarkupDrawFontSize(value)
   markupDrawFontSize.value = getMarkupFontSize()
-  applyMarkupStyleToSelection({ fontSize: getMarkupFontSize() })
+  patchSelectedMarkupStyle({ fontSize: getMarkupFontSize() })
 }
 
 const syncMeasurementStyleControls = () => {
   const selected = getActiveMeasurementStyle()
   if (selected) {
     measurementDrawColor.value = selected.color.clone()
-    measurementDrawColorDisplay.value = cssColor(selected.color)
+    measurementDrawColorDisplay.value = acapCssColor(selected.color)
     measurementDrawLineWeight.value = selected.lineWeight
     measurementDrawFontSize.value = selected.fontSize
     return
   }
   const db = getCurrentDatabase()
   if (db) {
-    const color = measurementColor(db)
+    const color = acapMeasurementColor(db)
     measurementDrawColor.value = color.clone()
-    measurementDrawColorDisplay.value = cssColor(color)
+    measurementDrawColorDisplay.value = acapCssColor(color)
   }
-  measurementDrawLineWeight.value = getMeasurementLineWeight()
-  measurementDrawFontSize.value = getMeasurementFontSize()
+  measurementDrawLineWeight.value = acapGetMeasurementLineWeight()
+  measurementDrawFontSize.value = acapGetMeasurementFontSize()
 }
 
 const handleMeasurementDrawColorChange = (value?: AcCmColor) => {
   if (!value) return
-  setMeasurementDrawColor(value)
+  acapSetMeasurementDrawColor(value)
   measurementDrawColor.value = value.clone()
-  measurementDrawColorDisplay.value = cssColor(value)
+  measurementDrawColorDisplay.value = acapCssColor(value)
   const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
   if (view) applyMeasurementStyleToSelection(view, { color: value })
 }
 
 const handleMeasurementDrawLineWeightChange = (value: AcGiLineWeight) => {
-  setMeasurementDrawLineWeight(value)
+  acapSetMeasurementDrawLineWeight(value)
   measurementDrawLineWeight.value = value
   const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
   if (view) applyMeasurementStyleToSelection(view, { lineWeight: value })
 }
 
 const handleMeasurementDrawFontSizeChange = (value: number) => {
-  setMeasurementDrawFontSize(value)
-  measurementDrawFontSize.value = getMeasurementFontSize()
+  acapSetMeasurementDrawFontSize(value)
+  measurementDrawFontSize.value = acapGetMeasurementFontSize()
   const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
   if (view) {
-    applyMeasurementStyleToSelection(view, { fontSize: getMeasurementFontSize() })
+    applyMeasurementStyleToSelection(view, { fontSize: acapGetMeasurementFontSize() })
   }
 }
 
@@ -896,11 +888,30 @@ const handleRibbonLayerStateToggle = (payload: {
   syncRibbonProperties(db)
 }
 
+/**
+ * Read: measurement only. Review: measurement + review. Write: all tabs.
+ * Contextual tabs keep the visibility their builders already set.
+ */
+const applyOpenModeTabVisibility = (
+  tabs: RibbonTabModel[],
+  openMode: AcEdOpenMode
+): RibbonTabModel[] => {
+  return tabs.map(tab => {
+    if (tab.contextual) return tab
+    const visible =
+      tab.id === 'measurement'
+        ? true
+        : tab.id === 'review'
+          ? openMode >= AcEdOpenMode.Review
+          : openMode === AcEdOpenMode.Write
+    return { ...tab, visible }
+  })
+}
+
 const buildBaseTabs = (
   openMode: AcEdOpenMode,
   markupVisible: boolean,
   measurementVisible: boolean,
-  undoRedoState: { canUndo: boolean; canRedo: boolean },
   agentPluginEnabled: boolean
 ): RibbonTabModel[] => {
   const ribbonTooltips = {
@@ -1718,31 +1729,6 @@ const buildBaseTabs = (
           orientation: 'row',
           collections: [
             {
-              id: 'home-undo-redo',
-              layout: 'column',
-              rows: 2,
-              items: [
-                {
-                  id: 'cmd-undo',
-                  type: 'button',
-                  label: t('main.ribbon.command.undo'),
-                  tooltip: ribbonTooltips.undo,
-                  size: 'small',
-                  disabled: !undoRedoState.canUndo,
-                  props: { icon: RefreshLeft }
-                },
-                {
-                  id: 'cmd-redo',
-                  type: 'button',
-                  label: t('main.ribbon.command.redo'),
-                  tooltip: ribbonTooltips.redo,
-                  size: 'small',
-                  disabled: !undoRedoState.canRedo,
-                  props: { icon: RefreshRight }
-                }
-              ]
-            },
-            {
               id: 'home-modify-main',
               layout: 'column',
               rows: 3,
@@ -2190,13 +2176,11 @@ const buildBaseTabs = (
     }
   ]
 
-  if (openMode >= AcEdOpenMode.Review) {
-    tabs.push({
-      id: 'review',
-      title: t('main.ribbon.tab.review'),
-      groups: reviewGroups
-    })
-  }
+  tabs.push({
+    id: 'review',
+    title: t('main.ribbon.tab.review'),
+    groups: reviewGroups
+  })
 
   tabs.push({
     id: 'measurement',
@@ -2204,7 +2188,7 @@ const buildBaseTabs = (
     groups: measurementGroups
   })
 
-  return markComponentConfigRaw(tabs)
+  return markComponentConfigRaw(applyOpenModeTabVisibility(tabs, openMode))
 }
 
 const ribbonData = computed(() => {
@@ -2272,8 +2256,6 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-copy', 'copy')
-  commandByItemId.set('cmd-undo', 'undo')
-  commandByItemId.set('cmd-redo', 'redo')
   commandByItemId.set('cmd-erase', 'erase')
   commandByItemId.set('cmd-offset', 'offset')
   commandByItemId.set('cmd-layer', 'layer')
@@ -2324,10 +2306,6 @@ const ribbonData = computed(() => {
     openMode,
     markupVisible,
     measurementVisible,
-    {
-      canUndo: canUndo.value,
-      canRedo: canRedo.value
-    },
     store.features.agentPlugin
   )
   return {
@@ -2335,6 +2313,20 @@ const ribbonData = computed(() => {
     commandByItemId
   }
 })
+
+watch(
+  () =>
+    ribbonData.value.tabs
+      .filter(tab => tab.visible !== false && !tab.contextual)
+      .map(tab => tab.id),
+  tabIds => {
+    if (tabIds.length === 0) return
+    if (!tabIds.includes(activeRibbonTabId.value)) {
+      activeRibbonTabId.value = tabIds[0]
+    }
+  },
+  { immediate: true }
+)
 
 const fileMenuItems = computed<FileMenuItemModel[]>(() => {
   locale.value
@@ -2427,6 +2419,16 @@ const runLazyCommand = async (command: string) => {
   AcApDocManager.instance.sendStringToExecute(command)
 }
 
+const handleHeaderUndo = () => {
+  if (isRibbonDisabled.value || !canUndo.value) return
+  AcApDocManager.instance.sendStringToExecute('undo')
+}
+
+const handleHeaderRedo = () => {
+  if (isRibbonDisabled.value || !canRedo.value) return
+  AcApDocManager.instance.sendStringToExecute('redo')
+}
+
 const handleFileMenuSelect = async (command: string) => {
   if (isRibbonDisabled.value) return
   if (command === 'Convert') {
@@ -2456,7 +2458,6 @@ const handleFileMenuSelect = async (command: string) => {
 
 <template>
   <div
-    v-if="features.isShowToolbar"
     ref="ribbonContainerRef"
     :aria-disabled="isRibbonDisabled"
     class="ml-ribbon-toolbar-container"
@@ -2475,6 +2476,34 @@ const handleFileMenuSelect = async (command: string) => {
       @file-menu-select="handleFileMenuSelect"
       @item-click="handleRibbonItemClick"
     >
+      <template #tabs-after="{ disabled }">
+        <div class="ml-ribbon-tabs-after">
+          <el-tooltip
+            :content="t('main.ribbon.tooltip.undo')"
+            :hide-after="0"
+            :show-after="1000"
+          >
+            <el-button
+              class="ml-ribbon-tabs-after__button"
+              :disabled="disabled || !canUndo"
+              :icon="RefreshLeft"
+              @click="handleHeaderUndo"
+            />
+          </el-tooltip>
+          <el-tooltip
+            :content="t('main.ribbon.tooltip.redo')"
+            :hide-after="0"
+            :show-after="1000"
+          >
+            <el-button
+              class="ml-ribbon-tabs-after__button"
+              :disabled="disabled || !canRedo"
+              :icon="RefreshRight"
+              @click="handleHeaderRedo"
+            />
+          </el-tooltip>
+        </div>
+      </template>
       <template #tabs-extra="{ disabled }">
         <ml-ribbon-language-selector
           v-if="features.isShowLanguageSelector"
@@ -2502,6 +2531,20 @@ const handleFileMenuSelect = async (command: string) => {
   width: 100%;
   box-sizing: border-box;
   z-index: 6;
+}
+
+.ml-ribbon-tabs-after {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ml-ribbon-tabs-after__button {
+  min-height: 24px;
+  height: 24px;
+  width: 24px;
+  min-width: 24px;
+  padding: 0;
 }
 
 .ml-ribbon-toolbar-container

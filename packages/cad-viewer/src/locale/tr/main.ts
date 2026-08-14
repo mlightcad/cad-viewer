@@ -588,7 +588,7 @@ export default {
       entityInfo: 'Varlık Bilgisi',
       fileName: 'Dosya Adı',
       languageSelector: 'Dil Seçici',
-      mainMenu: 'Ana Menü',
+      ribbon: 'Şerit',
       toolbar: 'Araç Çubuğu',
       stats: 'İstatistikler'
     },

@@ -53,5 +53,10 @@ export default {
     repository: 'GitHub',
     copyright: '© {year} mlightcad. Tüm hakları saklıdır.',
     ok: 'Tamam'
+  },
+  drawStyle: {
+    color: 'Renk',
+    lineWeight: 'Çizgi kalınlığı',
+    fontSize: 'Yazı yüksekliği'
   }
 }

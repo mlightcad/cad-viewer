@@ -53,5 +53,10 @@ export default {
     repository: 'GitHub',
     copyright: '© {year} mlightcad。保留所有权利。',
     ok: '确定'
+  },
+  drawStyle: {
+    color: '颜色',
+    lineWeight: '线宽',
+    fontSize: '字号'
   }
 }

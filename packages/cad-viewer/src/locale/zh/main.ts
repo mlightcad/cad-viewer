@@ -543,7 +543,7 @@ export default {
       entityInfo: '图元信息',
       fileName: '文件名',
       languageSelector: '语言菜单',
-      mainMenu: '主菜单',
+      ribbon: '功能区',
       toolbar: '工具栏',
       stats: '性能面板'
     },

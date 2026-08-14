@@ -28,6 +28,20 @@ let markupDrawLineWeight: AcGiLineWeight = MARKUP_LINE_WEIGHT
 /** Session draw font size for newly created text / callout markups. */
 let markupDrawFontSize = MARKUP_FONT_SIZE
 
+const drawStyleListeners = new Set<() => void>()
+
+function notifyMarkupDrawStyleChanged(): void {
+  for (const listener of drawStyleListeners) listener()
+}
+
+/** Notify when session markup color / lineweight / font size changes. */
+export function subscribeMarkupDrawStyle(listener: () => void): () => void {
+  drawStyleListeners.add(listener)
+  return () => {
+    drawStyleListeners.delete(listener)
+  }
+}
+
 /** Current color used when drawing markups (clone for safety). */
 export function defaultMarkupColor(): AcCmColor {
   return markupDrawColor.clone()
@@ -46,18 +60,21 @@ export function getMarkupFontSize(): number {
 /** Update the session markup draw color (affects current/future markups). */
 export function setMarkupDrawColor(color: AcCmColor): void {
   markupDrawColor = color.clone()
+  notifyMarkupDrawStyleChanged()
 }
 
 /** Update the session markup draw line weight. */
 export function setMarkupDrawLineWeight(weight: AcGiLineWeight): void {
   if (!(weight > 0)) return
   markupDrawLineWeight = weight
+  notifyMarkupDrawStyleChanged()
 }
 
 /** Update the session markup draw font size (CSS px). */
 export function setMarkupDrawFontSize(size: number): void {
   if (!Number.isFinite(size) || size <= 0) return
   markupDrawFontSize = size
+  notifyMarkupDrawStyleChanged()
 }
 
 /** Map a CAD line weight to a canvas stroke width in CSS pixels. */

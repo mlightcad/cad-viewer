@@ -103,6 +103,7 @@ import {
   AcEdOpenMode
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
+import { AcApDrawStyleToolbar } from '../ui/AcApDrawStyleToolbar'
 import {
   isScriptQuitCommand,
   parseScriptLines
@@ -395,6 +396,8 @@ export class AcApDocManager {
   private _commandManager: AcEdCommandStack
   /** Plugin manager */
   private _pluginManager: AcApPluginManager
+  /** Overlay for measurement / markup draw color, lineweight, and font size */
+  private readonly _drawStyleToolbar: AcApDrawStyleToolbar
   /**
    * Alias overrides provided by caller options.
    *
@@ -495,6 +498,7 @@ export class AcApDocManager {
       calculateSizeCallback: callback
     })
     this._context = new AcApContext(view, doc)
+    this._drawStyleToolbar = new AcApDrawStyleToolbar(view)
 
     this._fontLoader = new AcApFontLoader()
     const fontsUrl = this.resolveFontsBaseUrl()
@@ -723,6 +727,14 @@ export class AcApDocManager {
    */
   get pluginManager() {
     return this._pluginManager
+  }
+
+  /**
+   * Overlay shown in the filename slot while a measurement or markup
+   * drawing command is active.
+   */
+  get drawStyleToolbar() {
+    return this._drawStyleToolbar
   }
 
   /**

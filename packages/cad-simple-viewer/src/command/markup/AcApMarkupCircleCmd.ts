@@ -28,9 +28,7 @@ import {
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupFontSize,
-  getMarkupLineWeight,
-  markupColorToCss
+  getMarkupLineWeight
 } from './AcApMarkupUtil'
 
 class AcApMarkupCircleJig extends AcEdPreviewJig<number> {
@@ -48,6 +46,8 @@ class AcApMarkupCircleJig extends AcEdPreviewJig<number> {
   }
 
   update(radius: number) {
+    this._circle.color = defaultMarkupColor()
+    this._circle.lineWeight = getMarkupLineWeight()
     this._circle.radius = Math.max(radius, 0)
   }
 }
@@ -96,11 +96,6 @@ export class AcApMarkupCircleCmd extends AcEdCommand {
       const record: AcApMarkupRecord = {
         ...meta,
         type: 'circle',
-        style: {
-          color: markupColorToCss(color),
-          lineWeight: getMarkupLineWeight(),
-          fontSize: getMarkupFontSize()
-        },
         geometry: {
           type: 'circle',
           center: { x: center.x, y: center.y },

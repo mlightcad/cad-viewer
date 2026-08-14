@@ -6,8 +6,8 @@ import {
   formatMeasurementValue
 } from '../../util/AcApMeasurementUnits'
 import {
+  acapCloneMeasurementStyle,
   type AcApMeasurementStyle,
-  cloneMeasurementStyle,
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LINE_WEIGHT
 } from '../../util/AcApMeasurementUtil'
@@ -91,7 +91,7 @@ export function getMeasurementStyle(
   id: string
 ): AcApMeasurementStyle | undefined {
   const style = stylesById.get(id)
-  return style ? cloneMeasurementStyle(style) : undefined
+  return style ? acapCloneMeasurementStyle(style) : undefined
 }
 
 /** Style of the currently selected measurement, if any. */
@@ -116,7 +116,7 @@ function notifyMeasurementSelection(): void {
 }
 
 function rememberStyle(id: string, style: AcApMeasurementStyle): void {
-  stylesById.set(id, cloneMeasurementStyle(style))
+  stylesById.set(id, acapCloneMeasurementStyle(style))
 }
 
 /**
@@ -139,7 +139,7 @@ export function applyMeasurementStyle(
   rememberStyle(group.id, next)
   const extras = extrasById.get(group.id)
   if (extras) {
-    extras.style = cloneMeasurementStyle(next)
+    extras.style = acapCloneMeasurementStyle(next)
     if (extras.snapshot) {
       extras.snapshot = {
         ...extras.snapshot,

@@ -23,8 +23,7 @@ import { commitMarkup } from './AcApMarkupPresenter'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight,
-  markupColorToCss
+  getMarkupLineWeight
 } from './AcApMarkupUtil'
 
 class AcApMarkupArrowJig extends AcEdPreviewJig<AcGePoint3dLike> {
@@ -43,6 +42,8 @@ class AcApMarkupArrowJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   update(p2: AcGePoint3dLike) {
     this._line.endPoint = p2
+    this._line.color = defaultMarkupColor()
+    this._line.lineWeight = getMarkupLineWeight()
   }
 }
 
@@ -78,10 +79,6 @@ export class AcApMarkupArrowCmd extends AcEdCommand {
       const record: AcApMarkupRecord = {
         ...meta,
         type: 'arrow',
-        style: {
-          color: markupColorToCss(color),
-          lineWeight: getMarkupLineWeight()
-        },
         geometry: {
           type: 'arrow',
           start: { x: p1.x, y: p1.y },

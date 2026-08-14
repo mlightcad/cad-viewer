@@ -29,10 +29,10 @@
             {{ t('main.statusBar.setting.entityInfo') }}
           </el-dropdown-item>
           <el-dropdown-item
-            :icon="features.isShowMainMenu ? Check : ''"
-            command="isShowMainMenu"
+            :icon="features.isShowRibbon ? Check : ''"
+            command="isShowRibbon"
           >
-            {{ t('main.statusBar.setting.mainMenu') }}
+            {{ t('main.statusBar.setting.ribbon') }}
           </el-dropdown-item>
           <el-dropdown-item
             :icon="features.isShowLanguageSelector ? Check : ''"
@@ -88,9 +88,9 @@ const handleCommand = (command: keyof AcApSettings) => {
   } else if (command == 'isShowFileName') {
     features.isShowFileName = !features.isShowFileName
     AcApSettingManager.instance.isShowFileName = features.isShowFileName
-  } else if (command == 'isShowMainMenu') {
-    features.isShowMainMenu = !features.isShowMainMenu
-    AcApSettingManager.instance.isShowMainMenu = features.isShowMainMenu
+  } else if (command == 'isShowRibbon') {
+    features.isShowRibbon = !features.isShowRibbon
+    AcApSettingManager.instance.isShowRibbon = features.isShowRibbon
   } else if (command == 'isShowLanguageSelector') {
     features.isShowLanguageSelector = !features.isShowLanguageSelector
     AcApSettingManager.instance.isShowLanguageSelector =
