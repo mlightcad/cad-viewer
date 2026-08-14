@@ -5,6 +5,9 @@ export const commandTr = {
   ACAD: {
     layer: {
       description: 'Katman yöneticisi yerleştirme panelini açar veya kapatır'
+    },
+    markuppanel: {
+      description: 'İnceleme paleti yerleştirme panelini açar'
     }
   }
 }

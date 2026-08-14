@@ -32,11 +32,11 @@ import {
  */
 export class AcApRotateCmd extends AcEdCommand {
   /**
-   * Creates the ROTATE command and marks it as a review-mode command.
+   * Creates the ROTATE command. Drawing geometry may only be rotated in Write mode.
    */
   constructor() {
     super()
-    this.mode = AcEdOpenMode.Review
+    this.mode = AcEdOpenMode.Write
   }
 
   /**

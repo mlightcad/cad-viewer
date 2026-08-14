@@ -1,8 +1,4 @@
 jest.mock('../src/app', () => ({
-  AcApAnnotation: jest.fn().mockImplementation(() => ({
-    filterAnnotationEntities: (ids: string[]) =>
-      ids.filter(id => id !== 'annotation')
-  })),
   AcApDocManager: {
     instance: {
       editor: {
@@ -13,7 +9,6 @@ jest.mock('../src/app', () => ({
 }))
 
 jest.mock('../src/editor', () => ({
-  AcEdOpenMode: { Review: 'Review', Write: 'Write' },
   AcEdPromptSelectionOptions: class {
     constructor(readonly message: string) {}
   },
@@ -27,7 +22,7 @@ jest.mock('../src/i18n', () => ({
 }))
 
 import { AcApDocManager } from '../src/app'
-import { AcEdOpenMode, AcEdPromptStatus } from '../src/editor'
+import { AcEdPromptStatus } from '../src/editor'
 import {
   resolveSelectedEntities,
   resolveSelectedIds
@@ -35,13 +30,11 @@ import {
 
 interface TestContextOptions {
   selectionIds?: string[]
-  openMode?: typeof AcEdOpenMode.Review | typeof AcEdOpenMode.Write
   entities?: Map<string, { objectId: string }>
 }
 
 const createContext = ({
   selectionIds = [],
-  openMode = AcEdOpenMode.Write,
   entities = new Map()
 }: TestContextOptions = {}) => {
   const clear = jest.fn()
@@ -50,7 +43,6 @@ const createContext = ({
     clear,
     context: {
       doc: {
-        openMode,
         database: {
           tables: {
             blockTable: {
@@ -132,36 +124,9 @@ describe('AcApEntitySelection', () => {
       expect(clear).not.toHaveBeenCalled()
     })
 
-    test('filters annotation entities in review mode', async () => {
-      const line = { objectId: 'line' }
-      const { clear, context } = createContext({
-        selectionIds: ['line', 'annotation'],
-        openMode: AcEdOpenMode.Review,
-        entities: new Map([['line', line]])
-      })
-
-      const result = await resolveSelectedEntities(context as never)
-
-      expect(result).toEqual({ entities: [line], ids: ['line'] })
-      expect(clear).not.toHaveBeenCalled()
-    })
-
-    test('clears selection when review filtering removes all ids by default', async () => {
-      const { clear, context } = createContext({
-        selectionIds: ['annotation'],
-        openMode: AcEdOpenMode.Review
-      })
-
-      const result = await resolveSelectedEntities(context as never)
-
-      expect(result).toBeUndefined()
-      expect(clear).toHaveBeenCalledTimes(1)
-    })
-
     test('does not clear selection when clearOnEmpty is false', async () => {
       const { clear, context } = createContext({
-        selectionIds: ['annotation'],
-        openMode: AcEdOpenMode.Review
+        selectionIds: ['missing']
       })
 
       const result = await resolveSelectedEntities(context as never, {
@@ -222,28 +187,6 @@ describe('AcApEntitySelection', () => {
         status: AcEdPromptStatus.Cancel,
         value: undefined
       } as never)
-
-      const ids = await resolveSelectedIds(context as never, 'erase')
-
-      expect(ids).toBeUndefined()
-    })
-
-    test('filters annotation entities in review mode', async () => {
-      const { context } = createContext({
-        selectionIds: ['line', 'annotation'],
-        openMode: AcEdOpenMode.Review
-      })
-
-      const ids = await resolveSelectedIds(context as never, 'erase')
-
-      expect(ids).toEqual(['line'])
-    })
-
-    test('returns undefined when review filtering removes all ids', async () => {
-      const { context } = createContext({
-        selectionIds: ['annotation'],
-        openMode: AcEdOpenMode.Review
-      })
 
       const ids = await resolveSelectedIds(context as never, 'erase')
 

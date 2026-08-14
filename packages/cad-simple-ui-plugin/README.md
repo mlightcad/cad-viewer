@@ -1,6 +1,6 @@
 # @mlightcad/cad-simple-ui-plugin
 
-Framework-agnostic toolbar and layer manager UI for [`@mlightcad/cad-simple-viewer`](https://github.com/mlightcad/cad-viewer).
+Framework-agnostic toolbar, layer manager, and review palette UI for [`@mlightcad/cad-simple-viewer`](https://github.com/mlightcad/cad-viewer).
 
 This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Element Plus. All UI uses plain DOM and respects the cad-simple-viewer `--ml-ui-*` theme tokens.
 
@@ -9,13 +9,15 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 - Configurable toolbar with predefined CAD commands, separators, and preset references
 - Nested toolbar menus with submenu arrows
 - Toolbar placement: `top`, `bottom`, `left`, `right`
-- Default toolbar includes view/review tools, export submenu, toolbar placement, theme and locale toggles
+- Default toolbar includes view, measure, review, then export, plus toolbar placement, theme and locale toggles
 - UI theme follows `COLORTHEME` sysvar and `--ml-ui-*` tokens on `host` automatically
 - Locale follows `AcApI18n.currentLocale` automatically
 - Layer list in a dock panel tab (name, visibility, color), opened from the toolbar layer button
+- Review palette in a dock panel tab (markup list, status, comments), opened from the Review toolbar button (`markuppanel`)
 - Chrome DevTools-style **dock panel** with tabs, open/close, dock side (bottom/left/right), and resize handle
 - ACI color picker for layer colors
 - Layer UI opens from the toolbar button or the `layer` command (opens dock when closed, switches to layers tab when open)
+- Review palette opens from the Review toolbar button or the `markuppanel` command
 - Dock panel closes via the close button or `close-layer-manager` event
 - Optional collapsible toolbar (like HTML export viewer): hide tool buttons and show only a chevron toggle
 
@@ -133,7 +135,7 @@ Dock panel behavior:
 - By default the dock mounts on the viewer canvas parent (inside `host`), so sibling header toolbars are not stretched
 - Override mount element with `dockPanel.mountTarget` when needed
 - Drag the resize handle on the panel edge to adjust height or width
-- Multiple tabs supported (layers tab registered automatically)
+- Multiple tabs supported (layers and review tabs registered automatically when those toolbar buttons are present)
 - Canvas area shrinks when the panel is open (flex layout on `host`)
 
 Runtime dock panel controls:
@@ -160,6 +162,26 @@ createSimpleUiPlugin({
 ```
 
 The built-in `layerclose` command emits `close-layer-manager`, which the plugin listens for.
+
+### Review palette (dock panel)
+
+The review palette is enabled automatically when the resolved toolbar includes the Review button (`id: 'markup-panel'`, included in the default `annotation` preset). It lists HTML markups from `getMarkupStore()` and supports the same workflow as cad-viewer's Vue review palette: search, clear all, select a row, edit status/label/comment, zoom to, and delete.
+
+```typescript
+createSimpleUiPlugin({
+  host,
+  toolbar: {
+    items: [toolbarPreset('annotation')]
+  }
+})
+```
+
+Review palette behavior:
+
+- Click **Review** in the annotation toolbar menu (runs `markuppanel`) to open the dock panel when it is closed, or switch to the review tab when it is already open
+- Open or focus the palette via `AcApDocManager.sendStringToExecute('markuppanel')`
+- Row click selects the markup overlay and opens the details pane
+- Status, label, and comment edits go through `runMarkupEdit` so they stay on the undo stack
 
 ### Collapsible toolbar
 

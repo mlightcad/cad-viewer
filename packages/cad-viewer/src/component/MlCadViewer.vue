@@ -103,7 +103,6 @@ import {
   setColorTheme,
   toggleDark,
   useDocument,
-  useEntityDrawStyle,
   useLocale,
   useNotificationCenter,
   useSettings
@@ -115,7 +114,6 @@ import {
 } from '../util/openFileErrorMessage'
 import { MlDialogManager, MlFontFileReader } from './common'
 import {
-  MlEntityDrawStyleToolbar,
   MlEntityInfo,
   MlLanguageSelector,
   MlMainMenu,
@@ -288,7 +286,6 @@ watch(
   { immediate: true }
 )
 
-const { isShowToolbar } = useEntityDrawStyle(editor)
 provideViewerRect(containerRef)
 
 let headerResizeObserver: ResizeObserver | undefined
@@ -684,23 +681,11 @@ const closeNotificationCenter = () => {
 
           <!-- Display current filename at the top center -->
           <div
-            v-if="
-              editorRef &&
-              !isWriteMode &&
-              features.isShowFileName &&
-              !isShowToolbar
-            "
+            v-if="editorRef && !isWriteMode && features.isShowFileName"
             class="ml-file-name"
           >
             {{ displayName }}
           </div>
-
-          <!-- Toolbar for entity draw style -->
-          <ml-entity-draw-style-toolbar
-            v-if="editorRef"
-            :editor="editor"
-            class="ml-rev-tool-bar"
-          />
 
           <!-- Toolbar with common CAD operations (zoom, pan, select, etc.) -->
           <ml-tool-bars v-if="editorRef" />
@@ -805,15 +790,5 @@ const closeNotificationCenter = () => {
   text-align: center;
   pointer-events: none; /* Allow mouse events to pass through to container */
   z-index: 3; /* Ensure it's above canvas but doesn't block events */
-}
-
-/* Position the filename display at the top center of the viewer */
-.ml-rev-tool-bar {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-top: 20px;
-  z-index: 2; /* Ensure it's above canvas but doesn't block events */
 }
 </style>

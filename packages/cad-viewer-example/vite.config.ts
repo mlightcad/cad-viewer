@@ -70,6 +70,10 @@ export default defineConfig(({ command, mode }) => {
       )
     }
     if (linkLocalUiComponents) {
+      console.info(
+        '[cad-viewer-example] Aliasing @mlightcad/ui-components to local source:',
+        LOCAL_UI_COMPONENTS_SRC
+      )
       aliases.push({
         find: '@mlightcad/ui-components',
         replacement: LOCAL_UI_COMPONENTS_SRC

@@ -466,10 +466,6 @@ export default {
       text: 'Açıklama',
       description: 'İnceleme araçları'
     },
-    hideAnnotation: {
-      text: 'Gizle',
-      description: 'Açıklamaları gizler'
-    },
     layer: {
       text: 'Katman',
       description: 'Katmanları yönetir'
@@ -478,31 +474,6 @@ export default {
       text: 'Kaydır',
       description:
         'Görüntüleme yönünü veya büyütmeyi değiştirmeden görünümü kaydırır'
-    },
-    revCircle: {
-      text: 'Daire',
-      description:
-        'Çizimde alanları vurgulamak ve açıklamak için daireler kullanır'
-    },
-    revLine: {
-      text: 'Çizgi',
-      description:
-        'Çizimdeki nesneleri veya alanları açıklamak ve göstermek için düz çizgiler kullanır'
-    },
-    revFreehand: {
-      text: 'Serbest El',
-      description:
-        'Çizim içeriğini serbestçe açıklamak ve vurgulamak için serbest el çizimleri kullanır'
-    },
-    revRect: {
-      text: 'Dikdörtgen',
-      description:
-        'Çizimdeki nesneleri veya alanları vurgulamak ve açıklamak için dikdörtgenler kullanın'
-    },
-    revCloud: {
-      text: 'Bulut Revizyon',
-      description:
-        'Çizimdeki alanları bulut şeklinde bir çerçeveyle vurgulamak için kullanılır'
     },
     markupPanel: {
       text: 'İnceleme',
@@ -593,10 +564,6 @@ export default {
     select: {
       text: 'Seç',
       description: 'Varlıkları seçer'
-    },
-    showAnnotation: {
-      text: 'Göster',
-      description: 'Açıklamaları gösterir'
     },
     switchBg: {
       text: 'Değiştir',

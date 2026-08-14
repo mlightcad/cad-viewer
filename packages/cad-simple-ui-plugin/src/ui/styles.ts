@@ -130,44 +130,39 @@ export function ensureUiStyles() {
       cursor: not-allowed;
     }
 
+    /* Flyout mark: a small opaque right triangle in the corner toward the
+       submenu. It sits in the icon padding so the glyph stays clear. */
     .ml-ex-ui-toolbar-btn.has-children::after {
       content: '';
       position: absolute;
-      width: 0;
-      height: 0;
-      border-style: solid;
+      width: 6px;
+      height: 6px;
+      background: currentColor;
+      pointer-events: none;
     }
 
     .ml-ex-ui-toolbar.is-right .ml-ex-ui-toolbar-btn.has-children::after {
-      left: 2px;
-      top: 50%;
-      margin-top: -4px;
-      border-width: 4px 5px 4px 0;
-      border-color: transparent var(--ml-ui-text-muted, #606266) transparent transparent;
+      left: 1px;
+      bottom: 1px;
+      clip-path: polygon(0 100%, 0 0, 100% 100%);
     }
 
     .ml-ex-ui-toolbar.is-left .ml-ex-ui-toolbar-btn.has-children::after {
-      right: 2px;
-      top: 50%;
-      margin-top: -4px;
-      border-width: 4px 0 4px 5px;
-      border-color: transparent transparent transparent var(--ml-ui-text-muted, #606266);
+      right: 1px;
+      bottom: 1px;
+      clip-path: polygon(100% 100%, 0 100%, 100% 0);
     }
 
     .ml-ex-ui-toolbar.is-top .ml-ex-ui-toolbar-btn.has-children::after {
-      bottom: 2px;
-      left: 50%;
-      margin-left: -4px;
-      border-width: 5px 4px 0 4px;
-      border-color: var(--ml-ui-text-muted, #606266) transparent transparent transparent;
+      right: 1px;
+      bottom: 1px;
+      clip-path: polygon(100% 100%, 0 100%, 100% 0);
     }
 
     .ml-ex-ui-toolbar.is-bottom .ml-ex-ui-toolbar-btn.has-children::after {
-      top: 2px;
-      left: 50%;
-      margin-left: -4px;
-      border-width: 0 4px 5px 4px;
-      border-color: transparent transparent var(--ml-ui-text-muted, #606266) transparent;
+      right: 1px;
+      top: 1px;
+      clip-path: polygon(100% 0, 0 0, 100% 100%);
     }
 
     .ml-ex-ui-icon {
@@ -598,6 +593,188 @@ export function ensureUiStyles() {
       overflow: hidden;
     }
 
+    .ml-ex-ui-review-palette {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      gap: 8px;
+      padding: 8px;
+      box-sizing: border-box;
+      color: var(--ml-ui-text, #303133);
+      font-size: 12px;
+    }
+
+    .ml-ex-ui-review-toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .ml-ex-ui-review-search,
+    .ml-ex-ui-review-input,
+    .ml-ex-ui-review-select,
+    .ml-ex-ui-review-textarea {
+      box-sizing: border-box;
+      width: 100%;
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 4px;
+      background: var(--ml-ui-bg, #ffffff);
+      color: var(--ml-ui-text, #303133);
+      font: inherit;
+      padding: 4px 8px;
+    }
+
+    .ml-ex-ui-review-search {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .ml-ex-ui-review-textarea {
+      resize: vertical;
+      min-height: 44px;
+    }
+
+    .ml-ex-ui-review-btn {
+      flex: 0 0 auto;
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 4px;
+      background: var(--ml-ui-bg, #ffffff);
+      color: var(--ml-ui-text, #303133);
+      font: inherit;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    .ml-ex-ui-review-btn:hover:not(:disabled) {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
+    }
+
+    .ml-ex-ui-review-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .ml-ex-ui-review-btn-danger {
+      color: var(--ml-ui-danger, #f56c6c);
+      border-color: var(--ml-ui-danger, #f56c6c);
+    }
+
+    .ml-ex-ui-review-table-wrap {
+      flex: 1;
+      min-height: 120px;
+      overflow: auto;
+    }
+
+    .ml-ex-ui-review-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .ml-ex-ui-review-table th,
+    .ml-ex-ui-review-table td {
+      padding: 4px 6px;
+      text-align: left;
+      border-bottom: 1px solid var(--ml-ui-border, #dcdfe6);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ml-ex-ui-review-table th {
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      background: var(--ml-ui-bg, #ffffff);
+    }
+
+    .ml-ex-ui-review-table th:nth-child(1),
+    .ml-ex-ui-review-table td:nth-child(1) {
+      width: 88px;
+    }
+
+    .ml-ex-ui-review-table th:nth-child(2),
+    .ml-ex-ui-review-table td:nth-child(2) {
+      width: 96px;
+    }
+
+    .ml-ex-ui-review-row {
+      cursor: pointer;
+    }
+
+    .ml-ex-ui-review-row:hover {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
+    }
+
+    .ml-ex-ui-review-row.is-selected {
+      background: var(--ml-ui-accent-soft, rgba(64, 158, 255, 0.12));
+    }
+
+    .ml-ex-ui-review-empty-row td {
+      text-align: center;
+      color: var(--ml-ui-muted, #909399);
+      white-space: normal;
+      padding: 16px 8px;
+    }
+
+    .ml-ex-ui-review-detail {
+      border-top: 1px solid var(--ml-ui-border, #dcdfe6);
+      padding-top: 6px;
+      max-height: 46%;
+      overflow: auto;
+      flex: 0 0 auto;
+    }
+
+    .ml-ex-ui-review-detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+
+    .ml-ex-ui-review-detail-title {
+      font-weight: 600;
+    }
+
+    .ml-ex-ui-review-detail-close {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      margin-left: auto;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--ml-ui-text, #303133);
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .ml-ex-ui-review-detail-close:hover {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
+    }
+
+    .ml-ex-ui-review-field {
+      margin-bottom: 4px;
+    }
+
+    .ml-ex-ui-review-field-label {
+      display: block;
+      margin-bottom: 2px;
+      line-height: 1.2;
+    }
+
+    .ml-ex-ui-review-detail-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
     .ml-ex-ui-layer-list .ml-ex-ui-layer-table-wrap {
       flex: 1;
       min-height: 0;
@@ -864,6 +1041,11 @@ export function ensureUiStyles() {
       overflow: auto;
     }
 
+    .ml-ex-ui-dock-tab-panel:has(> .ml-ex-ui-review-palette),
+    .ml-ex-ui-dock-tab-panel:has(> .ml-ex-ui-layer-list) {
+      overflow: hidden;
+    }
+
     .ml-ex-ui-dock-tab-panel[hidden] {
       display: none;
     }
@@ -958,7 +1140,7 @@ export function ensureUiStyles() {
 export function removeUiStylesIfUnused() {
   if (
     document.querySelector(
-      '.ml-ex-ui-toolbar, .ml-ex-ui-layer-manager, .ml-ex-ui-dock-panel'
+      '.ml-ex-ui-toolbar, .ml-ex-ui-layer-manager, .ml-ex-ui-dock-panel, .ml-ex-ui-review-palette'
     )
   )
     return

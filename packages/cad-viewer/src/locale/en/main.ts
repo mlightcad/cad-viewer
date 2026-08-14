@@ -463,10 +463,6 @@ export default {
       text: 'Annotation',
       description: 'Review tools'
     },
-    hideAnnotation: {
-      text: 'Hide',
-      description: 'Hides annotations'
-    },
     layer: {
       text: 'Layer',
       description: 'Manages layers'
@@ -475,30 +471,6 @@ export default {
       text: 'Pan',
       description:
         'Shifts the view without changing the viewing direction or magnification'
-    },
-    revCircle: {
-      text: 'Circle',
-      description: 'Uses circles to highlight and annotate areas in the drawing'
-    },
-    revLine: {
-      text: 'Line',
-      description:
-        'Uses straight lines to annotate and explain objects or areas in the drawing'
-    },
-    revFreehand: {
-      text: 'Freehand',
-      description:
-        'Uses freehand strokes to freely annotate and emphasize drawing content'
-    },
-    revRect: {
-      text: 'Rectangle',
-      description:
-        'Use rectangles to highlight and annotate objects or areas in the drawing'
-    },
-    revCloud: {
-      text: 'Rev Cloud',
-      description:
-        'Used to highlight areas in a drawing with a cloud-shaped outline'
     },
     markupPanel: {
       text: 'Review',
@@ -590,10 +562,6 @@ export default {
     select: {
       text: 'Select',
       description: 'Selects entities'
-    },
-    showAnnotation: {
-      text: 'Show',
-      description: 'Shows annotations'
     },
     switchBg: {
       text: 'Switch',

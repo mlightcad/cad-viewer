@@ -21,7 +21,7 @@ import { AcApMovePreviewJig } from './AcApMovePreviewJig'
 export class AcApMoveCmd extends AcEdCommand {
   constructor() {
     super()
-    this.mode = AcEdOpenMode.Review
+    this.mode = AcEdOpenMode.Write
   }
 
   async execute(context: AcApContext) {

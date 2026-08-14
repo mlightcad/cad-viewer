@@ -14,6 +14,7 @@ import {
   AcExLayerDockController,
   AcExLayerUiControllerHolder
 } from './command/AcApLayerUiCmd'
+import { AcApMarkupPanelUiCmd } from './command/AcApMarkupPanelUiCmd'
 import { prependToolbarLayoutSwitcher } from './config/createToolbarLayoutSwitcher'
 import { normalizePluginOptions } from './config/normalizePluginOptions'
 import { resolveDockMountTarget } from './config/resolveDockMountTarget'
@@ -32,17 +33,20 @@ import { AcExI18n, registerSimpleUiI18n } from './i18n'
 import { AcExUiThemeSync } from './theme/AcExUiThemeSync'
 import { AcExDockPanel, type AcExDockPanelTab } from './ui/AcExDockPanel'
 import { AcExLayerListView } from './ui/AcExLayerListView'
+import { AcExReviewPaletteView } from './ui/AcExReviewPaletteView'
 import { AcExToolbar } from './ui/AcExToolbar'
 import { removeUiStylesIfUnused } from './ui/styles'
 
 const LAYERS_TAB_ID = 'layers'
+const REVIEW_TAB_ID = 'review'
 
 /**
- * CAD viewer plugin that adds a framework-agnostic toolbar and layer manager.
+ * CAD viewer plugin that adds a framework-agnostic toolbar, layer manager, and
+ * review palette.
  *
- * Registers the `layer` command when the toolbar includes a layer button, injects
- * shared UI styles, and keeps theme and locale in sync with {@link AcApI18n} and
- * the `COLORTHEME` system variable.
+ * Registers the `layer` and `markuppanel` commands when the toolbar includes
+ * those buttons, injects shared UI styles, and keeps theme and locale in sync
+ * with {@link AcApI18n} and the `COLORTHEME` system variable.
  */
 export class AcApSimpleUiPlugin implements AcApPlugin {
   /** {@link SIMPLE_UI_PLUGIN_NAME} */
@@ -50,10 +54,12 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   /** Plugin semver string. */
   version = packageJson.version
   /** Human-readable plugin summary. */
-  description = 'Framework-agnostic toolbar and layer manager UI'
+  description = 'Framework-agnostic toolbar, layer manager, and review palette UI'
 
   /** Layer list view mounted in the dock panel layers tab. */
   private layerListView?: AcExLayerListView
+  /** Review palette view mounted in the dock panel review tab. */
+  private reviewPaletteView?: AcExReviewPaletteView
   /** Chrome DevTools-style dock panel container. */
   private dockPanel?: AcExDockPanel
   /** Dock-mode layer controller (for cleanup). */
@@ -78,6 +84,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private commandManager?: AcEdCommandStack
   /** Whether the toolbar includes a layer button. */
   private hasLayerToolbarItem = false
+  /** Whether the toolbar includes a markup panel / review button. */
+  private hasMarkupPanelToolbarItem = false
   /** Whether {@link dockPanel} was explicitly enabled in options. */
   private dockPanelExplicitlyEnabled = false
   /** Normalized dock panel defaults from plugin options. */
@@ -99,9 +107,10 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private toolbarEdgeOffset = 8
   /** Commands registered during {@link onLoad} for cleanup on unload. */
   private registeredCommands: Array<{ group: string; name: string }> = []
-  /** Refreshes toolbar and layer UI when the app locale changes. */
+  /** Refreshes toolbar, layer, and review UI when the app locale changes. */
   private handleLocaleChanged = () => {
     this.layerListView?.refreshLocale()
+    this.reviewPaletteView?.refreshLocale()
     this.dockPanel?.refreshLocale()
     this.toolbar?.refresh()
   }
@@ -109,6 +118,9 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private handleDocumentActivatedForDock = () => {
     if (this.hasLayerToolbarItem) {
       this.mountLayerDockUi()
+    }
+    if (this.hasMarkupPanelToolbarItem) {
+      this.mountReviewDockUi()
     }
     this.tryUpgradeDockMountTarget()
     this.dockPanel?.ensureMounted()
@@ -255,6 +267,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       ? prependToolbarLayoutSwitcher(resolved, layoutSwitcher)
       : resolved
     this.syncLayerToolbarItem()
+    this.syncReviewToolbarItem()
     this.renderToolbarItems()
   }
 
@@ -360,7 +373,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
    * Creates UI components, registers commands, and starts theme sync.
    *
    * @param _context - Application context (unused).
-   * @param commandManager - Command stack used to register `layer`.
+   * @param commandManager - Command stack used to register `layer` and `markuppanel`.
    */
   onLoad(_context: AcApContext, commandManager: AcEdCommandStack): void {
     registerSimpleUiI18n()
@@ -405,6 +418,10 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       this.baseToolbarItems,
       'layer'
     )
+    this.hasMarkupPanelToolbarItem = toolbarItemsIncludeItem(
+      this.baseToolbarItems,
+      'markup-panel'
+    )
 
     if (resolvedOptions.shouldCreateDockPanel) {
       this.ensureDockPanel()
@@ -413,6 +430,11 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     if (this.hasLayerToolbarItem) {
       this.mountLayerDockUi()
       this.registerLayerCommand(commandManager)
+    }
+
+    if (this.hasMarkupPanelToolbarItem) {
+      this.mountReviewDockUi()
+      this.registerMarkupPanelCommand(commandManager)
     }
 
     if (toolbarEnabled) {
@@ -507,6 +529,24 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     }
   }
 
+  /** Mounts or tears down review UI when the markup panel button is added or removed. */
+  private syncReviewToolbarItem() {
+    const hadReview = this.hasMarkupPanelToolbarItem
+    const hasReview = toolbarItemsIncludeItem(
+      this.baseToolbarItems,
+      'markup-panel'
+    )
+    this.hasMarkupPanelToolbarItem = hasReview
+
+    if (hasReview && !hadReview) {
+      this.ensureMarkupPanelCommandRegistered()
+      this.mountReviewDockUi()
+    } else if (!hasReview && hadReview) {
+      this.teardownReviewUi()
+      this.unregisterMarkupPanelCommand()
+    }
+  }
+
   /** Removes the `layer` command when the layer toolbar button is removed at runtime. */
   private unregisterLayerCommand() {
     if (!this.commandManager) return
@@ -524,6 +564,27 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     if (this.registeredCommands.some(cmd => cmd.name === 'layer')) return
 
     this.registerLayerCommand(this.commandManager)
+  }
+
+  /** Removes the `markuppanel` command when the review toolbar button is removed. */
+  private unregisterMarkupPanelCommand() {
+    if (!this.commandManager) return
+    const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
+    const index = this.registeredCommands.findIndex(
+      cmd => cmd.name === 'markuppanel'
+    )
+    if (index === -1) return
+
+    this.commandManager.removeCmd(group, 'markuppanel')
+    this.registeredCommands.splice(index, 1)
+  }
+
+  /** Registers the `markuppanel` command when a review button appears at runtime. */
+  private ensureMarkupPanelCommandRegistered() {
+    if (!this.commandManager) return
+    if (this.registeredCommands.some(cmd => cmd.name === 'markuppanel')) return
+
+    this.registerMarkupPanelCommand(this.commandManager)
   }
 
   /** Registers the `layer` command with dock preparation wired in. */
@@ -552,7 +613,33 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.tryUpgradeDockMountTarget()
   }
 
-  /** Ensures the dock panel exists, layers tab is mounted, and mount target is current. */
+  /** Registers the `markuppanel` command with dock preparation wired in. */
+  private registerMarkupPanelCommand(commandManager: AcEdCommandStack) {
+    const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
+    commandManager.addCommand(
+      group,
+      'markuppanel',
+      'markuppanel',
+      this.createMarkupPanelCommand()
+    )
+    this.registeredCommands.push({ group, name: 'markuppanel' })
+  }
+
+  /** Creates the `markuppanel` command that prepares the dock panel before opening review. */
+  private createMarkupPanelCommand() {
+    return new AcApMarkupPanelUiCmd({
+      prepare: () => this.prepareReviewDockForCommand(),
+      toggle: () => this.dockPanel?.open(REVIEW_TAB_ID)
+    })
+  }
+
+  /** Ensures the dock panel and review tab exist for the `markuppanel` command. */
+  private prepareReviewDockForCommand() {
+    this.mountReviewDockUi()
+    this.tryUpgradeDockMountTarget()
+  }
+
+  /** Ensures the dock panel exists, tabs are mounted, and mount target is current. */
   private ensureDockReady() {
     if (!this.dockPanel) {
       this.prepareDockPanel()
@@ -562,16 +649,26 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     if (this.hasLayerToolbarItem && !this.dockPanel.hasTab(LAYERS_TAB_ID)) {
       this.mountLayerDockUi()
     }
+    if (
+      this.hasMarkupPanelToolbarItem &&
+      !this.dockPanel.hasTab(REVIEW_TAB_ID)
+    ) {
+      this.mountReviewDockUi()
+    }
 
     this.tryUpgradeDockMountTarget()
     this.dockPanel.ensureMounted()
   }
 
-  /** Ensures the dock panel exists, is mounted on the current target, and has layer tabs when applicable. */
+  /** Ensures the dock panel exists, is mounted on the current target, and has tabs when applicable. */
   private prepareDockPanel() {
     if (this.hasLayerToolbarItem) {
       this.mountLayerDockUi()
-    } else {
+    }
+    if (this.hasMarkupPanelToolbarItem) {
+      this.mountReviewDockUi()
+    }
+    if (!this.dockPanel) {
       this.ensureDockPanel()
     }
     this.tryUpgradeDockMountTarget()
@@ -678,10 +775,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.layerUiControllerHolder.current = this.layerDockController
   }
 
-  /** Tears down active layer UI without removing the dock shell. */
+  /** Tears down active layer UI without removing the dock shell when other tabs remain. */
   private teardownLayerUi() {
-    this.dockPanel?.close()
-
     this.dockPanel?.removeTab(LAYERS_TAB_ID)
     this.layerListView?.destroy()
     this.layerListView = undefined
@@ -691,14 +786,53 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     this.layerUiControllerHolder.current = undefined
 
-    if (
-      this.dockPanel &&
-      !this.dockPanelExplicitlyEnabled &&
-      !this.dockPanel.hasTabs
-    ) {
-      this.dockPanel.destroy()
-      this.dockPanel = undefined
+    this.destroyDockIfUnused()
+  }
+
+  /** Mounts the review palette in the dock panel review tab. */
+  private mountReviewDockUi() {
+    if (!this.hostEl || !this.i18n) return
+
+    this.ensureDockPanel()
+    if (!this.dockPanel) return
+
+    if (this.dockPanel.hasTab(REVIEW_TAB_ID)) {
+      return
     }
+
+    this.reviewPaletteView = new AcExReviewPaletteView({
+      editor: AcApDocManager.instance,
+      i18n: this.i18n
+    })
+    const added = this.dockPanel.addTab({
+      id: REVIEW_TAB_ID,
+      labelKey: 'dockPanel.tab.review',
+      content: this.reviewPaletteView.element
+    })
+    if (!added) {
+      this.reviewPaletteView.destroy()
+      this.reviewPaletteView = undefined
+    }
+  }
+
+  /** Tears down review UI without removing the dock shell when other tabs remain. */
+  private teardownReviewUi() {
+    this.dockPanel?.removeTab(REVIEW_TAB_ID)
+    this.reviewPaletteView?.destroy()
+    this.reviewPaletteView = undefined
+    this.destroyDockIfUnused()
+  }
+
+  /** Closes and optionally destroys the dock panel when it has no remaining tabs. */
+  private destroyDockIfUnused() {
+    if (!this.dockPanel) return
+    if (this.dockPanel.hasTabs) return
+
+    this.dockPanel.close()
+    if (this.dockPanelExplicitlyEnabled) return
+
+    this.dockPanel.destroy()
+    this.dockPanel = undefined
   }
 
   /** Updates toolbar placement. */
@@ -725,6 +859,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.registeredCommands = []
 
     this.teardownLayerUi()
+    this.teardownReviewUi()
     this.toolbar?.destroy()
     this.dockPanel?.destroy()
 
@@ -737,6 +872,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.baseToolbarItems = []
     this.toolbarItemsInput = 'default'
     this.hasLayerToolbarItem = false
+    this.hasMarkupPanelToolbarItem = false
     this.commandManager = undefined
     this.i18n = undefined
     this.themeSync?.stop()

@@ -6,7 +6,7 @@ import {
   AcGeTol
 } from '@mlightcad/data-model'
 
-import { AcApAnnotation, AcApContext, AcApDocManager } from '../../app'
+import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdBaseView,
   AcEdCommand,
@@ -175,11 +175,11 @@ export class AcApOffsetCmd extends AcEdCommand {
   private static _lastDistance?: number
 
   /**
-   * Creates the OFFSET command and marks it as a review-mode command.
+   * Creates the OFFSET command. Drawing geometry may only be offset in Write mode.
    */
   constructor() {
     super()
-    this.mode = AcEdOpenMode.Review
+    this.mode = AcEdOpenMode.Write
   }
 
   /**
@@ -199,7 +199,6 @@ export class AcApOffsetCmd extends AcEdCommand {
       this.showMessage(message, type)
     }
     const blockTable = context.doc.database.tables.blockTable
-    const annotation = new AcApAnnotation(context.doc.database)
     let offsetDistance: number | undefined
     let currentCurve: AcDbCurve | undefined
 
@@ -312,7 +311,6 @@ export class AcApOffsetCmd extends AcEdCommand {
       /**
        * Resolves the selected entity and advances to side-point picking when valid.
        *
-       * In review mode, annotation-owned entities are filtered out before lookup.
        * Non-curve selections show a warning and keep prompting for another object.
        *
        * @param result - Entity prompt result from the editor.
@@ -325,11 +323,7 @@ export class AcApOffsetCmd extends AcEdCommand {
           return 'finish'
         }
 
-        const validIds =
-          context.doc.openMode == AcEdOpenMode.Review
-            ? annotation.filterAnnotationEntities([result.objectId])
-            : [result.objectId]
-        const entity = context.doc.database.openEntityForRead(validIds[0])
+        const entity = context.doc.database.openEntityForRead(result.objectId)
         if (!isOffsettableCurve(entity)) {
           showCommandMessage(
             AcApI18n.t('jig.offset.invalidSelection'),
