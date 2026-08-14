@@ -29,9 +29,9 @@ import {
 import { AcApI18n } from '../../i18n'
 import {
   acapCssColor,
-  acapCurrentMeasurementStyle,
+  acapGetCurrentMeasurementStyle,
+  acapGetMeasurementColor,
   acapMeasurementCanvasLineWidth,
-  acapMeasurementColor,
   type AcApMeasurementStyle,
   formatMeasurementLength
 } from '../../util'
@@ -429,8 +429,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
-    const color = acapMeasurementColor(db)
-    const style = acapCurrentMeasurementStyle(db)
+    const color = acapGetMeasurementColor(db)
+    const style = acapGetCurrentMeasurementStyle(db)
     const canvasLineWidth = acapMeasurementCanvasLineWidth(style.lineWeight)
 
     // Construction-phase canvas — removed before this method returns
@@ -570,7 +570,7 @@ export class AcApMeasureArcCmd extends AcEdCommand {
           geom,
           start,
           end,
-          acapCurrentMeasurementStyle(db)
+          acapGetCurrentMeasurementStyle(db)
         )
       })
     )

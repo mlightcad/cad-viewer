@@ -24,6 +24,28 @@ export interface AcApMarkupInlineTextEditOptions {
   multiline?: boolean
 }
 
+/**
+ * Options for {@link editMarkupHtmlText}.
+ */
+export interface AcApMarkupHtmlTextEditOptions {
+  /** Label element that becomes content-editable. */
+  el: HTMLElement
+  /**
+   * Element that receives pointer events while editing.
+   * Defaults to {@link el}. Use the outer capsule so padding clicks stay in the editor.
+   */
+  listenOn?: HTMLElement
+  /**
+   * When `true`, Shift+Enter inserts a newline; Enter still commits.
+   * @defaultValue `false`
+   */
+  multiline?: boolean
+  /** Text shown when editing starts. Defaults to the element's current text. */
+  initialText?: string
+  /** When aborted, editing cancels and restores {@link initialText}. */
+  signal?: AbortSignal
+}
+
 /** CSS class applied to the element while inline editing is active. */
 const EDITING_CLASS = 'ml-html-text-editing'
 
@@ -35,6 +57,21 @@ const DOUBLE_CLICK_MS = 400
 
 /** Max pointer travel between those downs. */
 const DOUBLE_CLICK_SLOP_PX = 6
+
+const editingElements = new WeakSet<HTMLElement>()
+
+/** Count of in-progress {@link editMarkupHtmlText} sessions. */
+let editingCount = 0
+
+/**
+ * Whether a markup capsule / callout label is currently content-editable.
+ *
+ * View selection gestures check this so canvas clicks cannot pick CAD
+ * entities while the user is typing in a capsule.
+ */
+export function isMarkupHtmlTextEditing(): boolean {
+  return editingCount > 0
+}
 
 /**
  * Injects inline-edit CSS into `document.head` once.
@@ -51,6 +88,7 @@ function ensureStyles(): void {
       cursor: text !important;
       user-select: text;
       pointer-events: auto;
+      min-height: 1.2em;
     }
   `
   document.head.appendChild(style)
@@ -102,6 +140,115 @@ export function isMarkupDoublePointer(
 }
 
 /**
+ * Makes a markup capsule / callout label content-editable until the user
+ * commits or cancels.
+ *
+ * Enter (or blur) commits; Escape cancels and restores {@link AcApMarkupHtmlTextEditOptions.initialText}.
+ * Shift+Enter inserts a newline when {@link AcApMarkupHtmlTextEditOptions.multiline} is true.
+ *
+ * @returns Trimmed text on commit, or `undefined` when the user presses Escape.
+ */
+export function editMarkupHtmlText(
+  options: AcApMarkupHtmlTextEditOptions
+): Promise<string | undefined> {
+  ensureStyles()
+  const { el, multiline = false } = options
+  const listenOn = options.listenOn ?? el
+  if (editingElements.has(el)) {
+    return Promise.resolve(undefined)
+  }
+  if (options.signal?.aborted) {
+    return Promise.resolve(undefined)
+  }
+
+  const original =
+    options.initialText !== undefined
+      ? options.initialText
+      : (el.textContent ?? '').trim()
+
+  return new Promise(resolve => {
+    editingElements.add(el)
+    editingCount += 1
+    listenOn.style.pointerEvents = 'auto'
+    el.style.pointerEvents = 'auto'
+    el.textContent = original
+    el.classList.add(EDITING_CLASS)
+    el.tabIndex = 0
+    enablePlaintext(el)
+
+    let settled = false
+    let suppressBlurUntil = performance.now() + 300
+
+    const cleanup = () => {
+      options.signal?.removeEventListener('abort', onAbort)
+      el.classList.remove(EDITING_CLASS)
+      el.removeAttribute('contenteditable')
+      el.removeAttribute('tabindex')
+      listenOn.removeEventListener('pointerdown', onPointerDown, true)
+      el.removeEventListener('keydown', onKeyDown)
+      el.removeEventListener('blur', onBlur)
+      editingElements.delete(el)
+      editingCount = Math.max(0, editingCount - 1)
+    }
+
+    const finish = (commit: boolean) => {
+      if (settled) return
+      settled = true
+      const next = (el.textContent ?? '').trim()
+      if (!commit) {
+        el.textContent = original
+        cleanup()
+        resolve(undefined)
+        return
+      }
+      el.textContent = next
+      cleanup()
+      resolve(next)
+    }
+
+    const onPointerDown = (e: PointerEvent) => {
+      e.stopPropagation()
+    }
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing || e.keyCode === 229) return
+      e.stopPropagation()
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        finish(false)
+        return
+      }
+      if (e.key === 'Enter' && (!multiline || !e.shiftKey)) {
+        e.preventDefault()
+        finish(true)
+      }
+    }
+
+    const onBlur = () => {
+      if (performance.now() < suppressBlurUntil) {
+        el.focus()
+        return
+      }
+      finish(true)
+    }
+
+    const onAbort = () => finish(false)
+
+    listenOn.addEventListener('pointerdown', onPointerDown, true)
+    el.addEventListener('keydown', onKeyDown)
+    el.addEventListener('blur', onBlur)
+    options.signal?.addEventListener('abort', onAbort)
+
+    requestAnimationFrame(() => {
+      if (settled) return
+      suppressBlurUntil = performance.now() + 300
+      el.focus()
+      selectAll(el)
+    })
+  })
+}
+
+/**
  * Binds in-place text editing on a markup capsule or callout label.
  *
  * Starts on a timed double pointer-down (native `dblclick` is unreliable
@@ -114,52 +261,39 @@ export function isMarkupDoublePointer(
 export function bindMarkupInlineTextEdit(
   options: AcApMarkupInlineTextEditOptions
 ): () => void {
-  ensureStyles()
   const { view, el, recordId, multiline = false } = options
   const listenOn = options.listenOn ?? el
   listenOn.style.pointerEvents = 'auto'
   el.style.pointerEvents = 'auto'
-  let editing = false
-  let original = ''
-  let suppressBlurUntil = 0
   let lastPointer: { t: number; x: number; y: number } | undefined
-
-  const finish = (commit: boolean) => {
-    if (!editing) return
-    editing = false
-    el.classList.remove(EDITING_CLASS)
-    el.removeAttribute('contenteditable')
-    el.removeAttribute('tabindex')
-    const next = (el.textContent ?? '').trim()
-    if (!commit || next === original) {
-      el.textContent = original
-      return
-    }
-    runMarkupEdit(view, 'Edit Markup Text', () => {
-      getMarkupStore().updateMeta(recordId, { text: next })
-    })
-    el.textContent = next
-  }
+  let disposed = false
+  let abort: AbortController | undefined
 
   const startEdit = () => {
-    if (editing) return
+    if (disposed || editingElements.has(el)) return
     const record = getMarkupStore().get(recordId)
-    original = (record?.text ?? el.textContent ?? '').trim()
-    el.textContent = original
-    editing = true
-    suppressBlurUntil = performance.now() + 300
-    el.classList.add(EDITING_CLASS)
-    el.tabIndex = 0
-    enablePlaintext(el)
+    const original = (record?.text ?? el.textContent ?? '').trim()
     getMarkupStore().setSelectedId(recordId)
     view.htmlTransientManager.selectGroup(recordId)
-    el.focus()
-    selectAll(el)
+    abort = new AbortController()
+    void editMarkupHtmlText({
+      el,
+      listenOn,
+      multiline,
+      initialText: original,
+      signal: abort.signal
+    }).then(next => {
+      abort = undefined
+      if (disposed || next === undefined || next === original) return
+      runMarkupEdit(view, 'Edit Markup Text', () => {
+        getMarkupStore().updateMeta(recordId, { text: next })
+      })
+    })
   }
 
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return
-    if (editing) return
+    if (editingElements.has(el)) return
     const next = { t: performance.now(), x: e.clientX, y: e.clientY }
     const isDouble = e.detail >= 2 || isMarkupDoublePointer(lastPointer, next)
     lastPointer = next
@@ -174,38 +308,12 @@ export function bindMarkupInlineTextEdit(
     startEdit()
   }
 
-  const onKeyDown = (e: KeyboardEvent) => {
-    if (!editing) return
-    if (e.isComposing || e.keyCode === 229) return
-    e.stopPropagation()
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      finish(false)
-      return
-    }
-    if (e.key === 'Enter' && (!multiline || !e.shiftKey)) {
-      e.preventDefault()
-      finish(true)
-    }
-  }
-
-  const onBlur = () => {
-    if (performance.now() < suppressBlurUntil) {
-      el.focus()
-      return
-    }
-    finish(true)
-  }
-
   listenOn.addEventListener('pointerdown', onPointerDown, true)
   listenOn.addEventListener('dblclick', onDblClick)
-  el.addEventListener('keydown', onKeyDown)
-  el.addEventListener('blur', onBlur)
   return () => {
-    finish(false)
+    disposed = true
+    abort?.abort()
     listenOn.removeEventListener('pointerdown', onPointerDown, true)
     listenOn.removeEventListener('dblclick', onDblClick)
-    el.removeEventListener('keydown', onKeyDown)
-    el.removeEventListener('blur', onBlur)
   }
 }

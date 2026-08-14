@@ -24,7 +24,7 @@ import type { AcTrView2d } from '../../view'
 import {
   configureMarkupCommand,
   createMarkupMeta,
-  promptMarkupText,
+  promptMarkupCapsuleText,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
 import { commitMarkup } from './AcApMarkupPresenter'
@@ -187,6 +187,11 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._view.isDirty = true
   }
 
+  /** Capsule used for in-place text entry after the bubble is placed. */
+  get capsule(): AcTrHtmlCallout {
+    return this._bubble
+  }
+
   /**
    * Called when point input ends. Keep leader + bubble visible while the user
    * types callout text; {@link disposePreview} cleans up afterwards.
@@ -241,7 +246,7 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * Matches Autodesk Design Review 2D callout placement:
  * 1. Click where the leader / arrow tip begins
  * 2. Drag to place the callout text box (live leader + arrow + bubble preview)
- * 3. Enter the callout text
+ * 3. Type the callout text in the capsule
  *
  * @see Autodesk Design Review help — Create a Callout for 2D Content
  */
@@ -277,13 +282,8 @@ export class AcApMarkupCalloutCmd extends AcEdCommand {
         if (anchorResult.status !== AcEdPromptStatus.OK) return
         const anchor = anchorResult.value!
 
-        // 3. Enter text while leader + bubble preview stay visible
-        const text =
-          (await promptMarkupText(
-            context,
-            'jig.markup.callout.content',
-            ''
-          )) ?? ''
+        // 3. Type in the capsule (same as double-click edit)
+        const text = await promptMarkupCapsuleText(jig.capsule)
 
         const meta = createMarkupMeta(
           'callout',

@@ -12,6 +12,7 @@ import {
   MEASUREMENT_LINE_WEIGHT
 } from '../../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../../view'
+import { hitTestMeasurementGeometry } from './AcApMeasurementGeometry'
 import { runMeasurementEdit } from './AcApMeasurementHistory'
 import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
 import type { AcApMeasurementRecord } from './AcApMeasurementTypes'
@@ -316,4 +317,32 @@ export function commitMeasurementGroup(
     group.setVisible(false)
   }
   view.isDirty = true
+}
+
+/**
+ * Pick a visible measurement group by clicking its drawn stroke / fill.
+ *
+ * @returns Group id when the canvas-space point is within `threshold` pixels.
+ */
+export function pickMeasurementAt(
+  view: AcTrView2d,
+  canvasX: number,
+  canvasY: number,
+  threshold: number
+): string | undefined {
+  if (!measurementVisible) return undefined
+  const canvas = { x: canvasX, y: canvasY }
+  const worldToScreen = (point: { x: number; y: number }) =>
+    view.worldToScreen(point)
+  const groups = view.htmlTransientManager.groupsOnLayer(MEASUREMENT_LAYER)
+  for (let i = groups.length - 1; i >= 0; i--) {
+    const group = groups[i]
+    if (!group.visible) continue
+    const geom = extrasById.get(group.id)?.snapshot?.geometry
+    if (!geom) continue
+    if (hitTestMeasurementGeometry(geom, canvas, worldToScreen, threshold)) {
+      return group.id
+    }
+  }
+  return undefined
 }

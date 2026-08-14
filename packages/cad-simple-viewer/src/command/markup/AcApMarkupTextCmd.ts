@@ -1,3 +1,5 @@
+import { AcTrHtmlBadge } from '@mlightcad/three-renderer'
+
 import { AcApContext } from '../../app'
 import {
   AcEdCommand,
@@ -9,11 +11,13 @@ import type { AcTrView2d } from '../../view'
 import {
   configureMarkupCommand,
   createMarkupMeta,
-  promptMarkupText,
+  promptMarkupCapsuleText,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
 import { commitMarkup } from './AcApMarkupPresenter'
+import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
+import { defaultMarkupColor, getMarkupFontSize } from './AcApMarkupUtil'
 
 /**
  * Place a text markup label at a picked world point.
@@ -33,13 +37,33 @@ export class AcApMarkupTextCmd extends AcEdCommand {
       if (pointResult.status !== AcEdPromptStatus.OK) return
       const position = pointResult.value!
 
-      const text =
-        (await promptMarkupText(context, 'jig.markup.text.content', 'Note')) ??
-        'Note'
-
-      const meta = createMarkupMeta('text', context.view as AcTrView2d, context, {
-        text
+      const view = context.view as AcTrView2d
+      const badgeId = `live-markup-text-${Date.now()}`
+      const badge = new AcTrHtmlBadge({
+        id: badgeId,
+        color: defaultMarkupColor(),
+        text: '',
+        fontSize: getMarkupFontSize(),
+        worldPosition: position,
+        layer: MARKUP_LIVE_LAYER,
+        layoutId: view.activeLayoutBtrId
       })
+      view.htmlTransientManager.add(badge)
+      view.isDirty = true
+
+      let text = 'Note'
+      try {
+        text =
+          (await promptMarkupCapsuleText(
+            { textElement: badge.element, element: badge.element },
+            { multiline: false }
+          )) || 'Note'
+      } finally {
+        view.htmlTransientManager.remove(badgeId)
+        view.isDirty = true
+      }
+
+      const meta = createMarkupMeta('text', view, context, { text })
       const record: AcApMarkupRecord = {
         ...meta,
         type: 'text',

@@ -38,6 +38,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
 import { AcApDocManager, AcApSettingManager } from '../app'
+import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit'
 import {
   AcEdBaseView,
   AcEdCalculateSizeCallback,
@@ -61,6 +62,7 @@ import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResul
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
+import { trySelectReviewOverlay } from './AcEdReviewOverlayPick'
 import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
 import {
   shouldExtendBboxForDirectEntity,
@@ -360,6 +362,7 @@ export class AcTrView2d extends AcEdBaseView {
         this.mode === AcEdViewMode.SELECTION &&
         !this.editor.isActive &&
         !AcEdMTextEditor.getActiveInputBox() &&
+        !isMarkupHtmlTextEditing() &&
         !this._gripManager.isDragging
       )
     }
@@ -434,11 +437,20 @@ export class AcTrView2d extends AcEdBaseView {
       const action = this.getPointerSelectionAction(e)
 
       if (this.isSelectionClick(selectionStartCanvas, endCanvas)) {
-        const picked = this.pick(endWcs)
-        if (picked.length > 0) {
-          this.applySelection([picked[0].id], action)
-        } else if (action === 'replace') {
-          this.selectionSet.clear()
+        if (trySelectReviewOverlay(this, endCanvas.x, endCanvas.y, action)) {
+          if (action === 'replace') {
+            this.selectionSet.clear()
+          }
+        } else {
+          const picked = this.pick(endWcs)
+          if (picked.length > 0) {
+            if (action === 'replace') {
+              this.htmlTransientManager.deselectAll()
+            }
+            this.applySelection([picked[0].id], action)
+          } else if (action === 'replace') {
+            this.selectionSet.clear()
+          }
         }
       } else {
         const box = new AcGeBox2d()

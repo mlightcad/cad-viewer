@@ -460,6 +460,20 @@ export class AcTrHtmlTransientManager {
     return true
   }
 
+  /**
+   * Clear selection from one group.
+   *
+   * @param id - Group id
+   * @returns `true` when the group was selected and is now deselected
+   */
+  deselectGroup(id: string): boolean {
+    const group = this.groups.get(id)
+    if (!group || !this.selectedGroupIds.has(id)) return false
+    group.setSelected(false)
+    this.selectedGroupIds.delete(id)
+    return true
+  }
+
   /** Clear selection from every selected group. */
   deselectAll(): void {
     if (this.selectedGroupIds.size === 0) return

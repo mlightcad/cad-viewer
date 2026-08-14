@@ -24,10 +24,10 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
-  acapCurrentMeasurementStyle,
+  acapGetCurrentMeasurementStyle,
+  acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapGetMeasurementLineWeight,
-  acapMeasurementColor,
   type AcApMeasurementStyle,
   formatMeasurementLength
 } from '../../util'
@@ -167,7 +167,7 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   update(p2: AcGePoint3dLike) {
     this._line.endPoint = p2
-    this._line.color = acapMeasurementColor(this._db)
+    this._line.color = acapGetMeasurementColor(this._db)
     this._line.lineWeight = acapGetMeasurementLineWeight()
     this._badge.setColor(this._line.color)
     this._badge.setFontSize(acapGetMeasurementFontSize())
@@ -209,7 +209,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
-    const color = acapMeasurementColor(db)
+    const color = acapGetMeasurementColor(db)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -234,7 +234,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
           db,
           p1,
           p2,
-          acapCurrentMeasurementStyle(db)
+          acapGetCurrentMeasurementStyle(db)
         )
       })
     )

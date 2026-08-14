@@ -1,8 +1,20 @@
+import {
+  type AcApScreenPoint,
+  distPointToCirclePx,
+  distPointToRectOutlinePx,
+  distPointToSegmentPx,
+  pointInRectPx
+} from '../../util/AcApScreenHitTest'
 import type {
   AcApMarkupAttachedCallout,
   AcApMarkupGeometry,
   AcApMarkupPoint2d
 } from './AcApMarkupTypes'
+
+/** Extra hit slop for revision-cloud lobes around the AABB. */
+const CLOUD_HIT_EXTRA_PX = 8
+
+type WorldToScreen = (point: AcApMarkupPoint2d) => AcApScreenPoint
 
 /**
  * Translate a 2D markup point by a world-space delta.
@@ -147,5 +159,113 @@ export function translateMarkupGeometry(
         ...geometry,
         position: translateMarkupPoint(geometry.position, dx, dy)
       }
+  }
+}
+
+function hitTestLeader(
+  callout: AcApMarkupAttachedCallout | { tip: AcApMarkupPoint2d; anchor: AcApMarkupPoint2d },
+  canvas: AcApScreenPoint,
+  worldToScreen: WorldToScreen,
+  threshold: number
+): boolean {
+  const tip = worldToScreen(callout.tip)
+  const anchor = worldToScreen(callout.anchor)
+  return (
+    distPointToSegmentPx(canvas.x, canvas.y, tip.x, tip.y, anchor.x, anchor.y) <=
+    threshold
+  )
+}
+
+/**
+ * Whether a canvas-space pick hits a markup's drawn stroke (not HTML capsules).
+ *
+ * Hollow shapes (rect / cloud / circle) hit on the outline only. Highlights
+ * also hit their filled interior. Text / stamp / symbol are skipped — those
+ * are selected via their HTML overlays.
+ */
+export function hitTestMarkupGeometry(
+  geometry: AcApMarkupGeometry,
+  canvas: AcApScreenPoint,
+  worldToScreen: WorldToScreen,
+  threshold: number
+): boolean {
+  switch (geometry.type) {
+    case 'line':
+    case 'arrow': {
+      const a = worldToScreen(geometry.start)
+      const b = worldToScreen(geometry.end)
+      return (
+        distPointToSegmentPx(canvas.x, canvas.y, a.x, a.y, b.x, b.y) <=
+        threshold
+      )
+    }
+    case 'rect': {
+      if (
+        distPointToRectOutlinePx(
+          canvas.x,
+          canvas.y,
+          worldToScreen(geometry.corner1),
+          worldToScreen(geometry.corner2)
+        ) <= threshold
+      ) {
+        return true
+      }
+      return geometry.callout
+        ? hitTestLeader(geometry.callout, canvas, worldToScreen, threshold)
+        : false
+    }
+    case 'cloud': {
+      if (
+        distPointToRectOutlinePx(
+          canvas.x,
+          canvas.y,
+          worldToScreen(geometry.corner1),
+          worldToScreen(geometry.corner2)
+        ) <=
+        threshold + CLOUD_HIT_EXTRA_PX
+      ) {
+        return true
+      }
+      return geometry.callout
+        ? hitTestLeader(geometry.callout, canvas, worldToScreen, threshold)
+        : false
+    }
+    case 'circle': {
+      const c = worldToScreen(geometry.center)
+      const rim = worldToScreen({
+        x: geometry.center.x + geometry.radius,
+        y: geometry.center.y
+      })
+      const radius = Math.hypot(rim.x - c.x, rim.y - c.y)
+      if (
+        distPointToCirclePx(canvas.x, canvas.y, c.x, c.y, radius) <= threshold
+      ) {
+        return true
+      }
+      return geometry.callout
+        ? hitTestLeader(geometry.callout, canvas, worldToScreen, threshold)
+        : false
+    }
+    case 'highlight':
+      return (
+        pointInRectPx(
+          canvas.x,
+          canvas.y,
+          worldToScreen(geometry.corner1),
+          worldToScreen(geometry.corner2)
+        ) ||
+        distPointToRectOutlinePx(
+          canvas.x,
+          canvas.y,
+          worldToScreen(geometry.corner1),
+          worldToScreen(geometry.corner2)
+        ) <= threshold
+      )
+    case 'callout':
+      return hitTestLeader(geometry, canvas, worldToScreen, threshold)
+    case 'text':
+    case 'stamp':
+    case 'symbol':
+      return false
   }
 }
