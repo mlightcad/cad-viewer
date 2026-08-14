@@ -167,6 +167,10 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   update(p2: AcGePoint3dLike) {
     this._line.endPoint = p2
+    this._line.color = measurementColor(this._db)
+    this._line.lineWeight = getMeasurementLineWeight()
+    this._badge.setColor(this._line.color)
+    this._badge.setFontSize(getMeasurementFontSize())
 
     const dist = calcDist(this._p1, p2)
     if (dist < 0.0001) {
@@ -206,7 +210,6 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
     const editor = context.view.editor
     const db = context.doc.database
     const color = measurementColor(db)
-    const style = currentMeasurementStyle(db)
 
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
@@ -231,7 +234,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
           db,
           p1,
           p2,
-          style
+          currentMeasurementStyle(db)
         )
       })
     )

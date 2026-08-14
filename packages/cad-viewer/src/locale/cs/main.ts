@@ -576,7 +576,7 @@ export default {
       entityInfo: 'Informace o objektu',
       fileName: 'Název souboru',
       languageSelector: 'Volba jazyka',
-      mainMenu: 'Hlavní nabídka',
+      ribbon: 'Pás karet',
       toolbar: 'Panel nástrojů',
       stats: 'Statistiky'
     },

@@ -4,6 +4,7 @@ import {
   AcDbObjectId,
   AcDbPolyline,
   AcGeBox2d,
+  AcGeMatrix3d,
   AcGePoint2d,
   AcGePoint2dLike,
   AcGePoint3dLike,
@@ -14,6 +15,7 @@ import {
   AcTrHtmlCallout,
   AcTrHtmlCanvasOverlay,
   AcTrHtmlDot,
+  type AcTrHtmlElement,
   AcTrHtmlGroup,
   AcTrHtmlStamp
 } from '@mlightcad/three-renderer'
@@ -21,14 +23,26 @@ import {
 import type { AcEdBaseView } from '../../editor'
 import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import type { AcTrView2d } from '../../view'
-import { bindMarkupCalloutGrips } from './AcApMarkupCalloutDrag'
+import {
+  bindMarkupCalloutGrips,
+  bindMarkupPointerDrag
+} from './AcApMarkupCalloutDrag'
+import {
+  translateMarkupGeometry,
+  translateMarkupPoint
+} from './AcApMarkupGeometry'
 import {
   getMarkupHistory,
   getSessionUndo,
   runMarkupEdit
 } from './AcApMarkupHistory'
 import type { AcApMarkupShapeOutline } from './AcApMarkupShapeCallout'
-import { getMarkupStore, MARKUP_LAYER, MARKUP_LIVE_LAYER } from './AcApMarkupStore'
+import {
+  getMarkupStore,
+  MARKUP_LAYER,
+  MARKUP_LIVE_LAYER
+} from './AcApMarkupStore'
+import { bindMarkupInlineTextEdit } from './AcApMarkupTextEdit'
 import type {
   AcApMarkupAttachedCallout,
   AcApMarkupPoint2d,
@@ -92,23 +106,31 @@ export function buildMarkupCloud(
   for (let i = 0; i <= numSegmentsX; i++) {
     const t = i / numSegmentsX
     points.push(new AcGePoint2d(minX + width * t, minY))
-    bulges.push(i < numSegmentsX ? calculateBulge(segmentIndex++ % 2 === 0) : undefined)
+    bulges.push(
+      i < numSegmentsX ? calculateBulge(segmentIndex++ % 2 === 0) : undefined
+    )
   }
   for (let i = 1; i <= numSegmentsY; i++) {
     const t = i / numSegmentsY
     points.push(new AcGePoint2d(maxX, minY + height * t))
-    bulges.push(i < numSegmentsY ? calculateBulge(segmentIndex++ % 2 === 0) : undefined)
+    bulges.push(
+      i < numSegmentsY ? calculateBulge(segmentIndex++ % 2 === 0) : undefined
+    )
   }
   for (let i = 1; i <= numSegmentsX; i++) {
     const t = 1 - i / numSegmentsX
     points.push(new AcGePoint2d(minX + width * t, maxY))
-    bulges.push(i < numSegmentsX ? calculateBulge(segmentIndex++ % 2 === 0) : undefined)
+    bulges.push(
+      i < numSegmentsX ? calculateBulge(segmentIndex++ % 2 === 0) : undefined
+    )
   }
   for (let i = 1; i < numSegmentsY; i++) {
     const t = 1 - i / numSegmentsY
     points.push(new AcGePoint2d(minX, minY + height * t))
     bulges.push(
-      i < numSegmentsY - 1 ? calculateBulge(segmentIndex++ % 2 === 0) : undefined
+      i < numSegmentsY - 1
+        ? calculateBulge(segmentIndex++ % 2 === 0)
+        : undefined
     )
   }
 
@@ -219,6 +241,18 @@ function drawHighlight(
   ctx.strokeRect(x, y, w, h)
 }
 
+interface AcApMarkupAttachedCalloutVisual {
+  live: { tip: AcApMarkupPoint2d; anchor: AcApMarkupPoint2d }
+  redraw: () => void
+  tipDot: AcTrHtmlDot
+  bubble: AcTrHtmlCallout
+}
+
+function selectMarkupGroup(view2d: AcTrView2d, id: string): void {
+  getMarkupStore().setSelectedId(id)
+  view2d.htmlTransientManager.selectGroup(id)
+}
+
 /**
  * Attach a shape callout (leader without arrow + text bubble) to a markup group,
  * with drag grips for tip (on outline) and text bubble.
@@ -233,7 +267,7 @@ function publishAttachedCallout(
   layoutId: string | undefined,
   cleanups: Array<() => void>,
   outline: AcApMarkupShapeOutline
-): void {
+): AcApMarkupAttachedCalloutVisual {
   const container = view2d.container
   const overlay = new AcTrHtmlCanvasOverlay({
     id: `${record.id}-shape-leader`,
@@ -287,6 +321,16 @@ function publishAttachedCallout(
   group.add(bubble, tipDot)
 
   cleanups.push(
+    bindMarkupInlineTextEdit({
+      view: view2d,
+      el: bubble.textElement,
+      listenOn: bubble.element,
+      recordId: record.id,
+      multiline: true
+    })
+  )
+
+  cleanups.push(
     bindMarkupCalloutGrips({
       view: view2d,
       group,
@@ -294,10 +338,7 @@ function publishAttachedCallout(
       bubbleEl: bubble,
       state: live,
       outline,
-      onDragStart: () => {
-        getMarkupStore().setSelectedId(record.id)
-        view2d.htmlTransientManager.selectGroup(record.id)
-      },
+      onDragStart: () => selectMarkupGroup(view2d, record.id),
       onLiveChange: redraw,
       onCommit: next => {
         const current = getMarkupStore().get(record.id)
@@ -323,6 +364,80 @@ function publishAttachedCallout(
       }
     })
   )
+
+  return { live, redraw, tipDot, bubble }
+}
+
+function bindMarkupCenterMove(options: {
+  view: AcTrView2d
+  recordId: string
+  centerEl: AcTrHtmlElement
+  entityIds: AcDbObjectId[]
+  attached?: AcApMarkupAttachedCalloutVisual
+}): () => void {
+  const { view, recordId, centerEl, entityIds, attached } = options
+  let origin = {
+    x: centerEl.object.position.x,
+    y: centerEl.object.position.y
+  }
+  let last = { ...origin }
+  let originalCallout: AcApMarkupAttachedCallout | undefined
+  return bindMarkupPointerDrag({
+    view,
+    el: centerEl.element,
+    cursor: 'move',
+    onDragStart: () => {
+      selectMarkupGroup(view, recordId)
+      origin = {
+        x: centerEl.object.position.x,
+        y: centerEl.object.position.y
+      }
+      last = { ...origin }
+      originalCallout = attached
+        ? {
+            tip: { ...attached.live.tip },
+            anchor: { ...attached.live.anchor }
+          }
+        : undefined
+    },
+    onMove: point => {
+      last = point
+      const dx = point.x - origin.x
+      const dy = point.y - origin.y
+      if (entityIds.length > 0) {
+        const matrix = new AcGeMatrix3d().makeTranslation(dx, dy, 0)
+        view.updateTransientPreviewTransforms(
+          entityIds.map(objectId => ({ objectId, matrix }))
+        )
+      }
+      centerEl.setPosition(point)
+      if (attached && originalCallout) {
+        attached.live.tip = translateMarkupPoint(originalCallout.tip, dx, dy)
+        attached.live.anchor = translateMarkupPoint(
+          originalCallout.anchor,
+          dx,
+          dy
+        )
+        attached.tipDot.setPosition(attached.live.tip)
+        attached.bubble.setPosition(attached.live.anchor)
+        attached.redraw()
+      }
+    },
+    onCommit: () => {
+      const dx = last.x - origin.x
+      const dy = last.y - origin.y
+      if (Math.hypot(dx, dy) < 1e-9) return
+      runMarkupEdit(view, 'Move Markup', () => {
+        const current = getMarkupStore().get(recordId)
+        if (!current) return
+        const updated = getMarkupStore().updateGeometry(
+          recordId,
+          translateMarkupGeometry(current.geometry, dx, dy)
+        )
+        if (updated) getMarkupPresenter().publish(view, updated)
+      })
+    }
+  })
 }
 
 interface VisualExtras {
@@ -374,28 +489,39 @@ export class AcApMarkupPresenter {
       layoutId,
       selectable: true
     })
+    const pendingGrips: Array<() => void> = []
 
     const geom = record.geometry
     switch (geom.type) {
       case 'text': {
-        group.add(
-          new AcTrHtmlBadge({
-            id: `${record.id}-badge`,
-            color,
-            text: record.text || 'Note',
-            fontSize: record.style.fontSize,
-            worldPosition: geom.position,
-            layer,
-            layoutId
+        const badge = new AcTrHtmlBadge({
+          id: `${record.id}-badge`,
+          color,
+          text: record.text || 'Note',
+          fontSize: record.style.fontSize,
+          worldPosition: geom.position,
+          layer,
+          layoutId
+        })
+        group.add(badge)
+        cleanups.push(
+          bindMarkupInlineTextEdit({
+            view: view2d,
+            el: badge.element,
+            recordId: record.id
           })
         )
         break
       }
       case 'line':
       case 'arrow': {
+        const live = {
+          start: { ...geom.start },
+          end: { ...geom.end }
+        }
         const line = new AcDbLine(
-          { x: geom.start.x, y: geom.start.y, z: 0 },
-          { x: geom.end.x, y: geom.end.y, z: 0 }
+          { x: live.start.x, y: live.start.y, z: 0 },
+          { x: live.end.x, y: live.end.y, z: 0 }
         )
         line.color = color
         line.lineWeight = lineWeight
@@ -403,23 +529,23 @@ export class AcApMarkupPresenter {
         extras.entityIds.push(line.objectId)
         cleanups.push(() => view2d.removeTransientEntity(line.objectId))
 
-        group.add(
-          new AcTrHtmlDot({
-            id: `${record.id}-dot1`,
-            color,
-            worldPosition: geom.start,
-            layer,
-            layoutId
-          }),
-          new AcTrHtmlDot({
-            id: `${record.id}-dot2`,
-            color,
-            worldPosition: geom.end,
-            layer,
-            layoutId
-          })
-        )
+        const startDot = new AcTrHtmlDot({
+          id: `${record.id}-dot1`,
+          color,
+          worldPosition: live.start,
+          layer,
+          layoutId
+        })
+        const endDot = new AcTrHtmlDot({
+          id: `${record.id}-dot2`,
+          color,
+          worldPosition: live.end,
+          layer,
+          layoutId
+        })
+        group.add(startDot, endDot)
 
+        let redrawArrow: (() => void) | undefined
         if (geom.type === 'arrow') {
           const container = view2d.container
           const overlay = new AcTrHtmlCanvasOverlay({
@@ -429,18 +555,63 @@ export class AcApMarkupPresenter {
             layoutId
           })
           group.addCanvas(overlay)
-          const redraw = () => {
+          redrawArrow = () => {
             const ctx = fitCanvas(overlay.canvas, container)
             if (!ctx) return
-            const a = view2d.worldToScreen(geom.start)
-            const b = view2d.worldToScreen(geom.end)
+            const a = view2d.worldToScreen(live.start)
+            const b = view2d.worldToScreen(live.end)
             drawArrowHead(ctx, a, b, record.style.color)
           }
-          redraw()
-          view2d.events.viewChanged.addEventListener(redraw)
+          redrawArrow()
+          view2d.events.viewChanged.addEventListener(redrawArrow)
           cleanups.push(() =>
-            view2d.events.viewChanged.removeEventListener(redraw)
+            view2d.events.viewChanged.removeEventListener(redrawArrow!)
           )
+        }
+
+        if (geom.type === 'arrow') {
+          const refreshArrow = () => {
+            line.startPoint = { x: live.start.x, y: live.start.y, z: 0 }
+            line.endPoint = { x: live.end.x, y: live.end.y, z: 0 }
+            view2d.removeTransientEntity(line.objectId)
+            view2d.addTransientEntity(line)
+            redrawArrow?.()
+          }
+          const commitArrow = () => {
+            runMarkupEdit(view2d, 'Move Arrow', () => {
+              getMarkupStore().updateGeometry(record.id, {
+                type: 'arrow',
+                start: { ...live.start },
+                end: { ...live.end }
+              })
+            })
+          }
+          pendingGrips.push(() => {
+            cleanups.push(
+              bindMarkupPointerDrag({
+                view: view2d,
+                el: startDot.element,
+                onDragStart: () => selectMarkupGroup(view2d, record.id),
+                onMove: point => {
+                  live.start = point
+                  startDot.setPosition(point)
+                  refreshArrow()
+                },
+                onCommit: commitArrow
+              }),
+              bindMarkupPointerDrag({
+                view: view2d,
+                el: endDot.element,
+                onDragStart: () => selectMarkupGroup(view2d, record.id),
+                onMove: point => {
+                  live.end = point
+                  endDot.setPosition(point)
+                  refreshArrow()
+                },
+                onCommit: commitArrow
+              })
+            )
+          })
         }
         break
       }
@@ -457,32 +628,42 @@ export class AcApMarkupPresenter {
           x: (geom.corner1.x + geom.corner2.x) / 2,
           y: (geom.corner1.y + geom.corner2.y) / 2
         }
-        group.add(
-          new AcTrHtmlDot({
-            id: `${record.id}-dot`,
-            color,
-            worldPosition: mid,
-            layer,
-            layoutId
-          })
-        )
-        if (geom.callout) {
-          publishAttachedCallout(
-            view2d,
-            group,
-            record,
-            geom.callout,
-            color,
-            layer,
-            layoutId,
-            cleanups,
-            {
-              kind: 'cloud',
-              corner1: geom.corner1,
-              corner2: geom.corner2
-            }
+        const centerDot = new AcTrHtmlDot({
+          id: `${record.id}-dot`,
+          color,
+          worldPosition: mid,
+          layer,
+          layoutId
+        })
+        group.add(centerDot)
+        const attached = geom.callout
+          ? publishAttachedCallout(
+              view2d,
+              group,
+              record,
+              geom.callout,
+              color,
+              layer,
+              layoutId,
+              cleanups,
+              {
+                kind: 'cloud',
+                corner1: geom.corner1,
+                corner2: geom.corner2
+              }
+            )
+          : undefined
+        pendingGrips.push(() => {
+          cleanups.push(
+            bindMarkupCenterMove({
+              view: view2d,
+              recordId: record.id,
+              centerEl: centerDot,
+              entityIds: extras.entityIds,
+              attached
+            })
           )
-        }
+        })
         break
       }
       case 'rect': {
@@ -494,35 +675,46 @@ export class AcApMarkupPresenter {
         extras.entityIds.push(rect.objectId)
         cleanups.push(() => view2d.removeTransientEntity(rect.objectId))
 
-        group.add(
-          new AcTrHtmlDot({
-            id: `${record.id}-dot`,
-            color,
-            worldPosition: {
-              x: (geom.corner1.x + geom.corner2.x) / 2,
-              y: (geom.corner1.y + geom.corner2.y) / 2
-            },
-            layer,
-            layoutId
-          })
-        )
-        if (geom.callout) {
-          publishAttachedCallout(
-            view2d,
-            group,
-            record,
-            geom.callout,
-            color,
-            layer,
-            layoutId,
-            cleanups,
-            {
-              kind: 'rect',
-              corner1: geom.corner1,
-              corner2: geom.corner2
-            }
-          )
+        const mid = {
+          x: (geom.corner1.x + geom.corner2.x) / 2,
+          y: (geom.corner1.y + geom.corner2.y) / 2
         }
+        const centerDot = new AcTrHtmlDot({
+          id: `${record.id}-dot`,
+          color,
+          worldPosition: mid,
+          layer,
+          layoutId
+        })
+        group.add(centerDot)
+        const attached = geom.callout
+          ? publishAttachedCallout(
+              view2d,
+              group,
+              record,
+              geom.callout,
+              color,
+              layer,
+              layoutId,
+              cleanups,
+              {
+                kind: 'rect',
+                corner1: geom.corner1,
+                corner2: geom.corner2
+              }
+            )
+          : undefined
+        pendingGrips.push(() => {
+          cleanups.push(
+            bindMarkupCenterMove({
+              view: view2d,
+              recordId: record.id,
+              centerEl: centerDot,
+              entityIds: extras.entityIds,
+              attached
+            })
+          )
+        })
         break
       }
       case 'circle': {
@@ -536,32 +728,42 @@ export class AcApMarkupPresenter {
         extras.entityIds.push(circle.objectId)
         cleanups.push(() => view2d.removeTransientEntity(circle.objectId))
 
-        group.add(
-          new AcTrHtmlDot({
-            id: `${record.id}-dot`,
-            color,
-            worldPosition: geom.center,
-            layer,
-            layoutId
-          })
-        )
-        if (geom.callout) {
-          publishAttachedCallout(
-            view2d,
-            group,
-            record,
-            geom.callout,
-            color,
-            layer,
-            layoutId,
-            cleanups,
-            {
-              kind: 'circle',
-              center: geom.center,
-              radius: geom.radius
-            }
+        const centerDot = new AcTrHtmlDot({
+          id: `${record.id}-dot`,
+          color,
+          worldPosition: geom.center,
+          layer,
+          layoutId
+        })
+        group.add(centerDot)
+        const attached = geom.callout
+          ? publishAttachedCallout(
+              view2d,
+              group,
+              record,
+              geom.callout,
+              color,
+              layer,
+              layoutId,
+              cleanups,
+              {
+                kind: 'circle',
+                center: geom.center,
+                radius: geom.radius
+              }
+            )
+          : undefined
+        pendingGrips.push(() => {
+          cleanups.push(
+            bindMarkupCenterMove({
+              view: view2d,
+              recordId: record.id,
+              centerEl: centerDot,
+              entityIds: extras.entityIds,
+              attached
+            })
           )
-        }
+        })
         break
       }
       case 'highlight': {
@@ -651,37 +853,76 @@ export class AcApMarkupPresenter {
           layer,
           layoutId
         })
-        group.add(bubble, tipDot)
+        const centerDot = new AcTrHtmlDot({
+          id: `${record.id}-center`,
+          color,
+          worldPosition: {
+            x: (live.tip.x + live.anchor.x) / 2,
+            y: (live.tip.y + live.anchor.y) / 2
+          },
+          layer,
+          layoutId
+        })
+        group.add(bubble, tipDot, centerDot)
 
         cleanups.push(
-          bindMarkupCalloutGrips({
+          bindMarkupInlineTextEdit({
             view: view2d,
-            group,
-            tipEl: tipDot,
-            bubbleEl: bubble,
-            state: live,
-            onDragStart: () => {
-              getMarkupStore().setSelectedId(record.id)
-              view2d.htmlTransientManager.selectGroup(record.id)
-            },
-            onLiveChange: redraw,
-            onCommit: next => {
-              runMarkupEdit(view2d, 'Move Callout', () => {
-                getMarkupStore().updateGeometry(record.id, {
-                  type: 'callout',
-                  tip: next.tip,
-                  anchor: next.anchor
-                })
-              })
-            }
+            el: bubble.textElement,
+            listenOn: bubble.element,
+            recordId: record.id,
+            multiline: true
           })
         )
+
+        const syncCenter = () => {
+          centerDot.setPosition({
+            x: (live.tip.x + live.anchor.x) / 2,
+            y: (live.tip.y + live.anchor.y) / 2
+          })
+        }
+        pendingGrips.push(() => {
+          cleanups.push(
+            bindMarkupCalloutGrips({
+              view: view2d,
+              group,
+              tipEl: tipDot,
+              bubbleEl: bubble,
+              state: live,
+              onDragStart: () => selectMarkupGroup(view2d, record.id),
+              onLiveChange: () => {
+                redraw()
+                syncCenter()
+              },
+              onCommit: next => {
+                runMarkupEdit(view2d, 'Move Callout', () => {
+                  getMarkupStore().updateGeometry(record.id, {
+                    type: 'callout',
+                    tip: next.tip,
+                    anchor: next.anchor
+                  })
+                })
+              }
+            }),
+            bindMarkupCenterMove({
+              view: view2d,
+              recordId: record.id,
+              centerEl: centerDot,
+              entityIds: [],
+              attached: {
+                live,
+                redraw,
+                tipDot,
+                bubble
+              }
+            })
+          )
+        })
         break
       }
       case 'stamp':
       case 'symbol': {
-        const stampId =
-          geom.type === 'stamp' ? geom.stampId : geom.symbolId
+        const stampId = geom.type === 'stamp' ? geom.stampId : geom.symbolId
         const imageUrl = geom.imageUrl
         group.add(
           new AcTrHtmlStamp({
@@ -742,6 +983,7 @@ export class AcApMarkupPresenter {
     }
 
     view2d.htmlTransientManager.add(group)
+    for (const bind of pendingGrips) bind()
     view2d.isDirty = true
     this.published.add(record.id)
 
@@ -872,9 +1114,7 @@ export class AcApMarkupPresenter {
   }
 }
 
-function primaryPoint(
-  record: AcApMarkupRecord
-): AcGePoint3dLike | undefined {
+function primaryPoint(record: AcApMarkupRecord): AcGePoint3dLike | undefined {
   const g = record.geometry
   switch (g.type) {
     case 'text':
@@ -936,5 +1176,21 @@ export function commitMarkup(
   runMarkupEdit(view, 'Create Markup', () => {
     getMarkupStore().upsert(record)
     getMarkupPresenter().publish(view, record)
+  })
+}
+
+/**
+ * Apply a style patch to the selected markup and republish it.
+ */
+export function applyMarkupStyleToSelection(
+  view: AcEdBaseView,
+  patch: Partial<AcApMarkupRecord['style']>
+): void {
+  const store = getMarkupStore()
+  const id = store.selectedId
+  if (!id) return
+  runMarkupEdit(view, 'Markup Style', () => {
+    const updated = store.updateStyle(id, patch)
+    if (updated) getMarkupPresenter().publish(view, updated)
   })
 }

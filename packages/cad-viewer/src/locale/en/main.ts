@@ -584,7 +584,7 @@ export default {
       entityInfo: 'Entity Info',
       fileName: 'File Name',
       languageSelector: 'Language Selector',
-      mainMenu: 'Main Menu',
+      ribbon: 'Ribbon',
       toolbar: 'Toolbar',
       stats: 'Statistics'
     },

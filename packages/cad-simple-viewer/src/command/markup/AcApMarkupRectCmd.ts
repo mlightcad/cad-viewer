@@ -27,9 +27,7 @@ import {
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupFontSize,
-  getMarkupLineWeight,
-  markupColorToCss
+  getMarkupLineWeight
 } from './AcApMarkupUtil'
 
 class AcApMarkupRectJig extends AcEdPreviewJig<AcGePoint2dLike> {
@@ -49,6 +47,8 @@ class AcApMarkupRectJig extends AcEdPreviewJig<AcGePoint2dLike> {
   }
 
   update(second: AcGePoint2dLike) {
+    this._rect.color = defaultMarkupColor()
+    this._rect.lineWeight = getMarkupLineWeight()
     buildMarkupRect(this._rect, this._first, second)
   }
 }
@@ -91,11 +91,6 @@ export class AcApMarkupRectCmd extends AcEdCommand {
       const record: AcApMarkupRecord = {
         ...meta,
         type: 'rect',
-        style: {
-          color: markupColorToCss(color),
-          lineWeight: getMarkupLineWeight(),
-          fontSize: getMarkupFontSize()
-        },
         geometry: {
           type: 'rect',
           corner1: { x: p1.x, y: p1.y },

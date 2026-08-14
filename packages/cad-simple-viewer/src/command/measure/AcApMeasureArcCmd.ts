@@ -570,7 +570,7 @@ export class AcApMeasureArcCmd extends AcEdCommand {
           geom,
           start,
           end,
-          style
+          currentMeasurementStyle(db)
         )
       })
     )

@@ -51,7 +51,7 @@ The MlCadViewer component supports multiple ways to load CAD files:
 
 ### 1. Local File Loading
 Users can load files directly from their computer:
-- **File Dialog**: Click the main menu (☰) and select "Open" to browse and select local DWG/DXF files
+- **File Dialog**: Click the File menu on the ribbon and select "Open" to browse and select local DWG/DXF files
 - **Drag & Drop**: Drag and drop CAD files directly onto the viewer (if implemented in your application)
 - **File Input**: Use the built-in file reader component for programmatic file selection
 - **Component Prop**: Pass a File object directly to the `localFile` prop for automatic loading
@@ -187,7 +187,7 @@ The `MlCadViewer` component accepts the following props:
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `locale` | `'en' \| 'zh' \| 'default'` | `'default'` | Sets the language for the component interface. Use `'en'` for English, `'zh'` for Chinese, or `'default'` to use the browser's default language. |
-| `url` | `string` | `undefined` | Optional URL to automatically load a CAD file when the component mounts. The file will be fetched and opened automatically. **Note**: If not provided, users can still load local files using the main menu "Open" option. |
+| `url` | `string` | `undefined` | Optional URL to automatically load a CAD file when the component mounts. The file will be fetched and opened automatically. **Note**: If not provided, users can still load local files using the ribbon File menu "Open" option. |
 | `localFile` | `File` | `undefined` | Optional local File object to automatically load a CAD file when the component mounts. The file will be read and opened automatically. **Note**: This takes precedence over the `url` prop if both are provided. |
 | `background` | `number` | `undefined` | Background color as 24-bit hexadecimal RGB (e.g., `0x000000` for black, `0x808080` for gray). |
 | `baseUrl` | `string` | `undefined` | Base URL for loading fonts, templates, and example files. This URL is used by the CAD viewer to load resources like fonts and drawing templates. **Note**: If not provided, uses the default URL. |
@@ -205,13 +205,13 @@ The `MlCadViewer` reads its UI visibility from the global `AcApSettingManager` (
 | `isShowCoordinate` | `boolean` | `true` | Controls coordinate display visibility |
 | `isShowEntityInfo` | `boolean` | `false` | Controls entity info card visibility |
 | `isShowLanguageSelector` | `boolean` | `true` | Controls language selector visibility |
-| `isShowMainMenu` | `boolean` | `true` | Controls main menu visibility |
+| `isShowRibbon` | `boolean` | `true` | Controls ribbon visibility |
 | `isShowStats` | `boolean` | `false` | Controls performance statistics display |
 
 #### Example (recommended)
 ```vue
 <template>
-  <!-- Local file loading - users can open files via main menu -->
+  <!-- Local file loading - users can open files via the ribbon File menu -->
   <MlCadViewer locale="en" />
   
   <!-- Remote file loading - automatically loads from URL -->
@@ -292,7 +292,7 @@ This configuration will:
 
 The `MlCadViewer` component includes:
 
-- **Main Menu** - File operations (including local file opening), view controls, and settings
+- **Ribbon** - File operations (including local file opening), CAD commands, and settings
 - **Toolbars** - Drawing tools, zoom controls, and selection tools
 - **Layer Manager** - Layer visibility and property management
 - **Command Line** - AutoCAD-style command input

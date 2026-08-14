@@ -20,7 +20,7 @@
   - Customizable base URL for fonts, templates, and example files
   
   COMPONENTS INCLUDED:
-  - Main menu and language selector
+  - Ribbon with CAD commands and language selector
   - Toolbars with CAD commands
   - Layer manager for controlling entity visibility
   - Command line for text-based commands
@@ -103,6 +103,7 @@ import {
   setColorTheme,
   toggleDark,
   useDocument,
+  useDrawStyleToolbarVisible,
   useLocale,
   useNotificationCenter,
   useSettings
@@ -113,12 +114,7 @@ import {
   resolveOpenFileErrorTitle
 } from '../util/openFileErrorMessage'
 import { MlDialogManager, MlFontFileReader } from './common'
-import {
-  MlEntityInfo,
-  MlLanguageSelector,
-  MlMainMenu,
-  MlToolBars
-} from './layout'
+import { MlEntityInfo, MlToolBars } from './layout'
 import { MlNotificationCenter } from './notification'
 import { MlPaletteManager } from './palette'
 import { MlRibbonCommands } from './ribbon'
@@ -262,6 +258,7 @@ const viewerThemeClass = computed(() =>
 )
 
 const features = useSettings()
+const drawStyleToolbarVisible = useDrawStyleToolbarVisible()
 const {
   beginDocumentOpening,
   endDocumentOpening,
@@ -515,7 +512,7 @@ onUnmounted(() => {
 })
 
 watch(
-  [editorRef, isWriteMode, () => features.isShowToolbar],
+  [editorRef, isWriteMode, () => features.isShowRibbon, () => features.isShowToolbar],
   async () => {
     await nextTick()
     bindHeaderObserver()
@@ -657,15 +654,10 @@ const closeNotificationCenter = () => {
     <!-- Element Plus configuration provider for internationalization -->
     <el-config-provider :locale="elementPlusLocale">
       <div ref="layoutRef" class="ml-cad-layout">
-        <!-- Header section with main menu and language selector -->
+        <!-- Header section with command ribbon -->
         <header v-if="editorRef" ref="headerRef" class="ml-cad-header">
           <ml-ribbon-commands
-            v-if="isWriteMode"
-            :current-locale="effectiveLocale"
-          />
-          <ml-main-menu v-if="!isWriteMode" />
-          <ml-language-selector
-            v-if="!isWriteMode"
+            v-if="features.isShowRibbon"
             :current-locale="effectiveLocale"
           />
         </header>
@@ -681,7 +673,12 @@ const closeNotificationCenter = () => {
 
           <!-- Display current filename at the top center -->
           <div
-            v-if="editorRef && !isWriteMode && features.isShowFileName"
+            v-if="
+              editorRef &&
+              !features.isShowRibbon &&
+              features.isShowFileName &&
+              !drawStyleToolbarVisible
+            "
             class="ml-file-name"
           >
             {{ displayName }}

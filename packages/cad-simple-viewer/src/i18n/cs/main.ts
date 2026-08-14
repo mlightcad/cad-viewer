@@ -53,5 +53,10 @@ export default {
     repository: 'GitHub',
     copyright: '© {year} mlightcad. Všechna práva vyhrazena.',
     ok: 'OK'
+  },
+  drawStyle: {
+    color: 'Barva',
+    lineWeight: 'Tloušťka čáry',
+    fontSize: 'Výška textu'
   }
 }

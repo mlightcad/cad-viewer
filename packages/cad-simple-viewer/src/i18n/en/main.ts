@@ -53,5 +53,10 @@ export default {
     repository: 'GitHub',
     copyright: '© {year} mlightcad. All rights reserved.',
     ok: 'OK'
+  },
+  drawStyle: {
+    color: 'Color',
+    lineWeight: 'Lineweight',
+    fontSize: 'Text height'
   }
 }

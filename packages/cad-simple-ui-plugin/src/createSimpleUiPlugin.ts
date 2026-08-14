@@ -2,6 +2,7 @@ import {
   AcApContext,
   AcApDocManager,
   AcApI18n,
+  AcApSettingManager,
   type AcApLocale,
   AcApPlugin,
   AcEdCommandStack,
@@ -378,6 +379,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   onLoad(_context: AcApContext, commandManager: AcEdCommandStack): void {
     registerSimpleUiI18n()
     this.commandManager = commandManager
+    // This shell has no command ribbon; keep the draw-style overlay available.
+    AcApSettingManager.instance.isShowRibbon = false
 
     const resolvedOptions = normalizePluginOptions(this.options)
     const host =

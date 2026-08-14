@@ -30,9 +30,7 @@ import {
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupFontSize,
-  getMarkupLineWeight,
-  markupColorToCss
+  getMarkupLineWeight
 } from './AcApMarkupUtil'
 
 class AcApMarkupCloudJig extends AcEdPreviewJig<AcGePoint2dLike> {
@@ -54,6 +52,8 @@ class AcApMarkupCloudJig extends AcEdPreviewJig<AcGePoint2dLike> {
   }
 
   update(second: AcGePoint2dLike) {
+    this._cloud.color = defaultMarkupColor()
+    this._cloud.lineWeight = getMarkupLineWeight()
     buildMarkupCloud(this._cloud, this._first, second, this._view)
   }
 }
@@ -100,11 +100,6 @@ export class AcApMarkupCloudCmd extends AcEdCommand {
       const record: AcApMarkupRecord = {
         ...meta,
         type: 'cloud',
-        style: {
-          color: markupColorToCss(color),
-          lineWeight: getMarkupLineWeight(),
-          fontSize: getMarkupFontSize()
-        },
         geometry: {
           type: 'cloud',
           corner1: { x: p1.x, y: p1.y },

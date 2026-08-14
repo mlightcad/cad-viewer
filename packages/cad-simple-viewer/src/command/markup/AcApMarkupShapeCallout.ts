@@ -43,7 +43,12 @@ import type {
   AcApMarkupAttachedCallout,
   AcApMarkupPoint2d
 } from './AcApMarkupTypes'
-import { defaultMarkupColor, getMarkupFontSize, getMarkupLineWeight } from './AcApMarkupUtil'
+import {
+  defaultMarkupColor,
+  getMarkupFontSize,
+  getMarkupLineWeight,
+  subscribeMarkupDrawStyle
+} from './AcApMarkupUtil'
 
 /** Session flag: whether shape markups attach a callout by default. */
 let shapeCalloutEnabled = true
@@ -204,10 +209,13 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private readonly _line: AcDbLine
   private readonly _shape: AcDbEntity
   private readonly _ht: AcTrHtmlTransientManager
+  private readonly _tipDot: AcTrHtmlDot
+  private readonly _bubble: AcTrHtmlCallout
   private readonly _tipDotId: string
   private readonly _bubbleId: string
   private readonly _view: AcTrView2d
   private _tip: AcApMarkupPoint2d
+  private _unsubDrawStyle?: () => void
 
   constructor(
     view: AcEdBaseView,
@@ -239,25 +247,26 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._bubbleId = `live-shape-callout-bubble-${stamp}`
     const layoutId = this._view.activeLayoutBtrId
 
-    this._ht.add(
-      new AcTrHtmlDot({
-        id: this._tipDotId,
-        color,
-        worldPosition: this._tip,
-        layer: MARKUP_LIVE_LAYER,
-        layoutId
-      })
-    )
-    this._ht.add(
-      new AcTrHtmlCallout({
-        id: this._bubbleId,
-        color,
-        text: '',
-        fontSize: getMarkupFontSize(),
-        worldPosition: this._tip,
-        layer: MARKUP_LIVE_LAYER,
-        layoutId
-      })
+    this._tipDot = new AcTrHtmlDot({
+      id: this._tipDotId,
+      color,
+      worldPosition: this._tip,
+      layer: MARKUP_LIVE_LAYER,
+      layoutId
+    })
+    this._ht.add(this._tipDot)
+    this._bubble = new AcTrHtmlCallout({
+      id: this._bubbleId,
+      color,
+      text: '',
+      fontSize: getMarkupFontSize(),
+      worldPosition: this._tip,
+      layer: MARKUP_LIVE_LAYER,
+      layoutId
+    })
+    this._ht.add(this._bubble)
+    this._unsubDrawStyle = subscribeMarkupDrawStyle(() =>
+      this.applyCurrentStyle()
     )
     this._view.isDirty = true
   }
@@ -272,10 +281,8 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._line.startPoint = { x: this._tip.x, y: this._tip.y, z: 0 }
     this._line.endPoint = { x: anchor.x, y: anchor.y, z: anchor.z ?? 0 }
 
-    const tipDot = this._ht.get(this._tipDotId)
-    tipDot?.setPosition(this._tip)
-    const bubble = this._ht.get(this._bubbleId)
-    bubble?.setPosition(toward)
+    this._tipDot.setPosition(this._tip)
+    this._bubble.setPosition(toward)
     this._view.isDirty = true
   }
 
@@ -289,10 +296,29 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   /** Remove frozen preview graphics after text entry (or cancel). */
   disposePreview() {
+    this._unsubDrawStyle?.()
+    this._unsubDrawStyle = undefined
     this._view.removeTransientEntity(this._line.objectId)
     this._view.removeTransientEntity(this._shape.objectId)
     this._ht.remove(this._tipDotId)
     this._ht.remove(this._bubbleId)
+    this._view.isDirty = true
+  }
+
+  /** Apply session draw style to the frozen preview (including during text entry). */
+  private applyCurrentStyle(): void {
+    const color = defaultMarkupColor()
+    this._line.color = color
+    this._line.lineWeight = getMarkupLineWeight()
+    this._shape.color = color
+    this._shape.lineWeight = getMarkupLineWeight()
+    this._view.removeTransientEntity(this._line.objectId)
+    this._view.addTransientEntity(this._line)
+    this._view.removeTransientEntity(this._shape.objectId)
+    this._view.addTransientEntity(this._shape)
+    this._tipDot.setColor(color)
+    this._bubble.setColor(color)
+    this._bubble.setFontSize(getMarkupFontSize())
     this._view.isDirty = true
   }
 }

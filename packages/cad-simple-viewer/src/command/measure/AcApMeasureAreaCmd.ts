@@ -437,6 +437,11 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
 
     if (points.length < 3) return
 
-    placeAreaMeasurement(context.view as AcTrView2d, db, points, style)
+    placeAreaMeasurement(
+      context.view as AcTrView2d,
+      db,
+      points,
+      currentMeasurementStyle(db)
+    )
   }
 }

@@ -172,7 +172,15 @@ export class AcTrHtmlGroup {
       child.element.style.pointerEvents = 'auto'
       child.element.style.cursor = 'pointer'
       const handler = (e: MouseEvent) => {
-        e.preventDefault()
+        const target = e.target as HTMLElement | null
+        if (
+          target?.isContentEditable ||
+          target?.closest('[contenteditable="true"]')
+        ) {
+          e.stopPropagation()
+          return
+        }
+        // Do not preventDefault: that suppresses the following dblclick.
         e.stopPropagation()
         onSelect(this)
       }

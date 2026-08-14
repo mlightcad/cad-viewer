@@ -528,7 +528,7 @@ export class AcApMeasureAngleCmd extends AcEdCommand {
           vertex,
           arm1,
           arm2,
-          style
+          currentMeasurementStyle(db)
         )
       })
     )

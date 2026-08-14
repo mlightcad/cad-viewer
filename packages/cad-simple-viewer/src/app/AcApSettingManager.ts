@@ -40,8 +40,8 @@ export interface AcApSettings {
   isShowFileName: boolean
   /** Whether language selector is visible */
   isShowLanguageSelector: boolean
-  /** Whether main menu is visible */
-  isShowMainMenu: boolean
+  /** Whether the command ribbon is visible */
+  isShowRibbon: boolean
   /** Whether the toolbar is visible */
   isShowToolbar: boolean
   /** Whether performance statistics are displayed */
@@ -60,7 +60,7 @@ const DEFAULT_VALUES: AcApSettings = {
   isShowEntityInfo: false,
   isShowFileName: true,
   isShowLanguageSelector: true,
-  isShowMainMenu: true,
+  isShowRibbon: true,
   isShowToolbar: true,
   isShowStats: false,
   fontMapping: {},
@@ -320,21 +320,21 @@ export class AcApSettingManager<T extends AcApSettings = AcApSettings> {
   }
 
   /**
-   * Gets whether the main menu is visible.
+   * Gets whether the command ribbon is visible.
    *
-   * @returns True if the main menu should be displayed
+   * @returns True if the ribbon should be shown
    */
-  get isShowMainMenu() {
-    return this.get('isShowMainMenu')
+  get isShowRibbon() {
+    return this.get('isShowRibbon')
   }
 
   /**
-   * Sets whether the main menu is visible.
+   * Sets whether the command ribbon is visible.
    *
-   * @param value - True to show the main menu
+   * @param value - True to show the ribbon
    */
-  set isShowMainMenu(value: boolean) {
-    this.set('isShowMainMenu', value)
+  set isShowRibbon(value: boolean) {
+    this.set('isShowRibbon', value)
   }
 
   /**
