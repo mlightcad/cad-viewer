@@ -6,12 +6,6 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
     }
   },
   /** Minimal mock used by {@link createDefaultToolbarItems} markup visibility toggle. */
-  AcApAnnotation: class {
-    /** @returns Fixed annotation layer name for tests. */
-    getAnnotationLayer() {
-      return 'annotation'
-    }
-  },
   isMarkupVisible: () => true,
   isMeasurementVisible: () => true,
   AcEdOpenMode: {
@@ -234,6 +228,7 @@ describe('default toolbar items', () => {
       'markupcircle',
       'markuparrow',
       'markupstamp',
+      'markuppanel',
       'markupvis',
       'clearmarkups',
       'separator',
@@ -241,6 +236,7 @@ describe('default toolbar items', () => {
       'markupexport'
     ])
     expect(items.some(item => item.id === 'markup-vis')).toBe(false)
+    expect(items.some(item => item.id === 'markup-panel')).toBe(false)
     expect(
       annotation?.children?.find(child => child.id === 'markup-vis')?.toggle
     ).toBeDefined()
@@ -272,14 +268,48 @@ describe('default toolbar items', () => {
     ).toBeDefined()
   })
 
+  it('places review tools after measure and export after review', () => {
+    const items = createDefaultToolbarItems()
+    const measureIndex = items.findIndex(item => item.id === 'measure')
+    expect(items[measureIndex + 1]?.id).toBe('annotation')
+    expect(items[measureIndex + 2]?.id).toBe('export')
+  })
+
   it('uses dedicated parent icons for export and annotation', () => {
     const items = createDefaultToolbarItems()
     expect(items.find(item => item.id === 'export')?.icon).toContain(
       'M11 4h5v5'
     )
     expect(items.find(item => item.id === 'annotation')?.icon).toContain(
-      'M7 14.5'
+      'M12.4 3.25H5.5'
     )
+  })
+
+  it('uses the same review submenu icons as cad-viewer', () => {
+    const items = createDefaultToolbarItems()
+    const annotation = items.find(item => item.id === 'annotation')
+    const iconOf = (id: string) =>
+      annotation?.children?.find(child => child.id === id)?.icon
+
+    expect(iconOf('markup-cloud')).toContain('viewBox="0 0 40 40"')
+    expect(iconOf('markup-callout')).toContain('273.536 736')
+    expect(iconOf('markup-text')).toContain('m199.04 672.64')
+    expect(iconOf('markup-rect')).toContain('1.666717529296875,15.833333')
+    expect(iconOf('markup-circle')).toContain(
+      '17.366041494140624,8.13321261171875'
+    )
+    expect(iconOf('markup-arrow')).toContain('M754.752 480H160')
+    expect(iconOf('markup-stamp')).toContain('M624 475.968V640h144')
+    expect(iconOf('markup-panel')).toContain('M6.5 9.5h7M6.5 12h7')
+    expect(iconOf('markup-import')).toContain('M160 832h704')
+    expect(iconOf('markup-export')).toContain('384-253.696')
+    expect(iconOf('clear-markups')).toContain(
+      'M160 256H96a32 32 0 0 1 0-64h256'
+    )
+    expect(
+      annotation?.children?.find(child => child.id === 'markup-vis')?.toggle?.on
+        .icon
+    ).toContain('M512 160c320 0 512 352')
   })
 })
 

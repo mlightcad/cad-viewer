@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  ChatDotRound,
   ChatLineSquare,
   Delete,
   Download,
@@ -26,6 +25,8 @@ import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
 import {
   clearMeasurements,
   layer,
+  markupPanel,
+  markupTools,
   measure,
   measureAngle,
   measureArc,
@@ -211,7 +212,7 @@ const verticalToolbarData = computed(() => {
   // Only show review markup tools in Review mode or higher
   if (docOpenMode.value >= AcEdOpenMode.Review) {
     items.push({
-      icon: ChatDotRound,
+      icon: markupTools,
       text: t('main.verticalToolbar.annotation.text'),
       command: '',
       description: t('main.verticalToolbar.annotation.description'),
@@ -259,7 +260,7 @@ const verticalToolbarData = computed(() => {
           description: t('main.verticalToolbar.markupStamp.description')
         },
         {
-          icon: ChatDotRound,
+          icon: markupPanel,
           text: t('main.verticalToolbar.markupPanel.text'),
           command: 'markuppanel',
           description: t('main.verticalToolbar.markupPanel.description')

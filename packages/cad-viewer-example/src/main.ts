@@ -1,12 +1,16 @@
 import 'element-plus/dist/index.css'
 
 import { i18n } from '@mlightcad/cad-viewer'
+import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 
 import App from './App.vue'
 
 const initApp = () => {
   const app = createApp(App)
+  // Required when Vite aliases `@mlightcad/ui-components` to source: those SFCs
+  // use `<el-*>` tags without local imports (their own build auto-imports them).
+  app.use(ElementPlus)
   app.use(i18n)
   app.mount('#app')
   // Hide the loading spinner

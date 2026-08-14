@@ -123,6 +123,7 @@ import {
   layerUnisolate,
   layerUnlock,
   line,
+  markupPanel,
   measureAngle,
   measureArc,
   measureArea,
@@ -1080,7 +1081,7 @@ const buildBaseTabs = (
       label: t('main.verticalToolbar.markupPanel.text'),
       tooltip: t('main.verticalToolbar.markupPanel.description'),
       size: 'small',
-      props: { icon: ChatDotRound }
+      props: { icon: markupPanel }
     },
     {
       id: 'cmd-tool-markup-vis',

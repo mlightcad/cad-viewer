@@ -426,10 +426,6 @@ export default {
       text: '批注',
       description: '审阅工具'
     },
-    hideAnnotation: {
-      text: '隐藏批注',
-      description: '隐藏批注'
-    },
     layer: {
       text: '图层',
       description: '管理图层'
@@ -437,26 +433,6 @@ export default {
     pan: {
       text: '移动',
       description: '平移视图'
-    },
-    revCircle: {
-      text: '圆',
-      description: '使用圆高亮并标注图纸中的区域'
-    },
-    revLine: {
-      text: '直线',
-      description: '使用直线对图纸中的对象或区域进行标注和说明'
-    },
-    revFreehand: {
-      text: '手绘线',
-      description: '使用手绘线自由标注和强调图纸中的内容'
-    },
-    revRect: {
-      text: '矩形',
-      description: '使用矩形高亮并标注图纸中的对象或区域'
-    },
-    revCloud: {
-      text: '云线',
-      description: '在图纸中以云状线条标出修改或需要重点关注的区域'
     },
     markupPanel: {
       text: '批注面板',
@@ -545,10 +521,6 @@ export default {
     select: {
       text: '选择',
       description: '选择图元'
-    },
-    showAnnotation: {
-      text: '显示批注',
-      description: '显示批注'
     },
     switchBg: {
       text: '切换背景色',

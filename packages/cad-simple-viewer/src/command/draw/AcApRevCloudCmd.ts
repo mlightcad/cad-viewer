@@ -32,7 +32,7 @@ import {
   isRevCloudCloseToStart,
   rectanglePath,
   sampleEntityPath
-} from '../review/AcApRevCloudGeom'
+} from './AcApRevCloudGeom'
 
 type RevCloudMode = 'rectangular' | 'polygonal' | 'freehand'
 type RevCloudKeywordKey =

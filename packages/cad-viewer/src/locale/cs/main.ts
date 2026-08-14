@@ -456,10 +456,6 @@ export default {
       text: 'Poznámky',
       description: 'Nástroje kontroly'
     },
-    hideAnnotation: {
-      text: 'Skrýt',
-      description: 'Skryje poznámky'
-    },
     layer: {
       text: 'Hladiny',
       description: 'Spravuje hladiny'
@@ -467,28 +463,6 @@ export default {
     pan: {
       text: 'Posun',
       description: 'Posune pohled beze změny směru pohledu a zvětšení'
-    },
-    revCircle: {
-      text: 'Kružnice',
-      description: 'Kružnicemi zvýrazní a okomentuje oblasti ve výkresu'
-    },
-    revLine: {
-      text: 'Čára',
-      description:
-        'Úsečkami okomentuje a vysvětlí objekty nebo oblasti ve výkresu'
-    },
-    revFreehand: {
-      text: 'Od ruky',
-      description: 'Tahy od ruky volně okomentuje a zdůrazní obsah výkresu'
-    },
-    revRect: {
-      text: 'Obdélník',
-      description:
-        'Obdélníky zvýrazní a okomentuje objekty nebo oblasti ve výkresu'
-    },
-    revCloud: {
-      text: 'Revizní obláček',
-      description: 'Zvýrazní oblasti ve výkresu obláčkem'
     },
     markupPanel: {
       text: 'Kontrola',
@@ -580,10 +554,6 @@ export default {
     select: {
       text: 'Vybrat',
       description: 'Vybírá objekty'
-    },
-    showAnnotation: {
-      text: 'Zobrazit',
-      description: 'Zobrazí poznámky'
     },
     switchBg: {
       text: 'Pozadí',

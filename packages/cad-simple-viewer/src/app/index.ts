@@ -1,4 +1,3 @@
-export * from './AcApAnnotation'
 export * from './AcApBrand'
 export * from './AcApContext'
 export * from './AcApFontLoader'

@@ -20,6 +20,7 @@ import {
   ICON_MARKUP_CALLOUT,
   ICON_MARKUP_EXPORT,
   ICON_MARKUP_IMPORT,
+  ICON_MARKUP_PANEL,
   ICON_MARKUP_STAMP,
   ICON_MARKUP_TEXT,
   ICON_MEASURE,
@@ -92,7 +93,7 @@ function createToolbarPlacementItem(
 }
 
 /**
- * Builds the built-in toolbar item list (view, measure, export, review, theme, locale).
+ * Builds the built-in toolbar item list (view, measure, review, export, theme, locale).
  *
  * @param context - Optional callbacks for theme and locale toggle items.
  * @returns Default {@link AcExToolbarItem} array.
@@ -219,31 +220,6 @@ export function createDefaultToolbarItems(
       ]
     },
     {
-      id: 'export',
-      label: 'toolbar.export',
-      icon: ICON_EXPORT,
-      children: [
-        {
-          id: 'export-html',
-          label: 'toolbar.exportHtml',
-          icon: ICON_EXPORT_HTML,
-          command: 'chtml'
-        },
-        {
-          id: 'export-pdf',
-          label: 'toolbar.exportPdf',
-          icon: ICON_EXPORT_PDF,
-          command: 'cpdf'
-        },
-        {
-          id: 'export-svg',
-          label: 'toolbar.exportSvg',
-          icon: ICON_EXPORT_SVG,
-          command: 'csvg'
-        }
-      ]
-    },
-    {
       id: 'annotation',
       label: 'toolbar.annotation',
       icon: ICON_ANNOTATION,
@@ -292,6 +268,12 @@ export function createDefaultToolbarItems(
           command: 'markupstamp'
         },
         {
+          id: 'markup-panel',
+          label: 'toolbar.markupPanel',
+          icon: ICON_MARKUP_PANEL,
+          command: 'markuppanel'
+        },
+        {
           id: 'markup-vis',
           toggle: {
             getValue: isMarkupVisible,
@@ -328,6 +310,31 @@ export function createDefaultToolbarItems(
           label: 'toolbar.markupExport',
           icon: ICON_MARKUP_EXPORT,
           command: 'markupexport'
+        }
+      ]
+    },
+    {
+      id: 'export',
+      label: 'toolbar.export',
+      icon: ICON_EXPORT,
+      children: [
+        {
+          id: 'export-html',
+          label: 'toolbar.exportHtml',
+          icon: ICON_EXPORT_HTML,
+          command: 'chtml'
+        },
+        {
+          id: 'export-pdf',
+          label: 'toolbar.exportPdf',
+          icon: ICON_EXPORT_PDF,
+          command: 'cpdf'
+        },
+        {
+          id: 'export-svg',
+          label: 'toolbar.exportSvg',
+          icon: ICON_EXPORT_SVG,
+          command: 'csvg'
         }
       ]
     },

@@ -68,7 +68,7 @@ import {
   rectanglePath,
   REVCLOUD_BULGE,
   signedArea
-} from '../src/command/review/AcApRevCloudGeom'
+} from '../src/command/draw/AcApRevCloudGeom'
 import {
   accumulateSketchPoint,
   simplifySketchPoints
