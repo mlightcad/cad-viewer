@@ -8,7 +8,6 @@ import {
   AcApSettingManager,
   type AcApSettingManagerEventArgs
 } from '../app/AcApSettingManager'
-
 import { applyMarkupStyleToSelection } from '../command/markup/AcApMarkupPresenter'
 import { getMarkupStore } from '../command/markup/AcApMarkupStore'
 import {
