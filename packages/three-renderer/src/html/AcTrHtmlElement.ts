@@ -111,6 +111,7 @@ export class AcTrHtmlElement {
     )
     this.object.matrixAutoUpdate = true
     this.object.updateMatrix()
+    this.object.updateMatrixWorld(true)
     // Re-anchor view scale so the next zoom is relative to this placement.
     this.baseZoom = undefined
   }
