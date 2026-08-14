@@ -73,6 +73,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
       setCurrentLocale: jest.fn()
     },
     AcApPlugin: class {},
+    acapSetDrawStyleHostHasRibbon: jest.fn(),
     isMarkupVisible: () => true,
     isMeasurementVisible: () => true,
     AcEdCommand: class {},

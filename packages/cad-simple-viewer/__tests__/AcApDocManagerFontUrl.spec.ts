@@ -106,6 +106,10 @@ jest.mock('../src/plugin/AcApPluginManager', () => ({
   }))
 }))
 
+jest.mock('../src/ui/AcApDrawStyleToolbar', () => ({
+  AcApDrawStyleToolbar: jest.fn().mockImplementation(() => ({}))
+}))
+
 jest.mock('../src/editor', () => ({
   AcEdCommandStack: jest.fn().mockImplementation(() => ({
     addCommand: jest.fn(),
