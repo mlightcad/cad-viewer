@@ -33,10 +33,19 @@ export function pointerEventToMarkupWorld(
 
 const DRAG_THRESHOLD_PX = 4
 
+const windowListenerOptions: AddEventListenerOptions = {
+  capture: true,
+  passive: false
+}
+
 /**
  * Bind pointer-drag on one HTML overlay handle.
  * Hover + drag works without selecting the markup first.
  * Drag starts only after a small move so a double-click can still edit text.
+ *
+ * Move / up listeners are attached to `window`, not the handle. CSS2D
+ * repositions the handle under the cursor every frame; listening on the
+ * element (or capturing pointer on it) loses events after the first drag.
  */
 export function bindMarkupPointerDrag(options: {
   view: AcTrView2d
@@ -51,6 +60,10 @@ export function bindMarkupPointerDrag(options: {
 
   el.style.pointerEvents = 'auto'
   el.style.cursor = idleCursor
+  el.style.touchAction = 'none'
+  el.style.userSelect = 'none'
+
+  let detachActiveDrag: (() => void) | undefined
 
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return
@@ -64,11 +77,32 @@ export function bindMarkupPointerDrag(options: {
       return
     }
 
+    const pointerId = e.pointerId
     const startX = e.clientX
     const startY = e.clientY
     let dragging = false
 
+    const detach = () => {
+      window.removeEventListener(
+        'pointermove',
+        onPointerMove,
+        windowListenerOptions
+      )
+      window.removeEventListener(
+        'pointerup',
+        onPointerUp,
+        windowListenerOptions
+      )
+      window.removeEventListener(
+        'pointercancel',
+        onPointerUp,
+        windowListenerOptions
+      )
+      if (detachActiveDrag === detach) detachActiveDrag = undefined
+    }
+
     const onPointerMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return
       if (!dragging) {
         const dx = ev.clientX - startX
         const dy = ev.clientY - startY
@@ -77,7 +111,6 @@ export function bindMarkupPointerDrag(options: {
         }
         dragging = true
         ev.preventDefault()
-        el.setPointerCapture(ev.pointerId)
         el.style.cursor = 'grabbing'
         onDragStart?.()
       }
@@ -86,26 +119,25 @@ export function bindMarkupPointerDrag(options: {
     }
 
     const onPointerUp = (ev: PointerEvent) => {
-      el.removeEventListener('pointermove', onPointerMove)
-      el.removeEventListener('pointerup', onPointerUp)
-      el.removeEventListener('pointercancel', onPointerUp)
+      if (ev.pointerId !== pointerId) return
+      detach()
       if (!dragging) return
-      try {
-        el.releasePointerCapture(ev.pointerId)
-      } catch {
-        // Capture may already have been released.
-      }
       el.style.cursor = idleCursor
       onCommit()
     }
 
-    el.addEventListener('pointermove', onPointerMove)
-    el.addEventListener('pointerup', onPointerUp)
-    el.addEventListener('pointercancel', onPointerUp)
+    detachActiveDrag?.()
+    detachActiveDrag = detach
+    window.addEventListener('pointermove', onPointerMove, windowListenerOptions)
+    window.addEventListener('pointerup', onPointerUp, windowListenerOptions)
+    window.addEventListener('pointercancel', onPointerUp, windowListenerOptions)
   }
 
   el.addEventListener('pointerdown', onPointerDown)
-  return () => el.removeEventListener('pointerdown', onPointerDown)
+  return () => {
+    el.removeEventListener('pointerdown', onPointerDown)
+    detachActiveDrag?.()
+  }
 }
 
 /**
@@ -145,6 +177,7 @@ export function bindMarkupCalloutGrips(options: {
     onDragStart,
     onMove: point => {
       state.tip = outline ? computeLeaderTipOnShape(outline, point) : point
+      view.htmlTransientManager.updatePosition(tipEl.id, state.tip)
       tipEl.setPosition(state.tip)
       onLiveChange()
     },
@@ -159,6 +192,7 @@ export function bindMarkupCalloutGrips(options: {
     onDragStart,
     onMove: point => {
       state.anchor = point
+      view.htmlTransientManager.updatePosition(bubbleEl.id, state.anchor)
       bubbleEl.setPosition(state.anchor)
       onLiveChange()
     },

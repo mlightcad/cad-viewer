@@ -28,6 +28,7 @@ import {
   bindMarkupPointerDrag
 } from './AcApMarkupCalloutDrag'
 import {
+  markupGeometryCenter,
   translateMarkupGeometry,
   translateMarkupPoint
 } from './AcApMarkupGeometry'
@@ -160,12 +161,18 @@ function fitCanvas(
 ): CanvasRenderingContext2D | null {
   const rect = container.getBoundingClientRect()
   const dpr = window.devicePixelRatio || 1
+  const cssWidth = `${rect.width}px`
+  const cssHeight = `${rect.height}px`
+  const bufferWidth = Math.max(1, Math.floor(rect.width * dpr))
+  const bufferHeight = Math.max(1, Math.floor(rect.height * dpr))
   canvas.style.left = '0'
   canvas.style.top = '0'
-  canvas.style.width = `${rect.width}px`
-  canvas.style.height = `${rect.height}px`
-  canvas.width = Math.max(1, Math.floor(rect.width * dpr))
-  canvas.height = Math.max(1, Math.floor(rect.height * dpr))
+  if (canvas.style.width !== cssWidth) canvas.style.width = cssWidth
+  if (canvas.style.height !== cssHeight) canvas.style.height = cssHeight
+  // Assigning canvas.width/height clears the buffer and reallocates GPU
+  // backing store — skip when the size has not changed.
+  if (canvas.width !== bufferWidth) canvas.width = bufferWidth
+  if (canvas.height !== bufferHeight) canvas.height = bufferHeight
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -352,7 +359,7 @@ function publishAttachedCallout(
           return
         }
         runMarkupEdit(view2d, 'Move Callout', () => {
-          getMarkupStore().updateGeometry(record.id, {
+          const updated = getMarkupStore().updateGeometry(record.id, {
             ...geom,
             callout: {
               tip: next.tip,
@@ -360,12 +367,22 @@ function publishAttachedCallout(
               text: geom.callout?.text ?? callout.text
             }
           })
+          if (updated) getMarkupPresenter().publish(view2d, updated)
         })
       }
     })
   )
 
   return { live, redraw, tipDot, bubble }
+}
+
+function placeMarkupHtml(
+  view: AcTrView2d,
+  el: AcTrHtmlElement,
+  point: AcApMarkupPoint2d
+): void {
+  view.htmlTransientManager.updatePosition(el.id, point)
+  el.setPosition(point)
 }
 
 function bindMarkupCenterMove(options: {
@@ -388,7 +405,9 @@ function bindMarkupCenterMove(options: {
     cursor: 'move',
     onDragStart: () => {
       selectMarkupGroup(view, recordId)
-      origin = {
+      const stored = getMarkupStore().get(recordId)
+      const center = stored ? markupGeometryCenter(stored.geometry) : undefined
+      origin = center ?? {
         x: centerEl.object.position.x,
         y: centerEl.object.position.y
       }
@@ -410,7 +429,7 @@ function bindMarkupCenterMove(options: {
           entityIds.map(objectId => ({ objectId, matrix }))
         )
       }
-      centerEl.setPosition(point)
+      placeMarkupHtml(view, centerEl, point)
       if (attached && originalCallout) {
         attached.live.tip = translateMarkupPoint(originalCallout.tip, dx, dy)
         attached.live.anchor = translateMarkupPoint(
@@ -418,8 +437,8 @@ function bindMarkupCenterMove(options: {
           dx,
           dy
         )
-        attached.tipDot.setPosition(attached.live.tip)
-        attached.bubble.setPosition(attached.live.anchor)
+        placeMarkupHtml(view, attached.tipDot, attached.live.tip)
+        placeMarkupHtml(view, attached.bubble, attached.live.anchor)
         attached.redraw()
       }
     },
@@ -545,43 +564,51 @@ export class AcApMarkupPresenter {
         })
         group.add(startDot, endDot)
 
-        let redrawArrow: (() => void) | undefined
-        if (geom.type === 'arrow') {
-          const container = view2d.container
-          const overlay = new AcTrHtmlCanvasOverlay({
-            id: `${record.id}-arrow`,
-            container,
-            layer,
-            layoutId
-          })
-          group.addCanvas(overlay)
-          redrawArrow = () => {
-            const ctx = fitCanvas(overlay.canvas, container)
-            if (!ctx) return
-            const a = view2d.worldToScreen(live.start)
-            const b = view2d.worldToScreen(live.end)
+        const container = view2d.container
+        const overlay = new AcTrHtmlCanvasOverlay({
+          id: `${record.id}-stroke`,
+          container,
+          layer,
+          layoutId
+        })
+        group.addCanvas(overlay)
+        let draggingEndpoints = false
+        const redrawStroke = () => {
+          const ctx = fitCanvas(overlay.canvas, container)
+          if (!ctx) return
+          const a = view2d.worldToScreen(live.start)
+          const b = view2d.worldToScreen(live.end)
+          if (draggingEndpoints) {
+            ctx.strokeStyle = record.style.color
+            ctx.lineWidth = canvasLineWidth
+            ctx.beginPath()
+            ctx.moveTo(a.x, a.y)
+            ctx.lineTo(b.x, b.y)
+            ctx.stroke()
+          }
+          if (geom.type === 'arrow') {
             drawArrowHead(ctx, a, b, record.style.color)
           }
-          redrawArrow()
-          view2d.events.viewChanged.addEventListener(redrawArrow)
-          cleanups.push(() =>
-            view2d.events.viewChanged.removeEventListener(redrawArrow!)
-          )
         }
+        redrawStroke()
+        view2d.events.viewChanged.addEventListener(redrawStroke)
+        cleanups.push(() =>
+          view2d.events.viewChanged.removeEventListener(redrawStroke)
+        )
 
-        const refreshEndpoints = () => {
-          line.startPoint = { x: live.start.x, y: live.start.y, z: 0 }
-          line.endPoint = { x: live.end.x, y: live.end.y, z: 0 }
-          view2d.removeTransientEntity(line.objectId)
-          view2d.addTransientEntity(line)
-          redrawArrow?.()
+        const beginEndpointDrag = () => {
+          selectMarkupGroup(view2d, record.id)
+          draggingEndpoints = true
+          view2d.setTransientEntityVisible(line.objectId, false)
+          redrawStroke()
         }
         const commitEndpoints = () => {
+          draggingEndpoints = false
           runMarkupEdit(
             view2d,
             geom.type === 'arrow' ? 'Move Arrow' : 'Move Line',
             () => {
-              getMarkupStore().updateGeometry(
+              const updated = getMarkupStore().updateGeometry(
                 record.id,
                 geom.type === 'arrow'
                   ? {
@@ -595,6 +622,7 @@ export class AcApMarkupPresenter {
                       end: { ...live.end }
                     }
               )
+              if (updated) getMarkupPresenter().publish(view2d, updated)
             }
           )
         }
@@ -603,22 +631,22 @@ export class AcApMarkupPresenter {
             bindMarkupPointerDrag({
               view: view2d,
               el: startDot.element,
-              onDragStart: () => selectMarkupGroup(view2d, record.id),
+              onDragStart: beginEndpointDrag,
               onMove: point => {
                 live.start = point
-                startDot.setPosition(point)
-                refreshEndpoints()
+                placeMarkupHtml(view2d, startDot, point)
+                redrawStroke()
               },
               onCommit: commitEndpoints
             }),
             bindMarkupPointerDrag({
               view: view2d,
               el: endDot.element,
-              onDragStart: () => selectMarkupGroup(view2d, record.id),
+              onDragStart: beginEndpointDrag,
               onMove: point => {
                 live.end = point
-                endDot.setPosition(point)
-                refreshEndpoints()
+                placeMarkupHtml(view2d, endDot, point)
+                redrawStroke()
               },
               onCommit: commitEndpoints
             })
@@ -887,7 +915,7 @@ export class AcApMarkupPresenter {
         )
 
         const syncCenter = () => {
-          centerDot.setPosition({
+          placeMarkupHtml(view2d, centerDot, {
             x: (live.tip.x + live.anchor.x) / 2,
             y: (live.tip.y + live.anchor.y) / 2
           })
@@ -907,11 +935,12 @@ export class AcApMarkupPresenter {
               },
               onCommit: next => {
                 runMarkupEdit(view2d, 'Move Callout', () => {
-                  getMarkupStore().updateGeometry(record.id, {
+                  const updated = getMarkupStore().updateGeometry(record.id, {
                     type: 'callout',
                     tip: next.tip,
                     anchor: next.anchor
                   })
+                  if (updated) getMarkupPresenter().publish(view2d, updated)
                 })
               }
             }),
