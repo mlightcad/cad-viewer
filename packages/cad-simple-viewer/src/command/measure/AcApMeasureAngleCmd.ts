@@ -33,8 +33,8 @@ import {
   formatMeasurementAngle
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { AcApMeasureAngleEntity } from './entity'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
+import { AcApMeasureAngleEntity } from './entity'
 
 /** Returns the angle in degrees between two arms sharing a common vertex. */
 function calcAngleDeg(

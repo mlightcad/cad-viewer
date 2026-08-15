@@ -1,6 +1,6 @@
 import {
-  AcDbLine,
   type AcDbDatabase,
+  AcDbLine,
   type AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
@@ -11,9 +11,8 @@ import {
 
 import {
   acapMeasurementCanvasLineWidth,
-  formatMeasurementAngle,
-  type AcApMeasurementStyle
-} from '../../../util'
+  type AcApMeasurementStyle,
+  formatMeasurementAngle} from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import {
@@ -22,14 +21,14 @@ import {
 } from '../AcApMeasurementStore'
 import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
 import {
+  drawMeasureAngleArcOnCanvas,
+  measureAngleDeg
+} from './AcApMeasureDrawUtil'
+import {
   AcApMeasureEntity,
   type AcApMeasureEntityOptions,
   type AcApMeasureWorldDrawResult
 } from './AcApMeasureEntity'
-import {
-  drawMeasureAngleArcOnCanvas,
-  measureAngleDeg
-} from './AcApMeasureDrawUtil'
 
 /**
  * Angle measurement overlay entity.

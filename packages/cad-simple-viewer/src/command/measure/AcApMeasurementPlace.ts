@@ -1,8 +1,8 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
 import type { AcTrView2d } from '../../view'
-import { createMeasureEntityFromRecord } from './entity'
 import type { AcApMeasurementRecord } from './AcApMeasurementTypes'
+import { createMeasureEntityFromRecord } from './entity'
 
 function newImportedId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`

@@ -7,9 +7,8 @@ import {
 
 import {
   acapMeasurementCanvasLineWidth,
-  formatMeasurementLength,
-  type AcApMeasurementStyle
-} from '../../../util'
+  type AcApMeasurementStyle,
+  formatMeasurementLength} from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import {
@@ -18,16 +17,16 @@ import {
 } from '../AcApMeasurementStore'
 import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
 import {
-  AcApMeasureEntity,
-  type AcApMeasureEntityOptions,
-  type AcApMeasureWorldDrawResult
-} from './AcApMeasureEntity'
-import {
   type AcApMeasureCircleGeom,
   drawMeasureArcOnCanvas,
   measureShortArcLength,
   measureShortArcMid
 } from './AcApMeasureDrawUtil'
+import {
+  AcApMeasureEntity,
+  type AcApMeasureEntityOptions,
+  type AcApMeasureWorldDrawResult
+} from './AcApMeasureEntity'
 
 /**
  * Arc-length measurement overlay entity.

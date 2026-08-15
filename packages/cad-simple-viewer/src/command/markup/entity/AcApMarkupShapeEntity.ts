@@ -1,13 +1,13 @@
 import {
   AcDbCircle,
-  AcDbPolyline,
   type AcDbObjectId,
+  AcDbPolyline,
   AcGePoint3d
 } from '@mlightcad/data-model'
 import { AcTrHtmlDot } from '@mlightcad/three-renderer'
 
-import type { AcApOverlayWorldDrawResult } from '../../overlay'
 import type { AcTrView2d } from '../../../view'
+import type { AcApOverlayWorldDrawResult } from '../../overlay'
 import { buildMarkupCloud, buildMarkupRect } from '../AcApMarkupShapeBuilder'
 import type { AcApMarkupShapeOutline } from '../AcApMarkupShapeCallout'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'

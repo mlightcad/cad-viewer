@@ -1,11 +1,10 @@
 import { AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
 
-import {
-  drawOverlayHighlight,
-  fitOverlayCanvas,
-  type AcApOverlayWorldDrawResult
-} from '../../overlay'
 import type { AcTrView2d } from '../../../view'
+import {
+  type AcApOverlayWorldDrawResult,
+  drawOverlayHighlight,
+  fitOverlayCanvas} from '../../overlay'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import { AcApMarkupEntity } from './AcApMarkupEntity'
 

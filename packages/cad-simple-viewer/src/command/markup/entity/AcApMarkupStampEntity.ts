@@ -1,7 +1,7 @@
 import { AcTrHtmlStamp } from '@mlightcad/three-renderer'
 
-import type { AcApOverlayWorldDrawResult } from '../../overlay'
 import type { AcTrView2d } from '../../../view'
+import type { AcApOverlayWorldDrawResult } from '../../overlay'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import { AcApMarkupEntity } from './AcApMarkupEntity'
 

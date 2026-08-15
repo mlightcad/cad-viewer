@@ -1,14 +1,13 @@
 import {
-  AcDbLine,
   type AcDbDatabase,
+  AcDbLine,
   type AcGePoint3dLike
 } from '@mlightcad/data-model'
 import { AcTrHtmlBadge, AcTrHtmlDot } from '@mlightcad/three-renderer'
 
 import {
-  formatMeasurementLength,
-  type AcApMeasurementStyle
-} from '../../../util'
+  type AcApMeasurementStyle,
+  formatMeasurementLength} from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import { MEASUREMENT_LAYER } from '../AcApMeasurementStore'

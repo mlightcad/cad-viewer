@@ -7,16 +7,15 @@
 
 import type { AcTrHtmlElement, AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
+import type { AcTrView2d } from '../../view'
 import {
+  type AcApOverlayCalloutGripState,
+  type AcApOverlayPoint2d,
+  type AcApOverlayPointerDragOptions,
   bindOverlayCalloutGrips,
   bindOverlayPointerDrag,
   placeOverlayHtml,
-  pointerEventToOverlayWorld,
-  type AcApOverlayCalloutGripState,
-  type AcApOverlayPoint2d,
-  type AcApOverlayPointerDragOptions
-} from '../overlay'
-import type { AcTrView2d } from '../../view'
+  pointerEventToOverlayWorld} from '../overlay'
 import {
   type AcApMarkupShapeOutline,
   computeLeaderTipOnShape

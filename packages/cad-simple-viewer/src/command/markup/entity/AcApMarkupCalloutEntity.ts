@@ -5,14 +5,13 @@ import {
   AcTrHtmlDot
 } from '@mlightcad/three-renderer'
 
+import type { AcTrView2d } from '../../../view'
 import {
+  type AcApOverlayWorldDrawResult,
   bindOverlayCalloutGrips,
   drawOverlayLeader,
   fitOverlayCanvas,
-  placeOverlayHtml,
-  type AcApOverlayWorldDrawResult
-} from '../../overlay'
-import type { AcTrView2d } from '../../../view'
+  placeOverlayHtml} from '../../overlay'
 import { runMarkupEdit } from '../AcApMarkupHistory'
 import { republishMarkup } from '../AcApMarkupRepublish'
 import { getMarkupStore } from '../AcApMarkupStore'

@@ -1,17 +1,17 @@
 import {
-  AcGePoint3d,
   type AcDbObjectId,
+  AcGePoint3d,
   type AcGePoint3dLike,
   type AcGeVector3dLike,
   type AcGiLineWeight
 } from '@mlightcad/data-model'
 import { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
+import type { AcTrView2d } from '../../../view'
 import {
   AcApOverlayEntity,
   type AcApOverlayWorldDrawResult
 } from '../../overlay'
-import type { AcTrView2d } from '../../../view'
 import {
   hitTestMarkupGeometry,
   markupGeometryCenter,

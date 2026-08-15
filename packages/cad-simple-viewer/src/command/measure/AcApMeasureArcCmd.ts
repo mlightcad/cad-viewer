@@ -35,8 +35,8 @@ import {
   formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { AcApMeasureArcEntity } from './entity'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
+import { AcApMeasureArcEntity } from './entity'
 
 interface CircleGeom {
   cx: number

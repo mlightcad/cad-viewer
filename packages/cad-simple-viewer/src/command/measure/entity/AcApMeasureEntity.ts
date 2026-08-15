@@ -5,15 +5,15 @@ import type {
 import { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
 import type { AcApMeasurementStyle } from '../../../util'
+import type { AcTrView2d } from '../../../view'
 import {
   AcApOverlayEntity,
   type AcApOverlayWorldDrawResult
 } from '../../overlay'
-import type { AcTrView2d } from '../../../view'
 import { hitTestMeasurementGeometry } from '../AcApMeasurementGeometry'
 import {
-  commitMeasurementGroup,
   type AcApMeasurementGroupExtras,
+  commitMeasurementGroup,
   MEASUREMENT_LAYER
 } from '../AcApMeasurementStore'
 import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'

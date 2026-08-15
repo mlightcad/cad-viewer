@@ -2,9 +2,8 @@ import type { AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
 import { AcTrHtmlBadge, AcTrHtmlDot } from '@mlightcad/three-renderer'
 
 import {
-  formatMeasurementValue,
-  type AcApMeasurementStyle
-} from '../../../util'
+  type AcApMeasurementStyle,
+  formatMeasurementValue} from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import { MEASUREMENT_LAYER } from '../AcApMeasurementStore'

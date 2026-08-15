@@ -1,7 +1,7 @@
 import {
   AcDbLine,
-  AcGePoint3d,
   type AcDbObjectId,
+  AcGePoint3d,
   type AcGeVector3dLike
 } from '@mlightcad/data-model'
 import {
@@ -9,14 +9,13 @@ import {
   AcTrHtmlDot
 } from '@mlightcad/three-renderer'
 
+import type { AcTrView2d } from '../../../view'
 import {
+  type AcApOverlayWorldDrawResult,
   bindOverlayPointerDrag,
   drawOverlayArrowHead,
   fitOverlayCanvas,
-  placeOverlayHtml,
-  type AcApOverlayWorldDrawResult
-} from '../../overlay'
-import type { AcTrView2d } from '../../../view'
+  placeOverlayHtml} from '../../overlay'
 import { runMarkupEdit } from '../AcApMarkupHistory'
 import { republishMarkup } from '../AcApMarkupRepublish'
 import { getMarkupStore } from '../AcApMarkupStore'

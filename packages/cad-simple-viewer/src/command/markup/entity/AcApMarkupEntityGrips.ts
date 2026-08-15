@@ -2,7 +2,7 @@
  * Shared markup grip / attached-callout helpers used by concrete markup entities.
  */
 
-import { AcGeMatrix3d, type AcDbObjectId } from '@mlightcad/data-model'
+import { type AcDbObjectId,AcGeMatrix3d } from '@mlightcad/data-model'
 import {
   AcTrHtmlCallout,
   AcTrHtmlCanvasOverlay,
@@ -11,6 +11,7 @@ import {
   type AcTrHtmlGroup
 } from '@mlightcad/three-renderer'
 
+import type { AcTrView2d } from '../../../view'
 import {
   bindOverlayCalloutGrips,
   bindOverlayPointerDrag,
@@ -18,7 +19,6 @@ import {
   fitOverlayCanvas,
   placeOverlayHtml
 } from '../../overlay'
-import type { AcTrView2d } from '../../../view'
 import {
   markupGeometryCenter,
   translateMarkupGeometry,

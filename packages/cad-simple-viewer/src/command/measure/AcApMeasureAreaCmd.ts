@@ -27,8 +27,8 @@ import {
   formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { AcApMeasureAreaEntity } from './entity'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
+import { AcApMeasureAreaEntity } from './entity'
 
 /**
  * Rubber-band jig: shows a preview line from the last confirmed

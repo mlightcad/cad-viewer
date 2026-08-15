@@ -30,8 +30,8 @@ import {
   formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { AcApMeasureDistanceEntity } from './entity'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
+import { AcApMeasureDistanceEntity } from './entity'
 
 /** Returns the 2D Euclidean distance between two world points. */
 function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {

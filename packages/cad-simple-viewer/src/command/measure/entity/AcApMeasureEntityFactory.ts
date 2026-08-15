@@ -1,5 +1,5 @@
-import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
 import { deserializeMeasurementStyle } from '../AcApMeasurementSidecar'
+import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
 import { AcApMeasureAngleEntity } from './AcApMeasureAngleEntity'
 import { AcApMeasureArcEntity } from './AcApMeasureArcEntity'
 import { AcApMeasureAreaEntity } from './AcApMeasureAreaEntity'

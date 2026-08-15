@@ -3,7 +3,6 @@ import { AcGeBox2d, type AcGePoint3dLike } from '@mlightcad/data-model'
 import type { AcEdBaseView } from '../../editor'
 import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import type { AcTrView2d } from '../../view'
-import { createMarkupEntity } from './entity'
 import {
   getMarkupHistory,
   getSessionUndo,
@@ -16,6 +15,7 @@ import {
   MARKUP_LIVE_LAYER
 } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
+import { createMarkupEntity } from './entity'
 
 // Re-export shape builders for commands / jigs that imported them from here.
 export { buildMarkupCloud, buildMarkupRect } from './AcApMarkupShapeBuilder'
