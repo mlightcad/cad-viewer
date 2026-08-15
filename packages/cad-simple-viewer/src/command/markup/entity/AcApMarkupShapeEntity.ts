@@ -3,12 +3,14 @@ import { AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
 import {
-  acapLiveRectCorners,
   type AcApOverlayWorldDrawResult,
-  acapStrokeLiveCircle,
-  acapStrokeLivePolyline,
   fitOverlayCanvas
 } from '../../overlay'
+import {
+  acapLiveRectCorners,
+  acapStrokeLiveCircle,
+  acapStrokeLivePolyline
+} from '../../overlay/AcApHtmlLivePreview'
 import { strokeMarkupCloud } from '../AcApMarkupShapeBuilder'
 import type { AcApMarkupShapeOutline } from '../AcApMarkupShapeCallout'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'

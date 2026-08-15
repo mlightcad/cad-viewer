@@ -14,7 +14,10 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
-import { AcApHtmlLivePreview, acapStrokeLiveCircle } from '../overlay'
+import {
+  AcApHtmlLivePreview,
+  acapStrokeLiveCircle
+} from '../overlay/AcApHtmlLivePreview'
 import {
   configureMarkupCommand,
   createMarkupMeta,

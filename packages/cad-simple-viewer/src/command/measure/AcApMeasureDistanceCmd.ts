@@ -33,7 +33,7 @@ import { AcTrView2d } from '../../view'
 import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment
-} from '../overlay'
+} from '../overlay/AcApHtmlLivePreview'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import { AcApMeasureDistanceEntity } from './entity'
 

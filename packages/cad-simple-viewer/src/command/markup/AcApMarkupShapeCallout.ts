@@ -36,7 +36,7 @@ import {
   acapStrokeLiveCircle,
   acapStrokeLivePolyline,
   acapStrokeLiveSegment
-} from '../overlay'
+} from '../overlay/AcApHtmlLivePreview'
 import { promptMarkupCapsuleText } from './AcApMarkupCmdUtil'
 import {
   markupCloudVertices,

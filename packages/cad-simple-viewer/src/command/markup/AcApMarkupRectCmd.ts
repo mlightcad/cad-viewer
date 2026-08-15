@@ -14,7 +14,7 @@ import {
   AcApHtmlLivePreview,
   acapLiveRectCorners,
   acapStrokeLivePolyline
-} from '../overlay'
+} from '../overlay/AcApHtmlLivePreview'
 import {
   configureMarkupCommand,
   createMarkupMeta,
