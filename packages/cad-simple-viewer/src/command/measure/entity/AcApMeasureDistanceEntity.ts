@@ -175,10 +175,7 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
         entities: [line],
         style: this.style,
         value: { kind: 'length', value: dist },
-        snapshot: this.toRecord(layoutId),
-        dispose: () => {
-          view.removeTransientEntity(line.objectId)
-        }
+        snapshot: this.toRecord(layoutId)
       }
     }
   }

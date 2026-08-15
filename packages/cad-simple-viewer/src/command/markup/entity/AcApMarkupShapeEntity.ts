@@ -143,6 +143,7 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
       : undefined
 
     pendingGrips.push(() => {
+      attached?.bindGrips()
       cleanups.push(
         bindMarkupCenterMove({
           view,

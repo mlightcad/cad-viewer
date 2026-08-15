@@ -194,10 +194,7 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
         style: this.style,
         value: { kind: 'length', value: arcLen },
         snapshot: this.toRecord(layoutId),
-        redraw: paintArc,
-        dispose: () => {
-          view.events.viewChanged.removeEventListener(redrawPersist)
-        }
+        redraw: paintArc
       }
     }
   }

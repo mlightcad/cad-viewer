@@ -18,6 +18,15 @@ export class AcApMarkupTextEntity extends AcApMarkupEntity {
   }
 
   /**
+   * Text notes have no move grip in the presenter UX (inline edit only).
+   *
+   * @returns Empty grip list.
+   */
+  override subGetGripPoints() {
+    return []
+  }
+
+  /**
    * Publish a badge at the text position and bind inline edit.
    *
    * @param view - Active 2D view.

@@ -245,12 +245,7 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
         style: this.style,
         value: { kind: 'angle', radians: (degrees * Math.PI) / 180 },
         snapshot: this.toRecord(layoutId),
-        redraw: paintArc,
-        dispose: () => {
-          view.removeTransientEntity(line1.objectId)
-          view.removeTransientEntity(line2.objectId)
-          view.events.viewChanged.removeEventListener(redrawPersist)
-        }
+        redraw: paintArc
       }
     }
   }

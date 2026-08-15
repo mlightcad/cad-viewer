@@ -39,9 +39,13 @@ export interface AcApMeasureEntityOptions {
  *
  * Extends the overlay world-draw result with {@link extras} consumed by
  * {@link commitMeasurementGroup} when persisting the measurement.
+ *
+ * Put CAD / listener teardown on {@link AcApOverlayWorldDrawResult.dispose};
+ * {@link AcApMeasureEntity.commit} wires that into `extras.dispose` so the
+ * store always runs it. Do not duplicate cleanup in `extras.dispose`.
  */
 export interface AcApMeasureWorldDrawResult extends AcApOverlayWorldDrawResult {
-  /** Store payload (style, value, snapshot, dispose/redraw hooks) for commit. */
+  /** Store payload (style, value, snapshot, redraw) for commit. */
   extras: AcApMeasurementGroupExtras
 }
 
@@ -130,14 +134,18 @@ export abstract class AcApMeasureEntity extends AcApOverlayEntity {
    * Builds visuals and commits them to the measurement store / HTML manager.
    *
    * Calls {@link subWorldDrawWithDb}, then {@link commitMeasurementGroup}
-   * with the resulting group and extras.
+   * with the resulting group and extras. Uses {@link AcApOverlayWorldDrawResult.dispose}
+   * as the store's dispose hook so entity cleanup cannot be dropped.
    *
    * @param view - Active 2D view hosting HTML overlays and CAD transients
    * @param db - Drawing database used for unit/format labels
    */
   commit(view: AcTrView2d, db: AcDbDatabase): void {
     const drawn = this.subWorldDrawWithDb(view, db)
-    commitMeasurementGroup(view, drawn.group, drawn.extras)
+    commitMeasurementGroup(view, drawn.group, {
+      ...drawn.extras,
+      dispose: drawn.dispose
+    })
   }
 
   /**

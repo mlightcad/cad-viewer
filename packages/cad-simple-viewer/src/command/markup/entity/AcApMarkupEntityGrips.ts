@@ -53,6 +53,13 @@ export interface AcApMarkupAttachedCalloutVisual {
   tipDot: AcTrHtmlDot
   /** Text bubble HTML callout. */
   bubble: AcTrHtmlCallout
+  /**
+   * Bind tip / bubble pointer grips after the parent group is added to the
+   * HTML transient manager (avoids racing manager attach).
+   * Required for shape-attached callouts; optional when only used for
+   * center-move coupling.
+   */
+  bindGrips?: () => void
 }
 
 /**
@@ -163,43 +170,48 @@ export function publishAttachedCallout(
     })
   )
 
-  cleanups.push(
-    bindOverlayCalloutGrips({
-      view: view2d,
-      group,
-      tipEl: tipDot,
-      bubbleEl: bubble,
-      state: live,
-      constrainTip: point => computeLeaderTipOnShape(outline, point),
-      onDragStart: () => selectMarkupGroup(view2d, record.id),
-      onLiveChange: redraw,
-      onCommit: next => {
-        const current = getMarkupStore().get(record.id)
-        if (!current || current.geometry.type !== outline.kind) return
-        const geom = current.geometry
-        if (
-          geom.type !== 'cloud' &&
-          geom.type !== 'rect' &&
-          geom.type !== 'circle'
-        ) {
-          return
-        }
-        runMarkupEdit(view2d, 'Move Callout', () => {
-          const updated = getMarkupStore().updateGeometry(record.id, {
-            ...geom,
-            callout: {
-              tip: next.tip,
-              anchor: next.anchor,
-              text: geom.callout?.text ?? callout.text
-            }
+  /**
+   * Wire tip / bubble grips after the parent group is published.
+   */
+  const bindGrips = () => {
+    cleanups.push(
+      bindOverlayCalloutGrips({
+        view: view2d,
+        group,
+        tipEl: tipDot,
+        bubbleEl: bubble,
+        state: live,
+        constrainTip: point => computeLeaderTipOnShape(outline, point),
+        onDragStart: () => selectMarkupGroup(view2d, record.id),
+        onLiveChange: redraw,
+        onCommit: next => {
+          const current = getMarkupStore().get(record.id)
+          if (!current || current.geometry.type !== outline.kind) return
+          const geom = current.geometry
+          if (
+            geom.type !== 'cloud' &&
+            geom.type !== 'rect' &&
+            geom.type !== 'circle'
+          ) {
+            return
+          }
+          runMarkupEdit(view2d, 'Move Callout', () => {
+            const updated = getMarkupStore().updateGeometry(record.id, {
+              ...geom,
+              callout: {
+                tip: next.tip,
+                anchor: next.anchor,
+                text: geom.callout?.text ?? callout.text
+              }
+            })
+            if (updated) republishMarkup(view2d, updated)
           })
-          if (updated) republishMarkup(view2d, updated)
-        })
-      }
-    })
-  )
+        }
+      })
+    )
+  }
 
-  return { live, redraw, tipDot, bubble }
+  return { live, redraw, tipDot, bubble, bindGrips }
 }
 
 /**

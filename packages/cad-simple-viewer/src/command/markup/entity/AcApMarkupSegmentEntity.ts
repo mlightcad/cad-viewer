@@ -146,6 +146,11 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
     group.addCanvas(overlay)
     /** When true, CAD line is hidden and the canvas shows the live segment. */
     let draggingEndpoints = false
+    /** Endpoints captured when an endpoint drag starts (for zero-delta / restore). */
+    let dragStart = {
+      start: { ...live.start },
+      end: { ...live.end }
+    }
     /** Whether this segment draws an arrow head at the end. */
     const isArrow = geom.type === 'arrow'
     /**
@@ -175,19 +180,44 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
     )
 
     /**
+     * Show the CAD line again and clear the canvas stroke preview.
+     */
+    const restoreCadLine = () => {
+      draggingEndpoints = false
+      view.setTransientEntityVisible(line.objectId, true)
+      redrawStroke()
+    }
+    /**
      * Select the markup and switch to canvas stroke preview while dragging.
      */
     const beginEndpointDrag = () => {
       selectMarkupGroup(view, this.record.id)
+      dragStart = {
+        start: { ...live.start },
+        end: { ...live.end }
+      }
       draggingEndpoints = true
       view.setTransientEntityVisible(line.objectId, false)
       redrawStroke()
     }
     /**
      * Commit live endpoints to the store and republish.
+     * Restores CAD visibility when the drag is a no-op or the store update fails.
      */
     const commitEndpoints = () => {
-      draggingEndpoints = false
+      const startDelta = Math.hypot(
+        live.start.x - dragStart.start.x,
+        live.start.y - dragStart.start.y
+      )
+      const endDelta = Math.hypot(
+        live.end.x - dragStart.end.x,
+        live.end.y - dragStart.end.y
+      )
+      if (startDelta < 1e-9 && endDelta < 1e-9) {
+        restoreCadLine()
+        return
+      }
+      let republished = false
       runMarkupEdit(view, isArrow ? 'Move Arrow' : 'Move Line', () => {
         const updated = getMarkupStore().updateGeometry(
           this.record.id,
@@ -203,8 +233,12 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
                 end: { ...live.end }
               }
         )
-        if (updated) republishMarkup(view, updated)
+        if (updated) {
+          republishMarkup(view, updated)
+          republished = true
+        }
       })
+      if (!republished) restoreCadLine()
     }
     pendingGrips.push(() => {
       cleanups.push(

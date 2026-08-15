@@ -183,10 +183,7 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
         style: this.style,
         value: { kind: 'area', value: area },
         snapshot: this.toRecord(layoutId),
-        redraw: paintArea,
-        dispose: () => {
-          view.events.viewChanged.removeEventListener(redrawPersist)
-        }
+        redraw: paintArea
       }
     }
   }

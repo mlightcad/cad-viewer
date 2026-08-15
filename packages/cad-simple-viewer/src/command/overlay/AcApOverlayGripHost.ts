@@ -245,31 +245,67 @@ export function bindOverlayCalloutGrips(
   tipEl.element.style.width = '14px'
   tipEl.element.style.height = '14px'
 
+  /** Tip / anchor captured when a tip or bubble drag starts. */
+  let dragOrigin: AcApOverlayCalloutGripState = {
+    tip: { ...state.tip },
+    anchor: { ...state.anchor }
+  }
+
+  /**
+   * True when live tip / anchor match the drag-start origin (no store write).
+   */
+  const isZeroDelta = (next: AcApOverlayCalloutGripState): boolean => {
+    return (
+      Math.hypot(next.tip.x - dragOrigin.tip.x, next.tip.y - dragOrigin.tip.y) <
+        1e-9 &&
+      Math.hypot(
+        next.anchor.x - dragOrigin.anchor.x,
+        next.anchor.y - dragOrigin.anchor.y
+      ) < 1e-9
+    )
+  }
+
   const unbindTip = bindOverlayPointerDrag({
     view,
     el: tipEl.element,
-    onDragStart,
+    onDragStart: () => {
+      dragOrigin = {
+        tip: { ...state.tip },
+        anchor: { ...state.anchor }
+      }
+      onDragStart?.()
+    },
     onMove: point => {
       state.tip = constrainTip ? constrainTip(point) : point
       placeOverlayHtml(view, tipEl, state.tip)
       onLiveChange()
     },
     onCommit: () => {
-      onCommit({ tip: { ...state.tip }, anchor: { ...state.anchor } })
+      const next = { tip: { ...state.tip }, anchor: { ...state.anchor } }
+      if (isZeroDelta(next)) return
+      onCommit(next)
     }
   })
 
   const unbindBubble = bindOverlayPointerDrag({
     view,
     el: bubbleEl.element,
-    onDragStart,
+    onDragStart: () => {
+      dragOrigin = {
+        tip: { ...state.tip },
+        anchor: { ...state.anchor }
+      }
+      onDragStart?.()
+    },
     onMove: point => {
       state.anchor = point
       placeOverlayHtml(view, bubbleEl, state.anchor)
       onLiveChange()
     },
     onCommit: () => {
-      onCommit({ tip: { ...state.tip }, anchor: { ...state.anchor } })
+      const next = { tip: { ...state.tip }, anchor: { ...state.anchor } }
+      if (isZeroDelta(next)) return
+      onCommit(next)
     }
   })
 
