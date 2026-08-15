@@ -118,7 +118,7 @@ O monorepo inclui vários plugins oficiais. Cada um foca em uma preocupação; c
 
 | Pacote | Função | Comandos / capacidades |
 |--------|--------|------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **UI de barra de ferramentas e gerenciador de camadas** para `cad-simple-viewer` (DOM puro, sem Vue/React) | `layer`, barra de ferramentas padrão (view, measure, export, review, theme, locale) |
+| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **UI de barra de ferramentas, gerenciador de camadas e paleta de revisão** para `cad-simple-viewer` (DOM puro, sem Vue/React) | `layer`, `markuppanel`, barra de ferramentas padrão (view, measure, export, review, theme, locale) |
 | [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **Agente CAD em linguagem natural** (painel de chat com IA + chamadas de ferramentas de desenho) | `agent` |
 | [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | Exportar desenhos para **HTML offline autossuficiente** | `chtml` (diálogo no `cad-viewer`), `-chtml` (linha de comando) |
 | [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **Exportação e importação de PDF** (pipeline vetorial) | `cpdf`, `ipdf` |
@@ -131,9 +131,9 @@ O [`cad-simple-viewer`](packages/cad-simple-viewer) deliberadamente **não inclu
 Ele fornece:
 
 - Uma **barra de ferramentas configurável** (posicionamento em qualquer borda, comandos CAD padrão, menus aninhados, itens personalizados)
-- Um **gerenciador de camadas flutuante** (camada ligada/desligada, seletor de cor ACI, zoom para camada com duplo clique)
+- Um **painel dock** com aba de **gerenciador de camadas** (camada ligada/desligada, seletor de cor ACI, zoom para camada com duplo clique) e aba de **paleta de revisão** (lista de markups, status, comentários)
 - **Sincronização de tema** com a sysvar `COLORTHEME` e tokens CSS `--ml-ui-*` no seu elemento host
-- **Sincronização de locale** com `AcApI18n` (inglês / chinês)
+- **Sincronização de locale** com `AcApI18n` (inglês / chinês / tcheco / turco)
 
 Todos os widgets são agnósticos a framework (DOM puro). O app completo Vue [`cad-viewer`](packages/cad-viewer) tem sua própria UI Element Plus e não requer este plugin; use `cad-simple-ui-plugin` quando construir diretamente sobre `cad-simple-viewer`.
 

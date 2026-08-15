@@ -118,7 +118,7 @@ The monorepo ships several first-party plugins. Each focuses on one concern; com
 
 | Package | Role | Commands / capabilities |
 |---------|------|-------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **Toolbar & layer manager UI** for `cad-simple-viewer` (plain DOM, no Vue/React) | `layer`, default toolbar (view, measure, export, review, theme, locale) |
+| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **Toolbar, layer manager & review palette UI** for `cad-simple-viewer` (plain DOM, no Vue/React) | `layer`, `markuppanel`, default toolbar (view, measure, export, review, theme, locale) |
 | [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **Natural-language CAD agent** (AI chat panel + drawing tool calls) | `agent` |
 | [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | Export drawings to **self-contained offline HTML** | `chtml` (dialog in `cad-viewer`), `-chtml` (command-line) |
 | [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **PDF export and import** (vector pipeline) | `cpdf`, `ipdf` |
@@ -131,9 +131,9 @@ The monorepo ships several first-party plugins. Each focuses on one concern; com
 It provides:
 
 - A **configurable toolbar** (placement on any edge, default CAD commands, nested menus, custom items)
-- A **floating layer manager** (layer on/off, ACI color picker, zoom-to-layer on double-click)
+- A **dock panel** with a **layer manager** tab (layer on/off, ACI color picker, zoom-to-layer on double-click) and a **review palette** tab (markup list, status, comments)
 - **Theme sync** with the `COLORTHEME` sysvar and `--ml-ui-*` CSS tokens on your host element
-- **Locale sync** with `AcApI18n` (English / Chinese)
+- **Locale sync** with `AcApI18n` (English / Chinese / Czech / Turkish)
 
 All widgets are framework-agnostic (plain DOM). The full Vue [`cad-viewer`](packages/cad-viewer) app has its own Element Plus UI and does not require this plugin; use `cad-simple-ui-plugin` when you build on `cad-simple-viewer` directly.
 

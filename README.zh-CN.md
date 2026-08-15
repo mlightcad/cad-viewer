@@ -118,7 +118,7 @@ CAD-Viewer 在 [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer) 中�
 
 | 包名 | 作用 | 命令 / 能力 |
 |------|------|-------------|
-| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | 为 `cad-simple-viewer` 提供**工具栏与图层管理器 UI**（纯 DOM，不依赖 Vue/React） | `layer`、默认工具栏（视图、测量、导出、审阅、主题、语言） |
+| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | 为 `cad-simple-viewer` 提供**工具栏、图层管理器与批注列表面板 UI**（纯 DOM，不依赖 Vue/React） | `layer`、`markuppanel`、默认工具栏（视图、测量、导出、审阅、主题、语言） |
 | [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **自然语言 CAD 智能体**（AI 对话面板 + 绘图工具调用） | `agent` |
 | [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | 导出为**自包含离线 HTML** | `chtml`（`cad-viewer` 对话框）、`-chtml`（命令行） |
 | [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **PDF 导出与导入**（矢量管线） | `cpdf`、`ipdf` |
@@ -131,9 +131,9 @@ CAD-Viewer 在 [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer) 中�
 主要能力：
 
 - **可配置工具栏**（四边任意放置、内置 CAD 命令、嵌套菜单、自定义按钮）
-- **浮动图层管理器**（图层开关、ACI 颜色选择、双击缩放至图层）
+- **停靠面板**：含**图层管理器**标签页（图层开关、ACI 颜色选择、双击缩放至图层）与**批注/审阅列表**标签页（批注列表、状态、批注说明）
 - **主题同步**：跟随 `COLORTHEME` 系统变量及 host 上的 `--ml-ui-*` CSS 变量
-- **语言同步**：跟随 `AcApI18n`（中/英）
+- **语言同步**：跟随 `AcApI18n`（英 / 中 / 捷克语 / 土耳其语）
 
 全部 UI 为框架无关的纯 DOM 实现。完整 Vue 版 [`cad-viewer`](packages/cad-viewer) 自带 Element Plus 界面，**不需要**此插件；仅在直接基于 `cad-simple-viewer` 集成时使用 `cad-simple-ui-plugin`。
 
