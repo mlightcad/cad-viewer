@@ -34,6 +34,10 @@ export interface AcApOverlayWorldDrawResult {
  *
  * Leaves such as Dot / Badge / Callout remain render primitives; concrete
  * overlay types compose them inside {@link subWorldDraw}.
+ *
+ * Persistable overlays also implement
+ * {@link import('./AcApOverlaySerializable').AcApOverlaySerializable} with a
+ * domain record type; deserialize via domain factories, not this base class.
  */
 export abstract class AcApOverlayEntity {
   /**

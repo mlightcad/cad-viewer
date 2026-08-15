@@ -15,7 +15,7 @@ import {
   MARKUP_LIVE_LAYER
 } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
-import { createMarkupEntity } from './entity'
+import { createMarkupEntityFromRecord } from './entity'
 
 // Re-export shape builders for commands / jigs that imported them from here.
 export { buildMarkupCloud, buildMarkupRect } from './AcApMarkupShapeBuilder'
@@ -54,7 +54,7 @@ export class AcApMarkupPresenter {
       this.unpublish(view, record.id, { keepInStore: true })
     }
 
-    const entity = createMarkupEntity(record)
+    const entity = createMarkupEntityFromRecord(record)
     const drawn = entity.worldDraw(view2d)
     const { group, entityIds } = drawn
     const extras = {
@@ -212,7 +212,7 @@ export class AcApMarkupPresenter {
 
   /** Zoom roughly to a markup's primary world point. */
   focus(view: AcEdBaseView, record: AcApMarkupRecord): void {
-    const p = createMarkupEntity(record).primaryPoint() as
+    const p = createMarkupEntityFromRecord(record).primaryPoint() as
       | AcGePoint3dLike
       | undefined
     if (!p) return

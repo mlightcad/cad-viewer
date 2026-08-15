@@ -10,6 +10,7 @@ import { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 import type { AcTrView2d } from '../../../view'
 import {
   AcApOverlayEntity,
+  type AcApOverlaySerializable,
   type AcApOverlayWorldDrawResult
 } from '../../overlay'
 import {
@@ -69,8 +70,14 @@ export function markupDrawStyleFromRecord(
  * Concrete types implement {@link subWorldDraw} and optional grip protocols.
  * Geometry and metadata live on {@link record}; render primitives are composed
  * into an {@link AcTrHtmlGroup}.
+ *
+ * Implements {@link AcApOverlaySerializable} via {@link toRecord}. Rehydrate
+ * with {@link import('./AcApMarkupEntityFactory').createMarkupEntityFromRecord}.
  */
-export abstract class AcApMarkupEntity extends AcApOverlayEntity {
+export abstract class AcApMarkupEntity
+  extends AcApOverlayEntity
+  implements AcApOverlaySerializable<AcApMarkupRecord>
+{
   /** Current store snapshot driving this entity's geometry and metadata. */
   protected record: AcApMarkupRecord
 
@@ -90,10 +97,19 @@ export abstract class AcApMarkupEntity extends AcApOverlayEntity {
   }
 
   /**
-   * Current store record held by this entity.
+   * Sidecar / store snapshot of this markup (same object as the live record).
+   *
+   * @returns Current {@link AcApMarkupRecord}.
+   */
+  toRecord(): AcApMarkupRecord {
+    return this.record
+  }
+
+  /**
+   * Current store record held by this entity (alias of {@link toRecord}).
    */
   get markupRecord(): AcApMarkupRecord {
-    return this.record
+    return this.toRecord()
   }
 
   /**

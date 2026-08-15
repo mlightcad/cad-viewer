@@ -8,10 +8,12 @@ import type { AcApMeasureEntity } from './AcApMeasureEntity'
 import { AcApMeasurePointEntity } from './AcApMeasurePointEntity'
 
 /**
- * Creates a concrete measure entity from a sidecar / store record (import).
+ * Creates a concrete measure entity from a sidecar / store record (deserialize).
  *
- * Deserializes the record's style and dispatches on `geometry.type` to the
- * matching entity constructor (`distance`, `angle`, `area`, `arc`, or `point`).
+ * Pair with {@link AcApMeasureEntity.toRecord} for the serialize half of the
+ * overlay persistence protocol. Deserializes the record's style and dispatches
+ * on `geometry.type` to the matching entity constructor (`distance`, `angle`,
+ * `area`, `arc`, or `point`).
  *
  * @param record - Persisted measurement record to rehydrate
  * @returns Measure entity ready for {@link AcApMeasureEntity.commit}

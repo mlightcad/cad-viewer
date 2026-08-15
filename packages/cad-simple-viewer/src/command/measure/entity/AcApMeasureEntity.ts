@@ -8,6 +8,7 @@ import type { AcApMeasurementStyle } from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
   AcApOverlayEntity,
+  type AcApOverlaySerializable,
   type AcApOverlayWorldDrawResult
 } from '../../overlay'
 import { hitTestMeasurementGeometry } from '../AcApMeasurementGeometry'
@@ -56,8 +57,14 @@ export interface AcApMeasureWorldDrawResult extends AcApOverlayWorldDrawResult {
  * transients. Subclasses implement {@link toRecord} and
  * {@link subWorldDrawWithDb}; callers should use {@link commit} rather than
  * the generic overlay `worldDraw` path because unit labels need the database.
+ *
+ * Implements {@link AcApOverlaySerializable} via {@link toRecord}. Rehydrate
+ * with {@link import('./AcApMeasureEntityFactory').createMeasureEntityFromRecord}.
  */
-export abstract class AcApMeasureEntity extends AcApOverlayEntity {
+export abstract class AcApMeasureEntity
+  extends AcApOverlayEntity
+  implements AcApOverlaySerializable<AcApMeasurementRecord>
+{
   /** Visual style applied to CAD transients and HTML badges/dots. */
   protected readonly style: AcApMeasurementStyle
   /** Stable measurement id used for HTML group, store, and sidecar records. */

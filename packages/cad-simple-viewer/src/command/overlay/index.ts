@@ -6,3 +6,4 @@
 export * from './AcApOverlayDrawUtil'
 export * from './AcApOverlayEntity'
 export * from './AcApOverlayGripHost'
+export * from './AcApOverlaySerializable'
