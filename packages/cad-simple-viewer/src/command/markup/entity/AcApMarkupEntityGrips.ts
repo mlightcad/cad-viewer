@@ -2,7 +2,6 @@
  * Shared markup grip / attached-callout helpers used by concrete markup entities.
  */
 
-import { type AcDbObjectId,AcGeMatrix3d } from '@mlightcad/data-model'
 import {
   AcTrHtmlCallout,
   AcTrHtmlCanvasOverlay,
@@ -224,8 +223,11 @@ export interface AcApMarkupCenterMoveOptions {
   recordId: string
   /** Center grip HTML element. */
   centerEl: AcTrHtmlElement
-  /** CAD transient ids preview-transformed during drag. */
-  entityIds: AcDbObjectId[]
+  /**
+   * Called during drag with the world-space translation from drag origin.
+   * Used to live-preview HTML canvas shapes (no CAD transients).
+   */
+  onLiveOffset?: (dx: number, dy: number) => void
   /** Optional attached callout to keep in sync while moving. */
   attached?: AcApMarkupAttachedCalloutVisual
 }
@@ -233,16 +235,17 @@ export interface AcApMarkupCenterMoveOptions {
 /**
  * Whole-markup drag via a center grip element.
  *
- * Live-previews CAD transients with a translation matrix and optionally moves
- * an attached callout; commits via {@link translateMarkupGeometry}.
+ * Live-previews canvas geometry via {@link AcApMarkupCenterMoveOptions.onLiveOffset}
+ * and optionally moves an attached callout; commits via
+ * {@link translateMarkupGeometry}.
  *
- * @param options - Center handle, entity ids, and optional attached callout.
+ * @param options - Center handle and optional attached callout.
  * @returns Cleanup that unbinds the pointer drag.
  */
 export function bindMarkupCenterMove(
   options: AcApMarkupCenterMoveOptions
 ): () => void {
-  const { view, recordId, centerEl, entityIds, attached } = options
+  const { view, recordId, centerEl, onLiveOffset, attached } = options
   /** World origin captured at drag start (geometry center or element position). */
   let origin = {
     x: centerEl.object.position.x,
@@ -276,12 +279,7 @@ export function bindMarkupCenterMove(
       last = point
       const dx = point.x - origin.x
       const dy = point.y - origin.y
-      if (entityIds.length > 0) {
-        const matrix = new AcGeMatrix3d().makeTranslation(dx, dy, 0)
-        view.updateTransientPreviewTransforms(
-          entityIds.map(objectId => ({ objectId, matrix }))
-        )
-      }
+      onLiveOffset?.(dx, dy)
       placeOverlayHtml(view, centerEl, point)
       if (attached && originalCallout) {
         attached.live.tip = translateMarkupPoint(originalCallout.tip, dx, dy)
@@ -298,7 +296,10 @@ export function bindMarkupCenterMove(
     onCommit: () => {
       const dx = last.x - origin.x
       const dy = last.y - origin.y
-      if (Math.hypot(dx, dy) < 1e-9) return
+      if (Math.hypot(dx, dy) < 1e-9) {
+        onLiveOffset?.(0, 0)
+        return
+      }
       runMarkupEdit(view, 'Move Markup', () => {
         const current = getMarkupStore().get(recordId)
         if (!current) return

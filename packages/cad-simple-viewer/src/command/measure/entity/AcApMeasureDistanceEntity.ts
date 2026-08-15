@@ -1,17 +1,22 @@
 import {
   type AcDbDatabase,
-  AcDbLine,
   type AcGePoint3dLike
 } from '@mlightcad/data-model'
-import { AcTrHtmlBadge, AcTrHtmlDot } from '@mlightcad/three-renderer'
+import { AcTrHtmlBadge, AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
 
 import {
+  acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
-  formatMeasurementLength} from '../../../util'
+  formatMeasurementLength
+} from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
-import { MEASUREMENT_LAYER } from '../AcApMeasurementStore'
+import {
+  getMeasurementStyle,
+  MEASUREMENT_LAYER
+} from '../AcApMeasurementStore'
 import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
+import { drawMeasureSegmentOnCanvas } from './AcApMeasureDrawUtil'
 import {
   AcApMeasureEntity,
   type AcApMeasureEntityOptions,
@@ -34,9 +39,8 @@ function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {
 /**
  * Distance measurement overlay entity.
  *
- * Renders a transient CAD line between two endpoints, HTML dots at each end,
- * and a length badge at the midpoint. Commits length value and snapshot to
- * the measurement store.
+ * Renders an HTML canvas segment between two endpoints, HTML dots at each end,
+ * and a length badge at the midpoint. No CAD transient entities.
  */
 export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
   /** First endpoint of the measured segment in world coordinates. */
@@ -121,11 +125,11 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
   }
 
   /**
-   * Draws the distance line, endpoint dots, length badge, and commit extras.
+   * Draws the distance canvas stroke, endpoint dots, length badge, and extras.
    *
-   * @param view - Active 2D view for transients and HTML overlays
+   * @param view - Active 2D view for HTML overlays
    * @param db - Database used to format the length label
-   * @returns World-draw result with dispose hooks for the transient line
+   * @returns World-draw result with dispose for the viewChanged listener
    */
   protected subWorldDrawWithDb(
     view: AcTrView2d,
@@ -133,48 +137,65 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
   ): AcApMeasureWorldDrawResult {
     const dist = calcDist(this.p1, this.p2)
     const color = this.style.color
-    const line = new AcDbLine(this.p1, this.p2)
-    line.color = color
-    line.lineWeight = this.style.lineWeight
-    view.addTransientEntity(line)
-
     const layoutId = this.resolveLayoutId(view)
     const mid = this.primaryPoint()!
-    const group = this.createGroup(view).add(
-      new AcTrHtmlDot({
-        id: `${this.entityId}-dot1`,
-        color,
-        worldPosition: this.p1,
-        layer: MEASUREMENT_LAYER
-      }),
-      new AcTrHtmlDot({
-        id: `${this.entityId}-dot2`,
-        color,
-        worldPosition: this.p2,
-        layer: MEASUREMENT_LAYER
-      }),
-      new AcTrHtmlBadge({
-        id: `${this.entityId}-badge`,
-        color,
-        text: formatMeasurementLength(db, dist),
-        worldPosition: mid,
-        layer: MEASUREMENT_LAYER,
-        fontSize: this.style.fontSize
-      })
-    )
+
+    const persistOverlay = new AcTrHtmlCanvasOverlay({
+      id: `dist-canvas-${this.entityId}`,
+      container: view.container,
+      layer: MEASUREMENT_LAYER,
+      layoutId
+    })
+    const paintSegment = (paintStyle = this.style) =>
+      drawMeasureSegmentOnCanvas(
+        persistOverlay.canvas,
+        view,
+        this.p1,
+        this.p2,
+        paintStyle.color,
+        acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
+      )
+    paintSegment()
+    const redrawPersist = () =>
+      paintSegment(getMeasurementStyle(this.entityId) ?? this.style)
+    view.events.viewChanged.addEventListener(redrawPersist)
+
+    const group = this.createGroup(view)
+      .add(
+        new AcTrHtmlDot({
+          id: `${this.entityId}-dot1`,
+          color,
+          worldPosition: this.p1,
+          layer: MEASUREMENT_LAYER
+        }),
+        new AcTrHtmlDot({
+          id: `${this.entityId}-dot2`,
+          color,
+          worldPosition: this.p2,
+          layer: MEASUREMENT_LAYER
+        }),
+        new AcTrHtmlBadge({
+          id: `${this.entityId}-badge`,
+          color,
+          text: formatMeasurementLength(db, dist),
+          worldPosition: mid,
+          layer: MEASUREMENT_LAYER,
+          fontSize: this.style.fontSize
+        })
+      )
+      .addCanvas(persistOverlay)
 
     return {
       group,
-      entityIds: [line.objectId],
+      entityIds: [],
       dispose: () => {
-        view.removeTransientEntity(line.objectId)
+        view.events.viewChanged.removeEventListener(redrawPersist)
       },
       extras: {
-        entityIds: [line.objectId],
-        entities: [line],
         style: this.style,
         value: { kind: 'length', value: dist },
-        snapshot: this.toRecord(layoutId)
+        snapshot: this.toRecord(layoutId),
+        redraw: paintSegment
       }
     }
   }

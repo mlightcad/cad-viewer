@@ -1,6 +1,5 @@
 import {
   AcCmColor,
-  AcDbCircle,
   AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
@@ -16,6 +15,10 @@ import {
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
 import {
+  AcApHtmlLivePreview,
+  acapStrokeLiveCircle
+} from '../overlay/AcApHtmlLivePreview'
+import {
   configureMarkupCommand,
   createMarkupMeta,
   withMarkupInput
@@ -25,30 +28,57 @@ import {
   promptAttachedCallout,
   promptShapeFirstCorner
 } from './AcApMarkupShapeCallout'
+import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight
+  getMarkupLineWeight,
+  markupCanvasLineWidth
 } from './AcApMarkupUtil'
 
 class AcApMarkupCircleJig extends AcEdPreviewJig<number> {
-  private readonly _circle: AcDbCircle
+  private readonly _view: AcTrView2d
+  private readonly _center: AcGePoint3dLike
+  private readonly _preview: AcApHtmlLivePreview
+  private _color: AcCmColor
+  private _radius = 0
 
   constructor(view: AcEdBaseView, center: AcGePoint3dLike, color: AcCmColor) {
     super(view)
-    this._circle = new AcDbCircle(center, 0)
-    this._circle.color = color
-    this._circle.lineWeight = getMarkupLineWeight()
+    this._view = view as AcTrView2d
+    this._center = center
+    this._color = color
+    this._preview = new AcApHtmlLivePreview(
+      this._view,
+      `live-markup-circle-${Date.now()}`,
+      MARKUP_LIVE_LAYER
+    )
   }
 
-  get entity(): AcDbCircle {
-    return this._circle
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(radius: number) {
-    this._circle.color = defaultMarkupColor()
-    this._circle.lineWeight = getMarkupLineWeight()
-    this._circle.radius = Math.max(radius, 0)
+    this._radius = Math.max(radius, 0)
+    this._color = defaultMarkupColor()
+    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    this._preview.acapSetDraw((ctx, view) => {
+      acapStrokeLiveCircle(
+        ctx,
+        view,
+        this._center,
+        this._radius,
+        this._color,
+        lineWidth
+      )
+    })
+  }
+
+  end() {
+    super.end()
+    this._preview.acapDispose()
   }
 }
 

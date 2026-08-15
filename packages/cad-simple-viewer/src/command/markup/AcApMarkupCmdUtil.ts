@@ -67,10 +67,10 @@ export async function promptMarkupText(
   const prompt = new AcEdPromptStringOptions(AcApI18n.t(messageKey))
   prompt.allowEmpty = true
   prompt.allowSpaces = true
-  if (defaultValue) {
-    prompt.defaultValue = defaultValue
-    prompt.useDefaultValue = true
-  }
+  // Enter with no typing must accept the default (including empty) — floating
+  // input only commits blank Enter when useDefaultValue is true.
+  prompt.defaultValue = defaultValue
+  prompt.useDefaultValue = true
   const result = await context.view.editor.getString(prompt)
   if (result.status !== AcEdPromptStatus.OK) return undefined
   return (result.stringResult ?? defaultValue).trim()

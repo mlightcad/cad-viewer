@@ -223,7 +223,6 @@ export class AcApMarkupCalloutEntity extends AcApMarkupEntity {
           view,
           recordId: this.record.id,
           centerEl: centerDot,
-          entityIds: [],
           attached: {
             live,
             redraw,

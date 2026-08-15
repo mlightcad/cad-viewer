@@ -3,7 +3,6 @@ import {
   AcDbArc,
   AcDbCircle,
   AcDbDatabase,
-  AcDbLine,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
@@ -168,7 +167,6 @@ export function placeArcMeasurement(
  * cursor hovers over a circle or arc entity. Notifies the caller via onSnap.
  */
 class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private _dummy: AcDbLine
   private _ctx: AcApContext
   private _indicator: AcTrHtmlSnapIndicator
   private _htManager: AcTrHtmlTransientManager
@@ -188,7 +186,6 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._onSnap = onSnap
 
     const o = { x: 0, y: 0, z: 0 }
-    this._dummy = new AcDbLine(o, o)
 
     this._indicatorId = `live-arc-snap-${Date.now()}`
     this._htManager = (context.view as AcTrView2d).htmlTransientManager
@@ -203,8 +200,9 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._htManager.add(this._indicator)
   }
 
-  get entity(): AcDbLine {
-    return this._dummy
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(p: AcGePoint3dLike) {
@@ -273,7 +271,6 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * square snap indicator, and fires onMove with the already-snapped point.
  */
 class AcApArcEndSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private _dummy: AcDbLine
   private _geom: CircleGeom
   private _indicator: AcTrHtmlSnapIndicator
   private _htManager: AcTrHtmlTransientManager
@@ -291,7 +288,6 @@ class AcApArcEndSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._onMove = onMove
 
     const o = { x: 0, y: 0, z: 0 }
-    this._dummy = new AcDbLine(o, o)
 
     this._indicatorId = `live-arc-end-snap-${Date.now()}`
     this._htManager = (view as AcTrView2d).htmlTransientManager
@@ -305,8 +301,9 @@ class AcApArcEndSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._htManager.add(this._indicator)
   }
 
-  get entity(): AcDbLine {
-    return this._dummy
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(p: AcGePoint3dLike) {

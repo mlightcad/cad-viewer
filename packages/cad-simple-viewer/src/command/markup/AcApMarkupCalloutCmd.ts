@@ -1,12 +1,10 @@
 import {
   AcCmColor,
-  AcDbLine,
   AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
   AcTrHtmlCallout,
-  AcTrHtmlCanvasOverlay,
   AcTrHtmlDot,
   AcTrHtmlTransientManager
 } from '@mlightcad/three-renderer'
@@ -22,6 +20,10 @@ import {
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
 import {
+  AcApHtmlLivePreview,
+  acapStrokeLiveSegment
+} from '../overlay/AcApHtmlLivePreview'
+import {
   configureMarkupCommand,
   createMarkupMeta,
   promptMarkupCapsuleText,
@@ -34,57 +36,9 @@ import {
   defaultMarkupColor,
   getMarkupFontSize,
   getMarkupLineWeight,
-  markupColorToCss,
+  markupCanvasLineWidth,
   subscribeMarkupDrawStyle
 } from './AcApMarkupUtil'
-
-function fitCanvas(
-  canvas: HTMLCanvasElement,
-  container: HTMLElement
-): CanvasRenderingContext2D | null {
-  const rect = container.getBoundingClientRect()
-  const dpr = window.devicePixelRatio || 1
-  canvas.style.left = '0'
-  canvas.style.top = '0'
-  canvas.style.width = `${rect.width}px`
-  canvas.style.height = `${rect.height}px`
-  canvas.width = Math.max(1, Math.floor(rect.width * dpr))
-  canvas.height = Math.max(1, Math.floor(rect.height * dpr))
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return null
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  ctx.clearRect(0, 0, rect.width, rect.height)
-  return ctx
-}
-
-function drawArrowHead(
-  ctx: CanvasRenderingContext2D,
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-  color: string
-): void {
-  const dx = to.x - from.x
-  const dy = to.y - from.y
-  const len = Math.hypot(dx, dy) || 1
-  const ux = dx / len
-  const uy = dy / len
-  const size = 12
-  const left = {
-    x: to.x - ux * size - uy * size * 0.45,
-    y: to.y - uy * size + ux * size * 0.45
-  }
-  const right = {
-    x: to.x - ux * size + uy * size * 0.45,
-    y: to.y - uy * size - ux * size * 0.45
-  }
-  ctx.fillStyle = color
-  ctx.beginPath()
-  ctx.moveTo(to.x, to.y)
-  ctx.lineTo(left.x, left.y)
-  ctx.lineTo(right.x, right.y)
-  ctx.closePath()
-  ctx.fill()
-}
 
 /**
  * Live preview while placing a callout text bubble:
@@ -92,18 +46,15 @@ function drawArrowHead(
  */
 class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private readonly _tip: AcGePoint3dLike
-  private readonly _line: AcDbLine
   private readonly _view: AcTrView2d
   private readonly _ht: AcTrHtmlTransientManager
   private readonly _tipDot: AcTrHtmlDot
   private readonly _bubble: AcTrHtmlCallout
-  private readonly _overlay: AcTrHtmlCanvasOverlay
+  private readonly _preview: AcApHtmlLivePreview
   private readonly _tipDotId: string
   private readonly _bubbleId: string
-  private readonly _canvasId: string
-  private _colorCss: string
+  private _color: AcCmColor
   private _anchor: AcGePoint3dLike
-  private _onViewChanged?: () => void
   private _unsubDrawStyle?: () => void
 
   constructor(
@@ -116,18 +67,13 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._view = view as AcTrView2d
     this._tip = { x: tip.x, y: tip.y, z: tip.z ?? 0 }
     this._anchor = { ...this._tip }
-    this._colorCss = markupColorToCss(color)
+    this._color = color
     this._ht = this._view.htmlTransientManager
-
-    this._line = new AcDbLine(this._tip, this._tip)
-    this._line.color = color
-    this._line.lineWeight = getMarkupLineWeight()
 
     const layoutId = this._view.activeLayoutBtrId
     const stamp = Date.now()
     this._tipDotId = `live-markup-callout-tip-${stamp}`
     this._bubbleId = `live-markup-callout-bubble-${stamp}`
-    this._canvasId = `live-markup-callout-canvas-${stamp}`
 
     this._tipDot = new AcTrHtmlDot({
       id: this._tipDotId,
@@ -149,16 +95,12 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     })
     this._ht.add(this._bubble)
 
-    this._overlay = new AcTrHtmlCanvasOverlay({
-      id: this._canvasId,
-      container: this._view.container,
-      layer: MARKUP_LIVE_LAYER,
-      layoutId
-    })
-    this._ht.add(this._overlay)
+    this._preview = new AcApHtmlLivePreview(
+      this._view,
+      `live-markup-callout-leader-${stamp}`,
+      MARKUP_LIVE_LAYER
+    )
 
-    this._onViewChanged = () => this.paintArrow()
-    this._view.events.viewChanged.addEventListener(this._onViewChanged)
     this._unsubDrawStyle = subscribeMarkupDrawStyle(() =>
       this.applyCurrentStyle()
     )
@@ -166,24 +108,17 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._view.isHtmlDirty = true
   }
 
-  get entity(): AcDbLine {
-    return this._line
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(anchor: AcGePoint3dLike) {
     this._anchor = { x: anchor.x, y: anchor.y, z: anchor.z ?? 0 }
-    this._line.endPoint = this._anchor
-    this._line.color = defaultMarkupColor()
-    this._line.lineWeight = getMarkupLineWeight()
+    this._color = defaultMarkupColor()
     this._bubble.setPosition(this._anchor)
     this._bubble.setFontSize(getMarkupFontSize())
-    this.paintArrow()
-    this._view.isHtmlDirty = true
-  }
-
-  override render(): void {
-    super.render()
-    this.paintArrow()
+    this.paintLeader()
     this._view.isHtmlDirty = true
   }
 
@@ -197,46 +132,40 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
    * types callout text; {@link disposePreview} cleans up afterwards.
    */
   end() {
-    // Intentionally do not remove the line / HTML overlays.
+    // Intentionally do not remove the HTML overlays.
   }
 
   /** Remove frozen preview graphics after text entry (or cancel). */
   disposePreview() {
     this._unsubDrawStyle?.()
     this._unsubDrawStyle = undefined
-    this._view.removeTransientEntity(this._line.objectId)
-    if (this._onViewChanged) {
-      this._view.events.viewChanged.removeEventListener(this._onViewChanged)
-      this._onViewChanged = undefined
-    }
+    this._preview.acapDispose()
     this._ht.remove(this._tipDotId)
     this._ht.remove(this._bubbleId)
-    this._ht.remove(this._canvasId)
     this._view.isHtmlDirty = true
   }
 
   /** Apply session draw style to the frozen preview (including during text entry). */
   private applyCurrentStyle(): void {
-    const color = defaultMarkupColor()
-    this._colorCss = markupColorToCss(color)
-    this._line.color = color
-    this._line.lineWeight = getMarkupLineWeight()
-    this._view.removeTransientEntity(this._line.objectId)
-    this._view.addTransientEntity(this._line)
-    this._tipDot.setColor(color)
-    this._bubble.setColor(color)
+    this._color = defaultMarkupColor()
+    this._tipDot.setColor(this._color)
+    this._bubble.setColor(this._color)
     this._bubble.setFontSize(getMarkupFontSize())
-    this.paintArrow()
+    this.paintLeader()
     this._view.isHtmlDirty = true
   }
 
-  private paintArrow(): void {
-    const ctx = fitCanvas(this._overlay.canvas, this._view.container)
-    if (!ctx) return
-    const tipScreen = this._view.worldToScreen(this._tip)
-    const anchorScreen = this._view.worldToScreen(this._anchor)
-    // CAD transient line draws the shaft; canvas only adds the arrowhead.
-    drawArrowHead(ctx, anchorScreen, tipScreen, this._colorCss)
+  private paintLeader(): void {
+    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const color = this._color
+    const tip = this._tip
+    const anchor = this._anchor
+    this._preview.acapSetDraw((ctx, view) => {
+      // Arrow at tip (leader begins at tip, bubble at anchor).
+      acapStrokeLiveSegment(ctx, view, anchor, tip, color, lineWidth, {
+        arrow: true
+      })
+    })
   }
 }
 

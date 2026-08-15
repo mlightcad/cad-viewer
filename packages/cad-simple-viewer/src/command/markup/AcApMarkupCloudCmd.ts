@@ -1,6 +1,5 @@
 import {
   AcCmColor,
-  AcDbPolyline,
   AcGePoint2dLike
 } from '@mlightcad/data-model'
 
@@ -15,46 +14,81 @@ import {
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
 import {
+  type AcApHtmlLivePoint,
+  AcApHtmlLivePreview,
+  acapStrokeLivePolyline
+} from '../overlay/AcApHtmlLivePreview'
+import {
   configureMarkupCommand,
   createMarkupMeta,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
+import { commitMarkup } from './AcApMarkupPresenter'
 import {
-  buildMarkupCloud,
-  commitMarkup
-} from './AcApMarkupPresenter'
+  markupCloudVertices,
+  tessellateMarkupCloud
+} from './AcApMarkupShapeBuilder'
 import {
   promptAttachedCallout,
   promptShapeFirstCorner
 } from './AcApMarkupShapeCallout'
+import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight
+  getMarkupLineWeight,
+  markupCanvasLineWidth
 } from './AcApMarkupUtil'
 
+/** Build tessellated cloud outline (HTML stroke; no AcDb). */
+function cloudLivePoints(
+  first: AcGePoint2dLike,
+  second: AcGePoint2dLike,
+  view: AcEdBaseView
+): AcApHtmlLivePoint[] {
+  return tessellateMarkupCloud(markupCloudVertices(first, second, view))
+}
+
 class AcApMarkupCloudJig extends AcEdPreviewJig<AcGePoint2dLike> {
-  private readonly _cloud: AcDbPolyline
+  private readonly _view: AcTrView2d
   private readonly _first: AcGePoint2dLike
-  private readonly _view: AcEdBaseView
+  private readonly _preview: AcApHtmlLivePreview
+  private _color: AcCmColor
+  private _second: AcGePoint2dLike
 
   constructor(view: AcEdBaseView, start: AcGePoint2dLike, color: AcCmColor) {
     super(view)
-    this._view = view
+    this._view = view as AcTrView2d
     this._first = start
-    this._cloud = new AcDbPolyline()
-    this._cloud.color = color
-    this._cloud.lineWeight = getMarkupLineWeight()
+    this._second = start
+    this._color = color
+    this._preview = new AcApHtmlLivePreview(
+      this._view,
+      `live-markup-cloud-${Date.now()}`,
+      MARKUP_LIVE_LAYER
+    )
   }
 
-  get entity(): AcDbPolyline {
-    return this._cloud
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(second: AcGePoint2dLike) {
-    this._cloud.color = defaultMarkupColor()
-    this._cloud.lineWeight = getMarkupLineWeight()
-    buildMarkupCloud(this._cloud, this._first, second, this._view)
+    this._second = second
+    this._color = defaultMarkupColor()
+    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const points = cloudLivePoints(this._first, this._second, this._view)
+    this._preview.acapSetDraw((ctx, view) => {
+      acapStrokeLivePolyline(ctx, view, points, this._color, lineWidth, {
+        closed: true
+      })
+    })
+  }
+
+  end() {
+    super.end()
+    this._preview.acapDispose()
   }
 }
 

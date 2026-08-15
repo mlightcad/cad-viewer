@@ -12,10 +12,6 @@
 
 import {
   AcCmColor,
-  AcDbCircle,
-  AcDbEntity,
-  AcDbLine,
-  AcDbPolyline,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
@@ -33,10 +29,18 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
+import {
+  type AcApHtmlLivePoint,
+  AcApHtmlLivePreview,
+  acapLiveRectCorners,
+  acapStrokeLiveCircle,
+  acapStrokeLivePolyline,
+  acapStrokeLiveSegment
+} from '../overlay/AcApHtmlLivePreview'
 import { promptMarkupCapsuleText } from './AcApMarkupCmdUtil'
 import {
-  buildMarkupCloud,
-  buildMarkupRect
+  markupCloudVertices,
+  tessellateMarkupCloud
 } from './AcApMarkupShapeBuilder'
 import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type {
@@ -47,6 +51,7 @@ import {
   defaultMarkupColor,
   getMarkupFontSize,
   getMarkupLineWeight,
+  markupCanvasLineWidth,
   subscribeMarkupDrawStyle
 } from './AcApMarkupUtil'
 
@@ -173,30 +178,13 @@ export function computeLeaderTipOnShape(
   return { x: cx + dx * s, y: cy + dy * s }
 }
 
-function createShapePreviewEntity(
-  outline: AcApMarkupShapeOutline,
-  color: AcCmColor,
+/** Collect tessellated cloud outline vertices (HTML stroke; no AcDb). */
+function cloudLivePoints(
+  corner1: AcApMarkupPoint2d,
+  corner2: AcApMarkupPoint2d,
   view: AcEdBaseView
-): AcDbEntity {
-  if (outline.kind === 'circle') {
-    const circle = new AcDbCircle(
-      { x: outline.center.x, y: outline.center.y, z: 0 },
-      Math.max(outline.radius, 0)
-    )
-    circle.color = color
-    circle.lineWeight = getMarkupLineWeight()
-    return circle
-  }
-
-  const poly = new AcDbPolyline()
-  poly.color = color
-  poly.lineWeight = getMarkupLineWeight()
-  if (outline.kind === 'cloud') {
-    buildMarkupCloud(poly, outline.corner1, outline.corner2, view)
-  } else {
-    buildMarkupRect(poly, outline.corner1, outline.corner2)
-  }
-  return poly
+): AcApHtmlLivePoint[] {
+  return tessellateMarkupCloud(markupCloudVertices(corner1, corner2, view))
 }
 
 /**
@@ -206,15 +194,16 @@ function createShapePreviewEntity(
  */
 class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private readonly _outline: AcApMarkupShapeOutline
-  private readonly _line: AcDbLine
-  private readonly _shape: AcDbEntity
   private readonly _ht: AcTrHtmlTransientManager
   private readonly _tipDot: AcTrHtmlDot
   private readonly _bubble: AcTrHtmlCallout
+  private readonly _preview: AcApHtmlLivePreview
   private readonly _tipDotId: string
   private readonly _bubbleId: string
   private readonly _view: AcTrView2d
   private _tip: AcApMarkupPoint2d
+  private _anchor: AcApMarkupPoint2d
+  private _color: AcCmColor
   private _unsubDrawStyle?: () => void
 
   constructor(
@@ -225,22 +214,15 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     super(view)
     this._view = view as AcTrView2d
     this._outline = outline
+    this._color = color
     this._ht = this._view.htmlTransientManager
-
-    this._shape = createShapePreviewEntity(outline, color, view)
-    this._view.addTransientEntity(this._shape)
 
     const center = shapeCenter(outline)
     this._tip = computeLeaderTipOnShape(outline, {
       x: center.x + 1,
       y: center.y
     })
-    this._line = new AcDbLine(
-      { x: this._tip.x, y: this._tip.y, z: 0 },
-      { x: this._tip.x, y: this._tip.y, z: 0 }
-    )
-    this._line.color = color
-    this._line.lineWeight = getMarkupLineWeight()
+    this._anchor = { ...this._tip }
 
     const stamp = Date.now()
     this._tipDotId = `live-shape-callout-tip-${stamp}`
@@ -265,24 +247,32 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
       layoutId
     })
     this._ht.add(this._bubble)
+
+    this._preview = new AcApHtmlLivePreview(
+      this._view,
+      `live-shape-callout-stroke-${stamp}`,
+      MARKUP_LIVE_LAYER
+    )
     this._unsubDrawStyle = subscribeMarkupDrawStyle(() =>
       this.applyCurrentStyle()
     )
+    this.paintPreview()
     this._view.isHtmlDirty = true
   }
 
-  get entity(): AcDbLine {
-    return this._line
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(anchor: AcGePoint3dLike) {
     const toward = { x: anchor.x, y: anchor.y }
     this._tip = computeLeaderTipOnShape(this._outline, toward)
-    this._line.startPoint = { x: this._tip.x, y: this._tip.y, z: 0 }
-    this._line.endPoint = { x: anchor.x, y: anchor.y, z: anchor.z ?? 0 }
+    this._anchor = toward
 
     this._tipDot.setPosition(this._tip)
     this._bubble.setPosition(toward)
+    this.paintPreview()
     this._view.isHtmlDirty = true
   }
 
@@ -296,15 +286,14 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
    * Cleanup is done by {@link disposePreview}.
    */
   end() {
-    // Intentionally do not remove the line / HTML overlays / shape.
+    // Intentionally do not remove the HTML overlays.
   }
 
   /** Remove frozen preview graphics after text entry (or cancel). */
   disposePreview() {
     this._unsubDrawStyle?.()
     this._unsubDrawStyle = undefined
-    this._view.removeTransientEntity(this._line.objectId)
-    this._view.removeTransientEntity(this._shape.objectId)
+    this._preview.acapDispose()
     this._ht.remove(this._tipDotId)
     this._ht.remove(this._bubbleId)
     this._view.isHtmlDirty = true
@@ -312,19 +301,54 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   /** Apply session draw style to the frozen preview (including during text entry). */
   private applyCurrentStyle(): void {
-    const color = defaultMarkupColor()
-    this._line.color = color
-    this._line.lineWeight = getMarkupLineWeight()
-    this._shape.color = color
-    this._shape.lineWeight = getMarkupLineWeight()
-    this._view.removeTransientEntity(this._line.objectId)
-    this._view.addTransientEntity(this._line)
-    this._view.removeTransientEntity(this._shape.objectId)
-    this._view.addTransientEntity(this._shape)
-    this._tipDot.setColor(color)
-    this._bubble.setColor(color)
+    this._color = defaultMarkupColor()
+    this._tipDot.setColor(this._color)
+    this._bubble.setColor(this._color)
     this._bubble.setFontSize(getMarkupFontSize())
+    this.paintPreview()
     this._view.isHtmlDirty = true
+  }
+
+  private paintPreview(): void {
+    const outline = this._outline
+    const color = this._color
+    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const tip = this._tip
+    const anchor = this._anchor
+    const viewForCloud = this._view
+
+    this._preview.acapSetDraw((ctx, view) => {
+      if (outline.kind === 'circle') {
+        acapStrokeLiveCircle(
+          ctx,
+          view,
+          outline.center,
+          outline.radius,
+          color,
+          lineWidth
+        )
+      } else if (outline.kind === 'cloud') {
+        const points = cloudLivePoints(
+          outline.corner1,
+          outline.corner2,
+          viewForCloud
+        )
+        acapStrokeLivePolyline(ctx, view, points, color, lineWidth, {
+          closed: true
+        })
+      } else {
+        acapStrokeLivePolyline(
+          ctx,
+          view,
+          acapLiveRectCorners(outline.corner1, outline.corner2),
+          color,
+          lineWidth,
+          { closed: true }
+        )
+      }
+      // Design Review style: leader without arrowhead.
+      acapStrokeLiveSegment(ctx, view, tip, anchor, color, lineWidth)
+    })
   }
 }
 

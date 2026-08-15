@@ -1,8 +1,4 @@
-import {
-  AcCmColor,
-  AcDbPolyline,
-  AcGePoint2dLike
-} from '@mlightcad/data-model'
+import { AcCmColor, AcGePoint2dLike } from '@mlightcad/data-model'
 
 import { AcApContext } from '../../app'
 import {
@@ -15,41 +11,68 @@ import {
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
 import {
+  AcApHtmlLivePreview,
+  acapLiveRectCorners,
+  acapStrokeLivePolyline
+} from '../overlay/AcApHtmlLivePreview'
+import {
   configureMarkupCommand,
   createMarkupMeta,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
-import { buildMarkupRect, commitMarkup } from './AcApMarkupPresenter'
+import { commitMarkup } from './AcApMarkupPresenter'
 import {
   promptAttachedCallout,
   promptShapeFirstCorner
 } from './AcApMarkupShapeCallout'
+import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight
+  getMarkupLineWeight,
+  markupCanvasLineWidth
 } from './AcApMarkupUtil'
 
 class AcApMarkupRectJig extends AcEdPreviewJig<AcGePoint2dLike> {
-  private readonly _rect: AcDbPolyline
+  private readonly _view: AcTrView2d
   private readonly _first: AcGePoint2dLike
+  private readonly _preview: AcApHtmlLivePreview
+  private _color: AcCmColor
+  private _second: AcGePoint2dLike
 
   constructor(view: AcEdBaseView, start: AcGePoint2dLike, color: AcCmColor) {
     super(view)
+    this._view = view as AcTrView2d
     this._first = start
-    this._rect = new AcDbPolyline()
-    this._rect.color = color
-    this._rect.lineWeight = getMarkupLineWeight()
+    this._second = start
+    this._color = color
+    this._preview = new AcApHtmlLivePreview(
+      this._view,
+      `live-markup-rect-${Date.now()}`,
+      MARKUP_LIVE_LAYER
+    )
   }
 
-  get entity(): AcDbPolyline {
-    return this._rect
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(second: AcGePoint2dLike) {
-    this._rect.color = defaultMarkupColor()
-    this._rect.lineWeight = getMarkupLineWeight()
-    buildMarkupRect(this._rect, this._first, second)
+    this._second = second
+    this._color = defaultMarkupColor()
+    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const corners = acapLiveRectCorners(this._first, this._second)
+    this._preview.acapSetDraw((ctx, view) => {
+      acapStrokeLivePolyline(ctx, view, corners, this._color, lineWidth, {
+        closed: true
+      })
+    })
+  }
+
+  end() {
+    super.end()
+    this._preview.acapDispose()
   }
 }
 

@@ -1,6 +1,4 @@
 import {
-  AcDbLine,
-  type AcDbObjectId,
   AcGePoint3d,
   type AcGeVector3dLike
 } from '@mlightcad/data-model'
@@ -15,7 +13,8 @@ import {
   bindOverlayPointerDrag,
   drawOverlayArrowHead,
   fitOverlayCanvas,
-  placeOverlayHtml} from '../../overlay'
+  placeOverlayHtml
+} from '../../overlay'
 import { runMarkupEdit } from '../AcApMarkupHistory'
 import { republishMarkup } from '../AcApMarkupRepublish'
 import { getMarkupStore } from '../AcApMarkupStore'
@@ -26,8 +25,8 @@ import { selectMarkupGroup } from './AcApMarkupEntityGrips'
 /**
  * Line or arrow markup with endpoint grips.
  *
- * Draws a CAD transient line, endpoint HTML dots, and (for arrows) a canvas
- * arrow head. Endpoint drags hide the CAD line and preview a canvas stroke.
+ * Draws an HTML canvas stroke (and arrow head when applicable) plus endpoint
+ * HTML dots. No CAD transient entities.
  */
 export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
   /**
@@ -84,7 +83,7 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
   }
 
   /**
-   * Publish CAD line, endpoint dots, optional arrow canvas, and endpoint grips.
+   * Publish canvas stroke, endpoint dots, optional arrow head, and endpoint grips.
    *
    * @param view - Active 2D view.
    * @returns Built visuals; {@link AcApOverlayWorldDrawResult.bindGrips} binds
@@ -95,12 +94,10 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
     if (geom.type !== 'line' && geom.type !== 'arrow') {
       return this.emptyResult(this.createGroup())
     }
-    const { color, lineWeight, canvasLineWidth, layer, layoutId } = this.style()
+    const { color, canvasLineWidth, layer, layoutId } = this.style()
     const group = this.createGroup()
-    /** Unbinders for viewChanged, pointer drags, and CAD removal. */
+    /** Unbinders for viewChanged and pointer drags. */
     const cleanups: Array<() => void> = []
-    /** CAD transient object ids for highlight / visibility. */
-    const entityIds: AcDbObjectId[] = []
     /** Grip binders deferred until after manager.add(group). */
     const pendingGrips: Array<() => void> = []
 
@@ -109,15 +106,6 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
       start: { ...geom.start },
       end: { ...geom.end }
     }
-    const line = new AcDbLine(
-      { x: live.start.x, y: live.start.y, z: 0 },
-      { x: live.end.x, y: live.end.y, z: 0 }
-    )
-    line.color = color
-    line.lineWeight = lineWeight
-    view.addTransientEntity(line)
-    entityIds.push(line.objectId)
-    cleanups.push(() => view.removeTransientEntity(line.objectId))
 
     const startDot = new AcTrHtmlDot({
       id: `${this.record.id}-dot1`,
@@ -143,9 +131,7 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
       layoutId
     })
     group.addCanvas(overlay)
-    /** When true, CAD line is hidden and the canvas shows the live segment. */
-    let draggingEndpoints = false
-    /** Endpoints captured when an endpoint drag starts (for zero-delta / restore). */
+    /** Endpoints captured when an endpoint drag starts (for zero-delta). */
     let dragStart = {
       start: { ...live.start },
       end: { ...live.end }
@@ -160,14 +146,12 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
       if (!ctx) return
       const a = view.worldToScreen(live.start)
       const b = view.worldToScreen(live.end)
-      if (draggingEndpoints) {
-        ctx.strokeStyle = this.record.style.color
-        ctx.lineWidth = canvasLineWidth
-        ctx.beginPath()
-        ctx.moveTo(a.x, a.y)
-        ctx.lineTo(b.x, b.y)
-        ctx.stroke()
-      }
+      ctx.strokeStyle = this.record.style.color
+      ctx.lineWidth = canvasLineWidth
+      ctx.beginPath()
+      ctx.moveTo(a.x, a.y)
+      ctx.lineTo(b.x, b.y)
+      ctx.stroke()
       if (isArrow) {
         drawOverlayArrowHead(ctx, a, b, this.record.style.color)
       }
@@ -179,15 +163,7 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
     )
 
     /**
-     * Show the CAD line again and clear the canvas stroke preview.
-     */
-    const restoreCadLine = () => {
-      draggingEndpoints = false
-      view.setTransientEntityVisible(line.objectId, true)
-      redrawStroke()
-    }
-    /**
-     * Select the markup and switch to canvas stroke preview while dragging.
+     * Select the markup when an endpoint drag begins.
      */
     const beginEndpointDrag = () => {
       selectMarkupGroup(view, this.record.id)
@@ -195,13 +171,9 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
         start: { ...live.start },
         end: { ...live.end }
       }
-      draggingEndpoints = true
-      view.setTransientEntityVisible(line.objectId, false)
-      redrawStroke()
     }
     /**
      * Commit live endpoints to the store and republish.
-     * Restores CAD visibility when the drag is a no-op or the store update fails.
      */
     const commitEndpoints = () => {
       const startDelta = Math.hypot(
@@ -213,10 +185,9 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
         live.end.y - dragStart.end.y
       )
       if (startDelta < 1e-9 && endDelta < 1e-9) {
-        restoreCadLine()
+        redrawStroke()
         return
       }
-      let republished = false
       runMarkupEdit(view, isArrow ? 'Move Arrow' : 'Move Line', () => {
         const updated = getMarkupStore().updateGeometry(
           this.record.id,
@@ -234,10 +205,8 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
         )
         if (updated) {
           republishMarkup(view, updated)
-          republished = true
         }
       })
-      if (!republished) restoreCadLine()
     }
     pendingGrips.push(() => {
       cleanups.push(
@@ -268,7 +237,7 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
 
     return {
       group,
-      entityIds,
+      entityIds: [],
       dispose: () => {
         for (const fn of cleanups) {
           try {

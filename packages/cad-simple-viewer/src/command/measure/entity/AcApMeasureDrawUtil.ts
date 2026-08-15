@@ -62,11 +62,43 @@ const normaliseAngle = (a: number) =>
   ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
 
 /**
- * Draws a persistent angle arc between two arms on a measure overlay canvas.
+ * Strokes a single world-space segment onto a measure overlay canvas.
  *
- * Converts `vertex`, `arm1`, and `arm2` to screen space, chooses an arc radius
- * from the shorter arm length (with a minimum), and strokes the shorter angular
- * sector in the given color.
+ * @param canvas - Overlay canvas to paint
+ * @param view - View for world-to-screen conversion and canvas sizing
+ * @param p1 - Segment start in world coordinates
+ * @param p2 - Segment end in world coordinates
+ * @param color - Stroke color
+ * @param lineWidth - Stroke width in CSS pixels (default `2`)
+ */
+export function drawMeasureSegmentOnCanvas(
+  canvas: HTMLCanvasElement,
+  view: AcEdBaseView,
+  p1: Point2,
+  p2: Point2,
+  color: AcCmColor,
+  lineWidth = 2
+): void {
+  const prepared = prepareMeasureCanvas(canvas, view)
+  if (!prepared) return
+  const { ctx } = prepared
+  const a = view.worldToScreen(p1)
+  const b = view.worldToScreen(p2)
+  ctx.beginPath()
+  ctx.moveTo(a.x, a.y)
+  ctx.lineTo(b.x, b.y)
+  ctx.strokeStyle = acapCssColor(color)
+  ctx.lineWidth = lineWidth
+  ctx.stroke()
+  ctx.restore()
+}
+
+/**
+ * Draws angle arm lines plus the measurement arc on a measure overlay canvas.
+ *
+ * Converts `vertex`, `arm1`, and `arm2` to screen space, strokes both arms,
+ * then draws the shorter angular sector with a radius derived from the shorter
+ * arm length (with a minimum).
  *
  * @param canvas - Overlay canvas to paint
  * @param view - View for world-to-screen conversion and canvas sizing
@@ -93,6 +125,15 @@ export function drawMeasureAngleArcOnCanvas(
   const sa1 = view.worldToScreen(arm1)
   const sa2 = view.worldToScreen(arm2)
 
+  ctx.strokeStyle = acapCssColor(color)
+  ctx.lineWidth = lineWidth
+  ctx.beginPath()
+  ctx.moveTo(sv.x, sv.y)
+  ctx.lineTo(sa1.x, sa1.y)
+  ctx.moveTo(sv.x, sv.y)
+  ctx.lineTo(sa2.x, sa2.y)
+  ctx.stroke()
+
   const len1 = Math.hypot(sa1.x - sv.x, sa1.y - sv.y)
   const len2 = Math.hypot(sa2.x - sv.x, sa2.y - sv.y)
   const arcR = Math.max(Math.min(len1, len2) * 0.3, 15)
@@ -103,8 +144,6 @@ export function drawMeasureAngleArcOnCanvas(
 
   ctx.beginPath()
   ctx.arc(sv.x, sv.y, arcR, startAngle, endAngle, antiClockwise)
-  ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = lineWidth
   ctx.stroke()
   ctx.restore()
 }

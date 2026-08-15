@@ -4,9 +4,12 @@ import type { AcTrView2d } from '../../../view'
 import type { AcApOverlayWorldDrawResult } from '../../overlay'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import { AcApMarkupEntity } from './AcApMarkupEntity'
+import { bindMarkupCenterMove } from './AcApMarkupEntityGrips'
 
 /**
  * Stamp or symbol markup rendered as an {@link AcTrHtmlStamp}.
+ *
+ * Drag the stamp to move it.
  */
 export class AcApMarkupStampEntity extends AcApMarkupEntity {
   /**
@@ -17,40 +20,61 @@ export class AcApMarkupStampEntity extends AcApMarkupEntity {
   }
 
   /**
-   * Stamps currently have no move grips in the presenter UX.
+   * Publish a stamp / symbol image overlay and bind drag-to-move.
    *
-   * @returns Empty grip list.
+   * @param view - Active 2D view.
+   * @returns Group with the stamp and dispose / grip binders.
    */
-  override subGetGripPoints() {
-    return []
-  }
-
-  /**
-   * Publish a stamp / symbol image overlay at the record position.
-   *
-   * @param _view - Active 2D view (unused; stamp needs no view listeners).
-   * @returns Group containing the stamp leaf.
-   */
-  protected subWorldDraw(_view: AcTrView2d): AcApOverlayWorldDrawResult {
+  protected subWorldDraw(view: AcTrView2d): AcApOverlayWorldDrawResult {
     const geom = this.record.geometry
     if (geom.type !== 'stamp' && geom.type !== 'symbol') {
       return this.emptyResult(this.createGroup())
     }
     const { color, layer, layoutId } = this.style()
     const group = this.createGroup()
+    /** Unbinders for center-move drag. */
+    const cleanups: Array<() => void> = []
+    /** Grip binders deferred until after manager.add(group). */
+    const pendingGrips: Array<() => void> = []
+
     const stampId = geom.type === 'stamp' ? geom.stampId : geom.symbolId
-    group.add(
-      new AcTrHtmlStamp({
-        id: `${this.record.id}-stamp`,
-        color,
-        stampId,
-        text: this.record.text,
-        imageUrl: geom.imageUrl,
-        worldPosition: geom.position,
-        layer,
-        layoutId
-      })
-    )
-    return this.emptyResult(group)
+    const stamp = new AcTrHtmlStamp({
+      id: `${this.record.id}-stamp`,
+      color,
+      stampId,
+      text: this.record.text,
+      imageUrl: geom.imageUrl,
+      worldPosition: geom.position,
+      layer,
+      layoutId
+    })
+    group.add(stamp)
+
+    pendingGrips.push(() => {
+      cleanups.push(
+        bindMarkupCenterMove({
+          view,
+          recordId: this.record.id,
+          centerEl: stamp
+        })
+      )
+    })
+
+    return {
+      group,
+      entityIds: [],
+      dispose: () => {
+        for (const fn of cleanups) {
+          try {
+            fn()
+          } catch {
+            // ignore
+          }
+        }
+      },
+      bindGrips: () => {
+        for (const bind of pendingGrips) bind()
+      }
+    }
   }
 }

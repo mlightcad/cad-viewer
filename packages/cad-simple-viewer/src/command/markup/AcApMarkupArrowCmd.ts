@@ -1,8 +1,4 @@
-import {
-  AcCmColor,
-  AcDbLine,
-  AcGePoint3dLike
-} from '@mlightcad/data-model'
+import { AcCmColor, AcGePoint3dLike } from '@mlightcad/data-model'
 
 import { AcApContext } from '../../app'
 import {
@@ -15,35 +11,62 @@ import {
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
 import {
+  AcApHtmlLivePreview,
+  acapStrokeLiveSegment
+} from '../overlay/AcApHtmlLivePreview'
+import {
   configureMarkupCommand,
   createMarkupMeta,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
 import { commitMarkup } from './AcApMarkupPresenter'
+import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight
+  getMarkupLineWeight,
+  markupCanvasLineWidth
 } from './AcApMarkupUtil'
 
 class AcApMarkupArrowJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private readonly _line: AcDbLine
+  private readonly _view: AcTrView2d
+  private readonly _p1: AcGePoint3dLike
+  private readonly _preview: AcApHtmlLivePreview
+  private _color: AcCmColor
+  private _p2: AcGePoint3dLike
 
   constructor(view: AcEdBaseView, p1: AcGePoint3dLike, color: AcCmColor) {
     super(view)
-    this._line = new AcDbLine(p1, p1)
-    this._line.color = color
-    this._line.lineWeight = getMarkupLineWeight()
+    this._view = view as AcTrView2d
+    this._p1 = p1
+    this._p2 = p1
+    this._color = color
+    this._preview = new AcApHtmlLivePreview(
+      this._view,
+      `live-markup-arrow-${Date.now()}`,
+      MARKUP_LIVE_LAYER
+    )
   }
 
-  get entity(): AcDbLine {
-    return this._line
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(p2: AcGePoint3dLike) {
-    this._line.endPoint = p2
-    this._line.color = defaultMarkupColor()
-    this._line.lineWeight = getMarkupLineWeight()
+    this._p2 = p2
+    this._color = defaultMarkupColor()
+    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    this._preview.acapSetDraw((ctx, view) => {
+      acapStrokeLiveSegment(ctx, view, this._p1, this._p2, this._color, lineWidth, {
+        arrow: true
+      })
+    })
+  }
+
+  end() {
+    super.end()
+    this._preview.acapDispose()
   }
 }
 

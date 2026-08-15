@@ -18,14 +18,21 @@ import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import { createMarkupEntityFromRecord } from './entity'
 
 // Re-export shape builders for commands / jigs that imported them from here.
-export { buildMarkupCloud, buildMarkupRect } from './AcApMarkupShapeBuilder'
+export {
+  markupCloudVertices,
+  markupRectCorners,
+  strokeMarkupCloud,
+  tessellateMarkupCloud,
+  buildMarkupCloud,
+  buildMarkupRect
+} from './AcApMarkupShapeBuilder'
 
 function asView2d(view: AcEdBaseView): AcTrView2d {
   return view as AcTrView2d
 }
 
 /**
- * Maps markup records to HTML / CAD transient visuals and keeps them in sync
+ * Maps markup records to HTML overlay visuals and keeps them in sync
  * with {@link getMarkupStore}.
  *
  * Per-type draw / grip behavior lives on {@link AcApMarkupEntity} subclasses;
