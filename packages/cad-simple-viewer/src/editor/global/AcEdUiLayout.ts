@@ -5,7 +5,7 @@ export const ML_UI_MOBILE_MAX_WIDTH = 600
 export const ML_UI_MOBILE_MEDIA_QUERY = `(max-width: ${ML_UI_MOBILE_MAX_WIDTH}px)`
 
 /** Whether the current viewport matches the narrow mobile UI layout. */
-export function isMobileUiLayout(): boolean {
+export function acedIsMobileUiLayout(): boolean {
   return window.matchMedia?.(ML_UI_MOBILE_MEDIA_QUERY).matches ?? false
 }
 

@@ -32,12 +32,12 @@ pnpm add @mlightcad/cad-simple-ui-plugin @mlightcad/cad-simple-viewer @mlightcad
 Load the plugin after creating the document manager. Apply the initial UI theme on `host` first so theme/locale/placement buttons work even before a drawing is opened:
 
 ```typescript
-import { AcApDocManager, applyUiTheme } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, acedApplyUiTheme } from '@mlightcad/cad-simple-viewer'
 import { createSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
 
 const host = document.getElementById('viewer-host')!
 
-applyUiTheme('dark', host)
+acedApplyUiTheme('dark', host)
 
 AcApDocManager.createInstance({ container: host })
 
@@ -70,7 +70,7 @@ await registerSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
 The [vanilla example](../cad-simple-viewer-example) **defers viewer and plugin initialization until the user opens a file** (local upload or predefined sample). That keeps the first paint lightweight:
 
 1. Page load — only file picker UI; no `AcApDocManager` yet.
-2. First open — `applyUiTheme`, `AcApDocManager.createInstance`, lazy export plugins, then `registerSimpleUiPlugin`.
+2. First open — `acedApplyUiTheme`, `AcApDocManager.createInstance`, lazy export plugins, then `registerSimpleUiPlugin`.
 3. Subsequent opens — reuse the same viewer instance.
 
 You can adopt the same pattern or load the plugin at startup (see Quick start above). Both are supported.
@@ -107,7 +107,7 @@ toolbar: {
 }
 ```
 
-The built-in theme toggle button updates `COLORTHEME` when a document is open, or applies `applyUiTheme` on `host` when no document is loaded.
+The built-in theme toggle button updates `COLORTHEME` when a document is open, or applies `acedApplyUiTheme` on `host` when no document is loaded.
 
 ### Layer manager (dock panel)
 
@@ -456,12 +456,12 @@ Disabling the toolbar also disables the layer dock UI, because the layer list is
 ### Complete example
 
 ```typescript
-import { AcApDocManager, AcEdOpenMode, applyUiTheme } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, AcEdOpenMode, acedApplyUiTheme } from '@mlightcad/cad-simple-viewer'
 import { createSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
 
 const viewerPane = document.getElementById('viewerPane')!
 
-applyUiTheme('dark', viewerPane)
+acedApplyUiTheme('dark', viewerPane)
 
 AcApDocManager.createInstance({ container: document.getElementById('cad-container')! })
 

@@ -12,11 +12,11 @@ import {
 
 import type { AcTrView2d } from '../../../view'
 import {
-  bindOverlayCalloutGrips,
-  bindOverlayPointerDrag,
-  drawOverlayLeader,
-  fitOverlayCanvas,
-  placeOverlayHtml
+  acapBindOverlayCalloutGrips,
+  acapBindOverlayPointerDrag,
+  acapDrawOverlayLeader,
+  acapFitOverlayCanvas,
+  acapPlaceOverlayHtml
 } from '../../overlay'
 import {
   markupGeometryCenter,
@@ -122,9 +122,9 @@ export function publishAttachedCallout(
    * Redraw the leader stroke from {@link live} tip / anchor.
    */
   const redraw = () => {
-    const ctx = fitOverlayCanvas(overlay.canvas, container)
+    const ctx = acapFitOverlayCanvas(overlay.canvas, container)
     if (!ctx) return
-    drawOverlayLeader(
+    acapDrawOverlayLeader(
       ctx,
       view2d.worldToScreen(live.tip),
       view2d.worldToScreen(live.anchor),
@@ -174,7 +174,7 @@ export function publishAttachedCallout(
    */
   const bindGrips = () => {
     cleanups.push(
-      bindOverlayCalloutGrips({
+      acapBindOverlayCalloutGrips({
         view: view2d,
         group,
         tipEl: tipDot,
@@ -255,7 +255,7 @@ export function bindMarkupCenterMove(
   let last = { ...origin }
   /** Attached callout tip/anchor at drag start, for relative preview. */
   let originalCallout: AcApMarkupAttachedCallout | undefined
-  return bindOverlayPointerDrag({
+  return acapBindOverlayPointerDrag({
     view,
     el: centerEl.element,
     cursor: 'move',
@@ -280,7 +280,7 @@ export function bindMarkupCenterMove(
       const dx = point.x - origin.x
       const dy = point.y - origin.y
       onLiveOffset?.(dx, dy)
-      placeOverlayHtml(view, centerEl, point)
+      acapPlaceOverlayHtml(view, centerEl, point)
       if (attached && originalCallout) {
         attached.live.tip = translateMarkupPoint(originalCallout.tip, dx, dy)
         attached.live.anchor = translateMarkupPoint(
@@ -288,8 +288,8 @@ export function bindMarkupCenterMove(
           dx,
           dy
         )
-        placeOverlayHtml(view, attached.tipDot, attached.live.tip)
-        placeOverlayHtml(view, attached.bubble, attached.live.anchor)
+        acapPlaceOverlayHtml(view, attached.tipDot, attached.live.tip)
+        acapPlaceOverlayHtml(view, attached.bubble, attached.live.anchor)
         attached.redraw()
       }
     },

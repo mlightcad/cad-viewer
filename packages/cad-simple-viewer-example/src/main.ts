@@ -10,8 +10,8 @@ import {
   AcApOpenDatabaseOptions,
   AcApQNewCmd,
   AcApSettingManager,
+  acedApplyUiTheme,
   AcEdOpenMode,
-  applyUiTheme,
   isCompactUiLayout,
   LIBREDWG_PARSER_WORKER_FILE,
   MTEXT_RENDERER_WORKER_FILE
@@ -793,7 +793,7 @@ class CadViewerApp {
     if (this.isInitialized) return
 
     try {
-      applyUiTheme('dark', this.viewerPane)
+      acedApplyUiTheme('dark', this.viewerPane)
 
       const openProf = isOpenProfMode()
       const useWorkers = openProf ? isWorkerOpenMode() : true

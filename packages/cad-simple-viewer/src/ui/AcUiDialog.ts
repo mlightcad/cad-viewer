@@ -1,6 +1,6 @@
 import {
+  acedApplyUiTheme,
   type AcEdUiTheme,
-  applyUiTheme,
   resolveUiTheme
 } from '../editor/global/AcEdUiTheme'
 
@@ -106,7 +106,7 @@ export class AcUiDialog {
 
     this.backdrop = document.createElement('div')
     this.backdrop.className = 'ml-ui-dialog-backdrop'
-    applyUiTheme(options.theme ?? resolveUiTheme(host), this.backdrop)
+    acedApplyUiTheme(options.theme ?? resolveUiTheme(host), this.backdrop)
     if (options.closeOnBackdrop ?? true) {
       this.backdrop.addEventListener('mousedown', event => {
         if (event.target === this.backdrop) this.close()

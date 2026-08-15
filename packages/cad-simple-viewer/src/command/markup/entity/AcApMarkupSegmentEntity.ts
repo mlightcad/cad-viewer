@@ -9,11 +9,11 @@ import {
 
 import type { AcTrView2d } from '../../../view'
 import {
+  acapBindOverlayPointerDrag,
+  acapDrawOverlayArrowHead,
+  acapFitOverlayCanvas,
   type AcApOverlayWorldDrawResult,
-  bindOverlayPointerDrag,
-  drawOverlayArrowHead,
-  fitOverlayCanvas,
-  placeOverlayHtml
+  acapPlaceOverlayHtml
 } from '../../overlay'
 import { runMarkupEdit } from '../AcApMarkupHistory'
 import { republishMarkup } from '../AcApMarkupRepublish'
@@ -142,7 +142,7 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
      * Redraw canvas stroke / arrow head from {@link live} endpoints.
      */
     const redrawStroke = () => {
-      const ctx = fitOverlayCanvas(overlay.canvas, container)
+      const ctx = acapFitOverlayCanvas(overlay.canvas, container)
       if (!ctx) return
       const a = view.worldToScreen(live.start)
       const b = view.worldToScreen(live.end)
@@ -153,7 +153,7 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
       ctx.lineTo(b.x, b.y)
       ctx.stroke()
       if (isArrow) {
-        drawOverlayArrowHead(ctx, a, b, this.record.style.color)
+        acapDrawOverlayArrowHead(ctx, a, b, this.record.style.color)
       }
     }
     redrawStroke()
@@ -210,24 +210,24 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
     }
     pendingGrips.push(() => {
       cleanups.push(
-        bindOverlayPointerDrag({
+        acapBindOverlayPointerDrag({
           view,
           el: startDot.element,
           onDragStart: beginEndpointDrag,
           onMove: point => {
             live.start = point
-            placeOverlayHtml(view, startDot, point)
+            acapPlaceOverlayHtml(view, startDot, point)
             redrawStroke()
           },
           onCommit: commitEndpoints
         }),
-        bindOverlayPointerDrag({
+        acapBindOverlayPointerDrag({
           view,
           el: endDot.element,
           onDragStart: beginEndpointDrag,
           onMove: point => {
             live.end = point
-            placeOverlayHtml(view, endDot, point)
+            acapPlaceOverlayHtml(view, endDot, point)
             redrawStroke()
           },
           onCommit: commitEndpoints

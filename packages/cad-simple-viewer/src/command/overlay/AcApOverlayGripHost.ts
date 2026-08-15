@@ -24,7 +24,7 @@ export interface AcApOverlayPoint2d {
  * @param ev - Pointer event in viewport client coordinates.
  * @returns World XY point under the pointer.
  */
-export function pointerEventToOverlayWorld(
+export function acapPointerEventToOverlayWorld(
   view: AcTrView2d,
   ev: PointerEvent
 ): AcApOverlayPoint2d {
@@ -43,7 +43,7 @@ export function pointerEventToOverlayWorld(
  * @param el - Published CSS2D overlay to reposition.
  * @param point - New world-space anchor.
  */
-export function placeOverlayHtml(
+export function acapPlaceOverlayHtml(
   view: AcTrView2d,
   el: AcTrHtmlElement,
   point: AcApOverlayPoint2d
@@ -66,7 +66,7 @@ const windowListenerOptions: AddEventListenerOptions = {
 }
 
 /**
- * Options for {@link bindOverlayPointerDrag}.
+ * Options for {@link acapBindOverlayPointerDrag}.
  */
 export interface AcApOverlayPointerDragOptions {
   /** Active 2D view used for world conversion and dirty flags. */
@@ -93,7 +93,7 @@ export interface AcApOverlayPointerDragOptions {
  * @param options - Handle element and drag callbacks.
  * @returns Cleanup that removes listeners and cancels an in-progress drag.
  */
-export function bindOverlayPointerDrag(
+export function acapBindOverlayPointerDrag(
   options: AcApOverlayPointerDragOptions
 ): () => void {
   const { view, el, onDragStart, onMove, onCommit } = options
@@ -156,7 +156,7 @@ export function bindOverlayPointerDrag(
         el.style.cursor = 'grabbing'
         onDragStart?.()
       }
-      onMove(pointerEventToOverlayWorld(view, ev), ev)
+      onMove(acapPointerEventToOverlayWorld(view, ev), ev)
       view.isHtmlDirty = true
     }
 
@@ -193,7 +193,7 @@ export interface AcApOverlayCalloutGripState {
 }
 
 /**
- * Options for {@link bindOverlayCalloutGrips}.
+ * Options for {@link acapBindOverlayCalloutGrips}.
  */
 export interface AcApOverlayCalloutGripOptions {
   /** Active 2D view. */
@@ -228,7 +228,7 @@ export interface AcApOverlayCalloutGripOptions {
  * @param options - Tip / bubble elements and callbacks.
  * @returns Cleanup that unbinds both grips.
  */
-export function bindOverlayCalloutGrips(
+export function acapBindOverlayCalloutGrips(
   options: AcApOverlayCalloutGripOptions
 ): () => void {
   const {
@@ -265,7 +265,7 @@ export function bindOverlayCalloutGrips(
     )
   }
 
-  const unbindTip = bindOverlayPointerDrag({
+  const unbindTip = acapBindOverlayPointerDrag({
     view,
     el: tipEl.element,
     onDragStart: () => {
@@ -277,7 +277,7 @@ export function bindOverlayCalloutGrips(
     },
     onMove: point => {
       state.tip = constrainTip ? constrainTip(point) : point
-      placeOverlayHtml(view, tipEl, state.tip)
+      acapPlaceOverlayHtml(view, tipEl, state.tip)
       onLiveChange()
     },
     onCommit: () => {
@@ -287,7 +287,7 @@ export function bindOverlayCalloutGrips(
     }
   })
 
-  const unbindBubble = bindOverlayPointerDrag({
+  const unbindBubble = acapBindOverlayPointerDrag({
     view,
     el: bubbleEl.element,
     onDragStart: () => {
@@ -299,7 +299,7 @@ export function bindOverlayCalloutGrips(
     },
     onMove: point => {
       state.anchor = point
-      placeOverlayHtml(view, bubbleEl, state.anchor)
+      acapPlaceOverlayHtml(view, bubbleEl, state.anchor)
       onLiveChange()
     },
     onCommit: () => {

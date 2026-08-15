@@ -37,7 +37,7 @@ const THEME_TOKENS: Record<AcEdUiTheme, Record<string, string>> = {
   }
 }
 
-export function applyUiTheme(
+export function acedApplyUiTheme(
   theme: AcEdUiTheme,
   target: HTMLElement = document.documentElement
 ) {

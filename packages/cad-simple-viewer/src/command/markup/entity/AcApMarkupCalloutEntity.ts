@@ -7,11 +7,11 @@ import {
 
 import type { AcTrView2d } from '../../../view'
 import {
+  acapBindOverlayCalloutGrips,
+  acapDrawOverlayLeader,
+  acapFitOverlayCanvas,
   type AcApOverlayWorldDrawResult,
-  bindOverlayCalloutGrips,
-  drawOverlayLeader,
-  fitOverlayCanvas,
-  placeOverlayHtml} from '../../overlay'
+  acapPlaceOverlayHtml} from '../../overlay'
 import { runMarkupEdit } from '../AcApMarkupHistory'
 import { republishMarkup } from '../AcApMarkupRepublish'
 import { getMarkupStore } from '../AcApMarkupStore'
@@ -133,9 +133,9 @@ export class AcApMarkupCalloutEntity extends AcApMarkupEntity {
      * Redraw the leader (with arrow) from {@link live}.
      */
     const redraw = () => {
-      const ctx = fitOverlayCanvas(overlay.canvas, container)
+      const ctx = acapFitOverlayCanvas(overlay.canvas, container)
       if (!ctx) return
-      drawOverlayLeader(
+      acapDrawOverlayLeader(
         ctx,
         view.worldToScreen(live.tip),
         view.worldToScreen(live.anchor),
@@ -190,14 +190,14 @@ export class AcApMarkupCalloutEntity extends AcApMarkupEntity {
      * Keep the center grip halfway between tip and bubble during live drag.
      */
     const syncCenter = () => {
-      placeOverlayHtml(view, centerDot, {
+      acapPlaceOverlayHtml(view, centerDot, {
         x: (live.tip.x + live.anchor.x) / 2,
         y: (live.tip.y + live.anchor.y) / 2
       })
     }
     pendingGrips.push(() => {
       cleanups.push(
-        bindOverlayCalloutGrips({
+        acapBindOverlayCalloutGrips({
           view,
           group,
           tipEl: tipDot,
