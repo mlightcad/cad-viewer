@@ -82,6 +82,7 @@ worker (+ wasm) assets, register the converter, and optionally pass
 ```typescript
 import {
   AcApDocManager,
+  LIBREDWG_PARSER_WORKER_FILE,
   MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
 import {
@@ -90,7 +91,7 @@ import {
 } from '@mlightcad/data-model'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 
-const dwgParserUrl = './workers/libredwg-parser-worker.js'
+const dwgParserUrl = `./workers/${LIBREDWG_PARSER_WORKER_FILE}`
 AcDbDatabaseConverterManager.instance.register(
   AcDbFileType.DWG,
   new AcDbLibreDwgConverter({
