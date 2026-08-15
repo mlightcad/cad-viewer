@@ -11,8 +11,8 @@ import {
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
 import {
-  AcApHtmlLivePreview,
-  acapFillLiveHighlight
+  acapFillLiveHighlight,
+  AcApHtmlLivePreview
 } from '../overlay/AcApHtmlLivePreview'
 import {
   configureMarkupCommand,
