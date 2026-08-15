@@ -37,7 +37,7 @@ import { promptMarkupCapsuleText } from './AcApMarkupCmdUtil'
 import {
   buildMarkupCloud,
   buildMarkupRect
-} from './AcApMarkupPresenter'
+} from './AcApMarkupShapeBuilder'
 import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type {
   AcApMarkupAttachedCallout,

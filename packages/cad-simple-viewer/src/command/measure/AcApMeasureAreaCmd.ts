@@ -1,9 +1,7 @@
 import { AcCmColor, AcDbDatabase, AcDbLine, AcGePoint3dLike } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
-  AcTrHtmlCanvasOverlay,
-  AcTrHtmlDot,
-  AcTrHtmlGroup
+  AcTrHtmlCanvasOverlay
 } from '@mlightcad/three-renderer'
 
 import { AcApContext } from '../../app'
@@ -29,13 +27,8 @@ import {
   formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
-import {
-  commitMeasurementGroup,
-  getMeasurementStyle,
-  MEASUREMENT_LAYER,
-  MEASUREMENT_LIVE_LAYER
-} from './AcApMeasurementStore'
+import { AcApMeasureAreaEntity } from './entity'
+import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 
 /**
  * Rubber-band jig: shows a preview line from the last confirmed
@@ -110,52 +103,6 @@ function centroid(pts: AcGePoint3dLike[]): { x: number; y: number } {
   return { x, y }
 }
 
-/** Draws a filled polygon on a full-viewport canvas overlay. */
-function drawAreaOnCanvas(
-  canvas: HTMLCanvasElement,
-  view: AcEdBaseView,
-  points: AcGePoint3dLike[],
-  color: AcCmColor,
-  lineWidth = 2.5
-): void {
-  const rect = view.canvas.getBoundingClientRect()
-  const dpr = window.devicePixelRatio || 1
-  const w = Math.round(rect.width)
-  const h = Math.round(rect.height)
-
-  const origin = view.canvasToContainer({ x: 0, y: 0 })
-  canvas.style.left = `${origin.x}px`
-  canvas.style.top = `${origin.y}px`
-  canvas.style.width = `${w}px`
-  canvas.style.height = `${h}px`
-
-  if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-    canvas.width = w * dpr
-    canvas.height = h * dpr
-  }
-
-  const ctx = canvas.getContext('2d')
-  if (!ctx || points.length < 3) return
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.save()
-  ctx.scale(dpr, dpr)
-
-  const spts = points.map(p => view.worldToScreen(p))
-
-  ctx.beginPath()
-  ctx.moveTo(spts[0].x, spts[0].y)
-  for (let i = 1; i < spts.length; i++) ctx.lineTo(spts[i].x, spts[i].y)
-  ctx.closePath()
-  ctx.fillStyle = acapColorToCssAlpha(color, 0.2)
-  ctx.fill()
-  ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = lineWidth
-  ctx.stroke()
-
-  ctx.restore()
-}
-
 /**
  * Commit an area measurement overlay (also used when importing a sidecar).
  */
@@ -167,76 +114,7 @@ export function placeAreaMeasurement(
   options?: { id?: string; layoutId?: string }
 ): void {
   if (points.length < 3) return
-  const color = style.color
-  const area = shoelaceArea(points)
-  const id = options?.id ?? `area-${Date.now()}`
-  const layoutId = options?.layoutId ?? view.activeLayoutBtrId
-  const mid = centroid(points)
-
-  const persistOverlay = new AcTrHtmlCanvasOverlay({
-    id: `area-canvas-${id}`,
-    container: view.container,
-    layer: MEASUREMENT_LAYER,
-    layoutId
-  })
-  const paintArea = (paintStyle = style) =>
-    drawAreaOnCanvas(
-      persistOverlay.canvas,
-      view,
-      points,
-      paintStyle.color,
-      acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
-    )
-  paintArea()
-
-  const redrawPersist = () => paintArea(getMeasurementStyle(id) ?? style)
-  view.events.viewChanged.addEventListener(redrawPersist)
-
-  const group = new AcTrHtmlGroup({
-    id,
-    layer: MEASUREMENT_LAYER,
-    layoutId,
-    selectable: true
-  })
-    .add(
-      new AcTrHtmlBadge({
-        id: `${id}-badge`,
-        color,
-        text: `${formatMeasurementLength(db, area)}²`,
-        worldPosition: mid,
-        layer: MEASUREMENT_LAYER,
-        fontSize: style.fontSize
-      }),
-      ...points.map(
-        (p, i) =>
-          new AcTrHtmlDot({
-            id: `${id}-dot${i}`,
-            color,
-            worldPosition: p,
-            layer: MEASUREMENT_LAYER
-          })
-      )
-    )
-    .addCanvas(persistOverlay)
-
-  commitMeasurementGroup(view, group, {
-    style,
-    value: { kind: 'area', value: area },
-    snapshot: {
-      id,
-      type: 'area',
-      layoutId,
-      style: serializeMeasurementStyle(style),
-      geometry: {
-        type: 'area',
-        points: points.map(p => ({ x: p.x, y: p.y }))
-      }
-    },
-    redraw: paintArea,
-    dispose: () => {
-      view.events.viewChanged.removeEventListener(redrawPersist)
-    }
-  })
+  AcApMeasureAreaEntity.create(points, style, options).commit(view, db)
 }
 
 /**
