@@ -25,7 +25,7 @@ import {
   getActiveMeasurementStyle
 } from '../command/measure/AcApMeasurementStore'
 import type { AcEdCommandEventArgs } from '../editor'
-import { applyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
+import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
 import { AcApI18n } from '../i18n'
 import {
   acapCssColor,
@@ -302,7 +302,7 @@ export class AcApDrawStyleToolbar {
     this.root = document.createElement('div')
     this.root.className = 'ml-draw-style-toolbar'
     this.root.setAttribute('role', 'toolbar')
-    applyUiTheme(resolveUiTheme(view.container), this.root)
+    acedApplyUiTheme(resolveUiTheme(view.container), this.root)
 
     this.colorWrap = document.createElement('div')
     this.colorWrap.className = 'ml-draw-style-toolbar__color'

@@ -3,9 +3,8 @@ import { AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
 import {
-  type AcApOverlayWorldDrawResult,
-  fitOverlayCanvas
-} from '../../overlay'
+  acapFitOverlayCanvas,
+  type AcApOverlayWorldDrawResult} from '../../overlay'
 import {
   acapLiveRectCorners,
   acapStrokeLiveCircle,
@@ -115,7 +114,7 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
      * Redraw the shape stroke with the current {@link liveOffset}.
      */
     const redrawShape = () => {
-      const ctx = fitOverlayCanvas(overlay.canvas, container)
+      const ctx = acapFitOverlayCanvas(overlay.canvas, container)
       if (!ctx) return
       const css = this.record.style.color
       if (geom.type === 'cloud') {

@@ -12,9 +12,9 @@ import { AcTrHtmlCanvasOverlay } from '@mlightcad/three-renderer'
 import { acapCssColor } from '../../util'
 import type { AcTrView2d } from '../../view'
 import {
-  drawOverlayArrowHead,
-  drawOverlayHighlight,
-  fitOverlayCanvas
+  acapDrawOverlayArrowHead,
+  acapDrawOverlayHighlight,
+  acapFitOverlayCanvas
 } from './AcApOverlayDrawUtil'
 
 /** World-space 2D point for live preview strokes. */
@@ -101,7 +101,7 @@ export class AcApHtmlLivePreview {
 
   /** Paint the current frame onto the overlay canvas. */
   private acapPaint(): void {
-    const ctx = fitOverlayCanvas(this.overlay.canvas, this.view.container)
+    const ctx = acapFitOverlayCanvas(this.overlay.canvas, this.view.container)
     if (!ctx) return
     this.drawFn?.(ctx, this.view)
   }
@@ -139,7 +139,7 @@ export function acapStrokeLiveSegment(
   ctx.stroke()
   if (options?.dashed) ctx.setLineDash([])
   if (options?.arrow) {
-    drawOverlayArrowHead(ctx, sa, sb, css)
+    acapDrawOverlayArrowHead(ctx, sa, sb, css)
   }
 }
 
@@ -225,7 +225,7 @@ export function acapFillLiveHighlight(
   color: string,
   lineWidth: number
 ): void {
-  drawOverlayHighlight(
+  acapDrawOverlayHighlight(
     ctx,
     view.worldToScreen(corner1),
     view.worldToScreen(corner2),

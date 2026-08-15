@@ -1,4 +1,4 @@
-import { isMobileUiLayout } from '@mlightcad/cad-simple-viewer'
+import { acedIsMobileUiLayout } from '@mlightcad/cad-simple-viewer'
 
 import {
   createIconElement,
@@ -686,7 +686,7 @@ export class AcExDockPanel {
     if (this.side !== 'left' && this.side !== 'right') {
       return false
     }
-    return isMobileUiLayout()
+    return acedIsMobileUiLayout()
   }
 
   private toggleSideMenu() {

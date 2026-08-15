@@ -1,7 +1,7 @@
 import {
   AcApDocManager,
+  acedApplyUiTheme,
   type AcEdUiTheme,
-  applyUiTheme,
   isLightColorTheme
 } from '@mlightcad/cad-simple-viewer'
 import {
@@ -62,7 +62,7 @@ export class AcExUiThemeSync {
   }
 
   /**
-   * @param host - Element receiving `applyUiTheme` and `data-ml-ui-theme`.
+   * @param host - Element receiving `acedApplyUiTheme` and `data-ml-ui-theme`.
    * @param onThemeChanged - Optional callback after each theme application (e.g. toolbar refresh).
    */
   constructor(
@@ -134,12 +134,12 @@ export class AcExUiThemeSync {
   }
 
   /**
-   * Calls {@link applyUiTheme} and notifies {@link onThemeChanged}.
+   * Calls {@link acedApplyUiTheme} and notifies {@link onThemeChanged}.
    *
    * @param theme - Theme to apply.
    */
   private applyTheme(theme: AcEdUiTheme) {
-    applyUiTheme(theme, this.host)
+    acedApplyUiTheme(theme, this.host)
     this.onThemeChanged?.()
   }
 }

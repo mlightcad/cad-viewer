@@ -2,7 +2,7 @@
 
 import {
   isCompactUiLayout,
-  isMobileUiLayout,
+  acedIsMobileUiLayout,
   ML_UI_COMPACT_MAX_WIDTH,
   ML_UI_COMPACT_MEDIA_QUERY,
   ML_UI_MOBILE_MAX_WIDTH,
@@ -36,7 +36,7 @@ describe('AcEdUiLayout', () => {
       })
     })
 
-    expect(isMobileUiLayout()).toBe(true)
+    expect(acedIsMobileUiLayout()).toBe(true)
     expect(isCompactUiLayout()).toBe(false)
 
     if (matchMediaDescriptor) {

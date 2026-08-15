@@ -2,9 +2,8 @@ import { AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
 import {
-  type AcApOverlayWorldDrawResult,
-  drawOverlayHighlight,
-  fitOverlayCanvas} from '../../overlay'
+  acapDrawOverlayHighlight,
+  acapFitOverlayCanvas,  type AcApOverlayWorldDrawResult} from '../../overlay'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import { AcApMarkupEntity } from './AcApMarkupEntity'
 
@@ -56,9 +55,9 @@ export class AcApMarkupHighlightEntity extends AcApMarkupEntity {
      * Redraw the highlight rectangle in screen space.
      */
     const redraw = () => {
-      const ctx = fitOverlayCanvas(overlay.canvas, container)
+      const ctx = acapFitOverlayCanvas(overlay.canvas, container)
       if (!ctx) return
-      drawOverlayHighlight(
+      acapDrawOverlayHighlight(
         ctx,
         view.worldToScreen(geom.corner1),
         view.worldToScreen(geom.corner2),

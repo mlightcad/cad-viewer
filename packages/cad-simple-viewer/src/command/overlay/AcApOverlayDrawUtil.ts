@@ -12,7 +12,7 @@
  * @param container - View container used for size measurement.
  * @returns A 2D context ready to draw, or `null` if unavailable.
  */
-export function fitOverlayCanvas(
+export function acapFitOverlayCanvas(
   canvas: HTMLCanvasElement,
   container: HTMLElement
 ): CanvasRenderingContext2D | null {
@@ -43,7 +43,7 @@ export function fitOverlayCanvas(
  * @param to - Arrow tip in screen space.
  * @param color - CSS fill color.
  */
-export function drawOverlayArrowHead(
+export function acapDrawOverlayArrowHead(
   ctx: CanvasRenderingContext2D,
   from: { x: number; y: number },
   to: { x: number; y: number },
@@ -82,7 +82,7 @@ export function drawOverlayArrowHead(
  * @param withArrow - When `true`, draws an arrow head at `tip`.
  * @param lineWidth - Stroke width in CSS pixels.
  */
-export function drawOverlayLeader(
+export function acapDrawOverlayLeader(
   ctx: CanvasRenderingContext2D,
   tip: { x: number; y: number },
   anchor: { x: number; y: number },
@@ -97,7 +97,7 @@ export function drawOverlayLeader(
   ctx.lineTo(anchor.x, anchor.y)
   ctx.stroke()
   if (withArrow) {
-    drawOverlayArrowHead(ctx, anchor, tip, color)
+    acapDrawOverlayArrowHead(ctx, anchor, tip, color)
   }
 }
 
@@ -110,7 +110,7 @@ export function drawOverlayLeader(
  * @param color - CSS fill / stroke color.
  * @param lineWidth - Outline stroke width in CSS pixels.
  */
-export function drawOverlayHighlight(
+export function acapDrawOverlayHighlight(
   ctx: CanvasRenderingContext2D,
   a: { x: number; y: number },
   b: { x: number; y: number },

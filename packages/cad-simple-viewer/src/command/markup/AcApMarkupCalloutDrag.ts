@@ -9,13 +9,13 @@ import type { AcTrHtmlElement, AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../view'
 import {
+  acapBindOverlayCalloutGrips,
+  acapBindOverlayPointerDrag,
   type AcApOverlayCalloutGripState,
   type AcApOverlayPoint2d,
   type AcApOverlayPointerDragOptions,
-  bindOverlayCalloutGrips,
-  bindOverlayPointerDrag,
-  placeOverlayHtml,
-  pointerEventToOverlayWorld} from '../overlay'
+  acapPlaceOverlayHtml,
+  acapPointerEventToOverlayWorld} from '../overlay'
 import {
   type AcApMarkupShapeOutline,
   computeLeaderTipOnShape
@@ -30,7 +30,7 @@ export type AcApMarkupCalloutGripState = AcApOverlayCalloutGripState
 /**
  * Convert a pointer event to a world-space 2D point on the view.
  *
- * @deprecated Prefer {@link pointerEventToOverlayWorld}.
+ * @deprecated Prefer {@link acapPointerEventToOverlayWorld}.
  * @param view - Active 2D view.
  * @param ev - Pointer event in viewport client coordinates.
  * @returns World XY under the pointer.
@@ -39,13 +39,13 @@ export function pointerEventToMarkupWorld(
   view: AcTrView2d,
   ev: PointerEvent
 ): AcApMarkupPoint2d {
-  return pointerEventToOverlayWorld(view, ev)
+  return acapPointerEventToOverlayWorld(view, ev)
 }
 
 /**
  * Move a published HTML overlay and refresh its transform baseline.
  *
- * @deprecated Prefer {@link placeOverlayHtml}.
+ * @deprecated Prefer {@link acapPlaceOverlayHtml}.
  * @param view - Active 2D view.
  * @param el - Published CSS2D overlay.
  * @param point - New world-space anchor.
@@ -55,20 +55,20 @@ export function placeMarkupHtml(
   el: AcTrHtmlElement,
   point: AcApOverlayPoint2d
 ): void {
-  placeOverlayHtml(view, el, point)
+  acapPlaceOverlayHtml(view, el, point)
 }
 
 /**
  * Bind pointer-drag on one HTML overlay handle.
  *
- * @deprecated Prefer {@link bindOverlayPointerDrag}.
+ * @deprecated Prefer {@link acapBindOverlayPointerDrag}.
  * @param options - Same as {@link AcApOverlayPointerDragOptions}.
  * @returns Cleanup that removes listeners.
  */
 export function bindMarkupPointerDrag(
   options: AcApOverlayPointerDragOptions
 ): () => void {
-  return bindOverlayPointerDrag(options)
+  return acapBindOverlayPointerDrag(options)
 }
 
 /**
@@ -111,7 +111,7 @@ export function bindMarkupCalloutGrips(
   options: AcApMarkupCalloutGripBindOptions
 ): () => void {
   const { outline, ...rest } = options
-  return bindOverlayCalloutGrips({
+  return acapBindOverlayCalloutGrips({
     ...rest,
     constrainTip: outline
       ? point => computeLeaderTipOnShape(outline, point)
