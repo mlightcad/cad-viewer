@@ -118,7 +118,7 @@ CAD-Viewer는 [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer)의 �
 
 | 패키지 | 역할 | 명령 / 기능 |
 |---------|------|-------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | `cad-simple-viewer`용 **툴바 및 레이어 관리자 UI**(순수 DOM, Vue/React 없음) | `layer`, 기본 툴바(보기, 측정, 내보내기, 검토, 테마, 로케일) |
+| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | `cad-simple-viewer`용 **툴바·레이어 관리자·검토 팔레트 UI**(순수 DOM, Vue/React 없음) | `layer`, `markuppanel`, 기본 툴바(보기, 측정, 내보내기, 검토, 테마, 로케일) |
 | [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **자연어 CAD 에이전트**(AI 채팅 패널 + 도면 도구 호출) | `agent` |
 | [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | 도면을 **자체 포함 오프라인 HTML**로 내보내기 | `chtml` (`cad-viewer` 대화상자), `-chtml` (명령줄) |
 | [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **PDF 내보내기 및 가져오기**(벡터 파이프라인) | `cpdf`, `ipdf` |
@@ -131,9 +131,9 @@ CAD-Viewer는 [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer)의 �
 제공 기능:
 
 - **구성 가능한 툴바**(임의의 가장자리 배치, 기본 CAD 명령, 중첩 메뉴, 커스텀 항목)
-- **플로팅 레이어 관리자**(레이어 켜기/끄기, ACI 색상 선택기, 더블클릭으로 레이어로 줌)
+- **독 패널**: **레이어 관리자** 탭(레이어 켜기/끄기, ACI 색상 선택기, 더블클릭으로 레이어로 줌)과 **검토 팔레트** 탭(마크업 목록, 상태, 댓글)
 - **`COLORTHEME` sysvar 및 호스트 요소의 `--ml-ui-*` CSS 토큰과 테마 동기화**
-- **`AcApI18n`과 로케일 동기화**(영어 / 중국어)
+- **`AcApI18n`과 로케일 동기화**(영어 / 중국어 / 체코어 / 터키어)
 
 모든 위젯은 프레임워크에 독립적(순수 DOM)입니다. 전체 Vue [`cad-viewer`](packages/cad-viewer) 앱은 자체 Element Plus UI가 있으며 이 플러그인이 필요하지 않습니다. `cad-simple-viewer`를 직접 기반으로 구축할 때 `cad-simple-ui-plugin`을 사용하세요.
 

@@ -10,7 +10,12 @@ import {
   MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
 import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
-import { accmYieldForPaint } from '@mlightcad/data-model'
+import {
+  AcDbDatabaseConverterManager,
+  AcDbFileType,
+  accmYieldForPaint
+} from '@mlightcad/data-model'
+import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 
 /** Max time to wait for convert + deferred font/text geometry after open. */
 const SCENE_IDLE_TIMEOUT_MS = 120_000
@@ -178,6 +183,15 @@ async function ensureViewer(): Promise<void> {
   installDownloadCapture()
 
   const container = document.getElementById('cad-root') as HTMLDivElement
+  const dwgParserUrl = `./workers/${LIBREDWG_PARSER_WORKER_FILE}`
+  AcDbDatabaseConverterManager.instance.register(
+    AcDbFileType.DWG,
+    new AcDbLibreDwgConverter({
+      convertByEntityType: false,
+      useWorker: true,
+      parserWorkerUrl: dwgParserUrl
+    })
+  )
   AcApDocManager.createInstance({
     container,
     width: 1280,
@@ -186,7 +200,7 @@ async function ensureViewer(): Promise<void> {
     baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
     useMainThreadDraw: true,
     webworkerFileUrls: {
-      dwgParser: `./workers/${LIBREDWG_PARSER_WORKER_FILE}`,
+      dwgParser: dwgParserUrl,
       mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`
     }
   })

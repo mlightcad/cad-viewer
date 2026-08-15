@@ -2,7 +2,6 @@ import {
   AcCmColor,
   AcCmEventManager,
   AcDbDatabase,
-  AcDbDatabaseConverterManager,
   AcDbFileType,
   acdbHostApplicationServices,
   AcDbOpenDatabaseOptions,
@@ -10,7 +9,6 @@ import {
   AcGeBox2d,
   log
 } from '@mlightcad/data-model'
-import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 import { FontManager } from '@mlightcad/mtext-renderer'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
@@ -207,10 +205,12 @@ export interface AcDbDocumentEventArgs {
  */
 export interface AcApWebworkerFiles {
   /**
-   * URL of the Web Worker bundle responsible for parsing DWG files.
+   * Optional URL of a Web Worker that parses DWG files.
    *
-   * DWG parsing is computationally expensive and must be executed
-   * in a Web Worker to maintain UI responsiveness.
+   * The viewer does **not** register a DWG converter by default (LibreDWG is
+   * GPL). Hosts that opt into DWG support should register their own converter
+   * (e.g. `@mlightcad/libredwg-converter`) and may pass this URL so readiness
+   * checks can verify the worker script is reachable.
    */
   dwgParser?: string | URL
 
@@ -1934,48 +1934,15 @@ export class AcApDocManager {
   }
 
   /**
-   * Registers file format converters for CAD file processing.
-   *
-   * DXF needs no registration: the {@link AcDbDatabaseConverterManager}
-   * singleton binds the native DXF converter in its own constructor, so the
-   * converter is always attached to the same instance this app imports.
-   *
-   * DWG uses `@mlightcad/libredwg-converter` with a worker URL.
-   *
-   * Registration errors are logged without throwing so the application can
-   * continue if registration fails.
-   */
-  private registerConverters(webworkerFileUrls?: AcApWebworkerFiles) {
-    try {
-      const converter = new AcDbLibreDwgConverter({
-        convertByEntityType: false,
-        useWorker: true,
-        parserWorkerUrl:
-          webworkerFileUrls?.dwgParser ?? DEFAULT_WEBWORKER_FILE_URLS.dwgParser
-      })
-      AcDbDatabaseConverterManager.instance.register(
-        AcDbFileType.DWG,
-        converter
-      )
-    } catch (error) {
-      log.error('Failed to register dwg converter: ', error)
-    }
-  }
-
-  /**
    * Initializes background workers used by the viewer runtime.
    *
-   * This function performs two tasks:
-   * - Registers the LibreDWG DWG converter (parser runs in a worker). DXF is
-   *   already handled by the converter manager's built-in native converter.
-   * - Initializes the MText renderer by pointing it to its dedicated Web Worker
-   *   script for text layout and shaping.
-   *
-   * The function is safe to call during application startup. Errors during
-   * initialization are handled inside the respective registration routines.
+   * Points the MText renderer at its Web Worker script for text layout and
+   * shaping. DXF parsing is handled by the built-in converter in
+   * `@mlightcad/data-model`. DWG converters are **not** registered here —
+   * hosts that need DWG must depend on and register a converter themselves
+   * (e.g. `@mlightcad/libredwg-converter`).
    */
   private registerWorkers(webworkerFileUrls?: AcApWebworkerFiles) {
-    this.registerConverters(webworkerFileUrls)
     const mtextRenderer = AcTrMTextRenderer.getInstance()
     mtextRenderer.initialize(
       webworkerFileUrls?.mtextRender ?? DEFAULT_WEBWORKER_FILE_URLS.mtextRender

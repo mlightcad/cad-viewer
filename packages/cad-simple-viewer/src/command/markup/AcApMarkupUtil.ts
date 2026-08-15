@@ -2,6 +2,7 @@ import {
   AcCmColor,
   AcCmColorMethod,
   AcDbDatabase,
+  AcDbSystemVariables,
   AcDbSysVarManager,
   AcGiLineWeight
 } from '@mlightcad/data-model'
@@ -125,14 +126,12 @@ export function markupNow(): string {
 /**
  * Markup author from the AutoCAD-compatible **LOGINNAME** system variable.
  *
- * Read by name because this variable is not in the published system-variable
- * enum yet. Missing descriptors fall back to an empty author.
- *
  * @see https://help.autodesk.com/view/ACD/2026/ENU/?caas=caas/documentation/CIV3D/2014/ENU/filesACD/GUID-81446F4E-F6DC-442A-9889-EE777D3D49B9-htm.html
  */
 export function getMarkupAuthor(db: AcDbDatabase): string {
-  const manager = AcDbSysVarManager.instance()
-  if (!manager.getDescriptor('LOGINNAME')) return ''
-  const raw = manager.getVar('LOGINNAME', db)
+  const raw = AcDbSysVarManager.instance().getVar(
+    AcDbSystemVariables.LOGINNAME,
+    db
+  )
   return typeof raw === 'string' ? raw.trim() : ''
 }

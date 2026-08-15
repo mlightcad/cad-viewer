@@ -118,7 +118,7 @@ Monorepo dodává několik oficiálních pluginů. Každý se zaměřuje na jedn
 
 | Package | Role | Příkazy / schopnosti |
 |---------|------|-------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **Panel nástrojů a správce vrstev** pro `cad-simple-viewer` (čisté DOM, bez Vue/React) | `layer`, výchozí panel nástrojů (zobrazení, měření, export, revize, motiv, jazyk) |
+| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **Panel nástrojů, správce vrstev a paleta revizí** pro `cad-simple-viewer` (čisté DOM, bez Vue/React) | `layer`, `markuppanel`, výchozí panel nástrojů (zobrazení, měření, export, revize, motiv, jazyk) |
 | [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **CAD agent v přirozeném jazyce** (AI chat panel + volání nástrojů pro výkres) | `agent` |
 | [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | Export výkresů do **samostatného offline HTML** | `chtml` (dialog v `cad-viewer`), `-chtml` (příkazová řádka) |
 | [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **Export a import PDF** (vektorová pipeline) | `cpdf`, `ipdf` |
@@ -131,9 +131,9 @@ Monorepo dodává několik oficiálních pluginů. Každý se zaměřuje na jedn
 Poskytuje:
 
 - **Konfigurovatelný panel nástrojů** (umístění na libovolném okraji, výchozí CAD příkazy, vnořená menu, vlastní položky)
-- **Plovoucí správce vrstev** (zapnutí/vypnutí vrstvy, výběr barvy ACI, přiblížení na vrstvu dvojklikem)
+- **Dokovací panel** se záložkou **správce vrstev** (zapnutí/vypnutí vrstvy, výběr barvy ACI, přiblížení na vrstvu dvojklikem) a záložkou **palety revizí** (seznam značek, stav, komentáře)
 - **Synchronizaci motivu** se sysvar `COLORTHEME` a CSS tokeny `--ml-ui-*` na hostitelském elementu
-- **Synchronizaci jazyka** s `AcApI18n` (angličtina / čínština)
+- **Synchronizaci jazyka** s `AcApI18n` (angličtina / čínština / čeština / turečtina)
 
 Všechny widgety jsou nezávislé na frameworku (čisté DOM). Plná Vue aplikace [`cad-viewer`](packages/cad-viewer) má vlastní Element Plus UI a tento plugin nevyžaduje; použijte `cad-simple-ui-plugin`, když stavíte přímo na `cad-simple-viewer`.
 

@@ -72,12 +72,12 @@ The `LockAndFade` isolation keyword matches AutoCAD naming but the viewer **lock
 
 ## Web Worker deployment
 
-The viewer loads worker scripts for DWG parsing and MTEXT rendering. DXF is
-parsed by the built-in converter in `@mlightcad/data-model` (no separate worker).
-Host applications must deploy the DWG/MTEXT worker files and point to them via
-`webworkerFileUrls` in `AcApDocManager.createInstance()`.
-
-Before calling `openDocument()`, verify that the workers are reachable. Use the built-in readiness API rather than downloading worker bodies with a plain GET request (the LibreDWG worker alone is ~12 MB):
+The viewer ships an MTEXT layout worker. DXF is parsed by the built-in converter
+in `@mlightcad/data-model` (no separate worker). **DWG support is opt-in**: this
+package does not depend on or register `@mlightcad/libredwg-converter` (GPL).
+Hosts that need DWG must add that dependency (or another converter), deploy its
+worker (+ wasm) assets, register the converter, and optionally pass
+`webworkerFileUrls.dwgParser` for readiness checks.
 
 ```typescript
 import {
@@ -85,9 +85,24 @@ import {
   LIBREDWG_PARSER_WORKER_FILE,
   MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
+import {
+  AcDbDatabaseConverterManager,
+  AcDbFileType
+} from '@mlightcad/data-model'
+import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
+
+const dwgParserUrl = `./workers/${LIBREDWG_PARSER_WORKER_FILE}`
+AcDbDatabaseConverterManager.instance.register(
+  AcDbFileType.DWG,
+  new AcDbLibreDwgConverter({
+    convertByEntityType: false,
+    useWorker: true,
+    parserWorkerUrl: dwgParserUrl
+  })
+)
 
 const workerUrls = {
-  dwgParser: `./workers/${LIBREDWG_PARSER_WORKER_FILE}`,
+  dwgParser: dwgParserUrl,
   mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`
 }
 
@@ -105,7 +120,7 @@ if (!(await manager.areWorkersReady())) {
 }
 ```
 
-`areWorkersReady()` and `checkWebworkerReadiness()` use HEAD requests internally. Successful URL probes are cached for the current page lifecycle; failures are not cached at the probe layer, so a transient network error can succeed on a later `areWorkersReady()` call. After each check, `manager.workersReady` is `true` or `false` (`null` only before the first check).
+`areWorkersReady()` and `checkWebworkerReadiness()` use HEAD requests internally. Successful URL probes are cached for the current page lifecycle; failures are not cached at the probe layer, so a transient network error can succeed on a later `areWorkersReady()` call. After each check, `manager.workersReady` is `true` or `false` (`null` only before the first check). Only URLs you pass are probed — `dwgParser` is skipped when omitted.
 
 You can also enable automatic checks during initialization:
 

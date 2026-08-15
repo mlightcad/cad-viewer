@@ -79,7 +79,7 @@ Toast messages at the top report success or errors. The window title updates whe
 | Format | Notes |
 |--------|--------|
 | **DXF** | Built-in parser in `@mlightcad/data-model` |
-| **DWG** | LibreDWG WebAssembly via `libredwg-parser-worker.js` |
+| **DWG** | Optional `@mlightcad/libredwg-converter` (GPL) — registered by this example |
 
 ## What this example demonstrates
 

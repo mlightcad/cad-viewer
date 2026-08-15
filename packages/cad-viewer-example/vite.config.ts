@@ -7,6 +7,12 @@ import svgLoader from 'vite-svg-loader'
 import { visualizer } from 'rollup-plugin-visualizer'
 import vue from '@vitejs/plugin-vue'
 import { exampleRollupOutput } from '../vite-config/pluginRollupOutput'
+import {
+  LIBREDWG_CONVERTER_PACKAGE,
+  LIBREDWG_PARSER_WASM_FILE,
+  LIBREDWG_PARSER_WORKER_FILE,
+  MTEXT_RENDERER_WORKER_FILE
+} from '../../tools/worker-assets.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const VIEWER_RUNTIME_SRC = '../cad-html-plugin/dist/viewer-runtime.iife.js'
@@ -81,16 +87,39 @@ export default defineConfig(({ command, mode }) => {
     }
   }
 
+  const libredwgDist = `./node_modules/${LIBREDWG_CONVERTER_PACKAGE}/dist`
+  const libredwgWasmSrc = resolve(
+    __dirname,
+    'node_modules',
+    LIBREDWG_CONVERTER_PACKAGE,
+    'dist',
+    LIBREDWG_PARSER_WASM_FILE
+  )
+
   const plugins = [
     vue(),
     svgLoader(),
     viteStaticCopy({
       targets: [
         {
-          src: './node_modules/@mlightcad/cad-simple-viewer/dist/*-worker.js',
+          src: `./node_modules/@mlightcad/cad-simple-viewer/dist/${MTEXT_RENDERER_WORKER_FILE}`,
           dest: 'assets',
           rename: { stripBase: true }
         },
+        {
+          src: `${libredwgDist}/${LIBREDWG_PARSER_WORKER_FILE}`,
+          dest: 'assets',
+          rename: { stripBase: true }
+        },
+        ...(existsSync(libredwgWasmSrc)
+          ? [
+              {
+                src: `${libredwgDist}/${LIBREDWG_PARSER_WASM_FILE}`,
+                dest: 'assets',
+                rename: { stripBase: true }
+              }
+            ]
+          : []),
         ...(hasViewerRuntime
           ? [
               {
@@ -104,7 +133,6 @@ export default defineConfig(({ command, mode }) => {
     })
   ]
 
-  // Add conditional plugins
   if (mode === 'analyze') {
     plugins.push(visualizer())
   }
@@ -115,7 +143,7 @@ export default defineConfig(({ command, mode }) => {
       alias: aliases
     },
     optimizeDeps: {
-      force: command === 'serve', // Force re-optimization in dev mode to fix stale cache issues
+      force: command === 'serve',
       exclude:
         command === 'serve'
           ? [
@@ -138,7 +166,6 @@ export default defineConfig(({ command, mode }) => {
       modulePreload: false,
       minify: true,
       rollupOptions: {
-        // Main entry point for the app
         input: {
           main: resolve(__dirname, 'index.html')
         },
