@@ -1,4 +1,4 @@
-import { AcCmColor, AcDbDatabase, AcDbLine, AcGePoint3dLike } from '@mlightcad/data-model'
+import { AcCmColor, AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
   AcTrHtmlCanvasOverlay
@@ -21,7 +21,6 @@ import {
   acapCssColor,
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
-  acapGetMeasurementLineWeight,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
   formatMeasurementLength
@@ -31,32 +30,28 @@ import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import { AcApMeasureAreaEntity } from './entity'
 
 /**
- * Rubber-band jig: shows a preview line from the last confirmed
- * vertex to the current cursor position and fires onMove on each update.
+ * Rubber-band jig: fires onMove on each cursor update so the command can
+ * redraw the live polygon fill / outline (HTML-only — no CAD transient).
  */
 class AcApMeasureAreaJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private _line: AcDbLine
   private _onMove: (p: AcGePoint3dLike) => void
 
   constructor(
     view: AcEdBaseView,
-    from: AcGePoint3dLike,
-    color: AcCmColor,
+    _from: AcGePoint3dLike,
+    _color: AcCmColor,
     onMove: (p: AcGePoint3dLike) => void
   ) {
     super(view)
-    this._line = new AcDbLine(from, from)
-    this._line.color = color
-    this._line.lineWeight = acapGetMeasurementLineWeight()
     this._onMove = onMove
   }
 
-  get entity(): AcDbLine {
-    return this._line
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(p: AcGePoint3dLike) {
-    this._line.endPoint = p
     this._onMove(p)
   }
 }
@@ -221,6 +216,18 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         ctx.setLineDash([])
       }
 
+      // Rubber-band from last confirmed vertex to cursor (solid)
+      if (cursor && confirmedSpts.length >= 1) {
+        const last = confirmedSpts[confirmedSpts.length - 1]
+        const sc = context.view.worldToScreen(cursor)
+        ctx.beginPath()
+        ctx.moveTo(last.x, last.y)
+        ctx.lineTo(sc.x, sc.y)
+        ctx.strokeStyle = acapCssColor(color)
+        ctx.lineWidth = canvasLineWidth
+        ctx.stroke()
+      }
+
       ctx.restore()
     }
 
@@ -255,7 +262,11 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
               prompt.allowNone = true
 
               const onMove = (cursor: AcGePoint3dLike) => {
-                if (points.length < 2) return
+                if (points.length < 2) {
+                  // Still stroke rubber-band from first point while picking 2nd
+                  drawPolygon(cursor)
+                  return
+                }
                 const tempPts = [...points, cursor]
                 const area = shoelaceArea(tempPts)
                 liveBadge.setText(

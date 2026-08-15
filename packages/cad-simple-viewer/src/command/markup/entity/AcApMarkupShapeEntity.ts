@@ -1,14 +1,15 @@
-import {
-  AcDbCircle,
-  type AcDbObjectId,
-  AcDbPolyline,
-  AcGePoint3d
-} from '@mlightcad/data-model'
-import { AcTrHtmlDot } from '@mlightcad/three-renderer'
+import { AcGePoint3d } from '@mlightcad/data-model'
+import { AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
-import type { AcApOverlayWorldDrawResult } from '../../overlay'
-import { buildMarkupCloud, buildMarkupRect } from '../AcApMarkupShapeBuilder'
+import {
+  acapLiveRectCorners,
+  type AcApOverlayWorldDrawResult,
+  acapStrokeLiveCircle,
+  acapStrokeLivePolyline,
+  fitOverlayCanvas
+} from '../../overlay'
+import { strokeMarkupCloud } from '../AcApMarkupShapeBuilder'
 import type { AcApMarkupShapeOutline } from '../AcApMarkupShapeCallout'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import { AcApMarkupEntity } from './AcApMarkupEntity'
@@ -20,8 +21,9 @@ import {
 /**
  * Cloud / rect / circle markup with optional attached callout.
  *
- * Builds a CAD transient shape, a center move grip, and optionally a
+ * Builds an HTML canvas shape, a center move grip, and optionally a
  * shape-attached leader + bubble via {@link publishAttachedCallout}.
+ * No CAD transient entities.
  */
 export class AcApMarkupShapeEntity extends AcApMarkupEntity {
   /**
@@ -41,7 +43,7 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
   }
 
   /**
-   * Publish CAD shape, center dot, optional attached callout, and center move.
+   * Publish canvas shape, center dot, optional attached callout, and center move.
    *
    * @param view - Active 2D view.
    * @returns Built visuals with deferred center-move grip binding.
@@ -55,12 +57,10 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
     ) {
       return this.emptyResult(this.createGroup())
     }
-    const { color, lineWeight, layer, layoutId } = this.style()
+    const { color, canvasLineWidth, layer, layoutId } = this.style()
     const group = this.createGroup()
-    /** Unbinders for CAD removal, viewChanged, and grips. */
+    /** Unbinders for viewChanged and grips. */
     const cleanups: Array<() => void> = []
-    /** CAD transient object ids for highlight / preview transforms. */
-    const entityIds: AcDbObjectId[] = []
     /** Grip binders deferred until after manager.add(group). */
     const pendingGrips: Array<() => void> = []
 
@@ -68,15 +68,10 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
     let centerPos: { x: number; y: number }
     /** Outline used to constrain an attached callout tip. */
     let outline: AcApMarkupShapeOutline
+    /** Live drag translation applied while moving the center grip. */
+    let liveOffset = { dx: 0, dy: 0 }
 
     if (geom.type === 'cloud') {
-      const cloud = new AcDbPolyline()
-      cloud.color = color
-      cloud.lineWeight = lineWeight
-      buildMarkupCloud(cloud, geom.corner1, geom.corner2, view)
-      view.addTransientEntity(cloud)
-      entityIds.push(cloud.objectId)
-      cleanups.push(() => view.removeTransientEntity(cloud.objectId))
       centerPos = {
         x: (geom.corner1.x + geom.corner2.x) / 2,
         y: (geom.corner1.y + geom.corner2.y) / 2
@@ -87,13 +82,6 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
         corner2: geom.corner2
       }
     } else if (geom.type === 'rect') {
-      const rect = new AcDbPolyline()
-      rect.color = color
-      rect.lineWeight = lineWeight
-      buildMarkupRect(rect, geom.corner1, geom.corner2)
-      view.addTransientEntity(rect)
-      entityIds.push(rect.objectId)
-      cleanups.push(() => view.removeTransientEntity(rect.objectId))
       centerPos = {
         x: (geom.corner1.x + geom.corner2.x) / 2,
         y: (geom.corner1.y + geom.corner2.y) / 2
@@ -104,15 +92,6 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
         corner2: geom.corner2
       }
     } else {
-      const circle = new AcDbCircle(
-        { x: geom.center.x, y: geom.center.y, z: 0 },
-        geom.radius
-      )
-      circle.color = color
-      circle.lineWeight = lineWeight
-      view.addTransientEntity(circle)
-      entityIds.push(circle.objectId)
-      cleanups.push(() => view.removeTransientEntity(circle.objectId))
       centerPos = { ...geom.center }
       outline = {
         kind: 'circle',
@@ -120,6 +99,62 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
         radius: geom.radius
       }
     }
+
+    const container = view.container
+    const overlay = new AcTrHtmlCanvasOverlay({
+      id: `${this.record.id}-shape`,
+      container,
+      layer,
+      layoutId
+    })
+    group.addCanvas(overlay)
+
+    /**
+     * Redraw the shape stroke with the current {@link liveOffset}.
+     */
+    const redrawShape = () => {
+      const ctx = fitOverlayCanvas(overlay.canvas, container)
+      if (!ctx) return
+      const css = this.record.style.color
+      if (geom.type === 'cloud') {
+        strokeMarkupCloud(
+          ctx,
+          view,
+          geom.corner1,
+          geom.corner2,
+          css,
+          canvasLineWidth,
+          liveOffset
+        )
+      } else if (geom.type === 'rect') {
+        const corners = acapLiveRectCorners(geom.corner1, geom.corner2).map(
+          p => ({
+            x: p.x + liveOffset.dx,
+            y: p.y + liveOffset.dy
+          })
+        )
+        acapStrokeLivePolyline(ctx, view, corners, css, canvasLineWidth, {
+          closed: true
+        })
+      } else {
+        acapStrokeLiveCircle(
+          ctx,
+          view,
+          {
+            x: geom.center.x + liveOffset.dx,
+            y: geom.center.y + liveOffset.dy
+          },
+          geom.radius,
+          css,
+          canvasLineWidth
+        )
+      }
+    }
+    redrawShape()
+    view.events.viewChanged.addEventListener(redrawShape)
+    cleanups.push(() =>
+      view.events.viewChanged.removeEventListener(redrawShape)
+    )
 
     const centerDot = new AcTrHtmlDot({
       id: `${this.record.id}-dot`,
@@ -149,15 +184,18 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
           view,
           recordId: this.record.id,
           centerEl: centerDot,
-          entityIds,
-          attached
+          attached,
+          onLiveOffset: (dx, dy) => {
+            liveOffset = { dx, dy }
+            redrawShape()
+          }
         })
       )
     })
 
     return {
       group,
-      entityIds,
+      entityIds: [],
       dispose: () => {
         for (const fn of cleanups) {
           try {

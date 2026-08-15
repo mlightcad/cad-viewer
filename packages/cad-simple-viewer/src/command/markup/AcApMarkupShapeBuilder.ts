@@ -1,12 +1,8 @@
 /**
- * Markup shape polyline builders (revision cloud and rectangle).
+ * Markup shape geometry builders (revision cloud and rectangle) for HTML canvas.
  */
 
-import {
-  AcDbPolyline,
-  AcGePoint2d,
-  type AcGePoint2dLike
-} from '@mlightcad/data-model'
+import type { AcGePoint2dLike } from '@mlightcad/data-model'
 
 import type { AcEdBaseView } from '../../editor'
 
@@ -14,6 +10,19 @@ import type { AcEdBaseView } from '../../editor'
  * Target screen diameter in CSS pixels for each revision-cloud lobe.
  */
 const CLOUD_DIAMETER_PIXELS = 8
+
+/** World-space vertex with AutoCAD-style bulge to the next vertex. */
+export interface AcApMarkupCloudVertex {
+  /** World X. */
+  x: number
+  /** World Y. */
+  y: number
+  /**
+   * Bulge to the next vertex (`tan(includedAngle/4)`).
+   * Zero means a straight segment; the last vertex's bulge closes to the first.
+   */
+  bulge: number
+}
 
 /**
  * Convert a screen-space pixel length to world distance at a reference point.
@@ -35,31 +44,27 @@ function pixelToWorldDistance(
 }
 
 /**
- * Rebuild a closed revision-cloud polyline between two opposite corners.
+ * Build closed revision-cloud vertices (points + bulges) between two corners.
  *
- * Vertices and bulges are regenerated so lobe size tracks the current view
- * scale ({@link CLOUD_DIAMETER_PIXELS}).
+ * Lobe size tracks the current view scale ({@link CLOUD_DIAMETER_PIXELS}).
  *
- * @param cloud - Polyline to reset and fill.
  * @param firstPoint - One corner of the cloud AABB.
  * @param secondPoint - Opposite corner of the cloud AABB.
  * @param view - View used to size lobes in screen pixels.
+ * @returns Closed ring of vertices (last segment uses the last bulge → first point).
  */
-export function buildMarkupCloud(
-  cloud: AcDbPolyline,
+export function markupCloudVertices(
   firstPoint: AcGePoint2dLike,
   secondPoint: AcGePoint2dLike,
   view: AcEdBaseView
-): void {
-  cloud.reset(false)
-
+): AcApMarkupCloudVertex[] {
   const minX = Math.min(firstPoint.x, secondPoint.x)
   const maxX = Math.max(firstPoint.x, secondPoint.x)
   const minY = Math.min(firstPoint.y, secondPoint.y)
   const maxY = Math.max(firstPoint.y, secondPoint.y)
   const width = maxX - minX
   const height = maxY - minY
-  const centerPoint = new AcGePoint2d((minX + maxX) / 2, (minY + maxY) / 2)
+  const centerPoint = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
   const cloudDiameter = pixelToWorldDistance(
     view,
     CLOUD_DIAMETER_PIXELS,
@@ -69,8 +74,7 @@ export function buildMarkupCloud(
   const numSegmentsX = Math.max(4, Math.ceil(width / chordLength) * 2)
   const numSegmentsY = Math.max(4, Math.ceil(height / chordLength) * 2)
 
-  const points: AcGePoint2d[] = []
-  const bulges: (number | undefined)[] = []
+  const vertices: AcApMarkupCloudVertex[] = []
   let segmentIndex = 0
   /**
    * Alternating bulge for scalloped cloud edges.
@@ -82,57 +86,208 @@ export function buildMarkupCloud(
 
   for (let i = 0; i <= numSegmentsX; i++) {
     const t = i / numSegmentsX
-    points.push(new AcGePoint2d(minX + width * t, minY))
-    bulges.push(
-      i < numSegmentsX ? calculateBulge(segmentIndex++ % 2 === 0) : undefined
-    )
+    vertices.push({
+      x: minX + width * t,
+      y: minY,
+      bulge: i < numSegmentsX ? calculateBulge(segmentIndex++ % 2 === 0) : 0
+    })
   }
   for (let i = 1; i <= numSegmentsY; i++) {
     const t = i / numSegmentsY
-    points.push(new AcGePoint2d(maxX, minY + height * t))
-    bulges.push(
-      i < numSegmentsY ? calculateBulge(segmentIndex++ % 2 === 0) : undefined
-    )
+    vertices.push({
+      x: maxX,
+      y: minY + height * t,
+      bulge: i < numSegmentsY ? calculateBulge(segmentIndex++ % 2 === 0) : 0
+    })
   }
   for (let i = 1; i <= numSegmentsX; i++) {
     const t = 1 - i / numSegmentsX
-    points.push(new AcGePoint2d(minX + width * t, maxY))
-    bulges.push(
-      i < numSegmentsX ? calculateBulge(segmentIndex++ % 2 === 0) : undefined
-    )
+    vertices.push({
+      x: minX + width * t,
+      y: maxY,
+      bulge: i < numSegmentsX ? calculateBulge(segmentIndex++ % 2 === 0) : 0
+    })
   }
   for (let i = 1; i < numSegmentsY; i++) {
     const t = 1 - i / numSegmentsY
-    points.push(new AcGePoint2d(minX, minY + height * t))
-    bulges.push(
-      i < numSegmentsY - 1
-        ? calculateBulge(segmentIndex++ % 2 === 0)
-        : undefined
-    )
+    vertices.push({
+      x: minX,
+      y: minY + height * t,
+      bulge:
+        i < numSegmentsY - 1 ? calculateBulge(segmentIndex++ % 2 === 0) : 0
+    })
   }
 
-  for (let i = 0; i < points.length; i++) {
-    cloud.addVertexAt(i, points[i], bulges[i])
-  }
-  cloud.closed = true
+  // Closing segment (last → first) uses bulge 0, matching the prior polyline builder.
+  return vertices
 }
 
 /**
- * Build a closed rectangle polyline between two opposite corners.
+ * Axis-aligned rectangle corners as a closed polyline (world).
  *
- * @param rect - Polyline to reset and fill with four corners.
- * @param first - One corner of the rectangle.
- * @param second - Opposite corner of the rectangle.
+ * @param first - One corner.
+ * @param second - Opposite corner.
+ * @returns Four corners in order from `first`.
+ */
+export function markupRectCorners(
+  first: AcGePoint2dLike,
+  second: AcGePoint2dLike
+): Array<{ x: number; y: number }> {
+  return [
+    { x: first.x, y: first.y },
+    { x: second.x, y: first.y },
+    { x: second.x, y: second.y },
+    { x: first.x, y: second.y }
+  ]
+}
+
+/**
+ * Tessellate one bulged segment into world points (excluding `p1`, including end).
+ *
+ * @param p1 - Segment start.
+ * @param p2 - Segment end.
+ * @param bulge - AutoCAD bulge (`tan(includedAngle/4)`).
+ * @param samples - Interior samples along the arc (≥ 1 when bulged).
+ */
+function tessellateBulgeSegment(
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  bulge: number,
+  samples = 6
+): Array<{ x: number; y: number }> {
+  if (Math.abs(bulge) < 1e-8) {
+    return [{ x: p2.x, y: p2.y }]
+  }
+  const dx = p2.x - p1.x
+  const dy = p2.y - p1.y
+  const d = Math.hypot(dx, dy)
+  if (d < 1e-12) {
+    return [{ x: p2.x, y: p2.y }]
+  }
+  const cx =
+    (p1.x + p2.x) / 2 - (dy * (1 - bulge * bulge)) / (4 * bulge)
+  const cy =
+    (p1.y + p2.y) / 2 + (dx * (1 - bulge * bulge)) / (4 * bulge)
+  const r = Math.hypot(p1.x - cx, p1.y - cy)
+  const a0 = Math.atan2(p1.y - cy, p1.x - cx)
+  const a1 = Math.atan2(p2.y - cy, p2.x - cx)
+  let delta = a1 - a0
+  // Positive bulge → CCW (left of chord); negative → CW.
+  if (bulge > 0) {
+    if (delta <= 0) delta += Math.PI * 2
+  } else {
+    if (delta >= 0) delta -= Math.PI * 2
+  }
+  const out: Array<{ x: number; y: number }> = []
+  const steps = Math.max(2, samples)
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps
+    const a = a0 + delta * t
+    out.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) })
+  }
+  return out
+}
+
+/**
+ * Expand cloud vertices to a dense polyline suitable for canvas stroke.
+ *
+ * @param vertices - Closed cloud ring with bulges.
+ * @returns Tessellated world points (closed ring, first point not repeated).
+ */
+export function tessellateMarkupCloud(
+  vertices: AcApMarkupCloudVertex[]
+): Array<{ x: number; y: number }> {
+  if (vertices.length < 2) return vertices.map(v => ({ x: v.x, y: v.y }))
+  const points: Array<{ x: number; y: number }> = [
+    { x: vertices[0].x, y: vertices[0].y }
+  ]
+  for (let i = 0; i < vertices.length; i++) {
+    const a = vertices[i]
+    const b = vertices[(i + 1) % vertices.length]
+    const seg = tessellateBulgeSegment(
+      { x: a.x, y: a.y },
+      { x: b.x, y: b.y },
+      a.bulge
+    )
+    for (const p of seg) points.push(p)
+  }
+  return points
+}
+
+/**
+ * Stroke a revision cloud on a canvas context (screen projection).
+ *
+ * @param ctx - Canvas 2D context in CSS pixel space.
+ * @param view - View for world → screen.
+ * @param first - One AABB corner (world).
+ * @param second - Opposite AABB corner (world).
+ * @param color - CSS stroke color.
+ * @param lineWidth - Stroke width in CSS pixels.
+ * @param offset - Optional live drag translation in world space.
+ */
+export function strokeMarkupCloud(
+  ctx: CanvasRenderingContext2D,
+  view: AcEdBaseView,
+  first: AcGePoint2dLike,
+  second: AcGePoint2dLike,
+  color: string,
+  lineWidth: number,
+  offset?: { dx: number; dy: number }
+): void {
+  const dx = offset?.dx ?? 0
+  const dy = offset?.dy ?? 0
+  const vertices = markupCloudVertices(first, second, view)
+  const world = tessellateMarkupCloud(vertices).map(p => ({
+    x: p.x + dx,
+    y: p.y + dy
+  }))
+  if (world.length < 2) return
+  const screen = world.map(p => view.worldToScreen(p))
+  ctx.strokeStyle = color
+  ctx.lineWidth = lineWidth
+  ctx.beginPath()
+  ctx.moveTo(screen[0].x, screen[0].y)
+  for (let i = 1; i < screen.length; i++) {
+    ctx.lineTo(screen[i].x, screen[i].y)
+  }
+  ctx.closePath()
+  ctx.stroke()
+}
+
+/**
+ * @deprecated Prefer {@link markupCloudVertices} / {@link strokeMarkupCloud}.
+ * Kept for callers that still need an in-memory vertex list via the old name.
+ */
+export function buildMarkupCloud(
+  _cloud: { reset: (v: boolean) => void; addVertexAt: (i: number, p: { x: number; y: number }, b?: number) => void; closed: boolean },
+  firstPoint: AcGePoint2dLike,
+  secondPoint: AcGePoint2dLike,
+  view: AcEdBaseView
+): void {
+  const vertices = markupCloudVertices(firstPoint, secondPoint, view)
+  _cloud.reset(false)
+  for (let i = 0; i < vertices.length; i++) {
+    _cloud.addVertexAt(i, { x: vertices[i].x, y: vertices[i].y }, vertices[i].bulge)
+  }
+  _cloud.closed = true
+}
+
+/**
+ * @deprecated Prefer {@link markupRectCorners}.
  */
 export function buildMarkupRect(
-  rect: AcDbPolyline,
+  rect: {
+    reset: (v: boolean) => void
+    addVertexAt: (i: number, p: { x: number; y: number }) => void
+    closed: boolean
+  },
   first: AcGePoint2dLike,
   second: AcGePoint2dLike
 ): void {
+  const corners = markupRectCorners(first, second)
   rect.reset(false)
-  rect.addVertexAt(0, new AcGePoint2d(first.x, first.y))
-  rect.addVertexAt(1, new AcGePoint2d(second.x, first.y))
-  rect.addVertexAt(2, new AcGePoint2d(second.x, second.y))
-  rect.addVertexAt(3, new AcGePoint2d(first.x, second.y))
+  for (let i = 0; i < corners.length; i++) {
+    rect.addVertexAt(i, corners[i])
+  }
   rect.closed = true
 }

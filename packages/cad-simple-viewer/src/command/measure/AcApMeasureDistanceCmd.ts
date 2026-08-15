@@ -1,7 +1,6 @@
 import {
   AcCmColor,
   AcDbDatabase,
-  AcDbLine,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
@@ -26,10 +25,15 @@ import {
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapGetMeasurementLineWeight,
+  acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
   formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
+import {
+  AcApHtmlLivePreview,
+  acapStrokeLiveSegment
+} from '../overlay'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import { AcApMeasureDistanceEntity } from './entity'
 
@@ -57,18 +61,18 @@ export function placeDistanceMeasurement(
 /**
  * Preview jig for the distance measurement command.
  *
- * Renders a live rubber-band line from the fixed first point to the current
- * cursor position. The badge showing the live distance is rendered by the
- * jig itself and is removed when the jig ends — it is intentionally short-lived
- * and intrinsic to the interactive input UX.
+ * Renders a live HTML rubber-band segment and length badge (no AcDb preview).
  */
 export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private _line: AcDbLine
-  private _p1: AcGePoint3dLike
-  private _db: AcDbDatabase
-  private _htManager: AcTrHtmlTransientManager
-  private _badge: AcTrHtmlBadge
+  private readonly _view: AcTrView2d
+  private readonly _p1: AcGePoint3dLike
+  private readonly _db: AcDbDatabase
+  private readonly _htManager: AcTrHtmlTransientManager
+  private readonly _badge: AcTrHtmlBadge
   private readonly _badgeId: string
+  private readonly _preview: AcApHtmlLivePreview
+  private _color: AcCmColor
+  private _p2: AcGePoint3dLike
 
   constructor(
     view: AcEdBaseView,
@@ -77,38 +81,51 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
     color: AcCmColor
   ) {
     super(view)
+    this._view = view as AcTrView2d
     this._p1 = p1
+    this._p2 = p1
     this._db = db
-    this._line = new AcDbLine(p1, p1)
-    this._line.color = color
-    this._line.lineWeight = acapGetMeasurementLineWeight()
+    this._color = color
 
     this._badgeId = `live-dist-badge-${Date.now()}`
-    this._htManager = (view as AcTrView2d).htmlTransientManager
+    this._htManager = this._view.htmlTransientManager
     this._badge = new AcTrHtmlBadge({
       id: this._badgeId,
       color,
       worldPosition: p1,
       layer: MEASUREMENT_LIVE_LAYER,
-      layoutId: (view as AcTrView2d).activeLayoutBtrId,
+      layoutId: this._view.activeLayoutBtrId,
       fontSize: acapGetMeasurementFontSize()
     })
     this._badge.object.visible = false
     this._htManager.add(this._badge)
+
+    this._preview = new AcApHtmlLivePreview(
+      this._view,
+      `live-dist-stroke-${Date.now()}`,
+      MEASUREMENT_LIVE_LAYER
+    )
   }
 
-  get entity(): AcDbLine {
-    return this._line
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(p2: AcGePoint3dLike) {
-    this._line.endPoint = p2
-    this._line.color = acapGetMeasurementColor(this._db)
-    this._line.lineWeight = acapGetMeasurementLineWeight()
-    this._badge.setColor(this._line.color)
+    this._p2 = p2
+    this._color = acapGetMeasurementColor(this._db)
+    this._badge.setColor(this._color)
     this._badge.setFontSize(acapGetMeasurementFontSize())
 
     const dist = calcDist(this._p1, p2)
+    const lineWidth = acapMeasurementCanvasLineWidth(
+      acapGetMeasurementLineWeight()
+    )
+    this._preview.acapSetDraw((ctx, view) => {
+      acapStrokeLiveSegment(ctx, view, this._p1, this._p2, this._color, lineWidth)
+    })
+
     if (dist < 0.0001) {
       this._badge.object.visible = false
       return
@@ -124,6 +141,7 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   end() {
     super.end()
+    this._preview.acapDispose()
     this._htManager.remove(this._badgeId)
   }
 }
@@ -131,10 +149,8 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
 /**
  * Command that measures the straight-line distance between two points.
  *
- * Prompts the user to pick two world points, then registers a transient CAD
- * line between them. Persistent DOM overlays (dots + badge) are placed via
- * {@link AcTrHtmlTransientManager} using CSS2DObject, so they track zoom/pan
- * automatically without manual viewChanged listeners.
+ * Prompts for two world points, then commits a measurement overlay.
+ * Interactive preview is HTML-only (canvas stroke + badge).
  */
 export class AcApMeasureDistanceCmd extends AcEdCommand {
   constructor() {

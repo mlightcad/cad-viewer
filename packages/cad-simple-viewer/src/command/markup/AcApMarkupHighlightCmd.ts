@@ -1,9 +1,4 @@
-import {
-  AcCmColor,
-  AcDbPolyline,
-  AcGePoint2d,
-  AcGePoint3dLike
-} from '@mlightcad/data-model'
+import { AcCmColor, AcGePoint3dLike } from '@mlightcad/data-model'
 
 import { AcApContext } from '../../app'
 import {
@@ -15,55 +10,66 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
+import { acapFillLiveHighlight,AcApHtmlLivePreview } from '../overlay'
 import {
   configureMarkupCommand,
   createMarkupMeta,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
 import { commitMarkup } from './AcApMarkupPresenter'
+import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
   getMarkupLineWeight,
+  markupCanvasLineWidth,
   markupColorToCss
 } from './AcApMarkupUtil'
 
-function setRect(
-  poly: AcDbPolyline,
-  a: AcGePoint3dLike,
-  b: AcGePoint3dLike
-): void {
-  poly.reset(false)
-  const minX = Math.min(a.x, b.x)
-  const maxX = Math.max(a.x, b.x)
-  const minY = Math.min(a.y, b.y)
-  const maxY = Math.max(a.y, b.y)
-  poly.addVertexAt(0, new AcGePoint2d(minX, minY))
-  poly.addVertexAt(1, new AcGePoint2d(maxX, minY))
-  poly.addVertexAt(2, new AcGePoint2d(maxX, maxY))
-  poly.addVertexAt(3, new AcGePoint2d(minX, maxY))
-  poly.closed = true
-}
-
 class AcApMarkupHighlightJig extends AcEdPreviewJig<AcGePoint3dLike> {
+  private readonly _view: AcTrView2d
   private readonly _first: AcGePoint3dLike
-  private readonly _poly: AcDbPolyline
+  private readonly _preview: AcApHtmlLivePreview
+  private _second: AcGePoint3dLike
+  private _colorCss: string
 
   constructor(view: AcEdBaseView, start: AcGePoint3dLike, color: AcCmColor) {
     super(view)
+    this._view = view as AcTrView2d
     this._first = start
-    this._poly = new AcDbPolyline()
-    this._poly.color = color
-    this._poly.lineWeight = getMarkupLineWeight()
-    setRect(this._poly, start, start)
+    this._second = start
+    this._colorCss = markupColorToCss(color)
+    this._preview = new AcApHtmlLivePreview(
+      this._view,
+      `live-markup-highlight-${Date.now()}`,
+      MARKUP_LIVE_LAYER
+    )
   }
 
-  get entity(): AcDbPolyline {
-    return this._poly
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(second: AcGePoint3dLike) {
-    setRect(this._poly, this._first, second)
+    this._second = second
+    this._colorCss = markupColorToCss(defaultMarkupColor())
+    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    this._preview.acapSetDraw((ctx, view) => {
+      acapFillLiveHighlight(
+        ctx,
+        view,
+        this._first,
+        this._second,
+        this._colorCss,
+        lineWidth
+      )
+    })
+  }
+
+  end() {
+    super.end()
+    this._preview.acapDispose()
   }
 }
 

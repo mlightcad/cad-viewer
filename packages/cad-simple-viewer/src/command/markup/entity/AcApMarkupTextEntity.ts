@@ -5,9 +5,12 @@ import type { AcApOverlayWorldDrawResult } from '../../overlay'
 import { bindMarkupInlineTextEdit } from '../AcApMarkupTextEdit'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import { AcApMarkupEntity } from './AcApMarkupEntity'
+import { bindMarkupCenterMove } from './AcApMarkupEntityGrips'
 
 /**
  * Text note markup rendered as an {@link AcTrHtmlBadge}.
+ *
+ * Drag the badge to move; double-click to edit text inline.
  */
 export class AcApMarkupTextEntity extends AcApMarkupEntity {
   /**
@@ -18,19 +21,10 @@ export class AcApMarkupTextEntity extends AcApMarkupEntity {
   }
 
   /**
-   * Text notes have no move grip in the presenter UX (inline edit only).
-   *
-   * @returns Empty grip list.
-   */
-  override subGetGripPoints() {
-    return []
-  }
-
-  /**
-   * Publish a badge at the text position and bind inline edit.
+   * Publish a badge at the text position, bind drag-to-move and inline edit.
    *
    * @param view - Active 2D view.
-   * @returns Group with the badge and dispose for the edit binder.
+   * @returns Group with the badge and dispose / grip binders.
    */
   protected subWorldDraw(view: AcTrView2d): AcApOverlayWorldDrawResult {
     const geom = this.record.geometry
@@ -39,8 +33,10 @@ export class AcApMarkupTextEntity extends AcApMarkupEntity {
     }
     const { color, layer, layoutId } = this.style()
     const group = this.createGroup()
-    /** Unbinders for inline text edit and other listeners. */
+    /** Unbinders for inline text edit and center-move drag. */
     const cleanups: Array<() => void> = []
+    /** Grip binders deferred until after manager.add(group). */
+    const pendingGrips: Array<() => void> = []
 
     const badge = new AcTrHtmlBadge({
       id: `${this.record.id}-badge`,
@@ -60,6 +56,16 @@ export class AcApMarkupTextEntity extends AcApMarkupEntity {
       })
     )
 
+    pendingGrips.push(() => {
+      cleanups.push(
+        bindMarkupCenterMove({
+          view,
+          recordId: this.record.id,
+          centerEl: badge
+        })
+      )
+    })
+
     return {
       group,
       entityIds: [],
@@ -71,6 +77,9 @@ export class AcApMarkupTextEntity extends AcApMarkupEntity {
             // ignore
           }
         }
+      },
+      bindGrips: () => {
+        for (const bind of pendingGrips) bind()
       }
     }
   }

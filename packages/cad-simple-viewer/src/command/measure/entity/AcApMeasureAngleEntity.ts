@@ -1,6 +1,5 @@
 import {
   type AcDbDatabase,
-  AcDbLine,
   type AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
@@ -12,7 +11,8 @@ import {
 import {
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
-  formatMeasurementAngle} from '../../../util'
+  formatMeasurementAngle
+} from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import {
@@ -33,9 +33,9 @@ import {
 /**
  * Angle measurement overlay entity.
  *
- * Renders two transient CAD arm lines from the vertex, HTML dots at vertex and
- * arm ends, a canvas arc between the arms, and a degree badge along the angle
- * bisector. Redraws the arc on view changes.
+ * Renders two arm lines and an angle arc on an HTML canvas, HTML dots at the
+ * vertex and arm ends, and a degree badge along the angle bisector.
+ * No CAD transient entities.
  */
 export class AcApMeasureAngleEntity extends AcApMeasureEntity {
   /** Angle vertex in world coordinates. */
@@ -124,12 +124,12 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
   }
 
   /**
-   * Draws arm lines, dots, angle arc canvas, badge, and commit extras.
+   * Draws arm lines + arc canvas, dots, badge, and commit extras.
    *
-   * Registers a `viewChanged` listener to repaint the persistent arc; dispose
-   * extras remove the listener and transient lines.
+   * Registers a `viewChanged` listener to repaint the persistent canvas;
+   * dispose removes the listener.
    *
-   * @param view - Active 2D view for transients and HTML overlays
+   * @param view - Active 2D view for HTML overlays
    * @param db - Database used to format the angle label
    * @returns World-draw result including redraw/dispose hooks
    */
@@ -139,23 +139,14 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
   ): AcApMeasureWorldDrawResult {
     const color = this.style.color
     const degrees = measureAngleDeg(this.vertex, this.arm1, this.arm2)
-    const line1 = new AcDbLine(this.vertex, this.arm1)
-    line1.color = color
-    line1.lineWeight = this.style.lineWeight
-    view.addTransientEntity(line1)
-    const line2 = new AcDbLine(this.vertex, this.arm2)
-    line2.color = color
-    line2.lineWeight = this.style.lineWeight
-    view.addTransientEntity(line2)
-
     const layoutId = this.resolveLayoutId(view)
     const persistOverlay = new AcTrHtmlCanvasOverlay({
-      id: `angle-arc-${this.entityId}`,
+      id: `angle-canvas-${this.entityId}`,
       container: view.container,
       layer: MEASUREMENT_LAYER,
       layoutId
     })
-    const paintArc = (paintStyle = this.style) =>
+    const paintAngle = (paintStyle = this.style) =>
       drawMeasureAngleArcOnCanvas(
         persistOverlay.canvas,
         view,
@@ -165,9 +156,9 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
         paintStyle.color,
         acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
       )
-    paintArc()
+    paintAngle()
     const redrawPersist = () =>
-      paintArc(getMeasurementStyle(this.entityId) ?? this.style)
+      paintAngle(getMeasurementStyle(this.entityId) ?? this.style)
     view.events.viewChanged.addEventListener(redrawPersist)
 
     const dx1 = this.arm1.x - this.vertex.x
@@ -232,19 +223,15 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
 
     return {
       group,
-      entityIds: [line1.objectId, line2.objectId],
+      entityIds: [],
       dispose: () => {
-        view.removeTransientEntity(line1.objectId)
-        view.removeTransientEntity(line2.objectId)
         view.events.viewChanged.removeEventListener(redrawPersist)
       },
       extras: {
-        entityIds: [line1.objectId, line2.objectId],
-        entities: [line1, line2],
         style: this.style,
         value: { kind: 'angle', radians: (degrees * Math.PI) / 180 },
         snapshot: this.toRecord(layoutId),
-        redraw: paintArc
+        redraw: paintAngle
       }
     }
   }

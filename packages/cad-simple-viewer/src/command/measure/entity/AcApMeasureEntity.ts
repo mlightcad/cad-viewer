@@ -53,8 +53,8 @@ export interface AcApMeasureWorldDrawResult extends AcApOverlayWorldDrawResult {
 /**
  * Base class for measurement overlays (distance / angle / area / arc / point).
  *
- * Not an HTML leaf — composes {@link AcTrHtmlGroup} and optional CAD
- * transients. Subclasses implement {@link toRecord} and
+ * Not an HTML leaf — composes {@link AcTrHtmlGroup} and canvas / badge / dot
+ * children. Subclasses implement {@link toRecord} and
  * {@link subWorldDrawWithDb}; callers should use {@link commit} rather than
  * the generic overlay `worldDraw` path because unit labels need the database.
  *
@@ -65,7 +65,7 @@ export abstract class AcApMeasureEntity
   extends AcApOverlayEntity
   implements AcApOverlaySerializable<AcApMeasurementRecord>
 {
-  /** Visual style applied to CAD transients and HTML badges/dots. */
+  /** Visual style applied to HTML badges/dots and canvas strokes. */
   protected readonly style: AcApMeasurementStyle
   /** Stable measurement id used for HTML group, store, and sidecar records. */
   protected readonly entityId: string

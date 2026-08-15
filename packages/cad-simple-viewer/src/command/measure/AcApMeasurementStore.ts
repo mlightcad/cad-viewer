@@ -60,9 +60,15 @@ export function setMeasurementVisible(
  * Optional non-HTML resources attached to a measurement {@link AcTrHtmlGroup}.
  */
 export interface AcApMeasurementGroupExtras {
-  /** CAD transient entity object ids (lines, etc.). */
+  /**
+   * @deprecated CAD transients are no longer used for measurements; kept empty
+   * for backward-compatible call sites.
+   */
   entityIds?: AcDbObjectId[]
-  /** Live CAD entity refs so color / line weight can be updated in place. */
+  /**
+   * @deprecated CAD entity refs are no longer used; style updates go through
+   * {@link redraw}.
+   */
   entities?: AcDbEntity[]
   /** Style used when the group was committed (and after later style edits). */
   style?: AcApMeasurementStyle
@@ -73,7 +79,7 @@ export interface AcApMeasurementGroupExtras {
   /** Redraw canvas overlays after a style change (color / line weight). */
   redraw?: (style: AcApMeasurementStyle) => void
   /**
-   * Removes non-HTML resources (CAD transients, viewChanged listeners).
+   * Removes non-HTML resources (viewChanged listeners).
    * HTML children and group-owned canvases are removed by the html
    * transient manager / group dispose.
    */
@@ -121,7 +127,7 @@ function rememberStyle(id: string, style: AcApMeasurementStyle): void {
 }
 
 /**
- * Apply a style patch to one measurement group (HTML, CAD transients, canvases).
+ * Apply a style patch to one measurement group (HTML badges/dots and canvases).
  * Does not record undo; wrap with {@link runMeasurementEdit} from UI.
  */
 export function applyMeasurementStyle(
@@ -184,16 +190,6 @@ function paintMeasurementGroup(
   }
 
   const extras = extrasById.get(group.id)
-  const selected = group.selected
-  for (const entity of extras?.entities ?? []) {
-    entity.color = style.color.clone()
-    entity.lineWeight = style.lineWeight
-    view.removeTransientEntity(entity.objectId)
-    view.addTransientEntity(entity)
-  }
-  if (selected && (extras?.entityIds?.length ?? 0) > 0) {
-    view.highlight(extras!.entityIds!)
-  }
   extras?.redraw?.(style)
   view.isHtmlDirty = true
 }
@@ -248,7 +244,7 @@ export function resetMeasurementStyleState(): void {
 
 /**
  * Publishes a measurement {@link AcTrHtmlGroup} and wires measurement-specific
- * selection extras (CAD entity highlight).
+ * selection state.
  *
  * The group itself (children, canvases, click selection, Delete, layout
  * visibility) is handled by {@link AcTrHtmlTransientManager}.

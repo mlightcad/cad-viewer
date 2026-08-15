@@ -1,8 +1,4 @@
-import {
-  AcCmColor,
-  AcDbLine,
-  AcGePoint3dLike
-} from '@mlightcad/data-model'
+import { AcCmColor, AcGePoint3dLike } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
   AcTrHtmlTransientManager
@@ -18,6 +14,7 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
+import { AcApHtmlLivePreview, acapStrokeLiveSegment } from '../overlay'
 import {
   configureMarkupCommand,
   createMarkupMeta,
@@ -29,14 +26,19 @@ import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
   getMarkupLineWeight,
+  markupCanvasLineWidth,
   markupColorToCss
 } from './AcApMarkupUtil'
 
 class AcApMarkupLineJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private readonly _line: AcDbLine
+  private readonly _view: AcTrView2d
+  private readonly _p1: AcGePoint3dLike
   private readonly _ht: AcTrHtmlTransientManager
   private readonly _badge: AcTrHtmlBadge
   private readonly _badgeId: string
+  private readonly _preview: AcApHtmlLivePreview
+  private _color: AcCmColor
+  private _p2: AcGePoint3dLike
 
   constructor(
     view: AcEdBaseView,
@@ -45,10 +47,11 @@ class AcApMarkupLineJig extends AcEdPreviewJig<AcGePoint3dLike> {
     label: string
   ) {
     super(view)
-    this._line = new AcDbLine(p1, p1)
-    this._line.color = color
-    this._line.lineWeight = getMarkupLineWeight()
-    this._ht = (view as AcTrView2d).htmlTransientManager
+    this._view = view as AcTrView2d
+    this._p1 = p1
+    this._p2 = p1
+    this._color = color
+    this._ht = this._view.htmlTransientManager
     this._badgeId = `live-markup-line-${Date.now()}`
     this._badge = new AcTrHtmlBadge({
       id: this._badgeId,
@@ -56,27 +59,43 @@ class AcApMarkupLineJig extends AcEdPreviewJig<AcGePoint3dLike> {
       text: label,
       worldPosition: p1,
       layer: MARKUP_LIVE_LAYER,
-      layoutId: (view as AcTrView2d).activeLayoutBtrId
+      layoutId: this._view.activeLayoutBtrId
     })
     this._badge.object.visible = false
     this._ht.add(this._badge)
+
+    this._preview = new AcApHtmlLivePreview(
+      this._view,
+      `live-markup-line-stroke-${Date.now()}`,
+      MARKUP_LIVE_LAYER
+    )
   }
 
-  get entity(): AcDbLine {
-    return this._line
+  /** HTML-only preview — no CAD transient. */
+  get entity(): null {
+    return null
   }
 
   update(p2: AcGePoint3dLike) {
-    this._line.endPoint = p2
+    this._p2 = p2
+    this._color = defaultMarkupColor()
+    this._badge.setColor(this._color)
+
+    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    this._preview.acapSetDraw((ctx, view) => {
+      acapStrokeLiveSegment(ctx, view, this._p1, this._p2, this._color, lineWidth)
+    })
+
     this._badge.setPosition({
-      x: (this._line.startPoint.x + p2.x) / 2,
-      y: (this._line.startPoint.y + p2.y) / 2
+      x: (this._p1.x + p2.x) / 2,
+      y: (this._p1.y + p2.y) / 2
     })
     this._badge.object.visible = true
   }
 
   end() {
     super.end()
+    this._preview.acapDispose()
     this._ht.remove(this._badgeId)
   }
 }
