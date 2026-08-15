@@ -87,18 +87,26 @@ describe('checkWebworkerReadiness', () => {
   })
 
   it('falls back to a ranged GET when HEAD returns 405', async () => {
-    global.fetch = mockFetch(() =>
-      Promise.resolve({ ok: true, status: 200 } as Response)
-    )
-    ;(global.fetch as jest.Mock)
-      .mockResolvedValueOnce({ ok: false, status: 405 } as Response)
-      .mockResolvedValueOnce({ ok: true, status: 206 } as Response)
+    global.fetch = mockFetch((...args: unknown[]) => {
+      const init = args[1] as RequestInit | undefined
+      if (init?.method === 'HEAD') {
+        return Promise.resolve({ ok: false, status: 405 } as Response)
+      }
+      return Promise.resolve({ ok: true, status: 206 } as Response)
+    })
 
     const ready = await checkWebworkerReadiness({
-      dwgParser: dwgParserUrl
+      dwgParser: dwgParserUrl,
+      mtextRender: mtextRenderUrl
     })
 
     expect(ready).toBe(true)
+    expect(global.fetch).toHaveBeenCalledWith(mtextRenderUrl, {
+      method: 'HEAD'
+    })
+    expect(global.fetch).toHaveBeenCalledWith(mtextRenderUrl, {
+      headers: { Range: 'bytes=0-0' }
+    })
     expect(global.fetch).toHaveBeenCalledWith(dwgParserUrl, { method: 'HEAD' })
     expect(global.fetch).toHaveBeenCalledWith(dwgParserUrl, {
       headers: { Range: 'bytes=0-0' }
