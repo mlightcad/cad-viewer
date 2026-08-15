@@ -16,6 +16,6 @@ export const ML_UI_COMPACT_MAX_WIDTH = 960
 export const ML_UI_COMPACT_MEDIA_QUERY = `(max-width: ${ML_UI_COMPACT_MAX_WIDTH}px)`
 
 /** Whether the current viewport matches the compact app-shell layout. */
-export function isCompactUiLayout(): boolean {
+export function acedIsCompactUiLayout(): boolean {
   return window.matchMedia?.(ML_UI_COMPACT_MEDIA_QUERY).matches ?? false
 }

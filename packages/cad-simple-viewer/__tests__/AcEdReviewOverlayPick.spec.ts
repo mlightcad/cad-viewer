@@ -1,11 +1,17 @@
+import { AcGeBox2d } from '@mlightcad/data-model'
+
 import { getMarkupStore } from '../src/command/markup/AcApMarkupStore'
 import type { AcApMarkupRecord } from '../src/command/markup/AcApMarkupTypes'
-import { trySelectReviewOverlay } from '../src/view/AcEdReviewOverlayPick'
+import {
+  collectReviewOverlayIdsByBox,
+  trySelectReviewOverlay,
+  trySelectReviewOverlaysByBox
+} from '../src/view/AcEdReviewOverlayPick'
 import type { AcTrView2d } from '../src/view/AcTrView2d'
 
-function lineRecord(): AcApMarkupRecord {
+function lineRecord(id = 'line-1'): AcApMarkupRecord {
   return {
-    id: 'line-1',
+    id,
     type: 'line',
     layoutId: 'layout-a',
     style: { color: '#ff0000' },
@@ -21,6 +27,8 @@ function lineRecord(): AcApMarkupRecord {
 function mockView(ht: {
   selectGroup: jest.Mock
   deselectGroup: jest.Mock
+  deselectAll?: jest.Mock
+  hasSelection?: jest.Mock
 }): AcTrView2d {
   return {
     selectionBoxSize: 3,
@@ -29,8 +37,10 @@ function mockView(ht: {
     isHtmlDirty: false,
     worldToScreen: (point: { x: number; y: number }) => point,
     htmlTransientManager: {
-      getGroup: () => ({ id: 'line-1', visible: true }),
+      getGroup: (id: string) => ({ id, visible: true }),
       groupsOnLayer: () => [],
+      deselectAll: ht.deselectAll ?? jest.fn(),
+      hasSelection: ht.hasSelection ?? jest.fn(() => false),
       ...ht
     }
   } as unknown as AcTrView2d
@@ -99,6 +109,86 @@ describe('trySelectReviewOverlay', () => {
     expect(trySelectReviewOverlay(view, 50, 0, 'replace')).toBe(true)
     expect(selectGroup).toHaveBeenCalledWith('line-1', true)
     expect(view.isDirty).toBe(false)
+    expect(view.isHtmlDirty).toBe(true)
+  })
+})
+
+describe('trySelectReviewOverlaysByBox', () => {
+  beforeEach(() => {
+    getMarkupStore().reset()
+    getMarkupStore().upsert(lineRecord())
+    getMarkupStore().upsert(
+      lineRecord('line-2')
+    )
+    // Move line-2 far away
+    getMarkupStore().updateGeometry('line-2', {
+      type: 'line',
+      start: { x: 500, y: 500 },
+      end: { x: 600, y: 500 }
+    })
+  })
+
+  afterEach(() => {
+    getMarkupStore().reset()
+  })
+
+  it('collects overlays fully inside a window box', () => {
+    const view = mockView({
+      selectGroup: jest.fn(),
+      deselectGroup: jest.fn()
+    })
+    const box = new AcGeBox2d()
+      .expandByPoint({ x: -10, y: -10 })
+      .expandByPoint({ x: 110, y: 10 })
+    expect(collectReviewOverlayIdsByBox(view, box, 'window')).toEqual([
+      'line-1'
+    ])
+  })
+
+  it('collects overlays that intersect a crossing box', () => {
+    const view = mockView({
+      selectGroup: jest.fn(),
+      deselectGroup: jest.fn()
+    })
+    const box = new AcGeBox2d()
+      .expandByPoint({ x: 50, y: -5 })
+      .expandByPoint({ x: 60, y: 5 })
+    expect(collectReviewOverlayIdsByBox(view, box, 'crossing')).toEqual([
+      'line-1'
+    ])
+    expect(collectReviewOverlayIdsByBox(view, box, 'window')).toEqual([])
+  })
+
+  it('selects matching overlays additively on box select', () => {
+    const selectGroup = jest.fn(() => true)
+    const view = mockView({ selectGroup, deselectGroup: jest.fn() })
+    const box = new AcGeBox2d()
+      .expandByPoint({ x: -10, y: -10 })
+      .expandByPoint({ x: 110, y: 10 })
+
+    expect(trySelectReviewOverlaysByBox(view, box, 'window', 'add')).toBe(true)
+    expect(selectGroup).toHaveBeenCalledWith('line-1', false)
+    expect(view.isHtmlDirty).toBe(true)
+  })
+
+  it('clears prior overlay selection on replace even when the box is empty', () => {
+    const selectGroup = jest.fn(() => true)
+    const deselectAll = jest.fn()
+    const view = mockView({
+      selectGroup,
+      deselectGroup: jest.fn(),
+      deselectAll,
+      hasSelection: jest.fn(() => true)
+    })
+    const box = new AcGeBox2d()
+      .expandByPoint({ x: 1000, y: 1000 })
+      .expandByPoint({ x: 1100, y: 1100 })
+
+    expect(
+      trySelectReviewOverlaysByBox(view, box, 'window', 'replace')
+    ).toBe(true)
+    expect(deselectAll).toHaveBeenCalled()
+    expect(selectGroup).not.toHaveBeenCalled()
     expect(view.isHtmlDirty).toBe(true)
   })
 })

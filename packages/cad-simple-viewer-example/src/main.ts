@@ -11,8 +11,8 @@ import {
   AcApQNewCmd,
   AcApSettingManager,
   acedApplyUiTheme,
+  acedIsCompactUiLayout,
   AcEdOpenMode,
-  isCompactUiLayout,
   LIBREDWG_PARSER_WORKER_FILE,
   MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
@@ -929,7 +929,7 @@ class CadViewerApp {
   }
 
   private isMobileLayout() {
-    return isCompactUiLayout()
+    return acedIsCompactUiLayout()
   }
 
   private isFileSidebarOpen(): boolean {

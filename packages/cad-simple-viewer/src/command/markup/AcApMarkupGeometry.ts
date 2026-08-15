@@ -1,3 +1,5 @@
+import { AcGeBox2d } from '@mlightcad/data-model'
+
 import {
   type AcApScreenPoint,
   distPointToCirclePx,
@@ -174,6 +176,64 @@ function hitTestLeader(
     distPointToSegmentPx(canvas.x, canvas.y, tip.x, tip.y, anchor.x, anchor.y) <=
     threshold
   )
+}
+
+function expandAttachedCallout(
+  box: AcGeBox2d,
+  callout: AcApMarkupAttachedCallout | undefined
+): void {
+  if (!callout) return
+  box.expandByPoint(callout.tip)
+  box.expandByPoint(callout.anchor)
+}
+
+/**
+ * Axis-aligned world bounds of a markup's control geometry.
+ *
+ * Used for window / crossing box selection. Point-like markups (text / stamp /
+ * symbol) use their anchor; shapes include attached callout tip and anchor.
+ */
+export function markupGeometryBounds(
+  geometry: AcApMarkupGeometry
+): AcGeBox2d | undefined {
+  const box = new AcGeBox2d()
+  switch (geometry.type) {
+    case 'line':
+    case 'arrow':
+      box.expandByPoint(geometry.start).expandByPoint(geometry.end)
+      break
+    case 'rect':
+    case 'cloud':
+      box.expandByPoint(geometry.corner1).expandByPoint(geometry.corner2)
+      expandAttachedCallout(box, geometry.callout)
+      break
+    case 'highlight':
+      box.expandByPoint(geometry.corner1).expandByPoint(geometry.corner2)
+      break
+    case 'circle':
+      box
+        .expandByPoint({
+          x: geometry.center.x - geometry.radius,
+          y: geometry.center.y - geometry.radius
+        })
+        .expandByPoint({
+          x: geometry.center.x + geometry.radius,
+          y: geometry.center.y + geometry.radius
+        })
+      expandAttachedCallout(box, geometry.callout)
+      break
+    case 'callout':
+      box.expandByPoint(geometry.tip).expandByPoint(geometry.anchor)
+      break
+    case 'text':
+    case 'stamp':
+    case 'symbol':
+      box.expandByPoint(geometry.position)
+      break
+    default:
+      return undefined
+  }
+  return box.isEmpty() ? undefined : box
 }
 
 /**

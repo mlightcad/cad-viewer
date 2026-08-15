@@ -62,7 +62,10 @@ import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResul
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
-import { trySelectReviewOverlay } from './AcEdReviewOverlayPick'
+import {
+  trySelectReviewOverlay,
+  trySelectReviewOverlaysByBox
+} from './AcEdReviewOverlayPick'
 import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
 import {
   shouldExtendBboxForDirectEntity,
@@ -460,6 +463,7 @@ export class AcTrView2d extends AcEdBaseView {
           .expandByPoint(endWcs)
         const mode = this.getSelectionMode(selectionStartCanvas, endCanvas)
         this.selectByBoxWithMode(box, mode, action)
+        trySelectReviewOverlaysByBox(this, box, mode, action)
       }
 
       selectionStartWcs = null
