@@ -1,4 +1,7 @@
-import { hitTestMeasurementGeometry } from '../src/command/measure/AcApMeasurementGeometry'
+import {
+  hitTestMeasurementGeometry,
+  measurementGeometryBounds
+} from '../src/command/measure/AcApMeasurementGeometry'
 import type { AcApMeasurementGeometry } from '../src/command/measure/AcApMeasurementTypes'
 
 const identity = (point: { x: number; y: number }) => point
@@ -69,5 +72,35 @@ describe('hitTestMeasurementGeometry', () => {
         threshold
       )
     ).toBe(false)
+  })
+})
+
+describe('measurementGeometryBounds', () => {
+  it('returns the AABB of a distance measurement', () => {
+    const box = measurementGeometryBounds({
+      type: 'distance',
+      start: { x: 0, y: 10 },
+      end: { x: 50, y: 0 }
+    })
+    expect(box).toBeDefined()
+    expect(box!.min.x).toBe(0)
+    expect(box!.min.y).toBe(0)
+    expect(box!.max.x).toBe(50)
+    expect(box!.max.y).toBe(10)
+  })
+
+  it('uses the full circle AABB for an arc', () => {
+    const box = measurementGeometryBounds({
+      type: 'arc',
+      center: { x: 0, y: 0 },
+      radius: 25,
+      start: { x: 25, y: 0 },
+      end: { x: 0, y: 25 }
+    })
+    expect(box).toBeDefined()
+    expect(box!.min.x).toBe(-25)
+    expect(box!.min.y).toBe(-25)
+    expect(box!.max.x).toBe(25)
+    expect(box!.max.y).toBe(25)
   })
 })

@@ -33,7 +33,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     ...layout,
     acedIsMobileUiLayout: () =>
       window.matchMedia?.(layout.ML_UI_MOBILE_MEDIA_QUERY).matches ?? false,
-    isCompactUiLayout: () =>
+    acedIsCompactUiLayout: () =>
       window.matchMedia?.(layout.ML_UI_COMPACT_MEDIA_QUERY).matches ?? false,
     AcApContext: class {},
     AcApDocManager: {

@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 
 import {
-  isCompactUiLayout,
+  acedIsCompactUiLayout,
   acedIsMobileUiLayout,
   ML_UI_COMPACT_MAX_WIDTH,
   ML_UI_COMPACT_MEDIA_QUERY,
@@ -37,7 +37,7 @@ describe('AcEdUiLayout', () => {
     })
 
     expect(acedIsMobileUiLayout()).toBe(true)
-    expect(isCompactUiLayout()).toBe(false)
+    expect(acedIsCompactUiLayout()).toBe(false)
 
     if (matchMediaDescriptor) {
       Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)
@@ -60,7 +60,7 @@ describe('AcEdUiLayout', () => {
       })
     })
 
-    expect(isCompactUiLayout()).toBe(true)
+    expect(acedIsCompactUiLayout()).toBe(true)
 
     if (matchMediaDescriptor) {
       Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)

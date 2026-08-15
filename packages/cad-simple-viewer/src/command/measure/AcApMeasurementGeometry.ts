@@ -1,3 +1,5 @@
+import { AcGeBox2d } from '@mlightcad/data-model'
+
 import {
   type AcApScreenPoint,
   distPointToArcPx,
@@ -14,6 +16,51 @@ const TWO_PI = Math.PI * 2
 
 function normaliseAngle(a: number): number {
   return ((a % TWO_PI) + TWO_PI) % TWO_PI
+}
+
+/**
+ * Axis-aligned world bounds of a measurement's control geometry.
+ *
+ * Used for window / crossing box selection. Point measurements use their
+ * position; arcs use the full circle AABB of `center` ± `radius`.
+ */
+export function measurementGeometryBounds(
+  geometry: AcApMeasurementGeometry
+): AcGeBox2d | undefined {
+  const box = new AcGeBox2d()
+  switch (geometry.type) {
+    case 'distance':
+      box.expandByPoint(geometry.start).expandByPoint(geometry.end)
+      break
+    case 'angle':
+      box
+        .expandByPoint(geometry.vertex)
+        .expandByPoint(geometry.arm1)
+        .expandByPoint(geometry.arm2)
+      break
+    case 'area':
+      for (const point of geometry.points) {
+        box.expandByPoint(point)
+      }
+      break
+    case 'arc':
+      box
+        .expandByPoint({
+          x: geometry.center.x - geometry.radius,
+          y: geometry.center.y - geometry.radius
+        })
+        .expandByPoint({
+          x: geometry.center.x + geometry.radius,
+          y: geometry.center.y + geometry.radius
+        })
+      break
+    case 'point':
+      box.expandByPoint(geometry.position)
+      break
+    default:
+      return undefined
+  }
+  return box.isEmpty() ? undefined : box
 }
 
 /**

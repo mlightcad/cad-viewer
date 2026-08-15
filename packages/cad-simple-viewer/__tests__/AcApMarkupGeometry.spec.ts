@@ -1,4 +1,7 @@
-import { hitTestMarkupGeometry } from '../src/command/markup/AcApMarkupGeometry'
+import {
+  hitTestMarkupGeometry,
+  markupGeometryBounds
+} from '../src/command/markup/AcApMarkupGeometry'
 import type { AcApMarkupGeometry } from '../src/command/markup/AcApMarkupTypes'
 
 const identity = (point: { x: number; y: number }) => point
@@ -81,5 +84,34 @@ describe('hitTestMarkupGeometry', () => {
     expect(
       hitTestMarkupGeometry(geometry, { x: 40, y: 10 }, identity, threshold)
     ).toBe(true)
+  })
+})
+
+describe('markupGeometryBounds', () => {
+  it('returns the AABB of a line', () => {
+    const box = markupGeometryBounds({
+      type: 'line',
+      start: { x: 10, y: 5 },
+      end: { x: 40, y: 25 }
+    })
+    expect(box).toBeDefined()
+    expect(box!.min.x).toBe(10)
+    expect(box!.min.y).toBe(5)
+    expect(box!.max.x).toBe(40)
+    expect(box!.max.y).toBe(25)
+  })
+
+  it('includes circle radius and attached callout', () => {
+    const box = markupGeometryBounds({
+      type: 'circle',
+      center: { x: 0, y: 0 },
+      radius: 10,
+      callout: { tip: { x: 10, y: 0 }, anchor: { x: 50, y: 20 } }
+    })
+    expect(box).toBeDefined()
+    expect(box!.min.x).toBe(-10)
+    expect(box!.min.y).toBe(-10)
+    expect(box!.max.x).toBe(50)
+    expect(box!.max.y).toBe(20)
   })
 })

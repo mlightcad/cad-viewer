@@ -315,6 +315,13 @@ export function commitMeasurementGroup(
   view.isHtmlDirty = true
 }
 
+/** Snapshot geometry for a committed measurement group, if available. */
+export function getMeasurementGeometry(
+  id: string
+): AcApMeasurementRecord['geometry'] | undefined {
+  return extrasById.get(id)?.snapshot?.geometry
+}
+
 /**
  * Pick a visible measurement group by clicking its drawn stroke / fill.
  *
@@ -334,7 +341,7 @@ export function pickMeasurementAt(
   for (let i = groups.length - 1; i >= 0; i--) {
     const group = groups[i]
     if (!group.visible) continue
-    const geom = extrasById.get(group.id)?.snapshot?.geometry
+    const geom = getMeasurementGeometry(group.id)
     if (!geom) continue
     if (hitTestMeasurementGeometry(geom, canvas, worldToScreen, threshold)) {
       return group.id
