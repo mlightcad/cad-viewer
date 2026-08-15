@@ -2,7 +2,22 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "@mlightcad/cad-agent-plugin",
+      "@mlightcad/cad-html-plugin",
+      "@mlightcad/cad-pdf-plugin",
+      "@mlightcad/cad-simple-ui-plugin",
+      "@mlightcad/cad-simple-viewer",
+      "@mlightcad/cad-simple-viewer-cli",
+      "@mlightcad/cad-simple-viewer-example",
+      "@mlightcad/cad-svg-plugin",
+      "@mlightcad/cad-viewer",
+      "@mlightcad/cad-viewer-example",
+      "@mlightcad/cad-viewer-examples",
+      "@mlightcad/three-renderer"
+    ]
+  ],
   "linked": [],
   "access": "restricted",
   "baseBranch": "main",

@@ -1,5 +1,21 @@
 # @mlightcad/cad-viewer-example
 
+## 1.6.0
+
+### Minor Changes
+
+- feat: adds Design Review markup and measurement overlays with sidecar JSON persistence, undoable edits, draw-style controls, and AutoCAD-style REVCLOUD/SKETCH tools. Review overlays pick by stroke, support in-place text and window/crossing selection, and render on HTML canvas without forcing WebGL redraws. Ships a zero-build CDN bootstrap example, makes LibreDWG DWG support host opt-in, and retires cad-html-exporter-cli in favor of cad-simple-viewer-cli
+
+### Patch Changes
+
+- Updated dependencies
+  - @mlightcad/cad-agent-plugin@1.6.0
+  - @mlightcad/cad-html-plugin@1.6.0
+  - @mlightcad/cad-pdf-plugin@1.6.0
+  - @mlightcad/cad-simple-viewer@1.6.0
+  - @mlightcad/cad-viewer@1.6.0
+  - @mlightcad/three-renderer@1.6.0
+
 ## 1.5.11
 
 ### Patch Changes
@@ -135,7 +151,7 @@
 
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.5.0
-  - @mlightcad/cad-viewer@2.0.0
+  - @mlightcad/cad-viewer@1.6.0
 
 ## 1.4.13
 
@@ -263,7 +279,7 @@
 
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.4.0
-  - @mlightcad/cad-viewer@2.0.0
+  - @mlightcad/cad-viewer@1.6.0
 
 ## 1.3.4
 
@@ -309,7 +325,7 @@
 
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.3.0
-  - @mlightcad/cad-viewer@2.0.0
+  - @mlightcad/cad-viewer@1.6.0
 
 ## 1.2.5
 
@@ -366,7 +382,7 @@
 
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.2.0
-  - @mlightcad/cad-viewer@2.0.0
+  - @mlightcad/cad-viewer@1.6.0
 
 ## 1.1.12
 

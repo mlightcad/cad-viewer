@@ -1,5 +1,16 @@
 # @mlightcad/cad-agent-plugin
 
+## 1.6.0
+
+### Minor Changes
+
+- feat: adds Design Review markup and measurement overlays with sidecar JSON persistence, undoable edits, draw-style controls, and AutoCAD-style REVCLOUD/SKETCH tools. Review overlays pick by stroke, support in-place text and window/crossing selection, and render on HTML canvas without forcing WebGL redraws. Ships a zero-build CDN bootstrap example, makes LibreDWG DWG support host opt-in, and retires cad-html-exporter-cli in favor of cad-simple-viewer-cli
+
+### Patch Changes
+
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.6.0
+
 ## 1.5.11
 
 ### Patch Changes
