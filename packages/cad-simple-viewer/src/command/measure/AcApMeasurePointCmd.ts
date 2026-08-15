@@ -1,9 +1,4 @@
 import { AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
-import {
-  AcTrHtmlBadge,
-  AcTrHtmlDot,
-  AcTrHtmlGroup
-} from '@mlightcad/three-renderer'
 
 import { AcApContext } from '../../app'
 import {
@@ -17,15 +12,10 @@ import {
 import { AcApI18n } from '../../i18n'
 import {
   acapGetCurrentMeasurementStyle,
-  type AcApMeasurementStyle,
-  formatMeasurementValue
+  type AcApMeasurementStyle
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
-import {
-  commitMeasurementGroup,
-  MEASUREMENT_LAYER
-} from './AcApMeasurementStore'
+import { AcApMeasurePointEntity } from './entity'
 
 /**
  * Commit a coordinate measurement overlay (also used when importing a sidecar).
@@ -37,48 +27,7 @@ export function placePointMeasurement(
   style: AcApMeasurementStyle,
   options?: { id?: string; layoutId?: string }
 ): void {
-  const id = options?.id ?? `point-${Date.now()}`
-  const layoutId = options?.layoutId ?? view.activeLayoutBtrId
-  const value = { kind: 'coordinate' as const, x: point.x, y: point.y }
-  const color = style.color
-
-  const group = new AcTrHtmlGroup({
-    id,
-    layer: MEASUREMENT_LAYER,
-    layoutId,
-    selectable: true
-  }).add(
-    new AcTrHtmlDot({
-      id: `${id}-dot`,
-      color,
-      worldPosition: point,
-      layer: MEASUREMENT_LAYER
-    }),
-    new AcTrHtmlBadge({
-      id: `${id}-badge`,
-      color,
-      text: formatMeasurementValue(db, value),
-      worldPosition: point,
-      layer: MEASUREMENT_LAYER,
-      fontSize: style.fontSize,
-      transform: 'translate(-50%, calc(-50% - 16px))'
-    })
-  )
-
-  commitMeasurementGroup(view, group, {
-    style,
-    value,
-    snapshot: {
-      id,
-      type: 'point',
-      layoutId,
-      style: serializeMeasurementStyle(style),
-      geometry: {
-        type: 'point',
-        position: { x: point.x, y: point.y }
-      }
-    }
-  })
+  AcApMeasurePointEntity.create(point, style, options).commit(view, db)
 }
 
 /**

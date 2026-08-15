@@ -6,8 +6,6 @@ import {
 } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
-  AcTrHtmlDot,
-  AcTrHtmlGroup,
   AcTrHtmlTransientManager
 } from '@mlightcad/three-renderer'
 
@@ -32,12 +30,8 @@ import {
   formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
-import {
-  commitMeasurementGroup,
-  MEASUREMENT_LAYER,
-  MEASUREMENT_LIVE_LAYER
-} from './AcApMeasurementStore'
+import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
+import { AcApMeasureDistanceEntity } from './entity'
 
 /** Returns the 2D Euclidean distance between two world points. */
 function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {
@@ -57,65 +51,7 @@ export function placeDistanceMeasurement(
   style: AcApMeasurementStyle,
   options?: { id?: string; layoutId?: string }
 ): void {
-  const dist = calcDist(p1, p2)
-  const color = style.color
-  const line = new AcDbLine(p1, p2)
-  line.color = color
-  line.lineWeight = style.lineWeight
-  view.addTransientEntity(line)
-
-  const id = options?.id ?? `dist-${Date.now()}`
-  const layoutId = options?.layoutId ?? view.activeLayoutBtrId
-  const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
-
-  const group = new AcTrHtmlGroup({
-    id,
-    layer: MEASUREMENT_LAYER,
-    layoutId,
-    selectable: true
-  }).add(
-    new AcTrHtmlDot({
-      id: `${id}-dot1`,
-      color,
-      worldPosition: p1,
-      layer: MEASUREMENT_LAYER
-    }),
-    new AcTrHtmlDot({
-      id: `${id}-dot2`,
-      color,
-      worldPosition: p2,
-      layer: MEASUREMENT_LAYER
-    }),
-    new AcTrHtmlBadge({
-      id: `${id}-badge`,
-      color,
-      text: formatMeasurementLength(db, dist),
-      worldPosition: mid,
-      layer: MEASUREMENT_LAYER,
-      fontSize: style.fontSize
-    })
-  )
-
-  commitMeasurementGroup(view, group, {
-    entityIds: [line.objectId],
-    entities: [line],
-    style,
-    value: { kind: 'length', value: dist },
-    snapshot: {
-      id,
-      type: 'distance',
-      layoutId,
-      style: serializeMeasurementStyle(style),
-      geometry: {
-        type: 'distance',
-        start: { x: p1.x, y: p1.y },
-        end: { x: p2.x, y: p2.y }
-      }
-    },
-    dispose: () => {
-      view.removeTransientEntity(line.objectId)
-    }
-  })
+  AcApMeasureDistanceEntity.create(p1, p2, style, options).commit(view, db)
 }
 
 /**

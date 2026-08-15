@@ -10,7 +10,6 @@ import {
   AcTrHtmlBadge,
   AcTrHtmlCanvasOverlay,
   AcTrHtmlDot,
-  AcTrHtmlGroup,
   AcTrHtmlSnapIndicator,
   AcTrHtmlTransientManager
 } from '@mlightcad/three-renderer'
@@ -36,13 +35,8 @@ import {
   formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
-import {
-  commitMeasurementGroup,
-  getMeasurementStyle,
-  MEASUREMENT_LAYER,
-  MEASUREMENT_LIVE_LAYER
-} from './AcApMeasurementStore'
+import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
+import { AcApMeasureArcEntity } from './entity'
 
 interface CircleGeom {
   cx: number
@@ -163,84 +157,10 @@ export function placeArcMeasurement(
   style: AcApMeasurementStyle,
   options?: { id?: string; layoutId?: string }
 ): void {
-  const color = style.color
-  const arcLen = shortArcLength(start, end, geom)
-  const mid = shortArcMid(start, end, geom)
-  const id = options?.id ?? `arc-${Date.now()}`
-  const layoutId = options?.layoutId ?? view.activeLayoutBtrId
-
-  const persistOverlay = new AcTrHtmlCanvasOverlay({
-    id: `arc-canvas-${id}`,
-    container: view.container,
-    layer: MEASUREMENT_LAYER,
-    layoutId
-  })
-  const paintArc = (paintStyle = style) =>
-    drawArcOnCanvas(
-      persistOverlay.canvas,
-      view,
-      geom,
-      start,
-      end,
-      paintStyle.color,
-      acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
-    )
-  paintArc()
-
-  const redrawPersist = () => paintArc(getMeasurementStyle(id) ?? style)
-  view.events.viewChanged.addEventListener(redrawPersist)
-
-  const group = new AcTrHtmlGroup({
-    id,
-    layer: MEASUREMENT_LAYER,
-    layoutId,
-    selectable: true
-  })
-    .add(
-      new AcTrHtmlDot({
-        id: `${id}-dot1`,
-        color,
-        worldPosition: start,
-        layer: MEASUREMENT_LAYER
-      }),
-      new AcTrHtmlDot({
-        id: `${id}-dot2`,
-        color,
-        worldPosition: end,
-        layer: MEASUREMENT_LAYER
-      }),
-      new AcTrHtmlBadge({
-        id: `${id}-badge`,
-        color,
-        text: formatMeasurementLength(db, arcLen),
-        worldPosition: mid,
-        layer: MEASUREMENT_LAYER,
-        fontSize: style.fontSize
-      })
-    )
-    .addCanvas(persistOverlay)
-
-  commitMeasurementGroup(view, group, {
-    style,
-    value: { kind: 'length', value: arcLen },
-    snapshot: {
-      id,
-      type: 'arc',
-      layoutId,
-      style: serializeMeasurementStyle(style),
-      geometry: {
-        type: 'arc',
-        center: { x: geom.cx, y: geom.cy },
-        radius: geom.r,
-        start: { x: start.x, y: start.y },
-        end: { x: end.x, y: end.y }
-      }
-    },
-    redraw: paintArc,
-    dispose: () => {
-      view.events.viewChanged.removeEventListener(redrawPersist)
-    }
-  })
+  AcApMeasureArcEntity.create(geom, start, end, style, options).commit(
+    view,
+    db
+  )
 }
 
 /**
