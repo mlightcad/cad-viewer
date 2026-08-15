@@ -14,8 +14,8 @@ import {
 } from '../command/measure/AcApMeasurementStore'
 import type { AcEdSelectionAction, AcEdSelectionMode } from '../editor'
 import {
-  isSpatialBoxFullyInside,
-  type AcTrSpatialIndexBBox
+  type AcTrSpatialIndexBBox,
+  isSpatialBoxFullyInside
 } from '../spatialIndex/AcTrSpatialIndex'
 import type { AcTrView2d } from './AcTrView2d'
 

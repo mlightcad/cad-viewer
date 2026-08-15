@@ -11,8 +11,8 @@ import {
   AcApQNewCmd,
   AcApSettingManager,
   acedApplyUiTheme,
-  AcEdOpenMode,
   acedIsCompactUiLayout,
+  AcEdOpenMode,
   LIBREDWG_PARSER_WORKER_FILE,
   MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
