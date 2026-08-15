@@ -126,10 +126,14 @@
 
 <script type="module">
 const ML = '1.5.11'
+const LIBREDWG_PARSER_WORKER_FILE = 'libredwg-parser-worker.js'
 const npm = (pkg, path = '') => `https://cdn.jsdelivr.net/npm/${pkg}${path}`
 const CAD_VIEWER_URL = npm(`@mlightcad/cad-viewer@${ML}`, '/dist/cad-viewer.js')
 const BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
-const DWG_WORKER = npm('@mlightcad/libredwg-converter@3.13.0', '/dist/libredwg-parser-worker.js')
+const DWG_WORKER = npm(
+  '@mlightcad/libredwg-converter@3.13.0',
+  `/dist/${LIBREDWG_PARSER_WORKER_FILE}`
+)
 const CSS_SHIM = null
 
 const EXACT = {
