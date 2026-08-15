@@ -56,14 +56,14 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.12.5",
+    "@mlightcad/data-model": "^1.13.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "vue": "^3.4.21",
     "vue-tsc": "^2.1.6"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.12.5",
+    "@mlightcad/data-model": "^1.13.0",
     "vue": "^3.4.21"
   }
 }

@@ -33,6 +33,7 @@ import {
 } from './demoToolbarPresets'
 import { setupFileSidebarResize } from './fileSidebarResize'
 import { registerLazyPlugins } from './register'
+import { registerLibreDwgConverter } from './registerLibreDwg'
 
 const EXAMPLE_COMMAND_ALIASES = {
   LINE: ['LX'],
@@ -797,6 +798,8 @@ class CadViewerApp {
 
       const openProf = isOpenProfMode()
       const useWorkers = openProf ? isWorkerOpenMode() : true
+      const dwgParserUrl = `./workers/${LIBREDWG_PARSER_WORKER_FILE}`
+      registerLibreDwgConverter(dwgParserUrl)
       AcApDocManager.createInstance({
         container: this.container,
         busyIndicatorHost: this.viewerPane,
@@ -815,7 +818,7 @@ class CadViewerApp {
         },
         webworkerFileUrls: {
           mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`,
-          dwgParser: `./workers/${LIBREDWG_PARSER_WORKER_FILE}`
+          dwgParser: dwgParserUrl
         }
       })
       if (openProf) {

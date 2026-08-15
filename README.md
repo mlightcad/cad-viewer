@@ -192,7 +192,7 @@ These optimizations enable CAD-Viewer to smoothly render complex CAD drawings wi
 
 ## Known Issues
 
-The default open-source DWG path is based on [LibreDWG](https://github.com/LibreDWG/libredwg). It works well for many drawings, but its entity coverage is still limited, the WASM bundle is much larger, startup is slower, memory usage is high, and very large DWG files may hit out-of-memory errors. It also introduces GPL licensing considerations for commercial closed-source products.
+The default open-source DWG path is based on [LibreDWG](https://github.com/LibreDWG/libredwg) via the optional `@mlightcad/libredwg-converter` package. It works well for many drawings, but its entity coverage is still limited, the WASM bundle is much larger, startup is slower, memory usage is high, and very large DWG files may hit out-of-memory errors. It also introduces GPL licensing considerations for commercial closed-source products. `@mlightcad/cad-simple-viewer` does **not** depend on or register that converter by default — host apps (see the example packages) opt in explicitly.
 
 If you need better compatibility, lower memory usage, large-file support, or a cleaner commercial licensing story, see our [**proprietary DWG parser**](./PROPRIETARY-PARSER.md).
 
@@ -425,6 +425,6 @@ Contributions are welcome! Please open issues or pull requests for bug fixes, ne
 
 The cad-viewer monorepo is primarily [MIT](LICENSE) licensed.
 
-DXF loading uses the built-in MIT parser in `@mlightcad/data-model`. The **default DWG loading path** in `@mlightcad/cad-simple-viewer` depends on GPL-3.0 packages (`libredwg-web` / `@mlightcad/libredwg-converter`). If you ship a closed-source product and cannot distribute GPL code to your customers, use the [**proprietary DWG parser**](./PROPRIETARY-PARSER.md) instead — it replaces that converter and lets the rest of the stack remain MIT-only.
+DXF loading uses the built-in MIT parser in `@mlightcad/data-model`. DWG loading is **opt-in**: `@mlightcad/cad-simple-viewer` does not depend on GPL LibreDWG packages. Hosts that want open-source DWG support add `@mlightcad/libredwg-converter` (GPL-3.0) themselves, deploy its worker + wasm, and register the converter. If you ship a closed-source product and cannot distribute GPL code to your customers, use the [**proprietary DWG parser**](./PROPRIETARY-PARSER.md) instead.
 
 → **Commercial parser:** [PROPRIETARY-PARSER.md](./PROPRIETARY-PARSER.md) (scope, licensing, pricing, integration, GPL compliance, support)

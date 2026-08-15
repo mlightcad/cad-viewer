@@ -247,10 +247,6 @@ jest.mock('@mlightcad/data-model', () => ({
   }
 }))
 
-jest.mock('@mlightcad/libredwg-converter', () => ({
-  AcDbLibreDwgConverter: jest.fn()
-}))
-
 import { AcApDocManager } from '../src/app/AcApDocManager'
 
 describe('AcApDocManager font URL configuration', () => {

@@ -2,10 +2,7 @@ import {
   checkWebworkerReadiness,
   resetWebworkerReadinessCache
 } from '../src/app/AcApWebworkerReadiness'
-import {
-  LIBREDWG_PARSER_WORKER_FILE,
-  MTEXT_RENDERER_WORKER_FILE
-} from '../src/app/AcApWorkerAssets'
+import { MTEXT_RENDERER_WORKER_FILE } from '../src/app/AcApWorkerAssets'
 
 function mockFetch(
   implementation: (...args: unknown[]) => unknown
@@ -15,7 +12,7 @@ function mockFetch(
 
 describe('checkWebworkerReadiness', () => {
   const originalFetch = global.fetch
-  const dwgParserUrl = `/workers/${LIBREDWG_PARSER_WORKER_FILE}`
+  const dwgParserUrl = '/workers/libredwg-parser-worker.js'
   const mtextRenderUrl = `/workers/${MTEXT_RENDERER_WORKER_FILE}`
 
   beforeEach(() => {
@@ -24,6 +21,21 @@ describe('checkWebworkerReadiness', () => {
 
   afterEach(() => {
     global.fetch = originalFetch
+  })
+
+  it('probes only the MTEXT worker by default', async () => {
+    global.fetch = mockFetch(() =>
+      Promise.resolve({ ok: true, status: 200 } as Response)
+    )
+
+    const ready = await checkWebworkerReadiness()
+
+    expect(ready).toBe(true)
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    expect(global.fetch).toHaveBeenCalledWith(
+      `./assets/${MTEXT_RENDERER_WORKER_FILE}`,
+      { method: 'HEAD' }
+    )
   })
 
   it('uses HEAD requests and returns true when all workers respond ok', async () => {

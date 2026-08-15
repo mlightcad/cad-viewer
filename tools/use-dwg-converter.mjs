@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 /**
- * Switch cad-simple-viewer from @mlightcad/libredwg-converter (GPL)
+ * Switch example apps / CLI from @mlightcad/libredwg-converter (GPL)
  * to the proprietary @mlight-cad/dwg-converter (local realdwg-web path).
  * Also repoints the @mlightcad/data-model pnpm override to the local
  * realdwg-web checkout.
  *
- * Usage (from repo root or package):
+ * `@mlightcad/cad-simple-viewer` no longer depends on or registers a DWG
+ * converter — hosts (examples, CLI) own that opt-in.
+ *
+ * Usage (from repo root):
  *   node tools/use-dwg-converter.mjs
- *   pnpm --filter @mlightcad/cad-simple-viewer use:dwg-converter
+ *   pnpm use:dwg-converter
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -15,7 +18,6 @@ import { fileURLToPath } from 'node:url'
 
 const toolsDir = dirname(fileURLToPath(import.meta.url))
 const rootDir = join(toolsDir, '..')
-const pkgDir = join(rootDir, 'packages', 'cad-simple-viewer')
 
 const DWG_CONVERTER_VERSION =
   '../../../realdwg-web/packages/dwg-converter'
@@ -42,65 +44,199 @@ function replaceLibreDwgParserWorkerFile(content) {
   return next
 }
 
+function replacePackageDep(content) {
+  if (
+    content.includes('"@mlight-cad/dwg-converter"') &&
+    !content.includes('"@mlightcad/libredwg-converter"')
+  ) {
+    console.log('  already using @mlight-cad/dwg-converter')
+    return null
+  }
+
+  const next = content.replace(
+    /"@mlightcad\/libredwg-converter"\s*:\s*"[^"]*"/,
+    `"@mlight-cad/dwg-converter": "${DWG_CONVERTER_VERSION}"`
+  )
+
+  if (next === content) {
+    throw new Error('Expected @mlightcad/libredwg-converter in package.json')
+  }
+  return next
+}
+
+function replaceViteLibreDwg(content) {
+  if (
+    content.includes('DWG_CONVERTER_PACKAGE') &&
+    !content.includes('LIBREDWG_CONVERTER_PACKAGE')
+  ) {
+    console.log('  already using DWG_CONVERTER_PACKAGE')
+    return null
+  }
+
+  let next = content
+  next = next.replaceAll('LIBREDWG_CONVERTER_PACKAGE', 'DWG_CONVERTER_PACKAGE')
+  next = next.replaceAll('LIBREDWG_PARSER_WORKER_FILE', 'DWG_PARSER_WORKER_FILE')
+  next = next.replaceAll('LIBREDWG_PARSER_WASM_FILE', 'DWG_PARSER_MAIN_FILE')
+  // Proprietary converter may not ship a sibling wasm; drop wasm-only copy blocks
+  // left with an empty/mismatched asset — hosts should adjust manually if needed.
+
+  if (next === content) {
+    throw new Error('No LIBREDWG_* symbols found in vite.config.ts to replace')
+  }
+  return next
+}
+
+function replaceRegisterModule(content) {
+  if (
+    content.includes('AcDbDwgConverter') &&
+    !content.includes('AcDbLibreDwgConverter')
+  ) {
+    console.log('  already using AcDbDwgConverter')
+    return null
+  }
+
+  let next = content
+  next = next.replaceAll(
+    "from '@mlightcad/libredwg-converter'",
+    "from '@mlight-cad/dwg-converter'"
+  )
+  next = next.replaceAll('AcDbLibreDwgConverter', 'AcDbDwgConverter')
+  next = next.replaceAll('registerLibreDwgConverter', 'registerDwgConverter')
+  next = next.replaceAll('LIBREDWG_PARSER_WORKER_FILE', 'DWG_PARSER_WORKER_FILE')
+  next = next.replaceAll(
+    '`@mlightcad/libredwg-converter`',
+    '`@mlight-cad/dwg-converter`'
+  )
+
+  if (next === content) {
+    throw new Error(
+      'No AcDbLibreDwgConverter / libredwg-converter found in register module'
+    )
+  }
+  return next
+}
+
 const targets = [
   {
-    path: join(pkgDir, 'package.json'),
-    label: 'package.json',
+    path: join(
+      rootDir,
+      'packages',
+      'cad-simple-viewer-example',
+      'package.json'
+    ),
+    label: 'cad-simple-viewer-example/package.json',
+    transform: replacePackageDep
+  },
+  {
+    path: join(rootDir, 'packages', 'cad-viewer-example', 'package.json'),
+    label: 'cad-viewer-example/package.json',
+    transform: replacePackageDep
+  },
+  {
+    path: join(rootDir, 'packages', 'cad-simple-viewer-cli', 'package.json'),
+    label: 'cad-simple-viewer-cli/package.json',
+    transform: replacePackageDep
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
+      'cad-simple-viewer-example',
+      'vite.config.ts'
+    ),
+    label: 'cad-simple-viewer-example/vite.config.ts',
+    transform: replaceViteLibreDwg
+  },
+  {
+    path: join(rootDir, 'packages', 'cad-viewer-example', 'vite.config.ts'),
+    label: 'cad-viewer-example/vite.config.ts',
+    transform: replaceViteLibreDwg
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
+      'cad-simple-viewer-cli',
+      'scripts',
+      'copy-runner-assets.mjs'
+    ),
+    label: 'cad-simple-viewer-cli/scripts/copy-runner-assets.mjs',
+    transform: replaceViteLibreDwg
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
+      'cad-simple-viewer-example',
+      'src',
+      'registerLibreDwg.ts'
+    ),
+    label: 'cad-simple-viewer-example/src/registerLibreDwg.ts',
+    transform: replaceRegisterModule
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
+      'cad-viewer-example',
+      'src',
+      'registerLibreDwg.ts'
+    ),
+    label: 'cad-viewer-example/src/registerLibreDwg.ts',
+    transform: replaceRegisterModule
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
+      'cad-simple-viewer-example',
+      'src',
+      'main.ts'
+    ),
+    label: 'cad-simple-viewer-example/src/main.ts',
     transform(content) {
-      if (
-        content.includes('"@mlight-cad/dwg-converter"') &&
-        !content.includes('"@mlightcad/libredwg-converter"')
-      ) {
-        console.log('  already using @mlight-cad/dwg-converter')
+      let next = replaceLibreDwgParserWorkerFile(content)
+      if (next == null) {
+        next = content
+      }
+      const replaced = next
+        .replaceAll('registerLibreDwgConverter', 'registerDwgConverter')
+        .replaceAll('./registerLibreDwg', './registerLibreDwg')
+      if (replaced === content && next === content) {
+        console.log('  already switched')
         return null
       }
-
-      const next = content.replace(
-        /"@mlightcad\/libredwg-converter"\s*:\s*"[^"]*"/,
-        `"@mlight-cad/dwg-converter": "${DWG_CONVERTER_VERSION}"`
-      )
-
-      if (next === content) {
-        throw new Error(
-          'Expected @mlightcad/libredwg-converter in package.json'
-        )
-      }
-      return next
+      return replaced
     }
   },
   {
-    path: join(pkgDir, 'vite.config.ts'),
-    label: 'vite.config.ts',
+    path: join(rootDir, 'packages', 'cad-viewer-example', 'src', 'main.ts'),
+    label: 'cad-viewer-example/src/main.ts',
     transform(content) {
-      if (
-        content.includes('DWG_CONVERTER_PACKAGE') &&
-        !content.includes('LIBREDWG_CONVERTER_PACKAGE')
-      ) {
-        console.log('  already using DWG_CONVERTER_PACKAGE')
+      let next = replaceLibreDwgParserWorkerFile(content)
+      if (next == null) {
+        next = content
+      }
+      const replaced = next.replaceAll(
+        'registerLibreDwgConverter',
+        'registerDwgConverter'
+      )
+      if (replaced === content && next === content) {
+        console.log('  already switched')
         return null
       }
-
-      let next = content
-      next = next.replaceAll(
-        'LIBREDWG_CONVERTER_PACKAGE',
-        'DWG_CONVERTER_PACKAGE'
-      )
-      next = next.replaceAll(
-        'LIBREDWG_PARSER_WORKER_FILE',
-        'DWG_PARSER_WORKER_FILE'
-      )
-
-      if (next === content) {
-        throw new Error(
-          'No LIBREDWG_* symbols found in vite.config.ts to replace'
-        )
-      }
-      return next
+      return replaced
     }
   },
   {
-    path: join(pkgDir, 'src', 'app', 'AcApDocManager.ts'),
-    label: 'AcApDocManager.ts',
+    path: join(
+      rootDir,
+      'packages',
+      'cad-simple-viewer-cli',
+      'runner',
+      'main.ts'
+    ),
+    label: 'cad-simple-viewer-cli/runner/main.ts',
     transform(content) {
       if (
         content.includes('AcDbDwgConverter') &&
@@ -117,38 +253,15 @@ const targets = [
       )
       next = next.replaceAll('AcDbLibreDwgConverter', 'AcDbDwgConverter')
       next = next.replaceAll(
-        '`@mlightcad/libredwg-converter`',
-        '`@mlight-cad/dwg-converter`'
+        'LIBREDWG_PARSER_WORKER_FILE',
+        'DWG_PARSER_WORKER_FILE'
       )
 
       if (next === content) {
-        throw new Error(
-          'No AcDbLibreDwgConverter / libredwg-converter found in AcApDocManager.ts'
-        )
+        throw new Error('No libredwg references found in CLI runner/main.ts')
       }
       return next
     }
-  },
-  {
-    path: join(pkgDir, 'src', 'app', 'AcApWebworkerReadiness.ts'),
-    label: 'AcApWebworkerReadiness.ts',
-    transform: replaceLibreDwgParserWorkerFile
-  },
-  {
-    path: join(pkgDir, '__tests__', 'AcApWebworkerReadiness.spec.ts'),
-    label: 'AcApWebworkerReadiness.spec.ts',
-    transform: replaceLibreDwgParserWorkerFile
-  },
-  {
-    path: join(
-      rootDir,
-      'packages',
-      'cad-simple-viewer-example',
-      'src',
-      'main.ts'
-    ),
-    label: 'cad-simple-viewer-example/src/main.ts',
-    transform: replaceLibreDwgParserWorkerFile
   },
   {
     path: join(rootDir, 'pnpm-workspace.yaml'),
@@ -175,7 +288,9 @@ const targets = [
 ]
 
 function main() {
-  console.log('Switching cad-simple-viewer to @mlight-cad/dwg-converter…')
+  console.log(
+    'Switching example/CLI DWG path to @mlight-cad/dwg-converter…'
+  )
 
   let changed = 0
   for (const target of targets) {

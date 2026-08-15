@@ -129,7 +129,7 @@ const ML = '1.5.11'
 const npm = (pkg, path = '') => `https://cdn.jsdelivr.net/npm/${pkg}${path}`
 const CAD_VIEWER_URL = npm(`@mlightcad/cad-viewer@${ML}`, '/dist/cad-viewer.js')
 const BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
-const DWG_WORKER = npm(`@mlightcad/cad-simple-viewer@${ML}`, '/dist/libredwg-parser-worker.js')
+const DWG_WORKER = npm('@mlightcad/libredwg-converter@3.13.0', '/dist/libredwg-parser-worker.js')
 const CSS_SHIM = null
 
 const EXACT = {
@@ -311,6 +311,23 @@ async function openFile(file) {
   const { createApp, h } = vue
   const { AcApDocManager } = simpleViewer
   const { MlCadViewer, i18n } = cadViewer
+  const { AcDbDatabaseConverterManager, AcDbFileType } = await import(EXACT['@mlightcad/data-model'])
+  const { AcDbLibreDwgConverter } = await import(
+    npm('@mlightcad/libredwg-converter@3.13.0', '/+esm')
+  )
+
+  // Opt into GPL DWG support; worker (+ sibling wasm) live on the converter package CDN.
+  const dwgParser = URL.createObjectURL(
+    new Blob([`import ${JSON.stringify(DWG_WORKER)};\n`], { type: 'text/javascript' })
+  )
+  AcDbDatabaseConverterManager.instance.register(
+    AcDbFileType.DWG,
+    new AcDbLibreDwgConverter({
+      convertByEntityType: false,
+      useWorker: true,
+      parserWorkerUrl: dwgParser
+    })
+  )
 
   // MlCadViewer has no webworkerFileUrls prop yet — inject CDN worker via blob URL.
   const createInstance = AcApDocManager.createInstance.bind(AcApDocManager)
@@ -318,9 +335,7 @@ async function openFile(file) {
     ...options,
     useMainThreadDraw: options.useMainThreadDraw ?? true,
     webworkerFileUrls: {
-      dwgParser: URL.createObjectURL(
-        new Blob([`import ${JSON.stringify(DWG_WORKER)};\n`], { type: 'text/javascript' })
-      ),
+      dwgParser,
       ...options.webworkerFileUrls
     }
   })
