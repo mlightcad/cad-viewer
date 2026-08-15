@@ -49,7 +49,7 @@ export class AcApMarkupTextCmd extends AcEdCommand {
         layoutId: view.activeLayoutBtrId
       })
       view.htmlTransientManager.add(badge)
-      view.isDirty = true
+      view.isHtmlDirty = true
 
       let text = 'Note'
       try {
@@ -60,7 +60,7 @@ export class AcApMarkupTextCmd extends AcEdCommand {
           )) || 'Note'
       } finally {
         view.htmlTransientManager.remove(badgeId)
-        view.isDirty = true
+        view.isHtmlDirty = true
       }
 
       const meta = createMarkupMeta('text', view, context, { text })

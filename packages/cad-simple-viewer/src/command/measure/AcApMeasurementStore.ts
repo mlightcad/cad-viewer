@@ -53,7 +53,7 @@ export function setMeasurementVisible(
     }
   }
   ht.setVisible(visible, MEASUREMENT_LIVE_LAYER)
-  view.isDirty = true
+  view.isHtmlDirty = true
 }
 
 /**
@@ -195,7 +195,7 @@ function paintMeasurementGroup(
     view.highlight(extras!.entityIds!)
   }
   extras?.redraw?.(style)
-  view.isDirty = true
+  view.isHtmlDirty = true
 }
 
 /**
@@ -214,7 +214,7 @@ export function refreshMeasurementValueLabels(
       badge.setText?.(text)
     }
   }
-  view.isDirty = true
+  view.isHtmlDirty = true
 }
 
 /** Serializable snapshots of committed measurements currently on the view. */
@@ -316,7 +316,7 @@ export function commitMeasurementGroup(
   ) {
     group.setVisible(false)
   }
-  view.isDirty = true
+  view.isHtmlDirty = true
 }
 
 /**

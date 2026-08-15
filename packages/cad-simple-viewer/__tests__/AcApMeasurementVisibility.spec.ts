@@ -29,6 +29,7 @@ function createView(groups: AcTrHtmlGroup[], layoutId: string) {
   const view = {
     activeLayoutBtrId: layoutId,
     isDirty: false,
+    isHtmlDirty: false,
     htmlTransientManager: {
       groupsOnLayer(layer: string) {
         return groups.filter(group => group.layer === layer)
@@ -60,7 +61,8 @@ describe('AcApMeasurementVisibility', () => {
     expect(unscoped.setVisible).toHaveBeenCalledWith(false)
     expect(other.setVisible).not.toHaveBeenCalled()
     expect(setVisible).toHaveBeenCalledWith(false, MEASUREMENT_LIVE_LAYER)
-    expect(view.isDirty).toBe(true)
+    expect(view.isDirty).toBe(false)
+    expect(view.isHtmlDirty).toBe(true)
   })
 
   it('shows measurements on the active layout without revealing other layouts', () => {

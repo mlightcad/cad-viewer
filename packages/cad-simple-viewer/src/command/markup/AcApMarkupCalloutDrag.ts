@@ -31,6 +31,15 @@ export function pointerEventToMarkupWorld(
   return { x: world.x, y: world.y }
 }
 
+/** Move a published HTML overlay and refresh its transform baseline. */
+export function placeMarkupHtml(
+  view: AcTrView2d,
+  el: AcTrHtmlElement,
+  point: AcApMarkupPoint2d
+): void {
+  view.htmlTransientManager.updatePosition(el.id, point)
+}
+
 const DRAG_THRESHOLD_PX = 4
 
 const windowListenerOptions: AddEventListenerOptions = {
@@ -115,7 +124,7 @@ export function bindMarkupPointerDrag(options: {
         onDragStart?.()
       }
       onMove(pointerEventToMarkupWorld(view, ev), ev)
-      view.isDirty = true
+      view.isHtmlDirty = true
     }
 
     const onPointerUp = (ev: PointerEvent) => {
@@ -177,8 +186,7 @@ export function bindMarkupCalloutGrips(options: {
     onDragStart,
     onMove: point => {
       state.tip = outline ? computeLeaderTipOnShape(outline, point) : point
-      view.htmlTransientManager.updatePosition(tipEl.id, state.tip)
-      tipEl.setPosition(state.tip)
+      placeMarkupHtml(view, tipEl, state.tip)
       onLiveChange()
     },
     onCommit: () => {
@@ -192,8 +200,7 @@ export function bindMarkupCalloutGrips(options: {
     onDragStart,
     onMove: point => {
       state.anchor = point
-      view.htmlTransientManager.updatePosition(bubbleEl.id, state.anchor)
-      bubbleEl.setPosition(state.anchor)
+      placeMarkupHtml(view, bubbleEl, state.anchor)
       onLiveChange()
     },
     onCommit: () => {

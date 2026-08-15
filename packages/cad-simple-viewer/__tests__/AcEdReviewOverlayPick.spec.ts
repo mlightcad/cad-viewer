@@ -26,6 +26,7 @@ function mockView(ht: {
     selectionBoxSize: 3,
     activeLayoutBtrId: 'layout-a',
     isDirty: false,
+    isHtmlDirty: false,
     worldToScreen: (point: { x: number; y: number }) => point,
     htmlTransientManager: {
       getGroup: () => ({ id: 'line-1', visible: true }),
@@ -54,6 +55,7 @@ describe('trySelectReviewOverlay', () => {
     expect(selectGroup).not.toHaveBeenCalled()
     expect(deselectGroup).not.toHaveBeenCalled()
     expect(view.isDirty).toBe(false)
+    expect(view.isHtmlDirty).toBe(false)
   })
 
   it('consumes an additive hit only when the overlay is newly selected', () => {
@@ -62,12 +64,13 @@ describe('trySelectReviewOverlay', () => {
 
     expect(trySelectReviewOverlay(view, 50, 0, 'add')).toBe(true)
     expect(selectGroup).toHaveBeenCalledWith('line-1', false)
-    expect(view.isDirty).toBe(true)
+    expect(view.isDirty).toBe(false)
+    expect(view.isHtmlDirty).toBe(true)
 
     selectGroup.mockReturnValue(false)
-    view.isDirty = false
+    view.isHtmlDirty = false
     expect(trySelectReviewOverlay(view, 50, 0, 'add')).toBe(false)
-    expect(view.isDirty).toBe(false)
+    expect(view.isHtmlDirty).toBe(false)
   })
 
   it('lets Shift-remove fall through when the overlay was not selected', () => {
@@ -77,6 +80,7 @@ describe('trySelectReviewOverlay', () => {
     expect(trySelectReviewOverlay(view, 50, 0, 'remove')).toBe(false)
     expect(deselectGroup).toHaveBeenCalledWith('line-1')
     expect(view.isDirty).toBe(false)
+    expect(view.isHtmlDirty).toBe(false)
   })
 
   it('consumes Shift-remove when the overlay is deselected', () => {
@@ -84,7 +88,8 @@ describe('trySelectReviewOverlay', () => {
     const view = mockView({ selectGroup: jest.fn(), deselectGroup })
 
     expect(trySelectReviewOverlay(view, 50, 0, 'remove')).toBe(true)
-    expect(view.isDirty).toBe(true)
+    expect(view.isDirty).toBe(false)
+    expect(view.isHtmlDirty).toBe(true)
   })
 
   it('always consumes a replace click on a hit overlay', () => {
@@ -93,6 +98,7 @@ describe('trySelectReviewOverlay', () => {
 
     expect(trySelectReviewOverlay(view, 50, 0, 'replace')).toBe(true)
     expect(selectGroup).toHaveBeenCalledWith('line-1', true)
-    expect(view.isDirty).toBe(true)
+    expect(view.isDirty).toBe(false)
+    expect(view.isHtmlDirty).toBe(true)
   })
 })

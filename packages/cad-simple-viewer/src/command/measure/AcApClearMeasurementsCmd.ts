@@ -30,7 +30,7 @@ export function clearLayoutMeasurements(view: AcTrView2d): void {
     }
   })
   ht.clear(MEASUREMENT_LIVE_LAYER)
-  view.isDirty = true
+  view.isHtmlDirty = true
 }
 
 /**

@@ -464,17 +464,21 @@ export class AcTrScene {
    *
    * Also forwards matching ids to {@link AcTrHtmlTransientManager} so HTML
    * overlays receive the same delta as WebGL transients.
+   *
+   * @returns Which renderer layers actually changed, so the view can dirty
+   *   WebGL and CSS2D independently.
    */
   updateTransientPreviewTransforms(
     transforms: ReadonlyArray<{ objectId: AcDbObjectId; matrix: THREE.Matrix4 }>
-  ): boolean {
+  ): { webgl: boolean; html: boolean } {
     const mapped = transforms.map(entry => ({
       id: entry.objectId,
       matrix: entry.matrix
     }))
-    const webglUpdated = this._transientManager.applyTransforms(mapped)
-    const htmlUpdated = this._htmlTransientManager.applyTransforms(mapped)
-    return webglUpdated || htmlUpdated
+    return {
+      webgl: this._transientManager.applyTransforms(mapped),
+      html: this._htmlTransientManager.applyTransforms(mapped)
+    }
   }
 
   /**

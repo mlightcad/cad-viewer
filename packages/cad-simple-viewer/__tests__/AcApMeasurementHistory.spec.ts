@@ -61,6 +61,7 @@ function createView() {
   const view = {
     htmlTransientManager: manager,
     isDirty: false,
+    isHtmlDirty: false,
     removeTransientEntity: jest.fn(),
     addTransientEntity: jest.fn(),
     highlight: jest.fn(),

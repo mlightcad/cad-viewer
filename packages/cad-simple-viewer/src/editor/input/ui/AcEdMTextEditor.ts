@@ -491,7 +491,7 @@ export class AcEdMTextEditor {
       const onRenderFrame = () => {
         if (done) return
         mtextInputBox.update()
-        view.isDirty = true
+        view.isHtmlDirty = true
       }
 
       const onSysVarChanged = (args: { name: string; database: unknown }) => {
@@ -502,7 +502,7 @@ export class AcEdMTextEditor {
           return
         }
         mtextInputBox.setToolbarTheme(getToolbarTheme())
-        view.isDirty = true
+        view.isHtmlDirty = true
       }
 
       const cleanup = () => {
@@ -517,7 +517,7 @@ export class AcEdMTextEditor {
         AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
           onSysVarChanged
         )
-        view.isDirty = true
+        view.isHtmlDirty = true
       }
 
       const finish = (result: AcEdMTextEditorResult | null) => {
