@@ -199,7 +199,7 @@ export class AcApMeasurementHistory {
         const style = styles[group.id]
         if (style) applyMeasurementStyle(entry.view, group, style)
       }
-      entry.view.isDirty = true
+      entry.view.isHtmlDirty = true
     } finally {
       this.depth--
     }

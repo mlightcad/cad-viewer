@@ -78,6 +78,6 @@ export function trySelectReviewOverlay(
   const id = markupId ?? measurementId
   if (!id) return false
   const consumed = applyOverlaySelection(view, id, action)
-  if (consumed) view.isDirty = true
+  if (consumed) view.isHtmlDirty = true
   return consumed
 }

@@ -58,7 +58,7 @@ export class AcEdViewKeyHandler {
       case 'Escape':
         this.view.selectionSet.clear()
         this.view.htmlTransientManager.deselectAll()
-        this.view.isDirty = true
+        this.view.isHtmlDirty = true
         return false
 
       case 'Delete':
@@ -92,7 +92,7 @@ export class AcEdViewKeyHandler {
             }
           }
           if (removed) {
-            this.view.isDirty = true
+            this.view.isHtmlDirty = true
             e.preventDefault()
             return true
           }

@@ -25,7 +25,8 @@ import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import type { AcTrView2d } from '../../view'
 import {
   bindMarkupCalloutGrips,
-  bindMarkupPointerDrag
+  bindMarkupPointerDrag,
+  placeMarkupHtml
 } from './AcApMarkupCalloutDrag'
 import {
   markupGeometryCenter,
@@ -374,15 +375,6 @@ function publishAttachedCallout(
   )
 
   return { live, redraw, tipDot, bubble }
-}
-
-function placeMarkupHtml(
-  view: AcTrView2d,
-  el: AcTrHtmlElement,
-  point: AcApMarkupPoint2d
-): void {
-  view.htmlTransientManager.updatePosition(el.id, point)
-  el.setPosition(point)
 }
 
 function bindMarkupCenterMove(options: {
@@ -1024,7 +1016,7 @@ export class AcApMarkupPresenter {
 
     view2d.htmlTransientManager.add(group)
     for (const bind of pendingGrips) bind()
-    view2d.isDirty = true
+    view2d.isHtmlDirty = true
     this.published.add(record.id)
 
     // Preserve selection across republish (style / label / geometry edits).
@@ -1069,7 +1061,7 @@ export class AcApMarkupPresenter {
     } finally {
       this.suppressingStoreRemove = false
     }
-    view2d.isDirty = true
+    view2d.isHtmlDirty = true
   }
 
   /** Clear all markup visuals (and optionally store records). */
@@ -1100,7 +1092,7 @@ export class AcApMarkupPresenter {
       for (const id of ids) {
         this.unpublish(view, id, { keepInStore: !shouldClearStore })
       }
-      asView2d(view).isDirty = true
+      asView2d(view).isHtmlDirty = true
     }
     if (shouldClearStore && !getMarkupHistory().isBusy) {
       runMarkupEdit(view, 'Clear Markups', apply)
@@ -1126,7 +1118,7 @@ export class AcApMarkupPresenter {
     if (shouldClearStore) {
       getMarkupStore().clear({ markDirty: true })
     }
-    view2d.isDirty = true
+    view2d.isHtmlDirty = true
   }
 
   /** Drop published-id tracking after the view/scene was discarded. */

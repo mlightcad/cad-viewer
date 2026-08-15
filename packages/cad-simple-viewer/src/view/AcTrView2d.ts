@@ -147,8 +147,10 @@ export class AcTrView2d extends AcEdBaseView {
   private _layoutViewManager: AcTrLayoutViewManager
   /** The 3D scene containing all CAD entities organized by layouts and layers */
   private _scene: AcTrScene
-  /** Flag indicating if the view needs to be re-rendered */
+  /** Flag indicating if the WebGL scene needs to be re-rendered */
   private _isDirty: boolean
+  /** Flag indicating if CSS2D / HTML overlays need a CSS2DRenderer pass */
+  private _htmlDirty: boolean
   /** Performance monitoring statistics display */
   private _stats: Stats
   /** Map of missing raster images during rendering */
@@ -540,6 +542,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.initialize()
     this.onWindowResize()
     this._isDirty = true
+    this._htmlDirty = false
     this.startAnimationLoop()
     this._numOfEntitiesToProcess = 0
     this._pendingGeometryJobs = 0
@@ -598,9 +601,13 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Gets whether the view needs to be re-rendered.
+   * Gets whether the WebGL scene needs to be re-rendered.
    *
-   * @returns True if the view is dirty and needs re-rendering
+   * Camera, CAD entities, and WebGL transients set this flag. CSS2D / HTML
+   * overlay mutations should use {@link isHtmlDirty} instead so a badge or
+   * markup DOM change does not clear and redraw the drawing.
+   *
+   * @returns True if the WebGL view is dirty and needs re-rendering
    */
   get isDirty() {
     return this._isDirty
@@ -693,12 +700,37 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Sets whether the view needs to be re-rendered.
+   * Sets whether the WebGL scene needs to be re-rendered.
    *
-   * @param value - True to mark the view as needing re-rendering
+   * When true, the animation loop also runs CSS2DRenderer so HTML
+   * overlays reproject after pan / zoom. HTML-only changes should set
+   * {@link isHtmlDirty} instead.
+   *
+   * @param value - True to mark the WebGL view as needing re-rendering
    */
   set isDirty(value: boolean) {
     this._isDirty = value
+  }
+
+  /**
+   * Gets whether CSS2D / HTML overlays need a CSS2DRenderer pass.
+   *
+   * @returns True if HTML overlays changed without a WebGL scene change
+   */
+  get isHtmlDirty() {
+    return this._htmlDirty
+  }
+
+  /**
+   * Sets whether CSS2D / HTML overlays need a CSS2DRenderer pass.
+   *
+   * Does not force a WebGL redraw. Camera changes still go through
+   * {@link isDirty}, which also refreshes overlay projection.
+   *
+   * @param value - True to mark HTML overlays as needing a CSS2D pass
+   */
+  set isHtmlDirty(value: boolean) {
+    this._htmlDirty = value
   }
 
   /**
@@ -1589,16 +1621,14 @@ export class AcTrView2d extends AcEdBaseView {
       matrix: AcGeMatrix3d
     }>
   ): void {
-    if (
-      this._scene.updateTransientPreviewTransforms(
-        transforms.map(entry => ({
-          objectId: entry.objectId,
-          matrix: AcTrMatrixUtil.createMatrix4(entry.matrix)
-        }))
-      )
-    ) {
-      this._isDirty = true
-    }
+    const updated = this._scene.updateTransientPreviewTransforms(
+      transforms.map(entry => ({
+        objectId: entry.objectId,
+        matrix: AcTrMatrixUtil.createMatrix4(entry.matrix)
+      }))
+    )
+    if (updated.webgl) this._isDirty = true
+    if (updated.html) this._htmlDirty = true
   }
 
   /**
@@ -1997,15 +2027,21 @@ export class AcTrView2d extends AcEdBaseView {
 
     const stillLoading = this._numOfEntitiesToProcess > 0
     const deferRenderWhileLoading = stillLoading && !this._progressiveRendering
-    if (!this._isDirty && !stillLoading) return
+    if (!this._isDirty && !this._htmlDirty && !stillLoading) return
     if (deferRenderWhileLoading) return
-    if (!this._isDirty) return
+    if (!this._isDirty && !this._htmlDirty) return
 
-    if (this._progressiveRendering && stillLoading) {
-      this._progressivePaintCount++
+    let needsRedraw = false
+    if (this._isDirty) {
+      if (this._progressiveRendering && stillLoading) {
+        this._progressivePaintCount++
+      }
+      needsRedraw = this._layoutViewManager.render(this._scene)
     }
-    const needsRedraw = this._layoutViewManager.render(this._scene)
-    if (this.internalCamera) {
+    // Camera / WebGL dirty also reprojects CSS2D overlays. HTML-only dirty
+    // skips the WebGL pass so measurement badges and markup DOM can update
+    // without clearing and redrawing the drawing.
+    if (this.internalCamera && (this._isDirty || this._htmlDirty)) {
       this._css2dRenderer.render(this._scene.internalScene, this.internalCamera)
     }
     this._stats?.update()
@@ -2013,6 +2049,7 @@ export class AcTrView2d extends AcEdBaseView {
     // from geometry batches to keep total open time down. Counter hitting 0
     // still forces a final dirty in decreaseNumOfEntitiesToProcess().
     this._isDirty = needsRedraw
+    this._htmlDirty = false
   }
 
   private startAnimationLoop() {
@@ -2755,7 +2792,8 @@ export class AcTrView2d extends AcEdBaseView {
     } else if (this._numOfEntitiesToProcess === 0) {
       // Always mark dirty when the queue drains. Progressive open throttles
       // mid-open paints, so the last batch would otherwise never redraw until
-      // the user pans/zooms (animate bails when !_isDirty && !stillLoading).
+      // the user pans/zooms (animate bails when !_isDirty && !_htmlDirty &&
+      // !stillLoading).
       this._isDirty = true
     }
   }

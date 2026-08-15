@@ -268,7 +268,7 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._unsubDrawStyle = subscribeMarkupDrawStyle(() =>
       this.applyCurrentStyle()
     )
-    this._view.isDirty = true
+    this._view.isHtmlDirty = true
   }
 
   get entity(): AcDbLine {
@@ -283,7 +283,7 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
     this._tipDot.setPosition(this._tip)
     this._bubble.setPosition(toward)
-    this._view.isDirty = true
+    this._view.isHtmlDirty = true
   }
 
   /** Capsule used for in-place text entry after the bubble is placed. */
@@ -307,7 +307,7 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._view.removeTransientEntity(this._shape.objectId)
     this._ht.remove(this._tipDotId)
     this._ht.remove(this._bubbleId)
-    this._view.isDirty = true
+    this._view.isHtmlDirty = true
   }
 
   /** Apply session draw style to the frozen preview (including during text entry). */
@@ -324,7 +324,7 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._tipDot.setColor(color)
     this._bubble.setColor(color)
     this._bubble.setFontSize(getMarkupFontSize())
-    this._view.isDirty = true
+    this._view.isHtmlDirty = true
   }
 }
 

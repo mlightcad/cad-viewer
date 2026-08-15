@@ -18,7 +18,7 @@ export function setMarkupVisible(view: AcTrView2d, visible: boolean): void {
   markupVisible = visible
   view.htmlTransientManager.setVisible(visible, MARKUP_LAYER)
   view.htmlTransientManager.setVisible(visible, MARKUP_LIVE_LAYER)
-  view.isDirty = true
+  view.isHtmlDirty = true
 }
 
 /**

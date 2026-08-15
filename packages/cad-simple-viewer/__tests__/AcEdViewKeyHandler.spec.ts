@@ -50,7 +50,8 @@ function createMockView(
       groupsOnLayer: jest.fn(() => []),
       has: jest.fn(() => false)
     },
-    isDirty: false
+    isDirty: false,
+    isHtmlDirty: false
   } as unknown as AcTrView2d
 }
 

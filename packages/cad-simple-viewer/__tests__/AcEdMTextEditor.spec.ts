@@ -171,7 +171,8 @@ function createView() {
         removeEventListener: jest.fn()
       }
     },
-    isDirty: false
+    isDirty: false,
+    isHtmlDirty: false
   }
 }
 
