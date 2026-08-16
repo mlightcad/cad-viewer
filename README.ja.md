@@ -9,7 +9,7 @@ DWG/DXF の解析、ジオメトリ処理、レンダリングをすべてブラ
 
 - [**🌐 ホームページ**](https://mlightcad.com/)
 - **🌐 ライブデモ**：[Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 API ドキュメント**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（バージョン管理あり）· [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/)（最新 / dev）
+- **🌐 API ドキュメント**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（バージョン管理あり）· [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/)（最新 / dev）· [MCP サーバー](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
