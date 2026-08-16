@@ -9,7 +9,7 @@ Nabízí také něco, co u jiných CAD prohlížečů jen zřídka najdete — *
 
 - [**🌐 Domovská stránka**](https://mlightcad.com/)
 - **🌐 Živé demo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 Dokumentace API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (verzovaná) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (nejnovější/dev)
+- **🌐 Dokumentace API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (verzovaná) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (nejnovější/dev) · [MCP server](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -51,6 +51,20 @@ Komunitní desktopové balíčky pro Linux:
 - Offline i online editační pracovní postupy
 - 3D vykreslovací engine THREE.js s pokročilými optimalizačními technikami
 - Navrženo pro rozšiřitelnost a integraci s platformami jako CMS, Notion a WeChat
+
+## Vložení DWG/DXF jedním řádkem kódu
+
+Přidejte prohlížení DWG/DXF na libovolný web jediným `<iframe>` — bez CAD backendu a bez nahrávání výkresů do cizího cloudu. Soubor se načte z **vaší** URL a kompletně zpracuje v prohlížeči návštěvníka; nástroje pro review (posun, zoom, měření, anotace) jsou ihned k dispozici.
+
+```html
+<iframe
+  src="https://mlightcad.com/embed.html?url=https://example.com/plans/floor.dwg&mode=review&toolbar=1"
+  style="width:100%;height:600px;border:0"
+  allowfullscreen>
+</iframe>
+```
+
+Podrobný návod a živé demo: [Embed DWG/DXF on Your Website Without Uploading a Single Byte](https://medium.com/@mlightcad/embed-dwg-dxf-on-your-website-without-uploading-a-single-byte-cf5f6ad484c4).
 
 ## Začínáme
 

@@ -9,7 +9,7 @@ También ofrece algo que rara vez encontrará en otros visores CAD: **exportaci�
 
 - [**🌐 Página de inicio**](https://mlightcad.com/)
 - **🌐 Demo en vivo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 Documentación de la API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (última/dev)
+- **🌐 Documentación de la API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (última/dev) · [Servidor MCP](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -51,6 +51,20 @@ Paquetes de escritorio Linux de la comunidad:
 - Flujos de trabajo de edición sin conexión y en línea
 - Motores de renderizado 3D THREE.js con técnicas avanzadas de optimización
 - Diseñado para extensibilidad e integración con plataformas como CMS, Notion y WeChat
+
+## Incruste DWG/DXF con una línea de código
+
+Añada visualización DWG/DXF a cualquier sitio con un solo `<iframe>`: sin backend CAD ni subir planos a la nube de un tercero. El archivo se obtiene desde **su** URL y se analiza por completo en el navegador del visitante, con herramientas de revisión (desplazamiento, zoom, medición, anotación) listas de inmediato.
+
+```html
+<iframe
+  src="https://mlightcad.com/embed.html?url=https://example.com/plans/floor.dwg&mode=review&toolbar=1"
+  style="width:100%;height:600px;border:0"
+  allowfullscreen>
+</iframe>
+```
+
+Guía y demostración en vivo: [Embed DWG/DXF on Your Website Without Uploading a Single Byte](https://medium.com/@mlightcad/embed-dwg-dxf-on-your-website-without-uploading-a-single-byte-cf5f6ad484c4).
 
 ## Primeros pasos
 

@@ -9,7 +9,7 @@ cad-viewer — `первый в мире веб-просмотрщик и ред
 
 - [**🌐 Домашняя страница**](https://mlightcad.com/)
 - **🌐 Живая демонстрация**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 Документация API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (с версиями) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (последняя/dev)
+- **🌐 Документация API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (с версиями) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (последняя/dev) · [MCP-сервер](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -51,6 +51,20 @@ cad-viewer — `первый в мире веб-просмотрщик и ред
 - Рабочие процессы офлайн- и онлайн-редактирования
 - Движки 3D-рендеринга THREE.js с продвинутыми техниками оптимизации
 - Спроектирован для расширяемости и интеграции с платформами вроде CMS, Notion и WeChat
+
+## Встраивание DWG/DXF одной строкой кода
+
+Добавьте просмотр DWG/DXF на любой сайт одним `<iframe>` — без CAD-бэкенда и без загрузки чертежей в чужое облако. Файл загружается с **вашего** URL и полностью разбирается в браузере посетителя; инструменты рецензирования (панорамирование, масштаб, измерение, аннотации) доступны сразу.
+
+```html
+<iframe
+  src="https://mlightcad.com/embed.html?url=https://example.com/plans/floor.dwg&mode=review&toolbar=1"
+  style="width:100%;height:600px;border:0"
+  allowfullscreen>
+</iframe>
+```
+
+Обзор и живой playground: [Embed DWG/DXF on Your Website Without Uploading a Single Byte](https://medium.com/@mlightcad/embed-dwg-dxf-on-your-website-without-uploading-a-single-byte-cf5f6ad484c4).
 
 ## Начало работы
 

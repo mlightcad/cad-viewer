@@ -9,7 +9,7 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 
 - [**🌐 主页**](https://mlightcad.com/)
 - **🌐 在线演示**：[Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 API 文档**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（支持版本切换）· [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/)（最新 /dev）
+- **🌐 API 文档**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（支持版本切换）· [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/)（最新 /dev）· [MCP 服务器](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 项目 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -51,6 +51,20 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 - 支持离线与在线编辑流程
 - 基于 THREE.js 的 3D 渲染引擎，包含多项性能优化
 - 面向可扩展与二次开发，适配 CMS、Notion、微信等平台
+
+## 一行代码嵌入 DWG/DXF
+
+用一行 `<iframe>` 即可在任意网页中打开 DWG/DXF——**无需 CAD 后端，也无需把图纸上传到第三方云**。文件从你自己的 URL 拉取，并在访客浏览器中完成解析与渲染，开箱即用审查能力（平移、缩放、测量、批注）。
+
+```html
+<iframe
+  src="https://mlightcad.com/embed.html?url=https://example.com/plans/floor.dwg&mode=review&toolbar=1"
+  style="width:100%;height:600px;border:0"
+  allowfullscreen>
+</iframe>
+```
+
+完整介绍与在线体验：[Embed DWG/DXF on Your Website Without Uploading a Single Byte](https://medium.com/@mlightcad/embed-dwg-dxf-on-your-website-without-uploading-a-single-byte-cf5f6ad484c4)。
 
 ## 快速开始
 

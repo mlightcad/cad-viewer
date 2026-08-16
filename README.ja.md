@@ -9,7 +9,7 @@ DWG/DXF の解析、ジオメトリ処理、レンダリングをすべてブラ
 
 - [**🌐 ホームページ**](https://mlightcad.com/)
 - **🌐 ライブデモ**：[Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 API ドキュメント**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（バージョン管理あり）· [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/)（最新 / dev）
+- **🌐 API ドキュメント**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（バージョン管理あり）· [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/)（最新 / dev）· [MCP サーバー](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -51,6 +51,20 @@ DWG/DXF の解析、ジオメトリ処理、レンダリングをすべてブラ
 - オフラインおよびオンライン編集ワークフロー
 - 高度な最適化手法を備えた THREE.js 3D レンダリングエンジン
 - CMS、Notion、WeChat などのプラットフォームとの連携を見据えた拡張性
+
+## 1 行のコードで DWG/DXF を埋め込む
+
+単一の `<iframe>` で、任意のサイトに DWG/DXF 表示を追加できます。CAD バックエンドは不要で、図面をサードパーティのクラウドにアップロードする必要もありません。ファイルは**あなた自身の URL** から取得され、訪問者のブラウザだけで解析・描画され、レビュー機能（パン、ズーム、計測、注釈）がすぐ使えます。
+
+```html
+<iframe
+  src="https://mlightcad.com/embed.html?url=https://example.com/plans/floor.dwg&mode=review&toolbar=1"
+  style="width:100%;height:600px;border:0"
+  allowfullscreen>
+</iframe>
+```
+
+解説とライブ体験：[Embed DWG/DXF on Your Website Without Uploading a Single Byte](https://medium.com/@mlightcad/embed-dwg-dxf-on-your-website-without-uploading-a-single-byte-cf5f6ad484c4)。
 
 ## はじめに
 

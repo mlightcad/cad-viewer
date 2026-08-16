@@ -9,7 +9,7 @@ DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 �
 
 - [**🌐 홈페이지**](https://mlightcad.com/)
 - **🌐 라이브 데모**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 API 문서**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (버전별) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (최신/dev)
+- **🌐 API 문서**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (버전별) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (최신/dev) · [MCP 서버](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -51,6 +51,20 @@ DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 �
 - 오프라인 및 온라인 편집 워크플로
 - 고급 최적화 기법을 적용한 THREE.js 3D 렌더링 엔진
 - CMS, Notion, WeChat 등 플랫폼과의 확장 및 통합을 위해 설계
+
+## 한 줄 코드로 DWG/DXF 임베드
+
+단일 `<iframe>`만으로 어떤 웹사이트에도 DWG/DXF 보기를 추가할 수 있습니다. CAD 백엔드가 필요 없고, 도면을 타사 클라우드에 업로드할 필요도 없습니다. 파일은 **당신 소유의 URL**에서 가져와 방문자의 브라우저에서만 파싱·렌더링되며, 검토 도구(팬, 줌, 측정, 주석)가 바로 제공됩니다.
+
+```html
+<iframe
+  src="https://mlightcad.com/embed.html?url=https://example.com/plans/floor.dwg&mode=review&toolbar=1"
+  style="width:100%;height:600px;border:0"
+  allowfullscreen>
+</iframe>
+```
+
+상세 안내와 체험: [Embed DWG/DXF on Your Website Without Uploading a Single Byte](https://medium.com/@mlightcad/embed-dwg-dxf-on-your-website-without-uploading-a-single-byte-cf5f6ad484c4).
 
 ## 시작하기
 
