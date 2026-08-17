@@ -491,6 +491,9 @@ export const ACEX_HTML_SHELL_CSS = `
     font-weight: 600;
     white-space: pre-wrap;
     max-width: 240px;
+    min-width: 80px;
+    min-height: 1.75em;
+    box-sizing: border-box;
     transform: translate(-50%, -50%);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
     pointer-events: auto;
@@ -505,6 +508,7 @@ export const ACEX_HTML_SHELL_CSS = `
     letter-spacing: 0.04em;
     font-size: 11px;
     white-space: nowrap;
+    min-width: 0;
   }
   .mlcad-markup-dot {
     position: absolute;
@@ -735,7 +739,7 @@ function buildAcExMeasureToolStrip(): string {
           'data-i18n-attr': 'title aria-label'
         }
       )}
-      ${acExToolbarButton(acExHtmlIcons.markupHide, 'Hide measurements', {
+      ${acExToolbarButton(acExHtmlIcons.markupShow, 'Hide measurements', {
         'data-action': 'measure-visibility',
         'data-i18n-key': 'toolbar.measureHide',
         'data-i18n-attr': 'title aria-label'
@@ -809,7 +813,7 @@ function buildAcExMarkupToolStrip(): string {
         'data-i18n-key': 'toolbar.markupStamp',
         'data-i18n-attr': 'title aria-label'
       })}
-      ${acExToolbarButton(acExHtmlIcons.markupHide, 'Hide markups', {
+      ${acExToolbarButton(acExHtmlIcons.markupShow, 'Hide markups', {
         'data-action': 'markup-visibility',
         'data-i18n-key': 'toolbar.markupHide',
         'data-i18n-attr': 'title aria-label'

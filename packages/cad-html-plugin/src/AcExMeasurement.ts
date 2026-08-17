@@ -150,8 +150,6 @@ export interface AcExMeasureViewApi {
 export interface AcExMeasureControllerOptions {
   /** Root viewer container (`#mlcad-root`); hosts the overlay layer. */
   root: HTMLElement
-  /** THREE scene that receives persistent measurement line geometry. */
-  scene: THREE.Scene
   /** I18n helper for status hints and result messages. */
   i18n: AcExHtmlI18n
   /** View transform and formatting callbacks from the runtime. */
@@ -185,11 +183,10 @@ export interface AcExMeasureControllerOptions {
 /** Teardown callback registered when a measurement overlay is created. @internal */
 type AcExMeasureCleanup = () => void
 
-/** DOM/WebGL parts belonging to one committed measurement. @internal */
+/** DOM parts belonging to one committed measurement. @internal */
 interface AcExCommitParts {
   id: string
   dom: HTMLElement[]
-  lines: THREE.Line[]
   canvases: HTMLCanvasElement[]
   cleanups: AcExMeasureCleanup[]
 }
@@ -733,9 +730,9 @@ function makeOverlayCanvas(container: HTMLElement): HTMLCanvasElement {
  *
  * Responsibilities:
  * - Toolbar mode state (distance, angle, arc, area, coordinate) with status-bar hints.
- * - Live preview (rubber-band line, canvas arcs/fills, cursor-following label).
- * - Committed results that survive pan/zoom: THREE lines, DOM badges/dots, and
- *   canvas overlays redrawn on {@link syncOverlays}.
+ * - Live preview (HTML canvas rubber-band, arcs/fills, cursor-following label).
+ * - Committed results that survive pan/zoom: HTML canvas strokes, DOM badges/dots,
+ *   redrawn on {@link syncOverlays}.
  *
  * Pointer routing: while {@link isActive}, the runtime should call
  * {@link handlePointerDown} / {@link handlePointerMove} instead of panning.
@@ -744,8 +741,6 @@ function makeOverlayCanvas(container: HTMLElement): HTMLCanvasElement {
 export class AcExMeasureController {
   /** Viewer root (`#mlcad-root`). */
   private readonly _root: HTMLElement
-  /** Scene receiving persistent measurement lines. */
-  private readonly _scene: THREE.Scene
   /** Localized status hints and result strings. */
   private readonly _i18n: AcExHtmlI18n
   /** Pan/zoom and formatting callbacks from the runtime. */
@@ -776,16 +771,12 @@ export class AcExMeasureController {
   private _drawFontSize = ACEX_MEASUREMENT_FONT_SIZE
   /** Style of the measurement currently being committed (import or interactive). */
   private _commitStyle: AcExMeasurementSidecarStyle | null = null
-  /** Parent group for committed THREE line geometry. */
-  private readonly _measureGroup: THREE.Group
   /** Host for canvas overlays, dots, badges, and the live label. */
   private readonly _overlayLayer: HTMLDivElement
   /** Cursor-following value shown during interactive preview. */
   private readonly _liveLabel: HTMLDivElement
   /** Hidden file input for sidecar import. */
   private readonly _fileInput: HTMLInputElement
-  /** Rubber-band line while picking points. */
-  private readonly _previewLine: THREE.Line
   /** Canvas redraw callbacks invoked from {@link syncOverlays}. */
   private readonly _redrawListeners: AcExMeasureCleanup[] = []
   /** Finished measurements that survive after the tool is deactivated. */
@@ -823,12 +814,11 @@ export class AcExMeasureController {
   } | null = null
 
   /**
-   * Creates overlay layers in `root` and registers preview geometry in `scene`.
+   * Creates HTML overlay layers in `root` for measurement graphics.
    * @param options - Viewer hooks and DOM targets; see {@link AcExMeasureControllerOptions}.
    */
   constructor(options: AcExMeasureControllerOptions) {
     this._root = options.root
-    this._scene = options.scene
     this._i18n = options.i18n
     this._view = options.view
     this._statusEl = options.statusEl
@@ -838,11 +828,6 @@ export class AcExMeasureController {
     this._getTrackingOptions = options.getTrackingOptions ?? null
     this._onActiveChange = options.onActiveChange ?? null
     this._onStyleChange = options.onStyleChange ?? null
-
-    this._measureGroup = new THREE.Group()
-    this._measureGroup.name = 'measurements'
-    this._measureGroup.renderOrder = 20
-    this._scene.add(this._measureGroup)
 
     this._overlayLayer = document.createElement('div')
     this._overlayLayer.id = 'mlcad-measure-overlays'
@@ -861,16 +846,6 @@ export class AcExMeasureController {
     })
     this._root.appendChild(this._fileInput)
 
-    const previewMaterial = new THREE.LineBasicMaterial({
-      color: this._measureColor,
-      depthTest: false
-    })
-    const previewGeometry = new THREE.BufferGeometry()
-    this._previewLine = new THREE.Line(previewGeometry, previewMaterial)
-    this._previewLine.visible = false
-    this._previewLine.frustumCulled = false
-    this._previewLine.renderOrder = 15
-    this._scene.add(this._previewLine)
     this._updateVisibilityToolbar()
   }
 
@@ -968,11 +943,7 @@ export class AcExMeasureController {
       applyMeasureAccentCss(this._measureColor)
       this._liveLabel.style.color = this._measureCss()
     }
-
-    const material = this._previewLine.material
-    if (material instanceof THREE.LineBasicMaterial) {
-      material.color.setHex(this._measureColor)
-    }
+    this._liveLabel.style.fontSize = `${this._drawFontSize}px`
 
     const selectionPatch: {
       color?: string
@@ -1081,12 +1052,11 @@ export class AcExMeasureController {
   }
 
   /**
-   * Shows or hides all committed measurement graphics (DOM + THREE lines).
+   * Shows or hides all committed measurement graphics (HTML overlays).
    */
   setVisible(visible: boolean): void {
     this._visible = visible
     this._overlayLayer.style.display = visible ? '' : 'none'
-    this._measureGroup.visible = visible
     this._updateVisibilityToolbar()
     this._view.render()
   }
@@ -1173,15 +1143,16 @@ export class AcExMeasureController {
   }
 
   /**
-   * Handles a pointer-down while a measurement tool is active.
+   * Handles a pointer-down while a measurement tool is active (placement / OSNAP only).
+   * Committed overlay selection is idle-only via {@link handleSelectionPointerDown}.
    * @param clientX - Pointer X in viewport pixels.
    * @param clientY - Pointer Y in viewport pixels.
    * @returns `true` when the event was handled.
    */
   handlePointerDown(clientX: number, clientY: number): boolean {
-    if (this._trySelectCommittedAt(clientX, clientY)) {
-      return true
-    }
+    // While a measure tool is armed, never select/highlight committed overlays —
+    // endpoint dots coincide with CAD grips/OSNAP and would steal placement clicks.
+    // Idle selection uses {@link handleSelectionPointerDown} instead.
     if (!this._mode) return false
     this._lastPointer = { x: clientX, y: clientY }
     const point = this._resolvePointerWithOsnap(clientX, clientY)
@@ -1254,10 +1225,15 @@ export class AcExMeasureController {
 
   /**
    * Deletes all selected committed measurements.
-   * Handles `Delete` and `Backspace` (Mac delete key).
+   * Handles `Delete` and `Backspace` (Mac keyboard delete).
    */
   handleSelectionKeyDown(key: string, event?: KeyboardEvent): boolean {
-    if (key !== 'Delete' && key !== 'Backspace') return false
+    const isDelete =
+      key === 'Delete' ||
+      key === 'Backspace' ||
+      event?.code === 'Delete' ||
+      event?.code === 'Backspace'
+    if (!isDelete) return false
     if (this._selectedIds.size === 0) return false
 
     const target = event?.target
@@ -1268,10 +1244,12 @@ export class AcExMeasureController {
       }
     }
 
+    event?.preventDefault()
     for (const id of [...this._selectedIds]) {
       this._removeCommitted(id, false)
     }
     this._selectedIds.clear()
+    this._onStyleChange?.()
     this._updateIdleStatus()
     this._view.render()
     return true
@@ -1354,12 +1332,14 @@ export class AcExMeasureController {
       '[data-action="measure-visibility"]'
     )
     if (buttons.length === 0) return
+    // State-oriented icon: open eye while visible, slashed eye while hidden.
+    // Tooltip stays action-oriented (click to hide / show).
     const titleKey = this._visible
       ? 'toolbar.measureHide'
       : 'toolbar.measureShow'
     const icon = this._visible
-      ? acExHtmlIcons.markupHide
-      : acExHtmlIcons.markupShow
+      ? acExHtmlIcons.markupShow
+      : acExHtmlIcons.markupHide
     const label = this._i18n.t(titleKey)
     buttons.forEach(btn => {
       btn.classList.toggle('active', this._visible)
@@ -1376,12 +1356,13 @@ export class AcExMeasureController {
     })
   }
 
-  /** Removes transient preview line, label, and preview canvas. @internal */
+  /** Removes transient preview lines, label, and preview canvases. @internal */
   private _hidePreview(): void {
-    this._previewLine.visible = false
     this._liveLabel.style.display = 'none'
     this._overlayLayer
-      .querySelectorAll('.mlcad-measure-canvas--preview')
+      .querySelectorAll(
+        '.mlcad-measure-canvas--preview, .mlcad-measure-canvas--preview-line'
+      )
       .forEach(el => el.remove())
   }
 
@@ -1491,35 +1472,29 @@ export class AcExMeasureController {
     this._liveLabel.style.top = `${clientY - rootRect.top}px`
   }
 
-  /** Updates the rubber-band THREE line from WCS vertices. @internal */
+  /**
+   * Updates the rubber-band HTML canvas polyline from WCS vertices.
+   * Uses the current draw-style color and line weight.
+   * @internal
+   */
   private _setPreviewLine(points: THREE.Vector2[]): void {
+    let canvas = this._overlayLayer.querySelector<HTMLCanvasElement>(
+      '.mlcad-measure-canvas--preview-line'
+    )
     if (points.length < 2) {
-      this._previewLine.visible = false
+      canvas?.remove()
       return
     }
-    const geometry = this._previewLine.geometry
-    const existing = geometry.getAttribute('position') as
-      | THREE.BufferAttribute
-      | undefined
-    if (existing && existing.count === points.length) {
-      for (let i = 0; i < points.length; i++) {
-        existing.setXYZ(i, points[i]!.x, points[i]!.y, 0)
-      }
-      existing.needsUpdate = true
-      geometry.computeBoundingSphere()
-    } else {
-      const positions = new Float32Array(points.length * 3)
-      for (let i = 0; i < points.length; i++) {
-        positions[i * 3] = points[i]!.x
-        positions[i * 3 + 1] = points[i]!.y
-      }
-      geometry.dispose()
-      const next = new THREE.BufferGeometry()
-      next.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-      next.computeBoundingSphere()
-      this._previewLine.geometry = next
+    if (!canvas) {
+      canvas = makeOverlayCanvas(this._overlayLayer)
+      canvas.classList.add('mlcad-measure-canvas--preview-line')
     }
-    this._previewLine.visible = true
+    this._drawPolyline(
+      canvas,
+      points,
+      this._measureCss(),
+      acExMeasureCanvasLineWidth(this._drawLineWeight)
+    )
   }
 
   /** Formats X/Y for coordinate tool labels and badges. @internal */
@@ -2257,7 +2232,6 @@ export class AcExMeasureController {
     this._commitParts = {
       id: commitId,
       dom: [],
-      lines: [],
       canvases: [],
       cleanups: []
     }
@@ -2473,13 +2447,6 @@ export class AcExMeasureController {
       this._measureColor
     )
     const baseCss = measure.record.style.color || measureColorToCss(baseHex)
-    for (const line of measure.parts.lines) {
-      const material = line.material
-      if (material instanceof THREE.LineBasicMaterial) {
-        // Keep original color; selection is shown via CSS glow on canvases/DOM.
-        material.color.setHex(baseHex)
-      }
-    }
     for (const el of measure.parts.dom) {
       el.classList.toggle('mlcad-measure-selected', selected)
       if (el.classList.contains('mlcad-measure-badge')) {

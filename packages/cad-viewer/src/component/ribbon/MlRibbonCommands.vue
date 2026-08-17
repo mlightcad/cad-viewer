@@ -6,14 +6,12 @@ import {
   ChatLineSquare,
   Delete,
   DocumentCopy,
-  Download,
   EditPen,
   Hide,
   RefreshLeft,
   RefreshRight,
   Right,
   Stamp,
-  Upload,
   View
 } from '@element-plus/icons-vue'
 import {
@@ -110,7 +108,9 @@ import {
   editAttribute,
   ellipseArc,
   ellipseCenter,
+  exportIcon,
   hatch,
+  importIcon,
   layer,
   layerCurrent,
   layerFreeze,
@@ -1073,7 +1073,7 @@ const buildBaseTabs = (
       label: t('main.verticalToolbar.markupImport.text'),
       tooltip: verticalToolbarDescriptions.markupImport,
       size: 'small',
-      props: { icon: Upload }
+      props: { icon: importIcon }
     },
     {
       id: 'cmd-tool-markup-export',
@@ -1081,7 +1081,7 @@ const buildBaseTabs = (
       label: t('main.verticalToolbar.markupExport.text'),
       tooltip: verticalToolbarDescriptions.markupExport,
       size: 'small',
-      props: { icon: Download }
+      props: { icon: exportIcon }
     }
   ]
 
@@ -1239,7 +1239,7 @@ const buildBaseTabs = (
       label: t('main.verticalToolbar.measurementImport.text'),
       tooltip: verticalToolbarDescriptions.measurementImport,
       size: 'small',
-      props: { icon: Upload }
+      props: { icon: importIcon }
     },
     {
       id: 'cmd-tool-measurement-export',
@@ -1247,7 +1247,7 @@ const buildBaseTabs = (
       label: t('main.verticalToolbar.measurementExport.text'),
       tooltip: verticalToolbarDescriptions.measurementExport,
       size: 'small',
-      props: { icon: Download }
+      props: { icon: exportIcon }
     },
     {
       id: 'cmd-tool-clear-measurements',

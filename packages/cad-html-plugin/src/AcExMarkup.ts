@@ -219,6 +219,8 @@ export class AcExMarkupController {
   /** Blocks canvas placement while an inline text session is open. */
   private _awaitingInlineText = false
   private _inlineAbort: AbortController | null = null
+  /** True while a peer create tool (e.g. measure) is armed. */
+  private _peerToolActive = false
   private _lastSelectPointer:
     | { t: number; x: number; y: number; id: string }
     | undefined
@@ -268,6 +270,16 @@ export class AcExMarkupController {
   /** Clears the current markup selection (if any). */
   clearSelection(): void {
     this._deselect(true)
+  }
+
+  /**
+   * Suspends markup grip/badge pointer hit-testing while a peer create tool
+   * (e.g. measure) is armed, so overlay DOM cannot steal OSNAP placement clicks.
+   */
+  setPeerToolActive(active: boolean): void {
+    if (this._peerToolActive === active) return
+    this._peerToolActive = active
+    this._syncGripPointerEvents()
   }
 
   get mode(): AcExMarkupMode | null {
@@ -500,9 +512,9 @@ export class AcExMarkupController {
       this._completeShapeCalloutAnchor(point)
       return true
     }
-    if (this._trySelectCommittedAt(clientX, clientY)) {
-      return true
-    }
+    // While a markup tool is armed, never select/highlight committed overlays —
+    // grip/badge DOM and stroke hits coincide with CAD grips/OSNAP and would
+    // steal placement clicks. Idle selection uses {@link handleSelectionPointerDown}.
     if (!this._mode) return false
     this._lastPointer = { x: clientX, y: clientY }
     const point = this._resolvePointerWithOsnap(clientX, clientY)
@@ -584,10 +596,12 @@ export class AcExMarkupController {
   }
 
   deleteSelected(): void {
+    if (this._selectedIds.size === 0) return
     for (const id of [...this._selectedIds]) {
       this._removeCommitted(id, false)
     }
     this._selectedIds.clear()
+    this._onStyleChange?.()
     this._updateIdleStatus()
     this._view.render()
   }
@@ -1119,9 +1133,11 @@ export class AcExMarkupController {
   }
 
   private _gripsEnabled(): boolean {
-    // Allow editing grips even while a create tool is armed; only block during
-    // an in-progress draw / callout placement / inline text session.
+    // Match live viewer: while any create tool is armed (own or peer), do not
+    // let committed markup grips/badges receive pointer events.
     return (
+      !this._peerToolActive &&
+      this._mode === null &&
       !this._placingShapeCallout &&
       !this._awaitingInlineText &&
       !isAcExMarkupHtmlTextEditing() &&
@@ -1148,19 +1164,34 @@ export class AcExMarkupController {
     this._positionTempDom(el)
   }
 
+  /**
+   * Replaces the selection with only `id` (used when starting a grip edit so
+   * delete/style/status target the gripped markup).
+   */
   private _selectOnly(id: string): void {
-    if (this._selectedIds.size === 1 && this._selectedIds.has(id)) {
-      this._applySelectionStyles()
-      return
+    if (!(this._selectedIds.size === 1 && this._selectedIds.has(id))) {
+      this._selectedIds.clear()
     }
-    this._selectedIds.clear()
-    this._selectedIds.add(id)
-    this._applySelectionStyles()
-    this._onStyleChange?.()
-    const record = this._findRecord(id)
-    this._statusEl.textContent = this._i18n.t('status.markupSelected', {
-      type: record?.type ?? 'markup'
-    })
+    this._select(id)
+  }
+
+  /** Adds `id` to the selection (multi-select, same as measurements). */
+  private _select(id: string): void {
+    if (!this._selectedIds.has(id)) {
+      this._selectedIds.add(id)
+      this._applySelectionStyles()
+      this._onStyleChange?.()
+    } else {
+      this._applySelectionStyles()
+    }
+    this._statusEl.textContent =
+      this._selectedIds.size > 1
+        ? this._i18n.t('status.markupSelectedCount', {
+            count: String(this._selectedIds.size)
+          })
+        : this._i18n.t('status.markupSelected', {
+            type: this._findRecord(id)?.type ?? 'markup'
+          })
     this._view.render()
   }
 
@@ -1630,13 +1661,7 @@ export class AcExMarkupController {
       isAcExMarkupDoublePointer(this._lastSelectPointer, next)
     this._lastSelectPointer = next
 
-    this._selectedIds.clear()
-    this._selectedIds.add(hit.record.id)
-    this._applySelectionStyles()
-    this._onStyleChange?.()
-    this._statusEl.textContent = this._i18n.t('status.markupSelected', {
-      type: hit.record.type
-    })
+    this._select(hit.record.id)
 
     if (isDouble && hit.record.type !== 'stamp') {
       const badge = hit.parts.dom.find(el =>
@@ -1647,7 +1672,6 @@ export class AcExMarkupController {
       }
     }
 
-    this._view.render()
     return true
   }
 
@@ -1999,13 +2023,14 @@ export class AcExMarkupController {
       '[data-action="markup-visibility"]'
     )
     if (buttons.length === 0) return
-    // Action-oriented: when markups are visible, offer Hide (slashed eye).
+    // State-oriented icon: open eye while visible, slashed eye while hidden.
+    // Tooltip stays action-oriented (click to hide / show).
     const titleKey = this._visible
       ? 'toolbar.markupHide'
       : 'toolbar.markupShow'
     const icon = this._visible
-      ? acExHtmlIcons.markupHide
-      : acExHtmlIcons.markupShow
+      ? acExHtmlIcons.markupShow
+      : acExHtmlIcons.markupHide
     const label = this._i18n.t(titleKey)
     buttons.forEach(btn => {
       btn.classList.toggle('active', this._visible)
@@ -2029,9 +2054,16 @@ export class AcExMarkupController {
 
   private _updateIdleStatus(): void {
     if (this._mode) return
-    if (this._selectedIds.size > 0) {
+    if (this._selectedIds.size > 1) {
+      this._statusEl.textContent = this._i18n.t('status.markupSelectedCount', {
+        count: String(this._selectedIds.size)
+      })
+      return
+    }
+    if (this._selectedIds.size === 1) {
+      const id = [...this._selectedIds][0]
       this._statusEl.textContent = this._i18n.t('status.markupSelected', {
-        type: String(this._selectedIds.size)
+        type: this._findRecord(id!)?.type ?? 'markup'
       })
       return
     }

@@ -2,12 +2,10 @@
 import {
   ChatLineSquare,
   Delete,
-  Download,
   EditPen,
   Hide,
   Right,
   Stamp,
-  Upload,
   View
 } from '@element-plus/icons-vue'
 import {
@@ -24,6 +22,8 @@ import { useDocument, useSettings } from '../../composable'
 import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
 import {
   clearMeasurements,
+  exportIcon,
+  importIcon,
   layer,
   markupPanel,
   markupTools,
@@ -194,13 +194,13 @@ const verticalToolbarData = computed(() => {
         },
         toolbarSeparator,
         {
-          icon: Upload,
+          icon: importIcon,
           text: t('main.verticalToolbar.measurementImport.text'),
           command: 'measurementimport',
           description: t('main.verticalToolbar.measurementImport.description')
         },
         {
-          icon: Download,
+          icon: exportIcon,
           text: t('main.verticalToolbar.measurementExport.text'),
           command: 'measurementexport',
           description: t('main.verticalToolbar.measurementExport.description')
@@ -285,13 +285,13 @@ const verticalToolbarData = computed(() => {
         },
         toolbarSeparator,
         {
-          icon: Upload,
+          icon: importIcon,
           text: t('main.verticalToolbar.markupImport.text'),
           command: 'markupimport',
           description: t('main.verticalToolbar.markupImport.description')
         },
         {
-          icon: Download,
+          icon: exportIcon,
           text: t('main.verticalToolbar.markupExport.text'),
           command: 'markupexport',
           description: t('main.verticalToolbar.markupExport.description')

@@ -109,15 +109,19 @@ export const ICON_MARKUP_STAMP = elementPlusIcon(
 export const ICON_MARKUP_PANEL =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="3.5" y="3" width="13" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M3.5 6.5h13" /><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M6.5 9.5h7M6.5 12h7M6.5 14.5h4.5" /></svg>'
 
-/** Markup import icon (Element Plus Upload, same as cad-viewer). */
-export const ICON_MARKUP_IMPORT = elementPlusIcon(
-  'M160 832h704a32 32 0 1 1 0 64H160a32 32 0 1 1 0-64m384-578.304V704h-64V247.296L237.248 490.048 192 444.8 508.8 128l316.8 316.8-45.312 45.248z'
-)
+/**
+ * Import icon (document + down arrow).
+ * Inspired by Noun Project “import” 8131171 (Web Buttons by Elin Erkani).
+ */
+export const ICON_MARKUP_IMPORT =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" d="M4.5 2h6.4L15.5 6.6V16.5A1.5 1.5 0 0 1 14 18H4.5A1.5 1.5 0 0 1 3 16.5V3.5A1.5 1.5 0 0 1 4.5 2z"/><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" d="M10.9 2v4.6h4.6"/><path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M10 5.8v6M7.2 9.6 10 12.5l2.8-2.9"/></svg>'
 
-/** Markup export icon (Element Plus Download, same as cad-viewer). */
-export const ICON_MARKUP_EXPORT = elementPlusIcon(
-  'M160 832h704a32 32 0 1 1 0 64H160a32 32 0 1 1 0-64m384-253.696 236.288-236.352 45.248 45.248L508.8 704 192 387.2l45.248-45.248L480 584.704V128h64z'
-)
+/**
+ * Export icon (mirrored document + up arrow).
+ * Inspired by Noun Project “export file” 8131193 (Web Buttons by Elin Erkani).
+ */
+export const ICON_MARKUP_EXPORT =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" d="M15.5 2H9.1L4.5 6.6V16.5A1.5 1.5 0 0 0 6 18h9.5A1.5 1.5 0 0 0 17 16.5V3.5A1.5 1.5 0 0 0 15.5 2z"/><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" d="M9.1 2v4.6H4.5"/><path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M10 14.2V8M7.2 10.4 10 7.5l2.8 2.9"/></svg>'
 
 /** Clear markups icon (Element Plus Delete, same as cad-viewer). */
 export const ICON_CLEAR_MARKUPS = elementPlusIcon(

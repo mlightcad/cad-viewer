@@ -301,8 +301,8 @@ describe('default toolbar items', () => {
     expect(iconOf('markup-arrow')).toContain('M754.752 480H160')
     expect(iconOf('markup-stamp')).toContain('M624 475.968V640h144')
     expect(iconOf('markup-panel')).toContain('M6.5 9.5h7M6.5 12h7')
-    expect(iconOf('markup-import')).toContain('M160 832h704')
-    expect(iconOf('markup-export')).toContain('384-253.696')
+    expect(iconOf('markup-import')).toContain('M4.5 2h6.4L15.5 6.6')
+    expect(iconOf('markup-export')).toContain('M15.5 2H9.1L4.5 6.6')
     expect(iconOf('clear-markups')).toContain(
       'M160 256H96a32 32 0 0 1 0-64h256'
     )

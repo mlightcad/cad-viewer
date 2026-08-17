@@ -335,7 +335,6 @@ function startViewer(): void {
   if (measureEnabled) {
     measure = new AcExMeasureController({
       root,
-      scene,
       i18n,
       statusEl,
       getReadyStatus: () => readyStatus,
@@ -351,6 +350,9 @@ function startViewer(): void {
         measureSettingsRef.current?.getTrackingOptions() ?? null,
       onActiveChange: () => {
         setLeftPanForTools()
+        // Measure overlays are pointer-events:none; markup grips are not — suspend
+        // them so endpoint/badge DOM cannot steal OSNAP clicks while measuring.
+        markup?.setPeerToolActive(measure?.isActive === true)
       },
       onStyleChange: () => {
         drawStyleToolbarRef.current?.refresh()
@@ -384,6 +386,7 @@ function startViewer(): void {
       },
       onActiveChange: () => {
         setLeftPanForTools()
+        markup?.setPeerToolActive(measure?.isActive === true)
       },
       onStyleChange: () => {
         drawStyleToolbarRef.current?.refresh()
