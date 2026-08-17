@@ -335,7 +335,6 @@ function startViewer(): void {
   if (measureEnabled) {
     measure = new AcExMeasureController({
       root,
-      scene,
       i18n,
       statusEl,
       getReadyStatus: () => readyStatus,

@@ -74,13 +74,17 @@ function ensureStyles(): void {
   const style = document.createElement('style')
   style.id = STYLE_ID
   style.textContent = `
-    .mlcad-markup-text-editing {
-      outline: 1px solid #409eff;
-      outline-offset: 1px;
+    .mlcad-markup-text-editing,
+    .mlcad-markup-text-editing:focus,
+    .mlcad-markup-selected.mlcad-markup-text-editing {
+      outline: none !important;
+      outline-offset: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
       cursor: text !important;
       user-select: text;
       pointer-events: auto;
-      min-height: 1.2em;
+      min-width: 80px;
+      min-height: 1.75em;
       white-space: pre-wrap;
     }
   `

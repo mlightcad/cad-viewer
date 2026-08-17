@@ -97,6 +97,7 @@ export type AcExHtmlMessageKey =
   | 'status.markupShapeCalloutHint'
   | 'status.markupDefaultLabel'
   | 'status.markupSelected'
+  | 'status.markupSelectedCount'
   | 'status.markupCount'
   | 'status.markupExported'
   | 'status.markupImported'
@@ -207,6 +208,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
         'Click to place the text box (leader attaches to the shape). Esc cancels the callout.',
       markupDefaultLabel: 'Note',
       markupSelected: 'Selected markup: {type}',
+      markupSelectedCount: 'Selected markups: {count}',
       markupCount: 'Markups: {count}',
       markupExported: 'Exported {count} markup(s).',
       markupImported: 'Imported {count} markup(s).',
@@ -304,6 +306,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
         '点击放置文本框（引线自动贴到图形）。Esc 取消引线和文本框。',
       markupDefaultLabel: '批注',
       markupSelected: '已选批注：{type}',
+      markupSelectedCount: '已选批注：{count} 个',
       markupCount: '批注数：{count}',
       markupExported: '已导出 {count} 条批注。',
       markupImported: '已导入 {count} 条批注。',
@@ -407,6 +410,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
         'Klikněte pro umístění textového pole (vodítko se připojí k tvaru). Esc zruší odkaz.',
       markupDefaultLabel: 'Poznámka',
       markupSelected: 'Vybraná poznámka: {type}',
+      markupSelectedCount: 'Vybrané poznámky: {count}',
       markupCount: 'Poznámky: {count}',
       markupExported: 'Exportováno {count} poznámek.',
       markupImported: 'Importováno {count} poznámek.',
@@ -510,6 +514,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
         'Metin kutusunu yerleştirmek için tıklayın (lider şekle bağlanır). Esc çağrıyı iptal eder.',
       markupDefaultLabel: 'Not',
       markupSelected: 'Seçili işaretleme: {type}',
+      markupSelectedCount: 'Seçili işaretlemeler: {count}',
       markupCount: 'İşaretlemeler: {count}',
       markupExported: '{count} işaretleme dışa aktarıldı.',
       markupImported: '{count} işaretleme içe aktarıldı.',

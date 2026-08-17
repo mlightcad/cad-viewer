@@ -584,10 +584,12 @@ export class AcExMarkupController {
   }
 
   deleteSelected(): void {
+    if (this._selectedIds.size === 0) return
     for (const id of [...this._selectedIds]) {
       this._removeCommitted(id, false)
     }
     this._selectedIds.clear()
+    this._onStyleChange?.()
     this._updateIdleStatus()
     this._view.render()
   }
@@ -1149,18 +1151,26 @@ export class AcExMarkupController {
   }
 
   private _selectOnly(id: string): void {
-    if (this._selectedIds.size === 1 && this._selectedIds.has(id)) {
+    this._select(id)
+  }
+
+  /** Adds `id` to the selection (multi-select, same as measurements). */
+  private _select(id: string): void {
+    if (!this._selectedIds.has(id)) {
+      this._selectedIds.add(id)
       this._applySelectionStyles()
-      return
+      this._onStyleChange?.()
+    } else {
+      this._applySelectionStyles()
     }
-    this._selectedIds.clear()
-    this._selectedIds.add(id)
-    this._applySelectionStyles()
-    this._onStyleChange?.()
-    const record = this._findRecord(id)
-    this._statusEl.textContent = this._i18n.t('status.markupSelected', {
-      type: record?.type ?? 'markup'
-    })
+    this._statusEl.textContent =
+      this._selectedIds.size > 1
+        ? this._i18n.t('status.markupSelectedCount', {
+            count: String(this._selectedIds.size)
+          })
+        : this._i18n.t('status.markupSelected', {
+            type: this._findRecord(id)?.type ?? 'markup'
+          })
     this._view.render()
   }
 
@@ -1630,13 +1640,7 @@ export class AcExMarkupController {
       isAcExMarkupDoublePointer(this._lastSelectPointer, next)
     this._lastSelectPointer = next
 
-    this._selectedIds.clear()
-    this._selectedIds.add(hit.record.id)
-    this._applySelectionStyles()
-    this._onStyleChange?.()
-    this._statusEl.textContent = this._i18n.t('status.markupSelected', {
-      type: hit.record.type
-    })
+    this._select(hit.record.id)
 
     if (isDouble && hit.record.type !== 'stamp') {
       const badge = hit.parts.dom.find(el =>
@@ -1647,7 +1651,6 @@ export class AcExMarkupController {
       }
     }
 
-    this._view.render()
     return true
   }
 
@@ -1999,13 +2002,14 @@ export class AcExMarkupController {
       '[data-action="markup-visibility"]'
     )
     if (buttons.length === 0) return
-    // Action-oriented: when markups are visible, offer Hide (slashed eye).
+    // State-oriented icon: open eye while visible, slashed eye while hidden.
+    // Tooltip stays action-oriented (click to hide / show).
     const titleKey = this._visible
       ? 'toolbar.markupHide'
       : 'toolbar.markupShow'
     const icon = this._visible
-      ? acExHtmlIcons.markupHide
-      : acExHtmlIcons.markupShow
+      ? acExHtmlIcons.markupShow
+      : acExHtmlIcons.markupHide
     const label = this._i18n.t(titleKey)
     buttons.forEach(btn => {
       btn.classList.toggle('active', this._visible)
@@ -2029,9 +2033,16 @@ export class AcExMarkupController {
 
   private _updateIdleStatus(): void {
     if (this._mode) return
-    if (this._selectedIds.size > 0) {
+    if (this._selectedIds.size > 1) {
+      this._statusEl.textContent = this._i18n.t('status.markupSelectedCount', {
+        count: String(this._selectedIds.size)
+      })
+      return
+    }
+    if (this._selectedIds.size === 1) {
+      const id = [...this._selectedIds][0]
       this._statusEl.textContent = this._i18n.t('status.markupSelected', {
-        type: String(this._selectedIds.size)
+        type: this._findRecord(id!)?.type ?? 'markup'
       })
       return
     }
