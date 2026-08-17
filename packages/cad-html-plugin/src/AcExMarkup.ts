@@ -1,0 +1,2046 @@
+/**
+ * Markup annotation tools for the offline HTML viewer.
+ *
+ * Creates Design Review–style overlays (cloud, callout, text, rect, circle,
+ * arrow, stamp) with sidecar JSON import/export compatible with cad-simple-viewer.
+ *
+ * @module AcExMarkup
+ * @packageDocumentation
+ */
+
+import * as THREE from 'three'
+
+import type { AcExHtmlI18n } from './AcExHtmlI18n'
+import { acExHtmlIcons } from './AcExHtmlIcons'
+import {
+  acExComputeLeaderTipOnShape,
+  acExDrawMarkupArrowHead,
+  acExDrawMarkupLeader,
+  acExFitMarkupCanvas,
+  acExHitTestMarkup,
+  acExMarkupCanvasLineWidth,
+  acExMarkupCenter,
+  type AcExMarkupShapeOutline,
+  acExStrokeMarkupCloud,
+  acExTranslateMarkupGeometry} from './AcExMarkupGeometry'
+import { acExBindMarkupPointerDrag } from './AcExMarkupGripDrag'
+import {
+  acExMarkupSidecarFileName,
+  parseAcExMarkupSidecar,
+  stringifyAcExMarkupSidecar
+} from './AcExMarkupSidecar'
+import {
+  editAcExMarkupHtmlText,
+  isAcExMarkupDoublePointer,
+  isAcExMarkupHtmlTextEditing
+} from './AcExMarkupTextEdit'
+import type {
+  AcExMarkupAttachedCallout,
+  AcExMarkupGeometry,
+  AcExMarkupMode,
+  AcExMarkupPoint2d,
+  AcExMarkupRecord,
+  AcExMarkupSidecarFile,
+  AcExMarkupStyle
+} from './AcExMarkupTypes'
+import type { AcExTrackingOptions } from './AcExMeasureTracking'
+import { constrainToAcExTracking } from './AcExMeasureTracking'
+import type { AcExOsnapPoint } from './AcExOsnap'
+
+export type { AcExMarkupMode } from './AcExMarkupTypes'
+
+/** Default markup stroke color (ACI red). */
+export const ACEX_MARKUP_COLOR = '#e53935'
+
+/** @deprecated Selection uses CSS glow; original stroke color is preserved. */
+export const ACEX_MARKUP_SELECT_COLOR = '#ffd54f'
+
+/** Default CAD line weight (≈ 0.70 mm → ~2.5 px). */
+const ACEX_MARKUP_LINE_WEIGHT = 70
+
+/** Default font size for text / callout badges (CSS px). */
+const ACEX_MARKUP_FONT_SIZE = 12
+
+/** Screen-pixel tolerance for picking a committed markup. */
+const MARKUP_HIT_THRESHOLD_PX = 10
+
+/** Built-in stamp ids (caption defaults). */
+const BUILTIN_STAMPS = [
+  'approved',
+  'rejected',
+  'revised',
+  'for-review'
+] as const
+
+type AcExBuiltinStampId = (typeof BUILTIN_STAMPS)[number]
+
+const STAMP_LABELS: Record<AcExBuiltinStampId, string> = {
+  approved: 'APPROVED',
+  rejected: 'REJECTED',
+  revised: 'REVISED',
+  'for-review': 'FOR REVIEW'
+}
+
+interface AcExResolvedPoint {
+  point: THREE.Vector2
+  snap: AcExOsnapPoint | null
+}
+
+/**
+ * View/camera callbacks supplied by {@link AcExHtmlViewerRuntime}.
+ */
+export interface AcExMarkupViewApi {
+  screenToWcs: (clientX: number, clientY: number) => THREE.Vector2
+  wcsToScreen: (wcs: THREE.Vector2) => { x: number; y: number }
+  render: () => void
+  getSnapCacheKey: () => number
+  resolvePoint: (clientX: number, clientY: number) => AcExResolvedPoint
+}
+
+export interface AcExMarkupControllerOptions {
+  root: HTMLElement
+  i18n: AcExHtmlI18n
+  view: AcExMarkupViewApi
+  statusEl: HTMLElement
+  getReadyStatus: () => string
+  drawingName?: string
+  onOsnapMarker: (
+    snap: AcExOsnapPoint | null,
+    screen: { x: number; y: number } | null
+  ) => void
+  onActiveChange?: (active: boolean) => void
+  /** Called when selection or session draw style changes (draw-style toolbar). */
+  onStyleChange?: () => void
+  /** Called when a markup tool starts so the runtime can cancel measure mode. */
+  onBeforeActivate?: () => void
+  /** Ortho/polar tracking from the shared settings panel. */
+  getTrackingOptions?: () => AcExTrackingOptions | null
+}
+
+type AcExMarkupCleanup = () => void
+
+interface AcExMarkupParts {
+  id: string
+  dom: HTMLElement[]
+  canvases: HTMLCanvasElement[]
+  cleanups: AcExMarkupCleanup[]
+}
+
+interface AcExCommittedMarkup {
+  record: AcExMarkupRecord
+  parts: AcExMarkupParts
+}
+
+/** After cloud/rect/circle is drawn: place leader tip + text bubble. */
+interface AcExPlacingShapeCallout {
+  outline: AcExMarkupShapeOutline
+  tip: AcExMarkupPoint2d
+  anchor: AcExMarkupPoint2d
+  badge: HTMLElement
+  tipDot: HTMLElement
+}
+
+function createMarkupId(prefix = 'markup'): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `${prefix}-${crypto.randomUUID()}`
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function markupNow(): string {
+  return new Date().toISOString()
+}
+
+function defaultStyle(
+  color = ACEX_MARKUP_COLOR,
+  lineWeight = ACEX_MARKUP_LINE_WEIGHT,
+  fontSize = ACEX_MARKUP_FONT_SIZE
+): AcExMarkupStyle {
+  return {
+    color,
+    lineWeight,
+    fontSize
+  }
+}
+
+function point2(v: THREE.Vector2): AcExMarkupPoint2d {
+  return { x: v.x, y: v.y }
+}
+
+function toVector2(p: AcExMarkupPoint2d): THREE.Vector2 {
+  return new THREE.Vector2(p.x, p.y)
+}
+
+/**
+ * Manages markup annotation tools for the offline HTML viewer.
+ */
+export class AcExMarkupController {
+  private readonly _root: HTMLElement
+  private readonly _i18n: AcExHtmlI18n
+  private readonly _view: AcExMarkupViewApi
+  private readonly _statusEl: HTMLElement
+  private readonly _getReadyStatus: () => string
+  private readonly _drawingName: string | undefined
+  private readonly _onOsnapMarker: AcExMarkupControllerOptions['onOsnapMarker']
+  private readonly _onActiveChange: ((active: boolean) => void) | null
+  private readonly _onStyleChange: (() => void) | null
+  private readonly _onBeforeActivate: (() => void) | null
+  private readonly _getTrackingOptions:
+    | (() => AcExTrackingOptions | null)
+    | null
+
+  private readonly _overlayLayer: HTMLDivElement
+  private readonly _previewCanvas: HTMLCanvasElement
+  private readonly _fileInput: HTMLInputElement
+
+  private readonly _committed: AcExCommittedMarkup[] = []
+  private readonly _redrawListeners: AcExMarkupCleanup[] = []
+  private readonly _selectedIds = new Set<string>()
+
+  private _mode: AcExMarkupMode | null = null
+  private _points: THREE.Vector2[] = []
+  private _lastPointer: { x: number; y: number } | null = null
+  private _visible = true
+  private _stampIndex = 0
+  private _inOverlaySync = false
+  private _lastOverlaySyncKey = -1
+  private _overlayRootRect: DOMRect | null = null
+  private _osnapCache: {
+    clientX: number
+    clientY: number
+    cacheKey: number
+    point: THREE.Vector2
+    snap: AcExOsnapPoint | null
+  } | null = null
+  private _drawColor = ACEX_MARKUP_COLOR
+  private _drawLineWeight = ACEX_MARKUP_LINE_WEIGHT
+  private _drawFontSize = ACEX_MARKUP_FONT_SIZE
+  private _placingShapeCallout: AcExPlacingShapeCallout | null = null
+  /** Blocks canvas placement while an inline text session is open. */
+  private _awaitingInlineText = false
+  private _inlineAbort: AbortController | null = null
+  private _lastSelectPointer:
+    | { t: number; x: number; y: number; id: string }
+    | undefined
+
+  constructor(options: AcExMarkupControllerOptions) {
+    this._root = options.root
+    this._i18n = options.i18n
+    this._view = options.view
+    this._statusEl = options.statusEl
+    this._getReadyStatus = options.getReadyStatus
+    this._drawingName = options.drawingName
+    this._onOsnapMarker = options.onOsnapMarker
+    this._onActiveChange = options.onActiveChange ?? null
+    this._onStyleChange = options.onStyleChange ?? null
+    this._onBeforeActivate = options.onBeforeActivate ?? null
+    this._getTrackingOptions = options.getTrackingOptions ?? null
+
+    this._overlayLayer = document.createElement('div')
+    this._overlayLayer.id = 'mlcad-markup-overlays'
+    this._root.appendChild(this._overlayLayer)
+
+    this._previewCanvas = document.createElement('canvas')
+    this._previewCanvas.className =
+      'mlcad-markup-canvas mlcad-markup-canvas--preview'
+    this._overlayLayer.appendChild(this._previewCanvas)
+
+    this._fileInput = document.createElement('input')
+    this._fileInput.type = 'file'
+    this._fileInput.accept = '.json,application/json'
+    this._fileInput.style.display = 'none'
+    this._fileInput.addEventListener('change', () => {
+      void this._handleImportFile()
+    })
+    this._root.appendChild(this._fileInput)
+    this._updateVisibilityToolbar()
+  }
+
+  get isActive(): boolean {
+    return this._mode !== null
+  }
+
+  /** Whether one or more committed markups are selected. */
+  get hasSelection(): boolean {
+    return this._selectedIds.size > 0
+  }
+
+  /** Clears the current markup selection (if any). */
+  clearSelection(): void {
+    this._deselect(true)
+  }
+
+  get mode(): AcExMarkupMode | null {
+    return this._mode
+  }
+
+  get visible(): boolean {
+    return this._visible
+  }
+
+  /** Updates the default stroke/fill color for newly created markups. */
+  setMarkupColor(css: string): void {
+    this.setDrawStyle({ color: css })
+  }
+
+  /** Current session draw style (and selected markup style when applicable). */
+  getDrawStyle(): {
+    color: string
+    lineWeight: number
+    fontSize: number
+  } {
+    const selectedId =
+      this._selectedIds.size === 1
+        ? [...this._selectedIds][0]
+        : undefined
+    if (selectedId) {
+      const record = this._findRecord(selectedId)
+      if (record) {
+        return {
+          color: record.style.color || this._drawColor,
+          lineWeight: record.style.lineWeight ?? this._drawLineWeight,
+          fontSize: record.style.fontSize ?? this._drawFontSize
+        }
+      }
+    }
+    return {
+      color: this._drawColor,
+      lineWeight: this._drawLineWeight,
+      fontSize: this._drawFontSize
+    }
+  }
+
+  /**
+   * Updates session defaults and applies the same patch to the current selection.
+   */
+  setDrawStyle(patch: {
+    color?: string
+    lineWeight?: number
+    fontSize?: number
+  }): void {
+    if (patch.color) this._drawColor = patch.color
+    if (patch.lineWeight != null && patch.lineWeight > 0) {
+      this._drawLineWeight = patch.lineWeight
+    }
+    if (patch.fontSize != null && patch.fontSize > 0) {
+      this._drawFontSize = patch.fontSize
+    }
+    this._applyStyleToSelection(patch)
+    this._refreshActivePreview()
+    this._syncPlacingStyle()
+    this._onStyleChange?.()
+    this._view.render()
+  }
+
+  private _sessionStyle(): AcExMarkupStyle {
+    return defaultStyle(
+      this._drawColor,
+      this._drawLineWeight,
+      this._drawFontSize
+    )
+  }
+
+  private _applyStyleToSelection(patch: {
+    color?: string
+    lineWeight?: number
+    fontSize?: number
+  }): void {
+    if (this._selectedIds.size === 0) return
+    for (const id of this._selectedIds) {
+      const item = this._committed.find(c => c.record.id === id)
+      if (!item) continue
+      const style = item.record.style
+      if (patch.color) style.color = patch.color
+      if (patch.lineWeight != null && patch.lineWeight > 0) {
+        style.lineWeight = patch.lineWeight
+      }
+      if (patch.fontSize != null && patch.fontSize > 0) {
+        style.fontSize = patch.fontSize
+      }
+      item.record.updatedAt = markupNow()
+      const color = style.color || ACEX_MARKUP_COLOR
+      for (const el of item.parts.dom) {
+        if (
+          el.classList.contains('mlcad-markup-badge') ||
+          el.classList.contains('mlcad-markup-stamp')
+        ) {
+          el.style.color = color
+          el.style.borderColor = color
+          if (style.fontSize) {
+            el.style.fontSize = `${style.fontSize}px`
+          }
+        } else if (el.classList.contains('mlcad-markup-dot')) {
+          el.style.background = color
+        }
+      }
+    }
+    this._applySelectionStyles()
+  }
+
+  private _syncPlacingStyle(): void {
+    const placing = this._placingShapeCallout
+    if (!placing) return
+    placing.badge.style.color = this._drawColor
+    placing.badge.style.borderColor = this._drawColor
+    placing.badge.style.fontSize = `${this._drawFontSize}px`
+    placing.tipDot.style.background = this._drawColor
+  }
+
+  setMode(mode: AcExMarkupMode | null, toggleOff = true): void {
+    if (mode === this._mode && toggleOff) {
+      this.cancelMode()
+      return
+    }
+    this.cancelMode()
+    this._deselect(false)
+    if (mode === null) return
+    this._onBeforeActivate?.()
+    this._mode = mode
+    this._points = []
+    this._updateToolbarActive()
+    this._syncGripPointerEvents()
+    this._statusEl.textContent = this._hintForMode(mode)
+    this._onActiveChange?.(true)
+  }
+
+  cancelMode(): void {
+    const wasActive = this._mode !== null || this._placingShapeCallout !== null
+    this._abortInlineText()
+    this._finishPlacingShapeCallout(false)
+    this._mode = null
+    this._points = []
+    this._lastPointer = null
+    this._osnapCache = null
+    this._awaitingInlineText = false
+    this._clearPreview()
+    this._onOsnapMarker(null, null)
+    this._updateToolbarActive()
+    this._syncGripPointerEvents()
+    this._updateIdleStatus()
+    this._view.render()
+    if (wasActive) this._onActiveChange?.(false)
+  }
+
+  private _abortInlineText(): void {
+    this._inlineAbort?.abort()
+    this._inlineAbort = null
+    this._awaitingInlineText = false
+  }
+
+  private _beginInlineText(
+    options: Parameters<typeof editAcExMarkupHtmlText>[0]
+  ): Promise<string | undefined> {
+    this._abortInlineText()
+    const abort = new AbortController()
+    this._inlineAbort = abort
+    this._awaitingInlineText = true
+    this._syncGripPointerEvents()
+    return editAcExMarkupHtmlText({ ...options, signal: abort.signal }).finally(
+      () => {
+        if (this._inlineAbort === abort) {
+          this._inlineAbort = null
+          this._awaitingInlineText = false
+          this._syncGripPointerEvents()
+        }
+      }
+    )
+  }
+
+  refreshIdleStatus(): void {
+    this._updateIdleStatus()
+  }
+
+  clearAll(): void {
+    this.cancelMode()
+    this._deselect(false)
+    for (const item of [...this._committed]) {
+      this._removeCommitted(item.record.id, false)
+    }
+    this._updateIdleStatus()
+    this._view.render()
+  }
+
+  setVisible(visible: boolean): void {
+    this._visible = visible
+    this._overlayLayer.style.display = visible ? '' : 'none'
+    this._updateVisibilityToolbar()
+    this._view.render()
+  }
+
+  toggleVisible(): void {
+    this.setVisible(!this._visible)
+  }
+
+  syncOverlays(): void {
+    if (!this._visible) return
+    this._inOverlaySync = true
+    try {
+      this._overlayRootRect = this._root.getBoundingClientRect()
+      const overlayKey = this._view.getSnapCacheKey()
+      const cameraChanged = overlayKey !== this._lastOverlaySyncKey
+      if (cameraChanged) {
+        for (const fn of this._redrawListeners) fn()
+        this._positionDomOverlays()
+        this._lastOverlaySyncKey = overlayKey
+      }
+      this._refreshActivePreview()
+    } finally {
+      this._inOverlaySync = false
+      this._overlayRootRect = null
+    }
+  }
+
+  handlePointerDown(clientX: number, clientY: number): boolean {
+    if (this._awaitingInlineText || isAcExMarkupHtmlTextEditing()) {
+      return true
+    }
+    if (this._placingShapeCallout) {
+      this._lastPointer = { x: clientX, y: clientY }
+      const point = this._resolvePointerWithOsnap(clientX, clientY)
+      this._completeShapeCalloutAnchor(point)
+      return true
+    }
+    if (this._trySelectCommittedAt(clientX, clientY)) {
+      return true
+    }
+    if (!this._mode) return false
+    this._lastPointer = { x: clientX, y: clientY }
+    const point = this._resolvePointerWithOsnap(clientX, clientY)
+
+    switch (this._mode) {
+      case 'arrow':
+        return this._pointerTwoPoint(point, 'arrow')
+      case 'rect':
+        return this._pointerTwoPoint(point, 'rect')
+      case 'cloud':
+        return this._pointerTwoPoint(point, 'cloud')
+      case 'circle':
+        return this._pointerCircle(point)
+      case 'callout':
+        return this._pointerTwoPoint(point, 'callout')
+      case 'text':
+        return this._pointerText(point)
+      case 'stamp':
+        return this._pointerStamp(point)
+      default:
+        return false
+    }
+  }
+
+  handlePointerMove(clientX: number, clientY: number): void {
+    if (this._awaitingInlineText || isAcExMarkupHtmlTextEditing()) return
+    if (!this._mode && !this._placingShapeCallout) return
+    this._lastPointer = { x: clientX, y: clientY }
+    this._resolvePointerWithOsnap(clientX, clientY)
+    this._refreshActivePreview()
+  }
+
+  handleKeyDown(key: string): boolean {
+    if (isAcExMarkupHtmlTextEditing() || this._awaitingInlineText) {
+      return key === 'Escape'
+    }
+    if (this._placingShapeCallout) {
+      if (key === 'Escape') {
+        // Cancel leader + text box; keep the shape.
+        this._commitPlacingShapeWithoutCallout()
+        return true
+      }
+      return false
+    }
+    if (!this._mode) return false
+    if (key === 'Escape') {
+      this.cancelMode()
+      return true
+    }
+    return false
+  }
+
+  handleSelectionKeyDown(key: string, event: KeyboardEvent): boolean {
+    // Allow delete while a create tool is still armed; only block during
+    // in-progress placement / inline text editing.
+    if (
+      this._placingShapeCallout ||
+      isAcExMarkupHtmlTextEditing() ||
+      this._awaitingInlineText
+    ) {
+      return false
+    }
+    const isDelete =
+      key === 'Delete' ||
+      key === 'Backspace' ||
+      event.code === 'Delete' ||
+      event.code === 'Backspace'
+    if (isDelete && this._selectedIds.size > 0) {
+      event.preventDefault()
+      this.deleteSelected()
+      return true
+    }
+    return false
+  }
+
+  handleSelectionPointerDown(clientX: number, clientY: number): boolean {
+    if (this._mode) return false
+    return this._trySelectCommittedAt(clientX, clientY)
+  }
+
+  deleteSelected(): void {
+    for (const id of [...this._selectedIds]) {
+      this._removeCommitted(id, false)
+    }
+    this._selectedIds.clear()
+    this._updateIdleStatus()
+    this._view.render()
+  }
+
+  exportSidecar(): void {
+    const file: AcExMarkupSidecarFile = {
+      version: 1,
+      drawingName: this._drawingName,
+      markups: this._committed.map(c => c.record)
+    }
+    const text = stringifyAcExMarkupSidecar(file)
+    const blob = new Blob([text], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = acExMarkupSidecarFileName(this._drawingName)
+    a.click()
+    URL.revokeObjectURL(url)
+    this._statusEl.textContent = this._i18n.t('status.markupExported', {
+      count: String(file.markups.length)
+    })
+  }
+
+  importSidecar(): void {
+    this._fileInput.value = ''
+    this._fileInput.click()
+  }
+
+  /** Replace all markups from a parsed sidecar (used by tests / import). */
+  loadSidecar(file: AcExMarkupSidecarFile): void {
+    this.clearAll()
+    for (const record of file.markups) {
+      this._publishRecord(record)
+    }
+    this._updateIdleStatus()
+    this._view.render()
+  }
+
+  private async _handleImportFile(): Promise<void> {
+    const file = this._fileInput.files?.[0]
+    if (!file) return
+    try {
+      const text = await file.text()
+      const sidecar = parseAcExMarkupSidecar(text)
+      this.loadSidecar(sidecar)
+      this._statusEl.textContent = this._i18n.t('status.markupImported', {
+        count: String(sidecar.markups.length)
+      })
+    } catch (error) {
+      this._statusEl.textContent = this._i18n.t('status.markupImportFailed', {
+        error: String(error)
+      })
+    }
+  }
+
+  private _pointerTwoPoint(
+    point: THREE.Vector2,
+    kind: 'arrow' | 'rect' | 'cloud' | 'callout'
+  ): boolean {
+    this._points.push(point.clone())
+    this._syncGripPointerEvents()
+    if (this._points.length < 2) {
+      this._statusEl.textContent = this._hintForSecondPoint(kind)
+      return true
+    }
+    const a = this._points[0]!
+    const b = this._points[1]!
+    this._points = []
+    this._syncGripPointerEvents()
+    this._clearPreview()
+
+    if (kind === 'arrow') {
+      this._commitGeometry('arrow', {
+        type: 'arrow',
+        start: point2(a),
+        end: point2(b)
+      })
+      this._statusEl.textContent = this._hintForMode(kind)
+    } else if (kind === 'rect') {
+      this._beginPlacingShapeCallout({
+        kind: 'rect',
+        corner1: point2(a),
+        corner2: point2(b)
+      })
+    } else if (kind === 'cloud') {
+      this._beginPlacingShapeCallout({
+        kind: 'cloud',
+        corner1: point2(a),
+        corner2: point2(b)
+      })
+    } else {
+      this._beginStandaloneCalloutText(point2(a), point2(b))
+    }
+    return true
+  }
+
+  private _pointerCircle(point: THREE.Vector2): boolean {
+    this._points.push(point.clone())
+    this._syncGripPointerEvents()
+    if (this._points.length < 2) {
+      this._statusEl.textContent = this._i18n.t('status.markupCircleRadiusHint')
+      return true
+    }
+    const center = this._points[0]!
+    const rim = this._points[1]!
+    const radius = center.distanceTo(rim)
+    this._points = []
+    this._syncGripPointerEvents()
+    this._clearPreview()
+    if (radius > 1e-9) {
+      this._beginPlacingShapeCallout({
+        kind: 'circle',
+        center: point2(center),
+        radius
+      })
+    } else {
+      this._statusEl.textContent = this._hintForMode('circle')
+    }
+    return true
+  }
+
+  private _pointerText(point: THREE.Vector2): boolean {
+    if (this._awaitingInlineText) return true
+    const defaultLabel = this._i18n.t('status.markupDefaultLabel')
+    const badge = this._makeTempBadge(point2(point), '', this._drawColor)
+    this._statusEl.textContent = this._i18n.t('status.markupTextEditHint')
+    void this._beginInlineText({
+      el: badge,
+      listenOn: badge,
+      multiline: false,
+      initialText: ''
+    }).then(text => {
+      badge.remove()
+      if (this._mode !== 'text') return
+      // Escape → still commit with default label (matches simple-viewer TEXT cmd).
+      const final = (text ?? defaultLabel).trim() || defaultLabel
+      this._commitGeometry(
+        'text',
+        { type: 'text', position: point2(point) },
+        final
+      )
+      this._statusEl.textContent = this._hintForMode('text')
+      this._view.render()
+    })
+    return true
+  }
+
+  private _pointerStamp(point: THREE.Vector2): boolean {
+    const stampId = BUILTIN_STAMPS[this._stampIndex % BUILTIN_STAMPS.length]!
+    this._stampIndex = (this._stampIndex + 1) % BUILTIN_STAMPS.length
+    this._commitGeometry(
+      'stamp',
+      {
+        type: 'stamp',
+        position: point2(point),
+        stampId
+      },
+      STAMP_LABELS[stampId]
+    )
+    this._statusEl.textContent = this._hintForMode('stamp')
+    return true
+  }
+
+  private _beginStandaloneCalloutText(
+    tip: AcExMarkupPoint2d,
+    anchor: AcExMarkupPoint2d
+  ): void {
+    if (this._awaitingInlineText) return
+    const defaultLabel = this._i18n.t('status.markupDefaultLabel')
+    const badge = this._makeTempBadge(anchor, '', this._drawColor)
+    const tipDot = this._makeTempDot(tip, this._drawColor)
+    this._statusEl.textContent = this._i18n.t('status.markupTextEditHint')
+    const paintLeader = () => {
+      const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
+      if (!ctx) return
+      const tipS = this._worldToOverlay(tip)
+      const anchorS = this._worldToOverlay(anchor)
+      acExDrawMarkupLeader(
+        ctx,
+        tipS,
+        anchorS,
+        this._drawColor,
+        true,
+        acExMarkupCanvasLineWidth(this._drawLineWeight)
+      )
+    }
+    paintLeader()
+    void this._beginInlineText({
+      el: badge,
+      listenOn: badge,
+      multiline: true,
+      initialText: ''
+    }).then(text => {
+      badge.remove()
+      tipDot.remove()
+      this._clearPreview()
+      if (this._mode !== 'callout') return
+      const final = (text ?? '').trim() || defaultLabel
+      this._commitGeometry(
+        'callout',
+        { type: 'callout', tip, anchor },
+        final
+      )
+      this._statusEl.textContent = this._hintForMode('callout')
+      this._view.render()
+    })
+  }
+
+  private _beginPlacingShapeCallout(outline: AcExMarkupShapeOutline): void {
+    const toward =
+      outline.kind === 'circle'
+        ? {
+            x: outline.center.x + Math.max(outline.radius, 1),
+            y: outline.center.y
+          }
+        : {
+            x: Math.max(outline.corner1.x, outline.corner2.x) + 1,
+            y: (outline.corner1.y + outline.corner2.y) / 2
+          }
+    const tip = acExComputeLeaderTipOnShape(outline, toward)
+    const anchor = { ...toward }
+    const badge = this._makeTempBadge(anchor, '', this._drawColor)
+    const tipDot = this._makeTempDot(tip, this._drawColor)
+    this._placingShapeCallout = { outline, tip, anchor, badge, tipDot }
+    this._statusEl.textContent = this._i18n.t('status.markupShapeCalloutHint')
+    this._syncGripPointerEvents()
+    this._refreshActivePreview()
+    this._onActiveChange?.(true)
+  }
+
+  private _completeShapeCalloutAnchor(anchorPoint: THREE.Vector2): void {
+    const placing = this._placingShapeCallout
+    if (!placing || this._awaitingInlineText) return
+    const anchor = point2(anchorPoint)
+    const tip = acExComputeLeaderTipOnShape(placing.outline, anchor)
+    placing.tip = tip
+    placing.anchor = anchor
+    placing.badge.dataset.wcsX = String(anchor.x)
+    placing.badge.dataset.wcsY = String(anchor.y)
+    placing.tipDot.dataset.wcsX = String(tip.x)
+    placing.tipDot.dataset.wcsY = String(tip.y)
+    this._positionTempDom(placing.badge)
+    this._positionTempDom(placing.tipDot)
+    this._refreshActivePreview()
+
+    this._statusEl.textContent = this._i18n.t('status.markupTextEditHint')
+    void this._beginInlineText({
+      el: placing.badge,
+      listenOn: placing.badge,
+      multiline: true,
+      initialText: ''
+    }).then(text => {
+      // Cancelled via tool switch / abort — do not commit.
+      if (this._placingShapeCallout !== placing) return
+      // Escape during text entry → keep tip/anchor; empty text (simple-viewer).
+      // Escape before typing is handled by handleKeyDown (shape only, no callout).
+      const callout: AcExMarkupAttachedCallout = {
+        tip,
+        anchor,
+        text: text || undefined
+      }
+      this._commitShapeWithCallout(placing.outline, callout, text || undefined)
+      this._finishPlacingShapeCallout(true)
+      if (this._mode) {
+        this._statusEl.textContent = this._hintForMode(this._mode)
+      }
+      this._view.render()
+    })
+  }
+
+  private _commitPlacingShapeWithoutCallout(): void {
+    const placing = this._placingShapeCallout
+    if (!placing) return
+    this._commitShapeWithCallout(placing.outline, undefined, undefined)
+    this._finishPlacingShapeCallout(true)
+    if (this._mode) {
+      this._statusEl.textContent = this._hintForMode(this._mode)
+    }
+    this._view.render()
+  }
+
+  private _commitShapeWithCallout(
+    outline: AcExMarkupShapeOutline,
+    callout: AcExMarkupAttachedCallout | undefined,
+    text: string | undefined
+  ): void {
+    if (outline.kind === 'circle') {
+      this._commitGeometry(
+        'circle',
+        {
+          type: 'circle',
+          center: outline.center,
+          radius: outline.radius,
+          callout
+        },
+        text
+      )
+      return
+    }
+    this._commitGeometry(
+      outline.kind,
+      {
+        type: outline.kind,
+        corner1: outline.corner1,
+        corner2: outline.corner2,
+        callout
+      },
+      text
+    )
+  }
+
+  /**
+   * @param keepMode - When true, stay in the current markup tool after cleanup.
+   */
+  private _finishPlacingShapeCallout(keepMode: boolean): void {
+    const placing = this._placingShapeCallout
+    if (!placing) return
+    this._placingShapeCallout = null
+    placing.badge.remove()
+    placing.tipDot.remove()
+    this._clearPreview()
+    this._syncGripPointerEvents()
+    void keepMode
+  }
+
+  private _makeTempBadge(
+    wcs: AcExMarkupPoint2d,
+    text: string,
+    color: string
+  ): HTMLElement {
+    const badge = document.createElement('div')
+    badge.className = 'mlcad-markup-badge'
+    badge.dataset.wcsX = String(wcs.x)
+    badge.dataset.wcsY = String(wcs.y)
+    badge.textContent = text
+    badge.style.color = color
+    badge.style.borderColor = color
+    badge.style.fontSize = `${this._drawFontSize}px`
+    // Must not intercept canvas clicks while placing the leader anchor.
+    badge.style.pointerEvents = 'none'
+    this._overlayLayer.appendChild(badge)
+    this._positionTempDom(badge)
+    return badge
+  }
+
+  private _makeTempDot(wcs: AcExMarkupPoint2d, color: string): HTMLElement {
+    const dot = document.createElement('div')
+    dot.className = 'mlcad-markup-dot'
+    dot.dataset.wcsX = String(wcs.x)
+    dot.dataset.wcsY = String(wcs.y)
+    dot.style.background = color
+    dot.style.pointerEvents = 'none'
+    this._overlayLayer.appendChild(dot)
+    this._positionTempDom(dot)
+    return dot
+  }
+
+  private _positionTempDom(el: HTMLElement): void {
+    const x = Number(el.dataset.wcsX)
+    const y = Number(el.dataset.wcsY)
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    const screen = this._view.wcsToScreen(new THREE.Vector2(x, y))
+    el.style.left = `${screen.x - rootRect.left}px`
+    el.style.top = `${screen.y - rootRect.top}px`
+  }
+
+  private _commitGeometry(
+    type: AcExMarkupRecord['type'],
+    geometry: AcExMarkupGeometry,
+    text?: string
+  ): void {
+    const now = markupNow()
+    const record: AcExMarkupRecord = {
+      id: createMarkupId(),
+      type,
+      style: this._sessionStyle(),
+      text,
+      comment: '',
+      status: 'open',
+      author: '',
+      createdAt: now,
+      updatedAt: now,
+      geometry
+    }
+    this._publishRecord(record)
+    this._view.render()
+  }
+
+  private _publishRecord(record: AcExMarkupRecord): void {
+    const parts: AcExMarkupParts = {
+      id: record.id,
+      dom: [],
+      canvases: [],
+      cleanups: []
+    }
+    // Push before building visuals so the initial redraw can resolve the record.
+    this._committed.push({ record, parts })
+    this._buildVisuals(record, parts)
+    this._positionDomOverlays()
+  }
+
+  private _buildVisuals(record: AcExMarkupRecord, parts: AcExMarkupParts): void {
+    const color = record.style.color || ACEX_MARKUP_COLOR
+    const markupId = record.id
+
+    const canvas = document.createElement('canvas')
+    canvas.className = 'mlcad-markup-canvas'
+    canvas.dataset.markupId = markupId
+    this._overlayLayer.appendChild(canvas)
+    parts.canvases.push(canvas)
+
+    const redraw = () => {
+      const live = this._findRecord(markupId) ?? record
+      const ctx = acExFitMarkupCanvas(canvas, this._root)
+      if (!ctx) return
+      this._strokeGeometry(
+        ctx,
+        live.geometry,
+        live.style.color || ACEX_MARKUP_COLOR,
+        acExMarkupCanvasLineWidth(live.style.lineWeight)
+      )
+    }
+    this._redrawListeners.push(redraw)
+    parts.cleanups.push(() => {
+      const idx = this._redrawListeners.indexOf(redraw)
+      if (idx >= 0) this._redrawListeners.splice(idx, 1)
+    })
+    redraw()
+
+    const g = record.geometry
+    const attached =
+      (g.type === 'cloud' || g.type === 'rect' || g.type === 'circle') &&
+      g.callout
+        ? g.callout
+        : null
+
+    let badge: HTMLElement | null = null
+    if (
+      g.type === 'text' ||
+      g.type === 'callout' ||
+      g.type === 'stamp' ||
+      attached
+    ) {
+      badge = document.createElement('div')
+      badge.className =
+        g.type === 'stamp' ? 'mlcad-markup-stamp' : 'mlcad-markup-badge'
+      badge.dataset.markupId = markupId
+      const anchorPos =
+        g.type === 'text' || g.type === 'stamp'
+          ? g.position
+          : g.type === 'callout'
+            ? g.anchor
+            : attached!.anchor
+      badge.dataset.wcsX = String(anchorPos.x)
+      badge.dataset.wcsY = String(anchorPos.y)
+      const label =
+        (attached ? attached.text : undefined) ||
+        record.text?.trim() ||
+        (g.type === 'stamp' && 'stampId' in g
+          ? STAMP_LABELS[g.stampId as AcExBuiltinStampId] ?? g.stampId
+          : this._i18n.t('status.markupDefaultLabel'))
+      badge.textContent = label
+      badge.style.color = color
+      badge.style.borderColor = color
+      if (record.style.fontSize) {
+        badge.style.fontSize = `${record.style.fontSize}px`
+      }
+      this._overlayLayer.appendChild(badge)
+      parts.dom.push(badge)
+
+      if (g.type !== 'stamp') {
+        badge.addEventListener('dblclick', event => {
+          event.stopPropagation()
+          event.preventDefault()
+          this._editText(markupId, badge!)
+        })
+      }
+    }
+
+    let tipDot: HTMLElement | null = null
+    let startDot: HTMLElement | null = null
+    let endDot: HTMLElement | null = null
+    let centerDot: HTMLElement | null = null
+
+    if (g.type === 'arrow' || g.type === 'line') {
+      startDot = this._makeDot(g.start, color, markupId)
+      endDot = this._makeDot(g.end, color, markupId)
+      parts.dom.push(startDot, endDot)
+    } else if (g.type === 'callout') {
+      tipDot = this._makeDot(g.tip, color, markupId)
+      parts.dom.push(tipDot)
+    } else if (attached) {
+      tipDot = this._makeDot(attached.tip, color, markupId)
+      parts.dom.push(tipDot)
+    }
+
+    if (
+      g.type === 'callout' ||
+      g.type === 'cloud' ||
+      g.type === 'rect' ||
+      g.type === 'circle'
+    ) {
+      const center = acExMarkupCenter(record)
+      if (center) {
+        centerDot = this._makeDot(center, color, markupId)
+        parts.dom.push(centerDot)
+      }
+    }
+
+    parts.cleanups.push(
+      this._bindGrips({
+        id: markupId,
+        geometryType: g.type,
+        hasAttachedCallout: !!attached,
+        badge,
+        tipDot,
+        startDot,
+        endDot,
+        centerDot,
+        redraw
+      })
+    )
+    this._syncGripPointerEvents()
+  }
+
+  private _findRecord(id: string): AcExMarkupRecord | undefined {
+    return this._committed.find(c => c.record.id === id)?.record
+  }
+
+  private _gripsEnabled(): boolean {
+    // Allow editing grips even while a create tool is armed; only block during
+    // an in-progress draw / callout placement / inline text session.
+    return (
+      !this._placingShapeCallout &&
+      !this._awaitingInlineText &&
+      !isAcExMarkupHtmlTextEditing() &&
+      this._points.length === 0
+    )
+  }
+
+  private _syncGripPointerEvents(): void {
+    const enable = this._gripsEnabled()
+    for (const item of this._committed) {
+      for (const el of item.parts.dom) {
+        el.style.pointerEvents = enable ? 'auto' : 'none'
+      }
+    }
+  }
+
+  private _clientToWorld(clientX: number, clientY: number): AcExMarkupPoint2d {
+    return point2(this._view.screenToWcs(clientX, clientY))
+  }
+
+  private _placeDomAt(el: HTMLElement, wcs: AcExMarkupPoint2d): void {
+    el.dataset.wcsX = String(wcs.x)
+    el.dataset.wcsY = String(wcs.y)
+    this._positionTempDom(el)
+  }
+
+  private _selectOnly(id: string): void {
+    if (this._selectedIds.size === 1 && this._selectedIds.has(id)) {
+      this._applySelectionStyles()
+      return
+    }
+    this._selectedIds.clear()
+    this._selectedIds.add(id)
+    this._applySelectionStyles()
+    this._onStyleChange?.()
+    const record = this._findRecord(id)
+    this._statusEl.textContent = this._i18n.t('status.markupSelected', {
+      type: record?.type ?? 'markup'
+    })
+    this._view.render()
+  }
+
+  private _touchRecord(id: string): void {
+    const record = this._findRecord(id)
+    if (!record) return
+    record.updatedAt = markupNow()
+  }
+
+  private _bindGrips(options: {
+    id: string
+    geometryType: AcExMarkupRecord['type']
+    hasAttachedCallout: boolean
+    badge: HTMLElement | null
+    tipDot: HTMLElement | null
+    startDot: HTMLElement | null
+    endDot: HTMLElement | null
+    centerDot: HTMLElement | null
+    redraw: () => void
+  }): () => void {
+    const {
+      id,
+      geometryType,
+      hasAttachedCallout,
+      badge,
+      tipDot,
+      startDot,
+      endDot,
+      centerDot,
+      redraw
+    } = options
+    const cleanups: Array<() => void> = []
+    const isEnabled = () => this._gripsEnabled()
+    const clientToWorld = (x: number, y: number) => this._clientToWorld(x, y)
+    const onSelect = () => this._selectOnly(id)
+
+    const shapeOutline = (): AcExMarkupShapeOutline | null => {
+      const record = this._findRecord(id)
+      if (!record) return null
+      const g = record.geometry
+      if (g.type === 'cloud' || g.type === 'rect') {
+        return { kind: g.type, corner1: g.corner1, corner2: g.corner2 }
+      }
+      if (g.type === 'circle') {
+        return { kind: 'circle', center: g.center, radius: g.radius }
+      }
+      return null
+    }
+
+    const syncCenterDot = () => {
+      if (!centerDot) return
+      const record = this._findRecord(id)
+      if (!record) return
+      const center = acExMarkupCenter(record)
+      if (center) this._placeDomAt(centerDot, center)
+    }
+
+    const syncAttachedDom = (g: AcExMarkupGeometry) => {
+      if (g.type === 'callout') {
+        if (tipDot) this._placeDomAt(tipDot, g.tip)
+        if (badge) this._placeDomAt(badge, g.anchor)
+      } else if (
+        (g.type === 'cloud' || g.type === 'rect' || g.type === 'circle') &&
+        g.callout
+      ) {
+        if (tipDot) this._placeDomAt(tipDot, g.callout.tip)
+        if (badge) this._placeDomAt(badge, g.callout.anchor)
+      }
+      syncCenterDot()
+    }
+
+    // Text / stamp: drag badge to move position.
+    if (
+      badge &&
+      (geometryType === 'text' || geometryType === 'stamp')
+    ) {
+      cleanups.push(
+        acExBindMarkupPointerDrag({
+          el: badge,
+          clientToWorld,
+          isEnabled,
+          cursor: 'move',
+          onPointerDown: onSelect,
+          onMove: world => {
+            const record = this._findRecord(id)
+            if (!record) return
+            if (
+              record.geometry.type !== 'text' &&
+              record.geometry.type !== 'stamp'
+            ) {
+              return
+            }
+            record.geometry.position.x = world.x
+            record.geometry.position.y = world.y
+            this._placeDomAt(badge, world)
+          },
+          onCommit: () => this._touchRecord(id)
+        })
+      )
+    }
+
+    // Standalone callout or shape-attached callout: tip + bubble.
+    if (
+      badge &&
+      tipDot &&
+      (geometryType === 'callout' || hasAttachedCallout)
+    ) {
+      cleanups.push(
+        acExBindMarkupPointerDrag({
+          el: tipDot,
+          clientToWorld,
+          isEnabled,
+          onPointerDown: onSelect,
+          onMove: world => {
+            const record = this._findRecord(id)
+            if (!record) return
+            const g = record.geometry
+            let tip = world
+            if (g.type === 'cloud' || g.type === 'rect' || g.type === 'circle') {
+              const outline = shapeOutline()
+              if (!outline || !g.callout) return
+              tip = acExComputeLeaderTipOnShape(outline, world)
+              g.callout.tip.x = tip.x
+              g.callout.tip.y = tip.y
+            } else if (g.type === 'callout') {
+              g.tip.x = tip.x
+              g.tip.y = tip.y
+            } else {
+              return
+            }
+            this._placeDomAt(tipDot, tip)
+            if (geometryType === 'callout') syncCenterDot()
+            redraw()
+          },
+          onCommit: () => this._touchRecord(id)
+        })
+      )
+      cleanups.push(
+        acExBindMarkupPointerDrag({
+          el: badge,
+          clientToWorld,
+          isEnabled,
+          cursor: 'move',
+          onPointerDown: onSelect,
+          onMove: world => {
+            const record = this._findRecord(id)
+            if (!record) return
+            const g = record.geometry
+            if (g.type === 'callout') {
+              g.anchor.x = world.x
+              g.anchor.y = world.y
+            } else if (
+              (g.type === 'cloud' ||
+                g.type === 'rect' ||
+                g.type === 'circle') &&
+              g.callout
+            ) {
+              g.callout.anchor.x = world.x
+              g.callout.anchor.y = world.y
+            } else {
+              return
+            }
+            this._placeDomAt(badge, world)
+            if (geometryType === 'callout') syncCenterDot()
+            redraw()
+          },
+          onCommit: () => this._touchRecord(id)
+        })
+      )
+    }
+
+    // Arrow / line endpoints.
+    if (
+      startDot &&
+      endDot &&
+      (geometryType === 'arrow' || geometryType === 'line')
+    ) {
+      cleanups.push(
+        acExBindMarkupPointerDrag({
+          el: startDot,
+          clientToWorld,
+          isEnabled,
+          onPointerDown: onSelect,
+          onMove: world => {
+            const record = this._findRecord(id)
+            if (!record) return
+            const g = record.geometry
+            if (g.type !== 'arrow' && g.type !== 'line') return
+            g.start.x = world.x
+            g.start.y = world.y
+            this._placeDomAt(startDot, world)
+            redraw()
+          },
+          onCommit: () => this._touchRecord(id)
+        })
+      )
+      cleanups.push(
+        acExBindMarkupPointerDrag({
+          el: endDot,
+          clientToWorld,
+          isEnabled,
+          onPointerDown: onSelect,
+          onMove: world => {
+            const record = this._findRecord(id)
+            if (!record) return
+            const g = record.geometry
+            if (g.type !== 'arrow' && g.type !== 'line') return
+            g.end.x = world.x
+            g.end.y = world.y
+            this._placeDomAt(endDot, world)
+            redraw()
+          },
+          onCommit: () => this._touchRecord(id)
+        })
+      )
+    }
+
+    // Center grip: move whole callout / cloud / rect / circle (+ attached callout).
+    if (
+      centerDot &&
+      (geometryType === 'callout' ||
+        geometryType === 'cloud' ||
+        geometryType === 'rect' ||
+        geometryType === 'circle')
+    ) {
+      let originGeom: AcExMarkupGeometry | null = null
+      let originCenter: AcExMarkupPoint2d | null = null
+      cleanups.push(
+        acExBindMarkupPointerDrag({
+          el: centerDot,
+          clientToWorld,
+          isEnabled,
+          cursor: 'move',
+          onPointerDown: onSelect,
+          onDragStart: () => {
+            const record = this._findRecord(id)
+            if (!record) return
+            originGeom = structuredClone(record.geometry)
+            originCenter = acExMarkupCenter(record)
+          },
+          onMove: world => {
+            const record = this._findRecord(id)
+            if (!record || !originGeom || !originCenter) return
+            const dx = world.x - originCenter.x
+            const dy = world.y - originCenter.y
+            record.geometry = acExTranslateMarkupGeometry(originGeom, dx, dy)
+            syncAttachedDom(record.geometry)
+            this._placeDomAt(centerDot, world)
+            redraw()
+          },
+          onCommit: () => {
+            originGeom = null
+            originCenter = null
+            this._touchRecord(id)
+          }
+        })
+      )
+    }
+
+    return () => {
+      for (const fn of cleanups) fn()
+    }
+  }
+
+  private _makeDot(
+    wcs: AcExMarkupPoint2d,
+    color: string,
+    id: string
+  ): HTMLElement {
+    const dot = document.createElement('div')
+    dot.className = 'mlcad-markup-dot'
+    dot.dataset.markupId = id
+    dot.dataset.wcsX = String(wcs.x)
+    dot.dataset.wcsY = String(wcs.y)
+    dot.style.background = color
+    this._overlayLayer.appendChild(dot)
+    return dot
+  }
+
+  private _worldToOverlay(p: AcExMarkupPoint2d): { x: number; y: number } {
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    const screen = this._view.wcsToScreen(toVector2(p))
+    return { x: screen.x - rootRect.left, y: screen.y - rootRect.top }
+  }
+
+  private _overlayToWorld(s: { x: number; y: number }): AcExMarkupPoint2d {
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    return point2(
+      this._view.screenToWcs(rootRect.left + s.x, rootRect.top + s.y)
+    )
+  }
+
+  private _strokeGeometry(
+    ctx: CanvasRenderingContext2D,
+    g: AcExMarkupGeometry,
+    color: string,
+    lineWidth: number
+  ): void {
+    const worldToScreen = (p: AcExMarkupPoint2d) => this._worldToOverlay(p)
+    const screenToWorld = (s: { x: number; y: number }) =>
+      this._overlayToWorld(s)
+
+    switch (g.type) {
+      case 'arrow':
+      case 'line': {
+        const a = worldToScreen(g.start)
+        const b = worldToScreen(g.end)
+        ctx.strokeStyle = color
+        ctx.lineWidth = lineWidth
+        ctx.beginPath()
+        ctx.moveTo(a.x, a.y)
+        ctx.lineTo(b.x, b.y)
+        ctx.stroke()
+        if (g.type === 'arrow') {
+          acExDrawMarkupArrowHead(ctx, a, b, color)
+        }
+        break
+      }
+      case 'rect': {
+        const a = worldToScreen(g.corner1)
+        const b = worldToScreen(g.corner2)
+        ctx.strokeStyle = color
+        ctx.lineWidth = lineWidth
+        ctx.strokeRect(
+          Math.min(a.x, b.x),
+          Math.min(a.y, b.y),
+          Math.abs(b.x - a.x),
+          Math.abs(b.y - a.y)
+        )
+        this._strokeAttachedCallout(ctx, g.callout, color, lineWidth)
+        break
+      }
+      case 'highlight': {
+        const a = worldToScreen(g.corner1)
+        const b = worldToScreen(g.corner2)
+        const x = Math.min(a.x, b.x)
+        const y = Math.min(a.y, b.y)
+        const w = Math.abs(b.x - a.x)
+        const h = Math.abs(b.y - a.y)
+        ctx.fillStyle = color
+        ctx.globalAlpha = 0.28
+        ctx.fillRect(x, y, w, h)
+        ctx.globalAlpha = 1
+        ctx.strokeStyle = color
+        ctx.lineWidth = lineWidth
+        ctx.strokeRect(x, y, w, h)
+        break
+      }
+      case 'circle': {
+        const c = worldToScreen(g.center)
+        const rim = worldToScreen({
+          x: g.center.x + g.radius,
+          y: g.center.y
+        })
+        const r = Math.hypot(rim.x - c.x, rim.y - c.y)
+        ctx.strokeStyle = color
+        ctx.lineWidth = lineWidth
+        ctx.beginPath()
+        ctx.arc(c.x, c.y, r, 0, Math.PI * 2)
+        ctx.stroke()
+        this._strokeAttachedCallout(ctx, g.callout, color, lineWidth)
+        break
+      }
+      case 'cloud': {
+        acExStrokeMarkupCloud(
+          ctx,
+          g.corner1,
+          g.corner2,
+          worldToScreen,
+          screenToWorld,
+          color,
+          lineWidth
+        )
+        this._strokeAttachedCallout(ctx, g.callout, color, lineWidth)
+        break
+      }
+      case 'callout': {
+        const tip = worldToScreen(g.tip)
+        const anchor = worldToScreen(g.anchor)
+        acExDrawMarkupLeader(ctx, tip, anchor, color, true, lineWidth)
+        break
+      }
+      default:
+        break
+    }
+  }
+
+  private _strokeAttachedCallout(
+    ctx: CanvasRenderingContext2D,
+    callout: AcExMarkupAttachedCallout | undefined,
+    color: string,
+    lineWidth: number
+  ): void {
+    if (!callout) return
+    const tip = this._worldToOverlay(callout.tip)
+    const anchor = this._worldToOverlay(callout.anchor)
+    // Shape-attached leaders have no arrowhead (Design Review).
+    acExDrawMarkupLeader(ctx, tip, anchor, color, false, lineWidth)
+  }
+
+  private _editText(id: string, badge: HTMLElement): void {
+    if (this._awaitingInlineText || isAcExMarkupHtmlTextEditing()) return
+    const item = this._committed.find(c => c.record.id === id)
+    if (!item) return
+    const g = item.record.geometry
+    const attached =
+      (g.type === 'cloud' || g.type === 'rect' || g.type === 'circle') &&
+      g.callout
+        ? g.callout
+        : null
+    const current =
+      (attached?.text ?? item.record.text ?? badge.textContent ?? '').trim()
+    const multiline = item.record.type !== 'text'
+    this._syncGripPointerEvents()
+    void this._beginInlineText({
+      el: badge,
+      listenOn: badge,
+      multiline,
+      initialText: current
+    }).then(next => {
+      this._syncGripPointerEvents()
+      if (next === undefined || next === current) return
+      item.record.updatedAt = markupNow()
+      if (attached) {
+        attached.text = next || undefined
+        item.record.text = next || undefined
+      } else {
+        item.record.text = next
+      }
+      badge.textContent =
+        next.trim() || this._i18n.t('status.markupDefaultLabel')
+      this._view.render()
+    })
+  }
+
+  private _removeCommitted(id: string, updateStatus: boolean): void {
+    const index = this._committed.findIndex(c => c.record.id === id)
+    if (index < 0) return
+    const item = this._committed[index]!
+    for (const cleanup of item.parts.cleanups) cleanup()
+    for (const el of item.parts.dom) el.remove()
+    for (const canvas of item.parts.canvases) canvas.remove()
+    this._committed.splice(index, 1)
+    this._selectedIds.delete(id)
+    if (updateStatus) this._updateIdleStatus()
+  }
+
+  private _trySelectCommittedAt(clientX: number, clientY: number): boolean {
+    if (!this._visible) return false
+    const hit = this._pickCommitted(clientX, clientY)
+    if (!hit) {
+      this._lastSelectPointer = undefined
+      if (this._selectedIds.size > 0) {
+        this._deselect(true)
+        return true
+      }
+      return false
+    }
+    const next = {
+      t: performance.now(),
+      x: clientX,
+      y: clientY,
+      id: hit.record.id
+    }
+    const isDouble =
+      this._lastSelectPointer?.id === hit.record.id &&
+      isAcExMarkupDoublePointer(this._lastSelectPointer, next)
+    this._lastSelectPointer = next
+
+    this._selectedIds.clear()
+    this._selectedIds.add(hit.record.id)
+    this._applySelectionStyles()
+    this._onStyleChange?.()
+    this._statusEl.textContent = this._i18n.t('status.markupSelected', {
+      type: hit.record.type
+    })
+
+    if (isDouble && hit.record.type !== 'stamp') {
+      const badge = hit.parts.dom.find(el =>
+        el.classList.contains('mlcad-markup-badge')
+      )
+      if (badge) {
+        this._editText(hit.record.id, badge)
+      }
+    }
+
+    this._view.render()
+    return true
+  }
+
+  private _pickCommitted(
+    clientX: number,
+    clientY: number
+  ): AcExCommittedMarkup | null {
+    const worldToScreen = (p: AcExMarkupPoint2d) => {
+      const s = this._view.wcsToScreen(toVector2(p))
+      return s
+    }
+    for (let i = this._committed.length - 1; i >= 0; i--) {
+      const item = this._committed[i]!
+      // Prefer text-box / stamp hit so labels are easy to select.
+      for (const el of item.parts.dom) {
+        if (
+          !el.classList.contains('mlcad-markup-badge') &&
+          !el.classList.contains('mlcad-markup-stamp')
+        ) {
+          continue
+        }
+        const rect = el.getBoundingClientRect()
+        if (
+          clientX >= rect.left &&
+          clientX <= rect.right &&
+          clientY >= rect.top &&
+          clientY <= rect.bottom
+        ) {
+          return item
+        }
+      }
+      // Endpoint dots
+      for (const el of item.parts.dom) {
+        if (!el.classList.contains('mlcad-markup-dot')) continue
+        const rect = el.getBoundingClientRect()
+        if (
+          clientX >= rect.left &&
+          clientX <= rect.right &&
+          clientY >= rect.top &&
+          clientY <= rect.bottom
+        ) {
+          return item
+        }
+      }
+      if (
+        acExHitTestMarkup(
+          item.record,
+          clientX,
+          clientY,
+          MARKUP_HIT_THRESHOLD_PX,
+          worldToScreen
+        )
+      ) {
+        return item
+      }
+    }
+    return null
+  }
+
+  private _deselect(render: boolean): void {
+    if (this._selectedIds.size === 0) return
+    this._selectedIds.clear()
+    this._applySelectionStyles()
+    this._onStyleChange?.()
+    if (render) {
+      this._updateIdleStatus()
+      this._view.render()
+    }
+  }
+
+  private _applySelectionStyles(): void {
+    for (const item of this._committed) {
+      const selected = this._selectedIds.has(item.record.id)
+      const baseColor = item.record.style.color || ACEX_MARKUP_COLOR
+      for (const el of item.parts.dom) {
+        el.classList.toggle('mlcad-markup-selected', selected)
+        // Keep original colors; selection is shown via CSS glow only.
+        if (
+          el.classList.contains('mlcad-markup-badge') ||
+          el.classList.contains('mlcad-markup-stamp')
+        ) {
+          el.style.color = baseColor
+          el.style.borderColor = baseColor
+        } else if (el.classList.contains('mlcad-markup-dot')) {
+          el.style.background = baseColor
+        }
+      }
+      for (const canvas of item.parts.canvases) {
+        canvas.classList.toggle('mlcad-markup-selected', selected)
+      }
+    }
+    for (const fn of this._redrawListeners) fn()
+  }
+
+  private _positionDomOverlays(): void {
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    for (const item of this._committed) {
+      for (const el of item.parts.dom) {
+        const x = Number(el.dataset.wcsX)
+        const y = Number(el.dataset.wcsY)
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue
+        const screen = this._view.wcsToScreen(new THREE.Vector2(x, y))
+        el.style.left = `${screen.x - rootRect.left}px`
+        el.style.top = `${screen.y - rootRect.top}px`
+      }
+    }
+    const placing = this._placingShapeCallout
+    if (placing) {
+      this._positionTempDom(placing.badge)
+      this._positionTempDom(placing.tipDot)
+    }
+  }
+
+  private _resolvePointerWithOsnap(
+    clientX: number,
+    clientY: number
+  ): THREE.Vector2 {
+    const cacheKey = this._view.getSnapCacheKey()
+    if (
+      this._osnapCache &&
+      this._osnapCache.clientX === clientX &&
+      this._osnapCache.clientY === clientY &&
+      this._osnapCache.cacheKey === cacheKey
+    ) {
+      const snap = this._osnapCache.snap
+      if (snap) {
+        this._onOsnapMarker(snap, this._view.wcsToScreen(this._osnapCache.point))
+      } else {
+        this._onOsnapMarker(null, null)
+      }
+      return this._osnapCache.point
+    }
+    const resolved = this._view.resolvePoint(clientX, clientY)
+    let point = resolved.point
+    const tracking = this._getTrackingOptions?.()
+    const reference =
+      this._mode && this._points.length > 0
+        ? this._points[this._points.length - 1]!
+        : null
+    if (tracking && reference && (tracking.ortho || tracking.polar)) {
+      const constrained = constrainToAcExTracking(point, reference, tracking)
+      point = new THREE.Vector2(constrained.x, constrained.y)
+    }
+    this._osnapCache = {
+      clientX,
+      clientY,
+      cacheKey,
+      point: point.clone(),
+      snap: resolved.snap
+    }
+    if (resolved.snap) {
+      this._onOsnapMarker(resolved.snap, this._view.wcsToScreen(point))
+    } else {
+      this._onOsnapMarker(null, null)
+    }
+    return point
+  }
+
+  private _refreshActivePreview(): void {
+    if (this._awaitingInlineText || isAcExMarkupHtmlTextEditing()) {
+      // Keep frozen shape+leader visible while typing after anchor is placed.
+      if (this._placingShapeCallout) {
+        this._paintPlacingShapeCalloutPreview(this._placingShapeCallout)
+      }
+      return
+    }
+    if (
+      (!this._mode && !this._placingShapeCallout) ||
+      !this._lastPointer ||
+      this._inOverlaySync
+    ) {
+      if (!this._mode && !this._placingShapeCallout) this._clearPreview()
+      return
+    }
+
+    if (this._placingShapeCallout) {
+      const cursor = this._resolvePointerWithOsnap(
+        this._lastPointer.x,
+        this._lastPointer.y
+      )
+      const placing = this._placingShapeCallout
+      const anchor = point2(cursor)
+      const tip = acExComputeLeaderTipOnShape(placing.outline, anchor)
+      placing.tip = tip
+      placing.anchor = anchor
+      placing.badge.dataset.wcsX = String(anchor.x)
+      placing.badge.dataset.wcsY = String(anchor.y)
+      placing.tipDot.dataset.wcsX = String(tip.x)
+      placing.tipDot.dataset.wcsY = String(tip.y)
+      this._positionTempDom(placing.badge)
+      this._positionTempDom(placing.tipDot)
+      this._paintPlacingShapeCalloutPreview(placing)
+      return
+    }
+
+    const cursor = this._resolvePointerWithOsnap(
+      this._lastPointer.x,
+      this._lastPointer.y
+    )
+    const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
+    if (!ctx) return
+    const color = this._drawColor
+    const lineWidth = acExMarkupCanvasLineWidth(this._drawLineWeight)
+
+    if (this._points.length === 0) return
+    const a = this._points[0]!
+    const b = cursor
+
+    if (this._mode === 'arrow') {
+      this._strokeGeometry(
+        ctx,
+        { type: 'arrow', start: point2(a), end: point2(b) },
+        color,
+        lineWidth
+      )
+    } else if (this._mode === 'rect') {
+      this._strokeGeometry(
+        ctx,
+        { type: 'rect', corner1: point2(a), corner2: point2(b) },
+        color,
+        lineWidth
+      )
+    } else if (this._mode === 'cloud') {
+      acExStrokeMarkupCloud(
+        ctx,
+        point2(a),
+        point2(b),
+        p => this._worldToOverlay(p),
+        s => this._overlayToWorld(s),
+        color,
+        lineWidth
+      )
+    } else if (this._mode === 'circle') {
+      const radius = a.distanceTo(b)
+      this._strokeGeometry(
+        ctx,
+        { type: 'circle', center: point2(a), radius },
+        color,
+        lineWidth
+      )
+    } else if (this._mode === 'callout') {
+      const tip = this._worldToOverlay(point2(a))
+      const anchor = this._worldToOverlay(point2(b))
+      acExDrawMarkupLeader(ctx, tip, anchor, color, true, lineWidth)
+    }
+  }
+
+  private _paintPlacingShapeCalloutPreview(
+    placing: AcExPlacingShapeCallout
+  ): void {
+    const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
+    if (!ctx) return
+    const color = this._drawColor
+    const lineWidth = acExMarkupCanvasLineWidth(this._drawLineWeight)
+    const outline = placing.outline
+    if (outline.kind === 'circle') {
+      this._strokeGeometry(
+        ctx,
+        {
+          type: 'circle',
+          center: outline.center,
+          radius: outline.radius
+        },
+        color,
+        lineWidth
+      )
+    } else if (outline.kind === 'cloud') {
+      acExStrokeMarkupCloud(
+        ctx,
+        outline.corner1,
+        outline.corner2,
+        p => this._worldToOverlay(p),
+        s => this._overlayToWorld(s),
+        color,
+        lineWidth
+      )
+    } else {
+      this._strokeGeometry(
+        ctx,
+        {
+          type: 'rect',
+          corner1: outline.corner1,
+          corner2: outline.corner2
+        },
+        color,
+        lineWidth
+      )
+    }
+    const tip = this._worldToOverlay(placing.tip)
+    const anchor = this._worldToOverlay(placing.anchor)
+    acExDrawMarkupLeader(ctx, tip, anchor, color, false, lineWidth)
+  }
+
+  private _clearPreview(): void {
+    const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
+    if (ctx) {
+      // already cleared by fit
+    }
+  }
+
+  private _hintForMode(mode: AcExMarkupMode): string {
+    switch (mode) {
+      case 'cloud':
+        return this._i18n.t('status.markupCloudHint')
+      case 'callout':
+        return this._i18n.t('status.markupCalloutHint')
+      case 'text':
+        return this._i18n.t('status.markupTextHint')
+      case 'rect':
+        return this._i18n.t('status.markupRectHint')
+      case 'circle':
+        return this._i18n.t('status.markupCircleHint')
+      case 'arrow':
+        return this._i18n.t('status.markupArrowHint')
+      case 'stamp':
+        return this._i18n.t('status.markupStampHint')
+      default:
+        return this._getReadyStatus()
+    }
+  }
+
+  private _hintForSecondPoint(
+    kind: 'arrow' | 'rect' | 'cloud' | 'callout'
+  ): string {
+    switch (kind) {
+      case 'arrow':
+        return this._i18n.t('status.markupArrowEndHint')
+      case 'rect':
+        return this._i18n.t('status.markupRectCornerHint')
+      case 'cloud':
+        return this._i18n.t('status.markupCloudCornerHint')
+      case 'callout':
+        return this._i18n.t('status.markupCalloutAnchorHint')
+    }
+  }
+
+  private _updateToolbarActive(): void {
+    document.querySelectorAll('[data-markup-mode]').forEach(btn => {
+      const mode = btn.getAttribute('data-markup-mode')
+      btn.classList.toggle('active', mode === this._mode)
+    })
+    document
+      .getElementById('mlcad-markup-menu-btn')
+      ?.classList.toggle('active', this._mode !== null)
+  }
+
+  private _updateVisibilityToolbar(): void {
+    const buttons = document.querySelectorAll(
+      '[data-action="markup-visibility"]'
+    )
+    if (buttons.length === 0) return
+    // Action-oriented: when markups are visible, offer Hide (slashed eye).
+    const titleKey = this._visible
+      ? 'toolbar.markupHide'
+      : 'toolbar.markupShow'
+    const icon = this._visible
+      ? acExHtmlIcons.markupHide
+      : acExHtmlIcons.markupShow
+    const label = this._i18n.t(titleKey)
+    buttons.forEach(btn => {
+      btn.classList.toggle('active', this._visible)
+      btn.classList.toggle('is-toggled', this._visible)
+      btn.setAttribute('data-i18n-key', titleKey)
+      btn.setAttribute('title', label)
+      btn.setAttribute('aria-label', label)
+      const labelEl = btn.querySelector('.mlcad-dropdown-label')
+      if (labelEl) {
+        labelEl.setAttribute('data-i18n-key', titleKey)
+        labelEl.textContent = label
+      }
+      const iconHost = btn.querySelector('.mlcad-dropdown-icon')
+      if (iconHost) {
+        iconHost.innerHTML = icon
+      } else {
+        btn.innerHTML = icon
+      }
+    })
+  }
+
+  private _updateIdleStatus(): void {
+    if (this._mode) return
+    if (this._selectedIds.size > 0) {
+      this._statusEl.textContent = this._i18n.t('status.markupSelected', {
+        type: String(this._selectedIds.size)
+      })
+      return
+    }
+    if (this._committed.length > 0) {
+      this._statusEl.textContent = this._i18n.t('status.markupCount', {
+        count: String(this._committed.length)
+      })
+      return
+    }
+    this._statusEl.textContent = this._getReadyStatus()
+  }
+}

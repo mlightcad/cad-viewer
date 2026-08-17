@@ -5,13 +5,16 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
+import { setupAcExDrawStyleToolbar } from './AcExDrawStyleToolbar'
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
+import { setupAcExHtmlToolbarFlyouts } from './AcExHtmlToolbarFlyout'
 import {
   computeLayerExtentsMap,
   resolveLayoutViewExtents
 } from './AcExLayerExtents'
+import { AcExMarkupController, type AcExMarkupMode } from './AcExMarkup'
 import { AcExMeasureController, type AcExMeasureMode } from './AcExMeasurement'
 import { AcExOsnapIndex } from './AcExOsnap'
 import { AcExOsnapMarker } from './AcExOsnapMarker'
@@ -304,12 +307,28 @@ function startViewer(): void {
   }
 
   let measure: AcExMeasureController | null = null
+  let markup: AcExMarkupController | null = null
   const measureSettingsRef: {
     current: ReturnType<typeof setupAcExHtmlMeasureSettings> | null
   } = { current: null }
+  const toolbarFlyoutsRef: {
+    current: ReturnType<typeof setupAcExHtmlToolbarFlyouts> | null
+  } = { current: null }
+  const drawStyleToolbarRef: {
+    current: ReturnType<typeof setupAcExDrawStyleToolbar> | null
+  } = { current: null }
+
+  const isToolActive = () =>
+    measure?.isActive === true || markup?.isActive === true
+
+  const setLeftPanForTools = () => {
+    setOrbitLeftButtonPan(controls, !isToolActive())
+    drawStyleToolbarRef.current?.refresh()
+  }
 
   const render = () => {
     measure?.syncOverlays()
+    markup?.syncOverlays()
     renderer.render(scene, camera)
   }
 
@@ -320,6 +339,7 @@ function startViewer(): void {
       i18n,
       statusEl,
       getReadyStatus: () => readyStatus,
+      drawingName: snapshot.meta.title,
       onOsnapMarker: (snap, screen) => {
         if (snap && screen) {
           osnapMarker?.show(screen.x, screen.y, snap.mode)
@@ -329,8 +349,11 @@ function startViewer(): void {
       },
       getTrackingOptions: () =>
         measureSettingsRef.current?.getTrackingOptions() ?? null,
-      onActiveChange: active => {
-        setOrbitLeftButtonPan(controls, !active)
+      onActiveChange: () => {
+        setLeftPanForTools()
+      },
+      onStyleChange: () => {
+        drawStyleToolbarRef.current?.refresh()
       },
       view: {
         screenToWcs,
@@ -343,11 +366,66 @@ function startViewer(): void {
       }
     })
 
+    markup = new AcExMarkupController({
+      root,
+      i18n,
+      statusEl,
+      getReadyStatus: () => readyStatus,
+      drawingName: snapshot.meta.title,
+      onOsnapMarker: (snap, screen) => {
+        if (snap && screen) {
+          osnapMarker?.show(screen.x, screen.y, snap.mode)
+        } else {
+          osnapMarker?.hide()
+        }
+      },
+      onBeforeActivate: () => {
+        measure?.cancelMode()
+      },
+      onActiveChange: () => {
+        setLeftPanForTools()
+      },
+      onStyleChange: () => {
+        drawStyleToolbarRef.current?.refresh()
+      },
+      getTrackingOptions: () =>
+        measureSettingsRef.current?.getTrackingOptions() ?? null,
+      view: {
+        screenToWcs,
+        wcsToScreen,
+        render,
+        getSnapCacheKey: () => snapCacheKey,
+        resolvePoint: resolveMeasurePoint
+      }
+    })
+
     measureSettingsRef.current = setupAcExHtmlMeasureSettings({
       i18n,
       measure,
       angbase: snapshot.meta.units.angbase,
-      angdir: snapshot.meta.units.angdir
+      angdir: snapshot.meta.units.angdir,
+      onOpen: () => toolbarFlyoutsRef.current?.close()
+    })
+
+    drawStyleToolbarRef.current = setupAcExDrawStyleToolbar({
+      root,
+      i18n,
+      getKind: () => {
+        if (measure?.isActive) return 'measure'
+        if (markup?.isActive) return 'markup'
+        if (markup?.hasSelection) return 'markup'
+        if (measure?.hasSelection) return 'measure'
+        return undefined
+      },
+      getStyle: kind =>
+        kind === 'measure' ? measure!.getDrawStyle() : markup!.getDrawStyle(),
+      applyStyle: (kind, patch) => {
+        if (kind === 'measure') {
+          measure!.setDrawStyle(patch)
+        } else {
+          markup!.setDrawStyle(patch)
+        }
+      }
     })
   }
 
@@ -371,16 +449,6 @@ function startViewer(): void {
     ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
   })
 
-  i18n.setOnChange(() => {
-    readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
-    if (!measure?.isActive) {
-      measure?.refreshIdleStatus()
-    }
-    layerPanel?.refreshLayerLabels()
-    measureSettingsRef.current?.refreshLabels()
-    toolbarCollapse.refreshLabels()
-  })
-
   document
     .getElementById('mlcad-lang-btn')
     ?.addEventListener('click', event => {
@@ -395,43 +463,143 @@ function startViewer(): void {
     render()
   })
 
-  if (measureEnabled && measure) {
-    setupMeasurePointerInput(renderer.domElement, () => measure!, render)
+  if (measureEnabled && measure && markup) {
+    setupToolPointerInput(
+      renderer.domElement,
+      () => measure!,
+      () => markup!,
+      render
+    )
   }
 
-  setupPanCursorFeedback(renderer.domElement, () => measure?.isActive === true)
+  setupPanCursorFeedback(renderer.domElement, () => isToolActive())
 
   renderer.domElement.addEventListener('contextmenu', event => {
     event.preventDefault()
   })
+
+  const handleToolbarAction = (button: HTMLElement) => {
+    const action = button.getAttribute('data-action')
+    if (action === 'fit') {
+      fit()
+    } else if (action === 'clear-measurements') {
+      measure?.clearAll()
+    } else if (action === 'measure-visibility') {
+      measure?.toggleVisible()
+    } else if (action === 'measure-import') {
+      measure?.importSidecar()
+    } else if (action === 'measure-export') {
+      measure?.exportSidecar()
+    } else if (action === 'clear-markups') {
+      markup?.clearAll()
+    } else if (action === 'markup-visibility') {
+      markup?.toggleVisible()
+    } else if (action === 'markup-import') {
+      markup?.importSidecar()
+    } else if (action === 'markup-export') {
+      markup?.exportSidecar()
+    } else if (action === 'measure') {
+      markup?.cancelMode()
+      const mode = button.getAttribute(
+        'data-measure-mode'
+      ) as AcExMeasureMode | null
+      if (mode) {
+        measure?.setMode(mode)
+      }
+    } else if (action === 'markup') {
+      measure?.cancelMode()
+      const mode = button.getAttribute(
+        'data-markup-mode'
+      ) as AcExMarkupMode | null
+      if (mode) {
+        markup?.setMode(mode)
+      }
+    }
+  }
 
   document
     .querySelectorAll('#mlcad-toolbar button[data-action]')
     .forEach(button => {
       button.addEventListener('click', () => {
         const action = button.getAttribute('data-action')
-        if (action === 'fit') {
-          fit()
-        } else if (action === 'clear-measurements') {
-          measure?.clearAll()
-        } else if (action === 'measure') {
-          const mode = button.getAttribute(
-            'data-measure-mode'
-          ) as AcExMeasureMode | null
-          if (mode) {
-            measure?.setMode(mode)
-          }
-        }
+        // Parent menu buttons are handled by the flyout controller.
+        if (action === 'measure-menu' || action === 'markup-menu') return
+        handleToolbarAction(button as HTMLElement)
       })
     })
 
-  if (measureEnabled && measure) {
+  const toolbarFlyouts =
+    measureEnabled && measure && markup
+      ? setupAcExHtmlToolbarFlyouts({
+          onItemClick: handleToolbarAction,
+          closeOtherPanels: () => {
+            measureSettingsRef.current?.close()
+          },
+          onOpen: (menuId, menuRoot) => {
+            if (menuId === 'measure') {
+              measure!.setVisible(measure!.visible)
+              menuRoot
+                .querySelectorAll('[data-measure-mode]')
+                .forEach(btn => {
+                  const mode = btn.getAttribute('data-measure-mode')
+                  btn.classList.toggle('active', mode === measure!.mode)
+                })
+            } else {
+              markup!.setVisible(markup!.visible)
+              menuRoot
+                .querySelectorAll('[data-markup-mode]')
+                .forEach(btn => {
+                  const mode = btn.getAttribute('data-markup-mode')
+                  btn.classList.toggle('active', mode === markup!.mode)
+                })
+            }
+          }
+        })
+      : null
+  toolbarFlyoutsRef.current = toolbarFlyouts
+
+  i18n.setOnChange(() => {
+    readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
+    if (!measure?.isActive && !markup?.isActive) {
+      measure?.refreshIdleStatus()
+      markup?.refreshIdleStatus()
+    }
+    layerPanel?.refreshLayerLabels()
+    measureSettingsRef.current?.refreshLabels()
+    drawStyleToolbarRef.current?.refreshLabels()
+    toolbarCollapse.refreshLabels()
+    toolbarFlyouts?.refreshLabels()
+    // Re-apply visibility button label after i18n DOM refresh.
+    if (markup) {
+      markup.setVisible(markup.visible)
+    }
+    if (measure) {
+      measure.setVisible(measure.visible)
+    }
+    drawStyleToolbarRef.current?.refresh()
+  })
+
+  if (measureEnabled && measure && markup) {
     window.addEventListener('keydown', event => {
-      if (measure!.handleKeyDown(event.key)) {
+      // Don't steal keys from real text fields; markup inline edit uses
+      // stopPropagation on its own keydown handler.
+      const target = event.target as HTMLElement | null
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        (target?.isContentEditable &&
+          target.closest('.mlcad-markup-text-editing'))
+      ) {
+        return
+      }
+      if (measure!.handleKeyDown(event.key) || markup!.handleKeyDown(event.key)) {
         event.preventDefault()
         return
       }
-      if (measure!.handleSelectionKeyDown(event.key, event)) {
+      if (
+        measure!.handleSelectionKeyDown(event.key, event) ||
+        markup!.handleSelectionKeyDown(event.key, event)
+      ) {
         event.preventDefault()
       }
     })
@@ -494,11 +662,22 @@ function setupToolbarCollapse(
     layersBtn?.setAttribute('aria-expanded', 'false')
 
     if (settingsWrap) settingsWrap.hidden = true
-    settingsBtn?.classList.remove('active')
+    settingsBtn?.classList.remove('active', 'is-menu-open')
     settingsBtn?.setAttribute('aria-expanded', 'false')
 
     if (polarPanel) polarPanel.hidden = true
     polarBtn?.setAttribute('aria-expanded', 'false')
+
+    const measureStrip = document.getElementById('mlcad-measure-strip-wrap')
+    const markupStrip = document.getElementById('mlcad-markup-strip-wrap')
+    const measureMenuBtn = document.getElementById('mlcad-measure-menu-btn')
+    const markupMenuBtn = document.getElementById('mlcad-markup-menu-btn')
+    if (measureStrip) measureStrip.hidden = true
+    if (markupStrip) markupStrip.hidden = true
+    measureMenuBtn?.classList.remove('active', 'is-menu-open')
+    measureMenuBtn?.setAttribute('aria-expanded', 'false')
+    markupMenuBtn?.classList.remove('active', 'is-menu-open')
+    markupMenuBtn?.setAttribute('aria-expanded', 'false')
   }
 
   const syncToggle = () => {
@@ -811,12 +990,13 @@ function setupPanCursorFeedback(
 }
 
 /**
- * Left-button measure picking / selection on capture so selection can block
+ * Left-button tool picking / selection on capture so selection can block
  * OrbitControls pan; while a tool is active left pan is already toggled off.
  */
-function setupMeasurePointerInput(
+function setupToolPointerInput(
   domElement: HTMLElement,
   getMeasure: () => AcExMeasureController,
+  getMarkup: () => AcExMarkupController,
   render: () => void
 ): void {
   let pendingMove: { clientX: number; clientY: number } | null = null
@@ -828,9 +1008,16 @@ function setupMeasurePointerInput(
     pendingMove = null
     if (!sample) return
     const measure = getMeasure()
-    if (!measure.isActive) return
-    measure.handlePointerMove(sample.clientX, sample.clientY)
-    render()
+    const markup = getMarkup()
+    if (measure.isActive) {
+      measure.handlePointerMove(sample.clientX, sample.clientY)
+      render()
+      return
+    }
+    if (markup.isActive) {
+      markup.handlePointerMove(sample.clientX, sample.clientY)
+      render()
+    }
   }
 
   domElement.addEventListener(
@@ -838,15 +1025,31 @@ function setupMeasurePointerInput(
     event => {
       if (event.button !== 0) return
       const measure = getMeasure()
+      const markup = getMarkup()
       if (measure.isActive) {
         if (measure.handlePointerDown(event.clientX, event.clientY)) {
+          if (measure.hasSelection) markup.clearSelection()
+          render()
+        }
+        return
+      }
+      if (markup.isActive) {
+        if (markup.handlePointerDown(event.clientX, event.clientY)) {
+          if (markup.hasSelection) measure.clearSelection()
           render()
         }
         return
       }
       // Capture phase: stop before OrbitControls starts left-button pan.
+      if (markup.handleSelectionPointerDown(event.clientX, event.clientY)) {
+        event.stopImmediatePropagation()
+        if (markup.hasSelection) measure.clearSelection()
+        render()
+        return
+      }
       if (measure.handleSelectionPointerDown(event.clientX, event.clientY)) {
         event.stopImmediatePropagation()
+        if (measure.hasSelection) markup.clearSelection()
         render()
       }
     },
@@ -854,7 +1057,8 @@ function setupMeasurePointerInput(
   )
   domElement.addEventListener('pointermove', event => {
     const measure = getMeasure()
-    if (!measure.isActive) return
+    const markup = getMarkup()
+    if (!measure.isActive && !markup.isActive) return
     pendingMove = { clientX: event.clientX, clientY: event.clientY }
     if (moveRaf === 0) {
       moveRaf = requestAnimationFrame(flushPointerMove)

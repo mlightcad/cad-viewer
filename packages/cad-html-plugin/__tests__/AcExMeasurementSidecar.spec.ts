@@ -1,0 +1,71 @@
+import {
+  acExMeasurementSidecarFileName,
+  parseAcExMeasurementSidecar,
+  stringifyAcExMeasurementSidecar
+} from '../src/AcExMeasurementSidecar'
+import type { AcExMeasurementSidecarFile } from '../src/AcExMeasurementTypes'
+
+describe('AcExMeasurementSidecar', () => {
+  const sample: AcExMeasurementSidecarFile = {
+    version: 1,
+    drawingName: 'plan.dwg',
+    measurements: [
+      {
+        id: 'm1',
+        type: 'distance',
+        style: { color: '#08e8de', lineWeight: 70, fontSize: 13 },
+        geometry: {
+          type: 'distance',
+          start: { x: 0, y: 0 },
+          end: { x: 10, y: 0 }
+        }
+      },
+      {
+        id: 'm2',
+        type: 'point',
+        style: { color: '#08e8de', lineWeight: 70, fontSize: 13 },
+        geometry: { type: 'point', position: { x: 3, y: 4 } }
+      },
+      {
+        id: 'm3',
+        type: 'arc',
+        style: { color: '#ff0000', lineWeight: 70, fontSize: 13 },
+        geometry: {
+          type: 'arc',
+          center: { x: 0, y: 0 },
+          radius: 5,
+          start: { x: 5, y: 0 },
+          end: { x: 0, y: 5 }
+        }
+      }
+    ]
+  }
+
+  it('round-trips sidecar JSON', () => {
+    const text = stringifyAcExMeasurementSidecar(sample)
+    const parsed = parseAcExMeasurementSidecar(text)
+    expect(parsed.version).toBe(1)
+    expect(parsed.drawingName).toBe('plan.dwg')
+    expect(parsed.measurements).toHaveLength(3)
+    expect(parsed.measurements[0]?.type).toBe('distance')
+    expect(parsed.measurements[1]?.type).toBe('point')
+    expect(parsed.measurements[2]?.geometry.type).toBe('arc')
+  })
+
+  it('rejects invalid payloads', () => {
+    expect(() => parseAcExMeasurementSidecar('not-json')).toThrow(/not JSON/)
+    expect(() =>
+      parseAcExMeasurementSidecar('{"version":2,"measurements":[]}')
+    ).toThrow(/version 1/)
+  })
+
+  it('suggests sidecar file names', () => {
+    expect(acExMeasurementSidecarFileName('plan.dwg')).toBe(
+      'plan.measurement.json'
+    )
+    expect(acExMeasurementSidecarFileName('plan.html')).toBe(
+      'plan.measurement.json'
+    )
+    expect(acExMeasurementSidecarFileName()).toBe('drawing.measurement.json')
+  })
+})
