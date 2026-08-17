@@ -219,6 +219,8 @@ export class AcExMarkupController {
   /** Blocks canvas placement while an inline text session is open. */
   private _awaitingInlineText = false
   private _inlineAbort: AbortController | null = null
+  /** True while a peer create tool (e.g. measure) is armed. */
+  private _peerToolActive = false
   private _lastSelectPointer:
     | { t: number; x: number; y: number; id: string }
     | undefined
@@ -268,6 +270,16 @@ export class AcExMarkupController {
   /** Clears the current markup selection (if any). */
   clearSelection(): void {
     this._deselect(true)
+  }
+
+  /**
+   * Suspends markup grip/badge pointer hit-testing while a peer create tool
+   * (e.g. measure) is armed, so overlay DOM cannot steal OSNAP placement clicks.
+   */
+  setPeerToolActive(active: boolean): void {
+    if (this._peerToolActive === active) return
+    this._peerToolActive = active
+    this._syncGripPointerEvents()
   }
 
   get mode(): AcExMarkupMode | null {
@@ -500,9 +512,9 @@ export class AcExMarkupController {
       this._completeShapeCalloutAnchor(point)
       return true
     }
-    if (this._trySelectCommittedAt(clientX, clientY)) {
-      return true
-    }
+    // While a markup tool is armed, never select/highlight committed overlays —
+    // grip/badge DOM and stroke hits coincide with CAD grips/OSNAP and would
+    // steal placement clicks. Idle selection uses {@link handleSelectionPointerDown}.
     if (!this._mode) return false
     this._lastPointer = { x: clientX, y: clientY }
     const point = this._resolvePointerWithOsnap(clientX, clientY)
@@ -1121,9 +1133,11 @@ export class AcExMarkupController {
   }
 
   private _gripsEnabled(): boolean {
-    // Allow editing grips even while a create tool is armed; only block during
-    // an in-progress draw / callout placement / inline text session.
+    // Match live viewer: while any create tool is armed (own or peer), do not
+    // let committed markup grips/badges receive pointer events.
     return (
+      !this._peerToolActive &&
+      this._mode === null &&
       !this._placingShapeCallout &&
       !this._awaitingInlineText &&
       !isAcExMarkupHtmlTextEditing() &&

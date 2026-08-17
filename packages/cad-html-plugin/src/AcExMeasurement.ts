@@ -1143,15 +1143,16 @@ export class AcExMeasureController {
   }
 
   /**
-   * Handles a pointer-down while a measurement tool is active.
+   * Handles a pointer-down while a measurement tool is active (placement / OSNAP only).
+   * Committed overlay selection is idle-only via {@link handleSelectionPointerDown}.
    * @param clientX - Pointer X in viewport pixels.
    * @param clientY - Pointer Y in viewport pixels.
    * @returns `true` when the event was handled.
    */
   handlePointerDown(clientX: number, clientY: number): boolean {
-    if (this._trySelectCommittedAt(clientX, clientY)) {
-      return true
-    }
+    // While a measure tool is armed, never select/highlight committed overlays —
+    // endpoint dots coincide with CAD grips/OSNAP and would steal placement clicks.
+    // Idle selection uses {@link handleSelectionPointerDown} instead.
     if (!this._mode) return false
     this._lastPointer = { x: clientX, y: clientY }
     const point = this._resolvePointerWithOsnap(clientX, clientY)
