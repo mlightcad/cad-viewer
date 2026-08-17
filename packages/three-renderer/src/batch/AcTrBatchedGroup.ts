@@ -840,6 +840,15 @@ export class AcTrBatchedGroup extends THREE.Group {
     layerTraits: Partial<AcGiSubEntityTraits>,
     styleManager?: AcTrStyleManager
   ) {
+    // Only rewrite colour when the material is actually colour-bound to the
+    // layer. `followsLayerStyle` is also true for ByLayer lineweight / linetype
+    // alone; applying the layer colour in those cases clobbers absolute entity
+    // colours (e.g. true-color solid hatches on an ACI-7 layer become white).
+    const metadata = getMaterialMetadata(material)
+    if (metadata.isByLayerColor !== true) {
+      return
+    }
+
     // An ACI-7 (foreground) layer colour is theme-dependent: applying its raw
     // RGB bakes white onto a light canvas (#464). Resolve it against the
     // current background, and keep the clone's isForeground metadata in sync
