@@ -1150,7 +1150,14 @@ export class AcExMarkupController {
     this._positionTempDom(el)
   }
 
+  /**
+   * Replaces the selection with only `id` (used when starting a grip edit so
+   * delete/style/status target the gripped markup).
+   */
   private _selectOnly(id: string): void {
+    if (!(this._selectedIds.size === 1 && this._selectedIds.has(id))) {
+      this._selectedIds.clear()
+    }
     this._select(id)
   }
 
