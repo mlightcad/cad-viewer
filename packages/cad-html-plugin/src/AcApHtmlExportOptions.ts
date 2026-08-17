@@ -23,8 +23,8 @@ export interface AcApHtmlExportOptions {
    */
   initialView?: AcExInitialViewMode
   /**
-   * Offline viewer capability profile. `'view'` omits OSNAP data and measurement
-   * UI for a smaller, faster HTML file. Defaults to `'measure'`.
+   * Offline viewer capability profile. `'view'` omits OSNAP data, measurement,
+   * and markup UI for a smaller, faster HTML file. Defaults to `'measure'`.
    */
   viewerMode?: AcExViewerMode
 }

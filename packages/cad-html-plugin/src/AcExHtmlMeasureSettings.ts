@@ -39,6 +39,8 @@ export interface AcExHtmlMeasureSettingsContext {
   measure: AcExMeasureController
   angbase: number
   angdir: number
+  /** Close sibling sidebar panels (tool strips) when settings opens. */
+  onOpen?: () => void
 }
 
 function hexToCss(hex: number): string {
@@ -160,11 +162,7 @@ export function buildAcExHtmlSettingsStrip(): string {
 
   return `
       <div id="mlcad-settings-wrap" hidden>
-        <div id="mlcad-settings-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="settings.toolbar" aria-label="Measure settings">
-          <button type="button" class="mlcad-tool-btn mlcad-color-btn" id="mlcad-measure-color-btn" data-i18n-key="settings.measureColor" data-i18n-attr="title aria-label" title="Measure color" aria-label="Measure color">
-            ${acExHtmlIcons.color}
-          </button>
-          <input type="color" id="mlcad-measure-color-input" class="mlcad-color-input" value="${hexToCss(ACEX_DEFAULT_MEASURE_COLOR)}" tabindex="-1" aria-hidden="true" />
+        <div id="mlcad-settings-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="settings.toolbar" aria-label="Settings">
           ${acExToolbarButton(acExHtmlIcons.orthoMode, 'Orthogonal mode', {
             id: 'mlcad-ortho-btn',
             'data-toggle': 'ortho',
@@ -193,10 +191,13 @@ export interface AcExHtmlMeasureSettingsController {
   getTrackingOptions(): AcExTrackingOptions
   /** Reapplies i18n labels after locale change. */
   refreshLabels: () => void
+  /** Closes the settings strip (and polar panel). */
+  close: () => void
 }
 
 /**
- * Wires the measure settings strip: color picker, ortho, and polar tracking.
+ * Wires the measure settings strip: ortho and polar tracking.
+ * Drawing color / line weight / font size live on the canvas draw-style toolbar.
  */
 export function setupAcExHtmlMeasureSettings(
   ctx: AcExHtmlMeasureSettingsContext
@@ -215,16 +216,12 @@ export function setupAcExHtmlMeasureSettings(
   const polarPanel = document.getElementById('mlcad-polar-angles')
   const orthoBtn = document.getElementById('mlcad-ortho-btn')
   const polarBtn = document.getElementById('mlcad-polar-btn')
-  const colorBtn = document.getElementById('mlcad-measure-color-btn')
-  const colorInput = document.getElementById(
-    'mlcad-measure-color-input'
-  ) as HTMLInputElement | null
 
   const persist = () => savePersistedSettings(state)
 
   const syncMeasureColor = () => {
     applyMeasureColorCss(state.measureColor)
-    ctx.measure.setMeasureColor(state.measureColor)
+    ctx.measure.setDrawStyle({ colorHex: state.measureColor })
   }
 
   const syncTrackingButtons = () => {
@@ -255,8 +252,10 @@ export function setupAcExHtmlMeasureSettings(
   }
 
   const setSettingsOpen = (open: boolean) => {
+    if (open) ctx.onOpen?.()
     if (settingsWrap) settingsWrap.hidden = !open
     settingsBtn?.classList.toggle('active', open)
+    settingsBtn?.classList.toggle('is-menu-open', open)
     settingsBtn?.setAttribute('aria-expanded', String(open))
     if (!open) setPolarPanelOpen(false)
   }
@@ -309,25 +308,11 @@ export function setupAcExHtmlMeasureSettings(
   syncMeasureColor()
   syncTrackingButtons()
   syncPolarAngleButtons()
-  if (colorInput) colorInput.value = hexToCss(state.measureColor)
 
   settingsBtn?.addEventListener('click', event => {
     event.stopPropagation()
     const open = settingsWrap?.hidden !== false
     setSettingsOpen(open)
-  })
-
-  colorBtn?.addEventListener('click', event => {
-    event.stopPropagation()
-    colorInput?.click()
-  })
-
-  colorInput?.addEventListener('input', () => {
-    const hex = Number.parseInt(colorInput.value.slice(1), 16)
-    if (!Number.isFinite(hex)) return
-    state.measureColor = hex
-    syncMeasureColor()
-    persist()
   })
 
   orthoBtn?.addEventListener('click', event => {
@@ -360,14 +345,8 @@ export function setupAcExHtmlMeasureSettings(
       })
     })
 
-  document.addEventListener('click', event => {
-    if (settingsWrap?.hidden) return
-    const target = event.target
-    if (!(target instanceof Node)) return
-    const sidebar = document.getElementById('mlcad-sidebar')
-    if (sidebar?.contains(target)) return
-    setSettingsOpen(false)
-  })
+  // Settings strip stays open until the Settings button is clicked again
+  // (or another parent strip opens). Canvas clicks must not dismiss it.
 
   const refreshLabels = () => {
     ctx.i18n.applyToDocument(
@@ -389,6 +368,7 @@ export function setupAcExHtmlMeasureSettings(
         angdir: ctx.angdir
       }
     },
-    refreshLabels
+    refreshLabels,
+    close: () => setSettingsOpen(false)
   }
 }

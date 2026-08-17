@@ -8,6 +8,20 @@
 import * as THREE from 'three'
 
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
+import { acExHtmlIcons } from './AcExHtmlIcons'
+import {
+  ACEX_MEASUREMENT_FONT_SIZE,
+  ACEX_MEASUREMENT_LINE_WEIGHT,
+  acExMeasureCanvasLineWidth,
+  acExMeasurementSidecarFileName,
+  parseAcExMeasurementSidecar,
+  stringifyAcExMeasurementSidecar
+} from './AcExMeasurementSidecar'
+import type {
+  AcExMeasurementRecord,
+  AcExMeasurementSidecarFile,
+  AcExMeasurementSidecarStyle
+} from './AcExMeasurementTypes'
 import {
   type AcExMeasureQuantity,
   type AcExMeasureQuantityEntry,
@@ -25,7 +39,7 @@ import type { AcExOsnapPoint } from './AcExOsnap'
  */
 export const ACEX_MEASURE_COLOR = 0x08e8de
 
-/** Highlight color when a committed measurement is selected. */
+/** Highlight color when a committed measurement is selected (CSS glow only). */
 export const ACEX_MEASURE_SELECT_COLOR = 0xffd54f
 
 /** CSS color string used by 2D canvas measurement overlays. */
@@ -146,6 +160,8 @@ export interface AcExMeasureControllerOptions {
   statusEl: HTMLElement
   /** Returns the idle status text when no measurement tool is active. */
   getReadyStatus: () => string
+  /** Optional drawing title used for sidecar download file names. */
+  drawingName?: string
   /**
    * Called when the snap target under the cursor changes during measurement.
    * @param snap - Active snap mode and world position, or `null` when none.
@@ -162,6 +178,8 @@ export interface AcExMeasureControllerOptions {
    * (for example to toggle left-button pan on OrbitControls).
    */
   onActiveChange?: (active: boolean) => void
+  /** Called when selection or session draw style changes (draw-style toolbar). */
+  onStyleChange?: () => void
 }
 
 /** Teardown callback registered when a measurement overlay is created. @internal */
@@ -179,6 +197,8 @@ interface AcExCommitParts {
 /** One finished measurement that can be selected and deleted. @internal */
 interface AcExCommittedMeasure {
   id: string
+  /** Sidecar-compatible record used for import/export. */
+  record: AcExMeasurementRecord
   parts: AcExCommitParts
   quantity: AcExMeasureQuantity | null
   value: number
@@ -471,6 +491,98 @@ function isAngleOnSweep(start: number, mid: number, end: number): boolean {
 }
 
 /**
+ * Arc length of the shorter arc between two points on circle `g`.
+ * @internal
+ */
+function shortArcLength(
+  p1: THREE.Vector2,
+  p2: THREE.Vector2,
+  g: AcExCircleGeom
+): number {
+  const a1 = Math.atan2(p1.y - g.cy, p1.x - g.cx)
+  const a2 = Math.atan2(p2.y - g.cy, p2.x - g.cx)
+  const span = normaliseAngle(a2 - a1)
+  return Math.min(span, 2 * Math.PI - span) * g.r
+}
+
+/**
+ * Midpoint of the shorter arc between two points on circle `g`.
+ * @internal
+ */
+function shortArcMid(
+  p1: THREE.Vector2,
+  p2: THREE.Vector2,
+  g: AcExCircleGeom
+): THREE.Vector2 {
+  const a1 = Math.atan2(p1.y - g.cy, p1.x - g.cx)
+  const a2 = Math.atan2(p2.y - g.cy, p2.x - g.cx)
+  const ccwSpan = normaliseAngle(a2 - a1)
+  const mid =
+    ccwSpan <= Math.PI ? a1 + ccwSpan / 2 : a1 - (2 * Math.PI - ccwSpan) / 2
+  return new THREE.Vector2(
+    g.cx + g.r * Math.cos(mid),
+    g.cy + g.r * Math.sin(mid)
+  )
+}
+
+/**
+ * Whether the shorter arc from `start` to `end` is counter-clockwise.
+ * @internal
+ */
+function shortArcCounterClockwise(
+  start: THREE.Vector2,
+  end: THREE.Vector2,
+  g: AcExCircleGeom
+): boolean {
+  const a1 = Math.atan2(start.y - g.cy, start.x - g.cx)
+  const a2 = Math.atan2(end.y - g.cy, end.x - g.cx)
+  return normaliseAngle(a2 - a1) <= Math.PI
+}
+
+/** Best-effort CSS color → 24-bit RGB for THREE materials. @internal */
+function cssColorToHex(css: string, fallback: number): number {
+  const s = css.trim()
+  const hex6 = s.match(/^#([0-9a-f]{6})$/i)
+  if (hex6) return Number.parseInt(hex6[1]!, 16)
+  const hex3 = s.match(/^#([0-9a-f]{3})$/i)
+  if (hex3) {
+    const h = hex3[1]!
+    return Number.parseInt(
+      `${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`,
+      16
+    )
+  }
+  const rgb = s.match(
+    /^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)/i
+  )
+  if (rgb) {
+    const r = Math.max(0, Math.min(255, Math.round(Number(rgb[1]))))
+    const g = Math.max(0, Math.min(255, Math.round(Number(rgb[2]))))
+    const b = Math.max(0, Math.min(255, Math.round(Number(rgb[3]))))
+    if ([r, g, b].every(Number.isFinite)) return (r << 16) | (g << 8) | b
+  }
+  return fallback
+}
+
+/** Sync document CSS accent vars used by measure badges / live label. @internal */
+function applyMeasureAccentCss(hex: number): void {
+  const css = measureColorToCss(hex)
+  const r = (hex >> 16) & 0xff
+  const g = (hex >> 8) & 0xff
+  const b = hex & 0xff
+  const root = document.documentElement
+  root.style.setProperty('--mlcad-measure-accent', css)
+  root.style.setProperty(
+    '--mlcad-measure-accent-border',
+    `rgba(${r}, ${g}, ${b}, 0.45)`
+  )
+  root.style.setProperty(
+    '--mlcad-measure-accent-fill',
+    `rgba(${r}, ${g}, ${b}, 0.2)`
+  )
+}
+
+/**
  * Arc sweep from `start` to `end` that passes through `through` (radians).
  * @returns `{ span, counterClockwise }` for canvas `arc()` and length = span * r.
  * @internal
@@ -581,27 +693,6 @@ function segmentsIntersect(
 }
 
 /**
- * Builds a THREE polyline geometry from WCS vertices (Z = 0).
- * @param points - At least two XY points.
- * @returns Buffer geometry, or `null` when `points.length < 2`.
- * @internal
- */
-function makeLineGeometry(
-  points: THREE.Vector2[]
-): THREE.BufferGeometry | null {
-  if (points.length < 2) return null
-  const positions = new Float32Array(points.length * 3)
-  for (let i = 0; i < points.length; i++) {
-    positions[i * 3] = points[i]!.x
-    positions[i * 3 + 1] = points[i]!.y
-    positions[i * 3 + 2] = 0
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-  return geometry
-}
-
-/**
  * Creates a persistent endpoint marker (`mlcad-measure-dot`).
  * World position is stored on `dataset.wcsX` / `dataset.wcsY` and updated by
  * {@link AcExMeasureController.syncOverlays}.
@@ -663,6 +754,8 @@ export class AcExMeasureController {
   private readonly _statusEl: HTMLElement
   /** Idle status text provider. */
   private readonly _getReadyStatus: () => string
+  /** Drawing title for sidecar download names. */
+  private readonly _drawingName: string | undefined
   /** Snap marker callback for the runtime. */
   private readonly _onOsnapMarker: AcExMeasureControllerOptions['onOsnapMarker']
   /** Ortho/polar tracking options from the settings panel. */
@@ -673,20 +766,32 @@ export class AcExMeasureController {
   private readonly _onActiveChange:
     | ((active: boolean) => void)
     | null
+  /** Notifies when selection / session draw style changes. */
+  private readonly _onStyleChange: (() => void) | null
   /** Accent color for lines, labels, and canvas overlays. */
   private _measureColor = ACEX_MEASURE_COLOR
+  /** Session line weight for new measurements. */
+  private _drawLineWeight = ACEX_MEASUREMENT_LINE_WEIGHT
+  /** Session badge font size for new measurements. */
+  private _drawFontSize = ACEX_MEASUREMENT_FONT_SIZE
+  /** Style of the measurement currently being committed (import or interactive). */
+  private _commitStyle: AcExMeasurementSidecarStyle | null = null
   /** Parent group for committed THREE line geometry. */
   private readonly _measureGroup: THREE.Group
   /** Host for canvas overlays, dots, badges, and the live label. */
   private readonly _overlayLayer: HTMLDivElement
   /** Cursor-following value shown during interactive preview. */
   private readonly _liveLabel: HTMLDivElement
+  /** Hidden file input for sidecar import. */
+  private readonly _fileInput: HTMLInputElement
   /** Rubber-band line while picking points. */
   private readonly _previewLine: THREE.Line
   /** Canvas redraw callbacks invoked from {@link syncOverlays}. */
   private readonly _redrawListeners: AcExMeasureCleanup[] = []
   /** Finished measurements that survive after the tool is deactivated. */
   private readonly _committed: AcExCommittedMeasure[] = []
+  /** When false, DOM overlays and THREE measure lines are hidden. */
+  private _visible = true
   /** Parts being assembled for the measurement currently being committed. */
   private _commitParts: AcExCommitParts | null = null
   /** Monotonic id source for {@link _committed}. */
@@ -728,9 +833,11 @@ export class AcExMeasureController {
     this._view = options.view
     this._statusEl = options.statusEl
     this._getReadyStatus = options.getReadyStatus
+    this._drawingName = options.drawingName
     this._onOsnapMarker = options.onOsnapMarker
     this._getTrackingOptions = options.getTrackingOptions ?? null
     this._onActiveChange = options.onActiveChange ?? null
+    this._onStyleChange = options.onStyleChange ?? null
 
     this._measureGroup = new THREE.Group()
     this._measureGroup.name = 'measurements'
@@ -745,6 +852,15 @@ export class AcExMeasureController {
     this._liveLabel.className = 'mlcad-measure-live-label'
     this._overlayLayer.appendChild(this._liveLabel)
 
+    this._fileInput = document.createElement('input')
+    this._fileInput.type = 'file'
+    this._fileInput.accept = '.json,application/json'
+    this._fileInput.style.display = 'none'
+    this._fileInput.addEventListener('change', () => {
+      void this._handleImportFile()
+    })
+    this._root.appendChild(this._fileInput)
+
     const previewMaterial = new THREE.LineBasicMaterial({
       color: this._measureColor,
       depthTest: false
@@ -755,6 +871,7 @@ export class AcExMeasureController {
     this._previewLine.frustumCulled = false
     this._previewLine.renderOrder = 15
     this._scene.add(this._previewLine)
+    this._updateVisibilityToolbar()
   }
 
   /**
@@ -764,6 +881,16 @@ export class AcExMeasureController {
     return this._mode !== null
   }
 
+  /** Whether one or more committed measurements are selected. */
+  get hasSelection(): boolean {
+    return this._selectedIds.size > 0
+  }
+
+  /** Clears the current measurement selection (if any). */
+  clearSelection(): void {
+    this._deselect(true)
+  }
+
   /**
    * Currently selected toolbar mode, or `null` when idle.
    */
@@ -771,28 +898,111 @@ export class AcExMeasureController {
     return this._mode
   }
 
+  /** Whether committed measurement overlays are currently shown. */
+  get visible(): boolean {
+    return this._visible
+  }
+
   /**
-   * Updates the accent color used for measurement overlays and redraws canvases.
+   * Updates the session accent color used for new measurement overlays.
    *
    * @param hex - 24-bit RGB color (for example `0x08e8de`).
    */
   setMeasureColor(hex: number): void {
-    if (!Number.isFinite(hex)) return
-    this._measureColor = hex
-    const material = this._previewLine.material
-    if (material instanceof THREE.LineBasicMaterial) {
-      material.color.setHex(hex)
-    }
-    for (const measure of this._committed) {
-      if (this._selectedIds.has(measure.id)) continue
-      for (const line of measure.parts.lines) {
-        const lineMaterial = line.material
-        if (lineMaterial instanceof THREE.LineBasicMaterial) {
-          lineMaterial.color.setHex(hex)
+    this.setDrawStyle({ colorHex: hex })
+  }
+
+  /** Current session draw style (or selected measurement style when applicable). */
+  getDrawStyle(): {
+    color: string
+    lineWeight: number
+    fontSize: number
+  } {
+    const selectedId =
+      this._selectedIds.size === 1 ? [...this._selectedIds][0] : undefined
+    if (selectedId) {
+      const measure = this._committed.find(m => m.id === selectedId)
+      if (measure) {
+        return {
+          color: measure.record.style.color || this._measureCss(),
+          lineWeight: measure.record.style.lineWeight || this._drawLineWeight,
+          fontSize: measure.record.style.fontSize || this._drawFontSize
         }
       }
     }
-    for (const fn of this._redrawListeners) fn()
+    return {
+      color: this._measureCss(),
+      lineWeight: this._drawLineWeight,
+      fontSize: this._drawFontSize
+    }
+  }
+
+  /**
+   * Updates session defaults and applies the same patch to the current selection.
+   */
+  setDrawStyle(patch: {
+    color?: string
+    colorHex?: number
+    lineWeight?: number
+    fontSize?: number
+  }): void {
+    let colorChanged = false
+    if (patch.colorHex != null && Number.isFinite(patch.colorHex)) {
+      this._measureColor = patch.colorHex
+      colorChanged = true
+    } else if (patch.color) {
+      const next = cssColorToHex(patch.color, this._measureColor)
+      if (next !== this._measureColor || patch.color !== this._measureCss()) {
+        this._measureColor = next
+        colorChanged = true
+      }
+    }
+    if (patch.lineWeight != null && patch.lineWeight > 0) {
+      this._drawLineWeight = patch.lineWeight
+    }
+    if (patch.fontSize != null && patch.fontSize > 0) {
+      this._drawFontSize = patch.fontSize
+    }
+
+    if (colorChanged) {
+      applyMeasureAccentCss(this._measureColor)
+      this._liveLabel.style.color = this._measureCss()
+    }
+
+    const material = this._previewLine.material
+    if (material instanceof THREE.LineBasicMaterial) {
+      material.color.setHex(this._measureColor)
+    }
+
+    const selectionPatch: {
+      color?: string
+      lineWeight?: number
+      fontSize?: number
+    } = {}
+    if (colorChanged || patch.colorHex != null || patch.color) {
+      selectionPatch.color = this._measureCss()
+    }
+    if (patch.lineWeight != null && patch.lineWeight > 0) {
+      selectionPatch.lineWeight = patch.lineWeight
+    }
+    if (patch.fontSize != null && patch.fontSize > 0) {
+      selectionPatch.fontSize = patch.fontSize
+    }
+    this._applyStyleToSelection(selectionPatch)
+
+    // Mid-draw: keep in-progress commit style in sync with the session.
+    if (this._commitStyle) {
+      if (selectionPatch.color) this._commitStyle.color = selectionPatch.color
+      if (selectionPatch.lineWeight != null) {
+        this._commitStyle.lineWeight = selectionPatch.lineWeight
+      }
+      if (selectionPatch.fontSize != null) {
+        this._commitStyle.fontSize = selectionPatch.fontSize
+      }
+    }
+
+    this._refreshActivePreview()
+    this._onStyleChange?.()
     this._view.render()
   }
 
@@ -871,10 +1081,80 @@ export class AcExMeasureController {
   }
 
   /**
+   * Shows or hides all committed measurement graphics (DOM + THREE lines).
+   */
+  setVisible(visible: boolean): void {
+    this._visible = visible
+    this._overlayLayer.style.display = visible ? '' : 'none'
+    this._measureGroup.visible = visible
+    this._updateVisibilityToolbar()
+    this._view.render()
+  }
+
+  /** Toggles {@link setVisible}. */
+  toggleVisible(): void {
+    this.setVisible(!this._visible)
+  }
+
+  /** Download current measurements as a `*.measurement.json` sidecar. */
+  exportSidecar(): void {
+    const file: AcExMeasurementSidecarFile = {
+      version: 1,
+      drawingName: this._drawingName,
+      measurements: this._committed.map(c => c.record)
+    }
+    const text = stringifyAcExMeasurementSidecar(file)
+    const blob = new Blob([text], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = acExMeasurementSidecarFileName(this._drawingName)
+    a.click()
+    URL.revokeObjectURL(url)
+    this._statusEl.textContent = this._i18n.t('status.measureExported', {
+      count: String(file.measurements.length)
+    })
+  }
+
+  /** Open a file picker to import a measurement sidecar JSON. */
+  importSidecar(): void {
+    this._fileInput.value = ''
+    this._fileInput.click()
+  }
+
+  /** Replace all measurements from a parsed sidecar (used by tests / import). */
+  loadSidecar(file: AcExMeasurementSidecarFile): void {
+    this.clearAll()
+    for (const record of file.measurements) {
+      this._publishRecord(record)
+    }
+    this._updateIdleStatus()
+    this._view.render()
+  }
+
+  private async _handleImportFile(): Promise<void> {
+    const file = this._fileInput.files?.[0]
+    if (!file) return
+    try {
+      const text = await file.text()
+      const sidecar = parseAcExMeasurementSidecar(text)
+      this.loadSidecar(sidecar)
+      this._statusEl.textContent = this._i18n.t('status.measureImported', {
+        count: String(sidecar.measurements.length)
+      })
+    } catch (error) {
+      this._statusEl.textContent = this._i18n.t('status.measureImportFailed', {
+        error: String(error)
+      })
+    }
+  }
+
+  /**
    * Repositions DOM badges/dots and redraws registered canvas overlays.
    * Invoke from the viewer `render` path and after resize so graphics track pan/zoom.
    */
   syncOverlays(): void {
+    if (!this._visible) return
     this._inOverlaySync = true
     try {
       this._overlayRootRect = this._root.getBoundingClientRect()
@@ -1057,14 +1337,43 @@ export class AcExMeasureController {
     }
   }
 
-  /** Syncs `#mlcad-toolbar [data-measure-mode]` `active` class with `_mode`. @internal */
+  /** Syncs measure-mode `active` class and parent menu highlight. @internal */
   private _updateToolbarActive(): void {
+    document.querySelectorAll('[data-measure-mode]').forEach(btn => {
+      const mode = btn.getAttribute('data-measure-mode')
+      btn.classList.toggle('active', mode === this._mode)
+    })
     document
-      .querySelectorAll('#mlcad-toolbar [data-measure-mode]')
-      .forEach(btn => {
-        const mode = btn.getAttribute('data-measure-mode')
-        btn.classList.toggle('active', mode === this._mode)
-      })
+      .getElementById('mlcad-measure-menu-btn')
+      ?.classList.toggle('active', this._mode !== null)
+  }
+
+  /** Syncs show/hide measurement button label and icon. @internal */
+  private _updateVisibilityToolbar(): void {
+    const buttons = document.querySelectorAll(
+      '[data-action="measure-visibility"]'
+    )
+    if (buttons.length === 0) return
+    const titleKey = this._visible
+      ? 'toolbar.measureHide'
+      : 'toolbar.measureShow'
+    const icon = this._visible
+      ? acExHtmlIcons.markupHide
+      : acExHtmlIcons.markupShow
+    const label = this._i18n.t(titleKey)
+    buttons.forEach(btn => {
+      btn.classList.toggle('active', this._visible)
+      btn.classList.toggle('is-toggled', this._visible)
+      btn.setAttribute('data-i18n-key', titleKey)
+      btn.setAttribute('title', label)
+      btn.setAttribute('aria-label', label)
+      const iconHost = btn.querySelector('.mlcad-dropdown-icon')
+      if (iconHost) {
+        iconHost.innerHTML = icon
+      } else {
+        btn.innerHTML = icon
+      }
+    })
   }
 
   /** Removes transient preview line, label, and preview canvas. @internal */
@@ -1253,16 +1562,30 @@ export class AcExMeasureController {
    * Persists a coordinate measurement: endpoint dot and offset badge.
    * @internal
    */
-  private _commitCoordinate(point: THREE.Vector2): void {
+  private _commitCoordinate(
+    point: THREE.Vector2,
+    existing?: AcExMeasurementRecord
+  ): void {
     const label = this._formatCoordinateLabel(point.x, point.y)
-    this._startCommit()
+    const id = this._startCommit(existing?.id)
     this._addDot(point)
     const badge = this._addBadge(point, label)
     badge.classList.add('mlcad-measure-badge--coordinate')
-    this._finishCommit((clientX, clientY, threshold) => {
-      const s = this._view.wcsToScreen(point)
-      return Math.hypot(clientX - s.x, clientY - s.y) <= threshold
-    }, null)
+    const record =
+      existing ??
+      this._makeRecord(id, 'point', {
+        type: 'point',
+        position: { x: point.x, y: point.y }
+      })
+    this._finishCommit(
+      (clientX, clientY, threshold) => {
+        const s = this._view.wcsToScreen(point)
+        return Math.hypot(clientX - s.x, clientY - s.y) <= threshold
+      },
+      null,
+      0,
+      record
+    )
     this._statusEl.textContent = this._i18n.t('status.coordinates', {
       x: this._view.formatLength(point.x),
       y: this._view.formatLength(point.y)
@@ -1312,14 +1635,25 @@ export class AcExMeasureController {
    * Persists a distance measurement: line, endpoint dots, and midpoint badge.
    * @internal
    */
-  private _commitDistance(a: THREE.Vector2, b: THREE.Vector2): void {
+  private _commitDistance(
+    a: THREE.Vector2,
+    b: THREE.Vector2,
+    existing?: AcExMeasurementRecord
+  ): void {
     const dist = dist2(a, b)
-    this._startCommit()
+    const id = this._startCommit(existing?.id)
     this._addPersistentLine([a, b])
     this._addDot(a)
     this._addDot(b)
     const mid = new THREE.Vector2((a.x + b.x) / 2, (a.y + b.y) / 2)
     this._addBadge(mid, this._view.formatLength(dist))
+    const record =
+      existing ??
+      this._makeRecord(id, 'distance', {
+        type: 'distance',
+        start: { x: a.x, y: a.y },
+        end: { x: b.x, y: b.y }
+      })
     this._finishCommit(
       (clientX, clientY, threshold) => {
         const sa = this._view.wcsToScreen(a)
@@ -1330,7 +1664,8 @@ export class AcExMeasureController {
         )
       },
       'length',
-      dist
+      dist,
+      record
     )
     this._statusEl.textContent = this._i18n.t('status.distance', {
       value: this._view.formatLength(dist)
@@ -1391,15 +1726,27 @@ export class AcExMeasureController {
   private _commitAngle(
     vertex: THREE.Vector2,
     arm1: THREE.Vector2,
-    arm2: THREE.Vector2
+    arm2: THREE.Vector2,
+    existing?: AcExMeasurementRecord
   ): void {
     const deg = calcAngleDeg(vertex, arm1, arm2)
-    this._startCommit()
+    const id = this._startCommit(existing?.id)
     this._addPersistentLine([vertex, arm1])
     this._addPersistentLine([vertex, arm2])
     const canvas = makeOverlayCanvas(this._overlayLayer)
     this._trackCanvas(canvas)
-    const redraw = () => this._drawAngleArc(canvas, vertex, arm1, arm2)
+    const commitId = id
+    const redraw = () => {
+      const style = this._styleForCommit(commitId)
+      this._drawAngleArc(
+        canvas,
+        vertex,
+        arm1,
+        arm2,
+        style.color,
+        acExMeasureCanvasLineWidth(style.lineWeight)
+      )
+    }
     redraw()
     this._registerRedraw(redraw, () => canvas.remove())
 
@@ -1436,6 +1783,14 @@ export class AcExMeasureController {
       vertex.y + by * offset
     )
     this._addBadge(badgePos, this._view.formatAngle(deg))
+    const record =
+      existing ??
+      this._makeRecord(id, 'angle', {
+        type: 'angle',
+        vertex: { x: vertex.x, y: vertex.y },
+        arm1: { x: arm1.x, y: arm1.y },
+        arm2: { x: arm2.x, y: arm2.y }
+      })
     this._finishCommit(
       (clientX, clientY, threshold) =>
         hitTestAngleMeasure(
@@ -1448,7 +1803,9 @@ export class AcExMeasureController {
           badgePos,
           wcs => this._view.wcsToScreen(wcs)
         ),
-      null
+      null,
+      0,
+      record
     )
     this._statusEl.textContent = this._i18n.t('status.angle', {
       value: this._view.formatAngle(deg)
@@ -1527,14 +1884,26 @@ export class AcExMeasureController {
     geom: AcExCircleGeom,
     start: THREE.Vector2,
     through: THREE.Vector2,
-    end: THREE.Vector2
+    end: THREE.Vector2,
+    existing?: AcExMeasurementRecord
   ): void {
     const len = arcLengthThroughMiddle(start, through, end, geom)
     const mid = arcMidThroughMiddle(start, through, end, geom)
-    this._startCommit()
+    const id = this._startCommit(existing?.id)
     const canvas = makeOverlayCanvas(this._overlayLayer)
     this._trackCanvas(canvas)
-    const redraw = () => this._drawArc(canvas, geom, start, through, end)
+    const redraw = () => {
+      const style = this._styleForCommit(id)
+      this._drawArc(
+        canvas,
+        geom,
+        start,
+        through,
+        end,
+        style.color,
+        acExMeasureCanvasLineWidth(style.lineWeight)
+      )
+    }
     redraw()
     this._registerRedraw(redraw, () => canvas.remove())
 
@@ -1542,6 +1911,15 @@ export class AcExMeasureController {
     this._addDot(through)
     this._addDot(end)
     this._addBadge(mid, this._view.formatLength(len))
+    const record =
+      existing ??
+      this._makeRecord(id, 'arc', {
+        type: 'arc',
+        center: { x: geom.cx, y: geom.cy },
+        radius: geom.r,
+        start: { x: start.x, y: start.y },
+        end: { x: end.x, y: end.y }
+      })
     this._finishCommit(
       (clientX, clientY, threshold) => {
         const sc = this._view.wcsToScreen(new THREE.Vector2(geom.cx, geom.cy))
@@ -1572,11 +1950,78 @@ export class AcExMeasureController {
         )
       },
       'length',
-      len
+      len,
+      record
     )
     this._statusEl.textContent = this._i18n.t('status.arcLength', {
       value: this._view.formatLength(len)
     })
+  }
+
+  /**
+   * Commits an arc from sidecar geometry (short arc; no through point).
+   * @internal
+   */
+  private _commitShortArc(record: AcExMeasurementRecord): void {
+    if (record.geometry.type !== 'arc') return
+    const g = record.geometry
+    const geom: AcExCircleGeom = {
+      cx: g.center.x,
+      cy: g.center.y,
+      r: g.radius
+    }
+    const start = new THREE.Vector2(g.start.x, g.start.y)
+    const end = new THREE.Vector2(g.end.x, g.end.y)
+    const len = shortArcLength(start, end, geom)
+    const mid = shortArcMid(start, end, geom)
+    const counterClockwise = shortArcCounterClockwise(start, end, geom)
+    this._startCommit(record.id)
+    const canvas = makeOverlayCanvas(this._overlayLayer)
+    this._trackCanvas(canvas)
+    const commitId = record.id
+    const redraw = () => {
+      const style = this._styleForCommit(commitId)
+      this._drawShortArc(
+        canvas,
+        geom,
+        start,
+        end,
+        style.color,
+        acExMeasureCanvasLineWidth(style.lineWeight)
+      )
+    }
+    redraw()
+    this._registerRedraw(redraw, () => canvas.remove())
+    this._addDot(start)
+    this._addDot(end)
+    this._addBadge(mid, this._view.formatLength(len))
+    this._finishCommit(
+      (clientX, clientY, threshold) => {
+        const sc = this._view.wcsToScreen(new THREE.Vector2(geom.cx, geom.cy))
+        const ss = this._view.wcsToScreen(start)
+        const se = this._view.wcsToScreen(end)
+        const cx = sc.x
+        const cy = sc.y
+        const screenR = Math.hypot(ss.x - cx, ss.y - cy)
+        const sa = Math.atan2(ss.y - cy, ss.x - cx)
+        const ea = Math.atan2(se.y - cy, se.x - cx)
+        return (
+          distPointToArcPx(
+            clientX,
+            clientY,
+            cx,
+            cy,
+            screenR,
+            sa,
+            ea,
+            counterClockwise
+          ) <= threshold
+        )
+      },
+      'length',
+      len,
+      record
+    )
   }
 
   /**
@@ -1655,21 +2100,36 @@ export class AcExMeasureController {
    * Persists an area measurement: boundary line, fill canvas, vertex dots, badge.
    * @internal
    */
-  private _commitArea(points: THREE.Vector2[]): void {
+  private _commitArea(
+    points: THREE.Vector2[],
+    existing?: AcExMeasurementRecord
+  ): void {
     if (points.length < 3) return
     const area = shoelaceArea(points)
-    const closed = [...points, points[0]!]
-    this._startCommit()
-    this._addPersistentLine(closed)
-
+    const id = this._startCommit(existing?.id)
+    // Outline stroke comes from the area canvas (fill + stroke).
     const canvas = makeOverlayCanvas(this._overlayLayer)
     this._trackCanvas(canvas)
-    const redraw = () => this._drawAreaFill(canvas, points)
+    const redraw = () => {
+      const style = this._styleForCommit(id)
+      this._drawAreaFill(
+        canvas,
+        points,
+        style.color,
+        acExMeasureCanvasLineWidth(style.lineWeight)
+      )
+    }
     redraw()
     this._registerRedraw(redraw, () => canvas.remove())
 
     for (const p of points) this._addDot(p)
     this._addBadge(centroid(points), `${this._view.formatLength(area)}²`)
+    const record =
+      existing ??
+      this._makeRecord(id, 'area', {
+        type: 'area',
+        points: points.map(p => ({ x: p.x, y: p.y }))
+      })
     this._finishCommit(
       (clientX, clientY, threshold) => {
         const poly = this._screenPolyline(points)
@@ -1678,33 +2138,68 @@ export class AcExMeasureController {
         return distPointToPolylinePx(clientX, clientY, closedPoly) <= threshold
       },
       'area',
-      area
+      area,
+      record
     )
     this._statusEl.textContent = this._i18n.t('status.area', {
       value: `${this._view.formatLength(area)}²`
     })
   }
 
-  /** Adds a committed THREE line and registers disposal in `_cleanups`. @internal */
+  /**
+   * Adds a committed polyline as a style-aware canvas overlay (color + line weight).
+   * @internal
+   */
   private _addPersistentLine(points: THREE.Vector2[]): void {
-    const geometry = makeLineGeometry(points)
-    if (!geometry) return
-    const material = new THREE.LineBasicMaterial({
-      color: this._measureColor,
-      depthTest: false
-    })
-    const line = new THREE.Line(geometry, material)
-    line.renderOrder = 18
-    this._measureGroup.add(line)
+    if (points.length < 2) return
     const parts = this._commitParts
-    if (parts) {
-      parts.lines.push(line)
-      parts.cleanups.push(() => {
-        this._measureGroup.remove(line)
-        geometry.dispose()
-        material.dispose()
-      })
+    if (!parts) return
+    const canvas = makeOverlayCanvas(this._overlayLayer)
+    this._trackCanvas(canvas)
+    const commitId = parts.id
+    const pts = points.map(p => p.clone())
+    const redraw = () => {
+      const style = this._styleForCommit(commitId)
+      this._drawPolyline(
+        canvas,
+        pts,
+        style.color || this._measureCss(),
+        acExMeasureCanvasLineWidth(style.lineWeight)
+      )
     }
+    redraw()
+    this._registerRedraw(redraw, () => canvas.remove())
+  }
+
+  /** Draws a WCS polyline on a synced overlay canvas. @internal */
+  private _drawPolyline(
+    canvas: HTMLCanvasElement,
+    points: THREE.Vector2[],
+    strokeCss: string,
+    lineWidth: number
+  ): void {
+    if (points.length < 2) return
+    const synced = this._syncCanvas(canvas)
+    if (!synced) return
+    const { ctx, dpr } = synced
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.save()
+    ctx.scale(dpr, dpr)
+    const rootRect = this._overlayRootOffset()
+    ctx.beginPath()
+    for (let i = 0; i < points.length; i++) {
+      const s = this._view.wcsToScreen(points[i]!)
+      const x = s.x - rootRect.left
+      const y = s.y - rootRect.top
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.strokeStyle = strokeCss
+    ctx.lineWidth = lineWidth
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+    ctx.stroke()
+    ctx.restore()
   }
 
   /** Adds a DOM endpoint dot tracked in WCS via dataset attributes. @internal */
@@ -1712,6 +2207,8 @@ export class AcExMeasureController {
     const dot = makeDotEl()
     dot.dataset.wcsX = String(wcs.x)
     dot.dataset.wcsY = String(wcs.y)
+    const css = this._commitCss()
+    if (css) dot.style.background = css
     this._overlayLayer.appendChild(dot)
     this._positionDomOverlays()
     this._trackDom(dot)
@@ -1723,6 +2220,12 @@ export class AcExMeasureController {
     const badge = makeBadgeEl(text)
     badge.dataset.wcsX = String(wcs.x)
     badge.dataset.wcsY = String(wcs.y)
+    const css = this._commitCss()
+    if (css) {
+      badge.style.color = css
+      badge.style.borderColor = css
+    }
+    badge.style.fontSize = `${this._commitFontSize()}px`
     this._overlayLayer.appendChild(badge)
     this._positionDomOverlays()
     this._trackDom(badge)
@@ -1746,28 +2249,126 @@ export class AcExMeasureController {
   }
 
   /** @internal */
-  private _startCommit(): string {
-    const id = `m${++this._commitCounter}`
+  private _startCommit(id?: string): string {
+    const commitId = id ?? `m${++this._commitCounter}`
+    if (!this._commitStyle) {
+      this._commitStyle = this._defaultStyle()
+    }
     this._commitParts = {
-      id,
+      id: commitId,
       dom: [],
       lines: [],
       canvases: [],
       cleanups: []
     }
-    return id
+    return commitId
   }
 
   /** @internal */
   private _finishCommit(
     hitTest: (clientX: number, clientY: number, thresholdPx: number) => boolean,
     quantity: AcExMeasureQuantity | null,
-    value = 0
+    value = 0,
+    record?: AcExMeasurementRecord
   ): void {
     const parts = this._commitParts
-    if (!parts) return
-    this._committed.push({ id: parts.id, parts, hitTest, quantity, value })
+    if (!parts || !record) {
+      this._commitParts = null
+      this._commitStyle = null
+      return
+    }
+    this._committed.push({
+      id: parts.id,
+      record: { ...record, id: parts.id },
+      parts,
+      hitTest,
+      quantity,
+      value
+    })
     this._commitParts = null
+    this._commitStyle = null
+  }
+
+  /** Default sidecar style from the current session draw style. @internal */
+  private _defaultStyle(): AcExMeasurementSidecarStyle {
+    return {
+      color: this._measureCss(),
+      lineWeight: this._drawLineWeight,
+      fontSize: this._drawFontSize
+    }
+  }
+
+  /** Build a new sidecar record for an interactive commit. @internal */
+  private _makeRecord(
+    id: string,
+    type: AcExMeasurementRecord['type'],
+    geometry: AcExMeasurementRecord['geometry']
+  ): AcExMeasurementRecord {
+    return {
+      id,
+      type,
+      style: this._defaultStyle(),
+      geometry
+    }
+  }
+
+  /** CSS color for the measurement currently being committed. @internal */
+  private _commitCss(): string | null {
+    return this._commitStyle?.color ?? null
+  }
+
+  /** Badge font size for the measurement currently being committed. @internal */
+  private _commitFontSize(): number {
+    return this._commitStyle?.fontSize ?? this._drawFontSize
+  }
+
+  /** Resolve live style for a committed (or in-progress) measurement id. @internal */
+  private _styleForCommit(commitId: string): AcExMeasurementSidecarStyle {
+    const measure = this._committed.find(m => m.id === commitId)
+    if (measure) return measure.record.style
+    return this._commitStyle ?? this._defaultStyle()
+  }
+
+  /** Rebuild visuals from a sidecar record (import path). @internal */
+  private _publishRecord(record: AcExMeasurementRecord): void {
+    this._commitStyle = { ...record.style }
+    try {
+      const g = record.geometry
+      switch (g.type) {
+        case 'distance':
+          this._commitDistance(
+            new THREE.Vector2(g.start.x, g.start.y),
+            new THREE.Vector2(g.end.x, g.end.y),
+            record
+          )
+          break
+        case 'angle':
+          this._commitAngle(
+            new THREE.Vector2(g.vertex.x, g.vertex.y),
+            new THREE.Vector2(g.arm1.x, g.arm1.y),
+            new THREE.Vector2(g.arm2.x, g.arm2.y),
+            record
+          )
+          break
+        case 'area':
+          this._commitArea(
+            g.points.map(p => new THREE.Vector2(p.x, p.y)),
+            record
+          )
+          break
+        case 'arc':
+          this._commitShortArc(record)
+          break
+        case 'point':
+          this._commitCoordinate(
+            new THREE.Vector2(g.position.x, g.position.y),
+            record
+          )
+          break
+      }
+    } finally {
+      this._commitStyle = null
+    }
   }
 
   /** @internal */
@@ -1825,9 +2426,14 @@ export class AcExMeasureController {
    * @internal
    */
   private _trySelectCommittedAt(clientX: number, clientY: number): boolean {
+    if (!this._visible) return false
     const measure = this._pickCommittedMeasure(clientX, clientY)
     if (measure) {
       this._select(measure.id)
+      return true
+    }
+    if (this._selectedIds.size > 0) {
+      this._deselect(true)
       return true
     }
     return false
@@ -1838,7 +2444,8 @@ export class AcExMeasureController {
     if (this._selectedIds.has(id)) return
     this._selectedIds.add(id)
     const measure = this._committed.find(m => m.id === id)
-    if (measure) this._applyMeasureSelection(measure.parts, true)
+    if (measure) this._applyMeasureSelection(measure, true)
+    this._onStyleChange?.()
     if (!this._mode) this._updateIdleStatus()
     this._view.render()
   }
@@ -1848,32 +2455,74 @@ export class AcExMeasureController {
     if (this._selectedIds.size === 0) return
     for (const id of this._selectedIds) {
       const measure = this._committed.find(m => m.id === id)
-      if (measure) this._applyMeasureSelection(measure.parts, false)
+      if (measure) this._applyMeasureSelection(measure, false)
     }
     this._selectedIds.clear()
+    this._onStyleChange?.()
     if (updateStatus && !this._mode) this._updateIdleStatus()
     this._view.render()
   }
 
   /** @internal */
   private _applyMeasureSelection(
-    parts: AcExCommitParts,
+    measure: AcExCommittedMeasure,
     selected: boolean
   ): void {
-    for (const line of parts.lines) {
+    const baseHex = cssColorToHex(
+      measure.record.style.color,
+      this._measureColor
+    )
+    const baseCss = measure.record.style.color || measureColorToCss(baseHex)
+    for (const line of measure.parts.lines) {
       const material = line.material
       if (material instanceof THREE.LineBasicMaterial) {
-        material.color.setHex(
-          selected ? ACEX_MEASURE_SELECT_COLOR : this._measureColor
-        )
+        // Keep original color; selection is shown via CSS glow on canvases/DOM.
+        material.color.setHex(baseHex)
       }
     }
-    for (const el of parts.dom) {
+    for (const el of measure.parts.dom) {
       el.classList.toggle('mlcad-measure-selected', selected)
+      if (el.classList.contains('mlcad-measure-badge')) {
+        el.style.color = baseCss
+        el.style.borderColor = baseCss
+        if (measure.record.style.fontSize) {
+          el.style.fontSize = `${measure.record.style.fontSize}px`
+        }
+      } else if (el.classList.contains('mlcad-measure-dot')) {
+        el.style.background = baseCss
+      }
     }
-    for (const canvas of parts.canvases) {
+    for (const canvas of measure.parts.canvases) {
       canvas.classList.toggle('mlcad-measure-selected', selected)
     }
+  }
+
+  /** Apply style patch to currently selected measurements. @internal */
+  private _applyStyleToSelection(patch: {
+    color?: string
+    lineWeight?: number
+    fontSize?: number
+  }): void {
+    if (this._selectedIds.size === 0) return
+    for (const id of this._selectedIds) {
+      const measure = this._committed.find(m => m.id === id)
+      if (!measure) continue
+      const style = measure.record.style
+      if (patch.color) style.color = patch.color
+      if (patch.lineWeight != null && patch.lineWeight > 0) {
+        style.lineWeight = patch.lineWeight
+      }
+      if (patch.fontSize != null && patch.fontSize > 0) {
+        style.fontSize = patch.fontSize
+      }
+      // Keep selection highlight on DOM; canvas redraws pick up color/weight.
+      for (const el of measure.parts.dom) {
+        if (el.classList.contains('mlcad-measure-badge') && style.fontSize) {
+          el.style.fontSize = `${style.fontSize}px`
+        }
+      }
+    }
+    for (const fn of this._redrawListeners) fn()
   }
 
   /** @internal */
@@ -1941,7 +2590,9 @@ export class AcExMeasureController {
     canvas: HTMLCanvasElement,
     vertex: THREE.Vector2,
     arm1: THREE.Vector2,
-    arm2: THREE.Vector2
+    arm2: THREE.Vector2,
+    strokeCss?: string,
+    lineWidth = 2
   ): void {
     const synced = this._syncCanvas(canvas)
     if (!synced) return
@@ -1959,8 +2610,8 @@ export class AcExMeasureController {
 
     ctx.beginPath()
     ctx.arc(vx, vy, arc.r, arc.startAngle, arc.endAngle, arc.antiClockwise)
-    ctx.strokeStyle = this._measureCss()
-    ctx.lineWidth = 2
+    ctx.strokeStyle = strokeCss ?? this._measureCss()
+    ctx.lineWidth = lineWidth
     ctx.stroke()
     ctx.restore()
   }
@@ -1978,7 +2629,14 @@ export class AcExMeasureController {
       canvas = makeOverlayCanvas(this._overlayLayer)
       canvas.classList.add('mlcad-measure-canvas--preview')
     }
-    this._drawAngleArc(canvas, vertex, arm1, arm2)
+    this._drawAngleArc(
+      canvas,
+      vertex,
+      arm1,
+      arm2,
+      this._measureCss(),
+      acExMeasureCanvasLineWidth(this._drawLineWeight)
+    )
   }
 
   /** Draws the arc through `through` between `start` and `end` in screen space. @internal */
@@ -1987,7 +2645,9 @@ export class AcExMeasureController {
     g: AcExCircleGeom,
     start: THREE.Vector2,
     through: THREE.Vector2,
-    end: THREE.Vector2
+    end: THREE.Vector2,
+    strokeCss?: string,
+    lineWidth = 3
   ): void {
     const synced = this._syncCanvas(canvas)
     if (!synced) return
@@ -2013,8 +2673,47 @@ export class AcExMeasureController {
 
     ctx.beginPath()
     ctx.arc(cx, cy, screenR, sa, ea, counterClockwise)
-    ctx.strokeStyle = this._measureCss()
-    ctx.lineWidth = 3
+    ctx.strokeStyle = strokeCss ?? this._measureCss()
+    ctx.lineWidth = lineWidth
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  /** Draws the shorter arc between `start` and `end` (sidecar / simple-viewer). @internal */
+  private _drawShortArc(
+    canvas: HTMLCanvasElement,
+    g: AcExCircleGeom,
+    start: THREE.Vector2,
+    end: THREE.Vector2,
+    strokeCss?: string,
+    lineWidth = 3
+  ): void {
+    const synced = this._syncCanvas(canvas)
+    if (!synced) return
+    const { ctx, dpr } = synced
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.save()
+    ctx.scale(dpr, dpr)
+
+    const rootRect = this._overlayRootOffset()
+    const sc = this._view.wcsToScreen(new THREE.Vector2(g.cx, g.cy))
+    const ss = this._view.wcsToScreen(start)
+    const se = this._view.wcsToScreen(end)
+    const cx = sc.x - rootRect.left
+    const cy = sc.y - rootRect.top
+    const sx = ss.x - rootRect.left
+    const sy = ss.y - rootRect.top
+    const ex = se.x - rootRect.left
+    const ey = se.y - rootRect.top
+    const screenR = Math.hypot(sx - cx, sy - cy)
+    const sa = Math.atan2(sy - cy, sx - cx)
+    const ea = Math.atan2(ey - cy, ex - cx)
+    const counterClockwise = shortArcCounterClockwise(start, end, g)
+
+    ctx.beginPath()
+    ctx.arc(cx, cy, screenR, sa, ea, counterClockwise)
+    ctx.strokeStyle = strokeCss ?? this._measureCss()
+    ctx.lineWidth = lineWidth
     ctx.stroke()
     ctx.restore()
   }
@@ -2033,13 +2732,23 @@ export class AcExMeasureController {
       canvas = makeOverlayCanvas(this._overlayLayer)
       canvas.classList.add('mlcad-measure-canvas--preview')
     }
-    this._drawArc(canvas, g, start, through, end)
+    this._drawArc(
+      canvas,
+      g,
+      start,
+      through,
+      end,
+      this._measureCss(),
+      acExMeasureCanvasLineWidth(this._drawLineWeight)
+    )
   }
 
   /** Fills and strokes a polygon on a synced overlay canvas. @internal */
   private _drawAreaFill(
     canvas: HTMLCanvasElement,
-    points: THREE.Vector2[]
+    points: THREE.Vector2[],
+    strokeCss?: string,
+    lineWidth = 2
   ): void {
     if (points.length < 3) return
     const synced = this._syncCanvas(canvas)
@@ -2055,16 +2764,21 @@ export class AcExMeasureController {
       return { x: s.x - rootRect.left, y: s.y - rootRect.top }
     })
 
+    const stroke = strokeCss ?? this._measureCss()
+    const fill = strokeCss
+      ? measureColorToFill(cssColorToHex(strokeCss, this._measureColor))
+      : this._measureFill()
+
     ctx.beginPath()
     ctx.moveTo(spts[0]!.x, spts[0]!.y)
     for (let i = 1; i < spts.length; i++) {
       ctx.lineTo(spts[i]!.x, spts[i]!.y)
     }
     ctx.closePath()
-    ctx.fillStyle = this._measureFill()
+    ctx.fillStyle = fill
     ctx.fill()
-    ctx.strokeStyle = this._measureCss()
-    ctx.lineWidth = 2
+    ctx.strokeStyle = stroke
+    ctx.lineWidth = lineWidth
     ctx.stroke()
     ctx.restore()
   }
@@ -2079,6 +2793,11 @@ export class AcExMeasureController {
       canvas = makeOverlayCanvas(this._overlayLayer)
       canvas.classList.add('mlcad-measure-canvas--preview')
     }
-    this._drawAreaFill(canvas, points)
+    this._drawAreaFill(
+      canvas,
+      points,
+      this._measureCss(),
+      acExMeasureCanvasLineWidth(this._drawLineWeight)
+    )
   }
 }

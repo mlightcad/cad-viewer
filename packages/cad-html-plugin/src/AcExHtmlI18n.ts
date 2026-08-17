@@ -35,6 +35,24 @@ export type AcExHtmlMessageKey =
   | 'toolbar.measureArea'
   | 'toolbar.measureCoordinate'
   | 'toolbar.clearMeasurements'
+  | 'toolbar.measureHide'
+  | 'toolbar.measureShow'
+  | 'toolbar.measureImport'
+  | 'toolbar.measureExport'
+  | 'toolbar.measure'
+  | 'toolbar.annotation'
+  | 'toolbar.markupCloud'
+  | 'toolbar.markupCallout'
+  | 'toolbar.markupText'
+  | 'toolbar.markupRect'
+  | 'toolbar.markupCircle'
+  | 'toolbar.markupArrow'
+  | 'toolbar.markupStamp'
+  | 'toolbar.markupHide'
+  | 'toolbar.markupShow'
+  | 'toolbar.clearMarkups'
+  | 'toolbar.markupImport'
+  | 'toolbar.markupExport'
   | 'toolbar.settings'
   | 'toolbar.layers'
   | 'toolbar.language'
@@ -42,10 +60,12 @@ export type AcExHtmlMessageKey =
   | 'toolbar.collapse'
   | 'toolbar.expand'
   | 'settings.toolbar'
-  | 'settings.measureColor'
   | 'settings.ortho'
   | 'settings.polar'
   | 'settings.polarAngles'
+  | 'drawStyle.color'
+  | 'drawStyle.lineWeight'
+  | 'drawStyle.fontSize'
   | 'layers.title'
   | 'layers.close'
   | 'layers.showAll'
@@ -57,6 +77,30 @@ export type AcExHtmlMessageKey =
   | 'status.measureArcHint'
   | 'status.measureAreaHint'
   | 'status.measureCoordinateHint'
+  | 'status.measureExported'
+  | 'status.measureImported'
+  | 'status.measureImportFailed'
+  | 'status.markupCloudHint'
+  | 'status.markupCalloutHint'
+  | 'status.markupTextHint'
+  | 'status.markupRectHint'
+  | 'status.markupCircleHint'
+  | 'status.markupArrowHint'
+  | 'status.markupStampHint'
+  | 'status.markupArrowEndHint'
+  | 'status.markupRectCornerHint'
+  | 'status.markupCloudCornerHint'
+  | 'status.markupCalloutAnchorHint'
+  | 'status.markupCircleRadiusHint'
+  | 'status.markupTextPrompt'
+  | 'status.markupTextEditHint'
+  | 'status.markupShapeCalloutHint'
+  | 'status.markupDefaultLabel'
+  | 'status.markupSelected'
+  | 'status.markupCount'
+  | 'status.markupExported'
+  | 'status.markupImported'
+  | 'status.markupImportFailed'
   | 'status.distance'
   | 'status.coordinates'
   | 'status.angle'
@@ -87,7 +131,25 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       measureArea: 'Measure area',
       measureCoordinate: 'Measure coordinates',
       clearMeasurements: 'Clear measurements',
-      settings: 'Measure settings',
+      measureHide: 'Hide measurements',
+      measureShow: 'Show measurements',
+      measureImport: 'Import measurements',
+      measureExport: 'Export measurements',
+      measure: 'Measurement',
+      annotation: 'Review',
+      markupCloud: 'Cloud',
+      markupCallout: 'Callout',
+      markupText: 'Text',
+      markupRect: 'Rectangle',
+      markupCircle: 'Circle',
+      markupArrow: 'Arrow',
+      markupStamp: 'Stamp',
+      markupHide: 'Hide markups',
+      markupShow: 'Show markups',
+      clearMarkups: 'Clear markups',
+      markupImport: 'Import markups',
+      markupExport: 'Export markups',
+      settings: 'Settings',
       layers: 'Layers',
       language: 'Language',
       languageSwitch: 'Switch language',
@@ -95,11 +157,15 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       expand: 'Expand toolbar'
     },
     settings: {
-      toolbar: 'Measure settings',
-      measureColor: 'Measure color',
+      toolbar: 'Settings',
       ortho: 'Toggle orthogonal mode',
       polar: 'Polar tracking angles',
       polarAngles: 'Polar tracking angles'
+    },
+    drawStyle: {
+      color: 'Color',
+      lineWeight: 'Lineweight',
+      fontSize: 'Text height'
     },
     layers: {
       title: 'Layers',
@@ -120,6 +186,31 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
         'Click polygon vertices; click near the first point or press Enter to finish.',
       measureCoordinateHint:
         'Click a point to read its X/Y coordinates (object snap enabled).',
+      measureExported: 'Exported {count} measurement(s).',
+      measureImported: 'Imported {count} measurement(s).',
+      measureImportFailed: 'Failed to import measurements: {error}',
+      markupCloudHint: 'Click two corners to draw a revision cloud.',
+      markupCalloutHint: 'Click the leader tip, then the text anchor.',
+      markupTextHint: 'Click a point to place text.',
+      markupRectHint: 'Click two corners to draw a rectangle.',
+      markupCircleHint: 'Click the center, then a point on the circumference.',
+      markupArrowHint: 'Click the start point, then the arrow tip.',
+      markupStampHint: 'Click to place a stamp (cycles approved / rejected / …).',
+      markupArrowEndHint: 'Click the arrow tip.',
+      markupRectCornerHint: 'Click the opposite corner.',
+      markupCloudCornerHint: 'Click the opposite corner.',
+      markupCalloutAnchorHint: 'Click the text bubble position.',
+      markupCircleRadiusHint: 'Click a point on the circumference.',
+      markupTextPrompt: 'Enter markup text',
+      markupTextEditHint: 'Type text on the canvas. Enter to finish, Esc to cancel.',
+      markupShapeCalloutHint:
+        'Click to place the text box (leader attaches to the shape). Esc cancels the callout.',
+      markupDefaultLabel: 'Note',
+      markupSelected: 'Selected markup: {type}',
+      markupCount: 'Markups: {count}',
+      markupExported: 'Exported {count} markup(s).',
+      markupImported: 'Imported {count} markup(s).',
+      markupImportFailed: 'Failed to import markups: {error}',
       distance: 'Distance: {value}',
       coordinates: 'X: {x}  Y: {y}',
       angle: 'Angle: {value}',
@@ -142,7 +233,25 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       measureArea: '测量面积',
       measureCoordinate: '测量坐标',
       clearMeasurements: '清除测量',
-      settings: '测量设置',
+      measureHide: '隐藏测量',
+      measureShow: '显示测量',
+      measureImport: '导入测量',
+      measureExport: '导出测量',
+      measure: '测量',
+      annotation: '审阅',
+      markupCloud: '云线',
+      markupCallout: '标注',
+      markupText: '文字',
+      markupRect: '矩形',
+      markupCircle: '圆',
+      markupArrow: '箭头',
+      markupStamp: '图章',
+      markupHide: '隐藏批注',
+      markupShow: '显示批注',
+      clearMarkups: '清除批注',
+      markupImport: '导入批注',
+      markupExport: '导出批注',
+      settings: '设置',
       layers: '图层',
       language: '语言',
       languageSwitch: '切换语言',
@@ -150,11 +259,15 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       expand: '展开工具栏'
     },
     settings: {
-      toolbar: '测量设置',
-      measureColor: '测量颜色',
+      toolbar: '设置',
       ortho: '切换正交模式',
       polar: '极轴追踪角度',
       polarAngles: '极轴追踪角度'
+    },
+    drawStyle: {
+      color: '颜色',
+      lineWeight: '线宽',
+      fontSize: '字高'
     },
     layers: {
       title: '图层',
@@ -170,6 +283,31 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       measureArcHint: '依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。',
       measureAreaHint: '依次点击多边形顶点；靠近首点或按 Enter 完成。',
       measureCoordinateHint: '点击一点以读取其 X/Y 坐标（已启用对象捕捉）。',
+      measureExported: '已导出 {count} 条测量。',
+      measureImported: '已导入 {count} 条测量。',
+      measureImportFailed: '导入测量失败：{error}',
+      markupCloudHint: '点击两个对角点绘制修订云线。',
+      markupCalloutHint: '先点击引线端点，再点击文字位置。',
+      markupTextHint: '点击一点放置文字。',
+      markupRectHint: '点击两个对角点绘制矩形。',
+      markupCircleHint: '先点击圆心，再点击圆周上一点。',
+      markupArrowHint: '先点击起点，再点击箭头端点。',
+      markupStampHint: '点击放置图章（在批准/拒绝等之间循环）。',
+      markupArrowEndHint: '点击箭头端点。',
+      markupRectCornerHint: '点击对角点。',
+      markupCloudCornerHint: '点击对角点。',
+      markupCalloutAnchorHint: '点击文字气泡位置。',
+      markupCircleRadiusHint: '点击圆周上一点。',
+      markupTextPrompt: '输入批注文字',
+      markupTextEditHint: '在画布上输入文字。Enter 完成，Esc 取消。',
+      markupShapeCalloutHint:
+        '点击放置文本框（引线自动贴到图形）。Esc 取消引线和文本框。',
+      markupDefaultLabel: '批注',
+      markupSelected: '已选批注：{type}',
+      markupCount: '批注数：{count}',
+      markupExported: '已导出 {count} 条批注。',
+      markupImported: '已导入 {count} 条批注。',
+      markupImportFailed: '导入批注失败：{error}',
       distance: '距离：{value}',
       coordinates: 'X：{x}  Y：{y}',
       angle: '角度：{value}',
@@ -192,7 +330,25 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       measureArea: 'Změřit plochu',
       measureCoordinate: 'Změřit souřadnice',
       clearMeasurements: 'Vymazat měření',
-      settings: 'Nastavení měření',
+      measureHide: 'Skrýt měření',
+      measureShow: 'Zobrazit měření',
+      measureImport: 'Importovat měření',
+      measureExport: 'Exportovat měření',
+      measure: 'Měření',
+      annotation: 'Kontrola',
+      markupCloud: 'Obláček',
+      markupCallout: 'Odkaz',
+      markupText: 'Text',
+      markupRect: 'Obdélník',
+      markupCircle: 'Kružnice',
+      markupArrow: 'Šipka',
+      markupStamp: 'Razítko',
+      markupHide: 'Skrýt poznámky',
+      markupShow: 'Zobrazit poznámky',
+      clearMarkups: 'Vymazat poznámky',
+      markupImport: 'Importovat poznámky',
+      markupExport: 'Exportovat poznámky',
+      settings: 'Nastavení',
       layers: 'Hladiny',
       language: 'Jazyk',
       languageSwitch: 'Přepnout jazyk',
@@ -200,11 +356,15 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       expand: 'Rozbalit panel nástrojů'
     },
     settings: {
-      toolbar: 'Nastavení měření',
-      measureColor: 'Barva měření',
+      toolbar: 'Nastavení',
       ortho: 'Přepnout ortogonální režim',
       polar: 'Úhly polárního trasování',
       polarAngles: 'Úhly polárního trasování'
+    },
+    drawStyle: {
+      color: 'Barva',
+      lineWeight: 'Tloušťka čáry',
+      fontSize: 'Výška textu'
     },
     layers: {
       title: 'Hladiny',
@@ -225,6 +385,32 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
         'Klikejte na vrcholy mnohoúhelníku; dokončete kliknutím poblíž prvního bodu nebo stiskem Enter.',
       measureCoordinateHint:
         'Klikněte na bod pro zobrazení jeho souřadnic X/Y (uchopení objektů zapnuto).',
+      measureExported: 'Exportováno {count} měření.',
+      measureImported: 'Importováno {count} měření.',
+      measureImportFailed: 'Import měření selhal: {error}',
+      markupCloudHint: 'Klikněte na dva rohy pro nakreslení obláčku.',
+      markupCalloutHint: 'Klikněte na hrot vodítka a poté na kotvu textu.',
+      markupTextHint: 'Klikněte pro umístění textu.',
+      markupRectHint: 'Klikněte na dva rohy pro nakreslení obdélníku.',
+      markupCircleHint: 'Klikněte na střed a poté na bod na kružnici.',
+      markupArrowHint: 'Klikněte na začátek a poté na hrot šipky.',
+      markupStampHint: 'Klikněte pro umístění razítka (schváleno / zamítnuto / …).',
+      markupArrowEndHint: 'Klikněte na hrot šipky.',
+      markupRectCornerHint: 'Klikněte na protilehlý roh.',
+      markupCloudCornerHint: 'Klikněte na protilehlý roh.',
+      markupCalloutAnchorHint: 'Klikněte na pozici textové bubliny.',
+      markupCircleRadiusHint: 'Klikněte na bod na kružnici.',
+      markupTextPrompt: 'Zadejte text poznámky',
+      markupTextEditHint:
+        'Pište text přímo na plátno. Enter dokončí, Esc zruší.',
+      markupShapeCalloutHint:
+        'Klikněte pro umístění textového pole (vodítko se připojí k tvaru). Esc zruší odkaz.',
+      markupDefaultLabel: 'Poznámka',
+      markupSelected: 'Vybraná poznámka: {type}',
+      markupCount: 'Poznámky: {count}',
+      markupExported: 'Exportováno {count} poznámek.',
+      markupImported: 'Importováno {count} poznámek.',
+      markupImportFailed: 'Import poznámek selhal: {error}',
       distance: 'Vzdálenost: {value}',
       coordinates: 'X: {x}  Y: {y}',
       angle: 'Úhel: {value}',
@@ -247,7 +433,25 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       measureArea: 'Alan ölç',
       measureCoordinate: 'Koordinat ölç',
       clearMeasurements: 'Ölçümleri temizle',
-      settings: 'Ölçüm ayarları',
+      measureHide: 'Ölçümleri gizle',
+      measureShow: 'Ölçümleri göster',
+      measureImport: 'Ölçümleri içe aktar',
+      measureExport: 'Ölçümleri dışa aktar',
+      measure: 'Ölçüm',
+      annotation: 'İnceleme',
+      markupCloud: 'Bulut',
+      markupCallout: 'Çağrı',
+      markupText: 'Metin',
+      markupRect: 'Dikdörtgen',
+      markupCircle: 'Daire',
+      markupArrow: 'Ok',
+      markupStamp: 'Damga',
+      markupHide: 'İşaretlemeleri gizle',
+      markupShow: 'İşaretlemeleri göster',
+      clearMarkups: 'İşaretlemeleri temizle',
+      markupImport: 'İşaretlemeleri içe aktar',
+      markupExport: 'İşaretlemeleri dışa aktar',
+      settings: 'Ayarlar',
       layers: 'Katmanlar',
       language: 'Dil',
       languageSwitch: 'Dili değiştir',
@@ -255,11 +459,15 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       expand: 'Araç çubuğunu genişlet'
     },
     settings: {
-      toolbar: 'Ölçüm ayarları',
-      measureColor: 'Ölçüm rengi',
+      toolbar: 'Ayarlar',
       ortho: 'Dik modu aç/kapat',
       polar: 'Kutupsal izleme açıları',
       polarAngles: 'Kutupsal izleme açıları'
+    },
+    drawStyle: {
+      color: 'Renk',
+      lineWeight: 'Çizgi kalınlığı',
+      fontSize: 'Yazı yüksekliği'
     },
     layers: {
       title: 'Katmanlar',
@@ -280,6 +488,32 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
         'Çokgen köşelerini tıklayın; bitirmek için ilk noktanın yakınına tıklayın veya Enter’a basın.',
       measureCoordinateHint:
         'X/Y koordinatlarını okumak için bir nokta tıklayın (nesne yakalama etkin).',
+      measureExported: '{count} ölçüm dışa aktarıldı.',
+      measureImported: '{count} ölçüm içe aktarıldı.',
+      measureImportFailed: 'Ölçüm içe aktarılamadı: {error}',
+      markupCloudHint: 'Revizyon bulutu çizmek için iki köşe tıklayın.',
+      markupCalloutHint: 'Önce lider ucunu, sonra metin konumunu tıklayın.',
+      markupTextHint: 'Metin yerleştirmek için bir nokta tıklayın.',
+      markupRectHint: 'Dikdörtgen çizmek için iki köşe tıklayın.',
+      markupCircleHint: 'Önce merkezi, sonra çevre üzerindeki bir noktayı tıklayın.',
+      markupArrowHint: 'Önce başlangıcı, sonra ok ucunu tıklayın.',
+      markupStampHint: 'Damga yerleştirmek için tıklayın (onaylandı / reddedildi / …).',
+      markupArrowEndHint: 'Ok ucunu tıklayın.',
+      markupRectCornerHint: 'Karşı köşeyi tıklayın.',
+      markupCloudCornerHint: 'Karşı köşeyi tıklayın.',
+      markupCalloutAnchorHint: 'Metin balonu konumunu tıklayın.',
+      markupCircleRadiusHint: 'Çevre üzerindeki bir noktayı tıklayın.',
+      markupTextPrompt: 'İşaretleme metnini girin',
+      markupTextEditHint:
+        'Metni tuval üzerinde yazın. Enter ile bitirin, Esc ile iptal edin.',
+      markupShapeCalloutHint:
+        'Metin kutusunu yerleştirmek için tıklayın (lider şekle bağlanır). Esc çağrıyı iptal eder.',
+      markupDefaultLabel: 'Not',
+      markupSelected: 'Seçili işaretleme: {type}',
+      markupCount: 'İşaretlemeler: {count}',
+      markupExported: '{count} işaretleme dışa aktarıldı.',
+      markupImported: '{count} işaretleme içe aktarıldı.',
+      markupImportFailed: 'İşaretleme içe aktarılamadı: {error}',
       distance: 'Mesafe: {value}',
       coordinates: 'X: {x}  Y: {y}',
       angle: 'Açı: {value}',

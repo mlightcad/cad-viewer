@@ -18,8 +18,9 @@ const ICON_MEASURE_AREA =
 const ICON_MEASURE_COORDINATE =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.25 2h1.5v5.25H16v1.5h-5.25V16h-1.5v-7.25H4v-1.5h5.25V2Z"/><circle fill="currentColor" cx="10" cy="10" r="1.75"/></svg>'
 
-const ICON_CLEAR_MEASUREMENTS =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>'
+/** Shared trash icon for clear-measurements / clear-markups (matched size). */
+const ICON_CLEAR =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M7.5 3.5h5v1.2h3.2v1.4H4.3V4.7h3.2V3.5zm-2 4.1h9.2l-.7 8.2a1.5 1.5 0 0 1-1.5 1.4H7.5a1.5 1.5 0 0 1-1.5-1.4L5.5 7.6zm2.2 1.6-.4 5.4h1.4l.4-5.4H7.7zm3.6 0-.4 5.4h1.4l.4-5.4h-1.4z"/></svg>'
 
 const ICON_LAYER =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="m434.8 137.65-149.36-68.1c-16.19-7.4-42.69-7.4-58.88 0L77.3 137.65c-17.6 8-17.6 21.09 0 29.09l148 67.5c16.89 7.7 44.69 7.7 61.58 0l148-67.5c17.52-8 17.52-21.1-.08-29.09M160 308.52l-82.7 37.11c-17.6 8-17.6 21.1 0 29.1l148 67.5c16.89 7.69 44.69 7.69 61.58 0l148-67.5c17.6-8 17.6-21.1 0-29.1l-79.94-38.47"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="m160 204.48-82.8 37.16c-17.6 8-17.6 21.1 0 29.1l148 67.49c16.89 7.7 44.69 7.7 61.58 0l148-67.49c17.7-8 17.7-21.1.1-29.1L352 204.48"/></svg>'
@@ -54,6 +55,45 @@ const ICON_CHEVRON_UP =
 const ICON_CHEVRON_DOWN =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 13.5 14.5 9h-9L10 13.5Z"/></svg>'
 
+const ICON_MEASURE =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M1.5 7h17v6h-17ZM4.25 7h1v2.5h-1ZM7.5 7h.75v1.5H7.5ZM10.25 7h1v2.5h-1ZM13.5 7h.75v1.5H13.5ZM16.25 7h1v2.5h-1Z"/></svg>'
+
+const ICON_ANNOTATION =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.4 3.25H5.5A2.25 2.25 0 0 0 3.25 5.5v9A2.25 2.25 0 0 0 5.5 16.75h9A2.25 2.25 0 0 0 16.75 14.5V8.6"/><g transform="rotate(45 13.2 6.7)"><rect x="11.7" y="1.55" width="3" height="7.45" rx="1.45"/><path d="M11.7 3.2h3"/><path d="M11.7 9 13.2 12.15 14.7 9"/><rect x="12.8" y="7.05" width="0.8" height="1.2" rx="0.4"/></g></g></svg>'
+
+const ICON_MARKUP_CLOUD =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M4.2 13.2c-1.1 0-2-.9-2-2 0-.9.6-1.7 1.4-1.9C3.5 7.6 4.9 6.5 6.6 6.5c.5 0 1 .1 1.4.3C8.6 5.4 9.9 4.7 11.4 4.7c2.3 0 4.2 1.7 4.5 3.9.9.3 1.6 1.2 1.6 2.2 0 1.3-1 2.4-2.3 2.4H4.2z"/></svg>'
+
+const ICON_MARKUP_CALLOUT =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M3.5 3.5h13v9H8.2L5 15.2V12.5H3.5v-9zm1.5 1.5v6h1.5v1.6L8.8 11H15V5H5zm2 2.5h6v1.2H7V7.5zm0 2.5h4.5v1.2H7V10z"/></svg>'
+
+const ICON_MARKUP_TEXT =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M4 4.5h12v1.6H11.2V15.5H8.8V6.1H4V4.5z"/></svg>'
+
+const ICON_MARKUP_RECT =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M3.5 4.5h13v11h-13v-11zm1.5 1.5v8h10v-8H5z"/></svg>'
+
+const ICON_MARKUP_CIRCLE =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10 3.2a6.8 6.8 0 1 1 0 13.6 6.8 6.8 0 0 1 0-13.6zm0 1.5a5.3 5.3 0 1 0 0 10.6 5.3 5.3 0 0 0 0-10.6z"/></svg>'
+
+const ICON_MARKUP_ARROW =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M3.5 9.25h9.2L9.4 6 10.5 5l5 5-5 5-1.1-1 3.3-3.25H3.5v-1.5z"/></svg>'
+
+const ICON_MARKUP_STAMP =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M7.2 3.5a2.8 2.8 0 0 1 5.6 0v3.2h1.4A2.2 2.2 0 0 1 16.4 9v2.2H3.6V9a2.2 2.2 0 0 1 2.2-2.3h1.4V3.5zm1.5 0v3.2h2.6V3.5a1.3 1.3 0 0 0-2.6 0zM3.5 14.2h13v2.3h-13v-2.3z"/></svg>'
+
+const ICON_MARKUP_IMPORT =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.25 3.5h1.5v7.2l2.4-2.4 1.05 1.05L10 14.05 5.8 9.85l1.05-1.05 2.4 2.4V3.5zM3.5 15.5h13v1.5h-13v-1.5z"/></svg>'
+
+const ICON_MARKUP_EXPORT =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.25 12.5h1.5V5.3l2.4 2.4 1.05-1.05L10 2.95 5.8 7.15l1.05 1.05 2.4-2.4V12.5zM3.5 15.5h13v1.5h-13v-1.5z"/></svg>'
+
+const ICON_MARKUP_SHOW =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M512 160c320 0 512 352 512 352S832 864 512 864 0 512 0 512s192-352 512-352m0 64c-225.28 0-384.128 208.064-436.8 288 52.608 79.872 211.456 288 436.8 288 225.28 0 384.128-208.064 436.8-288-52.608-79.872-211.456-288-436.8-288m0 64a224 224 0 1 1 0 448 224 224 0 0 1 0-448m0 64a160.19 160.19 0 0 0-160 160c0 88.192 71.744 160 160 160s160-71.808 160-160-71.744-160-160-160"/></svg>'
+
+const ICON_MARKUP_HIDE =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M876.8 156.8c0-9.6-3.2-16-9.6-22.4s-12.8-9.6-22.4-9.6-16 3.2-22.4 9.6L736 220.8c-64-32-137.6-51.2-224-60.8-160 16-288 73.6-377.6 176S0 496 0 512s48 73.6 134.4 176c22.4 25.6 44.8 48 73.6 67.2l-86.4 89.6c-6.4 6.4-9.6 12.8-9.6 22.4s3.2 16 9.6 22.4 12.8 9.6 22.4 9.6 16-3.2 22.4-9.6l704-710.4c3.2-6.4 6.4-12.8 6.4-22.4m-646.4 528Q115.2 579.2 76.8 512q43.2-72 153.6-172.8C304 272 400 230.4 512 224c64 3.2 124.8 19.2 176 44.8l-54.4 54.4C598.4 300.8 560 288 512 288c-64 0-115.2 22.4-160 64s-64 96-64 160c0 48 12.8 89.6 35.2 124.8L256 707.2c-9.6-6.4-19.2-16-25.6-22.4m140.8-96Q352 555.2 352 512c0-44.8 16-83.2 48-112s67.2-48 112-48c28.8 0 54.4 6.4 73.6 19.2zM889.599 336c-12.8-16-28.8-28.8-41.6-41.6l-48 48c73.6 67.2 124.8 124.8 150.4 169.6q-43.2 72-153.6 172.8c-73.6 67.2-172.8 108.8-284.8 115.2-51.2-3.2-99.2-12.8-140.8-28.8l-48 48c57.6 22.4 118.4 38.4 188.8 44.8 160-16 288-73.6 377.6-176S1024 528 1024 512s-48.001-73.6-134.401-176"/><path fill="currentColor" d="M511.998 672c-12.8 0-25.6-3.2-38.4-6.4l-51.2 51.2c28.8 12.8 57.6 19.2 89.6 19.2 64 0 115.2-22.4 160-64 41.6-41.6 64-96 64-160 0-32-6.4-64-19.2-89.6l-51.2 51.2c3.2 12.8 6.4 25.6 6.4 38.4 0 44.8-16 83.2-48 112s-67.2 48-112 48"/></svg>'
+
 /**
  * Inline SVG markup keyed by toolbar / layer UI usage.
  * Each value is a complete `<svg>…</svg>` string using `currentColor`.
@@ -71,8 +111,8 @@ export const acExHtmlIcons = {
   measureArea: ICON_MEASURE_AREA,
   /** Measure-coordinate toolbar icon. */
   measureCoordinate: ICON_MEASURE_COORDINATE,
-  /** Clear-measurements toolbar icon. */
-  clearMeasurements: ICON_CLEAR_MEASUREMENTS,
+  /** Clear-measurements toolbar icon (same glyph as clear markups). */
+  clearMeasurements: ICON_CLEAR,
   /** Open layer drawer toolbar icon. */
   layer: ICON_LAYER,
   /** Per-layer zoom-to-box button icon. */
@@ -94,7 +134,37 @@ export const acExHtmlIcons = {
   /** Collapse toolbar (chevron up). */
   chevronUp: ICON_CHEVRON_UP,
   /** Expand toolbar (chevron down). */
-  chevronDown: ICON_CHEVRON_DOWN
+  chevronDown: ICON_CHEVRON_DOWN,
+  /** Measure tools parent menu icon. */
+  measure: ICON_MEASURE,
+  /** Review / annotation tools parent menu icon. */
+  annotation: ICON_ANNOTATION,
+  /** Markup revision cloud. */
+  markupCloud: ICON_MARKUP_CLOUD,
+  /** Markup callout. */
+  markupCallout: ICON_MARKUP_CALLOUT,
+  /** Markup text. */
+  markupText: ICON_MARKUP_TEXT,
+  /** Markup rectangle. */
+  markupRect: ICON_MARKUP_RECT,
+  /** Markup circle. */
+  markupCircle: ICON_MARKUP_CIRCLE,
+  /** Markup arrow. */
+  markupArrow: ICON_MARKUP_ARROW,
+  /** Markup stamp. */
+  markupStamp: ICON_MARKUP_STAMP,
+  /** Import markup sidecar JSON. */
+  markupImport: ICON_MARKUP_IMPORT,
+  /** Export markup sidecar JSON. */
+  markupExport: ICON_MARKUP_EXPORT,
+  /** Show markups (open eye). */
+  markupShow: ICON_MARKUP_SHOW,
+  /** Hide markups (slashed eye). */
+  markupHide: ICON_MARKUP_HIDE,
+  /** @deprecated Prefer {@link markupHide} / {@link markupShow}. */
+  markupVisibility: ICON_MARKUP_HIDE,
+  /** Clear all markups. */
+  clearMarkups: ICON_CLEAR
 } as const
 
 /**
@@ -114,6 +184,28 @@ export function acExToolbarButton(
     .map(([key, value]) => `${key}="${escapeAttr(value)}"`)
     .join(' ')
   return `<button type="button" class="mlcad-tool-btn" title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}" ${attrStr}>${icon}</button>`
+}
+
+/**
+ * Builds a flyout menu item with icon + label (cad-simple-ui-plugin style).
+ *
+ * @param icon - SVG markup from {@link acExHtmlIcons}.
+ * @param label - Default visible label before i18n overrides.
+ * @param attrs - Additional attributes (e.g. `data-action`, `data-i18n-key`).
+ */
+export function acExDropdownItem(
+  icon: string,
+  label: string,
+  attrs: Record<string, string>
+): string {
+  const attrStr = Object.entries(attrs)
+    .map(([key, value]) => `${key}="${escapeAttr(value)}"`)
+    .join(' ')
+  const i18nKey = attrs['data-i18n-key']
+  const labelAttrs = i18nKey
+    ? ` data-i18n-key="${escapeAttr(i18nKey)}" data-i18n-text`
+    : ''
+  return `<button type="button" class="mlcad-dropdown-item" role="menuitem" title="${escapeAttr(label)}" ${attrStr}><span class="mlcad-dropdown-icon" aria-hidden="true">${icon}</span><span class="mlcad-dropdown-label"${labelAttrs}>${escapeAttr(label)}</span></button>`
 }
 
 function escapeAttr(value: string): string {

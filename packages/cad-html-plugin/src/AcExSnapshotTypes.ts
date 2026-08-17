@@ -241,8 +241,8 @@ export type AcExInitialViewMode = 'fit' | 'current'
 /**
  * Offline viewer capability profile embedded at export time.
  *
- * - `view` — pan/zoom and layer visibility only (no measurement or OSNAP data).
- * - `measure` — full viewer with measurement tools and analytic OSNAP catalog.
+ * - `view` — pan/zoom and layer visibility only (no measurement, markup, or OSNAP data).
+ * - `measure` — full viewer with measurement tools, markup annotations, and analytic OSNAP catalog.
  */
 export type AcExViewerMode = 'view' | 'measure'
 

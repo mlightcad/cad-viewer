@@ -1,0 +1,84 @@
+/**
+ * Measurement sidecar types for the offline HTML viewer.
+ *
+ * Schema matches `@mlightcad/cad-simple-viewer` measurement sidecar JSON so
+ * measurements can be exchanged between the full CAD app and exported HTML.
+ *
+ * @module AcExMeasurementTypes
+ * @packageDocumentation
+ */
+
+/** Measurement kinds that can be persisted in a sidecar JSON file. */
+export type AcExMeasurementType =
+  | 'distance'
+  | 'angle'
+  | 'area'
+  | 'arc'
+  | 'point'
+
+/** 2D world point stored in a measurement sidecar. */
+export interface AcExMeasurementPoint2d {
+  x: number
+  y: number
+}
+
+/** Drawing style stored in the sidecar (CSS-friendly). */
+export interface AcExMeasurementSidecarStyle {
+  color: string
+  lineWeight: number
+  fontSize: number
+}
+
+export interface AcExMeasurementDistanceGeometry {
+  type: 'distance'
+  start: AcExMeasurementPoint2d
+  end: AcExMeasurementPoint2d
+}
+
+export interface AcExMeasurementAngleGeometry {
+  type: 'angle'
+  vertex: AcExMeasurementPoint2d
+  arm1: AcExMeasurementPoint2d
+  arm2: AcExMeasurementPoint2d
+}
+
+export interface AcExMeasurementAreaGeometry {
+  type: 'area'
+  points: AcExMeasurementPoint2d[]
+}
+
+export interface AcExMeasurementArcGeometry {
+  type: 'arc'
+  center: AcExMeasurementPoint2d
+  radius: number
+  start: AcExMeasurementPoint2d
+  end: AcExMeasurementPoint2d
+}
+
+export interface AcExMeasurementPointGeometry {
+  type: 'point'
+  position: AcExMeasurementPoint2d
+}
+
+export type AcExMeasurementGeometry =
+  | AcExMeasurementDistanceGeometry
+  | AcExMeasurementAngleGeometry
+  | AcExMeasurementAreaGeometry
+  | AcExMeasurementArcGeometry
+  | AcExMeasurementPointGeometry
+
+/** One committed measurement in a sidecar file. */
+export interface AcExMeasurementRecord {
+  id: string
+  type: AcExMeasurementType
+  layoutId?: string
+  style: AcExMeasurementSidecarStyle
+  geometry: AcExMeasurementGeometry
+}
+
+/** Sidecar JSON document for measurement overlays. */
+export interface AcExMeasurementSidecarFile {
+  version: 1
+  drawingName?: string
+  measurements: AcExMeasurementRecord[]
+}
