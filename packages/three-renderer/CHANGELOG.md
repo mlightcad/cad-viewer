@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.6.1
+
+### Patch Changes
+
+- feat: extends Design Review markup and measurement to the HTML viewer with sidecar persistence, aligned review icons, and HTML-only measure overlays that avoid forcing WebGL redraws. Also preserves absolute hatch colours when only lineweight is ByLayer, and documents GitMCP servers in the README and Cursor config
+
 ## 1.6.0
 
 ### Minor Changes
