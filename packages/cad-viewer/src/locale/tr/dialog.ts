@@ -84,8 +84,9 @@ export default {
     viewerModeView: 'Görüntüle',
     viewerModeViewHint:
       'Yalnızca kaydırma, yakınlaştırma ve katman kontrolleri',
-    viewerModeMeasure: 'Ölçüm',
-    viewerModeMeasureHint: 'Görüntüleme araçlarına ek olarak mesafe ölçümü'
+    viewerModeMeasure: 'Ölçüm ve İnceleme',
+    viewerModeMeasureHint:
+      'Görüntüleme araçlarına ek olarak ölçüm ve işaretleme'
   },
   quickSelectDlg: {
     title: 'Hızlı Seçim',

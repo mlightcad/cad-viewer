@@ -83,8 +83,8 @@ export default {
     viewerMode: 'Režim prohlížeče',
     viewerModeView: 'Prohlížení',
     viewerModeViewHint: 'Pouze posun, přiblížení a ovládání hladin',
-    viewerModeMeasure: 'Měření',
-    viewerModeMeasureHint: 'Nástroje prohlížení plus měření vzdálenosti'
+    viewerModeMeasure: 'Měření a kontrola',
+    viewerModeMeasureHint: 'Nástroje prohlížení plus měření a poznámky'
   },
   quickSelectDlg: {
     title: 'Rychlý výběr',
