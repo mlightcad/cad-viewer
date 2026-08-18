@@ -17,8 +17,8 @@ import {
 import {
   AcApConvertToDxfCmd,
   acapCssColor,
-  acapDrawStyleKindForCommand,
   AcApDocManager,
+  acapDrawStyleKindForCommand,
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapGetMeasurementLineWeight,
