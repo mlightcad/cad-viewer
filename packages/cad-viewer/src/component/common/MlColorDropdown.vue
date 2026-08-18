@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { AcCmColor, AcCmColorMethod } from '@mlightcad/data-model'
+import { AcCmColor, AcCmColorMethod, AcCmColorUtil } from '@mlightcad/data-model'
 import { ElOption, ElSelect } from 'element-plus'
 import { type Component, computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -101,15 +101,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const dlgVisible = ref<boolean>(false)
-const selectedKey = ref<string>(colorToKey(props.modelValue))
-const selectedColor = computed<string | undefined>(() =>
-  props.modelValue?.toString()
-)
-const selectedDisplayColor = computed<string>(
-  () => props.displayColor || keyToDisplayColor(selectedKey.value)
-)
-
 const defaultItems = [
   { key: 'bylayer', name: 'ByLayer' },
   { key: 'byblock', name: 'ByBlock' },
@@ -120,6 +111,15 @@ const defaultItems = [
   { key: 'aci-5', name: 'Blue' },
   { key: 'aci-6', name: 'Magenta' }
 ]
+
+const dlgVisible = ref<boolean>(false)
+const selectedKey = ref<string>(colorToKey(props.modelValue))
+const selectedColor = computed<string | undefined>(() =>
+  props.modelValue?.toString()
+)
+const selectedDisplayColor = computed<string>(
+  () => props.displayColor || keyToDisplayColor(selectedKey.value)
+)
 
 const mergedColorItems = computed(() =>
   defaultItems.map(i => ({
@@ -171,10 +171,23 @@ function handleDialogCancel() {
   selectedKey.value = colorToKey(props.modelValue)
 }
 
+function namedRibbonAciKey(c: AcCmColor): string | undefined {
+  let index: number | undefined
+  if (c.isByACI) index = c.colorIndex
+  else if (c.isByColor && c.RGB != null) {
+    index = AcCmColorUtil.getIndexByColor(c.RGB)
+  }
+  if (index == null) return undefined
+  const key = `aci-${index}`
+  return defaultItems.some(item => item.key === key) ? key : undefined
+}
+
 function colorToKey(c?: AcCmColor): string {
   if (!c) return ''
   if (c.isByLayer) return 'bylayer'
   if (c.isByBlock) return 'byblock'
+  const namedAci = namedRibbonAciKey(c)
+  if (namedAci) return namedAci
   if (c.isByACI) return `aci-${c.colorIndex}`
   if (c.isByColor) return `rgb-${c.red}-${c.green}-${c.blue}`
   return ''
@@ -210,7 +223,9 @@ function keyToDisplayColor(key: string) {
 function keyToDisplayName(key: string) {
   const found = mergedColorItems.value.find(i => i.key === key)
   if (found) return found.i18nName
-  if (key.startsWith('rgb-')) return t('main.colorDropdown.custom')
+  if (key.startsWith('rgb-') || key.startsWith('aci-')) {
+    return t('main.colorDropdown.custom')
+  }
   return ''
 }
 </script>

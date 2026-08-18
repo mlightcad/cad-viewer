@@ -49,8 +49,8 @@ const props = withDefaults(defineProps<RibbonMarkupFontSizeSelectProps>(), {
   options: () => [10, 12, 14, 16, 18, 20, 24, 28, 32],
   disabled: false,
   placeholder: '',
-  // Match lineweight control width so the left icon stays visible.
-  controlWidth: undefined
+  // Match overlay line-weight control width so the three style dropdowns align.
+  controlWidth: '120px'
 })
 
 const emit = defineEmits<{
