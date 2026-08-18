@@ -610,6 +610,12 @@ function startViewer(): void {
           const mode = btn.getAttribute('data-measure-mode')
           btn.classList.toggle('active', mode === measure.mode)
         })
+      } else if (menuId === 'review' && markup) {
+        markup.setVisible(markup.visible)
+        menuRoot.querySelectorAll('[data-markup-mode]').forEach(btn => {
+          const mode = btn.getAttribute('data-markup-mode')
+          btn.classList.toggle('active', mode === markup.mode)
+        })
       } else if (menuId === 'zoom') {
         const zoomWindow = navToolsRef.current?.getMode() === 'zoom-window'
         menuRoot.querySelectorAll('[data-action]').forEach(btn => {
