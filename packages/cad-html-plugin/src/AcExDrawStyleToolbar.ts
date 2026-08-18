@@ -99,6 +99,107 @@ const TOOLBAR_CSS = `
   font-size: 12px;
   padding: 0 6px;
 }
+.mlcad-draw-style-toolbar__lineweight {
+  position: relative;
+  width: 120px;
+  flex: 0 0 120px;
+}
+.mlcad-draw-style-toolbar__lineweight-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+  background: rgba(18, 22, 28, 0.95);
+  color: inherit;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+}
+.mlcad-draw-style-toolbar__lineweight-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.mlcad-draw-style-toolbar__lineweight-caret {
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 0;
+  height: 0;
+  border-left: 3.5px solid transparent;
+  border-right: 3.5px solid transparent;
+  border-top: 4px solid currentColor;
+  opacity: 0.55;
+}
+.mlcad-draw-style-toolbar__lineweight-preview {
+  position: relative;
+  display: inline-flex;
+  width: 36px;
+  height: 14px;
+  flex: 0 0 36px;
+}
+.mlcad-draw-style-toolbar__lineweight-preview::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--ml-lineweight-height, 2px);
+  transform: translateY(-50%);
+  background-color: currentColor;
+  border-radius: 999px;
+}
+.mlcad-draw-style-toolbar__lineweight-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 2;
+  min-width: 148px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(28, 32, 40, 0.98);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+.mlcad-draw-style-toolbar__lineweight-menu.is-open {
+  display: block;
+}
+.mlcad-draw-style-toolbar__lineweight-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.mlcad-draw-style-toolbar__lineweight-item:hover,
+.mlcad-draw-style-toolbar__lineweight-item.is-selected {
+  background: rgba(255, 255, 255, 0.1);
+}
+.mlcad-draw-style-toolbar__lineweight-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
 .mlcad-draw-style-toolbar__color {
   position: relative;
 }
@@ -202,6 +303,140 @@ function formatLineWeight(value: number): string {
   return `${(value / 100).toFixed(2)} mm`
 }
 
+function previewLineHeightPx(value: number): number {
+  return Math.max(1, Math.min(6, value / 40))
+}
+
+interface AcExLineWeightPicker {
+  root: HTMLDivElement
+  setValue: (weight: number) => void
+  setTitle: (title: string) => void
+  close: () => void
+  isOpen: () => boolean
+  contains: (node: Node | null) => boolean
+}
+
+function createLineWeightPicker(
+  onChange: (weight: number) => void,
+  onOpen: () => void
+): AcExLineWeightPicker {
+  const prefix = 'mlcad-draw-style-toolbar'
+  const weights = numericLineWeights()
+  let open = false
+
+  const root = document.createElement('div')
+  root.className = `${prefix}__lineweight`
+
+  const trigger = document.createElement('button')
+  trigger.type = 'button'
+  trigger.className = `${prefix}__lineweight-trigger`
+  trigger.setAttribute('aria-haspopup', 'listbox')
+  trigger.setAttribute('aria-expanded', 'false')
+
+  const preview = document.createElement('span')
+  preview.className = `${prefix}__lineweight-preview`
+
+  const label = document.createElement('span')
+  label.className = `${prefix}__lineweight-label`
+
+  const caret = document.createElement('span')
+  caret.className = `${prefix}__lineweight-caret`
+  caret.setAttribute('aria-hidden', 'true')
+
+  trigger.append(preview, label, caret)
+
+  const menu = document.createElement('div')
+  menu.className = `${prefix}__lineweight-menu`
+  menu.setAttribute('role', 'listbox')
+
+  const paintTrigger = (weight: number) => {
+    preview.style.setProperty(
+      '--ml-lineweight-height',
+      `${previewLineHeightPx(weight)}px`
+    )
+    label.textContent = formatLineWeight(weight)
+  }
+
+  const markSelected = (weight: number) => {
+    menu.querySelectorAll(`.${prefix}__lineweight-item`).forEach(node => {
+      const item = node as HTMLElement
+      item.classList.toggle('is-selected', item.dataset.value === String(weight))
+    })
+  }
+
+  const close = () => {
+    open = false
+    menu.classList.remove('is-open')
+    trigger.setAttribute('aria-expanded', 'false')
+  }
+
+  const openMenu = () => {
+    onOpen()
+    open = true
+    menu.classList.add('is-open')
+    trigger.setAttribute('aria-expanded', 'true')
+  }
+
+  const addItem = (weight: number) => {
+    const item = document.createElement('button')
+    item.type = 'button'
+    item.className = `${prefix}__lineweight-item`
+    item.dataset.value = String(weight)
+    item.setAttribute('role', 'option')
+
+    const itemPreview = document.createElement('span')
+    itemPreview.className = `${prefix}__lineweight-preview`
+    itemPreview.style.setProperty(
+      '--ml-lineweight-height',
+      `${previewLineHeightPx(weight)}px`
+    )
+
+    const itemLabel = document.createElement('span')
+    itemLabel.className = `${prefix}__lineweight-text`
+    itemLabel.textContent = formatLineWeight(weight)
+
+    item.append(itemPreview, itemLabel)
+    item.addEventListener('click', event => {
+      event.preventDefault()
+      event.stopPropagation()
+      paintTrigger(weight)
+      markSelected(weight)
+      close()
+      onChange(weight)
+    })
+    menu.appendChild(item)
+  }
+
+  for (const weight of weights) addItem(weight)
+
+  trigger.addEventListener('click', event => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (open) close()
+    else openMenu()
+  })
+
+  root.append(trigger, menu)
+  paintTrigger(weights[0] ?? 25)
+  markSelected(weights[0] ?? 25)
+
+  return {
+    root,
+    setValue: weight => {
+      if (!(weight > 0)) return
+      if (!menu.querySelector(`[data-value="${weight}"]`)) addItem(weight)
+      paintTrigger(weight)
+      markSelected(weight)
+    },
+    setTitle: title => {
+      trigger.title = title
+    },
+    close,
+    isOpen: () => open,
+    contains: node => !!node && root.contains(node)
+  }
+}
+
 function ensureStyles(): void {
   if (typeof document === 'undefined') return
   let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null
@@ -283,20 +518,13 @@ export function setupAcExDrawStyleToolbar(
   colorWrap.appendChild(colorPanel)
   root.appendChild(colorWrap)
 
-  const lineWeightSelect = document.createElement('select')
-  lineWeightSelect.className = 'mlcad-draw-style-toolbar__select'
-  for (const weight of numericLineWeights()) {
-    const option = document.createElement('option')
-    option.value = String(weight)
-    option.textContent = formatLineWeight(weight)
-    lineWeightSelect.appendChild(option)
-  }
-  root.appendChild(lineWeightSelect)
-
   const fontSizeSelect = document.createElement('select')
   fontSizeSelect.className = 'mlcad-draw-style-toolbar__select'
   root.appendChild(fontSizeSelect)
 
+  const lineWeightUi: { picker: AcExLineWeightPicker | null } = {
+    picker: null
+  }
   let colorPanelOpen = false
   let colorLeaveTimer: number | undefined
   let currentKind: AcExDrawStyleKind | undefined
@@ -314,6 +542,7 @@ export function setupAcExDrawStyleToolbar(
   }
 
   const showColorPanel = () => {
+    lineWeightUi.picker?.close()
     clearColorLeaveTimer()
     colorPanelOpen = true
     colorPanel.classList.add('is-open')
@@ -337,19 +566,7 @@ export function setupAcExDrawStyleToolbar(
     const color = cssToColor(style.color)
     swatchFill.style.background = cssColor(color)
     markSelectedAci(aciIndexOf(color))
-
-    const weightValue = String(style.lineWeight)
-    if (
-      !Array.from(lineWeightSelect.options).some(
-        option => option.value === weightValue
-      )
-    ) {
-      const option = document.createElement('option')
-      option.value = weightValue
-      option.textContent = formatLineWeight(style.lineWeight)
-      lineWeightSelect.appendChild(option)
-    }
-    lineWeightSelect.value = weightValue
+    lineWeightUi.picker?.setValue(style.lineWeight)
 
     const sizes = new Set(FONT_SIZE_OPTIONS)
     if (Number.isFinite(style.fontSize) && style.fontSize > 0) {
@@ -389,7 +606,7 @@ export function setupAcExDrawStyleToolbar(
 
   const relabel = () => {
     swatch.title = ctx.i18n.t('drawStyle.color')
-    lineWeightSelect.title = ctx.i18n.t('drawStyle.lineWeight')
+    lineWeightUi.picker?.setTitle(ctx.i18n.t('drawStyle.lineWeight'))
     fontSizeSelect.title = ctx.i18n.t('drawStyle.fontSize')
   }
 
@@ -397,6 +614,7 @@ export function setupAcExDrawStyleToolbar(
     currentKind = ctx.getKind()
     if (!currentKind) {
       hideColorPanel()
+      lineWeightUi.picker?.close()
       root.classList.remove('is-visible')
       return
     }
@@ -413,9 +631,8 @@ export function setupAcExDrawStyleToolbar(
   })
   colorWrap.addEventListener('mouseenter', () => clearColorLeaveTimer())
   colorWrap.addEventListener('mouseleave', () => scheduleHideColorPanel())
-  lineWeightSelect.addEventListener('change', () => {
-    applyLineWeight(Number(lineWeightSelect.value))
-  })
+  lineWeightUi.picker = createLineWeightPicker(applyLineWeight, hideColorPanel)
+  root.insertBefore(lineWeightUi.picker.root, fontSizeSelect)
   fontSizeSelect.addEventListener('change', () => {
     applyFontSize(Number(fontSizeSelect.value))
   })
@@ -423,10 +640,14 @@ export function setupAcExDrawStyleToolbar(
   root.addEventListener('mousedown', event => event.stopPropagation())
 
   const onDocumentPointerDown = (event: PointerEvent) => {
-    if (!colorPanelOpen) return
     const target = event.target as Node | null
-    if (target && colorWrap.contains(target)) return
-    hideColorPanel()
+    const inColor = !!target && colorWrap.contains(target)
+    const inLineWeight = !!lineWeightUi.picker?.contains(target)
+    const colorOpen = colorPanelOpen
+    const weightOpen = !!lineWeightUi.picker?.isOpen()
+    if (!colorOpen && !weightOpen) return
+    if (colorOpen && !inColor) hideColorPanel()
+    if (weightOpen && !inLineWeight) lineWeightUi.picker?.close()
   }
   document.addEventListener('pointerdown', onDocumentPointerDown, true)
 
@@ -441,6 +662,7 @@ export function setupAcExDrawStyleToolbar(
     dispose: () => {
       document.removeEventListener('pointerdown', onDocumentPointerDown, true)
       clearColorLeaveTimer()
+      lineWeightUi.picker?.close()
       root.remove()
     }
   }

@@ -6,7 +6,6 @@ import {
   ChatLineSquare,
   Delete,
   DocumentCopy,
-  EditPen,
   Hide,
   RefreshLeft,
   RefreshRight,
@@ -147,6 +146,7 @@ import {
   revCloud,
   revFreeDraw,
   revRect,
+  revText,
   setting,
   splineFitPoints,
   xline
@@ -637,6 +637,18 @@ const activateRibbonTabForDrawCommand = (args: AcEdCommandEventArgs) => {
   }
 }
 
+/**
+ * After a markup / measurement draw command ends, restore the tab from the
+ * current exclusive overlay selection. IDs are cleared so a markup that
+ * stayed selected across a measurement command still switches back to Review.
+ */
+const activateRibbonTabAfterDrawCommand = (args: AcEdCommandEventArgs) => {
+  if (!acapDrawStyleKindForCommand(args.command?.globalName)) return
+  lastActivatedMarkupId = undefined
+  lastActivatedMeasurementId = undefined
+  scheduleActivateRibbonTabForOverlaySelection()
+}
+
 onMounted(() => {
   AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
     handleSysVarChange
@@ -661,6 +673,9 @@ onMounted(() => {
   )
   AcApDocManager.instance.editor.events.commandEnded.addEventListener(
     syncMeasurementVisibility
+  )
+  AcApDocManager.instance.editor.events.commandEnded.addEventListener(
+    activateRibbonTabAfterDrawCommand
   )
   AcApDocManager.instance.events.documentActivated.addEventListener(
     handleDocumentActivated
@@ -703,6 +718,9 @@ onUnmounted(() => {
   )
   AcApDocManager.instance.editor.events.commandEnded.removeEventListener(
     syncMeasurementVisibility
+  )
+  AcApDocManager.instance.editor.events.commandEnded.removeEventListener(
+    activateRibbonTabAfterDrawCommand
   )
   AcApDocManager.instance.events.documentActivated.removeEventListener(
     handleDocumentActivated
@@ -1126,7 +1144,7 @@ const buildBaseTabs = (
       label: t('main.verticalToolbar.markupText.text'),
       tooltip: t('main.verticalToolbar.markupText.description'),
       size: 'large',
-      props: { icon: EditPen }
+      props: { icon: revText }
     }
   ]
 

@@ -17,7 +17,11 @@ import {
 import { commitMarkup } from './AcApMarkupPresenter'
 import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
-import { defaultMarkupColor, getMarkupFontSize } from './AcApMarkupUtil'
+import {
+  defaultMarkupColor,
+  getMarkupFontSize,
+  subscribeMarkupDrawStyle
+} from './AcApMarkupUtil'
 
 /**
  * Place a text markup label at a picked world point.
@@ -51,6 +55,12 @@ export class AcApMarkupTextCmd extends AcEdCommand {
       view.htmlTransientManager.add(badge)
       view.isHtmlDirty = true
 
+      const unsubDrawStyle = subscribeMarkupDrawStyle(() => {
+        badge.setColor(defaultMarkupColor())
+        badge.setFontSize(getMarkupFontSize())
+        view.isHtmlDirty = true
+      })
+
       let text = 'Note'
       try {
         text =
@@ -59,6 +69,7 @@ export class AcApMarkupTextCmd extends AcEdCommand {
             { multiline: false }
           )) || 'Note'
       } finally {
+        unsubDrawStyle()
         view.htmlTransientManager.remove(badgeId)
         view.isHtmlDirty = true
       }

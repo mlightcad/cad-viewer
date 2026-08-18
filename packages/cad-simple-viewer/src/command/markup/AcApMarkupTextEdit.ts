@@ -82,9 +82,12 @@ function ensureStyles(): void {
   const style = document.createElement('style')
   style.id = STYLE_ID
   style.textContent = `
-    .ml-html-text-editing {
-      outline: 1px solid var(--ml-ui-accent, #409eff);
-      outline-offset: 1px;
+    .ml-html-text-editing,
+    .ml-html-text-editing:focus,
+    .ml-html-selected.ml-html-text-editing {
+      outline: none !important;
+      outline-offset: 0;
+      box-shadow: var(--ml-ui-shadow, 0 1px 4px rgba(0, 0, 0, 0.2));
       cursor: text !important;
       user-select: text;
       pointer-events: auto;
@@ -173,6 +176,7 @@ export function editMarkupHtmlText(
     el.style.pointerEvents = 'auto'
     el.textContent = original
     el.classList.add(EDITING_CLASS)
+    listenOn.classList.add(EDITING_CLASS)
     el.tabIndex = 0
     enablePlaintext(el)
 
@@ -182,6 +186,7 @@ export function editMarkupHtmlText(
     const cleanup = () => {
       options.signal?.removeEventListener('abort', onAbort)
       el.classList.remove(EDITING_CLASS)
+      listenOn.classList.remove(EDITING_CLASS)
       el.removeAttribute('contenteditable')
       el.removeAttribute('tabindex')
       listenOn.removeEventListener('pointerdown', onPointerDown, true)

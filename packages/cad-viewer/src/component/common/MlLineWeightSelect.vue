@@ -1,9 +1,12 @@
 <template>
-  <div class="ml-lineweight-select">
+  <div
+    class="ml-lineweight-select"
+    :class="{ 'ml-lineweight-select--compact': compact }"
+  >
     <el-dropdown
       class="ml-lineweight-select__dropdown"
       trigger="click"
-      popper-class="ml-lineweight-popper"
+      :popper-class="popperClass"
       :disabled="props.disabled || !lineWeightItems.length"
       @command="onSelect"
     >
@@ -82,9 +85,22 @@ interface LineWeightSelectProps {
   placeholder?: string
   /** When true, hide ByLayer / ByBlock / Default (overlay style pickers). */
   numericOnly?: boolean
+  /**
+   * Narrower trigger sized for numeric weights plus a stroke preview
+   * (measure / markup style pickers).
+   */
+  compact?: boolean
 }
 
-const props = defineProps<LineWeightSelectProps>()
+const props = withDefaults(defineProps<LineWeightSelectProps>(), {
+  compact: false
+})
+
+const popperClass = computed(() =>
+  props.compact
+    ? 'ml-lineweight-popper ml-lineweight-popper--compact'
+    : 'ml-lineweight-popper'
+)
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: AcGiLineWeight): void
@@ -291,12 +307,30 @@ function onSelect(value: AcGiLineWeight) {
   flex: 1 1 auto;
 }
 
+.ml-lineweight-select--compact .ml-lineweight-select__trigger {
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.ml-lineweight-select--compact .ml-lineweight-select__value {
+  gap: 6px;
+}
+
+.ml-lineweight-select--compact .ml-lineweight-label {
+  font-size: 12px;
+}
+
 .ml-lineweight-preview {
   position: relative;
   display: inline-flex;
   width: 52px;
   height: 14px;
   flex: 0 0 52px;
+}
+
+.ml-lineweight-select--compact .ml-lineweight-preview {
+  width: 36px;
+  flex-basis: 36px;
 }
 
 .ml-lineweight-preview::before {
@@ -323,6 +357,16 @@ function onSelect(value: AcGiLineWeight) {
   justify-content: flex-start;
   gap: 8px;
   min-width: 160px;
+}
+
+:global(.ml-lineweight-popper--compact .ml-lineweight-item) {
+  gap: 6px;
+  min-width: 148px;
+}
+
+:global(.ml-lineweight-popper--compact .ml-lineweight-preview) {
+  width: 36px;
+  flex: 0 0 36px;
 }
 
 :global(.ml-lineweight-popper .ml-lineweight-text) {

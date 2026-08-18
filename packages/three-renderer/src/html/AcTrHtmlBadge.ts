@@ -7,7 +7,7 @@ import { AcTrHtmlElement, type AcTrHtmlElementOptions } from './AcTrHtmlElement'
  * Options for a capsule / label badge.
  */
 export interface AcTrHtmlBadgeOptions extends AcTrHtmlElementOptions {
-  /** Label text color */
+  /** Label text and capsule border color */
   color: AcCmColor
   /** Badge text content */
   text?: string
@@ -47,9 +47,11 @@ export class AcTrHtmlBadge extends AcTrHtmlElement {
     this.element.style.fontSize = `${fontSize}px`
   }
 
-  /** Update the badge text color. */
+  /** Update the badge text color and matching capsule border. */
   setColor(color: AcCmColor): void {
-    this.element.style.color = acTrHtmlCssColor(color)
+    const css = acTrHtmlCssColor(color)
+    this.element.style.color = css
+    this.element.style.borderColor = css
   }
 
   private static createElement(
@@ -61,9 +63,11 @@ export class AcTrHtmlBadge extends AcTrHtmlElement {
     const el = document.createElement('div')
     el.className = 'ml-html-badge'
     el.textContent = text
+    const css = acTrHtmlCssColor(color)
     const size = fontSize != null && fontSize > 0 ? fontSize : 13
     el.style.cssText =
-      `background:var(--ml-ui-bg, rgba(255,255,255,0.95));color:${acTrHtmlCssColor(color)};` +
+      `background:var(--ml-ui-bg, rgba(255,255,255,0.95));color:${css};` +
+      `border:1px solid ${css};box-sizing:border-box;` +
       `font-size:${size}px;font-family:sans-serif;font-weight:500;` +
       'padding:3px 14px;border-radius:20px;pointer-events:none;' +
       `transform:${transform ?? 'translate(-50%,-50%)'};white-space:nowrap;` +

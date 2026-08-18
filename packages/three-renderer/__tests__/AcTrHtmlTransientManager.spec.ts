@@ -377,4 +377,32 @@ describe('AcTrHtmlTransientManager', () => {
     expect(manager.groupsOnLayer('markup')).toEqual([])
     manager.dispose()
   })
+
+  it('highlights selection with glow without recoloring text', () => {
+    const scene = new THREE.Scene()
+    const manager = new AcTrHtmlTransientManager(scene)
+    const group = new AcTrHtmlGroup({
+      id: 'g-style',
+      selectable: true
+    }).add(
+      new AcTrHtmlElement(document.createElement('div'), {
+        id: 'g-style-child',
+        worldPosition: { x: 0, y: 0 }
+      })
+    )
+    manager.add(group)
+    manager.selectGroup('g-style')
+
+    const style = document.head.querySelector(
+      'style[data-ml-html-selection]'
+    ) as HTMLStyleElement | null
+    const css = style?.textContent ?? ''
+    expect(css).toContain('drop-shadow(0 0 1.5px #ffd54f)')
+    expect(css).toContain('drop-shadow(0 0 4px rgba(255, 213, 79, 0.95))')
+    expect(css).toContain('drop-shadow(0 0 8px rgba(255, 213, 79, 0.55))')
+    expect(css).toContain('outline: 2px solid rgba(255, 213, 79, 0.85)')
+    expect(css).not.toContain('color: #ffd54f')
+
+    manager.dispose()
+  })
 })

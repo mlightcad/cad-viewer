@@ -439,6 +439,7 @@ function startViewer(): void {
       getKind: () => {
         if (measure?.isActive) return 'measure'
         if (markup?.isActive) return 'markup'
+        if (markup?.hasSelection && measure?.hasSelection) return undefined
         if (markup?.hasSelection) return 'markup'
         if (measure?.hasSelection) return 'measure'
         return undefined
