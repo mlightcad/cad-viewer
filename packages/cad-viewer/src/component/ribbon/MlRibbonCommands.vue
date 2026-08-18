@@ -18,6 +18,7 @@ import {
   AcApConvertToDxfCmd,
   acapCssColor,
   AcApDocManager,
+  acapDrawStyleKindForCommand,
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapGetMeasurementLineWeight,
@@ -27,6 +28,7 @@ import {
   acapSetMeasurementDrawColor,
   acapSetMeasurementDrawFontSize,
   acapSetMeasurementDrawLineWeight,
+  type AcEdCommandEventArgs,
   AcEdOpenMode,
   type AcTrView2d,
   applyMarkupStyleToSelection,
@@ -38,6 +40,7 @@ import {
   getMarkupFontSize,
   getMarkupLineWeight,
   getMarkupStore,
+  getSelectedMeasurementId,
   isMarkupVisible,
   isMeasurementVisible,
   markupColorToCss,
@@ -158,6 +161,7 @@ import MlRibbonMeasurementUnitsPanel from './MlRibbonMeasurementUnitsPanel.vue'
 import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
 import MlRibbonPropertyLineTypeSelect from './MlRibbonPropertyLineTypeSelect.vue'
 import MlRibbonPropertyLineWeightSelect from './MlRibbonPropertyLineWeightSelect.vue'
+import { classifyOverlaySelection } from './overlaySelectionKind'
 import { useHatchContextualRibbon } from './useHatchContextualRibbon'
 import { useMTextContextualRibbon } from './useMTextContextualRibbon'
 
@@ -518,6 +522,8 @@ const handleDocumentActivated = () => {
   bindAnnotationVisibilityEvents(AcApDocManager.instance?.curDocument?.database)
   ribbonLayerIsolationSnapshot.value = null
   ribbonLayerPreviousSnapshot.value = null
+  lastActivatedMarkupId = undefined
+  lastActivatedMeasurementId = undefined
   syncMarkupVisibility()
   syncMeasurementVisibility()
   syncMarkupStyleControls()
@@ -546,6 +552,90 @@ const applyToSelectedEntities = (mutator: (entity: AcDbEntity) => void) => {
 
 let unsubscribeMarkupStore: (() => void) | undefined
 let unsubscribeMeasurementSelection: (() => void) | undefined
+let lastActivatedMarkupId: string | undefined
+let lastActivatedMeasurementId: string | undefined
+let overlayTabActivationScheduled = false
+let overlayTabActivationDisposed = false
+
+/**
+ * Reads the live CAD + overlay selection for {@link classifyOverlaySelection}.
+ */
+const overlaySelectionSnapshot = () => {
+  const view = AcApDocManager.instance?.curView
+  return {
+    selectedGroups: view?.htmlTransientManager?.getSelectedGroups(),
+    cadEntityCount: view?.selectionSet?.count ?? 0,
+    markupSelectedId: getMarkupStore().selectedId,
+    measurementSelected: getSelectedMeasurementId() != null
+  }
+}
+
+/**
+ * When the ribbon is showing, selecting only markups switches to the Review
+ * tab and selecting only measurements switches to the Measurement tab.
+ * Mixed selections (markup + measurement, drawing entities + overlay, …)
+ * and deselect do not change the tab; only a newly selected exclusive
+ * overlay does.
+ */
+const activateRibbonTabForOverlaySelection = () => {
+  const kind = classifyOverlaySelection(overlaySelectionSnapshot())
+
+  if (kind === 'mixed') return
+
+  if (kind === 'markup') {
+    const markupId = getMarkupStore().selectedId
+    const markupNewlySelected = markupId !== lastActivatedMarkupId
+    lastActivatedMarkupId = markupId
+    lastActivatedMeasurementId = undefined
+    if (markupNewlySelected && docOpenMode.value >= AcEdOpenMode.Review) {
+      activeRibbonTabId.value = 'review'
+    }
+    return
+  }
+
+  lastActivatedMarkupId = undefined
+
+  if (kind === 'measurement') {
+    const measurementId = getSelectedMeasurementId()
+    const measurementNewlySelected = measurementId !== lastActivatedMeasurementId
+    lastActivatedMeasurementId = measurementId
+    if (measurementNewlySelected) {
+      activeRibbonTabId.value = 'measurement'
+    }
+    return
+  }
+
+  lastActivatedMeasurementId = undefined
+}
+
+/**
+ * Coalesce overlay selection notifications from one box-select into a single
+ * tab decision after every group in that gesture has been selected.
+ */
+const scheduleActivateRibbonTabForOverlaySelection = () => {
+  if (overlayTabActivationScheduled) return
+  overlayTabActivationScheduled = true
+  queueMicrotask(() => {
+    overlayTabActivationScheduled = false
+    if (overlayTabActivationDisposed) return
+    activateRibbonTabForOverlaySelection()
+  })
+}
+
+/**
+ * Switches to Measurement or Review while a drawing command is active so
+ * color / lineweight / font-size can be changed before the overlay is committed.
+ */
+const activateRibbonTabForDrawCommand = (args: AcEdCommandEventArgs) => {
+  const kind = acapDrawStyleKindForCommand(args.command?.globalName)
+  if (kind === 'measure') {
+    activeRibbonTabId.value = 'measurement'
+    return
+  }
+  if (kind === 'markup' && docOpenMode.value >= AcEdOpenMode.Review) {
+    activeRibbonTabId.value = 'review'
+  }
+}
 
 onMounted(() => {
   AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
@@ -556,6 +646,9 @@ onMounted(() => {
   )
   AcApDocManager.instance.editor.events.commandWillStart.addEventListener(
     handleMTextCommandWillStart
+  )
+  AcApDocManager.instance.editor.events.commandWillStart.addEventListener(
+    activateRibbonTabForDrawCommand
   )
   AcApDocManager.instance.editor.events.commandEnded.addEventListener(
     handleHatchCommandEnded
@@ -582,6 +675,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  overlayTabActivationDisposed = true
   unsubscribeMarkupStore?.()
   unsubscribeMarkupStore = undefined
   unsubscribeMeasurementSelection?.()
@@ -594,6 +688,9 @@ onUnmounted(() => {
   )
   AcApDocManager.instance.editor.events.commandWillStart.removeEventListener(
     handleMTextCommandWillStart
+  )
+  AcApDocManager.instance.editor.events.commandWillStart.removeEventListener(
+    activateRibbonTabForDrawCommand
   )
   AcApDocManager.instance.editor.events.commandEnded.removeEventListener(
     handleHatchCommandEnded
@@ -669,12 +766,13 @@ const syncMarkupStyleControls = () => {
       selected.style.fontSize != null && selected.style.fontSize > 0
         ? selected.style.fontSize
         : getMarkupFontSize()
-    return
+  } else {
+    markupDrawColor.value = defaultMarkupColor()
+    markupDrawColorDisplay.value = markupColorToCss(markupDrawColor.value)
+    markupDrawLineWeight.value = getMarkupLineWeight()
+    markupDrawFontSize.value = getMarkupFontSize()
   }
-  markupDrawColor.value = defaultMarkupColor()
-  markupDrawColorDisplay.value = markupColorToCss(markupDrawColor.value)
-  markupDrawLineWeight.value = getMarkupLineWeight()
-  markupDrawFontSize.value = getMarkupFontSize()
+  scheduleActivateRibbonTabForOverlaySelection()
 }
 
 /**
@@ -726,16 +824,17 @@ const syncMeasurementStyleControls = () => {
     measurementDrawColorDisplay.value = acapCssColor(selected.color)
     measurementDrawLineWeight.value = selected.lineWeight
     measurementDrawFontSize.value = selected.fontSize
-    return
+  } else {
+    const db = getCurrentDatabase()
+    if (db) {
+      const color = acapGetMeasurementColor(db)
+      measurementDrawColor.value = color.clone()
+      measurementDrawColorDisplay.value = acapCssColor(color)
+    }
+    measurementDrawLineWeight.value = acapGetMeasurementLineWeight()
+    measurementDrawFontSize.value = acapGetMeasurementFontSize()
   }
-  const db = getCurrentDatabase()
-  if (db) {
-    const color = acapGetMeasurementColor(db)
-    measurementDrawColor.value = color.clone()
-    measurementDrawColorDisplay.value = acapCssColor(color)
-  }
-  measurementDrawLineWeight.value = acapGetMeasurementLineWeight()
-  measurementDrawFontSize.value = acapGetMeasurementFontSize()
+  scheduleActivateRibbonTabForOverlaySelection()
 }
 
 const handleMeasurementDrawColorChange = (value?: AcCmColor) => {

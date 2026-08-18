@@ -2,6 +2,9 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md)
 
+[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-simple-viewer.svg?label=cad-simple-viewer)](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer)
+[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-viewer.svg?label=cad-viewer)](https://www.npmjs.com/package/@mlightcad/cad-viewer)
+
 cad-viewer — `первый в мире веб-просмотрщик и редактор DXF/DWG, который полностью работает в браузере без каких-либо серверных сервисов`.
 Благодаря разбору DWG/DXF, обработке геометрии и рендерингу непосредственно в браузере cad-viewer обеспечивает по-настоящему serverless просмотр и редактирование CAD — идеально для облачных приложений, офлайн-работы и сценариев с повышенными требованиями к конфиденциальности.
 

@@ -143,6 +143,7 @@ const verticalToolbarData = computed(() => {
       text: t('main.verticalToolbar.measure.text'),
       command: '',
       description: t('main.verticalToolbar.measure.description'),
+      childrenType: 'sticky',
       children: [
         {
           icon: measureDistance,
@@ -216,6 +217,7 @@ const verticalToolbarData = computed(() => {
       text: t('main.verticalToolbar.annotation.text'),
       command: '',
       description: t('main.verticalToolbar.annotation.description'),
+      childrenType: 'sticky',
       children: [
         {
           icon: revCloud,
