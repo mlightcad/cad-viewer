@@ -90,10 +90,9 @@ export const ICON_MARKUP_CALLOUT = elementPlusIcon(
   'M352 512h320q32 0 32 32t-32 32H352q-32 0-32-32t32-32m0-192h320q32 0 32 32t-32 32H352q-32 0-32-32t32-32'
 )
 
-/** Markup text icon (Element Plus EditPen, same as cad-viewer). */
-export const ICON_MARKUP_TEXT = elementPlusIcon(
-  'm199.04 672.64 193.984 112 224-387.968-193.92-112-224 388.032zm-23.872 60.16 32.896 148.288 144.896-45.696zM455.04 229.248l193.92 112 56.704-98.112-193.984-112zM104.32 708.8l384-665.024 304.768 175.936L409.152 884.8h.064l-248.448 78.336zm384 254.272v-64h448v64z'
-)
+/** Markup text icon (capital A, same as cad-viewer `revText.svg`). */
+export const ICON_MARKUP_TEXT =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" fill-rule="evenodd" d="M10 2.2 17.2 17.6h-2.8l-1.45-4.2H7.05L5.6 17.6H2.8L10 2.2Zm0 4.3L8.2 11.2h3.6L10 6.5Z"/></svg>'
 
 /** Markup arrow icon (Element Plus Right, same as cad-viewer). */
 export const ICON_MARKUP_ARROW = elementPlusIcon(

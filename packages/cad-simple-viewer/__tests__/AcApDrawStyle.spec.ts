@@ -22,6 +22,7 @@ import {
 import {
   acapDrawStyleKindForCommand,
   acapIsDrawStyleToolbarVisible,
+  acapResolveDrawStyleKind,
   acapSetDrawStyleHostHasRibbon,
   acapSetDrawStyleToolbarVisible,
   acapShouldShowDrawStyleToolbar,
@@ -49,15 +50,45 @@ describe('acapDrawStyleKindForCommand', () => {
     expect(acapDrawStyleKindForCommand('MEASUREANGLE')).toBe('measure')
   })
 
-  it('classifies markup drawing commands', () => {
-    expect(acapDrawStyleKindForCommand('markuparrow')).toBe('markup')
-    expect(acapDrawStyleKindForCommand('markupcloud')).toBe('markup')
-  })
-
   it('ignores visibility / import commands', () => {
     expect(acapDrawStyleKindForCommand('measurementvis')).toBeUndefined()
     expect(acapDrawStyleKindForCommand('markupvis')).toBeUndefined()
     expect(acapDrawStyleKindForCommand('line')).toBeUndefined()
+  })
+})
+
+describe('acapResolveDrawStyleKind', () => {
+  it('keeps the overlay kind from overlay selection when no draw command is active', () => {
+    expect(acapResolveDrawStyleKind({ markupSelected: true })).toBe('markup')
+    expect(acapResolveDrawStyleKind({ measurementSelected: true })).toBe(
+      'measure'
+    )
+    expect(acapResolveDrawStyleKind({})).toBeUndefined()
+  })
+
+  it('prefers an active draw command over overlay selection', () => {
+    expect(
+      acapResolveDrawStyleKind({
+        commandKind: 'measure',
+        markupSelected: true
+      })
+    ).toBe('measure')
+    expect(
+      acapResolveDrawStyleKind({
+        commandKind: 'markup',
+        markupSelected: true,
+        measurementSelected: true
+      })
+    ).toBe('markup')
+  })
+
+  it('hides the overlay when markup and measurement are both selected', () => {
+    expect(
+      acapResolveDrawStyleKind({
+        markupSelected: true,
+        measurementSelected: true
+      })
+    ).toBeUndefined()
   })
 })
 

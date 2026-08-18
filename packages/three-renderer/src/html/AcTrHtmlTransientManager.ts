@@ -20,6 +20,9 @@ let selectionStylesInstalled = false
 /**
  * Injects the CSS used to highlight selected HTML overlays.
  *
+ * Selection is a fluorescent glow only: stroke / fill / text colors stay
+ * as drawn. Mirrors cad-html-plugin `AcExHtmlShell` markup/measure rules.
+ *
  * No-op after the first call, and when `document` is unavailable (SSR / workers).
  */
 function ensureSelectionStyles(): void {
@@ -29,23 +32,27 @@ function ensureSelectionStyles(): void {
   style.dataset.mlHtmlSelection = '1'
   style.textContent = `
 .ml-html-dot.${AC_TR_HTML_SELECTED_CLASS} {
-  border-color: #ffd54f !important;
-  box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.55);
+  box-shadow:
+    0 0 0 2px rgba(255, 213, 79, 0.75),
+    0 0 10px rgba(255, 213, 79, 0.95),
+    0 0 18px rgba(255, 213, 79, 0.55);
 }
-.ml-html-badge.${AC_TR_HTML_SELECTED_CLASS} {
-  border: 1px solid rgba(255, 213, 79, 0.75);
-  color: #ffd54f !important;
-  box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.35),
-    var(--ml-ui-shadow, 0 1px 4px rgba(0,0,0,0.2));
-}
+.ml-html-badge.${AC_TR_HTML_SELECTED_CLASS},
 .ml-html-callout.${AC_TR_HTML_SELECTED_CLASS},
-.ml-html-stamp.${AC_TR_HTML_SELECTED_CLASS} {
+.ml-html-stamp.${AC_TR_HTML_SELECTED_CLASS} .ml-html-stamp-badge,
+.ml-html-stamp.${AC_TR_HTML_SELECTED_CLASS} img {
   outline: 2px solid rgba(255, 213, 79, 0.85);
-  box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.35),
-    var(--ml-ui-shadow, 0 1px 4px rgba(0,0,0,0.2));
+  outline-offset: 1px;
+  box-shadow:
+    0 0 0 2px rgba(255, 213, 79, 0.4),
+    0 0 12px rgba(255, 213, 79, 0.75),
+    var(--ml-ui-shadow, 0 1px 4px rgba(0, 0, 0, 0.2));
 }
 .${AC_TR_HTML_CANVAS_CLASS}.${AC_TR_HTML_SELECTED_CLASS} {
-  filter: drop-shadow(0 0 3px #ffd54f);
+  filter:
+    drop-shadow(0 0 1.5px #ffd54f)
+    drop-shadow(0 0 4px rgba(255, 213, 79, 0.95))
+    drop-shadow(0 0 8px rgba(255, 213, 79, 0.55));
 }
 `
   document.head.appendChild(style)

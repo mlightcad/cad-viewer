@@ -309,7 +309,7 @@ describe('default toolbar items', () => {
 
     expect(iconOf('markup-cloud')).toContain('viewBox="0 0 40 40"')
     expect(iconOf('markup-callout')).toContain('273.536 736')
-    expect(iconOf('markup-text')).toContain('m199.04 672.64')
+    expect(iconOf('markup-text')).toContain('M10 2.2 17.2 17.6')
     expect(iconOf('markup-rect')).toContain('1.666717529296875,15.833333')
     expect(iconOf('markup-circle')).toContain(
       '17.366041494140624,8.13321261171875'

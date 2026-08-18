@@ -2,7 +2,6 @@
 import {
   ChatLineSquare,
   Delete,
-  EditPen,
   Hide,
   Right,
   Stamp,
@@ -37,6 +36,7 @@ import {
   revCircle,
   revCloud,
   revRect,
+  revText,
   select,
   switchBg,
   zoomToBox,
@@ -232,7 +232,7 @@ const verticalToolbarData = computed(() => {
           description: t('main.verticalToolbar.markupCallout.description')
         },
         {
-          icon: EditPen,
+          icon: revText,
           text: t('main.verticalToolbar.markupText.text'),
           command: 'markuptext',
           description: t('main.verticalToolbar.markupText.description')

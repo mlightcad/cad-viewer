@@ -22,7 +22,9 @@ import {
 } from '../command/markup/AcApMarkupUtil'
 import {
   applyMeasurementStyleToSelection,
-  getActiveMeasurementStyle
+  getActiveMeasurementStyle,
+  getSelectedMeasurementId,
+  subscribeMeasurementSelection
 } from '../command/measure/AcApMeasurementStore'
 import type { AcEdCommandEventArgs } from '../editor'
 import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
@@ -41,6 +43,7 @@ import type { AcTrView2d } from '../view'
 import {
   type AcApDrawStyleKind,
   acapDrawStyleKindForCommand,
+  acapResolveDrawStyleKind,
   acapSetDrawStyleToolbarVisible,
   acapShouldShowDrawStyleToolbar
 } from './AcApDrawStyle'
@@ -102,6 +105,107 @@ const TOOLBAR_CSS = `
       color: inherit;
       font-size: 12px;
       padding: 0 6px;
+    }
+    .ml-draw-style-toolbar__lineweight {
+      position: relative;
+      width: 120px;
+      flex: 0 0 120px;
+    }
+    .ml-draw-style-toolbar__lineweight-trigger {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      height: 28px;
+      box-sizing: border-box;
+      padding: 0 6px;
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 4px;
+      background: var(--ml-ui-bg, #fff);
+      color: inherit;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1;
+      text-align: left;
+      cursor: pointer;
+    }
+    .ml-draw-style-toolbar__lineweight-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+    }
+    .ml-draw-style-toolbar__lineweight-caret {
+      flex: 0 0 auto;
+      margin-left: auto;
+      width: 0;
+      height: 0;
+      border-left: 3.5px solid transparent;
+      border-right: 3.5px solid transparent;
+      border-top: 4px solid currentColor;
+      opacity: 0.55;
+    }
+    .ml-draw-style-toolbar__lineweight-preview {
+      position: relative;
+      display: inline-flex;
+      width: 36px;
+      height: 14px;
+      flex: 0 0 36px;
+    }
+    .ml-draw-style-toolbar__lineweight-preview::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: var(--ml-lineweight-height, 2px);
+      transform: translateY(-50%);
+      background-color: currentColor;
+      border-radius: 999px;
+    }
+    .ml-draw-style-toolbar__lineweight-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      z-index: 2;
+      min-width: 148px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 4px 0;
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 6px;
+      background: var(--ml-ui-bg, rgba(255, 255, 255, 0.98));
+      box-shadow: var(--ml-ui-shadow, 0 4px 12px rgba(0, 0, 0, 0.16));
+    }
+    .ml-draw-style-toolbar__lineweight-menu.is-open {
+      display: block;
+    }
+    .ml-draw-style-toolbar__lineweight-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px 10px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .ml-draw-style-toolbar__lineweight-item:hover,
+    .ml-draw-style-toolbar__lineweight-item.is-selected {
+      background: var(--ml-ui-hover, rgba(64, 158, 255, 0.12));
+    }
+    .ml-draw-style-toolbar__lineweight-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
     }
     .ml-draw-style-toolbar__color {
       position: relative;
@@ -226,6 +330,160 @@ function formatLineWeight(value: AcGiLineWeight): string {
 }
 
 /**
+ * Converts a numeric line weight into a clamped preview stroke thickness.
+ *
+ * @param value - Line weight in hundredths of a millimeter.
+ * @returns Stroke height in CSS pixels.
+ */
+function previewLineHeightPx(value: number): number {
+  return Math.max(1, Math.min(6, value / 40))
+}
+
+/** Custom line-weight dropdown used by {@link AcApDrawStyleToolbar}. */
+interface AcApLineWeightPicker {
+  /** Root control appended to the overlay. */
+  root: HTMLDivElement
+  /** Updates the trigger and selected menu item. */
+  setValue: (weight: number) => void
+  /** Sets the localized tooltip on the trigger. */
+  setTitle: (title: string) => void
+  /** Closes the popover menu. */
+  close: () => void
+  /** Whether the popover menu is open. */
+  isOpen: () => boolean
+  /** True when `node` is inside this control. */
+  contains: (node: Node | null) => boolean
+}
+
+/**
+ * Builds a compact line-weight dropdown with a stroke preview in each row.
+ *
+ * @param onChange - Called when the user picks a weight.
+ * @param onOpen - Called just before the menu opens (used to close other popovers).
+ * @returns Picker controller.
+ */
+function createLineWeightPicker(
+  onChange: (weight: AcGiLineWeight) => void,
+  onOpen: () => void
+): AcApLineWeightPicker {
+  const prefix = 'ml-draw-style-toolbar'
+  const weights = numericLineWeights()
+  let open = false
+
+  const root = document.createElement('div')
+  root.className = `${prefix}__lineweight`
+
+  const trigger = document.createElement('button')
+  trigger.type = 'button'
+  trigger.className = `${prefix}__lineweight-trigger`
+  trigger.setAttribute('aria-haspopup', 'listbox')
+  trigger.setAttribute('aria-expanded', 'false')
+
+  const preview = document.createElement('span')
+  preview.className = `${prefix}__lineweight-preview`
+
+  const label = document.createElement('span')
+  label.className = `${prefix}__lineweight-label`
+
+  const caret = document.createElement('span')
+  caret.className = `${prefix}__lineweight-caret`
+  caret.setAttribute('aria-hidden', 'true')
+
+  trigger.append(preview, label, caret)
+
+  const menu = document.createElement('div')
+  menu.className = `${prefix}__lineweight-menu`
+  menu.setAttribute('role', 'listbox')
+
+  const paintTrigger = (weight: number) => {
+    preview.style.setProperty(
+      '--ml-lineweight-height',
+      `${previewLineHeightPx(weight)}px`
+    )
+    label.textContent = formatLineWeight(weight)
+  }
+
+  const markSelected = (weight: number) => {
+    menu.querySelectorAll(`.${prefix}__lineweight-item`).forEach(node => {
+      const item = node as HTMLElement
+      item.classList.toggle('is-selected', item.dataset.value === String(weight))
+    })
+  }
+
+  const close = () => {
+    open = false
+    menu.classList.remove('is-open')
+    trigger.setAttribute('aria-expanded', 'false')
+  }
+
+  const openMenu = () => {
+    onOpen()
+    open = true
+    menu.classList.add('is-open')
+    trigger.setAttribute('aria-expanded', 'true')
+  }
+
+  const addItem = (weight: number) => {
+    const item = document.createElement('button')
+    item.type = 'button'
+    item.className = `${prefix}__lineweight-item`
+    item.dataset.value = String(weight)
+    item.setAttribute('role', 'option')
+
+    const itemPreview = document.createElement('span')
+    itemPreview.className = `${prefix}__lineweight-preview`
+    itemPreview.style.setProperty(
+      '--ml-lineweight-height',
+      `${previewLineHeightPx(weight)}px`
+    )
+
+    const itemLabel = document.createElement('span')
+    itemLabel.className = `${prefix}__lineweight-text`
+    itemLabel.textContent = formatLineWeight(weight)
+
+    item.append(itemPreview, itemLabel)
+    item.addEventListener('click', event => {
+      event.preventDefault()
+      event.stopPropagation()
+      paintTrigger(weight)
+      markSelected(weight)
+      close()
+      onChange(weight as AcGiLineWeight)
+    })
+    menu.appendChild(item)
+  }
+
+  for (const weight of weights) addItem(weight)
+
+  trigger.addEventListener('click', event => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (open) close()
+    else openMenu()
+  })
+
+  root.append(trigger, menu)
+  paintTrigger(weights[0] ?? 25)
+  markSelected(weights[0] ?? 25)
+
+  return {
+    root,
+    setValue: weight => {
+      if (!(weight > 0)) return
+      if (!menu.querySelector(`[data-value="${weight}"]`)) addItem(weight)
+      paintTrigger(weight)
+      markSelected(weight)
+    },
+    setTitle: title => {
+      trigger.title = title
+    },
+    close,
+    isOpen: () => open,
+    contains: node => !!node && root.contains(node)
+  }
+}
+
+/**
  * Injects overlay CSS into `document.head` once.
  */
 function ensureStyles(): void {
@@ -241,7 +499,8 @@ function ensureStyles(): void {
 
 /**
  * Compact color / lineweight / font-size overlay shown during measurement
- * and markup drawing commands when the host ribbon is hidden.
+ * and markup drawing commands, and while a measurement or markup overlay
+ * is selected, when the host ribbon is hidden.
  */
 export class AcApDrawStyleToolbar {
   /** Root toolbar element appended to the view container. */
@@ -259,14 +518,17 @@ export class AcApDrawStyleToolbar {
   /** Popover containing ACI palettes. */
   private readonly colorPanel: HTMLDivElement
 
-  /** Dropdown of numeric line weights. */
-  private readonly lineWeightSelect: HTMLSelectElement
+  /** Compact line-weight dropdown with stroke previews. */
+  private readonly lineWeightPicker: AcApLineWeightPicker
 
   /** Dropdown of font sizes in CSS pixels. */
   private readonly fontSizeSelect: HTMLSelectElement
 
   /** Active overlay session, or `undefined` when hidden. */
   private kind: AcApDrawStyleKind | undefined
+
+  /** Kind of the running draw command, if any. */
+  private commandKind: AcApDrawStyleKind | undefined
 
   /** Whether the ACI popover is open. */
   private colorPanelOpen = false
@@ -287,6 +549,12 @@ export class AcApDrawStyleToolbar {
 
   /** Closes the color panel when the pointer is pressed outside it. */
   private readonly onDocumentPointerDown: (event: PointerEvent) => void
+
+  /** Recomputes overlay kind when markup selection / records change. */
+  private readonly unsubscribeMarkupStore: () => void
+
+  /** Recomputes overlay kind when measurement selection changes. */
+  private readonly unsubscribeMeasurementSelection: () => void
 
   /**
    * Creates the overlay, injects CSS, and listens for command start/end.
@@ -327,15 +595,11 @@ export class AcApDrawStyleToolbar {
     this.colorWrap.appendChild(this.colorPanel)
     this.root.appendChild(this.colorWrap)
 
-    this.lineWeightSelect = document.createElement('select')
-    this.lineWeightSelect.className = 'ml-draw-style-toolbar__select'
-    for (const weight of numericLineWeights()) {
-      const option = document.createElement('option')
-      option.value = String(weight)
-      option.textContent = formatLineWeight(weight)
-      this.lineWeightSelect.appendChild(option)
-    }
-    this.root.appendChild(this.lineWeightSelect)
+    this.lineWeightPicker = createLineWeightPicker(
+      weight => this.applyLineWeight(weight),
+      () => this.hideColorPanel()
+    )
+    this.root.appendChild(this.lineWeightPicker.root)
 
     this.fontSizeSelect = document.createElement('select')
     this.fontSizeSelect.className = 'ml-draw-style-toolbar__select'
@@ -353,10 +617,6 @@ export class AcApDrawStyleToolbar {
     this.colorWrap.addEventListener('mouseleave', () =>
       this.scheduleHideColorPanel()
     )
-    this.lineWeightSelect.addEventListener('change', () => {
-      const weight = Number(this.lineWeightSelect.value) as AcGiLineWeight
-      if (weight > 0) this.applyLineWeight(weight)
-    })
     this.fontSizeSelect.addEventListener('change', () => {
       const size = Number(this.fontSizeSelect.value)
       if (size > 0) this.applyFontSize(size)
@@ -364,19 +624,29 @@ export class AcApDrawStyleToolbar {
     this.root.addEventListener('pointerdown', event => event.stopPropagation())
     this.root.addEventListener('mousedown', event => event.stopPropagation())
     this.onDocumentPointerDown = event => {
-      if (!this.colorPanelOpen) return
       const target = event.target as Node | null
-      if (target && this.colorWrap.contains(target)) return
-      this.hideColorPanel()
-      event.preventDefault()
-      event.stopPropagation()
+      const inColor = !!target && this.colorWrap.contains(target)
+      const inLineWeight = this.lineWeightPicker.contains(target)
+      const colorOpen = this.colorPanelOpen
+      const weightOpen = this.lineWeightPicker.isOpen()
+      if (!colorOpen && !weightOpen) return
+      if (colorOpen && !inColor) this.hideColorPanel()
+      if (weightOpen && !inLineWeight) this.lineWeightPicker.close()
+      if (!inColor && !inLineWeight) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
     }
     document.addEventListener('pointerdown', this.onDocumentPointerDown, true)
 
     this.onCommandWillStart = (args: AcEdCommandEventArgs) => {
-      this.setKind(acapDrawStyleKindForCommand(args.command.globalName))
+      this.commandKind = acapDrawStyleKindForCommand(args.command.globalName)
+      this.refreshKindAndVisibility()
     }
-    this.onCommandEnded = () => this.setKind(undefined)
+    this.onCommandEnded = () => {
+      this.commandKind = undefined
+      this.refreshKindAndVisibility()
+    }
 
     const host = view.container
     if (getComputedStyle(host).position === 'static') {
@@ -389,11 +659,17 @@ export class AcApDrawStyleToolbar {
     )
     view.editor.events.commandEnded.addEventListener(this.onCommandEnded)
     this.onSettingsModified = (args: AcApSettingManagerEventArgs) => {
-      if (args.key === 'isShowRibbon') this.refreshVisibility()
+      if (args.key === 'isShowRibbon') this.refreshKindAndVisibility()
     }
     AcApSettingManager.instance.events.modified.addEventListener(
       this.onSettingsModified
     )
+    this.unsubscribeMarkupStore = getMarkupStore().subscribe(() => {
+      this.refreshKindAndVisibility()
+    })
+    this.unsubscribeMeasurementSelection = subscribeMeasurementSelection(() => {
+      this.refreshKindAndVisibility()
+    })
     this.relabel()
   }
 
@@ -402,6 +678,7 @@ export class AcApDrawStyleToolbar {
    */
   dispose(): void {
     this.hideColorPanel()
+    this.lineWeightPicker.close()
     document.removeEventListener(
       'pointerdown',
       this.onDocumentPointerDown,
@@ -416,17 +693,21 @@ export class AcApDrawStyleToolbar {
     AcApSettingManager.instance.events.modified.removeEventListener(
       this.onSettingsModified
     )
+    this.unsubscribeMarkupStore()
+    this.unsubscribeMeasurementSelection()
     this.root.remove()
     acapSetDrawStyleToolbarVisible(false)
   }
 
   /**
-   * Sets the active session kind and refreshes visibility.
-   *
-   * @param kind - Measurement or markup session, or `undefined` to hide.
+   * Resolves command vs selection and shows or hides the overlay.
    */
-  private setKind(kind: AcApDrawStyleKind | undefined): void {
-    this.kind = kind
+  private refreshKindAndVisibility(): void {
+    this.kind = acapResolveDrawStyleKind({
+      commandKind: this.commandKind,
+      markupSelected: getMarkupStore().selectedId != null,
+      measurementSelected: getSelectedMeasurementId() != null
+    })
     this.refreshVisibility()
   }
 
@@ -442,6 +723,7 @@ export class AcApDrawStyleToolbar {
       this.syncFromSession()
     } else {
       this.hideColorPanel()
+      this.lineWeightPicker.close()
     }
   }
 
@@ -450,7 +732,7 @@ export class AcApDrawStyleToolbar {
    */
   private relabel(): void {
     this.swatch.title = AcApI18n.t('main.drawStyle.color')
-    this.lineWeightSelect.title = AcApI18n.t('main.drawStyle.lineWeight')
+    this.lineWeightPicker.setTitle(AcApI18n.t('main.drawStyle.lineWeight'))
     this.fontSizeSelect.title = AcApI18n.t('main.drawStyle.fontSize')
   }
 
@@ -499,18 +781,7 @@ export class AcApDrawStyleToolbar {
     this.swatchFill.style.background = css
     this.markSelectedAci(aciIndexOf(color))
 
-    const weightValue = String(lineWeight)
-    if (
-      !Array.from(this.lineWeightSelect.options).some(
-        option => option.value === weightValue
-      )
-    ) {
-      const option = document.createElement('option')
-      option.value = weightValue
-      option.textContent = formatLineWeight(lineWeight)
-      this.lineWeightSelect.appendChild(option)
-    }
-    this.lineWeightSelect.value = weightValue
+    this.lineWeightPicker.setValue(lineWeight)
 
     const sizes = new Set(FONT_SIZE_OPTIONS)
     if (Number.isFinite(fontSize) && fontSize > 0)
@@ -594,6 +865,7 @@ export class AcApDrawStyleToolbar {
    * Opens the ACI color popover.
    */
   private showColorPanel(): void {
+    this.lineWeightPicker.close()
     this.clearColorLeaveTimer()
     this.colorPanelOpen = true
     this.colorPanel.classList.add('is-open')

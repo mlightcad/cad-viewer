@@ -70,6 +70,31 @@ export function acapDrawStyleKindForCommand(
 }
 
 /**
+ * Session kind for the overlay: an active draw command wins, otherwise a
+ * selected markup or measurement keeps the toolbar available for restyling.
+ *
+ * Mixed markup + measurement selection matches the ribbon: neither kind owns
+ * the session, so the overlay hides until the selection is exclusive.
+ *
+ * @param input - Active command kind and overlay selection flags.
+ * @returns `'measure'` or `'markup'`, or `undefined` when the overlay should hide.
+ */
+export function acapResolveDrawStyleKind(input: {
+  /** Kind of the running draw command, if any. */
+  commandKind?: AcApDrawStyleKind
+  /** True when a markup overlay is selected. */
+  markupSelected?: boolean
+  /** True when a measurement overlay is selected. */
+  measurementSelected?: boolean
+}): AcApDrawStyleKind | undefined {
+  if (input.commandKind) return input.commandKind
+  if (input.markupSelected && input.measurementSelected) return undefined
+  if (input.markupSelected) return 'markup'
+  if (input.measurementSelected) return 'measure'
+  return undefined
+}
+
+/**
  * Tell the overlay whether this host has a command ribbon.
  *
  * Simple-ui has no ribbon and must not persist `isShowRibbon = false`,
@@ -100,7 +125,7 @@ export function acapIsDrawStyleHostRibbonVisible(): boolean {
  * The overlay is only needed when the host ribbon is turned off;
  * cad-viewer already exposes color / lineweight / font-size on the ribbon.
  *
- * @param kind - Active drawing session, or `undefined` when none is running.
+ * @param kind - Active drawing or selection session, or `undefined` when none.
  * @param showRibbon - Whether the host ribbon is visible.
  * @returns `true` when the overlay should be displayed.
  */
