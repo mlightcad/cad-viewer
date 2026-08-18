@@ -162,7 +162,7 @@ describe('resolveEffectiveToolbarItem', () => {
 })
 
 describe('default toolbar items', () => {
-  it('includes export submenu, theme and locale toggles', () => {
+  it('includes export submenu, theme toggle and locale picker', () => {
     const items = createDefaultToolbarItems()
     const exportItem = items.find(item => item.id === 'export')
     expect(exportItem?.children?.map(child => child.command)).toEqual([
@@ -199,7 +199,7 @@ describe('default toolbar items', () => {
     })
   })
 
-  it('uses selected child icon only for toolbar placement', () => {
+  it('uses selected child icon for toolbar placement and locale', () => {
     const items = createDefaultToolbarItems()
     expect(items.find(item => item.id === 'export')?.childIcon).toBeUndefined()
     expect(
@@ -208,6 +208,7 @@ describe('default toolbar items', () => {
     expect(items.find(item => item.id === 'toolbar-placement')?.childIcon).toBe(
       'selected'
     )
+    expect(items.find(item => item.id === 'locale')?.childIcon).toBe('selected')
     expect(items.find(item => item.id === 'measure')?.childIcon).toBeUndefined()
   })
 
@@ -275,10 +276,25 @@ describe('default toolbar items', () => {
     expect(items[measureIndex + 2]?.id).toBe('export')
   })
 
-  it('uses dedicated parent icons for export and annotation', () => {
+  it('uses sticky sub-toolbars for measure and review, dismissible for export and placement', () => {
+    const items = createDefaultToolbarItems()
+    expect(items.find(item => item.id === 'measure')?.childrenUi).toBe(
+      'sticky-toolbar'
+    )
+    expect(items.find(item => item.id === 'annotation')?.childrenUi).toBe(
+      'sticky-toolbar'
+    )
+    expect(items.find(item => item.id === 'export')?.childrenUi).toBe('toolbar')
+    expect(items.find(item => item.id === 'toolbar-placement')?.childrenUi).toBe(
+      'toolbar'
+    )
+    expect(items.find(item => item.id === 'locale')?.childrenUi).toBe('toolbar')
+  })
+
+  it('uses the same export parent icon as cad-viewer toolbar and ribbon', () => {
     const items = createDefaultToolbarItems()
     expect(items.find(item => item.id === 'export')?.icon).toContain(
-      'M11 4h5v5'
+      'M15.5 2H9.1L4.5 6.6'
     )
     expect(items.find(item => item.id === 'annotation')?.icon).toContain(
       'M12.4 3.25H5.5'
@@ -310,6 +326,49 @@ describe('default toolbar items', () => {
       annotation?.children?.find(child => child.id === 'markup-vis')?.toggle?.on
         .icon
     ).toContain('M512 160c320 0 512 352')
+  })
+
+  it('uses the same measurement submenu icons as cad-viewer', () => {
+    const items = createDefaultToolbarItems()
+    const measure = items.find(item => item.id === 'measure')
+    const iconOf = (id: string) =>
+      measure?.children?.find(child => child.id === id)?.icon
+
+    expect(iconOf('measure-distance')).toContain('M3.75 9.25h12.5v1.5H3.75')
+    expect(iconOf('measure-angle')).toContain('5.74 7.13 7 9.5 4.15 7.72')
+    expect(iconOf('measure-area')).toContain('M4 4h12v12H4V4Zm1.5 1.5v9h9v-9h-9Z')
+    expect(iconOf('measure-arc')).toContain('M2 16A10 10 0 0 0 18 16')
+    expect(iconOf('measure-point')).toContain('M9.25 2h1.5v5.25H16v1.5h-5.25V16')
+    expect(iconOf('clear-measurements')).toContain(
+      'M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6'
+    )
+    expect(iconOf('measurement-import')).toContain('M4.5 2h6.4L15.5 6.6')
+    expect(iconOf('measurement-export')).toContain('M15.5 2H9.1L4.5 6.6')
+    expect(
+      measure?.children?.find(child => child.id === 'measurement-vis')?.toggle
+        ?.on.icon
+    ).toContain('M512 160c320 0 512 352')
+  })
+
+  it('offers all supported locales in a dismissible language sub-toolbar', () => {
+    const items = createDefaultToolbarItems({
+      getTheme: () => 'light',
+      setTheme: () => undefined,
+      getLocale: () => 'cs',
+      setLocale: () => undefined,
+      getPlacement: () => 'right',
+      setPlacement: () => undefined
+    })
+    const locale = items.find(item => item.id === 'locale')
+    expect(locale?.toggle).toBeUndefined()
+    expect(locale?.childrenUi).toBe('toolbar')
+    expect(locale?.selectedChildId).toBe('locale-cs')
+    expect(locale?.children?.map(child => child.id)).toEqual([
+      'locale-en',
+      'locale-zh',
+      'locale-cs',
+      'locale-tr'
+    ])
   })
 })
 

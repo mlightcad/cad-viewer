@@ -83,8 +83,8 @@ export default {
     viewerMode: 'Viewer mode',
     viewerModeView: 'View',
     viewerModeViewHint: 'Pan, zoom, and layer controls only',
-    viewerModeMeasure: 'Measure',
-    viewerModeMeasureHint: 'View tools plus distance measurement'
+    viewerModeMeasure: 'Measure & Review',
+    viewerModeMeasureHint: 'View tools plus measurement and markup annotations'
   },
   quickSelectDlg: {
     title: 'Quick Select',

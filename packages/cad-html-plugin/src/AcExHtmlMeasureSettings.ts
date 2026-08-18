@@ -1,4 +1,9 @@
-import type { AcExHtmlI18n } from './AcExHtmlI18n'
+import {
+  ACEX_HTML_LOCALE_BADGES,
+  ACEX_HTML_LOCALES,
+  type AcExHtmlI18n,
+  type AcExHtmlLocale
+} from './AcExHtmlI18n'
 import { acExHtmlIcons, acExToolbarButton } from './AcExHtmlIcons'
 import type { AcExMeasureController } from './AcExMeasurement'
 import type { AcExTrackingOptions } from './AcExMeasureTracking'
@@ -39,8 +44,6 @@ export interface AcExHtmlMeasureSettingsContext {
   measure: AcExMeasureController
   angbase: number
   angdir: number
-  /** Close sibling sidebar panels (tool strips) when settings opens. */
-  onOpen?: () => void
 }
 
 function hexToCss(hex: number): string {
@@ -142,27 +145,60 @@ function savePersistedSettings(state: AcExMeasureSettingsState): void {
 }
 
 /**
- * Language toggle button shared by view-mode toolbar and measure settings strip.
+ * First-level language picker. The parent icon is the selected locale badge,
+ * matching cad-simple-ui-plugin `childIcon: 'selected'`.
  */
 export function buildAcExLanguageToolbarButton(): string {
-  return `<button type="button" class="mlcad-tool-btn mlcad-lang-btn" id="mlcad-lang-btn" data-i18n-key="toolbar.languageSwitch" data-i18n-attr="title aria-label" title="Switch language" aria-label="Switch language">
-            ${acExHtmlIcons.language}
-            <span class="mlcad-lang-badge" id="mlcad-lang-badge">EN</span>
-          </button>`
+  return '<button type="button" class="mlcad-tool-btn has-children" id="mlcad-lang-btn" aria-haspopup="true" aria-expanded="false" data-children-ui="toolbar" data-i18n-key="toolbar.language" data-i18n-attr="title aria-label" title="Language" aria-label="Language"><span class="mlcad-locale-option-badge" id="mlcad-lang-badge">EN</span></button>'
+}
+
+const LOCALE_LABEL_KEYS: Record<
+  AcExHtmlLocale,
+  'toolbar.localeEn' | 'toolbar.localeZh' | 'toolbar.localeCs' | 'toolbar.localeTr'
+> = {
+  en: 'toolbar.localeEn',
+  zh: 'toolbar.localeZh',
+  cs: 'toolbar.localeCs',
+  tr: 'toolbar.localeTr'
+}
+
+const LOCALE_FALLBACK_LABELS: Record<AcExHtmlLocale, string> = {
+  en: 'English',
+  zh: '中文',
+  cs: 'Čeština',
+  tr: 'Türkçe'
 }
 
 /**
- * Builds the settings strip markup inserted beside the toolbar in {@link buildAcExHtmlShellBody}.
+ * Dismissible language strip shown beside the language parent button.
  */
-export function buildAcExHtmlSettingsStrip(): string {
+export function buildAcExHtmlLocaleStrip(): string {
+  const buttons = ACEX_HTML_LOCALES.map(locale => {
+    const label = LOCALE_FALLBACK_LABELS[locale]
+    const key = LOCALE_LABEL_KEYS[locale]
+    const badge = ACEX_HTML_LOCALE_BADGES[locale]
+    return `<button type="button" class="mlcad-tool-btn mlcad-locale-option" data-locale="${locale}" data-i18n-key="${key}" data-i18n-attr="title aria-label" title="${label}" aria-label="${label}"><span class="mlcad-locale-option-badge">${badge}</span></button>`
+  }).join('')
+
+  return `<div id="mlcad-locale-strip-wrap" hidden>
+        <div id="mlcad-locale-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.language" aria-label="Language">
+          ${buttons}
+        </div>
+      </div>`
+}
+
+/**
+ * Builds the object-snap strip (ortho + polar) inserted beside the toolbar.
+ */
+export function buildAcExHtmlSnapStrip(): string {
   const polarAngleButtons = ACEX_POLAR_ANGLE_INCREMENTS.map(
     angle =>
       `<button type="button" class="mlcad-tool-btn mlcad-settings-option-btn mlcad-polar-angle-btn" data-polar-ang="${angle}" title="${angle}°" aria-label="${angle}°"><span class="mlcad-settings-option-indicator" aria-hidden="true"></span><span class="mlcad-settings-option-text">${angle}°</span></button>`
   ).join('')
 
   return `
-      <div id="mlcad-settings-wrap" hidden>
-        <div id="mlcad-settings-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="settings.toolbar" aria-label="Settings">
+      <div id="mlcad-snap-strip-wrap" hidden>
+        <div id="mlcad-snap-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.snap" aria-label="Object snap">
           ${acExToolbarButton(acExHtmlIcons.orthoMode, 'Orthogonal mode', {
             id: 'mlcad-ortho-btn',
             'data-toggle': 'ortho',
@@ -175,7 +211,6 @@ export function buildAcExHtmlSettingsStrip(): string {
             'data-i18n-key': 'settings.polar',
             'data-i18n-attr': 'title aria-label'
           })}
-          ${buildAcExLanguageToolbarButton()}
         </div>
         <div id="mlcad-polar-angles" role="group" data-i18n-attr="aria-label" data-i18n-key="settings.polarAngles" aria-label="Polar tracking angles" hidden>
           ${polarAngleButtons}
@@ -191,12 +226,13 @@ export interface AcExHtmlMeasureSettingsController {
   getTrackingOptions(): AcExTrackingOptions
   /** Reapplies i18n labels after locale change. */
   refreshLabels: () => void
-  /** Closes the settings strip (and polar panel). */
+  /** Closes the polar-angle panel (the snap strip is owned by the flyout). */
   close: () => void
 }
 
 /**
- * Wires the measure settings strip: ortho and polar tracking.
+ * Wires ortho and polar tracking controls in the object-snap strip.
+ * Strip open/close is owned by {@link setupAcExHtmlToolbarFlyouts}.
  * Drawing color / line weight / font size live on the canvas draw-style toolbar.
  */
 export function setupAcExHtmlMeasureSettings(
@@ -211,8 +247,6 @@ export function setupAcExHtmlMeasureSettings(
   }
   normalizeTrackingState(state)
 
-  const settingsBtn = document.getElementById('mlcad-settings-btn')
-  const settingsWrap = document.getElementById('mlcad-settings-wrap')
   const polarPanel = document.getElementById('mlcad-polar-angles')
   const orthoBtn = document.getElementById('mlcad-ortho-btn')
   const polarBtn = document.getElementById('mlcad-polar-btn')
@@ -249,15 +283,6 @@ export function setupAcExHtmlMeasureSettings(
         const ang = Number(btn.getAttribute('data-polar-ang'))
         btn.classList.toggle('active', isPolarAngleSelected(ang))
       })
-  }
-
-  const setSettingsOpen = (open: boolean) => {
-    if (open) ctx.onOpen?.()
-    if (settingsWrap) settingsWrap.hidden = !open
-    settingsBtn?.classList.toggle('active', open)
-    settingsBtn?.classList.toggle('is-menu-open', open)
-    settingsBtn?.setAttribute('aria-expanded', String(open))
-    if (!open) setPolarPanelOpen(false)
   }
 
   const setPolarPanelOpen = (open: boolean) => {
@@ -309,12 +334,6 @@ export function setupAcExHtmlMeasureSettings(
   syncTrackingButtons()
   syncPolarAngleButtons()
 
-  settingsBtn?.addEventListener('click', event => {
-    event.stopPropagation()
-    const open = settingsWrap?.hidden !== false
-    setSettingsOpen(open)
-  })
-
   orthoBtn?.addEventListener('click', event => {
     event.stopPropagation()
     setPolarPanelOpen(false)
@@ -345,12 +364,11 @@ export function setupAcExHtmlMeasureSettings(
       })
     })
 
-  // Settings strip stays open until the Settings button is clicked again
-  // (or another parent strip opens). Canvas clicks must not dismiss it.
+  // Polar panel stays until polar is toggled or the snap strip closes.
 
   const refreshLabels = () => {
     ctx.i18n.applyToDocument(
-      document.getElementById('mlcad-settings-wrap') ?? undefined
+      document.getElementById('mlcad-snap-strip-wrap') ?? undefined
     )
     syncPolarAngleButtons()
   }
@@ -369,6 +387,6 @@ export function setupAcExHtmlMeasureSettings(
       }
     },
     refreshLabels,
-    close: () => setSettingsOpen(false)
+    close: () => setPolarPanelOpen(false)
   }
 }

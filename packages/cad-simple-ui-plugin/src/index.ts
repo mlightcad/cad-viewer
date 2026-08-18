@@ -27,6 +27,7 @@ export type {
   AcExToolbarItemConfig,
   AcExToolbarItemsInput,
   AcExToolbarChildIconMode,
+  AcExToolbarChildrenUi,
   AcExToolbarPresetRef,
   AcExToolbarSeparator,
   AcExToolbarPlacement

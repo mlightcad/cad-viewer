@@ -82,8 +82,8 @@ export default {
     viewerMode: '查看器模式',
     viewerModeView: '查看',
     viewerModeViewHint: '仅平移、缩放与图层控制',
-    viewerModeMeasure: '测量',
-    viewerModeMeasureHint: '查看工具及距离测量'
+    viewerModeMeasure: '测量与批注',
+    viewerModeMeasureHint: '查看工具，以及测量与批注'
   },
   quickSelectDlg: {
     title: '快速选择',

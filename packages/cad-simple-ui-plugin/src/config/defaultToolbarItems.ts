@@ -1,4 +1,5 @@
 import {
+  type AcApLocale,
   AcEdOpenMode,
   type AcEdUiTheme,
   isMarkupVisible,
@@ -15,6 +16,7 @@ import {
   ICON_EXPORT_HTML,
   ICON_EXPORT_PDF,
   ICON_EXPORT_SVG,
+  ICON_LANGUAGE,
   ICON_LAYER,
   ICON_MARKUP_ARROW,
   ICON_MARKUP_CALLOUT,
@@ -80,6 +82,7 @@ function createToolbarPlacementItem(
     label: 'toolbar.placement',
     icon: ICON_TOOLBAR_PLACEMENT,
     requiresDocument: false,
+    childrenUi: 'toolbar',
     childIcon: 'selected',
     selectedChildId: `placement-${context?.getPlacement() ?? 'right'}`,
     children: TOOLBAR_PLACEMENTS.map(placement => ({
@@ -92,10 +95,52 @@ function createToolbarPlacementItem(
   }
 }
 
+const TOOLBAR_LOCALES: AcApLocale[] = ['en', 'zh', 'cs', 'tr']
+
+const LOCALE_BADGES: Record<AcApLocale, string> = {
+  en: 'EN',
+  zh: '中',
+  cs: 'CS',
+  tr: 'TR'
+}
+
+const LOCALE_LABELS: Record<AcApLocale, string> = {
+  en: 'toolbar.localeEn',
+  zh: 'toolbar.localeZh',
+  cs: 'toolbar.localeCs',
+  tr: 'toolbar.localeTr'
+}
+
+function localeBadgeIcon(badge: string): string {
+  return `<span style="font-size:10px;font-weight:700;line-height:1">${badge}</span>`
+}
+
+function createToolbarLocaleItem(
+  context?: AcExDefaultToolbarContext
+): AcExToolbarItem {
+  const current = context?.getLocale() ?? 'en'
+  return {
+    id: 'locale',
+    label: 'toolbar.locale',
+    icon: ICON_LANGUAGE,
+    requiresDocument: false,
+    childrenUi: 'toolbar',
+    childIcon: 'selected',
+    selectedChildId: `locale-${current}`,
+    children: TOOLBAR_LOCALES.map(locale => ({
+      id: `locale-${locale}`,
+      label: LOCALE_LABELS[locale],
+      icon: localeBadgeIcon(LOCALE_BADGES[locale]),
+      requiresDocument: false,
+      action: () => context?.setLocale(locale)
+    }))
+  }
+}
+
 /**
  * Builds the built-in toolbar item list (view, measure, review, export, theme, locale).
  *
- * @param context - Optional callbacks for theme and locale toggle items.
+ * @param context - Optional callbacks for theme, locale, and placement items.
  * @returns Default {@link AcExToolbarItem} array.
  */
 export function createDefaultToolbarItems(
@@ -148,6 +193,7 @@ export function createDefaultToolbarItems(
       id: 'measure',
       label: 'toolbar.measure',
       icon: ICON_MEASURE,
+      childrenUi: 'sticky-toolbar',
       children: [
         {
           id: 'measure-distance',
@@ -224,6 +270,7 @@ export function createDefaultToolbarItems(
       label: 'toolbar.annotation',
       icon: ICON_ANNOTATION,
       minOpenMode: AcEdOpenMode.Review,
+      childrenUi: 'sticky-toolbar',
       children: [
         {
           id: 'markup-cloud',
@@ -317,6 +364,7 @@ export function createDefaultToolbarItems(
       id: 'export',
       label: 'toolbar.export',
       icon: ICON_EXPORT,
+      childrenUi: 'toolbar',
       children: [
         {
           id: 'export-html',
@@ -360,23 +408,7 @@ export function createDefaultToolbarItems(
         }
       }
     },
-    {
-      id: 'locale',
-      requiresDocument: false,
-      toggle: {
-        getValue: () => (context?.getLocale() ?? 'en') === 'en',
-        on: {
-          label: 'toolbar.localeEn',
-          icon: '<span style="font-size:10px;font-weight:700;line-height:1">EN</span>',
-          action: () => context?.toggleLocale()
-        },
-        off: {
-          label: 'toolbar.localeZh',
-          icon: '<span style="font-size:10px;font-weight:700;line-height:1">中</span>',
-          action: () => context?.toggleLocale()
-        }
-      }
-    }
+    createToolbarLocaleItem(context)
   ]
 
   return items

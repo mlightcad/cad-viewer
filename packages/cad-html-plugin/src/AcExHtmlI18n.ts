@@ -3,13 +3,13 @@ export type AcExHtmlLocale = 'en' | 'zh' | 'cs' | 'tr'
 
 /**
  * All locales accepted by the offline viewer, in display order.
- * The language button cycles through this list; add a locale here plus a
- * {@link LOCALE_BADGES} entry and a `MESSAGES` tree to support it.
+ * The language strip lists these options; add a locale here plus a
+ * {@link ACEX_HTML_LOCALE_BADGES} entry and a `MESSAGES` tree to support it.
  */
 export const ACEX_HTML_LOCALES: AcExHtmlLocale[] = ['en', 'zh', 'cs', 'tr']
 
-/** Short button badge per locale (shown on the language toolbar button). */
-const LOCALE_BADGES: Record<AcExHtmlLocale, string> = {
+/** Short button badge per locale (shown on the language parent and strip). */
+export const ACEX_HTML_LOCALE_BADGES: Record<AcExHtmlLocale, string> = {
   en: 'EN',
   zh: '中',
   cs: 'CS',
@@ -28,7 +28,12 @@ export const ACEX_HTML_LOCALE_STORAGE_KEY = 'mlcad-html-locale'
  */
 export type AcExHtmlMessageKey =
   | 'toolbar.viewerTools'
+  | 'toolbar.select'
+  | 'toolbar.pan'
+  | 'toolbar.zoom'
   | 'toolbar.zoomExtents'
+  | 'toolbar.zoomWindow'
+  | 'toolbar.zoomOriginal'
   | 'toolbar.measureDistance'
   | 'toolbar.measureAngle'
   | 'toolbar.measureArc'
@@ -53,13 +58,15 @@ export type AcExHtmlMessageKey =
   | 'toolbar.clearMarkups'
   | 'toolbar.markupImport'
   | 'toolbar.markupExport'
-  | 'toolbar.settings'
+  | 'toolbar.snap'
   | 'toolbar.layers'
   | 'toolbar.language'
-  | 'toolbar.languageSwitch'
+  | 'toolbar.localeEn'
+  | 'toolbar.localeZh'
+  | 'toolbar.localeCs'
+  | 'toolbar.localeTr'
   | 'toolbar.collapse'
   | 'toolbar.expand'
-  | 'settings.toolbar'
   | 'settings.ortho'
   | 'settings.polar'
   | 'settings.polarAngles'
@@ -72,6 +79,7 @@ export type AcExHtmlMessageKey =
   | 'layers.hideAll'
   | 'layers.zoomTo'
   | 'status.ready'
+  | 'status.zoomWindowHint'
   | 'status.measureDistanceHint'
   | 'status.measureAngleHint'
   | 'status.measureArcHint'
@@ -125,7 +133,12 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
   en: {
     toolbar: {
       viewerTools: 'Viewer tools',
+      select: 'Select',
+      pan: 'Pan',
+      zoom: 'Zoom',
       zoomExtents: 'Zoom extents',
+      zoomWindow: 'Zoom window',
+      zoomOriginal: 'Original view',
       measureDistance: 'Measure distance',
       measureAngle: 'Measure angle',
       measureArc: 'Measure arc length',
@@ -150,15 +163,17 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       clearMarkups: 'Clear markups',
       markupImport: 'Import markups',
       markupExport: 'Export markups',
-      settings: 'Settings',
+      snap: 'Object snap',
       layers: 'Layers',
       language: 'Language',
-      languageSwitch: 'Switch language',
+      localeEn: 'English',
+      localeZh: '中文',
+      localeCs: 'Čeština',
+      localeTr: 'Türkçe',
       collapse: 'Collapse toolbar',
       expand: 'Expand toolbar'
     },
     settings: {
-      toolbar: 'Settings',
       ortho: 'Toggle orthogonal mode',
       polar: 'Polar tracking angles',
       polarAngles: 'Polar tracking angles'
@@ -177,6 +192,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
     },
     status: {
       ready: 'Ready',
+      zoomWindowHint: 'Click two corners to zoom to a window.',
       measureDistanceHint:
         'Click two points to measure distance (object snap enabled).',
       measureAngleHint:
@@ -228,7 +244,12 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
   zh: {
     toolbar: {
       viewerTools: '查看器工具',
+      select: '选择',
+      pan: '平移',
+      zoom: '缩放',
       zoomExtents: '范围缩放',
+      zoomWindow: '窗口缩放',
+      zoomOriginal: '原始视口',
       measureDistance: '测量距离',
       measureAngle: '测量角度',
       measureArc: '测量弧长',
@@ -253,15 +274,17 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       clearMarkups: '清除批注',
       markupImport: '导入批注',
       markupExport: '导出批注',
-      settings: '设置',
+      snap: '对象捕捉',
       layers: '图层',
       language: '语言',
-      languageSwitch: '切换语言',
+      localeEn: 'English',
+      localeZh: '中文',
+      localeCs: 'Čeština',
+      localeTr: 'Türkçe',
       collapse: '收起工具栏',
       expand: '展开工具栏'
     },
     settings: {
-      toolbar: '设置',
       ortho: '切换正交模式',
       polar: '极轴追踪角度',
       polarAngles: '极轴追踪角度'
@@ -280,6 +303,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
     },
     status: {
       ready: '就绪',
+      zoomWindowHint: '点击两个角点以窗口缩放。',
       measureDistanceHint: '点击两点以测量距离（已启用对象捕捉）。',
       measureAngleHint: '依次点击顶点与两条边上的点（已启用对象捕捉）。',
       measureArcHint: '依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。',
@@ -326,7 +350,12 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
   cs: {
     toolbar: {
       viewerTools: 'Nástroje prohlížeče',
+      select: 'Výběr',
+      pan: 'Posun',
+      zoom: 'Přiblížení',
       zoomExtents: 'Zoom na rozsah',
+      zoomWindow: 'Přiblížit oknem',
+      zoomOriginal: 'Původní pohled',
       measureDistance: 'Změřit vzdálenost',
       measureAngle: 'Změřit úhel',
       measureArc: 'Změřit délku oblouku',
@@ -351,15 +380,17 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       clearMarkups: 'Vymazat poznámky',
       markupImport: 'Importovat poznámky',
       markupExport: 'Exportovat poznámky',
-      settings: 'Nastavení',
+      snap: 'Uchopení objektů',
       layers: 'Hladiny',
       language: 'Jazyk',
-      languageSwitch: 'Přepnout jazyk',
+      localeEn: 'English',
+      localeZh: '中文',
+      localeCs: 'Čeština',
+      localeTr: 'Türkçe',
       collapse: 'Sbalit panel nástrojů',
       expand: 'Rozbalit panel nástrojů'
     },
     settings: {
-      toolbar: 'Nastavení',
       ortho: 'Přepnout ortogonální režim',
       polar: 'Úhly polárního trasování',
       polarAngles: 'Úhly polárního trasování'
@@ -378,6 +409,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
     },
     status: {
       ready: 'Připraveno',
+      zoomWindowHint: 'Klikněte na dva rohy pro přiblížení oknem.',
       measureDistanceHint:
         'Klikněte na dva body pro změření vzdálenosti (uchopení objektů zapnuto).',
       measureAngleHint:
@@ -430,7 +462,12 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
   tr: {
     toolbar: {
       viewerTools: 'Görüntüleyici araçları',
+      select: 'Seç',
+      pan: 'Kaydır',
+      zoom: 'Yakınlaştır',
       zoomExtents: 'Sınırlara yakınlaştır',
+      zoomWindow: 'Pencere Yakınlaştır',
+      zoomOriginal: 'Orijinal görünüm',
       measureDistance: 'Mesafe ölç',
       measureAngle: 'Açı ölç',
       measureArc: 'Yay uzunluğu ölç',
@@ -455,15 +492,17 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       clearMarkups: 'İşaretlemeleri temizle',
       markupImport: 'İşaretlemeleri içe aktar',
       markupExport: 'İşaretlemeleri dışa aktar',
-      settings: 'Ayarlar',
+      snap: 'Nesne Yakalama',
       layers: 'Katmanlar',
       language: 'Dil',
-      languageSwitch: 'Dili değiştir',
+      localeEn: 'English',
+      localeZh: '中文',
+      localeCs: 'Čeština',
+      localeTr: 'Türkçe',
       collapse: 'Araç çubuğunu daralt',
       expand: 'Araç çubuğunu genişlet'
     },
     settings: {
-      toolbar: 'Ayarlar',
       ortho: 'Dik modu aç/kapat',
       polar: 'Kutupsal izleme açıları',
       polarAngles: 'Kutupsal izleme açıları'
@@ -482,6 +521,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
     },
     status: {
       ready: 'Hazır',
+      zoomWindowHint: 'Pencere yakınlaştırmak için iki köşeyi tıklayın.',
       measureDistanceHint:
         'Mesafe ölçmek için iki nokta tıklayın (nesne yakalama etkin).',
       measureAngleHint:
@@ -651,9 +691,9 @@ export class AcExHtmlI18n {
     return this._locale
   }
 
-  /** Short badge text shown on the language toolbar button (e.g. `EN`, `中`, `CS`). */
+  /** Short badge text shown on the language parent button and locale strip. */
   get localeBadge(): string {
-    return LOCALE_BADGES[this._locale]
+    return ACEX_HTML_LOCALE_BADGES[this._locale]
   }
 
   /**
@@ -682,8 +722,8 @@ export class AcExHtmlI18n {
 
   /**
    * Advances to the next locale in {@link ACEX_HTML_LOCALES} (wrapping around),
-   * persists the choice, and refreshes the DOM. Drives the language button,
-   * which cycles through all supported locales on each click.
+   * persists the choice, and refreshes the DOM. Kept for tests and hosts that
+   * still cycle locales programmatically.
    *
    * @returns The locale after switching.
    */
@@ -749,8 +789,8 @@ export class AcExHtmlI18n {
 
     const langBtn = document.getElementById('mlcad-lang-btn')
     if (langBtn) {
-      langBtn.setAttribute('title', this.t('toolbar.languageSwitch'))
-      langBtn.setAttribute('aria-label', this.t('toolbar.languageSwitch'))
+      langBtn.setAttribute('title', this.t('toolbar.language'))
+      langBtn.setAttribute('aria-label', this.t('toolbar.language'))
     }
   }
 }

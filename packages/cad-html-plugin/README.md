@@ -16,8 +16,8 @@ The plugin path is designed for **lazy loading** so the export bundle is only do
 
 - **Display-only snapshot** — layers, layouts, line/mesh batches, extents, and drawing units (no editable DXF/DWG payload)
 - **Self-contained HTML** — gzip/base64 snapshot + inline viewer runtime; opens offline in any modern browser
-- **Offline viewer** — pan/zoom (OrbitControls), layer panel, layout switching, measurement, Design Review markup annotations, object snap (OSNAP)
-- **i18n** — embedded English / Chinese / Czech / Turkish UI; initial language follows the browser (`zh*` → Chinese, `cs*` → Czech, `tr*` → Turkish, otherwise English); the toolbar language button cycles through the supported locales, and the choice persists in `localStorage`
+- **Offline viewer** — select / pan / zoom (extents, window, original view), layer panel, layout switching, measurement, Design Review markup annotations, object snap (OSNAP). Select, pan, and zoom tools exit any active measurement or review drawing tool.
+- **i18n** — embedded English / Chinese / Czech / Turkish UI; initial language follows the browser (`zh*` → Chinese, `cs*` → Czech, `tr*` → Turkish, otherwise English); the toolbar language button opens a strip to pick a locale, and the choice persists in `localStorage`
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyHtmlPlugin`
 - **Composable API** — build snapshots from your own pipeline or call `packHtml` with a pre-built snapshot
 

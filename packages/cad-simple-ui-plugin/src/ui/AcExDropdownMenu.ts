@@ -11,14 +11,17 @@ import type { AcExI18n } from '../i18n'
 export class AcExDropdownMenu {
   /** Menu root element appended to the theme host. */
   private root: HTMLDivElement
+  /** Parent button that opened this menu. */
+  private anchor: HTMLElement
   /** Handler invoked when a menu item is chosen. */
   private onSelect?: (item: AcExToolbarItem) => void
   /** Handler invoked when the menu is closed. */
   private onClose?: () => void
-  /** Closes the menu when the user clicks outside. */
+  /** Closes the menu when the user clicks outside the menu and its anchor. */
   private handleDocumentClick = (event: MouseEvent) => {
     if (!(event.target instanceof Node)) return
     if (this.root.contains(event.target)) return
+    if (this.anchor.contains(event.target)) return
     this.close()
   }
 
@@ -34,6 +37,7 @@ export class AcExDropdownMenu {
     anchor: HTMLElement,
     private themeHost: HTMLElement
   ) {
+    this.anchor = anchor
     this.root = document.createElement('div')
     this.root.className = 'ml-ex-ui-dropdown'
     this.root.setAttribute('role', 'menu')

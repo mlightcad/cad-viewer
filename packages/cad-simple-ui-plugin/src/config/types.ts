@@ -21,6 +21,16 @@ export type AcExLocale = 'en' | 'zh' | 'cs' | 'tr'
  */
 export type AcExToolbarChildIconMode = 'fixed' | 'selected'
 
+/**
+ * How nested `children` are presented when the parent button is clicked.
+ *
+ * - `'menu'`: popover dropdown with icon + label (default). Closes on outside click.
+ * - `'toolbar'`: icon sub-toolbar beside the parent. Closes on canvas / outside click.
+ * - `'sticky-toolbar'`: icon sub-toolbar that stays open until the parent button
+ *   is clicked again. Canvas clicks do not dismiss it.
+ */
+export type AcExToolbarChildrenUi = 'menu' | 'toolbar' | 'sticky-toolbar'
+
 /** Visual separator between toolbar button groups. */
 export interface AcExToolbarSeparator {
   type: 'separator'
@@ -63,8 +73,14 @@ export interface AcExToolbarItem {
   minOpenMode?: AcEdOpenMode
   /** Static or dynamic disabled state evaluated at render time. */
   disabled?: boolean | (() => boolean)
-  /** Nested submenu items shown in a dropdown when the button is clicked. */
+  /** Nested submenu items shown when the button is clicked. */
   children?: AcExToolbarItem[]
+  /**
+   * Presentation of {@link children}. Defaults to `'menu'` (popover dropdown).
+   * Built-in Measure / Review use `'sticky-toolbar'`; Export, Toolbar
+   * Position, and Language use `'toolbar'`.
+   */
+  childrenUi?: AcExToolbarChildrenUi
   /**
    * When the button has `children`, controls whether the parent icon follows the
    * selected submenu item. Defaults to `'fixed'`.
@@ -93,7 +109,7 @@ export type AcExToolbarItemConfig =
 export type AcExToolbarItemsInput = AcExToolbarItemConfig[] | 'default'
 
 /**
- * Callbacks supplied when building the default toolbar (theme and locale toggles).
+ * Callbacks supplied when building the default toolbar (theme, locale, and placement).
  */
 export interface AcExDefaultToolbarContext {
   /** Returns the current UI theme. */
@@ -102,8 +118,8 @@ export interface AcExDefaultToolbarContext {
   setTheme: (theme: AcEdUiTheme) => void
   /** Returns the active application locale. */
   getLocale: () => AcApLocale
-  /** Switches between English and Chinese (leaves other locales unchanged when toggled to). */
-  toggleLocale: () => void
+  /** Sets the application locale. */
+  setLocale: (locale: AcApLocale) => void
   /** Returns the current toolbar edge placement. */
   getPlacement: () => AcExToolbarPlacement
   /** Moves the toolbar to the given host edge. */

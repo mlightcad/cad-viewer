@@ -36,33 +36,33 @@ export const ICON_ZOOM_WINDOW =
 export const ICON_LAYER =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="m434.8 137.65l-149.36-68.1c-16.19-7.4-42.69-7.4-58.88 0L77.3 137.65c-17.6 8-17.6 21.09 0 29.09l148 67.5c16.89 7.7 44.69 7.7 61.58 0l148-67.5c17.52-8 17.52-21.1-.08-29.09M160 308.52l-82.7 37.11c-17.6 8-17.6 21.1 0 29.1l148 67.5c16.89 7.69 44.69 7.69 61.58 0l148-67.5c17.6-8 17.6-21.1 0-29.1l-79.94-38.47"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="m160 204.48l-82.8 37.16c-17.6 8-17.6 21.1 0 29.1l148 67.49c16.89 7.7 44.69 7.7 61.58 0l148-67.49c17.7-8 17.7-21.1.1-29.1L352 204.48"/></svg>'
 
-/** Measure tools parent menu icon. */
+/** Measure tools parent menu icon (copied from cad-viewer `measure.svg`). */
 export const ICON_MEASURE =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" fill-rule="evenodd" d="M1.5 7h17v6h-17Z M4.25 7h1v2.5h-1Z M7.5 7h.75v1.5H7.5Z M10.25 7h1v2.5h-1Z M13.5 7h.75v1.5H13.5Z M16.25 7h1v2.5h-1Z"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" fill-rule="evenodd" d="M1.5 7h17v6h-17ZM4.25 7h1v2.5h-1ZM7.5 7h.75v1.5H7.5ZM10.25 7h1v2.5h-1ZM13.5 7h.75v1.5H13.5ZM16.25 7h1v2.5h-1Z"/></svg>'
 
-/** Measure distance icon (dimension line between two points). */
+/** Measure distance icon (copied from cad-viewer `measureDistance.svg`). */
 export const ICON_MEASURE_DISTANCE =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><circle cx="4" cy="15" r="1.6" fill="currentColor"/><circle cx="16" cy="5" r="1.6" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M5.4 13.6 14.6 6.4"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M3 15h2.8M16 5h-2.8"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" d="M3.75 9.25h12.5v1.5H3.75v-1.5ZM2.25 6.5h1.5v7h-1.5v-7ZM16.25 6.5h1.5v7h-1.5v-7Z"/></svg>'
 
-/** Measure angle icon. */
+/** Measure angle icon (copied from cad-viewer `measureAngle.svg`). */
 export const ICON_MEASURE_ANGLE =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M4 16a8 8 0 0 1 12-5"/><path fill="currentColor" d="M16 9h2v2h-2z"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><polygon fill="currentColor" points="5.74 7.13 7 9.5 4.15 7.72 3.2 7.12 3 7 7 4.5 6.17 6.05 5.67 7 5.74 7.13"/><polygon fill="currentColor" points="16 12.5 13.5 16.5 12.66 15.15 11.92 13.97 11 12.5 12 13.03 12.98 13.55 13.5 13.83 16 12.5"/><rect fill="currentColor" x="2" y="2.5" width="1" height="15"/><rect fill="currentColor" x="3" y="16.5" width="15" height="1"/><path fill="currentColor" d="M14,13c0,.18,0,.37,0,.55v0a6.82,6.82,0,0,1-.32,1.57l-.74-1.18L13,13.5c0-.14,0-.31,0-.47v0a6,6,0,0,0-6-6,6.74,6.74,0,0,0-1.26.13l-.29.07a5.61,5.61,0,0,0-1.3.52l-1-.6a7.07,7.07,0,0,1,2-.88,6.78,6.78,0,0,1,1-.19A7.7,7.7,0,0,1,7,6a7,7,0,0,1,7,7Z"/></svg>'
 
-/** Measure area icon. */
+/** Measure area icon (copied from cad-viewer `measureArea.svg`). */
 export const ICON_MEASURE_AREA =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M4 6h8v8H4z"/><path fill="currentColor" d="M12 12h4v4h-4z" opacity=".5"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" fill-rule="evenodd" d="M4 4h12v12H4V4Zm1.5 1.5v9h9v-9h-9Z"/><circle fill="currentColor" cx="4" cy="4" r="1.5"/><circle fill="currentColor" cx="16" cy="4" r="1.5"/><circle fill="currentColor" cx="4" cy="16" r="1.5"/><circle fill="currentColor" cx="16" cy="16" r="1.5"/></svg>'
 
-/** Measure arc length icon. */
+/** Measure arc length icon (copied from cad-viewer `measureArc.svg`). */
 export const ICON_MEASURE_ARC =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M4 14a8 8 0 0 1 12-8"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" d="M2 16A10 10 0 0 0 18 16h-1.5A8.5 8.5 0 0 1 3.5 16H2Z"/><circle fill="currentColor" cx="2" cy="16" r="1.5"/><circle fill="currentColor" cx="10" cy="12.2" r="1.5"/><circle fill="currentColor" cx="18" cy="16" r="1.5"/></svg>'
 
-/** Measure point / coordinates icon (crosshair with center marker). */
+/** Measure point / coordinates icon (copied from cad-viewer `measurePoint.svg`). */
 export const ICON_MEASURE_POINT =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" d="M9.25 2h1.5v5.25H16v1.5h-5.25V16h-1.5v-7.25H4v-1.5h5.25V2Z"/><circle fill="currentColor" cx="10" cy="10" r="1.75"/></svg>'
 
-/** Clear measurements icon (ruler with clear mark). */
+/** Clear measurements icon (copied from cad-viewer `clearMeasurements.svg`). */
 export const ICON_CLEAR_MEASUREMENTS =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M3 13h14"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M6 11v4M9.5 12v2M13 11v4M16.5 12v2"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M6.5 5.5 13.5 12.5M13.5 5.5 6.5 12.5"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>'
 
 /** Switch background icon. */
 export const ICON_SWITCH_BG =
@@ -139,6 +139,10 @@ export const ICON_ANNOTATION_HIDE = elementPlusIcon(
   'M511.998 672c-12.8 0-25.6-3.2-38.4-6.4l-51.2 51.2c28.8 12.8 57.6 19.2 89.6 19.2 64 0 115.2-22.4 160-64 41.6-41.6 64-96 64-160 0-32-6.4-64-19.2-89.6l-51.2 51.2c3.2 12.8 6.4 25.6 6.4 38.4 0 44.8-16 83.2-48 112s-67.2 48-112 48'
 )
 
+/** Language / locale picker parent icon (copied from cad-viewer `language.svg`). */
+export const ICON_LANGUAGE =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m18.5 10 4.4 11h-2.155l-1.201-3h-4.09l-1.199 3h-2.154L16.5 10h2zM10 2v2h6v2h-1.968a18.222 18.222 0 0 1-3.62 6.301 14.864 14.864 0 0 0 2.336 1.707l-.751 1.878A17.015 17.015 0 0 1 9 13.725 16.676 16.676 0 0 1 3.524 17.273l-.536-1.929a14.7 14.7 0 0 0 5.327-3.042A18.078 18.078 0 0 1 4.767 8h2.24A16.032 16.032 0 0 0 9 10.877 16.165 16.165 0 0 0 11.91 6.001L2 6V4h6V2h2zm7.5 10.885L16.253 16h2.492L17.5 12.885z"/></svg>'
+
 /** Light theme toggle icon (shown when light theme is active). */
 export const ICON_THEME_LIGHT =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.5" d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/></svg>'
@@ -147,9 +151,8 @@ export const ICON_THEME_LIGHT =
 export const ICON_THEME_DARK =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" d="M10 3a7 7 0 1 0 0 14 9 9 0 0 1 0-14Z"/></svg>'
 
-/** Export submenu parent icon (share from document). */
-export const ICON_EXPORT =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="4" y="7" width="10" height="10" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M11 4h5v5"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M10 5 16 11"/></svg>'
+/** Export parent icon (same document + up-arrow as cad-viewer toolbar/ribbon). */
+export const ICON_EXPORT = ICON_MARKUP_EXPORT
 
 /** Export HTML icon. */
 export const ICON_EXPORT_HTML =

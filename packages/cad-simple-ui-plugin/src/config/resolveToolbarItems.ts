@@ -15,7 +15,7 @@ import type {
 /**
  * Builds a lookup map of built-in toolbar items keyed by id (includes nested submenu entries).
  *
- * @param context - Context for theme/locale toggle presets.
+ * @param context - Context for theme/locale/placement presets.
  */
 export function createDefaultToolbarPresetMap(
   context?: AcExDefaultToolbarContext
@@ -64,7 +64,7 @@ export function insertToolbarItemsAt(
  * in custom lists are expanded from the built-in item map.
  *
  * @param options - Toolbar subsection of plugin options.
- * @param context - Context for default theme/locale toggle items.
+ * @param context - Context for default theme/locale/placement items.
  * @returns Resolved toolbar items ready for {@link AcExToolbar}.
  */
 export function resolveToolbarItems(
