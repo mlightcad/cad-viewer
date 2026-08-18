@@ -1,9 +1,28 @@
 import type {
+  AcExToolbarChildrenUi,
   AcExToolbarItem,
   AcExToolbarItemConfig,
   AcExToolbarPresetRef,
   AcExToolbarSeparator
 } from './types'
+
+/**
+ * Resolves how nested children are presented. Defaults to `'menu'`.
+ *
+ * @param item - Parent toolbar item.
+ */
+export function resolveToolbarChildrenUi(
+  item: AcExToolbarItem
+): AcExToolbarChildrenUi {
+  return item.childrenUi ?? 'menu'
+}
+
+/** Returns whether {@link childrenUi} is an icon sub-toolbar (sticky or dismissible). */
+export function isToolbarChildrenStrip(
+  childrenUi: AcExToolbarChildrenUi
+): boolean {
+  return childrenUi === 'toolbar' || childrenUi === 'sticky-toolbar'
+}
 
 /** Returns whether a toolbar config entry is a visual separator. */
 export function isToolbarSeparatorItem(

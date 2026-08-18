@@ -130,6 +130,13 @@ export function ensureUiStyles() {
       cursor: not-allowed;
     }
 
+    .ml-ex-ui-toolbar-btn.is-open,
+    .ml-ex-ui-toolbar-btn.is-toggled {
+      border-color: var(--ml-ui-accent, #409eff);
+      color: var(--ml-ui-accent, #409eff);
+      background: var(--ml-ui-accent-soft, rgba(64, 158, 255, 0.12));
+    }
+
     /* Flyout mark: a small opaque right triangle in the corner toward the
        submenu. It sits in the icon padding so the glyph stays clear. */
     .ml-ex-ui-toolbar-btn.has-children::after {
@@ -176,6 +183,44 @@ export function ensureUiStyles() {
     .ml-ex-ui-icon svg {
       width: 18px;
       height: 18px;
+    }
+
+    .ml-ex-ui-subtoolbar {
+      position: absolute;
+      z-index: 31;
+      display: flex;
+      gap: 4px;
+      padding: 6px;
+      background: var(--ml-ui-bg, #ffffff);
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      box-shadow: var(--ml-ui-shadow, 0 2px 6px rgba(0, 0, 0, 0.12));
+      border-radius: 6px;
+      box-sizing: border-box;
+      --ml-ex-ui-toolbar-btn-size: 32px;
+    }
+
+    .ml-ex-ui-subtoolbar.is-horizontal {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .ml-ex-ui-subtoolbar.is-vertical {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .ml-ex-ui-subtoolbar.is-horizontal .ml-ex-ui-toolbar-separator {
+      width: 1px;
+      align-self: stretch;
+      margin: 2px 4px;
+      min-height: 24px;
+    }
+
+    .ml-ex-ui-subtoolbar.is-vertical .ml-ex-ui-toolbar-separator {
+      height: 1px;
+      width: auto;
+      margin: 4px 2px;
+      min-width: 24px;
     }
 
     .ml-ex-ui-dropdown {
@@ -1140,7 +1185,7 @@ export function ensureUiStyles() {
 export function removeUiStylesIfUnused() {
   if (
     document.querySelector(
-      '.ml-ex-ui-toolbar, .ml-ex-ui-layer-manager, .ml-ex-ui-dock-panel, .ml-ex-ui-review-palette'
+      '.ml-ex-ui-toolbar, .ml-ex-ui-subtoolbar, .ml-ex-ui-layer-manager, .ml-ex-ui-dock-panel, .ml-ex-ui-review-palette'
     )
   )
     return

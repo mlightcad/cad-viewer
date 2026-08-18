@@ -7,9 +7,9 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 ## Features
 
 - Configurable toolbar with predefined CAD commands, separators, and preset references
-- Nested toolbar menus with submenu arrows
+- Nested sub-toolbars (sticky or dismissible) and optional popover menus, with flyout arrows
 - Toolbar placement: `top`, `bottom`, `left`, `right`
-- Default toolbar includes view, measure, review, then export, plus toolbar placement, theme and locale toggles
+- Default toolbar includes view, measure, review, then export, plus toolbar placement, theme toggle, and a language picker
 - UI theme follows `COLORTHEME` sysvar and `--ml-ui-*` tokens on `host` automatically
 - Locale follows `AcApI18n.currentLocale` automatically
 - Layer list in a dock panel tab (name, visibility, color), opened from the toolbar layer button
@@ -253,15 +253,16 @@ See `cad-simple-viewer-example` (`demoToolbarPresets.ts`) for a working layout s
 | `anchorAction` | Popover-style handler that receives the anchor button element. Takes precedence over `command` and `action` |
 | `requiresDocument` | When `false`, button stays enabled before a drawing is opened |
 | `minOpenMode` | Hide below Review/Write (`AcEdOpenMode.Review`) |
-| `children` | Submenu items (parent shows a flyout arrow) |
-| `childIcon` | `'fixed'` (default): parent keeps its own icon; `'selected'`: parent icon follows the active submenu item |
+| `children` | Nested items shown as a sub-toolbar or popover when the parent is clicked |
+| `childrenUi` | `'menu'` (popover, default), `'toolbar'` (closes on canvas click), or `'sticky-toolbar'` (stays until the parent is clicked again) |
+| `childIcon` | `'fixed'` (default): parent keeps its own icon; `'selected'`: parent icon follows the active child item |
 | `selectedChildId` | Initial submenu selection when `childIcon` is `'selected'` |
 | `toggle` | Two-state button with `getValue`, `on`, and `off` branches |
 | `type` | `'separator'` renders a divider; omit for buttons |
 | `preset` | Reference a built-in button by id (custom layouts only; use `{ preset: 'pan' }`) |
 | `disabled` | `boolean` or `() => boolean` |
 
-Built-in preset ids include: `select`, `pan`, `zoom-extent`, `layer`, `measure`, `export`, `toolbar-placement`, `switch-bg`, `theme`, `locale`, and nested ids such as `placement-top`, `measure-distance`, `export-html`, etc.
+Built-in preset ids include: `select`, `pan`, `zoom-extent`, `layer`, `measure`, `export`, `toolbar-placement`, `switch-bg`, `theme`, `locale`, and nested ids such as `placement-top`, `measure-distance`, `export-html`, `locale-en`, `locale-zh`, `locale-cs`, `locale-tr`, etc.
 
 ### 1. Default toolbar + extra buttons
 
@@ -384,7 +385,9 @@ createSimpleUiPlugin({
 }
 ```
 
-### 6. Submenu (nested commands)
+### 6. Submenu / sub-toolbar (nested commands)
+
+Popover menu (default when `childrenUi` is omitted):
 
 ```typescript
 {
@@ -395,6 +398,21 @@ createSimpleUiPlugin({
   children: [
     { id: 'line', label: 'Line', command: 'line' },
     { id: 'circle', label: 'Circle', command: 'circle' }
+  ]
+}
+```
+
+Icon sub-toolbar beside the parent (same model as the HTML export viewer). Measure and Review use `'sticky-toolbar'` so canvas clicks do not dismiss the strip; Export, Toolbar Position, and Language use `'toolbar'` so an outside click closes it:
+
+```typescript
+{
+  id: 'measure',
+  label: 'Measure',
+  icon: measureIconSvg,
+  childrenUi: 'sticky-toolbar',
+  children: [
+    { id: 'measure-distance', label: 'Distance', command: 'measuredistance' },
+    { id: 'measure-area', label: 'Area', command: 'measurearea' }
   ]
 }
 ```
@@ -415,7 +433,9 @@ When the parent icon should reflect the active submenu item:
 }
 ```
 
-Built-in buttons using `childIcon: 'selected'`: `toolbar-placement` only. `export`, `annotation`, and `measure` use fixed parent icons.
+Built-in buttons using `childIcon: 'selected'`: `toolbar-placement` and `locale`. `export`, `annotation`, and `measure` use fixed parent icons.
+
+Built-in `childrenUi`: `measure` and `annotation` are `'sticky-toolbar'`; `export`, `toolbar-placement`, and `locale` are `'toolbar'`. Custom items default to `'menu'`.
 
 Submenu flyout direction follows toolbar placement (e.g. arrow points left when the toolbar is on the right).
 
@@ -527,6 +547,7 @@ Omit the layer button from `items` if you do not want the layer dock UI or `laye
 | `AcApLayerStore` | Document-scoped layer observer and UI mutations |
 | `AcExSimpleUiPluginOptions` | Plugin configuration type |
 | `AcExToolbarItem` | Single toolbar button definition |
+| `AcExToolbarChildrenUi` | `'menu' \| 'toolbar' \| 'sticky-toolbar'` |
 | `AcExToolbarItemConfig` | Button, separator, or preset reference in toolbar config |
 | `createToolbarSeparator(id?)` | Helper that creates a separator entry |
 | `toolbarPreset(id)` | Helper that references a built-in button |

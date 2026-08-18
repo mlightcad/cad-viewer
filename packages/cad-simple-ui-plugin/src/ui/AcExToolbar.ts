@@ -14,10 +14,15 @@ import {
   resolveEffectiveToolbarItem,
   resolveParentToolbarDisplay
 } from '../config/resolveToolbarItems'
-import { isToolbarSeparatorItem } from '../config/toolbarItemUtils'
+import {
+  isToolbarChildrenStrip,
+  isToolbarSeparatorItem,
+  resolveToolbarChildrenUi
+} from '../config/toolbarItemUtils'
 import type { AcExToolbarItem, AcExToolbarPlacement } from '../config/types'
 import type { AcExI18n } from '../i18n'
 import { AcExDropdownMenu } from './AcExDropdownMenu'
+import { AcExSubToolbar } from './AcExSubToolbar'
 import { ensureUiStyles } from './styles'
 
 /** Constructor options for {@link AcExToolbar}. */
@@ -45,7 +50,7 @@ export interface AcExToolbarOptions {
 }
 
 /**
- * Plain-DOM floating toolbar with dropdown submenus and toggle buttons.
+ * Plain-DOM floating toolbar with sub-toolbars, dropdown menus, and toggles.
  *
  * Disables command buttons while a document is loading and filters items by
  * document open mode.
@@ -57,8 +62,16 @@ export class AcExToolbar {
   private themeHost: HTMLElement
   /** Root toolbar container appended to the mount host. */
   private root: HTMLDivElement
-  /** Currently open submenu, if any. */
+  /** Currently open popover submenu, if any. */
   private openDropdown?: AcExDropdownMenu
+  /** Currently open icon sub-toolbar, if any. */
+  private openSubToolbar?: AcExSubToolbar
+  /** Parent item id of the open children UI. */
+  private openParentId?: string
+  /** Sticky sub-toolbar parent id restored after a full re-render. */
+  private stickyParentId?: string
+  /** Parent button currently marked as expanded. */
+  private openParentButton?: HTMLElement
   /** Whether the toolbar is globally disabled during document open. */
   private isDisabled = false
   /** Current document open mode used for item visibility. */
@@ -93,6 +106,7 @@ export class AcExToolbar {
   private handleDocumentToBeOpened = () => {
     this.isDisabled = true
     this.syncRootClasses()
+    this.closeChildrenUi()
   }
 
   /**
@@ -226,8 +240,7 @@ export class AcExToolbar {
     this.visible = visible
     this.root.hidden = !visible
     if (!visible) {
-      this.openDropdown?.close()
-      this.openDropdown = undefined
+      this.closeChildrenUi()
       this.options.onCollapse?.()
     }
   }
@@ -254,8 +267,7 @@ export class AcExToolbar {
     if (!this.options.collapsible || this.collapsed === collapsed) return
     this.collapsed = collapsed
     if (collapsed) {
-      this.openDropdown?.close()
-      this.openDropdown = undefined
+      this.closeChildrenUi()
       this.options.onCollapse?.()
     }
     this.syncRootClasses()
@@ -271,7 +283,7 @@ export class AcExToolbar {
     }
     this.resizeObserver?.disconnect()
     this.resizeObserver = undefined
-    this.openDropdown?.close()
+    this.closeChildrenUi()
     AcApDocManager.instance.events.documentActivated.removeEventListener(
       this.handleDocumentActivated
     )
@@ -362,8 +374,8 @@ export class AcExToolbar {
 
   /** Rebuilds all toolbar buttons from {@link items}. */
   private renderButtons() {
-    this.openDropdown?.close()
-    this.openDropdown = undefined
+    const restoreStickyId = this.stickyParentId
+    this.closeChildrenUi()
     this.root.replaceChildren()
 
     const visibleItems = filterVisibleToolbarItems(this.items, this.openMode)
@@ -394,6 +406,8 @@ export class AcExToolbar {
 
       if (effective.children?.length) {
         button.classList.add('has-children')
+        button.setAttribute('aria-haspopup', 'true')
+        button.setAttribute('aria-expanded', 'false')
       }
 
       if (effective.icon) {
@@ -423,35 +437,12 @@ export class AcExToolbar {
           ).map(resolveEffectiveToolbarItem)
           if (visibleChildren.length === 0) return
 
-          this.openDropdown?.close()
-          const dropdown = new AcExDropdownMenu(
-            this.options.i18n,
-            visibleChildren,
-            button,
-            this.themeHost
-          )
-          dropdown.setOnSelect(child => {
-            if (isToolbarSeparatorItem(child)) return
-            if (item.childIcon === 'selected') {
-              this.selectedChildByParent.set(item.id, child.id)
-            }
-            if (child.action) {
-              child.action()
-            } else if (child.command) {
-              this.options.onCommand(child.command)
-            }
-            if (child.toggle) {
-              window.setTimeout(() => this.renderButtons(), 0)
-            } else if (item.childIcon === 'selected' || item.toggle) {
-              this.renderButtons()
-            }
-          })
-          dropdown.setOnClose(() => {
-            if (this.openDropdown === dropdown) {
-              this.openDropdown = undefined
-            }
-          })
-          this.openDropdown = dropdown
+          if (this.openParentId === item.id) {
+            this.closeChildrenUi()
+            return
+          }
+
+          this.openChildrenUi(item, button, visibleChildren)
           return
         }
 
@@ -472,6 +463,9 @@ export class AcExToolbar {
 
     this.appendCollapseToggle()
     this.scheduleSyncPosition()
+    if (restoreStickyId && !this.collapsed && this.visible) {
+      this.openStickyChildrenByParentId(restoreStickyId)
+    }
   }
 
   private ensureMountHostLayout() {
@@ -494,6 +488,7 @@ export class AcExToolbar {
     this.layoutFrame = requestAnimationFrame(() => {
       this.layoutFrame = undefined
       this.syncPosition()
+      this.openSubToolbar?.syncPosition()
     })
   }
 
@@ -551,6 +546,170 @@ export class AcExToolbar {
       if (item.childIcon === 'selected' && item.selectedChildId) {
         this.selectedChildByParent.set(item.id, item.selectedChildId)
       }
+    }
+  }
+
+  /** Closes any open dropdown or sub-toolbar and clears parent expanded state. */
+  private closeChildrenUi() {
+    this.openDropdown?.close()
+    this.openDropdown = undefined
+    this.openSubToolbar?.close()
+    this.openSubToolbar = undefined
+    this.clearParentOpenState()
+    this.openParentId = undefined
+    this.stickyParentId = undefined
+  }
+
+  /** Removes `is-open` / `aria-expanded` from the last expanded parent button. */
+  private clearParentOpenState() {
+    if (!this.openParentButton) return
+    this.openParentButton.classList.remove('is-open')
+    this.openParentButton.setAttribute('aria-expanded', 'false')
+    this.openParentButton = undefined
+  }
+
+  /**
+   * Marks a parent button as expanded while its children UI is open.
+   *
+   * @param button - Parent toolbar button.
+   */
+  private markParentOpen(button: HTMLElement) {
+    this.clearParentOpenState()
+    button.classList.add('is-open')
+    button.setAttribute('aria-expanded', 'true')
+    this.openParentButton = button
+  }
+
+  /**
+   * Opens a dropdown or sub-toolbar for a parent item.
+   *
+   * @param item - Parent toolbar item.
+   * @param button - Parent button used as the anchor.
+   * @param visibleChildren - Filtered, effective child items.
+   */
+  private openChildrenUi(
+    item: AcExToolbarItem,
+    button: HTMLButtonElement,
+    visibleChildren: AcExToolbarItem[]
+  ) {
+    this.closeChildrenUi()
+    const childrenUi = resolveToolbarChildrenUi(item)
+    this.openParentId = item.id
+    this.markParentOpen(button)
+
+    if (isToolbarChildrenStrip(childrenUi)) {
+      const sticky = childrenUi === 'sticky-toolbar'
+      this.stickyParentId = sticky ? item.id : undefined
+      const strip = new AcExSubToolbar({
+        i18n: this.options.i18n,
+        items: visibleChildren,
+        anchor: button,
+        toolbarRoot: this.root,
+        host: this.mountHost,
+        placement: this.options.placement,
+        sticky,
+        commandsDisabled: this.isDisabled || !this.hasDocument,
+        onSelect: child => this.activateChild(item, child, sticky),
+        onClose: () => {
+          if (this.openSubToolbar === strip) {
+            this.openSubToolbar = undefined
+            this.clearParentOpenState()
+            this.openParentId = undefined
+            this.stickyParentId = undefined
+          }
+        }
+      })
+      this.openSubToolbar = strip
+      return
+    }
+
+    const dropdown = new AcExDropdownMenu(
+      this.options.i18n,
+      visibleChildren,
+      button,
+      this.themeHost
+    )
+    dropdown.setOnSelect(child => {
+      this.activateChild(item, child, false)
+    })
+    dropdown.setOnClose(() => {
+      if (this.openDropdown === dropdown) {
+        this.openDropdown = undefined
+        this.clearParentOpenState()
+        this.openParentId = undefined
+      }
+    })
+    this.openDropdown = dropdown
+  }
+
+  /**
+   * Re-opens a sticky sub-toolbar after the main toolbar is rebuilt.
+   *
+   * @param parentId - Parent item id that was sticky-open.
+   */
+  private openStickyChildrenByParentId(parentId: string) {
+    const item = this.items.find(candidate => {
+      if (isToolbarSeparatorItem(candidate)) return false
+      return candidate.id === parentId
+    })
+    if (!item?.children?.length) return
+    if (resolveToolbarChildrenUi(item) !== 'sticky-toolbar') return
+
+    const button = this.root.querySelector<HTMLButtonElement>(
+      `[data-toolbar-item-id="${parentId}"]`
+    )
+    if (!button) return
+
+    const visibleChildren = filterVisibleToolbarItems(
+      item.children,
+      this.openMode
+    ).map(resolveEffectiveToolbarItem)
+    if (visibleChildren.length === 0) return
+
+    this.openChildrenUi(item, button, visibleChildren)
+  }
+
+  /**
+   * Runs a child item's action/command and refreshes parent/child UI as needed.
+   *
+   * @param parent - Parent toolbar item.
+   * @param child - Selected child item.
+   * @param sticky - Whether the child UI should stay open.
+   */
+  private activateChild(
+    parent: AcExToolbarItem,
+    child: AcExToolbarItem,
+    sticky: boolean
+  ) {
+    if (isToolbarSeparatorItem(child)) return
+    if (parent.childIcon === 'selected') {
+      this.selectedChildByParent.set(parent.id, child.id)
+    }
+    if (child.action) {
+      child.action()
+    } else if (child.command) {
+      this.options.onCommand(child.command)
+    }
+
+    if (child.toggle && sticky && this.openSubToolbar) {
+      window.setTimeout(() => {
+        if (!this.openSubToolbar) return
+        const visibleChildren = filterVisibleToolbarItems(
+          parent.children ?? [],
+          this.openMode
+        ).map(resolveEffectiveToolbarItem)
+        this.openSubToolbar.refresh(
+          visibleChildren,
+          this.isDisabled || !this.hasDocument
+        )
+      }, 0)
+      return
+    }
+
+    if (child.toggle) {
+      window.setTimeout(() => this.renderButtons(), 0)
+    } else if (parent.childIcon === 'selected' || parent.toggle) {
+      this.renderButtons()
     }
   }
 }

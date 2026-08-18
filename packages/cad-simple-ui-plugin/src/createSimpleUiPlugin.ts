@@ -110,6 +110,10 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private registeredCommands: Array<{ group: string; name: string }> = []
   /** Refreshes toolbar, layer, and review UI when the app locale changes. */
   private handleLocaleChanged = () => {
+    this.toolbar?.setSelectedChild(
+      'locale',
+      `locale-${AcApI18n.currentLocale}`
+    )
     this.layerListView?.refreshLocale()
     this.reviewPaletteView?.refreshLocale()
     this.dockPanel?.refreshLocale()
@@ -495,7 +499,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       getTheme: () => this.themeSync?.getTheme() ?? 'dark',
       setTheme: (theme: AcEdUiTheme) => this.themeSync?.setTheme(theme),
       getLocale: () => AcApI18n.currentLocale,
-      toggleLocale: () => this.toggleLocale(),
+      setLocale: (locale: AcApLocale) => this.setLocale(locale),
       getPlacement: () => this.toolbarPlacement,
       setPlacement: (placement: AcExToolbarPlacement) => {
         this.applyToolbarPlacement(placement)
@@ -886,10 +890,9 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     removeUiStylesIfUnused()
   }
 
-  /** Toggles {@link AcApI18n.currentLocale} between English and Chinese. */
-  private toggleLocale() {
-    const next: AcApLocale = AcApI18n.currentLocale === 'en' ? 'zh' : 'en'
-    AcApI18n.setCurrentLocale(next)
+  /** Sets {@link AcApI18n.currentLocale} to one of the supported locales. */
+  private setLocale(locale: AcApLocale) {
+    AcApI18n.setCurrentLocale(locale)
   }
 }
 
