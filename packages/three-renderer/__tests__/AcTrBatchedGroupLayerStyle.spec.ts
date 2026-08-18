@@ -68,6 +68,66 @@ describe('AcTrBatchedGroup layer style rebind', () => {
     expect(getLayerBoundMaterial).toHaveBeenCalled()
   })
 
+  it('does not clobber absolute hatch colour when only lineweight is ByLayer', () => {
+    // Regression: legend true-color solid hatches on an ACI-7 layer were
+    // painted white during layer sync because followsLayerStyle is true for
+    // ByLayer lineweight alone, and refreshLayerBoundMaterialColor used to
+    // rewrite colour unconditionally.
+    const group = new AcTrBatchedGroup()
+    const absoluteRgb = 0xc8cdd2
+    const sourceMaterial = new THREE.MeshBasicMaterial({ color: absoluteRgb })
+    setMaterialMetadata(sourceMaterial, {
+      layer: '采掘计划',
+      materialKey: 'solid_采掘计划_RGB:200,205,210_draw_-1',
+      isByLayerColor: false,
+      isByLayerLineWeight: true,
+      isForeground: false,
+      drawOrder: -1
+    })
+
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), sourceMaterial)
+    mesh.userData.layerName = '采掘计划'
+    getSceneDrawableUserData(mesh).noBatch = true
+    group.addEntity(createEntity('legend-hatch', mesh))
+
+    let targetMesh: THREE.Mesh | undefined
+    group.traverse(child => {
+      if (
+        targetMesh ||
+        !(child instanceof THREE.Mesh) ||
+        child === mesh
+      ) {
+        return
+      }
+      if (child.geometry instanceof THREE.PlaneGeometry) {
+        targetMesh = child
+      }
+    })
+    expect(targetMesh).toBeDefined()
+
+    const layerColor = {
+      isForeground: true,
+      RGB: 0xffffff
+    }
+
+    // Return the same material instance so rebind takes the in-place colour
+    // refresh path (the path that previously wiped absolute RGB).
+    group.rebindMaterialsForLayer(
+      '采掘计划',
+      { color: layerColor as never },
+      material => material,
+      {
+        currentBackgroundColor: 0x000000,
+        getLineMaterial: jest.fn(),
+        getMTextFillMaterial: jest.fn()
+      } as never
+    )
+
+    const material = targetMesh!.material as THREE.MeshBasicMaterial
+    expect(material.color.getHex()).toBe(absoluteRgb)
+    expect(material.userData.isForeground).toBe(false)
+  })
+
   it('syncAppearanceFromRecord refreshes unbatched drawables in one traversal', () => {
     const group = new AcTrBatchedGroup()
     const sourceMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
