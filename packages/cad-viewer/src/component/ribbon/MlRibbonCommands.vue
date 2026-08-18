@@ -165,6 +165,9 @@ import { classifyOverlaySelection } from './overlaySelectionKind'
 import { useHatchContextualRibbon } from './useHatchContextualRibbon'
 import { useMTextContextualRibbon } from './useMTextContextualRibbon'
 
+/** Shared dropdown width for color / line-weight / font-size in overlay Style panels. */
+const OVERLAY_STYLE_CONTROL_WIDTH = '120px'
+
 interface Props {
   currentLocale?: LocaleProp
 }
@@ -1251,6 +1254,7 @@ const buildBaseTabs = (
           modelValue: markupDrawColor.value,
           displayColor: markupDrawColorDisplay.value,
           placeholder: t('main.ribbon.property.color'),
+          controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
           'onUpdate:modelValue': handleMarkupDrawColorChange
         }
       }
@@ -1266,6 +1270,7 @@ const buildBaseTabs = (
           modelValue: markupDrawLineWeight.value,
           placeholder: t('main.ribbon.property.lineWeight'),
           numericOnly: true,
+          controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
           'onUpdate:modelValue': handleMarkupDrawLineWeightChange
         }
       }
@@ -1281,7 +1286,7 @@ const buildBaseTabs = (
           modelValue: markupDrawFontSize.value,
           options: [10, 12, 14, 16, 18, 20, 24, 28, 32],
           placeholder: t('main.verticalToolbar.markupFontSize.text'),
-          controlWidth: '108px',
+          controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
           'onUpdate:modelValue': handleMarkupDrawFontSizeChange
         }
       }
@@ -1434,6 +1439,7 @@ const buildBaseTabs = (
           modelValue: measurementDrawColor.value,
           displayColor: measurementDrawColorDisplay.value,
           placeholder: t('main.ribbon.property.color'),
+          controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
           'onUpdate:modelValue': handleMeasurementDrawColorChange
         }
       }
@@ -1449,6 +1455,7 @@ const buildBaseTabs = (
           modelValue: measurementDrawLineWeight.value,
           placeholder: t('main.ribbon.property.lineWeight'),
           numericOnly: true,
+          controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
           'onUpdate:modelValue': handleMeasurementDrawLineWeightChange
         }
       }
@@ -1464,7 +1471,7 @@ const buildBaseTabs = (
           modelValue: measurementDrawFontSize.value,
           options: [10, 12, 13, 14, 16, 18, 20, 24, 28, 32],
           placeholder: t('main.verticalToolbar.measurementFontSize.text'),
-          controlWidth: '108px',
+          controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
           'onUpdate:modelValue': handleMeasurementDrawFontSizeChange
         }
       }

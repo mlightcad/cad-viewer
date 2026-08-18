@@ -1,6 +1,7 @@
 import {
   AcCmColor,
   AcCmColorMethod,
+  AcCmColorUtil,
   AcDbDatabase,
   AcDbSystemVariables,
   AcDbSysVarManager,
@@ -90,12 +91,28 @@ export function markupColorToCss(color: AcCmColor): string {
   return color.cssColor ?? `rgb(${color.red}, ${color.green}, ${color.blue})`
 }
 
+/**
+ * If an RGB color matches the AutoCAD palette exactly, restore ByACI so
+ * ribbon color dropdowns can show named colors (Red, Yellow, …) instead of
+ * Custom after a CSS round-trip.
+ */
+function preferExactAciColor(color: AcCmColor): AcCmColor {
+  if (!color.isByColor) return color
+  const rgb = color.RGB
+  if (rgb == null) return color
+  const index = AcCmColorUtil.getIndexByColor(rgb)
+  if (index == null) return color
+  const aci = new AcCmColor()
+  aci.colorIndex = index
+  return aci
+}
+
 /** Parse a CSS color string back into AcCmColor (best-effort). */
 export function cssToMarkupColor(css: string): AcCmColor {
   const fromString = AcCmColor.fromString(css)
-  if (fromString) return fromString
+  if (fromString) return preferExactAciColor(fromString)
   try {
-    return new AcCmColor().setRGBFromCss(css)
+    return preferExactAciColor(new AcCmColor().setRGBFromCss(css))
   } catch {
     return createDefaultMarkupColor()
   }
