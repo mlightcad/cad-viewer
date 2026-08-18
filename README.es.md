@@ -2,6 +2,9 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md)
 
+[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-simple-viewer.svg?label=cad-simple-viewer)](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer)
+[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-viewer.svg?label=cad-viewer)](https://www.npmjs.com/package/@mlightcad/cad-viewer)
+
 cad-viewer es `el primer visor y editor web de DXF/DWG del mundo que funciona completamente en el navegador, sin depender de ningún servicio backend`.
 Al realizar el análisis de DWG/DXF, el procesamiento geométrico y el renderizado directamente en el navegador, cad-viewer permite una visualización y edición CAD verdaderamente sin servidor, ideal para aplicaciones en la nube, uso sin conexión y flujos de trabajo sensibles a la privacidad.
 

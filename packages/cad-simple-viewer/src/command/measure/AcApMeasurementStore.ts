@@ -101,6 +101,11 @@ export function getMeasurementStyle(
   return style ? acapCloneMeasurementStyle(style) : undefined
 }
 
+/** Id of the currently selected measurement group, if any. */
+export function getSelectedMeasurementId(): string | undefined {
+  return selectedMeasurementId
+}
+
 /** Style of the currently selected measurement, if any. */
 export function getActiveMeasurementStyle(): AcApMeasurementStyle | undefined {
   return selectedMeasurementId
