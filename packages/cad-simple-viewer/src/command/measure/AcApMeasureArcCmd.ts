@@ -737,7 +737,7 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     if (!endRaw) return
     const geomNow = jig.geom
     const start2 = toPoint2(start)
-    const end2 = toPoint2(snapToCircle(view.curPos, geomNow))
+    const end2 = toPoint2(snapToCircle(endRaw, geomNow))
     const sweep = lockedSweep(start2, end2, geomNow, jig.clockwise)
     if (!sweep) {
       this.showMessage(AcApI18n.t('jig.measureArc.invalidPoints'), 'warning')
