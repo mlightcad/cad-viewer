@@ -198,7 +198,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       measureAngleHint:
         'Click vertex, then two points on each arm (object snap enabled).',
       measureArcHint:
-        'Click arc start, a point on the arc, then arc end (object snap enabled).',
+        'Click a circle or arc to measure along it, or click start, a point on the arc, then end (object snap enabled). Ctrl (⌘ on Mac) switches major/minor arc.',
       measureAreaHint:
         'Click polygon vertices; click near the first point or press Enter to finish.',
       measureCoordinateHint:
@@ -212,14 +212,16 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       markupRectHint: 'Click two corners to draw a rectangle.',
       markupCircleHint: 'Click the center, then a point on the circumference.',
       markupArrowHint: 'Click the start point, then the arrow tip.',
-      markupStampHint: 'Click to place a stamp (cycles approved / rejected / …).',
+      markupStampHint:
+        'Click to place a stamp (cycles approved / rejected / …).',
       markupArrowEndHint: 'Click the arrow tip.',
       markupRectCornerHint: 'Click the opposite corner.',
       markupCloudCornerHint: 'Click the opposite corner.',
       markupCalloutAnchorHint: 'Click the text bubble position.',
       markupCircleRadiusHint: 'Click a point on the circumference.',
       markupTextPrompt: 'Enter markup text',
-      markupTextEditHint: 'Type text on the canvas. Enter to finish, Esc to cancel.',
+      markupTextEditHint:
+        'Type text on the canvas. Enter to finish, Esc to cancel.',
       markupShapeCalloutHint:
         'Click to place the text box (leader attaches to the shape). Esc cancels the callout.',
       markupDefaultLabel: 'Note',
@@ -306,7 +308,8 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       zoomWindowHint: '点击两个角点以窗口缩放。',
       measureDistanceHint: '点击两点以测量距离（已启用对象捕捉）。',
       measureAngleHint: '依次点击顶点与两条边上的点（已启用对象捕捉）。',
-      measureArcHint: '依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。',
+      measureArcHint:
+        '点击圆或圆弧可沿其测量；否则依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。锁定后按 Ctrl（Mac 为 Control 或 ⌘）可在大弧与小弧之间切换。',
       measureAreaHint: '依次点击多边形顶点；靠近首点或按 Enter 完成。',
       measureCoordinateHint: '点击一点以读取其 X/Y 坐标（已启用对象捕捉）。',
       measureExported: '已导出 {count} 条测量。',
@@ -415,7 +418,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       measureAngleHint:
         'Klikněte na vrchol, poté na dva body na každém rameni (uchopení objektů zapnuto).',
       measureArcHint:
-        'Klikněte na začátek oblouku, bod na oblouku a poté na konec oblouku (uchopení objektů zapnuto).',
+        'Klikněte na kružnici nebo oblouk pro měření podél něj, nebo klikněte na začátek, bod na oblouku a konec (uchopení objektů zapnuto). Ctrl (⌘ na Macu) přepíná velký/malý oblouk.',
       measureAreaHint:
         'Klikejte na vrcholy mnohoúhelníku; dokončete kliknutím poblíž prvního bodu nebo stiskem Enter.',
       measureCoordinateHint:
@@ -429,7 +432,8 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       markupRectHint: 'Klikněte na dva rohy pro nakreslení obdélníku.',
       markupCircleHint: 'Klikněte na střed a poté na bod na kružnici.',
       markupArrowHint: 'Klikněte na začátek a poté na hrot šipky.',
-      markupStampHint: 'Klikněte pro umístění razítka (schváleno / zamítnuto / …).',
+      markupStampHint:
+        'Klikněte pro umístění razítka (schváleno / zamítnuto / …).',
       markupArrowEndHint: 'Klikněte na hrot šipky.',
       markupRectCornerHint: 'Klikněte na protilehlý roh.',
       markupCloudCornerHint: 'Klikněte na protilehlý roh.',
@@ -527,7 +531,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       measureAngleHint:
         'Önce köşe noktasını, sonra her koldan birer nokta tıklayın (nesne yakalama etkin).',
       measureArcHint:
-        'Yay başlangıcını, yay üzerinde bir noktayı ve yay sonunu tıklayın (nesne yakalama etkin).',
+        'Ölçmek için bir çember veya yaya tıklayın; ya da yay başlangıcı, yay üzerindeki bir nokta ve yay sonunu tıklayın (nesne yakalama etkin). Ctrl (Mac’te ⌘) büyük/küçük yay arasında geçiş yapar.',
       measureAreaHint:
         'Çokgen köşelerini tıklayın; bitirmek için ilk noktanın yakınına tıklayın veya Enter’a basın.',
       measureCoordinateHint:
@@ -539,9 +543,11 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       markupCalloutHint: 'Önce lider ucunu, sonra metin konumunu tıklayın.',
       markupTextHint: 'Metin yerleştirmek için bir nokta tıklayın.',
       markupRectHint: 'Dikdörtgen çizmek için iki köşe tıklayın.',
-      markupCircleHint: 'Önce merkezi, sonra çevre üzerindeki bir noktayı tıklayın.',
+      markupCircleHint:
+        'Önce merkezi, sonra çevre üzerindeki bir noktayı tıklayın.',
       markupArrowHint: 'Önce başlangıcı, sonra ok ucunu tıklayın.',
-      markupStampHint: 'Damga yerleştirmek için tıklayın (onaylandı / reddedildi / …).',
+      markupStampHint:
+        'Damga yerleştirmek için tıklayın (onaylandı / reddedildi / …).',
       markupArrowEndHint: 'Ok ucunu tıklayın.',
       markupRectCornerHint: 'Karşı köşeyi tıklayın.',
       markupCloudCornerHint: 'Karşı köşeyi tıklayın.',

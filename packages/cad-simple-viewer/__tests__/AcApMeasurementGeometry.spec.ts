@@ -73,6 +73,33 @@ describe('hitTestMeasurementGeometry', () => {
       )
     ).toBe(false)
   })
+
+  it('hits the major arc when a through point selects the long sweep', () => {
+    const geometry: AcApMeasurementGeometry = {
+      type: 'arc',
+      center: { x: 0, y: 0 },
+      radius: 25,
+      start: { x: 25, y: 0 },
+      end: { x: 0, y: 25 },
+      through: { x: -25, y: 0 }
+    }
+    expect(
+      hitTestMeasurementGeometry(
+        geometry,
+        { x: -25, y: 0 },
+        identity,
+        threshold
+      )
+    ).toBe(true)
+    expect(
+      hitTestMeasurementGeometry(
+        geometry,
+        { x: 17.677, y: 17.677 },
+        identity,
+        threshold
+      )
+    ).toBe(false)
+  })
 })
 
 describe('measurementGeometryBounds', () => {

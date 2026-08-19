@@ -5,7 +5,9 @@ import { toWcsCoord } from './AcExBatchBuffers'
 import {
   collectPrimitiveDiscreteSnapCandidates,
   collectPrimitiveNearestSnapCandidate,
-  distSq
+  distSq,
+  inwardArcAlignment,
+  isBetterArcLock
 } from './AcExOsnapGeometry'
 import {
   ACEX_MAX_INTERSECTION_SOURCES,
@@ -649,6 +651,64 @@ export class AcExOsnapIndex {
       }
       this.segmentTree.load(segmentEntries)
     }
+  }
+
+  /**
+   * Finds the closest circle or circular-arc primitive whose curve is within
+   * `threshold` of `(px, py)`.
+   *
+   * Used by arc-length measurement to lock subsequent picks onto that circle
+   * when the first click lands on a `CIRCLE` / `ARC` (including polyline bulges).
+   *
+   * @param px - Cursor X in drawing units (WCS).
+   * @param py - Cursor Y in drawing units (WCS).
+   * @param threshold - Maximum distance in drawing units.
+   * @returns Circle center, radius, and the nearest point on the drawn
+   *   stroke, or `undefined` when none is close enough. `x`/`y` lie on the
+   *   curve (including arc endpoints), not a radial projection onto the
+   *   complementary full circle.
+   */
+  findCircleOrArcNear(
+    px: number,
+    py: number,
+    threshold: number
+  ): { cx: number; cy: number; r: number; x: number; y: number } | undefined {
+    if (threshold <= 0 || this.primitives.length === 0) return undefined
+    const threshSq = threshold * threshold
+    const box = searchBox(px, py, threshold)
+    let bestDistSq = threshSq
+    let bestAlign = -Infinity
+    let best:
+      | { cx: number; cy: number; r: number; x: number; y: number }
+      | undefined
+
+    const mouse = { x: px, y: py }
+    for (const hit of this.primitiveTree.search(box)) {
+      const prim = this.primitives[hit.index]!
+      if (this.hiddenLayers.has(prim.layer)) continue
+      if (prim.kind !== 'circle' && prim.kind !== 'arc') continue
+      const geo = primitiveToAcGeCurve(prim)
+      if (geo.kind !== 'circArc') continue
+      const nearest = geo.curve.nearestPoint({ x: px, y: py })
+      const d2 = distSq(px, py, nearest.x, nearest.y)
+      if (d2 > threshSq) continue
+      const align = inwardArcAlignment(geo.curve, nearest, mouse)
+      if (
+        !best ||
+        isBetterArcLock(d2, align, bestDistSq, bestAlign)
+      ) {
+        bestDistSq = d2
+        bestAlign = align
+        best = {
+          cx: prim.cx,
+          cy: prim.cy,
+          r: prim.r,
+          x: nearest.x,
+          y: nearest.y
+        }
+      }
+    }
+    return best
   }
 
   /**

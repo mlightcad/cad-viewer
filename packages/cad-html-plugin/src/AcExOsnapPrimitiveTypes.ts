@@ -126,9 +126,11 @@ export interface AcExOsnapCirclePrimitive extends AcExOsnapPrimitiveBase {
 /**
  * A circular arc (`AcDbArc`, or a bulge segment from `AcDbPolyline`).
  *
- * Angles are in radians. When {@link AcExOsnapArcPrimitive.normalSign} is `+1`,
- * increasing angle is counter-clockwise in WCS; when `-1`, the Y component is
- * mirrored so snap math matches AutoCAD clockwise arcs.
+ * Angles are AutoCAD OCS parameters in radians. When
+ * {@link AcExOsnapArcPrimitive.normalSign} is `+1`, they match WCS `atan2`;
+ * when `-1`, X is mirrored (−Z extrusion) so HTML snap can rebuild the WCS
+ * stroke. Do not copy clockwise `AcGeCircArc2d` public angles here — those
+ * are Y-mirrored, not OCS.
  */
 export interface AcExOsnapArcPrimitive extends AcExOsnapPrimitiveBase {
   /** Discriminator for {@link AcExOsnapPrimitive}. */

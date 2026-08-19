@@ -662,7 +662,10 @@ export default {
   measureArc: {
     startPoint: 'Specify arc start point',
     throughPoint: 'Specify a point on the arc',
-    endPoint: 'Specify arc end point'
+    endPoint: 'Specify arc end point',
+    lockedEndPoint:
+      'Specify arc end point (Ctrl to switch major/minor arc)',
+    invalidPoints: 'The three points are collinear and do not define an arc.'
   },
   measureArea: {
     firstPoint: 'Specify first point',

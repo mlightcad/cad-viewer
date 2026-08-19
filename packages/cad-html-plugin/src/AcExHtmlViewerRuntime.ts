@@ -1,4 +1,4 @@
-import { accmYieldForPaint,FLOAT_TOL } from '@mlightcad/data-model'
+import { accmYieldForPaint, FLOAT_TOL } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
@@ -10,7 +10,10 @@ import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
 import { setupAcExHtmlNavTools } from './AcExHtmlNavTools'
-import { setAcExHtmlParentChildIcon, setupAcExHtmlToolbarFlyouts } from './AcExHtmlToolbarFlyout'
+import {
+  setAcExHtmlParentChildIcon,
+  setupAcExHtmlToolbarFlyouts
+} from './AcExHtmlToolbarFlyout'
 import {
   computeLayerExtentsMap,
   resolveLayoutViewExtents
@@ -385,6 +388,10 @@ function startViewer(): void {
         render,
         getSnapCacheKey: () => snapCacheKey,
         resolvePoint: resolveMeasurePoint,
+        findCircleOrArcNear: (x, y) => {
+          if (!osnapIndex) return null
+          return osnapIndex.findCircleOrArcNear(x, y, osnapThresholdWcs) ?? null
+        },
         formatLength,
         formatAngle
       }
@@ -674,7 +681,7 @@ function startViewer(): void {
       return
     }
     if (!measure || !markup) return
-    if (measure.handleKeyDown(event.key) || markup.handleKeyDown(event.key)) {
+    if (measure.handleKeyDown(event.key, event) || markup.handleKeyDown(event.key)) {
       event.preventDefault()
       return
     }

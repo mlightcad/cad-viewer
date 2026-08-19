@@ -102,7 +102,8 @@ function parseGeometry(
         center: raw.center,
         radius: raw.radius,
         start: raw.start,
-        end: raw.end
+        end: raw.end,
+        ...(isPoint(raw.through) ? { through: raw.through } : {})
       }
     case 'point':
       if (!isPoint(raw.position)) return undefined

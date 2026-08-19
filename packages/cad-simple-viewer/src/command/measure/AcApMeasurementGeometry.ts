@@ -1,4 +1,4 @@
-import { AcGeBox2d } from '@mlightcad/data-model'
+import { AcGeBox2d, AcGeMathUtil } from '@mlightcad/data-model'
 
 import {
   type AcApScreenPoint,
@@ -11,12 +11,6 @@ import {
 import type { AcApMeasurementGeometry } from './AcApMeasurementTypes'
 
 type WorldToScreen = (point: { x: number; y: number }) => AcApScreenPoint
-
-const TWO_PI = Math.PI * 2
-
-function normaliseAngle(a: number): number {
-  return ((a % TWO_PI) + TWO_PI) % TWO_PI
-}
 
 /**
  * Axis-aligned world bounds of a measurement's control geometry.
@@ -112,7 +106,8 @@ export function hitTestMeasurementGeometry(
       const r = Math.max(Math.min(len1, len2) * 0.3, 15)
       const startAngle = Math.atan2(arm1.y - vertex.y, arm1.x - vertex.x)
       const endAngle = Math.atan2(arm2.y - vertex.y, arm2.x - vertex.x)
-      const antiClockwise = normaliseAngle(endAngle - startAngle) > Math.PI
+      const antiClockwise =
+        AcGeMathUtil.normalizeAngle(endAngle - startAngle) > Math.PI
       return (
         distPointToArcPx(
           canvas.x,
@@ -130,9 +125,7 @@ export function hitTestMeasurementGeometry(
       const verts = geometry.points.map(worldToScreen)
       if (verts.length < 2) return false
       if (pointInPolygonPx(canvas.x, canvas.y, verts)) return true
-      return (
-        distPointToPolylinePx(canvas.x, canvas.y, verts, true) <= threshold
-      )
+      return distPointToPolylinePx(canvas.x, canvas.y, verts, true) <= threshold
     }
     case 'arc': {
       const center = worldToScreen(geometry.center)
@@ -147,8 +140,17 @@ export function hitTestMeasurementGeometry(
       }
       const startAngle = Math.atan2(start.y - center.y, start.x - center.x)
       const endAngle = Math.atan2(end.y - center.y, end.x - center.x)
-      const cwSpan = normaliseAngle(endAngle - startAngle)
-      const antiClockwise = cwSpan > Math.PI
+      let antiClockwise =
+        AcGeMathUtil.normalizeAngle(endAngle - startAngle) > Math.PI
+      if (geometry.through) {
+        const through = worldToScreen(geometry.through)
+        const midAngle = Math.atan2(through.y - center.y, through.x - center.x)
+        antiClockwise = !AcGeMathUtil.isAngleOnCcwSweep(
+          startAngle,
+          midAngle,
+          endAngle
+        )
+      }
       return (
         distPointToArcPx(
           canvas.x,

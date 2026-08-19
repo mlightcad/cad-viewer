@@ -1,4 +1,4 @@
-import type { AcDbDatabase } from '@mlightcad/data-model'
+import { type AcDbDatabase, AcGeCircArc2d } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
   AcTrHtmlCanvasOverlay,
@@ -8,19 +8,15 @@ import {
 import {
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
-  formatMeasurementLength} from '../../../util'
+  formatMeasurementLength
+} from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
-import {
-  getMeasurementStyle,
-  MEASUREMENT_LAYER
-} from '../AcApMeasurementStore'
+import { getMeasurementStyle, MEASUREMENT_LAYER } from '../AcApMeasurementStore'
 import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
 import {
   type AcApMeasureCircleGeom,
-  drawMeasureArcOnCanvas,
-  measureShortArcLength,
-  measureShortArcMid
+  drawMeasureArcOnCanvas
 } from './AcApMeasureDrawUtil'
 import {
   AcApMeasureEntity,
@@ -28,20 +24,25 @@ import {
   type AcApMeasureWorldDrawResult
 } from './AcApMeasureEntity'
 
+type Point2 = { x: number; y: number }
+
 /**
  * Arc-length measurement overlay entity.
  *
- * Renders a canvas stroke of the shorter arc between two points on a circle,
- * HTML dots at the endpoints, and a length badge at the arc midpoint.
+ * Renders a canvas stroke of the measured arc (the sweep that contains
+ * {@link through} when present, otherwise the shorter arc), HTML dots at
+ * the control points, and a length badge at the arc midpoint.
  * Redraws the arc on view changes.
  */
 export class AcApMeasureArcEntity extends AcApMeasureEntity {
   /** Circle center and radius defining the measured arc. */
   private readonly geom: AcApMeasureCircleGeom
   /** Arc start point in world XY. */
-  private readonly start: { x: number; y: number }
+  private readonly start: Point2
+  /** Optional point on the measured sweep (distinguishes major vs minor arc). */
+  private readonly through: Point2 | undefined
   /** Arc end point in world XY. */
-  private readonly end: { x: number; y: number }
+  private readonly end: Point2
 
   /**
    * Creates an arc-length measure entity on the given circle.
@@ -50,17 +51,37 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
    * @param start - Arc start point in world XY
    * @param end - Arc end point in world XY
    * @param options - Shared id, layout, and style options
+   * @param through - Point on the measured sweep; omit for legacy short-arc records
    */
   constructor(
     geom: AcApMeasureCircleGeom,
-    start: { x: number; y: number },
-    end: { x: number; y: number },
-    options: AcApMeasureEntityOptions
+    start: Point2,
+    end: Point2,
+    options: AcApMeasureEntityOptions,
+    through?: Point2
   ) {
     super(options.id ?? `arc-${Date.now()}`, options.layoutId, options.style)
     this.geom = geom
     this.start = start
     this.end = end
+    this.through = through
+  }
+
+  /**
+   * Reconstructs the measured sweep from stored control points.
+   */
+  private resolveMeasuredArc(): AcGeCircArc2d | null {
+    if (this.through) {
+      return AcGeCircArc2d.tryCreateByThreePoints(
+        this.start,
+        this.through,
+        this.end
+      )
+    }
+    return AcGeCircArc2d.tryCreateShorterArc(this.start, this.end, {
+      x: this.geom.cx,
+      y: this.geom.cy
+    })
   }
 
   /**
@@ -70,37 +91,46 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
    * @param start - Arc start point in world XY
    * @param end - Arc end point in world XY
    * @param style - Measurement visual style
-   * @param options - Optional id and layout overrides
+   * @param options - Optional id, layout, and through-point overrides
    * @returns New {@link AcApMeasureArcEntity}
    */
   static create(
     geom: AcApMeasureCircleGeom,
-    start: { x: number; y: number },
-    end: { x: number; y: number },
+    start: Point2,
+    end: Point2,
     style: AcApMeasurementStyle,
-    options?: { id?: string; layoutId?: string }
+    options?: { id?: string; layoutId?: string; through?: Point2 }
   ): AcApMeasureArcEntity {
-    return new AcApMeasureArcEntity(geom, start, end, {
-      style,
-      id: options?.id,
-      layoutId: options?.layoutId
-    })
+    return new AcApMeasureArcEntity(
+      geom,
+      start,
+      end,
+      {
+        style,
+        id: options?.id,
+        layoutId: options?.layoutId
+      },
+      options?.through
+    )
   }
 
   /**
-   * Primary anchor for the measurement (midpoint of the shorter arc).
+   * Primary anchor for the measurement (midpoint of the measured sweep).
    *
-   * @returns World point on the shorter arc between {@link start} and {@link end}
+   * @returns World point on the arc between {@link start} and {@link end}
    */
   override primaryPoint() {
-    return measureShortArcMid(this.start, this.end, this.geom)
+    const mid = this.resolveMeasuredArc()?.midPoint
+    return mid
+      ? { x: mid.x, y: mid.y, z: 0 }
+      : { x: this.start.x, y: this.start.y, z: 0 }
   }
 
   /**
    * Serializes this arc measurement to a store/sidecar record.
    *
    * @param layoutId - Optional layout BTR id written onto the record
-   * @returns Record with `type: 'arc'` and center/radius/start/end geometry
+   * @returns Record with `type: 'arc'` and center/radius/start/through/end geometry
    */
   toRecord(layoutId?: string): AcApMeasurementRecord {
     return {
@@ -113,13 +143,16 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
         center: { x: this.geom.cx, y: this.geom.cy },
         radius: this.geom.r,
         start: { x: this.start.x, y: this.start.y },
-        end: { x: this.end.x, y: this.end.y }
+        end: { x: this.end.x, y: this.end.y },
+        ...(this.through
+          ? { through: { x: this.through.x, y: this.through.y } }
+          : {})
       }
     }
   }
 
   /**
-   * Draws the arc canvas stroke, endpoint dots, length badge, and extras.
+   * Draws the arc canvas stroke, control-point dots, length badge, and extras.
    *
    * Registers a `viewChanged` listener to repaint the arc; dispose extras
    * remove the listener.
@@ -133,8 +166,8 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
     db: AcDbDatabase
   ): AcApMeasureWorldDrawResult {
     const color = this.style.color
-    const arcLen = measureShortArcLength(this.start, this.end, this.geom)
-    const mid = measureShortArcMid(this.start, this.end, this.geom)
+    const arcLen = this.resolveMeasuredArc()?.length ?? 0
+    const mid = this.primaryPoint()
     const layoutId = this.resolveLayoutId(view)
 
     const persistOverlay = new AcTrHtmlCanvasOverlay({
@@ -151,7 +184,8 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
         this.start,
         this.end,
         paintStyle.color,
-        acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
+        acapMeasurementCanvasLineWidth(paintStyle.lineWeight),
+        this.through
       )
     paintArc()
     const redrawPersist = () =>
@@ -166,6 +200,16 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
           worldPosition: this.start,
           layer: MEASUREMENT_LAYER
         }),
+        ...(this.through
+          ? [
+              new AcTrHtmlDot({
+                id: `${this.entityId}-dot-through`,
+                color,
+                worldPosition: this.through,
+                layer: MEASUREMENT_LAYER
+              })
+            ]
+          : []),
         new AcTrHtmlDot({
           id: `${this.entityId}-dot2`,
           color,

@@ -48,7 +48,8 @@ export function createMeasureEntityFromRecord(
         { cx: geom.center.x, cy: geom.center.y, r: geom.radius },
         geom.start,
         geom.end,
-        options
+        options,
+        geom.through
       )
     case 'point':
       return new AcApMeasurePointEntity(

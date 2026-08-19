@@ -124,7 +124,11 @@ export function pointInPolygonPx(
 }
 
 /**
- * Screen distance from a point to a circular arc (sampled).
+ * Screen distance from a point to a circular arc.
+ *
+ * `antiClockwise` selects the decreasing-angle sweep from `startAngle` to
+ * `endAngle`; otherwise the increasing-angle sweep is used. Both sweeps wrap
+ * through `2π` so major arcs (greater than 180 degrees) can be hit-tested.
  */
 export function distPointToArcPx(
   px: number,
@@ -136,13 +140,14 @@ export function distPointToArcPx(
   endAngle: number,
   antiClockwise: boolean
 ): number {
+  const twoPi = Math.PI * 2
   const samples = 24
   let best = Infinity
-  const span = antiClockwise ? startAngle - endAngle : endAngle - startAngle
-  const total = Math.abs(span)
+  let span = antiClockwise ? startAngle - endAngle : endAngle - startAngle
+  if (span <= 0) span += twoPi
   for (let i = 0; i <= samples; i++) {
     const t = i / samples
-    const a = antiClockwise ? startAngle - t * total : startAngle + t * total
+    const a = antiClockwise ? startAngle - t * span : startAngle + t * span
     const x = cx + r * Math.cos(a)
     const y = cy + r * Math.sin(a)
     best = Math.min(best, Math.hypot(px - x, py - y))

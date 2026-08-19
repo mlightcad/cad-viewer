@@ -647,7 +647,9 @@ export default {
   measureArc: {
     startPoint: '指定弧的起点',
     throughPoint: '指定弧上的一个点',
-    endPoint: '指定弧的终点'
+    endPoint: '指定弧的终点',
+    lockedEndPoint: '指定弧的终点（按 Ctrl 在大弧与小弧之间切换）',
+    invalidPoints: '三点共线，无法测量弧长。'
   },
   measureAngle: {
     vertex: '指定顶点',

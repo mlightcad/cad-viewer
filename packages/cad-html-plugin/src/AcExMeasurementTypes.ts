@@ -53,6 +53,12 @@ export interface AcExMeasurementArcGeometry {
   radius: number
   start: AcExMeasurementPoint2d
   end: AcExMeasurementPoint2d
+  /**
+   * Point on the measured sweep. Distinguishes the major arc from the
+   * complementary minor arc after a JSON round-trip. Omitted in legacy
+   * sidecars, which always restore the shorter arc.
+   */
+  through?: AcExMeasurementPoint2d
 }
 
 export interface AcExMeasurementPointGeometry {
