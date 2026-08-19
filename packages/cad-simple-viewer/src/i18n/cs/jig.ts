@@ -660,7 +660,10 @@ export default {
   measureArc: {
     startPoint: 'Zadejte počáteční bod oblouku',
     throughPoint: 'Zadejte bod na oblouku',
-    endPoint: 'Zadejte koncový bod oblouku'
+    endPoint: 'Zadejte koncový bod oblouku',
+    lockedEndPoint:
+      'Zadejte koncový bod oblouku (Ctrl přepne velký/malý oblouk)',
+    invalidPoints: 'Tři body jsou kolineární a nedefinují oblouk.'
   },
   measureArea: {
     firstPoint: 'Zadejte první bod',

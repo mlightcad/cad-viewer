@@ -45,6 +45,12 @@ export interface AcApMeasurementArcGeometry {
   radius: number
   start: AcApMeasurementPoint2d
   end: AcApMeasurementPoint2d
+  /**
+   * Point on the measured sweep. Distinguishes the major arc from the
+   * complementary minor arc after a JSON round-trip. Omitted in legacy
+   * sidecars, which always restore the shorter arc.
+   */
+  through?: AcApMeasurementPoint2d
 }
 
 export interface AcApMeasurementPointGeometry {

@@ -5,6 +5,7 @@
  * @packageDocumentation
  */
 
+import { AcGeCircArc2d, AcGeMathUtil } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
@@ -130,6 +131,15 @@ export interface AcExMeasureViewApi {
    * @param clientY - Pointer Y in viewport pixels.
    */
   resolvePoint: (clientX: number, clientY: number) => AcExResolvedPoint
+
+  /**
+   * Circle or circular-arc under `(x, y)` in WCS, used to lock arc-length
+   * picks onto that circumference. Omit when the snapshot has no osnap catalog.
+   */
+  findCircleOrArcNear?: (
+    x: number,
+    y: number
+  ) => { cx: number; cy: number; r: number } | null
 
   /**
    * Formats a linear value using snapshot unit precision (e.g. `LUPREC`).
@@ -281,7 +291,9 @@ function distPointToPolylinePx(
 }
 
 /**
- * Screen distance from a point to a circular arc (shorter arc between two angles).
+ * Screen distance from a point to a circular arc.
+ * `antiClockwise` selects the decreasing-angle sweep; both directions wrap
+ * through `2π` so major arcs can be hit-tested.
  * @internal
  */
 function distPointToArcPx(
@@ -294,13 +306,14 @@ function distPointToArcPx(
   endAngle: number,
   antiClockwise: boolean
 ): number {
+  const twoPi = Math.PI * 2
   const samples = 24
   let best = Infinity
-  const span = antiClockwise ? startAngle - endAngle : endAngle - startAngle
-  const total = Math.abs(span)
+  let span = antiClockwise ? startAngle - endAngle : endAngle - startAngle
+  if (span <= 0) span += twoPi
   for (let i = 0; i <= samples; i++) {
     const t = i / samples
-    const a = antiClockwise ? startAngle - t * total : startAngle + t * total
+    const a = antiClockwise ? startAngle - t * span : startAngle + t * span
     const x = cx + r * Math.cos(a)
     const y = cy + r * Math.sin(a)
     best = Math.min(best, Math.hypot(px - x, py - y))
@@ -438,11 +451,10 @@ function calcAngleDeg(
 
 /**
  * Wraps a radian angle into `[0, 2π)`.
- * @param a - Angle in radians.
  * @internal
  */
 function normaliseAngle(a: number): number {
-  return ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+  return AcGeMathUtil.normalizeAngle(a)
 }
 
 /**
@@ -454,37 +466,17 @@ function circleFromThreePoints(
   p2: THREE.Vector2,
   p3: THREE.Vector2
 ): AcExCircleGeom | null {
-  const x1 = p1.x
-  const y1 = p1.y
-  const x2 = p2.x
-  const y2 = p2.y
-  const x3 = p3.x
-  const y3 = p3.y
-  const d = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
-  if (Math.abs(d) < 1e-10) return null
-  const cx =
-    ((x1 * x1 + y1 * y1) * (y2 - y3) +
-      (x2 * x2 + y2 * y2) * (y3 - y1) +
-      (x3 * x3 + y3 * y3) * (y1 - y2)) /
-    d
-  const cy =
-    ((x1 * x1 + y1 * y1) * (x3 - x2) +
-      (x2 * x2 + y2 * y2) * (x1 - x3) +
-      (x3 * x3 + y3 * y3) * (x2 - x1)) /
-    d
-  const r = Math.hypot(cx - x1, cy - y1)
-  if (!Number.isFinite(r) || r < 1e-9) return null
-  return { cx, cy, r }
+  const circle = AcGeCircArc2d.computeCircumcircle(p1, p2, p3)
+  if (!circle) return null
+  return { cx: circle.center.x, cy: circle.center.y, r: circle.radius }
 }
 
 /**
- * Whether `mid` lies on the CCW sweep from `start` to `end` (angles in `[0, 2π)`).
+ * Whether `mid` lies on the CCW sweep from `start` to `end`.
  * @internal
  */
 function isAngleOnSweep(start: number, mid: number, end: number): boolean {
-  const total = normaliseAngle(end - start)
-  const offset = normaliseAngle(mid - start)
-  return offset <= total + 1e-7
+  return AcGeMathUtil.isAngleOnCcwSweep(start, mid, end)
 }
 
 /**
@@ -496,10 +488,9 @@ function shortArcLength(
   p2: THREE.Vector2,
   g: AcExCircleGeom
 ): number {
-  const a1 = Math.atan2(p1.y - g.cy, p1.x - g.cx)
-  const a2 = Math.atan2(p2.y - g.cy, p2.x - g.cx)
-  const span = normaliseAngle(a2 - a1)
-  return Math.min(span, 2 * Math.PI - span) * g.r
+  return (
+    AcGeCircArc2d.tryCreateShorterArc(p1, p2, { x: g.cx, y: g.cy })?.length ?? 0
+  )
 }
 
 /**
@@ -511,15 +502,11 @@ function shortArcMid(
   p2: THREE.Vector2,
   g: AcExCircleGeom
 ): THREE.Vector2 {
-  const a1 = Math.atan2(p1.y - g.cy, p1.x - g.cx)
-  const a2 = Math.atan2(p2.y - g.cy, p2.x - g.cx)
-  const ccwSpan = normaliseAngle(a2 - a1)
-  const mid =
-    ccwSpan <= Math.PI ? a1 + ccwSpan / 2 : a1 - (2 * Math.PI - ccwSpan) / 2
-  return new THREE.Vector2(
-    g.cx + g.r * Math.cos(mid),
-    g.cy + g.r * Math.sin(mid)
-  )
+  const mid = AcGeCircArc2d.tryCreateShorterArc(p1, p2, {
+    x: g.cx,
+    y: g.cy
+  })?.midPoint
+  return mid ? new THREE.Vector2(mid.x, mid.y) : new THREE.Vector2(p1.x, p1.y)
 }
 
 /**
@@ -531,9 +518,11 @@ function shortArcCounterClockwise(
   end: THREE.Vector2,
   g: AcExCircleGeom
 ): boolean {
-  const a1 = Math.atan2(start.y - g.cy, start.x - g.cx)
-  const a2 = Math.atan2(end.y - g.cy, end.x - g.cx)
-  return normaliseAngle(a2 - a1) <= Math.PI
+  const arc = AcGeCircArc2d.tryCreateShorterArc(start, end, {
+    x: g.cx,
+    y: g.cy
+  })
+  return arc ? !arc.clockwise : true
 }
 
 /** Best-effort CSS color → 24-bit RGB for THREE materials. @internal */
@@ -544,14 +533,9 @@ function cssColorToHex(css: string, fallback: number): number {
   const hex3 = s.match(/^#([0-9a-f]{3})$/i)
   if (hex3) {
     const h = hex3[1]!
-    return Number.parseInt(
-      `${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`,
-      16
-    )
+    return Number.parseInt(`${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`, 16)
   }
-  const rgb = s.match(
-    /^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)/i
-  )
+  const rgb = s.match(/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)/i)
   if (rgb) {
     const r = Math.max(0, Math.min(255, Math.round(Number(rgb[1]))))
     const g = Math.max(0, Math.min(255, Math.round(Number(rgb[2]))))
@@ -559,6 +543,57 @@ function cssColorToHex(css: string, fallback: number): number {
     if ([r, g, b].every(Number.isFinite)) return (r << 16) | (g << 8) | b
   }
   return fallback
+}
+
+/**
+ * Projects `p` onto the circle circumference. If `p` is the center, the
+ * point at angle 0 is returned.
+ * @internal
+ */
+function snapPointToCircle(p: THREE.Vector2, g: AcExCircleGeom): THREE.Vector2 {
+  const dx = p.x - g.cx
+  const dy = p.y - g.cy
+  const d = Math.hypot(dx, dy)
+  if (!(d > 0)) return new THREE.Vector2(g.cx + g.r, g.cy)
+  const s = g.r / d
+  return new THREE.Vector2(g.cx + dx * s, g.cy + dy * s)
+}
+
+/** Minimum angular move (radians) before locked-arc sweep direction is chosen. */
+const ACEX_ARC_DIR_LOCK_RAD = 0.02
+
+/**
+ * Wraps an angle delta into (−π, π].
+ * @internal
+ */
+function wrapAngleToPi(delta: number): number {
+  return AcGeMathUtil.normalizeAngle(delta + Math.PI) - Math.PI
+}
+
+/**
+ * Sweep on `g` from `start` to `end`.
+ * Default is CCW so the sweep can grow past 180°. `clockwise` is the
+ * complementary direction (Ctrl / ⌘ toggle).
+ * @internal
+ */
+function lockedSweep(
+  start: THREE.Vector2,
+  end: THREE.Vector2,
+  g: AcExCircleGeom,
+  clockwise: boolean
+): { through: THREE.Vector2; length: number } | null {
+  const a1 = Math.atan2(start.y - g.cy, start.x - g.cx)
+  const a2 = Math.atan2(end.y - g.cy, end.x - g.cx)
+  const span = AcGeMathUtil.normalizeAngle(clockwise ? a1 - a2 : a2 - a1)
+  if (!(span > 1e-10) || span >= Math.PI * 2 - 1e-10) return null
+  const mid = clockwise ? a1 - span / 2 : a1 + span / 2
+  return {
+    through: new THREE.Vector2(
+      g.cx + g.r * Math.cos(mid),
+      g.cy + g.r * Math.sin(mid)
+    ),
+    length: span * g.r
+  }
 }
 
 /** Sync document CSS accent vars used by measure badges / live label. @internal */
@@ -580,37 +615,31 @@ function applyMeasureAccentCss(hex: number): void {
 }
 
 /**
- * Arc sweep from `start` to `end` that passes through `through` (radians).
- * @returns `{ span, counterClockwise }` for canvas `arc()` and length = span * r.
+ * Arc sweep from `start` to `end` that passes through `through`.
  * @internal
  */
 function arcSweepThroughMiddle(
   start: THREE.Vector2,
   through: THREE.Vector2,
   end: THREE.Vector2,
-  g: AcExCircleGeom
+  _g: AcExCircleGeom
 ): { span: number; counterClockwise: boolean } {
-  const a1 = Math.atan2(start.y - g.cy, start.x - g.cx)
-  const aMid = Math.atan2(through.y - g.cy, through.x - g.cx)
-  const a2 = Math.atan2(end.y - g.cy, end.x - g.cx)
-  const ccwSpan = normaliseAngle(a2 - a1)
-  if (isAngleOnSweep(a1, aMid, a2)) {
-    return { span: ccwSpan, counterClockwise: true }
-  }
-  return { span: 2 * Math.PI - ccwSpan, counterClockwise: false }
+  const arc = AcGeCircArc2d.tryCreateByThreePoints(start, through, end)
+  if (!arc) return { span: 0, counterClockwise: true }
+  return { span: arc.deltaAngle, counterClockwise: !arc.clockwise }
 }
 
 /**
- * Arc length from `start` to `end` on `g` through `through`.
+ * Arc length from `start` to `end` through `through`.
  * @internal
  */
 function arcLengthThroughMiddle(
   start: THREE.Vector2,
   through: THREE.Vector2,
   end: THREE.Vector2,
-  g: AcExCircleGeom
+  _g: AcExCircleGeom
 ): number {
-  return arcSweepThroughMiddle(start, through, end, g).span * g.r
+  return AcGeCircArc2d.tryCreateByThreePoints(start, through, end)?.length ?? 0
 }
 
 /**
@@ -621,20 +650,16 @@ function arcMidThroughMiddle(
   start: THREE.Vector2,
   through: THREE.Vector2,
   end: THREE.Vector2,
-  g: AcExCircleGeom
+  _g: AcExCircleGeom
 ): THREE.Vector2 {
-  const a1 = Math.atan2(start.y - g.cy, start.x - g.cx)
-  const { span, counterClockwise } = arcSweepThroughMiddle(
+  const mid = AcGeCircArc2d.tryCreateByThreePoints(
     start,
     through,
-    end,
-    g
-  )
-  const midAngle = counterClockwise ? a1 + span / 2 : a1 - span / 2
-  return new THREE.Vector2(
-    g.cx + g.r * Math.cos(midAngle),
-    g.cy + g.r * Math.sin(midAngle)
-  )
+    end
+  )?.midPoint
+  return mid
+    ? new THREE.Vector2(mid.x, mid.y)
+    : new THREE.Vector2(start.x, start.y)
 }
 
 /**
@@ -758,9 +783,7 @@ export class AcExMeasureController {
     | (() => AcExTrackingOptions | null)
     | null
   /** Notifies the viewer when measure-tool activity starts or stops. */
-  private readonly _onActiveChange:
-    | ((active: boolean) => void)
-    | null
+  private readonly _onActiveChange: ((active: boolean) => void) | null
   /** Notifies when selection / session draw style changes. */
   private readonly _onStyleChange: (() => void) | null
   /** Accent color for lines, labels, and canvas overlays. */
@@ -794,6 +817,23 @@ export class AcExMeasureController {
   private _mode: AcExMeasureMode | null = null
   /** Vertices collected for the current in-progress measurement. */
   private _points: THREE.Vector2[] = []
+  /**
+   * Circle locked when the first arc-tool click lands on a CIRCLE/ARC.
+   * Subsequent picks project onto this circumference (2-point sweep).
+   */
+  private _arcLock: AcExCircleGeom | null = null
+  /**
+   * Sticky Ctrl/⌘ toggle: flips the complementary (major/minor) sweep
+   * after a circle is locked. Press once; key-up does not revert.
+   */
+  private _arcLockFlip = false
+  /**
+   * Clockwise vs CCW chosen from the first significant mouse move after lock.
+   * `null` until that move; preview then defaults to CCW.
+   */
+  private _arcLockClockwise: boolean | null = null
+  /** Last polar angle of the snapped cursor while a circle is locked. */
+  private _arcLockLastAngle = 0
   /** Screen-pixel distance to the first vertex that auto-closes an area polygon. */
   private _areaCloseThresholdPx = 14
   /** Last pointer position during an active measure tool (for overlay sync on pan/zoom). */
@@ -1020,6 +1060,8 @@ export class AcExMeasureController {
     const wasActive = this._mode !== null
     this._mode = null
     this._points = []
+    this._arcLock = null
+    this._resetArcLockDirection()
     this._lastPointer = null
     this._osnapCache = null
     this._hidePreview()
@@ -1188,11 +1230,24 @@ export class AcExMeasureController {
    *
    * - `Escape` — {@link cancelMode} when a tool is active.
    * - `Enter` — commit an area polygon when at least three vertices are placed.
+   * - `Control` / `Meta` (⌘) — while a circle is locked, flip major/minor arc.
    *
    * @param key - `KeyboardEvent.key` value.
+   * @param event - Optional native event (used to ignore key repeat).
    * @returns `true` when the key was handled (caller may call `preventDefault`).
    */
-  handleKeyDown(key: string): boolean {
+  handleKeyDown(key: string, event?: KeyboardEvent): boolean {
+    if (
+      (key === 'Control' || key === 'Meta') &&
+      !event?.repeat &&
+      this._mode === 'arc' &&
+      this._arcLock &&
+      this._points.length === 1
+    ) {
+      this._arcLockFlip = !this._arcLockFlip
+      this._refreshActivePreview()
+      return true
+    }
     if (key === 'Escape') {
       if (this._mode) {
         this.cancelMode()
@@ -1787,8 +1842,45 @@ export class AcExMeasureController {
     })
   }
 
+  /** Clears locked-arc direction state (Ctrl flip and mouse-follow). @internal */
+  private _resetArcLockDirection(): void {
+    this._arcLockFlip = false
+    this._arcLockClockwise = null
+    this._arcLockLastAngle = 0
+  }
+
   /**
-   * Arc tool: start → point on arc → end, then {@link _commitArc}.
+   * Locks CW vs CCW from the first significant cursor move around the
+   * locked circle, then keeps that side so the sweep can pass 180°.
+   * @internal
+   */
+  private _trackArcLockDirection(end: THREE.Vector2): void {
+    if (!this._arcLock) return
+    const angle = Math.atan2(end.y - this._arcLock.cy, end.x - this._arcLock.cx)
+    if (this._arcLockClockwise == null) {
+      const delta = wrapAngleToPi(angle - this._arcLockLastAngle)
+      if (Math.abs(delta) > ACEX_ARC_DIR_LOCK_RAD) {
+        this._arcLockClockwise = delta < 0
+      }
+    }
+    this._arcLockLastAngle = angle
+  }
+
+  /**
+   * Effective locked-arc direction: mouse-chosen side XOR Ctrl/⌘ flip.
+   * @internal
+   */
+  private _lockedClockwise(): boolean {
+    return (this._arcLockClockwise ?? false) !== this._arcLockFlip
+  }
+
+  /**
+   * Arc tool: start → (point on arc) → end.
+   *
+   * If the first click lands on a CIRCLE or ARC, the circle is locked and the
+   * next click is the end point. Sweep direction follows the cursor so arcs
+   * greater than 180 degrees stay on the same side; Ctrl / ⌘ flips to the
+   * complementary sweep. Otherwise three free points define the arc.
    * @internal
    */
   private _pointerArc(
@@ -1796,6 +1888,56 @@ export class AcExMeasureController {
     clientX: number,
     clientY: number
   ): boolean {
+    if (this._points.length === 0) {
+      const raw = this._view.screenToWcs(clientX, clientY)
+      const lock =
+        this._view.findCircleOrArcNear?.(raw.x, raw.y) ??
+        this._view.findCircleOrArcNear?.(point.x, point.y)
+      if (lock && lock.r > 0) {
+        this._arcLock = lock
+        this._resetArcLockDirection()
+        const start = snapPointToCircle(point, lock)
+        this._arcLockLastAngle = Math.atan2(start.y - lock.cy, start.x - lock.cx)
+        this._points.push(start)
+        this._previewArc(this._points[0]!, clientX, clientY)
+        return true
+      }
+      this._arcLock = null
+      this._resetArcLockDirection()
+      this._points.push(point.clone())
+      this._previewArc(point, clientX, clientY)
+      return true
+    }
+
+    if (this._arcLock) {
+      const start = this._points[0]!
+      const raw = this._view.screenToWcs(clientX, clientY)
+      const end = snapPointToCircle(raw, this._arcLock)
+      this._trackArcLockDirection(end)
+      const sweep = lockedSweep(
+        start,
+        end,
+        this._arcLock,
+        this._lockedClockwise()
+      )
+      const geom = this._arcLock
+      if (!sweep) {
+        this._points = []
+        this._arcLock = null
+        this._resetArcLockDirection()
+        this._hidePreview()
+        this._statusEl.textContent = this._hintForMode('arc')
+        return true
+      }
+      this._commitArc(geom, start, sweep.through, end)
+      this._points = []
+      this._arcLock = null
+      this._resetArcLockDirection()
+      this._hidePreview()
+      this._statusEl.textContent = this._hintForMode('arc')
+      return true
+    }
+
     this._points.push(point.clone())
     if (this._points.length < 3) {
       this._previewArc(point, clientX, clientY)
@@ -1829,6 +1971,36 @@ export class AcExMeasureController {
       return
     }
     const start = this._points[0]!
+    if (this._arcLock && this._points.length === 1) {
+      const raw = this._view.screenToWcs(clientX, clientY)
+      const end = snapPointToCircle(raw, this._arcLock)
+      this._trackArcLockDirection(end)
+      const sweep = lockedSweep(
+        start,
+        end,
+        this._arcLock,
+        this._lockedClockwise()
+      )
+      this._overlayLayer
+        .querySelectorAll('.mlcad-measure-canvas--preview-line')
+        .forEach(el => el.remove())
+      if (!sweep) {
+        this._liveLabel.style.display = 'none'
+        this._overlayLayer
+          .querySelectorAll('.mlcad-measure-canvas--preview')
+          .forEach(el => el.remove())
+        this._requestRender()
+        return
+      }
+      this._showLiveLabel(
+        this._view.formatLength(sweep.length),
+        clientX,
+        clientY
+      )
+      this._drawPreviewArc(this._arcLock, start, sweep.through, end)
+      this._requestRender()
+      return
+    }
     if (this._points.length === 1) {
       this._setPreviewLine([start, point])
       this._requestRender()
@@ -1893,24 +2065,22 @@ export class AcExMeasureController {
         center: { x: geom.cx, y: geom.cy },
         radius: geom.r,
         start: { x: start.x, y: start.y },
-        end: { x: end.x, y: end.y }
+        end: { x: end.x, y: end.y },
+        through: { x: through.x, y: through.y }
       })
     this._finishCommit(
       (clientX, clientY, threshold) => {
         const sc = this._view.wcsToScreen(new THREE.Vector2(geom.cx, geom.cy))
         const ss = this._view.wcsToScreen(start)
         const se = this._view.wcsToScreen(end)
+        const st = this._view.wcsToScreen(through)
         const cx = sc.x
         const cy = sc.y
         const screenR = Math.hypot(ss.x - cx, ss.y - cy)
         const sa = Math.atan2(ss.y - cy, ss.x - cx)
         const ea = Math.atan2(se.y - cy, se.x - cx)
-        const { counterClockwise } = arcSweepThroughMiddle(
-          start,
-          through,
-          end,
-          geom
-        )
+        const mid = Math.atan2(st.y - cy, st.x - cx)
+        const antiClockwise = !isAngleOnSweep(sa, mid, ea)
         return (
           distPointToArcPx(
             clientX,
@@ -1920,7 +2090,7 @@ export class AcExMeasureController {
             screenR,
             sa,
             ea,
-            counterClockwise
+            antiClockwise
           ) <= threshold
         )
       },
@@ -2331,7 +2501,17 @@ export class AcExMeasureController {
           )
           break
         case 'arc':
-          this._commitShortArc(record)
+          if (g.through) {
+            this._commitArc(
+              { cx: g.center.x, cy: g.center.y, r: g.radius },
+              new THREE.Vector2(g.start.x, g.start.y),
+              new THREE.Vector2(g.through.x, g.through.y),
+              new THREE.Vector2(g.end.x, g.end.y),
+              record
+            )
+          } else {
+            this._commitShortArc(record)
+          }
           break
         case 'point':
           this._commitCoordinate(

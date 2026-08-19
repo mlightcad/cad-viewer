@@ -652,6 +652,44 @@ export class AcExOsnapIndex {
   }
 
   /**
+   * Finds the closest circle or circular-arc primitive whose curve is within
+   * `threshold` of `(px, py)`.
+   *
+   * Used by arc-length measurement to lock subsequent picks onto that circle
+   * when the first click lands on a `CIRCLE` / `ARC` (including polyline bulges).
+   *
+   * @param px - Cursor X in drawing units (WCS).
+   * @param py - Cursor Y in drawing units (WCS).
+   * @param threshold - Maximum distance in drawing units.
+   * @returns Circle center and radius, or `undefined` when none is close enough.
+   */
+  findCircleOrArcNear(
+    px: number,
+    py: number,
+    threshold: number
+  ): { cx: number; cy: number; r: number } | undefined {
+    if (threshold <= 0 || this.primitives.length === 0) return undefined
+    const threshSq = threshold * threshold
+    const box = searchBox(px, py, threshold)
+    let bestDistSq = threshSq
+    let best: { cx: number; cy: number; r: number } | undefined
+
+    for (const hit of this.primitiveTree.search(box)) {
+      const prim = this.primitives[hit.index]!
+      if (this.hiddenLayers.has(prim.layer)) continue
+      if (prim.kind !== 'circle' && prim.kind !== 'arc') continue
+      const nearest = collectPrimitiveNearestSnapCandidate(prim, px, py)
+      if (!nearest) continue
+      const d2 = distSq(px, py, nearest.x, nearest.y)
+      if (d2 <= bestDistSq) {
+        bestDistSq = d2
+        best = { cx: prim.cx, cy: prim.cy, r: prim.r }
+      }
+    }
+    return best
+  }
+
+  /**
    * Finds the best snap point near the cursor in WCS.
    *
    * Queries analytic {@link AcExLayoutSnapshot.osnap} primitives first; only when

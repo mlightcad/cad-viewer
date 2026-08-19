@@ -661,7 +661,10 @@ export default {
   measureArc: {
     startPoint: 'Yayın başlangıç noktasını belirtin',
     throughPoint: 'Yay üzerinde bir nokta belirtin',
-    endPoint: 'Yayın bitiş noktasını belirtin'
+    endPoint: 'Yayın bitiş noktasını belirtin',
+    lockedEndPoint:
+      'Yayın bitiş noktasını belirtin (Ctrl ile büyük/küçük yay arasında geçiş)',
+    invalidPoints: 'Üç nokta doğrusal ve bir yay tanımlamıyor.'
   },
   measureArea: {
     firstPoint: 'İlk noktayı belirtin',

@@ -35,7 +35,8 @@ describe('AcExMeasurementSidecar', () => {
           center: { x: 0, y: 0 },
           radius: 5,
           start: { x: 5, y: 0 },
-          end: { x: 0, y: 5 }
+          end: { x: 0, y: 5 },
+          through: { x: -5, y: 0 }
         }
       }
     ]
@@ -49,7 +50,14 @@ describe('AcExMeasurementSidecar', () => {
     expect(parsed.measurements).toHaveLength(3)
     expect(parsed.measurements[0]?.type).toBe('distance')
     expect(parsed.measurements[1]?.type).toBe('point')
-    expect(parsed.measurements[2]?.geometry.type).toBe('arc')
+    expect(parsed.measurements[2]?.geometry).toEqual({
+      type: 'arc',
+      center: { x: 0, y: 0 },
+      radius: 5,
+      start: { x: 5, y: 0 },
+      end: { x: 0, y: 5 },
+      through: { x: -5, y: 0 }
+    })
   })
 
   it('rejects invalid payloads', () => {
@@ -67,5 +75,35 @@ describe('AcExMeasurementSidecar', () => {
       'plan.measurement.json'
     )
     expect(acExMeasurementSidecarFileName()).toBe('drawing.measurement.json')
+  })
+
+  it('keeps legacy arc records that omit the through point', () => {
+    const parsed = parseAcExMeasurementSidecar(
+      JSON.stringify({
+        version: 1,
+        measurements: [
+          {
+            id: 'arc-legacy',
+            type: 'arc',
+            style: { color: '#ff0000', lineWeight: 70, fontSize: 13 },
+            geometry: {
+              type: 'arc',
+              center: { x: 0, y: 0 },
+              radius: 5,
+              start: { x: 5, y: 0 },
+              end: { x: 0, y: 5 }
+            }
+          }
+        ]
+      })
+    )
+    expect(parsed.measurements).toHaveLength(1)
+    expect(parsed.measurements[0]?.geometry).toEqual({
+      type: 'arc',
+      center: { x: 0, y: 0 },
+      radius: 5,
+      start: { x: 5, y: 0 },
+      end: { x: 0, y: 5 }
+    })
   })
 })

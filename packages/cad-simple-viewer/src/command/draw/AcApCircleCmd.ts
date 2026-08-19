@@ -1,8 +1,8 @@
 import {
   AcDbCircle,
+  AcGeCircArc2d,
   AcGePoint3d,
-  AcGePoint3dLike,
-  AcGeTol
+  AcGePoint3dLike
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
@@ -54,34 +54,30 @@ function applyCircleDefinition(
   entity.radius = definition.radius
 }
 
+function toCircleDefinition(
+  arc: AcGeCircArc2d | null
+): CircleDefinition | undefined {
+  if (!arc) return undefined
+  return {
+    center: { x: arc.center.x, y: arc.center.y, z: 0 },
+    radius: arc.radius
+  }
+}
+
 function createCircleFromCenterRadius(
   center: AcGePoint3dLike,
   radius: number
 ): CircleDefinition | undefined {
-  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius))
-    return undefined
-  return {
-    center: { x: center.x, y: center.y, z: 0 },
-    radius
-  }
+  return toCircleDefinition(AcGeCircArc2d.tryCreateCircle(center, radius))
 }
 
 function createCircleFromTwoPoints(
   first: AcGePoint3dLike,
   second: AcGePoint3dLike
 ): CircleDefinition | undefined {
-  const dx = second.x - first.x
-  const dy = second.y - first.y
-  const diameter = Math.hypot(dx, dy)
-  if (AcGeTol.isNonPositive(diameter)) return undefined
-  return {
-    center: {
-      x: (first.x + second.x) / 2,
-      y: (first.y + second.y) / 2,
-      z: 0
-    },
-    radius: diameter / 2
-  }
+  return toCircleDefinition(
+    AcGeCircArc2d.tryCreateCircleByDiameter(first, second)
+  )
 }
 
 function createCircleFromThreePoints(
@@ -89,34 +85,9 @@ function createCircleFromThreePoints(
   p2: AcGePoint3dLike,
   p3: AcGePoint3dLike
 ): CircleDefinition | undefined {
-  const x1 = p1.x
-  const y1 = p1.y
-  const x2 = p2.x
-  const y2 = p2.y
-  const x3 = p3.x
-  const y3 = p3.y
-
-  const d = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
-  if (AcGeTol.equalToZero(d)) return undefined
-
-  const ux =
-    ((x1 * x1 + y1 * y1) * (y2 - y3) +
-      (x2 * x2 + y2 * y2) * (y3 - y1) +
-      (x3 * x3 + y3 * y3) * (y1 - y2)) /
-    d
-  const uy =
-    ((x1 * x1 + y1 * y1) * (x3 - x2) +
-      (x2 * x2 + y2 * y2) * (x1 - x3) +
-      (x3 * x3 + y3 * y3) * (x2 - x1)) /
-    d
-
-  const radius = Math.hypot(ux - x1, uy - y1)
-  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius))
-    return undefined
-  return {
-    center: { x: ux, y: uy, z: 0 },
-    radius
-  }
+  return toCircleDefinition(
+    AcGeCircArc2d.tryCreateCircleByThreePoints(p1, p2, p3)
+  )
 }
 
 /**

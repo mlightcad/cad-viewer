@@ -73,7 +73,8 @@ describe('AcApMeasurementSidecar', () => {
             center: { x: 0, y: 0 },
             radius: 5,
             start: { x: 5, y: 0 },
-            end: { x: 0, y: 5 }
+            end: { x: 0, y: 5 },
+            through: { x: -5, y: 0 }
           }
         },
         {
@@ -107,7 +108,8 @@ describe('AcApMeasurementSidecar', () => {
       center: { x: 0, y: 0 },
       radius: 5,
       start: { x: 5, y: 0 },
-      end: { x: 0, y: 5 }
+      end: { x: 0, y: 5 },
+      through: { x: -5, y: 0 }
     })
     expect(parsed.measurements[4].geometry).toEqual({
       type: 'point',
@@ -144,5 +146,35 @@ describe('AcApMeasurementSidecar', () => {
     )
     expect(parsed.measurements).toHaveLength(1)
     expect(parsed.measurements[0].id).toBe('ok')
+  })
+
+  it('keeps legacy arc records that omit the through point', () => {
+    const parsed = parseMeasurementSidecar(
+      JSON.stringify({
+        version: 1,
+        measurements: [
+          {
+            id: 'arc-legacy',
+            type: 'arc',
+            style: { color: '#ffff00', lineWeight: 70, fontSize: 13 },
+            geometry: {
+              type: 'arc',
+              center: { x: 0, y: 0 },
+              radius: 5,
+              start: { x: 5, y: 0 },
+              end: { x: 0, y: 5 }
+            }
+          }
+        ]
+      })
+    )
+    expect(parsed.measurements).toHaveLength(1)
+    expect(parsed.measurements[0].geometry).toEqual({
+      type: 'arc',
+      center: { x: 0, y: 0 },
+      radius: 5,
+      start: { x: 5, y: 0 },
+      end: { x: 0, y: 5 }
+    })
   })
 })

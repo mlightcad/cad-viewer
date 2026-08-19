@@ -628,4 +628,45 @@ describe('AcExOsnapIndex', () => {
       mode: 'endpoint'
     })
   })
+
+  it('finds a circle or arc whose curve is within the aperture', () => {
+    const index = new AcExOsnapIndex()
+    index.rebuild({
+      ...layout,
+      lineBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'circle',
+            layer: '0',
+            cx: 0,
+            cy: 0,
+            r: 10,
+            normalSign: 1
+          },
+          {
+            kind: 'arc',
+            layer: '0',
+            cx: 40,
+            cy: 0,
+            r: 10,
+            startAngle: 0,
+            endAngle: Math.PI / 2,
+            normalSign: 1
+          }
+        ]
+      }
+    })
+    expect(index.findCircleOrArcNear(10.2, 0, 1)).toEqual({
+      cx: 0,
+      cy: 0,
+      r: 10
+    })
+    expect(index.findCircleOrArcNear(50.2, 0, 1)).toEqual({
+      cx: 40,
+      cy: 0,
+      r: 10
+    })
+    expect(index.findCircleOrArcNear(30, 0, 1)).toBeUndefined()
+  })
 })

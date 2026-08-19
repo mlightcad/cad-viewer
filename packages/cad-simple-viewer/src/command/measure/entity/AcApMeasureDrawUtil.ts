@@ -1,7 +1,23 @@
-import type { AcCmColor } from '@mlightcad/data-model'
+import {
+  type AcCmColor,
+  AcGeCircArc2d,
+  AcGeMathUtil
+} from '@mlightcad/data-model'
 
 import type { AcEdBaseView } from '../../../editor'
 import { acapColorToCssAlpha, acapCssColor } from '../../../util'
+
+/**
+ * Circle geometry in world XY used by arc-length measurement overlays.
+ */
+export interface AcApMeasureCircleGeom {
+  /** Circle center X in world coordinates. */
+  cx: number
+  /** Circle center Y in world coordinates. */
+  cy: number
+  /** Circle radius in world units. */
+  r: number
+}
 
 /**
  * Two-dimensional point in world or screen space (XY only).
@@ -51,15 +67,6 @@ function prepareMeasureCanvas(
   ctx.scale(dpr, dpr)
   return { ctx, dpr }
 }
-
-/**
- * Normalizes an angle in radians to the half-open interval `[0, 2π)`.
- *
- * @param a - Angle in radians (any real value)
- * @returns Equivalent angle in `[0, 2π)`
- */
-const normaliseAngle = (a: number) =>
-  ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
 
 /**
  * Strokes a single world-space segment onto a measure overlay canvas.
@@ -140,7 +147,8 @@ export function drawMeasureAngleArcOnCanvas(
 
   const startAngle = Math.atan2(sa1.y - sv.y, sa1.x - sv.x)
   const endAngle = Math.atan2(sa2.y - sv.y, sa2.x - sv.x)
-  const antiClockwise = normaliseAngle(endAngle - startAngle) > Math.PI
+  const antiClockwise =
+    AcGeMathUtil.normalizeAngle(endAngle - startAngle) > Math.PI
 
   ctx.beginPath()
   ctx.arc(sv.x, sv.y, arcR, startAngle, endAngle, antiClockwise)
@@ -188,100 +196,92 @@ export function drawMeasureAreaOnCanvas(
 }
 
 /**
- * Circle geometry in world XY used by arc-length measurements.
- */
-export interface AcApMeasureCircleGeom {
-  /** Circle center X in world coordinates. */
-  cx: number
-  /** Circle center Y in world coordinates. */
-  cy: number
-  /** Circle radius in world units. */
-  r: number
-}
-
-/**
- * Strokes the shorter arc between two points on a circle onto a measure canvas.
+ * Strokes a circular arc onto an already-prepared measure overlay context.
  *
- * Screen radius is taken from the distance of `p1` to the projected center so
- * the stroke tracks the circle under the current view transform.
+ * When `through` is given, the sweep that contains it is drawn (including
+ * major arcs over 180 degrees). Otherwise the shorter screen-space arc is
+ * used so legacy sidecar records without a through point keep their previous
+ * look.
  *
- * @param canvas - Overlay canvas to paint
- * @param view - View for world-to-screen conversion and canvas sizing
+ * @param ctx - Overlay context in CSS pixels
+ * @param view - View for world-to-screen conversion
  * @param g - Circle center and radius in world coordinates
- * @param p1 - Arc start point in world coordinates (on or near the circle)
- * @param p2 - Arc end point in world coordinates (on or near the circle)
+ * @param start - Arc start in world coordinates
+ * @param end - Arc end in world coordinates
  * @param color - Stroke color
- * @param lineWidth - Stroke width in CSS pixels (default `4`)
+ * @param lineWidth - Stroke width in CSS pixels
+ * @param through - Optional point on the measured sweep
  */
-export function drawMeasureArcOnCanvas(
-  canvas: HTMLCanvasElement,
+export function strokeMeasureArcOnContext(
+  ctx: CanvasRenderingContext2D,
   view: AcEdBaseView,
   g: AcApMeasureCircleGeom,
-  p1: Point2,
-  p2: Point2,
+  start: Point2,
+  end: Point2,
   color: AcCmColor,
-  lineWidth = 4
+  lineWidth: number,
+  through?: Point2
 ): void {
-  const prepared = prepareMeasureCanvas(canvas, view)
-  if (!prepared) return
-  const { ctx } = prepared
-
   const sc = view.worldToScreen({ x: g.cx, y: g.cy })
-  const ss = view.worldToScreen(p1)
-  const se = view.worldToScreen(p2)
+  const ss = view.worldToScreen(start)
+  const se = view.worldToScreen(end)
   const screenR = Math.hypot(ss.x - sc.x, ss.y - sc.y)
+  if (!(screenR > 0)) return
 
   const sa = Math.atan2(ss.y - sc.y, ss.x - sc.x)
   const ea = Math.atan2(se.y - sc.y, se.x - sc.x)
-  const cwSpan = normaliseAngle(ea - sa)
-  const antiClockwise = cwSpan > Math.PI
+  const measured = through
+    ? AcGeCircArc2d.tryCreateByThreePoints(start, through, end)
+    : undefined
+  const antiClockwise = measured
+    ? !measured.clockwise
+    : AcGeMathUtil.normalizeAngle(ea - sa) > Math.PI
 
   ctx.beginPath()
   ctx.arc(sc.x, sc.y, screenR, sa, ea, antiClockwise)
   ctx.strokeStyle = acapCssColor(color)
   ctx.lineWidth = lineWidth
   ctx.stroke()
-  ctx.restore()
 }
 
 /**
- * Computes the shorter arc length between two points on a circle.
+ * Strokes an arc between two points on a circle onto a measure canvas.
  *
- * @param p1 - First point in world coordinates
- * @param p2 - Second point in world coordinates
- * @param g - Circle center and radius
- * @returns Arc length along the shorter sector (`min(span, 2π − span) × r`)
- */
-export function measureShortArcLength(
-  p1: Point2,
-  p2: Point2,
-  g: AcApMeasureCircleGeom
-): number {
-  const a1 = Math.atan2(p1.y - g.cy, p1.x - g.cx)
-  const a2 = Math.atan2(p2.y - g.cy, p2.x - g.cx)
-  const span = normaliseAngle(a2 - a1)
-  return Math.min(span, 2 * Math.PI - span) * g.r
-}
-
-/**
- * Finds the midpoint of the shorter arc between two points on a circle.
+ * Screen radius is taken from the distance of `start` to the projected center
+ * so the stroke tracks the circle under the current view transform.
  *
- * @param p1 - Arc start in world coordinates
- * @param p2 - Arc end in world coordinates
- * @param g - Circle center and radius
- * @returns Midpoint on the shorter arc with `z: 0`
+ * @param canvas - Overlay canvas to paint
+ * @param view - View for world-to-screen conversion and canvas sizing
+ * @param g - Circle center and radius in world coordinates
+ * @param start - Arc start point in world coordinates (on or near the circle)
+ * @param end - Arc end point in world coordinates (on or near the circle)
+ * @param color - Stroke color
+ * @param lineWidth - Stroke width in CSS pixels (default `4`)
+ * @param through - Optional point on the measured sweep (major vs minor arc)
  */
-export function measureShortArcMid(
-  p1: Point2,
-  p2: Point2,
-  g: AcApMeasureCircleGeom
-): { x: number; y: number; z: number } {
-  const a1 = Math.atan2(p1.y - g.cy, p1.x - g.cx)
-  const a2 = Math.atan2(p2.y - g.cy, p2.x - g.cx)
-  const ccwSpan = normaliseAngle(a2 - a1)
-  const mid =
-    ccwSpan <= Math.PI ? a1 + ccwSpan / 2 : a1 - (2 * Math.PI - ccwSpan) / 2
-  return { x: g.cx + g.r * Math.cos(mid), y: g.cy + g.r * Math.sin(mid), z: 0 }
+export function drawMeasureArcOnCanvas(
+  canvas: HTMLCanvasElement,
+  view: AcEdBaseView,
+  g: AcApMeasureCircleGeom,
+  start: Point2,
+  end: Point2,
+  color: AcCmColor,
+  lineWidth = 4,
+  through?: Point2
+): void {
+  const prepared = prepareMeasureCanvas(canvas, view)
+  if (!prepared) return
+  strokeMeasureArcOnContext(
+    prepared.ctx,
+    view,
+    g,
+    start,
+    end,
+    color,
+    lineWidth,
+    through
+  )
+  prepared.ctx.restore()
 }
 
 /**

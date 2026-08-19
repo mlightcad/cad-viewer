@@ -1,11 +1,10 @@
 import {
   AcDbArc,
+  AcGeCircArc2d,
+  AcGeMathUtil,
   AcGePoint3d,
   AcGePoint3dLike,
-  AcGeTol,
-  AcGeVector3dLike,
-  FLOAT_TOL,
-  TAU
+  AcGeVector3dLike
 } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
@@ -36,28 +35,6 @@ interface ArcDefinition {
   startAngle: number
   endAngle: number
   normalSign: ArcNormalSign
-}
-
-/**
- * Normalizes an angle to the range [0, 2π).
- *
- * @param angle - Input angle in radians.
- * @returns Normalized angle in radians.
- */
-function normalizeAngle(angle: number) {
-  const value = angle % TAU
-  return value >= 0 ? value : value + TAU
-}
-
-/**
- * Computes Euclidean distance in XY plane.
- *
- * @param p1 - First point.
- * @param p2 - Second point.
- * @returns 2D distance between points.
- */
-function distance2d(p1: AcGePoint3dLike, p2: AcGePoint3dLike) {
-  return Math.hypot(p2.x - p1.x, p2.y - p1.y)
 }
 
 /**
@@ -92,7 +69,31 @@ function angleByNormalSign(
   const dx = point.x - center.x
   const dy = point.y - center.y
   const raw = normalSign === 1 ? Math.atan2(dy, dx) : Math.atan2(dy, -dx)
-  return normalizeAngle(raw)
+  return AcGeMathUtil.normalizeAngle(raw)
+}
+
+/**
+ * Maps a geometry-engine arc onto the OCS fields stored by `AcDbArc`.
+ */
+function toArcDefinition(arc: AcGeCircArc2d | null): ArcDefinition | undefined {
+  if (!arc) return undefined
+  const normalSign: ArcNormalSign = arc.clockwise ? -1 : 1
+  const center = { x: arc.center.x, y: arc.center.y, z: 0 }
+  return {
+    center,
+    radius: arc.radius,
+    startAngle: angleByNormalSign(
+      center,
+      { x: arc.startPoint.x, y: arc.startPoint.y, z: 0 },
+      normalSign
+    ),
+    endAngle: angleByNormalSign(
+      center,
+      { x: arc.endPoint.x, y: arc.endPoint.y, z: 0 },
+      normalSign
+    ),
+    normalSign
+  }
 }
 
 /**
@@ -159,93 +160,10 @@ function createFallbackArc(point: AcGePoint3dLike): ArcDefinition {
 }
 
 /**
- * Projects an arbitrary point radially onto a circle.
- *
- * @param center - Circle center.
- * @param radius - Circle radius.
- * @param point - Input point to project.
- * @returns Projected point on circle, or `undefined` when projection fails.
- */
-function projectPointToCircle(
-  center: AcGePoint3dLike,
-  radius: number,
-  point: AcGePoint3dLike
-) {
-  const dx = point.x - center.x
-  const dy = point.y - center.y
-  const distance = Math.hypot(dx, dy)
-  if (AcGeTol.isNonPositive(distance)) return undefined
-  const scale = radius / distance
-  return {
-    x: center.x + dx * scale,
-    y: center.y + dy * scale,
-    z: 0
-  }
-}
-
-/**
- * Tests whether `mid` lies on the forward sweep from `start` to `end`.
- *
- * All angles are treated as normalized radians in [0, 2π).
- *
- * @param start - Sweep start angle.
- * @param mid - Candidate angle to test.
- * @param end - Sweep end angle.
- * @returns `true` if `mid` is on the sweep.
- */
-function isAngleOnSweep(start: number, mid: number, end: number) {
-  const total = normalizeAngle(end - start)
-  const offset = normalizeAngle(mid - start)
-  return offset <= total + 1e-7
-}
-
-/**
- * Chooses arc orientation for 3-point input so the sweep passes the second point.
- *
- * @param center - Computed circumcenter.
- * @param start - Arc start point.
- * @param second - Point-on-arc (the AutoCAD "second point").
- * @param end - Arc end point.
- * @returns Orientation sign producing the intended 3-point arc.
- */
-function chooseThreePointNormalSign(
-  center: AcGePoint3dLike,
-  start: AcGePoint3dLike,
-  second: AcGePoint3dLike,
-  end: AcGePoint3dLike
-) {
-  const startCcw = angleByNormalSign(center, start, 1)
-  const secondCcw = angleByNormalSign(center, second, 1)
-  const endCcw = angleByNormalSign(center, end, 1)
-  const ccwContains = isAngleOnSweep(startCcw, secondCcw, endCcw)
-
-  const startCw = angleByNormalSign(center, start, -1)
-  const secondCw = angleByNormalSign(center, second, -1)
-  const endCw = angleByNormalSign(center, end, -1)
-  const cwContains = isAngleOnSweep(startCw, secondCw, endCw)
-
-  if (ccwContains && !cwContains) return 1 as ArcNormalSign
-  if (!ccwContains && cwContains) return -1 as ArcNormalSign
-
-  // Degenerate/near-boundary fallback.
-  const cross =
-    (second.x - start.x) * (end.y - start.y) -
-    (second.y - start.y) * (end.x - start.x)
-  return cross >= 0 ? (1 as ArcNormalSign) : (-1 as ArcNormalSign)
-}
-
-/**
  * Builds an arc from 3-point input (start / point-on-arc / end).
  *
- * This method computes circumcenter/radius explicitly in XY and chooses
- * orientation so the final sweep passes through `second`. If `reverseDirection`
- * is true, the orientation is flipped (used by Ctrl toggle).
- *
- * @param start - Start point.
- * @param second - Point on arc.
- * @param end - End point.
- * @param reverseDirection - Whether to invert auto-selected orientation.
- * @returns Arc definition or `undefined` when points are invalid.
+ * Geometry is computed by {@link AcGeCircArc2d.tryCreateByThreePoints}. If
+ * `reverseDirection` is true, the complementary sweep is used (Ctrl toggle).
  */
 function createArcFromThreePoints(
   start: AcGePoint3dLike,
@@ -253,55 +171,13 @@ function createArcFromThreePoints(
   end: AcGePoint3dLike,
   reverseDirection: boolean = false
 ) {
-  // Compute circumcenter from three non-collinear points in XY.
-  const x1 = start.x
-  const y1 = start.y
-  const x2 = second.x
-  const y2 = second.y
-  const x3 = end.x
-  const y3 = end.y
-  const d = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
-  if (AcGeTol.equalToZero(d)) return undefined
-
-  const ux =
-    ((x1 * x1 + y1 * y1) * (y2 - y3) +
-      (x2 * x2 + y2 * y2) * (y3 - y1) +
-      (x3 * x3 + y3 * y3) * (y1 - y2)) /
-    d
-  const uy =
-    ((x1 * x1 + y1 * y1) * (x3 - x2) +
-      (x2 * x2 + y2 * y2) * (x1 - x3) +
-      (x3 * x3 + y3 * y3) * (x2 - x1)) /
-    d
-
-  const center = { x: ux, y: uy, z: 0 }
-  const radius = distance2d(center, start)
-  if (!Number.isFinite(radius) || AcGeTol.isNonPositive(radius))
-    return undefined
-
-  // By default, choose the arc that actually passes through the second point.
-  // Ctrl toggle can reverse this selection to the complementary direction.
-  const autoNormalSign = chooseThreePointNormalSign(center, start, second, end)
-  const normalSign = reverseDirection
-    ? (-autoNormalSign as ArcNormalSign)
-    : autoNormalSign
-  return {
-    center,
-    radius,
-    startAngle: angleByNormalSign(center, start, normalSign),
-    endAngle: angleByNormalSign(center, end, normalSign),
-    normalSign
-  }
+  return toArcDefinition(
+    AcGeCircArc2d.tryCreateByThreePoints(start, second, end, reverseDirection)
+  )
 }
 
 /**
  * Builds arc by center/start/end with explicit orientation.
- *
- * @param center - Arc center.
- * @param start - Arc start point.
- * @param end - Arc end point.
- * @param normalSign - Orientation sign (+Z / -Z).
- * @returns Arc definition, or `undefined` if geometric constraints fail.
  */
 function createArcFromCenterStartEnd(
   center: AcGePoint3dLike,
@@ -309,40 +185,18 @@ function createArcFromCenterStartEnd(
   end: AcGePoint3dLike,
   normalSign: ArcNormalSign
 ) {
-  const radiusFromStart = distance2d(center, start)
-  const radiusFromEnd = distance2d(center, end)
-  if (
-    AcGeTol.isNonPositive(radiusFromStart) ||
-    AcGeTol.isNonPositive(radiusFromEnd)
-  ) {
-    return undefined
-  }
-  // Start/end must lie on the same circle (small tolerance for picked input).
-  const tolerance = Math.max(FLOAT_TOL, radiusFromStart * FLOAT_TOL)
-  if (Math.abs(radiusFromStart - radiusFromEnd) > tolerance) {
-    return undefined
-  }
-
-  return {
-    center: { x: center.x, y: center.y, z: 0 },
-    radius: radiusFromStart,
-    startAngle: angleByNormalSign(center, start, normalSign),
-    endAngle: angleByNormalSign(center, end, normalSign),
-    normalSign
-  }
+  return toArcDefinition(
+    AcGeCircArc2d.tryCreateByCenterStartEnd(
+      center,
+      start,
+      end,
+      normalSign === -1
+    )
+  )
 }
 
 /**
  * Builds center-start arc where user end input is projected onto the circle.
- *
- * Useful for preview/interaction where raw cursor point may not lie exactly
- * on the circle defined by center+start.
- *
- * @param center - Arc center.
- * @param start - Arc start point.
- * @param rawEnd - Raw user cursor/pick point.
- * @param normalSign - Orientation sign (+Z / -Z).
- * @returns Arc definition, or `undefined` if projection/geometry fails.
  */
 function createArcFromCenterStartProjectedEnd(
   center: AcGePoint3dLike,
@@ -350,221 +204,81 @@ function createArcFromCenterStartProjectedEnd(
   rawEnd: AcGePoint3dLike,
   normalSign: ArcNormalSign
 ) {
-  const radius = distance2d(center, start)
-  if (AcGeTol.isNonPositive(radius)) return undefined
-  const end = projectPointToCircle(center, radius, rawEnd)
-  if (!end) return undefined
-  return createArcFromCenterStartEnd(center, start, end, normalSign)
+  return toArcDefinition(
+    AcGeCircArc2d.tryCreateByCenterStartProjectedEnd(
+      center,
+      start,
+      rawEnd,
+      normalSign === -1
+    )
+  )
 }
 
 /**
  * Builds center-start arc from included sweep angle.
- *
  * Positive sweep = +Z orientation, negative sweep = -Z orientation.
- *
- * @param center - Arc center.
- * @param start - Arc start point.
- * @param sweepRad - Included angle in radians (signed).
- * @returns Arc definition, or `undefined` for invalid sweep/radius.
  */
 function createArcFromCenterStartSweep(
   center: AcGePoint3dLike,
   start: AcGePoint3dLike,
   sweepRad: number
 ) {
-  const radius = distance2d(center, start)
-  const sweep = Math.abs(sweepRad)
-  if (
-    AcGeTol.isNonPositive(radius) ||
-    AcGeTol.isNonPositive(sweep) ||
-    !AcGeTol.great(TAU - sweep, 0)
-  ) {
-    return undefined
-  }
-
-  const normalSign: ArcNormalSign = sweepRad >= 0 ? 1 : -1
-  const startAngle = angleByNormalSign(center, start, normalSign)
-  const endAngle = normalizeAngle(startAngle + sweep)
-  return {
-    center: { x: center.x, y: center.y, z: 0 },
-    radius,
-    startAngle,
-    endAngle,
-    normalSign
-  }
+  return toArcDefinition(
+    AcGeCircArc2d.tryCreateByCenterStartSweep(center, start, sweepRad)
+  )
 }
 
 /**
  * Builds center-start arc from chord length.
- *
- * Sign of chord length controls orientation; magnitude controls included angle.
- *
- * @param center - Arc center.
- * @param start - Arc start point.
- * @param chordLength - Chord length (signed).
- * @returns Arc definition, or `undefined` when out of geometric range.
  */
 function createArcFromCenterStartChord(
   center: AcGePoint3dLike,
   start: AcGePoint3dLike,
   chordLength: number
 ) {
-  const radius = distance2d(center, start)
-  const chord = Math.abs(chordLength)
-  if (
-    AcGeTol.isNonPositive(radius) ||
-    AcGeTol.isNonPositive(chord) ||
-    AcGeTol.great(chord, 2 * radius)
-  ) {
-    return undefined
-  }
-  const ratio = Math.max(-1, Math.min(1, chord / (2 * radius)))
-  const sweep = 2 * Math.asin(ratio)
-  const signedSweep = chordLength >= 0 ? sweep : -sweep
-  return createArcFromCenterStartSweep(center, start, signedSweep)
+  return toArcDefinition(
+    AcGeCircArc2d.tryCreateByCenterStartChord(center, start, chordLength)
+  )
 }
 
 /**
  * Builds start-end arc from included angle.
- *
- * @param start - Arc start point.
- * @param end - Arc end point.
- * @param sweepRad - Included angle in radians (signed).
- * @returns Arc definition, or `undefined` if no valid solution exists.
  */
 function createArcFromStartEndAngle(
   start: AcGePoint3dLike,
   end: AcGePoint3dLike,
   sweepRad: number
 ) {
-  const chord = distance2d(start, end)
-  const sweep = Math.abs(sweepRad)
-  if (
-    AcGeTol.isNonPositive(chord) ||
-    AcGeTol.isNonPositive(sweep) ||
-    !AcGeTol.great(TAU - sweep, 0)
-  ) {
-    return undefined
-  }
-
-  // chord = 2 * r * sin(theta/2)  ->  r = chord / (2 * sin(theta/2))
-  const sinHalf = Math.sin(sweep / 2)
-  if (AcGeTol.equalToZero(sinHalf)) return undefined
-
-  const radius = chord / (2 * sinHalf)
-  const offsetSquared = radius * radius - (chord * chord) / 4
-  if (AcGeTol.less(offsetSquared, 0)) return undefined
-
-  const offset = Math.sqrt(Math.max(0, offsetSquared))
-  const midX = (start.x + end.x) / 2
-  const midY = (start.y + end.y) / 2
-  const dx = end.x - start.x
-  const dy = end.y - start.y
-  const ux = -dy / chord
-  const uy = dx / chord
-
-  const isCounterClockwise = sweepRad >= 0
-  // Two circle centers satisfy start/end + radius. Select side by
-  // CW/CCW intent and whether included angle is minor/major.
-  const useLeft =
-    (isCounterClockwise && sweep <= Math.PI) ||
-    (!isCounterClockwise && sweep > Math.PI)
-  const side = useLeft ? 1 : -1
-
-  const center = {
-    x: midX + ux * offset * side,
-    y: midY + uy * offset * side,
-    z: 0
-  }
-  const normalSign: ArcNormalSign = isCounterClockwise ? 1 : -1
-  return createArcFromCenterStartEnd(center, start, end, normalSign)
+  return toArcDefinition(
+    AcGeCircArc2d.tryCreateByStartEndAngle(start, end, sweepRad)
+  )
 }
 
 /**
  * Builds start-end arc from tangent direction at start.
- *
- * @param start - Arc start point.
- * @param end - Arc end point.
- * @param directionRad - Tangent direction at start (radians).
- * @returns Arc definition, or `undefined` when constraints are degenerate.
  */
 function createArcFromStartEndDirection(
   start: AcGePoint3dLike,
   end: AcGePoint3dLike,
   directionRad: number
 ) {
-  // Build center from tangent constraint at start:
-  // center lies on line through start with normal to tangent.
-  const tx = Math.cos(directionRad)
-  const ty = Math.sin(directionRad)
-  const dx = end.x - start.x
-  const dy = end.y - start.y
-  const nx = -ty
-  const ny = tx
-  const denominator = 2 * (dx * nx + dy * ny)
-  if (AcGeTol.equalToZero(denominator)) return undefined
-
-  // Solve center = start + lambda * n so that |center-start| = |center-end|.
-  const lambda = (dx * dx + dy * dy) / denominator
-  if (!Number.isFinite(lambda)) return undefined
-
-  const center = {
-    x: start.x + nx * lambda,
-    y: start.y + ny * lambda,
-    z: 0
-  }
-  const radiusVectorX = start.x - center.x
-  const radiusVectorY = start.y - center.y
-  const cross = radiusVectorX * ty - radiusVectorY * tx
-  if (AcGeTol.equalToZero(cross)) return undefined
-
-  const normalSign: ArcNormalSign = cross >= 0 ? 1 : -1
-  return createArcFromCenterStartEnd(center, start, end, normalSign)
+  return toArcDefinition(
+    AcGeCircArc2d.tryCreateByStartEndDirection(start, end, directionRad)
+  )
 }
 
 /**
  * Builds start-end arc from radius.
- *
  * Radius sign controls side/orientation (AutoCAD-like behavior).
- *
- * @param start - Arc start point.
- * @param end - Arc end point.
- * @param radiusInput - Radius value (signed).
- * @returns Arc definition, or `undefined` when radius cannot connect points.
  */
 function createArcFromStartEndRadius(
   start: AcGePoint3dLike,
   end: AcGePoint3dLike,
   radiusInput: number
 ) {
-  const radius = Math.abs(radiusInput)
-  const chord = distance2d(start, end)
-  if (
-    AcGeTol.isNonPositive(radius) ||
-    AcGeTol.isNonPositive(chord) ||
-    AcGeTol.great(chord, 2 * radius)
-  ) {
-    return undefined
-  }
-
-  const midX = (start.x + end.x) / 2
-  const midY = (start.y + end.y) / 2
-  const dx = end.x - start.x
-  const dy = end.y - start.y
-  const ux = -dy / chord
-  const uy = dx / chord
-  const offset = Math.sqrt(Math.max(0, radius * radius - (chord * chord) / 4))
-
-  // Keep AutoCAD-like behavior:
-  // positive radius picks +Z side, negative radius picks mirrored side.
-  const side = radiusInput >= 0 ? 1 : -1
-  const center = {
-    x: midX + ux * offset * side,
-    y: midY + uy * offset * side,
-    z: 0
-  }
-  const normalSign: ArcNormalSign = radiusInput >= 0 ? 1 : -1
-  return createArcFromCenterStartEnd(center, start, end, normalSign)
+  return toArcDefinition(
+    AcGeCircArc2d.tryCreateByStartEndRadius(start, end, radiusInput)
+  )
 }
 
 /**
