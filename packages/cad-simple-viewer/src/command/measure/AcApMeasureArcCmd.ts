@@ -1,7 +1,5 @@
 import {
   AcCmColor,
-  AcDbArc,
-  AcDbCircle,
   AcDbDatabase,
   AcGeCircArc2d,
   AcGeMathUtil,
@@ -41,6 +39,7 @@ import {
   acapStrokeLivePolyline,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
+import { lockCurvesFromEntity } from './AcApMeasureArcLock'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import {
   AcApMeasureArcEntity,
@@ -110,15 +109,11 @@ function snapToCircle(
   return { x: g.cx + dx * s, y: g.cy + dy * s, z: 0 }
 }
 
-function circleGeomFromEntity(entity: unknown): AcApMeasureCircleGeom | null {
-  if (entity instanceof AcDbCircle || entity instanceof AcDbArc) {
-    return { cx: entity.center.x, cy: entity.center.y, r: entity.radius }
-  }
-  return null
-}
-
 /**
- * Picks the CIRCLE/ARC whose circumference is closest to `p` in screen space.
+ * Picks the CIRCLE / ARC / polyline-bulge stroke closest to `p` in screen space.
+ *
+ * Distance is measured to the drawn curve (not the complementary full circle)
+ * so a click on a gap or a straight polyline chord does not lock.
  *
  * @returns Geometry and the point snapped onto that circumference, or `null`.
  */
@@ -128,34 +123,32 @@ function pickCircleGeomAtPoint(
 ): { geom: AcApMeasureCircleGeom; snapped: AcGePoint3dLike } | null {
   const hits = context.view.pick(p, SNAP_SCREEN_PX)
   const blockTable = context.doc.database.tables.blockTable
+  const cursorScreen = context.view.worldToScreen(p)
+  const pick = { x: p.x, y: p.y, z: 0 }
 
-  let bestGeom: AcApMeasureCircleGeom | null = null
-  let bestDist = Number.MAX_VALUE
+  let best: { geom: AcApMeasureCircleGeom; snapped: AcGePoint3dLike } | null =
+    null
+  let bestScreen = SNAP_SCREEN_PX
 
   for (const hit of hits) {
     const entity = blockTable.getEntityById(hit.id)
-    const geom = circleGeomFromEntity(entity)
-    if (!geom) continue
-    const distToCircumference = Math.abs(
-      Math.hypot(p.x - geom.cx, p.y - geom.cy) - geom.r
-    )
-    if (distToCircumference < bestDist) {
-      bestDist = distToCircumference
-      bestGeom = geom
+    if (!entity) continue
+    for (const curve of lockCurvesFromEntity(entity)) {
+      if (!(curve.radius > 0)) continue
+      const nearest = curve.nearestPoint(pick)
+      const nearScreen = context.view.worldToScreen(nearest)
+      const screenDist = Math.hypot(
+        cursorScreen.x - nearScreen.x,
+        cursorScreen.y - nearScreen.y
+      )
+      if (screenDist <= bestScreen) {
+        bestScreen = screenDist
+        const geom = circleGeomFromArc(curve)
+        best = { geom, snapped: snapToCircle(p, geom) }
+      }
     }
   }
-
-  if (!bestGeom) return null
-
-  const snapped = snapToCircle(p, bestGeom)
-  const cursorScreen = context.view.worldToScreen(p)
-  const snapScreen = context.view.worldToScreen(snapped)
-  const screenDist = Math.hypot(
-    cursorScreen.x - snapScreen.x,
-    cursorScreen.y - snapScreen.y
-  )
-  if (screenDist > SNAP_SCREEN_PX) return null
-  return { geom: bestGeom, snapped }
+  return best
 }
 
 /**
@@ -178,29 +171,18 @@ export function placeArcMeasurement(
 }
 
 /**
- * First-point jig: square snap indicator when the cursor is on a CIRCLE/ARC.
+ * First-point jig: square snap indicator when the cursor is on a CIRCLE/ARC
+ * or a polyline bulge.
  */
 class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private readonly _ctx: AcApContext
   private readonly _indicator: AcTrHtmlSnapIndicator
   private readonly _htManager: AcTrHtmlTransientManager
   private readonly _indicatorId: string
-  private readonly _onSnap: (
-    geom: AcApMeasureCircleGeom | null,
-    snapped: AcGePoint3dLike | null
-  ) => void
 
-  constructor(
-    context: AcApContext,
-    color: AcCmColor,
-    onSnap: (
-      geom: AcApMeasureCircleGeom | null,
-      snapped: AcGePoint3dLike | null
-    ) => void
-  ) {
+  constructor(context: AcApContext, color: AcCmColor) {
     super(context.view)
     this._ctx = context
-    this._onSnap = onSnap
 
     this._indicatorId = `live-arc-snap-${Date.now()}`
     this._htManager = (context.view as AcTrView2d).htmlTransientManager
@@ -225,11 +207,9 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
     if (hit) {
       this._indicator.setPosition(hit.snapped)
       this._indicator.object.visible = true
-      this._onSnap(hit.geom, hit.snapped)
       return
     }
     this._indicator.object.visible = false
-    this._onSnap(null, null)
   }
 
   end() {
@@ -548,11 +528,11 @@ class AcApMeasureArcEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
 /**
  * Command that measures arc length.
  *
- * If the first pick lands on a CIRCLE or ARC entity, subsequent picks lock
- * onto that circumference (two-point sweep). Sweep direction follows the
- * first mouse movement so arcs greater than 180 degrees stay on the same
- * side; Ctrl flips to the complementary (major/minor) arc. Otherwise three
- * world points (start, a point on the arc, end) define a free-form arc.
+ * If the first pick lands on a CIRCLE, ARC, or polyline bulge, subsequent
+ * picks lock onto that circumference (two-point sweep). Sweep direction
+ * follows the first mouse movement so arcs greater than 180 degrees stay on
+ * the same side; Ctrl flips to the complementary (major/minor) arc. Otherwise
+ * three world points (start, a point on the arc, end) define a free-form arc.
  *
  * Interactive preview is HTML-only. The committed overlay is placed via
  * {@link placeArcMeasurement}.
@@ -572,36 +552,27 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     await context.view.withMode(AcEdViewMode.SELECTION, () =>
       editor.withCursor(AcEdCorsorType.Crosshair, async () => {
         editor.resetInputToggles()
-        let snapGeom: AcApMeasureCircleGeom | null = null
-        let snappedStart: AcGePoint3dLike | null = null
 
         const startPrompt = new AcEdPromptPointOptions(
           AcApI18n.t('jig.measureArc.startPoint')
         )
-        startPrompt.jig = new AcApArcSnapJig(
-          context,
-          color,
-          (geom, snapped) => {
-            snapGeom = geom
-            snappedStart = snapped
-          }
-        )
+        startPrompt.jig = new AcApArcSnapJig(context, color)
         const startResult = await editor.getPoint(startPrompt)
         if (startResult.status !== AcEdPromptStatus.OK) return
 
-        if (snapGeom && snappedStart) {
+        const start = startResult.value!
+        const lock = pickCircleGeomAtPoint(context, start)
+        if (lock) {
           await this.commitLockedArc(
             context,
             view,
             db,
             color,
-            snapGeom,
-            snappedStart
+            lock.geom,
+            lock.snapped
           )
           return
         }
-
-        const start = startResult.value!
         const throughPrompt = new AcEdPromptPointOptions(
           AcApI18n.t('jig.measureArc.throughPoint')
         )
@@ -659,7 +630,8 @@ export class AcApMeasureArcCmd extends AcEdCommand {
   }
 
   /**
-   * Two-point locked-arc flow after the start pick landed on a CIRCLE/ARC.
+   * Two-point locked-arc flow after the start pick landed on a CIRCLE, ARC,
+   * or polyline bulge.
    *
    * Sweep direction follows the cursor; Ctrl toggles the complementary arc.
    */
