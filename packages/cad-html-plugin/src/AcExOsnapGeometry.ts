@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-import type { AcGePoint2dLike } from '@mlightcad/data-model'
+import { AcGeCircArc2d, type AcGePoint2dLike } from '@mlightcad/data-model'
 
 import {
   type AcExOsnapAcGeCurve,
@@ -33,6 +33,53 @@ export function distSq(ax: number, ay: number, bx: number, by: number): number {
   const dx = ax - bx
   const dy = ay - by
   return dx * dx + dy * dy
+}
+
+/**
+ * How much `mouse - nearest` points into this circular arc.
+ *
+ * When two polyline bulge segments share a vertex, nearest-point distances
+ * are equal and a later-wins compare would always lock the second arc.
+ */
+export function inwardArcAlignment(
+  curve: AcGeCircArc2d,
+  nearest: AcGePoint2dLike,
+  mouse: AcGePoint2dLike
+): number {
+  const mx = mouse.x - nearest.x
+  const my = mouse.y - nearest.y
+  if (mx * mx + my * my < 1e-24) return 0
+
+  const r = curve.radius > 0 ? curve.radius : 1
+  const endTolSq = Math.max(1e-16, 1e-12 * r * r)
+  const atStart =
+    distSq(nearest.x, nearest.y, curve.startPoint.x, curve.startPoint.y) <=
+    endTolSq
+  const atEnd =
+    distSq(nearest.x, nearest.y, curve.endPoint.x, curve.endPoint.y) <= endTolSq
+  if (!atStart && !atEnd) return 0
+
+  const pts = curve.getPoints(8)
+  if (pts.length < 3) return 0
+  const inward = atStart && !atEnd ? pts[1]! : pts[pts.length - 2]!
+  const ix = inward.x - nearest.x
+  const iy = inward.y - nearest.y
+  const ilen = Math.hypot(ix, iy)
+  if (!(ilen > 1e-18)) return 0
+  return (mx * ix + my * iy) / ilen
+}
+
+/** True when `distSqValue`/`align` should replace the current lock winner. */
+export function isBetterArcLock(
+  distSqValue: number,
+  align: number,
+  bestDistSq: number,
+  bestAlign: number
+): boolean {
+  const tie = Math.max(1e-18, Math.abs(bestDistSq) * 1e-9)
+  if (distSqValue < bestDistSq - tie) return true
+  if (distSqValue > bestDistSq + tie) return false
+  return align > bestAlign
 }
 
 function pushPoint(

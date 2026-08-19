@@ -57,6 +57,23 @@ export function arcWcsPoint(
 }
 
 /**
+ * Inverse of {@link arcWcsPoint}: OCS parameter angle of a WCS point.
+ *
+ * Used when exporting WCS {@link AcGeCircArc2d} bulge geometry (polylines,
+ * hatch loops). Clockwise `AcGeCircArc2d` public angles are Y-mirrored, which
+ * is not the AutoCAD −Z / X-mirror convention {@link arcToAcGe} expects.
+ */
+export function wcsPointToOcsArcAngle(
+  cx: number,
+  cy: number,
+  x: number,
+  y: number,
+  normalSign: 1 | -1
+): number {
+  return Math.atan2(y - cy, normalSign * (x - cx))
+}
+
+/**
  * Builds an open circular arc in WCS from exported center/angle data.
  *
  * AutoCAD stores arc angles in OCS; a `-Z` extrusion mirrors X when mapping to

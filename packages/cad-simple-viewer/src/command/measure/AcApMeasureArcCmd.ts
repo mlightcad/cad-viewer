@@ -39,7 +39,13 @@ import {
   acapStrokeLivePolyline,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
-import { lockCurvesFromEntity } from './AcApMeasureArcLock'
+import {
+  inwardLockAlignment,
+  isBetterLockCandidate,
+  lockCurvesFromEntity,
+  pointLiesOnCircle,
+  sameCircleGeom
+} from './AcApMeasureArcLock'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import {
   AcApMeasureArcEntity,
@@ -98,7 +104,7 @@ function circleGeomFromArc(arc: AcGeCircArc2d): AcApMeasureCircleGeom {
  * point at angle 0 is returned.
  */
 function snapToCircle(
-  p: AcGePoint3dLike,
+  p: Point2,
   g: AcApMeasureCircleGeom
 ): { x: number; y: number; z: number } {
   const dx = p.x - g.cx
@@ -121,14 +127,26 @@ function pickCircleGeomAtPoint(
   context: AcApContext,
   p: AcGePoint3dLike
 ): { geom: AcApMeasureCircleGeom; snapped: AcGePoint3dLike } | null {
-  const hits = context.view.pick(p, SNAP_SCREEN_PX)
   const blockTable = context.doc.database.tables.blockTable
-  const cursorScreen = context.view.worldToScreen(p)
-  const pick = { x: p.x, y: p.y, z: 0 }
+  // OSNAP may have pulled `p` onto a shared polyline vertex. Score against
+  // the live cursor so the lock follows whichever arc the mouse is nearer.
+  const mouse = context.view.curPos
+  const seen = new Set<string>()
+  const hits = [
+    ...context.view.pick(mouse, SNAP_SCREEN_PX),
+    ...context.view.pick(p, SNAP_SCREEN_PX)
+  ].filter(hit => {
+    if (seen.has(hit.id)) return false
+    seen.add(hit.id)
+    return true
+  })
+  const cursorScreen = context.view.worldToScreen(mouse)
+  const pick = { x: mouse.x, y: mouse.y, z: 0 }
 
   let best: { geom: AcApMeasureCircleGeom; snapped: AcGePoint3dLike } | null =
     null
   let bestScreen = SNAP_SCREEN_PX
+  let bestAlign = -Infinity
 
   for (const hit of hits) {
     const entity = blockTable.getEntityById(hit.id)
@@ -141,8 +159,23 @@ function pickCircleGeomAtPoint(
         cursorScreen.x - nearScreen.x,
         cursorScreen.y - nearScreen.y
       )
-      if (screenDist <= bestScreen) {
+      if (screenDist > SNAP_SCREEN_PX) continue
+      const align = inwardLockAlignment(
+        curve,
+        { x: nearest.x, y: nearest.y },
+        { x: mouse.x, y: mouse.y }
+      )
+      if (
+        !best ||
+        isBetterLockCandidate(
+          screenDist * screenDist,
+          align,
+          bestScreen * bestScreen,
+          bestAlign
+        )
+      ) {
         bestScreen = screenDist
+        bestAlign = align
         const geom = circleGeomFromArc(curve)
         best = {
           geom,
@@ -230,8 +263,9 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * sticky toggle as the ARC command) flips to the complementary sweep.
  */
 class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
+  private readonly _ctx: AcApContext
   private readonly _view: AcTrView2d
-  private readonly _geom: AcApMeasureCircleGeom
+  private _geom: AcApMeasureCircleGeom
   private readonly _start: Point2
   private readonly _db: AcDbDatabase
   private readonly _indicator: AcTrHtmlSnapIndicator
@@ -250,14 +284,15 @@ class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _baseClockwise: boolean | null = null
 
   constructor(
-    view: AcEdBaseView,
+    context: AcApContext,
     db: AcDbDatabase,
     geom: AcApMeasureCircleGeom,
     start: AcGePoint3dLike,
     color: AcCmColor
   ) {
-    super(view)
-    this._view = view as AcTrView2d
+    super(context.view)
+    this._ctx = context
+    this._view = context.view as AcTrView2d
     this._geom = geom
     this._start = toPoint2(start)
     this._db = db
@@ -300,6 +335,14 @@ class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
   }
 
   /**
+   * Circle currently locked for the end pick. May switch between polyline
+   * bulge segments that share the start vertex as the cursor moves.
+   */
+  get geom(): AcApMeasureCircleGeom {
+    return this._geom
+  }
+
+  /**
    * Effective sweep direction after mouse-lock XOR the Ctrl sticky toggle.
    */
   get clockwise(): boolean {
@@ -322,7 +365,21 @@ class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
   }
 
   update(p: AcGePoint3dLike) {
-    const snapped = snapToCircle(p, this._geom)
+    const mouse = this._view.curPos
+    const hit = pickCircleGeomAtPoint(this._ctx, p)
+    if (
+      hit &&
+      pointLiesOnCircle(this._start, hit.geom) &&
+      !sameCircleGeom(this._geom, hit.geom)
+    ) {
+      this._geom = hit.geom
+      this._baseClockwise = null
+      this._lastAngle = Math.atan2(
+        this._start.y - hit.geom.cy,
+        this._start.x - hit.geom.cx
+      )
+    }
+    const snapped = snapToCircle(mouse, this._geom)
     const end = toPoint2(snapped)
     this._trackSweepDirection(end)
     this._color = acapGetMeasurementColor(this._db)
@@ -566,13 +623,16 @@ export class AcApMeasureArcCmd extends AcEdCommand {
         const start = startResult.value!
         const lock = pickCircleGeomAtPoint(context, start)
         if (lock) {
+          const startOnLock = pointLiesOnCircle(toPoint2(start), lock.geom)
+            ? start
+            : lock.snapped
           await this.commitLockedArc(
             context,
             view,
             db,
             color,
             lock.geom,
-            lock.snapped
+            startOnLock
           )
           return
         }
@@ -662,13 +722,7 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     const endPrompt = new AcEdPromptPointOptions(
       AcApI18n.t('jig.measureArc.lockedEndPoint')
     )
-    const jig = new AcApArcLockedEndJig(
-      context.view,
-      db,
-      geom,
-      start,
-      color
-    )
+    const jig = new AcApArcLockedEndJig(context, db, geom, start, color)
     endPrompt.jig = jig
 
     let endRaw: AcGePoint3dLike | undefined
@@ -681,9 +735,10 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     }
 
     if (!endRaw) return
+    const geomNow = jig.geom
     const start2 = toPoint2(start)
-    const end2 = toPoint2(snapToCircle(endRaw, geom))
-    const sweep = lockedSweep(start2, end2, geom, jig.clockwise)
+    const end2 = toPoint2(snapToCircle(view.curPos, geomNow))
+    const sweep = lockedSweep(start2, end2, geomNow, jig.clockwise)
     if (!sweep) {
       this.showMessage(AcApI18n.t('jig.measureArc.invalidPoints'), 'warning')
       return
@@ -692,7 +747,7 @@ export class AcApMeasureArcCmd extends AcEdCommand {
     placeArcMeasurement(
       view,
       db,
-      geom,
+      geomNow,
       start2,
       sweep.through,
       end2,

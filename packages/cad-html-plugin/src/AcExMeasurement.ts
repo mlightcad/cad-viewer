@@ -561,6 +561,23 @@ function snapPointToCircle(p: THREE.Vector2, g: AcExCircleGeom): THREE.Vector2 {
   return new THREE.Vector2(g.cx + dx * s, g.cy + dy * s)
 }
 
+/** True when `p` lies on circle `g` within a relative radial tolerance. */
+function pointLiesOnCircle(
+  p: { x: number; y: number },
+  g: AcExCircleGeom
+): boolean {
+  const radial = Math.abs(Math.hypot(p.x - g.cx, p.y - g.cy) - g.r)
+  return radial <= Math.max(1e-6, g.r * 1e-5)
+}
+
+function sameCircleGeom(a: AcExCircleGeom, b: AcExCircleGeom): boolean {
+  return (
+    Math.abs(a.cx - b.cx) <= 1e-8 &&
+    Math.abs(a.cy - b.cy) <= 1e-8 &&
+    Math.abs(a.r - b.r) <= 1e-8
+  )
+}
+
 /** Minimum angular move (radians) before locked-arc sweep direction is chosen. */
 const ACEX_ARC_DIR_LOCK_RAD = 0.02
 
@@ -1877,6 +1894,23 @@ export class AcExMeasureController {
   }
 
   /**
+   * After the start lands on a shared polyline vertex, move the lock onto
+   * whichever bulge through that vertex the cursor is closer to.
+   * @internal
+   */
+  private _rebindArcLock(raw: THREE.Vector2): void {
+    const start = this._points[0]
+    const current = this._arcLock
+    if (!start || !current) return
+    const near = this._view.findCircleOrArcNear?.(raw.x, raw.y)
+    if (!near || !(near.r > 0) || !pointLiesOnCircle(start, near)) return
+    if (sameCircleGeom(current, near)) return
+    this._arcLock = { cx: near.cx, cy: near.cy, r: near.r }
+    this._arcLockClockwise = null
+    this._arcLockLastAngle = Math.atan2(start.y - near.cy, start.x - near.cx)
+  }
+
+  /**
    * Arc tool: start → (point on arc) → end.
    *
    * If the first click lands on a CIRCLE or ARC, the circle is locked and the
@@ -1896,9 +1930,11 @@ export class AcExMeasureController {
         this._view.findCircleOrArcNear?.(raw.x, raw.y) ??
         this._view.findCircleOrArcNear?.(point.x, point.y)
       if (lock && lock.r > 0) {
-        this._arcLock = lock
+        this._arcLock = { cx: lock.cx, cy: lock.cy, r: lock.r }
         this._resetArcLockDirection()
-        const start = new THREE.Vector2(lock.x, lock.y)
+        const start = pointLiesOnCircle(point, lock)
+          ? point.clone()
+          : new THREE.Vector2(lock.x, lock.y)
         this._arcLockLastAngle = Math.atan2(start.y - lock.cy, start.x - lock.cx)
         this._points.push(start)
         this._previewArc(this._points[0]!, clientX, clientY)
@@ -1914,15 +1950,23 @@ export class AcExMeasureController {
     if (this._arcLock) {
       const start = this._points[0]!
       const raw = this._view.screenToWcs(clientX, clientY)
-      const end = snapPointToCircle(raw, this._arcLock)
+      this._rebindArcLock(raw)
+      const geom = this._arcLock
+      if (!geom) {
+        this._points = []
+        this._resetArcLockDirection()
+        this._hidePreview()
+        this._statusEl.textContent = this._hintForMode('arc')
+        return true
+      }
+      const end = snapPointToCircle(raw, geom)
       this._trackArcLockDirection(end)
       const sweep = lockedSweep(
         start,
         end,
-        this._arcLock,
+        geom,
         this._lockedClockwise()
       )
-      const geom = this._arcLock
       if (!sweep) {
         this._points = []
         this._arcLock = null
@@ -1975,12 +2019,18 @@ export class AcExMeasureController {
     const start = this._points[0]!
     if (this._arcLock && this._points.length === 1) {
       const raw = this._view.screenToWcs(clientX, clientY)
-      const end = snapPointToCircle(raw, this._arcLock)
+      this._rebindArcLock(raw)
+      const geom = this._arcLock
+      if (!geom) {
+        this._hidePreview()
+        return
+      }
+      const end = snapPointToCircle(raw, geom)
       this._trackArcLockDirection(end)
       const sweep = lockedSweep(
         start,
         end,
-        this._arcLock,
+        geom,
         this._lockedClockwise()
       )
       this._overlayLayer
@@ -1999,7 +2049,7 @@ export class AcExMeasureController {
         clientX,
         clientY
       )
-      this._drawPreviewArc(this._arcLock, start, sweep.through, end)
+      this._drawPreviewArc(geom, start, sweep.through, end)
       this._requestRender()
       return
     }

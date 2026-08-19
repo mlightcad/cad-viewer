@@ -2,13 +2,15 @@ import {
   AcDbArc,
   AcDbCircle,
   AcDbPolyline,
+  AcGeCircArc2d,
   AcGePoint2d,
   AcGePoint3d
 } from '@mlightcad/data-model'
 
 import {
   lockCurvesFromEntity,
-  pickLockOnEntities
+  pickLockOnEntities,
+  pointLiesOnCircle
 } from '../src/command/measure/AcApMeasureArcLock'
 
 describe('lockCurvesFromEntity', () => {
@@ -115,5 +117,59 @@ describe('pickLockOnEntities', () => {
     expect(
       pickLockOnEntities([polyline], { x: 50, y: 10, z: 0 }, 1)
     ).toBeUndefined()
+  })
+
+  it('at a shared bulge vertex, locks the arc the cursor is closer to', () => {
+    const polyline = new AcDbPolyline()
+    polyline.addVertexAt(0, new AcGePoint2d(0, 0), -Math.tan(Math.PI / 16))
+    polyline.addVertexAt(1, new AcGePoint2d(40, 0), 1)
+    polyline.addVertexAt(2, new AcGePoint2d(50, 0))
+
+    const first = new AcGeCircArc2d(
+      { x: 0, y: 0 },
+      { x: 40, y: 0 },
+      -Math.tan(Math.PI / 16)
+    )
+    const second = new AcGeCircArc2d({ x: 40, y: 0 }, { x: 50, y: 0 }, 1)
+    const toward = (
+      curve: AcGeCircArc2d,
+      fromStart: boolean,
+      dist: number
+    ) => {
+      const pts = curve.getPoints(16)
+      const origin = fromStart ? pts[0]! : pts[pts.length - 1]!
+      const inward = fromStart ? pts[1]! : pts[pts.length - 2]!
+      const ix = inward.x - origin.x
+      const iy = inward.y - origin.y
+      const len = Math.hypot(ix, iy)
+      return {
+        x: origin.x + (ix / len) * dist,
+        y: origin.y + (iy / len) * dist,
+        z: 0
+      }
+    }
+
+    expect(
+      pickLockOnEntities([polyline], toward(first, false, 0.05), 2)?.geom.r
+    ).toBeCloseTo(first.radius, 5)
+    expect(
+      pickLockOnEntities([polyline], toward(second, true, 0.05), 2)?.geom.r
+    ).toBeCloseTo(second.radius, 5)
+    // Exact vertex: distances tie; do not let the later segment win.
+    expect(
+      pickLockOnEntities([polyline], { x: 40, y: 0, z: 0 }, 2)?.geom.r
+    ).toBeCloseTo(first.radius, 5)
+    expect(
+      pointLiesOnCircle(
+        { x: 40, y: 0 },
+        { cx: first.center.x, cy: first.center.y, r: first.radius }
+      )
+    ).toBe(true)
+    expect(
+      pointLiesOnCircle(
+        { x: 40, y: 0 },
+        { cx: second.center.x, cy: second.center.y, r: second.radius }
+      )
+    ).toBe(true)
   })
 })
