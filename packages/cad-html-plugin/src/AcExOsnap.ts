@@ -661,18 +661,23 @@ export class AcExOsnapIndex {
    * @param px - Cursor X in drawing units (WCS).
    * @param py - Cursor Y in drawing units (WCS).
    * @param threshold - Maximum distance in drawing units.
-   * @returns Circle center and radius, or `undefined` when none is close enough.
+   * @returns Circle center, radius, and the nearest point on the drawn
+   *   stroke, or `undefined` when none is close enough. `x`/`y` lie on the
+   *   curve (including arc endpoints), not a radial projection onto the
+   *   complementary full circle.
    */
   findCircleOrArcNear(
     px: number,
     py: number,
     threshold: number
-  ): { cx: number; cy: number; r: number } | undefined {
+  ): { cx: number; cy: number; r: number; x: number; y: number } | undefined {
     if (threshold <= 0 || this.primitives.length === 0) return undefined
     const threshSq = threshold * threshold
     const box = searchBox(px, py, threshold)
     let bestDistSq = threshSq
-    let best: { cx: number; cy: number; r: number } | undefined
+    let best:
+      | { cx: number; cy: number; r: number; x: number; y: number }
+      | undefined
 
     for (const hit of this.primitiveTree.search(box)) {
       const prim = this.primitives[hit.index]!
@@ -683,7 +688,13 @@ export class AcExOsnapIndex {
       const d2 = distSq(px, py, nearest.x, nearest.y)
       if (d2 <= bestDistSq) {
         bestDistSq = d2
-        best = { cx: prim.cx, cy: prim.cy, r: prim.r }
+        best = {
+          cx: prim.cx,
+          cy: prim.cy,
+          r: prim.r,
+          x: nearest.x,
+          y: nearest.y
+        }
       }
     }
     return best

@@ -62,11 +62,40 @@ describe('pickLockOnEntities', () => {
   })
 
   it('locks onto the drawn arc, not the complementary sweep', () => {
-    expect(
-      pickLockOnEntities([quarterArc], { x: 7.071, y: 7.071, z: 0 }, 1)?.geom
-    ).toMatchObject({ cx: 0, cy: 0, r: 10 })
+    const hit = pickLockOnEntities(
+      [quarterArc],
+      { x: 7.071, y: 7.071, z: 0 },
+      1
+    )
+    expect(hit?.geom.cx).toBeCloseTo(0)
+    expect(hit?.geom.cy).toBeCloseTo(0)
+    expect(hit?.geom.r).toBeCloseTo(10)
     expect(
       pickLockOnEntities([quarterArc], { x: -10, y: 0, z: 0 }, 1)
+    ).toBeUndefined()
+  })
+
+  it('keeps nearest on the drawn stroke when a pick would project onto the complementary arc', () => {
+    const hit = pickLockOnEntities([quarterArc], { x: 9, y: -1, z: 0 }, 2)
+    expect(hit).toBeDefined()
+    expect(hit!.nearest.y).toBeGreaterThanOrEqual(0)
+    expect(hit!.nearest.x).toBeCloseTo(10, 1)
+  })
+
+  it('maps -Z extrusion OCS angles into WCS (X mirrored)', () => {
+    const arc = new AcDbArc({ x: 0, y: 0, z: 0 }, 10, 0, Math.PI / 2, {
+      x: 0,
+      y: 0,
+      z: -1
+    })
+    // Drawn stroke is Q2: (-10, 0) → (0, 10) through (−√2/2, √2/2).
+    const hit = pickLockOnEntities([arc], { x: -7.071, y: 7.071, z: 0 }, 1)
+    expect(hit?.geom.cx).toBeCloseTo(0)
+    expect(hit?.geom.cy).toBeCloseTo(0)
+    expect(hit?.geom.r).toBeCloseTo(10)
+    // Naive startAngle/endAngle in world XY would lock the +Z quarter in Q1.
+    expect(
+      pickLockOnEntities([arc], { x: 7.071, y: 7.071, z: 0 }, 1)
     ).toBeUndefined()
   })
 

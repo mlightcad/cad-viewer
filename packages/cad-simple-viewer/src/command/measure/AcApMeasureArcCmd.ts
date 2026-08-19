@@ -115,7 +115,7 @@ function snapToCircle(
  * Distance is measured to the drawn curve (not the complementary full circle)
  * so a click on a gap or a straight polyline chord does not lock.
  *
- * @returns Geometry and the point snapped onto that circumference, or `null`.
+ * @returns Geometry and the nearest point on that stroke, or `null`.
  */
 function pickCircleGeomAtPoint(
   context: AcApContext,
@@ -144,7 +144,10 @@ function pickCircleGeomAtPoint(
       if (screenDist <= bestScreen) {
         bestScreen = screenDist
         const geom = circleGeomFromArc(curve)
-        best = { geom, snapped: snapToCircle(p, geom) }
+        best = {
+          geom,
+          snapped: { x: nearest.x, y: nearest.y, z: 0 }
+        }
       }
     }
   }

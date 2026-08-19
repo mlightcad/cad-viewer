@@ -660,13 +660,46 @@ describe('AcExOsnapIndex', () => {
     expect(index.findCircleOrArcNear(10.2, 0, 1)).toEqual({
       cx: 0,
       cy: 0,
-      r: 10
+      r: 10,
+      x: 10,
+      y: 0
     })
     expect(index.findCircleOrArcNear(50.2, 0, 1)).toEqual({
       cx: 40,
       cy: 0,
-      r: 10
+      r: 10,
+      x: 50,
+      y: 0
     })
     expect(index.findCircleOrArcNear(30, 0, 1)).toBeUndefined()
+  })
+
+  it('keeps the start on the drawn arc when a nearby pick would project off it', () => {
+    const index = new AcExOsnapIndex()
+    index.rebuild({
+      ...layout,
+      lineBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'arc',
+            layer: '0',
+            cx: 0,
+            cy: 0,
+            r: 10,
+            startAngle: 0,
+            endAngle: Math.PI / 2,
+            normalSign: 1
+          }
+        ]
+      }
+    })
+    const hit = index.findCircleOrArcNear(9, -1, 2)
+    expect(hit?.cx).toBe(0)
+    expect(hit?.cy).toBe(0)
+    expect(hit?.r).toBe(10)
+    // Radial projection of (9, -1) lands below the X axis (complementary).
+    expect(hit!.y).toBeGreaterThanOrEqual(0)
+    expect(hit!.x).toBeCloseTo(10, 1)
   })
 })

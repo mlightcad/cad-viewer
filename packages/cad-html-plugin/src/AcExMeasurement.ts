@@ -134,12 +134,14 @@ export interface AcExMeasureViewApi {
 
   /**
    * Circle or circular-arc under `(x, y)` in WCS, used to lock arc-length
-   * picks onto that circumference. Omit when the snapshot has no osnap catalog.
+   * picks onto that circumference. `x`/`y` on the result are the nearest
+   * point on the drawn stroke (not a radial projection onto the full circle).
+   * Omit when the snapshot has no osnap catalog.
    */
   findCircleOrArcNear?: (
     x: number,
     y: number
-  ) => { cx: number; cy: number; r: number } | null
+  ) => { cx: number; cy: number; r: number; x: number; y: number } | null
 
   /**
    * Formats a linear value using snapshot unit precision (e.g. `LUPREC`).
@@ -1896,7 +1898,7 @@ export class AcExMeasureController {
       if (lock && lock.r > 0) {
         this._arcLock = lock
         this._resetArcLockDirection()
-        const start = snapPointToCircle(point, lock)
+        const start = new THREE.Vector2(lock.x, lock.y)
         this._arcLockLastAngle = Math.atan2(start.y - lock.cy, start.x - lock.cx)
         this._points.push(start)
         this._previewArc(this._points[0]!, clientX, clientY)
