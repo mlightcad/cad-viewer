@@ -43,6 +43,14 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
   }
 })
 
+jest.mock('@mlightcad/data-model', () => ({
+  acdbHostApplicationServices: () => ({
+    layoutManager: {
+      setCurrentLayoutBtrId: jest.fn()
+    }
+  })
+}))
+
 import type { AcExToolbarItem } from '../src/config/types'
 import { AcExI18n } from '../src/i18n'
 import { AcExToolbar } from '../src/ui/AcExToolbar'
@@ -154,6 +162,44 @@ describe('AcExToolbar children UI', () => {
       ?.click()
     expect(host.querySelector('.ml-ex-ui-subtoolbar')).toBeNull()
     expect(document.querySelector('.ml-ex-ui-dropdown')).toBeTruthy()
+    toolbar.destroy()
+  })
+
+  it('opens a popover menu for live children getters', () => {
+    const onSelect = jest.fn()
+    const item: AcExToolbarItem = {
+      id: 'layout',
+      label: 'Layout',
+      childrenUi: 'menu',
+      children: []
+    }
+    Object.defineProperty(item, 'children', {
+      configurable: true,
+      enumerable: true,
+      get: () => [
+        { id: 'layout-model', label: 'Model', action: onSelect },
+        { id: 'layout-1', label: 'Layout1', action: onSelect }
+      ]
+    })
+
+    const { host, toolbar } = createToolbar([item])
+    const parent = host.querySelector<HTMLButtonElement>(
+      '[data-toolbar-item-id="layout"]'
+    )
+    expect(parent?.classList.contains('has-children')).toBe(true)
+    parent?.click()
+
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).toBeNull()
+    const menu = document.querySelector('.ml-ex-ui-dropdown')
+    expect(menu).toBeTruthy()
+    expect(menu?.textContent).toContain('Model')
+    expect(menu?.textContent).toContain('Layout1')
+
+    menu
+      ?.querySelectorAll('button')[1]
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('.ml-ex-ui-dropdown')).toBeNull()
     toolbar.destroy()
   })
 })

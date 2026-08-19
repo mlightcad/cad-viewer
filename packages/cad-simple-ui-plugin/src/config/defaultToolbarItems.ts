@@ -47,6 +47,7 @@ import {
   ICON_ZOOM_EXTENT,
   ICON_ZOOM_WINDOW
 } from '../assets/icons'
+import { createLayoutToolbarItem } from './createLayoutToolbarItem'
 import type {
   AcExDefaultToolbarContext,
   AcExToolbarItem,
@@ -138,7 +139,7 @@ function createToolbarLocaleItem(
 }
 
 /**
- * Builds the built-in toolbar item list (view, measure, review, export, theme, locale).
+ * Builds the built-in toolbar item list (view, layout, measure, review, export, theme, locale).
  *
  * @param context - Optional callbacks for theme, locale, and placement items.
  * @returns Default {@link AcExToolbarItem} array.
@@ -183,6 +184,7 @@ export function createDefaultToolbarItems(
       icon: ICON_LAYER,
       command: 'layer'
     },
+    createLayoutToolbarItem(),
     {
       id: 'switch-bg',
       label: 'toolbar.switchBg',

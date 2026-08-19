@@ -39,6 +39,56 @@ export function isToolbarPresetRef(
 }
 
 /**
+ * Returns whether {@link children} is supplied by a getter rather than a static array.
+ *
+ * Dynamic children (for example drawing layouts) must not be snapshotted when
+ * cloning or expanding toolbar items.
+ *
+ * @param item - Toolbar item to inspect.
+ */
+export function isDynamicToolbarChildren(item: AcExToolbarItem): boolean {
+  return (
+    typeof Object.getOwnPropertyDescriptor(item, 'children')?.get === 'function'
+  )
+}
+
+/**
+ * Attaches a getter that rebuilds submenu children each time they are read.
+ *
+ * @param item - Parent toolbar item.
+ * @param getChildren - Factory invoked on each `children` access.
+ * @returns `item` with a live `children` getter.
+ */
+export function copyDynamicToolbarChildren(
+  item: AcExToolbarItem,
+  getChildren: () => AcExToolbarItem[]
+): AcExToolbarItem {
+  Object.defineProperty(item, 'children', {
+    configurable: true,
+    enumerable: true,
+    get: getChildren
+  })
+  return item
+}
+
+/**
+ * Copies a live `children` getter from `source` onto `target` when present.
+ *
+ * @param target - Clone that should keep dynamic children.
+ * @param source - Original item that may define a children getter.
+ * @returns Whether a getter was copied.
+ */
+export function preserveDynamicToolbarChildren(
+  target: AcExToolbarItem,
+  source: AcExToolbarItem
+): boolean {
+  const descriptor = Object.getOwnPropertyDescriptor(source, 'children')
+  if (typeof descriptor?.get !== 'function') return false
+  copyDynamicToolbarChildren(target, descriptor.get)
+  return true
+}
+
+/**
  * Creates a toolbar separator entry.
  *
  * @param id - Optional stable id for debugging.
@@ -78,7 +128,7 @@ export function indexToolbarItems(
   for (const item of items) {
     if (isToolbarSeparatorItem(item)) continue
     map.set(item.id, item)
-    if (item.children?.length) {
+    if (!isDynamicToolbarChildren(item) && item.children?.length) {
       indexToolbarItems(item.children, map)
     }
   }
@@ -123,6 +173,9 @@ function expandToolbarItemConfig(
   }
 
   const buttonItem = item as AcExToolbarItem
+  if (isDynamicToolbarChildren(buttonItem)) {
+    return cloneToolbarItem(buttonItem)
+  }
   if (buttonItem.children?.length) {
     return {
       ...buttonItem,
@@ -137,11 +190,15 @@ function expandToolbarItemConfig(
 }
 
 function cloneToolbarItem(item: AcExToolbarItem): AcExToolbarItem {
+  const clone: AcExToolbarItem = { ...item, children: item.children }
+  if (preserveDynamicToolbarChildren(clone, item)) {
+    return clone
+  }
   if (!item.children?.length) {
-    return { ...item }
+    return clone
   }
   return {
-    ...item,
+    ...clone,
     children: item.children.map(child => cloneToolbarItem(child))
   }
 }

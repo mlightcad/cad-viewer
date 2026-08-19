@@ -10,6 +10,7 @@ export const tr: Record<string, string> = {
   'toolbar.zoomExtent': 'Kapsama Yakınlaştır',
   'toolbar.zoomWindow': 'Pencere Yakınlaştır',
   'toolbar.layer': 'Katman Yöneticisi',
+  'toolbar.layout': 'Düzen',
   'toolbar.measure': 'Ölçüm',
   'toolbar.measureDistance': 'Mesafe Ölç',
   'toolbar.measureAngle': 'Açı Ölç',

@@ -227,6 +227,8 @@ export function ensureUiStyles() {
       position: fixed;
       z-index: 100;
       min-width: 160px;
+      max-height: min(360px, calc(100vh - 16px));
+      overflow-y: auto;
       padding: 4px;
       background: var(--ml-ui-bg, #ffffff);
       border: 1px solid var(--ml-ui-border, #dcdfe6);

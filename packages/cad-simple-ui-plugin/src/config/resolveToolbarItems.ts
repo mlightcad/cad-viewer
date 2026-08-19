@@ -4,6 +4,7 @@ import { createDefaultToolbarItems } from './defaultToolbarItems'
 import {
   expandToolbarItemConfigs,
   indexToolbarItems,
+  isDynamicToolbarChildren,
   isToolbarSeparatorItem
 } from './toolbarItemUtils'
 import type {
@@ -222,13 +223,20 @@ export function filterVisibleToolbarItems(
         isToolbarSeparatorItem(item) || isToolbarItemVisible(item, openMode)
     )
     .map(item => {
-      if (isToolbarSeparatorItem(item) || !item.children?.length) return item
+      if (
+        isToolbarSeparatorItem(item) ||
+        isDynamicToolbarChildren(item) ||
+        !item.children?.length
+      ) {
+        return item
+      }
       const children = filterVisibleToolbarItems(item.children, openMode)
       return { ...item, children }
     })
     .filter(item => {
       if (isToolbarSeparatorItem(item)) return true
       return (
+        isDynamicToolbarChildren(item) ||
         !item.children ||
         item.children.length > 0 ||
         item.command ||
