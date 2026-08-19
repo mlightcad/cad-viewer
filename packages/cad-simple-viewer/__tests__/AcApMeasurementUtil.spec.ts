@@ -1,6 +1,13 @@
-import { AcCmColor, type AcDbDatabase, AcGiLineWeight } from '@mlightcad/data-model'
+import {
+  AcCmColor,
+  AcCmColorMethod,
+  type AcDbDatabase,
+  AcGiLineWeight
+} from '@mlightcad/data-model'
 
 import {
+  acapCssColor,
+  acapCssToMeasurementColor,
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementFontSize,
   acapGetMeasurementLineWeight,
@@ -64,5 +71,32 @@ describe('AcApMeasurementUtil', () => {
     acapSetMeasurementDrawLineWeight(AcGiLineWeight.ByLayer)
     acapSetMeasurementDrawLineWeight(AcGiLineWeight.ByBlock)
     expect(acapGetMeasurementLineWeight()).toBe(AcGiLineWeight.LineWeight211)
+  })
+})
+
+describe('acapCssToMeasurementColor', () => {
+  it('restores ACI yellow after a CSS round-trip', () => {
+    const yellow = new AcCmColor(AcCmColorMethod.ByACI, 2)
+    const restored = acapCssToMeasurementColor(acapCssColor(yellow))
+    expect(restored.isByACI).toBe(true)
+    expect(restored.colorIndex).toBe(2)
+  })
+
+  it('maps CSS rgb/hex values that match the ACI palette back to ByACI', () => {
+    const rgb = acapCssToMeasurementColor('rgb(255,0,0)')
+    expect(rgb.isByACI).toBe(true)
+    expect(rgb.colorIndex).toBe(1)
+
+    const hex = acapCssToMeasurementColor('#00FF00')
+    expect(hex.isByACI).toBe(true)
+    expect(hex.colorIndex).toBe(3)
+  })
+
+  it('keeps true-color RGB that is not in the ACI palette', () => {
+    const custom = acapCssToMeasurementColor('rgb(12,34,56)')
+    expect(custom.isByColor).toBe(true)
+    expect(custom.red).toBe(12)
+    expect(custom.green).toBe(34)
+    expect(custom.blue).toBe(56)
   })
 })
