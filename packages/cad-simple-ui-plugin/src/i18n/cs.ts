@@ -10,6 +10,7 @@ export const cs: Record<string, string> = {
   'toolbar.zoomExtent': 'Přiblížit na rozsah',
   'toolbar.zoomWindow': 'Přiblížit oknem',
   'toolbar.layer': 'Správce hladin',
+  'toolbar.layout': 'Rozvržení',
   'toolbar.measure': 'Měření',
   'toolbar.measureDistance': 'Měřit vzdálenost',
   'toolbar.measureAngle': 'Měřit úhel',

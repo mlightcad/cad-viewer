@@ -73,7 +73,8 @@ export interface AcExToolbarItem {
   minOpenMode?: AcEdOpenMode
   /** Static or dynamic disabled state evaluated at render time. */
   disabled?: boolean | (() => boolean)
-  /** Nested submenu items shown when the button is clicked. */
+  /** Nested submenu items shown when the button is clicked.
+   * May be a live getter so the list can depend on the active document. */
   children?: AcExToolbarItem[]
   /**
    * Presentation of {@link children}. Defaults to `'menu'` (popover dropdown).

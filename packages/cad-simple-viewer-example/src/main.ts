@@ -840,7 +840,7 @@ class CadViewerApp {
           placement: 'right',
           items: 'default',
           appendItems: [AGENT_TOOLBAR_ITEM],
-          appendItemsAfter: 'layer',
+          appendItemsAfter: 'layout',
           collapsible: true
         }
       })

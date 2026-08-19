@@ -15,6 +15,14 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
   }
 }))
 
+jest.mock('@mlightcad/data-model', () => ({
+  acdbHostApplicationServices: () => ({
+    layoutManager: {
+      setCurrentLayoutBtrId: jest.fn()
+    }
+  })
+}))
+
 import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
 import { createDefaultToolbarItems } from '../src/config/defaultToolbarItems'
@@ -26,7 +34,10 @@ import {
   resolveSelectedChildItem,
   resolveToolbarItems
 } from '../src/config/resolveToolbarItems'
-import { createToolbarSeparator } from '../src/config/toolbarItemUtils'
+import {
+  createToolbarSeparator,
+  isDynamicToolbarChildren
+} from '../src/config/toolbarItemUtils'
 
 describe('resolveToolbarItems', () => {
   it('returns default items when items is default', () => {
@@ -102,6 +113,7 @@ describe('toolbar visibility', () => {
     const visible = filterVisibleToolbarItems(defaults, AcEdOpenMode.Read)
     expect(visible.some(item => item.id === 'annotation')).toBe(false)
     expect(visible.some(item => item.id === 'switch-bg')).toBe(true)
+    expect(visible.some(item => item.id === 'layout')).toBe(true)
     expect(visible.some(item => item.id === 'select')).toBe(true)
   })
 
@@ -181,10 +193,13 @@ describe('default toolbar items', () => {
     expect(items[themeIndex - 1]?.id).toBe('toolbar-placement')
   })
 
-  it('places switch background next to the layer manager', () => {
+  it('places the layout switcher between the layer manager and switch background', () => {
     const items = createDefaultToolbarItems()
     const layerIndex = items.findIndex(item => item.id === 'layer')
-    expect(items[layerIndex + 1]?.id).toBe('switch-bg')
+    expect(items[layerIndex + 1]?.id).toBe('layout')
+    expect(items[layerIndex + 1]?.childrenUi).toBe('menu')
+    expect(items[layerIndex + 1]?.icon).toContain('rect x="2" y="2" width="8.2"')
+    expect(items[layerIndex + 2]?.id).toBe('switch-bg')
   })
 
   it('includes a separator before settings buttons', () => {
@@ -285,6 +300,7 @@ describe('default toolbar items', () => {
       'sticky-toolbar'
     )
     expect(items.find(item => item.id === 'export')?.childrenUi).toBe('toolbar')
+    expect(items.find(item => item.id === 'layout')?.childrenUi).toBe('menu')
     expect(items.find(item => item.id === 'toolbar-placement')?.childrenUi).toBe(
       'toolbar'
     )
@@ -432,6 +448,16 @@ describe('toolbar presets and separators', () => {
       items.map(item => ('preset' in item ? item.preset : item.id))
     ).toEqual(['select', 'pan', 'sep-tools', 'measure'])
     expect(items[3].children?.length).toBeGreaterThan(0)
+  })
+
+  it('preserves live layout children when expanding the layout preset', () => {
+    const items = resolveToolbarItems({
+      items: [{ preset: 'layout' }]
+    })
+    expect(items).toHaveLength(1)
+    expect(items[0].id).toBe('layout')
+    expect(isDynamicToolbarChildren(items[0])).toBe(true)
+    expect(items[0].childrenUi).toBe('menu')
   })
 
   it('keeps separators when filtering by open mode', () => {

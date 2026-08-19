@@ -10,6 +10,7 @@ export const en: Record<string, string> = {
   'toolbar.zoomExtent': 'Zoom Extents',
   'toolbar.zoomWindow': 'Zoom Window',
   'toolbar.layer': 'Layer Manager',
+  'toolbar.layout': 'Layout',
   'toolbar.measure': 'Measure',
   'toolbar.measureDistance': 'Measure Distance',
   'toolbar.measureAngle': 'Measure Angle',

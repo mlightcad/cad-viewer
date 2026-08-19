@@ -10,6 +10,7 @@ export const zh: Record<string, string> = {
   'toolbar.zoomExtent': '缩放至范围',
   'toolbar.zoomWindow': '窗口缩放',
   'toolbar.layer': '图层管理器',
+  'toolbar.layout': '布局',
   'toolbar.measure': '测量',
   'toolbar.measureDistance': '测量距离',
   'toolbar.measureAngle': '测量角度',

@@ -15,6 +15,7 @@ import {
   resolveParentToolbarDisplay
 } from '../config/resolveToolbarItems'
 import {
+  isDynamicToolbarChildren,
   isToolbarChildrenStrip,
   isToolbarSeparatorItem,
   resolveToolbarChildrenUi
@@ -404,7 +405,7 @@ export class AcExToolbar {
       button.setAttribute('aria-label', button.title)
       button.dataset.toolbarItemId = effective.id
 
-      if (effective.children?.length) {
+      if (effective.children?.length || isDynamicToolbarChildren(item)) {
         button.classList.add('has-children')
         button.setAttribute('aria-haspopup', 'true')
         button.setAttribute('aria-expanded', 'false')
@@ -430,9 +431,9 @@ export class AcExToolbar {
         event.stopPropagation()
         if (button.disabled) return
 
-        if (effective.children?.length) {
+        if (effective.children?.length || isDynamicToolbarChildren(item)) {
           const visibleChildren = filterVisibleToolbarItems(
-            effective.children,
+            effective.children ?? [],
             this.openMode
           ).map(resolveEffectiveToolbarItem)
           if (visibleChildren.length === 0) return
