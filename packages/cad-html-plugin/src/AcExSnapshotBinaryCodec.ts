@@ -14,6 +14,7 @@ const F_LINE_INDICES = 1
 const F_LINE_PATTERN = 2
 const F_LINE_DISTANCES = 4
 const F_LINE_WIDTH = 8
+const F_LINE_RENDER_ORDER = 16
 
 const F_MESH_INDICES = 1
 const F_MESH_HATCH = 2
@@ -21,6 +22,7 @@ const F_MESH_GRADIENT_FILL = 4
 const F_MESH_GRADIENT_POS = 8
 const F_MESH_SIDE = 16
 const F_MESH_POINTS = 32
+const F_MESH_RENDER_ORDER = 64
 
 /**
  * Serializes a snapshot to a compact binary byte array.
@@ -132,7 +134,15 @@ function readLayout(reader: BinaryReader): AcExLayoutSnapshot {
     meshBatches.push(readMeshBatch(reader))
   }
 
-  return { btrId, name, isModelSpace, lineBatches, meshBatches, osnap, viewports }
+  return {
+    btrId,
+    name,
+    isModelSpace,
+    lineBatches,
+    meshBatches,
+    osnap,
+    viewports
+  }
 }
 
 function writeLineBatch(writer: BinaryWriter, batch: AcExLineBatch): void {
@@ -152,6 +162,9 @@ function writeLineBatch(writer: BinaryWriter, batch: AcExLineBatch): void {
   if (batch.lineWidth != null && batch.lineWidth > 0) {
     flags |= F_LINE_WIDTH
   }
+  if (batch.renderOrder != null && batch.renderOrder !== 0) {
+    flags |= F_LINE_RENDER_ORDER
+  }
   writer.writeU8(flags)
 
   if (flags & F_LINE_INDICES) {
@@ -165,6 +178,9 @@ function writeLineBatch(writer: BinaryWriter, batch: AcExLineBatch): void {
   }
   if (flags & F_LINE_WIDTH) {
     writer.writeF32(batch.lineWidth!)
+  }
+  if (flags & F_LINE_RENDER_ORDER) {
+    writer.writeI32(batch.renderOrder!)
   }
 }
 
@@ -193,6 +209,9 @@ function readLineBatch(reader: BinaryReader): AcExLineBatch {
   if (flags & F_LINE_WIDTH) {
     batch.lineWidth = reader.readF32()
   }
+  if (flags & F_LINE_RENDER_ORDER) {
+    batch.renderOrder = reader.readI32()
+  }
   return batch
 }
 
@@ -213,6 +232,9 @@ function writeMeshBatch(writer: BinaryWriter, batch: AcExMeshBatch): void {
   }
   if (batch.side != null) flags |= F_MESH_SIDE
   if (batch.points) flags |= F_MESH_POINTS
+  if (batch.renderOrder != null && batch.renderOrder !== 0) {
+    flags |= F_MESH_RENDER_ORDER
+  }
   writer.writeU8(flags)
 
   if (flags & F_MESH_INDICES) {
@@ -229,6 +251,9 @@ function writeMeshBatch(writer: BinaryWriter, batch: AcExMeshBatch): void {
   }
   if (flags & F_MESH_SIDE) {
     writer.writeU8(batch.side!)
+  }
+  if (flags & F_MESH_RENDER_ORDER) {
+    writer.writeI32(batch.renderOrder!)
   }
 }
 
@@ -264,6 +289,9 @@ function readMeshBatch(reader: BinaryReader): AcExMeshBatch {
   if (flags & F_MESH_POINTS) {
     batch.points = true
   }
+  if (flags & F_MESH_RENDER_ORDER) {
+    batch.renderOrder = reader.readI32()
+  }
   return batch
 }
 
@@ -281,6 +309,13 @@ class BinaryWriter {
   writeU32(value: number): void {
     const chunk = new Uint8Array(4)
     new DataView(chunk.buffer).setUint32(0, value >>> 0, true)
+    this.chunks.push(chunk)
+    this.length += 4
+  }
+
+  writeI32(value: number): void {
+    const chunk = new Uint8Array(4)
+    new DataView(chunk.buffer).setInt32(0, value | 0, true)
     this.chunks.push(chunk)
     this.length += 4
   }
@@ -374,6 +409,17 @@ class BinaryReader {
       4
     )
     const value = view.getUint32(0, true)
+    this.offset += 4
+    return value
+  }
+
+  readI32(): number {
+    const view = new DataView(
+      this.bytes.buffer,
+      this.bytes.byteOffset + this.offset,
+      4
+    )
+    const value = view.getInt32(0, true)
     this.offset += 4
     return value
   }
