@@ -86,6 +86,7 @@ export class AcEdGripEditSession {
   private finish() {
     this._jig.end()
     this._osnapMarkerManager.clear()
+    this._view.osnapResolver.clearAcquiredCenters()
     document.removeEventListener('mousemove', this._boundMouseMove)
     document.removeEventListener('mouseup', this._boundMouseUp)
     document.removeEventListener('keydown', this._boundKeyDown)
@@ -105,6 +106,12 @@ export class AcEdGripEditSession {
       cursorWcs,
       lastPoint: this._target.gripBaseWcs
     })
+    this._osnapMarkerManager.setHintMarkers(
+      AcEdOsnapResolver.displayCenterMarks(
+        this._view.osnapResolver.acquiredCenterMarks,
+        snapPoint
+      )
+    )
 
     if (snapPoint) {
       this._osnapMarkerManager.showMarker(

@@ -253,6 +253,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.inputs?.dispose()
     this.rubberBand?.dispose()
     this.osnapMarkerManager?.clear()
+    this.view.osnapResolver.clearAcquiredCenters()
   }
 
   /**
@@ -278,6 +279,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (this.osnapMarkerManager && this.lastOsnapPoint) {
       this.osnapMarkerManager.repositionTop(this.lastOsnapPoint)
     }
+    this.osnapMarkerManager?.repositionHints()
 
     if (!this.suppressDisplay && this.view.curMousePos) {
       this.setPosition(this.view.canvasToViewport(this.view.curMousePos))
@@ -360,6 +362,12 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
           ? { x: this.lastPoint.x, y: this.lastPoint.y, z: 0 }
           : undefined
       })
+      this.osnapMarkerManager.setHintMarkers(
+        AcEdOsnapResolver.displayCenterMarks(
+          this.view.osnapResolver.acquiredCenterMarks,
+          this.lastOsnapPoint
+        )
+      )
 
       if (this.lastOsnapPoint) {
         wcsPos.x = this.lastOsnapPoint.x

@@ -9,6 +9,7 @@ export type AcEdMarkerType =
   | 'rect'
   | 'diamond'
   | 'x'
+  | 'plus'
   | 'intersection'
 
 /**
@@ -169,6 +170,28 @@ export class AcEdMarker {
         transform: translate(-50%, -50%) rotate(-45deg);
       }
 
+      .ml-marker-plus::before,
+      .ml-marker-plus::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        background: currentColor;
+        transform-origin: center;
+      }
+
+      .ml-marker-plus::before {
+        width: 100%;
+        height: 2px;
+        transform: translate(-50%, -50%);
+      }
+
+      .ml-marker-plus::after {
+        width: 2px;
+        height: 100%;
+        transform: translate(-50%, -50%);
+      }
+
       .ml-marker-intersection {
         border: 2px solid currentColor;
         background: transparent;
@@ -237,6 +260,12 @@ export class AcEdMarker {
 
       case 'x':
         this._el.classList.add('ml-marker-x')
+        this._el.style.width = `${this._size}px`
+        this._el.style.height = `${this._size}px`
+        break
+
+      case 'plus':
+        this._el.classList.add('ml-marker-plus')
         this._el.style.width = `${this._size}px`
         this._el.style.height = `${this._size}px`
         break
