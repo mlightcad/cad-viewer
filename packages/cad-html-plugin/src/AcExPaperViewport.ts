@@ -35,10 +35,22 @@ export function viewportIsNearPaperBorder(
 }
 
 /**
- * Paper-space WCS → model-space WCS through a viewport (affine, no twist).
+ * View twist in radians, or `0` when omitted / non-finite.
+ */
+export function viewportTwist(viewport: AcExViewportSnapshot): number {
+  const twist = viewport.twist
+  return typeof twist === 'number' && Number.isFinite(twist) ? twist : 0
+}
+
+/**
+ * Paper-space WCS → model-space WCS through a viewport.
  *
- * Inverse of {@link modelPointToPaper}. Degenerate paper boxes return the
- * model view center.
+ * Maps the paper rectangle onto the DCS view (`model` size around its
+ * center), then rotates by {@link AcExViewportSnapshot.twist} so a
+ * non-zero DVIEW twist matches `AcGiViewport.dcsCenterToWcs`. Degenerate
+ * paper boxes return the model view center.
+ *
+ * Inverse of {@link modelPointToPaper}.
  */
 export function paperPointToModel(
   viewport: AcExViewportSnapshot,
@@ -49,22 +61,18 @@ export function paperPointToModel(
   const model = viewport.model
   const paperW = paper.maxX - paper.minX
   const paperH = paper.maxY - paper.minY
+  const centerX = (model.minX + model.maxX) / 2
+  const centerY = (model.minY + model.maxY) / 2
   if (paperW <= EPS || paperH <= EPS) {
-    return {
-      x: (model.minX + model.maxX) / 2,
-      y: (model.minY + model.maxY) / 2
-    }
+    return { x: centerX, y: centerY }
   }
-  const u = (x - paper.minX) / paperW
-  const v = (y - paper.minY) / paperH
-  return {
-    x: model.minX + u * (model.maxX - model.minX),
-    y: model.minY + v * (model.maxY - model.minY)
-  }
+  const localX = ((x - paper.minX) / paperW - 0.5) * (model.maxX - model.minX)
+  const localY = ((y - paper.minY) / paperH - 0.5) * (model.maxY - model.minY)
+  return rotateOffset(centerX, centerY, localX, localY, viewportTwist(viewport))
 }
 
 /**
- * Model-space WCS → paper-space WCS through a viewport (affine, no twist).
+ * Model-space WCS → paper-space WCS through a viewport.
  *
  * Inverse of {@link paperPointToModel}. Degenerate model boxes return the
  * paper rectangle center.
@@ -84,11 +92,52 @@ export function modelPointToPaper(
       y: (paper.minY + paper.maxY) / 2
     }
   }
-  const u = (x - model.minX) / modelW
-  const v = (y - model.minY) / modelH
+  const centerX = (model.minX + model.maxX) / 2
+  const centerY = (model.minY + model.maxY) / 2
+  const local = unrotateOffset(
+    x - centerX,
+    y - centerY,
+    viewportTwist(viewport)
+  )
+  const u = local.x / modelW + 0.5
+  const v = local.y / modelH + 0.5
   return {
     x: paper.minX + u * (paper.maxX - paper.minX),
     y: paper.minY + v * (paper.maxY - paper.minY)
+  }
+}
+
+function rotateOffset(
+  centerX: number,
+  centerY: number,
+  localX: number,
+  localY: number,
+  twist: number
+): { x: number; y: number } {
+  if (Math.abs(twist) <= EPS) {
+    return { x: centerX + localX, y: centerY + localY }
+  }
+  const cos = Math.cos(twist)
+  const sin = Math.sin(twist)
+  return {
+    x: centerX + localX * cos - localY * sin,
+    y: centerY + localX * sin + localY * cos
+  }
+}
+
+function unrotateOffset(
+  dx: number,
+  dy: number,
+  twist: number
+): { x: number; y: number } {
+  if (Math.abs(twist) <= EPS) {
+    return { x: dx, y: dy }
+  }
+  const cos = Math.cos(twist)
+  const sin = Math.sin(twist)
+  return {
+    x: dx * cos + dy * sin,
+    y: -dx * sin + dy * cos
   }
 }
 

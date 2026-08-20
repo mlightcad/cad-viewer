@@ -1,4 +1,61 @@
+import { AcGePoint3d, AcGiViewport } from '@mlightcad/data-model'
+
+import { AcTrRenderer } from '../src/renderer'
+import { AcTrBaseView } from '../src/viewport/AcTrBaseView'
 import { AcTrViewportView } from '../src/viewport/AcTrViewportView'
+
+function createMockRenderer(): AcTrRenderer {
+  return {
+    domElement: {} as HTMLCanvasElement,
+    render: jest.fn()
+  } as unknown as AcTrRenderer
+}
+
+function createViewport(twist: number): AcGiViewport {
+  const gi = new AcGiViewport()
+  gi.centerPoint = new AcGePoint3d(5, 5, 0)
+  gi.width = 10
+  gi.height = 10
+  gi.viewCenter = new AcGePoint3d(0, 0, 0)
+  gi.viewTarget = new AcGePoint3d(150, 300, 0)
+  gi.viewHeight = 200
+  gi.viewTwistAngle = twist
+  return gi
+}
+
+describe('AcTrViewportView twist', () => {
+  it('maps paper points through viewTwistAngle and orients the camera', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    const view = new AcTrViewportView(
+      parent,
+      createViewport(Math.PI / 2),
+      createMockRenderer()
+    )
+
+    const center = view.paperPointToModel({ x: 5, y: 5 })
+    expect(center.x).toBeCloseTo(150)
+    expect(center.y).toBeCloseTo(300)
+
+    const right = view.paperPointToModel({ x: 10, y: 5 })
+    expect(right.x).toBeCloseTo(150)
+    expect(right.y).toBeCloseTo(400)
+
+    expect(view.internalCamera.rotation.z).toBeCloseTo(Math.PI / 2)
+  })
+
+  it('keeps axis-aligned mapping when twist is zero', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    const view = new AcTrViewportView(
+      parent,
+      createViewport(0),
+      createMockRenderer()
+    )
+    const corner = view.paperPointToModel({ x: 0, y: 0 })
+    expect(corner.x).toBeCloseTo(50)
+    expect(corner.y).toBeCloseTo(200)
+    expect(view.internalCamera.rotation.z).toBeCloseTo(0)
+  })
+})
 
 describe('AcTrViewportView.isDefaultPaperSpaceViewport', () => {
   it('detects the classic looks-at-itself default', () => {

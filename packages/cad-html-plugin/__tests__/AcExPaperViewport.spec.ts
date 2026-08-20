@@ -30,6 +30,20 @@ describe('AcExPaperViewport', () => {
     expect(paperPointToModel(viewport, 10, 10)).toEqual({ x: 200, y: 400 })
   })
 
+  it('rotates paper-to-model mapping by view twist', () => {
+    const twisted: AcExViewportSnapshot = {
+      ...viewport,
+      twist: Math.PI / 2
+    }
+    expect(paperPointToModel(twisted, 5, 5)).toEqual({ x: 150, y: 300 })
+    const model = paperPointToModel(twisted, 10, 5)
+    expect(model.x).toBeCloseTo(150)
+    expect(model.y).toBeCloseTo(350)
+    const paper = modelPointToPaper(twisted, model.x, model.y)
+    expect(paper.x).toBeCloseTo(10)
+    expect(paper.y).toBeCloseTo(5)
+  })
+
   it('computes paper-to-model scale from width', () => {
     expect(viewportPaperToModelScale(viewport)).toBe(10)
   })

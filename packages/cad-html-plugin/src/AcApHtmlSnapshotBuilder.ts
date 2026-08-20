@@ -1,7 +1,7 @@
 import { AcApI18n, type AcTrScene } from '@mlightcad/cad-simple-viewer'
 import { accmYieldForPaint, type AcDbDatabase } from '@mlightcad/data-model'
 
-import { computeLayoutExtents } from './AcExLayerExtents'
+import { computeLayoutViewExtents } from './AcExLayerExtents'
 import { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
 import { collectLayoutViewports } from './AcExPaperViewportCollector'
 import { collectBatchesFromObject3D } from './AcExSceneBatchCollector'
@@ -242,7 +242,7 @@ function buildSnapshotMeta(
   const activeLayout =
     layouts.find(layout => layout.btrId === activeLayoutBtrId) ?? layouts[0]
   const viewExtents = activeLayout
-    ? computeLayoutExtents(activeLayout.lineBatches, activeLayout.meshBatches)
+    ? computeLayoutViewExtents(activeLayout)
     : null
   const initialView = options.initialView ?? 'fit'
 

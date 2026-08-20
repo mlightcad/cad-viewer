@@ -40,7 +40,14 @@ export function collectLayoutViewports(
     const paper = extentsFromBox2d(paperBox)
     const model = extentsFromBox2d(modelBox)
     if (!paper || !model) continue
-    viewports.push({ paper, model })
+    const twist = Number.isFinite(gi.viewTwistAngle)
+      ? gi.viewTwistAngle
+      : entity.viewTwistAngle
+    viewports.push(
+      Number.isFinite(twist) && Math.abs(twist) > 1e-12
+        ? { paper, model, twist }
+        : { paper, model }
+    )
   }
 
   return viewports.length > 0 ? viewports : undefined

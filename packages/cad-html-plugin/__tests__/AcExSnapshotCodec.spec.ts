@@ -241,7 +241,8 @@ describe('AcExSnapshotCodec', () => {
           viewports: [
             {
               paper: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
-              model: { minX: 100, minY: 200, maxX: 400, maxY: 500 }
+              model: { minX: 100, minY: 200, maxX: 400, maxY: 500 },
+              twist: Math.PI / 4
             }
           ]
         }
@@ -250,11 +251,18 @@ describe('AcExSnapshotCodec', () => {
     }
 
     const decoded = decodeSnapshot(encodeSnapshot(snapshot).payload)
-    expect(decoded.layouts[0]!.viewports).toEqual([
-      {
-        paper: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
-        model: { minX: 100, minY: 200, maxX: 400, maxY: 500 }
-      }
-    ])
+    expect(decoded.layouts[0]!.viewports?.[0]?.paper).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 12,
+      maxY: 9
+    })
+    expect(decoded.layouts[0]!.viewports?.[0]?.model).toEqual({
+      minX: 100,
+      minY: 200,
+      maxX: 400,
+      maxY: 500
+    })
+    expect(decoded.layouts[0]!.viewports?.[0]?.twist).toBeCloseTo(Math.PI / 4)
   })
 })

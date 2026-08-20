@@ -31,6 +31,7 @@ describe('collectLayoutViewports', () => {
     userVp.viewCenter = new AcGePoint3d(0, 0, 0)
     userVp.viewHeight = 800
     userVp.viewTarget = new AcGePoint3d(50, 40, 0)
+    userVp.viewTwistAngle = Math.PI / 6
     paper.appendEntity(userVp)
 
     expect(
@@ -45,6 +46,7 @@ describe('collectLayoutViewports', () => {
       maxX: 200,
       maxY: 160
     })
+    expect(viewports![0]!.twist).toBeCloseTo(Math.PI / 6)
     expect(viewports![0]!.model.minX).toBeLessThan(viewports![0]!.model.maxX)
     expect(viewports![0]!.model.minY).toBeLessThan(viewports![0]!.model.maxY)
   })

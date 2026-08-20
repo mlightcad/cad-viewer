@@ -531,7 +531,9 @@ function startViewer(): void {
         ACEX_CAMERA_DISTANCE
       )
       viewportCamera.lookAt(fitted.centerX, fitted.centerY, 0)
-      viewportCamera.setRotationFromEuler(new THREE.Euler(0, 0, 0))
+      const twist = viewport.twist ?? 0
+      viewportCamera.up.set(-Math.sin(twist), Math.cos(twist), 0)
+      viewportCamera.setRotationFromEuler(new THREE.Euler(0, 0, twist))
       viewportCamera.zoom = fitted.zoom
       viewportCamera.updateProjectionMatrix()
       acexCameraZoomUniform.value = fitted.zoom

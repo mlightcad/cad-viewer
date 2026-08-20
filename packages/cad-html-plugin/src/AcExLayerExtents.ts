@@ -119,17 +119,63 @@ export function computeLayoutExtents(
 }
 
 /**
+ * Unions two XY extents, ignoring `null` operands.
+ */
+export function unionExtents(
+  a: AcExExtents | null | undefined,
+  b: AcExExtents | null | undefined
+): AcExExtents | null {
+  if (!a) return b ?? null
+  if (!b) return a
+  return {
+    minX: Math.min(a.minX, b.minX),
+    minY: Math.min(a.minY, b.minY),
+    maxX: Math.max(a.maxX, b.maxX),
+    maxY: Math.max(a.maxY, b.maxY)
+  }
+}
+
+/**
+ * Unions paper-space rectangles of exported viewports. Used so an otherwise
+ * empty paper layout still frames its viewport frames instead of `0,0–1,1`.
+ */
+export function computeViewportPaperExtents(
+  viewports: ReadonlyArray<{ paper: AcExExtents }> | undefined
+): AcExExtents | null {
+  if (!viewports || viewports.length === 0) return null
+  let result: AcExExtents | null = null
+  for (const viewport of viewports) {
+    result = unionExtents(result, viewport.paper)
+  }
+  return result
+}
+
+/**
+ * Unions batch geometry with viewport paper frames for one layout.
+ *
+ * Returns `null` when the layout has neither drawable batches nor viewports.
+ */
+export function computeLayoutViewExtents(
+  layout: Pick<AcExLayoutSnapshot, 'lineBatches' | 'meshBatches' | 'viewports'>
+): AcExExtents | null {
+  return unionExtents(
+    computeLayoutExtents(layout.lineBatches, layout.meshBatches),
+    computeViewportPaperExtents(layout.viewports)
+  )
+}
+
+/**
  * Resolves zoom-to-fit extents for one layout snapshot.
  *
- * Prefers live batch geometry, then persisted {@link AcExSnapshot.meta.viewExtents},
- * and only then the database header extents as a last resort.
+ * Prefers live batch geometry unioned with viewport paper frames, then
+ * persisted {@link AcExSnapshot.meta.viewExtents}, and only then a unit box.
  */
 export function resolveLayoutViewExtents(
-  layout: Pick<AcExLayoutSnapshot, 'lineBatches' | 'meshBatches'>,
+  layout: Pick<AcExLayoutSnapshot, 'lineBatches' | 'meshBatches' | 'viewports'>,
   fallbackExtents?: AcExExtents
 ): AcExExtents {
   return (
-    computeLayoutExtents(layout.lineBatches, layout.meshBatches) ??
+    computeLayoutViewExtents(layout) ??
     fallbackExtents ?? {
       minX: 0,
       minY: 0,

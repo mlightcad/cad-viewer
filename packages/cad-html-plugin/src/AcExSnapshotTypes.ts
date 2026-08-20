@@ -208,6 +208,12 @@ export interface AcExViewportSnapshot {
   paper: AcExExtents
   /** Model-space rectangle shown through the viewport (`AcGiViewport.viewBox`). */
   model: AcExExtents
+  /**
+   * View twist in radians (`AcGiViewport.viewTwistAngle`, DXF group 51).
+   * Omitted when zero. Paper↔model mapping and the scissor camera rotate by
+   * this angle around the model view center.
+   */
+  twist?: number
 }
 
 /**
