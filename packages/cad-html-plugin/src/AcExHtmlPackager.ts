@@ -39,6 +39,7 @@ export function packHtml(
   const loadingBg = `#${snapshot.meta.background.toString(16).padStart(6, '0')}`
   const htmlLang = resolveAcExHtmlLocale(snapshot.meta.locale) ?? 'en'
   const viewerMode = snapshot.meta.viewerMode ?? 'measure'
+  const exportLayouts = snapshot.meta.exportLayouts !== false
 
   return `<!DOCTYPE html>
 <html lang="${htmlLang}">
@@ -50,7 +51,7 @@ export function packHtml(
   <style>${ACEX_HTML_SHELL_CSS}</style>
 </head>
 <body>
-${buildAcExHtmlShellBody(loadingBg, viewerMode)}
+${buildAcExHtmlShellBody(loadingBg, viewerMode, exportLayouts)}
   <script id="mlcad-snapshot" type="${mime}+${compression};base64">${encoded.payload}</script>
   <script>${escapeInlineScript(runtime)}</script>
 </body>

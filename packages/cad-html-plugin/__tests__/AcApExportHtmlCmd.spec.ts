@@ -32,15 +32,10 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
       t: (key: string) => {
         const globals: Record<string, string> = {
           'jig.chtml.keywords.yes.global': 'Yes',
-
           'jig.chtml.keywords.no.global': 'No',
-
           'jig.chtml.keywords.extents.global': 'Extents',
-
           'jig.chtml.keywords.current.global': 'Current',
-
           'jig.chtml.keywords.view.global': 'View',
-
           'jig.chtml.keywords.measure.global': 'Measure'
         }
 
@@ -54,11 +49,8 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
 
     AcEdPromptStatus: {
       Cancel: -5002,
-
       None: 0x1388,
-
       OK: 0x13ec,
-
       Keyword: -5005
     }
   }
@@ -71,11 +63,9 @@ jest.mock('../src/AcApHtmlConvertor', () => ({
 }))
 
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
-
 import { AcEdPromptStatus } from '@mlightcad/cad-simple-viewer'
 
 import { AcApExportHtmlCmd } from '../src/AcApExportHtmlCmd'
-
 import { AcApHtmlConvertor } from '../src/AcApHtmlConvertor'
 
 const getKeywords = AcApDocManager.instance.editor.getKeywords as jest.Mock
@@ -84,12 +74,15 @@ const convert = () =>
   (AcApHtmlConvertor as jest.MockedClass<typeof AcApHtmlConvertor>).mock
     .results[0]?.value.convert as jest.Mock
 
+function none() {
+  return { status: AcEdPromptStatus.None }
+}
+
 describe('AcApExportHtmlCmd prompt defaults', () => {
   const cmd = new AcApExportHtmlCmd()
 
   const context = {
     doc: { fileName: 'drawing.dwg', docTitle: 'Drawing' },
-
     view: {}
   } as any
 
@@ -99,56 +92,47 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
 
   test('accepts empty Enter (None) for all prompts and exports with defaults', async () => {
     getKeywords
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
 
     await cmd.execute(context)
 
-    expect(getKeywords).toHaveBeenCalledTimes(3)
-
+    expect(getKeywords).toHaveBeenCalledTimes(4)
     expect(getKeywords.mock.calls[0][0].allowNone).toBe(true)
-
     expect(getKeywords.mock.calls[1][0].allowNone).toBe(true)
-
     expect(getKeywords.mock.calls[2][0].allowNone).toBe(true)
+    expect(getKeywords.mock.calls[3][0].allowNone).toBe(true)
 
     expect(convert()).toHaveBeenCalledWith(
       'drawing.dwg',
-
       {
         exportInvisibleLayers: true,
-
+        exportLayouts: true,
         initialView: 'fit',
-
         viewerMode: 'measure'
       },
-
       context.view
     )
   })
 
   test('accepts default keyword (OK) for all prompts and exports', async () => {
     getKeywords
-
       .mockResolvedValueOnce({
         status: AcEdPromptStatus.OK,
-
         stringResult: 'Yes'
       })
-
       .mockResolvedValueOnce({
         status: AcEdPromptStatus.OK,
-
+        stringResult: 'Yes'
+      })
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
         stringResult: 'Extents'
       })
-
       .mockResolvedValueOnce({
         status: AcEdPromptStatus.OK,
-
         stringResult: 'Measure'
       })
 
@@ -156,29 +140,23 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
 
     expect(convert()).toHaveBeenCalledWith(
       'drawing.dwg',
-
       {
         exportInvisibleLayers: true,
-
+        exportLayouts: true,
         initialView: 'fit',
-
         viewerMode: 'measure'
       },
-
       context.view
     )
   })
 
   test('exports with view-only viewer mode when View keyword is selected', async () => {
     getKeywords
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
-
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
       .mockResolvedValueOnce({
         status: AcEdPromptStatus.OK,
-
         stringResult: 'View'
       })
 
@@ -186,15 +164,36 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
 
     expect(convert()).toHaveBeenCalledWith(
       'drawing.dwg',
-
       {
         exportInvisibleLayers: true,
-
+        exportLayouts: true,
         initialView: 'fit',
-
         viewerMode: 'view'
       },
+      context.view
+    )
+  })
 
+  test('exports without layouts when No is selected for the layouts prompt', async () => {
+    getKeywords
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
+        stringResult: 'No'
+      })
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+
+    await cmd.execute(context)
+
+    expect(convert()).toHaveBeenCalledWith(
+      'drawing.dwg',
+      {
+        exportInvisibleLayers: true,
+        exportLayouts: false,
+        initialView: 'fit',
+        viewerMode: 'measure'
+      },
       context.view
     )
   })
@@ -205,65 +204,56 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
     await cmd.execute(context)
 
     expect(getKeywords).toHaveBeenCalledTimes(1)
-
     expect(AcApHtmlConvertor).not.toHaveBeenCalled()
   })
 
-  test('cancels export when the second prompt is cancelled', async () => {
+  test('cancels export when the layouts prompt is cancelled', async () => {
     getKeywords
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
-
+      .mockResolvedValueOnce(none())
       .mockResolvedValueOnce({ status: AcEdPromptStatus.Cancel })
 
     await cmd.execute(context)
 
     expect(getKeywords).toHaveBeenCalledTimes(2)
-
     expect(AcApHtmlConvertor).not.toHaveBeenCalled()
   })
 
   test('cancels export when the viewer mode prompt is cancelled', async () => {
     getKeywords
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
-
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
       .mockResolvedValueOnce({ status: AcEdPromptStatus.Cancel })
 
     await cmd.execute(context)
 
-    expect(getKeywords).toHaveBeenCalledTimes(3)
-
+    expect(getKeywords).toHaveBeenCalledTimes(4)
     expect(AcApHtmlConvertor).not.toHaveBeenCalled()
   })
 
   test('registers default keywords on prompt options', async () => {
     getKeywords
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
-
-      .mockResolvedValueOnce({ status: AcEdPromptStatus.None })
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
 
     await cmd.execute(context)
 
     const invisibleLayersPrompt = getKeywords.mock.calls[0][0]
-
-    const initialViewPrompt = getKeywords.mock.calls[1][0]
-
-    const viewerModePrompt = getKeywords.mock.calls[2][0]
+    const layoutsPrompt = getKeywords.mock.calls[1][0]
+    const initialViewPrompt = getKeywords.mock.calls[2][0]
+    const viewerModePrompt = getKeywords.mock.calls[3][0]
 
     expect(invisibleLayersPrompt.keywords.default).toEqual(
       expect.objectContaining({ global: 'Yes' })
     )
-
+    expect(layoutsPrompt.keywords.default).toEqual(
+      expect.objectContaining({ global: 'Yes' })
+    )
     expect(initialViewPrompt.keywords.default).toEqual(
       expect.objectContaining({ global: 'Extents' })
     )
-
     expect(viewerModePrompt.keywords.default).toEqual(
       expect.objectContaining({ global: 'Measure' })
     )

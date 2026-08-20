@@ -618,11 +618,13 @@ export const ACEX_HTML_SHELL_CSS = `
  *
  * @param loadingBg - CSS color for the initial loading screen (matches drawing background).
  * @param viewerMode - `'view'` shows pan/zoom/layers only; `'measure'` adds measurement and markup tools.
+ * @param exportLayouts - When `false`, the layout switcher is omitted from the toolbar.
  * @returns HTML fragment inserted inside `<body>`.
  */
 export function buildAcExHtmlShellBody(
   loadingBg: string,
-  viewerMode: AcExViewerMode = 'measure'
+  viewerMode: AcExViewerMode = 'measure',
+  exportLayouts = true
 ): string {
   const measureToolbar =
     viewerMode === 'measure' ? buildAcExMeasureMenuButton() : ''
@@ -668,7 +670,7 @@ export function buildAcExHtmlShellBody(
           'data-i18n-key': 'toolbar.layers',
           'data-i18n-attr': 'title aria-label'
         })}
-        ${buildAcExLayoutMenuButton()}
+        ${exportLayouts ? buildAcExLayoutMenuButton() : ''}
         ${snapToolbar}
         ${languageToolbar}
         ${acExToolbarButton(acExHtmlIcons.chevronUp, 'Collapse toolbar', {

@@ -321,6 +321,13 @@ export interface AcExSnapshot {
      * snapshots produced before this option existed.
      */
     viewerMode?: AcExViewerMode
+    /**
+     * When `false`, paper-space layouts were not exported. The offline viewer
+     * hides the layout switcher and may release CPU geometry after the first
+     * draw. Defaults to `true` when omitted for snapshots produced before this
+     * option existed.
+     */
+    exportLayouts?: boolean
   }
   /** Layer table used by the layer drawer (visibility toggles, swatches). */
   layers: AcExLayerSnapshot[]

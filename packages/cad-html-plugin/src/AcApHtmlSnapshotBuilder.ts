@@ -43,6 +43,11 @@ export interface AcApHtmlSnapshotBuilderOptions {
    */
   exportInvisibleLayers?: boolean
   /**
+   * When `false`, only model space is written into the snapshot. Defaults to
+   * `true`.
+   */
+  exportLayouts?: boolean
+  /**
    * Initial framing when the exported HTML is opened. Defaults to `'fit'`.
    */
   initialView?: AcExInitialViewMode
@@ -102,6 +107,7 @@ export class AcApHtmlSnapshotBuilder {
     await accmYieldForPaint()
 
     const exportInvisibleLayers = options.exportInvisibleLayers !== false
+    const exportLayouts = options.exportLayouts !== false
     const includeLayer = exportInvisibleLayers
       ? undefined
       : (layerName: string) =>
@@ -127,8 +133,16 @@ export class AcApHtmlSnapshotBuilder {
     const layoutNames = new Map(
       tableLayouts.map(layout => [layout.blockTableRecordId, layout.name])
     )
+    const activeLayoutBtrId = resolveExportActiveLayoutBtrId(
+      scene,
+      exportLayouts
+    )
     const layouts: AcExLayoutSnapshot[] = []
-    for (const btrId of listExportLayoutBtrIds(scene, tableLayouts)) {
+    for (const btrId of listExportLayoutBtrIds(
+      scene,
+      tableLayouts,
+      exportLayouts
+    )) {
       layouts.push(
         collectLayoutSnapshot(
           scene,
@@ -144,15 +158,10 @@ export class AcApHtmlSnapshotBuilder {
 
     return {
       version: ACEX_SNAPSHOT_VERSION,
-      meta: buildSnapshotMeta(
-        meta,
-        options,
-        layouts,
-        scene.activeLayoutBtrId || scene.modelSpaceBtrId
-      ),
+      meta: buildSnapshotMeta(meta, options, layouts, activeLayoutBtrId),
       layers,
       layouts,
-      activeLayoutBtrId: scene.activeLayoutBtrId || scene.modelSpaceBtrId
+      activeLayoutBtrId
     }
   }
 
@@ -170,6 +179,7 @@ export class AcApHtmlSnapshotBuilder {
     options: AcApHtmlSnapshotBuilderOptions
   ): AcExSnapshot {
     const exportInvisibleLayers = options.exportInvisibleLayers !== false
+    const exportLayouts = options.exportLayouts !== false
     const includeLayer = exportInvisibleLayers
       ? undefined
       : (layerName: string) =>
@@ -195,8 +205,16 @@ export class AcApHtmlSnapshotBuilder {
     const layoutNames = new Map(
       tableLayouts.map(layout => [layout.blockTableRecordId, layout.name])
     )
+    const activeLayoutBtrId = resolveExportActiveLayoutBtrId(
+      scene,
+      exportLayouts
+    )
     const layouts: AcExLayoutSnapshot[] = []
-    for (const btrId of listExportLayoutBtrIds(scene, tableLayouts)) {
+    for (const btrId of listExportLayoutBtrIds(
+      scene,
+      tableLayouts,
+      exportLayouts
+    )) {
       layouts.push(
         collectLayoutSnapshot(
           scene,
@@ -211,15 +229,10 @@ export class AcApHtmlSnapshotBuilder {
 
     return {
       version: ACEX_SNAPSHOT_VERSION,
-      meta: buildSnapshotMeta(
-        meta,
-        options,
-        layouts,
-        scene.activeLayoutBtrId || scene.modelSpaceBtrId
-      ),
+      meta: buildSnapshotMeta(meta, options, layouts, activeLayoutBtrId),
       layers,
       layouts,
-      activeLayoutBtrId: scene.activeLayoutBtrId || scene.modelSpaceBtrId
+      activeLayoutBtrId
     }
   }
 }
@@ -256,7 +269,8 @@ function buildSnapshotMeta(
     locale: options.locale ?? AcApI18n.currentLocale,
     initialView,
     viewState: initialView === 'current' ? options.viewState : undefined,
-    viewerMode: options.viewerMode ?? 'measure'
+    viewerMode: options.viewerMode ?? 'measure',
+    exportLayouts: options.exportLayouts !== false
   }
 }
 
@@ -318,12 +332,18 @@ export function listDatabaseLayouts(
 
 /**
  * Ordered BTR ids to export: layout-table tabs first (tab order), then any
- * extra scene layouts that are not in the table.
+ * extra scene layouts that are not in the table. When `exportLayouts` is
+ * `false`, only model space is included.
  */
 function listExportLayoutBtrIds(
   scene: AcTrScene,
-  tableLayouts: AcExDatabaseLayoutInfo[]
+  tableLayouts: AcExDatabaseLayoutInfo[],
+  exportLayouts: boolean
 ): string[] {
+  if (!exportLayouts) {
+    return scene.modelSpaceBtrId ? [scene.modelSpaceBtrId] : []
+  }
+
   const seen = new Set<string>()
   const ids: string[] = []
   for (const layout of tableLayouts) {
@@ -337,6 +357,16 @@ function listExportLayoutBtrIds(
     ids.push(btrId)
   }
   return ids
+}
+
+function resolveExportActiveLayoutBtrId(
+  scene: AcTrScene,
+  exportLayouts: boolean
+): string {
+  if (!exportLayouts) {
+    return scene.modelSpaceBtrId
+  }
+  return scene.activeLayoutBtrId || scene.modelSpaceBtrId
 }
 
 function collectLayoutSnapshot(

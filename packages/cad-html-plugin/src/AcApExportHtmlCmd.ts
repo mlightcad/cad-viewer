@@ -52,8 +52,21 @@ export class AcApExportHtmlCmd extends AcEdCommand {
   }
 
   private async promptOptions(): Promise<AcApHtmlExportOptions | undefined> {
-    const exportInvisibleLayers = await this.promptExportInvisibleLayers()
+    const defaults = resolveAcApHtmlExportOptions()
+
+    const exportInvisibleLayers = await this.promptYesNo(
+      'jig.chtml.exportInvisibleLayers',
+      defaults.exportInvisibleLayers
+    )
     if (exportInvisibleLayers === undefined) {
+      return undefined
+    }
+
+    const exportLayouts = await this.promptYesNo(
+      'jig.chtml.exportLayouts',
+      defaults.exportLayouts
+    )
+    if (exportLayouts === undefined) {
       return undefined
     }
 
@@ -69,16 +82,17 @@ export class AcApExportHtmlCmd extends AcEdCommand {
 
     return resolveAcApHtmlExportOptions({
       exportInvisibleLayers,
+      exportLayouts,
       initialView,
       viewerMode
     })
   }
 
-  private async promptExportInvisibleLayers(): Promise<boolean | undefined> {
-    const defaults = resolveAcApHtmlExportOptions()
-    const prompt = new AcEdPromptKeywordOptions(
-      AcApI18n.t('jig.chtml.exportInvisibleLayers')
-    )
+  private async promptYesNo(
+    messageKey: string,
+    defaultYes: boolean
+  ): Promise<boolean | undefined> {
+    const prompt = new AcEdPromptKeywordOptions(AcApI18n.t(messageKey))
     prompt.allowNone = true
     const yes = prompt.keywords.add(
       AcApI18n.t('jig.chtml.keywords.yes.display'),
@@ -90,21 +104,21 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       AcApI18n.t('jig.chtml.keywords.no.global'),
       AcApI18n.t('jig.chtml.keywords.no.local')
     )
-    prompt.keywords.default = defaults.exportInvisibleLayers ? yes : no
+    prompt.keywords.default = defaultYes ? yes : no
 
     const result = await AcApDocManager.instance.editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.Cancel) {
       return undefined
     }
     if (result.status === AcEdPromptStatus.None) {
-      return defaults.exportInvisibleLayers
+      return defaultYes
     }
     if (
       result.status === AcEdPromptStatus.OK ||
       result.status === AcEdPromptStatus.Keyword
     ) {
       if (!result.stringResult) {
-        return defaults.exportInvisibleLayers
+        return defaultYes
       }
       return result.stringResult === 'Yes'
     }

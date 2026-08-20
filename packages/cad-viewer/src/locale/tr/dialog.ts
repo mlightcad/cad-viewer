@@ -73,6 +73,10 @@ export default {
     exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
     exportInvisibleLayersHint:
       'Kapalı veya dondurulmuş katmanlardaki geometriyi dışa aktarılan dosyaya dahil et',
+    layoutsSection: 'Yerleşimler',
+    exportLayouts: 'Yerleşimleri dışa aktar',
+    exportLayoutsHint:
+      'Kağıt alanı yerleşimlerini dışa aktarılan dosyaya dahil et',
     yes: 'Evet',
     no: 'Hayır',
     initialView: 'Başlangıç görünümü',

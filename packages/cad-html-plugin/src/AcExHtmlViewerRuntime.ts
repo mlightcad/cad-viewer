@@ -154,6 +154,9 @@ function startViewer(): void {
 
   const modelLayout = snapshot.layouts.find(item => item.isModelSpace)
   const hasPaperViewports = snapshotHasPaperViewports(snapshot.layouts)
+  const canSwitchLayouts =
+    snapshot.meta.exportLayouts !== false &&
+    (snapshot.layouts.length > 1 || hasPaperViewports)
 
   const paperLayerGroups = new Map<string, THREE.Group>()
   const modelLayerGroups = new Map<string, THREE.Group>()
@@ -271,7 +274,7 @@ function startViewer(): void {
       applyOsnapLayerVisibility(modelOsnapIndex)
     }
     // Keep inactive-layout catalogs so the user can switch back.
-    if (snapshot.layouts.length <= 1 && !hasPaperViewports) {
+    if (!canSwitchLayouts) {
       releaseSnapshotOsnapCatalogs(snapshot)
     }
   }
@@ -1050,7 +1053,7 @@ function startViewer(): void {
   lastViewByLayout.set(layout.btrId, initialView)
   // Shared typed arrays back the snapshot and THREE attributes. Releasing
   // them would prevent switching to other layouts later in this session.
-  if (snapshot.layouts.length <= 1 && !hasPaperViewports) {
+  if (!canSwitchLayouts) {
     releaseLayerGroupsGeometryCpuArrays(paperLayerGroups)
     releaseLayerGroupsGeometryCpuArrays(modelLayerGroups)
     releaseSnapshotBatchBuffers(snapshot)

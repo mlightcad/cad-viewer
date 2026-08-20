@@ -1208,6 +1208,7 @@ export default {
   },
   chtml: {
     exportInvisibleLayers: 'Export invisible layers',
+    exportLayouts: 'Export layouts',
     initialView: 'Initial view when opening HTML',
     viewerMode: 'Offline viewer mode',
     keywords: {
@@ -1237,8 +1238,8 @@ export default {
         global: 'View'
       },
       measure: {
-        display: 'Measure(M)',
-        local: 'Measure',
+        display: 'Measure & Review(M)',
+        local: 'Measure & Review',
         global: 'Measure'
       }
     }

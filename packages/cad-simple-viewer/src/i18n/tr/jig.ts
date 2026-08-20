@@ -1208,6 +1208,7 @@ export default {
   },
   chtml: {
     exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
+    exportLayouts: 'Yerleşimleri dışa aktar',
     initialView: 'HTML açılırken başlangıç görünümü',
     viewerMode: 'Çevrimdışı görüntüleyici modu',
     keywords: {
@@ -1237,8 +1238,8 @@ export default {
         global: 'View'
       },
       measure: {
-        display: 'Ölç(Ö)',
-        local: 'Ölç',
+        display: 'Ölçüm ve İnceleme(Ö)',
+        local: 'Ölçüm ve İnceleme',
         global: 'Measure'
       }
     }

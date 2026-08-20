@@ -1196,6 +1196,7 @@ export default {
   },
   chtml: {
     exportInvisibleLayers: '是否导出不可见图层',
+    exportLayouts: '是否导出布局',
     initialView: '打开 HTML 时的初始视图',
     viewerMode: '离线查看器模式',
     keywords: {
@@ -1225,8 +1226,8 @@ export default {
         global: 'View'
       },
       measure: {
-        display: '测量(M)',
-        local: '测量',
+        display: '测量与批注(M)',
+        local: '测量与批注',
         global: 'Measure'
       }
     }

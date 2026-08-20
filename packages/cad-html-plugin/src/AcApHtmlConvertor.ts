@@ -52,7 +52,10 @@ export class AcApHtmlConvertor {
    */
   async prepareAcTrView2dForHtmlExport(
     view: AcEdBaseView | null | undefined,
-    options: Pick<AcApHtmlExportOptions, 'exportInvisibleLayers'> = {}
+    options: Pick<
+      AcApHtmlExportOptions,
+      'exportInvisibleLayers' | 'exportLayouts'
+    > = {}
   ): Promise<AcTrView2d> {
     if (!view || !('cadScene' in view) || !view.cadScene) {
       throw new Error(
@@ -65,9 +68,11 @@ export class AcApHtmlConvertor {
       )
     }
     const resolved = resolveAcApHtmlExportOptions(options)
-    await view.ensureEntitiesConvertedForExport({
-      includeInvisibleLayers: resolved.exportInvisibleLayers
-    })
+    const conversionOptions = {
+      includeInvisibleLayers: resolved.exportInvisibleLayers,
+      includeLayouts: resolved.exportLayouts
+    }
+    await view.ensureEntitiesConvertedForExport(conversionOptions)
     await accmYieldForPaint()
     return view
   }
@@ -78,7 +83,8 @@ export class AcApHtmlConvertor {
    * @param fileName - Optional base name for the download (without extension).
    *   When omitted, the active document's `fileName` is used. A `.html` suffix
    *   is always applied; `.dwg` / `.dxf` suffixes on the input are stripped.
-   * @param options - Export options such as invisible-layer inclusion and initial view.
+   * @param options - Export options such as invisible-layer inclusion, layout
+   *   inclusion, and initial view.
    * @param view - Optional view to export from. Defaults to the active view.
    * @returns Resolves when packaging and download complete.
    */
@@ -107,10 +113,13 @@ export class AcApHtmlConvertor {
           title: getDrawingExportBaseName(sourceName),
           background: exportView.backgroundColor,
           exportInvisibleLayers: resolved.exportInvisibleLayers,
+          exportLayouts: resolved.exportLayouts,
           initialView: resolved.initialView,
           viewerMode: resolved.viewerMode,
           viewState:
-            resolved.initialView === 'current'
+            resolved.initialView === 'current' &&
+            (resolved.exportLayouts ||
+              exportView.activeLayoutBtrId === exportView.modelSpaceBtrId)
               ? captureAcApHtmlViewState(exportView)
               : undefined
         }
