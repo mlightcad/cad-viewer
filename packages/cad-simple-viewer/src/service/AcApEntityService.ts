@@ -149,14 +149,16 @@ export class AcApEntityService {
    * @returns Number of entities successfully erased.
    */
   eraseEntities(objectIds: AcDbObjectId[]): number {
-    let count = 0
-    objectIds.forEach(objectId => {
-      const entity = this.db.openEntityForWrite(objectId)
-      if (!entity) return
-      entity.erase()
-      count++
+    return this.runEntityEdit(() => {
+      let count = 0
+      objectIds.forEach(objectId => {
+        const entity = this.db.openEntityForWrite(objectId)
+        if (!entity) return
+        entity.erase()
+        count++
+      })
+      return count
     })
-    return count
   }
 
   /**
@@ -235,17 +237,19 @@ export class AcApEntityService {
    *
    * @param label - Undo group label.
    * @param fn - Mutation callback.
+   * @returns The value returned by `fn`.
    */
-  runEdit(label: string, fn: () => void): void {
-    acapRunServiceEdit(this.db, label, fn)
+  runEdit<T>(label: string, fn: () => T): T {
+    return acapRunServiceEdit(this.db, label, fn)
   }
 
   /**
    * Runs an entity edit with the default entity undo label.
    *
    * @param fn - Mutation callback.
+   * @returns The value returned by `fn`.
    */
-  runEntityEdit(fn: () => void): void {
-    acapRunServiceEdit(this.db, ENTITY_EDIT_LABEL, fn)
+  runEntityEdit<T>(fn: () => T): T {
+    return acapRunServiceEdit(this.db, ENTITY_EDIT_LABEL, fn)
   }
 }
