@@ -6,7 +6,7 @@
  *   another first-level button that opens a strip is clicked. Canvas clicks
  *   do not dismiss it. The parent button acts as a toggle.
  * - `'toolbar'`: icon strip that closes on canvas / outside click.
- * - `'menu'`: optional popover (unused by the built-in HTML chrome).
+ * - `'menu'`: popover listing items (drawing layouts).
  *
  * @module AcExHtmlToolbarFlyout
  * @packageDocumentation

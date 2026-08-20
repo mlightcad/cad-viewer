@@ -16,6 +16,7 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).toContain('data-action="zoom-window"')
     expect(html).toContain('data-action="zoom-original"')
     expect(html).toContain('id="mlcad-layers-btn"')
+    expect(html).toContain('id="mlcad-layout-menu-btn"')
     expect(html).toContain('id="mlcad-lang-btn"')
     expect(html).toContain('id="mlcad-lang-badge"')
     expect(html).toContain('id="mlcad-locale-strip-wrap"')
@@ -40,6 +41,7 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).toContain('id="mlcad-measure-menu-btn"')
     expect(html).toContain('id="mlcad-markup-menu-btn"')
     expect(html).toContain('id="mlcad-snap-menu-btn"')
+    expect(html).toContain('id="mlcad-layout-menu-btn"')
     expect(html).toContain('id="mlcad-lang-btn"')
     expect(html).toContain('id="mlcad-lang-badge"')
     expect(html).toContain('has-children')
@@ -68,8 +70,10 @@ describe('buildAcExHtmlShellBody', () => {
     expect(toolbarHtml).toContain('title="Zoom"')
     expect(toolbarHtml).toContain('title="Object snap"')
     expect(toolbarHtml).toContain('title="Language"')
+    expect(toolbarHtml).toContain('title="Layout"')
     expect(toolbarHtml).toContain('data-children-ui="sticky-toolbar"')
     expect(toolbarHtml).toContain('data-children-ui="toolbar"')
+    expect(toolbarHtml).toContain('data-children-ui="menu"')
   })
 
   it('omits markup toolbar controls in view mode', () => {

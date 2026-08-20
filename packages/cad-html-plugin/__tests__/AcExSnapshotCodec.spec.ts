@@ -210,4 +210,51 @@ describe('AcExSnapshotCodec', () => {
     expect(Array.from(line.positions)).toEqual([0, 0, 0, 100, 50, 0])
     expect(line.offset).toEqual([100_000, 2_000_000, 0])
   })
+
+  it('round-trips paper-space viewport descriptors', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ps',
+          name: 'Layout1',
+          isModelSpace: false,
+          lineBatches: [],
+          meshBatches: [],
+          viewports: [
+            {
+              paper: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
+              model: { minX: 100, minY: 200, maxX: 400, maxY: 500 }
+            }
+          ]
+        }
+      ],
+      activeLayoutBtrId: 'ps'
+    }
+
+    const decoded = decodeSnapshot(encodeSnapshot(snapshot).payload)
+    expect(decoded.layouts[0]!.viewports).toEqual([
+      {
+        paper: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
+        model: { minX: 100, minY: 200, maxX: 400, maxY: 500 }
+      }
+    ])
+  })
 })

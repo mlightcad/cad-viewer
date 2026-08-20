@@ -190,6 +190,8 @@ export interface AcExMeasureControllerOptions {
   onActiveChange?: (active: boolean) => void
   /** Called when selection or session draw style changes (draw-style toolbar). */
   onStyleChange?: () => void
+  /** Active layout BTR id; used to stamp and filter measurement overlays. */
+  getActiveLayoutId?: () => string
 }
 
 /** Teardown callback registered when a measurement overlay is created. @internal */
@@ -212,6 +214,14 @@ interface AcExCommittedMeasure {
   quantity: AcExMeasureQuantity | null
   value: number
   hitTest: (clientX: number, clientY: number, thresholdPx: number) => boolean
+}
+
+function isRecordOnLayout(
+  recordLayoutId: string | undefined,
+  activeLayoutId: string | undefined
+): boolean {
+  if (activeLayoutId == null) return true
+  return recordLayoutId == null || recordLayoutId === activeLayoutId
 }
 
 /**
@@ -805,6 +815,8 @@ export class AcExMeasureController {
   private readonly _onActiveChange: ((active: boolean) => void) | null
   /** Notifies when selection / session draw style changes. */
   private readonly _onStyleChange: (() => void) | null
+  /** Active layout BTR id for stamping / filtering overlays. */
+  private readonly _getActiveLayoutId: (() => string) | null
   /** Accent color for lines, labels, and canvas overlays. */
   private _measureColor = ACEX_MEASURE_COLOR
   /** Session line weight for new measurements. */
@@ -887,6 +899,7 @@ export class AcExMeasureController {
     this._getTrackingOptions = options.getTrackingOptions ?? null
     this._onActiveChange = options.onActiveChange ?? null
     this._onStyleChange = options.onStyleChange ?? null
+    this._getActiveLayoutId = options.getActiveLayoutId ?? null
 
     this._overlayLayer = document.createElement('div')
     this._overlayLayer.id = 'mlcad-measure-overlays'
@@ -1125,6 +1138,29 @@ export class AcExMeasureController {
   /** Toggles {@link setVisible}. */
   toggleVisible(): void {
     this.setVisible(!this._visible)
+  }
+
+  /**
+   * Shows or hides committed overlays according to the active layout.
+   * Records without `layoutId` remain visible on every layout.
+   */
+  syncLayoutVisibility(): void {
+    const activeId = this._getActiveLayoutId?.()
+    let selectionChanged = false
+    for (const measure of this._committed) {
+      const onLayout = isRecordOnLayout(measure.record.layoutId, activeId)
+      const show = this._visible && onLayout
+      for (const el of measure.parts.dom) el.hidden = !show
+      for (const canvas of measure.parts.canvases) canvas.hidden = !show
+      if (!onLayout && this._selectedIds.has(measure.id)) {
+        this._applyMeasureSelection(measure, false)
+        this._selectedIds.delete(measure.id)
+        selectionChanged = true
+      }
+    }
+    if (selectionChanged) {
+      this._onStyleChange?.()
+    }
   }
 
   /** Download current measurements as a `*.measurement.json` sidecar. */
@@ -1935,7 +1971,10 @@ export class AcExMeasureController {
         const start = pointLiesOnCircle(point, lock)
           ? point.clone()
           : new THREE.Vector2(lock.x, lock.y)
-        this._arcLockLastAngle = Math.atan2(start.y - lock.cy, start.x - lock.cx)
+        this._arcLockLastAngle = Math.atan2(
+          start.y - lock.cy,
+          start.x - lock.cx
+        )
         this._points.push(start)
         this._previewArc(this._points[0]!, clientX, clientY)
         return true
@@ -1961,12 +2000,7 @@ export class AcExMeasureController {
       }
       const end = snapPointToCircle(raw, geom)
       this._trackArcLockDirection(end)
-      const sweep = lockedSweep(
-        start,
-        end,
-        geom,
-        this._lockedClockwise()
-      )
+      const sweep = lockedSweep(start, end, geom, this._lockedClockwise())
       if (!sweep) {
         this._points = []
         this._arcLock = null
@@ -2027,12 +2061,7 @@ export class AcExMeasureController {
       }
       const end = snapPointToCircle(raw, geom)
       this._trackArcLockDirection(end)
-      const sweep = lockedSweep(
-        start,
-        end,
-        geom,
-        this._lockedClockwise()
-      )
+      const sweep = lockedSweep(start, end, geom, this._lockedClockwise())
       this._overlayLayer
         .querySelectorAll('.mlcad-measure-canvas--preview-line')
         .forEach(el => el.remove())
@@ -2483,6 +2512,7 @@ export class AcExMeasureController {
     })
     this._commitParts = null
     this._commitStyle = null
+    this.syncLayoutVisibility()
   }
 
   /** Default sidecar style from the current session draw style. @internal */
@@ -2503,6 +2533,7 @@ export class AcExMeasureController {
     return {
       id,
       type,
+      layoutId: this._getActiveLayoutId?.(),
       style: this._defaultStyle(),
       geometry
     }
@@ -2619,6 +2650,11 @@ export class AcExMeasureController {
   ): AcExCommittedMeasure | null {
     for (let i = this._committed.length - 1; i >= 0; i--) {
       const measure = this._committed[i]!
+      if (
+        !isRecordOnLayout(measure.record.layoutId, this._getActiveLayoutId?.())
+      ) {
+        continue
+      }
       if (this._measureHitAt(measure, clientX, clientY)) {
         return measure
       }

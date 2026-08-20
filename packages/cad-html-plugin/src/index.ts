@@ -69,6 +69,7 @@ export {
 } from './AcApHtmlPluginOptions'
 export {
   AcApHtmlSnapshotBuilder,
+  listDatabaseLayouts,
   type AcApHtmlSnapshotBuilderOptions
 } from './AcApHtmlSnapshotBuilder'
 export { createHtmlPlugin } from './createHtmlPlugin'

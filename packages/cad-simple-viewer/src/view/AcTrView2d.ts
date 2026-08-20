@@ -1032,6 +1032,19 @@ export class AcTrView2d extends AcEdBaseView {
     const db = AcApDocManager.instance.curDocument.database
     const pending: AcDbEntity[] = []
 
+    // Paper-space tabs the user never visited exist in the layout table but
+    // may be missing from the scene until first switch. HTML export needs
+    // every layout's geometry, so register those BTRs before collecting.
+    const layoutTable = db.objects?.layout
+    if (layoutTable?.newIterator) {
+      for (const layout of layoutTable.newIterator()) {
+        const btrId = layout.blockTableRecordId
+        if (btrId) {
+          this._scene.addEmptyLayout(btrId)
+        }
+      }
+    }
+
     for (const [layoutBtrId] of this._scene.layouts) {
       const blockTableRecord = db.tables.blockTable.getIdAt(layoutBtrId)
       if (!blockTableRecord) {
