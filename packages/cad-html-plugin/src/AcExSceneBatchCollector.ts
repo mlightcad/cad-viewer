@@ -400,6 +400,33 @@ function readMaterialStyle(material: THREE.Material): {
   }
 }
 
+/**
+ * Resolves the snapshot `renderOrder` for a drawable.
+ *
+ * Prefer material `drawOrder` (set even on unbatched hatch meshes) and fall
+ * back to `object.renderOrder` (set on batched meshes in `AcTrBatchedGroup`).
+ * `0` is omitted so the default linework tier stays compact.
+ */
+function resolveExportedRenderOrder(
+  object: THREE.Object3D,
+  material: THREE.Material
+): number | undefined {
+  const fromMaterial = getMaterialMetadata(material).drawOrder
+  const value = fromMaterial ?? object.renderOrder
+  return value === 0 ? undefined : value
+}
+
+function assignRenderOrder(
+  batch: { renderOrder?: number },
+  object: THREE.Object3D,
+  material: THREE.Material
+): void {
+  const renderOrder = resolveExportedRenderOrder(object, material)
+  if (renderOrder != null) {
+    batch.renderOrder = renderOrder
+  }
+}
+
 function resolveExportedHatchPattern(
   object: THREE.Object3D,
   hatchPattern: ReturnType<typeof extractHatchPattern> | undefined
@@ -443,7 +470,7 @@ function buildMeshBatch(
   const gradientPositions = style.gradientFill
     ? exportVertexAttributeSlice(geometry, 'gradientPosition')
     : undefined
-  return {
+  const batch: AcExMeshBatch = {
     layer: style.layer,
     color: style.color,
     offset,
@@ -453,6 +480,8 @@ function buildMeshBatch(
     side: style.side,
     ...slice
   }
+  assignRenderOrder(batch, object, material)
+  return batch
 }
 
 function exportBatchedLine2(
@@ -464,13 +493,15 @@ function exportBatchedLine2(
   }
   const { color, layer } = readMaterialStyle(batch.material as THREE.Material)
   const lineWidth = readLineWidth(batch.material as THREE.Material)
-  return {
+  const exported: AcExLineBatch = {
     layer,
     color,
     offset: readWorldOffset(batch),
     lineWidth,
     ...slice
   }
+  assignRenderOrder(exported, batch, batch.material as THREE.Material)
+  return exported
 }
 
 function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
@@ -484,7 +515,7 @@ function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
   const lineDistances = linePattern
     ? computeLineDistancesForSegments(slice.positions)
     : undefined
-  return {
+  const exported: AcExLineBatch = {
     layer,
     color,
     offset: readWorldOffset(batch),
@@ -492,6 +523,8 @@ function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
     lineDistances,
     ...slice
   }
+  assignRenderOrder(exported, batch, batch.material as THREE.Material)
+  return exported
 }
 
 function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
@@ -576,13 +609,15 @@ export function collectBatchesFromObject3D(
       const material = readExportMaterial(child)
       const { color, layer } = readMaterialStyle(material)
       const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice)
-      lineBatches.push({
+      const exported: AcExLineBatch = {
         layer,
         color,
         offset,
         lineWidth: readLineWidth(material),
         ...slice
-      })
+      }
+      assignRenderOrder(exported, child, material)
+      lineBatches.push(exported)
     } else if (
       child instanceof THREE.LineSegments &&
       !(child instanceof AcTrBatchedLine)
@@ -596,14 +631,16 @@ export function collectBatchesFromObject3D(
       const lineDistances = linePattern
         ? computeLineDistancesForSegments(slice.positions)
         : undefined
-      lineBatches.push({
+      const exported: AcExLineBatch = {
         layer,
         color,
         offset,
         linePattern,
         lineDistances,
         ...slice
-      })
+      }
+      assignRenderOrder(exported, child, material)
+      lineBatches.push(exported)
     } else if (
       child instanceof THREE.Mesh &&
       !(child instanceof AcTrBatchedMesh)

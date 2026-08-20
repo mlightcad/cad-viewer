@@ -1319,6 +1319,31 @@ function setupLayerPanel(
   }
 }
 
+function applyBatchPose(
+  object: THREE.Object3D,
+  batch: { offset: [number, number, number]; renderOrder?: number }
+): void {
+  object.position.set(batch.offset[0], batch.offset[1], batch.offset[2])
+  if (batch.renderOrder != null) {
+    object.renderOrder = batch.renderOrder
+  }
+}
+
+/**
+ * Hatch-tier fills sit below linework on the shared Z plane.
+ * Prefer the exported `renderOrder` (from `drawOrder`); patterned/gradient
+ * batches without that field still fall back to `-1`.
+ */
+function resolveMeshRenderOrder(batch: AcExMeshBatch): number | undefined {
+  if (batch.renderOrder != null) {
+    return batch.renderOrder
+  }
+  if (batch.hatchPattern || batch.gradientFill) {
+    return -1
+  }
+  return undefined
+}
+
 function createLineObject(
   batch: AcExLineBatch,
   wideLineMaterials: LineMaterial[],
@@ -1335,7 +1360,7 @@ function createLineObject(
     ) as LineMaterial
     wideLineMaterials.push(material)
     const object = new LineSegments2(geometry, material)
-    object.position.set(batch.offset[0], batch.offset[1], batch.offset[2])
+    applyBatchPose(object, batch)
     return object
   }
 
@@ -1359,7 +1384,7 @@ function createLineObject(
   }
   const material = createViewerLineMaterial(batch)
   const object = new THREE.LineSegments(geometry, material)
-  object.position.set(batch.offset[0], batch.offset[1], batch.offset[2])
+  applyBatchPose(object, batch)
   return object
 }
 
@@ -1533,7 +1558,10 @@ function createPointObject(batch: AcExMeshBatch): THREE.Points | null {
   )
   const material = createViewerPointsMaterial(batch)
   const object = new THREE.Points(geometry, material)
-  object.position.set(batch.offset[0], batch.offset[1], batch.offset[2])
+  applyBatchPose(object, {
+    offset: batch.offset,
+    renderOrder: batch.renderOrder
+  })
   return object
 }
 
@@ -1559,7 +1587,10 @@ function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
   }
   const material = createViewerMeshMaterial(batch)
   const object = new THREE.Mesh(geometry, material)
-  object.position.set(batch.offset[0], batch.offset[1], batch.offset[2])
+  applyBatchPose(object, {
+    offset: batch.offset,
+    renderOrder: resolveMeshRenderOrder(batch)
+  })
   return object
 }
 

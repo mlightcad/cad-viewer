@@ -697,4 +697,40 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     expect(lineBatches).toHaveLength(1)
     expect(lineBatches[0]!.positions.length).toBe(12)
   })
+
+  it('exports hatch-tier drawOrder as mesh renderOrder when object.renderOrder is 0', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(
+        new Float32Array([0, 0, 0, 10, 0, 0, 0, 10, 0]),
+        3
+      )
+    )
+    geometry.setIndex(new THREE.BufferAttribute(new Uint32Array([0, 1, 2]), 1))
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+    material.userData.drawOrder = -1
+    const mesh = new THREE.Mesh(geometry, material)
+    expect(mesh.renderOrder).toBe(0)
+
+    const { meshBatches } = collectBatchesFromObject3D(mesh)
+    expect(meshBatches).toHaveLength(1)
+    expect(meshBatches[0]!.renderOrder).toBe(-1)
+  })
+
+  it('omits default linework-tier renderOrder from line batches', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(new Float32Array([0, 0, 0, 10, 0, 0]), 3)
+    )
+    const line = new THREE.LineSegments(
+      geometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000 })
+    )
+
+    const { lineBatches } = collectBatchesFromObject3D(line)
+    expect(lineBatches).toHaveLength(1)
+    expect(lineBatches[0]!.renderOrder).toBeUndefined()
+  })
 })

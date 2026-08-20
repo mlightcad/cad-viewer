@@ -6,6 +6,11 @@ import type { AcExOsnapCatalog } from './AcExOsnapPrimitiveTypes'
  *
  * v3 adds {@link AcExLayoutSnapshot.viewports} so the offline HTML viewer can
  * scissor-render model space through paper-space viewports.
+ *
+ * Optional {@link AcExLineBatch.renderOrder} / {@link AcExMeshBatch.renderOrder}
+ * is a backward-compatible flag on v3 batches: hatch fills use `-1` so they
+ * sit below linework on the shared Z plane, matching the live viewer's
+ * `AcGiSubEntityTraits.drawOrder` / `Object3D.renderOrder` tiers.
  */
 export const ACEX_SNAPSHOT_VERSION = 3 as const
 
@@ -139,6 +144,11 @@ export interface AcExLineBatch {
    * `LineSegments2` / `LineMaterial`. Omitted for 1px `THREE.LineSegments`.
    */
   lineWidth?: number
+  /**
+   * Three.js `Object3D.renderOrder` for same-plane compositing.
+   * Omitted when `0` (the default linework tier).
+   */
+  renderOrder?: number
 }
 
 /**
@@ -194,6 +204,11 @@ export interface AcExMeshBatch {
   gradientPositions?: Float32Array
   /** Material side when a custom fill shader is used (`0` = front, `1` = back). */
   side?: number
+  /**
+   * Three.js `Object3D.renderOrder` for same-plane compositing.
+   * Hatch fills are `-1` so they sit below linework; omitted when `0`.
+   */
+  renderOrder?: number
 }
 
 /**

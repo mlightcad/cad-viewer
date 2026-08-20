@@ -92,6 +92,7 @@ describe('patterned hatch HTML export', () => {
     const { meshBatches } = collectBatchesFromObject3D(root)
     expect(meshBatches).toHaveLength(1)
     expect(meshBatches[0]?.hatchPattern?.patternLines.length).toBeGreaterThan(0)
+    expect(meshBatches[0]?.renderOrder).toBe(-1)
 
     const viewerMaterial = createViewerMeshMaterial(meshBatches[0]!)
     expect(viewerMaterial).toBeInstanceOf(THREE.ShaderMaterial)
@@ -152,6 +153,7 @@ describe('patterned hatch HTML export', () => {
     const decoded = decodeSnapshot(encoded.payload)
     const decodedBatch = decoded.layouts[0]!.meshBatches[0]!
     expect(decodedBatch.hatchPattern).toEqual(batch.hatchPattern)
+    expect(decodedBatch.renderOrder).toBe(-1)
 
     const viewerMaterial = createViewerMeshMaterial(decodedBatch)
     expect(viewerMaterial).toBeInstanceOf(THREE.ShaderMaterial)
