@@ -7,27 +7,51 @@
     @ok="handleOk"
   >
     <div class="ml-export-html-dlg">
-      <ml-fieldset-group
-        :title="t('dialog.exportHtmlDlg.layersSection')"
-        class="ml-export-html-dlg__section"
-      >
-        <div class="ml-export-html-dlg__toggle-row">
-          <div class="ml-export-html-dlg__toggle-copy">
-            <span class="ml-export-html-dlg__toggle-label">{{
-              t('dialog.exportHtmlDlg.exportInvisibleLayers')
-            }}</span>
-            <span class="ml-export-html-dlg__toggle-hint">{{
-              t('dialog.exportHtmlDlg.exportInvisibleLayersHint')
-            }}</span>
+      <div class="ml-export-html-dlg__settings-row">
+        <ml-fieldset-group
+          :title="t('dialog.exportHtmlDlg.layersSection')"
+          class="ml-export-html-dlg__section"
+        >
+          <div class="ml-export-html-dlg__toggle-row">
+            <div class="ml-export-html-dlg__toggle-copy">
+              <span class="ml-export-html-dlg__toggle-label">{{
+                t('dialog.exportHtmlDlg.exportInvisibleLayers')
+              }}</span>
+              <span class="ml-export-html-dlg__toggle-hint">{{
+                t('dialog.exportHtmlDlg.exportInvisibleLayersHint')
+              }}</span>
+            </div>
+            <el-switch
+              v-model="form.exportInvisibleLayers"
+              :active-text="t('dialog.exportHtmlDlg.yes')"
+              :inactive-text="t('dialog.exportHtmlDlg.no')"
+              inline-prompt
+            />
           </div>
-          <el-switch
-            v-model="form.exportInvisibleLayers"
-            :active-text="t('dialog.exportHtmlDlg.yes')"
-            :inactive-text="t('dialog.exportHtmlDlg.no')"
-            inline-prompt
-          />
-        </div>
-      </ml-fieldset-group>
+        </ml-fieldset-group>
+
+        <ml-fieldset-group
+          :title="t('dialog.exportHtmlDlg.layoutsSection')"
+          class="ml-export-html-dlg__section"
+        >
+          <div class="ml-export-html-dlg__toggle-row">
+            <div class="ml-export-html-dlg__toggle-copy">
+              <span class="ml-export-html-dlg__toggle-label">{{
+                t('dialog.exportHtmlDlg.exportLayouts')
+              }}</span>
+              <span class="ml-export-html-dlg__toggle-hint">{{
+                t('dialog.exportHtmlDlg.exportLayoutsHint')
+              }}</span>
+            </div>
+            <el-switch
+              v-model="form.exportLayouts"
+              :active-text="t('dialog.exportHtmlDlg.yes')"
+              :inactive-text="t('dialog.exportHtmlDlg.no')"
+              inline-prompt
+            />
+          </div>
+        </ml-fieldset-group>
+      </div>
 
       <ml-fieldset-group
         :title="t('dialog.exportHtmlDlg.initialView')"
@@ -156,6 +180,10 @@ export interface MlExportHtmlDlgForm {
    */
   exportInvisibleLayers: boolean
   /**
+   * When `true`, paper-space layouts are included in the exported snapshot.
+   */
+  exportLayouts: boolean
+  /**
    * Initial framing when the exported HTML is opened (`fit` = zoom extents).
    */
   initialView: AcExInitialViewMode
@@ -187,6 +215,7 @@ const visible = computed({
 /** Export options bound to the dialog form controls. */
 const form = reactive<MlExportHtmlDlgForm>({
   exportInvisibleLayers: true,
+  exportLayouts: true,
   initialView: 'fit',
   viewerMode: 'measure'
 })
@@ -196,6 +225,7 @@ const form = reactive<MlExportHtmlDlgForm>({
  */
 function resetForm() {
   form.exportInvisibleLayers = true
+  form.exportLayouts = true
   form.initialView = 'fit'
   form.viewerMode = 'measure'
 }
@@ -222,6 +252,7 @@ async function handleOk() {
 
   const options: AcApHtmlExportOptions = {
     exportInvisibleLayers: form.exportInvisibleLayers,
+    exportLayouts: form.exportLayouts,
     initialView: form.initialView,
     viewerMode: form.viewerMode
   }
@@ -256,6 +287,13 @@ async function handleOk() {
   gap: 12px;
 }
 
+.ml-export-html-dlg__settings-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  min-width: 0;
+}
+
 .ml-export-html-dlg__section {
   min-width: 0;
 }
@@ -264,7 +302,11 @@ async function handleOk() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
+}
+
+.ml-export-html-dlg__toggle-row :deep(.el-switch) {
+  flex: 0 0 auto;
 }
 
 .ml-export-html-dlg__toggle-copy {

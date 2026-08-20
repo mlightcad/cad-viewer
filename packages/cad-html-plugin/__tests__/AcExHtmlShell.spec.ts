@@ -81,4 +81,12 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).not.toContain('data-markup-mode=')
     expect(html).not.toContain('data-action="clear-markups"')
   })
+
+  it('omits the layout switcher when layouts are not exported', () => {
+    const html = buildAcExHtmlShellBody('#000000', 'measure', false)
+
+    expect(html).toContain('id="mlcad-layers-btn"')
+    expect(html).not.toContain('id="mlcad-layout-menu-btn"')
+    expect(html).not.toContain('title="Layout"')
+  })
 })

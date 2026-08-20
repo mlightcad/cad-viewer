@@ -107,5 +107,24 @@ describe('AcApHtmlSnapshotBuilder', () => {
     expect(snapshot.layouts[0]?.isModelSpace).toBe(true)
     expect(snapshot.layouts[2]?.lineBatches).toEqual([])
     expect(snapshot.activeLayoutBtrId).toBe('ms')
+    expect(snapshot.meta.exportLayouts).toBe(true)
+  })
+
+  it('exports only model space when exportLayouts is false', () => {
+    const database = fakeDatabase([
+      { layoutName: 'Layout1', tabOrder: 2, blockTableRecordId: 'ps1' },
+      { layoutName: 'Model', tabOrder: 1, blockTableRecordId: 'ms' },
+      { layoutName: 'Layout2', tabOrder: 3, blockTableRecordId: 'ps2' }
+    ])
+    const scene = fakeScene(['ms', 'ps1'], 'ps1', 'ms')
+    const snapshot = new AcApHtmlSnapshotBuilder().build(scene, database, {
+      viewerMode: 'view',
+      exportLayouts: false
+    })
+
+    expect(snapshot.layouts.map(layout => layout.btrId)).toEqual(['ms'])
+    expect(snapshot.layouts[0]?.isModelSpace).toBe(true)
+    expect(snapshot.activeLayoutBtrId).toBe('ms')
+    expect(snapshot.meta.exportLayouts).toBe(false)
   })
 })

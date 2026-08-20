@@ -19,6 +19,13 @@ export interface AcApHtmlExportOptions {
    */
   exportInvisibleLayers?: boolean
   /**
+   * When `true`, paper-space layouts are converted and written into the snapshot.
+   * When `false`, only model space is exported, the offline toolbar omits the
+   * layout switcher, and the viewer can release CPU geometry after the first
+   * draw. Defaults to `true`.
+   */
+  exportLayouts?: boolean
+  /**
    * Initial framing when the exported HTML is opened. Defaults to `'fit'`.
    */
   initialView?: AcExInitialViewMode
@@ -37,6 +44,7 @@ export function resolveAcApHtmlExportOptions(
 ): Required<AcApHtmlExportOptions> {
   return {
     exportInvisibleLayers: options.exportInvisibleLayers !== false,
+    exportLayouts: options.exportLayouts !== false,
     initialView: options.initialView ?? 'fit',
     viewerMode: options.viewerMode ?? 'measure'
   }

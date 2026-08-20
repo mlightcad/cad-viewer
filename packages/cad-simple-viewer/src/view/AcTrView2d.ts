@@ -1017,18 +1017,24 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Converts every drawable entity into the scene before offline export.
+   * Converts drawable entities into the scene before offline export.
    *
    * Interactive viewing skips off/frozen layers for performance; HTML snapshots
    * store layer visibility separately and need full geometry so the exported
    * layer panel can toggle layers on later.
    *
+   * When `includeLayouts` is `true` (the default), paper-space tabs the user
+   * never visited are registered and converted. When `false`, only model space
+   * is converted.
+   *
    * Converted geometry remains in the live scene after this call completes.
    */
   async ensureEntitiesConvertedForExport(options?: {
     includeInvisibleLayers?: boolean
+    includeLayouts?: boolean
   }) {
     const includeInvisibleLayers = options?.includeInvisibleLayers !== false
+    const includeLayouts = options?.includeLayouts !== false
     const db = AcApDocManager.instance.curDocument.database
     const pending: AcDbEntity[] = []
 
@@ -1036,7 +1042,7 @@ export class AcTrView2d extends AcEdBaseView {
     // may be missing from the scene until first switch. HTML export needs
     // every layout's geometry, so register those BTRs before collecting.
     const layoutTable = db.objects?.layout
-    if (layoutTable?.newIterator) {
+    if (includeLayouts && layoutTable?.newIterator) {
       for (const layout of layoutTable.newIterator()) {
         const btrId = layout.blockTableRecordId
         if (btrId) {
@@ -1046,6 +1052,9 @@ export class AcTrView2d extends AcEdBaseView {
     }
 
     for (const [layoutBtrId] of this._scene.layouts) {
+      if (!includeLayouts && layoutBtrId !== this._scene.modelSpaceBtrId) {
+        continue
+      }
       const blockTableRecord = db.tables.blockTable.getIdAt(layoutBtrId)
       if (!blockTableRecord) {
         continue

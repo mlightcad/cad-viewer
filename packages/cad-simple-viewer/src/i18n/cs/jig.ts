@@ -1205,6 +1205,7 @@ export default {
   },
   chtml: {
     exportInvisibleLayers: 'Exportovat neviditelné hladiny',
+    exportLayouts: 'Exportovat rozvržení',
     initialView: 'Počáteční pohled při otevření HTML',
     viewerMode: 'Režim offline prohlížeče',
     keywords: {
@@ -1234,8 +1235,8 @@ export default {
         global: 'View'
       },
       measure: {
-        display: 'Měření(M)',
-        local: 'Měření',
+        display: 'Měření a kontrola(M)',
+        local: 'Měření a kontrola',
         global: 'Measure'
       }
     }

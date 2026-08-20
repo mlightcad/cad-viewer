@@ -46,7 +46,31 @@ describe('AcApHtmlConvertor', () => {
       expect(prepared).toBe(view)
       expect(ensureEntitiesConvertedForExport).toHaveBeenCalledTimes(1)
       expect(ensureEntitiesConvertedForExport).toHaveBeenCalledWith({
-        includeInvisibleLayers: true
+        includeInvisibleLayers: true,
+        includeLayouts: true
+      })
+    })
+
+    it('skips paper-space conversion when layouts are not exported', async () => {
+      const ensureEntitiesConvertedForExport = jest
+        .fn()
+        .mockResolvedValue(undefined)
+      const view = Object.create(AcTrView2d.prototype) as AcTrView2d & {
+        cadScene: object
+        ensureEntitiesConvertedForExport: jest.Mock
+      }
+      Object.assign(view, {
+        cadScene: {},
+        ensureEntitiesConvertedForExport
+      })
+
+      await convertor.prepareAcTrView2dForHtmlExport(view, {
+        exportLayouts: false
+      })
+
+      expect(ensureEntitiesConvertedForExport).toHaveBeenCalledWith({
+        includeInvisibleLayers: true,
+        includeLayouts: false
       })
     })
   })

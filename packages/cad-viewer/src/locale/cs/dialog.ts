@@ -73,6 +73,10 @@ export default {
     exportInvisibleLayers: 'Exportovat neviditelné hladiny',
     exportInvisibleLayersHint:
       'Zahrnout do exportovaného souboru geometrii na vypnutých nebo zmrazených hladinách',
+    layoutsSection: 'Rozvržení',
+    exportLayouts: 'Exportovat rozvržení',
+    exportLayoutsHint:
+      'Zahrnout rozvržení výkresového prostoru do exportovaného souboru',
     yes: 'Ano',
     no: 'Ne',
     initialView: 'Počáteční pohled',

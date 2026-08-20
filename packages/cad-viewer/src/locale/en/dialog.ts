@@ -73,6 +73,10 @@ export default {
     exportInvisibleLayers: 'Export invisible layers',
     exportInvisibleLayersHint:
       'Include geometry on off or frozen layers in the exported file',
+    layoutsSection: 'Layouts',
+    exportLayouts: 'Export layouts',
+    exportLayoutsHint:
+      'Include paper-space layouts in the exported file',
     yes: 'Yes',
     no: 'No',
     initialView: 'Initial view',
