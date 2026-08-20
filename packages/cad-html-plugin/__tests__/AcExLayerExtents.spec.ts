@@ -1,6 +1,7 @@
 import {
   computeLayerExtentsMap,
   computeLayoutExtents,
+  computeLayoutViewExtents,
   resolveLayoutViewExtents
 } from '../src/AcExLayerExtents'
 
@@ -91,6 +92,50 @@ describe('AcExLayerExtents', () => {
       minY: 0,
       maxX: 5,
       maxY: 5
+    })
+  })
+
+  it('unions viewport paper frames when a paper layout has no batches', () => {
+    expect(
+      computeLayoutViewExtents({
+        lineBatches: [],
+        meshBatches: [],
+        viewports: [
+          {
+            paper: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
+            model: { minX: 100, minY: 200, maxX: 400, maxY: 500 }
+          },
+          {
+            paper: { minX: 20, minY: 4, maxX: 40, maxY: 30 },
+            model: { minX: 0, minY: 0, maxX: 1, maxY: 1 }
+          }
+        ]
+      })
+    ).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 40,
+      maxY: 30
+    })
+  })
+
+  it('frames empty paper layouts to viewport paper instead of the unit box', () => {
+    expect(
+      resolveLayoutViewExtents({
+        lineBatches: [],
+        meshBatches: [],
+        viewports: [
+          {
+            paper: { minX: 2, minY: 3, maxX: 14, maxY: 12 },
+            model: { minX: 0, minY: 0, maxX: 1, maxY: 1 }
+          }
+        ]
+      })
+    ).toEqual({
+      minX: 2,
+      minY: 3,
+      maxX: 14,
+      maxY: 12
     })
   })
 })

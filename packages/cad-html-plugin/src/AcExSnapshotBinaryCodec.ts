@@ -96,6 +96,7 @@ function writeLayout(writer: BinaryWriter, layout: AcExLayoutSnapshot): void {
   writer.writeString(layout.name)
   writer.writeU8(layout.isModelSpace ? 1 : 0)
   writer.writeJson(layout.osnap ?? null)
+  writer.writeJson(layout.viewports ?? null)
 
   writer.writeU32(layout.lineBatches.length)
   for (const batch of layout.lineBatches) {
@@ -114,6 +115,10 @@ function readLayout(reader: BinaryReader): AcExLayoutSnapshot {
   const isModelSpace = reader.readU8() !== 0
   const osnapValue = reader.readJson<AcExLayoutSnapshot['osnap'] | null>()
   const osnap = osnapValue ?? undefined
+  const viewportsValue = reader.readJson<
+    AcExLayoutSnapshot['viewports'] | null
+  >()
+  const viewports = viewportsValue ?? undefined
 
   const lineBatchCount = reader.readU32()
   const lineBatches: AcExLineBatch[] = []
@@ -127,7 +132,7 @@ function readLayout(reader: BinaryReader): AcExLayoutSnapshot {
     meshBatches.push(readMeshBatch(reader))
   }
 
-  return { btrId, name, isModelSpace, lineBatches, meshBatches, osnap }
+  return { btrId, name, isModelSpace, lineBatches, meshBatches, osnap, viewports }
 }
 
 function writeLineBatch(writer: BinaryWriter, batch: AcExLineBatch): void {

@@ -115,6 +115,9 @@ export const ACEX_HTML_SHELL_CSS = `
     position: fixed;
     z-index: 40;
     min-width: 180px;
+    max-width: min(280px, calc(100vw - 24px));
+    max-height: min(360px, calc(100vh - 24px));
+    overflow-y: auto;
     padding: 4px;
     background: var(--mlcad-ui-bg-elevated);
     border: 1px solid var(--mlcad-ui-border);
@@ -625,8 +628,7 @@ export function buildAcExHtmlShellBody(
     viewerMode === 'measure' ? buildAcExMeasureMenuButton() : ''
   const markupToolbar =
     viewerMode === 'measure' ? buildAcExMarkupMenuButton() : ''
-  const snapToolbar =
-    viewerMode === 'measure' ? buildAcExSnapMenuButton() : ''
+  const snapToolbar = viewerMode === 'measure' ? buildAcExSnapMenuButton() : ''
   const languageToolbar = buildAcExLanguageToolbarButton()
   const submenuTemplates = ''
   const toolStrips = `${buildAcExHtmlZoomStrip()}${
@@ -666,6 +668,7 @@ export function buildAcExHtmlShellBody(
           'data-i18n-key': 'toolbar.layers',
           'data-i18n-attr': 'title aria-label'
         })}
+        ${buildAcExLayoutMenuButton()}
         ${snapToolbar}
         ${languageToolbar}
         ${acExToolbarButton(acExHtmlIcons.chevronUp, 'Collapse toolbar', {
@@ -699,6 +702,18 @@ export function buildAcExHtmlShellBody(
 
 function buildAcExToolbarSeparator(): string {
   return '<div class="mlcad-tool-separator" aria-hidden="true"></div>'
+}
+
+function buildAcExLayoutMenuButton(): string {
+  return acExToolbarButton(acExHtmlIcons.layout, 'Layout', {
+    id: 'mlcad-layout-menu-btn',
+    'aria-haspopup': 'menu',
+    'aria-expanded': 'false',
+    'data-action': 'layout-menu',
+    'data-i18n-key': 'toolbar.layout',
+    'data-i18n-attr': 'title aria-label',
+    'data-children-ui': 'menu'
+  }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')
 }
 
 function buildAcExZoomMenuButton(): string {

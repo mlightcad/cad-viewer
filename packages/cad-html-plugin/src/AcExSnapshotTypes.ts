@@ -3,8 +3,11 @@ import type { AcExOsnapCatalog } from './AcExOsnapPrimitiveTypes'
 /**
  * Current snapshot schema version.
  * Increment when breaking changes are introduced to {@link AcExSnapshot}.
+ *
+ * v3 adds {@link AcExLayoutSnapshot.viewports} so the offline HTML viewer can
+ * scissor-render model space through paper-space viewports.
  */
-export const ACEX_SNAPSHOT_VERSION = 2 as const
+export const ACEX_SNAPSHOT_VERSION = 3 as const
 
 /**
  * Literal type of the supported snapshot schema version.
@@ -194,6 +197,26 @@ export interface AcExMeshBatch {
 }
 
 /**
+ * One paper-space viewport that shows a rectangle of model space.
+ *
+ * Matches the live viewer's `AcGiViewport.box` (paper) and `viewBox` (model)
+ * so the offline HTML viewer can scissor-render model geometry through the
+ * viewport, the same way {@link AcTrLayoutView} draws `AcTrViewportView`s.
+ */
+export interface AcExViewportSnapshot {
+  /** Viewport border in paper-space WCS (`AcGiViewport.box`). */
+  paper: AcExExtents
+  /** Model-space rectangle shown through the viewport (`AcGiViewport.viewBox`). */
+  model: AcExExtents
+  /**
+   * View twist in radians (`AcGiViewport.viewTwistAngle`, DXF group 51).
+   * Omitted when zero. Paper↔model mapping and the scissor camera rotate by
+   * this angle around the model view center.
+   */
+  twist?: number
+}
+
+/**
  * Geometry for one paper space or model space layout.
  * Contains only display batches — no block definitions or entity handles.
  */
@@ -223,6 +246,13 @@ export interface AcExLayoutSnapshot {
    * {@link AcExLineBatch} / {@link AcExMeshBatch} vertices.
    */
   osnap?: AcExOsnapCatalog
+  /**
+   * User-created paper-space viewports (skipped for model space).
+   *
+   * The default `*Paper_Space` viewport is omitted. The offline viewer uses
+   * these descriptors to scissor-render model-space batches inside each frame.
+   */
+  viewports?: AcExViewportSnapshot[]
 }
 
 /** Camera state for restoring the export-time view in the offline HTML viewer. */

@@ -22,7 +22,8 @@ import {
   acExMarkupCenter,
   type AcExMarkupShapeOutline,
   acExStrokeMarkupCloud,
-  acExTranslateMarkupGeometry} from './AcExMarkupGeometry'
+  acExTranslateMarkupGeometry
+} from './AcExMarkupGeometry'
 import { acExBindMarkupPointerDrag } from './AcExMarkupGripDrag'
 import {
   acExMarkupSidecarFileName,
@@ -115,6 +116,8 @@ export interface AcExMarkupControllerOptions {
   onBeforeActivate?: () => void
   /** Ortho/polar tracking from the shared settings panel. */
   getTrackingOptions?: () => AcExTrackingOptions | null
+  /** Active layout BTR id; used to stamp and filter markup overlays. */
+  getActiveLayoutId?: () => string
 }
 
 type AcExMarkupCleanup = () => void
@@ -171,6 +174,14 @@ function toVector2(p: AcExMarkupPoint2d): THREE.Vector2 {
   return new THREE.Vector2(p.x, p.y)
 }
 
+function isMarkupOnLayout(
+  recordLayoutId: string | undefined,
+  activeLayoutId: string | undefined
+): boolean {
+  if (activeLayoutId == null) return true
+  return recordLayoutId == null || recordLayoutId === activeLayoutId
+}
+
 /**
  * Manages markup annotation tools for the offline HTML viewer.
  */
@@ -188,6 +199,7 @@ export class AcExMarkupController {
   private readonly _getTrackingOptions:
     | (() => AcExTrackingOptions | null)
     | null
+  private readonly _getActiveLayoutId: (() => string) | null
 
   private readonly _overlayLayer: HTMLDivElement
   private readonly _previewCanvas: HTMLCanvasElement
@@ -237,6 +249,7 @@ export class AcExMarkupController {
     this._onStyleChange = options.onStyleChange ?? null
     this._onBeforeActivate = options.onBeforeActivate ?? null
     this._getTrackingOptions = options.getTrackingOptions ?? null
+    this._getActiveLayoutId = options.getActiveLayoutId ?? null
 
     this._overlayLayer = document.createElement('div')
     this._overlayLayer.id = 'mlcad-markup-overlays'
@@ -302,9 +315,7 @@ export class AcExMarkupController {
     fontSize: number
   } {
     const selectedId =
-      this._selectedIds.size === 1
-        ? [...this._selectedIds][0]
-        : undefined
+      this._selectedIds.size === 1 ? [...this._selectedIds][0] : undefined
     if (selectedId) {
       const record = this._findRecord(selectedId)
       if (record) {
@@ -481,6 +492,29 @@ export class AcExMarkupController {
 
   toggleVisible(): void {
     this.setVisible(!this._visible)
+  }
+
+  /**
+   * Shows or hides committed overlays according to the active layout.
+   * Records without `layoutId` remain visible on every layout.
+   */
+  syncLayoutVisibility(): void {
+    const activeId = this._getActiveLayoutId?.()
+    let selectionChanged = false
+    for (const item of this._committed) {
+      const onLayout = isMarkupOnLayout(item.record.layoutId, activeId)
+      const show = this._visible && onLayout
+      for (const el of item.parts.dom) el.hidden = !show
+      for (const canvas of item.parts.canvases) canvas.hidden = !show
+      if (!onLayout && this._selectedIds.has(item.record.id)) {
+        this._selectedIds.delete(item.record.id)
+        selectionChanged = true
+      }
+    }
+    if (selectionChanged) {
+      this._applySelectionStyles()
+      this._onStyleChange?.()
+    }
   }
 
   syncOverlays(): void {
@@ -800,11 +834,7 @@ export class AcExMarkupController {
       this._clearPreview()
       if (this._mode !== 'callout') return
       const final = (text ?? '').trim() || defaultLabel
-      this._commitGeometry(
-        'callout',
-        { type: 'callout', tip, anchor },
-        final
-      )
+      this._commitGeometry('callout', { type: 'callout', tip, anchor }, final)
       this._statusEl.textContent = this._hintForMode('callout')
       this._view.render()
     })
@@ -978,6 +1008,7 @@ export class AcExMarkupController {
     const record: AcExMarkupRecord = {
       id: createMarkupId(),
       type,
+      layoutId: this._getActiveLayoutId?.(),
       style: this._sessionStyle(),
       text,
       comment: '',
@@ -1002,9 +1033,13 @@ export class AcExMarkupController {
     this._committed.push({ record, parts })
     this._buildVisuals(record, parts)
     this._positionDomOverlays()
+    this.syncLayoutVisibility()
   }
 
-  private _buildVisuals(record: AcExMarkupRecord, parts: AcExMarkupParts): void {
+  private _buildVisuals(
+    record: AcExMarkupRecord,
+    parts: AcExMarkupParts
+  ): void {
     const color = record.style.color || ACEX_MARKUP_COLOR
     const markupId = record.id
 
@@ -1062,7 +1097,7 @@ export class AcExMarkupController {
         (attached ? attached.text : undefined) ||
         record.text?.trim() ||
         (g.type === 'stamp' && 'stampId' in g
-          ? STAMP_LABELS[g.stampId as AcExBuiltinStampId] ?? g.stampId
+          ? (STAMP_LABELS[g.stampId as AcExBuiltinStampId] ?? g.stampId)
           : this._i18n.t('status.markupDefaultLabel'))
       badge.textContent = label
       badge.style.color = color
@@ -1264,10 +1299,7 @@ export class AcExMarkupController {
     }
 
     // Text / stamp: drag badge to move position.
-    if (
-      badge &&
-      (geometryType === 'text' || geometryType === 'stamp')
-    ) {
+    if (badge && (geometryType === 'text' || geometryType === 'stamp')) {
       cleanups.push(
         acExBindMarkupPointerDrag({
           el: badge,
@@ -1294,11 +1326,7 @@ export class AcExMarkupController {
     }
 
     // Standalone callout or shape-attached callout: tip + bubble.
-    if (
-      badge &&
-      tipDot &&
-      (geometryType === 'callout' || hasAttachedCallout)
-    ) {
+    if (badge && tipDot && (geometryType === 'callout' || hasAttachedCallout)) {
       cleanups.push(
         acExBindMarkupPointerDrag({
           el: tipDot,
@@ -1310,7 +1338,11 @@ export class AcExMarkupController {
             if (!record) return
             const g = record.geometry
             let tip = world
-            if (g.type === 'cloud' || g.type === 'rect' || g.type === 'circle') {
+            if (
+              g.type === 'cloud' ||
+              g.type === 'rect' ||
+              g.type === 'circle'
+            ) {
               const outline = shapeOutline()
               if (!outline || !g.callout) return
               tip = acExComputeLeaderTipOnShape(outline, world)
@@ -1602,8 +1634,12 @@ export class AcExMarkupController {
       g.callout
         ? g.callout
         : null
-    const current =
-      (attached?.text ?? item.record.text ?? badge.textContent ?? '').trim()
+    const current = (
+      attached?.text ??
+      item.record.text ??
+      badge.textContent ??
+      ''
+    ).trim()
     const multiline = item.record.type !== 'text'
     this._syncGripPointerEvents()
     void this._beginInlineText({
@@ -1685,6 +1721,11 @@ export class AcExMarkupController {
     }
     for (let i = this._committed.length - 1; i >= 0; i--) {
       const item = this._committed[i]!
+      if (
+        !isMarkupOnLayout(item.record.layoutId, this._getActiveLayoutId?.())
+      ) {
+        continue
+      }
       // Prefer text-box / stamp hit so labels are easy to select.
       for (const el of item.parts.dom) {
         if (
@@ -1798,7 +1839,10 @@ export class AcExMarkupController {
     ) {
       const snap = this._osnapCache.snap
       if (snap) {
-        this._onOsnapMarker(snap, this._view.wcsToScreen(this._osnapCache.point))
+        this._onOsnapMarker(
+          snap,
+          this._view.wcsToScreen(this._osnapCache.point)
+        )
       } else {
         this._onOsnapMarker(null, null)
       }
@@ -2025,9 +2069,7 @@ export class AcExMarkupController {
     if (buttons.length === 0) return
     // State-oriented icon: open eye while visible, slashed eye while hidden.
     // Tooltip stays action-oriented (click to hide / show).
-    const titleKey = this._visible
-      ? 'toolbar.markupHide'
-      : 'toolbar.markupShow'
+    const titleKey = this._visible ? 'toolbar.markupHide' : 'toolbar.markupShow'
     const icon = this._visible
       ? acExHtmlIcons.markupShow
       : acExHtmlIcons.markupHide

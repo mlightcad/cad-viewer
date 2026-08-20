@@ -60,6 +60,7 @@ export type AcExHtmlMessageKey =
   | 'toolbar.markupExport'
   | 'toolbar.snap'
   | 'toolbar.layers'
+  | 'toolbar.layout'
   | 'toolbar.language'
   | 'toolbar.localeEn'
   | 'toolbar.localeZh'
@@ -165,6 +166,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       markupExport: 'Export markups',
       snap: 'Object snap',
       layers: 'Layers',
+      layout: 'Layout',
       language: 'Language',
       localeEn: 'English',
       localeZh: '中文',
@@ -278,6 +280,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       markupExport: '导出批注',
       snap: '对象捕捉',
       layers: '图层',
+      layout: '布局',
       language: '语言',
       localeEn: 'English',
       localeZh: '中文',
@@ -385,6 +388,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       markupExport: 'Exportovat poznámky',
       snap: 'Uchopení objektů',
       layers: 'Hladiny',
+      layout: 'Rozvržení',
       language: 'Jazyk',
       localeEn: 'English',
       localeZh: '中文',
@@ -498,6 +502,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       markupExport: 'İşaretlemeleri dışa aktar',
       snap: 'Nesne Yakalama',
       layers: 'Katmanlar',
+      layout: 'Düzen',
       language: 'Dil',
       localeEn: 'English',
       localeZh: '中文',
