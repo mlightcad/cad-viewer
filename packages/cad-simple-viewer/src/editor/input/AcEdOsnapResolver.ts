@@ -14,9 +14,10 @@ import { AcApSettingManager } from '../../app/AcApSettingManager'
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import {
   type AcEdOsnapCenterMark,
+  canonicalGsMark,
   centerMarksCoincide,
   collectCenterMarksFromEntity,
-  retainAcquiredCenterMarks
+  mergeAcquiredCenterMarks
 } from './AcEdOsnapCenterMarks'
 import { AcEdMarkerType } from './marker/AcEdMarker'
 
@@ -52,8 +53,9 @@ export class AcEdOsnapResolver {
   }
 
   /**
-   * Center ticks acquired by hovering circular geometry. Shown as plus marks;
-   * moving the cursor onto a tick snaps to that center.
+   * Center ticks acquired by hovering circular geometry. Shown as plus marks
+   * for the rest of the current point prompt; moving the cursor onto a tick
+   * snaps to that center.
    */
   get acquiredCenterMarks(): readonly AcEdOsnapCenterMark[] {
     return this._acquiredCenters
@@ -90,8 +92,7 @@ export class AcEdOsnapResolver {
     const snapPoints = this.collectOsnapPoints(
       options.cursorWcs,
       lastPoint,
-      hitRadiusPx,
-      threshold
+      hitRadiusPx
     )
 
     for (const mark of this._acquiredCenters) {
@@ -235,8 +236,7 @@ export class AcEdOsnapResolver {
   private collectOsnapPoints(
     cursorWcs: AcGePoint2dLike,
     lastPoint: AcGePoint2dLike,
-    hitRadiusPx: number,
-    aperture: number
+    hitRadiusPx: number
   ): AcEdOsnapPoint[] {
     const results = this._view.pick(cursorWcs, hitRadiusPx)
     const db = acdbHostApplicationServices().workingDatabase
@@ -264,7 +264,7 @@ export class AcEdOsnapResolver {
             osnapPoints,
             pickPoint,
             last,
-            child.id
+            canonicalGsMark(child.id)
           )
         )
       } else {
@@ -286,26 +286,18 @@ export class AcEdOsnapResolver {
       this.collectIntersectionOsnapPoints(uniqueEntities, osnapPoints)
     }
 
-    this.updateAcquiredCenters(
-      cursorWcs,
-      results,
-      modelSpace,
-      pickPoint,
-      aperture
-    )
+    this.updateAcquiredCenters(results, modelSpace, pickPoint)
 
     return osnapPoints
   }
 
   private updateAcquiredCenters(
-    cursorWcs: AcGePoint2dLike,
     results: Array<{
       id: AcDbObjectId
       children?: Array<{ id: AcDbObjectId }>
     }>,
     modelSpace: { getIdAt: (id: AcDbObjectId) => AcDbEntity | undefined },
-    pickPoint: AcGePoint3dLike,
-    aperture: number
+    pickPoint: AcGePoint3dLike
   ) {
     if (
       !acdbHasOsnapMode(
@@ -324,7 +316,11 @@ export class AcEdOsnapResolver {
       if (item.children && item.children.length > 0) {
         item.children.forEach(child => {
           hovered.push(
-            ...collectCenterMarksFromEntity(entity, pickPoint, child.id)
+            ...collectCenterMarksFromEntity(
+              entity,
+              pickPoint,
+              canonicalGsMark(child.id)
+            )
           )
         })
       } else {
@@ -332,9 +328,9 @@ export class AcEdOsnapResolver {
       }
     })
 
-    this._acquiredCenters =
-      hovered.length > 0
-        ? hovered
-        : retainAcquiredCenterMarks(this._acquiredCenters, cursorWcs, aperture)
+    this._acquiredCenters = mergeAcquiredCenterMarks(
+      this._acquiredCenters,
+      hovered
+    )
   }
 }

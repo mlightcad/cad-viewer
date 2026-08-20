@@ -1,6 +1,7 @@
 import {
   AcDb2dPolyline,
   AcDbArc,
+  AcDbBlockReference,
   AcDbCircle,
   AcDbEllipse,
   AcDbEntity,
@@ -8,7 +9,9 @@ import {
   AcDbOsnapMode,
   AcDbPolyline,
   AcGeCircArc2d,
+  AcGeMatrix3d,
   AcGePoint2dLike,
+  AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
@@ -17,8 +20,6 @@ export interface AcEdOsnapCenterMark {
   x: number
   y: number
   z: number
-  /** Supporting-curve radius used to keep the mark while moving toward the center. */
-  keepRadius: number
 }
 
 const BULGE_EPS = 1e-10
@@ -59,17 +60,29 @@ function tryBulgeArc(
   }
 }
 
-function markFromPoint(
-  point: AcGePoint3dLike,
-  keepRadius: number
-): AcEdOsnapCenterMark | undefined {
-  if (!(keepRadius > 0) || !Number.isFinite(keepRadius)) return undefined
+function markFromPoint(point: AcGePoint3dLike): AcEdOsnapCenterMark {
   return {
     x: point.x,
     y: point.y,
-    z: point.z ?? 0,
-    keepRadius
+    z: point.z ?? 0
   }
+}
+
+function transformMark(
+  mark: AcEdOsnapCenterMark,
+  matrix: AcGeMatrix3d
+): AcEdOsnapCenterMark {
+  const point = new AcGePoint3d(mark.x, mark.y, mark.z).applyMatrix4(matrix)
+  return markFromPoint(point)
+}
+
+/**
+ * Child spatial-index ids may get a `#n` suffix when the same object appears
+ * more than once in a block. Strip that before matching database object ids.
+ */
+export function canonicalGsMark(id: AcDbObjectId): AcDbObjectId {
+  if (typeof id !== 'string') return id
+  return id.replace(/#\d+$/, '')
 }
 
 function polylineVertices(entity: AcDbPolyline | AcDb2dPolyline): Array<{
@@ -135,10 +148,11 @@ function collectPolylineArcCenter(
   }
 
   if (!bestArc) return undefined
-  return markFromPoint(
-    { x: bestArc.center.x, y: bestArc.center.y, z: entity.elevation },
-    bestArc.radius
-  )
+  return markFromPoint({
+    x: bestArc.center.x,
+    y: bestArc.center.y,
+    z: entity.elevation
+  })
 }
 
 function collectFromOsnapCenter(
@@ -154,38 +168,81 @@ function collectFromOsnapCenter(
     points,
     gsMark
   )
-  const marks: AcEdOsnapCenterMark[] = []
-  for (const point of points) {
-    const keepRadius = hypot2(pickPoint.x, pickPoint.y, point.x, point.y)
-    const mark = markFromPoint(point, keepRadius)
-    if (mark) marks.push(mark)
+  return points.map(point => markFromPoint(point))
+}
+
+function findBlockSubEntity(
+  blockRef: AcDbBlockReference,
+  gsMark: AcDbObjectId,
+  parentMat: AcGeMatrix3d
+): { entity: AcDbEntity; transform: AcGeMatrix3d } | undefined {
+  const blockTableRecord = blockRef.blockTableRecord
+  if (!blockTableRecord) return undefined
+
+  const thisMat = new AcGeMatrix3d().multiplyMatrices(
+    parentMat,
+    blockRef.blockTransform
+  )
+  const targetId = canonicalGsMark(gsMark)
+
+  for (const entity of blockTableRecord.newIterator()) {
+    if (entity.objectId === gsMark || entity.objectId === targetId) {
+      return { entity, transform: thisMat }
+    }
+    if (entity instanceof AcDbBlockReference) {
+      const nested = findBlockSubEntity(entity, gsMark, thisMat)
+      if (nested) return nested
+    }
   }
-  return marks
+  return undefined
+}
+
+function collectBlockCenterMarks(
+  blockRef: AcDbBlockReference,
+  pickPoint: AcGePoint3dLike,
+  gsMark?: AcDbObjectId
+): AcEdOsnapCenterMark[] {
+  if (!gsMark) {
+    return collectFromOsnapCenter(blockRef, pickPoint)
+  }
+
+  const found = findBlockSubEntity(blockRef, gsMark, new AcGeMatrix3d())
+  if (!found) {
+    return collectFromOsnapCenter(blockRef, pickPoint, canonicalGsMark(gsMark))
+  }
+  if (found.entity instanceof AcDbBlockReference) {
+    return collectBlockCenterMarks(found.entity, pickPoint)
+  }
+
+  const inverse = found.transform.clone().invert()
+  const localPick = new AcGePoint3d(pickPoint).applyMatrix4(inverse)
+  return collectCenterMarksFromEntity(found.entity, localPick).map(mark =>
+    transformMark(mark, found.transform)
+  )
 }
 
 /**
  * Collects AutoCAD-style center ticks for circular geometry under the cursor.
  *
- * Circle, arc, ellipse, and the closest bulge segment of a polyline each
- * contribute one center. Other entities fall back to `subGetOsnapPoints(Center)`
- * so block references still acquire nested circle/arc/ellipse centers.
+ * Circle, arc, ellipse, polyline bulge segments, and the same geometry nested
+ * in block references each contribute a center.
  */
 export function collectCenterMarksFromEntity(
   entity: AcDbEntity,
   pickPoint: AcGePoint3dLike,
   gsMark?: AcDbObjectId
 ): AcEdOsnapCenterMark[] {
+  if (entity instanceof AcDbBlockReference) {
+    return collectBlockCenterMarks(entity, pickPoint, gsMark)
+  }
   if (entity instanceof AcDbCircle) {
-    const mark = markFromPoint(entity.center, entity.radius)
-    return mark ? [mark] : []
+    return [markFromPoint(entity.center)]
   }
   if (entity instanceof AcDbArc) {
-    const mark = markFromPoint(entity.center, entity.radius)
-    return mark ? [mark] : []
+    return [markFromPoint(entity.center)]
   }
   if (entity instanceof AcDbEllipse) {
-    const mark = markFromPoint(entity.center, entity.majorAxisRadius)
-    return mark ? [mark] : []
+    return [markFromPoint(entity.center)]
   }
   if (entity instanceof AcDbPolyline || entity instanceof AcDb2dPolyline) {
     const mark = collectPolylineArcCenter(entity, pickPoint)
@@ -194,20 +251,18 @@ export function collectCenterMarksFromEntity(
   return collectFromOsnapCenter(entity, pickPoint, gsMark)
 }
 
-/**
- * Keeps acquired centers while the cursor is still inside the supporting
- * curve, so the plus mark remains after leaving the circumference.
- */
-export function retainAcquiredCenterMarks(
-  marks: readonly AcEdOsnapCenterMark[],
-  cursor: AcGePoint2dLike,
-  aperture: number
+/** Appends newly hovered centers without dropping marks acquired earlier. */
+export function mergeAcquiredCenterMarks(
+  existing: readonly AcEdOsnapCenterMark[],
+  incoming: readonly AcEdOsnapCenterMark[]
 ): AcEdOsnapCenterMark[] {
-  const pad = Math.max(0, aperture)
-  return marks.filter(mark => {
-    const dist = hypot2(cursor.x, cursor.y, mark.x, mark.y)
-    return dist <= mark.keepRadius + pad
-  })
+  const merged = [...existing]
+  for (const mark of incoming) {
+    if (!merged.some(item => centerMarksCoincide(item, mark))) {
+      merged.push(mark)
+    }
+  }
+  return merged
 }
 
 export function centerMarksCoincide(
