@@ -166,7 +166,7 @@ CAD-Viewer は [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer) 内�
 - Vercel AI SDK（`Experimental_Agent` + `@ai-sdk/vue`）上の **Vue チャットパネル**（`AgentChatPanel`）
 - **ブラウザ側 LLM 設定** — OpenAI、Anthropic、OpenAI 互換エンドポイントの API キーはクライアントに保持（`localStorage` に暗号化保存）
 - **フェーズ 1 CAD ツール** — `get_drawing_context`；`draw_line`、`draw_circle`、`draw_arc`、`draw_rectangle`、`draw_polyline`、`draw_text`；`set_current_layer`、`create_layer`、`zoom_extents`
-- プラグイン i18n 層による **English / Chinese / Turkish / Czech** UI 文字列
+- プラグイン i18n 層による **英語 / 中国語 / トルコ語 / チェコ語** UI 文字列
 
 フル Vue [`cad-viewer`](packages/cad-viewer) アプリは、パッケージインストール時にエージェントを自動登録します（パレットタブ）。[`cad-simple-viewer-example`](packages/cad-simple-viewer-example) は `cad-simple-ui-plugin` 経由でドックタブに接続します。ホストアプリは `registerLazyAgentPlugin` と `setAgentPaletteOpener` を呼び出し、パネルのマウント位置を決定します。
 
@@ -209,7 +209,7 @@ CAD-Viewer は **卓越したパフォーマンス** 向けに設計されてお
 
 ## 既知の問題
 
-デフォルトのオープンソース DWG パスは [LibreDWG](https://github.com/LibreDWG/libredwg) ベースです。多くの図面で問題なく動作しますが、エンティティのカバレッジは依然として限定的で、WASM バンドルははるかに大きく、起動は遅く、メモリ使用量は高く、非常に大きな DWG ファイルではメモリ不足エラーが発生する可能性があります。商用クローズドソース製品には GPL ライセンスの考慮事項も伴います。
+デフォルトのオープンソース DWG パスは、オプションの `@mlightcad/libredwg-converter` パッケージ経由で [LibreDWG](https://github.com/LibreDWG/libredwg) を使用します。多くの図面で問題なく動作しますが、エンティティのカバレッジは依然として限定的で、WASM バンドルははるかに大きく、起動は遅く、メモリ使用量は高く、非常に大きな DWG ファイルではメモリ不足エラーが発生する可能性があります。商用クローズドソース製品には GPL ライセンスの考慮事項も伴います。`@mlightcad/cad-simple-viewer` はデフォルトではそのコンバーターに **依存せず、登録もしません** — ホストアプリ（各 example パッケージを参照）が明示的にオプトインします。
 
 より良い互換性、低いメモリ使用量、大容量ファイル対応、またはより明確な商用ライセンスが必要な場合は、[**プロプライエタリ DWG パーサー**](./PROPRIETARY-PARSER.md) を参照してください。
 
@@ -302,7 +302,7 @@ CAD-Viewer は **卓越したパフォーマンス** 向けに設計されてお
 * [x] 端点
 * [x] 中点
 * [x] 中心
-* [ ] 交点
+* [x] 交点
 * [ ] 垂線 / 接線
 * [x] 最近点
 * [ ] スナップトラッキング
@@ -442,6 +442,6 @@ CAD-Viewer は **卓越したパフォーマンス** 向けに設計されてお
 
 cad-viewer モノレポは主に [MIT](LICENSE) ライセンスです。
 
-DXF 読み込みは `@mlightcad/data-model` 内の組み込み MIT パーサーを使用します。`@mlightcad/cad-simple-viewer` の **デフォルト DWG 読み込みパス** は GPL-3.0 パッケージ（`libredwg-web` / `@mlightcad/libredwg-converter`）に依存します。クローズドソース製品を提供し、GPL コードを顧客に配布できない場合は、代わりに [**プロプライエタリ DWG パーサー**](./PROPRIETARY-PARSER.md) を使用してください — このコンバーターを置き換え、スタックの残りを MIT のみに保てます。
+DXF 読み込みは `@mlightcad/data-model` 内の組み込み MIT パーサーを使用します。DWG 読み込みは **オプトイン** です：`@mlightcad/cad-simple-viewer` は GPL の LibreDWG パッケージに依存しません。オープンソースの DWG サポートが必要なホストは、自身で `@mlightcad/libredwg-converter`（GPL-3.0）を追加し、worker と wasm を配置してコンバーターを登録します。クローズドソース製品を提供し、GPL コードを顧客に配布できない場合は、代わりに [**プロプライエタリ DWG パーサー**](./PROPRIETARY-PARSER.md) を使用してください。
 
 → **商用パーサー：** [PROPRIETARY-PARSER.md](./PROPRIETARY-PARSER.md)（スコープ、ライセンス、価格、統合、GPL コンプライアンス、サポート）

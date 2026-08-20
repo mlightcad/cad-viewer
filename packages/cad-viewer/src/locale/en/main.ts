@@ -595,6 +595,7 @@ export default {
       center: 'Center',
       node: 'Node',
       quadrant: 'Quadrant',
+      intersection: 'Intersection',
       insertion: 'Insertion',
       nearest: 'Nearest'
     },

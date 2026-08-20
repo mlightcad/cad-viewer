@@ -302,7 +302,7 @@ Legend:
 * [x] Endpoint
 * [x] Midpoint
 * [x] Center
-* [ ] Intersection
+* [x] Intersection
 * [ ] Perpendicular / tangent
 * [x] Nearest
 * [ ] Snap tracking

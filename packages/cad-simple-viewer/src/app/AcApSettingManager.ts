@@ -69,6 +69,7 @@ const DEFAULT_VALUES: AcApSettings = {
     AcDbOsnapMode.MidPoint,
     AcDbOsnapMode.Center,
     AcDbOsnapMode.Quadrant,
+    AcDbOsnapMode.Intersection,
     AcDbOsnapMode.Nearest
   ])
 }

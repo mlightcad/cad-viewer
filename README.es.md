@@ -209,7 +209,7 @@ Estas optimizaciones permiten que CAD-Viewer renderice sin problemas dibujos CAD
 
 ## Problemas conocidos
 
-La ruta DWG de código abierto predeterminada se basa en [LibreDWG](https://github.com/LibreDWG/libredwg). Funciona bien para muchos dibujos, pero su cobertura de entidades sigue siendo limitada, el paquete WASM es mucho más grande, el arranque es más lento, el uso de memoria es alto y los archivos DWG muy grandes pueden provocar errores de falta de memoria. También introduce consideraciones de licencia GPL para productos comerciales de código cerrado.
+La ruta DWG de código abierto predeterminada se basa en [LibreDWG](https://github.com/LibreDWG/libredwg) a través del paquete opcional `@mlightcad/libredwg-converter`. Funciona bien para muchos dibujos, pero su cobertura de entidades sigue siendo limitada, el paquete WASM es mucho más grande, el arranque es más lento, el uso de memoria es alto y los archivos DWG muy grandes pueden provocar errores de falta de memoria. También introduce consideraciones de licencia GPL para productos comerciales de código cerrado. `@mlightcad/cad-simple-viewer` **no** depende de ni registra ese convertidor de forma predeterminada: las aplicaciones host (véanse los paquetes de ejemplo) se adhieren de forma explícita.
 
 Si necesita mejor compatibilidad, menor uso de memoria, soporte para archivos grandes o una historia de licencias comerciales más limpia, consulte nuestro [**analizador DWG propietario**](./PROPRIETARY-PARSER.md).
 
@@ -302,7 +302,7 @@ Leyenda:
 * [x] Punto final
 * [x] Punto medio
 * [x] Centro
-* [ ] Intersección
+* [x] Intersección
 * [ ] Perpendicular / tangente
 * [x] Más cercano
 * [ ] Seguimiento de ajuste
@@ -442,6 +442,6 @@ Esta hoja de ruta es intencionalmente detallada para que los colaboradores pueda
 
 El monorepo cad-viewer está principalmente bajo licencia [MIT](LICENSE).
 
-La carga de DXF utiliza el analizador MIT integrado en `@mlightcad/data-model`. La **ruta de carga DWG predeterminada** en `@mlightcad/cad-simple-viewer` depende de paquetes GPL-3.0 (`libredwg-web` / `@mlightcad/libredwg-converter`). Si distribuye un producto de código cerrado y no puede distribuir código GPL a sus clientes, utilice el [**analizador DWG propietario**](./PROPRIETARY-PARSER.md) en su lugar — reemplaza ese convertidor y permite que el resto de la pila permanezca solo MIT.
+La carga de DXF utiliza el analizador MIT integrado en `@mlightcad/data-model`. La carga de DWG es **opt-in**: `@mlightcad/cad-simple-viewer` no depende de paquetes GPL de LibreDWG. Las aplicaciones host que deseen soporte DWG de código abierto añaden `@mlightcad/libredwg-converter` (GPL-3.0) ellas mismas, despliegan su worker + wasm y registran el convertidor. Si distribuye un producto de código cerrado y no puede distribuir código GPL a sus clientes, utilice el [**analizador DWG propietario**](./PROPRIETARY-PARSER.md) en su lugar.
 
 → **Analizador comercial:** [PROPRIETARY-PARSER.md](./PROPRIETARY-PARSER.md) (alcance, licencias, precios, integración, cumplimiento GPL, soporte)

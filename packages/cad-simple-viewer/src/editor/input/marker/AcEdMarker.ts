@@ -3,7 +3,13 @@ import { AcGePoint2dLike } from '@mlightcad/data-model'
 /**
  * Supported marker shapes.
  */
-export type AcEdMarkerType = 'circle' | 'triangle' | 'rect' | 'diamond' | 'x'
+export type AcEdMarkerType =
+  | 'circle'
+  | 'triangle'
+  | 'rect'
+  | 'diamond'
+  | 'x'
+  | 'intersection'
 
 /**
  * Represents a single marker displayed in screen coordinates.
@@ -162,6 +168,31 @@ export class AcEdMarker {
       .ml-marker-x::after {
         transform: translate(-50%, -50%) rotate(-45deg);
       }
+
+      .ml-marker-intersection {
+        border: 2px solid currentColor;
+        background: transparent;
+      }
+
+      .ml-marker-intersection::before,
+      .ml-marker-intersection::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 70%;
+        height: 2px;
+        background: currentColor;
+        transform-origin: center;
+      }
+
+      .ml-marker-intersection::before {
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+
+      .ml-marker-intersection::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+      }
     `
 
     document.head.appendChild(style)
@@ -206,6 +237,12 @@ export class AcEdMarker {
 
       case 'x':
         this._el.classList.add('ml-marker-x')
+        this._el.style.width = `${this._size}px`
+        this._el.style.height = `${this._size}px`
+        break
+
+      case 'intersection':
+        this._el.classList.add('ml-marker-intersection')
         this._el.style.width = `${this._size}px`
         this._el.style.height = `${this._size}px`
         break
