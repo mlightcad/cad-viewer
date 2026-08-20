@@ -505,4 +505,51 @@ describe('AcEdOsnapResolver', () => {
       expect(resolver.acquiredCenterMarks[0]?.y).toBeCloseTo(expected.y, 5)
     })
   })
+
+  it('transforms nested insert centers through the parent block transform', () => {
+    withWorkingDatabase(db => {
+      const inner = new AcDbBlockTableRecord()
+      inner.name = 'INNER_CEN_BLK'
+      db.tables.blockTable.add(inner)
+      const circle = new AcDbCircle(new AcGePoint3d(0, 0, 0), 50)
+      inner.appendEntity(circle)
+
+      const outer = new AcDbBlockTableRecord()
+      outer.name = 'OUTER_CEN_BLK'
+      db.tables.blockTable.add(outer)
+      const nestedInsert = new AcDbBlockReference('INNER_CEN_BLK')
+      nestedInsert.position = new AcGePoint3d(10, 0, 0)
+      outer.appendEntity(nestedInsert)
+
+      const insert = new AcDbBlockReference('OUTER_CEN_BLK')
+      insert.position = new AcGePoint3d(100, 20, 0)
+      insert.scaleFactors = new AcGePoint3d(2, 2, 1)
+      db.tables.blockTable.modelSpace.appendEntity(insert)
+
+      const expected = new AcGePoint3d(0, 0, 0)
+        .applyMatrix4(nestedInsert.blockTransform)
+        .applyMatrix4(insert.blockTransform)
+
+      AcApSettingManager.instance.osnapModes = acdbOsnapModesToMask([
+        AcDbOsnapMode.Center
+      ])
+
+      const view = createMockView([
+        {
+          id: insert.objectId,
+          children: [{ id: nestedInsert.objectId }]
+        }
+      ])
+      const resolver = new AcEdOsnapResolver(view)
+      resolver.resolve({
+        cursorWcs: { x: expected.x + 50, y: expected.y },
+        hitRadiusPx: 20
+      })
+
+      expect(resolver.acquiredCenterMarks).toHaveLength(1)
+      expect(resolver.acquiredCenterMarks[0]?.x).toBeCloseTo(expected.x, 5)
+      expect(resolver.acquiredCenterMarks[0]?.y).toBeCloseTo(expected.y, 5)
+      expect(resolver.acquiredCenterMarks[0]?.x).not.toBeCloseTo(10, 5)
+    })
+  })
 })

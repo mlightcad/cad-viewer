@@ -210,9 +210,6 @@ function collectBlockCenterMarks(
   if (!found) {
     return collectFromOsnapCenter(blockRef, pickPoint, canonicalGsMark(gsMark))
   }
-  if (found.entity instanceof AcDbBlockReference) {
-    return collectBlockCenterMarks(found.entity, pickPoint)
-  }
 
   const inverse = found.transform.clone().invert()
   const localPick = new AcGePoint3d(pickPoint).applyMatrix4(inverse)
