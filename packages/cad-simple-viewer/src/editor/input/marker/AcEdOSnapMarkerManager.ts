@@ -18,8 +18,12 @@ export class AcEdMarkerManager {
   /** The view associated with this input operation */
   private view: AcEdBaseView
 
-  /** Internal stack of active markers */
+  /** Internal stack of active snap markers */
   private stack: AcEdMarker[] = []
+
+  /** AutoCAD-style acquired center ticks (plus marks), not part of the snap stack. */
+  private hintMarkers: AcEdMarker[] = []
+  private hintPositions: AcGePoint2dLike[] = []
 
   constructor(view: AcEdBaseView) {
     this.view = view
@@ -40,14 +44,38 @@ export class AcEdMarkerManager {
     size?: number,
     color?: string
   ) {
-    // worldToScreen() returns canvas-local coordinates.
-    const canvasPos = this.view.worldToScreen(pos)
-    // Marker DOM is mounted in view.container, so convert to container-local.
-    const containerPos = this.view.canvasToContainer(canvasPos)
-    const marker = new AcEdMarker(type, size, color, this.view.container)
-    marker.setPosition(containerPos)
+    const marker = this.createMarker(pos, type, size, color)
     this.stack.push(marker)
     return marker
+  }
+
+  /**
+   * Replaces acquired-center plus marks. These stay visible independently of
+   * the snap-marker stack so hovering a circle can show its center tick while
+   * the cursor still snaps to nearest/quadrant on the circumference.
+   */
+  public setHintMarkers(
+    positions: readonly AcGePoint2dLike[],
+    type: AcEdMarkerType = 'plus',
+    size?: number,
+    color?: string
+  ) {
+    this.clearHintMarkers()
+    this.hintPositions = positions.map(pos => ({ x: pos.x, y: pos.y }))
+    for (const pos of this.hintPositions) {
+      this.hintMarkers.push(this.createMarker(pos, type, size, color))
+    }
+  }
+
+  /**
+   * Repositions acquired-center hint markers after pan/zoom.
+   */
+  public repositionHints() {
+    for (let i = 0; i < this.hintMarkers.length; i++) {
+      const pos = this.hintPositions[i]
+      if (!pos) continue
+      this.hintMarkers[i]!.setPosition(this.toContainerPos(pos))
+    }
   }
 
   /**
@@ -76,6 +104,7 @@ export class AcEdMarkerManager {
    * Should be called when OSNAP indicators need to be fully reset.
    */
   public clear() {
+    this.clearHintMarkers()
     for (const marker of this.stack) marker.destroy()
     this.stack = []
   }
@@ -91,5 +120,27 @@ export class AcEdMarkerManager {
    */
   public top(): AcEdMarker | undefined {
     return this.stack[this.stack.length - 1]
+  }
+
+  private createMarker(
+    pos: AcGePoint2dLike,
+    type?: AcEdMarkerType,
+    size?: number,
+    color?: string
+  ) {
+    const marker = new AcEdMarker(type, size, color, this.view.container)
+    marker.setPosition(this.toContainerPos(pos))
+    return marker
+  }
+
+  private toContainerPos(pos: AcGePoint2dLike) {
+    const canvasPos = this.view.worldToScreen(pos)
+    return this.view.canvasToContainer(canvasPos)
+  }
+
+  private clearHintMarkers() {
+    for (const marker of this.hintMarkers) marker.destroy()
+    this.hintMarkers = []
+    this.hintPositions = []
   }
 }
