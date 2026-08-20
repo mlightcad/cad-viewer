@@ -133,7 +133,7 @@ Monorepo dodává několik oficiálních pluginů. Každý se zaměřuje na jedn
 
 ### Oficiální pluginy
 
-| Package | Role | Příkazy / schopnosti |
+| Balíček | Účel | Příkazy / schopnosti |
 |---------|------|-------------------------|
 | [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **Panel nástrojů, správce vrstev a paleta revizí** pro `cad-simple-viewer` (čisté DOM, bez Vue/React) | `layer`, `markuppanel`, výchozí panel nástrojů (zobrazení, měření, export, revize, motiv, jazyk) |
 | [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **CAD agent v přirozeném jazyce** (AI chat panel + volání nástrojů pro výkres) | `agent` |
@@ -209,7 +209,7 @@ Tyto optimalizace umožňují CAD-Viewer plynule vykreslovat složité CAD výkr
 
 ## Známé problémy
 
-Výchozí open-source cesta pro DWG je založena na [LibreDWG](https://github.com/LibreDWG/libredwg). Funguje dobře pro mnoho výkresů, ale pokrytí entit je stále omezené, WASM balíček je mnohem větší, spuštění je pomalejší, spotřeba paměti je vysoká a velmi rozsáhlé soubory DWG mohou skončit chybou nedostatku paměti. Také zavádí licenční aspekty GPL pro komerční produkty s uzavřeným zdrojovým kódem.
+Výchozí open-source cesta pro DWG je založena na [LibreDWG](https://github.com/LibreDWG/libredwg) prostřednictvím volitelného balíčku `@mlightcad/libredwg-converter`. Funguje dobře pro mnoho výkresů, ale pokrytí entit je stále omezené, WASM balíček je mnohem větší, spuštění je pomalejší, spotřeba paměti je vysoká a velmi rozsáhlé soubory DWG mohou skončit chybou nedostatku paměti. Také zavádí licenční aspekty GPL pro komerční produkty s uzavřeným zdrojovým kódem. `@mlightcad/cad-simple-viewer` na tomto konvertoru **nezávisí** a ve výchozím stavu jej neregistruje — hostitelské aplikace (viz ukázkové balíčky) se připojují explicitně.
 
 Pokud potřebujete lepší kompatibilitu, nižší spotřebu paměti, podporu velkých souborů nebo čistší komerční licenční model, podívejte se na náš [**vlastní parser DWG**](./PROPRIETARY-PARSER.md).
 
@@ -302,7 +302,7 @@ Legenda:
 * [x] Koncový bod
 * [x] Střed
 * [x] Střed kružnice
-* [ ] Průsečík
+* [x] Průsečík
 * [ ] Kolmice / tečna
 * [x] Nejbližší
 * [ ] Sledování přichycení
@@ -442,6 +442,6 @@ Příspěvky jsou vítány! Otevírejte issue nebo pull requesty pro opravy chyb
 
 Monorepo cad-viewer je primárně licencováno pod [MIT](LICENSE).
 
-Načítání DXF používá vestavěný MIT parser v `@mlightcad/data-model`. **Výchozí cesta pro načítání DWG** v `@mlightcad/cad-simple-viewer` závisí na balíčcích GPL-3.0 (`libredwg-web` / `@mlightcad/libredwg-converter`). Pokud dodáváte produkt s uzavřeným zdrojovým kódem a nemůžete zákazníkům distribuovat GPL kód, použijte místo toho [**vlastní parser DWG**](./PROPRIETARY-PARSER.md) — nahradí tento konvertor a zbytek stacku zůstane pouze pod MIT.
+Načítání DXF používá vestavěný MIT parser v `@mlightcad/data-model`. Načítání DWG je **opt-in**: `@mlightcad/cad-simple-viewer` nezávisí na GPL balíčcích LibreDWG. Hostitelé, kteří chtějí open-source podporu DWG, si sami přidají `@mlightcad/libredwg-converter` (GPL-3.0), nasadí jeho worker + wasm a zaregistrují konvertor. Pokud dodáváte produkt s uzavřeným zdrojovým kódem a nemůžete zákazníkům distribuovat GPL kód, použijte místo toho [**vlastní parser DWG**](./PROPRIETARY-PARSER.md).
 
 → **Komerční parser:** [PROPRIETARY-PARSER.md](./PROPRIETARY-PARSER.md) (rozsah, licencování, ceny, integrace, soulad s GPL, podpora)

@@ -554,6 +554,7 @@ export default {
       center: '圆心',
       node: '节点',
       quadrant: '象限点',
+      intersection: '交点',
       insertion: '插入',
       nearest: '最近点'
     },

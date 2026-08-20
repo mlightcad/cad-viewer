@@ -587,6 +587,7 @@ export default {
       center: 'Střed',
       node: 'Uzel',
       quadrant: 'Kvadrant',
+      intersection: 'Průsečík',
       insertion: 'Bod vložení',
       nearest: 'Nejbližší'
     },

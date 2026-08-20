@@ -599,6 +599,7 @@ export default {
       center: 'Merkez',
       node: 'Düğüm',
       quadrant: 'Çeyrek',
+      intersection: 'Kesişim',
       insertion: 'Ekleme',
       nearest: 'En Yakın'
     },

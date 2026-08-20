@@ -1,5 +1,6 @@
 import {
   AcDbEntity,
+  acdbHasOsnapMode,
   acdbHostApplicationServices,
   acdbMaskToOsnapModes,
   AcDbObjectId,
@@ -9,7 +10,7 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApSettingManager } from '../../app'
+import { AcApSettingManager } from '../../app/AcApSettingManager'
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdMarkerType } from './marker/AcEdMarker'
 
@@ -27,6 +28,9 @@ export interface AcEdOsnapResolveOptions {
 }
 
 const DEFAULT_HIT_RADIUS_PX = 20
+
+/** Max nearby entities considered per intersection query (matches HTML viewer). */
+const MAX_INTERSECTION_SOURCES = 48
 
 /**
  * Resolves object snap points for a view during interactive input.
@@ -95,6 +99,8 @@ export class AcEdOsnapResolver {
         return 'diamond'
       case AcDbOsnapMode.Nearest:
         return 'x'
+      case AcDbOsnapMode.Intersection:
+        return 'intersection'
       default:
         return 'rect'
     }
@@ -105,6 +111,7 @@ export class AcEdOsnapResolver {
       case AcDbOsnapMode.EndPoint:
       case AcDbOsnapMode.MidPoint:
       case AcDbOsnapMode.Center:
+      case AcDbOsnapMode.Intersection:
         return 0
       case AcDbOsnapMode.Quadrant:
         return 1
@@ -145,7 +152,9 @@ export class AcEdOsnapResolver {
     gsMark?: AcDbObjectId
   ) {
     const modes = acdbMaskToOsnapModes(AcApSettingManager.instance.osnapModes)
-    modes.forEach(mode =>
+    modes.forEach(mode => {
+      // Intersection requires pairwise entity tests; see collectIntersectionOsnapPoints.
+      if (mode === AcDbOsnapMode.Intersection) return
       this.collectOsnapPointsByMode(
         entity,
         mode,
@@ -154,7 +163,27 @@ export class AcEdOsnapResolver {
         lastPoint,
         gsMark
       )
-    )
+    })
+  }
+
+  private collectIntersectionOsnapPoints(
+    entities: AcDbEntity[],
+    osnapPoints: AcEdOsnapPoint[]
+  ) {
+    const sources = entities.slice(0, MAX_INTERSECTION_SOURCES)
+    for (let i = 0; i < sources.length; i++) {
+      for (let j = i; j < sources.length; j++) {
+        const points = sources[i].intersectWith(sources[j])
+        for (const point of points) {
+          osnapPoints.push({
+            x: point.x,
+            y: point.y,
+            z: point.z,
+            type: AcDbOsnapMode.Intersection
+          })
+        }
+      }
+    }
   }
 
   private collectOsnapPoints(
@@ -169,9 +198,17 @@ export class AcEdOsnapResolver {
     const pickPoint = AcGeGeometryUtil.point2dToPoint3d(cursorWcs)
     const last = AcGeGeometryUtil.point2dToPoint3d(lastPoint)
 
+    const uniqueEntities: AcDbEntity[] = []
+    const seenIds = new Set<AcDbObjectId>()
+
     results.forEach(item => {
       const entity = modelSpace.getIdAt(item.id)
       if (!entity) return
+
+      if (!seenIds.has(item.id)) {
+        seenIds.add(item.id)
+        uniqueEntities.push(entity)
+      }
 
       if (item.children && item.children.length > 0) {
         item.children.forEach(child =>
@@ -192,6 +229,15 @@ export class AcEdOsnapResolver {
         )
       }
     })
+
+    if (
+      acdbHasOsnapMode(
+        AcApSettingManager.instance.osnapModes,
+        AcDbOsnapMode.Intersection
+      )
+    ) {
+      this.collectIntersectionOsnapPoints(uniqueEntities, osnapPoints)
+    }
 
     return osnapPoints
   }

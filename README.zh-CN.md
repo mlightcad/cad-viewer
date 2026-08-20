@@ -121,7 +121,7 @@ pnpm preview:simple
 ### 平板/手机浏览器操作
 - **选择**：轻触实体
 - **缩放**：双指捏合放大/缩小
-- **平移**：双指拖动移动视图
+- **平移**：单指拖动移动视图
 
 ## 插件系统（Plugin System）
 
@@ -166,7 +166,7 @@ CAD-Viewer 在 [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer) 中�
 - **Vue 对话面板**（`AgentChatPanel`），基于 Vercel AI SDK（`Experimental_Agent` + `@ai-sdk/vue`）
 - **浏览器端 LLM 配置** — 支持 OpenAI、Anthropic 及 OpenAI 兼容接口，API Key 保存在客户端（`localStorage` 加密存储）
 - **一期 CAD 工具** — `get_drawing_context`；`draw_line`、`draw_circle`、`draw_arc`、`draw_rectangle`、`draw_polyline`、`draw_text`；`set_current_layer`、`create_layer`、`zoom_extents`
-- **中/英** 界面文案，通过插件 i18n 层提供
+- **英 / 中 / 土耳其语 / 捷克语** 界面文案，通过插件 i18n 层提供
 
 完整 Vue 版 [`cad-viewer`](packages/cad-viewer) 在安装该包后会自动注册智能体（调色板标签页）。[`cad-simple-viewer-example`](packages/cad-simple-viewer-example) 通过 `cad-simple-ui-plugin` 将其接入停靠面板。宿主应用可调用 `registerLazyAgentPlugin` 与 `setAgentPaletteOpener`，自行决定面板挂载位置。
 
@@ -209,7 +209,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 ## 已知问题
 
-默认的开源 DWG 方案基于 [LibreDWG](https://github.com/LibreDWG/libredwg)。它可以处理不少图纸，但支持的 entity 类型仍然比较少，WASM bundle 体积更大、启动更慢、内存占用更高，解析大型 DWG 时还可能出现内存溢出；另外，对于闭源商业产品还需要考虑 GPL license 的传导问题。
+默认的开源 DWG 方案基于 [LibreDWG](https://github.com/LibreDWG/libredwg)，通过可选的 `@mlightcad/libredwg-converter` 包提供。它可以处理不少图纸，但支持的 entity 类型仍然比较少，WASM bundle 体积更大、启动更慢、内存占用更高，解析大型 DWG 时还可能出现内存溢出；另外，对于闭源商业产品还需要考虑 GPL license 的传导问题。`@mlightcad/cad-simple-viewer` **默认不依赖、也不注册**该 converter — 宿主应用（参见各 example 包）需自行显式接入。
 
 如果你需要更好的兼容性、更低的内存占用、更大的文件支持，或者更清晰的商业授权方案，请查看我们的 [**专有 DWG 解析器**](./PROPRIETARY-PARSER.zh-CN.md)。
 
@@ -303,7 +303,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 -   [x] 端点（Endpoint）
 -   [x] 中点（Midpoint）
 -   [x] 圆心（Center）
--   [ ] 交点（Intersection）
+-   [x] 交点（Intersection）
 -   [ ] 垂足 / 切点（Perpendicular / Tangent）
 -   [x] 最近点（Nearest）
 -   [ ] 捕捉追踪（Snap Tracking）
@@ -443,7 +443,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 cad-viewer monorepo 主体采用 [MIT](LICENSE) 授权。
 
-DXF 加载使用 `@mlightcad/data-model` 中内置的 MIT 解析器。`@mlightcad/cad-simple-viewer` 的**默认 DWG 加载路径**依赖 GPL-3.0 包（`libredwg-web` / `@mlightcad/libredwg-converter`）。若您交付闭源产品且无法向客户分发 GPL 代码，可使用 [**专有 DWG 解析器**](./PROPRIETARY-PARSER.zh-CN.md) 替换该 converter，其余技术栈可保持纯 MIT。
+DXF 加载使用 `@mlightcad/data-model` 中内置的 MIT 解析器。DWG 加载为**按需接入（opt-in）**：`@mlightcad/cad-simple-viewer` 不依赖 GPL 的 LibreDWG 包。若宿主需要开源 DWG 支持，需自行添加 `@mlightcad/libredwg-converter`（GPL-3.0）、部署其 worker 与 wasm，并注册 converter。若您交付闭源产品且无法向客户分发 GPL 代码，请改用 [**专有 DWG 解析器**](./PROPRIETARY-PARSER.zh-CN.md)。
 
 → **专有解析器说明：** [PROPRIETARY-PARSER.zh-CN.md](./PROPRIETARY-PARSER.zh-CN.md)（支持范围、授权条款、价格、集成方式、GPL 合规、支持维护）
 

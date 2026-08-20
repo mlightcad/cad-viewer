@@ -209,7 +209,7 @@ CAD-Viewer는 **탁월한 성능**을 위해 설계되었으며, 높은 프레�
 
 ## 알려진 문제
 
-기본 오픈소스 DWG 경로는 [LibreDWG](https://github.com/LibreDWG/libredwg) 기반입니다. 많은 도면에서 잘 동작하지만, 엔티티 커버리지는 여전히 제한적이고 WASM 번들은 훨씬 크며, 시작이 느리고, 메모리 사용량이 높으며, 매우 큰 DWG 파일에서는 메모리 부족 오류가 발생할 수 있습니다. 또한 상용 클로즈드소스 제품에는 GPL 라이선스 고려 사항이 있습니다.
+기본 오픈소스 DWG 경로는 선택적 `@mlightcad/libredwg-converter` 패키지를 통해 [LibreDWG](https://github.com/LibreDWG/libredwg)를 사용합니다. 많은 도면에서 잘 동작하지만, 엔티티 커버리지는 여전히 제한적이고 WASM 번들은 훨씬 크며, 시작이 느리고, 메모리 사용량이 높으며, 매우 큰 DWG 파일에서는 메모리 부족 오류가 발생할 수 있습니다. 또한 상용 클로즈드소스 제품에는 GPL 라이선스 고려 사항이 있습니다. `@mlightcad/cad-simple-viewer`는 기본적으로 해당 컨버터에 **의존하거나 등록하지 않습니다** — 호스트 앱(예제 패키지 참조)이 명시적으로 옵트인합니다.
 
 더 나은 호환성, 낮은 메모리 사용량, 대용량 파일 지원, 또는 더 명확한 상용 라이선스가 필요하면 [**프로프라이어터리 DWG 파서**](./PROPRIETARY-PARSER.md)를 참조하세요.
 
@@ -302,7 +302,7 @@ CAD-Viewer는 **탁월한 성능**을 위해 설계되었으며, 높은 프레�
 * [x] 끝점
 * [x] 중점
 * [x] 중심
-* [ ] 교차점
+* [x] 교차점
 * [ ] 수직 / 접선
 * [x] 최근접
 * [ ] 스냅 추적
@@ -442,6 +442,6 @@ CAD-Viewer는 **탁월한 성능**을 위해 설계되었으며, 높은 프레�
 
 cad-viewer 모노레포는 주로 [MIT](LICENSE) 라이선스입니다.
 
-DXF 로딩은 `@mlightcad/data-model`의 내장 MIT 파서를 사용합니다. `@mlightcad/cad-simple-viewer`의 **기본 DWG 로딩 경로**는 GPL-3.0 패키지(`libredwg-web` / `@mlightcad/libredwg-converter`)에 의존합니다. 클로즈드소스 제품을 배포하고 고객에게 GPL 코드를 배포할 수 없다면, [**프로프라이어터리 DWG 파서**](./PROPRIETARY-PARSER.md)를 대신 사용하세요—해당 컨버터를 대체하고 나머지 스택은 MIT만 유지할 수 있습니다.
+DXF 로딩은 `@mlightcad/data-model`의 내장 MIT 파서를 사용합니다. DWG 로딩은 **옵트인**입니다: `@mlightcad/cad-simple-viewer`는 GPL LibreDWG 패키지에 의존하지 않습니다. 오픈소스 DWG 지원이 필요한 호스트는 직접 `@mlightcad/libredwg-converter`(GPL-3.0)를 추가하고, worker + wasm을 배포한 뒤 컨버터를 등록합니다. 클로즈드소스 제품을 배포하고 고객에게 GPL 코드를 배포할 수 없다면, [**프로프라이어터리 DWG 파서**](./PROPRIETARY-PARSER.md)를 대신 사용하세요.
 
 → **상용 파서:** [PROPRIETARY-PARSER.md](./PROPRIETARY-PARSER.md) (범위, 라이선스, 가격, 통합, GPL 준수, 지원)

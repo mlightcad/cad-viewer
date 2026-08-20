@@ -94,7 +94,7 @@ pnpm dev
 pnpm dev:simple
 ```
 
-### Build
+### Compilação
 
 ```bash
 pnpm build
@@ -135,13 +135,13 @@ O monorepo inclui vários plugins oficiais. Cada um foca em uma preocupação; c
 
 | Pacote | Função | Comandos / capacidades |
 |--------|--------|------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **UI de barra de ferramentas, gerenciador de camadas e paleta de revisão** para `cad-simple-viewer` (DOM puro, sem Vue/React) | `layer`, `markuppanel`, barra de ferramentas padrão (view, measure, export, review, theme, locale) |
+| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **UI de barra de ferramentas, gerenciador de camadas e paleta de revisão** para `cad-simple-viewer` (DOM puro, sem Vue/React) | `layer`, `markuppanel`, barra de ferramentas padrão (visualização, medição, exportação, revisão, tema, idioma) |
 | [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **Agente CAD em linguagem natural** (painel de chat com IA + chamadas de ferramentas de desenho) | `agent` |
 | [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | Exportar desenhos para **HTML offline autossuficiente** | `chtml` (diálogo no `cad-viewer`), `-chtml` (linha de comando) |
 | [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **Exportação e importação de PDF** (pipeline vetorial) | `cpdf`, `ipdf` |
 | [`@mlightcad/cad-svg-plugin`](packages/cad-svg-plugin) | **Exportação SVG** e renderizador vetorial compartilhado (também usado pela exportação PDF) | `csvg` |
 
-### `@mlightcad/cad-simple-ui-plugin` — UI chrome para o visualizador simples
+### `@mlightcad/cad-simple-ui-plugin` — Interface de usuário para o visualizador simples
 
 O [`cad-simple-viewer`](packages/cad-simple-viewer) deliberadamente **não inclui UI de aplicativo** — apenas o canvas e o núcleo CAD. Se você incorporar o visualizador simples em seu próprio app web e quiser chrome pronto sem adotar o shell completo baseado em Vue do [`cad-viewer`](packages/cad-viewer), **`cad-simple-ui-plugin` é a camada de UI indicada**.
 
@@ -209,7 +209,7 @@ Essas otimizações permitem que o CAD-Viewer renderize suavemente desenhos CAD 
 
 ## Problemas conhecidos
 
-O caminho DWG open-source padrão é baseado em [LibreDWG](https://github.com/LibreDWG/libredwg). Funciona bem para muitos desenhos, mas sua cobertura de entidades ainda é limitada, o bundle WASM é muito maior, a inicialização é mais lenta, o uso de memória é alto e arquivos DWG muito grandes podem encontrar erros de falta de memória. Também introduz considerações de licenciamento GPL para produtos comerciais closed-source.
+O caminho DWG open-source padrão é baseado em [LibreDWG](https://github.com/LibreDWG/libredwg) por meio do pacote opcional `@mlightcad/libredwg-converter`. Funciona bem para muitos desenhos, mas sua cobertura de entidades ainda é limitada, o bundle WASM é muito maior, a inicialização é mais lenta, o uso de memória é alto e arquivos DWG muito grandes podem encontrar erros de falta de memória. Também introduz considerações de licenciamento GPL para produtos comerciais closed-source. O `@mlightcad/cad-simple-viewer` **não** depende nem registra esse conversor por padrão — os apps host (veja os pacotes de exemplo) optam explicitamente.
 
 Se você precisa de melhor compatibilidade, menor uso de memória, suporte a arquivos grandes ou uma história de licenciamento comercial mais limpa, veja nosso [**parser DWG proprietário**](./PROPRIETARY-PARSER.md).
 
@@ -222,7 +222,7 @@ Se você precisa de melhor compatibilidade, menor uso de memória, suporte a arq
 | Arquivos DWG grandes | Pode causar OOM em arquivos grandes | Sem esse problema |
 | Licença | Risco de propagação GPL | Sem problema de propagação GPL |
 
-## Roadmap
+## Roteiro
 
 O objetivo deste projeto é criar um **sistema 2D semelhante ao AutoCAD no navegador** (visualizador + editor), com arquitetura modular e integração agnóstica a framework.
 
@@ -272,9 +272,9 @@ Legenda:
 
 #### Controles de visualização
 
-* [x] Pan
-* [x] Zoom (roda / box zoom)
-* [x] Ajustar à visualização / extents
+* [x] Panorâmica
+* [x] Zoom (roda / zoom por janela)
+* [x] Ajustar à visualização / extensão
 * [ ] Visualizações nomeadas
 * [ ] Histórico de visualização (desfazer / refazer mudanças de visualização)
 
@@ -297,15 +297,15 @@ Legenda:
 * [x] Filtros de seleção (por tipo / camada)
 * [x] Ciclo de seleção
 
-#### Snap (OSNAP)
+#### Captura (OSNAP)
 
-* [x] Endpoint
-* [x] Midpoint
-* [x] Center
-* [ ] Intersection
-* [ ] Perpendicular / tangent
-* [x] Nearest
-* [ ] Snap tracking
+* [x] Ponto final
+* [x] Ponto médio
+* [x] Centro
+* [x] Interseção
+* [ ] Perpendicular / tangente
+* [x] Mais próximo
+* [ ] Rastreamento de captura
 
 
 ### Edição e modificação
@@ -313,56 +313,56 @@ Legenda:
 #### Edição básica
 
 * [x] Framework de edição de entidades
-* [x] Move
-* [x] Copy
-* [x] Rotate
-* [ ] Scale
-* [x] Delete
-* [x] Undo / redo
+* [x] Mover
+* [x] Copiar
+* [x] Rotacionar
+* [ ] Escalar
+* [x] Excluir
+* [x] Desfazer / refazer
 
 #### Edição geométrica
 
-* [x] Grip points
-* [ ] Stretch
-* [ ] Trim
-* [ ] Extend
-* [x] Offset
-* [ ] Explode
-* [ ] Join / fillet / chamfer (2D)
+* [x] Pontos de aderência
+* [ ] Esticar
+* [ ] Recortar
+* [ ] Estender
+* [x] Deslocamento
+* [ ] Explodir
+* [ ] Unir / filete / chanfro (2D)
 
 ### Ferramentas de desenho e criação
 
 #### Entidades básicas
 
-* [x] Line
-* [x] Polyline
+* [x] Linha
+* [x] Polilinha
 * [x] Spline
-* [x] Circle
-* [x] Arc
-* [x] Ellipse
-* [x] Rectangle / polygon
+* [x] Círculo
+* [x] Arco
+* [x] Elipse
+* [x] Retângulo / polígono
 
 #### Entidades avançadas
 
-* [x] Hatch
-* [ ] Text (single-line / multi-line)
-* [ ] Dimensions (linear, aligned, angular)
-* [ ] Blocks creation & insertion
+* [x] Hachura
+* [ ] Texto (linha única / multilinha)
+* [ ] Cotas (linear, alinhada, angular)
+* [ ] Criação e inserção de blocos
 
 ### Medição
 
-* [x] Distance
-* [x] Arc length
-* [x] Area
-* [x] Angle
-* [ ] Coordinate
-* [ ] Entity statistics (length, area, count)
+* [x] Distância
+* [x] Comprimento de arco
+* [x] Área
+* [x] Ângulo
+* [ ] Coordenada
+* [ ] Estatísticas de entidades (comprimento, área, contagem)
 
 ### Cota
 
-* [x] Linear dimension
-* [ ] Angle dimension
-* [ ] Coordinate
+* [x] Cota linear
+* [ ] Cota angular
+* [ ] Coordenada
 
 ### Propriedades e painéis de UI
 
@@ -377,7 +377,7 @@ Legenda:
 * [x] Gerenciador de camadas
 * [ ] Gerenciador de blocos
 * [x] Histórico de comandos / console
-* [x] Barra de status (snap, ortho, grid)
+* [x] Barra de status (captura, ortogonal, grade)
 
 #### Sistema de comandos
 
@@ -407,7 +407,7 @@ Legenda:
 
 * [x] Edição local no navegador
 * [x] Salvar em DXF
-* [ ] Salvar change set / diff
+* [ ] Salvar conjunto de alterações / diff
 * [ ] Persistência IndexedDB
 
 #### Editor online
@@ -430,9 +430,9 @@ Legenda:
 * [x] Referência de API
 * [ ] Guia de contribuição
 * [x] Projetos de exemplo
-* [x] Manutenção de roadmap e changelog
+* [x] Manutenção de roteiro e changelog
 
-Este roadmap é intencionalmente granular para que os colaboradores possam ver claramente **o que existe**, **o que falta** e **onde a ajuda é necessária**.
+Este roteiro é intencionalmente granular para que os colaboradores possam ver claramente **o que existe**, **o que falta** e **onde a ajuda é necessária**.
 
 ## Contribuindo
 
@@ -442,6 +442,6 @@ Contribuições são bem-vindas! Abra issues ou pull requests para correções d
 
 O monorepo cad-viewer é licenciado principalmente sob [MIT](LICENSE).
 
-O carregamento DXF usa o parser MIT integrado em `@mlightcad/data-model`. O **caminho padrão de carregamento DWG** em `@mlightcad/cad-simple-viewer` depende de pacotes GPL-3.0 (`libredwg-web` / `@mlightcad/libredwg-converter`). Se você distribui um produto closed-source e não pode distribuir código GPL aos seus clientes, use o [**parser DWG proprietário**](./PROPRIETARY-PARSER.md) — ele substitui esse conversor e permite que o restante da stack permaneça apenas MIT.
+O carregamento DXF usa o parser MIT integrado em `@mlightcad/data-model`. O carregamento DWG é **opt-in**: o `@mlightcad/cad-simple-viewer` não depende de pacotes GPL do LibreDWG. Hosts que desejam suporte DWG open-source adicionam `@mlightcad/libredwg-converter` (GPL-3.0) por conta própria, implantam o worker + wasm e registram o conversor. Se você distribui um produto closed-source e não pode distribuir código GPL aos seus clientes, use o [**parser DWG proprietário**](./PROPRIETARY-PARSER.md).
 
 → **Parser comercial:** [PROPRIETARY-PARSER.md](./PROPRIETARY-PARSER.md) (escopo, licenciamento, preços, integração, conformidade GPL, suporte)

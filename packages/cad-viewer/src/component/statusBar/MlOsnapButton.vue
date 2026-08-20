@@ -61,6 +61,10 @@ const osnapModes = [
   { value: AcDbOsnapMode.Node, label: t('main.statusBar.osnap.node') },
   { value: AcDbOsnapMode.Quadrant, label: t('main.statusBar.osnap.quadrant') },
   {
+    value: AcDbOsnapMode.Intersection,
+    label: t('main.statusBar.osnap.intersection')
+  },
+  {
     value: AcDbOsnapMode.Insertion,
     label: t('main.statusBar.osnap.insertion')
   },
