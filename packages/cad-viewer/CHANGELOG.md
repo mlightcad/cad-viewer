@@ -1,5 +1,18 @@
 # @mlightcad/cad-viewer
 
+## 1.6.2
+
+### Patch Changes
+
+- feat: adds an in-browser DWG/DXF to offline HTML converter, HTML export of paper-space viewports with layout switching, and a drawing layout switcher in the simple-ui toolbar. Object snap gains AutoCAD-style center ticks and intersection snaps. Overlay toolbars keep style controls while markup or measure is selected, restore named ACI colors, and restore undo for deleted entities. Arc-length measure locks onto circles, and hatch fills stay below linework in HTML export.
+- Updated dependencies
+  - @mlightcad/cad-agent-plugin@1.6.2
+  - @mlightcad/cad-html-plugin@1.6.2
+  - @mlightcad/cad-pdf-plugin@1.6.2
+  - @mlightcad/cad-simple-viewer@1.6.2
+  - @mlightcad/cad-svg-plugin@1.6.2
+  - @mlightcad/three-renderer@1.6.2
+
 ## 1.6.1
 
 ### Patch Changes
