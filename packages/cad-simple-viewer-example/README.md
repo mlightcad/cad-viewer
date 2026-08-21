@@ -10,6 +10,7 @@ A vanilla TypeScript demo that shows how to embed [`@mlightcad/cad-simple-viewer
 - **Lazy plugins** — registered from `@mlightcad/cad-*-plugin/register` in `src/register.ts`; `-chtml` / `cpdf` / `csvg` load plugin chunks on demand (`chtml` runs the same command-line export when no dialog command is registered)
 - **Browser-only** — Parsing and rendering run in the browser (Web Workers + WebAssembly for DWG)
 - **Responsive layout** — Sidebar + viewer pane; stacks vertically on narrow screens
+- **HTML converter** — Dedicated page (`html-converter.html`) to upload a drawing, adjust export options, and download a self-contained HTML file with no backend
 
 ## Prerequisites
 
@@ -49,7 +50,7 @@ cd packages/cad-simple-viewer-example
 pnpm dev
 ```
 
-Vite prints the local URL (default `http://localhost:5173`).
+Vite prints the local URL (default `http://localhost:5173`). Open `/html-converter.html` for the in-browser DWG/DXF → offline HTML converter.
 
 ### Production
 
@@ -73,6 +74,16 @@ The build copies parser workers and `viewer-runtime.iife.js` into `dist/` (see `
    - **Export HTML** / **Export PDF** — Run `chtml` / `cpdf` from the toolbar (`chtml` uses command-line prompts here; `-chtml` is equivalent). Plugins must be registered; see `src/main.ts`.
 
 Toast messages at the top report success or errors. The window title updates when a document is activated.
+
+### HTML converter
+
+Open `/html-converter.html` (or `cad-simple-viewer/html-converter.html` when served from `packages/examples`). Choose a local `.dwg` / `.dxf`, or load the sample `canteen.dwg`. Export options match the full viewer dialog:
+
+- Invisible layers and paper-space layouts
+- Initial view (zoom to extents vs the viewport saved in the drawing)
+- Viewer mode (view-only vs measure & review)
+
+Click **Convert and download HTML**. The page opens the drawing locally, builds a snapshot with `AcApHtmlSnapshotBuilder`, packs it with `packHtml`, and downloads the file — nothing is uploaded to a server.
 
 ## Supported formats
 
@@ -103,9 +114,11 @@ Lazy initialization: `AcApDocManager` is created on first file open, not at page
 | Path | Role |
 |------|------|
 | `index.html` | Layout: sidebar, toolbar, canvas container, styles |
+| `html-converter.html` | Browser-only DWG/DXF → offline HTML converter UI |
 | `src/main.ts` | `CadViewerApp` — wiring UI to `AcApDocManager` |
+| `src/htmlConverter.ts` | Converter page: open drawing, collect options, snapshot + `packHtml` |
 | `src/register.ts` | Registers export plugins from `@mlightcad/cad-*-plugin/register` |
-| `vite.config.ts` | `base: './'`, copies workers + `viewer-runtime.iife.js` |
+| `vite.config.ts` | `base: './'`, MPA entries, copies workers + `viewer-runtime.iife.js` |
 | `package.json` | Scripts and workspace dependencies |
 
 ## Dependencies

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Convert a local DWG or DXF drawing to a self-contained offline HTML file in the browser. No backend — the drawing never leaves this page."
+    />
+    <title>Convert drawing to offline HTML</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f4f6fb;
+        --card: #ffffff;
+        --text: #1a1f36;
+        --muted: #5b6478;
+        --accent: #2563eb;
+        --accent-soft: #dbeafe;
+        --border: #d8deea;
+        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        --danger: #b91c1c;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1419;
+          --card: #171c24;
+          --text: #eef2ff;
+          --muted: #a6b0c3;
+          --accent: #60a5fa;
+          --accent-soft: #1e293b;
+          --border: #2a3344;
+          --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        line-height: 1.5;
+        color: var(--text);
+        overflow-x: hidden;
+        background:
+          radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 28rem),
+          var(--bg);
+      }
+
+      .page {
+        position: relative;
+        max-width: 64rem;
+        margin: 0 auto;
+        padding: 1.5rem 1.25rem 3rem;
+      }
+
+      .nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem 1rem;
+        margin-bottom: 1.25rem;
+        font-size: 0.9rem;
+      }
+
+      .nav a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .nav a:hover {
+        text-decoration: underline;
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: clamp(1.6rem, 3.5vw, 2.15rem);
+        line-height: 1.2;
+      }
+
+      .lead {
+        margin: 0 0 1.5rem;
+        color: var(--muted);
+      }
+
+      .card {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 0;
+      }
+
+      .card-ui {
+        position: relative;
+        z-index: 1;
+        padding: 1.15rem 1.2rem 1.25rem;
+        background: var(--card);
+      }
+
+      .card.is-busy {
+        pointer-events: none;
+      }
+
+      .drop {
+        display: block;
+        margin: 0;
+        padding: 1.15rem 1rem;
+        border: 1.5px dashed var(--border);
+        border-radius: 12px;
+        background: var(--bg);
+        cursor: pointer;
+        text-align: center;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+
+      .drop:hover,
+      .drop.drag {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .drop strong {
+        color: var(--accent);
+      }
+
+      .drop small {
+        display: block;
+        margin-top: 0.4rem;
+        color: var(--muted);
+      }
+
+      .file-name {
+        display: block;
+        margin-top: 0.45rem;
+        font-size: 0.88rem;
+        color: var(--muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #fileInput {
+        display: none;
+      }
+
+      .file-bar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.75rem;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--text);
+        padding: 0.45rem 0.9rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btn:hover:not(:disabled) {
+        border-color: var(--accent);
+      }
+
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .btn-primary {
+        width: 100%;
+        margin-top: 0.35rem;
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+        padding: 0.7rem 1rem;
+        font-size: 0.95rem;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        filter: brightness(1.06);
+      }
+
+      .options h2 {
+        margin: 0 0 0.35rem;
+        font-size: 1.05rem;
+      }
+
+      .options-intro {
+        margin: 0 0 1rem;
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+
+      .options-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem 1rem;
+        margin-bottom: 0.25rem;
+      }
+
+      fieldset {
+        margin: 0;
+        padding: 0.75rem 0.8rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        min-width: 0;
+      }
+
+      legend {
+        padding: 0 0.35rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .toggle-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        min-width: 0;
+      }
+
+      .toggle-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .hint {
+        font-size: 0.78rem;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      .switch {
+        position: relative;
+        flex: 0 0 auto;
+        width: 2.6rem;
+        height: 1.45rem;
+      }
+
+      .switch input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .switch span {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 999px;
+        background: #cbd5e1;
+        transition: background 0.15s ease;
+      }
+
+      .switch span::after {
+        content: '';
+        position: absolute;
+        top: 0.15rem;
+        left: 0.15rem;
+        width: 1.15rem;
+        height: 1.15rem;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 0.15s ease;
+      }
+
+      .switch input:checked + span {
+        background: var(--accent);
+      }
+
+      .switch input:checked + span::after {
+        transform: translateX(1.15rem);
+      }
+
+      .switch input:focus-visible + span {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .choice-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+      }
+
+      .choice {
+        display: flex;
+        gap: 0.45rem;
+        align-items: flex-start;
+        min-width: 0;
+        padding: 0.55rem 0.55rem 0.55rem 0.45rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .choice:hover {
+        border-color: var(--accent);
+      }
+
+      .choice.is-selected {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .choice input {
+        margin-top: 0.15rem;
+      }
+
+      .choice-title {
+        display: block;
+        font-size: 0.86rem;
+        font-weight: 600;
+      }
+
+      .status {
+        margin: 0.85rem 0 0;
+        min-height: 1.6rem;
+        padding: 0.55rem 0.7rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--muted);
+        font-size: 0.82rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .status.error {
+        color: var(--danger);
+        border-color: #fecaca;
+        background: #fef2f2;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .status.error {
+          border-color: #7f1d1d;
+          background: #450a0a;
+          color: #fecaca;
+        }
+      }
+
+      .privacy {
+        margin: 0.85rem 0 0;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+
+      .progress-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 8;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1.5rem;
+        border-radius: 16px;
+        background: color-mix(in srgb, var(--card) 88%, transparent);
+        backdrop-filter: blur(6px);
+      }
+
+      .progress-overlay[hidden] {
+        display: none;
+      }
+
+      .spinner {
+        width: 2.75rem;
+        height: 2.75rem;
+        border: 4px solid var(--accent-soft);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.75s linear infinite;
+      }
+
+      .progress-track {
+        width: min(16rem, 80%);
+        height: 4px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--accent-soft);
+      }
+
+      .progress-track span {
+        display: block;
+        width: 40%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent);
+        animation: indeterminate 1.1s ease-in-out infinite;
+      }
+
+      .progress-message {
+        margin: 0;
+        max-width: 22rem;
+        text-align: center;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes indeterminate {
+        0% {
+          transform: translateX(-120%);
+        }
+        100% {
+          transform: translateX(320%);
+        }
+      }
+
+      .hidden-viewer {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .hidden-viewer canvas,
+      .hidden-viewer .ml-progress,
+      .hidden-viewer .ml-draw-style-toolbar {
+        pointer-events: none;
+      }
+
+      #cad-container {
+        width: 100%;
+        height: 100%;
+        min-height: 24rem;
+      }
+
+      @media (max-width: 720px) {
+        .file-bar,
+        .options-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <nav class="nav">
+        <a href="../" id="examplesHomeLink">Examples home</a>
+        <a href="./">Simple viewer demo</a>
+      </nav>
+      <script>
+        // Hide when served at site root (Vite); `../` only reaches the examples
+        // landing page when this file is under cad-simple-viewer/.
+        (function () {
+          var pageDir = new URL('./', location.href)
+          var parentDir = new URL('../', location.href)
+          if (pageDir.href === parentDir.href) {
+            var link = document.getElementById('examplesHomeLink')
+            if (link) link.hidden = true
+          }
+        })()
+      </script>
+      <header>
+        <h1>Convert drawing to offline HTML</h1>
+        <p class="lead">
+          Choose a local DWG or DXF file, pick export options, then convert.
+          The drawing is read only when you click Convert — nothing is uploaded
+          to a server.
+        </p>
+      </header>
+
+      <div class="card" id="converterCard">
+        <div class="hidden-viewer" id="hiddenViewer" aria-hidden="true">
+          <div id="cad-container"></div>
+        </div>
+        <div
+          class="progress-overlay"
+          id="progressOverlay"
+          hidden
+          aria-live="polite"
+          aria-busy="false"
+        >
+          <div class="spinner" aria-hidden="true"></div>
+          <div class="progress-track" aria-hidden="true"><span></span></div>
+          <p class="progress-message" id="progressMessage">Working…</p>
+        </div>
+        <div class="card-ui">
+        <div class="file-bar">
+        <label class="drop" id="dropZone" for="fileInput">
+          Drop a DWG or DXF here, or <strong>browse</strong>
+          <small>The file is not read until you convert</small>
+          <span class="file-name" id="fileName">No file selected</span>
+        </label>
+        <input id="fileInput" type="file" accept=".dwg,.dxf,application/acad,image/vnd.dxf" />
+        <button type="button" class="btn" id="sampleButton">Use sample</button>
+        </div>
+
+        <div class="options">
+          <h2>Export options</h2>
+          <p class="options-intro">
+            These match the HTML export dialog in the full viewer.
+          </p>
+
+          <div class="options-grid">
+          <fieldset>
+            <legend>Layers</legend>
+            <div class="toggle-row">
+              <div class="toggle-copy">
+                <span class="toggle-label">Export invisible layers</span>
+                <span class="hint">Include geometry on off or frozen layers</span>
+              </div>
+              <label class="switch">
+                <input id="exportInvisibleLayers" type="checkbox" checked />
+                <span></span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Layouts</legend>
+            <div class="toggle-row">
+              <div class="toggle-copy">
+                <span class="toggle-label">Export layouts</span>
+                <span class="hint">Include paper-space layouts in the snapshot</span>
+              </div>
+              <label class="switch">
+                <input id="exportLayouts" type="checkbox" checked />
+                <span></span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Initial view</legend>
+            <div class="choice-grid">
+              <label class="choice is-selected">
+                <input type="radio" name="initialView" value="fit" checked />
+                <span>
+                  <span class="choice-title">Zoom to extents</span>
+                  <span class="hint">Fit the whole drawing when the HTML opens</span>
+                </span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="initialView" value="current" />
+                <span>
+                  <span class="choice-title">Saved viewport</span>
+                  <span class="hint">Use the view last saved in the drawing</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Viewer mode</legend>
+            <div class="choice-grid">
+              <label class="choice">
+                <input type="radio" name="viewerMode" value="view" />
+                <span>
+                  <span class="choice-title">View</span>
+                  <span class="hint">Pan, zoom, and layer controls only</span>
+                </span>
+              </label>
+              <label class="choice is-selected">
+                <input type="radio" name="viewerMode" value="measure" checked />
+                <span>
+                  <span class="choice-title">Measure &amp; Review</span>
+                  <span class="hint">Adds measurement and markup tools</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary" id="convertButton" disabled>
+          Convert and download HTML
+        </button>
+        <p class="status" id="status">Choose a drawing, then convert.</p>
+        <p class="privacy">
+          Parsing, rendering, and packaging all happen locally. Only public
+          font/template assets may be fetched from the cad-data CDN.
+        </p>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/htmlConverter.ts"></script>
+  </body>
+</html>

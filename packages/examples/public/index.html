@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="CAD Viewer examples: full and simple browser demos, zero-build CDN bootstrap, self-contained offline HTML export, and API docs for DXF/DWG viewing with no backend required.">
+    <meta name="description" content="CAD Viewer examples: full and simple browser demos, zero-build CDN bootstrap, in-browser DWG/DXF to offline HTML conversion, self-contained HTML export, and API docs — no backend required.">
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <link rel="canonical" href="https://mlightcad.github.io/cad-viewer/">
     <title>CAD Viewer Examples</title>
@@ -48,7 +48,7 @@
       }
 
       .page {
-        max-width: 960px;
+        max-width: 1120px;
         margin: 0 auto;
         padding: 2.5rem 1.25rem 4rem;
       }
@@ -81,15 +81,50 @@
 
       .cards {
         display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem 1.25rem;
+        align-items: stretch;
+      }
+
+      .card-col {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
         gap: 1rem;
       }
 
+      .card-col .card {
+        flex: 1;
+      }
+
+      .card-wide {
+        grid-column: 1 / -1;
+      }
+
+      .card-col > h2 {
+        margin: 0;
+        font-size: 1.35rem;
+      }
+
       .card {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
         background: var(--card);
         border: 1px solid var(--border);
         border-radius: 16px;
         padding: 1.25rem 1.35rem;
         box-shadow: var(--shadow);
+      }
+
+      @media (max-width: 800px) {
+        .cards {
+          grid-template-columns: 1fr;
+        }
+
+        .card-wide {
+          grid-column: auto;
+        }
       }
 
       .card h3 {
@@ -112,6 +147,23 @@
         margin-top: 0.25rem;
       }
 
+      .card > a.button:first-of-type {
+        margin-top: auto;
+      }
+
+      .card-split {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem 1.5rem;
+        align-items: start;
+      }
+
+      @media (min-width: 801px) {
+        .card-split {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+      }
+
       .card a.button {
         display: inline-block;
         padding: 0.55rem 0.95rem;
@@ -120,6 +172,7 @@
         color: #fff;
         text-decoration: none;
         font-weight: 600;
+        margin: 0 0.5rem 0.35rem 0;
       }
 
       .card a.button:hover {
@@ -246,98 +299,133 @@
         </div>
       </section>
 
-      <section aria-labelledby="cdn-bootstrap">
-        <h2 id="cdn-bootstrap">Zero-build CDN Bootstrap</h2>
-        <article class="card">
-          <h3>Single HTML CDN Viewer</h3>
-          <div class="pill-row">
-            <span class="pill">No Node / Vite</span>
-            <span class="pill">Import maps</span>
-            <span class="pill">jsDelivr</span>
+      <section aria-label="Additional demos">
+        <div class="cards">
+          <div class="card-col">
+            <h2 id="cdn-bootstrap">Zero-build CDN Bootstrap</h2>
+            <article class="card">
+              <h3>Single HTML CDN Viewer</h3>
+              <div class="pill-row">
+                <span class="pill">No Node / Vite</span>
+                <span class="pill">Import maps</span>
+                <span class="pill">jsDelivr</span>
+              </div>
+              <p>
+                A minimal single-HTML host that loads <code>@mlightcad/cad-viewer</code> and its peer
+                dependencies from jsDelivr — no Node, Vite, or local <code>node_modules</code>.
+                The landing page is plain HTML file upload; Vue is only used to mount the viewer.
+              </p>
+              <ul>
+                <li>Import map + in-browser rewrite so published <code>cad-viewer.js</code> resolves on a CDN</li>
+                <li>Simple DWG/DXF file picker (no open-options UI)</li>
+                <li>LibreDWG worker via blob + jsDelivr; MTEXT on the main thread</li>
+                <li>Pin versions in one file when you upgrade</li>
+              </ul>
+              <a class="button" href="./cdn-bootstrap/cad-viewer.html" target="_blank" rel="noopener">Open CDN Bootstrap</a>
+              <p class="note">
+                Serve over HTTP(S) (for example <code>pnpm serve</code> from <code>packages/examples</code>).
+                Opening the file via <code>file://</code> will fail because browsers block ES module CDN imports.
+                Source:
+                <a href="https://github.com/mlightcad/cad-viewer/blob/main/packages/examples/public/cdn-bootstrap/cad-viewer.html"><code>packages/examples/public/cdn-bootstrap/cad-viewer.html</code></a>.
+              </p>
+            </article>
           </div>
-          <p>
-            A minimal single-HTML host that loads <code>@mlightcad/cad-viewer</code> and its peer
-            dependencies from jsDelivr — no Node, Vite, or local <code>node_modules</code>.
-            The landing page is plain HTML file upload; Vue is only used to mount the viewer.
-          </p>
-          <ul>
-            <li>Import map + in-browser rewrite so published <code>cad-viewer.js</code> resolves on a CDN</li>
-            <li>Simple DWG/DXF file picker (no open-options UI)</li>
-            <li>LibreDWG worker via blob + jsDelivr; MTEXT on the main thread</li>
-            <li>Pin versions in one file when you upgrade</li>
-          </ul>
-          <a class="button" href="./cdn-bootstrap/cad-viewer.html" target="_blank" rel="noopener">Open CDN Bootstrap</a>
-          <p class="note">
-            Serve over HTTP(S) (for example <code>pnpm serve</code> from <code>packages/examples</code>).
-            Opening the file via <code>file://</code> will fail because browsers block ES module CDN imports.
-            Source:
-            <a href="https://github.com/mlightcad/cad-viewer/blob/main/packages/examples/public/cdn-bootstrap/cad-viewer.html"><code>packages/examples/public/cdn-bootstrap/cad-viewer.html</code></a>.
-          </p>
-        </article>
-      </section>
 
-      <section aria-labelledby="offline-html">
-        <h2 id="offline-html">Self-Contained Offline HTML</h2>
-        <article class="card">
-          <h3>Canteen sample drawing (offline HTML export)</h3>
-          <div class="pill-row">
-            <span class="pill">Single file</span>
-            <span class="pill">No install</span>
-            <span class="pill">Low memory</span>
+          <div class="card-col">
+            <h2 id="offline-html">Self-Contained Offline HTML</h2>
+            <article class="card">
+              <h3>Convert your drawing in the browser</h3>
+              <div class="pill-row">
+                <span class="pill">No backend</span>
+                <span class="pill">Upload DWG / DXF</span>
+                <span class="pill">Adjustable options</span>
+              </div>
+              <p>
+                Open a local drawing, tune export options in the UI, and download a portable
+                <code>.html</code> file. Parsing, rendering, and packaging all run in this tab —
+                the drawing is never uploaded to a conversion server.
+              </p>
+              <ul>
+                <li>Drag-and-drop or file picker for <code>.dwg</code> / <code>.dxf</code></li>
+                <li>Progress animation while the drawing opens and HTML is packaged</li>
+                <li>Export invisible layers, paper-space layouts, and viewer mode</li>
+                <li>Optional sample <code>canteen.dwg</code> if you do not have a file handy</li>
+              </ul>
+              <a class="button" href="./cad-simple-viewer/html-converter.html" target="_blank" rel="noopener">Open HTML converter</a>
+              <p class="note">
+                Conversion never leaves the browser. Fonts and templates may be loaded from the public
+                cad-data CDN. When serving this page locally, run <code>pnpm build</code> and
+                <code>pnpm pre-serve</code> so workers and <code>viewer-runtime.iife.js</code> are copied.
+              </p>
+            </article>
           </div>
-          <p>
-            Export a DWG/DXF drawing into one portable <code>.html</code> file that embeds both the
-            drawing snapshot and a lightweight viewer runtime. Recipients can open it in any modern
-            browser — no CAD software, no server, and no cad-viewer deployment needed.
-          </p>
-          <ul>
-            <li><strong>Ultra-low memory footprint</strong> — far below desktop CAD viewers when opening the same drawing</li>
-            <li><strong>Works offline</strong> — email, archive, or host on any static file server</li>
-            <li><strong>Built-in tools</strong> — pan, zoom, zoom extents, layer toggle, and distance measurement</li>
-            <li><strong>Same pipeline as the live demos</strong> — generated with <code>cad-simple-viewer-cli</code> from the sample <code>canteen.dwg</code> drawing</li>
-          </ul>
-          <p class="note">
-            Memory consumption measured with the sample drawing
-            <a href="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg"><code>canteen.dwg</code></a>:
-          </p>
-          <table class="compare-table" aria-label="Memory consumption comparison for canteen.dwg">
-            <thead>
-              <tr>
-                <th scope="col">Viewer</th>
-                <th scope="col">Memory consumption</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>AutoCAD 2020</td>
-                <td>320 MB</td>
-              </tr>
-              <tr>
-                <td>GstarCAD Viewer (浩辰看图王)</td>
-                <td>246 MB</td>
-              </tr>
-              <tr>
-                <td>Self-contained HTML (measure mode)</td>
-                <td>56 MB</td>
-              </tr>
-              <tr>
-                <td>Self-contained HTML (view mode)</td>
-                <td>33 MB</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="note">
-            View mode uses about 83% less memory than AutoCAD 2020 and 77% less than GstarCAD Viewer,
-            while measure mode adds distance tools at 56 MB.
-          </p>
-          <a class="button" href="./self-contained-html/canteen.html" target="_blank" rel="noopener">Open offline HTML demo</a>
-          <a class="button secondary" href="https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli" target="_blank" rel="noopener">CLI docs</a>
-          <p class="note">
-            This file is produced automatically in CI on the <code>main</code> branch and published to GitHub Pages.
-            When serving locally with <code>pnpm serve</code>, run <code>pnpm export:demo-html</code> from
-            <code>packages/examples</code> to generate it.
-          </p>
-        </article>
+
+          <article class="card card-wide">
+            <h3>Canteen sample drawing (offline HTML export)</h3>
+            <div class="pill-row">
+              <span class="pill">Single file</span>
+              <span class="pill">No install</span>
+              <span class="pill">Low memory</span>
+            </div>
+            <div class="card-split">
+              <div>
+                <p>
+                  A ready-made export of the sample <code>canteen.dwg</code> drawing. Recipients can open
+                  it in any modern browser — no CAD software, no server, and no cad-viewer deployment needed.
+                </p>
+                <ul>
+                  <li><strong>Ultra-low memory footprint</strong> — far below desktop CAD viewers when opening the same drawing</li>
+                  <li><strong>Works offline</strong> — email, archive, or host on any static file server</li>
+                  <li><strong>Built-in tools</strong> — pan, zoom, zoom extents, layer toggle, and distance measurement</li>
+                  <li><strong>Same pipeline as the live converter</strong> — generated with <code>cad-simple-viewer-cli</code></li>
+                </ul>
+                <a class="button" href="./self-contained-html/canteen.html" target="_blank" rel="noopener">Open offline HTML demo</a>
+                <a class="button secondary" href="https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli" target="_blank" rel="noopener">CLI docs</a>
+              </div>
+              <div>
+                <p class="note">
+                  Memory consumption measured with the sample drawing
+                  <a href="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg"><code>canteen.dwg</code></a>:
+                </p>
+                <table class="compare-table" aria-label="Memory consumption comparison for canteen.dwg">
+                  <thead>
+                    <tr>
+                      <th scope="col">Viewer</th>
+                      <th scope="col">Memory consumption</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>AutoCAD 2020</td>
+                      <td>320 MB</td>
+                    </tr>
+                    <tr>
+                      <td>GstarCAD Viewer (浩辰看图王)</td>
+                      <td>246 MB</td>
+                    </tr>
+                    <tr>
+                      <td>Self-contained HTML (measure mode)</td>
+                      <td>56 MB</td>
+                    </tr>
+                    <tr>
+                      <td>Self-contained HTML (view mode)</td>
+                      <td>33 MB</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p class="note">
+                  View mode uses about 83% less memory than AutoCAD 2020 and 77% less than GstarCAD Viewer,
+                  while measure mode adds distance tools at 56 MB.
+                </p>
+              </div>
+            </div>
+            <p class="note">
+              This file is produced automatically in CI on the <code>main</code> branch and published to GitHub Pages.
+              When serving locally with <code>pnpm serve</code>, run <code>pnpm export:demo-html</code> from
+              <code>packages/examples</code> to generate it.
+            </p>
+          </article>
+        </div>
       </section>
 
       <section aria-labelledby="api-docs">

@@ -54,7 +54,8 @@ export default defineConfig(() => {
       minify: true,
       rollupOptions: {
         input: {
-          main: resolve(__dirname, 'index.html')
+          main: resolve(__dirname, 'index.html'),
+          htmlConverter: resolve(__dirname, 'html-converter.html')
         },
         output: exampleRollupOutput
       }
