@@ -477,9 +477,21 @@
   <body>
     <div class="page">
       <nav class="nav">
-        <a href="../">Examples home</a>
+        <a href="../" id="examplesHomeLink">Examples home</a>
         <a href="./">Simple viewer demo</a>
       </nav>
+      <script>
+        // Hide when served at site root (Vite); `../` only reaches the examples
+        // landing page when this file is under cad-simple-viewer/.
+        (function () {
+          var pageDir = new URL('./', location.href)
+          var parentDir = new URL('../', location.href)
+          if (pageDir.href === parentDir.href) {
+            var link = document.getElementById('examplesHomeLink')
+            if (link) link.hidden = true
+          }
+        })()
+      </script>
       <header>
         <h1>Convert drawing to offline HTML</h1>
         <p class="lead">

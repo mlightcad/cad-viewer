@@ -63,6 +63,7 @@ A browser-only converter: upload a local DWG/DXF (or open the sample canteen dra
 **Options (same as the full viewer HTML export dialog):**
 - Export invisible (off/frozen) layers
 - Export paper-space layouts
+- Initial view: zoom to extents, or the viewport saved in the drawing
 - Viewer mode: view-only, or measure & review
 
 #### Canteen sample (`/self-contained-html/canteen.html`)

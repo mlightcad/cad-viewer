@@ -265,11 +265,6 @@ class HtmlConverterApp {
     })
   }
 
-  private async waitForSceneIdle() {
-    const view = AcApDocManager.instance.curView as AcTrView2d | undefined
-    await view?.waitUntilIdle?.(8_000)
-  }
-
   private openOptions(): AcApOpenDatabaseOptions {
     const initialView = this.readExportOptions().initialView
     return {
@@ -341,7 +336,6 @@ class HtmlConverterApp {
     }
 
     const resolved = this.readExportOptions()
-    await this.waitForSceneIdle()
     await view.ensureEntitiesConvertedForExport({
       includeInvisibleLayers: resolved.exportInvisibleLayers,
       includeLayouts: resolved.exportLayouts
