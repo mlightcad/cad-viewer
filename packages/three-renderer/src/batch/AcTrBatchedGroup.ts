@@ -45,6 +45,7 @@ import { AcTrBatchedLine } from './AcTrBatchedLine'
 import { AcTrBatchedLine2 } from './AcTrBatchedLine2'
 import { AcTrBatchedMesh } from './AcTrBatchedMesh'
 import { AcTrBatchedPoint } from './AcTrBatchedPoint'
+import type { AcTrBatchCompareRole } from './highlight'
 import { type AcTrBatchHighlightKind } from './highlight'
 
 /**
@@ -226,7 +227,7 @@ export class AcTrBatchedGroup extends THREE.Group {
    */
   private static readonly sharedHighlightMaterialsBySource = new WeakMap<
     THREE.Material,
-    Map<AcTrBatchHighlightKind, THREE.Material>
+    Map<string, THREE.Material>
   >()
   private static readonly onSourceMaterialDisposed = (event: THREE.Event) => {
     AcTrBatchedGroup.releaseSharedHighlightMaterials(
@@ -290,6 +291,18 @@ export class AcTrBatchedGroup extends THREE.Group {
   private _unbatchedSelectedIds = new Set<string>()
   /** Entity ids whose unbatched drawables are currently hover-highlighted. */
   private _unbatchedHoveredIds = new Set<string>()
+  /** Compare-display role overrides keyed by entity object id. */
+  private _compareRoles = new Map<string, AcTrBatchCompareRole>()
+  /** Whether compare display mode is active for this group. */
+  private _compareEnabled = false
+  /** Unchanged-entity color while compare display is enabled. */
+  private _compareBaseColor = 0x9ca3af
+  /** Deleted-entity color while compare display is enabled. */
+  private _compareDeletedColor = 0xe11d48
+  /** Added-entity color while compare display is enabled. */
+  private _compareAddedColor = 0x22c55e
+  /** Modified-entity color while compare display is enabled. */
+  private _compareModifiedColor = 0xe11d48
   /**
    * Non-batched objects (for render paths that cannot be merged, e.g. fat lines).
    */
@@ -679,7 +692,11 @@ export class AcTrBatchedGroup extends THREE.Group {
         }
 
         if (rebound === material) {
-          this.refreshLayerBoundMaterialColor(material, layerTraits, styleManager)
+          this.refreshLayerBoundMaterialColor(
+            material,
+            layerTraits,
+            styleManager
+          )
           continue
         }
 
@@ -1086,9 +1103,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     const hasIndex = geometry.getIndex() !== null
-    const batches = hasIndex
-      ? this._lineWithIndexBatches
-      : this._lineBatches
+    const batches = hasIndex ? this._lineWithIndexBatches : this._lineBatches
     const batchedLine = this.resolveOriginBatch(
       batches,
       material.id,
@@ -1219,9 +1234,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     const hasIndex = geometry.getIndex() !== null
-    const batches = hasIndex
-      ? this._meshWithIndexBatches
-      : this._meshBatches
+    const batches = hasIndex ? this._meshWithIndexBatches : this._meshBatches
     const batchedMesh = this.resolveOriginBatch(
       batches,
       material.id,
@@ -1412,6 +1425,291 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   /**
+   * Enables or updates compare-display coloring for this group.
+   *
+   * When enabled, all entities render in `baseColor` unless they have a
+   * role override (deleted / added / modified). Selection and hover still win.
+   *
+   * @param options.enabled - Whether compare coloring is active.
+   * @param options.baseColor - Color for unchanged entities.
+   * @param options.colors - Optional role color overrides.
+   * @param options.overrides - Per-entity role assignments; `role: null` clears.
+   */
+  setCompareDisplay(options: {
+    /** Whether compare coloring is active. */
+    enabled: boolean
+    /** Color for unchanged entities. */
+    baseColor?: number
+    /** Role colors applied after the unchanged base color. */
+    colors?: {
+      /** Added-entity color. */
+      added?: number
+      /** Deleted-entity color. */
+      deleted?: number
+      /** Modified-entity color. */
+      modified?: number
+    }
+    /** Per-entity role assignments; `role: null` clears an override. */
+    overrides?: Iterable<{
+      /** Entity object id. */
+      objectId: string
+      /** Compare role, or `null` to clear. */
+      role: AcTrBatchCompareRole | null
+    }>
+  }) {
+    this._compareEnabled = options.enabled
+    if (options.baseColor != null) {
+      this._compareBaseColor = options.baseColor
+    }
+    if (options.colors?.deleted != null) {
+      this._compareDeletedColor = options.colors.deleted
+    }
+    if (options.colors?.added != null) {
+      this._compareAddedColor = options.colors.added
+    }
+    if (options.colors?.modified != null) {
+      this._compareModifiedColor = options.colors.modified
+    }
+
+    if (options.overrides) {
+      for (const entry of options.overrides) {
+        if (entry.role == null) {
+          this._compareRoles.delete(entry.objectId)
+        } else {
+          this._compareRoles.set(entry.objectId, entry.role)
+        }
+      }
+    }
+
+    if (!options.enabled) {
+      this._compareRoles.clear()
+    }
+
+    this.applyCompareDisplayToBatches()
+    this.refreshAllUnbatchedCompareMaterials()
+  }
+
+  /** Clears all compare role overrides and disables compare display. */
+  clearCompareDisplay() {
+    this.setCompareDisplay({ enabled: false, overrides: [] })
+  }
+
+  /**
+   * Applies or clears the compare role for one entity id.
+   *
+   * @param objectId - Entity object id.
+   * @param role - Compare role, or `null` to clear.
+   */
+  setEntityCompareRole(objectId: string, role: AcTrBatchCompareRole | null) {
+    if (role == null) {
+      this._compareRoles.delete(objectId)
+    } else {
+      this._compareRoles.set(objectId, role)
+    }
+    this.applyCompareRoleToEntity(objectId, role)
+    this.refreshUnbatchedCompareMaterial(objectId)
+  }
+
+  /** Pushes compare colors and role masks onto every origin batch in this group. */
+  private applyCompareDisplayToBatches() {
+    const colorOptions = {
+      enabled: this._compareEnabled,
+      baseColor: this._compareBaseColor,
+      deletedColor: this._compareDeletedColor,
+      addedColor: this._compareAddedColor,
+      modifiedColor: this._compareModifiedColor
+    }
+
+    const applyColors = (map: Map<number, AcTrOriginBatch[]>) => {
+      map.forEach(batches => {
+        batches.forEach(batch => {
+          batch.setCompareDisplayColors(colorOptions)
+          batch.flushHighlightMask()
+        })
+      })
+    }
+
+    const allMaps: Map<number, AcTrOriginBatch[]>[] = [
+      this._pointBatches as Map<number, AcTrOriginBatch[]>,
+      this._pointSymbolBatches as Map<number, AcTrOriginBatch[]>,
+      this._lineBatches as Map<number, AcTrOriginBatch[]>,
+      this._lineWithIndexBatches as Map<number, AcTrOriginBatch[]>,
+      this._line2Batches as Map<number, AcTrOriginBatch[]>,
+      this._meshBatches as Map<number, AcTrOriginBatch[]>,
+      this._meshWithIndexBatches as Map<number, AcTrOriginBatch[]>
+    ]
+
+    for (const map of allMaps) {
+      applyColors(map)
+    }
+
+    if (!this._compareEnabled) {
+      this._entitiesMap.forEach(items => {
+        items.forEach(item => {
+          const batchedObject = this.getObjectById(
+            item.batchedObjectId
+          ) as AcTrOriginBatch | null
+          batchedObject?.setCompareRoleAt(item.batchId, null)
+        })
+      })
+      for (const map of allMaps) {
+        applyColors(map)
+      }
+      return
+    }
+
+    this._compareRoles.forEach((role, objectId) => {
+      this.applyCompareRoleToEntity(objectId, role)
+    })
+  }
+
+  /**
+   * Writes `role` into every packed slot owned by `objectId`.
+   *
+   * @param objectId - Entity object id.
+   * @param role - Compare role, or `null` to clear.
+   */
+  private applyCompareRoleToEntity(
+    objectId: string,
+    role: AcTrBatchCompareRole | null
+  ) {
+    const entityInfo = this._entitiesMap.get(objectId)
+    const dirtyBatches = new Set<AcTrOriginBatch>()
+    entityInfo?.forEach(item => {
+      const batchedObject = this.getObjectById(
+        item.batchedObjectId
+      ) as AcTrOriginBatch | null
+      if (batchedObject?.setCompareRoleAt(item.batchId, role)) {
+        dirtyBatches.add(batchedObject)
+      }
+    })
+    dirtyBatches.forEach(batch => batch.flushHighlightMask())
+  }
+
+  /** Reapplies compare tints to every unbatched drawable. */
+  private refreshAllUnbatchedCompareMaterials() {
+    this._unbatchedEntities.forEach((_objects, objectId) => {
+      this.refreshUnbatchedCompareMaterial(objectId)
+    })
+  }
+
+  /**
+   * Reapplies compare tint (or restores highlight) for one unbatched entity.
+   *
+   * @param objectId - Entity object id.
+   */
+  private refreshUnbatchedCompareMaterial(objectId: string) {
+    const unbatchedObjects = this._unbatchedEntities.get(objectId)
+    if (!unbatchedObjects) {
+      return
+    }
+    // Selection/hover still take precedence
+    if (
+      this._unbatchedSelectedIds.has(objectId) ||
+      this._unbatchedHoveredIds.has(objectId)
+    ) {
+      this.refreshUnbatchedHighlight(unbatchedObjects[0]!, objectId)
+      // refreshUnbatchedHighlight only handles one root; apply to all
+      for (const object of unbatchedObjects) {
+        this.refreshUnbatchedHighlight(object, objectId)
+      }
+      return
+    }
+
+    for (const object of unbatchedObjects) {
+      if (!this._compareEnabled) {
+        this.unhighlightUnbatchedObject(object)
+        continue
+      }
+      const role = this._compareRoles.get(objectId)
+      const color = this.resolveCompareColor(role)
+      this.applyUnbatchedCompareMaterial(object, color)
+    }
+  }
+
+  /**
+   * Resolves the compare color for `role`, falling back to the unchanged base.
+   *
+   * @param role - Compare role, or `undefined` for unchanged.
+   */
+  private resolveCompareColor(role: AcTrBatchCompareRole | undefined): number {
+    if (role === 'deleted') return this._compareDeletedColor
+    if (role === 'added') return this._compareAddedColor
+    if (role === 'modified') return this._compareModifiedColor
+    return this._compareBaseColor
+  }
+
+  /**
+   * Tints an unbatched drawable (and its children) with a shared compare material.
+   *
+   * @param object - Root drawable.
+   * @param colorHex - 24-bit RGB color.
+   */
+  private applyUnbatchedCompareMaterial(
+    object: THREE.Object3D,
+    colorHex: number
+  ) {
+    if ('material' in object) {
+      const material = object.material as THREE.Material | THREE.Material[]
+      const objectData = getObjectUserData(object)
+      if (objectData.originalMaterial == null) {
+        objectData.originalMaterial = material
+      }
+      const source = objectData.originalMaterial ?? material
+      object.material = this.getSharedCompareMaterial(source, colorHex)
+      return
+    }
+    for (const child of object.children) {
+      this.applyUnbatchedCompareMaterial(child, colorHex)
+    }
+  }
+
+  /**
+   * Returns a cached clone of `material` tinted to `colorHex`.
+   *
+   * @param material - Source material or material array.
+   * @param colorHex - 24-bit RGB color used as the cache key.
+   */
+  private getSharedCompareMaterial(
+    material: THREE.Material | THREE.Material[],
+    colorHex: number
+  ): THREE.Material | THREE.Material[] {
+    if (Array.isArray(material)) {
+      return material.map(
+        entry =>
+          this.getSharedCompareMaterial(entry, colorHex) as THREE.Material
+      )
+    }
+
+    const kind = `compare-${colorHex}`
+    let cache = AcTrBatchedGroup.sharedHighlightMaterialsBySource.get(material)
+    if (!cache) {
+      cache = new Map()
+      AcTrBatchedGroup.sharedHighlightMaterialsBySource.set(material, cache)
+      material.addEventListener(
+        'dispose',
+        AcTrBatchedGroup.onSourceMaterialDisposed
+      )
+    }
+
+    const cached = cache.get(kind)
+    if (cached) {
+      return cached
+    }
+
+    const compareMaterial = AcTrMaterialUtil.cloneMaterial(material)
+    if (!Array.isArray(compareMaterial)) {
+      AcTrMaterialUtil.setMaterialColor(
+        compareMaterial,
+        new THREE.Color(colorHex)
+      )
+      cache.set(kind, compareMaterial)
+      return compareMaterial
+    }
+    return compareMaterial
+  }
+
+  /**
    * Applies or clears batched/unbatched highlight state for entity ids.
    *
    * @param objectIds - Database object ids whose highlight state should change.
@@ -1458,6 +1756,10 @@ export class AcTrBatchedGroup extends THREE.Group {
 
         for (const object of unbatchedObjects) {
           this.refreshUnbatchedHighlight(object, objectId)
+        }
+        // Restore compare tint when highlight is cleared
+        if (!enabled) {
+          this.refreshUnbatchedCompareMaterial(objectId)
         }
       }
     }

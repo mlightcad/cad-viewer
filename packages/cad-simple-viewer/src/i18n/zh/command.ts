@@ -350,6 +350,9 @@ export default {
     qnew: {
       description: '创建新图纸'
     },
+    close: {
+      description: '关闭当前图纸'
+    },
     ray: {
       description: '创建从起点向单一方向无限延伸的射线'
     },

@@ -226,6 +226,24 @@ export class AcApDocument {
   }
 
   /**
+   * Returns true when this document is an unused Untitled drawing that OPEN
+   * can reuse instead of creating another tab.
+   */
+  get isReusableUntitled(): boolean {
+    if (this._uri || this._fileName) {
+      return false
+    }
+    if (this._docTitle !== ACAP_UNTITLED_DOC_TITLE) {
+      return false
+    }
+    const modelSpace = this._database.tables.blockTable.modelSpace
+    if (modelSpace && modelSpace.newIterator().count > 0) {
+      return false
+    }
+    return true
+  }
+
+  /**
    * Returns true when the object is temporarily hidden by HIDEOBJECTS.
    */
   isObjectHidden(objectId: AcDbObjectId) {

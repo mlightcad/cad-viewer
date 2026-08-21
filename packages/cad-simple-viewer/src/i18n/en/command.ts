@@ -388,6 +388,9 @@ export default {
     qnew: {
       description: 'Starts a new drawing'
     },
+    close: {
+      description: 'Closes the current drawing'
+    },
     ray: {
       description:
         'Creates a ray that starts at a point and extends to infinity'

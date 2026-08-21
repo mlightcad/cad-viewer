@@ -31,6 +31,8 @@ export class AcApOpenFileProgressController {
   private _lastMessage = ''
   private _seeThrough = false
   private _sceneBusyGate?: () => boolean
+  /** Callback invoked after the overlay is hidden. */
+  private _onHidden?: () => void
   private _holdPollId?: ReturnType<typeof setTimeout>
 
   private static readonly OVERLAY_DEFAULT = 'rgba(0,0,0,0.45)'
@@ -45,6 +47,15 @@ export class AcApOpenFileProgressController {
       overlayColor: AcApOpenFileProgressController.OVERLAY_DEFAULT
     })
     this._progress.hide()
+  }
+
+  /**
+   * Moves the overlay onto another host (e.g. the canvas being opened).
+   *
+   * @param host - New parent element for the overlay.
+   */
+  setHost(host: HTMLElement): void {
+    this._progress.setHost(host)
   }
 
   /**
@@ -66,6 +77,15 @@ export class AcApOpenFileProgressController {
    */
   setSceneBusyGate(gate: (() => boolean) | undefined): void {
     this._sceneBusyGate = gate
+  }
+
+  /**
+   * Called after the overlay is hidden (open finished or cancelled).
+   *
+   * @param callback - Handler, or `undefined` to clear.
+   */
+  setOnHidden(callback: (() => void) | undefined): void {
+    this._onHidden = callback
   }
 
   /**
@@ -202,6 +222,7 @@ export class AcApOpenFileProgressController {
     this.clearHoldPoll()
     this._progress.hide()
     this.reset()
+    this._onHidden?.()
   }
 
   private clearHoldPoll(): void {

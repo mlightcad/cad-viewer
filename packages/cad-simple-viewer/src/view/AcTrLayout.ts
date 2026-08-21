@@ -812,6 +812,15 @@ export class AcTrLayout {
   }
 
   /**
+   * Applies compare-display coloring across all layers in this layout.
+   *
+   * @param options - Compare colors and per-entity role overrides.
+   */
+  setCompareDisplay(options: Parameters<AcTrLayer['setCompareDisplay']>[0]) {
+    this._layers.forEach(layer => layer.setCompareDisplay(options))
+  }
+
+  /**
    * Groups entity ids by render layer and applies one bulk highlight call per layer.
    *
    * @param ids - Entity object ids whose highlight state should change.

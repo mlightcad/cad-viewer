@@ -23,6 +23,15 @@ export class AcApBusyIndicator {
   }
 
   /**
+   * Moves the overlay onto another host (e.g. the focused split pane).
+   *
+   * @param host - New parent element for the overlay.
+   */
+  setHost(host: HTMLElement): void {
+    this._progress.setHost(host)
+  }
+
+  /**
    * Shows the busy overlay, optionally with a message.
    *
    * Nested calls increment an internal reference count; the overlay stays visible

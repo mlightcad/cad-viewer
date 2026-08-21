@@ -189,6 +189,24 @@ export class AcApProgress {
   }
 
   /**
+   * Moves the overlay onto another host (e.g. the focused split pane).
+   *
+   * @param host - New parent element for the overlay.
+   */
+  public setHost(host: HTMLElement): this {
+    if (this.options.host === host) {
+      return this
+    }
+    this.options.host = host
+    const hostPosition = getComputedStyle(host).position
+    if (hostPosition === 'static') {
+      host.style.position = 'relative'
+    }
+    host.appendChild(this.root)
+    return this
+  }
+
+  /**
    * Completely removes the component from the DOM.
    * Safe to call multiple times.
    */

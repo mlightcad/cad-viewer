@@ -496,4 +496,15 @@ export class AcTrLayer {
     }
     this._group.unselectMany(ids)
   }
+
+  /**
+   * Applies compare-display coloring to entities in this layer.
+   *
+   * @param options - Compare colors and per-entity role overrides.
+   */
+  setCompareDisplay(
+    options: Parameters<AcTrBatchedGroup['setCompareDisplay']>[0]
+  ) {
+    this._group.setCompareDisplay(options)
+  }
 }

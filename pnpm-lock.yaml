@@ -144,6 +144,39 @@ importers:
         specifier: ^2.1.6
         version: 2.2.12(typescript@5.9.3)
 
+  packages/cad-diff-viewer:
+    devDependencies:
+      '@mlightcad/cad-simple-viewer':
+        specifier: workspace:*
+        version: link:../cad-simple-viewer
+      '@mlightcad/data-model':
+        specifier: ^1.14.1
+        version: 1.14.1
+
+  packages/cad-diff-viewer-example:
+    dependencies:
+      '@mlightcad/cad-diff-viewer':
+        specifier: workspace:*
+        version: link:../cad-diff-viewer
+      '@mlightcad/cad-simple-viewer':
+        specifier: workspace:*
+        version: link:../cad-simple-viewer
+      '@mlightcad/data-model':
+        specifier: ^1.14.1
+        version: 1.14.1
+      '@mlightcad/libredwg-converter':
+        specifier: ^3.14.1
+        version: 3.14.1(@mlightcad/data-model@1.14.1)
+      '@mlightcad/mtext-renderer':
+        specifier: ^0.12.4
+        version: 0.12.4(three@0.172.0)
+      '@mlightcad/three-renderer':
+        specifier: workspace:*
+        version: link:../three-renderer
+      three:
+        specifier: ^0.172.0
+        version: 0.172.0
+
   packages/cad-html-plugin:
     devDependencies:
       '@mlightcad/cad-simple-viewer':
@@ -494,6 +527,9 @@ importers:
 
   packages/examples:
     devDependencies:
+      '@mlightcad/cad-diff-viewer-example':
+        specifier: workspace:*
+        version: link:../cad-diff-viewer-example
       '@mlightcad/cad-simple-viewer-example':
         specifier: workspace:*
         version: link:../cad-simple-viewer-example

@@ -9,7 +9,7 @@ import { AcTrBatchHighlightState } from './AcTrBatchHighlightState'
 
 /** Uniform bag injected into batch highlight shader programs. */
 export type AcTrBatchHighlightUniforms = {
-  /** RGBA mask texture: R = selected, G = hovered. */
+  /** RGBA mask texture: R = selected, G = hovered, B = compare role. */
   u_highlightMask: { value: THREE.Texture }
   /** Mask texture width and height in pixels. */
   u_highlightMaskSize: { value: THREE.Vector2 }
@@ -17,6 +17,16 @@ export type AcTrBatchHighlightUniforms = {
   u_highlightSelectColor: { value: THREE.Color }
   /** Fragment color applied when the slot is hovered. */
   u_highlightHoverColor: { value: THREE.Color }
+  /** When > 0.5, force compare base color then role overrides. */
+  u_compareEnabled: { value: number }
+  /** Base (unchanged) color in compare display mode. */
+  u_compareBaseColor: { value: THREE.Color }
+  /** Deleted entity color. */
+  u_compareDeletedColor: { value: THREE.Color }
+  /** Added entity color. */
+  u_compareAddedColor: { value: THREE.Color }
+  /** Modified entity color. */
+  u_compareModifiedColor: { value: THREE.Color }
 }
 
 const HIGHLIGHT_FRAGMENT_DECL = /* glsl */ `
@@ -24,24 +34,44 @@ uniform sampler2D u_highlightMask;
 uniform vec2 u_highlightMaskSize;
 uniform vec3 u_highlightSelectColor;
 uniform vec3 u_highlightHoverColor;
+uniform float u_compareEnabled;
+uniform vec3 u_compareBaseColor;
+uniform vec3 u_compareDeletedColor;
+uniform vec3 u_compareAddedColor;
+uniform vec3 u_compareModifiedColor;
 varying float vBatchSlotId;
 
 vec3 applyBatchHighlight(vec3 color) {
+  vec3 outColor = color;
   if (u_highlightMaskSize.x <= 0.0 || u_highlightMaskSize.y <= 0.0) {
-    return color;
+    if (u_compareEnabled > 0.5) {
+      return u_compareBaseColor;
+    }
+    return outColor;
   }
   vec2 maskUv = vec2(
     (mod(vBatchSlotId, u_highlightMaskSize.x) + 0.5) / u_highlightMaskSize.x,
     (floor(vBatchSlotId / u_highlightMaskSize.x) + 0.5) / u_highlightMaskSize.y
   );
   vec4 mask = texture2D(u_highlightMask, maskUv);
+  if (u_compareEnabled > 0.5) {
+    outColor = u_compareBaseColor;
+    float role = mask.b;
+    if (role > 0.9) {
+      outColor = u_compareModifiedColor;
+    } else if (role > 0.55) {
+      outColor = u_compareAddedColor;
+    } else if (role > 0.2) {
+      outColor = u_compareDeletedColor;
+    }
+  }
   if (mask.r > 0.5) {
     return u_highlightSelectColor;
   }
   if (mask.g > 0.5) {
     return u_highlightHoverColor;
   }
-  return color;
+  return outColor;
 }
 `
 
@@ -70,7 +100,12 @@ function createHighlightUniforms(): AcTrBatchHighlightUniforms {
     u_highlightMask: { value: EMPTY_HIGHLIGHT_MASK },
     u_highlightMaskSize: { value: new THREE.Vector2(1, 1) },
     u_highlightSelectColor: { value: HIGHLIGHT_SELECT_COLOR.clone() },
-    u_highlightHoverColor: { value: HIGHLIGHT_HOVER_COLOR.clone() }
+    u_highlightHoverColor: { value: HIGHLIGHT_HOVER_COLOR.clone() },
+    u_compareEnabled: { value: 0 },
+    u_compareBaseColor: { value: new THREE.Color(0x9ca3af) },
+    u_compareDeletedColor: { value: new THREE.Color(0xe11d48) },
+    u_compareAddedColor: { value: new THREE.Color(0x22c55e) },
+    u_compareModifiedColor: { value: new THREE.Color(0xe11d48) }
   }
 }
 
@@ -254,6 +289,11 @@ function mergeShaderUniforms(
   shader.uniforms.u_highlightMaskSize = uniforms.u_highlightMaskSize
   shader.uniforms.u_highlightSelectColor = uniforms.u_highlightSelectColor
   shader.uniforms.u_highlightHoverColor = uniforms.u_highlightHoverColor
+  shader.uniforms.u_compareEnabled = uniforms.u_compareEnabled
+  shader.uniforms.u_compareBaseColor = uniforms.u_compareBaseColor
+  shader.uniforms.u_compareDeletedColor = uniforms.u_compareDeletedColor
+  shader.uniforms.u_compareAddedColor = uniforms.u_compareAddedColor
+  shader.uniforms.u_compareModifiedColor = uniforms.u_compareModifiedColor
 }
 
 /**
@@ -271,6 +311,11 @@ function attachHighlightUniforms(
     material.uniforms.u_highlightMaskSize = uniforms.u_highlightMaskSize
     material.uniforms.u_highlightSelectColor = uniforms.u_highlightSelectColor
     material.uniforms.u_highlightHoverColor = uniforms.u_highlightHoverColor
+    material.uniforms.u_compareEnabled = uniforms.u_compareEnabled
+    material.uniforms.u_compareBaseColor = uniforms.u_compareBaseColor
+    material.uniforms.u_compareDeletedColor = uniforms.u_compareDeletedColor
+    material.uniforms.u_compareAddedColor = uniforms.u_compareAddedColor
+    material.uniforms.u_compareModifiedColor = uniforms.u_compareModifiedColor
   }
 }
 
@@ -321,7 +366,7 @@ export function patchMaterialForBatchHighlight(material: THREE.Material) {
 
       const previousCacheKey = material.customProgramCacheKey
       material.customProgramCacheKey = () =>
-        `${previousCacheKey.call(material)}|batchHighlight`
+        `${previousCacheKey.call(material)}|batchHighlightCompare`
     }
 
     attachHighlightUniforms(material, uniforms)
@@ -333,7 +378,7 @@ export function patchMaterialForBatchHighlight(material: THREE.Material) {
 }
 
 /**
- * Binds one batch highlight mask to the compiled material uniforms.
+ * Binds one batch highlight/compare mask to the compiled material uniforms.
  *
  * @param material - One material or material array used by the batch drawable.
  * @param state - CPU/GPU highlight mask owned by the batch container.
@@ -353,6 +398,11 @@ export function bindBatchHighlightUniforms(
     uniforms.u_highlightMaskSize.value.set(dimensions.width, dimensions.height)
     uniforms.u_highlightSelectColor.value.copy(HIGHLIGHT_SELECT_COLOR)
     uniforms.u_highlightHoverColor.value.copy(HIGHLIGHT_HOVER_COLOR)
+    uniforms.u_compareEnabled.value = state.compareEnabled ? 1 : 0
+    uniforms.u_compareBaseColor.value.copy(state.compareBaseColor)
+    uniforms.u_compareDeletedColor.value.copy(state.compareDeletedColor)
+    uniforms.u_compareAddedColor.value.copy(state.compareAddedColor)
+    uniforms.u_compareModifiedColor.value.copy(state.compareModifiedColor)
     if (entry instanceof THREE.ShaderMaterial) {
       entry.uniformsNeedUpdate = true
     }
@@ -388,7 +438,10 @@ export function installBatchHighlightRenderer(
     group
   ) => {
     previousOnBeforeRender?.(renderer, scene, camera, geometry, material, group)
-    if (!state.hasAnyHighlight() || !material) {
+    if (
+      (!state.hasAnyHighlight() && !state.needsCompareUniforms()) ||
+      !material
+    ) {
       return
     }
     bindBatchHighlightUniforms(material, state)

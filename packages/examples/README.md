@@ -4,7 +4,9 @@ This package serves as a central hub for all CAD viewer examples, providing easy
 
 ## Overview
 
-This package consolidates the built examples from both `@mlightcad/cad-viewer-example` and `@mlightcad/cad-simple-viewer-example` into a single, easily accessible location. It's designed for showcasing the capabilities of the CAD viewer libraries and providing reference implementations.
+This package consolidates the built examples from `@mlightcad/cad-viewer-example`,
+`@mlightcad/cad-simple-viewer-example`, and `@mlightcad/cad-diff-viewer-example`
+into a single, easily accessible location. It's designed for showcasing the capabilities of the CAD viewer libraries and providing reference implementations.
 
 ## Available Examples
 
@@ -40,7 +42,20 @@ A minimal, lightweight CAD viewer focusing on core functionality.
 - LibreDWG WebAssembly
 - Modern ES2020+ features
 
-### 3. Zero-build CDN Bootstrap (`/cdn-bootstrap/cad-viewer.html`)
+### 3. CAD Diff Viewer (`/cad-diff-viewer/`)
+Experimental reusable side-by-side / overlay comparison widget (`@mlightcad/cad-diff-viewer`).
+The host supplies one parent container; the component creates both canvases.
+
+**Features:**
+- Drop a DWG/DXF onto a pane, or click the pane / open-file icon
+- Side-by-side or overlay view modes with compare coloring (gray / red / green)
+- Results panel grouped by change kind or entity type, with prev/next navigation
+- Markup tools and a markups tab listing annotations from both drawings
+- Click a loaded pane to pan, zoom, and send commands to that drawing
+- Loading overlay stays on the pane that is opening
+- UI strings use `@mlightcad/cad-simple-viewer` i18n (`en` / `zh` / `tr` / `cs`)
+
+### 4. Zero-build CDN Bootstrap (`/cdn-bootstrap/cad-viewer.html`)
 
 A single HTML file that loads `@mlightcad/cad-viewer` from jsDelivr — no Node, Vite, or local `node_modules`. The landing page is a plain file picker; Vue is only used to mount the viewer.
 
@@ -52,7 +67,7 @@ A single HTML file that loads `@mlightcad/cad-viewer` from jsDelivr — no Node,
 
 Serve over HTTP(S); `file://` will not work for ES module CDN imports.
 
-### 4. Self-Contained Offline HTML
+### 5. Self-Contained Offline HTML
 
 Two complementary demos of the HTML export pipeline.
 
@@ -119,6 +134,7 @@ The examples will be available at:
 - Main index: `http://localhost:3000`
 - CAD Viewer Demo: `http://localhost:3000/cad-viewer/`
 - CAD Simple Viewer Demo: `http://localhost:3000/cad-simple-viewer/`
+- CAD Diff Viewer Demo: `http://localhost:3000/cad-diff-viewer/`
 - CDN bootstrap (zero-build): `http://localhost:3000/cdn-bootstrap/cad-viewer.html`
 - HTML converter (upload DWG/DXF in the browser): `http://localhost:3000/cad-simple-viewer/html-converter.html`
 - Self-contained HTML demo: `http://localhost:3000/self-contained-html/canteen.html` (generate first with `pnpm export:demo-html`)
@@ -149,6 +165,7 @@ pnpm build
 # Or build individual examples
 cd packages/cad-viewer-example && pnpm build
 cd packages/cad-simple-viewer-example && pnpm build
+cd packages/cad-diff-viewer-example && pnpm build
 ```
 
 ### Updating Examples
@@ -169,6 +186,7 @@ packages/examples/
 │   ├── llms.txt                # LLM-friendly project summary
 │   ├── cad-viewer/             # Full CAD viewer demo
 │   ├── cad-simple-viewer/      # Simple CAD viewer demo + in-browser HTML converter
+│   ├── cad-diff-viewer/        # Side-by-side diff viewer demo
 │   ├── cdn-bootstrap/          # Zero-build CDN single-HTML bootstrap
 │   └── self-contained-html/    # Offline HTML export demo (CI / export:demo-html)
 ├── copyDist.js                 # Script to copy built examples

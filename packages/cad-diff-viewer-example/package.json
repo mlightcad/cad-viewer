@@ -1,0 +1,28 @@
+{
+  "name": "@mlightcad/cad-diff-viewer-example",
+  "private": true,
+  "version": "1.6.2",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "scripts": {
+    "build": "tsc && vite build",
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "copy:workers": "node ../../tools/copy-workers.mjs dist/workers",
+    "dev": "vite",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mlightcad/cad-diff-viewer": "workspace:*",
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.14.1",
+    "@mlightcad/libredwg-converter": "^3.14.1",
+    "@mlightcad/mtext-renderer": "^0.12.4",
+    "@mlightcad/three-renderer": "workspace:*",
+    "three": "^0.172.0"
+  }
+}

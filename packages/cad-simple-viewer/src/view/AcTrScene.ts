@@ -368,6 +368,20 @@ export class AcTrScene {
   }
 
   /**
+   * Applies compare-display coloring to every non-reference layout in the scene.
+   * Overlay/reference layouts must be updated via their own {@link AcTrLayout.setCompareDisplay}.
+   *
+   * @param options - Compare colors and per-entity role overrides.
+   */
+  setCompareDisplay(options: Parameters<AcTrLayout['setCompareDisplay']>[0]) {
+    this._layouts.forEach(layout => {
+      if (!layout.isReference) {
+        layout.setCompareDisplay(options)
+      }
+    })
+  }
+
+  /**
    * Search entities intersected or contained in the specified bounding box.
    * @param box Input the query bounding box
    * @returns Return query results
@@ -447,10 +461,7 @@ export class AcTrScene {
    * Show or hide one transient entity already published in this scene.
    * @returns `true` when the entity exists and visibility was updated.
    */
-  setTransientEntityVisible(
-    objectId: AcDbObjectId,
-    visible: boolean
-  ): boolean {
+  setTransientEntityVisible(objectId: AcDbObjectId, visible: boolean): boolean {
     const entity = this._transientManager.get(objectId)
     if (!entity) return false
     if (entity.visible === visible) return false
