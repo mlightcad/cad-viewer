@@ -1,13 +1,5 @@
 <script setup lang="ts">
 import {
-  ChatLineSquare,
-  Delete,
-  Hide,
-  Right,
-  Stamp,
-  View
-} from '@element-plus/icons-vue'
-import {
   AcApDocManager,
   AcEdOpenMode,
   isMarkupVisible,
@@ -20,11 +12,17 @@ import { useI18n } from 'vue-i18n'
 import { useDocument, useSettings } from '../../composable'
 import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
 import {
+  clearMarkups,
   clearMeasurements,
   exportIcon,
   importIcon,
   layer,
+  markupArrow,
+  markupCallout,
+  markupHide,
   markupPanel,
+  markupShow,
+  markupStamp,
   markupTools,
   measure,
   measureAngle,
@@ -41,7 +39,7 @@ import {
   switchBg,
   zoomToBox,
   zoomToExtent
-} from '../../svg'
+} from '../../svg/toolbarIcons'
 
 const { t } = useI18n()
 const features = useSettings()
@@ -88,12 +86,12 @@ const visibilityToggle = (
   toggle: {
     value: visible,
     on: {
-      icon: View,
+      icon: markupShow,
       text: show.text,
       description: show.description
     },
     off: {
-      icon: Hide,
+      icon: markupHide,
       text: hide.text,
       description: hide.description
     }
@@ -226,7 +224,7 @@ const verticalToolbarData = computed(() => {
           description: t('main.verticalToolbar.markupCloud.description')
         },
         {
-          icon: ChatLineSquare,
+          icon: markupCallout,
           text: t('main.verticalToolbar.markupCallout.text'),
           command: 'markupcallout',
           description: t('main.verticalToolbar.markupCallout.description')
@@ -250,13 +248,13 @@ const verticalToolbarData = computed(() => {
           description: t('main.verticalToolbar.markupCircle.description')
         },
         {
-          icon: Right,
+          icon: markupArrow,
           text: t('main.verticalToolbar.markupArrow.text'),
           command: 'markuparrow',
           description: t('main.verticalToolbar.markupArrow.description')
         },
         {
-          icon: Stamp,
+          icon: markupStamp,
           text: t('main.verticalToolbar.markupStamp.text'),
           command: 'markupstamp',
           description: t('main.verticalToolbar.markupStamp.description')
@@ -280,7 +278,7 @@ const verticalToolbarData = computed(() => {
           }
         ),
         {
-          icon: Delete,
+          icon: clearMarkups,
           text: t('main.verticalToolbar.clearMarkups.text'),
           command: 'clearmarkups',
           description: t('main.verticalToolbar.clearMarkups.description')
@@ -346,5 +344,20 @@ const handleToggle = (command: string) => {
   opacity: 0.6;
   pointer-events: none;
   user-select: none;
+}
+
+.acap-svg-icon {
+  display: inline-flex;
+  width: 1em;
+  height: 1em;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.acap-svg-icon svg {
+  width: 1em;
+  height: 1em;
+  display: block;
 }
 </style>
