@@ -154,19 +154,21 @@ export function buildAcExLanguageToolbarButton(): string {
 
 const LOCALE_LABEL_KEYS: Record<
   AcExHtmlLocale,
-  'toolbar.localeEn' | 'toolbar.localeZh' | 'toolbar.localeCs' | 'toolbar.localeTr'
+  'toolbar.localeEn' | 'toolbar.localeZh' | 'toolbar.localeCs' | 'toolbar.localeTr' | 'toolbar.localeAr'
 > = {
   en: 'toolbar.localeEn',
   zh: 'toolbar.localeZh',
   cs: 'toolbar.localeCs',
-  tr: 'toolbar.localeTr'
+  tr: 'toolbar.localeTr',
+  ar: 'toolbar.localeAr'
 }
 
 const LOCALE_FALLBACK_LABELS: Record<AcExHtmlLocale, string> = {
   en: 'English',
   zh: '中文',
   cs: 'Čeština',
-  tr: 'Türkçe'
+  tr: 'Türkçe',
+  ar: 'العربية'
 }
 
 /**

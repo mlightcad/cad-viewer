@@ -14,6 +14,7 @@ function detectLocale(): AcApLocale {
   if (lang.startsWith('zh')) return 'zh'
   if (lang.startsWith('tr')) return 'tr'
   if (lang.startsWith('cs')) return 'cs'
+  if (lang.startsWith('ar')) return 'ar'
   return 'en'
 }
 

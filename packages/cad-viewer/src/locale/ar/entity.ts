@@ -1,0 +1,408 @@
+import enEntity from '../en/entity'
+
+export default {
+  ...enEntity,
+
+  entityName: {
+    ...enEntity.entityName,
+
+    '2dPolyline': 'متعدد الخطوط ثنائي الأبعاد',
+    '3dPolyline': 'متعدد الخطوط ثلاثي الأبعاد',
+    '3PointAngularDimension': 'بُعد زاوي ثلاثي النقاط',
+
+    AlignedDimension: 'بُعد بمحاذاة',
+    Arc: 'قوس',
+    ArcDimension: 'بُعد طول القوس',
+
+    AttDef: 'تعريف سمة',
+
+    BlockReference: 'مرجع كتلة',
+    Circle: 'دائرة',
+
+    Dimension: 'بُعد',
+    DiametricDimension: 'بُعد القطر',
+
+    Ellipse: 'قطع ناقص',
+    Face: 'وجه',
+    Hatch: 'تهشير',
+    Leader: 'خط توجيه',
+    Line: 'خط',
+
+    MText: 'نص متعدد الأسطر',
+
+    OrdinateDimension: 'بُعد إحداثي',
+    Point: 'نقطة',
+    Polyline: 'متعدد الخطوط',
+
+    RadialDimension: 'بُعد نصف القطر',
+    RasterImage: 'صورة نقطية',
+    Ray: 'شعاع',
+    RotatedDimension: 'بُعد مدوّر',
+
+    Shape: 'شكل',
+    Solid: 'مسطح مصمت',
+
+    Spline: 'منحنى Spline',
+    Table: 'جدول',
+    Trace: 'مسار',
+    Text: 'نص',
+    Xline: 'خط إنشائي'
+  },
+
+  enum: {
+    ...enEntity.enum,
+
+    AtLeast: 'على الأقل',
+    Exactly: 'بالضبط',
+
+    TopLeft: 'أعلى يسار',
+    TopCenter: 'أعلى الوسط',
+    TopRight: 'أعلى يمين',
+
+    MiddleLeft: 'منتصف يسار',
+    MiddleCenter: 'المنتصف',
+    MiddleRight: 'منتصف يمين',
+
+    BottomLeft: 'أسفل يسار',
+    BottomCenter: 'أسفل الوسط',
+    BottomRight: 'أسفل يمين',
+
+    LEFT_TO_RIGHT: 'من اليسار إلى اليمين',
+    RIGHT_TO_LEFT: 'من اليمين إلى اليسار',
+    TOP_TO_BOTTOM: 'من الأعلى إلى الأسفل',
+    BOTTOM_TO_TOP: 'من الأسفل إلى الأعلى',
+
+    BY_STYLE: 'حسب النمط',
+    UserDefined: 'محدد بواسطة المستخدم',
+    Predefined: 'مُعرّف مسبقًا',
+    Custom: 'مخصص'
+  },
+
+  property: {
+    ...enEntity.property,
+
+    general: 'عام',
+    geometry: 'الهندسة',
+    dimension: 'الأبعاد',
+    attribute: 'السمة',
+    pattern: 'النمط',
+    shape: 'الشكل',
+    table: 'الجدول',
+    others: 'أخرى',
+
+    name: 'الاسم',
+    size: 'الحجم',
+    widthFactor: 'معامل العرض',
+
+    patternType: 'نوع النمط',
+    patternName: 'اسم النمط',
+    patternAngle: 'زاوية النمط',
+    patternScale: 'مقياس النمط',
+
+    elevation: 'المنسوب',
+
+    text: 'النص',
+    dimensionText: 'نص البُعد',
+    dimensionStyleName: 'نمط الأبعاد',
+
+    handle: 'المعرّف',
+    color: 'اللون',
+    layer: 'الطبقة',
+    linetype: 'نوع الخط',
+    linetypeScale: 'مقياس نوع الخط',
+    lineWeight: 'سُمك الخط',
+    thickness: 'السماكة',
+    transparency: 'الشفافية',
+
+    measurement: 'القياس',
+
+    startX: 'بداية X',
+    startY: 'بداية Y',
+    startZ: 'بداية Z',
+
+    endX: 'نهاية X',
+    endY: 'نهاية Y',
+    endZ: 'نهاية Z',
+
+    length: 'الطول',
+    arcLength: 'طول القوس',
+    totalAngle: 'الزاوية الكلية',
+
+    centerX: 'المركز X',
+    centerY: 'المركز Y',
+    centerZ: 'المركز Z',
+
+    radius: 'نصف القطر',
+    diameter: 'القطر',
+
+    startAngle: 'زاوية البداية',
+    endAngle: 'زاوية النهاية',
+
+    perimeter: 'المحيط',
+    area: 'المساحة',
+
+    majorAxisRadius: 'نصف المحور الأكبر',
+    minorAxisRadius: 'نصف المحور الأصغر',
+
+    blockName: 'اسم الكتلة',
+
+    positionX: 'الموضع X',
+    positionY: 'الموضع Y',
+    positionZ: 'الموضع Z',
+
+    rotation: 'الدوران',
+    oblique: 'زاوية الميل',
+
+    scaleFactorsX: 'مقياس X',
+    scaleFactorsY: 'مقياس Y',
+    scaleFactorsZ: 'مقياس Z',
+
+    basePointX: 'نقطة الأساس X',
+    basePointY: 'نقطة الأساس Y',
+    basePointZ: 'نقطة الأساس Z',
+
+    contents: 'المحتوى',
+    styleName: 'النمط',
+
+    attachmentPoint: 'نقطة الإرفاق',
+    drawingDirection: 'اتجاه الكتابة',
+    textHeight: 'ارتفاع النص',
+    lineSpacingFactor: 'معامل تباعد الأسطر',
+
+    x: 'X',
+    y: 'Y',
+    z: 'Z',
+
+    numRows: 'عدد الصفوف',
+    numColumns: 'عدد الأعمدة',
+    tableWidth: 'عرض الجدول',
+    tableHeight: 'ارتفاع الجدول',
+
+    vertices: 'الرؤوس',
+    closed: 'مغلق',
+
+    dimBlockId: 'معرّف كتلة البُعد',
+
+    dimBlockPositionX: 'موضع كتلة البُعد X',
+    dimBlockPositionY: 'موضع كتلة البُعد Y',
+    dimBlockPositionZ: 'موضع كتلة البُعد Z',
+
+    textPositionX: 'موضع النص X',
+    textPositionY: 'موضع النص Y',
+    textPositionZ: 'موضع النص Z',
+
+    textRotation: 'دوران النص',
+    textLineSpacingFactor: 'معامل تباعد أسطر النص',
+    textLineSpacingStyle: 'نمط تباعد أسطر النص',
+
+    normalX: 'المتجه العمودي X',
+    normalY: 'المتجه العمودي Y',
+    normalZ: 'المتجه العمودي Z',
+
+    unitDirX: 'اتجاه الوحدة X',
+    unitDirY: 'اتجاه الوحدة Y',
+    unitDirZ: 'اتجاه الوحدة Z',
+
+    definedWidth: 'العرض المحدد',
+
+    xLine1PointX: 'خط الامتداد 1 X',
+    xLine1PointY: 'خط الامتداد 1 Y',
+    xLine1PointZ: 'خط الامتداد 1 Z',
+
+    xLine2PointX: 'خط الامتداد 2 X',
+    xLine2PointY: 'خط الامتداد 2 Y',
+    xLine2PointZ: 'خط الامتداد 2 Z',
+
+    dimLinePointX: 'خط البُعد X',
+    dimLinePointY: 'خط البُعد Y',
+    dimLinePointZ: 'خط البُعد Z',
+
+    centerPointX: 'نقطة المركز X',
+    centerPointY: 'نقطة المركز Y',
+    centerPointZ: 'نقطة المركز Z',
+
+    arcPointX: 'نقطة القوس X',
+    arcPointY: 'نقطة القوس Y',
+    arcPointZ: 'نقطة القوس Z',
+
+    chordPointX: 'نقطة الوتر X',
+    chordPointY: 'نقطة الوتر Y',
+    chordPointZ: 'نقطة الوتر Z',
+
+    farChordPointX: 'نقطة الوتر البعيدة X',
+    farChordPointY: 'نقطة الوتر البعيدة Y',
+    farChordPointZ: 'نقطة الوتر البعيدة Z',
+
+    leaderLength: 'طول خط التوجيه',
+
+    extArcStartAngle: 'زاوية بداية القوس الممتد',
+    extArcEndAngle: 'زاوية نهاية القوس الممتد',
+
+    definingPointX: 'نقطة التعريف X',
+    definingPointY: 'نقطة التعريف Y',
+    definingPointZ: 'نقطة التعريف Z',
+
+    leaderEndPointX: 'نهاية خط التوجيه X',
+    leaderEndPointY: 'نهاية خط التوجيه Y',
+    leaderEndPointZ: 'نهاية خط التوجيه Z',
+
+    directionX: 'الاتجاه X',
+    directionY: 'الاتجاه Y',
+    directionZ: 'الاتجاه Z',
+
+    locationX: 'الموقع X',
+    locationY: 'الموقع Y',
+    locationZ: 'الموقع Z',
+
+    shapeNumber: 'رقم الشكل'
+
+}
+,
+  color: {
+    ...enEntity.color,
+    aliceblue: 'أزرق أليس',
+    antiquewhite: 'أبيض عتيق',
+    aqua: 'سماوي مائي',
+    aquamarine: 'زبرجدي فاتح',
+    azure: 'أزرق سماوي',
+    beige: 'بيج',
+    bisque: 'كريمي خوخي',
+    black: 'أسود',
+    blanchedalmond: 'لوزي فاتح',
+    blue: 'أزرق',
+    blueviolet: 'بنفسجي مزرق',
+    brown: 'بني',
+    burlywood: 'خشبي فاتح',
+    cadetblue: 'أزرق رمادي',
+    chartreuse: 'أخضر مصفر فاقع',
+    chocolate: 'شوكولاتي',
+    coral: 'مرجاني',
+    cornflowerblue: 'أزرق زهرة الذرة',
+    cornsilk: 'حريري ذهبي',
+    crimson: 'قرمزي',
+    cyan: 'سماوي',
+    darkblue: 'أزرق داكن',
+    darkcyan: 'سماوي داكن',
+    darkgoldenrod: 'ذهبي داكن',
+    darkgray: 'رمادي داكن',
+    darkgreen: 'أخضر داكن',
+    darkkhaki: 'كاكي داكن',
+    darkmagenta: 'أرجواني داكن',
+    darkolivegreen: 'أخضر زيتوني داكن',
+    darkorange: 'برتقالي داكن',
+    darkorchid: 'أوركيد داكن',
+    darkred: 'أحمر داكن',
+    darksalmon: 'سلموني داكن',
+    darkseagreen: 'أخضر بحري داكن',
+    darkslateblue: 'أزرق أردوازي داكن',
+    darkslategray: 'رمادي أردوازي داكن',
+    darkturquoise: 'فيروزي داكن',
+    darkviolet: 'بنفسجي داكن',
+    deeppink: 'وردي عميق',
+    deepskyblue: 'أزرق سماوي عميق',
+    dimgrey: 'رمادي خافت',
+    dodgerblue: 'أزرق دودجر',
+    firebrick: 'آجري',
+    floralwhite: 'أبيض زهري',
+    forestgreen: 'أخضر غابي',
+    fuchsia: 'فوشيا',
+    gainsboro: 'رمادي غينسبورو',
+    ghostwhite: 'أبيض شبحي',
+    gold: 'ذهبي',
+    goldenrod: 'ذهبي خردلي',
+    gray: 'رمادي',
+    green: 'أخضر',
+    greenyellow: 'أصفر مخضر',
+    grey: 'رمادي',
+    honeydew: 'أخضر عسلي فاتح',
+    hotpink: 'وردي فاقع',
+    indianred: 'أحمر هندي',
+    indigo: 'نيلي',
+    ivory: 'عاجي',
+    khaki: 'كاكي',
+    lavender: 'خزامي',
+    lavenderblush: 'وردي خزامي',
+    lawngreen: 'أخضر عشبي',
+    lemonchiffon: 'ليموني فاتح',
+    lightblue: 'أزرق فاتح',
+    lightcoral: 'مرجاني فاتح',
+    lightcyan: 'سماوي فاتح',
+    lightgoldenrodyellow: 'أصفر ذهبي فاتح',
+    lightgray: 'رمادي فاتح',
+    lightgreen: 'أخضر فاتح',
+    lightgrey: 'رمادي فاتح',
+    lightpink: 'وردي فاتح',
+    lightsalmon: 'سلموني فاتح',
+    lightseagreen: 'أخضر بحري فاتح',
+    lightskyblue: 'أزرق سماوي فاتح',
+    lightslategray: 'رمادي أردوازي فاتح',
+    lightslategrey: 'رمادي أردوازي فاتح',
+    lightsteelblue: 'أزرق فولاذي فاتح',
+    lightyellow: 'أصفر فاتح',
+    lime: 'ليموني',
+    limegreen: 'أخضر ليموني',
+    linen: 'كتاني',
+    magenta: 'أرجواني',
+    maroon: 'خمري',
+    mediumaquamarine: 'زبرجدي متوسط',
+    mediumblue: 'أزرق متوسط',
+    mediumorchid: 'أوركيد متوسط',
+    mediumpurple: 'بنفسجي متوسط',
+    mediumseagreen: 'أخضر بحري متوسط',
+    mediumslateblue: 'أزرق أردوازي متوسط',
+    mediumspringgreen: 'أخضر ربيعي متوسط',
+    mediumturquoise: 'فيروزي متوسط',
+    mediumvioletred: 'أحمر بنفسجي متوسط',
+    midnightblue: 'أزرق ليلي',
+    mintcream: 'نعناعي كريمي',
+    mistyrose: 'وردي ضبابي',
+    moccasin: 'موكاسين',
+    navajowhite: 'أبيض نافاجو',
+    navy: 'كحلي',
+    oldlace: 'دانتيل عتيق',
+    olive: 'زيتوني',
+    olivedrab: 'زيتوني باهت',
+    orange: 'برتقالي',
+    orangered: 'أحمر برتقالي',
+    orchid: 'أوركيد',
+    palegoldenrod: 'ذهبي شاحب',
+    palegreen: 'أخضر شاحب',
+    paleturquoise: 'فيروزي شاحب',
+    palevioletred: 'أحمر بنفسجي شاحب',
+    papayawhip: 'كريمي بابايا',
+    peachpuff: 'خوخي فاتح',
+    peru: 'بيروفي',
+    pink: 'وردي',
+    plum: 'برقوقي',
+    powderblue: 'أزرق مسحوقي',
+    purple: 'بنفسجي',
+    rebeccapurple: 'بنفسجي ريبيكا',
+    red: 'أحمر',
+    rosybrown: 'بني وردي',
+    royalblue: 'أزرق ملكي',
+    saddlebrown: 'بني سرجي',
+    salmon: 'سلموني',
+    sandybrown: 'بني رملي',
+    seagreen: 'أخضر بحري',
+    seashell: 'صدفي',
+    sienna: 'سيينا',
+    silver: 'فضي',
+    skyblue: 'أزرق سماوي',
+    slateblue: 'أزرق أردوازي',
+    slategrey: 'رمادي أردوازي',
+    snow: 'أبيض ثلجي',
+    springgreen: 'أخضر ربيعي',
+    steelblue: 'أزرق فولاذي',
+    tan: 'بني أسمر',
+    teal: 'أزرق مخضر',
+    thistle: 'بنفسجي شوكي',
+    tomato: 'طماطمي',
+    turquoise: 'فيروزي',
+    violet: 'بنفسجي فاتح',
+    wheat: 'قمحي',
+    white: 'أبيض',
+    whitesmoke: 'أبيض دخاني',
+    yellow: 'أصفر',
+    yellowgreen: 'أخضر مصفر',
+  }
+}

@@ -139,7 +139,8 @@ const LOCALE_OPTIONS: Array<{ locale: AcApLocale; label: string }> = [
   { locale: 'en', label: 'English' },
   { locale: 'zh', label: '简体中文' },
   { locale: 'tr', label: 'Türkçe' },
-  { locale: 'cs', label: 'Čeština' }
+  { locale: 'cs', label: 'Čeština' },
+  { locale: 'ar', label: 'العربية' }
 ]
 
 /** Caret used by the language select trigger (Element Plus-style). */

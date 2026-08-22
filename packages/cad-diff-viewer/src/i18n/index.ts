@@ -1,6 +1,6 @@
 import { AcApI18n } from '@mlightcad/cad-simple-viewer'
 
-import { cs, en, tr, zh } from './messages'
+import { ar, cs, en, tr, zh } from './messages'
 
 /** Message namespace merged into {@link AcApI18n}. */
 export const DIFF_VIEWER_I18N_PREFIX = 'diffViewer'
@@ -18,6 +18,7 @@ export function acapRegisterDiffViewerI18n(): void {
   AcApI18n.mergeLocaleMessage('zh', { [DIFF_VIEWER_I18N_PREFIX]: zh })
   AcApI18n.mergeLocaleMessage('tr', { [DIFF_VIEWER_I18N_PREFIX]: tr })
   AcApI18n.mergeLocaleMessage('cs', { [DIFF_VIEWER_I18N_PREFIX]: cs })
+  AcApI18n.mergeLocaleMessage('ar', { [DIFF_VIEWER_I18N_PREFIX]: ar })
   isRegistered = true
 }
 

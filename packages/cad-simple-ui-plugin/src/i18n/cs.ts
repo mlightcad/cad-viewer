@@ -53,6 +53,7 @@ export const cs: Record<string, string> = {
   'toolbar.localeZh': '中文',
   'toolbar.localeCs': 'Čeština',
   'toolbar.localeTr': 'Türkçe',
+  'toolbar.localeAr': 'العربية',
   'toolbar.collapse': 'Sbalit panel nástrojů',
   'toolbar.expand': 'Rozbalit panel nástrojů',
   'layerManager.title': 'Správce hladin',

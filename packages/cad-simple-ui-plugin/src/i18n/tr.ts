@@ -53,6 +53,7 @@ export const tr: Record<string, string> = {
   'toolbar.localeZh': '中文',
   'toolbar.localeCs': 'Čeština',
   'toolbar.localeTr': 'Türkçe',
+  'toolbar.localeAr': 'العربية',
   'toolbar.collapse': 'Araç çubuğunu daralt',
   'toolbar.expand': 'Araç çubuğunu genişlet',
   'layerManager.title': 'Katman Yöneticisi',

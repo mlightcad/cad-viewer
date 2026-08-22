@@ -639,6 +639,14 @@ export default {
   },
   toolPalette: {
     moreTabs: 'More tabs',
+    dockSide: 'Dock side',
+    dock: {
+      float: 'Undock into separate window',
+      left: 'Dock to left',
+      top: 'Dock to top',
+      bottom: 'Dock to bottom',
+      right: 'Dock to right'
+    },
     entityProperties: {
       tab: 'Properties',
       title: 'Entity Properties',

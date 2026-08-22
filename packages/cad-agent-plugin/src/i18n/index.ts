@@ -1,5 +1,6 @@
 import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
 
+import { agentAr } from './ar'
 import { agentCs } from './cs'
 import { agentEn } from './en'
 import { agentTr } from './tr'
@@ -19,7 +20,8 @@ const agentMessagesByLocale = {
   en: agentEn,
   zh: agentZh,
   tr: agentTr,
-  cs: agentCs
+  cs: agentCs,
+  ar: agentAr
 } as const satisfies Record<AcApLocale, AgentChatLabels>
 
 /** Guards {@link registerAgentI18n} against duplicate merges. */
@@ -52,6 +54,7 @@ export function registerAgentI18n(): void {
   AcApI18n.mergeLocaleMessage('zh', buildVueMessages('zh'))
   AcApI18n.mergeLocaleMessage('tr', buildVueMessages('tr'))
   AcApI18n.mergeLocaleMessage('cs', buildVueMessages('cs'))
+  AcApI18n.mergeLocaleMessage('ar', buildVueMessages('ar'))
   isRegistered = true
 }
 
