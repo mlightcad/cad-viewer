@@ -32,6 +32,8 @@ const CSS = `
 }
 
 .ml-diff-toolbar {
+  position: relative;
+  z-index: 5;
   flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
@@ -57,6 +59,10 @@ const CSS = `
   padding-right: 0;
 }
 
+.ml-diff-toolbar-locale {
+  margin-left: auto;
+}
+
 .ml-diff-tool-btn {
   display: inline-flex;
   align-items: center;
@@ -70,6 +76,11 @@ const CSS = `
   color: var(--ml-diff-muted);
   font-size: 0.75rem;
   cursor: pointer;
+}
+
+.ml-diff-tool-btn.is-icon {
+  width: 1.85rem;
+  padding: 0.2rem;
 }
 
 .ml-diff-tool-btn:hover,
@@ -89,6 +100,100 @@ const CSS = `
   width: 1rem;
   height: 1rem;
   display: block;
+}
+
+.ml-diff-lang-select {
+  position: relative;
+  width: 110px;
+}
+
+.ml-diff-lang-select__trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  height: 24px;
+  padding: 0 22px 0 8px;
+  border: 1px solid #4c4d4f;
+  border-radius: 4px;
+  background: #1d2736;
+  color: var(--ml-diff-text);
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 22px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ml-diff-lang-select__trigger:hover,
+.ml-diff-lang-select.is-open .ml-diff-lang-select__trigger {
+  border-color: var(--ml-diff-focus);
+}
+
+.ml-diff-lang-select__trigger:focus-visible {
+  outline: none;
+  border-color: var(--ml-diff-focus);
+  box-shadow: 0 0 0 1px var(--ml-diff-focus);
+}
+
+.ml-diff-lang-select__label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-diff-lang-select__caret {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  color: var(--ml-diff-muted);
+  pointer-events: none;
+  transition: transform 0.15s ease;
+}
+
+.ml-diff-lang-select.is-open .ml-diff-lang-select__caret {
+  transform: rotate(180deg);
+}
+
+.ml-diff-lang-select__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 40;
+  min-width: 100%;
+  padding: 4px 0;
+  border: 1px solid #4c4d4f;
+  border-radius: 4px;
+  background: #1d2736;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+.ml-diff-lang-select__option {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  color: var(--ml-diff-text);
+  font-size: 12px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ml-diff-lang-select__option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ml-diff-lang-select__option.is-selected {
+  color: var(--ml-diff-text);
+  background: rgba(37, 99, 235, 0.22);
+  font-weight: 600;
 }
 
 .ml-diff-body {

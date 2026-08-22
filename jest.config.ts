@@ -29,6 +29,8 @@ const config: Config = {
   ],
   moduleNameMapper: {
     '^lodash-es$': 'lodash',
+    '^@mlightcad/cad-simple-viewer/icons$':
+      '<rootDir>/packages/cad-simple-viewer/src/ui/icons.ts',
     '^three/examples/jsm/lines/LineMaterial\\.js$':
       '<rootDir>/test/mocks/three/LineMaterial.js',
     '^three/examples/jsm/lines/LineSegments2\\.js$':

@@ -5,6 +5,7 @@ import {
   AcApDocManager,
   type AcApDocument,
   AcApI18n,
+  type AcApLocale,
   type AcApMarkupRecord,
   type AcApOpenDatabaseOptions,
   type AcApWebworkerFiles,
@@ -12,6 +13,17 @@ import {
   type AcTrView2d,
   listMarkupsForSession
 } from '@mlightcad/cad-simple-viewer'
+import {
+  ICON_MARKUP_ARROW,
+  ICON_MARKUP_CALLOUT,
+  ICON_MARKUP_CIRCLE,
+  ICON_MARKUP_CLOUD,
+  ICON_MARKUP_HIGHLIGHT,
+  ICON_MARKUP_LINE,
+  ICON_MARKUP_RECT,
+  ICON_MARKUP_STAMP,
+  ICON_MARKUP_TEXT
+} from '@mlightcad/cad-simple-viewer/icons'
 import { AcGeBox2d } from '@mlightcad/data-model'
 
 import {
@@ -108,17 +120,38 @@ const MARKUP_TOOLS: Array<{
   command: string
   /** i18n key under the `diffViewer` namespace. */
   labelKey: Parameters<typeof acapDiffViewerT>[0]
+  /** Inline SVG from `@mlightcad/cad-simple-viewer/icons`. */
+  icon: string
 }> = [
-  { command: 'markupcloud', labelKey: 'markupCloud' },
-  { command: 'markupcallout', labelKey: 'markupCallout' },
-  { command: 'markuptext', labelKey: 'markupText' },
-  { command: 'markuprect', labelKey: 'markupRect' },
-  { command: 'markupcircle', labelKey: 'markupCircle' },
-  { command: 'markuparrow', labelKey: 'markupArrow' },
-  { command: 'markupstamp', labelKey: 'markupStamp' },
-  { command: 'markupline', labelKey: 'markupLine' },
-  { command: 'markuphighlight', labelKey: 'markupHighlight' }
+  { command: 'markupcloud', labelKey: 'markupCloud', icon: ICON_MARKUP_CLOUD },
+  { command: 'markupcallout', labelKey: 'markupCallout', icon: ICON_MARKUP_CALLOUT },
+  { command: 'markuptext', labelKey: 'markupText', icon: ICON_MARKUP_TEXT },
+  { command: 'markuprect', labelKey: 'markupRect', icon: ICON_MARKUP_RECT },
+  { command: 'markupcircle', labelKey: 'markupCircle', icon: ICON_MARKUP_CIRCLE },
+  { command: 'markuparrow', labelKey: 'markupArrow', icon: ICON_MARKUP_ARROW },
+  { command: 'markupstamp', labelKey: 'markupStamp', icon: ICON_MARKUP_STAMP },
+  { command: 'markupline', labelKey: 'markupLine', icon: ICON_MARKUP_LINE },
+  { command: 'markuphighlight', labelKey: 'markupHighlight', icon: ICON_MARKUP_HIGHLIGHT }
 ]
+
+/** Language options shown in the toolbar select (same labels as cad-viewer ribbon). */
+const LOCALE_OPTIONS: Array<{ locale: AcApLocale; label: string }> = [
+  { locale: 'en', label: 'English' },
+  { locale: 'zh', label: '简体中文' },
+  { locale: 'tr', label: 'Türkçe' },
+  { locale: 'cs', label: 'Čeština' }
+]
+
+/** Caret used by the language select trigger (Element Plus-style). */
+const LOCALE_CHEVRON =
+  '<svg class="ml-diff-lang-select__caret" viewBox="0 0 12 12" aria-hidden="true"><path fill="currentColor" d="M2.4 4.2 6 8.1l3.6-3.9"/></svg>'
+
+/** Visible label for a locale code. */
+function localeOptionLabel(locale: AcApLocale): string {
+  return (
+    LOCALE_OPTIONS.find(option => option.locale === locale)?.label ?? 'English'
+  )
+}
 
 /**
  * Returns the process-wide {@link AcApDocManager} created by this widget.
@@ -200,6 +233,12 @@ export class AcApDiffViewer {
   private readonly panelTitle: HTMLElement
   /** Markup tool buttons, kept so locale changes can refresh labels. */
   private readonly markupButtons: HTMLButtonElement[] = []
+  /** Language select trigger (cad-viewer ribbon-style dropdown). */
+  private readonly localeTrigger: HTMLButtonElement
+  /** Language select dropdown menu. */
+  private readonly localeMenu: HTMLElement
+  /** Host wrapping the language trigger and menu (for outside-click). */
+  private readonly localeSelectHost: HTMLElement
 
   /** Document currently shown in the left pane, if any. */
   private leftDoc?: AcApDocument
@@ -227,6 +266,8 @@ export class AcApDiffViewer {
   private overlayId?: string
   /** True after {@link destroy} has run. */
   private disposed = false
+  /** Whether the language dropdown is open. */
+  private localeMenuOpen = false
 
   /**
    * Creates the widget, injects styles, and constructs a dedicated
@@ -283,6 +324,9 @@ export class AcApDiffViewer {
     this.groupByKindBtn = chrome.groupByKindBtn
     this.groupByTypeBtn = chrome.groupByTypeBtn
     this.panelTitle = chrome.panelTitle
+    this.localeTrigger = chrome.localeTrigger
+    this.localeMenu = chrome.localeMenu
+    this.localeSelectHost = chrome.localeSelectHost
 
     this.toolbar.append(...chrome.toolbarChildren)
     this.body.append(this.panesHost, this.sidePanel)
@@ -301,6 +345,7 @@ export class AcApDiffViewer {
     })
     AcApDocManager.instance.ensureSplitView(this.rightUi.canvas)
     AcApI18n.events.localeChanged.addEventListener(this.handleLocaleChanged)
+    document.addEventListener('pointerdown', this.handleDocumentPointerDown)
     this.syncChrome()
     this.syncViewModeUi()
     this.syncPanelUi()
@@ -463,6 +508,7 @@ export class AcApDiffViewer {
     if (this.disposed) return
     this.disposed = true
     AcApI18n.events.localeChanged.removeEventListener(this.handleLocaleChanged)
+    document.removeEventListener('pointerdown', this.handleDocumentPointerDown)
     for (const timer of this.bannerTimers.values()) {
       window.clearTimeout(timer)
     }
@@ -481,6 +527,7 @@ export class AcApDiffViewer {
   /** Relocalizes chrome and lists when {@link AcApI18n} locale changes. */
   private handleLocaleChanged = () => {
     if (this.disposed) return
+    this.setLocaleMenuOpen(false)
     this.syncChrome()
     this.syncViewModeUi()
     this.syncPanelUi()
@@ -524,15 +571,18 @@ export class AcApDiffViewer {
     for (const tool of MARKUP_TOOLS) {
       const btn = document.createElement('button')
       btn.type = 'button'
-      btn.className = 'ml-diff-tool-btn'
+      btn.className = 'ml-diff-tool-btn is-icon'
       btn.dataset.command = tool.command
       btn.dataset.labelKey = tool.labelKey
+      btn.innerHTML = tool.icon
       btn.addEventListener('click', () => {
         void this.runMarkupCommand(tool.command)
       })
       this.markupButtons.push(btn)
       markupGroup.appendChild(btn)
     }
+
+    const localeChrome = this.createLanguageSelect()
 
     btnSideBySide.addEventListener('click', () => {
       void this.setViewMode('side-by-side')
@@ -611,7 +661,7 @@ export class AcApDiffViewer {
     sidePanel.append(header, tabs, groupBar, resultsBody, markupsBody)
 
     return {
-      toolbarChildren: [modeGroup, navGroup, markupGroup],
+      toolbarChildren: [modeGroup, navGroup, markupGroup, localeChrome.group],
       btnSideBySide,
       btnOverlay,
       btnTogglePanel,
@@ -625,8 +675,94 @@ export class AcApDiffViewer {
       groupByKindBtn,
       groupByTypeBtn,
       panelTitle,
-      closeBtn
+      closeBtn,
+      localeTrigger: localeChrome.trigger,
+      localeMenu: localeChrome.menu,
+      localeSelectHost: localeChrome.host
     }
+  }
+
+  /**
+   * Builds the far-right language select (compact dropdown like cad-viewer ribbon).
+   */
+  private createLanguageSelect() {
+    const group = document.createElement('div')
+    group.className = 'ml-diff-toolbar-group ml-diff-toolbar-locale'
+    const host = document.createElement('div')
+    host.className = 'ml-diff-lang-select'
+    const trigger = document.createElement('button')
+    trigger.type = 'button'
+    trigger.className = 'ml-diff-lang-select__trigger'
+    trigger.setAttribute('aria-haspopup', 'listbox')
+    trigger.setAttribute('aria-expanded', 'false')
+    const label = document.createElement('span')
+    label.className = 'ml-diff-lang-select__label'
+    trigger.append(label)
+    trigger.insertAdjacentHTML('beforeend', LOCALE_CHEVRON)
+    trigger.addEventListener('click', event => {
+      event.stopPropagation()
+      this.setLocaleMenuOpen(!this.localeMenuOpen)
+    })
+
+    const menu = document.createElement('div')
+    menu.className = 'ml-diff-lang-select__menu'
+    menu.setAttribute('role', 'listbox')
+    menu.hidden = true
+    for (const option of LOCALE_OPTIONS) {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'ml-diff-lang-select__option'
+      btn.setAttribute('role', 'option')
+      btn.dataset.locale = option.locale
+      btn.textContent = option.label
+      btn.addEventListener('click', event => {
+        event.stopPropagation()
+        this.setLocaleMenuOpen(false)
+        if (option.locale === AcApI18n.currentLocale) return
+        AcApI18n.setCurrentLocale(option.locale)
+        document.documentElement.lang = option.locale
+      })
+      menu.appendChild(btn)
+    }
+
+    host.append(trigger, menu)
+    group.appendChild(host)
+    return { group, host, trigger, menu }
+  }
+
+  /** Opens or closes the language dropdown. */
+  private setLocaleMenuOpen(open: boolean) {
+    this.localeMenuOpen = open
+    this.localeMenu.hidden = !open
+    this.localeTrigger.setAttribute('aria-expanded', String(open))
+    this.localeSelectHost.classList.toggle('is-open', open)
+  }
+
+  /** Highlights the active locale and refreshes the trigger label. */
+  private syncLocaleSelect() {
+    const current = AcApI18n.currentLocale
+    const label = this.localeTrigger.querySelector('.ml-diff-lang-select__label')
+    if (label) label.textContent = localeOptionLabel(current)
+    this.localeTrigger.title = acapDiffViewerT('toolbarLanguage')
+    this.localeTrigger.setAttribute(
+      'aria-label',
+      acapDiffViewerT('toolbarLanguage')
+    )
+    this.localeMenu
+      .querySelectorAll<HTMLButtonElement>('.ml-diff-lang-select__option')
+      .forEach(btn => {
+        const selected = btn.dataset.locale === current
+        btn.classList.toggle('is-selected', selected)
+        btn.setAttribute('aria-selected', String(selected))
+      })
+  }
+
+  /** Closes the language menu when clicking outside it. */
+  private handleDocumentPointerDown = (event: PointerEvent) => {
+    if (!this.localeMenuOpen) return
+    if (!(event.target instanceof Node)) return
+    if (this.localeSelectHost.contains(event.target)) return
+    this.setLocaleMenuOpen(false)
   }
 
   /**
@@ -1236,10 +1372,12 @@ export class AcApDiffViewer {
     this.btnTogglePanel.textContent = acapDiffViewerT('toolbarTogglePanel')
     this.btnPrev.title = acapDiffViewerT('toolbarPrev')
     this.btnNext.title = acapDiffViewerT('toolbarNext')
+    this.syncLocaleSelect()
     for (const btn of this.markupButtons) {
       const key = btn.dataset.labelKey as Parameters<typeof acapDiffViewerT>[0]
-      btn.textContent = acapDiffViewerT(key)
-      btn.title = acapDiffViewerT(key)
+      const label = acapDiffViewerT(key)
+      btn.title = label
+      btn.setAttribute('aria-label', label)
     }
   }
 

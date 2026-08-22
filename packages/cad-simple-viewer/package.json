@@ -21,6 +21,8 @@
   "files": [
     "dist",
     "lib",
+    "icons.ts",
+    "src/ui/icons.ts",
     "README.md",
     "package.json"
   ],
@@ -32,6 +34,11 @@
       "types": "./lib/index.d.ts",
       "import": "./dist/cad-simple-viewer.js",
       "require": "./dist/cad-simple-viewer.umd.cjs"
+    },
+    "./icons": {
+      "types": "./src/ui/icons.ts",
+      "import": "./src/ui/icons.ts",
+      "default": "./lib/ui/icons.js"
     }
   },
   "scripts": {
