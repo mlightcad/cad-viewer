@@ -907,16 +907,6 @@ export default {
   toolPalette: {
     ...enMain.toolPalette,
 
-    moreTabs: 'المزيد من اللوحات',
-    dockSide: 'جهة الإرساء',
-    dock: {
-      float: 'إلغاء الإرساء وفتحها كنافذة مستقلة',
-      left: 'إرساء إلى اليسار',
-      top: 'إرساء إلى الأعلى',
-      bottom: 'إرساء إلى الأسفل',
-      right: 'إرساء إلى اليمين'
-    },
-
     entityProperties: {
       ...enMain.toolPalette.entityProperties,
 

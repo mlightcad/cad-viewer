@@ -166,7 +166,6 @@
     <ml-overflow-tabs
       v-model="activeTab"
       :tabs="detailTabs"
-      :more-tabs-label="t('main.toolPalette.moreTabs')"
       class="ml-memory-profile-tabs"
     >
       <div

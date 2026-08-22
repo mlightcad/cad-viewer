@@ -597,7 +597,6 @@ export default {
     moreLayouts: '更多布局'
   },
   toolPalette: {
-    moreTabs: '更多标签页',
     entityProperties: {
       tab: '属性',
       title: '图元属性',

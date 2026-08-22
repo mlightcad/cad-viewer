@@ -642,7 +642,6 @@ export default {
     moreLayouts: 'Diğer düzenler'
   },
   toolPalette: {
-    moreTabs: 'Diğer sekmeler',
     entityProperties: {
       tab: 'Özellikler',
       title: 'Varlık Özellikleri',

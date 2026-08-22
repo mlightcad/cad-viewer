@@ -630,7 +630,6 @@ export default {
     moreLayouts: 'Další rozvržení'
   },
   toolPalette: {
-    moreTabs: 'Další karty',
     entityProperties: {
       tab: 'Vlastnosti',
       title: 'Vlastnosti objektu',
