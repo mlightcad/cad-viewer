@@ -311,6 +311,10 @@ const CSS = `
   pointer-events: none;
 }
 
+.ml-diff-root.is-overlay .ml-diff-pane canvas {
+  pointer-events: auto;
+}
+
 .ml-diff-sidepanel {
   flex: 0 0 280px;
   max-width: 40%;

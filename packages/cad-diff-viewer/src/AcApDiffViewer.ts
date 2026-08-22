@@ -344,15 +344,17 @@ export class AcApDiffViewer {
   ): Promise<boolean> {
     this.assertAlive()
     const mgr = requireInstance()
-    if (this.viewMode === 'overlay') {
+    const wasOverlay = this.viewMode === 'overlay'
+    if (wasOverlay) {
       await this.exitOverlayMode()
     }
     const existing = side === 'left' ? this.leftDoc : this.rightDoc
+    const otherDoc = side === 'left' ? this.rightDoc : this.leftDoc
     if (
       existing &&
       mgr.sessionFor(existing) &&
-      mgr.documentCount > 1 &&
-      existing !== (side === 'left' ? this.rightDoc : this.leftDoc)
+      !existing.isReusableUntitled &&
+      existing !== otherDoc
     ) {
       await mgr.closeDocument(existing)
     }
@@ -369,6 +371,10 @@ export class AcApDiffViewer {
     if (!success) {
       this.options.events?.failed?.(side, fileName)
       this.syncChrome()
+      if (wasOverlay) {
+        await this.enterOverlayMode()
+        this.syncViewModeUi()
+      }
       return false
     }
 
@@ -776,13 +782,14 @@ export class AcApDiffViewer {
     this.refreshMarkupsList()
   }
 
-  /** Registers the right drawing as an overlay on the left canvas and hides the right pane. */
+  /** Registers the right drawing as an overlay on the left canvas, hides the right pane, and focuses the left view. */
   private async enterOverlayMode() {
     const mgr = requireInstance()
     const right = this.rightDocument
     if (!right) {
       this.viewMode = 'overlay'
       this.syncViewModeUi()
+      await this.activateSide('left')
       return
     }
     if (this.overlayId) {
@@ -795,9 +802,13 @@ export class AcApDiffViewer {
     })
     this.rightUi.pane.style.display = 'none'
     this.root.classList.add('is-overlay')
+    await this.activateSide('left')
   }
 
-  /** Removes the overlay and restores the right pane. */
+  /**
+   * Removes the overlay and restores the right pane.
+   * Does not change {@link viewMode}; callers that switch mode assign it themselves.
+   */
   private async exitOverlayMode() {
     const mgr = requireInstance()
     if (this.overlayId) {
@@ -806,7 +817,6 @@ export class AcApDiffViewer {
     }
     this.rightUi.pane.style.display = ''
     this.root.classList.remove('is-overlay')
-    this.viewMode = 'side-by-side'
   }
 
   /** Turns off compare coloring on both canvases and any overlay. */

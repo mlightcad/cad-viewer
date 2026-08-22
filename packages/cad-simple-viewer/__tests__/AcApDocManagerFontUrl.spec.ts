@@ -240,6 +240,8 @@ jest.mock('../src/command', () => {
         jest.fn().mockImplementation(() => ({ trigger: jest.fn() }))
       ])
     ),
+    acapBindMarkupSession: jest.fn(),
+    acapDisposeMarkupSession: jest.fn(),
     resetMarkupSession: jest.fn(),
     resetMeasurementSession: jest.fn()
   }

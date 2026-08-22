@@ -347,18 +347,14 @@ export class AcApSessionUndo {
   }
 }
 
-/** Session-wide DB / markup / overlay undo coordinator singleton. */
-let sharedSessionUndo: AcApSessionUndo | undefined
-
 /** Shared markup history for the active session. */
 export function getMarkupHistory(): AcApMarkupHistory {
   return getActiveMarkupBag().history
 }
 
-/** Shared session undo coordinator. */
+/** Session undo coordinator for the active document session. */
 export function getSessionUndo(): AcApSessionUndo {
-  if (!sharedSessionUndo) sharedSessionUndo = new AcApSessionUndo()
-  return sharedSessionUndo
+  return getActiveMarkupBag().sessionUndo
 }
 
 /**

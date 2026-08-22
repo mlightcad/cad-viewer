@@ -1,4 +1,4 @@
-import type { AcApMarkupHistory } from './AcApMarkupHistory'
+import type { AcApMarkupHistory, AcApSessionUndo } from './AcApMarkupHistory'
 import type { AcApMarkupPresenter } from './AcApMarkupPresenter'
 import type { AcApMarkupStore } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
@@ -11,6 +11,8 @@ export interface AcApMarkupSessionBag {
   presenter: AcApMarkupPresenter
   /** Undo/redo stack for this session. */
   history: AcApMarkupHistory
+  /** DB / markup / overlay undo coordinator for this session. */
+  sessionUndo: AcApSessionUndo
 }
 
 /** Factory that builds a fresh {@link AcApMarkupSessionBag}. */

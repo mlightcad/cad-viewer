@@ -1,6 +1,7 @@
 import { AcGeBox2d } from '@mlightcad/data-model'
 
-import { getMarkupStore } from '../src/command/markup/AcApMarkupStore'
+import { acapSetMarkupBagFactory } from '../src/command/markup/AcApMarkupSession'
+import { AcApMarkupStore, getMarkupStore } from '../src/command/markup/AcApMarkupStore'
 import type { AcApMarkupRecord } from '../src/command/markup/AcApMarkupTypes'
 import {
   collectReviewOverlayIdsByBox,
@@ -8,6 +9,13 @@ import {
   trySelectReviewOverlaysByBox
 } from '../src/view/AcEdReviewOverlayPick'
 import type { AcTrView2d } from '../src/view/AcTrView2d'
+
+acapSetMarkupBagFactory(() => ({
+  store: new AcApMarkupStore(),
+  presenter: {} as never,
+  history: {} as never,
+  sessionUndo: {} as never
+}))
 
 function lineRecord(id = 'line-1'): AcApMarkupRecord {
   return {
@@ -117,9 +125,7 @@ describe('trySelectReviewOverlaysByBox', () => {
   beforeEach(() => {
     getMarkupStore().reset()
     getMarkupStore().upsert(lineRecord())
-    getMarkupStore().upsert(
-      lineRecord('line-2')
-    )
+    getMarkupStore().upsert(lineRecord('line-2'))
     // Move line-2 far away
     getMarkupStore().updateGeometry('line-2', {
       type: 'line',
@@ -184,9 +190,9 @@ describe('trySelectReviewOverlaysByBox', () => {
       .expandByPoint({ x: 1000, y: 1000 })
       .expandByPoint({ x: 1100, y: 1100 })
 
-    expect(
-      trySelectReviewOverlaysByBox(view, box, 'window', 'replace')
-    ).toBe(true)
+    expect(trySelectReviewOverlaysByBox(view, box, 'window', 'replace')).toBe(
+      true
+    )
     expect(deselectAll).toHaveBeenCalled()
     expect(selectGroup).not.toHaveBeenCalled()
     expect(view.isHtmlDirty).toBe(true)

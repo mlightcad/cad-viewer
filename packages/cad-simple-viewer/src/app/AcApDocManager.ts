@@ -1286,11 +1286,13 @@ export class AcApDocManager {
     for (const session of this._sessions) {
       const overlay = session.overlays.get(overlayId)
       if (!overlay) continue
-      const view = session.context.view as AcTrView2d
-      view.cadScene.internalScene.remove(overlay.layout.internalObject)
+      const scene = this.sessionCadScene(session)
+      scene.internalScene.remove(overlay.layout.internalObject)
       overlay.layout.clear()
       session.overlays.delete(overlayId)
-      view.isDirty = true
+      if (!session.viewState) {
+        ;(session.context.view as AcTrView2d).isDirty = true
+      }
       return true
     }
     return false
@@ -2574,17 +2576,22 @@ export class AcApDocManager {
    * @param session - Session whose overlays should be disposed.
    */
   private clearSessionOverlays(session: AcApDocSession) {
-    const view = this.curView
+    const scene = this.sessionCadScene(session)
     for (const overlay of session.overlays.values()) {
-      if (session.viewState) {
-        session.viewState.scene.internalScene.remove(
-          overlay.layout.internalObject
-        )
-      } else {
-        view.cadScene.internalScene.remove(overlay.layout.internalObject)
-      }
+      scene.internalScene.remove(overlay.layout.internalObject)
       overlay.layout.clear()
     }
     session.overlays.clear()
+  }
+
+  /**
+   * Scene that currently owns `session`'s overlay layouts.
+   * Parked sessions keep overlays on {@link AcApDocSession.viewState}; live
+   * split-view sessions keep them on their own canvas, not {@link curView}.
+   */
+  private sessionCadScene(session: AcApDocSession) {
+    return (
+      session.viewState?.scene ?? (session.context.view as AcTrView2d).cadScene
+    )
   }
 }
