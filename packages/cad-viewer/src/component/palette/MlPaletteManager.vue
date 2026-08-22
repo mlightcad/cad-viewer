@@ -13,7 +13,6 @@
       <ml-overflow-tabs
         v-model="store.dialogs.activePaletteTab"
         :tabs="tabs"
-        :more-tabs-label="t('main.toolPalette.moreTabs')"
       >
         <div
           v-if="store.dialogs.activePaletteTab === 'layerManager'"
@@ -85,7 +84,6 @@ import {
 } from '@mlightcad/ui-components'
 import { ElConfigProvider } from 'element-plus'
 import { computed, defineAsyncComponent, nextTick, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { store } from '../../app'
 import { useSelectionSet, useViewerRect } from '../../composable'
@@ -117,7 +115,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const { t } = useI18n()
 const containerRect = useViewerRect()
 
 const DEFAULT_WIDTH = 520
