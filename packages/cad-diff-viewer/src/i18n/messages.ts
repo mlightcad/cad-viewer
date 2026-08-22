@@ -6,10 +6,14 @@ export const en = {
   invalidFile: 'Please choose a .dwg or .dxf file',
   toolbarSideBySide: 'Side by side',
   toolbarOverlay: 'Overlay',
+  toolbarSyncViews: 'Sync views',
   toolbarTogglePanel: 'Results panel',
   toolbarPrev: 'Previous difference',
   toolbarNext: 'Next difference',
+  toolbarSettings: 'Settings',
   toolbarLanguage: 'Language',
+  toolbarThemeLight: 'Switch to dark theme',
+  toolbarThemeDark: 'Switch to light theme',
   toolbarMarkup: 'Markup',
   markupCloud: 'Cloud',
   markupCallout: 'Callout',
@@ -33,7 +37,16 @@ export const en = {
   noMarkups: 'No markups yet',
   markupFromLeft: 'Left',
   markupFromRight: 'Right',
-  comparing: 'Comparing…'
+  comparing: 'Comparing…',
+  settingsTitle: 'Settings',
+  settingsUnchanged: 'Unchanged objects',
+  settingsDeleted: 'Deleted objects',
+  settingsAdded: 'Added objects',
+  settingsModified: 'Modified objects',
+  settingsOk: 'OK',
+  settingsCancel: 'Cancel',
+  settingsReset: 'Reset',
+  settingsClose: 'Close'
 }
 
 export const zh = {
@@ -44,10 +57,14 @@ export const zh = {
   invalidFile: '请选择 .dwg 或 .dxf 文件',
   toolbarSideBySide: '左右分屏',
   toolbarOverlay: '叠图',
+  toolbarSyncViews: '同步左右视图',
   toolbarTogglePanel: '结果面板',
   toolbarPrev: '上一个差异',
   toolbarNext: '下一个差异',
+  toolbarSettings: '设置',
   toolbarLanguage: '语言',
+  toolbarThemeLight: '切换为深色主题',
+  toolbarThemeDark: '切换为浅色主题',
   toolbarMarkup: '批注',
   markupCloud: '云线',
   markupCallout: '引出标注',
@@ -71,7 +88,16 @@ export const zh = {
   noMarkups: '暂无批注',
   markupFromLeft: '左侧',
   markupFromRight: '右侧',
-  comparing: '正在比对…'
+  comparing: '正在比对…',
+  settingsTitle: '设置',
+  settingsUnchanged: '相同对象',
+  settingsDeleted: '删除的对象',
+  settingsAdded: '新增的对象',
+  settingsModified: '修改的对象',
+  settingsOk: '确定',
+  settingsCancel: '取消',
+  settingsReset: '恢复默认',
+  settingsClose: '关闭'
 }
 
 export const tr = {
@@ -82,10 +108,14 @@ export const tr = {
   invalidFile: 'Lütfen bir .dwg veya .dxf dosyası seçin',
   toolbarSideBySide: 'Yan yana',
   toolbarOverlay: 'Üst üste',
+  toolbarSyncViews: 'Görünümleri eşitle',
   toolbarTogglePanel: 'Sonuç paneli',
   toolbarPrev: 'Önceki fark',
   toolbarNext: 'Sonraki fark',
+  toolbarSettings: 'Ayarlar',
   toolbarLanguage: 'Dil',
+  toolbarThemeLight: 'Koyu temaya geç',
+  toolbarThemeDark: 'Açık temaya geç',
   toolbarMarkup: 'İşaretleme',
   markupCloud: 'Bulut',
   markupCallout: 'Çağrı',
@@ -109,7 +139,16 @@ export const tr = {
   noMarkups: 'Henüz işaretleme yok',
   markupFromLeft: 'Sol',
   markupFromRight: 'Sağ',
-  comparing: 'Karşılaştırılıyor…'
+  comparing: 'Karşılaştırılıyor…',
+  settingsTitle: 'Ayarlar',
+  settingsUnchanged: 'Aynı nesneler',
+  settingsDeleted: 'Silinen nesneler',
+  settingsAdded: 'Eklenen nesneler',
+  settingsModified: 'Değiştirilen nesneler',
+  settingsOk: 'Tamam',
+  settingsCancel: 'İptal',
+  settingsReset: 'Sıfırla',
+  settingsClose: 'Kapat'
 }
 
 export const cs = {
@@ -120,10 +159,14 @@ export const cs = {
   invalidFile: 'Vyberte soubor .dwg nebo .dxf',
   toolbarSideBySide: 'Vedle sebe',
   toolbarOverlay: 'Překrytí',
+  toolbarSyncViews: 'Synchronizovat pohledy',
   toolbarTogglePanel: 'Panel výsledků',
   toolbarPrev: 'Předchozí rozdíl',
   toolbarNext: 'Další rozdíl',
+  toolbarSettings: 'Nastavení',
   toolbarLanguage: 'Jazyk',
+  toolbarThemeLight: 'Přepnout na tmavý motiv',
+  toolbarThemeDark: 'Přepnout na světlý motiv',
   toolbarMarkup: 'Poznámky',
   markupCloud: 'Oblak',
   markupCallout: 'Popisek',
@@ -147,5 +190,14 @@ export const cs = {
   noMarkups: 'Zatím žádné poznámky',
   markupFromLeft: 'Levý',
   markupFromRight: 'Pravý',
-  comparing: 'Porovnávání…'
+  comparing: 'Porovnávání…',
+  settingsTitle: 'Nastavení',
+  settingsUnchanged: 'Stejné objekty',
+  settingsDeleted: 'Smazané objekty',
+  settingsAdded: 'Přidané objekty',
+  settingsModified: 'Upravené objekty',
+  settingsOk: 'OK',
+  settingsCancel: 'Zrušit',
+  settingsReset: 'Obnovit výchozí',
+  settingsClose: 'Zavřít'
 }

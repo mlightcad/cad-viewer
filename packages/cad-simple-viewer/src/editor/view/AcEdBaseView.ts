@@ -220,6 +220,11 @@ export abstract class AcEdBaseView {
   private _curMousePos: AcGePoint2d
   /** Set of currently selected entities */
   private _selectionSet: AcEdSelectionSet
+  /**
+   * When false, pointer hover and click/box gestures do not select or
+   * highlight CAD entities. Markup overlays can still be picked.
+   */
+  private _entitySelectionEnabled = true
   /** Input manager for handling user interactions */
   private _editor: AcEditor
   /** Size of selection box in pixels for entity picking */
@@ -802,6 +807,7 @@ export abstract class AcEdBaseView {
    * Applies selection based on action.
    */
   applySelection(ids: AcDbObjectId[], action: AcEdSelectionAction) {
+    if (!this.entitySelectionEnabled) return
     if (action === 'replace') {
       this.selectionSet.clear()
       const unique = ids.filter(id => !this.selectionSet.has(id))
@@ -968,6 +974,23 @@ export abstract class AcEdBaseView {
   }
 
   /**
+   * Whether CAD entities can be selected and hover-highlighted.
+   *
+   * Markup / review overlays are unaffected. Default is `true`.
+   */
+  get entitySelectionEnabled() {
+    return this._entitySelectionEnabled
+  }
+  set entitySelectionEnabled(value: boolean) {
+    if (this._entitySelectionEnabled === value) return
+    this._entitySelectionEnabled = value
+    if (!value) {
+      this.clearHover()
+      this.selectionSet.clear()
+    }
+  }
+
+  /**
    * Object snap resolver scoped to this view.
    */
   get osnapResolver() {
@@ -1011,7 +1034,7 @@ export abstract class AcEdBaseView {
     this.events.mouseMove.dispatch({ x: wcsPos.x, y: wcsPos.y })
 
     // Hover handler
-    if (this.mode == AcEdViewMode.SELECTION) {
+    if (this.entitySelectionEnabled && this.mode == AcEdViewMode.SELECTION) {
       // If it is in “input acquisition” mode, disable hover behavior
       if (!this._editor.isActive) {
         this._hoverController.handleMouseMove(wcsPos.x, wcsPos.y)

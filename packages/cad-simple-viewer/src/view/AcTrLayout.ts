@@ -115,6 +115,14 @@ export class AcTrLayout {
    * and must not participate in selection, grips, or host edits.
    */
   isReference = false
+  /**
+   * Last compare-display options applied to this layout. Replayed onto
+   * layers created after {@link setCompareDisplay} so late layer groups
+   * still receive role tints.
+   */
+  private _compareDisplayOptions?: Parameters<
+    AcTrLayer['setCompareDisplay']
+  >[0]
 
   /**
    * Creates a new layout instance.
@@ -699,6 +707,9 @@ export class AcTrLayout {
       layer = new AcTrLayer(info)
       this._layers.set(name, layer)
       this._group.add(layer.internalObject)
+      if (this._compareDisplayOptions) {
+        layer.setCompareDisplay(this._compareDisplayOptions)
+      }
     }
     return layer
   }
@@ -817,6 +828,7 @@ export class AcTrLayout {
    * @param options - Compare colors and per-entity role overrides.
    */
   setCompareDisplay(options: Parameters<AcTrLayer['setCompareDisplay']>[0]) {
+    this._compareDisplayOptions = options
     this._layers.forEach(layer => layer.setCompareDisplay(options))
   }
 

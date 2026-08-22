@@ -450,7 +450,7 @@ export class AcTrView2d extends AcEdBaseView {
           if (action === 'replace') {
             this.selectionSet.clear()
           }
-        } else {
+        } else if (this.entitySelectionEnabled) {
           const picked = this.pick(endWcs)
           if (picked.length > 0) {
             if (action === 'replace') {
@@ -460,13 +460,17 @@ export class AcTrView2d extends AcEdBaseView {
           } else if (action === 'replace') {
             this.selectionSet.clear()
           }
+        } else if (action === 'replace') {
+          this.selectionSet.clear()
         }
       } else {
         const box = new AcGeBox2d()
           .expandByPoint(selectionStartWcs)
           .expandByPoint(endWcs)
         const mode = this.getSelectionMode(selectionStartCanvas, endCanvas)
-        this.selectByBoxWithMode(box, mode, action)
+        if (this.entitySelectionEnabled) {
+          this.selectByBoxWithMode(box, mode, action)
+        }
         trySelectReviewOverlaysByBox(this, box, mode, action)
       }
 
@@ -477,6 +481,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.canvas.addEventListener('dblclick', e => {
       if (e.button !== 0) return
       if (!canHandleSelectionGesture()) return
+      if (!this.entitySelectionEnabled) return
       if (AcApDocManager.instance.curDocument.openMode !== AcEdOpenMode.Write) {
         return
       }
@@ -2107,6 +2112,7 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   highlight(ids: AcDbObjectId[]) {
+    if (!this.entitySelectionEnabled) return
     this._isDirty = this._scene.select(ids)
   }
 
@@ -2158,6 +2164,7 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   onHover(id: AcDbObjectId) {
+    if (!this.entitySelectionEnabled) return
     this._isDirty = this._scene.hover([id])
   }
 

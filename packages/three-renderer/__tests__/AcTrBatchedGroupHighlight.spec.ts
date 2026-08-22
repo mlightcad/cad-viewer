@@ -1,10 +1,16 @@
 import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
 import { AcTrBatchedLine } from '../src/batch/AcTrBatchedLine'
+import { AcTrBatchedLine2 } from '../src/batch/AcTrBatchedLine2'
 import {
   AcTrBatchHighlightState,
-  BATCH_SLOT_ID_ATTRIBUTE
+  BATCH_SLOT_ID_ATTRIBUTE,
+  COMPARE_ROLE_ADDED,
+  COMPARE_ROLE_DELETED
 } from '../src/batch/highlight'
 import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrLine } from '../src/object/AcTrLine'
@@ -222,5 +228,82 @@ describe('AcTrBatchedGroup slot-mask highlight', () => {
     group.unselect('unbatched-1')
     expect(clonedLine.material).toBe(material)
     expect(getObjectUserData(clonedLine).originalMaterial).toBeUndefined()
+  })
+
+  it('replaces compare roles so leftover deleted masks do not linger', () => {
+    const group = new AcTrBatchedGroup()
+    group.addEntity(createBatchedLineEntity('old-deleted'))
+    group.addEntity(createBatchedLineEntity('kept'))
+
+    group.setCompareDisplay({
+      enabled: true,
+      overrides: [{ objectId: 'old-deleted', role: 'deleted' }]
+    })
+    group.setCompareDisplay({
+      enabled: true,
+      overrides: [{ objectId: 'kept', role: 'added' }]
+    })
+
+    const roles: number[] = []
+    group.traverse(child => {
+      if (!(child instanceof AcTrBatchedLine)) return
+      const state = (
+        child as AcTrBatchedLine & { _highlightState: AcTrBatchHighlightState }
+      )._highlightState
+      roles.push(...state.compareRoleMask)
+    })
+    expect(roles).not.toContain(COMPARE_ROLE_DELETED)
+    expect(roles).toContain(COMPARE_ROLE_ADDED)
+  })
+
+  it('applies compare roles to entities batched after setCompareDisplay', () => {
+    const group = new AcTrBatchedGroup()
+    group.setCompareDisplay({
+      enabled: true,
+      overrides: [{ objectId: '926', role: 'added' }]
+    })
+    group.addEntity(createBatchedLineEntity('926'))
+
+    const batchedLine = findBatchedLine(group)!
+    expect(batchedLine._highlightState.compareRoleMask[0]).toBe(
+      COMPARE_ROLE_ADDED
+    )
+  })
+
+  it('stores Line2 slotId as an instanced attribute per segment', () => {
+    const group = new AcTrBatchedGroup()
+    const geometry = new LineSegmentsGeometry()
+    geometry.setPositions([0, 0, 0, 100, 0, 0, 100, 0, 0, 160, -20, 0])
+    const line2 = new LineSegments2(
+      geometry,
+      new LineMaterial({
+        color: 0xffffff,
+        linewidth: 2,
+        resolution: new THREE.Vector2(800, 600)
+      })
+    )
+    const entity = new AcTrEntity(new AcTrRenderContext())
+    entity.objectId = '927'
+    entity.visible = true
+    entity.add(line2)
+    group.addEntity(entity)
+
+    let batched: AcTrBatchedLine2 | undefined
+    group.traverse(child => {
+      if (!batched && child instanceof AcTrBatchedLine2) {
+        batched = child
+      }
+    })
+    expect(batched).toBeDefined()
+    const slotId = batched!.geometry.getAttribute(BATCH_SLOT_ID_ATTRIBUTE)
+    expect(slotId).toBeInstanceOf(THREE.InstancedBufferAttribute)
+    expect(slotId.getX(0)).toBe(0)
+    expect(slotId.getX(1)).toBe(0)
+
+    group.setCompareDisplay({
+      enabled: true,
+      overrides: [{ objectId: '927', role: 'added' }]
+    })
+    expect(batched!._highlightState.compareRoleMask[0]).toBe(COMPARE_ROLE_ADDED)
   })
 })

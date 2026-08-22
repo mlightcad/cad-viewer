@@ -294,7 +294,9 @@ function toHit(
  * Compares two drawing databases (model space, top-level entities).
  *
  * Matching order:
- * 1. Same handle (`objectId`)
+ * 1. Same handle (`objectId`) **and** the same DXF type. Handles collide
+ *    across unrelated files, so a LINE and a CIRCLE that share a handle
+ *    are not treated as one entity.
  * 2. Same `dxfType` + layer + geometric fingerprint
  *
  * Left is treated as the old drawing; right as the new drawing.
@@ -327,7 +329,7 @@ export function acapCompareDrawings(
 
   for (const l of left) {
     const r = rightById.get(l.objectId)
-    if (r) {
+    if (r && l.dxfType === r.dxfType) {
       usedRight.add(r.objectId)
       const sameGeom = l.fingerprint === r.fingerprint
       const sameProp = l.propKey === r.propKey

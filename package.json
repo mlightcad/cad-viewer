@@ -33,6 +33,7 @@
     "lint:fix": "nx run-many -t lint:fix",
     "preview": "nx run @mlightcad/cad-viewer-example:preview",
     "preview:simple": "nx run @mlightcad/cad-simple-viewer-example:preview",
+    "preview:diff": "nx run @mlightcad/cad-diff-viewer-example:preview",
     "pre-serve": "nx run @mlightcad/cad-viewer-examples:pre-serve",
     "publish:viewer": "pnpm -r publish --access public --no-git-checks",
     "release": "node tools/release.mjs",

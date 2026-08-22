@@ -4,14 +4,16 @@ const STYLE_ID = 'ml-diff-viewer-styles'
 /** Widget stylesheet injected once by {@link acapInjectDiffViewerStyles}. */
 const CSS = `
 .ml-diff-root {
-  --ml-diff-bg: #111827;
-  --ml-diff-panel: #0f172a;
-  --ml-diff-border: #1f2937;
-  --ml-diff-text: #e5e7eb;
-  --ml-diff-muted: #9ca3af;
-  --ml-diff-focus: #2563eb;
+  --ml-diff-bg: var(--ml-ui-bg, #1d1e1f);
+  --ml-diff-panel: var(--ml-ui-bg, #1d1e1f);
+  --ml-diff-border: var(--ml-ui-border, #4c4d4f);
+  --ml-diff-text: var(--ml-ui-text, #e5eaf3);
+  --ml-diff-muted: var(--ml-ui-text-muted, #cfd3dc);
+  --ml-diff-focus: var(--ml-ui-accent, #409eff);
+  --ml-diff-hover: color-mix(in srgb, var(--ml-diff-text) 10%, transparent);
   --ml-diff-added: #22c55e;
   --ml-diff-deleted: #e11d48;
+  --ml-diff-modified: #f59e0b;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -61,6 +63,7 @@ const CSS = `
 
 .ml-diff-toolbar-locale {
   margin-left: auto;
+  gap: 0.35rem;
 }
 
 .ml-diff-tool-btn {
@@ -83,17 +86,21 @@ const CSS = `
   padding: 0.2rem;
 }
 
+.ml-diff-root.is-overlay .ml-diff-sync-btn {
+  display: none;
+}
+
 .ml-diff-tool-btn:hover,
 .ml-diff-tool-btn:focus-visible {
   color: var(--ml-diff-text);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--ml-diff-hover);
   outline: none;
 }
 
 .ml-diff-tool-btn.is-active {
   color: var(--ml-diff-text);
   border-color: var(--ml-diff-focus);
-  background: rgba(37, 99, 235, 0.18);
+  background: color-mix(in srgb, var(--ml-diff-focus) 18%, transparent);
 }
 
 .ml-diff-tool-btn svg {
@@ -114,9 +121,9 @@ const CSS = `
   width: 100%;
   height: 24px;
   padding: 0 22px 0 8px;
-  border: 1px solid #4c4d4f;
+  border: 1px solid var(--ml-diff-border);
   border-radius: 4px;
-  background: #1d2736;
+  background: var(--ml-diff-bg);
   color: var(--ml-diff-text);
   font-size: 12px;
   font-family: inherit;
@@ -166,10 +173,10 @@ const CSS = `
   z-index: 40;
   min-width: 100%;
   padding: 4px 0;
-  border: 1px solid #4c4d4f;
+  border: 1px solid var(--ml-diff-border);
   border-radius: 4px;
-  background: #1d2736;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  background: var(--ml-diff-panel);
+  box-shadow: var(--ml-ui-shadow, 0 6px 16px rgba(0, 0, 0, 0.45));
 }
 
 .ml-diff-lang-select__option {
@@ -187,12 +194,12 @@ const CSS = `
 }
 
 .ml-diff-lang-select__option:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--ml-diff-hover);
 }
 
 .ml-diff-lang-select__option.is-selected {
   color: var(--ml-diff-text);
-  background: rgba(37, 99, 235, 0.22);
+  background: color-mix(in srgb, var(--ml-diff-focus) 22%, transparent);
   font-weight: 600;
 }
 
@@ -232,11 +239,18 @@ const CSS = `
 }
 
 .ml-diff-pane.is-focused {
+  position: relative;
+  z-index: 1;
   border-color: var(--ml-diff-focus);
 }
 
 .ml-diff-pane + .ml-diff-pane {
   border-left: 1px solid var(--ml-diff-border);
+}
+
+/* Adjacent-sibling divider must not replace the focused pane's left edge. */
+.ml-diff-pane + .ml-diff-pane.is-focused {
+  border-left: 2px solid var(--ml-diff-focus);
 }
 
 .ml-diff-header {
@@ -280,7 +294,7 @@ const CSS = `
 .ml-diff-open:hover,
 .ml-diff-open:focus-visible {
   color: var(--ml-diff-text);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--ml-diff-hover);
   outline: none;
 }
 
@@ -340,14 +354,14 @@ const CSS = `
   gap: 0.55rem;
   max-width: 18rem;
   padding: 1.75rem 1.5rem;
-  border: 1px dashed #4b5563;
+  border: 1px dashed var(--ml-diff-border);
   border-radius: 10px;
   text-align: center;
-  background: rgba(15, 23, 42, 0.55);
+  background: color-mix(in srgb, var(--ml-diff-panel) 70%, transparent);
 }
 
 .ml-diff-empty-icon {
-  color: #6b7280;
+  color: var(--ml-diff-muted);
 }
 
 .ml-diff-empty-icon svg {
@@ -404,12 +418,12 @@ const CSS = `
   pointer-events: none;
   border: 2px dashed var(--ml-diff-focus);
   border-radius: 8px;
-  background: rgba(37, 99, 235, 0.12);
+  background: color-mix(in srgb, var(--ml-diff-focus) 12%, transparent);
 }
 
 .ml-diff-pane.is-dragover .ml-diff-empty-card {
   border-color: var(--ml-diff-focus);
-  background: rgba(37, 99, 235, 0.12);
+  background: color-mix(in srgb, var(--ml-diff-focus) 12%, transparent);
 }
 
 .ml-diff-pane:not(.is-focused) canvas {
@@ -486,16 +500,51 @@ const CSS = `
 }
 
 .ml-diff-group {
-  margin-bottom: 0.55rem;
+  margin-bottom: 0.35rem;
 }
 
 .ml-diff-group-title {
-  padding: 0.25rem 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.3rem 0.7rem;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ml-diff-muted);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.ml-diff-group-title::-webkit-details-marker,
+.ml-diff-group-title::marker {
+  display: none;
+  content: none;
+}
+
+.ml-diff-group-title::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+.ml-diff-group[open] .ml-diff-group-title::before {
+  transform: rotate(45deg);
+}
+
+.ml-diff-group-title:hover,
+.ml-diff-group-title:focus-visible {
+  color: var(--ml-diff-text);
+  background: var(--ml-diff-hover);
+  outline: none;
 }
 
 .ml-diff-result-item,
@@ -515,7 +564,7 @@ const CSS = `
 .ml-diff-result-item:hover,
 .ml-diff-markup-item:hover,
 .ml-diff-result-item.is-active {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--ml-diff-hover);
 }
 
 .ml-diff-result-item[data-kind='added'] {
@@ -527,7 +576,7 @@ const CSS = `
 }
 
 .ml-diff-result-item[data-kind='modified'] {
-  border-left-color: #f59e0b;
+  border-left-color: var(--ml-diff-modified);
 }
 
 .ml-diff-result-meta,
