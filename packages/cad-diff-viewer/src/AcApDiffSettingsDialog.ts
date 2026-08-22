@@ -1,6 +1,7 @@
 import {
   ACAP_DEFAULT_COMPARE_COLORS,
   type AcApCompareDisplayColors,
+  type AcEdUiTheme,
   AcUiDialog
 } from '@mlightcad/cad-simple-viewer'
 
@@ -24,6 +25,8 @@ const COLOR_ROWS: Array<{
 export interface AcApDiffSettingsDialogOptions {
   /** Current compare colors copied into the dialog. */
   colors: Required<AcApCompareDisplayColors>
+  /** UI chrome theme applied to the dialog backdrop. */
+  theme?: AcEdUiTheme
   /**
    * Host that receives the backdrop.
    * @defaultValue `document.body`
@@ -91,7 +94,7 @@ export class AcApDiffSettingsDialog extends AcUiDialog {
       closeLabel: acapDiffViewerT('settingsClose'),
       titleId: 'ml-diff-settings-title',
       dialogClassName: 'ml-diff-settings-dialog',
-      theme: 'dark'
+      theme: options.theme
     })
 
     this.initial = { ...options.colors }

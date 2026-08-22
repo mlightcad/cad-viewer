@@ -42,6 +42,20 @@ export const ICON_SETTINGS = `
 </svg>
 `.trim()
 
+/**
+ * Toolbar: switch to light theme (Element Plus `Sunny`, same as cad-viewer
+ * status-bar theme button when dark theme is active).
+ */
+export const ICON_THEME_SUNNY =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M512 704a192 192 0 1 0 0-384 192 192 0 0 0 0 384m0 64a256 256 0 1 1 0-512 256 256 0 0 1 0 512m0-704a32 32 0 0 1 32 32v64a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32m0 768a32 32 0 0 1 32 32v64a32 32 0 1 1-64 0v-64a32 32 0 0 1 32-32m384-384a32 32 0 0 1-32 32h-64a32 32 0 0 1 0-64h64a32 32 0 0 1 32 32M96 512a32 32 0 0 1 32-32H192a32 32 0 1 1 0 64H128a32 32 0 0 1-32-32m741.056-266.944a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 45.248-45.248zm-589.056 589.056a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 45.248-45.248zm589.056 0-45.248 45.248a32 32 0 0 1-45.248-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248M247.936 201.984a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 45.248-45.248z"/></svg>'
+
+/**
+ * Toolbar: switch to dark theme (Element Plus `Moon`, same as cad-viewer
+ * status-bar theme button when light theme is active).
+ */
+export const ICON_THEME_MOON =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden="true"><path fill="currentColor" d="M240.448 240.448a384 384 0 1 0 543.104 543.104 476.16 476.16 0 0 1-543.104-543.104"/></svg>'
+
 /** Inline SVG markup for the empty-pane illustration. */
 const EMPTY_FILE_ICON = `
 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">

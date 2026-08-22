@@ -76,6 +76,7 @@ const mockAppendLineGeometry = jest.fn().mockReturnValue(true)
 const mockAppendLine2Geometry = jest.fn().mockReturnValue(true)
 const mockAppendPointGeometry = jest.fn().mockReturnValue(true)
 const mockAppendMeshGeometry = jest.fn().mockReturnValue(true)
+const mockSetCompareDisplay = jest.fn()
 
 jest.mock('@mlightcad/three-renderer', () => {
   const THREE = require('three')
@@ -93,6 +94,7 @@ jest.mock('@mlightcad/three-renderer', () => {
       group.appendLine2Geometry = mockAppendLine2Geometry
       group.appendPointGeometry = mockAppendPointGeometry
       group.appendMeshGeometry = mockAppendMeshGeometry
+      group.setCompareDisplay = mockSetCompareDisplay
       return group
     }),
     AcTrGroup: class AcTrGroup {}
@@ -645,5 +647,22 @@ describe('AcTrLayout insert layer freeze', () => {
 
     expect(layout.applyInsertLayerFreeze('Wall', true)).toEqual([])
     expect(wallSetVisible).not.toHaveBeenCalled()
+  })
+
+  it('replays compare-display options onto layers created after setCompareDisplay', () => {
+    mockSetCompareDisplay.mockClear()
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo('0'))
+    const options = {
+      enabled: true,
+      baseColor: 0x9ca3af,
+      overrides: [{ objectId: '926', role: 'added' as const }]
+    }
+    layout.setCompareDisplay(options)
+    expect(mockSetCompareDisplay).toHaveBeenCalledWith(options)
+
+    mockSetCompareDisplay.mockClear()
+    layout.addLayer(createLayerInfo('NEW'))
+    expect(mockSetCompareDisplay).toHaveBeenCalledWith(options)
   })
 })

@@ -11,6 +11,7 @@ import {
   type AcApWebworkerFiles,
   acedApplyUiTheme,
   AcEdOpenMode,
+  type AcEdUiTheme,
   type AcTrView2d,
   listMarkupsForSession
 } from '@mlightcad/cad-simple-viewer'
@@ -45,7 +46,9 @@ import {
   ICON_RESULTS_PANEL,
   ICON_SETTINGS,
   ICON_SIDE_BY_SIDE,
-  ICON_SYNC_VIEWS
+  ICON_SYNC_VIEWS,
+  ICON_THEME_MOON,
+  ICON_THEME_SUNNY
 } from './icons'
 import { acapInjectDiffViewerStyles } from './injectDiffViewerStyles'
 
@@ -82,6 +85,8 @@ export interface AcApDiffViewerOptions {
   openDocumentDefaults?: AcApOpenDatabaseOptions
   /** Compare display colors (left=old/deleted red, right=new/added green). */
   compareColors?: AcApCompareDisplayColors
+  /** Initial UI chrome theme. Default dark. */
+  theme?: AcEdUiTheme
   /** Initial view mode. Default side-by-side. */
   viewMode?: AcApDiffViewMode
   /** Whether the results side panel starts open. Default true. */
@@ -238,6 +243,8 @@ export class AcApDiffViewer {
   private readonly btnNext: HTMLButtonElement
   /** Toolbar button that opens the compare-color settings dialog. */
   private readonly btnSettings: HTMLButtonElement
+  /** Toolbar button that toggles light / dark UI chrome. */
+  private readonly btnTheme: HTMLButtonElement
   /** Side-panel tab for compare results. */
   private readonly tabResults: HTMLButtonElement
   /** Side-panel tab for markups. */
@@ -267,6 +274,8 @@ export class AcApDiffViewer {
   private rightDragDepth = 0
   /** Auto-hide timers for per-pane error banners. */
   private readonly bannerTimers = new Map<AcApDiffViewerSide, number>()
+  /** Current UI chrome theme. */
+  private uiTheme: AcEdUiTheme
   /** Current view mode. */
   private viewMode: AcApDiffViewMode
   /** Whether the side panel is expanded. */
@@ -325,6 +334,7 @@ export class AcApDiffViewer {
   constructor(options: AcApDiffViewerOptions) {
     this.options = options
     this.colors = mergeColors(options.compareColors)
+    this.uiTheme = options.theme ?? 'dark'
     this.viewMode = options.viewMode ?? 'side-by-side'
     this.sidePanelOpen = options.sidePanelOpen !== false
     acapRegisterDiffViewerI18n()
@@ -345,7 +355,7 @@ export class AcApDiffViewer {
 
     this.root = document.createElement('div')
     this.root.className = 'ml-diff-root'
-    acedApplyUiTheme('dark', this.root)
+    acedApplyUiTheme(this.uiTheme, this.root)
     this.toolbar = document.createElement('div')
     this.toolbar.className = 'ml-diff-toolbar'
     this.body = document.createElement('div')
@@ -365,6 +375,7 @@ export class AcApDiffViewer {
     this.btnPrev = chrome.btnPrev
     this.btnNext = chrome.btnNext
     this.btnSettings = chrome.btnSettings
+    this.btnTheme = chrome.btnTheme
     this.sidePanel = chrome.sidePanel
     this.resultsBody = chrome.resultsBody
     this.markupsBody = chrome.markupsBody
@@ -677,7 +688,10 @@ export class AcApDiffViewer {
     btnSettings.type = 'button'
     btnSettings.className = 'ml-diff-tool-btn is-icon'
     btnSettings.innerHTML = ICON_SETTINGS
-    localeChrome.group.prepend(btnSettings)
+    const btnTheme = document.createElement('button')
+    btnTheme.type = 'button'
+    btnTheme.className = 'ml-diff-tool-btn is-icon'
+    localeChrome.group.prepend(btnSettings, btnTheme)
 
     btnSideBySide.addEventListener('click', () => {
       void this.setViewMode('side-by-side')
@@ -699,6 +713,9 @@ export class AcApDiffViewer {
     })
     btnSettings.addEventListener('click', () => {
       void this.openSettings()
+    })
+    btnTheme.addEventListener('click', () => {
+      this.setUiTheme(this.uiTheme === 'dark' ? 'light' : 'dark')
     })
 
     const sidePanel = document.createElement('aside')
@@ -770,6 +787,7 @@ export class AcApDiffViewer {
       btnPrev,
       btnNext,
       btnSettings,
+      btnTheme,
       sidePanel,
       resultsBody,
       markupsBody,
@@ -1061,6 +1079,7 @@ export class AcApDiffViewer {
     const snapshot = { ...this.colors }
     const result = await AcApDiffSettingsDialog.open({
       host: document.body,
+      theme: this.uiTheme,
       colors: this.colors,
       onChange: colors => {
         if (!this.disposed) this.applyCompareColors(colors)
@@ -1157,6 +1176,19 @@ export class AcApDiffViewer {
     this.root.classList.remove('is-overlay')
   }
 
+  /**
+   * Waits until left/right canvases finish entity conversion so compare
+   * role overrides can bind to packed geometry slots.
+   */
+  private async waitForCompareViewsIdle() {
+    const mgr = requireInstance()
+    const views: AcTrView2d[] = [mgr.mainView]
+    if (mgr.splitView) {
+      views.push(mgr.splitView)
+    }
+    await Promise.all(views.map(view => view.waitUntilIdle()))
+  }
+
   /** Turns off compare coloring on both canvases and any overlay. */
   private async clearCompareDisplay() {
     const mgr = requireInstance()
@@ -1179,6 +1211,20 @@ export class AcApDiffViewer {
     const mgr = requireInstance()
     if (!result || !this.leftDocument || !this.rightDocument) {
       await this.clearCompareDisplay()
+      return
+    }
+
+    // Open returns after the database is parsed, but Three.js conversion
+    // is still draining. Role tints look up packed slots; applying before
+    // those slots exist leaves added/deleted hits (often the last handles)
+    // on the unchanged base color.
+    await this.waitForCompareViewsIdle()
+    if (
+      this.disposed ||
+      this.compareResult !== result ||
+      !this.leftDocument ||
+      !this.rightDocument
+    ) {
       return
     }
 
@@ -1805,6 +1851,7 @@ export class AcApDiffViewer {
     const settingsLabel = acapDiffViewerT('toolbarSettings')
     this.btnSettings.title = settingsLabel
     this.btnSettings.setAttribute('aria-label', settingsLabel)
+    this.syncThemeButton()
     this.syncLocaleSelect()
     for (const btn of this.markupButtons) {
       const key = btn.dataset.labelKey as Parameters<typeof acapDiffViewerT>[0]
@@ -1838,6 +1885,31 @@ export class AcApDiffViewer {
     // Hide group toolbar on markups tab
     const groupBar = this.groupByKindBtn.parentElement
     if (groupBar) groupBar.hidden = this.activeTab !== 'results'
+  }
+
+  /**
+   * Applies UI chrome theme tokens and refreshes the toolbar theme button.
+   *
+   * @param theme - Target light or dark chrome theme.
+   */
+  private setUiTheme(theme: AcEdUiTheme) {
+    this.uiTheme = theme
+    acedApplyUiTheme(theme, this.root)
+    this.syncThemeButton()
+  }
+
+  /**
+   * Shows the opposite-theme icon (sun in dark, moon in light), matching
+   * cad-viewer's status-bar theme button.
+   */
+  private syncThemeButton() {
+    const isDark = this.uiTheme === 'dark'
+    this.btnTheme.innerHTML = isDark ? ICON_THEME_SUNNY : ICON_THEME_MOON
+    const label = isDark
+      ? acapDiffViewerT('toolbarThemeDark')
+      : acapDiffViewerT('toolbarThemeLight')
+    this.btnTheme.title = label
+    this.btnTheme.setAttribute('aria-label', label)
   }
 
   /** Throws if {@link destroy} has already run. */

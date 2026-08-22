@@ -10,6 +10,7 @@ const CSS = `
   --ml-diff-text: var(--ml-ui-text, #e5eaf3);
   --ml-diff-muted: var(--ml-ui-text-muted, #cfd3dc);
   --ml-diff-focus: var(--ml-ui-accent, #409eff);
+  --ml-diff-hover: color-mix(in srgb, var(--ml-diff-text) 10%, transparent);
   --ml-diff-added: #22c55e;
   --ml-diff-deleted: #e11d48;
   --ml-diff-modified: #f59e0b;
@@ -92,7 +93,7 @@ const CSS = `
 .ml-diff-tool-btn:hover,
 .ml-diff-tool-btn:focus-visible {
   color: var(--ml-diff-text);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--ml-diff-hover);
   outline: none;
 }
 
@@ -193,7 +194,7 @@ const CSS = `
 }
 
 .ml-diff-lang-select__option:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--ml-diff-hover);
 }
 
 .ml-diff-lang-select__option.is-selected {
@@ -293,7 +294,7 @@ const CSS = `
 .ml-diff-open:hover,
 .ml-diff-open:focus-visible {
   color: var(--ml-diff-text);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--ml-diff-hover);
   outline: none;
 }
 
@@ -542,7 +543,7 @@ const CSS = `
 .ml-diff-group-title:hover,
 .ml-diff-group-title:focus-visible {
   color: var(--ml-diff-text);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--ml-diff-hover);
   outline: none;
 }
 
@@ -563,7 +564,7 @@ const CSS = `
 .ml-diff-result-item:hover,
 .ml-diff-markup-item:hover,
 .ml-diff-result-item.is-active {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--ml-diff-hover);
 }
 
 .ml-diff-result-item[data-kind='added'] {

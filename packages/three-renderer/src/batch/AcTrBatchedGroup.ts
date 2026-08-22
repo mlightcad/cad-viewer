@@ -988,7 +988,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       return
     }
 
-    const objectId = entity.objectId
+    const objectId = String(entity.objectId ?? '')
     const entityVisible = entity.visible
     // One logical entity (same objectId) can be appended in multiple passes
     // (e.g. INSERT decomposition by source layer and inherited layer-0 bucket).
@@ -1285,6 +1285,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     item: AcTrEntityInBatchedObject,
     visible: boolean
   ) {
+    objectId = String(objectId)
     let entityInfo = this._entitiesMap.get(objectId)
     if (!entityInfo) {
       entityInfo = []
@@ -1494,7 +1495,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       this._compareRoles.clear()
       for (const entry of options.overrides) {
         if (entry.role != null) {
-          this._compareRoles.set(entry.objectId, entry.role)
+          this._compareRoles.set(String(entry.objectId), entry.role)
         }
       }
     }
@@ -1519,13 +1520,14 @@ export class AcTrBatchedGroup extends THREE.Group {
    * @param role - Compare role, or `null` to clear.
    */
   setEntityCompareRole(objectId: string, role: AcTrBatchCompareRole | null) {
+    const id = String(objectId)
     if (role == null) {
-      this._compareRoles.delete(objectId)
+      this._compareRoles.delete(id)
     } else {
-      this._compareRoles.set(objectId, role)
+      this._compareRoles.set(id, role)
     }
-    this.applyCompareRoleToEntity(objectId, role)
-    this.refreshUnbatchedCompareMaterial(objectId)
+    this.applyCompareRoleToEntity(id, role)
+    this.refreshUnbatchedCompareMaterial(id)
   }
 
   /** Pushes compare colors and role masks onto every origin batch in this group. */

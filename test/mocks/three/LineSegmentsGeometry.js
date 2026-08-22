@@ -1,6 +1,6 @@
 const THREE = require('three')
 
-class LineSegmentsGeometry extends THREE.BufferGeometry {
+class LineSegmentsGeometry extends THREE.InstancedBufferGeometry {
   setPositions(positions) {
     const array =
       positions instanceof Float32Array ? positions : new Float32Array(positions)

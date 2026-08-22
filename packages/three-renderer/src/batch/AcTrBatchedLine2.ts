@@ -440,6 +440,16 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
   setGeometrySize(maxSegmentCount: number) {
     const oldGeometry = this.geometry as LineSegmentsGeometry
     const oldPacked = this._getPackedSegmentArray()
+    const oldSlotId = oldGeometry.getAttribute('slotId') as
+      | THREE.BufferAttribute
+      | THREE.InstancedBufferAttribute
+      | undefined
+    const oldSlotIdArray = oldSlotId
+      ? (oldSlotId.array as Float32Array).slice(
+          0,
+          Math.min(oldSlotId.count, this._maxSegmentCount)
+        )
+      : undefined
 
     this._maxSegmentCount = maxSegmentCount
     this.geometry = new LineSegmentsGeometry()
@@ -450,6 +460,16 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     const newPacked = this._getPackedSegmentArray()
     copyArrayContents(oldPacked, newPacked)
     this._copyStaticAttributes(oldGeometry)
+    const slotIdAttr = ensureSlotIdAttribute(this.geometry, maxSegmentCount)
+    if (oldSlotIdArray) {
+      ;(slotIdAttr.array as Float32Array).set(
+        oldSlotIdArray.subarray(
+          0,
+          Math.min(oldSlotIdArray.length, slotIdAttr.count)
+        )
+      )
+      slotIdAttr.needsUpdate = true
+    }
     this._geometryInitialized = true
     this._syncDrawRange()
     oldGeometry.dispose()
