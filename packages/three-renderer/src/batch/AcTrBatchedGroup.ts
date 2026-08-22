@@ -302,7 +302,7 @@ export class AcTrBatchedGroup extends THREE.Group {
   /** Added-entity color while compare display is enabled. */
   private _compareAddedColor = 0x22c55e
   /** Modified-entity color while compare display is enabled. */
-  private _compareModifiedColor = 0xe11d48
+  private _compareModifiedColor = 0xf59e0b
   /**
    * Non-batched objects (for render paths that cannot be merged, e.g. fat lines).
    */
@@ -1080,6 +1080,20 @@ export class AcTrBatchedGroup extends THREE.Group {
     if (hasUnbatched) {
       this._unbatchedEntities.set(objectId, unbatchedObjects)
     }
+    this.syncCompareRoleForEntity(objectId)
+  }
+
+  /**
+   * If compare display is on, tints a newly packed entity with its role
+   * (or the unchanged base color).
+   *
+   * @param objectId - Entity just added to this group.
+   */
+  private syncCompareRoleForEntity(objectId: string) {
+    if (!this._compareEnabled) return
+    const role = this._compareRoles.get(objectId) ?? null
+    this.applyCompareRoleToEntity(objectId, role)
+    this.refreshUnbatchedCompareMaterial(objectId)
   }
 
   /**
@@ -1278,6 +1292,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
     entityInfo.push(item)
     this.applyBatchSlotVisibility(item, visible)
+    this.syncCompareRoleForEntity(objectId)
   }
 
   /**
@@ -1433,7 +1448,8 @@ export class AcTrBatchedGroup extends THREE.Group {
    * @param options.enabled - Whether compare coloring is active.
    * @param options.baseColor - Color for unchanged entities.
    * @param options.colors - Optional role color overrides.
-   * @param options.overrides - Per-entity role assignments; `role: null` clears.
+   * @param options.overrides - Full per-entity role set; replaces any previous
+   *   roles. Omit to keep the current set (color-only updates).
    */
   setCompareDisplay(options: {
     /** Whether compare coloring is active. */
@@ -1449,11 +1465,11 @@ export class AcTrBatchedGroup extends THREE.Group {
       /** Modified-entity color. */
       modified?: number
     }
-    /** Per-entity role assignments; `role: null` clears an override. */
+    /** Full per-entity role set; replaces any previous roles. */
     overrides?: Iterable<{
       /** Entity object id. */
       objectId: string
-      /** Compare role, or `null` to clear. */
+      /** Compare role, or `null` to skip (same as omitting the id). */
       role: AcTrBatchCompareRole | null
     }>
   }) {
@@ -1471,11 +1487,13 @@ export class AcTrBatchedGroup extends THREE.Group {
       this._compareModifiedColor = options.colors.modified
     }
 
+    // A new override list replaces the previous one. Merging would leave
+    // deleted roles on a pane that should only show added/modified hits
+    // (DWG handles collide across files).
     if (options.overrides) {
+      this._compareRoles.clear()
       for (const entry of options.overrides) {
-        if (entry.role == null) {
-          this._compareRoles.delete(entry.objectId)
-        } else {
+        if (entry.role != null) {
           this._compareRoles.set(entry.objectId, entry.role)
         }
       }
@@ -1543,15 +1561,19 @@ export class AcTrBatchedGroup extends THREE.Group {
       applyColors(map)
     }
 
-    if (!this._compareEnabled) {
-      this._entitiesMap.forEach(items => {
-        items.forEach(item => {
-          const batchedObject = this.getObjectById(
-            item.batchedObjectId
-          ) as AcTrOriginBatch | null
-          batchedObject?.setCompareRoleAt(item.batchId, null)
-        })
+    // Always clear slot masks first. Applying only the current
+    // `_compareRoles` would leave a previous deleted/added mask on
+    // entities that dropped out of the override set.
+    this._entitiesMap.forEach(items => {
+      items.forEach(item => {
+        const batchedObject = this.getObjectById(
+          item.batchedObjectId
+        ) as AcTrOriginBatch | null
+        batchedObject?.setCompareRoleAt(item.batchId, null)
       })
+    })
+
+    if (!this._compareEnabled) {
       for (const map of allMaps) {
         applyColors(map)
       }
@@ -2378,6 +2400,15 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     const batch = create()
+    if (this._compareEnabled) {
+      batch.setCompareDisplayColors({
+        enabled: true,
+        baseColor: this._compareBaseColor,
+        deletedColor: this._compareDeletedColor,
+        addedColor: this._compareAddedColor,
+        modifiedColor: this._compareModifiedColor
+      })
+    }
     list.push(batch)
     this.add(batch)
     return batch

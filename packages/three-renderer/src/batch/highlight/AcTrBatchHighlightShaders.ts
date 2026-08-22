@@ -105,7 +105,7 @@ function createHighlightUniforms(): AcTrBatchHighlightUniforms {
     u_compareBaseColor: { value: new THREE.Color(0x9ca3af) },
     u_compareDeletedColor: { value: new THREE.Color(0xe11d48) },
     u_compareAddedColor: { value: new THREE.Color(0x22c55e) },
-    u_compareModifiedColor: { value: new THREE.Color(0xe11d48) }
+    u_compareModifiedColor: { value: new THREE.Color(0xf59e0b) }
   }
 }
 

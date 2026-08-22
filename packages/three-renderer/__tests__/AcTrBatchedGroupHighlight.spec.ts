@@ -4,7 +4,9 @@ import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
 import { AcTrBatchedLine } from '../src/batch/AcTrBatchedLine'
 import {
   AcTrBatchHighlightState,
-  BATCH_SLOT_ID_ATTRIBUTE
+  BATCH_SLOT_ID_ATTRIBUTE,
+  COMPARE_ROLE_ADDED,
+  COMPARE_ROLE_DELETED
 } from '../src/batch/highlight'
 import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrLine } from '../src/object/AcTrLine'
@@ -222,5 +224,31 @@ describe('AcTrBatchedGroup slot-mask highlight', () => {
     group.unselect('unbatched-1')
     expect(clonedLine.material).toBe(material)
     expect(getObjectUserData(clonedLine).originalMaterial).toBeUndefined()
+  })
+
+  it('replaces compare roles so leftover deleted masks do not linger', () => {
+    const group = new AcTrBatchedGroup()
+    group.addEntity(createBatchedLineEntity('old-deleted'))
+    group.addEntity(createBatchedLineEntity('kept'))
+
+    group.setCompareDisplay({
+      enabled: true,
+      overrides: [{ objectId: 'old-deleted', role: 'deleted' }]
+    })
+    group.setCompareDisplay({
+      enabled: true,
+      overrides: [{ objectId: 'kept', role: 'added' }]
+    })
+
+    const roles: number[] = []
+    group.traverse(child => {
+      if (!(child instanceof AcTrBatchedLine)) return
+      const state = (
+        child as AcTrBatchedLine & { _highlightState: AcTrBatchHighlightState }
+      )._highlightState
+      roles.push(...state.compareRoleMask)
+    })
+    expect(roles).not.toContain(COMPARE_ROLE_DELETED)
+    expect(roles).toContain(COMPARE_ROLE_ADDED)
   })
 })

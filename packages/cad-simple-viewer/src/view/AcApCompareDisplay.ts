@@ -14,7 +14,7 @@ export interface AcApCompareDisplayColors {
   deleted?: number
   /** Added entities — right/new drawing (default green `#22c55e`). */
   added?: number
-  /** Modified entities (default same as deleted). */
+  /** Modified entities (default yellow `#f59e0b`). */
   modified?: number
 }
 
@@ -40,5 +40,5 @@ export const ACAP_DEFAULT_COMPARE_COLORS: Required<AcApCompareDisplayColors> = {
   unchanged: 0x9ca3af,
   deleted: 0xe11d48,
   added: 0x22c55e,
-  modified: 0xe11d48
+  modified: 0xf59e0b
 }
