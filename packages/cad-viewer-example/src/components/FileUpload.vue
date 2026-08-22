@@ -9,9 +9,11 @@
             </el-icon>
           </div>
           <div class="upload-hero-text">
-            <h1 class="upload-title">Select CAD File to View</h1>
+            <h1 class="upload-title">
+            {{ t('example.fileUpload.title') }}
+          </h1>
             <p class="upload-subtitle">
-              Import DWG or DXF drawings into the viewer
+              {{ t('example.fileUpload.subtitle') }}
             </p>
           </div>
         </section>
@@ -22,11 +24,11 @@
             class="new-drawing-button"
             @click="handleNewDrawing"
           >
-            New Drawing
+            {{ t('example.fileUpload.newDrawing') }}
           </button>
 
           <p class="upload-divider" aria-hidden="true">
-            <span>or</span>
+            <span>{{ t('example.fileUpload.or') }}</span>
           </p>
 
           <el-upload
@@ -39,7 +41,10 @@
           >
             <div class="dropzone-content">
               <p class="dropzone-title">
-                Drop file or <span class="dropzone-link">browse</span>
+                {{ t('example.fileUpload.dropFile') }}
+                <span class="dropzone-link">
+                  {{ t('example.fileUpload.browse') }}
+                </span>
               </p>
               <div class="format-tags">
                 <span class="format-tag">DWG</span>
@@ -52,16 +57,20 @@
 
       <section class="settings-section">
         <header class="settings-header">
-          <h2 class="settings-title">Open options</h2>
+          <h2 class="settings-title">
+            {{ t('example.fileUpload.openOptions') }}
+          </h2>
         </header>
 
         <div class="settings-grid">
           <div class="setting-block setting-block--full">
-            <h3 class="setting-label">Initial view</h3>
+            <h3 class="setting-label">
+              {{ t('example.fileUpload.initialView') }}
+            </h3>
             <div
               class="pill-segment"
               role="radiogroup"
-              aria-label="Initial view"
+              :aria-label="t('example.fileUpload.initialView')"
             >
               <button
                 v-for="option in openViewModes"
@@ -80,11 +89,13 @@
           </div>
 
           <div class="setting-block setting-block--full">
-            <h3 class="setting-label">Access mode</h3>
+            <h3 class="setting-label">
+              {{ t('example.fileUpload.accessMode') }}
+            </h3>
             <div
               class="pill-segment"
               role="radiogroup"
-              aria-label="Access mode"
+              :aria-label="t('example.fileUpload.accessMode')"
             >
               <button
                 v-for="mode in accessModes"
@@ -103,11 +114,13 @@
           </div>
 
           <div class="setting-block">
-            <h3 class="setting-label">Text rendering</h3>
+            <h3 class="setting-label">
+              {{ t('example.fileUpload.textRendering') }}
+            </h3>
             <div
               class="pill-segment"
               role="radiogroup"
-              aria-label="Text rendering"
+              :aria-label="t('example.fileUpload.textRendering')"
             >
               <button
                 type="button"
@@ -115,10 +128,10 @@
                 :class="{ 'is-active': !useMainThreadDraw }"
                 role="radio"
                 :aria-checked="!useMainThreadDraw"
-                title="Faster, more memory"
+                :title="t('example.fileUpload.workerHint')"
                 @click="useMainThreadDraw = false"
               >
-                Worker
+                {{ t('example.fileUpload.worker') }}
               </button>
               <button
                 type="button"
@@ -126,20 +139,22 @@
                 :class="{ 'is-active': useMainThreadDraw }"
                 role="radio"
                 :aria-checked="useMainThreadDraw"
-                title="Slower, less memory"
+                :title="t('example.fileUpload.mainThreadHint')"
                 @click="useMainThreadDraw = true"
               >
-                Main thread
+                {{ t('example.fileUpload.mainThread') }}
               </button>
             </div>
           </div>
 
           <div class="setting-block">
-            <h3 class="setting-label">Progressive</h3>
+            <h3 class="setting-label">
+              {{ t('example.fileUpload.progressive') }}
+            </h3>
             <div
               class="pill-segment"
               role="radiogroup"
-              aria-label="Progressive rendering"
+              :aria-label="t('example.fileUpload.progressiveRendering')"
             >
               <button
                 type="button"
@@ -147,10 +162,10 @@
                 :class="{ 'is-active': progressiveRendering }"
                 role="radio"
                 :aria-checked="progressiveRendering"
-                title="Show geometry while loading"
+                :title="t('example.fileUpload.progressiveOnHint')"
                 @click="progressiveRendering = true"
               >
-                On
+                {{ t('example.fileUpload.on') }}
               </button>
               <button
                 type="button"
@@ -158,20 +173,22 @@
                 :class="{ 'is-active': !progressiveRendering }"
                 role="radio"
                 :aria-checked="!progressiveRendering"
-                title="Wait until fully converted"
+                :title="t('example.fileUpload.progressiveOffHint')"
                 @click="progressiveRendering = false"
               >
-                Off
+                {{ t('example.fileUpload.off') }}
               </button>
             </div>
           </div>
 
           <div class="setting-block">
-            <h3 class="setting-label">Non-plottable</h3>
+            <h3 class="setting-label">
+              {{ t('example.fileUpload.nonPlottable') }}
+            </h3>
             <div
               class="pill-segment"
               role="radiogroup"
-              aria-label="Non-plottable layers"
+              :aria-label="t('example.fileUpload.nonPlottableLayers')"
             >
               <button
                 type="button"
@@ -179,10 +196,10 @@
                 :class="{ 'is-active': !drawNoPlotLayers }"
                 role="radio"
                 :aria-checked="!drawNoPlotLayers"
-                title="Web viewer default"
+                :title="t('example.fileUpload.hideHint')"
                 @click="drawNoPlotLayers = false"
               >
-                Hide
+                {{ t('example.fileUpload.hide') }}
               </button>
               <button
                 type="button"
@@ -190,10 +207,10 @@
                 :class="{ 'is-active': drawNoPlotLayers }"
                 role="radio"
                 :aria-checked="drawNoPlotLayers"
-                title="AutoCAD editor semantics"
+                :title="t('example.fileUpload.showHint')"
                 @click="drawNoPlotLayers = true"
               >
-                Show
+                {{ t('example.fileUpload.show') }}
               </button>
             </div>
           </div>
@@ -209,7 +226,8 @@ import { AcApOpenViewMode, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 import { log } from '@mlightcad/data-model'
 import type { UploadFile, UploadProps } from 'element-plus'
 import { ElIcon, ElUpload } from 'element-plus'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   onFileSelect: (
@@ -230,6 +248,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n({ useScope: 'global' })
 
 type OpenViewModeChoice = 'auto' | AcApOpenViewMode
 
@@ -239,44 +258,44 @@ const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
 
-const openViewModes = [
+const openViewModes = computed(() => [
   {
     value: 'auto' as const,
-    label: 'Auto',
-    description: 'Based on access mode'
+    label: t('example.fileUpload.auto'),
+    description: t('example.fileUpload.autoHint')
   },
   {
     value: AcApOpenViewMode.Extents,
-    label: 'Extents',
-    description: 'Fit drawing'
+    label: t('example.fileUpload.extents'),
+    description: t('example.fileUpload.extentsHint')
   },
   {
     value: AcApOpenViewMode.Saved,
-    label: 'Saved',
-    description: 'AutoCAD saved view'
+    label: t('example.fileUpload.saved'),
+    description: t('example.fileUpload.savedHint')
   }
-] as const
+] as const)
 
 const resolveOpenViewMode = (): AcApOpenViewMode | undefined =>
   selectedOpenViewMode.value === 'auto' ? undefined : selectedOpenViewMode.value
 
-const accessModes = [
+const accessModes = computed(() => [
   {
     value: AcEdOpenMode.Read,
-    label: 'Read',
-    description: 'View only'
+    label: t('example.fileUpload.read'),
+    description: t('example.fileUpload.readHint')
   },
   {
     value: AcEdOpenMode.Review,
-    label: 'Review',
-    description: 'View & review'
+    label: t('example.fileUpload.review'),
+    description: t('example.fileUpload.reviewHint')
   },
   {
     value: AcEdOpenMode.Write,
-    label: 'Write',
-    description: 'Full access'
+    label: t('example.fileUpload.write'),
+    description: t('example.fileUpload.writeHint')
   }
-] as const
+] as const)
 
 const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
   if (uploadFile.raw) {
@@ -305,7 +324,7 @@ const handleNewDrawing = () => {
 
 const beforeUpload: UploadProps['beforeUpload'] = (rawFile: File) => {
   if (!isValidFile(rawFile)) {
-    log.warn('Invalid file type. Please upload DWG or DXF files.')
+    log.warn(t('example.fileUpload.invalidFileType'))
     return false
   }
   return true

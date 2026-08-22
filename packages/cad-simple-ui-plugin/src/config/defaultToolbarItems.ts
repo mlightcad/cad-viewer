@@ -96,20 +96,22 @@ function createToolbarPlacementItem(
   }
 }
 
-const TOOLBAR_LOCALES: AcApLocale[] = ['en', 'zh', 'cs', 'tr']
+const TOOLBAR_LOCALES: AcApLocale[] = ['en', 'zh', 'cs', 'tr', 'ar']
 
 const LOCALE_BADGES: Record<AcApLocale, string> = {
   en: 'EN',
   zh: '中',
   cs: 'CS',
-  tr: 'TR'
+  tr: 'TR',
+  ar: 'AR'
 }
 
 const LOCALE_LABELS: Record<AcApLocale, string> = {
   en: 'toolbar.localeEn',
   zh: 'toolbar.localeZh',
   cs: 'toolbar.localeCs',
-  tr: 'toolbar.localeTr'
+  tr: 'toolbar.localeTr',
+  ar: 'toolbar.localeAr'
 }
 
 function localeBadgeIcon(badge: string): string {

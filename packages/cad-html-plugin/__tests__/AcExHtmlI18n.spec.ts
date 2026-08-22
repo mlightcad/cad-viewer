@@ -54,6 +54,7 @@ describe('AcExHtmlI18n', () => {
     expect(resolveAcExHtmlLocale('en-US')).toBe('en')
     expect(resolveAcExHtmlLocale('cs-CZ')).toBe('cs')
     expect(resolveAcExHtmlLocale('tr-TR')).toBe('tr')
+    expect(resolveAcExHtmlLocale('ar-SA')).toBe('ar')
     expect(resolveAcExHtmlLocale('fr')).toBeNull()
   })
 
@@ -63,6 +64,9 @@ describe('AcExHtmlI18n', () => {
 
     mockNavigator(['en-US', 'zh-CN'])
     expect(detectBrowserAcExHtmlLocale()).toBe('en')
+
+    mockNavigator(['ar-SA', 'en-US'])
+    expect(detectBrowserAcExHtmlLocale()).toBe('ar')
 
     mockNavigator(['fr-FR'])
     expect(detectBrowserAcExHtmlLocale()).toBe('en')
@@ -85,7 +89,7 @@ describe('AcExHtmlI18n', () => {
     expect(formatAcExHtmlMessage('Zoom: {name}', { name: '0' })).toBe('Zoom: 0')
   })
 
-  it('cycles the locale through en -> zh -> cs -> tr -> en', () => {
+  it('cycles the locale through en -> zh -> cs -> tr -> ar -> en', () => {
     const i18n = new AcExHtmlI18n('en')
     expect(i18n.t('layers.title')).toBe('Layers')
     expect(i18n.localeBadge).toBe('EN')
@@ -101,6 +105,10 @@ describe('AcExHtmlI18n', () => {
     expect(i18n.toggleLocale()).toBe('tr')
     expect(i18n.t('layers.title')).toBe('Katmanlar')
     expect(i18n.localeBadge).toBe('TR')
+
+    expect(i18n.toggleLocale()).toBe('ar')
+    expect(i18n.t('layers.title')).toBe('\u0627\u0644\u0637\u0628\u0642\u0627\u062a')
+    expect(i18n.localeBadge).toBe('AR')
 
     expect(i18n.toggleLocale()).toBe('en')
     expect(i18n.locale).toBe('en')

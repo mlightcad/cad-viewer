@@ -383,7 +383,8 @@ describe('default toolbar items', () => {
       'locale-en',
       'locale-zh',
       'locale-cs',
-      'locale-tr'
+      'locale-tr',
+      'locale-ar'
     ])
   })
 })

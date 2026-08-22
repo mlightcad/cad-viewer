@@ -1,19 +1,20 @@
 /** Supported locales in the offline HTML viewer. */
-export type AcExHtmlLocale = 'en' | 'zh' | 'cs' | 'tr'
+export type AcExHtmlLocale = 'en' | 'zh' | 'cs' | 'tr' | 'ar'
 
 /**
  * All locales accepted by the offline viewer, in display order.
  * The language strip lists these options; add a locale here plus a
  * {@link ACEX_HTML_LOCALE_BADGES} entry and a `MESSAGES` tree to support it.
  */
-export const ACEX_HTML_LOCALES: AcExHtmlLocale[] = ['en', 'zh', 'cs', 'tr']
+export const ACEX_HTML_LOCALES: AcExHtmlLocale[] = ['en', 'zh', 'cs', 'tr', 'ar']
 
 /** Short button badge per locale (shown on the language parent and strip). */
 export const ACEX_HTML_LOCALE_BADGES: Record<AcExHtmlLocale, string> = {
   en: 'EN',
   zh: '中',
   cs: 'CS',
-  tr: 'TR'
+  tr: 'TR',
+  ar: 'AR'
 }
 
 /**
@@ -66,6 +67,7 @@ export type AcExHtmlMessageKey =
   | 'toolbar.localeZh'
   | 'toolbar.localeCs'
   | 'toolbar.localeTr'
+  | 'toolbar.localeAr'
   | 'toolbar.collapse'
   | 'toolbar.expand'
   | 'settings.ortho'
@@ -130,7 +132,7 @@ interface AcExMessageTree {
   [key: string]: string | AcExMessageTree
 }
 
-const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
+const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
   en: {
     toolbar: {
       viewerTools: 'Viewer tools',
@@ -172,6 +174,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       localeZh: '中文',
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
+      localeAr: 'العربية',
       collapse: 'Collapse toolbar',
       expand: 'Expand toolbar'
     },
@@ -582,6 +585,119 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
       noLayout: 'Anlık görüntüde yerleşim verisi yok.'
     }
   }
+}
+
+const AR_MESSAGES: AcExMessageTree = {
+  'toolbar': {
+    'viewerTools': 'أدوات العارض',
+    'select': 'تحديد',
+    'pan': 'تحريك',
+    'zoom': 'تكبير/تصغير',
+    'zoomExtents': 'ملاءمة الرسم',
+    'zoomWindow': 'تكبير نافذة',
+    'zoomOriginal': 'العرض الأصلي',
+    'measureDistance': 'قياس المسافة',
+    'measureAngle': 'قياس الزاوية',
+    'measureArc': 'قياس طول القوس',
+    'measureArea': 'قياس المساحة',
+    'measureCoordinate': 'قياس الإحداثيات',
+    'clearMeasurements': 'مسح القياسات',
+    'measureHide': 'إخفاء القياسات',
+    'measureShow': 'إظهار القياسات',
+    'measureImport': 'استيراد القياسات',
+    'measureExport': 'تصدير القياسات',
+    'measure': 'القياس',
+    'annotation': 'مراجعة',
+    'markupCloud': 'سحابة مراجعة',
+    'markupCallout': 'تعليق توضيحي',
+    'markupText': 'نص',
+    'markupRect': 'مستطيل',
+    'markupCircle': 'دائرة',
+    'markupArrow': 'سهم',
+    'markupStamp': 'ختم',
+    'markupHide': 'إخفاء الملاحظات',
+    'markupShow': 'إظهار الملاحظات',
+    'clearMarkups': 'مسح الملاحظات',
+    'markupImport': 'استيراد الملاحظات',
+    'markupExport': 'تصدير الملاحظات',
+    'snap': 'التقاط الكائنات',
+    'layers': 'الطبقات',
+    'layout': 'التخطيط',
+    'language': 'اللغة',
+    'localeEn': 'English',
+    'localeZh': '中文',
+    'localeCs': 'Čeština',
+    'localeTr': 'Türkçe',
+    'localeAr': 'العربية',
+    'collapse': 'طي شريط الأدوات',
+    'expand': 'توسيع شريط الأدوات'
+  },
+  'settings': {
+    'ortho': 'تبديل الوضع المتعامد',
+    'polar': 'زوايا التتبع القطبي',
+    'polarAngles': 'زوايا التتبع القطبي'
+  },
+  'drawStyle': {
+    'color': 'اللون',
+    'lineWeight': 'سُمك الخط',
+    'fontSize': 'ارتفاع النص'
+  },
+  'layers': {
+    'title': 'الطبقات',
+    'close': 'إغلاق الطبقات',
+    'showAll': 'إظهار الكل',
+    'hideAll': 'إخفاء الكل',
+    'zoomTo': 'تكبير إلى {name}'
+  },
+  'status': {
+    'ready': 'جاهز',
+    'zoomWindowHint': 'انقر على ركنين لتحديد نافذة التكبير.',
+    'measureDistanceHint': 'انقر على نقطتين لقياس المسافة (التقاط الكائنات مفعّل).',
+    'measureAngleHint': 'انقر على رأس الزاوية، ثم نقطة على كل ضلع (التقاط الكائنات مفعّل).',
+    'measureArcHint': 'انقر على دائرة أو قوس للقياس عليه، أو انقر على نقطة البداية ثم نقطة على القوس ثم نقطة النهاية (التقاط الكائنات مفعّل). استخدم Ctrl (⌘ على Mac) للتبديل بين القوس الأكبر والأصغر.',
+    'measureAreaHint': 'انقر على رؤوس المضلع؛ انقر بالقرب من النقطة الأولى أو اضغط Enter للإنهاء.',
+    'measureCoordinateHint': 'انقر على نقطة لقراءة إحداثيات X/Y الخاصة بها (التقاط الكائنات مفعّل).',
+    'measureExported': 'تم تصدير {count} من القياسات.',
+    'measureImported': 'تم استيراد {count} من القياسات.',
+    'measureImportFailed': 'فشل استيراد القياسات: {error}',
+    'markupCloudHint': 'انقر على ركنين لرسم سحابة مراجعة.',
+    'markupCalloutHint': 'انقر على طرف خط الإشارة، ثم موضع النص.',
+    'markupTextHint': 'انقر على نقطة لوضع النص.',
+    'markupRectHint': 'انقر على ركنين لرسم مستطيل.',
+    'markupCircleHint': 'انقر على المركز، ثم على نقطة على المحيط.',
+    'markupArrowHint': 'انقر على نقطة البداية، ثم على رأس السهم.',
+    'markupStampHint': 'انقر لوضع ختم (يتنقل بين معتمد / مرفوض / …).',
+    'markupArrowEndHint': 'انقر على رأس السهم.',
+    'markupRectCornerHint': 'انقر على الركن المقابل.',
+    'markupCloudCornerHint': 'انقر على الركن المقابل.',
+    'markupCalloutAnchorHint': 'انقر على موضع فقاعة النص.',
+    'markupCircleRadiusHint': 'انقر على نقطة على المحيط.',
+    'markupTextPrompt': 'أدخل نص الملاحظة',
+    'markupTextEditHint': 'اكتب النص على مساحة الرسم. اضغط Enter للإنهاء أو Esc للإلغاء.',
+    'markupShapeCalloutHint': 'انقر لوضع مربع النص (يتصل خط الإشارة بالشكل). اضغط Esc لإلغاء التعليق التوضيحي.',
+    'markupDefaultLabel': 'ملاحظة',
+    'markupSelected': 'الملاحظة المحددة: {type}',
+    'markupSelectedCount': 'الملاحظات المحددة: {count}',
+    'markupCount': 'عدد الملاحظات: {count}',
+    'markupExported': 'تم تصدير {count} من الملاحظات.',
+    'markupImported': 'تم استيراد {count} من الملاحظات.',
+    'markupImportFailed': 'فشل استيراد الملاحظات: {error}',
+    'distance': 'المسافة: {value}',
+    'coordinates': 'X: {x}  Y: {y}',
+    'angle': 'الزاوية: {value}',
+    'arcLength': 'طول القوس: {value}',
+    'area': 'المساحة: {value}',
+    'lengthTotal': 'إجمالي الطول: {value}',
+    'areaTotal': 'إجمالي المساحة: {value}',
+    'zoomLayer': 'تكبير: {name}',
+    'loadFailed': 'فشل تحميل الرسم: {error}',
+    'noLayout': 'لا توجد بيانات تخطيط في اللقطة.'
+  }
+}
+
+const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
+  ...BASE_MESSAGES,
+  ar: AR_MESSAGES
 }
 
 /**

@@ -11,7 +11,7 @@
     <!-- CAD viewer when a file is selected or a new drawing is created -->
     <div v-else>
       <MlCadViewer
-        locale="en"
+        locale="default"
         :local-file="store.selectedFile ?? undefined"
         :mode="selectedMode"
         :use-main-thread-draw="useMainThreadDraw"
@@ -42,8 +42,9 @@ import FileUpload from './components/FileUpload.vue'
 import { initializeLocale } from './locale'
 import { store } from './store'
 
+initializeLocale()
+
 const initialize = () => {
-  initializeLocale()
   if (import.meta.env.DEV) {
     ;(
       window as Window & { AcApDocManager?: typeof AcApDocManager }

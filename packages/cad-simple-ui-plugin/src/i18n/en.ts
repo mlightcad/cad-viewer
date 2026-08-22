@@ -53,6 +53,7 @@ export const en: Record<string, string> = {
   'toolbar.localeZh': '中文',
   'toolbar.localeCs': 'Čeština',
   'toolbar.localeTr': 'Türkçe',
+  'toolbar.localeAr': 'العربية',
   'toolbar.collapse': 'Collapse toolbar',
   'toolbar.expand': 'Expand toolbar',
   'layerManager.title': 'Layer Manager',

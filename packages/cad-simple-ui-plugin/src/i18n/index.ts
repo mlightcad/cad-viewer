@@ -1,5 +1,7 @@
 import { AcApI18n } from '@mlightcad/cad-simple-viewer'
 
+import { ar } from './ar'
+import { commandAr } from './command-ar'
 import { commandCs } from './command-cs'
 import { commandEn } from './command-en'
 import { commandTr } from './command-tr'
@@ -65,6 +67,10 @@ export function registerSimpleUiI18n(): void {
   AcApI18n.mergeLocaleMessage('tr', {
     command: commandTr,
     [MESSAGE_PREFIX]: flatToNested(tr)
+  })
+  AcApI18n.mergeLocaleMessage('ar', {
+    command: commandAr,
+    [MESSAGE_PREFIX]: flatToNested(ar)
   })
   isRegistered = true
 }

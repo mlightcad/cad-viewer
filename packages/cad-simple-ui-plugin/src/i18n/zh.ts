@@ -53,6 +53,7 @@ export const zh: Record<string, string> = {
   'toolbar.localeZh': '中文',
   'toolbar.localeCs': 'Čeština',
   'toolbar.localeTr': 'Türkçe',
+  'toolbar.localeAr': 'العربية',
   'toolbar.collapse': '收起工具栏',
   'toolbar.expand': '展开工具栏',
   'layerManager.title': '图层管理器',
