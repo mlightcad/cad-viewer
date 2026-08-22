@@ -62,6 +62,7 @@ import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResul
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
+import type { AcApCompareDisplayOptions } from './AcApCompareDisplay'
 import {
   trySelectReviewOverlay,
   trySelectReviewOverlaysByBox
@@ -85,6 +86,7 @@ import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
 import { sortPickResults } from './AcTrPickResultUtil'
 import { AcTrProgressiveOpenFitController } from './AcTrProgressiveOpenFitController'
 import { AcTrScene } from './AcTrScene'
+import type { AcTrViewSessionState } from './AcTrViewSessionState'
 
 /**
  * Options to customize view
@@ -206,7 +208,7 @@ export class AcTrView2d extends AcEdBaseView {
   /** Entity display policy for layer-aware conversion skipping. */
   private readonly _entityDisplay: AcTrEntityDisplayController
   /** Layer appearance sync for style-table changes and text refresh. */
-  private readonly _layerAppearance: AcTrLayerAppearanceController
+  private _layerAppearance: AcTrLayerAppearanceController
   /** INSERT layer-0 inheritance material remapping. */
   private readonly _inheritedLayerMaterialMapper: AcTrInheritedLayerMaterialMapper
   /**
@@ -327,7 +329,9 @@ export class AcTrView2d extends AcEdBaseView {
     // Initialize background color through setter to keep renderer/cursor in sync.
     this.backgroundColor =
       mergedOptions.background ?? ACGI_MODEL_SPACE_BACKGROUND
-    this._stats = this.createStats(AcApSettingManager.instance.isShowStats)
+    this._stats = this.createStats(
+      AcApSettingManager.instance.isShowStats && this.isActiveManagedView()
+    )
 
     // Layout background sysvars drive the canvas clear colour and ACI-7
     // inversion (`MODELBKCOLOR` for model space, `PAPERBKCOLOR` for the
@@ -482,10 +486,22 @@ export class AcTrView2d extends AcEdBaseView {
     // such as the canvas or the entire document. This can interfere with other event listeners you
     // add, including the keydown event.
     document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (!this.isActiveManagedView()) return
       this._keyHandler.handleKeyDown(e)
     })
     acdbHostApplicationServices().layoutManager.events.layoutSwitched.addEventListener(
       args => {
+        if (!this.isActiveManagedView()) return
+        const layoutDb = (args.layout as { database?: { objectId?: string } })
+          .database
+        const currentDb = (
+          AcApDocManager as unknown as {
+            _instance?: { curDocument?: { database?: object } }
+          }
+        )._instance?.curDocument?.database
+        if (layoutDb && currentDb && layoutDb !== currentDb) {
+          return
+        }
         const btrId = args.layout.blockTableRecordId
         // "First visit" is tracked separately from view existence because
         // `addLayout` pre-creates an `AcTrLayoutView` for every layout in
@@ -1935,7 +1951,112 @@ export class AcTrView2d extends AcEdBaseView {
     this._scene.clear()
     this._isDirty = true
     this._missedImages.clear()
+    this._initializedLayouts.clear()
+    this._externallyFramedLayouts.clear()
+    this._loadingLayouts.clear()
     this._renderer.dispose()
+  }
+
+  /**
+   * Captures GPU/camera/selection state so another document can occupy this view.
+   *
+   * @returns Parked state owned by {@link AcApDocSession} until restore.
+   */
+  captureSessionState(): AcTrViewSessionState {
+    return {
+      scene: this._scene,
+      layoutViewManager: this._layoutViewManager,
+      initializedLayouts: this._initializedLayouts,
+      externallyFramedLayouts: this._externallyFramedLayouts,
+      loadingLayouts: this._loadingLayouts,
+      missedImages: this._missedImages,
+      selectionIds: this.selectionSet.ids
+    }
+  }
+
+  /**
+   * Restores a parked document onto this shared view without disposing the renderer.
+   *
+   * @param state - Snapshot previously returned by {@link captureSessionState} or {@link beginNewSession}.
+   */
+  restoreSessionState(state: AcTrViewSessionState): void {
+    this._convertEpoch++
+    this._convertQueue.length = 0
+    this._numOfEntitiesToProcess = 0
+    this._pendingGeometryJobs = 0
+    this._scene = state.scene
+    this._layoutViewManager = state.layoutViewManager
+    this._initializedLayouts = state.initializedLayouts
+    this._externallyFramedLayouts = state.externallyFramedLayouts
+    this._loadingLayouts = state.loadingLayouts
+    this._missedImages = state.missedImages
+    this.rebindLayerAppearance()
+    this._layoutViewManager.resize(this.width, this.height)
+    this.selectionSet.clear()
+    if (state.selectionIds.length > 0) {
+      this.selectionSet.add(state.selectionIds)
+    }
+    this._isDirty = true
+  }
+
+  /**
+   * Detaches the current scene and installs an empty one for a newly opened document.
+   *
+   * @returns Parked state of the previous document.
+   */
+  beginNewSession(): AcTrViewSessionState {
+    const parked = this.captureSessionState()
+    this._convertEpoch++
+    this._convertQueue.length = 0
+    this._numOfEntitiesToProcess = 0
+    this._pendingGeometryJobs = 0
+    this._scene = this.createScene()
+    this._layoutViewManager = new AcTrLayoutViewManager()
+    this._initializedLayouts = new Set()
+    this._externallyFramedLayouts = new Set()
+    this._loadingLayouts = new Set()
+    this._missedImages = new Map()
+    this.rebindLayerAppearance()
+    this.selectionSet.clear()
+    this._isDirty = true
+    return parked
+  }
+
+  /**
+   * Disposes GPU resources for a parked session that is being closed.
+   *
+   * @param state - Parked snapshot to discard.
+   */
+  disposeSessionState(state: AcTrViewSessionState): void {
+    state.scene.clear()
+    state.layoutViewManager = new AcTrLayoutViewManager()
+    state.initializedLayouts.clear()
+    state.externallyFramedLayouts.clear()
+    state.loadingLayouts.clear()
+    state.missedImages.clear()
+    state.selectionIds = []
+  }
+
+  /**
+   * Recreates the layer-appearance controller after the scene is swapped.
+   */
+  private rebindLayerAppearance() {
+    this._layerAppearance = new AcTrLayerAppearanceController(
+      this._scene,
+      this._renderer
+    )
+  }
+
+  /**
+   * True when this view is the document manager's live canvas.
+   * Satellite/preview views must ignore global shortcuts and layout switches.
+   */
+  private isActiveManagedView(): boolean {
+    const singleton = AcApDocManager as unknown as {
+      _instance?: { curView?: AcTrView2d }
+    }
+    const current = singleton._instance?.curView
+    return current == null || current === this
   }
 
   /**
@@ -1994,6 +2115,36 @@ export class AcTrView2d extends AcEdBaseView {
    */
   unhighlight(ids: AcDbObjectId[]) {
     this._isDirty = this._scene.unselect(ids)
+  }
+
+  /**
+   * Enables compare-display coloring on non-overlay layouts of this view.
+   * Pass an overlay {@link AcTrLayout} to color a reference overlay separately.
+   *
+   * @param options - Compare colors and per-entity role overrides.
+   * @param targetLayout - Overlay layout to color; omit for the main scene.
+   */
+  setCompareDisplay(
+    options: AcApCompareDisplayOptions,
+    targetLayout?: AcTrLayout
+  ) {
+    const baseColor = options.baseColor ?? options.colors?.unchanged ?? 0x9ca3af
+    const mapped = {
+      enabled: options.enabled,
+      baseColor,
+      colors: {
+        deleted: options.colors?.deleted,
+        added: options.colors?.added,
+        modified: options.colors?.modified
+      },
+      overrides: options.overrides
+    }
+    if (targetLayout) {
+      targetLayout.setCompareDisplay(mapped)
+    } else {
+      this._scene.setCompareDisplay(mapped)
+    }
+    this._isDirty = true
   }
 
   stopAnimationLoop() {

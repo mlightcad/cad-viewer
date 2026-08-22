@@ -1,3 +1,4 @@
+import { getActiveMarkupBag } from './AcApMarkupSession'
 import type {
   AcApMarkupRecord,
   AcApMarkupSidecarFile,
@@ -244,13 +245,9 @@ export class AcApMarkupStore {
   }
 }
 
-/** Process-wide markup store (one active drawing session). */
-let sharedStore: AcApMarkupStore | undefined
-
-/** Returns the shared markup store, creating it on first use. */
+/** Returns the markup store for the active document session. */
 export function getMarkupStore(): AcApMarkupStore {
-  if (!sharedStore) sharedStore = new AcApMarkupStore()
-  return sharedStore
+  return getActiveMarkupBag().store
 }
 
 /**

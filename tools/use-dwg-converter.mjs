@@ -121,6 +121,16 @@ const targets = [
     path: join(
       rootDir,
       'packages',
+      'cad-diff-viewer-example',
+      'package.json'
+    ),
+    label: 'cad-diff-viewer-example/package.json',
+    transform: replacePackageDep
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
       'cad-simple-viewer-example',
       'package.json'
     ),
@@ -136,6 +146,16 @@ const targets = [
     path: join(rootDir, 'packages', 'cad-simple-viewer-cli', 'package.json'),
     label: 'cad-simple-viewer-cli/package.json',
     transform: replacePackageDep
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
+      'cad-diff-viewer-example',
+      'vite.config.ts'
+    ),
+    label: 'cad-diff-viewer-example/vite.config.ts',
+    transform: replaceViteLibreDwg
   },
   {
     path: join(
@@ -167,6 +187,17 @@ const targets = [
     path: join(
       rootDir,
       'packages',
+      'cad-diff-viewer-example',
+      'src',
+      'registerLibreDwg.ts'
+    ),
+    label: 'cad-diff-viewer-example/src/registerLibreDwg.ts',
+    transform: replaceRegisterModule
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
       'cad-simple-viewer-example',
       'src',
       'registerLibreDwg.ts'
@@ -184,6 +215,30 @@ const targets = [
     ),
     label: 'cad-viewer-example/src/registerLibreDwg.ts',
     transform: replaceRegisterModule
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
+      'cad-diff-viewer-example',
+      'src',
+      'main.ts'
+    ),
+    label: 'cad-diff-viewer-example/src/main.ts',
+    transform(content) {
+      let next = replaceLibreDwgParserWorkerFile(content)
+      if (next == null) {
+        next = content
+      }
+      const replaced = next
+        .replaceAll('registerLibreDwgConverter', 'registerDwgConverter')
+        .replaceAll('./registerLibreDwg', './registerLibreDwg')
+      if (replaced === content && next === content) {
+        console.log('  already switched')
+        return null
+      }
+      return replaced
+    }
   },
   {
     path: join(

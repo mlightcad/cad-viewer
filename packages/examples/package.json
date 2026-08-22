@@ -13,6 +13,7 @@
     "serve": "node ./servePublic.js"
   },
   "devDependencies": {
+    "@mlightcad/cad-diff-viewer-example": "workspace:*",
     "@mlightcad/cad-simple-viewer-example": "workspace:*",
     "@mlightcad/cad-viewer-example": "workspace:*",
     "@types/fs-extra": "^11.0.4",

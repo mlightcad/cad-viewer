@@ -1,3 +1,6 @@
+// Side-effect: install per-session markup bag factory before other markup APIs run.
+export * from './AcApMarkupSessionBootstrap'
+export * from './AcApMarkupSession'
 export * from './AcApClearMarkupsCmd'
 export * from './AcApMarkupArrowCmd'
 export * from './AcApMarkupCalloutCmd'

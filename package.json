@@ -20,6 +20,7 @@
     "copy:workers": "pnpm -r --filter \"./packages/**\" run copy:workers",
     "dev": "nx run @mlightcad/cad-viewer-example:dev",
     "dev:simple": "nx run @mlightcad/cad-simple-viewer-example:dev",
+    "dev:diff": "nx run @mlightcad/cad-diff-viewer-example:dev",
     "docs:build": "typedoc --skipErrorChecking",
     "docs:site:prepare": "node tools/prepare-docs-site.mjs",
     "cli": "nx run @mlightcad/cad-simple-viewer-cli:build && node packages/cad-simple-viewer-cli/dist/cli.js",

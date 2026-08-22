@@ -51,12 +51,22 @@ jest.mock('../src/view', () => ({
     renderer: {},
     clear: jest.fn(),
     zoomToFitDrawing: jest.fn(),
-    zoomTo: jest.fn()
+    zoomTo: jest.fn(),
+    bindDrawDatabase: jest.fn(),
+    syncDisplaySysVars: jest.fn(),
+    captureSessionState: jest.fn(() => ({})),
+    restoreSessionState: jest.fn(),
+    beginNewSession: jest.fn(() => ({})),
+    stopAnimationLoop: jest.fn(),
+    disposeSessionState: jest.fn(),
+    selectionSet: { ids: [], clear: jest.fn(), add: jest.fn() }
   }))
 }))
 
 jest.mock('../src/app/AcApDocument', () => ({
   AcApDocument: jest.fn().mockImplementation(() => ({
+    isReusableUntitled: true,
+    destroy: jest.fn(),
     openMode: 0,
     database: {
       events: {
@@ -82,6 +92,14 @@ jest.mock('../src/app/AcApDocument', () => ({
   }))
 }))
 
+jest.mock('../src/app/AcApXrefManager', () => ({
+  AcApXrefManager: {
+    instance: {
+      clearAll: jest.fn()
+    }
+  }
+}))
+
 jest.mock('../src/app/AcApProgress', () => ({
   AcApProgress: jest.fn().mockImplementation(() => ({
     hide: jest.fn(),
@@ -91,12 +109,19 @@ jest.mock('../src/app/AcApProgress', () => ({
 }))
 
 jest.mock('../src/app/AcApContext', () => ({
-  AcApContext: jest.fn().mockImplementation((view, doc) => ({ view, doc }))
+  AcApContext: jest.fn().mockImplementation((view, doc) => ({
+    view,
+    doc,
+    suspend: jest.fn(),
+    resume: jest.fn(),
+    dispose: jest.fn()
+  }))
 }))
 
 jest.mock('../src/plugin/AcApPluginManager', () => ({
   AcApPluginManager: jest.fn().mockImplementation(() => ({
     unloadAllPlugins: jest.fn(() => Promise.resolve()),
+    setContext: jest.fn(),
     loadPluginsFromConfig: jest.fn(() =>
       Promise.resolve({ loaded: [], failed: [] })
     ),
@@ -115,7 +140,8 @@ jest.mock('../src/editor', () => ({
     addCommand: jest.fn(),
     lookupGlobalCmd: jest.fn(),
     lookupLocalCmd: jest.fn(),
-    searchCommandsByPrefix: jest.fn()
+    searchCommandsByPrefix: jest.fn(),
+    cancelActive: jest.fn(() => Promise.resolve())
   })),
   AcEdOpenMode: {
     Read: 0
@@ -133,6 +159,7 @@ jest.mock('../src/command', () => {
     'AcApCircleCmd',
     'AcApClearMarkupsCmd',
     'AcApClearMeasurementsCmd',
+    'AcApCloseCmd',
     'AcApConvertToDxfCmd',
     'AcApConvertToPngCmd',
     'AcApEntityPreviewCmd',
@@ -213,6 +240,8 @@ jest.mock('../src/command', () => {
         jest.fn().mockImplementation(() => ({ trigger: jest.fn() }))
       ])
     ),
+    acapBindMarkupSession: jest.fn(),
+    acapDisposeMarkupSession: jest.fn(),
     resetMarkupSession: jest.fn(),
     resetMeasurementSession: jest.fn()
   }
@@ -290,5 +319,35 @@ describe('AcApDocManager font URL configuration', () => {
     expect(mockSetRenderMode.mock.invocationCallOrder[0]).toBeLessThan(
       mockInitialize.mock.invocationCallOrder[0]
     )
+  })
+})
+
+describe('AcApDocManager document sessions', () => {
+  beforeEach(() => {
+    ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined
+  })
+
+  it('starts with one document session', () => {
+    const manager = AcApDocManager.createInstance({})
+    expect(manager?.documentCount).toBe(1)
+    expect(manager?.documents).toHaveLength(1)
+    expect(manager?.mdiActiveDocument).toBe(manager?.curDocument)
+    expect(manager?.activeSessionId).toMatch(/^doc-/)
+  })
+
+  it('activateDocument is a no-op for the current document', async () => {
+    const manager = AcApDocManager.createInstance({})
+    await expect(
+      manager!.activateDocument(manager!.curDocument)
+    ).resolves.toBe(true)
+    expect(manager!.documentCount).toBe(1)
+  })
+
+  it('closeDocument on the last drawing keeps one untitled session', async () => {
+    const manager = AcApDocManager.createInstance({})
+    const first = manager!.curDocument
+    await manager!.closeDocument()
+    expect(manager!.documentCount).toBe(1)
+    expect(manager!.curDocument).not.toBe(first)
   })
 })

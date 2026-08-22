@@ -11,6 +11,8 @@
       "@mlightcad/cad-simple-viewer",
       "@mlightcad/cad-simple-viewer-cli",
       "@mlightcad/cad-simple-viewer-example",
+      "@mlightcad/cad-diff-viewer",
+      "@mlightcad/cad-diff-viewer-example",
       "@mlightcad/cad-svg-plugin",
       "@mlightcad/cad-viewer",
       "@mlightcad/cad-viewer-example",

@@ -66,6 +66,22 @@ export class AcApPluginManager {
   }
 
   /**
+   * Context plugins should treat as current (the active MDI document).
+   */
+  get context() {
+    return this._context
+  }
+
+  /**
+   * Points plugins at the newly activated document context.
+   *
+   * @param context - Context of the active MDI document.
+   */
+  setContext(context: AcApContext) {
+    this._context = context
+  }
+
+  /**
    * Loads a plugin and calls its `onLoad` hook.
    *
    * If the plugin is already loaded, this method will throw an error.

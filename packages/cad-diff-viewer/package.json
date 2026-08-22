@@ -1,0 +1,49 @@
+{
+  "name": "@mlightcad/cad-diff-viewer",
+  "version": "1.6.2",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "keywords": [
+    "autocad",
+    "cad",
+    "cad-viewer",
+    "diff",
+    "dwg",
+    "dxf",
+    "mlightcad"
+  ],
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/cad-diff-viewer.umd.cjs",
+  "module": "./dist/cad-diff-viewer.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./dist/cad-diff-viewer.js",
+      "require": "./dist/cad-diff-viewer.umd.cjs"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "devDependencies": {
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.14.1"
+  },
+  "peerDependencies": {
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.14.1"
+  }
+}

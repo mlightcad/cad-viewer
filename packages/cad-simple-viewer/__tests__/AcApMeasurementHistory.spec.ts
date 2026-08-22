@@ -2,9 +2,13 @@ import { AcCmColor, type AcDbDatabase } from '@mlightcad/data-model'
 import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
 import {
+  AcApMarkupHistory,
+  AcApSessionUndo,
   getMarkupHistory,
   getSessionUndo
 } from '../src/command/markup/AcApMarkupHistory'
+import { acapSetMarkupBagFactory } from '../src/command/markup/AcApMarkupSession'
+import { AcApMarkupStore } from '../src/command/markup/AcApMarkupStore'
 import {
   bindMeasurementOverlayHistory,
   resetMeasurementSession,
@@ -22,6 +26,15 @@ import {
   MEASUREMENT_LINE_WEIGHT
 } from '../src/util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../src/view'
+
+acapSetMarkupBagFactory(() => ({
+  store: new AcApMarkupStore(),
+  presenter: {
+    forgetPublished() {}
+  } as never,
+  history: new AcApMarkupHistory(),
+  sessionUndo: new AcApSessionUndo()
+}))
 
 function mockDb(): AcDbDatabase {
   return {
@@ -188,9 +201,7 @@ describe('AcApMeasurementHistory', () => {
       },
       formatter: {
         formatLength(value: number) {
-          return Number(value).toFixed(
-            (db as { _luprec: number })._luprec
-          )
+          return Number(value).toFixed((db as { _luprec: number })._luprec)
         }
       }
     }

@@ -3,6 +3,7 @@ import type { AcDbDatabase } from '@mlightcad/data-model'
 import type { AcEdBaseView } from '../../editor'
 import { eventBus } from '../../editor/global/eventBus'
 import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
+import { getActiveMarkupBag } from './AcApMarkupSession'
 import { getMarkupStore } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 
@@ -346,21 +347,14 @@ export class AcApSessionUndo {
   }
 }
 
-/** Session-wide markup history singleton. */
-let sharedHistory: AcApMarkupHistory | undefined
-/** Session-wide DB / markup / overlay undo coordinator singleton. */
-let sharedSessionUndo: AcApSessionUndo | undefined
-
 /** Shared markup history for the active session. */
 export function getMarkupHistory(): AcApMarkupHistory {
-  if (!sharedHistory) sharedHistory = new AcApMarkupHistory()
-  return sharedHistory
+  return getActiveMarkupBag().history
 }
 
-/** Shared session undo coordinator. */
+/** Session undo coordinator for the active document session. */
 export function getSessionUndo(): AcApSessionUndo {
-  if (!sharedSessionUndo) sharedSessionUndo = new AcApSessionUndo()
-  return sharedSessionUndo
+  return getActiveMarkupBag().sessionUndo
 }
 
 /**

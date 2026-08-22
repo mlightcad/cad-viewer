@@ -1,5 +1,6 @@
 export * from './AcApBrand'
 export * from './AcApContext'
+export * from './AcApDocSession'
 export * from './AcApFontLoader'
 export * from './AcApCommandServices'
 export * from './AcApDocument'

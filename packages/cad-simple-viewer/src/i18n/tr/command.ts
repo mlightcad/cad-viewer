@@ -399,6 +399,9 @@ export default {
     qnew: {
       description: 'Yeni bir çizim başlatır'
     },
+    close: {
+      description: 'Geçerli çizimi kapatır'
+    },
     ray: {
       description: 'Bir noktadan başlayıp sonsuza uzanan bir ışın oluşturur'
     },

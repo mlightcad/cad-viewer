@@ -18,7 +18,9 @@ jest.mock('../src/app/AcApProgress', () => ({
     const instance = {
       hide: jest.fn(),
       show: jest.fn(),
-      setMessage: jest.fn()
+      setMessage: jest.fn(),
+      setHost: jest.fn(),
+      setOverlayColor: jest.fn()
     }
     mockProgressInstances.push(instance)
     return instance

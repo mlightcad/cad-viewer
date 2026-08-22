@@ -9,6 +9,7 @@ import {
   runMarkupEdit
 } from './AcApMarkupHistory'
 import { registerMarkupPublish } from './AcApMarkupRepublish'
+import { getActiveMarkupBag } from './AcApMarkupSession'
 import {
   getMarkupStore,
   MARKUP_LAYER,
@@ -233,12 +234,9 @@ export class AcApMarkupPresenter {
   }
 }
 
-let sharedPresenter: AcApMarkupPresenter | undefined
-
 /** Shared presenter for the active viewer session. */
 export function getMarkupPresenter(): AcApMarkupPresenter {
-  if (!sharedPresenter) sharedPresenter = new AcApMarkupPresenter()
-  return sharedPresenter
+  return getActiveMarkupBag().presenter
 }
 
 registerMarkupPublish((view, record) => {
@@ -246,7 +244,7 @@ registerMarkupPublish((view, record) => {
 })
 
 /**
- * Reset markup store, visuals tracking, and undo history for a new drawing.
+ * Reset markup store, visuals tracking, and undo history for the active drawing.
  * Call before {@link AcTrView2d.clear} so overlay dispose does not look like
  * user deletes and leftover undo cannot republish the previous drawing.
  */

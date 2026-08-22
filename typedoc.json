@@ -1,5 +1,5 @@
 {
-    "entryPoints": ["packages/cad-viewer", "packages/cad-simple-viewer"],
+    "entryPoints": ["packages/cad-viewer", "packages/cad-simple-viewer", "packages/cad-diff-viewer"],
     "name": "MLightCAD",
     "out": "docs",
     "entryPointStrategy": "packages",

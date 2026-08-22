@@ -3,6 +3,35 @@ import * as THREE from 'three'
 /** Highlight interaction kind bound to one packed geometry slot. */
 export type AcTrBatchHighlightKind = 'select' | 'hover'
 
+/**
+ * Compare-display role for one packed geometry slot.
+ * Encoded in the B channel of the highlight mask texture.
+ */
+export type AcTrBatchCompareRole = 'deleted' | 'added' | 'modified'
+
+/** No compare role encoded in {@link AcTrBatchHighlightState.compareRoleMask}. */
+export const COMPARE_ROLE_NONE = 0
+/** Deleted (left/old) entity encoded in {@link AcTrBatchHighlightState.compareRoleMask}. */
+export const COMPARE_ROLE_DELETED = 1
+/** Added (right/new) entity encoded in {@link AcTrBatchHighlightState.compareRoleMask}. */
+export const COMPARE_ROLE_ADDED = 2
+/** Modified entity encoded in {@link AcTrBatchHighlightState.compareRoleMask}. */
+export const COMPARE_ROLE_MODIFIED = 3
+
+/**
+ * Maps a compare role to its mask encoding.
+ *
+ * @param role - Compare role, or `null` / `undefined` for {@link COMPARE_ROLE_NONE}.
+ */
+export function compareRoleToMaskValue(
+  role: AcTrBatchCompareRole | null | undefined
+): number {
+  if (role === 'deleted') return COMPARE_ROLE_DELETED
+  if (role === 'added') return COMPARE_ROLE_ADDED
+  if (role === 'modified') return COMPARE_ROLE_MODIFIED
+  return COMPARE_ROLE_NONE
+}
+
 /** Safe upper bound for one highlight mask texture dimension. */
 const MAX_MASK_TEXTURE_DIMENSION = 4096
 
@@ -33,7 +62,8 @@ function computeMaskTextureLayout(slotCount: number) {
 /**
  * Per-batch CPU/GPU highlight mask for packed geometry slots.
  *
- * Selection and hover each occupy one channel in an RGBA `DataTexture`.
+ * Selection and hover each occupy one channel in an RGBA `DataTexture`
+ * (R = selected, G = hovered). Compare roles use the B channel.
  * Large batches use a 2D texture layout so width stays within GPU limits.
  */
 export class AcTrBatchHighlightState {
@@ -41,7 +71,22 @@ export class AcTrBatchHighlightState {
   selectedMask = new Uint8Array(0)
   /** CPU-side hover flags indexed by geometry slot id. */
   hoveredMask = new Uint8Array(0)
-  /** GPU mask texture uploaded from {@link selectedMask} and {@link hoveredMask}. */
+  /**
+   * CPU-side compare roles indexed by geometry slot id.
+   * Values: {@link COMPARE_ROLE_NONE} / DELETED / ADDED / MODIFIED.
+   */
+  compareRoleMask = new Uint8Array(0)
+  /** When true, batch shaders force the compare base color then role overrides. */
+  compareEnabled = false
+  /** Base (unchanged) color while compare display is enabled. */
+  compareBaseColor = new THREE.Color(0x9ca3af)
+  /** Color for deleted entities. */
+  compareDeletedColor = new THREE.Color(0xe11d48)
+  /** Color for added entities. */
+  compareAddedColor = new THREE.Color(0x22c55e)
+  /** Color for modified entities. */
+  compareModifiedColor = new THREE.Color(0xe11d48)
+  /** GPU mask texture uploaded from highlight and compare masks. */
   maskTexture: THREE.DataTexture | null = null
   /** Current width of {@link maskTexture} in pixels. */
   maskTextureWidth = 0
@@ -63,6 +108,7 @@ export class AcTrBatchHighlightState {
     return Math.max(
       this.selectedMask.length,
       this.hoveredMask.length,
+      this.compareRoleMask.length,
       this.addressableSlotCount,
       1
     )
@@ -80,10 +126,13 @@ export class AcTrBatchHighlightState {
     const newSize = Math.max(slotCount, this.selectedMask.length * 2, 16)
     const selectedMask = new Uint8Array(newSize)
     const hoveredMask = new Uint8Array(newSize)
+    const compareRoleMask = new Uint8Array(newSize)
     selectedMask.set(this.selectedMask)
     hoveredMask.set(this.hoveredMask)
+    compareRoleMask.set(this.compareRoleMask)
     this.selectedMask = selectedMask
     this.hoveredMask = hoveredMask
+    this.compareRoleMask = compareRoleMask
   }
 
   /**
@@ -134,7 +183,29 @@ export class AcTrBatchHighlightState {
   }
 
   /**
+   * Sets the compare role for one geometry slot (or clears it when `role` is null).
+   *
+   * @param slotId - Packed geometry slot index within the batch.
+   * @param role - Compare role, or `null` / `undefined` to clear.
+   * @returns `true` when the mask value changed.
+   */
+  setCompareRole(
+    slotId: number,
+    role: AcTrBatchCompareRole | null | undefined
+  ) {
+    this.ensureCapacity(slotId + 1)
+    const next = compareRoleToMaskValue(role)
+    if (this.compareRoleMask[slotId] === next) {
+      return false
+    }
+    this.compareRoleMask[slotId] = next
+    this.dirty = true
+    return true
+  }
+
+  /**
    * Clears both selection and hover flags for one geometry slot.
+   * Compare role is left unchanged.
    *
    * @param slotId - Packed geometry slot index within the batch.
    * @returns `true` when either mask channel changed.
@@ -171,6 +242,20 @@ export class AcTrBatchHighlightState {
   }
 
   /**
+   * Clears all compare role flags owned by this batch.
+   *
+   * @returns `true` when any compare role existed before clearing.
+   */
+  clearAllCompareRoles() {
+    if (!this.hasAnyCompareRole()) {
+      return false
+    }
+    this.compareRoleMask.fill(0)
+    this.dirty = true
+    return true
+  }
+
+  /**
    * Returns whether any geometry slot is currently selected or hovered.
    *
    * @returns `true` when at least one slot has a non-zero mask value.
@@ -182,6 +267,25 @@ export class AcTrBatchHighlightState {
       }
     }
     return false
+  }
+
+  /**
+   * Returns whether any geometry slot has a compare role override.
+   */
+  hasAnyCompareRole() {
+    for (let i = 0; i < this.compareRoleMask.length; i++) {
+      if (this.compareRoleMask[i]) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Whether the batch shader should apply compare coloring (base + roles).
+   */
+  needsCompareUniforms() {
+    return this.compareEnabled
   }
 
   /**
@@ -206,6 +310,9 @@ export class AcTrBatchHighlightState {
       const offset = (y * width + x) * 4
       data[offset] = this.selectedMask[slotId] ? 255 : 0
       data[offset + 1] = this.hoveredMask[slotId] ? 255 : 0
+      // Encode compare role in B: 0 / 85 / 170 / 255
+      const role = this.compareRoleMask[slotId] ?? 0
+      data[offset + 2] = role === 0 ? 0 : role * 85
     }
 
     if (

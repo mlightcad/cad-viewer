@@ -13,8 +13,21 @@ jest.mock('../src/editor/input/ui/AcEdMTextEditor', () => ({
 }))
 
 import { AcApDocManager } from '../src/app'
+import {
+  AcApMarkupHistory,
+  AcApSessionUndo
+} from '../src/command/markup/AcApMarkupHistory'
+import { acapSetMarkupBagFactory } from '../src/command/markup/AcApMarkupSession'
+import { AcApMarkupStore } from '../src/command/markup/AcApMarkupStore'
 import { AcEdViewKeyHandler } from '../src/view/AcEdViewKeyHandler'
 import type { AcTrView2d } from '../src/view/AcTrView2d'
+
+acapSetMarkupBagFactory(() => ({
+  store: new AcApMarkupStore(),
+  presenter: {} as never,
+  history: new AcApMarkupHistory(),
+  sessionUndo: new AcApSessionUndo()
+}))
 
 function keyboardEvent(partial: Partial<KeyboardEvent>): KeyboardEvent {
   return {

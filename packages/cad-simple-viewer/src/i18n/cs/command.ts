@@ -389,6 +389,9 @@ export default {
     qnew: {
       description: 'Zahájí nový výkres'
     },
+    close: {
+      description: 'Zavře aktuální výkres'
+    },
     ray: {
       description:
         'Vytvoří polopřímku, která začíná v bodě a pokračuje do nekonečna'

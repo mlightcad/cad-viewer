@@ -1,10 +1,27 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
 import {
+  AcApMarkupHistory,
+  AcApSessionUndo,
   bindOverlayHistory,
   getMarkupHistory,
   getSessionUndo
 } from '../src/command/markup/AcApMarkupHistory'
+import {
+  acapBindMarkupSession,
+  acapDisposeMarkupSession,
+  acapSetMarkupBagFactory
+} from '../src/command/markup/AcApMarkupSession'
+import { AcApMarkupStore } from '../src/command/markup/AcApMarkupStore'
+
+acapSetMarkupBagFactory(() => ({
+  store: new AcApMarkupStore(),
+  presenter: {
+    forgetPublished() {}
+  } as never,
+  history: new AcApMarkupHistory(),
+  sessionUndo: new AcApSessionUndo()
+}))
 
 function mockDb(options: {
   canUndo?: boolean
@@ -86,5 +103,21 @@ describe('AcApSessionUndo fallback', () => {
     expect(getSessionUndo().undo(mockDb({ canUndo: true, undo: false }))).toBe(
       false
     )
+  })
+
+  it('keeps undo kinds isolated across document sessions', () => {
+    acapBindMarkupSession('session-a')
+    getSessionUndo().recordDb()
+    const dbA = mockDb({ canUndo: true, undo: true })
+    expect(getSessionUndo().canUndo(dbA)).toBe(true)
+
+    acapBindMarkupSession('session-b')
+    expect(getSessionUndo().canUndo(mockDb({}))).toBe(false)
+
+    acapBindMarkupSession('session-a')
+    expect(getSessionUndo().undo(dbA)).toBe('db')
+
+    acapDisposeMarkupSession('session-a')
+    acapDisposeMarkupSession('session-b')
   })
 })

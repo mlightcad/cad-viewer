@@ -107,6 +107,8 @@ Prefer writing the changeset file directly (agents often lack an interactive TTY
 "@mlightcad/cad-simple-viewer": patch
 "@mlightcad/cad-simple-viewer-cli": patch
 "@mlightcad/cad-simple-viewer-example": patch
+"@mlightcad/cad-diff-viewer": patch
+"@mlightcad/cad-diff-viewer-example": patch
 "@mlightcad/cad-svg-plugin": patch
 "@mlightcad/cad-viewer": patch
 "@mlightcad/cad-viewer-example": patch

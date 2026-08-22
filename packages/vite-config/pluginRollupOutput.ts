@@ -12,6 +12,7 @@ export const PLUGIN_PACKAGE_IDS = [
 /** Core viewer libraries shipped from this monorepo. */
 export const VIEWER_PACKAGE_IDS = [
   'cad-simple-viewer',
+  'cad-diff-viewer',
   'cad-viewer',
   'three-renderer'
 ] as const
