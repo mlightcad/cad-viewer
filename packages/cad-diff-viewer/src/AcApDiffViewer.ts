@@ -316,8 +316,6 @@ export class AcApDiffViewer {
   private readonly btnNext: HTMLButtonElement
   /** Toolbar button that opens the compare-color settings dialog. */
   private readonly btnSettings: HTMLButtonElement
-  /** Toolbar button that creates markup clouds from compare change sets. */
-  private readonly btnGenerateClouds: HTMLButtonElement
   /** Toolbar toggle that shows or hides markup overlays on both panes. */
   private readonly btnMarkupVis: HTMLButtonElement
   /** Toolbar button that clears markups on both open drawings. */
@@ -472,7 +470,6 @@ export class AcApDiffViewer {
     this.btnPrev = chrome.btnPrev
     this.btnNext = chrome.btnNext
     this.btnSettings = chrome.btnSettings
-    this.btnGenerateClouds = chrome.btnGenerateClouds
     this.btnMarkupVis = chrome.btnMarkupVis
     this.btnClearMarkups = chrome.btnClearMarkups
     this.btnTheme = chrome.btnTheme
@@ -693,10 +690,16 @@ export class AcApDiffViewer {
   async goToDifference(delta: number): Promise<void> {
     const nav = this.compareResult?.navigation ?? []
     if (nav.length === 0) return
-    if (this.navIndex < 0) this.navIndex = delta > 0 ? 0 : nav.length - 1
-    else {
-      this.navIndex = (this.navIndex + delta + nav.length * 50) % nav.length
+    let nextIndex: number
+    if (this.navIndex < 0) {
+      if (delta > 0) nextIndex = 0
+      else if (delta < 0) nextIndex = nav.length - 1
+      else return
+    } else {
+      nextIndex = this.navIndex + delta
+      if (nextIndex < 0 || nextIndex >= nav.length) return
     }
+    this.navIndex = nextIndex
     const hit = nav[this.navIndex]!
     this.collapsedResultGroups.delete(this.resultGroupStorageKeyForHit(hit))
     await this.focusHit(hit)
@@ -1478,7 +1481,7 @@ export class AcApDiffViewer {
       await this.clearCompareDisplay()
       if (this.disposed || seq !== this.compareSeq) return
       this.renderResultsList()
-      this.btnGenerateClouds.disabled = true
+      this.syncToolbarButtons()
       return
     }
     const result = acapCompareDrawings(left.database, right.database, {
@@ -1500,7 +1503,7 @@ export class AcApDiffViewer {
     if (this.disposed || seq !== this.compareSeq) return
     this.renderResultsList()
     this.refreshMarkupsList()
-    this.btnGenerateClouds.disabled = this.compareResult.changeSets.length === 0
+    this.syncToolbarButtons()
   }
 
   /** Registers the right drawing as an overlay on the left canvas, hides the right pane, and focuses the left view. */
@@ -1740,6 +1743,7 @@ export class AcApDiffViewer {
       empty.className = 'ml-diff-empty-list'
       empty.textContent = acapDiffViewerT('noResults')
       body.appendChild(empty)
+      this.syncToolbarButtons()
       return
     }
 
@@ -1835,6 +1839,7 @@ export class AcApDiffViewer {
       })
       body.appendChild(group)
     }
+    this.syncToolbarButtons()
   }
 
   /** Pins or unpins the field-diff popover for a modified result row. */
@@ -2331,6 +2336,7 @@ export class AcApDiffViewer {
     this.syncPaneChrome(this.leftUi, left)
     this.syncPaneChrome(this.rightUi, right)
     this.syncFocusRings()
+    this.syncToolbarButtons()
     window.dispatchEvent(new Event('resize'))
   }
 
@@ -2407,10 +2413,7 @@ export class AcApDiffViewer {
     const settingsLabel = acapDiffViewerT('toolbarSettings')
     this.btnSettings.title = settingsLabel
     this.btnSettings.setAttribute('aria-label', settingsLabel)
-    this.btnGenerateClouds.disabled = !(this.compareResult?.changeSets.length)
-    const hasDoc = Boolean(this.leftDocument || this.rightDocument)
-    this.btnMarkupVis.disabled = !hasDoc
-    this.btnClearMarkups.disabled = !hasDoc
+    this.syncToolbarButtons()
     this.syncMarkupVisibilityButton()
     this.syncThemeButton()
     this.syncLocaleSelect()
@@ -2448,6 +2451,39 @@ export class AcApDiffViewer {
     if (groupBar) groupBar.hidden = this.activeTab !== 'results'
     if (!this.sidePanelOpen || this.activeTab !== 'results') {
       this.hideDiffPopover(true)
+    }
+  }
+
+  /**
+   * Updates toolbar markup and diff-navigation controls from open documents
+   * and the latest compare result.
+   */
+  private syncToolbarButtons() {
+    const hasDoc = Boolean(this.leftDocument || this.rightDocument)
+    const compareDone = Boolean(this.compareResult)
+    const nav = this.compareResult?.navigation ?? []
+
+    this.btnMarkupVis.disabled = !hasDoc
+    this.btnClearMarkups.disabled = !hasDoc
+    for (const btn of this.markupButtons) {
+      if (btn.dataset.command) {
+        btn.disabled = !hasDoc
+      } else if (btn.dataset.labelKey === 'markupClear') {
+        btn.disabled = !hasDoc
+      } else if (btn.dataset.labelKey === 'markupGenerateClouds') {
+        btn.disabled =
+          !compareDone || (this.compareResult?.changeSets.length ?? 0) === 0
+      }
+    }
+
+    this.btnPrev.hidden = !compareDone
+    this.btnNext.hidden = !compareDone
+    if (compareDone && nav.length > 0) {
+      this.btnPrev.disabled = this.navIndex <= 0
+      this.btnNext.disabled = this.navIndex >= nav.length - 1
+    } else if (compareDone) {
+      this.btnPrev.disabled = true
+      this.btnNext.disabled = true
     }
   }
 
