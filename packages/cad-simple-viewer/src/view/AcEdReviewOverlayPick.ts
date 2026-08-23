@@ -2,9 +2,12 @@ import { AcGeBox2d } from '@mlightcad/data-model'
 
 import {
   hitTestMarkupGeometry,
+  hitTestMarkupShapeOutline,
+  isAttachableShapeMarkup,
   markupGeometryBounds
 } from '../command/markup/AcApMarkupGeometry'
 import { getMarkupStore } from '../command/markup/AcApMarkupStore'
+import type { AcApMarkupRecord } from '../command/markup/AcApMarkupTypes'
 import { measurementGeometryBounds } from '../command/measure/AcApMeasurementGeometry'
 import {
   getMeasurementGeometry,
@@ -75,6 +78,42 @@ function pickMarkupAt(
       hitTestMarkupGeometry(record.geometry, canvas, worldToScreen, threshold)
     ) {
       return record.id
+    }
+  }
+  return undefined
+}
+
+/**
+ * Find a visible cloud / rect / circle with no attached callout whose outer
+ * frame is under the given world point (used when placing a callout tip).
+ */
+export function pickAttachableShapeMarkupAt(
+  view: AcTrView2d,
+  world: { x: number; y: number }
+): AcApMarkupRecord | undefined {
+  const canvas = view.worldToScreen(world)
+  // Stroke-band picking: do not use the full overlay hit radius (10px), which
+  // would match hollow interiors on small shapes.
+  const threshold = Math.max(view.selectionBoxSize * 2, 4)
+  const worldToScreen = (point: { x: number; y: number }) =>
+    view.worldToScreen(point)
+  const layoutId = view.activeLayoutBtrId
+  const records = getMarkupStore().list()
+  for (let i = records.length - 1; i >= 0; i--) {
+    const record = records[i]
+    if (record.layoutId != null && record.layoutId !== layoutId) continue
+    const group = view.htmlTransientManager.getGroup(record.id)
+    if (!group?.visible) continue
+    if (!isAttachableShapeMarkup(record.geometry)) continue
+    if (
+      hitTestMarkupShapeOutline(
+        record.geometry,
+        canvas,
+        worldToScreen,
+        threshold
+      )
+    ) {
+      return record
     }
   }
   return undefined

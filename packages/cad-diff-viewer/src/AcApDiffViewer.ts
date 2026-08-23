@@ -29,7 +29,6 @@ import {
   ICON_MARKUP_CALLOUT,
   ICON_MARKUP_CIRCLE,
   ICON_MARKUP_CLOUD,
-  ICON_MARKUP_HIGHLIGHT,
   ICON_MARKUP_LINE,
   ICON_MARKUP_RECT,
   ICON_MARKUP_STAMP,
@@ -165,14 +164,13 @@ const MARKUP_TOOLS: Array<{
   icon: string
 }> = [
   { command: 'markupcloud', labelKey: 'markupCloud', icon: ICON_MARKUP_CLOUD },
-  { command: 'markupcallout', labelKey: 'markupCallout', icon: ICON_MARKUP_CALLOUT },
-  { command: 'markuptext', labelKey: 'markupText', icon: ICON_MARKUP_TEXT },
   { command: 'markuprect', labelKey: 'markupRect', icon: ICON_MARKUP_RECT },
   { command: 'markupcircle', labelKey: 'markupCircle', icon: ICON_MARKUP_CIRCLE },
+  { command: 'markupcallout', labelKey: 'markupCallout', icon: ICON_MARKUP_CALLOUT },
   { command: 'markuparrow', labelKey: 'markupArrow', icon: ICON_MARKUP_ARROW },
-  { command: 'markupstamp', labelKey: 'markupStamp', icon: ICON_MARKUP_STAMP },
   { command: 'markupline', labelKey: 'markupLine', icon: ICON_MARKUP_LINE },
-  { command: 'markuphighlight', labelKey: 'markupHighlight', icon: ICON_MARKUP_HIGHLIGHT }
+  { command: 'markuptext', labelKey: 'markupText', icon: ICON_MARKUP_TEXT },
+  { command: 'markupstamp', labelKey: 'markupStamp', icon: ICON_MARKUP_STAMP }
 ]
 
 /** Language options shown in the toolbar select (same labels as cad-viewer ribbon). */

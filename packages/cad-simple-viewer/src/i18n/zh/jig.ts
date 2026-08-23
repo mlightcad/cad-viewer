@@ -720,7 +720,7 @@ export default {
       secondCorner: '指定高亮的对角点'
     },
     callout: {
-      tip: '指定引线尖端（箭头端）',
+      tip: '指定引线起点，或选择尚无标注的云线/矩形/圆外框',
       anchor: '指定标注文字框位置',
       content: '输入标注文字'
     },

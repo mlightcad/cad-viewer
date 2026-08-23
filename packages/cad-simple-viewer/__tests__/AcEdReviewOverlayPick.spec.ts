@@ -5,6 +5,7 @@ import { AcApMarkupStore, getMarkupStore } from '../src/command/markup/AcApMarku
 import type { AcApMarkupRecord } from '../src/command/markup/AcApMarkupTypes'
 import {
   collectReviewOverlayIdsByBox,
+  pickAttachableShapeMarkupAt,
   trySelectReviewOverlay,
   trySelectReviewOverlaysByBox
 } from '../src/view/AcEdReviewOverlayPick'
@@ -196,5 +197,62 @@ describe('trySelectReviewOverlaysByBox', () => {
     expect(deselectAll).toHaveBeenCalled()
     expect(selectGroup).not.toHaveBeenCalled()
     expect(view.isHtmlDirty).toBe(true)
+  })
+})
+
+describe('pickAttachableShapeMarkupAt', () => {
+  function rectRecord(id = 'rect-1'): AcApMarkupRecord {
+    return {
+      id,
+      type: 'rect',
+      layoutId: 'layout-a',
+      style: { color: '#ff0000' },
+      comment: '',
+      status: 'open',
+      author: 'alice',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      geometry: {
+        type: 'rect',
+        corner1: { x: 0, y: 0 },
+        corner2: { x: 40, y: 20 }
+      }
+    }
+  }
+
+  beforeEach(() => {
+    getMarkupStore().reset()
+  })
+
+  afterEach(() => {
+    getMarkupStore().reset()
+  })
+
+  it('picks a rectangle outline that has no attached callout', () => {
+    getMarkupStore().upsert(rectRecord())
+    const view = mockView({
+      selectGroup: jest.fn(),
+      deselectGroup: jest.fn()
+    })
+    expect(pickAttachableShapeMarkupAt(view, { x: 20, y: 0 })?.id).toBe(
+      'rect-1'
+    )
+    expect(pickAttachableShapeMarkupAt(view, { x: 20, y: 10 })).toBeUndefined()
+  })
+
+  it('ignores a shape that already has a callout', () => {
+    const record = rectRecord()
+    record.geometry = {
+      type: 'rect',
+      corner1: { x: 0, y: 0 },
+      corner2: { x: 40, y: 20 },
+      callout: { tip: { x: 40, y: 10 }, anchor: { x: 80, y: 10 } }
+    }
+    getMarkupStore().upsert(record)
+    const view = mockView({
+      selectGroup: jest.fn(),
+      deselectGroup: jest.fn()
+    })
+    expect(pickAttachableShapeMarkupAt(view, { x: 20, y: 0 })).toBeUndefined()
   })
 })

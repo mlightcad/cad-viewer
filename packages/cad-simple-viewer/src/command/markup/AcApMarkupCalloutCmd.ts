@@ -18,7 +18,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import type { AcTrView2d } from '../../view'
+import { type AcTrView2d,pickAttachableShapeMarkupAt } from '../../view'
 import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment
@@ -29,7 +29,9 @@ import {
   promptMarkupCapsuleText,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
-import { commitMarkup } from './AcApMarkupPresenter'
+import { isAttachableShapeMarkup, markupShapeOutlineFromGeometry } from './AcApMarkupGeometry'
+import { attachCalloutToMarkup, commitMarkup } from './AcApMarkupPresenter'
+import { promptAttachedCallout } from './AcApMarkupShapeCallout'
 import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
@@ -196,6 +198,24 @@ export class AcApMarkupCalloutCmd extends AcEdCommand {
       const tipResult = await context.view.editor.getPoint(tipPrompt)
       if (tipResult.status !== AcEdPromptStatus.OK) return
       const tip = tipResult.value!
+      const view2d = context.view as AcTrView2d
+
+      // Clicking the outer frame of a cloud / rect / circle that has no
+      // leader yet attaches a callout to that shape instead of creating a
+      // standalone callout markup.
+      const host = pickAttachableShapeMarkupAt(view2d, { x: tip.x, y: tip.y })
+      if (host && isAttachableShapeMarkup(host.geometry)) {
+        const outline = markupShapeOutlineFromGeometry(host.geometry)
+        const callout = await promptAttachedCallout(context, outline, {
+          force: true,
+          previewShape: false,
+          toward: { x: tip.x, y: tip.y }
+        })
+        if (callout) {
+          attachCalloutToMarkup(context.view, host.id, callout)
+        }
+        return
+      }
 
       // 2. Text-box location with live jig preview (placeholder bubble)
       const jig = new AcApMarkupCalloutJig(context.view, tip, '', color)

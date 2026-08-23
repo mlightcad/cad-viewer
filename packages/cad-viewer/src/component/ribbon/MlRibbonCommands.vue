@@ -151,6 +151,7 @@ import {
   splineFitPoints,
   xline
 } from '../../svg'
+import { markupLine } from '../../svg/toolbarIcons'
 import MlBlockInsertGallery from '../common/MlBlockInsertGallery.vue'
 import MlLayerSelect from '../common/MlLayerSelect.vue'
 import MlCharacterMapDialog from '../dialog/MlCharacterMapDialog.vue'
@@ -1134,30 +1135,11 @@ const buildBaseTabs = (
       props: { icon: revCloud }
     },
     {
-      id: 'cmd-tool-markup-callout',
-      type: 'button',
-      label: t('main.verticalToolbar.markupCallout.text'),
-      tooltip: t('main.verticalToolbar.markupCallout.description'),
-      size: 'large',
-      props: { icon: ChatLineSquare }
-    },
-    {
-      id: 'cmd-tool-markup-text',
-      type: 'button',
-      label: t('main.verticalToolbar.markupText.text'),
-      tooltip: t('main.verticalToolbar.markupText.description'),
-      size: 'large',
-      props: { icon: revText }
-    }
-  ]
-
-  const reviewShapeItems: RibbonItemModel[] = [
-    {
       id: 'cmd-tool-markup-rect',
       type: 'button',
       label: t('main.verticalToolbar.markupRect.text'),
       tooltip: t('main.verticalToolbar.markupRect.description'),
-      size: 'small',
+      size: 'large',
       props: { icon: revRect }
     },
     {
@@ -1165,9 +1147,20 @@ const buildBaseTabs = (
       type: 'button',
       label: t('main.verticalToolbar.markupCircle.text'),
       tooltip: t('main.verticalToolbar.markupCircle.description'),
-      size: 'small',
+      size: 'large',
       props: { icon: revCircle }
     },
+    {
+      id: 'cmd-tool-markup-callout',
+      type: 'button',
+      label: t('main.verticalToolbar.markupCallout.text'),
+      tooltip: t('main.verticalToolbar.markupCallout.description'),
+      size: 'large',
+      props: { icon: ChatLineSquare }
+    }
+  ]
+
+  const reviewShapeItems: RibbonItemModel[] = [
     {
       id: 'cmd-tool-markup-arrow',
       type: 'button',
@@ -1175,6 +1168,22 @@ const buildBaseTabs = (
       tooltip: t('main.verticalToolbar.markupArrow.description'),
       size: 'small',
       props: { icon: Right }
+    },
+    {
+      id: 'cmd-tool-markup-line',
+      type: 'button',
+      label: t('main.verticalToolbar.markupLine.text'),
+      tooltip: t('main.verticalToolbar.markupLine.description'),
+      size: 'small',
+      props: { icon: markupLine }
+    },
+    {
+      id: 'cmd-tool-markup-text',
+      type: 'button',
+      label: t('main.verticalToolbar.markupText.text'),
+      tooltip: t('main.verticalToolbar.markupText.description'),
+      size: 'small',
+      props: { icon: revText }
     }
   ]
 
@@ -2400,6 +2409,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-tool-markup-rect', 'markuprect')
   commandByItemId.set('cmd-tool-markup-circle', 'markupcircle')
   commandByItemId.set('cmd-tool-markup-arrow', 'markuparrow')
+  commandByItemId.set('cmd-tool-markup-line', 'markupline')
   commandByItemId.set('cmd-tool-markup-callout', 'markupcallout')
   commandByItemId.set('cmd-tool-markup-stamp', 'markupstamp')
   commandByItemId.set('cmd-tool-markup-import', 'markupimport')

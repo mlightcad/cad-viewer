@@ -1,6 +1,9 @@
 import {
   hitTestMarkupGeometry,
-  markupGeometryBounds
+  hitTestMarkupShapeOutline,
+  isAttachableShapeMarkup,
+  markupGeometryBounds,
+  markupShapeOutlineFromGeometry
 } from '../src/command/markup/AcApMarkupGeometry'
 import type { AcApMarkupGeometry } from '../src/command/markup/AcApMarkupTypes'
 
@@ -84,6 +87,88 @@ describe('hitTestMarkupGeometry', () => {
     expect(
       hitTestMarkupGeometry(geometry, { x: 40, y: 10 }, identity, threshold)
     ).toBe(true)
+  })
+})
+
+describe('isAttachableShapeMarkup', () => {
+  it('is true for cloud/rect/circle without an attached callout', () => {
+    expect(
+      isAttachableShapeMarkup({
+        type: 'rect',
+        corner1: { x: 0, y: 0 },
+        corner2: { x: 10, y: 10 }
+      })
+    ).toBe(true)
+    expect(
+      isAttachableShapeMarkup({
+        type: 'cloud',
+        corner1: { x: 0, y: 0 },
+        corner2: { x: 10, y: 10 },
+        callout: { tip: { x: 10, y: 5 }, anchor: { x: 20, y: 5 } }
+      })
+    ).toBe(false)
+    expect(
+      isAttachableShapeMarkup({
+        type: 'callout',
+        tip: { x: 0, y: 0 },
+        anchor: { x: 10, y: 0 }
+      })
+    ).toBe(false)
+  })
+})
+
+describe('hitTestMarkupShapeOutline', () => {
+  const threshold = 4
+
+  it('hits a rectangle outer frame but not the hollow interior', () => {
+    const geometry: AcApMarkupGeometry = {
+      type: 'rect',
+      corner1: { x: 0, y: 0 },
+      corner2: { x: 40, y: 20 }
+    }
+    expect(
+      hitTestMarkupShapeOutline(geometry, { x: 20, y: 0 }, identity, threshold)
+    ).toBe(true)
+    expect(
+      hitTestMarkupShapeOutline(geometry, { x: 20, y: 10 }, identity, threshold)
+    ).toBe(false)
+  })
+
+  it('hits a circle circumference but not the center', () => {
+    const geometry: AcApMarkupGeometry = {
+      type: 'circle',
+      center: { x: 0, y: 0 },
+      radius: 20
+    }
+    expect(
+      hitTestMarkupShapeOutline(geometry, { x: 20, y: 0 }, identity, threshold)
+    ).toBe(true)
+    expect(
+      hitTestMarkupShapeOutline(geometry, { x: 0, y: 0 }, identity, threshold)
+    ).toBe(false)
+  })
+})
+
+describe('markupShapeOutlineFromGeometry', () => {
+  it('maps circle and rect geometry to an outline', () => {
+    expect(
+      markupShapeOutlineFromGeometry({
+        type: 'circle',
+        center: { x: 1, y: 2 },
+        radius: 5
+      })
+    ).toEqual({ kind: 'circle', center: { x: 1, y: 2 }, radius: 5 })
+    expect(
+      markupShapeOutlineFromGeometry({
+        type: 'rect',
+        corner1: { x: 0, y: 0 },
+        corner2: { x: 4, y: 6 }
+      })
+    ).toEqual({
+      kind: 'rect',
+      corner1: { x: 0, y: 0 },
+      corner2: { x: 4, y: 6 }
+    })
   })
 })
 

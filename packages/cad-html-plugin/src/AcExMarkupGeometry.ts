@@ -67,6 +67,121 @@ export function acExComputeLeaderTipOnShape(
   return { x: cx + dx * s, y: cy + dy * s }
 }
 
+/** Extra hit slop for revision-cloud lobes around the AABB. */
+const CLOUD_HIT_EXTRA_PX = 8
+
+/**
+ * Whether geometry is a cloud / rect / circle with no attached callout.
+ */
+export function acExIsAttachableShapeMarkup(
+  geometry: AcExMarkupGeometry
+): boolean {
+  return (
+    (geometry.type === 'cloud' ||
+      geometry.type === 'rect' ||
+      geometry.type === 'circle') &&
+    geometry.callout == null
+  )
+}
+
+/**
+ * Shape outline used to constrain an attached-callout leader tip.
+ */
+export function acExMarkupShapeOutlineFromGeometry(
+  geometry: AcExMarkupGeometry
+): AcExMarkupShapeOutline | undefined {
+  if (geometry.type === 'circle') {
+    return {
+      kind: 'circle',
+      center: geometry.center,
+      radius: geometry.radius
+    }
+  }
+  if (geometry.type === 'cloud' || geometry.type === 'rect') {
+    return {
+      kind: geometry.type,
+      corner1: geometry.corner1,
+      corner2: geometry.corner2
+    }
+  }
+  return undefined
+}
+
+/**
+ * Whether a screen-space pick hits a cloud / rect / circle outer frame
+ * (AABB for cloud/rect, circumference for circle). Does not hit interiors
+ * or an already-attached callout leader.
+ */
+export function acExHitTestMarkupShapeOutline(
+  geometry: AcExMarkupGeometry,
+  clientX: number,
+  clientY: number,
+  thresholdPx: number,
+  worldToScreen: (p: AcExMarkupPoint2d) => { x: number; y: number }
+): boolean {
+  switch (geometry.type) {
+    case 'rect': {
+      const a = worldToScreen(geometry.corner1)
+      const b = worldToScreen(geometry.corner2)
+      const minX = Math.min(a.x, b.x)
+      const maxX = Math.max(a.x, b.x)
+      const minY = Math.min(a.y, b.y)
+      const maxY = Math.max(a.y, b.y)
+      const inside =
+        clientX >= minX &&
+        clientX <= maxX &&
+        clientY >= minY &&
+        clientY <= maxY
+      if (!inside) {
+        return acExDistToRectOutlinePx(clientX, clientY, a, b) <= thresholdPx
+      }
+      const distEdge = Math.min(
+        Math.abs(clientX - minX),
+        Math.abs(clientX - maxX),
+        Math.abs(clientY - minY),
+        Math.abs(clientY - maxY)
+      )
+      return distEdge <= thresholdPx
+    }
+    case 'cloud': {
+      const a = worldToScreen(geometry.corner1)
+      const b = worldToScreen(geometry.corner2)
+      const minX = Math.min(a.x, b.x)
+      const maxX = Math.max(a.x, b.x)
+      const minY = Math.min(a.y, b.y)
+      const maxY = Math.max(a.y, b.y)
+      const tol = thresholdPx + CLOUD_HIT_EXTRA_PX
+      const inside =
+        clientX >= minX &&
+        clientX <= maxX &&
+        clientY >= minY &&
+        clientY <= maxY
+      if (!inside) {
+        return acExDistToRectOutlinePx(clientX, clientY, a, b) <= tol
+      }
+      const distEdge = Math.min(
+        Math.abs(clientX - minX),
+        Math.abs(clientX - maxX),
+        Math.abs(clientY - minY),
+        Math.abs(clientY - maxY)
+      )
+      return distEdge <= tol
+    }
+    case 'circle': {
+      const c = worldToScreen(geometry.center)
+      const rim = worldToScreen({
+        x: geometry.center.x + geometry.radius,
+        y: geometry.center.y
+      })
+      const rPx = Math.hypot(rim.x - c.x, rim.y - c.y)
+      const d = Math.hypot(clientX - c.x, clientY - c.y)
+      return Math.abs(d - rPx) <= thresholdPx * 2
+    }
+    default:
+      return false
+  }
+}
+
 /** Target screen diameter in CSS pixels for each revision-cloud lobe. */
 const CLOUD_DIAMETER_PIXELS = 8
 
@@ -336,6 +451,25 @@ export function acExDistToSegmentPx(
   let t = ((px - ax) * dx + (py - ay) * dy) / len2
   t = Math.max(0, Math.min(1, t))
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+}
+
+/** Distance from a screen point to a rectangle outline (not the interior). */
+export function acExDistToRectOutlinePx(
+  px: number,
+  py: number,
+  a: { x: number; y: number },
+  b: { x: number; y: number }
+): number {
+  const minX = Math.min(a.x, b.x)
+  const maxX = Math.max(a.x, b.x)
+  const minY = Math.min(a.y, b.y)
+  const maxY = Math.max(a.y, b.y)
+  return Math.min(
+    acExDistToSegmentPx(px, py, minX, minY, maxX, minY),
+    acExDistToSegmentPx(px, py, maxX, minY, maxX, maxY),
+    acExDistToSegmentPx(px, py, maxX, maxY, minX, maxY),
+    acExDistToSegmentPx(px, py, minX, maxY, minX, minY)
+  )
 }
 
 /** Approximate center of a markup for badge placement / focus. */

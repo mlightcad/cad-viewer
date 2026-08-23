@@ -18,9 +18,12 @@ import {
   acExDrawMarkupLeader,
   acExFitMarkupCanvas,
   acExHitTestMarkup,
+  acExHitTestMarkupShapeOutline,
+  acExIsAttachableShapeMarkup,
   acExMarkupCanvasLineWidth,
   acExMarkupCenter,
   type AcExMarkupShapeOutline,
+  acExMarkupShapeOutlineFromGeometry,
   acExStrokeMarkupCloud,
   acExTranslateMarkupGeometry
 } from './AcExMarkupGeometry'
@@ -134,13 +137,15 @@ interface AcExCommittedMarkup {
   parts: AcExMarkupParts
 }
 
-/** After cloud/rect/circle is drawn: place leader tip + text bubble. */
+/** After cloud/rect/circle is drawn, or while attaching to an existing shape. */
 interface AcExPlacingShapeCallout {
   outline: AcExMarkupShapeOutline
   tip: AcExMarkupPoint2d
   anchor: AcExMarkupPoint2d
   badge: HTMLElement
   tipDot: HTMLElement
+  /** When set, attach the callout to this existing markup instead of creating one. */
+  existingId?: string
 }
 
 function createMarkupId(prefix = 'markup'): string {
@@ -563,7 +568,7 @@ export class AcExMarkupController {
       case 'circle':
         return this._pointerCircle(point)
       case 'callout':
-        return this._pointerTwoPoint(point, 'callout')
+        return this._pointerCallout(point, clientX, clientY)
       case 'text':
         return this._pointerText(point)
       case 'stamp':
@@ -587,8 +592,17 @@ export class AcExMarkupController {
     }
     if (this._placingShapeCallout) {
       if (key === 'Escape') {
-        // Cancel leader + text box; keep the shape.
-        this._commitPlacingShapeWithoutCallout()
+        if (this._placingShapeCallout.existingId) {
+          // Cancel attaching; leave the existing shape unchanged.
+          this._finishPlacingShapeCallout(true)
+          if (this._mode) {
+            this._statusEl.textContent = this._hintForMode(this._mode)
+          }
+          this._view.render()
+        } else {
+          // Cancel leader + text box; keep the newly drawn shape.
+          this._commitPlacingShapeWithoutCallout()
+        }
         return true
       }
       return false
@@ -732,6 +746,57 @@ export class AcExMarkupController {
     return true
   }
 
+  private _pointerCallout(
+    point: THREE.Vector2,
+    clientX: number,
+    clientY: number
+  ): boolean {
+    if (this._points.length === 0) {
+      const hit = this._pickAttachableShapeAt(clientX, clientY)
+      if (hit) {
+        const outline = acExMarkupShapeOutlineFromGeometry(hit.record.geometry)
+        if (outline) {
+          this._beginPlacingShapeCallout(outline, {
+            existingId: hit.record.id,
+            toward: this._clientToWorld(clientX, clientY)
+          })
+          return true
+        }
+      }
+    }
+    return this._pointerTwoPoint(point, 'callout')
+  }
+
+  private _pickAttachableShapeAt(
+    clientX: number,
+    clientY: number
+  ): AcExCommittedMarkup | null {
+    if (!this._visible) return null
+    const worldToScreen = (p: AcExMarkupPoint2d) =>
+      this._view.wcsToScreen(toVector2(p))
+    for (let i = this._committed.length - 1; i >= 0; i--) {
+      const item = this._committed[i]!
+      if (
+        !isMarkupOnLayout(item.record.layoutId, this._getActiveLayoutId?.())
+      ) {
+        continue
+      }
+      if (!acExIsAttachableShapeMarkup(item.record.geometry)) continue
+      if (
+        acExHitTestMarkupShapeOutline(
+          item.record.geometry,
+          clientX,
+          clientY,
+          MARKUP_HIT_THRESHOLD_PX,
+          worldToScreen
+        )
+      ) {
+        return item
+      }
+    }
+    return null
+  }
+
   private _pointerCircle(point: THREE.Vector2): boolean {
     this._points.push(point.clone())
     this._syncGripPointerEvents()
@@ -840,9 +905,13 @@ export class AcExMarkupController {
     })
   }
 
-  private _beginPlacingShapeCallout(outline: AcExMarkupShapeOutline): void {
+  private _beginPlacingShapeCallout(
+    outline: AcExMarkupShapeOutline,
+    options?: { existingId?: string; toward?: AcExMarkupPoint2d }
+  ): void {
     const toward =
-      outline.kind === 'circle'
+      options?.toward ??
+      (outline.kind === 'circle'
         ? {
             x: outline.center.x + Math.max(outline.radius, 1),
             y: outline.center.y
@@ -850,12 +919,19 @@ export class AcExMarkupController {
         : {
             x: Math.max(outline.corner1.x, outline.corner2.x) + 1,
             y: (outline.corner1.y + outline.corner2.y) / 2
-          }
+          })
     const tip = acExComputeLeaderTipOnShape(outline, toward)
     const anchor = { ...toward }
     const badge = this._makeTempBadge(anchor, '', this._drawColor)
     const tipDot = this._makeTempDot(tip, this._drawColor)
-    this._placingShapeCallout = { outline, tip, anchor, badge, tipDot }
+    this._placingShapeCallout = {
+      outline,
+      tip,
+      anchor,
+      badge,
+      tipDot,
+      existingId: options?.existingId
+    }
     this._statusEl.textContent = this._i18n.t('status.markupShapeCalloutHint')
     this._syncGripPointerEvents()
     this._refreshActivePreview()
@@ -893,7 +969,15 @@ export class AcExMarkupController {
         anchor,
         text: text || undefined
       }
-      this._commitShapeWithCallout(placing.outline, callout, text || undefined)
+      if (placing.existingId) {
+        this._attachCalloutToExisting(
+          placing.existingId,
+          callout,
+          text || undefined
+        )
+      } else {
+        this._commitShapeWithCallout(placing.outline, callout, text || undefined)
+      }
       this._finishPlacingShapeCallout(true)
       if (this._mode) {
         this._statusEl.textContent = this._hintForMode(this._mode)
@@ -905,8 +989,12 @@ export class AcExMarkupController {
   private _commitPlacingShapeWithoutCallout(): void {
     const placing = this._placingShapeCallout
     if (!placing) return
-    this._commitShapeWithCallout(placing.outline, undefined, undefined)
-    this._finishPlacingShapeCallout(true)
+    if (placing.existingId) {
+      this._finishPlacingShapeCallout(true)
+    } else {
+      this._commitShapeWithCallout(placing.outline, undefined, undefined)
+      this._finishPlacingShapeCallout(true)
+    }
     if (this._mode) {
       this._statusEl.textContent = this._hintForMode(this._mode)
     }
@@ -941,6 +1029,48 @@ export class AcExMarkupController {
       },
       text
     )
+  }
+
+  private _attachCalloutToExisting(
+    id: string,
+    callout: AcExMarkupAttachedCallout,
+    text: string | undefined
+  ): void {
+    const item = this._committed.find(c => c.record.id === id)
+    if (!item) return
+    const g = item.record.geometry
+    if (!acExIsAttachableShapeMarkup(g)) return
+    if (g.type !== 'cloud' && g.type !== 'rect' && g.type !== 'circle') return
+    const next: AcExMarkupRecord = {
+      ...item.record,
+      text,
+      updatedAt: markupNow(),
+      geometry: { ...g, callout }
+    }
+    this._rebuildRecord(next)
+  }
+
+  /** Replace visuals for an existing markup, preserving z-order. */
+  private _rebuildRecord(record: AcExMarkupRecord): void {
+    const index = this._committed.findIndex(c => c.record.id === record.id)
+    if (index < 0) {
+      this._publishRecord(record)
+      return
+    }
+    const item = this._committed[index]!
+    for (const cleanup of item.parts.cleanups) cleanup()
+    for (const el of item.parts.dom) el.remove()
+    for (const canvas of item.parts.canvases) canvas.remove()
+    const parts: AcExMarkupParts = {
+      id: record.id,
+      dom: [],
+      canvases: [],
+      cleanups: []
+    }
+    this._committed[index] = { record, parts }
+    this._buildVisuals(record, parts)
+    this._positionDomOverlays()
+    this.syncLayoutVisibility()
   }
 
   /**
@@ -1971,38 +2101,41 @@ export class AcExMarkupController {
     const color = this._drawColor
     const lineWidth = acExMarkupCanvasLineWidth(this._drawLineWeight)
     const outline = placing.outline
-    if (outline.kind === 'circle') {
-      this._strokeGeometry(
-        ctx,
-        {
-          type: 'circle',
-          center: outline.center,
-          radius: outline.radius
-        },
-        color,
-        lineWidth
-      )
-    } else if (outline.kind === 'cloud') {
-      acExStrokeMarkupCloud(
-        ctx,
-        outline.corner1,
-        outline.corner2,
-        p => this._worldToOverlay(p),
-        s => this._overlayToWorld(s),
-        color,
-        lineWidth
-      )
-    } else {
-      this._strokeGeometry(
-        ctx,
-        {
-          type: 'rect',
-          corner1: outline.corner1,
-          corner2: outline.corner2
-        },
-        color,
-        lineWidth
-      )
+    // Existing shape is already committed; only preview the new leader.
+    if (!placing.existingId) {
+      if (outline.kind === 'circle') {
+        this._strokeGeometry(
+          ctx,
+          {
+            type: 'circle',
+            center: outline.center,
+            radius: outline.radius
+          },
+          color,
+          lineWidth
+        )
+      } else if (outline.kind === 'cloud') {
+        acExStrokeMarkupCloud(
+          ctx,
+          outline.corner1,
+          outline.corner2,
+          p => this._worldToOverlay(p),
+          s => this._overlayToWorld(s),
+          color,
+          lineWidth
+        )
+      } else {
+        this._strokeGeometry(
+          ctx,
+          {
+            type: 'rect',
+            corner1: outline.corner1,
+            corner2: outline.corner2
+          },
+          color,
+          lineWidth
+        )
+      }
     }
     const tip = this._worldToOverlay(placing.tip)
     const anchor = this._worldToOverlay(placing.anchor)

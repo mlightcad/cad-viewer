@@ -731,7 +731,7 @@ export default {
       secondCorner: 'Specify opposite corner of highlight'
     },
     callout: {
-      tip: 'Specify leader tip (arrow end)',
+      tip: 'Specify leader tip, or a cloud / rectangle / circle outline without a callout',
       anchor: 'Specify callout text location',
       content: 'Enter callout text'
     },

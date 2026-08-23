@@ -488,6 +488,10 @@ export default {
       text: 'Šipka',
       description: 'Vytvoří šipkovou poznámku'
     },
+    markupLine: {
+      text: 'Úsečka',
+      description: 'Vytvoří liniovou poznámku'
+    },
     markupCallout: {
       text: 'Odkaz',
       description: 'Vytvoří odkazovou poznámku'

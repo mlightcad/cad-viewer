@@ -702,6 +702,12 @@ export default {
       description: 'إنشاء سهم مراجعة'
     },
 
+    markupLine: {
+      ...enMain.verticalToolbar.markupLine,
+      text: 'خط',
+      description: 'إنشاء خط مراجعة'
+    },
+
     markupCallout: {
       ...enMain.verticalToolbar.markupCallout,
       text: 'وسيلة شرح',

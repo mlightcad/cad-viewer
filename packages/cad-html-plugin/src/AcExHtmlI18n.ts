@@ -212,7 +212,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureImported: 'Imported {count} measurement(s).',
       measureImportFailed: 'Failed to import measurements: {error}',
       markupCloudHint: 'Click two corners to draw a revision cloud.',
-      markupCalloutHint: 'Click the leader tip, then the text anchor.',
+      markupCalloutHint:
+        'Click the leader tip, or the outline of a cloud / rectangle / circle that has no callout, then the text anchor.',
       markupTextHint: 'Click a point to place text.',
       markupRectHint: 'Click two corners to draw a rectangle.',
       markupCircleHint: 'Click the center, then a point on the circumference.',
@@ -322,7 +323,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureImported: '已导入 {count} 条测量。',
       measureImportFailed: '导入测量失败：{error}',
       markupCloudHint: '点击两个对角点绘制修订云线。',
-      markupCalloutHint: '先点击引线端点，再点击文字位置。',
+      markupCalloutHint:
+        '先点击引线端点，或点击尚无标注的云线/矩形/圆外框，再点击文字位置。',
       markupTextHint: '点击一点放置文字。',
       markupRectHint: '点击两个对角点绘制矩形。',
       markupCircleHint: '先点击圆心，再点击圆周上一点。',
@@ -434,7 +436,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureImported: 'Importováno {count} měření.',
       measureImportFailed: 'Import měření selhal: {error}',
       markupCloudHint: 'Klikněte na dva rohy pro nakreslení obláčku.',
-      markupCalloutHint: 'Klikněte na hrot vodítka a poté na kotvu textu.',
+      markupCalloutHint:
+        'Klikněte na hrot vodítka, nebo na obrys obláčku/obdélníku/kružnice bez odkazu, a poté na kotvu textu.',
       markupTextHint: 'Klikněte pro umístění textu.',
       markupRectHint: 'Klikněte na dva rohy pro nakreslení obdélníku.',
       markupCircleHint: 'Klikněte na střed a poté na bod na kružnici.',
@@ -548,7 +551,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureImported: '{count} ölçüm içe aktarıldı.',
       measureImportFailed: 'Ölçüm içe aktarılamadı: {error}',
       markupCloudHint: 'Revizyon bulutu çizmek için iki köşe tıklayın.',
-      markupCalloutHint: 'Önce lider ucunu, sonra metin konumunu tıklayın.',
+      markupCalloutHint:
+        'Lider ucunu veya çağrısı olmayan bulut/dikdörtgen/daire dış çerçevesini tıklayın, ardından metin konumunu tıklayın.',
       markupTextHint: 'Metin yerleştirmek için bir nokta tıklayın.',
       markupRectHint: 'Dikdörtgen çizmek için iki köşe tıklayın.',
       markupCircleHint:
@@ -661,7 +665,8 @@ const AR_MESSAGES: AcExMessageTree = {
     'measureImported': 'تم استيراد {count} من القياسات.',
     'measureImportFailed': 'فشل استيراد القياسات: {error}',
     'markupCloudHint': 'انقر على ركنين لرسم سحابة مراجعة.',
-    'markupCalloutHint': 'انقر على طرف خط الإشارة، ثم موضع النص.',
+    'markupCalloutHint':
+      'انقر على طرف خط الإشارة، أو على إطار سحابة/مستطيل/دائرة بدون تعليق توضيحي، ثم موضع النص.',
     'markupTextHint': 'انقر على نقطة لوضع النص.',
     'markupRectHint': 'انقر على ركنين لرسم مستطيل.',
     'markupCircleHint': 'انقر على المركز، ثم على نقطة على المحيط.',
