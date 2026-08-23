@@ -50,6 +50,7 @@ import {
   type AcApDiffCompareResult,
   type AcApDiffCompareSysVars,
   type AcApDiffEntityHit,
+  acapReadCompareSysVars,
   acapWriteCompareSysVars
 } from './compare'
 import { acapDiffViewerT, acapRegisterDiffViewerI18n } from './i18n'
@@ -150,6 +151,9 @@ const DRAWING_EXT = /\.(dwg|dxf)$/i
 
 /** Markup comment used to find clouds created from compare change sets. */
 const COMPARE_CLOUD_COMMENT = 'cad-diff-viewer:changeset'
+
+/** Delay before live-preview sysvar edits re-run compare (slider drags). */
+const COMPARE_SYSVAR_PREVIEW_MS = 200
 
 /** Toolbar markup commands shown in the widget chrome. */
 const MARKUP_TOOLS: Array<{
@@ -388,6 +392,15 @@ export class AcApDiffViewer {
   private activateSeq = 0
   /** Serializes {@link activateSide} so hover switches do not overlap. */
   private activateTail: Promise<unknown> = Promise.resolve()
+  /** Monotonic id so overlapping {@link runCompareAndApply} calls keep the latest result. */
+  private compareSeq = 0
+  /**
+   * Monotonic id so overlapping {@link enterOverlayMode} calls drop stale
+   * overlay registrations instead of leaking them.
+   */
+  private overlayRegisterSeq = 0
+  /** Timer used to debounce Settings sysvar live preview. */
+  private sysVarPreviewTimer = 0
   /**
    * Last pane the pointer entered. Toolbar markup commands target this side
    * even after the pointer leaves for the toolbar.
@@ -588,7 +601,7 @@ export class AcApDiffViewer {
     const doc = mgr.curDocument
     if (side === 'left') this.leftDoc = doc
     else this.rightDoc = doc
-    acapWriteCompareSysVars(this.sessionSysVars, [doc.database])
+    this.adoptCompareSysVarsAfterOpen(doc, Boolean(this.liveDoc(otherDoc)))
     this.syncChrome()
     this.options.events?.opened?.(side, doc)
     this.syncFollowerAfterOpen(side)
@@ -699,6 +712,9 @@ export class AcApDiffViewer {
   async destroy(): Promise<void> {
     if (this.disposed) return
     this.disposed = true
+    this.compareSeq++
+    this.overlayRegisterSeq++
+    this.clearSysVarPreviewTimer()
     AcApDiffSettingsDialog.dismiss()
     AcApI18n.events.localeChanged.removeEventListener(this.handleLocaleChanged)
     document.removeEventListener('pointerdown', this.handleDocumentPointerDown)
@@ -1348,14 +1364,66 @@ export class AcApDiffViewer {
         this.applyCompareColors(draft.colors)
         const varsChanged =
           JSON.stringify(draft.sysVars) !== JSON.stringify(this.sessionSysVars)
-        if (varsChanged) this.applyCompareSysVars(draft.sysVars)
+        if (varsChanged) this.scheduleCompareSysVars(draft.sysVars)
       }
     })
     if (this.disposed) return
     if (!result.confirmed) {
       this.applyCompareColors(snapshotColors)
-      this.applyCompareSysVars(snapshotVars)
+      this.flushCompareSysVars(snapshotVars)
+      return
     }
+    this.flushCompareSysVars(result.sysVars)
+  }
+
+  /**
+   * Adopts COMPARE sysvars after a pane opens a drawing.
+   *
+   * Drawing-saved variables are read from the new file when the other pane is
+   * empty. When a comparison is already in progress, the current session is
+   * written onto the new drawing so both panes stay in sync.
+   *
+   * @param doc - Newly opened document.
+   * @param otherIsOpen - True when the opposite pane already has a drawing.
+   */
+  private adoptCompareSysVarsAfterOpen(doc: AcApDocument, otherIsOpen: boolean) {
+    if (!otherIsOpen) {
+      this.sessionSysVars = acapReadCompareSysVars(doc.database)
+    }
+    acapWriteCompareSysVars(this.sessionSysVars, [doc.database])
+  }
+
+  /** Cancels a pending Settings sysvar preview timer. */
+  private clearSysVarPreviewTimer() {
+    if (!this.sysVarPreviewTimer) return
+    window.clearTimeout(this.sysVarPreviewTimer)
+    this.sysVarPreviewTimer = 0
+  }
+
+  /**
+   * Debounces COMPARE sysvar live preview so slider drags do not re-compare
+   * (and re-register the overlay) on every tick.
+   *
+   * @param sysVars - Draft values from the settings dialog.
+   */
+  private scheduleCompareSysVars(sysVars: AcApDiffCompareSysVars) {
+    this.clearSysVarPreviewTimer()
+    const next = { ...sysVars }
+    this.sysVarPreviewTimer = window.setTimeout(() => {
+      this.sysVarPreviewTimer = 0
+      if (this.disposed) return
+      this.applyCompareSysVars(next)
+    }, COMPARE_SYSVAR_PREVIEW_MS)
+  }
+
+  /**
+   * Applies COMPARE sysvars immediately, dropping any pending preview timer.
+   *
+   * @param sysVars - Values to persist (OK flush or Cancel restore).
+   */
+  private flushCompareSysVars(sysVars: AcApDiffCompareSysVars) {
+    this.clearSysVarPreviewTimer()
+    this.applyCompareSysVars(sysVars)
   }
 
   /**
@@ -1364,12 +1432,14 @@ export class AcApDiffViewer {
    * @param sysVars - Session values to apply.
    */
   private applyCompareSysVars(sysVars: AcApDiffCompareSysVars) {
+    const unchanged =
+      JSON.stringify(sysVars) === JSON.stringify(this.sessionSysVars)
     this.sessionSysVars = { ...sysVars }
     const dbs = [this.leftDocument?.database, this.rightDocument?.database].filter(
       (db): db is NonNullable<typeof db> => db != null
     )
     acapWriteCompareSysVars(this.sessionSysVars, dbs)
-    void this.runCompareAndApply()
+    if (!unchanged) void this.runCompareAndApply()
   }
 
   /**
@@ -1401,29 +1471,35 @@ export class AcApDiffViewer {
 
   /** Compares both panes when they have drawings, then applies display coloring. */
   private async runCompareAndApply() {
+    const seq = ++this.compareSeq
     const left = this.leftDocument
     const right = this.rightDocument
     if (!left || !right) {
       this.compareResult = undefined
       this.navIndex = -1
       await this.clearCompareDisplay()
+      if (this.disposed || seq !== this.compareSeq) return
       this.renderResultsList()
       this.btnGenerateClouds.disabled = true
       return
     }
-    this.compareResult = acapCompareDrawings(left.database, right.database, {
+    const result = acapCompareDrawings(left.database, right.database, {
       compareProps: this.sessionSysVars.compareprops,
       compareHatch: this.sessionSysVars.comparehatch,
       compareText: this.sessionSysVars.comparetext,
       compareTolerance: this.sessionSysVars.comparetolerance,
       compareRcMargin: this.sessionSysVars.comparercmargin
     })
+    if (this.disposed || seq !== this.compareSeq) return
+    this.compareResult = result
     this.navIndex = -1
     this.options.events?.compared?.(this.compareResult)
     if (this.viewMode === 'overlay') {
       await this.enterOverlayMode()
     }
+    if (this.disposed || seq !== this.compareSeq) return
     await this.applyCompareDisplay()
+    if (this.disposed || seq !== this.compareSeq) return
     this.renderResultsList()
     this.refreshMarkupsList()
     this.btnGenerateClouds.disabled = this.compareResult.changeSets.length === 0
@@ -1434,6 +1510,7 @@ export class AcApDiffViewer {
     this.lastPointerSide = 'left'
     const mgr = requireInstance()
     const right = this.rightDocument
+    const seq = ++this.overlayRegisterSeq
     if (!right) {
       this.viewMode = 'overlay'
       this.syncViewModeUi()
@@ -1445,9 +1522,18 @@ export class AcApDiffViewer {
       this.overlayId = undefined
     }
     // Re-convert right DB into left canvas as overlay (do not move scenes)
-    this.overlayId = await mgr.registerOverlayDatabase(right.database, {
+    const overlayId = await mgr.registerOverlayDatabase(right.database, {
       targetView: mgr.mainView
     })
+    if (this.disposed || seq !== this.overlayRegisterSeq) {
+      try {
+        mgr.removeOverlay(overlayId)
+      } catch {
+        // A newer call may already have replaced this registration.
+      }
+      return
+    }
+    this.overlayId = overlayId
     this.rightUi.pane.style.display = 'none'
     this.root.classList.add('is-overlay')
     await this.activateSide('left')
@@ -1458,6 +1544,7 @@ export class AcApDiffViewer {
    * Does not change {@link viewMode}; callers that switch mode assign it themselves.
    */
   private async exitOverlayMode() {
+    this.overlayRegisterSeq++
     const mgr = requireInstance()
     if (this.overlayId) {
       mgr.removeOverlay(this.overlayId)

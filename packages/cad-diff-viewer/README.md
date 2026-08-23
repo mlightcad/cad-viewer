@@ -112,8 +112,9 @@ mixed-kind sets use the modified color. The results panel navigates
 
 The Settings dialog (Colors / Objects / Geometry tabs) edits compare colors
 and these sysvars (live preview; Cancel restores the previous values).
-COMPAREPROPS is registry-saved; the other four are written onto both open
-drawings.
+COMPAREPROPS is registry-saved. The other four are read from the first
+opened drawing, then written onto both open drawings so the panes stay in
+sync.
 
 ## Limitations
 
