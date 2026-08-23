@@ -1,5 +1,5 @@
 /** `id` of the injected stylesheet, used to avoid inserting it twice. */
-const STYLE_ID = 'ml-diff-viewer-styles'
+const STYLE_ID = 'ml-diff-viewer-styles-v2'
 
 /** Widget stylesheet injected once by {@link acapInjectDiffViewerStyles}. */
 const CSS = `
@@ -101,6 +101,12 @@ const CSS = `
   color: var(--ml-diff-text);
   border-color: var(--ml-diff-focus);
   background: color-mix(in srgb, var(--ml-diff-focus) 18%, transparent);
+}
+
+.ml-diff-tool-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
 }
 
 .ml-diff-tool-btn svg {
@@ -547,6 +553,25 @@ const CSS = `
   outline: none;
 }
 
+.ml-diff-result-row {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border-left: 3px solid transparent;
+}
+
+.ml-diff-result-row[data-kind='added'] {
+  border-left-color: var(--ml-diff-added);
+}
+
+.ml-diff-result-row[data-kind='deleted'] {
+  border-left-color: var(--ml-diff-deleted);
+}
+
+.ml-diff-result-row[data-kind='modified'] {
+  border-left-color: var(--ml-diff-modified);
+}
+
 .ml-diff-result-item,
 .ml-diff-markup-item {
   display: block;
@@ -561,10 +586,60 @@ const CSS = `
   cursor: pointer;
 }
 
+.ml-diff-result-row .ml-diff-result-item {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-left: none;
+  padding-right: 0.35rem;
+}
+
+.ml-diff-result-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-diff-result-info {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  margin: 0.2rem 0.35rem 0.2rem 0;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ml-diff-muted);
+  cursor: pointer;
+}
+
+.ml-diff-result-info svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  display: block;
+}
+
+.ml-diff-result-info:hover,
+.ml-diff-result-info:focus-visible,
+.ml-diff-result-info.is-open {
+  color: var(--ml-diff-text);
+  background: var(--ml-diff-hover);
+  outline: none;
+}
+
 .ml-diff-result-item:hover,
 .ml-diff-markup-item:hover,
-.ml-diff-result-item.is-active {
+.ml-diff-result-item.is-active,
+.ml-diff-result-row:hover,
+.ml-diff-result-row.is-active {
   background: var(--ml-diff-hover);
+}
+
+.ml-diff-result-row:hover .ml-diff-result-item,
+.ml-diff-result-row.is-active .ml-diff-result-item {
+  background: transparent;
 }
 
 .ml-diff-result-item[data-kind='added'] {
@@ -592,6 +667,63 @@ const CSS = `
   color: var(--ml-diff-muted);
   font-size: 0.8rem;
   text-align: center;
+}
+
+.ml-diff-change-popover {
+  position: fixed;
+  z-index: 40;
+  min-width: 220px;
+  max-width: min(360px, calc(100vw - 16px));
+  max-height: min(320px, 70vh);
+  overflow: auto;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--ml-diff-border);
+  border-radius: 6px;
+  background: var(--ml-diff-panel);
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 35%, transparent);
+  color: var(--ml-diff-text);
+  font-size: 0.72rem;
+}
+
+.ml-diff-change-note {
+  padding: 0.2rem 0.15rem;
+  color: var(--ml-diff-muted);
+}
+
+.ml-diff-change-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ml-diff-change-table th,
+.ml-diff-change-table td {
+  padding: 0.22rem 0.35rem;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.ml-diff-change-table thead th {
+  color: var(--ml-diff-muted);
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--ml-diff-border);
+}
+
+.ml-diff-change-table tbody th {
+  width: 28%;
+  font-weight: 600;
+  color: var(--ml-diff-text);
+}
+
+.ml-diff-change-old {
+  color: var(--ml-diff-deleted);
+}
+
+.ml-diff-change-new {
+  color: var(--ml-diff-added);
 }
 `.trim()
 
