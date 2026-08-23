@@ -166,16 +166,17 @@ export function copyArrayContents(
   src: THREE.TypedArray,
   target: THREE.TypedArray
 ) {
+  const len = Math.min(src.length, target.length)
   if (src.constructor !== target.constructor) {
     // if arrays are of a different type (eg due to index size increasing) then data must be per-element copied
-    const len = Math.min(src.length, target.length)
     for (let i = 0; i < len; i++) {
       target[i] = src[i]
     }
-  } else {
-    // if the arrays use the same data layout we can use a fast block copy
-    const len = Math.min(src.length, target.length)
-    // @ts-expect-error no good way to remove this type error
-    target.set(new src.constructor(src.buffer, 0, len))
+    return
   }
+
+  // Copy the logical view (`src.subarray`), not `src.buffer` from byte 0.
+  // Reconstructing from the backing buffer ignores `byteOffset` and can
+  // drop packed `slotId` values when a batch grows.
+  target.set(src.subarray(0, len))
 }

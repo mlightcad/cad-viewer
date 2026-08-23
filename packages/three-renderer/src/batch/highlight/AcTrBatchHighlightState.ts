@@ -330,6 +330,10 @@ export class AcTrBatchHighlightState {
       this.maskTexture.minFilter = THREE.NearestFilter
       this.maskTexture.magFilter = THREE.NearestFilter
       this.maskTexture.generateMipmaps = false
+      this.maskTexture.unpackAlignment = 1
+      // Role bytes (0/85/170/255) must not be sRGB-decoded; that would map
+      // added (170) into the deleted shader threshold band.
+      this.maskTexture.colorSpace = THREE.NoColorSpace
       this.maskTexture.needsUpdate = true
       this.maskTextureWidth = width
       this.maskTextureHeight = height

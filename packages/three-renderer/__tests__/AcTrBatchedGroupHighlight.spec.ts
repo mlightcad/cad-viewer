@@ -3,6 +3,7 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
+import { copyArrayContents } from '../src/batch/AcTrBatchedGeometryInfo'
 import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
 import { AcTrBatchedLine } from '../src/batch/AcTrBatchedLine'
 import { AcTrBatchedLine2 } from '../src/batch/AcTrBatchedLine2'
@@ -12,6 +13,7 @@ import {
   COMPARE_ROLE_ADDED,
   COMPARE_ROLE_DELETED
 } from '../src/batch/highlight'
+import { buildLineGeometry } from '../src/object/AcTrLineGeometryBuilder'
 import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrLine } from '../src/object/AcTrLine'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
@@ -50,6 +52,32 @@ function findBatchedLine(group: AcTrBatchedGroup): AcTrBatchedLine | undefined {
     }
   })
   return result
+}
+
+function appendIndexedLine(
+  group: AcTrBatchedGroup,
+  material: THREE.LineBasicMaterial,
+  objectId: string,
+  x: number
+) {
+  const built = buildLineGeometry(
+    [
+      { x, y: 0, z: 0 },
+      { x: x + 1, y: 0, z: 0 }
+    ],
+    material
+  )
+  expect(built).not.toBeNull()
+  if (!built) return
+  expect(
+    group.appendLineGeometry(
+      built.geometry as THREE.BufferGeometry,
+      material,
+      built.worldOffset,
+      { objectId }
+    )
+  ).toBe(true)
+  built.geometry.dispose()
 }
 
 describe('AcTrBatchedGroup slot-mask highlight', () => {
@@ -305,5 +333,134 @@ describe('AcTrBatchedGroup slot-mask highlight', () => {
       overrides: [{ objectId: '927', role: 'added' }]
     })
     expect(batched!._highlightState.compareRoleMask[0]).toBe(COMPARE_ROLE_ADDED)
+  })
+
+  it('keeps slotIds and added roles after indexed-line batch growth', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff })
+    const group = new AcTrBatchedGroup()
+    const ids: string[] = []
+    for (let i = 0; i < 448; i++) {
+      ids.push(`line-${i}`)
+    }
+    ids.push('926', '927')
+
+    for (let i = 0; i < ids.length; i++) {
+      const built = buildLineGeometry(
+        [
+          { x: i, y: 0, z: 0 },
+          { x: i + 1, y: 0, z: 0 }
+        ],
+        material
+      )
+      expect(built).not.toBeNull()
+      if (!built) return
+      expect(
+        group.appendLineGeometry(
+          built.geometry as THREE.BufferGeometry,
+          material,
+          built.worldOffset,
+          { objectId: ids[i] }
+        )
+      ).toBe(true)
+      built.geometry.dispose()
+    }
+
+    const batchedLine = findBatchedLine(group)!
+    const slotId = batchedLine.geometry.getAttribute(BATCH_SLOT_ID_ATTRIBUTE)
+    expect(slotId.getX(100)).toBe(50)
+    expect(slotId.getX(896)).toBe(448)
+    expect(slotId.getX(898)).toBe(449)
+
+    group.setCompareDisplay({
+      enabled: true,
+      overrides: [
+        { objectId: '926', role: 'added' },
+        { objectId: '927', role: 'added' }
+      ]
+    })
+
+    const state = batchedLine._highlightState
+    expect(state.compareRoleMask[448]).toBe(COMPARE_ROLE_ADDED)
+    expect(state.compareRoleMask[449]).toBe(COMPARE_ROLE_ADDED)
+    expect(state.compareRoleMask[50]).toBe(0)
+
+    const texture = state.uploadMaskTexture(true)
+    const data = texture.image.data as Uint8Array
+    expect(data[448 * 4 + 2]).toBe(170)
+    expect(data[449 * 4 + 2]).toBe(170)
+    expect(texture.colorSpace).toBe(THREE.NoColorSpace)
+
+    const overlay = group.getObjectByName('CompareOverlay') as THREE.Group
+    expect(overlay.children).toHaveLength(2)
+    const overlayLine = overlay.children[0] as THREE.LineSegments
+    expect(
+      (overlayLine.material as THREE.LineBasicMaterial).color.getHex()
+    ).toBe(0x22c55e)
+  })
+
+  it('rebinds compare overlay geometry after a later batch growth', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff })
+    const group = new AcTrBatchedGroup()
+    group.setCompareDisplay({
+      enabled: true,
+      overrides: [{ objectId: 'hit', role: 'added' }]
+    })
+
+    appendIndexedLine(group, material, 'hit', 0)
+    const overlay = group.getObjectByName('CompareOverlay') as THREE.Group
+    expect(overlay.children).toHaveLength(1)
+    const overlayLine = overlay.children[0] as THREE.LineSegments
+    const attributesBefore = overlayLine.geometry.attributes
+    expect(attributesBefore).toBe(findBatchedLine(group)!.geometry.attributes)
+
+    // INITIAL_LINE_VERTEX_CAPACITY is 128 (2 verts/segment → 64 lines).
+    for (let i = 1; i <= 70; i++) {
+      appendIndexedLine(group, material, `filler-${i}`, i)
+    }
+
+    const batchedLine = findBatchedLine(group)!
+    expect(overlay.children).toHaveLength(1)
+    expect(overlay.children[0]).toBe(overlayLine)
+    expect(overlayLine.geometry.attributes).toBe(
+      batchedLine.geometry.attributes
+    )
+    expect(overlayLine.geometry.attributes).not.toBe(attributesBefore)
+    expect(
+      (overlayLine.material as THREE.LineBasicMaterial).color.getHex()
+    ).toBe(0x22c55e)
+  })
+
+  it('drops compare overlay children when the entity is removed', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff })
+    const group = new AcTrBatchedGroup()
+    appendIndexedLine(group, material, 'drop', 0)
+    appendIndexedLine(group, material, 'keep', 1)
+    group.setCompareDisplay({
+      enabled: true,
+      overrides: [
+        { objectId: 'keep', role: 'added' },
+        { objectId: 'drop', role: 'deleted' }
+      ]
+    })
+
+    const overlay = group.getObjectByName('CompareOverlay') as THREE.Group
+    expect(overlay.children).toHaveLength(2)
+    expect(group.removeEntity('drop')).toBe(true)
+    expect(overlay.children).toHaveLength(1)
+    expect(getObjectUserData(overlay.children[0]).objectId).toBe('keep')
+    const overlayLine = overlay.children[0] as THREE.LineSegments
+    expect(overlayLine.geometry.attributes).toBe(
+      findBatchedLine(group)!.geometry.attributes
+    )
+  })
+
+  it('copies typed-array views with a non-zero byteOffset', () => {
+    const buffer = new ArrayBuffer(16)
+    const src = new Float32Array(buffer, 8, 2)
+    src[0] = 448
+    src[1] = 449
+    const target = new Float32Array(4)
+    copyArrayContents(src, target)
+    expect(Array.from(target)).toEqual([448, 449, 0, 0])
   })
 })
