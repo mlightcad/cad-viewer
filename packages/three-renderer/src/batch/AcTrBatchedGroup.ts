@@ -4,6 +4,7 @@ import {
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
@@ -304,6 +305,21 @@ export class AcTrBatchedGroup extends THREE.Group {
   /** Modified-entity color while compare display is enabled. */
   private _compareModifiedColor = 0xf59e0b
   /**
+   * Origin batches keyed by Three.js `Object3D.id`.
+   *
+   * Compare/highlight lookups use this instead of `getObjectById`, which can
+   * miss containers after buffer growth or when overlay children share the tree.
+   */
+  private _originBatchById: Map<number, AcTrOriginBatch>
+  /**
+   * Top-most overlay of added/deleted/modified slots.
+   *
+   * Role tints in the packed batch shader lose z-fights against coplanar
+   * unchanged TABLE/INSERT linework packed into a later draw. These copies
+   * use unpatched materials and a high renderOrder so hits stay visible.
+   */
+  private _compareOverlay: AcTrHighlightOverlayGroup
+  /**
    * Non-batched objects (for render paths that cannot be merged, e.g. fat lines).
    */
   private _unbatchedObjects: THREE.Group
@@ -329,13 +345,18 @@ export class AcTrBatchedGroup extends THREE.Group {
     this._meshBatches = new Map()
     this._meshWithIndexBatches = new Map()
     this._entitiesMap = new Map()
+    this._originBatchById = new Map()
     this._unbatchedEntities = new Map()
     this._unbatchedObjects = new THREE.Group()
     this._selectedObjects = markHighlightOverlayGroup(new THREE.Group())
     this._hoverObjects = markHighlightOverlayGroup(new THREE.Group())
+    this._compareOverlay = markHighlightOverlayGroup(new THREE.Group())
+    this._compareOverlay.name = 'CompareOverlay'
+    this._compareOverlay.renderOrder = 10000
     this.add(this._unbatchedObjects)
     this.add(this._selectedObjects)
     this.add(this._hoverObjects)
+    this.add(this._compareOverlay)
   }
 
   /**
@@ -512,6 +533,8 @@ export class AcTrBatchedGroup extends THREE.Group {
     })
     this.clearHighlightGroup(this._selectedObjects)
     this.clearHighlightGroup(this._hoverObjects)
+    this.clearHighlightGroup(this._compareOverlay)
+    this._originBatchById.clear()
     this._unbatchedObjects.children.forEach(object => {
       this.disposeObject(object)
     })
@@ -934,9 +957,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     entityInfo?.forEach(item => {
-      const batchedObject = this.getObjectById(
-        item.batchedObjectId
-      ) as AcTrBatchedObject
+      const batchedObject = this.getOriginBatch(item.batchedObjectId)
       batchedObject?.setVisibleAt(item.batchId, visible)
     })
 
@@ -1094,6 +1115,10 @@ export class AcTrBatchedGroup extends THREE.Group {
     const role = this._compareRoles.get(objectId) ?? null
     this.applyCompareRoleToEntity(objectId, role)
     this.refreshUnbatchedCompareMaterial(objectId)
+    // Growth replaces packed attributes; overlay wrappers keep the old ones
+    // until rebound. Draw ranges stay valid across capacity increases.
+    this.rebindCompareOverlaySharedBuffers()
+    this.syncCompareOverlayForEntity(objectId)
   }
 
   /**
@@ -1301,14 +1326,13 @@ export class AcTrBatchedGroup extends THREE.Group {
    */
   removeEntity(objectId: string) {
     let result = false
+    let compactedBatches = false
     const entityInfo = this._entitiesMap.get(objectId)
     if (entityInfo) {
-      const batchedObjects = new Map<number, AcTrBatchedObject>()
+      const batchedObjects = new Map<number, AcTrOriginBatch>()
       for (let index = 0, len = entityInfo.length; index < len; index++) {
         const item = entityInfo[index]
-        const batchedObject = this.getObjectById(
-          item.batchedObjectId
-        ) as AcTrBatchedObject
+        const batchedObject = this.getOriginBatch(item.batchedObjectId)
         if (batchedObject) {
           batchedObject.deleteGeometry(item.batchId)
           batchedObjects.set(item.batchedObjectId, batchedObject)
@@ -1316,6 +1340,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         }
       }
       batchedObjects.forEach(batchedObject => batchedObject.optimize())
+      compactedBatches = batchedObjects.size > 0
       this.unselect(objectId)
       this.unhover(objectId)
       this._entitiesMap.delete(objectId)
@@ -1330,6 +1355,15 @@ export class AcTrBatchedGroup extends THREE.Group {
       })
       this._unbatchedEntities.delete(objectId)
       result = true
+    }
+    if (this._compareEnabled) {
+      // Compact moves remaining slot ranges, so shared overlay draw ranges
+      // must be rebuilt. Unbatched-only deletes only drop this entity's copy.
+      if (compactedBatches) {
+        this.refreshCompareOverlay()
+      } else {
+        this.removeCompareOverlayForEntity(objectId)
+      }
     }
     return result
   }
@@ -1346,9 +1380,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       const intersects: THREE.Intersection[] = []
       for (let index = 0, len = entityInfo.length; index < len; index++) {
         const item = entityInfo[index]
-        const batchedObject = this.getObjectById(
-          item.batchedObjectId
-        ) as AcTrBatchedObject
+        const batchedObject = this.getOriginBatch(item.batchedObjectId)
         if (batchedObject) {
           batchedObject.intersectWith(item.batchId, raycaster, intersects)
           if (intersects.length > 0) return true
@@ -1505,6 +1537,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     this.applyCompareDisplayToBatches()
+    this.refreshCompareOverlay()
     this.refreshAllUnbatchedCompareMaterials()
   }
 
@@ -1528,6 +1561,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
     this.applyCompareRoleToEntity(id, role)
     this.refreshUnbatchedCompareMaterial(id)
+    this.syncCompareOverlayForEntity(id)
   }
 
   /** Pushes compare colors and role masks onto every origin batch in this group. */
@@ -1540,51 +1574,14 @@ export class AcTrBatchedGroup extends THREE.Group {
       modifiedColor: this._compareModifiedColor
     }
 
-    const applyColors = (map: Map<number, AcTrOriginBatch[]>) => {
+    for (const map of this.groups) {
       map.forEach(batches => {
         batches.forEach(batch => {
           batch.setCompareDisplayColors(colorOptions)
-          batch.flushHighlightMask()
+          batch.applyPackedCompareRoles(this._compareRoles)
         })
       })
     }
-
-    const allMaps: Map<number, AcTrOriginBatch[]>[] = [
-      this._pointBatches as Map<number, AcTrOriginBatch[]>,
-      this._pointSymbolBatches as Map<number, AcTrOriginBatch[]>,
-      this._lineBatches as Map<number, AcTrOriginBatch[]>,
-      this._lineWithIndexBatches as Map<number, AcTrOriginBatch[]>,
-      this._line2Batches as Map<number, AcTrOriginBatch[]>,
-      this._meshBatches as Map<number, AcTrOriginBatch[]>,
-      this._meshWithIndexBatches as Map<number, AcTrOriginBatch[]>
-    ]
-
-    for (const map of allMaps) {
-      applyColors(map)
-    }
-
-    // Always clear slot masks first. Applying only the current
-    // `_compareRoles` would leave a previous deleted/added mask on
-    // entities that dropped out of the override set.
-    this._entitiesMap.forEach(items => {
-      items.forEach(item => {
-        const batchedObject = this.getObjectById(
-          item.batchedObjectId
-        ) as AcTrOriginBatch | null
-        batchedObject?.setCompareRoleAt(item.batchId, null)
-      })
-    })
-
-    if (!this._compareEnabled) {
-      for (const map of allMaps) {
-        applyColors(map)
-      }
-      return
-    }
-
-    this._compareRoles.forEach((role, objectId) => {
-      this.applyCompareRoleToEntity(objectId, role)
-    })
   }
 
   /**
@@ -1600,9 +1597,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     const entityInfo = this._entitiesMap.get(objectId)
     const dirtyBatches = new Set<AcTrOriginBatch>()
     entityInfo?.forEach(item => {
-      const batchedObject = this.getObjectById(
-        item.batchedObjectId
-      ) as AcTrOriginBatch | null
+      const batchedObject = this.getOriginBatch(item.batchedObjectId)
       if (batchedObject?.setCompareRoleAt(item.batchId, role)) {
         dirtyBatches.add(batchedObject)
       }
@@ -1753,9 +1748,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     for (const objectId of objectIds) {
       const entityInfo = this._entitiesMap.get(objectId)
       entityInfo?.forEach(item => {
-        const batchedObject = this.getObjectById(
-          item.batchedObjectId
-        ) as AcTrOriginBatch | null
+        const batchedObject = this.getOriginBatch(item.batchedObjectId)
         if (
           batchedObject &&
           batchedObject.setHighlightAt(item.batchId, kind, enabled)
@@ -2007,36 +2000,47 @@ export class AcTrBatchedGroup extends THREE.Group {
     containerGroup: THREE.Group,
     options: {
       maxSlots: number
-      mode: 'highlight' | 'preview'
+      mode: 'highlight' | 'preview' | 'compare'
       previewStyle?: 'normal' | 'dashed'
+      compareColor?: number
     }
   ): number {
     let added = 0
+    const applyOverlayStyle = (object: THREE.Object3D) => {
+      if (options.mode === 'highlight') {
+        this.applyHighlightMaterial(object)
+        return
+      }
+      if (options.mode === 'compare') {
+        this.applyCompareOverlayMaterial(
+          object,
+          options.compareColor ?? 0x22c55e
+        )
+        return
+      }
+      this.applyPreviewMaterial(object, options.previewStyle ?? 'normal')
+    }
     const entityInfo = this._entitiesMap.get(objectId)
     if (entityInfo && added < options.maxSlots) {
       const limit = Math.min(entityInfo.length, options.maxSlots)
       for (let index = 0; index < limit; index++) {
         const item = entityInfo[index]
-        const batchedObject = this.getObjectById(item.batchedObjectId) as
-          | AcTrOriginBatch
-          | undefined
+        const batchedObject = this.getOriginBatch(item.batchedObjectId)
         if (!batchedObject || !this.hasBatchObjectAt(batchedObject)) {
           continue
         }
 
         const object = batchedObject.getObjectAt(item.batchId)
         this.copyHighlightMetadata(batchedObject, object)
-        if (options.mode === 'highlight') {
-          this.applyHighlightMaterial(object)
-        } else {
-          this.applyPreviewMaterial(object, options.previewStyle ?? 'normal')
-        }
+        applyOverlayStyle(object)
 
         const overlayUserData = getHighlightUserData(object)
         overlayUserData.objectId = objectId
+        overlayUserData.batchedObjectId = item.batchedObjectId
         overlayUserData.disposeGeometryOnRemove =
           batchedObject instanceof AcTrBatchedLine2
         overlayUserData.previewDrawable = options.mode === 'preview'
+        object.renderOrder = containerGroup.renderOrder
         containerGroup.add(object)
         added++
       }
@@ -2049,18 +2053,12 @@ export class AcTrBatchedGroup extends THREE.Group {
         const obj = unbatchedObjects[index]
         const overlayObj = obj.clone()
         this.copyHighlightMetadata(obj, overlayObj)
-        if (options.mode === 'highlight') {
-          this.applyHighlightMaterial(overlayObj)
-        } else {
-          this.applyPreviewMaterial(
-            overlayObj,
-            options.previewStyle ?? 'normal'
-          )
-        }
+        applyOverlayStyle(overlayObj)
 
         const overlayUserData = getHighlightUserData(overlayObj)
         overlayUserData.objectId = objectId
         overlayUserData.previewDrawable = options.mode === 'preview'
+        overlayObj.renderOrder = containerGroup.renderOrder
         containerGroup.add(overlayObj)
         added++
       }
@@ -2113,6 +2111,146 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   /**
+   * Assigns a fresh, unpatched material in the compare role color.
+   *
+   * Cloning the batch material would keep the highlight shader, which tints
+   * everything to the unchanged base color when the packed slot mask misses.
+   */
+  private applyCompareOverlayMaterial(object: THREE.Object3D, color: number) {
+    const replace = (node: THREE.Object3D) => {
+      if (node instanceof LineSegments2) {
+        const src = node.material as LineMaterial
+        const material = new LineMaterial({
+          color,
+          linewidth: src.linewidth,
+          worldUnits: src.worldUnits,
+          dashed: false
+        })
+        material.resolution.copy(src.resolution)
+        material.depthTest = true
+        material.polygonOffset = true
+        material.polygonOffsetFactor = -2
+        material.polygonOffsetUnits = -2
+        node.material = material
+      } else if (
+        node instanceof THREE.LineSegments ||
+        node instanceof THREE.Line
+      ) {
+        node.material = new THREE.LineBasicMaterial({
+          color,
+          depthTest: true,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2
+        })
+      } else if (node instanceof THREE.Mesh) {
+        node.material = new THREE.MeshBasicMaterial({
+          color,
+          side: THREE.DoubleSide,
+          depthTest: true,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2
+        })
+      } else if (node instanceof THREE.Points) {
+        const src = node.material as THREE.PointsMaterial
+        node.material = new THREE.PointsMaterial({
+          color,
+          size: src.size,
+          sizeAttenuation: src.sizeAttenuation,
+          depthTest: true
+        })
+      }
+
+      node.children.forEach(child => replace(child))
+    }
+    replace(object)
+  }
+
+  /**
+   * Rebinds compare-overlay wrappers onto the live packed attribute arrays.
+   *
+   * {@link AcTrBatchedLine.getObjectAt} shares `attributes`/`index` with the
+   * batch, not the `BufferGeometry` object. `setGeometrySize` disposes those
+   * arrays and allocates new ones; overlay meshes would otherwise keep the
+   * disposed buffers. Line2 overlays own cloned sub-geometry and are skipped.
+   */
+  private rebindCompareOverlaySharedBuffers() {
+    if (this._compareOverlay.children.length === 0) {
+      return
+    }
+    for (const child of this._compareOverlay.children) {
+      const data = getHighlightUserData(child)
+      if (data.batchedObjectId == null || data.disposeGeometryOnRemove) {
+        continue
+      }
+      const batch = this.getOriginBatch(data.batchedObjectId)
+      const childGeometry = this.getDrawableGeometry(child)
+      if (batch == null || childGeometry == null) {
+        continue
+      }
+      if (childGeometry.attributes !== batch.geometry.attributes) {
+        childGeometry.index = batch.geometry.index
+        childGeometry.attributes = batch.geometry.attributes
+      }
+    }
+  }
+
+  /**
+   * Rebuilds the compare overlay for every current role override.
+   */
+  private refreshCompareOverlay() {
+    this.clearHighlightGroup(this._compareOverlay)
+    if (!this._compareEnabled) {
+      return
+    }
+    this._compareRoles.forEach((role, objectId) => {
+      this.appendEntityOverlayDrawables(objectId, this._compareOverlay, {
+        maxSlots: 10000,
+        mode: 'compare',
+        compareColor: this.resolveCompareColor(role)
+      })
+    })
+  }
+
+  /**
+   * Updates the compare overlay for one entity after a late batch append.
+   */
+  private syncCompareOverlayForEntity(objectId: string) {
+    this.removeCompareOverlayForEntity(objectId)
+    if (!this._compareEnabled) {
+      return
+    }
+    const role = this._compareRoles.get(objectId)
+    if (role == null) {
+      return
+    }
+    this.appendEntityOverlayDrawables(objectId, this._compareOverlay, {
+      maxSlots: 10000,
+      mode: 'compare',
+      compareColor: this.resolveCompareColor(role)
+    })
+  }
+
+  /**
+   * Removes compare-overlay drawables owned by `objectId`.
+   */
+  private removeCompareOverlayForEntity(objectId: string) {
+    const stale = this._compareOverlay.children.filter(
+      child => getHighlightUserData(child).objectId === objectId
+    )
+    stale.forEach(child => this.disposeHighlightObject(child))
+    stale.forEach(child => child.removeFromParent())
+  }
+
+  /**
+   * Resolves a packed batch container by its Three.js object id.
+   */
+  private getOriginBatch(batchedObjectId: number) {
+    return this._originBatchById.get(batchedObjectId)
+  }
+
+  /**
    * Copies highlight-related user-data flags from source to target object.
    */
   private copyHighlightMetadata(
@@ -2132,9 +2270,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     item: AcTrEntityInBatchedObject,
     visible: boolean
   ) {
-    const batchedObject = this.getObjectById(item.batchedObjectId) as
-      | AcTrBatchedObject
-      | undefined
+    const batchedObject = this.getOriginBatch(item.batchedObjectId)
     batchedObject?.setVisibleAt(item.batchId, visible)
   }
 
@@ -2142,10 +2278,7 @@ export class AcTrBatchedGroup extends THREE.Group {
    * Returns visibility state for one batched geometry slot.
    */
   private getBatchItemVisible(item: AcTrEntityInBatchedObject): boolean {
-    const batchedObject = this.getObjectById(item.batchedObjectId) as
-      | (AcTrBatchedObject & { getVisibleAt(geometryId: number): boolean })
-      | AcTrBatchedPoint
-      | undefined
+    const batchedObject = this.getOriginBatch(item.batchedObjectId)
     return batchedObject?.getVisibleAt(item.batchId) ?? false
   }
 
@@ -2412,6 +2545,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       })
     }
     list.push(batch)
+    this._originBatchById.set(batch.id, batch)
     this.add(batch)
     return batch
   }

@@ -970,6 +970,34 @@ export function createAcTrBatchedMixin<
     }
 
     /**
+     * Writes compare roles for every packed slot from `objectId` metadata.
+     *
+     * This is the source of truth for GPU tinting: it does not depend on
+     * `Object3D.getObjectById` or the group-level entity map, so late-appended
+     * handles (and slots whose Three.js container id lookup fails) still
+     * receive added/deleted/modified colors.
+     *
+     * @param roles - Compare roles keyed by entity object id.
+     * @returns This instance for chaining.
+     */
+    applyPackedCompareRoles(roles: ReadonlyMap<string, AcTrBatchCompareRole>) {
+      for (let slotId = 0; slotId < this._geometryInfo.length; slotId++) {
+        const info = this._geometryInfo[slotId]
+        if (!isBatchGeometryActive(info.flags)) {
+          continue
+        }
+        const objectId = info.objectId
+        const role =
+          objectId != null && objectId !== ''
+            ? (roles.get(String(objectId)) ?? null)
+            : null
+        this.setCompareRoleAt(slotId, role)
+      }
+      this.flushHighlightMask()
+      return this
+    }
+
+    /**
      * Applies compare-display colors to the batch highlight state.
      *
      * @param options.enabled - Whether compare coloring is active.

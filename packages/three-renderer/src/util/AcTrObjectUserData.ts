@@ -119,6 +119,12 @@ export type AcTrSceneDrawableUserData = AcTrPickableObjectUserData &
 
 export interface AcTrHighlightUserData {
   objectId?: string
+  /**
+   * Three.js id of the origin batch this overlay was extracted from.
+   *
+   * Used to rebind shared packed `attributes`/`index` after batch growth.
+   */
+  batchedObjectId?: number
   disposeGeometryOnRemove?: boolean
   /** Marks geometry extracted for command preview overlays. */
   previewDrawable?: boolean
