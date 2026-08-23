@@ -499,6 +499,10 @@ export default {
       text: 'Ok',
       description: 'Ok işareti oluşturur'
     },
+    markupLine: {
+      text: 'Çizgi',
+      description: 'Çizgi işareti oluşturur'
+    },
     markupCallout: {
       text: 'Çağrı',
       description: 'Çağrı notu oluşturur'

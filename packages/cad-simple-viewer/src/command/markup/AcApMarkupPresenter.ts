@@ -10,12 +10,16 @@ import {
 } from './AcApMarkupHistory'
 import { registerMarkupPublish } from './AcApMarkupRepublish'
 import { getActiveMarkupBag } from './AcApMarkupSession'
+import { isAttachableShapeMarkup } from './AcApMarkupGeometry'
 import {
   getMarkupStore,
   MARKUP_LAYER,
   MARKUP_LIVE_LAYER
 } from './AcApMarkupStore'
-import type { AcApMarkupRecord } from './AcApMarkupTypes'
+import type {
+  AcApMarkupAttachedCallout,
+  AcApMarkupRecord
+} from './AcApMarkupTypes'
 import { createMarkupEntityFromRecord } from './entity'
 
 // Re-export shape builders for commands / jigs that imported them from here.
@@ -267,6 +271,34 @@ export function commitMarkup(
     getMarkupStore().upsert(record)
     getMarkupPresenter().publish(view, record)
   })
+}
+
+/**
+ * Attach a leader + text box to an existing cloud / rect / circle that has none.
+ *
+ * @returns true when the record was updated.
+ */
+export function attachCalloutToMarkup(
+  view: AcEdBaseView,
+  recordId: string,
+  callout: AcApMarkupAttachedCallout
+): boolean {
+  const store = getMarkupStore()
+  const existing = store.get(recordId)
+  if (!existing || !isAttachableShapeMarkup(existing.geometry)) return false
+  runMarkupEdit(view, 'Attach Callout', () => {
+    const current = store.get(recordId)
+    if (!current || !isAttachableShapeMarkup(current.geometry)) return
+    const updated: AcApMarkupRecord = {
+      ...current,
+      text: callout.text,
+      geometry: { ...current.geometry, callout },
+      updatedAt: new Date().toISOString()
+    }
+    store.upsert(updated)
+    getMarkupPresenter().publish(view, updated)
+  })
+  return true
 }
 
 /**

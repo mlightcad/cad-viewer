@@ -729,7 +729,7 @@ export default {
       secondCorner: 'Zadejte protilehlý roh zvýraznění'
     },
     callout: {
-      tip: 'Zadejte hrot odkazu (konec šipky)',
+      tip: 'Zadejte hrot vodítka, nebo obrys obláčku/obdélníku/kružnice bez odkazu',
       anchor: 'Zadejte umístění textu odkazu',
       content: 'Zadejte text odkazu'
     },

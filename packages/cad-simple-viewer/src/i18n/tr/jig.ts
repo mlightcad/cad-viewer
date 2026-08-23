@@ -730,7 +730,7 @@ export default {
       secondCorner: 'Vurgu dikdörtgeninin karşı köşesini belirtin'
     },
     callout: {
-      tip: 'Lider ucunu belirtin (ok ucu)',
+      tip: 'Lider ucunu veya çağrısı olmayan bulut/dikdörtgen/daire dış çerçevesini belirtin',
       anchor: 'Çağrı metninin konumunu belirtin',
       content: 'Çağrı metnini girin'
     },

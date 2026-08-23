@@ -496,6 +496,10 @@ export default {
       text: 'Arrow',
       description: 'Create an arrow markup'
     },
+    markupLine: {
+      text: 'Line',
+      description: 'Create a line markup'
+    },
     markupCallout: {
       text: 'Callout',
       description: 'Create a callout'

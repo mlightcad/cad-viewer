@@ -17,6 +17,7 @@ import {
   ICON_MARKUP_CLOUD,
   ICON_MARKUP_EXPORT,
   ICON_MARKUP_IMPORT,
+  ICON_MARKUP_LINE,
   ICON_MARKUP_PANEL,
   ICON_MARKUP_RECT,
   ICON_MARKUP_STAMP,
@@ -64,6 +65,7 @@ export const revText = acapSvgIcon(ICON_MARKUP_TEXT, 'IconRevText')
 export const revRect = acapSvgIcon(ICON_MARKUP_RECT, 'IconRevRect')
 export const revCircle = acapSvgIcon(ICON_MARKUP_CIRCLE, 'IconRevCircle')
 export const markupArrow = acapSvgIcon(ICON_MARKUP_ARROW, 'IconMarkupArrow')
+export const markupLine = acapSvgIcon(ICON_MARKUP_LINE, 'IconMarkupLine')
 export const markupStamp = acapSvgIcon(ICON_MARKUP_STAMP, 'IconMarkupStamp')
 export const markupPanel = acapSvgIcon(ICON_MARKUP_PANEL, 'IconMarkupPanel')
 export const markupShow = acapSvgIcon(ICON_ANNOTATION_SHOW, 'IconMarkupShow')

@@ -192,8 +192,22 @@ function cloudLivePoints(
  * keeps the shape visible, auto-updates leader tip on the outline, and shows
  * leader (no arrow) + text bubble following the cursor.
  */
+/** Options for {@link promptAttachedCallout}. */
+export interface AcApPromptAttachedCalloutOptions {
+  /** Prompt even when the session Callout option is off. */
+  force?: boolean
+  /**
+   * When false, do not redraw the shape in the live preview (it is already
+   * on screen). Default true.
+   */
+  previewShape?: boolean
+  /** Initial cursor direction used to place the leader tip on the outline. */
+  toward?: AcApMarkupPoint2d
+}
+
 class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private readonly _outline: AcApMarkupShapeOutline
+  private readonly _previewShape: boolean
   private readonly _ht: AcTrHtmlTransientManager
   private readonly _tipDot: AcTrHtmlDot
   private readonly _bubble: AcTrHtmlCallout
@@ -209,19 +223,22 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   constructor(
     view: AcEdBaseView,
     outline: AcApMarkupShapeOutline,
-    color: AcCmColor
+    color: AcCmColor,
+    options?: Pick<AcApPromptAttachedCalloutOptions, 'previewShape' | 'toward'>
   ) {
     super(view)
     this._view = view as AcTrView2d
     this._outline = outline
+    this._previewShape = options?.previewShape !== false
     this._color = color
     this._ht = this._view.htmlTransientManager
 
     const center = shapeCenter(outline)
-    this._tip = computeLeaderTipOnShape(outline, {
+    const toward = options?.toward ?? {
       x: center.x + 1,
       y: center.y
-    })
+    }
+    this._tip = computeLeaderTipOnShape(outline, toward)
     this._anchor = { ...this._tip }
 
     const stamp = Date.now()
@@ -317,34 +334,37 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     const anchor = this._anchor
     const viewForCloud = this._view
 
+    const previewShape = this._previewShape
     this._preview.acapSetDraw((ctx, view) => {
-      if (outline.kind === 'circle') {
-        acapStrokeLiveCircle(
-          ctx,
-          view,
-          outline.center,
-          outline.radius,
-          color,
-          lineWidth
-        )
-      } else if (outline.kind === 'cloud') {
-        const points = cloudLivePoints(
-          outline.corner1,
-          outline.corner2,
-          viewForCloud
-        )
-        acapStrokeLivePolyline(ctx, view, points, color, lineWidth, {
-          closed: true
-        })
-      } else {
-        acapStrokeLivePolyline(
-          ctx,
-          view,
-          acapLiveRectCorners(outline.corner1, outline.corner2),
-          color,
-          lineWidth,
-          { closed: true }
-        )
+      if (previewShape) {
+        if (outline.kind === 'circle') {
+          acapStrokeLiveCircle(
+            ctx,
+            view,
+            outline.center,
+            outline.radius,
+            color,
+            lineWidth
+          )
+        } else if (outline.kind === 'cloud') {
+          const points = cloudLivePoints(
+            outline.corner1,
+            outline.corner2,
+            viewForCloud
+          )
+          acapStrokeLivePolyline(ctx, view, points, color, lineWidth, {
+            closed: true
+          })
+        } else {
+          acapStrokeLivePolyline(
+            ctx,
+            view,
+            acapLiveRectCorners(outline.corner1, outline.corner2),
+            color,
+            lineWidth,
+            { closed: true }
+          )
+        }
       }
       // Design Review style: leader without arrowhead.
       acapStrokeLiveSegment(ctx, view, tip, anchor, color, lineWidth)
@@ -356,15 +376,22 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * After a shape is placed, if the callout option is on, prompt for text
  * location (leader tip is auto-computed on the outline). Returns undefined
  * when the option is off or cancelled.
+ *
+ * Pass {@link AcApPromptAttachedCalloutOptions.force} when attaching a
+ * callout to an existing shape from the callout command.
  */
 export async function promptAttachedCallout(
   context: AcApContext,
-  outline: AcApMarkupShapeOutline
+  outline: AcApMarkupShapeOutline,
+  options?: AcApPromptAttachedCalloutOptions
 ): Promise<AcApMarkupAttachedCallout | undefined> {
-  if (!shapeCalloutEnabled) return undefined
+  if (!options?.force && !shapeCalloutEnabled) return undefined
 
   const color = defaultMarkupColor()
-  const jig = new AcApMarkupShapeCalloutJig(context.view, outline, color)
+  const jig = new AcApMarkupShapeCalloutJig(context.view, outline, color, {
+    previewShape: options?.previewShape,
+    toward: options?.toward
+  })
 
   try {
     const anchorPrompt = new AcEdPromptPointOptions(

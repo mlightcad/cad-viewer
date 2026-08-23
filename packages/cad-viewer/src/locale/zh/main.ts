@@ -458,6 +458,10 @@ export default {
       text: '箭头',
       description: '创建箭头批注'
     },
+    markupLine: {
+      text: '直线',
+      description: '创建直线批注'
+    },
     markupCallout: {
       text: '标注',
       description: '创建引线标注'
