@@ -104,16 +104,12 @@ import {
   circleTanTanTan,
   circleThreePoints,
   circleTwoPoints,
-  clearMeasurements,
   countlist,
   defineAttribute,
   editAttribute,
   ellipseArc,
   ellipseCenter,
-  exportIcon,
   hatch,
-  importIcon,
-  layer,
   layerCurrent,
   layerFreeze,
   layerIsolate,
@@ -125,12 +121,6 @@ import {
   layerUnisolate,
   layerUnlock,
   line,
-  markupPanel,
-  measureAngle,
-  measureArc,
-  measureArea,
-  measureDistance,
-  measurePoint,
   mline,
   move,
   mtext,
@@ -142,16 +132,29 @@ import {
   qselect,
   ray,
   rect,
-  revCircle,
-  revCloud,
   revFreeDraw,
-  revRect,
-  revText,
   setting,
   splineFitPoints,
   xline
 } from '../../svg'
-import { markupLine } from '../../svg/toolbarIcons'
+import {
+  clearMeasurements,
+  clearMarkups,
+  exportIcon,
+  importIcon,
+  layer,
+  markupLine,
+  markupPanel,
+  measureAngle,
+  measureArc,
+  measureArea,
+  measureDistance,
+  measurePoint,
+  revCircle,
+  revCloud,
+  revRect,
+  revText
+} from '../../svg/toolbarIcons'
 import MlBlockInsertGallery from '../common/MlBlockInsertGallery.vue'
 import MlLayerSelect from '../common/MlLayerSelect.vue'
 import MlCharacterMapDialog from '../dialog/MlCharacterMapDialog.vue'
@@ -1247,7 +1250,7 @@ const buildBaseTabs = (
       label: t('main.verticalToolbar.clearMarkups.text'),
       tooltip: verticalToolbarDescriptions.clearMarkups,
       size: 'small',
-      props: { icon: Delete }
+      props: { icon: clearMarkups }
     }
   ]
 

@@ -307,7 +307,7 @@ import {
   useDialogManager,
   useLayers
 } from '../../composable'
-import { select as selectIcon } from '../../svg'
+import { select as selectIcon } from '../../svg/toolbarIcons'
 import {
   buildLineTypeOptions,
   type LineTypeOption

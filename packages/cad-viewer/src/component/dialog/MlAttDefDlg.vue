@@ -231,7 +231,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useDialogManager } from '../../composable'
-import { select as selectIcon } from '../../svg'
+import { select as selectIcon } from '../../svg/toolbarIcons'
 import MlBaseDialog from '../common/MlBaseDialog.vue'
 import MlFieldsetGroup from '../common/MlFieldsetGroup.vue'
 
