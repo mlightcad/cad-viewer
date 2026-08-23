@@ -138,8 +138,8 @@ import {
   xline
 } from '../../svg'
 import {
-  clearMeasurements,
   clearMarkups,
+  clearMeasurements,
   exportIcon,
   importIcon,
   layer,
