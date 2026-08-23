@@ -1,10 +1,40 @@
-import type { AcDbDatabase, AcDbEntity } from '@mlightcad/data-model'
+import { type AcDbDatabase, type AcDbEntity } from '@mlightcad/data-model'
+
+import {
+  acapBuildCompareChangeSets,
+  type AcApDiffChangeSet
+} from './acapCompareChangeSets'
+import {
+  ACAP_COMPAREHATCH_DEFAULT,
+  ACAP_COMPAREPROPS_COLOR,
+  ACAP_COMPAREPROPS_DEFAULT,
+  ACAP_COMPAREPROPS_LAYER,
+  ACAP_COMPAREPROPS_LINETYPE,
+  ACAP_COMPAREPROPS_LINETYPESCALE,
+  ACAP_COMPAREPROPS_LINEWEIGHT,
+  ACAP_COMPAREPROPS_THICKNESS,
+  ACAP_COMPAREPROPS_TRANSPARENCY,
+  ACAP_COMPARERCMARGIN_DEFAULT,
+  ACAP_COMPARETEXT_DEFAULT,
+  ACAP_COMPARETOLERANCE_DEFAULT,
+  acapToleranceFromCompareTolerance
+} from './acapCompareSysVars'
 
 /** Change classification for one compared entity. */
 export type AcApDiffChangeKind = 'added' | 'deleted' | 'modified' | 'unchanged'
 
 /** Which drawing an entity hit belongs to. */
 export type AcApDiffHitSide = 'left' | 'right'
+
+/** One changed property on a modified entity pair. */
+export interface AcApDiffFieldChange {
+  /** Stable field id (e.g. `layer`, `endPoint`). */
+  field: string
+  /** Formatted value from the old (left) drawing. Empty when the field is absent. */
+  oldValue: string
+  /** Formatted value from the new (right) drawing. Empty when the field is absent. */
+  newValue: string
+}
 
 /** One entity contribution to a compare result. */
 export interface AcApDiffEntityHit {
@@ -31,6 +61,8 @@ export interface AcApDiffEntityHit {
     /** Maximum Y in WCS. */
     maxY: number
   }
+  /** Field-level old/new values; set on modified hits. */
+  changes?: AcApDiffFieldChange[]
 }
 
 /** Full compare output for two drawings. */
@@ -45,15 +77,59 @@ export interface AcApDiffCompareResult {
   unchanged: AcApDiffEntityHit[]
   /** Flat navigation list: deleted → modified → added. */
   navigation: AcApDiffEntityHit[]
+  /**
+   * Nearby differences grouped for revision clouds
+   * ({@link AcApDiffCompareOptions.compareRcMargin}).
+   */
+  changeSets: AcApDiffChangeSet[]
 }
 
 /** Options for {@link acapCompareDrawings}. */
 export interface AcApDiffCompareOptions {
-  /** Absolute distance tolerance. Defaults to a fraction of drawing size. */
+  /**
+   * Absolute distance tolerance. When omitted, derived from
+   * {@link compareTolerance} (AutoCAD COMPARETOLERANCE decimal places).
+   */
   tolerance?: number
   /** Include unchanged pairs in {@link AcApDiffCompareResult.unchanged}. Default false. */
   includeUnchanged?: boolean
+  /**
+   * COMPAREPROPS bitcode. `0` (AutoCAD default) ignores object property
+   * changes; only geometry differences count as modified.
+   */
+  compareProps?: number
+  /** COMPAREHATCH. `0` (AutoCAD default) excludes hatch objects. */
+  compareHatch?: number
+  /** COMPARETEXT. `1` (AutoCAD default) includes text objects. */
+  compareText?: number
+  /**
+   * COMPARETOLERANCE decimal places (0–14). AutoCAD default is `6`.
+   * Used when {@link tolerance} is omitted.
+   */
+  compareTolerance?: number
+  /**
+   * COMPARERCMARGIN (1–25). AutoCAD default is `5`. Scales change-set
+   * clustering and revision-cloud padding.
+   */
+  compareRcMargin?: number
 }
+
+/** COMPAREPROPS field id → bit. Fields not listed are geometry (always compared). */
+const COMPAREPROPS_FIELD_BITS: Record<string, number> = {
+  color: ACAP_COMPAREPROPS_COLOR,
+  layer: ACAP_COMPAREPROPS_LAYER,
+  lineType: ACAP_COMPAREPROPS_LINETYPE,
+  lineTypeScale: ACAP_COMPAREPROPS_LINETYPESCALE,
+  lineWeight: ACAP_COMPAREPROPS_LINEWEIGHT,
+  transparency: ACAP_COMPAREPROPS_TRANSPARENCY,
+  thickness: ACAP_COMPAREPROPS_THICKNESS
+}
+
+/** DXF types treated as hatch objects for COMPAREHATCH. */
+const HATCH_DXF_TYPES = new Set(['HATCH'])
+
+/** DXF types treated as text objects for COMPARETEXT. */
+const TEXT_DXF_TYPES = new Set(['TEXT', 'MTEXT', 'ATTRIB', 'ATTDEF'])
 
 /** Cached geometry/property snapshot for one model-space entity. */
 interface EntitySnapshot {
@@ -67,10 +143,22 @@ interface EntitySnapshot {
   layer: string
   /** Quantized geometry fingerprint used for matching. */
   fingerprint: string
-  /** Layer/color/linetype/lineweight/visibility key. */
+  /** Property key gated by COMPAREPROPS. */
   propKey: string
   /** Axis-aligned extents, when the entity exposes them. */
   extents?: AcApDiffEntityHit['extents']
+  /** Comparable fields used to explain modified hits. */
+  fields: SnapField[]
+}
+
+/** One comparable entity field used to explain a modified hit. */
+interface SnapField {
+  /** Stable field id. */
+  id: string
+  /** Human-readable value (locale-agnostic). */
+  display: string
+  /** Quantized value used for equality. */
+  key: string
 }
 
 /**
@@ -125,6 +213,201 @@ function pointKey(
 ): string {
   if (!p) return ''
   return `${quantize(p.x ?? 0, tol)},${quantize(p.y ?? 0, tol)},${quantize(p.z ?? 0, tol)}`
+}
+
+/** Trims float noise for display without changing compare keys. */
+function formatNumber(value: number): string {
+  if (!Number.isFinite(value)) return String(value)
+  return String(Number(value.toFixed(6)))
+}
+
+/** Formats a point, omitting Z when it is effectively zero. */
+function formatPoint(p: { x?: number; y?: number; z?: number }): string {
+  const x = formatNumber(p.x ?? 0)
+  const y = formatNumber(p.y ?? 0)
+  const z = p.z ?? 0
+  if (Math.abs(z) < 1e-9) return `(${x}, ${y})`
+  return `(${x}, ${y}, ${formatNumber(z)})`
+}
+
+/** Formats an angle stored in radians as degrees. */
+function formatAngle(rad: number): string {
+  return `${formatNumber((rad * 180) / Math.PI)}°`
+}
+
+/**
+ * Collects property and geometry fields used to explain a modified pair.
+ *
+ * Geometry fields match {@link entityFingerprint}; extents are included only
+ * as a fallback when no other geometry is present.
+ *
+ * @param entity - Entity to inspect.
+ * @param tol - Absolute grid size used for equality keys.
+ */
+function collectEntityFields(entity: AcDbEntity, tol: number): SnapField[] {
+  const e = entity as AcDbEntity &
+    Record<string, unknown> & {
+      color?: { toString?: () => string }
+      lineType?: string
+      lineWeight?: number
+      visibility?: boolean
+    }
+  const fields: SnapField[] = []
+  const add = (id: string, display: string, key: string) => {
+    fields.push({ id, display, key })
+  }
+
+  add('layer', String(e.layer ?? ''), String(e.layer ?? ''))
+  const color = e.color?.toString?.() ?? ''
+  add('color', color, color)
+  const lineType = e.lineType ?? ''
+  add('lineType', lineType, lineType)
+  add(
+    'lineWeight',
+    e.lineWeight != null ? String(e.lineWeight) : '',
+    String(e.lineWeight ?? '')
+  )
+  if (typeof e.linetypeScale === 'number') {
+    add(
+      'lineTypeScale',
+      formatNumber(e.linetypeScale),
+      String(quantize(e.linetypeScale, tol))
+    )
+  }
+  const transparency = (
+    e.transparency as { toString?: () => string } | undefined
+  )?.toString?.()
+  if (transparency != null && transparency !== '') {
+    add('transparency', transparency, transparency)
+  }
+  if (typeof e.thickness === 'number') {
+    add(
+      'thickness',
+      formatNumber(e.thickness),
+      String(quantize(e.thickness, tol))
+    )
+  }
+
+  const geomCount = fields.length
+  if (e.startPoint && e.endPoint) {
+    const sp = e.startPoint as { x?: number; y?: number; z?: number }
+    const ep = e.endPoint as { x?: number; y?: number; z?: number }
+    add('startPoint', formatPoint(sp), pointKey(sp, tol))
+    add('endPoint', formatPoint(ep), pointKey(ep, tol))
+  }
+  if (e.center) {
+    const c = e.center as { x?: number; y?: number; z?: number }
+    add('center', formatPoint(c), pointKey(c, tol))
+  }
+  if (typeof e.radius === 'number') {
+    add('radius', formatNumber(e.radius), String(quantize(e.radius, tol)))
+  }
+  if (typeof e.startAngle === 'number' && typeof e.endAngle === 'number') {
+    add(
+      'startAngle',
+      formatAngle(e.startAngle),
+      String(quantize(e.startAngle, tol))
+    )
+    add('endAngle', formatAngle(e.endAngle), String(quantize(e.endAngle, tol)))
+  }
+  if (e.position) {
+    const p = e.position as { x?: number; y?: number; z?: number }
+    add('position', formatPoint(p), pointKey(p, tol))
+  }
+  if (e.location) {
+    const p = e.location as { x?: number; y?: number; z?: number }
+    add('location', formatPoint(p), pointKey(p, tol))
+  }
+  if (typeof e.rotation === 'number') {
+    add('rotation', formatAngle(e.rotation), String(quantize(e.rotation, tol)))
+  }
+  if (typeof e.height === 'number') {
+    add('height', formatNumber(e.height), String(quantize(e.height, tol)))
+  }
+  if (typeof e.blockName === 'string') {
+    add('blockName', e.blockName, e.blockName)
+  }
+  if (e.scaleFactors) {
+    const s = e.scaleFactors as { x?: number; y?: number; z?: number }
+    add(
+      'scale',
+      `${formatNumber(s.x ?? 1)}, ${formatNumber(s.y ?? 1)}, ${formatNumber(s.z ?? 1)}`,
+      `${quantize(s.x ?? 1, tol)},${quantize(s.y ?? 1, tol)},${quantize(s.z ?? 1, tol)}`
+    )
+  }
+  if (typeof e.textString === 'string') {
+    add('text', e.textString, e.textString)
+  }
+  if (typeof e.contents === 'string') {
+    add('mtext', e.contents, e.contents)
+  }
+  const extents = readExtents(entity)
+  if (extents && fields.length === geomCount) {
+    add(
+      'extents',
+      `${formatPoint({ x: extents.minX, y: extents.minY })} – ${formatPoint({ x: extents.maxX, y: extents.maxY })}`,
+      `${quantize(extents.minX, tol)},${quantize(extents.minY, tol)},${quantize(extents.maxX, tol)},${quantize(extents.maxY, tol)}`
+    )
+  }
+  add('objectId', String(entity.objectId ?? ''), String(entity.objectId ?? ''))
+
+  return fields
+}
+
+/**
+ * Returns field-level old/new pairs for a modified snapshot pair.
+ *
+ * Line endpoints that only differ by direction are treated as equal, matching
+ * {@link entityFingerprint}.
+ *
+ * @param left - Old-drawing snapshot.
+ * @param right - New-drawing snapshot.
+ */
+function diffEntityFields(
+  left: EntitySnapshot,
+  right: EntitySnapshot,
+  compareProps: number
+): AcApDiffFieldChange[] {
+  const leftMap = new Map(left.fields.map(f => [f.id, f]))
+  const rightMap = new Map(right.fields.map(f => [f.id, f]))
+  const ids: string[] = []
+  const seen = new Set<string>()
+  for (const field of [...left.fields, ...right.fields]) {
+    if (seen.has(field.id)) continue
+    seen.add(field.id)
+    ids.push(field.id)
+  }
+
+  const lStart = leftMap.get('startPoint')
+  const lEnd = leftMap.get('endPoint')
+  const rStart = rightMap.get('startPoint')
+  const rEnd = rightMap.get('endPoint')
+  const reversedSame =
+    lStart != null &&
+    lEnd != null &&
+    rStart != null &&
+    rEnd != null &&
+    [lStart.key, lEnd.key].sort().join('|') ===
+      [rStart.key, rEnd.key].sort().join('|')
+
+  const changes: AcApDiffFieldChange[] = []
+  for (const id of ids) {
+    if (reversedSame && (id === 'startPoint' || id === 'endPoint')) continue
+    const propBit = COMPAREPROPS_FIELD_BITS[id]
+    if (propBit != null && (compareProps & propBit) === 0) continue
+    const l = leftMap.get(id)
+    const r = rightMap.get(id)
+    if ((l?.key ?? '') === (r?.key ?? '')) continue
+    changes.push({
+      field: id,
+      oldValue: l?.display ?? '',
+      newValue: r?.display ?? ''
+    })
+  }
+  if (changes.length === 0 && left.fingerprint !== right.fingerprint) {
+    changes.push({ field: 'geometry', oldValue: '', newValue: '' })
+  }
+  return changes
 }
 
 /**
@@ -190,64 +473,110 @@ function entityFingerprint(entity: AcDbEntity, tol: number): string {
 }
 
 /**
- * Builds a property key from layer, color, linetype, lineweight, and visibility.
+ * Builds a property key from the COMPAREPROPS bits that are enabled.
+ *
+ * When `compareProps` is `0`, the key is empty so property-only changes
+ * do not mark an entity as modified (AutoCAD default).
  *
  * @param entity - Entity to inspect.
+ * @param compareProps - COMPAREPROPS bitcode.
  */
-function entityPropKey(entity: AcDbEntity): string {
+function entityPropKey(entity: AcDbEntity, compareProps: number): string {
+  if (compareProps === 0) return ''
   const e = entity as AcDbEntity & {
     color?: { toString?: () => string }
     lineType?: string
     lineWeight?: number
-    visibility?: boolean
+    linetypeScale?: number
+    transparency?: { toString?: () => string }
+    thickness?: number
   }
-  return [
-    e.layer ?? '',
-    e.color?.toString?.() ?? '',
-    e.lineType ?? '',
-    String(e.lineWeight ?? ''),
-    String(e.visibility !== false)
-  ].join('|')
+  const parts: string[] = []
+  if (compareProps & ACAP_COMPAREPROPS_COLOR) {
+    parts.push(e.color?.toString?.() ?? '')
+  }
+  if (compareProps & ACAP_COMPAREPROPS_LAYER) {
+    parts.push(String(e.layer ?? ''))
+  }
+  if (compareProps & ACAP_COMPAREPROPS_LINETYPE) {
+    parts.push(e.lineType ?? '')
+  }
+  if (compareProps & ACAP_COMPAREPROPS_LINETYPESCALE) {
+    parts.push(String(e.linetypeScale ?? ''))
+  }
+  if (compareProps & ACAP_COMPAREPROPS_LINEWEIGHT) {
+    parts.push(String(e.lineWeight ?? ''))
+  }
+  if (compareProps & ACAP_COMPAREPROPS_TRANSPARENCY) {
+    parts.push(e.transparency?.toString?.() ?? '')
+  }
+  if (compareProps & ACAP_COMPAREPROPS_THICKNESS) {
+    parts.push(String(e.thickness ?? ''))
+  }
+  return parts.join('|')
+}
+
+/** True when `dxfType` is a hatch object excluded by COMPAREHATCH=0. */
+function isHatchDxfType(dxfType: string): boolean {
+  return HATCH_DXF_TYPES.has(dxfType.toUpperCase())
+}
+
+/** True when `dxfType` is a text object excluded by COMPARETEXT=0. */
+function isTextDxfType(dxfType: string): boolean {
+  return TEXT_DXF_TYPES.has(dxfType.toUpperCase())
 }
 
 /**
  * Collects top-level model-space entities from `db`.
  *
+ * Hatch and text objects are skipped according to COMPAREHATCH / COMPARETEXT.
+ *
  * @param db - Drawing database.
  * @param tol - Tolerance used for fingerprints.
+ * @param compareProps - COMPAREPROPS bitcode for the property key.
+ * @param includeHatch - When false, hatch objects are omitted.
+ * @param includeText - When false, text objects are omitted.
  */
-function collectModelSpace(db: AcDbDatabase, tol: number): EntitySnapshot[] {
+function collectModelSpace(
+  db: AcDbDatabase,
+  tol: number,
+  compareProps: number,
+  includeHatch: boolean,
+  includeText: boolean
+): EntitySnapshot[] {
   const out: EntitySnapshot[] = []
   const modelSpace = db.tables.blockTable.modelSpace
   for (const entity of modelSpace.newIterator()) {
     const objectId = String(entity.objectId ?? '')
     if (!objectId) continue
+    const dxfType = String(entity.dxfTypeName ?? entity.type ?? 'UNKNOWN')
+    if (!includeHatch && isHatchDxfType(dxfType)) continue
+    if (!includeText && isTextDxfType(dxfType)) continue
     out.push({
       entity,
       objectId,
-      dxfType: String(entity.dxfTypeName ?? entity.type ?? 'UNKNOWN'),
+      dxfType,
       layer: String(entity.layer ?? '0'),
       fingerprint: entityFingerprint(entity, tol),
-      propKey: entityPropKey(entity),
-      extents: readExtents(entity)
+      propKey: entityPropKey(entity, compareProps),
+      extents: readExtents(entity),
+      fields: collectEntityFields(entity, tol)
     })
   }
   return out
 }
 
 /**
- * Chooses a compare tolerance from extents, or returns `explicit` when positive.
+ * Characteristic drawing size from snapshot extents, used to scale
+ * COMPARERCMARGIN clustering.
  *
- * @param left - Left-drawing snapshots (rough pass).
- * @param right - Right-drawing snapshots (rough pass).
- * @param explicit - Host-provided tolerance.
+ * @param left - Left-drawing snapshots.
+ * @param right - Right-drawing snapshots.
  */
-function estimateTolerance(
+function drawingSizeFromSnapshots(
   left: EntitySnapshot[],
-  right: EntitySnapshot[],
-  explicit?: number
+  right: EntitySnapshot[]
 ): number {
-  if (explicit != null && explicit > 0) return explicit
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
@@ -260,9 +589,8 @@ function estimateTolerance(
     maxX = Math.max(maxX, e.maxX)
     maxY = Math.max(maxY, e.maxY)
   }
-  if (!Number.isFinite(minX)) return 1e-4
-  const size = Math.max(maxX - minX, maxY - minY, 1)
-  return Math.max(size * 1e-6, 1e-6)
+  if (!Number.isFinite(minX)) return 1
+  return Math.max(maxX - minX, maxY - minY, 1)
 }
 
 /**
@@ -277,7 +605,8 @@ function toHit(
   snap: EntitySnapshot,
   side: AcApDiffHitSide,
   kind: AcApDiffChangeKind,
-  pairedId?: string
+  pairedId?: string,
+  changes?: AcApDiffFieldChange[]
 ): AcApDiffEntityHit {
   return {
     side,
@@ -286,8 +615,21 @@ function toHit(
     layer: snap.layer,
     kind,
     pairedId,
-    extents: snap.extents
+    extents: snap.extents,
+    changes
   }
+}
+
+/** Pushes both sides of a modified pair, sharing the same field-level diff. */
+function pushModified(
+  modified: AcApDiffEntityHit[],
+  left: EntitySnapshot,
+  right: EntitySnapshot,
+  compareProps: number
+) {
+  const changes = diffEntityFields(left, right, compareProps)
+  modified.push(toHit(left, 'left', 'modified', right.objectId, changes))
+  modified.push(toHit(right, 'right', 'modified', left.objectId, changes))
 }
 
 /**
@@ -297,25 +639,45 @@ function toHit(
  * 1. Same handle (`objectId`) **and** the same DXF type. Handles collide
  *    across unrelated files, so a LINE and a CIRCLE that share a handle
  *    are not treated as one entity.
- * 2. Same `dxfType` + layer + geometric fingerprint
+ * 2. Same `dxfType` (+ layer when COMPAREPROPS includes Layer) and the
+ *    same geometric fingerprint
+ *
+ * Classification follows AutoCAD COMPARE:
+ * - COMPAREPROPS `0` ignores object property changes (layer table color
+ *   changes never count; only the entity's stored Color/Layer/… bits do).
+ * - COMPAREHATCH `0` omits hatch objects.
+ * - COMPARETEXT `0` omits text objects.
+ * - COMPARETOLERANCE is decimal-place precision (`6` → `1e-6`).
  *
  * Left is treated as the old drawing; right as the new drawing.
  *
  * @param leftDb - Old drawing (deletions are reported from this side).
  * @param rightDb - New drawing (additions are reported from this side).
- * @param options - Matching tolerance and whether to keep unchanged pairs.
- * @returns Classified hits plus a flat {@link AcApDiffCompareResult.navigation} list.
+ * @param options - COMPARE sysvars, matching tolerance, unchanged pairs.
+ * @returns Classified hits, navigation list, and revision-cloud change sets.
  */
 export function acapCompareDrawings(
   leftDb: AcDbDatabase,
   rightDb: AcDbDatabase,
   options: AcApDiffCompareOptions = {}
 ): AcApDiffCompareResult {
-  const roughLeft = collectModelSpace(leftDb, 1e-4)
-  const roughRight = collectModelSpace(rightDb, 1e-4)
-  const tol = estimateTolerance(roughLeft, roughRight, options.tolerance)
-  const left = collectModelSpace(leftDb, tol)
-  const right = collectModelSpace(rightDb, tol)
+  const compareProps = options.compareProps ?? ACAP_COMPAREPROPS_DEFAULT
+  const includeHatch =
+    (options.compareHatch ?? ACAP_COMPAREHATCH_DEFAULT) !== 0
+  const includeText = (options.compareText ?? ACAP_COMPARETEXT_DEFAULT) !== 0
+  const compareTolerance =
+    options.compareTolerance ?? ACAP_COMPARETOLERANCE_DEFAULT
+  const compareRcMargin =
+    options.compareRcMargin ?? ACAP_COMPARERCMARGIN_DEFAULT
+  const tol =
+    options.tolerance != null && options.tolerance > 0
+      ? options.tolerance
+      : acapToleranceFromCompareTolerance(compareTolerance)
+
+  const collect = (db: AcDbDatabase) =>
+    collectModelSpace(db, tol, compareProps, includeHatch, includeText)
+  const left = collect(leftDb)
+  const right = collect(rightDb)
 
   const rightById = new Map(right.map(s => [s.objectId, s]))
   const usedRight = new Set<string>()
@@ -339,8 +701,7 @@ export function acapCompareDrawings(
           unchanged.push(toHit(r, 'right', 'unchanged', l.objectId))
         }
       } else {
-        modified.push(toHit(l, 'left', 'modified', r.objectId))
-        modified.push(toHit(r, 'right', 'modified', l.objectId))
+        pushModified(modified, l, r, compareProps)
       }
     } else {
       leftUnmatched.push(l)
@@ -349,9 +710,10 @@ export function acapCompareDrawings(
 
   const rightUnmatched = right.filter(s => !usedRight.has(s.objectId))
 
-  // Fingerprint matching within type+layer buckets
-  /** Groups unmatched right entities by DXF type and layer. */
-  const bucketKey = (s: EntitySnapshot) => `${s.dxfType}\0${s.layer}`
+  // Fingerprint matching: type (+ layer when COMPAREPROPS includes Layer)
+  const matchByLayer = (compareProps & ACAP_COMPAREPROPS_LAYER) !== 0
+  const bucketKey = (s: EntitySnapshot) =>
+    matchByLayer ? `${s.dxfType}\0${s.layer}` : s.dxfType
   const rightBuckets = new Map<string, EntitySnapshot[]>()
   for (const r of rightUnmatched) {
     const key = bucketKey(r)
@@ -376,8 +738,7 @@ export function acapCompareDrawings(
           unchanged.push(toHit(r, 'right', 'unchanged', l.objectId))
         }
       } else {
-        modified.push(toHit(l, 'left', 'modified', r.objectId))
-        modified.push(toHit(r, 'right', 'modified', l.objectId))
+        pushModified(modified, l, r, compareProps)
       }
     } else {
       deleted.push(toHit(l, 'left', 'deleted'))
@@ -390,12 +751,17 @@ export function acapCompareDrawings(
     }
   }
 
-  // Navigation: one entry per logical change (prefer left for modified)
   const navigation: AcApDiffEntityHit[] = [
     ...deleted,
     ...modified.filter(h => h.side === 'left'),
     ...added
   ]
 
-  return { added, deleted, modified, unchanged, navigation }
+  const changeSets = acapBuildCompareChangeSets(
+    [...deleted, ...modified, ...added],
+    drawingSizeFromSnapshots(left, right),
+    compareRcMargin
+  )
+
+  return { added, deleted, modified, unchanged, navigation, changeSets }
 }

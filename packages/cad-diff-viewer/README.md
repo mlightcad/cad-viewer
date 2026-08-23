@@ -63,13 +63,20 @@ Default role colors (overridable via `compareColors`):
 
 ### Diff algorithm
 
-`acapCompareDrawings(leftDb, rightDb)` compares **model-space, top-level
-entities only** (no paper space, no INSERT expansion). Left is the old drawing;
-right is the new drawing.
+`acapCompareDrawings(leftDb, rightDb, options)` compares the two model-space
+databases. Left is the old drawing; right is the new drawing. Options follow
+AutoCAD COMPARE system variables from `@mlightcad/data-model`:
 
-**Tolerance.** A first pass collects extents and picks an absolute grid of about
-`max(drawingSize × 1e-6, 1e-6)`, unless you pass `tolerance`. Coordinates and
-angles are quantized onto that grid so near-identical geometry still matches.
+| Sysvar | Default | Effect |
+| --- | --- | --- |
+| **COMPAREPROPS** | `0` | Bitcode for object property diffs: Color `1`, Layer `2`, Linetype `4`, Linetype scale `8`, Lineweight `16`, Transparency `32`, Thickness `64`. `0` ignores property-only changes (geometry still compared). |
+| **COMPAREHATCH** | `0` | `0` excludes hatch objects; `1` includes them. |
+| **COMPARETEXT** | `1` | `0` excludes TEXT/MTEXT/ATTRIB/ATTDEF; `1` includes them. |
+| **COMPARETOLERANCE** | `6` | Decimal places of geometric precision (`6` → `1e-6`). |
+| **COMPARERCMARGIN** | `5` | `1–25`. Scales change-set clustering and revision-cloud padding. |
+
+**Tolerance.** Coordinates and angles are quantized onto
+`10 ** -COMPARETOLERANCE`, unless you pass an explicit `tolerance`.
 
 Each entity then gets two strings:
 
@@ -77,25 +84,90 @@ Each entity then gets two strings:
   radius / angles, position, rotation, height, block name, scale, TEXT /
   MTEXT contents). If those fields are missing, axis-aligned extents are used.
   Line endpoints are stored in a direction-independent order.
-- **Property key** — layer, color, linetype, lineweight, visibility.
+- **Property key** — only the COMPAREPROPS bits that are enabled (empty when
+  COMPAREPROPS is `0`).
 
 **Matching (in order):**
 
-1. Same DWG/DXF handle (`objectId`). Typical when the file was edited in place.
-2. Among leftovers, same `dxfType` + layer **and** the same fingerprint. Typical
-   when handles were regenerated but the entity was only restyled.
+1. Same DWG/DXF handle (`objectId`) **and** the same DXF type. Typical when
+   the file was edited in place.
+2. Among leftovers, same `dxfType` (and layer, when COMPAREPROPS includes
+   Layer) **and** the same fingerprint.
 
 **Classification:**
 
 | Fingerprint | Property key | Result |
 | --- | --- | --- |
 | equal | equal | unchanged (omitted unless `includeUnchanged`) |
-| equal | different | modified (attribute-only change) |
+| equal | different | modified (attribute-only change; COMPAREPROPS ≠ 0) |
 | different | — (handle match) | modified |
 | no match | — | deleted (left only) or added (right only) |
 
 Modified pairs emit **two** hits (one per side) with `pairedId` pointing at the
-other entity. The results panel navigates `deleted → modified (left) → added`.
+other entity. Nearby differences are grouped into **change sets**. The markup
+toolbar can create built-in cloud markups around those sets. A cloud uses the
+Settings color for its single change kind (added, deleted, or modified);
+mixed-kind sets use the modified color. The results panel navigates
+`deleted → modified (left) → added`.
+
+The Settings dialog (Colors / Objects / Geometry tabs) edits compare colors
+and these sysvars (live preview; Cancel restores the previous values).
+COMPAREPROPS is registry-saved. The other four are read from the first
+opened drawing, then written onto both open drawings so the panes stay in
+sync.
+
+## Limitations
+
+Several of these match AutoCAD COMPARE. Others are current-scope gaps in
+this viewer.
+
+**Scope**
+
+- Only **model-space, top-level** entities are compared. Paper space, other
+  layouts, and entities nested inside an INSERT / block definition are not.
+- An INSERT is one object (block name, insertion point, rotation, scale, and
+  the INSERT’s own properties). Edits inside the block definition are ignored.
+  Compare coloring keys off the INSERT handle, so nested primitives share one
+  role color instead of being tinted individually.
+- Hatches are omitted unless COMPAREHATCH is `1`. TEXT / MTEXT / ATTRIB /
+  ATTDEF are omitted when COMPARETEXT is `0`.
+
+**Properties vs appearance**
+
+- The algorithm compares **stored entity values**, not the final rendered
+  look. ByLayer / ByBlock color and linetype are not resolved against the
+  layer table or a parent block.
+- Changing a layer’s color or linetype in the layer table does **not** mark
+  entities on that layer as modified. COMPAREPROPS Layer only means the
+  entity moved to a different layer name.
+- COMPAREPROPS defaults to `0`, so color, layer name, linetype, linetype
+  scale, lineweight, transparency, and thickness are ignored until the
+  matching bit is enabled in Settings.
+
+**Matching**
+
+- Same-handle pairing also requires the same DXF type. Unrelated files often
+  reuse handles; a LINE and a CIRCLE that share a handle are not treated as
+  one entity.
+- Fingerprints cover common geometry (line endpoints, circle/arc, text,
+  INSERT transform, and similar). Types without those fields fall back to
+  axis-aligned extents, so some edits can be missed or over-matched.
+
+**Display**
+
+- Compare display replaces each drawing’s ACI / TrueColor with role tints
+  (gray / red / green). It is not a true-color overlay of the originals.
+- Overlay mode does not keep a distinct modified color: modified-left is
+  painted as deleted, modified-right as added.
+- Overlay mode converts the right drawing again as a read-only overlay; GPU
+  scenes are not moved between the two canvases.
+
+**Hosting**
+
+- `AcApDocManager` is a process singleton. Do not mount `AcApDiffViewer` on a
+  page that already hosts another CAD viewer from this stack.
+- DWG parsing is not bundled. Register a converter in the host (see
+  [`cad-diff-viewer-example`](../cad-diff-viewer-example)).
 
 ## Usage
 
@@ -125,11 +197,7 @@ await viewer.openDocument('left', file.name, await file.arrayBuffer())
 - Drop a DWG/DXF onto a pane, or click the pane / open-file icon
 - Compare results panel (by change kind or entity type) with prev/next navigation
 - Markup tools (cloud, callout, text, rect, circle, arrow, stamp, …)
+- Show / hide markups, and clear markups on both drawings
+- Generate cloud markups from compare change sets
 - Compare display mode: gray base, deleted red, added green (configurable)
 - Strings go through `AcApI18n` (`diffViewer.*`)
-
-`AcApDocManager` is a process singleton. Mount `AcApDiffViewer` on a page that
-does not already host another CAD viewer.
-
-DWG parsing is not bundled. Register a converter in the host (see the
-[`cad-diff-viewer-example`](../cad-diff-viewer-example) demo).
