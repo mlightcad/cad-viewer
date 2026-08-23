@@ -335,9 +335,8 @@ describe('default toolbar items', () => {
     expect(iconOf('markup-panel')).toContain('M6.5 9.5h7M6.5 12h7')
     expect(iconOf('markup-import')).toContain('M4.5 2h6.4L15.5 6.6')
     expect(iconOf('markup-export')).toContain('M15.5 2H9.1L4.5 6.6')
-    expect(iconOf('clear-markups')).toContain(
-      'M160 256H96a32 32 0 0 1 0-64h256'
-    )
+    expect(iconOf('clear-markups')).toContain('viewBox="0 0 512 512"')
+    expect(iconOf('clear-markups')).toContain('M 459.5 0')
     expect(
       annotation?.children?.find(child => child.id === 'markup-vis')?.toggle?.on
         .icon
@@ -355,9 +354,8 @@ describe('default toolbar items', () => {
     expect(iconOf('measure-area')).toContain('M4 4h12v12H4V4Zm1.5 1.5v9h9v-9h-9Z')
     expect(iconOf('measure-arc')).toContain('M2 16A10 10 0 0 0 18 16')
     expect(iconOf('measure-point')).toContain('M9.25 2h1.5v5.25H16v1.5h-5.25V16')
-    expect(iconOf('clear-measurements')).toContain(
-      'M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6'
-    )
+    expect(iconOf('clear-measurements')).toContain('viewBox="0 0 512 512"')
+    expect(iconOf('clear-measurements')).toContain('M 459.5 0')
     expect(iconOf('measurement-import')).toContain('M4.5 2h6.4L15.5 6.6')
     expect(iconOf('measurement-export')).toContain('M15.5 2H9.1L4.5 6.6')
     expect(

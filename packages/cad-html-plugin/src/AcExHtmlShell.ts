@@ -852,18 +852,6 @@ function buildAcExMarkupToolStrip(): string {
         'data-i18n-key': 'toolbar.markupCloud',
         'data-i18n-attr': 'title aria-label'
       })}
-      ${acExToolbarButton(acExHtmlIcons.markupCallout, 'Callout', {
-        'data-action': 'markup',
-        'data-markup-mode': 'callout',
-        'data-i18n-key': 'toolbar.markupCallout',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acExToolbarButton(acExHtmlIcons.markupText, 'Text', {
-        'data-action': 'markup',
-        'data-markup-mode': 'text',
-        'data-i18n-key': 'toolbar.markupText',
-        'data-i18n-attr': 'title aria-label'
-      })}
       ${acExToolbarButton(acExHtmlIcons.markupRect, 'Rectangle', {
         'data-action': 'markup',
         'data-markup-mode': 'rect',
@@ -876,10 +864,22 @@ function buildAcExMarkupToolStrip(): string {
         'data-i18n-key': 'toolbar.markupCircle',
         'data-i18n-attr': 'title aria-label'
       })}
+      ${acExToolbarButton(acExHtmlIcons.markupCallout, 'Callout', {
+        'data-action': 'markup',
+        'data-markup-mode': 'callout',
+        'data-i18n-key': 'toolbar.markupCallout',
+        'data-i18n-attr': 'title aria-label'
+      })}
       ${acExToolbarButton(acExHtmlIcons.markupArrow, 'Arrow', {
         'data-action': 'markup',
         'data-markup-mode': 'arrow',
         'data-i18n-key': 'toolbar.markupArrow',
+        'data-i18n-attr': 'title aria-label'
+      })}
+      ${acExToolbarButton(acExHtmlIcons.markupText, 'Text', {
+        'data-action': 'markup',
+        'data-markup-mode': 'text',
+        'data-i18n-key': 'toolbar.markupText',
         'data-i18n-attr': 'title aria-label'
       })}
       ${acExToolbarButton(acExHtmlIcons.markupStamp, 'Stamp', {
