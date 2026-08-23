@@ -781,10 +781,12 @@ export class AcApDiffViewer {
     btnPrev.type = 'button'
     btnPrev.className = 'ml-diff-tool-btn'
     btnPrev.textContent = '◀'
+    btnPrev.disabled = true
     const btnNext = document.createElement('button')
     btnNext.type = 'button'
     btnNext.className = 'ml-diff-tool-btn'
     btnNext.textContent = '▶'
+    btnNext.disabled = true
     navGroup.append(btnTogglePanel, btnPrev, btnNext)
 
     const markupGroup = document.createElement('div')
@@ -2462,6 +2464,7 @@ export class AcApDiffViewer {
     const hasDoc = Boolean(this.leftDocument || this.rightDocument)
     const compareDone = Boolean(this.compareResult)
     const nav = this.compareResult?.navigation ?? []
+    const navReady = compareDone && nav.length > 0
 
     this.btnMarkupVis.disabled = !hasDoc
     this.btnClearMarkups.disabled = !hasDoc
@@ -2476,15 +2479,8 @@ export class AcApDiffViewer {
       }
     }
 
-    this.btnPrev.hidden = !compareDone
-    this.btnNext.hidden = !compareDone
-    if (compareDone && nav.length > 0) {
-      this.btnPrev.disabled = this.navIndex <= 0
-      this.btnNext.disabled = this.navIndex >= nav.length - 1
-    } else if (compareDone) {
-      this.btnPrev.disabled = true
-      this.btnNext.disabled = true
-    }
+    this.btnPrev.disabled = !navReady || this.navIndex <= 0
+    this.btnNext.disabled = !navReady || this.navIndex >= nav.length - 1
   }
 
   /**
