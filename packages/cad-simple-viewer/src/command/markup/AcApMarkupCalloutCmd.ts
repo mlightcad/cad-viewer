@@ -18,7 +18,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { pickAttachableShapeMarkupAt, type AcTrView2d } from '../../view'
+import { type AcTrView2d,pickAttachableShapeMarkupAt } from '../../view'
 import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment

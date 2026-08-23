@@ -22,8 +22,8 @@ import {
   acExIsAttachableShapeMarkup,
   acExMarkupCanvasLineWidth,
   acExMarkupCenter,
-  acExMarkupShapeOutlineFromGeometry,
   type AcExMarkupShapeOutline,
+  acExMarkupShapeOutlineFromGeometry,
   acExStrokeMarkupCloud,
   acExTranslateMarkupGeometry
 } from './AcExMarkupGeometry'

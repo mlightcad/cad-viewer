@@ -3,6 +3,7 @@ import { AcGeBox2d, type AcGePoint3dLike } from '@mlightcad/data-model'
 import type { AcEdBaseView } from '../../editor'
 import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import type { AcTrView2d } from '../../view'
+import { isAttachableShapeMarkup } from './AcApMarkupGeometry'
 import {
   getMarkupHistory,
   getSessionUndo,
@@ -10,7 +11,6 @@ import {
 } from './AcApMarkupHistory'
 import { registerMarkupPublish } from './AcApMarkupRepublish'
 import { getActiveMarkupBag } from './AcApMarkupSession'
-import { isAttachableShapeMarkup } from './AcApMarkupGeometry'
 import {
   getMarkupStore,
   MARKUP_LAYER,
