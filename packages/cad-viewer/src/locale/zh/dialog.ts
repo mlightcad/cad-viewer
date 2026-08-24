@@ -69,6 +69,8 @@ export default {
   },
   exportHtmlDlg: {
     title: '导出为 HTML',
+    tabExport: '导出',
+    tabSecurity: '安全',
     layersSection: '图层',
     exportInvisibleLayers: '导出不可见图层',
     exportInvisibleLayersHint: '将关闭或冻结图层上的几何图形包含在导出文件中',
@@ -86,7 +88,20 @@ export default {
     viewerModeView: '查看',
     viewerModeViewHint: '仅平移、缩放与图层控制',
     viewerModeMeasure: '测量与批注',
-    viewerModeMeasureHint: '查看工具，以及测量与批注'
+    viewerModeMeasureHint: '查看工具，以及测量与批注',
+    expirySection: '有效期',
+    expiry1Day: '1 天',
+    expiry7Days: '7 天',
+    expiry30Days: '30 天',
+    expiryNever: '永久有效',
+    expiryHint: '超过有效期后，导出的 HTML 将无法打开。',
+    passwordSection: '密码',
+    passwordPlaceholder: '留空表示不设置密码',
+    passwordHint: '设置密码后，打开 HTML 时需要输入正确密码。密码可手动输入，也可点击右侧按钮自动生成。',
+    generatePassword: '生成密码',
+    copyPassword: '复制',
+    copyPasswordSuccess: '密码已复制到剪贴板。',
+    copyPasswordFailed: '无法复制密码到剪贴板。'
   },
   quickSelectDlg: {
     title: '快速选择',

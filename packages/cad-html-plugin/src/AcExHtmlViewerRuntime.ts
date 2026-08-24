@@ -6,6 +6,16 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import { setupAcExDrawStyleToolbar } from './AcExDrawStyleToolbar'
+import {
+  decryptAcExHtmlSnapshotPayload,
+  isAcExHtmlAccessExpired,
+  parseAcExHtmlAccessManifest
+} from './AcExHtmlAccess'
+import {
+  ACEX_HTML_MAX_PASSWORD_ATTEMPTS,
+  lockAcExHtmlAccessGate,
+  promptAcExHtmlAccessPassword
+} from './AcExHtmlAccessGate'
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import { setupAcExHtmlLayoutMenu } from './AcExHtmlLayoutMenu'
@@ -81,10 +91,64 @@ function createHiddenStatusSink(): HTMLElement {
 }
 
 function bootstrap(): void {
-  void accmYieldForPaint().then(startViewer)
+  void accmYieldForPaint().then(() => startViewer())
 }
 
-function startViewer(): void {
+async function resolveSnapshotPayload(
+  snapshotEl: HTMLElement,
+  i18n: AcExHtmlI18n
+): Promise<string | null> {
+  const accessEl = document.getElementById('mlcad-access')
+  const manifest = parseAcExHtmlAccessManifest(accessEl?.textContent)
+
+  if (manifest && isAcExHtmlAccessExpired(manifest)) {
+    showViewerError(i18n.t('access.expired'))
+    return null
+  }
+
+  let payload = snapshotEl.textContent?.trim() ?? ''
+
+  if (!manifest?.encrypted) {
+    return payload
+  }
+
+  if (!manifest.salt) {
+    showViewerError(
+      i18n.t('status.loadFailed', { error: 'Missing access metadata.' })
+    )
+    return null
+  }
+
+  let failedAttempts = 0
+  let pendingError: 'access.wrongPassword' | undefined
+
+  while (failedAttempts < ACEX_HTML_MAX_PASSWORD_ATTEMPTS) {
+    try {
+      const password = await promptAcExHtmlAccessPassword(i18n, pendingError)
+      pendingError = undefined
+      try {
+        return await decryptAcExHtmlSnapshotPayload(
+          password,
+          payload,
+          manifest.salt
+        )
+      } catch {
+        failedAttempts++
+        if (failedAttempts >= ACEX_HTML_MAX_PASSWORD_ATTEMPTS) {
+          lockAcExHtmlAccessGate(i18n)
+          return null
+        }
+        pendingError = 'access.wrongPassword'
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return null
+}
+
+async function startViewer(): Promise<void> {
   const root = document.getElementById('mlcad-root')
   const snapshotEl = document.getElementById('mlcad-snapshot')
   if (!root || !snapshotEl) {
@@ -92,25 +156,27 @@ function startViewer(): void {
     return
   }
 
+  const i18n = new AcExHtmlI18n(detectAcExHtmlLocale())
+  i18n.applyToDocument()
+
+  const payload = await resolveSnapshotPayload(snapshotEl, i18n)
+  if (!payload) {
+    return
+  }
+
   const statusEl =
     document.getElementById('mlcad-status-bar') ?? createHiddenStatusSink()
 
-  const payload = snapshotEl.textContent?.trim() ?? ''
   let snapshot: AcExSnapshot
   try {
     snapshot = decodeSnapshot(payload)
   } catch (error) {
-    const i18n = new AcExHtmlI18n(detectAcExHtmlLocale())
-    i18n.applyToDocument()
     showViewerError(i18n.t('status.loadFailed', { error: String(error) }))
     return
   }
 
   const viewerMode: AcExViewerMode = snapshot.meta.viewerMode ?? 'measure'
   const measureEnabled = viewerMode === 'measure'
-
-  const i18n = new AcExHtmlI18n(detectAcExHtmlLocale())
-  i18n.applyToDocument()
 
   const initialLayout =
     snapshot.layouts.find(l => l.btrId === snapshot.activeLayoutBtrId) ??

@@ -1,10 +1,13 @@
 import type { AcTrView2d } from '@mlightcad/cad-simple-viewer'
 
+import type { AcApHtmlExpiryDays } from './AcExHtmlAccess'
 import type {
   AcExInitialViewMode,
   AcExViewerMode,
   AcExViewState
 } from './AcExSnapshotTypes'
+
+export type { AcApHtmlExpiryDays } from './AcExHtmlAccess'
 
 /** Matches the offline HTML viewer orthographic half-height in world units. */
 const HTML_VIEWER_CAMERA_FRUSTUM = 400
@@ -34,6 +37,15 @@ export interface AcApHtmlExportOptions {
    * and markup UI for a smaller, faster HTML file. Defaults to `'measure'`.
    */
   viewerMode?: AcExViewerMode
+  /**
+   * How long the exported HTML remains valid. Defaults to `'never'`.
+   */
+  expiryDays?: AcApHtmlExpiryDays
+  /**
+   * Optional password required to open the exported HTML. When set, the snapshot
+   * payload is encrypted in the file.
+   */
+  password?: string
 }
 
 /**
@@ -41,12 +53,19 @@ export interface AcApHtmlExportOptions {
  */
 export function resolveAcApHtmlExportOptions(
   options: AcApHtmlExportOptions = {}
-): Required<AcApHtmlExportOptions> {
+): Required<
+  Omit<AcApHtmlExportOptions, 'password' | 'expiryDays'>
+> & {
+  expiryDays: AcApHtmlExpiryDays
+  password: string
+} {
   return {
     exportInvisibleLayers: options.exportInvisibleLayers !== false,
     exportLayouts: options.exportLayouts !== false,
     initialView: options.initialView ?? 'fit',
-    viewerMode: options.viewerMode ?? 'measure'
+    viewerMode: options.viewerMode ?? 'measure',
+    expiryDays: options.expiryDays ?? 'never',
+    password: options.password?.trim() ?? ''
   }
 }
 /**

@@ -39,6 +39,18 @@ export {
 } from './AcExOsnapPrimitiveToAcGe'
 export { packHtml, type AcExPackHtmlOptions } from './AcExHtmlPackager'
 export {
+  type AcApHtmlExpiryDays,
+  type AcExHtmlAccessManifest,
+  buildAcExHtmlAccessManifest,
+  decryptAcExHtmlSnapshotPayload,
+  encryptAcExHtmlSnapshotPayload,
+  isAcExHtmlAccessExpired,
+  needsAcExHtmlAccessControl,
+  parseAcExHtmlAccessManifest,
+  protectAcExHtmlEncodedSnapshot,
+  resolveAcApHtmlExpiresAt
+} from './AcExHtmlAccess'
+export {
   AcExHtmlI18n,
   type AcExHtmlLocale,
   type AcExHtmlMessageKey,

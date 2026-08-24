@@ -17,7 +17,12 @@ import {
   resolveViewerRuntimeUrl
 } from './AcApHtmlPluginOptions'
 import { AcApHtmlSnapshotBuilder } from './AcApHtmlSnapshotBuilder'
+import {
+  protectAcExHtmlEncodedSnapshot,
+  resolveAcApHtmlExpiresAt
+} from './AcExHtmlAccess'
 import { packHtml } from './AcExHtmlPackager'
+import { encodeSnapshot } from './AcExSnapshotCodec'
 import type { AcExSnapshot } from './AcExSnapshotTypes'
 
 /**
@@ -131,9 +136,20 @@ export class AcApHtmlConvertor {
 
       await accmYieldForPaint()
 
+      const expiresAt = resolveAcApHtmlExpiresAt(resolved.expiryDays)
+      const protectedSnapshot = await protectAcExHtmlEncodedSnapshot(
+        encodeSnapshot(snapshot),
+        {
+          expiresAt,
+          password: resolved.password || undefined
+        }
+      )
+
       const html = packHtml(snapshot, {
         title: snapshot.meta.title,
-        viewerRuntime
+        viewerRuntime,
+        encoded: protectedSnapshot.encoded,
+        accessManifest: protectedSnapshot.manifest
       })
 
       await accmYieldForPaint()
@@ -160,9 +176,15 @@ export class AcApHtmlConvertor {
       await accmYieldForPaint()
       const viewerRuntime = await this.loadViewerRuntime()
       await accmYieldForPaint()
+      const protectedSnapshot = await protectAcExHtmlEncodedSnapshot(
+        encodeSnapshot(snapshot),
+        { expiresAt: null }
+      )
       const html = packHtml(snapshot, {
         title: snapshot.meta.title,
-        viewerRuntime
+        viewerRuntime,
+        encoded: protectedSnapshot.encoded,
+        accessManifest: protectedSnapshot.manifest
       })
       await accmYieldForPaint()
       this.downloadHtml(html, downloadName)

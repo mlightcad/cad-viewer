@@ -571,6 +571,9 @@ export const ACEX_HTML_SHELL_CSS = `
   #mlcad-loading.mlcad-loading--done {
     opacity: 0; visibility: hidden; pointer-events: none;
   }
+  #mlcad-loading.mlcad-loading--gate .mlcad-loading-spinner {
+    display: none;
+  }
   .mlcad-loading-spinner {
     width: 48px; height: 48px; box-sizing: border-box;
     border: 3px solid rgba(255, 255, 255, 0.12);
@@ -579,6 +582,93 @@ export const ACEX_HTML_SHELL_CSS = `
     animation: mlcad-spin 0.85s linear infinite;
   }
   @keyframes mlcad-spin { to { transform: rotate(360deg); } }
+
+  #mlcad-access-gate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 360px;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+  #mlcad-access-gate[hidden] {
+    display: none !important;
+  }
+  .mlcad-access-card {
+    width: 100%;
+    padding: 24px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--mlcad-ui-border);
+    background: var(--mlcad-ui-bg-elevated);
+    box-shadow: var(--mlcad-shadow);
+    box-sizing: border-box;
+  }
+  .mlcad-access-title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--mlcad-ui-text);
+    text-align: center;
+  }
+  .mlcad-access-hint {
+    margin: 0 0 16px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--mlcad-ui-muted);
+    text-align: center;
+  }
+  .mlcad-access-field {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .mlcad-access-field input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid var(--mlcad-ui-border);
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--mlcad-ui-text);
+    font: inherit;
+    box-sizing: border-box;
+  }
+  .mlcad-access-field input:focus {
+    outline: none;
+    border-color: rgba(26, 140, 255, 0.65);
+    box-shadow: 0 0 0 2px rgba(26, 140, 255, 0.2);
+  }
+  .mlcad-access-submit {
+    width: 100%;
+    height: 36px;
+    border: 1px solid rgba(26, 140, 255, 0.55);
+    border-radius: 6px;
+    background: rgba(26, 140, 255, 0.22);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .mlcad-access-submit:hover {
+    background: rgba(26, 140, 255, 0.32);
+  }
+  .mlcad-access-error {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #ff8a80;
+    text-align: center;
+  }
+  .mlcad-access-error[hidden] {
+    display: none;
+  }
+  .mlcad-access-gate--locked .mlcad-access-submit:disabled,
+  .mlcad-access-gate--locked .mlcad-access-field input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
 
   @media (max-width: ${ML_UI_MOBILE_MAX_WIDTH}px) {
     :root {
@@ -642,6 +732,25 @@ export function buildAcExHtmlShellBody(
   return `
   <div id="mlcad-loading" aria-hidden="true" style="background:${loadingBg}">
     <div class="mlcad-loading-spinner"></div>
+    <div id="mlcad-access-gate" hidden>
+      <form id="mlcad-access-form" class="mlcad-access-card">
+        <h2 class="mlcad-access-title" data-i18n-key="access.title">Protected drawing</h2>
+        <p class="mlcad-access-hint" data-i18n-key="access.passwordPrompt">Enter the password to open this file.</p>
+        <div class="mlcad-access-field">
+          <input
+            id="mlcad-access-password"
+            type="password"
+            autocomplete="off"
+            data-i18n-key="access.passwordPlaceholder"
+            data-i18n-attr="placeholder aria-label"
+            placeholder="Password"
+            aria-label="Password"
+          />
+        </div>
+        <button type="submit" class="mlcad-access-submit" data-i18n-key="access.unlock">Unlock</button>
+        <p id="mlcad-access-error" class="mlcad-access-error" hidden></p>
+      </form>
+    </div>
   </div>
   <div id="mlcad-root">
     <aside id="mlcad-sidebar">

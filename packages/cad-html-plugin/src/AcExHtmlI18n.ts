@@ -123,6 +123,14 @@ export type AcExHtmlMessageKey =
   | 'status.zoomLayer'
   | 'status.loadFailed'
   | 'status.noLayout'
+  | 'access.title'
+  | 'access.passwordPrompt'
+  | 'access.passwordPlaceholder'
+  | 'access.unlock'
+  | 'access.passwordRequired'
+  | 'access.wrongPassword'
+  | 'access.expired'
+  | 'access.tooManyAttempts'
 
 /**
  * Nested string table used for locale message lookup.
@@ -247,6 +255,17 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomLayer: 'Zoom: {name}',
       loadFailed: 'Failed to load drawing: {error}',
       noLayout: 'No layout data in snapshot.'
+    },
+    access: {
+      title: 'Protected drawing',
+      passwordPrompt: 'Enter the password to open this file.',
+      passwordPlaceholder: 'Password',
+      unlock: 'Unlock',
+      passwordRequired: 'Please enter a password.',
+      wrongPassword: 'Incorrect password. Try again.',
+      expired: 'This file has expired and can no longer be opened.',
+      tooManyAttempts:
+        'Too many incorrect password attempts. Refresh the page to try again.'
     }
   },
   zh: {
@@ -356,6 +375,16 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomLayer: '缩放：{name}',
       loadFailed: '无法加载图纸：{error}',
       noLayout: '快照中没有布局数据。'
+    },
+    access: {
+      title: '受保护的图纸',
+      passwordPrompt: '请输入密码以打开此文件。',
+      passwordPlaceholder: '密码',
+      unlock: '解锁',
+      passwordRequired: '请输入密码。',
+      wrongPassword: '密码错误，请重试。',
+      expired: '此文件已过期，无法打开。',
+      tooManyAttempts: '密码错误次数过多，请刷新页面后重新输入。'
     }
   },
   cs: {
@@ -471,6 +500,17 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomLayer: 'Zoom: {name}',
       loadFailed: 'Nepodařilo se načíst výkres: {error}',
       noLayout: 'Snímek neobsahuje data rozvržení.'
+    },
+    access: {
+      title: 'Chráněný výkres',
+      passwordPrompt: 'Zadejte heslo pro otevření tohoto souboru.',
+      passwordPlaceholder: 'Heslo',
+      unlock: 'Odemknout',
+      passwordRequired: 'Zadejte heslo.',
+      wrongPassword: 'Nesprávné heslo. Zkuste to znovu.',
+      expired: 'Platnost tohoto souboru vypršela a nelze jej otevřít.',
+      tooManyAttempts:
+        'Příliš mnoho nesprávných pokusů o heslo. Obnovte stránku a zkuste to znovu.'
     }
   },
   tr: {
@@ -587,6 +627,17 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomLayer: 'Yakınlaştır: {name}',
       loadFailed: 'Çizim yüklenemedi: {error}',
       noLayout: 'Anlık görüntüde yerleşim verisi yok.'
+    },
+    access: {
+      title: 'Korumalı çizim',
+      passwordPrompt: 'Bu dosyayı açmak için parolayı girin.',
+      passwordPlaceholder: 'Parola',
+      unlock: 'Kilidi aç',
+      passwordRequired: 'Lütfen bir parola girin.',
+      wrongPassword: 'Parola yanlış. Tekrar deneyin.',
+      expired: 'Bu dosyanın süresi doldu ve artık açılamaz.',
+      tooManyAttempts:
+        'Çok fazla yanlış parola denemesi yapıldı. Tekrar denemek için sayfayı yenileyin.'
     }
   }
 }
@@ -697,6 +748,17 @@ const AR_MESSAGES: AcExMessageTree = {
     'zoomLayer': 'تكبير: {name}',
     'loadFailed': 'فشل تحميل الرسم: {error}',
     'noLayout': 'لا توجد بيانات تخطيط في اللقطة.'
+  },
+  access: {
+    title: 'رسم محمي',
+    passwordPrompt: 'أدخل كلمة المرور لفتح هذا الملف.',
+    passwordPlaceholder: 'كلمة المرور',
+    unlock: 'فتح',
+    passwordRequired: 'يرجى إدخال كلمة المرور.',
+    wrongPassword: 'كلمة المرور غير صحيحة. حاول مرة أخرى.',
+    expired: 'انتهت صلاحية هذا الملف ولا يمكن فتحه.',
+    tooManyAttempts:
+      'عدد محاولات إدخال كلمة المرور كبير جدًا. قم بتحديث الصفحة للمحاولة مرة أخرى.'
   }
 }
 
