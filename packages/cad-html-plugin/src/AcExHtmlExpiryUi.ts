@@ -56,12 +56,12 @@ export function setupAcExHtmlExpiryMonitor(
     const remaining = expiresAt - now
     const timeLabel = formatAcExHtmlExpiresAt(expiresAt, i18n.locale)
     if (remaining <= ACEX_HTML_EXPIRY_COUNTDOWN_MS) {
-      badge.classList.add('mlcad-expiry-badge--countdown')
+      badge.classList.add('mlcad-expiry-countdown')
       badge.textContent = i18n.t('access.badgeCountdown', {
         time: formatAcExHtmlCountdown(remaining)
       })
     } else {
-      badge.classList.remove('mlcad-expiry-badge--countdown')
+      badge.classList.remove('mlcad-expiry-countdown')
       badge.textContent = i18n.t('access.badgeExpires', { time: timeLabel })
     }
     badge.hidden = false

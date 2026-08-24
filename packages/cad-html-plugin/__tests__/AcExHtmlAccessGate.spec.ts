@@ -48,9 +48,23 @@ describe('AcExHtmlAccessGate', () => {
     expect(errorEl?.textContent).toContain('Refresh the page')
   })
 
+  it('shows a countdown on the unlock page when expiry is near', () => {
+    jest.useFakeTimers()
+    const i18n = new AcExHtmlI18n('en')
+    const expiresAt = Date.now() + 90_000
+    void promptAcExHtmlAccessPassword(i18n, { expiresAt })
+
+    const expiryEl = document.getElementById('mlcad-access-expiry')
+    expect(expiryEl?.hidden).toBe(false)
+    expect(expiryEl?.classList.contains('mlcad-expiry-countdown')).toBe(true)
+    expect(expiryEl?.textContent).toMatch(/Expires in /)
+
+    jest.useRealTimers()
+  })
+
   it('shows expiry info and a wrong-password error on the next prompt', async () => {
     const i18n = new AcExHtmlI18n('zh')
-    const expiresAt = Date.UTC(2026, 5, 1, 12, 0, 0)
+    const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000
     const promptPromise = promptAcExHtmlAccessPassword(i18n, {
       errorKey: 'access.wrongPassword',
       expiresAt
@@ -61,6 +75,7 @@ describe('AcExHtmlAccessGate', () => {
     expect(errorEl?.hidden).toBe(false)
     expect(errorEl?.textContent).toBe('密码错误，请重试。')
     expect(expiryEl?.hidden).toBe(false)
+    expect(expiryEl?.classList.contains('mlcad-expiry-countdown')).toBe(false)
     expect(expiryEl?.textContent).toContain('有效期至')
 
     const input = document.getElementById(

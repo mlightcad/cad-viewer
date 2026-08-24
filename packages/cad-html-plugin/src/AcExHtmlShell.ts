@@ -628,6 +628,16 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-access-expiry[hidden] {
     display: none;
   }
+  .mlcad-access-expiry.mlcad-expiry-countdown {
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 16px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
   .mlcad-access-field {
     display: flex;
     gap: 8px;
@@ -706,7 +716,7 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-expiry-badge[hidden] {
     display: none !important;
   }
-  .mlcad-expiry-badge--countdown {
+  .mlcad-expiry-countdown {
     border-color: rgba(255, 152, 0, 0.55);
     background: rgba(255, 152, 0, 0.16);
     color: #ffcc80;

@@ -1,8 +1,15 @@
-import { formatAcExHtmlExpiresAt } from './AcExHtmlAccess'
+import {
+  ACEX_HTML_EXPIRY_COUNTDOWN_MS,
+  formatAcExHtmlCountdown,
+  formatAcExHtmlExpiresAt
+} from './AcExHtmlAccess'
 import type { AcExHtmlI18n, AcExHtmlMessageKey } from './AcExHtmlI18n'
 
 /** Maximum wrong-password attempts before the access gate is locked. */
 export const ACEX_HTML_MAX_PASSWORD_ATTEMPTS = 3
+
+/** Interval handle for unlock-page expiry countdown updates. */
+let accessExpiryTimerId = 0
 
 /**
  * Shows the password gate overlay and resolves when the user submits a password.
@@ -62,6 +69,7 @@ export function promptAcExHtmlAccessPassword(
 
     const cleanup = () => {
       form.removeEventListener('submit', onSubmit)
+      stopAcExHtmlAccessExpiryTimer()
       gate.hidden = true
       loading?.classList.remove('mlcad-loading--gate')
     }
@@ -114,6 +122,7 @@ export function lockAcExHtmlAccessGate(i18n: AcExHtmlI18n): void {
   const errorEl = document.getElementById('mlcad-access-error')
   const loading = document.getElementById('mlcad-loading')
 
+  stopAcExHtmlAccessExpiryTimer()
   resetAcExHtmlAccessGateUi()
   i18n.applyToDocument()
   gate?.classList.add('mlcad-access-gate--locked')
@@ -151,6 +160,7 @@ export function showAcExHtmlAccessExpired(
   const errorEl = document.getElementById('mlcad-access-error')
   const expiryEl = document.getElementById('mlcad-access-expiry')
 
+  stopAcExHtmlAccessExpiryTimer()
   i18n.applyToDocument()
   if (gate) {
     gate.hidden = false
@@ -193,11 +203,15 @@ export function showAcExHtmlAccessExpired(
   if (expiryEl) {
     expiryEl.hidden = true
     expiryEl.textContent = ''
+    expiryEl.classList.remove('mlcad-expiry-countdown')
   }
 }
 
 /**
  * Updates the unlock-page expiry line under the password prompt.
+ *
+ * Within the last {@link ACEX_HTML_EXPIRY_COUNTDOWN_MS}, switches to a live
+ * countdown using the same warning colors as the post-open expiry badge.
  */
 export function setAcExHtmlAccessExpiryInfo(
   i18n: AcExHtmlI18n,
@@ -207,15 +221,53 @@ export function setAcExHtmlAccessExpiryInfo(
   if (!expiryEl) {
     return
   }
+
+  stopAcExHtmlAccessExpiryTimer()
+
   if (expiresAt == null) {
     expiryEl.hidden = true
     expiryEl.textContent = ''
+    expiryEl.classList.remove('mlcad-expiry-countdown')
     return
   }
-  expiryEl.hidden = false
-  expiryEl.textContent = i18n.t('access.expiresAt', {
-    time: formatAcExHtmlExpiresAt(expiresAt, i18n.locale)
-  })
+
+  const refresh = () => {
+    const now = Date.now()
+    if (now > expiresAt) {
+      showAcExHtmlAccessExpired(i18n, expiresAt)
+      return
+    }
+
+    const remaining = expiresAt - now
+    expiryEl.hidden = false
+    if (remaining <= ACEX_HTML_EXPIRY_COUNTDOWN_MS) {
+      expiryEl.classList.add('mlcad-expiry-countdown')
+      expiryEl.textContent = i18n.t('access.badgeCountdown', {
+        time: formatAcExHtmlCountdown(remaining)
+      })
+    } else {
+      expiryEl.classList.remove('mlcad-expiry-countdown')
+      expiryEl.textContent = i18n.t('access.expiresAt', {
+        time: formatAcExHtmlExpiresAt(expiresAt, i18n.locale)
+      })
+    }
+  }
+
+  refresh()
+  if (
+    !document
+      .getElementById('mlcad-access-gate')
+      ?.classList.contains('mlcad-access-gate--expired')
+  ) {
+    accessExpiryTimerId = window.setInterval(refresh, 1000)
+  }
+}
+
+function stopAcExHtmlAccessExpiryTimer(): void {
+  if (accessExpiryTimerId) {
+    window.clearInterval(accessExpiryTimerId)
+    accessExpiryTimerId = 0
+  }
 }
 
 function resetAcExHtmlAccessGateUi(): void {
@@ -226,8 +278,11 @@ function resetAcExHtmlAccessGateUi(): void {
   const input = document.getElementById(
     'mlcad-access-password'
   ) as HTMLInputElement | null
+  const expiryEl = document.getElementById('mlcad-access-expiry')
 
+  stopAcExHtmlAccessExpiryTimer()
   gate?.classList.remove('mlcad-access-gate--locked', 'mlcad-access-gate--expired')
+  expiryEl?.classList.remove('mlcad-expiry-countdown')
   if (field) {
     field.hidden = false
   }
