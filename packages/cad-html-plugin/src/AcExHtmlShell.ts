@@ -679,6 +679,14 @@ export const ACEX_HTML_SHELL_CSS = `
     opacity: 0.55;
     cursor: not-allowed;
   }
+  .mlcad-access-field[hidden],
+  .mlcad-access-submit[hidden],
+  .mlcad-access-gate--expired .mlcad-access-field,
+  .mlcad-access-gate--expired .mlcad-access-submit,
+  .mlcad-access-gate--expired #mlcad-access-expiry,
+  .mlcad-access-gate--expired #mlcad-access-error {
+    display: none !important;
+  }
   .mlcad-expiry-badge {
     position: fixed;
     top: var(--mlcad-ui-inset);

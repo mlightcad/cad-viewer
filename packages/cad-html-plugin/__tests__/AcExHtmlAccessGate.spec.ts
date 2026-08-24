@@ -82,6 +82,9 @@ describe('AcExHtmlAccessGate', () => {
     const gate = document.getElementById('mlcad-access-gate')
     const field = document.querySelector<HTMLElement>('.mlcad-access-field')
     const submit = document.querySelector<HTMLElement>('.mlcad-access-submit')
+    const input = document.getElementById(
+      'mlcad-access-password'
+    ) as HTMLInputElement
     const title = document.querySelector('.mlcad-access-title')
     const hint = document.querySelector('.mlcad-access-hint')
 
@@ -89,6 +92,7 @@ describe('AcExHtmlAccessGate', () => {
     expect(gate?.classList.contains('mlcad-access-gate--expired')).toBe(true)
     expect(field?.hidden).toBe(true)
     expect(submit?.hidden).toBe(true)
+    expect(input.disabled).toBe(true)
     expect(title?.textContent).toBe('File expired')
     expect(hint?.textContent).toContain('expired on')
   })

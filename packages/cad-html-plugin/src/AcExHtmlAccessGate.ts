@@ -178,6 +178,14 @@ export function showAcExHtmlAccessExpired(
   if (submit) {
     submit.hidden = true
   }
+  const input = document.getElementById(
+    'mlcad-access-password'
+  ) as HTMLInputElement | null
+  if (input) {
+    input.disabled = true
+    input.value = ''
+    input.blur()
+  }
   if (errorEl) {
     errorEl.hidden = true
     errorEl.textContent = ''
