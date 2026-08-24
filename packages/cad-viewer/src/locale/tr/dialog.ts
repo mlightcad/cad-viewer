@@ -69,6 +69,8 @@ export default {
   },
   exportHtmlDlg: {
     title: 'HTML Olarak Dışa Aktar',
+    tabExport: 'Dışa Aktar',
+    tabSecurity: 'Güvenlik',
     layersSection: 'Katmanlar',
     exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
     exportInvisibleLayersHint:
@@ -90,7 +92,26 @@ export default {
       'Yalnızca kaydırma, yakınlaştırma ve katman kontrolleri',
     viewerModeMeasure: 'Ölçüm ve İnceleme',
     viewerModeMeasureHint:
-      'Görüntüleme araçlarına ek olarak ölçüm ve işaretleme'
+      'Görüntüleme araçlarına ek olarak ölçüm ve işaretleme',
+    expirySection: 'Geçerlilik',
+    expiry1Day: '1 gün',
+    expiry7Days: '7 gün',
+    expiry30Days: '30 gün',
+    expiryCustom: 'Özel',
+    expiryNever: 'Süresiz',
+    expiryCustomPlaceholder: 'Son geçerlilik tarihi ve saatini seçin',
+    expiryCustomRequired: 'Lütfen özel bir son geçerlilik tarihi ve saati seçin.',
+    expiryCustomPast: 'Özel son geçerlilik gelecekte olmalıdır.',
+    expiryHint:
+      'Geçerlilik süresi dolduktan sonra dışa aktarılan HTML artık açılamaz.',
+    passwordSection: 'Parola',
+    passwordPlaceholder: 'Parola yoksa boş bırakın',
+    passwordHint:
+      'Ayarlandığında HTML dosyasını açmak için doğru parola gerekir. Elle girin veya düğmeyle oluşturun.',
+    generatePassword: 'Oluştur',
+    copyPassword: 'Kopyala',
+    copyPasswordSuccess: 'Parola panoya kopyalandı.',
+    copyPasswordFailed: 'Parola panoya kopyalanamadı.'
   },
   quickSelectDlg: {
     title: 'Hızlı Seçim',

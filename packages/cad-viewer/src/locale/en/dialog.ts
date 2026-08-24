@@ -69,6 +69,8 @@ export default {
   },
   exportHtmlDlg: {
     title: 'Export to HTML',
+    tabExport: 'Export',
+    tabSecurity: 'Security',
     layersSection: 'Layers',
     exportInvisibleLayers: 'Export invisible layers',
     exportInvisibleLayersHint:
@@ -88,7 +90,25 @@ export default {
     viewerModeView: 'View',
     viewerModeViewHint: 'Pan, zoom, and layer controls only',
     viewerModeMeasure: 'Measure & Review',
-    viewerModeMeasureHint: 'View tools plus measurement and markup annotations'
+    viewerModeMeasureHint: 'View tools plus measurement and markup annotations',
+    expirySection: 'Validity',
+    expiry1Day: '1 day',
+    expiry7Days: '7 days',
+    expiry30Days: '30 days',
+    expiryCustom: 'Custom',
+    expiryNever: 'Never expires',
+    expiryCustomPlaceholder: 'Select expiry date and time',
+    expiryCustomRequired: 'Please select a custom expiry date and time.',
+    expiryCustomPast: 'The custom expiry must be in the future.',
+    expiryHint: 'After the validity period ends, the exported HTML can no longer be opened.',
+    passwordSection: 'Password',
+    passwordPlaceholder: 'Leave blank for no password',
+    passwordHint:
+      'When set, the HTML file requires the correct password to open. Enter one manually or generate one with the button.',
+    generatePassword: 'Generate',
+    copyPassword: 'Copy',
+    copyPasswordSuccess: 'Password copied to the clipboard.',
+    copyPasswordFailed: 'Unable to copy the password to the clipboard.'
   },
   quickSelectDlg: {
     title: 'Quick Select',

@@ -69,6 +69,8 @@ export default {
   },
   exportHtmlDlg: {
     title: 'Exportovat do HTML',
+    tabExport: 'Export',
+    tabSecurity: 'Zabezpečení',
     layersSection: 'Hladiny',
     exportInvisibleLayers: 'Exportovat neviditelné hladiny',
     exportInvisibleLayersHint:
@@ -88,7 +90,25 @@ export default {
     viewerModeView: 'Prohlížení',
     viewerModeViewHint: 'Pouze posun, přiblížení a ovládání hladin',
     viewerModeMeasure: 'Měření a kontrola',
-    viewerModeMeasureHint: 'Nástroje prohlížení plus měření a poznámky'
+    viewerModeMeasureHint: 'Nástroje prohlížení plus měření a poznámky',
+    expirySection: 'Platnost',
+    expiry1Day: '1 den',
+    expiry7Days: '7 dní',
+    expiry30Days: '30 dní',
+    expiryCustom: 'Vlastní',
+    expiryNever: 'Bez expirace',
+    expiryCustomPlaceholder: 'Vyberte datum a čas expirace',
+    expiryCustomRequired: 'Vyberte vlastní datum a čas expirace.',
+    expiryCustomPast: 'Vlastní expirace musí být v budoucnosti.',
+    expiryHint: 'Po uplynutí platnosti již exportované HTML nebude možné otevřít.',
+    passwordSection: 'Heslo',
+    passwordPlaceholder: 'Ponechte prázdné bez hesla',
+    passwordHint:
+      'Po nastavení hesla bude k otevření HTML vyžadováno správné heslo. Zadejte ho ručně nebo vygenerujte tlačítkem.',
+    generatePassword: 'Vygenerovat',
+    copyPassword: 'Kopírovat',
+    copyPasswordSuccess: 'Heslo bylo zkopírováno do schránky.',
+    copyPasswordFailed: 'Heslo se nepodařilo zkopírovat do schránky.'
   },
   quickSelectDlg: {
     title: 'Rychlý výběr',

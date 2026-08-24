@@ -6,6 +6,18 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import { setupAcExDrawStyleToolbar } from './AcExDrawStyleToolbar'
+import {
+  decryptAcExHtmlSnapshotPayload,
+  isAcExHtmlAccessExpired,
+  parseAcExHtmlAccessManifest
+} from './AcExHtmlAccess'
+import {
+  ACEX_HTML_MAX_PASSWORD_ATTEMPTS,
+  lockAcExHtmlAccessGate,
+  promptAcExHtmlAccessPassword,
+  showAcExHtmlAccessExpired
+} from './AcExHtmlAccessGate'
+import { setupAcExHtmlExpiryMonitor } from './AcExHtmlExpiryUi'
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import { setupAcExHtmlLayoutMenu } from './AcExHtmlLayoutMenu'
@@ -60,10 +72,8 @@ const ACEX_CAMERA_DISTANCE = 500
 function hideLoading(): void {
   const loading = document.getElementById('mlcad-loading')
   if (!loading) return
+  // Keep the node so the access/expiry gate can be shown again after open.
   loading.classList.add('mlcad-loading--done')
-  loading.addEventListener('transitionend', () => loading.remove(), {
-    once: true
-  })
 }
 
 function showViewerError(message: string): void {
@@ -81,10 +91,71 @@ function createHiddenStatusSink(): HTMLElement {
 }
 
 function bootstrap(): void {
-  void accmYieldForPaint().then(startViewer)
+  void accmYieldForPaint().then(() => startViewer())
 }
 
-function startViewer(): void {
+async function resolveSnapshotPayload(
+  snapshotEl: HTMLElement,
+  i18n: AcExHtmlI18n
+): Promise<{ payload: string; expiresAt: number | null } | null> {
+  const accessEl = document.getElementById('mlcad-access')
+  const manifest = parseAcExHtmlAccessManifest(accessEl?.textContent)
+  const expiresAt = manifest?.expiresAt ?? null
+
+  if (manifest && isAcExHtmlAccessExpired(manifest)) {
+    showAcExHtmlAccessExpired(i18n, expiresAt)
+    return null
+  }
+
+  const payload = snapshotEl.textContent?.trim() ?? ''
+
+  if (!manifest?.encrypted) {
+    return { payload, expiresAt }
+  }
+
+  if (!manifest.salt) {
+    showViewerError(
+      i18n.t('status.loadFailed', { error: 'Missing access metadata.' })
+    )
+    return null
+  }
+
+  let failedAttempts = 0
+  let pendingError: 'access.wrongPassword' | undefined
+
+  while (failedAttempts < ACEX_HTML_MAX_PASSWORD_ATTEMPTS) {
+    try {
+      const password = await promptAcExHtmlAccessPassword(i18n, {
+        errorKey: pendingError,
+        expiresAt
+      })
+      pendingError = undefined
+      try {
+        return {
+          payload: await decryptAcExHtmlSnapshotPayload(
+            password,
+            payload,
+            manifest.salt
+          ),
+          expiresAt
+        }
+      } catch {
+        failedAttempts++
+        if (failedAttempts >= ACEX_HTML_MAX_PASSWORD_ATTEMPTS) {
+          lockAcExHtmlAccessGate(i18n)
+          return null
+        }
+        pendingError = 'access.wrongPassword'
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return null
+}
+
+async function startViewer(): Promise<void> {
   const root = document.getElementById('mlcad-root')
   const snapshotEl = document.getElementById('mlcad-snapshot')
   if (!root || !snapshotEl) {
@@ -92,25 +163,28 @@ function startViewer(): void {
     return
   }
 
+  const i18n = new AcExHtmlI18n(detectAcExHtmlLocale())
+  i18n.applyToDocument()
+
+  const resolved = await resolveSnapshotPayload(snapshotEl, i18n)
+  if (!resolved) {
+    return
+  }
+  const { payload, expiresAt } = resolved
+
   const statusEl =
     document.getElementById('mlcad-status-bar') ?? createHiddenStatusSink()
 
-  const payload = snapshotEl.textContent?.trim() ?? ''
   let snapshot: AcExSnapshot
   try {
     snapshot = decodeSnapshot(payload)
   } catch (error) {
-    const i18n = new AcExHtmlI18n(detectAcExHtmlLocale())
-    i18n.applyToDocument()
     showViewerError(i18n.t('status.loadFailed', { error: String(error) }))
     return
   }
 
   const viewerMode: AcExViewerMode = snapshot.meta.viewerMode ?? 'measure'
   const measureEnabled = viewerMode === 'measure'
-
-  const i18n = new AcExHtmlI18n(detectAcExHtmlLocale())
-  i18n.applyToDocument()
 
   const initialLayout =
     snapshot.layouts.find(l => l.btrId === snapshot.activeLayoutBtrId) ??
@@ -450,6 +524,7 @@ function startViewer(): void {
   const navToolsRef: {
     current: ReturnType<typeof setupAcExHtmlNavTools> | null
   } = { current: null }
+  let expiryMonitor: ReturnType<typeof setupAcExHtmlExpiryMonitor> | null = null
 
   const isToolActive = () =>
     measure?.isActive === true || markup?.isActive === true
@@ -986,6 +1061,7 @@ function startViewer(): void {
     toolbarCollapse.refreshLabels()
     toolbarFlyouts?.refreshLabels()
     navToolsRef.current?.refreshLabels()
+    expiryMonitor?.refreshLabels()
     // Re-apply visibility button label after i18n DOM refresh.
     if (markup) {
       markup.setVisible(markup.visible)
@@ -1059,6 +1135,16 @@ function startViewer(): void {
     releaseSnapshotBatchBuffers(snapshot)
   }
   measure?.refreshIdleStatus()
+  if (expiresAt != null) {
+    expiryMonitor = setupAcExHtmlExpiryMonitor({
+      expiresAt,
+      i18n,
+      onExpire: () => {
+        // Keep the canvas mounted under the expired gate; interaction is blocked
+        // by the loading overlay.
+      }
+    })
+  }
   hideLoading()
 }
 

@@ -93,6 +93,8 @@ export default {
   exportHtmlDlg: {
     ...enDialog.exportHtmlDlg,
     title: 'تصدير إلى HTML',
+    tabExport: 'تصدير',
+    tabSecurity: 'الأمان',
 
     layersSection: 'الطبقات',
     exportInvisibleLayers: 'تصدير الطبقات غير المرئية',
@@ -123,7 +125,27 @@ export default {
 
     viewerModeMeasure: 'قياس ومراجعة',
     viewerModeMeasureHint:
-      'أدوات العرض بالإضافة إلى القياسات وتعليقات المراجعة'
+      'أدوات العرض بالإضافة إلى القياسات وتعليقات المراجعة',
+
+    expirySection: 'مدة الصلاحية',
+    expiry1Day: 'يوم واحد',
+    expiry7Days: '7 أيام',
+    expiry30Days: '30 يومًا',
+    expiryCustom: 'مخصص',
+    expiryNever: 'بدون انتهاء',
+    expiryCustomPlaceholder: 'اختر تاريخ ووقت الانتهاء',
+    expiryCustomRequired: 'يرجى اختيار تاريخ ووقت انتهاء مخصص.',
+    expiryCustomPast: 'يجب أن يكون وقت الانتهاء المخصص في المستقبل.',
+    expiryHint:
+      'بعد انتهاء مدة الصلاحية، لن يمكن فتح ملف HTML المُصدَّر.',
+    passwordSection: 'كلمة المرور',
+    passwordPlaceholder: 'اتركه فارغًا لعدم تعيين كلمة مرور',
+    passwordHint:
+      'عند التعيين، يتطلب فتح ملف HTML إدخال كلمة المرور الصحيحة. أدخلها يدويًا أو أنشئها بالزر.',
+    generatePassword: 'إنشاء كلمة مرور',
+    copyPassword: 'نسخ',
+    copyPasswordSuccess: 'تم نسخ كلمة المرور إلى الحافظة.',
+    copyPasswordFailed: 'تعذر نسخ كلمة المرور إلى الحافظة.'
   },
 
   quickSelectDlg: {

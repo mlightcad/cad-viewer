@@ -78,6 +78,16 @@ function none() {
   return { status: AcEdPromptStatus.None }
 }
 
+const defaultExportOptions = {
+  exportInvisibleLayers: true,
+  exportLayouts: true,
+  initialView: 'fit',
+  viewerMode: 'measure',
+  expiryDays: 'never',
+  expiresAt: null,
+  password: ''
+}
+
 describe('AcApExportHtmlCmd prompt defaults', () => {
   const cmd = new AcApExportHtmlCmd()
 
@@ -107,12 +117,7 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
 
     expect(convert()).toHaveBeenCalledWith(
       'drawing.dwg',
-      {
-        exportInvisibleLayers: true,
-        exportLayouts: true,
-        initialView: 'fit',
-        viewerMode: 'measure'
-      },
+      defaultExportOptions,
       context.view
     )
   })
@@ -140,12 +145,7 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
 
     expect(convert()).toHaveBeenCalledWith(
       'drawing.dwg',
-      {
-        exportInvisibleLayers: true,
-        exportLayouts: true,
-        initialView: 'fit',
-        viewerMode: 'measure'
-      },
+      defaultExportOptions,
       context.view
     )
   })
@@ -164,12 +164,7 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
 
     expect(convert()).toHaveBeenCalledWith(
       'drawing.dwg',
-      {
-        exportInvisibleLayers: true,
-        exportLayouts: true,
-        initialView: 'fit',
-        viewerMode: 'view'
-      },
+      { ...defaultExportOptions, viewerMode: 'view' },
       context.view
     )
   })
@@ -188,12 +183,7 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
 
     expect(convert()).toHaveBeenCalledWith(
       'drawing.dwg',
-      {
-        exportInvisibleLayers: true,
-        exportLayouts: false,
-        initialView: 'fit',
-        viewerMode: 'measure'
-      },
+      { ...defaultExportOptions, exportLayouts: false },
       context.view
     )
   })
