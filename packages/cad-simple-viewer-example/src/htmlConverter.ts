@@ -1,10 +1,13 @@
 import {
-  type AcApHtmlExportOptions,
+  type AcApHtmlExpiryDays,
   AcApHtmlSnapshotBuilder,
   type AcExInitialViewMode,
   type AcExViewerMode,
   captureAcApHtmlViewState,
+  encodeSnapshot,
   packHtml,
+  protectAcExHtmlEncodedSnapshot,
+  resolveAcApHtmlExpiresAt,
   resolveAcApHtmlExportOptions
 } from '@mlightcad/cad-html-plugin'
 import {
@@ -42,9 +45,18 @@ const MESSAGES = {
   converted: 'Download started for {name}.html',
   openFailed: 'Failed to open {name}.',
   convertFailed: 'Conversion failed: {error}',
+  expiryCustomRequired: 'Please select a custom expiry date and time.',
+  expiryCustomPast: 'The custom expiry must be in the future.',
+  copyPasswordSuccess: 'Password copied to the clipboard.',
+  copyPasswordFailed: 'Unable to copy the password to the clipboard.',
   runtimeMissing:
     'Failed to load viewer-runtime.iife.js. Rebuild the example package and refresh.'
 } as const
+
+const PASSWORD_CHARS =
+  'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+
+const EXPIRY_DAY_VALUES = new Set<string>(['1', '7', '30', 'never', 'custom'])
 
 function format(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => vars[key] ?? '')
@@ -72,6 +84,9 @@ class HtmlConverterApp {
   private readonly convertButton: HTMLButtonElement
   private readonly exportInvisibleLayers: HTMLInputElement
   private readonly exportLayouts: HTMLInputElement
+  private readonly customExpiresAt: HTMLInputElement
+  private readonly exportPassword: HTMLInputElement
+  private readonly copyPasswordButton: HTMLButtonElement
   private initialized = false
   private busy = false
   private currentName = ''
@@ -103,8 +118,18 @@ class HtmlConverterApp {
     this.exportLayouts = document.getElementById(
       'exportLayouts'
     ) as HTMLInputElement
+    this.customExpiresAt = document.getElementById(
+      'customExpiresAt'
+    ) as HTMLInputElement
+    this.exportPassword = document.getElementById(
+      'exportPassword'
+    ) as HTMLInputElement
+    this.copyPasswordButton = document.getElementById(
+      'copyPassword'
+    ) as HTMLButtonElement
 
     this.bindEvents()
+    this.initSecurityDefaults()
   }
 
   private bindEvents() {
@@ -144,6 +169,70 @@ class HtmlConverterApp {
         input.addEventListener('change', () => this.syncChoiceSelection())
       })
     this.syncChoiceSelection()
+
+    document.querySelectorAll<HTMLButtonElement>('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        this.activateTab(tab.dataset.tab === 'security' ? 'security' : 'export')
+      })
+    })
+
+    document
+      .querySelectorAll<HTMLInputElement>('input[name="expiryDays"]')
+      .forEach(input => {
+        input.addEventListener('change', () => this.syncExpirySelection())
+      })
+    this.syncExpirySelection()
+
+    document.getElementById('generatePassword')?.addEventListener('click', () => {
+      this.generatePassword()
+    })
+    this.copyPasswordButton.addEventListener('click', () => {
+      void this.copyPassword()
+    })
+    this.exportPassword.addEventListener('input', () => {
+      this.syncCopyPasswordButton()
+    })
+    this.syncCopyPasswordButton()
+
+    document.getElementById('togglePassword')?.addEventListener('click', () => {
+      this.togglePasswordVisibility()
+    })
+  }
+
+  private activateTab(tab: 'export' | 'security') {
+    document.querySelectorAll<HTMLButtonElement>('.tab').forEach(button => {
+      const isActive = button.dataset.tab === tab
+      button.classList.toggle('is-active', isActive)
+      button.setAttribute('aria-selected', isActive ? 'true' : 'false')
+      button.tabIndex = isActive ? 0 : -1
+    })
+    const exportPanel = document.getElementById('panelExport')
+    const securityPanel = document.getElementById('panelSecurity')
+    if (exportPanel) {
+      exportPanel.hidden = tab !== 'export'
+    }
+    if (securityPanel) {
+      securityPanel.hidden = tab !== 'security'
+    }
+  }
+
+  private initSecurityDefaults() {
+    this.customExpiresAt.value = this.toDateTimeLocalValue(
+      this.defaultCustomExpiresAt()
+    )
+    this.customExpiresAt.min = this.toDateTimeLocalValue(new Date())
+  }
+
+  private defaultCustomExpiresAt(): Date {
+    const date = new Date()
+    date.setDate(date.getDate() + 1)
+    date.setSeconds(0, 0)
+    return date
+  }
+
+  private toDateTimeLocalValue(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
   }
 
   private syncChoiceSelection() {
@@ -154,6 +243,72 @@ class HtmlConverterApp {
         Boolean(input && (input as HTMLInputElement).checked)
       )
     })
+  }
+
+  private syncExpirySelection() {
+    document
+      .querySelectorAll<HTMLLabelElement>('.expiry-option')
+      .forEach(label => {
+        const input = label.querySelector('input[type="radio"]')
+        label.classList.toggle(
+          'is-selected',
+          Boolean(input && (input as HTMLInputElement).checked)
+        )
+      })
+    const selected = (
+      document.querySelector(
+        'input[name="expiryDays"]:checked'
+      ) as HTMLInputElement | null
+    )?.value
+    this.customExpiresAt.classList.toggle(
+      'is-visible',
+      selected === 'custom'
+    )
+  }
+
+  private syncCopyPasswordButton() {
+    this.copyPasswordButton.disabled = this.exportPassword.value.trim().length === 0
+  }
+
+  private togglePasswordVisibility() {
+    const toggle = document.getElementById(
+      'togglePassword'
+    ) as HTMLButtonElement | null
+    const show = this.exportPassword.type === 'password'
+    this.exportPassword.type = show ? 'text' : 'password'
+    if (!toggle) {
+      return
+    }
+    toggle.classList.toggle('is-visible', show)
+    toggle.setAttribute('aria-pressed', show ? 'true' : 'false')
+    toggle.setAttribute(
+      'aria-label',
+      show ? 'Hide password' : 'Show password'
+    )
+    toggle.title = show ? 'Hide password' : 'Show password'
+  }
+
+  private generatePassword() {
+    const bytes = new Uint8Array(12)
+    crypto.getRandomValues(bytes)
+    this.exportPassword.value = Array.from(
+      bytes,
+      byte => PASSWORD_CHARS[byte % PASSWORD_CHARS.length]!
+    ).join('')
+    this.syncCopyPasswordButton()
+  }
+
+  private async copyPassword() {
+    const password = this.exportPassword.value.trim()
+    if (!password) {
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(password)
+      this.setStatus(MESSAGES.copyPasswordSuccess)
+    } catch {
+      this.setStatus(MESSAGES.copyPasswordFailed, true)
+    }
   }
 
   private setStatus(message: string, isError = false) {
@@ -292,7 +447,46 @@ class HtmlConverterApp {
     )
   }
 
-  private readExportOptions(): AcApHtmlExportOptions {
+  private readExpiryDays(): AcApHtmlExpiryDays {
+    const raw = (
+      document.querySelector(
+        'input[name="expiryDays"]:checked'
+      ) as HTMLInputElement | null
+    )?.value
+    if (!raw || !EXPIRY_DAY_VALUES.has(raw)) {
+      return 'never'
+    }
+    if (raw === '1' || raw === '7' || raw === '30') {
+      return Number(raw) as 1 | 7 | 30
+    }
+    return raw as 'never' | 'custom'
+  }
+
+  private readCustomExpiresAt(): number | null {
+    const value = this.customExpiresAt.value
+    if (!value) {
+      return null
+    }
+    const time = new Date(value).getTime()
+    return Number.isNaN(time) ? null : time
+  }
+
+  private validateSecurityOptions(
+    options: ReturnType<typeof resolveAcApHtmlExportOptions>
+  ): string | null {
+    if (options.expiryDays !== 'custom') {
+      return null
+    }
+    if (options.expiresAt == null) {
+      return MESSAGES.expiryCustomRequired
+    }
+    if (options.expiresAt <= Date.now()) {
+      return MESSAGES.expiryCustomPast
+    }
+    return null
+  }
+
+  private readExportOptions(): ReturnType<typeof resolveAcApHtmlExportOptions> {
     const viewerMode = (
       document.querySelector(
         'input[name="viewerMode"]:checked'
@@ -303,11 +497,15 @@ class HtmlConverterApp {
         'input[name="initialView"]:checked'
       ) as HTMLInputElement | null
     )?.value as AcExInitialViewMode | undefined
+    const expiryDays = this.readExpiryDays()
     return resolveAcApHtmlExportOptions({
       exportInvisibleLayers: this.exportInvisibleLayers.checked,
       exportLayouts: this.exportLayouts.checked,
       initialView: initialView ?? 'fit',
-      viewerMode: viewerMode ?? 'measure'
+      viewerMode: viewerMode ?? 'measure',
+      expiryDays,
+      expiresAt: expiryDays === 'custom' ? this.readCustomExpiresAt() : null,
+      password: this.exportPassword.value.trim() || undefined
     })
   }
 
@@ -361,15 +559,37 @@ class HtmlConverterApp {
       }
     )
 
+    const expiresAt = resolveAcApHtmlExpiresAt(
+      resolved.expiryDays,
+      Date.now(),
+      resolved.expiresAt
+    )
+    const protectedSnapshot = await protectAcExHtmlEncodedSnapshot(
+      encodeSnapshot(snapshot),
+      {
+        expiresAt,
+        password: resolved.password || undefined
+      }
+    )
+
     const viewerRuntime = await (this.runtimePromise ?? this.loadViewerRuntime())
     return packHtml(snapshot, {
       title: snapshot.meta.title,
-      viewerRuntime
+      viewerRuntime,
+      encoded: protectedSnapshot.encoded,
+      accessManifest: protectedSnapshot.manifest
     })
   }
 
   private async convert() {
     if (this.busy || !this.hasPendingSource()) {
+      return
+    }
+
+    const securityError = this.validateSecurityOptions(this.readExportOptions())
+    if (securityError) {
+      this.setStatus(securityError, true)
+      this.activateTab('security')
       return
     }
 

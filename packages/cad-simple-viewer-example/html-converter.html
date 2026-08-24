@@ -207,9 +207,48 @@
       }
 
       .options-intro {
-        margin: 0 0 1rem;
+        margin: 0 0 0.85rem;
         font-size: 0.88rem;
         color: var(--muted);
+      }
+
+      .tabs {
+        display: flex;
+        gap: 0.15rem;
+        margin-bottom: 0.85rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .tab {
+        appearance: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        padding: 0.45rem 0.85rem;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .tab:hover {
+        color: var(--text);
+      }
+
+      .tab.is-active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+
+      .tab:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .tab-panel[hidden] {
+        display: none;
       }
 
       .options-grid {
@@ -217,6 +256,150 @@
         grid-template-columns: 1fr 1fr;
         gap: 0.75rem 1rem;
         margin-bottom: 0.25rem;
+      }
+
+      .security-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .expiry-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem 0.75rem;
+      }
+
+      .expiry-option {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-width: 0;
+        padding: 0.4rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.86rem;
+        font-weight: 600;
+      }
+
+      .expiry-option:hover {
+        border-color: var(--accent);
+      }
+
+      .expiry-option.is-selected {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .expiry-option input {
+        margin: 0;
+      }
+
+      .custom-expiry {
+        display: none;
+        width: 100%;
+        min-width: 0;
+        align-self: center;
+        padding: 0.4rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+        font-size: 0.86rem;
+      }
+
+      .custom-expiry.is-visible {
+        display: block;
+      }
+
+      .section-hint {
+        margin: 0.55rem 0 0;
+        font-size: 0.78rem;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      .password-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .password-field {
+        position: relative;
+        flex: 1 1 12rem;
+        min-width: 0;
+      }
+
+      .password-input {
+        width: 100%;
+        padding: 0.5rem 2.35rem 0.5rem 0.65rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+        font-size: 0.88rem;
+      }
+
+      .password-input:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+
+      .password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 0.2rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        transform: translateY(-50%);
+      }
+
+      .password-toggle:hover {
+        color: var(--text);
+        background: var(--accent-soft);
+      }
+
+      .password-toggle:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+
+      .password-toggle svg {
+        width: 1.1rem;
+        height: 1.1rem;
+        display: block;
+      }
+
+      .password-toggle .icon-hide {
+        display: none;
+      }
+
+      .password-toggle.is-visible .icon-show {
+        display: none;
+      }
+
+      .password-toggle.is-visible .icon-hide {
+        display: block;
+      }
+
+      .password-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
       }
 
       fieldset {
@@ -468,7 +651,8 @@
 
       @media (max-width: 720px) {
         .file-bar,
-        .options-grid {
+        .options-grid,
+        .expiry-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -533,74 +717,221 @@
             These match the HTML export dialog in the full viewer.
           </p>
 
-          <div class="options-grid">
-          <fieldset>
-            <legend>Layers</legend>
-            <div class="toggle-row">
-              <div class="toggle-copy">
-                <span class="toggle-label">Export invisible layers</span>
-                <span class="hint">Include geometry on off or frozen layers</span>
-              </div>
-              <label class="switch">
-                <input id="exportInvisibleLayers" type="checkbox" checked />
-                <span></span>
-              </label>
-            </div>
-          </fieldset>
+          <div class="tabs" role="tablist" aria-label="Export option categories">
+            <button
+              type="button"
+              class="tab is-active"
+              role="tab"
+              id="tabExport"
+              aria-controls="panelExport"
+              aria-selected="true"
+              data-tab="export"
+            >
+              Export
+            </button>
+            <button
+              type="button"
+              class="tab"
+              role="tab"
+              id="tabSecurity"
+              aria-controls="panelSecurity"
+              aria-selected="false"
+              data-tab="security"
+              tabindex="-1"
+            >
+              Security
+            </button>
+          </div>
 
-          <fieldset>
-            <legend>Layouts</legend>
-            <div class="toggle-row">
-              <div class="toggle-copy">
-                <span class="toggle-label">Export layouts</span>
-                <span class="hint">Include paper-space layouts in the snapshot</span>
-              </div>
-              <label class="switch">
-                <input id="exportLayouts" type="checkbox" checked />
-                <span></span>
-              </label>
-            </div>
-          </fieldset>
+          <div
+            class="tab-panel"
+            id="panelExport"
+            role="tabpanel"
+            aria-labelledby="tabExport"
+          >
+            <div class="options-grid">
+              <fieldset>
+                <legend>Layers</legend>
+                <div class="toggle-row">
+                  <div class="toggle-copy">
+                    <span class="toggle-label">Export invisible layers</span>
+                    <span class="hint">Include geometry on off or frozen layers</span>
+                  </div>
+                  <label class="switch">
+                    <input id="exportInvisibleLayers" type="checkbox" checked />
+                    <span></span>
+                  </label>
+                </div>
+              </fieldset>
 
-          <fieldset>
-            <legend>Initial view</legend>
-            <div class="choice-grid">
-              <label class="choice is-selected">
-                <input type="radio" name="initialView" value="fit" checked />
-                <span>
-                  <span class="choice-title">Zoom to extents</span>
-                  <span class="hint">Fit the whole drawing when the HTML opens</span>
-                </span>
-              </label>
-              <label class="choice">
-                <input type="radio" name="initialView" value="current" />
-                <span>
-                  <span class="choice-title">Saved viewport</span>
-                  <span class="hint">Use the view last saved in the drawing</span>
-                </span>
-              </label>
-            </div>
-          </fieldset>
+              <fieldset>
+                <legend>Layouts</legend>
+                <div class="toggle-row">
+                  <div class="toggle-copy">
+                    <span class="toggle-label">Export layouts</span>
+                    <span class="hint">Include paper-space layouts in the snapshot</span>
+                  </div>
+                  <label class="switch">
+                    <input id="exportLayouts" type="checkbox" checked />
+                    <span></span>
+                  </label>
+                </div>
+              </fieldset>
 
-          <fieldset>
-            <legend>Viewer mode</legend>
-            <div class="choice-grid">
-              <label class="choice">
-                <input type="radio" name="viewerMode" value="view" />
-                <span>
-                  <span class="choice-title">View</span>
-                  <span class="hint">Pan, zoom, and layer controls only</span>
-                </span>
-              </label>
-              <label class="choice is-selected">
-                <input type="radio" name="viewerMode" value="measure" checked />
-                <span>
-                  <span class="choice-title">Measure &amp; Review</span>
-                  <span class="hint">Adds measurement and markup tools</span>
-                </span>
-              </label>
+              <fieldset>
+                <legend>Initial view</legend>
+                <div class="choice-grid">
+                  <label class="choice is-selected">
+                    <input type="radio" name="initialView" value="fit" checked />
+                    <span>
+                      <span class="choice-title">Zoom to extents</span>
+                      <span class="hint">Fit the whole drawing when the HTML opens</span>
+                    </span>
+                  </label>
+                  <label class="choice">
+                    <input type="radio" name="initialView" value="current" />
+                    <span>
+                      <span class="choice-title">Saved viewport</span>
+                      <span class="hint">Use the view last saved in the drawing</span>
+                    </span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Viewer mode</legend>
+                <div class="choice-grid">
+                  <label class="choice">
+                    <input type="radio" name="viewerMode" value="view" />
+                    <span>
+                      <span class="choice-title">View</span>
+                      <span class="hint">Pan, zoom, and layer controls only</span>
+                    </span>
+                  </label>
+                  <label class="choice is-selected">
+                    <input type="radio" name="viewerMode" value="measure" checked />
+                    <span>
+                      <span class="choice-title">Measure &amp; Review</span>
+                      <span class="hint">Adds measurement and markup tools</span>
+                    </span>
+                  </label>
+                </div>
+              </fieldset>
             </div>
-          </fieldset>
+          </div>
+
+          <div
+            class="tab-panel"
+            id="panelSecurity"
+            role="tabpanel"
+            aria-labelledby="tabSecurity"
+            hidden
+          >
+            <div class="security-stack">
+              <fieldset>
+                <legend>Validity</legend>
+                <div class="expiry-grid" id="expiryGrid">
+                  <label class="expiry-option">
+                    <input type="radio" name="expiryDays" value="1" />
+                    <span>1 day</span>
+                  </label>
+                  <label class="expiry-option">
+                    <input type="radio" name="expiryDays" value="7" />
+                    <span>7 days</span>
+                  </label>
+                  <label class="expiry-option">
+                    <input type="radio" name="expiryDays" value="30" />
+                    <span>30 days</span>
+                  </label>
+                  <label class="expiry-option">
+                    <input type="radio" name="expiryDays" value="custom" />
+                    <span>Custom</span>
+                  </label>
+                  <label class="expiry-option is-selected">
+                    <input type="radio" name="expiryDays" value="never" checked />
+                    <span>Never expires</span>
+                  </label>
+                  <input
+                    id="customExpiresAt"
+                    class="custom-expiry"
+                    type="datetime-local"
+                    aria-label="Custom expiry date and time"
+                  />
+                </div>
+                <p class="section-hint">
+                  After the validity period ends, the exported HTML can no longer
+                  be opened.
+                </p>
+              </fieldset>
+
+              <fieldset>
+                <legend>Password</legend>
+                <div class="password-row">
+                  <div class="password-field">
+                    <input
+                      id="exportPassword"
+                      class="password-input"
+                      type="password"
+                      autocomplete="new-password"
+                      placeholder="Leave blank for no password"
+                    />
+                    <button
+                      type="button"
+                      class="password-toggle"
+                      id="togglePassword"
+                      aria-label="Show password"
+                      aria-pressed="false"
+                      title="Show password"
+                    >
+                      <svg
+                        class="icon-show"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      <svg
+                        class="icon-hide"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+                        />
+                        <path
+                          d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
+                        />
+                        <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="password-actions">
+                    <button type="button" class="btn" id="generatePassword">
+                      Generate
+                    </button>
+                    <button type="button" class="btn" id="copyPassword" disabled>
+                      Copy
+                    </button>
+                  </div>
+                </div>
+                <p class="section-hint">
+                  When set, the HTML file requires the correct password to open.
+                  Enter one manually or generate one with the button.
+                </p>
+              </fieldset>
+            </div>
           </div>
         </div>
 
