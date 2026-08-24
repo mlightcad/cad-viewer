@@ -77,10 +77,7 @@
     </div>
 
     <div class="ml-layer-manager-body">
-      <div
-        v-show="filterPanelVisible"
-        class="ml-layer-manager-filter-panel"
-      >
+      <div v-show="filterPanelVisible" class="ml-layer-manager-filter-panel">
         <div class="ml-layer-manager-filter-panel-header">
           <span class="ml-layer-manager-filters-title">
             {{ t('main.toolPalette.layerManager.filters') }}
@@ -143,16 +140,8 @@
 </template>
 
 <script setup lang="ts">
-import {
-  Filter,
-  FolderAdd,
-  Plus,
-  Search
-} from '@element-plus/icons-vue'
-import {
-  AcApDocManager,
-  AcApLayerService
-} from '@mlightcad/cad-simple-viewer'
+import { Filter, FolderAdd, Plus, Search } from '@element-plus/icons-vue'
+import { AcApDocManager, AcApLayerService } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor, AcCmTransparency } from '@mlightcad/data-model'
 import {
   ElButton,
@@ -257,9 +246,7 @@ const currentLayerLabel = computed(() =>
   })
 )
 
-const toFilterTreeNodes = (
-  nodes: typeof filterTree
-): FilterTreeNode[] =>
+const toFilterTreeNodes = (nodes: typeof filterTree): FilterTreeNode[] =>
   nodes.map(node => ({
     id: node.id,
     label: node.name,
@@ -341,9 +328,7 @@ const selectedLayer = computed(
 watch(displayedLayers, rows => {
   if (
     selectedLayerName.value &&
-    !rows.some(
-      row => !row.isDraft && row.name === selectedLayerName.value
-    )
+    !rows.some(row => !row.isDraft && row.name === selectedLayerName.value)
   ) {
     selectedLayerName.value = null
   }
@@ -616,9 +601,12 @@ const handleDeleteLayer = () => {
 
   const result = new AcApLayerService(db).deleteLayer(layer.name)
   if (!result.ok) {
-    let message = t('main.toolPalette.layerManager.messages.layerDeleteFailed', {
-      name: layer.name
-    })
+    let message = t(
+      'main.toolPalette.layerManager.messages.layerDeleteFailed',
+      {
+        name: layer.name
+      }
+    )
     if (result.reason === 'layer_0') {
       message = t('main.toolPalette.layerManager.messages.cannotDeleteLayer0')
     } else if (result.reason === 'current_layer') {
