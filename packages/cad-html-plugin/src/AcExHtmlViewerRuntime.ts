@@ -106,7 +106,7 @@ async function resolveSnapshotPayload(
     return null
   }
 
-  let payload = snapshotEl.textContent?.trim() ?? ''
+  const payload = snapshotEl.textContent?.trim() ?? ''
 
   if (!manifest?.encrypted) {
     return payload

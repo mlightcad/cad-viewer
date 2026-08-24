@@ -1,8 +1,8 @@
-import { resolveAcExHtmlLocale } from './AcExHtmlI18n'
 import type { AcExHtmlAccessManifest } from './AcExHtmlAccess'
+import { resolveAcExHtmlLocale } from './AcExHtmlI18n'
 import { ACEX_HTML_SHELL_CSS, buildAcExHtmlShellBody } from './AcExHtmlShell'
-import type { AcExEncodedSnapshot } from './AcExSnapshotCompression'
 import { encodeSnapshot, snapshotMimeType } from './AcExSnapshotCodec'
+import type { AcExEncodedSnapshot } from './AcExSnapshotCompression'
 import type { AcExSnapshot } from './AcExSnapshotTypes'
 
 /**

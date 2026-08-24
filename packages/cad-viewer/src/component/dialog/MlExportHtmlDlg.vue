@@ -219,8 +219,8 @@
  * this UI is available via `-chtml`.
  */
 import type {
-  AcApHtmlExportOptions,
   AcApHtmlExpiryDays,
+  AcApHtmlExportOptions,
   AcExInitialViewMode,
   AcExViewerMode
 } from '@mlightcad/cad-html-plugin'
