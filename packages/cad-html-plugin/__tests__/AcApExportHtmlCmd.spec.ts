@@ -84,6 +84,7 @@ const defaultExportOptions = {
   initialView: 'fit',
   viewerMode: 'measure',
   expiryDays: 'never',
+  expiresAt: null,
   password: ''
 }
 

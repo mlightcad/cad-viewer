@@ -3,7 +3,8 @@
 import {
   ACEX_HTML_MAX_PASSWORD_ATTEMPTS,
   lockAcExHtmlAccessGate,
-  promptAcExHtmlAccessPassword
+  promptAcExHtmlAccessPassword,
+  showAcExHtmlAccessExpired
 } from '../src/AcExHtmlAccessGate'
 import { AcExHtmlI18n } from '../src/AcExHtmlI18n'
 
@@ -13,7 +14,12 @@ describe('AcExHtmlAccessGate', () => {
       <div id="mlcad-loading">
         <div id="mlcad-access-gate" hidden>
           <form id="mlcad-access-form">
-            <input id="mlcad-access-password" type="password" />
+            <h2 class="mlcad-access-title" data-i18n-key="access.title" data-i18n-text>Protected drawing</h2>
+            <p class="mlcad-access-hint" data-i18n-key="access.passwordPrompt" data-i18n-text>Enter the password to open this file.</p>
+            <p id="mlcad-access-expiry" class="mlcad-access-expiry" hidden></p>
+            <div class="mlcad-access-field">
+              <input id="mlcad-access-password" type="password" />
+            </div>
             <button type="submit" class="mlcad-access-submit">Unlock</button>
             <p id="mlcad-access-error" hidden></p>
           </form>
@@ -42,13 +48,20 @@ describe('AcExHtmlAccessGate', () => {
     expect(errorEl?.textContent).toContain('Refresh the page')
   })
 
-  it('shows a wrong-password error on the next prompt', async () => {
+  it('shows expiry info and a wrong-password error on the next prompt', async () => {
     const i18n = new AcExHtmlI18n('zh')
-    const promptPromise = promptAcExHtmlAccessPassword(i18n, 'access.wrongPassword')
+    const expiresAt = Date.UTC(2026, 5, 1, 12, 0, 0)
+    const promptPromise = promptAcExHtmlAccessPassword(i18n, {
+      errorKey: 'access.wrongPassword',
+      expiresAt
+    })
 
     const errorEl = document.getElementById('mlcad-access-error')
+    const expiryEl = document.getElementById('mlcad-access-expiry')
     expect(errorEl?.hidden).toBe(false)
     expect(errorEl?.textContent).toBe('密码错误，请重试。')
+    expect(expiryEl?.hidden).toBe(false)
+    expect(expiryEl?.textContent).toContain('有效期至')
 
     const input = document.getElementById(
       'mlcad-access-password'
@@ -59,6 +72,25 @@ describe('AcExHtmlAccessGate', () => {
     )
 
     await expect(promptPromise).resolves.toBe('secret')
+  })
+
+  it('shows an expired unlock page without the password form', () => {
+    const i18n = new AcExHtmlI18n('en')
+    const expiresAt = Date.UTC(2026, 0, 1, 8, 0, 0)
+    showAcExHtmlAccessExpired(i18n, expiresAt)
+
+    const gate = document.getElementById('mlcad-access-gate')
+    const field = document.querySelector<HTMLElement>('.mlcad-access-field')
+    const submit = document.querySelector<HTMLElement>('.mlcad-access-submit')
+    const title = document.querySelector('.mlcad-access-title')
+    const hint = document.querySelector('.mlcad-access-hint')
+
+    expect(gate?.hidden).toBe(false)
+    expect(gate?.classList.contains('mlcad-access-gate--expired')).toBe(true)
+    expect(field?.hidden).toBe(true)
+    expect(submit?.hidden).toBe(true)
+    expect(title?.textContent).toBe('File expired')
+    expect(hint?.textContent).toContain('expired on')
   })
 
   it('exports a three-attempt limit constant', () => {

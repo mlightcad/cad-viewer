@@ -14,8 +14,10 @@ import {
 import {
   ACEX_HTML_MAX_PASSWORD_ATTEMPTS,
   lockAcExHtmlAccessGate,
-  promptAcExHtmlAccessPassword
+  promptAcExHtmlAccessPassword,
+  showAcExHtmlAccessExpired
 } from './AcExHtmlAccessGate'
+import { setupAcExHtmlExpiryMonitor } from './AcExHtmlExpiryUi'
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import { setupAcExHtmlLayoutMenu } from './AcExHtmlLayoutMenu'
@@ -70,10 +72,8 @@ const ACEX_CAMERA_DISTANCE = 500
 function hideLoading(): void {
   const loading = document.getElementById('mlcad-loading')
   if (!loading) return
+  // Keep the node so the access/expiry gate can be shown again after open.
   loading.classList.add('mlcad-loading--done')
-  loading.addEventListener('transitionend', () => loading.remove(), {
-    once: true
-  })
 }
 
 function showViewerError(message: string): void {
@@ -97,19 +97,20 @@ function bootstrap(): void {
 async function resolveSnapshotPayload(
   snapshotEl: HTMLElement,
   i18n: AcExHtmlI18n
-): Promise<string | null> {
+): Promise<{ payload: string; expiresAt: number | null } | null> {
   const accessEl = document.getElementById('mlcad-access')
   const manifest = parseAcExHtmlAccessManifest(accessEl?.textContent)
+  const expiresAt = manifest?.expiresAt ?? null
 
   if (manifest && isAcExHtmlAccessExpired(manifest)) {
-    showViewerError(i18n.t('access.expired'))
+    showAcExHtmlAccessExpired(i18n, expiresAt)
     return null
   }
 
   const payload = snapshotEl.textContent?.trim() ?? ''
 
   if (!manifest?.encrypted) {
-    return payload
+    return { payload, expiresAt }
   }
 
   if (!manifest.salt) {
@@ -124,14 +125,20 @@ async function resolveSnapshotPayload(
 
   while (failedAttempts < ACEX_HTML_MAX_PASSWORD_ATTEMPTS) {
     try {
-      const password = await promptAcExHtmlAccessPassword(i18n, pendingError)
+      const password = await promptAcExHtmlAccessPassword(i18n, {
+        errorKey: pendingError,
+        expiresAt
+      })
       pendingError = undefined
       try {
-        return await decryptAcExHtmlSnapshotPayload(
-          password,
-          payload,
-          manifest.salt
-        )
+        return {
+          payload: await decryptAcExHtmlSnapshotPayload(
+            password,
+            payload,
+            manifest.salt
+          ),
+          expiresAt
+        }
       } catch {
         failedAttempts++
         if (failedAttempts >= ACEX_HTML_MAX_PASSWORD_ATTEMPTS) {
@@ -159,10 +166,11 @@ async function startViewer(): Promise<void> {
   const i18n = new AcExHtmlI18n(detectAcExHtmlLocale())
   i18n.applyToDocument()
 
-  const payload = await resolveSnapshotPayload(snapshotEl, i18n)
-  if (!payload) {
+  const resolved = await resolveSnapshotPayload(snapshotEl, i18n)
+  if (!resolved) {
     return
   }
+  const { payload, expiresAt } = resolved
 
   const statusEl =
     document.getElementById('mlcad-status-bar') ?? createHiddenStatusSink()
@@ -516,6 +524,7 @@ async function startViewer(): Promise<void> {
   const navToolsRef: {
     current: ReturnType<typeof setupAcExHtmlNavTools> | null
   } = { current: null }
+  let expiryMonitor: ReturnType<typeof setupAcExHtmlExpiryMonitor> | null = null
 
   const isToolActive = () =>
     measure?.isActive === true || markup?.isActive === true
@@ -1052,6 +1061,7 @@ async function startViewer(): Promise<void> {
     toolbarCollapse.refreshLabels()
     toolbarFlyouts?.refreshLabels()
     navToolsRef.current?.refreshLabels()
+    expiryMonitor?.refreshLabels()
     // Re-apply visibility button label after i18n DOM refresh.
     if (markup) {
       markup.setVisible(markup.visible)
@@ -1125,6 +1135,16 @@ async function startViewer(): Promise<void> {
     releaseSnapshotBatchBuffers(snapshot)
   }
   measure?.refreshIdleStatus()
+  if (expiresAt != null) {
+    expiryMonitor = setupAcExHtmlExpiryMonitor({
+      expiresAt,
+      i18n,
+      onExpire: () => {
+        // Keep the canvas mounted under the expired gate; interaction is blocked
+        // by the loading overlay.
+      }
+    })
+  }
   hideLoading()
 }
 

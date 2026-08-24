@@ -3,6 +3,7 @@
     v-model:modelValue="visible"
     :title="t('dialog.exportHtmlDlg.title')"
     :width="520"
+    :auto-close="false"
     @open="handleOpen"
     @ok="handleOk"
   >
@@ -154,23 +155,39 @@
               :title="t('dialog.exportHtmlDlg.expirySection')"
               class="ml-export-html-dlg__section"
             >
-              <el-radio-group
-                v-model="form.expiryDays"
-                class="ml-export-html-dlg__expiry-group"
-              >
-                <el-radio :value="1">{{
-                  t('dialog.exportHtmlDlg.expiry1Day')
-                }}</el-radio>
-                <el-radio :value="7">{{
-                  t('dialog.exportHtmlDlg.expiry7Days')
-                }}</el-radio>
-                <el-radio :value="30">{{
-                  t('dialog.exportHtmlDlg.expiry30Days')
-                }}</el-radio>
-                <el-radio value="never">{{
-                  t('dialog.exportHtmlDlg.expiryNever')
-                }}</el-radio>
-              </el-radio-group>
+              <div class="ml-export-html-dlg__expiry-grid">
+                <el-radio-group
+                  v-model="form.expiryDays"
+                  class="ml-export-html-dlg__expiry-group"
+                >
+                  <el-radio :value="1">{{
+                    t('dialog.exportHtmlDlg.expiry1Day')
+                  }}</el-radio>
+                  <el-radio :value="7">{{
+                    t('dialog.exportHtmlDlg.expiry7Days')
+                  }}</el-radio>
+                  <el-radio :value="30">{{
+                    t('dialog.exportHtmlDlg.expiry30Days')
+                  }}</el-radio>
+                  <el-radio value="custom">{{
+                    t('dialog.exportHtmlDlg.expiryCustom')
+                  }}</el-radio>
+                  <el-radio value="never">{{
+                    t('dialog.exportHtmlDlg.expiryNever')
+                  }}</el-radio>
+                </el-radio-group>
+                <el-date-picker
+                  v-if="form.expiryDays === 'custom'"
+                  v-model="form.customExpiresAt"
+                  type="datetime"
+                  class="ml-export-html-dlg__custom-expiry"
+                  :placeholder="
+                    t('dialog.exportHtmlDlg.expiryCustomPlaceholder')
+                  "
+                  :disabled-date="isPastExpiryDate"
+                  :clearable="false"
+                />
+              </div>
               <p class="ml-export-html-dlg__section-hint">
                 {{ t('dialog.exportHtmlDlg.expiryHint') }}
               </p>
@@ -227,6 +244,7 @@ import type {
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import {
   ElButton,
+  ElDatePicker,
   ElInput,
   ElMessage,
   ElRadio,
@@ -281,6 +299,8 @@ export interface MlExportHtmlDlgForm {
   viewerMode: AcExViewerMode
   /** How long the exported HTML remains valid. */
   expiryDays: AcApHtmlExpiryDays
+  /** Absolute expiry used when {@link MlExportHtmlDlgForm.expiryDays} is `'custom'`. */
+  customExpiresAt: Date | null
   /** Optional password required to open the exported HTML. */
   password: string
 }
@@ -319,6 +339,7 @@ const form = reactive<MlExportHtmlDlgForm>({
   initialView: 'fit',
   viewerMode: 'measure',
   expiryDays: 'never',
+  customExpiresAt: null,
   password: ''
 })
 
@@ -331,8 +352,28 @@ function resetForm() {
   form.initialView = 'fit'
   form.viewerMode = 'measure'
   form.expiryDays = 'never'
+  form.customExpiresAt = defaultCustomExpiresAt()
   form.password = ''
   activeTab.value = 'export'
+}
+
+/**
+ * Default custom expiry: tomorrow at the current local time.
+ */
+function defaultCustomExpiresAt(): Date {
+  const date = new Date()
+  date.setDate(date.getDate() + 1)
+  date.setSeconds(0, 0)
+  return date
+}
+
+/**
+ * Disables calendar days that are entirely in the past.
+ */
+function isPastExpiryDate(date: Date): boolean {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return date.getTime() < today.getTime()
 }
 
 /**
@@ -391,12 +432,36 @@ async function handleOk() {
   const document = docManager.curDocument
   const view = docManager.curView
 
+  if (form.expiryDays === 'custom') {
+    const customExpiresAt = form.customExpiresAt?.getTime()
+    if (customExpiresAt == null || Number.isNaN(customExpiresAt)) {
+      ElMessage({
+        message: t('dialog.exportHtmlDlg.expiryCustomRequired'),
+        grouping: true,
+        type: 'error'
+      })
+      return
+    }
+    if (customExpiresAt <= Date.now()) {
+      ElMessage({
+        message: t('dialog.exportHtmlDlg.expiryCustomPast'),
+        grouping: true,
+        type: 'error'
+      })
+      return
+    }
+  }
+
   const options: AcApHtmlExportOptions = {
     exportInvisibleLayers: form.exportInvisibleLayers,
     exportLayouts: form.exportLayouts,
     initialView: form.initialView,
     viewerMode: form.viewerMode,
     expiryDays: form.expiryDays,
+    expiresAt:
+      form.expiryDays === 'custom'
+        ? (form.customExpiresAt?.getTime() ?? null)
+        : null,
     password: form.password.trim() || undefined
   }
 
@@ -416,9 +481,11 @@ async function handleOk() {
       resolveAcApHtmlExportOptions(options),
       view
     )
+    visible.value = false
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     docManager.editor.showMessage(message, 'error')
+    visible.value = false
   }
 }
 </script>
@@ -551,10 +618,20 @@ async function handleOk() {
   line-height: 1.35;
 }
 
-.ml-export-html-dlg__expiry-group {
+.ml-export-html-dlg__expiry-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.ml-export-html-dlg__expiry-group {
+  display: contents;
+}
+
+.ml-export-html-dlg__custom-expiry {
+  min-width: 0;
   width: 100%;
 }
 

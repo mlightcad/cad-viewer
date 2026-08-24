@@ -618,6 +618,16 @@ export const ACEX_HTML_SHELL_CSS = `
     color: var(--mlcad-ui-muted);
     text-align: center;
   }
+  .mlcad-access-expiry {
+    margin: -8px 0 16px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--mlcad-ui-muted);
+    text-align: center;
+  }
+  .mlcad-access-expiry[hidden] {
+    display: none;
+  }
   .mlcad-access-field {
     display: flex;
     gap: 8px;
@@ -668,6 +678,31 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-access-gate--locked .mlcad-access-field input:disabled {
     opacity: 0.55;
     cursor: not-allowed;
+  }
+  .mlcad-expiry-badge {
+    position: fixed;
+    top: var(--mlcad-ui-inset);
+    right: var(--mlcad-ui-inset);
+    z-index: 40;
+    max-width: min(360px, calc(100vw - 2 * var(--mlcad-ui-inset)));
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--mlcad-ui-border);
+    background: var(--mlcad-ui-bg-elevated);
+    box-shadow: var(--mlcad-shadow);
+    color: var(--mlcad-ui-text);
+    font-size: 12px;
+    line-height: 1.4;
+    pointer-events: none;
+  }
+  .mlcad-expiry-badge[hidden] {
+    display: none !important;
+  }
+  .mlcad-expiry-badge--countdown {
+    border-color: rgba(255, 152, 0, 0.55);
+    background: rgba(255, 152, 0, 0.16);
+    color: #ffcc80;
+    font-variant-numeric: tabular-nums;
   }
 
   @media (max-width: ${ML_UI_MOBILE_MAX_WIDTH}px) {
@@ -734,8 +769,9 @@ export function buildAcExHtmlShellBody(
     <div class="mlcad-loading-spinner"></div>
     <div id="mlcad-access-gate" hidden>
       <form id="mlcad-access-form" class="mlcad-access-card">
-        <h2 class="mlcad-access-title" data-i18n-key="access.title">Protected drawing</h2>
-        <p class="mlcad-access-hint" data-i18n-key="access.passwordPrompt">Enter the password to open this file.</p>
+        <h2 class="mlcad-access-title" data-i18n-key="access.title" data-i18n-text>Protected drawing</h2>
+        <p class="mlcad-access-hint" data-i18n-key="access.passwordPrompt" data-i18n-text>Enter the password to open this file.</p>
+        <p id="mlcad-access-expiry" class="mlcad-access-expiry" hidden></p>
         <div class="mlcad-access-field">
           <input
             id="mlcad-access-password"
@@ -747,7 +783,7 @@ export function buildAcExHtmlShellBody(
             aria-label="Password"
           />
         </div>
-        <button type="submit" class="mlcad-access-submit" data-i18n-key="access.unlock">Unlock</button>
+        <button type="submit" class="mlcad-access-submit" data-i18n-key="access.unlock" data-i18n-text>Unlock</button>
         <p id="mlcad-access-error" class="mlcad-access-error" hidden></p>
       </form>
     </div>

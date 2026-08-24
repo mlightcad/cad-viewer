@@ -97,7 +97,11 @@ export default {
     expiry1Day: '1 gün',
     expiry7Days: '7 gün',
     expiry30Days: '30 gün',
+    expiryCustom: 'Özel',
     expiryNever: 'Süresiz',
+    expiryCustomPlaceholder: 'Son geçerlilik tarihi ve saatini seçin',
+    expiryCustomRequired: 'Lütfen özel bir son geçerlilik tarihi ve saati seçin.',
+    expiryCustomPast: 'Özel son geçerlilik gelecekte olmalıdır.',
     expiryHint:
       'Geçerlilik süresi dolduktan sonra dışa aktarılan HTML artık açılamaz.',
     passwordSection: 'Parola',

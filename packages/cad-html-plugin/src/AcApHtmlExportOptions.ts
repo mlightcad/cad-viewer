@@ -39,8 +39,14 @@ export interface AcApHtmlExportOptions {
   viewerMode?: AcExViewerMode
   /**
    * How long the exported HTML remains valid. Defaults to `'never'`.
+   * Use `'custom'` with {@link AcApHtmlExportOptions.expiresAt} for an absolute time.
    */
   expiryDays?: AcApHtmlExpiryDays
+  /**
+   * Absolute expiry timestamp (Unix ms). Used when {@link AcApHtmlExportOptions.expiryDays}
+   * is `'custom'`. Ignored for relative periods and `'never'`.
+   */
+  expiresAt?: number | null
   /**
    * Optional password required to open the exported HTML. When set, the snapshot
    * payload is encrypted in the file.
@@ -54,9 +60,10 @@ export interface AcApHtmlExportOptions {
 export function resolveAcApHtmlExportOptions(
   options: AcApHtmlExportOptions = {}
 ): Required<
-  Omit<AcApHtmlExportOptions, 'password' | 'expiryDays'>
+  Omit<AcApHtmlExportOptions, 'password' | 'expiryDays' | 'expiresAt'>
 > & {
   expiryDays: AcApHtmlExpiryDays
+  expiresAt: number | null
   password: string
 } {
   return {
@@ -65,6 +72,7 @@ export function resolveAcApHtmlExportOptions(
     initialView: options.initialView ?? 'fit',
     viewerMode: options.viewerMode ?? 'measure',
     expiryDays: options.expiryDays ?? 'never',
+    expiresAt: options.expiresAt ?? null,
     password: options.password?.trim() ?? ''
   }
 }

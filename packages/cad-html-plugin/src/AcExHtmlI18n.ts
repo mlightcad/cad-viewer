@@ -130,6 +130,11 @@ export type AcExHtmlMessageKey =
   | 'access.passwordRequired'
   | 'access.wrongPassword'
   | 'access.expired'
+  | 'access.expiredTitle'
+  | 'access.expiredDetail'
+  | 'access.expiresAt'
+  | 'access.badgeExpires'
+  | 'access.badgeCountdown'
   | 'access.tooManyAttempts'
 
 /**
@@ -264,6 +269,12 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       passwordRequired: 'Please enter a password.',
       wrongPassword: 'Incorrect password. Try again.',
       expired: 'This file has expired and can no longer be opened.',
+      expiredTitle: 'File expired',
+      expiredDetail:
+        'This file expired on {time} and can no longer be opened.',
+      expiresAt: 'Expires: {time}',
+      badgeExpires: 'Expires {time}',
+      badgeCountdown: 'Expires in {time}',
       tooManyAttempts:
         'Too many incorrect password attempts. Refresh the page to try again.'
     }
@@ -384,6 +395,11 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       passwordRequired: '请输入密码。',
       wrongPassword: '密码错误，请重试。',
       expired: '此文件已过期，无法打开。',
+      expiredTitle: '文件已过期',
+      expiredDetail: '此文件已于 {time} 过期，无法打开。',
+      expiresAt: '有效期至：{time}',
+      badgeExpires: '有效期至 {time}',
+      badgeCountdown: '剩余 {time}',
       tooManyAttempts: '密码错误次数过多，请刷新页面后重新输入。'
     }
   },
@@ -509,6 +525,12 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       passwordRequired: 'Zadejte heslo.',
       wrongPassword: 'Nesprávné heslo. Zkuste to znovu.',
       expired: 'Platnost tohoto souboru vypršela a nelze jej otevřít.',
+      expiredTitle: 'Soubor vypršel',
+      expiredDetail:
+        'Platnost tohoto souboru vypršela dne {time} a již jej nelze otevřít.',
+      expiresAt: 'Platnost do: {time}',
+      badgeExpires: 'Platnost do {time}',
+      badgeCountdown: 'Vyprší za {time}',
       tooManyAttempts:
         'Příliš mnoho nesprávných pokusů o heslo. Obnovte stránku a zkuste to znovu.'
     }
@@ -636,6 +658,12 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       passwordRequired: 'Lütfen bir parola girin.',
       wrongPassword: 'Parola yanlış. Tekrar deneyin.',
       expired: 'Bu dosyanın süresi doldu ve artık açılamaz.',
+      expiredTitle: 'Dosyanın süresi doldu',
+      expiredDetail:
+        'Bu dosyanın süresi {time} tarihinde doldu ve artık açılamaz.',
+      expiresAt: 'Son geçerlilik: {time}',
+      badgeExpires: 'Son geçerlilik {time}',
+      badgeCountdown: 'Kalan süre {time}',
       tooManyAttempts:
         'Çok fazla yanlış parola denemesi yapıldı. Tekrar denemek için sayfayı yenileyin.'
     }
@@ -757,6 +785,12 @@ const AR_MESSAGES: AcExMessageTree = {
     passwordRequired: 'يرجى إدخال كلمة المرور.',
     wrongPassword: 'كلمة المرور غير صحيحة. حاول مرة أخرى.',
     expired: 'انتهت صلاحية هذا الملف ولا يمكن فتحه.',
+    expiredTitle: 'انتهت صلاحية الملف',
+    expiredDetail:
+      'انتهت صلاحية هذا الملف في {time} ولا يمكن فتحه.',
+    expiresAt: 'ينتهي في: {time}',
+    badgeExpires: 'ينتهي في {time}',
+    badgeCountdown: 'متبقي {time}',
     tooManyAttempts:
       'عدد محاولات إدخال كلمة المرور كبير جدًا. قم بتحديث الصفحة للمحاولة مرة أخرى.'
   }

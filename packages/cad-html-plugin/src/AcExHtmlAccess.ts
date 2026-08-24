@@ -3,8 +3,11 @@ import type { AcExEncodedSnapshot } from './AcExSnapshotCodec'
 /** Access-control manifest schema version embedded in exported HTML. */
 export const ACEX_HTML_ACCESS_VERSION = 1 as const
 
-/** Supported HTML export validity periods in days. */
-export type AcApHtmlExpiryDays = 1 | 7 | 30 | 'never'
+/** Remaining time window (ms) before expiry when the viewer shows a countdown. */
+export const ACEX_HTML_EXPIRY_COUNTDOWN_MS = 10 * 60 * 1000
+
+/** Supported HTML export validity periods. */
+export type AcApHtmlExpiryDays = 1 | 7 | 30 | 'never' | 'custom'
 
 /**
  * Access metadata embedded in protected HTML exports.
@@ -27,15 +30,29 @@ const PBKDF2_ITERATIONS = 100_000
 const SALT_BYTES = 16
 const IV_BYTES = 12
 
+const LOCALE_TO_BCP47: Record<string, string> = {
+  en: 'en',
+  zh: 'zh-CN',
+  cs: 'cs',
+  tr: 'tr',
+  ar: 'ar'
+}
+
 /**
  * Computes the expiry timestamp from a validity period and export time.
+ *
+ * When `expiryDays` is `'custom'`, returns `customExpiresAt` (or `null`).
  */
 export function resolveAcApHtmlExpiresAt(
   expiryDays: AcApHtmlExpiryDays,
-  exportedAt = Date.now()
+  exportedAt = Date.now(),
+  customExpiresAt?: number | null
 ): number | null {
   if (expiryDays === 'never') {
     return null
+  }
+  if (expiryDays === 'custom') {
+    return customExpiresAt ?? null
   }
   return exportedAt + expiryDays * 24 * 60 * 60 * 1000
 }
@@ -59,6 +76,56 @@ export function isAcExHtmlAccessExpired(
   now = Date.now()
 ): boolean {
   return manifest.expiresAt != null && now > manifest.expiresAt
+}
+
+/**
+ * Returns whether the near-expiry countdown should be shown.
+ */
+export function isAcExHtmlExpiryCountdownActive(
+  expiresAt: number,
+  now = Date.now()
+): boolean {
+  const remaining = expiresAt - now
+  return remaining > 0 && remaining <= ACEX_HTML_EXPIRY_COUNTDOWN_MS
+}
+
+/**
+ * Formats an absolute expiry timestamp for display in the given locale.
+ */
+export function formatAcExHtmlExpiresAt(
+  expiresAt: number,
+  locale = 'en'
+): string {
+  const bcp47 = LOCALE_TO_BCP47[locale] ?? locale
+  try {
+    return new Date(expiresAt).toLocaleString(bcp47, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+  } catch {
+    return new Date(expiresAt).toISOString()
+  }
+}
+
+/**
+ * Formats a remaining duration as `M:SS` or `H:MM:SS`.
+ */
+export function formatAcExHtmlCountdown(remainingMs: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(remainingMs / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  const mm = String(minutes).padStart(2, '0')
+  const ss = String(seconds).padStart(2, '0')
+  if (hours > 0) {
+    return `${hours}:${mm}:${ss}`
+  }
+  return `${minutes}:${ss}`
 }
 
 /**

@@ -131,7 +131,11 @@ export default {
     expiry1Day: 'يوم واحد',
     expiry7Days: '7 أيام',
     expiry30Days: '30 يومًا',
+    expiryCustom: 'مخصص',
     expiryNever: 'بدون انتهاء',
+    expiryCustomPlaceholder: 'اختر تاريخ ووقت الانتهاء',
+    expiryCustomRequired: 'يرجى اختيار تاريخ ووقت انتهاء مخصص.',
+    expiryCustomPast: 'يجب أن يكون وقت الانتهاء المخصص في المستقبل.',
     expiryHint:
       'بعد انتهاء مدة الصلاحية، لن يمكن فتح ملف HTML المُصدَّر.',
     passwordSection: 'كلمة المرور',

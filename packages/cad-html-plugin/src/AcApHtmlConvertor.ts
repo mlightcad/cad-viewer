@@ -136,7 +136,11 @@ export class AcApHtmlConvertor {
 
       await accmYieldForPaint()
 
-      const expiresAt = resolveAcApHtmlExpiresAt(resolved.expiryDays)
+      const expiresAt = resolveAcApHtmlExpiresAt(
+        resolved.expiryDays,
+        Date.now(),
+        resolved.expiresAt
+      )
       const protectedSnapshot = await protectAcExHtmlEncodedSnapshot(
         encodeSnapshot(snapshot),
         {

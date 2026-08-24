@@ -1,7 +1,9 @@
 import {
   decryptAcExHtmlSnapshotPayload,
   encryptAcExHtmlSnapshotPayload,
+  formatAcExHtmlCountdown,
   isAcExHtmlAccessExpired,
+  isAcExHtmlExpiryCountdownActive,
   needsAcExHtmlAccessControl,
   protectAcExHtmlEncodedSnapshot,
   resolveAcApHtmlExpiresAt
@@ -17,6 +19,22 @@ describe('AcExHtmlAccess', () => {
     expect(resolveAcApHtmlExpiresAt(7, exportedAt)).toBe(
       exportedAt + 7 * 24 * 60 * 60 * 1000
     )
+    expect(resolveAcApHtmlExpiresAt('custom', exportedAt, 123)).toBe(123)
+    expect(resolveAcApHtmlExpiresAt('custom', exportedAt)).toBeNull()
+  })
+
+  it('formats countdown durations', () => {
+    expect(formatAcExHtmlCountdown(5_000)).toBe('0:05')
+    expect(formatAcExHtmlCountdown(65_000)).toBe('1:05')
+    expect(formatAcExHtmlCountdown(3_665_000)).toBe('1:01:05')
+  })
+
+  it('detects the near-expiry countdown window', () => {
+    const expiresAt = Date.now() + 5 * 60 * 1000
+    expect(isAcExHtmlExpiryCountdownActive(expiresAt)).toBe(true)
+    expect(
+      isAcExHtmlExpiryCountdownActive(Date.now() + 20 * 60 * 1000)
+    ).toBe(false)
   })
 
   it('detects when access control is required', () => {
