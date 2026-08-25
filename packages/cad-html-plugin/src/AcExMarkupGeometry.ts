@@ -11,6 +11,7 @@ import type {
   AcExMarkupPoint2d,
   AcExMarkupRecord
 } from './AcExMarkupTypes'
+import type { AcExExtents } from './AcExSnapshotTypes'
 
 /** Shape outline used to auto-place the leader tip on the perimeter. */
 export type AcExMarkupShapeOutline =
@@ -505,6 +506,125 @@ export function acExMarkupCenter(
     default:
       return null
   }
+}
+
+function expandExtents(
+  extents: AcExExtents | null,
+  point: AcExMarkupPoint2d
+): AcExExtents {
+  if (!extents) {
+    return { minX: point.x, minY: point.y, maxX: point.x, maxY: point.y }
+  }
+  return {
+    minX: Math.min(extents.minX, point.x),
+    minY: Math.min(extents.minY, point.y),
+    maxX: Math.max(extents.maxX, point.x),
+    maxY: Math.max(extents.maxY, point.y)
+  }
+}
+
+function expandExtentsByCallout(
+  extents: AcExExtents | null,
+  callout: AcExMarkupAttachedCallout | undefined
+): AcExExtents | null {
+  if (!callout) return extents
+  return expandExtents(expandExtents(extents, callout.tip), callout.anchor)
+}
+
+/**
+ * Axis-aligned world bounds of a markup's control geometry.
+ *
+ * Shapes include an attached callout tip and text-box anchor so zoom-to
+ * frames the leader together with the shape.
+ */
+export function acExMarkupBounds(
+  geometry: AcExMarkupGeometry
+): AcExExtents | null {
+  switch (geometry.type) {
+    case 'line':
+    case 'arrow':
+      return expandExtents(
+        expandExtents(null, geometry.start),
+        geometry.end
+      )
+    case 'rect':
+    case 'cloud':
+      return expandExtentsByCallout(
+        expandExtents(expandExtents(null, geometry.corner1), geometry.corner2),
+        geometry.callout
+      )
+    case 'highlight':
+      return expandExtents(
+        expandExtents(null, geometry.corner1),
+        geometry.corner2
+      )
+    case 'circle':
+      return expandExtentsByCallout(
+        expandExtents(
+          expandExtents(null, {
+            x: geometry.center.x - geometry.radius,
+            y: geometry.center.y - geometry.radius
+          }),
+          {
+            x: geometry.center.x + geometry.radius,
+            y: geometry.center.y + geometry.radius
+          }
+        ),
+        geometry.callout
+      )
+    case 'callout':
+      return expandExtents(expandExtents(null, geometry.tip), geometry.anchor)
+    case 'text':
+    case 'stamp':
+    case 'symbol':
+      return expandExtents(null, geometry.position)
+    default:
+      return null
+  }
+}
+
+/**
+ * Grow extents by overlay client rectangles converted to world space.
+ *
+ * Used so zoom-to includes HTML text boxes / badges / stamps.
+ */
+export function acExExpandExtentsByClientRects(
+  extents: AcExExtents | null,
+  rects: ReadonlyArray<{
+    left: number
+    top: number
+    right: number
+    bottom: number
+  }>,
+  clientToWorld: (clientX: number, clientY: number) => AcExMarkupPoint2d
+): AcExExtents | null {
+  let next = extents
+  for (const rect of rects) {
+    if (rect.right <= rect.left && rect.bottom <= rect.top) continue
+    next = expandExtents(next, clientToWorld(rect.left, rect.top))
+    next = expandExtents(next, clientToWorld(rect.right, rect.bottom))
+  }
+  return next
+}
+
+/**
+ * Combined zoom-to extents: control geometry plus overlay rectangles.
+ */
+export function acExMarkupFocusExtents(
+  geometry: AcExMarkupGeometry,
+  overlayRects: ReadonlyArray<{
+    left: number
+    top: number
+    right: number
+    bottom: number
+  }>,
+  clientToWorld: (clientX: number, clientY: number) => AcExMarkupPoint2d
+): AcExExtents | null {
+  return acExExpandExtentsByClientRects(
+    acExMarkupBounds(geometry),
+    overlayRects,
+    clientToWorld
+  )
 }
 
 function acExTranslatePoint(

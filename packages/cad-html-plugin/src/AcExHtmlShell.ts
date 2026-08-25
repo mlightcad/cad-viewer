@@ -31,6 +31,7 @@ export const ACEX_HTML_SHELL_CSS = `
     --mlcad-drawer-width: 220px;
     --mlcad-drawer-gap: 8px;
     --mlcad-ui-inset: 12px;
+    --mlcad-review-max-height: calc(100vh - 2 * var(--mlcad-ui-inset) - 48px);
     --mlcad-z-chrome: 7;
     --mlcad-z-measure: 5;
     --mlcad-z-markup: 6;
@@ -206,11 +207,12 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   #mlcad-zoom-window-rect[hidden] { display: none; }
 
-  #mlcad-layer-drawer {
+  #mlcad-layer-drawer,
+  #mlcad-review-drawer {
     flex-shrink: 1;
     min-width: 0;
     width: var(--mlcad-drawer-width);
-    max-height: min(420px, calc(100vh - 48px));
+    max-height: min(420px, var(--mlcad-review-max-height));
     display: flex; flex-direction: column;
     background: var(--mlcad-ui-bg-elevated);
     border: 1px solid var(--mlcad-ui-border);
@@ -218,8 +220,22 @@ export const ACEX_HTML_SHELL_CSS = `
     box-shadow: var(--mlcad-shadow);
     backdrop-filter: blur(12px);
     overflow: hidden;
+    box-sizing: border-box;
   }
-  #mlcad-layer-drawer[hidden] { display: none; }
+  #mlcad-markup-strip-wrap {
+    position: relative;
+  }
+  #mlcad-review-drawer {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: var(--mlcad-drawer-gap);
+    width: min(320px, calc(100vw - 2 * var(--mlcad-ui-inset) - var(--mlcad-toolbar-width) - var(--mlcad-drawer-gap)));
+    height: 100%;
+    max-height: var(--mlcad-review-max-height);
+  }
+  #mlcad-layer-drawer[hidden],
+  #mlcad-review-drawer[hidden] { display: none; }
 
   .mlcad-drawer-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -289,6 +305,92 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   .mlcad-layer-zoom:disabled { opacity: 0.35; cursor: not-allowed; }
 
+  .mlcad-review-toolbar {
+    display: flex; gap: 6px; align-items: center;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--mlcad-ui-border);
+  }
+  .mlcad-review-search {
+    flex: 1; min-width: 0;
+    box-sizing: border-box;
+    padding: 4px 8px;
+    border: 1px solid var(--mlcad-ui-border);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--mlcad-ui-text);
+    font-size: 12px;
+  }
+  .mlcad-review-clear,
+  .mlcad-review-zoom,
+  .mlcad-review-delete {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    border: 1px solid var(--mlcad-ui-border);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--mlcad-ui-text);
+    font-size: 12px; cursor: pointer;
+  }
+  .mlcad-review-clear:disabled { opacity: 0.5; cursor: default; }
+  .mlcad-review-delete { color: #f56c6c; border-color: rgba(245, 108, 108, 0.55); }
+  .mlcad-review-table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
+  .mlcad-review-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+  }
+  .mlcad-review-table th,
+  .mlcad-review-table td {
+    padding: 4px 8px; text-align: left;
+    border-bottom: 1px solid var(--mlcad-ui-border);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 90px;
+  }
+  .mlcad-review-table tr.is-selected td {
+    background: rgba(26, 140, 255, 0.22);
+  }
+  .mlcad-review-table tr { cursor: pointer; }
+  .mlcad-review-empty td { text-align: center; color: var(--mlcad-ui-muted); cursor: default; }
+  .mlcad-review-detail {
+    flex: 0 1 auto;
+    max-height: 52%;
+    overflow: auto;
+    border-top: 1px solid var(--mlcad-ui-border);
+    padding: 8px 10px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+    box-sizing: border-box;
+  }
+  .mlcad-review-detail[hidden] { display: none; }
+  .mlcad-review-detail-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 4px;
+  }
+  .mlcad-review-detail-title { font-weight: 600; font-size: 12px; }
+  .mlcad-review-detail-close {
+    flex-shrink: 0;
+    width: 24px; height: 24px; padding: 0;
+    border: none; border-radius: 4px;
+    background: transparent; color: var(--mlcad-ui-muted);
+    cursor: pointer; font-size: 16px; line-height: 1;
+  }
+  .mlcad-review-detail-close:hover {
+    background: rgba(255, 255, 255, 0.08); color: var(--mlcad-ui-text);
+  }
+  .mlcad-review-field { display: flex; flex-direction: column; gap: 2px; }
+  .mlcad-review-field-label { font-size: 11px; color: var(--mlcad-ui-muted); }
+  .mlcad-review-status,
+  .mlcad-review-author,
+  .mlcad-review-text,
+  .mlcad-review-comment {
+    box-sizing: border-box; width: 100%;
+    padding: 4px 6px;
+    border: 1px solid var(--mlcad-ui-border);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--mlcad-ui-text);
+    font-size: 12px;
+  }
+  .mlcad-review-author:disabled { opacity: 0.7; }
+  .mlcad-review-comment { min-height: 44px; resize: vertical; }
+  .mlcad-review-detail-actions { display: flex; gap: 6px; margin-top: 2px; }
+
   #mlcad-status-bar {
     position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: var(--mlcad-z-chrome);
     display: flex; align-items: center; min-height: 28px; padding: 0 12px;
@@ -307,7 +409,8 @@ export const ACEX_HTML_SHELL_CSS = `
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-markup-strip-wrap,
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-zoom-strip-wrap,
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-locale-strip-wrap,
-  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-layer-drawer {
+  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-layer-drawer,
+  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-review-drawer {
     display: none !important;
   }
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-toolbar .mlcad-tool-btn:not(#mlcad-toolbar-toggle) {
@@ -737,6 +840,9 @@ export const ACEX_HTML_SHELL_CSS = `
       margin-left: auto;
       max-width: calc(100vw - 2 * var(--mlcad-ui-inset) - var(--mlcad-toolbar-width) - var(--mlcad-drawer-gap));
     }
+    #mlcad-review-drawer {
+      max-width: calc(100vw - 2 * var(--mlcad-ui-inset) - var(--mlcad-toolbar-width) - var(--mlcad-drawer-gap));
+    }
     .mlcad-layer-action-btn {
       min-height: 28px;
       padding: 3px 6px;
@@ -867,6 +973,58 @@ export function buildAcExHtmlShellBody(
 
 function buildAcExToolbarSeparator(): string {
   return '<div class="mlcad-tool-separator" aria-hidden="true"></div>'
+}
+
+function buildAcExReviewDrawer(): string {
+  return `<div id="mlcad-review-drawer" role="dialog" data-i18n-attr="aria-label" data-i18n-key="review.title" aria-label="Review" hidden>
+        <div class="mlcad-drawer-header">
+          <span data-i18n-key="review.title" data-i18n-text>Review</span>
+          <button type="button" class="mlcad-drawer-close" id="mlcad-review-close" data-i18n-key="review.close" data-i18n-attr="aria-label" aria-label="Close review">×</button>
+        </div>
+        <div class="mlcad-review-toolbar">
+          <input type="search" class="mlcad-review-search" data-i18n-key="review.searchPlaceholder" data-i18n-attr="placeholder" placeholder="Search markups" />
+          <button type="button" class="mlcad-review-clear" data-i18n-key="review.clear" data-i18n-text>Clear all</button>
+        </div>
+        <div class="mlcad-review-table-wrap">
+          <table class="mlcad-review-table">
+            <thead>
+              <tr>
+                <th data-review-col="type" data-i18n-key="review.type" data-i18n-text>Type</th>
+                <th data-review-col="status" data-i18n-key="review.status" data-i18n-text>Status</th>
+                <th data-review-col="author" data-i18n-key="review.author" data-i18n-text>Author</th>
+                <th data-review-col="summary" data-i18n-key="review.summary" data-i18n-text>Summary</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="mlcad-review-detail" hidden>
+          <div class="mlcad-review-detail-header">
+            <div class="mlcad-review-detail-title" data-i18n-key="review.details" data-i18n-text>Details</div>
+            <button type="button" class="mlcad-review-detail-close" data-i18n-key="review.closeDetails" data-i18n-attr="title aria-label" title="Close details" aria-label="Close details">×</button>
+          </div>
+          <div class="mlcad-review-field">
+            <label class="mlcad-review-field-label" data-review-field="status" data-i18n-key="review.status" data-i18n-text>Status</label>
+            <select class="mlcad-review-status"></select>
+          </div>
+          <div class="mlcad-review-field">
+            <label class="mlcad-review-field-label" data-review-field="author" data-i18n-key="review.author" data-i18n-text>Author</label>
+            <input type="text" class="mlcad-review-author" disabled />
+          </div>
+          <div class="mlcad-review-field">
+            <label class="mlcad-review-field-label" data-review-field="label" data-i18n-key="review.label" data-i18n-text>Label</label>
+            <input type="text" class="mlcad-review-text" />
+          </div>
+          <div class="mlcad-review-field">
+            <label class="mlcad-review-field-label" data-review-field="comment" data-i18n-key="review.comment" data-i18n-text>Comment</label>
+            <textarea class="mlcad-review-comment" rows="2"></textarea>
+          </div>
+          <div class="mlcad-review-detail-actions">
+            <button type="button" class="mlcad-review-zoom" data-i18n-key="review.zoomTo" data-i18n-text>Zoom to</button>
+            <button type="button" class="mlcad-review-delete" data-i18n-key="review.delete" data-i18n-text>Delete</button>
+          </div>
+        </div>
+      </div>`
 }
 
 function buildAcExLayoutMenuButton(): string {
@@ -1051,6 +1209,12 @@ function buildAcExMarkupToolStrip(): string {
         'data-i18n-key': 'toolbar.markupStamp',
         'data-i18n-attr': 'title aria-label'
       })}
+      ${acExToolbarButton(acExHtmlIcons.markupPanel, 'Review', {
+        'data-action': 'markup-panel',
+        'aria-pressed': 'false',
+        'data-i18n-key': 'toolbar.markupPanel',
+        'data-i18n-attr': 'title aria-label'
+      })}
       ${acExToolbarButton(acExHtmlIcons.markupShow, 'Hide markups', {
         'data-action': 'markup-visibility',
         'data-i18n-key': 'toolbar.markupHide',
@@ -1073,6 +1237,7 @@ function buildAcExMarkupToolStrip(): string {
         'data-i18n-attr': 'title aria-label'
       })}
     </div>
+    ${buildAcExReviewDrawer()}
   </div>`
 }
 

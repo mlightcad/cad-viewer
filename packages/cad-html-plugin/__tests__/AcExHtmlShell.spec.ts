@@ -56,6 +56,12 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).toContain('data-measure-mode="distance"')
     expect(html).toContain('data-action="measure-import"')
     expect(html).toContain('data-markup-mode="cloud"')
+    expect(html).toContain('data-action="markup-panel"')
+    expect(html).toContain('id="mlcad-review-drawer"')
+    expect(html.indexOf('id="mlcad-markup-strip-wrap"')).toBeLessThan(
+      html.indexOf('id="mlcad-review-drawer"')
+    )
+    expect(html).toContain('mlcad-review-detail-close')
     expect(html).toContain('data-action="clear-markups"')
     expect(html).toContain('id="mlcad-status-bar"')
     expect(html.match(/mlcad-tool-separator/g)?.length).toBeGreaterThanOrEqual(2)
@@ -80,6 +86,8 @@ describe('buildAcExHtmlShellBody', () => {
     const html = buildAcExHtmlShellBody('#000000', 'view')
     expect(html).not.toContain('data-markup-mode=')
     expect(html).not.toContain('data-action="clear-markups"')
+    expect(html).not.toContain('data-action="markup-panel"')
+    expect(html).not.toContain('id="mlcad-review-drawer"')
   })
 
   it('omits the layout switcher when layouts are not exported', () => {

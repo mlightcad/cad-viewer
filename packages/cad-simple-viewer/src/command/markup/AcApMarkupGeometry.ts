@@ -192,10 +192,38 @@ function expandAttachedCallout(
 }
 
 /**
+ * Grow `box` by the world-space corners of overlay client rectangles.
+ *
+ * Used so zoom-to includes HTML text boxes / badges / stamps whose size is
+ * screen-space, not just geometry control points.
+ *
+ * @param box - World AABB to expand in place.
+ * @param rects - Overlay `getBoundingClientRect()` results.
+ * @param clientToWorld - Converts viewport/client pixels to world XY.
+ */
+export function expandMarkupBoundsByClientRects(
+  box: AcGeBox2d,
+  rects: ReadonlyArray<{
+    left: number
+    top: number
+    right: number
+    bottom: number
+  }>,
+  clientToWorld: (clientX: number, clientY: number) => AcApMarkupPoint2d
+): void {
+  for (const rect of rects) {
+    if (rect.right <= rect.left && rect.bottom <= rect.top) continue
+    box.expandByPoint(clientToWorld(rect.left, rect.top))
+    box.expandByPoint(clientToWorld(rect.right, rect.bottom))
+  }
+}
+
+/**
  * Axis-aligned world bounds of a markup's control geometry.
  *
- * Used for window / crossing box selection. Point-like markups (text / stamp /
- * symbol) use their anchor; shapes include attached callout tip and anchor.
+ * Used for window / crossing box selection and zoom-to. Point-like markups
+ * (text / stamp / symbol) use their anchor; shapes include attached callout
+ * tip and anchor so leaders are part of the same box as the shape.
  */
 export function markupGeometryBounds(
   geometry: AcApMarkupGeometry

@@ -54,6 +54,7 @@ export type AcExHtmlMessageKey =
   | 'toolbar.markupCircle'
   | 'toolbar.markupArrow'
   | 'toolbar.markupStamp'
+  | 'toolbar.markupPanel'
   | 'toolbar.markupHide'
   | 'toolbar.markupShow'
   | 'toolbar.clearMarkups'
@@ -81,6 +82,25 @@ export type AcExHtmlMessageKey =
   | 'layers.showAll'
   | 'layers.hideAll'
   | 'layers.zoomTo'
+  | 'review.title'
+  | 'review.close'
+  | 'review.searchPlaceholder'
+  | 'review.empty'
+  | 'review.type'
+  | 'review.status'
+  | 'review.author'
+  | 'review.summary'
+  | 'review.details'
+  | 'review.closeDetails'
+  | 'review.label'
+  | 'review.comment'
+  | 'review.zoomTo'
+  | 'review.delete'
+  | 'review.clear'
+  | 'review.statusValues.open'
+  | 'review.statusValues.question'
+  | 'review.statusValues.answered'
+  | 'review.statusValues.closed'
   | 'status.ready'
   | 'status.zoomWindowHint'
   | 'status.measureDistanceHint'
@@ -174,6 +194,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupCircle: 'Circle',
       markupArrow: 'Arrow',
       markupStamp: 'Stamp',
+      markupPanel: 'Review',
       markupHide: 'Hide markups',
       markupShow: 'Show markups',
       clearMarkups: 'Clear markups',
@@ -207,6 +228,29 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       showAll: 'Show all',
       hideAll: 'Hide all',
       zoomTo: 'Zoom to {name}'
+    },
+    review: {
+      title: 'Review',
+      close: 'Close review',
+      searchPlaceholder: 'Search markups',
+      empty: 'No markups yet',
+      type: 'Type',
+      status: 'Status',
+      author: 'Author',
+      summary: 'Summary',
+      details: 'Details',
+      closeDetails: 'Close details',
+      label: 'Label',
+      comment: 'Comment',
+      zoomTo: 'Zoom to',
+      delete: 'Delete',
+      clear: 'Clear all',
+      statusValues: {
+        open: 'Open',
+        question: 'Question',
+        answered: 'Answered',
+        closed: 'Closed'
+      }
     },
     status: {
       ready: 'Ready',
@@ -307,6 +351,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupCircle: '圆',
       markupArrow: '箭头',
       markupStamp: '图章',
+      markupPanel: '批注面板',
       markupHide: '隐藏批注',
       markupShow: '显示批注',
       clearMarkups: '清除批注',
@@ -339,6 +384,29 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       showAll: '全部显示',
       hideAll: '全部隐藏',
       zoomTo: '缩放到 {name}'
+    },
+    review: {
+      title: '批注',
+      close: '关闭批注面板',
+      searchPlaceholder: '搜索批注',
+      empty: '暂无批注',
+      type: '类型',
+      status: '状态',
+      author: '作者',
+      summary: '摘要',
+      details: '详情',
+      closeDetails: '关闭详情',
+      label: '标签',
+      comment: '评论',
+      zoomTo: '缩放到',
+      delete: '删除',
+      clear: '全部清除',
+      statusValues: {
+        open: '打开',
+        question: '疑问',
+        answered: '已答复',
+        closed: '已关闭'
+      }
     },
     status: {
       ready: '就绪',
@@ -431,6 +499,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupCircle: 'Kružnice',
       markupArrow: 'Šipka',
       markupStamp: 'Razítko',
+      markupPanel: 'Kontrola',
       markupHide: 'Skrýt poznámky',
       markupShow: 'Zobrazit poznámky',
       clearMarkups: 'Vymazat poznámky',
@@ -463,6 +532,29 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       showAll: 'Zobrazit vše',
       hideAll: 'Skrýt vše',
       zoomTo: 'Přiblížit na {name}'
+    },
+    review: {
+      title: 'Kontrola',
+      close: 'Zavřít kontrolu',
+      searchPlaceholder: 'Hledat poznámky',
+      empty: 'Zatím žádné poznámky',
+      type: 'Typ',
+      status: 'Stav',
+      author: 'Autor',
+      summary: 'Souhrn',
+      details: 'Podrobnosti',
+      closeDetails: 'Zavřít podrobnosti',
+      label: 'Popisek',
+      comment: 'Komentář',
+      zoomTo: 'Přiblížit na',
+      delete: 'Odstranit',
+      clear: 'Vymazat vše',
+      statusValues: {
+        open: 'Otevřeno',
+        question: 'Otázka',
+        answered: 'Zodpovězeno',
+        closed: 'Uzavřeno'
+      }
     },
     status: {
       ready: 'Připraveno',
@@ -563,6 +655,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupCircle: 'Daire',
       markupArrow: 'Ok',
       markupStamp: 'Damga',
+      markupPanel: 'İnceleme',
       markupHide: 'İşaretlemeleri gizle',
       markupShow: 'İşaretlemeleri göster',
       clearMarkups: 'İşaretlemeleri temizle',
@@ -595,6 +688,29 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       showAll: 'Tümünü göster',
       hideAll: 'Tümünü gizle',
       zoomTo: '{name} katmanına yakınlaştır'
+    },
+    review: {
+      title: 'İnceleme',
+      close: 'İncelemeyi kapat',
+      searchPlaceholder: 'İşaretlerde ara',
+      empty: 'Henüz işaret yok',
+      type: 'Tür',
+      status: 'Durum',
+      author: 'Yazar',
+      summary: 'Özet',
+      details: 'Ayrıntılar',
+      closeDetails: 'Ayrıntıları kapat',
+      label: 'Etiket',
+      comment: 'Yorum',
+      zoomTo: 'Yakınlaştır',
+      delete: 'Sil',
+      clear: 'Tümünü temizle',
+      statusValues: {
+        open: 'Açık',
+        question: 'Soru',
+        answered: 'Yanıtlandı',
+        closed: 'Kapalı'
+      }
     },
     status: {
       ready: 'Hazır',
@@ -698,6 +814,7 @@ const AR_MESSAGES: AcExMessageTree = {
     'markupCircle': 'دائرة',
     'markupArrow': 'سهم',
     'markupStamp': 'ختم',
+    'markupPanel': 'مراجعة',
     'markupHide': 'إخفاء الملاحظات',
     'markupShow': 'إظهار الملاحظات',
     'clearMarkups': 'مسح الملاحظات',
@@ -731,6 +848,29 @@ const AR_MESSAGES: AcExMessageTree = {
     'showAll': 'إظهار الكل',
     'hideAll': 'إخفاء الكل',
     'zoomTo': 'تكبير إلى {name}'
+  },
+  'review': {
+    'title': 'مراجعة',
+    'close': 'إغلاق المراجعة',
+    'searchPlaceholder': 'البحث في الملاحظات',
+    'empty': 'لا توجد ملاحظات بعد',
+    'type': 'النوع',
+    'status': 'الحالة',
+    'author': 'المؤلف',
+    'summary': 'الملخص',
+    'details': 'التفاصيل',
+    'closeDetails': 'إغلاق التفاصيل',
+    'label': 'التسمية',
+    'comment': 'التعليق',
+    'zoomTo': 'تكبير إلى',
+    'delete': 'حذف',
+    'clear': 'مسح الكل',
+    'statusValues': {
+      'open': 'مفتوح',
+      'question': 'سؤال',
+      'answered': 'تمت الإجابة',
+      'closed': 'مغلق'
+    }
   },
   'status': {
     'ready': 'جاهز',

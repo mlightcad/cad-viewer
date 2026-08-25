@@ -30,12 +30,23 @@ const LOCAL_UI_COMPONENTS_ROOT = resolve(
   '../../../ui-components'
 )
 
-function useLocalDataModel(mode: string): boolean {
-  if (mode === 'local-data-model') {
-    return true
-  }
-  const flag = process.env.CAD_VIEWER_USE_LOCAL_DATA_MODEL
+function isEnvFlagEnabled(name: string): boolean {
+  const flag = process.env[name]
   return flag === '1' || flag?.toLowerCase() === 'true'
+}
+
+function useLocalDataModel(mode: string): boolean {
+  return (
+    mode === 'local-data-model' ||
+    isEnvFlagEnabled('CAD_VIEWER_USE_LOCAL_DATA_MODEL')
+  )
+}
+
+function useLocalUiComponents(mode: string): boolean {
+  return (
+    mode === 'local-ui-components' ||
+    isEnvFlagEnabled('CAD_VIEWER_USE_LOCAL_UI_COMPONENTS')
+  )
 }
 
 export default defineConfig(({ command, mode }) => {
@@ -58,7 +69,9 @@ export default defineConfig(({ command, mode }) => {
     useLocalDataModel(mode) &&
     existsSync(LOCAL_DATA_MODEL_ENTRY)
   const linkLocalUiComponents =
-    command === 'serve' && existsSync(LOCAL_UI_COMPONENTS_SRC)
+    command === 'serve' &&
+    useLocalUiComponents(mode) &&
+    existsSync(LOCAL_UI_COMPONENTS_SRC)
   if (command === 'serve') {
     aliases.push({
       find: /^@mlightcad\/(cad-svg-plugin|three-renderer|cad-simple-viewer|cad-viewer)$/,
@@ -84,6 +97,14 @@ export default defineConfig(({ command, mode }) => {
         find: '@mlightcad/ui-components',
         replacement: LOCAL_UI_COMPONENTS_SRC
       })
+    } else if (
+      useLocalUiComponents(mode) &&
+      !existsSync(LOCAL_UI_COMPONENTS_SRC)
+    ) {
+      console.warn(
+        '[cad-viewer-example] Local ui-components alias requested but not found at:',
+        LOCAL_UI_COMPONENTS_SRC
+      )
     }
   }
 
