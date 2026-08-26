@@ -1,7 +1,7 @@
 import {
   AcGeArea2d,
-  AcGiSubEntityTraits,
-  type AcGeTessellateOptions
+  type AcGeTessellateOptions,
+  AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 
 import { AcSvgEntity } from './AcSvgEntity'
