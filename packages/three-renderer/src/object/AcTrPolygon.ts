@@ -1,4 +1,5 @@
 import {
+  acdbDrawTessellateOptions,
   AcGeArea2d,
   AcGeGeometryUtil,
   AcGeIndexNode,
@@ -42,8 +43,14 @@ export class AcTrPolygon extends AcTrEntity {
     super(context)
     this._traits = traits
 
-    const pointBoundaries = area.getPoints(100)
-    const hierarchy = area.buildHierarchy()
+    const tessellateOptions = acdbDrawTessellateOptions({ context })
+    const pointBoundaries = area.tessellate(tessellateOptions)
+    // Reuse sampled loops so buildHierarchy does not tessellate a second time.
+    const hierarchy = (
+      Object.create(area, {
+        tessellate: { value: () => pointBoundaries }
+      }) as AcGeArea2d
+    ).buildHierarchy(tessellateOptions)
     const hasRenderableBoundaries = pointBoundaries.some(
       loop => loop.length >= 3
     )

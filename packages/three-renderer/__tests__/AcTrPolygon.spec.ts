@@ -20,8 +20,10 @@ function createRectangularArea(
     new AcGePoint2d(minX, maxY)
   ]
 
+  const loops = [loop]
   return {
-    getPoints: () => [loop],
+    getPoints: () => loops,
+    tessellate: () => loops,
     buildHierarchy: () => ({
       children: [{ index: 0, children: [] }]
     })

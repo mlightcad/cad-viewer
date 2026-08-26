@@ -57,6 +57,14 @@ export default {
       show: 'إظهار',
       showHint: 'سلوك محرر AutoCAD',
 
+      curveQuality: 'جودة المنحنيات',
+      curveDraft: 'ذاكرة',
+      curveDraftHint: 'رؤوس أقل وملفات أصغر',
+      curveStandard: 'قياسي',
+      curveStandardHint: 'متوازن (100 ضلع لكل دائرة)',
+      curveHigh: 'جودة',
+      curveHighHint: 'منحنيات أنعم وذاكرة أكبر',
+
       invalidFileType:
         'نوع الملف غير صالح. يرجى اختيار ملف DWG أو DXF.'
     }

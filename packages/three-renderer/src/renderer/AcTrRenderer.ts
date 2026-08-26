@@ -1,5 +1,6 @@
 import {
   AcCmEventManager,
+  acdbDrawTessellateOptions,
   AcGeArea2d,
   AcGeCircArc3d,
   AcGeEllipseArc3d,
@@ -508,14 +509,16 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   circularArc(arc: AcGeCircArc3d) {
-    return this.linePoints(arc.getPoints(100))
+    return this.linePoints(arc.tessellate(acdbDrawTessellateOptions(this)))
   }
 
   /**
    * @inheritdoc
    */
   ellipticalArc(ellipseArc: AcGeEllipseArc3d) {
-    return this.linePoints(ellipseArc.getPoints(100))
+    return this.linePoints(
+      ellipseArc.tessellate(acdbDrawTessellateOptions(this))
+    )
   }
 
   /**

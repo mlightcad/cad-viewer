@@ -1,6 +1,7 @@
 import {
   AcCmColor,
   AcCmTransparency,
+  acdbDrawTessellateOptions,
   AcDbRenderingCache,
   AcGeArea2d,
   AcGeBox2d,
@@ -8,9 +9,12 @@ import {
   AcGeEllipseArc3d,
   AcGePoint3d,
   AcGePoint3dLike,
+  ACGI_DARK_THEME_FOREGROUND,
+  ACGI_LIGHT_THEME_FOREGROUND,
   AcGiContext,
   AcGiFontMapping,
   AcGiImageStyle,
+  acgiIsLightBackground,
   AcGiLineWeight,
   AcGiMTextData,
   AcGiPointStyle,
@@ -57,12 +61,16 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   private _foregroundColor = 0x000000
   private _showLineWeight = false
   private _pendingImages: Promise<void>[]
+  private readonly _context: AcGiContext
 
   constructor() {
     this._entities = []
     this._bbox = new AcGeBox2d()
     this._fontMapping = {}
     this._pendingImages = []
+    this._context = AcGiContext.fromBackgroundColor(
+      this._currentBackgroundColor
+    )
     this._subEntityTraits = {
       color: new AcCmColor(),
       lineType: {
@@ -97,7 +105,7 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
    * @inheritdoc
    */
   get context(): AcGiContext {
-    return AcGiContext.fromBackgroundColor(this._currentBackgroundColor)
+    return this._context
   }
 
   /**
@@ -132,6 +140,9 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
 
   set currentBackgroundColor(value: number) {
     this._currentBackgroundColor = value
+    this._context.backgroundIsDark = !acgiIsLightBackground(value)
+    this._context.foregroundOnDark = ACGI_DARK_THEME_FOREGROUND
+    this._context.foregroundOnLight = ACGI_LIGHT_THEME_FOREGROUND
   }
 
   /**
@@ -199,7 +210,12 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
    */
   circularArc(arc: AcGeCircArc3d) {
     return this.pushEntity(
-      new AcSvgCircArc(arc, this._subEntityTraits, this.styleContext)
+      new AcSvgCircArc(
+        arc,
+        this._subEntityTraits,
+        this.styleContext,
+        acdbDrawTessellateOptions(this)
+      )
     )
   }
 
@@ -211,7 +227,8 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
       new AcTrEllipticalArc(
         ellipseArc,
         this._subEntityTraits,
-        this.styleContext
+        this.styleContext,
+        acdbDrawTessellateOptions(this)
       )
     )
   }
@@ -245,7 +262,12 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
    */
   area(area: AcGeArea2d) {
     return this.pushEntity(
-      new AcSvgArea(area, this._subEntityTraits, this.styleContext)
+      new AcSvgArea(
+        area,
+        this._subEntityTraits,
+        this.styleContext,
+        acdbDrawTessellateOptions(this)
+      )
     )
   }
 
