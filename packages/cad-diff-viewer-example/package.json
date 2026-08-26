@@ -19,8 +19,8 @@
   "dependencies": {
     "@mlightcad/cad-diff-viewer": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.14.2",
-    "@mlightcad/libredwg-converter": "^3.14.2",
+    "@mlightcad/data-model": "^1.14.3",
+    "@mlightcad/libredwg-converter": "^3.14.3",
     "@mlightcad/mtext-renderer": "^0.12.4",
     "@mlightcad/three-renderer": "workspace:*",
     "three": "^0.172.0"

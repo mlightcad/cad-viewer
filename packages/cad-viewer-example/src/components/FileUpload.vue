@@ -113,6 +113,31 @@
             </div>
           </div>
 
+          <div class="setting-block setting-block--full">
+            <h3 class="setting-label">
+              {{ t('example.fileUpload.curveQuality') }}
+            </h3>
+            <div
+              class="pill-segment"
+              role="radiogroup"
+              :aria-label="t('example.fileUpload.curveQuality')"
+            >
+              <button
+                v-for="option in curveQualityOptions"
+                :key="option.value"
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': selectedCircleSides === option.value }"
+                role="radio"
+                :aria-checked="selectedCircleSides === option.value"
+                :title="option.description"
+                @click="selectedCircleSides = option.value"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
           <div class="setting-block">
             <h3 class="setting-label">
               {{ t('example.fileUpload.textRendering') }}
@@ -223,7 +248,12 @@
 <script setup lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue'
 import { AcApOpenViewMode, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
-import { log } from '@mlightcad/data-model'
+import {
+  ACDB_DRAW_CIRCLE_SIDES_DRAFT,
+  ACDB_DRAW_CIRCLE_SIDES_HIGH,
+  ACDB_DRAW_CIRCLE_SIDES_STANDARD,
+  log
+} from '@mlightcad/data-model'
 import type { UploadFile, UploadProps } from 'element-plus'
 import { ElIcon, ElUpload } from 'element-plus'
 import { computed, ref } from 'vue'
@@ -236,14 +266,16 @@ interface Props {
     useMainThreadDraw: boolean,
     drawNoPlotLayers: boolean,
     progressiveRendering: boolean,
-    openViewMode: AcApOpenViewMode | undefined
+    openViewMode: AcApOpenViewMode | undefined,
+    circleSides: number
   ) => void
   onNewDrawing?: (
     mode: AcEdOpenMode,
     useMainThreadDraw: boolean,
     drawNoPlotLayers: boolean,
     progressiveRendering: boolean,
-    openViewMode: AcApOpenViewMode | undefined
+    openViewMode: AcApOpenViewMode | undefined,
+    circleSides: number
   ) => void
 }
 
@@ -254,6 +286,7 @@ type OpenViewModeChoice = 'auto' | AcApOpenViewMode
 
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
 const selectedOpenViewMode = ref<OpenViewModeChoice>('auto')
+const selectedCircleSides = ref(ACDB_DRAW_CIRCLE_SIDES_DRAFT)
 const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
@@ -278,6 +311,24 @@ const openViewModes = computed(() => [
 
 const resolveOpenViewMode = (): AcApOpenViewMode | undefined =>
   selectedOpenViewMode.value === 'auto' ? undefined : selectedOpenViewMode.value
+
+const curveQualityOptions = computed(() => [
+  {
+    value: ACDB_DRAW_CIRCLE_SIDES_DRAFT,
+    label: t('example.fileUpload.curveDraft'),
+    description: t('example.fileUpload.curveDraftHint')
+  },
+  {
+    value: ACDB_DRAW_CIRCLE_SIDES_STANDARD,
+    label: t('example.fileUpload.curveStandard'),
+    description: t('example.fileUpload.curveStandardHint')
+  },
+  {
+    value: ACDB_DRAW_CIRCLE_SIDES_HIGH,
+    label: t('example.fileUpload.curveHigh'),
+    description: t('example.fileUpload.curveHighHint')
+  }
+] as const)
 
 const accessModes = computed(() => [
   {
@@ -306,7 +357,8 @@ const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
         useMainThreadDraw.value,
         drawNoPlotLayers.value,
         progressiveRendering.value,
-        resolveOpenViewMode()
+        resolveOpenViewMode(),
+        selectedCircleSides.value
       )
     }
   }
@@ -318,7 +370,8 @@ const handleNewDrawing = () => {
     useMainThreadDraw.value,
     drawNoPlotLayers.value,
     progressiveRendering.value,
-    resolveOpenViewMode()
+    resolveOpenViewMode(),
+    selectedCircleSides.value
   )
 }
 

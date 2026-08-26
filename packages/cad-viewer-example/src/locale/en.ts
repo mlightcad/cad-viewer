@@ -57,6 +57,14 @@ export default {
       show: 'Show',
       showHint: 'AutoCAD editor semantics',
 
+      curveQuality: 'Curve quality',
+      curveDraft: 'Memory',
+      curveDraftHint: 'Fewer vertices, smaller files',
+      curveStandard: 'Standard',
+      curveStandardHint: 'Balanced (100 sides per circle)',
+      curveHigh: 'Quality',
+      curveHighHint: 'Smoother curves, more memory',
+
       invalidFileType:
         'Invalid file type. Please upload DWG or DXF files.'
     }

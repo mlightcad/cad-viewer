@@ -90,7 +90,7 @@ import {
   AcEdOpenMode,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
-import { log } from '@mlightcad/data-model'
+import { ACDB_DRAW_CIRCLE_SIDES_DRAFT, log } from '@mlightcad/data-model'
 import { provideLocale } from '@mlightcad/ui-components'
 import { ElConfigProvider, ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -183,6 +183,13 @@ interface Props {
    * Write uses {@link AcApOpenViewMode.Saved}.
    */
   openViewMode?: AcApOpenViewMode
+  /**
+   * Maximum segments used to tessellate a full circle when drawing.
+   * Lower values save memory; higher values look smoother.
+   * When omitted, {@link ACDB_DRAW_CIRCLE_SIDES_DRAFT} (50) is used,
+   * matching the data-model default for {@link AcApOpenDatabaseOptions.circleSides}.
+   */
+  circleSides?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -196,7 +203,8 @@ const props = withDefaults(defineProps<Props>(), {
   theme: 'dark',
   mode: AcEdOpenMode.Write,
   progressiveRendering: false,
-  openViewMode: undefined
+  openViewMode: undefined,
+  circleSides: ACDB_DRAW_CIRCLE_SIDES_DRAFT
 })
 
 const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
@@ -204,6 +212,7 @@ const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
   mode: props.mode,
   drawNoPlotLayers: props.drawNoPlotLayers,
   progressiveRendering: props.progressiveRendering,
+  circleSides: props.circleSides,
   ...(props.openViewMode != null ? { openViewMode: props.openViewMode } : {})
 })
 
@@ -438,7 +447,8 @@ watch(
     props.mode,
     props.drawNoPlotLayers,
     props.progressiveRendering,
-    props.openViewMode
+    props.openViewMode,
+    props.circleSides
   ],
   () => {
     if (editorRef.value) {
@@ -516,7 +526,12 @@ onUnmounted(() => {
 })
 
 watch(
-  [editorRef, isWriteMode, () => features.isShowRibbon, () => features.isShowToolbar],
+  [
+    editorRef,
+    isWriteMode,
+    () => features.isShowRibbon,
+    () => features.isShowToolbar
+  ],
   async () => {
     await nextTick()
     bindHeaderObserver()

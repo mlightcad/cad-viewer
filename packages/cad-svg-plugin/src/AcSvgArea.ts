@@ -1,10 +1,11 @@
-import { AcGeArea2d, AcGiSubEntityTraits } from '@mlightcad/data-model'
+import {
+  AcGeArea2d,
+  AcGiSubEntityTraits,
+  type AcGeTessellateOptions
+} from '@mlightcad/data-model'
 
 import { AcSvgEntity } from './AcSvgEntity'
 import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
-
-/** Segments per arc when approximating curves in area loops. */
-const ARC_SEGMENTS = 32
 
 /**
  * SVG area entity: renders an `AcGeArea2d` as a filled `<path>` element.
@@ -14,10 +15,11 @@ export class AcSvgArea extends AcSvgEntity {
   constructor(
     area: AcGeArea2d,
     traits: AcGiSubEntityTraits,
-    ctx: AcSvgStyleContext
+    ctx: AcSvgStyleContext,
+    tessellateOptions?: AcGeTessellateOptions
   ) {
     super()
-    const loopPointArrays = area.getPoints(ARC_SEGMENTS)
+    const loopPointArrays = area.tessellate(tessellateOptions)
     let d = ''
 
     for (const loop of loopPointArrays) {

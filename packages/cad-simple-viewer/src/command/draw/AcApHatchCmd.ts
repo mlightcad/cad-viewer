@@ -483,7 +483,7 @@ export class AcApHatchCmd extends AcEdCommand {
   private buildLoopInfos(loops: ReadonlyArray<AcGeLoop2d>): LoopInfo[] {
     const infos: LoopInfo[] = []
     loops.forEach(loop => {
-      const points = loop.getPoints(128).map(p => ({ x: p.x, y: p.y }))
+      const points = loop.tessellate().map(p => ({ x: p.x, y: p.y }))
       if (points.length < 3) return
       infos.push({
         loop,

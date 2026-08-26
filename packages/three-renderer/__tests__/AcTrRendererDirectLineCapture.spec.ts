@@ -48,8 +48,10 @@ describe('AcTrRenderer direct capture', () => {
 
   it('captures area() payload without building AcTrPolygon geometry', () => {
     const renderer = createRenderer()
+    const loops = [[{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 5 }]]
     const area = {
-      getPoints: () => [[{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 5 }]],
+      getPoints: () => loops,
+      tessellate: () => loops,
       buildHierarchy: () => ({ children: [] })
     }
 

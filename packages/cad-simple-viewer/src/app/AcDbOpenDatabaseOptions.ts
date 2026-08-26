@@ -19,9 +19,11 @@ export enum AcApOpenViewMode {
  * the `readOnly` property with a `mode` property that provides more granular
  * access control.
  *
- * Inherits {@link AcDbOpenDatabaseOptions.drawNoPlotLayers} from the data
- * model. {@link AcApDocManager} defaults `drawNoPlotLayers` to `false`
- * (web viewer semantics) when omitted.
+ * Inherits {@link AcDbOpenDatabaseOptions.drawNoPlotLayers} and
+ * {@link AcDbOpenDatabaseOptions.circleSides} from the data model.
+ * {@link AcApDocManager} defaults `drawNoPlotLayers` to `false`
+ * (web viewer semantics) when omitted. When `circleSides` is omitted,
+ * the data model uses draft quality (50).
  *
  * Fonts are not loaded during database open. They are fetched on demand by
  * `@mlightcad/mtext-renderer` (`FontManager.lazyFontLoading`) while text is
