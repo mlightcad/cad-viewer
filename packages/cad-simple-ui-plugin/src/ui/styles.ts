@@ -818,8 +818,16 @@ export function ensureUiStyles() {
 
     .ml-ex-ui-review-detail-actions {
       display: flex;
-      gap: 8px;
+      flex-direction: row;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 4px;
       margin-top: 4px;
+    }
+
+    .ml-ex-ui-review-detail-actions .ml-ex-ui-review-btn {
+      flex: 0 0 auto;
+      width: auto;
     }
 
     .ml-ex-ui-layer-list .ml-ex-ui-layer-table-wrap {

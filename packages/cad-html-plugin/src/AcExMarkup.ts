@@ -22,6 +22,7 @@ import {
   acExIsAttachableShapeMarkup,
   acExMarkupCanvasLineWidth,
   acExMarkupCenter,
+  acExMarkupFocusExtents,
   type AcExMarkupShapeOutline,
   acExMarkupShapeOutlineFromGeometry,
   acExStrokeMarkupCloud,
@@ -45,11 +46,13 @@ import type {
   AcExMarkupPoint2d,
   AcExMarkupRecord,
   AcExMarkupSidecarFile,
+  AcExMarkupStatus,
   AcExMarkupStyle
 } from './AcExMarkupTypes'
 import type { AcExTrackingOptions } from './AcExMeasureTracking'
 import { constrainToAcExTracking } from './AcExMeasureTracking'
 import type { AcExOsnapPoint } from './AcExOsnap'
+import type { AcExExtents } from './AcExSnapshotTypes'
 
 export type { AcExMarkupMode } from './AcExMarkupTypes'
 
@@ -99,6 +102,8 @@ export interface AcExMarkupViewApi {
   render: () => void
   getSnapCacheKey: () => number
   resolvePoint: (clientX: number, clientY: number) => AcExResolvedPoint
+  /** Frames the camera on world XY extents (review-panel zoom-to). */
+  zoomToExtents: (extents: AcExExtents) => void
 }
 
 export interface AcExMarkupControllerOptions {
@@ -213,6 +218,7 @@ export class AcExMarkupController {
   private readonly _committed: AcExCommittedMarkup[] = []
   private readonly _redrawListeners: AcExMarkupCleanup[] = []
   private readonly _selectedIds = new Set<string>()
+  private readonly _recordListeners = new Set<() => void>()
 
   private _mode: AcExMarkupMode | null = null
   private _points: THREE.Vector2[] = []
@@ -486,6 +492,7 @@ export class AcExMarkupController {
     }
     this._updateIdleStatus()
     this._view.render()
+    this._notifyRecordsChanged()
   }
 
   setVisible(visible: boolean): void {
@@ -519,6 +526,7 @@ export class AcExMarkupController {
     if (selectionChanged) {
       this._applySelectionStyles()
       this._onStyleChange?.()
+      this._notifyRecordsChanged()
     }
   }
 
@@ -652,6 +660,98 @@ export class AcExMarkupController {
     this._onStyleChange?.()
     this._updateIdleStatus()
     this._view.render()
+    this._notifyRecordsChanged()
+  }
+
+  /** Committed markup records on the current drawing (all layouts). */
+  list(): AcExMarkupRecord[] {
+    return this._committed.map(item => item.record)
+  }
+
+  /** Currently selected markup id when exactly one item is selected. */
+  get selectedId(): string | undefined {
+    if (this._selectedIds.size !== 1) return undefined
+    return [...this._selectedIds][0]
+  }
+
+  /**
+   * Subscribe to list / selection changes for the review panel.
+   *
+   * @returns Unsubscriber.
+   */
+  subscribe(listener: () => void): () => void {
+    this._recordListeners.add(listener)
+    return () => {
+      this._recordListeners.delete(listener)
+    }
+  }
+
+  /**
+   * Select a markup from the review panel (replaces the current selection).
+   */
+  selectFromPanel(id: string): void {
+    this._selectOnly(id)
+  }
+
+  /**
+   * Zoom to the combined AABB of a markup (shape, leader, and HTML text box).
+   *
+   * @returns `true` when extents were applied.
+   */
+  focus(id: string): boolean {
+    const item = this._committed.find(entry => entry.record.id === id)
+    if (!item) return false
+    const rects = item.parts.dom
+      .filter(
+        el => !el.classList.contains('mlcad-markup-dot') && !el.hidden
+      )
+      .map(el => el.getBoundingClientRect())
+      .filter(rect => rect.width > 0 || rect.height > 0)
+    const extents = acExMarkupFocusExtents(
+      item.record.geometry,
+      rects,
+      (clientX, clientY) => this._clientToWorld(clientX, clientY)
+    )
+    if (!extents) return false
+    this._view.zoomToExtents(extents)
+    this._selectOnly(id)
+    return true
+  }
+
+  /**
+   * Patch review metadata (status / label / comment) for one markup.
+   */
+  updateMeta(
+    id: string,
+    patch: Partial<Pick<AcExMarkupRecord, 'comment' | 'status' | 'text'>>
+  ): void {
+    const item = this._committed.find(entry => entry.record.id === id)
+    if (!item) return
+    const next: AcExMarkupRecord = {
+      ...item.record,
+      ...patch,
+      updatedAt: markupNow()
+    }
+    if (patch.text !== undefined) {
+      this._rebuildRecord(next)
+    } else {
+      item.record.comment = next.comment
+      item.record.status = next.status as AcExMarkupStatus
+      item.record.updatedAt = next.updatedAt
+    }
+    this._notifyRecordsChanged()
+  }
+
+  /** Remove one committed markup. */
+  removeMarkup(id: string): void {
+    this._removeCommitted(id, true)
+    this._onStyleChange?.()
+    this._view.render()
+    this._notifyRecordsChanged()
+  }
+
+  private _notifyRecordsChanged(): void {
+    for (const listener of this._recordListeners) listener()
   }
 
   exportSidecar(): void {
@@ -686,6 +786,7 @@ export class AcExMarkupController {
     }
     this._updateIdleStatus()
     this._view.render()
+    this._notifyRecordsChanged()
   }
 
   private async _handleImportFile(): Promise<void> {
@@ -1071,6 +1172,7 @@ export class AcExMarkupController {
     this._buildVisuals(record, parts)
     this._positionDomOverlays()
     this.syncLayoutVisibility()
+    this._notifyRecordsChanged()
   }
 
   /**
@@ -1164,6 +1266,7 @@ export class AcExMarkupController {
     this._buildVisuals(record, parts)
     this._positionDomOverlays()
     this.syncLayoutVisibility()
+    this._notifyRecordsChanged()
   }
 
   private _buildVisuals(
@@ -1358,6 +1461,7 @@ export class AcExMarkupController {
             type: this._findRecord(id)?.type ?? 'markup'
           })
     this._view.render()
+    this._notifyRecordsChanged()
   }
 
   private _touchRecord(id: string): void {
@@ -1790,6 +1894,7 @@ export class AcExMarkupController {
       badge.textContent =
         next.trim() || this._i18n.t('status.markupDefaultLabel')
       this._view.render()
+      this._notifyRecordsChanged()
     })
   }
 
@@ -1911,6 +2016,7 @@ export class AcExMarkupController {
       this._updateIdleStatus()
       this._view.render()
     }
+    this._notifyRecordsChanged()
   }
 
   private _applySelectionStyles(): void {

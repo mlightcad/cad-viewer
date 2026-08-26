@@ -15,6 +15,7 @@
     "copy:workers": "node ../../tools/copy-workers.mjs dist/assets",
     "dev": "vite",
     "dev:local-data-model": "vite --mode local-data-model",
+    "dev:local-ui-components": "vite --mode local-ui-components",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",

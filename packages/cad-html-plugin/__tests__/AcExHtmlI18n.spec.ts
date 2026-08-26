@@ -120,5 +120,7 @@ describe('AcExHtmlI18n', () => {
     expect(i18n.t('layers.zoomTo', { name: 'Duvarlar' })).toBe(
       'Duvarlar katmanına yakınlaştır'
     )
+    expect(i18n.t('review.zoomTo')).toBe('Yakınlaştır')
+    expect(i18n.t('review.closeDetails')).toBe('Ayrıntıları kapat')
   })
 })

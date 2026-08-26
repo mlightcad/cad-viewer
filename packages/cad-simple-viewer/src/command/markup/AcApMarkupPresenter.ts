@@ -1,9 +1,13 @@
-import { AcGeBox2d, type AcGePoint3dLike } from '@mlightcad/data-model'
+import { AcGeBox2d } from '@mlightcad/data-model'
 
 import type { AcEdBaseView } from '../../editor'
 import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import type { AcTrView2d } from '../../view'
-import { isAttachableShapeMarkup } from './AcApMarkupGeometry'
+import {
+  expandMarkupBoundsByClientRects,
+  isAttachableShapeMarkup,
+  markupGeometryBounds
+} from './AcApMarkupGeometry'
 import {
   getMarkupHistory,
   getSessionUndo,
@@ -222,20 +226,51 @@ export class AcApMarkupPresenter {
     getMarkupStore().setSelectedId(id)
   }
 
-  /** Zoom roughly to a markup's primary world point. */
+  /**
+   * Zoom to the combined world AABB of a markup: shape, leader, and published
+   * HTML overlays (text box / badge / stamp).
+   */
   focus(view: AcEdBaseView, record: AcApMarkupRecord): void {
-    const p = createMarkupEntityFromRecord(record).primaryPoint() as
-      | AcGePoint3dLike
-      | undefined
-    if (!p) return
-    const view2d = asView2d(view)
-    const pad = 50
-    const box = new AcGeBox2d()
-      .expandByPoint({ x: p.x - pad, y: p.y - pad })
-      .expandByPoint({ x: p.x + pad, y: p.y + pad })
-    view2d.zoomTo(box, 1.5)
+    const box = markupFocusExtents(view, record)
+    if (!box) return
+    asView2d(view).zoomTo(box, 1.5)
     this.select(view, record.id)
   }
+}
+
+/**
+ * Combined zoom-to box for a markup: control geometry plus HTML text boxes.
+ *
+ * Grip dots are omitted; they sit on geometry already included in the AABB.
+ *
+ * @param view - View used for overlay lookup and client → world conversion.
+ * @param record - Markup whose shape, leader, and overlays are framed.
+ * @returns World AABB, or `undefined` when the markup has no finite bounds.
+ */
+export function markupFocusExtents(
+  view: AcEdBaseView,
+  record: AcApMarkupRecord
+): AcGeBox2d | undefined {
+  const geometryBox = markupGeometryBounds(record.geometry)
+  const box = geometryBox
+    ? new AcGeBox2d(geometryBox.min, geometryBox.max)
+    : new AcGeBox2d()
+  const group = asView2d(view).htmlTransientManager.getGroup(record.id)
+  if (group) {
+    const rects = []
+    for (const child of group.children) {
+      const el = child.element
+      if (el.classList.contains('ml-html-dot')) continue
+      const rect = el.getBoundingClientRect()
+      if (rect.width <= 0 && rect.height <= 0) continue
+      rects.push(rect)
+    }
+    expandMarkupBoundsByClientRects(box, rects, (clientX, clientY) => {
+      const canvas = view.viewportToCanvas({ x: clientX, y: clientY })
+      return view.screenToWorld(canvas)
+    })
+  }
+  return box.isEmpty() ? undefined : box
 }
 
 /** Shared presenter for the active viewer session. */

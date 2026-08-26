@@ -1,4 +1,5 @@
 import {
+  expandMarkupBoundsByClientRects,
   hitTestMarkupGeometry,
   hitTestMarkupShapeOutline,
   isAttachableShapeMarkup,
@@ -198,5 +199,51 @@ describe('markupGeometryBounds', () => {
     expect(box!.min.y).toBe(-10)
     expect(box!.max.x).toBe(50)
     expect(box!.max.y).toBe(20)
+  })
+
+  it('unions a cloud AABB with its attached leader and text-box anchor', () => {
+    const box = markupGeometryBounds({
+      type: 'cloud',
+      corner1: { x: 0, y: 0 },
+      corner2: { x: 20, y: 10 },
+      callout: { tip: { x: 20, y: 5 }, anchor: { x: 80, y: 40 } }
+    })
+    expect(box).toBeDefined()
+    expect(box!.min.x).toBe(0)
+    expect(box!.min.y).toBe(0)
+    expect(box!.max.x).toBe(80)
+    expect(box!.max.y).toBe(40)
+  })
+
+  it('includes both callout leader tip and text-box anchor', () => {
+    const box = markupGeometryBounds({
+      type: 'callout',
+      tip: { x: 0, y: 0 },
+      anchor: { x: 100, y: -30 }
+    })
+    expect(box).toBeDefined()
+    expect(box!.min.x).toBe(0)
+    expect(box!.min.y).toBe(-30)
+    expect(box!.max.x).toBe(100)
+    expect(box!.max.y).toBe(0)
+  })
+})
+
+describe('expandMarkupBoundsByClientRects', () => {
+  it('unions overlay client rectangles converted to world space', () => {
+    const box = markupGeometryBounds({
+      type: 'callout',
+      tip: { x: 0, y: 0 },
+      anchor: { x: 10, y: 0 }
+    })!
+    expandMarkupBoundsByClientRects(
+      box,
+      [{ left: 100, top: 20, right: 180, bottom: 60 }],
+      (clientX, clientY) => ({ x: clientX / 10, y: -clientY / 10 })
+    )
+    expect(box.min.x).toBe(0)
+    expect(box.min.y).toBe(-6)
+    expect(box.max.x).toBe(18)
+    expect(box.max.y).toBe(0)
   })
 })

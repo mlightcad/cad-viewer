@@ -23,6 +23,7 @@ import { acExHtmlIcons } from './AcExHtmlIcons'
 import { setupAcExHtmlLayoutMenu } from './AcExHtmlLayoutMenu'
 import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
 import { setupAcExHtmlNavTools } from './AcExHtmlNavTools'
+import { setupAcExHtmlReviewPanel } from './AcExHtmlReviewPanel'
 import {
   setAcExHtmlParentChildIcon,
   setupAcExHtmlToolbarFlyouts
@@ -738,7 +739,8 @@ async function startViewer(): Promise<void> {
         wcsToScreen,
         render,
         getSnapCacheKey: () => snapCacheKey,
-        resolvePoint: resolveMeasurePoint
+        resolvePoint: resolveMeasurePoint,
+        zoomToExtents
       }
     })
 
@@ -797,7 +799,20 @@ async function startViewer(): Promise<void> {
         ...paperLayerGroups.keys(),
         ...modelLayerGroups.keys()
       ])
-    ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+    ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+    closeOtherDrawers: () => reviewPanel?.close()
+  })
+
+  const reviewPanel = setupAcExHtmlReviewPanel({
+    i18n,
+    getMarkup: () => markup,
+    closeOtherDrawers: () => {
+      const layerDrawer = document.getElementById('mlcad-layer-drawer')
+      const layersBtn = document.getElementById('mlcad-layers-btn')
+      if (layerDrawer) layerDrawer.hidden = true
+      layersBtn?.classList.remove('active')
+      layersBtn?.setAttribute('aria-expanded', 'false')
+    }
   })
 
   const disposeObject3D = (object: THREE.Object3D) => {
@@ -968,6 +983,11 @@ async function startViewer(): Promise<void> {
       markup?.importSidecar()
     } else if (action === 'markup-export') {
       markup?.exportSidecar()
+    } else if (action === 'markup-panel') {
+      measure?.cancelMode()
+      markup?.cancelMode()
+      const drawer = document.getElementById('mlcad-review-drawer')
+      reviewPanel?.setOpen(Boolean(drawer?.hidden))
     } else if (action === 'measure') {
       markup?.cancelMode()
       const mode = button.getAttribute(
@@ -1056,6 +1076,7 @@ async function startViewer(): Promise<void> {
       markup?.refreshIdleStatus()
     }
     layerPanel?.refreshLayerLabels()
+    reviewPanel?.refreshLabels()
     measureSettingsRef.current?.refreshLabels()
     drawStyleToolbarRef.current?.refreshLabels()
     toolbarCollapse.refreshLabels()
@@ -1180,6 +1201,13 @@ function setupToolbarCollapse(
     layersBtn?.classList.remove('active')
     layersBtn?.setAttribute('aria-expanded', 'false')
 
+    const reviewDrawer = document.getElementById('mlcad-review-drawer')
+    if (reviewDrawer) reviewDrawer.hidden = true
+    document.querySelectorAll('[data-action="markup-panel"]').forEach(btn => {
+      btn.classList.remove('active')
+      btn.setAttribute('aria-pressed', 'false')
+    })
+
     closeStrips?.()
   }
 
@@ -1235,6 +1263,8 @@ interface AcExLayerPanelContext {
   osnapIndexes: AcExOsnapIndex[]
   /** Sorted layer names for bulk show/hide actions. */
   sortedLayerNames: string[]
+  /** Close the review drawer when the layer drawer opens. */
+  closeOtherDrawers?: () => void
 }
 
 /** Handles returned by {@link setupLayerPanel} for locale-driven UI updates. */
@@ -1259,7 +1289,8 @@ function setupLayerPanel(
     zoomToExtents,
     cancelZoomWindow,
     osnapIndexes,
-    sortedLayerNames
+    sortedLayerNames,
+    closeOtherDrawers
   } = ctx
 
   const layersBtn = document.getElementById('mlcad-layers-btn')
@@ -1365,6 +1396,7 @@ function setupLayerPanel(
   }
 
   const setDrawerOpen = (open: boolean) => {
+    if (open) closeOtherDrawers?.()
     layerDrawer.hidden = !open
     layersBtn.classList.toggle('active', open)
     layersBtn.setAttribute('aria-expanded', String(open))

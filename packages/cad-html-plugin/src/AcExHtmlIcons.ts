@@ -23,6 +23,7 @@ import {
   ICON_MARKUP_EXPORT,
   ICON_MARKUP_HIDE,
   ICON_MARKUP_IMPORT,
+  ICON_MARKUP_PANEL,
   ICON_MARKUP_RECT,
   ICON_MARKUP_SHOW,
   ICON_MARKUP_STAMP,
@@ -113,6 +114,8 @@ export const acExHtmlIcons = {
   markupArrow: ICON_MARKUP_ARROW,
   /** Markup stamp. */
   markupStamp: ICON_MARKUP_STAMP,
+  /** Review list / markup panel. */
+  markupPanel: ICON_MARKUP_PANEL,
   /** Import markup sidecar JSON. */
   markupImport: ICON_MARKUP_IMPORT,
   /** Export markup sidecar JSON. */
