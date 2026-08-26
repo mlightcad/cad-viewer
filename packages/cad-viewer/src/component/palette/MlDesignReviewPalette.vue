@@ -27,6 +27,7 @@
       row-key="id"
       :empty-text="t('main.toolPalette.designReview.empty')"
       @row-click="handleRowClick"
+      @row-dblclick="handleRowDblClick"
     >
       <el-table-column
         prop="type"
@@ -119,7 +120,10 @@
 
 <script setup lang="ts">
 import { Close } from '@element-plus/icons-vue'
-import type { AcApMarkupStatus } from '@mlightcad/cad-simple-viewer'
+import type {
+  AcApMarkupRecord,
+  AcApMarkupStatus
+} from '@mlightcad/cad-simple-viewer'
 import {
   ElButton,
   ElForm,
@@ -190,6 +194,11 @@ watch(
 const handleRowClick = (row: { id: string }) => {
   detailsOpen.value = true
   select(row.id)
+}
+
+const handleRowDblClick = (row: AcApMarkupRecord) => {
+  detailsOpen.value = true
+  focus(row)
 }
 
 const closeDetails = () => {
@@ -315,7 +324,14 @@ const statusLabel = (status: AcApMarkupStatus) => {
 
 .ml-design-review-detail-actions {
   display: flex;
-  gap: 8px;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 4px;
   margin-top: 4px;
+}
+
+.ml-design-review-detail-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 </style>

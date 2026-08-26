@@ -80,6 +80,8 @@ export class AcExReviewPaletteView {
   private selectedId: string | undefined
   /** Previous selected id used to commit drafts when switching rows. */
   private lastSelectedId: string | undefined
+  /** Last markup list signature used to avoid rebuilding rows on selection-only updates. */
+  private tableContentKey = ''
   /** Whether the details pane is visible. */
   private detailsOpen = true
   /** Unsubscribes from markup store changes. */
@@ -174,6 +176,16 @@ export class AcExReviewPaletteView {
     table.appendChild(thead)
 
     this.tbody = document.createElement('tbody')
+    this.tbody.addEventListener('click', event => {
+      const id = this.rowMarkupId(event)
+      if (id) this.handleRowClick(id)
+    })
+    this.tbody.addEventListener('dblclick', event => {
+      const id = this.rowMarkupId(event)
+      if (!id) return
+      const record = this.markups.find(markup => markup.id === id)
+      if (record) this.handleRowDblClick(record)
+    })
     table.appendChild(this.tbody)
     tableWrap.appendChild(table)
     this.element.appendChild(tableWrap)
@@ -313,9 +325,44 @@ export class AcExReviewPaletteView {
 
     this.lastSelectedId = this.selectedId
     this.clearButton.disabled = this.markups.length === 0
-    this.renderTable()
+    this.refreshTable()
     this.updateDetailFields({
       preserveDrafts: this.selectedId === prevId
+    })
+  }
+
+  /** Row markup id from a bubbled table event, if any. */
+  private rowMarkupId(event: Event): string | undefined {
+    const target = event.target
+    if (!(target instanceof Element)) return undefined
+    const row = target.closest('tr[data-markup-id]')
+    if (!row || !this.tbody.contains(row)) return undefined
+    return row instanceof HTMLElement ? row.dataset.markupId : undefined
+  }
+
+  /** Rebuilds rows only when markup list content changes; otherwise updates selection. */
+  private refreshTable() {
+    const key = this.markups
+      .map(
+        record =>
+          `${record.id}\t${record.type}\t${record.status}\t${record.author}\t${record.text ?? ''}\t${record.comment}`
+      )
+      .join('\n')
+    if (
+      key === this.tableContentKey &&
+      this.tbody.querySelector('tr[data-markup-id], .ml-ex-ui-review-empty-row')
+    ) {
+      this.syncRowSelection()
+      return
+    }
+    this.tableContentKey = key
+    this.renderTable()
+  }
+
+  /** Toggles `is-selected` on existing rows without replacing them. */
+  private syncRowSelection() {
+    this.tbody.querySelectorAll<HTMLTableRowElement>('tr[data-markup-id]').forEach(row => {
+      row.classList.toggle('is-selected', row.dataset.markupId === this.selectedId)
     })
   }
 
@@ -342,7 +389,6 @@ export class AcExReviewPaletteView {
       if (record.id === this.selectedId) {
         tr.classList.add('is-selected')
       }
-      tr.addEventListener('click', () => this.handleRowClick(record.id))
 
       const typeCell = document.createElement('td')
       typeCell.textContent = this.typeLabel(record.type)
@@ -417,6 +463,12 @@ export class AcExReviewPaletteView {
     // Re-open details even when the row is already selected: store.select is a
     // no-op for the same id, so syncFromStore will not run.
     this.updateDetailFields({ preserveDrafts: true })
+  }
+
+  /** Selects a markup, opens details, and zooms the view to it. */
+  private handleRowDblClick(record: AcApMarkupRecord) {
+    this.handleRowClick(record.id)
+    this.focusMarkup(record)
   }
 
   /** Commits drafts and hides the details pane. */

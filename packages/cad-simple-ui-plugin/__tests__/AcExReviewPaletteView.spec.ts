@@ -182,9 +182,12 @@ describe('AcExReviewPaletteView', () => {
     ).toBe(true)
 
     firstRow.click()
-    expect(
-      view.element.querySelector('.ml-ex-ui-review-detail')?.hasAttribute('hidden')
-    ).toBe(false)
+    expect(firstRow.isConnected).toBe(true)
+    firstRow.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(mockPresenter.focus).toHaveBeenCalledWith(
+      mockView,
+      expect.objectContaining({ id: 'cloud-1' })
+    )
 
     view.destroy()
   })

@@ -166,11 +166,6 @@ export function setupAcExHtmlReviewPanel(options: {
       const tr = document.createElement('tr')
       tr.dataset.markupId = record.id
       if (record.id === selectedId) tr.classList.add('is-selected')
-      tr.addEventListener('click', () => {
-        detailsOpen = true
-        getMarkup()?.selectFromPanel(record.id)
-        updateDetail()
-      })
 
       const typeCell = document.createElement('td')
       typeCell.textContent = typeLabel(record.type)
@@ -203,10 +198,60 @@ export function setupAcExHtmlReviewPanel(options: {
     }
   }
 
+  const recordsKey = (records: readonly AcExMarkupRecord[]) =>
+    records
+      .map(
+        record =>
+          `${record.id}\t${record.type}\t${record.status}\t${record.author}\t${record.text ?? ''}\t${record.comment}`
+      )
+      .join('\n')
+
+  let tableContentKey = ''
+
+  const syncRowSelection = () => {
+    const selectedId = getMarkup()?.selectedId
+    tbody.querySelectorAll('tr[data-markup-id]').forEach(row => {
+      row.classList.toggle('is-selected', row.getAttribute('data-markup-id') === selectedId)
+    })
+  }
+
   const refresh = () => {
-    renderTable()
+    const records = getMarkup()?.list() ?? []
+    const key = recordsKey(records)
+    if (
+      key === tableContentKey &&
+      tbody.querySelector('tr[data-markup-id], .mlcad-review-empty')
+    ) {
+      syncRowSelection()
+    } else {
+      tableContentKey = key
+      renderTable()
+    }
     updateDetail()
   }
+
+  const rowMarkupId = (event: Event): string | undefined => {
+    const target = event.target
+    if (!(target instanceof Element)) return undefined
+    const row = target.closest('tr[data-markup-id]')
+    if (!row || !tbody.contains(row)) return undefined
+    return row instanceof HTMLElement ? row.dataset.markupId : undefined
+  }
+
+  tbody.addEventListener('click', event => {
+    const id = rowMarkupId(event)
+    if (!id) return
+    detailsOpen = true
+    getMarkup()?.selectFromPanel(id)
+    updateDetail()
+  })
+  tbody.addEventListener('dblclick', event => {
+    const id = rowMarkupId(event)
+    if (!id) return
+    detailsOpen = true
+    getMarkup()?.focus(id)
+    updateDetail()
+  })
 
   const setOpen = (open: boolean) => {
     if (open) closeOtherDrawers()
@@ -293,7 +338,8 @@ export function setupAcExHtmlReviewPanel(options: {
     zoomBtn.textContent = i18n.t('review.zoomTo')
     deleteBtn.textContent = i18n.t('review.delete')
     rebuildStatusOptions()
-    refresh()
+    renderTable()
+    updateDetail()
   }
 
   rebuildStatusOptions()
