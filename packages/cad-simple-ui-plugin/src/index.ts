@@ -26,6 +26,8 @@ export type {
   AcUiLocale,
   AcUiPluginLayoutMode,
   AcUiSimpleUiPluginOptions,
+  AcUiSubToolbarOptions,
+  AcUiSubToolbarPosition,
   AcUiToolbarItem,
   AcUiToolbarItemConfig,
   AcUiToolbarItemsInput,

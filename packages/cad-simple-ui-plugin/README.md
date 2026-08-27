@@ -219,11 +219,23 @@ acuiCreateSimpleUiPlugin({
     phone: {
       toolbar: {
         // optional overrides; phone inherits only enabled/mountTarget from toolbar
+        // subToolbar.position: 'front' (default) | 'end' | 'center' | 'auto'
       }
     }
   }
 })
 ```
+
+`toolbar.subToolbar` can override chrome (`showLabels`, `size`, …) and **`position`**:
+
+| Value | Behavior |
+| --- | --- |
+| `front` (default) | First sub-toolbar button aligns with the first toolbar button |
+| `end` | Last sub-toolbar button aligns with the last toolbar button |
+| `center` | Center the sub-toolbar on the parent toolbar |
+| `auto` | Align to the parent button |
+
+`position` is ignored when the sub-toolbar `size` is `'stretch'`.
 
 Runtime controls:
 

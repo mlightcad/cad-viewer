@@ -880,7 +880,7 @@ class CadViewerApp {
               subToolbar: {
                 showLabels: false,
                 showSeparators: false,
-                size: 'stretch',
+                size: 'auto',
                 overflow: 'wrap'
               }
             }

@@ -25,6 +25,20 @@ export type AcUiToolbarOverflow = 'menu' | 'wrap'
 export type AcUiToolbarSize = 'auto' | 'stretch'
 
 /**
+ * How a sub-toolbar aligns along the parent toolbar's main axis.
+ *
+ * - `'front'`: first sub-toolbar button aligns with the first toolbar button
+ *   (default)
+ * - `'end'`: last sub-toolbar button aligns with the last toolbar button
+ * - `'center'`: centers the sub-toolbar on the parent toolbar
+ * - `'auto'`: align to the parent button
+ *
+ * Ignored when the sub-toolbar {@link AcUiToolbarChromeOptions.size} is
+ * `'stretch'`.
+ */
+export type AcUiSubToolbarPosition = 'front' | 'end' | 'center' | 'auto'
+
+/**
  * Shared layout and chrome options for the main toolbar and sub-toolbars.
  *
  * Sub-toolbars inherit unset fields from the main toolbar unless overridden via
@@ -68,6 +82,19 @@ export interface AcUiToolbarChromeOptions {
    * @default true
    */
   showSeparators?: boolean
+}
+
+/**
+ * Sub-toolbar overrides: chrome fields plus optional axis alignment.
+ *
+ * Unset chrome fields inherit from the main toolbar.
+ */
+export interface AcUiSubToolbarOptions extends Partial<AcUiToolbarChromeOptions> {
+  /**
+   * Aligns the strip along the parent toolbar axis.
+   * @default 'front'
+   */
+  position?: AcUiSubToolbarPosition
 }
 
 /** Dock panel edge placement relative to the viewer host element. */
@@ -208,9 +235,11 @@ export interface AcUiToolbarOptions extends AcUiToolbarChromeOptions {
    */
   mountTarget?: HTMLElement
   /**
-   * Sub-toolbar chrome overrides. Unset fields inherit from the main toolbar.
+   * Sub-toolbar chrome and position overrides. Unset chrome fields inherit from
+   * the main toolbar. {@link AcUiSubToolbarOptions.position} defaults to
+   * `'front'`.
    */
-  subToolbar?: Partial<AcUiToolbarChromeOptions>
+  subToolbar?: AcUiSubToolbarOptions
 }
 
 /**

@@ -23,7 +23,7 @@ import {
   acuiResolveToolbarChildrenUi
 } from '../config/toolbarItemUtils'
 import type {
-  AcUiToolbarChromeOptions,
+  AcUiSubToolbarOptions,
   AcUiToolbarItem,
   AcUiToolbarOverflow,
   AcUiToolbarPlacement,
@@ -74,8 +74,8 @@ export interface AcUiToolbarMountOptions {
   showBorder?: boolean
   /** When false, omits visual separators between toolbar groups. @default true */
   showSeparators?: boolean
-  /** Sub-toolbar chrome overrides; unset fields inherit from this toolbar. */
-  subToolbar?: Partial<AcUiToolbarChromeOptions>
+  /** Sub-toolbar chrome and position overrides; unset chrome inherits from this toolbar. */
+  subToolbar?: AcUiSubToolbarOptions
 }
 
 /**
@@ -1112,6 +1112,7 @@ export class AcUiToolbar {
         placement: this.options.placement,
         sticky,
         chrome: this.resolveSubToolbarChrome(),
+        position: this.options.subToolbar?.position,
         getCrossAxisInset: () => this.getCrossAxisInset(),
         commandsDisabled: this.isDisabled || !this.hasDocument,
         onSelect: (child, childButton) =>
@@ -1280,6 +1281,7 @@ export class AcUiToolbar {
       placement: this.options.placement,
       sticky: nestedSticky,
       chrome: this.resolveSubToolbarChrome(),
+      position: this.options.subToolbar?.position,
       getCrossAxisInset: () => this.getCrossAxisInset(),
       commandsDisabled: this.isDisabled || !this.hasDocument,
       onSelect: (child, nestedButton) =>

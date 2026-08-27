@@ -623,4 +623,154 @@ describe('AcUiToolbar children UI', () => {
     expect(getComputedStyle(themeBtn!).flexGrow).toBe('1')
     toolbar.destroy()
   })
+
+  it('centers a sub-toolbar on the parent toolbar when position is center', () => {
+    const host = document.createElement('div')
+    host.style.position = 'relative'
+    host.style.width = '400px'
+    host.style.height = '300px'
+    Object.defineProperty(host, 'clientWidth', {
+      configurable: true,
+      get: () => 400
+    })
+    Object.defineProperty(host, 'clientHeight', {
+      configurable: true,
+      get: () => 300
+    })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      edgeOffset: 0,
+      size: 'stretch',
+      subToolbar: { position: 'center' },
+      items: [
+        {
+          id: 'zoom',
+          label: 'toolbar.zoom',
+          childrenUi: 'toolbar',
+          children: [
+            { id: 'zoom-extent', label: 'toolbar.zoomExtent', command: 'zoom' }
+          ]
+        },
+        { id: 'layer', label: 'toolbar.layerShort', command: 'layer' },
+        {
+          id: 'settings',
+          label: 'toolbar.settings',
+          childrenUi: 'toolbar',
+          children: [
+            { id: 'theme', label: 'toolbar.theme', command: 'theme' }
+          ]
+        }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="settings"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    const root = host.querySelector<HTMLElement>('.ml-ex-ui-toolbar')!
+    const sub = host.querySelector<HTMLElement>('.ml-ex-ui-subtoolbar')!
+    const expectedLeft =
+      (root.getBoundingClientRect().width - sub.offsetWidth) / 2
+    expect(Number.parseFloat(sub.style.left)).toBeCloseTo(expectedLeft, 0)
+    toolbar.destroy()
+  })
+
+  it('aligns sub-toolbar front and end to the parent toolbar buttons', () => {
+    const host = document.createElement('div')
+    host.style.position = 'relative'
+    host.style.width = '400px'
+    host.style.height = '300px'
+    Object.defineProperty(host, 'clientWidth', {
+      configurable: true,
+      get: () => 400
+    })
+    Object.defineProperty(host, 'clientHeight', {
+      configurable: true,
+      get: () => 300
+    })
+    document.body.appendChild(host)
+
+    const create = (position: 'front' | 'end') =>
+      new AcUiToolbar({
+        host,
+        placement: 'bottom',
+        edgeOffset: 0,
+        size: 'stretch',
+        subToolbar: { position },
+        items: [
+          {
+            id: 'zoom',
+            label: 'toolbar.zoom',
+            childrenUi: 'toolbar',
+            children: [
+              {
+                id: 'zoom-a',
+                label: 'toolbar.zoomExtent',
+                command: 'zoom-a'
+              },
+              {
+                id: 'zoom-b',
+                label: 'toolbar.zoomWindow',
+                command: 'zoom-b'
+              }
+            ]
+          },
+          { id: 'layer', label: 'toolbar.layerShort', command: 'layer' },
+          {
+            id: 'settings',
+            label: 'toolbar.settings',
+            childrenUi: 'toolbar',
+            children: [
+              { id: 'theme', label: 'toolbar.theme', command: 'theme' }
+            ]
+          }
+        ],
+        i18n: new AcUiI18n(),
+        onCommand: jest.fn()
+      })
+
+    const frontToolbar = create('front')
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="settings"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    const frontRoot = host.querySelector<HTMLElement>('.ml-ex-ui-toolbar')!
+    const frontSub = host.querySelector<HTMLElement>('.ml-ex-ui-subtoolbar')!
+    const firstToolbarBtn = frontRoot.querySelector<HTMLElement>(
+      '.ml-ex-ui-toolbar-btn:not([hidden])'
+    )!
+    const firstSubBtn = frontSub.querySelector<HTMLElement>(
+      '.ml-ex-ui-toolbar-btn:not([hidden])'
+    )!
+    expect(firstSubBtn.getBoundingClientRect().left).toBeCloseTo(
+      firstToolbarBtn.getBoundingClientRect().left,
+      0
+    )
+    frontToolbar.destroy()
+
+    const endToolbar = create('end')
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="zoom"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    const endRoot = host.querySelector<HTMLElement>('.ml-ex-ui-toolbar')!
+    const endSub = host.querySelector<HTMLElement>('.ml-ex-ui-subtoolbar')!
+    const endToolbarBtns = Array.from(
+      endRoot.querySelectorAll<HTMLElement>(
+        '.ml-ex-ui-toolbar-btn:not([hidden])'
+      )
+    )
+    const endSubBtns = Array.from(
+      endSub.querySelectorAll<HTMLElement>('.ml-ex-ui-toolbar-btn:not([hidden])')
+    )
+    const lastToolbarBtn = endToolbarBtns[endToolbarBtns.length - 1]
+    const lastSubBtn = endSubBtns[endSubBtns.length - 1]
+    expect(lastSubBtn.getBoundingClientRect().right).toBeCloseTo(
+      lastToolbarBtn.getBoundingClientRect().right,
+      0
+    )
+    endToolbar.destroy()
+  })
 })

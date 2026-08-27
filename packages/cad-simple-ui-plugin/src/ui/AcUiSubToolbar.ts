@@ -9,12 +9,16 @@ import {
   acuiIsDynamicToolbarChildren,
   acuiIsToolbarSeparatorItem
 } from '../config/toolbarItemUtils'
-import type { AcUiToolbarItem, AcUiToolbarPlacement } from '../config/types'
+import type {
+  AcUiSubToolbarPosition,
+  AcUiToolbarItem,
+  AcUiToolbarPlacement
+} from '../config/types'
 import type { AcUiI18n } from '../i18n'
 import { acuiEnsureUiStyles } from './styles'
 
 /** Constructor options for {@link AcUiSubToolbar}. */
-export interface AcUiSubToolbarOptions {
+export interface AcUiSubToolbarMountOptions {
   /** i18n helper for button tooltips. */
   i18n: AcUiI18n
   /** Child items to render. */
@@ -29,6 +33,11 @@ export interface AcUiSubToolbarOptions {
   placement: AcUiToolbarPlacement
   /** Resolved layout and chrome options. */
   chrome: AcUiResolvedToolbarChrome
+  /**
+   * Aligns the strip along the parent toolbar axis.
+   * @default 'front'
+   */
+  position?: AcUiSubToolbarPosition
   /** Cross-axis host margins inherited from the parent toolbar. */
   getCrossAxisInset: () => { near: number; far: number }
   /**
@@ -51,7 +60,7 @@ export interface AcUiSubToolbarOptions {
  * close on outside click, matching a lightweight flyout toolbar.
  */
 export class AcUiSubToolbar {
-  /** Strip root appended to {@link AcUiSubToolbarOptions.host}. */
+  /** Strip root appended to {@link AcUiSubToolbarMountOptions.host}. */
   private root: HTMLDivElement
   /** Child items last passed to the constructor or {@link refresh}. */
   private items: AcUiToolbarItem[]
@@ -71,7 +80,7 @@ export class AcUiSubToolbar {
   /**
    * @param options - Host, placement, items, and selection callback.
    */
-  constructor(private options: AcUiSubToolbarOptions) {
+  constructor(private options: AcUiSubToolbarMountOptions) {
     acuiEnsureUiStyles()
     this.items = options.items
     this.commandsDisabled = options.commandsDisabled
@@ -124,6 +133,7 @@ export class AcUiSubToolbar {
     if (!this.root.isConnected) return
 
     const { host, toolbarRoot, anchor, placement, chrome } = this.options
+    const position = this.options.position ?? 'front'
     const gap = chrome.edgeOffset
     const hostRect = host.getBoundingClientRect()
     const toolbarRect = toolbarRoot.getBoundingClientRect()
@@ -142,19 +152,51 @@ export class AcUiSubToolbar {
 
     if (placement === 'right') {
       left = toolbarRect.left - hostRect.left - subWidth - gap
-      top = anchorRect.top - hostRect.top
+      top = stretch
+        ? crossInset.near
+        : this.resolveMainAxisOffset({
+            position,
+            axis: 'vertical',
+            toolbarRect,
+            hostRect,
+            anchorRect,
+            subSize: subHeight
+          })
     } else if (placement === 'left') {
       left = toolbarRect.right - hostRect.left + gap
-      top = anchorRect.top - hostRect.top
+      top = stretch
+        ? crossInset.near
+        : this.resolveMainAxisOffset({
+            position,
+            axis: 'vertical',
+            toolbarRect,
+            hostRect,
+            anchorRect,
+            subSize: subHeight
+          })
     } else if (placement === 'top') {
       left = stretch
         ? crossInset.near
-        : anchorRect.left - hostRect.left
+        : this.resolveMainAxisOffset({
+            position,
+            axis: 'horizontal',
+            toolbarRect,
+            hostRect,
+            anchorRect,
+            subSize: subWidth
+          })
       top = toolbarRect.bottom - hostRect.top + gap
     } else {
       left = stretch
         ? crossInset.near
-        : anchorRect.left - hostRect.left
+        : this.resolveMainAxisOffset({
+            position,
+            axis: 'horizontal',
+            toolbarRect,
+            hostRect,
+            anchorRect,
+            subSize: subWidth
+          })
       top = toolbarRect.top - hostRect.top - subHeight - gap
     }
 
@@ -178,6 +220,84 @@ export class AcUiSubToolbar {
 
     this.root.style.left = `${left}px`
     this.root.style.top = `${top}px`
+  }
+
+  /**
+   * Resolves left (horizontal strip) or top (vertical strip) from
+   * {@link AcUiSubToolbarPosition}.
+   */
+  private resolveMainAxisOffset(args: {
+    position: AcUiSubToolbarPosition
+    axis: 'horizontal' | 'vertical'
+    toolbarRect: DOMRect
+    hostRect: DOMRect
+    anchorRect: DOMRect
+    subSize: number
+  }): number {
+    const { position, axis, toolbarRect, hostRect, anchorRect, subSize } = args
+
+    if (position === 'auto') {
+      return axis === 'horizontal'
+        ? anchorRect.left - hostRect.left
+        : anchorRect.top - hostRect.top
+    }
+
+    if (position === 'center') {
+      return axis === 'horizontal'
+        ? toolbarRect.left - hostRect.left + (toolbarRect.width - subSize) / 2
+        : toolbarRect.top - hostRect.top + (toolbarRect.height - subSize) / 2
+    }
+
+    const toolbarButtons = this.queryVisibleButtons(this.options.toolbarRoot)
+    const subButtons = this.queryVisibleButtons(this.root)
+    const toolbarEdge =
+      position === 'front'
+        ? toolbarButtons[0]
+        : toolbarButtons[toolbarButtons.length - 1]
+    const subEdge =
+      position === 'front' ? subButtons[0] : subButtons[subButtons.length - 1]
+
+    if (!toolbarEdge || !subEdge) {
+      if (position === 'front') {
+        return axis === 'horizontal'
+          ? toolbarRect.left - hostRect.left
+          : toolbarRect.top - hostRect.top
+      }
+      return axis === 'horizontal'
+        ? toolbarRect.right - hostRect.left - subSize
+        : toolbarRect.bottom - hostRect.top - subSize
+    }
+
+    const toolbarEdgeRect = toolbarEdge.getBoundingClientRect()
+    const rootRect = this.root.getBoundingClientRect()
+    const subEdgeRect = subEdge.getBoundingClientRect()
+
+    if (axis === 'horizontal') {
+      if (position === 'front') {
+        const subOffset = subEdgeRect.left - rootRect.left
+        return toolbarEdgeRect.left - hostRect.left - subOffset
+      }
+      const subOffset = subEdgeRect.left - rootRect.left
+      return (
+        toolbarEdgeRect.right - hostRect.left - subOffset - subEdgeRect.width
+      )
+    }
+
+    if (position === 'front') {
+      const subOffset = subEdgeRect.top - rootRect.top
+      return toolbarEdgeRect.top - hostRect.top - subOffset
+    }
+    const subOffset = subEdgeRect.top - rootRect.top
+    return (
+      toolbarEdgeRect.bottom - hostRect.top - subOffset - subEdgeRect.height
+    )
+  }
+
+  /** Visible toolbar buttons used for front/end edge alignment. */
+  private queryVisibleButtons(root: HTMLElement): HTMLElement[] {
+    return Array.from(
+      root.querySelectorAll<HTMLElement>('.ml-ex-ui-toolbar-btn:not([hidden])')
+    )
   }
 
   /** Detaches the strip and removes the outside-click listener. */
