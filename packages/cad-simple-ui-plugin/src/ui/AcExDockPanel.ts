@@ -1,5 +1,4 @@
 import { acedIsMobileUiLayout } from '@mlightcad/cad-simple-viewer'
-
 import {
   createIconElement,
   ICON_DOCK_CLOSE,
@@ -8,7 +7,8 @@ import {
   ICON_PLACEMENT_LEFT,
   ICON_PLACEMENT_RIGHT,
   ICON_PLACEMENT_TOP
-} from '../assets/icons'
+} from '@mlightcad/cad-simple-viewer/icons'
+
 import type { AcExDockPanelSide } from '../config/types'
 import type { AcExI18n } from '../i18n'
 import { ensureUiStyles } from './styles'

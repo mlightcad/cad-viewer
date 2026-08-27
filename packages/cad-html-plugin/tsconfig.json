@@ -7,6 +7,9 @@
     "paths": {
       "@mlightcad/cad-html-plugin": [
         "./src/index.ts"
+      ],
+      "@mlightcad/cad-simple-ui-plugin/toolbar": [
+        "../cad-simple-ui-plugin/lib/toolbar.d.ts"
       ]
     }
   },

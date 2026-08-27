@@ -14,20 +14,49 @@ import {
 } from './AcApHtmlExportOptions'
 import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions'
 
+/** Options for {@link AcApExportHtmlCmd}. */
+export interface AcApExportHtmlCmdOptions {
+  /** Plugin options (e.g. `viewerRuntimeUrl`). */
+  pluginOptions?: AcApHtmlPluginOptions
+  /**
+   * When true, prompts for export options on the command line (`-chtml`).
+   * When false, exports immediately with {@link resolveAcApHtmlExportOptions}
+   * defaults (`chtml` in hosts without a dialog command).
+   *
+   * @default true
+   */
+  interactive?: boolean
+}
+
 /**
- * Editor command that exports the active drawing as a self-contained HTML file
- * using command-line prompts (`-chtml`).
+ * Editor command that exports the active drawing as a self-contained HTML file.
+ *
+ * - Interactive mode (`-chtml`): command-line keyword prompts.
+ * - Non-interactive mode (`chtml` without a UI dialog): export with defaults,
+ *   matching one-click toolbar UX (similar to `cpdf`).
  *
  * The command delegates to {@link AcApHtmlConvertor}, which serializes the
  * current Three.js scene into an {@link AcExSnapshot} HTML snapshot,
  * bundles the offline viewer runtime, and triggers a browser download.
  */
 export class AcApExportHtmlCmd extends AcEdCommand {
+  private readonly pluginOptions: AcApHtmlPluginOptions
+  private readonly interactive: boolean
+
   /**
-   * @param pluginOptions - HTML plugin options (e.g. `viewerRuntimeUrl`)
+   * @param options - Plugin options and whether to prompt for export settings.
+   *   Passing {@link AcApHtmlPluginOptions} alone is treated as interactive
+   *   (`-chtml`) for backward compatibility.
    */
-  constructor(private readonly pluginOptions: AcApHtmlPluginOptions = {}) {
+  constructor(options: AcApExportHtmlCmdOptions | AcApHtmlPluginOptions = {}) {
     super()
+    if (isLegacyPluginOptionsOnly(options)) {
+      this.pluginOptions = options
+      this.interactive = true
+    } else {
+      this.pluginOptions = options.pluginOptions ?? {}
+      this.interactive = options.interactive !== false
+    }
   }
 
   /**
@@ -38,7 +67,9 @@ export class AcApExportHtmlCmd extends AcEdCommand {
    *   has been initiated, or rejects if runtime loading or packaging fails.
    */
   async execute(context: AcApContext) {
-    const options = await this.promptOptions()
+    const options = this.interactive
+      ? await this.promptOptions()
+      : resolveAcApHtmlExportOptions()
     if (!options) {
       return
     }
@@ -203,4 +234,11 @@ export class AcApExportHtmlCmd extends AcEdCommand {
     }
     return undefined
   }
+}
+
+/** True when `options` is only {@link AcApHtmlPluginOptions} (no cmd wrappers). */
+function isLegacyPluginOptionsOnly(
+  options: AcApExportHtmlCmdOptions | AcApHtmlPluginOptions
+): options is AcApHtmlPluginOptions {
+  return !('interactive' in options) && !('pluginOptions' in options)
 }

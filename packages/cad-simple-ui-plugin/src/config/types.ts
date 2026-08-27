@@ -7,6 +7,14 @@ import type {
 /** Toolbar edge placement relative to the viewer host element. */
 export type AcExToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
 
+/**
+ * How the toolbar shows items that do not fit along the docked edge.
+ *
+ * - `'menu'`: hide overflowing items behind a "more" (⋯) button that opens a popup.
+ * - `'scroll'`: keep all items in a scrollable strip (horizontal or vertical).
+ */
+export type AcExToolbarOverflow = 'menu' | 'scroll'
+
 /** Dock panel edge placement relative to the viewer host element. */
 export type AcExDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
 
@@ -87,7 +95,11 @@ export interface AcExToolbarItem {
    * selected submenu item. Defaults to `'fixed'`.
    */
   childIcon?: AcExToolbarChildIconMode
-  /** Initial submenu selection when {@link childIcon} is `'selected'`. */
+  /**
+   * Initial submenu selection when {@link childIcon} is `'selected'`.
+   * Applied once when the parent first appears; later item-list updates do not
+   * overwrite a runtime selection.
+   */
   selectedChildId?: string
   /** Two-state button that merges `on` or `off` branch fields based on `getValue`. */
   toggle?: {
@@ -182,8 +194,13 @@ export interface AcExSimpleUiPluginOptions {
      * Defaults to the active view container when it is inside `host`.
      */
     mountTarget?: HTMLElement
-    /** Inset from the canvas edge in px. @default 8 */
+    /** Inset from the docked canvas edge in px. @default 8 */
     edgeOffset?: number
+    /**
+     * How overflowing toolbar items are shown when the host is too small.
+     * @default 'menu'
+     */
+    overflow?: AcExToolbarOverflow
   }
 }
 

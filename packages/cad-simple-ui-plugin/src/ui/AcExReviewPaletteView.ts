@@ -8,8 +8,11 @@ import {
   MARKUP_STATUSES,
   runMarkupEdit
 } from '@mlightcad/cad-simple-viewer'
+import {
+  createIconElement,
+  ICON_DOCK_CLOSE
+} from '@mlightcad/cad-simple-viewer/icons'
 
-import { createIconElement, ICON_DOCK_CLOSE } from '../assets/icons'
 import type { AcExI18n } from '../i18n'
 import { ensureUiStyles } from './styles'
 

@@ -1,6 +1,16 @@
+import { resolve } from 'path'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      // Bundle toolbar chrome from source so Rollup tree-shakes dock/plugin code.
+      '@mlightcad/cad-simple-ui-plugin/toolbar': resolve(
+        __dirname,
+        '../cad-simple-ui-plugin/src/toolbar.ts'
+      )
+    }
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: false,

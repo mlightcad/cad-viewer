@@ -56,6 +56,7 @@ export const zh: Record<string, string> = {
   'toolbar.localeAr': 'العربية',
   'toolbar.collapse': '收起工具栏',
   'toolbar.expand': '展开工具栏',
+  'toolbar.more': '更多工具',
   'layerManager.title': '图层管理器',
   'layerManager.name': '名称',
   'layerManager.on': '开',

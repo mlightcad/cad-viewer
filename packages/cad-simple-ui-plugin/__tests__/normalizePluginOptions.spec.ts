@@ -33,8 +33,9 @@ describe('normalizePluginOptions', () => {
     expect(resolved.dockPanel.defaultWidth).toBe(320)
   })
 
-  it('defaults toolbar edge offset', () => {
+  it('defaults toolbar edge offset and overflow', () => {
     const resolved = normalizePluginOptions({})
     expect(resolved.toolbar.edgeOffset).toBe(8)
+    expect(resolved.toolbar.overflow).toBe('menu')
   })
 })

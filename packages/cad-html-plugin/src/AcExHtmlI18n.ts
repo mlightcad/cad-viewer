@@ -71,6 +71,7 @@ export type AcExHtmlMessageKey =
   | 'toolbar.localeAr'
   | 'toolbar.collapse'
   | 'toolbar.expand'
+  | 'toolbar.more'
   | 'settings.ortho'
   | 'settings.polar'
   | 'settings.polarAngles'
@@ -210,7 +211,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeTr: 'Türkçe',
       localeAr: 'العربية',
       collapse: 'Collapse toolbar',
-      expand: 'Expand toolbar'
+      expand: 'Expand toolbar',
+      more: 'More tools'
     },
     settings: {
       ortho: 'Toggle orthogonal mode',
@@ -366,7 +368,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
       collapse: '收起工具栏',
-      expand: '展开工具栏'
+      expand: '展开工具栏',
+      more: '更多工具'
     },
     settings: {
       ortho: '切换正交模式',
@@ -514,7 +517,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
       collapse: 'Sbalit panel nástrojů',
-      expand: 'Rozbalit panel nástrojů'
+      expand: 'Rozbalit panel nástrojů',
+      more: 'Další nástroje'
     },
     settings: {
       ortho: 'Přepnout ortogonální režim',
@@ -670,7 +674,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
       collapse: 'Araç çubuğunu daralt',
-      expand: 'Araç çubuğunu genişlet'
+      expand: 'Araç çubuğunu genişlet',
+      more: 'Diğer araçlar'
     },
     settings: {
       ortho: 'Dik modu aç/kapat',
@@ -830,7 +835,8 @@ const AR_MESSAGES: AcExMessageTree = {
     'localeTr': 'Türkçe',
     'localeAr': 'العربية',
     'collapse': 'طي شريط الأدوات',
-    'expand': 'توسيع شريط الأدوات'
+    'expand': 'توسيع شريط الأدوات',
+    'more': 'المزيد من الأدوات'
   },
   'settings': {
     'ortho': 'تبديل الوضع المتعامد',
@@ -1151,14 +1157,5 @@ export class AcExHtmlI18n {
         el.setAttribute(attr, text)
       }
     })
-
-    const badge = document.getElementById('mlcad-lang-badge')
-    if (badge) badge.textContent = this.localeBadge
-
-    const langBtn = document.getElementById('mlcad-lang-btn')
-    if (langBtn) {
-      langBtn.setAttribute('title', this.t('toolbar.language'))
-      langBtn.setAttribute('aria-label', this.t('toolbar.language'))
-    }
   }
 }

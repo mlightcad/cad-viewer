@@ -7,7 +7,7 @@ A vanilla TypeScript demo that shows how to embed [`@mlightcad/cad-simple-viewer
 - **Local files** — Open `.dxf` / `.dwg` via file picker (toolbar **Open** or center **Open File**)
 - **Sample drawings** — Sidebar loads predefined files from the [cad-data](https://github.com/mlightcad/cad-data) CDN
 - **Viewer toolbar** — Zoom fit, zoom window, background toggle, pickbox size, line-weight display, export HTML/PDF
-- **Lazy plugins** — registered from `@mlightcad/cad-*-plugin/register` in `src/register.ts`; `-chtml` / `cpdf` / `csvg` load plugin chunks on demand (`chtml` runs the same command-line export when no dialog command is registered)
+- **Lazy plugins** — registered from `@mlightcad/cad-*-plugin/register` in `src/register.ts`; `-chtml` / `cpdf` / `csvg` load plugin chunks on demand (`chtml` exports with defaults when no dialog is registered; `-chtml` uses command-line prompts)
 - **Browser-only** — Parsing and rendering run in the browser (Web Workers + WebAssembly for DWG)
 - **Responsive layout** — Sidebar + viewer pane; stacks vertically on narrow screens
 - **HTML converter** — Dedicated page (`html-converter.html`) to upload a drawing, adjust export options, and download a self-contained HTML file with no backend
@@ -71,7 +71,7 @@ The build copies parser workers and `viewer-runtime.iife.js` into `dist/` (see `
    - **Switch BG** — Toggle drawing background
    - **Set Pickbox** — Prompt to set `PICKBOX` system variable
    - **LineWeight: On/Off** — Toggle `lwdisplay` on the current database
-   - **Export HTML** / **Export PDF** — Run `chtml` / `cpdf` from the toolbar (`chtml` uses command-line prompts here; `-chtml` is equivalent). Plugins must be registered; see `src/main.ts`.
+   - **Export HTML** / **Export PDF** — Run `chtml` / `cpdf` from the toolbar (`chtml` exports with defaults; use `-chtml` for command-line prompts). Plugins must be registered; see `src/main.ts`.
 
 Toast messages at the top report success or errors. The window title updates when a document is activated.
 

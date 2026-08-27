@@ -56,6 +56,7 @@ export const tr: Record<string, string> = {
   'toolbar.localeAr': 'العربية',
   'toolbar.collapse': 'Araç çubuğunu daralt',
   'toolbar.expand': 'Araç çubuğunu genişlet',
+  'toolbar.more': 'Diğer araçlar',
   'layerManager.title': 'Katman Yöneticisi',
   'layerManager.name': 'Ad',
   'layerManager.on': 'Açık',

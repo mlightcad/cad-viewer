@@ -484,6 +484,13 @@ export class AcExMarkupController {
     this._updateIdleStatus()
   }
 
+  /**
+   * Re-applies markup-mode `active` classes after the toolbar DOM is rebuilt.
+   */
+  syncToolbarActive(): void {
+    this._updateToolbarActive()
+  }
+
   clearAll(): void {
     this.cancelMode()
     this._deselect(false)
@@ -2292,18 +2299,32 @@ export class AcExMarkupController {
   }
 
   private _updateToolbarActive(): void {
-    document.querySelectorAll('[data-markup-mode]').forEach(btn => {
-      const mode = btn.getAttribute('data-markup-mode')
+    const modeIds = new Set([
+      'cloud',
+      'rect',
+      'circle',
+      'callout',
+      'arrow',
+      'text',
+      'stamp'
+    ])
+    document.querySelectorAll('[data-toolbar-item-id^="markup-"]').forEach(btn => {
+      const id = btn.getAttribute('data-toolbar-item-id')
+      if (!id) return
+      const mode = id.startsWith('markup-') ? id.slice('markup-'.length) : null
+      if (!mode || !modeIds.has(mode)) return
       btn.classList.toggle('active', mode === this._mode)
     })
     document
-      .getElementById('mlcad-markup-menu-btn')
-      ?.classList.toggle('active', this._mode !== null)
+      .querySelectorAll('[data-toolbar-item-id="markup"]')
+      .forEach(btn => {
+        btn.classList.toggle('active', this._mode !== null)
+      })
   }
 
   private _updateVisibilityToolbar(): void {
     const buttons = document.querySelectorAll(
-      '[data-action="markup-visibility"]'
+      '[data-toolbar-item-id="markup-visibility"]'
     )
     if (buttons.length === 0) return
     // State-oriented icon: open eye while visible, slashed eye while hidden.
@@ -2316,15 +2337,9 @@ export class AcExMarkupController {
     buttons.forEach(btn => {
       btn.classList.toggle('active', this._visible)
       btn.classList.toggle('is-toggled', this._visible)
-      btn.setAttribute('data-i18n-key', titleKey)
       btn.setAttribute('title', label)
       btn.setAttribute('aria-label', label)
-      const labelEl = btn.querySelector('.mlcad-dropdown-label')
-      if (labelEl) {
-        labelEl.setAttribute('data-i18n-key', titleKey)
-        labelEl.textContent = label
-      }
-      const iconHost = btn.querySelector('.mlcad-dropdown-icon')
+      const iconHost = btn.querySelector('.ml-ex-ui-icon')
       if (iconHost) {
         iconHost.innerHTML = icon
       } else {

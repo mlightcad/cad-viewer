@@ -1,4 +1,4 @@
-import { ML_UI_MOBILE_MAX_WIDTH } from '@mlightcad/cad-simple-viewer'
+import { ML_EX_UI_MOBILE_MAX_WIDTH } from './uiLayout'
 
 const STYLE_ID = 'ml-ex-ui-styles'
 
@@ -27,6 +27,11 @@ export function ensureUiStyles() {
       --ml-ex-ui-toolbar-btn-size: 32px;
     }
 
+    .ml-ex-ui-toolbar.is-static {
+      position: relative;
+      z-index: auto;
+    }
+
     .ml-ex-ui-toolbar-host {
       position: relative;
     }
@@ -50,9 +55,70 @@ export function ensureUiStyles() {
       display: none !important;
     }
 
-    .ml-ex-ui-toolbar.is-collapsed .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-collapse-btn),
+    .ml-ex-ui-toolbar.is-collapsed .ml-ex-ui-toolbar-items,
+    .ml-ex-ui-toolbar.is-collapsed .ml-ex-ui-toolbar-overflow-btn,
     .ml-ex-ui-toolbar.is-collapsed .ml-ex-ui-toolbar-separator {
       display: none;
+    }
+
+    .ml-ex-ui-toolbar-items {
+      display: flex;
+      gap: 4px;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .ml-ex-ui-toolbar.is-horizontal .ml-ex-ui-toolbar-items {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .ml-ex-ui-toolbar.is-vertical .ml-ex-ui-toolbar-items {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .ml-ex-ui-toolbar.is-scroll .ml-ex-ui-toolbar-items.is-scroll {
+      flex: 1 1 auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: var(--ml-ui-border, #dcdfe6) transparent;
+    }
+
+    .ml-ex-ui-toolbar.is-horizontal.is-scroll .ml-ex-ui-toolbar-items.is-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .ml-ex-ui-toolbar.is-vertical.is-scroll .ml-ex-ui-toolbar-items.is-scroll {
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .ml-ex-ui-toolbar.is-overflow-flush-x {
+      border-left: none;
+      border-right: none;
+      border-radius: 0;
+    }
+
+    .ml-ex-ui-toolbar.is-overflow-flush-y {
+      border-top: none;
+      border-bottom: none;
+      border-radius: 0;
+    }
+
+    .ml-ex-ui-toolbar.is-overflow-flush-x .ml-ex-ui-toolbar-items,
+    .ml-ex-ui-toolbar.is-overflow-flush-y .ml-ex-ui-toolbar-items {
+      flex: 1 1 auto;
+    }
+
+    .ml-ex-ui-toolbar-overflow-btn {
+      flex-shrink: 0;
+    }
+
+    .ml-ex-ui-toolbar.is-vertical .ml-ex-ui-toolbar-overflow-btn .ml-ex-ui-icon {
+      transform: rotate(90deg);
     }
 
     .ml-ex-ui-toolbar-collapse-btn {
@@ -109,6 +175,7 @@ export function ensureUiStyles() {
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
+      flex-shrink: 0;
       min-width: var(--ml-ex-ui-toolbar-btn-size);
       min-height: var(--ml-ex-ui-toolbar-btn-size);
       padding: 4px;
@@ -118,6 +185,15 @@ export function ensureUiStyles() {
       color: var(--ml-ui-text, #303133);
       cursor: pointer;
       font-size: 12px;
+    }
+
+    .ml-ex-ui-toolbar-btn.is-overflowed,
+    .ml-ex-ui-toolbar-separator.is-overflowed,
+    .ml-ex-ui-toolbar-overflow-btn[hidden],
+    .ml-ex-ui-toolbar-items[hidden],
+    .ml-ex-ui-toolbar-btn[hidden],
+    .ml-ex-ui-toolbar-separator[hidden] {
+      display: none !important;
     }
 
     .ml-ex-ui-toolbar-btn:hover:not(:disabled) {
@@ -221,6 +297,34 @@ export function ensureUiStyles() {
       width: auto;
       margin: 4px 2px;
       min-width: 24px;
+    }
+
+    .ml-ex-ui-subtoolbar.is-mobile-fullwidth {
+      box-sizing: border-box;
+    }
+
+    .ml-ex-ui-subtoolbar.is-mobile-fullwidth.is-evenly {
+      justify-content: space-evenly;
+      flex-wrap: nowrap;
+    }
+
+    .ml-ex-ui-subtoolbar.is-mobile-fullwidth.is-wrap {
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+
+    .ml-ex-ui-subtoolbar.is-vertical.is-fullheight {
+      box-sizing: border-box;
+    }
+
+    .ml-ex-ui-subtoolbar.is-vertical.is-wrap {
+      flex-wrap: wrap;
+      align-content: flex-start;
+      /* Width is set in JS; column-wrap needs an explicit cross-size. */
+    }
+
+    .ml-ex-ui-subtoolbar .ml-ex-ui-toolbar-btn {
+      flex-shrink: 0;
     }
 
     .ml-ex-ui-dropdown {
@@ -1170,7 +1274,7 @@ export function ensureUiStyles() {
       color: var(--ml-ui-accent, #409eff);
     }
 
-    @media (max-width: ${ML_UI_MOBILE_MAX_WIDTH}px) {
+    @media (max-width: ${ML_EX_UI_MOBILE_MAX_WIDTH}px) {
       .ml-ex-ui-host-dock-left .ml-ex-ui-dock-panel[data-open='true'][data-side='left'],
       .ml-ex-ui-host-dock-right .ml-ex-ui-dock-panel[data-open='true'][data-side='right'] {
         position: absolute;

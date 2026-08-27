@@ -8,7 +8,7 @@ HTML **export** for [`@mlightcad/cad-simple-viewer`](../cad-simple-viewer): snap
 | Command | Description |
 |---------|-------------|
 | `-chtml` | Export via **command-line prompts** (no dialog; AutoCAD-style `-` prefix) |
-| `chtml` | Same as `-chtml` when no UI command is registered (e.g. `cad-simple-viewer` only). In [`cad-viewer`](../cad-viewer), `chtml` opens an **export options dialog** instead |
+| `chtml` | In [`cad-viewer`](../cad-viewer): opens an **export options dialog**. In hosts without a dialog command (e.g. `cad-simple-viewer-example`): **one-shot export with defaults** (toolbar-friendly, like `cpdf`) |
 
 The plugin path is designed for **lazy loading** so the export bundle is only downloaded when a user runs `-chtml` or confirms export from the `chtml` dialog (or runs `chtml` in a host that has no dialog command). Low-level APIs (`packHtml`, snapshot types, scene collectors) are also exported for custom pipelines and the headless CLI [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli).
 

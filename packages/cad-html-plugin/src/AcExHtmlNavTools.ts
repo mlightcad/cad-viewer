@@ -53,10 +53,14 @@ export interface AcExHtmlNavToolsOptions {
   statusEl?: HTMLElement | null
 }
 
-const NAV_MODE_BUTTONS: Array<{ mode: AcExHtmlNavMode; action: string }> = [
-  { mode: 'select', action: 'select' },
-  { mode: 'pan', action: 'pan' }
+const NAV_MODE_BUTTONS: Array<{ mode: AcExHtmlNavMode; itemId: string }> = [
+  { mode: 'select', itemId: 'select' },
+  { mode: 'pan', itemId: 'pan' }
 ]
+
+function toolbarButtons(itemId: string): NodeListOf<Element> {
+  return document.querySelectorAll(`[data-toolbar-item-id="${itemId}"]`)
+}
 
 /**
  * Wires Select / Pan / Zoom Window as exclusive idle tools.
@@ -103,15 +107,19 @@ export function setupAcExHtmlNavTools(
 
   const syncButtons = () => {
     const drawing = options.isDrawingActive()
-    NAV_MODE_BUTTONS.forEach(({ mode: navMode, action }) => {
+    NAV_MODE_BUTTONS.forEach(({ mode: navMode, itemId }) => {
       const pressed = !drawing && mode === navMode
-      document.querySelectorAll(`[data-action="${action}"]`).forEach(btn => {
+      toolbarButtons(itemId).forEach(btn => {
         btn.classList.toggle('active', pressed)
         btn.setAttribute('aria-pressed', String(pressed))
       })
     })
     const zoomWindowPressed = !drawing && mode === 'zoom-window'
-    document.querySelectorAll('[data-action="zoom-window"]').forEach(btn => {
+    toolbarButtons('zoom-window').forEach(btn => {
+      btn.classList.toggle('active', zoomWindowPressed)
+      btn.setAttribute('aria-pressed', String(zoomWindowPressed))
+    })
+    toolbarButtons('zoom').forEach(btn => {
       btn.classList.toggle('active', zoomWindowPressed)
       btn.setAttribute('aria-pressed', String(zoomWindowPressed))
     })

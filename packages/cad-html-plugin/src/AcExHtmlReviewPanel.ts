@@ -257,7 +257,7 @@ export function setupAcExHtmlReviewPanel(options: {
     if (open) closeOtherDrawers()
     drawer.hidden = !open
     document
-      .querySelectorAll('[data-action="markup-panel"]')
+      .querySelectorAll('[data-toolbar-item-id="markup-panel"]')
       .forEach(btn => {
         btn.classList.toggle('active', open)
         btn.setAttribute('aria-pressed', String(open))

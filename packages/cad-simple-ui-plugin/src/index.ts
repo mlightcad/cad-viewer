@@ -30,9 +30,18 @@ export type {
   AcExToolbarChildrenUi,
   AcExToolbarPresetRef,
   AcExToolbarSeparator,
+  AcExToolbarOverflow,
   AcExToolbarPlacement
 } from './config/types'
 export { SIMPLE_UI_PLUGIN_NAME } from './config/types'
+export {
+  AcExToolbar,
+  type AcExToolbarDocBridge,
+  type AcExToolbarDocState,
+  type AcExToolbarI18n,
+  type AcExToolbarOptions
+} from './ui/AcExToolbar'
+export { ensureUiStyles, removeUiStylesIfUnused } from './ui/styles'
 export { createDefaultToolbarPresetMap } from './config/resolveToolbarItems'
 export {
   createToolbarSeparator,

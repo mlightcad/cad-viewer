@@ -29,6 +29,11 @@
       "types": "./lib/register.d.ts",
       "import": "./dist/cad-simple-ui-plugin-register.js",
       "require": "./dist/cad-simple-ui-plugin-register.umd.cjs"
+    },
+    "./toolbar": {
+      "types": "./lib/toolbar.d.ts",
+      "import": "./dist/cad-simple-ui-plugin-toolbar.js",
+      "require": "./dist/cad-simple-ui-plugin-toolbar.umd.cjs"
     }
   },
   "scripts": {

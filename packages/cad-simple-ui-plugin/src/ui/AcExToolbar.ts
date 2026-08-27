@@ -1,30 +1,71 @@
-import { AcApDocManager, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
-
 import {
   createIconElement,
   ICON_CHEVRON_DOWN,
   ICON_CHEVRON_LEFT,
   ICON_CHEVRON_RIGHT,
   ICON_CHEVRON_UP
-} from '../assets/icons'
+} from '@mlightcad/cad-simple-viewer/icons'
+
 import {
   filterVisibleToolbarItems,
   isToolbarItemDisabled,
   itemRequiresDocument,
   resolveEffectiveToolbarItem,
   resolveParentToolbarDisplay
-} from '../config/resolveToolbarItems'
+} from '../config/toolbarItemDisplay'
 import {
   isDynamicToolbarChildren,
   isToolbarChildrenStrip,
   isToolbarSeparatorItem,
   resolveToolbarChildrenUi
 } from '../config/toolbarItemUtils'
-import type { AcExToolbarItem, AcExToolbarPlacement } from '../config/types'
-import type { AcExI18n } from '../i18n'
+import type {
+  AcExToolbarItem,
+  AcExToolbarOverflow,
+  AcExToolbarPlacement
+} from '../config/types'
 import { AcExDropdownMenu } from './AcExDropdownMenu'
 import { AcExSubToolbar } from './AcExSubToolbar'
 import { ensureUiStyles } from './styles'
+import { ML_EX_UI_MOBILE_MEDIA_QUERY } from './uiLayout'
+
+const TOOLBAR_GAP_PX = 4
+const TOOLBAR_PADDING_PX = 6
+const OVERFLOW_PARENT_ID = '__overflow__'
+/** Aligns with `AcEdOpenMode` without importing cad-simple-viewer. */
+const OPEN_MODE_READ = 0
+const OPEN_MODE_WRITE = 8
+const ICON_MORE =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6" fill="currentColor"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><circle cx="15.5" cy="10" r="1.6" fill="currentColor"/></svg>'
+
+/**
+ * Minimal i18n contract used by {@link AcExToolbar} and related chrome.
+ * Hosts may supply {@link AcExI18n} or any object with a compatible `t`.
+ */
+export interface AcExToolbarI18n {
+  t(key: string, params?: Record<string, string>): string
+}
+
+/** Document visibility/open-mode snapshot when {@link AcExToolbarOptions.docBinding} is false. */
+export interface AcExToolbarDocState {
+  /** Whether command buttons that require a document stay enabled. */
+  hasDocument: boolean
+  /** Open mode used for {@link AcExToolbarItem.minOpenMode} filtering. */
+  openMode: number
+}
+
+/**
+ * Document-manager facade for hosts that enable {@link AcExToolbarOptions.docBinding}.
+ * Keeps `@mlightcad/cad-simple-viewer` out of the toolbar module graph for offline bundles.
+ */
+export interface AcExToolbarDocBridge {
+  hasDocument(): boolean
+  getOpenMode(): number
+  subscribeActivated(listener: () => void): void
+  unsubscribeActivated(listener: () => void): void
+  subscribeToBeOpened(listener: () => void): void
+  unsubscribeToBeOpened(listener: () => void): void
+}
 
 /** Constructor options for {@link AcExToolbar}. */
 export interface AcExToolbarOptions {
@@ -37,7 +78,7 @@ export interface AcExToolbarOptions {
   /** Toolbar item definitions to render. */
   items: AcExToolbarItem[]
   /** i18n helper for button labels and tooltips. */
-  i18n: AcExI18n
+  i18n: AcExToolbarI18n
   /** Invoked when a leaf item with a `command` is activated. */
   onCommand: (command: string) => void
   /** When true, append a collapse/expand toggle at the end of the toolbar. */
@@ -46,8 +87,40 @@ export interface AcExToolbarOptions {
   defaultCollapsed?: boolean
   /** Invoked when the toolbar is collapsed (e.g. close the dock panel). */
   onCollapse?: () => void
-  /** Distance from the canvas edge in px. @default 8 */
+  /** Distance from the docked canvas edge in px. @default 8 */
   edgeOffset?: number
+  /**
+   * How overflowing items are shown when the host is too small.
+   * @default 'menu'
+   */
+  overflow?: AcExToolbarOverflow
+  /**
+   * Layout mode for the toolbar root.
+   * - `'absolute'` (default): floats inside {@link host} on the docked edge.
+   * - `'static'`: participates in normal document flow (e.g. HTML export sidebar).
+   */
+  positioning?: 'absolute' | 'static'
+  /**
+   * When true (default), subscribe via {@link docBridge}.
+   * Set to false for offline hosts (e.g. HTML export runtime); then use {@link documentState}.
+   */
+  docBinding?: boolean
+  /**
+   * Required when {@link docBinding} is true. Supplied by SimpleUiPlugin from
+   * `AcApDocManager` so this module does not import cad-simple-viewer.
+   */
+  docBridge?: AcExToolbarDocBridge
+  /**
+   * Document state when {@link docBinding} is false.
+   * @default `{ hasDocument: true, openMode: 8 }` (Write)
+   */
+  documentState?: AcExToolbarDocState
+  /**
+   * Called after buttons are rebuilt ({@link AcExToolbar.updateItems},
+   * {@link AcExToolbar.refresh}, or an internal re-render). Hosts can re-apply
+   * transient `active` classes that live outside item config.
+   */
+  onRender?: () => void
 }
 
 /**
@@ -76,7 +149,7 @@ export class AcExToolbar {
   /** Whether the toolbar is globally disabled during document open. */
   private isDisabled = false
   /** Current document open mode used for item visibility. */
-  private openMode = AcEdOpenMode.Read
+  private openMode = OPEN_MODE_READ
   /** Whether an active document is loaded. */
   private hasDocument = false
   /** Item list last passed to {@link updateItems} or the constructor. */
@@ -87,24 +160,49 @@ export class AcExToolbar {
   private collapsed: boolean
   /** Whether the toolbar root is shown. */
   private visible = true
-  /** Inset from the canvas edge in px. */
+  /** Whether document manager events are wired. */
+  private readonly docBinding: boolean
+  /** Document bridge when {@link docBinding} is true. */
+  private readonly docBridge?: AcExToolbarDocBridge
+  /** Absolute float vs in-flow layout. */
+  private readonly positioning: 'absolute' | 'static'
+  /** Inset from the docked canvas edge in px. */
   private edgeOffset: number
+  /** How overflowing items are shown when the host is too small. */
+  private overflow: AcExToolbarOverflow
+  /** Flex strip that holds toolbar buttons and separators. */
+  private itemsEl: HTMLDivElement
+  /** "More" button that opens overflowing items as a popup. */
+  private overflowButton: HTMLButtonElement
+  /** Items currently hidden behind {@link overflowButton}. */
+  private overflowedItems: AcExToolbarItem[] = []
+  /** When set, the toolbar is flush to the host on that axis (overflow ⋯ visible). */
+  private overflowFlush?: 'x' | 'y'
+  /** Rendered items keyed by id for overflow activation. */
+  private itemById = new Map<string, AcExToolbarItem>()
   /** Keeps the toolbar inside the canvas when the host is resized. */
   private resizeObserver?: ResizeObserver
+  /** Re-layouts overflow when the viewport crosses the mobile breakpoint. */
+  private mobileMql?: MediaQueryList
   private layoutFrame?: number
+  /** Repositions overflow/sub-toolbars after the mobile breakpoint changes. */
+  private handleMobileLayoutChange = () => {
+    this.scheduleSyncPosition()
+  }
 
   /** Re-renders buttons when a document becomes active. */
   private handleDocumentActivated = () => {
-    this.hasDocument = Boolean(AcApDocManager.instance.curDocument)
+    if (!this.docBinding || !this.docBridge) return
+    this.hasDocument = this.docBridge.hasDocument()
     this.isDisabled = false
     this.syncRootClasses()
-    this.openMode =
-      AcApDocManager.instance.curDocument?.openMode ?? AcEdOpenMode.Read
+    this.openMode = this.docBridge.getOpenMode()
     this.renderButtons()
   }
 
   /** Disables the toolbar while a document is opening. */
   private handleDocumentToBeOpened = () => {
+    if (!this.docBinding) return
     this.isDisabled = true
     this.syncRootClasses()
     this.closeChildrenUi()
@@ -118,26 +216,56 @@ export class AcExToolbar {
     this.mountHost = options.host
     this.themeHost = options.themeHost ?? options.host
     this.edgeOffset = options.edgeOffset ?? 8
+    this.overflow = options.overflow ?? 'menu'
+    this.docBinding = options.docBinding !== false
+    this.docBridge = options.docBridge
+    this.positioning = options.positioning ?? 'absolute'
     this.items = options.items
     this.collapsed =
       Boolean(options.collapsible) && Boolean(options.defaultCollapsed)
     this.seedSelectedChildren(options.items)
     this.ensureMountHostLayout()
 
+    if (!this.docBinding) {
+      this.hasDocument = options.documentState?.hasDocument ?? true
+      this.openMode = options.documentState?.openMode ?? OPEN_MODE_WRITE
+      this.isDisabled = false
+    }
+
     this.root = document.createElement('div')
     this.syncRootClasses()
     this.root.setAttribute('role', 'toolbar')
+
+    this.itemsEl = document.createElement('div')
+    this.itemsEl.className = 'ml-ex-ui-toolbar-items'
+
+    this.overflowButton = document.createElement('button')
+    this.overflowButton.type = 'button'
+    this.overflowButton.className =
+      'ml-ex-ui-toolbar-btn ml-ex-ui-toolbar-overflow-btn'
+    this.overflowButton.dataset.toolbarItemId = 'toolbar-overflow'
+    this.overflowButton.hidden = true
+    this.overflowButton.setAttribute('aria-haspopup', 'menu')
+    this.overflowButton.setAttribute('aria-expanded', 'false')
+    this.overflowButton.appendChild(createIconElement(ICON_MORE))
+    this.syncOverflowButtonLabel()
+    this.overflowButton.addEventListener('click', event => {
+      event.stopPropagation()
+      this.toggleOverflowMenu()
+    })
+
+    this.root.append(this.itemsEl, this.overflowButton)
     this.mountHost.appendChild(this.root)
     this.setupResizeObserver()
+    this.setupMobileLayoutListener()
 
-    AcApDocManager.instance.events.documentActivated.addEventListener(
-      this.handleDocumentActivated
-    )
-    AcApDocManager.instance.events.documentToBeOpened.addEventListener(
-      this.handleDocumentToBeOpened
-    )
-
-    this.handleDocumentActivated()
+    if (this.docBinding && this.docBridge) {
+      this.docBridge.subscribeActivated(this.handleDocumentActivated)
+      this.docBridge.subscribeToBeOpened(this.handleDocumentToBeOpened)
+      this.handleDocumentActivated()
+    } else {
+      this.renderButtons()
+    }
   }
 
   /**
@@ -153,9 +281,31 @@ export class AcExToolbar {
 
   /** Refreshes open mode and re-renders (e.g. after locale or theme change). */
   refresh() {
-    this.openMode =
-      AcApDocManager.instance.curDocument?.openMode ?? AcEdOpenMode.Read
+    if (this.docBinding && this.docBridge) {
+      this.openMode = this.docBridge.getOpenMode()
+    }
     this.renderButtons()
+  }
+
+  /**
+   * Updates document state when {@link AcExToolbarOptions.docBinding} is false.
+   *
+   * @param state - Partial hasDocument / openMode overrides.
+   */
+  setDocumentState(state: Partial<AcExToolbarDocState>) {
+    if (this.docBinding) return
+    if (state.hasDocument !== undefined) {
+      this.hasDocument = state.hasDocument
+    }
+    if (state.openMode !== undefined) {
+      this.openMode = state.openMode
+    }
+    this.renderButtons()
+  }
+
+  /** Toolbar root element (for hosts that need to query buttons). */
+  get element() {
+    return this.root
   }
 
   /**
@@ -174,7 +324,7 @@ export class AcExToolbar {
     this.renderButtons()
   }
 
-  /** Current inset from the canvas edge in px. */
+  /** Current inset from the docked canvas edge in px. */
   getEdgeOffset() {
     return this.edgeOffset
   }
@@ -186,6 +336,24 @@ export class AcExToolbar {
    */
   setEdgeOffset(offset: number) {
     this.edgeOffset = Math.max(0, offset)
+    this.scheduleSyncPosition()
+  }
+
+  /** Current overflow strategy for items that do not fit. */
+  getOverflow() {
+    return this.overflow
+  }
+
+  /**
+   * Sets how overflowing items are shown and reclamps toolbar layout.
+   *
+   * @param overflow - `'menu'` (⋯ popup) or `'scroll'`.
+   */
+  setOverflow(overflow: AcExToolbarOverflow) {
+    if (this.overflow === overflow) return
+    this.overflow = overflow
+    this.closeChildrenUi()
+    this.syncRootClasses()
     this.scheduleSyncPosition()
   }
 
@@ -284,13 +452,12 @@ export class AcExToolbar {
     }
     this.resizeObserver?.disconnect()
     this.resizeObserver = undefined
+    this.teardownMobileLayoutListener()
     this.closeChildrenUi()
-    AcApDocManager.instance.events.documentActivated.removeEventListener(
-      this.handleDocumentActivated
-    )
-    AcApDocManager.instance.events.documentToBeOpened.removeEventListener(
-      this.handleDocumentToBeOpened
-    )
+    if (this.docBinding && this.docBridge) {
+      this.docBridge.unsubscribeActivated(this.handleDocumentActivated)
+      this.docBridge.unsubscribeToBeOpened(this.handleDocumentToBeOpened)
+    }
     this.root.remove()
   }
 
@@ -315,6 +482,10 @@ export class AcExToolbar {
     ]
     if (this.collapsed) classes.push('is-collapsed')
     if (this.isDisabled) classes.push('is-disabled')
+    if (this.overflow === 'scroll' && !this.collapsed) classes.push('is-scroll')
+    if (this.positioning === 'static') classes.push('is-static')
+    if (this.overflowFlush === 'x') classes.push('is-overflow-flush-x')
+    if (this.overflowFlush === 'y') classes.push('is-overflow-flush-y')
     this.root.className = classes.join(' ')
   }
 
@@ -377,7 +548,11 @@ export class AcExToolbar {
   private renderButtons() {
     const restoreStickyId = this.stickyParentId
     this.closeChildrenUi()
-    this.root.replaceChildren()
+    this.itemsEl.replaceChildren()
+    this.itemById.clear()
+    this.overflowedItems = []
+    this.overflowButton.hidden = true
+    this.syncOverflowButtonLabel()
 
     const visibleItems = filterVisibleToolbarItems(this.items, this.openMode)
     visibleItems.forEach(item => {
@@ -387,11 +562,13 @@ export class AcExToolbar {
         separator.setAttribute('role', 'separator')
         if (item.id) {
           separator.dataset.toolbarItemId = item.id
+          this.itemById.set(item.id, item)
         }
-        this.root.appendChild(separator)
+        this.itemsEl.appendChild(separator)
         return
       }
 
+      this.itemById.set(item.id, item)
       const effective = resolveParentToolbarDisplay(
         item,
         this.selectedChildByParent.get(item.id)
@@ -430,42 +607,61 @@ export class AcExToolbar {
       button.addEventListener('click', event => {
         event.stopPropagation()
         if (button.disabled) return
-
-        if (effective.children?.length || isDynamicToolbarChildren(item)) {
-          const visibleChildren = filterVisibleToolbarItems(
-            effective.children ?? [],
-            this.openMode
-          ).map(resolveEffectiveToolbarItem)
-          if (visibleChildren.length === 0) return
-
-          if (this.openParentId === item.id) {
-            this.closeChildrenUi()
-            return
-          }
-
-          this.openChildrenUi(item, button, visibleChildren)
-          return
-        }
-
-        if (effective.anchorAction) {
-          effective.anchorAction(button)
-        } else if (effective.action) {
-          effective.action()
-        } else if (effective.command) {
-          this.options.onCommand(effective.command)
-        }
-        if (item.toggle) {
-          window.setTimeout(() => this.renderButtons(), 0)
-        }
+        this.activateToolbarItem(item, button)
       })
 
-      this.root.appendChild(button)
+      this.itemsEl.appendChild(button)
     })
 
+    this.root.replaceChildren(this.itemsEl, this.overflowButton)
     this.appendCollapseToggle()
     this.scheduleSyncPosition()
     if (restoreStickyId && !this.collapsed && this.visible) {
       this.openStickyChildrenByParentId(restoreStickyId)
+    }
+    this.options.onRender?.()
+  }
+
+  /**
+   * Activates a toolbar item: opens children UI or runs the leaf action/command.
+   *
+   * @param item - Toolbar item that was chosen.
+   * @param button - Visible anchor button (parent, or the overflow button).
+   */
+  private activateToolbarItem(
+    item: AcExToolbarItem,
+    button: HTMLButtonElement
+  ) {
+    const effective = resolveParentToolbarDisplay(
+      item,
+      this.selectedChildByParent.get(item.id)
+    )
+
+    if (effective.children?.length || isDynamicToolbarChildren(item)) {
+      const visibleChildren = filterVisibleToolbarItems(
+        effective.children ?? [],
+        this.openMode
+      ).map(resolveEffectiveToolbarItem)
+      if (visibleChildren.length === 0) return
+
+      if (this.openParentId === item.id) {
+        this.closeChildrenUi()
+        return
+      }
+
+      this.openChildrenUi(item, button, visibleChildren)
+      return
+    }
+
+    if (effective.anchorAction) {
+      effective.anchorAction(button)
+    } else if (effective.action) {
+      effective.action()
+    } else if (effective.command) {
+      this.options.onCommand(effective.command)
+    }
+    if (item.toggle) {
+      window.setTimeout(() => this.renderButtons(), 0)
     }
   }
 
@@ -484,6 +680,18 @@ export class AcExToolbar {
     this.resizeObserver.observe(this.mountHost)
   }
 
+  private setupMobileLayoutListener() {
+    this.teardownMobileLayoutListener()
+    if (typeof window.matchMedia !== 'function') return
+    this.mobileMql = window.matchMedia(ML_EX_UI_MOBILE_MEDIA_QUERY)
+    this.mobileMql.addEventListener('change', this.handleMobileLayoutChange)
+  }
+
+  private teardownMobileLayoutListener() {
+    this.mobileMql?.removeEventListener('change', this.handleMobileLayoutChange)
+    this.mobileMql = undefined
+  }
+
   private scheduleSyncPosition() {
     if (this.layoutFrame !== undefined) return
     this.layoutFrame = requestAnimationFrame(() => {
@@ -497,6 +705,26 @@ export class AcExToolbar {
   private syncPosition() {
     if (!this.root.isConnected || this.root.hidden) return
 
+    if (this.positioning === 'static') {
+      this.root.style.top = ''
+      this.root.style.bottom = ''
+      this.root.style.left = ''
+      this.root.style.right = ''
+      this.root.style.transform = ''
+      this.root.style.width = ''
+      this.root.style.height = ''
+      const horizontal = this.isHorizontal()
+      if (horizontal) {
+        this.root.style.maxWidth = `${Math.max(0, this.mountHost.clientWidth)}px`
+        this.root.style.maxHeight = ''
+      } else {
+        this.root.style.maxHeight = `${Math.max(0, this.mountHost.clientHeight || window.innerHeight)}px`
+        this.root.style.maxWidth = ''
+      }
+      this.syncOverflow()
+      return
+    }
+
     const offset = this.edgeOffset
     const hostWidth = this.mountHost.clientWidth
     const hostHeight = this.mountHost.clientHeight
@@ -509,17 +737,33 @@ export class AcExToolbar {
     this.root.style.transform = ''
     this.root.style.maxWidth = ''
     this.root.style.maxHeight = ''
+    this.root.style.width = ''
+    this.root.style.height = ''
+
+    const placement = this.options.placement
+    const horizontal = placement === 'top' || placement === 'bottom'
+    if (horizontal) {
+      this.root.style.maxWidth = `${Math.max(0, hostWidth - offset * 2)}px`
+    } else {
+      this.root.style.maxHeight = `${Math.max(0, hostHeight - offset * 2)}px`
+    }
+
+    this.syncOverflow()
 
     const toolbarWidth = this.root.offsetWidth
     const toolbarHeight = this.root.offsetHeight
-    const placement = this.options.placement
 
-    if (placement === 'top' || placement === 'bottom') {
-      const maxLeft = Math.max(offset, hostWidth - toolbarWidth - offset)
-      const idealLeft = (hostWidth - toolbarWidth) / 2
-      const left = Math.min(maxLeft, Math.max(offset, idealLeft))
-      this.root.style.left = `${left}px`
-      this.root.style.maxWidth = `${Math.max(0, hostWidth - offset * 2)}px`
+    if (horizontal) {
+      if (this.overflowFlush === 'x') {
+        this.root.style.left = '0px'
+        this.root.style.width = `${hostWidth}px`
+        this.root.style.maxWidth = `${hostWidth}px`
+      } else {
+        const maxLeft = Math.max(offset, hostWidth - toolbarWidth - offset)
+        const idealLeft = (hostWidth - toolbarWidth) / 2
+        const left = Math.min(maxLeft, Math.max(offset, idealLeft))
+        this.root.style.left = `${left}px`
+      }
       if (placement === 'top') {
         this.root.style.top = `${offset}px`
       } else {
@@ -528,11 +772,16 @@ export class AcExToolbar {
       return
     }
 
-    const maxTop = Math.max(offset, hostHeight - toolbarHeight - offset)
-    const idealTop = (hostHeight - toolbarHeight) / 2
-    const top = Math.min(maxTop, Math.max(offset, idealTop))
-    this.root.style.top = `${top}px`
-    this.root.style.maxHeight = `${Math.max(0, hostHeight - offset * 2)}px`
+    if (this.overflowFlush === 'y') {
+      this.root.style.top = '0px'
+      this.root.style.height = `${hostHeight}px`
+      this.root.style.maxHeight = `${hostHeight}px`
+    } else {
+      const maxTop = Math.max(offset, hostHeight - toolbarHeight - offset)
+      const idealTop = (hostHeight - toolbarHeight) / 2
+      const top = Math.min(maxTop, Math.max(offset, idealTop))
+      this.root.style.top = `${top}px`
+    }
     if (placement === 'left') {
       this.root.style.left = `${offset}px`
     } else {
@@ -540,11 +789,258 @@ export class AcExToolbar {
     }
   }
 
-  /** Seeds submenu selection from {@link AcExToolbarItem.selectedChildId}. */
+  /** Hides extra items behind ⋯ or enables scrolling when the host is too small. */
+  private syncOverflow() {
+    const children = Array.from(this.itemsEl.children) as HTMLElement[]
+    for (const child of children) {
+      child.hidden = false
+      child.classList.remove('is-overflowed')
+    }
+    this.itemsEl.hidden = false
+    this.itemsEl.classList.remove('is-scroll')
+    this.itemsEl.style.maxWidth = ''
+    this.itemsEl.style.maxHeight = ''
+    this.overflowButton.hidden = true
+    this.overflowedItems = []
+    this.overflowFlush = undefined
+
+    if (this.collapsed || !this.visible) {
+      this.syncRootClasses()
+      return
+    }
+
+    const horizontal = this.isHorizontal()
+    const availableInset = this.availableMainSize(false)
+    const padding = this.readPadding(this.root, horizontal)
+    const rootGap = this.readGap(this.root, horizontal)
+    const itemGap = this.readGap(this.itemsEl, horizontal)
+    let chrome = padding + this.collapseChromeSize(horizontal, rootGap)
+
+    if (this.overflow === 'scroll') {
+      this.itemsEl.classList.add('is-scroll')
+      const budget = Math.max(0, availableInset - chrome)
+      if (horizontal) {
+        this.itemsEl.style.maxWidth = `${budget}px`
+      } else {
+        this.itemsEl.style.maxHeight = `${budget}px`
+      }
+      this.syncRootClasses()
+      return
+    }
+
+    const sizes = children.map(child => this.outerMainSize(child, horizontal))
+    const itemsSize = this.totalWithGaps(sizes, itemGap)
+    if (itemsSize + chrome <= availableInset + 0.5) {
+      this.syncRootClasses()
+      return
+    }
+
+    this.overflowFlush = horizontal ? 'x' : 'y'
+    this.syncRootClasses()
+
+    this.overflowButton.hidden = false
+    chrome += rootGap + this.outerMainSize(this.overflowButton, horizontal)
+    const budget = Math.max(0, this.availableMainSize(true) - chrome)
+
+    let used = 0
+    let lastVisibleIndex = -1
+    for (let i = 0; i < children.length; i++) {
+      const extra = lastVisibleIndex >= 0 ? itemGap : 0
+      const next = used + extra + sizes[i]
+      if (next <= budget + 0.5) {
+        used = next
+        lastVisibleIndex = i
+      } else {
+        break
+      }
+    }
+
+    while (
+      lastVisibleIndex >= 0 &&
+      children[lastVisibleIndex].getAttribute('role') === 'separator'
+    ) {
+      lastVisibleIndex -= 1
+    }
+
+    for (let i = 0; i < children.length; i++) {
+      const hide = i > lastVisibleIndex
+      children[i].hidden = hide
+      children[i].classList.toggle('is-overflowed', hide)
+      if (!hide) continue
+      const id = children[i].dataset.toolbarItemId
+      const item = id ? this.itemById.get(id) : undefined
+      if (item && !isToolbarSeparatorItem(item)) {
+        this.overflowedItems.push(resolveEffectiveToolbarItem(item))
+      }
+    }
+
+    if (this.overflowedItems.length === 0) {
+      this.overflowButton.hidden = true
+    }
+    this.itemsEl.hidden = lastVisibleIndex < 0
+  }
+
+  private toggleOverflowMenu() {
+    if (this.openParentId === OVERFLOW_PARENT_ID) {
+      this.closeChildrenUi()
+      return
+    }
+    this.openOverflowMenu()
+  }
+
+  private openOverflowMenu() {
+    if (this.overflowedItems.length === 0) return
+
+    this.closeChildrenUi()
+    this.openParentId = OVERFLOW_PARENT_ID
+    this.markParentOpen(this.overflowButton)
+
+    const dropdown = new AcExDropdownMenu(
+      this.options.i18n,
+      this.overflowedItems,
+      this.overflowButton,
+      this.themeHost
+    )
+    dropdown.setOnSelect(child => {
+      this.activateOverflowItem(child)
+    })
+    dropdown.setOnClose(() => {
+      if (this.openDropdown === dropdown) {
+        this.openDropdown = undefined
+        this.clearParentOpenState()
+        this.openParentId = undefined
+      }
+    })
+    this.openDropdown = dropdown
+  }
+
+  private activateOverflowItem(child: AcExToolbarItem) {
+    const item = this.itemById.get(child.id) ?? child
+    if (isToolbarSeparatorItem(item)) return
+
+    const originalButton = this.itemsEl.querySelector<HTMLButtonElement>(
+      `[data-toolbar-item-id="${item.id}"]`
+    )
+    if (
+      originalButton?.disabled ||
+      (itemRequiresDocument(item) && (this.isDisabled || !this.hasDocument)) ||
+      isToolbarItemDisabled(item)
+    ) {
+      return
+    }
+
+    const anchor = originalButton?.hidden
+      ? this.overflowButton
+      : (originalButton ?? this.overflowButton)
+    this.activateToolbarItem(item, anchor)
+  }
+
+  private syncOverflowButtonLabel() {
+    const title = this.options.i18n.t('toolbar.more')
+    this.overflowButton.title = title
+    this.overflowButton.setAttribute('aria-label', title)
+  }
+
+  private isHorizontal() {
+    return (
+      this.options.placement === 'top' || this.options.placement === 'bottom'
+    )
+  }
+
+  private availableMainSize(flush: boolean) {
+    if (this.positioning === 'static') {
+      const horizontal = this.isHorizontal()
+      if (horizontal) {
+        return Math.max(0, this.mountHost.clientWidth || window.innerWidth)
+      }
+      // Sidebar hosts are often auto-height; use the viewport for overflow.
+      const hostHeight = this.mountHost.clientHeight
+      return Math.max(
+        0,
+        hostHeight > 0 ? hostHeight : window.innerHeight - this.edgeOffset * 2
+      )
+    }
+    const offset = flush ? 0 : this.edgeOffset
+    return this.isHorizontal()
+      ? this.mountHost.clientWidth - offset * 2
+      : this.mountHost.clientHeight - offset * 2
+  }
+
+  private collapseChromeSize(horizontal: boolean, rootGap: number) {
+    if (!this.options.collapsible || this.collapsed) return 0
+    const collapseBtn = this.root.querySelector<HTMLElement>(
+      '.ml-ex-ui-toolbar-collapse-btn'
+    )
+    if (!collapseBtn) return 0
+    let size = rootGap + this.outerMainSize(collapseBtn, horizontal)
+    const separator = Array.from(this.root.children).find(
+      child =>
+        child instanceof HTMLElement &&
+        child.classList.contains('ml-ex-ui-toolbar-separator')
+    ) as HTMLElement | undefined
+    if (separator) {
+      size += rootGap + this.outerMainSize(separator, horizontal)
+    }
+    return size
+  }
+
+  private readPadding(el: HTMLElement, horizontal: boolean) {
+    const style = getComputedStyle(el)
+    const start = Number.parseFloat(
+      horizontal ? style.paddingLeft : style.paddingTop
+    )
+    const end = Number.parseFloat(
+      horizontal ? style.paddingRight : style.paddingBottom
+    )
+    const startPx = Number.isFinite(start) ? start : TOOLBAR_PADDING_PX
+    const endPx = Number.isFinite(end) ? end : TOOLBAR_PADDING_PX
+    return startPx + endPx
+  }
+
+  private readGap(el: HTMLElement, horizontal: boolean) {
+    const style = getComputedStyle(el)
+    const axisGap = Number.parseFloat(
+      horizontal ? style.columnGap : style.rowGap
+    )
+    if (Number.isFinite(axisGap) && axisGap > 0) return axisGap
+    const gap = Number.parseFloat(style.gap)
+    return Number.isFinite(gap) && gap > 0 ? gap : TOOLBAR_GAP_PX
+  }
+
+  private outerMainSize(el: HTMLElement, horizontal: boolean) {
+    const style = getComputedStyle(el)
+    const start = Number.parseFloat(
+      horizontal ? style.marginLeft : style.marginTop
+    )
+    const end = Number.parseFloat(
+      horizontal ? style.marginRight : style.marginBottom
+    )
+    const marginStart = Number.isFinite(start) ? start : 0
+    const marginEnd = Number.isFinite(end) ? end : 0
+    return (
+      (horizontal ? el.offsetWidth : el.offsetHeight) + marginStart + marginEnd
+    )
+  }
+
+  private totalWithGaps(sizes: number[], gap: number) {
+    if (sizes.length === 0) return 0
+    return sizes.reduce((sum, size) => sum + size, 0) + gap * (sizes.length - 1)
+  }
+
+  /**
+   * Seeds submenu selection from {@link AcExToolbarItem.selectedChildId}.
+   *
+   * Existing runtime selections are kept so {@link updateItems} can rebuild the
+   * item list (locale, toggles) without resetting `childIcon: 'selected'` parents.
+   */
   private seedSelectedChildren(items: AcExToolbarItem[]) {
     for (const item of items) {
       if (isToolbarSeparatorItem(item)) continue
-      if (item.childIcon === 'selected' && item.selectedChildId) {
+      if (
+        item.childIcon === 'selected' &&
+        item.selectedChildId &&
+        !this.selectedChildByParent.has(item.id)
+      ) {
         this.selectedChildByParent.set(item.id, item.selectedChildId)
       }
     }
@@ -606,8 +1102,9 @@ export class AcExToolbar {
         items: visibleChildren,
         anchor: button,
         toolbarRoot: this.root,
-        host: this.mountHost,
+        host: this.themeHost,
         placement: this.options.placement,
+        edgeOffset: this.edgeOffset,
         sticky,
         commandsDisabled: this.isDisabled || !this.hasDocument,
         onSelect: child => this.activateChild(item, child, sticky),
@@ -660,6 +1157,7 @@ export class AcExToolbar {
       `[data-toolbar-item-id="${parentId}"]`
     )
     if (!button) return
+    const anchor = button.hidden ? this.overflowButton : button
 
     const visibleChildren = filterVisibleToolbarItems(
       item.children,
@@ -667,7 +1165,7 @@ export class AcExToolbar {
     ).map(resolveEffectiveToolbarItem)
     if (visibleChildren.length === 0) return
 
-    this.openChildrenUi(item, button, visibleChildren)
+    this.openChildrenUi(item, anchor, visibleChildren)
   }
 
   /**

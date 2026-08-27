@@ -1087,44 +1087,54 @@ export class AcEdInputManager {
           return scriptedValue
         }
 
-        return new Promise<string>((resolve, reject) => {
-          // Register a rejector so `cancelActiveInput()` (called by the
-          // command dispatcher when a new command pre-empts the running one)
-          // can abort this keyword-only prompt the same way ESC would.
-          const rejector = (err?: Error) => {
-            if (this._activeRejector === rejector) {
-              this._activeRejector = null
-            }
-            // Tear down the floating command-line keyword session so its
-            // input box and event listeners do not linger after cancel.
-            this._commandLine.cancelActiveSession()
-            reject(err ?? new Error('cancelled'))
-          }
-          this._activeRejector = rejector
+        // Keyword prompts are useless if the command line is hidden (e.g. user
+        // toggled it off). Show it for this interactive session so toolbar /
+        // `-chtml` flows are not silent.
+        const wasCommandLineVisible = this._commandLine.visible
+        this._commandLine.visible = true
 
-          this._commandLine.getKeywords(options, true).then(
-            result => {
+        try {
+          return await new Promise<string>((resolve, reject) => {
+            // Register a rejector so `cancelActiveInput()` (called by the
+            // command dispatcher when a new command pre-empts the running one)
+            // can abort this keyword-only prompt the same way ESC would.
+            const rejector = (err?: Error) => {
               if (this._activeRejector === rejector) {
                 this._activeRejector = null
               }
-              if (!result) {
-                reject(
-                  options.allowNone
-                    ? new AcEdNoneInputError()
-                    : new Error('cancelled')
-                )
-                return
-              }
-              resolve(result)
-            },
-            err => {
-              if (this._activeRejector === rejector) {
-                this._activeRejector = null
-              }
-              reject(err)
+              // Tear down the floating command-line keyword session so its
+              // input box and event listeners do not linger after cancel.
+              this._commandLine.cancelActiveSession()
+              reject(err ?? new Error('cancelled'))
             }
-          )
-        })
+            this._activeRejector = rejector
+
+            this._commandLine.getKeywords(options, true).then(
+              result => {
+                if (this._activeRejector === rejector) {
+                  this._activeRejector = null
+                }
+                if (!result) {
+                  reject(
+                    options.allowNone
+                      ? new AcEdNoneInputError()
+                      : new Error('cancelled')
+                  )
+                  return
+                }
+                resolve(result)
+              },
+              err => {
+                if (this._activeRejector === rejector) {
+                  this._activeRejector = null
+                }
+                reject(err)
+              }
+            )
+          })
+        } finally {
+          this._commandLine.visible = wasCommandLineVisible
+        }
       },
       value => new AcEdPromptResult(AcEdPromptStatus.OK, value),
       status => new AcEdPromptResult(status),

@@ -1112,6 +1112,13 @@ export class AcExMeasureController {
   }
 
   /**
+   * Re-applies measure-mode `active` classes after the toolbar DOM is rebuilt.
+   */
+  syncToolbarActive(): void {
+    this._updateToolbarActive()
+  }
+
+  /**
    * Removes all persistent measurement graphics (lines, canvas, badges, dots),
    * disposes THREE resources, and returns the viewer to idle status.
    */
@@ -1427,19 +1434,33 @@ export class AcExMeasureController {
 
   /** Syncs measure-mode `active` class and parent menu highlight. @internal */
   private _updateToolbarActive(): void {
-    document.querySelectorAll('[data-measure-mode]').forEach(btn => {
-      const mode = btn.getAttribute('data-measure-mode')
+    document.querySelectorAll('[data-toolbar-item-id^="measure-"]').forEach(btn => {
+      const id = btn.getAttribute('data-toolbar-item-id')
+      if (!id || id === 'measure-visibility' || id.startsWith('measure-import') || id.startsWith('measure-export')) {
+        return
+      }
+      const mode = id.startsWith('measure-') ? id.slice('measure-'.length) : null
+      const modeIds = new Set([
+        'distance',
+        'angle',
+        'arc',
+        'area',
+        'coordinate'
+      ])
+      if (!mode || !modeIds.has(mode)) return
       btn.classList.toggle('active', mode === this._mode)
     })
     document
-      .getElementById('mlcad-measure-menu-btn')
-      ?.classList.toggle('active', this._mode !== null)
+      .querySelectorAll('[data-toolbar-item-id="measure"]')
+      .forEach(btn => {
+        btn.classList.toggle('active', this._mode !== null)
+      })
   }
 
   /** Syncs show/hide measurement button label and icon. @internal */
   private _updateVisibilityToolbar(): void {
     const buttons = document.querySelectorAll(
-      '[data-action="measure-visibility"]'
+      '[data-toolbar-item-id="measure-visibility"]'
     )
     if (buttons.length === 0) return
     // State-oriented icon: open eye while visible, slashed eye while hidden.
@@ -1454,10 +1475,9 @@ export class AcExMeasureController {
     buttons.forEach(btn => {
       btn.classList.toggle('active', this._visible)
       btn.classList.toggle('is-toggled', this._visible)
-      btn.setAttribute('data-i18n-key', titleKey)
       btn.setAttribute('title', label)
       btn.setAttribute('aria-label', label)
-      const iconHost = btn.querySelector('.mlcad-dropdown-icon')
+      const iconHost = btn.querySelector('.ml-ex-ui-icon')
       if (iconHost) {
         iconHost.innerHTML = icon
       } else {

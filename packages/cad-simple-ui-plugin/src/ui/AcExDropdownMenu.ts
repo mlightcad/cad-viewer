@@ -1,7 +1,8 @@
-import { createIconElement } from '../assets/icons'
+import { createIconElement } from '@mlightcad/cad-simple-viewer/icons'
+
 import { isToolbarSeparatorItem } from '../config/toolbarItemUtils'
 import type { AcExToolbarItem } from '../config/types'
-import type { AcExI18n } from '../i18n'
+import type { AcExToolbarI18n } from './AcExToolbar'
 
 /**
  * Fixed-position dropdown menu for toolbar submenu items.
@@ -32,7 +33,7 @@ export class AcExDropdownMenu {
    * @param themeHost - Theme host so `--ml-ui-*` CSS variables are inherited.
    */
   constructor(
-    private i18n: AcExI18n,
+    private i18n: AcExToolbarI18n,
     items: AcExToolbarItem[],
     anchor: HTMLElement,
     private themeHost: HTMLElement
@@ -58,6 +59,7 @@ export class AcExDropdownMenu {
       button.type = 'button'
       button.className = 'ml-ex-ui-dropdown-item'
       button.setAttribute('role', 'menuitem')
+      button.dataset.toolbarItemId = item.id
       if (item.toggle) {
         const pressed = item.toggle.getValue()
         button.setAttribute('aria-pressed', String(pressed))
