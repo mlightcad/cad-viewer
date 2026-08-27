@@ -95,6 +95,14 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private baseToolbarItems: AcUiToolbarItem[] = []
   /** Raw toolbar items configuration last applied via {@link setToolbarItems}. */
   private toolbarItemsInput: AcUiToolbarItemsInput = 'default'
+  /**
+   * When true, {@link setToolbarItems} replaced the layout-derived item list.
+   * Layout switches still update chrome (placement, size, labels) but keep
+   * this item list until the next {@link setToolbarItems} call.
+   */
+  private toolbarItemsOverridden = false
+  /** Optional layout-switcher button prepended by the last {@link setToolbarItems}. */
+  private toolbarLayoutSwitcher?: AcUiToolbarItem
   /** Command stack reference for dynamic layer command registration. */
   private commandManager?: AcEdCommandStack
   /** Whether the toolbar includes a layer button. */
@@ -144,12 +152,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private registeredCommands: Array<{ group: string; name: string }> = []
   /** Refreshes toolbar, layer, and review UI when the app locale changes. */
   private handleLocaleChanged = () => {
-    const toolbarOpts = this.getMergedToolbarOptions(this.activeLayoutKind)
-    this.baseToolbarItems = acuiResolveToolbarItems(
-      toolbarOpts,
-      this.getToolbarContext(),
-      this.activeLayoutKind
-    )
+    this.rebuildToolbarItems(this.activeLayoutKind)
     this.toolbar?.setSelectedChild('locale', `locale-${AcApI18n.currentLocale}`)
     this.layerListView?.refreshLocale()
     this.reviewPaletteView?.refreshLocale()
@@ -295,7 +298,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
    *
    * Unlike `toolbar.appendItems`, this replaces the full `items` collection.
    * Preset references and `'default'` are resolved using the same rules as
-   * initial plugin load.
+   * initial plugin load. Subsequent {@link setLayout} / auto viewport switches
+   * keep this list and only update toolbar chrome.
    *
    * @param items - Full toolbar layout definition.
    * @param layoutSwitcher - Optional layout submenu button prepended before `items`.
@@ -306,6 +310,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   ) {
     if (!this.toolbar) return
 
+    this.toolbarItemsOverridden = true
+    this.toolbarLayoutSwitcher = layoutSwitcher
     this.toolbarItemsInput = items
     const resolved = this.resolveBaseToolbarItems(items)
     this.baseToolbarItems = layoutSwitcher
@@ -635,6 +641,9 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   /**
    * Applies toolbar configuration for a layout kind and refreshes dock wiring.
    *
+   * Chrome always comes from merged layout options. Item lists come from those
+   * options unless {@link setToolbarItems} has replaced them at runtime.
+   *
    * @param kind - Target layout kind.
    * @param options - When `skipToolbarApply` is true, only updates resolved state.
    */
@@ -655,13 +664,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.toolbarSize = toolbarOpts.size ?? 'auto'
     this.toolbarOverflow = toolbarOpts.overflow ?? 'menu'
     this.toolbarSubToolbar = toolbarOpts.subToolbar
-    this.toolbarItemsInput = toolbarOpts.items ?? 'default'
-
-    this.baseToolbarItems = acuiResolveToolbarItems(
-      toolbarOpts,
-      this.getToolbarContext(),
-      kind
-    )
+    this.rebuildToolbarItems(kind, toolbarOpts)
     this.syncLayerToolbarItem()
     this.syncReviewToolbarItem()
 
@@ -697,6 +700,33 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
         this.applyToolbarPlacement(placement)
       }
     }
+  }
+
+  /**
+   * Resolves {@link baseToolbarItems} from a runtime override or layout options.
+   *
+   * @param kind - Layout kind used for `'default'` and preset expansion.
+   * @param toolbarOpts - Merged options for `kind`; fetched when omitted.
+   */
+  private rebuildToolbarItems(
+    kind: AcEdUiLayoutKind,
+    toolbarOpts?: AcUiToolbarOptions
+  ) {
+    if (this.toolbarItemsOverridden) {
+      const resolved = this.resolveBaseToolbarItems(this.toolbarItemsInput)
+      this.baseToolbarItems = this.toolbarLayoutSwitcher
+        ? acuiPrependToolbarLayoutSwitcher(resolved, this.toolbarLayoutSwitcher)
+        : resolved
+      return
+    }
+
+    const merged = toolbarOpts ?? this.getMergedToolbarOptions(kind)
+    this.toolbarItemsInput = merged.items ?? 'default'
+    this.baseToolbarItems = acuiResolveToolbarItems(
+      merged,
+      this.getToolbarContext(),
+      kind
+    )
   }
 
   /** Resolves raw toolbar input into concrete toolbar items. */
@@ -1081,6 +1111,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.dockPanelMountTargetOption = undefined
     this.baseToolbarItems = []
     this.toolbarItemsInput = 'default'
+    this.toolbarItemsOverridden = false
+    this.toolbarLayoutSwitcher = undefined
     this.hasLayerToolbarItem = false
     this.hasMarkupPanelToolbarItem = false
     this.commandManager = undefined

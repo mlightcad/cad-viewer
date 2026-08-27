@@ -240,7 +240,7 @@ Toolbar buttons are configured through `toolbar.items`. You can start from the b
 
 ### Replace the full toolbar at runtime
 
-Use `appendItems` only when you want to keep the built-in default and add a few buttons. To **replace the entire toolbar**, call `setToolbarItems` on the loaded plugin:
+Use `appendItems` only when you want to keep the built-in default and add a few buttons. To **replace the entire toolbar**, call `setToolbarItems` on the loaded plugin. Auto or forced layout switches then keep that item list and only update chrome (placement, size, labels):
 
 ```typescript
 import {

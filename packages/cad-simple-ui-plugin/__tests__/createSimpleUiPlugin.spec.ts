@@ -573,6 +573,50 @@ describe('AcApSimpleUiPlugin', () => {
     expect(host.querySelector('.ml-ex-ui-dock-panel')).toBeNull()
   })
 
+  it('switches to phone default items when layout is phone and items were not overridden', () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default',
+        appendItems: [{ id: 'agent', command: 'agent' }],
+        appendItemsAfter: 'layout'
+      }
+    })
+
+    expect(host.querySelector('[data-toolbar-item-id="select"]')).not.toBeNull()
+    expect(plugin.setLayout('phone')).toBe(true)
+    expect(plugin.getLayout()).toBe('phone')
+    expect(plugin.getToolbarPlacement()).toBe('bottom')
+    expect(host.querySelector('[data-toolbar-item-id="zoom"]')).not.toBeNull()
+    expect(host.querySelector('[data-toolbar-item-id="select"]')).toBeNull()
+    expect(host.querySelector('[data-toolbar-item-id="agent"]')).toBeNull()
+  })
+
+  it('keeps setToolbarItems across layout switches while still applying phone chrome', () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default'
+      }
+    })
+
+    plugin.setToolbarItems([
+      { id: 'custom', label: 'Custom', command: 'custom' }
+    ])
+    expect(host.querySelector('[data-toolbar-item-id="custom"]')).not.toBeNull()
+
+    expect(plugin.setLayout('phone')).toBe(true)
+    expect(plugin.getLayout()).toBe('phone')
+    expect(plugin.getToolbarPlacement()).toBe('bottom')
+    expect(plugin.getToolbarItems()).toEqual([
+      { id: 'custom', label: 'Custom', command: 'custom' }
+    ])
+    expect(host.querySelector('[data-toolbar-item-id="custom"]')).not.toBeNull()
+    expect(host.querySelector('[data-toolbar-item-id="zoom"]')).toBeNull()
+  })
+
   it('upgrades dock mount target from host fallback when the canvas parent becomes available', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
