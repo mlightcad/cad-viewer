@@ -648,4 +648,33 @@ describe('AcApSimpleUiPlugin', () => {
     expect(canvasParent.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
     expect(host.querySelector(':scope > .ml-ex-ui-dock-panel')).toBeNull()
   })
+
+  it('upgrades toolbar mount from host fallback to canvas parent when the view appears', () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+
+    mockCurView.container = undefined
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: [acuiToolbarPreset('select')]
+      }
+    })
+
+    expect(host.querySelector(':scope > .ml-ex-ui-toolbar')).not.toBeNull()
+    expect(plugin.isToolbarVisible()).toBe(true)
+
+    const canvasParent = document.createElement('div')
+    const canvas = document.createElement('div')
+    canvasParent.appendChild(canvas)
+    host.appendChild(canvasParent)
+    mockCurView.container = canvas
+
+    mockDocumentActivatedListeners.forEach(listener => {
+      listener({ doc: { database: new AcDbDatabase() } } as never)
+    })
+
+    expect(canvasParent.querySelector('.ml-ex-ui-toolbar')).not.toBeNull()
+    expect(host.querySelector(':scope > .ml-ex-ui-toolbar')).toBeNull()
+  })
 })

@@ -600,7 +600,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   }
 
   /**
-   * Moves the toolbar from a host fallback to the canvas container once available.
+   * Moves the toolbar from a host or inner-canvas fallback to the preferred
+   * mount (typically the canvas parent) once the view is available.
    */
   private tryUpgradeToolbarMountTarget() {
     if (this.toolbarMountTargetOption || !this.hostEl || !this.toolbar) {
@@ -613,9 +614,11 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     }
 
     const canvasContainer = AcApDocManager.instance.curView?.container
+    const canvasParent = canvasContainer?.parentElement
     if (
       this.toolbarMountEl !== this.hostEl &&
-      this.toolbarMountEl !== canvasContainer
+      this.toolbarMountEl !== canvasContainer &&
+      this.toolbarMountEl !== canvasParent
     ) {
       return
     }

@@ -18,11 +18,32 @@ import type {
 } from './types'
 
 /**
+ * Indexes items that are not already in the preset map (and nested children).
+ * Used so phone-only ids such as `zoom` / `settings` resolve on desktop/pad
+ * without replacing shared desktop presets like `layer`.
+ */
+function acuiIndexMissingToolbarItems(
+  items: AcUiToolbarItem[],
+  map: Map<string, AcUiToolbarItem>
+): void {
+  for (const item of items) {
+    if (acuiIsToolbarSeparatorItem(item)) continue
+    if (!map.has(item.id)) {
+      map.set(item.id, item)
+    }
+    if (!acuiIsDynamicToolbarChildren(item) && item.children?.length) {
+      acuiIndexMissingToolbarItems(item.children, map)
+    }
+  }
+}
+
+/**
  * Builds a lookup map of built-in toolbar items keyed by id (includes nested submenu entries).
  *
- * Indexes both desktop/pad and phone defaults so presets like `zoom` / `settings` resolve.
- * Shared ids (`layer`, `annotation`) follow {@link layout}: phone variants overwrite
- * desktop ones only when resolving a phone toolbar.
+ * Indexes desktop/pad defaults first so shared ids (`layer`, `annotation`) keep
+ * desktop variants. Phone items overwrite those ids only when {@link layout} is
+ * `'phone'`. On desktop/pad, phone-only ids (`zoom`, `settings`) are added when
+ * missing so custom lists can still reference them.
  *
  * @param context - Context for theme/locale/placement presets.
  * @param layout - Layout whose shared-id variants should win for overlapping presets.
@@ -32,10 +53,12 @@ export function acuiCreateDefaultToolbarPresetMap(
   layout: AcEdUiLayoutKind = 'desktop'
 ): Map<string, AcUiToolbarItem> {
   const map = new Map<string, AcUiToolbarItem>()
-  acuiIndexToolbarItems(acuiCreatePhoneToolbarItems(context), map)
   acuiIndexToolbarItems(acuiCreateDefaultToolbarItems(context), map)
+  const phoneItems = acuiCreatePhoneToolbarItems(context)
   if (layout === 'phone') {
-    acuiIndexToolbarItems(acuiCreatePhoneToolbarItems(context), map)
+    acuiIndexToolbarItems(phoneItems, map)
+  } else {
+    acuiIndexMissingToolbarItems(phoneItems, map)
   }
   return map
 }

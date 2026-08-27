@@ -27,6 +27,7 @@ import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
 import { acuiCreateDefaultToolbarItems } from '../src/config/defaultToolbarItems'
 import {
+  acuiCreateDefaultToolbarPresetMap,
   acuiFilterVisibleToolbarItems,
   acuiIsToolbarItemVisible,
   acuiResolveEffectiveToolbarItem,
@@ -487,6 +488,18 @@ describe('toolbar presets and separators', () => {
     )
     expect(items[0].label).toBe('toolbar.layerShort')
     expect(items[1].label).toBe('toolbar.annotationShort')
+  })
+
+  it('does not let phone variants overwrite desktop shared presets', () => {
+    const desktop = acuiCreateDefaultToolbarPresetMap(undefined, 'desktop')
+    expect(desktop.get('layer')?.label).toBe('toolbar.layer')
+    expect(desktop.get('annotation')?.label).toBe('toolbar.annotation')
+    expect(desktop.get('zoom')?.id).toBe('zoom')
+    expect(desktop.get('settings')?.id).toBe('settings')
+
+    const phone = acuiCreateDefaultToolbarPresetMap(undefined, 'phone')
+    expect(phone.get('layer')?.label).toBe('toolbar.layerShort')
+    expect(phone.get('annotation')?.label).toBe('toolbar.annotationShort')
   })
 
   it('preserves live layout children when expanding the layout preset', () => {
