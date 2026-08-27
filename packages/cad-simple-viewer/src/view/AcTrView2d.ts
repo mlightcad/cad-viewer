@@ -38,6 +38,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
 import { AcApDocManager, AcApSettingManager } from '../app'
+import { AcApZoomCmd } from '../command/AcApZoomCmd'
 import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit'
 import {
   AcEdBaseView,
@@ -1193,6 +1194,10 @@ export class AcTrView2d extends AcEdBaseView {
         }
         this._progressiveOpenFit.applyFinalFit(() => this.resolveLayoutFitBox())
         this.endProgressiveOpenFit()
+        const originalBtrId = layoutBtrId ?? this.activeLayoutBtrId
+        if (originalBtrId) {
+          AcApZoomCmd.rememberOriginalView(this, originalBtrId)
+        }
       },
       300, // check every 300 ms
       timeout
@@ -1936,6 +1941,7 @@ export class AcTrView2d extends AcEdBaseView {
           }
         }
         this._isDirty = true
+        AcApZoomCmd.rememberOriginalView(this, btrId)
       },
       300,
       0

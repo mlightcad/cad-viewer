@@ -13,6 +13,7 @@ import {
   acedApplyUiTheme,
   acedIsCompactUiLayout,
   AcEdOpenMode,
+  eventBus,
   LIBREDWG_PARSER_WORKER_FILE,
   MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
@@ -123,6 +124,7 @@ class CadViewerApp {
   private demoDockTabCount = 0
   private viewerToolbarMenuOpen = false
   private isInitialized = false
+  private documentEventsRegistered = false
   private hasOpenedFile = false
   private isLoadingFile = false
 
@@ -790,6 +792,29 @@ class CadViewerApp {
     return this.hasOpenedFile
   }
 
+  private registerDocumentEvents() {
+    if (this.documentEventsRegistered) return
+
+    AcApDocManager.instance.events.documentActivated.addEventListener(
+      args => {
+        document.title = args.doc.docTitle
+        this.onFileOpened()
+        this.finishLoadingState()
+        this.updateDevToolbarLabels()
+      }
+    )
+
+    AcApDocManager.instance.events.documentToBeOpened.addEventListener(() => {
+      this.setLoadingState(true)
+    })
+
+    eventBus.on('open-local-file-started', () => {
+      this.setLoadingState(true)
+    })
+
+    this.documentEventsRegistered = true
+  }
+
   private async initialize() {
     if (this.isInitialized) return
 
@@ -821,6 +846,7 @@ class CadViewerApp {
           dwgParser: dwgParserUrl
         }
       })
+      this.registerDocumentEvents()
       if (openProf) {
         const w = window as Window & { __OPEN_MODE__?: string }
         w.__OPEN_MODE__ = useWorkers ? 'worker-mtext' : 'main-mtext'
@@ -842,6 +868,23 @@ class CadViewerApp {
           appendItems: [AGENT_TOOLBAR_ITEM],
           appendItemsAfter: 'layout',
           collapsible: true
+        },
+        layouts: {
+          phone: {
+            toolbar: {
+              placement: 'bottom',
+              showLabels: true,
+              size: 'stretch',
+              edgeOffset: 0,
+              collapsible: false,
+              subToolbar: {
+                showLabels: false,
+                showSeparators: false,
+                size: 'stretch',
+                overflow: 'wrap'
+              }
+            }
+          }
         }
       })
 
@@ -849,19 +892,6 @@ class CadViewerApp {
         SIMPLE_UI_PLUGIN_NAME
       ) as AcApSimpleUiPlugin
       setupAgentIntegration(plugin)
-
-      AcApDocManager.instance.events.documentActivated.addEventListener(
-        args => {
-          document.title = args.doc.docTitle
-          this.onFileOpened()
-          this.finishLoadingState()
-          this.updateDevToolbarLabels()
-        }
-      )
-
-      AcApDocManager.instance.events.documentToBeOpened.addEventListener(() => {
-        this.setLoadingState(true)
-      })
 
       this.isInitialized = true
       this.updateDevToolbarLabels()
@@ -875,6 +905,7 @@ class CadViewerApp {
     this.fileInput.addEventListener('change', event => {
       const file = (event.target as HTMLInputElement).files?.[0]
       if (file) {
+        this.setLoadingState(true)
         void this.loadLocalFile(file)
       }
       this.fileInput.value = ''
@@ -894,6 +925,7 @@ class CadViewerApp {
         button.classList.add('active')
         this.updateFileSidebarSubtitle(button.textContent?.trim() || '')
         this.setFileSidebarExpanded(false)
+        this.setLoadingState(true)
         void this.loadPredefinedFile(url)
       })
     })
@@ -984,13 +1016,17 @@ class CadViewerApp {
   private async createNewDrawing() {
     await this.initialize()
 
-    if (!this.isInitialized) return
+    if (!this.isInitialized) {
+      return
+    }
 
     this.clearMessages()
+    this.setLoadingState(true)
 
     try {
       const cmd = new AcApQNewCmd()
       await cmd.execute(AcApDocManager.instance.context)
+      this.onFileOpened()
       this.predefinedButtons.forEach(item => item.classList.remove('active'))
       this.updateFileSidebarSubtitle('Tap to browse sample files')
       this.showMessage('New drawing created', 'success')
@@ -1007,6 +1043,7 @@ class CadViewerApp {
     const fileName = file.name.toLowerCase()
     if (!fileName.endsWith('.dxf') && !fileName.endsWith('.dwg')) {
       this.showMessage('Please select a DXF or DWG file', 'error')
+      this.finishLoadingState()
       return
     }
 
@@ -1071,6 +1108,7 @@ class CadViewerApp {
       }
 
       if (success) {
+        this.onFileOpened()
         this.predefinedButtons.forEach(item => item.classList.remove('active'))
         this.updateFileSidebarSubtitle('Tap to browse sample files')
         this.showMessage(`Successfully loaded: ${file.name}`, 'success')
@@ -1099,6 +1137,7 @@ class CadViewerApp {
       const success = await AcApDocManager.instance.openUrl(url, options)
 
       if (success) {
+        this.onFileOpened()
         const fileName = this.getFileNameFromUrl(url)
         this.showMessage(`Successfully loaded: ${fileName}`, 'success')
       } else {

@@ -1194,6 +1194,11 @@ export default {
         local: 'Önceki',
         global: 'Previous'
       },
+      original: {
+        display: 'Orijinal(O)',
+        local: 'Orijinal',
+        global: 'Original'
+      },
       scale: {
         display: 'Ölçek(Ö)',
         local: 'Ölçek',

@@ -5,13 +5,20 @@ export type AcUiNormalizedPluginOptions = Required<
   Omit<AcUiSimpleUiPluginOptions, 'host' | 'locale'>
 > & {
   host?: HTMLElement
+  /** Whether the dock panel shell should be created on load. */
   shouldCreateDockPanel: boolean
 }
 
 /**
  * Fills in default option values and derived flags for plugin initialization.
  *
+ * Normalizes {@link AcUiSimpleUiPluginOptions.layout} to `'auto'` when omitted,
+ * ensures `layouts` is an object, and applies toolbar defaults (including
+ * optional {@link AcUiToolbarOptions.showLabels} and
+ * {@link AcUiToolbarOptions.size}).
+ *
  * @param options - Raw plugin options from the caller.
+ * @returns Normalized options used during {@link AcApSimpleUiPlugin.onLoad}.
  */
 export function acuiNormalizePluginOptions(
   options: AcUiSimpleUiPluginOptions = {}
@@ -20,6 +27,8 @@ export function acuiNormalizePluginOptions(
 
   return {
     host: options.host,
+    layout: options.layout ?? 'auto',
+    layouts: options.layouts ?? {},
     dockPanel: {
       enabled: dockPanelEnabled,
       defaultOpen: options.dockPanel?.defaultOpen ?? false,
@@ -28,7 +37,10 @@ export function acuiNormalizePluginOptions(
       defaultWidth: options.dockPanel?.defaultWidth ?? 280
     },
     toolbar: {
-      enabled: options.toolbar?.enabled ?? true,
+      enabled:
+        options.toolbar?.enabled === false
+          ? false
+          : (options.toolbar?.enabled ?? true),
       placement: options.toolbar?.placement ?? 'right',
       items: options.toolbar?.items ?? 'default',
       appendItems: options.toolbar?.appendItems,
@@ -36,7 +48,14 @@ export function acuiNormalizePluginOptions(
       appendItemsBefore: options.toolbar?.appendItemsBefore,
       collapsible: options.toolbar?.collapsible ?? false,
       defaultCollapsed: options.toolbar?.defaultCollapsed ?? false,
-      edgeOffset: options.toolbar?.edgeOffset ?? 8
+      edgeOffset: options.toolbar?.edgeOffset ?? 8,
+      sideOffset: options.toolbar?.sideOffset ?? 0,
+      showLabels: options.toolbar?.showLabels,
+      size: options.toolbar?.size,
+      overflow: options.toolbar?.overflow,
+      showBorder: options.toolbar?.showBorder ?? true,
+      showSeparators: options.toolbar?.showSeparators ?? true,
+      subToolbar: options.toolbar?.subToolbar
     },
     shouldCreateDockPanel: dockPanelEnabled
   }

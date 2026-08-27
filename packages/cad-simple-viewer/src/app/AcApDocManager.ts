@@ -1998,6 +1998,7 @@ export class AcApDocManager {
       // Drop overlay / markup history before view.clear() disposes HTML.
       resetMeasurementSession()
       resetMarkupSession()
+      AcApZoomCmd.clearOriginalViews()
       this.openProgressView.clear()
     }
     this.openProgressView.bindDrawDatabase(this.context.doc.database)
@@ -2083,8 +2084,10 @@ export class AcApDocManager {
       const openViewMode = this.resolveOpenViewMode(options)
 
       const progressiveRendering = options?.progressiveRendering ?? false
+      let framedSynchronously = false
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
         view.zoomTo(layoutLimits)
+        framedSynchronously = true
       } else if (openViewMode === AcApOpenViewMode.Extents) {
         if (progressiveRendering) {
           view.beginProgressiveOpenFit()
@@ -2100,8 +2103,10 @@ export class AcApDocManager {
 
         if (activeModelViewBox) {
           view.zoomTo(activeModelViewBox)
+          framedSynchronously = true
         } else if (this.hasUsableDrawingExtents(db)) {
           view.zoomTo(new AcGeBox2d(db.extmin, db.extmax))
+          framedSynchronously = true
         } else {
           if (progressiveRendering) {
             view.beginProgressiveOpenFit()
@@ -2122,6 +2127,11 @@ export class AcApDocManager {
       // above relies on `curView` being an `AcTrView2d`, and the
       // markLayoutAsInitialized method is part of that contract.
       view.markLayoutAsInitialized(db.currentSpaceId)
+      // `zoomToFitDrawing` frames asynchronously; capture original view in
+      // its completion callback instead of here (pre-fit camera is wrong).
+      if (framedSynchronously) {
+        AcApZoomCmd.rememberOriginalView(view, db.currentSpaceId)
+      }
       // OPENPROF: db.read is done; wait for batchConvert to drain, then print.
       this._openFileProfiler.markReadCompleteAndScheduleReport(view)
     } else {

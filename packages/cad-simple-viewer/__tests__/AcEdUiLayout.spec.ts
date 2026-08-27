@@ -1,13 +1,58 @@
 /** @jest-environment jsdom */
 
 import {
+  acedGetUiLayout,
   acedIsCompactUiLayout,
   acedIsMobileUiLayout,
+  acedSubscribeUiLayout,
   ML_UI_COMPACT_MAX_WIDTH,
   ML_UI_COMPACT_MEDIA_QUERY,
   ML_UI_MOBILE_MAX_WIDTH,
   ML_UI_MOBILE_MEDIA_QUERY
 } from '../src/editor/global/AcEdUiLayout'
+
+type MediaListener = (event: MediaQueryListEvent) => void
+
+function installMatchMedia(matches: (query: string) => boolean) {
+  const listeners = new Map<string, Set<MediaListener>>()
+  const matchMediaDescriptor = Object.getOwnPropertyDescriptor(
+    window,
+    'matchMedia'
+  )
+
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: (query: string) => ({
+      matches: matches(query),
+      media: query,
+      addEventListener: (type: string, listener: MediaListener) => {
+        if (type !== 'change') return
+        let set = listeners.get(query)
+        if (!set) {
+          set = new Set()
+          listeners.set(query, set)
+        }
+        set.add(listener)
+      },
+      removeEventListener: (type: string, listener: MediaListener) => {
+        if (type !== 'change') return
+        listeners.get(query)?.delete(listener)
+      }
+    })
+  })
+
+  return {
+    restore() {
+      if (matchMediaDescriptor) {
+        Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)
+      }
+    },
+    fire(query: string) {
+      const event = { matches: matches(query), media: query } as MediaQueryListEvent
+      listeners.get(query)?.forEach(listener => listener(event))
+    }
+  }
+}
 
 describe('AcEdUiLayout', () => {
   it('exports mobile layout constants', () => {
@@ -21,49 +66,59 @@ describe('AcEdUiLayout', () => {
   })
 
   it('reports mobile layout from matchMedia', () => {
-    const matchMediaDescriptor = Object.getOwnPropertyDescriptor(
-      window,
-      'matchMedia'
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
     )
-
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      value: (query: string) => ({
-        matches: query === ML_UI_MOBILE_MEDIA_QUERY,
-        media: query,
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn()
-      })
-    })
 
     expect(acedIsMobileUiLayout()).toBe(true)
     expect(acedIsCompactUiLayout()).toBe(false)
+    expect(acedGetUiLayout()).toBe('phone')
 
-    if (matchMediaDescriptor) {
-      Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)
-    }
+    media.restore()
   })
 
   it('reports compact layout from matchMedia', () => {
-    const matchMediaDescriptor = Object.getOwnPropertyDescriptor(
-      window,
-      'matchMedia'
+    const media = installMatchMedia(
+      query => query === ML_UI_COMPACT_MEDIA_QUERY
     )
 
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      value: (query: string) => ({
-        matches: query === ML_UI_COMPACT_MEDIA_QUERY,
-        media: query,
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn()
-      })
+    expect(acedIsCompactUiLayout()).toBe(true)
+    expect(acedGetUiLayout()).toBe('pad')
+
+    media.restore()
+  })
+
+  it('reports desktop when neither mobile nor compact matches', () => {
+    const media = installMatchMedia(() => false)
+
+    expect(acedGetUiLayout()).toBe('desktop')
+
+    media.restore()
+  })
+
+  it('notifies subscribers when layout kind changes', () => {
+    let mobile = true
+    let compact = true
+    const media = installMatchMedia(query => {
+      if (query === ML_UI_MOBILE_MEDIA_QUERY) return mobile
+      if (query === ML_UI_COMPACT_MEDIA_QUERY) return compact
+      return false
     })
 
-    expect(acedIsCompactUiLayout()).toBe(true)
+    const listener = jest.fn()
+    const unsubscribe = acedSubscribeUiLayout(listener)
 
-    if (matchMediaDescriptor) {
-      Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)
-    }
+    expect(acedGetUiLayout()).toBe('phone')
+
+    mobile = false
+    media.fire(ML_UI_MOBILE_MEDIA_QUERY)
+    expect(listener).toHaveBeenCalledWith('pad')
+
+    compact = false
+    media.fire(ML_UI_COMPACT_MEDIA_QUERY)
+    expect(listener).toHaveBeenCalledWith('desktop')
+
+    unsubscribe()
+    media.restore()
   })
 })

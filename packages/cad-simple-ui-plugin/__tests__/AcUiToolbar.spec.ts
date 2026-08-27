@@ -202,4 +202,425 @@ describe('AcUiToolbar children UI', () => {
     expect(document.querySelector('.ml-ex-ui-dropdown')).toBeNull()
     toolbar.destroy()
   })
+
+  it('renders button labels when showLabels is enabled', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 800 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      showLabels: true,
+      items: [{ id: 'layer', label: 'toolbar.layerShort', command: 'layer' }],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    expect(
+      host.querySelector('.ml-ex-ui-toolbar')?.classList.contains('has-labels')
+    ).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-toolbar-btn-label')).toBeTruthy()
+    toolbar.destroy()
+  })
+
+  it('applies stretch bottom bar classes and positioning', async () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      size: 'stretch',
+      overflow: 'menu',
+      edgeOffset: 0,
+      items: [
+        { id: 'zoom', label: 'toolbar.zoom', command: 'zoom' },
+        { id: 'layer', label: 'toolbar.layerShort', command: 'layer' }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve())
+    })
+
+    const root = host.querySelector<HTMLElement>('.ml-ex-ui-toolbar')
+    expect(root?.classList.contains('is-stretch')).toBe(true)
+    expect(root?.style.left).toBe('0px')
+    expect(root?.style.right).toBe('0px')
+    expect(root?.style.width).toBe('400px')
+
+    const zoomBtn = host.querySelector<HTMLElement>(
+      '[data-toolbar-item-id="zoom"]'
+    )
+    expect(getComputedStyle(zoomBtn!).flexGrow).toBe('1')
+    toolbar.destroy()
+  })
+
+  it('opens nested locale strip from settings sub-toolbar', () => {
+    const { host, toolbar } = createToolbar([
+      {
+        id: 'settings',
+        label: 'toolbar.settings',
+        childrenUi: 'toolbar',
+        children: [
+          {
+            id: 'locale',
+            label: 'toolbar.locale',
+            childrenUi: 'toolbar',
+            children: [
+              { id: 'locale-en', label: 'toolbar.localeEn', action: jest.fn() }
+            ]
+          }
+        ]
+      }
+    ])
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="settings"]')
+      ?.click()
+    expect(host.querySelectorAll('.ml-ex-ui-subtoolbar').length).toBe(1)
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="locale"]')
+      ?.click()
+    expect(host.querySelectorAll('.ml-ex-ui-subtoolbar').length).toBe(2)
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="locale-en"]')
+      ?.click()
+    expect(host.querySelectorAll('.ml-ex-ui-subtoolbar').length).toBe(0)
+    toolbar.destroy()
+  })
+
+  it('shows overflow menu when vertical toolbar exceeds host height', async () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 200 })
+    Object.defineProperty(host, 'clientHeight', { value: 120 })
+    document.body.appendChild(host)
+    const items: AcUiToolbarItem[] = Array.from({ length: 8 }, (_, index) => ({
+      id: `cmd-${index}`,
+      label: 'toolbar.select',
+      command: `cmd-${index}`
+    }))
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'right',
+      overflow: 'menu',
+      items,
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve())
+    })
+
+    const overflowBtn = host.querySelector<HTMLButtonElement>(
+      '[data-toolbar-item-id="toolbar-overflow"]'
+    )
+    expect(overflowBtn).toBeTruthy()
+    expect(overflowBtn?.hidden).toBe(false)
+
+    const hiddenButtons = host.querySelectorAll(
+      '.ml-ex-ui-toolbar-btn[data-toolbar-item-id^="cmd-"][hidden]'
+    )
+    expect(hiddenButtons.length).toBeGreaterThan(0)
+
+    overflowBtn?.click()
+    expect(host.querySelector('.ml-ex-ui-dropdown')).toBeTruthy()
+    toolbar.destroy()
+  })
+
+  it('keeps overflow menu button visible when host height is very small', async () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 200 })
+    Object.defineProperty(host, 'clientHeight', { value: 72 })
+    document.body.appendChild(host)
+    const items: AcUiToolbarItem[] = Array.from({ length: 8 }, (_, index) => ({
+      id: `cmd-${index}`,
+      label: 'toolbar.select',
+      command: `cmd-${index}`
+    }))
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'right',
+      collapsible: true,
+      overflow: 'menu',
+      items,
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve())
+      })
+    })
+
+    const overflowBtn = host.querySelector<HTMLButtonElement>(
+      '[data-toolbar-item-id="toolbar-overflow"]'
+    )
+    expect(overflowBtn?.hidden).toBe(false)
+    toolbar.destroy()
+  })
+
+  it('keeps overflow button inside host when toolbar is taller than host', async () => {
+    const host = document.createElement('div')
+    host.style.position = 'relative'
+    host.style.width = '200px'
+    host.style.height = '180px'
+    Object.defineProperty(host, 'clientWidth', {
+      configurable: true,
+      get: () => 200
+    })
+    Object.defineProperty(host, 'clientHeight', {
+      configurable: true,
+      get: () => 180
+    })
+    document.body.appendChild(host)
+    const items: AcUiToolbarItem[] = Array.from({ length: 12 }, (_, index) => ({
+      id: `cmd-${index}`,
+      label: 'toolbar.select',
+      command: `cmd-${index}`
+    }))
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'right',
+      edgeOffset: 8,
+      collapsible: true,
+      overflow: 'menu',
+      items,
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve())
+      })
+    })
+
+    const overflowBtn = host.querySelector<HTMLButtonElement>(
+      '[data-toolbar-item-id="toolbar-overflow"]'
+    )
+    expect(overflowBtn?.hidden).toBe(false)
+
+    const hostRect = host.getBoundingClientRect()
+    const overflowRect = overflowBtn!.getBoundingClientRect()
+    expect(overflowRect.bottom).toBeLessThanOrEqual(hostRect.bottom + 1)
+    expect(overflowRect.top).toBeGreaterThanOrEqual(hostRect.top - 1)
+
+    const root = host.querySelector<HTMLElement>('.ml-ex-ui-toolbar')
+    expect(root?.style.maxHeight).toBe('')
+    const rootRect = root!.getBoundingClientRect()
+    expect(overflowRect.bottom).toBeLessThanOrEqual(rootRect.bottom + 1)
+    toolbar.destroy()
+  })
+
+  it('wraps toolbar buttons across multiple rows when overflow is wrap', async () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 160 })
+    Object.defineProperty(host, 'clientHeight', { value: 200 })
+    document.body.appendChild(host)
+    const items: AcUiToolbarItem[] = Array.from({ length: 6 }, (_, index) => ({
+      id: `cmd-${index}`,
+      label: 'toolbar.layerShort',
+      command: `cmd-${index}`
+    }))
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      showLabels: true,
+      overflow: 'wrap',
+      items,
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve())
+    })
+
+    const root = host.querySelector<HTMLElement>('.ml-ex-ui-toolbar')
+    expect(root?.classList.contains('is-overflow-wrap')).toBe(true)
+    expect(
+      host.querySelector('[data-toolbar-item-id="toolbar-overflow"]')
+    ).toBeNull()
+    toolbar.destroy()
+  })
+
+  it('omits separators when showSeparators is false', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 800 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'right',
+      showSeparators: false,
+      collapsible: true,
+      items: [
+        { id: 'select', label: 'toolbar.select', command: 'select' },
+        { type: 'separator', id: 'sep-1' },
+        { id: 'layer', label: 'toolbar.layerShort', command: 'layer' }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    expect(host.querySelectorAll('.ml-ex-ui-toolbar-separator').length).toBe(0)
+    toolbar.destroy()
+  })
+
+  it('omits separators when showSeparators is false', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 800 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'right',
+      showSeparators: false,
+      collapsible: true,
+      items: [
+        { id: 'select', label: 'toolbar.select', command: 'select' },
+        { type: 'separator', id: 'sep-1' },
+        { id: 'layer', label: 'toolbar.layerShort', command: 'layer' }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    expect(host.querySelectorAll('.ml-ex-ui-toolbar-separator').length).toBe(0)
+    toolbar.destroy()
+  })
+
+  it('hides the toolbar border when showBorder is false', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 800 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'right',
+      showBorder: false,
+      items: [{ id: 'layer', label: 'toolbar.layerShort', command: 'layer' }],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    expect(
+      host.querySelector('.ml-ex-ui-toolbar')?.classList.contains('no-border')
+    ).toBe(true)
+    toolbar.destroy()
+  })
+
+  it('applies sideOffset to cross-axis wrap limits for horizontal toolbars', async () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 200 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      edgeOffset: 0,
+      sideOffset: 16,
+      overflow: 'wrap',
+      items: Array.from({ length: 6 }, (_, index) => ({
+        id: `cmd-${index}`,
+        label: 'toolbar.layerShort',
+        command: `cmd-${index}`
+      })),
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve())
+    })
+
+    const root = host.querySelector<HTMLElement>('.ml-ex-ui-toolbar')
+    expect(root?.style.getPropertyValue('--ml-ex-ui-toolbar-max-height')).toBe(
+      '184px'
+    )
+    toolbar.destroy()
+  })
+
+  it('passes sub-toolbar chrome overrides to child strips', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 800 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'right',
+      subToolbar: { showBorder: false, showLabels: true },
+      items: [
+        {
+          id: 'measure',
+          label: 'toolbar.measure',
+          childrenUi: 'toolbar',
+          children: [
+            { id: 'distance', label: 'toolbar.distance', command: 'measure' }
+          ]
+        }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    const sub = host.querySelector('.ml-ex-ui-subtoolbar')
+    expect(sub?.classList.contains('no-border')).toBe(true)
+    expect(sub?.classList.contains('has-labels')).toBe(true)
+    toolbar.destroy()
+  })
+
+  it('applies stretch size to horizontal sub-toolbars on bottom placement', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 300 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      edgeOffset: 0,
+      subToolbar: { size: 'stretch' },
+      items: [
+        {
+          id: 'settings',
+          label: 'toolbar.settings',
+          childrenUi: 'toolbar',
+          children: [
+            { id: 'theme', label: 'toolbar.theme', command: 'theme' },
+            { id: 'locale', label: 'toolbar.language', command: 'locale' }
+          ]
+        }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="settings"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    const sub = host.querySelector<HTMLElement>('.ml-ex-ui-subtoolbar')
+    expect(sub?.classList.contains('is-stretch')).toBe(true)
+    expect(sub?.style.width).toBe('400px')
+    expect(sub?.style.left).toBe('0px')
+
+    const themeBtn = sub?.querySelector<HTMLElement>(
+      '[data-toolbar-item-id="theme"]'
+    )
+    expect(getComputedStyle(themeBtn!).flexGrow).toBe('1')
+    toolbar.destroy()
+  })
 })

@@ -1,6 +1,10 @@
+import type { AcEdUiLayoutKind } from '@mlightcad/cad-simple-viewer'
 import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
-import { acuiCreateDefaultToolbarItems } from './defaultToolbarItems'
+import {
+  acuiCreateDefaultToolbarItems,
+  acuiCreatePhoneToolbarItems
+} from './defaultToolbarItems'
 import {
   acuiExpandToolbarItemConfigs,
   acuiIndexToolbarItems,
@@ -9,20 +13,30 @@ import {
 } from './toolbarItemUtils'
 import type {
   AcUiDefaultToolbarContext,
-  AcUiSimpleUiPluginOptions,
-  AcUiToolbarItem
+  AcUiToolbarItem,
+  AcUiToolbarOptions
 } from './types'
 
 /**
  * Builds a lookup map of built-in toolbar items keyed by id (includes nested submenu entries).
  *
+ * Indexes both desktop/pad and phone defaults so presets like `zoom` / `settings` resolve.
+ * Shared ids (`layer`, `annotation`) follow {@link layout}: phone variants overwrite
+ * desktop ones only when resolving a phone toolbar.
+ *
  * @param context - Context for theme/locale/placement presets.
+ * @param layout - Layout whose shared-id variants should win for overlapping presets.
  */
 export function acuiCreateDefaultToolbarPresetMap(
-  context?: AcUiDefaultToolbarContext
+  context?: AcUiDefaultToolbarContext,
+  layout: AcEdUiLayoutKind = 'desktop'
 ): Map<string, AcUiToolbarItem> {
   const map = new Map<string, AcUiToolbarItem>()
+  acuiIndexToolbarItems(acuiCreatePhoneToolbarItems(context), map)
   acuiIndexToolbarItems(acuiCreateDefaultToolbarItems(context), map)
+  if (layout === 'phone') {
+    acuiIndexToolbarItems(acuiCreatePhoneToolbarItems(context), map)
+  }
   return map
 }
 
@@ -66,18 +80,23 @@ export function acuiInsertToolbarItemsAt(
  *
  * @param options - Toolbar subsection of plugin options.
  * @param context - Context for default theme/locale/placement items.
+ * @param layout - When `'phone'`, `'default'` resolves to the phone item set.
  * @returns Resolved toolbar items ready for {@link AcUiToolbar}.
  */
 export function acuiResolveToolbarItems(
-  options: AcUiSimpleUiPluginOptions['toolbar'],
-  context?: AcUiDefaultToolbarContext
+  options: AcUiToolbarOptions | undefined,
+  context?: AcUiDefaultToolbarContext,
+  layout: AcEdUiLayoutKind = 'desktop'
 ): AcUiToolbarItem[] {
   const toolbar = options ?? {}
-  const presets = acuiCreateDefaultToolbarPresetMap(context)
+  const presets = acuiCreateDefaultToolbarPresetMap(context, layout)
   let items: AcUiToolbarItem[]
 
   if (toolbar.items === 'default' || toolbar.items == null) {
-    items = acuiCreateDefaultToolbarItems(context)
+    items =
+      layout === 'phone'
+        ? acuiCreatePhoneToolbarItems(context)
+        : acuiCreateDefaultToolbarItems(context)
   } else {
     items = acuiExpandToolbarItemConfigs(toolbar.items, presets)
   }

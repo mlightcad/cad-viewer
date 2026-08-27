@@ -1182,6 +1182,11 @@ export default {
         local: '上一个',
         global: 'Previous'
       },
+      original: {
+        display: '原始视口(O)',
+        local: '原始视口',
+        global: 'Original'
+      },
       scale: {
         display: '比例(S)',
         local: '比例',

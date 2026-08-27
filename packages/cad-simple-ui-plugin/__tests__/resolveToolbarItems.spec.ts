@@ -46,6 +46,21 @@ describe('acuiResolveToolbarItems', () => {
     expect(items[0].id).toBe('select')
   })
 
+  it('returns phone default items when layout is phone', () => {
+    const items = acuiResolveToolbarItems({ items: 'default' }, undefined, 'phone')
+    expect(items.map(item => item.id)).toEqual([
+      'zoom',
+      'measure',
+      'annotation',
+      'layer',
+      'layout',
+      'settings'
+    ])
+    expect(items[0].children?.some(child => child.id === 'zoom-original')).toBe(
+      true
+    )
+  })
+
   it('appends custom items after defaults', () => {
     const items = acuiResolveToolbarItems({
       items: 'default',
@@ -447,6 +462,31 @@ describe('toolbar presets and separators', () => {
       items.map(item => ('preset' in item ? item.preset : item.id))
     ).toEqual(['select', 'pan', 'sep-tools', 'measure'])
     expect(items[3].children?.length).toBeGreaterThan(0)
+  })
+
+  it('keeps desktop labels for shared presets and still resolves phone-only ids', () => {
+    const items = acuiResolveToolbarItems({
+      items: [
+        { preset: 'layer' },
+        { preset: 'annotation' },
+        { preset: 'zoom' },
+        { preset: 'settings' }
+      ]
+    })
+    expect(items[0].label).toBe('toolbar.layer')
+    expect(items[1].label).toBe('toolbar.annotation')
+    expect(items[2].id).toBe('zoom')
+    expect(items[3].id).toBe('settings')
+  })
+
+  it('uses phone labels for shared presets when layout is phone', () => {
+    const items = acuiResolveToolbarItems(
+      { items: [{ preset: 'layer' }, { preset: 'annotation' }] },
+      undefined,
+      'phone'
+    )
+    expect(items[0].label).toBe('toolbar.layerShort')
+    expect(items[1].label).toBe('toolbar.annotationShort')
   })
 
   it('preserves live layout children when expanding the layout preset', () => {

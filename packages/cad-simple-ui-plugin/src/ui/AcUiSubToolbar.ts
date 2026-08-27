@@ -1,12 +1,17 @@
 import { createIconElement } from '../assets/icons'
+import type { AcUiResolvedToolbarChrome } from '../config/resolveToolbarChrome'
 import {
   acuiIsToolbarItemDisabled,
   acuiItemRequiresDocument,
   acuiResolveEffectiveToolbarItem
 } from '../config/resolveToolbarItems'
-import { acuiIsToolbarSeparatorItem } from '../config/toolbarItemUtils'
+import {
+  acuiIsDynamicToolbarChildren,
+  acuiIsToolbarSeparatorItem
+} from '../config/toolbarItemUtils'
 import type { AcUiToolbarItem, AcUiToolbarPlacement } from '../config/types'
 import type { AcUiI18n } from '../i18n'
+import { acuiEnsureUiStyles } from './styles'
 
 /** Constructor options for {@link AcUiSubToolbar}. */
 export interface AcUiSubToolbarOptions {
@@ -22,6 +27,10 @@ export interface AcUiSubToolbarOptions {
   host: HTMLElement
   /** Parent toolbar edge placement. */
   placement: AcUiToolbarPlacement
+  /** Resolved layout and chrome options. */
+  chrome: AcUiResolvedToolbarChrome
+  /** Cross-axis host margins inherited from the parent toolbar. */
+  getCrossAxisInset: () => { near: number; far: number }
   /**
    * When true, canvas / outside clicks do not close the strip.
    * Only the parent button (or an explicit {@link close}) dismisses it.
@@ -30,7 +39,7 @@ export interface AcUiSubToolbarOptions {
   /** Whether command buttons should be disabled (document loading / missing). */
   commandsDisabled: boolean
   /** Invoked when a leaf item is activated. */
-  onSelect: (item: AcUiToolbarItem) => void
+  onSelect: (item: AcUiToolbarItem, button: HTMLButtonElement) => void
   /** Invoked when the strip is closed. */
   onClose?: () => void
 }
@@ -63,10 +72,11 @@ export class AcUiSubToolbar {
    * @param options - Host, placement, items, and selection callback.
    */
   constructor(private options: AcUiSubToolbarOptions) {
+    acuiEnsureUiStyles()
     this.items = options.items
     this.commandsDisabled = options.commandsDisabled
     this.root = document.createElement('div')
-    this.root.className = this.rootClassName()
+    this.syncRootClasses()
     this.root.setAttribute('role', 'toolbar')
     const label = options.anchor.getAttribute('aria-label')
     if (label) {
@@ -74,6 +84,7 @@ export class AcUiSubToolbar {
     }
 
     this.renderButtons()
+    this.applyChromeLayout()
     options.host.appendChild(this.root)
     this.syncPosition()
 
@@ -104,6 +115,7 @@ export class AcUiSubToolbar {
       this.commandsDisabled = commandsDisabled
     }
     this.renderButtons()
+    this.applyChromeLayout()
     this.syncPosition()
   }
 
@@ -111,8 +123,8 @@ export class AcUiSubToolbar {
   syncPosition() {
     if (!this.root.isConnected) return
 
-    const { host, toolbarRoot, anchor, placement } = this.options
-    const gap = 8
+    const { host, toolbarRoot, anchor, placement, chrome } = this.options
+    const gap = chrome.edgeOffset
     const hostRect = host.getBoundingClientRect()
     const toolbarRect = toolbarRoot.getBoundingClientRect()
     const anchorRect = anchor.getBoundingClientRect()
@@ -120,6 +132,10 @@ export class AcUiSubToolbar {
     const subHeight = this.root.offsetHeight
     const hostWidth = host.clientWidth
     const hostHeight = host.clientHeight
+    const crossInset = this.options.getCrossAxisInset()
+    const horizontalStrip =
+      placement === 'left' || placement === 'right'
+    const stretch = chrome.size === 'stretch'
 
     let left: number
     let top: number
@@ -131,17 +147,34 @@ export class AcUiSubToolbar {
       left = toolbarRect.right - hostRect.left + gap
       top = anchorRect.top - hostRect.top
     } else if (placement === 'top') {
-      left = anchorRect.left - hostRect.left
+      left = stretch
+        ? crossInset.near
+        : anchorRect.left - hostRect.left
       top = toolbarRect.bottom - hostRect.top + gap
     } else {
-      left = anchorRect.left - hostRect.left
+      left = stretch
+        ? crossInset.near
+        : anchorRect.left - hostRect.left
       top = toolbarRect.top - hostRect.top - subHeight - gap
     }
 
-    const maxLeft = Math.max(0, hostWidth - subWidth)
-    const maxTop = Math.max(0, hostHeight - subHeight)
-    left = Math.min(Math.max(0, left), maxLeft)
-    top = Math.min(Math.max(0, top), maxTop)
+    if (horizontalStrip) {
+      const minTop = crossInset.near
+      const maxTop = Math.max(minTop, hostHeight - subHeight - crossInset.far)
+      top = Math.min(Math.max(minTop, top), maxTop)
+      if (stretch) {
+        left = crossInset.near
+      }
+    } else {
+      const minLeft = crossInset.near
+      const maxLeft = Math.max(minLeft, hostWidth - subWidth - crossInset.far)
+      left = stretch
+        ? crossInset.near
+        : Math.min(Math.max(minLeft, left), maxLeft)
+      const minTop = crossInset.near
+      const maxTop = Math.max(minTop, hostHeight - subHeight - crossInset.far)
+      top = Math.min(Math.max(minTop, top), maxTop)
+    }
 
     this.root.style.left = `${left}px`
     this.root.style.top = `${top}px`
@@ -156,19 +189,96 @@ export class AcUiSubToolbar {
     this.options.onClose?.()
   }
 
-  private rootClassName() {
+  private syncRootClasses() {
     const vertical =
       this.options.placement === 'left' || this.options.placement === 'right'
-    return [
+    const { chrome } = this.options
+    const classes = [
       'ml-ex-ui-subtoolbar',
       vertical ? 'is-vertical' : 'is-horizontal'
-    ].join(' ')
+    ]
+    if (chrome.showLabels) classes.push('has-labels')
+    if (chrome.size === 'stretch') classes.push('is-stretch')
+    if (chrome.overflow === 'wrap') classes.push('is-overflow-wrap')
+    if (!chrome.showBorder) classes.push('no-border')
+    this.root.className = classes.join(' ')
+  }
+
+  private applyChromeLayout() {
+    this.applyStretchSize()
+    this.applyOverflowLayout()
+  }
+
+  private applyStretchSize() {
+    const { host, placement, chrome } = this.options
+    if (chrome.size !== 'stretch') {
+      this.root.style.removeProperty('width')
+      this.root.style.removeProperty('height')
+      return
+    }
+
+    const crossInset = this.options.getCrossAxisInset()
+    const horizontalStrip = placement === 'left' || placement === 'right'
+
+    if (horizontalStrip) {
+      const stretchHeight = Math.max(
+        0,
+        host.clientHeight - crossInset.near - crossInset.far
+      )
+      this.root.style.height = `${stretchHeight}px`
+      this.root.style.removeProperty('width')
+    } else {
+      const stretchWidth = Math.max(
+        0,
+        host.clientWidth - crossInset.near - crossInset.far
+      )
+      this.root.style.width = `${stretchWidth}px`
+      this.root.style.removeProperty('height')
+    }
+  }
+
+  private applyOverflowLayout() {
+    const { host, placement, chrome } = this.options
+    if (chrome.overflow !== 'wrap') {
+      if (chrome.size !== 'stretch') {
+        this.root.style.removeProperty('--ml-ex-ui-toolbar-max-width')
+        this.root.style.removeProperty('--ml-ex-ui-toolbar-max-height')
+      }
+      return
+    }
+
+    const crossInset = this.options.getCrossAxisInset()
+    const horizontalStrip = placement === 'left' || placement === 'right'
+
+    if (horizontalStrip) {
+      const maxHeight = Math.max(
+        0,
+        host.clientHeight - crossInset.near - crossInset.far
+      )
+      this.root.style.setProperty(
+        '--ml-ex-ui-toolbar-max-height',
+        `${maxHeight}px`
+      )
+      this.root.style.removeProperty('--ml-ex-ui-toolbar-max-width')
+    } else {
+      const maxWidth = Math.max(
+        0,
+        host.clientWidth - crossInset.near - crossInset.far
+      )
+      this.root.style.setProperty(
+        '--ml-ex-ui-toolbar-max-width',
+        `${maxWidth}px`
+      )
+      this.root.style.removeProperty('--ml-ex-ui-toolbar-max-height')
+    }
   }
 
   private renderButtons() {
     this.root.replaceChildren()
+    const { chrome } = this.options
     this.items.forEach(item => {
       if (acuiIsToolbarSeparatorItem(item)) {
+        if (!chrome.showSeparators) return
         const separator = document.createElement('div')
         separator.className = 'ml-ex-ui-toolbar-separator'
         separator.setAttribute('role', 'separator')
@@ -195,14 +305,27 @@ export class AcUiSubToolbar {
         button.classList.toggle('is-toggled', pressed)
       }
 
+      if (effective.children?.length || acuiIsDynamicToolbarChildren(item)) {
+        button.classList.add('has-children')
+        button.setAttribute('aria-haspopup', 'true')
+        button.setAttribute('aria-expanded', 'false')
+      }
+
       if (effective.icon) {
         button.appendChild(createIconElement(effective.icon))
-      } else if (effective.label) {
+      } else if (effective.label && !chrome.showLabels) {
         const text = document.createElement('span')
         text.textContent = this.options.i18n.t(effective.label)
         text.style.fontSize = '11px'
         text.style.padding = '0 4px'
         button.appendChild(text)
+      }
+
+      if (chrome.showLabels && effective.label) {
+        const label = document.createElement('span')
+        label.className = 'ml-ex-ui-toolbar-btn-label'
+        label.textContent = this.options.i18n.t(effective.label)
+        button.appendChild(label)
       }
 
       button.disabled =
@@ -212,8 +335,11 @@ export class AcUiSubToolbar {
       button.addEventListener('click', event => {
         event.stopPropagation()
         if (button.disabled) return
-        this.options.onSelect(effective)
-        if (!this.options.sticky) {
+        this.options.onSelect(effective, button)
+        const hasNestedChildren =
+          Boolean(effective.children?.length) ||
+          acuiIsDynamicToolbarChildren(item)
+        if (!this.options.sticky && !hasNestedChildren) {
           this.close()
         }
       })

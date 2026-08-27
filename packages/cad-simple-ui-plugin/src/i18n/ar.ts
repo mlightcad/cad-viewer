@@ -4,11 +4,14 @@
 export const ar: Record<string, string> = {
   'toolbar.select': 'تحديد',
   'toolbar.pan': 'تحريك العرض',
+  'toolbar.zoom': 'تكبير',
   'toolbar.zoomExtent': 'تكبير إلى حدود الرسم',
   'toolbar.zoomWindow': 'تكبير نافذة',
-
+  'toolbar.zoomOriginal': 'العرض الأصلي',
   'toolbar.layer': 'مدير الطبقات',
+  'toolbar.layerShort': 'الطبقات',
   'toolbar.layout': 'المخطط',
+  'toolbar.settings': 'الإعدادات',
 
   'toolbar.measure': 'القياس',
   'toolbar.measureDistance': 'قياس المسافة',
@@ -26,6 +29,7 @@ export const ar: Record<string, string> = {
   'toolbar.switchBg': 'تبديل الخلفية',
 
   'toolbar.annotation': 'أدوات المراجعة',
+  'toolbar.annotationShort': 'مراجعة',
 
   'toolbar.markupCloud': 'سحابة',
   'toolbar.markupCallout': 'وسيلة شرح',

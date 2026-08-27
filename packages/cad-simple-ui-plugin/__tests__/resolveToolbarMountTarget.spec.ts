@@ -27,8 +27,20 @@ describe('acuiResolveToolbarMountTarget', () => {
     expect(acuiResolveToolbarMountTarget(host, mountTarget)).toBe(mountTarget)
   })
 
-  it('returns canvas container when it is inside host', () => {
-    const canvasContainer = {} as HTMLElement
+  it('returns canvas parent when it is inside host', () => {
+    const canvasParent = {} as HTMLElement
+    const canvasContainer = { parentElement: canvasParent } as HTMLElement
+    const host = {
+      contains: (node: unknown) => node === canvasParent
+    } as unknown as HTMLElement
+
+    mockCurView.container = canvasContainer
+    expect(acuiResolveToolbarMountTarget(host)).toBe(canvasParent)
+  })
+
+  it('returns canvas container when parent is outside host', () => {
+    const canvasParent = {} as HTMLElement
+    const canvasContainer = { parentElement: canvasParent } as HTMLElement
     const host = {
       contains: (node: unknown) => node === canvasContainer
     } as unknown as HTMLElement

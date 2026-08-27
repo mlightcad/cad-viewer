@@ -27,6 +27,11 @@ export function acuiEnsureUiStyles() {
       --ml-ex-ui-toolbar-btn-size: 32px;
     }
 
+    .ml-ex-ui-toolbar.no-border,
+    .ml-ex-ui-subtoolbar.no-border {
+      border: none;
+    }
+
     .ml-ex-ui-toolbar-host {
       position: relative;
     }
@@ -172,6 +177,128 @@ export function acuiEnsureUiStyles() {
       clip-path: polygon(100% 0, 0 0, 100% 100%);
     }
 
+    .ml-ex-ui-toolbar.has-labels .ml-ex-ui-toolbar-btn {
+      flex-direction: column;
+      gap: 2px;
+      min-height: auto;
+      padding: 6px 4px 4px;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch.is-horizontal
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ),
+    .ml-ex-ui-toolbar.is-stretch.is-vertical
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ) {
+      flex: 1 1 0;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch.is-horizontal
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ) {
+      min-width: 0;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch.is-vertical
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ) {
+      min-height: 0;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch .ml-ex-ui-toolbar-separator {
+      flex: 0 0 auto;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch.is-horizontal .ml-ex-ui-toolbar-overflow-btn,
+    .ml-ex-ui-toolbar.is-stretch.is-horizontal .ml-ex-ui-toolbar-collapse-btn,
+    .ml-ex-ui-toolbar.is-stretch.is-vertical .ml-ex-ui-toolbar-overflow-btn,
+    .ml-ex-ui-toolbar.is-stretch.is-vertical .ml-ex-ui-toolbar-collapse-btn {
+      flex: 0 0 auto;
+    }
+
+    .ml-ex-ui-toolbar-btn-label {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 10px;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch.is-horizontal {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      gap: 0;
+      padding: 4px 0;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch.is-horizontal.is-bottom {
+      border-bottom: none;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch.is-horizontal .ml-ex-ui-toolbar-btn {
+      border-radius: 0;
+      border-top: none;
+      border-bottom: none;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch.is-horizontal .ml-ex-ui-toolbar-btn:first-child {
+      border-left: none;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch.is-horizontal .ml-ex-ui-toolbar-btn:last-child {
+      border-right: none;
+    }
+
+    .ml-ex-ui-toolbar.is-stretch.is-vertical {
+      gap: 0;
+      padding: 4px 6px;
+    }
+
+    .ml-ex-ui-toolbar.is-overflow-wrap {
+      flex-wrap: wrap;
+      align-content: flex-start;
+    }
+
+    .ml-ex-ui-toolbar.is-overflow-wrap.is-horizontal {
+      max-width: var(--ml-ex-ui-toolbar-max-width, none);
+    }
+
+    .ml-ex-ui-toolbar.is-overflow-wrap.is-vertical {
+      max-height: var(--ml-ex-ui-toolbar-max-height, none);
+    }
+
+    .ml-ex-ui-toolbar.is-overflow-menu.has-labels.is-horizontal
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ) {
+      flex: 0 0 auto;
+      min-width: var(--ml-ex-ui-toolbar-btn-size);
+    }
+
+    .ml-ex-ui-toolbar.is-overflow-menu.is-stretch.has-labels.is-horizontal
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ) {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .ml-ex-ui-toolbar.is-overflow-menu.is-vertical {
+      flex-shrink: 0;
+    }
+
+    .ml-ex-ui-toolbar-overflow-btn[hidden] {
+      display: none !important;
+    }
+
     .ml-ex-ui-icon {
       display: inline-flex;
       width: 18px;
@@ -183,6 +310,65 @@ export function acuiEnsureUiStyles() {
     .ml-ex-ui-icon svg {
       width: 18px;
       height: 18px;
+    }
+
+    .ml-ex-ui-subtoolbar.is-overflow-wrap {
+      flex-wrap: wrap;
+      align-content: flex-start;
+    }
+
+    .ml-ex-ui-subtoolbar.is-overflow-wrap.is-horizontal {
+      max-width: var(--ml-ex-ui-toolbar-max-width, none);
+    }
+
+    .ml-ex-ui-subtoolbar.is-overflow-wrap.is-vertical {
+      max-height: var(--ml-ex-ui-toolbar-max-height, none);
+    }
+
+    .ml-ex-ui-subtoolbar.has-labels .ml-ex-ui-toolbar-btn {
+      flex-direction: column;
+      gap: 2px;
+      min-height: auto;
+      padding: 6px 4px 4px;
+    }
+
+    .ml-ex-ui-subtoolbar.is-stretch.is-horizontal
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ),
+    .ml-ex-ui-subtoolbar.is-stretch.is-vertical
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ) {
+      flex: 1 1 0;
+    }
+
+    .ml-ex-ui-subtoolbar.is-stretch.is-horizontal
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ) {
+      min-width: 0;
+    }
+
+    .ml-ex-ui-subtoolbar.is-stretch.is-vertical
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ) {
+      min-height: 0;
+    }
+
+    .ml-ex-ui-subtoolbar.is-stretch .ml-ex-ui-toolbar-separator {
+      flex: 0 0 auto;
+    }
+
+    .ml-ex-ui-subtoolbar.is-stretch.is-horizontal {
+      gap: 0;
+      padding: 4px 0;
+    }
+
+    .ml-ex-ui-subtoolbar.is-stretch.is-vertical {
+      gap: 0;
+      padding: 4px 6px;
     }
 
     .ml-ex-ui-subtoolbar {

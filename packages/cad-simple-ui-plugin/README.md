@@ -196,6 +196,44 @@ toolbar: {
 }
 ```
 
+### Responsive layouts (phone / pad / desktop)
+
+By default the plugin uses `layout: 'auto'` and follows viewport width via `acedGetUiLayout()` from `@mlightcad/cad-simple-viewer`:
+
+- **phone** (≤600px): bottom toolbar with `size: 'stretch'`, labels; zoom, measure, review, layer, layout, settings
+- **pad** (601–960px): same chrome as desktop unless overridden
+- **desktop** (>960px): right-side default toolbar
+
+```typescript
+acuiCreateSimpleUiPlugin({
+  host,
+  layout: 'auto', // default; or force 'phone' | 'pad' | 'desktop'
+  toolbar: {
+    placement: 'right',
+    items: 'default',
+    collapsible: true,
+    appendItems: [{ id: 'agent', command: 'agent' }],
+    appendItemsAfter: 'layout'
+  },
+  layouts: {
+    phone: {
+      toolbar: {
+        // optional overrides; phone inherits only enabled/mountTarget from toolbar
+      }
+    }
+  }
+})
+```
+
+Runtime controls:
+
+```typescript
+plugin.getLayout() // 'phone' | 'pad' | 'desktop'
+plugin.setLayout('auto') // or force a specific kind
+```
+
+Toolbar configuration is typed as `AcUiToolbarOptions` and can be reused by other packages (for example HTML export in a follow-up PR). Phone defaults include nested **Zoom** (original view / extents / window) and **Settings** (theme / background / language) sub-toolbars.
+
 ## Custom toolbar
 
 Toolbar buttons are configured through `toolbar.items`. You can start from the built-in set, extend it, or replace it entirely.
