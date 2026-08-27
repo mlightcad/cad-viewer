@@ -96,7 +96,12 @@ export class AcEdViewKeyHandler {
             e.preventDefault()
             return true
           }
-          AcApDocManager.instance.sendStringToExecute('erase')
+          // lookupGlobalCmd applies the current document's open mode, so it
+          // returns undefined in read/review mode and the keypress is
+          // silently ignored instead of surfacing an error message.
+          if (AcApDocManager.instance.lookupGlobalCmd('erase')) {
+            AcApDocManager.instance.sendStringToExecute('erase')
+          }
         }
         return false
     }
