@@ -1,20 +1,20 @@
 import { createIconElement } from '../assets/icons'
-import { isToolbarSeparatorItem } from '../config/toolbarItemUtils'
-import type { AcExToolbarItem } from '../config/types'
-import type { AcExI18n } from '../i18n'
+import { acuiIsToolbarSeparatorItem } from '../config/toolbarItemUtils'
+import type { AcUiToolbarItem } from '../config/types'
+import type { AcUiI18n } from '../i18n'
 
 /**
  * Fixed-position dropdown menu for toolbar submenu items.
  *
  * Closes on outside click and positions itself near the anchor button.
  */
-export class AcExDropdownMenu {
+export class AcUiDropdownMenu {
   /** Menu root element appended to the theme host. */
   private root: HTMLDivElement
   /** Parent button that opened this menu. */
   private anchor: HTMLElement
   /** Handler invoked when a menu item is chosen. */
-  private onSelect?: (item: AcExToolbarItem) => void
+  private onSelect?: (item: AcUiToolbarItem) => void
   /** Handler invoked when the menu is closed. */
   private onClose?: () => void
   /** Closes the menu when the user clicks outside the menu and its anchor. */
@@ -32,8 +32,8 @@ export class AcExDropdownMenu {
    * @param themeHost - Theme host so `--ml-ui-*` CSS variables are inherited.
    */
   constructor(
-    private i18n: AcExI18n,
-    items: AcExToolbarItem[],
+    private i18n: AcUiI18n,
+    items: AcUiToolbarItem[],
     anchor: HTMLElement,
     private themeHost: HTMLElement
   ) {
@@ -43,7 +43,7 @@ export class AcExDropdownMenu {
     this.root.setAttribute('role', 'menu')
 
     items.forEach(item => {
-      if (isToolbarSeparatorItem(item)) {
+      if (acuiIsToolbarSeparatorItem(item)) {
         const separator = document.createElement('div')
         separator.className = 'ml-ex-ui-dropdown-separator'
         separator.setAttribute('role', 'separator')
@@ -87,7 +87,7 @@ export class AcExDropdownMenu {
    *
    * @param handler - Selection handler.
    */
-  setOnSelect(handler: (item: AcExToolbarItem) => void) {
+  setOnSelect(handler: (item: AcUiToolbarItem) => void) {
     this.onSelect = handler
   }
 

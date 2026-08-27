@@ -50,21 +50,21 @@ jest.mock('@mlightcad/data-model', () => ({
 }))
 
 import {
-  createLayoutToolbarChildren,
-  createLayoutToolbarItem,
-  listDocumentLayouts,
-  switchCurrentLayout
+  acuiCreateLayoutToolbarChildren,
+  acuiCreateLayoutToolbarItem,
+  acuiListDocumentLayouts,
+  acuiSwitchCurrentLayout
 } from '../src/config/createLayoutToolbarItem'
-import { isDynamicToolbarChildren } from '../src/config/toolbarItemUtils'
+import { acuiIsDynamicToolbarChildren } from '../src/config/toolbarItemUtils'
 
-describe('createLayoutToolbarItem', () => {
+describe('acuiCreateLayoutToolbarItem', () => {
   beforeEach(() => {
     currentSpaceId = 'btr-model'
     mockSetCurrentLayoutBtrId.mockReset()
   })
 
   it('lists layouts including model space ordered by tabOrder', () => {
-    expect(listDocumentLayouts().map(layout => layout.name)).toEqual([
+    expect(acuiListDocumentLayouts().map(layout => layout.name)).toEqual([
       'Model',
       'Layout2',
       'Layout1'
@@ -73,7 +73,7 @@ describe('createLayoutToolbarItem', () => {
 
   it('marks the current space as active', () => {
     currentSpaceId = 'btr-layout2'
-    const active = listDocumentLayouts().filter(layout => layout.isActive)
+    const active = acuiListDocumentLayouts().filter(layout => layout.isActive)
     expect(active).toEqual([
       expect.objectContaining({
         name: 'Layout2',
@@ -83,10 +83,10 @@ describe('createLayoutToolbarItem', () => {
   })
 
   it('creates a menu parent with a live children getter', () => {
-    const item = createLayoutToolbarItem()
+    const item = acuiCreateLayoutToolbarItem()
     expect(item.id).toBe('layout')
     expect(item.childrenUi).toBe('menu')
-    expect(isDynamicToolbarChildren(item)).toBe(true)
+    expect(acuiIsDynamicToolbarChildren(item)).toBe(true)
     expect(item.children?.map(child => child.label)).toEqual([
       'Model',
       'Layout2',
@@ -95,7 +95,7 @@ describe('createLayoutToolbarItem', () => {
   })
 
   it('switches the current layout when a submenu item is chosen', () => {
-    const children = createLayoutToolbarChildren()
+    const children = acuiCreateLayoutToolbarChildren()
     const layout1 = children.find(child => child.label === 'Layout1')
     layout1?.action?.()
     expect(mockSetCurrentLayoutBtrId).toHaveBeenCalledWith('btr-layout1')
@@ -103,7 +103,7 @@ describe('createLayoutToolbarItem', () => {
 
   it('highlights the active layout in the submenu', () => {
     currentSpaceId = 'btr-layout1'
-    const children = createLayoutToolbarChildren()
+    const children = acuiCreateLayoutToolbarChildren()
     expect(
       children.find(child => child.label === 'Layout1')?.toggle?.getValue()
     ).toBe(true)
@@ -112,8 +112,8 @@ describe('createLayoutToolbarItem', () => {
     ).toBe(false)
   })
 
-  it('forwards switchCurrentLayout to the layout manager', () => {
-    switchCurrentLayout('btr-layout2')
+  it('forwards acuiSwitchCurrentLayout to the layout manager', () => {
+    acuiSwitchCurrentLayout('btr-layout2')
     expect(mockSetCurrentLayoutBtrId).toHaveBeenCalledWith('btr-layout2')
   })
 })

@@ -47,37 +47,37 @@ import {
   ICON_ZOOM_EXTENT,
   ICON_ZOOM_WINDOW
 } from '../assets/icons'
-import { createLayoutToolbarItem } from './createLayoutToolbarItem'
+import { acuiCreateLayoutToolbarItem } from './createLayoutToolbarItem'
 import type {
-  AcExDefaultToolbarContext,
-  AcExToolbarItem,
-  AcExToolbarPlacement
+  AcUiDefaultToolbarContext,
+  AcUiToolbarItem,
+  AcUiToolbarPlacement
 } from './types'
 
-const TOOLBAR_PLACEMENTS: AcExToolbarPlacement[] = [
+const TOOLBAR_PLACEMENTS: AcUiToolbarPlacement[] = [
   'top',
   'bottom',
   'left',
   'right'
 ]
 
-const PLACEMENT_ICONS: Record<AcExToolbarPlacement, string> = {
+const PLACEMENT_ICONS: Record<AcUiToolbarPlacement, string> = {
   top: ICON_PLACEMENT_TOP,
   bottom: ICON_PLACEMENT_BOTTOM,
   left: ICON_PLACEMENT_LEFT,
   right: ICON_PLACEMENT_RIGHT
 }
 
-const PLACEMENT_LABELS: Record<AcExToolbarPlacement, string> = {
+const PLACEMENT_LABELS: Record<AcUiToolbarPlacement, string> = {
   top: 'toolbar.placementTop',
   bottom: 'toolbar.placementBottom',
   left: 'toolbar.placementLeft',
   right: 'toolbar.placementRight'
 }
 
-function createToolbarPlacementItem(
-  context?: AcExDefaultToolbarContext
-): AcExToolbarItem {
+function acuiCreateToolbarPlacementItem(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem {
   return {
     id: 'toolbar-placement',
     label: 'toolbar.placement',
@@ -118,9 +118,9 @@ function localeBadgeIcon(badge: string): string {
   return `<span style="font-size:10px;font-weight:700;line-height:1">${badge}</span>`
 }
 
-function createToolbarLocaleItem(
-  context?: AcExDefaultToolbarContext
-): AcExToolbarItem {
+function acuiCreateToolbarLocaleItem(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem {
   const current = context?.getLocale() ?? 'en'
   return {
     id: 'locale',
@@ -144,18 +144,18 @@ function createToolbarLocaleItem(
  * Builds the built-in toolbar item list (view, layout, measure, review, export, theme, locale).
  *
  * @param context - Optional callbacks for theme, locale, and placement items.
- * @returns Default {@link AcExToolbarItem} array.
+ * @returns Default {@link AcUiToolbarItem} array.
  */
-export function createDefaultToolbarItems(
-  context?: AcExDefaultToolbarContext
-): AcExToolbarItem[] {
+export function acuiCreateDefaultToolbarItems(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem[] {
   const getTheme = (): AcEdUiTheme => context?.getTheme() ?? 'light'
   const toggleTheme = () => {
     const next: AcEdUiTheme = getTheme() === 'dark' ? 'light' : 'dark'
     context?.setTheme(next)
   }
 
-  const items: AcExToolbarItem[] = [
+  const items: AcUiToolbarItem[] = [
     {
       id: 'select',
       label: 'toolbar.select',
@@ -186,7 +186,7 @@ export function createDefaultToolbarItems(
       icon: ICON_LAYER,
       command: 'layer'
     },
-    createLayoutToolbarItem(),
+    acuiCreateLayoutToolbarItem(),
     {
       id: 'switch-bg',
       label: 'toolbar.switchBg',
@@ -394,7 +394,7 @@ export function createDefaultToolbarItems(
       type: 'separator',
       id: 'sep-settings'
     },
-    createToolbarPlacementItem(context),
+    acuiCreateToolbarPlacementItem(context),
     {
       id: 'theme',
       requiresDocument: false,
@@ -412,7 +412,7 @@ export function createDefaultToolbarItems(
         }
       }
     },
-    createToolbarLocaleItem(context)
+    acuiCreateToolbarLocaleItem(context)
   ]
 
   return items

@@ -10,7 +10,7 @@ import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
  * @param host - Plugin host element (toolbar and theme root).
  * @param mountTarget - Optional explicit dock mount element.
  */
-export function resolveDockMountTarget(
+export function acuiResolveDockMountTarget(
   host: HTMLElement,
   mountTarget?: HTMLElement
 ): HTMLElement {

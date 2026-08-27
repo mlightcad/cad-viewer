@@ -1,7 +1,7 @@
 import { AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
 
 /** Actions invoked by the `markuppanel` command to prepare and open review UI. */
-export interface AcExMarkupPanelCommandActions {
+export interface AcUiMarkupPanelCommandActions {
   /** Ensures the dock panel and review tab exist before opening. */
   prepare(): void
   /** Activates the review tab in the dock panel. */
@@ -15,7 +15,7 @@ export class AcApMarkupPanelUiCmd extends AcEdCommand {
   /**
    * @param actions - Prepare and open callbacks wired by the plugin.
    */
-  constructor(private readonly actions: AcExMarkupPanelCommandActions) {
+  constructor(private readonly actions: AcUiMarkupPanelCommandActions) {
     super()
   }
 

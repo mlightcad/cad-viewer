@@ -11,9 +11,9 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
   }
 }))
 
-import { resolveDockMountTarget } from '../src/config/resolveDockMountTarget'
+import { acuiResolveDockMountTarget } from '../src/config/resolveDockMountTarget'
 
-describe('resolveDockMountTarget', () => {
+describe('acuiResolveDockMountTarget', () => {
   afterEach(() => {
     mockCurView.container = undefined
   })
@@ -22,7 +22,7 @@ describe('resolveDockMountTarget', () => {
     const host = { contains: () => true } as unknown as HTMLElement
     const mountTarget = {} as HTMLElement
 
-    expect(resolveDockMountTarget(host, mountTarget)).toBe(mountTarget)
+    expect(acuiResolveDockMountTarget(host, mountTarget)).toBe(mountTarget)
   })
 
   it('returns canvas parent when it is inside host', () => {
@@ -33,7 +33,7 @@ describe('resolveDockMountTarget', () => {
     } as unknown as HTMLElement
 
     mockCurView.container = canvas
-    expect(resolveDockMountTarget(host)).toBe(canvasParent)
+    expect(acuiResolveDockMountTarget(host)).toBe(canvasParent)
   })
 
   it('falls back to host when canvas parent is outside host', () => {
@@ -44,6 +44,6 @@ describe('resolveDockMountTarget', () => {
     } as unknown as HTMLElement
 
     mockCurView.container = canvas
-    expect(resolveDockMountTarget(host)).toBe(host)
+    expect(acuiResolveDockMountTarget(host)).toBe(host)
   })
 })

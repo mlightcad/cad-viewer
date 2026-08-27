@@ -19,7 +19,7 @@ interface LocaleMessageTree {
   [key: string]: string | LocaleMessageTree
 }
 
-/** Whether {@link registerSimpleUiI18n} has already run. */
+/** Whether {@link acuiRegisterSimpleUiI18n} has already run. */
 let isRegistered = false
 
 /**
@@ -50,7 +50,7 @@ function flatToNested(flat: Record<string, string>): LocaleMessageTree {
  *
  * Safe to call multiple times; subsequent calls are no-ops.
  */
-export function registerSimpleUiI18n(): void {
+export function acuiRegisterSimpleUiI18n(): void {
   if (isRegistered) return
   AcApI18n.mergeLocaleMessage('en', {
     command: commandEn,
@@ -78,7 +78,7 @@ export function registerSimpleUiI18n(): void {
 /**
  * Scoped translation helper for plugin UI strings under the `simpleUi` namespace.
  */
-export class AcExI18n {
+export class AcUiI18n {
   /**
    * Translates a key relative to the `simpleUi` namespace.
    *

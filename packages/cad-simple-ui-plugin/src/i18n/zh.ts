@@ -1,5 +1,5 @@
 /**
- * Chinese UI strings for {@link registerSimpleUiI18n}.
+ * Chinese UI strings for {@link acuiRegisterSimpleUiI18n}.
  *
  * Keys use dot notation (for example `toolbar.select`) and are nested under
  * the `simpleUi` namespace when registered.

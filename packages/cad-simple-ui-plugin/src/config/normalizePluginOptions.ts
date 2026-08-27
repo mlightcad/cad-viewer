@@ -1,8 +1,8 @@
-import type { AcExSimpleUiPluginOptions } from './types'
+import type { AcUiSimpleUiPluginOptions } from './types'
 
 /** Resolved plugin options with explicit defaults for nested sections. */
-export type AcExNormalizedPluginOptions = Required<
-  Omit<AcExSimpleUiPluginOptions, 'host' | 'locale'>
+export type AcUiNormalizedPluginOptions = Required<
+  Omit<AcUiSimpleUiPluginOptions, 'host' | 'locale'>
 > & {
   host?: HTMLElement
   shouldCreateDockPanel: boolean
@@ -13,9 +13,9 @@ export type AcExNormalizedPluginOptions = Required<
  *
  * @param options - Raw plugin options from the caller.
  */
-export function normalizePluginOptions(
-  options: AcExSimpleUiPluginOptions = {}
-): AcExNormalizedPluginOptions {
+export function acuiNormalizePluginOptions(
+  options: AcUiSimpleUiPluginOptions = {}
+): AcUiNormalizedPluginOptions {
   const dockPanelEnabled = options.dockPanel?.enabled === true
 
   return {

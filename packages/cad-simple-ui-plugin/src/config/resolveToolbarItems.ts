@@ -1,16 +1,16 @@
 import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
-import { createDefaultToolbarItems } from './defaultToolbarItems'
+import { acuiCreateDefaultToolbarItems } from './defaultToolbarItems'
 import {
-  expandToolbarItemConfigs,
-  indexToolbarItems,
-  isDynamicToolbarChildren,
-  isToolbarSeparatorItem
+  acuiExpandToolbarItemConfigs,
+  acuiIndexToolbarItems,
+  acuiIsDynamicToolbarChildren,
+  acuiIsToolbarSeparatorItem
 } from './toolbarItemUtils'
 import type {
-  AcExDefaultToolbarContext,
-  AcExSimpleUiPluginOptions,
-  AcExToolbarItem
+  AcUiDefaultToolbarContext,
+  AcUiSimpleUiPluginOptions,
+  AcUiToolbarItem
 } from './types'
 
 /**
@@ -18,11 +18,11 @@ import type {
  *
  * @param context - Context for theme/locale/placement presets.
  */
-export function createDefaultToolbarPresetMap(
-  context?: AcExDefaultToolbarContext
-): Map<string, AcExToolbarItem> {
-  const map = new Map<string, AcExToolbarItem>()
-  indexToolbarItems(createDefaultToolbarItems(context), map)
+export function acuiCreateDefaultToolbarPresetMap(
+  context?: AcUiDefaultToolbarContext
+): Map<string, AcUiToolbarItem> {
+  const map = new Map<string, AcUiToolbarItem>()
+  acuiIndexToolbarItems(acuiCreateDefaultToolbarItems(context), map)
   return map
 }
 
@@ -34,11 +34,11 @@ export function createDefaultToolbarPresetMap(
  * @param position - Optional anchor id (`after` or `before`); omitted means end.
  * @returns New item array with `toInsert` merged in.
  */
-export function insertToolbarItemsAt(
-  items: AcExToolbarItem[],
-  toInsert: AcExToolbarItem[],
+export function acuiInsertToolbarItemsAt(
+  items: AcUiToolbarItem[],
+  toInsert: AcUiToolbarItem[],
   position?: { after?: string; before?: string }
-): AcExToolbarItem[] {
+): AcUiToolbarItem[] {
   if (!toInsert.length) return items
 
   const anchorId = position?.before ?? position?.after
@@ -66,26 +66,26 @@ export function insertToolbarItemsAt(
  *
  * @param options - Toolbar subsection of plugin options.
  * @param context - Context for default theme/locale/placement items.
- * @returns Resolved toolbar items ready for {@link AcExToolbar}.
+ * @returns Resolved toolbar items ready for {@link AcUiToolbar}.
  */
-export function resolveToolbarItems(
-  options: AcExSimpleUiPluginOptions['toolbar'],
-  context?: AcExDefaultToolbarContext
-): AcExToolbarItem[] {
+export function acuiResolveToolbarItems(
+  options: AcUiSimpleUiPluginOptions['toolbar'],
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem[] {
   const toolbar = options ?? {}
-  const presets = createDefaultToolbarPresetMap(context)
-  let items: AcExToolbarItem[]
+  const presets = acuiCreateDefaultToolbarPresetMap(context)
+  let items: AcUiToolbarItem[]
 
   if (toolbar.items === 'default' || toolbar.items == null) {
-    items = createDefaultToolbarItems(context)
+    items = acuiCreateDefaultToolbarItems(context)
   } else {
-    items = expandToolbarItemConfigs(toolbar.items, presets)
+    items = acuiExpandToolbarItemConfigs(toolbar.items, presets)
   }
 
   if (toolbar.appendItems?.length) {
-    items = insertToolbarItemsAt(
+    items = acuiInsertToolbarItemsAt(
       items,
-      expandToolbarItemConfigs(toolbar.appendItems, presets),
+      acuiExpandToolbarItemConfigs(toolbar.appendItems, presets),
       {
         after: toolbar.appendItemsAfter,
         before: toolbar.appendItemsBefore
@@ -102,8 +102,8 @@ export function resolveToolbarItems(
  * @param item - Toolbar item to test.
  * @param openMode - Current document open mode.
  */
-export function isToolbarItemVisible(
-  item: AcExToolbarItem,
+export function acuiIsToolbarItemVisible(
+  item: AcUiToolbarItem,
   openMode: AcEdOpenMode
 ): boolean {
   if (item.minOpenMode == null) return true
@@ -116,10 +116,10 @@ export function isToolbarItemVisible(
  * @param item - Item that may define a `toggle` configuration.
  * @returns Item with effective label, icon, command, and action from the active branch.
  */
-export function resolveEffectiveToolbarItem(
-  item: AcExToolbarItem
-): AcExToolbarItem {
-  if (isToolbarSeparatorItem(item)) return item
+export function acuiResolveEffectiveToolbarItem(
+  item: AcUiToolbarItem
+): AcUiToolbarItem {
+  if (acuiIsToolbarSeparatorItem(item)) return item
   if (!item.toggle) return item
   const active = item.toggle.getValue()
   const branch = active ? item.toggle.on : item.toggle.off
@@ -137,10 +137,10 @@ export function resolveEffectiveToolbarItem(
  * @param item - Parent item with `children`.
  * @param activeChildId - Runtime-selected child id, if any.
  */
-export function resolveSelectedChildItem(
-  item: AcExToolbarItem,
+export function acuiResolveSelectedChildItem(
+  item: AcUiToolbarItem,
   activeChildId?: string
-): AcExToolbarItem | undefined {
+): AcUiToolbarItem | undefined {
   if (!item.children?.length) return undefined
 
   const candidates = [activeChildId, item.selectedChildId].filter(
@@ -157,25 +157,25 @@ export function resolveSelectedChildItem(
 /**
  * Applies parent-button display fields for submenu parents.
  *
- * When {@link AcExToolbarItem.childIcon} is `'selected'`, the parent icon is
+ * When {@link AcUiToolbarItem.childIcon} is `'selected'`, the parent icon is
  * taken from the active submenu child while the parent label is unchanged.
  *
  * @param item - Parent toolbar item (may include `children`).
  * @param activeChildId - Runtime-selected child id, if any.
  */
-export function resolveParentToolbarDisplay(
-  item: AcExToolbarItem,
+export function acuiResolveParentToolbarDisplay(
+  item: AcUiToolbarItem,
   activeChildId?: string
-): AcExToolbarItem {
-  const effective = resolveEffectiveToolbarItem(item)
+): AcUiToolbarItem {
+  const effective = acuiResolveEffectiveToolbarItem(item)
   if (effective.childIcon !== 'selected' || !effective.children?.length) {
     return effective
   }
 
-  const child = resolveSelectedChildItem(effective, activeChildId)
+  const child = acuiResolveSelectedChildItem(effective, activeChildId)
   if (!child) return effective
 
-  const resolvedChild = resolveEffectiveToolbarItem(child)
+  const resolvedChild = acuiResolveEffectiveToolbarItem(child)
   return {
     ...effective,
     icon: resolvedChild.icon ?? effective.icon
@@ -188,8 +188,8 @@ export function resolveParentToolbarDisplay(
  * @param item - Toolbar item to inspect.
  * @returns `requiresDocument` when set, otherwise `true` when `command` is set.
  */
-export function itemRequiresDocument(item: AcExToolbarItem): boolean {
-  if (isToolbarSeparatorItem(item)) return false
+export function acuiItemRequiresDocument(item: AcUiToolbarItem): boolean {
+  if (acuiIsToolbarSeparatorItem(item)) return false
   if (item.requiresDocument != null) return item.requiresDocument
   return Boolean(item.command || item.anchorAction)
 }
@@ -199,7 +199,7 @@ export function itemRequiresDocument(item: AcExToolbarItem): boolean {
  *
  * @param item - Toolbar item with optional static or dynamic `disabled`.
  */
-export function isToolbarItemDisabled(item: AcExToolbarItem): boolean {
+export function acuiIsToolbarItemDisabled(item: AcUiToolbarItem): boolean {
   if (item.disabled == null) return false
   return typeof item.disabled === 'function' ? item.disabled() : item.disabled
 }
@@ -213,30 +213,31 @@ export function isToolbarItemDisabled(item: AcExToolbarItem): boolean {
  * @param items - Root toolbar items.
  * @param openMode - Current document open mode.
  */
-export function filterVisibleToolbarItems(
-  items: AcExToolbarItem[],
+export function acuiFilterVisibleToolbarItems(
+  items: AcUiToolbarItem[],
   openMode: AcEdOpenMode
-): AcExToolbarItem[] {
+): AcUiToolbarItem[] {
   return items
     .filter(
       item =>
-        isToolbarSeparatorItem(item) || isToolbarItemVisible(item, openMode)
+        acuiIsToolbarSeparatorItem(item) ||
+        acuiIsToolbarItemVisible(item, openMode)
     )
     .map(item => {
       if (
-        isToolbarSeparatorItem(item) ||
-        isDynamicToolbarChildren(item) ||
+        acuiIsToolbarSeparatorItem(item) ||
+        acuiIsDynamicToolbarChildren(item) ||
         !item.children?.length
       ) {
         return item
       }
-      const children = filterVisibleToolbarItems(item.children, openMode)
+      const children = acuiFilterVisibleToolbarItems(item.children, openMode)
       return { ...item, children }
     })
     .filter(item => {
-      if (isToolbarSeparatorItem(item)) return true
+      if (acuiIsToolbarSeparatorItem(item)) return true
       return (
-        isDynamicToolbarChildren(item) ||
+        acuiIsDynamicToolbarChildren(item) ||
         !item.children ||
         item.children.length > 0 ||
         item.command ||

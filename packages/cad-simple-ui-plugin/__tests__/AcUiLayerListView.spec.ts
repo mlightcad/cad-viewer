@@ -78,27 +78,27 @@ jest.mock('@mlightcad/data-model', () => ({
   }
 }))
 
-import { AcExI18n, registerSimpleUiI18n } from '../src/i18n'
-import { AcExLayerListView } from '../src/ui/AcExLayerListView'
+import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../src/i18n'
+import { AcUiLayerListView } from '../src/ui/AcUiLayerListView'
 
 function createView() {
-  registerSimpleUiI18n()
+  acuiRegisterSimpleUiI18n()
   const host = document.createElement('div')
   document.body.appendChild(host)
-  return new AcExLayerListView({
+  return new AcUiLayerListView({
     editor: editor as never,
-    i18n: new AcExI18n(),
+    i18n: new AcUiI18n(),
     host
   })
 }
 
-function getLayerNames(view: AcExLayerListView) {
+function getLayerNames(view: AcUiLayerListView) {
   return Array.from(
     view.element.querySelectorAll('.ml-ex-ui-layer-name')
   ).map(el => el.textContent?.replace(/\*$/, '') ?? '')
 }
 
-describe('AcExLayerListView', () => {
+describe('AcUiLayerListView', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('ml-ex-ui-styles')?.remove()

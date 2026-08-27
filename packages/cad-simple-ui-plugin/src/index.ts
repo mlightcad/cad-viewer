@@ -6,38 +6,38 @@
  */
 export {
   AcApSimpleUiPlugin,
-  createSimpleUiPlugin
+  acuiCreateSimpleUiPlugin
 } from './createSimpleUiPlugin'
-export type { AcExDockPanelTab } from './ui/AcExDockPanel'
-export { registerSimpleUiPlugin } from './register'
+export type { AcUiDockPanelTab } from './ui/AcUiDockPanel'
+export { acuiRegisterSimpleUiPlugin } from './register'
 export {
-  createToolbarLayoutSwitcher,
-  prependToolbarLayoutSwitcher
+  acuiCreateToolbarLayoutSwitcher,
+  acuiPrependToolbarLayoutSwitcher
 } from './config/createToolbarLayoutSwitcher'
 export type {
-  AcExToolbarLayoutPreset,
-  AcExToolbarLayoutSwitcherOptions
+  AcUiToolbarLayoutPreset,
+  AcUiToolbarLayoutSwitcherOptions
 } from './config/createToolbarLayoutSwitcher'
 export type {
-  AcExDefaultToolbarContext,
-  AcExDockPanelSide,
-  AcExLocale,
-  AcExSimpleUiPluginOptions,
-  AcExToolbarItem,
-  AcExToolbarItemConfig,
-  AcExToolbarItemsInput,
-  AcExToolbarChildIconMode,
-  AcExToolbarChildrenUi,
-  AcExToolbarPresetRef,
-  AcExToolbarSeparator,
-  AcExToolbarPlacement
+  AcUiDefaultToolbarContext,
+  AcUiDockPanelSide,
+  AcUiLocale,
+  AcUiSimpleUiPluginOptions,
+  AcUiToolbarItem,
+  AcUiToolbarItemConfig,
+  AcUiToolbarItemsInput,
+  AcUiToolbarChildIconMode,
+  AcUiToolbarChildrenUi,
+  AcUiToolbarPresetRef,
+  AcUiToolbarSeparator,
+  AcUiToolbarPlacement
 } from './config/types'
 export { SIMPLE_UI_PLUGIN_NAME } from './config/types'
-export { createDefaultToolbarPresetMap } from './config/resolveToolbarItems'
+export { acuiCreateDefaultToolbarPresetMap } from './config/resolveToolbarItems'
 export {
-  createToolbarSeparator,
-  toolbarPreset
+  acuiCreateToolbarSeparator,
+  acuiToolbarPreset
 } from './config/toolbarItemUtils'
-export { AcExI18n, registerSimpleUiI18n } from './i18n'
+export { AcUiI18n, acuiRegisterSimpleUiI18n } from './i18n'
 export type { AcApLayerInfo } from '@mlightcad/cad-simple-viewer'
 export { AcApLayerStore } from '@mlightcad/cad-simple-viewer'

@@ -1,5 +1,5 @@
 /**
- * Czech UI strings for {@link registerSimpleUiI18n}.
+ * Czech UI strings for {@link acuiRegisterSimpleUiI18n}.
  *
  * Keys use dot notation (for example `toolbar.select`) and are nested under
  * the `simpleUi` namespace when registered.

@@ -1,10 +1,10 @@
 import {
   type AcApSimpleUiPlugin,
-  type AcExDockPanelSide,
-  type AcExToolbarPlacement,
+  type AcUiDockPanelSide,
+  type AcUiToolbarPlacement,
   SIMPLE_UI_PLUGIN_NAME
 } from '@mlightcad/cad-simple-ui-plugin'
-import { registerSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
+import { acuiRegisterSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
   AcApDocManager,
   AcApOpenDatabaseOptions,
@@ -415,7 +415,7 @@ class CadViewerApp {
     this.dockButton.setAttribute('aria-expanded', 'false')
   }
 
-  private isDockSizeVertical(side: AcExDockPanelSide | undefined): boolean {
+  private isDockSizeVertical(side: AcUiDockPanelSide | undefined): boolean {
     return side === 'top' || side === 'bottom'
   }
 
@@ -548,7 +548,7 @@ class CadViewerApp {
       button.addEventListener('click', event => {
         event.stopPropagation()
         const placement = button.dataset.viewerToolbarPlacement as
-          | AcExToolbarPlacement
+          | AcUiToolbarPlacement
           | undefined
         if (!placement) return
         void this.applyViewerToolbarPlacement(placement)
@@ -607,7 +607,7 @@ class CadViewerApp {
     this.viewerToolbarButton.setAttribute('aria-expanded', 'false')
   }
 
-  private async applyViewerToolbarPlacement(placement: AcExToolbarPlacement) {
+  private async applyViewerToolbarPlacement(placement: AcUiToolbarPlacement) {
     await this.initialize()
 
     const plugin = this.getSimpleUiPlugin()
@@ -829,7 +829,7 @@ class CadViewerApp {
 
       registerLazyPlugins()
 
-      await registerSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
+      await acuiRegisterSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
         host: this.viewerPane,
         dockPanel: {
           defaultOpen: false,
