@@ -8,36 +8,36 @@ import {
   ICON_CHEVRON_UP
 } from '../assets/icons'
 import {
-  filterVisibleToolbarItems,
-  isToolbarItemDisabled,
-  itemRequiresDocument,
-  resolveEffectiveToolbarItem,
-  resolveParentToolbarDisplay
+  acuiFilterVisibleToolbarItems,
+  acuiIsToolbarItemDisabled,
+  acuiItemRequiresDocument,
+  acuiResolveEffectiveToolbarItem,
+  acuiResolveParentToolbarDisplay
 } from '../config/resolveToolbarItems'
 import {
-  isDynamicToolbarChildren,
-  isToolbarChildrenStrip,
-  isToolbarSeparatorItem,
-  resolveToolbarChildrenUi
+  acuiIsDynamicToolbarChildren,
+  acuiIsToolbarChildrenStrip,
+  acuiIsToolbarSeparatorItem,
+  acuiResolveToolbarChildrenUi
 } from '../config/toolbarItemUtils'
-import type { AcExToolbarItem, AcExToolbarPlacement } from '../config/types'
-import type { AcExI18n } from '../i18n'
-import { AcExDropdownMenu } from './AcExDropdownMenu'
-import { AcExSubToolbar } from './AcExSubToolbar'
-import { ensureUiStyles } from './styles'
+import type { AcUiToolbarItem, AcUiToolbarPlacement } from '../config/types'
+import type { AcUiI18n } from '../i18n'
+import { AcUiDropdownMenu } from './AcUiDropdownMenu'
+import { AcUiSubToolbar } from './AcUiSubToolbar'
+import { acuiEnsureUiStyles } from './styles'
 
-/** Constructor options for {@link AcExToolbar}. */
-export interface AcExToolbarOptions {
+/** Constructor options for {@link AcUiToolbar}. */
+export interface AcUiToolbarOptions {
   /** Viewer canvas element that receives the toolbar root node. */
   host: HTMLElement
   /** Theme host for dropdown menus; defaults to {@link host}. */
   themeHost?: HTMLElement
   /** Edge placement of the toolbar. */
-  placement: AcExToolbarPlacement
+  placement: AcUiToolbarPlacement
   /** Toolbar item definitions to render. */
-  items: AcExToolbarItem[]
+  items: AcUiToolbarItem[]
   /** i18n helper for button labels and tooltips. */
-  i18n: AcExI18n
+  i18n: AcUiI18n
   /** Invoked when a leaf item with a `command` is activated. */
   onCommand: (command: string) => void
   /** When true, append a collapse/expand toggle at the end of the toolbar. */
@@ -56,7 +56,7 @@ export interface AcExToolbarOptions {
  * Disables command buttons while a document is loading and filters items by
  * document open mode.
  */
-export class AcExToolbar {
+export class AcUiToolbar {
   /** Canvas element receiving the toolbar root node. */
   private mountHost: HTMLElement
   /** Host element used for themed dropdown menus. */
@@ -64,9 +64,9 @@ export class AcExToolbar {
   /** Root toolbar container appended to the mount host. */
   private root: HTMLDivElement
   /** Currently open popover submenu, if any. */
-  private openDropdown?: AcExDropdownMenu
+  private openDropdown?: AcUiDropdownMenu
   /** Currently open icon sub-toolbar, if any. */
-  private openSubToolbar?: AcExSubToolbar
+  private openSubToolbar?: AcUiSubToolbar
   /** Parent item id of the open children UI. */
   private openParentId?: string
   /** Sticky sub-toolbar parent id restored after a full re-render. */
@@ -80,8 +80,8 @@ export class AcExToolbar {
   /** Whether an active document is loaded. */
   private hasDocument = false
   /** Item list last passed to {@link updateItems} or the constructor. */
-  private items: AcExToolbarItem[]
-  /** Runtime submenu selection for parents with {@link AcExToolbarItem.childIcon} `'selected'`. */
+  private items: AcUiToolbarItem[]
+  /** Runtime submenu selection for parents with {@link AcUiToolbarItem.childIcon} `'selected'`. */
   private selectedChildByParent = new Map<string, string>()
   /** Whether the toolbar is collapsed to show only the toggle button. */
   private collapsed: boolean
@@ -113,8 +113,8 @@ export class AcExToolbar {
   /**
    * @param options - Host, placement, items, i18n, and command callback.
    */
-  constructor(private options: AcExToolbarOptions) {
-    ensureUiStyles()
+  constructor(private options: AcUiToolbarOptions) {
+    acuiEnsureUiStyles()
     this.mountHost = options.host
     this.themeHost = options.themeHost ?? options.host
     this.edgeOffset = options.edgeOffset ?? 8
@@ -145,7 +145,7 @@ export class AcExToolbar {
    *
    * @param items - New toolbar items.
    */
-  updateItems(items: AcExToolbarItem[]) {
+  updateItems(items: AcUiToolbarItem[]) {
     this.items = items
     this.seedSelectedChildren(items)
     this.renderButtons()
@@ -163,7 +163,7 @@ export class AcExToolbar {
    *
    * @param placement - Target edge placement.
    */
-  setPlacement(placement: AcExToolbarPlacement) {
+  setPlacement(placement: AcUiToolbarPlacement) {
     if (this.options.placement === placement) return
     this.options.placement = placement
     this.selectedChildByParent.set(
@@ -318,7 +318,7 @@ export class AcExToolbar {
     this.root.className = classes.join(' ')
   }
 
-  /** Toggles collapsed state when {@link AcExToolbarOptions.collapsible} is enabled. */
+  /** Toggles collapsed state when {@link AcUiToolbarOptions.collapsible} is enabled. */
   private toggleCollapsed() {
     this.setCollapsed(!this.collapsed)
   }
@@ -379,9 +379,12 @@ export class AcExToolbar {
     this.closeChildrenUi()
     this.root.replaceChildren()
 
-    const visibleItems = filterVisibleToolbarItems(this.items, this.openMode)
+    const visibleItems = acuiFilterVisibleToolbarItems(
+      this.items,
+      this.openMode
+    )
     visibleItems.forEach(item => {
-      if (isToolbarSeparatorItem(item)) {
+      if (acuiIsToolbarSeparatorItem(item)) {
         const separator = document.createElement('div')
         separator.className = 'ml-ex-ui-toolbar-separator'
         separator.setAttribute('role', 'separator')
@@ -392,7 +395,7 @@ export class AcExToolbar {
         return
       }
 
-      const effective = resolveParentToolbarDisplay(
+      const effective = acuiResolveParentToolbarDisplay(
         item,
         this.selectedChildByParent.get(item.id)
       )
@@ -405,7 +408,7 @@ export class AcExToolbar {
       button.setAttribute('aria-label', button.title)
       button.dataset.toolbarItemId = effective.id
 
-      if (effective.children?.length || isDynamicToolbarChildren(item)) {
+      if (effective.children?.length || acuiIsDynamicToolbarChildren(item)) {
         button.classList.add('has-children')
         button.setAttribute('aria-haspopup', 'true')
         button.setAttribute('aria-expanded', 'false')
@@ -422,20 +425,20 @@ export class AcExToolbar {
       }
 
       const disabled =
-        (itemRequiresDocument(effective) &&
+        (acuiItemRequiresDocument(effective) &&
           (this.isDisabled || !this.hasDocument)) ||
-        isToolbarItemDisabled(effective)
+        acuiIsToolbarItemDisabled(effective)
       button.disabled = disabled
 
       button.addEventListener('click', event => {
         event.stopPropagation()
         if (button.disabled) return
 
-        if (effective.children?.length || isDynamicToolbarChildren(item)) {
-          const visibleChildren = filterVisibleToolbarItems(
+        if (effective.children?.length || acuiIsDynamicToolbarChildren(item)) {
+          const visibleChildren = acuiFilterVisibleToolbarItems(
             effective.children ?? [],
             this.openMode
-          ).map(resolveEffectiveToolbarItem)
+          ).map(acuiResolveEffectiveToolbarItem)
           if (visibleChildren.length === 0) return
 
           if (this.openParentId === item.id) {
@@ -540,10 +543,10 @@ export class AcExToolbar {
     }
   }
 
-  /** Seeds submenu selection from {@link AcExToolbarItem.selectedChildId}. */
-  private seedSelectedChildren(items: AcExToolbarItem[]) {
+  /** Seeds submenu selection from {@link AcUiToolbarItem.selectedChildId}. */
+  private seedSelectedChildren(items: AcUiToolbarItem[]) {
     for (const item of items) {
-      if (isToolbarSeparatorItem(item)) continue
+      if (acuiIsToolbarSeparatorItem(item)) continue
       if (item.childIcon === 'selected' && item.selectedChildId) {
         this.selectedChildByParent.set(item.id, item.selectedChildId)
       }
@@ -589,19 +592,19 @@ export class AcExToolbar {
    * @param visibleChildren - Filtered, effective child items.
    */
   private openChildrenUi(
-    item: AcExToolbarItem,
+    item: AcUiToolbarItem,
     button: HTMLButtonElement,
-    visibleChildren: AcExToolbarItem[]
+    visibleChildren: AcUiToolbarItem[]
   ) {
     this.closeChildrenUi()
-    const childrenUi = resolveToolbarChildrenUi(item)
+    const childrenUi = acuiResolveToolbarChildrenUi(item)
     this.openParentId = item.id
     this.markParentOpen(button)
 
-    if (isToolbarChildrenStrip(childrenUi)) {
+    if (acuiIsToolbarChildrenStrip(childrenUi)) {
       const sticky = childrenUi === 'sticky-toolbar'
       this.stickyParentId = sticky ? item.id : undefined
-      const strip = new AcExSubToolbar({
+      const strip = new AcUiSubToolbar({
         i18n: this.options.i18n,
         items: visibleChildren,
         anchor: button,
@@ -624,7 +627,7 @@ export class AcExToolbar {
       return
     }
 
-    const dropdown = new AcExDropdownMenu(
+    const dropdown = new AcUiDropdownMenu(
       this.options.i18n,
       visibleChildren,
       button,
@@ -650,21 +653,21 @@ export class AcExToolbar {
    */
   private openStickyChildrenByParentId(parentId: string) {
     const item = this.items.find(candidate => {
-      if (isToolbarSeparatorItem(candidate)) return false
+      if (acuiIsToolbarSeparatorItem(candidate)) return false
       return candidate.id === parentId
     })
     if (!item?.children?.length) return
-    if (resolveToolbarChildrenUi(item) !== 'sticky-toolbar') return
+    if (acuiResolveToolbarChildrenUi(item) !== 'sticky-toolbar') return
 
     const button = this.root.querySelector<HTMLButtonElement>(
       `[data-toolbar-item-id="${parentId}"]`
     )
     if (!button) return
 
-    const visibleChildren = filterVisibleToolbarItems(
+    const visibleChildren = acuiFilterVisibleToolbarItems(
       item.children,
       this.openMode
-    ).map(resolveEffectiveToolbarItem)
+    ).map(acuiResolveEffectiveToolbarItem)
     if (visibleChildren.length === 0) return
 
     this.openChildrenUi(item, button, visibleChildren)
@@ -678,11 +681,11 @@ export class AcExToolbar {
    * @param sticky - Whether the child UI should stay open.
    */
   private activateChild(
-    parent: AcExToolbarItem,
-    child: AcExToolbarItem,
+    parent: AcUiToolbarItem,
+    child: AcUiToolbarItem,
     sticky: boolean
   ) {
-    if (isToolbarSeparatorItem(child)) return
+    if (acuiIsToolbarSeparatorItem(child)) return
     if (parent.childIcon === 'selected') {
       this.selectedChildByParent.set(parent.id, child.id)
     }
@@ -695,10 +698,10 @@ export class AcExToolbar {
     if (child.toggle && sticky && this.openSubToolbar) {
       window.setTimeout(() => {
         if (!this.openSubToolbar) return
-        const visibleChildren = filterVisibleToolbarItems(
+        const visibleChildren = acuiFilterVisibleToolbarItems(
           parent.children ?? [],
           this.openMode
-        ).map(resolveEffectiveToolbarItem)
+        ).map(acuiResolveEffectiveToolbarItem)
         this.openSubToolbar.refresh(
           visibleChildren,
           this.isDisabled || !this.hasDocument

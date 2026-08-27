@@ -9,16 +9,16 @@ import {
   ICON_PLACEMENT_RIGHT,
   ICON_PLACEMENT_TOP
 } from '../assets/icons'
-import type { AcExDockPanelSide } from '../config/types'
-import type { AcExI18n } from '../i18n'
-import { ensureUiStyles } from './styles'
+import type { AcUiDockPanelSide } from '../config/types'
+import type { AcUiI18n } from '../i18n'
+import { acuiEnsureUiStyles } from './styles'
 
 const DOCK_MIN_SIZE = 120
 const DOCK_MAX_SIZE_RATIO = 0.75
 const DOCK_TAB_OVERFLOW_BTN_WIDTH = 28
 
-/** Tab definition for {@link AcExDockPanel}. */
-export interface AcExDockPanelTab {
+/** Tab definition for {@link AcUiDockPanel}. */
+export interface AcUiDockPanelTab {
   /** Stable tab identifier. */
   id: string
   /** i18n key under the `simpleUi` namespace. */
@@ -29,14 +29,14 @@ export interface AcExDockPanelTab {
   content: HTMLElement
 }
 
-/** Constructor options for {@link AcExDockPanel}. */
-export interface AcExDockPanelOptions {
+/** Constructor options for {@link AcUiDockPanel}. */
+export interface AcUiDockPanelOptions {
   /** Viewer host element; dock panel is appended as a direct child. */
   host: HTMLElement
   /** i18n helper for labels. */
-  i18n: AcExI18n
+  i18n: AcUiI18n
   /** Initial dock side. @default 'left' */
-  defaultSide?: AcExDockPanelSide
+  defaultSide?: AcUiDockPanelSide
   /** Whether the panel starts open. @default false */
   defaultOpen?: boolean
   /** Bottom dock default height in px. @default 240 */
@@ -57,9 +57,9 @@ interface DockTabRecord {
 /**
  * Chrome DevTools-style dock panel with tabs, open/close, and dock side selection.
  */
-export class AcExDockPanel {
+export class AcUiDockPanel {
   private host: HTMLElement
-  private readonly i18n: AcExI18n
+  private readonly i18n: AcUiI18n
   private readonly root: HTMLDivElement
   private readonly contentEl: HTMLDivElement
   private readonly tabsWrap: HTMLDivElement
@@ -71,7 +71,7 @@ export class AcExDockPanel {
   private readonly closeButton: HTMLButtonElement
   private readonly tabs = new Map<string, DockTabRecord>()
   private activeTabId?: string
-  private side: AcExDockPanelSide
+  private side: AcUiDockPanelSide
   private isPanelOpen: boolean
   private size: number
   private defaultHeight: number
@@ -157,7 +157,7 @@ export class AcExDockPanel {
   /**
    * @param options - Host, i18n, and initial layout options.
    */
-  constructor(options: AcExDockPanelOptions) {
+  constructor(options: AcUiDockPanelOptions) {
     this.host = options.host
     this.i18n = options.i18n
     this.side = options.defaultSide ?? 'left'
@@ -169,7 +169,7 @@ export class AcExDockPanel {
         ? this.defaultHeight
         : this.defaultWidth
 
-    ensureUiStyles()
+    acuiEnsureUiStyles()
     this.ensureHostLayout()
 
     this.root = document.createElement('div')
@@ -276,7 +276,7 @@ export class AcExDockPanel {
    * @param tab - Tab definition.
    * @returns `true` when the tab was added; `false` if it already exists or is invalid.
    */
-  addTab(tab: AcExDockPanelTab): boolean {
+  addTab(tab: AcUiDockPanelTab): boolean {
     if (this.tabs.has(tab.id)) return false
     if (!tab.labelKey && !tab.label) return false
 
@@ -438,7 +438,7 @@ export class AcExDockPanel {
    *
    * @param side - New dock side.
    */
-  setSide(side: AcExDockPanelSide) {
+  setSide(side: AcUiDockPanelSide) {
     if (this.side === side) return
     const previousSide = this.side
     this.side = side
@@ -476,7 +476,7 @@ export class AcExDockPanel {
   }
 
   /** Current dock side. */
-  getSide(): AcExDockPanelSide {
+  getSide(): AcUiDockPanelSide {
     return this.side
   }
 
@@ -717,7 +717,7 @@ export class AcExDockPanel {
     this.sideMenuRoot.replaceChildren()
 
     const sides: Array<{
-      side: AcExDockPanelSide
+      side: AcUiDockPanelSide
       labelKey: string
       icon: string
     }> = [

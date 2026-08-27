@@ -5,13 +5,13 @@ import type {
 } from '@mlightcad/cad-simple-viewer'
 
 /** Toolbar edge placement relative to the viewer host element. */
-export type AcExToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
+export type AcUiToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
 
 /** Dock panel edge placement relative to the viewer host element. */
-export type AcExDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
+export type AcUiDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
 
 /** Supported UI locale codes for plugin strings. */
-export type AcExLocale = 'en' | 'zh' | 'cs' | 'tr'
+export type AcUiLocale = 'en' | 'zh' | 'cs' | 'tr'
 
 /**
  * Controls how a parent button icon relates to its submenu selection.
@@ -19,7 +19,7 @@ export type AcExLocale = 'en' | 'zh' | 'cs' | 'tr'
  * - `'fixed'`: parent keeps its own `icon` (default).
  * - `'selected'`: parent shows the selected child's `icon`.
  */
-export type AcExToolbarChildIconMode = 'fixed' | 'selected'
+export type AcUiToolbarChildIconMode = 'fixed' | 'selected'
 
 /**
  * How nested `children` are presented when the parent button is clicked.
@@ -29,24 +29,24 @@ export type AcExToolbarChildIconMode = 'fixed' | 'selected'
  * - `'sticky-toolbar'`: icon sub-toolbar that stays open until the parent button
  *   is clicked again. Canvas clicks do not dismiss it.
  */
-export type AcExToolbarChildrenUi = 'menu' | 'toolbar' | 'sticky-toolbar'
+export type AcUiToolbarChildrenUi = 'menu' | 'toolbar' | 'sticky-toolbar'
 
 /** Visual separator between toolbar button groups. */
-export interface AcExToolbarSeparator {
+export interface AcUiToolbarSeparator {
   type: 'separator'
   /** Optional stable id for debugging. */
   id?: string
 }
 
 /** Reference to a built-in toolbar button when composing a custom layout. */
-export interface AcExToolbarPresetRef {
+export interface AcUiToolbarPresetRef {
   preset: string
 }
 
 /**
  * Configuration for a single toolbar button or submenu entry.
  */
-export interface AcExToolbarItem {
+export interface AcUiToolbarItem {
   /** Stable identifier used for DOM attributes and debugging. */
   id: string
   /** When `'separator'`, renders a divider instead of a button. */
@@ -75,18 +75,18 @@ export interface AcExToolbarItem {
   disabled?: boolean | (() => boolean)
   /** Nested submenu items shown when the button is clicked.
    * May be a live getter so the list can depend on the active document. */
-  children?: AcExToolbarItem[]
+  children?: AcUiToolbarItem[]
   /**
    * Presentation of {@link children}. Defaults to `'menu'` (popover dropdown).
    * Built-in Measure / Review use `'sticky-toolbar'`; Export, Toolbar
    * Position, and Language use `'toolbar'`.
    */
-  childrenUi?: AcExToolbarChildrenUi
+  childrenUi?: AcUiToolbarChildrenUi
   /**
    * When the button has `children`, controls whether the parent icon follows the
    * selected submenu item. Defaults to `'fixed'`.
    */
-  childIcon?: AcExToolbarChildIconMode
+  childIcon?: AcUiToolbarChildIconMode
   /** Initial submenu selection when {@link childIcon} is `'selected'`. */
   selectedChildId?: string
   /** Two-state button that merges `on` or `off` branch fields based on `getValue`. */
@@ -94,25 +94,25 @@ export interface AcExToolbarItem {
     /** Returns whether the toggle is in the "on" branch. */
     getValue: () => boolean
     /** Fields applied when `getValue` returns true. */
-    on: Partial<AcExToolbarItem>
+    on: Partial<AcUiToolbarItem>
     /** Fields applied when `getValue` returns false. */
-    off: Partial<AcExToolbarItem>
+    off: Partial<AcUiToolbarItem>
   }
 }
 
 /** Resolved toolbar entry: button, separator, or preset reference in config. */
-export type AcExToolbarItemConfig =
-  | AcExToolbarItem
-  | AcExToolbarSeparator
-  | AcExToolbarPresetRef
+export type AcUiToolbarItemConfig =
+  | AcUiToolbarItem
+  | AcUiToolbarSeparator
+  | AcUiToolbarPresetRef
 
 /** Toolbar item list passed to {@link AcApSimpleUiPlugin.setToolbarItems}. */
-export type AcExToolbarItemsInput = AcExToolbarItemConfig[] | 'default'
+export type AcUiToolbarItemsInput = AcUiToolbarItemConfig[] | 'default'
 
 /**
  * Callbacks supplied when building the default toolbar (theme, locale, and placement).
  */
-export interface AcExDefaultToolbarContext {
+export interface AcUiDefaultToolbarContext {
   /** Returns the current UI theme. */
   getTheme: () => AcEdUiTheme
   /** Applies a UI theme change. */
@@ -122,19 +122,19 @@ export interface AcExDefaultToolbarContext {
   /** Sets the application locale. */
   setLocale: (locale: AcApLocale) => void
   /** Returns the current toolbar edge placement. */
-  getPlacement: () => AcExToolbarPlacement
+  getPlacement: () => AcUiToolbarPlacement
   /** Moves the toolbar to the given host edge. */
-  setPlacement: (placement: AcExToolbarPlacement) => void
+  setPlacement: (placement: AcUiToolbarPlacement) => void
 }
 
 /**
- * Options passed to {@link createSimpleUiPlugin} and {@link registerSimpleUiPlugin}.
+ * Options passed to {@link acuiCreateSimpleUiPlugin} and {@link acuiRegisterSimpleUiPlugin}.
  */
-export interface AcExSimpleUiPluginOptions {
+export interface AcUiSimpleUiPluginOptions {
   /** Viewer host element; defaults to the active view container or `document.body`. */
   host?: HTMLElement
   /** @deprecated Locale follows {@link AcApI18n.currentLocale} automatically. */
-  locale?: AcExLocale
+  locale?: AcUiLocale
   /** Chrome DevTools-style dock panel configuration. */
   dockPanel?: {
     /** Explicitly enable the dock panel container. */
@@ -142,7 +142,7 @@ export interface AcExSimpleUiPluginOptions {
     /** @default false */
     defaultOpen?: boolean
     /** @default 'left' */
-    defaultSide?: AcExDockPanelSide
+    defaultSide?: AcUiDockPanelSide
     /** Bottom dock default height in px. @default 240 */
     defaultHeight?: number
     /** Left/right dock default width in px. @default 280 */
@@ -158,11 +158,11 @@ export interface AcExSimpleUiPluginOptions {
     /** When false, the toolbar is not created. */
     enabled?: boolean
     /** Edge placement relative to `host`. */
-    placement?: AcExToolbarPlacement
+    placement?: AcUiToolbarPlacement
     /** Toolbar items, `'default'`, or a custom list (may include presets and separators). */
-    items?: AcExToolbarItemConfig[] | 'default'
+    items?: AcUiToolbarItemConfig[] | 'default'
     /** Extra items merged into `items` (default: appended at the end). */
-    appendItems?: AcExToolbarItemConfig[]
+    appendItems?: AcUiToolbarItemConfig[]
     /**
      * Insert `appendItems` after the root toolbar item with this id.
      * Ignored when {@link appendItemsBefore} is set.

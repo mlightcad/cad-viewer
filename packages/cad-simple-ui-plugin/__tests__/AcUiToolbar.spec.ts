@@ -51,27 +51,27 @@ jest.mock('@mlightcad/data-model', () => ({
   })
 }))
 
-import type { AcExToolbarItem } from '../src/config/types'
-import { AcExI18n } from '../src/i18n'
-import { AcExToolbar } from '../src/ui/AcExToolbar'
+import type { AcUiToolbarItem } from '../src/config/types'
+import { AcUiI18n } from '../src/i18n'
+import { AcUiToolbar } from '../src/ui/AcUiToolbar'
 
-function createToolbar(items: AcExToolbarItem[]) {
+function createToolbar(items: AcUiToolbarItem[]) {
   const host = document.createElement('div')
   Object.defineProperty(host, 'clientWidth', { value: 800 })
   Object.defineProperty(host, 'clientHeight', { value: 600 })
   document.body.appendChild(host)
   const onCommand = jest.fn()
-  const toolbar = new AcExToolbar({
+  const toolbar = new AcUiToolbar({
     host,
     placement: 'right',
     items,
-    i18n: new AcExI18n(),
+    i18n: new AcUiI18n(),
     onCommand
   })
   return { host, toolbar, onCommand }
 }
 
-describe('AcExToolbar children UI', () => {
+describe('AcUiToolbar children UI', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('ml-ex-ui-styles')?.remove()
@@ -167,7 +167,7 @@ describe('AcExToolbar children UI', () => {
 
   it('opens a popover menu for live children getters', () => {
     const onSelect = jest.fn()
-    const item: AcExToolbarItem = {
+    const item: AcUiToolbarItem = {
       id: 'layout',
       label: 'Layout',
       childrenUi: 'menu',

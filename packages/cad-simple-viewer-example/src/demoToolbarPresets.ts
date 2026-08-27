@@ -1,12 +1,12 @@
 import type {
   AcApSimpleUiPlugin,
-  AcExToolbarItemsInput,
-  AcExToolbarLayoutPreset
+  AcUiToolbarItemsInput,
+  AcUiToolbarLayoutPreset
 } from '@mlightcad/cad-simple-ui-plugin'
 import {
-  createToolbarLayoutSwitcher,
-  createToolbarSeparator,
-  toolbarPreset
+  acuiCreateToolbarLayoutSwitcher,
+  acuiCreateToolbarSeparator,
+  acuiToolbarPreset
 } from '@mlightcad/cad-simple-ui-plugin'
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 
@@ -19,7 +19,7 @@ const ICON_DEMO_ZOOM =
 let demoCustomToolsVisible = true
 
 /** Selectable demo toolbar layouts (full `items` definitions, not appendItems). */
-export const DEMO_TOOLBAR_LAYOUTS: AcExToolbarLayoutPreset[] = [
+export const DEMO_TOOLBAR_LAYOUTS: AcUiToolbarLayoutPreset[] = [
   { id: 'default', label: 'Built-in default' },
   { id: 'minimal', label: 'Minimal view tools' },
   { id: 'draw', label: 'Draw tools' },
@@ -27,17 +27,17 @@ export const DEMO_TOOLBAR_LAYOUTS: AcExToolbarLayoutPreset[] = [
 ]
 
 /** Full toolbar `items` for each demo layout preset. */
-export const DEMO_TOOLBAR_PRESET_ITEMS: Record<string, AcExToolbarItemsInput> =
+export const DEMO_TOOLBAR_PRESET_ITEMS: Record<string, AcUiToolbarItemsInput> =
   {
     default: 'default',
     minimal: [
-      toolbarPreset('select'),
-      toolbarPreset('pan'),
-      toolbarPreset('zoomExtent'),
-      toolbarPreset('layer')
+      acuiToolbarPreset('select'),
+      acuiToolbarPreset('pan'),
+      acuiToolbarPreset('zoomExtent'),
+      acuiToolbarPreset('layer')
     ],
     draw: [
-      toolbarPreset('select'),
+      acuiToolbarPreset('select'),
       {
         id: 'draw-line',
         label: 'Line',
@@ -50,13 +50,13 @@ export const DEMO_TOOLBAR_PRESET_ITEMS: Record<string, AcExToolbarItemsInput> =
         command: 'circle',
         requiresDocument: true
       },
-      toolbarPreset('layer'),
-      createToolbarSeparator('draw-separator'),
-      toolbarPreset('zoomWindow')
+      acuiToolbarPreset('layer'),
+      acuiCreateToolbarSeparator('draw-separator'),
+      acuiToolbarPreset('zoomWindow')
     ],
     custom: [
-      toolbarPreset('select'),
-      toolbarPreset('pan'),
+      acuiToolbarPreset('select'),
+      acuiToolbarPreset('pan'),
       {
         id: 'demo-info',
         label: 'Demo Info',
@@ -111,7 +111,7 @@ export const DEMO_TOOLBAR_PRESET_ITEMS: Record<string, AcExToolbarItemsInput> =
           window.alert(`Layer count: ${count}`)
         }
       },
-      toolbarPreset('layer')
+      acuiToolbarPreset('layer')
     ]
   }
 
@@ -136,7 +136,7 @@ export function applyDemoToolbarLayout(
     return
   }
 
-  const layoutSwitcher = createToolbarLayoutSwitcher({
+  const layoutSwitcher = acuiCreateToolbarLayoutSwitcher({
     presets: DEMO_TOOLBAR_LAYOUTS,
     currentId: presetId,
     onSelect: id => applyDemoToolbarLayout(plugin, id)

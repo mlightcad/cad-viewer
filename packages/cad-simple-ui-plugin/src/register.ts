@@ -1,6 +1,6 @@
 import type { AcApPluginManager } from '@mlightcad/cad-simple-viewer'
 
-import type { AcExSimpleUiPluginOptions } from './config/types'
+import type { AcUiSimpleUiPluginOptions } from './config/types'
 
 /**
  * Loads the simple UI plugin on the given plugin manager.
@@ -9,13 +9,13 @@ import type { AcExSimpleUiPluginOptions } from './config/types'
  * bundle is not pulled into the application entry chunk.
  *
  * @param pluginManager - Target plugin manager instance.
- * @param options - Passed through to {@link createSimpleUiPlugin}.
+ * @param options - Passed through to {@link acuiCreateSimpleUiPlugin}.
  */
-export async function registerSimpleUiPlugin(
+export async function acuiRegisterSimpleUiPlugin(
   pluginManager: AcApPluginManager,
-  options: AcExSimpleUiPluginOptions = {}
+  options: AcUiSimpleUiPluginOptions = {}
 ): Promise<void> {
-  const { createSimpleUiPlugin } =
+  const { acuiCreateSimpleUiPlugin } =
     await import('@mlightcad/cad-simple-ui-plugin')
-  await pluginManager.loadPlugin(createSimpleUiPlugin(options))
+  await pluginManager.loadPlugin(acuiCreateSimpleUiPlugin(options))
 }

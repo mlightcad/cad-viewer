@@ -10,15 +10,15 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 
 import { createIconElement, ICON_DOCK_CLOSE } from '../assets/icons'
-import type { AcExI18n } from '../i18n'
-import { ensureUiStyles } from './styles'
+import type { AcUiI18n } from '../i18n'
+import { acuiEnsureUiStyles } from './styles'
 
-/** Constructor options for {@link AcExReviewPaletteView}. */
-export interface AcExReviewPaletteViewOptions {
+/** Constructor options for {@link AcUiReviewPaletteView}. */
+export interface AcUiReviewPaletteViewOptions {
   /** Document manager used to resolve the active view for markup actions. */
   editor: AcApDocManager
   /** i18n helper for panel labels. */
-  i18n: AcExI18n
+  i18n: AcUiI18n
 }
 
 /**
@@ -27,7 +27,7 @@ export interface AcExReviewPaletteViewOptions {
  * Mirrors cad-viewer's Vue review palette using plain DOM: search, table,
  * status/label/comment editing, zoom-to, delete, and clear-all.
  */
-export class AcExReviewPaletteView {
+export class AcUiReviewPaletteView {
   /** Root element mounted in the dock panel review tab. */
   readonly element: HTMLDivElement
   /** Search box filtering the markup table. */
@@ -73,7 +73,7 @@ export class AcExReviewPaletteView {
   /** Document manager whose current view receives markup actions. */
   private readonly editor: AcApDocManager
   /** i18n helper for labels. */
-  private readonly i18n: AcExI18n
+  private readonly i18n: AcUiI18n
   /** Latest markup records from {@link getMarkupStore}. */
   private markups: AcApMarkupRecord[] = []
   /** Currently selected markup id from the store. */
@@ -90,10 +90,10 @@ export class AcExReviewPaletteView {
   /**
    * @param options - Editor and i18n used to render and mutate markups.
    */
-  constructor(options: AcExReviewPaletteViewOptions) {
+  constructor(options: AcUiReviewPaletteViewOptions) {
     this.editor = options.editor
     this.i18n = options.i18n
-    ensureUiStyles()
+    acuiEnsureUiStyles()
 
     this.element = document.createElement('div')
     this.element.className = 'ml-ex-ui-review-palette'
@@ -269,7 +269,8 @@ export class AcExReviewPaletteView {
     })
     this.deleteButton = document.createElement('button')
     this.deleteButton.type = 'button'
-    this.deleteButton.className = 'ml-ex-ui-review-btn ml-ex-ui-review-btn-danger'
+    this.deleteButton.className =
+      'ml-ex-ui-review-btn ml-ex-ui-review-btn-danger'
     this.deleteButton.addEventListener('click', () => {
       const selected = this.selectedMarkup()
       if (selected) this.removeMarkup(selected.id)
@@ -361,9 +362,14 @@ export class AcExReviewPaletteView {
 
   /** Toggles `is-selected` on existing rows without replacing them. */
   private syncRowSelection() {
-    this.tbody.querySelectorAll<HTMLTableRowElement>('tr[data-markup-id]').forEach(row => {
-      row.classList.toggle('is-selected', row.dataset.markupId === this.selectedId)
-    })
+    this.tbody
+      .querySelectorAll<HTMLTableRowElement>('tr[data-markup-id]')
+      .forEach(row => {
+        row.classList.toggle(
+          'is-selected',
+          row.dataset.markupId === this.selectedId
+        )
+      })
   }
 
   /** Rebuilds table rows from the filtered markup list. */

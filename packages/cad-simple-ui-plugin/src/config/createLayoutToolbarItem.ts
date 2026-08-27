@@ -2,8 +2,8 @@ import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { acdbHostApplicationServices } from '@mlightcad/data-model'
 
 import { ICON_LAYOUT } from '../assets/icons'
-import { copyDynamicToolbarChildren } from './toolbarItemUtils'
-import type { AcExToolbarItem } from './types'
+import { acuiCopyDynamicToolbarChildren } from './toolbarItemUtils'
+import type { AcUiToolbarItem } from './types'
 
 /** One selectable drawing layout (model space or paper space). */
 interface DocumentLayoutInfo {
@@ -22,7 +22,7 @@ interface DocumentLayoutInfo {
  *
  * @returns Layouts when a document is open; otherwise an empty list.
  */
-export function listDocumentLayouts(): DocumentLayoutInfo[] {
+export function acuiListDocumentLayouts(): DocumentLayoutInfo[] {
   const database = AcApDocManager.instance.curDocument?.database
   const layoutTable = database?.objects?.layout
   if (!database || !layoutTable?.newIterator) return []
@@ -45,7 +45,7 @@ export function listDocumentLayouts(): DocumentLayoutInfo[] {
  *
  * @param blockTableRecordId - Layout block table record id.
  */
-export function switchCurrentLayout(blockTableRecordId: string): void {
+export function acuiSwitchCurrentLayout(blockTableRecordId: string): void {
   acdbHostApplicationServices().layoutManager.setCurrentLayoutBtrId(
     blockTableRecordId
   )
@@ -56,11 +56,11 @@ export function switchCurrentLayout(blockTableRecordId: string): void {
  *
  * @returns Menu items that switch the current layout when clicked.
  */
-export function createLayoutToolbarChildren(): AcExToolbarItem[] {
-  return listDocumentLayouts().map(layout => ({
+export function acuiCreateLayoutToolbarChildren(): AcUiToolbarItem[] {
+  return acuiListDocumentLayouts().map(layout => ({
     id: `layout-${layout.blockTableRecordId}`,
     label: layout.name,
-    action: () => switchCurrentLayout(layout.blockTableRecordId),
+    action: () => acuiSwitchCurrentLayout(layout.blockTableRecordId),
     toggle: {
       getValue: () => {
         const database = AcApDocManager.instance.curDocument?.database
@@ -80,8 +80,8 @@ export function createLayoutToolbarChildren(): AcExToolbarItem[] {
  *
  * @returns Layout parent button with a popover menu (`childrenUi: 'menu'`).
  */
-export function createLayoutToolbarItem(): AcExToolbarItem {
-  const item: AcExToolbarItem = {
+export function acuiCreateLayoutToolbarItem(): AcUiToolbarItem {
+  const item: AcUiToolbarItem = {
     id: 'layout',
     label: 'toolbar.layout',
     icon: ICON_LAYOUT,
@@ -89,5 +89,5 @@ export function createLayoutToolbarItem(): AcExToolbarItem {
     childrenUi: 'menu',
     children: []
   }
-  return copyDynamicToolbarChildren(item, createLayoutToolbarChildren)
+  return acuiCopyDynamicToolbarChildren(item, acuiCreateLayoutToolbarChildren)
 }

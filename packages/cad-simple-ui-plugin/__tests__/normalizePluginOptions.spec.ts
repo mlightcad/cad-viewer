@@ -1,8 +1,8 @@
-import { normalizePluginOptions } from '../src/config/normalizePluginOptions'
+import { acuiNormalizePluginOptions } from '../src/config/normalizePluginOptions'
 
-describe('normalizePluginOptions', () => {
+describe('acuiNormalizePluginOptions', () => {
   it('does not create dock panel by default', () => {
-    const resolved = normalizePluginOptions({})
+    const resolved = acuiNormalizePluginOptions({})
     expect(resolved.shouldCreateDockPanel).toBe(false)
     expect(resolved.dockPanel.defaultSide).toBe('left')
     expect(resolved.dockPanel.defaultOpen).toBe(false)
@@ -11,14 +11,14 @@ describe('normalizePluginOptions', () => {
   })
 
   it('creates dock panel when explicitly enabled', () => {
-    const resolved = normalizePluginOptions({
+    const resolved = acuiNormalizePluginOptions({
       dockPanel: { enabled: true }
     })
     expect(resolved.shouldCreateDockPanel).toBe(true)
   })
 
   it('applies dock panel option overrides', () => {
-    const resolved = normalizePluginOptions({
+    const resolved = acuiNormalizePluginOptions({
       dockPanel: {
         enabled: true,
         defaultOpen: true,
@@ -34,7 +34,7 @@ describe('normalizePluginOptions', () => {
   })
 
   it('defaults toolbar edge offset', () => {
-    const resolved = normalizePluginOptions({})
+    const resolved = acuiNormalizePluginOptions({})
     expect(resolved.toolbar.edgeOffset).toBe(8)
   })
 })

@@ -4,10 +4,10 @@ import {
   eventBus
 } from '@mlightcad/cad-simple-viewer'
 
-import type { AcExDockPanel } from '../ui/AcExDockPanel'
+import type { AcUiDockPanel } from '../ui/AcUiDockPanel'
 
 /** Shared interface for layer UI controllers. */
-export interface AcExLayerUiController {
+export interface AcUiLayerUiController {
   /** Toggles layer UI from the `layer` CAD command. */
   toggleFromCommand(): void
   /** Hides or closes layer UI (used by `close-layer-manager` event). */
@@ -19,7 +19,7 @@ export interface AcExLayerUiController {
 /**
  * Layer UI controller that opens the layers tab in a dock panel.
  */
-export class AcExLayerDockController implements AcExLayerUiController {
+export class AcUiLayerDockController implements AcUiLayerUiController {
   private readonly handleCloseLayerManager = () => {
     this.hide()
   }
@@ -29,7 +29,7 @@ export class AcExLayerDockController implements AcExLayerUiController {
    * @param layersTabId - Tab id registered for the layer list.
    */
   constructor(
-    private readonly dockPanel: AcExDockPanel,
+    private readonly dockPanel: AcUiDockPanel,
     private readonly layersTabId = 'layers'
   ) {
     eventBus.on('close-layer-manager', this.handleCloseLayerManager)
@@ -60,7 +60,7 @@ export class AcExLayerDockController implements AcExLayerUiController {
 }
 
 /** Actions invoked by the `layer` command to prepare and open layer UI in the dock. */
-export interface AcExLayerCommandActions {
+export interface AcUiLayerCommandActions {
   /** Ensures the dock panel and layers tab exist before toggling. */
   prepare(): void
   /** Activates the layers tab in the dock panel. */
@@ -68,9 +68,9 @@ export interface AcExLayerCommandActions {
 }
 
 /** Mutable holder so the `layer` command stays registered while the UI mode switches. */
-export class AcExLayerUiControllerHolder implements AcExLayerUiController {
+export class AcUiLayerUiControllerHolder implements AcUiLayerUiController {
   /** Active layer UI controller delegate. */
-  current?: AcExLayerUiController
+  current?: AcUiLayerUiController
 
   toggleFromCommand() {
     this.current?.toggleFromCommand()
@@ -92,7 +92,7 @@ export class AcApLayerUiCmd extends AcEdCommand {
   /**
    * @param actions - Prepare and toggle callbacks wired by the plugin.
    */
-  constructor(private readonly actions: AcExLayerCommandActions) {
+  constructor(private readonly actions: AcUiLayerCommandActions) {
     super()
   }
 

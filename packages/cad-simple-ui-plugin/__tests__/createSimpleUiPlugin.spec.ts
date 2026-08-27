@@ -148,8 +148,8 @@ jest.mock('@mlightcad/data-model', () => ({
 import { AcApDocManager, AcEdCommandStack } from '@mlightcad/cad-simple-viewer'
 import { AcDbDatabase } from '@mlightcad/data-model'
 
+import { acuiToolbarPreset } from '../src/config/toolbarItemUtils'
 import { AcApSimpleUiPlugin } from '../src/createSimpleUiPlugin'
-import { toolbarPreset } from '../src/config/toolbarItemUtils'
 
 function createHostTree() {
   const host = document.createElement('div')
@@ -204,7 +204,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('select'), toolbarPreset('layer')]
+        items: [acuiToolbarPreset('select'), acuiToolbarPreset('layer')]
       }
     })
 
@@ -222,7 +222,7 @@ describe('AcApSimpleUiPlugin', () => {
       host,
       dockPanel: { enabled: true },
       toolbar: {
-        items: [toolbarPreset('select')]
+        items: [acuiToolbarPreset('select')]
       }
     })
 
@@ -247,7 +247,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('layer')]
+        items: [acuiToolbarPreset('layer')]
       }
     })
 
@@ -290,7 +290,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('layer')]
+        items: [acuiToolbarPreset('layer')]
       }
     })
 
@@ -329,7 +329,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('layer')]
+        items: [acuiToolbarPreset('layer')]
       }
     })
 
@@ -352,7 +352,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('layer')]
+        items: [acuiToolbarPreset('layer')]
       }
     })
 
@@ -375,7 +375,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('layer')]
+        items: [acuiToolbarPreset('layer')]
       }
     })
 
@@ -410,7 +410,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('layer')]
+        items: [acuiToolbarPreset('layer')]
       }
     })
 
@@ -444,7 +444,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('layer')]
+        items: [acuiToolbarPreset('layer')]
       }
     })
 
@@ -476,7 +476,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('select'), toolbarPreset('layer')],
+        items: [acuiToolbarPreset('select'), acuiToolbarPreset('layer')],
         collapsible: true
       }
     })
@@ -503,17 +503,17 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('select')]
+        items: [acuiToolbarPreset('select')]
       }
     })
 
     expect(mockCommands.has('SYSTEM:layer')).toBe(false)
 
-    plugin.setToolbarItems([toolbarPreset('select'), toolbarPreset('layer')])
+    plugin.setToolbarItems([acuiToolbarPreset('select'), acuiToolbarPreset('layer')])
     expect(mockCommands.has('SYSTEM:layer')).toBe(true)
     expect(host.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
 
-    plugin.setToolbarItems([toolbarPreset('select')])
+    plugin.setToolbarItems([acuiToolbarPreset('select')])
     expect(mockCommands.has('SYSTEM:layer')).toBe(false)
     expect(host.querySelector('.ml-ex-ui-dock-panel')).toBeNull()
   })
@@ -523,7 +523,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('annotation')]
+        items: [acuiToolbarPreset('annotation')]
       }
     })
 
@@ -555,20 +555,20 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('select')]
+        items: [acuiToolbarPreset('select')]
       }
     })
 
     expect(mockCommands.has('SYSTEM:markuppanel')).toBe(false)
 
     plugin.setToolbarItems([
-      toolbarPreset('select'),
-      toolbarPreset('annotation')
+      acuiToolbarPreset('select'),
+      acuiToolbarPreset('annotation')
     ])
     expect(mockCommands.has('SYSTEM:markuppanel')).toBe(true)
     expect(host.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
 
-    plugin.setToolbarItems([toolbarPreset('select')])
+    plugin.setToolbarItems([acuiToolbarPreset('select')])
     expect(mockCommands.has('SYSTEM:markuppanel')).toBe(false)
     expect(host.querySelector('.ml-ex-ui-dock-panel')).toBeNull()
   })
@@ -581,7 +581,7 @@ describe('AcApSimpleUiPlugin', () => {
     const { plugin } = loadPlugin({
       host,
       toolbar: {
-        items: [toolbarPreset('layer')]
+        items: [acuiToolbarPreset('layer')]
       }
     })
 

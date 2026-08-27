@@ -1,18 +1,18 @@
 import { ICON_TOOLBAR_PLACEMENT } from '../assets/icons'
-import type { AcExToolbarItem } from './types'
+import type { AcUiToolbarItem } from './types'
 
 /** One selectable entry in a toolbar layout switcher submenu. */
-export interface AcExToolbarLayoutPreset {
+export interface AcUiToolbarLayoutPreset {
   /** Stable preset identifier. */
   id: string
   /** Display label for the submenu entry. */
   label: string
 }
 
-/** Options for {@link createToolbarLayoutSwitcher}. */
-export interface AcExToolbarLayoutSwitcherOptions {
+/** Options for {@link acuiCreateToolbarLayoutSwitcher}. */
+export interface AcUiToolbarLayoutSwitcherOptions {
   /** Presets shown in the submenu. */
-  presets: AcExToolbarLayoutPreset[]
+  presets: AcUiToolbarLayoutPreset[]
   /** Id of the currently active preset. */
   currentId: string
   /** Invoked when the user selects a preset. */
@@ -33,9 +33,9 @@ export interface AcExToolbarLayoutSwitcherOptions {
  *
  * @param options - Presets, current selection, and selection handler.
  */
-export function createToolbarLayoutSwitcher(
-  options: AcExToolbarLayoutSwitcherOptions
-): AcExToolbarItem {
+export function acuiCreateToolbarLayoutSwitcher(
+  options: AcUiToolbarLayoutSwitcherOptions
+): AcUiToolbarItem {
   const id = options.id ?? 'toolbar-layout-switcher'
   const selectedChildId = `layout-${options.currentId}`
 
@@ -58,12 +58,12 @@ export function createToolbarLayoutSwitcher(
  * Prepends a layout switcher and separator before a fully custom toolbar item list.
  *
  * @param items - Toolbar items for the active preset (not including the switcher).
- * @param switcher - Layout switcher button from {@link createToolbarLayoutSwitcher}.
+ * @param switcher - Layout switcher button from {@link acuiCreateToolbarLayoutSwitcher}.
  */
-export function prependToolbarLayoutSwitcher(
-  items: AcExToolbarItem[],
-  switcher: AcExToolbarItem
-): AcExToolbarItem[] {
+export function acuiPrependToolbarLayoutSwitcher(
+  items: AcUiToolbarItem[],
+  switcher: AcUiToolbarItem
+): AcUiToolbarItem[] {
   return [
     switcher,
     { type: 'separator', id: 'toolbar-layout-switcher-separator' },
