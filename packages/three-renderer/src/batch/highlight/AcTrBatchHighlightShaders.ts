@@ -437,7 +437,19 @@ export function installBatchHighlightRenderer(
     material,
     group
   ) => {
-    previousOnBeforeRender?.(renderer, scene, camera, geometry, material, group)
+    // Preserve `this` binding: `object.onBeforeRender` may be inherited from
+    // the prototype (e.g. `LineSegments2`), so a bare call would lose the
+    // receiver and `this.material` inside the previous handler would be
+    // undefined.
+    previousOnBeforeRender?.call(
+      object,
+      renderer,
+      scene,
+      camera,
+      geometry,
+      material,
+      group
+    )
     if (
       (!state.hasAnyHighlight() && !state.needsCompareUniforms()) ||
       !material
