@@ -1,9 +1,13 @@
-import type { AcUiSimpleUiPluginOptions, AcUiToolbarConfig, AcUiLayoutKind } from './types'
 import {
   acuiGetBuiltInToolbarDefaults,
   acuiMergeToolbarConfigs,
   acuiResolveLayoutToolbarConfig
 } from './resolveToolbarItems'
+import type {
+  AcUiLayoutKind,
+  AcUiSimpleUiPluginOptions,
+  AcUiToolbarConfig
+} from './types'
 
 /** Resolved plugin options with explicit defaults for nested sections. */
 export type AcUiNormalizedPluginOptions = {
@@ -41,8 +45,7 @@ export function acuiNormalizePluginOptions(
   }
 
   // Initial toolbar snapshot: prefer desktop when auto (host may still switch).
-  const initialKind: AcUiLayoutKind =
-    layout === 'auto' ? 'desktop' : layout
+  const initialKind: AcUiLayoutKind = layout === 'auto' ? 'desktop' : layout
 
   return {
     host: options.host,
@@ -60,4 +63,8 @@ export function acuiNormalizePluginOptions(
   }
 }
 
-export { acuiGetBuiltInToolbarDefaults, acuiMergeToolbarConfigs, acuiResolveLayoutToolbarConfig }
+export {
+  acuiGetBuiltInToolbarDefaults,
+  acuiMergeToolbarConfigs,
+  acuiResolveLayoutToolbarConfig
+}

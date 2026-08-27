@@ -9,16 +9,16 @@
  */
 
 import {
-  AcUiToolbar,
   acuiGetLayoutKind,
-  ML_EX_UI_COMPACT_MEDIA_QUERY,
-  ML_EX_UI_MOBILE_MEDIA_QUERY,
+  type AcUiLayoutKind,
+  type AcUiLayoutOptions,
+  AcUiToolbar,
   type AcUiToolbarConfig,
   type AcUiToolbarItem,
   type AcUiToolbarOverflow,
   type AcUiToolbarPlacement,
-  type AcUiLayoutKind,
-  type AcUiLayoutOptions
+  ML_EX_UI_COMPACT_MEDIA_QUERY,
+  ML_EX_UI_MOBILE_MEDIA_QUERY
 } from '@mlightcad/cad-simple-ui-plugin/toolbar'
 
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
@@ -231,4 +231,3 @@ export function setupAcExHtmlSimpleToolbar(
     getLayoutKind: () => currentKind
   }
 }
-

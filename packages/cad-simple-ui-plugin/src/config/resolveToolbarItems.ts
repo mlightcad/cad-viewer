@@ -11,10 +11,10 @@ import {
 } from './toolbarItemUtils'
 import type {
   AcUiDefaultToolbarContext,
+  AcUiLayoutKind,
   AcUiSimpleUiPluginOptions,
   AcUiToolbarConfig,
-  AcUiToolbarItem,
-  AcUiLayoutKind
+  AcUiToolbarItem
 } from './types'
 
 export {
@@ -43,7 +43,10 @@ export function acuiCreateDefaultToolbarPresetMap(
   const map = new Map<string, AcUiToolbarItem>()
   acuiIndexToolbarItems(acuiCreateDefaultToolbarItems(context), map)
   acuiIndexToolbarItems(
-    [acuiCreateZoomToolbarItem(context), acuiCreateSettingsToolbarItem(context)],
+    [
+      acuiCreateZoomToolbarItem(context),
+      acuiCreateSettingsToolbarItem(context)
+    ],
     map
   )
   return map

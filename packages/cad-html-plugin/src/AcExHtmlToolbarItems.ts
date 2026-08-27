@@ -10,11 +10,11 @@
  */
 
 import type {
+  AcUiLayoutKind,
   AcUiToolbarConfig,
   AcUiToolbarI18n,
   AcUiToolbarItem,
-  AcUiToolbarItemConfig,
-  AcUiLayoutKind
+  AcUiToolbarItemConfig
 } from '@mlightcad/cad-simple-ui-plugin/toolbar'
 import {
   acuiExpandToolbarItemConfigs,
@@ -536,7 +536,8 @@ export function resolveAcExHtmlToolbarConfig(
   let items: AcUiToolbarItem[]
   if (config.items == null || config.items === 'default') {
     items = acuiExpandToolbarItemConfigs(
-      getAcExHtmlBuiltInToolbarConfig('desktop', ctx).items as AcUiToolbarItemConfig[],
+      getAcExHtmlBuiltInToolbarConfig('desktop', ctx)
+        .items as AcUiToolbarItemConfig[],
       presets
     )
   } else {
@@ -591,4 +592,3 @@ export function adaptAcExHtmlToolbarI18n(i18n: {
     }
   }
 }
-

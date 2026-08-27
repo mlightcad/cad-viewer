@@ -5,8 +5,8 @@ import {
   type AcApLocale,
   AcApPlugin,
   acapSetDrawStyleHostHasRibbon,
-  acedGetUiLayoutKind,
   AcEdCommandStack,
+  acedGetUiLayoutKind,
   AcEdOpenMode,
   type AcEdUiTheme,
   ML_UI_COMPACT_MEDIA_QUERY,
@@ -29,13 +29,13 @@ import { acuiResolveToolbarMountTarget } from './config/resolveToolbarMountTarge
 import { acuiToolbarItemsIncludeItem } from './config/toolbarItemUtils'
 import {
   AcUiDockPanelSide,
+  AcUiLayoutKind,
   AcUiSimpleUiPluginOptions,
   AcUiToolbarConfig,
   AcUiToolbarItem,
   AcUiToolbarItemsInput,
   AcUiToolbarOverflow,
   AcUiToolbarPlacement,
-  AcUiLayoutKind,
   SIMPLE_UI_PLUGIN_NAME
 } from './config/types'
 import { AcUiI18n, acuiRegisterSimpleUiI18n } from './i18n'
@@ -63,7 +63,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   /** Plugin semver string. */
   version = packageJson.version
   /** Human-readable plugin summary. */
-  description = 'Framework-agnostic toolbar, layer manager, and review palette UI'
+  description =
+    'Framework-agnostic toolbar, layer manager, and review palette UI'
 
   /** Layer list view mounted in the dock panel layers tab. */
   private layerListView?: AcUiLayerListView
@@ -134,10 +135,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private registeredCommands: Array<{ group: string; name: string }> = []
   /** Refreshes toolbar, layer, and review UI when the app locale changes. */
   private handleLocaleChanged = () => {
-    this.toolbar?.setSelectedChild(
-      'locale',
-      `locale-${AcApI18n.currentLocale}`
-    )
+    this.toolbar?.setSelectedChild('locale', `locale-${AcApI18n.currentLocale}`)
     this.layerListView?.refreshLocale()
     this.reviewPaletteView?.refreshLocale()
     this.dockPanel?.refreshLocale()
@@ -566,7 +564,10 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   /** Resolves the canvas element that receives the floating toolbar. */
   private getToolbarMountEl(): HTMLElement | undefined {
     if (!this.hostEl) return undefined
-    return acuiResolveToolbarMountTarget(this.hostEl, this.toolbarMountTargetOption)
+    return acuiResolveToolbarMountTarget(
+      this.hostEl,
+      this.toolbarMountTargetOption
+    )
   }
 
   /**
@@ -885,7 +886,10 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   /** Resolves the dock mount element (lazy; canvas parent may appear after load). */
   private getDockMountEl(): HTMLElement | undefined {
     if (!this.hostEl) return undefined
-    return acuiResolveDockMountTarget(this.hostEl, this.dockPanelMountTargetOption)
+    return acuiResolveDockMountTarget(
+      this.hostEl,
+      this.dockPanelMountTargetOption
+    )
   }
 
   /**
