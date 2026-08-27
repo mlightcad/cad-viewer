@@ -56,6 +56,7 @@ export const en: Record<string, string> = {
   'toolbar.localeAr': 'العربية',
   'toolbar.collapse': 'Collapse toolbar',
   'toolbar.expand': 'Expand toolbar',
+  'toolbar.more': 'More tools',
   'layerManager.title': 'Layer Manager',
   'layerManager.name': 'Name',
   'layerManager.on': 'On',

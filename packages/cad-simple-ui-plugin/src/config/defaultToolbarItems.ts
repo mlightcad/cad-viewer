@@ -5,7 +5,6 @@ import {
   isMarkupVisible,
   isMeasurementVisible
 } from '@mlightcad/cad-simple-viewer'
-
 import {
   ICON_ANNOTATION,
   ICON_ANNOTATION_HIDE,
@@ -46,7 +45,8 @@ import {
   ICON_TOOLBAR_PLACEMENT,
   ICON_ZOOM_EXTENT,
   ICON_ZOOM_WINDOW
-} from '../assets/icons'
+} from '@mlightcad/cad-simple-viewer/icons'
+
 import { createLayoutToolbarItem } from './createLayoutToolbarItem'
 import type {
   AcExDefaultToolbarContext,

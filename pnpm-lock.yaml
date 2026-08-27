@@ -179,6 +179,9 @@ importers:
 
   packages/cad-html-plugin:
     devDependencies:
+      '@mlightcad/cad-simple-ui-plugin':
+        specifier: workspace:*
+        version: link:../cad-simple-ui-plugin
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer

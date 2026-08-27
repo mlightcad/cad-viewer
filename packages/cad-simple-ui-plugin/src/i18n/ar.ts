@@ -65,6 +65,7 @@ export const ar: Record<string, string> = {
 
   'toolbar.collapse': 'طي شريط الأدوات',
   'toolbar.expand': 'توسيع شريط الأدوات',
+  'toolbar.more': 'المزيد من الأدوات',
 
   'layerManager.title': 'مدير الطبقات',
   'layerManager.name': 'الاسم',

@@ -6,6 +6,7 @@ import {
   AcApPlugin,
   acapSetDrawStyleHostHasRibbon,
   AcEdCommandStack,
+  AcEdOpenMode,
   type AcEdUiTheme
 } from '@mlightcad/cad-simple-viewer'
 
@@ -27,6 +28,7 @@ import {
   AcExSimpleUiPluginOptions,
   AcExToolbarItem,
   AcExToolbarItemsInput,
+  AcExToolbarOverflow,
   AcExToolbarPlacement,
   SIMPLE_UI_PLUGIN_NAME
 } from './config/types'
@@ -104,8 +106,10 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private toolbarMountEl?: HTMLElement
   /** Explicit toolbar mount override from plugin options. */
   private toolbarMountTargetOption?: HTMLElement
-  /** Inset of the viewer toolbar from the canvas edge in px. */
+  /** Inset of the viewer toolbar from the docked canvas edge in px. */
   private toolbarEdgeOffset = 8
+  /** How overflowing toolbar items are shown when the host is too small. */
+  private toolbarOverflow: AcExToolbarOverflow = 'menu'
   /** Commands registered during {@link onLoad} for cleanup on unload. */
   private registeredCommands: Array<{ group: string; name: string }> = []
   /** Refreshes toolbar, layer, and review UI when the app locale changes. */
@@ -351,13 +355,13 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     return true
   }
 
-  /** Returns the viewer toolbar inset from the canvas edge in px. */
+  /** Returns the viewer toolbar inset from the docked canvas edge in px. */
   getToolbarEdgeOffset(): number {
     return this.toolbar?.getEdgeOffset() ?? this.toolbarEdgeOffset
   }
 
   /**
-   * Sets the viewer toolbar inset from the canvas edge.
+   * Sets the viewer toolbar inset from the docked canvas edge.
    *
    * @param offset - Distance in px (clamped to >= 0).
    * @returns `true` when applied; `false` when the toolbar is unavailable.
@@ -371,6 +375,29 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     }
     this.toolbarEdgeOffset = Math.max(0, offset)
     this.toolbar.setEdgeOffset(this.toolbarEdgeOffset)
+    return true
+  }
+
+  /** Returns how overflowing toolbar items are shown. */
+  getToolbarOverflow(): AcExToolbarOverflow {
+    return this.toolbar?.getOverflow() ?? this.toolbarOverflow
+  }
+
+  /**
+   * Sets how overflowing toolbar items are shown when the host is too small.
+   *
+   * @param overflow - `'menu'` (⋯ popup) or `'scroll'`.
+   * @returns `true` when applied; `false` when the toolbar is unavailable.
+   */
+  setToolbarOverflow(overflow: AcExToolbarOverflow): boolean {
+    if (!this.toolbar) {
+      console.warn(
+        '[SimpleUiPlugin] setToolbarOverflow skipped: toolbar is unavailable.'
+      )
+      return false
+    }
+    this.toolbarOverflow = overflow
+    this.toolbar.setOverflow(overflow)
     return true
   }
 
@@ -399,6 +426,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.toolbarPlacement = resolvedOptions.toolbar.placement ?? 'right'
     this.toolbarCollapsible = resolvedOptions.toolbar.collapsible ?? false
     this.toolbarEdgeOffset = resolvedOptions.toolbar.edgeOffset ?? 8
+    this.toolbarOverflow = resolvedOptions.toolbar.overflow ?? 'menu'
     this.dockPanelExplicitlyEnabled = resolvedOptions.dockPanel.enabled === true
     this.dockPanelDefaults = {
       defaultOpen: resolvedOptions.dockPanel.defaultOpen ?? false,
@@ -453,10 +481,36 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
         themeHost: host,
         placement: this.toolbarPlacement,
         edgeOffset: this.toolbarEdgeOffset,
+        overflow: this.toolbarOverflow,
         items: this.baseToolbarItems,
         i18n: this.i18n,
         collapsible: resolvedOptions.toolbar.collapsible,
         defaultCollapsed: resolvedOptions.toolbar.defaultCollapsed,
+        docBridge: {
+          hasDocument: () => Boolean(AcApDocManager.instance.curDocument),
+          getOpenMode: () =>
+            AcApDocManager.instance.curDocument?.openMode ?? AcEdOpenMode.Read,
+          subscribeActivated: listener => {
+            AcApDocManager.instance.events.documentActivated.addEventListener(
+              listener
+            )
+          },
+          unsubscribeActivated: listener => {
+            AcApDocManager.instance.events.documentActivated.removeEventListener(
+              listener
+            )
+          },
+          subscribeToBeOpened: listener => {
+            AcApDocManager.instance.events.documentToBeOpened.addEventListener(
+              listener
+            )
+          },
+          unsubscribeToBeOpened: listener => {
+            AcApDocManager.instance.events.documentToBeOpened.removeEventListener(
+              listener
+            )
+          }
+        },
         onCollapse: () => {
           this.dockPanel?.close()
         },

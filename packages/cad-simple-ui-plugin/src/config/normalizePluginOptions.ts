@@ -36,7 +36,8 @@ export function normalizePluginOptions(
       appendItemsBefore: options.toolbar?.appendItemsBefore,
       collapsible: options.toolbar?.collapsible ?? false,
       defaultCollapsed: options.toolbar?.defaultCollapsed ?? false,
-      edgeOffset: options.toolbar?.edgeOffset ?? 8
+      edgeOffset: options.toolbar?.edgeOffset ?? 8,
+      overflow: options.toolbar?.overflow ?? 'menu'
     },
     shouldCreateDockPanel: dockPanelEnabled
   }

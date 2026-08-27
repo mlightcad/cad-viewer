@@ -1,4 +1,5 @@
-import { ICON_TOOLBAR_PLACEMENT } from '../assets/icons'
+import { ICON_TOOLBAR_PLACEMENT } from '@mlightcad/cad-simple-viewer/icons'
+
 import type { AcExToolbarItem } from './types'
 
 /** One selectable entry in a toolbar layout switcher submenu. */

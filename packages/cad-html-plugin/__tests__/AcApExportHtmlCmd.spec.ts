@@ -221,6 +221,19 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
     expect(AcApHtmlConvertor).not.toHaveBeenCalled()
   })
 
+  test('exports with defaults immediately when interactive is false', async () => {
+    const quickCmd = new AcApExportHtmlCmd({ interactive: false })
+
+    await quickCmd.execute(context)
+
+    expect(getKeywords).not.toHaveBeenCalled()
+    expect(convert()).toHaveBeenCalledWith(
+      'drawing.dwg',
+      defaultExportOptions,
+      context.view
+    )
+  })
+
   test('registers default keywords on prompt options', async () => {
     getKeywords
       .mockResolvedValueOnce(none())

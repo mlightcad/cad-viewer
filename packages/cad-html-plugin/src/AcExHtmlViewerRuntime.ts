@@ -18,16 +18,12 @@ import {
   showAcExHtmlAccessExpired
 } from './AcExHtmlAccessGate'
 import { setupAcExHtmlExpiryMonitor } from './AcExHtmlExpiryUi'
-import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
+import { AcExHtmlI18n, detectAcExHtmlLocale, isAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
-import { setupAcExHtmlLayoutMenu } from './AcExHtmlLayoutMenu'
 import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
 import { setupAcExHtmlNavTools } from './AcExHtmlNavTools'
 import { setupAcExHtmlReviewPanel } from './AcExHtmlReviewPanel'
-import {
-  setAcExHtmlParentChildIcon,
-  setupAcExHtmlToolbarFlyouts
-} from './AcExHtmlToolbarFlyout'
+import { setupAcExHtmlSimpleToolbar } from './AcExHtmlSimpleToolbar'
 import {
   computeLayerExtentsMap,
   resolveLayoutViewExtents
@@ -513,11 +509,8 @@ async function startViewer(): Promise<void> {
   const measureSettingsRef: {
     current: ReturnType<typeof setupAcExHtmlMeasureSettings> | null
   } = { current: null }
-  const toolbarFlyoutsRef: {
-    current: ReturnType<typeof setupAcExHtmlToolbarFlyouts> | null
-  } = { current: null }
-  const layoutMenuRef: {
-    current: ReturnType<typeof setupAcExHtmlLayoutMenu> | null
+  const simpleToolbarRef: {
+    current: ReturnType<typeof setupAcExHtmlSimpleToolbar> | null
   } = { current: null }
   const drawStyleToolbarRef: {
     current: ReturnType<typeof setupAcExDrawStyleToolbar> | null
@@ -526,9 +519,17 @@ async function startViewer(): Promise<void> {
     current: ReturnType<typeof setupAcExHtmlNavTools> | null
   } = { current: null }
   let expiryMonitor: ReturnType<typeof setupAcExHtmlExpiryMonitor> | null = null
+  let layerPanel: ReturnType<typeof setupLayerPanel> | null = null
+  let reviewPanel: ReturnType<typeof setupAcExHtmlReviewPanel> | null = null
 
   const isToolActive = () =>
     measure?.isActive === true || markup?.isActive === true
+
+  const syncToolbarDependentState = () => {
+    navToolsRef.current?.syncButtons()
+    measure?.syncToolbarActive()
+    markup?.syncToolbarActive()
+  }
 
   const setLeftPanForTools = () => {
     if (isToolActive()) {
@@ -748,7 +749,8 @@ async function startViewer(): Promise<void> {
       i18n,
       measure,
       angbase: snapshot.meta.units.angbase,
-      angdir: snapshot.meta.units.angdir
+      angdir: snapshot.meta.units.angdir,
+      onUiChange: () => simpleToolbarRef.current?.refresh()
     })
 
     drawStyleToolbarRef.current = setupAcExDrawStyleToolbar({
@@ -774,13 +776,7 @@ async function startViewer(): Promise<void> {
     })
   }
 
-  const toolbarCollapse = setupToolbarCollapse(i18n, () => {
-    toolbarFlyoutsRef.current?.close()
-    layoutMenuRef.current?.close()
-    measureSettingsRef.current?.close()
-  })
-
-  const layerPanel = setupLayerPanel({
+  layerPanel = setupLayerPanel({
     snapshot,
     layerVisible,
     layerGroupMaps: [paperLayerGroups, modelLayerGroups],
@@ -803,16 +799,10 @@ async function startViewer(): Promise<void> {
     closeOtherDrawers: () => reviewPanel?.close()
   })
 
-  const reviewPanel = setupAcExHtmlReviewPanel({
+  reviewPanel = setupAcExHtmlReviewPanel({
     i18n,
     getMarkup: () => markup,
-    closeOtherDrawers: () => {
-      const layerDrawer = document.getElementById('mlcad-layer-drawer')
-      const layersBtn = document.getElementById('mlcad-layers-btn')
-      if (layerDrawer) layerDrawer.hidden = true
-      layersBtn?.classList.remove('active')
-      layersBtn?.setAttribute('aria-expanded', 'false')
-    }
+    closeOtherDrawers: () => layerPanel?.close()
   })
 
   const disposeObject3D = (object: THREE.Object3D) => {
@@ -899,7 +889,7 @@ async function startViewer(): Promise<void> {
 
     measure?.syncLayoutVisibility()
     markup?.syncLayoutVisibility()
-    layoutMenuRef.current?.refresh()
+    simpleToolbarRef.current?.refresh()
     recomputeOsnapThresholdWcs()
     bumpSnapCacheKey()
     render()
@@ -946,128 +936,177 @@ async function startViewer(): Promise<void> {
     event.preventDefault()
   })
 
-  const handleToolbarAction = (button: HTMLElement) => {
-    const action = button.getAttribute('data-action')
-    if (action === 'select' || action === 'pan' || action === 'zoom-window') {
-      navToolsRef.current?.setMode(action)
-      if (action === 'zoom-window') {
-        setAcExHtmlParentChildIcon('mlcad-zoom-menu-btn', button)
+  const toolbarConfigEl = document.getElementById('mlcad-root')
+  const viewerModeAttr =
+    (toolbarConfigEl?.dataset.viewerMode as AcExViewerMode | undefined) ??
+    (measureEnabled ? 'measure' : 'view')
+  const exportLayoutsAttr = toolbarConfigEl?.dataset.exportLayouts !== '0'
+
+  const handleHtmlToolbarCommand = (command: string) => {
+    if (!command.startsWith('html:')) return
+    const body = command.slice('html:'.length)
+
+    if (body === 'select' || body === 'pan' || body === 'zoom-window') {
+      navToolsRef.current?.setMode(body)
+      if (body === 'zoom-window') {
+        simpleToolbarRef.current?.toolbar.setSelectedChild('zoom', 'zoom-window')
+        simpleToolbarRef.current?.toolbar.refresh()
       }
       return
     }
-    if (action === 'fit') {
+    if (body === 'zoom-fit') {
       navToolsRef.current?.cancelZoomWindow()
       measure?.cancelMode()
       markup?.cancelMode()
-      setAcExHtmlParentChildIcon('mlcad-zoom-menu-btn', button)
+      simpleToolbarRef.current?.toolbar.setSelectedChild('zoom', 'zoom-fit')
+      simpleToolbarRef.current?.toolbar.refresh()
       fit()
-    } else if (action === 'zoom-original') {
+      return
+    }
+    if (body === 'zoom-original') {
       navToolsRef.current?.cancelZoomWindow()
       measure?.cancelMode()
       markup?.cancelMode()
-      setAcExHtmlParentChildIcon('mlcad-zoom-menu-btn', button)
+      simpleToolbarRef.current?.toolbar.setSelectedChild(
+        'zoom',
+        'zoom-original'
+      )
+      simpleToolbarRef.current?.toolbar.refresh()
       restoreOriginalView()
-    } else if (action === 'clear-measurements') {
+      return
+    }
+    if (body === 'layers') {
+      const drawer = document.getElementById('mlcad-layer-drawer')
+      layerPanel?.setOpen(Boolean(drawer?.hidden))
+      return
+    }
+    if (body.startsWith('layout:')) {
+      switchLayout(body.slice('layout:'.length))
+      return
+    }
+    if (body.startsWith('locale:')) {
+      const locale = body.slice('locale:'.length)
+      if (isAcExHtmlLocale(locale)) {
+        i18n.setLocale(locale)
+        simpleToolbarRef.current?.refresh()
+      }
+      return
+    }
+    if (body === 'snap-ortho') {
+      measureSettingsRef.current?.toggleOrtho()
+      return
+    }
+    if (body === 'snap-polar') {
+      measureSettingsRef.current?.togglePolarPanel()
+      return
+    }
+    if (body === 'clear-measurements') {
       measure?.clearAll()
-    } else if (action === 'measure-visibility') {
+      return
+    }
+    if (body === 'measure-visibility') {
       measure?.toggleVisible()
-    } else if (action === 'measure-import') {
+      return
+    }
+    if (body === 'measure-import') {
       measure?.importSidecar()
-    } else if (action === 'measure-export') {
+      return
+    }
+    if (body === 'measure-export') {
       measure?.exportSidecar()
-    } else if (action === 'clear-markups') {
+      return
+    }
+    if (body === 'clear-markups') {
       markup?.clearAll()
-    } else if (action === 'markup-visibility') {
+      return
+    }
+    if (body === 'markup-visibility') {
       markup?.toggleVisible()
-    } else if (action === 'markup-import') {
+      return
+    }
+    if (body === 'markup-import') {
       markup?.importSidecar()
-    } else if (action === 'markup-export') {
+      return
+    }
+    if (body === 'markup-export') {
       markup?.exportSidecar()
-    } else if (action === 'markup-panel') {
+      return
+    }
+    if (body === 'markup-panel') {
       measure?.cancelMode()
       markup?.cancelMode()
       const drawer = document.getElementById('mlcad-review-drawer')
       reviewPanel?.setOpen(Boolean(drawer?.hidden))
-    } else if (action === 'measure') {
+      return
+    }
+    if (body.startsWith('measure:')) {
       markup?.cancelMode()
-      const mode = button.getAttribute(
-        'data-measure-mode'
-      ) as AcExMeasureMode | null
-      if (mode) {
-        measure?.setMode(mode)
-      }
-    } else if (action === 'markup') {
+      const mode = body.slice('measure:'.length) as AcExMeasureMode
+      measure?.setMode(mode)
+      return
+    }
+    if (body.startsWith('markup:')) {
       measure?.cancelMode()
-      const mode = button.getAttribute(
-        'data-markup-mode'
-      ) as AcExMarkupMode | null
-      if (mode) {
-        markup?.setMode(mode)
-      }
+      const mode = body.slice('markup:'.length) as AcExMarkupMode
+      markup?.setMode(mode)
     }
   }
 
-  document
-    .querySelectorAll('#mlcad-toolbar button[data-action]')
-    .forEach(button => {
-      button.addEventListener('click', () => {
-        const action = button.getAttribute('data-action')
-        // Parent menu buttons are handled by the flyout controller.
-        if (
-          action === 'measure-menu' ||
-          action === 'markup-menu' ||
-          action === 'snap-menu' ||
-          action === 'zoom-menu' ||
-          action === 'layout-menu'
-        ) {
-          return
-        }
-        handleToolbarAction(button as HTMLElement)
-      })
+  if (root) {
+    simpleToolbarRef.current = setupAcExHtmlSimpleToolbar({
+      host: root,
+      overlayHost: root,
+      i18n,
+      context: {
+        viewerMode: viewerModeAttr,
+        exportLayouts: exportLayoutsAttr && canSwitchLayouts,
+        getLayouts: () =>
+          snapshot.layouts.map(item => ({
+            btrId: item.btrId,
+            name: item.name
+          })),
+        getActiveLayoutBtrId: () => layout.btrId,
+        getLocale: () => i18n.locale,
+        getOrtho: () => measureSettingsRef.current?.state.ortho ?? false,
+        getPolar: () => {
+          const settings = measureSettingsRef.current
+          if (!settings) return false
+          return (
+            settings.isPolarPanelOpen() ||
+            (settings.state.polar && !settings.state.ortho)
+          )
+        },
+        isMeasureVisible: () => measure?.visible ?? true,
+        isMarkupVisible: () => markup?.visible ?? true
+      },
+      onCommand: handleHtmlToolbarCommand,
+      onRender: syncToolbarDependentState,
+      onCollapse: () => {
+        layerPanel?.close()
+        reviewPanel?.close()
+        measureSettingsRef.current?.close()
+        const sidebar = document.getElementById('mlcad-sidebar')
+        sidebar?.classList.add('mlcad-sidebar--collapsed')
+      }
     })
 
-  const toolbarFlyouts = setupAcExHtmlToolbarFlyouts({
-    onItemClick: handleToolbarAction,
-    onLocaleSelect: locale => i18n.setLocale(locale),
-    getLocale: () => i18n.locale,
-    onClose: menuId => {
-      if (menuId === 'snap') {
-        measureSettingsRef.current?.close()
-      }
-    },
-    onOpen: (menuId, menuRoot) => {
-      layoutMenuRef.current?.close()
-      if (menuId === 'measure' && measure) {
-        measure.setVisible(measure.visible)
-        menuRoot.querySelectorAll('[data-measure-mode]').forEach(btn => {
-          const mode = btn.getAttribute('data-measure-mode')
-          btn.classList.toggle('active', mode === measure.mode)
-        })
-      } else if (menuId === 'review' && markup) {
-        markup.setVisible(markup.visible)
-        menuRoot.querySelectorAll('[data-markup-mode]').forEach(btn => {
-          const mode = btn.getAttribute('data-markup-mode')
-          btn.classList.toggle('active', mode === markup.mode)
-        })
-      } else if (menuId === 'zoom') {
-        const zoomWindow = navToolsRef.current?.getMode() === 'zoom-window'
-        menuRoot.querySelectorAll('[data-action]').forEach(btn => {
-          btn.classList.toggle(
-            'active',
-            btn.getAttribute('data-action') === 'zoom-window' && zoomWindow
-          )
-        })
-      }
+    // Keep sidebar collapsed class in sync when expanding via the shared toggle.
+    const toolbar = simpleToolbarRef.current.toolbar
+    const syncSidebarCollapsed = () => {
+      const sidebar = document.getElementById('mlcad-sidebar')
+      sidebar?.classList.toggle(
+        'mlcad-sidebar--collapsed',
+        toolbar.isCollapsed
+      )
     }
-  })
-  toolbarFlyoutsRef.current = toolbarFlyouts
-
-  layoutMenuRef.current = setupAcExHtmlLayoutMenu({
-    layouts: snapshot.layouts,
-    getActiveLayoutBtrId: () => layout.btrId,
-    onSelect: switchLayout,
-    closeOtherFlyouts: () => toolbarFlyouts.close()
-  })
+    syncSidebarCollapsed()
+    const collapseBtn = toolbar.element.querySelector(
+      '[data-toolbar-item-id="toolbar-collapse"]'
+    )
+    collapseBtn?.addEventListener('click', () => {
+      queueMicrotask(syncSidebarCollapsed)
+    })
+  }
 
   i18n.setOnChange(() => {
     readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
@@ -1079,8 +1118,7 @@ async function startViewer(): Promise<void> {
     reviewPanel?.refreshLabels()
     measureSettingsRef.current?.refreshLabels()
     drawStyleToolbarRef.current?.refreshLabels()
-    toolbarCollapse.refreshLabels()
-    toolbarFlyouts?.refreshLabels()
+    simpleToolbarRef.current?.refresh()
     navToolsRef.current?.refreshLabels()
     expiryMonitor?.refreshLabels()
     // Re-apply visibility button label after i18n DOM refresh.
@@ -1176,69 +1214,6 @@ interface AcExLayerRowRefs {
   zoomBtn: HTMLButtonElement
 }
 
-/** Handles returned by {@link setupToolbarCollapse} for locale-driven UI updates. */
-interface AcExToolbarCollapseController {
-  refreshLabels: () => void
-}
-
-function setupToolbarCollapse(
-  i18n: AcExHtmlI18n,
-  closeStrips?: () => void
-): AcExToolbarCollapseController {
-  const sidebar = document.getElementById('mlcad-sidebar')
-  const toggleBtn = document.getElementById('mlcad-toolbar-toggle')
-  if (!sidebar || !toggleBtn) {
-    return { refreshLabels: () => {} }
-  }
-
-  let collapsed = false
-
-  const closeSidePanels = () => {
-    const layerDrawer = document.getElementById('mlcad-layer-drawer')
-    const layersBtn = document.getElementById('mlcad-layers-btn')
-
-    if (layerDrawer) layerDrawer.hidden = true
-    layersBtn?.classList.remove('active')
-    layersBtn?.setAttribute('aria-expanded', 'false')
-
-    const reviewDrawer = document.getElementById('mlcad-review-drawer')
-    if (reviewDrawer) reviewDrawer.hidden = true
-    document.querySelectorAll('[data-action="markup-panel"]').forEach(btn => {
-      btn.classList.remove('active')
-      btn.setAttribute('aria-pressed', 'false')
-    })
-
-    closeStrips?.()
-  }
-
-  const syncToggle = () => {
-    sidebar.classList.toggle('mlcad-sidebar--collapsed', collapsed)
-    toggleBtn.innerHTML = collapsed
-      ? acExHtmlIcons.chevronDown
-      : acExHtmlIcons.chevronUp
-    toggleBtn.setAttribute('aria-expanded', String(!collapsed))
-    toggleBtn.dataset.i18nKey = collapsed
-      ? 'toolbar.expand'
-      : 'toolbar.collapse'
-    const label = i18n.t(collapsed ? 'toolbar.expand' : 'toolbar.collapse')
-    toggleBtn.setAttribute('title', label)
-    toggleBtn.setAttribute('aria-label', label)
-  }
-
-  toggleBtn.addEventListener('click', event => {
-    event.stopPropagation()
-    collapsed = !collapsed
-    if (collapsed) closeSidePanels()
-    syncToggle()
-  })
-
-  syncToggle()
-
-  return {
-    refreshLabels: () => syncToggle()
-  }
-}
-
 /** Dependencies passed into {@link setupLayerPanel}. */
 interface AcExLayerPanelContext {
   /** Full snapshot (layer table and metadata). */
@@ -1273,6 +1248,10 @@ interface AcExLayerPanelController {
   refreshLayerLabels: () => void
   /** Enables/disables per-layer zoom after the active layout changes. */
   syncLayerZoomButtons: () => void
+  /** Opens or closes the layer drawer. */
+  setOpen: (open: boolean) => void
+  /** Closes the layer drawer. */
+  close: () => void
 }
 
 function setupLayerPanel(
@@ -1293,13 +1272,14 @@ function setupLayerPanel(
     closeOtherDrawers
   } = ctx
 
-  const layersBtn = document.getElementById('mlcad-layers-btn')
+  const layersBtn = () =>
+    document.querySelector<HTMLElement>('[data-toolbar-item-id="layer"]')
   const layerDrawer = document.getElementById('mlcad-layer-drawer')
   const layerList = document.getElementById('mlcad-layer-list')
   const layerClose = document.getElementById('mlcad-layer-close')
   const showAllBtn = document.getElementById('mlcad-layer-show-all')
   const hideAllBtn = document.getElementById('mlcad-layer-hide-all')
-  if (!layersBtn || !layerDrawer || !layerList) return null
+  if (!layerDrawer || !layerList) return null
 
   const layerRows: AcExLayerRowRefs[] = []
 
@@ -1398,14 +1378,10 @@ function setupLayerPanel(
   const setDrawerOpen = (open: boolean) => {
     if (open) closeOtherDrawers?.()
     layerDrawer.hidden = !open
-    layersBtn.classList.toggle('active', open)
-    layersBtn.setAttribute('aria-expanded', String(open))
+    const btn = layersBtn()
+    btn?.classList.toggle('active', open)
+    btn?.setAttribute('aria-expanded', String(open))
   }
-
-  layersBtn.addEventListener('click', event => {
-    event.stopPropagation()
-    setDrawerOpen(layerDrawer.hidden)
-  })
 
   layerClose?.addEventListener('click', () => setDrawerOpen(false))
 
@@ -1418,6 +1394,12 @@ function setupLayerPanel(
     if (!(target instanceof Node)) return
     const sidebar = document.getElementById('mlcad-sidebar')
     if (sidebar?.contains(target)) return
+    if (
+      target instanceof Element &&
+      target.closest('[data-toolbar-item-id="layer"]')
+    ) {
+      return
+    }
     setDrawerOpen(false)
   })
 
@@ -1433,7 +1415,9 @@ function setupLayerPanel(
       for (const row of layerRows) {
         row.zoomBtn.disabled = !layerExtents.get(row.name)
       }
-    }
+    },
+    setOpen: setDrawerOpen,
+    close: () => setDrawerOpen(false)
   }
 }
 

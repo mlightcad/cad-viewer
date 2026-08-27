@@ -11,8 +11,10 @@ import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions'
 /**
  * HTML export plugin for cad-simple-viewer.
  *
- * Registers `-chtml` when loaded. Register this plugin lazily via
- * {@link registerLazyHtmlPlugin} so the export bundle is fetched on demand.
+ * Registers `-chtml` (interactive prompts) and, when no UI `chtml` command
+ * exists, a non-interactive `chtml` that exports with defaults. Register this
+ * plugin lazily via {@link registerLazyHtmlPlugin} so the export bundle is
+ * fetched on demand.
  */
 export class AcApHtmlPlugin implements AcApPlugin {
   /** @inheritdoc */
@@ -20,7 +22,7 @@ export class AcApHtmlPlugin implements AcApPlugin {
   /** @inheritdoc */
   version = packageJson.version
   /** @inheritdoc */
-  description = 'HTML export (-chtml) command'
+  description = 'HTML export (chtml / -chtml) command'
 
   /** Commands registered in {@link onLoad} for cleanup in {@link onUnload}. */
   private registeredCommands: Array<{ group: string; name: string }> = []
@@ -31,20 +33,32 @@ export class AcApHtmlPlugin implements AcApPlugin {
   constructor(private readonly options: AcApHtmlPluginOptions = {}) {}
 
   /**
-   * Registers the `-chtml` system command (command-line, no dialog).
+   * Registers HTML export commands.
+   *
+   * - `-chtml` — command-line prompts for export options
+   * - `chtml` — one-shot export with defaults when no dialog command is registered
+   *   (e.g. cad-simple-viewer-example toolbar). Full cad-viewer registers its own
+   *   `chtml` dialog command first, so this alias is skipped there.
    *
    * @param _context - Application context (unused)
    * @param commandManager - Command stack used to register the HTML export command
    */
   onLoad(_context: AcApContext, commandManager: AcEdCommandStack): void {
     const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
-    const exportCmd = new AcApExportHtmlCmd(this.options)
+    const interactiveCmd = new AcApExportHtmlCmd({
+      pluginOptions: this.options,
+      interactive: true
+    })
 
-    commandManager.addCommand(group, '-chtml', '-chtml', exportCmd)
+    commandManager.addCommand(group, '-chtml', '-chtml', interactiveCmd)
     this.registeredCommands.push({ group, name: '-chtml' })
 
     if (!commandManager.lookupGlobalCmd('chtml')) {
-      commandManager.addCommand(group, 'chtml', 'chtml', exportCmd)
+      const quickCmd = new AcApExportHtmlCmd({
+        pluginOptions: this.options,
+        interactive: false
+      })
+      commandManager.addCommand(group, 'chtml', 'chtml', quickCmd)
       this.registeredCommands.push({ group, name: 'chtml' })
     }
   }

@@ -56,6 +56,7 @@ export const cs: Record<string, string> = {
   'toolbar.localeAr': 'العربية',
   'toolbar.collapse': 'Sbalit panel nástrojů',
   'toolbar.expand': 'Rozbalit panel nástrojů',
+  'toolbar.more': 'Další nástroje',
   'layerManager.title': 'Správce hladin',
   'layerManager.name': 'Název',
   'layerManager.on': 'Zapnuto',

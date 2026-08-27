@@ -130,7 +130,12 @@ export function createLibEntryFileName(
   format: string,
   entryName = 'index'
 ): string {
-  const base = entryName === 'register' ? `${packageId}-register` : packageId
+  const base =
+    entryName === 'register'
+      ? `${packageId}-register`
+      : entryName === 'toolbar'
+        ? `${packageId}-toolbar`
+        : packageId
   return format === 'es' ? `${base}.js` : `${base}.umd.cjs`
 }
 
@@ -146,6 +151,24 @@ export function createLibManualChunks(packageId: string): ManualChunksOption {
   return (id: string) => {
     if (/[\\/]register\.ts$/.test(id)) {
       return `${packageId}-register`
+    }
+    // Isolate toolbar chrome so `/toolbar` does not re-export the full plugin chunk.
+    if (
+      packageId === 'cad-simple-ui-plugin' &&
+      (/[\\/]toolbar\.ts$/.test(id) ||
+        /[\\/]ui[\\/]AcExToolbar\.ts$/.test(id) ||
+        /[\\/]ui[\\/]AcExSubToolbar\.ts$/.test(id) ||
+        /[\\/]ui[\\/]AcExDropdownMenu\.ts$/.test(id) ||
+        /[\\/]ui[\\/]styles\.ts$/.test(id) ||
+        /[\\/]ui[\\/]uiLayout\.ts$/.test(id) ||
+        /[\\/]config[\\/](types|toolbarItemUtils|toolbarItemDisplay)\.ts$/.test(
+          id
+        ))
+    ) {
+      return `${packageId}-toolbar`
+    }
+    if (/[\\/]toolbar\.ts$/.test(id)) {
+      return `${packageId}-toolbar`
     }
     return packageId
   }

@@ -496,6 +496,10 @@ describe('AcApSimpleUiPlugin', () => {
 
     expect(plugin.setToolbarEdgeOffset(16)).toBe(true)
     expect(plugin.getToolbarEdgeOffset()).toBe(16)
+
+    expect(plugin.getToolbarOverflow()).toBe('menu')
+    expect(plugin.setToolbarOverflow('scroll')).toBe(true)
+    expect(plugin.getToolbarOverflow()).toBe('scroll')
   })
 
   it('setToolbarItems dynamically adds the layer command when a layer button appears', () => {

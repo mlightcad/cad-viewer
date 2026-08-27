@@ -1,7 +1,7 @@
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
+import { ICON_LAYOUT } from '@mlightcad/cad-simple-viewer/icons'
 import { acdbHostApplicationServices } from '@mlightcad/data-model'
 
-import { ICON_LAYOUT } from '../assets/icons'
 import { copyDynamicToolbarChildren } from './toolbarItemUtils'
 import type { AcExToolbarItem } from './types'
 

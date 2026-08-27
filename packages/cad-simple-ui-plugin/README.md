@@ -20,6 +20,8 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 - Review palette opens from the Review toolbar button or the `markuppanel` command
 - Dock panel closes via the close button or `close-layer-manager` event
 - Optional collapsible toolbar (like HTML export viewer): hide tool buttons and show only a chevron toggle
+- Configurable toolbar overflow: `'menu'` (⋯ popup) or `'scroll'` when the host cannot fit every button
+- Mobile top/bottom sub-toolbars stretch to the screen width, with even spacing or wrapping
 
 ## Install
 
@@ -196,6 +198,40 @@ toolbar: {
 }
 ```
 
+### Toolbar edge offset
+
+`toolbar.edgeOffset` is the inset in pixels from the **docked** canvas edge (`top` / `bottom` / `left` / `right`). It defaults to `8`.
+
+```typescript
+toolbar: {
+  placement: 'bottom',
+  edgeOffset: 16
+}
+
+// Runtime:
+plugin.setToolbarEdgeOffset(24)
+plugin.getToolbarEdgeOffset()
+```
+
+### Toolbar overflow
+
+When the host width (top/bottom) or height (left/right) cannot fit every button, choose one overflow strategy:
+
+- `'menu'` (default): hide overflowing items behind a ⋯ button; click it to open a popup of the remaining tools
+- `'scroll'`: keep all buttons in a strip that scrolls along the toolbar axis
+
+```typescript
+toolbar: {
+  placement: 'bottom',
+  overflow: 'menu' // or 'scroll'
+}
+
+plugin.setToolbarOverflow('scroll')
+plugin.getToolbarOverflow()
+```
+
+On a phone-sized viewport (`max-width: 600px`), a sub-toolbar opened from a **top** or **bottom** parent bar stretches to the canvas width. If every child fits on one row, buttons are evenly spaced; otherwise they wrap to multiple rows.
+
 ## Custom toolbar
 
 Toolbar buttons are configured through `toolbar.items`. You can start from the built-in set, extend it, or replace it entirely.
@@ -256,7 +292,7 @@ See `cad-simple-viewer-example` (`demoToolbarPresets.ts`) for a working layout s
 | `children` | Nested items shown as a sub-toolbar or popover when the parent is clicked |
 | `childrenUi` | `'menu'` (popover, default), `'toolbar'` (closes on canvas click), or `'sticky-toolbar'` (stays until the parent is clicked again) |
 | `childIcon` | `'fixed'` (default): parent keeps its own icon; `'selected'`: parent icon follows the active child item |
-| `selectedChildId` | Initial submenu selection when `childIcon` is `'selected'` |
+| `selectedChildId` | Initial submenu selection when `childIcon` is `'selected'`. Later `updateItems` calls keep the runtime selection |
 | `toggle` | Two-state button with `getValue`, `on`, and `off` branches |
 | `type` | `'separator'` renders a divider; omit for buttons |
 | `preset` | Reference a built-in button by id (custom layouts only; use `{ preset: 'pan' }`) |
@@ -553,6 +589,7 @@ Omit the layer button from `items` if you do not want the layer dock UI or `laye
 | `toolbarPreset(id)` | Helper that references a built-in button |
 | `createDefaultToolbarPresetMap()` | Built-in items keyed by id (advanced use) |
 | `AcExToolbarPlacement` | `'top' \| 'bottom' \| 'left' \| 'right'` |
+| `AcExToolbarOverflow` | `'menu' \| 'scroll'` |
 
 ## See also
 
