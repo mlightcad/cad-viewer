@@ -12,6 +12,9 @@
       "@mlightcad/cad-simple-ui-plugin/toolbar": [
         "./packages/cad-simple-ui-plugin/src/toolbar.ts"
       ],
+      "@mlightcad/cad-simple-ui-plugin/setup-toolbar": [
+        "./packages/cad-simple-ui-plugin/src/setupToolbar.ts"
+      ],
       "@mlightcad/cad-simple-viewer/icons": [
         "./packages/cad-simple-viewer/src/ui/icons.ts"
       ]

@@ -105,6 +105,9 @@ describe('createAcExHtmlToolbarItems', () => {
     expect(config.placement).toBe('bottom')
     expect(config.edgeOffset).toBe(0)
     expect(config.collapsible).toBe(false)
+    expect(config.contentWidth).toBe('full')
+    expect(config.itemDistribution).toBe('evenly')
+    expect(config.showItemLabels).toBe(true)
 
     const items = resolveAcExHtmlToolbarConfig(config, baseCtx)
     expect(items.map(item => item.id)).toEqual([

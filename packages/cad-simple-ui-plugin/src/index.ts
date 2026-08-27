@@ -21,11 +21,12 @@ export type {
 export type {
   AcUiDefaultToolbarContext,
   AcUiDockPanelSide,
-  AcUiLocale,
   AcUiSimpleUiPluginOptions,
   AcUiToolbarConfig,
+  AcUiToolbarContentWidth,
   AcUiToolbarItem,
   AcUiToolbarItemConfig,
+  AcUiToolbarItemDistribution,
   AcUiToolbarItemsInput,
   AcUiToolbarChildIconMode,
   AcUiToolbarChildrenUi,
@@ -50,8 +51,14 @@ export {
   acuiGetBuiltInToolbarDefaults,
   acuiMergeToolbarConfigs,
   acuiResolveLayoutToolbarConfig,
-  acuiResolveToolbarItems
+  acuiResolveToolbarItems,
+  acuiResolveToolbarItemsFromPresets
 } from './config/resolveToolbarItems'
+export {
+  acuiSetupToolbar,
+  type AcUiSetupToolbarController,
+  type AcUiSetupToolbarOptions
+} from './ui/acuiSetupToolbar'
 export {
   acuiCreateToolbarSeparator,
   acuiExpandToolbarItemConfigs,

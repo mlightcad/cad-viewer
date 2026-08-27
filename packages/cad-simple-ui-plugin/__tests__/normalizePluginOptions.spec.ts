@@ -81,6 +81,9 @@ describe('acuiNormalizePluginOptions', () => {
     expect(resolved.layoutToolbars.mobile.placement).toBe('bottom')
     expect(resolved.layoutToolbars.mobile.edgeOffset).toBe(0)
     expect(resolved.layoutToolbars.mobile.collapsible).toBe(false)
+    expect(resolved.layoutToolbars.mobile.contentWidth).toBe('full')
+    expect(resolved.layoutToolbars.mobile.itemDistribution).toBe('evenly')
+    expect(resolved.layoutToolbars.mobile.showItemLabels).toBe(true)
     expect(resolved.layoutToolbars.mobile.items).toEqual(
       MOBILE_DEFAULT_TOOLBAR_ITEMS
     )
@@ -96,13 +99,19 @@ describe('acuiNormalizePluginOptions', () => {
         mobile: {
           toolbar: {
             edgeOffset: 4,
-            placement: 'top'
+            placement: 'top',
+            contentWidth: 'hug',
+            itemDistribution: 'start',
+            showItemLabels: false
           }
         }
       }
     })
     expect(resolved.layoutToolbars.mobile.edgeOffset).toBe(4)
     expect(resolved.layoutToolbars.mobile.placement).toBe('top')
+    expect(resolved.layoutToolbars.mobile.contentWidth).toBe('hug')
+    expect(resolved.layoutToolbars.mobile.itemDistribution).toBe('start')
+    expect(resolved.layoutToolbars.mobile.showItemLabels).toBe(false)
   })
 
   it('locks layout when layout is forced', () => {

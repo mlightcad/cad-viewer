@@ -34,6 +34,11 @@
       "types": "./lib/toolbar.d.ts",
       "import": "./dist/cad-simple-ui-plugin-toolbar.js",
       "require": "./dist/cad-simple-ui-plugin-toolbar.umd.cjs"
+    },
+    "./setup-toolbar": {
+      "types": "./lib/setupToolbar.d.ts",
+      "import": "./dist/cad-simple-ui-plugin-setupToolbar.js",
+      "require": "./dist/cad-simple-ui-plugin-setupToolbar.umd.cjs"
     }
   },
   "scripts": {

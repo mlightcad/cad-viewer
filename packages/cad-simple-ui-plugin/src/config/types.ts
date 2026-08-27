@@ -8,6 +8,22 @@ import type {
 export type AcUiToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
 
 /**
+ * How the toolbar sizes along the docked edge.
+ *
+ * - `'hug'`: shrink-wrap to content (centered with {@link AcUiToolbarConfig.edgeOffset}).
+ * - `'full'`: stretch to the host width/height on the main axis.
+ */
+export type AcUiToolbarContentWidth = 'hug' | 'full'
+
+/**
+ * How toolbar buttons are distributed inside the items strip.
+ *
+ * - `'start'`: pack toward the start with fixed gaps.
+ * - `'evenly'`: equal spacing across the available main axis.
+ */
+export type AcUiToolbarItemDistribution = 'start' | 'evenly'
+
+/**
  * How the toolbar shows items that do not fit along the docked edge.
  *
  * - `'menu'`: hide overflowing items behind a "more" (⋯) button that opens a popup.
@@ -17,9 +33,6 @@ export type AcUiToolbarOverflow = 'menu' | 'scroll'
 
 /** Dock panel edge placement relative to the viewer host element. */
 export type AcUiDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
-
-/** Supported UI locale codes for plugin strings. */
-export type AcUiLocale = 'en' | 'zh' | 'cs' | 'tr'
 
 /**
  * Device-oriented UI layout kind for toolbars.
@@ -169,6 +182,30 @@ export interface AcUiToolbarConfig {
    * @default 'menu'
    */
   overflow?: AcUiToolbarOverflow
+  /**
+   * How the toolbar sizes along the docked edge.
+   *
+   * - `'hug'` (default): shrink-wrap to content.
+   * - `'full'`: stretch to the host size on the main axis (phone tab-bar style).
+   *
+   * Mobile built-in default is `'full'`.
+   */
+  contentWidth?: AcUiToolbarContentWidth
+  /**
+   * How buttons are distributed inside the items strip.
+   *
+   * - `'start'` (default): pack toward the start with fixed gaps.
+   * - `'evenly'`: equal spacing across the available main axis.
+   *
+   * Mobile built-in default is `'evenly'`.
+   */
+  itemDistribution?: AcUiToolbarItemDistribution
+  /**
+   * When true, render {@link AcUiToolbarItem.label} under each toolbar button icon.
+   *
+   * Mobile built-in default is `true`.
+   */
+  showItemLabels?: boolean
 }
 
 /**
@@ -208,8 +245,6 @@ export interface AcUiDefaultToolbarContext {
 export interface AcUiSimpleUiPluginOptions {
   /** Viewer host element; defaults to the active view container or `document.body`. */
   host?: HTMLElement
-  /** @deprecated Locale follows {@link AcApI18n.currentLocale} automatically. */
-  locale?: AcUiLocale
   /**
    * How device layouts are chosen.
    *

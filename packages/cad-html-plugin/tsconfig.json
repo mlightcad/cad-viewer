@@ -10,6 +10,9 @@
       ],
       "@mlightcad/cad-simple-ui-plugin/toolbar": [
         "../cad-simple-ui-plugin/lib/toolbar.d.ts"
+      ],
+      "@mlightcad/cad-simple-ui-plugin/setup-toolbar": [
+        "../cad-simple-ui-plugin/lib/setupToolbar.d.ts"
       ]
     }
   },

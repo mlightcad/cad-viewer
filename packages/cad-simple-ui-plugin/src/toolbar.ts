@@ -3,6 +3,10 @@
  * without loading the full SimpleUiPlugin (dock panel, layer/review commands).
  *
  * Used by the offline HTML export viewer runtime.
+ *
+ * For config-driven mount + layout switching, import {@link acuiSetupToolbar}
+ * from `@mlightcad/cad-simple-ui-plugin/setup-toolbar` or use the thin HTML
+ * wrapper {@link setupAcExHtmlSimpleToolbar}.
  */
 
 export {
@@ -21,8 +25,10 @@ export type {
   AcUiToolbarChildIconMode,
   AcUiToolbarChildrenUi,
   AcUiToolbarConfig,
+  AcUiToolbarContentWidth,
   AcUiToolbarItem,
   AcUiToolbarItemConfig,
+  AcUiToolbarItemDistribution,
   AcUiToolbarOverflow,
   AcUiToolbarPlacement,
   AcUiToolbarPresetRef,
@@ -39,6 +45,11 @@ export {
   acuiToolbarPreset
 } from './config/toolbarItemUtils'
 export {
+  acuiMergeToolbarConfigs,
+  acuiResolveLayoutToolbarConfig,
+  acuiResolveToolbarItemsFromPresets
+} from './config/toolbarConfig'
+export {
   acuiGetLayoutKind,
   acuiIsCompactLayout,
   acuiIsMobileLayout,
@@ -47,4 +58,3 @@ export {
   ML_EX_UI_MOBILE_MAX_WIDTH,
   ML_EX_UI_MOBILE_MEDIA_QUERY
 } from './ui/uiLayout'
-

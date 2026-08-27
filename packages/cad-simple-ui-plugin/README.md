@@ -239,9 +239,11 @@ By default the plugin picks a layout from the viewport (`layout: 'auto'`):
 
 | Kind | Breakpoint | Default toolbar |
 |------|------------|-----------------|
-| `mobile` | ≤ 600px | Bottom bar, `edgeOffset: 0`, not collapsible; zoom / measure / annotation / layer / layout / settings |
+| `mobile` | ≤ 600px | Bottom bar, full width, evenly spaced buttons with labels; `edgeOffset: 0`, not collapsible; zoom / measure / annotation / layer / layout / settings |
 | `pad` | 601–960px | Same as current desktop defaults (right side) |
 | `desktop` | > 960px | Right side, full default items |
+
+Mobile chrome defaults (`contentWidth: 'full'`, `itemDistribution: 'evenly'`, `showItemLabels: true`) are overridable via `layouts.mobile.toolbar`.
 
 Top-level `toolbar` options merge into **pad** and **desktop** only (backward compatible). Override any kind with `layouts`:
 
@@ -259,7 +261,10 @@ acuiCreateSimpleUiPlugin({
     mobile: {
       toolbar: {
         // Optional overrides on top of the built-in mobile defaults
-        edgeOffset: 0
+        edgeOffset: 0,
+        contentWidth: 'full',
+        itemDistribution: 'evenly',
+        showItemLabels: true
       }
     }
   }
@@ -267,6 +272,24 @@ acuiCreateSimpleUiPlugin({
 ```
 
 Reusable toolbar chrome is typed as `AcUiToolbarConfig` (also exported from `@mlightcad/cad-simple-ui-plugin/toolbar` for HTML export).
+
+Standalone hosts (without SimpleUiPlugin) can mount the same config-driven toolbar via `acuiSetupToolbar` from `@mlightcad/cad-simple-ui-plugin/setup-toolbar`:
+
+```typescript
+import { acuiSetupToolbar } from '@mlightcad/cad-simple-ui-plugin/setup-toolbar'
+
+acuiSetupToolbar({
+  host,
+  i18n,
+  onCommand,
+  layout: 'auto',
+  toolbar: { /* pad/desktop overrides */ },
+  layouts: { mobile: { toolbar: { /* … */ } } },
+  getBuiltInDefaults: kind => /* host defaults */,
+  presets: () => /* preset Map */,
+  docBinding: false
+})
+```
 
 ## Custom toolbar
 

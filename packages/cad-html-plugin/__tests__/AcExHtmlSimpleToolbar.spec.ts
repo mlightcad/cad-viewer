@@ -18,7 +18,7 @@ const setOverflow = jest.fn()
 const getOverflow = jest.fn(() => 'menu')
 const setPlacement = jest.fn()
 
-jest.mock('@mlightcad/cad-simple-ui-plugin/toolbar', () => {
+jest.mock('@mlightcad/cad-simple-ui-plugin/setup-toolbar', () => {
   class AcUiToolbar {
     element = document.createElement('div')
     isCollapsed = false
@@ -32,22 +32,57 @@ jest.mock('@mlightcad/cad-simple-ui-plugin/toolbar', () => {
     getOverflow = getOverflow
     setPlacement = setPlacement
     setCollapsible = jest.fn()
+    setContentWidth = jest.fn()
+    setItemDistribution = jest.fn()
+    setShowItemLabels = jest.fn()
+    setVisible = jest.fn()
     constructor(public options: Record<string, unknown>) {
       const host = options.host as HTMLElement
       host.appendChild(this.element)
     }
   }
   return {
-    AcUiToolbar,
-    acuiCreateToolbarSeparator: (id: string) => ({ type: 'separator', id }),
-    acuiExpandToolbarItemConfigs: (items: unknown[]) => items,
-    acuiInsertToolbarItemsAt: (items: unknown[]) => items,
-    acuiToolbarPreset: (preset: string) => ({ preset }),
-    acuiGetLayoutKind: () => 'desktop',
-    ML_EX_UI_MOBILE_MEDIA_QUERY: '(max-width: 600px)',
-    ML_EX_UI_COMPACT_MEDIA_QUERY: '(max-width: 960px)'
+    acuiSetupToolbar: (opts: Record<string, unknown>) => {
+      const getBuiltInDefaults = opts.getBuiltInDefaults as
+        | ((kind: string) => Record<string, unknown>)
+        | undefined
+      const builtIn = getBuiltInDefaults?.('desktop') ?? {}
+      const toolbar = new AcUiToolbar({
+        ...opts,
+        positioning: 'absolute',
+        overflow: builtIn.overflow ?? 'menu',
+        edgeOffset: builtIn.edgeOffset ?? 12,
+        onRender: opts.onRender
+      })
+      const onAfterResolve = opts.onAfterResolve as
+        | ((tb: InstanceType<typeof AcUiToolbar>) => void)
+        | undefined
+      onAfterResolve?.(toolbar)
+      return {
+        toolbar,
+        refresh: jest.fn(),
+        destroy: () => toolbar.destroy(),
+        getEdgeOffset: () => toolbar.getEdgeOffset(),
+        setEdgeOffset: (offset: number) => toolbar.setEdgeOffset(offset),
+        getOverflow: () => toolbar.getOverflow(),
+        setOverflow: (overflow: string) => toolbar.setOverflow(overflow),
+        getPlacement: () => toolbar.placement,
+        setPlacement: (placement: string) => toolbar.setPlacement(placement),
+        getLayoutKind: () => 'desktop'
+      }
+    }
   }
 })
+
+jest.mock('@mlightcad/cad-simple-ui-plugin/toolbar', () => ({
+  acuiCreateToolbarSeparator: (id: string) => ({ type: 'separator', id }),
+  acuiExpandToolbarItemConfigs: (items: unknown[]) => items,
+  acuiInsertToolbarItemsAt: (items: unknown[]) => items,
+  acuiToolbarPreset: (preset: string) => ({ preset }),
+  acuiGetLayoutKind: () => 'desktop',
+  ML_EX_UI_MOBILE_MEDIA_QUERY: '(max-width: 600px)',
+  ML_EX_UI_COMPACT_MEDIA_QUERY: '(max-width: 960px)'
+}))
 
 import { setupAcExHtmlSimpleToolbar } from '../src/AcExHtmlSimpleToolbar'
 import type { AcExHtmlI18n } from '../src/AcExHtmlI18n'

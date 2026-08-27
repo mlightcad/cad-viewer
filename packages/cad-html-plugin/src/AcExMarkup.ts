@@ -59,9 +59,6 @@ export type { AcExMarkupMode } from './AcExMarkupTypes'
 /** Default markup stroke color (ACI red). */
 export const ACEX_MARKUP_COLOR = '#e53935'
 
-/** @deprecated Selection uses CSS glow; original stroke color is preserved. */
-export const ACEX_MARKUP_SELECT_COLOR = '#ffd54f'
-
 /** Default CAD line weight (≈ 0.70 mm → ~2.5 px). */
 const ACEX_MARKUP_LINE_WEIGHT = 70
 

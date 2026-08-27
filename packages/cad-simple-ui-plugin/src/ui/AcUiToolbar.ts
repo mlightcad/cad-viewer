@@ -20,7 +20,9 @@ import {
   acuiResolveToolbarChildrenUi
 } from '../config/toolbarItemUtils'
 import type {
+  AcUiToolbarContentWidth,
   AcUiToolbarItem,
+  AcUiToolbarItemDistribution,
   AcUiToolbarOverflow,
   AcUiToolbarPlacement
 } from '../config/types'
@@ -94,6 +96,21 @@ export interface AcUiToolbarOptions {
    * @default 'menu'
    */
   overflow?: AcUiToolbarOverflow
+  /**
+   * How the toolbar sizes along the docked edge.
+   * @default 'hug'
+   */
+  contentWidth?: AcUiToolbarContentWidth
+  /**
+   * How buttons are distributed inside the items strip.
+   * @default 'start'
+   */
+  itemDistribution?: AcUiToolbarItemDistribution
+  /**
+   * When true, render {@link AcUiToolbarItem.label} under each button icon.
+   * @default false
+   */
+  showItemLabels?: boolean
   /**
    * Layout mode for the toolbar root.
    * - `'absolute'` (default): floats inside {@link host} on the docked edge.
@@ -174,6 +191,12 @@ export class AcUiToolbar {
   private edgeOffset: number
   /** How overflowing items are shown when the host is too small. */
   private overflow: AcUiToolbarOverflow
+  /** Whether the toolbar stretches to the host size on the main axis. */
+  private contentWidth: AcUiToolbarContentWidth
+  /** How buttons are distributed inside the items strip. */
+  private itemDistribution: AcUiToolbarItemDistribution
+  /** Whether button captions are rendered under icons. */
+  private showItemLabels: boolean
   /** Flex strip that holds toolbar buttons and separators. */
   private itemsEl: HTMLDivElement
   /** "More" button that opens overflowing items as a popup. */
@@ -221,6 +244,9 @@ export class AcUiToolbar {
     this.themeHost = options.themeHost ?? options.host
     this.edgeOffset = options.edgeOffset ?? 8
     this.overflow = options.overflow ?? 'menu'
+    this.contentWidth = options.contentWidth ?? 'hug'
+    this.itemDistribution = options.itemDistribution ?? 'start'
+    this.showItemLabels = Boolean(options.showItemLabels)
     this.docBinding = options.docBinding !== false
     this.docBridge = options.docBridge
     this.positioning = options.positioning ?? 'absolute'
@@ -242,6 +268,7 @@ export class AcUiToolbar {
 
     this.itemsEl = document.createElement('div')
     this.itemsEl.className = 'ml-ex-ui-toolbar-items'
+    this.syncItemsClasses()
 
     this.overflowButton = document.createElement('button')
     this.overflowButton.type = 'button'
@@ -361,6 +388,60 @@ export class AcUiToolbar {
     this.scheduleSyncPosition()
   }
 
+  /** Current content width mode along the docked edge. */
+  getContentWidth() {
+    return this.contentWidth
+  }
+
+  /**
+   * Sets whether the toolbar hug-wraps content or stretches to the host size.
+   *
+   * @param contentWidth - `'hug'` or `'full'`.
+   */
+  setContentWidth(contentWidth: AcUiToolbarContentWidth) {
+    if (this.contentWidth === contentWidth) return
+    this.contentWidth = contentWidth
+    this.closeChildrenUi()
+    this.syncRootClasses()
+    this.syncItemsClasses()
+    this.scheduleSyncPosition()
+  }
+
+  /** Current button distribution inside the items strip. */
+  getItemDistribution() {
+    return this.itemDistribution
+  }
+
+  /**
+   * Sets how buttons are distributed inside the items strip.
+   *
+   * @param itemDistribution - `'start'` or `'evenly'`.
+   */
+  setItemDistribution(itemDistribution: AcUiToolbarItemDistribution) {
+    if (this.itemDistribution === itemDistribution) return
+    this.itemDistribution = itemDistribution
+    this.syncItemsClasses()
+    this.scheduleSyncPosition()
+  }
+
+  /** Whether short captions are shown under toolbar button icons. */
+  getShowItemLabels() {
+    return this.showItemLabels
+  }
+
+  /**
+   * Toggles short captions under toolbar button icons and rebuilds buttons.
+   *
+   * @param showItemLabels - When true, render captions.
+   */
+  setShowItemLabels(showItemLabels: boolean) {
+    const next = Boolean(showItemLabels)
+    if (this.showItemLabels === next) return
+    this.showItemLabels = next
+    this.syncRootClasses()
+    this.renderButtons()
+  }
+
   /**
    * Moves the toolbar to another canvas mount element.
    *
@@ -391,6 +472,11 @@ export class AcUiToolbar {
   /** Current toolbar edge placement. */
   get placement() {
     return this.options.placement
+  }
+
+  /** Whether a collapse/expand toggle is available. */
+  get isCollapsible() {
+    return Boolean(this.options.collapsible)
   }
 
   /** Whether the toolbar is collapsed to the toggle button only. */
@@ -506,9 +592,26 @@ export class AcUiToolbar {
     if (this.isDisabled) classes.push('is-disabled')
     if (this.overflow === 'scroll' && !this.collapsed) classes.push('is-scroll')
     if (this.positioning === 'static') classes.push('is-static')
-    if (this.overflowFlush === 'x') classes.push('is-overflow-flush-x')
-    if (this.overflowFlush === 'y') classes.push('is-overflow-flush-y')
+    if (this.contentWidth === 'full') classes.push('is-full-width')
+    if (this.showItemLabels) classes.push('is-show-labels')
+    if (this.overflowFlush === 'x' || this.shouldFlushFullWidth('x')) {
+      classes.push('is-overflow-flush-x')
+    }
+    if (this.overflowFlush === 'y' || this.shouldFlushFullWidth('y')) {
+      classes.push('is-overflow-flush-y')
+    }
     this.root.className = classes.join(' ')
+  }
+
+  /** Applies distribution classes on the items strip. */
+  private syncItemsClasses() {
+    this.itemsEl.classList.toggle('is-evenly', this.itemDistribution === 'evenly')
+  }
+
+  /** Whether full-width mode should flush to the host edge on the given axis. */
+  private shouldFlushFullWidth(axis: 'x' | 'y') {
+    if (this.contentWidth !== 'full' || this.edgeOffset > 0) return false
+    return axis === 'x' ? this.isHorizontal() : !this.isHorizontal()
   }
 
   /** Toggles collapsed state when {@link AcUiToolbarOptions.collapsible} is enabled. */
@@ -612,7 +715,14 @@ export class AcUiToolbar {
 
       if (effective.icon) {
         button.appendChild(createIconElement(effective.icon))
-      } else if (effective.label) {
+      }
+
+      if (this.showItemLabels && effective.label) {
+        const caption = document.createElement('span')
+        caption.className = 'ml-ex-ui-toolbar-btn-caption'
+        caption.textContent = this.options.i18n.t(effective.label)
+        button.appendChild(caption)
+      } else if (!effective.icon && effective.label) {
         const text = document.createElement('span')
         text.textContent = this.options.i18n.t(effective.label)
         text.style.fontSize = '11px'
@@ -764,6 +874,7 @@ export class AcUiToolbar {
 
     const placement = this.options.placement
     const horizontal = placement === 'top' || placement === 'bottom'
+    const fullWidth = this.contentWidth === 'full'
     if (horizontal) {
       this.root.style.maxWidth = `${Math.max(0, hostWidth - offset * 2)}px`
     } else {
@@ -776,7 +887,11 @@ export class AcUiToolbar {
     const toolbarHeight = this.root.offsetHeight
 
     if (horizontal) {
-      if (this.overflowFlush === 'x') {
+      if (fullWidth) {
+        this.root.style.left = `${offset}px`
+        this.root.style.width = `${Math.max(0, hostWidth - offset * 2)}px`
+        this.root.style.maxWidth = `${Math.max(0, hostWidth - offset * 2)}px`
+      } else if (this.overflowFlush === 'x') {
         this.root.style.left = '0px'
         this.root.style.width = `${hostWidth}px`
         this.root.style.maxWidth = `${hostWidth}px`
@@ -794,7 +909,11 @@ export class AcUiToolbar {
       return
     }
 
-    if (this.overflowFlush === 'y') {
+    if (fullWidth) {
+      this.root.style.top = `${offset}px`
+      this.root.style.height = `${Math.max(0, hostHeight - offset * 2)}px`
+      this.root.style.maxHeight = `${Math.max(0, hostHeight - offset * 2)}px`
+    } else if (this.overflowFlush === 'y') {
       this.root.style.top = '0px'
       this.root.style.height = `${hostHeight}px`
       this.root.style.maxHeight = `${hostHeight}px`
@@ -832,6 +951,14 @@ export class AcUiToolbar {
     }
 
     const horizontal = this.isHorizontal()
+
+    // Full-width toolbars keep every item visible and stretch to the host.
+    if (this.contentWidth === 'full') {
+      this.overflowFlush = horizontal ? 'x' : 'y'
+      this.syncRootClasses()
+      return
+    }
+
     const availableInset = this.availableMainSize(false)
     const padding = this.readPadding(this.root, horizontal)
     const rootGap = this.readGap(this.root, horizontal)

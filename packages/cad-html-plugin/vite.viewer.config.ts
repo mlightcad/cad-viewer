@@ -8,6 +8,10 @@ export default defineConfig({
       '@mlightcad/cad-simple-ui-plugin/toolbar': resolve(
         __dirname,
         '../cad-simple-ui-plugin/src/toolbar.ts'
+      ),
+      '@mlightcad/cad-simple-ui-plugin/setup-toolbar': resolve(
+        __dirname,
+        '../cad-simple-ui-plugin/src/setupToolbar.ts'
       )
     }
   },

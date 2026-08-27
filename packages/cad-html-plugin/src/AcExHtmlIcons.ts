@@ -127,8 +127,6 @@ export const acExHtmlIcons = {
   markupShow: ICON_MARKUP_SHOW,
   /** Hide markups (slashed eye). */
   markupHide: ICON_MARKUP_HIDE,
-  /** @deprecated Prefer {@link markupHide} / {@link markupShow}. */
-  markupVisibility: ICON_MARKUP_HIDE,
   /** Clear all markups. */
   clearMarkups: ICON_CLEAR_MARKUPS
 } as const

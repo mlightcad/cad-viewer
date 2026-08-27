@@ -67,6 +67,9 @@ function createToolbar(
     hostWidth?: number
     hostHeight?: number
     edgeOffset?: number
+    contentWidth?: 'hug' | 'full'
+    itemDistribution?: 'start' | 'evenly'
+    showItemLabels?: boolean
     onRender?: () => void
   }
 ) {
@@ -84,6 +87,9 @@ function createToolbar(
     placement: options?.placement ?? 'right',
     overflow: options?.overflow,
     edgeOffset: options?.edgeOffset,
+    contentWidth: options?.contentWidth,
+    itemDistribution: options?.itemDistribution,
+    showItemLabels: options?.showItemLabels,
     items,
     i18n: new AcUiI18n(),
     onCommand,
@@ -706,6 +712,39 @@ describe('AcUiToolbar selected child persistence', () => {
     const afterConstruct = onRender.mock.calls.length
     toolbar.updateItems(zoomItems())
     expect(onRender.mock.calls.length).toBeGreaterThan(afterConstruct)
+
+    toolbar.destroy()
+  })
+
+  it('renders button labels and full-width evenly classes when configured', async () => {
+    const { host, toolbar } = createToolbar(
+      [
+        { id: 'zoom', label: 'toolbar.zoom', icon: '<svg></svg>' },
+        { id: 'layer', label: 'toolbar.layer', icon: '<svg></svg>' }
+      ],
+      {
+        placement: 'bottom',
+        edgeOffset: 0,
+        contentWidth: 'full',
+        itemDistribution: 'evenly',
+        showItemLabels: true,
+        hostWidth: 375
+      }
+    )
+
+    await flushLayout()
+
+    expect(toolbar.element.classList.contains('is-full-width')).toBe(true)
+    expect(toolbar.element.classList.contains('is-show-labels')).toBe(true)
+    expect(
+      host.querySelector('.ml-ex-ui-toolbar-items')?.classList.contains('is-evenly')
+    ).toBe(true)
+    expect(
+      host.querySelector(
+        '[data-toolbar-item-id="zoom"] .ml-ex-ui-toolbar-btn-caption'
+      )?.textContent
+    ).toBeTruthy()
+    expect(toolbar.element.style.width).toBe('375px')
 
     toolbar.destroy()
   })

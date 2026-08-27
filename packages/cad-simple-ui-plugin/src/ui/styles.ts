@@ -109,8 +109,41 @@ export function acuiEnsureUiStyles() {
     }
 
     .ml-ex-ui-toolbar.is-overflow-flush-x .ml-ex-ui-toolbar-items,
-    .ml-ex-ui-toolbar.is-overflow-flush-y .ml-ex-ui-toolbar-items {
+    .ml-ex-ui-toolbar.is-overflow-flush-y .ml-ex-ui-toolbar-items,
+    .ml-ex-ui-toolbar.is-full-width .ml-ex-ui-toolbar-items {
       flex: 1 1 auto;
+    }
+
+    .ml-ex-ui-toolbar-items.is-evenly {
+      justify-content: space-evenly;
+    }
+
+    .ml-ex-ui-toolbar.is-full-width .ml-ex-ui-toolbar-items.is-evenly > .ml-ex-ui-toolbar-btn {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .ml-ex-ui-toolbar.is-show-labels .ml-ex-ui-toolbar-btn {
+      flex-direction: column;
+      gap: 2px;
+      height: auto;
+      min-height: var(--ml-ex-ui-toolbar-btn-size);
+      padding: 4px 2px;
+    }
+
+    .ml-ex-ui-toolbar.is-show-labels .ml-ex-ui-toolbar-btn-caption {
+      display: block;
+      max-width: 100%;
+      font-size: 10px;
+      line-height: 1.15;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ml-ex-ui-toolbar.is-show-labels .ml-ex-ui-toolbar-btn.has-children::after {
+      display: none;
     }
 
     .ml-ex-ui-toolbar-overflow-btn {

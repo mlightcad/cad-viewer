@@ -135,7 +135,9 @@ export function createLibEntryFileName(
       ? `${packageId}-register`
       : entryName === 'toolbar'
         ? `${packageId}-toolbar`
-        : packageId
+        : entryName === 'setupToolbar'
+          ? `${packageId}-setupToolbar`
+          : packageId
   return format === 'es' ? `${base}.js` : `${base}.umd.cjs`
 }
 
@@ -152,16 +154,15 @@ export function createLibManualChunks(packageId: string): ManualChunksOption {
     if (/[\\/]register\.ts$/.test(id)) {
       return `${packageId}-register`
     }
-    // Isolate toolbar chrome so `/toolbar` does not re-export the full plugin chunk.
+    // Isolate toolbar chrome so `/toolbar` and `/setup-toolbar` do not pull
+    // the full plugin chunk (dock / layer / review).
     if (
       packageId === 'cad-simple-ui-plugin' &&
-      (/[\\/]toolbar\.ts$/.test(id) ||
-        /[\\/]ui[\\/]AcUiToolbar\.ts$/.test(id) ||
-        /[\\/]ui[\\/]AcUiSubToolbar\.ts$/.test(id) ||
-        /[\\/]ui[\\/]AcUiDropdownMenu\.ts$/.test(id) ||
-        /[\\/]ui[\\/]styles\.ts$/.test(id) ||
-        /[\\/]ui[\\/]uiLayout\.ts$/.test(id) ||
-        /[\\/]config[\\/](types|toolbarItemUtils|toolbarItemDisplay)\.ts$/.test(
+      (/[\\/](?:toolbar|setupToolbar)\.ts$/.test(id) ||
+        /[\\/]ui[\\/](?:AcUiToolbar|AcUiSubToolbar|AcUiDropdownMenu|acuiSetupToolbar|styles|uiLayout)\.ts$/.test(
+          id
+        ) ||
+        /[\\/]config[\\/](types|toolbarConfig|toolbarItemUtils|toolbarItemDisplay)\.ts$/.test(
           id
         ))
     ) {

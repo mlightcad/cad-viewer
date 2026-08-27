@@ -488,7 +488,10 @@ export function getAcExHtmlBuiltInToolbarConfig(
       collapsible: false,
       defaultCollapsed: false,
       edgeOffset: 0,
-      overflow: 'menu'
+      overflow: 'menu',
+      contentWidth: 'full',
+      itemDistribution: 'evenly',
+      showItemLabels: true
     }
   }
 
@@ -521,7 +524,10 @@ export function getAcExHtmlBuiltInToolbarConfig(
     collapsible: true,
     defaultCollapsed: false,
     edgeOffset: 12,
-    overflow: 'menu'
+    overflow: 'menu',
+    contentWidth: 'hug',
+    itemDistribution: 'start',
+    showItemLabels: false
   }
 }
 

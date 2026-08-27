@@ -105,18 +105,10 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     defaultHeight: number
     defaultWidth: number
   }
-  /** Current toolbar edge placement (mutable via toolbar settings button). */
-  private toolbarPlacement: AcUiToolbarPlacement = 'right'
-  /** Whether the viewer toolbar supports collapse/expand. */
-  private toolbarCollapsible = false
   /** Canvas element receiving the floating viewer toolbar. */
   private toolbarMountEl?: HTMLElement
   /** Explicit toolbar mount override from plugin options. */
   private toolbarMountTargetOption?: HTMLElement
-  /** Inset of the viewer toolbar from the docked canvas edge in px. */
-  private toolbarEdgeOffset = 8
-  /** How overflowing toolbar items are shown when the host is too small. */
-  private toolbarOverflow: AcUiToolbarOverflow = 'menu'
   /** `'auto'` follows viewport; otherwise locks to one layout kind. */
   private layoutMode: 'auto' | AcUiLayoutKind = 'auto'
   /** Resolved toolbar config per device layout. */
@@ -310,7 +302,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
   /** Returns the viewer toolbar edge placement. */
   getToolbarPlacement(): AcUiToolbarPlacement {
-    return this.toolbarPlacement
+    return this.toolbar?.placement ?? this.activeToolbarConfig().placement ?? 'right'
   }
 
   /**
@@ -326,7 +318,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       )
       return false
     }
-    this.applyToolbarPlacement(placement)
+    this.toolbar.setPlacement(placement)
     return true
   }
 
@@ -373,7 +365,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       )
       return false
     }
-    if (!this.toolbarCollapsible) {
+    if (!this.toolbar.isCollapsible) {
       console.warn(
         '[SimpleUiPlugin] setToolbarCollapsed skipped: toolbar is not collapsible.'
       )
@@ -385,7 +377,9 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
   /** Returns the viewer toolbar inset from the docked canvas edge in px. */
   getToolbarEdgeOffset(): number {
-    return this.toolbar?.getEdgeOffset() ?? this.toolbarEdgeOffset
+    return (
+      this.toolbar?.getEdgeOffset() ?? this.activeToolbarConfig().edgeOffset ?? 8
+    )
   }
 
   /**
@@ -401,14 +395,15 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       )
       return false
     }
-    this.toolbarEdgeOffset = Math.max(0, offset)
-    this.toolbar.setEdgeOffset(this.toolbarEdgeOffset)
+    this.toolbar.setEdgeOffset(offset)
     return true
   }
 
   /** Returns how overflowing toolbar items are shown. */
   getToolbarOverflow(): AcUiToolbarOverflow {
-    return this.toolbar?.getOverflow() ?? this.toolbarOverflow
+    return (
+      this.toolbar?.getOverflow() ?? this.activeToolbarConfig().overflow ?? 'menu'
+    )
   }
 
   /**
@@ -424,7 +419,6 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       )
       return false
     }
-    this.toolbarOverflow = overflow
     this.toolbar.setOverflow(overflow)
     return true
   }
@@ -459,10 +453,6 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.currentLayoutKind = initialKind
     this.toolbarMountTargetOption =
       initialToolbar.mountTarget ?? this.options.toolbar?.mountTarget
-    this.toolbarPlacement = initialToolbar.placement ?? 'right'
-    this.toolbarCollapsible = initialToolbar.collapsible ?? false
-    this.toolbarEdgeOffset = initialToolbar.edgeOffset ?? 8
-    this.toolbarOverflow = initialToolbar.overflow ?? 'menu'
     this.dockPanelExplicitlyEnabled = resolvedOptions.dockPanel.enabled === true
     this.dockPanelDefaults = {
       defaultOpen: resolvedOptions.dockPanel.defaultOpen ?? false,
@@ -515,12 +505,15 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       this.toolbar = new AcUiToolbar({
         host: toolbarMountEl,
         themeHost: host,
-        placement: this.toolbarPlacement,
-        edgeOffset: this.toolbarEdgeOffset,
-        overflow: this.toolbarOverflow,
+        placement: initialToolbar.placement ?? 'right',
+        edgeOffset: initialToolbar.edgeOffset ?? 8,
+        overflow: initialToolbar.overflow ?? 'menu',
+        contentWidth: initialToolbar.contentWidth ?? 'hug',
+        itemDistribution: initialToolbar.itemDistribution ?? 'start',
+        showItemLabels: initialToolbar.showItemLabels ?? false,
         items: this.baseToolbarItems,
         i18n: this.i18n,
-        collapsible: this.toolbarCollapsible,
+        collapsible: initialToolbar.collapsible ?? false,
         defaultCollapsed: initialToolbar.defaultCollapsed,
         docBridge: {
           hasDocument: () => Boolean(AcApDocManager.instance.curDocument),
@@ -597,9 +590,9 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       setTheme: (theme: AcEdUiTheme) => this.themeSync?.setTheme(theme),
       getLocale: () => AcApI18n.currentLocale,
       setLocale: (locale: AcApLocale) => this.setLocale(locale),
-      getPlacement: () => this.toolbarPlacement,
+      getPlacement: () => this.getToolbarPlacement(),
       setPlacement: (placement: AcUiToolbarPlacement) => {
-        this.applyToolbarPlacement(placement)
+        this.toolbar?.setPlacement(placement)
       },
       restoreOriginalView: () => this.restoreOriginalView()
     }
@@ -663,10 +656,6 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     const config = this.layoutToolbars[kind]
     this.toolbarMountTargetOption =
       config.mountTarget ?? this.options.toolbar?.mountTarget
-    this.toolbarPlacement = config.placement ?? 'right'
-    this.toolbarCollapsible = config.collapsible ?? false
-    this.toolbarEdgeOffset = config.edgeOffset ?? (kind === 'mobile' ? 0 : 8)
-    this.toolbarOverflow = config.overflow ?? 'menu'
     this.toolbarItemsInput = config.items ?? 'default'
 
     this.baseToolbarItems =
@@ -679,12 +668,25 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     if (!this.toolbar) return
 
-    this.toolbar.setPlacement(this.toolbarPlacement)
-    this.toolbar.setEdgeOffset(this.toolbarEdgeOffset)
-    this.toolbar.setOverflow(this.toolbarOverflow)
-    this.toolbar.setCollapsible(this.toolbarCollapsible)
+    const isMobile = kind === 'mobile'
+    this.toolbar.setPlacement(config.placement ?? 'right')
+    this.toolbar.setEdgeOffset(config.edgeOffset ?? (isMobile ? 0 : 8))
+    this.toolbar.setOverflow(config.overflow ?? 'menu')
+    this.toolbar.setContentWidth(
+      config.contentWidth ?? (isMobile ? 'full' : 'hug')
+    )
+    this.toolbar.setItemDistribution(
+      config.itemDistribution ?? (isMobile ? 'evenly' : 'start')
+    )
+    this.toolbar.setShowItemLabels(config.showItemLabels ?? isMobile)
+    this.toolbar.setCollapsible(config.collapsible ?? false)
     this.toolbar.updateItems(this.baseToolbarItems)
     this.toolbar.setVisible(config.enabled !== false)
+  }
+
+  /** Resolved chrome config for the active layout (fallback when toolbar is absent). */
+  private activeToolbarConfig(): AcUiToolbarConfig {
+    return this.layoutToolbars[this.currentLayoutKind] ?? {}
   }
 
   /** Resolves raw toolbar input into concrete toolbar items. */
@@ -1024,12 +1026,6 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     this.dockPanel.destroy()
     this.dockPanel = undefined
-  }
-
-  /** Updates toolbar placement. */
-  private applyToolbarPlacement(placement: AcUiToolbarPlacement) {
-    this.toolbarPlacement = placement
-    this.toolbar?.setPlacement(placement)
   }
 
   /**

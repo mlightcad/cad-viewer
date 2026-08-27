@@ -18,7 +18,8 @@ export default defineConfig({
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
         register: resolve(__dirname, 'src/register.ts'),
-        toolbar: resolve(__dirname, 'src/toolbar.ts')
+        toolbar: resolve(__dirname, 'src/toolbar.ts'),
+        setupToolbar: resolve(__dirname, 'src/setupToolbar.ts')
       },
       name: pluginId,
       fileName: (format, entryName) =>
