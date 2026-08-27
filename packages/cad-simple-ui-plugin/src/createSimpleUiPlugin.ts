@@ -5,10 +5,10 @@ import {
   type AcApLocale,
   AcApPlugin,
   acapSetDrawStyleHostHasRibbon,
+  AcEdCommandStack,
   acedGetUiLayout,
   acedSubscribeUiLayout,
   type AcEdUiLayoutKind,
-  AcEdCommandStack,
   type AcEdUiTheme
 } from '@mlightcad/cad-simple-viewer'
 
@@ -34,8 +34,8 @@ import {
   AcUiToolbarItemsInput,
   AcUiToolbarOptions,
   AcUiToolbarOverflow,
-  AcUiToolbarSize,
   AcUiToolbarPlacement,
+  AcUiToolbarSize,
   SIMPLE_UI_PLUGIN_NAME
 } from './config/types'
 import { AcUiI18n, acuiRegisterSimpleUiI18n } from './i18n'

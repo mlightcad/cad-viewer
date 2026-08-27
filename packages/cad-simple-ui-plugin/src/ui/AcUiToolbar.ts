@@ -8,6 +8,7 @@ import {
   ICON_CHEVRON_UP,
   ICON_MORE
 } from '../assets/icons'
+import { acuiResolveToolbarChrome } from '../config/resolveToolbarChrome'
 import {
   acuiFilterVisibleToolbarItems,
   acuiIsToolbarItemDisabled,
@@ -28,7 +29,6 @@ import type {
   AcUiToolbarPlacement,
   AcUiToolbarSize
 } from '../config/types'
-import { acuiResolveToolbarChrome } from '../config/resolveToolbarChrome'
 import type { AcUiI18n } from '../i18n'
 import { AcUiDropdownMenu } from './AcUiDropdownMenu'
 import { AcUiSubToolbar } from './AcUiSubToolbar'
