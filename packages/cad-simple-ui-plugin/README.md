@@ -22,6 +22,7 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 - Optional collapsible toolbar (like HTML export viewer): hide tool buttons and show only a chevron toggle
 - Configurable toolbar overflow: `'menu'` (⋯ popup) or `'scroll'` when the host cannot fit every button
 - Mobile top/bottom sub-toolbars stretch to the screen width, with even spacing or wrapping
+- **Responsive layouts**: automatic `mobile` / `pad` / `desktop` toolbars via `acedGetUiLayoutKind()` (≤600 / ≤960 / wider), configurable through `layouts` and optional `layout` lock
 
 ## Install
 
@@ -35,7 +36,7 @@ Load the plugin after creating the document manager. Apply the initial UI theme 
 
 ```typescript
 import { AcApDocManager, acedApplyUiTheme } from '@mlightcad/cad-simple-viewer'
-import { createSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
+import { acuiCreateSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
 
 const host = document.getElementById('viewer-host')!
 
@@ -44,7 +45,7 @@ acedApplyUiTheme('dark', host)
 AcApDocManager.createInstance({ container: host })
 
 await AcApDocManager.instance.pluginManager.loadPlugin(
-  createSimpleUiPlugin({
+  acuiCreateSimpleUiPlugin({
     host,
     toolbar: {
       placement: 'right',
@@ -59,9 +60,9 @@ await AcApDocManager.instance.pluginManager.loadPlugin(
 Import from `@mlightcad/cad-simple-ui-plugin/register` so the main plugin bundle is loaded only when you register it:
 
 ```typescript
-import { registerSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
+import { acuiRegisterSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 
-await registerSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
+await acuiRegisterSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
   host,
   toolbar: { placement: 'right', items: 'default' }
 })
@@ -72,7 +73,7 @@ await registerSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
 The [vanilla example](../cad-simple-viewer-example) **defers viewer and plugin initialization until the user opens a file** (local upload or predefined sample). That keeps the first paint lightweight:
 
 1. Page load — only file picker UI; no `AcApDocManager` yet.
-2. First open — `acedApplyUiTheme`, `AcApDocManager.createInstance`, lazy export plugins, then `registerSimpleUiPlugin`.
+2. First open — `acedApplyUiTheme`, `AcApDocManager.createInstance`, lazy export plugins, then `acuiRegisterSimpleUiPlugin`.
 3. Subsequent opens — reuse the same viewer instance.
 
 You can adopt the same pattern or load the plugin at startup (see Quick start above). Both are supported.
@@ -116,7 +117,7 @@ The built-in theme toggle button updates `COLORTHEME` when a document is open, o
 The layer list is enabled automatically when the resolved toolbar includes a layer button (`id: 'layer'` or `{ preset: 'layer' }`). Layers always render as a tab in the dock panel.
 
 ```typescript
-createSimpleUiPlugin({
+acuiCreateSimpleUiPlugin({
   host,
   dockPanel: {
     defaultSide: 'left', // 'top' | 'bottom' | 'left' | 'right' (default: 'left')
@@ -157,7 +158,7 @@ plugin.setDockPanelSize(320)
 You can enable an empty dock panel for future tabs without a layer button:
 
 ```typescript
-createSimpleUiPlugin({
+acuiCreateSimpleUiPlugin({
   host,
   dockPanel: { enabled: true }
 })
@@ -170,10 +171,10 @@ The built-in `layerclose` command emits `close-layer-manager`, which the plugin 
 The review palette is enabled automatically when the resolved toolbar includes the Review button (`id: 'markup-panel'`, included in the default `annotation` preset). It lists HTML markups from `getMarkupStore()` and supports the same workflow as cad-viewer's Vue review palette: search, clear all, select a row, edit status/label/comment, zoom to, and delete.
 
 ```typescript
-createSimpleUiPlugin({
+acuiCreateSimpleUiPlugin({
   host,
   toolbar: {
-    items: [toolbarPreset('annotation')]
+    items: [acuiToolbarPreset('annotation')]
   }
 })
 ```
@@ -232,6 +233,41 @@ plugin.getToolbarOverflow()
 
 On a phone-sized viewport (`max-width: 600px`), a sub-toolbar opened from a **top** or **bottom** parent bar stretches to the canvas width. If every child fits on one row, buttons are evenly spaced; otherwise they wrap to multiple rows.
 
+### Device layouts (mobile / pad / desktop)
+
+By default the plugin picks a layout from the viewport (`layout: 'auto'`):
+
+| Kind | Breakpoint | Default toolbar |
+|------|------------|-----------------|
+| `mobile` | ≤ 600px | Bottom bar, `edgeOffset: 0`, not collapsible; zoom / measure / annotation / layer / layout / settings |
+| `pad` | 601–960px | Same as current desktop defaults (right side) |
+| `desktop` | > 960px | Right side, full default items |
+
+Top-level `toolbar` options merge into **pad** and **desktop** only (backward compatible). Override any kind with `layouts`:
+
+```typescript
+acuiCreateSimpleUiPlugin({
+  host,
+  layout: 'auto', // or 'mobile' | 'pad' | 'desktop' to lock
+  toolbar: {
+    // Applied to pad + desktop only
+    placement: 'right',
+    collapsible: true,
+    appendItems: [/* … */]
+  },
+  layouts: {
+    mobile: {
+      toolbar: {
+        // Optional overrides on top of the built-in mobile defaults
+        edgeOffset: 0
+      }
+    }
+  }
+})
+```
+
+Reusable toolbar chrome is typed as `AcUiToolbarConfig` (also exported from `@mlightcad/cad-simple-ui-plugin/toolbar` for HTML export).
+
 ## Custom toolbar
 
 Toolbar buttons are configured through `toolbar.items`. You can start from the built-in set, extend it, or replace it entirely.
@@ -244,8 +280,8 @@ Use `appendItems` only when you want to keep the built-in default and add a few 
 import {
   SIMPLE_UI_PLUGIN_NAME,
   type AcApSimpleUiPlugin,
-  createToolbarLayoutSwitcher,
-  toolbarPreset
+  acuiCreateToolbarLayoutSwitcher,
+  acuiToolbarPreset
 } from '@mlightcad/cad-simple-ui-plugin'
 
 const plugin = docManager.pluginManager.getPlugin(
@@ -253,18 +289,18 @@ const plugin = docManager.pluginManager.getPlugin(
 ) as AcApSimpleUiPlugin
 
 plugin.setToolbarItems([
-  toolbarPreset('select'),
-  toolbarPreset('pan'),
-  toolbarPreset('layer')
+  acuiToolbarPreset('select'),
+  acuiToolbarPreset('pan'),
+  acuiToolbarPreset('layer')
 ])
 
 // Optional: prepend a submenu button that switches between full layouts
 plugin.setToolbarItems(
   [
-    toolbarPreset('select'),
+    acuiToolbarPreset('select'),
     { id: 'line', label: 'Line', command: 'line', requiresDocument: true }
   ],
-  createToolbarLayoutSwitcher({
+  acuiCreateToolbarLayoutSwitcher({
     presets: [
       { id: 'view', label: 'View tools' },
       { id: 'draw', label: 'Draw tools' }
@@ -275,9 +311,9 @@ plugin.setToolbarItems(
 )
 ```
 
-See `cad-simple-viewer-example` (`demoToolbarPresets.ts`) for a working layout switcher prepended to the **viewer toolbar** (via `createToolbarLayoutSwitcher` + `setToolbarItems`). The example dev toolbar also includes a layout dropdown that calls the same preset helpers.
+See `cad-simple-viewer-example` (`demoToolbarPresets.ts`) for a working layout switcher prepended to the **viewer toolbar** (via `acuiCreateToolbarLayoutSwitcher` + `setToolbarItems`). The example dev toolbar also includes a layout dropdown that calls the same preset helpers.
 
-### `AcExToolbarItem` fields
+### `AcUiToolbarItem` fields
 
 | Field | Description |
 |-------|-------------|
@@ -306,9 +342,9 @@ Keep all predefined buttons and append your own at the end:
 
 ```typescript
 import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
-import { createSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
+import { acuiCreateSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
 
-createSimpleUiPlugin({
+acuiCreateSimpleUiPlugin({
   toolbar: {
     placement: 'right',
     items: 'default',
@@ -330,25 +366,25 @@ Pick built-in buttons by id and group them with separators — no need to duplic
 
 ```typescript
 import {
-  createSimpleUiPlugin,
-  createToolbarSeparator,
-  toolbarPreset
+  acuiCreateSimpleUiPlugin,
+  acuiCreateToolbarSeparator,
+  acuiToolbarPreset
 } from '@mlightcad/cad-simple-ui-plugin'
 
-createSimpleUiPlugin({
+acuiCreateSimpleUiPlugin({
   toolbar: {
     placement: 'right',
     items: [
-      toolbarPreset('select'),
-      toolbarPreset('pan'),
-      toolbarPreset('zoom-extent'),
-      createToolbarSeparator('sep-tools'),
-      toolbarPreset('layer'),
-      toolbarPreset('measure'),
-      createToolbarSeparator('sep-settings'),
-      toolbarPreset('switch-bg'),
-      toolbarPreset('theme'),
-      toolbarPreset('locale')
+      acuiToolbarPreset('select'),
+      acuiToolbarPreset('pan'),
+      acuiToolbarPreset('zoom-extent'),
+      acuiCreateToolbarSeparator('sep-tools'),
+      acuiToolbarPreset('layer'),
+      acuiToolbarPreset('measure'),
+      acuiCreateToolbarSeparator('sep-settings'),
+      acuiToolbarPreset('switch-bg'),
+      acuiToolbarPreset('theme'),
+      acuiToolbarPreset('locale')
     ]
   }
 })
@@ -370,7 +406,7 @@ items: [
 Replace the default set with your own list:
 
 ```typescript
-createSimpleUiPlugin({
+acuiCreateSimpleUiPlugin({
   toolbar: {
     placement: 'top',
     items: [
@@ -502,7 +538,7 @@ Submenu flyout direction follows toolbar placement (e.g. arrow points left when 
 ### 9. Disable toolbar
 
 ```typescript
-createSimpleUiPlugin({
+acuiCreateSimpleUiPlugin({
   toolbar: { enabled: false }
 })
 ```
@@ -513,7 +549,7 @@ Disabling the toolbar also disables the layer dock UI, because the layer list is
 
 ```typescript
 import { AcApDocManager, AcEdOpenMode, acedApplyUiTheme } from '@mlightcad/cad-simple-viewer'
-import { createSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
+import { acuiCreateSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
 
 const viewerPane = document.getElementById('viewerPane')!
 
@@ -522,7 +558,7 @@ acedApplyUiTheme('dark', viewerPane)
 AcApDocManager.createInstance({ container: document.getElementById('cad-container')! })
 
 await AcApDocManager.instance.pluginManager.loadPlugin(
-  createSimpleUiPlugin({
+  acuiCreateSimpleUiPlugin({
     host: viewerPane,
     toolbar: {
       placement: 'right',
@@ -567,8 +603,8 @@ To use the layer UI in a custom toolbar, include the built-in preset or a button
 
 ```typescript
 items: [
-  toolbarPreset('select'),
-  toolbarPreset('layer')
+  acuiToolbarPreset('select'),
+  acuiToolbarPreset('layer')
 ]
 ```
 
@@ -578,20 +614,20 @@ Omit the layer button from `items` if you do not want the layer dock UI or `laye
 
 | Export | Description |
 |--------|-------------|
-| `createSimpleUiPlugin(options)` | Returns an `AcApPlugin` instance |
-| `registerSimpleUiPlugin(pluginManager, options)` | Eager-load helper |
+| `acuiCreateSimpleUiPlugin(options)` | Returns an `AcApPlugin` instance |
+| `acuiRegisterSimpleUiPlugin(pluginManager, options)` | Eager-load helper |
 | `AcApLayerStore` | Document-scoped layer observer and UI mutations |
-| `AcExSimpleUiPluginOptions` | Plugin configuration type |
-| `AcExToolbarItem` | Single toolbar button definition |
-| `AcExToolbarChildrenUi` | `'menu' \| 'toolbar' \| 'sticky-toolbar'` |
-| `AcExToolbarItemConfig` | Button, separator, or preset reference in toolbar config |
-| `createToolbarSeparator(id?)` | Helper that creates a separator entry |
-| `toolbarPreset(id)` | Helper that references a built-in button |
-| `createDefaultToolbarPresetMap()` | Built-in items keyed by id (advanced use) |
-| `AcExToolbarPlacement` | `'top' \| 'bottom' \| 'left' \| 'right'` |
-| `AcExToolbarOverflow` | `'menu' \| 'scroll'` |
+| `AcUiSimpleUiPluginOptions` | Plugin configuration type |
+| `AcUiToolbarItem` | Single toolbar button definition |
+| `AcUiToolbarChildrenUi` | `'menu' \| 'toolbar' \| 'sticky-toolbar'` |
+| `AcUiToolbarItemConfig` | Button, separator, or preset reference in toolbar config |
+| `acuiCreateToolbarSeparator(id?)` | Helper that creates a separator entry |
+| `acuiToolbarPreset(id)` | Helper that references a built-in button |
+| `acuiCreateDefaultToolbarPresetMap()` | Built-in items keyed by id (advanced use) |
+| `AcUiToolbarPlacement` | `'top' \| 'bottom' \| 'left' \| 'right'` |
+| `AcUiToolbarOverflow` | `'menu' \| 'scroll'` |
 
 ## See also
 
-- [cad-simple-viewer-example](../cad-simple-viewer-example) — vanilla TypeScript demo (lazy init on first file open; uses `registerSimpleUiPlugin`)
+- [cad-simple-viewer-example](../cad-simple-viewer-example) — vanilla TypeScript demo (lazy init on first file open; uses `acuiRegisterSimpleUiPlugin`)
 - [cad-viewer](../cad-viewer) — full Vue + Element Plus application shell

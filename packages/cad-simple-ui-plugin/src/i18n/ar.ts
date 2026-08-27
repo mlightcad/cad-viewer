@@ -4,8 +4,11 @@
 export const ar: Record<string, string> = {
   'toolbar.select': 'تحديد',
   'toolbar.pan': 'تحريك العرض',
+  'toolbar.zoom': 'تكبير',
   'toolbar.zoomExtent': 'تكبير إلى حدود الرسم',
   'toolbar.zoomWindow': 'تكبير نافذة',
+  'toolbar.zoomOriginal': 'العرض الأصلي',
+  'toolbar.settings': 'الإعدادات',
 
   'toolbar.layer': 'مدير الطبقات',
   'toolbar.layout': 'المخطط',

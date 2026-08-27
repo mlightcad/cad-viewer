@@ -1,5 +1,5 @@
 /**
- * Chinese UI strings for {@link registerSimpleUiI18n}.
+ * Chinese UI strings for {@link acuiRegisterSimpleUiI18n}.
  *
  * Keys use dot notation (for example `toolbar.select`) and are nested under
  * the `simpleUi` namespace when registered.
@@ -7,8 +7,11 @@
 export const zh: Record<string, string> = {
   'toolbar.select': '选择',
   'toolbar.pan': '平移',
+  'toolbar.zoom': '缩放',
   'toolbar.zoomExtent': '缩放至范围',
   'toolbar.zoomWindow': '窗口缩放',
+  'toolbar.zoomOriginal': '原始视口',
+  'toolbar.settings': '设置',
   'toolbar.layer': '图层管理器',
   'toolbar.layout': '布局',
   'toolbar.measure': '测量',

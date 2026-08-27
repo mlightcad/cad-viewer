@@ -1,5 +1,5 @@
 /**
- * English UI strings for {@link registerSimpleUiI18n}.
+ * English UI strings for {@link acuiRegisterSimpleUiI18n}.
  *
  * Keys use dot notation (for example `toolbar.select`) and are nested under
  * the `simpleUi` namespace when registered.
@@ -7,8 +7,11 @@
 export const en: Record<string, string> = {
   'toolbar.select': 'Select',
   'toolbar.pan': 'Pan',
+  'toolbar.zoom': 'Zoom',
   'toolbar.zoomExtent': 'Zoom Extents',
   'toolbar.zoomWindow': 'Zoom Window',
+  'toolbar.zoomOriginal': 'Original view',
+  'toolbar.settings': 'Settings',
   'toolbar.layer': 'Layer Manager',
   'toolbar.layout': 'Layout',
   'toolbar.measure': 'Measure',

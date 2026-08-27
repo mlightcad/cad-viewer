@@ -2,8 +2,8 @@
 
 import { ML_UI_MOBILE_MEDIA_QUERY } from '@mlightcad/cad-simple-viewer'
 
-import { AcExI18n, registerSimpleUiI18n } from '../src/i18n'
-import { AcExDockPanel } from '../src/ui/AcExDockPanel'
+import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../src/i18n'
+import { AcUiDockPanel } from '../src/ui/AcUiDockPanel'
 
 class ResizeObserverMock {
   observe() {}
@@ -41,15 +41,15 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
 })
 
 function createPanel(
-  options?: Partial<ConstructorParameters<typeof AcExDockPanel>[0]>
+  options?: Partial<ConstructorParameters<typeof AcUiDockPanel>[0]>
 ) {
-  registerSimpleUiI18n()
+  acuiRegisterSimpleUiI18n()
   const host = document.createElement('div')
   document.body.appendChild(host)
 
-  const panel = new AcExDockPanel({
+  const panel = new AcUiDockPanel({
     host,
-    i18n: new AcExI18n(),
+    i18n: new AcUiI18n(),
     defaultSide: 'left',
     defaultOpen: false,
     defaultHeight: 240,
@@ -66,7 +66,7 @@ function createTabContent(label = 'content') {
   return content
 }
 
-describe('AcExDockPanel', () => {
+describe('AcUiDockPanel', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('ml-ex-ui-styles')?.remove()
@@ -282,10 +282,10 @@ describe('AcExDockPanel', () => {
     host.appendChild(canvasParent)
     document.body.appendChild(host)
 
-    registerSimpleUiI18n()
-    const panel = new AcExDockPanel({
+    acuiRegisterSimpleUiI18n()
+    const panel = new AcUiDockPanel({
       host,
-      i18n: new AcExI18n(),
+      i18n: new AcUiI18n(),
       defaultSide: 'left',
       defaultOpen: false
     })
@@ -307,10 +307,10 @@ describe('AcExDockPanel', () => {
     host.appendChild(canvasParent)
     document.body.appendChild(host)
 
-    registerSimpleUiI18n()
-    const panel = new AcExDockPanel({
+    acuiRegisterSimpleUiI18n()
+    const panel = new AcUiDockPanel({
       host,
-      i18n: new AcExI18n(),
+      i18n: new AcUiI18n(),
       defaultSide: 'left',
       defaultOpen: false
     })
@@ -330,10 +330,10 @@ describe('AcExDockPanel', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
 
-    registerSimpleUiI18n()
-    const panel = new AcExDockPanel({
+    acuiRegisterSimpleUiI18n()
+    const panel = new AcUiDockPanel({
       host,
-      i18n: new AcExI18n(),
+      i18n: new AcUiI18n(),
       defaultSide: 'left',
       defaultOpen: false
     })
@@ -365,10 +365,10 @@ describe('AcExDockPanel', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
 
-    registerSimpleUiI18n()
-    const panel = new AcExDockPanel({
+    acuiRegisterSimpleUiI18n()
+    const panel = new AcUiDockPanel({
       host,
-      i18n: new AcExI18n(),
+      i18n: new AcUiI18n(),
       defaultSide: 'left',
       defaultOpen: false
     })

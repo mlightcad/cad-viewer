@@ -5,7 +5,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
       curDocument: undefined
     }
   },
-  /** Minimal mock used by {@link createDefaultToolbarItems} markup visibility toggle. */
+  /** Minimal mock used by {@link acuiCreateDefaultToolbarItems} markup visibility toggle. */
   isMarkupVisible: () => true,
   isMeasurementVisible: () => true,
   AcEdOpenMode: {
@@ -25,29 +25,29 @@ jest.mock('@mlightcad/data-model', () => ({
 
 import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
-import { createDefaultToolbarItems } from '../src/config/defaultToolbarItems'
+import { acuiCreateDefaultToolbarItems } from '../src/config/defaultToolbarItems'
 import {
-  filterVisibleToolbarItems,
-  isToolbarItemVisible,
-  resolveEffectiveToolbarItem,
-  resolveParentToolbarDisplay,
-  resolveSelectedChildItem,
-  resolveToolbarItems
+  acuiFilterVisibleToolbarItems,
+  acuiIsToolbarItemVisible,
+  acuiResolveEffectiveToolbarItem,
+  acuiResolveParentToolbarDisplay,
+  acuiResolveSelectedChildItem,
+  acuiResolveToolbarItems
 } from '../src/config/resolveToolbarItems'
 import {
-  createToolbarSeparator,
-  isDynamicToolbarChildren
+  acuiCreateToolbarSeparator,
+  acuiIsDynamicToolbarChildren
 } from '../src/config/toolbarItemUtils'
 
-describe('resolveToolbarItems', () => {
+describe('acuiResolveToolbarItems', () => {
   it('returns default items when items is default', () => {
-    const items = resolveToolbarItems({ items: 'default' })
+    const items = acuiResolveToolbarItems({ items: 'default' })
     expect(items.length).toBeGreaterThan(0)
     expect(items[0].id).toBe('select')
   })
 
   it('appends custom items after defaults', () => {
-    const items = resolveToolbarItems({
+    const items = acuiResolveToolbarItems({
       items: 'default',
       appendItems: [{ id: 'custom', command: 'test' }]
     })
@@ -56,7 +56,7 @@ describe('resolveToolbarItems', () => {
   })
 
   it('inserts appendItems after a root toolbar item id', () => {
-    const items = resolveToolbarItems({
+    const items = acuiResolveToolbarItems({
       items: 'default',
       appendItems: [{ id: 'agent', command: 'agent' }],
       appendItemsAfter: 'layer'
@@ -66,7 +66,7 @@ describe('resolveToolbarItems', () => {
   })
 
   it('inserts appendItems before a root toolbar item id', () => {
-    const items = resolveToolbarItems({
+    const items = acuiResolveToolbarItems({
       items: 'default',
       appendItems: [{ id: 'agent', command: 'agent' }],
       appendItemsBefore: 'measure'
@@ -76,7 +76,7 @@ describe('resolveToolbarItems', () => {
   })
 
   it('prefers appendItemsBefore over appendItemsAfter', () => {
-    const items = resolveToolbarItems({
+    const items = acuiResolveToolbarItems({
       items: 'default',
       appendItems: [{ id: 'agent', command: 'agent' }],
       appendItemsAfter: 'select',
@@ -90,7 +90,7 @@ describe('resolveToolbarItems', () => {
   })
 
   it('falls back to the end when the append anchor is missing', () => {
-    const items = resolveToolbarItems({
+    const items = acuiResolveToolbarItems({
       items: 'default',
       appendItems: [{ id: 'custom', command: 'test' }],
       appendItemsAfter: 'missing-item'
@@ -99,7 +99,7 @@ describe('resolveToolbarItems', () => {
   })
 
   it('uses custom item list when provided', () => {
-    const items = resolveToolbarItems({
+    const items = acuiResolveToolbarItems({
       items: [{ id: 'only', command: 'only' }]
     })
     expect(items).toHaveLength(1)
@@ -109,8 +109,8 @@ describe('resolveToolbarItems', () => {
 
 describe('toolbar visibility', () => {
   it('hides review-only items in read mode', () => {
-    const defaults = createDefaultToolbarItems()
-    const visible = filterVisibleToolbarItems(defaults, AcEdOpenMode.Read)
+    const defaults = acuiCreateDefaultToolbarItems()
+    const visible = acuiFilterVisibleToolbarItems(defaults, AcEdOpenMode.Read)
     expect(visible.some(item => item.id === 'annotation')).toBe(false)
     expect(visible.some(item => item.id === 'switch-bg')).toBe(true)
     expect(visible.some(item => item.id === 'layout')).toBe(true)
@@ -118,21 +118,21 @@ describe('toolbar visibility', () => {
   })
 
   it('shows review-only items in review mode', () => {
-    const defaults = createDefaultToolbarItems()
-    const visible = filterVisibleToolbarItems(defaults, AcEdOpenMode.Review)
+    const defaults = acuiCreateDefaultToolbarItems()
+    const visible = acuiFilterVisibleToolbarItems(defaults, AcEdOpenMode.Review)
     expect(visible.some(item => item.id === 'annotation')).toBe(true)
     expect(visible.some(item => item.id === 'switch-bg')).toBe(true)
   })
 
   it('respects minOpenMode on individual items', () => {
     expect(
-      isToolbarItemVisible(
+      acuiIsToolbarItemVisible(
         { id: 'x', minOpenMode: AcEdOpenMode.Review },
         AcEdOpenMode.Read
       )
     ).toBe(false)
     expect(
-      isToolbarItemVisible(
+      acuiIsToolbarItemVisible(
         { id: 'x', minOpenMode: AcEdOpenMode.Review },
         AcEdOpenMode.Write
       )
@@ -153,14 +153,14 @@ describe('toolbar visibility', () => {
         ]
       }
     ]
-    const visible = filterVisibleToolbarItems(items, AcEdOpenMode.Read)
+    const visible = acuiFilterVisibleToolbarItems(items, AcEdOpenMode.Read)
     expect(visible[0].children?.map(child => child.id)).toEqual(['read-child'])
   })
 })
 
-describe('resolveEffectiveToolbarItem', () => {
+describe('acuiResolveEffectiveToolbarItem', () => {
   it('uses off branch when toggle value is false', () => {
-    const item = resolveEffectiveToolbarItem({
+    const item = acuiResolveEffectiveToolbarItem({
       id: 'toggle',
       toggle: {
         getValue: () => false,
@@ -175,7 +175,7 @@ describe('resolveEffectiveToolbarItem', () => {
 
 describe('default toolbar items', () => {
   it('includes export submenu, theme toggle and locale picker', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     const exportItem = items.find(item => item.id === 'export')
     expect(exportItem?.children?.map(child => child.command)).toEqual([
       'chtml',
@@ -188,13 +188,13 @@ describe('default toolbar items', () => {
   })
 
   it('places toolbar placement button before theme', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     const themeIndex = items.findIndex(item => item.id === 'theme')
     expect(items[themeIndex - 1]?.id).toBe('toolbar-placement')
   })
 
   it('places the layout switcher between the layer manager and switch background', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     const layerIndex = items.findIndex(item => item.id === 'layer')
     expect(items[layerIndex + 1]?.id).toBe('layout')
     expect(items[layerIndex + 1]?.childrenUi).toBe('menu')
@@ -203,7 +203,7 @@ describe('default toolbar items', () => {
   })
 
   it('includes a separator before settings buttons', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     const placementIndex = items.findIndex(
       item => item.id === 'toolbar-placement'
     )
@@ -215,7 +215,7 @@ describe('default toolbar items', () => {
   })
 
   it('uses selected child icon for toolbar placement and locale', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     expect(items.find(item => item.id === 'export')?.childIcon).toBeUndefined()
     expect(
       items.find(item => item.id === 'annotation')?.childIcon
@@ -228,7 +228,7 @@ describe('default toolbar items', () => {
   })
 
   it('uses markup commands from the review panel in the annotation submenu', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     const annotation = items.find(item => item.id === 'annotation')
     expect(
       annotation?.children?.map(child =>
@@ -259,7 +259,7 @@ describe('default toolbar items', () => {
   })
 
   it('places measurement visibility in the measure submenu', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     const measure = items.find(item => item.id === 'measure')
     expect(
       measure?.children?.map(child =>
@@ -285,14 +285,14 @@ describe('default toolbar items', () => {
   })
 
   it('places review tools after measure and export after review', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     const measureIndex = items.findIndex(item => item.id === 'measure')
     expect(items[measureIndex + 1]?.id).toBe('annotation')
     expect(items[measureIndex + 2]?.id).toBe('export')
   })
 
   it('uses sticky sub-toolbars for measure and review, dismissible for export and placement', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     expect(items.find(item => item.id === 'measure')?.childrenUi).toBe(
       'sticky-toolbar'
     )
@@ -308,7 +308,7 @@ describe('default toolbar items', () => {
   })
 
   it('uses the same export parent icon as cad-viewer toolbar and ribbon', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     expect(items.find(item => item.id === 'export')?.icon).toContain(
       'M15.5 2H9.1L4.5 6.6'
     )
@@ -318,7 +318,7 @@ describe('default toolbar items', () => {
   })
 
   it('uses the same review submenu icons as cad-viewer', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     const annotation = items.find(item => item.id === 'annotation')
     const iconOf = (id: string) =>
       annotation?.children?.find(child => child.id === id)?.icon
@@ -344,7 +344,7 @@ describe('default toolbar items', () => {
   })
 
   it('uses the same measurement submenu icons as cad-viewer', () => {
-    const items = createDefaultToolbarItems()
+    const items = acuiCreateDefaultToolbarItems()
     const measure = items.find(item => item.id === 'measure')
     const iconOf = (id: string) =>
       measure?.children?.find(child => child.id === id)?.icon
@@ -365,7 +365,7 @@ describe('default toolbar items', () => {
   })
 
   it('offers all supported locales in a dismissible language sub-toolbar', () => {
-    const items = createDefaultToolbarItems({
+    const items = acuiCreateDefaultToolbarItems({
       getTheme: () => 'light',
       setTheme: () => undefined,
       getLocale: () => 'cs',
@@ -389,7 +389,7 @@ describe('default toolbar items', () => {
 
 describe('parent toolbar display', () => {
   it('keeps parent icon when childIcon is fixed', () => {
-    const parent = resolveParentToolbarDisplay({
+    const parent = acuiResolveParentToolbarDisplay({
       id: 'measure',
       icon: 'parent-icon',
       childIcon: 'fixed',
@@ -399,7 +399,7 @@ describe('parent toolbar display', () => {
   })
 
   it('uses selected child icon when childIcon is selected', () => {
-    const parent = resolveParentToolbarDisplay(
+    const parent = acuiResolveParentToolbarDisplay(
       {
         id: 'export',
         label: 'toolbar.export',
@@ -418,7 +418,7 @@ describe('parent toolbar display', () => {
   })
 
   it('resolves active child by runtime selection first', () => {
-    const child = resolveSelectedChildItem(
+    const child = acuiResolveSelectedChildItem(
       {
         id: 'export',
         selectedChildId: 'export-html',
@@ -434,12 +434,45 @@ describe('parent toolbar display', () => {
 })
 
 describe('toolbar presets and separators', () => {
+  it('expands zoom and settings mobile presets', () => {
+    const items = acuiResolveToolbarItems({
+      items: [
+        { preset: 'zoom' },
+        { preset: 'measure' },
+        { preset: 'annotation' },
+        { preset: 'layer' },
+        { preset: 'layout' },
+        { preset: 'settings' }
+      ]
+    })
+    expect(items.map(item => item.id)).toEqual([
+      'zoom',
+      'measure',
+      'annotation',
+      'layer',
+      'layout',
+      'settings'
+    ])
+    const zoom = items.find(item => item.id === 'zoom')
+    expect(zoom?.children?.map(child => child.id)).toEqual([
+      'zoom-original',
+      'zoom-extent',
+      'zoom-window'
+    ])
+    const settings = items.find(item => item.id === 'settings')
+    expect(settings?.children?.map(child => child.id)).toEqual([
+      'theme',
+      'switch-bg',
+      'locale'
+    ])
+  })
+
   it('expands preset references in a custom layout', () => {
-    const items = resolveToolbarItems({
+    const items = acuiResolveToolbarItems({
       items: [
         { preset: 'select' },
         { preset: 'pan' },
-        createToolbarSeparator('sep-tools'),
+        acuiCreateToolbarSeparator('sep-tools'),
         { preset: 'measure' }
       ]
     })
@@ -450,24 +483,24 @@ describe('toolbar presets and separators', () => {
   })
 
   it('preserves live layout children when expanding the layout preset', () => {
-    const items = resolveToolbarItems({
+    const items = acuiResolveToolbarItems({
       items: [{ preset: 'layout' }]
     })
     expect(items).toHaveLength(1)
     expect(items[0].id).toBe('layout')
-    expect(isDynamicToolbarChildren(items[0])).toBe(true)
+    expect(acuiIsDynamicToolbarChildren(items[0])).toBe(true)
     expect(items[0].childrenUi).toBe('menu')
   })
 
   it('keeps separators when filtering by open mode', () => {
-    const items = resolveToolbarItems({
+    const items = acuiResolveToolbarItems({
       items: [
         { preset: 'select' },
-        createToolbarSeparator(),
+        acuiCreateToolbarSeparator(),
         { preset: 'annotation' }
       ]
     })
-    const visible = filterVisibleToolbarItems(items, AcEdOpenMode.Read)
+    const visible = acuiFilterVisibleToolbarItems(items, AcEdOpenMode.Read)
     expect(visible.some(item => item.type === 'separator')).toBe(true)
     expect(visible.some(item => item.id === 'select')).toBe(true)
     expect(visible.some(item => item.id === 'annotation')).toBe(false)

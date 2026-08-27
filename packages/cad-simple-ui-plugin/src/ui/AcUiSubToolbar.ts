@@ -1,21 +1,24 @@
 import { createIconElement } from '@mlightcad/cad-simple-viewer/icons'
 
 import {
-  isToolbarItemDisabled,
-  itemRequiresDocument,
-  resolveEffectiveToolbarItem
+  acuiIsToolbarItemDisabled,
+  acuiItemRequiresDocument,
+  acuiResolveEffectiveToolbarItem
 } from '../config/toolbarItemDisplay'
-import { isToolbarSeparatorItem } from '../config/toolbarItemUtils'
-import type { AcExToolbarItem, AcExToolbarPlacement } from '../config/types'
-import type { AcExToolbarI18n } from './AcExToolbar'
-import { isExUiMobileLayout } from './uiLayout'
+import {
+  acuiIsDynamicToolbarChildren,
+  acuiIsToolbarSeparatorItem
+} from '../config/toolbarItemUtils'
+import type { AcUiToolbarItem, AcUiToolbarPlacement } from '../config/types'
+import type { AcUiToolbarI18n } from './AcUiToolbar'
+import { acuiIsMobileLayout } from './uiLayout'
 
-/** Constructor options for {@link AcExSubToolbar}. */
-export interface AcExSubToolbarOptions {
+/** Constructor options for {@link AcUiSubToolbar}. */
+export interface AcUiSubToolbarOptions {
   /** i18n helper for button tooltips. */
-  i18n: AcExToolbarI18n
+  i18n: AcUiToolbarI18n
   /** Child items to render. */
-  items: AcExToolbarItem[]
+  items: AcUiToolbarItem[]
   /** Parent toolbar button used for positioning and outside-click exclusion. */
   anchor: HTMLElement
   /** Main toolbar root used to place the strip beside the parent bar. */
@@ -23,7 +26,7 @@ export interface AcExSubToolbarOptions {
   /** Canvas mount that receives the strip (positioned absolutely). */
   host: HTMLElement
   /** Parent toolbar edge placement. */
-  placement: AcExToolbarPlacement
+  placement: AcUiToolbarPlacement
   /** Inset from the docked canvas edge in px. @default 8 */
   edgeOffset?: number
   /**
@@ -34,7 +37,7 @@ export interface AcExSubToolbarOptions {
   /** Whether command buttons should be disabled (document loading / missing). */
   commandsDisabled: boolean
   /** Invoked when a leaf item is activated. */
-  onSelect: (item: AcExToolbarItem) => void
+  onSelect: (item: AcUiToolbarItem) => void
   /** Invoked when the strip is closed. */
   onClose?: () => void
 }
@@ -45,11 +48,11 @@ export interface AcExSubToolbarOptions {
  * Sticky strips stay open until the parent is clicked again. Dismissible strips
  * close on outside click, matching a lightweight flyout toolbar.
  */
-export class AcExSubToolbar {
-  /** Strip root appended to {@link AcExSubToolbarOptions.host}. */
+export class AcUiSubToolbar {
+  /** Strip root appended to {@link AcUiSubToolbarOptions.host}. */
   private root: HTMLDivElement
   /** Child items last passed to the constructor or {@link refresh}. */
-  private items: AcExToolbarItem[]
+  private items: AcUiToolbarItem[]
   /** Whether command buttons are disabled. */
   private commandsDisabled: boolean
   /** Whether {@link close} has already run. */
@@ -60,13 +63,20 @@ export class AcExSubToolbar {
     if (!(event.target instanceof Node)) return
     if (this.root.contains(event.target)) return
     if (this.options.anchor.contains(event.target)) return
+    // Keep open when interacting with a nested sub-toolbar / dropdown.
+    if (
+      event.target instanceof Element &&
+      event.target.closest('.ml-ex-ui-subtoolbar, .ml-ex-ui-dropdown')
+    ) {
+      return
+    }
     this.close()
   }
 
   /**
    * @param options - Host, placement, items, and selection callback.
    */
-  constructor(private options: AcExSubToolbarOptions) {
+  constructor(private options: AcUiSubToolbarOptions) {
     this.items = options.items
     this.commandsDisabled = options.commandsDisabled
     this.root = document.createElement('div')
@@ -96,13 +106,18 @@ export class AcExSubToolbar {
     return this.options.anchor
   }
 
+  /** Strip root element (for nested child button lookup). */
+  get element() {
+    return this.root
+  }
+
   /**
    * Replaces child items and re-renders without closing the strip.
    *
    * @param items - Updated child items (e.g. after a toggle).
    * @param commandsDisabled - Optional override for command disabled state.
    */
-  refresh(items: AcExToolbarItem[], commandsDisabled?: boolean) {
+  refresh(items: AcUiToolbarItem[], commandsDisabled?: boolean) {
     this.items = items
     if (commandsDisabled !== undefined) {
       this.commandsDisabled = commandsDisabled
@@ -241,7 +256,7 @@ export class AcExSubToolbar {
   private useMobileFullWidthLayout() {
     const { placement } = this.options
     return (
-      (placement === 'top' || placement === 'bottom') && isExUiMobileLayout()
+      (placement === 'top' || placement === 'bottom') && acuiIsMobileLayout()
     )
   }
 
@@ -266,7 +281,7 @@ export class AcExSubToolbar {
   private renderButtons() {
     this.root.replaceChildren()
     this.items.forEach(item => {
-      if (isToolbarSeparatorItem(item)) {
+      if (acuiIsToolbarSeparatorItem(item)) {
         const separator = document.createElement('div')
         separator.className = 'ml-ex-ui-toolbar-separator'
         separator.setAttribute('role', 'separator')
@@ -277,7 +292,7 @@ export class AcExSubToolbar {
         return
       }
 
-      const effective = resolveEffectiveToolbarItem(item)
+      const effective = acuiResolveEffectiveToolbarItem(item)
       const button = document.createElement('button')
       button.type = 'button'
       button.className = 'ml-ex-ui-toolbar-btn'
@@ -286,6 +301,14 @@ export class AcExSubToolbar {
         : effective.id
       button.setAttribute('aria-label', button.title)
       button.dataset.toolbarItemId = effective.id
+
+      const hasChildren =
+        Boolean(effective.children?.length) || acuiIsDynamicToolbarChildren(item)
+      if (hasChildren) {
+        button.classList.add('has-children')
+        button.setAttribute('aria-haspopup', 'true')
+        button.setAttribute('aria-expanded', 'false')
+      }
 
       if (effective.toggle) {
         const pressed = effective.toggle.getValue()
@@ -304,14 +327,15 @@ export class AcExSubToolbar {
       }
 
       button.disabled =
-        (itemRequiresDocument(effective) && this.commandsDisabled) ||
-        isToolbarItemDisabled(effective)
+        (acuiItemRequiresDocument(effective) && this.commandsDisabled) ||
+        acuiIsToolbarItemDisabled(effective)
 
       button.addEventListener('click', event => {
         event.stopPropagation()
         if (button.disabled) return
         this.options.onSelect(effective)
-        if (!this.options.sticky) {
+        // Keep the strip open when the child opens its own nested UI.
+        if (!this.options.sticky && !hasChildren) {
           this.close()
         }
       })

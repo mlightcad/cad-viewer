@@ -19,3 +19,24 @@ export const ML_UI_COMPACT_MEDIA_QUERY = `(max-width: ${ML_UI_COMPACT_MAX_WIDTH}
 export function acedIsCompactUiLayout(): boolean {
   return window.matchMedia?.(ML_UI_COMPACT_MEDIA_QUERY).matches ?? false
 }
+
+/**
+ * Device-oriented UI layout kind for toolbars and chrome.
+ *
+ * - `'mobile'`: viewport ≤ {@link ML_UI_MOBILE_MAX_WIDTH}
+ * - `'pad'`: between mobile and {@link ML_UI_COMPACT_MAX_WIDTH} (inclusive)
+ * - `'desktop'`: wider than compact
+ */
+export type AcEdUiLayoutKind = 'mobile' | 'pad' | 'desktop'
+
+/**
+ * Resolves the current UI layout kind from viewport width.
+ *
+ * Uses the same breakpoints as {@link acedIsMobileUiLayout} and
+ * {@link acedIsCompactUiLayout}.
+ */
+export function acedGetUiLayoutKind(): AcEdUiLayoutKind {
+  if (acedIsMobileUiLayout()) return 'mobile'
+  if (acedIsCompactUiLayout()) return 'pad'
+  return 'desktop'
+}

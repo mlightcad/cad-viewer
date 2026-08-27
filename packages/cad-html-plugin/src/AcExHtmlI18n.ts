@@ -64,6 +64,7 @@ export type AcExHtmlMessageKey =
   | 'toolbar.layers'
   | 'toolbar.layout'
   | 'toolbar.language'
+  | 'toolbar.settings'
   | 'toolbar.localeEn'
   | 'toolbar.localeZh'
   | 'toolbar.localeCs'
@@ -205,6 +206,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       layers: 'Layers',
       layout: 'Layout',
       language: 'Language',
+      settings: 'Settings',
       localeEn: 'English',
       localeZh: '中文',
       localeCs: 'Čeština',
@@ -363,6 +365,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       layers: '图层',
       layout: '布局',
       language: '语言',
+      settings: '设置',
       localeEn: 'English',
       localeZh: '中文',
       localeCs: 'Čeština',
@@ -512,6 +515,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       layers: 'Hladiny',
       layout: 'Rozvržení',
       language: 'Jazyk',
+      settings: 'Nastavení',
       localeEn: 'English',
       localeZh: '中文',
       localeCs: 'Čeština',
@@ -669,6 +673,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       layers: 'Katmanlar',
       layout: 'Düzen',
       language: 'Dil',
+      settings: 'Ayarlar',
       localeEn: 'English',
       localeZh: '中文',
       localeCs: 'Čeština',
@@ -829,6 +834,7 @@ const AR_MESSAGES: AcExMessageTree = {
     'layers': 'الطبقات',
     'layout': 'التخطيط',
     'language': 'اللغة',
+    'settings': 'الإعدادات',
     'localeEn': 'English',
     'localeZh': '中文',
     'localeCs': 'Čeština',

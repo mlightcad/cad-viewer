@@ -1,68 +1,56 @@
-import { createDefaultToolbarItems } from './defaultToolbarItems'
 import {
-  expandToolbarItemConfigs,
-  indexToolbarItems
+  acuiCreateDefaultToolbarItems,
+  acuiCreateSettingsToolbarItem,
+  acuiCreateZoomToolbarItem,
+  MOBILE_DEFAULT_TOOLBAR_ITEMS
+} from './defaultToolbarItems'
+import {
+  acuiExpandToolbarItemConfigs,
+  acuiIndexToolbarItems,
+  acuiInsertToolbarItemsAt
 } from './toolbarItemUtils'
 import type {
-  AcExDefaultToolbarContext,
-  AcExSimpleUiPluginOptions,
-  AcExToolbarItem
+  AcUiDefaultToolbarContext,
+  AcUiSimpleUiPluginOptions,
+  AcUiToolbarConfig,
+  AcUiToolbarItem,
+  AcUiLayoutKind
 } from './types'
 
 export {
-  filterVisibleToolbarItems,
-  isToolbarItemDisabled,
-  isToolbarItemVisible,
-  itemRequiresDocument,
-  resolveEffectiveToolbarItem,
-  resolveParentToolbarDisplay,
-  resolveSelectedChildItem
+  acuiFilterVisibleToolbarItems,
+  acuiIsToolbarItemDisabled,
+  acuiIsToolbarItemVisible,
+  acuiItemRequiresDocument,
+  acuiResolveEffectiveToolbarItem,
+  acuiResolveParentToolbarDisplay,
+  acuiResolveSelectedChildItem
 } from './toolbarItemDisplay'
+
+export { acuiInsertToolbarItemsAt } from './toolbarItemUtils'
 
 /**
  * Builds a lookup map of built-in toolbar items keyed by id (includes nested submenu entries).
  *
- * @param context - Context for theme/locale/placement presets.
+ * Also registers mobile-oriented presets (`zoom`, `settings`) that are not part of the
+ * pad/desktop root list.
+ *
+ * @param context - Context for theme/locale/placement/zoom presets.
  */
-export function createDefaultToolbarPresetMap(
-  context?: AcExDefaultToolbarContext
-): Map<string, AcExToolbarItem> {
-  const map = new Map<string, AcExToolbarItem>()
-  indexToolbarItems(createDefaultToolbarItems(context), map)
+export function acuiCreateDefaultToolbarPresetMap(
+  context?: AcUiDefaultToolbarContext
+): Map<string, AcUiToolbarItem> {
+  const map = new Map<string, AcUiToolbarItem>()
+  acuiIndexToolbarItems(acuiCreateDefaultToolbarItems(context), map)
+  acuiIndexToolbarItems(
+    [acuiCreateZoomToolbarItem(context), acuiCreateSettingsToolbarItem(context)],
+    map
+  )
   return map
 }
 
 /**
- * Inserts toolbar items at the configured position relative to a root item id.
- *
- * @param items - Base toolbar items.
- * @param toInsert - Items to insert from `appendItems`.
- * @param position - Optional anchor id (`after` or `before`); omitted means end.
- * @returns New item array with `toInsert` merged in.
- */
-export function insertToolbarItemsAt(
-  items: AcExToolbarItem[],
-  toInsert: AcExToolbarItem[],
-  position?: { after?: string; before?: string }
-): AcExToolbarItem[] {
-  if (!toInsert.length) return items
-
-  const anchorId = position?.before ?? position?.after
-  if (!anchorId) {
-    return [...items, ...toInsert]
-  }
-
-  const anchorIndex = items.findIndex(item => item.id === anchorId)
-  if (anchorIndex === -1) {
-    return [...items, ...toInsert]
-  }
-
-  const insertAt = position?.before ? anchorIndex : anchorIndex + 1
-  return [...items.slice(0, insertAt), ...toInsert, ...items.slice(insertAt)]
-}
-
-/**
- * Resolves the final toolbar item list from plugin options.
+ * Resolves the final toolbar item list from a toolbar config section.
  *
  * Uses the default set when `items` is `'default'` or omitted, then merges
  * `appendItems` when present. Use `appendItemsAfter` or `appendItemsBefore` to
@@ -72,26 +60,26 @@ export function insertToolbarItemsAt(
  *
  * @param options - Toolbar subsection of plugin options.
  * @param context - Context for default theme/locale/placement items.
- * @returns Resolved toolbar items ready for {@link AcExToolbar}.
+ * @returns Resolved toolbar items ready for {@link AcUiToolbar}.
  */
-export function resolveToolbarItems(
-  options: AcExSimpleUiPluginOptions['toolbar'],
-  context?: AcExDefaultToolbarContext
-): AcExToolbarItem[] {
+export function acuiResolveToolbarItems(
+  options: AcUiToolbarConfig | undefined,
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem[] {
   const toolbar = options ?? {}
-  const presets = createDefaultToolbarPresetMap(context)
-  let items: AcExToolbarItem[]
+  const presets = acuiCreateDefaultToolbarPresetMap(context)
+  let items: AcUiToolbarItem[]
 
   if (toolbar.items === 'default' || toolbar.items == null) {
-    items = createDefaultToolbarItems(context)
+    items = acuiCreateDefaultToolbarItems(context)
   } else {
-    items = expandToolbarItemConfigs(toolbar.items, presets)
+    items = acuiExpandToolbarItemConfigs(toolbar.items, presets)
   }
 
   if (toolbar.appendItems?.length) {
-    items = insertToolbarItemsAt(
+    items = acuiInsertToolbarItemsAt(
       items,
-      expandToolbarItemConfigs(toolbar.appendItems, presets),
+      acuiExpandToolbarItemConfigs(toolbar.appendItems, presets),
       {
         after: toolbar.appendItemsAfter,
         before: toolbar.appendItemsBefore
@@ -100,4 +88,87 @@ export function resolveToolbarItems(
   }
 
   return items
+}
+
+/** Built-in toolbar defaults per device layout kind. */
+export function acuiGetBuiltInToolbarDefaults(
+  kind: AcUiLayoutKind
+): Required<
+  Pick<
+    AcUiToolbarConfig,
+    | 'enabled'
+    | 'placement'
+    | 'items'
+    | 'collapsible'
+    | 'defaultCollapsed'
+    | 'edgeOffset'
+    | 'overflow'
+  >
+> {
+  if (kind === 'mobile') {
+    return {
+      enabled: true,
+      placement: 'bottom',
+      items: MOBILE_DEFAULT_TOOLBAR_ITEMS,
+      collapsible: false,
+      defaultCollapsed: false,
+      edgeOffset: 0,
+      overflow: 'menu'
+    }
+  }
+  return {
+    enabled: true,
+    placement: 'right',
+    items: 'default',
+    collapsible: false,
+    defaultCollapsed: false,
+    edgeOffset: 8,
+    overflow: 'menu'
+  }
+}
+
+/**
+ * Shallow-merges toolbar config layers (later wins for defined fields).
+ */
+export function acuiMergeToolbarConfigs(
+  ...layers: Array<AcUiToolbarConfig | undefined>
+): AcUiToolbarConfig {
+  const result: AcUiToolbarConfig = {}
+  for (const layer of layers) {
+    if (!layer) continue
+    if (layer.enabled !== undefined) result.enabled = layer.enabled
+    if (layer.placement !== undefined) result.placement = layer.placement
+    if (layer.items !== undefined) result.items = layer.items
+    if (layer.appendItems !== undefined) result.appendItems = layer.appendItems
+    if (layer.appendItemsAfter !== undefined) {
+      result.appendItemsAfter = layer.appendItemsAfter
+    }
+    if (layer.appendItemsBefore !== undefined) {
+      result.appendItemsBefore = layer.appendItemsBefore
+    }
+    if (layer.collapsible !== undefined) result.collapsible = layer.collapsible
+    if (layer.defaultCollapsed !== undefined) {
+      result.defaultCollapsed = layer.defaultCollapsed
+    }
+    if (layer.mountTarget !== undefined) result.mountTarget = layer.mountTarget
+    if (layer.edgeOffset !== undefined) result.edgeOffset = layer.edgeOffset
+    if (layer.overflow !== undefined) result.overflow = layer.overflow
+  }
+  return result
+}
+
+/**
+ * Resolves the effective toolbar config for a layout kind.
+ *
+ * Merge order: built-in defaults → top-level `toolbar` (pad/desktop only) →
+ * `layouts.<kind>.toolbar`.
+ */
+export function acuiResolveLayoutToolbarConfig(
+  options: AcUiSimpleUiPluginOptions,
+  kind: AcUiLayoutKind
+): AcUiToolbarConfig {
+  const builtIn = acuiGetBuiltInToolbarDefaults(kind)
+  const topLevel = kind === 'mobile' ? undefined : options.toolbar
+  const layoutOverride = options.layouts?.[kind]?.toolbar
+  return acuiMergeToolbarConfigs(builtIn, topLevel, layoutOverride)
 }

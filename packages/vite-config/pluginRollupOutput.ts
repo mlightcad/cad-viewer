@@ -156,9 +156,9 @@ export function createLibManualChunks(packageId: string): ManualChunksOption {
     if (
       packageId === 'cad-simple-ui-plugin' &&
       (/[\\/]toolbar\.ts$/.test(id) ||
-        /[\\/]ui[\\/]AcExToolbar\.ts$/.test(id) ||
-        /[\\/]ui[\\/]AcExSubToolbar\.ts$/.test(id) ||
-        /[\\/]ui[\\/]AcExDropdownMenu\.ts$/.test(id) ||
+        /[\\/]ui[\\/]AcUiToolbar\.ts$/.test(id) ||
+        /[\\/]ui[\\/]AcUiSubToolbar\.ts$/.test(id) ||
+        /[\\/]ui[\\/]AcUiDropdownMenu\.ts$/.test(id) ||
         /[\\/]ui[\\/]styles\.ts$/.test(id) ||
         /[\\/]ui[\\/]uiLayout\.ts$/.test(id) ||
         /[\\/]config[\\/](types|toolbarItemUtils|toolbarItemDisplay)\.ts$/.test(

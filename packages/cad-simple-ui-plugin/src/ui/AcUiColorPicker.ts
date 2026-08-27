@@ -1,7 +1,7 @@
 import { AcCmColor, AcCmColorMethod } from '@mlightcad/data-model'
 
-import type { AcExI18n } from '../i18n'
-import { ensureUiStyles } from './styles'
+import type { AcUiI18n } from '../i18n'
+import { acuiEnsureUiStyles } from './styles'
 
 const SMALL_COLORS = Array.from({ length: 9 }, (_, i) => i + 1)
 const LARGE_COLORS = Array.from({ length: 240 }, (_, i) => i + 10)
@@ -12,7 +12,7 @@ const GRAY_COLORS = Array.from({ length: 6 }, (_, i) => i + 250)
  *
  * Presents standard AutoCAD Color Index palettes plus numeric or hex input.
  */
-export class AcExColorPicker {
+export class AcUiColorPicker {
   /** Full-screen backdrop containing the dialog. */
   private backdrop: HTMLDivElement
   /** Currently selected ACI index, if any. */
@@ -36,11 +36,11 @@ export class AcExColorPicker {
    * @param initialColor - Optional initial selection.
    */
   constructor(
-    private i18n: AcExI18n,
+    private i18n: AcUiI18n,
     themeHost: HTMLElement,
     initialColor?: AcCmColor
   ) {
-    ensureUiStyles()
+    acuiEnsureUiStyles()
     this.selectedIndex = this.toColorIndex(initialColor)
 
     this.backdrop = document.createElement('div')
