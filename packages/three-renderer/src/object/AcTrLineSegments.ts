@@ -60,6 +60,9 @@ export class AcTrLineSegments extends AcTrEntity {
 
       const line = new LineSegments2(lineGeometry, material)
       line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
+      if (material.dashed) {
+        line.computeLineDistances()
+      }
       getSceneDrawableUserData(line).styleMaterialId = material.id
       this.add(line)
       this.finalizeLeafDrawables()
