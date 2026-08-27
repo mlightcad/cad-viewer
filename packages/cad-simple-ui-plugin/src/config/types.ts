@@ -5,7 +5,7 @@ import type {
 } from '@mlightcad/cad-simple-viewer'
 
 /** Toolbar edge placement relative to the viewer host element. */
-export type AcExToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
+export type AcUiToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
 
 /**
  * How the toolbar shows items that do not fit along the docked edge.
@@ -13,13 +13,20 @@ export type AcExToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
  * - `'menu'`: hide overflowing items behind a "more" (⋯) button that opens a popup.
  * - `'scroll'`: keep all items in a scrollable strip (horizontal or vertical).
  */
-export type AcExToolbarOverflow = 'menu' | 'scroll'
+export type AcUiToolbarOverflow = 'menu' | 'scroll'
 
 /** Dock panel edge placement relative to the viewer host element. */
-export type AcExDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
+export type AcUiDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
 
 /** Supported UI locale codes for plugin strings. */
-export type AcExLocale = 'en' | 'zh' | 'cs' | 'tr'
+export type AcUiLocale = 'en' | 'zh' | 'cs' | 'tr'
+
+/**
+ * Device-oriented UI layout kind for toolbars.
+ *
+ * Mirrors viewer {@link AcEdUiLayoutKind}.
+ */
+export type AcUiLayoutKind = 'mobile' | 'pad' | 'desktop'
 
 /**
  * Controls how a parent button icon relates to its submenu selection.
@@ -27,7 +34,7 @@ export type AcExLocale = 'en' | 'zh' | 'cs' | 'tr'
  * - `'fixed'`: parent keeps its own `icon` (default).
  * - `'selected'`: parent shows the selected child's `icon`.
  */
-export type AcExToolbarChildIconMode = 'fixed' | 'selected'
+export type AcUiToolbarChildIconMode = 'fixed' | 'selected'
 
 /**
  * How nested `children` are presented when the parent button is clicked.
@@ -37,24 +44,24 @@ export type AcExToolbarChildIconMode = 'fixed' | 'selected'
  * - `'sticky-toolbar'`: icon sub-toolbar that stays open until the parent button
  *   is clicked again. Canvas clicks do not dismiss it.
  */
-export type AcExToolbarChildrenUi = 'menu' | 'toolbar' | 'sticky-toolbar'
+export type AcUiToolbarChildrenUi = 'menu' | 'toolbar' | 'sticky-toolbar'
 
 /** Visual separator between toolbar button groups. */
-export interface AcExToolbarSeparator {
+export interface AcUiToolbarSeparator {
   type: 'separator'
   /** Optional stable id for debugging. */
   id?: string
 }
 
 /** Reference to a built-in toolbar button when composing a custom layout. */
-export interface AcExToolbarPresetRef {
+export interface AcUiToolbarPresetRef {
   preset: string
 }
 
 /**
  * Configuration for a single toolbar button or submenu entry.
  */
-export interface AcExToolbarItem {
+export interface AcUiToolbarItem {
   /** Stable identifier used for DOM attributes and debugging. */
   id: string
   /** When `'separator'`, renders a divider instead of a button. */
@@ -83,18 +90,18 @@ export interface AcExToolbarItem {
   disabled?: boolean | (() => boolean)
   /** Nested submenu items shown when the button is clicked.
    * May be a live getter so the list can depend on the active document. */
-  children?: AcExToolbarItem[]
+  children?: AcUiToolbarItem[]
   /**
    * Presentation of {@link children}. Defaults to `'menu'` (popover dropdown).
    * Built-in Measure / Review use `'sticky-toolbar'`; Export, Toolbar
    * Position, and Language use `'toolbar'`.
    */
-  childrenUi?: AcExToolbarChildrenUi
+  childrenUi?: AcUiToolbarChildrenUi
   /**
    * When the button has `children`, controls whether the parent icon follows the
    * selected submenu item. Defaults to `'fixed'`.
    */
-  childIcon?: AcExToolbarChildIconMode
+  childIcon?: AcUiToolbarChildIconMode
   /**
    * Initial submenu selection when {@link childIcon} is `'selected'`.
    * Applied once when the parent first appears; later item-list updates do not
@@ -106,25 +113,76 @@ export interface AcExToolbarItem {
     /** Returns whether the toggle is in the "on" branch. */
     getValue: () => boolean
     /** Fields applied when `getValue` returns true. */
-    on: Partial<AcExToolbarItem>
+    on: Partial<AcUiToolbarItem>
     /** Fields applied when `getValue` returns false. */
-    off: Partial<AcExToolbarItem>
+    off: Partial<AcUiToolbarItem>
   }
 }
 
 /** Resolved toolbar entry: button, separator, or preset reference in config. */
-export type AcExToolbarItemConfig =
-  | AcExToolbarItem
-  | AcExToolbarSeparator
-  | AcExToolbarPresetRef
+export type AcUiToolbarItemConfig =
+  | AcUiToolbarItem
+  | AcUiToolbarSeparator
+  | AcUiToolbarPresetRef
 
 /** Toolbar item list passed to {@link AcApSimpleUiPlugin.setToolbarItems}. */
-export type AcExToolbarItemsInput = AcExToolbarItemConfig[] | 'default'
+export type AcUiToolbarItemsInput = AcUiToolbarItemConfig[] | 'default'
+
+/**
+ * Reusable toolbar chrome configuration (placement, items, collapse, overflow).
+ *
+ * Shared by {@link AcUiSimpleUiPluginOptions} and HTML export viewer setup so both
+ * hosts can compose toolbars from the same shape (including preset refs).
+ */
+export interface AcUiToolbarConfig {
+  /** When false, the toolbar is not created. */
+  enabled?: boolean
+  /** Edge placement relative to `host`. */
+  placement?: AcUiToolbarPlacement
+  /** Toolbar items, `'default'`, or a custom list (may include presets and separators). */
+  items?: AcUiToolbarItemConfig[] | 'default'
+  /** Extra items merged into `items` (default: appended at the end). */
+  appendItems?: AcUiToolbarItemConfig[]
+  /**
+   * Insert `appendItems` after the root toolbar item with this id.
+   * Ignored when {@link appendItemsBefore} is set.
+   */
+  appendItemsAfter?: string
+  /**
+   * Insert `appendItems` before the root toolbar item with this id.
+   * Takes precedence over {@link appendItemsAfter}.
+   */
+  appendItemsBefore?: string
+  /** When true, show a collapse/expand toggle at the end of the toolbar. */
+  collapsible?: boolean
+  /** Initial collapsed state when {@link collapsible} is true. */
+  defaultCollapsed?: boolean
+  /**
+   * Canvas element that receives the floating toolbar.
+   * Defaults to the active view container when it is inside `host`.
+   */
+  mountTarget?: HTMLElement
+  /** Inset from the docked canvas edge in px. @default 8 */
+  edgeOffset?: number
+  /**
+   * How overflowing toolbar items are shown when the host is too small.
+   * @default 'menu'
+   */
+  overflow?: AcUiToolbarOverflow
+}
+
+/**
+ * Per-device-layout options under {@link AcUiSimpleUiPluginOptions.layouts}.
+ */
+export interface AcUiLayoutOptions {
+  /** Toolbar configuration for this layout kind. */
+  toolbar?: AcUiToolbarConfig
+}
 
 /**
  * Callbacks supplied when building the default toolbar (theme, locale, and placement).
  */
-export interface AcExDefaultToolbarContext {
+export interface AcUiDefaultToolbarContext {
   /** Returns the current UI theme. */
   getTheme: () => AcEdUiTheme
   /** Applies a UI theme change. */
@@ -134,19 +192,31 @@ export interface AcExDefaultToolbarContext {
   /** Sets the application locale. */
   setLocale: (locale: AcApLocale) => void
   /** Returns the current toolbar edge placement. */
-  getPlacement: () => AcExToolbarPlacement
+  getPlacement: () => AcUiToolbarPlacement
   /** Moves the toolbar to the given host edge. */
-  setPlacement: (placement: AcExToolbarPlacement) => void
+  setPlacement: (placement: AcUiToolbarPlacement) => void
+  /**
+   * Restores the view captured when the current document was activated
+   * ("original viewport"). Used by the mobile zoom submenu.
+   */
+  restoreOriginalView?: () => void
 }
 
 /**
- * Options passed to {@link createSimpleUiPlugin} and {@link registerSimpleUiPlugin}.
+ * Options passed to {@link acuiCreateSimpleUiPlugin} and {@link acuiRegisterSimpleUiPlugin}.
  */
-export interface AcExSimpleUiPluginOptions {
+export interface AcUiSimpleUiPluginOptions {
   /** Viewer host element; defaults to the active view container or `document.body`. */
   host?: HTMLElement
   /** @deprecated Locale follows {@link AcApI18n.currentLocale} automatically. */
-  locale?: AcExLocale
+  locale?: AcUiLocale
+  /**
+   * How device layouts are chosen.
+   *
+   * - `'auto'` (default): follow viewport via {@link acedGetUiLayoutKind}.
+   * - `'mobile' | 'pad' | 'desktop'`: lock to that layout.
+   */
+  layout?: 'auto' | AcUiLayoutKind
   /** Chrome DevTools-style dock panel configuration. */
   dockPanel?: {
     /** Explicitly enable the dock panel container. */
@@ -154,7 +224,7 @@ export interface AcExSimpleUiPluginOptions {
     /** @default false */
     defaultOpen?: boolean
     /** @default 'left' */
-    defaultSide?: AcExDockPanelSide
+    defaultSide?: AcUiDockPanelSide
     /** Bottom dock default height in px. @default 240 */
     defaultHeight?: number
     /** Left/right dock default width in px. @default 280 */
@@ -165,44 +235,26 @@ export interface AcExSimpleUiPluginOptions {
      */
     mountTarget?: HTMLElement
   }
-  /** Toolbar configuration. Enabled by default. */
-  toolbar?: {
-    /** When false, the toolbar is not created. */
-    enabled?: boolean
-    /** Edge placement relative to `host`. */
-    placement?: AcExToolbarPlacement
-    /** Toolbar items, `'default'`, or a custom list (may include presets and separators). */
-    items?: AcExToolbarItemConfig[] | 'default'
-    /** Extra items merged into `items` (default: appended at the end). */
-    appendItems?: AcExToolbarItemConfig[]
-    /**
-     * Insert `appendItems` after the root toolbar item with this id.
-     * Ignored when {@link appendItemsBefore} is set.
-     */
-    appendItemsAfter?: string
-    /**
-     * Insert `appendItems` before the root toolbar item with this id.
-     * Takes precedence over {@link appendItemsAfter}.
-     */
-    appendItemsBefore?: string
-    /** When true, show a collapse/expand toggle at the end of the toolbar. */
-    collapsible?: boolean
-    /** Initial collapsed state when {@link collapsible} is true. */
-    defaultCollapsed?: boolean
-    /**
-     * Canvas element that receives the floating toolbar.
-     * Defaults to the active view container when it is inside `host`.
-     */
-    mountTarget?: HTMLElement
-    /** Inset from the docked canvas edge in px. @default 8 */
-    edgeOffset?: number
-    /**
-     * How overflowing toolbar items are shown when the host is too small.
-     * @default 'menu'
-     */
-    overflow?: AcExToolbarOverflow
+  /**
+   * Toolbar configuration. Enabled by default.
+   *
+   * When {@link layouts} is used, this top-level block is merged only into
+   * **pad** and **desktop** layouts (not mobile) for backward compatibility.
+   */
+  toolbar?: AcUiToolbarConfig
+  /**
+   * Per-device toolbar (and future chrome) overrides.
+   *
+   * Merge order for each kind: built-in defaults → top-level {@link toolbar}
+   * (pad/desktop only) → `layouts.<kind>.toolbar`.
+   */
+  layouts?: {
+    mobile?: AcUiLayoutOptions
+    pad?: AcUiLayoutOptions
+    desktop?: AcUiLayoutOptions
   }
 }
 
 /** Plugin identifier registered with {@link AcApPluginManager}. */
 export const SIMPLE_UI_PLUGIN_NAME = 'SimpleUiPlugin'
+

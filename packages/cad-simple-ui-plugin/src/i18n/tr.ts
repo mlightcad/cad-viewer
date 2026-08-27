@@ -1,5 +1,5 @@
 /**
- * Turkish UI strings for {@link registerSimpleUiI18n}.
+ * Turkish UI strings for {@link acuiRegisterSimpleUiI18n}.
  *
  * Keys use dot notation (for example `toolbar.select`) and are nested under
  * the `simpleUi` namespace when registered.
@@ -7,8 +7,11 @@
 export const tr: Record<string, string> = {
   'toolbar.select': 'Seç',
   'toolbar.pan': 'Kaydır',
+  'toolbar.zoom': 'Yakınlaştır',
   'toolbar.zoomExtent': 'Kapsama Yakınlaştır',
   'toolbar.zoomWindow': 'Pencere Yakınlaştır',
+  'toolbar.zoomOriginal': 'Orijinal görünüm',
+  'toolbar.settings': 'Ayarlar',
   'toolbar.layer': 'Katman Yöneticisi',
   'toolbar.layout': 'Düzen',
   'toolbar.measure': 'Ölçüm',

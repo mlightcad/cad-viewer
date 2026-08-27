@@ -7,26 +7,26 @@ import {
 } from '@mlightcad/cad-simple-viewer/icons'
 
 import {
-  filterVisibleToolbarItems,
-  isToolbarItemDisabled,
-  itemRequiresDocument,
-  resolveEffectiveToolbarItem,
-  resolveParentToolbarDisplay
+  acuiFilterVisibleToolbarItems,
+  acuiIsToolbarItemDisabled,
+  acuiItemRequiresDocument,
+  acuiResolveEffectiveToolbarItem,
+  acuiResolveParentToolbarDisplay
 } from '../config/toolbarItemDisplay'
 import {
-  isDynamicToolbarChildren,
-  isToolbarChildrenStrip,
-  isToolbarSeparatorItem,
-  resolveToolbarChildrenUi
+  acuiIsDynamicToolbarChildren,
+  acuiIsToolbarChildrenStrip,
+  acuiIsToolbarSeparatorItem,
+  acuiResolveToolbarChildrenUi
 } from '../config/toolbarItemUtils'
 import type {
-  AcExToolbarItem,
-  AcExToolbarOverflow,
-  AcExToolbarPlacement
+  AcUiToolbarItem,
+  AcUiToolbarOverflow,
+  AcUiToolbarPlacement
 } from '../config/types'
-import { AcExDropdownMenu } from './AcExDropdownMenu'
-import { AcExSubToolbar } from './AcExSubToolbar'
-import { ensureUiStyles } from './styles'
+import { AcUiDropdownMenu } from './AcUiDropdownMenu'
+import { AcUiSubToolbar } from './AcUiSubToolbar'
+import { acuiEnsureUiStyles } from './styles'
 import { ML_EX_UI_MOBILE_MEDIA_QUERY } from './uiLayout'
 
 const TOOLBAR_GAP_PX = 4
@@ -39,26 +39,26 @@ const ICON_MORE =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6" fill="currentColor"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><circle cx="15.5" cy="10" r="1.6" fill="currentColor"/></svg>'
 
 /**
- * Minimal i18n contract used by {@link AcExToolbar} and related chrome.
- * Hosts may supply {@link AcExI18n} or any object with a compatible `t`.
+ * Minimal i18n contract used by {@link AcUiToolbar} and related chrome.
+ * Hosts may supply {@link AcUiI18n} or any object with a compatible `t`.
  */
-export interface AcExToolbarI18n {
+export interface AcUiToolbarI18n {
   t(key: string, params?: Record<string, string>): string
 }
 
-/** Document visibility/open-mode snapshot when {@link AcExToolbarOptions.docBinding} is false. */
-export interface AcExToolbarDocState {
+/** Document visibility/open-mode snapshot when {@link AcUiToolbarOptions.docBinding} is false. */
+export interface AcUiToolbarDocState {
   /** Whether command buttons that require a document stay enabled. */
   hasDocument: boolean
-  /** Open mode used for {@link AcExToolbarItem.minOpenMode} filtering. */
+  /** Open mode used for {@link AcUiToolbarItem.minOpenMode} filtering. */
   openMode: number
 }
 
 /**
- * Document-manager facade for hosts that enable {@link AcExToolbarOptions.docBinding}.
+ * Document-manager facade for hosts that enable {@link AcUiToolbarOptions.docBinding}.
  * Keeps `@mlightcad/cad-simple-viewer` out of the toolbar module graph for offline bundles.
  */
-export interface AcExToolbarDocBridge {
+export interface AcUiToolbarDocBridge {
   hasDocument(): boolean
   getOpenMode(): number
   subscribeActivated(listener: () => void): void
@@ -67,18 +67,18 @@ export interface AcExToolbarDocBridge {
   unsubscribeToBeOpened(listener: () => void): void
 }
 
-/** Constructor options for {@link AcExToolbar}. */
-export interface AcExToolbarOptions {
+/** Constructor options for {@link AcUiToolbar}. */
+export interface AcUiToolbarOptions {
   /** Viewer canvas element that receives the toolbar root node. */
   host: HTMLElement
   /** Theme host for dropdown menus; defaults to {@link host}. */
   themeHost?: HTMLElement
   /** Edge placement of the toolbar. */
-  placement: AcExToolbarPlacement
+  placement: AcUiToolbarPlacement
   /** Toolbar item definitions to render. */
-  items: AcExToolbarItem[]
+  items: AcUiToolbarItem[]
   /** i18n helper for button labels and tooltips. */
-  i18n: AcExToolbarI18n
+  i18n: AcUiToolbarI18n
   /** Invoked when a leaf item with a `command` is activated. */
   onCommand: (command: string) => void
   /** When true, append a collapse/expand toggle at the end of the toolbar. */
@@ -93,7 +93,7 @@ export interface AcExToolbarOptions {
    * How overflowing items are shown when the host is too small.
    * @default 'menu'
    */
-  overflow?: AcExToolbarOverflow
+  overflow?: AcUiToolbarOverflow
   /**
    * Layout mode for the toolbar root.
    * - `'absolute'` (default): floats inside {@link host} on the docked edge.
@@ -109,15 +109,15 @@ export interface AcExToolbarOptions {
    * Required when {@link docBinding} is true. Supplied by SimpleUiPlugin from
    * `AcApDocManager` so this module does not import cad-simple-viewer.
    */
-  docBridge?: AcExToolbarDocBridge
+  docBridge?: AcUiToolbarDocBridge
   /**
    * Document state when {@link docBinding} is false.
    * @default `{ hasDocument: true, openMode: 8 }` (Write)
    */
-  documentState?: AcExToolbarDocState
+  documentState?: AcUiToolbarDocState
   /**
-   * Called after buttons are rebuilt ({@link AcExToolbar.updateItems},
-   * {@link AcExToolbar.refresh}, or an internal re-render). Hosts can re-apply
+   * Called after buttons are rebuilt ({@link AcUiToolbar.updateItems},
+   * {@link AcUiToolbar.refresh}, or an internal re-render). Hosts can re-apply
    * transient `active` classes that live outside item config.
    */
   onRender?: () => void
@@ -129,7 +129,7 @@ export interface AcExToolbarOptions {
  * Disables command buttons while a document is loading and filters items by
  * document open mode.
  */
-export class AcExToolbar {
+export class AcUiToolbar {
   /** Canvas element receiving the toolbar root node. */
   private mountHost: HTMLElement
   /** Host element used for themed dropdown menus. */
@@ -137,11 +137,15 @@ export class AcExToolbar {
   /** Root toolbar container appended to the mount host. */
   private root: HTMLDivElement
   /** Currently open popover submenu, if any. */
-  private openDropdown?: AcExDropdownMenu
+  private openDropdown?: AcUiDropdownMenu
   /** Currently open icon sub-toolbar, if any. */
-  private openSubToolbar?: AcExSubToolbar
+  private openSubToolbar?: AcUiSubToolbar
+  /** Nested sub-toolbar opened from a child that itself has children (e.g. settings → locale). */
+  private nestedSubToolbar?: AcUiSubToolbar
   /** Parent item id of the open children UI. */
   private openParentId?: string
+  /** Nested parent item id while a nested strip is open. */
+  private nestedParentId?: string
   /** Sticky sub-toolbar parent id restored after a full re-render. */
   private stickyParentId?: string
   /** Parent button currently marked as expanded. */
@@ -153,8 +157,8 @@ export class AcExToolbar {
   /** Whether an active document is loaded. */
   private hasDocument = false
   /** Item list last passed to {@link updateItems} or the constructor. */
-  private items: AcExToolbarItem[]
-  /** Runtime submenu selection for parents with {@link AcExToolbarItem.childIcon} `'selected'`. */
+  private items: AcUiToolbarItem[]
+  /** Runtime submenu selection for parents with {@link AcUiToolbarItem.childIcon} `'selected'`. */
   private selectedChildByParent = new Map<string, string>()
   /** Whether the toolbar is collapsed to show only the toggle button. */
   private collapsed: boolean
@@ -163,23 +167,23 @@ export class AcExToolbar {
   /** Whether document manager events are wired. */
   private readonly docBinding: boolean
   /** Document bridge when {@link docBinding} is true. */
-  private readonly docBridge?: AcExToolbarDocBridge
+  private readonly docBridge?: AcUiToolbarDocBridge
   /** Absolute float vs in-flow layout. */
   private readonly positioning: 'absolute' | 'static'
   /** Inset from the docked canvas edge in px. */
   private edgeOffset: number
   /** How overflowing items are shown when the host is too small. */
-  private overflow: AcExToolbarOverflow
+  private overflow: AcUiToolbarOverflow
   /** Flex strip that holds toolbar buttons and separators. */
   private itemsEl: HTMLDivElement
   /** "More" button that opens overflowing items as a popup. */
   private overflowButton: HTMLButtonElement
   /** Items currently hidden behind {@link overflowButton}. */
-  private overflowedItems: AcExToolbarItem[] = []
+  private overflowedItems: AcUiToolbarItem[] = []
   /** When set, the toolbar is flush to the host on that axis (overflow ⋯ visible). */
   private overflowFlush?: 'x' | 'y'
   /** Rendered items keyed by id for overflow activation. */
-  private itemById = new Map<string, AcExToolbarItem>()
+  private itemById = new Map<string, AcUiToolbarItem>()
   /** Keeps the toolbar inside the canvas when the host is resized. */
   private resizeObserver?: ResizeObserver
   /** Re-layouts overflow when the viewport crosses the mobile breakpoint. */
@@ -211,8 +215,8 @@ export class AcExToolbar {
   /**
    * @param options - Host, placement, items, i18n, and command callback.
    */
-  constructor(private options: AcExToolbarOptions) {
-    ensureUiStyles()
+  constructor(private options: AcUiToolbarOptions) {
+    acuiEnsureUiStyles()
     this.mountHost = options.host
     this.themeHost = options.themeHost ?? options.host
     this.edgeOffset = options.edgeOffset ?? 8
@@ -273,7 +277,7 @@ export class AcExToolbar {
    *
    * @param items - New toolbar items.
    */
-  updateItems(items: AcExToolbarItem[]) {
+  updateItems(items: AcUiToolbarItem[]) {
     this.items = items
     this.seedSelectedChildren(items)
     this.renderButtons()
@@ -288,11 +292,11 @@ export class AcExToolbar {
   }
 
   /**
-   * Updates document state when {@link AcExToolbarOptions.docBinding} is false.
+   * Updates document state when {@link AcUiToolbarOptions.docBinding} is false.
    *
    * @param state - Partial hasDocument / openMode overrides.
    */
-  setDocumentState(state: Partial<AcExToolbarDocState>) {
+  setDocumentState(state: Partial<AcUiToolbarDocState>) {
     if (this.docBinding) return
     if (state.hasDocument !== undefined) {
       this.hasDocument = state.hasDocument
@@ -313,7 +317,7 @@ export class AcExToolbar {
    *
    * @param placement - Target edge placement.
    */
-  setPlacement(placement: AcExToolbarPlacement) {
+  setPlacement(placement: AcUiToolbarPlacement) {
     if (this.options.placement === placement) return
     this.options.placement = placement
     this.selectedChildByParent.set(
@@ -349,7 +353,7 @@ export class AcExToolbar {
    *
    * @param overflow - `'menu'` (⋯ popup) or `'scroll'`.
    */
-  setOverflow(overflow: AcExToolbarOverflow) {
+  setOverflow(overflow: AcUiToolbarOverflow) {
     if (this.overflow === overflow) return
     this.overflow = overflow
     this.closeChildrenUi()
@@ -444,6 +448,24 @@ export class AcExToolbar {
     this.scheduleSyncPosition()
   }
 
+  /**
+   * Enables or disables the collapse/expand toggle at the end of the toolbar.
+   *
+   * When disabling, expands the toolbar if it was collapsed.
+   *
+   * @param collapsible - Whether the collapse toggle should be shown.
+   */
+  setCollapsible(collapsible: boolean) {
+    const next = Boolean(collapsible)
+    if (Boolean(this.options.collapsible) === next) return
+    this.options.collapsible = next
+    if (!next && this.collapsed) {
+      this.collapsed = false
+      this.syncRootClasses()
+    }
+    this.renderButtons()
+  }
+
   /** Removes listeners, closes dropdowns, and detaches the toolbar DOM. */
   destroy() {
     if (this.layoutFrame !== undefined) {
@@ -489,7 +511,7 @@ export class AcExToolbar {
     this.root.className = classes.join(' ')
   }
 
-  /** Toggles collapsed state when {@link AcExToolbarOptions.collapsible} is enabled. */
+  /** Toggles collapsed state when {@link AcUiToolbarOptions.collapsible} is enabled. */
   private toggleCollapsed() {
     this.setCollapsed(!this.collapsed)
   }
@@ -554,9 +576,9 @@ export class AcExToolbar {
     this.overflowButton.hidden = true
     this.syncOverflowButtonLabel()
 
-    const visibleItems = filterVisibleToolbarItems(this.items, this.openMode)
+    const visibleItems = acuiFilterVisibleToolbarItems(this.items, this.openMode)
     visibleItems.forEach(item => {
-      if (isToolbarSeparatorItem(item)) {
+      if (acuiIsToolbarSeparatorItem(item)) {
         const separator = document.createElement('div')
         separator.className = 'ml-ex-ui-toolbar-separator'
         separator.setAttribute('role', 'separator')
@@ -569,7 +591,7 @@ export class AcExToolbar {
       }
 
       this.itemById.set(item.id, item)
-      const effective = resolveParentToolbarDisplay(
+      const effective = acuiResolveParentToolbarDisplay(
         item,
         this.selectedChildByParent.get(item.id)
       )
@@ -582,7 +604,7 @@ export class AcExToolbar {
       button.setAttribute('aria-label', button.title)
       button.dataset.toolbarItemId = effective.id
 
-      if (effective.children?.length || isDynamicToolbarChildren(item)) {
+      if (effective.children?.length || acuiIsDynamicToolbarChildren(item)) {
         button.classList.add('has-children')
         button.setAttribute('aria-haspopup', 'true')
         button.setAttribute('aria-expanded', 'false')
@@ -599,9 +621,9 @@ export class AcExToolbar {
       }
 
       const disabled =
-        (itemRequiresDocument(effective) &&
+        (acuiItemRequiresDocument(effective) &&
           (this.isDisabled || !this.hasDocument)) ||
-        isToolbarItemDisabled(effective)
+        acuiIsToolbarItemDisabled(effective)
       button.disabled = disabled
 
       button.addEventListener('click', event => {
@@ -629,19 +651,19 @@ export class AcExToolbar {
    * @param button - Visible anchor button (parent, or the overflow button).
    */
   private activateToolbarItem(
-    item: AcExToolbarItem,
+    item: AcUiToolbarItem,
     button: HTMLButtonElement
   ) {
-    const effective = resolveParentToolbarDisplay(
+    const effective = acuiResolveParentToolbarDisplay(
       item,
       this.selectedChildByParent.get(item.id)
     )
 
-    if (effective.children?.length || isDynamicToolbarChildren(item)) {
-      const visibleChildren = filterVisibleToolbarItems(
+    if (effective.children?.length || acuiIsDynamicToolbarChildren(item)) {
+      const visibleChildren = acuiFilterVisibleToolbarItems(
         effective.children ?? [],
         this.openMode
-      ).map(resolveEffectiveToolbarItem)
+      ).map(acuiResolveEffectiveToolbarItem)
       if (visibleChildren.length === 0) return
 
       if (this.openParentId === item.id) {
@@ -869,8 +891,8 @@ export class AcExToolbar {
       if (!hide) continue
       const id = children[i].dataset.toolbarItemId
       const item = id ? this.itemById.get(id) : undefined
-      if (item && !isToolbarSeparatorItem(item)) {
-        this.overflowedItems.push(resolveEffectiveToolbarItem(item))
+      if (item && !acuiIsToolbarSeparatorItem(item)) {
+        this.overflowedItems.push(acuiResolveEffectiveToolbarItem(item))
       }
     }
 
@@ -895,7 +917,7 @@ export class AcExToolbar {
     this.openParentId = OVERFLOW_PARENT_ID
     this.markParentOpen(this.overflowButton)
 
-    const dropdown = new AcExDropdownMenu(
+    const dropdown = new AcUiDropdownMenu(
       this.options.i18n,
       this.overflowedItems,
       this.overflowButton,
@@ -914,17 +936,17 @@ export class AcExToolbar {
     this.openDropdown = dropdown
   }
 
-  private activateOverflowItem(child: AcExToolbarItem) {
+  private activateOverflowItem(child: AcUiToolbarItem) {
     const item = this.itemById.get(child.id) ?? child
-    if (isToolbarSeparatorItem(item)) return
+    if (acuiIsToolbarSeparatorItem(item)) return
 
     const originalButton = this.itemsEl.querySelector<HTMLButtonElement>(
       `[data-toolbar-item-id="${item.id}"]`
     )
     if (
       originalButton?.disabled ||
-      (itemRequiresDocument(item) && (this.isDisabled || !this.hasDocument)) ||
-      isToolbarItemDisabled(item)
+      (acuiItemRequiresDocument(item) && (this.isDisabled || !this.hasDocument)) ||
+      acuiIsToolbarItemDisabled(item)
     ) {
       return
     }
@@ -1028,14 +1050,14 @@ export class AcExToolbar {
   }
 
   /**
-   * Seeds submenu selection from {@link AcExToolbarItem.selectedChildId}.
+   * Seeds submenu selection from {@link AcUiToolbarItem.selectedChildId}.
    *
    * Existing runtime selections are kept so {@link updateItems} can rebuild the
    * item list (locale, toggles) without resetting `childIcon: 'selected'` parents.
    */
-  private seedSelectedChildren(items: AcExToolbarItem[]) {
+  private seedSelectedChildren(items: AcUiToolbarItem[]) {
     for (const item of items) {
-      if (isToolbarSeparatorItem(item)) continue
+      if (acuiIsToolbarSeparatorItem(item)) continue
       if (
         item.childIcon === 'selected' &&
         item.selectedChildId &&
@@ -1050,11 +1072,19 @@ export class AcExToolbar {
   private closeChildrenUi() {
     this.openDropdown?.close()
     this.openDropdown = undefined
+    this.closeNestedChildrenUi()
     this.openSubToolbar?.close()
     this.openSubToolbar = undefined
     this.clearParentOpenState()
     this.openParentId = undefined
     this.stickyParentId = undefined
+  }
+
+  /** Closes a nested sub-toolbar opened from a child with its own children. */
+  private closeNestedChildrenUi() {
+    this.nestedSubToolbar?.close()
+    this.nestedSubToolbar = undefined
+    this.nestedParentId = undefined
   }
 
   /** Removes `is-open` / `aria-expanded` from the last expanded parent button. */
@@ -1085,19 +1115,19 @@ export class AcExToolbar {
    * @param visibleChildren - Filtered, effective child items.
    */
   private openChildrenUi(
-    item: AcExToolbarItem,
+    item: AcUiToolbarItem,
     button: HTMLButtonElement,
-    visibleChildren: AcExToolbarItem[]
+    visibleChildren: AcUiToolbarItem[]
   ) {
     this.closeChildrenUi()
-    const childrenUi = resolveToolbarChildrenUi(item)
+    const childrenUi = acuiResolveToolbarChildrenUi(item)
     this.openParentId = item.id
     this.markParentOpen(button)
 
-    if (isToolbarChildrenStrip(childrenUi)) {
+    if (acuiIsToolbarChildrenStrip(childrenUi)) {
       const sticky = childrenUi === 'sticky-toolbar'
       this.stickyParentId = sticky ? item.id : undefined
-      const strip = new AcExSubToolbar({
+      const strip = new AcUiSubToolbar({
         i18n: this.options.i18n,
         items: visibleChildren,
         anchor: button,
@@ -1110,6 +1140,7 @@ export class AcExToolbar {
         onSelect: child => this.activateChild(item, child, sticky),
         onClose: () => {
           if (this.openSubToolbar === strip) {
+            this.closeNestedChildrenUi()
             this.openSubToolbar = undefined
             this.clearParentOpenState()
             this.openParentId = undefined
@@ -1121,7 +1152,7 @@ export class AcExToolbar {
       return
     }
 
-    const dropdown = new AcExDropdownMenu(
+    const dropdown = new AcUiDropdownMenu(
       this.options.i18n,
       visibleChildren,
       button,
@@ -1147,11 +1178,11 @@ export class AcExToolbar {
    */
   private openStickyChildrenByParentId(parentId: string) {
     const item = this.items.find(candidate => {
-      if (isToolbarSeparatorItem(candidate)) return false
+      if (acuiIsToolbarSeparatorItem(candidate)) return false
       return candidate.id === parentId
     })
     if (!item?.children?.length) return
-    if (resolveToolbarChildrenUi(item) !== 'sticky-toolbar') return
+    if (acuiResolveToolbarChildrenUi(item) !== 'sticky-toolbar') return
 
     const button = this.root.querySelector<HTMLButtonElement>(
       `[data-toolbar-item-id="${parentId}"]`
@@ -1159,10 +1190,10 @@ export class AcExToolbar {
     if (!button) return
     const anchor = button.hidden ? this.overflowButton : button
 
-    const visibleChildren = filterVisibleToolbarItems(
+    const visibleChildren = acuiFilterVisibleToolbarItems(
       item.children,
       this.openMode
-    ).map(resolveEffectiveToolbarItem)
+    ).map(acuiResolveEffectiveToolbarItem)
     if (visibleChildren.length === 0) return
 
     this.openChildrenUi(item, anchor, visibleChildren)
@@ -1176,11 +1207,29 @@ export class AcExToolbar {
    * @param sticky - Whether the child UI should stay open.
    */
   private activateChild(
-    parent: AcExToolbarItem,
-    child: AcExToolbarItem,
+    parent: AcUiToolbarItem,
+    child: AcUiToolbarItem,
     sticky: boolean
   ) {
-    if (isToolbarSeparatorItem(child)) return
+    if (acuiIsToolbarSeparatorItem(child)) return
+
+    const hasChildren =
+      Boolean(child.children?.length) || acuiIsDynamicToolbarChildren(child)
+    if (hasChildren) {
+      if (this.nestedParentId === child.id) {
+        this.closeNestedChildrenUi()
+        return
+      }
+      const anchor =
+        this.openSubToolbar?.element.querySelector<HTMLElement>(
+          `[data-toolbar-item-id="${child.id}"]`
+        ) ?? undefined
+      if (anchor) {
+        this.openNestedChildrenUi(child, anchor)
+      }
+      return
+    }
+
     if (parent.childIcon === 'selected') {
       this.selectedChildByParent.set(parent.id, child.id)
     }
@@ -1190,13 +1239,18 @@ export class AcExToolbar {
       this.options.onCommand(child.command)
     }
 
+    // Nested leaf selection (e.g. a locale) closes the nested strip.
+    if (this.nestedParentId === parent.id) {
+      this.closeNestedChildrenUi()
+    }
+
     if (child.toggle && sticky && this.openSubToolbar) {
       window.setTimeout(() => {
         if (!this.openSubToolbar) return
-        const visibleChildren = filterVisibleToolbarItems(
+        const visibleChildren = acuiFilterVisibleToolbarItems(
           parent.children ?? [],
           this.openMode
-        ).map(resolveEffectiveToolbarItem)
+        ).map(acuiResolveEffectiveToolbarItem)
         this.openSubToolbar.refresh(
           visibleChildren,
           this.isDisabled || !this.hasDocument
@@ -1210,5 +1264,66 @@ export class AcExToolbar {
     } else if (parent.childIcon === 'selected' || parent.toggle) {
       this.renderButtons()
     }
+  }
+
+  /**
+   * Opens a nested dropdown or sub-toolbar for a child that itself has children.
+   *
+   * @param item - Nested parent item (e.g. locale under settings).
+   * @param anchor - Button inside the parent sub-toolbar.
+   */
+  private openNestedChildrenUi(item: AcUiToolbarItem, anchor: HTMLElement) {
+    this.closeNestedChildrenUi()
+    const childrenUi = acuiResolveToolbarChildrenUi(item)
+    const visibleChildren = acuiFilterVisibleToolbarItems(
+      item.children ?? [],
+      this.openMode
+    ).map(acuiResolveEffectiveToolbarItem)
+    if (visibleChildren.length === 0) return
+
+    this.nestedParentId = item.id
+    anchor.setAttribute('aria-expanded', 'true')
+    anchor.classList.add('is-open')
+
+    if (acuiIsToolbarChildrenStrip(childrenUi)) {
+      const sticky = childrenUi === 'sticky-toolbar'
+      const strip = new AcUiSubToolbar({
+        i18n: this.options.i18n,
+        items: visibleChildren,
+        anchor,
+        toolbarRoot: this.root,
+        host: this.themeHost,
+        placement: this.options.placement,
+        edgeOffset: this.edgeOffset,
+        sticky,
+        commandsDisabled: this.isDisabled || !this.hasDocument,
+        onSelect: nestedChild => this.activateChild(item, nestedChild, sticky),
+        onClose: () => {
+          if (this.nestedSubToolbar === strip) {
+            this.nestedSubToolbar = undefined
+            this.nestedParentId = undefined
+            anchor.classList.remove('is-open')
+            anchor.setAttribute('aria-expanded', 'false')
+          }
+        }
+      })
+      this.nestedSubToolbar = strip
+      return
+    }
+
+    const dropdown = new AcUiDropdownMenu(
+      this.options.i18n,
+      visibleChildren,
+      anchor,
+      this.themeHost
+    )
+    dropdown.setOnSelect(nestedChild => {
+      this.activateChild(item, nestedChild, false)
+    })
+    dropdown.setOnClose(() => {
+      this.nestedParentId = undefined
+      anchor.classList.remove('is-open')
+      anchor.setAttribute('aria-expanded', 'false')
+    })
   }
 }

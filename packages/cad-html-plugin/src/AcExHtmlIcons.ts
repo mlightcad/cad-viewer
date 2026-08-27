@@ -39,6 +39,7 @@ import {
   ICON_PAN,
   ICON_POLAR_TRACKING,
   ICON_SELECT,
+  ICON_SETTINGS,
   ICON_ZOOM_BOX,
   ICON_ZOOM_EXTENT,
   ICON_ZOOM_ORIGINAL,
@@ -54,6 +55,8 @@ export const acExHtmlIcons = {
   select: ICON_SELECT,
   /** Pan tool toolbar icon. */
   pan: ICON_PAN,
+  /** Settings / gear parent toolbar icon. */
+  settings: ICON_SETTINGS,
   /** Zoom-to-extents toolbar icon. */
   zoomExtent: ICON_ZOOM_EXTENT,
   /** Zoom-window / per-layer zoom-to-box toolbar icon. */

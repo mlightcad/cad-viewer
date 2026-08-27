@@ -5,19 +5,19 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor } from '@mlightcad/data-model'
 
-import type { AcExI18n } from '../i18n'
-import { AcExColorPicker } from './AcExColorPicker'
-import { ensureUiStyles } from './styles'
+import type { AcUiI18n } from '../i18n'
+import { AcUiColorPicker } from './AcUiColorPicker'
+import { acuiEnsureUiStyles } from './styles'
 
 /** Sort direction for the layer name column. */
-export type AcExLayerNameSortOrder = 'none' | 'asc' | 'desc'
+export type AcUiLayerNameSortOrder = 'none' | 'asc' | 'desc'
 
-/** Constructor options for {@link AcExLayerListView}. */
-export interface AcExLayerListViewOptions {
+/** Constructor options for {@link AcUiLayerListView}. */
+export interface AcUiLayerListViewOptions {
   /** Document manager used to resolve the active document's layer store. */
   editor: AcApDocManager
   /** i18n helper for panel labels. */
-  i18n: AcExI18n
+  i18n: AcUiI18n
   /** Viewer host used for theme CSS variables and color picker. */
   host: HTMLElement
   /** When true, renders a title header above the table. */
@@ -29,7 +29,7 @@ export interface AcExLayerListViewOptions {
  *
  * Used in dock panel tabs (for example the layers tab).
  */
-export class AcExLayerListView {
+export class AcUiLayerListView {
   /** Root element containing optional header and table. */
   readonly element: HTMLDivElement
   /** Layer table body receiving row nodes. */
@@ -53,23 +53,23 @@ export class AcExLayerListView {
   /** Layer store currently subscribed for change notifications. */
   private subscribedLayerStore?: AcApLayerStore
   /** i18n helper for labels and toasts. */
-  private readonly i18n: AcExI18n
+  private readonly i18n: AcUiI18n
   /** Viewer host reference. */
   private readonly host: HTMLElement
   /** Whether a title header is rendered above the table. */
   private readonly showHeader: boolean
   /** Current sort direction for the name column. */
-  private nameSortOrder: AcExLayerNameSortOrder = 'none'
+  private nameSortOrder: AcUiLayerNameSortOrder = 'none'
 
   /**
    * @param options - Editor, i18n, host, and display options.
    */
-  constructor(options: AcExLayerListViewOptions) {
+  constructor(options: AcUiLayerListViewOptions) {
     this.editor = options.editor
     this.i18n = options.i18n
     this.host = options.host
     this.showHeader = options.showHeader ?? false
-    ensureUiStyles()
+    acuiEnsureUiStyles()
 
     this.element = document.createElement('div')
     this.element.className = 'ml-ex-ui-layer-list'
@@ -360,7 +360,7 @@ export class AcExLayerListView {
     swatch.style.background = layer.cssColor
     swatch.addEventListener('click', async () => {
       const initial = AcCmColor.fromString(layer.color)
-      const picker = new AcExColorPicker(
+      const picker = new AcUiColorPicker(
         this.i18n,
         this.host,
         initial ?? undefined

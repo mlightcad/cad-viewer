@@ -74,8 +74,8 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
 
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 
-import { AcExI18n, registerSimpleUiI18n } from '../src/i18n'
-import { AcExReviewPaletteView } from '../src/ui/AcExReviewPaletteView'
+import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../src/i18n'
+import { AcUiReviewPaletteView } from '../src/ui/AcUiReviewPaletteView'
 
 function createRecord(
   overrides: Partial<AcApMarkupRecord> & Pick<AcApMarkupRecord, 'id' | 'type'>
@@ -93,14 +93,14 @@ function createRecord(
 }
 
 function createView() {
-  registerSimpleUiI18n()
-  return new AcExReviewPaletteView({
+  acuiRegisterSimpleUiI18n()
+  return new AcUiReviewPaletteView({
     editor: AcApDocManager.instance,
-    i18n: new AcExI18n()
+    i18n: new AcUiI18n()
   })
 }
 
-describe('AcExReviewPaletteView', () => {
+describe('AcUiReviewPaletteView', () => {
   beforeEach(() => {
     records.length = 0
     selectedId = undefined

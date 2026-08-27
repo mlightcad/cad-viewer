@@ -19,7 +19,7 @@ const getOverflow = jest.fn(() => 'menu')
 const setPlacement = jest.fn()
 
 jest.mock('@mlightcad/cad-simple-ui-plugin/toolbar', () => {
-  class AcExToolbar {
+  class AcUiToolbar {
     element = document.createElement('div')
     isCollapsed = false
     placement = 'left'
@@ -31,14 +31,21 @@ jest.mock('@mlightcad/cad-simple-ui-plugin/toolbar', () => {
     setOverflow = setOverflow
     getOverflow = getOverflow
     setPlacement = setPlacement
+    setCollapsible = jest.fn()
     constructor(public options: Record<string, unknown>) {
       const host = options.host as HTMLElement
       host.appendChild(this.element)
     }
   }
   return {
-    AcExToolbar,
-    createToolbarSeparator: (id: string) => ({ type: 'separator', id })
+    AcUiToolbar,
+    acuiCreateToolbarSeparator: (id: string) => ({ type: 'separator', id }),
+    acuiExpandToolbarItemConfigs: (items: unknown[]) => items,
+    acuiInsertToolbarItemsAt: (items: unknown[]) => items,
+    acuiToolbarPreset: (preset: string) => ({ preset }),
+    acuiGetLayoutKind: () => 'desktop',
+    ML_EX_UI_MOBILE_MEDIA_QUERY: '(max-width: 600px)',
+    ML_EX_UI_COMPACT_MEDIA_QUERY: '(max-width: 960px)'
   }
 })
 
@@ -56,7 +63,7 @@ describe('setupAcExHtmlSimpleToolbar', () => {
     setPlacement.mockClear()
   })
 
-  it('mounts AcExToolbar absolutely on the viewer root with edgeOffset and overflow', () => {
+  it('mounts AcUiToolbar absolutely on the viewer root with edgeOffset and overflow', () => {
     const host = document.getElementById('root')!
     const onCommand = jest.fn()
     const onRender = jest.fn()

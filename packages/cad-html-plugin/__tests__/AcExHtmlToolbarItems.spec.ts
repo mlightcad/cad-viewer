@@ -1,4 +1,8 @@
-import { createAcExHtmlToolbarItems } from '../src/AcExHtmlToolbarItems'
+import {
+  createAcExHtmlToolbarItems,
+  getAcExHtmlBuiltInToolbarConfig,
+  resolveAcExHtmlToolbarConfig
+} from '../src/AcExHtmlToolbarItems'
 
 describe('createAcExHtmlToolbarItems', () => {
   const baseCtx = {
@@ -94,5 +98,27 @@ describe('createAcExHtmlToolbarItems', () => {
     ])
     expect(layout.children?.[0].toggle?.getValue()).toBe(true)
     expect(layout.children?.[1].toggle?.getValue()).toBe(false)
+  })
+
+  it('builds a compact mobile toolbar from presets', () => {
+    const config = getAcExHtmlBuiltInToolbarConfig('mobile', baseCtx)
+    expect(config.placement).toBe('bottom')
+    expect(config.edgeOffset).toBe(0)
+    expect(config.collapsible).toBe(false)
+
+    const items = resolveAcExHtmlToolbarConfig(config, baseCtx)
+    expect(items.map(item => item.id)).toEqual([
+      'zoom',
+      'measure',
+      'markup',
+      'layer',
+      'layout',
+      'settings'
+    ])
+    const settings = items.find(item => item.id === 'settings')
+    expect(settings?.children?.map(child => child.id)).toEqual([
+      'locale',
+      'snap'
+    ])
   })
 })

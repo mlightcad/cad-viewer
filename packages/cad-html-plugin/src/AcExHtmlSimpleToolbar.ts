@@ -1,22 +1,33 @@
 /**
- * Mounts {@link AcExToolbar} for the offline HTML export viewer.
+ * Mounts {@link AcUiToolbar} for the offline HTML export viewer.
  *
  * Uses absolute docking on the viewer root (same model as simple-ui) so
  * edgeOffset, overflow menu/scroll, edge flush, and mobile sub-toolbars work.
+ *
+ * Supports mobile / pad / desktop layouts via {@link AcUiToolbarConfig}, with
+ * automatic switching from viewport breakpoints unless {@link layout} is locked.
  */
 
 import {
-  AcExToolbar,
-  type AcExToolbarItem,
-  type AcExToolbarOverflow,
-  type AcExToolbarPlacement
+  acuiGetLayoutKind,
+  type AcUiLayoutKind,
+  type AcUiLayoutOptions,
+  AcUiToolbar,
+  type AcUiToolbarConfig,
+  type AcUiToolbarItem,
+  type AcUiToolbarOverflow,
+  type AcUiToolbarPlacement,
+  ML_EX_UI_COMPACT_MEDIA_QUERY,
+  ML_EX_UI_MOBILE_MEDIA_QUERY
 } from '@mlightcad/cad-simple-ui-plugin/toolbar'
 
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import {
   type AcExHtmlToolbarItemContext,
   adaptAcExHtmlToolbarI18n,
-  createAcExHtmlToolbarItems} from './AcExHtmlToolbarItems'
+  getAcExHtmlBuiltInToolbarConfig,
+  resolveAcExHtmlToolbarConfig
+} from './AcExHtmlToolbarItems'
 
 function toToolbarI18n(i18n: AcExHtmlI18n) {
   return adaptAcExHtmlToolbarI18n({
@@ -27,13 +38,10 @@ function toToolbarI18n(i18n: AcExHtmlI18n) {
 /** Aligns with `AcEdOpenMode.Write` without importing cad-simple-viewer. */
 const HTML_TOOLBAR_OPEN_MODE_WRITE = 8
 
-/** Default inset matching `--mlcad-ui-inset` in the HTML shell. */
-const HTML_TOOLBAR_EDGE_OFFSET = 12
-
 /** Handles returned by {@link setupAcExHtmlSimpleToolbar}. */
 export interface AcExHtmlSimpleToolbarController {
   /** Underlying shared toolbar instance. */
-  toolbar: AcExToolbar
+  toolbar: AcUiToolbar
   /** Rebuilds items after locale / visibility / snap state changes. */
   refresh: () => void
   /** Tears down the toolbar DOM. */
@@ -43,13 +51,15 @@ export interface AcExHtmlSimpleToolbarController {
   /** Sets dock-edge inset (clamped to >= 0) and reclamps layout. */
   setEdgeOffset: (offset: number) => void
   /** Current overflow strategy. */
-  getOverflow: () => AcExToolbarOverflow
+  getOverflow: () => AcUiToolbarOverflow
   /** Sets overflow to `'menu'` (⋯) or `'scroll'`. */
-  setOverflow: (overflow: AcExToolbarOverflow) => void
+  setOverflow: (overflow: AcUiToolbarOverflow) => void
   /** Current edge placement. */
-  getPlacement: () => AcExToolbarPlacement
+  getPlacement: () => AcUiToolbarPlacement
   /** Moves the toolbar to another edge. */
-  setPlacement: (placement: AcExToolbarPlacement) => void
+  setPlacement: (placement: AcUiToolbarPlacement) => void
+  /** Layout kind currently applied. */
+  getLayoutKind: () => AcUiLayoutKind
 }
 
 /** Options for {@link setupAcExHtmlSimpleToolbar}. */
@@ -73,12 +83,59 @@ export interface AcExHtmlSimpleToolbarOptions {
    * measure / markup `active` classes.
    */
   onRender?: () => void
-  /** Dock edge. @default `'left'` */
-  placement?: AcExToolbarPlacement
-  /** Inset from the docked edge in px. @default 12 */
+  /**
+   * How device layouts are chosen.
+   *
+   * - `'auto'` (default): follow viewport via {@link acuiGetLayoutKind}.
+   * - `'mobile' | 'pad' | 'desktop'`: lock to that layout.
+   */
+  layout?: 'auto' | AcUiLayoutKind
+  /**
+   * Toolbar overrides merged into pad/desktop defaults (not mobile), matching
+   * simple-ui top-level `toolbar` semantics.
+   */
+  toolbar?: AcUiToolbarConfig
+  /** Per-device toolbar overrides. */
+  layouts?: {
+    mobile?: AcUiLayoutOptions
+    pad?: AcUiLayoutOptions
+    desktop?: AcUiLayoutOptions
+  }
+  /** @deprecated Prefer {@link toolbar}.placement. @default from layout */
+  placement?: AcUiToolbarPlacement
+  /** @deprecated Prefer {@link toolbar}.edgeOffset. */
   edgeOffset?: number
-  /** Overflow strategy. @default `'menu'` */
-  overflow?: AcExToolbarOverflow
+  /** @deprecated Prefer {@link toolbar}.overflow. */
+  overflow?: AcUiToolbarOverflow
+}
+
+function mergeToolbarConfig(
+  ...layers: Array<AcUiToolbarConfig | undefined>
+): AcUiToolbarConfig {
+  const result: AcUiToolbarConfig = {}
+  for (const layer of layers) {
+    if (!layer) continue
+    Object.assign(result, layer)
+  }
+  return result
+}
+
+function resolveKindToolbar(
+  options: AcExHtmlSimpleToolbarOptions,
+  kind: AcUiLayoutKind
+): AcUiToolbarConfig {
+  const builtIn = getAcExHtmlBuiltInToolbarConfig(kind, options.context)
+  const topLevel = kind === 'mobile' ? undefined : options.toolbar
+  const legacy: AcUiToolbarConfig | undefined =
+    kind === 'mobile'
+      ? undefined
+      : {
+          placement: options.placement,
+          edgeOffset: options.edgeOffset,
+          overflow: options.overflow
+        }
+  const layoutOverride = options.layouts?.[kind]?.toolbar
+  return mergeToolbarConfig(builtIn, topLevel, legacy, layoutOverride)
 }
 
 /**
@@ -87,24 +144,33 @@ export interface AcExHtmlSimpleToolbarOptions {
 export function setupAcExHtmlSimpleToolbar(
   options: AcExHtmlSimpleToolbarOptions
 ): AcExHtmlSimpleToolbarController {
-  const buildItems = (): AcExToolbarItem[] =>
-    createAcExHtmlToolbarItems(options.context)
+  const layoutMode = options.layout ?? 'auto'
+  let currentKind: AcUiLayoutKind =
+    layoutMode === 'auto' ? acuiGetLayoutKind() : layoutMode
 
-  const toolbar = new AcExToolbar({
+  const buildConfig = (kind: AcUiLayoutKind) =>
+    resolveKindToolbar(options, kind)
+
+  const buildItems = (kind: AcUiLayoutKind): AcUiToolbarItem[] =>
+    resolveAcExHtmlToolbarConfig(buildConfig(kind), options.context)
+
+  let config = buildConfig(currentKind)
+
+  const toolbar = new AcUiToolbar({
     host: options.host,
     themeHost: options.overlayHost ?? options.host,
-    placement: options.placement ?? 'left',
+    placement: config.placement ?? 'left',
     positioning: 'absolute',
-    collapsible: true,
-    defaultCollapsed: false,
-    overflow: options.overflow ?? 'menu',
-    edgeOffset: options.edgeOffset ?? HTML_TOOLBAR_EDGE_OFFSET,
+    collapsible: config.collapsible ?? true,
+    defaultCollapsed: config.defaultCollapsed ?? false,
+    overflow: config.overflow ?? 'menu',
+    edgeOffset: config.edgeOffset ?? 12,
     docBinding: false,
     documentState: {
       hasDocument: true,
       openMode: HTML_TOOLBAR_OPEN_MODE_WRITE
     },
-    items: buildItems(),
+    items: buildItems(currentKind),
     i18n: toToolbarI18n(options.i18n),
     onCommand: options.onCommand,
     onCollapse: options.onCollapse,
@@ -113,6 +179,34 @@ export function setupAcExHtmlSimpleToolbar(
 
   toolbar.setSelectedChild('locale', `locale-${options.context.getLocale()}`)
 
+  const applyKind = (kind: AcUiLayoutKind) => {
+    if (kind === currentKind) return
+    currentKind = kind
+    config = buildConfig(kind)
+    toolbar.setPlacement(config.placement ?? 'left')
+    toolbar.setEdgeOffset(config.edgeOffset ?? (kind === 'mobile' ? 0 : 12))
+    toolbar.setOverflow(config.overflow ?? 'menu')
+    toolbar.setCollapsible(config.collapsible ?? kind !== 'mobile')
+    toolbar.updateItems(buildItems(kind))
+    toolbar.setSelectedChild('locale', `locale-${options.context.getLocale()}`)
+  }
+
+  const layoutMqls: MediaQueryList[] = []
+  const handleLayoutChange = () => {
+    if (layoutMode !== 'auto') return
+    applyKind(acuiGetLayoutKind())
+  }
+  if (layoutMode === 'auto' && typeof window.matchMedia === 'function') {
+    for (const query of [
+      ML_EX_UI_MOBILE_MEDIA_QUERY,
+      ML_EX_UI_COMPACT_MEDIA_QUERY
+    ]) {
+      const mql = window.matchMedia(query)
+      mql.addEventListener('change', handleLayoutChange)
+      layoutMqls.push(mql)
+    }
+  }
+
   return {
     toolbar,
     refresh: () => {
@@ -120,14 +214,20 @@ export function setupAcExHtmlSimpleToolbar(
         'locale',
         `locale-${options.context.getLocale()}`
       )
-      toolbar.updateItems(buildItems())
+      toolbar.updateItems(buildItems(currentKind))
     },
-    destroy: () => toolbar.destroy(),
+    destroy: () => {
+      for (const mql of layoutMqls) {
+        mql.removeEventListener('change', handleLayoutChange)
+      }
+      toolbar.destroy()
+    },
     getEdgeOffset: () => toolbar.getEdgeOffset(),
     setEdgeOffset: offset => toolbar.setEdgeOffset(offset),
     getOverflow: () => toolbar.getOverflow(),
     setOverflow: overflow => toolbar.setOverflow(overflow),
     getPlacement: () => toolbar.placement,
-    setPlacement: placement => toolbar.setPlacement(placement)
+    setPlacement: placement => toolbar.setPlacement(placement),
+    getLayoutKind: () => currentKind
   }
 }

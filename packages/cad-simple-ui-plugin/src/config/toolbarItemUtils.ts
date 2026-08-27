@@ -1,9 +1,9 @@
 import type {
-  AcExToolbarChildrenUi,
-  AcExToolbarItem,
-  AcExToolbarItemConfig,
-  AcExToolbarPresetRef,
-  AcExToolbarSeparator
+  AcUiToolbarChildrenUi,
+  AcUiToolbarItem,
+  AcUiToolbarItemConfig,
+  AcUiToolbarPresetRef,
+  AcUiToolbarSeparator
 } from './types'
 
 /**
@@ -11,30 +11,30 @@ import type {
  *
  * @param item - Parent toolbar item.
  */
-export function resolveToolbarChildrenUi(
-  item: AcExToolbarItem
-): AcExToolbarChildrenUi {
+export function acuiResolveToolbarChildrenUi(
+  item: AcUiToolbarItem
+): AcUiToolbarChildrenUi {
   return item.childrenUi ?? 'menu'
 }
 
 /** Returns whether {@link childrenUi} is an icon sub-toolbar (sticky or dismissible). */
-export function isToolbarChildrenStrip(
-  childrenUi: AcExToolbarChildrenUi
+export function acuiIsToolbarChildrenStrip(
+  childrenUi: AcUiToolbarChildrenUi
 ): boolean {
   return childrenUi === 'toolbar' || childrenUi === 'sticky-toolbar'
 }
 
 /** Returns whether a toolbar config entry is a visual separator. */
-export function isToolbarSeparatorItem(
-  item: AcExToolbarItemConfig
-): item is AcExToolbarSeparator {
+export function acuiIsToolbarSeparatorItem(
+  item: AcUiToolbarItemConfig
+): item is AcUiToolbarSeparator {
   return 'type' in item && item.type === 'separator'
 }
 
 /** Returns whether a toolbar config entry references a built-in preset button. */
-export function isToolbarPresetRef(
-  item: AcExToolbarItemConfig
-): item is AcExToolbarPresetRef {
+export function acuiIsToolbarPresetRef(
+  item: AcUiToolbarItemConfig
+): item is AcUiToolbarPresetRef {
   return 'preset' in item && typeof item.preset === 'string'
 }
 
@@ -46,7 +46,7 @@ export function isToolbarPresetRef(
  *
  * @param item - Toolbar item to inspect.
  */
-export function isDynamicToolbarChildren(item: AcExToolbarItem): boolean {
+export function acuiIsDynamicToolbarChildren(item: AcUiToolbarItem): boolean {
   return (
     typeof Object.getOwnPropertyDescriptor(item, 'children')?.get === 'function'
   )
@@ -59,10 +59,10 @@ export function isDynamicToolbarChildren(item: AcExToolbarItem): boolean {
  * @param getChildren - Factory invoked on each `children` access.
  * @returns `item` with a live `children` getter.
  */
-export function copyDynamicToolbarChildren(
-  item: AcExToolbarItem,
-  getChildren: () => AcExToolbarItem[]
-): AcExToolbarItem {
+export function acuiCopyDynamicToolbarChildren(
+  item: AcUiToolbarItem,
+  getChildren: () => AcUiToolbarItem[]
+): AcUiToolbarItem {
   Object.defineProperty(item, 'children', {
     configurable: true,
     enumerable: true,
@@ -78,13 +78,13 @@ export function copyDynamicToolbarChildren(
  * @param source - Original item that may define a children getter.
  * @returns Whether a getter was copied.
  */
-export function preserveDynamicToolbarChildren(
-  target: AcExToolbarItem,
-  source: AcExToolbarItem
+export function acuiPreserveDynamicToolbarChildren(
+  target: AcUiToolbarItem,
+  source: AcUiToolbarItem
 ): boolean {
   const descriptor = Object.getOwnPropertyDescriptor(source, 'children')
   if (typeof descriptor?.get !== 'function') return false
-  copyDynamicToolbarChildren(target, descriptor.get)
+  acuiCopyDynamicToolbarChildren(target, descriptor.get)
   return true
 }
 
@@ -93,7 +93,7 @@ export function preserveDynamicToolbarChildren(
  *
  * @param id - Optional stable id for debugging.
  */
-export function createToolbarSeparator(id?: string): AcExToolbarSeparator {
+export function acuiCreateToolbarSeparator(id?: string): AcUiToolbarSeparator {
   return { type: 'separator', id }
 }
 
@@ -102,34 +102,63 @@ export function createToolbarSeparator(id?: string): AcExToolbarSeparator {
  *
  * @param preset - Preset id such as `'pan'` or `'measure'`.
  */
-export function toolbarPreset(preset: string): AcExToolbarPresetRef {
+export function acuiToolbarPreset(preset: string): AcUiToolbarPresetRef {
   return { preset }
 }
 
+/**
+ * Inserts toolbar items at the configured position relative to a root item id.
+ *
+ * @param items - Base toolbar items.
+ * @param toInsert - Items to insert from `appendItems`.
+ * @param position - Optional anchor id (`after` or `before`); omitted means end.
+ * @returns New item array with `toInsert` merged in.
+ */
+export function acuiInsertToolbarItemsAt(
+  items: AcUiToolbarItem[],
+  toInsert: AcUiToolbarItem[],
+  position?: { after?: string; before?: string }
+): AcUiToolbarItem[] {
+  if (!toInsert.length) return items
+
+  const anchorId = position?.before ?? position?.after
+  if (!anchorId) {
+    return [...items, ...toInsert]
+  }
+
+  const anchorIndex = items.findIndex(item => item.id === anchorId)
+  if (anchorIndex === -1) {
+    return [...items, ...toInsert]
+  }
+
+  const insertAt = position?.before ? anchorIndex : anchorIndex + 1
+  return [...items.slice(0, insertAt), ...toInsert, ...items.slice(insertAt)]
+}
+
 /** Returns whether a resolved toolbar item list includes the given button id. */
-export function toolbarItemsIncludeItem(
-  items: AcExToolbarItem[],
+export function acuiToolbarItemsIncludeItem(
+  items: AcUiToolbarItem[],
   itemId: string
 ): boolean {
   return items.some(item => {
-    if (isToolbarSeparatorItem(item)) return false
+    if (acuiIsToolbarSeparatorItem(item)) return false
     if (item.id === itemId) return true
     return item.children
-      ? toolbarItemsIncludeItem(item.children, itemId)
+      ? acuiToolbarItemsIncludeItem(item.children, itemId)
       : false
   })
 }
 
 /** Registers button items (and nested children) in a preset lookup map. */
-export function indexToolbarItems(
-  items: AcExToolbarItem[],
-  map: Map<string, AcExToolbarItem>
+export function acuiIndexToolbarItems(
+  items: AcUiToolbarItem[],
+  map: Map<string, AcUiToolbarItem>
 ): void {
   for (const item of items) {
-    if (isToolbarSeparatorItem(item)) continue
+    if (acuiIsToolbarSeparatorItem(item)) continue
     map.set(item.id, item)
-    if (!isDynamicToolbarChildren(item) && item.children?.length) {
-      indexToolbarItems(item.children, map)
+    if (!acuiIsDynamicToolbarChildren(item) && item.children?.length) {
+      acuiIndexToolbarItems(item.children, map)
     }
   }
 }
@@ -140,10 +169,10 @@ export function indexToolbarItems(
  * @param items - Raw toolbar configuration entries.
  * @param presets - Built-in items keyed by id.
  */
-export function expandToolbarItemConfigs(
-  items: AcExToolbarItemConfig[],
-  presets: Map<string, AcExToolbarItem>
-): AcExToolbarItem[] {
+export function acuiExpandToolbarItemConfigs(
+  items: AcUiToolbarItemConfig[],
+  presets: Map<string, AcUiToolbarItem>
+): AcUiToolbarItem[] {
   return items.flatMap(item => {
     const expanded = expandToolbarItemConfig(item, presets)
     return expanded ? [expanded] : []
@@ -151,17 +180,17 @@ export function expandToolbarItemConfigs(
 }
 
 function expandToolbarItemConfig(
-  item: AcExToolbarItemConfig,
-  presets: Map<string, AcExToolbarItem>
-): AcExToolbarItem | null {
-  if (isToolbarSeparatorItem(item)) {
+  item: AcUiToolbarItemConfig,
+  presets: Map<string, AcUiToolbarItem>
+): AcUiToolbarItem | null {
+  if (acuiIsToolbarSeparatorItem(item)) {
     return {
       type: 'separator',
       id: item.id ?? `separator-${Math.random().toString(36).slice(2, 9)}`
     }
   }
 
-  if (isToolbarPresetRef(item)) {
+  if (acuiIsToolbarPresetRef(item)) {
     const preset = presets.get(item.preset)
     if (!preset) {
       console.warn(
@@ -172,15 +201,15 @@ function expandToolbarItemConfig(
     return cloneToolbarItem(preset)
   }
 
-  const buttonItem = item as AcExToolbarItem
-  if (isDynamicToolbarChildren(buttonItem)) {
+  const buttonItem = item as AcUiToolbarItem
+  if (acuiIsDynamicToolbarChildren(buttonItem)) {
     return cloneToolbarItem(buttonItem)
   }
   if (buttonItem.children?.length) {
     return {
       ...buttonItem,
-      children: expandToolbarItemConfigs(
-        buttonItem.children as AcExToolbarItemConfig[],
+      children: acuiExpandToolbarItemConfigs(
+        buttonItem.children as AcUiToolbarItemConfig[],
         presets
       )
     }
@@ -189,9 +218,9 @@ function expandToolbarItemConfig(
   return buttonItem
 }
 
-function cloneToolbarItem(item: AcExToolbarItem): AcExToolbarItem {
-  const clone: AcExToolbarItem = { ...item, children: item.children }
-  if (preserveDynamicToolbarChildren(clone, item)) {
+function cloneToolbarItem(item: AcUiToolbarItem): AcUiToolbarItem {
+  const clone: AcUiToolbarItem = { ...item, children: item.children }
+  if (acuiPreserveDynamicToolbarChildren(clone, item)) {
     return clone
   }
   if (!item.children?.length) {

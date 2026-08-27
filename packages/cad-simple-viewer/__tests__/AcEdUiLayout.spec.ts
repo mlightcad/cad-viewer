@@ -1,6 +1,7 @@
 /** @jest-environment jsdom */
 
 import {
+  acedGetUiLayoutKind,
   acedIsCompactUiLayout,
   acedIsMobileUiLayout,
   ML_UI_COMPACT_MAX_WIDTH,
@@ -38,13 +39,14 @@ describe('AcEdUiLayout', () => {
 
     expect(acedIsMobileUiLayout()).toBe(true)
     expect(acedIsCompactUiLayout()).toBe(false)
+    expect(acedGetUiLayoutKind()).toBe('mobile')
 
     if (matchMediaDescriptor) {
       Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)
     }
   })
 
-  it('reports compact layout from matchMedia', () => {
+  it('reports pad layout when compact matches and mobile does not', () => {
     const matchMediaDescriptor = Object.getOwnPropertyDescriptor(
       window,
       'matchMedia'
@@ -61,6 +63,30 @@ describe('AcEdUiLayout', () => {
     })
 
     expect(acedIsCompactUiLayout()).toBe(true)
+    expect(acedGetUiLayoutKind()).toBe('pad')
+
+    if (matchMediaDescriptor) {
+      Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)
+    }
+  })
+
+  it('reports desktop when neither mobile nor compact matches', () => {
+    const matchMediaDescriptor = Object.getOwnPropertyDescriptor(
+      window,
+      'matchMedia'
+    )
+
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      })
+    })
+
+    expect(acedGetUiLayoutKind()).toBe('desktop')
 
     if (matchMediaDescriptor) {
       Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)

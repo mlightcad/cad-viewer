@@ -52,18 +52,18 @@ jest.mock('@mlightcad/data-model', () => ({
 }))
 
 import type {
-  AcExToolbarItem,
-  AcExToolbarOverflow,
-  AcExToolbarPlacement
+  AcUiToolbarItem,
+  AcUiToolbarOverflow,
+  AcUiToolbarPlacement
 } from '../src/config/types'
-import { AcExI18n } from '../src/i18n'
-import { AcExToolbar } from '../src/ui/AcExToolbar'
+import { AcUiI18n } from '../src/i18n'
+import { AcUiToolbar } from '../src/ui/AcUiToolbar'
 
 function createToolbar(
-  items: AcExToolbarItem[],
+  items: AcUiToolbarItem[],
   options?: {
-    placement?: AcExToolbarPlacement
-    overflow?: AcExToolbarOverflow
+    placement?: AcUiToolbarPlacement
+    overflow?: AcUiToolbarOverflow
     hostWidth?: number
     hostHeight?: number
     edgeOffset?: number
@@ -79,13 +79,13 @@ function createToolbar(
   })
   document.body.appendChild(host)
   const onCommand = jest.fn()
-  const toolbar = new AcExToolbar({
+  const toolbar = new AcUiToolbar({
     host,
     placement: options?.placement ?? 'right',
     overflow: options?.overflow,
     edgeOffset: options?.edgeOffset,
     items,
-    i18n: new AcExI18n(),
+    i18n: new AcUiI18n(),
     onCommand,
     onRender: options?.onRender,
     docBridge: {
@@ -219,7 +219,7 @@ function mockToolbarSizes(buttonSize = 40) {
   }
 }
 
-describe('AcExToolbar children UI', () => {
+describe('AcUiToolbar children UI', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('ml-ex-ui-styles')?.remove()
@@ -315,7 +315,7 @@ describe('AcExToolbar children UI', () => {
 
   it('opens a popover menu for live children getters', () => {
     const onSelect = jest.fn()
-    const item: AcExToolbarItem = {
+    const item: AcUiToolbarItem = {
       id: 'layout',
       label: 'Layout',
       childrenUi: 'menu',
@@ -352,7 +352,7 @@ describe('AcExToolbar children UI', () => {
   })
 })
 
-function manyButtons(count: number): AcExToolbarItem[] {
+function manyButtons(count: number): AcUiToolbarItem[] {
   return Array.from({ length: count }, (_, index) => ({
     id: `tool-${index}`,
     label: `Tool ${index}`,
@@ -360,7 +360,7 @@ function manyButtons(count: number): AcExToolbarItem[] {
   }))
 }
 
-describe('AcExToolbar overflow and edge offset', () => {
+describe('AcUiToolbar overflow and edge offset', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('ml-ex-ui-styles')?.remove()
@@ -489,7 +489,7 @@ describe('AcExToolbar overflow and edge offset', () => {
   })
 })
 
-describe('AcExSubToolbar mobile full width', () => {
+describe('AcUiSubToolbar mobile full width', () => {
   const originalMatchMedia = window.matchMedia
 
   afterEach(() => {
@@ -585,7 +585,7 @@ describe('AcExSubToolbar mobile full width', () => {
   })
 })
 
-describe('AcExSubToolbar vertical wrap', () => {
+describe('AcUiSubToolbar vertical wrap', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('ml-ex-ui-styles')?.remove()
@@ -654,13 +654,13 @@ describe('AcExSubToolbar vertical wrap', () => {
   })
 })
 
-describe('AcExToolbar selected child persistence', () => {
+describe('AcUiToolbar selected child persistence', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('ml-ex-ui-styles')?.remove()
   })
 
-  const zoomItems = (): AcExToolbarItem[] => [
+  const zoomItems = (): AcUiToolbarItem[] => [
     {
       id: 'zoom',
       label: 'toolbar.zoom',

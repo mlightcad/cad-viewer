@@ -39,36 +39,39 @@ import {
   ICON_REV_CLOUD,
   ICON_REV_RECT,
   ICON_SELECT,
+  ICON_SETTINGS,
   ICON_SWITCH_BG,
   ICON_THEME_DARK,
   ICON_THEME_LIGHT,
   ICON_TOOLBAR_PLACEMENT,
   ICON_ZOOM_EXTENT,
+  ICON_ZOOM_ORIGINAL,
   ICON_ZOOM_WINDOW
 } from '@mlightcad/cad-simple-viewer/icons'
 
-import { createLayoutToolbarItem } from './createLayoutToolbarItem'
+import { acuiCreateLayoutToolbarItem } from './createLayoutToolbarItem'
 import type {
-  AcExDefaultToolbarContext,
-  AcExToolbarItem,
-  AcExToolbarPlacement
+  AcUiDefaultToolbarContext,
+  AcUiToolbarItem,
+  AcUiToolbarItemConfig,
+  AcUiToolbarPlacement
 } from './types'
 
-const TOOLBAR_PLACEMENTS: AcExToolbarPlacement[] = [
+const TOOLBAR_PLACEMENTS: AcUiToolbarPlacement[] = [
   'top',
   'bottom',
   'left',
   'right'
 ]
 
-const PLACEMENT_ICONS: Record<AcExToolbarPlacement, string> = {
+const PLACEMENT_ICONS: Record<AcUiToolbarPlacement, string> = {
   top: ICON_PLACEMENT_TOP,
   bottom: ICON_PLACEMENT_BOTTOM,
   left: ICON_PLACEMENT_LEFT,
   right: ICON_PLACEMENT_RIGHT
 }
 
-const PLACEMENT_LABELS: Record<AcExToolbarPlacement, string> = {
+const PLACEMENT_LABELS: Record<AcUiToolbarPlacement, string> = {
   top: 'toolbar.placementTop',
   bottom: 'toolbar.placementBottom',
   left: 'toolbar.placementLeft',
@@ -76,8 +79,8 @@ const PLACEMENT_LABELS: Record<AcExToolbarPlacement, string> = {
 }
 
 function createToolbarPlacementItem(
-  context?: AcExDefaultToolbarContext
-): AcExToolbarItem {
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem {
   return {
     id: 'toolbar-placement',
     label: 'toolbar.placement',
@@ -118,9 +121,14 @@ function localeBadgeIcon(badge: string): string {
   return `<span style="font-size:10px;font-weight:700;line-height:1">${badge}</span>`
 }
 
-function createToolbarLocaleItem(
-  context?: AcExDefaultToolbarContext
-): AcExToolbarItem {
+/**
+ * Builds the language submenu button (icon strip of locale badges).
+ *
+ * @param context - Optional locale getters/setters.
+ */
+export function acuiCreateToolbarLocaleItem(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem {
   const current = context?.getLocale() ?? 'en'
   return {
     id: 'locale',
@@ -141,21 +149,130 @@ function createToolbarLocaleItem(
 }
 
 /**
- * Builds the built-in toolbar item list (view, layout, measure, review, export, theme, locale).
+ * Builds the theme toggle button.
  *
- * @param context - Optional callbacks for theme, locale, and placement items.
- * @returns Default {@link AcExToolbarItem} array.
+ * @param context - Optional theme getters/setters.
  */
-export function createDefaultToolbarItems(
-  context?: AcExDefaultToolbarContext
-): AcExToolbarItem[] {
+export function acuiCreateToolbarThemeItem(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem {
   const getTheme = (): AcEdUiTheme => context?.getTheme() ?? 'light'
   const toggleTheme = () => {
     const next: AcEdUiTheme = getTheme() === 'dark' ? 'light' : 'dark'
     context?.setTheme(next)
   }
+  return {
+    id: 'theme',
+    requiresDocument: false,
+    toggle: {
+      getValue: () => getTheme() === 'light',
+      on: {
+        label: 'toolbar.themeLight',
+        icon: ICON_THEME_LIGHT,
+        action: toggleTheme
+      },
+      off: {
+        label: 'toolbar.themeDark',
+        icon: ICON_THEME_DARK,
+        action: toggleTheme
+      }
+    }
+  }
+}
 
-  const items: AcExToolbarItem[] = [
+/**
+ * Builds the zoom parent button with original / extents / window children.
+ *
+ * Used by the mobile default toolbar via `{ preset: 'zoom' }`.
+ *
+ * @param context - Optional restore-original-view callback.
+ */
+export function acuiCreateZoomToolbarItem(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem {
+  return {
+    id: 'zoom',
+    label: 'toolbar.zoom',
+    icon: ICON_ZOOM_EXTENT,
+    childrenUi: 'toolbar',
+    childIcon: 'selected',
+    selectedChildId: 'zoom-extent',
+    children: [
+      {
+        id: 'zoom-original',
+        label: 'toolbar.zoomOriginal',
+        icon: ICON_ZOOM_ORIGINAL,
+        action: () => context?.restoreOriginalView?.()
+      },
+      {
+        id: 'zoom-extent',
+        label: 'toolbar.zoomExtent',
+        icon: ICON_ZOOM_EXTENT,
+        command: 'zoom\nall'
+      },
+      {
+        id: 'zoom-window',
+        label: 'toolbar.zoomWindow',
+        icon: ICON_ZOOM_WINDOW,
+        command: 'zoom\nwindow'
+      }
+    ]
+  }
+}
+
+/**
+ * Builds the settings parent button (theme, switch background, language).
+ *
+ * Used by the mobile default toolbar via `{ preset: 'settings' }`.
+ *
+ * @param context - Theme / locale context for nested items.
+ */
+export function acuiCreateSettingsToolbarItem(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem {
+  return {
+    id: 'settings',
+    label: 'toolbar.settings',
+    icon: ICON_SETTINGS,
+    requiresDocument: false,
+    childrenUi: 'toolbar',
+    children: [
+      acuiCreateToolbarThemeItem(context),
+      {
+        id: 'switch-bg',
+        label: 'toolbar.switchBg',
+        icon: ICON_SWITCH_BG,
+        command: 'switchbg'
+      },
+      acuiCreateToolbarLocaleItem(context)
+    ]
+  }
+}
+
+/**
+ * Mobile-default toolbar item list (preset references).
+ *
+ * Order: zoom, measure, annotation, layer, layout, settings.
+ */
+export const MOBILE_DEFAULT_TOOLBAR_ITEMS: AcUiToolbarItemConfig[] = [
+  { preset: 'zoom' },
+  { preset: 'measure' },
+  { preset: 'annotation' },
+  { preset: 'layer' },
+  { preset: 'layout' },
+  { preset: 'settings' }
+]
+
+/**
+ * Builds the built-in toolbar item list (view, layout, measure, review, export, theme, locale).
+ *
+ * @param context - Optional callbacks for theme, locale, and placement items.
+ * @returns Default {@link AcUiToolbarItem} array.
+ */
+export function acuiCreateDefaultToolbarItems(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem[] {
+  const items: AcUiToolbarItem[] = [
     {
       id: 'select',
       label: 'toolbar.select',
@@ -186,7 +303,7 @@ export function createDefaultToolbarItems(
       icon: ICON_LAYER,
       command: 'layer'
     },
-    createLayoutToolbarItem(),
+    acuiCreateLayoutToolbarItem(),
     {
       id: 'switch-bg',
       label: 'toolbar.switchBg',
@@ -395,25 +512,10 @@ export function createDefaultToolbarItems(
       id: 'sep-settings'
     },
     createToolbarPlacementItem(context),
-    {
-      id: 'theme',
-      requiresDocument: false,
-      toggle: {
-        getValue: () => getTheme() === 'light',
-        on: {
-          label: 'toolbar.themeLight',
-          icon: ICON_THEME_LIGHT,
-          action: toggleTheme
-        },
-        off: {
-          label: 'toolbar.themeDark',
-          icon: ICON_THEME_DARK,
-          action: toggleTheme
-        }
-      }
-    },
-    createToolbarLocaleItem(context)
+    acuiCreateToolbarThemeItem(context),
+    acuiCreateToolbarLocaleItem(context)
   ]
 
   return items
 }
+

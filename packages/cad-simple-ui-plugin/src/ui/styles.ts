@@ -7,7 +7,7 @@ const STYLE_ID = 'ml-ex-ui-styles'
  *
  * Safe to call from multiple components; subsequent calls are no-ops.
  */
-export function ensureUiStyles() {
+export function acuiEnsureUiStyles() {
   if (document.getElementById(STYLE_ID)) return
 
   const style = document.createElement('style')
@@ -1296,7 +1296,7 @@ export function ensureUiStyles() {
 /**
  * Removes injected UI styles when no toolbar or layer manager remains in the DOM.
  */
-export function removeUiStylesIfUnused() {
+export function acuiRemoveUiStylesIfUnused() {
   if (
     document.querySelector(
       '.ml-ex-ui-toolbar, .ml-ex-ui-subtoolbar, .ml-ex-ui-layer-manager, .ml-ex-ui-dock-panel, .ml-ex-ui-review-palette'

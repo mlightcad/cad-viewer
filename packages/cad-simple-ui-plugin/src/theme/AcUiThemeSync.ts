@@ -17,7 +17,7 @@ import {
  * @param host - Viewer host element.
  * @returns `'light'`, `'dark'`, or `undefined` when unset or invalid.
  */
-export function readUiThemeFromHost(
+export function acuiReadUiThemeFromHost(
   host: HTMLElement
 ): AcEdUiTheme | undefined {
   const attr = host.getAttribute('data-ml-ui-theme')
@@ -30,7 +30,7 @@ export function readUiThemeFromHost(
  *
  * @param database - Drawing database.
  */
-export function readUiThemeFromDatabase(database: AcDbDatabase): AcEdUiTheme {
+export function acuiReadUiThemeFromDatabase(database: AcDbDatabase): AcEdUiTheme {
   const value = AcDbSysVarManager.instance().getVar(
     AcDbSystemVariables.COLORTHEME,
     database
@@ -41,7 +41,7 @@ export function readUiThemeFromDatabase(database: AcDbDatabase): AcEdUiTheme {
 /**
  * Keeps `data-ml-ui-theme` on the host in sync with `COLORTHEME` and document activation.
  */
-export class AcExUiThemeSync {
+export class AcUiThemeSync {
   /** Applies theme when `COLORTHEME` changes on the active database. */
   private handleSysVarChanged = (args: AcDbSysVarEventArgs) => {
     const database = AcApDocManager.instance.curDocument?.database
@@ -58,7 +58,7 @@ export class AcExUiThemeSync {
   private handleDocumentActivated = (args: {
     doc: { database: AcDbDatabase }
   }) => {
-    this.applyTheme(readUiThemeFromDatabase(args.doc.database))
+    this.applyTheme(acuiReadUiThemeFromDatabase(args.doc.database))
   }
 
   /**
@@ -98,7 +98,7 @@ export class AcExUiThemeSync {
    * Defaults to `'dark'` when the attribute is missing.
    */
   getTheme(): AcEdUiTheme {
-    return readUiThemeFromHost(this.host) ?? 'dark'
+    return acuiReadUiThemeFromHost(this.host) ?? 'dark'
   }
 
   /**
@@ -125,11 +125,11 @@ export class AcExUiThemeSync {
   private syncFromCurrentSource() {
     const database = AcApDocManager.instance.curDocument?.database
     if (database) {
-      this.applyTheme(readUiThemeFromDatabase(database))
+      this.applyTheme(acuiReadUiThemeFromDatabase(database))
       return
     }
 
-    const fromHost = readUiThemeFromHost(this.host)
+    const fromHost = acuiReadUiThemeFromHost(this.host)
     if (fromHost) return
   }
 

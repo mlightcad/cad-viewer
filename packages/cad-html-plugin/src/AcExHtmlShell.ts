@@ -74,7 +74,7 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   #mlcad-sidebar > * { pointer-events: auto; }
 
-  /* Shared AcExToolbar chrome (absolute on #mlcad-root). */
+  /* Shared AcUiToolbar chrome (absolute on #mlcad-root). */
   #mlcad-root > .ml-ex-ui-toolbar {
     background: var(--mlcad-ui-bg);
     border-color: var(--mlcad-ui-border);

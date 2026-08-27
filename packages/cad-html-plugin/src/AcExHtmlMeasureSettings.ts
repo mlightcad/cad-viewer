@@ -160,7 +160,7 @@ export interface AcExHtmlMeasureSettingsController {
 
 /**
  * Wires ortho / polar tracking for the offline HTML viewer.
- * Ortho and polar toggles live on the shared {@link AcExToolbar}; this module
+ * Ortho and polar toggles live on the shared {@link AcUiToolbar}; this module
  * owns persisted state and the polar-angle panel beside the toolbar.
  */
 export function setupAcExHtmlMeasureSettings(

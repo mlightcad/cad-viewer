@@ -6,47 +6,62 @@
  */
 export {
   AcApSimpleUiPlugin,
-  createSimpleUiPlugin
+  acuiCreateSimpleUiPlugin
 } from './createSimpleUiPlugin'
-export type { AcExDockPanelTab } from './ui/AcExDockPanel'
-export { registerSimpleUiPlugin } from './register'
+export type { AcUiDockPanelTab } from './ui/AcUiDockPanel'
+export { acuiRegisterSimpleUiPlugin } from './register'
 export {
-  createToolbarLayoutSwitcher,
-  prependToolbarLayoutSwitcher
+  acuiCreateToolbarLayoutSwitcher,
+  acuiPrependToolbarLayoutSwitcher
 } from './config/createToolbarLayoutSwitcher'
 export type {
-  AcExToolbarLayoutPreset,
-  AcExToolbarLayoutSwitcherOptions
+  AcUiToolbarLayoutPreset,
+  AcUiToolbarLayoutSwitcherOptions
 } from './config/createToolbarLayoutSwitcher'
 export type {
-  AcExDefaultToolbarContext,
-  AcExDockPanelSide,
-  AcExLocale,
-  AcExSimpleUiPluginOptions,
-  AcExToolbarItem,
-  AcExToolbarItemConfig,
-  AcExToolbarItemsInput,
-  AcExToolbarChildIconMode,
-  AcExToolbarChildrenUi,
-  AcExToolbarPresetRef,
-  AcExToolbarSeparator,
-  AcExToolbarOverflow,
-  AcExToolbarPlacement
+  AcUiDefaultToolbarContext,
+  AcUiDockPanelSide,
+  AcUiLocale,
+  AcUiSimpleUiPluginOptions,
+  AcUiToolbarConfig,
+  AcUiToolbarItem,
+  AcUiToolbarItemConfig,
+  AcUiToolbarItemsInput,
+  AcUiToolbarChildIconMode,
+  AcUiToolbarChildrenUi,
+  AcUiToolbarPresetRef,
+  AcUiToolbarSeparator,
+  AcUiToolbarOverflow,
+  AcUiToolbarPlacement,
+  AcUiLayoutKind,
+  AcUiLayoutOptions
 } from './config/types'
 export { SIMPLE_UI_PLUGIN_NAME } from './config/types'
 export {
-  AcExToolbar,
-  type AcExToolbarDocBridge,
-  type AcExToolbarDocState,
-  type AcExToolbarI18n,
-  type AcExToolbarOptions
-} from './ui/AcExToolbar'
-export { ensureUiStyles, removeUiStylesIfUnused } from './ui/styles'
-export { createDefaultToolbarPresetMap } from './config/resolveToolbarItems'
+  AcUiToolbar,
+  type AcUiToolbarDocBridge,
+  type AcUiToolbarDocState,
+  type AcUiToolbarI18n,
+  type AcUiToolbarOptions
+} from './ui/AcUiToolbar'
+export { acuiEnsureUiStyles, acuiRemoveUiStylesIfUnused } from './ui/styles'
 export {
-  createToolbarSeparator,
-  toolbarPreset
+  acuiCreateDefaultToolbarPresetMap,
+  acuiGetBuiltInToolbarDefaults,
+  acuiMergeToolbarConfigs,
+  acuiResolveLayoutToolbarConfig,
+  acuiResolveToolbarItems
+} from './config/resolveToolbarItems'
+export {
+  acuiCreateToolbarSeparator,
+  acuiExpandToolbarItemConfigs,
+  acuiToolbarPreset
 } from './config/toolbarItemUtils'
-export { AcExI18n, registerSimpleUiI18n } from './i18n'
+export {
+  acuiCreateSettingsToolbarItem,
+  acuiCreateZoomToolbarItem,
+  MOBILE_DEFAULT_TOOLBAR_ITEMS
+} from './config/defaultToolbarItems'
+export { AcUiI18n, acuiRegisterSimpleUiI18n } from './i18n'
 export type { AcApLayerInfo } from '@mlightcad/cad-simple-viewer'
 export { AcApLayerStore } from '@mlightcad/cad-simple-viewer'
