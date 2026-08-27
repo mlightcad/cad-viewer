@@ -2855,9 +2855,43 @@ export class AcTrBatchedGroup extends THREE.Group {
         source.getAttribute('instanceColorEnd').clone()
       )
     }
+    if (source.hasAttribute('instanceDistanceStart')) {
+      this.applyInstanceLineDistances(geometry)
+    }
     AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
     AcTrBufferGeometryUtil.safeComputeBoundingSphere(geometry)
     return geometry
+  }
+
+  /**
+   * Repopulates `instanceDistanceStart`/`instanceDistanceEnd` on a cloned
+   * {@link LineSegmentsGeometry} from its `instanceStart`/`instanceEnd`. This
+   * keeps dashed `LineMaterial` patterns intact when a `LineSegments2` is
+   * folded into the wide-line batch (see `cloneLineSegments2Geometry`).
+   * Mirrors `LineSegments2.computeLineDistances()` but operates on the raw
+   * geometry so it can run after `setPositions`.
+   */
+  private applyInstanceLineDistances(geometry: LineSegmentsGeometry) {
+    const instanceStart = geometry.getAttribute('instanceStart')
+    const instanceEnd = geometry.getAttribute('instanceEnd')
+    if (!instanceStart || !instanceEnd) return
+    const count = instanceStart.count
+    const lineDistances = new Float32Array(2 * count)
+    for (let i = 0, j = 0; i < count; i++, j += 2) {
+      _v1.fromBufferAttribute(instanceStart, i)
+      _v2.fromBufferAttribute(instanceEnd, i)
+      lineDistances[j] = j === 0 ? 0 : lineDistances[j - 1]
+      lineDistances[j + 1] = lineDistances[j] + _v1.distanceTo(_v2)
+    }
+    const buffer = new THREE.InstancedInterleavedBuffer(lineDistances, 2, 1)
+    geometry.setAttribute(
+      'instanceDistanceStart',
+      new THREE.InterleavedBufferAttribute(buffer, 1, 0)
+    )
+    geometry.setAttribute(
+      'instanceDistanceEnd',
+      new THREE.InterleavedBufferAttribute(buffer, 1, 1)
+    )
   }
 
   /**
