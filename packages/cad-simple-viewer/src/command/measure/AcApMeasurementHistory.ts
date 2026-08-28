@@ -1,6 +1,3 @@
-// Side-effect: register republish impl for grip edits (avoids circular imports).
-import './AcApMeasurementPlace'
-
 import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
 import type { AcEdBaseView } from '../../editor'
