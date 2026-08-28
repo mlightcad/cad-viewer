@@ -27,6 +27,7 @@ export const ar: Record<string, string> = {
   'toolbar.clearMeasurements': 'مسح القياسات',
 
   'toolbar.switchBg': 'تبديل الخلفية',
+  'toolbar.readingMode': 'وضع القراءة',
 
   'toolbar.annotation': 'أدوات المراجعة',
   'toolbar.annotationShort': 'مراجعة',

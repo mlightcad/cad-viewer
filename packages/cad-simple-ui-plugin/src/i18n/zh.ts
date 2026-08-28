@@ -27,6 +27,7 @@ export const zh: Record<string, string> = {
   'toolbar.measurementExport': '导出',
   'toolbar.clearMeasurements': '清除测量',
   'toolbar.switchBg': '切换背景',
+  'toolbar.readingMode': '阅读模式',
   'toolbar.annotation': '审阅工具',
   'toolbar.annotationShort': '批注',
   'toolbar.markupCloud': '云线',

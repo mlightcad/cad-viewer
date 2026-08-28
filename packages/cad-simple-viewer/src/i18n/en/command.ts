@@ -474,6 +474,10 @@ export default {
     switchbg: {
       description: 'Toggles the drawing area background between white and black'
     },
+    readingmode: {
+      description:
+        'Toggles reading mode: black linework on a white canvas for easier review'
+    },
     unisolateobjects: {
       description: 'Redisplay all objects hidden by HIDEOBJECTS'
     },

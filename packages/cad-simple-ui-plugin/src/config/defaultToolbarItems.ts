@@ -36,6 +36,7 @@ import {
   ICON_PLACEMENT_LEFT,
   ICON_PLACEMENT_RIGHT,
   ICON_PLACEMENT_TOP,
+  ICON_READING_MODE,
   ICON_REV_CIRCLE,
   ICON_REV_CLOUD,
   ICON_REV_RECT,
@@ -403,6 +404,13 @@ export function acuiCreateSettingsToolbarItem(
         icon: ICON_SWITCH_BG,
         command: 'switchbg'
       },
+      {
+        id: 'reading-mode',
+        label: 'toolbar.readingMode',
+        icon: ICON_READING_MODE,
+        requiresDocument: true,
+        command: 'readingmode'
+      },
       acuiCreateToolbarLocaleItem(context)
     ]
   }
@@ -454,6 +462,13 @@ export function acuiCreateDefaultToolbarItems(
       label: 'toolbar.switchBg',
       icon: ICON_SWITCH_BG,
       command: 'switchbg'
+    },
+    {
+      id: 'reading-mode',
+      label: 'toolbar.readingMode',
+      icon: ICON_READING_MODE,
+      requiresDocument: true,
+      command: 'readingmode'
     },
     acuiCreateMeasureToolbarItem(),
     acuiCreateAnnotationToolbarItem(),

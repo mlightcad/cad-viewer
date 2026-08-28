@@ -27,6 +27,7 @@ export const en: Record<string, string> = {
   'toolbar.measurementExport': 'Export',
   'toolbar.clearMeasurements': 'Clear Measurements',
   'toolbar.switchBg': 'Switch Background',
+  'toolbar.readingMode': 'Reading Mode',
   'toolbar.annotation': 'Review tools',
   'toolbar.annotationShort': 'Review',
   'toolbar.markupCloud': 'Cloud',

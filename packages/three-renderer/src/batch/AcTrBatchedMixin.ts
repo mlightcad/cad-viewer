@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 
 import { AcTrCommonUtil } from '../util'
+import { getMaterialRuntimeUserData } from '../util/AcTrObjectUserData'
 import {
   AcTrBatchGeometryDefaultFlags,
   AcTrBatchGeometryFlags,
@@ -26,6 +27,16 @@ import {
   installBatchHighlightRenderer,
   writeSlotIdRange
 } from './highlight'
+
+/** Whether any material in the batch was patched for highlight/compare shaders. */
+function hasBatchHighlightMaterial(
+  material: THREE.Material | THREE.Material[]
+): boolean {
+  const materials = Array.isArray(material) ? material : [material]
+  return materials.some(
+    entry => getMaterialRuntimeUserData(entry).batchHighlightPatched
+  )
+}
 
 /**
  * Generic constructor type used to parameterize the batched mixin factory.
@@ -1045,14 +1056,16 @@ export function createAcTrBatchedMixin<
      */
     flushHighlightMask() {
       this._highlightState.setAddressableSlotCount(this._geometryInfo.length)
-      if (this._highlightState.dirty) {
+      const wasDirty = this._highlightState.dirty
+      if (wasDirty) {
         this._highlightState.uploadMaskTexture()
       }
-      if (
+      const shouldSyncHighlightUniforms =
+        !!this.material &&
         (this._highlightState.hasAnyHighlight() ||
-          this._highlightState.needsCompareUniforms()) &&
-        this.material
-      ) {
+          this._highlightState.needsCompareUniforms() ||
+          (wasDirty && hasBatchHighlightMaterial(this.material)))
+      if (shouldSyncHighlightUniforms) {
         bindBatchHighlightUniforms(this.material, this._highlightState)
       }
       return this

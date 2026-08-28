@@ -27,6 +27,7 @@ export const tr: Record<string, string> = {
   'toolbar.measurementExport': 'Dışa Aktar',
   'toolbar.clearMeasurements': 'Ölçümleri Temizle',
   'toolbar.switchBg': 'Arka Planı Değiştir',
+  'toolbar.readingMode': 'Okuma Modu',
   'toolbar.annotation': 'İnceleme araçları',
   'toolbar.annotationShort': 'İnceleme',
   'toolbar.markupCloud': 'Bulut',
