@@ -135,6 +135,10 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
       if (len >= 0) dashSize += len
       else gapSize += Math.abs(len)
     }
+    // Note: zero-length elements (dots) are folded into the dash sum and only
+    // collapse to a fixed 0.5 dash when the pattern has no pen-down length at
+    // all (pure dot linetypes). The shader path instead renders each dot as a
+    // fixed 0.5 dash — an acceptable approximation for this degraded path.
     if (dashSize === 0) dashSize = 0.5
     const dashedLineMaterial = new LineMaterial({
       color: rgb,

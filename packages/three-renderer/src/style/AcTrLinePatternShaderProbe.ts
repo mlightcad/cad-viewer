@@ -29,6 +29,8 @@ export class AcTrLinePatternShaderProbe {
     const H = 32
 
     let target: THREE.WebGLRenderTarget | null = null
+    let controlGeometry: THREE.BufferGeometry | null = null
+    let shaderGeometry: THREE.BufferGeometry | null = null
     let controlMaterial: THREE.LineBasicMaterial | null = null
     let shaderMaterial: THREE.Material | null = null
 
@@ -38,7 +40,7 @@ export class AcTrLinePatternShaderProbe {
       const scene = new THREE.Scene()
       const camera = new THREE.OrthographicCamera(-10, 30, 10, -10, 0.1, 10)
 
-      const controlGeometry = new THREE.BufferGeometry()
+      controlGeometry = new THREE.BufferGeometry()
       controlGeometry.setAttribute(
         'position',
         new THREE.Float32BufferAttribute([0, -2, -1, 20, -2, -1], 3)
@@ -46,7 +48,7 @@ export class AcTrLinePatternShaderProbe {
       controlMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 })
       scene.add(new THREE.LineSegments(controlGeometry, controlMaterial))
 
-      const shaderGeometry = new THREE.BufferGeometry()
+      shaderGeometry = new THREE.BufferGeometry()
       shaderGeometry.setAttribute(
         'position',
         new THREE.Float32BufferAttribute([0, 2, -1, 20, 2, -1], 3)
@@ -101,6 +103,8 @@ export class AcTrLinePatternShaderProbe {
       return true
     } finally {
       target?.dispose()
+      controlGeometry?.dispose()
+      shaderGeometry?.dispose()
       controlMaterial?.dispose()
       shaderMaterial?.dispose()
     }

@@ -59,6 +59,13 @@ export class AcTrLineSegments extends AcTrEntity {
       )
 
       const line = new LineSegments2(lineGeometry, material)
+      // Dashed LineMaterial requires per-instance line distances on the
+      // geometry to render the dash pattern (patterned lines fall back to
+      // dashed LineMaterial when the custom linetype shader is unusable,
+      // see AcTrLineMaterialManager.createDashedFatLineMaterial).
+      if (material.dashed) {
+        line.computeLineDistances()
+      }
       line.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
       getSceneDrawableUserData(line).styleMaterialId = material.id
       this.add(line)

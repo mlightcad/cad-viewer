@@ -31,8 +31,8 @@ import {
   AcTrPolygon,
   AcTrShape
 } from '../object'
-import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrLinePatternShaderProbe } from '../style/AcTrLinePatternShaderProbe'
+import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport/AcTrCamera'
 import {
