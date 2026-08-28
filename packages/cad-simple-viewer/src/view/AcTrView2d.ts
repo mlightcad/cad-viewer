@@ -918,29 +918,46 @@ export class AcTrView2d extends AcEdBaseView {
    * Enables or disables transient reading mode (black linework, white canvas).
    *
    * @param enabled - When true, snapshots the current canvas background and
-   *   forces monochrome display; when false, restores the snapshot.
+   *   forces monochrome display; when false, restores the snapshot and
+   *   original entity colors.
    */
   setReadingMode(enabled: boolean) {
     if (enabled === this._readingModeEnabled) {
       return
     }
     if (enabled) {
-      this._readingModeSavedBackground = this.backgroundColor
-      this.backgroundColor = ACAP_READING_MODE_BACKGROUND
-      this.setCompareDisplay({
-        enabled: true,
-        baseColor: ACAP_READING_MODE_COLOR
-      })
+      this.applyReadingModeDisplay(true)
       this._readingModeEnabled = true
       return
     }
 
-    this.setCompareDisplay({ enabled: false })
-    if (this._readingModeSavedBackground != null) {
-      this.backgroundColor = this._readingModeSavedBackground
-    }
-    this._readingModeSavedBackground = null
+    const savedBackground = this._readingModeSavedBackground
     this._readingModeEnabled = false
+    this._readingModeSavedBackground = null
+
+    if (savedBackground != null) {
+      this.backgroundColor = savedBackground
+    }
+    this.setCompareDisplay({ enabled: false, overrides: [] })
+    this._isDirty = true
+  }
+
+  /**
+   * Snapshots the current canvas background (optional) and forces reading-mode
+   * display colors.
+   *
+   * @param snapshotBackground - When true, stores {@link backgroundColor}
+   *   before applying the white canvas override.
+   */
+  private applyReadingModeDisplay(snapshotBackground: boolean) {
+    if (snapshotBackground) {
+      this._readingModeSavedBackground = this.backgroundColor
+    }
+    this.backgroundColor = ACAP_READING_MODE_BACKGROUND
+    this.setCompareDisplay({
+      enabled: true,
+      baseColor: ACAP_READING_MODE_COLOR
+    })
   }
 
   /** Re-applies reading-mode display after background sysvar sync. */
@@ -948,12 +965,7 @@ export class AcTrView2d extends AcEdBaseView {
     if (!this._readingModeEnabled) {
       return
     }
-    this._readingModeSavedBackground = this.backgroundColor
-    this.backgroundColor = ACAP_READING_MODE_BACKGROUND
-    this.setCompareDisplay({
-      enabled: true,
-      baseColor: ACAP_READING_MODE_COLOR
-    })
+    this.applyReadingModeDisplay(true)
   }
 
   /**
