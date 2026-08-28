@@ -129,25 +129,6 @@ export class AcApMarkupCalloutEntity extends AcApMarkupEntity {
       tip: { ...geom.tip },
       anchor: { ...geom.anchor }
     }
-    /**
-     * Redraw the leader (with arrow) from {@link live}.
-     */
-    const redraw = () => {
-      const ctx = acapFitOverlayCanvas(overlay.canvas, container)
-      if (!ctx) return
-      acapDrawOverlayLeader(
-        ctx,
-        view.worldToScreen(live.tip),
-        view.worldToScreen(live.anchor),
-        this.record.style.color,
-        true,
-        canvasLineWidth,
-        view
-      )
-    }
-    redraw()
-    view.events.viewChanged.addEventListener(redraw)
-    cleanups.push(() => view.events.viewChanged.removeEventListener(redraw))
 
     const bubble = new AcTrHtmlCallout({
       id: `${this.record.id}-bubble`,
@@ -176,6 +157,28 @@ export class AcApMarkupCalloutEntity extends AcApMarkupEntity {
       layoutId
     })
     group.add(bubble, tipDot, centerDot)
+    this.seedOverlaySizes(view, [bubble, tipDot, centerDot], [overlay.canvas])
+
+    /**
+     * Redraw the leader (with arrow) from {@link live}.
+     */
+    const redraw = () => {
+      const ctx = acapFitOverlayCanvas(overlay.canvas, container)
+      if (!ctx) return
+      acapDrawOverlayLeader(
+        ctx,
+        view.worldToScreen(live.tip),
+        view.worldToScreen(live.anchor),
+        this.record.style.color,
+        true,
+        canvasLineWidth,
+        view,
+        this.record.style.strokeWidthWcs
+      )
+    }
+    redraw()
+    view.events.viewChanged.addEventListener(redraw)
+    cleanups.push(() => view.events.viewChanged.removeEventListener(redraw))
 
     cleanups.push(
       bindMarkupInlineTextEdit({

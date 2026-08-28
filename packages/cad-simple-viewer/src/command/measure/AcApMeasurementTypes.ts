@@ -14,11 +14,21 @@ export interface AcApMeasurementPoint2d {
   y: number
 }
 
-/** Drawing style stored in the sidecar (CSS-friendly). */
+/** Drawing style stored in the sidecar (CSS-friendly + world-space sizes). */
 export interface AcApMeasurementSidecarStyle {
   color: string
   lineWeight: AcGiLineWeight
+  /** Authoring badge font size in CSS pixels (legacy / UI). */
   fontSize: number
+  /**
+   * Badge text height in world units. Prefer this over {@link fontSize} when
+   * restoring overlays so size is independent of camera zoom.
+   */
+  textHeightWcs?: number
+  /**
+   * Canvas stroke width in world units. Prefer this when restoring overlays.
+   */
+  strokeWidthWcs?: number
 }
 
 export interface AcApMeasurementDistanceGeometry {

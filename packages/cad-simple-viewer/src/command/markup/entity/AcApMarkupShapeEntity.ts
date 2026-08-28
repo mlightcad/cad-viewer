@@ -110,6 +110,33 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
     })
     group.addCanvas(overlay)
 
+    const centerDot = new AcTrHtmlDot({
+      id: `${this.record.id}-dot`,
+      color,
+      worldPosition: centerPos,
+      layer,
+      layoutId
+    })
+    group.add(centerDot)
+
+    const attached = geom.callout
+      ? publishAttachedCallout({
+          view,
+          group,
+          record: this.record,
+          callout: geom.callout,
+          style: this.style(),
+          cleanups,
+          outline
+        })
+      : undefined
+
+    this.seedOverlaySizes(
+      view,
+      attached ? [centerDot, attached.tipDot, attached.bubble] : [centerDot],
+      [overlay.canvas]
+    )
+
     /**
      * Redraw the shape stroke with the current {@link liveOffset}.
      */
@@ -125,7 +152,8 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
           geom.corner2,
           css,
           canvasLineWidth,
-          liveOffset
+          liveOffset,
+          this.record.style.strokeWidthWcs
         )
       } else if (geom.type === 'rect') {
         const corners = acapLiveRectCorners(geom.corner1, geom.corner2).map(
@@ -156,27 +184,6 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
     cleanups.push(() =>
       view.events.viewChanged.removeEventListener(redrawShape)
     )
-
-    const centerDot = new AcTrHtmlDot({
-      id: `${this.record.id}-dot`,
-      color,
-      worldPosition: centerPos,
-      layer,
-      layoutId
-    })
-    group.add(centerDot)
-
-    const attached = geom.callout
-      ? publishAttachedCallout({
-          view,
-          group,
-          record: this.record,
-          callout: geom.callout,
-          style: this.style(),
-          cleanups,
-          outline
-        })
-      : undefined
 
     pendingGrips.push(() => {
       attached?.bindGrips?.()

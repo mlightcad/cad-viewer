@@ -225,6 +225,7 @@ export function tessellateMarkupCloud(
  * @param color - CSS stroke color.
  * @param lineWidth - Stroke width in CSS pixels.
  * @param offset - Optional live drag translation in world space.
+ * @param strokeWidthWcs - Optional persisted world-space stroke width.
  */
 export function strokeMarkupCloud(
   ctx: CanvasRenderingContext2D,
@@ -233,7 +234,8 @@ export function strokeMarkupCloud(
   second: AcGePoint2dLike,
   color: string,
   lineWidth: number,
-  offset?: { dx: number; dy: number }
+  offset?: { dx: number; dy: number },
+  strokeWidthWcs?: number
 ): void {
   const dx = offset?.dx ?? 0
   const dy = offset?.dy ?? 0
@@ -245,7 +247,12 @@ export function strokeMarkupCloud(
   if (world.length < 2) return
   const screen = world.map(p => view.worldToScreen(p))
   ctx.strokeStyle = color
-  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
+  ctx.lineWidth = acapScaledOverlayLineWidth(
+    lineWidth,
+    ctx.canvas,
+    view,
+    strokeWidthWcs
+  )
   ctx.beginPath()
   ctx.moveTo(screen[0].x, screen[0].y)
   for (let i = 1; i < screen.length; i++) {

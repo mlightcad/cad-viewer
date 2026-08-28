@@ -6,7 +6,7 @@ import {
   AcGiLineWeight
 } from '@mlightcad/data-model'
 
-import { preferExactAciColor } from './AcApCssColor'
+import { acCmColorToCssHex, parseCssToAcCmColor } from './AcApCssColor'
 
 /** Factory default CAD line weight for measurement geometry. */
 export const MEASUREMENT_LINE_WEIGHT = AcGiLineWeight.LineWeight070
@@ -111,20 +111,12 @@ export function acapColorToCssAlpha(c: AcCmColor, alpha: number): string {
   return `rgba(${c.red}, ${c.green}, ${c.blue}, ${alpha})`
 }
 
-/** Returns the CSS color string for a measurement color, with fallback. */
+/** Converts an AcCmColor to a CSS hex color string for overlays / sidecars. */
 export function acapCssColor(c: AcCmColor): string {
-  return c.cssColor ?? `rgb(${c.red}, ${c.green}, ${c.blue})`
+  return acCmColorToCssHex(c)
 }
 
 /** Parse a CSS color string back into AcCmColor (best-effort). */
 export function acapCssToMeasurementColor(css: string): AcCmColor {
-  const fromString = AcCmColor.fromString(css)
-  if (fromString) return preferExactAciColor(fromString)
-  try {
-    return preferExactAciColor(new AcCmColor().setRGBFromCss(css))
-  } catch {
-    const fallback = new AcCmColor()
-    fallback.setRGB(123, 135, 148)
-    return fallback
-  }
+  return parseCssToAcCmColor(css, [123, 135, 148])
 }

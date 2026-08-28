@@ -36,8 +36,12 @@ export interface AcExMarkupStyle {
   color: string
   /** Optional AutoCAD-style line weight enum value. */
   lineWeight?: number
-  /** Screen-space font size in CSS pixels for text / callout bubbles. */
+  /** Authoring font size in CSS pixels for text / callout bubbles (legacy / UI). */
   fontSize?: number
+  /** Text / callout height in world units (preferred when restoring overlays). */
+  textHeightWcs?: number
+  /** Canvas stroke width in world units (preferred when restoring overlays). */
+  strokeWidthWcs?: number
 }
 
 /** Shared metadata on every markup record. */

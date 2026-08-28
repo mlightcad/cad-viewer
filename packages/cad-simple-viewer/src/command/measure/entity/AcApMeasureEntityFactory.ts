@@ -22,7 +22,13 @@ export function createMeasureEntityFromRecord(
   record: AcApMeasurementRecord
 ): AcApMeasureEntity {
   const style = deserializeMeasurementStyle(record.style)
-  const options = { id: record.id, layoutId: record.layoutId, style }
+  const options = {
+    id: record.id,
+    layoutId: record.layoutId,
+    style,
+    textHeightWcs: record.style.textHeightWcs,
+    strokeWidthWcs: record.style.strokeWidthWcs
+  }
   const geom = record.geometry
   switch (geom.type) {
     case 'distance':

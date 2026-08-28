@@ -5,13 +5,17 @@ import {
   type AcGeVector3dLike,
   type AcGiLineWeight
 } from '@mlightcad/data-model'
-import { AcTrHtmlGroup } from '@mlightcad/three-renderer'
+import {
+  AcTrHtmlGroup,
+  type AcTrHtmlElement
+} from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
 import {
   AcApOverlayEntity,
   type AcApOverlaySerializable,
-  type AcApOverlayWorldDrawResult
+  type AcApOverlayWorldDrawResult,
+  acapSeedOverlaySizesFromWcs
 } from '../../overlay'
 import {
   hitTestMarkupGeometry,
@@ -22,6 +26,7 @@ import { MARKUP_LAYER } from '../AcApMarkupStore'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import {
   cssToMarkupColor,
+  MARKUP_FONT_SIZE,
   MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth
 } from '../AcApMarkupUtil'
@@ -225,6 +230,29 @@ export abstract class AcApMarkupEntity
       layer,
       layoutId,
       selectable: true
+    })
+  }
+
+  /**
+   * Seeds imported WCS sizes onto HTML overlays and canvases before first paint.
+   */
+  protected seedOverlaySizes(
+    view: AcTrView2d,
+    elements: readonly AcTrHtmlElement[],
+    canvases: readonly HTMLElement[] = []
+  ): void {
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: this.record.style.textHeightWcs,
+      strokeWidthWcs: this.record.style.strokeWidthWcs,
+      fontSizePx: this.record.style.fontSize ?? MARKUP_FONT_SIZE,
+      strokeScreenPx: markupCanvasLineWidth(
+        this.record.style.lineWeight != null &&
+          this.record.style.lineWeight > 0
+          ? this.record.style.lineWeight
+          : MARKUP_LINE_WEIGHT
+      ),
+      elements,
+      canvases
     })
   }
 

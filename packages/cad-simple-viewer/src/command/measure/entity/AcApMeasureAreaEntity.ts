@@ -10,7 +10,6 @@ import {
   type AcApMeasurementStyle,
   formatMeasurementLength} from '../../../util'
 import type { AcTrView2d } from '../../../view'
-import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import {
   getMeasurementStyle,
   MEASUREMENT_LAYER
@@ -48,7 +47,9 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
     super(
       options.id ?? `area-${Date.now()}`,
       options.layoutId,
-      options.style
+      options.style,
+      options.textHeightWcs,
+      options.strokeWidthWcs
     )
     this.points = points
   }
@@ -88,14 +89,15 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
    * Serializes this area measurement to a store/sidecar record.
    *
    * @param layoutId - Optional layout BTR id written onto the record
+   * @param view - Optional view used to convert screen style to WCS
    * @returns Record with `type: 'area'` and polygon point geometry
    */
-  toRecord(layoutId?: string): AcApMeasurementRecord {
+  toRecord(layoutId?: string, view?: AcTrView2d): AcApMeasurementRecord {
     return {
       id: this.entityId,
       type: 'area',
       layoutId,
-      style: serializeMeasurementStyle(this.style),
+      style: this.serializeStyle(view),
       geometry: {
         type: 'area',
         points: this.points.map(p => ({ x: p.x, y: p.y }))
@@ -137,6 +139,28 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
       layer: MEASUREMENT_LAYER,
       layoutId
     })
+    const badge = new AcTrHtmlBadge({
+      id: `${this.entityId}-badge`,
+      color,
+      text: `${formatMeasurementLength(db, area)}²`,
+      worldPosition: mid,
+      layer: MEASUREMENT_LAYER,
+      fontSize: this.style.fontSize
+    })
+    const dots = this.points.map(
+      (p, i) =>
+        new AcTrHtmlDot({
+          id: `${this.entityId}-dot${i}`,
+          color,
+          worldPosition: p,
+          layer: MEASUREMENT_LAYER
+        })
+    )
+    this.seedOverlaySizes(
+      view,
+      [badge, ...dots],
+      [persistOverlay.canvas]
+    )
     const paintArea = (paintStyle = this.style) =>
       drawMeasureAreaOnCanvas(
         persistOverlay.canvas,
@@ -151,25 +175,7 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
     view.events.viewChanged.addEventListener(redrawPersist)
 
     const group = this.createGroup(view)
-      .add(
-        new AcTrHtmlBadge({
-          id: `${this.entityId}-badge`,
-          color,
-          text: `${formatMeasurementLength(db, area)}²`,
-          worldPosition: mid,
-          layer: MEASUREMENT_LAYER,
-          fontSize: this.style.fontSize
-        }),
-        ...this.points.map(
-          (p, i) =>
-            new AcTrHtmlDot({
-              id: `${this.entityId}-dot${i}`,
-              color,
-              worldPosition: p,
-              layer: MEASUREMENT_LAYER
-            })
-        )
-      )
+      .add(badge, ...dots)
       .addCanvas(persistOverlay)
 
     return {
@@ -181,7 +187,7 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
       extras: {
         style: this.style,
         value: { kind: 'area', value: area },
-        snapshot: this.toRecord(layoutId),
+        snapshot: this.toRecord(layoutId, view),
         redraw: paintArea
       }
     }

@@ -24,6 +24,7 @@ import type {
   AcApMarkupAttachedCallout,
   AcApMarkupRecord
 } from './AcApMarkupTypes'
+import { patchMarkupStyleWcs, withMarkupStyleWcs } from './AcApMarkupUtil'
 import { createMarkupEntityFromRecord } from './entity'
 
 // Re-export shape builders for commands / jigs that imported them from here.
@@ -303,8 +304,12 @@ export function commitMarkup(
   record: AcApMarkupRecord
 ): void {
   runMarkupEdit(view, 'Create Markup', () => {
-    getMarkupStore().upsert(record)
-    getMarkupPresenter().publish(view, record)
+    const enriched = {
+      ...record,
+      style: withMarkupStyleWcs(record.style, asView2d(view))
+    }
+    getMarkupStore().upsert(enriched)
+    getMarkupPresenter().publish(view, enriched)
   })
 }
 
@@ -347,7 +352,20 @@ export function applyMarkupStyleToSelection(
   const id = store.selectedId
   if (!id) return
   runMarkupEdit(view, 'Markup Style', () => {
+    const previous = store.get(id)
+    if (!previous) return
     const updated = store.updateStyle(id, patch)
-    if (updated) getMarkupPresenter().publish(view, updated)
+    if (!updated) return
+    const enriched = {
+      ...updated,
+      style: patchMarkupStyleWcs(
+        previous.style,
+        updated.style,
+        asView2d(view),
+        patch
+      )
+    }
+    store.upsert(enriched)
+    getMarkupPresenter().publish(view, enriched)
   })
 }

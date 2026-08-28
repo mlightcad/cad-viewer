@@ -7,15 +7,23 @@ import {
 } from '../../util/AcApMeasurementUnits'
 import {
   acapCloneMeasurementStyle,
+  acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LINE_WEIGHT
 } from '../../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../../view'
+import {
+  acapScreenPxToWcs,
+  acapSeedOverlaySizesFromWcs
+} from '../overlay/AcApOverlayDrawUtil'
 import { hitTestMeasurementGeometry } from './AcApMeasurementGeometry'
 import { runMeasurementEdit } from './AcApMeasurementHistory'
 import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
-import type { AcApMeasurementRecord } from './AcApMeasurementTypes'
+import type {
+  AcApMeasurementRecord,
+  AcApMeasurementSidecarStyle
+} from './AcApMeasurementTypes'
 
 /** HTML transient layer for committed measurement overlays. */
 export const MEASUREMENT_LAYER = 'measurement'
@@ -134,6 +142,9 @@ function rememberStyle(id: string, style: AcApMeasurementStyle): void {
 /**
  * Apply a style patch to one measurement group (HTML badges/dots and canvases).
  * Does not record undo; wrap with {@link runMeasurementEdit} from UI.
+ *
+ * Color, line weight, and font size are independent: changing one does not
+ * rewrite the others' world-space sizes from the current camera zoom.
  */
 export function applyMeasurementStyle(
   view: AcTrView2d,
@@ -148,18 +159,107 @@ export function applyMeasurementStyle(
     lineWeight: patch.lineWeight ?? prev?.lineWeight ?? MEASUREMENT_LINE_WEIGHT,
     fontSize: patch.fontSize ?? prev?.fontSize ?? MEASUREMENT_FONT_SIZE
   }
+  const fontSizeChanged =
+    patch.fontSize != null &&
+    (prev == null || patch.fontSize !== prev.fontSize)
+  const lineWeightChanged =
+    patch.lineWeight != null &&
+    (prev == null || patch.lineWeight !== prev.lineWeight)
+
   rememberStyle(group.id, next)
   const extras = extrasById.get(group.id)
   if (extras) {
     extras.style = acapCloneMeasurementStyle(next)
     if (extras.snapshot) {
+      const prevSnap = extras.snapshot.style
+      const base = serializeMeasurementStyle(next)
       extras.snapshot = {
         ...extras.snapshot,
-        style: serializeMeasurementStyle(next)
+        style: {
+          ...base,
+          textHeightWcs: resolveUpdatedTextHeightWcs(
+            view,
+            next.fontSize,
+            prev?.fontSize,
+            prevSnap.textHeightWcs,
+            fontSizeChanged
+          ),
+          strokeWidthWcs: resolveUpdatedStrokeWidthWcs(
+            view,
+            next.lineWeight,
+            prev?.lineWeight,
+            prevSnap.strokeWidthWcs,
+            lineWeightChanged
+          )
+        }
       }
     }
   }
+
+  if (fontSizeChanged || lineWeightChanged) {
+    const snap = extrasById.get(group.id)?.snapshot?.style
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: snap?.textHeightWcs,
+      strokeWidthWcs: snap?.strokeWidthWcs,
+      fontSizePx: next.fontSize,
+      strokeScreenPx: acapMeasurementCanvasLineWidth(next.lineWeight),
+      elements: [...group.children],
+      canvases: group.canvases.map(c => c.canvas)
+    })
+  }
+
   paintMeasurementGroup(view, group, next)
+}
+
+/** Scale or recompute text height WCS when font size changes; otherwise keep. */
+function resolveUpdatedTextHeightWcs(
+  view: AcTrView2d,
+  nextFontSize: number,
+  prevFontSize: number | undefined,
+  prevTextHeightWcs: number | undefined,
+  fontSizeChanged: boolean
+): number {
+  if (
+    fontSizeChanged &&
+    prevTextHeightWcs != null &&
+    prevTextHeightWcs > 0 &&
+    prevFontSize != null &&
+    prevFontSize > 0
+  ) {
+    return prevTextHeightWcs * (nextFontSize / prevFontSize)
+  }
+  if (fontSizeChanged || prevTextHeightWcs == null || !(prevTextHeightWcs > 0)) {
+    return acapScreenPxToWcs(nextFontSize, view)
+  }
+  return prevTextHeightWcs
+}
+
+/** Scale or recompute stroke WCS when line weight changes; otherwise keep. */
+function resolveUpdatedStrokeWidthWcs(
+  view: AcTrView2d,
+  nextLineWeight: AcApMeasurementStyle['lineWeight'],
+  prevLineWeight: AcApMeasurementStyle['lineWeight'] | undefined,
+  prevStrokeWidthWcs: number | undefined,
+  lineWeightChanged: boolean
+): number {
+  const nextPx = acapMeasurementCanvasLineWidth(nextLineWeight)
+  if (
+    lineWeightChanged &&
+    prevStrokeWidthWcs != null &&
+    prevStrokeWidthWcs > 0 &&
+    prevLineWeight != null
+  ) {
+    const prevPx = acapMeasurementCanvasLineWidth(prevLineWeight)
+    if (prevPx > 0) return prevStrokeWidthWcs * (nextPx / prevPx)
+  }
+  if (
+    lineWeightChanged ||
+    prevStrokeWidthWcs == null ||
+    !(prevStrokeWidthWcs > 0)
+  ) {
+    return acapScreenPxToWcs(nextPx, view)
+  }
+  return prevStrokeWidthWcs
 }
 
 /**
@@ -226,14 +326,30 @@ export function collectMeasurementRecords(
   for (const group of view.htmlTransientManager.groupsOnLayer(MEASUREMENT_LAYER)) {
     const extras = extrasById.get(group.id)
     if (!extras?.snapshot) continue
-    const style = extras.style ?? stylesById.get(group.id)
+    const live = extras.style ?? stylesById.get(group.id)
+    const snapStyle = extras.snapshot.style
+    let style: AcApMeasurementSidecarStyle = snapStyle
+    if (live) {
+      // Keep live color / weights / fontSize, but preserve creation-time WCS
+      // from the snapshot (do not recompute from the current zoom).
+      const base = serializeMeasurementStyle(live)
+      style = {
+        ...base,
+        textHeightWcs:
+          snapStyle.textHeightWcs ?? acapScreenPxToWcs(base.fontSize, view),
+        strokeWidthWcs:
+          snapStyle.strokeWidthWcs ??
+          acapScreenPxToWcs(
+            acapMeasurementCanvasLineWidth(base.lineWeight),
+            view
+          )
+      }
+    }
     records.push({
       ...extras.snapshot,
       id: group.id,
       layoutId: group.layoutId,
-      style: style
-        ? serializeMeasurementStyle(style)
-        : extras.snapshot.style
+      style
     })
   }
   return records

@@ -48,6 +48,7 @@ export class AcApMarkupTextEntity extends AcApMarkupEntity {
       layoutId
     })
     group.add(badge)
+    this.seedOverlaySizes(view, [badge], [])
     cleanups.push(
       bindMarkupInlineTextEdit({
         view,

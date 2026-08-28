@@ -2,11 +2,13 @@
  * Shared canvas helpers for markup / measure overlay drawing.
  */
 
+import type { AcTrHtmlElement } from '@mlightcad/three-renderer'
+
 import type { AcEdBaseView } from '../../editor'
 import type { AcTrView2d } from '../../view'
 
-/** Dataset key storing orthographic zoom when an overlay canvas was first drawn. */
-export const ACAP_OVERLAY_BASE_ZOOM = 'overlayBaseZoom'
+/** Dataset key storing stroke width in world units for view-synced canvas pens. */
+export const ACAP_OVERLAY_STROKE_WCS = 'overlayStrokeWcs'
 
 /** Returns the active orthographic camera zoom, or `null` when unavailable. */
 export function acapGetCameraZoom(view: AcEdBaseView): number | null {
@@ -15,29 +17,126 @@ export function acapGetCameraZoom(view: AcEdBaseView): number | null {
 }
 
 /**
- * Scale factor for one overlay canvas relative to the zoom at first paint.
+ * CSS pixels per one world-space unit along +X (from {@link AcEdBaseView.worldToScreen}).
  */
-export function acapOverlayViewScale(
-  anchor: HTMLElement,
-  view: AcEdBaseView
-): number {
-  const zoom = acapGetCameraZoom(view)
-  if (zoom == null) return 1
-  let base = Number(anchor.dataset[ACAP_OVERLAY_BASE_ZOOM])
-  if (!Number.isFinite(base) || base === 0) {
-    base = zoom
-    anchor.dataset[ACAP_OVERLAY_BASE_ZOOM] = String(zoom)
-  }
-  return zoom / base
+export function acapPixelsPerWorldUnit(view: AcEdBaseView): number {
+  const a = view.worldToScreen({ x: 0, y: 0 })
+  const b = view.worldToScreen({ x: 1, y: 0 })
+  const ppu = Math.hypot(b.x - a.x, b.y - a.y)
+  return ppu > 0 && Number.isFinite(ppu) ? ppu : 1
 }
 
-/** Maps a base CSS stroke width to the current view-synced width. */
+/** Converts a screen-space size in CSS pixels to world units. */
+export function acapScreenPxToWcs(px: number, view: AcEdBaseView): number {
+  return px / acapPixelsPerWorldUnit(view)
+}
+
+/** Converts a world-space size to CSS pixels at the current view scale. */
+export function acapWcsToScreenPx(wcs: number, view: AcEdBaseView): number {
+  return wcs * acapPixelsPerWorldUnit(view)
+}
+
+/** Pre-seeds a canvas stroke width in world units (import / first layout). */
+export function acapSeedOverlayStrokeWcs(
+  anchor: HTMLElement,
+  strokeWidthWcs: number
+): void {
+  if (!(strokeWidthWcs > 0) || !Number.isFinite(strokeWidthWcs)) return
+  anchor.dataset[ACAP_OVERLAY_STROKE_WCS] = String(strokeWidthWcs)
+}
+
+/**
+ * View-synced canvas stroke width.
+ *
+ * Prefer an explicit world-space width; otherwise use a seeded dataset value,
+ * else convert `baseLineWidth` to WCS on first paint and keep that pen size as
+ * the camera zooms. Callers that re-seed after style edits should omit the
+ * explicit WCS argument so the dataset wins.
+ */
 export function acapScaledOverlayLineWidth(
   baseLineWidth: number,
   anchor: HTMLElement,
-  view: AcEdBaseView
+  view: AcEdBaseView,
+  strokeWidthWcs?: number
 ): number {
-  return baseLineWidth * acapOverlayViewScale(anchor, view)
+  const ppu = acapPixelsPerWorldUnit(view)
+  let wcs =
+    strokeWidthWcs != null && strokeWidthWcs > 0
+      ? strokeWidthWcs
+      : Number(anchor.dataset[ACAP_OVERLAY_STROKE_WCS])
+  if (!Number.isFinite(wcs) || wcs <= 0) {
+    wcs = baseLineWidth / ppu
+    anchor.dataset[ACAP_OVERLAY_STROKE_WCS] = String(wcs)
+  } else if (
+    strokeWidthWcs != null &&
+    strokeWidthWcs > 0 &&
+    anchor.dataset[ACAP_OVERLAY_STROKE_WCS] !== String(wcs)
+  ) {
+    anchor.dataset[ACAP_OVERLAY_STROKE_WCS] = String(wcs)
+  }
+  return Math.max(0.5, wcs * ppu)
+}
+
+/**
+ * Orthographic `baseZoom` that makes a fixed CSS size match a world-space size
+ * at the current view (for {@link AcTrHtmlElement.scaleWithView}).
+ */
+export function acapBaseZoomFromWcsSize(
+  screenPxAtCreate: number,
+  sizeWcs: number,
+  view: AcEdBaseView
+): number | null {
+  const zoom = acapGetCameraZoom(view)
+  const ppu = acapPixelsPerWorldUnit(view)
+  if (zoom == null || !(screenPxAtCreate > 0) || !(sizeWcs > 0)) return null
+  const base = (screenPxAtCreate * zoom) / (sizeWcs * ppu)
+  return base > 0 && Number.isFinite(base) ? base : null
+}
+
+/**
+ * Seeds HTML overlays and canvases from sidecar world-space sizes so import
+ * matches creation scale regardless of the current camera zoom.
+ */
+export function acapSeedOverlaySizesFromWcs(
+  view: AcEdBaseView,
+  options: {
+    textHeightWcs?: number
+    strokeWidthWcs?: number
+    /** CSS font size used when the overlay was authored (badge / callout). */
+    fontSizePx?: number
+    /** Screen stroke width used when authored (from CAD line weight). */
+    strokeScreenPx?: number
+    elements?: readonly AcTrHtmlElement[]
+    canvases?: readonly HTMLElement[]
+  }
+): void {
+  const {
+    textHeightWcs,
+    strokeWidthWcs,
+    fontSizePx,
+    elements,
+    canvases
+  } = options
+
+  if (strokeWidthWcs != null && strokeWidthWcs > 0) {
+    for (const canvas of canvases ?? []) {
+      acapSeedOverlayStrokeWcs(canvas, strokeWidthWcs)
+    }
+  }
+
+  // Pair text screen/WCS axes only — never mix fontSize with strokeWidthWcs.
+  if (
+    !(fontSizePx != null && fontSizePx > 0) ||
+    !(textHeightWcs != null && textHeightWcs > 0)
+  ) {
+    return
+  }
+
+  const baseZoom = acapBaseZoomFromWcsSize(fontSizePx, textHeightWcs, view)
+  if (baseZoom == null) return
+  for (const el of elements ?? []) {
+    if (el.scaleWithView) el.baseZoom = baseZoom
+  }
 }
 
 /**
@@ -127,9 +226,15 @@ export function acapDrawOverlayLeader(
   color: string,
   withArrow = true,
   lineWidth = 2,
-  view: AcEdBaseView
+  view: AcEdBaseView,
+  strokeWidthWcs?: number
 ): void {
-  const strokeWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
+  const strokeWidth = acapScaledOverlayLineWidth(
+    lineWidth,
+    ctx.canvas,
+    view,
+    strokeWidthWcs
+  )
   ctx.strokeStyle = color
   ctx.lineWidth = strokeWidth
   ctx.beginPath()
@@ -156,9 +261,15 @@ export function acapDrawOverlayHighlight(
   b: { x: number; y: number },
   color: string,
   lineWidth = 1.5,
-  view: AcEdBaseView
+  view: AcEdBaseView,
+  strokeWidthWcs?: number
 ): void {
-  const strokeWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
+  const strokeWidth = acapScaledOverlayLineWidth(
+    lineWidth,
+    ctx.canvas,
+    view,
+    strokeWidthWcs
+  )
   const x = Math.min(a.x, b.x)
   const y = Math.min(a.y, b.y)
   const w = Math.abs(a.x - b.x)

@@ -15,7 +15,9 @@ import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
   acExPositionWcsOverlay,
   acExResetOverlayViewScale,
-  acExScaledCanvasLineWidth
+  acExScaledCanvasLineWidth,
+  acExScreenPxToWcs,
+  acExSeedOverlaySizesFromWcs
 } from './AcExHtmlOverlayDom'
 import {
   acExComputeLeaderTipOnShape,
@@ -374,10 +376,54 @@ export class AcExMarkupController {
   }
 
   private _sessionStyle(): AcExMarkupStyle {
-    return defaultStyle(
-      this._drawColor,
-      this._drawLineWeight,
-      this._drawFontSize
+    return this._styleWithWcs(
+      defaultStyle(this._drawColor, this._drawLineWeight, this._drawFontSize)
+    )
+  }
+
+  /** Attach world-space text/stroke sizes from the current view. */
+  private _styleWithWcs(style: AcExMarkupStyle): AcExMarkupStyle {
+    const fontSize =
+      style.fontSize != null && style.fontSize > 0
+        ? style.fontSize
+        : ACEX_MARKUP_FONT_SIZE
+    const lineWeight =
+      style.lineWeight != null && style.lineWeight > 0
+        ? style.lineWeight
+        : ACEX_MARKUP_LINE_WEIGHT
+    const wcsToScreen = (p: { x: number; y: number }) =>
+      this._wcsToScreenPoint(p)
+    return {
+      ...style,
+      textHeightWcs: acExScreenPxToWcs(fontSize, wcsToScreen),
+      strokeWidthWcs: acExScreenPxToWcs(
+        acExMarkupCanvasLineWidth(lineWeight),
+        wcsToScreen
+      )
+    }
+  }
+
+  private _wcsToScreenPoint(p: { x: number; y: number }): {
+    x: number
+    y: number
+  } {
+    const s = this._view.wcsToScreen(new THREE.Vector2(p.x, p.y))
+    return { x: s.x, y: s.y }
+  }
+
+  private _scaledCanvasLineWidth(
+    baseLineWidth: number,
+    canvas: HTMLCanvasElement,
+    strokeWidthWcs?: number
+  ): number {
+    return acExScaledCanvasLineWidth(
+      baseLineWidth,
+      canvas,
+      this._view.getCameraZoom(),
+      {
+        strokeWidthWcs,
+        wcsToScreen: p => this._wcsToScreenPoint(p)
+      }
     )
   }
 
@@ -387,16 +433,66 @@ export class AcExMarkupController {
     fontSize?: number
   }): void {
     if (this._selectedIds.size === 0) return
+    const wcsToScreen = (p: { x: number; y: number }) =>
+      this._wcsToScreenPoint(p)
     for (const id of this._selectedIds) {
       const item = this._committed.find(c => c.record.id === id)
       if (!item) continue
       const style = item.record.style
       if (patch.color) style.color = patch.color
       if (patch.lineWeight != null && patch.lineWeight > 0) {
+        const prevWeight =
+          style.lineWeight != null && style.lineWeight > 0
+            ? style.lineWeight
+            : ACEX_MARKUP_LINE_WEIGHT
+        const prevPx = acExMarkupCanvasLineWidth(prevWeight)
+        const nextPx = acExMarkupCanvasLineWidth(patch.lineWeight)
+        if (
+          style.strokeWidthWcs != null &&
+          style.strokeWidthWcs > 0 &&
+          prevPx > 0
+        ) {
+          style.strokeWidthWcs = style.strokeWidthWcs * (nextPx / prevPx)
+        } else {
+          style.strokeWidthWcs = acExScreenPxToWcs(nextPx, wcsToScreen)
+        }
         style.lineWeight = patch.lineWeight
       }
       if (patch.fontSize != null && patch.fontSize > 0) {
+        const prevFont =
+          style.fontSize != null && style.fontSize > 0
+            ? style.fontSize
+            : ACEX_MARKUP_FONT_SIZE
+        if (
+          style.textHeightWcs != null &&
+          style.textHeightWcs > 0 &&
+          prevFont > 0
+        ) {
+          style.textHeightWcs =
+            style.textHeightWcs * (patch.fontSize / prevFont)
+        } else {
+          style.textHeightWcs = acExScreenPxToWcs(
+            patch.fontSize,
+            wcsToScreen
+          )
+        }
         style.fontSize = patch.fontSize
+      }
+      if (patch.fontSize != null || patch.lineWeight != null) {
+        acExSeedOverlaySizesFromWcs(
+          this._view.getCameraZoom(),
+          wcsToScreen,
+          {
+            textHeightWcs: style.textHeightWcs,
+            strokeWidthWcs: style.strokeWidthWcs,
+            fontSizePx: style.fontSize ?? ACEX_MARKUP_FONT_SIZE,
+            strokeScreenPx: acExMarkupCanvasLineWidth(
+              style.lineWeight ?? ACEX_MARKUP_LINE_WEIGHT
+            ),
+            elements: item.parts.dom,
+            canvases: item.parts.canvases
+          }
+        )
       }
       item.record.updatedAt = markupNow()
       const color = style.color || ACEX_MARKUP_COLOR
@@ -415,6 +511,7 @@ export class AcExMarkupController {
         }
       }
     }
+    this._positionDomOverlays()
     this._applySelectionStyles()
   }
 
@@ -993,11 +1090,7 @@ export class AcExMarkupController {
         anchorS,
         this._drawColor,
         true,
-        acExScaledCanvasLineWidth(
-          baseWidth,
-          ctx.canvas,
-          this._view.getCameraZoom()
-        )
+        this._scaledCanvasLineWidth(baseWidth, ctx.canvas)
       )
     }
     paintLeader()
@@ -1275,6 +1368,20 @@ export class AcExMarkupController {
     // Push before building visuals so the initial redraw can resolve the record.
     this._committed.push({ record, parts })
     this._buildVisuals(record, parts)
+    acExSeedOverlaySizesFromWcs(
+      this._view.getCameraZoom(),
+      p => this._wcsToScreenPoint(p),
+      {
+        textHeightWcs: record.style.textHeightWcs,
+        strokeWidthWcs: record.style.strokeWidthWcs,
+        fontSizePx: record.style.fontSize ?? ACEX_MARKUP_FONT_SIZE,
+        strokeScreenPx: acExMarkupCanvasLineWidth(
+          record.style.lineWeight ?? ACEX_MARKUP_LINE_WEIGHT
+        ),
+        elements: parts.dom,
+        canvases: parts.canvases
+      }
+    )
     this._positionDomOverlays()
     this.syncLayoutVisibility()
     this._notifyRecordsChanged()
@@ -1301,7 +1408,8 @@ export class AcExMarkupController {
         ctx,
         live.geometry,
         live.style.color || ACEX_MARKUP_COLOR,
-        acExMarkupCanvasLineWidth(live.style.lineWeight)
+        acExMarkupCanvasLineWidth(live.style.lineWeight),
+        live.style.strokeWidthWcs
       )
     }
     this._redrawListeners.push(redraw)
@@ -1766,12 +1874,13 @@ export class AcExMarkupController {
     ctx: CanvasRenderingContext2D,
     g: AcExMarkupGeometry,
     color: string,
-    lineWidth: number
+    lineWidth: number,
+    strokeWidthWcs?: number
   ): void {
-    const strokeWidth = acExScaledCanvasLineWidth(
+    const strokeWidth = this._scaledCanvasLineWidth(
       lineWidth,
       ctx.canvas,
-      this._view.getCameraZoom()
+      strokeWidthWcs
     )
     const worldToScreen = (p: AcExMarkupPoint2d) => this._worldToOverlay(p)
     const screenToWorld = (s: { x: number; y: number }) =>
@@ -2199,7 +2308,7 @@ export class AcExMarkupController {
         p => this._worldToOverlay(p),
         s => this._overlayToWorld(s),
         color,
-        acExScaledCanvasLineWidth(lineWidth, ctx.canvas, this._view.getCameraZoom())
+        this._scaledCanvasLineWidth(lineWidth, ctx.canvas)
       )
     } else if (this._mode === 'circle') {
       const radius = a.distanceTo(b)
@@ -2218,7 +2327,7 @@ export class AcExMarkupController {
         anchor,
         color,
         true,
-        acExScaledCanvasLineWidth(lineWidth, ctx.canvas, this._view.getCameraZoom())
+        this._scaledCanvasLineWidth(lineWidth, ctx.canvas)
       )
     }
   }
@@ -2252,7 +2361,7 @@ export class AcExMarkupController {
           p => this._worldToOverlay(p),
           s => this._overlayToWorld(s),
           color,
-          acExScaledCanvasLineWidth(lineWidth, ctx.canvas, this._view.getCameraZoom())
+          this._scaledCanvasLineWidth(lineWidth, ctx.canvas)
         )
       } else {
         this._strokeGeometry(
@@ -2275,7 +2384,7 @@ export class AcExMarkupController {
       anchor,
       color,
       false,
-      acExScaledCanvasLineWidth(lineWidth, ctx.canvas, this._view.getCameraZoom())
+      this._scaledCanvasLineWidth(lineWidth, ctx.canvas)
     )
   }
 
