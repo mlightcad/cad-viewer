@@ -948,6 +948,7 @@ export class AcTrView2d extends AcEdBaseView {
     if (!this._readingModeEnabled) {
       return
     }
+    this._readingModeSavedBackground = this.backgroundColor
     this.backgroundColor = ACAP_READING_MODE_BACKGROUND
     this.setCompareDisplay({
       enabled: true,
