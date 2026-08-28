@@ -193,6 +193,7 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
           recordId: this.record.id,
           centerEl: centerDot,
           attached,
+          useOsnap: true,
           onLiveOffset: (dx, dy) => {
             liveOffset = { dx, dy }
             redrawShape()

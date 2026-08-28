@@ -405,4 +405,30 @@ describe('AcTrHtmlTransientManager', () => {
 
     manager.dispose()
   })
+
+  it('disables overlay pointer hits so clicks can pass through to the canvas', () => {
+    const scene = new THREE.Scene()
+    const manager = new AcTrHtmlTransientManager(scene)
+    const child = new AcTrHtmlElement(document.createElement('div'), {
+      id: 'hit-child',
+      worldPosition: { x: 0, y: 0 }
+    })
+    const group = new AcTrHtmlGroup({
+      id: 'hit-group',
+      selectable: true
+    }).add(child)
+    manager.add(group)
+    expect(child.element.style.pointerEvents).toBe('auto')
+
+    manager.setHitTestEnabled(false)
+    expect(child.element.style.pointerEvents).toBe('none')
+
+    child.element.style.pointerEvents = 'auto'
+    manager.syncHitTest()
+    expect(child.element.style.pointerEvents).toBe('none')
+
+    manager.setHitTestEnabled(true)
+    expect(child.element.style.pointerEvents).toBe('auto')
+    manager.dispose()
+  })
 })

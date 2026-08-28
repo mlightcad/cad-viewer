@@ -91,6 +91,11 @@ export class AcTrHtmlTransientManager {
   private readonly selectedGroupIds = new Set<string>()
   /** Active layout BTR id used to filter layout-scoped overlays. */
   private _activeLayoutId?: string
+  /**
+   * When false, overlay HTML children do not receive pointer hits so CAD
+   * command / OSNAP clicks pass through to the canvas.
+   */
+  private _hitTestEnabled = true
   /** World matrix captured when each leaf transient was published. */
   private readonly _baselineMatrices = new Map<string, THREE.Matrix4>()
   /** Scratch matrix used to compose world transforms in {@link applyTransforms}. */
@@ -440,6 +445,36 @@ export class AcTrHtmlTransientManager {
   }
 
   /**
+   * Enable or disable pointer hit-testing on published HTML overlays.
+   *
+   * Disabled while a CAD command is acquiring points so measurement / markup
+   * endpoint DOM cannot swallow OSNAP clicks meant for the canvas.
+   *
+   * @param enabled - `true` to allow overlay grips/badges to receive pointers
+   */
+  setHitTestEnabled(enabled: boolean): void {
+    this._hitTestEnabled = enabled
+    this.syncHitTest()
+  }
+
+  /**
+   * Re-apply {@link setHitTestEnabled} to every published CSS2D child.
+   * Call after grip binding, which may set `pointer-events: auto`.
+   */
+  syncHitTest(): void {
+    const pe = this._hitTestEnabled ? 'auto' : 'none'
+    for (const group of this.groups.values()) {
+      for (const child of group.children) {
+        child.element.style.pointerEvents = pe
+      }
+    }
+    for (const entry of this.entries.values()) {
+      if (this.groupChildIds.has(entry.id)) continue
+      entry.element.style.pointerEvents = pe
+    }
+  }
+
+  /**
    * Select a group by id.
    *
    * @param id - Group id
@@ -548,6 +583,7 @@ export class AcTrHtmlTransientManager {
       this.selectGroup(g.id)
     })
     this.applyItemLayoutVisibility(group)
+    this.syncHitTest()
   }
 
   /**

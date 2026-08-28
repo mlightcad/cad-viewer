@@ -603,6 +603,12 @@ export class AcTrView2d extends AcEdBaseView {
     // This method is called after camera and render are created.
     // Children class can override this method to add its own logic
     this.setCursor(AcEdCorsorType.Crosshair)
+    this.editor.events.commandWillStart.addEventListener(() => {
+      this.htmlTransientManager.setHitTestEnabled(false)
+    })
+    this.editor.events.commandEnded.addEventListener(() => {
+      this.htmlTransientManager.setHitTestEnabled(true)
+    })
   }
 
   /**

@@ -17,6 +17,7 @@ import type { AcTrSpatialSearchOptions } from '../../spatialIndex/AcTrSpatialInd
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
 import { AcEdOsnapResolver } from '../input/AcEdOsnapResolver'
+import { AcEdMarkerManager } from '../input/marker'
 import { AcEdHoverController } from './AcEdHoverController'
 import {
   AcEdSelectionAction,
@@ -246,6 +247,9 @@ export abstract class AcEdBaseView {
 
   /** Resolves object snap points using this view's pick and coordinate APIs. */
   private _osnapResolver: AcEdOsnapResolver
+
+  /** OSNAP markers shown while dragging overlay measurement / markup grips. */
+  private _overlayGripOsnapMarkers: AcEdMarkerManager | null = null
 
   /** The HTML canvas element for rendering */
   protected _canvas: HTMLCanvasElement
@@ -995,6 +999,51 @@ export abstract class AcEdBaseView {
    */
   get osnapResolver() {
     return this._osnapResolver
+  }
+
+  /**
+   * Resolves a world XY cursor through object snap and updates overlay grip
+   * snap markers. Used by HTML overlay endpoint drags (measure / markup).
+   *
+   * @param cursor - Raw world XY under the pointer.
+   * @param lastPoint - Grip origin passed to the osnap resolver as lastPoint.
+   * @returns Snapped world XY, or `cursor` when nothing is in aperture.
+   */
+  resolveOverlayGripPoint(
+    cursor: { x: number; y: number },
+    lastPoint?: { x: number; y: number }
+  ): { x: number; y: number } {
+    const cursorWcs = { x: cursor.x, y: cursor.y, z: 0 }
+    this._overlayGripOsnapMarkers ??= new AcEdMarkerManager(this)
+    this._overlayGripOsnapMarkers.hideMarker()
+    const snapPoint = this._osnapResolver.resolve({
+      cursorWcs,
+      lastPoint: lastPoint
+        ? { x: lastPoint.x, y: lastPoint.y, z: 0 }
+        : cursorWcs
+    })
+    this._overlayGripOsnapMarkers.setHintMarkers(
+      AcEdOsnapResolver.displayCenterMarks(
+        this._osnapResolver.acquiredCenterMarks,
+        snapPoint
+      )
+    )
+    if (snapPoint) {
+      this._overlayGripOsnapMarkers.showMarker(
+        snapPoint,
+        AcEdOsnapResolver.osnapModeToMarkerType(snapPoint.type)
+      )
+      return { x: snapPoint.x, y: snapPoint.y }
+    }
+    return { x: cursor.x, y: cursor.y }
+  }
+
+  /**
+   * Hides overlay grip snap markers and clears acquired centers.
+   */
+  clearOverlayGripOsnap(): void {
+    this._overlayGripOsnapMarkers?.clear()
+    this._osnapResolver.clearAcquiredCenters()
   }
 
   protected onWindowResize() {

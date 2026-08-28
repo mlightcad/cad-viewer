@@ -37,6 +37,49 @@ export function acapPointerEventToOverlayWorld(
 }
 
 /**
+ * View methods used for overlay grip object snap. Duck-typed so jsdom tests
+ * can mock a view without loading `@mlightcad/data-model`.
+ */
+interface AcApOverlayOsnapView {
+  osnapResolver?: {
+    resolve?: (options: {
+      cursorWcs: { x: number; y: number; z: number }
+      lastPoint: { x: number; y: number; z: number }
+    }) => { x: number; y: number } | undefined
+    clearAcquiredCenters?: () => void
+  }
+  resolveOverlayGripPoint?: (
+    cursor: { x: number; y: number },
+    lastPoint?: { x: number; y: number }
+  ) => { x: number; y: number }
+  clearOverlayGripOsnap?: () => void
+}
+
+/**
+ * Convert a pointer event to world XY, applying object snap when the view
+ * supports it (same path as CAD entity grip edit).
+ */
+function acapPointerEventToOverlayWorldMaybeOsnap(
+  view: AcTrView2d,
+  ev: PointerEvent,
+  lastPoint: AcApOverlayPoint2d
+): AcApOverlayPoint2d {
+  const raw = acapPointerEventToOverlayWorld(view, ev)
+  const osnapView = view as AcTrView2d & AcApOverlayOsnapView
+  if (typeof osnapView.resolveOverlayGripPoint === 'function') {
+    return osnapView.resolveOverlayGripPoint(raw, lastPoint)
+  }
+  const resolver = osnapView.osnapResolver
+  if (typeof resolver?.resolve !== 'function') return raw
+  const cursorWcs = { x: raw.x, y: raw.y, z: 0 }
+  const snapPoint = resolver.resolve({
+    cursorWcs,
+    lastPoint: { x: lastPoint.x, y: lastPoint.y, z: 0 }
+  })
+  return snapPoint ? { x: snapPoint.x, y: snapPoint.y } : raw
+}
+
+/**
  * Move a published HTML overlay and refresh its transform baseline.
  *
  * @param view - Active 2D view whose HTML transient manager owns `el`.
@@ -81,6 +124,13 @@ export interface AcApOverlayPointerDragOptions {
   onMove: (world: AcApOverlayPoint2d, ev: PointerEvent) => void
   /** Invoked on pointerup / cancel after a drag occurred. */
   onCommit: () => void
+  /**
+   * When true (default), pointer world points go through object snap so
+   * measurement / markup endpoint edits match create-tool snapping.
+   * Set false for whole-object moves that should follow the cursor
+   * (callout bubble, text/stamp). Shape center grips pass true.
+   */
+  useOsnap?: boolean
 }
 
 /**
@@ -98,11 +148,18 @@ export function acapBindOverlayPointerDrag(
 ): () => void {
   const { view, el, onDragStart, onMove, onCommit } = options
   const idleCursor = options.cursor ?? 'grab'
+  const useOsnap = options.useOsnap !== false
 
   el.style.pointerEvents = 'auto'
   el.style.cursor = idleCursor
   el.style.touchAction = 'none'
   el.style.userSelect = 'none'
+  const htmlManager = (
+    view as {
+      htmlTransientManager?: { syncHitTest?: () => void }
+    }
+  ).htmlTransientManager
+  htmlManager?.syncHitTest?.()
 
   /** Detach function for the active window listeners, if any. */
   let detachActiveDrag: (() => void) | undefined
@@ -123,6 +180,13 @@ export function acapBindOverlayPointerDrag(
     const startX = e.clientX
     const startY = e.clientY
     let dragging = false
+    const lastPoint = acapPointerEventToOverlayWorld(view, e)
+    const osnapView = view as AcTrView2d & AcApOverlayOsnapView
+
+    const resolveWorld = (ev: PointerEvent): AcApOverlayPoint2d => {
+      if (!useOsnap) return acapPointerEventToOverlayWorld(view, ev)
+      return acapPointerEventToOverlayWorldMaybeOsnap(view, ev, lastPoint)
+    }
 
     const detach = () => {
       window.removeEventListener(
@@ -156,13 +220,20 @@ export function acapBindOverlayPointerDrag(
         el.style.cursor = 'grabbing'
         onDragStart?.()
       }
-      onMove(acapPointerEventToOverlayWorld(view, ev), ev)
+      onMove(resolveWorld(ev), ev)
       view.isHtmlDirty = true
     }
 
     const onPointerUp = (ev: PointerEvent) => {
       if (ev.pointerId !== pointerId) return
       detach()
+      if (useOsnap && dragging) {
+        if (typeof osnapView.clearOverlayGripOsnap === 'function') {
+          osnapView.clearOverlayGripOsnap()
+        } else {
+          osnapView.osnapResolver?.clearAcquiredCenters?.()
+        }
+      }
       if (!dragging) return
       el.style.cursor = idleCursor
       onCommit()
@@ -290,6 +361,7 @@ export function acapBindOverlayCalloutGrips(
   const unbindBubble = acapBindOverlayPointerDrag({
     view,
     el: bubbleEl.element,
+    useOsnap: false,
     onDragStart: () => {
       dragOrigin = {
         tip: { ...state.tip },
