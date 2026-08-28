@@ -187,7 +187,8 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   XLINE: ['XL'],
   ZOOM: ['Z'],
   UNDO: ['U'],
-  REDO: ['REDO']
+  REDO: ['REDO'],
+  READINGMODE: ['RM']
 }
 
 /**
@@ -1365,6 +1366,42 @@ export class AcApDocManager {
   ): void {
     const target = view ?? (this.curView as AcTrView2d)
     target.setCompareDisplay(options)
+  }
+
+  /**
+   * Whether transient reading mode is active on a view (default: current view).
+   *
+   * @param view - Target canvas; defaults to {@link curView}.
+   */
+  isReadingModeEnabled(view?: AcTrView2d): boolean {
+    const target = view ?? (this.curView as AcTrView2d)
+    return target.readingModeEnabled
+  }
+
+  /**
+   * Enables or disables transient reading mode on a view (default: current view).
+   *
+   * Reading mode forces black linework on a white canvas without modifying the
+   * drawing database. It shares the compare-display colour path, so it is
+   * mutually exclusive with active compare display on that view.
+   *
+   * @param enabled - When true, enables reading mode; when false, restores the
+   *   previous canvas background and entity colours.
+   * @param view - Target canvas; defaults to {@link curView}.
+   */
+  setReadingMode(enabled: boolean, view?: AcTrView2d): void {
+    const target = view ?? (this.curView as AcTrView2d)
+    target.setReadingMode(enabled)
+  }
+
+  /**
+   * Toggles transient reading mode on a view (default: current view).
+   *
+   * @param view - Target canvas; defaults to {@link curView}.
+   */
+  toggleReadingMode(view?: AcTrView2d): void {
+    const target = view ?? (this.curView as AcTrView2d)
+    target.toggleReadingMode()
   }
 
   /**
