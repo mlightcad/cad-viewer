@@ -32,7 +32,7 @@ export class AcTrHtmlBadge extends AcTrHtmlElement {
         options.fontSize,
         options.transform
       ),
-      options
+      { ...options, scaleWithView: options.scaleWithView ?? true }
     )
   }
 

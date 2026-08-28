@@ -2,6 +2,44 @@
  * Shared canvas helpers for markup / measure overlay drawing.
  */
 
+import type { AcEdBaseView } from '../../editor'
+import type { AcTrView2d } from '../../view'
+
+/** Dataset key storing orthographic zoom when an overlay canvas was first drawn. */
+export const ACAP_OVERLAY_BASE_ZOOM = 'overlayBaseZoom'
+
+/** Returns the active orthographic camera zoom, or `null` when unavailable. */
+export function acapGetCameraZoom(view: AcEdBaseView): number | null {
+  const zoom = (view as AcTrView2d).internalCamera?.zoom
+  return typeof zoom === 'number' && zoom > 0 ? zoom : null
+}
+
+/**
+ * Scale factor for one overlay canvas relative to the zoom at first paint.
+ */
+export function acapOverlayViewScale(
+  anchor: HTMLElement,
+  view: AcEdBaseView
+): number {
+  const zoom = acapGetCameraZoom(view)
+  if (zoom == null) return 1
+  let base = Number(anchor.dataset[ACAP_OVERLAY_BASE_ZOOM])
+  if (!Number.isFinite(base) || base === 0) {
+    base = zoom
+    anchor.dataset[ACAP_OVERLAY_BASE_ZOOM] = String(zoom)
+  }
+  return zoom / base
+}
+
+/** Maps a base CSS stroke width to the current view-synced width. */
+export function acapScaledOverlayLineWidth(
+  baseLineWidth: number,
+  anchor: HTMLElement,
+  view: AcEdBaseView
+): number {
+  return baseLineWidth * acapOverlayViewScale(anchor, view)
+}
+
 /**
  * Fit a canvas to its container and return a 2D context cleared for this frame.
  *
@@ -88,10 +126,12 @@ export function acapDrawOverlayLeader(
   anchor: { x: number; y: number },
   color: string,
   withArrow = true,
-  lineWidth = 2
+  lineWidth = 2,
+  view: AcEdBaseView
 ): void {
+  const strokeWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
   ctx.strokeStyle = color
-  ctx.lineWidth = lineWidth
+  ctx.lineWidth = strokeWidth
   ctx.beginPath()
   ctx.moveTo(tip.x, tip.y)
   ctx.lineTo(anchor.x, anchor.y)
@@ -115,8 +155,10 @@ export function acapDrawOverlayHighlight(
   a: { x: number; y: number },
   b: { x: number; y: number },
   color: string,
-  lineWidth = 1.5
+  lineWidth = 1.5,
+  view: AcEdBaseView
 ): void {
+  const strokeWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
   const x = Math.min(a.x, b.x)
   const y = Math.min(a.y, b.y)
   const w = Math.abs(a.x - b.x)
@@ -126,6 +168,6 @@ export function acapDrawOverlayHighlight(
   ctx.fillRect(x, y, w, h)
   ctx.globalAlpha = 1
   ctx.strokeStyle = color
-  ctx.lineWidth = lineWidth
+  ctx.lineWidth = strokeWidth
   ctx.strokeRect(x, y, w, h)
 }

@@ -134,7 +134,8 @@ export function publishAttachedCallout(
         record.style.lineWeight != null && record.style.lineWeight > 0
           ? record.style.lineWeight
           : MARKUP_LINE_WEIGHT
-      )
+      ),
+      view2d
     )
   }
   redraw()

@@ -13,7 +13,8 @@ import {
   acapDrawOverlayArrowHead,
   acapFitOverlayCanvas,
   type AcApOverlayWorldDrawResult,
-  acapPlaceOverlayHtml
+  acapPlaceOverlayHtml,
+  acapScaledOverlayLineWidth
 } from '../../overlay'
 import { runMarkupEdit } from '../AcApMarkupHistory'
 import { republishMarkup } from '../AcApMarkupRepublish'
@@ -147,7 +148,11 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
       const a = view.worldToScreen(live.start)
       const b = view.worldToScreen(live.end)
       ctx.strokeStyle = this.record.style.color
-      ctx.lineWidth = canvasLineWidth
+      ctx.lineWidth = acapScaledOverlayLineWidth(
+        canvasLineWidth,
+        overlay.canvas,
+        view
+      )
       ctx.beginPath()
       ctx.moveTo(a.x, a.y)
       ctx.lineTo(b.x, b.y)

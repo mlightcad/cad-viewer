@@ -668,6 +668,7 @@ async function startViewer(): Promise<void> {
         wcsToScreen,
         render,
         getSnapCacheKey: () => snapCacheKey,
+        getCameraZoom: () => camera.zoom,
         resolvePoint: resolveMeasurePoint,
         findCircleOrArcNear: (x, y) => {
           if (!layout.isModelSpace && modelOsnapIndex) {
@@ -739,6 +740,7 @@ async function startViewer(): Promise<void> {
         wcsToScreen,
         render,
         getSnapCacheKey: () => snapCacheKey,
+        getCameraZoom: () => camera.zoom,
         resolvePoint: resolveMeasurePoint,
         zoomToExtents
       }

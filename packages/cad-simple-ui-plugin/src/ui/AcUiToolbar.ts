@@ -301,6 +301,34 @@ export class AcUiToolbar {
     this.renderButtons()
   }
 
+  /** Updates button labels and tooltips after locale change. */
+  refreshLocale() {
+    this.syncOverflowButtonLabels()
+    this.syncCollapseToggleButton()
+    for (const { item, element, isSeparator } of this.renderedEntries) {
+      if (isSeparator) continue
+      const button = element as HTMLButtonElement
+      const effective = acuiResolveParentToolbarDisplay(
+        item,
+        this.selectedChildByParent.get(item.id)
+      )
+      const label = effective.label
+        ? this.options.i18n.t(effective.label)
+        : effective.id
+      button.title = label
+      button.setAttribute('aria-label', label)
+      const labelEl = button.querySelector('.ml-ex-ui-toolbar-btn-label')
+      if (labelEl) {
+        labelEl.textContent = label
+      } else if (effective.label && !this.options.showLabels) {
+        const text = button.querySelector('span')
+        if (text) text.textContent = label
+      }
+    }
+    this.openSubToolbar?.refreshLocale()
+    this.openNestedSubToolbar?.refreshLocale()
+  }
+
   /**
    * Moves the toolbar to another host edge and updates orientation classes.
    *
@@ -1125,7 +1153,9 @@ export class AcUiToolbar {
             this.openParentId = undefined
             this.stickyParentId = undefined
           }
-        }
+        },
+        shouldKeepOpenForTarget: target =>
+          this.openNestedSubToolbar?.containsTarget(target) ?? false
       })
       this.openSubToolbar = strip
       return
@@ -1316,6 +1346,13 @@ export class AcUiToolbar {
       effective.action()
     } else if (effective.command) {
       this.options.onCommand(effective.command)
+    }
+
+    const isLocalePick =
+      !acuiIsToolbarSeparatorItem(child) &&
+      effective.id.startsWith('locale-')
+    if (isLocalePick) {
+      this.refreshLocale()
     }
 
     if (child.toggle && sticky && this.openSubToolbar) {

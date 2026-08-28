@@ -13,6 +13,11 @@ import * as THREE from 'three'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
+  acExPositionWcsOverlay,
+  acExResetOverlayViewScale,
+  acExScaledCanvasLineWidth
+} from './AcExHtmlOverlayDom'
+import {
   acExComputeLeaderTipOnShape,
   acExDrawMarkupArrowHead,
   acExDrawMarkupLeader,
@@ -101,6 +106,8 @@ export interface AcExMarkupViewApi {
   wcsToScreen: (wcs: THREE.Vector2) => { x: number; y: number }
   render: () => void
   getSnapCacheKey: () => number
+  /** Current orthographic camera zoom (used to scale DOM overlays). */
+  getCameraZoom: () => number
   resolvePoint: (clientX: number, clientY: number) => AcExResolvedPoint
   /** Frames the camera on world XY extents (review-panel zoom-to). */
   zoomToExtents: (extents: AcExExtents) => void
@@ -979,13 +986,18 @@ export class AcExMarkupController {
       if (!ctx) return
       const tipS = this._worldToOverlay(tip)
       const anchorS = this._worldToOverlay(anchor)
+      const baseWidth = acExMarkupCanvasLineWidth(this._drawLineWeight)
       acExDrawMarkupLeader(
         ctx,
         tipS,
         anchorS,
         this._drawColor,
         true,
-        acExMarkupCanvasLineWidth(this._drawLineWeight)
+        acExScaledCanvasLineWidth(
+          baseWidth,
+          ctx.canvas,
+          this._view.getCameraZoom()
+        )
       )
     }
     paintLeader()
@@ -1227,8 +1239,7 @@ export class AcExMarkupController {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return
     const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     const screen = this._view.wcsToScreen(new THREE.Vector2(x, y))
-    el.style.left = `${screen.x - rootRect.left}px`
-    el.style.top = `${screen.y - rootRect.top}px`
+    acExPositionWcsOverlay(el, screen, rootRect, this._view.getCameraZoom())
   }
 
   private _commitGeometry(
@@ -1429,6 +1440,7 @@ export class AcExMarkupController {
   private _placeDomAt(el: HTMLElement, wcs: AcExMarkupPoint2d): void {
     el.dataset.wcsX = String(wcs.x)
     el.dataset.wcsY = String(wcs.y)
+    acExResetOverlayViewScale(el)
     this._positionTempDom(el)
   }
 
@@ -1756,6 +1768,11 @@ export class AcExMarkupController {
     color: string,
     lineWidth: number
   ): void {
+    const strokeWidth = acExScaledCanvasLineWidth(
+      lineWidth,
+      ctx.canvas,
+      this._view.getCameraZoom()
+    )
     const worldToScreen = (p: AcExMarkupPoint2d) => this._worldToOverlay(p)
     const screenToWorld = (s: { x: number; y: number }) =>
       this._overlayToWorld(s)
@@ -1766,7 +1783,7 @@ export class AcExMarkupController {
         const a = worldToScreen(g.start)
         const b = worldToScreen(g.end)
         ctx.strokeStyle = color
-        ctx.lineWidth = lineWidth
+        ctx.lineWidth = strokeWidth
         ctx.beginPath()
         ctx.moveTo(a.x, a.y)
         ctx.lineTo(b.x, b.y)
@@ -1780,14 +1797,14 @@ export class AcExMarkupController {
         const a = worldToScreen(g.corner1)
         const b = worldToScreen(g.corner2)
         ctx.strokeStyle = color
-        ctx.lineWidth = lineWidth
+        ctx.lineWidth = strokeWidth
         ctx.strokeRect(
           Math.min(a.x, b.x),
           Math.min(a.y, b.y),
           Math.abs(b.x - a.x),
           Math.abs(b.y - a.y)
         )
-        this._strokeAttachedCallout(ctx, g.callout, color, lineWidth)
+        this._strokeAttachedCallout(ctx, g.callout, color, strokeWidth)
         break
       }
       case 'highlight': {
@@ -1802,7 +1819,7 @@ export class AcExMarkupController {
         ctx.fillRect(x, y, w, h)
         ctx.globalAlpha = 1
         ctx.strokeStyle = color
-        ctx.lineWidth = lineWidth
+        ctx.lineWidth = strokeWidth
         ctx.strokeRect(x, y, w, h)
         break
       }
@@ -1814,11 +1831,11 @@ export class AcExMarkupController {
         })
         const r = Math.hypot(rim.x - c.x, rim.y - c.y)
         ctx.strokeStyle = color
-        ctx.lineWidth = lineWidth
+        ctx.lineWidth = strokeWidth
         ctx.beginPath()
         ctx.arc(c.x, c.y, r, 0, Math.PI * 2)
         ctx.stroke()
-        this._strokeAttachedCallout(ctx, g.callout, color, lineWidth)
+        this._strokeAttachedCallout(ctx, g.callout, color, strokeWidth)
         break
       }
       case 'cloud': {
@@ -1829,15 +1846,15 @@ export class AcExMarkupController {
           worldToScreen,
           screenToWorld,
           color,
-          lineWidth
+          strokeWidth
         )
-        this._strokeAttachedCallout(ctx, g.callout, color, lineWidth)
+        this._strokeAttachedCallout(ctx, g.callout, color, strokeWidth)
         break
       }
       case 'callout': {
         const tip = worldToScreen(g.tip)
         const anchor = worldToScreen(g.anchor)
-        acExDrawMarkupLeader(ctx, tip, anchor, color, true, lineWidth)
+        acExDrawMarkupLeader(ctx, tip, anchor, color, true, strokeWidth)
         break
       }
       default:
@@ -2045,14 +2062,14 @@ export class AcExMarkupController {
 
   private _positionDomOverlays(): void {
     const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    const zoom = this._view.getCameraZoom()
     for (const item of this._committed) {
       for (const el of item.parts.dom) {
         const x = Number(el.dataset.wcsX)
         const y = Number(el.dataset.wcsY)
         if (!Number.isFinite(x) || !Number.isFinite(y)) continue
         const screen = this._view.wcsToScreen(new THREE.Vector2(x, y))
-        el.style.left = `${screen.x - rootRect.left}px`
-        el.style.top = `${screen.y - rootRect.top}px`
+        acExPositionWcsOverlay(el, screen, rootRect, zoom)
       }
     }
     const placing = this._placingShapeCallout
@@ -2182,7 +2199,7 @@ export class AcExMarkupController {
         p => this._worldToOverlay(p),
         s => this._overlayToWorld(s),
         color,
-        lineWidth
+        acExScaledCanvasLineWidth(lineWidth, ctx.canvas, this._view.getCameraZoom())
       )
     } else if (this._mode === 'circle') {
       const radius = a.distanceTo(b)
@@ -2195,7 +2212,14 @@ export class AcExMarkupController {
     } else if (this._mode === 'callout') {
       const tip = this._worldToOverlay(point2(a))
       const anchor = this._worldToOverlay(point2(b))
-      acExDrawMarkupLeader(ctx, tip, anchor, color, true, lineWidth)
+      acExDrawMarkupLeader(
+        ctx,
+        tip,
+        anchor,
+        color,
+        true,
+        acExScaledCanvasLineWidth(lineWidth, ctx.canvas, this._view.getCameraZoom())
+      )
     }
   }
 
@@ -2228,7 +2252,7 @@ export class AcExMarkupController {
           p => this._worldToOverlay(p),
           s => this._overlayToWorld(s),
           color,
-          lineWidth
+          acExScaledCanvasLineWidth(lineWidth, ctx.canvas, this._view.getCameraZoom())
         )
       } else {
         this._strokeGeometry(
@@ -2245,7 +2269,14 @@ export class AcExMarkupController {
     }
     const tip = this._worldToOverlay(placing.tip)
     const anchor = this._worldToOverlay(placing.anchor)
-    acExDrawMarkupLeader(ctx, tip, anchor, color, false, lineWidth)
+    acExDrawMarkupLeader(
+      ctx,
+      tip,
+      anchor,
+      color,
+      false,
+      acExScaledCanvasLineWidth(lineWidth, ctx.canvas, this._view.getCameraZoom())
+    )
   }
 
   private _clearPreview(): void {

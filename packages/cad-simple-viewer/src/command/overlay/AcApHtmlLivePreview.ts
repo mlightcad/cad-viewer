@@ -14,7 +14,8 @@ import type { AcTrView2d } from '../../view'
 import {
   acapDrawOverlayArrowHead,
   acapDrawOverlayHighlight,
-  acapFitOverlayCanvas
+  acapFitOverlayCanvas,
+  acapScaledOverlayLineWidth
 } from './AcApOverlayDrawUtil'
 
 /** World-space 2D point for live preview strokes. */
@@ -131,7 +132,7 @@ export function acapStrokeLiveSegment(
   const sa = view.worldToScreen(a)
   const sb = view.worldToScreen(b)
   ctx.strokeStyle = css
-  ctx.lineWidth = lineWidth
+  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
   if (options?.dashed) ctx.setLineDash([8, 5])
   ctx.beginPath()
   ctx.moveTo(sa.x, sa.y)
@@ -165,7 +166,7 @@ export function acapStrokeLivePolyline(
   const css = typeof color === 'string' ? color : acapCssColor(color)
   const screen = points.map(p => view.worldToScreen(p))
   ctx.strokeStyle = css
-  ctx.lineWidth = lineWidth
+  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
   if (options?.dashed) ctx.setLineDash([8, 5])
   ctx.beginPath()
   ctx.moveTo(screen[0].x, screen[0].y)
@@ -201,7 +202,7 @@ export function acapStrokeLiveCircle(
   const rim = view.worldToScreen({ x: center.x + radius, y: center.y })
   const screenR = Math.hypot(rim.x - sc.x, rim.y - sc.y)
   ctx.strokeStyle = css
-  ctx.lineWidth = lineWidth
+  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
   ctx.beginPath()
   ctx.arc(sc.x, sc.y, screenR, 0, Math.PI * 2)
   ctx.stroke()
@@ -230,7 +231,8 @@ export function acapFillLiveHighlight(
     view.worldToScreen(corner1),
     view.worldToScreen(corner2),
     color,
-    lineWidth
+    lineWidth,
+    view
   )
 }
 

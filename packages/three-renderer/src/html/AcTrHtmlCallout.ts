@@ -26,7 +26,7 @@ export class AcTrHtmlCallout extends AcTrHtmlElement {
         options.text ?? '',
         options.fontSize
       ),
-      options
+      { ...options, scaleWithView: options.scaleWithView ?? true }
     )
   }
 

@@ -16,7 +16,10 @@ export interface AcTrHtmlDotOptions extends AcTrHtmlElementOptions {
  */
 export class AcTrHtmlDot extends AcTrHtmlElement {
   constructor(options: AcTrHtmlDotOptions) {
-    super(AcTrHtmlDot.createElement(options.color), options)
+    super(AcTrHtmlDot.createElement(options.color), {
+      ...options,
+      scaleWithView: options.scaleWithView ?? true
+    })
   }
 
   /** Update the marker fill color. */

@@ -141,7 +141,8 @@ export class AcApMarkupCalloutEntity extends AcApMarkupEntity {
         view.worldToScreen(live.anchor),
         this.record.style.color,
         true,
-        canvasLineWidth
+        canvasLineWidth,
+        view
       )
     }
     redraw()
