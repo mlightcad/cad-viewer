@@ -46,4 +46,37 @@ describe('acuiResolveDockMountTarget', () => {
     mockCurView.container = canvas
     expect(acuiResolveDockMountTarget(host)).toBe(host)
   })
+
+  it('skips dock-main when it has become the canvas parent', () => {
+    const canvasParent = { classList: { contains: () => false } } as unknown as HTMLElement
+    const dockMain = {
+      classList: { contains: (name: string) => name === 'ml-ex-ui-dock-main' },
+      parentElement: canvasParent
+    } as unknown as HTMLElement
+    const host = {
+      contains: (node: unknown) => node === dockMain || node === canvasParent
+    } as unknown as HTMLElement
+
+    mockCurView.container = { parentElement: dockMain }
+    expect(acuiResolveDockMountTarget(host)).toBe(canvasParent)
+  })
+
+  it('skips toolbar-main when it has become the canvas parent', () => {
+    const canvasParent = {
+      classList: { contains: () => false }
+    } as unknown as HTMLElement
+    const toolbarMain = {
+      classList: {
+        contains: (name: string) => name === 'ml-ex-ui-toolbar-main'
+      },
+      parentElement: canvasParent
+    } as unknown as HTMLElement
+    const host = {
+      contains: (node: unknown) =>
+        node === toolbarMain || node === canvasParent
+    } as unknown as HTMLElement
+
+    mockCurView.container = { parentElement: toolbarMain }
+    expect(acuiResolveDockMountTarget(host)).toBe(canvasParent)
+  })
 })

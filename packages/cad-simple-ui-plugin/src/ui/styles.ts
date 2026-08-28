@@ -36,6 +36,45 @@ export function acuiEnsureUiStyles() {
       position: relative;
     }
 
+    .ml-ex-ui-toolbar.is-in-parent {
+      position: relative;
+      inset: auto;
+      z-index: 30;
+      flex: 0 0 auto;
+    }
+
+    .ml-ex-ui-toolbar.is-in-parent.is-stretch {
+      align-self: stretch;
+    }
+
+    .ml-ex-ui-toolbar.is-in-parent:not(.is-stretch) {
+      align-self: center;
+    }
+
+    .ml-ex-ui-toolbar-in-parent {
+      display: flex;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .ml-ex-ui-toolbar-in-parent-top,
+    .ml-ex-ui-toolbar-in-parent-bottom {
+      flex-direction: column;
+    }
+
+    .ml-ex-ui-toolbar-in-parent-left,
+    .ml-ex-ui-toolbar-in-parent-right {
+      flex-direction: row;
+    }
+
+    .ml-ex-ui-toolbar-main {
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
     .ml-ex-ui-toolbar.is-horizontal {
       flex-direction: row;
       align-items: center;

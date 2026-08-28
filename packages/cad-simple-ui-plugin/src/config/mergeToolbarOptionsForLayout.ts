@@ -56,7 +56,8 @@ export function acuiBuiltinToolbarOptionsForLayout(
  */
 const PHONE_INHERITED_TOP_LEVEL_KEYS: (keyof AcUiToolbarOptions)[] = [
   'mountTarget',
-  'enabled'
+  'enabled',
+  'inCanvasParent'
 ]
 
 /**

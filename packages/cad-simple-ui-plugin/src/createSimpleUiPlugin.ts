@@ -130,6 +130,10 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private toolbarEdgeOffset = 8
   /** Cross-axis inset of the viewer toolbar from host edges in px. */
   private toolbarSideOffset = 0
+  /**
+   * When true, the toolbar is a flex sibling of the canvas in the canvas parent.
+   */
+  private toolbarInCanvasParent = false
   /** Whether the main toolbar shows labels below icons. */
   private toolbarShowLabels = false
   /** Whether the toolbar container border is shown. */
@@ -174,6 +178,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.dockPanel?.ensureMounted()
     this.ensureViewerToolbar()
     this.tryUpgradeToolbarMountTarget()
+    this.toolbar?.syncInParentLayout()
   }
 
   /**
@@ -573,6 +578,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
         overflow: this.toolbarOverflow,
         showBorder: this.toolbarShowBorder,
         showSeparators: this.toolbarShowSeparators,
+        inCanvasParent: this.toolbarInCanvasParent,
         subToolbar: this.toolbarSubToolbar,
         onCollapse: () => {
           this.dockPanel?.close()
@@ -593,9 +599,15 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     }
   }
 
-  /** Resolves the canvas element that receives the floating toolbar. */
+  /** Resolves the canvas element that receives the viewer toolbar. */
   private getToolbarMountEl(): HTMLElement | undefined {
     if (!this.hostEl) return undefined
+    if (this.toolbarInCanvasParent) {
+      return acuiResolveDockMountTarget(
+        this.hostEl,
+        this.toolbarMountTargetOption
+      )
+    }
     return acuiResolveToolbarMountTarget(
       this.hostEl,
       this.toolbarMountTargetOption
@@ -611,8 +623,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       return
     }
 
-    const preferred = acuiResolveToolbarMountTarget(this.hostEl)
-    if (preferred === this.toolbarMountEl) {
+    const preferred = this.getToolbarMountEl()
+    if (!preferred || preferred === this.toolbarMountEl) {
       return
     }
 
@@ -628,6 +640,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     this.toolbar.reparentTo(preferred)
     this.toolbarMountEl = preferred
+    this.toolbar.syncInParentLayout()
   }
 
   /**
@@ -670,6 +683,10 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.toolbarSize = toolbarOpts.size ?? 'auto'
     this.toolbarOverflow = toolbarOpts.overflow ?? 'menu'
     this.toolbarSubToolbar = toolbarOpts.subToolbar
+    const nextInCanvasParent = toolbarOpts.inCanvasParent === true
+    const inCanvasParentChanged =
+      nextInCanvasParent !== this.toolbarInCanvasParent
+    this.toolbarInCanvasParent = nextInCanvasParent
     this.rebuildToolbarItems(kind, toolbarOpts)
     this.syncLayerToolbarItem()
     this.syncReviewToolbarItem()
@@ -678,6 +695,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       return
     }
 
+    // Unwrap/wrap before remounting so overlay resolution never sees a
+    // transient `toolbar-main` as `canvas.parentElement`.
     this.toolbar.applyViewOptions({
       placement: this.toolbarPlacement,
       edgeOffset: this.toolbarEdgeOffset,
@@ -690,8 +709,19 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       showBorder: this.toolbarShowBorder,
       showSeparators: this.toolbarShowSeparators,
       subToolbar: this.toolbarSubToolbar,
+      inCanvasParent: this.toolbarInCanvasParent,
       items: this.baseToolbarItems
     })
+
+    if (inCanvasParentChanged || !this.toolbar.isRootConnected()) {
+      const preferred = this.getToolbarMountEl()
+      if (preferred) {
+        this.toolbar.reparentTo(preferred)
+        this.toolbarMountEl = preferred
+      }
+    }
+
+    this.toolbar.syncInParentLayout()
   }
 
   /** Context passed when resolving default toolbar presets. */
@@ -902,6 +932,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     this.tryUpgradeDockMountTarget()
     this.dockPanel.ensureMounted()
+    this.toolbar?.syncInParentLayout()
   }
 
   /** Ensures the dock panel exists, is mounted on the current target, and has tabs when applicable. */
@@ -937,6 +968,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       defaultHeight: this.dockPanelDefaults.defaultHeight,
       defaultWidth: this.dockPanelDefaults.defaultWidth
     })
+    this.syncToolbarMountAfterDockChange()
   }
 
   /** Resolves the dock mount element (lazy; canvas parent may appear after load). */
@@ -970,6 +1002,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     this.dockPanel.reparentTo(preferred)
     this.refreshLayerDockController()
+    this.syncToolbarMountAfterDockChange()
   }
 
   /** Rebinds the layer dock controller after the dock panel moves. */
@@ -1080,6 +1113,22 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     this.dockPanel.destroy()
     this.dockPanel = undefined
+    this.syncToolbarMountAfterDockChange()
+  }
+
+  /**
+   * Re-resolves the toolbar mount after dock wrap/unwrap, which can detach a
+   * stale `dock-main` host or change `canvas.parentElement`.
+   */
+  private syncToolbarMountAfterDockChange() {
+    if (!this.toolbar || !this.hostEl) return
+    const preferred = this.getToolbarMountEl()
+    if (!preferred) return
+    if (preferred !== this.toolbarMountEl || !this.toolbar.isRootConnected()) {
+      this.toolbar.reparentTo(preferred)
+      this.toolbarMountEl = preferred
+    }
+    this.toolbar.syncInParentLayout()
   }
 
   /** Updates toolbar placement. */
