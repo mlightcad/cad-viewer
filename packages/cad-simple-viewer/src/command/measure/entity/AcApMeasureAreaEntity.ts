@@ -8,9 +8,17 @@ import {
 import {
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
-  formatMeasurementLength} from '../../../util'
+  formatMeasurementLength
+} from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
+  acapBindOverlayPointerDrag,
+  acapPlaceOverlayHtml
+} from '../../overlay'
+import { runMeasurementEdit } from '../AcApMeasurementHistory'
+import { republishMeasurement } from '../AcApMeasurementRepublish'
+import {
+  getMeasurementSnapshot,
   getMeasurementStyle,
   MEASUREMENT_LAYER
 } from '../AcApMeasurementStore'
@@ -25,13 +33,16 @@ import {
   type AcApMeasureEntityOptions,
   type AcApMeasureWorldDrawResult
 } from './AcApMeasureEntity'
+import { selectMeasurementGroup } from './AcApMeasureEntityGrips'
+
+type Point2 = { x: number; y: number }
 
 /**
  * Area measurement overlay entity.
  *
  * Renders a filled canvas polygon, HTML dots at each vertex, and an area
- * badge at the vertex centroid. Requires at least three points for a full
- * draw; fewer points yield an empty group with empty extras.
+ * badge at the vertex centroid. Vertex grips update the measured value live
+ * and republish on commit.
  */
 export class AcApMeasureAreaEntity extends AcApMeasureEntity {
   /** Polygon vertices in world coordinates (closed implicitly when drawn). */
@@ -128,10 +139,10 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
         extras: {}
       }
     }
+    const live: Point2[] = this.points.map(p => ({ x: p.x, y: p.y }))
+    let area = measureShoelaceArea(live)
     const color = this.style.color
-    const area = measureShoelaceArea(this.points)
     const layoutId = this.resolveLayoutId(view)
-    const mid = measureCentroid(this.points)
 
     const persistOverlay = new AcTrHtmlCanvasOverlay({
       id: `area-canvas-${this.entityId}`,
@@ -143,11 +154,11 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
       id: `${this.entityId}-badge`,
       color,
       text: `${formatMeasurementLength(db, area)}²`,
-      worldPosition: mid,
+      worldPosition: measureCentroid(live),
       layer: MEASUREMENT_LAYER,
       fontSize: this.style.fontSize
     })
-    const dots = this.points.map(
+    const dots = live.map(
       (p, i) =>
         new AcTrHtmlDot({
           id: `${this.entityId}-dot${i}`,
@@ -165,7 +176,7 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
       drawMeasureAreaOnCanvas(
         persistOverlay.canvas,
         view,
-        this.points,
+        live,
         paintStyle.color,
         acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
       )
@@ -178,11 +189,90 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
       .add(badge, ...dots)
       .addCanvas(persistOverlay)
 
+    const cleanups: Array<() => void> = [
+      () => view.events.viewChanged.removeEventListener(redrawPersist)
+    ]
+    const pendingGrips: Array<() => void> = []
+    let dragStart = live.map(p => ({ ...p }))
+
+    const refreshLive = () => {
+      area = measureShoelaceArea(live)
+      badge.setText(`${formatMeasurementLength(db, area)}²`)
+      acapPlaceOverlayHtml(view, badge, measureCentroid(live))
+      paintArea(getMeasurementStyle(this.entityId) ?? this.style)
+      view.isHtmlDirty = true
+    }
+
+    const beginEndpointDrag = () => {
+      selectMeasurementGroup(view, this.entityId)
+      dragStart = live.map(p => ({ ...p }))
+    }
+
+    const commitEndpoints = () => {
+      let delta = 0
+      for (let i = 0; i < live.length; i++) {
+        delta += Math.hypot(
+          live[i].x - dragStart[i].x,
+          live[i].y - dragStart[i].y
+        )
+      }
+      if (delta < 1e-9) {
+        refreshLive()
+        return
+      }
+      const snap = getMeasurementSnapshot(this.entityId)
+      const geometry: AcApMeasurementRecord['geometry'] = {
+        type: 'area',
+        points: live.map(p => ({ x: p.x, y: p.y }))
+      }
+      const record: AcApMeasurementRecord = snap
+        ? { ...snap, geometry }
+        : {
+            id: this.entityId,
+            type: 'area',
+            layoutId,
+            style: this.serializeStyle(view),
+            geometry
+          }
+      runMeasurementEdit(view, 'Move Area', () => {
+        republishMeasurement(view, db, record)
+      })
+    }
+
+    pendingGrips.push(() => {
+      for (let i = 0; i < dots.length; i++) {
+        const index = i
+        const dot = dots[index]
+        cleanups.push(
+          acapBindOverlayPointerDrag({
+            view,
+            el: dot.element,
+            onDragStart: beginEndpointDrag,
+            onMove: point => {
+              live[index] = point
+              acapPlaceOverlayHtml(view, dot, point)
+              refreshLive()
+            },
+            onCommit: commitEndpoints
+          })
+        )
+      }
+    })
+
     return {
       group,
       entityIds: [],
       dispose: () => {
-        view.events.viewChanged.removeEventListener(redrawPersist)
+        for (const fn of cleanups) {
+          try {
+            fn()
+          } catch {
+            // ignore
+          }
+        }
+      },
+      bindGrips: () => {
+        for (const bind of pendingGrips) bind()
       },
       extras: {
         style: this.style,

@@ -11,6 +11,13 @@ import {
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
+  acapBindOverlayPointerDrag,
+  acapPlaceOverlayHtml
+} from '../../overlay'
+import { runMeasurementEdit } from '../AcApMeasurementHistory'
+import { republishMeasurement } from '../AcApMeasurementRepublish'
+import {
+  getMeasurementSnapshot,
   getMeasurementStyle,
   MEASUREMENT_LAYER
 } from '../AcApMeasurementStore'
@@ -21,6 +28,7 @@ import {
   type AcApMeasureEntityOptions,
   type AcApMeasureWorldDrawResult
 } from './AcApMeasureEntity'
+import { selectMeasurementGroup } from './AcApMeasureEntityGrips'
 
 /**
  * Euclidean distance between two points in the XY plane (Z ignored).
@@ -29,7 +37,7 @@ import {
  * @param p2 - Second endpoint
  * @returns Distance `√((Δx)² + (Δy)²)`
  */
-function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {
+function calcDist(p1: { x: number; y: number }, p2: { x: number; y: number }): number {
   const dx = p2.x - p1.x
   const dy = p2.y - p1.y
   return Math.sqrt(dx * dx + dy * dy)
@@ -39,7 +47,8 @@ function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {
  * Distance measurement overlay entity.
  *
  * Renders an HTML canvas segment between two endpoints, HTML dots at each end,
- * and a length badge at the midpoint. No CAD transient entities.
+ * and a length badge at the midpoint. Endpoint grips update the measured value
+ * live and republish on commit.
  */
 export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
   /** First endpoint of the measured segment in world coordinates. */
@@ -137,10 +146,17 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
     view: AcTrView2d,
     db: AcDbDatabase
   ): AcApMeasureWorldDrawResult {
-    const dist = calcDist(this.p1, this.p2)
+    const live = {
+      start: { x: this.p1.x, y: this.p1.y },
+      end: { x: this.p2.x, y: this.p2.y }
+    }
+    let dist = calcDist(live.start, live.end)
     const color = this.style.color
     const layoutId = this.resolveLayoutId(view)
-    const mid = this.primaryPoint()!
+    const midOf = (a: { x: number; y: number }, b: { x: number; y: number }) => ({
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2
+    })
 
     const persistOverlay = new AcTrHtmlCanvasOverlay({
       id: `dist-canvas-${this.entityId}`,
@@ -151,20 +167,20 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
     const dot1 = new AcTrHtmlDot({
       id: `${this.entityId}-dot1`,
       color,
-      worldPosition: this.p1,
+      worldPosition: live.start,
       layer: MEASUREMENT_LAYER
     })
     const dot2 = new AcTrHtmlDot({
       id: `${this.entityId}-dot2`,
       color,
-      worldPosition: this.p2,
+      worldPosition: live.end,
       layer: MEASUREMENT_LAYER
     })
     const badge = new AcTrHtmlBadge({
       id: `${this.entityId}-badge`,
       color,
       text: formatMeasurementLength(db, dist),
-      worldPosition: mid,
+      worldPosition: midOf(live.start, live.end),
       layer: MEASUREMENT_LAYER,
       fontSize: this.style.fontSize
     })
@@ -173,8 +189,8 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
       drawMeasureSegmentOnCanvas(
         persistOverlay.canvas,
         view,
-        this.p1,
-        this.p2,
+        live.start,
+        live.end,
         paintStyle.color,
         acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
       )
@@ -187,11 +203,111 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
       .add(dot1, dot2, badge)
       .addCanvas(persistOverlay)
 
+    const cleanups: Array<() => void> = [
+      () => view.events.viewChanged.removeEventListener(redrawPersist)
+    ]
+    const pendingGrips: Array<() => void> = []
+    let dragStart = {
+      start: { ...live.start },
+      end: { ...live.end }
+    }
+
+    const refreshLive = () => {
+      dist = calcDist(live.start, live.end)
+      badge.setText(formatMeasurementLength(db, dist))
+      acapPlaceOverlayHtml(view, badge, midOf(live.start, live.end))
+      paintSegment(getMeasurementStyle(this.entityId) ?? this.style)
+      view.isHtmlDirty = true
+    }
+
+    const beginEndpointDrag = () => {
+      selectMeasurementGroup(view, this.entityId)
+      dragStart = {
+        start: { ...live.start },
+        end: { ...live.end }
+      }
+    }
+
+    const commitEndpoints = () => {
+      const startDelta = Math.hypot(
+        live.start.x - dragStart.start.x,
+        live.start.y - dragStart.start.y
+      )
+      const endDelta = Math.hypot(
+        live.end.x - dragStart.end.x,
+        live.end.y - dragStart.end.y
+      )
+      if (startDelta < 1e-9 && endDelta < 1e-9) {
+        refreshLive()
+        return
+      }
+      const snap = getMeasurementSnapshot(this.entityId)
+      const record: AcApMeasurementRecord = snap
+        ? {
+            ...snap,
+            geometry: {
+              type: 'distance',
+              start: { ...live.start },
+              end: { ...live.end }
+            }
+          }
+        : {
+            id: this.entityId,
+            type: 'distance',
+            layoutId,
+            style: this.serializeStyle(view),
+            geometry: {
+              type: 'distance',
+              start: { ...live.start },
+              end: { ...live.end }
+            }
+          }
+      runMeasurementEdit(view, 'Move Distance', () => {
+        republishMeasurement(view, db, record)
+      })
+    }
+
+    pendingGrips.push(() => {
+      cleanups.push(
+        acapBindOverlayPointerDrag({
+          view,
+          el: dot1.element,
+          onDragStart: beginEndpointDrag,
+          onMove: point => {
+            live.start = point
+            acapPlaceOverlayHtml(view, dot1, point)
+            refreshLive()
+          },
+          onCommit: commitEndpoints
+        }),
+        acapBindOverlayPointerDrag({
+          view,
+          el: dot2.element,
+          onDragStart: beginEndpointDrag,
+          onMove: point => {
+            live.end = point
+            acapPlaceOverlayHtml(view, dot2, point)
+            refreshLive()
+          },
+          onCommit: commitEndpoints
+        })
+      )
+    })
+
     return {
       group,
       entityIds: [],
       dispose: () => {
-        view.events.viewChanged.removeEventListener(redrawPersist)
+        for (const fn of cleanups) {
+          try {
+            fn()
+          } catch {
+            // ignore
+          }
+        }
+      },
+      bindGrips: () => {
+        for (const bind of pendingGrips) bind()
       },
       extras: {
         style: this.style,

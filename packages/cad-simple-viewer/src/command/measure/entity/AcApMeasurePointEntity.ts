@@ -3,21 +3,32 @@ import { AcTrHtmlBadge, AcTrHtmlDot } from '@mlightcad/three-renderer'
 
 import {
   type AcApMeasurementStyle,
-  formatMeasurementValue} from '../../../util'
+  formatMeasurementValue
+} from '../../../util'
 import type { AcTrView2d } from '../../../view'
-import { MEASUREMENT_LAYER } from '../AcApMeasurementStore'
+import {
+  acapBindOverlayPointerDrag,
+  acapPlaceOverlayHtml
+} from '../../overlay'
+import { runMeasurementEdit } from '../AcApMeasurementHistory'
+import { republishMeasurement } from '../AcApMeasurementRepublish'
+import {
+  getMeasurementSnapshot,
+  MEASUREMENT_LAYER
+} from '../AcApMeasurementStore'
 import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
 import {
   AcApMeasureEntity,
   type AcApMeasureEntityOptions,
   type AcApMeasureWorldDrawResult
 } from './AcApMeasureEntity'
+import { selectMeasurementGroup } from './AcApMeasureEntityGrips'
 
 /**
  * Point / coordinate measurement overlay entity.
  *
  * Renders an HTML dot at the measured location and a badge showing formatted
- * X/Y coordinates. No CAD transient entities are created.
+ * X/Y coordinates. The endpoint grip moves the point and updates the label.
  */
 export class AcApMeasurePointEntity extends AcApMeasureEntity {
   /** Measured point in world coordinates. */
@@ -100,24 +111,25 @@ export class AcApMeasurePointEntity extends AcApMeasureEntity {
     view: AcTrView2d,
     db: AcDbDatabase
   ): AcApMeasureWorldDrawResult {
+    const live = { x: this.point.x, y: this.point.y }
     const layoutId = this.resolveLayoutId(view)
-    const value = {
+    let value = {
       kind: 'coordinate' as const,
-      x: this.point.x,
-      y: this.point.y
+      x: live.x,
+      y: live.y
     }
     const color = this.style.color
     const dot = new AcTrHtmlDot({
       id: `${this.entityId}-dot`,
       color,
-      worldPosition: this.point,
+      worldPosition: live,
       layer: MEASUREMENT_LAYER
     })
     const badge = new AcTrHtmlBadge({
       id: `${this.entityId}-badge`,
       color,
       text: formatMeasurementValue(db, value),
-      worldPosition: this.point,
+      worldPosition: live,
       layer: MEASUREMENT_LAYER,
       fontSize: this.style.fontSize,
       transform: 'translate(-50%, calc(-50% - 16px))'
@@ -125,10 +137,76 @@ export class AcApMeasurePointEntity extends AcApMeasureEntity {
     this.seedOverlaySizes(view, [dot, badge])
     const group = this.createGroup(view).add(dot, badge)
 
+    const cleanups: Array<() => void> = []
+    const pendingGrips: Array<() => void> = []
+    let dragStart = { ...live }
+
+    const refreshLive = () => {
+      value = { kind: 'coordinate', x: live.x, y: live.y }
+      badge.setText(formatMeasurementValue(db, value))
+      acapPlaceOverlayHtml(view, badge, live)
+      view.isHtmlDirty = true
+    }
+
+    pendingGrips.push(() => {
+      cleanups.push(
+        acapBindOverlayPointerDrag({
+          view,
+          el: dot.element,
+          onDragStart: () => {
+            selectMeasurementGroup(view, this.entityId)
+            dragStart = { ...live }
+          },
+          onMove: point => {
+            live.x = point.x
+            live.y = point.y
+            acapPlaceOverlayHtml(view, dot, live)
+            refreshLive()
+          },
+          onCommit: () => {
+            if (
+              Math.hypot(live.x - dragStart.x, live.y - dragStart.y) < 1e-9
+            ) {
+              refreshLive()
+              return
+            }
+            const snap = getMeasurementSnapshot(this.entityId)
+            const geometry: AcApMeasurementRecord['geometry'] = {
+              type: 'point',
+              position: { x: live.x, y: live.y }
+            }
+            const record: AcApMeasurementRecord = snap
+              ? { ...snap, geometry }
+              : {
+                  id: this.entityId,
+                  type: 'point',
+                  layoutId,
+                  style: this.serializeStyle(view),
+                  geometry
+                }
+            runMeasurementEdit(view, 'Move Point', () => {
+              republishMeasurement(view, db, record)
+            })
+          }
+        })
+      )
+    })
+
     return {
       group,
       entityIds: [],
-      dispose: () => undefined,
+      dispose: () => {
+        for (const fn of cleanups) {
+          try {
+            fn()
+          } catch {
+            // ignore
+          }
+        }
+      },
+      bindGrips: () => {
+        for (const bind of pendingGrips) bind()
+      },
       extras: {
         style: this.style,
         value,

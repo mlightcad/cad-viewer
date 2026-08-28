@@ -1,3 +1,6 @@
+// Side-effect: register republish impl for grip edits (avoids circular imports).
+import './AcApMeasurementPlace'
+
 import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
 import type { AcEdBaseView } from '../../editor'
@@ -17,7 +20,8 @@ import {
   getMeasurementStyle,
   MEASUREMENT_LAYER,
   resetMeasurementStyleState,
-  resetMeasurementVisibility
+  resetMeasurementVisibility,
+  restoreMeasurementGroupExtras
 } from './AcApMeasurementStore'
 
 /**
@@ -193,9 +197,11 @@ export class AcApMeasurementHistory {
       }
       for (const group of attach) {
         ht.reattach(group)
+        restoreMeasurementGroupExtras(group)
       }
       const styles = direction === 'undo' ? entry.stylesBefore : entry.stylesAfter
       for (const group of snapshotMeasurementGroups(entry.view)) {
+        restoreMeasurementGroupExtras(group)
         const style = styles[group.id]
         if (style) applyMeasurementStyle(entry.view, group, style)
       }
