@@ -838,13 +838,27 @@ export class AcTrView2d extends AcEdBaseView {
    * manager. Does not touch `COLORTHEME` / UI chrome.
    */
   private applyCanvasBackground(value: number) {
-    this._renderer.setClearColor(value)
-    // Updates style-manager background, repaints ACI-7 / bg-follow materials.
     this._renderer.currentBackgroundColor = value
     this._layerAppearance.refreshTextMaterialsInObjectTree(
       this._scene.internalScene
     )
     this.resyncForegroundLayersForBackground()
+    if (this._readingModeEnabled) {
+      this._readingModeSavedBackground = value
+      this.applyViewClearColor(ACAP_READING_MODE_BACKGROUND)
+      return
+    }
+    this.applyViewClearColor(value)
+  }
+
+  /**
+   * Updates only the WebGL clear colour and cursor chrome.
+   *
+   * Reading mode uses this so the white canvas is visual-only and does not
+   * repaint cached entity materials via the style manager.
+   */
+  private applyViewClearColor(value: number) {
+    this._renderer.setClearColor(value)
     this.editor.syncCursorBackground(value)
     this._isDirty = true
   }
@@ -935,25 +949,25 @@ export class AcTrView2d extends AcEdBaseView {
     this._readingModeEnabled = false
     this._readingModeSavedBackground = null
 
-    if (savedBackground != null) {
-      this.backgroundColor = savedBackground
-    }
     this.setCompareDisplay({ enabled: false, overrides: [] })
+    if (savedBackground != null) {
+      this.applyViewClearColor(savedBackground)
+    }
     this._isDirty = true
   }
 
   /**
-   * Snapshots the current canvas background (optional) and forces reading-mode
+   * Snapshots the current layout background (optional) and forces reading-mode
    * display colors.
    *
-   * @param snapshotBackground - When true, stores {@link backgroundColor}
-   *   before applying the white canvas override.
+   * @param snapshotBackground - When true, stores the style-manager layout
+   *   background before applying the white canvas override.
    */
   private applyReadingModeDisplay(snapshotBackground: boolean) {
     if (snapshotBackground) {
-      this._readingModeSavedBackground = this.backgroundColor
+      this._readingModeSavedBackground = this._renderer.currentBackgroundColor
     }
-    this.backgroundColor = ACAP_READING_MODE_BACKGROUND
+    this.applyViewClearColor(ACAP_READING_MODE_BACKGROUND)
     this.setCompareDisplay({
       enabled: true,
       baseColor: ACAP_READING_MODE_COLOR
