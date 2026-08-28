@@ -203,8 +203,8 @@ export function applyMeasurementStyle(
       strokeWidthWcs: snap?.strokeWidthWcs,
       fontSizePx: next.fontSize,
       strokeScreenPx: acapMeasurementCanvasLineWidth(next.lineWeight),
-      elements: [...group.children],
-      canvases: group.canvases.map(c => c.canvas)
+      elements: [...(group.children ?? [])],
+      canvases: (group.canvases ?? []).map(c => c.canvas)
     })
   }
 
