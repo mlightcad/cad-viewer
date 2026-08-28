@@ -5,6 +5,7 @@
 import type { AcGePoint2dLike } from '@mlightcad/data-model'
 
 import type { AcEdBaseView } from '../../editor'
+import { acapScaledOverlayLineWidth } from '../overlay/AcApOverlayDrawUtil'
 
 /**
  * Target screen diameter in CSS pixels for each revision-cloud lobe.
@@ -244,7 +245,7 @@ export function strokeMarkupCloud(
   if (world.length < 2) return
   const screen = world.map(p => view.worldToScreen(p))
   ctx.strokeStyle = color
-  ctx.lineWidth = lineWidth
+  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
   ctx.beginPath()
   ctx.moveTo(screen[0].x, screen[0].y)
   for (let i = 1; i < screen.length; i++) {

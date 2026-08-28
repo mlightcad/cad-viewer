@@ -62,7 +62,8 @@ export class AcApMarkupHighlightEntity extends AcApMarkupEntity {
         view.worldToScreen(geom.corner1),
         view.worldToScreen(geom.corner2),
         this.record.style.color,
-        canvasLineWidth
+        canvasLineWidth,
+        view
       )
     }
     redraw()

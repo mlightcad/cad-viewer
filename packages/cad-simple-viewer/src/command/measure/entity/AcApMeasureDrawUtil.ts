@@ -6,6 +6,7 @@ import {
 
 import type { AcEdBaseView } from '../../../editor'
 import { acapColorToCssAlpha, acapCssColor } from '../../../util'
+import { acapScaledOverlayLineWidth } from '../../overlay/AcApOverlayDrawUtil'
 
 /**
  * Circle geometry in world XY used by arc-length measurement overlays.
@@ -95,7 +96,7 @@ export function drawMeasureSegmentOnCanvas(
   ctx.moveTo(a.x, a.y)
   ctx.lineTo(b.x, b.y)
   ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = lineWidth
+  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, canvas, view)
   ctx.stroke()
   ctx.restore()
 }
@@ -133,7 +134,7 @@ export function drawMeasureAngleArcOnCanvas(
   const sa2 = view.worldToScreen(arm2)
 
   ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = lineWidth
+  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, canvas, view)
   ctx.beginPath()
   ctx.moveTo(sv.x, sv.y)
   ctx.lineTo(sa1.x, sa1.y)
@@ -190,7 +191,7 @@ export function drawMeasureAreaOnCanvas(
   ctx.fillStyle = acapColorToCssAlpha(color, 0.2)
   ctx.fill()
   ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = lineWidth
+  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, canvas, view)
   ctx.stroke()
   ctx.restore()
 }
@@ -240,7 +241,7 @@ export function strokeMeasureArcOnContext(
   ctx.beginPath()
   ctx.arc(sc.x, sc.y, screenR, sa, ea, antiClockwise)
   ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = lineWidth
+  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
   ctx.stroke()
 }
 

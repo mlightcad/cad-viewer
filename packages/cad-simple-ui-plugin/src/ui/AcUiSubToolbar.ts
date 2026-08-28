@@ -51,6 +51,11 @@ export interface AcUiSubToolbarMountOptions {
   onSelect: (item: AcUiToolbarItem, button: HTMLButtonElement) => void
   /** Invoked when the strip is closed. */
   onClose?: () => void
+  /**
+   * Keeps a dismissible strip open when the event target lies in related UI
+   * (for example a nested sub-toolbar opened from this strip).
+   */
+  shouldKeepOpenForTarget?: (target: Node) => boolean
 }
 
 /**
@@ -74,6 +79,7 @@ export class AcUiSubToolbar {
     if (!(event.target instanceof Node)) return
     if (this.root.contains(event.target)) return
     if (this.options.anchor.contains(event.target)) return
+    if (this.options.shouldKeepOpenForTarget?.(event.target)) return
     this.close()
   }
 
@@ -126,6 +132,37 @@ export class AcUiSubToolbar {
     this.renderButtons()
     this.applyChromeLayout()
     this.syncPosition()
+  }
+
+  /** Whether `target` lies inside this strip root. */
+  containsTarget(target: Node): boolean {
+    return this.root.contains(target)
+  }
+
+  /** Updates button labels and tooltips after locale change. */
+  refreshLocale() {
+    const { chrome } = this.options
+    for (const button of Array.from(
+      this.root.querySelectorAll<HTMLButtonElement>('.ml-ex-ui-toolbar-btn')
+    )) {
+      const itemId = button.dataset.toolbarItemId
+      if (!itemId) continue
+      const item = this.items.find(candidate => candidate.id === itemId)
+      if (!item || acuiIsToolbarSeparatorItem(item)) continue
+      const effective = acuiResolveEffectiveToolbarItem(item)
+      const label = effective.label
+        ? this.options.i18n.t(effective.label)
+        : effective.id
+      button.title = label
+      button.setAttribute('aria-label', label)
+      const labelEl = button.querySelector('.ml-ex-ui-toolbar-btn-label')
+      if (labelEl) {
+        labelEl.textContent = label
+      } else if (effective.label && !chrome.showLabels) {
+        const text = button.querySelector('span')
+        if (text) text.textContent = label
+      }
+    }
   }
 
   /** Repositions the strip beside the parent toolbar after layout changes. */

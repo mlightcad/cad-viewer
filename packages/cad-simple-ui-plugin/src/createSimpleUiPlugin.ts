@@ -159,6 +159,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.dockPanel?.refreshLocale()
     if (this.toolbar) {
       this.toolbar.updateItems(this.baseToolbarItems)
+      this.toolbar.refreshLocale()
     }
   }
   /** Re-resolves mount targets after the viewer view becomes available. */

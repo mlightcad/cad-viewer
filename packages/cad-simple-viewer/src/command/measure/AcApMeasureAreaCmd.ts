@@ -26,6 +26,7 @@ import {
   formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
+import { acapScaledOverlayLineWidth } from '../overlay/AcApOverlayDrawUtil'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import { AcApMeasureAreaEntity } from './entity'
 
@@ -210,7 +211,11 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         for (let i = 1; i < confirmedSpts.length; i++)
           ctx.lineTo(confirmedSpts[i].x, confirmedSpts[i].y)
         ctx.strokeStyle = acapCssColor(color)
-        ctx.lineWidth = canvasLineWidth
+        ctx.lineWidth = acapScaledOverlayLineWidth(
+          canvasLineWidth,
+          fillCanvas,
+          context.view
+        )
         ctx.setLineDash([8, 5])
         ctx.stroke()
         ctx.setLineDash([])
@@ -224,7 +229,11 @@ export class AcApMeasureAreaCmd extends AcEdCommand {
         ctx.moveTo(last.x, last.y)
         ctx.lineTo(sc.x, sc.y)
         ctx.strokeStyle = acapCssColor(color)
-        ctx.lineWidth = canvasLineWidth
+        ctx.lineWidth = acapScaledOverlayLineWidth(
+          canvasLineWidth,
+          fillCanvas,
+          context.view
+        )
         ctx.stroke()
       }
 

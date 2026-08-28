@@ -11,6 +11,11 @@ import * as THREE from 'three'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
+  acExPositionClientOverlay,
+  acExPositionWcsOverlay,
+  acExScaledCanvasLineWidth
+} from './AcExHtmlOverlayDom'
+import {
   ACEX_MEASUREMENT_FONT_SIZE,
   ACEX_MEASUREMENT_LINE_WEIGHT,
   acExMeasureCanvasLineWidth,
@@ -124,6 +129,9 @@ export interface AcExMeasureViewApi {
    * Monotonic value that changes when pan/zoom invalidates cached pointer picks.
    */
   getSnapCacheKey: () => number
+
+  /** Current orthographic camera zoom (used to scale DOM overlays). */
+  getCameraZoom: () => number
 
   /**
    * Resolves a pointer pick with object snap applied.
@@ -1578,8 +1586,13 @@ export class AcExMeasureController {
     const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     this._liveLabel.textContent = text
     this._liveLabel.style.display = 'block'
-    this._liveLabel.style.left = `${clientX - rootRect.left}px`
-    this._liveLabel.style.top = `${clientY - rootRect.top}px`
+    acExPositionClientOverlay(
+      this._liveLabel,
+      clientX,
+      clientY,
+      rootRect,
+      this._view.getCameraZoom()
+    )
   }
 
   /**
@@ -2421,7 +2434,11 @@ export class AcExMeasureController {
       else ctx.lineTo(x, y)
     }
     ctx.strokeStyle = strokeCss
-    ctx.lineWidth = lineWidth
+    ctx.lineWidth = acExScaledCanvasLineWidth(
+      lineWidth,
+      canvas,
+      this._view.getCameraZoom()
+    )
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
     ctx.stroke()
@@ -2774,6 +2791,7 @@ export class AcExMeasureController {
   /** Projects `data-wcs-*` DOM overlays to root-local screen coordinates. @internal */
   private _positionDomOverlays(): void {
     const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    const zoom = this._view.getCameraZoom()
     this._overlayLayer
       .querySelectorAll<HTMLElement>('.mlcad-measure-dot, .mlcad-measure-badge')
       .forEach(el => {
@@ -2781,8 +2799,7 @@ export class AcExMeasureController {
         const y = Number(el.dataset.wcsY)
         if (!Number.isFinite(x) || !Number.isFinite(y)) return
         const screen = this._view.wcsToScreen(new THREE.Vector2(x, y))
-        el.style.left = `${screen.x - rootRect.left}px`
-        el.style.top = `${screen.y - rootRect.top}px`
+        acExPositionWcsOverlay(el, screen, rootRect, zoom)
       })
   }
 
@@ -2846,7 +2863,11 @@ export class AcExMeasureController {
     ctx.beginPath()
     ctx.arc(vx, vy, arc.r, arc.startAngle, arc.endAngle, arc.antiClockwise)
     ctx.strokeStyle = strokeCss ?? this._measureCss()
-    ctx.lineWidth = lineWidth
+    ctx.lineWidth = acExScaledCanvasLineWidth(
+      lineWidth,
+      canvas,
+      this._view.getCameraZoom()
+    )
     ctx.stroke()
     ctx.restore()
   }
@@ -2909,7 +2930,11 @@ export class AcExMeasureController {
     ctx.beginPath()
     ctx.arc(cx, cy, screenR, sa, ea, counterClockwise)
     ctx.strokeStyle = strokeCss ?? this._measureCss()
-    ctx.lineWidth = lineWidth
+    ctx.lineWidth = acExScaledCanvasLineWidth(
+      lineWidth,
+      canvas,
+      this._view.getCameraZoom()
+    )
     ctx.stroke()
     ctx.restore()
   }
@@ -2948,7 +2973,11 @@ export class AcExMeasureController {
     ctx.beginPath()
     ctx.arc(cx, cy, screenR, sa, ea, counterClockwise)
     ctx.strokeStyle = strokeCss ?? this._measureCss()
-    ctx.lineWidth = lineWidth
+    ctx.lineWidth = acExScaledCanvasLineWidth(
+      lineWidth,
+      canvas,
+      this._view.getCameraZoom()
+    )
     ctx.stroke()
     ctx.restore()
   }
@@ -3013,7 +3042,11 @@ export class AcExMeasureController {
     ctx.fillStyle = fill
     ctx.fill()
     ctx.strokeStyle = stroke
-    ctx.lineWidth = lineWidth
+    ctx.lineWidth = acExScaledCanvasLineWidth(
+      lineWidth,
+      canvas,
+      this._view.getCameraZoom()
+    )
     ctx.stroke()
     ctx.restore()
   }
