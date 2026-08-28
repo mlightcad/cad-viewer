@@ -22,7 +22,10 @@ import {
   HIGHLIGHT_HOVER_COLOR,
   HIGHLIGHT_SELECT_COLOR
 } from '../src/util/AcTrMaterialUtil'
-import { getObjectUserData } from '../src/util/AcTrObjectUserData'
+import {
+  getMaterialRuntimeUserData,
+  getObjectUserData
+} from '../src/util/AcTrObjectUserData'
 
 const defaultTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
 
@@ -256,6 +259,22 @@ describe('AcTrBatchedGroup slot-mask highlight', () => {
     group.unselect('unbatched-1')
     expect(clonedLine.material).toBe(material)
     expect(getObjectUserData(clonedLine).originalMaterial).toBeUndefined()
+  })
+
+  it('clears u_compareEnabled uniform when compare display is disabled', () => {
+    const group = new AcTrBatchedGroup()
+    group.addEntity(createBatchedLineEntity('line-1'))
+
+    group.setCompareDisplay({ enabled: true, baseColor: 0x000000 })
+    const batchedLine = findBatchedLine(group)!
+    const material = batchedLine.material as THREE.Material
+    const uniforms = getMaterialRuntimeUserData(material).batchHighlightUniforms!
+    expect(uniforms.u_compareEnabled.value).toBe(1)
+
+    group.setCompareDisplay({ enabled: false, overrides: [] })
+
+    expect(batchedLine._highlightState.compareEnabled).toBe(false)
+    expect(uniforms.u_compareEnabled.value).toBe(0)
   })
 
   it('replaces compare roles so leftover deleted masks do not linger', () => {
