@@ -85,6 +85,8 @@ export class AcTrLinePatternShaders {
             }`
 
     const fragmentShader = /*glsl*/ `
+            precision highp float;
+
             uniform mat4 modelMatrix;
             uniform vec3 diffuse;
             uniform vec3 u_color;
