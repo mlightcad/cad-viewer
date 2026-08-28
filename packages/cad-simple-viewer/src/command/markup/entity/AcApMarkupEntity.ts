@@ -6,8 +6,8 @@ import {
   type AcGiLineWeight
 } from '@mlightcad/data-model'
 import {
-  AcTrHtmlGroup,
-  type AcTrHtmlElement
+  type AcTrHtmlElement,
+  AcTrHtmlGroup
 } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
