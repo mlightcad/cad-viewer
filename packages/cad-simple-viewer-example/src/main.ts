@@ -877,6 +877,7 @@ class CadViewerApp {
               size: 'stretch',
               edgeOffset: 0,
               collapsible: false,
+              inCanvasParent: true,
               subToolbar: {
                 showLabels: false,
                 showSeparators: false,

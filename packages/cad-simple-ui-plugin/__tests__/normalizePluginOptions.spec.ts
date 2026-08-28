@@ -36,6 +36,7 @@ describe('acuiNormalizePluginOptions', () => {
   it('defaults toolbar edge offset', () => {
     const resolved = acuiNormalizePluginOptions({})
     expect(resolved.toolbar.edgeOffset).toBe(8)
+    expect(resolved.toolbar.inCanvasParent).toBe(false)
   })
 
   it('defaults layout mode to auto', () => {

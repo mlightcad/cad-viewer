@@ -774,3 +774,118 @@ describe('AcUiToolbar children UI', () => {
     endToolbar.destroy()
   })
 })
+
+describe('AcUiToolbar in-canvas-parent layout', () => {
+  afterEach(() => {
+    document.body.replaceChildren()
+    document.getElementById('ml-ex-ui-styles')?.remove()
+  })
+
+  it('wraps canvas children and sits as a flex sibling', async () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    const canvas = document.createElement('div')
+    canvas.id = 'canvas'
+    host.appendChild(canvas)
+    document.body.appendChild(host)
+
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      size: 'stretch',
+      edgeOffset: 4,
+      sideOffset: 2,
+      inCanvasParent: true,
+      items: [{ id: 'zoom', label: 'toolbar.zoom', command: 'zoom' }],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve())
+    })
+
+    const root = host.querySelector<HTMLElement>('.ml-ex-ui-toolbar')
+    const main = host.querySelector<HTMLElement>('.ml-ex-ui-toolbar-main')
+    expect(root?.classList.contains('is-in-parent')).toBe(true)
+    expect(host.classList.contains('ml-ex-ui-toolbar-in-parent-bottom')).toBe(
+      true
+    )
+    expect(main).not.toBeNull()
+    expect(main?.contains(canvas)).toBe(true)
+    expect(root?.previousElementSibling).toBe(main)
+    expect(root?.style.top).toBe('')
+    expect(root?.style.left).toBe('')
+    expect(root?.style.width).toBe('')
+    expect(root?.style.marginTop).toBe('4px')
+    expect(root?.style.marginLeft).toBe('2px')
+
+    toolbar.destroy()
+    expect(host.querySelector('.ml-ex-ui-toolbar-main')).toBeNull()
+    expect(host.contains(canvas)).toBe(true)
+  })
+
+  it('lays out inside dock-main so dock side changes keep the toolbar on the canvas', () => {
+    const host = document.createElement('div')
+    const dockMain = document.createElement('div')
+    dockMain.className = 'ml-ex-ui-dock-main'
+    const canvas = document.createElement('div')
+    dockMain.appendChild(canvas)
+    const dockPanel = document.createElement('div')
+    dockPanel.className = 'ml-ex-ui-dock-panel'
+    host.appendChild(dockMain)
+    host.appendChild(dockPanel)
+    document.body.appendChild(host)
+
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      inCanvasParent: true,
+      items: [{ id: 'zoom', label: 'toolbar.zoom', command: 'zoom' }],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    expect(dockMain.querySelector('.ml-ex-ui-toolbar-main')?.contains(canvas)).toBe(
+      true
+    )
+    expect(dockMain.querySelector('.ml-ex-ui-toolbar')).not.toBeNull()
+    expect(dockPanel.parentElement).toBe(host)
+    expect(host.querySelector(':scope > .ml-ex-ui-toolbar')).toBeNull()
+
+    toolbar.destroy()
+  })
+
+  it('restores overlay layout when inCanvasParent is turned off', async () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    const canvas = document.createElement('div')
+    host.appendChild(canvas)
+    document.body.appendChild(host)
+
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      size: 'stretch',
+      edgeOffset: 0,
+      inCanvasParent: true,
+      items: [{ id: 'zoom', label: 'toolbar.zoom', command: 'zoom' }],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    toolbar.applyViewOptions({ inCanvasParent: false })
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve())
+    })
+
+    const root = host.querySelector<HTMLElement>('.ml-ex-ui-toolbar')
+    expect(root?.classList.contains('is-in-parent')).toBe(false)
+    expect(host.querySelector('.ml-ex-ui-toolbar-main')).toBeNull()
+    expect(host.contains(canvas)).toBe(true)
+    expect(root?.style.bottom).toBe('0px')
+    toolbar.destroy()
+  })
+})

@@ -76,6 +76,11 @@ export interface AcUiToolbarMountOptions {
   showSeparators?: boolean
   /** Sub-toolbar chrome and position overrides; unset chrome inherits from this toolbar. */
   subToolbar?: AcUiSubToolbarOptions
+  /**
+   * When true, sit as a flex sibling of the canvas inside the mount host instead
+   * of floating over the drawing. @default false
+   */
+  inCanvasParent?: boolean
 }
 
 /**
@@ -125,6 +130,14 @@ export class AcUiToolbar {
   private showBorder: boolean
   /** Whether separator dividers are rendered between toolbar groups. */
   private showSeparators: boolean
+  /**
+   * When true, the toolbar is a flex sibling of the canvas rather than an overlay.
+   */
+  private inCanvasParent: boolean
+  /** Canvas-slot wrapper used when {@link inCanvasParent} is enabled. */
+  private toolbarMain?: HTMLDivElement
+  /** Flex host that currently owns the in-canvas-parent layout classes. */
+  private inParentHost?: HTMLElement
   /** Keeps the toolbar inside the canvas when the host is resized. */
   private resizeObserver?: ResizeObserver
   private layoutFrame?: number
@@ -171,6 +184,7 @@ export class AcUiToolbar {
     this.sideOffset = options.sideOffset ?? 0
     this.showBorder = options.showBorder ?? true
     this.showSeparators = options.showSeparators ?? true
+    this.inCanvasParent = options.inCanvasParent === true
     this.items = options.items
     this.collapsed =
       Boolean(options.collapsible) && Boolean(options.defaultCollapsed)
@@ -198,6 +212,7 @@ export class AcUiToolbar {
     })
 
     this.mountHost.appendChild(this.root)
+    this.ensureInParentLayout()
     this.setupResizeObserver()
 
     AcApDocManager.instance.events.documentActivated.addEventListener(
@@ -245,6 +260,7 @@ export class AcUiToolbar {
         | 'showSeparators'
         | 'subToolbar'
         | 'items'
+        | 'inCanvasParent'
       >
     >
   ) {
@@ -285,11 +301,16 @@ export class AcUiToolbar {
     if (view.subToolbar !== undefined) {
       this.options.subToolbar = view.subToolbar
     }
+    if (view.inCanvasParent !== undefined) {
+      this.inCanvasParent = view.inCanvasParent
+      this.options.inCanvasParent = view.inCanvasParent
+    }
     if (view.items !== undefined) {
       this.items = view.items
       this.seedSelectedChildren(view.items)
     }
     this.syncRootClasses()
+    this.ensureInParentLayout()
     this.renderButtons()
     this.scheduleSyncPosition()
   }
@@ -342,6 +363,7 @@ export class AcUiToolbar {
       `placement-${placement}`
     )
     this.syncRootClasses()
+    this.ensureInParentLayout()
     this.renderButtons()
   }
 
@@ -416,13 +438,31 @@ export class AcUiToolbar {
    * @param newHost - New canvas container.
    */
   reparentTo(newHost: HTMLElement) {
-    if (this.mountHost === newHost) return
+    if (this.mountHost === newHost) {
+      if (!this.root.isConnected && newHost.isConnected) {
+        newHost.appendChild(this.root)
+      }
+      this.syncInParentLayout()
+      return
+    }
 
     this.resizeObserver?.disconnect()
+    this.releaseInParentLayout({ keepRoot: true })
     this.root.remove()
     this.mountHost = newHost
     this.ensureMountHostLayout()
     this.mountHost.appendChild(this.root)
+    this.ensureInParentLayout()
+    this.setupResizeObserver()
+    this.scheduleSyncPosition()
+  }
+
+  /**
+   * Re-applies in-canvas-parent flex layout after the dock panel wraps or
+   * reparents the canvas slot.
+   */
+  syncInParentLayout() {
+    this.ensureInParentLayout()
     this.setupResizeObserver()
     this.scheduleSyncPosition()
   }
@@ -517,6 +557,7 @@ export class AcUiToolbar {
     AcApDocManager.instance.events.documentToBeOpened.removeEventListener(
       this.handleDocumentToBeOpened
     )
+    this.releaseInParentLayout({ keepRoot: false })
     this.root.remove()
   }
 
@@ -548,6 +589,7 @@ export class AcUiToolbar {
     if (this.isDisabled) classes.push('is-disabled')
     if (this.options.showLabels) classes.push('has-labels')
     if (this.options.size === 'stretch') classes.push('is-stretch')
+    if (this.inCanvasParent) classes.push('is-in-parent')
     if (this.options.overflow === 'wrap') classes.push('is-overflow-wrap')
     if (this.options.overflow === 'menu') classes.push('is-overflow-menu')
     if (!this.showBorder) classes.push('no-border')
@@ -786,33 +828,42 @@ export class AcUiToolbar {
       entry.element.hidden = false
     })
 
-    const offset = this.edgeOffset
+    const offset = this.inCanvasParent ? this.sideOffset : this.edgeOffset
     const crossInset = this.getCrossAxisInset()
     const horizontal = this.getOrientationClass() === 'horizontal'
+    const host = this.getLayoutHost()
     if (horizontal) {
-      const maxWidth = Math.max(0, this.mountHost.clientWidth - offset * 2)
+      const maxWidth = Math.max(0, host.clientWidth - offset * 2)
       this.root.style.setProperty(
         '--ml-ex-ui-toolbar-max-width',
         `${maxWidth}px`
       )
-      const maxHeight = Math.max(
-        0,
-        this.mountHost.clientHeight - crossInset.near - crossInset.far
-      )
-      this.root.style.setProperty(
-        '--ml-ex-ui-toolbar-max-height',
-        `${maxHeight}px`
-      )
+      if (this.inCanvasParent) {
+        this.root.style.removeProperty('--ml-ex-ui-toolbar-max-height')
+      } else {
+        const maxHeight = Math.max(
+          0,
+          host.clientHeight - crossInset.near - crossInset.far
+        )
+        this.root.style.setProperty(
+          '--ml-ex-ui-toolbar-max-height',
+          `${maxHeight}px`
+        )
+      }
     } else {
-      const maxWidth = Math.max(
-        0,
-        this.mountHost.clientWidth - crossInset.near - crossInset.far
-      )
-      this.root.style.setProperty(
-        '--ml-ex-ui-toolbar-max-width',
-        `${maxWidth}px`
-      )
-      const maxHeight = Math.max(0, this.mountHost.clientHeight - offset * 2)
+      if (this.inCanvasParent) {
+        this.root.style.removeProperty('--ml-ex-ui-toolbar-max-width')
+      } else {
+        const maxWidth = Math.max(
+          0,
+          host.clientWidth - crossInset.near - crossInset.far
+        )
+        this.root.style.setProperty(
+          '--ml-ex-ui-toolbar-max-width',
+          `${maxWidth}px`
+        )
+      }
+      const maxHeight = Math.max(0, host.clientHeight - offset * 2)
       this.root.style.setProperty(
         '--ml-ex-ui-toolbar-max-height',
         `${maxHeight}px`
@@ -969,10 +1020,9 @@ export class AcUiToolbar {
 
   /** Returns the host axis limit for toolbar content (inside edge offsets). */
   private getOverflowHostLimit(horizontal: boolean): number {
-    const offset = this.edgeOffset
-    const hostSize = horizontal
-      ? this.mountHost.clientWidth
-      : this.mountHost.clientHeight
+    const offset = this.inCanvasParent ? this.sideOffset : this.edgeOffset
+    const host = this.getLayoutHost()
+    const hostSize = horizontal ? host.clientWidth : host.clientHeight
     return Math.max(0, hostSize - offset * 2)
   }
 
@@ -1023,12 +1073,185 @@ export class AcUiToolbar {
     this.mountHost.classList.add('ml-ex-ui-toolbar-host')
   }
 
+  /**
+   * Flex container used for overflow and in-canvas-parent sizing.
+   *
+   * Overlay toolbars measure the mount host. In-canvas-parent toolbars measure
+   * the canvas-slot flex host so the bar tracks the drawing area, not the
+   * outer dock chrome.
+   */
+  private getLayoutHost(): HTMLElement {
+    if (this.inCanvasParent) {
+      return this.inParentHost ?? this.mountHost
+    }
+    return this.mountHost
+  }
+
+  /**
+   * Positioning host for sub-toolbars: the canvas slot when in-canvas-parent
+   * so strips overlay the drawing, not the outer flex host.
+   */
+  private getOverlayHost(): HTMLElement {
+    if (this.inCanvasParent && this.toolbarMain) {
+      return this.toolbarMain
+    }
+    return this.mountHost
+  }
+
+  private static readonly IN_PARENT_HOST_CLASSES = [
+    'ml-ex-ui-toolbar-in-parent',
+    'ml-ex-ui-toolbar-in-parent-top',
+    'ml-ex-ui-toolbar-in-parent-bottom',
+    'ml-ex-ui-toolbar-in-parent-left',
+    'ml-ex-ui-toolbar-in-parent-right'
+  ] as const
+
+  /**
+   * Wraps canvas children and places the toolbar as a flex sibling when
+   * {@link inCanvasParent} is enabled. Prefers an existing dock-main slot so
+   * dock side changes do not pull the toolbar onto the dock axis.
+   */
+  private ensureInParentLayout() {
+    if (!this.inCanvasParent) {
+      this.releaseInParentLayout({ keepRoot: true })
+      return
+    }
+
+    const wrapRoot = this.resolveInParentWrapRoot()
+    this.applyInParentHostClasses(wrapRoot)
+    this.ensureToolbarMainWrapper(wrapRoot)
+    this.placeToolbarInWrapRoot(wrapRoot)
+  }
+
+  /** Dock-main when present, otherwise the toolbar mount host. */
+  private resolveInParentWrapRoot(): HTMLElement {
+    const dockMain = this.mountHost.querySelector(':scope > .ml-ex-ui-dock-main')
+    return dockMain instanceof HTMLElement ? dockMain : this.mountHost
+  }
+
+  private applyInParentHostClasses(wrapRoot: HTMLElement) {
+    if (this.inParentHost && this.inParentHost !== wrapRoot) {
+      this.clearInParentHostClasses(this.inParentHost)
+    }
+    this.inParentHost = wrapRoot
+    wrapRoot.classList.add('ml-ex-ui-toolbar-in-parent')
+    wrapRoot.classList.remove(
+      'ml-ex-ui-toolbar-in-parent-top',
+      'ml-ex-ui-toolbar-in-parent-bottom',
+      'ml-ex-ui-toolbar-in-parent-left',
+      'ml-ex-ui-toolbar-in-parent-right'
+    )
+    wrapRoot.classList.add(
+      `ml-ex-ui-toolbar-in-parent-${this.options.placement}`
+    )
+  }
+
+  private clearInParentHostClasses(host?: HTMLElement) {
+    if (!host) return
+    host.classList.remove(...AcUiToolbar.IN_PARENT_HOST_CLASSES)
+  }
+
+  private shouldSkipInParentMove(node: Node): boolean {
+    if (!(node instanceof HTMLElement)) return false
+    return (
+      node === this.root ||
+      node.classList.contains('ml-ex-ui-toolbar') ||
+      node.classList.contains('ml-ex-ui-toolbar-main') ||
+      node.classList.contains('ml-ex-ui-dock-panel') ||
+      node.classList.contains('ml-ex-ui-subtoolbar') ||
+      node.classList.contains('ml-ex-ui-dropdown')
+    )
+  }
+
+  private ensureToolbarMainWrapper(wrapRoot: HTMLElement) {
+    if (this.toolbarMain?.parentElement === wrapRoot) return
+
+    const existing = wrapRoot.querySelector(':scope > .ml-ex-ui-toolbar-main')
+    if (existing instanceof HTMLElement) {
+      this.toolbarMain = existing as HTMLDivElement
+      return
+    }
+
+    const movable: Node[] = []
+    Array.from(wrapRoot.childNodes).forEach(child => {
+      if (this.shouldSkipInParentMove(child)) return
+      movable.push(child)
+    })
+
+    const wrapper = document.createElement('div')
+    wrapper.className = 'ml-ex-ui-toolbar-main'
+    movable.forEach(node => wrapper.appendChild(node))
+    wrapRoot.appendChild(wrapper)
+    this.toolbarMain = wrapper
+  }
+
+  private placeToolbarInWrapRoot(wrapRoot: HTMLElement) {
+    const placement = this.options.placement
+    if (placement === 'top' || placement === 'left') {
+      wrapRoot.insertBefore(this.root, wrapRoot.firstChild)
+      return
+    }
+    wrapRoot.appendChild(this.root)
+  }
+
+  /**
+   * Unwraps the canvas slot and restores overlay mounting.
+   *
+   * @param options.keepRoot - When true, leaves the toolbar root in the DOM.
+   */
+  private releaseInParentLayout(options: { keepRoot: boolean }) {
+    const wasInParent = Boolean(this.inParentHost || this.toolbarMain)
+    this.clearInParentHostClasses(this.inParentHost)
+    this.inParentHost = undefined
+    this.releaseToolbarMainWrapper()
+    this.clearInParentOffsetStyles()
+    if (
+      wasInParent &&
+      options.keepRoot &&
+      this.root.isConnected &&
+      this.root.parentElement !== this.mountHost &&
+      this.mountHost.isConnected
+    ) {
+      this.mountHost.appendChild(this.root)
+    }
+  }
+
+  private releaseToolbarMainWrapper() {
+    if (!this.toolbarMain?.isConnected) {
+      this.toolbarMain = undefined
+      return
+    }
+
+    const parent = this.toolbarMain.parentElement
+    if (parent) {
+      while (this.toolbarMain.firstChild) {
+        parent.insertBefore(this.toolbarMain.firstChild, this.toolbarMain)
+      }
+    }
+    this.toolbarMain.remove()
+    this.toolbarMain = undefined
+  }
+
+  private clearInParentOffsetStyles() {
+    this.root.style.marginTop = ''
+    this.root.style.marginRight = ''
+    this.root.style.marginBottom = ''
+    this.root.style.marginLeft = ''
+  }
+
   private setupResizeObserver() {
     this.resizeObserver?.disconnect()
     this.resizeObserver = new ResizeObserver(() => {
       this.scheduleSyncPosition()
     })
     this.resizeObserver.observe(this.mountHost)
+    const layoutHost = this.getLayoutHost()
+    if (layoutHost !== this.mountHost) {
+      this.resizeObserver.observe(layoutHost)
+    }
+    if (this.toolbarMain && this.toolbarMain !== layoutHost) {
+      this.resizeObserver.observe(this.toolbarMain)
+    }
   }
 
   private scheduleSyncPosition() {
@@ -1052,6 +1275,13 @@ export class AcUiToolbar {
   /** Positions the toolbar inside the canvas, clamped to the current host bounds. */
   private syncPosition() {
     if (!this.root.isConnected || this.root.hidden) return
+
+    if (this.inCanvasParent) {
+      this.applyInParentPosition()
+      return
+    }
+
+    this.clearInParentOffsetStyles()
 
     const offset = this.edgeOffset
     const hostWidth = this.mountHost.clientWidth
@@ -1114,6 +1344,38 @@ export class AcUiToolbar {
       this.root.style.left = `${offset}px`
     } else {
       this.root.style.right = `${offset}px`
+    }
+  }
+
+  /**
+   * Applies edge/side offsets as margins so an in-canvas-parent toolbar sits
+   * against the canvas without overlay positioning.
+   */
+  private applyInParentPosition() {
+    this.root.style.top = ''
+    this.root.style.bottom = ''
+    this.root.style.left = ''
+    this.root.style.right = ''
+    this.root.style.transform = ''
+    this.root.style.width = ''
+    this.root.style.height = ''
+    this.root.style.maxWidth = ''
+    this.root.style.maxHeight = ''
+
+    const offset = this.edgeOffset
+    const side = this.sideOffset
+    const placement = this.options.placement
+
+    if (placement === 'top' || placement === 'bottom') {
+      this.root.style.marginTop = placement === 'bottom' ? `${offset}px` : '0'
+      this.root.style.marginBottom = placement === 'top' ? `${offset}px` : '0'
+      this.root.style.marginLeft = `${side}px`
+      this.root.style.marginRight = `${side}px`
+    } else {
+      this.root.style.marginLeft = placement === 'right' ? `${offset}px` : '0'
+      this.root.style.marginRight = placement === 'left' ? `${offset}px` : '0'
+      this.root.style.marginTop = `${side}px`
+      this.root.style.marginBottom = `${side}px`
     }
   }
 
@@ -1185,7 +1447,7 @@ export class AcUiToolbar {
         items: visibleChildren,
         anchor: button,
         toolbarRoot: this.root,
-        host: this.mountHost,
+        host: this.getOverlayHost(),
         placement: this.options.placement,
         sticky,
         chrome: this.resolveSubToolbarChrome(),
@@ -1356,7 +1618,7 @@ export class AcUiToolbar {
       items: visibleChildren,
       anchor: button,
       toolbarRoot: this.root,
-      host: this.mountHost,
+      host: this.getOverlayHost(),
       placement: this.options.placement,
       sticky: nestedSticky,
       chrome: this.resolveSubToolbarChrome(),

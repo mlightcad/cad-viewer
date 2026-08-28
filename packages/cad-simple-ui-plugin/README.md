@@ -9,6 +9,7 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 - Configurable toolbar with predefined CAD commands, separators, and preset references
 - Nested sub-toolbars (sticky or dismissible) and optional popover menus, with flyout arrows
 - Toolbar placement: `top`, `bottom`, `left`, `right`
+- Optional in-canvas-parent layout: sit against the canvas edge instead of floating over it
 - Default toolbar includes view, measure, review, then export, plus toolbar placement, theme toggle, and a language picker
 - UI theme follows `COLORTHEME` sysvar and `--ml-ui-*` tokens on `host` automatically
 - Locale follows `AcApI18n.currentLocale` automatically
@@ -196,6 +197,31 @@ toolbar: {
 }
 ```
 
+### In-canvas-parent toolbar
+
+By default the toolbar floats over the drawing (`position: absolute`). Set `toolbar.inCanvasParent: true` to place it as a flex sibling of the canvas inside the **same parent the dock panel uses** (the viewer canvas parent when it lies inside `host`). The toolbar then sits against the canvas edge instead of covering it. `placement` still picks the edge; `edgeOffset` and `sideOffset` still apply as the gap from the canvas and the orthogonal insets.
+
+```typescript
+toolbar: {
+  placement: 'bottom',
+  inCanvasParent: true,
+  edgeOffset: 0
+}
+```
+
+Phone layouts can enable this without affecting desktop overlay chrome:
+
+```typescript
+layouts: {
+  phone: {
+    toolbar: {
+      placement: 'bottom',
+      inCanvasParent: true
+    }
+  }
+}
+```
+
 ### Responsive layouts (phone / pad / desktop)
 
 By default the plugin uses `layout: 'auto'` and follows viewport width via `acedGetUiLayout()` from `@mlightcad/cad-simple-viewer`:
@@ -218,7 +244,7 @@ acuiCreateSimpleUiPlugin({
   layouts: {
     phone: {
       toolbar: {
-        // optional overrides; phone inherits only enabled/mountTarget from toolbar
+        // optional overrides; phone inherits enabled/mountTarget/inCanvasParent
         // subToolbar.position: 'front' (default) | 'end' | 'center' | 'auto'
       }
     }

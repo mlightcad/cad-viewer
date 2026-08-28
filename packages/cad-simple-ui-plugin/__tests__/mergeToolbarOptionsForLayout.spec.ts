@@ -32,19 +32,21 @@ describe('acuiMergeToolbarOptionsForLayout', () => {
     expect(merged.appendItemsAfter).toBeUndefined()
   })
 
-  it('inherits mountTarget and enabled on phone from top-level toolbar', () => {
+  it('inherits mountTarget, enabled, and inCanvasParent on phone from top-level toolbar', () => {
     const mountTarget = {} as HTMLElement
     const merged = acuiMergeToolbarOptionsForLayout(
       'phone',
       {
         enabled: true,
         mountTarget,
+        inCanvasParent: true,
         appendItems: [{ id: 'agent', command: 'agent' }]
       },
       undefined
     )
     expect(merged.mountTarget).toBe(mountTarget)
     expect(merged.enabled).toBe(true)
+    expect(merged.inCanvasParent).toBe(true)
     expect(merged.appendItems).toBeUndefined()
   })
 

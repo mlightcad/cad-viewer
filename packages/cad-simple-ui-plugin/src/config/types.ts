@@ -235,6 +235,15 @@ export interface AcUiToolbarOptions extends AcUiToolbarChromeOptions {
    */
   mountTarget?: HTMLElement
   /**
+   * When true, the toolbar is laid out as a flex sibling of the canvas inside
+   * the canvas parent (the same mount target as the dock panel) instead of
+   * floating over the drawing. {@link placement} still selects which edge;
+   * {@link edgeOffset} and {@link sideOffset} remain insets.
+   *
+   * @default false
+   */
+  inCanvasParent?: boolean
+  /**
    * Sub-toolbar chrome and position overrides. Unset chrome fields inherit from
    * the main toolbar. {@link AcUiSubToolbarOptions.position} defaults to
    * `'front'`.
@@ -246,8 +255,8 @@ export interface AcUiToolbarOptions extends AcUiToolbarChromeOptions {
  * Per-layout overrides for {@link AcUiSimpleUiPluginOptions.layouts}.
  *
  * Each entry's `toolbar` is merged on top of built-in defaults and the top-level
- * {@link AcUiToolbarOptions} baseline (phone inherits only `enabled` and
- * `mountTarget` from the top-level toolbar — see
+ * {@link AcUiToolbarOptions} baseline (phone inherits only `enabled`,
+ * `mountTarget`, and `inCanvasParent` from the top-level toolbar — see
  * {@link acuiMergeToolbarOptionsForLayout}).
  */
 export interface AcUiLayoutOptions {
@@ -329,8 +338,9 @@ export interface AcUiSimpleUiPluginOptions {
   }
   /**
    * Toolbar baseline configuration. Applied fully to pad/desktop. Phone inherits
-   * only {@link AcUiToolbarOptions.mountTarget} and `enabled` from this baseline;
-   * phone chrome and items come from built-in phone defaults plus
+   * only {@link AcUiToolbarOptions.mountTarget}, `enabled`, and
+   * {@link AcUiToolbarOptions.inCanvasParent} from this baseline; phone chrome
+   * and items come from built-in phone defaults plus
    * {@link layouts.phone.toolbar} (append items are not inherited on phone).
    */
   toolbar?: AcUiToolbarOptions

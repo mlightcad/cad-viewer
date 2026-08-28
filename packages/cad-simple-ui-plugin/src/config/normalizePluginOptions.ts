@@ -55,6 +55,7 @@ export function acuiNormalizePluginOptions(
       overflow: options.toolbar?.overflow,
       showBorder: options.toolbar?.showBorder ?? true,
       showSeparators: options.toolbar?.showSeparators ?? true,
+      inCanvasParent: options.toolbar?.inCanvasParent === true,
       subToolbar: options.toolbar?.subToolbar
     },
     shouldCreateDockPanel: dockPanelEnabled

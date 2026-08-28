@@ -677,4 +677,118 @@ describe('AcApSimpleUiPlugin', () => {
     expect(canvasParent.querySelector('.ml-ex-ui-toolbar')).not.toBeNull()
     expect(host.querySelector(':scope > .ml-ex-ui-toolbar')).toBeNull()
   })
+
+  it('places an in-canvas-parent toolbar as a sibling of the canvas slot', () => {
+    const { host, canvasParent, canvas } = createHostTree()
+    loadPlugin({
+      host,
+      layout: 'phone',
+      toolbar: {
+        inCanvasParent: true
+      },
+      layouts: {
+        phone: {
+          toolbar: {
+            items: [acuiToolbarPreset('select')],
+            inCanvasParent: true
+          }
+        }
+      }
+    })
+
+    const toolbar = canvasParent.querySelector('.ml-ex-ui-toolbar')
+    const main = canvasParent.querySelector('.ml-ex-ui-toolbar-main')
+    expect(toolbar).not.toBeNull()
+    expect(main).not.toBeNull()
+    expect(main?.contains(canvas)).toBe(true)
+    expect(toolbar?.classList.contains('is-in-parent')).toBe(true)
+    expect(toolbar?.classList.contains('is-bottom')).toBe(true)
+    expect(canvasParent.classList.contains('ml-ex-ui-toolbar-in-parent-bottom')).toBe(
+      true
+    )
+  })
+
+  it('keeps an in-canvas-parent toolbar inside dock-main on the canvas parent', () => {
+    const { host, canvasParent, canvas } = createHostTree()
+    loadPlugin({
+      host,
+      layout: 'phone',
+      toolbar: {
+        items: [acuiToolbarPreset('layer')],
+        inCanvasParent: true
+      }
+    })
+
+    const dockMain = canvasParent.querySelector('.ml-ex-ui-dock-main')
+    expect(dockMain).not.toBeNull()
+    expect(dockMain?.querySelector('.ml-ex-ui-toolbar-main')?.contains(canvas)).toBe(
+      true
+    )
+    expect(dockMain?.querySelector('.ml-ex-ui-toolbar')).not.toBeNull()
+    expect(canvasParent.querySelector(':scope > .ml-ex-ui-toolbar')).toBeNull()
+    expect(canvasParent.querySelector(':scope > .ml-ex-ui-dock-panel')).not.toBeNull()
+  })
+
+  it('restores overlay chrome when leaving phone in-canvas-parent layout', () => {
+    const { host, canvasParent, canvas } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      layout: 'phone',
+      layouts: {
+        phone: {
+          toolbar: {
+            items: [acuiToolbarPreset('select')],
+            inCanvasParent: true
+          }
+        }
+      }
+    })
+
+    expect(
+      canvasParent.querySelector('.ml-ex-ui-toolbar-main')?.contains(canvas)
+    ).toBe(true)
+
+    expect(plugin.setLayout('desktop')).toBe(true)
+
+    const toolbar = canvasParent.querySelector('.ml-ex-ui-toolbar')
+    expect(toolbar).not.toBeNull()
+    expect(toolbar?.isConnected).toBe(true)
+    expect(toolbar?.classList.contains('is-in-parent')).toBe(false)
+    expect(toolbar?.classList.contains('is-right')).toBe(true)
+    expect(canvasParent.querySelector('.ml-ex-ui-toolbar-main')).toBeNull()
+    expect(canvasParent.contains(canvas)).toBe(true)
+  })
+
+  it('restores overlay chrome inside dock-main after leaving in-canvas-parent', () => {
+    const { host, canvasParent, canvas } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      layout: 'phone',
+      toolbar: {
+        items: [acuiToolbarPreset('layer')]
+      },
+      layouts: {
+        phone: {
+          toolbar: {
+            inCanvasParent: true
+          }
+        }
+      }
+    })
+
+    expect(
+      canvasParent.querySelector('.ml-ex-ui-dock-main .ml-ex-ui-toolbar-main')
+        ?.contains(canvas)
+    ).toBe(true)
+
+    expect(plugin.setLayout('desktop')).toBe(true)
+
+    const dockMain = canvasParent.querySelector('.ml-ex-ui-dock-main')
+    const toolbar = dockMain?.querySelector('.ml-ex-ui-toolbar')
+    expect(toolbar).not.toBeNull()
+    expect(toolbar?.classList.contains('is-in-parent')).toBe(false)
+    expect(dockMain?.querySelector('.ml-ex-ui-toolbar-main')).toBeNull()
+    expect(dockMain?.contains(canvas)).toBe(true)
+    expect(canvasParent.querySelector(':scope > .ml-ex-ui-dock-panel')).not.toBeNull()
+  })
 })
