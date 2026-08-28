@@ -79,6 +79,7 @@ import {
   AcApPolylineCmd,
   AcApQNewCmd,
   AcApRayCmd,
+  AcApReadingModeCmd,
   AcApRectCmd,
   AcApRedoCmd,
   AcApRegenCmd,
@@ -1695,6 +1696,7 @@ export class AcApDocManager {
     addSystemCommand('sketch', 'sketch', new AcApSketchCmd())
     addSystemCommand('spline', 'spline', new AcApSplineCmd())
     addSystemCommand('switchbg', 'switchbg', new AcApSwitchBgCmd())
+    addSystemCommand('readingmode', 'readingmode', new AcApReadingModeCmd())
     addSystemCommand(
       'unisolateobjects',
       'unisolateobjects',

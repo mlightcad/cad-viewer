@@ -65,6 +65,10 @@ import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
 import type { AcApCompareDisplayOptions } from './AcApCompareDisplay'
 import {
+  ACAP_READING_MODE_BACKGROUND,
+  ACAP_READING_MODE_COLOR
+} from './AcApReadingMode'
+import {
   trySelectReviewOverlay,
   trySelectReviewOverlaysByBox
 } from './AcEdReviewOverlayPick'
@@ -257,6 +261,10 @@ export class AcTrView2d extends AcEdBaseView {
   private _gripManager: AcEdGripManager
   /** Global keyboard shortcuts for the view (undo/redo, erase, etc.). */
   private _keyHandler: AcEdViewKeyHandler
+  /** Transient reading mode forces black linework on a white canvas. */
+  private _readingModeEnabled = false
+  /** Background snapshot taken when reading mode is enabled. */
+  private _readingModeSavedBackground: number | null = null
 
   /**
    * Wall-time between cooperative yields during progressive open (ms).
@@ -893,6 +901,58 @@ export class AcTrView2d extends AcEdBaseView {
     this.applyCanvasBackground(
       readLayoutBackgroundColor(database, this.isModelSpaceLayout(database))
     )
+    this.reapplyReadingModeIfEnabled()
+  }
+
+  /** Whether transient reading mode is active on this view. */
+  get readingModeEnabled() {
+    return this._readingModeEnabled
+  }
+
+  /** Toggles transient reading mode on or off. */
+  toggleReadingMode() {
+    this.setReadingMode(!this._readingModeEnabled)
+  }
+
+  /**
+   * Enables or disables transient reading mode (black linework, white canvas).
+   *
+   * @param enabled - When true, snapshots the current canvas background and
+   *   forces monochrome display; when false, restores the snapshot.
+   */
+  setReadingMode(enabled: boolean) {
+    if (enabled === this._readingModeEnabled) {
+      return
+    }
+    if (enabled) {
+      this._readingModeSavedBackground = this.backgroundColor
+      this.backgroundColor = ACAP_READING_MODE_BACKGROUND
+      this.setCompareDisplay({
+        enabled: true,
+        baseColor: ACAP_READING_MODE_COLOR
+      })
+      this._readingModeEnabled = true
+      return
+    }
+
+    this.setCompareDisplay({ enabled: false })
+    if (this._readingModeSavedBackground != null) {
+      this.backgroundColor = this._readingModeSavedBackground
+    }
+    this._readingModeSavedBackground = null
+    this._readingModeEnabled = false
+  }
+
+  /** Re-applies reading-mode display after background sysvar sync. */
+  private reapplyReadingModeIfEnabled() {
+    if (!this._readingModeEnabled) {
+      return
+    }
+    this.backgroundColor = ACAP_READING_MODE_BACKGROUND
+    this.setCompareDisplay({
+      enabled: true,
+      baseColor: ACAP_READING_MODE_COLOR
+    })
   }
 
   /**

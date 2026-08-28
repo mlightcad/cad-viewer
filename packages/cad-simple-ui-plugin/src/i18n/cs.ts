@@ -27,6 +27,7 @@ export const cs: Record<string, string> = {
   'toolbar.measurementExport': 'Exportovat',
   'toolbar.clearMeasurements': 'Vymazat měření',
   'toolbar.switchBg': 'Přepnout pozadí',
+  'toolbar.readingMode': 'Režim čtení',
   'toolbar.annotation': 'Nástroje kontroly',
   'toolbar.annotationShort': 'Kontrola',
   'toolbar.markupCloud': 'Obláček',

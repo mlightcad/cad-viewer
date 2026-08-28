@@ -571,6 +571,11 @@ export default {
       text: 'Switch',
       description: 'Switches the drawing background between white and black'
     },
+    readingMode: {
+      text: 'Reading',
+      description:
+        'Toggles reading mode: black linework on a white canvas for easier review'
+    },
     zoomToExtent: {
       text: 'Zoom Extents',
       description: 'Zooms to display the maximum extents of all entities'

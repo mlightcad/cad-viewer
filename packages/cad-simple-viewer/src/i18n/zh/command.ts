@@ -432,6 +432,9 @@ export default {
     switchbg: {
       description: '切换绘图区域背景颜色，在白色和黑色背景之间切换'
     },
+    readingmode: {
+      description: '切换阅读模式：白底黑线，便于阅读复杂图纸'
+    },
     unisolateobjects: {
       description: '重新显示 HIDEOBJECTS 隐藏的所有对象'
     },

@@ -29,6 +29,7 @@ import {
   ICON_MEASURE_DISTANCE,
   ICON_MEASURE_POINT,
   ICON_PAN,
+  ICON_READING_MODE,
   ICON_SELECT,
   ICON_SWITCH_BG,
   ICON_ZOOM_EXTENT,
@@ -43,6 +44,7 @@ export const zoomToExtent = acapSvgIcon(ICON_ZOOM_EXTENT, 'IconZoomToExtent')
 export const zoomToBox = acapSvgIcon(ICON_ZOOM_WINDOW, 'IconZoomToBox')
 export const layer = acapSvgIcon(ICON_LAYER, 'IconLayer')
 export const switchBg = acapSvgIcon(ICON_SWITCH_BG, 'IconSwitchBg')
+export const readingMode = acapSvgIcon(ICON_READING_MODE, 'IconReadingMode')
 export const measure = acapSvgIcon(ICON_MEASURE, 'IconMeasure')
 export const measureDistance = acapSvgIcon(
   ICON_MEASURE_DISTANCE,

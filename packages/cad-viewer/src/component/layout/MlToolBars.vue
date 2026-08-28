@@ -35,6 +35,7 @@ import {
   revCloud,
   revRect,
   revText,
+  readingMode,
   select,
   switchBg,
   zoomToBox,
@@ -135,6 +136,12 @@ const verticalToolbarData = computed(() => {
       text: t('main.verticalToolbar.switchBg.text'),
       command: 'switchbg',
       description: t('main.verticalToolbar.switchBg.description')
+    },
+    {
+      icon: readingMode,
+      text: t('main.verticalToolbar.readingMode.text'),
+      command: 'readingmode',
+      description: t('main.verticalToolbar.readingMode.description')
     },
     {
       icon: measure,
