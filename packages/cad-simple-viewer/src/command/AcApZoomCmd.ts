@@ -7,6 +7,7 @@ import {
 
 import { AcApContext, AcApDocManager } from '../app'
 import {
+  AcEdBaseView,
   AcEdCommand,
   AcEdPromptBoxOptions,
   AcEdPromptPointOptions,
@@ -27,6 +28,7 @@ import { AcApI18n } from '../i18n'
  *   - `Center`: prompt center + height/scale factor.
  *   - `Scale`: scale relative to current view (`n`, `nX`, `nXP`).
  *   - `Previous`: restore previous zoom box.
+ *   - `Original`: restore the view captured when the layout was first framed.
  *
  * This command intentionally keeps all zoom branches in one implementation so
  * callers can use script-style command input such as:
@@ -43,19 +45,63 @@ export class AcApZoomCmd extends AcEdCommand {
   private static previousViewBox?: AcGeBox2d
 
   /**
+   * View boxes captured when each layout was first framed (open or first visit).
+   * Keyed by layout block table record id.
+   */
+  private static originalViewBoxByLayout = new Map<string, AcGeBox2d>()
+
+  /**
+   * Captures the current view box as the "original" view for a layout.
+   *
+   * Called after the first successful framing when a document opens or when the
+   * user first visits a layout tab. Used by the ZOOM `Original` keyword.
+   * Later calls for the same layout are ignored so ZOOM Extents cannot replace
+   * the stored original view.
+   *
+   * @param view - Active view.
+   * @param layoutBtrId - Layout block table record id.
+   */
+  static rememberOriginalView(view: AcEdBaseView, layoutBtrId: string) {
+    if (!layoutBtrId || view.width <= 0 || view.height <= 0) return
+    if (AcApZoomCmd.originalViewBoxByLayout.has(layoutBtrId)) return
+    AcApZoomCmd.originalViewBoxByLayout.set(
+      layoutBtrId,
+      AcApZoomCmd.captureViewBoxFromView(view)
+    )
+  }
+
+  /**
+   * Clears remembered original views (e.g. when replacing the current document).
+   *
+   * Does not clear {@link previousViewBox} used by the `Previous` zoom keyword.
+   */
+  static clearOriginalViews() {
+    AcApZoomCmd.originalViewBoxByLayout.clear()
+  }
+
+  /**
+   * Captures current visible world box from viewport corners.
+   *
+   * @param view - Active view.
+   * @returns Current view box in world coordinates.
+   */
+  private static captureViewBoxFromView(view: AcEdBaseView) {
+    const topLeft = view.screenToWorld({ x: 0, y: 0 })
+    const bottomRight = view.screenToWorld({
+      x: view.width,
+      y: view.height
+    })
+    return new AcGeBox2d().expandByPoint(topLeft).expandByPoint(bottomRight)
+  }
+
+  /**
    * Captures current visible world box from the viewport corners.
    *
    * @param context - Current command context.
    * @returns Current view box in world coordinates.
    */
   private captureCurrentViewBox(context: AcApContext) {
-    const topLeft = context.view.screenToWorld({ x: 0, y: 0 })
-    const bottomRight = context.view.screenToWorld({
-      x: context.view.width,
-      y: context.view.height
-    })
-
-    return new AcGeBox2d().expandByPoint(topLeft).expandByPoint(bottomRight)
+    return AcApZoomCmd.captureViewBoxFromView(context.view)
   }
 
   /**
@@ -253,6 +299,25 @@ export class AcApZoomCmd extends AcEdCommand {
   }
 
   /**
+   * Restores the view captured when the active layout was first framed.
+   * Falls back to zoom extents when no original view is stored.
+   *
+   * @param context - Current command context.
+   */
+  private runOriginal(context: AcApContext) {
+    const layoutBtrId = context.doc.database.currentSpaceId
+    const original = layoutBtrId
+      ? AcApZoomCmd.originalViewBoxByLayout.get(layoutBtrId)
+      : undefined
+    this.rememberViewBeforeZoom(context)
+    if (original) {
+      context.view.zoomTo(original, 1)
+      return
+    }
+    context.view.zoomToFitDrawing()
+  }
+
+  /**
    * Runs zoom interaction with keyword-capable branching.
    *
    * @param context - Current command context.
@@ -281,6 +346,11 @@ export class AcApZoomCmd extends AcEdCommand {
       AcApI18n.t('jig.zoom.keywords.previous.display'),
       AcApI18n.t('jig.zoom.keywords.previous.global'),
       AcApI18n.t('jig.zoom.keywords.previous.local')
+    )
+    firstPrompt.keywords.add(
+      AcApI18n.t('jig.zoom.keywords.original.display'),
+      AcApI18n.t('jig.zoom.keywords.original.global'),
+      AcApI18n.t('jig.zoom.keywords.original.local')
     )
     firstPrompt.keywords.add(
       AcApI18n.t('jig.zoom.keywords.scale.display'),
@@ -338,6 +408,10 @@ export class AcApZoomCmd extends AcEdCommand {
     }
     if (keyword === 'Previous') {
       this.runPrevious(context)
+      return
+    }
+    if (keyword === 'Original') {
+      this.runOriginal(context)
     }
   }
 }

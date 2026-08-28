@@ -1194,6 +1194,11 @@ export default {
         local: 'Previous',
         global: 'Previous'
       },
+      original: {
+        display: 'Original(O)',
+        local: 'Original',
+        global: 'Original'
+      },
       scale: {
         display: 'Scale(S)',
         local: 'Scale',

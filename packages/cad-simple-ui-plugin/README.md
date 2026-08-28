@@ -196,13 +196,63 @@ toolbar: {
 }
 ```
 
+### Responsive layouts (phone / pad / desktop)
+
+By default the plugin uses `layout: 'auto'` and follows viewport width via `acedGetUiLayout()` from `@mlightcad/cad-simple-viewer`:
+
+- **phone** (≤600px): bottom toolbar with `size: 'stretch'`, labels; zoom, measure, review, layer, layout, settings
+- **pad** (601–960px): same chrome as desktop unless overridden
+- **desktop** (>960px): right-side default toolbar
+
+```typescript
+acuiCreateSimpleUiPlugin({
+  host,
+  layout: 'auto', // default; or force 'phone' | 'pad' | 'desktop'
+  toolbar: {
+    placement: 'right',
+    items: 'default',
+    collapsible: true,
+    appendItems: [{ id: 'agent', command: 'agent' }],
+    appendItemsAfter: 'layout'
+  },
+  layouts: {
+    phone: {
+      toolbar: {
+        // optional overrides; phone inherits only enabled/mountTarget from toolbar
+        // subToolbar.position: 'front' (default) | 'end' | 'center' | 'auto'
+      }
+    }
+  }
+})
+```
+
+`toolbar.subToolbar` can override chrome (`showLabels`, `size`, …) and **`position`**:
+
+| Value | Behavior |
+| --- | --- |
+| `front` (default) | First sub-toolbar button aligns with the first toolbar button |
+| `end` | Last sub-toolbar button aligns with the last toolbar button |
+| `center` | Center the sub-toolbar on the parent toolbar |
+| `auto` | Align to the parent button |
+
+`position` is ignored when the sub-toolbar `size` is `'stretch'`.
+
+Runtime controls:
+
+```typescript
+plugin.getLayout() // 'phone' | 'pad' | 'desktop'
+plugin.setLayout('auto') // or force a specific kind
+```
+
+Toolbar configuration is typed as `AcUiToolbarOptions` and can be reused by other packages (for example HTML export in a follow-up PR). Phone defaults include nested **Zoom** (original view / extents / window) and **Settings** (theme / background / language) sub-toolbars.
+
 ## Custom toolbar
 
 Toolbar buttons are configured through `toolbar.items`. You can start from the built-in set, extend it, or replace it entirely.
 
 ### Replace the full toolbar at runtime
 
-Use `appendItems` only when you want to keep the built-in default and add a few buttons. To **replace the entire toolbar**, call `setToolbarItems` on the loaded plugin:
+Use `appendItems` only when you want to keep the built-in default and add a few buttons. To **replace the entire toolbar**, call `setToolbarItems` on the loaded plugin. Auto or forced layout switches then keep that item list and only update chrome (placement, size, labels):
 
 ```typescript
 import {

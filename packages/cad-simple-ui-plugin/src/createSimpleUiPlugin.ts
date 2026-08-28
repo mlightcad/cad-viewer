@@ -6,6 +6,9 @@ import {
   AcApPlugin,
   acapSetDrawStyleHostHasRibbon,
   AcEdCommandStack,
+  acedGetUiLayout,
+  acedSubscribeUiLayout,
+  type AcEdUiLayoutKind,
   type AcEdUiTheme
 } from '@mlightcad/cad-simple-viewer'
 
@@ -17,6 +20,7 @@ import {
 } from './command/AcApLayerUiCmd'
 import { AcApMarkupPanelUiCmd } from './command/AcApMarkupPanelUiCmd'
 import { acuiPrependToolbarLayoutSwitcher } from './config/createToolbarLayoutSwitcher'
+import { acuiMergeToolbarOptionsForLayout } from './config/mergeToolbarOptionsForLayout'
 import { acuiNormalizePluginOptions } from './config/normalizePluginOptions'
 import { acuiResolveDockMountTarget } from './config/resolveDockMountTarget'
 import { acuiResolveToolbarItems } from './config/resolveToolbarItems'
@@ -24,10 +28,14 @@ import { acuiResolveToolbarMountTarget } from './config/resolveToolbarMountTarge
 import { acuiToolbarItemsIncludeItem } from './config/toolbarItemUtils'
 import {
   AcUiDockPanelSide,
+  AcUiPluginLayoutMode,
   AcUiSimpleUiPluginOptions,
   AcUiToolbarItem,
   AcUiToolbarItemsInput,
+  AcUiToolbarOptions,
+  AcUiToolbarOverflow,
   AcUiToolbarPlacement,
+  AcUiToolbarSize,
   SIMPLE_UI_PLUGIN_NAME
 } from './config/types'
 import { AcUiI18n, acuiRegisterSimpleUiI18n } from './i18n'
@@ -48,6 +56,11 @@ const REVIEW_TAB_ID = 'review'
  * Registers the `layer` and `markuppanel` commands when the toolbar includes
  * those buttons, injects shared UI styles, and keeps theme and locale in sync
  * with {@link AcApI18n} and the `COLORTHEME` system variable.
+ *
+ * Supports responsive chrome via {@link AcUiSimpleUiPluginOptions.layout} and
+ * {@link AcUiSimpleUiPluginOptions.layouts}: phone (bottom full-width bar),
+ * pad, and desktop (default right-side toolbar). Use {@link getLayout} and
+ * {@link setLayout} to read or override the active layout at runtime.
  */
 export class AcApSimpleUiPlugin implements AcApPlugin {
   /** {@link SIMPLE_UI_PLUGIN_NAME} */
@@ -82,6 +95,14 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private baseToolbarItems: AcUiToolbarItem[] = []
   /** Raw toolbar items configuration last applied via {@link setToolbarItems}. */
   private toolbarItemsInput: AcUiToolbarItemsInput = 'default'
+  /**
+   * When true, {@link setToolbarItems} replaced the layout-derived item list.
+   * Layout switches still update chrome (placement, size, labels) but keep
+   * this item list until the next {@link setToolbarItems} call.
+   */
+  private toolbarItemsOverridden = false
+  /** Optional layout-switcher button prepended by the last {@link setToolbarItems}. */
+  private toolbarLayoutSwitcher?: AcUiToolbarItem
   /** Command stack reference for dynamic layer command registration. */
   private commandManager?: AcEdCommandStack
   /** Whether the toolbar includes a layer button. */
@@ -107,15 +128,38 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private toolbarMountTargetOption?: HTMLElement
   /** Inset of the viewer toolbar from the canvas edge in px. */
   private toolbarEdgeOffset = 8
+  /** Cross-axis inset of the viewer toolbar from host edges in px. */
+  private toolbarSideOffset = 0
+  /** Whether the main toolbar shows labels below icons. */
+  private toolbarShowLabels = false
+  /** Whether the toolbar container border is shown. */
+  private toolbarShowBorder = true
+  /** Whether toolbar separator dividers are shown. */
+  private toolbarShowSeparators = true
+  /** Toolbar sizing along the layout axis (`auto` or `stretch`). */
+  private toolbarSize: AcUiToolbarSize = 'auto'
+  /** Overflow behavior when buttons exceed host bounds. */
+  private toolbarOverflow: AcUiToolbarOverflow = 'menu'
+  /** Sub-toolbar chrome overrides. */
+  private toolbarSubToolbar?: AcUiToolbarOptions['subToolbar']
+  /** Layout mode from plugin options (`auto` or forced kind). */
+  private layoutMode: AcUiPluginLayoutMode = 'auto'
+  /** Active resolved layout kind after merging defaults. */
+  private activeLayoutKind: AcEdUiLayoutKind = 'desktop'
+  /** Unsubscribe from viewport layout media queries. */
+  private unsubscribeLayout?: () => void
   /** Commands registered during {@link onLoad} for cleanup on unload. */
   private registeredCommands: Array<{ group: string; name: string }> = []
   /** Refreshes toolbar, layer, and review UI when the app locale changes. */
   private handleLocaleChanged = () => {
+    this.rebuildToolbarItems(this.activeLayoutKind)
     this.toolbar?.setSelectedChild('locale', `locale-${AcApI18n.currentLocale}`)
     this.layerListView?.refreshLocale()
     this.reviewPaletteView?.refreshLocale()
     this.dockPanel?.refreshLocale()
-    this.toolbar?.refresh()
+    if (this.toolbar) {
+      this.toolbar.updateItems(this.baseToolbarItems)
+    }
   }
   /** Re-resolves mount targets after the viewer view becomes available. */
   private handleDocumentActivatedForDock = () => {
@@ -127,6 +171,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     }
     this.tryUpgradeDockMountTarget()
     this.dockPanel?.ensureMounted()
+    this.ensureViewerToolbar()
     this.tryUpgradeToolbarMountTarget()
   }
 
@@ -253,7 +298,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
    *
    * Unlike `toolbar.appendItems`, this replaces the full `items` collection.
    * Preset references and `'default'` are resolved using the same rules as
-   * initial plugin load.
+   * initial plugin load. Subsequent {@link setLayout} / auto viewport switches
+   * keep this list and only update toolbar chrome.
    *
    * @param items - Full toolbar layout definition.
    * @param layoutSwitcher - Optional layout submenu button prepended before `items`.
@@ -264,6 +310,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   ) {
     if (!this.toolbar) return
 
+    this.toolbarItemsOverridden = true
+    this.toolbarLayoutSwitcher = layoutSwitcher
     this.toolbarItemsInput = items
     const resolved = this.resolveBaseToolbarItems(items)
     this.baseToolbarItems = layoutSwitcher
@@ -354,6 +402,47 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     return this.toolbar?.getEdgeOffset() ?? this.toolbarEdgeOffset
   }
 
+  /** Returns the active UI layout kind (`phone`, `pad`, or `desktop`). */
+  getLayout(): AcEdUiLayoutKind {
+    return this.activeLayoutKind
+  }
+
+  /**
+   * Sets layout mode and reapplies toolbar chrome for the target kind.
+   *
+   * When `mode` is `'auto'`, subscribes to viewport media queries via
+   * {@link acedSubscribeUiLayout} and switches toolbar configuration when
+   * {@link acedGetUiLayout} changes. Forced modes stop auto subscription.
+   *
+   * @param mode - `'auto'` or a fixed {@link AcEdUiLayoutKind}.
+   * @returns `true` when the mode was stored or applied; `false` when the
+   *   toolbar is unavailable and the mode could not be applied (except when only
+   *   updating stored mode before toolbar creation).
+   */
+  setLayout(mode: AcUiPluginLayoutMode): boolean {
+    if (!this.toolbar && mode !== this.layoutMode) {
+      this.layoutMode = mode
+      return true
+    }
+    if (!this.toolbar) return false
+
+    this.layoutMode = mode
+    this.unsubscribeLayout?.()
+    this.unsubscribeLayout = undefined
+
+    if (mode === 'auto') {
+      this.unsubscribeLayout = acedSubscribeUiLayout(kind => {
+        if (kind !== this.activeLayoutKind) {
+          this.applyLayoutKind(kind)
+        }
+      })
+      this.applyLayoutKind(acedGetUiLayout())
+    } else {
+      this.applyLayoutKind(mode)
+    }
+    return true
+  }
+
   /**
    * Sets the viewer toolbar inset from the canvas edge.
    *
@@ -394,9 +483,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.hostEl = host
     this.dockPanelMountTargetOption = this.options.dockPanel?.mountTarget
     this.toolbarMountTargetOption = this.options.toolbar?.mountTarget
-    this.toolbarPlacement = resolvedOptions.toolbar.placement ?? 'right'
-    this.toolbarCollapsible = resolvedOptions.toolbar.collapsible ?? false
-    this.toolbarEdgeOffset = resolvedOptions.toolbar.edgeOffset ?? 8
+    this.layoutMode = resolvedOptions.layout
     this.dockPanelExplicitlyEnabled = resolvedOptions.dockPanel.enabled === true
     this.dockPanelDefaults = {
       defaultOpen: resolvedOptions.dockPanel.defaultOpen ?? false,
@@ -414,23 +501,10 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       this.handleDocumentActivatedForDock
     )
 
-    const toolbarEnabled = resolvedOptions.toolbar.enabled
-    this.toolbarItemsInput = resolvedOptions.toolbar.items ?? 'default'
-    this.baseToolbarItems = toolbarEnabled
-      ? acuiResolveToolbarItems(
-          resolvedOptions.toolbar,
-          this.getToolbarContext()
-        )
-      : []
-
-    this.hasLayerToolbarItem = acuiToolbarItemsIncludeItem(
-      this.baseToolbarItems,
-      'layer'
-    )
-    this.hasMarkupPanelToolbarItem = acuiToolbarItemsIncludeItem(
-      this.baseToolbarItems,
-      'markup-panel'
-    )
+    const initialLayout =
+      this.layoutMode === 'auto' ? acedGetUiLayout() : this.layoutMode
+    const toolbarEnabled = this.isViewerToolbarEnabled()
+    this.applyLayoutKind(initialLayout, { skipToolbarApply: !toolbarEnabled })
 
     if (resolvedOptions.shouldCreateDockPanel) {
       this.ensureDockPanel()
@@ -446,18 +520,57 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       this.registerMarkupPanelCommand(commandManager)
     }
 
-    if (toolbarEnabled) {
-      const toolbarMountEl = this.getToolbarMountEl() ?? host
-      this.toolbarMountEl = toolbarMountEl
+    this.ensureViewerToolbar(host)
+  }
+
+  /** Whether viewer toolbar creation is allowed (only explicit `false` disables). */
+  private isViewerToolbarEnabled(): boolean {
+    return this.options.toolbar?.enabled !== false
+  }
+
+  /**
+   * Creates the floating toolbar when enabled and not already present.
+   *
+   * @param host - Plugin theme host; defaults to {@link hostEl}.
+   */
+  private ensureViewerToolbar(host?: HTMLElement) {
+    if (!this.isViewerToolbarEnabled()) {
+      return
+    }
+    if (this.toolbar) {
+      if (this.toolbar.isRootConnected()) {
+        return
+      }
+      this.toolbar.destroy()
+      this.toolbar = undefined
+      this.toolbarMountEl = undefined
+    }
+
+    const mountHost = host ?? this.hostEl
+    if (!mountHost || !this.i18n) {
+      return
+    }
+
+    const toolbarMountEl = this.getToolbarMountEl() ?? mountHost
+    this.toolbarMountEl = toolbarMountEl
+    const mergedToolbar = this.getMergedToolbarOptions(this.activeLayoutKind)
+    try {
       this.toolbar = new AcUiToolbar({
         host: toolbarMountEl,
-        themeHost: host,
+        themeHost: mountHost,
         placement: this.toolbarPlacement,
         edgeOffset: this.toolbarEdgeOffset,
+        sideOffset: this.toolbarSideOffset,
         items: this.baseToolbarItems,
         i18n: this.i18n,
-        collapsible: resolvedOptions.toolbar.collapsible,
-        defaultCollapsed: resolvedOptions.toolbar.defaultCollapsed,
+        collapsible: this.toolbarCollapsible,
+        defaultCollapsed: mergedToolbar.defaultCollapsed,
+        showLabels: this.toolbarShowLabels,
+        size: this.toolbarSize,
+        overflow: this.toolbarOverflow,
+        showBorder: this.toolbarShowBorder,
+        showSeparators: this.toolbarShowSeparators,
+        subToolbar: this.toolbarSubToolbar,
         onCollapse: () => {
           this.dockPanel?.close()
         },
@@ -465,6 +578,15 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
           AcApDocManager.instance.sendStringToExecute(command)
         }
       })
+    } catch (error) {
+      console.error('[SimpleUiPlugin] Failed to create viewer toolbar:', error)
+      return
+    }
+
+    try {
+      this.setLayout(this.layoutMode)
+    } catch (error) {
+      console.warn('[SimpleUiPlugin] setLayout failed during toolbar setup:', error)
     }
   }
 
@@ -478,7 +600,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   }
 
   /**
-   * Moves the toolbar from a host fallback to the canvas container once available.
+   * Moves the toolbar from a host or inner-canvas fallback to the preferred
+   * mount (typically the canvas parent) once the view is available.
    */
   private tryUpgradeToolbarMountTarget() {
     if (this.toolbarMountTargetOption || !this.hostEl || !this.toolbar) {
@@ -486,15 +609,86 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     }
 
     const preferred = acuiResolveToolbarMountTarget(this.hostEl)
-    if (preferred === this.toolbarMountEl || preferred === this.hostEl) {
+    if (preferred === this.toolbarMountEl) {
       return
     }
-    if (this.toolbarMountEl !== this.hostEl) {
+
+    const canvasContainer = AcApDocManager.instance.curView?.container
+    const canvasParent = canvasContainer?.parentElement
+    if (
+      this.toolbarMountEl !== this.hostEl &&
+      this.toolbarMountEl !== canvasContainer &&
+      this.toolbarMountEl !== canvasParent
+    ) {
       return
     }
 
     this.toolbar.reparentTo(preferred)
     this.toolbarMountEl = preferred
+  }
+
+  /**
+   * Merges built-in, top-level, and per-layout toolbar options for a kind.
+   *
+   * @param kind - Layout kind to resolve options for.
+   * @returns Merged {@link AcUiToolbarOptions} used by {@link applyLayoutKind}.
+   */
+  private getMergedToolbarOptions(kind: AcEdUiLayoutKind): AcUiToolbarOptions {
+    return acuiMergeToolbarOptionsForLayout(
+      kind,
+      this.options.toolbar,
+      this.options.layouts?.[kind]?.toolbar
+    )
+  }
+
+  /**
+   * Applies toolbar configuration for a layout kind and refreshes dock wiring.
+   *
+   * Chrome always comes from merged layout options. Item lists come from those
+   * options unless {@link setToolbarItems} has replaced them at runtime.
+   *
+   * @param kind - Target layout kind.
+   * @param options - When `skipToolbarApply` is true, only updates resolved state.
+   */
+  private applyLayoutKind(
+    kind: AcEdUiLayoutKind,
+    options?: { skipToolbarApply?: boolean }
+  ) {
+    this.activeLayoutKind = kind
+    const toolbarOpts = this.getMergedToolbarOptions(kind)
+
+    this.toolbarPlacement = toolbarOpts.placement ?? 'right'
+    this.toolbarCollapsible = toolbarOpts.collapsible ?? false
+    this.toolbarEdgeOffset = toolbarOpts.edgeOffset ?? 8
+    this.toolbarSideOffset = toolbarOpts.sideOffset ?? 0
+    this.toolbarShowLabels = toolbarOpts.showLabels ?? false
+    this.toolbarShowBorder = toolbarOpts.showBorder ?? true
+    this.toolbarShowSeparators = toolbarOpts.showSeparators ?? true
+    this.toolbarSize = toolbarOpts.size ?? 'auto'
+    this.toolbarOverflow = toolbarOpts.overflow ?? 'menu'
+    this.toolbarSubToolbar = toolbarOpts.subToolbar
+    this.rebuildToolbarItems(kind, toolbarOpts)
+    this.syncLayerToolbarItem()
+    this.syncReviewToolbarItem()
+
+    if (options?.skipToolbarApply || !this.toolbar) {
+      return
+    }
+
+    this.toolbar.applyViewOptions({
+      placement: this.toolbarPlacement,
+      edgeOffset: this.toolbarEdgeOffset,
+      sideOffset: this.toolbarSideOffset,
+      collapsible: this.toolbarCollapsible,
+      defaultCollapsed: toolbarOpts.defaultCollapsed,
+      showLabels: this.toolbarShowLabels,
+      size: this.toolbarSize,
+      overflow: this.toolbarOverflow,
+      showBorder: this.toolbarShowBorder,
+      showSeparators: this.toolbarShowSeparators,
+      subToolbar: this.toolbarSubToolbar,
+      items: this.baseToolbarItems
+    })
   }
 
   /** Context passed when resolving default toolbar presets. */
@@ -511,13 +705,44 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     }
   }
 
+  /**
+   * Resolves {@link baseToolbarItems} from a runtime override or layout options.
+   *
+   * @param kind - Layout kind used for `'default'` and preset expansion.
+   * @param toolbarOpts - Merged options for `kind`; fetched when omitted.
+   */
+  private rebuildToolbarItems(
+    kind: AcEdUiLayoutKind,
+    toolbarOpts?: AcUiToolbarOptions
+  ) {
+    if (this.toolbarItemsOverridden) {
+      const resolved = this.resolveBaseToolbarItems(this.toolbarItemsInput)
+      this.baseToolbarItems = this.toolbarLayoutSwitcher
+        ? acuiPrependToolbarLayoutSwitcher(resolved, this.toolbarLayoutSwitcher)
+        : resolved
+      return
+    }
+
+    const merged = toolbarOpts ?? this.getMergedToolbarOptions(kind)
+    this.toolbarItemsInput = merged.items ?? 'default'
+    this.baseToolbarItems = acuiResolveToolbarItems(
+      merged,
+      this.getToolbarContext(),
+      kind
+    )
+  }
+
   /** Resolves raw toolbar input into concrete toolbar items. */
   private resolveBaseToolbarItems(
     items: AcUiToolbarItemsInput
   ): AcUiToolbarItem[] {
     return acuiResolveToolbarItems(
-      { items, appendItems: undefined },
-      this.getToolbarContext()
+      {
+        items,
+        appendItems: undefined
+      },
+      this.getToolbarContext(),
+      this.activeLayoutKind
     )
   }
 
@@ -863,6 +1088,9 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
    * @param commandManager - Command stack used to remove registered commands.
    */
   onUnload(_context: AcApContext, commandManager: AcEdCommandStack): void {
+    this.unsubscribeLayout?.()
+    this.unsubscribeLayout = undefined
+
     AcApI18n.events.localeChanged.removeEventListener(this.handleLocaleChanged)
     AcApDocManager.instance.events.documentActivated.removeEventListener(
       this.handleDocumentActivatedForDock
@@ -886,6 +1114,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.dockPanelMountTargetOption = undefined
     this.baseToolbarItems = []
     this.toolbarItemsInput = 'default'
+    this.toolbarItemsOverridden = false
+    this.toolbarLayoutSwitcher = undefined
     this.hasLayerToolbarItem = false
     this.hasMarkupPanelToolbarItem = false
     this.commandManager = undefined

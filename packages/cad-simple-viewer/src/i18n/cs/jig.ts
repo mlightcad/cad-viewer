@@ -1191,6 +1191,11 @@ export default {
         local: 'Předchozí',
         global: 'Previous'
       },
+      original: {
+        display: 'Původní(O)',
+        local: 'Původní',
+        global: 'Original'
+      },
       scale: {
         display: 'Měřítko(S)',
         local: 'Měřítko',

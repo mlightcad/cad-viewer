@@ -40,11 +40,13 @@ import {
   ICON_REV_CLOUD,
   ICON_REV_RECT,
   ICON_SELECT,
+  ICON_SETTINGS,
   ICON_SWITCH_BG,
   ICON_THEME_DARK,
   ICON_THEME_LIGHT,
   ICON_TOOLBAR_PLACEMENT,
   ICON_ZOOM_EXTENT,
+  ICON_ZOOM_ORIGINAL,
   ICON_ZOOM_WINDOW
 } from '../assets/icons'
 import { acuiCreateLayoutToolbarItem } from './createLayoutToolbarItem'
@@ -140,8 +142,274 @@ function acuiCreateToolbarLocaleItem(
   }
 }
 
+function acuiCreateThemeToolbarItem(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem {
+  const getTheme = (): AcEdUiTheme => context?.getTheme() ?? 'light'
+  const toggleTheme = () => {
+    const next: AcEdUiTheme = getTheme() === 'dark' ? 'light' : 'dark'
+    context?.setTheme(next)
+  }
+  return {
+    id: 'theme',
+    requiresDocument: false,
+    toggle: {
+      getValue: () => getTheme() === 'light',
+      on: {
+        label: 'toolbar.themeLight',
+        icon: ICON_THEME_LIGHT,
+        action: toggleTheme
+      },
+      off: {
+        label: 'toolbar.themeDark',
+        icon: ICON_THEME_DARK,
+        action: toggleTheme
+      }
+    }
+  }
+}
+
+function acuiCreateMeasureToolbarItem(): AcUiToolbarItem {
+  return {
+    id: 'measure',
+    label: 'toolbar.measure',
+    icon: ICON_MEASURE,
+    childrenUi: 'sticky-toolbar',
+    children: [
+      {
+        id: 'measure-distance',
+        label: 'toolbar.measureDistance',
+        icon: ICON_MEASURE_DISTANCE,
+        command: 'measuredistance'
+      },
+      {
+        id: 'measure-angle',
+        label: 'toolbar.measureAngle',
+        icon: ICON_MEASURE_ANGLE,
+        command: 'measureangle'
+      },
+      {
+        id: 'measure-area',
+        label: 'toolbar.measureArea',
+        icon: ICON_MEASURE_AREA,
+        command: 'measurearea'
+      },
+      {
+        id: 'measure-arc',
+        label: 'toolbar.measureArc',
+        icon: ICON_MEASURE_ARC,
+        command: 'measurearc'
+      },
+      {
+        id: 'measure-point',
+        label: 'toolbar.measurePoint',
+        icon: ICON_MEASURE_POINT,
+        command: 'measurepoint'
+      },
+      {
+        id: 'measurement-vis',
+        toggle: {
+          getValue: isMeasurementVisible,
+          on: {
+            label: 'toolbar.showMeasurements',
+            icon: ICON_ANNOTATION_SHOW,
+            command: 'measurementvis'
+          },
+          off: {
+            label: 'toolbar.hideMeasurements',
+            icon: ICON_ANNOTATION_HIDE,
+            command: 'measurementvis'
+          }
+        }
+      },
+      {
+        id: 'clear-measurements',
+        label: 'toolbar.clearMeasurements',
+        icon: ICON_CLEAR_MEASUREMENTS,
+        command: 'clearmeasurements'
+      },
+      {
+        type: 'separator',
+        id: 'sep-measure-import-export'
+      },
+      {
+        id: 'measurement-import',
+        label: 'toolbar.measurementImport',
+        icon: ICON_MARKUP_IMPORT,
+        command: 'measurementimport'
+      },
+      {
+        id: 'measurement-export',
+        label: 'toolbar.measurementExport',
+        icon: ICON_MARKUP_EXPORT,
+        command: 'measurementexport'
+      }
+    ]
+  }
+}
+
+function acuiCreateAnnotationToolbarItem(): AcUiToolbarItem {
+  return {
+    id: 'annotation',
+    label: 'toolbar.annotation',
+    icon: ICON_ANNOTATION,
+    minOpenMode: AcEdOpenMode.Review,
+    childrenUi: 'sticky-toolbar',
+    children: [
+      {
+        id: 'markup-cloud',
+        label: 'toolbar.markupCloud',
+        icon: ICON_REV_CLOUD,
+        command: 'markupcloud'
+      },
+      {
+        id: 'markup-callout',
+        label: 'toolbar.markupCallout',
+        icon: ICON_MARKUP_CALLOUT,
+        command: 'markupcallout'
+      },
+      {
+        id: 'markup-text',
+        label: 'toolbar.markupText',
+        icon: ICON_MARKUP_TEXT,
+        command: 'markuptext'
+      },
+      {
+        id: 'markup-rect',
+        label: 'toolbar.markupRect',
+        icon: ICON_REV_RECT,
+        command: 'markuprect'
+      },
+      {
+        id: 'markup-circle',
+        label: 'toolbar.markupCircle',
+        icon: ICON_REV_CIRCLE,
+        command: 'markupcircle'
+      },
+      {
+        id: 'markup-arrow',
+        label: 'toolbar.markupArrow',
+        icon: ICON_MARKUP_ARROW,
+        command: 'markuparrow'
+      },
+      {
+        id: 'markup-stamp',
+        label: 'toolbar.markupStamp',
+        icon: ICON_MARKUP_STAMP,
+        command: 'markupstamp'
+      },
+      {
+        id: 'markup-panel',
+        label: 'toolbar.markupPanel',
+        icon: ICON_MARKUP_PANEL,
+        command: 'markuppanel'
+      },
+      {
+        id: 'markup-vis',
+        toggle: {
+          getValue: isMarkupVisible,
+          on: {
+            label: 'toolbar.showMarkup',
+            icon: ICON_ANNOTATION_SHOW,
+            command: 'markupvis'
+          },
+          off: {
+            label: 'toolbar.hideMarkup',
+            icon: ICON_ANNOTATION_HIDE,
+            command: 'markupvis'
+          }
+        }
+      },
+      {
+        id: 'clear-markups',
+        label: 'toolbar.clearMarkups',
+        icon: ICON_CLEAR_MARKUPS,
+        command: 'clearmarkups'
+      },
+      {
+        type: 'separator',
+        id: 'sep-markup-import-export'
+      },
+      {
+        id: 'markup-import',
+        label: 'toolbar.markupImport',
+        icon: ICON_MARKUP_IMPORT,
+        command: 'markupimport'
+      },
+      {
+        id: 'markup-export',
+        label: 'toolbar.markupExport',
+        icon: ICON_MARKUP_EXPORT,
+        command: 'markupexport'
+      }
+    ]
+  }
+}
+
 /**
- * Builds the built-in toolbar item list (view, layout, measure, review, export, theme, locale).
+ * Builds the phone-layout zoom parent with original / extents / window children.
+ *
+ * @returns Zoom toolbar item with dismissible icon sub-toolbar children.
+ */
+export function acuiCreateZoomToolbarItem(): AcUiToolbarItem {
+  return {
+    id: 'zoom',
+    label: 'toolbar.zoom',
+    icon: ICON_ZOOM_EXTENT,
+    childrenUi: 'toolbar',
+    children: [
+      {
+        id: 'zoom-original',
+        label: 'toolbar.zoomOriginal',
+        icon: ICON_ZOOM_ORIGINAL,
+        command: 'zoom\noriginal'
+      },
+      {
+        id: 'zoom-extent',
+        label: 'toolbar.zoomExtent',
+        icon: ICON_ZOOM_EXTENT,
+        command: 'zoom\nall'
+      },
+      {
+        id: 'zoom-window',
+        label: 'toolbar.zoomWindow',
+        icon: ICON_ZOOM_WINDOW,
+        command: 'zoom\nwindow'
+      }
+    ]
+  }
+}
+
+/**
+ * Builds the phone-layout settings parent (theme, background, language).
+ *
+ * @param context - Optional callbacks for theme toggle and locale submenu items.
+ * @returns Settings toolbar item with nested dismissible sub-toolbars.
+ */
+export function acuiCreateSettingsToolbarItem(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem {
+  return {
+    id: 'settings',
+    label: 'toolbar.settings',
+    icon: ICON_SETTINGS,
+    requiresDocument: false,
+    childrenUi: 'toolbar',
+    children: [
+      acuiCreateThemeToolbarItem(context),
+      {
+        id: 'switch-bg',
+        label: 'toolbar.switchBg',
+        icon: ICON_SWITCH_BG,
+        command: 'switchbg'
+      },
+      acuiCreateToolbarLocaleItem(context)
+    ]
+  }
+}
+
+/**
+ * Builds the built-in desktop/pad toolbar item list.
  *
  * @param context - Optional callbacks for theme, locale, and placement items.
  * @returns Default {@link AcUiToolbarItem} array.
@@ -149,12 +417,6 @@ function acuiCreateToolbarLocaleItem(
 export function acuiCreateDefaultToolbarItems(
   context?: AcUiDefaultToolbarContext
 ): AcUiToolbarItem[] {
-  const getTheme = (): AcEdUiTheme => context?.getTheme() ?? 'light'
-  const toggleTheme = () => {
-    const next: AcEdUiTheme = getTheme() === 'dark' ? 'light' : 'dark'
-    context?.setTheme(next)
-  }
-
   const items: AcUiToolbarItem[] = [
     {
       id: 'select',
@@ -193,177 +455,8 @@ export function acuiCreateDefaultToolbarItems(
       icon: ICON_SWITCH_BG,
       command: 'switchbg'
     },
-    {
-      id: 'measure',
-      label: 'toolbar.measure',
-      icon: ICON_MEASURE,
-      childrenUi: 'sticky-toolbar',
-      children: [
-        {
-          id: 'measure-distance',
-          label: 'toolbar.measureDistance',
-          icon: ICON_MEASURE_DISTANCE,
-          command: 'measuredistance'
-        },
-        {
-          id: 'measure-angle',
-          label: 'toolbar.measureAngle',
-          icon: ICON_MEASURE_ANGLE,
-          command: 'measureangle'
-        },
-        {
-          id: 'measure-area',
-          label: 'toolbar.measureArea',
-          icon: ICON_MEASURE_AREA,
-          command: 'measurearea'
-        },
-        {
-          id: 'measure-arc',
-          label: 'toolbar.measureArc',
-          icon: ICON_MEASURE_ARC,
-          command: 'measurearc'
-        },
-        {
-          id: 'measure-point',
-          label: 'toolbar.measurePoint',
-          icon: ICON_MEASURE_POINT,
-          command: 'measurepoint'
-        },
-        {
-          id: 'measurement-vis',
-          toggle: {
-            getValue: isMeasurementVisible,
-            on: {
-              label: 'toolbar.showMeasurements',
-              icon: ICON_ANNOTATION_SHOW,
-              command: 'measurementvis'
-            },
-            off: {
-              label: 'toolbar.hideMeasurements',
-              icon: ICON_ANNOTATION_HIDE,
-              command: 'measurementvis'
-            }
-          }
-        },
-        {
-          id: 'clear-measurements',
-          label: 'toolbar.clearMeasurements',
-          icon: ICON_CLEAR_MEASUREMENTS,
-          command: 'clearmeasurements'
-        },
-        {
-          type: 'separator',
-          id: 'sep-measure-import-export'
-        },
-        {
-          id: 'measurement-import',
-          label: 'toolbar.measurementImport',
-          icon: ICON_MARKUP_IMPORT,
-          command: 'measurementimport'
-        },
-        {
-          id: 'measurement-export',
-          label: 'toolbar.measurementExport',
-          icon: ICON_MARKUP_EXPORT,
-          command: 'measurementexport'
-        }
-      ]
-    },
-    {
-      id: 'annotation',
-      label: 'toolbar.annotation',
-      icon: ICON_ANNOTATION,
-      minOpenMode: AcEdOpenMode.Review,
-      childrenUi: 'sticky-toolbar',
-      children: [
-        {
-          id: 'markup-cloud',
-          label: 'toolbar.markupCloud',
-          icon: ICON_REV_CLOUD,
-          command: 'markupcloud'
-        },
-        {
-          id: 'markup-callout',
-          label: 'toolbar.markupCallout',
-          icon: ICON_MARKUP_CALLOUT,
-          command: 'markupcallout'
-        },
-        {
-          id: 'markup-text',
-          label: 'toolbar.markupText',
-          icon: ICON_MARKUP_TEXT,
-          command: 'markuptext'
-        },
-        {
-          id: 'markup-rect',
-          label: 'toolbar.markupRect',
-          icon: ICON_REV_RECT,
-          command: 'markuprect'
-        },
-        {
-          id: 'markup-circle',
-          label: 'toolbar.markupCircle',
-          icon: ICON_REV_CIRCLE,
-          command: 'markupcircle'
-        },
-        {
-          id: 'markup-arrow',
-          label: 'toolbar.markupArrow',
-          icon: ICON_MARKUP_ARROW,
-          command: 'markuparrow'
-        },
-        {
-          id: 'markup-stamp',
-          label: 'toolbar.markupStamp',
-          icon: ICON_MARKUP_STAMP,
-          command: 'markupstamp'
-        },
-        {
-          id: 'markup-panel',
-          label: 'toolbar.markupPanel',
-          icon: ICON_MARKUP_PANEL,
-          command: 'markuppanel'
-        },
-        {
-          id: 'markup-vis',
-          toggle: {
-            getValue: isMarkupVisible,
-            on: {
-              label: 'toolbar.showMarkup',
-              icon: ICON_ANNOTATION_SHOW,
-              command: 'markupvis'
-            },
-            off: {
-              label: 'toolbar.hideMarkup',
-              icon: ICON_ANNOTATION_HIDE,
-              command: 'markupvis'
-            }
-          }
-        },
-        {
-          id: 'clear-markups',
-          label: 'toolbar.clearMarkups',
-          icon: ICON_CLEAR_MARKUPS,
-          command: 'clearmarkups'
-        },
-        {
-          type: 'separator',
-          id: 'sep-markup-import-export'
-        },
-        {
-          id: 'markup-import',
-          label: 'toolbar.markupImport',
-          icon: ICON_MARKUP_IMPORT,
-          command: 'markupimport'
-        },
-        {
-          id: 'markup-export',
-          label: 'toolbar.markupExport',
-          icon: ICON_MARKUP_EXPORT,
-          command: 'markupexport'
-        }
-      ]
-    },
+    acuiCreateMeasureToolbarItem(),
+    acuiCreateAnnotationToolbarItem(),
     {
       id: 'export',
       label: 'toolbar.export',
@@ -395,25 +488,36 @@ export function acuiCreateDefaultToolbarItems(
       id: 'sep-settings'
     },
     acuiCreateToolbarPlacementItem(context),
-    {
-      id: 'theme',
-      requiresDocument: false,
-      toggle: {
-        getValue: () => getTheme() === 'light',
-        on: {
-          label: 'toolbar.themeLight',
-          icon: ICON_THEME_LIGHT,
-          action: toggleTheme
-        },
-        off: {
-          label: 'toolbar.themeDark',
-          icon: ICON_THEME_DARK,
-          action: toggleTheme
-        }
-      }
-    },
+    acuiCreateThemeToolbarItem(context),
     acuiCreateToolbarLocaleItem(context)
   ]
 
   return items
+}
+
+/**
+ * Builds the phone-layout toolbar: zoom, measure, annotation, layer, layout, settings.
+ *
+ * @param context - Optional callbacks for theme and locale items under settings.
+ * @returns Default phone {@link AcUiToolbarItem} array.
+ */
+export function acuiCreatePhoneToolbarItems(
+  context?: AcUiDefaultToolbarContext
+): AcUiToolbarItem[] {
+  return [
+    acuiCreateZoomToolbarItem(),
+    acuiCreateMeasureToolbarItem(),
+    {
+      ...acuiCreateAnnotationToolbarItem(),
+      label: 'toolbar.annotationShort'
+    },
+    {
+      id: 'layer',
+      label: 'toolbar.layerShort',
+      icon: ICON_LAYER,
+      command: 'layer'
+    },
+    acuiCreateLayoutToolbarItem(),
+    acuiCreateSettingsToolbarItem(context)
+  ]
 }

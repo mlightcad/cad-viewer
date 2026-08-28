@@ -893,6 +893,11 @@ export default {
         local: 'السابق',
         global: 'Previous'
       },
+      original: {
+        display: 'الأصلي(O)',
+        local: 'الأصلي',
+        global: 'Original'
+      },
       scale: {
         display: 'مقياس(S)',
         local: 'مقياس',

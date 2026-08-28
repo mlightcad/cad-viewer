@@ -37,4 +37,10 @@ describe('acuiNormalizePluginOptions', () => {
     const resolved = acuiNormalizePluginOptions({})
     expect(resolved.toolbar.edgeOffset).toBe(8)
   })
+
+  it('defaults layout mode to auto', () => {
+    const resolved = acuiNormalizePluginOptions({})
+    expect(resolved.layout).toBe('auto')
+    expect(resolved.layouts).toEqual({})
+  })
 })

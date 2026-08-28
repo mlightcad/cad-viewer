@@ -1,11 +1,101 @@
 import type {
   AcApLocale,
   AcEdOpenMode,
+  AcEdUiLayoutKind,
   AcEdUiTheme
 } from '@mlightcad/cad-simple-viewer'
 
 /** Toolbar edge placement relative to the viewer host element. */
 export type AcUiToolbarPlacement = 'top' | 'bottom' | 'left' | 'right'
+
+/**
+ * Overflow behavior when toolbar buttons exceed the host bounds.
+ *
+ * - `'menu'`: show a ⋯ button; overflow items open in a dropdown menu.
+ * - `'wrap'`: continue on additional rows (horizontal) or columns (vertical).
+ */
+export type AcUiToolbarOverflow = 'menu' | 'wrap'
+
+/**
+ * Sizing along the toolbar layout axis: width for horizontal bars, height for vertical bars.
+ *
+ * - `'auto'`: natural size from button content (default).
+ * - `'stretch'`: fill the available host width or height and space buttons evenly.
+ */
+export type AcUiToolbarSize = 'auto' | 'stretch'
+
+/**
+ * How a sub-toolbar aligns along the parent toolbar's main axis.
+ *
+ * - `'front'`: first sub-toolbar button aligns with the first toolbar button
+ *   (default)
+ * - `'end'`: last sub-toolbar button aligns with the last toolbar button
+ * - `'center'`: centers the sub-toolbar on the parent toolbar
+ * - `'auto'`: align to the parent button
+ *
+ * Ignored when the sub-toolbar {@link AcUiToolbarChromeOptions.size} is
+ * `'stretch'`.
+ */
+export type AcUiSubToolbarPosition = 'front' | 'end' | 'center' | 'auto'
+
+/**
+ * Shared layout and chrome options for the main toolbar and sub-toolbars.
+ *
+ * Sub-toolbars inherit unset fields from the main toolbar unless overridden via
+ * {@link AcUiToolbarOptions.subToolbar}.
+ */
+export interface AcUiToolbarChromeOptions {
+  /**
+   * Inset from the host edge where the toolbar is anchored in px.
+   * Top/bottom placement uses top or bottom; left/right uses left or right.
+   * @default 8
+   */
+  edgeOffset?: number
+  /**
+   * Minimum inset from the host edges orthogonal to {@link edgeOffset} in px.
+   *
+   * - Horizontal toolbar (top/bottom): spacing from the top and bottom edges.
+   * - Vertical toolbar (left/right): spacing from the left and right edges.
+   *
+   * Used when the toolbar is at its maximum cross-axis size (for example wrap
+   * overflow) and for cross-axis positioning clamps.
+   * @default 0
+   */
+  sideOffset?: number
+  /** When true, render button labels below icons on icon toolbars. */
+  showLabels?: boolean
+  /**
+   * Sizing along the toolbar layout axis: width for horizontal bars, height for
+   * vertical bars.
+   * @default 'auto'
+   */
+  size?: AcUiToolbarSize
+  /** Overflow behavior when buttons exceed the host bounds. */
+  overflow?: AcUiToolbarOverflow
+  /**
+   * When false, hides the toolbar container border line.
+   * @default true
+   */
+  showBorder?: boolean
+  /**
+   * When false, omits visual separators between toolbar button groups.
+   * @default true
+   */
+  showSeparators?: boolean
+}
+
+/**
+ * Sub-toolbar overrides: chrome fields plus optional axis alignment.
+ *
+ * Unset chrome fields inherit from the main toolbar.
+ */
+export interface AcUiSubToolbarOptions extends Partial<AcUiToolbarChromeOptions> {
+  /**
+   * Aligns the strip along the parent toolbar axis.
+   * @default 'front'
+   */
+  position?: AcUiSubToolbarPosition
+}
 
 /** Dock panel edge placement relative to the viewer host element. */
 export type AcUiDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
@@ -110,6 +200,70 @@ export type AcUiToolbarItemConfig =
 export type AcUiToolbarItemsInput = AcUiToolbarItemConfig[] | 'default'
 
 /**
+ * Standalone toolbar configuration shared by the plugin and (later) HTML export.
+ *
+ * Built-in defaults per layout kind come from
+ * {@link acuiBuiltinToolbarOptionsForLayout}; callers merge via
+ * {@link acuiMergeToolbarOptionsForLayout}.
+ */
+export interface AcUiToolbarOptions extends AcUiToolbarChromeOptions {
+  /** When false, the toolbar is not created. */
+  enabled?: boolean
+  /** Edge placement relative to `host`. */
+  placement?: AcUiToolbarPlacement
+  /** Toolbar items, `'default'`, or a custom list (may include presets and separators). */
+  items?: AcUiToolbarItemConfig[] | 'default'
+  /** Extra items merged into `items` (default: appended at the end). */
+  appendItems?: AcUiToolbarItemConfig[]
+  /**
+   * Insert `appendItems` after the root toolbar item with this id.
+   * Ignored when {@link appendItemsBefore} is set.
+   */
+  appendItemsAfter?: string
+  /**
+   * Insert `appendItems` before the root toolbar item with this id.
+   * Takes precedence over {@link appendItemsAfter}.
+   */
+  appendItemsBefore?: string
+  /** When true, show a collapse/expand toggle at the end of the toolbar. */
+  collapsible?: boolean
+  /** Initial collapsed state when {@link collapsible} is true. */
+  defaultCollapsed?: boolean
+  /**
+   * Canvas element that receives the floating toolbar.
+   * Defaults to the active view container when it is inside `host`.
+   */
+  mountTarget?: HTMLElement
+  /**
+   * Sub-toolbar chrome and position overrides. Unset chrome fields inherit from
+   * the main toolbar. {@link AcUiSubToolbarOptions.position} defaults to
+   * `'front'`.
+   */
+  subToolbar?: AcUiSubToolbarOptions
+}
+
+/**
+ * Per-layout overrides for {@link AcUiSimpleUiPluginOptions.layouts}.
+ *
+ * Each entry's `toolbar` is merged on top of built-in defaults and the top-level
+ * {@link AcUiToolbarOptions} baseline (phone inherits only `enabled` and
+ * `mountTarget` from the top-level toolbar — see
+ * {@link acuiMergeToolbarOptionsForLayout}).
+ */
+export interface AcUiLayoutOptions {
+  /** Toolbar configuration for this layout kind. */
+  toolbar?: AcUiToolbarOptions
+}
+
+/**
+ * How the plugin chooses among phone / pad / desktop chrome.
+ *
+ * - `'auto'`: follow viewport width via {@link acedGetUiLayout}
+ * - `'phone' | 'pad' | 'desktop'`: force a layout kind regardless of viewport
+ */
+export type AcUiPluginLayoutMode = 'auto' | AcEdUiLayoutKind
+
+/**
  * Callbacks supplied when building the default toolbar (theme, locale, and placement).
  */
 export interface AcUiDefaultToolbarContext {
@@ -135,6 +289,26 @@ export interface AcUiSimpleUiPluginOptions {
   host?: HTMLElement
   /** @deprecated Locale follows {@link AcApI18n.currentLocale} automatically. */
   locale?: AcUiLocale
+  /**
+   * Layout mode. `'auto'` follows viewport width; otherwise forces one kind.
+   * @default 'auto'
+   */
+  layout?: AcUiPluginLayoutMode
+  /**
+   * Per-layout toolbar overrides. Merged on top of built-in defaults and the
+   * top-level {@link toolbar} baseline.
+   *
+   * Keys match {@link AcEdUiLayoutKind}. Phone overrides replace phone built-ins;
+   * pad/desktop overrides replace the full top-level toolbar for that kind.
+   */
+  layouts?: {
+    /** Overrides when {@link AcApSimpleUiPlugin.getLayout} resolves to phone. */
+    phone?: AcUiLayoutOptions
+    /** Overrides when {@link AcApSimpleUiPlugin.getLayout} resolves to pad. */
+    pad?: AcUiLayoutOptions
+    /** Overrides when {@link AcApSimpleUiPlugin.getLayout} resolves to desktop. */
+    desktop?: AcUiLayoutOptions
+  }
   /** Chrome DevTools-style dock panel configuration. */
   dockPanel?: {
     /** Explicitly enable the dock panel container. */
@@ -153,38 +327,13 @@ export interface AcUiSimpleUiPluginOptions {
      */
     mountTarget?: HTMLElement
   }
-  /** Toolbar configuration. Enabled by default. */
-  toolbar?: {
-    /** When false, the toolbar is not created. */
-    enabled?: boolean
-    /** Edge placement relative to `host`. */
-    placement?: AcUiToolbarPlacement
-    /** Toolbar items, `'default'`, or a custom list (may include presets and separators). */
-    items?: AcUiToolbarItemConfig[] | 'default'
-    /** Extra items merged into `items` (default: appended at the end). */
-    appendItems?: AcUiToolbarItemConfig[]
-    /**
-     * Insert `appendItems` after the root toolbar item with this id.
-     * Ignored when {@link appendItemsBefore} is set.
-     */
-    appendItemsAfter?: string
-    /**
-     * Insert `appendItems` before the root toolbar item with this id.
-     * Takes precedence over {@link appendItemsAfter}.
-     */
-    appendItemsBefore?: string
-    /** When true, show a collapse/expand toggle at the end of the toolbar. */
-    collapsible?: boolean
-    /** Initial collapsed state when {@link collapsible} is true. */
-    defaultCollapsed?: boolean
-    /**
-     * Canvas element that receives the floating toolbar.
-     * Defaults to the active view container when it is inside `host`.
-     */
-    mountTarget?: HTMLElement
-    /** Inset from the canvas edge in px. @default 8 */
-    edgeOffset?: number
-  }
+  /**
+   * Toolbar baseline configuration. Applied fully to pad/desktop. Phone inherits
+   * only {@link AcUiToolbarOptions.mountTarget} and `enabled` from this baseline;
+   * phone chrome and items come from built-in phone defaults plus
+   * {@link layouts.phone.toolbar} (append items are not inherited on phone).
+   */
+  toolbar?: AcUiToolbarOptions
 }
 
 /** Plugin identifier registered with {@link AcApPluginManager}. */

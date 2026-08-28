@@ -224,9 +224,13 @@ export const ICON_CHEVRON_RIGHT =
 export const ICON_CHEVRON_LEFT =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M6.5 10 11 14.5V5.5L6.5 10Z"/></svg>'
 
-/** Restore the view captured when an HTML export first opened. */
+/** Restore the view captured when a layout was first framed (ZOOM Original). */
 export const ICON_ZOOM_ORIGINAL =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" d="M10 2.6 18 9.8h-2.1V17h-4.4v-4.4H8.5V17H4.1V9.8H2L10 2.6Zm0 1.8L5.3 9.8V15.8h2V11.4h5.4v4.4h2V9.8L10 4.4Z"/></svg>'
+
+/** Settings / gear parent icon for compact toolbars. */
+export const ICON_SETTINGS =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" d="M8.08 2.1h3.84l.32 1.52a6.4 6.4 0 0 1 1.36.78l1.48-.64 1.92 1.92-.64 1.48c.3.42.54.88.78 1.36l1.52.32v3.84l-1.52.32a6.4 6.4 0 0 1-.78 1.36l.64 1.48-1.92 1.92-1.48-.64a6.4 6.4 0 0 1-1.36.78l-.32 1.52H8.08l-.32-1.52a6.4 6.4 0 0 1-1.36-.78l-1.48.64-1.92-1.92.64-1.48a6.4 6.4 0 0 1-.78-1.36L1.34 11.92V8.08l1.52-.32c.24-.48.48-.94.78-1.36l-.64-1.48 1.92-1.92 1.48.64c.42-.3.88-.54 1.36-.78L8.08 2.1ZM10 7.2A2.8 2.8 0 1 0 10 12.8 2.8 2.8 0 0 0 10 7.2Z"/></svg>'
 
 /** Show-all-layers action icon. */
 export const ICON_LAYER_ON =
@@ -272,6 +276,10 @@ export const ICON_MARKUP_SHOW = ICON_ANNOTATION_SHOW
 
 /** Alias for {@link ICON_ANNOTATION_HIDE}. */
 export const ICON_MARKUP_HIDE = ICON_ANNOTATION_HIDE
+
+/** Overflow / more menu icon (horizontal ellipsis). */
+export const ICON_MORE =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><circle cx="4" cy="10" r="1.6" fill="currentColor"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><circle cx="16" cy="10" r="1.6" fill="currentColor"/></svg>'
 
 /**
  * Creates a DOM icon element from an SVG string, element, or factory.
