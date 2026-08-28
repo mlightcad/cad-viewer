@@ -1,6 +1,6 @@
 import { AcApContext } from '../app'
 import { AcEdCommand } from '../editor'
-import { AcTrView2d } from '../view/AcTrView2d'
+import type { AcTrView2d } from '../view/AcTrView2d'
 
 /**
  * Toggles transient reading mode: black linework on a white canvas.

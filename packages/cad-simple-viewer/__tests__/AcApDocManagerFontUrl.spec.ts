@@ -217,6 +217,7 @@ jest.mock('../src/command', () => {
     'AcApPolylineCmd',
     'AcApQNewCmd',
     'AcApRayCmd',
+    'AcApReadingModeCmd',
     'AcApRectCmd',
     'AcApRegenCmd',
     'AcApRevCloudCmd',

@@ -1,71 +1,72 @@
 import {
   ACAP_READING_MODE_BACKGROUND,
-  ACAP_READING_MODE_COLOR
+  ACAP_READING_MODE_COLOR,
+  AcApReadingModeState
 } from '../src/view/AcApReadingMode'
-import { AcTrView2d } from '../src/view/AcTrView2d'
 
-type ReadingModeViewStub = {
-  _readingModeEnabled: boolean
-  _readingModeSavedBackground: number | null
-  _isDirty?: boolean
-  _renderer?: { currentBackgroundColor: number }
-  applyViewClearColor: jest.Mock
-  setCompareDisplay: jest.Mock
-}
-
-describe('AcTrView2d reading mode', () => {
-  it('refreshes saved background when re-applied after document reload', () => {
-    const applyViewClearColor = jest.fn()
-    const view: ReadingModeViewStub = {
-      _readingModeEnabled: true,
-      _readingModeSavedBackground: 0x000000,
-      _renderer: { currentBackgroundColor: 0xffffff },
-      applyViewClearColor,
-      setCompareDisplay: jest.fn()
+describe('AcApReadingModeState', () => {
+  function createHost() {
+    return {
+      getCurrentBackgroundColor: jest.fn(() => 0xffffff),
+      applyViewClearColor: jest.fn(),
+      setCompareDisplay: jest.fn(),
+      markDirty: jest.fn()
     }
+  }
 
-    const reapply = (
-      AcTrView2d.prototype as unknown as {
-        reapplyReadingModeIfEnabled: () => void
-      }
-    ).reapplyReadingModeIfEnabled
-    reapply.call(view)
+  it('refreshes saved background when re-applied after document reload', () => {
+    const host = createHost()
+    host.getCurrentBackgroundColor.mockReturnValue(0xffffff)
+    const state = new AcApReadingModeState(host)
+    state.setEnabled(true)
+    host.getCurrentBackgroundColor.mockReturnValue(0x112233)
+    host.applyViewClearColor.mockClear()
+    host.setCompareDisplay.mockClear()
 
-    expect(view._readingModeSavedBackground).toBe(0xffffff)
-    expect(applyViewClearColor).toHaveBeenCalledWith(
+    state.reapplyIfEnabled()
+
+    expect(host.applyViewClearColor).toHaveBeenCalledWith(
       ACAP_READING_MODE_BACKGROUND
     )
-    expect(view.setCompareDisplay).toHaveBeenCalledWith({
+    expect(host.setCompareDisplay).toHaveBeenCalledWith({
       enabled: true,
       baseColor: ACAP_READING_MODE_COLOR
     })
+
+    state.setEnabled(false)
+    expect(host.applyViewClearColor).toHaveBeenCalledWith(0x112233)
   })
 
   it('restores clear color without mutating style manager materials on disable', () => {
-    const applyViewClearColor = jest.fn()
-    const setCompareDisplay = jest.fn()
-    const view: ReadingModeViewStub = {
-      _readingModeEnabled: true,
-      _readingModeSavedBackground: 0x000000,
-      _isDirty: false,
-      applyViewClearColor,
-      setCompareDisplay
-    }
+    const host = createHost()
+    host.getCurrentBackgroundColor.mockReturnValue(0x000000)
+    const state = new AcApReadingModeState(host)
+    state.setEnabled(true)
+    host.applyViewClearColor.mockClear()
+    host.setCompareDisplay.mockClear()
+    host.markDirty.mockClear()
 
-    const setReadingMode = (
-      AcTrView2d.prototype as unknown as {
-        setReadingMode: (enabled: boolean) => void
-      }
-    ).setReadingMode
-    setReadingMode.call(view, false)
+    state.setEnabled(false)
 
-    expect(view._readingModeEnabled).toBe(false)
-    expect(view._readingModeSavedBackground).toBeNull()
-    expect(setCompareDisplay).toHaveBeenCalledWith({
+    expect(state.isEnabled).toBe(false)
+    expect(host.setCompareDisplay).toHaveBeenCalledWith({
       enabled: false,
       overrides: []
     })
-    expect(applyViewClearColor).toHaveBeenCalledWith(0x000000)
-    expect(view._isDirty).toBe(true)
+    expect(host.applyViewClearColor).toHaveBeenCalledWith(0x000000)
+    expect(host.markDirty).toHaveBeenCalledTimes(1)
+  })
+
+  it('updates saved background via noteLayoutBackground while enabled', () => {
+    const host = createHost()
+    host.getCurrentBackgroundColor.mockReturnValue(0x000000)
+    const state = new AcApReadingModeState(host)
+    state.setEnabled(true)
+    state.noteLayoutBackground(0xabcdef)
+    host.applyViewClearColor.mockClear()
+
+    state.setEnabled(false)
+
+    expect(host.applyViewClearColor).toHaveBeenCalledWith(0xabcdef)
   })
 })

@@ -1,3 +1,13 @@
+jest.mock('../src/app', () => ({}))
+
+jest.mock('../src/editor', () => {
+  class AcEdCommand {}
+
+  return {
+    AcEdCommand
+  }
+})
+
 import { AcApReadingModeCmd } from '../src/command/AcApReadingModeCmd'
 
 describe('AcApReadingModeCmd', () => {
