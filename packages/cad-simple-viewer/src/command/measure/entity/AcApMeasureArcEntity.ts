@@ -208,19 +208,20 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
     const resolveArc = () =>
       this.resolveMeasuredArc(live.geom, live.start, live.end, live.through)
 
-    const syncGeomFromThreePoints = () => {
-      if (!live.through) return
+    const syncGeomFromThreePoints = (): boolean => {
+      if (!live.through) return true
       const arc = AcGeCircArc2d.tryCreateByThreePoints(
         live.start,
         live.through,
         live.end
       )
-      if (!arc) return
+      if (!arc) return false
       live.geom = {
         cx: arc.center.x,
         cy: arc.center.y,
         r: arc.radius
       }
+      return true
     }
 
     let arcLen = resolveArc()?.length ?? 0
@@ -310,12 +311,26 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
     }
 
     const refreshLive = () => {
-      if (hasThrough) syncGeomFromThreePoints()
-      arcLen = resolveArc()?.length ?? 0
+      const valid = syncGeomFromThreePoints()
+      const arc = valid ? resolveArc() : null
+      arcLen = arc?.length ?? 0
       badge.setText(formatMeasurementLength(db, arcLen))
       acapPlaceOverlayHtml(view, badge, midPoint())
       paintArc(getMeasurementStyle(this.entityId) ?? this.style)
       view.isHtmlDirty = true
+    }
+
+    const restoreDragStart = () => {
+      live.start = { ...dragStart.start }
+      live.end = { ...dragStart.end }
+      live.through = dragStart.through ? { ...dragStart.through } : undefined
+      live.geom = { ...dragStart.geom }
+      acapPlaceOverlayHtml(view, dot1, live.start)
+      acapPlaceOverlayHtml(view, dot2, live.end)
+      if (dotThrough && live.through) {
+        acapPlaceOverlayHtml(view, dotThrough, live.through)
+      }
+      refreshLive()
     }
 
     const beginEndpointDrag = () => {
@@ -345,7 +360,10 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
         refreshLive()
         return
       }
-      if (hasThrough) syncGeomFromThreePoints()
+      if (!syncGeomFromThreePoints()) {
+        restoreDragStart()
+        return
+      }
       const snap = getMeasurementSnapshot(this.entityId)
       const geometry: AcApMeasurementRecord['geometry'] = {
         type: 'arc',

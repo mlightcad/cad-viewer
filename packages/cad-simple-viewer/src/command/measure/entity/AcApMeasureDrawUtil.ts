@@ -257,6 +257,9 @@ export function strokeMeasureArcOnContext(
   const measured = through
     ? AcGeCircArc2d.tryCreateByThreePoints(start, through, end)
     : undefined
+  // Collinear three-point input cannot define a circle; do not stroke the
+  // previous circumcircle (start/end no longer lie on `g`).
+  if (through && !measured) return
   const antiClockwise = measured
     ? !measured.clockwise
     : AcGeMathUtil.normalizeAngle(ea - sa) > Math.PI

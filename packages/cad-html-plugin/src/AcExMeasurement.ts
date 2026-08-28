@@ -2445,8 +2445,23 @@ export class AcExMeasureController {
       return true
     }
 
+    let dragStart = {
+      start: start.clone(),
+      through: through.clone(),
+      end: end.clone(),
+      geom: { ...geom }
+    }
+
     const refresh = () => {
-      if (!syncGeom()) return 0
+      if (!syncGeom()) {
+        // Dots already moved; drop the stale circumcircle and length until
+        // the three points define a circle again (or the drag is reverted).
+        badge.textContent = this._view.formatLength(0)
+        this._placeDomAt(badge, start)
+        for (const fn of this._redrawListeners) fn()
+        this._view.render()
+        return 0
+      }
       const len = arcLengthThroughMiddle(start, through, end, geom)
       const nextMid = arcMidThroughMiddle(start, through, end, geom)
       mid.copy(nextMid)
@@ -2468,9 +2483,26 @@ export class AcExMeasureController {
       return len
     }
 
+    const restoreDragStart = () => {
+      start.copy(dragStart.start)
+      through.copy(dragStart.through)
+      end.copy(dragStart.end)
+      geom.cx = dragStart.geom.cx
+      geom.cy = dragStart.geom.cy
+      geom.r = dragStart.geom.r
+      this._placeDomAt(startDot, start)
+      this._placeDomAt(throughDot, through)
+      this._placeDomAt(endDot, end)
+      refresh()
+    }
+
     const isEnabled = () => !this._mode
     const onSelect = () => this._selectOnly(id)
     const onCommit = () => {
+      if (!syncGeom()) {
+        restoreDragStart()
+        return
+      }
       const len = refresh()
       this._touchMeasureGeometry(id, 'length', len)
     }
@@ -2480,6 +2512,14 @@ export class AcExMeasureController {
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled,
         onPointerDown: onSelect,
+        onDragStart: () => {
+          dragStart = {
+            start: start.clone(),
+            through: through.clone(),
+            end: end.clone(),
+            geom: { ...geom }
+          }
+        },
         onMove: world => {
           target.set(world.x, world.y)
           this._placeDomAt(el, world)
@@ -3516,6 +3556,13 @@ export class AcExMeasureController {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.save()
     ctx.scale(dpr, dpr)
+
+    // Collinear start/through/end cannot define a circle; leave the canvas
+    // cleared instead of stroking the previous circumcircle.
+    if (!AcGeCircArc2d.tryCreateByThreePoints(start, through, end)) {
+      ctx.restore()
+      return
+    }
 
     const rootRect = this._overlayRootOffset()
     const sc = this._view.wcsToScreen(new THREE.Vector2(g.cx, g.cy))
