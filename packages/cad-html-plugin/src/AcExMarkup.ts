@@ -1545,6 +1545,18 @@ export class AcExMarkupController {
     return point2(this._view.screenToWcs(clientX, clientY))
   }
 
+  private _clientToWorldWithOsnap(
+    clientX: number,
+    clientY: number
+  ): AcExMarkupPoint2d {
+    return point2(this._resolvePointerWithOsnap(clientX, clientY))
+  }
+
+  private _hideOsnapMarker(): void {
+    this._osnapCache = null
+    this._onOsnapMarker(null, null)
+  }
+
   private _placeDomAt(el: HTMLElement, wcs: AcExMarkupPoint2d): void {
     el.dataset.wcsX = String(wcs.x)
     el.dataset.wcsY = String(wcs.y)
@@ -1585,6 +1597,7 @@ export class AcExMarkupController {
   }
 
   private _touchRecord(id: string): void {
+    this._hideOsnapMarker()
     const record = this._findRecord(id)
     if (!record) return
     record.updatedAt = markupNow()
@@ -1615,6 +1628,8 @@ export class AcExMarkupController {
     const cleanups: Array<() => void> = []
     const isEnabled = () => this._gripsEnabled()
     const clientToWorld = (x: number, y: number) => this._clientToWorld(x, y)
+    const clientToWorldOsnap = (x: number, y: number) =>
+      this._clientToWorldWithOsnap(x, y)
     const onSelect = () => this._selectOnly(id)
 
     const shapeOutline = (): AcExMarkupShapeOutline | null => {
@@ -1684,7 +1699,7 @@ export class AcExMarkupController {
       cleanups.push(
         acExBindMarkupPointerDrag({
           el: tipDot,
-          clientToWorld,
+          clientToWorld: clientToWorldOsnap,
           isEnabled,
           onPointerDown: onSelect,
           onMove: world => {
@@ -1758,7 +1773,7 @@ export class AcExMarkupController {
       cleanups.push(
         acExBindMarkupPointerDrag({
           el: startDot,
-          clientToWorld,
+          clientToWorld: clientToWorldOsnap,
           isEnabled,
           onPointerDown: onSelect,
           onMove: world => {
@@ -1777,7 +1792,7 @@ export class AcExMarkupController {
       cleanups.push(
         acExBindMarkupPointerDrag({
           el: endDot,
-          clientToWorld,
+          clientToWorld: clientToWorldOsnap,
           isEnabled,
           onPointerDown: onSelect,
           onMove: world => {
@@ -1803,12 +1818,16 @@ export class AcExMarkupController {
         geometryType === 'rect' ||
         geometryType === 'circle')
     ) {
+      const snapCenter =
+        geometryType === 'cloud' ||
+        geometryType === 'rect' ||
+        geometryType === 'circle'
       let originGeom: AcExMarkupGeometry | null = null
       let originCenter: AcExMarkupPoint2d | null = null
       cleanups.push(
         acExBindMarkupPointerDrag({
           el: centerDot,
-          clientToWorld,
+          clientToWorld: snapCenter ? clientToWorldOsnap : clientToWorld,
           isEnabled,
           cursor: 'move',
           onPointerDown: onSelect,

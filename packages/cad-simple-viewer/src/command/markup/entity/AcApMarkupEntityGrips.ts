@@ -247,6 +247,11 @@ export interface AcApMarkupCenterMoveOptions {
   onLiveOffset?: (dx: number, dy: number) => void
   /** Optional attached callout to keep in sync while moving. */
   attached?: AcApMarkupAttachedCalloutVisual
+  /**
+   * When true, the center grip snaps to CAD geometry (rect / circle / cloud).
+   * Default false for text, stamp, and callout whole-object moves.
+   */
+  useOsnap?: boolean
 }
 
 /**
@@ -276,6 +281,7 @@ export function bindMarkupCenterMove(
     view,
     el: centerEl.element,
     cursor: 'move',
+    useOsnap: options.useOsnap === true,
     onDragStart: () => {
       selectMarkupGroup(view, recordId)
       const stored = getMarkupStore().get(recordId)

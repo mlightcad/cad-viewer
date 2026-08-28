@@ -891,6 +891,8 @@ export class AcExMeasureController {
 
   /** Active toolbar mode, or `null` when idle. */
   private _mode: AcExMeasureMode | null = null
+  /** True while a peer create tool (e.g. markup) is armed. */
+  private _peerToolActive = false
   /** Vertices collected for the current in-progress measurement. */
   private _points: THREE.Vector2[] = []
   /**
@@ -981,6 +983,16 @@ export class AcExMeasureController {
   /** Clears the current measurement selection (if any). */
   clearSelection(): void {
     this._deselect(true)
+  }
+
+  /**
+   * Suspends measurement endpoint pointer hit-testing while a peer create
+   * tool (e.g. markup) is armed, so overlay DOM cannot steal OSNAP clicks.
+   */
+  setPeerToolActive(active: boolean): void {
+    if (this._peerToolActive === active) return
+    this._peerToolActive = active
+    this._syncGripPointerEvents()
   }
 
   /**
@@ -1125,6 +1137,7 @@ export class AcExMeasureController {
     this._mode = mode
     this._points = []
     this._updateToolbarActive()
+    this._syncGripPointerEvents()
     this._statusEl.textContent = this._hintForMode(mode)
     this._onActiveChange?.(true)
   }
@@ -1144,6 +1157,7 @@ export class AcExMeasureController {
     this._hidePreview()
     this._onOsnapMarker(null, null)
     this._updateToolbarActive()
+    this._syncGripPointerEvents()
     this._updateIdleStatus()
     this._view.render()
     if (wasActive) this._onActiveChange?.(false)
@@ -1754,7 +1768,7 @@ export class AcExMeasureController {
       acExBindMarkupPointerDrag({
         el: dot,
         clientToWorld: (x, y) => this._clientToWorld(x, y),
-        isEnabled: () => !this._mode,
+        isEnabled: () => this._gripsEnabled(),
         onPointerDown: () => this._selectOnly(id),
         onMove: world => {
           pos.set(world.x, world.y)
@@ -1767,6 +1781,7 @@ export class AcExMeasureController {
         }
       })
     )
+    this._syncGripPointerEvents()
   }
 
   /**
@@ -1887,7 +1902,7 @@ export class AcExMeasureController {
       return dist
     }
 
-    const isEnabled = () => !this._mode
+    const isEnabled = () => this._gripsEnabled()
     const onSelect = () => this._selectOnly(id)
     const onCommit = () => {
       const dist = refresh()
@@ -1919,6 +1934,7 @@ export class AcExMeasureController {
         onCommit
       })
     )
+    this._syncGripPointerEvents()
   }
 
   /**
@@ -2089,7 +2105,7 @@ export class AcExMeasureController {
       return deg
     }
 
-    const isEnabled = () => !this._mode
+    const isEnabled = () => this._gripsEnabled()
     const onSelect = () => this._selectOnly(id)
     const onCommit = () => {
       refresh()
@@ -2110,6 +2126,7 @@ export class AcExMeasureController {
       })
 
     parts.cleanups.push(bind(dotV, vertex), bind(dot1, arm1), bind(dot2, arm2))
+    this._syncGripPointerEvents()
   }
 
   /** Clears locked-arc direction state (Ctrl flip and mouse-follow). @internal */
@@ -2496,11 +2513,12 @@ export class AcExMeasureController {
       refresh()
     }
 
-    const isEnabled = () => !this._mode
+    const isEnabled = () => this._gripsEnabled()
     const onSelect = () => this._selectOnly(id)
     const onCommit = () => {
       if (!syncGeom()) {
         restoreDragStart()
+        this._hideOsnapMarker()
         return
       }
       const len = refresh()
@@ -2533,6 +2551,7 @@ export class AcExMeasureController {
       bind(throughDot, through),
       bind(endDot, end)
     )
+    this._syncGripPointerEvents()
   }
 
   /**
@@ -2645,7 +2664,7 @@ export class AcExMeasureController {
       return len
     }
 
-    const isEnabled = () => !this._mode
+    const isEnabled = () => this._gripsEnabled()
     const onSelect = () => this._selectOnly(id)
     const onCommit = () => {
       const len = refresh()
@@ -2667,6 +2686,7 @@ export class AcExMeasureController {
       })
 
     parts.cleanups.push(bind(startDot, start), bind(endDot, end))
+    this._syncGripPointerEvents()
   }
 
   /**
@@ -2827,7 +2847,7 @@ export class AcExMeasureController {
       return area
     }
 
-    const isEnabled = () => !this._mode
+    const isEnabled = () => this._gripsEnabled()
     const onSelect = () => this._selectOnly(id)
     const onCommit = () => {
       const area = refresh()
@@ -2853,6 +2873,7 @@ export class AcExMeasureController {
         })
       )
     }
+    this._syncGripPointerEvents()
   }
 
   /**
@@ -2903,10 +2924,38 @@ export class AcExMeasureController {
     this._onStyleChange?.()
   }
 
-  /** Client → world converter for grip hosts. @internal */
-  private _clientToWorld(clientX: number, clientY: number): { x: number; y: number } {
-    const w = this._view.screenToWcs(clientX, clientY)
-    return { x: w.x, y: w.y }
+  /** Client → world converter for grip hosts (object snap applied). @internal */
+  private _clientToWorld(
+    clientX: number,
+    clientY: number
+  ): { x: number; y: number } {
+    const p = this._resolvePointerWithOsnap(clientX, clientY)
+    return { x: p.x, y: p.y }
+  }
+
+  private _hideOsnapMarker(): void {
+    this._osnapCache = null
+    this._onOsnapMarker(null, null)
+  }
+
+  /** True when committed endpoint grips may receive pointer events. @internal */
+  private _gripsEnabled(): boolean {
+    return !this._peerToolActive && this._mode === null
+  }
+
+  /**
+   * Enables or disables pointer hits on measurement endpoint dots.
+   * Inline `pointer-events` from grip binding otherwise steal OSNAP clicks.
+   * @internal
+   */
+  private _syncGripPointerEvents(): void {
+    const enable = this._gripsEnabled()
+    for (const measure of this._committed) {
+      for (const el of measure.parts.dom) {
+        if (!el.classList.contains('mlcad-measure-dot')) continue
+        el.style.pointerEvents = enable ? 'auto' : 'none'
+      }
+    }
   }
 
   /**
@@ -2918,6 +2967,7 @@ export class AcExMeasureController {
     quantity: AcExMeasureQuantity | null,
     value: number
   ): void {
+    this._hideOsnapMarker()
     const measure = this._committed.find(m => m.id === id)
     if (!measure) return
     measure.quantity = quantity
