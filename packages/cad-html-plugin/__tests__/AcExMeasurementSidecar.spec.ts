@@ -60,6 +60,35 @@ describe('AcExMeasurementSidecar', () => {
     })
   })
 
+  it('round-trips WCS style fields', () => {
+    const withWcs: AcExMeasurementSidecarFile = {
+      version: 1,
+      measurements: [
+        {
+          id: 'wcs',
+          type: 'distance',
+          style: {
+            color: '#08e8de',
+            lineWeight: 70,
+            fontSize: 13,
+            textHeightWcs: 0.65,
+            strokeWidthWcs: 0.1
+          },
+          geometry: {
+            type: 'distance',
+            start: { x: 0, y: 0 },
+            end: { x: 1, y: 0 }
+          }
+        }
+      ]
+    }
+    const parsed = parseAcExMeasurementSidecar(
+      stringifyAcExMeasurementSidecar(withWcs)
+    )
+    expect(parsed.measurements[0]?.style.textHeightWcs).toBe(0.65)
+    expect(parsed.measurements[0]?.style.strokeWidthWcs).toBe(0.1)
+  })
+
   it('rejects invalid payloads', () => {
     expect(() => parseAcExMeasurementSidecar('not-json')).toThrow(/not JSON/)
     expect(() =>

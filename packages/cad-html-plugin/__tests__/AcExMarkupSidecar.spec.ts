@@ -50,11 +50,70 @@ describe('AcExMarkupSidecar', () => {
     expect(parsed.markups[1]?.text).toBe('Note')
   })
 
+  it('round-trips WCS style fields', () => {
+    const withWcs: AcExMarkupSidecarFile = {
+      version: 1,
+      markups: [
+        {
+          id: 'wcs',
+          type: 'arrow',
+          style: {
+            color: '#e53935',
+            lineWeight: 70,
+            textHeightWcs: 0.6,
+            strokeWidthWcs: 0.1
+          },
+          comment: '',
+          status: 'open',
+          author: '',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          geometry: {
+            type: 'arrow',
+            start: { x: 0, y: 0 },
+            end: { x: 10, y: 5 }
+          }
+        }
+      ]
+    }
+    const parsed = parseAcExMarkupSidecar(stringifyAcExMarkupSidecar(withWcs))
+    expect(parsed.markups[0]?.style.textHeightWcs).toBe(0.6)
+    expect(parsed.markups[0]?.style.strokeWidthWcs).toBe(0.1)
+  })
+
   it('rejects invalid payloads', () => {
     expect(() => parseAcExMarkupSidecar('not-json')).toThrow(/not JSON/)
     expect(() => parseAcExMarkupSidecar('{"version":2,"markups":[]}')).toThrow(
       /version 1/
     )
+  })
+
+  it('drops non-finite world-space style sizes', () => {
+    const parsed = parseAcExMarkupSidecar(
+      JSON.stringify({
+        version: 1,
+        markups: [
+          {
+            id: 'm1',
+            type: 'text',
+            style: {
+              color: '#ff0000',
+              fontSize: 12,
+              textHeightWcs: Number.POSITIVE_INFINITY,
+              strokeWidthWcs: Number.NaN
+            },
+            comment: '',
+            status: 'open',
+            author: '',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+            geometry: { type: 'text', position: { x: 1, y: 2 } }
+          }
+        ]
+      })
+    )
+    expect(parsed.markups[0]?.style.textHeightWcs).toBeUndefined()
+    expect(parsed.markups[0]?.style.strokeWidthWcs).toBeUndefined()
   })
 
   it('suggests sidecar file names', () => {

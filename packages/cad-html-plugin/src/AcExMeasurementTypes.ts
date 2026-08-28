@@ -22,11 +22,16 @@ export interface AcExMeasurementPoint2d {
   y: number
 }
 
-/** Drawing style stored in the sidecar (CSS-friendly). */
+/** Drawing style stored in the sidecar (CSS-friendly + world-space sizes). */
 export interface AcExMeasurementSidecarStyle {
   color: string
   lineWeight: number
+  /** Authoring badge font size in CSS pixels (legacy / UI). */
   fontSize: number
+  /** Badge text height in world units (preferred when restoring overlays). */
+  textHeightWcs?: number
+  /** Canvas stroke width in world units (preferred when restoring overlays). */
+  strokeWidthWcs?: number
 }
 
 export interface AcExMeasurementDistanceGeometry {

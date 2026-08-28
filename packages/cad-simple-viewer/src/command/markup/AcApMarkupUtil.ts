@@ -7,7 +7,9 @@ import {
   AcGiLineWeight
 } from '@mlightcad/data-model'
 
-import { preferExactAciColor } from '../../util/AcApCssColor'
+import type { AcEdBaseView } from '../../editor'
+import { acCmColorToCssHex, parseCssToAcCmColor } from '../../util/AcApCssColor'
+import { acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil'
 import type { AcApMarkupStyle } from './AcApMarkupTypes'
 
 /** Factory default markup color (ACI red) used to seed the draw style. */
@@ -88,18 +90,12 @@ export function markupCanvasLineWidth(weight: AcGiLineWeight | number): number {
 
 /** Convert AcCmColor to a CSS color string for sidecar style. */
 export function markupColorToCss(color: AcCmColor): string {
-  return color.cssColor ?? `rgb(${color.red}, ${color.green}, ${color.blue})`
+  return acCmColorToCssHex(color)
 }
 
 /** Parse a CSS color string back into AcCmColor (best-effort). */
 export function cssToMarkupColor(css: string): AcCmColor {
-  const fromString = AcCmColor.fromString(css)
-  if (fromString) return preferExactAciColor(fromString)
-  try {
-    return preferExactAciColor(new AcCmColor().setRGBFromCss(css))
-  } catch {
-    return createDefaultMarkupColor()
-  }
+  return parseCssToAcCmColor(css, [255, 0, 0])
 }
 
 /** Build a style object from the current markup draw color / line weight / font size. */
@@ -108,6 +104,92 @@ export function defaultMarkupStyle(): AcApMarkupStyle {
     color: markupColorToCss(defaultMarkupColor()),
     lineWeight: getMarkupLineWeight(),
     fontSize: getMarkupFontSize()
+  }
+}
+
+/** Attach world-space text/stroke sizes from the current view (sidecar export). */
+export function withMarkupStyleWcs(
+  style: AcApMarkupStyle,
+  view: AcEdBaseView
+): AcApMarkupStyle {
+  const fontSize =
+    style.fontSize != null && style.fontSize > 0
+      ? style.fontSize
+      : MARKUP_FONT_SIZE
+  const lineWeight =
+    style.lineWeight != null && style.lineWeight > 0
+      ? style.lineWeight
+      : MARKUP_LINE_WEIGHT
+  return {
+    ...style,
+    textHeightWcs: acapScreenPxToWcs(fontSize, view),
+    strokeWidthWcs: acapScreenPxToWcs(markupCanvasLineWidth(lineWeight), view)
+  }
+}
+
+/**
+ * Merge a style patch while keeping world-space sizes independent of color.
+ *
+ * Only recomputes / scales {@link AcApMarkupStyle.textHeightWcs} when font size
+ * changes, and {@link AcApMarkupStyle.strokeWidthWcs} when line weight changes.
+ */
+export function patchMarkupStyleWcs(
+  previous: AcApMarkupStyle,
+  next: AcApMarkupStyle,
+  view: AcEdBaseView,
+  patch: Partial<AcApMarkupStyle>
+): AcApMarkupStyle {
+  const prevFont =
+    previous.fontSize != null && previous.fontSize > 0
+      ? previous.fontSize
+      : MARKUP_FONT_SIZE
+  const nextFont =
+    next.fontSize != null && next.fontSize > 0 ? next.fontSize : MARKUP_FONT_SIZE
+  const prevWeight =
+    previous.lineWeight != null && previous.lineWeight > 0
+      ? previous.lineWeight
+      : MARKUP_LINE_WEIGHT
+  const nextWeight =
+    next.lineWeight != null && next.lineWeight > 0
+      ? next.lineWeight
+      : MARKUP_LINE_WEIGHT
+
+  const fontSizeChanged =
+    patch.fontSize != null && patch.fontSize !== previous.fontSize
+  const lineWeightChanged =
+    patch.lineWeight != null && patch.lineWeight !== previous.lineWeight
+
+  let textHeightWcs = previous.textHeightWcs ?? next.textHeightWcs
+  if (fontSizeChanged) {
+    if (textHeightWcs != null && textHeightWcs > 0 && prevFont > 0) {
+      textHeightWcs = textHeightWcs * (nextFont / prevFont)
+    } else {
+      textHeightWcs = acapScreenPxToWcs(nextFont, view)
+    }
+  } else if (textHeightWcs == null || !(textHeightWcs > 0)) {
+    textHeightWcs = acapScreenPxToWcs(nextFont, view)
+  }
+
+  let strokeWidthWcs = previous.strokeWidthWcs ?? next.strokeWidthWcs
+  if (lineWeightChanged) {
+    const prevPx = markupCanvasLineWidth(prevWeight)
+    const nextPx = markupCanvasLineWidth(nextWeight)
+    if (strokeWidthWcs != null && strokeWidthWcs > 0 && prevPx > 0) {
+      strokeWidthWcs = strokeWidthWcs * (nextPx / prevPx)
+    } else {
+      strokeWidthWcs = acapScreenPxToWcs(nextPx, view)
+    }
+  } else if (strokeWidthWcs == null || !(strokeWidthWcs > 0)) {
+    strokeWidthWcs = acapScreenPxToWcs(
+      markupCanvasLineWidth(nextWeight),
+      view
+    )
+  }
+
+  return {
+    ...next,
+    textHeightWcs,
+    strokeWidthWcs
   }
 }
 

@@ -14,7 +14,6 @@ import {
   formatMeasurementAngle
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
-import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import {
   getMeasurementStyle,
   MEASUREMENT_LAYER
@@ -62,7 +61,9 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
     super(
       options.id ?? `angle-${Date.now()}`,
       options.layoutId,
-      options.style
+      options.style,
+      options.textHeightWcs,
+      options.strokeWidthWcs
     )
     this.vertex = vertex
     this.arm1 = arm1
@@ -106,14 +107,15 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
    * Serializes this angle measurement to a store/sidecar record.
    *
    * @param layoutId - Optional layout BTR id written onto the record
+   * @param view - Optional view used to convert screen style to WCS
    * @returns Record with `type: 'angle'` and vertex/arm geometry
    */
-  toRecord(layoutId?: string): AcApMeasurementRecord {
+  toRecord(layoutId?: string, view?: AcTrView2d): AcApMeasurementRecord {
     return {
       id: this.entityId,
       type: 'angle',
       layoutId,
-      style: serializeMeasurementStyle(this.style),
+      style: this.serializeStyle(view),
       geometry: {
         type: 'angle',
         vertex: { x: this.vertex.x, y: this.vertex.y },
@@ -146,20 +148,6 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
       layer: MEASUREMENT_LAYER,
       layoutId
     })
-    const paintAngle = (paintStyle = this.style) =>
-      drawMeasureAngleArcOnCanvas(
-        persistOverlay.canvas,
-        view,
-        this.vertex,
-        this.arm1,
-        this.arm2,
-        paintStyle.color,
-        acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
-      )
-    paintAngle()
-    const redrawPersist = () =>
-      paintAngle(getMeasurementStyle(this.entityId) ?? this.style)
-    view.events.viewChanged.addEventListener(redrawPersist)
 
     const dx1 = this.arm1.x - this.vertex.x
     const dy1 = this.arm1.y - this.vertex.y
@@ -190,35 +178,54 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
       y: this.vertex.y + by * badgeOffset
     }
 
-    const group = this.createGroup(view)
-      .add(
-        new AcTrHtmlDot({
-          id: `${this.entityId}-dotV`,
-          color,
-          worldPosition: this.vertex,
-          layer: MEASUREMENT_LAYER
-        }),
-        new AcTrHtmlDot({
-          id: `${this.entityId}-dot1`,
-          color,
-          worldPosition: this.arm1,
-          layer: MEASUREMENT_LAYER
-        }),
-        new AcTrHtmlDot({
-          id: `${this.entityId}-dot2`,
-          color,
-          worldPosition: this.arm2,
-          layer: MEASUREMENT_LAYER
-        }),
-        new AcTrHtmlBadge({
-          id: `${this.entityId}-badge`,
-          color,
-          text: formatMeasurementAngle(db, (degrees * Math.PI) / 180),
-          worldPosition: badgeWorld,
-          layer: MEASUREMENT_LAYER,
-          fontSize: this.style.fontSize
-        })
+    const dotV = new AcTrHtmlDot({
+      id: `${this.entityId}-dotV`,
+      color,
+      worldPosition: this.vertex,
+      layer: MEASUREMENT_LAYER
+    })
+    const dot1 = new AcTrHtmlDot({
+      id: `${this.entityId}-dot1`,
+      color,
+      worldPosition: this.arm1,
+      layer: MEASUREMENT_LAYER
+    })
+    const dot2 = new AcTrHtmlDot({
+      id: `${this.entityId}-dot2`,
+      color,
+      worldPosition: this.arm2,
+      layer: MEASUREMENT_LAYER
+    })
+    const badge = new AcTrHtmlBadge({
+      id: `${this.entityId}-badge`,
+      color,
+      text: formatMeasurementAngle(db, (degrees * Math.PI) / 180),
+      worldPosition: badgeWorld,
+      layer: MEASUREMENT_LAYER,
+      fontSize: this.style.fontSize
+    })
+    this.seedOverlaySizes(
+      view,
+      [dotV, dot1, dot2, badge],
+      [persistOverlay.canvas]
+    )
+    const paintAngle = (paintStyle = this.style) =>
+      drawMeasureAngleArcOnCanvas(
+        persistOverlay.canvas,
+        view,
+        this.vertex,
+        this.arm1,
+        this.arm2,
+        paintStyle.color,
+        acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
       )
+    paintAngle()
+    const redrawPersist = () =>
+      paintAngle(getMeasurementStyle(this.entityId) ?? this.style)
+    view.events.viewChanged.addEventListener(redrawPersist)
+
+    const group = this.createGroup(view)
+      .add(dotV, dot1, dot2, badge)
       .addCanvas(persistOverlay)
 
     return {
@@ -230,7 +237,7 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
       extras: {
         style: this.style,
         value: { kind: 'angle', radians: (degrees * Math.PI) / 180 },
-        snapshot: this.toRecord(layoutId),
+        snapshot: this.toRecord(layoutId, view),
         redraw: paintAngle
       }
     }

@@ -78,6 +78,7 @@ function prepareMeasureCanvas(
  * @param p2 - Segment end in world coordinates
  * @param color - Stroke color
  * @param lineWidth - Stroke width in CSS pixels (default `2`)
+ * @param strokeWidthWcs - Optional imported world-space stroke width
  */
 export function drawMeasureSegmentOnCanvas(
   canvas: HTMLCanvasElement,
@@ -85,7 +86,8 @@ export function drawMeasureSegmentOnCanvas(
   p1: Point2,
   p2: Point2,
   color: AcCmColor,
-  lineWidth = 2
+  lineWidth = 2,
+  strokeWidthWcs?: number
 ): void {
   const prepared = prepareMeasureCanvas(canvas, view)
   if (!prepared) return
@@ -96,7 +98,12 @@ export function drawMeasureSegmentOnCanvas(
   ctx.moveTo(a.x, a.y)
   ctx.lineTo(b.x, b.y)
   ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, canvas, view)
+  ctx.lineWidth = acapScaledOverlayLineWidth(
+    lineWidth,
+    canvas,
+    view,
+    strokeWidthWcs
+  )
   ctx.stroke()
   ctx.restore()
 }
@@ -115,6 +122,7 @@ export function drawMeasureSegmentOnCanvas(
  * @param arm2 - Second arm endpoint in world coordinates
  * @param color - Stroke color
  * @param lineWidth - Stroke width in CSS pixels (default `2`)
+ * @param strokeWidthWcs - Optional imported world-space stroke width
  */
 export function drawMeasureAngleArcOnCanvas(
   canvas: HTMLCanvasElement,
@@ -123,7 +131,8 @@ export function drawMeasureAngleArcOnCanvas(
   arm1: Point2,
   arm2: Point2,
   color: AcCmColor,
-  lineWidth = 2
+  lineWidth = 2,
+  strokeWidthWcs?: number
 ): void {
   const prepared = prepareMeasureCanvas(canvas, view)
   if (!prepared) return
@@ -134,7 +143,12 @@ export function drawMeasureAngleArcOnCanvas(
   const sa2 = view.worldToScreen(arm2)
 
   ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, canvas, view)
+  ctx.lineWidth = acapScaledOverlayLineWidth(
+    lineWidth,
+    canvas,
+    view,
+    strokeWidthWcs
+  )
   ctx.beginPath()
   ctx.moveTo(sv.x, sv.y)
   ctx.lineTo(sa1.x, sa1.y)
@@ -168,13 +182,15 @@ export function drawMeasureAngleArcOnCanvas(
  * @param points - Polygon vertices in world coordinates (closed implicitly)
  * @param color - Fill and stroke color
  * @param lineWidth - Stroke width in CSS pixels (default `2.5`)
+ * @param strokeWidthWcs - Optional imported world-space stroke width
  */
 export function drawMeasureAreaOnCanvas(
   canvas: HTMLCanvasElement,
   view: AcEdBaseView,
   points: Point2[],
   color: AcCmColor,
-  lineWidth = 2.5
+  lineWidth = 2.5,
+  strokeWidthWcs?: number
 ): void {
   const prepared = prepareMeasureCanvas(canvas, view)
   if (!prepared || points.length < 3) {
@@ -191,7 +207,12 @@ export function drawMeasureAreaOnCanvas(
   ctx.fillStyle = acapColorToCssAlpha(color, 0.2)
   ctx.fill()
   ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, canvas, view)
+  ctx.lineWidth = acapScaledOverlayLineWidth(
+    lineWidth,
+    canvas,
+    view,
+    strokeWidthWcs
+  )
   ctx.stroke()
   ctx.restore()
 }
@@ -212,6 +233,7 @@ export function drawMeasureAreaOnCanvas(
  * @param color - Stroke color
  * @param lineWidth - Stroke width in CSS pixels
  * @param through - Optional point on the measured sweep
+ * @param strokeWidthWcs - Optional imported world-space stroke width
  */
 export function strokeMeasureArcOnContext(
   ctx: CanvasRenderingContext2D,
@@ -221,7 +243,8 @@ export function strokeMeasureArcOnContext(
   end: Point2,
   color: AcCmColor,
   lineWidth: number,
-  through?: Point2
+  through?: Point2,
+  strokeWidthWcs?: number
 ): void {
   const sc = view.worldToScreen({ x: g.cx, y: g.cy })
   const ss = view.worldToScreen(start)
@@ -241,7 +264,12 @@ export function strokeMeasureArcOnContext(
   ctx.beginPath()
   ctx.arc(sc.x, sc.y, screenR, sa, ea, antiClockwise)
   ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
+  ctx.lineWidth = acapScaledOverlayLineWidth(
+    lineWidth,
+    ctx.canvas,
+    view,
+    strokeWidthWcs
+  )
   ctx.stroke()
 }
 
@@ -259,6 +287,7 @@ export function strokeMeasureArcOnContext(
  * @param color - Stroke color
  * @param lineWidth - Stroke width in CSS pixels (default `4`)
  * @param through - Optional point on the measured sweep (major vs minor arc)
+ * @param strokeWidthWcs - Optional imported world-space stroke width
  */
 export function drawMeasureArcOnCanvas(
   canvas: HTMLCanvasElement,
@@ -268,7 +297,8 @@ export function drawMeasureArcOnCanvas(
   end: Point2,
   color: AcCmColor,
   lineWidth = 4,
-  through?: Point2
+  through?: Point2,
+  strokeWidthWcs?: number
 ): void {
   const prepared = prepareMeasureCanvas(canvas, view)
   if (!prepared) return
@@ -280,7 +310,8 @@ export function drawMeasureArcOnCanvas(
     end,
     color,
     lineWidth,
-    through
+    through,
+    strokeWidthWcs
   )
   prepared.ctx.restore()
 }

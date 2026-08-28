@@ -72,6 +72,12 @@ function isType(value: unknown): value is AcExMarkupType {
   )
 }
 
+function parsePositiveNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && value > 0 && Number.isFinite(value)
+    ? value
+    : undefined
+}
+
 function parseRecord(raw: unknown): AcExMarkupRecord | undefined {
   if (!isPlainObject(raw)) return undefined
   if (typeof raw.id !== 'string' || !isType(raw.type)) return undefined
@@ -154,7 +160,9 @@ function parseRecord(raw: unknown): AcExMarkupRecord | undefined {
       fontSize:
         typeof raw.style.fontSize === 'number' && raw.style.fontSize > 0
           ? raw.style.fontSize
-          : undefined
+          : undefined,
+      textHeightWcs: parsePositiveNumber(raw.style.textHeightWcs),
+      strokeWidthWcs: parsePositiveNumber(raw.style.strokeWidthWcs)
     },
     text: typeof raw.text === 'string' ? raw.text : undefined,
     comment: typeof raw.comment === 'string' ? raw.comment : '',

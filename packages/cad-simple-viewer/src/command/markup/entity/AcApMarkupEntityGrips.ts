@@ -16,7 +16,8 @@ import {
   acapBindOverlayPointerDrag,
   acapDrawOverlayLeader,
   acapFitOverlayCanvas,
-  acapPlaceOverlayHtml
+  acapPlaceOverlayHtml,
+  acapSeedOverlaySizesFromWcs
 } from '../../overlay'
 import {
   markupGeometryCenter,
@@ -35,6 +36,7 @@ import type {
   AcApMarkupRecord
 } from '../AcApMarkupTypes'
 import {
+  MARKUP_FONT_SIZE,
   MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth
 } from '../AcApMarkupUtil'
@@ -135,7 +137,8 @@ export function publishAttachedCallout(
           ? record.style.lineWeight
           : MARKUP_LINE_WEIGHT
       ),
-      view2d
+      view2d,
+      record.style.strokeWidthWcs
     )
   }
   redraw()
@@ -159,6 +162,19 @@ export function publishAttachedCallout(
     layoutId
   })
   group.add(bubble, tipDot)
+
+  acapSeedOverlaySizesFromWcs(view2d, {
+    textHeightWcs: record.style.textHeightWcs,
+    strokeWidthWcs: record.style.strokeWidthWcs,
+    fontSizePx: record.style.fontSize ?? MARKUP_FONT_SIZE,
+    strokeScreenPx: markupCanvasLineWidth(
+      record.style.lineWeight != null && record.style.lineWeight > 0
+        ? record.style.lineWeight
+        : MARKUP_LINE_WEIGHT
+    ),
+    elements: [bubble, tipDot],
+    canvases: [overlay.canvas]
+  })
 
   cleanups.push(
     bindMarkupInlineTextEdit({

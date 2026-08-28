@@ -56,6 +56,12 @@ function isType(value: unknown): value is AcExMeasurementType {
   )
 }
 
+function parsePositiveNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && value > 0 && Number.isFinite(value)
+    ? value
+    : undefined
+}
+
 function parseStyle(raw: unknown): AcExMeasurementSidecarStyle | undefined {
   if (!isPlainObject(raw) || typeof raw.color !== 'string') return undefined
   const lineWeight =
@@ -66,7 +72,13 @@ function parseStyle(raw: unknown): AcExMeasurementSidecarStyle | undefined {
     typeof raw.fontSize === 'number' && raw.fontSize > 0
       ? raw.fontSize
       : ACEX_MEASUREMENT_FONT_SIZE
-  return { color: raw.color, lineWeight, fontSize }
+  return {
+    color: raw.color,
+    lineWeight,
+    fontSize,
+    textHeightWcs: parsePositiveNumber(raw.textHeightWcs),
+    strokeWidthWcs: parsePositiveNumber(raw.strokeWidthWcs)
+  }
 }
 
 function parseGeometry(

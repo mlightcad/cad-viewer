@@ -19,7 +19,9 @@ describe('AcApMeasurementSidecar', () => {
           style: {
             color: '#ff0000',
             lineWeight: AcGiLineWeight.LineWeight070,
-            fontSize: 13
+            fontSize: 13,
+            textHeightWcs: 2.5,
+            strokeWidthWcs: 0.4
           },
           geometry: {
             type: 'distance',
@@ -96,6 +98,8 @@ describe('AcApMeasurementSidecar', () => {
     expect(parsed.version).toBe(1)
     expect(parsed.drawingName).toBe('demo.dwg')
     expect(parsed.measurements).toHaveLength(5)
+    expect(parsed.measurements[0].style.textHeightWcs).toBe(2.5)
+    expect(parsed.measurements[0].style.strokeWidthWcs).toBe(0.4)
     expect(parsed.measurements[0].geometry).toEqual({
       type: 'distance',
       start: { x: 0, y: 0 },
@@ -115,6 +119,24 @@ describe('AcApMeasurementSidecar', () => {
       type: 'point',
       position: { x: 3, y: 4 }
     })
+  })
+
+  it('keeps legacy styles that omit world-space sizes', () => {
+    const parsed = parseMeasurementSidecar(
+      JSON.stringify({
+        version: 1,
+        measurements: [
+          {
+            id: 'legacy',
+            type: 'point',
+            style: { color: '#abcabc', lineWeight: 35, fontSize: 13 },
+            geometry: { type: 'point', position: { x: 1, y: 2 } }
+          }
+        ]
+      })
+    )
+    expect(parsed.measurements[0].style.textHeightWcs).toBeUndefined()
+    expect(parsed.measurements[0].style.strokeWidthWcs).toBeUndefined()
   })
 
   it('suggests sidecar file names', () => {

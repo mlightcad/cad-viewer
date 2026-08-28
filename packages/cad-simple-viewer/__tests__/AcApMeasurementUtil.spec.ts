@@ -99,4 +99,11 @@ describe('acapCssToMeasurementColor', () => {
     expect(custom.green).toBe(34)
     expect(custom.blue).toBe(56)
   })
+
+  it('parses rgb() without spaces (sidecar export form)', () => {
+    const color = acapCssToMeasurementColor('rgb(96,165,250)')
+    expect(color.red).toBe(96)
+    expect(color.green).toBe(165)
+    expect(color.blue).toBe(250)
+  })
 })

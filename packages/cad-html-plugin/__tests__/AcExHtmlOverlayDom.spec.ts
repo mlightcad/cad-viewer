@@ -1,11 +1,15 @@
 /** @jest-environment jsdom */
 
 import {
+  ACEX_OVERLAY_BASE_ZOOM,
+  ACEX_OVERLAY_STROKE_WCS,
   acExOverlayTransform,
   acExOverlayViewScale,
+  acExPixelsPerWorldUnit,
   acExPositionWcsOverlay,
   acExResetOverlayViewScale,
-  acExScaledCanvasLineWidth
+  acExScaledCanvasLineWidth,
+  acExSeedOverlaySizesFromWcs
 } from '../src/AcExHtmlOverlayDom'
 
 describe('AcExHtmlOverlayDom', () => {
@@ -46,9 +50,83 @@ describe('AcExHtmlOverlayDom', () => {
     expect(el.style.transform).toBe('translate(-50%, -50%)')
   })
 
-  it('scales canvas stroke width with zoom', () => {
+  it('scales canvas stroke width with zoom (legacy path)', () => {
     const canvas = document.createElement('canvas')
     expect(acExScaledCanvasLineWidth(2, canvas, 2)).toBe(2)
     expect(acExScaledCanvasLineWidth(2, canvas, 4)).toBe(4)
+  })
+
+  it('scales canvas stroke width with WCS via wcsToScreen', () => {
+    const canvas = document.createElement('canvas')
+    const wcsToScreen = (wcs: { x: number; y: number }) => ({
+      x: wcs.x * 10,
+      y: wcs.y * 10
+    })
+    expect(acExPixelsPerWorldUnit(wcsToScreen)).toBe(10)
+
+    const width = acExScaledCanvasLineWidth(2, canvas, 1, {
+      strokeWidthWcs: 0.25,
+      wcsToScreen
+    })
+    expect(width).toBe(2.5)
+
+    const width2 = acExScaledCanvasLineWidth(2, canvas, 1, {
+      strokeWidthWcs: 0.25,
+      wcsToScreen: (wcs: { x: number; y: number }) => ({
+        x: wcs.x * 20,
+        y: wcs.y * 20
+      })
+    })
+    expect(width2).toBe(5)
+  })
+
+  it('honors re-seeded stroke WCS when explicit width is omitted', () => {
+    const canvas = document.createElement('canvas')
+    const wcsToScreen = (wcs: { x: number; y: number }) => ({
+      x: wcs.x * 10,
+      y: wcs.y * 10
+    })
+
+    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+      strokeWidthWcs: 0.2,
+      canvases: [canvas]
+    })
+    expect(canvas.dataset[ACEX_OVERLAY_STROKE_WCS]).toBe('0.2')
+
+    // Stale constructor WCS would overwrite; omit so dataset wins after style edit.
+    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+      strokeWidthWcs: 0.4,
+      canvases: [canvas]
+    })
+    const width = acExScaledCanvasLineWidth(2, canvas, 2, { wcsToScreen })
+    expect(width).toBe(4)
+  })
+
+  it('seeds DOM baseZoom only from matched text screen/WCS pair', () => {
+    const el = document.createElement('div')
+    const canvas = document.createElement('canvas')
+    const wcsToScreen = (wcs: { x: number; y: number }) => ({
+      x: wcs.x * 10,
+      y: wcs.y * 10
+    })
+
+    // Font size without textHeightWcs must not pair with stroke WCS.
+    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+      fontSizePx: 13,
+      strokeWidthWcs: 0.4,
+      strokeScreenPx: 2.5,
+      elements: [el],
+      canvases: [canvas]
+    })
+    expect(el.dataset[ACEX_OVERLAY_BASE_ZOOM]).toBeUndefined()
+    expect(canvas.dataset[ACEX_OVERLAY_STROKE_WCS]).toBe('0.4')
+
+    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+      fontSizePx: 13,
+      textHeightWcs: 1.3,
+      elements: [el]
+    })
+    // base = (13 * 2) / (1.3 * 10) = 2
+    expect(el.dataset[ACEX_OVERLAY_BASE_ZOOM]).toBe('2')
   })
 })

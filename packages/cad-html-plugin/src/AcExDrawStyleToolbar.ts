@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import { AcCmColor, AcGiLineWeight } from '@mlightcad/data-model'
+import { AcCmColor, AcCmColorUtil, AcGiLineWeight } from '@mlightcad/data-model'
 
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 
@@ -270,11 +270,30 @@ function cssColor(color: AcCmColor): string {
   return color.cssColor ?? `rgb(${color.red}, ${color.green}, ${color.blue})`
 }
 
+function preferExactAciColor(color: AcCmColor): AcCmColor {
+  if (!color.isByColor) return color
+  const rgb = color.RGB
+  if (rgb == null) return color
+  const index = AcCmColorUtil.getIndexByColor(rgb)
+  if (index == null) return color
+  const aci = new AcCmColor()
+  aci.colorIndex = index
+  return aci
+}
+
 function cssToColor(css: string): AcCmColor {
-  const fromString = AcCmColor.fromString(css)
-  if (fromString) return fromString
+  const trimmed = css.trim()
+  const isFunctional = /^(rgb|rgba|hsl|hsla)\(/i.test(trimmed)
+  if (!isFunctional) {
+    try {
+      const fromString = AcCmColor.fromString(trimmed)
+      if (fromString) return preferExactAciColor(fromString)
+    } catch {
+      // Fall through to setRGBFromCss.
+    }
+  }
   try {
-    return new AcCmColor().setRGBFromCss(css)
+    return preferExactAciColor(new AcCmColor().setRGBFromCss(trimmed))
   } catch {
     const fallback = new AcCmColor()
     fallback.setRGB(8, 232, 222)

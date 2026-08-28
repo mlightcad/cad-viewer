@@ -2,22 +2,32 @@ import type {
   AcDbDatabase,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
-import { AcTrHtmlGroup } from '@mlightcad/three-renderer'
+import {
+  type AcTrHtmlElement,
+  AcTrHtmlGroup} from '@mlightcad/three-renderer'
 
-import type { AcApMeasurementStyle } from '../../../util'
+import {
+  acapMeasurementCanvasLineWidth,
+  type AcApMeasurementStyle
+} from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
   AcApOverlayEntity,
   type AcApOverlaySerializable,
-  type AcApOverlayWorldDrawResult
+  type AcApOverlayWorldDrawResult,
+  acapSeedOverlaySizesFromWcs
 } from '../../overlay'
 import { hitTestMeasurementGeometry } from '../AcApMeasurementGeometry'
+import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import {
   type AcApMeasurementGroupExtras,
   commitMeasurementGroup,
   MEASUREMENT_LAYER
 } from '../AcApMeasurementStore'
-import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
+import type {
+  AcApMeasurementRecord,
+  AcApMeasurementSidecarStyle
+} from '../AcApMeasurementTypes'
 
 /**
  * Options shared by measurement entity constructors.
@@ -33,6 +43,10 @@ export interface AcApMeasureEntityOptions {
   layoutId?: string
   /** Visual style (color, line weight, font size) for CAD and HTML overlays. */
   style: AcApMeasurementStyle
+  /** World-space badge height from sidecar import (optional). */
+  textHeightWcs?: number
+  /** World-space stroke width from sidecar import (optional). */
+  strokeWidthWcs?: number
 }
 
 /**
@@ -71,6 +85,10 @@ export abstract class AcApMeasureEntity
   protected readonly entityId: string
   /** Optional layout override from construction options. */
   protected readonly layoutIdOption: string | undefined
+  /** Imported world-space badge height (sidecar). */
+  protected readonly textHeightWcs?: number
+  /** Imported world-space stroke width (sidecar). */
+  protected readonly strokeWidthWcs?: number
 
   /**
    * Creates a measure entity with the given id, layout, and style.
@@ -78,16 +96,22 @@ export abstract class AcApMeasureEntity
    * @param id - Stable measurement identifier
    * @param layoutId - Layout BTR id, or `undefined` to resolve from the view
    * @param style - Measurement visual style
+   * @param textHeightWcs - Optional imported world-space text height
+   * @param strokeWidthWcs - Optional imported world-space stroke width
    */
   constructor(
     id: string,
     layoutId: string | undefined,
-    style: AcApMeasurementStyle
+    style: AcApMeasurementStyle,
+    textHeightWcs?: number,
+    strokeWidthWcs?: number
   ) {
     super()
     this.entityId = id
     this.layoutIdOption = layoutId
     this.style = style
+    this.textHeightWcs = textHeightWcs
+    this.strokeWidthWcs = strokeWidthWcs
   }
 
   /**
@@ -103,12 +127,17 @@ export abstract class AcApMeasureEntity
    * Builds a serializable snapshot of this measurement.
    *
    * Geometry is taken from construction-time fields; `layoutId` may override
-   * the layout stored on the record.
+   * the layout stored on the record. When `view` is provided, style includes
+   * world-space text / stroke sizes for camera-independent import.
    *
    * @param layoutId - Optional layout BTR id written onto the record
+   * @param view - Optional view used to convert screen style to WCS
    * @returns Sidecar-ready measurement record
    */
-  abstract toRecord(layoutId?: string): AcApMeasurementRecord
+  abstract toRecord(
+    layoutId?: string,
+    view?: AcTrView2d
+  ): AcApMeasurementRecord
 
   /**
    * Hit-tests this measurement's geometry against a canvas point.
@@ -209,6 +238,29 @@ export abstract class AcApMeasureEntity
    */
   protected resolveLayoutId(view: AcTrView2d): string | undefined {
     return this.layoutIdOption ?? view.activeLayoutBtrId
+  }
+
+  /** Sidecar style including world-space sizes at the current view. */
+  protected serializeStyle(view?: AcTrView2d): AcApMeasurementSidecarStyle {
+    return serializeMeasurementStyle(this.style, view)
+  }
+
+  /**
+   * Seeds imported WCS sizes onto HTML overlays and canvases before first paint.
+   */
+  protected seedOverlaySizes(
+    view: AcTrView2d,
+    elements: readonly AcTrHtmlElement[],
+    canvases: readonly HTMLElement[] = []
+  ): void {
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: this.textHeightWcs,
+      strokeWidthWcs: this.strokeWidthWcs,
+      fontSizePx: this.style.fontSize,
+      strokeScreenPx: acapMeasurementCanvasLineWidth(this.style.lineWeight),
+      elements,
+      canvases
+    })
   }
 }
 

@@ -1,12 +1,15 @@
 import { AcGiLineWeight } from '@mlightcad/data-model'
 
+import type { AcEdBaseView } from '../../editor'
 import {
   acapCssColor,
   acapCssToMeasurementColor,
+  acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LINE_WEIGHT
 } from '../../util/AcApMeasurementUtil'
+import { acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil'
 import type {
   AcApMeasurementGeometry,
   AcApMeasurementPoint2d,
@@ -45,6 +48,12 @@ function isType(value: unknown): value is AcApMeasurementType {
   )
 }
 
+function parsePositiveNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && value > 0 && Number.isFinite(value)
+    ? value
+    : undefined
+}
+
 function parseStyle(raw: unknown): AcApMeasurementSidecarStyle | undefined {
   if (!isPlainObject(raw) || typeof raw.color !== 'string') return undefined
   const lineWeight =
@@ -55,7 +64,13 @@ function parseStyle(raw: unknown): AcApMeasurementSidecarStyle | undefined {
     typeof raw.fontSize === 'number' && raw.fontSize > 0
       ? raw.fontSize
       : MEASUREMENT_FONT_SIZE
-  return { color: raw.color, lineWeight, fontSize }
+  return {
+    color: raw.color,
+    lineWeight,
+    fontSize,
+    textHeightWcs: parsePositiveNumber(raw.textHeightWcs),
+    strokeWidthWcs: parsePositiveNumber(raw.strokeWidthWcs)
+  }
 }
 
 function parseGeometry(
@@ -117,13 +132,22 @@ function parseRecord(raw: unknown): AcApMeasurementRecord | undefined {
 
 /** Serialize a live measurement style for the sidecar. */
 export function serializeMeasurementStyle(
-  style: AcApMeasurementStyle
+  style: AcApMeasurementStyle,
+  view?: AcEdBaseView
 ): AcApMeasurementSidecarStyle {
-  return {
+  const result: AcApMeasurementSidecarStyle = {
     color: acapCssColor(style.color),
     lineWeight: style.lineWeight,
     fontSize: style.fontSize
   }
+  if (view) {
+    result.textHeightWcs = acapScreenPxToWcs(style.fontSize, view)
+    result.strokeWidthWcs = acapScreenPxToWcs(
+      acapMeasurementCanvasLineWidth(style.lineWeight),
+      view
+    )
+  }
+  return result
 }
 
 /** Restore a live measurement style from sidecar CSS / numeric fields. */

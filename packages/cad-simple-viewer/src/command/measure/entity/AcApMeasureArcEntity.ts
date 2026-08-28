@@ -11,7 +11,6 @@ import {
   formatMeasurementLength
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
-import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import { getMeasurementStyle, MEASUREMENT_LAYER } from '../AcApMeasurementStore'
 import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
 import {
@@ -60,7 +59,13 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
     options: AcApMeasureEntityOptions,
     through?: Point2
   ) {
-    super(options.id ?? `arc-${Date.now()}`, options.layoutId, options.style)
+    super(
+      options.id ?? `arc-${Date.now()}`,
+      options.layoutId,
+      options.style,
+      options.textHeightWcs,
+      options.strokeWidthWcs
+    )
     this.geom = geom
     this.start = start
     this.end = end
@@ -130,14 +135,15 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
    * Serializes this arc measurement to a store/sidecar record.
    *
    * @param layoutId - Optional layout BTR id written onto the record
+   * @param view - Optional view used to convert screen style to WCS
    * @returns Record with `type: 'arc'` and center/radius/start/through/end geometry
    */
-  toRecord(layoutId?: string): AcApMeasurementRecord {
+  toRecord(layoutId?: string, view?: AcTrView2d): AcApMeasurementRecord {
     return {
       id: this.entityId,
       type: 'arc',
       layoutId,
-      style: serializeMeasurementStyle(this.style),
+      style: this.serializeStyle(view),
       geometry: {
         type: 'arc',
         center: { x: this.geom.cx, y: this.geom.cy },
@@ -176,6 +182,39 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
       layer: MEASUREMENT_LAYER,
       layoutId
     })
+    const dot1 = new AcTrHtmlDot({
+      id: `${this.entityId}-dot1`,
+      color,
+      worldPosition: this.start,
+      layer: MEASUREMENT_LAYER
+    })
+    const dotThrough = this.through
+      ? new AcTrHtmlDot({
+          id: `${this.entityId}-dot-through`,
+          color,
+          worldPosition: this.through,
+          layer: MEASUREMENT_LAYER
+        })
+      : undefined
+    const dot2 = new AcTrHtmlDot({
+      id: `${this.entityId}-dot2`,
+      color,
+      worldPosition: this.end,
+      layer: MEASUREMENT_LAYER
+    })
+    const badge = new AcTrHtmlBadge({
+      id: `${this.entityId}-badge`,
+      color,
+      text: formatMeasurementLength(db, arcLen),
+      worldPosition: mid,
+      layer: MEASUREMENT_LAYER,
+      fontSize: this.style.fontSize
+    })
+    this.seedOverlaySizes(
+      view,
+      dotThrough ? [dot1, dotThrough, dot2, badge] : [dot1, dot2, badge],
+      [persistOverlay.canvas]
+    )
     const paintArc = (paintStyle = this.style) =>
       drawMeasureArcOnCanvas(
         persistOverlay.canvas,
@@ -194,36 +233,10 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
 
     const group = this.createGroup(view)
       .add(
-        new AcTrHtmlDot({
-          id: `${this.entityId}-dot1`,
-          color,
-          worldPosition: this.start,
-          layer: MEASUREMENT_LAYER
-        }),
-        ...(this.through
-          ? [
-              new AcTrHtmlDot({
-                id: `${this.entityId}-dot-through`,
-                color,
-                worldPosition: this.through,
-                layer: MEASUREMENT_LAYER
-              })
-            ]
-          : []),
-        new AcTrHtmlDot({
-          id: `${this.entityId}-dot2`,
-          color,
-          worldPosition: this.end,
-          layer: MEASUREMENT_LAYER
-        }),
-        new AcTrHtmlBadge({
-          id: `${this.entityId}-badge`,
-          color,
-          text: formatMeasurementLength(db, arcLen),
-          worldPosition: mid,
-          layer: MEASUREMENT_LAYER,
-          fontSize: this.style.fontSize
-        })
+        dot1,
+        ...(dotThrough ? [dotThrough] : []),
+        dot2,
+        badge
       )
       .addCanvas(persistOverlay)
 
@@ -236,7 +249,7 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
       extras: {
         style: this.style,
         value: { kind: 'length', value: arcLen },
-        snapshot: this.toRecord(layoutId),
+        snapshot: this.toRecord(layoutId, view),
         redraw: paintArc
       }
     }

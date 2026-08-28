@@ -10,7 +10,6 @@ import {
   formatMeasurementLength
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
-import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import {
   getMeasurementStyle,
   MEASUREMENT_LAYER
@@ -63,7 +62,9 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
     super(
       options.id ?? `dist-${Date.now()}`,
       options.layoutId,
-      options.style
+      options.style,
+      options.textHeightWcs,
+      options.strokeWidthWcs
     )
     this.p1 = p1
     this.p2 = p2
@@ -108,14 +109,15 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
    * Serializes this distance measurement to a store/sidecar record.
    *
    * @param layoutId - Optional layout BTR id written onto the record
+   * @param view - Optional view used to convert screen style to WCS
    * @returns Record with `type: 'distance'` and start/end geometry
    */
-  toRecord(layoutId?: string): AcApMeasurementRecord {
+  toRecord(layoutId?: string, view?: AcTrView2d): AcApMeasurementRecord {
     return {
       id: this.entityId,
       type: 'distance',
       layoutId,
-      style: serializeMeasurementStyle(this.style),
+      style: this.serializeStyle(view),
       geometry: {
         type: 'distance',
         start: { x: this.p1.x, y: this.p1.y },
@@ -146,6 +148,27 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
       layer: MEASUREMENT_LAYER,
       layoutId
     })
+    const dot1 = new AcTrHtmlDot({
+      id: `${this.entityId}-dot1`,
+      color,
+      worldPosition: this.p1,
+      layer: MEASUREMENT_LAYER
+    })
+    const dot2 = new AcTrHtmlDot({
+      id: `${this.entityId}-dot2`,
+      color,
+      worldPosition: this.p2,
+      layer: MEASUREMENT_LAYER
+    })
+    const badge = new AcTrHtmlBadge({
+      id: `${this.entityId}-badge`,
+      color,
+      text: formatMeasurementLength(db, dist),
+      worldPosition: mid,
+      layer: MEASUREMENT_LAYER,
+      fontSize: this.style.fontSize
+    })
+    this.seedOverlaySizes(view, [dot1, dot2, badge], [persistOverlay.canvas])
     const paintSegment = (paintStyle = this.style) =>
       drawMeasureSegmentOnCanvas(
         persistOverlay.canvas,
@@ -161,28 +184,7 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
     view.events.viewChanged.addEventListener(redrawPersist)
 
     const group = this.createGroup(view)
-      .add(
-        new AcTrHtmlDot({
-          id: `${this.entityId}-dot1`,
-          color,
-          worldPosition: this.p1,
-          layer: MEASUREMENT_LAYER
-        }),
-        new AcTrHtmlDot({
-          id: `${this.entityId}-dot2`,
-          color,
-          worldPosition: this.p2,
-          layer: MEASUREMENT_LAYER
-        }),
-        new AcTrHtmlBadge({
-          id: `${this.entityId}-badge`,
-          color,
-          text: formatMeasurementLength(db, dist),
-          worldPosition: mid,
-          layer: MEASUREMENT_LAYER,
-          fontSize: this.style.fontSize
-        })
-      )
+      .add(dot1, dot2, badge)
       .addCanvas(persistOverlay)
 
     return {
@@ -194,7 +196,7 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
       extras: {
         style: this.style,
         value: { kind: 'length', value: dist },
-        snapshot: this.toRecord(layoutId),
+        snapshot: this.toRecord(layoutId, view),
         redraw: paintSegment
       }
     }

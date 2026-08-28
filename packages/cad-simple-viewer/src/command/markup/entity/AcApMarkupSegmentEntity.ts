@@ -132,6 +132,7 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
       layoutId
     })
     group.addCanvas(overlay)
+    this.seedOverlaySizes(view, [startDot, endDot], [overlay.canvas])
     /** Endpoints captured when an endpoint drag starts (for zero-delta). */
     let dragStart = {
       start: { ...live.start },
@@ -151,7 +152,8 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
       ctx.lineWidth = acapScaledOverlayLineWidth(
         canvasLineWidth,
         overlay.canvas,
-        view
+        view,
+        this.record.style.strokeWidthWcs
       )
       ctx.beginPath()
       ctx.moveTo(a.x, a.y)

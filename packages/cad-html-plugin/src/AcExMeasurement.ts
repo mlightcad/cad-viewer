@@ -13,7 +13,9 @@ import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
   acExPositionClientOverlay,
   acExPositionWcsOverlay,
-  acExScaledCanvasLineWidth
+  acExScaledCanvasLineWidth,
+  acExScreenPxToWcs,
+  acExSeedOverlaySizesFromWcs
 } from './AcExHtmlOverlayDom'
 import {
   ACEX_MEASUREMENT_FONT_SIZE,
@@ -1842,7 +1844,8 @@ export class AcExMeasureController {
         arm1,
         arm2,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight)
+        acExMeasureCanvasLineWidth(style.lineWeight),
+        style.strokeWidthWcs
       )
     }
     redraw()
@@ -2142,7 +2145,8 @@ export class AcExMeasureController {
         through,
         end,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight)
+        acExMeasureCanvasLineWidth(style.lineWeight),
+        style.strokeWidthWcs
       )
     }
     redraw()
@@ -2226,7 +2230,8 @@ export class AcExMeasureController {
         start,
         end,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight)
+        acExMeasureCanvasLineWidth(style.lineWeight),
+        style.strokeWidthWcs
       )
     }
     redraw()
@@ -2355,7 +2360,8 @@ export class AcExMeasureController {
         canvas,
         points,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight)
+        acExMeasureCanvasLineWidth(style.lineWeight),
+        style.strokeWidthWcs
       )
     }
     redraw()
@@ -2403,7 +2409,8 @@ export class AcExMeasureController {
         canvas,
         pts,
         style.color || this._measureCss(),
-        acExMeasureCanvasLineWidth(style.lineWeight)
+        acExMeasureCanvasLineWidth(style.lineWeight),
+        style.strokeWidthWcs
       )
     }
     redraw()
@@ -2415,7 +2422,8 @@ export class AcExMeasureController {
     canvas: HTMLCanvasElement,
     points: THREE.Vector2[],
     strokeCss: string,
-    lineWidth: number
+    lineWidth: number,
+    strokeWidthWcs?: number
   ): void {
     if (points.length < 2) return
     const synced = this._syncCanvas(canvas)
@@ -2434,10 +2442,10 @@ export class AcExMeasureController {
       else ctx.lineTo(x, y)
     }
     ctx.strokeStyle = strokeCss
-    ctx.lineWidth = acExScaledCanvasLineWidth(
+    ctx.lineWidth = this._scaledCanvasLineWidth(
       lineWidth,
       canvas,
-      this._view.getCameraZoom()
+      strokeWidthWcs
     )
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
@@ -2519,14 +2527,29 @@ export class AcExMeasureController {
       this._commitStyle = null
       return
     }
+    const style = this._ensureStyleWcs(record.style)
+    const committedRecord = { ...record, id: parts.id, style }
     this._committed.push({
       id: parts.id,
-      record: { ...record, id: parts.id },
+      record: committedRecord,
       parts,
       hitTest,
       quantity,
       value
     })
+    acExSeedOverlaySizesFromWcs(
+      this._view.getCameraZoom(),
+      p => this._wcsToScreenPoint(p),
+      {
+        textHeightWcs: style.textHeightWcs,
+        strokeWidthWcs: style.strokeWidthWcs,
+        fontSizePx: style.fontSize,
+        strokeScreenPx: acExMeasureCanvasLineWidth(style.lineWeight),
+        elements: parts.dom,
+        canvases: parts.canvases
+      }
+    )
+    this._positionDomOverlays()
     this._commitParts = null
     this._commitStyle = null
     this.syncLayoutVisibility()
@@ -2534,11 +2557,78 @@ export class AcExMeasureController {
 
   /** Default sidecar style from the current session draw style. @internal */
   private _defaultStyle(): AcExMeasurementSidecarStyle {
-    return {
+    return this._styleWithWcs({
       color: this._measureCss(),
       lineWeight: this._drawLineWeight,
       fontSize: this._drawFontSize
+    })
+  }
+
+  /**
+   * Fill any missing world-space sizes without overwriting sidecar values.
+   * @internal
+   */
+  private _ensureStyleWcs(
+    style: AcExMeasurementSidecarStyle
+  ): AcExMeasurementSidecarStyle {
+    const wcsToScreen = (p: { x: number; y: number }) =>
+      this._wcsToScreenPoint(p)
+    return {
+      ...style,
+      textHeightWcs:
+        style.textHeightWcs != null && style.textHeightWcs > 0
+          ? style.textHeightWcs
+          : acExScreenPxToWcs(style.fontSize, wcsToScreen),
+      strokeWidthWcs:
+        style.strokeWidthWcs != null && style.strokeWidthWcs > 0
+          ? style.strokeWidthWcs
+          : acExScreenPxToWcs(
+              acExMeasureCanvasLineWidth(style.lineWeight),
+              wcsToScreen
+            )
     }
+  }
+
+  /** Attach world-space text/stroke sizes from the current view. @internal */
+  private _styleWithWcs(
+    style: AcExMeasurementSidecarStyle
+  ): AcExMeasurementSidecarStyle {
+    const wcsToScreen = (p: { x: number; y: number }) =>
+      this._wcsToScreenPoint(p)
+    return {
+      ...style,
+      textHeightWcs: acExScreenPxToWcs(style.fontSize, wcsToScreen),
+      strokeWidthWcs: acExScreenPxToWcs(
+        acExMeasureCanvasLineWidth(style.lineWeight),
+        wcsToScreen
+      )
+    }
+  }
+
+  /** Maps WCS to screen coordinates for overlay helpers. @internal */
+  private _wcsToScreenPoint(p: { x: number; y: number }): {
+    x: number
+    y: number
+  } {
+    const s = this._view.wcsToScreen(new THREE.Vector2(p.x, p.y))
+    return { x: s.x, y: s.y }
+  }
+
+  /** View-synced canvas stroke width for the current camera. @internal */
+  private _scaledCanvasLineWidth(
+    baseLineWidth: number,
+    canvas: HTMLCanvasElement,
+    strokeWidthWcs?: number
+  ): number {
+    return acExScaledCanvasLineWidth(
+      baseLineWidth,
+      canvas,
+      this._view.getCameraZoom(),
+      {
+        strokeWidthWcs,
+        wcsToScreen: p => this._wcsToScreenPoint(p)
+      }
+    )
   }
 
   /** Build a new sidecar record for an interactive commit. @internal */
@@ -2756,16 +2846,59 @@ export class AcExMeasureController {
     fontSize?: number
   }): void {
     if (this._selectedIds.size === 0) return
+    const wcsToScreen = (p: { x: number; y: number }) =>
+      this._wcsToScreenPoint(p)
     for (const id of this._selectedIds) {
       const measure = this._committed.find(m => m.id === id)
       if (!measure) continue
       const style = measure.record.style
       if (patch.color) style.color = patch.color
       if (patch.lineWeight != null && patch.lineWeight > 0) {
+        const prevWeight = style.lineWeight
+        const prevPx = acExMeasureCanvasLineWidth(prevWeight)
+        const nextPx = acExMeasureCanvasLineWidth(patch.lineWeight)
+        if (
+          style.strokeWidthWcs != null &&
+          style.strokeWidthWcs > 0 &&
+          prevPx > 0
+        ) {
+          style.strokeWidthWcs =
+            style.strokeWidthWcs * (nextPx / prevPx)
+        } else {
+          style.strokeWidthWcs = acExScreenPxToWcs(nextPx, wcsToScreen)
+        }
         style.lineWeight = patch.lineWeight
       }
       if (patch.fontSize != null && patch.fontSize > 0) {
+        const prevFont = style.fontSize
+        if (
+          style.textHeightWcs != null &&
+          style.textHeightWcs > 0 &&
+          prevFont > 0
+        ) {
+          style.textHeightWcs =
+            style.textHeightWcs * (patch.fontSize / prevFont)
+        } else {
+          style.textHeightWcs = acExScreenPxToWcs(
+            patch.fontSize,
+            wcsToScreen
+          )
+        }
         style.fontSize = patch.fontSize
+      }
+      if (patch.fontSize != null || patch.lineWeight != null) {
+        acExSeedOverlaySizesFromWcs(
+          this._view.getCameraZoom(),
+          wcsToScreen,
+          {
+            textHeightWcs: style.textHeightWcs,
+            strokeWidthWcs: style.strokeWidthWcs,
+            fontSizePx: style.fontSize,
+            strokeScreenPx: acExMeasureCanvasLineWidth(style.lineWeight),
+            elements: measure.parts.dom,
+            canvases: measure.parts.canvases
+          }
+        )
       }
       // Keep selection highlight on DOM; canvas redraws pick up color/weight.
       for (const el of measure.parts.dom) {
@@ -2774,6 +2907,7 @@ export class AcExMeasureController {
         }
       }
     }
+    this._positionDomOverlays()
     for (const fn of this._redrawListeners) fn()
   }
 
@@ -2844,7 +2978,8 @@ export class AcExMeasureController {
     arm1: THREE.Vector2,
     arm2: THREE.Vector2,
     strokeCss?: string,
-    lineWidth = 2
+    lineWidth = 2,
+    strokeWidthWcs?: number
   ): void {
     const synced = this._syncCanvas(canvas)
     if (!synced) return
@@ -2863,10 +2998,10 @@ export class AcExMeasureController {
     ctx.beginPath()
     ctx.arc(vx, vy, arc.r, arc.startAngle, arc.endAngle, arc.antiClockwise)
     ctx.strokeStyle = strokeCss ?? this._measureCss()
-    ctx.lineWidth = acExScaledCanvasLineWidth(
+    ctx.lineWidth = this._scaledCanvasLineWidth(
       lineWidth,
       canvas,
-      this._view.getCameraZoom()
+      strokeWidthWcs
     )
     ctx.stroke()
     ctx.restore()
@@ -2903,7 +3038,8 @@ export class AcExMeasureController {
     through: THREE.Vector2,
     end: THREE.Vector2,
     strokeCss?: string,
-    lineWidth = 3
+    lineWidth = 3,
+    strokeWidthWcs?: number
   ): void {
     const synced = this._syncCanvas(canvas)
     if (!synced) return
@@ -2930,10 +3066,10 @@ export class AcExMeasureController {
     ctx.beginPath()
     ctx.arc(cx, cy, screenR, sa, ea, counterClockwise)
     ctx.strokeStyle = strokeCss ?? this._measureCss()
-    ctx.lineWidth = acExScaledCanvasLineWidth(
+    ctx.lineWidth = this._scaledCanvasLineWidth(
       lineWidth,
       canvas,
-      this._view.getCameraZoom()
+      strokeWidthWcs
     )
     ctx.stroke()
     ctx.restore()
@@ -2946,7 +3082,8 @@ export class AcExMeasureController {
     start: THREE.Vector2,
     end: THREE.Vector2,
     strokeCss?: string,
-    lineWidth = 3
+    lineWidth = 3,
+    strokeWidthWcs?: number
   ): void {
     const synced = this._syncCanvas(canvas)
     if (!synced) return
@@ -2973,10 +3110,10 @@ export class AcExMeasureController {
     ctx.beginPath()
     ctx.arc(cx, cy, screenR, sa, ea, counterClockwise)
     ctx.strokeStyle = strokeCss ?? this._measureCss()
-    ctx.lineWidth = acExScaledCanvasLineWidth(
+    ctx.lineWidth = this._scaledCanvasLineWidth(
       lineWidth,
       canvas,
-      this._view.getCameraZoom()
+      strokeWidthWcs
     )
     ctx.stroke()
     ctx.restore()
@@ -3012,7 +3149,8 @@ export class AcExMeasureController {
     canvas: HTMLCanvasElement,
     points: THREE.Vector2[],
     strokeCss?: string,
-    lineWidth = 2
+    lineWidth = 2,
+    strokeWidthWcs?: number
   ): void {
     if (points.length < 3) return
     const synced = this._syncCanvas(canvas)
@@ -3042,10 +3180,10 @@ export class AcExMeasureController {
     ctx.fillStyle = fill
     ctx.fill()
     ctx.strokeStyle = stroke
-    ctx.lineWidth = acExScaledCanvasLineWidth(
+    ctx.lineWidth = this._scaledCanvasLineWidth(
       lineWidth,
       canvas,
-      this._view.getCameraZoom()
+      strokeWidthWcs
     )
     ctx.stroke()
     ctx.restore()
