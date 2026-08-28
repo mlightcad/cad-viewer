@@ -182,6 +182,8 @@ export abstract class AcApMeasureEntity
       ...drawn.extras,
       dispose: drawn.dispose
     })
+    // Bind after manager.add so pointer capture targets a published DOM node.
+    drawn.bindGrips?.()
   }
 
   /**

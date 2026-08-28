@@ -843,6 +843,9 @@ export class AcUiToolbar {
 
     const horizontal = this.getOrientationClass() === 'horizontal'
     const hostLimit = this.getOverflowHostLimit(horizontal)
+    // Stretch mode forces root width/height to the host, so offset* metrics never
+    // shrink when items are hidden. Measure intrinsic content size instead.
+    const fullSize = this.getToolbarOverflowMeasureSize(horizontal)
 
     if (hostLimit <= 0 || this.renderedEntries.length === 0) {
       this.root.style.removeProperty('--ml-ex-ui-toolbar-max-width')
@@ -850,7 +853,7 @@ export class AcUiToolbar {
       return
     }
 
-    if (this.getToolbarAxisSize(horizontal) <= hostLimit) {
+    if (fullSize <= hostLimit) {
       this.root.style.removeProperty('--ml-ex-ui-toolbar-max-width')
       this.root.style.removeProperty('--ml-ex-ui-toolbar-max-height')
       return
@@ -863,10 +866,21 @@ export class AcUiToolbar {
       for (let i = 0; i < this.renderedEntries.length; i++) {
         this.renderedEntries[i].element.hidden = i >= hideFrom
       }
-      if (this.getToolbarAxisSize(horizontal) <= hostLimit || hideFrom === 0) {
+      if (
+        this.getToolbarOverflowMeasureSize(horizontal) <= hostLimit ||
+        hideFrom === 0
+      ) {
         break
       }
       hideFrom -= 1
+    }
+
+    // Keep at least one primary item visible when possible (avoid ⋯-only bars).
+    if (hideFrom === 0 && this.renderedEntries.length > 0) {
+      hideFrom = 1
+      for (let i = 0; i < this.renderedEntries.length; i++) {
+        this.renderedEntries[i].element.hidden = i >= hideFrom
+      }
     }
 
     for (let i = hideFrom; i < this.renderedEntries.length; i++) {
@@ -890,17 +904,38 @@ export class AcUiToolbar {
   }
 
   /**
-   * Returns the toolbar root size along the layout axis (padding and chrome included).
+   * Intrinsic axis size for overflow-menu decisions (padding + visible children).
    *
-   * Uses live layout metrics; falls back to child summation in test environments.
+   * Stretch chrome forces the root box to the host size, so {@link getToolbarAxisSize}
+   * cannot detect overflow. This sums unstretched child sizes instead.
    */
-  private getToolbarAxisSize(horizontal: boolean): number {
-    this.flushToolbarAxisMeasure()
-    const measured = horizontal ? this.root.offsetWidth : this.root.offsetHeight
-    if (measured > 0) return measured
+  private getToolbarOverflowMeasureSize(horizontal: boolean): number {
+    const stretch = this.isStretchSize()
+    const prevWidth = this.root.style.width
+    const prevHeight = this.root.style.height
+    if (stretch) {
+      // Drop stretch flex so labeled buttons report natural widths/heights.
+      this.root.classList.remove('is-stretch')
+      this.root.style.width = horizontal ? 'max-content' : prevWidth
+      this.root.style.height = horizontal ? prevHeight : 'max-content'
+    }
 
-    const gap = 4
-    let size = 12
+    this.flushToolbarAxisMeasure()
+    const style = getComputedStyle(this.root)
+    const gap =
+      Number.parseFloat(horizontal ? style.columnGap || style.gap : style.rowGap || style.gap) ||
+      4
+    const padding = horizontal
+      ? Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+      : Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom)
+    const border = horizontal
+      ? Number.parseFloat(style.borderLeftWidth) +
+        Number.parseFloat(style.borderRightWidth)
+      : Number.parseFloat(style.borderTopWidth) +
+        Number.parseFloat(style.borderBottomWidth)
+    let size =
+      (Number.isFinite(padding) ? padding : 0) +
+      (Number.isFinite(border) ? border : 0)
     let visibleCount = 0
     for (const child of Array.from(this.root.children)) {
       if (child instanceof HTMLElement && !child.hidden) {
@@ -909,7 +944,27 @@ export class AcUiToolbar {
         visibleCount += 1
       }
     }
+
+    if (stretch) {
+      this.root.classList.add('is-stretch')
+      this.root.style.width = prevWidth
+      this.root.style.height = prevHeight
+      this.flushToolbarAxisMeasure()
+    }
+
     return size
+  }
+
+  /**
+   * Returns the toolbar root size along the layout axis (padding and chrome included).
+   *
+   * Uses live layout metrics; falls back to child summation in test environments.
+   */
+  private getToolbarAxisSize(horizontal: boolean): number {
+    this.flushToolbarAxisMeasure()
+    const measured = horizontal ? this.root.offsetWidth : this.root.offsetHeight
+    if (measured > 0) return measured
+    return this.getToolbarOverflowMeasureSize(horizontal)
   }
 
   /** Returns the host axis limit for toolbar content (inside edge offsets). */
@@ -985,7 +1040,7 @@ export class AcUiToolbar {
       if (this.overflowMenuActive) {
         const horizontal = this.getOrientationClass() === 'horizontal'
         const hostLimit = this.getOverflowHostLimit(horizontal)
-        if (this.getToolbarAxisSize(horizontal) > hostLimit) {
+        if (this.getToolbarOverflowMeasureSize(horizontal) > hostLimit) {
           this.applyOverflowMenuLayout()
           this.syncPosition()
         }
@@ -1013,14 +1068,10 @@ export class AcUiToolbar {
     this.root.style.maxWidth = ''
     this.root.style.maxHeight = ''
 
-    const horizontal = this.getOrientationClass() === 'horizontal'
     const toolbarWidth = this.getToolbarAxisSize(true)
     const toolbarHeight = this.getToolbarAxisSize(false)
     const placement = this.options.placement
     const stretch = this.isStretchSize()
-    const hostLimit = horizontal
-      ? hostWidth - offset * 2
-      : hostHeight - offset * 2
 
     if (placement === 'top' || placement === 'bottom') {
       if (stretch) {
@@ -1051,12 +1102,10 @@ export class AcUiToolbar {
       const lowerTop = offset
       const upperTop = hostHeight - toolbarHeight - offset
       const idealTop = (hostHeight - toolbarHeight) / 2
-      const pinOverflowMenu =
-        this.options.overflow === 'menu' &&
-        (this.overflowMenuActive || toolbarHeight > hostLimit)
-      const top = pinOverflowMenu
-        ? Math.max(lowerTop, upperTop)
-        : upperTop >= lowerTop
+      // When the shrunk toolbar still fits, keep vertical centering. When it
+      // cannot fit, upperTop is negative and bottom-aligns so ⋯ stays in view.
+      const top =
+        upperTop >= lowerTop
           ? Math.min(upperTop, Math.max(lowerTop, idealTop))
           : upperTop
       this.root.style.top = `${top}px`

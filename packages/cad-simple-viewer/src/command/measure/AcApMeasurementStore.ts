@@ -97,6 +97,12 @@ export interface AcApMeasurementGroupExtras {
 type MeasurementSelectionListener = () => void
 
 const extrasById = new Map<string, AcApMeasurementGroupExtras>()
+/**
+ * Per-group extras retained across {@link AcTrHtmlTransientManager.detach} so
+ * undo/redo can restore geometry snapshots when groups with the same id are
+ * swapped during grip edits.
+ */
+const extrasByGroup = new WeakMap<AcTrHtmlGroup, AcApMeasurementGroupExtras>()
 const stylesById = new Map<string, AcApMeasurementStyle>()
 const selectionListeners = new Set<MeasurementSelectionListener>()
 let selectedMeasurementId: string | undefined
@@ -364,6 +370,19 @@ export function resetMeasurementStyleState(): void {
 }
 
 /**
+ * Re-bind extras for a group reattached by measurement undo/redo.
+ * Call after {@link AcTrHtmlTransientManager.reattach}.
+ */
+export function restoreMeasurementGroupExtras(group: AcTrHtmlGroup): void {
+  const extras = extrasByGroup.get(group)
+  if (!extras) return
+  extrasById.set(group.id, extras)
+  if (extras.style) {
+    rememberStyle(group.id, extras.style)
+  }
+}
+
+/**
  * Publishes a measurement {@link AcTrHtmlGroup} and wires measurement-specific
  * selection state.
  *
@@ -376,7 +395,9 @@ export function commitMeasurementGroup(
   extras?: AcApMeasurementGroupExtras
 ): void {
   const entityIds = extras?.entityIds ?? []
-  extrasById.set(group.id, extras ?? {})
+  const payload = extras ?? {}
+  extrasById.set(group.id, payload)
+  extrasByGroup.set(group, payload)
   if (extras?.style) {
     rememberStyle(group.id, extras.style)
   }
@@ -441,6 +462,14 @@ export function getMeasurementGeometry(
   id: string
 ): AcApMeasurementRecord['geometry'] | undefined {
   return extrasById.get(id)?.snapshot?.geometry
+}
+
+/** Full sidecar snapshot for a committed measurement, if available. */
+export function getMeasurementSnapshot(
+  id: string
+): AcApMeasurementRecord | undefined {
+  const snap = extrasById.get(id)?.snapshot
+  return snap ? { ...snap, geometry: snap.geometry } : undefined
 }
 
 /**

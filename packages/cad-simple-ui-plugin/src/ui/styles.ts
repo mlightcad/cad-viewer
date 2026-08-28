@@ -295,6 +295,10 @@ export function acuiEnsureUiStyles() {
       flex-shrink: 0;
     }
 
+    /* Author display:inline-flex on buttons otherwise beats the UA
+       [hidden] rule and overflow menu hide loops never shrink the axis. */
+    .ml-ex-ui-toolbar-btn[hidden],
+    .ml-ex-ui-toolbar-separator[hidden],
     .ml-ex-ui-toolbar-overflow-btn[hidden] {
       display: none !important;
     }

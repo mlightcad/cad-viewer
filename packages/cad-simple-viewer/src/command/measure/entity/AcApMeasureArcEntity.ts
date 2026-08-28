@@ -11,7 +11,13 @@ import {
   formatMeasurementLength
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
-import { getMeasurementStyle, MEASUREMENT_LAYER } from '../AcApMeasurementStore'
+import {
+  acapBindOverlayPointerDrag,
+  acapPlaceOverlayHtml
+} from '../../overlay'
+import { runMeasurementEdit } from '../AcApMeasurementHistory'
+import { republishMeasurement } from '../AcApMeasurementRepublish'
+import { getMeasurementSnapshot, getMeasurementStyle, MEASUREMENT_LAYER } from '../AcApMeasurementStore'
 import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
 import {
   type AcApMeasureCircleGeom,
@@ -22,16 +28,33 @@ import {
   type AcApMeasureEntityOptions,
   type AcApMeasureWorldDrawResult
 } from './AcApMeasureEntity'
+import { selectMeasurementGroup } from './AcApMeasureEntityGrips'
 
 type Point2 = { x: number; y: number }
 
 /**
+ * Project a free point onto a circle (for legacy short-arc records).
+ */
+function projectOntoCircle(
+  geom: AcApMeasureCircleGeom,
+  point: Point2
+): Point2 {
+  const dx = point.x - geom.cx
+  const dy = point.y - geom.cy
+  const len = Math.hypot(dx, dy)
+  if (!(len > 1e-12)) {
+    return { x: geom.cx + geom.r, y: geom.cy }
+  }
+  const s = geom.r / len
+  return { x: geom.cx + dx * s, y: geom.cy + dy * s }
+}
+
+/**
  * Arc-length measurement overlay entity.
  *
- * Renders a canvas stroke of the measured arc (the sweep that contains
- * {@link through} when present, otherwise the shorter arc), HTML dots at
- * the control points, and a length badge at the arc midpoint.
- * Redraws the arc on view changes.
+ * Renders a canvas stroke of the measured arc, HTML dots at the control
+ * points, and a length badge at the arc midpoint. Endpoint grips update the
+ * measured value live and republish on commit.
  */
 export class AcApMeasureArcEntity extends AcApMeasureEntity {
   /** Circle center and radius defining the measured arc. */
@@ -75,17 +98,18 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
   /**
    * Reconstructs the measured sweep from stored control points.
    */
-  private resolveMeasuredArc(): AcGeCircArc2d | null {
-    if (this.through) {
-      return AcGeCircArc2d.tryCreateByThreePoints(
-        this.start,
-        this.through,
-        this.end
-      )
+  private resolveMeasuredArc(
+    geom: AcApMeasureCircleGeom,
+    start: Point2,
+    end: Point2,
+    through?: Point2
+  ): AcGeCircArc2d | null {
+    if (through) {
+      return AcGeCircArc2d.tryCreateByThreePoints(start, through, end)
     }
-    return AcGeCircArc2d.tryCreateShorterArc(this.start, this.end, {
-      x: this.geom.cx,
-      y: this.geom.cy
+    return AcGeCircArc2d.tryCreateShorterArc(start, end, {
+      x: geom.cx,
+      y: geom.cy
     })
   }
 
@@ -125,7 +149,12 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
    * @returns World point on the arc between {@link start} and {@link end}
    */
   override primaryPoint() {
-    const mid = this.resolveMeasuredArc()?.midPoint
+    const mid = this.resolveMeasuredArc(
+      this.geom,
+      this.start,
+      this.end,
+      this.through
+    )?.midPoint
     return mid
       ? { x: mid.x, y: mid.y, z: 0 }
       : { x: this.start.x, y: this.start.y, z: 0 }
@@ -160,9 +189,6 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
   /**
    * Draws the arc canvas stroke, control-point dots, length badge, and extras.
    *
-   * Registers a `viewChanged` listener to repaint the arc; dispose extras
-   * remove the listener.
-   *
    * @param view - Active 2D view for HTML overlays
    * @param db - Database used to format the arc-length label
    * @returns World-draw result including redraw/dispose hooks
@@ -171,9 +197,42 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
     view: AcTrView2d,
     db: AcDbDatabase
   ): AcApMeasureWorldDrawResult {
+    const hasThrough = this.through != null
+    const live = {
+      geom: { ...this.geom } as AcApMeasureCircleGeom,
+      start: { ...this.start } as Point2,
+      end: { ...this.end } as Point2,
+      through: this.through ? ({ ...this.through } as Point2) : undefined
+    }
+
+    const resolveArc = () =>
+      this.resolveMeasuredArc(live.geom, live.start, live.end, live.through)
+
+    const syncGeomFromThreePoints = (): boolean => {
+      if (!live.through) return true
+      const arc = AcGeCircArc2d.tryCreateByThreePoints(
+        live.start,
+        live.through,
+        live.end
+      )
+      if (!arc) return false
+      live.geom = {
+        cx: arc.center.x,
+        cy: arc.center.y,
+        r: arc.radius
+      }
+      return true
+    }
+
+    let arcLen = resolveArc()?.length ?? 0
+    const midPoint = (): Point2 => {
+      const mid = resolveArc()?.midPoint
+      return mid
+        ? { x: mid.x, y: mid.y }
+        : { x: live.start.x, y: live.start.y }
+    }
+
     const color = this.style.color
-    const arcLen = this.resolveMeasuredArc()?.length ?? 0
-    const mid = this.primaryPoint()
     const layoutId = this.resolveLayoutId(view)
 
     const persistOverlay = new AcTrHtmlCanvasOverlay({
@@ -185,28 +244,28 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
     const dot1 = new AcTrHtmlDot({
       id: `${this.entityId}-dot1`,
       color,
-      worldPosition: this.start,
+      worldPosition: live.start,
       layer: MEASUREMENT_LAYER
     })
-    const dotThrough = this.through
+    const dotThrough = live.through
       ? new AcTrHtmlDot({
           id: `${this.entityId}-dot-through`,
           color,
-          worldPosition: this.through,
+          worldPosition: live.through,
           layer: MEASUREMENT_LAYER
         })
       : undefined
     const dot2 = new AcTrHtmlDot({
       id: `${this.entityId}-dot2`,
       color,
-      worldPosition: this.end,
+      worldPosition: live.end,
       layer: MEASUREMENT_LAYER
     })
     const badge = new AcTrHtmlBadge({
       id: `${this.entityId}-badge`,
       color,
       text: formatMeasurementLength(db, arcLen),
-      worldPosition: mid,
+      worldPosition: midPoint(),
       layer: MEASUREMENT_LAYER,
       fontSize: this.style.fontSize
     })
@@ -219,12 +278,12 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
       drawMeasureArcOnCanvas(
         persistOverlay.canvas,
         view,
-        this.geom,
-        this.start,
-        this.end,
+        live.geom,
+        live.start,
+        live.end,
         paintStyle.color,
         acapMeasurementCanvasLineWidth(paintStyle.lineWeight),
-        this.through
+        live.through
       )
     paintArc()
     const redrawPersist = () =>
@@ -240,11 +299,153 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
       )
       .addCanvas(persistOverlay)
 
+    const cleanups: Array<() => void> = [
+      () => view.events.viewChanged.removeEventListener(redrawPersist)
+    ]
+    const pendingGrips: Array<() => void> = []
+    let dragStart = {
+      start: { ...live.start },
+      end: { ...live.end },
+      through: live.through ? { ...live.through } : undefined,
+      geom: { ...live.geom }
+    }
+
+    const refreshLive = () => {
+      const valid = syncGeomFromThreePoints()
+      const arc = valid ? resolveArc() : null
+      arcLen = arc?.length ?? 0
+      badge.setText(formatMeasurementLength(db, arcLen))
+      acapPlaceOverlayHtml(view, badge, midPoint())
+      paintArc(getMeasurementStyle(this.entityId) ?? this.style)
+      view.isHtmlDirty = true
+    }
+
+    const restoreDragStart = () => {
+      live.start = { ...dragStart.start }
+      live.end = { ...dragStart.end }
+      live.through = dragStart.through ? { ...dragStart.through } : undefined
+      live.geom = { ...dragStart.geom }
+      acapPlaceOverlayHtml(view, dot1, live.start)
+      acapPlaceOverlayHtml(view, dot2, live.end)
+      if (dotThrough && live.through) {
+        acapPlaceOverlayHtml(view, dotThrough, live.through)
+      }
+      refreshLive()
+    }
+
+    const beginEndpointDrag = () => {
+      selectMeasurementGroup(view, this.entityId)
+      dragStart = {
+        start: { ...live.start },
+        end: { ...live.end },
+        through: live.through ? { ...live.through } : undefined,
+        geom: { ...live.geom }
+      }
+    }
+
+    const commitEndpoints = () => {
+      const delta =
+        Math.hypot(
+          live.start.x - dragStart.start.x,
+          live.start.y - dragStart.start.y
+        ) +
+        Math.hypot(live.end.x - dragStart.end.x, live.end.y - dragStart.end.y) +
+        (live.through && dragStart.through
+          ? Math.hypot(
+              live.through.x - dragStart.through.x,
+              live.through.y - dragStart.through.y
+            )
+          : 0)
+      if (delta < 1e-9) {
+        refreshLive()
+        return
+      }
+      if (!syncGeomFromThreePoints()) {
+        restoreDragStart()
+        return
+      }
+      const snap = getMeasurementSnapshot(this.entityId)
+      const geometry: AcApMeasurementRecord['geometry'] = {
+        type: 'arc',
+        center: { x: live.geom.cx, y: live.geom.cy },
+        radius: live.geom.r,
+        start: { ...live.start },
+        end: { ...live.end },
+        ...(live.through ? { through: { ...live.through } } : {})
+      }
+      const record: AcApMeasurementRecord = snap
+        ? { ...snap, geometry }
+        : {
+            id: this.entityId,
+            type: 'arc',
+            layoutId,
+            style: this.serializeStyle(view),
+            geometry
+          }
+      runMeasurementEdit(view, 'Move Arc', () => {
+        republishMeasurement(view, db, record)
+      })
+    }
+
+    const constrainEndpoint = (point: Point2): Point2 =>
+      hasThrough ? point : projectOntoCircle(live.geom, point)
+
+    pendingGrips.push(() => {
+      cleanups.push(
+        acapBindOverlayPointerDrag({
+          view,
+          el: dot1.element,
+          onDragStart: beginEndpointDrag,
+          onMove: point => {
+            live.start = constrainEndpoint(point)
+            acapPlaceOverlayHtml(view, dot1, live.start)
+            refreshLive()
+          },
+          onCommit: commitEndpoints
+        }),
+        acapBindOverlayPointerDrag({
+          view,
+          el: dot2.element,
+          onDragStart: beginEndpointDrag,
+          onMove: point => {
+            live.end = constrainEndpoint(point)
+            acapPlaceOverlayHtml(view, dot2, live.end)
+            refreshLive()
+          },
+          onCommit: commitEndpoints
+        })
+      )
+      if (dotThrough && live.through) {
+        cleanups.push(
+          acapBindOverlayPointerDrag({
+            view,
+            el: dotThrough.element,
+            onDragStart: beginEndpointDrag,
+            onMove: point => {
+              live.through = point
+              acapPlaceOverlayHtml(view, dotThrough, point)
+              refreshLive()
+            },
+            onCommit: commitEndpoints
+          })
+        )
+      }
+    })
+
     return {
       group,
       entityIds: [],
       dispose: () => {
-        view.events.viewChanged.removeEventListener(redrawPersist)
+        for (const fn of cleanups) {
+          try {
+            fn()
+          } catch {
+            // ignore
+          }
+        }
+      },
+      bindGrips: () => {
+        for (const bind of pendingGrips) bind()
       },
       extras: {
         style: this.style,

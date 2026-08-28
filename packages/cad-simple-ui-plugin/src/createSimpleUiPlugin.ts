@@ -511,14 +511,16 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       this.ensureDockPanel()
     }
 
+    // applyLayoutKind → syncLayerToolbarItem / syncReviewToolbarItem may already
+    // have registered these; use ensure* so onLoad stays idempotent.
     if (this.hasLayerToolbarItem) {
       this.mountLayerDockUi()
-      this.registerLayerCommand(commandManager)
+      this.ensureLayerCommandRegistered()
     }
 
     if (this.hasMarkupPanelToolbarItem) {
       this.mountReviewDockUi()
-      this.registerMarkupPanelCommand(commandManager)
+      this.ensureMarkupPanelCommandRegistered()
     }
 
     this.ensureViewerToolbar(host)
@@ -827,6 +829,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
   /** Registers the `layer` command with dock preparation wired in. */
   private registerLayerCommand(commandManager: AcEdCommandStack) {
+    if (this.registeredCommands.some(cmd => cmd.name === 'layer')) return
+
     const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
     commandManager.addCommand(
       group,
@@ -853,6 +857,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
   /** Registers the `markuppanel` command with dock preparation wired in. */
   private registerMarkupPanelCommand(commandManager: AcEdCommandStack) {
+    if (this.registeredCommands.some(cmd => cmd.name === 'markuppanel')) return
+
     const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
     commandManager.addCommand(
       group,
