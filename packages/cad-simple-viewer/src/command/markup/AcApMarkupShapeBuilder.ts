@@ -8,9 +8,12 @@ import type { AcEdBaseView } from '../../editor'
 import { acapScaledOverlayLineWidth } from '../overlay/AcApOverlayDrawUtil'
 
 /**
- * Target screen diameter in CSS pixels for each revision-cloud lobe.
+ * Target screen diameter in CSS pixels for each revision-cloud lobe at creation.
  */
 const CLOUD_DIAMETER_PIXELS = 8
+
+/** Dataset key storing revision-cloud lobe diameter in world units. */
+export const ACAP_OVERLAY_CLOUD_WCS_KEY = 'overlayCloudWcs'
 
 /** World-space vertex with AutoCAD-style bulge to the next vertex. */
 export interface AcApMarkupCloudVertex {
@@ -47,17 +50,20 @@ function pixelToWorldDistance(
 /**
  * Build closed revision-cloud vertices (points + bulges) between two corners.
  *
- * Lobe size tracks the current view scale ({@link CLOUD_DIAMETER_PIXELS}).
+ * Lobe size is a world-space diameter. When omitted, {@link CLOUD_DIAMETER_PIXELS}
+ * is converted at the current view (jig / first paint).
  *
  * @param firstPoint - One corner of the cloud AABB.
  * @param secondPoint - Opposite corner of the cloud AABB.
- * @param view - View used to size lobes in screen pixels.
+ * @param view - View used to size lobes when `diameterWcs` is omitted.
+ * @param diameterWcs - Optional world-space lobe diameter (keeps size across zoom).
  * @returns Closed ring of vertices (last segment uses the last bulge → first point).
  */
 export function markupCloudVertices(
   firstPoint: AcGePoint2dLike,
   secondPoint: AcGePoint2dLike,
-  view: AcEdBaseView
+  view: AcEdBaseView,
+  diameterWcs?: number
 ): AcApMarkupCloudVertex[] {
   const minX = Math.min(firstPoint.x, secondPoint.x)
   const maxX = Math.max(firstPoint.x, secondPoint.x)
@@ -66,11 +72,10 @@ export function markupCloudVertices(
   const width = maxX - minX
   const height = maxY - minY
   const centerPoint = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
-  const cloudDiameter = pixelToWorldDistance(
-    view,
-    CLOUD_DIAMETER_PIXELS,
-    centerPoint
-  )
+  const cloudDiameter =
+    diameterWcs != null && diameterWcs > 0
+      ? diameterWcs
+      : pixelToWorldDistance(view, CLOUD_DIAMETER_PIXELS, centerPoint)
   const chordLength = Math.max(cloudDiameter, 1e-6)
   const numSegmentsX = Math.max(4, Math.ceil(width / chordLength) * 2)
   const numSegmentsY = Math.max(4, Math.ceil(height / chordLength) * 2)
@@ -239,7 +244,18 @@ export function strokeMarkupCloud(
 ): void {
   const dx = offset?.dx ?? 0
   const dy = offset?.dy ?? 0
-  const vertices = markupCloudVertices(first, second, view)
+  const centerPoint = {
+    x: (first.x + second.x) / 2,
+    y: (first.y + second.y) / 2
+  }
+  let diameterWcs = Number(ctx.canvas.dataset[ACAP_OVERLAY_CLOUD_WCS_KEY])
+  if (!(diameterWcs > 0) || !Number.isFinite(diameterWcs)) {
+    diameterWcs = pixelToWorldDistance(view, CLOUD_DIAMETER_PIXELS, centerPoint)
+    if (diameterWcs > 0) {
+      ctx.canvas.dataset[ACAP_OVERLAY_CLOUD_WCS_KEY] = String(diameterWcs)
+    }
+  }
+  const vertices = markupCloudVertices(first, second, view, diameterWcs)
   const world = tessellateMarkupCloud(vertices).map(p => ({
     x: p.x + dx,
     y: p.y + dy

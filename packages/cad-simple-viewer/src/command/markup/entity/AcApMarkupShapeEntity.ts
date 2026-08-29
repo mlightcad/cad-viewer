@@ -1,5 +1,5 @@
 import { AcGePoint3d } from '@mlightcad/data-model'
-import { AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
+import { AcTrHtmlCanvasOverlay, AcTrHtmlGrip } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
 import {
@@ -110,7 +110,7 @@ export class AcApMarkupShapeEntity extends AcApMarkupEntity {
     })
     group.addCanvas(overlay)
 
-    const centerDot = new AcTrHtmlDot({
+    const centerDot = new AcTrHtmlGrip({
       id: `${this.record.id}-dot`,
       color,
       worldPosition: centerPos,

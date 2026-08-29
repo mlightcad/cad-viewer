@@ -26,8 +26,9 @@ export interface AcTrHtmlElementOptions {
   /**
    * When `true`, the DOM element scales with orthographic camera zoom
    * (relative to first paint). When `false`, screen size stays constant.
-   * {@link AcTrHtmlBadge}, {@link AcTrHtmlCallout}, and {@link AcTrHtmlDot}
-   * default to `true`; other overlay types default to `false`.
+   * {@link AcTrHtmlBadge}, {@link AcTrHtmlCallout}, {@link AcTrHtmlDot},
+   * {@link AcTrHtmlGrip}, and {@link AcTrHtmlStamp} default to `true`; other
+   * overlay types default to `false`.
    */
   scaleWithView?: boolean
   /**

@@ -38,7 +38,10 @@ const STAMP_LABELS: Record<string, string> = {
  */
 export class AcTrHtmlStamp extends AcTrHtmlElement {
   constructor(options: AcTrHtmlStampOptions) {
-    super(AcTrHtmlStamp.createElement(options), options)
+    super(AcTrHtmlStamp.createElement(options), {
+      ...options,
+      scaleWithView: options.scaleWithView ?? true
+    })
   }
 
   /** Update the stamp caption text. */

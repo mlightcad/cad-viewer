@@ -181,3 +181,85 @@ describe('acapBindOverlayPointerDrag osnap', () => {
     el.remove()
   })
 })
+
+describe('acapBindOverlayPointerDrag overlay grips', () => {
+  it('does not start a drag on an unselected overlay grip', () => {
+    const el = document.createElement('div')
+    el.className = 'ml-html-grip'
+    document.body.appendChild(el)
+    const onMove = jest.fn()
+    const onDragStart = jest.fn()
+    const onCommit = jest.fn()
+
+    const unbind = acapBindOverlayPointerDrag({
+      view: mockView(),
+      el,
+      onDragStart,
+      onMove,
+      onCommit
+    })
+
+    dispatchPointer(el, 'pointerdown', 20, 20)
+    dispatchPointer(window, 'pointermove', 30, 20)
+    dispatchPointer(window, 'pointerup', 30, 20)
+
+    expect(onDragStart).not.toHaveBeenCalled()
+    expect(onMove).not.toHaveBeenCalled()
+    expect(onCommit).not.toHaveBeenCalled()
+
+    unbind()
+    el.remove()
+  })
+
+  it('hides overlay grips while dragging and restores them after commit', () => {
+    const el = document.createElement('div')
+    el.className = 'ml-html-grip ml-html-selected'
+    const other = document.createElement('div')
+    other.className = 'ml-html-grip ml-html-selected'
+    document.body.appendChild(el)
+    document.body.appendChild(other)
+
+    const unbind = acapBindOverlayPointerDrag({
+      view: mockView(),
+      el,
+      onMove: () => undefined,
+      onCommit: () => undefined
+    })
+
+    dispatchPointer(el, 'pointerdown', 20, 20)
+    dispatchPointer(window, 'pointermove', 30, 20)
+    expect(el.classList.contains('ml-html-grip-dragging')).toBe(true)
+    expect(other.classList.contains('ml-html-grip-dragging')).toBe(true)
+
+    dispatchPointer(window, 'pointerup', 30, 20)
+    expect(el.classList.contains('ml-html-grip-dragging')).toBe(false)
+    expect(other.classList.contains('ml-html-grip-dragging')).toBe(false)
+
+    unbind()
+    el.remove()
+    other.remove()
+  })
+
+  it('respects isEnabled when it returns false', () => {
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+    const onMove = jest.fn()
+
+    const unbind = acapBindOverlayPointerDrag({
+      view: mockView(),
+      el,
+      isEnabled: () => false,
+      onMove,
+      onCommit: () => undefined
+    })
+
+    dispatchPointer(el, 'pointerdown', 20, 20)
+    dispatchPointer(window, 'pointermove', 30, 20)
+    dispatchPointer(window, 'pointerup', 30, 20)
+
+    expect(onMove).not.toHaveBeenCalled()
+
+    unbind()
+    el.remove()
+  })
+})

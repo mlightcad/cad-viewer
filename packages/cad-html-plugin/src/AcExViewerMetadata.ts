@@ -1,6 +1,59 @@
-import type { AcDbDatabase } from '@mlightcad/data-model'
+import {
+  AcCmColor,
+  AcCmColorMethod,
+  type AcDbDatabase,
+  AcDbSystemVariables,
+  AcDbSysVarManager
+} from '@mlightcad/data-model'
 
-import type { AcExExtents, AcExViewerUnits } from './AcExSnapshotTypes'
+import type {
+  AcExExtents,
+  AcExViewerGripAppearance,
+  AcExViewerUnits
+} from './AcExSnapshotTypes'
+
+const DEFAULT_GRIP: AcExViewerGripAppearance = {
+  size: 8,
+  colorCss: '#0080ff',
+  hotColorCss: '#ff0000'
+}
+
+function aciIndexToCss(index: number): string {
+  const color = new AcCmColor(AcCmColorMethod.ByACI, index)
+  return color.cssColor ?? `rgb(${color.red}, ${color.green}, ${color.blue})`
+}
+
+/**
+ * Reads grip appearance from the drawing database for HTML export.
+ * Falls back to AutoCAD-like defaults when sysvars are unavailable.
+ */
+function readExportGripAppearance(
+  database: AcDbDatabase
+): AcExViewerGripAppearance {
+  try {
+    const manager = AcDbSysVarManager.instance()
+    const size = manager.getVar(
+      AcDbSystemVariables.GRIPSIZE,
+      database
+    ) as number
+    const gripColor = manager.getVar(
+      AcDbSystemVariables.GRIPCOLOR,
+      database
+    ) as number
+    const gripHot = manager.getVar(
+      AcDbSystemVariables.GRIPHOT,
+      database
+    ) as number
+    if (!(size > 0) || !Number.isFinite(size)) return DEFAULT_GRIP
+    return {
+      size,
+      colorCss: aciIndexToCss(gripColor),
+      hotColorCss: aciIndexToCss(gripHot)
+    }
+  } catch {
+    return DEFAULT_GRIP
+  }
+}
 
 /** Return type of {@link buildViewerMetadata}. */
 export interface AcExViewerMetadata {
@@ -10,6 +63,8 @@ export interface AcExViewerMetadata {
   extents: AcExExtents
   /** Unit and formatting sysvars for the offline viewer. */
   units: AcExViewerUnits
+  /** Grip square appearance from `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`. */
+  grip: AcExViewerGripAppearance
   /** Canvas background color as 24-bit RGB hex. */
   background: number
 }
@@ -32,6 +87,7 @@ export function buildViewerMetadata(
 ): AcExViewerMetadata {
   const extmin = database.extmin
   const extmax = database.extmax
+  const grip = readExportGripAppearance(database)
   return {
     title: options?.title,
     extents: {
@@ -51,6 +107,7 @@ export function buildViewerMetadata(
       angbase: database.angbase,
       angdir: database.angdir
     },
+    grip,
     background: options?.background ?? 0x000000
   }
 }

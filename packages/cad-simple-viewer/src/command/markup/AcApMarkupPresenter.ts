@@ -261,7 +261,12 @@ export function markupFocusExtents(
     const rects = []
     for (const child of group.children) {
       const el = child.element
-      if (el.classList.contains('ml-html-dot')) continue
+      if (
+        el.classList.contains('ml-html-dot') ||
+        el.classList.contains('ml-html-grip')
+      ) {
+        continue
+      }
       const rect = el.getBoundingClientRect()
       if (rect.width <= 0 && rect.height <= 0) continue
       rects.push(rect)

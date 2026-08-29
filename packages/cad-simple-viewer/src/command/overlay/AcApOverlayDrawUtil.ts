@@ -77,6 +77,37 @@ export function acapScaledOverlayLineWidth(
   return Math.max(0.5, wcs * ppu)
 }
 
+/** Arrow-head length in CSS pixels at the overlay's creation-scale stroke. */
+export const ACAP_OVERLAY_ARROW_SIZE_PX = 12
+
+/**
+ * Screen length of an overlay arrow head, tracking the same WCS scale as the stroke.
+ *
+ * @param scaledLineWidth - Stroke width already converted to the current view.
+ * @param baseLineWidth - CSS stroke used when the overlay was authored (default `2`).
+ */
+export function acapOverlayArrowSize(
+  scaledLineWidth: number,
+  baseLineWidth = 2
+): number {
+  const base =
+    baseLineWidth > 0 && Number.isFinite(baseLineWidth) ? baseLineWidth : 2
+  return Math.max(1, scaledLineWidth * (ACAP_OVERLAY_ARROW_SIZE_PX / base))
+}
+
+/**
+ * Screen dash pattern that stays proportional to the current stroke width.
+ */
+export function acapOverlayDash(
+  scaledLineWidth: number,
+  baseLineWidth = 2
+): number[] {
+  const base =
+    baseLineWidth > 0 && Number.isFinite(baseLineWidth) ? baseLineWidth : 2
+  const s = scaledLineWidth / base
+  return [8 * s, 5 * s]
+}
+
 /**
  * Orthographic `baseZoom` that makes a fixed CSS size match a world-space size
  * at the current view (for {@link AcTrHtmlElement.scaleWithView}).
@@ -121,6 +152,21 @@ export function acapSeedOverlaySizesFromWcs(
   if (strokeWidthWcs != null && strokeWidthWcs > 0) {
     for (const canvas of canvases ?? []) {
       acapSeedOverlayStrokeWcs(canvas, strokeWidthWcs)
+    }
+  }
+
+  if (
+    strokeWidthWcs != null &&
+    strokeWidthWcs > 0 &&
+    options.strokeScreenPx != null &&
+    options.strokeScreenPx > 0
+  ) {
+    const cloudWcs =
+      (8 * strokeWidthWcs) / options.strokeScreenPx
+    for (const canvas of canvases ?? []) {
+      if (!canvas.dataset.overlayCloudWcs) {
+        canvas.dataset.overlayCloudWcs = String(cloudWcs)
+      }
     }
   }
 
@@ -179,19 +225,21 @@ export function acapFitOverlayCanvas(
  * @param from - Tail / direction reference in screen space.
  * @param to - Arrow tip in screen space.
  * @param color - CSS fill color.
+ * @param sizePx - Arrow length in CSS pixels (view-scaled by the caller).
  */
 export function acapDrawOverlayArrowHead(
   ctx: CanvasRenderingContext2D,
   from: { x: number; y: number },
   to: { x: number; y: number },
-  color: string
+  color: string,
+  sizePx = ACAP_OVERLAY_ARROW_SIZE_PX
 ): void {
   const dx = to.x - from.x
   const dy = to.y - from.y
   const len = Math.hypot(dx, dy) || 1
   const ux = dx / len
   const uy = dy / len
-  const size = 12
+  const size = sizePx
   const left = {
     x: to.x - ux * size - uy * size * 0.45,
     y: to.y - uy * size + ux * size * 0.45
@@ -242,7 +290,13 @@ export function acapDrawOverlayLeader(
   ctx.lineTo(anchor.x, anchor.y)
   ctx.stroke()
   if (withArrow) {
-    acapDrawOverlayArrowHead(ctx, anchor, tip, color)
+    acapDrawOverlayArrowHead(
+      ctx,
+      anchor,
+      tip,
+      color,
+      acapOverlayArrowSize(strokeWidth, lineWidth)
+    )
   }
 }
 

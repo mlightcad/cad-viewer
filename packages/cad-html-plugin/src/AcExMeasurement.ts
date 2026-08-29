@@ -42,6 +42,7 @@ import {
   constrainToAcExTracking
 } from './AcExMeasureTracking'
 import type { AcExOsnapPoint } from './AcExOsnap'
+import { acExIsOverlayGrip, acExOverlayGripClassName } from './AcExOverlayGrip'
 
 /**
  * THREE/WebGL color for measurement overlays (lines, preview rubber-band).
@@ -388,6 +389,12 @@ function hitTestMeasureDom(
   paddingPx = 2
 ): boolean {
   for (const el of parts.dom) {
+    if (
+      el.classList.contains('mlcad-measure-dot') &&
+      !el.classList.contains('mlcad-measure-selected')
+    ) {
+      continue
+    }
     const rect = el.getBoundingClientRect()
     if (
       clientX >= rect.left - paddingPx &&
@@ -796,7 +803,7 @@ function segmentsIntersect(
  */
 function makeDotEl(): HTMLDivElement {
   const dot = document.createElement('div')
-  dot.className = 'mlcad-measure-dot'
+  dot.className = acExOverlayGripClassName('measure')
   return dot
 }
 
@@ -2907,7 +2914,7 @@ export class AcExMeasureController {
   private _placeDomAt(el: HTMLElement, wcs: { x: number; y: number }): void {
     el.dataset.wcsX = String(wcs.x)
     el.dataset.wcsY = String(wcs.y)
-    acExResetOverlayViewScale(el)
+    if (!acExIsOverlayGrip(el)) acExResetOverlayViewScale(el)
     const screen = this._view.wcsToScreen(new THREE.Vector2(wcs.x, wcs.y))
     const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     acExPositionWcsOverlay(el, screen, rootRect, this._view.getCameraZoom())
@@ -2951,9 +2958,10 @@ export class AcExMeasureController {
   private _syncGripPointerEvents(): void {
     const enable = this._gripsEnabled()
     for (const measure of this._committed) {
+      const selected = this._selectedIds.has(measure.id)
       for (const el of measure.parts.dom) {
         if (!el.classList.contains('mlcad-measure-dot')) continue
-        el.style.pointerEvents = enable ? 'auto' : 'none'
+        el.style.pointerEvents = enable && selected ? 'auto' : 'none'
       }
     }
   }
@@ -3396,6 +3404,7 @@ export class AcExMeasureController {
     for (const canvas of measure.parts.canvases) {
       canvas.classList.toggle('mlcad-measure-selected', selected)
     }
+    this._syncGripPointerEvents()
   }
 
   /** Apply style patch to currently selected measurements. @internal */
@@ -3463,6 +3472,8 @@ export class AcExMeasureController {
       for (const el of measure.parts.dom) {
         if (el.classList.contains('mlcad-measure-badge') && style.fontSize) {
           el.style.fontSize = `${style.fontSize}px`
+        } else if (el.classList.contains('mlcad-measure-dot') && style.color) {
+          el.style.background = style.color
         }
       }
     }

@@ -15,6 +15,8 @@ import {
   acapDrawOverlayArrowHead,
   acapDrawOverlayHighlight,
   acapFitOverlayCanvas,
+  acapOverlayArrowSize,
+  acapOverlayDash,
   acapScaledOverlayLineWidth
 } from './AcApOverlayDrawUtil'
 
@@ -132,15 +134,22 @@ export function acapStrokeLiveSegment(
   const sa = view.worldToScreen(a)
   const sb = view.worldToScreen(b)
   ctx.strokeStyle = css
-  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
-  if (options?.dashed) ctx.setLineDash([8, 5])
+  const strokeWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
+  ctx.lineWidth = strokeWidth
+  if (options?.dashed) ctx.setLineDash(acapOverlayDash(strokeWidth, lineWidth))
   ctx.beginPath()
   ctx.moveTo(sa.x, sa.y)
   ctx.lineTo(sb.x, sb.y)
   ctx.stroke()
   if (options?.dashed) ctx.setLineDash([])
   if (options?.arrow) {
-    acapDrawOverlayArrowHead(ctx, sa, sb, css)
+    acapDrawOverlayArrowHead(
+      ctx,
+      sa,
+      sb,
+      css,
+      acapOverlayArrowSize(strokeWidth, lineWidth)
+    )
   }
 }
 
@@ -166,8 +175,9 @@ export function acapStrokeLivePolyline(
   const css = typeof color === 'string' ? color : acapCssColor(color)
   const screen = points.map(p => view.worldToScreen(p))
   ctx.strokeStyle = css
-  ctx.lineWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
-  if (options?.dashed) ctx.setLineDash([8, 5])
+  const strokeWidth = acapScaledOverlayLineWidth(lineWidth, ctx.canvas, view)
+  ctx.lineWidth = strokeWidth
+  if (options?.dashed) ctx.setLineDash(acapOverlayDash(strokeWidth, lineWidth))
   ctx.beginPath()
   ctx.moveTo(screen[0].x, screen[0].y)
   for (let i = 1; i < screen.length; i++) {

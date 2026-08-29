@@ -133,6 +133,20 @@ export function acExSeedOverlaySizesFromWcs(
     }
   }
 
+  if (
+    strokeWidthWcs != null &&
+    strokeWidthWcs > 0 &&
+    options.strokeScreenPx != null &&
+    options.strokeScreenPx > 0
+  ) {
+    const cloudWcs = (8 * strokeWidthWcs) / options.strokeScreenPx
+    for (const canvas of canvases ?? []) {
+      if (!canvas.dataset.overlayCloudWcs) {
+        canvas.dataset.overlayCloudWcs = String(cloudWcs)
+      }
+    }
+  }
+
   // Pair text screen/WCS axes only — never mix fontSize with strokeWidthWcs.
   if (
     !(fontSizePx != null && fontSizePx > 0) ||

@@ -35,6 +35,9 @@ export const ACEX_HTML_SHELL_CSS = `
     --mlcad-z-chrome: 7;
     --mlcad-z-measure: 5;
     --mlcad-z-markup: 6;
+    --ml-ui-grip-size: 8px;
+    --ml-ui-grip-normal: #0080ff;
+    --ml-ui-grip-hot: #ff0000;
   }
   html, body {
     margin: 0; height: 100%; overflow: hidden;
@@ -536,7 +539,21 @@ export const ACEX_HTML_SHELL_CSS = `
     border: 2px solid rgba(255, 255, 255, 0.9);
     box-sizing: border-box;
     transform: translate(-50%, -50%);
+    visibility: hidden;
     pointer-events: none;
+    cursor: grab;
+  }
+  .mlcad-measure-dot.mlcad-measure-selected {
+    visibility: visible;
+    pointer-events: auto;
+    box-shadow:
+      0 0 0 2px rgba(255, 213, 79, 0.75),
+      0 0 10px rgba(255, 213, 79, 0.95),
+      0 0 18px rgba(255, 213, 79, 0.55);
+  }
+  #mlcad-measure-overlays.mlcad-grip-dragging .mlcad-measure-dot {
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
   .mlcad-measure-badge {
     position: absolute;
@@ -554,12 +571,6 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   .mlcad-measure-badge--coordinate {
     transform: translate(-50%, calc(-50% - 16px));
-  }
-  .mlcad-measure-dot.mlcad-measure-selected {
-    box-shadow:
-      0 0 0 2px rgba(255, 213, 79, 0.75),
-      0 0 10px rgba(255, 213, 79, 0.95),
-      0 0 18px rgba(255, 213, 79, 0.55);
   }
   .mlcad-measure-badge.mlcad-measure-selected {
     outline: 2px solid rgba(255, 213, 79, 0.85);
@@ -630,6 +641,17 @@ export const ACEX_HTML_SHELL_CSS = `
     white-space: nowrap;
     min-width: 0;
   }
+  .mlcad-markup-preview-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--mlcad-markup-accent);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
   .mlcad-markup-dot {
     position: absolute;
     width: 10px;
@@ -639,15 +661,21 @@ export const ACEX_HTML_SHELL_CSS = `
     border: 2px solid rgba(255, 255, 255, 0.9);
     box-sizing: border-box;
     transform: translate(-50%, -50%);
-    pointer-events: auto;
+    visibility: hidden;
+    pointer-events: none;
     cursor: grab;
-    touch-action: none;
   }
   .mlcad-markup-dot.mlcad-markup-selected {
+    visibility: visible;
+    pointer-events: auto;
     box-shadow:
       0 0 0 2px rgba(255, 213, 79, 0.75),
       0 0 10px rgba(255, 213, 79, 0.95),
       0 0 18px rgba(255, 213, 79, 0.55);
+  }
+  #mlcad-markup-overlays.mlcad-grip-dragging .mlcad-markup-dot {
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
   .mlcad-markup-badge.mlcad-markup-selected,
   .mlcad-markup-stamp.mlcad-markup-selected {

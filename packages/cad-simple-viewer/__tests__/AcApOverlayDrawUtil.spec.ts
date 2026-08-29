@@ -2,6 +2,8 @@
 
 import {
   ACAP_OVERLAY_STROKE_WCS,
+  acapOverlayArrowSize,
+  acapOverlayDash,
   acapScaledOverlayLineWidth,
   acapSeedOverlaySizesFromWcs
 } from '../src/command/overlay/AcApOverlayDrawUtil'
@@ -65,5 +67,29 @@ describe('AcApOverlayDrawUtil WCS stroke', () => {
     })
     // base = (13 * 2) / (1.3 * 10) = 2
     expect(el.baseZoom).toBe(2)
+  })
+})
+
+describe('AcApOverlayDrawUtil arrow and dash scale', () => {
+  it('scales arrow head with the view-synced stroke', () => {
+    expect(acapOverlayArrowSize(2, 2)).toBe(12)
+    expect(acapOverlayArrowSize(4, 2)).toBe(24)
+    expect(acapOverlayArrowSize(2.5, 2.5)).toBe(12)
+  })
+
+  it('scales dash pattern with the view-synced stroke', () => {
+    expect(acapOverlayDash(2, 2)).toEqual([8, 5])
+    expect(acapOverlayDash(4, 2)).toEqual([16, 10])
+  })
+
+  it('seeds cloud lobe WCS from the stroke screen/WCS pair', () => {
+    const view = mockView(10)
+    const canvas = document.createElement('canvas')
+    acapSeedOverlaySizesFromWcs(view, {
+      strokeWidthWcs: 0.4,
+      strokeScreenPx: 2.5,
+      canvases: [canvas]
+    })
+    expect(canvas.dataset.overlayCloudWcs).toBe('1.28')
   })
 })

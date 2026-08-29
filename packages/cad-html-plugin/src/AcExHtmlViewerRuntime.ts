@@ -187,6 +187,11 @@ async function startViewer(): Promise<void> {
   const viewerMode: AcExViewerMode = snapshot.meta.viewerMode ?? 'measure'
   const measureEnabled = viewerMode === 'measure'
 
+  const grip = snapshot.meta.grip
+  root.style.setProperty('--ml-ui-grip-size', `${grip?.size ?? 8}px`)
+  root.style.setProperty('--ml-ui-grip-normal', grip?.colorCss ?? '#0080ff')
+  root.style.setProperty('--ml-ui-grip-hot', grip?.hotColorCss ?? '#ff0000')
+
   const initialLayout =
     snapshot.layouts.find(l => l.btrId === snapshot.activeLayoutBtrId) ??
     snapshot.layouts[0]

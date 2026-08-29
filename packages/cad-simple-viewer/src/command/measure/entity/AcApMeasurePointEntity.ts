@@ -1,5 +1,5 @@
 import type { AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
-import { AcTrHtmlBadge, AcTrHtmlDot } from '@mlightcad/three-renderer'
+import { AcTrHtmlBadge, AcTrHtmlGrip } from '@mlightcad/three-renderer'
 
 import {
   type AcApMeasurementStyle,
@@ -119,7 +119,7 @@ export class AcApMeasurePointEntity extends AcApMeasureEntity {
       y: live.y
     }
     const color = this.style.color
-    const dot = new AcTrHtmlDot({
+    const dot = new AcTrHtmlGrip({
       id: `${this.entityId}-dot`,
       color,
       worldPosition: live,

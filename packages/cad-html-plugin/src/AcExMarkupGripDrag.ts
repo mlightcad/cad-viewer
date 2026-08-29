@@ -9,6 +9,11 @@
  */
 
 import type { AcExMarkupPoint2d } from './AcExMarkupTypes'
+import {
+  acExIsOverlayGrip,
+  acExIsOverlayGripSelected,
+  acExSetOverlayGripsDragging
+} from './AcExOverlayGrip'
 
 /** Pointer movement (CSS px, squared) before a drag starts. */
 const DRAG_THRESHOLD_PX = 4
@@ -47,18 +52,34 @@ export function acExBindMarkupPointerDrag(
   options: AcExMarkupPointerDragOptions
 ): () => void {
   const { el, clientToWorld, onDragStart, onMove, onCommit } = options
+  const isGrip = acExIsOverlayGrip(el)
   const idleCursor = options.cursor ?? 'grab'
 
-  el.style.pointerEvents = 'auto'
+  if (!isGrip) {
+    el.style.pointerEvents = 'auto'
+  }
   el.style.cursor = idleCursor
   el.style.touchAction = 'none'
   el.style.userSelect = 'none'
 
   let detachActiveDrag: (() => void) | undefined
+  let hidGrips = false
+
+  const dragAllowed = (): boolean => {
+    if (options.isEnabled && !options.isEnabled()) return false
+    if (isGrip && !acExIsOverlayGripSelected(el)) return false
+    return true
+  }
+
+  const restoreGrips = () => {
+    if (!hidGrips) return
+    hidGrips = false
+    acExSetOverlayGripsDragging(false)
+  }
 
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return
-    if (options.isEnabled && !options.isEnabled()) return
+    if (!dragAllowed()) return
     const target = e.target as HTMLElement | null
     if (
       e.detail >= 2 ||
@@ -72,7 +93,6 @@ export function acExBindMarkupPointerDrag(
     options.onPointerDown?.(e)
     e.stopPropagation()
     e.preventDefault()
-    // Capture so OrbitControls / canvas handlers cannot steal the gesture.
     try {
       el.setPointerCapture(e.pointerId)
     } catch {
@@ -114,6 +134,10 @@ export function acExBindMarkupPointerDrag(
         dragging = true
         ev.preventDefault()
         el.style.cursor = 'grabbing'
+        if (isGrip) {
+          hidGrips = true
+          acExSetOverlayGripsDragging(true)
+        }
         onDragStart?.()
       }
       onMove(clientToWorld(ev.clientX, ev.clientY), ev)
@@ -124,11 +148,15 @@ export function acExBindMarkupPointerDrag(
       detach()
       if (!dragging) return
       el.style.cursor = idleCursor
+      restoreGrips()
       onCommit()
     }
 
     detachActiveDrag?.()
-    detachActiveDrag = detach
+    detachActiveDrag = () => {
+      restoreGrips()
+      detach()
+    }
     window.addEventListener('pointermove', onPointerMove, windowListenerOptions)
     window.addEventListener('pointerup', onPointerUp, windowListenerOptions)
     window.addEventListener('pointercancel', onPointerUp, windowListenerOptions)

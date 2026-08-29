@@ -1,9 +1,11 @@
-import { AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
+import { AcTrHtmlCanvasOverlay, AcTrHtmlGrip } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
 import {
   acapDrawOverlayHighlight,
-  acapFitOverlayCanvas,  type AcApOverlayWorldDrawResult} from '../../overlay'
+  acapFitOverlayCanvas,
+  type AcApOverlayWorldDrawResult
+} from '../../overlay'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import { AcApMarkupEntity } from './AcApMarkupEntity'
 
@@ -52,7 +54,7 @@ export class AcApMarkupHighlightEntity extends AcApMarkupEntity {
     })
     group.addCanvas(overlay)
 
-    const centerDot = new AcTrHtmlDot({
+    const centerDot = new AcTrHtmlGrip({
       id: `${this.record.id}-dot`,
       color,
       worldPosition: {

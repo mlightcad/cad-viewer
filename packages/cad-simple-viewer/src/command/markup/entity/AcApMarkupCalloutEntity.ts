@@ -2,7 +2,7 @@ import { AcGePoint3d, type AcGeVector3dLike } from '@mlightcad/data-model'
 import {
   AcTrHtmlCallout,
   AcTrHtmlCanvasOverlay,
-  AcTrHtmlDot
+  AcTrHtmlGrip
 } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
@@ -139,14 +139,14 @@ export class AcApMarkupCalloutEntity extends AcApMarkupEntity {
       layer,
       layoutId
     })
-    const tipDot = new AcTrHtmlDot({
+    const tipDot = new AcTrHtmlGrip({
       id: `${this.record.id}-tip`,
       color,
       worldPosition: live.tip,
       layer,
       layoutId
     })
-    const centerDot = new AcTrHtmlDot({
+    const centerDot = new AcTrHtmlGrip({
       id: `${this.record.id}-center`,
       color,
       worldPosition: {

@@ -46,6 +46,18 @@ export interface AcExViewerUnits {
 }
 
 /**
+ * Grip square appearance copied from `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`.
+ */
+export interface AcExViewerGripAppearance {
+  /** Grip square edge length in CSS pixels (`GRIPSIZE`). */
+  size: number
+  /** CSS color for idle grips (`GRIPCOLOR`). */
+  colorCss: string
+  /** CSS color for hover / hot grips (`GRIPHOT`). */
+  hotColorCss: string
+}
+
+/**
  * Axis-aligned bounding box in world coordinates (WCS), XY plane.
  * Z is not stored; extents are used for zoom-to-extents and layer fit.
  */
@@ -317,6 +329,12 @@ export interface AcExSnapshot {
     viewExtents?: AcExExtents
     /** Unit and formatting sysvars for measurement display. */
     units: AcExViewerUnits
+    /**
+     * Grip square appearance from `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`.
+     * Omitted on snapshots produced before this field existed; the viewer
+     * then uses AutoCAD-like defaults (8px, `#0080ff` / `#ff0000`).
+     */
+    grip?: AcExViewerGripAppearance
     /** Canvas background color as 24-bit RGB hex. */
     background: number
     /** Export-time UI locale from the CAD app (informational; runtime uses browser language). */

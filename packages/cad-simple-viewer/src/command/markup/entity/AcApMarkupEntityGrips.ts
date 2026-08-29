@@ -5,8 +5,8 @@
 import {
   AcTrHtmlCallout,
   AcTrHtmlCanvasOverlay,
-  AcTrHtmlDot,
   type AcTrHtmlElement,
+  AcTrHtmlGrip,
   type AcTrHtmlGroup
 } from '@mlightcad/three-renderer'
 
@@ -50,8 +50,8 @@ export interface AcApMarkupAttachedCalloutVisual {
   live: { tip: AcApMarkupPoint2d; anchor: AcApMarkupPoint2d }
   /** Redraw the leader canvas from {@link live}. */
   redraw: () => void
-  /** Tip grip HTML dot. */
-  tipDot: AcTrHtmlDot
+  /** Tip grip HTML circle. */
+  tipDot: AcTrHtmlGrip
   /** Text bubble HTML callout. */
   bubble: AcTrHtmlCallout
   /**
@@ -154,7 +154,7 @@ export function publishAttachedCallout(
     layer,
     layoutId
   })
-  const tipDot = new AcTrHtmlDot({
+  const tipDot = new AcTrHtmlGrip({
     id: `${record.id}-shape-tip`,
     color,
     worldPosition: live.tip,
