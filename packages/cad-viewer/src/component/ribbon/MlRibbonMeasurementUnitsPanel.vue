@@ -1,7 +1,6 @@
 <template>
   <el-form
     label-position="left"
-    label-width="auto"
     class="ml-ribbon-measure-units"
     size="small"
   >
@@ -46,6 +45,9 @@ import { drawingUnitPrecisionOptions } from '../../util/drawingUnitPrecision'
 
 /**
  * Length or angle type/precision controls for one Measurement ribbon group.
+ *
+ * Labels are aligned with CSS grid instead of `label-width="auto"`, which
+ * makes ElForm report `unexpected width NaN` when overflow groups are hidden.
  */
 interface RibbonMeasurementUnitsPanelProps {
   kind: 'length' | 'angle'
@@ -136,19 +138,27 @@ const precisionOptions = computed(() =>
 <style scoped>
 .ml-ribbon-measure-units {
   --ml-ribbon-measure-units-scale: var(--ml-rb-scale, 1);
+  display: grid;
+  grid-template-columns: max-content auto;
+  align-items: center;
+  row-gap: calc(4px * var(--ml-ribbon-measure-units-scale));
+  column-gap: calc(6px * var(--ml-ribbon-measure-units-scale));
 }
 
 .ml-ribbon-measure-units :deep(.el-form-item) {
-  margin-bottom: calc(4px * var(--ml-ribbon-measure-units-scale));
-}
-
-.ml-ribbon-measure-units :deep(.el-form-item:last-child) {
+  display: contents;
   margin-bottom: 0;
 }
 
 .ml-ribbon-measure-units :deep(.el-form-item__label) {
+  width: auto !important;
   font-size: calc(11px * var(--ml-ribbon-measure-units-scale));
-  padding-right: calc(6px * var(--ml-ribbon-measure-units-scale));
+  padding-right: 0;
+  justify-content: flex-start;
+}
+
+.ml-ribbon-measure-units :deep(.el-form-item__content) {
+  margin-left: 0 !important;
 }
 
 .ml-ribbon-measure-units__control {
