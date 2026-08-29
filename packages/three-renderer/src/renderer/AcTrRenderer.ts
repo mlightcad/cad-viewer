@@ -298,6 +298,27 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     this._renderer.setViewport(x, y, width, height)
   }
 
+  /**
+   * Sets the WebGL scissor rectangle in CSS pixels (origin bottom-left).
+   *
+   * @param x - Left edge in CSS pixels.
+   * @param y - Bottom edge in CSS pixels.
+   * @param width - Width in CSS pixels.
+   * @param height - Height in CSS pixels.
+   */
+  setScissor(x: number, y: number, width: number, height: number) {
+    this._renderer.setScissor(x, y, width, height)
+  }
+
+  /**
+   * Enables or disables scissor clipping for subsequent draws.
+   *
+   * @param enabled - When true, drawing is clipped to the last {@link setScissor}.
+   */
+  setScissorTest(enabled: boolean) {
+    this._renderer.setScissorTest(enabled)
+  }
+
   clear() {
     this._renderer.clear()
   }

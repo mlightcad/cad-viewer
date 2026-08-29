@@ -5,6 +5,12 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
+import {
+  acExCssRectToWcsBox,
+  acExCssTopLeftRectToGl,
+  acExIntersectCssRects,
+  acExWcsBoxToCssRect
+} from './AcExCssRect'
 import { setupAcExDrawStyleToolbar } from './AcExDrawStyleToolbar'
 import {
   decryptAcExHtmlSnapshotPayload,
@@ -50,6 +56,13 @@ import {
   createViewerMeshMaterial,
   createViewerPointsMaterial
 } from './AcExPatternSnapshot'
+import {
+  ACEX_SNAP_LOUPE_INSET_PX,
+  ACEX_SNAP_LOUPE_SIZE_PX,
+  ACEX_SNAP_LOUPE_TOP_INSET_PX,
+  ACEX_SNAP_LOUPE_ZOOM,
+  AcExSnapLoupe
+} from './AcExSnapLoupe'
 import { decodeSnapshot } from './AcExSnapshotCodec'
 import type {
   AcExExtents,
@@ -59,6 +72,7 @@ import type {
   AcExSnapshot,
   AcExViewerMode
 } from './AcExSnapshotTypes'
+import { AcExTouchPointSession } from './AcExTouchPointSession'
 import {
   releaseLayerGroupsGeometryCpuArrays,
   releaseSnapshotBatchBuffers,
@@ -365,7 +379,14 @@ async function startViewer(): Promise<void> {
   const modelScene = new THREE.Scene()
   const viewportCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)
   viewportCamera.up.set(0, 1, 0)
+  /** Orthographic camera used only for the snap-loupe scissor pass. */
+  const loupeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)
+  loupeCamera.up.set(0, 1, 0)
   const savedViewportBox = new THREE.Vector4()
+  /** DOM chrome (border, crosshair, OSNAP glyph) for the snap loupe. */
+  const snapLoupe = new AcExSnapLoupe(canvasHost)
+  /** Last client sample while the loupe is visible; `null` when hidden. */
+  let loupeSample: { clientX: number; clientY: number } | null = null
 
   const getOrCreateLayerGroup = (
     groups: Map<string, THREE.Group>,
@@ -640,6 +661,42 @@ async function startViewer(): Promise<void> {
     return { point, snap: snap ?? null }
   }
 
+  /**
+   * Hides the snap-loupe HUD and drops the last sample so the overlay pass
+   * is skipped on the next frame.
+   */
+  const hideSnapLoupe = () => {
+    loupeSample = null
+    snapLoupe.hide()
+  }
+
+  /**
+   * Positions the loupe HUD (and optional OSNAP glyph) around a client sample.
+   * The sample is stored so the magnified overlay pass can draw on the next
+   * frame.
+   *
+   * @param clientX - Sample X in client CSS pixels.
+   * @param clientY - Sample Y in client CSS pixels.
+   */
+  const refreshSnapLoupeHud = (clientX: number, clientY: number) => {
+    loupeSample = { clientX, clientY }
+    const canvasRect = renderer.domElement.getBoundingClientRect()
+    const canvasX = clientX - canvasRect.left
+    const canvasY = clientY - canvasRect.top
+    const { point, snap } = resolveMeasurePoint(clientX, clientY)
+    if (snap) {
+      const screen = wcsToScreen(point)
+      snapLoupe.show(
+        canvasX,
+        canvasY,
+        { x: screen.x - canvasRect.left, y: screen.y - canvasRect.top },
+        snap.mode
+      )
+    } else {
+      snapLoupe.show(canvasX, canvasY)
+    }
+  }
+
   let measure: AcExMeasureController | null = null
   let markup: AcExMarkupController | null = null
   const measureSettingsRef: {
@@ -762,11 +819,131 @@ async function startViewer(): Promise<void> {
     acexCameraZoomUniform.value = camera.zoom
   }
 
+  /**
+   * Fits an orthographic camera so `extents` fills a CSS rectangle of
+   * `vpW` × `vpH`, matching {@link computeViewportCamera}.
+   *
+   * @param target - Camera to update.
+   * @param extents - World box to show.
+   * @param vpW - Target CSS width in pixels.
+   * @param vpH - Target CSS height in pixels.
+   * @param twist - Optional DVIEW twist in radians.
+   */
+  const applyOrthoFit = (
+    target: THREE.OrthographicCamera,
+    extents: AcExExtents,
+    vpW: number,
+    vpH: number,
+    twist = 0
+  ) => {
+    const fitted = computeViewportCamera(extents, vpW, vpH)
+    target.left = -fitted.aspect * fitted.frustum
+    target.right = fitted.aspect * fitted.frustum
+    target.top = fitted.frustum
+    target.bottom = -fitted.frustum
+    target.position.set(fitted.centerX, fitted.centerY, ACEX_CAMERA_DISTANCE)
+    target.lookAt(fitted.centerX, fitted.centerY, 0)
+    target.up.set(-Math.sin(twist), Math.cos(twist), 0)
+    target.setRotationFromEuler(new THREE.Euler(0, 0, twist))
+    target.zoom = fitted.zoom
+    target.updateProjectionMatrix()
+    acexCameraZoomUniform.value = fitted.zoom
+  }
+
+  /**
+   * Draws the magnified snap loupe into a screen-fixed scissor after the main
+   * layout and paper viewports. Nested paper-space viewports that intersect
+   * the loupe are scissor-clipped so model content stays visible inside it.
+   */
+  const renderSnapLoupe = () => {
+    if (!loupeSample || !snapLoupe.isVisible) return
+    const { width, height } = getCanvasSize()
+    if (width <= 0 || height <= 0) return
+    const half = ACEX_SNAP_LOUPE_SIZE_PX / ACEX_SNAP_LOUPE_ZOOM / 2
+    const p1 = screenToWcs(loupeSample.clientX - half, loupeSample.clientY - half)
+    const p2 = screenToWcs(loupeSample.clientX + half, loupeSample.clientY + half)
+    const viewBox: AcExExtents = {
+      minX: Math.min(p1.x, p2.x),
+      minY: Math.min(p1.y, p2.y),
+      maxX: Math.max(p1.x, p2.x),
+      maxY: Math.max(p1.y, p2.y)
+    }
+    const loupeRect = {
+      x: ACEX_SNAP_LOUPE_INSET_PX,
+      y: ACEX_SNAP_LOUPE_TOP_INSET_PX,
+      width: ACEX_SNAP_LOUPE_SIZE_PX,
+      height: ACEX_SNAP_LOUPE_SIZE_PX
+    }
+    const gl = acExCssTopLeftRectToGl(loupeRect, height)
+    const autoClear = renderer.autoClear
+    renderer.autoClear = false
+    renderer.getViewport(savedViewportBox)
+    renderer.setScissor(gl.x, gl.y, gl.width, gl.height)
+    renderer.setScissorTest(true)
+    renderer.setViewport(gl.x, gl.y, gl.width, gl.height)
+    renderer.clear()
+    applyOrthoFit(loupeCamera, viewBox, loupeRect.width, loupeRect.height)
+    renderer.render(scene, loupeCamera)
+
+    if (
+      !layout.isModelSpace &&
+      layout.viewports?.length &&
+      modelRoot.children.length > 0
+    ) {
+      for (const viewport of layout.viewports) {
+        const magRect = acExWcsBoxToCssRect(viewport.paper, viewBox, loupeRect)
+        const hit = acExIntersectCssRects(magRect, loupeRect)
+        if (!hit) continue
+        const paperHit = acExCssRectToWcsBox(hit, viewBox, loupeRect)
+        const corners = [
+          paperPointToModel(viewport, paperHit.minX, paperHit.minY),
+          paperPointToModel(viewport, paperHit.maxX, paperHit.minY),
+          paperPointToModel(viewport, paperHit.maxX, paperHit.maxY),
+          paperPointToModel(viewport, paperHit.minX, paperHit.maxY)
+        ]
+        const modelBox: AcExExtents = {
+          minX: Math.min(...corners.map(c => c.x)),
+          minY: Math.min(...corners.map(c => c.y)),
+          maxX: Math.max(...corners.map(c => c.x)),
+          maxY: Math.max(...corners.map(c => c.y))
+        }
+        const nestedGl = acExCssTopLeftRectToGl(hit, height)
+        renderer.setScissor(nestedGl.x, nestedGl.y, nestedGl.width, nestedGl.height)
+        renderer.setViewport(
+          nestedGl.x,
+          nestedGl.y,
+          nestedGl.width,
+          nestedGl.height
+        )
+        renderer.clearDepth()
+        applyOrthoFit(
+          loupeCamera,
+          modelBox,
+          hit.width,
+          hit.height,
+          viewport.twist ?? 0
+        )
+        renderer.render(modelScene, loupeCamera)
+      }
+    }
+
+    renderer.setScissorTest(false)
+    renderer.setViewport(
+      savedViewportBox.x,
+      savedViewportBox.y,
+      savedViewportBox.z,
+      savedViewportBox.w
+    )
+    renderer.autoClear = autoClear
+    acexCameraZoomUniform.value = camera.zoom
+  }
+
   const render = () => {
     measure?.syncOverlays()
     markup?.syncOverlays()
     renderer.render(scene, camera)
     renderPaperViewports()
+    renderSnapLoupe()
   }
 
   if (measureEnabled) {
@@ -1067,7 +1244,9 @@ async function startViewer(): Promise<void> {
     getMeasure: () => measure,
     getMarkup: () => markup,
     getNavTools: () => navToolsRef.current,
-    render
+    render,
+    refreshSnapLoupeHud,
+    hideSnapLoupe
   })
 
   setupPanCursorFeedback(
@@ -1734,25 +1913,111 @@ function setupPanCursorFeedback(
   window.addEventListener('pointercancel', clearPanCursor)
 }
 
-/** Pointer wiring for {@link setupToolPointerInput}. */
+/**
+ * Pointer wiring for {@link setupToolPointerInput}.
+ */
 interface AcExToolPointerInputOptions {
+  /** Canvas (or host) that receives pointer events. */
   domElement: HTMLElement
+  /** Active measure controller, or `null` when measure is disabled. */
   getMeasure: () => AcExMeasureController | null
+  /** Active markup controller, or `null` when markup is disabled. */
   getMarkup: () => AcExMarkupController | null
+  /** Navigation tools (zoom-window, etc.), or `null` before they are created. */
   getNavTools: () => ReturnType<typeof setupAcExHtmlNavTools> | null
+  /** Redraws the scene, overlays, paper viewports, and snap loupe. */
   render: () => void
+  /**
+   * Shows the snap-loupe HUD around a client sample while a long-press is
+   * active.
+   *
+   * @param clientX - Sample X in client CSS pixels.
+   * @param clientY - Sample Y in client CSS pixels.
+   */
+  refreshSnapLoupeHud: (clientX: number, clientY: number) => void
+  /** Hides the snap-loupe HUD and clears the overlay sample. */
+  hideSnapLoupe: () => void
 }
 
 /**
  * Left-button tool picking / selection on capture so selection can block
  * OrbitControls pan; while a tool is active left pan is already toggled off.
  * Also drives zoom-window picks in both view and measure modes.
+ * Touch drawing tools defer commit until pointerup so a long-press can open
+ * the snap loupe.
+ *
+ * @param options - Canvas, tool accessors, render callback, and loupe HUD.
  */
 function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
-  const { domElement, getMeasure, getMarkup, getNavTools, render } = options
+  const {
+    domElement,
+    getMeasure,
+    getMarkup,
+    getNavTools,
+    render,
+    refreshSnapLoupeHud,
+    hideSnapLoupe
+  } = options
   let pendingMove: { clientX: number; clientY: number } | null = null
   let moveRaf = 0
+  const touchSession = new AcExTouchPointSession()
 
+  /**
+   * Whether measure or markup is currently drawing.
+   *
+   * @returns True when a drawing tool should receive the next pick.
+   */
+  const isDrawingToolActive = () =>
+    getMeasure()?.isActive === true || getMarkup()?.isActive === true
+
+  /**
+   * Commits a measure or markup point at the given client sample.
+   *
+   * @param clientX - Sample X in client CSS pixels.
+   * @param clientY - Sample Y in client CSS pixels.
+   */
+  const commitDrawingPoint = (clientX: number, clientY: number) => {
+    const measure = getMeasure()
+    const markup = getMarkup()
+    if (measure?.isActive) {
+      if (measure.handlePointerDown(clientX, clientY)) {
+        if (measure.hasSelection) markup?.clearSelection()
+        render()
+      }
+      return
+    }
+    if (markup?.isActive) {
+      if (markup.handlePointerDown(clientX, clientY)) {
+        if (markup.hasSelection) measure?.clearSelection()
+        render()
+      }
+    }
+  }
+
+  /**
+   * Updates the in-progress measure or markup preview without committing.
+   *
+   * @param clientX - Sample X in client CSS pixels.
+   * @param clientY - Sample Y in client CSS pixels.
+   */
+  const previewDrawingPoint = (clientX: number, clientY: number) => {
+    const measure = getMeasure()
+    const markup = getMarkup()
+    if (measure?.isActive) {
+      measure.handlePointerMove(clientX, clientY)
+      render()
+      return
+    }
+    if (markup?.isActive) {
+      markup.handlePointerMove(clientX, clientY)
+      render()
+    }
+  }
+
+  /**
+   * Applies the latest coalesced pointer-move sample: tool preview, loupe HUD
+   * while long-pressing, or zoom-window rubber band.
+   */
   const flushPointerMove = () => {
     moveRaf = 0
     const sample = pendingMove
@@ -1762,15 +2027,47 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     const markup = getMarkup()
     if (measure?.isActive) {
       measure.handlePointerMove(sample.clientX, sample.clientY)
+      if (touchSession.isLoupe) {
+        refreshSnapLoupeHud(sample.clientX, sample.clientY)
+      }
       render()
       return
     }
     if (markup?.isActive) {
       markup.handlePointerMove(sample.clientX, sample.clientY)
+      if (touchSession.isLoupe) {
+        refreshSnapLoupeHud(sample.clientX, sample.clientY)
+      }
       render()
       return
     }
     getNavTools()?.handlePointerMove(sample.clientX, sample.clientY)
+  }
+
+  /**
+   * Ends a touch pick. When `commit` is true, a short tap or loupe release
+   * places the drawing point; otherwise the gesture is aborted.
+   *
+   * @param event - Pointer event that ended or cancelled the gesture.
+   * @param commit - When false, abort without placing a point.
+   */
+  const endTouchPick = (event: PointerEvent, commit: boolean) => {
+    if (event.pointerType !== 'touch') return
+    if (touchSession.phase === 'idle') return
+    if (event.pointerId !== touchSession.pointerId) return
+    if (!commit) {
+      touchSession.cancel()
+      hideSnapLoupe()
+      render()
+      return
+    }
+    const action = touchSession.end()
+    hideSnapLoupe()
+    if (action === 'commit') {
+      commitDrawingPoint(event.clientX, event.clientY)
+    } else {
+      render()
+    }
   }
 
   domElement.addEventListener(
@@ -1779,6 +2076,15 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
       if (event.button !== 0) return
       const measure = getMeasure()
       const markup = getMarkup()
+      if (event.pointerType === 'touch' && isDrawingToolActive()) {
+        touchSession.start(event.pointerId, event.clientX, event.clientY, () => {
+          refreshSnapLoupeHud(touchSession.x, touchSession.y)
+          render()
+        })
+        previewDrawingPoint(event.clientX, event.clientY)
+        domElement.setPointerCapture(event.pointerId)
+        return
+      }
       if (measure?.isActive) {
         if (measure.handlePointerDown(event.clientX, event.clientY)) {
           if (measure.hasSelection) markup?.clearSelection()
@@ -1798,7 +2104,6 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
         event.stopImmediatePropagation()
         return
       }
-      // Capture phase: stop before OrbitControls starts left-button pan.
       if (markup?.handleSelectionPointerDown(event.clientX, event.clientY)) {
         event.stopImmediatePropagation()
         if (markup.hasSelection) measure?.clearSelection()
@@ -1817,11 +2122,20 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     const measure = getMeasure()
     const markup = getMarkup()
     const zoomWindow = getNavTools()?.getMode() === 'zoom-window'
+    if (event.pointerType === 'touch' && touchSession.isPicking) {
+      touchSession.move(event.clientX, event.clientY, false)
+    }
     if (!measure?.isActive && !markup?.isActive && !zoomWindow) return
     pendingMove = { clientX: event.clientX, clientY: event.clientY }
     if (moveRaf === 0) {
       moveRaf = requestAnimationFrame(flushPointerMove)
     }
+  })
+  window.addEventListener('pointerup', event => {
+    endTouchPick(event, true)
+  })
+  window.addEventListener('pointercancel', event => {
+    endTouchPick(event, false)
   })
 }
 

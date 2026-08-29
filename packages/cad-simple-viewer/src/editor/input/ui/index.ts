@@ -2,6 +2,8 @@ export * from './AcEdCommandLine'
 export * from './AcEdInputManager'
 export * from './AcEdMessageType'
 export * from './AcEdMTextEditor'
+export * from './AcEdSnapLoupe'
+export * from './AcEdTouchPointSession'
 export type {
   MTextToolbarColorPickerContext,
   MTextToolbarColorPickerFactory,

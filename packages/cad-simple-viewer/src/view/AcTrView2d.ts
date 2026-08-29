@@ -43,6 +43,7 @@ import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit'
 import {
   AcEdBaseView,
   AcEdCalculateSizeCallback,
+  AcEdSnapLoupeViewState,
   AcEdConditionWaiter,
   AcEdCorsorType,
   AcEdGripManager,
@@ -629,6 +630,36 @@ export class AcTrView2d extends AcEdBaseView {
    */
   set mode(value: AcEdViewMode) {
     this.activeLayoutView.mode = value
+  }
+
+  /**
+   * Enables or disables OrbitControls on the active layout view.
+   *
+   * @param enabled - When false, pan and zoom are disabled (e.g. while the
+   *   snap loupe is tracking a long-press).
+   */
+  override setNavigationEnabled(enabled: boolean) {
+    const layoutView = this.activeLayoutView
+    if (layoutView) layoutView.enabled = enabled
+  }
+
+  /**
+   * Shows or hides the screen-fixed snap loupe overlay viewport.
+   *
+   * @param state - Loupe screen rectangle and world box, or `null` to hide.
+   */
+  override setSnapLoupe(state: AcEdSnapLoupeViewState | null) {
+    const overlay = this.activeLayoutView?.overlayViewport
+    if (!overlay) return
+    if (!state) {
+      overlay.visible = false
+      this._isDirty = true
+      return
+    }
+    overlay.setScreenRect(state.x, state.y, state.size, state.size)
+    overlay.setViewBox(state.viewBox)
+    overlay.visible = true
+    this._isDirty = true
   }
 
   /**
