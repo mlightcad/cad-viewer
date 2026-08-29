@@ -23,10 +23,15 @@ import {
   promptAcExHtmlAccessPassword,
   showAcExHtmlAccessExpired
 } from './AcExHtmlAccessGate'
+import {
+  acExHtmlIsPhoneLayout,
+  setupAcExHtmlDrawerSheets
+} from './AcExHtmlDrawerSheet'
 import { setupAcExHtmlExpiryMonitor } from './AcExHtmlExpiryUi'
 import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import { setupAcExHtmlLayoutMenu } from './AcExHtmlLayoutMenu'
+import { setupAcExHtmlMeasurePanel } from './AcExHtmlMeasurePanel'
 import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
 import { setupAcExHtmlNavTools } from './AcExHtmlNavTools'
 import { setupAcExHtmlReviewPanel } from './AcExHtmlReviewPanel'
@@ -1010,7 +1015,8 @@ async function startViewer(): Promise<void> {
           return osnapIndex.findCircleOrArcNear(x, y, osnapThresholdWcs) ?? null
         },
         formatLength,
-        formatAngle
+        formatAngle,
+        zoomToExtents
       }
     })
 
@@ -1087,6 +1093,24 @@ async function startViewer(): Promise<void> {
     measureSettingsRef.current?.close()
   })
 
+  const closeLayerDrawer = () => {
+    const layerDrawer = document.getElementById('mlcad-layer-drawer')
+    const layersBtn = document.getElementById('mlcad-layers-btn')
+    if (layerDrawer) layerDrawer.hidden = true
+    layersBtn?.classList.remove('active')
+    layersBtn?.setAttribute('aria-expanded', 'false')
+  }
+
+  let reviewPanel: ReturnType<typeof setupAcExHtmlReviewPanel> = null
+  let measurePanel: ReturnType<typeof setupAcExHtmlMeasurePanel> = null
+
+  const drawerSheets = setupAcExHtmlDrawerSheets({
+    closeStrips: () => {
+      toolbarFlyoutsRef.current?.close()
+      layoutMenuRef.current?.close()
+    }
+  })
+
   const layerPanel = setupLayerPanel({
     snapshot,
     layerVisible,
@@ -1107,19 +1131,31 @@ async function startViewer(): Promise<void> {
         ...modelLayerGroups.keys()
       ])
     ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
-    closeOtherDrawers: () => reviewPanel?.close()
+    closeOtherDrawers: () => {
+      reviewPanel?.close()
+      measurePanel?.close()
+    },
+    onPhoneOpen: drawer => drawerSheets.preparePhoneOpen(drawer)
   })
 
-  const reviewPanel = setupAcExHtmlReviewPanel({
+  reviewPanel = setupAcExHtmlReviewPanel({
     i18n,
     getMarkup: () => markup,
     closeOtherDrawers: () => {
-      const layerDrawer = document.getElementById('mlcad-layer-drawer')
-      const layersBtn = document.getElementById('mlcad-layers-btn')
-      if (layerDrawer) layerDrawer.hidden = true
-      layersBtn?.classList.remove('active')
-      layersBtn?.setAttribute('aria-expanded', 'false')
-    }
+      closeLayerDrawer()
+      measurePanel?.close()
+    },
+    onPhoneOpen: drawer => drawerSheets.preparePhoneOpen(drawer)
+  })
+
+  measurePanel = setupAcExHtmlMeasurePanel({
+    i18n,
+    getMeasure: () => measure,
+    closeOtherDrawers: () => {
+      closeLayerDrawer()
+      reviewPanel?.close()
+    },
+    onPhoneOpen: drawer => drawerSheets.preparePhoneOpen(drawer)
   })
 
   const disposeObject3D = (object: THREE.Object3D) => {
@@ -1300,6 +1336,11 @@ async function startViewer(): Promise<void> {
       markup?.cancelMode()
       const drawer = document.getElementById('mlcad-review-drawer')
       reviewPanel?.setOpen(Boolean(drawer?.hidden))
+    } else if (action === 'measure-panel') {
+      measure?.cancelMode()
+      markup?.cancelMode()
+      const drawer = document.getElementById('mlcad-measure-drawer')
+      measurePanel?.setOpen(Boolean(drawer?.hidden))
     } else if (action === 'measure') {
       markup?.cancelMode()
       const mode = button.getAttribute(
@@ -1355,6 +1396,7 @@ async function startViewer(): Promise<void> {
     onLocaleSelect: locale => i18n.setLocale(locale),
     getLocale: () => i18n.locale,
     onStripChange: () => {
+      drawerSheets.syncInset()
       resize()
       recomputeOsnapThresholdWcs()
       bumpSnapCacheKey()
@@ -1364,9 +1406,21 @@ async function startViewer(): Promise<void> {
       if (menuId === 'snap') {
         measureSettingsRef.current?.close()
       }
+      if (acExHtmlIsPhoneLayout()) return
+      if (menuId === 'measure') {
+        measurePanel?.close()
+      }
+      if (menuId === 'review') {
+        reviewPanel?.close()
+      }
     },
     onOpen: (menuId, menuRoot) => {
       layoutMenuRef.current?.close()
+      if (acExHtmlIsPhoneLayout()) {
+        closeLayerDrawer()
+        reviewPanel?.close()
+        measurePanel?.close()
+      }
       if (menuId === 'measure' && measure) {
         measure.setVisible(measure.visible)
         menuRoot.querySelectorAll('[data-measure-mode]').forEach(btn => {
@@ -1396,7 +1450,14 @@ async function startViewer(): Promise<void> {
     layouts: snapshot.layouts,
     getActiveLayoutBtrId: () => layout.btrId,
     onSelect: switchLayout,
-    closeOtherFlyouts: () => toolbarFlyouts.close()
+    closeOtherFlyouts: () => {
+      toolbarFlyouts.close()
+      if (acExHtmlIsPhoneLayout()) {
+        closeLayerDrawer()
+        reviewPanel?.close()
+        measurePanel?.close()
+      }
+    }
   })
 
   i18n.setOnChange(() => {
@@ -1407,6 +1468,7 @@ async function startViewer(): Promise<void> {
     }
     layerPanel?.refreshLayerLabels()
     reviewPanel?.refreshLabels()
+    measurePanel?.refreshLabels()
     measureSettingsRef.current?.refreshLabels()
     drawStyleToolbarRef.current?.refreshLabels()
     toolbarCollapse.refreshLabels()
@@ -1469,6 +1531,7 @@ async function startViewer(): Promise<void> {
 
   window.addEventListener('resize', () => {
     resize()
+    toolbarFlyouts.syncLayout()
     recomputeOsnapThresholdWcs()
     bumpSnapCacheKey()
     render()
@@ -1545,6 +1608,13 @@ function setupToolbarCollapse(
       btn.setAttribute('aria-pressed', 'false')
     })
 
+    const measureDrawer = document.getElementById('mlcad-measure-drawer')
+    if (measureDrawer) measureDrawer.hidden = true
+    document.querySelectorAll('[data-action="measure-panel"]').forEach(btn => {
+      btn.classList.remove('active')
+      btn.setAttribute('aria-pressed', 'false')
+    })
+
     closeStrips?.()
   }
 
@@ -1602,6 +1672,8 @@ interface AcExLayerPanelContext {
   sortedLayerNames: string[]
   /** Close the review drawer when the layer drawer opens. */
   closeOtherDrawers?: () => void
+  /** Phone: park the drawer and dismiss open strips. */
+  onPhoneOpen?: (drawer: HTMLElement) => void
 }
 
 /** Handles returned by {@link setupLayerPanel} for locale-driven UI updates. */
@@ -1627,7 +1699,8 @@ function setupLayerPanel(
     cancelZoomWindow,
     osnapIndexes,
     sortedLayerNames,
-    closeOtherDrawers
+    closeOtherDrawers,
+    onPhoneOpen
   } = ctx
 
   const layersBtn = document.getElementById('mlcad-layers-btn')
@@ -1733,7 +1806,10 @@ function setupLayerPanel(
   }
 
   const setDrawerOpen = (open: boolean) => {
-    if (open) closeOtherDrawers?.()
+    if (open) {
+      closeOtherDrawers?.()
+      onPhoneOpen?.(layerDrawer)
+    }
     layerDrawer.hidden = !open
     layersBtn.classList.toggle('active', open)
     layersBtn.setAttribute('aria-expanded', String(open))
@@ -1745,6 +1821,9 @@ function setupLayerPanel(
   })
 
   layerClose?.addEventListener('click', () => setDrawerOpen(false))
+  layerDrawer
+    .querySelector('.mlcad-drawer-sheet-close')
+    ?.addEventListener('click', () => setDrawerOpen(false))
 
   showAllBtn?.addEventListener('click', () => setAllLayersVisible(true))
   hideAllBtn?.addEventListener('click', () => setAllLayersVisible(false))

@@ -8,6 +8,9 @@ export const commandTr = {
     },
     markuppanel: {
       description: 'İnceleme paleti yerleştirme panelini açar'
+    },
+    measurementpanel: {
+      description: 'Ölçüm listesi yerleştirme panelini açar'
     }
   }
 }

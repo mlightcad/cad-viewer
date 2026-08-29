@@ -11,6 +11,14 @@ describe('acuiMergeToolbarOptionsForLayout', () => {
     expect(merged.showLabels).toBe(true)
     expect(merged.size).toBe('stretch')
     expect(merged.overflow).toBe('menu')
+    expect(merged.showChildrenIndicator).toBe(false)
+    expect(merged.subToolbar).toEqual({
+      showLabels: true,
+      showSeparators: false,
+      size: 'stretch',
+      overflow: 'wrap',
+      replaceOnNested: true
+    })
   })
 
   it('does not inherit appendItems on phone from top-level toolbar', () => {

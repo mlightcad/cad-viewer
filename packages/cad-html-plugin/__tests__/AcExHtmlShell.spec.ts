@@ -1,4 +1,29 @@
-import { buildAcExHtmlShellBody } from '../src/AcExHtmlShell'
+import { ACEX_HTML_SHELL_CSS, buildAcExHtmlShellBody } from '../src/AcExHtmlShell'
+
+describe('ACEX_HTML_SHELL_CSS', () => {
+  it('hides drawer title rows on the phone breakpoint', () => {
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      '#mlcad-layer-drawer .mlcad-drawer-header,'
+    )
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      '#mlcad-review-drawer .mlcad-drawer-header,'
+    )
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      '#mlcad-measure-drawer .mlcad-drawer-header {'
+    )
+  })
+
+  it('uses a narrower portrait slot for sub-toolbar buttons', () => {
+    expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-subtoolbar-btn-width: 28px')
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      'calc(var(--mlcad-toolbar-phone-height) - 16px)'
+    )
+    expect(ACEX_HTML_SHELL_CSS).toContain('auto-fit')
+    expect(ACEX_HTML_SHELL_CSS).not.toContain(
+      '--mlcad-toolbar-phone-btn-size: var(--mlcad-toolbar-phone-height)'
+    )
+  })
+})
 
 describe('buildAcExHtmlShellBody', () => {
   it('omits measurement toolbar controls in view mode', () => {
@@ -59,6 +84,18 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).toContain('data-markup-mode="cloud"')
     expect(html).toContain('data-action="markup-panel"')
     expect(html).toContain('id="mlcad-review-drawer"')
+    expect(html).toContain('data-action="measure-panel"')
+    expect(html).toContain('id="mlcad-measure-drawer"')
+    expect(html).toContain('data-measure-filter="distance"')
+    expect(html).toContain('data-measure-filter="arc"')
+    expect(html).toContain('data-measure-filter="angle"')
+    expect(html).toContain('data-measure-filter="area"')
+    expect(html).not.toContain('mlcad-measure-search')
+    expect(html.indexOf('id="mlcad-measure-strip-wrap"')).toBeLessThan(
+      html.indexOf('id="mlcad-measure-drawer"')
+    )
+    expect((html.match(/class="mlcad-drawer-grabber"/g) ?? []).length).toBe(3)
+    expect((html.match(/class="mlcad-drawer-sheet-close"/g) ?? []).length).toBe(3)
     expect(html.indexOf('id="mlcad-markup-strip-wrap"')).toBeLessThan(
       html.indexOf('id="mlcad-review-drawer"')
     )
@@ -102,6 +139,10 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).not.toContain('data-action="clear-markups"')
     expect(html).not.toContain('data-action="markup-panel"')
     expect(html).not.toContain('id="mlcad-review-drawer"')
+    expect(html).not.toContain('data-action="measure-panel"')
+    expect(html).not.toContain('id="mlcad-measure-drawer"')
+    expect(html).toContain('mlcad-drawer-grabber')
+    expect(html).toContain('mlcad-drawer-sheet-close')
   })
 
   it('omits the layout switcher when layouts are not exported', () => {

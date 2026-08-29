@@ -13,6 +13,7 @@
  */
 
 import type { AcExHtmlLocale } from './AcExHtmlI18n'
+import { acExHtmlSyncStripWrapPack } from './AcExHtmlStripWrapPack'
 
 /** Strip ids wired by {@link setupAcExHtmlToolbarFlyouts}. */
 export type AcExHtmlStripId =
@@ -32,6 +33,8 @@ export interface AcExHtmlToolbarFlyoutController {
   close: () => void
   /** Syncs locale option `active` state after a locale change. */
   refreshLabels: () => void
+  /** Recomputes phone wrap-pack columns after resize or strip open. */
+  syncLayout: () => void
 }
 
 /**
@@ -168,6 +171,11 @@ export function setupAcExHtmlToolbarFlyouts(
   const find = (id: AcExHtmlStripId) =>
     resolved.find(entry => entry.id === id)
 
+  const syncLayout = () => {
+    acExHtmlSyncStripWrapPack()
+    requestAnimationFrame(() => acExHtmlSyncStripWrapPack())
+  }
+
   const syncLocaleSelection = () => {
     const locale = options.getLocale?.()
     const localeStrip = find('locale')?.strip
@@ -222,6 +230,7 @@ export function setupAcExHtmlToolbarFlyouts(
     openId = id
     syncParentExpanded()
     options.onStripChange?.()
+    syncLayout()
     if (!id) return
 
     const opened = find(id)
@@ -252,6 +261,7 @@ export function setupAcExHtmlToolbarFlyouts(
     }
     if (previous) options.onClose?.(previous)
     options.onStripChange?.()
+    syncLayout()
   }
 
   const toggle = (id: AcExHtmlStripId) => {
@@ -281,6 +291,7 @@ export function setupAcExHtmlToolbarFlyouts(
     syncParentExpanded()
     syncLocaleSelection()
     options.onStripChange?.()
+    syncLayout()
     if (locale?.strip) options.onOpen?.('locale', locale.strip)
   }
 
@@ -303,6 +314,7 @@ export function setupAcExHtmlToolbarFlyouts(
       openId = 'settings'
       syncParentExpanded()
       options.onStripChange?.()
+      syncLayout()
       return
     }
     openNestedLocale()
@@ -344,6 +356,7 @@ export function setupAcExHtmlToolbarFlyouts(
           openId = 'settings'
           syncParentExpanded()
           options.onStripChange?.()
+          syncLayout()
         } else {
           close()
         }
@@ -377,6 +390,7 @@ export function setupAcExHtmlToolbarFlyouts(
     close,
     refreshLabels: () => {
       syncLocaleSelection()
-    }
+    },
+    syncLayout
   }
 }

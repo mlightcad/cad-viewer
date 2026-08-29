@@ -15,6 +15,7 @@ import type {
   AcUiToolbarPlacement
 } from '../config/types'
 import type { AcUiI18n } from '../i18n'
+import { acuiComputeWrapPackSlot } from './acuiWrapPackLayout'
 import { acuiEnsureUiStyles } from './styles'
 
 /** Constructor options for {@link AcUiSubToolbar}. */
@@ -118,6 +119,25 @@ export class AcUiSubToolbar {
     return this.options.anchor
   }
 
+  /** Strip root element (used when stacking nested strips). */
+  get rootElement() {
+    return this.root
+  }
+
+  /**
+   * Hides or shows the strip without destroying it (used when
+   * {@link AcUiSubToolbarOptions.replaceOnNested} replaces this strip with a
+   * nested one).
+   *
+   * @param hidden - When true, the strip is not visible and does not receive
+   *   pointer events.
+   */
+  setHidden(hidden: boolean) {
+    this.root.hidden = hidden
+    this.root.style.visibility = hidden ? 'hidden' : ''
+    this.root.style.pointerEvents = hidden ? 'none' : ''
+  }
+
   /**
    * Replaces child items and re-renders without closing the strip.
    *
@@ -168,6 +188,12 @@ export class AcUiSubToolbar {
   /** Repositions the strip beside the parent toolbar after layout changes. */
   syncPosition() {
     if (!this.root.isConnected) return
+
+    // Recompute stretch width and wrap-pack slots before measuring — host
+    // resize only calls syncPosition, not a full remount.
+    if (!this.root.hidden) {
+      this.applyChromeLayout()
+    }
 
     const { host, toolbarRoot, anchor, placement, chrome } = this.options
     const position = this.options.position ?? 'front'
@@ -358,12 +384,115 @@ export class AcUiSubToolbar {
     if (chrome.size === 'stretch') classes.push('is-stretch')
     if (chrome.overflow === 'wrap') classes.push('is-overflow-wrap')
     if (!chrome.showBorder) classes.push('no-border')
+    if (chrome.showChildrenIndicator) classes.push('show-children-indicator')
     this.root.className = classes.join(' ')
   }
 
   private applyChromeLayout() {
     this.applyStretchSize()
     this.applyOverflowLayout()
+    this.applyWrapPackLayout()
+    this.applyLabeledButtonMaxWidth()
+  }
+
+  /**
+   * Caps labeled button width slightly below height so icon+label buttons stay
+   * portrait-shaped and long captions ellipsize. Skipped when wrap-pack already
+   * assigned slot widths (full rows fill the strip evenly).
+   */
+  private applyLabeledButtonMaxWidth() {
+    const { chrome } = this.options
+    if (!chrome.showLabels || this.root.classList.contains('is-wrap-pack')) {
+      if (!chrome.showLabels) {
+        for (const button of this.queryVisibleButtons(this.root)) {
+          button.style.removeProperty('max-width')
+        }
+      }
+      return
+    }
+    for (const button of this.queryVisibleButtons(this.root)) {
+      const height = button.offsetHeight
+      if (height <= 0) continue
+      button.style.maxWidth = `${Math.max(24, height - 4)}px`
+    }
+  }
+
+  /**
+   * Stretch + wrap horizontal strips:
+   * - Full rows fill the strip evenly.
+   * - A short last row (when there are prior full rows) keeps that slot width
+   *   and stays left-aligned.
+   * - A single incomplete row stretches buttons across the full strip.
+   */
+  private applyWrapPackLayout() {
+    const { chrome, placement, host } = this.options
+    const horizontalStrip = placement === 'top' || placement === 'bottom'
+    const buttons = this.queryVisibleButtons(this.root)
+
+    const clearInlineSizing = () => {
+      for (const button of buttons) {
+        button.style.removeProperty('flex')
+        button.style.removeProperty('width')
+        button.style.removeProperty('max-width')
+        delete button.dataset.wrapPackRow
+      }
+    }
+
+    if (
+      !horizontalStrip ||
+      chrome.size !== 'stretch' ||
+      chrome.overflow !== 'wrap'
+    ) {
+      this.root.classList.remove('is-wrap-pack')
+      clearInlineSizing()
+      return
+    }
+
+    if (buttons.length === 0) return
+
+    // Prefer the laid-out content width (excludes border). Fall back to the
+    // host stretch target when the box has not been measured yet.
+    const crossInset = this.options.getCrossAxisInset()
+    const stretchWidth = Math.max(
+      0,
+      host.clientWidth - crossInset.near - crossInset.far
+    )
+    if (stretchWidth > 0 && this.root.style.width !== `${stretchWidth}px`) {
+      this.root.style.width = `${stretchWidth}px`
+    }
+    const containerWidth =
+      this.root.clientWidth > 0 ? this.root.clientWidth : stretchWidth
+    if (containerWidth <= 0) {
+      this.root.classList.remove('is-wrap-pack')
+      clearInlineSizing()
+      return
+    }
+
+    for (const button of buttons) {
+      button.style.flex = '0 0 auto'
+      button.style.width = 'auto'
+      button.style.removeProperty('max-width')
+    }
+
+    const height = Math.max(...buttons.map(button => button.offsetHeight), 1)
+    const { perRow, slotWidth } = acuiComputeWrapPackSlot(
+      containerWidth,
+      height,
+      buttons.length
+    )
+    this.root.classList.add('is-wrap-pack')
+
+    const singleRow = buttons.length <= perRow
+    const fullRowCount = singleRow
+      ? buttons.length
+      : Math.floor(buttons.length / perRow) * perRow
+    buttons.forEach((button, index) => {
+      button.style.flex = `0 0 ${slotWidth}px`
+      button.style.width = `${slotWidth}px`
+      button.style.maxWidth = `${slotWidth}px`
+      button.dataset.wrapPackRow =
+        singleRow || index < fullRowCount ? 'full' : 'last'
+    })
   }
 
   private applyStretchSize() {

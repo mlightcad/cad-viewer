@@ -40,6 +40,7 @@ import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { AcApDocManager, AcApSettingManager } from '../app'
 import { AcApZoomCmd } from '../command/AcApZoomCmd'
 import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit'
+import { notifyMeasurementLayoutChanged } from '../command/measure/AcApMeasurementStore'
 import {
   AcEdBaseView,
   AcEdCalculateSizeCallback,
@@ -1097,10 +1098,14 @@ export class AcTrView2d extends AcEdBaseView {
     return this._scene.activeLayoutBtrId
   }
   set activeLayoutBtrId(value: string) {
+    const previous = this._scene.activeLayoutBtrId
     this._layoutViewManager.activeLayoutBtrId = value
     this._scene.activeLayoutBtrId = value
     this.htmlTransientManager.setActiveLayoutId(value)
     this._isDirty = true
+    if (previous !== value) {
+      notifyMeasurementLayoutChanged()
+    }
   }
 
   /**

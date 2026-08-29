@@ -1,4 +1,7 @@
-import type { AcUiToolbarChromeOptions } from './types'
+import type {
+  AcUiSubToolbarOptions,
+  AcUiToolbarChromeOptions
+} from './types'
 
 /** Resolved toolbar chrome with explicit defaults applied. */
 export type AcUiResolvedToolbarChrome = Required<
@@ -11,8 +14,12 @@ export type AcUiResolvedToolbarChrome = Required<
     | 'overflow'
     | 'showBorder'
     | 'showSeparators'
+    | 'showChildrenIndicator'
   >
->
+> & {
+  /** Whether nested strips replace the ancestor strip. @default false */
+  replaceOnNested: boolean
+}
 
 /**
  * Merges toolbar chrome options and fills in defaults.
@@ -22,7 +29,8 @@ export type AcUiResolvedToolbarChrome = Required<
  */
 export function acuiResolveToolbarChrome(
   base: Partial<AcUiToolbarChromeOptions> = {},
-  override?: Partial<AcUiToolbarChromeOptions>
+  override?: Partial<AcUiToolbarChromeOptions> &
+    Pick<AcUiSubToolbarOptions, 'replaceOnNested'>
 ): AcUiResolvedToolbarChrome {
   const merged = { ...base, ...override }
   return {
@@ -32,6 +40,8 @@ export function acuiResolveToolbarChrome(
     size: merged.size ?? 'auto',
     overflow: merged.overflow ?? 'menu',
     showBorder: merged.showBorder ?? true,
-    showSeparators: merged.showSeparators ?? true
+    showSeparators: merged.showSeparators ?? true,
+    showChildrenIndicator: merged.showChildrenIndicator ?? true,
+    replaceOnNested: merged.replaceOnNested ?? false
   }
 }

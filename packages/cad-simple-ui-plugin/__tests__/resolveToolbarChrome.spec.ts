@@ -9,7 +9,9 @@ describe('acuiResolveToolbarChrome', () => {
       size: 'auto',
       overflow: 'menu',
       showBorder: true,
-      showSeparators: true
+      showSeparators: true,
+      showChildrenIndicator: true,
+      replaceOnNested: false
     })
   })
 
@@ -23,12 +25,14 @@ describe('acuiResolveToolbarChrome', () => {
           size: 'stretch',
           overflow: 'wrap',
           showBorder: true,
-          showSeparators: true
+          showSeparators: true,
+          showChildrenIndicator: true
         },
         {
           showLabels: false,
           showBorder: false,
-          showSeparators: false
+          showSeparators: false,
+          replaceOnNested: true
         }
       )
     ).toEqual({
@@ -38,7 +42,9 @@ describe('acuiResolveToolbarChrome', () => {
       size: 'stretch',
       overflow: 'wrap',
       showBorder: false,
-      showSeparators: false
+      showSeparators: false,
+      showChildrenIndicator: true,
+      replaceOnNested: true
     })
   })
 })

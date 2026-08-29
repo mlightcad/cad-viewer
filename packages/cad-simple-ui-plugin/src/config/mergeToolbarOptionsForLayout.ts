@@ -27,7 +27,15 @@ export function acuiBuiltinToolbarOptionsForLayout(
       size: 'stretch',
       overflow: 'menu',
       showBorder: true,
-      showSeparators: true
+      showSeparators: true,
+      showChildrenIndicator: false,
+      subToolbar: {
+        showLabels: true,
+        showSeparators: false,
+        size: 'stretch',
+        overflow: 'wrap',
+        replaceOnNested: true
+      }
     }
   }
 
@@ -43,7 +51,11 @@ export function acuiBuiltinToolbarOptionsForLayout(
     size: 'auto',
     overflow: 'menu',
     showBorder: true,
-    showSeparators: true
+    showSeparators: true,
+    showChildrenIndicator: true,
+    subToolbar: {
+      replaceOnNested: false
+    }
   }
 }
 

@@ -45,6 +45,7 @@ export type AcExHtmlMessageKey =
   | 'toolbar.measureShow'
   | 'toolbar.measureImport'
   | 'toolbar.measureExport'
+  | 'toolbar.measurementPanel'
   | 'toolbar.measure'
   | 'toolbar.annotation'
   | 'toolbar.markupCloud'
@@ -105,6 +106,18 @@ export type AcExHtmlMessageKey =
   | 'review.statusValues.question'
   | 'review.statusValues.answered'
   | 'review.statusValues.closed'
+  | 'measurePanel.title'
+  | 'measurePanel.close'
+  | 'measurePanel.filterGroup'
+  | 'measurePanel.filterDistance'
+  | 'measurePanel.filterArc'
+  | 'measurePanel.filterAngle'
+  | 'measurePanel.filterArea'
+  | 'measurePanel.empty'
+  | 'measurePanel.type'
+  | 'measurePanel.value'
+  | 'measurePanel.delete'
+  | 'measurePanel.clear'
   | 'status.ready'
   | 'status.zoomWindowHint'
   | 'status.measureDistanceHint'
@@ -189,6 +202,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureShow: 'Show',
       measureImport: 'Import',
       measureExport: 'Export',
+      measurementPanel: 'List',
       measure: 'Measure',
       annotation: 'Review',
       markupCloud: 'Cloud',
@@ -259,6 +273,20 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         answered: 'Answered',
         closed: 'Closed'
       }
+    },
+    measurePanel: {
+      title: 'Measurements',
+      close: 'Close measurements',
+      filterGroup: 'Filter by type',
+      filterDistance: 'Distance',
+      filterArc: 'Arc',
+      filterAngle: 'Angle',
+      filterArea: 'Area',
+      empty: 'No measurements yet',
+      type: 'Type',
+      value: 'Value',
+      delete: 'Delete',
+      clear: 'Clear all'
     },
     status: {
       ready: 'Ready',
@@ -350,6 +378,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureShow: '显示',
       measureImport: '导入',
       measureExport: '导出',
+      measurementPanel: '列表',
       measure: '测量',
       annotation: '审阅',
       markupCloud: '云线',
@@ -419,6 +448,20 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         answered: '已答复',
         closed: '已关闭'
       }
+    },
+    measurePanel: {
+      title: '测量',
+      close: '关闭测量面板',
+      filterGroup: '按类型筛选',
+      filterDistance: '距离',
+      filterArc: '弧长',
+      filterAngle: '角度',
+      filterArea: '面积',
+      empty: '暂无测量',
+      type: '类型',
+      value: '数值',
+      delete: '删除',
+      clear: '全部清除'
     },
     status: {
       ready: '就绪',
@@ -502,6 +545,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureShow: 'Zobrazit',
       measureImport: 'Import',
       measureExport: 'Export',
+      measurementPanel: 'Seznam',
       measure: 'Měření',
       annotation: 'Kontrola',
       markupCloud: 'Obláček',
@@ -571,6 +615,20 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         answered: 'Zodpovězeno',
         closed: 'Uzavřeno'
       }
+    },
+    measurePanel: {
+      title: 'Měření',
+      close: 'Zavřít měření',
+      filterGroup: 'Filtrovat podle typu',
+      filterDistance: 'Vzdálenost',
+      filterArc: 'Oblouk',
+      filterAngle: 'Úhel',
+      filterArea: 'Plocha',
+      empty: 'Zatím žádná měření',
+      type: 'Typ',
+      value: 'Hodnota',
+      delete: 'Odstranit',
+      clear: 'Vymazat vše'
     },
     status: {
       ready: 'Připraveno',
@@ -662,6 +720,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureShow: 'Göster',
       measureImport: 'İçe aktar',
       measureExport: 'Dışa aktar',
+      measurementPanel: 'Liste',
       measure: 'Ölçüm',
       annotation: 'İnceleme',
       markupCloud: 'Bulut',
@@ -731,6 +790,20 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         answered: 'Yanıtlandı',
         closed: 'Kapalı'
       }
+    },
+    measurePanel: {
+      title: 'Ölçümler',
+      close: 'Ölçümleri kapat',
+      filterGroup: 'Türe göre filtrele',
+      filterDistance: 'Mesafe',
+      filterArc: 'Yay',
+      filterAngle: 'Açı',
+      filterArea: 'Alan',
+      empty: 'Henüz ölçüm yok',
+      type: 'Tür',
+      value: 'Değer',
+      delete: 'Sil',
+      clear: 'Tümünü temizle'
     },
     status: {
       ready: 'Hazır',
@@ -825,6 +898,7 @@ const AR_MESSAGES: AcExMessageTree = {
     'measureShow': 'إظهار',
     'measureImport': 'استيراد',
     'measureExport': 'تصدير',
+    'measurementPanel': 'قائمة',
     'measure': 'قياس',
     'annotation': 'مراجعة',
     'markupCloud': 'سحابة',
@@ -895,6 +969,20 @@ const AR_MESSAGES: AcExMessageTree = {
       'answered': 'تمت الإجابة',
       'closed': 'مغلق'
     }
+  },
+  'measurePanel': {
+    'title': 'القياسات',
+    'close': 'إغلاق القياسات',
+    'filterGroup': 'التصفية حسب النوع',
+    'filterDistance': 'مسافة',
+    'filterArc': 'قوس',
+    'filterAngle': 'زاوية',
+    'filterArea': 'مساحة',
+    'empty': 'لا توجد قياسات حتى الآن',
+    'type': 'النوع',
+    'value': 'القيمة',
+    'delete': 'حذف',
+    'clear': 'مسح الكل'
   },
   'status': {
     'ready': 'جاهز',

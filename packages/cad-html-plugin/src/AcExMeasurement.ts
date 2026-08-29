@@ -28,9 +28,11 @@ import {
   stringifyAcExMeasurementSidecar
 } from './AcExMeasurementSidecar'
 import type {
+  AcExMeasurementGeometry,
   AcExMeasurementRecord,
   AcExMeasurementSidecarFile,
-  AcExMeasurementSidecarStyle
+  AcExMeasurementSidecarStyle,
+  AcExMeasurementType
 } from './AcExMeasurementTypes'
 import {
   type AcExMeasureQuantity,
@@ -43,6 +45,7 @@ import {
 } from './AcExMeasureTracking'
 import type { AcExOsnapPoint } from './AcExOsnap'
 import { acExIsOverlayGrip, acExOverlayGripClassName } from './AcExOverlayGrip'
+import type { AcExExtents } from './AcExSnapshotTypes'
 
 /**
  * THREE/WebGL color for measurement overlays (lines, preview rubber-band).
@@ -167,6 +170,9 @@ export interface AcExMeasureViewApi {
    * @param valueDeg - Angle in degrees.
    */
   formatAngle: (valueDeg: number) => string
+
+  /** Frames the camera on a world-space AABB. */
+  zoomToExtents: (extents: AcExExtents) => void
 }
 
 /**
@@ -235,6 +241,59 @@ function isRecordOnLayout(
 ): boolean {
   if (activeLayoutId == null) return true
   return recordLayoutId == null || recordLayoutId === activeLayoutId
+}
+
+/** World AABB of a measurement's control geometry. */
+function measurementFocusExtents(
+  geometry: AcExMeasurementGeometry
+): AcExExtents | null {
+  const xs: number[] = []
+  const ys: number[] = []
+  const add = (point: { x: number; y: number }) => {
+    xs.push(point.x)
+    ys.push(point.y)
+  }
+  switch (geometry.type) {
+    case 'distance':
+      add(geometry.start)
+      add(geometry.end)
+      break
+    case 'angle':
+      add(geometry.vertex)
+      add(geometry.arm1)
+      add(geometry.arm2)
+      break
+    case 'area':
+      for (const point of geometry.points) add(point)
+      break
+    case 'arc':
+      add({
+        x: geometry.center.x - geometry.radius,
+        y: geometry.center.y - geometry.radius
+      })
+      add({
+        x: geometry.center.x + geometry.radius,
+        y: geometry.center.y + geometry.radius
+      })
+      break
+    case 'point':
+      add(geometry.position)
+      break
+    default:
+      return null
+  }
+  if (xs.length === 0) return null
+  let minX = Math.min(...xs)
+  let minY = Math.min(...ys)
+  let maxX = Math.max(...xs)
+  let maxY = Math.max(...ys)
+  if (!(maxX - minX > 1e-8) && !(maxY - minY > 1e-8)) {
+    minX -= 1
+    minY -= 1
+    maxX += 1
+    maxY += 1
+  }
+  return { minX, minY, maxX, maxY }
 }
 
 /**
@@ -895,6 +954,8 @@ export class AcExMeasureController {
   private _commitCounter = 0
   /** Selected committed measurement ids. */
   private readonly _selectedIds = new Set<string>()
+  /** Listeners notified when the committed measurement list changes. */
+  private readonly _recordListeners = new Set<() => void>()
 
   /** Active toolbar mode, or `null` when idle. */
   private _mode: AcExMeasureMode | null = null
@@ -1191,6 +1252,93 @@ export class AcExMeasureController {
   }
 
   /**
+   * Committed measurements on the active layout, with formatted badge text.
+   */
+  list(): Array<{
+    id: string
+    type: AcExMeasurementType
+    valueText: string
+    record: AcExMeasurementRecord
+  }> {
+    const activeId = this._getActiveLayoutId?.()
+    return this._committed
+      .filter(measure => isRecordOnLayout(measure.record.layoutId, activeId))
+      .map(measure => ({
+        id: measure.id,
+        type: measure.record.type,
+        valueText: this._valueText(measure),
+        record: measure.record
+      }))
+  }
+
+  /** Currently selected measurement id when exactly one is selected. */
+  get selectedId(): string | undefined {
+    if (this._selectedIds.size !== 1) return undefined
+    return [...this._selectedIds][0]
+  }
+
+  /** Subscribe to list/selection changes. */
+  subscribe(listener: () => void): () => void {
+    this._recordListeners.add(listener)
+    return () => {
+      this._recordListeners.delete(listener)
+    }
+  }
+
+  /** Select a measurement from the list panel. */
+  selectFromPanel(id: string): void {
+    this._deselect(false)
+    this._select(id)
+    this._notifyRecordsChanged()
+  }
+
+  /**
+   * Zoom to a measurement and select it.
+   *
+   * @returns `true` when extents were applied.
+   */
+  focus(id: string): boolean {
+    const measure = this._committed.find(item => item.id === id)
+    if (!measure) return false
+    const extents = measurementFocusExtents(measure.record.geometry)
+    if (!extents) return false
+    this._view.zoomToExtents(extents)
+    this.selectFromPanel(id)
+    return true
+  }
+
+  /** Remove one committed measurement. */
+  removeMeasurement(id: string): void {
+    this._removeCommitted(id, true)
+  }
+
+  private _notifyRecordsChanged(): void {
+    for (const listener of this._recordListeners) listener()
+  }
+
+  private _valueText(measure: AcExCommittedMeasure): string {
+    const badge = measure.parts.dom.find(el =>
+      el.classList.contains('mlcad-measure-badge')
+    )
+    const text = badge?.textContent?.trim()
+    if (text) return text
+    switch (measure.record.type) {
+      case 'area':
+        return `${this._view.formatLength(measure.value)}²`
+      case 'angle':
+        return this._view.formatAngle(measure.value)
+      case 'point':
+        if (measure.record.geometry.type === 'point') {
+          const p = measure.record.geometry.position
+          return `X ${this._view.formatLength(p.x)}  Y ${this._view.formatLength(p.y)}`
+        }
+        return ''
+      default:
+        return this._view.formatLength(measure.value)
+    }
+  }
+
+  /**
    * Removes all persistent measurement graphics (lines, canvas, badges, dots),
    * disposes THREE resources, and returns the viewer to idle status.
    */
@@ -1240,6 +1388,7 @@ export class AcExMeasureController {
     if (selectionChanged) {
       this._onStyleChange?.()
     }
+    this._notifyRecordsChanged()
   }
 
   /** Download current measurements as a `*.measurement.json` sidecar. */
@@ -2950,6 +3099,7 @@ export class AcExMeasureController {
     const measure = this._committed.find(m => m.id === id)
     if (measure) this._applyMeasureSelection(measure, true)
     this._onStyleChange?.()
+    this._notifyRecordsChanged()
   }
 
   /** Client → world converter for grip hosts (object snap applied). @internal */
@@ -3141,6 +3291,7 @@ export class AcExMeasureController {
     this._commitParts = null
     this._commitStyle = null
     this.syncLayoutVisibility()
+    this._notifyRecordsChanged()
   }
 
   /** Default sidecar style from the current session draw style. @internal */
@@ -3385,6 +3536,7 @@ export class AcExMeasureController {
     this._onStyleChange?.()
     if (!this._mode) this._updateIdleStatus()
     this._view.render()
+    this._notifyRecordsChanged()
   }
 
   /** @internal */
@@ -3398,6 +3550,7 @@ export class AcExMeasureController {
     this._onStyleChange?.()
     if (updateStatus && !this._mode) this._updateIdleStatus()
     this._view.render()
+    this._notifyRecordsChanged()
   }
 
   /** @internal */
@@ -3511,6 +3664,7 @@ export class AcExMeasureController {
     for (const fn of measure.parts.cleanups) fn()
     if (render && !this._mode) this._updateIdleStatus()
     if (render) this._view.render()
+    this._notifyRecordsChanged()
   }
 
   /** Projects `data-wcs-*` DOM overlays to root-local screen coordinates. @internal */

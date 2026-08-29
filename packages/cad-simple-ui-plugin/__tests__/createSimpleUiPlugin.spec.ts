@@ -119,7 +119,15 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     runMarkupEdit: (_view: unknown, _label: string, mutate: () => void) => {
       mutate()
     },
-    MARKUP_STATUSES: ['open', 'question', 'answered', 'closed']
+    MARKUP_STATUSES: ['open', 'question', 'answered', 'closed'],
+    listLayoutMeasurements: () => [],
+    getMeasurementValueText: () => '',
+    getSelectedMeasurementId: () => undefined,
+    subscribeMeasurements: () => () => undefined,
+    subscribeMeasurementSelection: () => () => undefined,
+    focusMeasurement: jest.fn(),
+    removeMeasurement: jest.fn(),
+    clearLayoutMeasurements: jest.fn()
   }
 })
 
@@ -571,6 +579,155 @@ describe('AcApSimpleUiPlugin', () => {
     plugin.setToolbarItems([acuiToolbarPreset('select')])
     expect(mockCommands.has('SYSTEM:markuppanel')).toBe(false)
     expect(host.querySelector('.ml-ex-ui-dock-panel')).toBeNull()
+  })
+
+  it('loads measurement UI in the dock panel and opens it from measurementpanel', async () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: [acuiToolbarPreset('measure')]
+      }
+    })
+
+    expect(mockCommands.has('SYSTEM:measurementpanel')).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
+    expect(host.querySelector('.ml-ex-ui-measure-palette')).not.toBeNull()
+
+    const getActiveTabId = () =>
+      (
+        plugin as unknown as {
+          dockPanel?: { activeTab?: string }
+        }
+      ).dockPanel?.activeTab
+
+    expect(plugin.isDockPanelOpen()).toBe(false)
+
+    const cmd = mockCommands.get('SYSTEM:measurementpanel') as {
+      execute: (context: unknown) => Promise<void>
+    }
+    await cmd.execute({})
+
+    expect(plugin.isDockPanelOpen()).toBe(true)
+    expect(getActiveTabId()).toBe('measurements')
+    expect(host.querySelector('.ml-ex-ui-measure-palette')).not.toBeNull()
+  })
+
+  it('setToolbarItems dynamically adds the measurementpanel command', () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: [acuiToolbarPreset('select')]
+      }
+    })
+
+    expect(mockCommands.has('SYSTEM:measurementpanel')).toBe(false)
+
+    plugin.setToolbarItems([
+      acuiToolbarPreset('select'),
+      acuiToolbarPreset('measure')
+    ])
+    expect(mockCommands.has('SYSTEM:measurementpanel')).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
+
+    plugin.setToolbarItems([acuiToolbarPreset('select')])
+    expect(mockCommands.has('SYSTEM:measurementpanel')).toBe(false)
+    expect(host.querySelector('.ml-ex-ui-dock-panel')).toBeNull()
+  })
+
+  it('closes open sub-toolbars when replaceOnNested is true and a dock panel opens', async () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default',
+        subToolbar: { replaceOnNested: true }
+      }
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).not.toBeNull()
+
+    const cmd = mockCommands.get('SYSTEM:measurementpanel') as {
+      execute: (context: unknown) => Promise<void>
+    }
+    await cmd.execute({})
+
+    expect(plugin.isDockPanelOpen()).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).toBeNull()
+  })
+
+  it('keeps open sub-toolbars when replaceOnNested is false and a dock panel opens', async () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default',
+        subToolbar: { replaceOnNested: false }
+      }
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).not.toBeNull()
+
+    const cmd = mockCommands.get('SYSTEM:measurementpanel') as {
+      execute: (context: unknown) => Promise<void>
+    }
+    await cmd.execute({})
+
+    expect(plugin.isDockPanelOpen()).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).not.toBeNull()
+  })
+
+  it('closes the dock panel when replaceOnNested is true and a sub-toolbar opens', async () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default',
+        subToolbar: { replaceOnNested: true }
+      }
+    })
+
+    const cmd = mockCommands.get('SYSTEM:measurementpanel') as {
+      execute: (context: unknown) => Promise<void>
+    }
+    await cmd.execute({})
+    expect(plugin.isDockPanelOpen()).toBe(true)
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(plugin.isDockPanelOpen()).toBe(false)
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).not.toBeNull()
+  })
+
+  it('keeps the dock panel open when replaceOnNested is false and a sub-toolbar opens', async () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default',
+        subToolbar: { replaceOnNested: false }
+      }
+    })
+
+    const cmd = mockCommands.get('SYSTEM:measurementpanel') as {
+      execute: (context: unknown) => Promise<void>
+    }
+    await cmd.execute({})
+    expect(plugin.isDockPanelOpen()).toBe(true)
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(plugin.isDockPanelOpen()).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).not.toBeNull()
   })
 
   it('switches to phone default items when layout is phone and items were not overridden', () => {

@@ -31,6 +31,7 @@ import {
   ICON_MEASURE_AREA,
   ICON_MEASURE_DISTANCE,
   ICON_MEASURE_POINT,
+  ICON_MEASUREMENT_PANEL,
   ICON_PAN,
   ICON_PLACEMENT_BOTTOM,
   ICON_PLACEMENT_LEFT,
@@ -206,6 +207,12 @@ function acuiCreateMeasureToolbarItem(): AcUiToolbarItem {
         label: 'toolbar.measurePoint',
         icon: ICON_MEASURE_POINT,
         command: 'measurepoint'
+      },
+      {
+        id: 'measurement-panel',
+        label: 'toolbar.measurementPanel',
+        icon: ICON_MEASUREMENT_PANEL,
+        command: 'measurementpanel'
       },
       {
         id: 'measurement-vis',

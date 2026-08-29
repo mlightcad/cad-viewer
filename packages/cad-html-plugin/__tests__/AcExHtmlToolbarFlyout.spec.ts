@@ -85,6 +85,24 @@ describe('setupAcExHtmlToolbarFlyouts', () => {
     expect(document.getElementById('mlcad-snap-strip-wrap')?.hidden).toBe(false)
   })
 
+  it('notifies onOpen when a strip replaces another', () => {
+    mountAllStrips()
+    const onOpen = jest.fn()
+    setupAcExHtmlToolbarFlyouts({ onItemClick: jest.fn(), onOpen })
+
+    document.getElementById('mlcad-measure-menu-btn')?.click()
+    expect(onOpen).toHaveBeenCalledWith(
+      'measure',
+      document.getElementById('mlcad-measure-strip')
+    )
+
+    document.getElementById('mlcad-zoom-menu-btn')?.click()
+    expect(onOpen).toHaveBeenLastCalledWith(
+      'zoom',
+      document.getElementById('mlcad-zoom-strip')
+    )
+  })
+
   it('closes a dismissible language strip on canvas click and locale select', () => {
     mountAllStrips()
     const onLocaleSelect = jest.fn()
