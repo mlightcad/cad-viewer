@@ -934,7 +934,7 @@ export class AcExMarkupController {
         start: point2(a),
         end: point2(b)
       })
-      this._statusEl.textContent = this._hintForMode(kind)
+      this.cancelMode()
     } else if (kind === 'rect') {
       this._beginPlacingShapeCallout({
         kind: 'rect',
@@ -1049,7 +1049,7 @@ export class AcExMarkupController {
         { type: 'text', position: point2(point) },
         final
       )
-      this._statusEl.textContent = this._hintForMode('text')
+      this.cancelMode()
       this._view.render()
     })
     return true
@@ -1067,7 +1067,7 @@ export class AcExMarkupController {
       },
       STAMP_LABELS[stampId]
     )
-    this._statusEl.textContent = this._hintForMode('stamp')
+    this.cancelMode()
     return true
   }
 
@@ -1110,7 +1110,7 @@ export class AcExMarkupController {
       if (this._mode !== 'callout') return
       const final = (text ?? '').trim() || defaultLabel
       this._commitGeometry('callout', { type: 'callout', tip, anchor }, final)
-      this._statusEl.textContent = this._hintForMode('callout')
+      this.cancelMode()
       this._view.render()
     })
   }
@@ -1188,10 +1188,8 @@ export class AcExMarkupController {
       } else {
         this._commitShapeWithCallout(placing.outline, callout, text || undefined)
       }
-      this._finishPlacingShapeCallout(true)
-      if (this._mode) {
-        this._statusEl.textContent = this._hintForMode(this._mode)
-      }
+      this._finishPlacingShapeCallout(false)
+      this.cancelMode()
       this._view.render()
     })
   }
@@ -1200,13 +1198,14 @@ export class AcExMarkupController {
     const placing = this._placingShapeCallout
     if (!placing) return
     if (placing.existingId) {
-      this._finishPlacingShapeCallout(true)
+      this._finishPlacingShapeCallout(false)
+      if (this._mode) {
+        this._statusEl.textContent = this._hintForMode(this._mode)
+      }
     } else {
       this._commitShapeWithCallout(placing.outline, undefined, undefined)
-      this._finishPlacingShapeCallout(true)
-    }
-    if (this._mode) {
-      this._statusEl.textContent = this._hintForMode(this._mode)
+      this._finishPlacingShapeCallout(false)
+      this.cancelMode()
     }
     this._view.render()
   }
@@ -2506,15 +2505,19 @@ export class AcExMarkupController {
       btn.setAttribute('data-i18n-key', titleKey)
       btn.setAttribute('title', label)
       btn.setAttribute('aria-label', label)
-      const labelEl = btn.querySelector('.mlcad-dropdown-label')
+      const labelEl =
+        btn.querySelector('.mlcad-tool-btn-label') ??
+        btn.querySelector('.mlcad-dropdown-label')
       if (labelEl) {
         labelEl.setAttribute('data-i18n-key', titleKey)
         labelEl.textContent = label
       }
-      const iconHost = btn.querySelector('.mlcad-dropdown-icon')
+      const iconHost =
+        btn.querySelector('.mlcad-tool-btn-icon') ??
+        btn.querySelector('.mlcad-dropdown-icon')
       if (iconHost) {
         iconHost.innerHTML = icon
-      } else {
+      } else if (!labelEl) {
         btn.innerHTML = icon
       }
     })

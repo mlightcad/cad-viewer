@@ -25,12 +25,17 @@ describe('setupAcExHtmlToolbarFlyouts', () => {
       <button type="button" id="mlcad-snap-menu-btn"></button>
       <button type="button" id="mlcad-zoom-menu-btn"></button>
       <button type="button" id="mlcad-lang-btn"></button>
+      <button type="button" id="mlcad-settings-btn"></button>
       ${stripHtml('mlcad-measure-strip', '<button type="button" data-action="measure" data-measure-mode="distance"></button>')}
       ${stripHtml('mlcad-markup-strip', '<button type="button" data-action="markup" data-markup-mode="cloud"></button>')}
       ${stripHtml('mlcad-snap-strip', '<button type="button" id="mlcad-ortho-btn"></button>')}
       ${stripHtml(
         'mlcad-zoom-strip',
         '<button type="button" data-action="fit"></button><button type="button" data-action="zoom-original"></button>'
+      )}
+      ${stripHtml(
+        'mlcad-settings-strip',
+        '<button type="button" data-action="toggle-theme"></button><button type="button" id="mlcad-settings-locale-btn" data-action="locale-menu"></button><button type="button" data-action="switch-bg"></button>'
       )}
       ${stripHtml(
         'mlcad-locale-strip',
@@ -107,6 +112,41 @@ describe('setupAcExHtmlToolbarFlyouts', () => {
     expect(wrap?.hidden).toBe(true)
   })
 
+  it('opens locale from settings and hides the settings strip', () => {
+    mountAllStrips()
+    const onLocaleSelect = jest.fn()
+    const onStripChange = jest.fn()
+    setupAcExHtmlToolbarFlyouts({
+      onItemClick: jest.fn(),
+      onLocaleSelect,
+      getLocale: () => 'zh',
+      onStripChange
+    })
+
+    document.getElementById('mlcad-settings-btn')?.click()
+    expect(document.getElementById('mlcad-settings-strip-wrap')?.hidden).toBe(
+      false
+    )
+
+    document.getElementById('mlcad-settings-locale-btn')?.click()
+    expect(document.getElementById('mlcad-settings-strip-wrap')?.hidden).toBe(
+      true
+    )
+    expect(document.getElementById('mlcad-locale-strip-wrap')?.hidden).toBe(
+      false
+    )
+
+    document.querySelector<HTMLButtonElement>('[data-locale="en"]')?.click()
+    expect(onLocaleSelect).toHaveBeenCalledWith('en')
+    expect(document.getElementById('mlcad-locale-strip-wrap')?.hidden).toBe(
+      true
+    )
+    expect(document.getElementById('mlcad-settings-strip-wrap')?.hidden).toBe(
+      false
+    )
+    expect(onStripChange).toHaveBeenCalled()
+  })
+
   it('closes a dismissible zoom strip on canvas click and tool select', () => {
     mountAllStrips()
     const onItemClick = jest.fn()
@@ -125,16 +165,20 @@ describe('setupAcExHtmlToolbarFlyouts', () => {
     expect(wrap?.hidden).toBe(true)
   })
 
-  it('copies a child icon onto the parent button', () => {
+  it('copies a child icon onto the parent button icon slot', () => {
     mountFixture(
-      '<button id="mlcad-zoom-menu-btn">parent</button><button id="child"><span>icon</span></button>'
+      '<button id="mlcad-zoom-menu-btn"><span class="mlcad-tool-btn-icon">parent</span><span class="mlcad-tool-btn-label">Zoom</span></button><button id="child"><span class="mlcad-tool-btn-icon"><span>icon</span></span><span class="mlcad-tool-btn-label">Fit</span></button>'
     )
     setAcExHtmlParentChildIcon(
       'mlcad-zoom-menu-btn',
       document.getElementById('child') as HTMLElement
     )
-    expect(document.getElementById('mlcad-zoom-menu-btn')?.innerHTML).toBe(
+    const parent = document.getElementById('mlcad-zoom-menu-btn')
+    expect(parent?.querySelector('.mlcad-tool-btn-icon')?.innerHTML).toBe(
       '<span>icon</span>'
+    )
+    expect(parent?.querySelector('.mlcad-tool-btn-label')?.textContent).toBe(
+      'Zoom'
     )
   })
 })

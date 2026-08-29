@@ -39,6 +39,10 @@ import {
   ICON_PAN,
   ICON_POLAR_TRACKING,
   ICON_SELECT,
+  ICON_SETTINGS,
+  ICON_SWITCH_BG,
+  ICON_THEME_DARK,
+  ICON_THEME_LIGHT,
   ICON_ZOOM_BOX,
   ICON_ZOOM_EXTENT,
   ICON_ZOOM_ORIGINAL,
@@ -127,14 +131,27 @@ export const acExHtmlIcons = {
   /** @deprecated Prefer {@link markupHide} / {@link markupShow}. */
   markupVisibility: ICON_MARKUP_HIDE,
   /** Clear all markups. */
-  clearMarkups: ICON_CLEAR_MARKUPS
+  clearMarkups: ICON_CLEAR_MARKUPS,
+  /** Phone settings parent toolbar icon. */
+  settings: ICON_SETTINGS,
+  /** Toggle drawing background between black and white. */
+  switchBg: ICON_SWITCH_BG,
+  /** Switch to light UI chrome. */
+  themeLight: ICON_THEME_LIGHT,
+  /** Switch to dark UI chrome. */
+  themeDark: ICON_THEME_DARK
 } as const
 
 /**
- * Builds an HTML toolbar `<button>` with an inline icon and extra attributes.
+ * Builds an HTML toolbar `<button>` with an inline icon, optional phone label,
+ * and extra attributes.
+ *
+ * When `data-i18n-key` is present, a `.mlcad-tool-btn-label` leaf is added so
+ * phone layouts can show a translated caption under the icon. Pad/desktop CSS
+ * hides the label; `title` / `aria-label` remain the accessible name.
  *
  * @param icon - SVG markup from {@link acExHtmlIcons}.
- * @param title - Default `title` and `aria-label` before i18n overrides.
+ * @param title - Default `title`, `aria-label`, and label text before i18n.
  * @param attrs - Additional attributes (e.g. `data-action`, `data-i18n-key`).
  * @returns HTML string for one toolbar button.
  */
@@ -146,7 +163,11 @@ export function acExToolbarButton(
   const attrStr = Object.entries(attrs)
     .map(([key, value]) => `${key}="${escapeAttr(value)}"`)
     .join(' ')
-  return `<button type="button" class="mlcad-tool-btn" title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}" ${attrStr}>${icon}</button>`
+  const i18nKey = attrs['data-i18n-key']
+  const label = i18nKey
+    ? `<span class="mlcad-tool-btn-label" data-i18n-key="${escapeAttr(i18nKey)}" data-i18n-text>${escapeAttr(title)}</span>`
+    : ''
+  return `<button type="button" class="mlcad-tool-btn" title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}" ${attrStr}><span class="mlcad-tool-btn-icon" aria-hidden="true">${icon}</span>${label}</button>`
 }
 
 /**

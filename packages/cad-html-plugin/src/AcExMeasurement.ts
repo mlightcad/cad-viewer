@@ -1171,6 +1171,19 @@ export class AcExMeasureController {
   }
 
   /**
+   * Ends create mode after a successful interactive commit, keeping the
+   * just-written status message (result readout) instead of replacing it
+   * with idle totals / empty ready text.
+   */
+  private _exitCreateModeKeepStatus(): void {
+    const msg = this._statusEl.textContent
+    this.cancelMode()
+    if (msg?.trim()) {
+      this._statusEl.textContent = msg
+    }
+  }
+
+  /**
    * Refreshes the idle status bar (totals or ready text) when no tool is active.
    */
   refreshIdleStatus(): void {
@@ -1384,7 +1397,7 @@ export class AcExMeasureController {
       this._commitArea([...this._points])
       this._points = []
       this._hidePreview()
-      this._statusEl.textContent = this._hintForMode('area')
+      this._exitCreateModeKeepStatus()
       return true
     }
     return false
@@ -1523,10 +1536,19 @@ export class AcExMeasureController {
       btn.setAttribute('data-i18n-key', titleKey)
       btn.setAttribute('title', label)
       btn.setAttribute('aria-label', label)
-      const iconHost = btn.querySelector('.mlcad-dropdown-icon')
+      const labelEl =
+        btn.querySelector('.mlcad-tool-btn-label') ??
+        btn.querySelector('.mlcad-dropdown-label')
+      if (labelEl) {
+        labelEl.setAttribute('data-i18n-key', titleKey)
+        labelEl.textContent = label
+      }
+      const iconHost =
+        btn.querySelector('.mlcad-tool-btn-icon') ??
+        btn.querySelector('.mlcad-dropdown-icon')
       if (iconHost) {
         iconHost.innerHTML = icon
-      } else {
+      } else if (!labelEl) {
         btn.innerHTML = icon
       }
     })
@@ -1689,13 +1711,12 @@ export class AcExMeasureController {
    */
   private _pointerCoordinate(
     point: THREE.Vector2,
-    clientX: number,
-    clientY: number
+    _clientX: number,
+    _clientY: number
   ): boolean {
     this._commitCoordinate(point)
     this._hidePreview()
-    this._statusEl.textContent = this._hintForMode('coordinate')
-    this._previewCoordinate(point, clientX, clientY)
+    this._exitCreateModeKeepStatus()
     return true
   }
 
@@ -1809,7 +1830,7 @@ export class AcExMeasureController {
     this._commitDistance(a!, b!)
     this._points = []
     this._hidePreview()
-    this._statusEl.textContent = this._hintForMode('distance')
+    this._exitCreateModeKeepStatus()
     return true
   }
 
@@ -1964,7 +1985,7 @@ export class AcExMeasureController {
     this._commitAngle(vertex, arm1, arm2)
     this._points = []
     this._hidePreview()
-    this._statusEl.textContent = this._hintForMode('angle')
+    this._exitCreateModeKeepStatus()
     return true
   }
 
@@ -2253,7 +2274,7 @@ export class AcExMeasureController {
       this._arcLock = null
       this._resetArcLockDirection()
       this._hidePreview()
-      this._statusEl.textContent = this._hintForMode('arc')
+      this._exitCreateModeKeepStatus()
       return true
     }
 
@@ -2275,7 +2296,7 @@ export class AcExMeasureController {
     this._commitArc(geom, start, through, end)
     this._points = []
     this._hidePreview()
-    this._statusEl.textContent = this._hintForMode('arc')
+    this._exitCreateModeKeepStatus()
     return true
   }
 
@@ -2714,7 +2735,7 @@ export class AcExMeasureController {
         this._commitArea([...this._points])
         this._points = []
         this._hidePreview()
-        this._statusEl.textContent = this._hintForMode('area')
+        this._exitCreateModeKeepStatus()
         return true
       }
     }
@@ -2736,7 +2757,7 @@ export class AcExMeasureController {
             this._commitArea([...this._points])
             this._points = []
             this._hidePreview()
-            this._statusEl.textContent = this._hintForMode('area')
+            this._exitCreateModeKeepStatus()
             return true
           }
         }
