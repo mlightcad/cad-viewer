@@ -3,8 +3,11 @@
 import {
   acedGetUiLayout,
   acedIsCompactUiLayout,
+  acedIsHandheldDevice,
+  acedIsMobileOrPadUi,
   acedIsMobileUiLayout,
   acedSubscribeUiLayout,
+  ML_UI_COARSE_POINTER_MEDIA_QUERY,
   ML_UI_COMPACT_MAX_WIDTH,
   ML_UI_COMPACT_MEDIA_QUERY,
   ML_UI_MOBILE_MAX_WIDTH,
@@ -119,6 +122,29 @@ describe('AcEdUiLayout', () => {
     expect(listener).toHaveBeenCalledWith('desktop')
 
     unsubscribe()
+    media.restore()
+  })
+
+  it('treats pad viewport as mobile-or-pad UI', () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_COMPACT_MEDIA_QUERY
+    )
+
+    expect(acedGetUiLayout()).toBe('pad')
+    expect(acedIsMobileOrPadUi()).toBe(true)
+
+    media.restore()
+  })
+
+  it('treats coarse pointer as a handheld device at desktop width', () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_COARSE_POINTER_MEDIA_QUERY
+    )
+
+    expect(acedGetUiLayout()).toBe('desktop')
+    expect(acedIsHandheldDevice()).toBe(true)
+    expect(acedIsMobileOrPadUi()).toBe(true)
+
     media.restore()
   })
 })

@@ -26,6 +26,26 @@ export function acedIsCompactUiLayout(): boolean {
   return window.matchMedia?.(ML_UI_COMPACT_MEDIA_QUERY).matches ?? false
 }
 
+/** Media query matching a coarse primary pointer (typical phones and pads). */
+export const ML_UI_COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)'
+
+const MOBILE_OR_PAD_UA =
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
+
+/**
+ * Whether the browser looks like a phone or pad, independent of viewport width.
+ *
+ * Covers landscape / wide tablets that exceed {@link ML_UI_COMPACT_MAX_WIDTH},
+ * including iPadOS which reports as Macintosh with a touch screen.
+ */
+export function acedIsHandheldDevice(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const nav = navigator as Navigator & { msMaxTouchPoints?: number }
+  if (MOBILE_OR_PAD_UA.test(nav.userAgent || '')) return true
+  if (nav.platform === 'MacIntel' && (nav.maxTouchPoints ?? 0) > 1) return true
+  return window.matchMedia?.(ML_UI_COARSE_POINTER_MEDIA_QUERY).matches ?? false
+}
+
 /**
  * Coarse UI layout kind derived from viewport width.
  *
@@ -44,6 +64,14 @@ export function acedGetUiLayout(): AcEdUiLayoutKind {
   if (acedIsMobileUiLayout()) return 'phone'
   if (acedIsCompactUiLayout()) return 'pad'
   return 'desktop'
+}
+
+/**
+ * Whether the UI should behave as phone or pad: compact viewport, or a
+ * handheld / touch device at any width (including landscape).
+ */
+export function acedIsMobileOrPadUi(): boolean {
+  return acedGetUiLayout() !== 'desktop' || acedIsHandheldDevice()
 }
 
 /**
