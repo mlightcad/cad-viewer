@@ -12,8 +12,8 @@ import {
   acapBindOverlayPointerDrag,
   acapDrawOverlayArrowHead,
   acapFitOverlayCanvas,
-  type AcApOverlayWorldDrawResult,
   acapOverlayArrowSize,
+  type AcApOverlayWorldDrawResult,
   acapPlaceOverlayHtml,
   acapScaledOverlayLineWidth
 } from '../../overlay'

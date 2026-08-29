@@ -26,7 +26,7 @@ import {
   formatMeasurementLength
 } from '../../util'
 import { AcTrView2d } from '../../view'
-import { acapScaledOverlayLineWidth, acapOverlayDash } from '../overlay/AcApOverlayDrawUtil'
+import { acapOverlayDash,acapScaledOverlayLineWidth } from '../overlay/AcApOverlayDrawUtil'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import { AcApMeasureAreaEntity } from './entity'
 

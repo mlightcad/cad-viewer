@@ -63,7 +63,7 @@ export interface AcExViewerMetadata {
   extents: AcExExtents
   /** Unit and formatting sysvars for the offline viewer. */
   units: AcExViewerUnits
-  /** Grip square appearance from `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`. */
+  /** CAD entity square-grip appearance from `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`. */
   grip: AcExViewerGripAppearance
   /** Canvas background color as 24-bit RGB hex. */
   background: number

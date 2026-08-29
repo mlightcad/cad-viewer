@@ -90,7 +90,7 @@ export class AcEdGripManager {
     this._view = view
     this.bindEvents()
     // The view is constructed during `AcApDocManager.createInstance()`, before
-    // the singleton is assigned. Defer so overlay grips still inherit GRIPSIZE.
+    // the singleton is assigned. Defer so CAD square grips still inherit GRIPSIZE.
     queueMicrotask(() => this.applyAppearance())
   }
 
@@ -236,8 +236,8 @@ export class AcEdGripManager {
 
   /**
    * Updates size and colours on the view container (and existing handles)
-   * from current sysvars. Always writes CSS variables so overlay grips can
-   * inherit `GRIPSIZE` even when no CAD entities are selected.
+   * from current sysvars. Always writes CSS variables so CAD square grips
+   * inherit `GRIPSIZE` even when no entities are currently selected.
    */
   private applyAppearance() {
     try {

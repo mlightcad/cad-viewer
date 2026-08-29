@@ -31,8 +31,9 @@ export interface AcEdGripAppearance {
 }
 
 /**
- * Writes grip appearance onto a host so overlay and entity grips share
- * `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT` through CSS custom properties.
+ * Writes CAD entity square-grip appearance onto a host so `.ml-grip-handle`
+ * inherits `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`. Overlay measure/markup
+ * endpoint circles keep their own colored-dot styling and ignore these vars.
  */
 export function applyGripAppearanceToHost(
   host: HTMLElement,
@@ -64,7 +65,7 @@ export function readGripAppearance(database: AcDbDatabase): AcEdGripAppearance {
   ) as number
 
   return {
-    size,
+    size: size > 0 && Number.isFinite(size) ? size : DEFAULT_GRIP_SIZE_PX,
     colorCss: aciIndexToCss(gripColor),
     hotColorCss: aciIndexToCss(gripHot)
   }

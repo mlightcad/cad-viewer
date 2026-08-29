@@ -10,6 +10,12 @@ import type { AcTrView2d } from '../../view'
 /** Dataset key storing stroke width in world units for view-synced canvas pens. */
 export const ACAP_OVERLAY_STROKE_WCS = 'overlayStrokeWcs'
 
+/** Dataset key storing revision-cloud lobe diameter in world units. */
+export const ACAP_OVERLAY_CLOUD_WCS = 'overlayCloudWcs'
+
+/** Target screen diameter in CSS pixels for each revision-cloud lobe at creation. */
+export const ACAP_OVERLAY_CLOUD_DIAMETER_PX = 8
+
 /** Returns the active orthographic camera zoom, or `null` when unavailable. */
 export function acapGetCameraZoom(view: AcEdBaseView): number | null {
   const zoom = (view as AcTrView2d).internalCamera?.zoom
@@ -141,13 +147,8 @@ export function acapSeedOverlaySizesFromWcs(
     canvases?: readonly HTMLElement[]
   }
 ): void {
-  const {
-    textHeightWcs,
-    strokeWidthWcs,
-    fontSizePx,
-    elements,
-    canvases
-  } = options
+  const { textHeightWcs, strokeWidthWcs, fontSizePx, elements, canvases } =
+    options
 
   if (strokeWidthWcs != null && strokeWidthWcs > 0) {
     for (const canvas of canvases ?? []) {
@@ -162,11 +163,9 @@ export function acapSeedOverlaySizesFromWcs(
     options.strokeScreenPx > 0
   ) {
     const cloudWcs =
-      (8 * strokeWidthWcs) / options.strokeScreenPx
+      (ACAP_OVERLAY_CLOUD_DIAMETER_PX * strokeWidthWcs) / options.strokeScreenPx
     for (const canvas of canvases ?? []) {
-      if (!canvas.dataset.overlayCloudWcs) {
-        canvas.dataset.overlayCloudWcs = String(cloudWcs)
-      }
+      canvas.dataset[ACAP_OVERLAY_CLOUD_WCS] = String(cloudWcs)
     }
   }
 

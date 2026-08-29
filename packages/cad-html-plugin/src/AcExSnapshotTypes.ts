@@ -46,7 +46,8 @@ export interface AcExViewerUnits {
 }
 
 /**
- * Grip square appearance copied from `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`.
+ * CAD entity square-grip appearance from `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`.
+ * Overlay measure/markup endpoint circles keep their own colored-dot styling.
  */
 export interface AcExViewerGripAppearance {
   /** Grip square edge length in CSS pixels (`GRIPSIZE`). */
@@ -330,9 +331,10 @@ export interface AcExSnapshot {
     /** Unit and formatting sysvars for measurement display. */
     units: AcExViewerUnits
     /**
-     * Grip square appearance from `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`.
-     * Omitted on snapshots produced before this field existed; the viewer
-     * then uses AutoCAD-like defaults (8px, `#0080ff` / `#ff0000`).
+     * CAD entity square-grip appearance from `GRIPSIZE` / `GRIPCOLOR` /
+     * `GRIPHOT`. Overlay endpoint circles ignore these values. Omitted on
+     * snapshots produced before this field existed; the viewer then uses
+     * AutoCAD-like defaults (8px, `#0080ff` / `#ff0000`).
      */
     grip?: AcExViewerGripAppearance
     /** Canvas background color as 24-bit RGB hex. */

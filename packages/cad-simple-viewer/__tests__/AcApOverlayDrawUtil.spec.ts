@@ -91,5 +91,12 @@ describe('AcApOverlayDrawUtil arrow and dash scale', () => {
       canvases: [canvas]
     })
     expect(canvas.dataset.overlayCloudWcs).toBe('1.28')
+
+    acapSeedOverlaySizesFromWcs(view, {
+      strokeWidthWcs: 0.8,
+      strokeScreenPx: 2.5,
+      canvases: [canvas]
+    })
+    expect(canvas.dataset.overlayCloudWcs).toBe('2.56')
   })
 })
