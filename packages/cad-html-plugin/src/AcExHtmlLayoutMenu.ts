@@ -8,6 +8,7 @@
  * @packageDocumentation
  */
 
+import { ML_UI_MOBILE_MAX_WIDTH } from './AcExHtmlShell'
 import type { AcExLayoutSnapshot } from './AcExSnapshotTypes'
 
 /** Handles returned by {@link setupAcExHtmlLayoutMenu}. */
@@ -74,14 +75,30 @@ export function setupAcExHtmlLayoutMenu(
   const positionNear = (root: HTMLDivElement) => {
     const rect = btn.getBoundingClientRect()
     const menuRect = root.getBoundingClientRect()
-    let top = rect.top
-    let left = rect.right + 8
+    const phone =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.(`(max-width: ${ML_UI_MOBILE_MAX_WIDTH}px)`).matches
 
-    if (left + menuRect.width > window.innerWidth - 8) {
-      left = Math.max(8, rect.left - menuRect.width - 8)
-    }
-    if (top + menuRect.height > window.innerHeight - 8) {
-      top = Math.max(8, window.innerHeight - menuRect.height - 8)
+    let top: number
+    let left: number
+
+    if (phone) {
+      // Open upward above the bottom toolbar.
+      top = rect.top - menuRect.height - 8
+      left = Math.max(8, Math.min(rect.left, window.innerWidth - menuRect.width - 8))
+      if (top < 8) {
+        top = Math.min(rect.bottom + 8, window.innerHeight - menuRect.height - 8)
+      }
+    } else {
+      top = rect.top
+      left = rect.right + 8
+
+      if (left + menuRect.width > window.innerWidth - 8) {
+        left = Math.max(8, rect.left - menuRect.width - 8)
+      }
+      if (top + menuRect.height > window.innerHeight - 8) {
+        top = Math.max(8, window.innerHeight - menuRect.height - 8)
+      }
     }
 
     root.style.top = `${Math.max(8, top)}px`

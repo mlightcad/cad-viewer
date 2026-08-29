@@ -91,6 +91,112 @@ function createHiddenStatusSink(): HTMLElement {
   return el
 }
 
+/** Keeps `#mlcad-status-bar` hidden when empty so it does not reserve chrome. */
+function wireStatusBarVisibility(el: HTMLElement): void {
+  const sync = () => {
+    el.hidden = !el.textContent?.trim()
+  }
+  sync()
+  const observer = new MutationObserver(sync)
+  observer.observe(el, {
+    characterData: true,
+    childList: true,
+    subtree: true
+  })
+}
+
+const ACEX_HTML_THEME_STORAGE_KEY = 'mlcad-html-theme'
+
+type AcExHtmlTheme = 'dark' | 'light'
+
+function loadStoredTheme(): AcExHtmlTheme {
+  try {
+    const raw = localStorage.getItem(ACEX_HTML_THEME_STORAGE_KEY)
+    if (raw === 'light' || raw === 'dark') return raw
+  } catch {
+    /* private mode */
+  }
+  return 'dark'
+}
+
+function applyHtmlTheme(theme: AcExHtmlTheme): void {
+  document.documentElement.setAttribute('data-mlcad-theme', theme)
+  try {
+    localStorage.setItem(ACEX_HTML_THEME_STORAGE_KEY, theme)
+  } catch {
+    /* private mode */
+  }
+  const btn = document.getElementById('mlcad-theme-btn')
+  if (!btn) return
+  const icon = btn.querySelector('.mlcad-tool-btn-icon')
+  const label = btn.querySelector('.mlcad-tool-btn-label')
+  // Match cad-simple-ui-plugin: show the current theme icon; the label is the
+  // action (switch to the other theme).
+  const nextKey = theme === 'light' ? 'toolbar.themeLight' : 'toolbar.themeDark'
+  const nextIcon =
+    theme === 'light' ? acExHtmlIcons.themeLight : acExHtmlIcons.themeDark
+  const nextTitle =
+    theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'
+  if (icon) icon.innerHTML = nextIcon
+  btn.setAttribute('data-i18n-key', nextKey)
+  btn.setAttribute('data-i18n-attr', 'title aria-label')
+  btn.setAttribute('title', nextTitle)
+  btn.setAttribute('aria-label', nextTitle)
+  if (label) {
+    label.setAttribute('data-i18n-key', nextKey)
+    label.setAttribute('data-i18n-text', '')
+  }
+}
+
+/** Luminance heuristic matching live-viewer black/white background toggles. */
+function isLightRgb(hex: number): boolean {
+  const r = (hex >> 16) & 0xff
+  const g = (hex >> 8) & 0xff
+  const b = hex & 0xff
+  return (r * 299 + g * 587 + b * 114) / 1000 >= 128
+}
+
+function invertNearBlackWhite(hex: number): number | null {
+  const r = (hex >> 16) & 0xff
+  const g = (hex >> 8) & 0xff
+  const b = hex & 0xff
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  // Near grayscale extremes only (ACI 7 / black ink).
+  if (max - min > 16) return null
+  if (max <= 40) return 0xffffff
+  if (min >= 215) return 0x000000
+  return null
+}
+
+function flipMaterialColor(material: THREE.Material): void {
+  const colorMats = material as THREE.MeshBasicMaterial & {
+    color?: THREE.Color
+    uniforms?: { u_color?: { value: THREE.Color } }
+  }
+  if (colorMats.color?.getHex) {
+    const next = invertNearBlackWhite(colorMats.color.getHex())
+    if (next != null) colorMats.color.setHex(next)
+  }
+  const uniformColor = colorMats.uniforms?.u_color?.value
+  if (uniformColor?.getHex) {
+    const next = invertNearBlackWhite(uniformColor.getHex())
+    if (next != null) uniformColor.setHex(next)
+  }
+}
+
+function flipNearBlackWhiteMaterials(root: THREE.Object3D): void {
+  root.traverse(obj => {
+    const mat = (obj as THREE.Mesh).material
+    if (!mat) return
+    if (Array.isArray(mat)) {
+      for (const m of mat) flipMaterialColor(m)
+    } else {
+      flipMaterialColor(mat)
+    }
+  })
+}
+
 function bootstrap(): void {
   void accmYieldForPaint().then(() => startViewer())
 }
@@ -175,6 +281,7 @@ async function startViewer(): Promise<void> {
 
   const statusEl =
     document.getElementById('mlcad-status-bar') ?? createHiddenStatusSink()
+  wireStatusBarVisibility(statusEl)
 
   let snapshot: AcExSnapshot
   try {
@@ -192,6 +299,9 @@ async function startViewer(): Promise<void> {
   root.style.setProperty('--ml-ui-grip-normal', grip?.colorCss ?? '#0080ff')
   root.style.setProperty('--ml-ui-grip-hot', grip?.hotColorCss ?? '#ff0000')
 
+  applyHtmlTheme(loadStoredTheme())
+  i18n.applyToDocument()
+
   const initialLayout =
     snapshot.layouts.find(l => l.btrId === snapshot.activeLayoutBtrId) ??
     snapshot.layouts[0]
@@ -205,16 +315,20 @@ async function startViewer(): Promise<void> {
     snapshot.layers.map(layer => [layer.name, layer.visible])
   )
 
+  const canvasHost =
+    document.getElementById('mlcad-canvas-host') ?? root
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-  root.insertBefore(renderer.domElement, root.firstChild)
+  canvasHost.insertBefore(renderer.domElement, canvasHost.firstChild)
 
   const scene = new THREE.Scene()
-  scene.background = new THREE.Color(snapshot.meta.background)
+  const originalBackground = snapshot.meta.background >>> 0
+  let backgroundSwapped = false
+  scene.background = new THREE.Color(originalBackground)
 
   const getCanvasSize = () => ({
-    width: root.clientWidth || window.innerWidth,
-    height: root.clientHeight || window.innerHeight
+    width: canvasHost.clientWidth || window.innerWidth,
+    height: canvasHost.clientHeight || window.innerHeight
   })
 
   const { width: initialWidth, height: initialHeight } = getCanvasSize()
@@ -441,7 +555,20 @@ async function startViewer(): Promise<void> {
     render()
   }
 
-  let readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
+  let readyStatus = ''
+
+  const switchDrawingBackground = () => {
+    backgroundSwapped = !backgroundSwapped
+    const next = backgroundSwapped
+      ? isLightRgb(originalBackground)
+        ? 0x000000
+        : 0xffffff
+      : originalBackground
+    scene.background = new THREE.Color(next)
+    flipNearBlackWhiteMaterials(scene)
+    flipNearBlackWhiteMaterials(modelScene)
+    render()
+  }
 
   const screenToWcs = (clientX: number, clientY: number): THREE.Vector2 => {
     const rect = renderer.domElement.getBoundingClientRect()
@@ -868,6 +995,9 @@ async function startViewer(): Promise<void> {
         paperRoot,
         paperWideLineMaterials
       )
+      if (backgroundSwapped) {
+        flipNearBlackWhiteMaterials(paperRoot)
+      }
       if (hasPaperViewports) {
         modelScene.add(modelRoot)
       }
@@ -1007,6 +1137,16 @@ async function startViewer(): Promise<void> {
       if (mode) {
         markup?.setMode(mode)
       }
+    } else if (action === 'toggle-theme') {
+      const current =
+        (document.documentElement.getAttribute('data-mlcad-theme') as
+          | AcExHtmlTheme
+          | null) ?? 'dark'
+      const next: AcExHtmlTheme = current === 'dark' ? 'light' : 'dark'
+      applyHtmlTheme(next)
+      i18n.applyToDocument()
+    } else if (action === 'switch-bg') {
+      switchDrawingBackground()
     }
   }
 
@@ -1021,7 +1161,9 @@ async function startViewer(): Promise<void> {
           action === 'markup-menu' ||
           action === 'snap-menu' ||
           action === 'zoom-menu' ||
-          action === 'layout-menu'
+          action === 'layout-menu' ||
+          action === 'settings-menu' ||
+          action === 'locale-menu'
         ) {
           return
         }
@@ -1033,6 +1175,12 @@ async function startViewer(): Promise<void> {
     onItemClick: handleToolbarAction,
     onLocaleSelect: locale => i18n.setLocale(locale),
     getLocale: () => i18n.locale,
+    onStripChange: () => {
+      resize()
+      recomputeOsnapThresholdWcs()
+      bumpSnapCacheKey()
+      render()
+    },
     onClose: menuId => {
       if (menuId === 'snap') {
         measureSettingsRef.current?.close()
@@ -1073,7 +1221,7 @@ async function startViewer(): Promise<void> {
   })
 
   i18n.setOnChange(() => {
-    readyStatus = snapshot.meta.title ?? i18n.t('status.ready')
+    readyStatus = ''
     if (!measure?.isActive && !markup?.isActive) {
       measure?.refreshIdleStatus()
       markup?.refreshIdleStatus()
@@ -1093,6 +1241,13 @@ async function startViewer(): Promise<void> {
     if (measure) {
       measure.setVisible(measure.visible)
     }
+    // Theme button keys may have been overwritten by applyToDocument; re-sync.
+    applyHtmlTheme(
+      (document.documentElement.getAttribute('data-mlcad-theme') as
+        | AcExHtmlTheme
+        | null) ?? 'dark'
+    )
+    i18n.applyToDocument()
     drawStyleToolbarRef.current?.refresh()
   })
 
