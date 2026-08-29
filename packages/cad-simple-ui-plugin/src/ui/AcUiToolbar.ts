@@ -74,6 +74,11 @@ export interface AcUiToolbarMountOptions {
   showBorder?: boolean
   /** When false, omits visual separators between toolbar groups. @default true */
   showSeparators?: boolean
+  /**
+   * When true, parent buttons with children show a corner triangle.
+   * @default true
+   */
+  showChildrenIndicator?: boolean
   /** Sub-toolbar chrome and position overrides; unset chrome inherits from this toolbar. */
   subToolbar?: AcUiSubToolbarOptions
   /**
@@ -81,6 +86,12 @@ export interface AcUiToolbarMountOptions {
    * of floating over the drawing. @default false
    */
   inCanvasParent?: boolean
+  /**
+   * Called when a sub-toolbar or menu opens and
+   * {@link AcUiSubToolbarOptions.replaceOnNested} is true, so callers can hide
+   * mutually exclusive chrome such as the dock panel.
+   */
+  onExclusiveOpen?: () => void
 }
 
 /**
@@ -130,6 +141,8 @@ export class AcUiToolbar {
   private showBorder: boolean
   /** Whether separator dividers are rendered between toolbar groups. */
   private showSeparators: boolean
+  /** Whether parent buttons with children show a corner triangle. */
+  private showChildrenIndicator: boolean
   /**
    * When true, the toolbar is a flex sibling of the canvas rather than an overlay.
    */
@@ -184,6 +197,7 @@ export class AcUiToolbar {
     this.sideOffset = options.sideOffset ?? 0
     this.showBorder = options.showBorder ?? true
     this.showSeparators = options.showSeparators ?? true
+    this.showChildrenIndicator = options.showChildrenIndicator ?? true
     this.inCanvasParent = options.inCanvasParent === true
     this.items = options.items
     this.collapsed =
@@ -258,6 +272,7 @@ export class AcUiToolbar {
         | 'overflow'
         | 'showBorder'
         | 'showSeparators'
+        | 'showChildrenIndicator'
         | 'subToolbar'
         | 'items'
         | 'inCanvasParent'
@@ -297,6 +312,10 @@ export class AcUiToolbar {
     }
     if (view.showSeparators !== undefined) {
       this.showSeparators = view.showSeparators
+    }
+    if (view.showChildrenIndicator !== undefined) {
+      this.showChildrenIndicator = view.showChildrenIndicator
+      this.options.showChildrenIndicator = view.showChildrenIndicator
     }
     if (view.subToolbar !== undefined) {
       this.options.subToolbar = view.subToolbar
@@ -348,6 +367,27 @@ export class AcUiToolbar {
     }
     this.openSubToolbar?.refreshLocale()
     this.openNestedSubToolbar?.refreshLocale()
+  }
+
+  /**
+   * Whether nested strips and dock panels replace an open ancestor strip.
+   *
+   * @see {@link AcUiSubToolbarOptions.replaceOnNested}
+   */
+  get replaceOnNested() {
+    return this.resolveSubToolbarChrome().replaceOnNested === true
+  }
+
+  /** Closes any open dropdown or sub-toolbar. */
+  dismissOpenChildren() {
+    this.closeChildrenUi()
+  }
+
+  /** Notifies the host to hide mutually exclusive chrome (e.g. dock panels). */
+  private notifyExclusiveOpen() {
+    if (this.replaceOnNested) {
+      this.options.onExclusiveOpen?.()
+    }
   }
 
   /**
@@ -407,7 +447,8 @@ export class AcUiToolbar {
         size: this.options.size,
         overflow: this.options.overflow,
         showBorder: this.showBorder,
-        showSeparators: this.showSeparators
+        showSeparators: this.showSeparators,
+        showChildrenIndicator: this.showChildrenIndicator
       },
       this.options.subToolbar
     )
@@ -593,6 +634,7 @@ export class AcUiToolbar {
     if (this.options.overflow === 'wrap') classes.push('is-overflow-wrap')
     if (this.options.overflow === 'menu') classes.push('is-overflow-menu')
     if (!this.showBorder) classes.push('no-border')
+    if (this.showChildrenIndicator) classes.push('show-children-indicator')
     this.root.className = classes.join(' ')
   }
 
@@ -1034,6 +1076,7 @@ export class AcUiToolbar {
     }
     if (this.overflowItems.length === 0) return
 
+    this.notifyExclusiveOpen()
     this.closeChildrenUi()
 
     const menuItems = this.overflowItems
@@ -1269,6 +1312,7 @@ export class AcUiToolbar {
         }
       }
       this.openSubToolbar?.syncPosition()
+      this.openNestedSubToolbar?.syncPosition()
     })
   }
 
@@ -1407,6 +1451,9 @@ export class AcUiToolbar {
     if (!this.openParentButton) return
     this.openParentButton.classList.remove('is-open')
     this.openParentButton.setAttribute('aria-expanded', 'false')
+    if (this.openParentButton instanceof HTMLElement) {
+      this.openParentButton.blur()
+    }
     this.openParentButton = undefined
   }
 
@@ -1434,6 +1481,7 @@ export class AcUiToolbar {
     button: HTMLButtonElement,
     visibleChildren: AcUiToolbarItem[]
   ) {
+    this.notifyExclusiveOpen()
     this.closeChildrenUi()
     const childrenUi = acuiResolveToolbarChildrenUi(item)
     this.openParentId = item.id
@@ -1518,12 +1566,6 @@ export class AcUiToolbar {
     this.openChildrenUi(item, button, visibleChildren)
   }
 
-  /** Closes the nested sub-toolbar opened from a parent strip item. */
-  private closeNestedSubToolbar() {
-    this.openNestedSubToolbar?.close()
-    this.openNestedSubToolbar = undefined
-  }
-
   /**
    * Handles a sub-toolbar item click, opening nested strips when needed.
    *
@@ -1583,8 +1625,18 @@ export class AcUiToolbar {
     stripParent: AcUiToolbarItem,
     stripSticky: boolean
   ) {
+    if (
+      this.openNestedSubToolbar &&
+      this.openNestedSubToolbar.anchor === button
+    ) {
+      this.closeNestedSubToolbar()
+      return
+    }
+
     this.closeNestedSubToolbar()
     const childrenUi = acuiResolveToolbarChildrenUi(item)
+    const chrome = this.resolveSubToolbarChrome()
+    const replaceOnNested = chrome.replaceOnNested
 
     if (!acuiIsToolbarChildrenStrip(childrenUi)) {
       const dropdown = new AcUiDropdownMenu(
@@ -1612,16 +1664,23 @@ export class AcUiToolbar {
       return
     }
 
+    if (replaceOnNested) {
+      this.openSubToolbar?.setHidden(true)
+    }
+
     const nestedSticky = childrenUi === 'sticky-toolbar'
     const nested = new AcUiSubToolbar({
       i18n: this.options.i18n,
       items: visibleChildren,
       anchor: button,
-      toolbarRoot: this.root,
+      toolbarRoot:
+        replaceOnNested || !this.openSubToolbar
+          ? this.root
+          : this.openSubToolbar.rootElement,
       host: this.getOverlayHost(),
       placement: this.options.placement,
       sticky: nestedSticky,
-      chrome: this.resolveSubToolbarChrome(),
+      chrome,
       position: this.options.subToolbar?.position,
       getCrossAxisInset: () => this.getCrossAxisInset(),
       commandsDisabled: this.isDisabled || !this.hasDocument,
@@ -1630,10 +1689,25 @@ export class AcUiToolbar {
       onClose: () => {
         if (this.openNestedSubToolbar === nested) {
           this.openNestedSubToolbar = undefined
+          if (replaceOnNested) {
+            this.openSubToolbar?.setHidden(false)
+            this.openSubToolbar?.syncPosition()
+          }
         }
       }
     })
     this.openNestedSubToolbar = nested
+  }
+
+  /** Closes the nested sub-toolbar opened from a parent strip item. */
+  private closeNestedSubToolbar() {
+    const replaceOnNested =
+      this.resolveSubToolbarChrome().replaceOnNested === true
+    this.openNestedSubToolbar?.close()
+    this.openNestedSubToolbar = undefined
+    if (replaceOnNested) {
+      this.openSubToolbar?.setHidden(false)
+    }
   }
 
   /**

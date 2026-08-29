@@ -17,7 +17,10 @@ import {
   acapScreenPxToWcs,
   acapSeedOverlaySizesFromWcs
 } from '../overlay/AcApOverlayDrawUtil'
-import { hitTestMeasurementGeometry } from './AcApMeasurementGeometry'
+import {
+  hitTestMeasurementGeometry,
+  measurementGeometryBounds
+} from './AcApMeasurementGeometry'
 import { runMeasurementEdit } from './AcApMeasurementHistory'
 import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
 import type {
@@ -95,6 +98,7 @@ export interface AcApMeasurementGroupExtras {
 }
 
 type MeasurementSelectionListener = () => void
+type MeasurementListListener = () => void
 
 const extrasById = new Map<string, AcApMeasurementGroupExtras>()
 /**
@@ -105,6 +109,7 @@ const extrasById = new Map<string, AcApMeasurementGroupExtras>()
 const extrasByGroup = new WeakMap<AcTrHtmlGroup, AcApMeasurementGroupExtras>()
 const stylesById = new Map<string, AcApMeasurementStyle>()
 const selectionListeners = new Set<MeasurementSelectionListener>()
+const listListeners = new Set<MeasurementListListener>()
 let selectedMeasurementId: string | undefined
 
 /** Style currently stored for a committed measurement group. */
@@ -139,6 +144,87 @@ export function subscribeMeasurementSelection(
 
 function notifyMeasurementSelection(): void {
   for (const listener of selectionListeners) listener()
+}
+
+/** Notify when committed measurements are added, removed, restored, or filtered by layout. */
+export function subscribeMeasurements(
+  listener: MeasurementListListener
+): () => void {
+  listListeners.add(listener)
+  return () => {
+    listListeners.delete(listener)
+  }
+}
+
+function notifyMeasurementsChanged(): void {
+  for (const listener of listListeners) listener()
+}
+
+/**
+ * Notify list subscribers that the active layout changed, so layout-filtered
+ * views (the measurement palette) can re-query {@link listLayoutMeasurements}.
+ */
+export function notifyMeasurementLayoutChanged(): void {
+  notifyMeasurementsChanged()
+}
+
+/**
+ * Committed measurements on the active layout (records without `layoutId`
+ * are treated as present on every layout).
+ */
+export function listLayoutMeasurements(
+  view: AcTrView2d
+): AcApMeasurementRecord[] {
+  const layoutId = view.activeLayoutBtrId
+  return collectMeasurementRecords(view).filter(
+    record => record.layoutId == null || record.layoutId === layoutId
+  )
+}
+
+/**
+ * Formatted badge text for a committed measurement, or an empty string when
+ * the value or drawing database is unavailable.
+ */
+export function getMeasurementValueText(
+  id: string,
+  db?: AcDbDatabase | null
+): string {
+  const extras = extrasById.get(id)
+  if (!extras?.value || !db) return ''
+  return formatMeasurementValue(db, extras.value)
+}
+
+/**
+ * Select a measurement and zoom the view to its geometry.
+ *
+ * Point measurements (degenerate AABB) are padded so the camera can frame them.
+ */
+export function focusMeasurement(
+  view: AcTrView2d,
+  record: AcApMeasurementRecord
+): void {
+  const box = measurementGeometryBounds(record.geometry)
+  if (!box) return
+  const width = box.max.x - box.min.x
+  const height = box.max.y - box.min.y
+  if (!(width > 1e-8) && !(height > 1e-8)) {
+    const pad = 1
+    box.expandByPoint({ x: box.min.x - pad, y: box.min.y - pad })
+    box.expandByPoint({ x: box.max.x + pad, y: box.max.y + pad })
+  }
+  view.zoomTo(box, 1.5)
+  view.htmlTransientManager.selectGroup(record.id)
+}
+
+/**
+ * Detach one committed measurement (undoable).
+ */
+export function removeMeasurement(view: AcTrView2d, id: string): void {
+  if (!view.htmlTransientManager.getGroup(id)) return
+  runMeasurementEdit(view, 'Delete Measurement', () => {
+    view.htmlTransientManager.detach(id)
+  })
+  view.isHtmlDirty = true
 }
 
 function rememberStyle(id: string, style: AcApMeasurementStyle): void {
@@ -367,6 +453,7 @@ export function resetMeasurementStyleState(): void {
   stylesById.clear()
   selectedMeasurementId = undefined
   notifyMeasurementSelection()
+  notifyMeasurementsChanged()
 }
 
 /**
@@ -380,6 +467,7 @@ export function restoreMeasurementGroupExtras(group: AcTrHtmlGroup): void {
   if (extras.style) {
     rememberStyle(group.id, extras.style)
   }
+  notifyMeasurementsChanged()
 }
 
 /**
@@ -443,6 +531,7 @@ export function commitMeasurementGroup(
     } catch {
       // Ignore dispose errors from domain cleanups.
     }
+    notifyMeasurementsChanged()
   }
 
   runMeasurementEdit(view, 'Create Measurement', () => {
@@ -455,6 +544,7 @@ export function commitMeasurementGroup(
     group.setVisible(false)
   }
   view.isHtmlDirty = true
+  notifyMeasurementsChanged()
 }
 
 /** Snapshot geometry for a committed measurement group, if available. */

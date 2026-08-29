@@ -133,6 +133,9 @@ export const ICON_MARKUP_STAMP = elementPlusIcon(
 export const ICON_MARKUP_PANEL =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="3.5" y="3" width="13" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M3.5 6.5h13" /><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M6.5 9.5h7M6.5 12h7M6.5 14.5h4.5" /></svg>'
 
+/** Measurement list panel icon (same list glyph as the review panel). */
+export const ICON_MEASUREMENT_PANEL = ICON_MARKUP_PANEL
+
 /**
  * Import icon (document + down arrow).
  * Inspired by Noun Project “import” 8131171 (Web Buttons by Elin Erkani).

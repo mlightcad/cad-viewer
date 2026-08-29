@@ -52,10 +52,13 @@ export function setupAcExHtmlReviewPanel(options: {
   i18n: AcExHtmlI18n
   getMarkup: () => AcExMarkupController | null
   closeOtherDrawers: () => void
+  /** Phone: park the drawer and dismiss open strips. */
+  onPhoneOpen?: (drawer: HTMLElement) => void
 }): AcExHtmlReviewPanelController | null {
-  const { i18n, getMarkup, closeOtherDrawers } = options
+  const { i18n, getMarkup, closeOtherDrawers, onPhoneOpen } = options
   const drawer = document.getElementById('mlcad-review-drawer')
   const closeBtn = document.getElementById('mlcad-review-close')
+  const sheetCloseBtn = drawer?.querySelector('.mlcad-drawer-sheet-close')
   if (!drawer) return null
 
   const searchInput = drawer.querySelector(
@@ -254,7 +257,10 @@ export function setupAcExHtmlReviewPanel(options: {
   })
 
   const setOpen = (open: boolean) => {
-    if (open) closeOtherDrawers()
+    if (open) {
+      closeOtherDrawers()
+      onPhoneOpen?.(drawer)
+    }
     drawer.hidden = !open
     document
       .querySelectorAll('[data-action="markup-panel"]')
@@ -276,6 +282,7 @@ export function setupAcExHtmlReviewPanel(options: {
   searchInput.addEventListener('input', () => renderTable())
   clearBtn.addEventListener('click', () => getMarkup()?.clearAll())
   closeBtn?.addEventListener('click', () => setOpen(false))
+  sheetCloseBtn?.addEventListener('click', () => setOpen(false))
 
   statusSelect.addEventListener('change', () => {
     const selected = selectedRecord()

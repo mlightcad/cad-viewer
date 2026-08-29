@@ -115,6 +115,8 @@ describe('AcUiToolbar children UI', () => {
 
     parent?.click()
     expect(host.querySelector('.ml-ex-ui-subtoolbar')).toBeNull()
+    expect(parent?.classList.contains('is-open')).toBe(false)
+    expect(parent?.getAttribute('aria-expanded')).toBe('false')
     toolbar.destroy()
   })
 
@@ -886,6 +888,294 @@ describe('AcUiToolbar in-canvas-parent layout', () => {
     expect(host.querySelector('.ml-ex-ui-toolbar-main')).toBeNull()
     expect(host.contains(canvas)).toBe(true)
     expect(root?.style.bottom).toBe('0px')
+    toolbar.destroy()
+  })
+
+  it('omits children-indicator class when showChildrenIndicator is false', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      showChildrenIndicator: false,
+      items: [
+        {
+          id: 'measure',
+          label: 'toolbar.measure',
+          childrenUi: 'sticky-toolbar',
+          children: [
+            { id: 'measure-distance', label: 'Distance', command: 'measuredistance' }
+          ]
+        }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    const root = host.querySelector('.ml-ex-ui-toolbar')
+    expect(root?.classList.contains('show-children-indicator')).toBe(false)
+    expect(
+      host
+        .querySelector('[data-toolbar-item-id="measure"]')
+        ?.classList.contains('has-children')
+    ).toBe(true)
+    toolbar.destroy()
+  })
+
+  it('replaces the ancestor strip when replaceOnNested is true', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      showLabels: true,
+      size: 'stretch',
+      subToolbar: {
+        showLabels: true,
+        size: 'stretch',
+        overflow: 'wrap',
+        replaceOnNested: true
+      },
+      items: [
+        {
+          id: 'settings',
+          label: 'toolbar.settings',
+          childrenUi: 'toolbar',
+          children: [
+            {
+              id: 'locale',
+              label: 'toolbar.locale',
+              childrenUi: 'toolbar',
+              children: [
+                { id: 'locale-en', label: 'toolbar.localeEn', action: () => undefined },
+                { id: 'locale-zh', label: 'toolbar.localeZh', action: () => undefined }
+              ]
+            }
+          ]
+        }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="settings"]')
+      ?.click()
+    const firstStrip = host.querySelector<HTMLElement>('.ml-ex-ui-subtoolbar')
+    expect(firstStrip).toBeTruthy()
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="locale"]')
+      ?.click()
+
+    const strips = Array.from(
+      host.querySelectorAll<HTMLElement>('.ml-ex-ui-subtoolbar')
+    )
+    expect(strips).toHaveLength(2)
+    expect(firstStrip?.hidden).toBe(true)
+    const visible = strips.filter(strip => !strip.hidden)
+    expect(visible).toHaveLength(1)
+    expect(visible[0]?.querySelector('[data-toolbar-item-id="locale-zh"]')).toBeTruthy()
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="settings"]')
+      ?.click()
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).toBeNull()
+    toolbar.destroy()
+  })
+
+  it('dismissOpenChildren closes an open sticky strip', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      subToolbar: { replaceOnNested: true },
+      items: [
+        {
+          id: 'measure',
+          label: 'toolbar.measure',
+          childrenUi: 'sticky-toolbar',
+          children: [
+            { id: 'measure-distance', label: 'Distance', command: 'measuredistance' }
+          ]
+        }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    expect(toolbar.replaceOnNested).toBe(true)
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).toBeTruthy()
+
+    toolbar.dismissOpenChildren()
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).toBeNull()
+    toolbar.destroy()
+  })
+
+  it('notifies onExclusiveOpen when replaceOnNested is true and a strip opens', () => {
+    const onExclusiveOpen = jest.fn()
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      subToolbar: { replaceOnNested: true },
+      items: [
+        {
+          id: 'measure',
+          label: 'toolbar.measure',
+          childrenUi: 'sticky-toolbar',
+          children: [
+            { id: 'measure-distance', label: 'Distance', command: 'measuredistance' }
+          ]
+        },
+        {
+          id: 'layout',
+          label: 'toolbar.layout',
+          childrenUi: 'menu',
+          children: [{ id: 'layout-model', label: 'Model', action: () => undefined }]
+        }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn(),
+      onExclusiveOpen
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(onExclusiveOpen).toHaveBeenCalledTimes(1)
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="layout"]')
+      ?.click()
+    expect(onExclusiveOpen).toHaveBeenCalledTimes(2)
+    toolbar.destroy()
+  })
+
+  it('does not notify onExclusiveOpen when replaceOnNested is false', () => {
+    const onExclusiveOpen = jest.fn()
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      subToolbar: { replaceOnNested: false },
+      items: [
+        {
+          id: 'measure',
+          label: 'toolbar.measure',
+          childrenUi: 'sticky-toolbar',
+          children: [
+            { id: 'measure-distance', label: 'Distance', command: 'measuredistance' }
+          ]
+        }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn(),
+      onExclusiveOpen
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(onExclusiveOpen).not.toHaveBeenCalled()
+    toolbar.destroy()
+  })
+
+  it('shows labels on measure visibility toggle buttons', () => {
+    let measurementsVisible = true
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 400 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      showLabels: true,
+      subToolbar: { showLabels: true, size: 'stretch', overflow: 'wrap' },
+      items: [
+        {
+          id: 'measure',
+          label: 'toolbar.measure',
+          childrenUi: 'sticky-toolbar',
+          children: [
+            {
+              id: 'measurement-vis',
+              toggle: {
+                getValue: () => measurementsVisible,
+                on: {
+                  label: 'toolbar.showMeasurements',
+                  command: 'measurementvis'
+                },
+                off: {
+                  label: 'toolbar.hideMeasurements',
+                  command: 'measurementvis'
+                }
+              }
+            }
+          ]
+        }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: () => {
+        measurementsVisible = !measurementsVisible
+      }
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    const visBtn = host.querySelector<HTMLButtonElement>(
+      '[data-toolbar-item-id="measurement-vis"]'
+    )
+    expect(visBtn?.querySelector('.ml-ex-ui-toolbar-btn-label')).toBeTruthy()
+    expect(visBtn?.classList.contains('is-toggled')).toBe(true)
+    toolbar.destroy()
+  })
+
+  it('does not apply wrap-pack slot widths on the main phone toolbar', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 360 })
+    Object.defineProperty(host, 'clientHeight', { value: 640 })
+    document.body.appendChild(host)
+
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      showLabels: true,
+      size: 'stretch',
+      overflow: 'menu',
+      items: [
+        { id: 'a', label: 'A', command: 'a' },
+        { id: 'b', label: 'B', command: 'b' },
+        { id: 'c', label: 'C', command: 'c' }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    const root = host.querySelector('.ml-ex-ui-toolbar')
+    expect(root?.classList.contains('is-wrap-pack')).toBe(false)
+    const buttons = Array.from(
+      host.querySelectorAll<HTMLElement>('.ml-ex-ui-toolbar-btn')
+    )
+    expect(buttons.every(button => button.style.width === '')).toBe(true)
+    expect(buttons.every(button => button.style.maxWidth === '')).toBe(true)
     toolbar.destroy()
   })
 })

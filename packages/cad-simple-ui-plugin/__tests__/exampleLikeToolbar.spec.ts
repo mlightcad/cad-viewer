@@ -90,7 +90,15 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     runMarkupEdit: (_view: unknown, _label: string, mutate: () => void) => {
       mutate()
     },
-    MARKUP_STATUSES: ['open', 'question', 'answered', 'closed']
+    MARKUP_STATUSES: ['open', 'question', 'answered', 'closed'],
+    listLayoutMeasurements: () => [],
+    getMeasurementValueText: () => '',
+    getSelectedMeasurementId: () => undefined,
+    subscribeMeasurements: () => () => undefined,
+    subscribeMeasurementSelection: () => () => undefined,
+    focusMeasurement: jest.fn(),
+    removeMeasurement: jest.fn(),
+    clearLayoutMeasurements: jest.fn()
   }
 })
 

@@ -879,10 +879,11 @@ class CadViewerApp {
               collapsible: false,
               inCanvasParent: true,
               subToolbar: {
-                showLabels: false,
+                showLabels: true,
                 showSeparators: false,
-                size: 'auto',
-                overflow: 'wrap'
+                size: 'stretch',
+                overflow: 'wrap',
+                replaceOnNested: true
               }
             }
           }

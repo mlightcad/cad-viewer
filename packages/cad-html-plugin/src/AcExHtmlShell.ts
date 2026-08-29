@@ -34,6 +34,8 @@ export const ACEX_HTML_SHELL_CSS = `
     --mlcad-markup-accent-border: rgba(229, 57, 53, 0.45);
     --mlcad-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
     --mlcad-toolbar-width: 44px;
+    /* Sub-toolbar icon buttons: same 32px width as cad-simple-ui-plugin. */
+    --mlcad-subtoolbar-btn-width: 32px;
     --mlcad-drawer-width: 220px;
     --mlcad-drawer-gap: 8px;
     --mlcad-ui-inset: 12px;
@@ -278,7 +280,8 @@ export const ACEX_HTML_SHELL_CSS = `
   #mlcad-zoom-window-rect[hidden] { display: none; }
 
   #mlcad-layer-drawer,
-  #mlcad-review-drawer {
+  #mlcad-review-drawer,
+  #mlcad-measure-drawer {
     flex-shrink: 1;
     min-width: 0;
     width: var(--mlcad-drawer-width);
@@ -305,7 +308,8 @@ export const ACEX_HTML_SHELL_CSS = `
     max-height: var(--mlcad-review-max-height);
   }
   #mlcad-layer-drawer[hidden],
-  #mlcad-review-drawer[hidden] { display: none; }
+  #mlcad-review-drawer[hidden],
+  #mlcad-measure-drawer[hidden] { display: none; }
 
   .mlcad-drawer-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -322,6 +326,35 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-drawer-close:hover {
     background: rgba(255, 255, 255, 0.08); color: var(--mlcad-ui-text);
   }
+
+  .mlcad-drawer-sheet-chrome {
+    display: none;
+  }
+  .mlcad-drawer-grabber {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 20px;
+    cursor: ns-resize;
+    touch-action: none;
+  }
+  .mlcad-drawer-grabber::before {
+    content: '';
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--mlcad-ui-muted);
+    opacity: 0.75;
+  }
+  .mlcad-drawer-sheet-close {
+    width: 36px; height: 28px; padding: 0;
+    border: none; background: transparent;
+    color: var(--mlcad-ui-muted); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .mlcad-drawer-sheet-close:hover { color: var(--mlcad-ui-text); }
+  .mlcad-drawer-sheet-close svg { width: 18px; height: 18px; }
 
   .mlcad-layer-actions {
     display: flex; gap: 4px; padding: 6px 8px;
@@ -461,6 +494,61 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-review-comment { min-height: 44px; resize: vertical; }
   .mlcad-review-detail-actions { display: flex; gap: 6px; margin-top: 2px; }
 
+  .mlcad-measure-toolbar {
+    display: flex; gap: 8px; align-items: center;
+    padding: 8px 10px; border-bottom: 1px solid var(--mlcad-ui-border);
+  }
+  .mlcad-measure-filter {
+    flex: 1 1 auto; min-width: 0;
+    display: flex; overflow: hidden;
+    border: 1px solid var(--mlcad-ui-border); border-radius: 4px;
+  }
+  .mlcad-measure-filter-btn {
+    flex: 1 1 0; min-width: 0; padding: 4px 2px;
+    border: none; border-right: 1px solid var(--mlcad-ui-border);
+    background: transparent; color: var(--mlcad-ui-text);
+    font: inherit; font-size: 11px; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mlcad-measure-filter-btn:last-child { border-right: none; }
+  .mlcad-measure-filter-btn:hover:not(.is-active) {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .mlcad-measure-filter-btn.is-active {
+    background: rgba(8, 232, 222, 0.18);
+  }
+  .mlcad-measure-clear,
+  .mlcad-measure-row-delete {
+    border: 1px solid var(--mlcad-ui-border); border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04); color: var(--mlcad-ui-text);
+    padding: 4px 8px; font-size: 12px; cursor: pointer;
+  }
+  .mlcad-measure-clear:disabled { opacity: 0.5; cursor: default; }
+  .mlcad-measure-row-delete { color: #f56c6c; border-color: rgba(245, 108, 108, 0.55); padding: 2px 6px; font-size: 11px; }
+  .mlcad-measure-table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
+  .mlcad-measure-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .mlcad-measure-table th,
+  .mlcad-measure-table td {
+    padding: 6px 8px; text-align: left; font-size: 12px;
+    border-bottom: 1px solid var(--mlcad-ui-border);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mlcad-measure-table tr.is-selected td {
+    background: rgba(8, 232, 222, 0.12);
+  }
+  .mlcad-measure-table tr { cursor: pointer; }
+  .mlcad-measure-empty td { text-align: center; color: var(--mlcad-ui-muted); cursor: default; }
+  #mlcad-measure-strip-wrap { position: relative; }
+  #mlcad-measure-drawer {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: var(--mlcad-drawer-gap);
+    width: min(320px, calc(100vw - 2 * var(--mlcad-ui-inset) - var(--mlcad-toolbar-width) - var(--mlcad-drawer-gap)));
+    height: 100%;
+    max-height: var(--mlcad-review-max-height);
+  }
+
   #mlcad-status-bar {
     position: absolute; left: 12px; right: 12px; top: 10px; z-index: var(--mlcad-z-chrome);
     display: flex; align-items: center; min-height: 28px; padding: 0 12px;
@@ -490,7 +578,8 @@ export const ACEX_HTML_SHELL_CSS = `
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-settings-strip-wrap,
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-locale-strip-wrap,
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-layer-drawer,
-  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-review-drawer {
+  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-review-drawer,
+  #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-measure-drawer {
     display: none !important;
   }
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-toolbar .mlcad-tool-btn:not(#mlcad-toolbar-toggle) {
@@ -537,6 +626,15 @@ export const ACEX_HTML_SHELL_CSS = `
     border-radius: 8px;
     box-shadow: var(--mlcad-shadow);
     backdrop-filter: blur(12px);
+  }
+  #mlcad-snap-strip .mlcad-tool-btn,
+  #mlcad-measure-strip .mlcad-tool-btn,
+  #mlcad-markup-strip .mlcad-tool-btn,
+  #mlcad-zoom-strip .mlcad-tool-btn,
+  #mlcad-settings-strip .mlcad-tool-btn,
+  #mlcad-locale-strip .mlcad-tool-btn {
+    width: var(--mlcad-subtoolbar-btn-width);
+    height: var(--mlcad-toolbar-width);
   }
   #mlcad-measure-strip .mlcad-tool-separator,
   #mlcad-markup-strip .mlcad-tool-separator {
@@ -939,8 +1037,11 @@ export const ACEX_HTML_SHELL_CSS = `
       --mlcad-drawer-width: min(280px, calc(100vw - 16px));
       --mlcad-ui-inset: 0px;
       --mlcad-toolbar-phone-height: 56px;
-      /* Square default; grows with auto-fit when a row has leftover space. */
-      --mlcad-toolbar-phone-btn-size: var(--mlcad-toolbar-phone-height);
+      /* Portrait min width, matching cad-simple-ui wrap-pack (max(24, height - 4)). */
+      --mlcad-toolbar-phone-btn-size: max(
+        24px,
+        calc(var(--mlcad-toolbar-phone-height) - 4px)
+      );
     }
     #mlcad-root {
       display: flex;
@@ -1062,10 +1163,10 @@ export const ACEX_HTML_SHELL_CSS = `
     #mlcad-settings-strip,
     #mlcad-locale-strip {
       display: grid;
-      /* Square min; auto-fit collapses empty tracks so leftover width is
-         shared evenly (full rows absorb remainder; short rows fill width). */
+      /* Portrait min; auto-fill keeps leftover tracks so short last rows stay
+         narrow instead of stretching into squares. */
       grid-template-columns: repeat(
-        auto-fit,
+        auto-fill,
         minmax(var(--mlcad-toolbar-phone-btn-size), 1fr)
       );
       justify-content: start;
@@ -1094,7 +1195,7 @@ export const ACEX_HTML_SHELL_CSS = `
       width: 100%;
       min-width: 0;
       height: auto;
-      min-height: var(--mlcad-toolbar-phone-btn-size);
+      min-height: var(--mlcad-toolbar-phone-height);
       border-radius: 0;
       padding: 4px 2px;
       box-sizing: border-box;
@@ -1113,24 +1214,34 @@ export const ACEX_HTML_SHELL_CSS = `
       pointer-events: auto;
     }
     #mlcad-layer-drawer,
-    #mlcad-review-drawer {
-      position: absolute;
-      left: 8px;
-      right: 8px;
-      bottom: calc(100% + 8px);
+    #mlcad-review-drawer,
+    #mlcad-measure-drawer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: var(--mlcad-phone-drawer-bottom, var(--mlcad-toolbar-phone-height));
       top: auto;
       margin: 0;
+      width: 100%;
       max-width: none;
-      max-height: min(55vh, calc(100vh - var(--mlcad-toolbar-phone-height) - 48px));
+      height: min(42vh, calc(100vh - var(--mlcad-phone-drawer-bottom, var(--mlcad-toolbar-phone-height)) - 12px));
+      max-height: calc(100vh - var(--mlcad-phone-drawer-bottom, var(--mlcad-toolbar-phone-height)) - 12px);
       z-index: calc(var(--mlcad-z-chrome) + 1);
-    }
-    #mlcad-review-drawer {
-      /* Nested under markup strip; pin above phone chrome. */
-      position: fixed;
-      left: 8px;
-      right: 8px;
-      bottom: calc(var(--mlcad-toolbar-phone-height) + 52px);
+      border-radius: 12px 12px 0 0;
       pointer-events: auto;
+    }
+    #mlcad-layer-drawer .mlcad-drawer-sheet-chrome,
+    #mlcad-review-drawer .mlcad-drawer-sheet-chrome,
+    #mlcad-measure-drawer .mlcad-drawer-sheet-chrome {
+      display: flex;
+      align-items: center;
+      flex: 0 0 auto;
+      min-height: 28px;
+    }
+    #mlcad-layer-drawer .mlcad-drawer-header,
+    #mlcad-review-drawer .mlcad-drawer-header,
+    #mlcad-measure-drawer .mlcad-drawer-header {
+      display: none;
     }
     .mlcad-layer-action-btn {
       min-height: 28px;
@@ -1250,6 +1361,7 @@ export function buildAcExHtmlShellBody(
       </nav>
       ${toolStrips}
       <div id="mlcad-layer-drawer" role="dialog" data-i18n-attr="aria-label" data-i18n-key="layers.title" aria-label="Layers" hidden>
+        ${buildAcExDrawerSheetChrome('mlcad-layer-sheet-close', 'layers.close', 'Close layers')}
         <div class="mlcad-drawer-header">
           <span data-i18n-key="layers.title" data-i18n-text>Layers</span>
           <button type="button" class="mlcad-drawer-close" id="mlcad-layer-close" data-i18n-key="layers.close" data-i18n-attr="aria-label" aria-label="Close layers">×</button>
@@ -1273,8 +1385,20 @@ function buildAcExToolbarSeparator(): string {
   return '<div class="mlcad-tool-separator" aria-hidden="true"></div>'
 }
 
+function buildAcExDrawerSheetChrome(
+  closeId: string,
+  closeKey: string,
+  closeLabel: string
+): string {
+  return `<div class="mlcad-drawer-sheet-chrome">
+          <div class="mlcad-drawer-grabber" role="separator" aria-orientation="horizontal"></div>
+          <button type="button" class="mlcad-drawer-sheet-close" id="${closeId}" data-i18n-key="${closeKey}" data-i18n-attr="aria-label" aria-label="${closeLabel}">${acExHtmlIcons.chevronDown}</button>
+        </div>`
+}
+
 function buildAcExReviewDrawer(): string {
   return `<div id="mlcad-review-drawer" role="dialog" data-i18n-attr="aria-label" data-i18n-key="review.title" aria-label="Review" hidden>
+        ${buildAcExDrawerSheetChrome('mlcad-review-sheet-close', 'review.close', 'Close review')}
         <div class="mlcad-drawer-header">
           <span data-i18n-key="review.title" data-i18n-text>Review</span>
           <button type="button" class="mlcad-drawer-close" id="mlcad-review-close" data-i18n-key="review.close" data-i18n-attr="aria-label" aria-label="Close review">×</button>
@@ -1468,6 +1592,12 @@ function buildAcExMeasureToolStrip(): string {
         'data-i18n-key': 'toolbar.measureCoordinate',
         'data-i18n-attr': 'title aria-label'
       })}
+      ${acExToolbarButton(acExHtmlIcons.measurementPanel, 'List', {
+        'data-action': 'measure-panel',
+        'aria-pressed': 'false',
+        'data-i18n-key': 'toolbar.measurementPanel',
+        'data-i18n-attr': 'title aria-label'
+      })}
       ${acExToolbarButton(acExHtmlIcons.markupShow, 'Hide', {
         'data-action': 'measure-visibility',
         'data-i18n-key': 'toolbar.measureHide',
@@ -1490,7 +1620,39 @@ function buildAcExMeasureToolStrip(): string {
         'data-i18n-attr': 'title aria-label'
       })}
     </div>
+    ${buildAcExMeasureDrawer()}
   </div>`
+}
+
+function buildAcExMeasureDrawer(): string {
+  return `<div id="mlcad-measure-drawer" role="dialog" data-i18n-attr="aria-label" data-i18n-key="measurePanel.title" aria-label="Measurements" hidden>
+        ${buildAcExDrawerSheetChrome('mlcad-measure-sheet-close', 'measurePanel.close', 'Close measurements')}
+        <div class="mlcad-drawer-header">
+          <span data-i18n-key="measurePanel.title" data-i18n-text>Measurements</span>
+          <button type="button" class="mlcad-drawer-close" id="mlcad-measure-close" data-i18n-key="measurePanel.close" data-i18n-attr="aria-label" aria-label="Close measurements">×</button>
+        </div>
+        <div class="mlcad-measure-toolbar">
+          <div class="mlcad-measure-filter" role="group" data-i18n-key="measurePanel.filterGroup" data-i18n-attr="aria-label" aria-label="Filter by type">
+            <button type="button" class="mlcad-measure-filter-btn" data-measure-filter="distance" aria-pressed="false" data-i18n-key="measurePanel.filterDistance" data-i18n-text data-i18n-attr="title aria-label" title="Distance">Distance</button>
+            <button type="button" class="mlcad-measure-filter-btn" data-measure-filter="arc" aria-pressed="false" data-i18n-key="measurePanel.filterArc" data-i18n-text data-i18n-attr="title aria-label" title="Arc">Arc</button>
+            <button type="button" class="mlcad-measure-filter-btn" data-measure-filter="angle" aria-pressed="false" data-i18n-key="measurePanel.filterAngle" data-i18n-text data-i18n-attr="title aria-label" title="Angle">Angle</button>
+            <button type="button" class="mlcad-measure-filter-btn" data-measure-filter="area" aria-pressed="false" data-i18n-key="measurePanel.filterArea" data-i18n-text data-i18n-attr="title aria-label" title="Area">Area</button>
+          </div>
+          <button type="button" class="mlcad-measure-clear" data-i18n-key="measurePanel.clear" data-i18n-text>Clear all</button>
+        </div>
+        <div class="mlcad-measure-table-wrap">
+          <table class="mlcad-measure-table">
+            <thead>
+              <tr>
+                <th data-measure-col="type" data-i18n-key="measurePanel.type" data-i18n-text>Type</th>
+                <th data-measure-col="value" data-i18n-key="measurePanel.value" data-i18n-text>Value</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>`
 }
 
 function buildAcExMarkupToolStrip(): string {

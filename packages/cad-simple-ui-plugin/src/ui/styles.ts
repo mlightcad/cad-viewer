@@ -164,9 +164,11 @@ export function acuiEnsureUiStyles() {
       font-size: 12px;
     }
 
-    .ml-ex-ui-toolbar-btn:hover:not(:disabled) {
-      border-color: var(--ml-ui-accent, #409eff);
-      color: var(--ml-ui-accent, #409eff);
+    @media (hover: hover) {
+      .ml-ex-ui-toolbar-btn:hover:not(:disabled) {
+        border-color: var(--ml-ui-accent, #409eff);
+        color: var(--ml-ui-accent, #409eff);
+      }
     }
 
     .ml-ex-ui-toolbar-btn:disabled {
@@ -182,8 +184,12 @@ export function acuiEnsureUiStyles() {
     }
 
     /* Flyout mark: a small opaque right triangle in the corner toward the
-       submenu. It sits in the icon padding so the glyph stays clear. */
-    .ml-ex-ui-toolbar-btn.has-children::after {
+       submenu. It sits in the icon padding so the glyph stays clear.
+       Only shown when the toolbar root has .show-children-indicator. */
+    .ml-ex-ui-toolbar.show-children-indicator
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-subtoolbar.show-children-indicator
+      .ml-ex-ui-toolbar-btn.has-children::after {
       content: '';
       position: absolute;
       width: 6px;
@@ -192,25 +198,29 @@ export function acuiEnsureUiStyles() {
       pointer-events: none;
     }
 
-    .ml-ex-ui-toolbar.is-right .ml-ex-ui-toolbar-btn.has-children::after {
+    .ml-ex-ui-toolbar.show-children-indicator.is-right
+      .ml-ex-ui-toolbar-btn.has-children::after {
       left: 1px;
       bottom: 1px;
       clip-path: polygon(0 100%, 0 0, 100% 100%);
     }
 
-    .ml-ex-ui-toolbar.is-left .ml-ex-ui-toolbar-btn.has-children::after {
+    .ml-ex-ui-toolbar.show-children-indicator.is-left
+      .ml-ex-ui-toolbar-btn.has-children::after {
       right: 1px;
       bottom: 1px;
       clip-path: polygon(100% 100%, 0 100%, 100% 0);
     }
 
-    .ml-ex-ui-toolbar.is-top .ml-ex-ui-toolbar-btn.has-children::after {
+    .ml-ex-ui-toolbar.show-children-indicator.is-top
+      .ml-ex-ui-toolbar-btn.has-children::after {
       right: 1px;
       bottom: 1px;
       clip-path: polygon(100% 100%, 0 100%, 100% 0);
     }
 
-    .ml-ex-ui-toolbar.is-bottom .ml-ex-ui-toolbar-btn.has-children::after {
+    .ml-ex-ui-toolbar.show-children-indicator.is-bottom
+      .ml-ex-ui-toolbar-btn.has-children::after {
       right: 1px;
       top: 1px;
       clip-path: polygon(100% 0, 0 0, 100% 100%);
@@ -384,6 +394,20 @@ export function acuiEnsureUiStyles() {
         .ml-ex-ui-toolbar-collapse-btn
       ) {
       flex: 1 1 0;
+    }
+
+    .ml-ex-ui-subtoolbar.is-wrap-pack.is-horizontal {
+      justify-content: flex-start;
+      align-content: flex-start;
+    }
+
+    .ml-ex-ui-subtoolbar.is-wrap-pack.is-horizontal
+      .ml-ex-ui-toolbar-btn:not(.ml-ex-ui-toolbar-overflow-btn):not(
+        .ml-ex-ui-toolbar-collapse-btn
+      ) {
+      flex-grow: 0;
+      flex-shrink: 0;
+      box-sizing: border-box;
     }
 
     .ml-ex-ui-subtoolbar.is-stretch.is-horizontal
@@ -1059,6 +1083,148 @@ export function acuiEnsureUiStyles() {
       width: auto;
     }
 
+    .ml-ex-ui-measure-palette {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      gap: 8px;
+      padding: 8px;
+      box-sizing: border-box;
+      color: var(--ml-ui-text, #303133);
+      font-size: 12px;
+    }
+
+    .ml-ex-ui-measure-toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .ml-ex-ui-measure-filter {
+      display: flex;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 4px;
+    }
+
+    .ml-ex-ui-measure-filter-btn {
+      flex: 1 1 0;
+      min-width: 0;
+      border: none;
+      border-right: 1px solid var(--ml-ui-border, #dcdfe6);
+      background: var(--ml-ui-bg, #ffffff);
+      color: var(--ml-ui-text, #303133);
+      font: inherit;
+      font-size: 11px;
+      padding: 4px 2px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ml-ex-ui-measure-filter-btn:last-child {
+      border-right: none;
+    }
+
+    .ml-ex-ui-measure-filter-btn:hover:not(.is-active) {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
+    }
+
+    .ml-ex-ui-measure-filter-btn.is-active {
+      background: var(--ml-ui-accent-soft, rgba(64, 158, 255, 0.16));
+      color: var(--ml-ui-accent, #409eff);
+    }
+
+    .ml-ex-ui-measure-btn {
+      flex: 0 0 auto;
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 4px;
+      background: var(--ml-ui-bg, #ffffff);
+      color: var(--ml-ui-text, #303133);
+      font: inherit;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    .ml-ex-ui-measure-btn:hover:not(:disabled) {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.06));
+    }
+
+    .ml-ex-ui-measure-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .ml-ex-ui-measure-btn-danger {
+      color: #f56c6c;
+      border-color: rgba(245, 108, 108, 0.55);
+    }
+
+    .ml-ex-ui-measure-table-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .ml-ex-ui-measure-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .ml-ex-ui-measure-table th,
+    .ml-ex-ui-measure-table td {
+      padding: 6px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--ml-ui-border, #dcdfe6);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ml-ex-ui-measure-table th {
+      font-weight: 600;
+      color: var(--ml-ui-text-muted, #606266);
+    }
+
+    .ml-ex-ui-measure-table th:nth-child(1),
+    .ml-ex-ui-measure-table td:nth-child(1) {
+      width: 28%;
+    }
+
+    .ml-ex-ui-measure-actions-col {
+      width: 72px;
+      text-align: right;
+    }
+
+    .ml-ex-ui-measure-row {
+      cursor: pointer;
+    }
+
+    .ml-ex-ui-measure-row:hover {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.04));
+    }
+
+    .ml-ex-ui-measure-row.is-selected {
+      background: var(--ml-ui-accent-soft, rgba(64, 158, 255, 0.12));
+    }
+
+    .ml-ex-ui-measure-empty-row td {
+      text-align: center;
+      color: var(--ml-ui-text-muted, #606266);
+      cursor: default;
+    }
+
+    .ml-ex-ui-measure-row-delete {
+      padding: 2px 6px;
+      font-size: 11px;
+    }
+
     .ml-ex-ui-layer-list .ml-ex-ui-layer-table-wrap {
       flex: 1;
       min-height: 0;
@@ -1075,7 +1241,8 @@ export function acuiEnsureUiStyles() {
     }
 
     .ml-ex-ui-host-dock-top,
-    .ml-ex-ui-host-dock-bottom {
+    .ml-ex-ui-host-dock-bottom,
+    .ml-ex-ui-host-dock-sheet {
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -1206,6 +1373,46 @@ export function acuiEnsureUiStyles() {
       border-left: 1px solid var(--ml-ui-border, #dcdfe6);
     }
 
+    .ml-ex-ui-dock-sheet-chrome {
+      display: none;
+    }
+
+    .ml-ex-ui-dock-sheet-grabber {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 20px;
+      cursor: ns-resize;
+      touch-action: none;
+    }
+
+    .ml-ex-ui-dock-sheet-grabber::before {
+      content: '';
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--ml-ui-text-muted, #909399);
+      opacity: 0.7;
+    }
+
+    .ml-ex-ui-dock-sheet-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: var(--ml-ui-text-muted, #606266);
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+
+    .ml-ex-ui-dock-sheet-close:hover {
+      color: var(--ml-ui-text, #303133);
+    }
+
     .ml-ex-ui-dock-header {
       display: flex;
       align-items: stretch;
@@ -1326,6 +1533,7 @@ export function acuiEnsureUiStyles() {
     }
 
     .ml-ex-ui-dock-tab-panel:has(> .ml-ex-ui-review-palette),
+    .ml-ex-ui-dock-tab-panel:has(> .ml-ex-ui-measure-palette),
     .ml-ex-ui-dock-tab-panel:has(> .ml-ex-ui-layer-list) {
       overflow: hidden;
     }
@@ -1400,18 +1608,41 @@ export function acuiEnsureUiStyles() {
     }
 
     @media (max-width: ${ML_UI_MOBILE_MAX_WIDTH}px) {
-      .ml-ex-ui-host-dock-left .ml-ex-ui-dock-panel[data-open='true'][data-side='left'],
-      .ml-ex-ui-host-dock-right .ml-ex-ui-dock-panel[data-open='true'][data-side='right'] {
+      .ml-ex-ui-dock-panel[data-open='true'][data-phone-sheet='true'] {
         position: absolute;
-        inset: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        bottom: var(--ml-ex-ui-phone-sheet-inset, 0px);
         width: 100%;
-        height: 100%;
-        z-index: 40;
+        height: var(--ml-ex-ui-dock-size);
+        max-height: calc(100% - var(--ml-ex-ui-phone-sheet-inset, 0px));
+        flex: none;
+        flex-direction: column;
+        z-index: 35;
+        border: none;
+        border-top: 1px solid var(--ml-ui-border, #dcdfe6);
+        border-radius: 12px 12px 0 0;
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
       }
 
-      .ml-ex-ui-host-dock-left .ml-ex-ui-dock-panel[data-side='left'] .ml-ex-ui-dock-resize-handle,
-      .ml-ex-ui-host-dock-right .ml-ex-ui-dock-panel[data-side='right'] .ml-ex-ui-dock-resize-handle {
+      .ml-ex-ui-dock-panel[data-phone-sheet='true'] .ml-ex-ui-dock-resize-handle {
         display: none;
+      }
+
+      .ml-ex-ui-dock-panel[data-phone-sheet='true'] .ml-ex-ui-dock-sheet-chrome {
+        display: flex;
+        align-items: center;
+        flex: 0 0 auto;
+        min-height: 28px;
+      }
+
+      .ml-ex-ui-dock-panel[data-phone-sheet='true'] .ml-ex-ui-dock-header {
+        display: none;
+      }
+
+      .ml-ex-ui-host-dock-sheet .ml-ex-ui-dock-main {
+        flex: 1 1 auto;
       }
     }
   `
@@ -1424,7 +1655,7 @@ export function acuiEnsureUiStyles() {
 export function acuiRemoveUiStylesIfUnused() {
   if (
     document.querySelector(
-      '.ml-ex-ui-toolbar, .ml-ex-ui-subtoolbar, .ml-ex-ui-layer-manager, .ml-ex-ui-dock-panel, .ml-ex-ui-review-palette'
+      '.ml-ex-ui-toolbar, .ml-ex-ui-subtoolbar, .ml-ex-ui-layer-manager, .ml-ex-ui-dock-panel, .ml-ex-ui-review-palette, .ml-ex-ui-measure-palette'
     )
   )
     return

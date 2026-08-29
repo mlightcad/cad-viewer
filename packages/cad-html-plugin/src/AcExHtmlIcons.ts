@@ -34,6 +34,7 @@ import {
   ICON_MEASURE_AREA,
   ICON_MEASURE_COORDINATE,
   ICON_MEASURE_DISTANCE,
+  ICON_MEASUREMENT_PANEL,
   ICON_ORTHO_MODE,
   ICON_OSNAP,
   ICON_PAN,
@@ -120,6 +121,8 @@ export const acExHtmlIcons = {
   markupStamp: ICON_MARKUP_STAMP,
   /** Review list / markup panel. */
   markupPanel: ICON_MARKUP_PANEL,
+  /** Measurement list panel. */
+  measurementPanel: ICON_MEASUREMENT_PANEL,
   /** Import markup sidecar JSON. */
   markupImport: ICON_MARKUP_IMPORT,
   /** Export markup sidecar JSON. */

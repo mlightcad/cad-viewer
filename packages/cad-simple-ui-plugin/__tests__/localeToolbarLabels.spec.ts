@@ -14,12 +14,22 @@ const localeLabels: Record<string, Record<string, string>> = {
   en: {
     'simpleUi.toolbar.layerShort': 'Layers',
     'simpleUi.toolbar.settings': 'Settings',
-    'simpleUi.toolbar.locale': 'Language'
+    'simpleUi.toolbar.locale': 'Language',
+    'simpleUi.toolbar.measure': 'Measure',
+    'simpleUi.toolbar.measureDistance': 'Distance',
+    'simpleUi.toolbar.measurementPanel': 'List',
+    'simpleUi.toolbar.showMeasurements': 'Show',
+    'simpleUi.toolbar.hideMeasurements': 'Hide'
   },
   zh: {
     'simpleUi.toolbar.layerShort': '图层',
     'simpleUi.toolbar.settings': '设置',
-    'simpleUi.toolbar.locale': '语言'
+    'simpleUi.toolbar.locale': '语言',
+    'simpleUi.toolbar.measure': '测量',
+    'simpleUi.toolbar.measureDistance': '测距离',
+    'simpleUi.toolbar.measurementPanel': '列表',
+    'simpleUi.toolbar.showMeasurements': '显示',
+    'simpleUi.toolbar.hideMeasurements': '隐藏'
   }
 }
 
@@ -147,7 +157,7 @@ describe('phone toolbar labels on locale change', () => {
       placement: 'bottom',
       showLabels: true,
       size: 'stretch',
-      subToolbar: { showLabels: false },
+      subToolbar: { showLabels: false, replaceOnNested: false },
       items: acuiCreatePhoneToolbarItems({
         getTheme: () => 'light',
         setTheme: () => undefined,
@@ -182,6 +192,101 @@ describe('phone toolbar labels on locale change', () => {
 
     expect(currentLocale).toBe('zh')
     expect(getLayerLabel(host)).toBe('图层')
+    toolbar.destroy()
+  })
+
+  it('hides the ancestor strip when replaceOnNested is true', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 800 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      showLabels: true,
+      size: 'stretch',
+      subToolbar: {
+        showLabels: true,
+        size: 'stretch',
+        overflow: 'wrap',
+        replaceOnNested: true
+      },
+      items: acuiCreatePhoneToolbarItems({
+        getTheme: () => 'light',
+        setTheme: () => undefined,
+        getLocale: () => AcApI18n.currentLocale as 'en',
+        setLocale: locale => AcApI18n.setCurrentLocale(locale),
+        getPlacement: () => 'bottom',
+        setPlacement: () => undefined
+      }),
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="settings"]')
+      ?.click()
+    const settingsStrip = host.querySelector<HTMLElement>('.ml-ex-ui-subtoolbar')
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="locale"]')
+      ?.click()
+
+    expect(settingsStrip?.hidden).toBe(true)
+    expect(
+      Array.from(host.querySelectorAll<HTMLElement>('.ml-ex-ui-subtoolbar')).filter(
+        strip => !strip.hidden
+      )
+    ).toHaveLength(1)
+    toolbar.destroy()
+  })
+
+  it('updates open measure-strip labels on locale change', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 800 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'bottom',
+      showLabels: true,
+      size: 'stretch',
+      subToolbar: { showLabels: true, size: 'stretch', overflow: 'wrap' },
+      items: acuiCreatePhoneToolbarItems({
+        getTheme: () => 'light',
+        setTheme: () => undefined,
+        getLocale: () => AcApI18n.currentLocale as 'en',
+        setLocale: locale => AcApI18n.setCurrentLocale(locale),
+        getPlacement: () => 'bottom',
+        setPlacement: () => undefined
+      }),
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+
+    const distanceLabel = () =>
+      host.querySelector(
+        '[data-toolbar-item-id="measure-distance"] .ml-ex-ui-toolbar-btn-label'
+      )?.textContent
+
+    const panelLabel = () =>
+      host.querySelector(
+        '[data-toolbar-item-id="measurement-panel"] .ml-ex-ui-toolbar-btn-label'
+      )?.textContent
+
+    expect(distanceLabel()).toBe('Distance')
+    expect(panelLabel()).toBe('List')
+
+    AcApI18n.setCurrentLocale('zh')
+    toolbar.refreshLocale()
+
+    expect(distanceLabel()).toBe('测距离')
+    expect(panelLabel()).toBe('列表')
     toolbar.destroy()
   })
 })

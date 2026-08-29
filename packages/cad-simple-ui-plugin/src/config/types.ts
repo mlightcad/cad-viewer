@@ -82,6 +82,12 @@ export interface AcUiToolbarChromeOptions {
    * @default true
    */
   showSeparators?: boolean
+  /**
+   * When true, parent buttons with children show a small corner triangle.
+   * Phone layouts typically set this to false.
+   * @default true
+   */
+  showChildrenIndicator?: boolean
 }
 
 /**
@@ -95,6 +101,16 @@ export interface AcUiSubToolbarOptions extends Partial<AcUiToolbarChromeOptions>
    * @default 'front'
    */
   position?: AcUiSubToolbarPosition
+  /**
+   * When true, opening a nested sub-toolbar hides the ancestor strip so only
+   * the new strip is visible (saves vertical space on phone). When false,
+   * nested strips stack beside/above the ancestor (pad/desktop).
+   *
+   * Also, when true, layers / measurements / review dock panels, sub-toolbars,
+   * and menus are mutually exclusive: opening one closes the others.
+   * @default false
+   */
+  replaceOnNested?: boolean
 }
 
 /** Dock panel edge placement relative to the viewer host element. */

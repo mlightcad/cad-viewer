@@ -74,4 +74,18 @@ describe('setupAcExHtmlLayoutMenu', () => {
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
     expect(document.querySelector('.mlcad-dropdown')).toBeNull()
   })
+
+  it('closes sibling flyouts when the menu opens', () => {
+    mountButton()
+    const closeOtherFlyouts = jest.fn()
+    setupAcExHtmlLayoutMenu({
+      layouts: [{ btrId: 'btr-model', name: 'Model' }],
+      getActiveLayoutBtrId: () => 'btr-model',
+      onSelect: jest.fn(),
+      closeOtherFlyouts
+    })
+
+    document.getElementById('mlcad-layout-menu-btn')?.click()
+    expect(closeOtherFlyouts).toHaveBeenCalledTimes(1)
+  })
 })

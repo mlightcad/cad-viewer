@@ -1,7 +1,11 @@
-import { acedIsMobileUiLayout } from '@mlightcad/cad-simple-viewer'
+import {
+  acedIsMobileUiLayout,
+  ML_UI_MOBILE_MEDIA_QUERY
+} from '@mlightcad/cad-simple-viewer'
 
 import {
   createIconElement,
+  ICON_CHEVRON_DOWN,
   ICON_DOCK_CLOSE,
   ICON_DOCK_SIDE_MENU,
   ICON_PLACEMENT_BOTTOM,
@@ -39,6 +43,8 @@ export interface AcUiDockPanelOptions {
   defaultSide?: AcUiDockPanelSide
   /** Whether the panel starts open. @default false */
   defaultOpen?: boolean
+  /** Called when the panel is opened (including tab switches while open). */
+  onOpen?: () => void
   /** Bottom dock default height in px. @default 240 */
   defaultHeight?: number
   /** Left/right dock default width in px. @default 280 */
@@ -69,6 +75,9 @@ export class AcUiDockPanel {
   private readonly resizeHandle: HTMLDivElement
   private readonly sideMenuButton: HTMLButtonElement
   private readonly closeButton: HTMLButtonElement
+  private readonly sheetChrome: HTMLDivElement
+  private readonly sheetGrabber: HTMLDivElement
+  private readonly sheetCloseButton: HTMLButtonElement
   private readonly tabs = new Map<string, DockTabRecord>()
   private activeTabId?: string
   private side: AcUiDockPanelSide
@@ -76,6 +85,8 @@ export class AcUiDockPanel {
   private size: number
   private defaultHeight: number
   private defaultWidth: number
+  /** Invoked at the start of {@link open} so callers can dismiss sub-toolbars. */
+  private readonly onOpen?: () => void
   private sideMenuRoot?: HTMLDivElement
   private overflowMenuRoot?: HTMLDivElement
   private overflowTabIds: string[] = []
@@ -84,24 +95,25 @@ export class AcUiDockPanel {
   private resizePointerId?: number
   private resizeStartPos = 0
   private resizeStartSize = 0
+  /** Element that captured the active resize pointer (handle or sheet grabber). */
+  private resizeCaptureTarget?: HTMLElement
   /** Wraps canvas content so only the drawing area shrinks when the dock opens. */
   private dockMainWrapper?: HTMLDivElement
+  private mobileMediaQuery?: MediaQueryList
 
   private handleResizePointerDown = (event: PointerEvent) => {
-    if (
-      event.button !== 0 ||
-      !this.isPanelOpen ||
-      this.isMobileHorizontalDock()
-    )
-      return
+    if (event.button !== 0 || !this.isPanelOpen) return
     event.preventDefault()
     this.resizePointerId = event.pointerId
     this.resizeStartPos =
-      this.side === 'bottom' || this.side === 'top'
-        ? event.clientY
-        : event.clientX
+      this.usesVerticalResize() ? event.clientY : event.clientX
     this.resizeStartSize = this.size
-    this.resizeHandle.setPointerCapture(event.pointerId)
+    const target =
+      event.currentTarget instanceof HTMLElement
+        ? event.currentTarget
+        : this.resizeHandle
+    this.resizeCaptureTarget = target
+    target.setPointerCapture(event.pointerId)
     document.addEventListener('pointermove', this.handleResizePointerMove)
     document.addEventListener('pointerup', this.handleResizePointerUp)
     document.addEventListener('pointercancel', this.handleResizePointerUp)
@@ -110,8 +122,9 @@ export class AcUiDockPanel {
   private handleResizePointerMove = (event: PointerEvent) => {
     if (this.resizePointerId !== event.pointerId) return
     event.preventDefault()
-    const delta =
-      this.side === 'bottom'
+    const delta = this.usesPhoneSheet()
+      ? this.resizeStartPos - event.clientY
+      : this.side === 'bottom'
         ? this.resizeStartPos - event.clientY
         : this.side === 'top'
           ? event.clientY - this.resizeStartPos
@@ -124,9 +137,11 @@ export class AcUiDockPanel {
   private handleResizePointerUp = (event: PointerEvent) => {
     if (this.resizePointerId !== event.pointerId) return
     this.resizePointerId = undefined
-    if (this.resizeHandle.hasPointerCapture(event.pointerId)) {
-      this.resizeHandle.releasePointerCapture(event.pointerId)
+    const captureTarget = this.resizeCaptureTarget ?? this.resizeHandle
+    if (captureTarget.hasPointerCapture(event.pointerId)) {
+      captureTarget.releasePointerCapture(event.pointerId)
     }
+    this.resizeCaptureTarget = undefined
     document.removeEventListener('pointermove', this.handleResizePointerMove)
     document.removeEventListener('pointerup', this.handleResizePointerUp)
     document.removeEventListener('pointercancel', this.handleResizePointerUp)
@@ -164,6 +179,7 @@ export class AcUiDockPanel {
     this.isPanelOpen = options.defaultOpen ?? false
     this.defaultHeight = options.defaultHeight ?? 240
     this.defaultWidth = options.defaultWidth ?? 280
+    this.onOpen = options.onOpen
     this.size =
       this.side === 'bottom' || this.side === 'top'
         ? this.defaultHeight
@@ -257,11 +273,37 @@ export class AcUiDockPanel {
     this.contentEl.appendChild(header)
     this.contentEl.appendChild(this.bodyEl)
 
+    this.sheetChrome = document.createElement('div')
+    this.sheetChrome.className = 'ml-ex-ui-dock-sheet-chrome'
+
+    this.sheetGrabber = document.createElement('div')
+    this.sheetGrabber.className = 'ml-ex-ui-dock-sheet-grabber'
+    this.sheetGrabber.setAttribute('role', 'separator')
+    this.sheetGrabber.setAttribute('aria-orientation', 'horizontal')
+    this.sheetGrabber.title = this.i18n.t('dockPanel.resize')
+    this.sheetGrabber.setAttribute('aria-label', this.i18n.t('dockPanel.resize'))
+    this.sheetGrabber.addEventListener('pointerdown', this.handleResizePointerDown)
+
+    this.sheetCloseButton = document.createElement('button')
+    this.sheetCloseButton.type = 'button'
+    this.sheetCloseButton.className = 'ml-ex-ui-dock-sheet-close'
+    this.sheetCloseButton.title = this.i18n.t('dockPanel.close')
+    this.sheetCloseButton.setAttribute(
+      'aria-label',
+      this.i18n.t('dockPanel.close')
+    )
+    this.sheetCloseButton.appendChild(createIconElement(ICON_CHEVRON_DOWN))
+    this.sheetCloseButton.addEventListener('click', () => this.close())
+
+    this.sheetChrome.append(this.sheetGrabber, this.sheetCloseButton)
+
+    this.root.appendChild(this.sheetChrome)
     this.root.appendChild(this.contentEl)
     this.root.appendChild(this.resizeHandle)
 
     this.ensureDockMainWrapper()
     this.mountToHost()
+    this.bindMobileMediaQuery()
     this.applyLayoutState()
   }
 
@@ -400,6 +442,7 @@ export class AcUiDockPanel {
    * @param tabId - Tab to activate.
    */
   open(tabId?: string) {
+    this.onOpen?.()
     if (tabId) {
       this.setActiveTab(tabId)
     } else if (this.activeTabId) {
@@ -516,6 +559,13 @@ export class AcUiDockPanel {
       'aria-label',
       this.i18n.t('dockPanel.moreTabs')
     )
+    this.sheetGrabber.title = this.i18n.t('dockPanel.resize')
+    this.sheetGrabber.setAttribute('aria-label', this.i18n.t('dockPanel.resize'))
+    this.sheetCloseButton.title = this.i18n.t('dockPanel.close')
+    this.sheetCloseButton.setAttribute(
+      'aria-label',
+      this.i18n.t('dockPanel.close')
+    )
     if (this.sideMenuRoot) {
       this.renderSideMenuItems()
     }
@@ -541,6 +591,7 @@ export class AcUiDockPanel {
     }
     this.tabOverflowObserver?.disconnect()
     this.tabOverflowObserver = undefined
+    this.unbindMobileMediaQuery()
     this.closeSideMenu()
     this.closeOverflowMenu()
     this.releaseDockMainWrapper()
@@ -629,7 +680,8 @@ export class AcUiDockPanel {
       'ml-ex-ui-host-dock-top',
       'ml-ex-ui-host-dock-bottom',
       'ml-ex-ui-host-dock-left',
-      'ml-ex-ui-host-dock-right'
+      'ml-ex-ui-host-dock-right',
+      'ml-ex-ui-host-dock-sheet'
     )
   }
 
@@ -646,16 +698,26 @@ export class AcUiDockPanel {
   }
 
   private applyLayoutState() {
+    const phoneSheet = this.usesPhoneSheet()
     this.root.dataset.side = this.side
     this.root.dataset.open = String(this.isPanelOpen)
+    this.root.dataset.phoneSheet = String(phoneSheet)
     this.host.classList.remove(
       'ml-ex-ui-host-dock-top',
       'ml-ex-ui-host-dock-bottom',
       'ml-ex-ui-host-dock-left',
-      'ml-ex-ui-host-dock-right'
+      'ml-ex-ui-host-dock-right',
+      'ml-ex-ui-host-dock-sheet'
     )
     if (this.isPanelOpen) {
-      this.host.classList.add(`ml-ex-ui-host-dock-${this.side}`)
+      this.host.classList.add(
+        phoneSheet ? 'ml-ex-ui-host-dock-sheet' : `ml-ex-ui-host-dock-${this.side}`
+      )
+    }
+    if (phoneSheet) {
+      this.syncPhoneSheetInset()
+    } else {
+      this.root.style.removeProperty('--ml-ex-ui-phone-sheet-inset')
     }
     this.root.style.setProperty('--ml-ex-ui-dock-size', `${this.size}px`)
     this.scheduleUpdateTabOverflow()
@@ -669,24 +731,71 @@ export class AcUiDockPanel {
   }
 
   private getMaxSize(): number {
-    if (this.side === 'bottom' || this.side === 'top') {
-      return Math.max(
-        DOCK_MIN_SIZE,
-        this.host.clientHeight * DOCK_MAX_SIZE_RATIO
-      )
-    }
-    if (this.isMobileHorizontalDock()) {
-      return Math.max(DOCK_MIN_SIZE, this.host.clientWidth)
+    if (this.usesPhoneSheet() || this.side === 'bottom' || this.side === 'top') {
+      const available = this.usesPhoneSheet()
+        ? this.host.clientHeight - this.getPhoneChromeInset()
+        : this.host.clientHeight
+      return Math.max(DOCK_MIN_SIZE, available * DOCK_MAX_SIZE_RATIO)
     }
     return Math.max(DOCK_MIN_SIZE, this.host.clientWidth * DOCK_MAX_SIZE_RATIO)
   }
 
-  /** Whether the dock uses full-width overlay layout on narrow viewports. */
-  private isMobileHorizontalDock(): boolean {
-    if (this.side !== 'left' && this.side !== 'right') {
-      return false
-    }
+  /** Whether the dock is shown as a full-width sheet above the phone toolbar. */
+  private usesPhoneSheet(): boolean {
     return acedIsMobileUiLayout()
+  }
+
+  /** Whether height (rather than width) is resized. */
+  private usesVerticalResize(): boolean {
+    return this.usesPhoneSheet() || this.side === 'bottom' || this.side === 'top'
+  }
+
+  private bindMobileMediaQuery() {
+    if (typeof window.matchMedia !== 'function') return
+    this.mobileMediaQuery = window.matchMedia(ML_UI_MOBILE_MEDIA_QUERY)
+    this.mobileMediaQuery.addEventListener('change', this.handleMobileMediaChange)
+  }
+
+  private unbindMobileMediaQuery() {
+    this.mobileMediaQuery?.removeEventListener(
+      'change',
+      this.handleMobileMediaChange
+    )
+    this.mobileMediaQuery = undefined
+  }
+
+  private handleMobileMediaChange = () => {
+    if (this.usesPhoneSheet() && this.side !== 'bottom' && this.side !== 'top') {
+      this.size = this.defaultHeight
+    }
+    this.applyLayoutState()
+  }
+
+  private syncPhoneSheetInset() {
+    this.root.style.setProperty(
+      '--ml-ex-ui-phone-sheet-inset',
+      `${this.getPhoneChromeInset()}px`
+    )
+  }
+
+  /** Combined height of the in-host toolbar and any visible sub-toolbars. */
+  private getPhoneChromeInset(): number {
+    let inset = 0
+    const toolbar = this.host.querySelector('.ml-ex-ui-toolbar')
+    if (toolbar instanceof HTMLElement && this.isElementVisible(toolbar)) {
+      inset += toolbar.offsetHeight
+    }
+    this.host.querySelectorAll('.ml-ex-ui-subtoolbar').forEach(node => {
+      if (node instanceof HTMLElement && this.isElementVisible(node)) {
+        inset += node.offsetHeight
+      }
+    })
+    return inset
+  }
+
+  private isElementVisible(element: HTMLElement) {
+    if (element.hidden) return false
+    return element.offsetParent !== null || element.getClientRects().length > 0
   }
 
   private toggleSideMenu() {

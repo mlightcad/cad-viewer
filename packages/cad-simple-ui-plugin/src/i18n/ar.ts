@@ -5,29 +5,30 @@ export const ar: Record<string, string> = {
   'toolbar.select': 'تحديد',
   'toolbar.pan': 'تحريك العرض',
   'toolbar.zoom': 'تكبير',
-  'toolbar.zoomExtent': 'تكبير إلى حدود الرسم',
-  'toolbar.zoomWindow': 'تكبير نافذة',
-  'toolbar.zoomOriginal': 'العرض الأصلي',
+  'toolbar.zoomExtent': 'ملاءمة',
+  'toolbar.zoomWindow': 'نافذة',
+  'toolbar.zoomOriginal': 'أصلي',
   'toolbar.layer': 'مدير الطبقات',
   'toolbar.layerShort': 'الطبقات',
   'toolbar.layout': 'المخطط',
   'toolbar.settings': 'الإعدادات',
 
   'toolbar.measure': 'القياس',
-  'toolbar.measureDistance': 'قياس المسافة',
-  'toolbar.measureAngle': 'قياس الزاوية',
-  'toolbar.measureArea': 'قياس المساحة',
-  'toolbar.measureArc': 'قياس طول القوس',
-  'toolbar.measurePoint': 'قياس نقطة',
+  'toolbar.measureDistance': 'مسافة',
+  'toolbar.measureAngle': 'زاوية',
+  'toolbar.measureArea': 'مساحة',
+  'toolbar.measureArc': 'قوس',
+  'toolbar.measurePoint': 'XY',
 
-  'toolbar.showMeasurements': 'إظهار القياسات',
-  'toolbar.hideMeasurements': 'إخفاء القياسات',
+  'toolbar.showMeasurements': 'إظهار',
+  'toolbar.hideMeasurements': 'إخفاء',
   'toolbar.measurementImport': 'استيراد',
   'toolbar.measurementExport': 'تصدير',
-  'toolbar.clearMeasurements': 'مسح القياسات',
+  'toolbar.clearMeasurements': 'مسح',
+  'toolbar.measurementPanel': 'قائمة',
 
-  'toolbar.switchBg': 'تبديل الخلفية',
-  'toolbar.readingMode': 'وضع القراءة',
+  'toolbar.switchBg': 'خلفية',
+  'toolbar.readingMode': 'قراءة',
 
   'toolbar.annotation': 'أدوات المراجعة',
   'toolbar.annotationShort': 'مراجعة',
@@ -43,9 +44,9 @@ export const ar: Record<string, string> = {
 
   'toolbar.markupImport': 'استيراد',
   'toolbar.markupExport': 'تصدير',
-  'toolbar.clearMarkups': 'مسح علامات المراجعة',
-  'toolbar.showMarkup': 'إظهار علامات المراجعة',
-  'toolbar.hideMarkup': 'إخفاء علامات المراجعة',
+  'toolbar.clearMarkups': 'مسح',
+  'toolbar.showMarkup': 'إظهار',
+  'toolbar.hideMarkup': 'إخفاء',
 
   'toolbar.export': 'تصدير',
   'toolbar.exportHtml': 'تصدير HTML',
@@ -58,8 +59,8 @@ export const ar: Record<string, string> = {
   'toolbar.placementLeft': 'يسار',
   'toolbar.placementRight': 'يمين',
 
-  'toolbar.themeLight': 'التبديل إلى الوضع الداكن',
-  'toolbar.themeDark': 'التبديل إلى الوضع الفاتح',
+  'toolbar.themeLight': 'داكن',
+  'toolbar.themeDark': 'فاتح',
 
   'toolbar.locale': 'اللغة',
   'toolbar.localeEn': 'English',
@@ -69,6 +70,7 @@ export const ar: Record<string, string> = {
   'toolbar.localeAr': 'العربية',
 
   'toolbar.collapse': 'طي شريط الأدوات',
+  'toolbar.moreOverflow': 'المزيد من الأدوات',
   'toolbar.expand': 'توسيع شريط الأدوات',
 
   'layerManager.title': 'مدير الطبقات',
@@ -107,6 +109,8 @@ export const ar: Record<string, string> = {
 
   'dockPanel.tab.layers': 'الطبقات',
   'dockPanel.tab.review': 'المراجعة',
+  'dockPanel.tab.measurements': 'القياسات',
+  'dockPanel.resize': 'تغيير ارتفاع اللوحة',
 
   'reviewPalette.searchPlaceholder':
     'البحث في علامات المراجعة',
@@ -140,5 +144,17 @@ export const ar: Record<string, string> = {
   'reviewPalette.typeValues.stamp': 'ختم',
   'reviewPalette.typeValues.line': 'خط',
   'reviewPalette.typeValues.highlight': 'تمييز',
-  'reviewPalette.typeValues.symbol': 'رمز'
+  'reviewPalette.typeValues.symbol': 'رمز',
+
+  'measurePalette.filterGroup': 'التصفية حسب النوع',
+  'measurePalette.empty': 'لا توجد قياسات حتى الآن',
+  'measurePalette.type': 'النوع',
+  'measurePalette.value': 'القيمة',
+  'measurePalette.delete': 'حذف',
+  'measurePalette.clear': 'مسح الكل',
+  'measurePalette.typeValues.distance': 'مسافة',
+  'measurePalette.typeValues.angle': 'زاوية',
+  'measurePalette.typeValues.area': 'مساحة',
+  'measurePalette.typeValues.arc': 'قوس',
+  'measurePalette.typeValues.point': 'XY'
 }
