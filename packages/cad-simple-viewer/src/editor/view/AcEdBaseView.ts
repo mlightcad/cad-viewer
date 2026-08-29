@@ -75,6 +75,21 @@ export interface AcEdViewHoverEventArgs {
 }
 
 /**
+ * Screen-fixed snap-loupe overlay: CSS rectangle on the canvas plus the
+ * world box shown inside it.
+ */
+export interface AcEdSnapLoupeViewState {
+  /** Canvas-local left of the loupe (CSS pixels). */
+  x: number
+  /** Canvas-local top of the loupe (CSS pixels). */
+  y: number
+  /** Width and height of the square loupe (CSS pixels). */
+  size: number
+  /** World-space box mapped onto the loupe. */
+  viewBox: AcGeBox2d
+}
+
+/**
  * Interface to define arguments of render frame events.
  */
 export interface AcEdViewRenderFrameEventArgs {
@@ -999,6 +1014,26 @@ export abstract class AcEdBaseView {
    */
   get osnapResolver() {
     return this._osnapResolver
+  }
+
+  /**
+   * Enables or disables camera pan/zoom (OrbitControls) for this view.
+   * Default is a no-op; {@link AcTrView2d} toggles the active layout controls.
+   *
+   * @param _enabled - When false, the user cannot pan or zoom this view.
+   */
+  setNavigationEnabled(_enabled: boolean): void {
+    // Optional; 2D view overrides this.
+  }
+
+  /**
+   * Shows or hides the screen-fixed snap loupe overlay viewport.
+   * Pass `null` to hide. Default is a no-op.
+   *
+   * @param _state - Loupe screen rectangle and world box, or `null` to hide.
+   */
+  setSnapLoupe(_state: AcEdSnapLoupeViewState | null): void {
+    // Optional; 2D view overrides this.
   }
 
   /**

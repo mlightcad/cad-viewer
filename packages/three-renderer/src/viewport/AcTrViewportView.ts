@@ -282,15 +282,10 @@ export class AcTrViewportView extends AcTrBaseView {
 
       const y = this._parentView.height - viewportWindowBox.min.y - vpH
       this._renderer.setViewport(viewportWindowBox.min.x, y, vpW, vpH)
-      this._renderer.internalRenderer.setScissor(
-        viewportWindowBox.min.x,
-        y,
-        vpW,
-        vpH
-      )
-      this._renderer.internalRenderer.setScissorTest(true)
+      this._renderer.setScissor(viewportWindowBox.min.x, y, vpW, vpH)
+      this._renderer.setScissorTest(true)
       this._renderer.render(scene, this._camera)
-      this._renderer.internalRenderer.setScissorTest(false)
+      this._renderer.setScissorTest(false)
     }
   }
 }

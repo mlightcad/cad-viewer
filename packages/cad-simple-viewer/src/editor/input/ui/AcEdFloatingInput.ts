@@ -22,6 +22,8 @@ import {
 } from './AcEdFloatingInputTypes'
 import { AcEdFloatingMessage } from './AcEdFloatingMessage'
 import { AcEdRubberBand } from './AcEdRubberBand'
+import { AcEdSnapLoupe } from './AcEdSnapLoupe'
+import { AcEdTouchPointSession } from './AcEdTouchPointSession'
 
 /**
  * A UI component providing a small floating input box used inside CAD editing
@@ -76,6 +78,20 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
   /** Cached click handler */
   private boundOnClick: (e: MouseEvent) => void
+  /** Cached touch `pointerdown` handler for delayed pick / snap loupe. */
+  private boundOnPointerDown: (e: PointerEvent) => void
+  /** Cached touch `pointermove` handler for pick preview and loupe tracking. */
+  private boundOnPointerMove: (e: PointerEvent) => void
+  /** Cached touch `pointerup` handler that commits the pick. */
+  private boundOnPointerUp: (e: PointerEvent) => void
+  /** Cached `pointercancel` handler that aborts the pick. */
+  private boundOnPointerCancel: (e: PointerEvent) => void
+  /** Long-press / short-tap state for one-finger point picking. */
+  private readonly touchSession = new AcEdTouchPointSession()
+  /** Magnifier HUD shown after a long-press on touch. */
+  private snapLoupe?: AcEdSnapLoupe
+  /** When true, the synthetic `click` that follows a touch `pointerup` is ignored. */
+  private ignoreNextClick = false
   /** Whether to suppress UI display while keeping input active */
   private suppressDisplay: boolean = false
   /** Cached sysvar handler */
@@ -160,6 +176,16 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     // -----------------------------
     this.boundOnClick = e => this.handleClick(e)
     this.parent.addEventListener('click', this.boundOnClick)
+    this.boundOnPointerDown = e => this.handlePointerDown(e)
+    this.boundOnPointerMove = e => this.handlePointerMove(e)
+    this.boundOnPointerUp = e => this.handlePointerUp(e)
+    this.boundOnPointerCancel = e => this.handlePointerCancel(e)
+    this.parent.addEventListener('pointerdown', this.boundOnPointerDown)
+    this.parent.addEventListener('pointermove', this.boundOnPointerMove)
+    // Release can happen off-canvas; listen on window like the HTML viewer.
+    window.addEventListener('pointerup', this.boundOnPointerUp)
+    window.addEventListener('pointercancel', this.boundOnPointerCancel)
+    this.snapLoupe = new AcEdSnapLoupe(view)
 
     // -----------------------------
     // Dynamic input settings listener
@@ -245,6 +271,15 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     super.dispose()
 
     this.parent.removeEventListener('click', this.boundOnClick)
+    this.parent.removeEventListener('pointerdown', this.boundOnPointerDown)
+    this.parent.removeEventListener('pointermove', this.boundOnPointerMove)
+    window.removeEventListener('pointerup', this.boundOnPointerUp)
+    window.removeEventListener('pointercancel', this.boundOnPointerCancel)
+    this.releaseTouchCapture()
+    this.touchSession.cancel()
+    this.snapLoupe?.dispose()
+    this.view.setNavigationEnabled(true)
+    this.view.setSnapLoupe(null)
     AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
       this.boundOnInputSysVarChanged
     )
@@ -264,7 +299,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   protected override handleMouseMove(e: MouseEvent) {
     if (!this.visible) return
 
-    const wcsPos = this.getPosition(e)
+    const wcsPos = this.getPosition({ x: e.clientX, y: e.clientY })
     this.updateDynamicPreview(wcsPos)
   }
 
@@ -292,12 +327,139 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
   private handleClick(e: MouseEvent) {
     if (!this.visible) return
+    if (this.ignoreNextClick) {
+      this.ignoreNextClick = false
+      return
+    }
 
-    const wcsPos = this.getPosition(e)
+    const wcsPos = this.getPosition({ x: e.clientX, y: e.clientY })
     const defaults = this.getDynamicValue(wcsPos)
     const committed = this.onCommit?.(defaults.value, wcsPos) ?? true
     if (committed) {
       this.lastPoint = wcsPos
+    }
+  }
+
+  /**
+   * Starts a one-finger pick. Short taps still commit on `pointerup`; a
+   * long-press opens the snap loupe and disables navigation until release.
+   *
+   * @param e - Pointer event; only `touch` with button 0 is handled.
+   */
+  private handlePointerDown(e: PointerEvent) {
+    if (!this.visible || e.pointerType !== 'touch') return
+    if (e.button !== 0) return
+    this.touchSession.start(e.pointerId, e.clientX, e.clientY, () => {
+      this.view.setNavigationEnabled(false)
+      this.applyClientSample(this.touchSession.x, this.touchSession.y)
+      this.refreshLoupe()
+    })
+    this.applyClientSample(e.clientX, e.clientY)
+    this.parent.setPointerCapture(e.pointerId)
+  }
+
+  /**
+   * Updates the pick preview while the finger is down. Movement past the
+   * cancel threshold before the long-press fires is treated as a pan.
+   *
+   * @param e - Pointer event for the active touch session.
+   */
+  private handlePointerMove(e: PointerEvent) {
+    if (e.pointerType !== 'touch') return
+    if (e.pointerId !== this.touchSession.pointerId) return
+    const moved = this.touchSession.move(e.clientX, e.clientY, true)
+    if (moved === 'panning') return
+    if (!this.visible || !this.touchSession.isPicking) return
+    this.applyClientSample(e.clientX, e.clientY)
+    if (this.touchSession.isLoupe) this.refreshLoupe()
+  }
+
+  /**
+   * Ends the touch pick. A short tap or loupe release commits the point;
+   * a pan-aborted gesture does not. The following `click` is swallowed.
+   *
+   * @param e - Pointer event that ended the gesture.
+   */
+  private handlePointerUp(e: PointerEvent) {
+    if (e.pointerType !== 'touch') return
+    if (this.touchSession.phase === 'idle') return
+    if (e.pointerId !== this.touchSession.pointerId) return
+    this.ignoreNextClick = true
+    this.releaseTouchCapture()
+    const action = this.touchSession.end()
+    this.view.setNavigationEnabled(true)
+    this.snapLoupe?.hide()
+    if (!this.visible || action !== 'commit') return
+    this.applyClientSample(e.clientX, e.clientY)
+    const wcsPos = this.lastDynamicPoint
+      ? new AcGePoint2d(this.lastDynamicPoint.x, this.lastDynamicPoint.y)
+      : this.getPosition({ x: e.clientX, y: e.clientY })
+    const defaults = this.getDynamicValue(wcsPos)
+    const committed = this.onCommit?.(defaults.value, wcsPos) ?? true
+    if (committed) {
+      this.lastPoint = wcsPos
+    }
+  }
+
+  /**
+   * Aborts the touch pick without committing (for example on `pointercancel`).
+   *
+   * @param e - Pointer event; only `touch` is handled.
+   */
+  private handlePointerCancel(e: PointerEvent) {
+    if (e.pointerType !== 'touch') return
+    if (this.touchSession.phase === 'idle') return
+    if (e.pointerId !== this.touchSession.pointerId) return
+    this.ignoreNextClick = true
+    this.releaseTouchCapture()
+    this.touchSession.cancel()
+    this.view.setNavigationEnabled(true)
+    this.snapLoupe?.hide()
+  }
+
+  /**
+   * Releases pointer capture taken in {@link handlePointerDown}, if any.
+   */
+  private releaseTouchCapture() {
+    const pointerId = this.touchSession.pointerId
+    if (pointerId === -1) return
+    if (this.parent.hasPointerCapture(pointerId)) {
+      this.parent.releasePointerCapture(pointerId)
+    }
+  }
+
+  /**
+   * Converts a client sample to WCS (with OSNAP) and refreshes the dynamic
+   * preview / rubber band.
+   *
+   * @param clientX - Sample X in client CSS pixels.
+   * @param clientY - Sample Y in client CSS pixels.
+   */
+  private applyClientSample(clientX: number, clientY: number) {
+    const wcsPos = this.getPosition({ x: clientX, y: clientY })
+    this.updateDynamicPreview(wcsPos)
+  }
+
+  /**
+   * Positions the snap-loupe HUD and overlay viewport around the current
+   * touch sample, including an OSNAP glyph when a snap is active.
+   */
+  private refreshLoupe() {
+    if (!this.snapLoupe) return
+    const canvas = this.view.viewportToCanvas({
+      x: this.touchSession.x,
+      y: this.touchSession.y
+    })
+    if (this.lastOsnapPoint) {
+      const snapScreen = this.view.worldToScreen(this.lastOsnapPoint)
+      this.snapLoupe.show(
+        canvas.x,
+        canvas.y,
+        { x: snapScreen.x, y: snapScreen.y },
+        AcEdOsnapResolver.osnapModeToMarkerType(this.lastOsnapPoint.type)
+      )
+    } else {
+      this.snapLoupe.show(canvas.x, canvas.y)
     }
   }
 
@@ -346,7 +508,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   /**
    * Gets the current cursor position in WCS, considering OSNAP.
    */
-  private getPosition(e: MouseEvent) {
+  private getPosition(e: AcGePoint2dLike) {
     // Update floating UI position (screen space)
     const mousePos = super.setPosition(e)
 

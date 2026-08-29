@@ -66,6 +66,21 @@ export const ACEX_HTML_SHELL_CSS = `
     touch-action: none;
   }
 
+  .mlcad-snap-loupe {
+    position: absolute;
+    left: 8px;
+    top: 56px;
+    width: 128px;
+    height: 128px;
+    box-sizing: border-box;
+    border: 2px solid var(--mlcad-measure-accent, #08e8de);
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 8;
+    overflow: hidden;
+    box-shadow: var(--mlcad-shadow);
+  }
+
   html[data-mlcad-theme="light"] {
     --mlcad-ui-bg: rgba(255, 255, 255, 0.94);
     --mlcad-ui-bg-elevated: rgba(248, 249, 250, 0.98);
@@ -950,6 +965,7 @@ export const ACEX_HTML_SHELL_CSS = `
       flex-direction: column-reverse;
       align-items: stretch;
       gap: 0;
+      overflow: visible;
     }
     #mlcad-toolbar {
       flex-direction: row;
@@ -1014,15 +1030,27 @@ export const ACEX_HTML_SHELL_CSS = `
     #mlcad-settings-btn {
       display: flex !important;
     }
-    #mlcad-snap-strip-wrap,
-    #mlcad-measure-strip-wrap,
-    #mlcad-markup-strip-wrap,
-    #mlcad-zoom-strip-wrap,
-    #mlcad-settings-strip-wrap,
-    #mlcad-locale-strip-wrap {
-      width: 100%;
+    /* Float above the bottom bar so the wrap does not occupy an in-flow
+       rectangle of page background around the rounded strip. */
+    #mlcad-sidebar > #mlcad-snap-strip-wrap,
+    #mlcad-sidebar > #mlcad-measure-strip-wrap,
+    #mlcad-sidebar > #mlcad-markup-strip-wrap,
+    #mlcad-sidebar > #mlcad-zoom-strip-wrap,
+    #mlcad-sidebar > #mlcad-settings-strip-wrap,
+    #mlcad-sidebar > #mlcad-locale-strip-wrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 100%;
+      width: auto;
       flex-direction: column;
       align-items: stretch;
+      background: none;
+      box-shadow: none;
+      backdrop-filter: none;
+      overflow: visible;
+      pointer-events: none;
+      z-index: calc(var(--mlcad-z-chrome) + 1);
     }
     #mlcad-settings-strip-wrap:not([hidden]) {
       display: flex !important;
@@ -1045,13 +1073,17 @@ export const ACEX_HTML_SHELL_CSS = `
       width: auto;
       box-sizing: border-box;
       gap: 0;
-      margin: 4px 8px 0;
+      margin: 4px 8px 8px;
       padding: 4px 0;
       border-radius: 8px;
       /* Match active toolbar button outline. */
       border: 1px solid var(--mlcad-tool-btn-active-border);
       box-shadow: none;
-      overflow: visible;
+      backdrop-filter: none;
+      overflow: hidden;
+      isolation: isolate;
+      clip-path: inset(0 round 8px);
+      pointer-events: auto;
     }
     #mlcad-snap-strip .mlcad-tool-btn,
     #mlcad-measure-strip .mlcad-tool-btn,
@@ -1078,6 +1110,7 @@ export const ACEX_HTML_SHELL_CSS = `
       width: 100%;
       box-sizing: border-box;
       border-radius: 0;
+      pointer-events: auto;
     }
     #mlcad-layer-drawer,
     #mlcad-review-drawer {
@@ -1097,6 +1130,7 @@ export const ACEX_HTML_SHELL_CSS = `
       left: 8px;
       right: 8px;
       bottom: calc(var(--mlcad-toolbar-phone-height) + 52px);
+      pointer-events: auto;
     }
     .mlcad-layer-action-btn {
       min-height: 28px;
