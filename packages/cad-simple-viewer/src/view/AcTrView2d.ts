@@ -43,12 +43,12 @@ import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit'
 import {
   AcEdBaseView,
   AcEdCalculateSizeCallback,
-  AcEdSnapLoupeViewState,
   AcEdConditionWaiter,
   AcEdCorsorType,
   AcEdGripManager,
   AcEdMTextEditor,
   AcEdOpenMode,
+  AcEdSnapLoupeViewState,
   AcEdSpatialQueryResultItem,
   AcEdSpatialQueryResultItemEx,
   AcEdViewMode,
