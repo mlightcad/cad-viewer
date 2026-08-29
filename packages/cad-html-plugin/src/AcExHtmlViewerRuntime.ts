@@ -1531,6 +1531,7 @@ async function startViewer(): Promise<void> {
 
   window.addEventListener('resize', () => {
     resize()
+    toolbarFlyouts.syncLayout()
     recomputeOsnapThresholdWcs()
     bumpSnapCacheKey()
     render()

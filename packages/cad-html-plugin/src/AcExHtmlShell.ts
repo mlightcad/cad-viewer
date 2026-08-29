@@ -34,8 +34,8 @@ export const ACEX_HTML_SHELL_CSS = `
     --mlcad-markup-accent-border: rgba(229, 57, 53, 0.45);
     --mlcad-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
     --mlcad-toolbar-width: 44px;
-    /* Sub-toolbar icon buttons: same 32px width as cad-simple-ui-plugin. */
-    --mlcad-subtoolbar-btn-width: 32px;
+    /* Sub-toolbar icon buttons: narrower than the 44px main toolbar. */
+    --mlcad-subtoolbar-btn-width: 28px;
     --mlcad-drawer-width: 220px;
     --mlcad-drawer-gap: 8px;
     --mlcad-ui-inset: 12px;
@@ -1037,10 +1037,10 @@ export const ACEX_HTML_SHELL_CSS = `
       --mlcad-drawer-width: min(280px, calc(100vw - 16px));
       --mlcad-ui-inset: 0px;
       --mlcad-toolbar-phone-height: 56px;
-      /* Portrait min width, matching cad-simple-ui wrap-pack (max(24, height - 4)). */
+      /* Portrait min width (narrower than simple-ui's height - 4). */
       --mlcad-toolbar-phone-btn-size: max(
         24px,
-        calc(var(--mlcad-toolbar-phone-height) - 4px)
+        calc(var(--mlcad-toolbar-phone-height) - 16px)
       );
     }
     #mlcad-root {
@@ -1163,10 +1163,10 @@ export const ACEX_HTML_SHELL_CSS = `
     #mlcad-settings-strip,
     #mlcad-locale-strip {
       display: grid;
-      /* Portrait min; auto-fill keeps leftover tracks so short last rows stay
-         narrow instead of stretching into squares. */
+      /* Fallback before wrap-pack JS: auto-fit stretches a short strip evenly.
+         JS then sets an explicit column count so wrapped last rows stay narrow. */
       grid-template-columns: repeat(
-        auto-fill,
+        auto-fit,
         minmax(var(--mlcad-toolbar-phone-btn-size), 1fr)
       );
       justify-content: start;

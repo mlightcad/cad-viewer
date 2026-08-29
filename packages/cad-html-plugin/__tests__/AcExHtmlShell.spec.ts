@@ -14,11 +14,11 @@ describe('ACEX_HTML_SHELL_CSS', () => {
   })
 
   it('uses a narrower portrait slot for sub-toolbar buttons', () => {
-    expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-subtoolbar-btn-width: 32px')
+    expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-subtoolbar-btn-width: 28px')
     expect(ACEX_HTML_SHELL_CSS).toContain(
-      'calc(var(--mlcad-toolbar-phone-height) - 4px)'
+      'calc(var(--mlcad-toolbar-phone-height) - 16px)'
     )
-    expect(ACEX_HTML_SHELL_CSS).toContain('auto-fill')
+    expect(ACEX_HTML_SHELL_CSS).toContain('auto-fit')
     expect(ACEX_HTML_SHELL_CSS).not.toContain(
       '--mlcad-toolbar-phone-btn-size: var(--mlcad-toolbar-phone-height)'
     )
