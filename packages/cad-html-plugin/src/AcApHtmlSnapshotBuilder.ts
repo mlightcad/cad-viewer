@@ -265,6 +265,7 @@ function buildSnapshotMeta(
     extents: meta.extents,
     viewExtents: viewExtents ?? undefined,
     units: meta.units,
+    grip: meta.grip,
     background: meta.background,
     locale: options.locale ?? AcApI18n.currentLocale,
     initialView,

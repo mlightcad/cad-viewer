@@ -2,7 +2,7 @@ import {
   type AcDbDatabase,
   type AcGePoint3dLike
 } from '@mlightcad/data-model'
-import { AcTrHtmlBadge, AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
+import { AcTrHtmlBadge, AcTrHtmlCanvasOverlay, AcTrHtmlGrip } from '@mlightcad/three-renderer'
 
 import {
   acapMeasurementCanvasLineWidth,
@@ -164,13 +164,13 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
       layer: MEASUREMENT_LAYER,
       layoutId
     })
-    const dot1 = new AcTrHtmlDot({
+    const dot1 = new AcTrHtmlGrip({
       id: `${this.entityId}-dot1`,
       color,
       worldPosition: live.start,
       layer: MEASUREMENT_LAYER
     })
-    const dot2 = new AcTrHtmlDot({
+    const dot2 = new AcTrHtmlGrip({
       id: `${this.entityId}-dot2`,
       color,
       worldPosition: live.end,

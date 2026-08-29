@@ -32,6 +32,7 @@ import {
   acExMarkupFocusExtents,
   type AcExMarkupShapeOutline,
   acExMarkupShapeOutlineFromGeometry,
+  acExOverlayArrowSize,
   acExStrokeMarkupCloud,
   acExTranslateMarkupGeometry
 } from './AcExMarkupGeometry'
@@ -59,6 +60,7 @@ import type {
 import type { AcExTrackingOptions } from './AcExMeasureTracking'
 import { constrainToAcExTracking } from './AcExMeasureTracking'
 import type { AcExOsnapPoint } from './AcExOsnap'
+import { acExIsOverlayGrip, acExOverlayGripClassName } from './AcExOverlayGrip'
 import type { AcExExtents } from './AcExSnapshotTypes'
 
 export type { AcExMarkupMode } from './AcExMarkupTypes'
@@ -1084,13 +1086,15 @@ export class AcExMarkupController {
       const tipS = this._worldToOverlay(tip)
       const anchorS = this._worldToOverlay(anchor)
       const baseWidth = acExMarkupCanvasLineWidth(this._drawLineWeight)
+      const scaled = this._scaledCanvasLineWidth(baseWidth, ctx.canvas)
       acExDrawMarkupLeader(
         ctx,
         tipS,
         anchorS,
         this._drawColor,
         true,
-        this._scaledCanvasLineWidth(baseWidth, ctx.canvas)
+        scaled,
+        acExOverlayArrowSize(scaled, baseWidth)
       )
     }
     paintLeader()
@@ -1316,7 +1320,7 @@ export class AcExMarkupController {
 
   private _makeTempDot(wcs: AcExMarkupPoint2d, color: string): HTMLElement {
     const dot = document.createElement('div')
-    dot.className = 'mlcad-markup-dot'
+    dot.className = 'mlcad-markup-preview-dot'
     dot.dataset.wcsX = String(wcs.x)
     dot.dataset.wcsY = String(wcs.y)
     dot.style.background = color
@@ -1535,8 +1539,13 @@ export class AcExMarkupController {
   private _syncGripPointerEvents(): void {
     const enable = this._gripsEnabled()
     for (const item of this._committed) {
+      const selected = this._selectedIds.has(item.record.id)
       for (const el of item.parts.dom) {
-        el.style.pointerEvents = enable ? 'auto' : 'none'
+        if (el.classList.contains('mlcad-markup-dot')) {
+          el.style.pointerEvents = enable && selected ? 'auto' : 'none'
+        } else {
+          el.style.pointerEvents = enable ? 'auto' : 'none'
+        }
       }
     }
   }
@@ -1560,7 +1569,7 @@ export class AcExMarkupController {
   private _placeDomAt(el: HTMLElement, wcs: AcExMarkupPoint2d): void {
     el.dataset.wcsX = String(wcs.x)
     el.dataset.wcsY = String(wcs.y)
-    acExResetOverlayViewScale(el)
+    if (!acExIsOverlayGrip(el)) acExResetOverlayViewScale(el)
     this._positionTempDom(el)
   }
 
@@ -1867,7 +1876,7 @@ export class AcExMarkupController {
     id: string
   ): HTMLElement {
     const dot = document.createElement('div')
-    dot.className = 'mlcad-markup-dot'
+    dot.className = acExOverlayGripClassName('markup')
     dot.dataset.markupId = id
     dot.dataset.wcsX = String(wcs.x)
     dot.dataset.wcsY = String(wcs.y)
@@ -1917,7 +1926,13 @@ export class AcExMarkupController {
         ctx.lineTo(b.x, b.y)
         ctx.stroke()
         if (g.type === 'arrow') {
-          acExDrawMarkupArrowHead(ctx, a, b, color)
+          acExDrawMarkupArrowHead(
+            ctx,
+            a,
+            b,
+            color,
+            acExOverlayArrowSize(strokeWidth, lineWidth)
+          )
         }
         break
       }
@@ -1982,7 +1997,15 @@ export class AcExMarkupController {
       case 'callout': {
         const tip = worldToScreen(g.tip)
         const anchor = worldToScreen(g.anchor)
-        acExDrawMarkupLeader(ctx, tip, anchor, color, true, strokeWidth)
+        acExDrawMarkupLeader(
+          ctx,
+          tip,
+          anchor,
+          color,
+          true,
+          strokeWidth,
+          acExOverlayArrowSize(strokeWidth, lineWidth)
+        )
         break
       }
       default:
@@ -2124,17 +2147,19 @@ export class AcExMarkupController {
           return item
         }
       }
-      // Endpoint dots
-      for (const el of item.parts.dom) {
-        if (!el.classList.contains('mlcad-markup-dot')) continue
-        const rect = el.getBoundingClientRect()
-        if (
-          clientX >= rect.left &&
-          clientX <= rect.right &&
-          clientY >= rect.top &&
-          clientY <= rect.bottom
-        ) {
-          return item
+      // Endpoint grips are only hittable after the overlay is selected.
+      if (this._selectedIds.has(item.record.id)) {
+        for (const el of item.parts.dom) {
+          if (!el.classList.contains('mlcad-markup-dot')) continue
+          const rect = el.getBoundingClientRect()
+          if (
+            clientX >= rect.left &&
+            clientX <= rect.right &&
+            clientY >= rect.top &&
+            clientY <= rect.bottom
+          ) {
+            return item
+          }
         }
       }
       if (
@@ -2186,6 +2211,7 @@ export class AcExMarkupController {
       }
     }
     for (const fn of this._redrawListeners) fn()
+    this._syncGripPointerEvents()
   }
 
   private _positionDomOverlays(): void {
@@ -2340,13 +2366,15 @@ export class AcExMarkupController {
     } else if (this._mode === 'callout') {
       const tip = this._worldToOverlay(point2(a))
       const anchor = this._worldToOverlay(point2(b))
+      const scaled = this._scaledCanvasLineWidth(lineWidth, ctx.canvas)
       acExDrawMarkupLeader(
         ctx,
         tip,
         anchor,
         color,
         true,
-        this._scaledCanvasLineWidth(lineWidth, ctx.canvas)
+        scaled,
+        acExOverlayArrowSize(scaled, lineWidth)
       )
     }
   }

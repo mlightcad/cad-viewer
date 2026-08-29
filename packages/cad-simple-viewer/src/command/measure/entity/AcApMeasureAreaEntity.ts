@@ -2,7 +2,7 @@ import type { AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
   AcTrHtmlCanvasOverlay,
-  AcTrHtmlDot
+  AcTrHtmlGrip
 } from '@mlightcad/three-renderer'
 
 import {
@@ -160,7 +160,7 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
     })
     const dots = live.map(
       (p, i) =>
-        new AcTrHtmlDot({
+        new AcTrHtmlGrip({
           id: `${this.entityId}-dot${i}`,
           color,
           worldPosition: p,

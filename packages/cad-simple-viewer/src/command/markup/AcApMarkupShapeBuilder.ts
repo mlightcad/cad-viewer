@@ -5,12 +5,11 @@
 import type { AcGePoint2dLike } from '@mlightcad/data-model'
 
 import type { AcEdBaseView } from '../../editor'
-import { acapScaledOverlayLineWidth } from '../overlay/AcApOverlayDrawUtil'
-
-/**
- * Target screen diameter in CSS pixels for each revision-cloud lobe.
- */
-const CLOUD_DIAMETER_PIXELS = 8
+import {
+  ACAP_OVERLAY_CLOUD_DIAMETER_PX,
+  ACAP_OVERLAY_CLOUD_WCS,
+  acapScaledOverlayLineWidth
+} from '../overlay/AcApOverlayDrawUtil'
 
 /** World-space vertex with AutoCAD-style bulge to the next vertex. */
 export interface AcApMarkupCloudVertex {
@@ -47,17 +46,20 @@ function pixelToWorldDistance(
 /**
  * Build closed revision-cloud vertices (points + bulges) between two corners.
  *
- * Lobe size tracks the current view scale ({@link CLOUD_DIAMETER_PIXELS}).
+ * Lobe size is a world-space diameter. When omitted, {@link ACAP_OVERLAY_CLOUD_DIAMETER_PX}
+ * is converted at the current view (jig / first paint).
  *
  * @param firstPoint - One corner of the cloud AABB.
  * @param secondPoint - Opposite corner of the cloud AABB.
- * @param view - View used to size lobes in screen pixels.
+ * @param view - View used to size lobes when `diameterWcs` is omitted.
+ * @param diameterWcs - Optional world-space lobe diameter (keeps size across zoom).
  * @returns Closed ring of vertices (last segment uses the last bulge → first point).
  */
 export function markupCloudVertices(
   firstPoint: AcGePoint2dLike,
   secondPoint: AcGePoint2dLike,
-  view: AcEdBaseView
+  view: AcEdBaseView,
+  diameterWcs?: number
 ): AcApMarkupCloudVertex[] {
   const minX = Math.min(firstPoint.x, secondPoint.x)
   const maxX = Math.max(firstPoint.x, secondPoint.x)
@@ -66,11 +68,10 @@ export function markupCloudVertices(
   const width = maxX - minX
   const height = maxY - minY
   const centerPoint = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
-  const cloudDiameter = pixelToWorldDistance(
-    view,
-    CLOUD_DIAMETER_PIXELS,
-    centerPoint
-  )
+  const cloudDiameter =
+    diameterWcs != null && diameterWcs > 0
+      ? diameterWcs
+      : pixelToWorldDistance(view, ACAP_OVERLAY_CLOUD_DIAMETER_PX, centerPoint)
   const chordLength = Math.max(cloudDiameter, 1e-6)
   const numSegmentsX = Math.max(4, Math.ceil(width / chordLength) * 2)
   const numSegmentsY = Math.max(4, Math.ceil(height / chordLength) * 2)
@@ -114,8 +115,7 @@ export function markupCloudVertices(
     vertices.push({
       x: minX,
       y: minY + height * t,
-      bulge:
-        i < numSegmentsY - 1 ? calculateBulge(segmentIndex++ % 2 === 0) : 0
+      bulge: i < numSegmentsY - 1 ? calculateBulge(segmentIndex++ % 2 === 0) : 0
     })
   }
 
@@ -165,10 +165,8 @@ function tessellateBulgeSegment(
   if (d < 1e-12) {
     return [{ x: p2.x, y: p2.y }]
   }
-  const cx =
-    (p1.x + p2.x) / 2 - (dy * (1 - bulge * bulge)) / (4 * bulge)
-  const cy =
-    (p1.y + p2.y) / 2 + (dx * (1 - bulge * bulge)) / (4 * bulge)
+  const cx = (p1.x + p2.x) / 2 - (dy * (1 - bulge * bulge)) / (4 * bulge)
+  const cy = (p1.y + p2.y) / 2 + (dx * (1 - bulge * bulge)) / (4 * bulge)
   const r = Math.hypot(p1.x - cx, p1.y - cy)
   const a0 = Math.atan2(p1.y - cy, p1.x - cx)
   const a1 = Math.atan2(p2.y - cy, p2.x - cx)
@@ -239,7 +237,22 @@ export function strokeMarkupCloud(
 ): void {
   const dx = offset?.dx ?? 0
   const dy = offset?.dy ?? 0
-  const vertices = markupCloudVertices(first, second, view)
+  const centerPoint = {
+    x: (first.x + second.x) / 2,
+    y: (first.y + second.y) / 2
+  }
+  let diameterWcs = Number(ctx.canvas.dataset[ACAP_OVERLAY_CLOUD_WCS])
+  if (!(diameterWcs > 0) || !Number.isFinite(diameterWcs)) {
+    diameterWcs = pixelToWorldDistance(
+      view,
+      ACAP_OVERLAY_CLOUD_DIAMETER_PX,
+      centerPoint
+    )
+    if (diameterWcs > 0) {
+      ctx.canvas.dataset[ACAP_OVERLAY_CLOUD_WCS] = String(diameterWcs)
+    }
+  }
+  const vertices = markupCloudVertices(first, second, view, diameterWcs)
   const world = tessellateMarkupCloud(vertices).map(p => ({
     x: p.x + dx,
     y: p.y + dy
@@ -267,7 +280,11 @@ export function strokeMarkupCloud(
  * Kept for callers that still need an in-memory vertex list via the old name.
  */
 export function buildMarkupCloud(
-  _cloud: { reset: (v: boolean) => void; addVertexAt: (i: number, p: { x: number; y: number }, b?: number) => void; closed: boolean },
+  _cloud: {
+    reset: (v: boolean) => void
+    addVertexAt: (i: number, p: { x: number; y: number }, b?: number) => void
+    closed: boolean
+  },
   firstPoint: AcGePoint2dLike,
   secondPoint: AcGePoint2dLike,
   view: AcEdBaseView
@@ -275,7 +292,11 @@ export function buildMarkupCloud(
   const vertices = markupCloudVertices(firstPoint, secondPoint, view)
   _cloud.reset(false)
   for (let i = 0; i < vertices.length; i++) {
-    _cloud.addVertexAt(i, { x: vertices[i].x, y: vertices[i].y }, vertices[i].bulge)
+    _cloud.addVertexAt(
+      i,
+      { x: vertices[i].x, y: vertices[i].y },
+      vertices[i].bulge
+    )
   }
   _cloud.closed = true
 }

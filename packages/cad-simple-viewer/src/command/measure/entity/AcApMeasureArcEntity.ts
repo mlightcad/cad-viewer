@@ -2,7 +2,7 @@ import { type AcDbDatabase, AcGeCircArc2d } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
   AcTrHtmlCanvasOverlay,
-  AcTrHtmlDot
+  AcTrHtmlGrip
 } from '@mlightcad/three-renderer'
 
 import {
@@ -241,21 +241,21 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
       layer: MEASUREMENT_LAYER,
       layoutId
     })
-    const dot1 = new AcTrHtmlDot({
+    const dot1 = new AcTrHtmlGrip({
       id: `${this.entityId}-dot1`,
       color,
       worldPosition: live.start,
       layer: MEASUREMENT_LAYER
     })
     const dotThrough = live.through
-      ? new AcTrHtmlDot({
+      ? new AcTrHtmlGrip({
           id: `${this.entityId}-dot-through`,
           color,
           worldPosition: live.through,
           layer: MEASUREMENT_LAYER
         })
       : undefined
-    const dot2 = new AcTrHtmlDot({
+    const dot2 = new AcTrHtmlGrip({
       id: `${this.entityId}-dot2`,
       color,
       worldPosition: live.end,

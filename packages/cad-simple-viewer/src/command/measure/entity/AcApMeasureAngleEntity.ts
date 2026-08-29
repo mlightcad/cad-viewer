@@ -5,7 +5,7 @@ import {
 import {
   AcTrHtmlBadge,
   AcTrHtmlCanvasOverlay,
-  AcTrHtmlDot
+  AcTrHtmlGrip
 } from '@mlightcad/three-renderer'
 
 import {
@@ -164,19 +164,19 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
       layoutId
     })
 
-    const dotV = new AcTrHtmlDot({
+    const dotV = new AcTrHtmlGrip({
       id: `${this.entityId}-dotV`,
       color,
       worldPosition: live.vertex,
       layer: MEASUREMENT_LAYER
     })
-    const dot1 = new AcTrHtmlDot({
+    const dot1 = new AcTrHtmlGrip({
       id: `${this.entityId}-dot1`,
       color,
       worldPosition: live.arm1,
       layer: MEASUREMENT_LAYER
     })
-    const dot2 = new AcTrHtmlDot({
+    const dot2 = new AcTrHtmlGrip({
       id: `${this.entityId}-dot2`,
       color,
       worldPosition: live.arm2,
@@ -285,7 +285,7 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
     }
 
     const bindDot = (
-      dot: AcTrHtmlDot,
+      dot: AcTrHtmlGrip,
       key: 'vertex' | 'arm1' | 'arm2'
     ) =>
       acapBindOverlayPointerDrag({

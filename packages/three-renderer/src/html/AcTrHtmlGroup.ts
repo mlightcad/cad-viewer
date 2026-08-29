@@ -1,5 +1,6 @@
 import { AcTrHtmlCanvasOverlay } from './AcTrHtmlCanvasOverlay'
 import { AC_TR_HTML_DEFAULT_LAYER, AcTrHtmlElement } from './AcTrHtmlElement'
+import { acTrIsHtmlGrip } from './AcTrHtmlGrip'
 
 /**
  * Options for an {@link AcTrHtmlGroup}.
@@ -101,7 +102,7 @@ export class AcTrHtmlGroup {
   add(...children: AcTrHtmlElement[]): this {
     for (const child of children) {
       this._children.push(child)
-      if (this.selectable) {
+      if (this.selectable && !acTrIsHtmlGrip(child.element)) {
         child.element.style.pointerEvents = 'auto'
         child.element.style.cursor = 'pointer'
       }
@@ -169,6 +170,7 @@ export class AcTrHtmlGroup {
     if (!this.selectable) return
 
     for (const child of this._children) {
+      if (acTrIsHtmlGrip(child.element)) continue
       child.element.style.pointerEvents = 'auto'
       child.element.style.cursor = 'pointer'
       const handler = (e: MouseEvent) => {

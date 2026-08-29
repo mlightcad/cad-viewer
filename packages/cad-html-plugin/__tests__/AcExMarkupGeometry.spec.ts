@@ -4,7 +4,8 @@ import {
   acExIsAttachableShapeMarkup,
   acExMarkupBounds,
   acExMarkupFocusExtents,
-  acExMarkupShapeOutlineFromGeometry
+  acExMarkupShapeOutlineFromGeometry,
+  acExOverlayArrowSize
 } from '../src/AcExMarkupGeometry'
 import type { AcExMarkupGeometry } from '../src/AcExMarkupTypes'
 
@@ -138,5 +139,12 @@ describe('acExMarkupFocusExtents', () => {
         (clientX, clientY) => ({ x: clientX / 10, y: -clientY / 10 })
       )
     ).toEqual({ minX: 0, minY: -6, maxX: 18, maxY: 0 })
+  })
+})
+
+describe('acExOverlayArrowSize', () => {
+  it('scales arrow heads with stroke width', () => {
+    expect(acExOverlayArrowSize(2, 2)).toBe(12)
+    expect(acExOverlayArrowSize(4, 2)).toBe(24)
   })
 })

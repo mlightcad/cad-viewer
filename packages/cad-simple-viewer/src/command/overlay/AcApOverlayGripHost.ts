@@ -7,6 +7,13 @@ import type { AcTrHtmlElement, AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../view'
 
+/** Overlay grip class; keep as a string so this module stays jsdom-loadable. */
+const HTML_GRIP_CLASS = 'ml-html-grip'
+/** Toggled on every overlay grip while a grip drag is in progress. */
+const HTML_GRIP_DRAGGING_CLASS = 'ml-html-grip-dragging'
+/** Selected class applied by {@link AcTrHtmlElement.setSelected}. */
+const HTML_SELECTED_CLASS = 'ml-html-selected'
+
 /**
  * 2D world-space point used by overlay grip hosts.
  */
@@ -131,10 +138,35 @@ export interface AcApOverlayPointerDragOptions {
    * (callout bubble, text/stamp). Shape center grips pass true.
    */
   useOsnap?: boolean
+  /**
+   * When false, pointerdown is ignored. Overlay grips also require the
+   * handle to already be selected (`ml-html-selected`).
+   */
+  isEnabled?: () => boolean
+}
+
+/**
+ * True when the handle is an overlay endpoint grip.
+ */
+function isOverlayHtmlGrip(el: HTMLElement): boolean {
+  return el.classList.contains(HTML_GRIP_CLASS)
+}
+
+/**
+ * Hide or restore every overlay endpoint grip in `root`.
+ */
+function setOverlayGripsDragging(dragging: boolean, root: ParentNode): void {
+  root.querySelectorAll(`.${HTML_GRIP_CLASS}`).forEach(node => {
+    node.classList.toggle(HTML_GRIP_DRAGGING_CLASS, dragging)
+  })
 }
 
 /**
  * Bind pointer-drag on one HTML overlay handle.
+ *
+ * Overlay endpoint grips (`ml-html-grip`) only drag when already selected, and
+ * all overlay endpoint grips are hidden for the duration of the drag (same as
+ * CAD entity grips).
  *
  * Drag starts only after a small move so a double-click can still edit text.
  * Move / up listeners attach to `window` so CSS2D repositioning does not lose
@@ -147,10 +179,14 @@ export function acapBindOverlayPointerDrag(
   options: AcApOverlayPointerDragOptions
 ): () => void {
   const { view, el, onDragStart, onMove, onCommit } = options
+  const isGrip = isOverlayHtmlGrip(el)
   const idleCursor = options.cursor ?? 'grab'
   const useOsnap = options.useOsnap !== false
 
-  el.style.pointerEvents = 'auto'
+  // Grip visibility / hit-testing is CSS-owned (hidden until selected).
+  if (!isGrip) {
+    el.style.pointerEvents = 'auto'
+  }
   el.style.cursor = idleCursor
   el.style.touchAction = 'none'
   el.style.userSelect = 'none'
@@ -163,9 +199,18 @@ export function acapBindOverlayPointerDrag(
 
   /** Detach function for the active window listeners, if any. */
   let detachActiveDrag: (() => void) | undefined
+  /** True after overlay grips were hidden for this drag. */
+  let hidGrips = false
+
+  const dragAllowed = (): boolean => {
+    if (options.isEnabled && !options.isEnabled()) return false
+    if (isGrip && !el.classList.contains(HTML_SELECTED_CLASS)) return false
+    return true
+  }
 
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return
+    if (!dragAllowed()) return
     const target = e.target as HTMLElement | null
     if (
       e.detail >= 2 ||
@@ -207,6 +252,12 @@ export function acapBindOverlayPointerDrag(
       if (detachActiveDrag === detach) detachActiveDrag = undefined
     }
 
+    const restoreGrips = () => {
+      if (!hidGrips) return
+      hidGrips = false
+      setOverlayGripsDragging(false, view.container ?? document)
+    }
+
     const onPointerMove = (ev: PointerEvent) => {
       if (ev.pointerId !== pointerId) return
       if (!dragging) {
@@ -218,6 +269,10 @@ export function acapBindOverlayPointerDrag(
         dragging = true
         ev.preventDefault()
         el.style.cursor = 'grabbing'
+        if (isGrip) {
+          hidGrips = true
+          setOverlayGripsDragging(true, view.container ?? document)
+        }
         onDragStart?.()
       }
       onMove(resolveWorld(ev), ev)
@@ -236,11 +291,15 @@ export function acapBindOverlayPointerDrag(
       }
       if (!dragging) return
       el.style.cursor = idleCursor
+      restoreGrips()
       onCommit()
     }
 
     detachActiveDrag?.()
-    detachActiveDrag = detach
+    detachActiveDrag = () => {
+      restoreGrips()
+      detach()
+    }
     window.addEventListener('pointermove', onPointerMove, windowListenerOptions)
     window.addEventListener('pointerup', onPointerUp, windowListenerOptions)
     window.addEventListener('pointercancel', onPointerUp, windowListenerOptions)
@@ -312,9 +371,6 @@ export function acapBindOverlayCalloutGrips(
     onLiveChange,
     onCommit
   } = options
-
-  tipEl.element.style.width = '14px'
-  tipEl.element.style.height = '14px'
 
   /** Tip / anchor captured when a tip or bubble drag starts. */
   let dragOrigin: AcApOverlayCalloutGripState = {

@@ -6,6 +6,20 @@ import {
   AcDbSysVarManager
 } from '@mlightcad/data-model'
 
+/** CSS custom property for grip square edge length (`GRIPSIZE`). */
+export const ML_UI_GRIP_SIZE_VAR = '--ml-ui-grip-size'
+/** CSS custom property for idle grip fill (`GRIPCOLOR`). */
+export const ML_UI_GRIP_NORMAL_VAR = '--ml-ui-grip-normal'
+/** CSS custom property for hover / hot grip fill (`GRIPHOT`). */
+export const ML_UI_GRIP_HOT_VAR = '--ml-ui-grip-hot'
+
+/** Fallback grip size in CSS pixels when `GRIPSIZE` is unavailable. */
+export const DEFAULT_GRIP_SIZE_PX = 8
+/** Fallback idle grip color when `GRIPCOLOR` is unavailable. */
+export const DEFAULT_GRIP_COLOR_CSS = '#0080ff'
+/** Fallback hover / hot grip color when `GRIPHOT` is unavailable. */
+export const DEFAULT_GRIP_HOT_COLOR_CSS = '#ff0000'
+
 /** Visual appearance of grip handles derived from grip system variables. */
 export interface AcEdGripAppearance {
   /** Grip square edge length in CSS pixels (`GRIPSIZE`). */
@@ -14,6 +28,20 @@ export interface AcEdGripAppearance {
   colorCss: string
   /** CSS color for hot / hovered grips (`GRIPHOT`). */
   hotColorCss: string
+}
+
+/**
+ * Writes CAD entity square-grip appearance onto a host so `.ml-grip-handle`
+ * inherits `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`. Overlay measure/markup
+ * endpoint circles keep their own colored-dot styling and ignore these vars.
+ */
+export function applyGripAppearanceToHost(
+  host: HTMLElement,
+  appearance: AcEdGripAppearance
+): void {
+  host.style.setProperty(ML_UI_GRIP_SIZE_VAR, `${appearance.size}px`)
+  host.style.setProperty(ML_UI_GRIP_NORMAL_VAR, appearance.colorCss)
+  host.style.setProperty(ML_UI_GRIP_HOT_VAR, appearance.hotColorCss)
 }
 
 function aciIndexToCss(index: number): string {
@@ -37,7 +65,7 @@ export function readGripAppearance(database: AcDbDatabase): AcEdGripAppearance {
   ) as number
 
   return {
-    size,
+    size: size > 0 && Number.isFinite(size) ? size : DEFAULT_GRIP_SIZE_PX,
     colorCss: aciIndexToCss(gripColor),
     hotColorCss: aciIndexToCss(gripHot)
   }

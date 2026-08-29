@@ -5,6 +5,10 @@
  * @packageDocumentation
  */
 
+import {
+  ACEX_OVERLAY_CLOUD_DIAMETER_PX,
+  ACEX_OVERLAY_CLOUD_WCS
+} from './AcExHtmlOverlayDom'
 import type {
   AcExMarkupAttachedCallout,
   AcExMarkupGeometry,
@@ -12,6 +16,8 @@ import type {
   AcExMarkupRecord
 } from './AcExMarkupTypes'
 import type { AcExExtents } from './AcExSnapshotTypes'
+
+export { ACEX_OVERLAY_CLOUD_DIAMETER_PX, ACEX_OVERLAY_CLOUD_WCS }
 
 /** Shape outline used to auto-place the leader tip on the perimeter. */
 export type AcExMarkupShapeOutline =
@@ -71,6 +77,21 @@ export function acExComputeLeaderTipOnShape(
 /** Extra hit slop for revision-cloud lobes around the AABB. */
 const CLOUD_HIT_EXTRA_PX = 8
 
+/** Arrow-head length in CSS pixels at the overlay's creation-scale stroke. */
+export const ACEX_OVERLAY_ARROW_SIZE_PX = 12
+
+/**
+ * Screen length of an overlay arrow head, tracking the same WCS scale as the stroke.
+ */
+export function acExOverlayArrowSize(
+  scaledLineWidth: number,
+  baseLineWidth = 2
+): number {
+  const base =
+    baseLineWidth > 0 && Number.isFinite(baseLineWidth) ? baseLineWidth : 2
+  return Math.max(1, scaledLineWidth * (ACEX_OVERLAY_ARROW_SIZE_PX / base))
+}
+
 /**
  * Whether geometry is a cloud / rect / circle with no attached callout.
  */
@@ -129,10 +150,7 @@ export function acExHitTestMarkupShapeOutline(
       const minY = Math.min(a.y, b.y)
       const maxY = Math.max(a.y, b.y)
       const inside =
-        clientX >= minX &&
-        clientX <= maxX &&
-        clientY >= minY &&
-        clientY <= maxY
+        clientX >= minX && clientX <= maxX && clientY >= minY && clientY <= maxY
       if (!inside) {
         return acExDistToRectOutlinePx(clientX, clientY, a, b) <= thresholdPx
       }
@@ -153,10 +171,7 @@ export function acExHitTestMarkupShapeOutline(
       const maxY = Math.max(a.y, b.y)
       const tol = thresholdPx + CLOUD_HIT_EXTRA_PX
       const inside =
-        clientX >= minX &&
-        clientX <= maxX &&
-        clientY >= minY &&
-        clientY <= maxY
+        clientX >= minX && clientX <= maxX && clientY >= minY && clientY <= maxY
       if (!inside) {
         return acExDistToRectOutlinePx(clientX, clientY, a, b) <= tol
       }
@@ -182,9 +197,6 @@ export function acExHitTestMarkupShapeOutline(
       return false
   }
 }
-
-/** Target screen diameter in CSS pixels for each revision-cloud lobe. */
-const CLOUD_DIAMETER_PIXELS = 8
 
 /** World-space vertex with AutoCAD-style bulge to the next vertex. */
 interface AcExMarkupCloudVertex {
@@ -224,14 +236,15 @@ export function acExDrawMarkupArrowHead(
   ctx: CanvasRenderingContext2D,
   from: { x: number; y: number },
   to: { x: number; y: number },
-  color: string
+  color: string,
+  sizePx = ACEX_OVERLAY_ARROW_SIZE_PX
 ): void {
   const dx = to.x - from.x
   const dy = to.y - from.y
   const len = Math.hypot(dx, dy) || 1
   const ux = dx / len
   const uy = dy / len
-  const size = 12
+  const size = Math.max(1, sizePx)
   const left = {
     x: to.x - ux * size - uy * size * 0.45,
     y: to.y - uy * size + ux * size * 0.45
@@ -256,7 +269,8 @@ export function acExDrawMarkupLeader(
   anchor: { x: number; y: number },
   color: string,
   withArrow = true,
-  lineWidth = 2
+  lineWidth = 2,
+  arrowSizePx?: number
 ): void {
   ctx.strokeStyle = color
   ctx.lineWidth = lineWidth
@@ -265,7 +279,13 @@ export function acExDrawMarkupLeader(
   ctx.lineTo(anchor.x, anchor.y)
   ctx.stroke()
   if (withArrow) {
-    acExDrawMarkupArrowHead(ctx, anchor, tip, color)
+    acExDrawMarkupArrowHead(
+      ctx,
+      anchor,
+      tip,
+      color,
+      arrowSizePx ?? acExOverlayArrowSize(lineWidth)
+    )
   }
 }
 
@@ -291,7 +311,8 @@ function markupCloudVertices(
   firstPoint: AcExMarkupPoint2d,
   secondPoint: AcExMarkupPoint2d,
   worldToScreen: (p: AcExMarkupPoint2d) => { x: number; y: number },
-  screenToWorld: (p: { x: number; y: number }) => AcExMarkupPoint2d
+  screenToWorld: (p: { x: number; y: number }) => AcExMarkupPoint2d,
+  diameterWcs?: number
 ): AcExMarkupCloudVertex[] {
   const minX = Math.min(firstPoint.x, secondPoint.x)
   const maxX = Math.max(firstPoint.x, secondPoint.x)
@@ -300,12 +321,15 @@ function markupCloudVertices(
   const width = maxX - minX
   const height = maxY - minY
   const centerPoint = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
-  const cloudDiameter = pixelToWorldDistance(
-    worldToScreen,
-    screenToWorld,
-    CLOUD_DIAMETER_PIXELS,
-    centerPoint
-  )
+  const cloudDiameter =
+    diameterWcs != null && diameterWcs > 0
+      ? diameterWcs
+      : pixelToWorldDistance(
+          worldToScreen,
+          screenToWorld,
+          ACEX_OVERLAY_CLOUD_DIAMETER_PX,
+          centerPoint
+        )
   const chordLength = Math.max(cloudDiameter, 1e-6)
   const numSegmentsX = Math.max(4, Math.ceil(width / chordLength) * 2)
   const numSegmentsY = Math.max(4, Math.ceil(height / chordLength) * 2)
@@ -343,8 +367,7 @@ function markupCloudVertices(
     vertices.push({
       x: minX,
       y: minY + height * t,
-      bulge:
-        i < numSegmentsY - 1 ? calculateBulge(segmentIndex++ % 2 === 0) : 0
+      bulge: i < numSegmentsY - 1 ? calculateBulge(segmentIndex++ % 2 === 0) : 0
     })
   }
   return vertices
@@ -390,9 +413,7 @@ function tessellateMarkupCloud(
   vertices: AcExMarkupCloudVertex[]
 ): AcExMarkupPoint2d[] {
   if (vertices.length < 2) return vertices.map(v => ({ x: v.x, y: v.y }))
-  const points: AcExMarkupPoint2d[] = [
-    { x: vertices[0].x, y: vertices[0].y }
-  ]
+  const points: AcExMarkupPoint2d[] = [{ x: vertices[0].x, y: vertices[0].y }]
   for (let i = 0; i < vertices.length; i++) {
     const a = vertices[i]!
     const b = vertices[(i + 1) % vertices.length]!
@@ -416,11 +437,28 @@ export function acExStrokeMarkupCloud(
   color: string,
   lineWidth: number
 ): void {
+  const centerPoint = {
+    x: (first.x + second.x) / 2,
+    y: (first.y + second.y) / 2
+  }
+  let diameterWcs = Number(ctx.canvas.dataset[ACEX_OVERLAY_CLOUD_WCS])
+  if (!(diameterWcs > 0) || !Number.isFinite(diameterWcs)) {
+    diameterWcs = pixelToWorldDistance(
+      worldToScreen,
+      screenToWorld,
+      ACEX_OVERLAY_CLOUD_DIAMETER_PX,
+      centerPoint
+    )
+    if (diameterWcs > 0) {
+      ctx.canvas.dataset[ACEX_OVERLAY_CLOUD_WCS] = String(diameterWcs)
+    }
+  }
   const vertices = markupCloudVertices(
     first,
     second,
     worldToScreen,
-    screenToWorld
+    screenToWorld,
+    diameterWcs
   )
   const world = tessellateMarkupCloud(vertices)
   if (world.length < 2) return
@@ -543,10 +581,7 @@ export function acExMarkupBounds(
   switch (geometry.type) {
     case 'line':
     case 'arrow':
-      return expandExtents(
-        expandExtents(null, geometry.start),
-        geometry.end
-      )
+      return expandExtents(expandExtents(null, geometry.start), geometry.end)
     case 'rect':
     case 'cloud':
       return expandExtentsByCallout(
@@ -735,16 +770,14 @@ export function acExHitTestMarkup(
       const a = worldToScreen(g.start)
       const b = worldToScreen(g.end)
       return (
-        acExDistToSegmentPx(clientX, clientY, a.x, a.y, b.x, b.y) <=
-        thresholdPx
+        acExDistToSegmentPx(clientX, clientY, a.x, a.y, b.x, b.y) <= thresholdPx
       )
     }
     case 'callout': {
       const a = worldToScreen(g.tip)
       const b = worldToScreen(g.anchor)
       return (
-        acExDistToSegmentPx(clientX, clientY, a.x, a.y, b.x, b.y) <=
-        thresholdPx
+        acExDistToSegmentPx(clientX, clientY, a.x, a.y, b.x, b.y) <= thresholdPx
       )
     }
     case 'rect':

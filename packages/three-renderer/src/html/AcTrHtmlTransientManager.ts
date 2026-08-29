@@ -5,6 +5,7 @@ import {
   AcTrHtmlCanvasOverlay
 } from './AcTrHtmlCanvasOverlay'
 import { AC_TR_HTML_SELECTED_CLASS, AcTrHtmlElement } from './AcTrHtmlElement'
+import { acTrIsHtmlGrip } from './AcTrHtmlGrip'
 import { AcTrHtmlGroup } from './AcTrHtmlGroup'
 
 /** Scratch vector reused when decomposing CSS2D object matrices. */
@@ -31,12 +32,6 @@ function ensureSelectionStyles(): void {
   const style = document.createElement('style')
   style.dataset.mlHtmlSelection = '1'
   style.textContent = `
-.ml-html-dot.${AC_TR_HTML_SELECTED_CLASS} {
-  box-shadow:
-    0 0 0 2px rgba(255, 213, 79, 0.75),
-    0 0 10px rgba(255, 213, 79, 0.95),
-    0 0 18px rgba(255, 213, 79, 0.55);
-}
 .ml-html-badge.${AC_TR_HTML_SELECTED_CLASS},
 .ml-html-callout.${AC_TR_HTML_SELECTED_CLASS},
 .ml-html-stamp.${AC_TR_HTML_SELECTED_CLASS} .ml-html-stamp-badge,
@@ -47,6 +42,12 @@ function ensureSelectionStyles(): void {
     0 0 0 2px rgba(255, 213, 79, 0.4),
     0 0 12px rgba(255, 213, 79, 0.75),
     var(--ml-ui-shadow, 0 1px 4px rgba(0, 0, 0, 0.2));
+}
+.ml-html-dot.${AC_TR_HTML_SELECTED_CLASS} {
+  box-shadow:
+    0 0 0 2px rgba(255, 213, 79, 0.75),
+    0 0 10px rgba(255, 213, 79, 0.95),
+    0 0 18px rgba(255, 213, 79, 0.55);
 }
 .${AC_TR_HTML_CANVAS_CLASS}.${AC_TR_HTML_SELECTED_CLASS} {
   filter:
@@ -465,6 +466,11 @@ export class AcTrHtmlTransientManager {
     const pe = this._hitTestEnabled ? 'auto' : 'none'
     for (const group of this.groups.values()) {
       for (const child of group.children) {
+        if (acTrIsHtmlGrip(child.element)) {
+          // CSS shows grips only when selected; command lock uses inline none.
+          child.element.style.pointerEvents = this._hitTestEnabled ? '' : 'none'
+          continue
+        }
         child.element.style.pointerEvents = pe
       }
     }

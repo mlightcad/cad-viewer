@@ -4,6 +4,12 @@ export const ACEX_OVERLAY_BASE_ZOOM = 'overlayBaseZoom'
 /** Dataset key storing canvas stroke width in world units. */
 export const ACEX_OVERLAY_STROKE_WCS = 'overlayStrokeWcs'
 
+/** Dataset key storing revision-cloud lobe diameter in world units. */
+export const ACEX_OVERLAY_CLOUD_WCS = 'overlayCloudWcs'
+
+/** Target screen diameter in CSS pixels for each revision-cloud lobe at creation. */
+export const ACEX_OVERLAY_CLOUD_DIAMETER_PX = 8
+
 /**
  * Scale factor for HTML measure/markup overlays relative to first layout.
  */
@@ -119,17 +125,25 @@ export function acExSeedOverlaySizesFromWcs(
     canvases?: readonly HTMLElement[]
   }
 ): void {
-  const {
-    textHeightWcs,
-    strokeWidthWcs,
-    fontSizePx,
-    elements,
-    canvases
-  } = options
+  const { textHeightWcs, strokeWidthWcs, fontSizePx, elements, canvases } =
+    options
 
   if (strokeWidthWcs != null && strokeWidthWcs > 0) {
     for (const canvas of canvases ?? []) {
       acExSeedOverlayStrokeWcs(canvas, strokeWidthWcs)
+    }
+  }
+
+  if (
+    strokeWidthWcs != null &&
+    strokeWidthWcs > 0 &&
+    options.strokeScreenPx != null &&
+    options.strokeScreenPx > 0
+  ) {
+    const cloudWcs =
+      (ACEX_OVERLAY_CLOUD_DIAMETER_PX * strokeWidthWcs) / options.strokeScreenPx
+    for (const canvas of canvases ?? []) {
+      canvas.dataset[ACEX_OVERLAY_CLOUD_WCS] = String(cloudWcs)
     }
   }
 
