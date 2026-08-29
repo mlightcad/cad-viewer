@@ -15,11 +15,11 @@ export const ACEX_SNAP_LOUPE_INSET_PX = 8
 export const ACEX_SNAP_LOUPE_TOP_INSET_PX = 56
 
 /**
- * DOM chrome for the offline HTML snap loupe (border, crosshair, OSNAP glyph).
+ * DOM chrome for the offline HTML snap loupe (border and OSNAP glyph).
  * Geometry is drawn into a WebGL scissor by the viewer runtime.
  */
 export class AcExSnapLoupe {
-  /** Root HUD element (border + crosshair), positioned over the overlay. */
+  /** Root HUD element (border), positioned over the overlay. */
   private readonly root: HTMLDivElement
   /** OSNAP glyph drawn inside the loupe when a snap is active. */
   private readonly marker: HTMLDivElement
@@ -41,9 +41,6 @@ export class AcExSnapLoupe {
     this.root.className = 'mlcad-snap-loupe'
     this.root.setAttribute('aria-hidden', 'true')
     this.root.style.display = 'none'
-    const crosshair = document.createElement('div')
-    crosshair.className = 'mlcad-snap-loupe-crosshair'
-    this.root.appendChild(crosshair)
     this.marker = document.createElement('div')
     this.marker.className =
       'mlcad-osnap-marker mlcad-osnap-marker--rect mlcad-osnap-marker--hidden'

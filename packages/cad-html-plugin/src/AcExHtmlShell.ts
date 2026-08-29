@@ -80,32 +80,6 @@ export const ACEX_HTML_SHELL_CSS = `
     overflow: hidden;
     box-shadow: var(--mlcad-shadow);
   }
-  .mlcad-snap-loupe-crosshair {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-  .mlcad-snap-loupe-crosshair::before,
-  .mlcad-snap-loupe-crosshair::after {
-    content: '';
-    position: absolute;
-    background: var(--mlcad-measure-accent, #08e8de);
-    opacity: 0.85;
-  }
-  .mlcad-snap-loupe-crosshair::before {
-    left: 50%;
-    top: 0;
-    width: 1px;
-    height: 100%;
-    transform: translateX(-50%);
-  }
-  .mlcad-snap-loupe-crosshair::after {
-    top: 50%;
-    left: 0;
-    height: 1px;
-    width: 100%;
-    transform: translateY(-50%);
-  }
 
   html[data-mlcad-theme="light"] {
     --mlcad-ui-bg: rgba(255, 255, 255, 0.94);

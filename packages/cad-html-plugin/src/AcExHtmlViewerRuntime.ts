@@ -383,7 +383,7 @@ async function startViewer(): Promise<void> {
   const loupeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)
   loupeCamera.up.set(0, 1, 0)
   const savedViewportBox = new THREE.Vector4()
-  /** DOM chrome (border, crosshair, OSNAP glyph) for the snap loupe. */
+  /** DOM chrome (border and OSNAP glyph) for the snap loupe. */
   const snapLoupe = new AcExSnapLoupe(canvasHost)
   /** Last client sample while the loupe is visible; `null` when hidden. */
   let loupeSample: { clientX: number; clientY: number } | null = null

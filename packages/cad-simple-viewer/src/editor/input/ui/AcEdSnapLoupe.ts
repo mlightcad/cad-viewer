@@ -17,7 +17,7 @@ export {
 } from './AcEdSnapLoupeMath'
 
 /**
- * DOM chrome for the mobile snap loupe: border, crosshair, and OSNAP glyph.
+ * DOM chrome for the mobile snap loupe: border and OSNAP glyph.
  *
  * CAD geometry is drawn by the view's overlay viewport; this widget only
  * drives that viewport and paints HUD on top.
@@ -28,7 +28,7 @@ export class AcEdSnapLoupe {
 
   /** View whose overlay viewport shows the magnified CAD content. */
   private readonly view: AcEdBaseView
-  /** Root HUD element (border + crosshair), positioned over the overlay. */
+  /** Root HUD element (border), positioned over the overlay. */
   private readonly root: HTMLDivElement
   /** OSNAP glyph drawn inside the loupe when a snap is active. */
   private readonly marker: AcEdMarker
@@ -44,9 +44,6 @@ export class AcEdSnapLoupe {
     this.root = document.createElement('div')
     this.root.className = 'ml-snap-loupe'
     this.root.setAttribute('aria-hidden', 'true')
-    const crosshair = document.createElement('div')
-    crosshair.className = 'ml-snap-loupe-crosshair'
-    this.root.appendChild(crosshair)
     const hostPosition = getComputedStyle(view.container).position
     if (hostPosition === 'static') {
       view.container.style.position = 'relative'
@@ -133,32 +130,6 @@ export class AcEdSnapLoupe {
         z-index: 20;
         overflow: hidden;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-      }
-      .ml-snap-loupe-crosshair {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-      }
-      .ml-snap-loupe-crosshair::before,
-      .ml-snap-loupe-crosshair::after {
-        content: '';
-        position: absolute;
-        background: var(--ml-ui-canvas-line, #0f0);
-        opacity: 0.85;
-      }
-      .ml-snap-loupe-crosshair::before {
-        left: 50%;
-        top: 0;
-        width: 1px;
-        height: 100%;
-        transform: translateX(-50%);
-      }
-      .ml-snap-loupe-crosshair::after {
-        top: 50%;
-        left: 0;
-        height: 1px;
-        width: 100%;
-        transform: translateY(-50%);
       }
     `
     document.head.appendChild(style)
