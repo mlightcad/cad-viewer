@@ -1,6 +1,7 @@
 import {
   AcCmColor,
   AcDbDatabase,
+  AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
@@ -97,8 +98,9 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
       layoutId: this._view.activeLayoutBtrId,
       fontSize: acapGetMeasurementFontSize()
     })
-    this._badge.object.visible = false
     this._htManager.add(this._badge)
+    // `add()` applies layout visibility and would force the empty capsule on.
+    this._badge.object.visible = false
 
     this._preview = new AcApHtmlLivePreview(
       this._view,
@@ -182,6 +184,7 @@ export class AcApMeasureDistanceCmd extends AcEdCommand {
           AcApI18n.t('jig.measureDistance.secondPoint')
         )
         p2Prompt.useBasePoint = true
+        p2Prompt.basePoint = new AcGePoint3d(p1)
         p2Prompt.jig = new AcApMeasureDistanceJig(context.view, db, p1, color)
         const p2Result = await editor.getPoint(p2Prompt)
         if (p2Result.status !== AcEdPromptStatus.OK) return

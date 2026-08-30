@@ -23,7 +23,13 @@ import {
 import { AcEdFloatingMessage } from './AcEdFloatingMessage'
 import { AcEdRubberBand } from './AcEdRubberBand'
 import { AcEdSnapLoupe } from './AcEdSnapLoupe'
-import { AcEdTouchPointSession } from './AcEdTouchPointSession'
+import {
+  acedIsGhostClientOrigin,
+  acedIsTouchDerivedMouseEvent,
+  acedShouldIgnoreCompatMouse,
+  acedSinkFollowingClick,
+  AcEdTouchPointSession
+} from './AcEdTouchPointSession'
 
 /**
  * A UI component providing a small floating input box used inside CAD editing
@@ -90,8 +96,13 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   private readonly touchSession = new AcEdTouchPointSession()
   /** Magnifier HUD shown after a long-press on touch. */
   private snapLoupe?: AcEdSnapLoupe
-  /** When true, the synthetic `click` that follows a touch `pointerup` is ignored. */
-  private ignoreNextClick = false
+  /**
+   * When true, a left-button mouse/pen `pointerdown` landed on this prompt's
+   * canvas, so the following `click` may commit. Touch never sets this:
+   * phone/pad hide dynamic input, so a leftover compatibility `click` would
+   * otherwise hit the canvas and commit the next point prompt.
+   */
+  private mouseClickArmed = false
   /** Whether to suppress UI display while keeping input active */
   private suppressDisplay: boolean = false
   /** Cached sysvar handler */
@@ -180,7 +191,11 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.boundOnPointerMove = e => this.handlePointerMove(e)
     this.boundOnPointerUp = e => this.handlePointerUp(e)
     this.boundOnPointerCancel = e => this.handlePointerCancel(e)
-    this.parent.addEventListener('pointerdown', this.boundOnPointerDown)
+    // `preventDefault` on touch `pointerdown` needs a non-passive listener so
+    // the browser does not synthesize a leftover `click` for this gesture.
+    this.parent.addEventListener('pointerdown', this.boundOnPointerDown, {
+      passive: false
+    })
     this.parent.addEventListener('pointermove', this.boundOnPointerMove)
     // Release can happen off-canvas; listen on window like the HTML viewer.
     window.addEventListener('pointerup', this.boundOnPointerUp)
@@ -222,16 +237,16 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.updateDynamicInputDisplay()
     if (!this.suppressDisplay) {
       super.showAt(pos)
-      // Seed preview so modifier toggles can refresh immediately.
-      const wcsPos = this.view.screenToWorld(this.view.viewportToCanvas(pos))
-      this.updateDynamicPreview(wcsPos)
-      return
+    } else {
+      this.visible = true
+      this.container.style.display = 'none'
+      this.setPosition(pos)
+      this.parent.addEventListener('mousemove', this.boundOnMouseMove)
     }
-
-    this.visible = true
-    this.container.style.display = 'none'
-    this.setPosition(pos)
-    this.parent.addEventListener('mousemove', this.boundOnMouseMove)
+    // Phone/pad have no hover. Do not seed the measure jig from a dummy
+    // canvas-(0,0) or leftover finger sample; wait for a real pointer.
+    if (!this.view.hasCursorPos) return
+    if (acedShouldIgnoreCompatMouse()) return
     const wcsPos = this.view.screenToWorld(this.view.viewportToCanvas(pos))
     this.updateDynamicPreview(wcsPos)
   }
@@ -298,6 +313,9 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
    */
   protected override handleMouseMove(e: MouseEvent) {
     if (!this.visible) return
+    if (this.touchSession.isPicking) return
+    if (acedShouldIgnoreCompatMouse()) return
+    if (acedIsGhostClientOrigin(e) || acedIsTouchDerivedMouseEvent(e)) return
 
     const wcsPos = this.getPosition({ x: e.clientX, y: e.clientY })
     this.updateDynamicPreview(wcsPos)
@@ -327,10 +345,15 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
   private handleClick(e: MouseEvent) {
     if (!this.visible) return
-    if (this.ignoreNextClick) {
-      this.ignoreNextClick = false
-      return
-    }
+    // Mouse/pen: commit only after this prompt saw a canvas pointerdown.
+    // Touch commits on pointerup. Compatibility mouse events after a long-press
+    // (including while the finger is still moving the loupe) must not commit
+    // a second nearby point on the next prompt.
+    if (this.touchSession.isPicking) return
+    if (acedShouldIgnoreCompatMouse()) return
+    if (!this.mouseClickArmed) return
+    this.mouseClickArmed = false
+    if (acedIsGhostClientOrigin(e) || acedIsTouchDerivedMouseEvent(e)) return
 
     const wcsPos = this.getPosition({ x: e.clientX, y: e.clientY })
     const defaults = this.getDynamicValue(wcsPos)
@@ -341,14 +364,28 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   }
 
   /**
-   * Starts a one-finger pick. Short taps still commit on `pointerup`; a
-   * long-press opens the snap loupe and disables navigation until release.
+   * Starts a one-finger pick on touch, or arms a mouse/pen click commit.
    *
-   * @param e - Pointer event; only `touch` with button 0 is handled.
+   * @param e - Pointer event; button 0 only. Touch is handled here; mouse and
+   *   pen arm {@link mouseClickArmed} so the following `click` can commit.
    */
   private handlePointerDown(e: PointerEvent) {
-    if (!this.visible || e.pointerType !== 'touch') return
-    if (e.button !== 0) return
+    if (!this.visible || e.button !== 0) return
+    if (e.pointerType !== 'touch') {
+      // Long-press (and finger move while the loupe is open) must not arm a
+      // mouse click. Compatibility `pointerdown` after touch `pointerup` also
+      // must not clear the click sink — that was committing a second nearby
+      // point on the next measure-distance prompt.
+      if (this.touchSession.isPicking) return
+      if (acedShouldIgnoreCompatMouse()) return
+      if (acedIsGhostClientOrigin(e) || acedIsTouchDerivedMouseEvent(e)) {
+        return
+      }
+      this.mouseClickArmed = true
+      return
+    }
+    e.preventDefault()
+    this.mouseClickArmed = false
     this.touchSession.start(e.pointerId, e.clientX, e.clientY, () => {
       this.view.setNavigationEnabled(false)
       this.applyClientSample(this.touchSession.x, this.touchSession.y)
@@ -384,11 +421,14 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (e.pointerType !== 'touch') return
     if (this.touchSession.phase === 'idle') return
     if (e.pointerId !== this.touchSession.pointerId) return
-    this.ignoreNextClick = true
+    this.mouseClickArmed = false
+    acedSinkFollowingClick()
     this.releaseTouchCapture()
     const action = this.touchSession.end()
     this.view.setNavigationEnabled(true)
     this.snapLoupe?.hide()
+    // Finger-up coords must not seed the next prompt's jig preview.
+    this.view.clearCursorPos()
     if (!this.visible || action !== 'commit') return
     this.applyClientSample(e.clientX, e.clientY)
     const wcsPos = this.lastDynamicPoint
@@ -410,11 +450,13 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (e.pointerType !== 'touch') return
     if (this.touchSession.phase === 'idle') return
     if (e.pointerId !== this.touchSession.pointerId) return
-    this.ignoreNextClick = true
+    this.mouseClickArmed = false
+    acedSinkFollowingClick()
     this.releaseTouchCapture()
     this.touchSession.cancel()
     this.view.setNavigationEnabled(true)
     this.snapLoupe?.hide()
+    this.view.clearCursorPos()
   }
 
   /**

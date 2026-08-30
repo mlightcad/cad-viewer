@@ -9,6 +9,129 @@ export const ACED_TOUCH_POINT_LONG_PRESS_MS = 350
  */
 export const ACED_TOUCH_POINT_MOVE_CANCEL_PX = 10
 
+let followingClickSink: ((event: Event) => void) | null = null
+let followingClickSinkTimer: ReturnType<typeof setTimeout> | null = null
+
+/**
+ * Ignore compatibility mouse events this long after a touch pick ends.
+ *
+ * Chrome fires a `pointerType: 'mouse'` `pointerdown` then `click` after
+ * touch `pointerup`. Those coordinates are near the finger, so a two-point
+ * command (measure distance) would commit both points from one long-press.
+ */
+export const ACED_TOUCH_MOUSE_GUARD_MS = 1000
+
+let ignoreCompatMouseUntil = 0
+
+/**
+ * Whether a mouse/pen event is a leftover from a touch gesture.
+ *
+ * Browsers synthesize `pointerType: 'mouse'` (and `click`) after touch.
+ * Those events often have `clientX/clientY` of `0`, which maps to the
+ * canvas origin — the top-left of the view.
+ */
+export function acedIsTouchDerivedMouseEvent(
+  event: MouseEvent | PointerEvent
+): boolean {
+  if ('pointerType' in event && event.pointerType === 'touch') return true
+  const caps = (
+    event as MouseEvent & {
+      sourceCapabilities?: { firesTouchEvents?: boolean }
+    }
+  ).sourceCapabilities
+  return caps?.firesTouchEvents === true
+}
+
+/**
+ * Whether client coordinates are the document origin.
+ *
+ * Compatibility mouse events after a toolbar tap are often dispatched at
+ * `(0, 0)`, which would commit a point at the canvas top-left.
+ *
+ * @param event - Event with client coordinates.
+ * @returns True when both client axes are zero.
+ */
+export function acedIsGhostClientOrigin(event: {
+  clientX: number
+  clientY: number
+}): boolean {
+  return event.clientX === 0 && event.clientY === 0
+}
+
+/**
+ * Stops the next `click` in the capture phase and ignores compatibility
+ * mouse events for {@link ACED_TOUCH_MOUSE_GUARD_MS}.
+ *
+ * Touch picking commits on `pointerup`. The browser then synthesizes a
+ * mouse `pointerdown` + `click` near the finger. A new point prompt would
+ * treat that as a real mouse pick unless this guard stays armed across
+ * prompt instances.
+ */
+export function acedSinkFollowingClick() {
+  acedArmTouchMouseGuard()
+  if (followingClickSink) return
+  const sink = (event: Event) => {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    acedClearFollowingClickSink()
+  }
+  followingClickSink = sink
+  window.addEventListener('click', sink, true)
+  // If `preventDefault` on touch pointerdown already suppressed the leftover
+  // click, do not leave the sink armed forever — that would eat the next
+  // real mouse click on a hybrid (touch + mouse) device.
+  followingClickSinkTimer = setTimeout(() => {
+    acedClearFollowingClickSink()
+  }, ACED_TOUCH_MOUSE_GUARD_MS)
+}
+
+/**
+ * Removes {@link acedSinkFollowingClick} if it is armed.
+ */
+export function acedClearFollowingClickSink() {
+  if (followingClickSinkTimer != null) {
+    clearTimeout(followingClickSinkTimer)
+    followingClickSinkTimer = null
+  }
+  if (!followingClickSink) return
+  window.removeEventListener('click', followingClickSink, true)
+  followingClickSink = null
+}
+
+/**
+ * Arms the compatibility-mouse ignore window after a touch pick.
+ *
+ * @param now - Current time in milliseconds; defaults to `performance.now()`.
+ */
+export function acedArmTouchMouseGuard(now: number = performance.now()) {
+  ignoreCompatMouseUntil = Math.max(
+    ignoreCompatMouseUntil,
+    now + ACED_TOUCH_MOUSE_GUARD_MS
+  )
+}
+
+/**
+ * Whether mouse `pointerdown` / `click` should be ignored as leftover from
+ * a touch pick (including on a newly created prompt).
+ *
+ * @param now - Current time in milliseconds; defaults to `performance.now()`.
+ * @returns True while a following-click sink is armed or the guard window
+ *   has not expired.
+ */
+export function acedShouldIgnoreCompatMouse(
+  now: number = performance.now()
+): boolean {
+  return followingClickSink != null || now < ignoreCompatMouseUntil
+}
+
+/**
+ * Clears the click sink and mouse guard. Used by tests.
+ */
+export function acedResetTouchMouseGuard() {
+  acedClearFollowingClickSink()
+  ignoreCompatMouseUntil = 0
+}
+
 /**
  * Phases of a one-finger point-pick gesture.
  *

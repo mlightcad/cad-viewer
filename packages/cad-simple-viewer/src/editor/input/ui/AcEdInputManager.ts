@@ -60,6 +60,7 @@ import {
 } from './AcEdFloatingInputTypes'
 import { AcEdFloatingMessage } from './AcEdFloatingMessage'
 import { AcEdMessageType } from './AcEdMessageType'
+import { acedShouldIgnoreCompatMouse } from './AcEdTouchPointSession'
 
 /**
  * Internal control-flow error used to propagate keyword picks out of
@@ -2096,7 +2097,14 @@ export class AcEdInputManager {
       document.addEventListener('keyup', modifierHandler)
       this.view.canvas.addEventListener('contextmenu', contextMenuHandler)
       // showAt() expects viewport coordinates; curMousePos is canvas-local.
-      floatingInput.showAt(this.view.canvasToViewport(this.view.curMousePos))
+      // On touch, skip the dummy canvas-(0,0) seed until a real pointer sample.
+      // Also skip leftover finger coords after a touch pick — those seed a
+      // short jig segment on the next measure-distance prompt.
+      if (this.view.hasCursorPos && !acedShouldIgnoreCompatMouse()) {
+        floatingInput.showAt(this.view.canvasToViewport(this.view.curMousePos))
+      } else {
+        floatingInput.showAt({ x: 0, y: 0 })
+      }
 
       promptInputSession.promise.then(result => {
         if (settled) return

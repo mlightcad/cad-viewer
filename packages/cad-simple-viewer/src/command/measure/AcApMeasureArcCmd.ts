@@ -319,8 +319,8 @@ class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
       layoutId: this._view.activeLayoutBtrId,
       fontSize: acapGetMeasurementFontSize()
     })
-    this._badge.object.visible = false
     this._htManager.add(this._badge)
+    this._badge.object.visible = false
 
     this._preview = new AcApHtmlLivePreview(
       this._view,
@@ -514,8 +514,8 @@ class AcApMeasureArcEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
       layoutId: this._view.activeLayoutBtrId,
       fontSize: acapGetMeasurementFontSize()
     })
-    this._badge.object.visible = false
     this._htManager.add(this._badge)
+    this._badge.object.visible = false
 
     this._preview = new AcApHtmlLivePreview(
       this._view,
