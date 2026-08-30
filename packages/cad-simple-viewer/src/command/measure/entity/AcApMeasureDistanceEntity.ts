@@ -11,8 +11,8 @@ import {
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
-  acapBindOverlayPointerDrag,
   ACAP_OVERLAY_ARROW_SIZE_PX,
+  acapBindOverlayPointerDrag,
   acapPlaceOverlayHtml,
   acapScreenPxToWcs
 } from '../../overlay'

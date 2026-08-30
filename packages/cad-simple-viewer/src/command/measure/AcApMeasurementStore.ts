@@ -20,7 +20,7 @@ import {
 } from '../overlay/AcApOverlayDrawUtil'
 import {
   hitTestMeasurementGeometry,
-  measurementGeometryBounds
+  measurementFocusBox
 } from './AcApMeasurementGeometry'
 import { runMeasurementEdit } from './AcApMeasurementHistory'
 import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
@@ -196,25 +196,55 @@ export function getMeasurementValueText(
 }
 
 /**
- * Select a measurement and zoom the view to its geometry.
+ * Select a measurement and zoom the view to its geometry plus HTML overlays.
  *
- * Point measurements (degenerate AABB) are padded so the camera can frame them.
+ * Coordinate measurements include the badge (capsule) so the camera frames
+ * the label instead of the point. Zooming to a 1-unit pad around the point
+ * would scale the WCS-sized capsule over the canvas and steal pointer events.
  */
 export function focusMeasurement(
   view: AcTrView2d,
   record: AcApMeasurementRecord
 ): void {
-  const box = measurementGeometryBounds(record.geometry)
+  const box = measurementFocusBox(
+    record.geometry,
+    collectMeasurementOverlayRects(view, record.id),
+    (clientX, clientY) => {
+      const canvas = view.viewportToCanvas({ x: clientX, y: clientY })
+      return view.screenToWorld(canvas)
+    }
+  )
   if (!box) return
-  const width = box.max.x - box.min.x
-  const height = box.max.y - box.min.y
-  if (!(width > 1e-8) && !(height > 1e-8)) {
-    const pad = 1
-    box.expandByPoint({ x: box.min.x - pad, y: box.min.y - pad })
-    box.expandByPoint({ x: box.max.x + pad, y: box.max.y + pad })
-  }
   view.zoomTo(box, 1.5)
   view.htmlTransientManager.selectGroup(record.id)
+}
+
+/** Badge / callout client rects; skip endpoint grips that sit on geometry. */
+function collectMeasurementOverlayRects(
+  view: AcTrView2d,
+  id: string
+): Array<{ left: number; top: number; right: number; bottom: number }> {
+  const group = view.htmlTransientManager.getGroup(id)
+  if (!group) return []
+  const rects: Array<{
+    left: number
+    top: number
+    right: number
+    bottom: number
+  }> = []
+  for (const child of group.children) {
+    const el = child.element
+    if (
+      el.classList.contains('ml-html-dot') ||
+      el.classList.contains('ml-html-grip')
+    ) {
+      continue
+    }
+    const rect = el.getBoundingClientRect()
+    if (rect.width <= 0 && rect.height <= 0) continue
+    rects.push(rect)
+  }
+  return rects
 }
 
 /**

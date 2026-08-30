@@ -13,6 +13,21 @@ import type { AcApMeasurementGeometry } from './AcApMeasurementTypes'
 
 type WorldToScreen = (point: { x: number; y: number }) => AcApScreenPoint
 
+type ClientToWorld = (clientX: number, clientY: number) => {
+  x: number
+  y: number
+}
+
+type OverlayClientRect = {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+/** Fallback pad (world units) when a point measurement has no overlay size. */
+const DEGENERATE_FOCUS_PAD_WCS = 1
+
 /**
  * Axis-aligned world bounds of a measurement's control geometry.
  *
@@ -56,6 +71,42 @@ export function measurementGeometryBounds(
       return undefined
   }
   return box.isEmpty() ? undefined : box
+}
+
+function padDegenerateMeasurementBox(box: AcGeBox2d): void {
+  const width = box.max.x - box.min.x
+  const height = box.max.y - box.min.y
+  if (width > 1e-8 || height > 1e-8) return
+  const pad = DEGENERATE_FOCUS_PAD_WCS
+  box.expandByPoint({ x: box.min.x - pad, y: box.min.y - pad })
+  box.expandByPoint({ x: box.max.x + pad, y: box.max.y + pad })
+}
+
+/**
+ * Combined zoom-to box: control geometry plus HTML overlay rectangles.
+ *
+ * Point / coordinate measurements are a degenerate AABB on their own. Union
+ * the badge (capsule) client rect so the camera frames the label instead of
+ * zooming onto the point. A 1-unit pad remains only when no overlay size is
+ * available.
+ */
+export function measurementFocusBox(
+  geometry: AcApMeasurementGeometry,
+  overlayRects: ReadonlyArray<OverlayClientRect>,
+  clientToWorld: ClientToWorld
+): AcGeBox2d | undefined {
+  const geometryBox = measurementGeometryBounds(geometry)
+  const box = geometryBox
+    ? new AcGeBox2d(geometryBox.min, geometryBox.max)
+    : new AcGeBox2d()
+  for (const rect of overlayRects) {
+    if (rect.right <= rect.left && rect.bottom <= rect.top) continue
+    box.expandByPoint(clientToWorld(rect.left, rect.top))
+    box.expandByPoint(clientToWorld(rect.right, rect.bottom))
+  }
+  if (box.isEmpty()) return undefined
+  padDegenerateMeasurementBox(box)
+  return box
 }
 
 /**

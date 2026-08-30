@@ -23,6 +23,7 @@ import {
 } from './AcExHtmlOverlayDom'
 import {
   acExDrawMarkupArrowHead,
+  acExExpandExtentsByClientRects,
   acExOverlayArrowSize
 } from './AcExMarkupGeometry'
 import { acExBindMarkupPointerDrag } from './AcExMarkupGripDrag'
@@ -250,8 +251,8 @@ function isRecordOnLayout(
   return recordLayoutId == null || recordLayoutId === activeLayoutId
 }
 
-/** World AABB of a measurement's control geometry. */
-function measurementFocusExtents(
+/** World AABB of a measurement's control geometry (no overlay padding). */
+function measurementGeometryExtents(
   geometry: AcExMeasurementGeometry
 ): AcExExtents | null {
   const xs: number[] = []
@@ -290,17 +291,48 @@ function measurementFocusExtents(
       return null
   }
   if (xs.length === 0) return null
-  let minX = Math.min(...xs)
-  let minY = Math.min(...ys)
-  let maxX = Math.max(...xs)
-  let maxY = Math.max(...ys)
-  if (!(maxX - minX > 1e-8) && !(maxY - minY > 1e-8)) {
-    minX -= 1
-    minY -= 1
-    maxX += 1
-    maxY += 1
+  return {
+    minX: Math.min(...xs),
+    minY: Math.min(...ys),
+    maxX: Math.max(...xs),
+    maxY: Math.max(...ys)
   }
-  return { minX, minY, maxX, maxY }
+}
+
+function padDegenerateExtents(extents: AcExExtents): AcExExtents {
+  if (extents.maxX - extents.minX > 1e-8 || extents.maxY - extents.minY > 1e-8) {
+    return extents
+  }
+  return {
+    minX: extents.minX - 1,
+    minY: extents.minY - 1,
+    maxX: extents.maxX + 1,
+    maxY: extents.maxY + 1
+  }
+}
+
+/**
+ * Combined zoom-to extents: control geometry plus HTML overlay rectangles.
+ *
+ * Coordinate measurements are a degenerate AABB on their own. Union the
+ * badge (capsule) so the camera frames the label instead of the point.
+ */
+function measurementFocusExtents(
+  geometry: AcExMeasurementGeometry,
+  overlayRects: ReadonlyArray<{
+    left: number
+    top: number
+    right: number
+    bottom: number
+  }>,
+  clientToWorld: (clientX: number, clientY: number) => { x: number; y: number }
+): AcExExtents | null {
+  const extents = acExExpandExtentsByClientRects(
+    measurementGeometryExtents(geometry),
+    overlayRects,
+    clientToWorld
+  )
+  return extents ? padDegenerateExtents(extents) : null
 }
 
 /**
@@ -1310,14 +1342,25 @@ export class AcExMeasureController {
   }
 
   /**
-   * Zoom to a measurement and select it.
+   * Zoom to a measurement (geometry plus HTML badge) and select it.
    *
    * @returns `true` when extents were applied.
    */
   focus(id: string): boolean {
     const measure = this._committed.find(item => item.id === id)
     if (!measure) return false
-    const extents = measurementFocusExtents(measure.record.geometry)
+    const rects = measure.parts.dom
+      .filter(el => !acExIsOverlayGrip(el) && !el.hidden)
+      .map(el => el.getBoundingClientRect())
+      .filter(rect => rect.width > 0 || rect.height > 0)
+    const extents = measurementFocusExtents(
+      measure.record.geometry,
+      rects,
+      (clientX, clientY) => {
+        const p = this._view.screenToWcs(clientX, clientY)
+        return { x: p.x, y: p.y }
+      }
+    )
     if (!extents) return false
     this._view.zoomToExtents(extents)
     this.selectFromPanel(id)
