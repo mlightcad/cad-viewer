@@ -282,6 +282,9 @@ export default {
     measurementvis: {
       description: 'Zobrazí nebo skryje měření na aktuálním rozvržení'
     },
+    measurementpanel: {
+      description: 'Otevře paletu měření'
+    },
     measurementexport: {
       description: 'Exportuje měření do sidecar JSON souboru'
     },

@@ -512,6 +512,12 @@ export default {
         'إظهار أو إخفاء القياسات في المخطط الحالي'
     },
 
+    measurementpanel: {
+      ...enCommand.ACAD.measurementpanel,
+      description:
+        'فتح لوحة القياس'
+    },
+
     measurementexport: {
       ...enCommand.ACAD.measurementexport,
       description:

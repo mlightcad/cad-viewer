@@ -280,6 +280,9 @@ export default {
     measurementvis: {
       description: 'Shows or hides measurements on the current layout'
     },
+    measurementpanel: {
+      description: 'Opens the measurement palette'
+    },
     measurementexport: {
       description: 'Exports measurements to a sidecar JSON file'
     },

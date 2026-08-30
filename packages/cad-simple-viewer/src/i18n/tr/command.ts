@@ -291,6 +291,9 @@ export default {
     measurementvis: {
       description: 'Geçerli yerleşimdeki ölçümleri gösterir veya gizler'
     },
+    measurementpanel: {
+      description: 'Ölçüm paletini açar'
+    },
     measurementexport: {
       description: 'Ölçümleri sidecar JSON dosyasına dışa aktarır'
     },

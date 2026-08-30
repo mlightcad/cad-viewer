@@ -29,6 +29,7 @@ import {
   measureArc,
   measureArea,
   measureDistance,
+  measurementPanel,
   measurePoint,
   pan,
   readingMode,
@@ -179,6 +180,12 @@ const verticalToolbarData = computed(() => {
           text: t('main.verticalToolbar.measurePoint.text'),
           command: 'measurepoint',
           description: t('main.verticalToolbar.measurePoint.description')
+        },
+        {
+          icon: measurementPanel,
+          text: t('main.verticalToolbar.measurementPanel.text'),
+          command: 'measurementpanel',
+          description: t('main.verticalToolbar.measurementPanel.description')
         },
         visibilityToggle(
           'measurementvis',

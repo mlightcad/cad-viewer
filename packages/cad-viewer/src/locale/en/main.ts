@@ -447,6 +447,10 @@ export default {
       text: 'Point',
       description: 'Measures the X/Y coordinates of a picked point'
     },
+    measurementPanel: {
+      text: 'Panel',
+      description: 'Open the measurement palette'
+    },
     clearMeasurements: {
       text: 'Clear',
       description: 'Removes all measurements from the current layout'
@@ -473,7 +477,7 @@ export default {
         'Shifts the view without changing the viewing direction or magnification'
     },
     markupPanel: {
-      text: 'Results',
+      text: 'Panel',
       description: 'Open the markup palette'
     },
     markupText: {
@@ -744,6 +748,23 @@ export default {
         question: 'Question',
         answered: 'Answered',
         closed: 'Closed'
+      }
+    },
+    measurements: {
+      tab: 'Measure',
+      title: 'Measurements',
+      empty: 'No measurements yet',
+      type: 'Type',
+      value: 'Value',
+      filterAll: 'All',
+      delete: 'Delete',
+      clear: 'Clear all',
+      typeValues: {
+        distance: 'Distance',
+        angle: 'Angle',
+        area: 'Area',
+        arc: 'Arc',
+        point: 'XY'
       }
     },
     missingResources: {

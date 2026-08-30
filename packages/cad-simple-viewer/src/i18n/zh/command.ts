@@ -253,6 +253,9 @@ export default {
     measurementvis: {
       description: '显示或隐藏当前布局上的测量标注'
     },
+    measurementpanel: {
+      description: '打开测量面板'
+    },
     measurementexport: {
       description: '将测量标注导出为 sidecar JSON 文件'
     },

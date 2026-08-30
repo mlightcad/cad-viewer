@@ -410,6 +410,10 @@ export default {
       text: '坐标',
       description: '测量拾取点的 X/Y 坐标'
     },
+    measurementPanel: {
+      text: '测量面板',
+      description: '打开测量面板'
+    },
     clearMeasurements: {
       text: '清除',
       description: '清除当前布局上的所有测量标注'
@@ -435,7 +439,7 @@ export default {
       description: '平移视图'
     },
     markupPanel: {
-      text: '看结果',
+      text: '批注面板',
       description: '打开批注面板'
     },
     markupText: {
@@ -703,6 +707,23 @@ export default {
         question: '疑问',
         answered: '已答复',
         closed: '已关闭'
+      }
+    },
+    measurements: {
+      tab: '测量',
+      title: '测量',
+      empty: '暂无测量',
+      type: '类型',
+      value: '数值',
+      filterAll: '全部',
+      delete: '删除',
+      clear: '全部清除',
+      typeValues: {
+        distance: '距离',
+        angle: '角度',
+        area: '面积',
+        arc: '弧长',
+        point: '坐标'
       }
     },
     missingResources: {
