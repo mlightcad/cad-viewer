@@ -8,6 +8,7 @@ import {
   distPointToSegmentPx,
   pointInPolygonPx
 } from '../../util/AcApScreenHitTest'
+import { measureAngleArcRadiusWcs } from './AcApMeasureAngleArc'
 import type { AcApMeasurementGeometry } from './AcApMeasurementTypes'
 
 type WorldToScreen = (point: { x: number; y: number }) => AcApScreenPoint
@@ -101,13 +102,20 @@ export function hitTestMeasurementGeometry(
       ) {
         return true
       }
-      const len1 = Math.hypot(arm1.x - vertex.x, arm1.y - vertex.y)
-      const len2 = Math.hypot(arm2.x - vertex.x, arm2.y - vertex.y)
-      const r = Math.max(Math.min(len1, len2) * 0.3, 15)
       const startAngle = Math.atan2(arm1.y - vertex.y, arm1.x - vertex.x)
       const endAngle = Math.atan2(arm2.y - vertex.y, arm2.x - vertex.x)
       const antiClockwise =
         AcGeMathUtil.normalizeAngle(endAngle - startAngle) > Math.PI
+      const origin = worldToScreen({ x: 0, y: 0 })
+      const unit = worldToScreen({ x: 1, y: 0 })
+      const ppu = Math.hypot(unit.x - origin.x, unit.y - origin.y)
+      const r =
+        measureAngleArcRadiusWcs(
+          geometry.vertex,
+          geometry.arm1,
+          geometry.arm2
+        ) * (ppu > 0 && Number.isFinite(ppu) ? ppu : 1)
+      if (!(r > 0)) return false
       return (
         distPointToArcPx(
           canvas.x,

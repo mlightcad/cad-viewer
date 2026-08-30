@@ -17,8 +17,16 @@ export function createDefaultMarkupColor(): AcCmColor {
   return new AcCmColor(AcCmColorMethod.ByACI, 1)
 }
 
+/**
+ * Overlay line weight meaning "no CAD lineweight" (hairline).
+ *
+ * Drawn as 1 CSS pixel and not scaled with zoom until the user picks a
+ * numeric lineweight from the drawing-style / style toolbar.
+ */
+export const MARKUP_HAIRLINE_LINE_WEIGHT = 0 as AcGiLineWeight
+
 /** Factory default CAD line weight for markup geometry. */
-export const MARKUP_LINE_WEIGHT = AcGiLineWeight.LineWeight070
+export const MARKUP_LINE_WEIGHT = MARKUP_HAIRLINE_LINE_WEIGHT
 
 /** Factory default screen font size (CSS px) for text / callout markups. */
 export const MARKUP_FONT_SIZE = 12
@@ -69,7 +77,7 @@ export function setMarkupDrawColor(color: AcCmColor): void {
 
 /** Update the session markup draw line weight. */
 export function setMarkupDrawLineWeight(weight: AcGiLineWeight): void {
-  if (!(weight > 0)) return
+  if (!Number.isFinite(weight) || weight < 0) return
   markupDrawLineWeight = weight
   notifyMarkupDrawStyleChanged()
 }
@@ -81,10 +89,22 @@ export function setMarkupDrawFontSize(size: number): void {
   notifyMarkupDrawStyleChanged()
 }
 
+/**
+ * Resolve a stored markup line weight, treating missing / negative CAD
+ * specials as the session default. `0` is hairline and is kept.
+ */
+export function resolveMarkupLineWeight(
+  weight: number | undefined | null
+): AcGiLineWeight {
+  return typeof weight === 'number' && Number.isFinite(weight) && weight >= 0
+    ? (weight as AcGiLineWeight)
+    : MARKUP_LINE_WEIGHT
+}
+
 /** Map a CAD line weight to a canvas stroke width in CSS pixels. */
 export function markupCanvasLineWidth(weight: AcGiLineWeight | number): number {
   const n = Number(weight)
-  if (!Number.isFinite(n) || n <= 0) return 2
+  if (!Number.isFinite(n) || n <= 0) return 0
   return Math.max(1, n / 28)
 }
 
@@ -116,14 +136,13 @@ export function withMarkupStyleWcs(
     style.fontSize != null && style.fontSize > 0
       ? style.fontSize
       : MARKUP_FONT_SIZE
-  const lineWeight =
-    style.lineWeight != null && style.lineWeight > 0
-      ? style.lineWeight
-      : MARKUP_LINE_WEIGHT
+  const lineWeight = resolveMarkupLineWeight(style.lineWeight)
+  const strokePx = markupCanvasLineWidth(lineWeight)
   return {
     ...style,
     textHeightWcs: acapScreenPxToWcs(fontSize, view),
-    strokeWidthWcs: acapScreenPxToWcs(markupCanvasLineWidth(lineWeight), view)
+    strokeWidthWcs:
+      strokePx > 0 ? acapScreenPxToWcs(strokePx, view) : undefined
   }
 }
 
@@ -145,14 +164,8 @@ export function patchMarkupStyleWcs(
       : MARKUP_FONT_SIZE
   const nextFont =
     next.fontSize != null && next.fontSize > 0 ? next.fontSize : MARKUP_FONT_SIZE
-  const prevWeight =
-    previous.lineWeight != null && previous.lineWeight > 0
-      ? previous.lineWeight
-      : MARKUP_LINE_WEIGHT
-  const nextWeight =
-    next.lineWeight != null && next.lineWeight > 0
-      ? next.lineWeight
-      : MARKUP_LINE_WEIGHT
+  const prevWeight = resolveMarkupLineWeight(previous.lineWeight)
+  const nextWeight = resolveMarkupLineWeight(next.lineWeight)
 
   const fontSizeChanged =
     patch.fontSize != null && patch.fontSize !== previous.fontSize
@@ -171,19 +184,18 @@ export function patchMarkupStyleWcs(
   }
 
   let strokeWidthWcs = previous.strokeWidthWcs ?? next.strokeWidthWcs
-  if (lineWeightChanged) {
+  const nextPx = markupCanvasLineWidth(nextWeight)
+  if (!(nextPx > 0)) {
+    strokeWidthWcs = undefined
+  } else if (lineWeightChanged) {
     const prevPx = markupCanvasLineWidth(prevWeight)
-    const nextPx = markupCanvasLineWidth(nextWeight)
     if (strokeWidthWcs != null && strokeWidthWcs > 0 && prevPx > 0) {
       strokeWidthWcs = strokeWidthWcs * (nextPx / prevPx)
     } else {
       strokeWidthWcs = acapScreenPxToWcs(nextPx, view)
     }
   } else if (strokeWidthWcs == null || !(strokeWidthWcs > 0)) {
-    strokeWidthWcs = acapScreenPxToWcs(
-      markupCanvasLineWidth(nextWeight),
-      view
-    )
+    strokeWidthWcs = acapScreenPxToWcs(nextPx, view)
   }
 
   return {

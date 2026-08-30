@@ -57,6 +57,7 @@ export default {
   drawStyle: {
     color: 'Barva',
     lineWeight: 'Tloušťka čáry',
+    lineWeightHairline: 'Bez tloušťky',
     fontSize: 'Výška textu'
   }
 }

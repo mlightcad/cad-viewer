@@ -27,8 +27,8 @@ import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import {
   cssToMarkupColor,
   MARKUP_FONT_SIZE,
-  MARKUP_LINE_WEIGHT,
-  markupCanvasLineWidth
+  markupCanvasLineWidth,
+  resolveMarkupLineWeight
 } from '../AcApMarkupUtil'
 
 /**
@@ -56,10 +56,7 @@ export interface AcApMarkupDrawStyle {
 export function markupDrawStyleFromRecord(
   record: AcApMarkupRecord
 ): AcApMarkupDrawStyle {
-  const lineWeight =
-    record.style.lineWeight != null && record.style.lineWeight > 0
-      ? (record.style.lineWeight as AcGiLineWeight)
-      : MARKUP_LINE_WEIGHT
+  const lineWeight = resolveMarkupLineWeight(record.style.lineWeight)
   return {
     color: cssToMarkupColor(record.style.color),
     lineWeight,
@@ -246,10 +243,7 @@ export abstract class AcApMarkupEntity
       strokeWidthWcs: this.record.style.strokeWidthWcs,
       fontSizePx: this.record.style.fontSize ?? MARKUP_FONT_SIZE,
       strokeScreenPx: markupCanvasLineWidth(
-        this.record.style.lineWeight != null &&
-          this.record.style.lineWeight > 0
-          ? this.record.style.lineWeight
-          : MARKUP_LINE_WEIGHT
+        resolveMarkupLineWeight(this.record.style.lineWeight)
       ),
       elements,
       canvases

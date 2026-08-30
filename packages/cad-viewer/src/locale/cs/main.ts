@@ -230,7 +230,8 @@ export default {
     property: {
       color: 'Barva',
       lineType: 'Typ čáry',
-      lineWeight: 'Tloušťka čáry'
+      lineWeight: 'Tloušťka čáry',
+      lineWeightHairline: 'Bez tloušťky'
     },
     layerTools: {
       select: 'Hladina',

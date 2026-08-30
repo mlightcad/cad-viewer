@@ -147,4 +147,8 @@ describe('acExOverlayArrowSize', () => {
     expect(acExOverlayArrowSize(2, 2)).toBe(12)
     expect(acExOverlayArrowSize(4, 2)).toBe(24)
   })
+
+  it('keeps a 12px arrow for hairline strokes', () => {
+    expect(acExOverlayArrowSize(1, 0)).toBe(12)
+  })
 })

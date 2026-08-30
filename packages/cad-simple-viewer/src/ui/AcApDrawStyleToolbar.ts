@@ -309,7 +309,7 @@ const GRAY_ACI = Array.from({ length: 6 }, (_, i) => i + 250)
  * @returns Positive values in hundredths of a millimeter (for example 25 = 0.25 mm).
  */
 function numericLineWeights(): AcGiLineWeight[] {
-  return Array.from(
+  const weights = Array.from(
     new Set(
       Object.values(AcGiLineWeight).filter(
         (value): value is AcGiLineWeight =>
@@ -317,15 +317,17 @@ function numericLineWeights(): AcGiLineWeight[] {
       )
     )
   ).sort((a, b) => a - b)
+  return [0 as AcGiLineWeight, ...weights]
 }
 
 /**
  * Formats a line weight for the dropdown label.
  *
- * @param value - Line weight in hundredths of a millimeter.
- * @returns Label such as `"0.25 mm"`.
+ * @param value - Line weight in hundredths of a millimeter, or `0` for hairline.
+ * @returns Label such as `"Hairline"` or `"0.25 mm"`.
  */
 function formatLineWeight(value: AcGiLineWeight): string {
+  if (!(value > 0)) return AcApI18n.t('main.drawStyle.lineWeightHairline')
   return `${(value / 100).toFixed(2)} mm`
 }
 
@@ -347,6 +349,8 @@ interface AcApLineWeightPicker {
   setValue: (weight: number) => void
   /** Sets the localized tooltip on the trigger. */
   setTitle: (title: string) => void
+  /** Relabels menu items after a locale change (hairline label). */
+  refreshLabels: () => void
   /** Closes the popover menu. */
   close: () => void
   /** Whether the popover menu is open. */
@@ -369,6 +373,7 @@ function createLineWeightPicker(
   const prefix = 'ml-draw-style-toolbar'
   const weights = numericLineWeights()
   let open = false
+  let currentWeight = weights[0] ?? (0 as AcGiLineWeight)
 
   const root = document.createElement('div')
   root.className = `${prefix}__lineweight`
@@ -396,11 +401,12 @@ function createLineWeightPicker(
   menu.setAttribute('role', 'listbox')
 
   const paintTrigger = (weight: number) => {
+    currentWeight = weight as AcGiLineWeight
     preview.style.setProperty(
       '--ml-lineweight-height',
-      `${previewLineHeightPx(weight)}px`
+      `${previewLineHeightPx(weight > 0 ? weight : 1)}px`
     )
-    label.textContent = formatLineWeight(weight)
+    label.textContent = formatLineWeight(weight as AcGiLineWeight)
   }
 
   const markSelected = (weight: number) => {
@@ -434,12 +440,12 @@ function createLineWeightPicker(
     itemPreview.className = `${prefix}__lineweight-preview`
     itemPreview.style.setProperty(
       '--ml-lineweight-height',
-      `${previewLineHeightPx(weight)}px`
+      `${previewLineHeightPx(weight > 0 ? weight : 1)}px`
     )
 
     const itemLabel = document.createElement('span')
     itemLabel.className = `${prefix}__lineweight-text`
-    itemLabel.textContent = formatLineWeight(weight)
+    itemLabel.textContent = formatLineWeight(weight as AcGiLineWeight)
 
     item.append(itemPreview, itemLabel)
     item.addEventListener('click', event => {
@@ -463,19 +469,28 @@ function createLineWeightPicker(
   })
 
   root.append(trigger, menu)
-  paintTrigger(weights[0] ?? 25)
-  markSelected(weights[0] ?? 25)
+  paintTrigger(currentWeight)
+  markSelected(currentWeight)
 
   return {
     root,
     setValue: weight => {
-      if (!(weight > 0)) return
+      if (!Number.isFinite(weight) || weight < 0) return
       if (!menu.querySelector(`[data-value="${weight}"]`)) addItem(weight)
       paintTrigger(weight)
       markSelected(weight)
     },
     setTitle: title => {
       trigger.title = title
+    },
+    refreshLabels: () => {
+      menu.querySelectorAll(`.${prefix}__lineweight-item`).forEach(node => {
+        const item = node as HTMLElement
+        const weight = Number(item.dataset.value)
+        const text = item.querySelector(`.${prefix}__lineweight-text`)
+        if (text) text.textContent = formatLineWeight(weight as AcGiLineWeight)
+      })
+      paintTrigger(currentWeight)
     },
     close,
     isOpen: () => open,
@@ -733,6 +748,7 @@ export class AcApDrawStyleToolbar {
   private relabel(): void {
     this.swatch.title = AcApI18n.t('main.drawStyle.color')
     this.lineWeightPicker.setTitle(AcApI18n.t('main.drawStyle.lineWeight'))
+    this.lineWeightPicker.refreshLabels()
     this.fontSizeSelect.title = AcApI18n.t('main.drawStyle.fontSize')
   }
 

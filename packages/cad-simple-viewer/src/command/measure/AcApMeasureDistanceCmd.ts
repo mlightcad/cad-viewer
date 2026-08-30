@@ -123,7 +123,15 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
       acapGetMeasurementLineWeight()
     )
     this._preview.acapSetDraw((ctx, view) => {
-      acapStrokeLiveSegment(ctx, view, this._p1, this._p2, this._color, lineWidth)
+      acapStrokeLiveSegment(
+        ctx,
+        view,
+        this._p1,
+        this._p2,
+        this._color,
+        lineWidth,
+        { arrow: 'both' }
+      )
     })
 
     if (dist < 0.0001) {

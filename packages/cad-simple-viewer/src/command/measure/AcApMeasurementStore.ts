@@ -335,6 +335,7 @@ function resolveUpdatedStrokeWidthWcs(
   lineWeightChanged: boolean
 ): number {
   const nextPx = acapMeasurementCanvasLineWidth(nextLineWeight)
+  if (!(nextPx > 0)) return 0
   if (
     lineWeightChanged &&
     prevStrokeWidthWcs != null &&

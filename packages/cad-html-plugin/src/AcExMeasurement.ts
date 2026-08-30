@@ -11,13 +11,16 @@ import * as THREE from 'three'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
+  acExPixelsPerWorldUnit,
   acExPositionClientOverlay,
   acExPositionWcsOverlay,
   acExResetOverlayViewScale,
   acExScaledCanvasLineWidth,
+  acExScaledOverlayArrowSize,
   acExScreenPxToWcs,
   acExSeedOverlaySizesFromWcs
 } from './AcExHtmlOverlayDom'
+import { acExDrawMarkupArrowHead } from './AcExMarkupGeometry'
 import { acExBindMarkupPointerDrag } from './AcExMarkupGripDrag'
 import {
   ACEX_MEASUREMENT_FONT_SIZE,
@@ -405,15 +408,35 @@ function distPointToArcPx(
   return best
 }
 
+/** Fraction of the shorter world-space arm used as the dimension arc radius. */
+const ANGLE_ARC_RADIUS_WCS_FRACTION = 0.3
+
 /**
- * Screen-space interior angle arc (viewport pixels), matching {@link AcExMeasureController._drawAngleArc}.
+ * World-space radius of the interior angle dimension arc.
+ * @internal
+ */
+function angleArcRadiusWcs(
+  vertex: THREE.Vector2,
+  arm1: THREE.Vector2,
+  arm2: THREE.Vector2
+): number {
+  const len1 = Math.hypot(arm1.x - vertex.x, arm1.y - vertex.y)
+  const len2 = Math.hypot(arm2.x - vertex.x, arm2.y - vertex.y)
+  return Math.min(len1, len2) * ANGLE_ARC_RADIUS_WCS_FRACTION
+}
+
+/**
+ * Interior angle arc in overlay pixels. Radius is
+ * {@link ANGLE_ARC_RADIUS_WCS_FRACTION} of the shorter world-space arm,
+ * then converted with `wcsToScreen`, so the arc stays between the arms when
+ * the camera zooms. Matches {@link AcExMeasureController._drawAngleArc}.
  * @internal
  */
 function interiorAngleArcScreenMetrics(
   vertex: THREE.Vector2,
   arm1: THREE.Vector2,
   arm2: THREE.Vector2,
-  wcsToScreen: (wcs: THREE.Vector2) => { x: number; y: number }
+  wcsToScreen: (wcs: { x: number; y: number }) => { x: number; y: number }
 ): {
   cx: number
   cy: number
@@ -427,9 +450,8 @@ function interiorAngleArcScreenMetrics(
   const sa2 = wcsToScreen(arm2)
   const cx = sv.x
   const cy = sv.y
-  const len1 = Math.hypot(sa1.x - cx, sa1.y - cy)
-  const len2 = Math.hypot(sa2.x - cx, sa2.y - cy)
-  const r = Math.max(Math.min(len1, len2) * 0.3, 15)
+  const rWcs = angleArcRadiusWcs(vertex, arm1, arm2)
+  const r = rWcs * acExPixelsPerWorldUnit(wcsToScreen)
   const startAngle = Math.atan2(sa1.y - cy, sa1.x - cx)
   const endAngle = Math.atan2(sa2.y - cy, sa2.x - cx)
   const antiClockwise = normaliseAngle(endAngle - startAngle) > Math.PI
@@ -486,7 +508,9 @@ function hitTestAngleMeasure(
     return true
   }
 
-  const arc = interiorAngleArcScreenMetrics(vertex, arm1, arm2, wcsToScreen)
+  const arc = interiorAngleArcScreenMetrics(vertex, arm1, arm2, p =>
+    wcsToScreen(new THREE.Vector2(p.x, p.y))
+  )
   if (
     distPointToArcPx(
       clientX,
@@ -1097,7 +1121,7 @@ export class AcExMeasureController {
       if (measure) {
         return {
           color: measure.record.style.color || this._measureCss(),
-          lineWeight: measure.record.style.lineWeight || this._drawLineWeight,
+          lineWeight: measure.record.style.lineWeight ?? this._drawLineWeight,
           fontSize: measure.record.style.fontSize || this._drawFontSize
         }
       }
@@ -1129,7 +1153,11 @@ export class AcExMeasureController {
         colorChanged = true
       }
     }
-    if (patch.lineWeight != null && patch.lineWeight > 0) {
+    if (
+      patch.lineWeight != null &&
+      Number.isFinite(patch.lineWeight) &&
+      patch.lineWeight >= 0
+    ) {
       this._drawLineWeight = patch.lineWeight
     }
     if (patch.fontSize != null && patch.fontSize > 0) {
@@ -1150,7 +1178,11 @@ export class AcExMeasureController {
     if (colorChanged || patch.colorHex != null || patch.color) {
       selectionPatch.color = this._measureCss()
     }
-    if (patch.lineWeight != null && patch.lineWeight > 0) {
+    if (
+      patch.lineWeight != null &&
+      Number.isFinite(patch.lineWeight) &&
+      patch.lineWeight >= 0
+    ) {
       selectionPatch.lineWeight = patch.lineWeight
     }
     if (patch.fontSize != null && patch.fontSize > 0) {
@@ -1829,7 +1861,10 @@ export class AcExMeasureController {
    * Uses the current draw-style color and line weight.
    * @internal
    */
-  private _setPreviewLine(points: THREE.Vector2[]): void {
+  private _setPreviewLine(
+    points: THREE.Vector2[],
+    options?: { bothArrows?: boolean }
+  ): void {
     let canvas = this._overlayLayer.querySelector<HTMLCanvasElement>(
       '.mlcad-measure-canvas--preview-line'
     )
@@ -1845,7 +1880,9 @@ export class AcExMeasureController {
       canvas,
       points,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(this._drawLineWeight)
+      acExMeasureCanvasLineWidth(this._drawLineWeight),
+      undefined,
+      options?.bothArrows
     )
   }
 
@@ -1994,14 +2031,15 @@ export class AcExMeasureController {
       return
     }
     const anchor = this._points[0]!
-    this._setPreviewLine([anchor, point])
+    this._setPreviewLine([anchor, point], { bothArrows: true })
     const dist = dist2(anchor, point)
     this._showLiveLabel(this._view.formatLength(dist), clientX, clientY)
     this._requestRender()
   }
 
   /**
-   * Persists a distance measurement: line, endpoint dots, and midpoint badge.
+   * Persists a distance measurement: line with endpoint arrows, endpoint dots,
+   * and midpoint badge.
    * @internal
    */
   private _commitDistance(
@@ -2013,7 +2051,7 @@ export class AcExMeasureController {
     const end = b.clone()
     const dist = dist2(start, end)
     const id = this._startCommit(existing?.id)
-    this._addPersistentLine([start, end])
+    this._addPersistentLine([start, end], { bothArrows: true })
     const dot1 = this._addDot(start)
     const dot2 = this._addDot(end)
     const mid = new THREE.Vector2((start.x + end.x) / 2, (start.y + end.y) / 2)
@@ -3057,7 +3095,10 @@ export class AcExMeasureController {
    * Adds a committed polyline as a style-aware canvas overlay (color + line weight).
    * @internal
    */
-  private _addPersistentLine(points: THREE.Vector2[]): void {
+  private _addPersistentLine(
+    points: THREE.Vector2[],
+    options?: { bothArrows?: boolean }
+  ): void {
     if (points.length < 2) return
     const parts = this._commitParts
     if (!parts) return
@@ -3066,6 +3107,7 @@ export class AcExMeasureController {
     const commitId = parts.id
     // Keep the caller's Vector2 refs so grip edits can mutate them in place.
     const pts = points
+    const bothArrows = options?.bothArrows === true
     const redraw = () => {
       const style = this._styleForCommit(commitId)
       this._drawPolyline(
@@ -3073,7 +3115,8 @@ export class AcExMeasureController {
         pts,
         style.color || this._measureCss(),
         acExMeasureCanvasLineWidth(style.lineWeight),
-        style.strokeWidthWcs
+        style.strokeWidthWcs,
+        bothArrows
       )
     }
     redraw()
@@ -3161,7 +3204,8 @@ export class AcExMeasureController {
     points: THREE.Vector2[],
     strokeCss: string,
     lineWidth: number,
-    strokeWidthWcs?: number
+    strokeWidthWcs?: number,
+    bothArrows = false
   ): void {
     if (points.length < 2) return
     const synced = this._syncCanvas(canvas)
@@ -3171,23 +3215,37 @@ export class AcExMeasureController {
     ctx.save()
     ctx.scale(dpr, dpr)
     const rootRect = this._overlayRootOffset()
+    const screen: { x: number; y: number }[] = []
     ctx.beginPath()
     for (let i = 0; i < points.length; i++) {
       const s = this._view.wcsToScreen(points[i]!)
       const x = s.x - rootRect.left
       const y = s.y - rootRect.top
+      screen.push({ x, y })
       if (i === 0) ctx.moveTo(x, y)
       else ctx.lineTo(x, y)
     }
     ctx.strokeStyle = strokeCss
-    ctx.lineWidth = this._scaledCanvasLineWidth(
+    const scaled = this._scaledCanvasLineWidth(
       lineWidth,
       canvas,
       strokeWidthWcs
     )
+    ctx.lineWidth = scaled
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
     ctx.stroke()
+    if (bothArrows && screen.length === 2) {
+      const a = screen[0]!
+      const b = screen[1]!
+      const arrowSize = acExScaledOverlayArrowSize(canvas, p =>
+        this._wcsToScreenPoint(p)
+      )
+      if (Math.hypot(b.x - a.x, b.y - a.y) >= arrowSize) {
+        acExDrawMarkupArrowHead(ctx, b, a, strokeCss, arrowSize)
+        acExDrawMarkupArrowHead(ctx, a, b, strokeCss, arrowSize)
+      }
+    }
     ctx.restore()
   }
 
@@ -3312,6 +3370,7 @@ export class AcExMeasureController {
   ): AcExMeasurementSidecarStyle {
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
+    const strokePx = acExMeasureCanvasLineWidth(style.lineWeight)
     return {
       ...style,
       textHeightWcs:
@@ -3321,10 +3380,9 @@ export class AcExMeasureController {
       strokeWidthWcs:
         style.strokeWidthWcs != null && style.strokeWidthWcs > 0
           ? style.strokeWidthWcs
-          : acExScreenPxToWcs(
-              acExMeasureCanvasLineWidth(style.lineWeight),
-              wcsToScreen
-            )
+          : strokePx > 0
+            ? acExScreenPxToWcs(strokePx, wcsToScreen)
+            : undefined
     }
   }
 
@@ -3334,13 +3392,12 @@ export class AcExMeasureController {
   ): AcExMeasurementSidecarStyle {
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
+    const strokePx = acExMeasureCanvasLineWidth(style.lineWeight)
     return {
       ...style,
       textHeightWcs: acExScreenPxToWcs(style.fontSize, wcsToScreen),
-      strokeWidthWcs: acExScreenPxToWcs(
-        acExMeasureCanvasLineWidth(style.lineWeight),
-        wcsToScreen
-      )
+      strokeWidthWcs:
+        strokePx > 0 ? acExScreenPxToWcs(strokePx, wcsToScreen) : undefined
     }
   }
 
@@ -3595,11 +3652,17 @@ export class AcExMeasureController {
       if (!measure) continue
       const style = measure.record.style
       if (patch.color) style.color = patch.color
-      if (patch.lineWeight != null && patch.lineWeight > 0) {
+      if (
+        patch.lineWeight != null &&
+        Number.isFinite(patch.lineWeight) &&
+        patch.lineWeight >= 0
+      ) {
         const prevWeight = style.lineWeight
         const prevPx = acExMeasureCanvasLineWidth(prevWeight)
         const nextPx = acExMeasureCanvasLineWidth(patch.lineWeight)
-        if (
+        if (!(nextPx > 0)) {
+          style.strokeWidthWcs = undefined
+        } else if (
           style.strokeWidthWcs != null &&
           style.strokeWidthWcs > 0 &&
           prevPx > 0
@@ -3733,22 +3796,24 @@ export class AcExMeasureController {
     ctx.save()
     ctx.scale(dpr, dpr)
 
-    const arc = interiorAngleArcScreenMetrics(vertex, arm1, arm2, wcs =>
-      this._view.wcsToScreen(wcs)
+    const arc = interiorAngleArcScreenMetrics(vertex, arm1, arm2, p =>
+      this._wcsToScreenPoint(p)
     )
     const rootRect = this._overlayRootOffset()
     const vx = arc.cx - rootRect.left
     const vy = arc.cy - rootRect.top
 
-    ctx.beginPath()
-    ctx.arc(vx, vy, arc.r, arc.startAngle, arc.endAngle, arc.antiClockwise)
-    ctx.strokeStyle = strokeCss ?? this._measureCss()
-    ctx.lineWidth = this._scaledCanvasLineWidth(
-      lineWidth,
-      canvas,
-      strokeWidthWcs
-    )
-    ctx.stroke()
+    if (arc.r > 0) {
+      ctx.beginPath()
+      ctx.arc(vx, vy, arc.r, arc.startAngle, arc.endAngle, arc.antiClockwise)
+      ctx.strokeStyle = strokeCss ?? this._measureCss()
+      ctx.lineWidth = this._scaledCanvasLineWidth(
+        lineWidth,
+        canvas,
+        strokeWidthWcs
+      )
+      ctx.stroke()
+    }
     ctx.restore()
   }
 

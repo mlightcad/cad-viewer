@@ -227,7 +227,8 @@ export default {
     property: {
       color: '颜色',
       lineType: '线型',
-      lineWeight: '线宽'
+      lineWeight: '线宽',
+      lineWeightHairline: '无线宽'
     },
     layerTools: {
       select: '图层',

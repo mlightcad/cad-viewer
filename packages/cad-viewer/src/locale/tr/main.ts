@@ -231,7 +231,8 @@ export default {
     property: {
       color: 'Renk',
       lineType: 'Çizgi Tipi',
-      lineWeight: 'Çizgi Kalınlığı'
+      lineWeight: 'Çizgi Kalınlığı',
+      lineWeightHairline: 'Kılcal'
     },
     layerTools: {
       select: 'Katman',

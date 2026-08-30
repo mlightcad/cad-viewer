@@ -37,8 +37,8 @@ import type {
 } from '../AcApMarkupTypes'
 import {
   MARKUP_FONT_SIZE,
-  MARKUP_LINE_WEIGHT,
-  markupCanvasLineWidth
+  markupCanvasLineWidth,
+  resolveMarkupLineWeight
 } from '../AcApMarkupUtil'
 import type { AcApMarkupDrawStyle } from './AcApMarkupEntity'
 
@@ -133,9 +133,7 @@ export function publishAttachedCallout(
       record.style.color,
       false,
       markupCanvasLineWidth(
-        record.style.lineWeight != null && record.style.lineWeight > 0
-          ? record.style.lineWeight
-          : MARKUP_LINE_WEIGHT
+        resolveMarkupLineWeight(record.style.lineWeight)
       ),
       view2d,
       record.style.strokeWidthWcs
@@ -168,9 +166,7 @@ export function publishAttachedCallout(
     strokeWidthWcs: record.style.strokeWidthWcs,
     fontSizePx: record.style.fontSize ?? MARKUP_FONT_SIZE,
     strokeScreenPx: markupCanvasLineWidth(
-      record.style.lineWeight != null && record.style.lineWeight > 0
-        ? record.style.lineWeight
-        : MARKUP_LINE_WEIGHT
+      resolveMarkupLineWeight(record.style.lineWeight)
     ),
     elements: [bubble, tipDot],
     canvases: [overlay.canvas]

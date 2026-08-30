@@ -30,8 +30,9 @@ describe('AcApMeasurementUtil', () => {
     acapResetMeasurementDrawStyle()
   })
 
-  it('keeps factory line weight and font size until they are changed', () => {
+  it('defaults to hairline until a numeric line weight is chosen', () => {
     expect(acapGetMeasurementLineWeight()).toBe(MEASUREMENT_LINE_WEIGHT)
+    expect(acapGetMeasurementLineWeight()).toBe(0)
     expect(acapGetMeasurementFontSize()).toBe(MEASUREMENT_FONT_SIZE)
   })
 
@@ -63,14 +64,23 @@ describe('AcApMeasurementUtil', () => {
   })
 
   it('maps CAD line weight 070 to a 2.5px canvas stroke', () => {
-    expect(acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)).toBeCloseTo(2.5)
+    expect(
+      acapMeasurementCanvasLineWidth(AcGiLineWeight.LineWeight070)
+    ).toBeCloseTo(2.5)
   })
 
-  it('ignores non-positive line weights', () => {
+  it('maps hairline to a 0 canvas width sentinel', () => {
+    expect(acapMeasurementCanvasLineWidth(0 as AcGiLineWeight)).toBe(0)
+  })
+
+  it('accepts hairline and ignores negative CAD specials', () => {
     acapSetMeasurementDrawLineWeight(AcGiLineWeight.LineWeight211)
     acapSetMeasurementDrawLineWeight(AcGiLineWeight.ByLayer)
     acapSetMeasurementDrawLineWeight(AcGiLineWeight.ByBlock)
     expect(acapGetMeasurementLineWeight()).toBe(AcGiLineWeight.LineWeight211)
+
+    acapSetMeasurementDrawLineWeight(0 as AcGiLineWeight)
+    expect(acapGetMeasurementLineWeight()).toBe(0)
   })
 })
 

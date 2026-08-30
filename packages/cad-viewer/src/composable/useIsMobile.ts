@@ -45,7 +45,9 @@ export function useIsMobile() {
   })
 
   const isMobileOrPad = computed(() => {
-    // Depend on these so resize / primary-pointer changes re-run the shared check.
+    // Compact (≤960) already includes the phone breakpoint (≤600). Tracking
+    // isSmallViewport would not change this value; only the desktop boundary
+    // and primary-pointer type can.
     void isCompactViewport.value
     void isCoarsePointer.value
     return acedIsMobileOrPadUi()

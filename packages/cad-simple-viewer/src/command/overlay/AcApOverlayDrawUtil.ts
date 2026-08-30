@@ -58,6 +58,9 @@ export function acapSeedOverlayStrokeWcs(
  * else convert `baseLineWidth` to WCS on first paint and keep that pen size as
  * the camera zooms. Callers that re-seed after style edits should omit the
  * explicit WCS argument so the dataset wins.
+ *
+ * A non-positive `baseLineWidth` is hairline: always 1 CSS pixel, with any
+ * stored WCS width cleared.
  */
 export function acapScaledOverlayLineWidth(
   baseLineWidth: number,
@@ -65,6 +68,10 @@ export function acapScaledOverlayLineWidth(
   view: AcEdBaseView,
   strokeWidthWcs?: number
 ): number {
+  if (!(baseLineWidth > 0)) {
+    delete anchor.dataset[ACAP_OVERLAY_STROKE_WCS]
+    return 1
+  }
   const ppu = acapPixelsPerWorldUnit(view)
   let wcs =
     strokeWidthWcs != null && strokeWidthWcs > 0
@@ -83,6 +90,9 @@ export function acapScaledOverlayLineWidth(
   return Math.max(0.5, wcs * ppu)
 }
 
+/** Dataset key storing overlay arrow-head length in world units. */
+export const ACAP_OVERLAY_ARROW_WCS = 'overlayArrowWcs'
+
 /** Arrow-head length in CSS pixels at the overlay's creation-scale stroke. */
 export const ACAP_OVERLAY_ARROW_SIZE_PX = 12
 
@@ -97,8 +107,34 @@ export function acapOverlayArrowSize(
   baseLineWidth = 2
 ): number {
   const base =
-    baseLineWidth > 0 && Number.isFinite(baseLineWidth) ? baseLineWidth : 2
+    baseLineWidth > 0 && Number.isFinite(baseLineWidth) ? baseLineWidth : 1
   return Math.max(1, scaledLineWidth * (ACAP_OVERLAY_ARROW_SIZE_PX / base))
+}
+
+/**
+ * Arrow-head length in CSS pixels that stays a fixed world size.
+ *
+ * Used by distance measurements so arrows shrink/grow with zoom even when
+ * the stroke is hairline (1 CSS px). Seeds {@link ACAP_OVERLAY_ARROW_SIZE_PX}
+ * as WCS on first paint unless `arrowSizeWcs` is provided.
+ */
+export function acapScaledOverlayArrowSize(
+  canvas: HTMLElement,
+  view: AcEdBaseView,
+  arrowSizeWcs?: number
+): number {
+  const ppu = acapPixelsPerWorldUnit(view)
+  let wcs =
+    arrowSizeWcs != null && arrowSizeWcs > 0
+      ? arrowSizeWcs
+      : Number(canvas.dataset[ACAP_OVERLAY_ARROW_WCS])
+  if (!Number.isFinite(wcs) || wcs <= 0) {
+    wcs = ACAP_OVERLAY_ARROW_SIZE_PX / ppu
+    canvas.dataset[ACAP_OVERLAY_ARROW_WCS] = String(wcs)
+  } else if (arrowSizeWcs != null && arrowSizeWcs > 0) {
+    canvas.dataset[ACAP_OVERLAY_ARROW_WCS] = String(wcs)
+  }
+  return Math.max(0.5, wcs * ppu)
 }
 
 /**
@@ -109,7 +145,7 @@ export function acapOverlayDash(
   baseLineWidth = 2
 ): number[] {
   const base =
-    baseLineWidth > 0 && Number.isFinite(baseLineWidth) ? baseLineWidth : 2
+    baseLineWidth > 0 && Number.isFinite(baseLineWidth) ? baseLineWidth : 1
   const s = scaledLineWidth / base
   return [8 * s, 5 * s]
 }
@@ -153,6 +189,10 @@ export function acapSeedOverlaySizesFromWcs(
   if (strokeWidthWcs != null && strokeWidthWcs > 0) {
     for (const canvas of canvases ?? []) {
       acapSeedOverlayStrokeWcs(canvas, strokeWidthWcs)
+    }
+  } else if (options.strokeScreenPx === 0) {
+    for (const canvas of canvases ?? []) {
+      delete canvas.dataset[ACAP_OVERLAY_STROKE_WCS]
     }
   }
 
