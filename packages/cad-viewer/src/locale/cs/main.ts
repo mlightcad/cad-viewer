@@ -465,7 +465,7 @@ export default {
       description: 'Posune pohled beze změny směru pohledu a zvětšení'
     },
     markupPanel: {
-      text: 'Kontrola',
+      text: 'Výsledky',
       description: 'Otevře paletu poznámek'
     },
     markupText: {

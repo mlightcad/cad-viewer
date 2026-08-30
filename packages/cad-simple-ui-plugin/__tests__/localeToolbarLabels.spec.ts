@@ -17,7 +17,7 @@ const localeLabels: Record<string, Record<string, string>> = {
     'simpleUi.toolbar.locale': 'Language',
     'simpleUi.toolbar.measure': 'Measure',
     'simpleUi.toolbar.measureDistance': 'Distance',
-    'simpleUi.toolbar.measurementPanel': 'List',
+    'simpleUi.toolbar.measurementPanel': 'Results',
     'simpleUi.toolbar.showMeasurements': 'Show',
     'simpleUi.toolbar.hideMeasurements': 'Hide'
   },
@@ -27,7 +27,7 @@ const localeLabels: Record<string, Record<string, string>> = {
     'simpleUi.toolbar.locale': '语言',
     'simpleUi.toolbar.measure': '测量',
     'simpleUi.toolbar.measureDistance': '测距离',
-    'simpleUi.toolbar.measurementPanel': '列表',
+    'simpleUi.toolbar.measurementPanel': '看结果',
     'simpleUi.toolbar.showMeasurements': '显示',
     'simpleUi.toolbar.hideMeasurements': '隐藏'
   }
@@ -280,13 +280,13 @@ describe('phone toolbar labels on locale change', () => {
       )?.textContent
 
     expect(distanceLabel()).toBe('Distance')
-    expect(panelLabel()).toBe('List')
+    expect(panelLabel()).toBe('Results')
 
     AcApI18n.setCurrentLocale('zh')
     toolbar.refreshLocale()
 
     expect(distanceLabel()).toBe('测距离')
-    expect(panelLabel()).toBe('列表')
+    expect(panelLabel()).toBe('看结果')
     toolbar.destroy()
   })
 })

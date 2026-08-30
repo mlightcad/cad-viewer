@@ -25,7 +25,7 @@ export const ar: Record<string, string> = {
   'toolbar.measurementImport': 'استيراد',
   'toolbar.measurementExport': 'تصدير',
   'toolbar.clearMeasurements': 'مسح',
-  'toolbar.measurementPanel': 'قائمة',
+  'toolbar.measurementPanel': 'نتائج',
 
   'toolbar.switchBg': 'خلفية',
   'toolbar.readingMode': 'قراءة',
@@ -40,7 +40,7 @@ export const ar: Record<string, string> = {
   'toolbar.markupCircle': 'دائرة',
   'toolbar.markupArrow': 'سهم',
   'toolbar.markupStamp': 'ختم',
-  'toolbar.markupPanel': 'مراجعة',
+  'toolbar.markupPanel': 'نتائج',
 
   'toolbar.markupImport': 'استيراد',
   'toolbar.markupExport': 'تصدير',
