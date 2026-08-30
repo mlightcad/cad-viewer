@@ -6,8 +6,8 @@ import {
   getMeasurementValueText,
   getSelectedMeasurementId,
   listLayoutMeasurements,
-  subscribeMeasurementSelection,
-  subscribeMeasurements
+  subscribeMeasurements,
+  subscribeMeasurementSelection
 } from '@mlightcad/cad-simple-viewer'
 import { onMounted, onUnmounted, ref } from 'vue'
 

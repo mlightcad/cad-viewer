@@ -13,7 +13,7 @@
         <el-option
           v-for="type in filterTypes"
           :key="type"
-          :label="t(`main.toolPalette.measurements.typeValues.${type}`)"
+          :label="typeLabel(type)"
           :value="type"
         />
       </el-select>
@@ -43,7 +43,7 @@
         width="96"
       >
         <template #default="{ row }">
-          {{ t(`main.toolPalette.measurements.typeValues.${row.type}`) }}
+          {{ typeLabel(row.type) }}
         </template>
       </el-table-column>
       <el-table-column
@@ -98,6 +98,21 @@ const filtered = computed(() => {
 
 const handleRowClick = (row: AcApMeasurementRecord) => {
   focus(row)
+}
+
+const typeLabel = (type: AcApMeasurementType) => {
+  switch (type) {
+    case 'distance':
+      return t('main.toolPalette.measurements.typeValues.distance')
+    case 'angle':
+      return t('main.toolPalette.measurements.typeValues.angle')
+    case 'area':
+      return t('main.toolPalette.measurements.typeValues.area')
+    case 'arc':
+      return t('main.toolPalette.measurements.typeValues.arc')
+    case 'point':
+      return t('main.toolPalette.measurements.typeValues.point')
+  }
 }
 </script>
 
