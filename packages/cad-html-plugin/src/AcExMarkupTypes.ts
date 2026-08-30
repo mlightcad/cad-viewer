@@ -34,13 +34,13 @@ export interface AcExMarkupPoint2d {
 export interface AcExMarkupStyle {
   /** CSS color string, e.g. `#ff0000` or `rgb(255,0,0)`. */
   color: string
-  /** Optional AutoCAD-style line weight enum value. */
+  /** Always hairline (`0`) on write; legacy non-zero values are ignored on parse. */
   lineWeight?: number
   /** Authoring font size in CSS pixels for text / callout bubbles (legacy / UI). */
   fontSize?: number
   /** Text / callout height in world units (preferred when restoring overlays). */
   textHeightWcs?: number
-  /** Canvas stroke width in world units (preferred when restoring overlays). */
+  /** Legacy canvas stroke width in world units. Ignored on parse; never written. */
   strokeWidthWcs?: number
 }
 

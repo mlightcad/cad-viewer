@@ -31,7 +31,7 @@ export interface AcApMarkupPoint2d {
 export interface AcApMarkupStyle {
   /** CSS color string, e.g. `#ff0000` or `rgb(255,0,0)`. */
   color: string
-  /** Optional AutoCAD-style line weight enum value. */
+  /** Always hairline (`0`) on write; legacy non-zero values are ignored on parse. */
   lineWeight?: number
   /** Authoring font size in CSS pixels for text / callout bubbles (legacy / UI). */
   fontSize?: number
@@ -41,7 +41,7 @@ export interface AcApMarkupStyle {
    */
   textHeightWcs?: number
   /**
-   * Canvas stroke width in world units. Prefer this when restoring overlays.
+   * Legacy canvas stroke width in world units. Ignored on parse; never written.
    */
   strokeWidthWcs?: number
 }

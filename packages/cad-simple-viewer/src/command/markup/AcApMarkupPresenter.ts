@@ -351,7 +351,7 @@ export function attachCalloutToMarkup(
  */
 export function applyMarkupStyleToSelection(
   view: AcEdBaseView,
-  patch: Partial<AcApMarkupRecord['style']>
+  patch: Partial<Pick<AcApMarkupRecord['style'], 'color' | 'fontSize'>>
 ): void {
   const store = getMarkupStore()
   const id = store.selectedId

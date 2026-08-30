@@ -42,13 +42,15 @@ describe('AcExMeasurementSidecar', () => {
     ]
   }
 
-  it('round-trips sidecar JSON', () => {
+  it('round-trips sidecar JSON as hairline', () => {
     const text = stringifyAcExMeasurementSidecar(sample)
+    expect(text).not.toMatch(/"strokeWidthWcs"\s*:/)
     const parsed = parseAcExMeasurementSidecar(text)
     expect(parsed.version).toBe(1)
     expect(parsed.drawingName).toBe('plan.dwg')
     expect(parsed.measurements).toHaveLength(3)
     expect(parsed.measurements[0]?.type).toBe('distance')
+    expect(parsed.measurements[0]?.style.lineWeight).toBe(0)
     expect(parsed.measurements[1]?.type).toBe('point')
     expect(parsed.measurements[2]?.geometry).toEqual({
       type: 'arc',
@@ -60,7 +62,7 @@ describe('AcExMeasurementSidecar', () => {
     })
   })
 
-  it('round-trips WCS style fields', () => {
+  it('keeps textHeightWcs and ignores legacy strokeWidthWcs', () => {
     const withWcs: AcExMeasurementSidecarFile = {
       version: 1,
       measurements: [
@@ -82,11 +84,35 @@ describe('AcExMeasurementSidecar', () => {
         }
       ]
     }
-    const parsed = parseAcExMeasurementSidecar(
-      stringifyAcExMeasurementSidecar(withWcs)
-    )
+    const text = stringifyAcExMeasurementSidecar(withWcs)
+    expect(text).not.toMatch(/"strokeWidthWcs"\s*:/)
+    const parsed = parseAcExMeasurementSidecar(text)
     expect(parsed.measurements[0]?.style.textHeightWcs).toBe(0.65)
-    expect(parsed.measurements[0]?.style.strokeWidthWcs).toBe(0.1)
+    expect(parsed.measurements[0]?.style.lineWeight).toBe(0)
+    expect(parsed.measurements[0]?.style.strokeWidthWcs).toBeUndefined()
+  })
+
+  it('normalizes legacy thick styles to hairline on parse', () => {
+    const parsed = parseAcExMeasurementSidecar(
+      JSON.stringify({
+        version: 1,
+        measurements: [
+          {
+            id: 'thick',
+            type: 'point',
+            style: {
+              color: '#08e8de',
+              lineWeight: 70,
+              fontSize: 13,
+              strokeWidthWcs: 0.2
+            },
+            geometry: { type: 'point', position: { x: 1, y: 2 } }
+          }
+        ]
+      })
+    )
+    expect(parsed.measurements[0]?.style.lineWeight).toBe(0)
+    expect(parsed.measurements[0]?.style.strokeWidthWcs).toBeUndefined()
   })
 
   it('keeps hairline line weight 0 in sidecar styles', () => {
@@ -145,6 +171,7 @@ describe('AcExMeasurementSidecar', () => {
       })
     )
     expect(parsed.measurements).toHaveLength(1)
+    expect(parsed.measurements[0]?.style.lineWeight).toBe(0)
     expect(parsed.measurements[0]?.geometry).toEqual({
       type: 'arc',
       center: { x: 0, y: 0 },

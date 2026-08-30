@@ -1,4 +1,4 @@
-import { AcCmColor, AcGiLineWeight } from '@mlightcad/data-model'
+import { AcCmColor } from '@mlightcad/data-model'
 import type { AcTrHtmlGroup } from '@mlightcad/three-renderer'
 
 import {
@@ -18,6 +18,7 @@ import {
 import type { AcApMeasurementRecord } from '../src/command/measure/AcApMeasurementTypes'
 import {
   MEASUREMENT_FONT_SIZE,
+  MEASUREMENT_LINE_WEIGHT,
   OVERLAY_HAIRLINE_LINE_WEIGHT
 } from '../src/util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../src/view'
@@ -83,29 +84,28 @@ function makeGroup(id: string): AcTrHtmlGroup {
   } as unknown as AcTrHtmlGroup
 }
 
-function numericSnapshot(id: string): AcApMeasurementRecord {
-  const color = new AcCmColor()
-  color.setRGB(10, 20, 30)
+function hairlineSnapshot(id: string): AcApMeasurementRecord {
   return {
     id,
     type: 'point',
     style: {
       color: 'rgb(10,20,30)',
-      lineWeight: AcGiLineWeight.LineWeight070,
+      lineWeight: MEASUREMENT_LINE_WEIGHT,
       fontSize: MEASUREMENT_FONT_SIZE,
       textHeightWcs: 1.3,
+      // Legacy field ignored on export.
       strokeWidthWcs: 0.25
     },
     geometry: { type: 'point', position: { x: 1, y: 2 } }
   }
 }
 
-describe('AcApMeasurementStore hairline stroke WCS', () => {
+describe('AcApMeasurementStore hairline stroke', () => {
   afterEach(() => {
     resetMeasurementSession()
   })
 
-  it('omits strokeWidthWcs after switching a measurement to hairline', () => {
+  it('always exports hairline and omits strokeWidthWcs', () => {
     const { view, manager } = createView()
     const group = makeGroup('hairline-edit')
     const color = new AcCmColor()
@@ -113,26 +113,26 @@ describe('AcApMeasurementStore hairline stroke WCS', () => {
     commitMeasurementGroup(view, group, {
       style: {
         color,
-        lineWeight: AcGiLineWeight.LineWeight070,
+        lineWeight: OVERLAY_HAIRLINE_LINE_WEIGHT,
         fontSize: MEASUREMENT_FONT_SIZE
       },
-      snapshot: numericSnapshot(group.id)
+      snapshot: hairlineSnapshot(group.id)
     })
     expect(manager.getGroup('hairline-edit')).toBe(group)
 
-    applyMeasurementStyle(view, group, {
-      lineWeight: OVERLAY_HAIRLINE_LINE_WEIGHT
-    })
+    applyMeasurementStyle(view, group, { fontSize: 16 })
 
     const [record] = collectMeasurementRecords(view)
     expect(record?.style.lineWeight).toBe(0)
     expect(record?.style.strokeWidthWcs).toBeUndefined()
+    expect(record?.style.fontSize).toBe(16)
 
     const json = stringifyMeasurementSidecar({
       version: 1,
       measurements: collectMeasurementRecords(view)
     })
     expect(json).not.toMatch(/"strokeWidthWcs"\s*:/)
+    expect(json).toMatch(/"lineWeight"\s*:\s*0/)
   })
 
   it('does not invent a 0 WCS stroke for a hairline snapshot', () => {

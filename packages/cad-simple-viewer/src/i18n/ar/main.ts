@@ -56,8 +56,6 @@ export default {
   },
   drawStyle: {
     color: 'اللون',
-    lineWeight: 'سُمك الخط',
-    lineWeightHairline: 'بلا سماكة',
     fontSize: 'ارتفاع النص'
   }
 }

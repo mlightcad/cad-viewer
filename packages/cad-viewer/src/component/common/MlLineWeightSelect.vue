@@ -84,26 +84,19 @@ interface LineWeightSelectProps {
   disabled?: boolean
   /** Placeholder shown when no line weight can be resolved. */
   placeholder?: string
-  /** When true, hide ByLayer / ByBlock / Default (overlay style pickers). */
+  /** When true, hide ByLayer / ByBlock / Default. */
   numericOnly?: boolean
   /**
-   * Prepend a hairline (no CAD lineweight) option. Used by measurement /
-   * review style pickers; other ribbon line-weight controls stay unchanged.
-   */
-  includeHairline?: boolean
-  /**
-   * Narrower trigger sized for numeric weights plus a stroke preview
-   * (measure / markup style pickers).
+   * Narrower trigger sized for numeric weights plus a stroke preview.
    */
   compact?: boolean
 }
 
 const props = withDefaults(defineProps<LineWeightSelectProps>(), {
-  compact: false,
-  includeHairline: false
+  compact: false
 })
 
-const { locale, t } = useI18n()
+const { locale } = useI18n()
 
 const popperClass = computed(() =>
   props.compact
@@ -123,9 +116,6 @@ const emit = defineEmits<{
  * @returns Human-readable text for the given enum member.
  */
 function formatLabel(value: AcGiLineWeight): string {
-  if (props.includeHairline && value === 0) {
-    return t('main.ribbon.property.lineWeightHairline')
-  }
   switch (value) {
     case AcGiLineWeight.ByLayer:
       return locale.value === 'ar' ? 'حسب الطبقة' : 'ByLayer'
@@ -160,7 +150,6 @@ function previewPx(value: AcGiLineWeight): number | null {
  */
 function sortLineWeightValues(a: AcGiLineWeight, b: AcGiLineWeight) {
   const specialOrder: AcGiLineWeight[] = [
-    ...(props.includeHairline ? [0 as AcGiLineWeight] : []),
     AcGiLineWeight.ByLayer,
     AcGiLineWeight.ByBlock,
     AcGiLineWeight.ByLineWeightDefault
@@ -184,16 +173,12 @@ const lineWeightItems = computed<LineWeightItem[]>(() => {
       Object.values(AcGiLineWeight).filter((v): v is AcGiLineWeight => {
         if (typeof v !== 'number') return false
         if (v === AcGiLineWeight.ByDIPs) return false
-        // Overlay hairline sentinel; added back only when includeHairline.
         if (v === 0) return false
         if (props.numericOnly) return v > 0
         return true
       })
     )
   )
-  if (props.includeHairline && !values.includes(0 as AcGiLineWeight)) {
-    values.push(0 as AcGiLineWeight)
-  }
   return values.sort(sortLineWeightValues).map(v => ({
     value: v,
     label: formatLabel(v),

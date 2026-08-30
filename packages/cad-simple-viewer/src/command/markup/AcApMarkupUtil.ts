@@ -20,8 +20,7 @@ export function createDefaultMarkupColor(): AcCmColor {
 /**
  * Overlay line weight meaning "no CAD lineweight" (hairline).
  *
- * Drawn as 1 CSS pixel and not scaled with zoom until the user picks a
- * numeric lineweight from the drawing-style / style toolbar.
+ * Drawn as 1 CSS pixel and not scaled with zoom.
  */
 export const MARKUP_HAIRLINE_LINE_WEIGHT = 0 as AcGiLineWeight
 
@@ -34,9 +33,6 @@ export const MARKUP_FONT_SIZE = 12
 /** Session draw color for newly created markups. */
 let markupDrawColor: AcCmColor = createDefaultMarkupColor()
 
-/** Session draw line weight for newly created markups. */
-let markupDrawLineWeight: AcGiLineWeight = MARKUP_LINE_WEIGHT
-
 /** Session draw font size for newly created text / callout markups. */
 let markupDrawFontSize = MARKUP_FONT_SIZE
 
@@ -46,7 +42,7 @@ function notifyMarkupDrawStyleChanged(): void {
   for (const listener of drawStyleListeners) listener()
 }
 
-/** Notify when session markup color / lineweight / font size changes. */
+/** Notify when session markup color / font size changes. */
 export function subscribeMarkupDrawStyle(listener: () => void): () => void {
   drawStyleListeners.add(listener)
   return () => {
@@ -57,11 +53,6 @@ export function subscribeMarkupDrawStyle(listener: () => void): () => void {
 /** Current color used when drawing markups (clone for safety). */
 export function defaultMarkupColor(): AcCmColor {
   return markupDrawColor.clone()
-}
-
-/** Current line weight used when drawing markups. */
-export function getMarkupLineWeight(): AcGiLineWeight {
-  return markupDrawLineWeight
 }
 
 /** Current font size (CSS px) used when drawing text / callout markups. */
@@ -75,13 +66,6 @@ export function setMarkupDrawColor(color: AcCmColor): void {
   notifyMarkupDrawStyleChanged()
 }
 
-/** Update the session markup draw line weight. */
-export function setMarkupDrawLineWeight(weight: AcGiLineWeight): void {
-  if (!Number.isFinite(weight) || weight < 0) return
-  markupDrawLineWeight = weight
-  notifyMarkupDrawStyleChanged()
-}
-
 /** Update the session markup draw font size (CSS px). */
 export function setMarkupDrawFontSize(size: number): void {
   if (!Number.isFinite(size) || size <= 0) return
@@ -91,7 +75,7 @@ export function setMarkupDrawFontSize(size: number): void {
 
 /**
  * Resolve a stored markup line weight, treating missing / negative CAD
- * specials as the session default. `0` is hairline and is kept.
+ * specials as the hairline default. `0` is hairline and is kept.
  */
 export function resolveMarkupLineWeight(
   weight: number | undefined | null
@@ -118,16 +102,16 @@ export function cssToMarkupColor(css: string): AcCmColor {
   return parseCssToAcCmColor(css, [255, 0, 0])
 }
 
-/** Build a style object from the current markup draw color / line weight / font size. */
+/** Build a style object from the current markup draw color / font size. */
 export function defaultMarkupStyle(): AcApMarkupStyle {
   return {
     color: markupColorToCss(defaultMarkupColor()),
-    lineWeight: getMarkupLineWeight(),
+    lineWeight: MARKUP_LINE_WEIGHT,
     fontSize: getMarkupFontSize()
   }
 }
 
-/** Attach world-space text/stroke sizes from the current view (sidecar export). */
+/** Attach world-space text height from the current view (sidecar export). */
 export function withMarkupStyleWcs(
   style: AcApMarkupStyle,
   view: AcEdBaseView
@@ -136,21 +120,19 @@ export function withMarkupStyleWcs(
     style.fontSize != null && style.fontSize > 0
       ? style.fontSize
       : MARKUP_FONT_SIZE
-  const lineWeight = resolveMarkupLineWeight(style.lineWeight)
-  const strokePx = markupCanvasLineWidth(lineWeight)
   return {
     ...style,
-    textHeightWcs: acapScreenPxToWcs(fontSize, view),
-    strokeWidthWcs:
-      strokePx > 0 ? acapScreenPxToWcs(strokePx, view) : undefined
+    lineWeight: MARKUP_LINE_WEIGHT,
+    textHeightWcs: acapScreenPxToWcs(fontSize, view)
   }
 }
 
 /**
- * Merge a style patch while keeping world-space sizes independent of color.
+ * Merge a style patch while keeping world-space text size independent of color.
  *
  * Only recomputes / scales {@link AcApMarkupStyle.textHeightWcs} when font size
- * changes, and {@link AcApMarkupStyle.strokeWidthWcs} when line weight changes.
+ * changes. Overlay strokes stay hairline; {@link AcApMarkupStyle.strokeWidthWcs}
+ * is never written.
  */
 export function patchMarkupStyleWcs(
   previous: AcApMarkupStyle,
@@ -164,13 +146,9 @@ export function patchMarkupStyleWcs(
       : MARKUP_FONT_SIZE
   const nextFont =
     next.fontSize != null && next.fontSize > 0 ? next.fontSize : MARKUP_FONT_SIZE
-  const prevWeight = resolveMarkupLineWeight(previous.lineWeight)
-  const nextWeight = resolveMarkupLineWeight(next.lineWeight)
 
   const fontSizeChanged =
     patch.fontSize != null && patch.fontSize !== previous.fontSize
-  const lineWeightChanged =
-    patch.lineWeight != null && patch.lineWeight !== previous.lineWeight
 
   let textHeightWcs = previous.textHeightWcs ?? next.textHeightWcs
   if (fontSizeChanged) {
@@ -183,25 +161,11 @@ export function patchMarkupStyleWcs(
     textHeightWcs = acapScreenPxToWcs(nextFont, view)
   }
 
-  let strokeWidthWcs = previous.strokeWidthWcs ?? next.strokeWidthWcs
-  const nextPx = markupCanvasLineWidth(nextWeight)
-  if (!(nextPx > 0)) {
-    strokeWidthWcs = undefined
-  } else if (lineWeightChanged) {
-    const prevPx = markupCanvasLineWidth(prevWeight)
-    if (strokeWidthWcs != null && strokeWidthWcs > 0 && prevPx > 0) {
-      strokeWidthWcs = strokeWidthWcs * (nextPx / prevPx)
-    } else {
-      strokeWidthWcs = acapScreenPxToWcs(nextPx, view)
-    }
-  } else if (strokeWidthWcs == null || !(strokeWidthWcs > 0)) {
-    strokeWidthWcs = acapScreenPxToWcs(nextPx, view)
-  }
-
+  const { strokeWidthWcs: _omitStroke, ...rest } = next
   return {
-    ...next,
-    textHeightWcs,
-    strokeWidthWcs
+    ...rest,
+    lineWeight: MARKUP_LINE_WEIGHT,
+    textHeightWcs
   }
 }
 

@@ -36,7 +36,7 @@ import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight,
+  MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth
 } from './AcApMarkupUtil'
 
@@ -77,7 +77,7 @@ class AcApMarkupCloudJig extends AcEdPreviewJig<AcGePoint2dLike> {
   update(second: AcGePoint2dLike) {
     this._second = second
     this._color = defaultMarkupColor()
-    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const lineWidth = markupCanvasLineWidth(MARKUP_LINE_WEIGHT)
     const points = cloudLivePoints(this._first, this._second, this._view)
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLivePolyline(ctx, view, points, this._color, lineWidth, {

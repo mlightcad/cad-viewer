@@ -28,10 +28,10 @@ import {
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
-  acapGetMeasurementLineWeight,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
-  formatMeasurementLength
+  formatMeasurementLength,
+  MEASUREMENT_LINE_WEIGHT
 } from '../../util'
 import { AcTrView2d } from '../../view'
 import {
@@ -388,7 +388,7 @@ class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._badge.setFontSize(acapGetMeasurementFontSize())
 
     const lineWidth = acapMeasurementCanvasLineWidth(
-      acapGetMeasurementLineWeight()
+      MEASUREMENT_LINE_WEIGHT
     )
     const sweep = lockedSweep(this._start, end, this._geom, this.clockwise)
 
@@ -453,7 +453,7 @@ class AcApMeasureArcThroughJig extends AcEdPreviewJig<AcGePoint3dLike> {
   update(p: AcGePoint3dLike) {
     this._cursor = p
     const lineWidth = acapMeasurementCanvasLineWidth(
-      acapGetMeasurementLineWeight()
+      MEASUREMENT_LINE_WEIGHT
     )
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLiveSegment(
@@ -536,7 +536,7 @@ class AcApMeasureArcEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._badge.setFontSize(acapGetMeasurementFontSize())
 
     const lineWidth = acapMeasurementCanvasLineWidth(
-      acapGetMeasurementLineWeight()
+      MEASUREMENT_LINE_WEIGHT
     )
     const arc = AcGeCircArc2d.tryCreateByThreePoints(
       this._start,

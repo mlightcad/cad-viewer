@@ -80,8 +80,6 @@ export type AcExHtmlMessageKey =
   | 'settings.polar'
   | 'settings.polarAngles'
   | 'drawStyle.color'
-  | 'drawStyle.lineWeight'
-  | 'drawStyle.lineWeightHairline'
   | 'drawStyle.fontSize'
   | 'layers.title'
   | 'layers.close'
@@ -242,8 +240,6 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: 'Color',
-      lineWeight: 'Lineweight',
-      lineWeightHairline: 'Hairline',
       fontSize: 'Text height'
     },
     layers: {
@@ -418,8 +414,6 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: '颜色',
-      lineWeight: '线宽',
-      lineWeightHairline: '无线宽',
       fontSize: '字高'
     },
     layers: {
@@ -586,8 +580,6 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: 'Barva',
-      lineWeight: 'Tloušťka čáry',
-      lineWeightHairline: 'Bez tloušťky',
       fontSize: 'Výška textu'
     },
     layers: {
@@ -762,8 +754,6 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: 'Renk',
-      lineWeight: 'Çizgi kalınlığı',
-      lineWeightHairline: 'Kılcal',
       fontSize: 'Yazı yüksekliği'
     },
     layers: {
@@ -942,8 +932,6 @@ const AR_MESSAGES: AcExMessageTree = {
   },
   'drawStyle': {
     'color': 'اللون',
-    'lineWeight': 'سُمك الخط',
-    'lineWeightHairline': 'بلا سماكة',
     'fontSize': 'ارتفاع النص'
   },
   'layers': {

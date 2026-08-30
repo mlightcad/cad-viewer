@@ -64,22 +64,16 @@ function parsePositiveNumber(value: unknown): number | undefined {
 
 function parseStyle(raw: unknown): AcExMeasurementSidecarStyle | undefined {
   if (!isPlainObject(raw) || typeof raw.color !== 'string') return undefined
-  const lineWeight =
-    typeof raw.lineWeight === 'number' &&
-    Number.isFinite(raw.lineWeight) &&
-    raw.lineWeight >= 0
-      ? raw.lineWeight
-      : ACEX_MEASUREMENT_LINE_WEIGHT
+  // Accept legacy lineWeight / strokeWidthWcs without failing, but always hairline.
   const fontSize =
     typeof raw.fontSize === 'number' && raw.fontSize > 0
       ? raw.fontSize
       : ACEX_MEASUREMENT_FONT_SIZE
   return {
     color: raw.color,
-    lineWeight,
+    lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
     fontSize,
-    textHeightWcs: parsePositiveNumber(raw.textHeightWcs),
-    strokeWidthWcs: parsePositiveNumber(raw.strokeWidthWcs)
+    textHeightWcs: parsePositiveNumber(raw.textHeightWcs)
   }
 }
 
@@ -174,11 +168,28 @@ export function parseAcExMeasurementSidecar(
   }
 }
 
+function normalizeStyleForWrite(
+  style: AcExMeasurementSidecarStyle
+): AcExMeasurementSidecarStyle {
+  const { strokeWidthWcs: _ignored, ...rest } = style
+  return {
+    ...rest,
+    lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT
+  }
+}
+
 /** Serialize a sidecar file to pretty-printed JSON. */
 export function stringifyAcExMeasurementSidecar(
   file: AcExMeasurementSidecarFile
 ): string {
-  return `${JSON.stringify(file, null, 2)}\n`
+  const normalized: AcExMeasurementSidecarFile = {
+    ...file,
+    measurements: file.measurements.map(m => ({
+      ...m,
+      style: normalizeStyleForWrite(m.style)
+    }))
+  }
+  return `${JSON.stringify(normalized, null, 2)}\n`
 }
 
 /**

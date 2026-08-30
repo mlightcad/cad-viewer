@@ -230,8 +230,7 @@ export default {
     property: {
       color: 'Barva',
       lineType: 'Typ čáry',
-      lineWeight: 'Tloušťka čáry',
-      lineWeightHairline: 'Bez tloušťky'
+      lineWeight: 'Tloušťka čáry'
     },
     layerTools: {
       select: 'Hladina',
@@ -513,10 +512,6 @@ export default {
       text: 'Barva',
       description: 'Nastaví barvu nových poznámek'
     },
-    markupLineWeight: {
-      text: 'Tloušťka čáry',
-      description: 'Nastaví tloušťku čáry nových poznámek'
-    },
     markupFontSize: {
       text: 'Velikost písma',
       description: 'Nastaví velikost písma textových a odkazových poznámek'
@@ -525,11 +520,6 @@ export default {
       text: 'Barva',
       description:
         'Nastaví barvu vybraného měření, nebo měření, která přidáte příště'
-    },
-    measurementLineWeight: {
-      text: 'Tloušťka čáry',
-      description:
-        'Nastaví tloušťku čáry vybraného měření, nebo měření, která přidáte příště'
     },
     measurementFontSize: {
       text: 'Velikost písma',

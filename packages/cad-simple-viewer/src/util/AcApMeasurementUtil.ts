@@ -11,8 +11,7 @@ import { acCmColorToCssHex, parseCssToAcCmColor } from './AcApCssColor'
 /**
  * Overlay line weight meaning "no CAD lineweight" (hairline).
  *
- * Drawn as 1 CSS pixel and not scaled with zoom until the user picks a
- * numeric lineweight from the drawing-style / style toolbar.
+ * Drawn as 1 CSS pixel and not scaled with zoom.
  */
 export const OVERLAY_HAIRLINE_LINE_WEIGHT = 0 as AcGiLineWeight
 
@@ -24,9 +23,6 @@ export const MEASUREMENT_FONT_SIZE = 13
 
 /** Session draw color for newly created measurements (undefined = use sysvar). */
 let measurementDrawColor: AcCmColor | undefined
-
-/** Session draw line weight for newly created measurements. */
-let measurementDrawLineWeight: AcGiLineWeight = MEASUREMENT_LINE_WEIGHT
 
 /** Session draw font size for newly created measurement badges. */
 let measurementDrawFontSize = MEASUREMENT_FONT_SIZE
@@ -47,11 +43,6 @@ export function acapGetMeasurementColor(db: AcDbDatabase): AcCmColor {
   ) as AcCmColor
 }
 
-/** Current line weight used when drawing measurements. */
-export function acapGetMeasurementLineWeight(): AcGiLineWeight {
-  return measurementDrawLineWeight
-}
-
 /** Current font size (CSS px) used when drawing measurement badges. */
 export function acapGetMeasurementFontSize(): number {
   return measurementDrawFontSize
@@ -60,12 +51,6 @@ export function acapGetMeasurementFontSize(): number {
 /** Update the session measurement draw color (affects current/future measurements). */
 export function acapSetMeasurementDrawColor(color: AcCmColor): void {
   measurementDrawColor = color.clone()
-}
-
-/** Update the session measurement draw line weight. */
-export function acapSetMeasurementDrawLineWeight(weight: AcGiLineWeight): void {
-  if (!Number.isFinite(weight) || weight < 0) return
-  measurementDrawLineWeight = weight
 }
 
 /** Update the session measurement draw font size (CSS px). */
@@ -77,17 +62,16 @@ export function acapSetMeasurementDrawFontSize(size: number): void {
 /** Restore factory session measurement draw style (tests / document reset). */
 export function acapResetMeasurementDrawStyle(): void {
   measurementDrawColor = undefined
-  measurementDrawLineWeight = MEASUREMENT_LINE_WEIGHT
   measurementDrawFontSize = MEASUREMENT_FONT_SIZE
 }
 
-/** Build a style object from the current measurement draw color / line weight / font size. */
+/** Build a style object from the current measurement draw color / font size. */
 export function acapGetCurrentMeasurementStyle(
   db: AcDbDatabase
 ): AcApMeasurementStyle {
   return {
     color: acapGetMeasurementColor(db),
-    lineWeight: acapGetMeasurementLineWeight(),
+    lineWeight: MEASUREMENT_LINE_WEIGHT,
     fontSize: acapGetMeasurementFontSize()
   }
 }

@@ -954,8 +954,6 @@ export class AcExMeasureController {
   private readonly _getActiveLayoutId: (() => string) | null
   /** Accent color for lines, labels, and canvas overlays. */
   private _measureColor = ACEX_MEASURE_COLOR
-  /** Session line weight for new measurements. */
-  private _drawLineWeight = ACEX_MEASUREMENT_LINE_WEIGHT
   /** Session badge font size for new measurements. */
   private _drawFontSize = ACEX_MEASUREMENT_FONT_SIZE
   /** Style of the measurement currently being committed (import or interactive). */
@@ -1121,14 +1119,14 @@ export class AcExMeasureController {
       if (measure) {
         return {
           color: measure.record.style.color || this._measureCss(),
-          lineWeight: measure.record.style.lineWeight ?? this._drawLineWeight,
+          lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
           fontSize: measure.record.style.fontSize || this._drawFontSize
         }
       }
     }
     return {
       color: this._measureCss(),
-      lineWeight: this._drawLineWeight,
+      lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
       fontSize: this._drawFontSize
     }
   }
@@ -1153,13 +1151,6 @@ export class AcExMeasureController {
         colorChanged = true
       }
     }
-    if (
-      patch.lineWeight != null &&
-      Number.isFinite(patch.lineWeight) &&
-      patch.lineWeight >= 0
-    ) {
-      this._drawLineWeight = patch.lineWeight
-    }
     if (patch.fontSize != null && patch.fontSize > 0) {
       this._drawFontSize = patch.fontSize
     }
@@ -1172,18 +1163,10 @@ export class AcExMeasureController {
 
     const selectionPatch: {
       color?: string
-      lineWeight?: number
       fontSize?: number
     } = {}
     if (colorChanged || patch.colorHex != null || patch.color) {
       selectionPatch.color = this._measureCss()
-    }
-    if (
-      patch.lineWeight != null &&
-      Number.isFinite(patch.lineWeight) &&
-      patch.lineWeight >= 0
-    ) {
-      selectionPatch.lineWeight = patch.lineWeight
     }
     if (patch.fontSize != null && patch.fontSize > 0) {
       selectionPatch.fontSize = patch.fontSize
@@ -1193,9 +1176,7 @@ export class AcExMeasureController {
     // Mid-draw: keep in-progress commit style in sync with the session.
     if (this._commitStyle) {
       if (selectionPatch.color) this._commitStyle.color = selectionPatch.color
-      if (selectionPatch.lineWeight != null) {
-        this._commitStyle.lineWeight = selectionPatch.lineWeight
-      }
+      this._commitStyle.lineWeight = ACEX_MEASUREMENT_LINE_WEIGHT
       if (selectionPatch.fontSize != null) {
         this._commitStyle.fontSize = selectionPatch.fontSize
       }
@@ -1880,7 +1861,7 @@ export class AcExMeasureController {
       canvas,
       points,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(this._drawLineWeight),
+      acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT),
       undefined,
       options?.bothArrows
     )
@@ -3338,9 +3319,8 @@ export class AcExMeasureController {
       p => this._wcsToScreenPoint(p),
       {
         textHeightWcs: style.textHeightWcs,
-        strokeWidthWcs: style.strokeWidthWcs,
         fontSizePx: style.fontSize,
-        strokeScreenPx: acExMeasureCanvasLineWidth(style.lineWeight),
+        strokeScreenPx: acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT),
         elements: parts.dom,
         canvases: parts.canvases
       }
@@ -3356,13 +3336,14 @@ export class AcExMeasureController {
   private _defaultStyle(): AcExMeasurementSidecarStyle {
     return this._styleWithWcs({
       color: this._measureCss(),
-      lineWeight: this._drawLineWeight,
+      lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
       fontSize: this._drawFontSize
     })
   }
 
   /**
-   * Fill any missing world-space sizes without overwriting sidecar values.
+   * Fill any missing world-space text height without overwriting sidecar values.
+   * Never writes strokeWidthWcs (overlay strokes stay hairline).
    * @internal
    */
   private _ensureStyleWcs(
@@ -3370,34 +3351,28 @@ export class AcExMeasureController {
   ): AcExMeasurementSidecarStyle {
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
-    const strokePx = acExMeasureCanvasLineWidth(style.lineWeight)
+    const { strokeWidthWcs: _omit, ...rest } = style
     return {
-      ...style,
+      ...rest,
+      lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
       textHeightWcs:
         style.textHeightWcs != null && style.textHeightWcs > 0
           ? style.textHeightWcs
-          : acExScreenPxToWcs(style.fontSize, wcsToScreen),
-      strokeWidthWcs:
-        style.strokeWidthWcs != null && style.strokeWidthWcs > 0
-          ? style.strokeWidthWcs
-          : strokePx > 0
-            ? acExScreenPxToWcs(strokePx, wcsToScreen)
-            : undefined
+          : acExScreenPxToWcs(style.fontSize, wcsToScreen)
     }
   }
 
-  /** Attach world-space text/stroke sizes from the current view. @internal */
+  /** Attach world-space text height from the current view. @internal */
   private _styleWithWcs(
     style: AcExMeasurementSidecarStyle
   ): AcExMeasurementSidecarStyle {
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
-    const strokePx = acExMeasureCanvasLineWidth(style.lineWeight)
+    const { strokeWidthWcs: _omit, ...rest } = style
     return {
-      ...style,
-      textHeightWcs: acExScreenPxToWcs(style.fontSize, wcsToScreen),
-      strokeWidthWcs:
-        strokePx > 0 ? acExScreenPxToWcs(strokePx, wcsToScreen) : undefined
+      ...rest,
+      lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
+      textHeightWcs: acExScreenPxToWcs(style.fontSize, wcsToScreen)
     }
   }
 
@@ -3641,7 +3616,6 @@ export class AcExMeasureController {
   /** Apply style patch to currently selected measurements. @internal */
   private _applyStyleToSelection(patch: {
     color?: string
-    lineWeight?: number
     fontSize?: number
   }): void {
     if (this._selectedIds.size === 0) return
@@ -3652,28 +3626,8 @@ export class AcExMeasureController {
       if (!measure) continue
       const style = measure.record.style
       if (patch.color) style.color = patch.color
-      if (
-        patch.lineWeight != null &&
-        Number.isFinite(patch.lineWeight) &&
-        patch.lineWeight >= 0
-      ) {
-        const prevWeight = style.lineWeight
-        const prevPx = acExMeasureCanvasLineWidth(prevWeight)
-        const nextPx = acExMeasureCanvasLineWidth(patch.lineWeight)
-        if (!(nextPx > 0)) {
-          style.strokeWidthWcs = undefined
-        } else if (
-          style.strokeWidthWcs != null &&
-          style.strokeWidthWcs > 0 &&
-          prevPx > 0
-        ) {
-          style.strokeWidthWcs =
-            style.strokeWidthWcs * (nextPx / prevPx)
-        } else {
-          style.strokeWidthWcs = acExScreenPxToWcs(nextPx, wcsToScreen)
-        }
-        style.lineWeight = patch.lineWeight
-      }
+      style.lineWeight = ACEX_MEASUREMENT_LINE_WEIGHT
+      style.strokeWidthWcs = undefined
       if (patch.fontSize != null && patch.fontSize > 0) {
         const prevFont = style.fontSize
         if (
@@ -3691,21 +3645,22 @@ export class AcExMeasureController {
         }
         style.fontSize = patch.fontSize
       }
-      if (patch.fontSize != null || patch.lineWeight != null) {
+      if (patch.fontSize != null) {
         acExSeedOverlaySizesFromWcs(
           this._view.getCameraZoom(),
           wcsToScreen,
           {
             textHeightWcs: style.textHeightWcs,
-            strokeWidthWcs: style.strokeWidthWcs,
             fontSizePx: style.fontSize,
-            strokeScreenPx: acExMeasureCanvasLineWidth(style.lineWeight),
+            strokeScreenPx: acExMeasureCanvasLineWidth(
+              ACEX_MEASUREMENT_LINE_WEIGHT
+            ),
             elements: measure.parts.dom,
             canvases: measure.parts.canvases
           }
         )
       }
-      // Keep selection highlight on DOM; canvas redraws pick up color/weight.
+      // Keep selection highlight on DOM; canvas redraws pick up color.
       for (const el of measure.parts.dom) {
         if (el.classList.contains('mlcad-measure-badge') && style.fontSize) {
           el.style.fontSize = `${style.fontSize}px`
@@ -3836,7 +3791,7 @@ export class AcExMeasureController {
       arm1,
       arm2,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(this._drawLineWeight)
+      acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
     )
   }
 
@@ -3957,7 +3912,7 @@ export class AcExMeasureController {
       through,
       end,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(this._drawLineWeight)
+      acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
     )
   }
 
@@ -4020,7 +3975,7 @@ export class AcExMeasureController {
       canvas,
       points,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(this._drawLineWeight)
+      acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
     )
   }
 }

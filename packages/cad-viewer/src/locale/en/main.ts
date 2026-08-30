@@ -230,8 +230,7 @@ export default {
     property: {
       color: 'Color',
       lineType: 'Linetype',
-      lineWeight: 'Lineweight',
-      lineWeightHairline: 'Hairline'
+      lineWeight: 'Lineweight'
     },
     layerTools: {
       select: 'Layer',
@@ -521,10 +520,6 @@ export default {
       text: 'Color',
       description: 'Set the color for new markup drawings'
     },
-    markupLineWeight: {
-      text: 'Lineweight',
-      description: 'Set the lineweight for new markup drawings'
-    },
     markupFontSize: {
       text: 'Font size',
       description: 'Set the font size for text and callout markups'
@@ -533,11 +528,6 @@ export default {
       text: 'Color',
       description:
         'Set the color for the selected measurement, or for measurements you add next'
-    },
-    measurementLineWeight: {
-      text: 'Lineweight',
-      description:
-        'Set the lineweight for the selected measurement, or for measurements you add next'
     },
     measurementFontSize: {
       text: 'Font size',

@@ -1075,8 +1075,11 @@ async function startViewer(): Promise<void> {
         if (measure?.hasSelection) return 'measure'
         return undefined
       },
-      getStyle: kind =>
-        kind === 'measure' ? measure!.getDrawStyle() : markup!.getDrawStyle(),
+      getStyle: kind => {
+        const style =
+          kind === 'measure' ? measure!.getDrawStyle() : markup!.getDrawStyle()
+        return { color: style.color, fontSize: style.fontSize }
+      },
       applyStyle: (kind, patch) => {
         if (kind === 'measure') {
           measure!.setDrawStyle(patch)

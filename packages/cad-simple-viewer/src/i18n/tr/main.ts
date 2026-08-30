@@ -56,8 +56,6 @@ export default {
   },
   drawStyle: {
     color: 'Renk',
-    lineWeight: 'Çizgi kalınlığı',
-    lineWeightHairline: 'Kılcal',
     fontSize: 'Yazı yüksekliği'
   }
 }

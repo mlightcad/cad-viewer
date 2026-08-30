@@ -24,10 +24,10 @@ import {
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
-  acapGetMeasurementLineWeight,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
-  formatMeasurementAngle
+  formatMeasurementAngle,
+  MEASUREMENT_LINE_WEIGHT
 } from '../../util'
 import { AcTrView2d } from '../../view'
 import {
@@ -101,7 +101,7 @@ class AcApMeasureArm1Jig extends AcEdPreviewJig<AcGePoint3dLike> {
   update(p: AcGePoint3dLike) {
     this._cursor = p
     const lineWidth = acapMeasurementCanvasLineWidth(
-      acapGetMeasurementLineWeight()
+      MEASUREMENT_LINE_WEIGHT
     )
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLiveSegment(
@@ -186,7 +186,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._badge.setFontSize(acapGetMeasurementFontSize())
 
     const lineWidth = acapMeasurementCanvasLineWidth(
-      acapGetMeasurementLineWeight()
+      MEASUREMENT_LINE_WEIGHT
     )
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLiveSegment(
