@@ -11,6 +11,7 @@ import * as THREE from 'three'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
+  ACEX_OVERLAY_ARROW_SIZE_PX,
   acExPixelsPerWorldUnit,
   acExPositionClientOverlay,
   acExPositionWcsOverlay,
@@ -20,7 +21,11 @@ import {
   acExScreenPxToWcs,
   acExSeedOverlaySizesFromWcs
 } from './AcExHtmlOverlayDom'
-import { acExDrawMarkupArrowHead } from './AcExMarkupGeometry'
+import {
+  acExDrawMarkupArrowHead,
+  acExExpandExtentsByClientRects,
+  acExOverlayArrowSize
+} from './AcExMarkupGeometry'
 import { acExBindMarkupPointerDrag } from './AcExMarkupGripDrag'
 import {
   ACEX_MEASUREMENT_FONT_SIZE,
@@ -246,8 +251,8 @@ function isRecordOnLayout(
   return recordLayoutId == null || recordLayoutId === activeLayoutId
 }
 
-/** World AABB of a measurement's control geometry. */
-function measurementFocusExtents(
+/** World AABB of a measurement's control geometry (no overlay padding). */
+function measurementGeometryExtents(
   geometry: AcExMeasurementGeometry
 ): AcExExtents | null {
   const xs: number[] = []
@@ -286,17 +291,48 @@ function measurementFocusExtents(
       return null
   }
   if (xs.length === 0) return null
-  let minX = Math.min(...xs)
-  let minY = Math.min(...ys)
-  let maxX = Math.max(...xs)
-  let maxY = Math.max(...ys)
-  if (!(maxX - minX > 1e-8) && !(maxY - minY > 1e-8)) {
-    minX -= 1
-    minY -= 1
-    maxX += 1
-    maxY += 1
+  return {
+    minX: Math.min(...xs),
+    minY: Math.min(...ys),
+    maxX: Math.max(...xs),
+    maxY: Math.max(...ys)
   }
-  return { minX, minY, maxX, maxY }
+}
+
+function padDegenerateExtents(extents: AcExExtents): AcExExtents {
+  if (extents.maxX - extents.minX > 1e-8 || extents.maxY - extents.minY > 1e-8) {
+    return extents
+  }
+  return {
+    minX: extents.minX - 1,
+    minY: extents.minY - 1,
+    maxX: extents.maxX + 1,
+    maxY: extents.maxY + 1
+  }
+}
+
+/**
+ * Combined zoom-to extents: control geometry plus HTML overlay rectangles.
+ *
+ * Coordinate measurements are a degenerate AABB on their own. Union the
+ * badge (capsule) so the camera frames the label instead of the point.
+ */
+function measurementFocusExtents(
+  geometry: AcExMeasurementGeometry,
+  overlayRects: ReadonlyArray<{
+    left: number
+    top: number
+    right: number
+    bottom: number
+  }>,
+  clientToWorld: (clientX: number, clientY: number) => { x: number; y: number }
+): AcExExtents | null {
+  const extents = acExExpandExtentsByClientRects(
+    measurementGeometryExtents(geometry),
+    overlayRects,
+    clientToWorld
+  )
+  return extents ? padDegenerateExtents(extents) : null
 }
 
 /**
@@ -1306,14 +1342,25 @@ export class AcExMeasureController {
   }
 
   /**
-   * Zoom to a measurement and select it.
+   * Zoom to a measurement (geometry plus HTML badge) and select it.
    *
    * @returns `true` when extents were applied.
    */
   focus(id: string): boolean {
     const measure = this._committed.find(item => item.id === id)
     if (!measure) return false
-    const extents = measurementFocusExtents(measure.record.geometry)
+    const rects = measure.parts.dom
+      .filter(el => !acExIsOverlayGrip(el) && !el.hidden)
+      .map(el => el.getBoundingClientRect())
+      .filter(rect => rect.width > 0 || rect.height > 0)
+    const extents = measurementFocusExtents(
+      measure.record.geometry,
+      rects,
+      (clientX, clientY) => {
+        const p = this._view.screenToWcs(clientX, clientY)
+        return { x: p.x, y: p.y }
+      }
+    )
     if (!extents) return false
     this._view.zoomToExtents(extents)
     this.selectFromPanel(id)
@@ -3097,7 +3144,9 @@ export class AcExMeasureController {
         style.color || this._measureCss(),
         acExMeasureCanvasLineWidth(style.lineWeight),
         style.strokeWidthWcs,
-        bothArrows
+        bothArrows,
+        bothArrows,
+        style.arrowSizeWcs
       )
     }
     redraw()
@@ -3186,7 +3235,9 @@ export class AcExMeasureController {
     strokeCss: string,
     lineWidth: number,
     strokeWidthWcs?: number,
-    bothArrows = false
+    bothArrows = false,
+    scaleArrowsWithView = false,
+    arrowSizeWcs?: number
   ): void {
     if (points.length < 2) return
     const synced = this._syncCanvas(canvas)
@@ -3219,9 +3270,13 @@ export class AcExMeasureController {
     if (bothArrows && screen.length === 2) {
       const a = screen[0]!
       const b = screen[1]!
-      const arrowSize = acExScaledOverlayArrowSize(canvas, p =>
-        this._wcsToScreenPoint(p)
-      )
+      const arrowSize = scaleArrowsWithView
+        ? acExScaledOverlayArrowSize(
+            canvas,
+            p => this._wcsToScreenPoint(p),
+            arrowSizeWcs
+          )
+        : acExOverlayArrowSize(scaled, lineWidth)
       if (Math.hypot(b.x - a.x, b.y - a.y) >= arrowSize) {
         acExDrawMarkupArrowHead(ctx, b, a, strokeCss, arrowSize)
         acExDrawMarkupArrowHead(ctx, a, b, strokeCss, arrowSize)
@@ -3304,7 +3359,10 @@ export class AcExMeasureController {
       this._commitStyle = null
       return
     }
-    const style = this._ensureStyleWcs(record.style)
+    const style = this._ensureStyleWcs(
+      record.style,
+      record.type === 'distance'
+    )
     const committedRecord = { ...record, id: parts.id, style }
     this._committed.push({
       id: parts.id,
@@ -3319,6 +3377,7 @@ export class AcExMeasureController {
       p => this._wcsToScreenPoint(p),
       {
         textHeightWcs: style.textHeightWcs,
+        arrowSizeWcs: style.arrowSizeWcs,
         fontSizePx: style.fontSize,
         strokeScreenPx: acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT),
         elements: parts.dom,
@@ -3342,23 +3401,31 @@ export class AcExMeasureController {
   }
 
   /**
-   * Fill any missing world-space text height without overwriting sidecar values.
+   * Fill any missing world-space sizes without overwriting sidecar values.
    * Never writes strokeWidthWcs (overlay strokes stay hairline).
    * @internal
    */
   private _ensureStyleWcs(
-    style: AcExMeasurementSidecarStyle
+    style: AcExMeasurementSidecarStyle,
+    includeArrow = false
   ): AcExMeasurementSidecarStyle {
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
     const { strokeWidthWcs: _omit, ...rest } = style
+    const arrowSizeWcs =
+      style.arrowSizeWcs != null && style.arrowSizeWcs > 0
+        ? style.arrowSizeWcs
+        : includeArrow
+          ? acExScreenPxToWcs(ACEX_OVERLAY_ARROW_SIZE_PX, wcsToScreen)
+          : undefined
     return {
       ...rest,
       lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
       textHeightWcs:
         style.textHeightWcs != null && style.textHeightWcs > 0
           ? style.textHeightWcs
-          : acExScreenPxToWcs(style.fontSize, wcsToScreen)
+          : acExScreenPxToWcs(style.fontSize, wcsToScreen),
+      ...(arrowSizeWcs != null && arrowSizeWcs > 0 ? { arrowSizeWcs } : {})
     }
   }
 

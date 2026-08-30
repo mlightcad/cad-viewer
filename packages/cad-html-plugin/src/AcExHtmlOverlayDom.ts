@@ -10,11 +10,11 @@ export const ACEX_OVERLAY_CLOUD_WCS = 'overlayCloudWcs'
 /** Target screen diameter in CSS pixels for each revision-cloud lobe at creation. */
 export const ACEX_OVERLAY_CLOUD_DIAMETER_PX = 8
 
+/** Arrow-head length in CSS pixels at the overlay's creation-scale stroke. */
+export const ACEX_OVERLAY_ARROW_SIZE_PX = 12
+
 /** Dataset key storing overlay arrow-head length in world units. */
 export const ACEX_OVERLAY_ARROW_WCS = 'overlayArrowWcs'
-
-/** Arrow-head length in CSS pixels at first paint; stored as WCS thereafter. */
-export const ACEX_OVERLAY_ARROW_SIZE_PX = 12
 
 /**
  * Scale factor for HTML measure/markup overlays relative to first layout.
@@ -76,6 +76,14 @@ export function acExSeedOverlayStrokeWcs(
   canvas.dataset[ACEX_OVERLAY_STROKE_WCS] = String(strokeWidthWcs)
 }
 
+export function acExSeedOverlayArrowWcs(
+  canvas: HTMLElement,
+  arrowSizeWcs: number
+): void {
+  if (!(arrowSizeWcs > 0) || !Number.isFinite(arrowSizeWcs)) return
+  canvas.dataset[ACEX_OVERLAY_ARROW_WCS] = String(arrowSizeWcs)
+}
+
 /**
  * View-synced canvas stroke. Prefer strokeWidthWcs; else convert baseLineWidth
  * to WCS on first paint and stash on the canvas.
@@ -113,8 +121,11 @@ export function acExScaledCanvasLineWidth(
 /**
  * Arrow-head length in CSS pixels that stays a fixed world size.
  *
- * Distance measurements use this so arrows follow zoom even when the stroke
- * is hairline. Seeds {@link ACEX_OVERLAY_ARROW_SIZE_PX} as WCS on first paint.
+ * Used by committed distance measurements and arrow markups. Seeds
+ * {@link ACEX_OVERLAY_ARROW_SIZE_PX} as WCS on first paint (the size shown
+ * during the jig) unless `arrowSizeWcs` is provided. Live previews should use
+ * `acExOverlayArrowSize` so the head stays a constant screen size
+ * while the user zooms during placement.
  */
 export function acExScaledOverlayArrowSize(
   canvas: HTMLCanvasElement,
@@ -154,6 +165,7 @@ export function acExSeedOverlaySizesFromWcs(
   options: {
     textHeightWcs?: number
     strokeWidthWcs?: number
+    arrowSizeWcs?: number
     fontSizePx?: number
     strokeScreenPx?: number
     elements?: readonly HTMLElement[]
@@ -170,6 +182,12 @@ export function acExSeedOverlaySizesFromWcs(
   } else if (options.strokeScreenPx === 0) {
     for (const canvas of canvases ?? []) {
       delete canvas.dataset[ACEX_OVERLAY_STROKE_WCS]
+    }
+  }
+
+  if (options.arrowSizeWcs != null && options.arrowSizeWcs > 0) {
+    for (const canvas of canvases ?? []) {
+      acExSeedOverlayArrowWcs(canvas, options.arrowSizeWcs)
     }
   }
 

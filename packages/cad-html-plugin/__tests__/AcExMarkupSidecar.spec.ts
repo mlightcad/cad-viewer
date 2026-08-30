@@ -63,6 +63,7 @@ describe('AcExMarkupSidecar', () => {
             color: '#e53935',
             lineWeight: 70,
             textHeightWcs: 0.6,
+            arrowSizeWcs: 0.9,
             strokeWidthWcs: 0.1
           },
           comment: '',
@@ -82,6 +83,7 @@ describe('AcExMarkupSidecar', () => {
     expect(text).not.toMatch(/"strokeWidthWcs"\s*:/)
     const parsed = parseAcExMarkupSidecar(text)
     expect(parsed.markups[0]?.style.textHeightWcs).toBe(0.6)
+    expect(parsed.markups[0]?.style.arrowSizeWcs).toBe(0.9)
     expect(parsed.markups[0]?.style.lineWeight).toBe(0)
     expect(parsed.markups[0]?.style.strokeWidthWcs).toBeUndefined()
   })

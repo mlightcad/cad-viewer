@@ -11,8 +11,10 @@ import {
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
+  ACAP_OVERLAY_ARROW_SIZE_PX,
   acapBindOverlayPointerDrag,
-  acapPlaceOverlayHtml
+  acapPlaceOverlayHtml,
+  acapScreenPxToWcs
 } from '../../overlay'
 import { runMeasurementEdit } from '../AcApMeasurementHistory'
 import { republishMeasurement } from '../AcApMeasurementRepublish'
@@ -73,7 +75,8 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
       options.layoutId,
       options.style,
       options.textHeightWcs,
-      options.strokeWidthWcs
+      options.strokeWidthWcs,
+      options.arrowSizeWcs
     )
     this.p1 = p1
     this.p2 = p2
@@ -122,11 +125,18 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
    * @returns Record with `type: 'distance'` and start/end geometry
    */
   toRecord(layoutId?: string, view?: AcTrView2d): AcApMeasurementRecord {
+    const style = this.serializeStyle(view)
+    const arrowSizeWcs =
+      this.arrowSizeWcs ??
+      (view ? acapScreenPxToWcs(ACAP_OVERLAY_ARROW_SIZE_PX, view) : undefined)
+    if (arrowSizeWcs != null && arrowSizeWcs > 0) {
+      style.arrowSizeWcs = arrowSizeWcs
+    }
     return {
       id: this.entityId,
       type: 'distance',
       layoutId,
-      style: this.serializeStyle(view),
+      style,
       geometry: {
         type: 'distance',
         start: { x: this.p1.x, y: this.p1.y },
@@ -192,7 +202,9 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
         live.start,
         live.end,
         paintStyle.color,
-        acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
+        acapMeasurementCanvasLineWidth(paintStyle.lineWeight),
+        this.strokeWidthWcs,
+        this.arrowSizeWcs
       )
     paintSegment()
     const redrawPersist = () =>

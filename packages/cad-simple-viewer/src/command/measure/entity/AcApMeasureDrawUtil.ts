@@ -87,9 +87,12 @@ function prepareMeasureCanvas(
  * @param color - Stroke color
  * @param lineWidth - Stroke width in CSS pixels (default `2`)
  * @param strokeWidthWcs - Optional imported world-space stroke width
+ * @param arrowSizeWcs - Optional imported world-space arrow-head length
  *
- * Arrow heads at both endpoints are a fixed world length (seeded from 12 CSS
- * px on first paint) so they scale with camera zoom even for hairline strokes.
+ * Arrow heads at both endpoints freeze the jig's screen size as WCS on first
+ * paint (or use imported `arrowSizeWcs` from a sidecar), then scale with camera
+ * zoom. Live jigs use {@link acapOverlayArrowSize} instead so the head stays
+ * a constant CSS size while placing.
  */
 export function drawMeasureSegmentOnCanvas(
   canvas: HTMLCanvasElement,
@@ -98,7 +101,8 @@ export function drawMeasureSegmentOnCanvas(
   p2: Point2,
   color: AcCmColor,
   lineWidth = 2,
-  strokeWidthWcs?: number
+  strokeWidthWcs?: number,
+  arrowSizeWcs?: number
 ): void {
   const prepared = prepareMeasureCanvas(canvas, view)
   if (!prepared) return
@@ -118,7 +122,7 @@ export function drawMeasureSegmentOnCanvas(
   )
   ctx.lineWidth = strokeWidth
   ctx.stroke()
-  const arrowSize = acapScaledOverlayArrowSize(canvas, view)
+  const arrowSize = acapScaledOverlayArrowSize(canvas, view, arrowSizeWcs)
   if (Math.hypot(b.x - a.x, b.y - a.y) >= arrowSize) {
     acapDrawOverlayArrowHead(ctx, b, a, css, arrowSize)
     acapDrawOverlayArrowHead(ctx, a, b, css, arrowSize)

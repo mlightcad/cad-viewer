@@ -190,13 +190,16 @@ describe('AcExHtmlOverlayDom', () => {
     acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
       fontSizePx: 13,
       textHeightWcs: 1.3,
-      elements: [grip, badge]
+      arrowSizeWcs: 1.2,
+      elements: [grip, badge],
+      canvases: [grip]
     })
     expect(grip.dataset[ACEX_OVERLAY_BASE_ZOOM]).toBe('2')
     expect(badge.dataset[ACEX_OVERLAY_BASE_ZOOM]).toBe('2')
+    expect(grip.dataset[ACEX_OVERLAY_ARROW_WCS]).toBe('1.2')
   })
 
-  it('scales distance arrows in WCS independently of hairline stroke', () => {
+  it('freezes committed distance arrows as WCS on first paint', () => {
     const canvas = document.createElement('canvas')
     const at10 = (wcs: { x: number; y: number }) => ({
       x: wcs.x * 10,
@@ -209,5 +212,15 @@ describe('AcExHtmlOverlayDom', () => {
     expect(acExScaledOverlayArrowSize(canvas, at10)).toBe(12)
     expect(Number(canvas.dataset[ACEX_OVERLAY_ARROW_WCS])).toBeCloseTo(1.2)
     expect(acExScaledOverlayArrowSize(canvas, at5)).toBeCloseTo(6)
+  })
+
+  it('uses imported arrowSizeWcs instead of seeding from screen pixels', () => {
+    const canvas = document.createElement('canvas')
+    const at10 = (wcs: { x: number; y: number }) => ({
+      x: wcs.x * 10,
+      y: wcs.y * 10
+    })
+    expect(acExScaledOverlayArrowSize(canvas, at10, 2.4)).toBeCloseTo(24)
+    expect(canvas.dataset[ACEX_OVERLAY_ARROW_WCS]).toBe('2.4')
   })
 })

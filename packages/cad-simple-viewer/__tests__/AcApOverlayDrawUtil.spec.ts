@@ -86,10 +86,22 @@ describe('AcApOverlayDrawUtil WCS stroke', () => {
     acapSeedOverlaySizesFromWcs(view, {
       fontSizePx: 13,
       textHeightWcs: 1.3,
-      elements: [el as never]
+      arrowSizeWcs: 1.2,
+      elements: [el as never],
+      canvases: [canvas]
     })
     // base = (13 * 2) / (1.3 * 10) = 2
     expect(el.baseZoom).toBe(2)
+    expect(canvas.dataset[ACAP_OVERLAY_ARROW_WCS]).toBe('1.2')
+  })
+
+  it('seeds arrow WCS independently of the text screen/WCS pair', () => {
+    const canvas = document.createElement('canvas')
+    acapSeedOverlaySizesFromWcs(mockView(10), {
+      arrowSizeWcs: 1.2,
+      canvases: [canvas]
+    })
+    expect(canvas.dataset[ACAP_OVERLAY_ARROW_WCS]).toBe('1.2')
   })
 })
 
@@ -109,11 +121,17 @@ describe('AcApOverlayDrawUtil arrow and dash scale', () => {
     expect(acapOverlayArrowSize(1, 0)).toBe(12)
   })
 
-  it('scales distance arrows in WCS independently of hairline stroke', () => {
+  it('freezes committed distance arrows as WCS on first paint', () => {
     const canvas = document.createElement('canvas')
     expect(acapScaledOverlayArrowSize(canvas, mockView(10))).toBe(12)
     expect(Number(canvas.dataset[ACAP_OVERLAY_ARROW_WCS])).toBeCloseTo(1.2)
     expect(acapScaledOverlayArrowSize(canvas, mockView(5))).toBeCloseTo(6)
+  })
+
+  it('uses imported arrowSizeWcs instead of seeding from screen pixels', () => {
+    const canvas = document.createElement('canvas')
+    expect(acapScaledOverlayArrowSize(canvas, mockView(10), 2.4)).toBeCloseTo(24)
+    expect(Number(canvas.dataset[ACAP_OVERLAY_ARROW_WCS])).toBe(2.4)
   })
 
   it('seeds cloud lobe WCS from the stroke screen/WCS pair', () => {

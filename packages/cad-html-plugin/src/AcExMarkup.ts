@@ -13,9 +13,11 @@ import * as THREE from 'three'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
+  ACEX_OVERLAY_ARROW_SIZE_PX,
   acExPositionWcsOverlay,
   acExResetOverlayViewScale,
   acExScaledCanvasLineWidth,
+  acExScaledOverlayArrowSize,
   acExScreenPxToWcs,
   acExSeedOverlaySizesFromWcs
 } from './AcExHtmlOverlayDom'
@@ -382,7 +384,7 @@ export class AcExMarkupController {
     )
   }
 
-  /** Attach world-space text height from the current view. */
+  /** Attach world-space text height and arrow length from the current view. */
   private _styleWithWcs(style: AcExMarkupStyle): AcExMarkupStyle {
     const fontSize =
       style.fontSize != null && style.fontSize > 0
@@ -391,10 +393,15 @@ export class AcExMarkupController {
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
     const { strokeWidthWcs: _omit, ...rest } = style
+    const arrowSizeWcs =
+      style.arrowSizeWcs != null && style.arrowSizeWcs > 0
+        ? style.arrowSizeWcs
+        : acExScreenPxToWcs(ACEX_OVERLAY_ARROW_SIZE_PX, wcsToScreen)
     return {
       ...rest,
       lineWeight: ACEX_MARKUP_LINE_WEIGHT,
-      textHeightWcs: acExScreenPxToWcs(fontSize, wcsToScreen)
+      textHeightWcs: acExScreenPxToWcs(fontSize, wcsToScreen),
+      arrowSizeWcs
     }
   }
 
@@ -1349,6 +1356,7 @@ export class AcExMarkupController {
       p => this._wcsToScreenPoint(p),
       {
         textHeightWcs: record.style.textHeightWcs,
+        arrowSizeWcs: record.style.arrowSizeWcs,
         fontSizePx: record.style.fontSize ?? ACEX_MARKUP_FONT_SIZE,
         strokeScreenPx: acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
         elements: parts.dom,
@@ -1381,7 +1389,10 @@ export class AcExMarkupController {
         ctx,
         live.geometry,
         live.style.color || ACEX_MARKUP_COLOR,
-        acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
+        acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
+        undefined,
+        true,
+        live.style.arrowSizeWcs
       )
     }
     this._redrawListeners.push(redraw)
@@ -1871,7 +1882,9 @@ export class AcExMarkupController {
     g: AcExMarkupGeometry,
     color: string,
     lineWidth: number,
-    strokeWidthWcs?: number
+    strokeWidthWcs?: number,
+    scaleArrowsWithView = false,
+    arrowSizeWcs?: number
   ): void {
     const strokeWidth = this._scaledCanvasLineWidth(
       lineWidth,
@@ -1899,7 +1912,13 @@ export class AcExMarkupController {
             a,
             b,
             color,
-            acExOverlayArrowSize(strokeWidth, lineWidth)
+            scaleArrowsWithView
+              ? acExScaledOverlayArrowSize(
+                  ctx.canvas,
+                  worldToScreen,
+                  arrowSizeWcs
+                )
+              : acExOverlayArrowSize(strokeWidth, lineWidth)
           )
         }
         break
@@ -1972,7 +1991,13 @@ export class AcExMarkupController {
           color,
           true,
           strokeWidth,
-          acExOverlayArrowSize(strokeWidth, lineWidth)
+          scaleArrowsWithView
+            ? acExScaledOverlayArrowSize(
+                ctx.canvas,
+                worldToScreen,
+                arrowSizeWcs
+              )
+            : acExOverlayArrowSize(strokeWidth, lineWidth)
         )
         break
       }

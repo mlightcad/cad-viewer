@@ -48,6 +48,37 @@ describe('AcApMarkupSidecar', () => {
     })
   })
 
+  it('round-trips arrowSizeWcs on arrow markups', () => {
+    const file: AcApMarkupSidecarFile = {
+      version: 1,
+      markups: [
+        {
+          id: 'markup-arrow',
+          type: 'arrow',
+          style: {
+            color: '#00ff00',
+            lineWeight: 0,
+            arrowSizeWcs: 0.8
+          },
+          comment: '',
+          status: 'open',
+          author: 'alice',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          geometry: {
+            type: 'arrow',
+            start: { x: 0, y: 0 },
+            end: { x: 5, y: 0 }
+          }
+        }
+      ]
+    }
+    const text = stringifyMarkupSidecar(file)
+    expect(text).toMatch(/"arrowSizeWcs"\s*:\s*0\.8/)
+    const parsed = parseMarkupSidecar(text)
+    expect(parsed.markups[0]?.style.arrowSizeWcs).toBe(0.8)
+  })
+
   it('suggests sidecar file names', () => {
     expect(markupSidecarFileName('plan.dwg')).toBe('plan.markup.json')
     expect(markupSidecarFileName('plan.DXF')).toBe('plan.markup.json')

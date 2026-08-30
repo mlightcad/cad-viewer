@@ -41,6 +41,11 @@ export interface AcApMarkupStyle {
    */
   textHeightWcs?: number
   /**
+   * Arrow-head length in world units (arrow / callout markups). Prefer this
+   * when restoring overlays so arrow size is independent of camera zoom.
+   */
+  arrowSizeWcs?: number
+  /**
    * Legacy canvas stroke width in world units. Ignored on parse; never written.
    */
   strokeWidthWcs?: number

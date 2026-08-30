@@ -40,6 +40,11 @@ export interface AcExMarkupStyle {
   fontSize?: number
   /** Text / callout height in world units (preferred when restoring overlays). */
   textHeightWcs?: number
+  /**
+   * Arrow-head length in world units (arrow / callout markups). Preferred
+   * when restoring overlays.
+   */
+  arrowSizeWcs?: number
   /** Legacy canvas stroke width in world units. Ignored on parse; never written. */
   strokeWidthWcs?: number
 }
