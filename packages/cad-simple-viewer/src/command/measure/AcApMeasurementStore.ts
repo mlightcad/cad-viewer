@@ -326,16 +326,21 @@ function resolveUpdatedTextHeightWcs(
   return prevTextHeightWcs
 }
 
-/** Scale or recompute stroke WCS when line weight changes; otherwise keep. */
+/**
+ * Scale or recompute stroke WCS when line weight changes; otherwise keep.
+ *
+ * Hairline (`nextPx === 0`) returns `undefined` so sidecar serialization
+ * omits world-space stroke instead of writing `0`.
+ */
 function resolveUpdatedStrokeWidthWcs(
   view: AcTrView2d,
   nextLineWeight: AcApMeasurementStyle['lineWeight'],
   prevLineWeight: AcApMeasurementStyle['lineWeight'] | undefined,
   prevStrokeWidthWcs: number | undefined,
   lineWeightChanged: boolean
-): number {
+): number | undefined {
   const nextPx = acapMeasurementCanvasLineWidth(nextLineWeight)
-  if (!(nextPx > 0)) return 0
+  if (!(nextPx > 0)) return undefined
   if (
     lineWeightChanged &&
     prevStrokeWidthWcs != null &&
@@ -426,16 +431,17 @@ export function collectMeasurementRecords(
       // Keep live color / weights / fontSize, but preserve creation-time WCS
       // from the snapshot (do not recompute from the current zoom).
       const base = serializeMeasurementStyle(live)
+      const strokePx = acapMeasurementCanvasLineWidth(base.lineWeight)
       style = {
         ...base,
         textHeightWcs:
           snapStyle.textHeightWcs ?? acapScreenPxToWcs(base.fontSize, view),
         strokeWidthWcs:
-          snapStyle.strokeWidthWcs ??
-          acapScreenPxToWcs(
-            acapMeasurementCanvasLineWidth(base.lineWeight),
-            view
-          )
+          snapStyle.strokeWidthWcs != null && snapStyle.strokeWidthWcs > 0
+            ? snapStyle.strokeWidthWcs
+            : strokePx > 0
+              ? acapScreenPxToWcs(strokePx, view)
+              : undefined
       }
     }
     records.push({
