@@ -147,4 +147,16 @@ describe('AcEdUiLayout', () => {
 
     media.restore()
   })
+
+  it('does not treat any-pointer coarse (touch laptop) as handheld', () => {
+    const media = installMatchMedia(
+      query => query === '(any-pointer: coarse)'
+    )
+
+    expect(acedGetUiLayout()).toBe('desktop')
+    expect(acedIsHandheldDevice()).toBe(false)
+    expect(acedIsMobileOrPadUi()).toBe(false)
+
+    media.restore()
+  })
 })

@@ -26,7 +26,12 @@ export function acedIsCompactUiLayout(): boolean {
   return window.matchMedia?.(ML_UI_COMPACT_MEDIA_QUERY).matches ?? false
 }
 
-/** Media query matching a coarse primary pointer (typical phones and pads). */
+/**
+ * Media query matching a coarse *primary* pointer (typical phones and pads).
+ *
+ * Uses `pointer`, not `any-pointer`, so a mouse-first laptop with a touch
+ * screen (`pointer: fine` + `any-pointer: coarse`) stays desktop.
+ */
 export const ML_UI_COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)'
 
 const MOBILE_OR_PAD_UA =
@@ -37,6 +42,8 @@ const MOBILE_OR_PAD_UA =
  *
  * Covers landscape / wide tablets that exceed {@link ML_UI_COMPACT_MAX_WIDTH},
  * including iPadOS which reports as Macintosh with a touch screen.
+ * Coarse-pointer detection uses the primary pointer only; see
+ * {@link ML_UI_COARSE_POINTER_MEDIA_QUERY}.
  */
 export function acedIsHandheldDevice(): boolean {
   if (typeof navigator === 'undefined') return false

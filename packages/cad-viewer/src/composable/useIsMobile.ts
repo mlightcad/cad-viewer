@@ -1,4 +1,5 @@
 import {
+  acedIsMobileOrPadUi,
   ML_UI_COARSE_POINTER_MEDIA_QUERY,
   ML_UI_COMPACT_MEDIA_QUERY,
   ML_UI_MOBILE_MEDIA_QUERY
@@ -14,7 +15,6 @@ export function useIsMobile() {
 
   const hasTouchCapability = ref(false)
   const isMobileUserAgent = ref(false)
-  const isIpadOs = ref(false)
 
   onMounted(() => {
     try {
@@ -30,12 +30,9 @@ export function useIsMobile() {
         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
           ua
         )
-      isIpadOs.value =
-        nav.platform === 'MacIntel' && (nav.maxTouchPoints ?? 0) > 1
     } catch {
       hasTouchCapability.value = false
       isMobileUserAgent.value = false
-      isIpadOs.value = false
     }
   })
 
@@ -48,12 +45,10 @@ export function useIsMobile() {
   })
 
   const isMobileOrPad = computed(() => {
-    return (
-      !!isCompactViewport.value ||
-      isMobileUserAgent.value ||
-      isIpadOs.value ||
-      !!isCoarsePointer.value
-    )
+    // Depend on these so resize / primary-pointer changes re-run the shared check.
+    void isCompactViewport.value
+    void isCoarsePointer.value
+    return acedIsMobileOrPadUi()
   })
 
   return { isMobile, isMobileOrPad, isSmallViewport }
