@@ -164,8 +164,8 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
       // Keep the label slightly above the vertex (was -30px screen offset).
       transform: 'translate(-50%, calc(-50% - 30px))'
     })
-    this._badge.object.visible = false
     this._htManager.add(this._badge)
+    this._badge.object.visible = false
 
     this._preview = new AcApHtmlLivePreview(
       this._view,

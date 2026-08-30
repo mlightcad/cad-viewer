@@ -234,6 +234,12 @@ export abstract class AcEdBaseView {
    * the canvas bounding-rect origin (`viewportToCanvas`).
    */
   private _curMousePos: AcGePoint2d
+  /**
+   * True after at least one mouse or pointer sample has updated
+   * {@link curMousePos}. Touch devices never fire `mousemove` until a finger
+   * is down, so the default `(0, 0)` must not be treated as a real cursor.
+   */
+  private _hasCursorPos = false
   /** Set of currently selected entities */
   private _selectionSet: AcEdSelectionSet
   /**
@@ -307,10 +313,21 @@ export abstract class AcEdBaseView {
     this._height = rect.height
     this._curPos = new AcGePoint2d()
     this._curMousePos = new AcGePoint2d()
+    this._hasCursorPos = false
     this._selectionSet = new AcEdSelectionSet()
     this._editor = new AcEditor(this)
     this._osnapResolver = new AcEdOsnapResolver(this)
     this._canvas.addEventListener('mousemove', event => this.onMouseMove(event))
+    // Touch does not fire `mousemove`. Keep cursor (and therefore the next
+    // point-prompt preview) in sync with the finger, otherwise `curMousePos`
+    // stays at canvas (0, 0) — the top-left of the view. Mouse already has
+    // `mousemove`; do not also handle pointer events or hover runs twice.
+    this._canvas.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'touch') this.onMouseMove(event)
+    })
+    this._canvas.addEventListener('pointermove', event => {
+      if (event.pointerType === 'touch') this.onMouseMove(event)
+    })
     this._canvas.addEventListener('mousedown', event => {
       if (event.button === 1) {
         // Middle mouse button (button === 1)
@@ -986,6 +1003,27 @@ export abstract class AcEdBaseView {
   }
 
   /**
+   * Whether {@link curMousePos} has been set by a real pointer sample.
+   *
+   * @returns False until the first mouse or pointer event on the canvas.
+   */
+  get hasCursorPos() {
+    return this._hasCursorPos
+  }
+
+  /**
+   * Marks {@link curMousePos} as stale so the next point prompt does not
+   * treat a leftover touch sample as a live cursor.
+   *
+   * Touch picking commits on `pointerup`. The finger position must not seed
+   * the following prompt's jig (that would draw a short segment next to the
+   * pick). The next real pointer sample sets this flag again.
+   */
+  clearCursorPos() {
+    this._hasCursorPos = false
+  }
+
+  /**
    * The selection set in current view.
    */
   get selectionSet() {
@@ -1104,11 +1142,14 @@ export abstract class AcEdBaseView {
   }
 
   /**
-   * Mouse move event handler.
-   * @param event Input mouse event argument
+   * Pointer sample handler. Updates canvas-local and world cursor from mouse
+   * or touch coordinates.
+   *
+   * @param event - Mouse or pointer event with client coordinates.
    */
-  private onMouseMove(event: MouseEvent) {
+  private onMouseMove(event: MouseEvent | PointerEvent) {
     // Keep one canonical conversion path for all view input code.
+    this._hasCursorPos = true
     this._curMousePos = this.viewportToCanvas({
       x: event.clientX,
       y: event.clientY
