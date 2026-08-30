@@ -476,7 +476,7 @@ export default {
         'Görüntüleme yönünü veya büyütmeyi değiştirmeden görünümü kaydırır'
     },
     markupPanel: {
-      text: 'İnceleme',
+      text: 'Sonuç',
       description: 'İşaret paletini açar'
     },
     markupText: {

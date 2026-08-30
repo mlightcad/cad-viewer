@@ -473,7 +473,7 @@ export default {
         'Shifts the view without changing the viewing direction or magnification'
     },
     markupPanel: {
-      text: 'Review',
+      text: 'Results',
       description: 'Open the markup palette'
     },
     markupText: {

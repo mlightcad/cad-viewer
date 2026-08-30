@@ -25,6 +25,9 @@ export const ACEX_HTML_SHELL_CSS = `
     --mlcad-ui-muted: #9aa0a6;
     --mlcad-accent: #08e8de;
     --mlcad-accent-active: #1a8cff;
+    /* Shared measure-tool SVGs read --el-color-primary (Element Plus in cad-viewer). */
+    --el-color-primary: var(--mlcad-accent);
+    --ml-ui-accent: var(--mlcad-accent);
     --mlcad-tool-btn-active-border: rgba(26, 140, 255, 0.55);
     --mlcad-tool-btn-active-bg: rgba(26, 140, 255, 0.22);
     --mlcad-measure-accent: #08e8de;
@@ -1600,7 +1603,7 @@ function buildAcExMeasureToolStrip(): string {
         'data-i18n-key': 'toolbar.measureCoordinate',
         'data-i18n-attr': 'title aria-label'
       })}
-      ${acExToolbarButton(acExHtmlIcons.measurementPanel, 'List', {
+      ${acExToolbarButton(acExHtmlIcons.measurementPanel, 'Results', {
         'data-action': 'measure-panel',
         'aria-pressed': 'false',
         'data-i18n-key': 'toolbar.measurementPanel',
@@ -1708,7 +1711,7 @@ function buildAcExMarkupToolStrip(): string {
         'data-i18n-key': 'toolbar.markupStamp',
         'data-i18n-attr': 'title aria-label'
       })}
-      ${acExToolbarButton(acExHtmlIcons.markupPanel, 'Review', {
+      ${acExToolbarButton(acExHtmlIcons.markupPanel, 'Results', {
         'data-action': 'markup-panel',
         'aria-pressed': 'false',
         'data-i18n-key': 'toolbar.markupPanel',

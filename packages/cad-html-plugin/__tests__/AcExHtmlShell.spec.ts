@@ -22,6 +22,13 @@ describe('ACEX_HTML_SHELL_CSS', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain('transform: translate(-50%, -50%);')
   })
 
+  it('aliases Element Plus primary so shared measure-tool SVGs resolve', () => {
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      '--el-color-primary: var(--mlcad-accent)'
+    )
+    expect(ACEX_HTML_SHELL_CSS).toContain('--ml-ui-accent: var(--mlcad-accent)')
+  })
+
   it('uses a narrower portrait slot for sub-toolbar buttons', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-subtoolbar-btn-width: 28px')
     expect(ACEX_HTML_SHELL_CSS).toContain(

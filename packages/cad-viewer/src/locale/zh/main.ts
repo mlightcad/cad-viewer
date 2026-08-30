@@ -435,7 +435,7 @@ export default {
       description: '平移视图'
     },
     markupPanel: {
-      text: '批注面板',
+      text: '看结果',
       description: '打开批注面板'
     },
     markupText: {

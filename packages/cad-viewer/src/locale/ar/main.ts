@@ -668,7 +668,7 @@ export default {
 
     markupPanel: {
       ...enMain.verticalToolbar.markupPanel,
-      text: 'مراجعة',
+      text: 'نتائج',
       description: 'فتح لوحة المراجعة'
     },
 
