@@ -1,6 +1,7 @@
 export { default as MlBlocksPalette } from './MlBlocksPalette.vue'
 export { default as MlCountList } from './MlCountList.vue'
 export { default as MlDesignReviewPalette } from './MlDesignReviewPalette.vue'
+export { default as MlMeasurementPalette } from './MlMeasurementPalette.vue'
 export { default as MlExternalReferences } from './MlExternalReferences.vue'
 export { default as MlMemoryProfile } from './MlMemoryProfile.vue'
 export { default as MlMissingResources } from './MlMissingResources.vue'

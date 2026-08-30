@@ -28,6 +28,7 @@ import {
   ICON_MEASURE_AREA,
   ICON_MEASURE_DISTANCE,
   ICON_MEASURE_POINT,
+  ICON_MEASUREMENT_PANEL,
   ICON_PAN,
   ICON_READING_MODE,
   ICON_SELECT,
@@ -70,6 +71,10 @@ export const markupArrow = acapSvgIcon(ICON_MARKUP_ARROW, 'IconMarkupArrow')
 export const markupLine = acapSvgIcon(ICON_MARKUP_LINE, 'IconMarkupLine')
 export const markupStamp = acapSvgIcon(ICON_MARKUP_STAMP, 'IconMarkupStamp')
 export const markupPanel = acapSvgIcon(ICON_MARKUP_PANEL, 'IconMarkupPanel')
+export const measurementPanel = acapSvgIcon(
+  ICON_MEASUREMENT_PANEL,
+  'IconMeasurementPanel'
+)
 export const markupShow = acapSvgIcon(ICON_ANNOTATION_SHOW, 'IconMarkupShow')
 export const markupHide = acapSvgIcon(ICON_ANNOTATION_HIDE, 'IconMarkupHide')
 export const clearMarkups = acapSvgIcon(ICON_CLEAR_MARKUPS, 'IconClearMarkups')

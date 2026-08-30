@@ -440,6 +440,10 @@ export default {
       text: 'Bod',
       description: 'Změří souřadnice X/Y vybraného bodu'
     },
+    measurementPanel: {
+      text: 'Panel měření',
+      description: 'Otevře paletu měření'
+    },
     clearMeasurements: {
       text: 'Vymazat',
       description: 'Odstraní všechna měření z aktuálního rozvržení'
@@ -465,7 +469,7 @@ export default {
       description: 'Posune pohled beze změny směru pohledu a zvětšení'
     },
     markupPanel: {
-      text: 'Výsledky',
+      text: 'Panel poznámek',
       description: 'Otevře paletu poznámek'
     },
     markupText: {
@@ -731,6 +735,23 @@ export default {
         question: 'Otázka',
         answered: 'Zodpovězeno',
         closed: 'Uzavřeno'
+      }
+    },
+    measurements: {
+      tab: 'Měření',
+      title: 'Měření',
+      empty: 'Zatím žádná měření',
+      type: 'Typ',
+      value: 'Hodnota',
+      filterAll: 'Vše',
+      delete: 'Odstranit',
+      clear: 'Vymazat vše',
+      typeValues: {
+        distance: 'Vzdálenost',
+        angle: 'Úhel',
+        area: 'Plocha',
+        arc: 'Oblouk',
+        point: 'XY'
       }
     },
     missingResources: {

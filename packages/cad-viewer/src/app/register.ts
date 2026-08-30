@@ -21,6 +21,7 @@ import {
   AcApInsertPaletteCmd,
   AcApLayerStateCmd,
   AcApMarkupPanelCmd,
+  AcApMeasurementPanelCmd,
   AcApMemCmd,
   AcApMissedDataCmd,
   AcApOpenPerfCmd,
@@ -121,6 +122,12 @@ export const registerCmds = () => {
       'markuppanel',
       'markuppanel',
       new AcApMarkupPanelCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'measurementpanel',
+      'measurementpanel',
+      new AcApMeasurementPanelCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

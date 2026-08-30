@@ -145,6 +145,7 @@ import {
   measureArc,
   measureArea,
   measureDistance,
+  measurementPanel,
   measurePoint,
   revCircle,
   revCloud,
@@ -1302,6 +1303,14 @@ const buildBaseTabs = (
       props: { icon: measurePoint }
     },
     {
+      id: 'cmd-tool-measurement-panel',
+      type: 'button',
+      label: t('main.verticalToolbar.measurementPanel.text'),
+      tooltip: t('main.verticalToolbar.measurementPanel.description'),
+      size: 'large',
+      props: { icon: measurementPanel }
+    },
+    {
       id: 'cmd-tool-measurement-vis',
       type: 'toggle',
       label: t('main.verticalToolbar.showMeasurements.text'),
@@ -2361,6 +2370,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-tool-measure-area', 'measurearea')
   commandByItemId.set('cmd-tool-measure-arc', 'measurearc')
   commandByItemId.set('cmd-tool-measure-point', 'measurepoint')
+  commandByItemId.set('cmd-tool-measurement-panel', 'measurementpanel')
   commandByItemId.set('cmd-tool-measurement-vis', 'measurementvis')
   commandByItemId.set('cmd-tool-measurement-import', 'measurementimport')
   commandByItemId.set('cmd-tool-measurement-export', 'measurementexport')

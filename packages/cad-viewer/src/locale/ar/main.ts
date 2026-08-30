@@ -630,6 +630,12 @@ export default {
       description: 'قراءة إحداثيات X وY لنقطة محددة'
     },
 
+    measurementPanel: {
+      ...enMain.verticalToolbar.measurementPanel,
+      text: 'لوحة القياس',
+      description: 'فتح لوحة القياس'
+    },
+
     clearMeasurements: {
       ...enMain.verticalToolbar.clearMeasurements,
       text: 'مسح',
@@ -668,7 +674,7 @@ export default {
 
     markupPanel: {
       ...enMain.verticalToolbar.markupPanel,
-      text: 'نتائج',
+      text: 'لوحة المراجعة',
       description: 'فتح لوحة المراجعة'
     },
 
@@ -1066,6 +1072,29 @@ export default {
         question: 'سؤال',
         answered: 'تمت الإجابة',
         closed: 'مغلق'
+      }
+    },
+
+    measurements: {
+      ...enMain.toolPalette.measurements,
+
+      tab: 'القياس',
+      title: 'القياسات',
+
+      empty: 'لا توجد قياسات حتى الآن',
+      type: 'النوع',
+      value: 'القيمة',
+      filterAll: 'الكل',
+      delete: 'حذف',
+      clear: 'مسح الكل',
+
+      typeValues: {
+        ...enMain.toolPalette.measurements.typeValues,
+        distance: 'مسافة',
+        angle: 'زاوية',
+        area: 'مساحة',
+        arc: 'قوس',
+        point: 'XY'
       }
     },
 

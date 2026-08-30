@@ -450,6 +450,10 @@ export default {
       text: 'Nokta',
       description: 'Seçilen noktanın X/Y koordinatlarını ölçer'
     },
+    measurementPanel: {
+      text: 'Ölçüm paneli',
+      description: 'Ölçüm paletini açar'
+    },
     clearMeasurements: {
       text: 'Temizle',
       description: 'Geçerli yerleşimdeki tüm ölçümleri kaldırır'
@@ -476,7 +480,7 @@ export default {
         'Görüntüleme yönünü veya büyütmeyi değiştirmeden görünümü kaydırır'
     },
     markupPanel: {
-      text: 'Sonuç',
+      text: 'İşaret paneli',
       description: 'İşaret paletini açar'
     },
     markupText: {
@@ -743,6 +747,23 @@ export default {
         question: 'Soru',
         answered: 'Yanıtlandı',
         closed: 'Kapalı'
+      }
+    },
+    measurements: {
+      tab: 'Ölçüm',
+      title: 'Ölçümler',
+      empty: 'Henüz ölçüm yok',
+      type: 'Tür',
+      value: 'Değer',
+      filterAll: 'Tümü',
+      delete: 'Sil',
+      clear: 'Tümünü temizle',
+      typeValues: {
+        distance: 'Mesafe',
+        angle: 'Açı',
+        area: 'Alan',
+        arc: 'Yay',
+        point: 'XY'
       }
     },
     missingResources: {

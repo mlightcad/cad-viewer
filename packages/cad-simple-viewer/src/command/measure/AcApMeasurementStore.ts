@@ -357,6 +357,7 @@ function paintMeasurementGroup(
 
 /**
  * Reformat committed measurement badges using the effective measurement units.
+ * Notifies list subscribers so palettes refresh their cached value text.
  */
 export function refreshMeasurementValueLabels(
   view: AcTrView2d,
@@ -372,6 +373,7 @@ export function refreshMeasurementValueLabels(
     }
   }
   view.isHtmlDirty = true
+  notifyMeasurementsChanged()
 }
 
 /** Serializable snapshots of committed measurements currently on the view. */
