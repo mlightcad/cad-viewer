@@ -13,6 +13,15 @@ describe('ACEX_HTML_SHELL_CSS', () => {
     )
   })
 
+  it('centers the phone sheet grabber on the full sheet width', () => {
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      '.mlcad-drawer-sheet-chrome {\n    display: none;\n    position: relative;'
+    )
+    expect(ACEX_HTML_SHELL_CSS).toContain('.mlcad-drawer-grabber::before {')
+    expect(ACEX_HTML_SHELL_CSS).toContain('left: 50%;')
+    expect(ACEX_HTML_SHELL_CSS).toContain('transform: translate(-50%, -50%);')
+  })
+
   it('uses a narrower portrait slot for sub-toolbar buttons', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-subtoolbar-btn-width: 28px')
     expect(ACEX_HTML_SHELL_CSS).toContain(

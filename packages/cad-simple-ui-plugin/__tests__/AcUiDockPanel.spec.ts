@@ -479,6 +479,12 @@ describe('AcUiDockPanel', () => {
     expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
       '.ml-ex-ui-host-dock-sheet {'
     )
+    expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
+      '.ml-ex-ui-dock-sheet-grabber::before'
+    )
+    expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
+      'transform: translate(-50%, -50%);'
+    )
 
     panel.setPanelSize(800)
     expect(panel.getSize()).toBe(525)
