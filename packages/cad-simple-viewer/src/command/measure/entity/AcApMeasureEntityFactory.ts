@@ -27,7 +27,8 @@ export function createMeasureEntityFromRecord(
     layoutId: record.layoutId,
     style,
     textHeightWcs: record.style.textHeightWcs,
-    strokeWidthWcs: record.style.strokeWidthWcs
+    strokeWidthWcs: record.style.strokeWidthWcs,
+    arrowSizeWcs: record.style.arrowSizeWcs
   }
   const geom = record.geometry
   switch (geom.type) {

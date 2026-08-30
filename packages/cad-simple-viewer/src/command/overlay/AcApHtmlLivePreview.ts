@@ -17,7 +17,6 @@ import {
   acapFitOverlayCanvas,
   acapOverlayArrowSize,
   acapOverlayDash,
-  acapScaledOverlayArrowSize,
   acapScaledOverlayLineWidth
 } from './AcApOverlayDrawUtil'
 
@@ -145,14 +144,13 @@ export function acapStrokeLiveSegment(
   ctx.stroke()
   if (options?.dashed) ctx.setLineDash([])
   if (options?.arrow) {
+    const size = acapOverlayArrowSize(strokeWidth, lineWidth)
     if (options.arrow === 'both') {
-      const size = acapScaledOverlayArrowSize(ctx.canvas, view)
       if (Math.hypot(sb.x - sa.x, sb.y - sa.y) >= size) {
         acapDrawOverlayArrowHead(ctx, sb, sa, css, size)
         acapDrawOverlayArrowHead(ctx, sa, sb, css, size)
       }
     } else {
-      const size = acapOverlayArrowSize(strokeWidth, lineWidth)
       acapDrawOverlayArrowHead(ctx, sa, sb, css, size)
     }
   }

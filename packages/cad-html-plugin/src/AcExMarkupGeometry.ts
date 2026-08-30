@@ -84,6 +84,11 @@ const CLOUD_HIT_EXTRA_PX = 8
 
 /**
  * Screen length of an overlay arrow head, tracking the same WCS scale as the stroke.
+ *
+ * Hairline overlays (`baseLineWidth <= 0`) keep a constant
+ * {@link ACEX_OVERLAY_ARROW_SIZE_PX}. Use this during jig / live preview so
+ * the head stays a fixed screen size while the user zooms. After commit,
+ * freeze that size in world units with `acExScaledOverlayArrowSize`.
  */
 export function acExOverlayArrowSize(
   scaledLineWidth: number,

@@ -9,7 +9,7 @@ import {
 
 import type { AcEdBaseView } from '../../editor'
 import { acCmColorToCssHex, parseCssToAcCmColor } from '../../util/AcApCssColor'
-import { acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil'
+import { ACAP_OVERLAY_ARROW_SIZE_PX, acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil'
 import type { AcApMarkupStyle } from './AcApMarkupTypes'
 
 /** Factory default markup color (ACI red) used to seed the draw style. */
@@ -111,7 +111,7 @@ export function defaultMarkupStyle(): AcApMarkupStyle {
   }
 }
 
-/** Attach world-space text height from the current view (sidecar export). */
+/** Attach world-space text height (and arrow length) from the current view. */
 export function withMarkupStyleWcs(
   style: AcApMarkupStyle,
   view: AcEdBaseView
@@ -120,10 +120,15 @@ export function withMarkupStyleWcs(
     style.fontSize != null && style.fontSize > 0
       ? style.fontSize
       : MARKUP_FONT_SIZE
+  const arrowSizeWcs =
+    style.arrowSizeWcs != null && style.arrowSizeWcs > 0
+      ? style.arrowSizeWcs
+      : acapScreenPxToWcs(ACAP_OVERLAY_ARROW_SIZE_PX, view)
   return {
     ...style,
     lineWeight: MARKUP_LINE_WEIGHT,
-    textHeightWcs: acapScreenPxToWcs(fontSize, view)
+    textHeightWcs: acapScreenPxToWcs(fontSize, view),
+    arrowSizeWcs
   }
 }
 
@@ -165,7 +170,11 @@ export function patchMarkupStyleWcs(
   return {
     ...rest,
     lineWeight: MARKUP_LINE_WEIGHT,
-    textHeightWcs
+    textHeightWcs,
+    arrowSizeWcs:
+      previous.arrowSizeWcs != null && previous.arrowSizeWcs > 0
+        ? previous.arrowSizeWcs
+        : next.arrowSizeWcs
   }
 }
 

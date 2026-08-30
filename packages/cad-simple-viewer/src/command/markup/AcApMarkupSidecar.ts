@@ -143,7 +143,8 @@ function parseRecord(raw: unknown): AcApMarkupRecord | undefined {
         typeof raw.style.fontSize === 'number' && raw.style.fontSize > 0
           ? raw.style.fontSize
           : undefined,
-      textHeightWcs: parsePositiveNumber(raw.style.textHeightWcs)
+      textHeightWcs: parsePositiveNumber(raw.style.textHeightWcs),
+      arrowSizeWcs: parsePositiveNumber(raw.style.arrowSizeWcs)
     },
     text: typeof raw.text === 'string' ? raw.text : undefined,
     comment: typeof raw.comment === 'string' ? raw.comment : '',

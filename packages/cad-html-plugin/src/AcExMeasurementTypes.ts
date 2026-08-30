@@ -31,6 +31,11 @@ export interface AcExMeasurementSidecarStyle {
   fontSize: number
   /** Badge text height in world units (preferred when restoring overlays). */
   textHeightWcs?: number
+  /**
+   * Distance-measurement arrow-head length in world units (preferred when
+   * restoring overlays).
+   */
+  arrowSizeWcs?: number
   /** Legacy canvas stroke width in world units. Ignored on parse; never written. */
   strokeWidthWcs?: number
 }

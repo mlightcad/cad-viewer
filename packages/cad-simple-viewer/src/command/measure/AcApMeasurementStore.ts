@@ -14,6 +14,7 @@ import {
 } from '../../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../../view'
 import {
+  ACAP_OVERLAY_ARROW_SIZE_PX,
   acapScreenPxToWcs,
   acapSeedOverlaySizesFromWcs
 } from '../overlay/AcApOverlayDrawUtil'
@@ -273,7 +274,10 @@ export function applyMeasurementStyle(
             prev?.fontSize,
             prevSnap.textHeightWcs,
             fontSizeChanged
-          )
+          ),
+          ...(prevSnap.arrowSizeWcs != null && prevSnap.arrowSizeWcs > 0
+            ? { arrowSizeWcs: prevSnap.arrowSizeWcs }
+            : {})
         }
       }
     }
@@ -389,13 +393,21 @@ export function collectMeasurementRecords(
     let style: AcApMeasurementSidecarStyle
     if (live) {
       // Keep live color / fontSize, force hairline lineWeight, preserve
-      // creation-time textHeightWcs from the snapshot. Never export strokeWidthWcs.
+      // creation-time textHeightWcs / arrowSizeWcs from the snapshot. Never
+      // export strokeWidthWcs.
       const base = serializeMeasurementStyle(live)
+      const arrowSizeWcs =
+        snapStyle.arrowSizeWcs != null && snapStyle.arrowSizeWcs > 0
+          ? snapStyle.arrowSizeWcs
+          : extras.snapshot.type === 'distance'
+            ? acapScreenPxToWcs(ACAP_OVERLAY_ARROW_SIZE_PX, view)
+            : undefined
       style = {
         ...base,
         lineWeight: MEASUREMENT_LINE_WEIGHT,
         textHeightWcs:
-          snapStyle.textHeightWcs ?? acapScreenPxToWcs(base.fontSize, view)
+          snapStyle.textHeightWcs ?? acapScreenPxToWcs(base.fontSize, view),
+        ...(arrowSizeWcs != null && arrowSizeWcs > 0 ? { arrowSizeWcs } : {})
       }
     } else {
       const { strokeWidthWcs: _omit, ...rest } = snapStyle

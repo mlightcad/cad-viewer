@@ -173,7 +173,8 @@ export class AcApMarkupCalloutEntity extends AcApMarkupEntity {
         true,
         canvasLineWidth,
         view,
-        this.record.style.strokeWidthWcs
+        this.record.style.strokeWidthWcs,
+        this.record.style.arrowSizeWcs
       )
     }
     redraw()

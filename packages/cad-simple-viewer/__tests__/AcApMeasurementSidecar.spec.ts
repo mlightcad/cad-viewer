@@ -19,6 +19,7 @@ describe('AcApMeasurementSidecar', () => {
             lineWeight: 70,
             fontSize: 13,
             textHeightWcs: 2.5,
+            arrowSizeWcs: 1.2,
             strokeWidthWcs: 0.4
           },
           geometry: {
@@ -99,6 +100,7 @@ describe('AcApMeasurementSidecar', () => {
     expect(parsed.drawingName).toBe('demo.dwg')
     expect(parsed.measurements).toHaveLength(5)
     expect(parsed.measurements[0].style.textHeightWcs).toBe(2.5)
+    expect(parsed.measurements[0].style.arrowSizeWcs).toBe(1.2)
     expect(parsed.measurements[0].style.lineWeight).toBe(0)
     expect(parsed.measurements[0].style.strokeWidthWcs).toBeUndefined()
     expect(parsed.measurements[0].geometry).toEqual({

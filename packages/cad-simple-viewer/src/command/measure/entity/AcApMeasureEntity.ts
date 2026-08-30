@@ -47,6 +47,8 @@ export interface AcApMeasureEntityOptions {
   textHeightWcs?: number
   /** World-space stroke width from sidecar import (optional). */
   strokeWidthWcs?: number
+  /** World-space arrow-head length from sidecar import (optional). */
+  arrowSizeWcs?: number
 }
 
 /**
@@ -89,6 +91,8 @@ export abstract class AcApMeasureEntity
   protected readonly textHeightWcs?: number
   /** Imported world-space stroke width (sidecar). */
   protected readonly strokeWidthWcs?: number
+  /** Imported world-space arrow-head length (sidecar). */
+  protected readonly arrowSizeWcs?: number
 
   /**
    * Creates a measure entity with the given id, layout, and style.
@@ -98,13 +102,15 @@ export abstract class AcApMeasureEntity
    * @param style - Measurement visual style
    * @param textHeightWcs - Optional imported world-space text height
    * @param strokeWidthWcs - Optional imported world-space stroke width
+   * @param arrowSizeWcs - Optional imported world-space arrow-head length
    */
   constructor(
     id: string,
     layoutId: string | undefined,
     style: AcApMeasurementStyle,
     textHeightWcs?: number,
-    strokeWidthWcs?: number
+    strokeWidthWcs?: number,
+    arrowSizeWcs?: number
   ) {
     super()
     this.entityId = id
@@ -112,6 +118,7 @@ export abstract class AcApMeasureEntity
     this.style = style
     this.textHeightWcs = textHeightWcs
     this.strokeWidthWcs = strokeWidthWcs
+    this.arrowSizeWcs = arrowSizeWcs
   }
 
   /**
@@ -258,6 +265,7 @@ export abstract class AcApMeasureEntity
     acapSeedOverlaySizesFromWcs(view, {
       textHeightWcs: this.textHeightWcs,
       strokeWidthWcs: this.strokeWidthWcs,
+      arrowSizeWcs: this.arrowSizeWcs,
       fontSizePx: this.style.fontSize,
       strokeScreenPx: acapMeasurementCanvasLineWidth(this.style.lineWeight),
       elements,

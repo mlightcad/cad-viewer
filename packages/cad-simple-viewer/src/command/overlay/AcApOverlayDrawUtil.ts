@@ -51,6 +51,15 @@ export function acapSeedOverlayStrokeWcs(
   anchor.dataset[ACAP_OVERLAY_STROKE_WCS] = String(strokeWidthWcs)
 }
 
+/** Pre-seeds overlay arrow-head length in world units (import / first layout). */
+export function acapSeedOverlayArrowWcs(
+  anchor: HTMLElement,
+  arrowSizeWcs: number
+): void {
+  if (!(arrowSizeWcs > 0) || !Number.isFinite(arrowSizeWcs)) return
+  anchor.dataset[ACAP_OVERLAY_ARROW_WCS] = String(arrowSizeWcs)
+}
+
 /**
  * View-synced canvas stroke width.
  *
@@ -90,14 +99,19 @@ export function acapScaledOverlayLineWidth(
   return Math.max(0.5, wcs * ppu)
 }
 
-/** Dataset key storing overlay arrow-head length in world units. */
-export const ACAP_OVERLAY_ARROW_WCS = 'overlayArrowWcs'
-
 /** Arrow-head length in CSS pixels at the overlay's creation-scale stroke. */
 export const ACAP_OVERLAY_ARROW_SIZE_PX = 12
 
+/** Dataset key storing overlay arrow-head length in world units. */
+export const ACAP_OVERLAY_ARROW_WCS = 'overlayArrowWcs'
+
 /**
  * Screen length of an overlay arrow head, tracking the same WCS scale as the stroke.
+ *
+ * Hairline overlays (`baseLineWidth <= 0`) keep a constant
+ * {@link ACAP_OVERLAY_ARROW_SIZE_PX}. Use this during jig / live preview so
+ * the head stays a fixed screen size while the user zooms. After commit, use
+ * {@link acapScaledOverlayArrowSize} to freeze that size in world units.
  *
  * @param scaledLineWidth - Stroke width already converted to the current view.
  * @param baseLineWidth - CSS stroke used when the overlay was authored (default `2`).
@@ -114,9 +128,9 @@ export function acapOverlayArrowSize(
 /**
  * Arrow-head length in CSS pixels that stays a fixed world size.
  *
- * Used by distance measurements so arrows shrink/grow with zoom even when
- * the stroke is hairline (1 CSS px). Seeds {@link ACAP_OVERLAY_ARROW_SIZE_PX}
- * as WCS on first paint unless `arrowSizeWcs` is provided.
+ * Used by committed distance measurements and arrow markups. Seeds
+ * {@link ACAP_OVERLAY_ARROW_SIZE_PX} as WCS on first paint (the size shown
+ * during the jig) unless `arrowSizeWcs` is provided.
  */
 export function acapScaledOverlayArrowSize(
   canvas: HTMLElement,
@@ -175,6 +189,7 @@ export function acapSeedOverlaySizesFromWcs(
   options: {
     textHeightWcs?: number
     strokeWidthWcs?: number
+    arrowSizeWcs?: number
     /** CSS font size used when the overlay was authored (badge / callout). */
     fontSizePx?: number
     /** Screen stroke width used when authored (from CAD line weight). */
@@ -193,6 +208,12 @@ export function acapSeedOverlaySizesFromWcs(
   } else if (options.strokeScreenPx === 0) {
     for (const canvas of canvases ?? []) {
       delete canvas.dataset[ACAP_OVERLAY_STROKE_WCS]
+    }
+  }
+
+  if (options.arrowSizeWcs != null && options.arrowSizeWcs > 0) {
+    for (const canvas of canvases ?? []) {
+      acapSeedOverlayArrowWcs(canvas, options.arrowSizeWcs)
     }
   }
 
@@ -314,7 +335,8 @@ export function acapDrawOverlayLeader(
   withArrow = true,
   lineWidth = 2,
   view: AcEdBaseView,
-  strokeWidthWcs?: number
+  strokeWidthWcs?: number,
+  arrowSizeWcs?: number
 ): void {
   const strokeWidth = acapScaledOverlayLineWidth(
     lineWidth,
@@ -334,7 +356,7 @@ export function acapDrawOverlayLeader(
       anchor,
       tip,
       color,
-      acapOverlayArrowSize(strokeWidth, lineWidth)
+      acapScaledOverlayArrowSize(ctx.canvas, view, arrowSizeWcs)
     )
   }
 }

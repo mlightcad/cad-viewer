@@ -74,6 +74,7 @@ describe('AcExMeasurementSidecar', () => {
             lineWeight: 70,
             fontSize: 13,
             textHeightWcs: 0.65,
+            arrowSizeWcs: 1.2,
             strokeWidthWcs: 0.1
           },
           geometry: {
@@ -88,6 +89,7 @@ describe('AcExMeasurementSidecar', () => {
     expect(text).not.toMatch(/"strokeWidthWcs"\s*:/)
     const parsed = parseAcExMeasurementSidecar(text)
     expect(parsed.measurements[0]?.style.textHeightWcs).toBe(0.65)
+    expect(parsed.measurements[0]?.style.arrowSizeWcs).toBe(1.2)
     expect(parsed.measurements[0]?.style.lineWeight).toBe(0)
     expect(parsed.measurements[0]?.style.strokeWidthWcs).toBeUndefined()
   })

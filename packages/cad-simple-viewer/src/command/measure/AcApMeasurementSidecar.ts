@@ -62,7 +62,8 @@ function parseStyle(raw: unknown): AcApMeasurementSidecarStyle | undefined {
     color: raw.color,
     lineWeight: MEASUREMENT_LINE_WEIGHT,
     fontSize,
-    textHeightWcs: parsePositiveNumber(raw.textHeightWcs)
+    textHeightWcs: parsePositiveNumber(raw.textHeightWcs),
+    arrowSizeWcs: parsePositiveNumber(raw.arrowSizeWcs)
   }
 }
 

@@ -241,6 +241,7 @@ export abstract class AcApMarkupEntity
     acapSeedOverlaySizesFromWcs(view, {
       textHeightWcs: this.record.style.textHeightWcs,
       strokeWidthWcs: this.record.style.strokeWidthWcs,
+      arrowSizeWcs: this.record.style.arrowSizeWcs,
       fontSizePx: this.record.style.fontSize ?? MARKUP_FONT_SIZE,
       strokeScreenPx: markupCanvasLineWidth(
         resolveMarkupLineWeight(this.record.style.lineWeight)

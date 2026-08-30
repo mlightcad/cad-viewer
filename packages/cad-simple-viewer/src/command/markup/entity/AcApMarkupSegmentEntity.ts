@@ -12,9 +12,9 @@ import {
   acapBindOverlayPointerDrag,
   acapDrawOverlayArrowHead,
   acapFitOverlayCanvas,
-  acapOverlayArrowSize,
   type AcApOverlayWorldDrawResult,
   acapPlaceOverlayHtml,
+  acapScaledOverlayArrowSize,
   acapScaledOverlayLineWidth
 } from '../../overlay'
 import { runMarkupEdit } from '../AcApMarkupHistory'
@@ -167,7 +167,11 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
           a,
           b,
           this.record.style.color,
-          acapOverlayArrowSize(strokeWidth, canvasLineWidth)
+          acapScaledOverlayArrowSize(
+            overlay.canvas,
+            view,
+            this.record.style.arrowSizeWcs
+          )
         )
       }
     }

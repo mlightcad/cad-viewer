@@ -11,6 +11,7 @@ import * as THREE from 'three'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
+  ACEX_OVERLAY_ARROW_SIZE_PX,
   acExPixelsPerWorldUnit,
   acExPositionClientOverlay,
   acExPositionWcsOverlay,
@@ -20,7 +21,10 @@ import {
   acExScreenPxToWcs,
   acExSeedOverlaySizesFromWcs
 } from './AcExHtmlOverlayDom'
-import { acExDrawMarkupArrowHead } from './AcExMarkupGeometry'
+import {
+  acExDrawMarkupArrowHead,
+  acExOverlayArrowSize
+} from './AcExMarkupGeometry'
 import { acExBindMarkupPointerDrag } from './AcExMarkupGripDrag'
 import {
   ACEX_MEASUREMENT_FONT_SIZE,
@@ -3097,7 +3101,9 @@ export class AcExMeasureController {
         style.color || this._measureCss(),
         acExMeasureCanvasLineWidth(style.lineWeight),
         style.strokeWidthWcs,
-        bothArrows
+        bothArrows,
+        bothArrows,
+        style.arrowSizeWcs
       )
     }
     redraw()
@@ -3186,7 +3192,9 @@ export class AcExMeasureController {
     strokeCss: string,
     lineWidth: number,
     strokeWidthWcs?: number,
-    bothArrows = false
+    bothArrows = false,
+    scaleArrowsWithView = false,
+    arrowSizeWcs?: number
   ): void {
     if (points.length < 2) return
     const synced = this._syncCanvas(canvas)
@@ -3219,9 +3227,13 @@ export class AcExMeasureController {
     if (bothArrows && screen.length === 2) {
       const a = screen[0]!
       const b = screen[1]!
-      const arrowSize = acExScaledOverlayArrowSize(canvas, p =>
-        this._wcsToScreenPoint(p)
-      )
+      const arrowSize = scaleArrowsWithView
+        ? acExScaledOverlayArrowSize(
+            canvas,
+            p => this._wcsToScreenPoint(p),
+            arrowSizeWcs
+          )
+        : acExOverlayArrowSize(scaled, lineWidth)
       if (Math.hypot(b.x - a.x, b.y - a.y) >= arrowSize) {
         acExDrawMarkupArrowHead(ctx, b, a, strokeCss, arrowSize)
         acExDrawMarkupArrowHead(ctx, a, b, strokeCss, arrowSize)
@@ -3304,7 +3316,10 @@ export class AcExMeasureController {
       this._commitStyle = null
       return
     }
-    const style = this._ensureStyleWcs(record.style)
+    const style = this._ensureStyleWcs(
+      record.style,
+      record.type === 'distance'
+    )
     const committedRecord = { ...record, id: parts.id, style }
     this._committed.push({
       id: parts.id,
@@ -3319,6 +3334,7 @@ export class AcExMeasureController {
       p => this._wcsToScreenPoint(p),
       {
         textHeightWcs: style.textHeightWcs,
+        arrowSizeWcs: style.arrowSizeWcs,
         fontSizePx: style.fontSize,
         strokeScreenPx: acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT),
         elements: parts.dom,
@@ -3342,23 +3358,31 @@ export class AcExMeasureController {
   }
 
   /**
-   * Fill any missing world-space text height without overwriting sidecar values.
+   * Fill any missing world-space sizes without overwriting sidecar values.
    * Never writes strokeWidthWcs (overlay strokes stay hairline).
    * @internal
    */
   private _ensureStyleWcs(
-    style: AcExMeasurementSidecarStyle
+    style: AcExMeasurementSidecarStyle,
+    includeArrow = false
   ): AcExMeasurementSidecarStyle {
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
     const { strokeWidthWcs: _omit, ...rest } = style
+    const arrowSizeWcs =
+      style.arrowSizeWcs != null && style.arrowSizeWcs > 0
+        ? style.arrowSizeWcs
+        : includeArrow
+          ? acExScreenPxToWcs(ACEX_OVERLAY_ARROW_SIZE_PX, wcsToScreen)
+          : undefined
     return {
       ...rest,
       lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
       textHeightWcs:
         style.textHeightWcs != null && style.textHeightWcs > 0
           ? style.textHeightWcs
-          : acExScreenPxToWcs(style.fontSize, wcsToScreen)
+          : acExScreenPxToWcs(style.fontSize, wcsToScreen),
+      ...(arrowSizeWcs != null && arrowSizeWcs > 0 ? { arrowSizeWcs } : {})
     }
   }
 
