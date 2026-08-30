@@ -231,8 +231,7 @@ export default {
     property: {
       color: 'Renk',
       lineType: 'Çizgi Tipi',
-      lineWeight: 'Çizgi Kalınlığı',
-      lineWeightHairline: 'Kılcal'
+      lineWeight: 'Çizgi Kalınlığı'
     },
     layerTools: {
       select: 'Katman',
@@ -524,10 +523,6 @@ export default {
       text: 'Renk',
       description: 'Yeni işaret çizimleri için rengi ayarlar'
     },
-    markupLineWeight: {
-      text: 'Çizgi Kalınlığı',
-      description: 'Yeni işaret çizimleri için çizgi kalınlığını ayarlar'
-    },
     markupFontSize: {
       text: 'Yazı Boyutu',
       description: 'Metin ve çağrı işaretleri için yazı boyutunu ayarlar'
@@ -535,11 +530,6 @@ export default {
     measurementColor: {
       text: 'Renk',
       description: 'Seçili ölçümün veya sonraki ölçümlerin rengini ayarlar'
-    },
-    measurementLineWeight: {
-      text: 'Çizgi Kalınlığı',
-      description:
-        'Seçili ölçümün veya sonraki ölçümlerin çizgi kalınlığını ayarlar'
     },
     measurementFontSize: {
       text: 'Yazı Boyutu',

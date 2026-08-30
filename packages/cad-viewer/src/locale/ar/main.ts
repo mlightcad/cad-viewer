@@ -51,8 +51,7 @@ export default {
       ...enMain.ribbon.property,
       color: 'اللون',
       lineType: 'نوع الخط',
-      lineWeight: 'سُمك الخط',
-      lineWeightHairline: 'بلا سماكة'
+      lineWeight: 'سُمك الخط'
     },
 
     layerTools: {
@@ -739,12 +738,6 @@ export default {
       description: 'تحديد لون علامات المراجعة الجديدة'
     },
 
-    markupLineWeight: {
-      ...enMain.verticalToolbar.markupLineWeight,
-      text: 'سُمك الخط',
-      description: 'تحديد سُمك خط علامات المراجعة الجديدة'
-    },
-
     markupFontSize: {
       ...enMain.verticalToolbar.markupFontSize,
       text: 'حجم الخط',
@@ -755,12 +748,6 @@ export default {
       ...enMain.verticalToolbar.measurementColor,
       text: 'اللون',
       description: 'تحديد لون القياس المحدد أو القياسات الجديدة'
-    },
-
-    measurementLineWeight: {
-      ...enMain.verticalToolbar.measurementLineWeight,
-      text: 'سُمك الخط',
-      description: 'تحديد سُمك خط القياس المحدد أو القياسات الجديدة'
     },
 
     measurementFontSize: {

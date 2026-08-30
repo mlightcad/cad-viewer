@@ -235,28 +235,26 @@ function rememberStyle(id: string, style: AcApMeasurementStyle): void {
  * Apply a style patch to one measurement group (HTML badges/dots and canvases).
  * Does not record undo; wrap with {@link runMeasurementEdit} from UI.
  *
- * Color, line weight, and font size are independent: changing one does not
- * rewrite the others' world-space sizes from the current camera zoom.
+ * Color and font size are independent: changing one does not rewrite the
+ * other's world-space size from the current camera zoom. Overlay strokes stay
+ * hairline ({@link MEASUREMENT_LINE_WEIGHT}); strokeWidthWcs is never written.
  */
 export function applyMeasurementStyle(
   view: AcTrView2d,
   group: AcTrHtmlGroup,
-  patch: Partial<AcApMeasurementStyle>
+  patch: Partial<Pick<AcApMeasurementStyle, 'color' | 'fontSize'>>
 ): void {
   const prev = stylesById.get(group.id)
   const color = patch.color?.clone() ?? prev?.color.clone()
   if (!color) return
   const next: AcApMeasurementStyle = {
     color,
-    lineWeight: patch.lineWeight ?? prev?.lineWeight ?? MEASUREMENT_LINE_WEIGHT,
+    lineWeight: MEASUREMENT_LINE_WEIGHT,
     fontSize: patch.fontSize ?? prev?.fontSize ?? MEASUREMENT_FONT_SIZE
   }
   const fontSizeChanged =
     patch.fontSize != null &&
     (prev == null || patch.fontSize !== prev.fontSize)
-  const lineWeightChanged =
-    patch.lineWeight != null &&
-    (prev == null || patch.lineWeight !== prev.lineWeight)
 
   rememberStyle(group.id, next)
   const extras = extrasById.get(group.id)
@@ -275,26 +273,18 @@ export function applyMeasurementStyle(
             prev?.fontSize,
             prevSnap.textHeightWcs,
             fontSizeChanged
-          ),
-          strokeWidthWcs: resolveUpdatedStrokeWidthWcs(
-            view,
-            next.lineWeight,
-            prev?.lineWeight,
-            prevSnap.strokeWidthWcs,
-            lineWeightChanged
           )
         }
       }
     }
   }
 
-  if (fontSizeChanged || lineWeightChanged) {
+  if (fontSizeChanged) {
     const snap = extrasById.get(group.id)?.snapshot?.style
     acapSeedOverlaySizesFromWcs(view, {
       textHeightWcs: snap?.textHeightWcs,
-      strokeWidthWcs: snap?.strokeWidthWcs,
       fontSizePx: next.fontSize,
-      strokeScreenPx: acapMeasurementCanvasLineWidth(next.lineWeight),
+      strokeScreenPx: acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT),
       elements: [...(group.children ?? [])],
       canvases: (group.canvases ?? []).map(c => c.canvas)
     })
@@ -303,7 +293,9 @@ export function applyMeasurementStyle(
   paintMeasurementGroup(view, group, next)
 }
 
-/** Scale or recompute text height WCS when font size changes; otherwise keep. */
+/**
+ * Scale or recompute text height WCS when font size changes; otherwise keep.
+ */
 function resolveUpdatedTextHeightWcs(
   view: AcTrView2d,
   nextFontSize: number,
@@ -327,45 +319,11 @@ function resolveUpdatedTextHeightWcs(
 }
 
 /**
- * Scale or recompute stroke WCS when line weight changes; otherwise keep.
- *
- * Hairline (`nextPx === 0`) returns `undefined` so sidecar serialization
- * omits world-space stroke instead of writing `0`.
- */
-function resolveUpdatedStrokeWidthWcs(
-  view: AcTrView2d,
-  nextLineWeight: AcApMeasurementStyle['lineWeight'],
-  prevLineWeight: AcApMeasurementStyle['lineWeight'] | undefined,
-  prevStrokeWidthWcs: number | undefined,
-  lineWeightChanged: boolean
-): number | undefined {
-  const nextPx = acapMeasurementCanvasLineWidth(nextLineWeight)
-  if (!(nextPx > 0)) return undefined
-  if (
-    lineWeightChanged &&
-    prevStrokeWidthWcs != null &&
-    prevStrokeWidthWcs > 0 &&
-    prevLineWeight != null
-  ) {
-    const prevPx = acapMeasurementCanvasLineWidth(prevLineWeight)
-    if (prevPx > 0) return prevStrokeWidthWcs * (nextPx / prevPx)
-  }
-  if (
-    lineWeightChanged ||
-    prevStrokeWidthWcs == null ||
-    !(prevStrokeWidthWcs > 0)
-  ) {
-    return acapScreenPxToWcs(nextPx, view)
-  }
-  return prevStrokeWidthWcs
-}
-
-/**
  * Apply a style patch to every selected measurement group (undoable).
  */
 export function applyMeasurementStyleToSelection(
   view: AcTrView2d,
-  patch: Partial<AcApMeasurementStyle>
+  patch: Partial<Pick<AcApMeasurementStyle, 'color' | 'fontSize'>>
 ): void {
   const groups = view.htmlTransientManager
     .getSelectedGroups()
@@ -426,23 +384,20 @@ export function collectMeasurementRecords(
     if (!extras?.snapshot) continue
     const live = extras.style ?? stylesById.get(group.id)
     const snapStyle = extras.snapshot.style
-    let style: AcApMeasurementSidecarStyle = snapStyle
+    let style: AcApMeasurementSidecarStyle
     if (live) {
-      // Keep live color / weights / fontSize, but preserve creation-time WCS
-      // from the snapshot (do not recompute from the current zoom).
+      // Keep live color / fontSize, force hairline lineWeight, preserve
+      // creation-time textHeightWcs from the snapshot. Never export strokeWidthWcs.
       const base = serializeMeasurementStyle(live)
-      const strokePx = acapMeasurementCanvasLineWidth(base.lineWeight)
       style = {
         ...base,
+        lineWeight: MEASUREMENT_LINE_WEIGHT,
         textHeightWcs:
-          snapStyle.textHeightWcs ?? acapScreenPxToWcs(base.fontSize, view),
-        strokeWidthWcs:
-          snapStyle.strokeWidthWcs != null && snapStyle.strokeWidthWcs > 0
-            ? snapStyle.strokeWidthWcs
-            : strokePx > 0
-              ? acapScreenPxToWcs(strokePx, view)
-              : undefined
+          snapStyle.textHeightWcs ?? acapScreenPxToWcs(base.fontSize, view)
       }
+    } else {
+      const { strokeWidthWcs: _omit, ...rest } = snapStyle
+      style = { ...rest, lineWeight: MEASUREMENT_LINE_WEIGHT }
     }
     records.push({
       ...extras.snapshot,

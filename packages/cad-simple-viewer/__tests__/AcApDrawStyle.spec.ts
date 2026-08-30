@@ -1,7 +1,6 @@
 import {
   AcCmColor,
-  AcCmColorMethod,
-  AcGiLineWeight
+  AcCmColorMethod
 } from '@mlightcad/data-model'
 
 import {
@@ -13,10 +12,8 @@ import type { AcApMarkupGeometry } from '../src/command/markup/AcApMarkupTypes'
 import {
   createDefaultMarkupColor,
   MARKUP_FONT_SIZE,
-  MARKUP_LINE_WEIGHT,
   setMarkupDrawColor,
   setMarkupDrawFontSize,
-  setMarkupDrawLineWeight,
   subscribeMarkupDrawStyle
 } from '../src/command/markup/AcApMarkupUtil'
 import {
@@ -30,17 +27,15 @@ import {
 } from '../src/ui/AcApDrawStyle'
 
 describe('subscribeMarkupDrawStyle', () => {
-  it('notifies when markup draw color, line weight, or font size change', () => {
+  it('notifies when markup draw color or font size change', () => {
     const seen: string[] = []
     const unsubscribe = subscribeMarkupDrawStyle(() => seen.push('change'))
     setMarkupDrawColor(new AcCmColor(AcCmColorMethod.ByACI, 3))
-    setMarkupDrawLineWeight(AcGiLineWeight.LineWeight013)
     setMarkupDrawFontSize(16)
     unsubscribe()
     setMarkupDrawColor(createDefaultMarkupColor())
-    setMarkupDrawLineWeight(MARKUP_LINE_WEIGHT)
     setMarkupDrawFontSize(MARKUP_FONT_SIZE)
-    expect(seen).toEqual(['change', 'change', 'change'])
+    expect(seen).toEqual(['change', 'change'])
   })
 })
 

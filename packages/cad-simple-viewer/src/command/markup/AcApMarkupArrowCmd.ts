@@ -24,7 +24,7 @@ import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight,
+  MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth
 } from './AcApMarkupUtil'
 
@@ -56,7 +56,7 @@ class AcApMarkupArrowJig extends AcEdPreviewJig<AcGePoint3dLike> {
   update(p2: AcGePoint3dLike) {
     this._p2 = p2
     this._color = defaultMarkupColor()
-    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const lineWidth = markupCanvasLineWidth(MARKUP_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLiveSegment(ctx, view, this._p1, this._p2, this._color, lineWidth, {
         arrow: true

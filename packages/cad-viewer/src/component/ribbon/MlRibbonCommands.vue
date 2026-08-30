@@ -20,13 +20,11 @@ import {
   acapDrawStyleKindForCommand,
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
-  acapGetMeasurementLineWeight,
   AcApOpenCmd,
   AcApQNewCmd,
   acapRunDatabaseEdit,
   acapSetMeasurementDrawColor,
   acapSetMeasurementDrawFontSize,
-  acapSetMeasurementDrawLineWeight,
   type AcEdCommandEventArgs,
   AcEdOpenMode,
   type AcTrView2d,
@@ -37,7 +35,6 @@ import {
   getActiveMeasurementStyle,
   getEffectiveMeasurementUnits,
   getMarkupFontSize,
-  getMarkupLineWeight,
   getMarkupStore,
   getSelectedMeasurementId,
   isMarkupVisible,
@@ -46,7 +43,6 @@ import {
   refreshMeasurementValueLabels,
   setMarkupDrawColor,
   setMarkupDrawFontSize,
-  setMarkupDrawLineWeight,
   setMeasurementUnitOverride,
   subscribeMeasurementSelection
 } from '@mlightcad/cad-simple-viewer'
@@ -199,11 +195,9 @@ const isMarkupOverlayVisible = ref(true)
 const isMeasurementOverlayVisible = ref(true)
 const markupDrawColor = shallowRef(defaultMarkupColor())
 const markupDrawColorDisplay = ref(markupColorToCss(markupDrawColor.value))
-const markupDrawLineWeight = ref<AcGiLineWeight>(getMarkupLineWeight())
 const markupDrawFontSize = ref(getMarkupFontSize())
 const measurementDrawColor = shallowRef(new AcCmColor())
 const measurementDrawColorDisplay = ref('#7b8794')
-const measurementDrawLineWeight = ref<AcGiLineWeight>(acapGetMeasurementLineWeight())
 const measurementDrawFontSize = ref(acapGetMeasurementFontSize())
 const measurementLunits = ref(AcDbLinearUnits.Decimal)
 const measurementLuprec = ref(4)
@@ -784,9 +778,6 @@ const syncMarkupStyleControls = () => {
     const color = cssToMarkupColor(selected.style.color)
     markupDrawColor.value = color
     markupDrawColorDisplay.value = selected.style.color
-    markupDrawLineWeight.value =
-      (selected.style.lineWeight as AcGiLineWeight | undefined) ??
-      getMarkupLineWeight()
     markupDrawFontSize.value =
       selected.style.fontSize != null && selected.style.fontSize > 0
         ? selected.style.fontSize
@@ -794,7 +785,6 @@ const syncMarkupStyleControls = () => {
   } else {
     markupDrawColor.value = defaultMarkupColor()
     markupDrawColorDisplay.value = markupColorToCss(markupDrawColor.value)
-    markupDrawLineWeight.value = getMarkupLineWeight()
     markupDrawFontSize.value = getMarkupFontSize()
   }
   scheduleActivateRibbonTabForOverlaySelection()
@@ -804,7 +794,7 @@ const syncMarkupStyleControls = () => {
  * Apply a style patch to the currently selected markup and republish it.
  */
 const patchSelectedMarkupStyle = (
-  patch: Partial<{ color: string; lineWeight: number; fontSize: number }>
+  patch: Partial<{ color: string; fontSize: number }>
 ) => {
   const view = AcApDocManager.instance?.curView
   if (view) applyMarkupStyleToSelection(view, patch)
@@ -823,16 +813,6 @@ const handleMarkupDrawColorChange = (value?: AcCmColor) => {
 }
 
 /**
- * Updates the session markup draw line weight used by subsequent markup commands.
- * When a markup is selected, also updates that markup's line weight.
- */
-const handleMarkupDrawLineWeightChange = (value: AcGiLineWeight) => {
-  setMarkupDrawLineWeight(value)
-  markupDrawLineWeight.value = value
-  patchSelectedMarkupStyle({ lineWeight: value })
-}
-
-/**
  * Updates the session markup draw font size used by text / callout markups.
  * When a markup is selected, also updates that markup's font size.
  */
@@ -847,7 +827,6 @@ const syncMeasurementStyleControls = () => {
   if (selected) {
     measurementDrawColor.value = selected.color.clone()
     measurementDrawColorDisplay.value = acapCssColor(selected.color)
-    measurementDrawLineWeight.value = selected.lineWeight
     measurementDrawFontSize.value = selected.fontSize
   } else {
     const db = getCurrentDatabase()
@@ -856,7 +835,6 @@ const syncMeasurementStyleControls = () => {
       measurementDrawColor.value = color.clone()
       measurementDrawColorDisplay.value = acapCssColor(color)
     }
-    measurementDrawLineWeight.value = acapGetMeasurementLineWeight()
     measurementDrawFontSize.value = acapGetMeasurementFontSize()
   }
   scheduleActivateRibbonTabForOverlaySelection()
@@ -869,13 +847,6 @@ const handleMeasurementDrawColorChange = (value?: AcCmColor) => {
   measurementDrawColorDisplay.value = acapCssColor(value)
   const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
   if (view) applyMeasurementStyleToSelection(view, { color: value })
-}
-
-const handleMeasurementDrawLineWeightChange = (value: AcGiLineWeight) => {
-  acapSetMeasurementDrawLineWeight(value)
-  measurementDrawLineWeight.value = value
-  const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
-  if (view) applyMeasurementStyleToSelection(view, { lineWeight: value })
 }
 
 const handleMeasurementDrawFontSizeChange = (value: number) => {
@@ -1272,23 +1243,6 @@ const buildBaseTabs = (
       }
     },
     {
-      id: 'markup-draw-line-weight',
-      type: 'custom',
-      size: 'small',
-      tooltip: t('main.verticalToolbar.markupLineWeight.description'),
-      props: {
-        component: MlRibbonPropertyLineWeightSelect,
-        componentProps: {
-          modelValue: markupDrawLineWeight.value,
-          placeholder: t('main.ribbon.property.lineWeight'),
-          numericOnly: true,
-          includeHairline: true,
-          controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
-          'onUpdate:modelValue': handleMarkupDrawLineWeightChange
-        }
-      }
-    },
-    {
       id: 'markup-draw-font-size',
       type: 'custom',
       size: 'small',
@@ -1454,23 +1408,6 @@ const buildBaseTabs = (
           placeholder: t('main.ribbon.property.color'),
           controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
           'onUpdate:modelValue': handleMeasurementDrawColorChange
-        }
-      }
-    },
-    {
-      id: 'measurement-draw-line-weight',
-      type: 'custom',
-      size: 'small',
-      tooltip: t('main.verticalToolbar.measurementLineWeight.description'),
-      props: {
-        component: MlRibbonPropertyLineWeightSelect,
-        componentProps: {
-          modelValue: measurementDrawLineWeight.value,
-          placeholder: t('main.ribbon.property.lineWeight'),
-          numericOnly: true,
-          includeHairline: true,
-          controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
-          'onUpdate:modelValue': handleMeasurementDrawLineWeightChange
         }
       }
     },
@@ -2106,7 +2043,6 @@ const buildBaseTabs = (
                     componentProps: {
                       modelValue: ribbonLineWeight.value,
                       placeholder: t('main.ribbon.property.lineWeight'),
-                      includeHairline: false,
                       'onUpdate:modelValue': handleRibbonLineWeightChange
                     }
                   }
@@ -2336,15 +2272,13 @@ const ribbonData = computed(() => {
   const openMode = docOpenMode.value
   const markupVisible = isMarkupOverlayVisible.value
   const measurementVisible = isMeasurementOverlayVisible.value
-  // Track markup draw style so Review ribbon color / lineweight controls refresh.
+  // Track markup draw style so Review ribbon color / font controls refresh.
   markupDrawColor.value
   markupDrawColorDisplay.value
-  markupDrawLineWeight.value
   markupDrawFontSize.value
   // Track measurement draw style so Measurement ribbon controls refresh.
   measurementDrawColor.value
   measurementDrawColorDisplay.value
-  measurementDrawLineWeight.value
   measurementDrawFontSize.value
   measurementLunits.value
   measurementLuprec.value

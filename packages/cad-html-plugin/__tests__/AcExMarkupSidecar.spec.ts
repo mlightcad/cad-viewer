@@ -40,17 +40,19 @@ describe('AcExMarkupSidecar', () => {
     ]
   }
 
-  it('round-trips sidecar JSON', () => {
+  it('round-trips sidecar JSON as hairline', () => {
     const text = stringifyAcExMarkupSidecar(sample)
+    expect(text).not.toMatch(/"strokeWidthWcs"\s*:/)
     const parsed = parseAcExMarkupSidecar(text)
     expect(parsed.version).toBe(1)
     expect(parsed.drawingName).toBe('plan.dwg')
     expect(parsed.markups).toHaveLength(2)
     expect(parsed.markups[0]?.type).toBe('arrow')
+    expect(parsed.markups[0]?.style.lineWeight).toBe(0)
     expect(parsed.markups[1]?.text).toBe('Note')
   })
 
-  it('round-trips WCS style fields', () => {
+  it('keeps textHeightWcs and ignores legacy strokeWidthWcs', () => {
     const withWcs: AcExMarkupSidecarFile = {
       version: 1,
       markups: [
@@ -76,9 +78,12 @@ describe('AcExMarkupSidecar', () => {
         }
       ]
     }
-    const parsed = parseAcExMarkupSidecar(stringifyAcExMarkupSidecar(withWcs))
+    const text = stringifyAcExMarkupSidecar(withWcs)
+    expect(text).not.toMatch(/"strokeWidthWcs"\s*:/)
+    const parsed = parseAcExMarkupSidecar(text)
     expect(parsed.markups[0]?.style.textHeightWcs).toBe(0.6)
-    expect(parsed.markups[0]?.style.strokeWidthWcs).toBe(0.1)
+    expect(parsed.markups[0]?.style.lineWeight).toBe(0)
+    expect(parsed.markups[0]?.style.strokeWidthWcs).toBeUndefined()
   })
 
   it('rejects invalid payloads', () => {
@@ -88,7 +93,7 @@ describe('AcExMarkupSidecar', () => {
     )
   })
 
-  it('drops non-finite world-space style sizes', () => {
+  it('ignores legacy strokeWidthWcs and non-finite textHeightWcs', () => {
     const parsed = parseAcExMarkupSidecar(
       JSON.stringify({
         version: 1,
@@ -100,7 +105,7 @@ describe('AcExMarkupSidecar', () => {
               color: '#ff0000',
               fontSize: 12,
               textHeightWcs: Number.POSITIVE_INFINITY,
-              strokeWidthWcs: Number.NaN
+              strokeWidthWcs: 0.5
             },
             comment: '',
             status: 'open',
@@ -112,6 +117,7 @@ describe('AcExMarkupSidecar', () => {
         ]
       })
     )
+    expect(parsed.markups[0]?.style.lineWeight).toBe(0)
     expect(parsed.markups[0]?.style.textHeightWcs).toBeUndefined()
     expect(parsed.markups[0]?.style.strokeWidthWcs).toBeUndefined()
   })

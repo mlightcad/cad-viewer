@@ -56,8 +56,6 @@ export default {
   },
   drawStyle: {
     color: 'Color',
-    lineWeight: 'Lineweight',
-    lineWeightHairline: 'Hairline',
     fontSize: 'Text height'
   }
 }

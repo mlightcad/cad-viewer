@@ -28,7 +28,7 @@ import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight,
+  MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth,
   markupColorToCss
 } from './AcApMarkupUtil'
@@ -84,7 +84,7 @@ class AcApMarkupLineJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._color = defaultMarkupColor()
     this._badge.setColor(this._color)
 
-    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const lineWidth = markupCanvasLineWidth(MARKUP_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLiveSegment(ctx, view, this._p1, this._p2, this._color, lineWidth)
     })
@@ -137,7 +137,7 @@ export class AcApMarkupLineCmd extends AcEdCommand {
         type: 'line',
         style: {
           color: markupColorToCss(color),
-          lineWeight: getMarkupLineWeight()
+          lineWeight: MARKUP_LINE_WEIGHT
         },
         geometry: {
           type: 'line',

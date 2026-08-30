@@ -3,8 +3,10 @@ import type {
   AcApMarkupRecord,
   AcApMarkupSidecarFile,
   AcApMarkupStatus,
+  AcApMarkupStyle,
   AcApMarkupType
 } from './AcApMarkupTypes'
+import { MARKUP_LINE_WEIGHT } from './AcApMarkupUtil'
 
 const MARKUP_TYPES: readonly AcApMarkupType[] = [
   'text',
@@ -135,16 +137,13 @@ function parseRecord(raw: unknown): AcApMarkupRecord | undefined {
     layoutId: typeof raw.layoutId === 'string' ? raw.layoutId : undefined,
     style: {
       color: raw.style.color,
-      lineWeight:
-        typeof raw.style.lineWeight === 'number'
-          ? raw.style.lineWeight
-          : undefined,
+      // Accept legacy lineWeight / strokeWidthWcs without failing, but always hairline.
+      lineWeight: MARKUP_LINE_WEIGHT,
       fontSize:
         typeof raw.style.fontSize === 'number' && raw.style.fontSize > 0
           ? raw.style.fontSize
           : undefined,
-      textHeightWcs: parsePositiveNumber(raw.style.textHeightWcs),
-      strokeWidthWcs: parsePositiveNumber(raw.style.strokeWidthWcs)
+      textHeightWcs: parsePositiveNumber(raw.style.textHeightWcs)
     },
     text: typeof raw.text === 'string' ? raw.text : undefined,
     comment: typeof raw.comment === 'string' ? raw.comment : '',
@@ -192,9 +191,24 @@ export function parseMarkupSidecar(text: string): AcApMarkupSidecarFile {
   }
 }
 
+function normalizeStyleForWrite(style: AcApMarkupStyle): AcApMarkupStyle {
+  const { strokeWidthWcs: _ignored, ...rest } = style
+  return {
+    ...rest,
+    lineWeight: MARKUP_LINE_WEIGHT
+  }
+}
+
 /** Serialize a sidecar file to pretty-printed JSON. */
 export function stringifyMarkupSidecar(file: AcApMarkupSidecarFile): string {
-  return `${JSON.stringify(file, null, 2)}\n`
+  const normalized: AcApMarkupSidecarFile = {
+    ...file,
+    markups: file.markups.map(m => ({
+      ...m,
+      style: normalizeStyleForWrite(m.style)
+    }))
+  }
+  return `${JSON.stringify(normalized, null, 2)}\n`
 }
 
 /**

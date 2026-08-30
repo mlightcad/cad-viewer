@@ -175,12 +175,6 @@ function markupNow(): string {
   return new Date().toISOString()
 }
 
-function resolveMarkupLineWeight(weight?: number): number {
-  return typeof weight === 'number' && Number.isFinite(weight) && weight >= 0
-    ? weight
-    : ACEX_MARKUP_LINE_WEIGHT
-}
-
 function defaultStyle(
   color = ACEX_MARKUP_COLOR,
   lineWeight = ACEX_MARKUP_LINE_WEIGHT,
@@ -253,7 +247,6 @@ export class AcExMarkupController {
     snap: AcExOsnapPoint | null
   } | null = null
   private _drawColor = ACEX_MARKUP_COLOR
-  private _drawLineWeight = ACEX_MARKUP_LINE_WEIGHT
   private _drawFontSize = ACEX_MARKUP_FONT_SIZE
   private _placingShapeCallout: AcExPlacingShapeCallout | null = null
   /** Blocks canvas placement while an inline text session is open. */
@@ -349,14 +342,14 @@ export class AcExMarkupController {
       if (record) {
         return {
           color: record.style.color || this._drawColor,
-          lineWeight: record.style.lineWeight ?? this._drawLineWeight,
+          lineWeight: ACEX_MARKUP_LINE_WEIGHT,
           fontSize: record.style.fontSize ?? this._drawFontSize
         }
       }
     }
     return {
       color: this._drawColor,
-      lineWeight: this._drawLineWeight,
+      lineWeight: ACEX_MARKUP_LINE_WEIGHT,
       fontSize: this._drawFontSize
     }
   }
@@ -370,17 +363,13 @@ export class AcExMarkupController {
     fontSize?: number
   }): void {
     if (patch.color) this._drawColor = patch.color
-    if (
-      patch.lineWeight != null &&
-      Number.isFinite(patch.lineWeight) &&
-      patch.lineWeight >= 0
-    ) {
-      this._drawLineWeight = patch.lineWeight
-    }
     if (patch.fontSize != null && patch.fontSize > 0) {
       this._drawFontSize = patch.fontSize
     }
-    this._applyStyleToSelection(patch)
+    this._applyStyleToSelection({
+      color: patch.color,
+      fontSize: patch.fontSize
+    })
     this._refreshActivePreview()
     this._syncPlacingStyle()
     this._onStyleChange?.()
@@ -389,25 +378,23 @@ export class AcExMarkupController {
 
   private _sessionStyle(): AcExMarkupStyle {
     return this._styleWithWcs(
-      defaultStyle(this._drawColor, this._drawLineWeight, this._drawFontSize)
+      defaultStyle(this._drawColor, ACEX_MARKUP_LINE_WEIGHT, this._drawFontSize)
     )
   }
 
-  /** Attach world-space text/stroke sizes from the current view. */
+  /** Attach world-space text height from the current view. */
   private _styleWithWcs(style: AcExMarkupStyle): AcExMarkupStyle {
     const fontSize =
       style.fontSize != null && style.fontSize > 0
         ? style.fontSize
         : ACEX_MARKUP_FONT_SIZE
-    const lineWeight = resolveMarkupLineWeight(style.lineWeight)
-    const strokePx = acExMarkupCanvasLineWidth(lineWeight)
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
+    const { strokeWidthWcs: _omit, ...rest } = style
     return {
-      ...style,
-      textHeightWcs: acExScreenPxToWcs(fontSize, wcsToScreen),
-      strokeWidthWcs:
-        strokePx > 0 ? acExScreenPxToWcs(strokePx, wcsToScreen) : undefined
+      ...rest,
+      lineWeight: ACEX_MARKUP_LINE_WEIGHT,
+      textHeightWcs: acExScreenPxToWcs(fontSize, wcsToScreen)
     }
   }
 
@@ -437,7 +424,6 @@ export class AcExMarkupController {
 
   private _applyStyleToSelection(patch: {
     color?: string
-    lineWeight?: number
     fontSize?: number
   }): void {
     if (this._selectedIds.size === 0) return
@@ -448,27 +434,8 @@ export class AcExMarkupController {
       if (!item) continue
       const style = item.record.style
       if (patch.color) style.color = patch.color
-      if (
-        patch.lineWeight != null &&
-        Number.isFinite(patch.lineWeight) &&
-        patch.lineWeight >= 0
-      ) {
-        const prevWeight = resolveMarkupLineWeight(style.lineWeight)
-        const prevPx = acExMarkupCanvasLineWidth(prevWeight)
-        const nextPx = acExMarkupCanvasLineWidth(patch.lineWeight)
-        if (!(nextPx > 0)) {
-          style.strokeWidthWcs = undefined
-        } else if (
-          style.strokeWidthWcs != null &&
-          style.strokeWidthWcs > 0 &&
-          prevPx > 0
-        ) {
-          style.strokeWidthWcs = style.strokeWidthWcs * (nextPx / prevPx)
-        } else {
-          style.strokeWidthWcs = acExScreenPxToWcs(nextPx, wcsToScreen)
-        }
-        style.lineWeight = patch.lineWeight
-      }
+      style.lineWeight = ACEX_MARKUP_LINE_WEIGHT
+      style.strokeWidthWcs = undefined
       if (patch.fontSize != null && patch.fontSize > 0) {
         const prevFont =
           style.fontSize != null && style.fontSize > 0
@@ -489,17 +456,14 @@ export class AcExMarkupController {
         }
         style.fontSize = patch.fontSize
       }
-      if (patch.fontSize != null || patch.lineWeight != null) {
+      if (patch.fontSize != null) {
         acExSeedOverlaySizesFromWcs(
           this._view.getCameraZoom(),
           wcsToScreen,
           {
             textHeightWcs: style.textHeightWcs,
-            strokeWidthWcs: style.strokeWidthWcs,
             fontSizePx: style.fontSize ?? ACEX_MARKUP_FONT_SIZE,
-            strokeScreenPx: acExMarkupCanvasLineWidth(
-              style.lineWeight ?? ACEX_MARKUP_LINE_WEIGHT
-            ),
+            strokeScreenPx: acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
             elements: item.parts.dom,
             canvases: item.parts.canvases
           }
@@ -1094,7 +1058,7 @@ export class AcExMarkupController {
       if (!ctx) return
       const tipS = this._worldToOverlay(tip)
       const anchorS = this._worldToOverlay(anchor)
-      const baseWidth = acExMarkupCanvasLineWidth(this._drawLineWeight)
+      const baseWidth = acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
       const scaled = this._scaledCanvasLineWidth(baseWidth, ctx.canvas)
       acExDrawMarkupLeader(
         ctx,
@@ -1385,11 +1349,8 @@ export class AcExMarkupController {
       p => this._wcsToScreenPoint(p),
       {
         textHeightWcs: record.style.textHeightWcs,
-        strokeWidthWcs: record.style.strokeWidthWcs,
         fontSizePx: record.style.fontSize ?? ACEX_MARKUP_FONT_SIZE,
-        strokeScreenPx: acExMarkupCanvasLineWidth(
-          record.style.lineWeight ?? ACEX_MARKUP_LINE_WEIGHT
-        ),
+        strokeScreenPx: acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
         elements: parts.dom,
         canvases: parts.canvases
       }
@@ -1420,8 +1381,7 @@ export class AcExMarkupController {
         ctx,
         live.geometry,
         live.style.color || ACEX_MARKUP_COLOR,
-        acExMarkupCanvasLineWidth(live.style.lineWeight),
-        live.style.strokeWidthWcs
+        acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
       )
     }
     this._redrawListeners.push(redraw)
@@ -2333,7 +2293,7 @@ export class AcExMarkupController {
     const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
     if (!ctx) return
     const color = this._drawColor
-    const lineWidth = acExMarkupCanvasLineWidth(this._drawLineWeight)
+    const lineWidth = acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
 
     if (this._points.length === 0) return
     const a = this._points[0]!
@@ -2393,7 +2353,7 @@ export class AcExMarkupController {
     const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
     if (!ctx) return
     const color = this._drawColor
-    const lineWidth = acExMarkupCanvasLineWidth(this._drawLineWeight)
+    const lineWidth = acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
     const outline = placing.outline
     // Existing shape is already committed; only preview the new leader.
     if (!placing.existingId) {

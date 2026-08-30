@@ -24,10 +24,10 @@ import {
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
-  acapGetMeasurementLineWeight,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
-  formatMeasurementLength
+  formatMeasurementLength,
+  MEASUREMENT_LINE_WEIGHT
 } from '../../util'
 import { AcTrView2d } from '../../view'
 import {
@@ -119,9 +119,7 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._badge.setFontSize(acapGetMeasurementFontSize())
 
     const dist = calcDist(this._p1, p2)
-    const lineWidth = acapMeasurementCanvasLineWidth(
-      acapGetMeasurementLineWeight()
-    )
+    const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLiveSegment(
         ctx,

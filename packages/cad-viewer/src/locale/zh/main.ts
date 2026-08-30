@@ -227,8 +227,7 @@ export default {
     property: {
       color: '颜色',
       lineType: '线型',
-      lineWeight: '线宽',
-      lineWeightHairline: '无线宽'
+      lineWeight: '线宽'
     },
     layerTools: {
       select: '图层',
@@ -483,10 +482,6 @@ export default {
       text: '颜色',
       description: '设置新建批注的颜色'
     },
-    markupLineWeight: {
-      text: '线宽',
-      description: '设置新建批注的线宽'
-    },
     markupFontSize: {
       text: '字号',
       description: '设置文字与标注文本框的字号'
@@ -494,10 +489,6 @@ export default {
     measurementColor: {
       text: '颜色',
       description: '有选中测量标注时修改其颜色；未选中时用于后续添加的测量标注'
-    },
-    measurementLineWeight: {
-      text: '线宽',
-      description: '有选中测量标注时修改其线宽；未选中时用于后续添加的测量标注'
     },
     measurementFontSize: {
       text: '字号',

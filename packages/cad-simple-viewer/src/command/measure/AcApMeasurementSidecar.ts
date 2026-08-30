@@ -1,10 +1,7 @@
-import { AcGiLineWeight } from '@mlightcad/data-model'
-
 import type { AcEdBaseView } from '../../editor'
 import {
   acapCssColor,
   acapCssToMeasurementColor,
-  acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LINE_WEIGHT
@@ -56,22 +53,16 @@ function parsePositiveNumber(value: unknown): number | undefined {
 
 function parseStyle(raw: unknown): AcApMeasurementSidecarStyle | undefined {
   if (!isPlainObject(raw) || typeof raw.color !== 'string') return undefined
-  const lineWeight =
-    typeof raw.lineWeight === 'number' &&
-    Number.isFinite(raw.lineWeight) &&
-    raw.lineWeight >= 0
-      ? (raw.lineWeight as AcGiLineWeight)
-      : MEASUREMENT_LINE_WEIGHT
+  // Accept legacy lineWeight / strokeWidthWcs without failing, but always hairline.
   const fontSize =
     typeof raw.fontSize === 'number' && raw.fontSize > 0
       ? raw.fontSize
       : MEASUREMENT_FONT_SIZE
   return {
     color: raw.color,
-    lineWeight,
+    lineWeight: MEASUREMENT_LINE_WEIGHT,
     fontSize,
-    textHeightWcs: parsePositiveNumber(raw.textHeightWcs),
-    strokeWidthWcs: parsePositiveNumber(raw.strokeWidthWcs)
+    textHeightWcs: parsePositiveNumber(raw.textHeightWcs)
   }
 }
 
@@ -139,15 +130,11 @@ export function serializeMeasurementStyle(
 ): AcApMeasurementSidecarStyle {
   const result: AcApMeasurementSidecarStyle = {
     color: acapCssColor(style.color),
-    lineWeight: style.lineWeight,
+    lineWeight: MEASUREMENT_LINE_WEIGHT,
     fontSize: style.fontSize
   }
   if (view) {
     result.textHeightWcs = acapScreenPxToWcs(style.fontSize, view)
-    const strokePx = acapMeasurementCanvasLineWidth(style.lineWeight)
-    if (strokePx > 0) {
-      result.strokeWidthWcs = acapScreenPxToWcs(strokePx, view)
-    }
   }
   return result
 }
@@ -158,8 +145,7 @@ export function deserializeMeasurementStyle(
 ): AcApMeasurementStyle {
   return {
     color: acapCssToMeasurementColor(style.color),
-    lineWeight:
-      style.lineWeight >= 0 ? style.lineWeight : MEASUREMENT_LINE_WEIGHT,
+    lineWeight: MEASUREMENT_LINE_WEIGHT,
     fontSize: style.fontSize > 0 ? style.fontSize : MEASUREMENT_FONT_SIZE
   }
 }
@@ -196,11 +182,28 @@ export function parseMeasurementSidecar(
   }
 }
 
+function normalizeStyleForWrite(
+  style: AcApMeasurementSidecarStyle
+): AcApMeasurementSidecarStyle {
+  const { strokeWidthWcs: _ignored, ...rest } = style
+  return {
+    ...rest,
+    lineWeight: MEASUREMENT_LINE_WEIGHT
+  }
+}
+
 /** Serialize a sidecar file to pretty-printed JSON. */
 export function stringifyMeasurementSidecar(
   file: AcApMeasurementSidecarFile
 ): string {
-  return `${JSON.stringify(file, null, 2)}\n`
+  const normalized: AcApMeasurementSidecarFile = {
+    ...file,
+    measurements: file.measurements.map(m => ({
+      ...m,
+      style: normalizeStyleForWrite(m.style)
+    }))
+  }
+  return `${JSON.stringify(normalized, null, 2)}\n`
 }
 
 /**

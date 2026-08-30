@@ -10,7 +10,6 @@
       :disabled="disabled"
       :placeholder="placeholder"
       :numeric-only="numericOnly"
-      :include-hairline="includeHairline === true"
       :compact="numericOnly"
       @update:modelValue="emit('update:modelValue', $event)"
     />
@@ -35,20 +34,13 @@ interface RibbonPropertyLineWeightSelectProps {
   disabled?: boolean
   /** Placeholder shown when no line weight can be resolved. */
   placeholder?: string
-  /** When true, hide ByLayer / ByBlock / Default (overlay style pickers). */
+  /** When true, hide ByLayer / ByBlock / Default. */
   numericOnly?: boolean
-  /**
-   * Prepend a hairline option. Only measurement / review style pickers
-   * should set this; Home / entity property line-weight stays unchanged.
-   */
-  includeHairline?: boolean
   /** Optional fixed width for the embedded control; defaults narrower when `numericOnly`. */
   controlWidth?: string
 }
 
-const props = withDefaults(defineProps<RibbonPropertyLineWeightSelectProps>(), {
-  includeHairline: false
-})
+const props = defineProps<RibbonPropertyLineWeightSelectProps>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: AcGiLineWeight): void

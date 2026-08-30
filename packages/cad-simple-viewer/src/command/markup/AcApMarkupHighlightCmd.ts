@@ -24,7 +24,7 @@ import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight,
+  MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth,
   markupColorToCss
 } from './AcApMarkupUtil'
@@ -57,7 +57,7 @@ class AcApMarkupHighlightJig extends AcEdPreviewJig<AcGePoint3dLike> {
   update(second: AcGePoint3dLike) {
     this._second = second
     this._colorCss = markupColorToCss(defaultMarkupColor())
-    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const lineWidth = markupCanvasLineWidth(MARKUP_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {
       acapFillLiveHighlight(
         ctx,
@@ -115,7 +115,7 @@ export class AcApMarkupHighlightCmd extends AcEdCommand {
         type: 'highlight',
         style: {
           color: colorCss,
-          lineWeight: getMarkupLineWeight()
+          lineWeight: MARKUP_LINE_WEIGHT
         },
         geometry: {
           type: 'highlight',

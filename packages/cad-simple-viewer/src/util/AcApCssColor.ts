@@ -16,17 +16,22 @@ export function preferExactAciColor(color: AcCmColor): AcCmColor {
   return aci
 }
 
-/** CSS functional color notations that {@link AcCmColor.fromString} does not accept. */
-function isCssFunctionalColor(css: string): boolean {
-  return /^(rgb|rgba|hsl|hsla)\(/i.test(css.trim())
+/**
+ * CSS hex / functional notations that {@link AcCmColor.fromString} does not
+ * accept. Passing them to `fromString` logs "Unknown color name" (hex like
+ * `#d51572` is looked up as a named color).
+ */
+function shouldSkipFromString(css: string): boolean {
+  const s = css.trim()
+  return s.startsWith('#') || /^(rgb|rgba|hsl|hsla)\(/i.test(s)
 }
 
 /**
  * Parse a CSS color string into {@link AcCmColor}.
  *
- * Prefer {@link AcCmColor.setRGBFromCss} for `rgb()` / `hsl()` (and similar);
- * {@link AcCmColor.fromString} only understands named / hex / ACI-style values
- * and logs "Unknown color name" for functional CSS colors.
+ * Prefer {@link AcCmColor.setRGBFromCss} for `#hex` / `rgb()` / `hsl()`;
+ * {@link AcCmColor.fromString} only understands named / ACI-style / `RGB:r,g,b`
+ * values and logs "Unknown color name" for CSS hex and functional colors.
  */
 export function parseCssToAcCmColor(
   css: string,
@@ -39,7 +44,7 @@ export function parseCssToAcCmColor(
     return empty
   }
 
-  if (!isCssFunctionalColor(trimmed)) {
+  if (!shouldSkipFromString(trimmed)) {
     try {
       const fromString = AcCmColor.fromString(trimmed)
       if (fromString) return preferExactAciColor(fromString)

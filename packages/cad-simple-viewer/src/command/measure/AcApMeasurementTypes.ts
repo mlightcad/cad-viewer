@@ -17,6 +17,7 @@ export interface AcApMeasurementPoint2d {
 /** Drawing style stored in the sidecar (CSS-friendly + world-space sizes). */
 export interface AcApMeasurementSidecarStyle {
   color: string
+  /** Always hairline (`0`) on write; legacy non-zero values are ignored on parse. */
   lineWeight: AcGiLineWeight
   /** Authoring badge font size in CSS pixels (legacy / UI). */
   fontSize: number
@@ -26,7 +27,7 @@ export interface AcApMeasurementSidecarStyle {
    */
   textHeightWcs?: number
   /**
-   * Canvas stroke width in world units. Prefer this when restoring overlays.
+   * Legacy canvas stroke width in world units. Ignored on parse; never written.
    */
   strokeWidthWcs?: number
 }

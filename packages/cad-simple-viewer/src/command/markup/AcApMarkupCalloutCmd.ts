@@ -37,7 +37,7 @@ import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
   getMarkupFontSize,
-  getMarkupLineWeight,
+  MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth,
   subscribeMarkupDrawStyle
 } from './AcApMarkupUtil'
@@ -158,7 +158,7 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   }
 
   private paintLeader(): void {
-    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const lineWidth = markupCanvasLineWidth(MARKUP_LINE_WEIGHT)
     const color = this._color
     const tip = this._tip
     const anchor = this._anchor
