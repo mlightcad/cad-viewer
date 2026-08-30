@@ -17,6 +17,7 @@ import {
   acapFitOverlayCanvas,
   acapOverlayArrowSize,
   acapOverlayDash,
+  acapScaledOverlayArrowSize,
   acapScaledOverlayLineWidth
 } from './AcApOverlayDrawUtil'
 
@@ -119,7 +120,8 @@ export class AcApHtmlLivePreview {
  * @param b - Segment end (world).
  * @param color - CSS or AcCmColor stroke color.
  * @param lineWidth - Stroke width in CSS pixels.
- * @param options - Optional dash pattern and arrow head at `b`.
+ * @param options - Optional dash pattern and arrow head (`true` at `b`,
+ *   `'both'` at both endpoints).
  */
 export function acapStrokeLiveSegment(
   ctx: CanvasRenderingContext2D,
@@ -128,7 +130,7 @@ export function acapStrokeLiveSegment(
   b: AcApHtmlLivePoint,
   color: string | AcCmColor,
   lineWidth: number,
-  options?: { dashed?: boolean; arrow?: boolean }
+  options?: { dashed?: boolean; arrow?: boolean | 'both' }
 ): void {
   const css = typeof color === 'string' ? color : acapCssColor(color)
   const sa = view.worldToScreen(a)
@@ -143,13 +145,16 @@ export function acapStrokeLiveSegment(
   ctx.stroke()
   if (options?.dashed) ctx.setLineDash([])
   if (options?.arrow) {
-    acapDrawOverlayArrowHead(
-      ctx,
-      sa,
-      sb,
-      css,
-      acapOverlayArrowSize(strokeWidth, lineWidth)
-    )
+    if (options.arrow === 'both') {
+      const size = acapScaledOverlayArrowSize(ctx.canvas, view)
+      if (Math.hypot(sb.x - sa.x, sb.y - sa.y) >= size) {
+        acapDrawOverlayArrowHead(ctx, sb, sa, css, size)
+        acapDrawOverlayArrowHead(ctx, sa, sb, css, size)
+      }
+    } else {
+      const size = acapOverlayArrowSize(strokeWidth, lineWidth)
+      acapDrawOverlayArrowHead(ctx, sa, sb, css, size)
+    }
   }
 }
 

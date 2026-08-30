@@ -48,6 +48,46 @@ describe('hitTestMeasurementGeometry', () => {
     ).toBe(false)
   })
 
+  it('hits the angle arc at the world-space radius, not a 15px screen floor', () => {
+    const geometry: AcApMeasurementGeometry = {
+      type: 'angle',
+      vertex: { x: 0, y: 0 },
+      arm1: { x: 20, y: 0 },
+      arm2: { x: 0, y: 20 }
+    }
+    const onArc = 20 * 0.3 * Math.SQRT1_2
+    expect(
+      hitTestMeasurementGeometry(
+        geometry,
+        { x: onArc, y: onArc },
+        identity,
+        threshold
+      )
+    ).toBe(true)
+    // Former screen-space floor of 15px along the bisector.
+    expect(
+      hitTestMeasurementGeometry(
+        geometry,
+        { x: 15 * Math.SQRT1_2, y: 15 * Math.SQRT1_2 },
+        identity,
+        threshold
+      )
+    ).toBe(false)
+
+    const zoomOut = (point: { x: number; y: number }) => ({
+      x: point.x * 0.25,
+      y: point.y * 0.25
+    })
+    expect(
+      hitTestMeasurementGeometry(
+        geometry,
+        { x: 15 * Math.SQRT1_2, y: 15 * Math.SQRT1_2 },
+        zoomOut,
+        threshold
+      )
+    ).toBe(false)
+  })
+
   it('hits an area measurement on the fill and the outline', () => {
     const geometry: AcApMeasurementGeometry = {
       type: 'area',

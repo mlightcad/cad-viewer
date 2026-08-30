@@ -89,6 +89,24 @@ describe('AcExMeasurementSidecar', () => {
     expect(parsed.measurements[0]?.style.strokeWidthWcs).toBe(0.1)
   })
 
+  it('keeps hairline line weight 0 in sidecar styles', () => {
+    const parsed = parseAcExMeasurementSidecar(
+      JSON.stringify({
+        version: 1,
+        measurements: [
+          {
+            id: 'hairline',
+            type: 'point',
+            style: { color: '#08e8de', lineWeight: 0, fontSize: 13 },
+            geometry: { type: 'point', position: { x: 1, y: 2 } }
+          }
+        ]
+      })
+    )
+    expect(parsed.measurements[0]?.style.lineWeight).toBe(0)
+    expect(parsed.measurements[0]?.style.strokeWidthWcs).toBeUndefined()
+  })
+
   it('rejects invalid payloads', () => {
     expect(() => parseAcExMeasurementSidecar('not-json')).toThrow(/not JSON/)
     expect(() =>

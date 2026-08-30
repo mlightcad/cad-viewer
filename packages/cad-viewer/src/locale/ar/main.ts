@@ -51,7 +51,8 @@ export default {
       ...enMain.ribbon.property,
       color: 'اللون',
       lineType: 'نوع الخط',
-      lineWeight: 'سُمك الخط'
+      lineWeight: 'سُمك الخط',
+      lineWeightHairline: 'بلا سماكة'
     },
 
     layerTools: {

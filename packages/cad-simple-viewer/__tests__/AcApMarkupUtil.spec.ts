@@ -1,9 +1,14 @@
-import { AcCmColor, AcCmColorMethod } from '@mlightcad/data-model'
+import { AcCmColor, AcCmColorMethod, AcGiLineWeight } from '@mlightcad/data-model'
 
 import {
   createDefaultMarkupColor,
   cssToMarkupColor,
-  markupColorToCss
+  MARKUP_LINE_WEIGHT,
+  markupCanvasLineWidth,
+  markupColorToCss,
+  resolveMarkupLineWeight,
+  setMarkupDrawLineWeight,
+  getMarkupLineWeight
 } from '../src/command/markup/AcApMarkupUtil'
 
 describe('cssToMarkupColor', () => {
@@ -37,5 +42,35 @@ describe('cssToMarkupColor', () => {
     const restored = cssToMarkupColor(markupColorToCss(yellow))
     expect(restored.isByACI).toBe(true)
     expect(restored.colorIndex).toBe(2)
+  })
+})
+
+describe('markup line weight', () => {
+  afterEach(() => {
+    setMarkupDrawLineWeight(MARKUP_LINE_WEIGHT)
+  })
+
+  it('defaults to hairline and maps it to a 0 canvas width sentinel', () => {
+    expect(MARKUP_LINE_WEIGHT).toBe(0)
+    expect(markupCanvasLineWidth(MARKUP_LINE_WEIGHT)).toBe(0)
+    expect(markupCanvasLineWidth(AcGiLineWeight.LineWeight070)).toBeCloseTo(
+      2.5
+    )
+  })
+
+  it('keeps hairline and falls back only for missing or negative values', () => {
+    expect(resolveMarkupLineWeight(0)).toBe(0)
+    expect(resolveMarkupLineWeight(70)).toBe(70)
+    expect(resolveMarkupLineWeight(undefined)).toBe(MARKUP_LINE_WEIGHT)
+    expect(resolveMarkupLineWeight(AcGiLineWeight.ByLayer)).toBe(
+      MARKUP_LINE_WEIGHT
+    )
+  })
+
+  it('accepts hairline as a session draw line weight', () => {
+    setMarkupDrawLineWeight(AcGiLineWeight.LineWeight013)
+    setMarkupDrawLineWeight(0 as AcGiLineWeight)
+    expect(getMarkupLineWeight()).toBe(0)
+    setMarkupDrawLineWeight(MARKUP_LINE_WEIGHT)
   })
 })

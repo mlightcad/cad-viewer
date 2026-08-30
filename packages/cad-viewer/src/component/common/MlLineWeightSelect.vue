@@ -87,6 +87,11 @@ interface LineWeightSelectProps {
   /** When true, hide ByLayer / ByBlock / Default (overlay style pickers). */
   numericOnly?: boolean
   /**
+   * Prepend a hairline (no CAD lineweight) option. Used by measurement /
+   * review style pickers; other ribbon line-weight controls stay unchanged.
+   */
+  includeHairline?: boolean
+  /**
    * Narrower trigger sized for numeric weights plus a stroke preview
    * (measure / markup style pickers).
    */
@@ -94,10 +99,11 @@ interface LineWeightSelectProps {
 }
 
 const props = withDefaults(defineProps<LineWeightSelectProps>(), {
-  compact: false
+  compact: false,
+  includeHairline: false
 })
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 
 const popperClass = computed(() =>
   props.compact
@@ -117,6 +123,9 @@ const emit = defineEmits<{
  * @returns Human-readable text for the given enum member.
  */
 function formatLabel(value: AcGiLineWeight): string {
+  if (props.includeHairline && value === 0) {
+    return t('main.ribbon.property.lineWeightHairline')
+  }
   switch (value) {
     case AcGiLineWeight.ByLayer:
       return locale.value === 'ar' ? 'حسب الطبقة' : 'ByLayer'
@@ -137,6 +146,7 @@ function formatLabel(value: AcGiLineWeight): string {
  */
 function previewPx(value: AcGiLineWeight): number | null {
   if (value < 0) return null
+  if (value === 0) return 1
   return Math.max(1, Math.min(6, value / 40))
 }
 
@@ -149,7 +159,8 @@ function previewPx(value: AcGiLineWeight): number | null {
  * @returns A sort order compatible with `Array.prototype.sort`.
  */
 function sortLineWeightValues(a: AcGiLineWeight, b: AcGiLineWeight) {
-  const specialOrder = [
+  const specialOrder: AcGiLineWeight[] = [
+    ...(props.includeHairline ? [0 as AcGiLineWeight] : []),
     AcGiLineWeight.ByLayer,
     AcGiLineWeight.ByBlock,
     AcGiLineWeight.ByLineWeightDefault
@@ -167,24 +178,28 @@ function sortLineWeightValues(a: AcGiLineWeight, b: AcGiLineWeight) {
   return a - b
 }
 
-const lineWeightItems = computed<LineWeightItem[]>(() =>
-  Array.from(
+const lineWeightItems = computed<LineWeightItem[]>(() => {
+  const values = Array.from(
     new Set(
-      Object.values(AcGiLineWeight).filter(
-        (v): v is AcGiLineWeight =>
-          typeof v === 'number' &&
-          v !== AcGiLineWeight.ByDIPs &&
-          (!props.numericOnly || v > 0)
-      )
+      Object.values(AcGiLineWeight).filter((v): v is AcGiLineWeight => {
+        if (typeof v !== 'number') return false
+        if (v === AcGiLineWeight.ByDIPs) return false
+        // Overlay hairline sentinel; added back only when includeHairline.
+        if (v === 0) return false
+        if (props.numericOnly) return v > 0
+        return true
+      })
     )
   )
-    .sort(sortLineWeightValues)
-    .map(v => ({
-      value: v,
-      label: formatLabel(v),
-      previewWidth: previewPx(v)
-    }))
-)
+  if (props.includeHairline && !values.includes(0 as AcGiLineWeight)) {
+    values.push(0 as AcGiLineWeight)
+  }
+  return values.sort(sortLineWeightValues).map(v => ({
+    value: v,
+    label: formatLabel(v),
+    previewWidth: previewPx(v)
+  }))
+})
 
 const selectedItem = computed<LineWeightItem | undefined>(() =>
   lineWeightItems.value.find(item => item.value === props.modelValue)

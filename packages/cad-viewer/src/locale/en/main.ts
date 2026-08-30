@@ -230,7 +230,8 @@ export default {
     property: {
       color: 'Color',
       lineType: 'Linetype',
-      lineWeight: 'Lineweight'
+      lineWeight: 'Lineweight',
+      lineWeightHairline: 'Hairline'
     },
     layerTools: {
       select: 'Layer',

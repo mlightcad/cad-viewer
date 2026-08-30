@@ -1,6 +1,7 @@
 /** @jest-environment jsdom */
 
 import {
+  ACEX_OVERLAY_ARROW_WCS,
   ACEX_OVERLAY_BASE_ZOOM,
   ACEX_OVERLAY_CLOUD_WCS,
   ACEX_OVERLAY_STROKE_WCS,
@@ -10,6 +11,7 @@ import {
   acExPositionWcsOverlay,
   acExResetOverlayViewScale,
   acExScaledCanvasLineWidth,
+  acExScaledOverlayArrowSize,
   acExSeedOverlaySizesFromWcs
 } from '../src/AcExHtmlOverlayDom'
 
@@ -77,6 +79,38 @@ describe('AcExHtmlOverlayDom', () => {
       })
     })
     expect(width2).toBe(5)
+  })
+
+  it('uses a 1px hairline and clears stored WCS when base width is 0', () => {
+    const canvas = document.createElement('canvas')
+    canvas.dataset[ACEX_OVERLAY_STROKE_WCS] = '0.4'
+    const wcsToScreen = (wcs: { x: number; y: number }) => ({
+      x: wcs.x * 10,
+      y: wcs.y * 10
+    })
+
+    expect(
+      acExScaledCanvasLineWidth(0, canvas, 1, {
+        strokeWidthWcs: 0.4,
+        wcsToScreen
+      })
+    ).toBe(1)
+    expect(canvas.dataset[ACEX_OVERLAY_STROKE_WCS]).toBeUndefined()
+  })
+
+  it('clears stored stroke WCS when seeding a hairline overlay', () => {
+    const canvas = document.createElement('canvas')
+    canvas.dataset[ACEX_OVERLAY_STROKE_WCS] = '0.4'
+    const wcsToScreen = (wcs: { x: number; y: number }) => ({
+      x: wcs.x * 10,
+      y: wcs.y * 10
+    })
+
+    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+      strokeScreenPx: 0,
+      canvases: [canvas]
+    })
+    expect(canvas.dataset[ACEX_OVERLAY_STROKE_WCS]).toBeUndefined()
   })
 
   it('honors re-seeded stroke WCS when explicit width is omitted', () => {
@@ -160,5 +194,20 @@ describe('AcExHtmlOverlayDom', () => {
     })
     expect(grip.dataset[ACEX_OVERLAY_BASE_ZOOM]).toBe('2')
     expect(badge.dataset[ACEX_OVERLAY_BASE_ZOOM]).toBe('2')
+  })
+
+  it('scales distance arrows in WCS independently of hairline stroke', () => {
+    const canvas = document.createElement('canvas')
+    const at10 = (wcs: { x: number; y: number }) => ({
+      x: wcs.x * 10,
+      y: wcs.y * 10
+    })
+    const at5 = (wcs: { x: number; y: number }) => ({
+      x: wcs.x * 5,
+      y: wcs.y * 5
+    })
+    expect(acExScaledOverlayArrowSize(canvas, at10)).toBe(12)
+    expect(Number(canvas.dataset[ACEX_OVERLAY_ARROW_WCS])).toBeCloseTo(1.2)
+    expect(acExScaledOverlayArrowSize(canvas, at5)).toBeCloseTo(6)
   })
 })

@@ -8,8 +8,16 @@ import {
 
 import { acCmColorToCssHex, parseCssToAcCmColor } from './AcApCssColor'
 
+/**
+ * Overlay line weight meaning "no CAD lineweight" (hairline).
+ *
+ * Drawn as 1 CSS pixel and not scaled with zoom until the user picks a
+ * numeric lineweight from the drawing-style / style toolbar.
+ */
+export const OVERLAY_HAIRLINE_LINE_WEIGHT = 0 as AcGiLineWeight
+
 /** Factory default CAD line weight for measurement geometry. */
-export const MEASUREMENT_LINE_WEIGHT = AcGiLineWeight.LineWeight070
+export const MEASUREMENT_LINE_WEIGHT = OVERLAY_HAIRLINE_LINE_WEIGHT
 
 /** Factory default screen font size (CSS px) for measurement badges. */
 export const MEASUREMENT_FONT_SIZE = 13
@@ -56,7 +64,7 @@ export function acapSetMeasurementDrawColor(color: AcCmColor): void {
 
 /** Update the session measurement draw line weight. */
 export function acapSetMeasurementDrawLineWeight(weight: AcGiLineWeight): void {
-  if (!(weight > 0)) return
+  if (!Number.isFinite(weight) || weight < 0) return
   measurementDrawLineWeight = weight
 }
 
@@ -97,12 +105,14 @@ export function acapCloneMeasurementStyle(
 
 /**
  * Map a CAD line weight to a canvas stroke width in CSS pixels.
- * {@link AcGiLineWeight.LineWeight070} (70) ≈ 2.5px, matching the previous
- * area-measurement default.
+ *
+ * Hairline ({@link OVERLAY_HAIRLINE_LINE_WEIGHT}) returns `0` so overlay
+ * painters can keep a 1px screen stroke that does not scale with zoom.
+ * {@link AcGiLineWeight.LineWeight070} (70) ≈ 2.5px.
  */
 export function acapMeasurementCanvasLineWidth(weight: AcGiLineWeight): number {
   const n = Number(weight)
-  if (!Number.isFinite(n) || n <= 0) return 2
+  if (!Number.isFinite(n) || n <= 0) return 0
   return Math.max(1, n / 28)
 }
 

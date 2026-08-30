@@ -139,6 +139,24 @@ describe('AcApMeasurementSidecar', () => {
     expect(parsed.measurements[0].style.strokeWidthWcs).toBeUndefined()
   })
 
+  it('keeps hairline line weight 0 in sidecar styles', () => {
+    const parsed = parseMeasurementSidecar(
+      JSON.stringify({
+        version: 1,
+        measurements: [
+          {
+            id: 'hairline',
+            type: 'point',
+            style: { color: '#abcabc', lineWeight: 0, fontSize: 13 },
+            geometry: { type: 'point', position: { x: 1, y: 2 } }
+          }
+        ]
+      })
+    )
+    expect(parsed.measurements[0].style.lineWeight).toBe(0)
+    expect(parsed.measurements[0].style.strokeWidthWcs).toBeUndefined()
+  })
+
   it('suggests sidecar file names', () => {
     expect(measurementSidecarFileName('plan.dwg')).toBe('plan.measurement.json')
     expect(measurementSidecarFileName('plan.DXF')).toBe('plan.measurement.json')

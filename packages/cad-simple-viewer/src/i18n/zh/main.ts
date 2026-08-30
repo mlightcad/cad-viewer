@@ -57,6 +57,7 @@ export default {
   drawStyle: {
     color: '颜色',
     lineWeight: '线宽',
+    lineWeightHairline: '无线宽',
     fontSize: '字号'
   }
 }

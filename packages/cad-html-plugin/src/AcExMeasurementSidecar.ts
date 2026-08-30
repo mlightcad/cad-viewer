@@ -15,15 +15,15 @@ import type {
   AcExMeasurementType
 } from './AcExMeasurementTypes'
 
-/** Default CAD line weight (matches simple-viewer `LineWeight070`). */
-export const ACEX_MEASUREMENT_LINE_WEIGHT = 70
+/** Default overlay line weight: hairline (1 CSS px, not zoom-scaled). */
+export const ACEX_MEASUREMENT_LINE_WEIGHT = 0
 
 /** Default badge font size in CSS pixels (matches simple-viewer). */
 export const ACEX_MEASUREMENT_FONT_SIZE = 13
 
 /** Map CAD line weight to canvas stroke width in CSS pixels. */
 export function acExMeasureCanvasLineWidth(weight?: number): number {
-  if (weight == null || !Number.isFinite(weight) || weight <= 0) return 2
+  if (weight == null || !Number.isFinite(weight) || weight <= 0) return 0
   return Math.max(1, weight / 28)
 }
 
@@ -65,7 +65,9 @@ function parsePositiveNumber(value: unknown): number | undefined {
 function parseStyle(raw: unknown): AcExMeasurementSidecarStyle | undefined {
   if (!isPlainObject(raw) || typeof raw.color !== 'string') return undefined
   const lineWeight =
-    typeof raw.lineWeight === 'number' && raw.lineWeight > 0
+    typeof raw.lineWeight === 'number' &&
+    Number.isFinite(raw.lineWeight) &&
+    raw.lineWeight >= 0
       ? raw.lineWeight
       : ACEX_MEASUREMENT_LINE_WEIGHT
   const fontSize =

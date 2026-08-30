@@ -309,16 +309,18 @@ function aciIndexOf(color: AcCmColor): number | undefined {
 }
 
 function numericLineWeights(): number[] {
-  return Array.from(
+  const weights = Array.from(
     new Set(
       Object.values(AcGiLineWeight).filter(
         (value): value is number => typeof value === 'number' && value > 0
       )
     )
   ).sort((a, b) => a - b)
+  return [0, ...weights]
 }
 
-function formatLineWeight(value: number): string {
+function formatLineWeight(value: number, hairlineLabel: string): string {
+  if (!(value > 0)) return hairlineLabel
   return `${(value / 100).toFixed(2)} mm`
 }
 
@@ -330,6 +332,7 @@ interface AcExLineWeightPicker {
   root: HTMLDivElement
   setValue: (weight: number) => void
   setTitle: (title: string) => void
+  refreshLabels: () => void
   close: () => void
   isOpen: () => boolean
   contains: (node: Node | null) => boolean
@@ -337,11 +340,13 @@ interface AcExLineWeightPicker {
 
 function createLineWeightPicker(
   onChange: (weight: number) => void,
-  onOpen: () => void
+  onOpen: () => void,
+  hairlineLabel: () => string
 ): AcExLineWeightPicker {
   const prefix = 'mlcad-draw-style-toolbar'
   const weights = numericLineWeights()
   let open = false
+  let currentWeight = weights[0] ?? 0
 
   const root = document.createElement('div')
   root.className = `${prefix}__lineweight`
@@ -369,11 +374,12 @@ function createLineWeightPicker(
   menu.setAttribute('role', 'listbox')
 
   const paintTrigger = (weight: number) => {
+    currentWeight = weight
     preview.style.setProperty(
       '--ml-lineweight-height',
-      `${previewLineHeightPx(weight)}px`
+      `${previewLineHeightPx(weight > 0 ? weight : 1)}px`
     )
-    label.textContent = formatLineWeight(weight)
+    label.textContent = formatLineWeight(weight, hairlineLabel())
   }
 
   const markSelected = (weight: number) => {
@@ -407,12 +413,12 @@ function createLineWeightPicker(
     itemPreview.className = `${prefix}__lineweight-preview`
     itemPreview.style.setProperty(
       '--ml-lineweight-height',
-      `${previewLineHeightPx(weight)}px`
+      `${previewLineHeightPx(weight > 0 ? weight : 1)}px`
     )
 
     const itemLabel = document.createElement('span')
     itemLabel.className = `${prefix}__lineweight-text`
-    itemLabel.textContent = formatLineWeight(weight)
+    itemLabel.textContent = formatLineWeight(weight, hairlineLabel())
 
     item.append(itemPreview, itemLabel)
     item.addEventListener('click', event => {
@@ -436,19 +442,28 @@ function createLineWeightPicker(
   })
 
   root.append(trigger, menu)
-  paintTrigger(weights[0] ?? 25)
-  markSelected(weights[0] ?? 25)
+  paintTrigger(currentWeight)
+  markSelected(currentWeight)
 
   return {
     root,
     setValue: weight => {
-      if (!(weight > 0)) return
+      if (!Number.isFinite(weight) || weight < 0) return
       if (!menu.querySelector(`[data-value="${weight}"]`)) addItem(weight)
       paintTrigger(weight)
       markSelected(weight)
     },
     setTitle: title => {
       trigger.title = title
+    },
+    refreshLabels: () => {
+      menu.querySelectorAll(`.${prefix}__lineweight-item`).forEach(node => {
+        const item = node as HTMLElement
+        const weight = Number(item.dataset.value)
+        const text = item.querySelector(`.${prefix}__lineweight-text`)
+        if (text) text.textContent = formatLineWeight(weight, hairlineLabel())
+      })
+      paintTrigger(currentWeight)
     },
     close,
     isOpen: () => open,
@@ -614,7 +629,7 @@ export function setupAcExDrawStyleToolbar(
   }
 
   const applyLineWeight = (weight: number) => {
-    if (!currentKind || !(weight > 0)) return
+    if (!currentKind || !Number.isFinite(weight) || weight < 0) return
     ctx.applyStyle(currentKind, { lineWeight: weight })
   }
 
@@ -626,6 +641,7 @@ export function setupAcExDrawStyleToolbar(
   const relabel = () => {
     swatch.title = ctx.i18n.t('drawStyle.color')
     lineWeightUi.picker?.setTitle(ctx.i18n.t('drawStyle.lineWeight'))
+    lineWeightUi.picker?.refreshLabels()
     fontSizeSelect.title = ctx.i18n.t('drawStyle.fontSize')
   }
 
@@ -650,7 +666,11 @@ export function setupAcExDrawStyleToolbar(
   })
   colorWrap.addEventListener('mouseenter', () => clearColorLeaveTimer())
   colorWrap.addEventListener('mouseleave', () => scheduleHideColorPanel())
-  lineWeightUi.picker = createLineWeightPicker(applyLineWeight, hideColorPanel)
+  lineWeightUi.picker = createLineWeightPicker(
+    applyLineWeight,
+    hideColorPanel,
+    () => ctx.i18n.t('drawStyle.lineWeightHairline')
+  )
   root.insertBefore(lineWeightUi.picker.root, fontSizeSelect)
   fontSizeSelect.addEventListener('change', () => {
     applyFontSize(Number(fontSizeSelect.value))

@@ -6,7 +6,15 @@ import {
 
 import type { AcEdBaseView } from '../../../editor'
 import { acapColorToCssAlpha, acapCssColor } from '../../../util'
-import { acapScaledOverlayLineWidth } from '../../overlay/AcApOverlayDrawUtil'
+import {
+  acapDrawOverlayArrowHead,
+  acapScaledOverlayArrowSize,
+  acapScaledOverlayLineWidth,
+  acapWcsToScreenPx
+} from '../../overlay/AcApOverlayDrawUtil'
+import { measureAngleArcRadiusWcs } from '../AcApMeasureAngleArc'
+
+export { MEASURE_ANGLE_ARC_RADIUS_FRACTION } from '../AcApMeasureAngleArc'
 
 /**
  * Circle geometry in world XY used by arc-length measurement overlays.
@@ -79,6 +87,9 @@ function prepareMeasureCanvas(
  * @param color - Stroke color
  * @param lineWidth - Stroke width in CSS pixels (default `2`)
  * @param strokeWidthWcs - Optional imported world-space stroke width
+ *
+ * Arrow heads at both endpoints are a fixed world length (seeded from 12 CSS
+ * px on first paint) so they scale with camera zoom even for hairline strokes.
  */
 export function drawMeasureSegmentOnCanvas(
   canvas: HTMLCanvasElement,
@@ -97,14 +108,21 @@ export function drawMeasureSegmentOnCanvas(
   ctx.beginPath()
   ctx.moveTo(a.x, a.y)
   ctx.lineTo(b.x, b.y)
-  ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = acapScaledOverlayLineWidth(
+  const css = acapCssColor(color)
+  ctx.strokeStyle = css
+  const strokeWidth = acapScaledOverlayLineWidth(
     lineWidth,
     canvas,
     view,
     strokeWidthWcs
   )
+  ctx.lineWidth = strokeWidth
   ctx.stroke()
+  const arrowSize = acapScaledOverlayArrowSize(canvas, view)
+  if (Math.hypot(b.x - a.x, b.y - a.y) >= arrowSize) {
+    acapDrawOverlayArrowHead(ctx, b, a, css, arrowSize)
+    acapDrawOverlayArrowHead(ctx, a, b, css, arrowSize)
+  }
   ctx.restore()
 }
 
@@ -112,8 +130,9 @@ export function drawMeasureSegmentOnCanvas(
  * Draws angle arm lines plus the measurement arc on a measure overlay canvas.
  *
  * Converts `vertex`, `arm1`, and `arm2` to screen space, strokes both arms,
- * then draws the shorter angular sector with a radius derived from the shorter
- * arm length (with a minimum).
+ * then draws the shorter angular sector. Arc radius is
+ * {@link MEASURE_ANGLE_ARC_RADIUS_FRACTION} of the shorter **world-space**
+ * arm so it stays attached to the arms across zoom.
  *
  * @param canvas - Overlay canvas to paint
  * @param view - View for world-to-screen conversion and canvas sizing
@@ -156,18 +175,20 @@ export function drawMeasureAngleArcOnCanvas(
   ctx.lineTo(sa2.x, sa2.y)
   ctx.stroke()
 
-  const len1 = Math.hypot(sa1.x - sv.x, sa1.y - sv.y)
-  const len2 = Math.hypot(sa2.x - sv.x, sa2.y - sv.y)
-  const arcR = Math.max(Math.min(len1, len2) * 0.3, 15)
-
   const startAngle = Math.atan2(sa1.y - sv.y, sa1.x - sv.x)
   const endAngle = Math.atan2(sa2.y - sv.y, sa2.x - sv.x)
   const antiClockwise =
     AcGeMathUtil.normalizeAngle(endAngle - startAngle) > Math.PI
 
-  ctx.beginPath()
-  ctx.arc(sv.x, sv.y, arcR, startAngle, endAngle, antiClockwise)
-  ctx.stroke()
+  const arcR = acapWcsToScreenPx(
+    measureAngleArcRadiusWcs(vertex, arm1, arm2),
+    view
+  )
+  if (arcR > 0) {
+    ctx.beginPath()
+    ctx.arc(sv.x, sv.y, arcR, startAngle, endAngle, antiClockwise)
+    ctx.stroke()
+  }
   ctx.restore()
 }
 

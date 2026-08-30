@@ -46,9 +46,9 @@ function calcDist(p1: { x: number; y: number }, p2: { x: number; y: number }): n
 /**
  * Distance measurement overlay entity.
  *
- * Renders an HTML canvas segment between two endpoints, HTML dots at each end,
- * and a length badge at the midpoint. Endpoint grips update the measured value
- * live and republish on commit.
+ * Renders an HTML canvas segment with arrows at both endpoints, HTML dots at
+ * each end, and a length badge at the midpoint. Endpoint grips update the
+ * measured value live and republish on commit.
  */
 export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
   /** First endpoint of the measured segment in world coordinates. */

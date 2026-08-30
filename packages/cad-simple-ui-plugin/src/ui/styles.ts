@@ -1375,6 +1375,7 @@ export function acuiEnsureUiStyles() {
 
     .ml-ex-ui-dock-sheet-chrome {
       display: none;
+      position: relative;
     }
 
     .ml-ex-ui-dock-sheet-grabber {
@@ -1389,6 +1390,10 @@ export function acuiEnsureUiStyles() {
 
     .ml-ex-ui-dock-sheet-grabber::before {
       content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
       width: 36px;
       height: 4px;
       border-radius: 2px;
@@ -1407,6 +1412,8 @@ export function acuiEnsureUiStyles() {
       color: var(--ml-ui-text-muted, #606266);
       cursor: pointer;
       flex: 0 0 auto;
+      position: relative;
+      z-index: 1;
     }
 
     .ml-ex-ui-dock-sheet-close:hover {

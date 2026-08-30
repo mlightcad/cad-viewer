@@ -71,8 +71,8 @@ export const ACEX_MARKUP_COLOR = '#e53935'
 /** @deprecated Selection uses CSS glow; original stroke color is preserved. */
 export const ACEX_MARKUP_SELECT_COLOR = '#ffd54f'
 
-/** Default CAD line weight (≈ 0.70 mm → ~2.5 px). */
-const ACEX_MARKUP_LINE_WEIGHT = 70
+/** Default overlay line weight: hairline (1 CSS px, not zoom-scaled). */
+const ACEX_MARKUP_LINE_WEIGHT = 0
 
 /** Default font size for text / callout badges (CSS px). */
 const ACEX_MARKUP_FONT_SIZE = 12
@@ -173,6 +173,12 @@ function createMarkupId(prefix = 'markup'): string {
 
 function markupNow(): string {
   return new Date().toISOString()
+}
+
+function resolveMarkupLineWeight(weight?: number): number {
+  return typeof weight === 'number' && Number.isFinite(weight) && weight >= 0
+    ? weight
+    : ACEX_MARKUP_LINE_WEIGHT
 }
 
 function defaultStyle(
@@ -364,7 +370,11 @@ export class AcExMarkupController {
     fontSize?: number
   }): void {
     if (patch.color) this._drawColor = patch.color
-    if (patch.lineWeight != null && patch.lineWeight > 0) {
+    if (
+      patch.lineWeight != null &&
+      Number.isFinite(patch.lineWeight) &&
+      patch.lineWeight >= 0
+    ) {
       this._drawLineWeight = patch.lineWeight
     }
     if (patch.fontSize != null && patch.fontSize > 0) {
@@ -389,19 +399,15 @@ export class AcExMarkupController {
       style.fontSize != null && style.fontSize > 0
         ? style.fontSize
         : ACEX_MARKUP_FONT_SIZE
-    const lineWeight =
-      style.lineWeight != null && style.lineWeight > 0
-        ? style.lineWeight
-        : ACEX_MARKUP_LINE_WEIGHT
+    const lineWeight = resolveMarkupLineWeight(style.lineWeight)
+    const strokePx = acExMarkupCanvasLineWidth(lineWeight)
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
     return {
       ...style,
       textHeightWcs: acExScreenPxToWcs(fontSize, wcsToScreen),
-      strokeWidthWcs: acExScreenPxToWcs(
-        acExMarkupCanvasLineWidth(lineWeight),
-        wcsToScreen
-      )
+      strokeWidthWcs:
+        strokePx > 0 ? acExScreenPxToWcs(strokePx, wcsToScreen) : undefined
     }
   }
 
@@ -442,14 +448,17 @@ export class AcExMarkupController {
       if (!item) continue
       const style = item.record.style
       if (patch.color) style.color = patch.color
-      if (patch.lineWeight != null && patch.lineWeight > 0) {
-        const prevWeight =
-          style.lineWeight != null && style.lineWeight > 0
-            ? style.lineWeight
-            : ACEX_MARKUP_LINE_WEIGHT
+      if (
+        patch.lineWeight != null &&
+        Number.isFinite(patch.lineWeight) &&
+        patch.lineWeight >= 0
+      ) {
+        const prevWeight = resolveMarkupLineWeight(style.lineWeight)
         const prevPx = acExMarkupCanvasLineWidth(prevWeight)
         const nextPx = acExMarkupCanvasLineWidth(patch.lineWeight)
-        if (
+        if (!(nextPx > 0)) {
+          style.strokeWidthWcs = undefined
+        } else if (
           style.strokeWidthWcs != null &&
           style.strokeWidthWcs > 0 &&
           prevPx > 0

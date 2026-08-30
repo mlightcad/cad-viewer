@@ -329,6 +329,7 @@ export const ACEX_HTML_SHELL_CSS = `
 
   .mlcad-drawer-sheet-chrome {
     display: none;
+    position: relative;
   }
   .mlcad-drawer-grabber {
     flex: 1 1 auto;
@@ -341,6 +342,10 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   .mlcad-drawer-grabber::before {
     content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     width: 36px;
     height: 4px;
     border-radius: 2px;
@@ -352,6 +357,9 @@ export const ACEX_HTML_SHELL_CSS = `
     border: none; background: transparent;
     color: var(--mlcad-ui-muted); cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 1;
   }
   .mlcad-drawer-sheet-close:hover { color: var(--mlcad-ui-text); }
   .mlcad-drawer-sheet-close svg { width: 18px; height: 18px; }

@@ -1,9 +1,11 @@
 /** @jest-environment jsdom */
 
 import {
+  ACAP_OVERLAY_ARROW_WCS,
   ACAP_OVERLAY_STROKE_WCS,
   acapOverlayArrowSize,
   acapOverlayDash,
+  acapScaledOverlayArrowSize,
   acapScaledOverlayLineWidth,
   acapSeedOverlaySizesFromWcs
 } from '../src/command/overlay/AcApOverlayDrawUtil'
@@ -40,6 +42,27 @@ describe('AcApOverlayDrawUtil WCS stroke', () => {
     // Explicit stale WCS would overwrite the seeded dataset (the bug we fixed).
     expect(acapScaledOverlayLineWidth(2.5, canvas, view, 0.2)).toBe(2)
     expect(canvas.dataset[ACAP_OVERLAY_STROKE_WCS]).toBe('0.2')
+  })
+
+  it('uses a 1px hairline and clears stored WCS when base width is 0', () => {
+    const view = mockView(10)
+    const canvas = document.createElement('canvas')
+    canvas.dataset[ACAP_OVERLAY_STROKE_WCS] = '0.4'
+
+    expect(acapScaledOverlayLineWidth(0, canvas, view, 0.4)).toBe(1)
+    expect(canvas.dataset[ACAP_OVERLAY_STROKE_WCS]).toBeUndefined()
+  })
+
+  it('clears stored stroke WCS when seeding a hairline overlay', () => {
+    const view = mockView(10)
+    const canvas = document.createElement('canvas')
+    canvas.dataset[ACAP_OVERLAY_STROKE_WCS] = '0.4'
+
+    acapSeedOverlaySizesFromWcs(view, {
+      strokeScreenPx: 0,
+      canvases: [canvas]
+    })
+    expect(canvas.dataset[ACAP_OVERLAY_STROKE_WCS]).toBeUndefined()
   })
 
   it('seeds element baseZoom only from matched text screen/WCS pair', () => {
@@ -80,6 +103,17 @@ describe('AcApOverlayDrawUtil arrow and dash scale', () => {
   it('scales dash pattern with the view-synced stroke', () => {
     expect(acapOverlayDash(2, 2)).toEqual([8, 5])
     expect(acapOverlayDash(4, 2)).toEqual([16, 10])
+  })
+
+  it('keeps a 12px arrow for hairline strokes', () => {
+    expect(acapOverlayArrowSize(1, 0)).toBe(12)
+  })
+
+  it('scales distance arrows in WCS independently of hairline stroke', () => {
+    const canvas = document.createElement('canvas')
+    expect(acapScaledOverlayArrowSize(canvas, mockView(10))).toBe(12)
+    expect(Number(canvas.dataset[ACAP_OVERLAY_ARROW_WCS])).toBeCloseTo(1.2)
+    expect(acapScaledOverlayArrowSize(canvas, mockView(5))).toBeCloseTo(6)
   })
 
   it('seeds cloud lobe WCS from the stroke screen/WCS pair', () => {

@@ -57,7 +57,9 @@ function parsePositiveNumber(value: unknown): number | undefined {
 function parseStyle(raw: unknown): AcApMeasurementSidecarStyle | undefined {
   if (!isPlainObject(raw) || typeof raw.color !== 'string') return undefined
   const lineWeight =
-    typeof raw.lineWeight === 'number' && raw.lineWeight > 0
+    typeof raw.lineWeight === 'number' &&
+    Number.isFinite(raw.lineWeight) &&
+    raw.lineWeight >= 0
       ? (raw.lineWeight as AcGiLineWeight)
       : MEASUREMENT_LINE_WEIGHT
   const fontSize =
@@ -142,10 +144,10 @@ export function serializeMeasurementStyle(
   }
   if (view) {
     result.textHeightWcs = acapScreenPxToWcs(style.fontSize, view)
-    result.strokeWidthWcs = acapScreenPxToWcs(
-      acapMeasurementCanvasLineWidth(style.lineWeight),
-      view
-    )
+    const strokePx = acapMeasurementCanvasLineWidth(style.lineWeight)
+    if (strokePx > 0) {
+      result.strokeWidthWcs = acapScreenPxToWcs(strokePx, view)
+    }
   }
   return result
 }
@@ -157,7 +159,7 @@ export function deserializeMeasurementStyle(
   return {
     color: acapCssToMeasurementColor(style.color),
     lineWeight:
-      style.lineWeight > 0 ? style.lineWeight : MEASUREMENT_LINE_WEIGHT,
+      style.lineWeight >= 0 ? style.lineWeight : MEASUREMENT_LINE_WEIGHT,
     fontSize: style.fontSize > 0 ? style.fontSize : MEASUREMENT_FONT_SIZE
   }
 }

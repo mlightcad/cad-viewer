@@ -1282,6 +1282,7 @@ const buildBaseTabs = (
           modelValue: markupDrawLineWeight.value,
           placeholder: t('main.ribbon.property.lineWeight'),
           numericOnly: true,
+          includeHairline: true,
           controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
           'onUpdate:modelValue': handleMarkupDrawLineWeightChange
         }
@@ -1467,6 +1468,7 @@ const buildBaseTabs = (
           modelValue: measurementDrawLineWeight.value,
           placeholder: t('main.ribbon.property.lineWeight'),
           numericOnly: true,
+          includeHairline: true,
           controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
           'onUpdate:modelValue': handleMeasurementDrawLineWeightChange
         }
@@ -2104,6 +2106,7 @@ const buildBaseTabs = (
                     componentProps: {
                       modelValue: ribbonLineWeight.value,
                       placeholder: t('main.ribbon.property.lineWeight'),
+                      includeHairline: false,
                       'onUpdate:modelValue': handleRibbonLineWeightChange
                     }
                   }

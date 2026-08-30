@@ -10,6 +10,12 @@ export const ACEX_OVERLAY_CLOUD_WCS = 'overlayCloudWcs'
 /** Target screen diameter in CSS pixels for each revision-cloud lobe at creation. */
 export const ACEX_OVERLAY_CLOUD_DIAMETER_PX = 8
 
+/** Dataset key storing overlay arrow-head length in world units. */
+export const ACEX_OVERLAY_ARROW_WCS = 'overlayArrowWcs'
+
+/** Arrow-head length in CSS pixels at first paint; stored as WCS thereafter. */
+export const ACEX_OVERLAY_ARROW_SIZE_PX = 12
+
 /**
  * Scale factor for HTML measure/markup overlays relative to first layout.
  */
@@ -83,6 +89,10 @@ export function acExScaledCanvasLineWidth(
     wcsToScreen?: (wcs: { x: number; y: number }) => { x: number; y: number }
   }
 ): number {
+  if (!(baseLineWidth > 0)) {
+    delete canvas.dataset[ACEX_OVERLAY_STROKE_WCS]
+    return 1
+  }
   if (options?.wcsToScreen) {
     const ppu = acExPixelsPerWorldUnit(options.wcsToScreen)
     let wcs =
@@ -98,6 +108,31 @@ export function acExScaledCanvasLineWidth(
     return Math.max(0.5, wcs * ppu)
   }
   return baseLineWidth * acExOverlayViewScale(zoom, canvas)
+}
+
+/**
+ * Arrow-head length in CSS pixels that stays a fixed world size.
+ *
+ * Distance measurements use this so arrows follow zoom even when the stroke
+ * is hairline. Seeds {@link ACEX_OVERLAY_ARROW_SIZE_PX} as WCS on first paint.
+ */
+export function acExScaledOverlayArrowSize(
+  canvas: HTMLCanvasElement,
+  wcsToScreen: (wcs: { x: number; y: number }) => { x: number; y: number },
+  arrowSizeWcs?: number
+): number {
+  const ppu = acExPixelsPerWorldUnit(wcsToScreen)
+  let wcs =
+    arrowSizeWcs != null && arrowSizeWcs > 0
+      ? arrowSizeWcs
+      : Number(canvas.dataset[ACEX_OVERLAY_ARROW_WCS])
+  if (!Number.isFinite(wcs) || wcs <= 0) {
+    wcs = ACEX_OVERLAY_ARROW_SIZE_PX / ppu
+    canvas.dataset[ACEX_OVERLAY_ARROW_WCS] = String(wcs)
+  } else if (arrowSizeWcs != null && arrowSizeWcs > 0) {
+    canvas.dataset[ACEX_OVERLAY_ARROW_WCS] = String(wcs)
+  }
+  return Math.max(0.5, wcs * ppu)
 }
 
 /** Seed DOM baseZoom so CSS size matches WCS at current camera. */
@@ -131,6 +166,10 @@ export function acExSeedOverlaySizesFromWcs(
   if (strokeWidthWcs != null && strokeWidthWcs > 0) {
     for (const canvas of canvases ?? []) {
       acExSeedOverlayStrokeWcs(canvas, strokeWidthWcs)
+    }
+  } else if (options.strokeScreenPx === 0) {
+    for (const canvas of canvases ?? []) {
+      delete canvas.dataset[ACEX_OVERLAY_STROKE_WCS]
     }
   }
 

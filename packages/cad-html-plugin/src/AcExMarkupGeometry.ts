@@ -6,6 +6,7 @@
  */
 
 import {
+  ACEX_OVERLAY_ARROW_SIZE_PX,
   ACEX_OVERLAY_CLOUD_DIAMETER_PX,
   ACEX_OVERLAY_CLOUD_WCS
 } from './AcExHtmlOverlayDom'
@@ -17,7 +18,11 @@ import type {
 } from './AcExMarkupTypes'
 import type { AcExExtents } from './AcExSnapshotTypes'
 
-export { ACEX_OVERLAY_CLOUD_DIAMETER_PX, ACEX_OVERLAY_CLOUD_WCS }
+export {
+  ACEX_OVERLAY_ARROW_SIZE_PX,
+  ACEX_OVERLAY_CLOUD_DIAMETER_PX,
+  ACEX_OVERLAY_CLOUD_WCS
+}
 
 /** Shape outline used to auto-place the leader tip on the perimeter. */
 export type AcExMarkupShapeOutline =
@@ -77,9 +82,6 @@ export function acExComputeLeaderTipOnShape(
 /** Extra hit slop for revision-cloud lobes around the AABB. */
 const CLOUD_HIT_EXTRA_PX = 8
 
-/** Arrow-head length in CSS pixels at the overlay's creation-scale stroke. */
-export const ACEX_OVERLAY_ARROW_SIZE_PX = 12
-
 /**
  * Screen length of an overlay arrow head, tracking the same WCS scale as the stroke.
  */
@@ -88,7 +90,7 @@ export function acExOverlayArrowSize(
   baseLineWidth = 2
 ): number {
   const base =
-    baseLineWidth > 0 && Number.isFinite(baseLineWidth) ? baseLineWidth : 2
+    baseLineWidth > 0 && Number.isFinite(baseLineWidth) ? baseLineWidth : 1
   return Math.max(1, scaledLineWidth * (ACEX_OVERLAY_ARROW_SIZE_PX / base))
 }
 
@@ -291,7 +293,7 @@ export function acExDrawMarkupLeader(
 
 /** Map CAD line weight to canvas stroke width in CSS pixels. */
 export function acExMarkupCanvasLineWidth(weight?: number): number {
-  if (weight == null || !Number.isFinite(weight) || weight <= 0) return 2
+  if (weight == null || !Number.isFinite(weight) || weight <= 0) return 0
   return Math.max(1, weight / 28)
 }
 
