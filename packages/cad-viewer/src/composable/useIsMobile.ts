@@ -1,10 +1,17 @@
-import { ML_UI_MOBILE_MEDIA_QUERY } from '@mlightcad/cad-simple-viewer'
+import {
+  acedIsMobileOrPadUi,
+  ML_UI_COARSE_POINTER_MEDIA_QUERY,
+  ML_UI_COMPACT_MEDIA_QUERY,
+  ML_UI_MOBILE_MEDIA_QUERY
+} from '@mlightcad/cad-simple-viewer'
 import { useMediaQuery } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 // Heuristic mobile detection combining viewport, touch capability, and user agent
 export function useIsMobile() {
   const isSmallViewport = useMediaQuery(ML_UI_MOBILE_MEDIA_QUERY)
+  const isCompactViewport = useMediaQuery(ML_UI_COMPACT_MEDIA_QUERY)
+  const isCoarsePointer = useMediaQuery(ML_UI_COARSE_POINTER_MEDIA_QUERY)
 
   const hasTouchCapability = ref(false)
   const isMobileUserAgent = ref(false)
@@ -14,7 +21,7 @@ export function useIsMobile() {
       const nav = window.navigator as Navigator & { msMaxTouchPoints?: number }
       const maxTouchPoints = nav.maxTouchPoints ?? nav.msMaxTouchPoints ?? 0
       const coarsePointer =
-        window.matchMedia?.('(pointer: coarse)').matches ?? false
+        window.matchMedia?.(ML_UI_COARSE_POINTER_MEDIA_QUERY).matches ?? false
       hasTouchCapability.value =
         maxTouchPoints > 0 || coarsePointer || 'ontouchstart' in window
 
@@ -37,5 +44,12 @@ export function useIsMobile() {
     )
   })
 
-  return { isMobile }
+  const isMobileOrPad = computed(() => {
+    // Depend on these so resize / primary-pointer changes re-run the shared check.
+    void isCompactViewport.value
+    void isCoarsePointer.value
+    return acedIsMobileOrPadUi()
+  })
+
+  return { isMobile, isMobileOrPad, isSmallViewport }
 }

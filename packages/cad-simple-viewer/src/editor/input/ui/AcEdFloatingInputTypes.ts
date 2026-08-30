@@ -122,7 +122,8 @@ export interface AcEdFloatingInputOptions<T> {
 
   /**
    * Whether the prompt label is allowed to be shown at all.
-   * Actual visibility is still controlled by DYNMODE/DYNPROMPT.
+   * Actual visibility is still controlled by DYNMODE/DYNPROMPT, and is always
+   * off on phone and pad UIs.
    */
   allowPrompt?: boolean
 

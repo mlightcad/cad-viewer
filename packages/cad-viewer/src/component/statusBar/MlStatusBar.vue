@@ -50,6 +50,7 @@
           off-color="var(--el-text-color-regular)"
         />
         <ml-sys-var-toggle-button
+          v-if="!isMobileOrPad"
           :sys-var-name="AcDbSystemVariables.DYNMODE"
           :on-icon="dynamicInput"
           :off-icon="dynamicInput"
@@ -98,7 +99,7 @@ const props = defineProps<{
 const { text: posText } = useCurrentPos(AcApDocManager.instance.curView)
 const features = useSettings()
 const { isDocumentOpening } = useDocument()
-const { isMobile } = useIsMobile()
+const { isMobile, isMobileOrPad } = useIsMobile()
 const { t } = useI18n()
 const isStatusBarDisabled = computed(() => isDocumentOpening.value)
 
