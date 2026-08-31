@@ -15,9 +15,6 @@ function installLocalStorageMock() {
     },
     clear: () => {
       store.clear()
-    },
-    get store() {
-      return store
     }
   }
   Object.defineProperty(globalThis, 'localStorage', {
@@ -55,11 +52,20 @@ describe('migrateStoredSettings', () => {
 })
 
 describe('AcApSettingManager layers', () => {
+  const originalLocalStorage = globalThis.localStorage
   let ls: ReturnType<typeof installLocalStorageMock>
 
   beforeEach(() => {
     ls = installLocalStorageMock()
     AcApSettingManager.resetInstanceForTesting()
+  })
+
+  afterEach(() => {
+    AcApSettingManager.resetInstanceForTesting()
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: originalLocalStorage
+    })
   })
 
   it('loads defaults when localStorage is empty', () => {
