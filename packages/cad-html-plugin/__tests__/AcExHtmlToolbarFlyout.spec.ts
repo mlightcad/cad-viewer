@@ -44,7 +44,7 @@ describe('setupAcExHtmlToolbarFlyouts', () => {
     `)
   }
 
-  it('toggles a sticky strip and keeps it open on canvas click', () => {
+  it('closes a dismissible measure strip on canvas click and tool select', () => {
     mountAllStrips()
     const onItemClick = jest.fn()
     const flyouts = setupAcExHtmlToolbarFlyouts({ onItemClick })
@@ -56,20 +56,35 @@ describe('setupAcExHtmlToolbarFlyouts', () => {
     expect(parent?.classList.contains('is-menu-open')).toBe(true)
 
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-    expect(wrap?.hidden).toBe(false)
+    expect(wrap?.hidden).toBe(true)
 
+    parent?.click()
     document
       .querySelector<HTMLButtonElement>('[data-measure-mode="distance"]')
       ?.click()
     expect(onItemClick).toHaveBeenCalled()
-    expect(wrap?.hidden).toBe(false)
-
-    parent?.click()
     expect(wrap?.hidden).toBe(true)
+
     flyouts.close()
   })
 
-  it('closes a sticky strip when another strip parent is clicked', () => {
+  it('closes a dismissible review strip after a markup tool is selected', () => {
+    mountAllStrips()
+    const onItemClick = jest.fn()
+    setupAcExHtmlToolbarFlyouts({ onItemClick })
+    const wrap = document.getElementById('mlcad-markup-strip-wrap')
+
+    document.getElementById('mlcad-markup-menu-btn')?.click()
+    expect(wrap?.hidden).toBe(false)
+
+    document
+      .querySelector<HTMLButtonElement>('[data-markup-mode="cloud"]')
+      ?.click()
+    expect(onItemClick).toHaveBeenCalled()
+    expect(wrap?.hidden).toBe(true)
+  })
+
+  it('closes a strip when another strip parent is clicked', () => {
     mountAllStrips()
     setupAcExHtmlToolbarFlyouts({ onItemClick: jest.fn() })
 
@@ -179,6 +194,22 @@ describe('setupAcExHtmlToolbarFlyouts', () => {
 
     document.getElementById('mlcad-zoom-menu-btn')?.click()
     document.querySelector<HTMLButtonElement>('[data-action="fit"]')?.click()
+    expect(onItemClick).toHaveBeenCalled()
+    expect(wrap?.hidden).toBe(true)
+  })
+
+  it('closes a dismissible settings strip after a leaf tool is selected', () => {
+    mountAllStrips()
+    const onItemClick = jest.fn()
+    setupAcExHtmlToolbarFlyouts({ onItemClick })
+    const wrap = document.getElementById('mlcad-settings-strip-wrap')
+
+    document.getElementById('mlcad-settings-btn')?.click()
+    expect(wrap?.hidden).toBe(false)
+
+    document
+      .querySelector<HTMLButtonElement>('[data-action="toggle-theme"]')
+      ?.click()
     expect(onItemClick).toHaveBeenCalled()
     expect(wrap?.hidden).toBe(true)
   })

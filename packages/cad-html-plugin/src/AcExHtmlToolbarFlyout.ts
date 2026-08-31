@@ -3,9 +3,10 @@
  *
  * Matches cad-simple-ui-plugin:
  * - `'sticky-toolbar'`: stays open until the parent is clicked again, or
- *   another first-level button that opens a strip is clicked. Canvas clicks
- *   do not dismiss it. The parent button acts as a toggle.
- * - `'toolbar'`: icon strip that closes on canvas / outside click.
+ *   another first-level button that opens a strip is clicked. Child and
+ *   canvas clicks do not dismiss it. The parent button acts as a toggle.
+ * - `'toolbar'`: icon strip that closes when a child button is clicked, or
+ *   on canvas / outside click.
  * - `'menu'`: popover listing items (drawing layouts).
  *
  * @module AcExHtmlToolbarFlyout
@@ -73,14 +74,14 @@ interface AcExHtmlStripConfig {
 const STRIPS: AcExHtmlStripConfig[] = [
   {
     id: 'measure',
-    sticky: true,
+    sticky: false,
     btnId: 'mlcad-measure-menu-btn',
     wrapId: 'mlcad-measure-strip-wrap',
     stripId: 'mlcad-measure-strip'
   },
   {
     id: 'review',
-    sticky: true,
+    sticky: false,
     btnId: 'mlcad-markup-menu-btn',
     wrapId: 'mlcad-markup-strip-wrap',
     stripId: 'mlcad-markup-strip'
@@ -145,10 +146,10 @@ export function setAcExHtmlParentChildIcon(
 /**
  * Wires Measurement / Review / Snap / Zoom / Settings / Language parents.
  *
- * Sticky parents toggle open/closed. Opening any other strip parent replaces
- * the current strip. On phone, language under settings replaces the settings
- * strip (only one strip level visible). Canvas clicks dismiss only non-sticky
- * strips.
+ * Parents toggle open/closed. Opening any other strip parent replaces the
+ * current strip. Clicking a child tool on a dismissible strip closes it.
+ * On phone, language under settings replaces the settings strip (only one
+ * strip level visible). Canvas clicks dismiss only non-sticky strips.
  */
 export function setupAcExHtmlToolbarFlyouts(
   options: AcExHtmlToolbarFlyoutOptions
@@ -329,10 +330,8 @@ export function setupAcExHtmlToolbarFlyouts(
           // Nested locale opener is handled above.
           if (btn.id === 'mlcad-settings-locale-btn') return
           options.onItemClick(btn)
-          if (!entry.sticky && entry.id !== 'settings') {
+          if (!entry.sticky) {
             close()
-          } else if (entry.id === 'settings') {
-            options.onStripChange?.()
           }
         })
       })

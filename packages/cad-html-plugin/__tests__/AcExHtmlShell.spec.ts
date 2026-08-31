@@ -29,8 +29,14 @@ describe('ACEX_HTML_SHELL_CSS', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain('--ml-ui-accent: var(--mlcad-accent)')
   })
 
-  it('uses a narrower portrait slot for sub-toolbar buttons', () => {
-    expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-subtoolbar-btn-width: 28px')
+  it('matches pad/desktop sub-toolbar buttons to the parent toolbar size', () => {
+    expect(ACEX_HTML_SHELL_CSS).not.toContain('--mlcad-subtoolbar-btn-width')
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      'width: var(--mlcad-toolbar-width);\n    height: var(--mlcad-toolbar-width);'
+    )
+  })
+
+  it('uses a narrower portrait slot for phone sub-toolbar buttons', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain(
       'calc(var(--mlcad-toolbar-phone-height) - 16px)'
     )
@@ -155,9 +161,15 @@ describe('buildAcExHtmlShellBody', () => {
     expect(toolbarHtml).toContain('title="Language"')
     expect(toolbarHtml).toContain('title="Layout"')
     expect(toolbarHtml).toContain('title="Settings"')
-    expect(toolbarHtml).toContain('data-children-ui="sticky-toolbar"')
     expect(toolbarHtml).toContain('data-children-ui="toolbar"')
+    expect(toolbarHtml).toContain('data-children-ui="sticky-toolbar"')
     expect(toolbarHtml).toContain('data-children-ui="menu"')
+    expect(toolbarHtml).toMatch(
+      /id="mlcad-measure-menu-btn"[\s\S]*?data-children-ui="toolbar"/
+    )
+    expect(toolbarHtml).toMatch(
+      /id="mlcad-markup-menu-btn"[\s\S]*?data-children-ui="toolbar"/
+    )
 
     // Zoom children order: original → extents → window
     const zoomStrip = html.match(

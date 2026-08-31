@@ -37,8 +37,6 @@ export const ACEX_HTML_SHELL_CSS = `
     --mlcad-markup-accent-border: rgba(229, 57, 53, 0.45);
     --mlcad-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
     --mlcad-toolbar-width: 44px;
-    /* Sub-toolbar icon buttons: narrower than the 44px main toolbar. */
-    --mlcad-subtoolbar-btn-width: 28px;
     --mlcad-drawer-width: 220px;
     --mlcad-drawer-gap: 8px;
     --mlcad-ui-inset: 12px;
@@ -830,13 +828,15 @@ export const ACEX_HTML_SHELL_CSS = `
     box-shadow: var(--mlcad-shadow);
     backdrop-filter: blur(12px);
   }
+  /* Pad/desktop: same button size as the parent bar so a vertical strip
+     matches its width and a horizontal strip matches its height. */
   #mlcad-snap-strip .mlcad-tool-btn,
   #mlcad-measure-strip .mlcad-tool-btn,
   #mlcad-markup-strip .mlcad-tool-btn,
   #mlcad-zoom-strip .mlcad-tool-btn,
   #mlcad-settings-strip .mlcad-tool-btn,
   #mlcad-locale-strip .mlcad-tool-btn {
-    width: var(--mlcad-subtoolbar-btn-width);
+    width: var(--mlcad-toolbar-width);
     height: var(--mlcad-toolbar-width);
   }
   #mlcad-measure-strip .mlcad-tool-separator,
@@ -1839,7 +1839,7 @@ function buildAcExMeasureMenuButton(): string {
     'data-action': 'measure-menu',
     'data-i18n-key': 'toolbar.measure',
     'data-i18n-attr': 'title aria-label',
-    'data-children-ui': 'sticky-toolbar'
+    'data-children-ui': 'toolbar'
   }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')
 }
 
@@ -1851,7 +1851,7 @@ function buildAcExMarkupMenuButton(): string {
     'data-action': 'markup-menu',
     'data-i18n-key': 'toolbar.annotation',
     'data-i18n-attr': 'title aria-label',
-    'data-children-ui': 'sticky-toolbar'
+    'data-children-ui': 'toolbar'
   }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')
 }
 
