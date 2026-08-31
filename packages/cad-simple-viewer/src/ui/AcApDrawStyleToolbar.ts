@@ -37,6 +37,11 @@ import {
 } from '../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../view'
 import {
+  type AcUiAciPaletteStacks,
+  acuiCreateAciPaletteStacks,
+  acuiEnsureAciPaletteStyles
+} from './AcApAciPaletteUi'
+import {
   type AcApDrawStyleKind,
   acapDrawStyleKindForCommand,
   acapRegisterDrawStyleSessionHost,
@@ -123,7 +128,7 @@ const TOOLBAR_CSS = `
       border-radius: 6px;
       background: var(--ml-ui-bg, rgba(255, 255, 255, 0.98));
       box-shadow: var(--ml-ui-shadow, 0 4px 12px rgba(0, 0, 0, 0.16));
-      --ml-draw-style-aci-cell: 11px;
+      --ml-aci-cell-size: 11px;
     }
     .ml-draw-style-toolbar__color-panel.is-open {
       display: block;
@@ -131,37 +136,6 @@ const TOOLBAR_CSS = `
     .ml-draw-style-toolbar__color-panel--drop-up {
       top: auto;
       bottom: calc(100% + 6px);
-    }
-    .ml-draw-style-toolbar__aci-large {
-      display: grid;
-      grid-template-columns: repeat(24, var(--ml-draw-style-aci-cell));
-      gap: 1px;
-      margin-bottom: 6px;
-    }
-    .ml-draw-style-toolbar__aci-small {
-      display: grid;
-      grid-template-columns: repeat(9, var(--ml-draw-style-aci-cell));
-      gap: 1px;
-      margin-bottom: 6px;
-    }
-    .ml-draw-style-toolbar__aci-gray {
-      display: flex;
-      gap: 4px;
-    }
-    .ml-draw-style-toolbar__aci-cell {
-      width: var(--ml-draw-style-aci-cell);
-      height: var(--ml-draw-style-aci-cell);
-      padding: 0;
-      border: 1px solid #999;
-      box-sizing: border-box;
-      cursor: pointer;
-    }
-    .ml-draw-style-toolbar__aci-cell:hover {
-      outline: 1px solid #00a8ff;
-    }
-    .ml-draw-style-toolbar__aci-cell.is-selected {
-      outline: 2px solid var(--ml-ui-accent, #409eff);
-      outline-offset: -1px;
     }
   `
 
@@ -178,16 +152,6 @@ function colorFromAci(index: number): AcCmColor {
 }
 
 /**
- * CSS hex for an ACI index.
- *
- * @param index - AutoCAD Color Index.
- * @returns CSS color string, falling back to white.
- */
-function aciCss(index: number): string {
-  return colorFromAci(index).cssColor || '#ffffff'
-}
-
-/**
  * ACI index of a color when it is stored as ByACI.
  *
  * @param color - Color to inspect.
@@ -200,19 +164,11 @@ function aciIndexOf(color: AcCmColor): number | undefined {
   return undefined
 }
 
-/** ACI indices 1–9 (standard small palette). */
-const SMALL_ACI = Array.from({ length: 9 }, (_, i) => i + 1)
-
-/** ACI indices 10–249 (large palette). */
-const LARGE_ACI = Array.from({ length: 240 }, (_, i) => i + 10)
-
-/** ACI indices 250–255 (gray ramp). */
-const GRAY_ACI = Array.from({ length: 6 }, (_, i) => i + 250)
-
 /**
  * Injects overlay CSS into `document.head` once.
  */
 function ensureStyles(): void {
+  acuiEnsureAciPaletteStyles()
   if (typeof document === 'undefined') return
   let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null
   if (!style) {
@@ -243,6 +199,9 @@ export class AcApDrawStyleToolbar {
 
   /** Popover containing ACI palettes. */
   private readonly colorPanel: HTMLDivElement
+
+  /** Shared ACI palette stacks mounted in {@link colorPanel}. */
+  private readonly aciStacks: AcUiAciPaletteStacks
 
   /** Dropdown of font sizes in CSS pixels. */
   private readonly fontSizeSelect: HTMLSelectElement
@@ -311,15 +270,13 @@ export class AcApDrawStyleToolbar {
     this.swatch.appendChild(this.swatchFill)
     this.colorPanel = document.createElement('div')
     this.colorPanel.className = 'ml-draw-style-toolbar__color-panel'
-    this.colorPanel.appendChild(
-      this.createAciPalette(LARGE_ACI, 'ml-draw-style-toolbar__aci-large')
-    )
-    this.colorPanel.appendChild(
-      this.createAciPalette(SMALL_ACI, 'ml-draw-style-toolbar__aci-small')
-    )
-    this.colorPanel.appendChild(
-      this.createAciPalette(GRAY_ACI, 'ml-draw-style-toolbar__aci-gray')
-    )
+    this.aciStacks = acuiCreateAciPaletteStacks({
+      onSelect: index => {
+        this.applyColor(colorFromAci(index))
+        this.hideColorPanel()
+      }
+    })
+    this.colorPanel.appendChild(this.aciStacks.root)
     this.colorWrap.appendChild(this.swatch)
     this.colorWrap.appendChild(this.colorPanel)
 
@@ -425,6 +382,7 @@ export class AcApDrawStyleToolbar {
     this.unsubscribeMeasurementSelection()
     this.unmountSession()
     acapUnregisterDrawStyleSessionHost(this.view)
+    this.aciStacks.dispose()
     this.root.remove()
     acapSetDrawStyleToolbarVisible(false)
   }
@@ -542,7 +500,7 @@ export class AcApDrawStyleToolbar {
   private paint(color: AcCmColor, fontSize: number): void {
     const css = acapCssColor(color)
     this.swatchFill.style.background = css
-    this.markSelectedAci(aciIndexOf(color))
+    this.aciStacks.setSelected(aciIndexOf(color))
 
     const sizes = new Set(FONT_SIZE_OPTIONS)
     if (Number.isFinite(fontSize) && fontSize > 0)
@@ -567,7 +525,7 @@ export class AcApDrawStyleToolbar {
    */
   private applyColor(color: AcCmColor): void {
     this.swatchFill.style.background = acapCssColor(color)
-    this.markSelectedAci(aciIndexOf(color))
+    this.aciStacks.setSelected(aciIndexOf(color))
     if (this.kind === 'measure') {
       acapSetMeasurementDrawColor(color)
       applyMeasurementStyleToSelection(this.view, { color })
@@ -575,51 +533,6 @@ export class AcApDrawStyleToolbar {
     }
     setMarkupDrawColor(color)
     applyMarkupStyleToSelection(this.view, { color: markupColorToCss(color) })
-  }
-
-  /**
-   * Builds a grid of ACI color cells.
-   *
-   * @param indices - ACI indices to show.
-   * @param className - Layout class (`large`, `small`, or `gray`).
-   * @returns Palette container.
-   */
-  private createAciPalette(
-    indices: number[],
-    className: string
-  ): HTMLDivElement {
-    const palette = document.createElement('div')
-    palette.className = className
-    for (const index of indices) {
-      const cell = document.createElement('button')
-      cell.type = 'button'
-      cell.className = 'ml-draw-style-toolbar__aci-cell'
-      cell.dataset.aci = String(index)
-      cell.style.background = aciCss(index)
-      cell.title = String(index)
-      cell.addEventListener('click', event => {
-        event.preventDefault()
-        event.stopPropagation()
-        this.applyColor(colorFromAci(index))
-        this.hideColorPanel()
-      })
-      palette.appendChild(cell)
-    }
-    return palette
-  }
-
-  /**
-   * Highlights the cell matching the current ACI index.
-   *
-   * @param index - Selected ACI index, or `undefined` to clear.
-   */
-  private markSelectedAci(index: number | undefined): void {
-    this.colorPanel
-      .querySelectorAll('.ml-draw-style-toolbar__aci-cell')
-      .forEach(node => {
-        const cell = node as HTMLElement
-        cell.classList.toggle('is-selected', cell.dataset.aci === String(index))
-      })
   }
 
   /**

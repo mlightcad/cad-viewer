@@ -234,6 +234,45 @@ describe('AcEdMobileCommandChrome', () => {
     media.restore()
   })
 
+  it('lets accessory children receive pointerdown while sinking bubbles to the host', () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
+    )
+    const childHit = jest.fn()
+    const hostHit = jest.fn()
+    host.addEventListener('pointerdown', hostHit)
+
+    chrome.show(
+      {
+        prompt: 'Specify point',
+        keywords: [],
+        allowNone: true,
+        showMetrics: false,
+        accessory: {
+          id: 'pointer-child',
+          mount: el => {
+            const child = document.createElement('button')
+            child.type = 'button'
+            child.addEventListener('pointerdown', childHit)
+            el.appendChild(child)
+          },
+          unmount: () => undefined
+        }
+      },
+      { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
+    )
+
+    const child = host.querySelector(
+      '.ml-mobile-cmd-accessory button'
+    ) as HTMLButtonElement
+    child.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+
+    expect(childHit).toHaveBeenCalledTimes(1)
+    expect(hostHit).not.toHaveBeenCalled()
+    host.removeEventListener('pointerdown', hostHit)
+    media.restore()
+  })
+
   it('hides the overlay and clears the host class', () => {
     const media = installMatchMedia(
       query => query === ML_UI_MOBILE_MEDIA_QUERY

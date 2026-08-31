@@ -1,5 +1,6 @@
 export * from './AcUiDialog'
 export * from './AcUiAboutDialog'
+export * from './AcApAciPaletteUi'
 export * from './AcApDrawStyle'
 export * from './AcApDrawStyleToolbar'
 export * from './icons'

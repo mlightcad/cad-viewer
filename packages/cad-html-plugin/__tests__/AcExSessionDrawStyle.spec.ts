@@ -6,6 +6,10 @@ import type { AcExHtmlI18n } from '../src/AcExHtmlI18n'
 
 Object.assign(globalThis, { TextDecoder, TextEncoder })
 
+jest.mock('@mlightcad/cad-simple-viewer', () =>
+  jest.requireActual('../../cad-simple-viewer/src/ui/AcApAciPaletteUi.ts')
+)
+
 // Value import after the polyfill: `@mlightcad/data-model` needs TextDecoder in jsdom.
 const { setupAcExSessionDrawStyle } =
   require('../src/AcExSessionDrawStyle') as typeof import('../src/AcExSessionDrawStyle')
@@ -20,6 +24,7 @@ describe('setupAcExSessionDrawStyle', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('mlcad-session-style-styles')?.remove()
+    document.getElementById('ml-aci-palette-styles')?.remove()
   })
 
   it('mounts color and font-size controls into the session host, not a canvas overlay', () => {
@@ -43,6 +48,7 @@ describe('setupAcExSessionDrawStyle', () => {
 
     expect(host.querySelector('.mlcad-session-style')).toBeTruthy()
     expect(host.querySelector('.mlcad-session-style__swatch')).toBeTruthy()
+    expect(host.querySelector('.ml-aci-stacks')).toBeTruthy()
     expect(
       (host.querySelector('.mlcad-session-style__select') as HTMLSelectElement)
         .value
