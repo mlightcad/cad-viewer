@@ -1882,8 +1882,6 @@ const buildBaseTabs = (
           id: 'home-layer',
           title: t('main.ribbon.group.layer'),
           orientation: 'row',
-          enableGroupOverflow: true,
-          priority: 90,
           collections: [
             {
               id: 'home-layer-button',
@@ -2016,7 +2014,6 @@ const buildBaseTabs = (
           id: 'home-properties',
           title: t('main.ribbon.group.properties'),
           orientation: 'row',
-          priority: 20,
           collections: [
             {
               id: 'home-properties-button',

@@ -380,7 +380,7 @@ function bindAciCellLoupe(
     loupeSwatch.style.background = acuiAciCssColor(index)
     loupeLabel.textContent = String(index)
     loupe.style.left = `${clientX}px`
-    loupe.style.top = `${clientY - LOUPE_OFFSET_Y_PX + LOUPE_SIZE_PX}px`
+    loupe.style.top = `${clientY - LOUPE_OFFSET_Y_PX}px`
     loupe.classList.add('is-visible')
     loupeActive = true
   }
@@ -393,7 +393,7 @@ function bindAciCellLoupe(
     }
     if (previewCell) {
       loupe.style.left = `${clientX}px`
-      loupe.style.top = `${clientY - LOUPE_OFFSET_Y_PX + LOUPE_SIZE_PX}px`
+      loupe.style.top = `${clientY - LOUPE_OFFSET_Y_PX}px`
     }
   }
 
