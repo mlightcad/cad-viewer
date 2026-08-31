@@ -11,6 +11,7 @@ import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import { eventBus } from '../global/eventBus'
 import { AcEdMessageType } from '../input/ui/AcEdMessageType'
 import { AcEdOpenMode } from '../view/AcEdOpenMode'
+import type { AcEdSessionAccessory } from './AcEdSessionAccessory'
 
 /**
  * Abstract base class for all CAD commands.
@@ -308,6 +309,17 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
    */
   async execute(_context: AcApContext) {
     // Do nothing - subclasses should override this method
+  }
+
+  /**
+   * Optional widgets for the phone/pad session panel (top row, above chips
+   * and metrics). The default returns `null`.
+   *
+   * @param _context - The current application context
+   * @returns Accessory to mount, or `null` to leave the slot empty
+   */
+  createSessionAccessory(_context: AcApContext): AcEdSessionAccessory | null {
+    return null
   }
 
   /**

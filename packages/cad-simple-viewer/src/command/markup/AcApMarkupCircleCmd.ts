@@ -19,7 +19,7 @@ import {
   acapStrokeLiveCircle
 } from '../overlay/AcApHtmlLivePreview'
 import {
-  configureMarkupCommand,
+  configureMarkupDrawCommand,
   createMarkupMeta,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
@@ -88,7 +88,7 @@ class AcApMarkupCircleJig extends AcEdPreviewJig<number> {
 export class AcApMarkupCircleCmd extends AcEdCommand {
   constructor() {
     super()
-    configureMarkupCommand(this)
+    configureMarkupDrawCommand(this)
   }
 
   async execute(context: AcApContext) {

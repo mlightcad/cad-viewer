@@ -1,5 +1,6 @@
 import type { AcApContext } from '../../app'
 import {
+  type AcEdCommand,
   AcEdCorsorType,
   AcEdOpenMode,
   AcEdPromptStatus,
@@ -7,6 +8,7 @@ import {
   AcEdViewMode
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { acapBindDrawStyleSessionAccessory } from '../../ui/AcApDrawStyle'
 import type { AcTrView2d } from '../../view'
 import { editMarkupHtmlText } from './AcApMarkupTextEdit'
 import type {
@@ -34,6 +36,15 @@ export function configureMarkupCommand(command: {
 }): void {
   command.mode = MARKUP_OPEN_MODE
   command.recordsUndoStack = false
+}
+
+/**
+ * Markup drawing commands: Review mode plus color / font-size in the
+ * phone/pad session panel.
+ */
+export function configureMarkupDrawCommand(command: AcEdCommand): void {
+  configureMarkupCommand(command)
+  acapBindDrawStyleSessionAccessory(command)
 }
 
 /** Create shared metadata fields for a new markup record. */

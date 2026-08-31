@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import { ML_UI_MOBILE_MAX_WIDTH } from './AcExHtmlShell'
+import { ML_UI_COMPACT_MAX_WIDTH, ML_UI_MOBILE_MAX_WIDTH } from './AcExHtmlShell'
 
 const MIN_HEIGHT = 160
 const DEFAULT_HEIGHT_VH = 0.42
@@ -27,6 +27,15 @@ export function acExHtmlIsPhoneLayout(): boolean {
   return (
     typeof window !== 'undefined' &&
     window.matchMedia?.(`(max-width: ${ML_UI_MOBILE_MAX_WIDTH}px)`).matches ===
+      true
+  )
+}
+
+/** Whether the offline HTML chrome is using the phone or pad breakpoint. */
+export function acExHtmlIsCompactLayout(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia?.(`(max-width: ${ML_UI_COMPACT_MAX_WIDTH}px)`).matches ===
       true
   )
 }

@@ -10,6 +10,7 @@ import {
 
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
+import type { AcEdSessionAccessory } from '../../command/AcEdSessionAccessory'
 import {
   acedIsMobileOrPadUi,
   acedShouldHideDesktopCommandLine,
@@ -284,13 +285,26 @@ export class AcEdInputManager {
         prompt: args.prompt,
         keywords: args.keywords ?? [],
         allowNone: args.allowNone,
-        showMetrics: args.showMetrics
+        showMetrics: args.showMetrics,
+        accessory: this.resolveSessionAccessory()
       },
       {
         onConfirm: args.onConfirm,
         onCancel: args.onCancel,
         onKeyword: args.onKeyword
       }
+    )
+  }
+
+  /**
+   * Asks the active command for session-panel widgets (color / font size).
+   */
+  private resolveSessionAccessory(): AcEdSessionAccessory | null {
+    const manager = AcApDocManager.instance
+    return (
+      manager.commandManager.activeCommand?.createSessionAccessory(
+        manager.context
+      ) ?? null
     )
   }
 

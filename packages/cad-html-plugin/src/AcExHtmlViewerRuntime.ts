@@ -15,7 +15,6 @@ import {
   acExIntersectCssRects,
   acExWcsBoxToCssRect
 } from './AcExCssRect'
-import { setupAcExDrawStyleToolbar } from './AcExDrawStyleToolbar'
 import {
   decryptAcExHtmlSnapshotPayload,
   isAcExHtmlAccessExpired,
@@ -65,6 +64,7 @@ import {
   createViewerMeshMaterial,
   createViewerPointsMaterial
 } from './AcExPatternSnapshot'
+import { setupAcExSessionDrawStyle } from './AcExSessionDrawStyle'
 import {
   ACEX_SNAP_LOUPE_INSET_PX,
   ACEX_SNAP_LOUPE_SIZE_PX,
@@ -717,8 +717,15 @@ async function startViewer(): Promise<void> {
   const drawerSheetsRef: {
     current: ReturnType<typeof setupAcExHtmlDrawerSheets> | null
   } = { current: null }
+  const sessionDrawStyleRef: {
+    current: ReturnType<typeof setupAcExSessionDrawStyle> | null
+  } = { current: null }
   const applySessionUi = () => {
-    sessionPanel?.setState(measureSession ?? markupSession)
+    const state = measureSession ?? markupSession
+    sessionPanel?.setState(state)
+    sessionPanel?.setAccessory(
+      state ? (sessionDrawStyleRef.current?.createSessionAccessory() ?? null) : null
+    )
     drawerSheetsRef.current?.syncInset()
   }
   sessionPanel?.setHandlers({
@@ -742,9 +749,6 @@ async function startViewer(): Promise<void> {
   const layoutMenuRef: {
     current: ReturnType<typeof setupAcExHtmlLayoutMenu> | null
   } = { current: null }
-  const drawStyleToolbarRef: {
-    current: ReturnType<typeof setupAcExDrawStyleToolbar> | null
-  } = { current: null }
   const navToolsRef: {
     current: ReturnType<typeof setupAcExHtmlNavTools> | null
   } = { current: null }
@@ -761,7 +765,7 @@ async function startViewer(): Promise<void> {
       controls,
       navToolsRef.current?.isPanEnabled() ?? !isToolActive()
     )
-    drawStyleToolbarRef.current?.refresh()
+    sessionDrawStyleRef.current?.refresh()
     navToolsRef.current?.syncButtons()
   }
 
@@ -1005,7 +1009,7 @@ async function startViewer(): Promise<void> {
         applySessionUi()
       },
       onStyleChange: () => {
-        drawStyleToolbarRef.current?.refresh()
+        sessionDrawStyleRef.current?.refresh()
       },
       getActiveLayoutId: () => layout.btrId,
       view: {
@@ -1078,7 +1082,7 @@ async function startViewer(): Promise<void> {
         applySessionUi()
       },
       onStyleChange: () => {
-        drawStyleToolbarRef.current?.refresh()
+        sessionDrawStyleRef.current?.refresh()
       },
       getTrackingOptions: () =>
         measureSettingsRef.current?.getTrackingOptions() ?? null,
@@ -1101,15 +1105,11 @@ async function startViewer(): Promise<void> {
       angdir: snapshot.meta.units.angdir
     })
 
-    drawStyleToolbarRef.current = setupAcExDrawStyleToolbar({
-      root,
+    sessionDrawStyleRef.current = setupAcExSessionDrawStyle({
       i18n,
       getKind: () => {
         if (measure?.isActive) return 'measure'
         if (markup?.isActive) return 'markup'
-        if (markup?.hasSelection && measure?.hasSelection) return undefined
-        if (markup?.hasSelection) return 'markup'
-        if (measure?.hasSelection) return 'measure'
         return undefined
       },
       getStyle: kind => {
@@ -1125,6 +1125,7 @@ async function startViewer(): Promise<void> {
         }
       }
     })
+    applySessionUi()
   }
 
   const toolbarCollapse = setupToolbarCollapse(i18n, () => {
@@ -1512,7 +1513,7 @@ async function startViewer(): Promise<void> {
     measurePanel?.refreshLabels()
     sessionPanel?.refreshLabels()
     measureSettingsRef.current?.refreshLabels()
-    drawStyleToolbarRef.current?.refreshLabels()
+    sessionDrawStyleRef.current?.refreshLabels()
     toolbarCollapse.refreshLabels()
     toolbarFlyouts?.refreshLabels()
     navToolsRef.current?.refreshLabels()
@@ -1531,7 +1532,7 @@ async function startViewer(): Promise<void> {
         | null) ?? 'dark'
     )
     i18n.applyToDocument()
-    drawStyleToolbarRef.current?.refresh()
+    sessionDrawStyleRef.current?.refresh()
   })
 
   window.addEventListener('keydown', event => {

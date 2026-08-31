@@ -1,10 +1,14 @@
 /** @jest-environment jsdom */
 
 import {
+  acExHtmlIsCompactLayout,
   acExHtmlIsPhoneLayout,
   setupAcExHtmlDrawerSheets
 } from '../src/AcExHtmlDrawerSheet'
-import { ML_UI_MOBILE_MAX_WIDTH } from '../src/AcExHtmlShell'
+import {
+  ML_UI_COMPACT_MAX_WIDTH,
+  ML_UI_MOBILE_MAX_WIDTH
+} from '../src/AcExHtmlShell'
 
 describe('setupAcExHtmlDrawerSheets', () => {
   const originalMatchMedia = window.matchMedia
@@ -29,6 +33,17 @@ describe('setupAcExHtmlDrawerSheets', () => {
     expect(acExHtmlIsPhoneLayout()).toBe(true)
     mockPhone(false)
     expect(acExHtmlIsPhoneLayout()).toBe(false)
+  })
+
+  it('detects the compact (phone or pad) breakpoint', () => {
+    window.matchMedia = (query: string) =>
+      ({
+        matches: query.includes(`${ML_UI_COMPACT_MAX_WIDTH}`),
+        media: query,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }) as unknown as MediaQueryList
+    expect(acExHtmlIsCompactLayout()).toBe(true)
   })
 
   it('parks the drawer on the sidebar and closes strips on phone', () => {

@@ -132,7 +132,7 @@ export interface AcExMarkupControllerOptions {
     screen: { x: number; y: number } | null
   ) => void
   onActiveChange?: (active: boolean) => void
-  /** Called when selection or session draw style changes (draw-style toolbar). */
+  /** Called when selection or session draw style changes (session accessory). */
   onStyleChange?: () => void
   /** Called when a markup tool starts so the runtime can cancel measure mode. */
   onBeforeActivate?: () => void

@@ -235,7 +235,7 @@ export interface AcExHtmlMeasureSettingsController {
 /**
  * Wires ortho and polar tracking controls in the object-snap strip.
  * Strip open/close is owned by {@link setupAcExHtmlToolbarFlyouts}.
- * Drawing color / line weight / font size live on the canvas draw-style toolbar.
+ * Drawing color / font size live on the session panel accessory.
  */
 export function setupAcExHtmlMeasureSettings(
   ctx: AcExHtmlMeasureSettingsContext

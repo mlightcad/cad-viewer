@@ -17,13 +17,16 @@ import {
   subscribeMarkupDrawStyle
 } from '../src/command/markup/AcApMarkupUtil'
 import {
+  acapBindDrawStyleSessionAccessory,
   acapDrawStyleKindForCommand,
   acapIsDrawStyleToolbarVisible,
+  acapRegisterDrawStyleSessionHost,
   acapResolveDrawStyleKind,
   acapSetDrawStyleHostHasRibbon,
   acapSetDrawStyleToolbarVisible,
   acapShouldShowDrawStyleToolbar,
-  acapSubscribeDrawStyleToolbarVisibility
+  acapSubscribeDrawStyleToolbarVisibility,
+  acapUnregisterDrawStyleSessionHost
 } from '../src/ui/AcApDrawStyle'
 
 describe('subscribeMarkupDrawStyle', () => {
@@ -215,5 +218,27 @@ describe('isMarkupDoublePointer', () => {
     expect(isMarkupDoublePointer(undefined, { t: 1000, x: 0, y: 0 })).toBe(
       false
     )
+  })
+})
+
+describe('acapBindDrawStyleSessionAccessory', () => {
+  it('returns the view toolbar accessory and clears after unregister', () => {
+    const view = {}
+    const accessory = {
+      id: 'draw-style',
+      mount: jest.fn(),
+      unmount: jest.fn()
+    }
+    acapRegisterDrawStyleSessionHost(view as never, {
+      createSessionAccessory: () => accessory
+    })
+    const command = {
+      createSessionAccessory: (_context: unknown) =>
+        null as typeof accessory | null
+    }
+    acapBindDrawStyleSessionAccessory(command)
+    expect(command.createSessionAccessory({ view })).toBe(accessory)
+    acapUnregisterDrawStyleSessionHost(view as never)
+    expect(command.createSessionAccessory({ view })).toBeNull()
   })
 })

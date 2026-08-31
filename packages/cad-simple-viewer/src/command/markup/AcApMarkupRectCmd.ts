@@ -16,7 +16,7 @@ import {
   acapStrokeLivePolyline
 } from '../overlay/AcApHtmlLivePreview'
 import {
-  configureMarkupCommand,
+  configureMarkupDrawCommand,
   createMarkupMeta,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
@@ -82,7 +82,7 @@ class AcApMarkupRectJig extends AcEdPreviewJig<AcGePoint2dLike> {
 export class AcApMarkupRectCmd extends AcEdCommand {
   constructor() {
     super()
-    configureMarkupCommand(this)
+    configureMarkupDrawCommand(this)
   }
 
   async execute(context: AcApContext) {

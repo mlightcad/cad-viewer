@@ -15,7 +15,7 @@ import {
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
 import {
-  configureMarkupCommand,
+  configureMarkupDrawCommand,
   createMarkupMeta,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
@@ -76,7 +76,7 @@ class AcApMarkupArrowJig extends AcEdPreviewJig<AcGePoint3dLike> {
 export class AcApMarkupArrowCmd extends AcEdCommand {
   constructor() {
     super()
-    configureMarkupCommand(this)
+    configureMarkupDrawCommand(this)
   }
 
   async execute(context: AcApContext) {

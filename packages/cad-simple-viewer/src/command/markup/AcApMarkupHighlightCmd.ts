@@ -15,7 +15,7 @@ import {
   AcApHtmlLivePreview
 } from '../overlay/AcApHtmlLivePreview'
 import {
-  configureMarkupCommand,
+  configureMarkupDrawCommand,
   createMarkupMeta,
   withMarkupInput
 } from './AcApMarkupCmdUtil'
@@ -82,7 +82,7 @@ class AcApMarkupHighlightJig extends AcEdPreviewJig<AcGePoint3dLike> {
 export class AcApMarkupHighlightCmd extends AcEdCommand {
   constructor() {
     super()
-    configureMarkupCommand(this)
+    configureMarkupDrawCommand(this)
   }
 
   async execute(context: AcApContext) {
