@@ -98,6 +98,9 @@ export class AcEdMobileCommandChrome {
   private open = false
   private showMetrics = false
   private hasBasePoint = false
+  /** Last live readout; restored across hide/show so a lift does not zero values. */
+  private frozenTexts: AcEdMobileMetricTexts | null = null
+  private frozenHasBasePoint = false
   private localeUnsub?: () => void
   private layoutUnsub?: () => void
 
@@ -237,7 +240,11 @@ export class AcEdMobileCommandChrome {
     this.promptEl.textContent = stripPromptColon(state.prompt)
     this.confirmBtn.disabled = !state.allowNone
     this.renderChips(state.keywords)
-    this.setMetricTexts(ZERO_TEXTS, false)
+    if (this.frozenTexts) {
+      this.setMetricTexts(this.frozenTexts, this.frozenHasBasePoint)
+    } else {
+      this.setMetricTexts(ZERO_TEXTS, false)
+    }
     this.layoutUnsub?.()
     this.layoutUnsub = acedSubscribeUiLayout(() => {
       if (this.open) this.applyMetricVisibility()
@@ -271,6 +278,8 @@ export class AcEdMobileCommandChrome {
   setMetrics(metrics: AcEdMobileSessionMetrics, texts: AcEdMobileMetricTexts) {
     if (!this.open) return
     this.hasBasePoint = metrics.hasBasePoint
+    this.frozenTexts = { ...texts }
+    this.frozenHasBasePoint = metrics.hasBasePoint
     this.setMetricTexts(texts, metrics.hasBasePoint)
     this.applyMetricVisibility()
   }

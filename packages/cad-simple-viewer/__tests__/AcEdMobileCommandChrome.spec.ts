@@ -252,4 +252,61 @@ describe('AcEdMobileCommandChrome', () => {
     )
     media.restore()
   })
+
+  it('keeps the last metric readout after hide/show until new live values arrive', () => {
+    const media = installMatchMedia(
+      query =>
+        query === ML_UI_MOBILE_MEDIA_QUERY ||
+        query === ML_UI_COMPACT_MEDIA_QUERY
+    )
+    const show = (prompt: string) =>
+      chrome.show(
+        {
+          prompt,
+          keywords: [],
+          allowNone: false,
+          showMetrics: true
+        },
+        { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
+      )
+    show('Specify first point:')
+    chrome.setMetrics(
+      {
+        hasBasePoint: true,
+        length: 25,
+        angleDeg: 45,
+        dx: 10,
+        dy: 10,
+        x: 10,
+        y: 10
+      },
+      {
+        length: '25',
+        angle: '45',
+        dx: '10',
+        dy: '10',
+        x: '10',
+        y: '10'
+      }
+    )
+    chrome.hide()
+    show('Specify next point:')
+    const panel = host.querySelector('.ml-mobile-cmd-panel') as HTMLElement
+    expect(
+      panel.querySelector('[data-metric="length"] .ml-mobile-cmd-metric-value')
+        ?.textContent
+    ).toBe('25')
+    expect(
+      panel.querySelector('[data-metric="angle"] .ml-mobile-cmd-metric-value')
+        ?.textContent
+    ).toBe('45')
+    expect(
+      panel.querySelector('[data-metric="dx"] .ml-mobile-cmd-metric-value')
+        ?.textContent
+    ).toBe('10')
+    expect(
+      (host.querySelector('.ml-mobile-cmd-group-polar') as HTMLElement).hidden
+    ).toBe(false)
+    media.restore()
+  })
 })

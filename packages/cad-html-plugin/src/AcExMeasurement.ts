@@ -1054,6 +1054,11 @@ export class AcExMeasureController {
   private _areaCloseThresholdPx = 14
   /** Last pointer position during an active measure tool (for overlay sync on pan/zoom). */
   private _lastPointer: { x: number; y: number } | null = null
+  /**
+   * True while a pointer is down and moving. After lift, session metrics stay
+   * frozen at the last sample until the next press.
+   */
+  private _livePointer = false
   /** Guards against re-entrant `render()` while {@link syncOverlays} refreshes preview. */
   private _inOverlaySync = false
   /** Cached `#mlcad-root` rect for one {@link syncOverlays} pass. @internal */
@@ -1267,6 +1272,7 @@ export class AcExMeasureController {
     if (mode === null) return
     this._mode = mode
     this._points = []
+    this._livePointer = false
     this._updateToolbarActive()
     this._syncGripPointerEvents()
     this._statusEl.textContent = this._hintForMode(mode)
@@ -1285,6 +1291,7 @@ export class AcExMeasureController {
     this._arcLock = null
     this._resetArcLockDirection()
     this._lastPointer = null
+    this._livePointer = false
     this._osnapCache = null
     this._hidePreview()
     this._onOsnapMarker(null, null)
@@ -1344,19 +1351,20 @@ export class AcExMeasureController {
           this._lastPointer.y
         )
       : this._points[this._points.length - 1]
-    const base =
-      this._points.length > 0
-        ? this._points[this._points.length - 1]
-        : null
+    const lastCommitted = this._points[this._points.length - 1] ?? null
+    const prevCommitted =
+      this._points.length >= 2 ? this._points[this._points.length - 2]! : null
+    // Finger down: rubber-band from the last pick. Finger up: keep the
+    // completed segment (or absolute X/Y of the only pick) until next press.
+    const base = this._livePointer ? lastCommitted : prevCommitted
     const useRelative =
-      this._mode !== 'coordinate' &&
-      this._points.length >= 1 &&
-      this._lastPointer != null
+      this._mode !== 'coordinate' && base != null && cursor != null
     const dx = useRelative && base && cursor ? cursor.x - base.x : 0
     const dy = useRelative && base && cursor ? cursor.y - base.y : 0
     const length = Math.hypot(dx, dy)
     let angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI
     if (angleDeg < 0) angleDeg += 360
+    if (this._livePointer && useRelative && length === 0) return
     const confirmEnabled =
       (this._mode === 'continuous' && this._points.length >= 2) ||
       (this._mode === 'area' && this._points.length >= 3)
@@ -1651,22 +1659,33 @@ export class AcExMeasureController {
     this._lastPointer = { x: clientX, y: clientY }
     const point = this._resolvePointerWithOsnap(clientX, clientY)
 
+    let handled = true
     switch (this._mode) {
       case 'distance':
-        return this._pointerDistance(point, clientX, clientY)
+        handled = this._pointerDistance(point, clientX, clientY)
+        break
       case 'continuous':
-        return this._pointerContinuous(point, clientX, clientY)
+        handled = this._pointerContinuous(point, clientX, clientY)
+        break
       case 'angle':
-        return this._pointerAngle(point, clientX, clientY)
+        handled = this._pointerAngle(point, clientX, clientY)
+        break
       case 'arc':
-        return this._pointerArc(point, clientX, clientY)
+        handled = this._pointerArc(point, clientX, clientY)
+        break
       case 'area':
-        return this._pointerArea(point, clientX, clientY)
+        handled = this._pointerArea(point, clientX, clientY)
+        break
       case 'coordinate':
-        return this._pointerCoordinate(point, clientX, clientY)
+        handled = this._pointerCoordinate(point, clientX, clientY)
+        break
       default:
-        return true
+        handled = true
+        break
     }
+    this._livePointer = false
+    this._syncSessionUi()
+    return handled
   }
 
   /**
@@ -1676,6 +1695,7 @@ export class AcExMeasureController {
    */
   handlePointerMove(clientX: number, clientY: number): void {
     if (!this._mode) return
+    this._livePointer = true
     this._lastPointer = { x: clientX, y: clientY }
   }
 

@@ -312,6 +312,9 @@ export class AcEdInputManager {
       cursor,
       basePoint
     )
+    // A zero-length rubber-band (cursor still on lastPoint after lift / before
+    // the next press) must not wipe the previous readout.
+    if (metrics.hasBasePoint && metrics.length === 0) return
     this._mobileChrome.setMetrics(metrics, {
       length: this.formatNumber(metrics.length, 'distance'),
       angle: this.formatNumber(metrics.angleDeg, 'angle'),
@@ -968,7 +971,6 @@ export class AcEdInputManager {
             showBaseLineOnly: !options.useDashedLine
           })
           this._mobileChrome.update({ showMetrics: true })
-          this.pushMobileMetrics(firstPoint, firstPoint)
           return false
         }
         return true
@@ -2253,12 +2255,6 @@ export class AcEdInputManager {
         onCancel: () => rejector(),
         onKeyword: keywordRejector
       })
-      if (showMetrics) {
-        const seed = basePoint ?? this.lastPoint
-        if (seed) {
-          this.pushMobileMetrics(seed, seed)
-        }
-      }
 
       const escHandler = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
