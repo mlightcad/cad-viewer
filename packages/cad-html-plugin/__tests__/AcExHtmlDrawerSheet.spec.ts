@@ -133,4 +133,34 @@ describe('setupAcExHtmlDrawerSheets', () => {
 
     expect(drawer.parentElement?.id).toBe('mlcad-measure-strip-wrap')
   })
+
+  it('uses the visible session panel height as the phone drawer inset', () => {
+    mockPhone(true)
+    document.body.innerHTML = `
+      <nav id="mlcad-toolbar"></nav>
+      <div id="mlcad-command-session"></div>
+    `
+    const toolbar = document.getElementById('mlcad-toolbar') as HTMLElement
+    const session = document.getElementById(
+      'mlcad-command-session'
+    ) as HTMLElement
+    Object.defineProperty(toolbar, 'offsetHeight', { value: 56 })
+    Object.defineProperty(session, 'offsetHeight', { value: 120 })
+
+    const sheets = setupAcExHtmlDrawerSheets()
+    sheets.syncInset()
+    expect(
+      document.documentElement.style.getPropertyValue(
+        '--mlcad-phone-drawer-bottom'
+      )
+    ).toBe('120px')
+
+    session.hidden = true
+    sheets.syncInset()
+    expect(
+      document.documentElement.style.getPropertyValue(
+        '--mlcad-phone-drawer-bottom'
+      )
+    ).toBe('56px')
+  })
 })

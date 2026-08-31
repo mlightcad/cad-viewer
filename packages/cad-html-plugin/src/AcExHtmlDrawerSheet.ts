@@ -85,6 +85,10 @@ export function setupAcExHtmlDrawerSheets(options?: {
       if (wrap.hidden) return
       inset += wrap.offsetHeight
     })
+    const session = document.getElementById('mlcad-command-session')
+    if (session && !session.hidden && acExHtmlIsPhoneLayout()) {
+      inset = Math.max(inset, session.offsetHeight)
+    }
     document.documentElement.style.setProperty(
       '--mlcad-phone-drawer-bottom',
       `${inset}px`

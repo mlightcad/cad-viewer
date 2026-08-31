@@ -82,6 +82,22 @@ export function acedIsMobileOrPadUi(): boolean {
 }
 
 /**
+ * Whether the desktop floating command line should be hidden.
+ *
+ * Phone layouts always hide it (commands start from the toolbar). Pad and
+ * other handheld UIs hide it only while an input session is active so the
+ * mobile command chrome can replace Enter/Esc and keyword chips.
+ *
+ * @param sessionActive - True while {@link AcEdInputManager} is acquiring input.
+ */
+export function acedShouldHideDesktopCommandLine(
+  sessionActive: boolean
+): boolean {
+  if (acedIsMobileUiLayout()) return true
+  return sessionActive && acedIsMobileOrPadUi()
+}
+
+/**
  * Subscribes to viewport layout-kind changes (mobile + compact media queries).
  *
  * @param listener - Invoked whenever {@link acedGetUiLayout} would return a new kind.

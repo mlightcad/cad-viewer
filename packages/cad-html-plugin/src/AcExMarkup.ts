@@ -10,6 +10,7 @@
 
 import * as THREE from 'three'
 
+import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
@@ -139,6 +140,10 @@ export interface AcExMarkupControllerOptions {
   getTrackingOptions?: () => AcExTrackingOptions | null
   /** Active layout BTR id; used to stamp and filter markup overlays. */
   getActiveLayoutId?: () => string
+  /**
+   * Updates the touch session panel. Pass `null` when no markup tool is active.
+   */
+  onSessionUi?: (state: AcExCommandSessionUiState | null) => void
 }
 
 type AcExMarkupCleanup = () => void
@@ -217,6 +222,9 @@ export class AcExMarkupController {
   private readonly _drawingName: string | undefined
   private readonly _onOsnapMarker: AcExMarkupControllerOptions['onOsnapMarker']
   private readonly _onActiveChange: ((active: boolean) => void) | null
+  private readonly _onSessionUi: ((
+    state: AcExCommandSessionUiState | null
+  ) => void) | null
   private readonly _onStyleChange: (() => void) | null
   private readonly _onBeforeActivate: (() => void) | null
   private readonly _getTrackingOptions:
@@ -269,6 +277,7 @@ export class AcExMarkupController {
     this._drawingName = options.drawingName
     this._onOsnapMarker = options.onOsnapMarker
     this._onActiveChange = options.onActiveChange ?? null
+    this._onSessionUi = options.onSessionUi ?? null
     this._onStyleChange = options.onStyleChange ?? null
     this._onBeforeActivate = options.onBeforeActivate ?? null
     this._getTrackingOptions = options.getTrackingOptions ?? null
@@ -521,6 +530,7 @@ export class AcExMarkupController {
     this._syncGripPointerEvents()
     this._statusEl.textContent = this._hintForMode(mode)
     this._onActiveChange?.(true)
+    this._syncSessionUi()
   }
 
   cancelMode(): void {
@@ -539,6 +549,34 @@ export class AcExMarkupController {
     this._updateIdleStatus()
     this._view.render()
     if (wasActive) this._onActiveChange?.(false)
+    this._syncSessionUi()
+  }
+
+  /** Escape equivalent for the session panel × button. */
+  cancelSession(): boolean {
+    return this.handleKeyDown('Escape')
+  }
+
+  private _syncSessionUi(): void {
+    if (!this._onSessionUi) return
+    if (!this._mode) {
+      this._onSessionUi(null)
+      return
+    }
+    this._onSessionUi({
+      prompt: this._hintForMode(this._mode),
+      confirmEnabled: false,
+      metrics: {
+        hasBasePoint: false,
+        lengthText: '0',
+        angleText: '0',
+        dxText: '0',
+        dyText: '0',
+        xText: '0',
+        yText: '0'
+      },
+      chips: []
+    })
   }
 
   private _abortInlineText(): void {

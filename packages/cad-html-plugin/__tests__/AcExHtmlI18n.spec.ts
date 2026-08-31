@@ -89,6 +89,8 @@ describe('AcExHtmlI18n', () => {
     expect(i18n.t('toolbar.measurementPanel')).toBe('看结果')
     expect(i18n.t('measurePanel.empty')).toBe('暂无测量')
     expect(i18n.t('measurePanel.filterArc')).toBe('弧长')
+    expect(i18n.t('session.confirm')).toBe('确定')
+    expect(i18n.t('session.undo')).toBe('撤销')
     expect(formatAcExHtmlMessage('Zoom: {name}', { name: '0' })).toBe('Zoom: 0')
   })
 

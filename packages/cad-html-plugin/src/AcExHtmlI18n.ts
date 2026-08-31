@@ -118,6 +118,15 @@ export type AcExHtmlMessageKey =
   | 'measurePanel.value'
   | 'measurePanel.delete'
   | 'measurePanel.clear'
+  | 'session.length'
+  | 'session.angle'
+  | 'session.dx'
+  | 'session.dy'
+  | 'session.x'
+  | 'session.y'
+  | 'session.confirm'
+  | 'session.cancel'
+  | 'session.undo'
   | 'status.ready'
   | 'status.zoomWindowHint'
   | 'status.measureDistanceHint'
@@ -289,19 +298,30 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       delete: 'Delete',
       clear: 'Clear all'
     },
+    session: {
+      length: 'Length',
+      angle: 'Angle',
+      dx: 'ΔX',
+      dy: 'ΔY',
+      x: 'X',
+      y: 'Y',
+      confirm: 'Confirm',
+      cancel: 'Cancel',
+      undo: 'Undo'
+    },
     status: {
       ready: 'Ready',
       zoomWindowHint: 'Click two corners to zoom to a window.',
       measureDistanceHint:
         'Click two points to measure distance (object snap enabled).',
       measureContinuousHint:
-        'Click successive points to measure each segment; Enter or Esc to finish (object snap enabled).',
+        'Tap successive points to measure each segment; tap ✓ to finish. Long-press for precise snap.',
+      measureAreaHint:
+        'Tap polygon vertices; tap ✓ to finish when at least three points are set. Long-press for precise snap.',
       measureAngleHint:
         'Click vertex, then two points on each arm (object snap enabled).',
       measureArcHint:
         'Click a circle or arc to measure along it, or click start, a point on the arc, then end (object snap enabled). Ctrl (⌘ on Mac) switches major/minor arc.',
-      measureAreaHint:
-        'Click polygon vertices; click near the first point or press Enter to finish.',
       measureCoordinateHint:
         'Click a point to read its X/Y coordinates (object snap enabled).',
       measureExported: 'Exported {count} measurement(s).',
@@ -466,16 +486,27 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       delete: '删除',
       clear: '全部清除'
     },
+    session: {
+      length: '长度',
+      angle: '角度',
+      dx: 'ΔX',
+      dy: 'ΔY',
+      x: 'X',
+      y: 'Y',
+      confirm: '确定',
+      cancel: '取消',
+      undo: '撤销'
+    },
     status: {
       ready: '就绪',
       zoomWindowHint: '点击两个角点以窗口缩放。',
       measureDistanceHint: '点击两点以测量距离（已启用对象捕捉）。',
       measureContinuousHint:
-        '依次点击多个点测量各段距离，按 Enter 或 Esc 完成（已启用对象捕捉）。',
+        '依次点击多个点测量各段距离，点 ✓ 完成。长按可精确捕捉。',
+      measureAreaHint: '依次点击多边形顶点；至少三点后点 ✓ 完成。长按可精确捕捉。',
       measureAngleHint: '依次点击顶点与两条边上的点（已启用对象捕捉）。',
       measureArcHint:
         '点击圆或圆弧可沿其测量；否则依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。锁定后按 Ctrl（Mac 为 Control 或 ⌘）可在大弧与小弧之间切换。',
-      measureAreaHint: '依次点击多边形顶点；靠近首点或按 Enter 完成。',
       measureCoordinateHint: '点击一点以读取其 X/Y 坐标（已启用对象捕捉）。',
       measureExported: '已导出 {count} 条测量。',
       measureImported: '已导入 {count} 条测量。',
@@ -635,19 +666,30 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       delete: 'Odstranit',
       clear: 'Vymazat vše'
     },
+    session: {
+      length: 'Délka',
+      angle: 'Úhel',
+      dx: 'ΔX',
+      dy: 'ΔY',
+      x: 'X',
+      y: 'Y',
+      confirm: 'Potvrdit',
+      cancel: 'Zrušit',
+      undo: 'Zpět'
+    },
     status: {
       ready: 'Připraveno',
       zoomWindowHint: 'Klikněte na dva rohy pro přiblížení oknem.',
       measureDistanceHint:
         'Klikněte na dva body pro změření vzdálenosti (uchopení objektů zapnuto).',
       measureContinuousHint:
-        'Klikněte na další body pro změření každého úseku; Enter nebo Esc dokončí (uchopení objektů zapnuto).',
+        'Klepejte na další body pro měření každého úseku; dokončete klepnutím na ✓. Dlouhé stisknutí pro přesné uchopení.',
       measureAngleHint:
         'Klikněte na vrchol, poté na dva body na každém rameni (uchopení objektů zapnuto).',
       measureArcHint:
         'Klikněte na kružnici nebo oblouk pro měření podél něj, nebo klikněte na začátek, bod na oblouku a konec (uchopení objektů zapnuto). Ctrl (⌘ na Macu) přepíná velký/malý oblouk.',
       measureAreaHint:
-        'Klikejte na vrcholy mnohoúhelníku; dokončete kliknutím poblíž prvního bodu nebo stiskem Enter.',
+        'Klepejte na vrcholy mnohoúhelníku; dokončete klepnutím na ✓ po alespoň třech bodech.',
       measureCoordinateHint:
         'Klikněte na bod pro zobrazení jeho souřadnic X/Y (uchopení objektů zapnuto).',
       measureExported: 'Exportováno {count} měření.',
@@ -812,19 +854,30 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       delete: 'Sil',
       clear: 'Tümünü temizle'
     },
+    session: {
+      length: 'Uzunluk',
+      angle: 'Açı',
+      dx: 'ΔX',
+      dy: 'ΔY',
+      x: 'X',
+      y: 'Y',
+      confirm: 'Onayla',
+      cancel: 'İptal',
+      undo: 'Geri al'
+    },
     status: {
       ready: 'Hazır',
       zoomWindowHint: 'Pencere yakınlaştırmak için iki köşeyi tıklayın.',
       measureDistanceHint:
         'Mesafe ölçmek için iki nokta tıklayın (nesne yakalama etkin).',
       measureContinuousHint:
-        'Her segmenti ölçmek için ardışık noktalar tıklayın; bitirmek için Enter veya Esc (nesne yakalama etkin).',
+        'Her segmenti ölçmek için ardışık noktalar dokunun; bitirmek için ✓. Hassas yakalama için basılı tutun.',
       measureAngleHint:
         'Önce köşe noktasını, sonra her koldan birer nokta tıklayın (nesne yakalama etkin).',
       measureArcHint:
         'Ölçmek için bir çember veya yaya tıklayın; ya da yay başlangıcı, yay üzerindeki bir nokta ve yay sonunu tıklayın (nesne yakalama etkin). Ctrl (Mac’te ⌘) büyük/küçük yay arasında geçiş yapar.',
       measureAreaHint:
-        'Çokgen köşelerini tıklayın; bitirmek için ilk noktanın yakınına tıklayın veya Enter’a basın.',
+        'Çokgen köşelerini dokunun; en az üç noktadan sonra bitirmek için ✓.',
       measureCoordinateHint:
         'X/Y koordinatlarını okumak için bir nokta tıklayın (nesne yakalama etkin).',
       measureExported: '{count} ölçüm dışa aktarıldı.',
@@ -993,14 +1046,25 @@ const AR_MESSAGES: AcExMessageTree = {
     'delete': 'حذف',
     'clear': 'مسح الكل'
   },
+  'session': {
+    'length': 'الطول',
+    'angle': 'الزاوية',
+    'dx': 'ΔX',
+    'dy': 'ΔY',
+    'x': 'X',
+    'y': 'Y',
+    'confirm': 'تأكيد',
+    'cancel': 'إلغاء',
+    'undo': 'تراجع'
+  },
   'status': {
     'ready': 'جاهز',
     'zoomWindowHint': 'انقر على ركنين لتحديد نافذة التكبير.',
     'measureDistanceHint': 'انقر على نقطتين لقياس المسافة (التقاط الكائنات مفعّل).',
-    'measureContinuousHint': 'انقر على نقاط متتالية لقياس كل قطعة؛ Enter أو Esc للإنهاء (التقاط الكائنات مفعّل).',
+    'measureContinuousHint': 'انقر على نقاط متتالية لقياس كل قطعة؛ انقر ✓ للإنهاء. اضغط مطولاً للالتقاط الدقيق.',
     'measureAngleHint': 'انقر على رأس الزاوية، ثم نقطة على كل ضلع (التقاط الكائنات مفعّل).',
     'measureArcHint': 'انقر على دائرة أو قوس للقياس عليه، أو انقر على نقطة البداية ثم نقطة على القوس ثم نقطة النهاية (التقاط الكائنات مفعّل). استخدم Ctrl (⌘ على Mac) للتبديل بين القوس الأكبر والأصغر.',
-    'measureAreaHint': 'انقر على رؤوس المضلع؛ انقر بالقرب من النقطة الأولى أو اضغط Enter للإنهاء.',
+    'measureAreaHint': 'انقر على رؤوس المضلع؛ انقر ✓ للإنهاء بعد ثلاث نقاط على الأقل.',
     'measureCoordinateHint': 'انقر على نقطة لقراءة إحداثيات X/Y الخاصة بها (التقاط الكائنات مفعّل).',
     'measureExported': 'تم تصدير {count} من القياسات.',
     'measureImported': 'تم استيراد {count} من القياسات.',

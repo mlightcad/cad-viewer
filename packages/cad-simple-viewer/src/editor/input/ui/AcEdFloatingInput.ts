@@ -506,6 +506,14 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   }
 
   /**
+   * Rubber-band origin after the prompt has started, if any.
+   * Used by the mobile session panel for length / angle / Δ metrics.
+   */
+  get sessionBasePoint(): AcGePoint2dLike | undefined {
+    return this.rubberBand ? this.orthoReferencePoint : undefined
+  }
+
+  /**
    * Starts rubber-band preview from a base point after the prompt has already begun.
    * Used by two-point distance acquisition when the first point is picked by click.
    */
