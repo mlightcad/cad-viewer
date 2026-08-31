@@ -131,9 +131,11 @@ export type AcUiToolbarChildIconMode = 'fixed' | 'selected'
  * How nested `children` are presented when the parent button is clicked.
  *
  * - `'menu'`: popover dropdown with icon + label (default). Closes on outside click.
- * - `'toolbar'`: icon sub-toolbar beside the parent. Closes on canvas / outside click.
+ * - `'toolbar'`: icon sub-toolbar beside the parent. Closes when a child button
+ *   is clicked, or on canvas / outside click.
  * - `'sticky-toolbar'`: icon sub-toolbar that stays open until the parent button
- *   is clicked again. Canvas clicks do not dismiss it.
+ *   is clicked again, or another parent opens a different strip. Child and
+ *   canvas clicks do not dismiss it.
  */
 export type AcUiToolbarChildrenUi = 'menu' | 'toolbar' | 'sticky-toolbar'
 
@@ -184,8 +186,8 @@ export interface AcUiToolbarItem {
   children?: AcUiToolbarItem[]
   /**
    * Presentation of {@link children}. Defaults to `'menu'` (popover dropdown).
-   * Built-in Measure / Review use `'sticky-toolbar'`; Export, Toolbar
-   * Position, and Language use `'toolbar'`.
+   * Built-in Measure, Review, Export, Toolbar Position, and Language use
+   * `'toolbar'`.
    */
   childrenUi?: AcUiToolbarChildrenUi
   /**

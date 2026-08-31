@@ -309,13 +309,11 @@ describe('default toolbar items', () => {
     expect(items[measureIndex + 2]?.id).toBe('export')
   })
 
-  it('uses sticky sub-toolbars for measure and review, dismissible for export and placement', () => {
+  it('uses dismissible sub-toolbars for measure, review, export, and placement', () => {
     const items = acuiCreateDefaultToolbarItems()
-    expect(items.find(item => item.id === 'measure')?.childrenUi).toBe(
-      'sticky-toolbar'
-    )
+    expect(items.find(item => item.id === 'measure')?.childrenUi).toBe('toolbar')
     expect(items.find(item => item.id === 'annotation')?.childrenUi).toBe(
-      'sticky-toolbar'
+      'toolbar'
     )
     expect(items.find(item => item.id === 'export')?.childrenUi).toBe('toolbar')
     expect(items.find(item => item.id === 'layout')?.childrenUi).toBe('menu')

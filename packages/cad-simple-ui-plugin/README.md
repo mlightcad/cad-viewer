@@ -330,7 +330,7 @@ See `cad-simple-viewer-example` (`demoToolbarPresets.ts`) for a working layout s
 | `requiresDocument` | When `false`, button stays enabled before a drawing is opened |
 | `minOpenMode` | Hide below Review/Write (`AcEdOpenMode.Review`) |
 | `children` | Nested items shown as a sub-toolbar or popover when the parent is clicked |
-| `childrenUi` | `'menu'` (popover, default), `'toolbar'` (closes on canvas click), or `'sticky-toolbar'` (stays until the parent is clicked again) |
+| `childrenUi` | `'menu'` (popover, default), `'toolbar'` (closes on child or canvas click), or `'sticky-toolbar'` (stays until the parent is clicked again) |
 | `childIcon` | `'fixed'` (default): parent keeps its own icon; `'selected'`: parent icon follows the active child item |
 | `selectedChildId` | Initial submenu selection when `childIcon` is `'selected'` |
 | `toggle` | Two-state button with `getValue`, `on`, and `off` branches |
@@ -478,14 +478,14 @@ Popover menu (default when `childrenUi` is omitted):
 }
 ```
 
-Icon sub-toolbar beside the parent (same model as the HTML export viewer). Measure and Review use `'sticky-toolbar'` so canvas clicks do not dismiss the strip; Export, Toolbar Position, and Language use `'toolbar'` so an outside click closes it:
+Icon sub-toolbar beside the parent (same model as the HTML export viewer). Measure, Review, Export, Toolbar Position, and Language use `'toolbar'` so clicking a child button or the canvas closes the strip:
 
 ```typescript
 {
   id: 'measure',
   label: 'Measure',
   icon: measureIconSvg,
-  childrenUi: 'sticky-toolbar',
+  childrenUi: 'toolbar',
   children: [
     { id: 'measure-distance', label: 'Distance', command: 'measuredistance' },
     { id: 'measure-area', label: 'Area', command: 'measurearea' }
@@ -511,7 +511,7 @@ When the parent icon should reflect the active submenu item:
 
 Built-in buttons using `childIcon: 'selected'`: `toolbar-placement` and `locale`. `export`, `annotation`, and `measure` use fixed parent icons.
 
-Built-in `childrenUi`: `measure` and `annotation` are `'sticky-toolbar'`; `export`, `toolbar-placement`, and `locale` are `'toolbar'`. Custom items default to `'menu'`.
+Built-in `childrenUi`: `measure`, `annotation`, `export`, `toolbar-placement`, and `locale` are `'toolbar'`. Custom items default to `'menu'`. Use `'sticky-toolbar'` to keep a strip open until the parent is clicked again.
 
 Submenu flyout direction follows toolbar placement (e.g. arrow points left when the toolbar is on the right).
 

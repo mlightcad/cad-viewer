@@ -177,7 +177,7 @@ function acuiCreateMeasureToolbarItem(): AcUiToolbarItem {
     id: 'measure',
     label: 'toolbar.measure',
     icon: ICON_MEASURE,
-    childrenUi: 'sticky-toolbar',
+    childrenUi: 'toolbar',
     children: [
       {
         id: 'measure-distance',
@@ -269,7 +269,7 @@ function acuiCreateAnnotationToolbarItem(): AcUiToolbarItem {
     label: 'toolbar.annotation',
     icon: ICON_ANNOTATION,
     minOpenMode: AcEdOpenMode.Review,
-    childrenUi: 'sticky-toolbar',
+    childrenUi: 'toolbar',
     children: [
       {
         id: 'markup-cloud',
