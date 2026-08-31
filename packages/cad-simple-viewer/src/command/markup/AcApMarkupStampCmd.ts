@@ -1,18 +1,13 @@
 import { AcApContext } from '../../app'
 import {
-  AcEdCommand,
   AcEdPromptPointOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
-import {
-  configureMarkupDrawCommand,
-  createMarkupMeta,
-  promptMarkupText,
-  withMarkupInput
-} from './AcApMarkupCmdUtil'
+import { createMarkupMeta, promptMarkupText } from './AcApMarkupCmdUtil'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
 import { commitMarkup } from './AcApMarkupPresenter'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import { defaultMarkupStyle } from './AcApMarkupUtil'
@@ -28,14 +23,9 @@ const BUILTIN_STAMPS = new Set([
 /**
  * Place a review stamp (or custom symbol) at a picked point.
  */
-export class AcApMarkupStampCmd extends AcEdCommand {
-  constructor() {
-    super()
-    configureMarkupDrawCommand(this)
-  }
-
+export class AcApMarkupStampCmd extends AcApMarkupDrawCmd {
   async execute(context: AcApContext) {
-    await withMarkupInput(context, async () => {
+    await this.withMarkupInput(context, async () => {
       const stampPrompt = new AcEdPromptStringOptions(
         AcApI18n.t('jig.markup.stamp.kind')
       )

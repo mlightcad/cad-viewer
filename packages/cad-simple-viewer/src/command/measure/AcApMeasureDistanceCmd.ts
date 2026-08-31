@@ -12,16 +12,11 @@ import {
 import { AcApContext } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
-  AcEdCorsorType,
-  AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
-  AcEdPromptStatus,
-  AcEdViewMode
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { acapBindDrawStyleSessionAccessory } from '../../ui/AcApDrawStyle'
 import {
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
@@ -36,6 +31,7 @@ import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
+import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import { AcApMeasureDistanceEntity } from './entity'
 
@@ -161,45 +157,37 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * Prompts for two world points, then commits a measurement overlay.
  * Interactive preview is HTML-only (canvas stroke + badge).
  */
-export class AcApMeasureDistanceCmd extends AcEdCommand {
-  constructor() {
-    super()
-    this.mode = AcEdOpenMode.Read
-    acapBindDrawStyleSessionAccessory(this)
-  }
-
+export class AcApMeasureDistanceCmd extends AcApMeasureDrawCmd {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
     const color = acapGetMeasurementColor(db)
 
-    await context.view.withMode(AcEdViewMode.SELECTION, () =>
-      editor.withCursor(AcEdCorsorType.Crosshair, async () => {
-        const p1Prompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.measureDistance.firstPoint')
-        )
-        const p1Result = await editor.getPoint(p1Prompt)
-        if (p1Result.status !== AcEdPromptStatus.OK) return
-        const p1 = p1Result.value!
+    await this.withMeasureInput(context, async () => {
+      const p1Prompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureDistance.firstPoint')
+      )
+      const p1Result = await editor.getPoint(p1Prompt)
+      if (p1Result.status !== AcEdPromptStatus.OK) return
+      const p1 = p1Result.value!
 
-        const p2Prompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.measureDistance.secondPoint')
-        )
-        p2Prompt.useBasePoint = true
-        p2Prompt.basePoint = new AcGePoint3d(p1)
-        p2Prompt.jig = new AcApMeasureDistanceJig(context.view, db, p1, color)
-        const p2Result = await editor.getPoint(p2Prompt)
-        if (p2Result.status !== AcEdPromptStatus.OK) return
-        const p2 = p2Result.value!
+      const p2Prompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureDistance.secondPoint')
+      )
+      p2Prompt.useBasePoint = true
+      p2Prompt.basePoint = new AcGePoint3d(p1)
+      p2Prompt.jig = new AcApMeasureDistanceJig(context.view, db, p1, color)
+      const p2Result = await editor.getPoint(p2Prompt)
+      if (p2Result.status !== AcEdPromptStatus.OK) return
+      const p2 = p2Result.value!
 
-        placeDistanceMeasurement(
-          context.view as AcTrView2d,
-          db,
-          p1,
-          p2,
-          acapGetCurrentMeasurementStyle(db)
-        )
-      })
-    )
+      placeDistanceMeasurement(
+        context.view as AcTrView2d,
+        db,
+        p1,
+        p2,
+        acapGetCurrentMeasurementStyle(db)
+      )
+    })
   }
 }

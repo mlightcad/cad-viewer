@@ -3,7 +3,6 @@ import { AcCmColor, AcGePoint3dLike } from '@mlightcad/data-model'
 import { AcApContext } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
@@ -14,11 +13,8 @@ import {
   acapFillLiveHighlight,
   AcApHtmlLivePreview
 } from '../overlay/AcApHtmlLivePreview'
-import {
-  configureMarkupDrawCommand,
-  createMarkupMeta,
-  withMarkupInput
-} from './AcApMarkupCmdUtil'
+import { createMarkupMeta } from './AcApMarkupCmdUtil'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
 import { commitMarkup } from './AcApMarkupPresenter'
 import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
@@ -79,14 +75,9 @@ class AcApMarkupHighlightJig extends AcEdPreviewJig<AcGePoint3dLike> {
 /**
  * Create a semi-transparent rectangular highlight markup.
  */
-export class AcApMarkupHighlightCmd extends AcEdCommand {
-  constructor() {
-    super()
-    configureMarkupDrawCommand(this)
-  }
-
+export class AcApMarkupHighlightCmd extends AcApMarkupDrawCmd {
   async execute(context: AcApContext) {
-    await withMarkupInput(context, async () => {
+    await this.withMarkupInput(context, async () => {
       const color = defaultMarkupColor()
       const colorCss = markupColorToCss(color)
       const p1Prompt = new AcEdPromptPointOptions(
