@@ -2154,7 +2154,6 @@ export class AcEdInputManager {
         options.showMetrics ??
         (options.inputCount === 2 || basePoint != null)
 
-      let floatingInput!: AcEdFloatingInput<T>
       const getDynamicValue: AcEdFloatingInputDynamicValueCallback<T> = pos => {
         this.pushMobileMetrics(
           pos,
@@ -2163,7 +2162,7 @@ export class AcEdInputManager {
         return options.getDynamicValue(pos)
       }
 
-      floatingInput = new AcEdFloatingInput(this.view, {
+      const floatingInput = new AcEdFloatingInput(this.view, {
         parent: this.view.canvas,
         inputCount: options.inputCount,
         message: promptDefaults.message,
