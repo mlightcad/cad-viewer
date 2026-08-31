@@ -73,9 +73,14 @@ export const ICON_MEASURE_DISTANCE = measureToolIcon(
   `<rect fill="${TOOL_ICON_ACCENT}" x="2.9" y="2.5" width="1.25" height="8.8" rx=".2"/><rect fill="${TOOL_ICON_ACCENT}" x="15.85" y="2.5" width="1.25" height="8.8" rx=".2"/><path fill="${TOOL_ICON_ACCENT}" d="M4.4 6.9 7.2 5.05v3.7Z"/><path fill="${TOOL_ICON_ACCENT}" d="M15.6 6.9 12.8 5.05v3.7Z"/><rect fill="${TOOL_ICON_ACCENT}" x="6.7" y="6.25" width="6.6" height="1.3"/>`
 )
 
-/** Measure angle icon (diagonal segment with endpoint grips over a ruler). */
+/** Continuous distance icon (distance glyph with an "n" badge for n segments). */
+export const ICON_MEASURE_CONTINUOUS = measureToolIcon(
+  `<rect fill="${TOOL_ICON_ACCENT}" x="2.9" y="2.5" width="1.25" height="8.8" rx=".2"/><rect fill="${TOOL_ICON_ACCENT}" x="15.85" y="2.5" width="1.25" height="8.8" rx=".2"/><path fill="${TOOL_ICON_ACCENT}" d="M4.4 6.9 7.2 5.05v3.7Z"/><path fill="${TOOL_ICON_ACCENT}" d="M15.6 6.9 12.8 5.05v3.7Z"/><rect fill="${TOOL_ICON_ACCENT}" x="6.7" y="6.25" width="6.6" height="1.3"/><circle fill="currentColor" cx="10" cy="3.45" r="2.2"/><text x="10" y="4.42" text-anchor="middle" font-size="3.15" font-weight="700" font-family="Arial,Helvetica,sans-serif" fill="${TOOL_ICON_ACCENT}">n</text>`
+)
+
+/** Measure angle icon (two rays and a dimension arc over a ruler). */
 export const ICON_MEASURE_ANGLE = measureToolIcon(
-  `<g fill="none" stroke-linejoin="miter"><path stroke="currentColor" stroke-width="1.45" stroke-linecap="butt" d="M4.6 3.8 14.6 11.6"/><rect stroke="${TOOL_ICON_ACCENT}" stroke-width="1.1" x="3.35" y="2.55" width="2.5" height="2.5"/><rect stroke="${TOOL_ICON_ACCENT}" stroke-width="1.1" x="13.35" y="10.35" width="2.5" height="2.5"/></g>`
+  `<g fill="none" stroke="${TOOL_ICON_ACCENT}" stroke-linejoin="miter"><path stroke-width="1.55" stroke-linecap="butt" d="M16.9 12.25H4.9L11.6 3.03"/><path stroke-width="1.7" stroke-linecap="butt" d="M11.05 12.25A6.15 6.15 0 0 0 8.51 7.27"/></g><path fill="${TOOL_ICON_ACCENT}" d="M11.05 12.25 9.85 10.55h2.4Z"/><path fill="${TOOL_ICON_ACCENT}" d="M8.51 7.27 10.46 7.39 9.23 9.09Z"/>`
 )
 
 /** Measure area icon (filled quarter-circle sector over a ruler). */

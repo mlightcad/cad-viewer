@@ -17,6 +17,7 @@ export const zh: Record<string, string> = {
   'toolbar.settings': '设置',
   'toolbar.measure': '测量',
   'toolbar.measureDistance': '测距离',
+  'toolbar.measureContinuous': '连续测',
   'toolbar.measureAngle': '测角度',
   'toolbar.measureArea': '测面积',
   'toolbar.measureArc': '测弧长',

@@ -1,5 +1,5 @@
 /**
- * Measurement tools for the offline HTML viewer (distance, angle, arc, area, coordinate).
+ * Measurement tools for the offline HTML viewer (distance, continuous, angle, arc, area, coordinate).
  *
  * @module AcExMeasurement
  * @packageDocumentation
@@ -84,6 +84,7 @@ const MEASURE_HIT_THRESHOLD_PX = 10
  * Active measurement tool selected from the toolbar.
  *
  * - `distance` — two-point linear distance.
+ * - `continuous` — chained linear distances (successive vertices until Enter/Esc).
  * - `angle` — three-point angle (vertex + two arm endpoints).
  * - `arc` — three-point arc length (start, point on arc, end).
  * - `area` — multi-point polygon area.
@@ -91,6 +92,7 @@ const MEASURE_HIT_THRESHOLD_PX = 10
  */
 export type AcExMeasureMode =
   | 'distance'
+  | 'continuous'
   | 'angle'
   | 'arc'
   | 'area'
@@ -1237,18 +1239,19 @@ export class AcExMeasureController {
    * Activates a measure mode from the toolbar.
    *
    * When `toggleOff` is true (default) and `mode` equals the active mode,
-   * the tool is turned off via {@link cancelMode}. Switching modes clears
-   * in-progress picks and updates toolbar `active` styling.
+   * an in-progress continuous chain with at least one segment is committed;
+   * otherwise the tool is turned off via {@link cancelMode}. Switching away
+   * from continuous behaves the same way, then enters the new mode.
    *
    * @param mode - Tool to enable, or `null` to only reset state.
    * @param toggleOff - If true, clicking the same tool again deactivates it.
    */
   setMode(mode: AcExMeasureMode | null, toggleOff = true): void {
     if (mode === this._mode && toggleOff) {
-      this.cancelMode()
+      if (!this._finishContinuousIfPossible()) this.cancelMode()
       return
     }
-    this.cancelMode()
+    if (!this._finishContinuousIfPossible()) this.cancelMode()
     this._deselect(false)
     if (mode === null) return
     this._mode = mode
@@ -1278,6 +1281,19 @@ export class AcExMeasureController {
     this._updateIdleStatus()
     this._view.render()
     if (wasActive) this._onActiveChange?.(false)
+  }
+
+  /**
+   * Commits an in-progress continuous measurement when at least one segment
+   * exists, then exits create mode. Used by Enter, Esc, and tool switching.
+   */
+  private _finishContinuousIfPossible(): boolean {
+    if (this._mode !== 'continuous' || this._points.length < 2) return false
+    this._commitContinuous(this._points.map(p => p.clone()))
+    this._points = []
+    this._hidePreview()
+    this._exitCreateModeKeepStatus()
+    return true
   }
 
   /**
@@ -1545,6 +1561,8 @@ export class AcExMeasureController {
     switch (this._mode) {
       case 'distance':
         return this._pointerDistance(point, clientX, clientY)
+      case 'continuous':
+        return this._pointerContinuous(point, clientX, clientY)
       case 'angle':
         return this._pointerAngle(point, clientX, clientY)
       case 'arc':
@@ -1592,6 +1610,7 @@ export class AcExMeasureController {
       return true
     }
     if (key === 'Escape') {
+      if (this._finishContinuousIfPossible()) return true
       if (this._mode) {
         this.cancelMode()
         return true
@@ -1609,6 +1628,7 @@ export class AcExMeasureController {
       this._exitCreateModeKeepStatus()
       return true
     }
+    if (key === 'Enter' && this._finishContinuousIfPossible()) return true
     return false
   }
 
@@ -1702,6 +1722,8 @@ export class AcExMeasureController {
     switch (mode) {
       case 'distance':
         return this._i18n.t('status.measureDistanceHint')
+      case 'continuous':
+        return this._i18n.t('status.measureContinuousHint')
       case 'angle':
         return this._i18n.t('status.measureAngleHint')
       case 'arc':
@@ -1768,7 +1790,7 @@ export class AcExMeasureController {
     this._liveLabel.style.display = 'none'
     this._overlayLayer
       .querySelectorAll(
-        '.mlcad-measure-canvas--preview, .mlcad-measure-canvas--preview-line'
+        '.mlcad-measure-canvas--preview, .mlcad-measure-canvas--preview-line, .mlcad-measure-badge--preview'
       )
       .forEach(el => el.remove())
   }
@@ -1846,6 +1868,11 @@ export class AcExMeasureController {
           this._previewDistance(point, x, y)
         }
         break
+      case 'continuous':
+        if (this._points.length >= 1) {
+          this._previewContinuous(point, x, y)
+        }
+        break
       case 'angle':
         if (this._points.length >= 1) {
           this._previewAngle(point, x, y)
@@ -1885,13 +1912,45 @@ export class AcExMeasureController {
   }
 
   /**
+   * Positions live per-segment badges during continuous measurement.
+   * @internal
+   */
+  private _syncPreviewBadges(
+    items: Array<{ wcs: THREE.Vector2; text: string }>
+  ): void {
+    const existing = Array.from(
+      this._overlayLayer.querySelectorAll<HTMLDivElement>(
+        '.mlcad-measure-badge--preview'
+      )
+    )
+    while (existing.length > items.length) existing.pop()?.remove()
+    while (existing.length < items.length) {
+      const el = makeBadgeEl('')
+      el.classList.add('mlcad-measure-badge--preview')
+      this._overlayLayer.appendChild(el)
+      existing.push(el)
+    }
+    const css = this._measureCss()
+    for (let i = 0; i < items.length; i++) {
+      const el = existing[i]!
+      const item = items[i]!
+      el.textContent = item.text
+      el.style.color = css
+      el.style.borderColor = css
+      el.style.fontSize = `${this._drawFontSize}px`
+      el.style.display = 'block'
+      this._placeDomAt(el, item.wcs)
+    }
+  }
+
+  /**
    * Updates the rubber-band HTML canvas polyline from WCS vertices.
    * Uses the current draw-style color and line weight.
    * @internal
    */
   private _setPreviewLine(
     points: THREE.Vector2[],
-    options?: { bothArrows?: boolean }
+    options?: { bothArrows?: boolean; segmentArrows?: boolean }
   ): void {
     let canvas = this._overlayLayer.querySelector<HTMLCanvasElement>(
       '.mlcad-measure-canvas--preview-line'
@@ -1910,7 +1969,10 @@ export class AcExMeasureController {
       this._measureCss(),
       acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT),
       undefined,
-      options?.bothArrows
+      options?.bothArrows,
+      false,
+      undefined,
+      options?.segmentArrows
     )
   }
 
@@ -2178,6 +2240,66 @@ export class AcExMeasureController {
       })
     )
     this._syncGripPointerEvents()
+  }
+
+  /**
+   * Continuous tool: successive vertices until Enter/Esc.
+   * @internal
+   */
+  private _pointerContinuous(
+    point: THREE.Vector2,
+    clientX: number,
+    clientY: number
+  ): boolean {
+    if (this._points.length >= 1) {
+      const last = this._points[this._points.length - 1]!
+      if (dist2(last, point) < 1e-9) return true
+    }
+    this._points.push(point.clone())
+    this._previewContinuous(point, clientX, clientY)
+    return true
+  }
+
+  /** Continuous tool live preview (polyline + per-segment midpoint badges). @internal */
+  private _previewContinuous(
+    point: THREE.Vector2,
+    _clientX: number,
+    _clientY: number
+  ): void {
+    if (this._points.length === 0) {
+      this._hidePreview()
+      return
+    }
+    const pts = [...this._points, point]
+    this._setPreviewLine(pts, { segmentArrows: true })
+    const items: Array<{ wcs: THREE.Vector2; text: string }> = []
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i]!
+      const b = pts[i + 1]!
+      const dist = dist2(a, b)
+      if (dist < 1e-4) continue
+      items.push({
+        wcs: new THREE.Vector2((a.x + b.x) / 2, (a.y + b.y) / 2),
+        text: this._view.formatLength(dist)
+      })
+    }
+    this._syncPreviewBadges(items)
+    this._liveLabel.style.display = 'none'
+    this._requestRender()
+  }
+
+  /**
+   * Persists each consecutive pair as a normal distance measurement.
+   * @internal
+   */
+  private _commitContinuous(pointsIn: THREE.Vector2[]): void {
+    if (pointsIn.length < 2) return
+    for (let i = 0; i < pointsIn.length - 1; i++) {
+      const a = pointsIn[i]!
+      const b = pointsIn[i + 1]!
+      if (dist2(a, b) < 1e-4) continue
+      this._commitDistance(a, b)
+    }
   }
 
   /**
@@ -3237,12 +3359,14 @@ export class AcExMeasureController {
     strokeWidthWcs?: number,
     bothArrows = false,
     scaleArrowsWithView = false,
-    arrowSizeWcs?: number
+    arrowSizeWcs?: number,
+    segmentArrows = false
   ): void {
     if (points.length < 2) return
     const synced = this._syncCanvas(canvas)
     if (!synced) return
     const { ctx, dpr } = synced
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.save()
     ctx.scale(dpr, dpr)
@@ -3267,9 +3391,10 @@ export class AcExMeasureController {
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
     ctx.stroke()
-    if (bothArrows && screen.length === 2) {
-      const a = screen[0]!
-      const b = screen[1]!
+    const drawArrows = segmentArrows
+      ? screen.length >= 2
+      : bothArrows && screen.length === 2
+    if (drawArrows) {
       const arrowSize = scaleArrowsWithView
         ? acExScaledOverlayArrowSize(
             canvas,
@@ -3277,9 +3402,14 @@ export class AcExMeasureController {
             arrowSizeWcs
           )
         : acExOverlayArrowSize(scaled, lineWidth)
-      if (Math.hypot(b.x - a.x, b.y - a.y) >= arrowSize) {
-        acExDrawMarkupArrowHead(ctx, b, a, strokeCss, arrowSize)
-        acExDrawMarkupArrowHead(ctx, a, b, strokeCss, arrowSize)
+      const last = segmentArrows ? screen.length - 1 : 1
+      for (let i = 0; i < last; i++) {
+        const a = screen[i]!
+        const b = screen[i + 1]!
+        if (Math.hypot(b.x - a.x, b.y - a.y) >= arrowSize) {
+          acExDrawMarkupArrowHead(ctx, b, a, strokeCss, arrowSize)
+          acExDrawMarkupArrowHead(ctx, a, b, strokeCss, arrowSize)
+        }
       }
     }
     ctx.restore()

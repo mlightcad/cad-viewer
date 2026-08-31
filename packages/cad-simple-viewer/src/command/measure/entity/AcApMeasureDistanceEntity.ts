@@ -28,8 +28,8 @@ import { drawMeasureSegmentOnCanvas } from './AcApMeasureDrawUtil'
 import {
   AcApMeasureEntity,
   type AcApMeasureEntityOptions,
-  type AcApMeasureWorldDrawResult
-} from './AcApMeasureEntity'
+  type AcApMeasureWorldDrawResult,
+  newMeasureOverlayId} from './AcApMeasureEntity'
 import { selectMeasurementGroup } from './AcApMeasureEntityGrips'
 
 /**
@@ -71,7 +71,7 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
     options: AcApMeasureEntityOptions
   ) {
     super(
-      options.id ?? `dist-${Date.now()}`,
+      options.id ?? newMeasureOverlayId('dist'),
       options.layoutId,
       options.style,
       options.textHeightWcs,

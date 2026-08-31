@@ -201,6 +201,7 @@ jest.mock('../src/command', () => {
     'AcApMeasureAngleCmd',
     'AcApMeasureArcCmd',
     'AcApMeasureAreaCmd',
+    'AcApMeasureContinuousCmd',
     'AcApMeasureDistanceCmd',
     'AcApMeasurementExportCmd',
     'AcApMeasurementImportCmd',

@@ -606,6 +606,12 @@ export default {
       description: 'قياس المسافة بين نقطتين'
     },
 
+    measureContinuous: {
+      ...enMain.verticalToolbar.measureContinuous,
+      text: 'مستمر',
+      description: 'قياس مسافات متسلسلة باختيار نقاط متتالية حتى Enter أو إلغاء'
+    },
+
     measureAngle: {
       ...enMain.verticalToolbar.measureAngle,
       text: 'الزاوية',

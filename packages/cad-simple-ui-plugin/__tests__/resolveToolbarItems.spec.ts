@@ -285,6 +285,7 @@ describe('default toolbar items', () => {
       )
     ).toEqual([
       'measuredistance',
+      'measurecontinuous',
       'measureangle',
       'measurearea',
       'measurearc',
@@ -373,7 +374,10 @@ describe('default toolbar items', () => {
 
     expect(iconOf('measure-distance')).toContain('M4.4 6.9 7.2 5.05v3.7Z')
     expect(iconOf('measure-distance')).toContain('--el-color-primary')
-    expect(iconOf('measure-angle')).toContain('M4.6 3.8 14.6 11.6')
+    expect(iconOf('measure-continuous')).toContain('M4.4 6.9 7.2 5.05v3.7Z')
+    expect(iconOf('measure-continuous')).toContain('>n</text>')
+    expect(iconOf('measure-continuous')).toContain('--el-color-primary')
+    expect(iconOf('measure-angle')).toContain('M16.9 12.25H4.9L11.6 3.03')
     expect(iconOf('measure-angle')).toContain('--el-color-primary')
     expect(iconOf('measure-area')).toContain('M5 12V4.2A7.8 7.8 0 0 1 12.8 12Z')
     expect(iconOf('measure-area')).toContain('--el-color-primary')

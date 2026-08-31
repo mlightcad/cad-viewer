@@ -144,6 +144,7 @@ import {
   measureAngle,
   measureArc,
   measureArea,
+  measureContinuous,
   measureDistance,
   measurementPanel,
   measurePoint,
@@ -1083,6 +1084,7 @@ const buildBaseTabs = (
   }
   const verticalToolbarDescriptions = {
     measureDistance: t('main.verticalToolbar.measureDistance.description'),
+    measureContinuous: t('main.verticalToolbar.measureContinuous.description'),
     measureAngle: t('main.verticalToolbar.measureAngle.description'),
     measureArea: t('main.verticalToolbar.measureArea.description'),
     measureArc: t('main.verticalToolbar.measureArc.description'),
@@ -1269,6 +1271,14 @@ const buildBaseTabs = (
       tooltip: verticalToolbarDescriptions.measureDistance,
       size: 'large',
       props: { icon: measureDistance }
+    },
+    {
+      id: 'cmd-tool-measure-continuous',
+      type: 'button',
+      label: t('main.verticalToolbar.measureContinuous.text'),
+      tooltip: verticalToolbarDescriptions.measureContinuous,
+      size: 'large',
+      props: { icon: measureContinuous }
     },
     {
       id: 'cmd-tool-measure-angle',
@@ -2366,6 +2376,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-tool-markup-vis', 'markupvis')
   commandByItemId.set('cmd-tool-markup-clear', 'clearmarkups')
   commandByItemId.set('cmd-tool-measure-distance', 'measuredistance')
+  commandByItemId.set('cmd-tool-measure-continuous', 'measurecontinuous')
   commandByItemId.set('cmd-tool-measure-angle', 'measureangle')
   commandByItemId.set('cmd-tool-measure-area', 'measurearea')
   commandByItemId.set('cmd-tool-measure-arc', 'measurearc')

@@ -36,6 +36,7 @@ export type AcExHtmlMessageKey =
   | 'toolbar.zoomWindow'
   | 'toolbar.zoomOriginal'
   | 'toolbar.measureDistance'
+  | 'toolbar.measureContinuous'
   | 'toolbar.measureAngle'
   | 'toolbar.measureArc'
   | 'toolbar.measureArea'
@@ -120,6 +121,7 @@ export type AcExHtmlMessageKey =
   | 'status.ready'
   | 'status.zoomWindowHint'
   | 'status.measureDistanceHint'
+  | 'status.measureContinuousHint'
   | 'status.measureAngleHint'
   | 'status.measureArcHint'
   | 'status.measureAreaHint'
@@ -192,6 +194,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomWindow: 'Window',
       zoomOriginal: 'Original',
       measureDistance: 'Distance',
+      measureContinuous: 'Continuous',
       measureAngle: 'Angle',
       measureArc: 'Arc',
       measureArea: 'Area',
@@ -291,6 +294,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomWindowHint: 'Click two corners to zoom to a window.',
       measureDistanceHint:
         'Click two points to measure distance (object snap enabled).',
+      measureContinuousHint:
+        'Click successive points to measure each segment; Enter or Esc to finish (object snap enabled).',
       measureAngleHint:
         'Click vertex, then two points on each arm (object snap enabled).',
       measureArcHint:
@@ -367,6 +372,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomWindow: '窗口',
       zoomOriginal: '原始',
       measureDistance: '测距离',
+      measureContinuous: '连续测',
       measureAngle: '测角度',
       measureArc: '测弧长',
       measureArea: '测面积',
@@ -464,6 +470,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       ready: '就绪',
       zoomWindowHint: '点击两个角点以窗口缩放。',
       measureDistanceHint: '点击两点以测量距离（已启用对象捕捉）。',
+      measureContinuousHint:
+        '依次点击多个点测量各段距离，按 Enter 或 Esc 完成（已启用对象捕捉）。',
       measureAngleHint: '依次点击顶点与两条边上的点（已启用对象捕捉）。',
       measureArcHint:
         '点击圆或圆弧可沿其测量；否则依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。锁定后按 Ctrl（Mac 为 Control 或 ⌘）可在大弧与小弧之间切换。',
@@ -533,6 +541,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomWindow: 'Okno',
       zoomOriginal: 'Původní',
       measureDistance: 'Vzdálenost',
+      measureContinuous: 'Spojité',
       measureAngle: 'Úhel',
       measureArc: 'Oblouk',
       measureArea: 'Plocha',
@@ -631,6 +640,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomWindowHint: 'Klikněte na dva rohy pro přiblížení oknem.',
       measureDistanceHint:
         'Klikněte na dva body pro změření vzdálenosti (uchopení objektů zapnuto).',
+      measureContinuousHint:
+        'Klikněte na další body pro změření každého úseku; Enter nebo Esc dokončí (uchopení objektů zapnuto).',
       measureAngleHint:
         'Klikněte na vrchol, poté na dva body na každém rameni (uchopení objektů zapnuto).',
       measureArcHint:
@@ -707,6 +718,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomWindow: 'Pencere',
       zoomOriginal: 'Orijinal',
       measureDistance: 'Mesafe',
+      measureContinuous: 'Sürekli',
       measureAngle: 'Açı',
       measureArc: 'Yay',
       measureArea: 'Alan',
@@ -805,6 +817,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       zoomWindowHint: 'Pencere yakınlaştırmak için iki köşeyi tıklayın.',
       measureDistanceHint:
         'Mesafe ölçmek için iki nokta tıklayın (nesne yakalama etkin).',
+      measureContinuousHint:
+        'Her segmenti ölçmek için ardışık noktalar tıklayın; bitirmek için Enter veya Esc (nesne yakalama etkin).',
       measureAngleHint:
         'Önce köşe noktasını, sonra her koldan birer nokta tıklayın (nesne yakalama etkin).',
       measureArcHint:
@@ -884,6 +898,7 @@ const AR_MESSAGES: AcExMessageTree = {
     'zoomWindow': 'نافذة',
     'zoomOriginal': 'أصلي',
     'measureDistance': 'مسافة',
+    'measureContinuous': 'مستمر',
     'measureAngle': 'زاوية',
     'measureArc': 'قوس',
     'measureArea': 'مساحة',
@@ -982,6 +997,7 @@ const AR_MESSAGES: AcExMessageTree = {
     'ready': 'جاهز',
     'zoomWindowHint': 'انقر على ركنين لتحديد نافذة التكبير.',
     'measureDistanceHint': 'انقر على نقطتين لقياس المسافة (التقاط الكائنات مفعّل).',
+    'measureContinuousHint': 'انقر على نقاط متتالية لقياس كل قطعة؛ Enter أو Esc للإنهاء (التقاط الكائنات مفعّل).',
     'measureAngleHint': 'انقر على رأس الزاوية، ثم نقطة على كل ضلع (التقاط الكائنات مفعّل).',
     'measureArcHint': 'انقر على دائرة أو قوس للقياس عليه، أو انقر على نقطة البداية ثم نقطة على القوس ثم نقطة النهاية (التقاط الكائنات مفعّل). استخدم Ctrl (⌘ على Mac) للتبديل بين القوس الأكبر والأصغر.',
     'measureAreaHint': 'انقر على رؤوس المضلع؛ انقر بالقرب من النقطة الأولى أو اضغط Enter للإنهاء.',

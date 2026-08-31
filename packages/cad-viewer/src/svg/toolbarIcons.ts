@@ -26,6 +26,7 @@ import {
   ICON_MEASURE_ANGLE,
   ICON_MEASURE_ARC,
   ICON_MEASURE_AREA,
+  ICON_MEASURE_CONTINUOUS,
   ICON_MEASURE_DISTANCE,
   ICON_MEASURE_POINT,
   ICON_MEASUREMENT_PANEL,
@@ -50,6 +51,10 @@ export const measure = acapSvgIcon(ICON_MEASURE, 'IconMeasure')
 export const measureDistance = acapSvgIcon(
   ICON_MEASURE_DISTANCE,
   'IconMeasureDistance'
+)
+export const measureContinuous = acapSvgIcon(
+  ICON_MEASURE_CONTINUOUS,
+  'IconMeasureContinuous'
 )
 export const measureAngle = acapSvgIcon(ICON_MEASURE_ANGLE, 'IconMeasureAngle')
 export const measureArea = acapSvgIcon(ICON_MEASURE_AREA, 'IconMeasureArea')

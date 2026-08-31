@@ -32,6 +32,7 @@ import {
   ICON_MEASURE_ANGLE,
   ICON_MEASURE_ARC,
   ICON_MEASURE_AREA,
+  ICON_MEASURE_CONTINUOUS,
   ICON_MEASURE_COORDINATE,
   ICON_MEASURE_DISTANCE,
   ICON_MEASUREMENT_PANEL,
@@ -65,6 +66,8 @@ export const acExHtmlIcons = {
   zoomBox: ICON_ZOOM_BOX,
   /** Measure-distance toolbar icon. */
   measureDistance: ICON_MEASURE_DISTANCE,
+  /** Continuous (chained) distance toolbar icon. */
+  measureContinuous: ICON_MEASURE_CONTINUOUS,
   /** Measure-angle toolbar icon. */
   measureAngle: ICON_MEASURE_ANGLE,
   /** Measure-arc-length toolbar icon. */

@@ -28,6 +28,7 @@ import {
   measureAngle,
   measureArc,
   measureArea,
+  measureContinuous,
   measureDistance,
   measurementPanel,
   measurePoint,
@@ -156,6 +157,12 @@ const verticalToolbarData = computed(() => {
           text: t('main.verticalToolbar.measureDistance.text'),
           command: 'measuredistance',
           description: t('main.verticalToolbar.measureDistance.description')
+        },
+        {
+          icon: measureContinuous,
+          text: t('main.verticalToolbar.measureContinuous.text'),
+          command: 'measurecontinuous',
+          description: t('main.verticalToolbar.measureContinuous.description')
         },
         {
           icon: measureAngle,

@@ -424,6 +424,11 @@ export default {
       text: 'Vzdálenost',
       description: 'Změří vzdálenost mezi dvěma body'
     },
+    measureContinuous: {
+      text: 'Spojité',
+      description:
+        'Měří řetězené vzdálenosti postupným zadáváním bodů, dokud nestisknete Enter nebo Zrušit'
+    },
     measureAngle: {
       text: 'Úhel',
       description: 'Změří úhel mezi dvěma čarami se společným vrcholem'

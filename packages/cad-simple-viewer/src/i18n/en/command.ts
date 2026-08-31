@@ -302,6 +302,10 @@ export default {
     measuredistance: {
       description: 'Measures the distance and delta values between two points'
     },
+    measurecontinuous: {
+      description:
+        'Measures chained distances by picking successive points until Enter or Cancel'
+    },
     measurepoint: {
       description: 'Measures the X/Y coordinates of a picked point'
     },

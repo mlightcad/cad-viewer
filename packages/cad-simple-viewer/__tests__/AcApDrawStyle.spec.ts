@@ -42,6 +42,7 @@ describe('subscribeMarkupDrawStyle', () => {
 describe('acapDrawStyleKindForCommand', () => {
   it('classifies measurement drawing commands', () => {
     expect(acapDrawStyleKindForCommand('measuredistance')).toBe('measure')
+    expect(acapDrawStyleKindForCommand('measurecontinuous')).toBe('measure')
     expect(acapDrawStyleKindForCommand('MEASUREANGLE')).toBe('measure')
   })
 

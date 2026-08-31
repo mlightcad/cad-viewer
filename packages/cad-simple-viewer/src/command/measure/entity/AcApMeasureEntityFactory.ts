@@ -12,8 +12,8 @@ import { AcApMeasurePointEntity } from './AcApMeasurePointEntity'
  *
  * Pair with {@link AcApMeasureEntity.toRecord} for the serialize half of the
  * overlay persistence protocol. Deserializes the record's style and dispatches
- * on `geometry.type` to the matching entity constructor (`distance`, `angle`,
- * `area`, `arc`, or `point`).
+ * on `geometry.type` to the matching entity constructor (`distance`,
+ * `angle`, `area`, `arc`, or `point`).
  *
  * @param record - Persisted measurement record to rehydrate
  * @returns Measure entity ready for {@link AcApMeasureEntity.commit}

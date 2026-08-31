@@ -675,6 +675,10 @@ export default {
     firstPoint: 'Specify first point',
     secondPoint: 'Specify second point'
   },
+  measureContinuous: {
+    firstPoint: 'Specify first point',
+    nextPoint: 'Specify next point (or press Enter to finish)'
+  },
   measurePoint: {
     point: 'Specify point'
   },

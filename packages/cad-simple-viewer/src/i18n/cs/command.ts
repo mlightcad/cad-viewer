@@ -303,6 +303,10 @@ export default {
     measuredistance: {
       description: 'Změří vzdálenost a přírůstky mezi dvěma body'
     },
+    measurecontinuous: {
+      description:
+        'Měří řetězené vzdálenosti postupným zadáváním bodů, dokud nestisknete Enter nebo Zrušit'
+    },
     measurepoint: {
       description: 'Změří souřadnice X/Y vybraného bodu'
     },
