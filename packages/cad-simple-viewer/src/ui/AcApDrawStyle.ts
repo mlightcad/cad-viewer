@@ -1,4 +1,7 @@
+import type { AcApContext } from '../app/AcApContext'
 import { AcApSettingManager } from '../app/AcApSettingManager'
+import type { AcEdSessionAccessory } from '../editor/command/AcEdSessionAccessory'
+import type { AcEdBaseView } from '../editor/view/AcEdBaseView'
 
 /**
  * Kind of drawing session served by the style overlay.
@@ -171,4 +174,49 @@ export function acapSetDrawStyleToolbarVisible(visible: boolean): void {
   if (toolbarVisible === visible) return
   toolbarVisible = visible
   for (const listener of visibilityListeners) listener(visible)
+}
+
+/**
+ * Host that can mount color / font-size controls into the session panel.
+ */
+export interface AcApDrawStyleSessionHost {
+  createSessionAccessory(): AcEdSessionAccessory
+}
+
+const sessionHosts = new WeakMap<object, AcApDrawStyleSessionHost>()
+
+/**
+ * Registers the view's draw-style toolbar as the session-panel accessory host.
+ *
+ * @param view - View whose container hosts the overlay.
+ * @param host - Toolbar that can reparent controls into the session slot.
+ */
+export function acapRegisterDrawStyleSessionHost(
+  view: AcEdBaseView,
+  host: AcApDrawStyleSessionHost
+): void {
+  sessionHosts.set(view, host)
+}
+
+/**
+ * Drops the view's draw-style session host (toolbar dispose).
+ *
+ * @param view - View previously passed to {@link acapRegisterDrawStyleSessionHost}.
+ */
+export function acapUnregisterDrawStyleSessionHost(view: AcEdBaseView): void {
+  sessionHosts.delete(view)
+}
+
+/**
+ * Makes `command.createSessionAccessory` return the view's draw-style controls.
+ *
+ * @param command - Command that should expose color / font-size on phone/pad.
+ */
+export function acapBindDrawStyleSessionAccessory(command: {
+  createSessionAccessory: (
+    context: AcApContext
+  ) => AcEdSessionAccessory | null
+}): void {
+  command.createSessionAccessory = context =>
+    sessionHosts.get(context.view)?.createSessionAccessory() ?? null
 }

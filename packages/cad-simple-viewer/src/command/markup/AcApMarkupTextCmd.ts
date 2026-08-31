@@ -9,7 +9,7 @@ import {
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
 import {
-  configureMarkupCommand,
+  configureMarkupDrawCommand,
   createMarkupMeta,
   promptMarkupCapsuleText,
   withMarkupInput
@@ -29,7 +29,7 @@ import {
 export class AcApMarkupTextCmd extends AcEdCommand {
   constructor() {
     super()
-    configureMarkupCommand(this)
+    configureMarkupDrawCommand(this)
   }
 
   async execute(context: AcApContext) {

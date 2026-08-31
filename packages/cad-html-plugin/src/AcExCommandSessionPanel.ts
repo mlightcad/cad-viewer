@@ -39,6 +39,18 @@ export interface AcExCommandSessionPanelHandlers {
 }
 
 /**
+ * Widget mounted at the top of the session panel (color / font size).
+ */
+export interface AcExSessionAccessory {
+  /** Stable id so a re-show can replace rather than stack. */
+  id: string
+  /** Called when the session panel is shown. `host` is the accessory row. */
+  mount(host: HTMLElement): void
+  /** Called on hide or when a different accessory replaces this one. */
+  unmount(): void
+}
+
+/**
  * Bottom session panel for the offline HTML viewer: live length/angle/Δ
  * readouts plus on-screen Confirm / Cancel. The existing
  * `#mlcad-status-bar` remains the prompt (top message bar).
@@ -54,6 +66,7 @@ export class AcExCommandSessionPanel {
   private readonly polarActions: HTMLElement | null
   private readonly deltaActions: HTMLElement | null
   private readonly sharedActions: HTMLElement | null
+  private readonly accessoryEl: HTMLElement
   private readonly chipsEl: HTMLElement
   private readonly cancelBtn: HTMLButtonElement
   private readonly confirmBtn: HTMLButtonElement
@@ -63,6 +76,7 @@ export class AcExCommandSessionPanel {
   >
   private handlers: AcExCommandSessionPanelHandlers | null = null
   private lastState: AcExCommandSessionUiState | null = null
+  private accessory: AcExSessionAccessory | null = null
 
   constructor(host: HTMLElement, i18n: AcExHtmlI18n) {
     this.i18n = i18n
@@ -79,6 +93,15 @@ export class AcExCommandSessionPanel {
     this.polarActions = host.querySelector('[data-session-actions="polar"]')
     this.deltaActions = host.querySelector('[data-session-actions="delta"]')
     this.sharedActions = host.querySelector('[data-session-actions="shared"]')
+    this.accessoryEl =
+      (host.querySelector('.mlcad-session-accessory') as HTMLElement) ??
+      host.insertBefore(
+        Object.assign(document.createElement('div'), {
+          className: 'mlcad-session-accessory',
+          hidden: true
+        }),
+        host.firstChild
+      )
     this.chipsEl = host.querySelector('.mlcad-session-chips') as HTMLElement
     this.cancelBtn = host.querySelector(
       '.mlcad-session-cancel'
@@ -134,11 +157,31 @@ export class AcExCommandSessionPanel {
       .getElementById('mlcad-root')
       ?.classList.toggle('mlcad-session-active', active)
 
-    if (!state) return
+    if (!state) {
+      this.setAccessory(null)
+      return
+    }
 
     this.confirmBtn.disabled = !state.confirmEnabled
     this.renderMetrics(state.metrics)
     this.renderChips(state.chips)
+  }
+
+  /**
+   * Mounts widgets at the top of the session panel. Pass `null` to clear.
+   * Same `id` is a no-op so live metric updates do not remount controls.
+   */
+  setAccessory(next: AcExSessionAccessory | null): void {
+    if ((this.accessory?.id ?? null) === (next?.id ?? null)) return
+    this.accessory?.unmount()
+    this.accessoryEl.replaceChildren()
+    this.accessory = next
+    if (next) {
+      this.accessoryEl.hidden = false
+      next.mount(this.accessoryEl)
+    } else {
+      this.accessoryEl.hidden = true
+    }
   }
 
   /** Re-applies metric labels after a locale change. */

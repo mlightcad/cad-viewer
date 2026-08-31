@@ -24,6 +24,7 @@ import {
   subscribeMeasurementSelection
 } from '../command/measure/AcApMeasurementStore'
 import type { AcEdCommandEventArgs } from '../editor'
+import type { AcEdSessionAccessory } from '../editor/command/AcEdSessionAccessory'
 import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
 import { AcApI18n } from '../i18n'
 import {
@@ -38,9 +39,11 @@ import type { AcTrView2d } from '../view'
 import {
   type AcApDrawStyleKind,
   acapDrawStyleKindForCommand,
+  acapRegisterDrawStyleSessionHost,
   acapResolveDrawStyleKind,
   acapSetDrawStyleToolbarVisible,
-  acapShouldShowDrawStyleToolbar
+  acapShouldShowDrawStyleToolbar,
+  acapUnregisterDrawStyleSessionHost
 } from './AcApDrawStyle'
 
 /** Font-size choices shown in the overlay dropdown, in CSS pixels. */
@@ -71,6 +74,11 @@ const TOOLBAR_CSS = `
     }
     .ml-draw-style-toolbar.is-visible {
       display: inline-flex;
+    }
+    .ml-draw-style-toolbar__controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .ml-draw-style-toolbar__swatch {
       position: relative;
@@ -119,6 +127,10 @@ const TOOLBAR_CSS = `
     }
     .ml-draw-style-toolbar__color-panel.is-open {
       display: block;
+    }
+    .ml-draw-style-toolbar__color-panel--drop-up {
+      top: auto;
+      bottom: calc(100% + 6px);
     }
     .ml-draw-style-toolbar__aci-large {
       display: grid;
@@ -235,6 +247,12 @@ export class AcApDrawStyleToolbar {
   /** Dropdown of font sizes in CSS pixels. */
   private readonly fontSizeSelect: HTMLSelectElement
 
+  /** Color swatch + font-size row; reparented into the session panel. */
+  private readonly controlsRow: HTMLDivElement
+
+  /** True while controls live in the phone/pad session accessory slot. */
+  private sessionMounted = false
+
   /** Active overlay session, or `undefined` when hidden. */
   private kind: AcApDrawStyleKind | undefined
 
@@ -304,11 +322,14 @@ export class AcApDrawStyleToolbar {
     )
     this.colorWrap.appendChild(this.swatch)
     this.colorWrap.appendChild(this.colorPanel)
-    this.root.appendChild(this.colorWrap)
 
     this.fontSizeSelect = document.createElement('select')
     this.fontSizeSelect.className = 'ml-draw-style-toolbar__select'
-    this.root.appendChild(this.fontSizeSelect)
+
+    this.controlsRow = document.createElement('div')
+    this.controlsRow.className = 'ml-draw-style-toolbar__controls'
+    this.controlsRow.append(this.colorWrap, this.fontSizeSelect)
+    this.root.appendChild(this.controlsRow)
 
     this.swatch.addEventListener('click', event => {
       event.preventDefault()
@@ -328,6 +349,12 @@ export class AcApDrawStyleToolbar {
     })
     this.root.addEventListener('pointerdown', event => event.stopPropagation())
     this.root.addEventListener('mousedown', event => event.stopPropagation())
+    this.controlsRow.addEventListener('pointerdown', event =>
+      event.stopPropagation()
+    )
+    this.controlsRow.addEventListener('mousedown', event =>
+      event.stopPropagation()
+    )
     this.onDocumentPointerDown = event => {
       const target = event.target as Node | null
       const inColor = !!target && this.colorWrap.contains(target)
@@ -354,6 +381,7 @@ export class AcApDrawStyleToolbar {
       host.style.position = 'relative'
     }
     host.appendChild(this.root)
+    acapRegisterDrawStyleSessionHost(view, this)
 
     view.editor.events.commandWillStart.addEventListener(
       this.onCommandWillStart
@@ -395,8 +423,50 @@ export class AcApDrawStyleToolbar {
     )
     this.unsubscribeMarkupStore()
     this.unsubscribeMeasurementSelection()
+    this.unmountSession()
+    acapUnregisterDrawStyleSessionHost(this.view)
     this.root.remove()
     acapSetDrawStyleToolbarVisible(false)
+  }
+
+  /**
+   * Color / font-size controls for the phone/pad session panel.
+   *
+   * @returns Accessory that reparents {@link controlsRow} into the slot.
+   */
+  createSessionAccessory(): AcEdSessionAccessory {
+    return {
+      id: 'draw-style',
+      mount: host => this.mountSession(host),
+      unmount: () => this.unmountSession()
+    }
+  }
+
+  /**
+   * Moves the controls into the session panel and hides the canvas overlay.
+   *
+   * @param host - Accessory row in the bottom session panel.
+   */
+  private mountSession(host: HTMLElement): void {
+    this.sessionMounted = true
+    this.colorPanel.classList.add('ml-draw-style-toolbar__color-panel--drop-up')
+    host.appendChild(this.controlsRow)
+    this.refreshVisibility()
+    this.syncFromSession()
+  }
+
+  /**
+   * Restores the controls to the canvas overlay.
+   */
+  private unmountSession(): void {
+    if (!this.sessionMounted) return
+    this.sessionMounted = false
+    this.hideColorPanel()
+    this.colorPanel.classList.remove(
+      'ml-draw-style-toolbar__color-panel--drop-up'
+    )
+    this.root.appendChild(this.controlsRow)
+    this.refreshVisibility()
   }
 
   /**
@@ -413,12 +483,16 @@ export class AcApDrawStyleToolbar {
 
   /**
    * Shows or hides the overlay based on {@link acapShouldShowDrawStyleToolbar}.
+   * Hidden while the same controls are mounted in the session panel.
    */
   private refreshVisibility(): void {
-    const visible = acapShouldShowDrawStyleToolbar(this.kind)
+    const visible =
+      acapShouldShowDrawStyleToolbar(this.kind) && !this.sessionMounted
     this.root.classList.toggle('is-visible', visible)
-    acapSetDrawStyleToolbarVisible(visible)
-    if (visible) {
+    acapSetDrawStyleToolbarVisible(
+      visible || (this.sessionMounted && this.kind != null)
+    )
+    if (visible || this.sessionMounted) {
       this.relabel()
       this.syncFromSession()
     } else {

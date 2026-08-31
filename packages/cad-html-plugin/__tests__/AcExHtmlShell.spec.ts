@@ -60,6 +60,12 @@ describe('ACEX_HTML_SHELL_CSS', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain(
       '#mlcad-command-session.is-relative .mlcad-session-group-polar {'
     )
+    expect(ACEX_HTML_SHELL_CSS).toContain('.mlcad-session-accessory {')
+    expect(ACEX_HTML_SHELL_CSS).toContain("'accessory accessory'")
+    expect(ACEX_HTML_SHELL_CSS).toContain('flex: 0 0 36px')
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      '#mlcad-command-session.is-absolute .mlcad-session-actions-shared {'
+    )
   })
 })
 
@@ -90,6 +96,7 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).not.toContain('mlcad-tool-separator')
     expect(html).toContain('id="mlcad-status-bar"')
     expect(html).toContain('id="mlcad-command-session"')
+    expect(html).toContain('mlcad-session-accessory')
     expect(html).toContain('data-session-stack="abs"')
     expect(html).toContain('data-session-stack="polar"')
     expect(html).toContain('data-session-stack="delta"')

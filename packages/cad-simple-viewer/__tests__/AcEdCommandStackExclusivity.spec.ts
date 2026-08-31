@@ -102,4 +102,64 @@ describe('AcEdCommandStack — command exclusivity', () => {
 
     await expect(stack.cancelActive()).resolves.toBeUndefined()
   })
+
+  test('runActive sets activeCommand before work so the first prompt can read it', async () => {
+    const stack = new AcEdCommandStack()
+    const cmd = new DummyCommand()
+    const view = makeStubView(jest.fn())
+    let seenDuringWork: AcEdCommand | null = null
+
+    await stack.runActive(cmd, view, async () => {
+      seenDuringWork = stack.activeCommand
+    })
+
+    expect(seenDuringWork).toBe(cmd)
+    expect(stack.activeCommand).toBeNull()
+  })
+
+  test('runActive releases the slot if work throws', async () => {
+    const stack = new AcEdCommandStack()
+    const cmd = new DummyCommand()
+    const view = makeStubView(jest.fn())
+
+    await expect(
+      stack.runActive(cmd, view, async () => {
+        throw new Error('boom')
+      })
+    ).rejects.toThrow('boom')
+    expect(stack.activeCommand).toBeNull()
+  })
+
+  test('cancelActive during runActive waits until work settles', async () => {
+    const stack = new AcEdCommandStack()
+    const cmd = new DummyCommand()
+    const cancelSpy = jest.fn()
+    const view = makeStubView(cancelSpy)
+
+    let resolveWork!: () => void
+    const workPromise = new Promise<void>(resolve => {
+      resolveWork = resolve
+    })
+    const runPromise = stack.runActive(cmd, view, () => workPromise)
+
+    let cancelSettled = false
+    const cancelPromise = stack.cancelActive().then(() => {
+      cancelSettled = true
+    })
+    expect(cancelSpy).toHaveBeenCalledTimes(1)
+    await Promise.resolve()
+    expect(cancelSettled).toBe(false)
+
+    resolveWork()
+    await runPromise
+    await cancelPromise
+    expect(cancelSettled).toBe(true)
+    expect(stack.activeCommand).toBeNull()
+  })
+})
+
+describe('AcEdCommand.createSessionAccessory', () => {
+  test('defaults to null', () => {
+    expect(new DummyCommand().createSessionAccessory({} as never)).toBeNull()
+  })
 })

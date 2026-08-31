@@ -1,4 +1,5 @@
 import { AcApI18n } from '../../../i18n/AcApI18n'
+import type { AcEdSessionAccessory } from '../../command/AcEdSessionAccessory'
 import {
   acedIsMobileOrPadUi,
   acedIsMobileUiLayout,
@@ -52,6 +53,8 @@ export interface AcEdMobileCommandChromeState {
   allowNone: boolean
   /** When false, the metric row is hidden (typed-only numeric prompts). */
   showMetrics: boolean
+  /** Optional widgets mounted at the top of the bottom panel. */
+  accessory?: AcEdSessionAccessory | null
 }
 
 const STYLE_ID = 'ml-mobile-cmd-styles'
@@ -87,7 +90,9 @@ export class AcEdMobileCommandChrome {
   private readonly polarActions: HTMLDivElement
   private readonly deltaActions: HTMLDivElement
   private readonly sharedActions: HTMLDivElement
+  private readonly accessoryEl: HTMLDivElement
   private readonly chipsEl: HTMLDivElement
+  private accessory: AcEdSessionAccessory | null = null
   private readonly cancelBtn: HTMLButtonElement
   private readonly confirmBtn: HTMLButtonElement
   private readonly metricButtons: Record<
@@ -145,6 +150,11 @@ export class AcEdMobileCommandChrome {
     this.deltaStack.className = 'ml-mobile-cmd-metric-stack'
     this.deltaStack.append(this.metricButtons.dx, this.metricButtons.dy)
 
+    this.accessoryEl = document.createElement('div')
+    this.accessoryEl.className = 'ml-mobile-cmd-accessory'
+    this.accessoryEl.hidden = true
+    this.sinkPointer(this.accessoryEl)
+
     this.chipsEl = document.createElement('div')
     this.chipsEl.className = 'ml-mobile-cmd-chips'
 
@@ -194,6 +204,7 @@ export class AcEdMobileCommandChrome {
     this.deltaGroup.append(this.deltaStack, this.deltaActions)
 
     panel.append(
+      this.accessoryEl,
       this.chipsEl,
       this.absGroup,
       this.polarGroup,
@@ -239,6 +250,7 @@ export class AcEdMobileCommandChrome {
     this.host.style.setProperty('--ml-mobile-cmd-prompt-height', '40px')
     this.promptEl.textContent = stripPromptColon(state.prompt)
     this.confirmBtn.disabled = !state.allowNone
+    this.setAccessory(state.accessory ?? null)
     this.renderChips(state.keywords)
     if (this.frozenTexts) {
       this.setMetricTexts(this.frozenTexts, this.frozenHasBasePoint)
@@ -288,6 +300,7 @@ export class AcEdMobileCommandChrome {
   hide(): void {
     this.open = false
     this.callbacks = null
+    this.setAccessory(null)
     this.layoutUnsub?.()
     this.layoutUnsub = undefined
     this.root.hidden = true
@@ -371,6 +384,19 @@ export class AcEdMobileCommandChrome {
     }
   }
 
+  private setAccessory(next: AcEdSessionAccessory | null): void {
+    if ((this.accessory?.id ?? null) === (next?.id ?? null)) return
+    this.accessory?.unmount()
+    this.accessoryEl.replaceChildren()
+    this.accessory = next
+    if (next) {
+      this.accessoryEl.hidden = false
+      next.mount(this.accessoryEl)
+    } else {
+      this.accessoryEl.hidden = true
+    }
+  }
+
   private renderChips(keywords: AcEdMobileKeywordChip[]): void {
     this.chipsEl.replaceChildren()
     this.chipsEl.hidden = keywords.length === 0
@@ -444,11 +470,11 @@ function stripPromptColon(message: string): string {
 }
 
 function cancelIcon(): string {
-  return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.42L10.59 12l-4.9 4.89a1 1 0 1 0 1.42 1.42L12 13.41l4.89 4.9a1 1 0 0 0 1.42-1.42L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z"/></svg>'
+  return '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.42L10.59 12l-4.9 4.89a1 1 0 1 0 1.42 1.42L12 13.41l4.89 4.9a1 1 0 0 0 1.42-1.42L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z"/></svg>'
 }
 
 function confirmIcon(): string {
-  return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M9.55 18.2 3.8 12.45l1.4-1.4 4.35 4.36 9.25-9.26 1.4 1.41z"/></svg>'
+  return '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9.55 18.2 3.8 12.45l1.4-1.4 4.35 4.36 9.25-9.26 1.4 1.41z"/></svg>'
 }
 
 const MOBILE_CMD_CSS = `
@@ -564,6 +590,18 @@ const MOBILE_CMD_CSS = `
     font-variant-numeric: tabular-nums;
     font-size: 13px;
   }
+  .ml-mobile-cmd-accessory {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ml-mobile-cmd-accessory:not([hidden]) {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ml-ui-border, rgba(255, 255, 255, 0.12));
+  }
+  .ml-mobile-cmd-accessory[hidden] {
+    display: none;
+  }
   .ml-mobile-cmd-chips {
     display: flex;
     flex-wrap: wrap;
@@ -591,11 +629,11 @@ const MOBILE_CMD_CSS = `
   .ml-mobile-cmd-cancel,
   .ml-mobile-cmd-confirm {
     box-sizing: border-box;
-    flex: 0 0 48px;
+    flex: 0 0 36px;
     align-self: center;
-    margin-block: auto;
-    width: 48px;
-    height: 48px;
+    margin: 0;
+    width: 36px;
+    height: 36px;
     padding: 0;
     border-radius: 50%;
     border: 0;
@@ -609,6 +647,8 @@ const MOBILE_CMD_CSS = `
   .ml-mobile-cmd-cancel svg,
   .ml-mobile-cmd-confirm svg {
     display: block;
+    width: 18px;
+    height: 18px;
   }
   .ml-mobile-cmd-cancel {
     background: #5c6370;
@@ -652,6 +692,12 @@ const MOBILE_CMD_CSS = `
       align-items: center;
       justify-content: center;
     }
+    .ml-mobile-cmd-panel.is-absolute .ml-mobile-cmd-group-abs {
+      align-items: center;
+    }
+    .ml-mobile-cmd-panel.is-absolute .ml-mobile-cmd-actions-shared {
+      align-self: center;
+    }
     .ml-mobile-cmd-panel.is-relative:not([hidden]),
     .ml-mobile-cmd-panel.is-absolute:not([hidden]) {
       display: grid;
@@ -661,12 +707,14 @@ const MOBILE_CMD_CSS = `
     }
     .ml-mobile-cmd-panel.is-relative {
       grid-template-areas:
+        'accessory accessory'
         'chips chips'
         'polar shared'
         'delta shared';
     }
     .ml-mobile-cmd-panel.is-absolute {
       grid-template-areas:
+        'accessory accessory'
         'chips chips'
         'abs shared';
     }
@@ -674,6 +722,7 @@ const MOBILE_CMD_CSS = `
     .ml-mobile-cmd-group-delta { grid-area: delta; }
     .ml-mobile-cmd-group-abs { grid-area: abs; }
     .ml-mobile-cmd-actions-shared { grid-area: shared; }
+    .ml-mobile-cmd-accessory { grid-area: accessory; }
     .ml-mobile-cmd-chips { grid-area: chips; }
     .ml-mobile-cmd-panel.is-relative .ml-mobile-cmd-group-polar {
       padding-bottom: 6px;

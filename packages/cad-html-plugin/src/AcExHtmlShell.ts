@@ -13,6 +13,12 @@ import type { AcExViewerMode } from './AcExSnapshotTypes'
 export const ML_UI_MOBILE_MAX_WIDTH = 600
 
 /**
+ * Pad / compact breakpoint for the offline HTML chrome.
+ * Keep in sync with `ML_UI_COMPACT_MAX_WIDTH` in cad-simple-viewer.
+ */
+export const ML_UI_COMPACT_MAX_WIDTH = 960
+
+/**
  * Shared CSS for the offline HTML viewer chrome (toolbar, layer drawer, status bar).
  * Injected into the `<style>` block by {@link packHtml}.
  */
@@ -656,6 +662,12 @@ export const ACEX_HTML_SHELL_CSS = `
     align-items: center;
     justify-content: center;
   }
+  #mlcad-command-session.is-absolute .mlcad-session-group-abs {
+    align-items: center;
+  }
+  #mlcad-command-session.is-absolute .mlcad-session-actions-shared {
+    align-self: center;
+  }
   #mlcad-command-session.is-relative:not([hidden]),
   #mlcad-command-session.is-absolute:not([hidden]) {
     display: grid;
@@ -665,12 +677,14 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   #mlcad-command-session.is-relative {
     grid-template-areas:
+      'accessory accessory'
       'polar shared'
       'delta shared'
       'chips chips';
   }
   #mlcad-command-session.is-absolute {
     grid-template-areas:
+      'accessory accessory'
       'abs shared'
       'chips chips';
   }
@@ -678,6 +692,7 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-session-group-delta { grid-area: delta; }
   .mlcad-session-group-abs { grid-area: abs; }
   .mlcad-session-actions-shared { grid-area: shared; }
+  .mlcad-session-accessory { grid-area: accessory; }
   .mlcad-session-chips { grid-area: chips; }
   #mlcad-command-session.is-actions-only:not([hidden]) {
     display: flex;
@@ -728,6 +743,18 @@ export const ACEX_HTML_SHELL_CSS = `
     font-variant-numeric: tabular-nums;
     font-size: 13px;
   }
+  .mlcad-session-accessory {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mlcad-session-accessory:not([hidden]) {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--mlcad-ui-border);
+  }
+  .mlcad-session-accessory[hidden] {
+    display: none;
+  }
   .mlcad-session-chips {
     display: none !important;
   }
@@ -746,11 +773,11 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-session-cancel,
   .mlcad-session-confirm {
     box-sizing: border-box;
-    flex: 0 0 48px;
+    flex: 0 0 36px;
     align-self: center;
-    margin-block: auto;
-    width: 48px;
-    height: 48px;
+    margin: 0;
+    width: 36px;
+    height: 36px;
     padding: 0;
     border-radius: 50%;
     border: 0;
@@ -764,6 +791,8 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-session-cancel svg,
   .mlcad-session-confirm svg {
     display: block;
+    width: 18px;
+    height: 18px;
   }
   .mlcad-session-cancel { background: #5c6370; }
   .mlcad-session-confirm { background: var(--mlcad-accent-active); }
@@ -1568,6 +1597,7 @@ export function buildAcExHtmlShellBody(
     <div id="mlcad-canvas-host">
       <footer id="mlcad-status-bar" aria-live="polite" hidden></footer>
       <div id="mlcad-command-session" class="mlcad-command-session" hidden aria-hidden="true">
+        <div class="mlcad-session-accessory" hidden></div>
         <div class="mlcad-session-group mlcad-session-group-abs">
           <div class="mlcad-session-metric-stack" data-session-stack="abs">
             <button type="button" class="mlcad-session-metric" data-session-metric="x" disabled>
@@ -1581,10 +1611,10 @@ export function buildAcExHtmlShellBody(
           </div>
           <div class="mlcad-session-actions" data-session-actions="abs">
             <button type="button" class="mlcad-session-cancel" data-i18n-key="session.cancel" data-i18n-attr="aria-label" aria-label="Cancel">
-              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.42L10.59 12l-4.9 4.89a1 1 0 1 0 1.42 1.42L12 13.41l4.89 4.9a1 1 0 0 0 1.42-1.42L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z"/></svg>
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.42L10.59 12l-4.9 4.89a1 1 0 1 0 1.42 1.42L12 13.41l4.89 4.9a1 1 0 0 0 1.42-1.42L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z"/></svg>
             </button>
             <button type="button" class="mlcad-session-confirm" data-i18n-key="session.confirm" data-i18n-attr="aria-label" aria-label="Confirm" disabled>
-              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M9.55 18.2 3.8 12.45l1.4-1.4 4.35 4.36 9.25-9.26 1.4 1.41z"/></svg>
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9.55 18.2 3.8 12.45l1.4-1.4 4.35 4.36 9.25-9.26 1.4 1.41z"/></svg>
             </button>
           </div>
         </div>

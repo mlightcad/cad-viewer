@@ -218,7 +218,7 @@ export interface AcExMeasureControllerOptions {
    * (for example to toggle left-button pan on OrbitControls).
    */
   onActiveChange?: (active: boolean) => void
-  /** Called when selection or session draw style changes (draw-style toolbar). */
+  /** Called when selection or session draw style changes (session accessory). */
   onStyleChange?: () => void
   /** Active layout BTR id; used to stamp and filter measurement overlays. */
   getActiveLayoutId?: () => string

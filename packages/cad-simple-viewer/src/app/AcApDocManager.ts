@@ -1959,15 +1959,18 @@ export class AcApDocManager {
     // so its `commandEnded` lifecycle finishes before the new one begins.
     await this._commandManager.cancelActive()
 
-    const promise = cmd.trigger(this.context).finally(() => {
-      if (!options.preserveScriptInputs) {
-        this.editor.clearScriptInputs()
+    // markActive must run before trigger(): the first getPoint prompt is
+    // opened synchronously until the first await, and the mobile session
+    // accessory reads commandManager.activeCommand.
+    await this._commandManager.runActive(cmd, this.curView, async () => {
+      try {
+        await cmd.trigger(this.context)
+      } finally {
+        if (!options.preserveScriptInputs) {
+          this.editor.clearScriptInputs()
+        }
       }
-      this._commandManager.clearActive(cmd)
     })
-    this._commandManager.markActive(cmd, this.curView, promise)
-
-    await promise
   }
 
   /**

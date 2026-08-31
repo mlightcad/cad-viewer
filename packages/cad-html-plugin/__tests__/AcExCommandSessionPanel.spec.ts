@@ -307,4 +307,32 @@ describe('AcExCommandSessionPanel', () => {
     confirm.click()
     expect(onConfirm).toHaveBeenCalledTimes(1)
   })
+
+  it('mounts an accessory on the first row and unmounts when hidden', () => {
+    mockPhone(true)
+    const host = mountSessionHost()
+    const panel = new AcExCommandSessionPanel(host, new AcExHtmlI18n('en'))
+    const mount = jest.fn((slot: HTMLElement) => {
+      slot.appendChild(document.createElement('span'))
+    })
+    const unmount = jest.fn()
+    panel.setState({
+      prompt: 'Specify point',
+      confirmEnabled: true,
+      metrics: null,
+      chips: []
+    })
+    panel.setAccessory({ id: 'draw-style', mount, unmount })
+    const slot = host.querySelector('.mlcad-session-accessory') as HTMLElement
+    expect(slot.hidden).toBe(false)
+    expect(mount).toHaveBeenCalledTimes(1)
+    expect(slot.firstElementChild?.tagName).toBe('SPAN')
+
+    panel.setAccessory({ id: 'draw-style', mount, unmount })
+    expect(mount).toHaveBeenCalledTimes(1)
+
+    panel.setState(null)
+    expect(unmount).toHaveBeenCalledTimes(1)
+    expect(slot.hidden).toBe(true)
+  })
 })

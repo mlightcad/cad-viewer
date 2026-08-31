@@ -21,6 +21,7 @@ import {
   AcEdViewMode
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { acapBindDrawStyleSessionAccessory } from '../../ui/AcApDrawStyle'
 import {
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
@@ -175,6 +176,7 @@ export class AcApMeasureContinuousCmd extends AcEdCommand {
   constructor() {
     super()
     this.mode = AcEdOpenMode.Read
+    acapBindDrawStyleSessionAccessory(this)
   }
 
   async execute(context: AcApContext) {

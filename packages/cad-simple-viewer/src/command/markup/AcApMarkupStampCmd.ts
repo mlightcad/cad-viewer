@@ -8,7 +8,7 @@ import {
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
 import {
-  configureMarkupCommand,
+  configureMarkupDrawCommand,
   createMarkupMeta,
   promptMarkupText,
   withMarkupInput
@@ -31,7 +31,7 @@ const BUILTIN_STAMPS = new Set([
 export class AcApMarkupStampCmd extends AcEdCommand {
   constructor() {
     super()
-    configureMarkupCommand(this)
+    configureMarkupDrawCommand(this)
   }
 
   async execute(context: AcApContext) {

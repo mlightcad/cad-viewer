@@ -97,7 +97,10 @@ describe('AcEdMobileCommandChrome', () => {
       'Specify next point'
     )
     const panel = host.querySelector('.ml-mobile-cmd-panel') as HTMLElement
-    expect(panel.firstElementChild?.classList.contains('ml-mobile-cmd-chips')).toBe(
+    expect(
+      panel.firstElementChild?.classList.contains('ml-mobile-cmd-accessory')
+    ).toBe(true)
+    expect(panel.children[1]?.classList.contains('ml-mobile-cmd-chips')).toBe(
       true
     )
     expect(panel.querySelector('.ml-mobile-cmd-chip')?.textContent).toBe('Undo')
@@ -308,5 +311,51 @@ describe('AcEdMobileCommandChrome', () => {
       (host.querySelector('.ml-mobile-cmd-group-polar') as HTMLElement).hidden
     ).toBe(false)
     media.restore()
+  })
+
+  it('mounts the accessory as the first panel row and unmounts on hide', () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
+    )
+    const mount = jest.fn((host: HTMLElement) => {
+      host.appendChild(document.createElement('span'))
+    })
+    const unmount = jest.fn()
+    chrome.show(
+      {
+        prompt: 'Specify point',
+        keywords: [],
+        allowNone: true,
+        showMetrics: false,
+        accessory: { id: 'draw-style', mount, unmount }
+      },
+      { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
+    )
+    const accessory = host.querySelector(
+      '.ml-mobile-cmd-accessory'
+    ) as HTMLElement
+    expect(accessory.hidden).toBe(false)
+    expect(mount).toHaveBeenCalledTimes(1)
+    expect(mount.mock.calls[0][0]).toBe(accessory)
+    expect(accessory.firstElementChild?.tagName).toBe('SPAN')
+
+    chrome.hide()
+    expect(unmount).toHaveBeenCalledTimes(1)
+    expect(accessory.hidden).toBe(true)
+    expect(accessory.childElementCount).toBe(0)
+    media.restore()
+  })
+
+  it('uses 36px confirm/cancel buttons centered in the absolute metrics row', () => {
+    const css = document.getElementById('ml-mobile-cmd-styles')?.textContent ?? ''
+    expect(css).toContain('flex: 0 0 36px')
+    expect(css).toContain('width: 36px')
+    expect(css).toContain('height: 36px')
+    expect(css).toContain(
+      '.ml-mobile-cmd-panel.is-absolute .ml-mobile-cmd-actions-shared'
+    )
+    expect(css).toContain(
+      '.ml-mobile-cmd-panel.is-absolute .ml-mobile-cmd-group-abs'
+    )
   })
 })
