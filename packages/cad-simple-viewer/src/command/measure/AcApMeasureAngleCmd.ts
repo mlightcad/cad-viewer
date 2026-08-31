@@ -1,8 +1,4 @@
-import {
-  AcCmColor,
-  AcDbDatabase,
-  AcGePoint3dLike
-} from '@mlightcad/data-model'
+import { AcCmColor, AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
   AcTrHtmlTransientManager
@@ -11,16 +7,11 @@ import {
 import { AcApContext } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
-  AcEdCorsorType,
-  AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
-  AcEdPromptStatus,
-  AcEdViewMode
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { acapBindDrawStyleSessionAccessory } from '../../ui/AcApDrawStyle'
 import {
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
@@ -35,6 +26,7 @@ import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
+import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import { AcApMeasureAngleEntity } from './entity'
 
@@ -101,9 +93,7 @@ class AcApMeasureArm1Jig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   update(p: AcGePoint3dLike) {
     this._cursor = p
-    const lineWidth = acapMeasurementCanvasLineWidth(
-      MEASUREMENT_LINE_WEIGHT
-    )
+    const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLiveSegment(
         ctx,
@@ -186,9 +176,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._badge.setColor(this._color)
     this._badge.setFontSize(acapGetMeasurementFontSize())
 
-    const lineWidth = acapMeasurementCanvasLineWidth(
-      MEASUREMENT_LINE_WEIGHT
-    )
+    const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLiveSegment(
         ctx,
@@ -210,9 +198,7 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     })
 
     const deg = calcAngleDeg(this._vertex, this._arm1, p)
-    this._badge.setText(
-      formatMeasurementAngle(this._db, (deg * Math.PI) / 180)
-    )
+    this._badge.setText(formatMeasurementAngle(this._db, (deg * Math.PI) / 180))
     this._badge.setPosition(this._vertex)
     this._badge.object.visible = true
   }
@@ -232,63 +218,55 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * (canvas strokes + badge). Committed overlay is placed via
  * {@link placeAngleMeasurement}.
  */
-export class AcApMeasureAngleCmd extends AcEdCommand {
-  constructor() {
-    super()
-    this.mode = AcEdOpenMode.Read
-    acapBindDrawStyleSessionAccessory(this)
-  }
-
+export class AcApMeasureAngleCmd extends AcApMeasureDrawCmd {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
     const color = acapGetMeasurementColor(db)
 
-    await context.view.withMode(AcEdViewMode.SELECTION, () =>
-      editor.withCursor(AcEdCorsorType.Crosshair, async () => {
-        // Pick vertex
-        const vertexPrompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.measureAngle.vertex')
-        )
-        const vertexResult = await editor.getPoint(vertexPrompt)
-        if (vertexResult.status !== AcEdPromptStatus.OK) return
-        const vertex = vertexResult.value!
+    await this.withMeasureInput(context, async () => {
+      // Pick vertex
+      const vertexPrompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureAngle.vertex')
+      )
+      const vertexResult = await editor.getPoint(vertexPrompt)
+      if (vertexResult.status !== AcEdPromptStatus.OK) return
+      const vertex = vertexResult.value!
 
-        // Pick first arm endpoint (jig provides HTML rubber-band from vertex)
-        const arm1Prompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.measureAngle.arm1')
-        )
-        arm1Prompt.useBasePoint = true
-        arm1Prompt.jig = new AcApMeasureArm1Jig(context.view, vertex, color)
-        const arm1Result = await editor.getPoint(arm1Prompt)
-        if (arm1Result.status !== AcEdPromptStatus.OK) return
-        const arm1 = arm1Result.value!
+      // Pick first arm endpoint (jig provides HTML rubber-band from vertex)
+      const arm1Prompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureAngle.arm1')
+      )
+      arm1Prompt.useBasePoint = true
+      arm1Prompt.jig = new AcApMeasureArm1Jig(context.view, vertex, color)
+      const arm1Result = await editor.getPoint(arm1Prompt)
+      if (arm1Result.status !== AcEdPromptStatus.OK) return
+      const arm1 = arm1Result.value!
 
-        // Pick second arm endpoint with live preview (dashed arm1 + solid arm2 + badge)
-        const arm2Prompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.measureAngle.arm2')
-        )
-        arm2Prompt.jig = new AcApMeasureAngleJig(
-          context.view,
-          db,
-          vertex,
-          arm1,
-          color
-        )
+      // Pick second arm endpoint with live preview (dashed arm1 + solid arm2 + badge)
+      const arm2Prompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureAngle.arm2')
+      )
+      arm2Prompt.jig = new AcApMeasureAngleJig(
+        context.view,
+        db,
+        vertex,
+        arm1,
+        color
+      )
 
-        const arm2Result = await editor.getPoint(arm2Prompt)
-        if (arm2Result.status !== AcEdPromptStatus.OK) return
-        const arm2 = arm2Result.value!
+      const arm2Result = await editor.getPoint(arm2Prompt)
+      if (arm2Result.status !== AcEdPromptStatus.OK) return
+      const arm2 = arm2Result.value!
 
-        placeAngleMeasurement(
-          context.view as AcTrView2d,
-          db,
-          vertex,
-          arm1,
-          arm2,
-          acapGetCurrentMeasurementStyle(db)
-        )
-      })
-    )
+      placeAngleMeasurement(
+        context.view as AcTrView2d,
+        db,
+        vertex,
+        arm1,
+        arm2,
+        acapGetCurrentMeasurementStyle(db)
+      )
+    })
   }
 }

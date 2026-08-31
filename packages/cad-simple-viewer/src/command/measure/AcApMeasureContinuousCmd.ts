@@ -12,16 +12,11 @@ import {
 import { AcApContext } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
-  AcEdCorsorType,
-  AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
-  AcEdPromptStatus,
-  AcEdViewMode
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { acapBindDrawStyleSessionAccessory } from '../../ui/AcApDrawStyle'
 import {
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
@@ -36,6 +31,7 @@ import {
   acapStrokeLivePolyline
 } from '../overlay/AcApHtmlLivePreview'
 import { placeDistanceMeasurement } from './AcApMeasureDistanceCmd'
+import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
 import { runMeasurementEdit } from './AcApMeasurementHistory'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import { newMeasureOverlayId } from './entity/AcApMeasureEntity'
@@ -172,55 +168,42 @@ export class AcApMeasureContinuousJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * The user keeps picking the next vertex until Enter or Cancel. Each
  * consecutive pair is committed as a normal distance measurement.
  */
-export class AcApMeasureContinuousCmd extends AcEdCommand {
-  constructor() {
-    super()
-    this.mode = AcEdOpenMode.Read
-    acapBindDrawStyleSessionAccessory(this)
-  }
-
+export class AcApMeasureContinuousCmd extends AcApMeasureDrawCmd {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
     const color = acapGetMeasurementColor(db)
     const points: AcGePoint3dLike[] = []
 
-    await context.view.withMode(AcEdViewMode.SELECTION, () =>
-      editor.withCursor(AcEdCorsorType.Crosshair, async () => {
-        const p1Prompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.measureContinuous.firstPoint')
-        )
-        const p1Result = await editor.getPoint(p1Prompt)
-        if (p1Result.status !== AcEdPromptStatus.OK) return
-        points.push(clonePoint(p1Result.value!))
+    await this.withMeasureInput(context, async () => {
+      const p1Prompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureContinuous.firstPoint')
+      )
+      const p1Result = await editor.getPoint(p1Prompt)
+      if (p1Result.status !== AcEdPromptStatus.OK) return
+      points.push(clonePoint(p1Result.value!))
 
-        const jig = new AcApMeasureContinuousJig(
-          context.view,
-          db,
-          points,
-          color
-        )
-        try {
-          while (points.length < 100) {
-            const prompt = new AcEdPromptPointOptions(
-              AcApI18n.t('jig.measureContinuous.nextPoint')
-            )
-            prompt.useBasePoint = true
-            prompt.basePoint = new AcGePoint3d(points[points.length - 1])
-            prompt.allowNone = true
-            prompt.jig = jig
-            const result = await editor.getPoint(prompt)
-            if (result.status !== AcEdPromptStatus.OK) break
-            const next = clonePoint(result.value!)
-            const last = points[points.length - 1]!
-            if (calcDist(last, next) < 1e-9) continue
-            points.push(next)
-          }
-        } finally {
-          jig.disposePreview()
+      const jig = new AcApMeasureContinuousJig(context.view, db, points, color)
+      try {
+        while (points.length < 100) {
+          const prompt = new AcEdPromptPointOptions(
+            AcApI18n.t('jig.measureContinuous.nextPoint')
+          )
+          prompt.useBasePoint = true
+          prompt.basePoint = new AcGePoint3d(points[points.length - 1])
+          prompt.allowNone = true
+          prompt.jig = jig
+          const result = await editor.getPoint(prompt)
+          if (result.status !== AcEdPromptStatus.OK) break
+          const next = clonePoint(result.value!)
+          const last = points[points.length - 1]!
+          if (calcDist(last, next) < 1e-9) continue
+          points.push(next)
         }
-      })
-    )
+      } finally {
+        jig.disposePreview()
+      }
+    })
 
     if (points.length < 2) return
 

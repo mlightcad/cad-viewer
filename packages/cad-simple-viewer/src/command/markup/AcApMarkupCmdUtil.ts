@@ -40,7 +40,8 @@ export function configureMarkupCommand(command: {
 
 /**
  * Markup drawing commands: Review mode plus color / font-size in the
- * phone/pad session panel.
+ * phone/pad session panel. Prefer {@link AcApMarkupDrawCmd} for new tools;
+ * this helper remains for one-off configuration.
  */
 export function configureMarkupDrawCommand(command: AcEdCommand): void {
   configureMarkupCommand(command)

@@ -1,12 +1,8 @@
-import {
-  AcCmColor,
-  AcGePoint2dLike
-} from '@mlightcad/data-model'
+import { AcCmColor, AcGePoint2dLike } from '@mlightcad/data-model'
 
 import { AcApContext } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
@@ -18,11 +14,8 @@ import {
   AcApHtmlLivePreview,
   acapStrokeLivePolyline
 } from '../overlay/AcApHtmlLivePreview'
-import {
-  configureMarkupDrawCommand,
-  createMarkupMeta,
-  withMarkupInput
-} from './AcApMarkupCmdUtil'
+import { createMarkupMeta } from './AcApMarkupCmdUtil'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
 import { commitMarkup } from './AcApMarkupPresenter'
 import {
   markupCloudVertices,
@@ -96,14 +89,9 @@ class AcApMarkupCloudJig extends AcEdPreviewJig<AcGePoint2dLike> {
  * Create a rectangular revision-cloud markup, optionally with an attached
  * callout (leader + text, no arrow).
  */
-export class AcApMarkupCloudCmd extends AcEdCommand {
-  constructor() {
-    super()
-    configureMarkupDrawCommand(this)
-  }
-
+export class AcApMarkupCloudCmd extends AcApMarkupDrawCmd {
   async execute(context: AcApContext) {
-    await withMarkupInput(context, async () => {
+    await this.withMarkupInput(context, async () => {
       const color = defaultMarkupColor()
       const p1 = await promptShapeFirstCorner(
         context,

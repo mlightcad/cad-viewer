@@ -15,16 +15,11 @@ import {
 import { AcApContext, AcApDocManager } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
-  AcEdCorsorType,
-  AcEdOpenMode,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
-  AcEdPromptStatus,
-  AcEdViewMode
+  AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { acapBindDrawStyleSessionAccessory } from '../../ui/AcApDrawStyle'
 import {
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
@@ -47,6 +42,7 @@ import {
   pointLiesOnCircle,
   sameCircleGeom
 } from './AcApMeasureArcLock'
+import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import {
   AcApMeasureArcEntity,
@@ -388,9 +384,7 @@ class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._badge.setColor(this._color)
     this._badge.setFontSize(acapGetMeasurementFontSize())
 
-    const lineWidth = acapMeasurementCanvasLineWidth(
-      MEASUREMENT_LINE_WEIGHT
-    )
+    const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     const sweep = lockedSweep(this._start, end, this._geom, this.clockwise)
 
     this._preview.acapSetDraw((ctx, view) => {
@@ -453,9 +447,7 @@ class AcApMeasureArcThroughJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   update(p: AcGePoint3dLike) {
     this._cursor = p
-    const lineWidth = acapMeasurementCanvasLineWidth(
-      MEASUREMENT_LINE_WEIGHT
-    )
+    const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLiveSegment(
         ctx,
@@ -536,9 +528,7 @@ class AcApMeasureArcEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._badge.setColor(this._color)
     this._badge.setFontSize(acapGetMeasurementFontSize())
 
-    const lineWidth = acapMeasurementCanvasLineWidth(
-      MEASUREMENT_LINE_WEIGHT
-    )
+    const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     const arc = AcGeCircArc2d.tryCreateByThreePoints(
       this._start,
       this._through,
@@ -598,100 +588,89 @@ class AcApMeasureArcEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
  * Interactive preview is HTML-only. The committed overlay is placed via
  * {@link placeArcMeasurement}.
  */
-export class AcApMeasureArcCmd extends AcEdCommand {
-  constructor() {
-    super()
-    this.mode = AcEdOpenMode.Read
-    acapBindDrawStyleSessionAccessory(this)
-  }
-
+export class AcApMeasureArcCmd extends AcApMeasureDrawCmd {
   async execute(context: AcApContext) {
     const editor = context.view.editor
     const db = context.doc.database
     const color = acapGetMeasurementColor(db)
     const view = context.view as AcTrView2d
 
-    await context.view.withMode(AcEdViewMode.SELECTION, () =>
-      editor.withCursor(AcEdCorsorType.Crosshair, async () => {
-        editor.resetInputToggles()
+    await this.withMeasureInput(context, async () => {
+      editor.resetInputToggles()
 
-        const startPrompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.measureArc.startPoint')
-        )
-        startPrompt.jig = new AcApArcSnapJig(context, color)
-        const startResult = await editor.getPoint(startPrompt)
-        if (startResult.status !== AcEdPromptStatus.OK) return
+      const startPrompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureArc.startPoint')
+      )
+      startPrompt.jig = new AcApArcSnapJig(context, color)
+      const startResult = await editor.getPoint(startPrompt)
+      if (startResult.status !== AcEdPromptStatus.OK) return
 
-        const start = startResult.value!
-        const lock = pickCircleGeomAtPoint(context, start)
-        if (lock) {
-          const startOnLock = pointLiesOnCircle(toPoint2(start), lock.geom)
-            ? start
-            : lock.snapped
-          await this.commitLockedArc(
-            context,
-            view,
-            db,
-            color,
-            lock.geom,
-            startOnLock
-          )
-          return
-        }
-        const throughPrompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.measureArc.throughPoint')
-        )
-        throughPrompt.useBasePoint = true
-        throughPrompt.jig = new AcApMeasureArcThroughJig(
-          context.view,
-          start,
-          color
-        )
-        const throughResult = await editor.getPoint(throughPrompt)
-        if (throughResult.status !== AcEdPromptStatus.OK) return
-        const through = throughResult.value!
-
-        const endPrompt = new AcEdPromptPointOptions(
-          AcApI18n.t('jig.measureArc.endPoint')
-        )
-        endPrompt.jig = new AcApMeasureArcEndJig(
-          context.view,
-          db,
-          start,
-          through,
-          color
-        )
-        const endResult = await editor.getPoint(endPrompt)
-        if (endResult.status !== AcEdPromptStatus.OK) return
-        const end = endResult.value!
-
-        const start2 = toPoint2(start)
-        const through2 = toPoint2(through)
-        const end2 = toPoint2(end)
-        const measured = AcGeCircArc2d.tryCreateByThreePoints(
-          start2,
-          through2,
-          end2
-        )
-        if (!measured) {
-          this.showMessage(
-            AcApI18n.t('jig.measureArc.invalidPoints'),
-            'warning'
-          )
-          return
-        }
-
-        placeArcMeasurement(
+      const start = startResult.value!
+      const lock = pickCircleGeomAtPoint(context, start)
+      if (lock) {
+        const startOnLock = pointLiesOnCircle(toPoint2(start), lock.geom)
+          ? start
+          : lock.snapped
+        await this.commitLockedArc(
+          context,
           view,
           db,
-          circleGeomFromArc(measured),
-          start2,
-          through2,
-          end2,
-          acapGetCurrentMeasurementStyle(db)
+          color,
+          lock.geom,
+          startOnLock
         )
-      })
-    )
+        return
+      }
+      const throughPrompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureArc.throughPoint')
+      )
+      throughPrompt.useBasePoint = true
+      throughPrompt.jig = new AcApMeasureArcThroughJig(
+        context.view,
+        start,
+        color
+      )
+      const throughResult = await editor.getPoint(throughPrompt)
+      if (throughResult.status !== AcEdPromptStatus.OK) return
+      const through = throughResult.value!
+
+      const endPrompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureArc.endPoint')
+      )
+      endPrompt.jig = new AcApMeasureArcEndJig(
+        context.view,
+        db,
+        start,
+        through,
+        color
+      )
+      const endResult = await editor.getPoint(endPrompt)
+      if (endResult.status !== AcEdPromptStatus.OK) return
+      const end = endResult.value!
+
+      const start2 = toPoint2(start)
+      const through2 = toPoint2(through)
+      const end2 = toPoint2(end)
+      const measured = AcGeCircArc2d.tryCreateByThreePoints(
+        start2,
+        through2,
+        end2
+      )
+      if (!measured) {
+        this.showMessage(AcApI18n.t('jig.measureArc.invalidPoints'), 'warning')
+        return
+      }
+
+      placeArcMeasurement(
+        view,
+        db,
+        circleGeomFromArc(measured),
+        start2,
+        through2,
+        end2,
+        acapGetCurrentMeasurementStyle(db)
+      )
+    })
   }
 
   /**

@@ -1,13 +1,8 @@
-import {
-  AcCmColor,
-  AcGePoint3d,
-  AcGePoint3dLike
-} from '@mlightcad/data-model'
+import { AcCmColor, AcGePoint3d, AcGePoint3dLike } from '@mlightcad/data-model'
 
 import { AcApContext } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
   AcEdPreviewJig,
   AcEdPromptDistanceOptions,
   AcEdPromptStatus
@@ -18,11 +13,8 @@ import {
   AcApHtmlLivePreview,
   acapStrokeLiveCircle
 } from '../overlay/AcApHtmlLivePreview'
-import {
-  configureMarkupDrawCommand,
-  createMarkupMeta,
-  withMarkupInput
-} from './AcApMarkupCmdUtil'
+import { createMarkupMeta } from './AcApMarkupCmdUtil'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
 import { commitMarkup } from './AcApMarkupPresenter'
 import {
   promptAttachedCallout,
@@ -85,14 +77,9 @@ class AcApMarkupCircleJig extends AcEdPreviewJig<number> {
 /**
  * Create a circle markup, optionally with an attached callout (no arrow).
  */
-export class AcApMarkupCircleCmd extends AcEdCommand {
-  constructor() {
-    super()
-    configureMarkupDrawCommand(this)
-  }
-
+export class AcApMarkupCircleCmd extends AcApMarkupDrawCmd {
   async execute(context: AcApContext) {
-    await withMarkupInput(context, async () => {
+    await this.withMarkupInput(context, async () => {
       const color = defaultMarkupColor()
       const center = await promptShapeFirstCorner(
         context,
@@ -106,7 +93,11 @@ export class AcApMarkupCircleCmd extends AcEdCommand {
       radiusPrompt.allowZero = false
       radiusPrompt.useBasePoint = true
       radiusPrompt.useDashedLine = true
-      radiusPrompt.basePoint = new AcGePoint3d(center.x, center.y, center.z ?? 0)
+      radiusPrompt.basePoint = new AcGePoint3d(
+        center.x,
+        center.y,
+        center.z ?? 0
+      )
       radiusPrompt.jig = new AcApMarkupCircleJig(context.view, center, color)
       const radiusResult = await context.view.editor.getDistance(radiusPrompt)
       if (radiusResult.status !== AcEdPromptStatus.OK) return

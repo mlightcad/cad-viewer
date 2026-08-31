@@ -1,8 +1,4 @@
-import {
-  AcCmColor,
-  AcGePoint3d,
-  AcGePoint3dLike
-} from '@mlightcad/data-model'
+import { AcCmColor, AcGePoint3d, AcGePoint3dLike } from '@mlightcad/data-model'
 import {
   AcTrHtmlCallout,
   AcTrHtmlDot,
@@ -12,24 +8,22 @@ import {
 import { AcApContext } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { type AcTrView2d,pickAttachableShapeMarkupAt } from '../../view'
+import { type AcTrView2d, pickAttachableShapeMarkupAt } from '../../view'
 import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
+import { createMarkupMeta, promptMarkupCapsuleText } from './AcApMarkupCmdUtil'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
 import {
-  configureMarkupDrawCommand,
-  createMarkupMeta,
-  promptMarkupCapsuleText,
-  withMarkupInput
-} from './AcApMarkupCmdUtil'
-import { isAttachableShapeMarkup, markupShapeOutlineFromGeometry } from './AcApMarkupGeometry'
+  isAttachableShapeMarkup,
+  markupShapeOutlineFromGeometry
+} from './AcApMarkupGeometry'
 import { attachCalloutToMarkup, commitMarkup } from './AcApMarkupPresenter'
 import { promptAttachedCallout } from './AcApMarkupShapeCallout'
 import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
@@ -181,14 +175,9 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
  *
  * @see Autodesk Design Review help — Create a Callout for 2D Content
  */
-export class AcApMarkupCalloutCmd extends AcEdCommand {
-  constructor() {
-    super()
-    configureMarkupDrawCommand(this)
-  }
-
+export class AcApMarkupCalloutCmd extends AcApMarkupDrawCmd {
   async execute(context: AcApContext) {
-    await withMarkupInput(context, async () => {
+    await this.withMarkupInput(context, async () => {
       const color = defaultMarkupColor()
 
       // 1. Arrow / leader tip (where the leader begins on the drawing)
