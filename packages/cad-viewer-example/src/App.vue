@@ -27,10 +27,10 @@
 </template>
 
 <script setup lang="ts">
-// import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 import {
   AcApDocManager,
   AcApOpenViewMode,
+  AcApSettingManager,
   AcEdCommandStack,
   AcEdOpenMode
 } from '@mlightcad/cad-simple-viewer'
@@ -42,6 +42,11 @@ import { AcApQuitCmd } from './commands'
 import FileUpload from './components/FileUpload.vue'
 import { initializeLocale } from './locale'
 import { store } from './store'
+
+// Isolate this example's prefs from cad-simple-viewer-example on localhost.
+AcApSettingManager.configure({
+  storageKey: 'mlightcad.settings.cad-viewer'
+})
 
 initializeLocale()
 
@@ -66,12 +71,16 @@ const initialize = () => {
   )
 }
 
-// Decide whether to show command line vertical toolbar at the right side,
-// performance stats, coordinates in status bar, etc.
-// AcApSettingManager.instance.isShowCommandLine = false
-// AcApSettingManager.instance.isShowToolbar = false
-// AcApSettingManager.instance.isShowStats = false
-// AcApSettingManager.instance.isShowCoordinate = false
+// Host layout overrides (session only — does not write localStorage):
+// AcApSettingManager.instance.apply(
+//   {
+//     isShowCommandLine: false,
+//     isShowToolbar: false,
+//     isShowStats: false,
+//     isShowCoordinate: false
+//   },
+//   { persist: false }
+// )
 
 const BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
 

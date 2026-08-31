@@ -36,6 +36,11 @@ import { setupFileSidebarResize } from './fileSidebarResize'
 import { registerLazyPlugins } from './register'
 import { registerLibreDwgConverter } from './registerLibreDwg'
 
+// Isolate this example's prefs from cad-viewer-example on localhost.
+AcApSettingManager.configure({
+  storageKey: 'mlightcad.settings.simple-viewer'
+})
+
 const EXAMPLE_COMMAND_ALIASES = {
   LINE: ['LX'],
   CIRCLE: ['CI'],

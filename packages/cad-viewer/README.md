@@ -198,6 +198,8 @@ The `MlCadViewer` component accepts the following props:
 
 The `MlCadViewer` reads its UI visibility from the global `AcApSettingManager` (provided by `@mlightcad/cad-simple-viewer`). Configure these flags anywhere before rendering the viewer to customize the UI.
 
+Settings resolve in three layers (later wins): built-in defaults, user preferences in `localStorage`, and session overrides. Only user preferences are persisted. Use `{ persist: false }` for host layout (for example hide the command line on mobile) so the change does not leak into other products or later visits on the same origin.
+
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `isShowToolbar` | `boolean` | `true` | Controls toolbar visibility |
@@ -237,13 +239,22 @@ The `MlCadViewer` reads its UI visibility from the global `AcApSettingManager` (
 import { MlCadViewer } from '@mlightcad/cad-viewer'
 import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 
-// Configure global UI flags before the viewer mounts
-AcApSettingManager.instance.isShowCommandLine = false
-// Optional toggles
-// AcApSettingManager.instance.isShowToolbar = false
-// AcApSettingManager.instance.isShowStats = true
-// AcApSettingManager.instance.isShowCoordinate = false
-// AcApSettingManager.instance.isShowEntityInfo = false
+// Optional: isolate this product's preferences on a shared origin
+AcApSettingManager.configure({
+  storageKey: 'mlightcad.settings.cad-viewer'
+})
+
+// Host layout before mount — session only (does not write localStorage)
+AcApSettingManager.instance.apply(
+  {
+    isShowCommandLine: false
+    // isShowToolbar: false,
+    // isShowStats: true,
+    // isShowCoordinate: false,
+    // isShowEntityInfo: false
+  },
+  { persist: false }
+)
 </script>
 ```
 
@@ -251,6 +262,8 @@ AcApSettingManager.instance.isShowCommandLine = false
 
 - Settings are global and immediately reflected by `MlCadViewer`.
 - You can change them at runtime using the same `AcApSettingManager.instance` reference.
+- Property setters (for example `isShowToolbar = false`) and the in-app settings menu persist user preferences by default.
+- On the same origin, give each product its own `storageKey` via `AcApSettingManager.configure` so preferences do not cross-contaminate. Call `configure` before the first settings read/write.
 
 ### Base URL Configuration
 
