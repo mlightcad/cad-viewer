@@ -279,6 +279,45 @@ export function acapFitOverlayCanvas(
 }
 
 /**
+ * Fit a canvas to the view's drawing surface (not the outer container).
+ *
+ * Live measure overlays must use this when stroking with
+ * {@link AcEdBaseView.worldToScreen}: those coordinates are canvas-local,
+ * while the view container can include chrome around the WebGL canvas.
+ * Positions the overlay with {@link AcEdBaseView.canvasToContainer} so
+ * confirmed segments stay aligned with CSS2D badges.
+ *
+ * @param canvas - Target canvas element owned by an overlay.
+ * @param view - View whose canvas bounds and container offset are used.
+ * @returns A 2D context ready to draw, or `null` if unavailable.
+ */
+export function acapFitOverlayCanvasToView(
+  canvas: HTMLCanvasElement,
+  view: AcEdBaseView
+): CanvasRenderingContext2D | null {
+  const rect = view.canvas.getBoundingClientRect()
+  const dpr = window.devicePixelRatio || 1
+  const w = Math.round(rect.width)
+  const h = Math.round(rect.height)
+  const origin = view.canvasToContainer({ x: 0, y: 0 })
+  canvas.style.left = `${origin.x}px`
+  canvas.style.top = `${origin.y}px`
+  const cssWidth = `${w}px`
+  const cssHeight = `${h}px`
+  if (canvas.style.width !== cssWidth) canvas.style.width = cssWidth
+  if (canvas.style.height !== cssHeight) canvas.style.height = cssHeight
+  const bufferWidth = Math.max(1, Math.floor(w * dpr))
+  const bufferHeight = Math.max(1, Math.floor(h * dpr))
+  if (canvas.width !== bufferWidth) canvas.width = bufferWidth
+  if (canvas.height !== bufferHeight) canvas.height = bufferHeight
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, w, h)
+  return ctx
+}
+
+/**
  * Draw a filled arrow head at `to`, pointing along `from` → `to`.
  *
  * @param ctx - Canvas 2D context (CSS pixel space).

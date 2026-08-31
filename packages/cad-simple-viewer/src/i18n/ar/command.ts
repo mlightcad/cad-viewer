@@ -554,6 +554,12 @@ export default {
         'قياس المسافة وفروق الإحداثيات بين نقطتين'
     },
 
+    measurecontinuous: {
+      ...enCommand.ACAD.measurecontinuous,
+      description:
+        'قياس مسافات متسلسلة باختيار نقاط متتالية حتى Enter أو إلغاء'
+    },
+
     measurepoint: {
       ...enCommand.ACAD.measurepoint,
       description:

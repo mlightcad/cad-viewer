@@ -17,6 +17,7 @@ export const en: Record<string, string> = {
   'toolbar.settings': 'Settings',
   'toolbar.measure': 'Measure',
   'toolbar.measureDistance': 'Distance',
+  'toolbar.measureContinuous': 'Continuous',
   'toolbar.measureAngle': 'Angle',
   'toolbar.measureArea': 'Area',
   'toolbar.measureArc': 'Arc',

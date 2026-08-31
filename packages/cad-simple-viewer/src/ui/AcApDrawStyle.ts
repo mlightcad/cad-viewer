@@ -13,6 +13,7 @@ export type AcApDrawStyleKind = 'measure' | 'markup'
  */
 const MEASURE_DRAW_COMMANDS = new Set([
   'measuredistance',
+  'measurecontinuous',
   'measurearea',
   'measureangle',
   'measurearc',

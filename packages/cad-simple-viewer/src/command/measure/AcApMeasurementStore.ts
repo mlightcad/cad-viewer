@@ -199,8 +199,9 @@ export function getMeasurementValueText(
  * Select a measurement and zoom the view to its geometry plus HTML overlays.
  *
  * Coordinate measurements include the badge (capsule) so the camera frames
- * the label instead of the point. Zooming to a 1-unit pad around the point
- * would scale the WCS-sized capsule over the canvas and steal pointer events.
+ * the label instead of zooming onto the point. Zooming to a 1-unit pad around
+ * the point would scale the WCS-sized capsule over the canvas and steal
+ * pointer events.
  */
 export function focusMeasurement(
   view: AcTrView2d,

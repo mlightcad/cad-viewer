@@ -1579,6 +1579,12 @@ function buildAcExMeasureToolStrip(): string {
         'data-i18n-key': 'toolbar.measureDistance',
         'data-i18n-attr': 'title aria-label'
       })}
+      ${acExToolbarButton(acExHtmlIcons.measureContinuous, 'Continuous', {
+        'data-action': 'measure',
+        'data-measure-mode': 'continuous',
+        'data-i18n-key': 'toolbar.measureContinuous',
+        'data-i18n-attr': 'title aria-label'
+      })}
       ${acExToolbarButton(acExHtmlIcons.measureAngle, 'Angle', {
         'data-action': 'measure',
         'data-measure-mode': 'angle',

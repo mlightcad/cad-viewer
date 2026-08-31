@@ -63,6 +63,7 @@ import {
   AcApMeasureAngleCmd,
   AcApMeasureArcCmd,
   AcApMeasureAreaCmd,
+  AcApMeasureContinuousCmd,
   AcApMeasureDistanceCmd,
   AcApMeasurementExportCmd,
   AcApMeasurementImportCmd,
@@ -1648,6 +1649,11 @@ export class AcApDocManager {
       'measuredistance',
       'measuredistance',
       new AcApMeasureDistanceCmd()
+    )
+    addSystemCommand(
+      'measurecontinuous',
+      'measurecontinuous',
+      new AcApMeasureContinuousCmd()
     )
     addSystemCommand('measurearea', 'measurearea', new AcApMeasureAreaCmd())
     addSystemCommand('measureangle', 'measureangle', new AcApMeasureAngleCmd())

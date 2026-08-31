@@ -15,6 +15,7 @@ import {
   acapDrawOverlayArrowHead,
   acapDrawOverlayHighlight,
   acapFitOverlayCanvas,
+  acapFitOverlayCanvasToView,
   acapOverlayArrowSize,
   acapOverlayDash,
   acapScaledOverlayLineWidth
@@ -48,14 +49,28 @@ export class AcApHtmlLivePreview {
   private drawFn: AcApHtmlLiveDrawFn | null = null
   /** Bound viewChanged listener. */
   private readonly onViewChanged = () => this.acapPaint()
+  /**
+   * When true, the overlay is sized to the WebGL canvas and offset with
+   * {@link AcTrView2d.canvasToContainer} so `worldToScreen` strokes align
+   * with CSS2D badges. Default fits the outer view container.
+   */
+  private readonly alignToViewCanvas: boolean
 
   /**
    * @param view - Active 2D view.
    * @param id - Unique overlay id.
    * @param layer - HTML transient live layer name.
+   * @param options - Overlay alignment. Use `alignToViewCanvas` for measure
+   *   jigs that stroke with `worldToScreen` next to CSS2D badges.
    */
-  constructor(view: AcTrView2d, id: string, layer: string) {
+  constructor(
+    view: AcTrView2d,
+    id: string,
+    layer: string,
+    options?: { alignToViewCanvas?: boolean }
+  ) {
     this.view = view
+    this.alignToViewCanvas = options?.alignToViewCanvas === true
     this.overlay = new AcTrHtmlCanvasOverlay({
       id,
       container: view.container,
@@ -104,7 +119,9 @@ export class AcApHtmlLivePreview {
 
   /** Paint the current frame onto the overlay canvas. */
   private acapPaint(): void {
-    const ctx = acapFitOverlayCanvas(this.overlay.canvas, this.view.container)
+    const ctx = this.alignToViewCanvas
+      ? acapFitOverlayCanvasToView(this.overlay.canvas, this.view)
+      : acapFitOverlayCanvas(this.overlay.canvas, this.view.container)
     if (!ctx) return
     this.drawFn?.(ctx, this.view)
   }
@@ -164,7 +181,7 @@ export function acapStrokeLiveSegment(
  * @param points - World vertices in order.
  * @param color - CSS or AcCmColor stroke color.
  * @param lineWidth - Stroke width in CSS pixels.
- * @param options - Optional dash / closePath.
+ * @param options - Optional dash / closePath / per-segment arrows.
  */
 export function acapStrokeLivePolyline(
   ctx: CanvasRenderingContext2D,
@@ -172,7 +189,7 @@ export function acapStrokeLivePolyline(
   points: AcApHtmlLivePoint[],
   color: string | AcCmColor,
   lineWidth: number,
-  options?: { dashed?: boolean; closed?: boolean }
+  options?: { dashed?: boolean; closed?: boolean; segmentArrows?: boolean }
 ): void {
   if (points.length < 2) return
   const css = typeof color === 'string' ? color : acapCssColor(color)
@@ -182,13 +199,26 @@ export function acapStrokeLivePolyline(
   ctx.lineWidth = strokeWidth
   if (options?.dashed) ctx.setLineDash(acapOverlayDash(strokeWidth, lineWidth))
   ctx.beginPath()
-  ctx.moveTo(screen[0].x, screen[0].y)
+  ctx.moveTo(screen[0]!.x, screen[0]!.y)
   for (let i = 1; i < screen.length; i++) {
-    ctx.lineTo(screen[i].x, screen[i].y)
+    ctx.lineTo(screen[i]!.x, screen[i]!.y)
   }
   if (options?.closed) ctx.closePath()
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
   ctx.stroke()
   if (options?.dashed) ctx.setLineDash([])
+  if (options?.segmentArrows) {
+    const size = acapOverlayArrowSize(strokeWidth, lineWidth)
+    for (let i = 0; i < screen.length - 1; i++) {
+      const a = screen[i]!
+      const b = screen[i + 1]!
+      if (Math.hypot(b.x - a.x, b.y - a.y) >= size) {
+        acapDrawOverlayArrowHead(ctx, b, a, css, size)
+        acapDrawOverlayArrowHead(ctx, a, b, css, size)
+      }
+    }
+  }
 }
 
 /**

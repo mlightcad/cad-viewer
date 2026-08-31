@@ -674,6 +674,10 @@ export default {
     firstPoint: 'İlk noktayı belirtin',
     secondPoint: 'İkinci noktayı belirtin'
   },
+  measureContinuous: {
+    firstPoint: 'İlk noktayı belirtin',
+    nextPoint: 'Sonraki noktayı belirtin (bitirmek için Enter\'a basın)'
+  },
   measurePoint: {
     point: 'Noktayı belirtin'
   },

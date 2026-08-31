@@ -394,6 +394,10 @@ export default {
       text: '距离',
       description: '测量两点之间的距离'
     },
+    measureContinuous: {
+      text: '连续测',
+      description: '连续拾取多个点测量各段距离，直到按 Enter 或取消'
+    },
     measureAngle: {
       text: '角度',
       description: '测量共享一个顶点的两条线之间的角度'

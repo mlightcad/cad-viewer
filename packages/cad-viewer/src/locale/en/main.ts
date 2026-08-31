@@ -430,6 +430,11 @@ export default {
       text: 'Distance',
       description: 'Measures the distance between two points'
     },
+    measureContinuous: {
+      text: 'Continuous',
+      description:
+        'Measures chained distances by picking successive points until Enter or Cancel'
+    },
     measureAngle: {
       text: 'Angle',
       description:

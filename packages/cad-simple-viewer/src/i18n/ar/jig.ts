@@ -1544,6 +1544,16 @@ export default {
       'حدد النقطة الثانية'
   },
 
+  measureContinuous: {
+    ...enJig.measureContinuous,
+
+    firstPoint:
+      'حدد النقطة الأولى',
+
+    nextPoint:
+      'حدد النقطة التالية (أو اضغط Enter للإنهاء)'
+  },
+
   measurePoint: {
     ...enJig.measurePoint,
 

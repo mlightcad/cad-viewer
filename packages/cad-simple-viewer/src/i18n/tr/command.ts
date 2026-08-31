@@ -313,6 +313,10 @@ export default {
     measuredistance: {
       description: 'İki nokta arasındaki mesafeyi ve delta değerlerini ölçer'
     },
+    measurecontinuous: {
+      description:
+        'Enter veya İptal edilene kadar ardışık noktalar seçerek zincirleme mesafeleri ölçer'
+    },
     measurepoint: {
       description: 'Seçilen noktanın X/Y koordinatlarını ölçer'
     },

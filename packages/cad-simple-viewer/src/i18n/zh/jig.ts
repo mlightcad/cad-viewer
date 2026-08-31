@@ -664,6 +664,10 @@ export default {
     firstPoint: '指定第一个点',
     secondPoint: '指定第二个点'
   },
+  measureContinuous: {
+    firstPoint: '指定第一个点',
+    nextPoint: '指定下一个点（或按 Enter 完成）'
+  },
   measurePoint: {
     point: '指定点'
   },

@@ -30,6 +30,17 @@ import type {
 } from '../AcApMeasurementTypes'
 
 /**
+ * Unique overlay id for a measurement group.
+ *
+ * `Date.now()` alone collides when several distances are committed in the
+ * same millisecond (continuous measure). The HTML manager replaces groups
+ * with the same id, which drops earlier segments.
+ */
+export function newMeasureOverlayId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+/**
  * Options shared by measurement entity constructors.
  *
  * Concrete measure entities pass these into {@link AcApMeasureEntity} so id,

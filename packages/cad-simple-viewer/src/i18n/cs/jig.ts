@@ -673,6 +673,10 @@ export default {
     firstPoint: 'Zadejte první bod',
     secondPoint: 'Zadejte druhý bod'
   },
+  measureContinuous: {
+    firstPoint: 'Zadejte první bod',
+    nextPoint: 'Zadejte další bod (nebo stiskněte Enter pro dokončení)'
+  },
   measurePoint: {
     point: 'Zadejte bod'
   },

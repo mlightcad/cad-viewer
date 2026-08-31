@@ -274,6 +274,9 @@ export default {
     measuredistance: {
       description: '测量两点之间的距离及坐标增量'
     },
+    measurecontinuous: {
+      description: '连续拾取多个点测量各段距离，直到按 Enter 或取消'
+    },
     measurepoint: {
       description: '测量拾取点的 X/Y 坐标'
     },

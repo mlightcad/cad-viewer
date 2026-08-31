@@ -96,6 +96,7 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).not.toContain('mlcad-measure-submenu-template')
     expect(html).not.toContain('mlcad-markup-submenu-template')
     expect(html).toContain('data-measure-mode="distance"')
+    expect(html).toContain('data-measure-mode="continuous"')
     expect(html).toContain('data-action="measure-import"')
     expect(html).toContain('data-markup-mode="cloud"')
     expect(html).toContain('data-action="markup-panel"')

@@ -17,6 +17,7 @@ export const tr: Record<string, string> = {
   'toolbar.settings': 'Ayarlar',
   'toolbar.measure': 'Ölçüm',
   'toolbar.measureDistance': 'Mesafe',
+  'toolbar.measureContinuous': 'Sürekli',
   'toolbar.measureAngle': 'Açı',
   'toolbar.measureArea': 'Alan',
   'toolbar.measureArc': 'Yay',

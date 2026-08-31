@@ -434,6 +434,11 @@ export default {
       text: 'Mesafe',
       description: 'İki nokta arasındaki mesafeyi ölçer'
     },
+    measureContinuous: {
+      text: 'Sürekli',
+      description:
+        'Enter veya İptal edilene kadar ardışık noktalar seçerek zincirleme mesafeleri ölçer'
+    },
     measureAngle: {
       text: 'Açı',
       description: 'Ortak bir köşeyi paylaşan iki çizgi arasındaki açıyı ölçer'

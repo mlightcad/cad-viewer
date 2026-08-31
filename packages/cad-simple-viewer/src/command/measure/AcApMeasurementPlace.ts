@@ -4,10 +4,11 @@ import type { AcTrView2d } from '../../view'
 import { registerMeasurementPublish } from './AcApMeasurementRepublish'
 import { getSelectedMeasurementId } from './AcApMeasurementStore'
 import type { AcApMeasurementRecord } from './AcApMeasurementTypes'
+import { newMeasureOverlayId } from './entity/AcApMeasureEntity'
 import { createMeasureEntityFromRecord } from './entity/AcApMeasureEntityFactory'
 
 function newImportedId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  return newMeasureOverlayId(prefix)
 }
 
 /**
@@ -20,9 +21,7 @@ export function placeMeasurementRecord(
   record: AcApMeasurementRecord
 ): boolean {
   const prefix =
-    record.geometry.type === 'distance'
-      ? 'dist'
-      : record.geometry.type
+    record.geometry.type === 'distance' ? 'dist' : record.geometry.type
   const placed: AcApMeasurementRecord = {
     ...record,
     id: newImportedId(prefix)

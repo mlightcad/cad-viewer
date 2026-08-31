@@ -15,6 +15,7 @@ export const ar: Record<string, string> = {
 
   'toolbar.measure': 'القياس',
   'toolbar.measureDistance': 'مسافة',
+  'toolbar.measureContinuous': 'مستمر',
   'toolbar.measureAngle': 'زاوية',
   'toolbar.measureArea': 'مساحة',
   'toolbar.measureArc': 'قوس',

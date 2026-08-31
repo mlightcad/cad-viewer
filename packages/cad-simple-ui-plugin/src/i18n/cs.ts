@@ -17,6 +17,7 @@ export const cs: Record<string, string> = {
   'toolbar.settings': 'Nastavení',
   'toolbar.measure': 'Měření',
   'toolbar.measureDistance': 'Vzdálenost',
+  'toolbar.measureContinuous': 'Spojité',
   'toolbar.measureAngle': 'Úhel',
   'toolbar.measureArea': 'Plocha',
   'toolbar.measureArc': 'Oblouk',

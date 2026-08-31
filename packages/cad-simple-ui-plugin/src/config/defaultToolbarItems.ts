@@ -29,6 +29,7 @@ import {
   ICON_MEASURE_ANGLE,
   ICON_MEASURE_ARC,
   ICON_MEASURE_AREA,
+  ICON_MEASURE_CONTINUOUS,
   ICON_MEASURE_DISTANCE,
   ICON_MEASURE_POINT,
   ICON_MEASUREMENT_PANEL,
@@ -183,6 +184,12 @@ function acuiCreateMeasureToolbarItem(): AcUiToolbarItem {
         label: 'toolbar.measureDistance',
         icon: ICON_MEASURE_DISTANCE,
         command: 'measuredistance'
+      },
+      {
+        id: 'measure-continuous',
+        label: 'toolbar.measureContinuous',
+        icon: ICON_MEASURE_CONTINUOUS,
+        command: 'measurecontinuous'
       },
       {
         id: 'measure-angle',
