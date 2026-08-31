@@ -7,8 +7,7 @@
 
 import {
   acuiCreateAciPaletteStacks,
-  acuiEnsureAciPaletteStyles,
-  type AcUiAciPaletteStacks
+  acuiEnsureAciPaletteStyles
 } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor, AcCmColorUtil } from '@mlightcad/data-model'
 
@@ -235,17 +234,13 @@ export function setupAcExSessionDrawStyle(
     colorLeaveTimer = window.setTimeout(() => hideColorPanel(), 220)
   }
 
-  let aciStacks!: AcUiAciPaletteStacks
-  const applyColor = (css: string) => {
-    if (!currentKind) return
-    swatchFill.style.background = css
-    aciStacks.setSelected(aciIndexOf(cssToColor(css)))
-    ctx.applyStyle(currentKind, { color: css })
-  }
-
-  aciStacks = acuiCreateAciPaletteStacks({
+  const aciStacks = acuiCreateAciPaletteStacks({
     onSelect: index => {
-      applyColor(cssColor(colorFromAci(index)))
+      if (!currentKind) return
+      const css = cssColor(colorFromAci(index))
+      swatchFill.style.background = css
+      aciStacks.setSelected(index)
+      ctx.applyStyle(currentKind, { color: css })
       hideColorPanel()
     }
   })

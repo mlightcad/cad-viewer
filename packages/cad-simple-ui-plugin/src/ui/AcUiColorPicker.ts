@@ -1,6 +1,6 @@
 import {
-  acuiCreateAciIndexPicker,
-  type AcUiAciIndexPicker
+  type AcUiAciIndexPicker,
+  acuiCreateAciIndexPicker
 } from '@mlightcad/cad-simple-viewer'
 import { AcCmColor, AcCmColorMethod } from '@mlightcad/data-model'
 
