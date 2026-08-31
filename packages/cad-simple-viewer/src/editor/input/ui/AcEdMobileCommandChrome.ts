@@ -444,14 +444,17 @@ export class AcEdMobileCommandChrome {
     this.cancelBtn.setAttribute('aria-label', t('main.mobileCommand.cancel'))
   }
 
+  /**
+   * Stops `pointerdown` from bubbling to the canvas while still allowing the
+   * event to reach interactive children (e.g. ACI palette long-press loupe).
+   *
+   * Must use the bubble phase: capture + `stopPropagation` on the accessory /
+   * panel would prevent descendants from receiving pointer events at all.
+   */
   private sinkPointer(el: HTMLElement): void {
-    el.addEventListener(
-      'pointerdown',
-      e => {
-        e.stopPropagation()
-      },
-      { capture: true }
-    )
+    el.addEventListener('pointerdown', e => {
+      e.stopPropagation()
+    })
   }
 
   private static injectCss(): void {

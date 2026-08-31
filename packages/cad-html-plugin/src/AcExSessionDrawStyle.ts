@@ -5,6 +5,11 @@
  * @packageDocumentation
  */
 
+import {
+  acuiCreateAciPaletteStacks,
+  acuiEnsureAciPaletteStyles,
+  type AcUiAciPaletteStacks
+} from '@mlightcad/cad-simple-viewer'
 import { AcCmColor, AcCmColorUtil } from '@mlightcad/data-model'
 
 import type { AcExSessionAccessory } from './AcExCommandSessionPanel'
@@ -93,56 +98,21 @@ const SESSION_STYLE_CSS = `
   border-radius: 6px;
   background: rgba(28, 32, 40, 0.98);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-  --mlcad-session-style-aci-cell: 11px;
+  --ml-aci-cell-size: 11px;
+  --ml-ui-accent: #08e8de;
 }
 .mlcad-session-style__color-panel.is-open {
   display: block;
 }
-.mlcad-session-style__aci-large {
-  display: grid;
-  grid-template-columns: repeat(24, var(--mlcad-session-style-aci-cell));
-  gap: 1px;
-  margin-bottom: 6px;
-}
-.mlcad-session-style__aci-small {
-  display: grid;
-  grid-template-columns: repeat(9, var(--mlcad-session-style-aci-cell));
-  gap: 1px;
-  margin-bottom: 6px;
-}
-.mlcad-session-style__aci-gray {
-  display: flex;
-  gap: 4px;
-}
-.mlcad-session-style__aci-cell {
-  width: var(--mlcad-session-style-aci-cell);
-  height: var(--mlcad-session-style-aci-cell);
-  padding: 0;
-  border: 1px solid #666;
-  box-sizing: border-box;
-  cursor: pointer;
-}
-.mlcad-session-style__aci-cell:hover {
-  outline: 1px solid #00a8ff;
-}
-.mlcad-session-style__aci-cell.is-selected {
-  outline: 2px solid #08e8de;
-  outline-offset: -1px;
+.mlcad-session-style__color-panel .ml-aci-cell {
+  border-color: #666;
 }
 `
-
-const SMALL_ACI = Array.from({ length: 9 }, (_, i) => i + 1)
-const LARGE_ACI = Array.from({ length: 240 }, (_, i) => i + 10)
-const GRAY_ACI = Array.from({ length: 6 }, (_, i) => i + 250)
 
 function colorFromAci(index: number): AcCmColor {
   const color = new AcCmColor()
   color.colorIndex = index
   return color
-}
-
-function aciCss(index: number): string {
-  return colorFromAci(index).cssColor || '#ffffff'
 }
 
 function cssColor(color: AcCmColor): string {
@@ -189,6 +159,7 @@ function aciIndexOf(color: AcCmColor): number | undefined {
 }
 
 function ensureStyles(): void {
+  acuiEnsureAciPaletteStyles()
   if (typeof document === 'undefined') return
   let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null
   if (!style) {
@@ -236,44 +207,6 @@ export function setupAcExSessionDrawStyle(
   const colorPanel = document.createElement('div')
   colorPanel.className = 'mlcad-session-style__color-panel'
 
-  const createAciPalette = (indices: number[], className: string) => {
-    const palette = document.createElement('div')
-    palette.className = className
-    for (const index of indices) {
-      const cell = document.createElement('button')
-      cell.type = 'button'
-      cell.className = 'mlcad-session-style__aci-cell'
-      cell.dataset.aci = String(index)
-      cell.style.background = aciCss(index)
-      cell.title = String(index)
-      cell.addEventListener('click', event => {
-        event.preventDefault()
-        event.stopPropagation()
-        applyColor(cssColor(colorFromAci(index)))
-        hideColorPanel()
-      })
-      palette.appendChild(cell)
-    }
-    return palette
-  }
-
-  colorPanel.appendChild(
-    createAciPalette(LARGE_ACI, 'mlcad-session-style__aci-large')
-  )
-  colorPanel.appendChild(
-    createAciPalette(SMALL_ACI, 'mlcad-session-style__aci-small')
-  )
-  colorPanel.appendChild(
-    createAciPalette(GRAY_ACI, 'mlcad-session-style__aci-gray')
-  )
-
-  colorWrap.appendChild(swatch)
-  colorWrap.appendChild(colorPanel)
-
-  const fontSizeSelect = document.createElement('select')
-  fontSizeSelect.className = 'mlcad-session-style__select'
-  controlsRow.append(colorWrap, fontSizeSelect)
-
   let colorPanelOpen = false
   let colorLeaveTimer: number | undefined
   let currentKind: AcExDrawStyleKind | undefined
@@ -302,17 +235,33 @@ export function setupAcExSessionDrawStyle(
     colorLeaveTimer = window.setTimeout(() => hideColorPanel(), 220)
   }
 
-  const markSelectedAci = (index: number | undefined) => {
-    colorPanel.querySelectorAll('.mlcad-session-style__aci-cell').forEach(el => {
-      const aci = Number((el as HTMLElement).dataset.aci)
-      el.classList.toggle('is-selected', index != null && aci === index)
-    })
+  let aciStacks!: AcUiAciPaletteStacks
+  const applyColor = (css: string) => {
+    if (!currentKind) return
+    swatchFill.style.background = css
+    aciStacks.setSelected(aciIndexOf(cssToColor(css)))
+    ctx.applyStyle(currentKind, { color: css })
   }
+
+  aciStacks = acuiCreateAciPaletteStacks({
+    onSelect: index => {
+      applyColor(cssColor(colorFromAci(index)))
+      hideColorPanel()
+    }
+  })
+  colorPanel.appendChild(aciStacks.root)
+
+  colorWrap.appendChild(swatch)
+  colorWrap.appendChild(colorPanel)
+
+  const fontSizeSelect = document.createElement('select')
+  fontSizeSelect.className = 'mlcad-session-style__select'
+  controlsRow.append(colorWrap, fontSizeSelect)
 
   const paint = (style: AcExDrawStyleValues) => {
     const color = cssToColor(style.color)
     swatchFill.style.background = cssColor(color)
-    markSelectedAci(aciIndexOf(color))
+    aciStacks.setSelected(aciIndexOf(color))
 
     const sizes = new Set(FONT_SIZE_OPTIONS)
     if (Number.isFinite(style.fontSize) && style.fontSize > 0) {
@@ -331,13 +280,6 @@ export function setupAcExSessionDrawStyle(
         ? Math.round(style.fontSize)
         : 12
     )
-  }
-
-  const applyColor = (css: string) => {
-    if (!currentKind) return
-    swatchFill.style.background = css
-    markSelectedAci(aciIndexOf(cssToColor(css)))
-    ctx.applyStyle(currentKind, { color: css })
   }
 
   const applyFontSize = (size: number) => {
@@ -411,6 +353,7 @@ export function setupAcExSessionDrawStyle(
       unmountSession()
       document.removeEventListener('pointerdown', onDocumentPointerDown, true)
       clearColorLeaveTimer()
+      aciStacks.dispose()
     }
   }
 }
