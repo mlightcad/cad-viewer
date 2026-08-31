@@ -582,6 +582,198 @@ export const ACEX_HTML_SHELL_CSS = `
     transform: translateY(-6px);
   }
 
+  #mlcad-command-session {
+    position: absolute;
+    left: 50%;
+    right: auto;
+    bottom: 0;
+    z-index: calc(var(--mlcad-z-chrome) + 3);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 440px;
+    max-width: calc(100% - 24px);
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    padding: 10px 12px;
+    background: var(--mlcad-ui-bg-elevated);
+    color: var(--mlcad-ui-text);
+    border: 1px solid var(--mlcad-ui-border);
+    border-bottom: 0;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+    pointer-events: auto;
+  }
+  #mlcad-command-session[hidden] {
+    display: none !important;
+  }
+  .mlcad-session-group {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    min-width: 0;
+  }
+  .mlcad-session-group[hidden] {
+    display: none;
+  }
+  #mlcad-command-session.is-relative .mlcad-session-group-polar {
+    border-bottom: 1px solid var(--mlcad-ui-border);
+    padding-bottom: 6px;
+  }
+  #mlcad-command-session.is-relative .mlcad-session-group-delta {
+    padding-top: 6px;
+  }
+  .mlcad-session-group:not(:has(.mlcad-session-metric-stack:not([hidden]))) {
+    justify-content: flex-end;
+  }
+  .mlcad-session-metric-stack {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+  }
+  .mlcad-session-metric-stack[hidden] {
+    display: none;
+  }
+  .mlcad-session-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex: 0 0 auto;
+    align-self: stretch;
+    padding-left: 12px;
+    border-left: 1px solid var(--mlcad-ui-border);
+  }
+  .mlcad-session-group .mlcad-session-actions {
+    display: none;
+  }
+  .mlcad-session-actions-shared {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+  #mlcad-command-session.is-relative:not([hidden]),
+  #mlcad-command-session.is-absolute:not([hidden]) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+    row-gap: 0;
+  }
+  #mlcad-command-session.is-relative {
+    grid-template-areas:
+      'polar shared'
+      'delta shared'
+      'chips chips';
+  }
+  #mlcad-command-session.is-absolute {
+    grid-template-areas:
+      'abs shared'
+      'chips chips';
+  }
+  .mlcad-session-group-polar { grid-area: polar; }
+  .mlcad-session-group-delta { grid-area: delta; }
+  .mlcad-session-group-abs { grid-area: abs; }
+  .mlcad-session-actions-shared { grid-area: shared; }
+  .mlcad-session-chips { grid-area: chips; }
+  #mlcad-command-session.is-actions-only:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+  }
+  #mlcad-command-session.is-actions-only .mlcad-session-actions-shared {
+    border-left: 0;
+    padding-left: 0;
+    justify-content: flex-end;
+    align-self: flex-end;
+  }
+  .mlcad-session-group:not(:has(.mlcad-session-metric-stack:not([hidden])))
+    .mlcad-session-actions {
+    border-left: 0;
+    padding-left: 0;
+  }
+  .mlcad-session-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 2px 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    min-height: 28px;
+    min-width: 0;
+    flex: 1;
+    width: 100%;
+  }
+  .mlcad-session-metric[hidden] {
+    display: none;
+  }
+  .mlcad-session-metric-label {
+    flex: 0 0 auto;
+    color: var(--mlcad-ui-muted);
+    font-size: 12px;
+  }
+  .mlcad-session-metric-value {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+  }
+  .mlcad-session-chips {
+    display: none !important;
+  }
+  .mlcad-session-chips[hidden] {
+    display: none !important;
+  }
+  .mlcad-session-chip {
+    min-height: 32px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    border: 1px solid var(--mlcad-ui-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--mlcad-accent);
+    font-size: 13px;
+  }
+  .mlcad-session-cancel,
+  .mlcad-session-confirm {
+    box-sizing: border-box;
+    flex: 0 0 48px;
+    align-self: center;
+    margin-block: auto;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    cursor: pointer;
+    color: #fff;
+  }
+  .mlcad-session-cancel svg,
+  .mlcad-session-confirm svg {
+    display: block;
+  }
+  .mlcad-session-cancel { background: #5c6370; }
+  .mlcad-session-confirm { background: var(--mlcad-accent-active); }
+  .mlcad-session-confirm:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-snap-strip-wrap,
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-measure-strip-wrap,
   #mlcad-sidebar.mlcad-sidebar--collapsed #mlcad-markup-strip-wrap,
@@ -1274,6 +1466,49 @@ export const ACEX_HTML_SHELL_CSS = `
       right: 8px;
       top: 8px;
     }
+    #mlcad-command-session {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      max-width: none;
+      transform: none;
+      border-radius: 0;
+      border: 0;
+      border-top: 1px solid var(--mlcad-ui-border);
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+    #mlcad-command-session.is-relative:not([hidden]),
+    #mlcad-command-session.is-absolute:not([hidden]),
+    #mlcad-command-session.is-actions-only:not([hidden]) {
+      display: flex;
+      flex-direction: column;
+    }
+    .mlcad-session-metric-stack {
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      gap: 2px;
+    }
+    .mlcad-session-metric {
+      flex: none;
+    }
+    .mlcad-session-group .mlcad-session-actions {
+      display: flex;
+    }
+    .mlcad-session-actions-shared {
+      display: none;
+    }
+    #mlcad-command-session.is-relative .mlcad-session-group-polar {
+      padding-bottom: 0;
+    }
+    #mlcad-command-session.is-relative .mlcad-session-group-delta {
+      padding-top: 0;
+    }
+    #mlcad-root.mlcad-session-active #mlcad-toolbar {
+      visibility: hidden;
+    }
   }
 `
 
@@ -1332,6 +1567,56 @@ export function buildAcExHtmlShellBody(
   <div id="mlcad-root">
     <div id="mlcad-canvas-host">
       <footer id="mlcad-status-bar" aria-live="polite" hidden></footer>
+      <div id="mlcad-command-session" class="mlcad-command-session" hidden aria-hidden="true">
+        <div class="mlcad-session-group mlcad-session-group-abs">
+          <div class="mlcad-session-metric-stack" data-session-stack="abs">
+            <button type="button" class="mlcad-session-metric" data-session-metric="x" disabled>
+              <span class="mlcad-session-metric-label" data-i18n-key="session.x" data-i18n-text>X</span>
+              <span class="mlcad-session-metric-value">0</span>
+            </button>
+            <button type="button" class="mlcad-session-metric" data-session-metric="y" disabled>
+              <span class="mlcad-session-metric-label" data-i18n-key="session.y" data-i18n-text>Y</span>
+              <span class="mlcad-session-metric-value">0</span>
+            </button>
+          </div>
+          <div class="mlcad-session-actions" data-session-actions="abs">
+            <button type="button" class="mlcad-session-cancel" data-i18n-key="session.cancel" data-i18n-attr="aria-label" aria-label="Cancel">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.42L10.59 12l-4.9 4.89a1 1 0 1 0 1.42 1.42L12 13.41l4.89 4.9a1 1 0 0 0 1.42-1.42L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z"/></svg>
+            </button>
+            <button type="button" class="mlcad-session-confirm" data-i18n-key="session.confirm" data-i18n-attr="aria-label" aria-label="Confirm" disabled>
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M9.55 18.2 3.8 12.45l1.4-1.4 4.35 4.36 9.25-9.26 1.4 1.41z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="mlcad-session-group mlcad-session-group-polar" hidden>
+          <div class="mlcad-session-metric-stack" data-session-stack="polar">
+            <button type="button" class="mlcad-session-metric" data-session-metric="length" disabled>
+              <span class="mlcad-session-metric-label" data-i18n-key="session.length" data-i18n-text>Length</span>
+              <span class="mlcad-session-metric-value">0</span>
+            </button>
+            <button type="button" class="mlcad-session-metric" data-session-metric="angle" disabled>
+              <span class="mlcad-session-metric-label" data-i18n-key="session.angle" data-i18n-text>Angle</span>
+              <span class="mlcad-session-metric-value">0</span>
+            </button>
+          </div>
+          <div class="mlcad-session-actions" data-session-actions="polar"></div>
+        </div>
+        <div class="mlcad-session-group mlcad-session-group-delta" hidden>
+          <div class="mlcad-session-metric-stack" data-session-stack="delta">
+            <button type="button" class="mlcad-session-metric" data-session-metric="dx" disabled>
+              <span class="mlcad-session-metric-label" data-i18n-key="session.dx" data-i18n-text>ΔX</span>
+              <span class="mlcad-session-metric-value">0</span>
+            </button>
+            <button type="button" class="mlcad-session-metric" data-session-metric="dy" disabled>
+              <span class="mlcad-session-metric-label" data-i18n-key="session.dy" data-i18n-text>ΔY</span>
+              <span class="mlcad-session-metric-value">0</span>
+            </button>
+          </div>
+          <div class="mlcad-session-actions" data-session-actions="delta"></div>
+        </div>
+        <div class="mlcad-session-actions mlcad-session-actions-shared" data-session-actions="shared"></div>
+        <div class="mlcad-session-chips" hidden></div>
+      </div>
     </div>
     <aside id="mlcad-sidebar">
       <nav id="mlcad-toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.viewerTools" aria-label="Viewer tools">

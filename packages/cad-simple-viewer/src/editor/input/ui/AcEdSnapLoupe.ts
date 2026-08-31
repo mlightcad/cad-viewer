@@ -1,5 +1,6 @@
 import { AcGeBox2d, AcGePoint2d } from '@mlightcad/data-model'
 
+import { acedIsMobileOrPadUi } from '../../global/AcEdUiLayout'
 import { AcEdBaseView } from '../../view'
 import { AcEdMarker, AcEdMarkerType } from '../marker/AcEdMarker'
 import {
@@ -74,10 +75,18 @@ export class AcEdSnapLoupe {
   ) {
     const size = ACED_SNAP_LOUPE_SIZE_PX
     const inset = ACED_SNAP_LOUPE_INSET_PX
+    const promptOffset = acedIsMobileOrPadUi()
+      ? parseFloat(
+          getComputedStyle(this.view.container).getPropertyValue(
+            '--ml-mobile-cmd-prompt-height'
+          )
+        ) || 40
+      : 0
+    const top = inset + (Number.isFinite(promptOffset) ? promptOffset : 0)
     const viewBox = acedLoupeViewBoxFromCanvasSample(this.view, canvasX, canvasY)
-    this.view.setSnapLoupe({ x: inset, y: inset, size, viewBox })
+    this.view.setSnapLoupe({ x: inset, y: top, size, viewBox })
 
-    const host = this.view.canvasToContainer({ x: inset, y: inset })
+    const host = this.view.canvasToContainer({ x: inset, y: top })
     this.root.style.left = `${host.x}px`
     this.root.style.top = `${host.y}px`
     this.root.style.display = 'block'

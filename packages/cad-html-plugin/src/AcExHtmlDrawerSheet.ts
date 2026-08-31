@@ -85,6 +85,12 @@ export function setupAcExHtmlDrawerSheets(options?: {
       if (wrap.hidden) return
       inset += wrap.offsetHeight
     })
+    const session = document.getElementById('mlcad-command-session')
+    if (session && !session.hidden && acExHtmlIsPhoneLayout()) {
+      // Session replaces the toolbar (which stays in layout via visibility:
+      // hidden). Pin the drawer to the session height only.
+      inset = session.offsetHeight
+    }
     document.documentElement.style.setProperty(
       '--mlcad-phone-drawer-bottom',
       `${inset}px`

@@ -14,6 +14,16 @@ export default {
     invalidInput: 'Geçersiz giriş.',
     close: 'Komut satırını kapat'
   },
+  mobileCommand: {
+    length: 'Uzunluk',
+    angle: 'Açı',
+    dx: 'ΔX',
+    dy: 'ΔY',
+    x: 'X',
+    y: 'Y',
+    confirm: 'Onayla',
+    cancel: 'İptal'
+  },
   inputManager: {
     firstCorner: 'İlk köşeyi belirtin veya',
     secondCorner: 'İkinci köşeyi belirtin veya'

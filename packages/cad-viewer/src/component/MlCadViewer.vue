@@ -796,6 +796,13 @@ const closeNotificationCenter = () => {
   z-index: 6;
 }
 
+/* Mobile command chrome is position:fixed over the canvas; hide the
+   status-bar footer so ✓ / × receive taps instead of the footer. */
+.ml-cad-layout:has(.ml-mobile-cmd-active) .ml-cad-footer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Position the filename display at the top center of the viewer */
 .ml-file-name {
   position: fixed;

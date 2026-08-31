@@ -10,6 +10,11 @@ import {
 
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
+import {
+  acedIsMobileOrPadUi,
+  acedShouldHideDesktopCommandLine,
+  acedSubscribeUiLayout
+} from '../../global/AcEdUiLayout'
 import { AcEdBaseView } from '../../view'
 import { AcEdInputModifiers } from '../AcEdInputModifiers'
 import { AcEdInputToggles } from '../AcEdInputToggles'
@@ -60,6 +65,14 @@ import {
 } from './AcEdFloatingInputTypes'
 import { AcEdFloatingMessage } from './AcEdFloatingMessage'
 import { AcEdMessageType } from './AcEdMessageType'
+import {
+  AcEdMobileCommandChrome,
+  type AcEdMobileKeywordChip
+} from './AcEdMobileCommandChrome'
+import {
+  acedComputeSessionMetrics,
+  type AcEdMobileSessionMetrics
+} from './AcEdMobileSessionMetrics'
 import { acedShouldIgnoreCompatMouse } from './AcEdTouchPointSession'
 
 /**
@@ -114,6 +127,8 @@ export class AcEdInputManager {
 
   /** Command line UI component */
   private _commandLine: AcEdCommandLine
+  /** Phone/pad prompt bar + session panel (hidden on desktop). */
+  private _mobileChrome: AcEdMobileCommandChrome
   /** Buffered command-line style inputs (each item is one Enter-confirmed value). */
   private _scriptInputs: string[] = []
   /** Current modifier key state during input sessions. */
@@ -162,9 +177,16 @@ export class AcEdInputManager {
     }
     const commandLine = new AcEdCommandLine(this.view.container)
     this._commandLine = commandLine
-    commandLine.visible = AcApSettingManager.instance.isShowCommandLine
+    this._mobileChrome = new AcEdMobileCommandChrome(this.view.container)
+    this.syncDesktopCommandLineVisibility()
     AcApSettingManager.instance.events.modified.addEventListener(() => {
-      commandLine.visible = AcApSettingManager.instance.isShowCommandLine
+      this.syncDesktopCommandLineVisibility()
+    })
+    acedSubscribeUiLayout(() => {
+      this.syncDesktopCommandLineVisibility()
+      if (!acedIsMobileOrPadUi() && this._mobileChrome.isOpen) {
+        this._mobileChrome.hide()
+      }
     })
   }
 
@@ -217,6 +239,90 @@ export class AcEdInputManager {
     if (!rejector) return
     this._activeRejector = null
     rejector()
+  }
+
+  /**
+   * Shows or hides the desktop command line according to settings and layout.
+   */
+  private syncDesktopCommandLineVisibility(): void {
+    const hide = acedShouldHideDesktopCommandLine(this.active)
+    this._commandLine.visible =
+      !hide && AcApSettingManager.instance.isShowCommandLine
+  }
+
+  /**
+   * Visible keyword chips for the mobile session panel.
+   */
+  private mobileKeywordChips(
+    options: AcEdPromptOptions<unknown>
+  ): AcEdMobileKeywordChip[] {
+    return (options.keywords?.toArray() ?? [])
+      .filter(kw => kw.visible)
+      .map(kw => ({
+        displayName: kw.displayName,
+        globalName: kw.globalName,
+        enabled: kw.enabled
+      }))
+  }
+
+  /**
+   * Opens the mobile command chrome for the current prompt when on phone/pad.
+   */
+  private beginMobilePrompt(args: {
+    prompt: string
+    keywords?: AcEdMobileKeywordChip[]
+    allowNone: boolean
+    showMetrics: boolean
+    onConfirm: () => void
+    onCancel: () => void
+    onKeyword: (globalName: string) => void
+  }): void {
+    this.syncDesktopCommandLineVisibility()
+    if (!acedIsMobileOrPadUi()) return
+    this._mobileChrome.show(
+      {
+        prompt: args.prompt,
+        keywords: args.keywords ?? [],
+        allowNone: args.allowNone,
+        showMetrics: args.showMetrics
+      },
+      {
+        onConfirm: args.onConfirm,
+        onCancel: args.onCancel,
+        onKeyword: args.onKeyword
+      }
+    )
+  }
+
+  /** Closes the mobile command chrome and restores desktop CLI visibility. */
+  private endMobilePrompt(): void {
+    this._mobileChrome.hide()
+    this.syncDesktopCommandLineVisibility()
+  }
+
+  /**
+   * Pushes live length/angle/Δ values into the mobile session panel.
+   */
+  private pushMobileMetrics(
+    cursor: AcGePoint2dLike,
+    basePoint?: AcGePoint2dLike | null
+  ): void {
+    if (!this._mobileChrome.isOpen) return
+    const metrics: AcEdMobileSessionMetrics = acedComputeSessionMetrics(
+      cursor,
+      basePoint
+    )
+    // A zero-length rubber-band (cursor still on lastPoint after lift / before
+    // the next press) must not wipe the previous readout.
+    if (metrics.hasBasePoint && metrics.length === 0) return
+    this._mobileChrome.setMetrics(metrics, {
+      length: this.formatNumber(metrics.length, 'distance'),
+      angle: this.formatNumber(metrics.angleDeg, 'angle'),
+      dx: this.formatNumber(metrics.dx, 'point'),
+      dy: this.formatNumber(metrics.dy, 'point'),
+      x: this.formatNumber(metrics.x, 'point'),
+      y: this.formatNumber(metrics.y, 'point')
+    })
   }
 
   /**
@@ -788,7 +894,8 @@ export class AcEdInputManager {
       inputCount: 1,
       promptOptions: options,
       handler,
-      getDynamicValue
+      getDynamicValue,
+      showMetrics: false
     })
   }
 
@@ -863,6 +970,7 @@ export class AcEdInputManager {
           floatingInput?.setBasePoint(firstPoint, {
             showBaseLineOnly: !options.useDashedLine
           })
+          this._mobileChrome.update({ showMetrics: true })
           return false
         }
         return true
@@ -1089,41 +1197,54 @@ export class AcEdInputManager {
         }
 
         return new Promise<string>((resolve, reject) => {
-          // Register a rejector so `cancelActiveInput()` (called by the
-          // command dispatcher when a new command pre-empts the running one)
-          // can abort this keyword-only prompt the same way ESC would.
-          const rejector = (err?: Error) => {
+          let settled = false
+          const finish = (action: () => void) => {
+            if (settled) return
+            settled = true
+            this.active = false
             if (this._activeRejector === rejector) {
               this._activeRejector = null
             }
-            // Tear down the floating command-line keyword session so its
-            // input box and event listeners do not linger after cancel.
             this._commandLine.cancelActiveSession()
-            reject(err ?? new Error('cancelled'))
+            this.endMobilePrompt()
+            action()
+          }
+          const rejector = (err?: Error) => {
+            finish(() => reject(err ?? new Error('cancelled')))
           }
           this._activeRejector = rejector
+          // Pad hides the desktop CLI only while a prompt session is active.
+          this.active = true
+
+          this.beginMobilePrompt({
+            prompt: options.getDisplayMessage(),
+            keywords: this.mobileKeywordChips(options),
+            allowNone: options.allowNone,
+            showMetrics: false,
+            onConfirm: () => {
+              if (options.allowNone) {
+                rejector(new AcEdNoneInputError())
+              }
+            },
+            onCancel: () => rejector(),
+            onKeyword: globalName => {
+              finish(() => resolve(globalName))
+            }
+          })
 
           this._commandLine.getKeywords(options, true).then(
             result => {
-              if (this._activeRejector === rejector) {
-                this._activeRejector = null
-              }
               if (!result) {
-                reject(
+                rejector(
                   options.allowNone
                     ? new AcEdNoneInputError()
                     : new Error('cancelled')
                 )
                 return
               }
-              resolve(result)
+              finish(() => resolve(result))
             },
-            err => {
-              if (this._activeRejector === rejector) {
-                this._activeRejector = null
-              }
-              reject(err)
-            }
+            err => rejector(err instanceof Error ? err : undefined)
           )
         })
       },
@@ -1240,6 +1361,7 @@ export class AcEdInputManager {
             previewEl?.remove()
             keywordSession?.cancel()
             this._commandLine.clear()
+            this.endMobilePrompt()
 
             document.removeEventListener('keydown', keyHandler)
             this.view.canvas.removeEventListener('mousedown', mouseDown)
@@ -1253,6 +1375,21 @@ export class AcEdInputManager {
             this.view.events.viewResize.removeEventListener(onViewChanged)
           }
           this._activeRejector = rejector
+
+          this.beginMobilePrompt({
+            prompt: options.getDisplayMessage(),
+            keywords: this.mobileKeywordChips(options),
+            allowNone: true,
+            showMetrics: false,
+            onConfirm: () => {
+              cleanup()
+              resolve([...selected])
+            },
+            onCancel: () => rejector(),
+            onKeyword: globalName => {
+              rejector(new AcEdKeywordInputError(globalName))
+            }
+          })
 
           keywordSession?.promise.then(keyword => {
             if (settled) return
@@ -1436,8 +1573,25 @@ export class AcEdInputManager {
             floatingMessage?.dispose()
             keywordSession?.cancel()
             this._commandLine.clear()
+            this.endMobilePrompt()
           }
           this._activeRejector = rejector
+
+          this.beginMobilePrompt({
+            prompt: options.getDisplayMessage(),
+            keywords: this.mobileKeywordChips(options),
+            allowNone: options.allowNone,
+            showMetrics: false,
+            onConfirm: () => {
+              if (!options.allowNone) return
+              cleanup()
+              resolve(null)
+            },
+            onCancel: () => rejector(),
+            onKeyword: globalName => {
+              rejector(new AcEdKeywordInputError(globalName))
+            }
+          })
 
           keywordSession?.promise.then(keyword => {
             if (settled) return
@@ -1958,6 +2112,7 @@ export class AcEdInputManager {
     drawPreview?: AcEdFloatingInputDrawPreviewCallback
     onCommit?: AcEdFloatingInputCommitCallback<T>
     onFloatingInputCreated?: (input: AcEdFloatingInput<T>) => void
+    showMetrics?: boolean
   }): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.active = true
@@ -1995,6 +2150,18 @@ export class AcEdInputManager {
       const defaultBehavior = this.resolvePromptDefaultValue(
         options.promptOptions
       )
+      const showMetrics =
+        options.showMetrics ??
+        (options.inputCount === 2 || basePoint != null)
+
+      const getDynamicValue: AcEdFloatingInputDynamicValueCallback<T> = pos => {
+        this.pushMobileMetrics(
+          pos,
+          basePoint ?? floatingInput.sessionBasePoint
+        )
+        return options.getDynamicValue(pos)
+      }
+
       const floatingInput = new AcEdFloatingInput(this.view, {
         parent: this.view.canvas,
         inputCount: options.inputCount,
@@ -2009,7 +2176,7 @@ export class AcEdInputManager {
         useDefaultValue: defaultBehavior.useDefaultValue,
         defaultValue: defaultBehavior.defaultValue,
         validate: validate,
-        getDynamicValue: options.getDynamicValue,
+        getDynamicValue,
         drawPreview: (pos: AcGePoint2dLike) => {
           if (promptDefaults.jig) {
             const defaults = options.getDynamicValue(pos)
@@ -2053,6 +2220,7 @@ export class AcEdInputManager {
         floatingInput.dispose()
         promptInputSession.cancel()
         this._commandLine.clear()
+        this.endMobilePrompt()
       }
 
       const resolver = (value: T) => {
@@ -2074,6 +2242,18 @@ export class AcEdInputManager {
       const keywordRejector = (keyword: string) => {
         rejector(new AcEdKeywordInputError(keyword))
       }
+
+      this.beginMobilePrompt({
+        prompt: options.promptOptions.getDisplayMessage(),
+        keywords: this.mobileKeywordChips(
+          options.promptOptions as AcEdPromptOptions<unknown>
+        ),
+        allowNone,
+        showMetrics,
+        onConfirm: () => noneRejector(),
+        onCancel: () => rejector(),
+        onKeyword: keywordRejector
+      })
 
       const escHandler = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {

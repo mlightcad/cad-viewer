@@ -6,6 +6,7 @@ import {
   acedIsHandheldDevice,
   acedIsMobileOrPadUi,
   acedIsMobileUiLayout,
+  acedShouldHideDesktopCommandLine,
   acedSubscribeUiLayout,
   ML_UI_COARSE_POINTER_MEDIA_QUERY,
   ML_UI_COMPACT_MAX_WIDTH,
@@ -157,6 +158,27 @@ describe('AcEdUiLayout', () => {
     expect(acedIsHandheldDevice()).toBe(false)
     expect(acedIsMobileOrPadUi()).toBe(false)
 
+    media.restore()
+  })
+})
+
+describe('acedShouldHideDesktopCommandLine', () => {
+  it('hides the CLI on the phone breakpoint even when idle', () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
+    )
+    expect(acedShouldHideDesktopCommandLine(false)).toBe(true)
+    expect(acedShouldHideDesktopCommandLine(true)).toBe(true)
+    media.restore()
+  })
+
+  it('hides the CLI on pad only while a prompt is active', () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_COMPACT_MEDIA_QUERY
+    )
+    expect(acedGetUiLayout()).toBe('pad')
+    expect(acedShouldHideDesktopCommandLine(false)).toBe(false)
+    expect(acedShouldHideDesktopCommandLine(true)).toBe(true)
     media.restore()
   })
 })

@@ -39,6 +39,22 @@ describe('ACEX_HTML_SHELL_CSS', () => {
       '--mlcad-toolbar-phone-btn-size: var(--mlcad-toolbar-phone-height)'
     )
   })
+
+  it('pins the phone session panel over the toolbar', () => {
+    expect(ACEX_HTML_SHELL_CSS).toContain('#mlcad-command-session {')
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      '#mlcad-root.mlcad-session-active #mlcad-toolbar {'
+    )
+    expect(ACEX_HTML_SHELL_CSS).toContain('visibility: hidden')
+    expect(ACEX_HTML_SHELL_CSS).toContain('.mlcad-session-group {')
+    expect(ACEX_HTML_SHELL_CSS).toContain('.mlcad-session-metric-stack {')
+    expect(ACEX_HTML_SHELL_CSS).toContain('.mlcad-session-actions {')
+    expect(ACEX_HTML_SHELL_CSS).toContain('.mlcad-session-actions-shared {')
+    expect(ACEX_HTML_SHELL_CSS).toContain('width: 440px')
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      '#mlcad-command-session.is-relative .mlcad-session-group-polar {'
+    )
+  })
 })
 
 describe('buildAcExHtmlShellBody', () => {
@@ -67,6 +83,11 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).not.toContain('id="mlcad-snap-strip-wrap"')
     expect(html).not.toContain('mlcad-tool-separator')
     expect(html).toContain('id="mlcad-status-bar"')
+    expect(html).toContain('id="mlcad-command-session"')
+    expect(html).toContain('data-session-stack="abs"')
+    expect(html).toContain('data-session-stack="polar"')
+    expect(html).toContain('data-session-stack="delta"')
+    expect(html).toContain('data-session-actions="shared"')
     expect(html).toContain('mlcad-tool-btn-label')
   })
 
@@ -119,6 +140,7 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).toContain('mlcad-review-detail-close')
     expect(html).toContain('data-action="clear-markups"')
     expect(html).toContain('id="mlcad-status-bar"')
+    expect(html).toContain('id="mlcad-command-session"')
     expect(html.match(/mlcad-tool-separator/g)?.length).toBeGreaterThanOrEqual(2)
     // Child tools live in strips, not as first-level toolbar buttons.
     const toolbarHtml = html.match(/<nav id="mlcad-toolbar"[\s\S]*?<\/nav>/)?.[0]

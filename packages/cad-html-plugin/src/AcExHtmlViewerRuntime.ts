@@ -6,6 +6,10 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import {
+  AcExCommandSessionPanel,
+  type AcExCommandSessionUiState
+} from './AcExCommandSessionPanel'
+import {
   acExCssRectToWcsBox,
   acExCssTopLeftRectToGl,
   acExIntersectCssRects,
@@ -704,6 +708,31 @@ async function startViewer(): Promise<void> {
 
   let measure: AcExMeasureController | null = null
   let markup: AcExMarkupController | null = null
+  let measureSession: AcExCommandSessionUiState | null = null
+  let markupSession: AcExCommandSessionUiState | null = null
+  const sessionHost = document.getElementById('mlcad-command-session')
+  const sessionPanel = sessionHost
+    ? new AcExCommandSessionPanel(sessionHost, i18n)
+    : null
+  const drawerSheetsRef: {
+    current: ReturnType<typeof setupAcExHtmlDrawerSheets> | null
+  } = { current: null }
+  const applySessionUi = () => {
+    sessionPanel?.setState(measureSession ?? markupSession)
+    drawerSheetsRef.current?.syncInset()
+  }
+  sessionPanel?.setHandlers({
+    onConfirm: () => {
+      measure?.confirmSession()
+    },
+    onCancel: () => {
+      if (measure?.isActive) measure.cancelSession()
+      else markup?.cancelSession()
+    },
+    onChip: id => {
+      if (id === 'undo') measure?.undoLastVertex()
+    }
+  })
   const measureSettingsRef: {
     current: ReturnType<typeof setupAcExHtmlMeasureSettings> | null
   } = { current: null }
@@ -971,6 +1000,10 @@ async function startViewer(): Promise<void> {
         setLeftPanForTools()
         markup?.setPeerToolActive(measure?.isActive === true)
       },
+      onSessionUi: state => {
+        measureSession = state
+        applySessionUi()
+      },
       onStyleChange: () => {
         drawStyleToolbarRef.current?.refresh()
       },
@@ -1039,6 +1072,10 @@ async function startViewer(): Promise<void> {
       onActiveChange: () => {
         setLeftPanForTools()
         measure?.setPeerToolActive(markup?.isActive === true)
+      },
+      onSessionUi: state => {
+        markupSession = state
+        applySessionUi()
       },
       onStyleChange: () => {
         drawStyleToolbarRef.current?.refresh()
@@ -1113,6 +1150,7 @@ async function startViewer(): Promise<void> {
       layoutMenuRef.current?.close()
     }
   })
+  drawerSheetsRef.current = drawerSheets
 
   const layerPanel = setupLayerPanel({
     snapshot,
@@ -1472,6 +1510,7 @@ async function startViewer(): Promise<void> {
     layerPanel?.refreshLayerLabels()
     reviewPanel?.refreshLabels()
     measurePanel?.refreshLabels()
+    sessionPanel?.refreshLabels()
     measureSettingsRef.current?.refreshLabels()
     drawStyleToolbarRef.current?.refreshLabels()
     toolbarCollapse.refreshLabels()

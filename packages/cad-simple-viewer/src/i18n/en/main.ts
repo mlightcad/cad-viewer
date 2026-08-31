@@ -14,6 +14,16 @@ export default {
     invalidInput: 'Invalid input.',
     close: 'Close command line'
   },
+  mobileCommand: {
+    length: 'Length',
+    angle: 'Angle',
+    dx: 'ΔX',
+    dy: 'ΔY',
+    x: 'X',
+    y: 'Y',
+    confirm: 'Confirm',
+    cancel: 'Cancel'
+  },
   inputManager: {
     firstCorner: 'Specify the first corner or',
     secondCorner: 'Specify the second corner or'

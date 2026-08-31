@@ -14,6 +14,16 @@ export default {
     invalidInput: 'Neplatný vstup.',
     close: 'Zavřít příkazový řádek'
   },
+  mobileCommand: {
+    length: 'Délka',
+    angle: 'Úhel',
+    dx: 'ΔX',
+    dy: 'ΔY',
+    x: 'X',
+    y: 'Y',
+    confirm: 'Potvrdit',
+    cancel: 'Zrušit'
+  },
   inputManager: {
     firstCorner: 'Zadejte první roh nebo',
     secondCorner: 'Zadejte druhý roh nebo'

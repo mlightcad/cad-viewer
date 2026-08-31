@@ -14,6 +14,16 @@ export default {
     invalidInput: 'إدخال غير صالح.',
     close: 'إغلاق سطر الأوامر'
   },
+  mobileCommand: {
+    length: 'الطول',
+    angle: 'الزاوية',
+    dx: 'ΔX',
+    dy: 'ΔY',
+    x: 'X',
+    y: 'Y',
+    confirm: 'تأكيد',
+    cancel: 'إلغاء'
+  },
   inputManager: {
     firstCorner: 'حدد الركن الأول أو',
     secondCorner: 'حدد الركن الثاني أو'
