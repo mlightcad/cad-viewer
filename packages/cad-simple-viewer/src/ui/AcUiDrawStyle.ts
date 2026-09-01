@@ -1,7 +1,9 @@
-import type { AcApContext } from '../app/AcApContext'
 import { AcApSettingManager } from '../app/AcApSettingManager'
-import type { AcEdSessionAccessory } from '../editor/command/AcEdSessionAccessory'
-import type { AcEdBaseView } from '../editor/view/AcEdBaseView'
+import { AcEdSessionAccessoryMountSkippedError } from '../editor/command/AcEdCommand'
+import type {
+  AcEdSessionAccessory,
+  AcEdSessionAccessoryOptions
+} from '../editor/command/AcEdSessionAccessory'
 import {
   type AcApDrawStyleKind,
   acapDrawStyleKindForCommand
@@ -64,85 +66,55 @@ export function acuiShouldShowDrawStyleToolbar(
 }
 
 /**
- * Ribbon gate for a command-provided session accessory.
- *
- * Draw-style controls are suppressed on desktop when the host ribbon already
- * exposes the same color / font-size UI. Non-draw-style accessories pass through.
- *
- * @param slot - Target mount slot for this refresh.
- * @param commandName - Active command global name, if any.
- * @param accessory - Accessory returned by `createSessionAccessory`.
- * @returns `accessory`, or `null` when the desktop ribbon replaces draw-style.
- */
-export function acuiFilterDesktopCommandSessionAccessory(
-  slot: 'desktop' | 'mobile',
-  commandName: string | undefined,
-  accessory: AcEdSessionAccessory
-): AcEdSessionAccessory | null {
-  if (accessory.id !== 'draw-style') return accessory
-  if (slot !== 'desktop') return accessory
-  const kind = acapDrawStyleKindForCommand(commandName)
-  if (!acuiShouldShowDrawStyleToolbar(kind)) return null
-  return accessory
-}
-
-/**
- * Host that can mount color / font-size controls into a session accessory slot.
- */
-export interface AcUiDrawStyleSessionHost {
-  /**
-   * Updates the active measure/markup session before controls mount.
-   *
-   * @param kind - `'measure'`, `'markup'`, or `undefined` when inactive.
-   */
-  setActiveKind(kind: AcUiDrawStyleKind | undefined): void
-  /** Builds the session accessory that reparents draw-style controls. */
-  createSessionAccessory(): AcEdSessionAccessory
-}
-
-/** Per-view draw-style session hosts registered by {@link acuiRegisterDrawStyleSessionHost}. */
-const sessionHosts = new WeakMap<object, AcUiDrawStyleSessionHost>()
-
-/**
- * Registers the view's draw-style controls as the session accessory host.
- *
- * @param view - View whose draw-style controls back session accessories.
- * @param host - Host that can reparent controls into a session slot.
- */
-export function acuiRegisterDrawStyleSessionHost(
-  view: AcEdBaseView,
-  host: AcUiDrawStyleSessionHost
-): void {
-  sessionHosts.set(view, host)
-}
-
-/**
- * Drops the view's draw-style session host.
- *
- * @param view - View previously passed to {@link acuiRegisterDrawStyleSessionHost}.
- */
-export function acuiUnregisterDrawStyleSessionHost(view: AcEdBaseView): void {
-  sessionHosts.delete(view)
-}
-
-/**
- * Makes `command.createSessionAccessory` return the view's draw-style controls.
+ * Assigns `command.sessionAccessory` so trigger mounts the view's draw-style controls.
  *
  * Sets the host session kind from the command's global name so color / font-size
  * sync and apply target the measure or markup store while the command runs.
+ * Desktop mounts are suppressed when the ribbon already exposes the same UI.
  *
  * @param command - Command that should expose color / font-size session UI.
  */
 export function acuiBindDrawStyleSessionAccessory(command: {
+  /** Global command name used to resolve measure vs markup. */
   globalName?: string
-  createSessionAccessory: (
-    context: AcApContext
-  ) => AcEdSessionAccessory | null
+  /** Session accessory slot assigned by this binder. */
+  sessionAccessory: AcEdSessionAccessory | null
 }): void {
-  command.createSessionAccessory = context => {
-    const host = sessionHosts.get(context.view)
-    if (!host) return null
-    host.setActiveKind(acapDrawStyleKindForCommand(command.globalName))
-    return host.createSessionAccessory()
+  /** Inner accessory created from the view host while mounted. */
+  let inner: AcEdSessionAccessory | null = null
+
+  command.sessionAccessory = {
+    id: 'draw-style',
+    /**
+     * Resolves the view host, applies session kind, and mounts controls.
+     *
+     * @param options - Host element, slot type, and owning view.
+     * @throws {AcEdSessionAccessoryMountSkippedError} When there is no host or
+     *   desktop ribbon already covers the same UI.
+     */
+    mount(options: AcEdSessionAccessoryOptions) {
+      const host = options.view.drawStyleSessionHost
+      if (!host) {
+        throw new AcEdSessionAccessoryMountSkippedError()
+      }
+
+      const kind = acapDrawStyleKindForCommand(command.globalName)
+      host.setActiveKind(kind)
+
+      if (
+        options.type === 'desktop' &&
+        !acuiShouldShowDrawStyleToolbar(kind)
+      ) {
+        throw new AcEdSessionAccessoryMountSkippedError()
+      }
+
+      inner = host.createSessionAccessory()
+      inner.mount(options)
+    },
+    /** Unmounts the inner host accessory created during {@link mount}. */
+    unmount() {
+      inner?.unmount()
+      inner = null
+    }
   }
 }

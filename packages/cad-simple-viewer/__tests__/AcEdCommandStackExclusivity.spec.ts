@@ -158,8 +158,8 @@ describe('AcEdCommandStack — command exclusivity', () => {
   })
 })
 
-describe('AcEdCommand.createSessionAccessory', () => {
+describe('AcEdCommand.sessionAccessory', () => {
   test('defaults to null', () => {
-    expect(new DummyCommand().createSessionAccessory({} as never)).toBeNull()
+    expect(new DummyCommand().sessionAccessory).toBeNull()
   })
 })

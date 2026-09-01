@@ -2,6 +2,7 @@ import { AcCmEventManager, AcDbObjectId } from '@mlightcad/data-model'
 
 import { AcApDocManager } from '../../app'
 import { AcEdCommand } from '../command'
+import type { AcEdSessionAccessoryEventArgs } from '../command/AcEdSessionAccessory'
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import { AcEdCorsorType, AcEdCursorManager } from './AcEdCursorManager'
 import { AcEdInputModifiers } from './AcEdInputModifiers'
@@ -47,6 +48,9 @@ export interface AcEdCommandEventArgs {
   /** The command instance involved in the event */
   command: AcEdCommand
 }
+
+/** Re-export of session-accessory event payload for editor consumers. */
+export type { AcEdSessionAccessoryEventArgs }
 
 /**
  * Advanced input handler for CAD operations providing high-level user interaction methods.
@@ -99,7 +103,19 @@ export class AcEditor {
     /** Fired just before the command starts executing */
     commandWillStart: new AcCmEventManager<AcEdCommandEventArgs>(),
     /** Fired after the command finishes executing */
-    commandEnded: new AcCmEventManager<AcEdCommandEventArgs>()
+    commandEnded: new AcCmEventManager<AcEdCommandEventArgs>(),
+    /** Fired just before a session accessory is mounted */
+    beforeMountSessionAccessory:
+      new AcCmEventManager<AcEdSessionAccessoryEventArgs>(),
+    /** Fired after a session accessory has been mounted */
+    afterMountSessionAccessory:
+      new AcCmEventManager<AcEdSessionAccessoryEventArgs>(),
+    /** Fired just before a session accessory is unmounted */
+    beforeUnmountSessionAccessory:
+      new AcCmEventManager<AcEdSessionAccessoryEventArgs>(),
+    /** Fired after a session accessory has been unmounted */
+    afterUnmountSessionAccessory:
+      new AcCmEventManager<AcEdSessionAccessoryEventArgs>()
   }
 
   /**
@@ -110,7 +126,7 @@ export class AcEditor {
   constructor(view: AcEdBaseView) {
     this._view = view
     this._cursorManager = new AcEdCursorManager(view)
-    this._inputManager = new AcEdInputManager(view, this.events.commandEnded)
+    this._inputManager = new AcEdInputManager(view, this.events)
   }
 
   /** Input manager for prompts, mobile chrome, and session accessories. */

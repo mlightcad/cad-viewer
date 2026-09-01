@@ -87,8 +87,6 @@ import {
   AcEdCommandStack,
   AcEdOpenMode
 } from '../editor'
-import { AcEdDesktopSessionAccessoryChrome } from '../editor/input/ui/AcEdDesktopSessionAccessoryChrome'
-import { AcEdSessionAccessoryCoordinator } from '../editor/input/ui/AcEdSessionAccessoryCoordinator'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
 import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
@@ -399,10 +397,6 @@ export class AcApDocManager {
   private _commandManager: AcEdCommandStack
   /** Plugin manager */
   private _pluginManager: AcApPluginManager
-  /** Desktop top-center slot for command session accessories. */
-  private readonly _desktopSessionAccessory: AcEdDesktopSessionAccessoryChrome
-  /** Mounts session accessories on desktop and mobile slots. */
-  private readonly _sessionAccessoryCoordinator: AcEdSessionAccessoryCoordinator
   /**
    * Alias overrides provided by caller options.
    *
@@ -520,20 +514,6 @@ export class AcApDocManager {
     acdbHostApplicationServices().workingDatabase = doc.database
 
     this._commandManager = new AcEdCommandStack()
-    this._desktopSessionAccessory = new AcEdDesktopSessionAccessoryChrome(
-      view.container
-    )
-    this._sessionAccessoryCoordinator = new AcEdSessionAccessoryCoordinator({
-      view,
-      getContext: () => this.context,
-      commandManager: this._commandManager,
-      desktopChrome: this._desktopSessionAccessory,
-      mobileChrome: view.editor.inputManager.mobileChrome,
-      isMobilePromptOpen: () => view.editor.inputManager.isMobilePromptOpen
-    })
-    view.editor.inputManager?.setSessionAccessoryCoordinator(
-      this._sessionAccessoryCoordinator
-    )
     this.registerCommands()
     this._pluginManager = new AcApPluginManager(
       this.context,
@@ -1644,7 +1624,6 @@ export class AcApDocManager {
     addSystemCommand('dimlinear', 'dimlinear', new AcApDimLinearCmd())
     registerMeasureCommands(addSystemCommand, {
       view: this._mainView,
-      coordinator: this._sessionAccessoryCoordinator,
       commandManager: this._commandManager
     })
     addSystemCommand('-hatch', '-hatch', new AcApHatchCmd())
@@ -1684,7 +1663,6 @@ export class AcApDocManager {
     addSystemCommand('revcloud', 'revcloud', new AcApRevCloudCmd())
     registerMarkupCommands(addSystemCommand, {
       view: this._mainView,
-      coordinator: this._sessionAccessoryCoordinator,
       commandManager: this._commandManager
     })
     addSystemCommand('select', 'select', new AcApSelectCmd())

@@ -11,61 +11,22 @@ describe('AcEdDesktopSessionAccessoryChrome', () => {
     document.body.appendChild(host)
   })
 
-  it('mounts and unmounts accessories by id', () => {
+  it('exposes a mount host and toggles shell visibility', () => {
     const chrome = new AcEdDesktopSessionAccessoryChrome(host)
-    const mount = jest.fn((slot: HTMLElement) => {
-      slot.appendChild(document.createElement('span'))
-    })
-    const unmount = jest.fn()
+    expect(chrome.host.classList.contains('ml-desktop-session-accessory__slot')).toBe(
+      true
+    )
 
-    chrome.setAccessory({ id: 'draw-style', mount, unmount })
+    chrome.prepare()
     const root = host.querySelector('.ml-desktop-session-accessory') as HTMLElement
     expect(root.hidden).toBe(false)
     expect(root.classList.contains('is-visible')).toBe(true)
-    expect(mount).toHaveBeenCalledTimes(1)
-    expect(
-      root.querySelector('.ml-desktop-session-accessory__slot')?.firstElementChild
-        ?.tagName
-    ).toBe('SPAN')
 
-    chrome.setAccessory(null)
-    expect(unmount).toHaveBeenCalledTimes(1)
+    chrome.host.appendChild(document.createElement('span'))
+    chrome.clear()
     expect(root.hidden).toBe(true)
     expect(root.classList.contains('is-visible')).toBe(false)
-    chrome.dispose()
-  })
-
-  it('skips remounting when the same accessory id is already active', () => {
-    const chrome = new AcEdDesktopSessionAccessoryChrome(host)
-    const mount = jest.fn()
-    const unmount = jest.fn()
-    const accessory = { id: 'draw-style', mount, unmount }
-
-    chrome.setAccessory(accessory)
-    chrome.setAccessory({ id: 'draw-style', mount: jest.fn(), unmount: jest.fn() })
-    expect(mount).toHaveBeenCalledTimes(1)
-    expect(unmount).not.toHaveBeenCalled()
-    chrome.dispose()
-  })
-
-  it('replaces accessories with different ids', () => {
-    const chrome = new AcEdDesktopSessionAccessoryChrome(host)
-    const firstUnmount = jest.fn()
-    const secondMount = jest.fn()
-
-    chrome.setAccessory({
-      id: 'draw-style',
-      mount: jest.fn(),
-      unmount: firstUnmount
-    })
-    chrome.setAccessory({
-      id: 'other',
-      mount: secondMount,
-      unmount: jest.fn()
-    })
-
-    expect(firstUnmount).toHaveBeenCalledTimes(1)
-    expect(secondMount).toHaveBeenCalledTimes(1)
+    expect(chrome.host.childElementCount).toBe(0)
     chrome.dispose()
   })
 })

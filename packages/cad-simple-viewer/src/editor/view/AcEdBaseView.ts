@@ -14,6 +14,11 @@ import {
 import { debounce } from 'lodash-es'
 
 import type { AcTrSpatialSearchOptions } from '../../spatialIndex/AcTrSpatialIndex'
+import type {
+  AcEdDrawStyleSessionHost,
+  AcEdSessionAccessory,
+  AcEdSessionAccessoryHostInfo
+} from '../command/AcEdSessionAccessory'
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
 import { AcEdOsnapResolver } from '../input/AcEdOsnapResolver'
@@ -278,6 +283,9 @@ export abstract class AcEdBaseView {
   /** The HTML element to contain this view */
   protected _container: HTMLElement
 
+  /** Optional draw-style session accessory host for measure/markup UI. */
+  private _drawStyleSessionHost: AcEdDrawStyleSessionHost | null = null
+
   /** Events fired by the view for various interactions */
   public readonly events = {
     /** Fired when mouse moves over the view */
@@ -372,6 +380,46 @@ export abstract class AcEdBaseView {
    */
   get editor() {
     return this._editor
+  }
+
+  /**
+   * Active mount target for session accessories (desktop slot or mobile panel).
+   */
+  get sessionAccessoryHost(): AcEdSessionAccessoryHostInfo {
+    return this._editor.inputManager.sessionAccessoryHost
+  }
+
+  /**
+   * Selection-driven session accessory shown when no command accessory is mounted.
+   */
+  get selectionSessionAccessory(): AcEdSessionAccessory | null {
+    return this._editor.inputManager.selectionSessionAccessory
+  }
+
+  /**
+   * Updates the selection-driven session accessory forwarded to the input manager.
+   *
+   * @param value - Accessory to show on selection, or `null` to clear.
+   */
+  set selectionSessionAccessory(value: AcEdSessionAccessory | null) {
+    this._editor.inputManager.selectionSessionAccessory = value
+  }
+
+  /**
+   * Draw-style controls host used by measure/markup session accessories.
+   * Set by draw-style install; cleared on dispose/unregister.
+   */
+  get drawStyleSessionHost(): AcEdDrawStyleSessionHost | null {
+    return this._drawStyleSessionHost
+  }
+
+  /**
+   * Registers or clears the draw-style session controls host for this view.
+   *
+   * @param value - Host instance, or `null` when disposed.
+   */
+  set drawStyleSessionHost(value: AcEdDrawStyleSessionHost | null) {
+    this._drawStyleSessionHost = value
   }
 
   /**
