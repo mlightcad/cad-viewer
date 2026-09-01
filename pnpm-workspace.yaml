@@ -12,7 +12,7 @@ overrides:
   '@mlightcad/libredwg-converter': '^3.14.3'
   '@mlightcad/mtext-input-box': '^0.2.23'
   '@mlightcad/mtext-renderer': '^0.12.4'
-  '@mlightcad/ribbon': '^0.1.12'
+  '@mlightcad/ribbon': '^0.1.13'
   '@mlightcad/ui-components': '^0.1.11'
   element-plus: '^2.12.0'
   glob: '^13.0.6'
