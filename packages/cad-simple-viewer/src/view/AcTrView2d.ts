@@ -41,7 +41,6 @@ import { AcApDocManager, AcApSettingManager } from '../app'
 import { AcApZoomCmd } from '../command/AcApZoomCmd'
 import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit'
 import { notifyMeasurementLayoutChanged } from '../command/measure/AcApMeasurementStore'
-import { ML_UI_Z_CANVAS_HTML_OVERLAY } from '../editor/global/AcEdUiLayout'
 import {
   AcEdBaseView,
   AcEdCalculateSizeCallback,
@@ -62,6 +61,7 @@ import {
   isModelSpaceDatabase,
   readLayoutBackgroundColor
 } from '../editor/global/AcEdUiColor'
+import { ML_UI_Z_CANVAS_HTML_OVERLAY } from '../editor/global/AcEdUiLayout'
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'

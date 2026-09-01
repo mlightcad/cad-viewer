@@ -8,8 +8,8 @@
 import { AcCmColor, AcCmColorUtil } from '@mlightcad/data-model'
 
 import type { AcExSessionAccessory } from './AcExCommandSessionPanel'
-import { AcUiAciColorDialog } from './AcExHtmlSimpleViewerUi'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
+import { AcUiAciColorDialog } from './AcExHtmlSimpleViewerUi'
 
 /** Active drawing session that owns the accessory. */
 export type AcExDrawStyleKind = 'measure' | 'markup'

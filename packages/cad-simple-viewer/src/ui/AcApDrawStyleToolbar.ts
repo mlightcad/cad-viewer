@@ -25,8 +25,8 @@ import {
 } from '../command/measure/AcApMeasurementStore'
 import type { AcEdCommandEventArgs } from '../editor'
 import type { AcEdSessionAccessory } from '../editor/command/AcEdSessionAccessory'
-import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
 import { ML_UI_Z_DRAW_STYLE_TOOLBAR } from '../editor/global/AcEdUiLayout'
+import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
 import { AcApI18n } from '../i18n'
 import {
   acapCssColor,
@@ -37,12 +37,6 @@ import {
   acapSetMeasurementDrawFontSize
 } from '../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../view'
-import { AcUiAciColorDialog } from './AcUiAciColorDialog'
-import {
-  type AcUiAciPaletteStacks,
-  acuiCreateAciPaletteStacks,
-  acuiEnsureAciPaletteStyles
-} from './AcUiAciPaletteUi'
 import {
   type AcApDrawStyleKind,
   acapDrawStyleKindForCommand,
@@ -52,6 +46,12 @@ import {
   acapShouldShowDrawStyleToolbar,
   acapUnregisterDrawStyleSessionHost
 } from './AcApDrawStyle'
+import { AcUiAciColorDialog } from './AcUiAciColorDialog'
+import {
+  type AcUiAciPaletteStacks,
+  acuiCreateAciPaletteStacks,
+  acuiEnsureAciPaletteStyles
+} from './AcUiAciPaletteUi'
 
 /** Font-size choices shown in the overlay dropdown, in CSS pixels. */
 const FONT_SIZE_OPTIONS = [10, 12, 13, 14, 16, 18, 20, 24, 28, 32]
