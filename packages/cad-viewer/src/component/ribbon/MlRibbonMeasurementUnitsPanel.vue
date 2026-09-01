@@ -32,11 +32,26 @@
         />
       </el-select>
     </el-form-item>
+    <el-form-item v-if="isLength" :label="unitLabel">
+      <el-select
+        :model-value="lengthUnit"
+        class="ml-ribbon-measure-units__control"
+        @update:model-value="emit('update:lengthUnit', $event)"
+      >
+        <el-option
+          v-for="opt in lengthUnitOptions"
+          :key="opt.value"
+          :label="opt.label"
+          :value="opt.value"
+        />
+      </el-select>
+    </el-form-item>
   </el-form>
 </template>
 
 <script setup lang="ts">
-import { AcDbAngleUnits, AcDbLinearUnits } from '@mlightcad/data-model'
+import { MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING } from '@mlightcad/cad-simple-viewer'
+import { AcDbAngleUnits, AcDbLinearUnits, AcDbUnitsValue } from '@mlightcad/data-model'
 import { ElForm, ElFormItem, ElOption, ElSelect } from 'element-plus'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -53,6 +68,7 @@ interface RibbonMeasurementUnitsPanelProps {
   kind: 'length' | 'angle'
   unitType: number
   precision: number
+  lengthUnit?: number
 }
 
 const props = defineProps<RibbonMeasurementUnitsPanelProps>()
@@ -60,6 +76,7 @@ const props = defineProps<RibbonMeasurementUnitsPanelProps>()
 const emit = defineEmits<{
   (e: 'update:unitType', value: number): void
   (e: 'update:precision', value: number): void
+  (e: 'update:lengthUnit', value: number): void
 }>()
 
 const { t } = useI18n()
@@ -77,6 +94,8 @@ const precisionLabel = computed(() =>
     ? t('dialog.drawingUnitsDlg.lengthPrecision')
     : t('dialog.drawingUnitsDlg.anglePrecision')
 )
+
+const unitLabel = computed(() => t('dialog.drawingUnitsDlg.lengthUnit'))
 
 const unitOptions = computed(() =>
   isLength.value
@@ -133,6 +152,41 @@ const unitOptions = computed(() =>
 const precisionOptions = computed(() =>
   drawingUnitPrecisionOptions(props.precision)
 )
+
+const lengthUnitOptions = computed(() => [
+  {
+    value: MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING,
+    label: t('dialog.drawingUnitsDlg.lengthUnitFollowDrawing')
+  },
+  {
+    value: AcDbUnitsValue.Millimeters,
+    label: `${t('dialog.drawingUnitsDlg.insUnits._4')} (mm)`
+  },
+  {
+    value: AcDbUnitsValue.Centimeters,
+    label: `${t('dialog.drawingUnitsDlg.insUnits._5')} (cm)`
+  },
+  {
+    value: AcDbUnitsValue.Meters,
+    label: `${t('dialog.drawingUnitsDlg.insUnits._6')} (m)`
+  },
+  {
+    value: AcDbUnitsValue.Kilometers,
+    label: `${t('dialog.drawingUnitsDlg.insUnits._7')} (km)`
+  },
+  {
+    value: AcDbUnitsValue.Inches,
+    label: `${t('dialog.drawingUnitsDlg.insUnits._1')} (in)`
+  },
+  {
+    value: AcDbUnitsValue.Feet,
+    label: `${t('dialog.drawingUnitsDlg.insUnits._2')} (ft)`
+  },
+  {
+    value: AcDbUnitsValue.Yards,
+    label: `${t('dialog.drawingUnitsDlg.insUnits._10')} (yd)`
+  }
+])
 </script>
 
 <style scoped>

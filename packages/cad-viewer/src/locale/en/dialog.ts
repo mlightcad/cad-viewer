@@ -13,6 +13,8 @@ export default {
     lengthSection: 'Length',
     lengthType: 'Type:',
     lengthPrecision: 'Precision:',
+    lengthUnit: 'Unit:',
+    lengthUnitFollowDrawing: 'Follow drawing',
     angleSection: 'Angle',
     angleType: 'Type:',
     anglePrecision: 'Precision:',

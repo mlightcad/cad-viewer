@@ -44,7 +44,8 @@ import {
   setMarkupDrawColor,
   setMarkupDrawFontSize,
   setMeasurementUnitOverride,
-  subscribeMeasurementSelection
+  subscribeMeasurementSelection,
+  MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING
 } from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
@@ -205,6 +206,7 @@ const measurementLunits = ref(AcDbLinearUnits.Decimal)
 const measurementLuprec = ref(4)
 const measurementAunits = ref(AcDbAngleUnits.DecimalDegrees)
 const measurementAuprec = ref(0)
+const measurementLengthUnit = ref<number>(MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING)
 const isRibbonDisabled = computed(() => isDocumentOpening.value)
 const ribbonColor = ref<AcCmColor | undefined>(new AcCmColor())
 const ribbonColorDisplay = ref('#7b8794')
@@ -868,6 +870,7 @@ const syncMeasurementUnitControls = () => {
   measurementLuprec.value = units.luprec
   measurementAunits.value = units.aunits
   measurementAuprec.value = units.auprec
+  measurementLengthUnit.value = units.lengthUnit
 }
 
 const refreshCurrentMeasurementLabels = () => {
@@ -883,6 +886,7 @@ const applyMeasurementUnitOverride = (
     luprec: number
     aunits: number
     auprec: number
+    lengthUnit: number
   }>
 ) => {
   setMeasurementUnitOverride(patch)
@@ -904,6 +908,10 @@ const handleMeasurementAunitsChange = (value: number) => {
 
 const handleMeasurementAuprecChange = (value: number) => {
   applyMeasurementUnitOverride({ auprec: value })
+}
+
+const handleMeasurementLengthUnitChange = (value: number) => {
+  applyMeasurementUnitOverride({ lengthUnit: value })
 }
 
 /**
@@ -1499,8 +1507,10 @@ const buildBaseTabs = (
                   kind: 'length',
                   unitType: measurementLunits.value,
                   precision: measurementLuprec.value,
+                  lengthUnit: measurementLengthUnit.value,
                   'onUpdate:unitType': handleMeasurementLunitsChange,
-                  'onUpdate:precision': handleMeasurementLuprecChange
+                  'onUpdate:precision': handleMeasurementLuprecChange,
+                  'onUpdate:lengthUnit': handleMeasurementLengthUnitChange
                 }
               }
             }
@@ -2300,6 +2310,7 @@ const ribbonData = computed(() => {
   measurementLuprec.value
   measurementAunits.value
   measurementAuprec.value
+  measurementLengthUnit.value
   const commandByItemId = new Map<string, string>()
   commandByItemId.set('cmd-line', 'line')
   commandByItemId.set('cmd-polyline', 'pline')

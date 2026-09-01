@@ -13,6 +13,8 @@ export default {
     lengthSection: 'Délka',
     lengthType: 'Typ:',
     lengthPrecision: 'Přesnost:',
+    lengthUnit: 'Jednotka:',
+    lengthUnitFollowDrawing: 'Podle výkresu',
     angleSection: 'Úhel',
     angleType: 'Typ:',
     anglePrecision: 'Přesnost:',
