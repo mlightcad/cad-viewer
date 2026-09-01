@@ -5,14 +5,14 @@ import {
 } from '../AcApDrawStyleSession'
 import { AcApClearMeasurementsCmd } from './AcApClearMeasurementsCmd'
 import { AcApMeasureAngleCmd } from './AcApMeasureAngleCmd'
-import { AcApMeasureAreaCmd } from './AcApMeasureAreaCmd'
 import { AcApMeasureArcCmd } from './AcApMeasureArcCmd'
+import { AcApMeasureAreaCmd } from './AcApMeasureAreaCmd'
 import { AcApMeasureContinuousCmd } from './AcApMeasureContinuousCmd'
 import { AcApMeasureDistanceCmd } from './AcApMeasureDistanceCmd'
-import { AcApMeasurePointCmd } from './AcApMeasurePointCmd'
 import { AcApMeasurementExportCmd } from './AcApMeasurementImportExportCmd'
 import { AcApMeasurementImportCmd } from './AcApMeasurementImportExportCmd'
 import { AcApMeasurementVisibilityCmd } from './AcApMeasurementVisibilityCmd'
+import { AcApMeasurePointCmd } from './AcApMeasurePointCmd'
 
 /**
  * Registers measurement commands and installs the shared draw-style session

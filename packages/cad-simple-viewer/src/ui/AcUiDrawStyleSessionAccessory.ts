@@ -29,17 +29,17 @@ import {
   acapSetMeasurementDrawFontSize
 } from '../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../view'
-import {
-  type AcUiDrawStyleKind,
-  acuiRegisterDrawStyleSessionHost,
-  acuiUnregisterDrawStyleSessionHost
-} from './AcUiDrawStyle'
 import { AcUiAciColorDialog } from './AcUiAciColorDialog'
 import {
   type AcUiAciPaletteStacks,
   acuiCreateAciPaletteStacks,
   acuiEnsureAciPaletteStyles
 } from './AcUiAciPaletteUi'
+import {
+  type AcUiDrawStyleKind,
+  acuiRegisterDrawStyleSessionHost,
+  acuiUnregisterDrawStyleSessionHost
+} from './AcUiDrawStyle'
 
 /** Font-size choices shown in the overlay dropdown, in CSS pixels. */
 const FONT_SIZE_OPTIONS = [10, 12, 13, 14, 16, 18, 20, 24, 28, 32]

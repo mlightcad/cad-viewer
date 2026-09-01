@@ -1,8 +1,9 @@
 import type { AcApContext } from '../../../app/AcApContext'
+import { acuiFilterDesktopCommandSessionAccessory } from '../../../ui/AcUiDrawStyle'
 import type { AcEdCommandStack } from '../../command/AcEdCommandStack'
 import type { AcEdSessionAccessory } from '../../command/AcEdSessionAccessory'
-import type { AcEdBaseView } from '../../view/AcEdBaseView'
 import { acedSubscribeUiLayout } from '../../global/AcEdUiLayout'
+import type { AcEdBaseView } from '../../view/AcEdBaseView'
 import type { AcEdCommandEventArgs } from '../AcEditor'
 import { AcEdDesktopSessionAccessoryChrome } from './AcEdDesktopSessionAccessoryChrome'
 import type { AcEdMobileCommandChrome } from './AcEdMobileCommandChrome'
@@ -10,7 +11,6 @@ import type {
   AcEdSessionAccessorySlot,
   AcEdSessionAccessorySource
 } from './AcEdSessionAccessorySource'
-import { acuiFilterDesktopCommandSessionAccessory } from '../../../ui/AcUiDrawStyle'
 
 /** Dependencies for {@link AcEdSessionAccessoryCoordinator}. */
 export interface AcEdSessionAccessoryCoordinatorOptions {

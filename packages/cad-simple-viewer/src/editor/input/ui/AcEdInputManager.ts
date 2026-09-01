@@ -11,7 +11,6 @@ import {
 
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
-import type { AcEdSessionAccessoryCoordinator } from './AcEdSessionAccessoryCoordinator'
 import type { AcEdSessionAccessory } from '../../command/AcEdSessionAccessory'
 import {
   acedIsMobileOrPadUi,
@@ -19,9 +18,9 @@ import {
   acedSubscribeUiLayout
 } from '../../global/AcEdUiLayout'
 import type { AcEdBaseView } from '../../view'
-import type { AcEdCommandEventArgs } from '../AcEditor'
 import { AcEdInputModifiers } from '../AcEdInputModifiers'
 import { AcEdInputToggles } from '../AcEdInputToggles'
+import type { AcEdCommandEventArgs } from '../AcEditor'
 import { AcEdSelectionSet } from '../AcEdSelectionSet'
 import {
   AcEdAngleHandler,
@@ -77,6 +76,7 @@ import {
   acedComputeSessionMetrics,
   type AcEdMobileSessionMetrics
 } from './AcEdMobileSessionMetrics'
+import type { AcEdSessionAccessoryCoordinator } from './AcEdSessionAccessoryCoordinator'
 import {
   acedIsTouchLongPressContextMenu,
   acedShouldIgnoreCompatMouse

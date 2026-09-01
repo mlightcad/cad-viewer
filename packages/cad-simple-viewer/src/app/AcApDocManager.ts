@@ -77,19 +77,19 @@ import {
   resetMeasurementSession
 } from '../command'
 import {
+  acapGetDrawStyleSessionAccessory
+} from '../command/AcApDrawStyleSession'
+import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands'
+import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands'
+import {
   AcEdCalculateSizeCallback,
   AcEdCommand,
   AcEdCommandStack,
   AcEdOpenMode
 } from '../editor'
-import { AcApPluginManager } from '../plugin/AcApPluginManager'
-import {
-  acapGetDrawStyleSessionAccessory
-} from '../command/AcApDrawStyleSession'
-import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands'
-import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands'
 import { AcEdDesktopSessionAccessoryChrome } from '../editor/input/ui/AcEdDesktopSessionAccessoryChrome'
 import { AcEdSessionAccessoryCoordinator } from '../editor/input/ui/AcEdSessionAccessoryCoordinator'
+import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
 import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 import { AcTrView2d } from '../view'
