@@ -67,5 +67,15 @@ export default {
   drawStyle: {
     color: 'Color',
     fontSize: 'Text height'
+  },
+  colorPicker: {
+    title: 'Select Color',
+    close: 'Close',
+    ok: 'OK',
+    cancel: 'Cancel',
+    index: 'Color Index: ',
+    rgb: 'RGB: ',
+    input: 'Color',
+    inputPlaceholder: '1-255 or #RRGGBB'
   }
 }

@@ -1,7 +1,7 @@
 /**
  * Shared ACI color palette DOM builders and styles.
  *
- * @module AcApAciPaletteUi
+ * @module AcUiAciPaletteUi
  * @packageDocumentation
  */
 
@@ -15,6 +15,12 @@ import {
 
 /** DOM id of the injected shared ACI palette stylesheet. */
 const STYLE_ID = 'ml-aci-palette-styles'
+
+/** Class that stretches the 24-column ACI grid to the host width. */
+export const ML_ACI_STACKS_FILL_CLASS = 'ml-aci-stacks--fill'
+
+/** Gap between a drop-up ACI popover and its swatch (matches host CSS). */
+const ACI_PANEL_DROP_UP_GAP_PX = 6
 
 /** Delay before the long-press magnifier appears. */
 const LONG_PRESS_MS = 350
@@ -33,7 +39,8 @@ const LOUPE_OFFSET_Y_PX = 72
  *
  * Do not set `--ml-aci-cell-size` on `.ml-aci-stacks` / `.ml-aci-picker`: hosts
  * (draw-style toolbar, session panel) override it to 11px. Use a 12px fallback
- * where the variable is consumed instead.
+ * where the variable is consumed instead. Fill mode (`.ml-aci-stacks--fill`)
+ * ignores the variable and sizes cells from the host width.
  */
 const ACI_PALETTE_CSS = `
 .ml-aci-picker,
@@ -85,6 +92,46 @@ const ACI_PALETTE_CSS = `
   grid-template-columns: repeat(9, minmax(0, 1fr));
 }
 .ml-aci-picker .ml-aci-palette-small .ml-aci-cell {
+  width: auto;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+}
+/* Index-only picker (no ByLayer / ByBlock): keep 1–9 and grays on the same
+ * 24-column track as the large palette so cell size matches. */
+.ml-aci-picker--no-special .ml-aci-small-row {
+  justify-content: flex-start;
+}
+.ml-aci-picker--no-special .ml-aci-palette-small,
+.ml-aci-picker--no-special .ml-aci-palette-gray {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 1px;
+}
+.ml-aci-picker--no-special .ml-aci-palette-small .ml-aci-cell,
+.ml-aci-picker--no-special .ml-aci-palette-gray .ml-aci-cell {
+  width: auto;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+}
+/* Session / mobile popover: 10-row grid fills the host; 1–9 and grays stay
+ * left-aligned in the same 24-column track so cell size matches. */
+.ml-aci-stacks--fill {
+  width: 100%;
+  box-sizing: border-box;
+}
+.ml-aci-stacks--fill .ml-aci-palette-large,
+.ml-aci-stacks--fill .ml-aci-palette-small,
+.ml-aci-stacks--fill .ml-aci-palette-gray {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 1px;
+  justify-content: start;
+}
+.ml-aci-stacks--fill .ml-aci-cell {
   width: auto;
   height: auto;
   aspect-ratio: 1 / 1;
@@ -232,6 +279,46 @@ export function acuiEnsureAciPaletteStyles(): void {
     document.head.appendChild(style)
   }
   style.textContent = ACI_PALETTE_CSS
+}
+
+/**
+ * Pins a drop-up ACI popover to the viewport width above `anchor`.
+ *
+ * Uses `position: absolute` offsets (not `fixed`) so a transformed session
+ * panel cannot trap the popover at 440px on pad layouts.
+ *
+ * @param panel - Color popover element.
+ * @param anchor - Swatch wrapper (`position: relative`) that owns the popover.
+ * @param gapPx - Space between the popover bottom and the swatch. @default 6
+ */
+export function acuiPinAciPanelToViewportWidth(
+  panel: HTMLElement,
+  anchor: HTMLElement,
+  gapPx = ACI_PANEL_DROP_UP_GAP_PX
+): void {
+  const wrapRect = anchor.getBoundingClientRect()
+  panel.style.boxSizing = 'border-box'
+  panel.style.left = `${-wrapRect.left}px`
+  panel.style.right = 'auto'
+  panel.style.width = `${window.innerWidth}px`
+  panel.style.maxWidth = 'none'
+  panel.style.top = 'auto'
+  panel.style.bottom = `${wrapRect.height + gapPx}px`
+}
+
+/**
+ * Clears inline pin styles set by {@link acuiPinAciPanelToViewportWidth}.
+ *
+ * @param panel - Color popover element.
+ */
+export function acuiClearAciPanelViewportPin(panel: HTMLElement): void {
+  panel.style.boxSizing = ''
+  panel.style.left = ''
+  panel.style.right = ''
+  panel.style.width = ''
+  panel.style.maxWidth = ''
+  panel.style.top = ''
+  panel.style.bottom = ''
 }
 
 /**
@@ -537,6 +624,11 @@ export interface AcUiAciPaletteStacksOptions {
   onSelect: (index: number, event: Event) => void
   /** Initially selected ACI index, if any. */
   selectedIndex?: number | null
+  /**
+   * Stretch the 10-row (24-column) palette across the host width. The 1–9
+   * and gray rows stay left-aligned with the same cell size.
+   */
+  fill?: boolean
 }
 
 /** Controller returned by {@link acuiCreateAciPaletteStacks}. */
@@ -545,6 +637,8 @@ export interface AcUiAciPaletteStacks {
   root: HTMLDivElement
   /** Highlights the cell for `index`, or clears selection when nullish. */
   setSelected: (index: number | null | undefined) => void
+  /** Toggles {@link ML_ACI_STACKS_FILL_CLASS} on {@link root}. */
+  setFill: (fill: boolean) => void
   /** Tears down loupe listeners and DOM. */
   dispose: () => void
 }
@@ -561,6 +655,11 @@ export function acuiCreateAciPaletteStacks(
 
   const root = document.createElement('div')
   root.className = 'ml-aci-stacks'
+
+  const setFill = (fill: boolean) => {
+    root.classList.toggle(ML_ACI_STACKS_FILL_CLASS, fill)
+  }
+  setFill(options.fill === true)
 
   const onSelect = (index: number, event: Event) => {
     markSelectedInRoot(root, index)
@@ -594,6 +693,7 @@ export function acuiCreateAciPaletteStacks(
   return {
     root,
     setSelected: index => markSelectedInRoot(root, index),
+    setFill,
     dispose: () => disposeLoupe()
   }
 }
@@ -621,6 +721,11 @@ export interface AcUiAciIndexPickerOptions {
   initialIndex?: number | null
   /** Fired whenever the selection changes. */
   onChange?: (index: number) => void
+  /**
+   * Show ByLayer / ByBlock actions beside the 1–9 row.
+   * @default true
+   */
+  showByLayerByBlock?: boolean
 }
 
 /** Controller returned by {@link acuiCreateAciIndexPicker}. */
@@ -636,7 +741,8 @@ export interface AcUiAciIndexPicker {
 }
 
 /**
- * Builds a full ACI index picker (palettes, ByLayer/ByBlock, input, preview).
+ * Builds a full ACI index picker (palettes, optional ByLayer/ByBlock, input,
+ * preview).
  *
  * @param options - Labels, initial index, and change callback.
  */
@@ -645,12 +751,16 @@ export function acuiCreateAciIndexPicker(
 ): AcUiAciIndexPicker {
   acuiEnsureAciPaletteStyles()
 
+  const showByLayerByBlock = options.showByLayerByBlock !== false
   let selectedIndex: number | null = options.initialIndex ?? null
 
   const root = document.createElement('div')
-  root.className = 'ml-aci-picker'
+  root.className = showByLayerByBlock
+    ? 'ml-aci-picker'
+    : 'ml-aci-picker ml-aci-picker--no-special'
 
   const onSelect = (index: number) => {
+    if (!showByLayerByBlock && (index === 0 || index === 256)) return
     selectedIndex = index
     markSelectedInRoot(root, index)
     input.value = String(index)
@@ -676,18 +786,20 @@ export function acuiCreateAciIndexPicker(
     )
   )
 
-  const smallActions = document.createElement('div')
-  smallActions.className = 'ml-aci-small-actions'
-  const byLayerBtn = document.createElement('button')
-  byLayerBtn.type = 'button'
-  byLayerBtn.textContent = options.labels.byLayer ?? 'ByLayer'
-  byLayerBtn.addEventListener('click', () => onSelect(256))
-  const byBlockBtn = document.createElement('button')
-  byBlockBtn.type = 'button'
-  byBlockBtn.textContent = options.labels.byBlock ?? 'ByBlock'
-  byBlockBtn.addEventListener('click', () => onSelect(0))
-  smallActions.append(byLayerBtn, byBlockBtn)
-  smallRow.appendChild(smallActions)
+  if (showByLayerByBlock) {
+    const smallActions = document.createElement('div')
+    smallActions.className = 'ml-aci-small-actions'
+    const byLayerBtn = document.createElement('button')
+    byLayerBtn.type = 'button'
+    byLayerBtn.textContent = options.labels.byLayer ?? 'ByLayer'
+    byLayerBtn.addEventListener('click', () => onSelect(256))
+    const byBlockBtn = document.createElement('button')
+    byBlockBtn.type = 'button'
+    byBlockBtn.textContent = options.labels.byBlock ?? 'ByBlock'
+    byBlockBtn.addEventListener('click', () => onSelect(0))
+    smallActions.append(byLayerBtn, byBlockBtn)
+    smallRow.appendChild(smallActions)
+  }
   root.appendChild(smallRow)
 
   root.appendChild(
@@ -721,7 +833,10 @@ export function acuiCreateAciIndexPicker(
   if (selectedIndex != null) input.value = String(selectedIndex)
   const applyInput = () => {
     const parsed = acuiParseAciManualInput(input.value)
-    if (parsed == null) {
+    if (
+      parsed == null ||
+      (!showByLayerByBlock && (parsed === 0 || parsed === 256))
+    ) {
       input.value = selectedIndex != null ? String(selectedIndex) : ''
       return
     }

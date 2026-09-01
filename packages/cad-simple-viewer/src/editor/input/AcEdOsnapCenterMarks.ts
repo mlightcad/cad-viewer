@@ -24,6 +24,15 @@ export interface AcEdOsnapCenterMark {
 
 const BULGE_EPS = 1e-10
 
+/**
+ * Max AutoCAD-style acquired center ticks kept during one point prompt.
+ *
+ * Hovering many circles/arcs appends a tick per unique center. Without a
+ * cap, a fast sweep recreates hundreds of DOM markers on every pointer
+ * move and the canvas appears frozen.
+ */
+export const ACED_MAX_ACQUIRED_CENTER_MARKS = 32
+
 function hypot2(ax: number, ay: number, bx: number, by: number) {
   return Math.hypot(ax - bx, ay - by)
 }
@@ -133,14 +142,20 @@ function collectPolylineArcCenter(
     const start = vertices[i]!
     const end = vertices[(i + 1) % vertices.length]!
     const arc = tryBulgeArc(start, end, start.bulge)
-    const dist = arc
-      ? hypot2(
-          pickPoint.x,
-          pickPoint.y,
-          arc.nearestPoint(pickPoint).x,
-          arc.nearestPoint(pickPoint).y
-        )
-      : distToSegment(pickPoint.x, pickPoint.y, start.x, start.y, end.x, end.y)
+    let dist: number
+    if (arc) {
+      const nearest = arc.nearestPoint(pickPoint)
+      dist = hypot2(pickPoint.x, pickPoint.y, nearest.x, nearest.y)
+    } else {
+      dist = distToSegment(
+        pickPoint.x,
+        pickPoint.y,
+        start.x,
+        start.y,
+        end.x,
+        end.y
+      )
+    }
     if (dist < bestDist) {
       bestDist = dist
       bestArc = arc
@@ -253,13 +268,32 @@ export function mergeAcquiredCenterMarks(
   existing: readonly AcEdOsnapCenterMark[],
   incoming: readonly AcEdOsnapCenterMark[]
 ): AcEdOsnapCenterMark[] {
+  if (incoming.length === 0) {
+    return existing.length <= ACED_MAX_ACQUIRED_CENTER_MARKS
+      ? (existing as AcEdOsnapCenterMark[])
+      : existing.slice(-ACED_MAX_ACQUIRED_CENTER_MARKS)
+  }
+
   const merged = [...existing]
+  let changed = existing.length > ACED_MAX_ACQUIRED_CENTER_MARKS
   for (const mark of incoming) {
-    if (!merged.some(item => centerMarksCoincide(item, mark))) {
+    const idx = merged.findIndex(item => centerMarksCoincide(item, mark))
+    if (idx >= 0) {
+      if (idx !== merged.length - 1) {
+        const [kept] = merged.splice(idx, 1)
+        merged.push(kept!)
+        changed = true
+      }
+    } else {
       merged.push(mark)
+      changed = true
     }
   }
-  return merged
+
+  if (merged.length > ACED_MAX_ACQUIRED_CENTER_MARKS) {
+    return merged.slice(merged.length - ACED_MAX_ACQUIRED_CENTER_MARKS)
+  }
+  return changed ? merged : (existing as AcEdOsnapCenterMark[])
 }
 
 export function centerMarksCoincide(

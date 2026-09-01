@@ -8,6 +8,7 @@ import {
   acedClearFollowingClickSink,
   acedIsGhostClientOrigin,
   acedIsTouchDerivedMouseEvent,
+  acedIsTouchLongPressContextMenu,
   acedResetTouchMouseGuard,
   acedShouldIgnoreCompatMouse,
   acedSinkFollowingClick,
@@ -154,6 +155,40 @@ describe('acedIsTouchDerivedMouseEvent', () => {
         sourceCapabilities: { firesTouchEvents: true }
       } as unknown as MouseEvent)
     ).toBe(true)
+  })
+})
+
+describe('acedIsTouchLongPressContextMenu', () => {
+  afterEach(() => {
+    acedResetTouchMouseGuard()
+  })
+
+  it('treats a firesTouchEvents contextmenu as a long-press leftover', () => {
+    expect(
+      acedIsTouchLongPressContextMenu({
+        button: 2,
+        sourceCapabilities: { firesTouchEvents: true }
+      } as unknown as MouseEvent)
+    ).toBe(true)
+  })
+
+  it('treats contextmenu during the compat-mouse guard as a leftover', () => {
+    acedSinkFollowingClick()
+    expect(
+      acedIsTouchLongPressContextMenu({
+        button: 2,
+        pointerType: 'mouse'
+      } as unknown as MouseEvent)
+    ).toBe(true)
+  })
+
+  it('does not treat a real mouse right-click as a leftover', () => {
+    expect(
+      acedIsTouchLongPressContextMenu({
+        button: 2,
+        pointerType: 'mouse'
+      } as unknown as MouseEvent)
+    ).toBe(false)
   })
 })
 

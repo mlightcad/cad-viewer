@@ -67,5 +67,15 @@ export default {
   drawStyle: {
     color: 'Renk',
     fontSize: 'Yazı yüksekliği'
+  },
+  colorPicker: {
+    title: 'Renk Seç',
+    close: 'Kapat',
+    ok: 'Tamam',
+    cancel: 'İptal',
+    index: 'Renk İndeksi: ',
+    rgb: 'RGB: ',
+    input: 'Renk',
+    inputPlaceholder: '1-255 veya #RRGGBB'
   }
 }

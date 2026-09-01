@@ -1,4 +1,9 @@
 import {
+  ML_UI_MOBILE_MAX_WIDTH,
+  ML_UI_SESSION_PANEL_MAX_WIDTH,
+  ML_UI_SESSION_PANEL_WIDTH
+} from '../editor/global/AcEdUiLayout'
+import {
   acedApplyUiTheme,
   type AcEdUiTheme,
   resolveUiTheme
@@ -35,6 +40,17 @@ export interface AcUiDialogOptions {
   dialogClassName?: string
 
   /**
+   * Layout-aware panel width.
+   *
+   * When `true` (default): pad and desktop match the bottom session panel
+   * ({@link ML_UI_SESSION_PANEL_WIDTH}); phone uses the full viewport.
+   * Set `false` for the compact `min(360px, calc(100vw - 32px))` width.
+   *
+   * @defaultValue `true`
+   */
+  layoutWidth?: boolean
+
+  /**
    * Whether clicking the backdrop closes the dialog.
    * @defaultValue `true`
    */
@@ -62,7 +78,9 @@ export class AcUiDialog {
   /** ID of the shared base style element. */
   public static readonly styleId = 'ml-ui-dialog-styles'
 
-  private static stylesInjected = false
+  /** Class applied when {@link AcUiDialogOptions.layoutWidth} is `false`. */
+  public static readonly compactClass = 'ml-ui-dialog--compact'
+
   private static nextTitleId = 0
 
   /** Full-screen backdrop containing the dialog panel. */
@@ -114,7 +132,11 @@ export class AcUiDialog {
     }
 
     this.dialog = document.createElement('div')
-    this.dialog.className = ['ml-ui-dialog', options.dialogClassName]
+    this.dialog.className = [
+      'ml-ui-dialog',
+      options.layoutWidth === false ? AcUiDialog.compactClass : '',
+      options.dialogClassName
+    ]
       .filter(Boolean)
       .join(' ')
     this.dialog.setAttribute('role', 'dialog')
@@ -258,11 +280,7 @@ export class AcUiDialog {
    * Injects shared dialog chrome CSS once per document.
    */
   static ensureStyles(): void {
-    if (AcUiDialog.stylesInjected) return
-    if (document.getElementById(AcUiDialog.styleId)) {
-      AcUiDialog.stylesInjected = true
-      return
-    }
+    if (document.getElementById(AcUiDialog.styleId)) return
 
     const style = document.createElement('style')
     style.id = AcUiDialog.styleId
@@ -279,7 +297,10 @@ export class AcUiDialog {
 }
 
 .ml-ui-dialog {
-  width: min(360px, calc(100vw - 32px));
+  width: ${ML_UI_SESSION_PANEL_WIDTH}px;
+  max-width: ${ML_UI_SESSION_PANEL_MAX_WIDTH};
+  max-height: 100%;
+  overflow: auto;
   box-sizing: border-box;
   padding: 16px 18px 14px;
   border-radius: 10px;
@@ -287,6 +308,21 @@ export class AcUiDialog {
   background: var(--ml-ui-bg, #ffffff);
   color: var(--ml-ui-text, #303133);
   box-shadow: var(--ml-ui-shadow, 0 8px 28px rgba(0, 0, 0, 0.28));
+}
+
+.ml-ui-dialog.${AcUiDialog.compactClass} {
+  width: min(360px, calc(100vw - 32px));
+  max-width: none;
+}
+
+@media (max-width: ${ML_UI_MOBILE_MAX_WIDTH}px) {
+  .ml-ui-dialog:not(.${AcUiDialog.compactClass}) {
+    width: 100%;
+    max-width: none;
+    border-radius: 0;
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
 }
 
 .ml-ui-dialog-header {
@@ -340,8 +376,18 @@ export class AcUiDialog {
 .ml-ui-dialog-btn:hover {
   filter: brightness(1.05);
 }
+
+.ml-ui-dialog-btn-secondary {
+  border: 1px solid var(--ml-ui-border, #dcdfe6);
+  background: var(--ml-ui-bg, #ffffff);
+  color: var(--ml-ui-text, #303133);
+}
+
+.ml-ui-dialog-btn-secondary:hover {
+  filter: none;
+  background: var(--ml-ui-border, #dcdfe6);
+}
 `.trim()
     document.head.appendChild(style)
-    AcUiDialog.stylesInjected = true
   }
 }

@@ -26,6 +26,7 @@ import {
 import type { AcEdCommandEventArgs } from '../editor'
 import type { AcEdSessionAccessory } from '../editor/command/AcEdSessionAccessory'
 import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
+import { ML_UI_Z_DRAW_STYLE_TOOLBAR } from '../editor/global/AcEdUiLayout'
 import { AcApI18n } from '../i18n'
 import {
   acapCssColor,
@@ -36,11 +37,12 @@ import {
   acapSetMeasurementDrawFontSize
 } from '../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../view'
+import { AcUiAciColorDialog } from './AcUiAciColorDialog'
 import {
   type AcUiAciPaletteStacks,
   acuiCreateAciPaletteStacks,
   acuiEnsureAciPaletteStyles
-} from './AcApAciPaletteUi'
+} from './AcUiAciPaletteUi'
 import {
   type AcApDrawStyleKind,
   acapDrawStyleKindForCommand,
@@ -64,7 +66,7 @@ const TOOLBAR_CSS = `
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 99999;
+      z-index: ${ML_UI_Z_DRAW_STYLE_TOOLBAR};
       display: none;
       align-items: center;
       gap: 8px;
@@ -221,6 +223,9 @@ export class AcApDrawStyleToolbar {
   /** Whether the ACI popover is open. */
   private colorPanelOpen = false
 
+  /** True while the session ACI dialog is open. */
+  private colorDialogOpen = false
+
   /** Timer id used to delay-hide the color panel on mouse leave. */
   private colorLeaveTimer: number | undefined
 
@@ -291,6 +296,10 @@ export class AcApDrawStyleToolbar {
     this.swatch.addEventListener('click', event => {
       event.preventDefault()
       event.stopPropagation()
+      if (this.sessionMounted) {
+        void this.openSessionColorDialog()
+        return
+      }
       if (this.colorPanelOpen) this.hideColorPanel()
       else this.showColorPanel()
     })
@@ -407,6 +416,7 @@ export class AcApDrawStyleToolbar {
    */
   private mountSession(host: HTMLElement): void {
     this.sessionMounted = true
+    this.hideColorPanel()
     this.colorPanel.classList.add('ml-draw-style-toolbar__color-panel--drop-up')
     host.appendChild(this.controlsRow)
     this.refreshVisibility()
@@ -551,6 +561,40 @@ export class AcApDrawStyleToolbar {
     this.clearColorLeaveTimer()
     this.colorPanelOpen = false
     this.colorPanel.classList.remove('is-open')
+  }
+
+  /**
+   * Opens the index-only color dialog used on the phone/pad session panel.
+   */
+  private async openSessionColorDialog(): Promise<void> {
+    if (this.colorDialogOpen) return
+    this.colorDialogOpen = true
+    this.hideColorPanel()
+    try {
+      const selected = this.aciStacks.root.querySelector(
+        '.ml-aci-cell.is-selected'
+      ) as HTMLElement | null
+      const initial = selected ? Number(selected.dataset.aci) : null
+      const index = await AcUiAciColorDialog.open({
+        host: this.view.container,
+        theme: resolveUiTheme(this.view.container),
+        initialIndex:
+          initial != null && Number.isFinite(initial) ? initial : null,
+        labels: {
+          title: AcApI18n.t('main.colorPicker.title'),
+          close: AcApI18n.t('main.colorPicker.close'),
+          ok: AcApI18n.t('main.colorPicker.ok'),
+          cancel: AcApI18n.t('main.colorPicker.cancel'),
+          index: AcApI18n.t('main.colorPicker.index'),
+          rgb: AcApI18n.t('main.colorPicker.rgb'),
+          input: AcApI18n.t('main.colorPicker.input'),
+          inputPlaceholder: AcApI18n.t('main.colorPicker.inputPlaceholder')
+        }
+      })
+      if (index != null) this.applyColor(colorFromAci(index))
+    } finally {
+      this.colorDialogOpen = false
+    }
   }
 
   /**

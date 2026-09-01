@@ -48,8 +48,9 @@ export const ACEX_HTML_SHELL_CSS = `
     --mlcad-ui-inset: 12px;
     --mlcad-review-max-height: calc(100vh - 2 * var(--mlcad-ui-inset) - 48px);
     --mlcad-z-chrome: 7;
-    --mlcad-z-measure: 5;
-    --mlcad-z-markup: 6;
+    /* Drawing overlays stay under chrome, session panel, and modal dialogs. */
+    --mlcad-z-measure: 1;
+    --mlcad-z-markup: 2;
     --ml-ui-grip-size: 8px;
     --ml-ui-grip-normal: #0080ff;
     --ml-ui-grip-hot: #ff0000;
@@ -938,10 +939,12 @@ export const ACEX_HTML_SHELL_CSS = `
     position: absolute;
     left: 0;
     top: 0;
+    z-index: 1;
     pointer-events: none;
   }
   .mlcad-measure-dot {
     position: absolute;
+    z-index: 3;
     width: 10px;
     height: 10px;
     border-radius: 50%;
@@ -967,6 +970,7 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   .mlcad-measure-badge {
     position: absolute;
+    z-index: 2;
     padding: 3px 10px;
     border-radius: 14px;
     background: var(--mlcad-ui-bg-elevated);
@@ -998,6 +1002,7 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   .mlcad-measure-live-label {
     position: absolute;
+    z-index: 2;
     pointer-events: none;
     color: var(--mlcad-measure-accent);
     font-size: 12px;
@@ -1018,11 +1023,13 @@ export const ACEX_HTML_SHELL_CSS = `
     position: absolute;
     left: 0;
     top: 0;
+    z-index: 1;
     pointer-events: none;
   }
   .mlcad-markup-badge,
   .mlcad-markup-stamp {
     position: absolute;
+    z-index: 2;
     padding: 3px 10px;
     border-radius: 14px;
     background: var(--mlcad-ui-bg-elevated);
@@ -1064,6 +1071,7 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   .mlcad-markup-dot {
     position: absolute;
+    z-index: 3;
     width: 10px;
     height: 10px;
     border-radius: 50%;

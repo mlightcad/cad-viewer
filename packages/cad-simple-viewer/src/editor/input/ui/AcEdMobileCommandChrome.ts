@@ -4,7 +4,9 @@ import {
   acedIsMobileOrPadUi,
   acedIsMobileUiLayout,
   acedSubscribeUiLayout,
-  ML_UI_MOBILE_MAX_WIDTH
+  ML_UI_MOBILE_MAX_WIDTH,
+  ML_UI_SESSION_PANEL_MAX_WIDTH,
+  ML_UI_SESSION_PANEL_WIDTH
 } from '../../global/AcEdUiLayout'
 import type { AcEdMobileSessionMetrics } from './AcEdMobileSessionMetrics'
 
@@ -671,8 +673,8 @@ const MOBILE_CMD_CSS = `
       left: 50%;
       right: auto;
       box-sizing: border-box;
-      width: 440px;
-      max-width: calc(100vw - 24px);
+      width: ${ML_UI_SESSION_PANEL_WIDTH}px;
+      max-width: ${ML_UI_SESSION_PANEL_MAX_WIDTH};
       transform: translateX(-50%);
       border-radius: 12px 12px 0 0;
       border: 1px solid var(--ml-ui-border, rgba(255, 255, 255, 0.12));

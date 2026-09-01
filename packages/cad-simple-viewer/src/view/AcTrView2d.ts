@@ -41,6 +41,7 @@ import { AcApDocManager, AcApSettingManager } from '../app'
 import { AcApZoomCmd } from '../command/AcApZoomCmd'
 import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit'
 import { notifyMeasurementLayoutChanged } from '../command/measure/AcApMeasurementStore'
+import { ML_UI_Z_CANVAS_HTML_OVERLAY } from '../editor/global/AcEdUiLayout'
 import {
   AcEdBaseView,
   AcEdCalculateSizeCallback,
@@ -312,6 +313,12 @@ export class AcTrView2d extends AcEdBaseView {
     renderer.domElement.style.display = 'block'
     renderer.domElement.style.maxWidth = '100%'
     renderer.domElement.style.maxHeight = '100%'
+    // Keep one-finger picks (measure snap loupe) from being stolen by the
+    // browser scroll / long-press context-menu gesture.
+    renderer.domElement.style.touchAction = 'none'
+    renderer.domElement.style.userSelect = 'none'
+    renderer.domElement.style.setProperty('-webkit-user-select', 'none')
+    renderer.domElement.style.setProperty('-webkit-touch-callout', 'none')
 
     super(renderer.domElement, container)
     this._gripManager = new AcEdGripManager(this)
@@ -564,7 +571,10 @@ export class AcTrView2d extends AcEdBaseView {
     this._css2dRenderer.domElement.style.top = '0px'
     this._css2dRenderer.domElement.style.left = '0px'
     this._css2dRenderer.domElement.style.pointerEvents = 'none'
-    this._css2dRenderer.domElement.style.zIndex = '99998'
+    // Below command line / mobile chrome / dialogs; above the WebGL canvas.
+    this._css2dRenderer.domElement.style.zIndex = String(
+      ML_UI_Z_CANVAS_HTML_OVERLAY
+    )
     this._css2dRenderer.domElement.style.maxWidth = '100%'
     this._css2dRenderer.domElement.style.maxHeight = '100%'
     container.appendChild(this._css2dRenderer.domElement)

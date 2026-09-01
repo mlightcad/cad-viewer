@@ -67,5 +67,15 @@ export default {
   drawStyle: {
     color: 'Barva',
     fontSize: 'Výška textu'
+  },
+  colorPicker: {
+    title: 'Vybrat barvu',
+    close: 'Zavřít',
+    ok: 'OK',
+    cancel: 'Zrušit',
+    index: 'Index barvy: ',
+    rgb: 'RGB: ',
+    input: 'Barva',
+    inputPlaceholder: '1-255 nebo #RRGGBB'
   }
 }

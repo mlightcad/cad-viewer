@@ -75,7 +75,7 @@ export class AcEdOsnapResolver {
     snap?: AcEdOsnapPoint
   ): AcEdOsnapCenterMark[] {
     if (!snap || snap.type !== AcDbOsnapMode.Center) {
-      return [...marks]
+      return marks as AcEdOsnapCenterMark[]
     }
     return marks.filter(mark => !centerMarksCoincide(mark, snap))
   }
