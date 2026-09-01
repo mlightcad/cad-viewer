@@ -4,6 +4,10 @@ import {
 } from '../app/AcApSettingManager'
 import type { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
 import {
+  ACED_DRAW_STYLE_SESSION_PROVIDER_ID,
+  type AcEdDrawStyleSessionHost
+} from '../editor/command/AcEdSessionAccessory'
+import {
   type AcUiDrawStyleKind,
   acuiResolveDrawStyleKind,
   acuiShouldShowDrawStyleToolbar
@@ -18,21 +22,12 @@ import {
   subscribeMeasurementSelection
 } from './measure/AcApMeasurementStore'
 
-/** Per-view install record kept in {@link installs}. */
-interface DrawStyleInstallRecord {
-  /** Draw-style controls host for the view. */
-  host: AcUiDrawStyleSessionAccessory
-  /** Tears down selection sync subscriptions. */
-  unsubscribe: () => void
-}
-
-/** Weak map of views to their one-time draw-style install records. */
-const installs = new WeakMap<object, DrawStyleInstallRecord>()
-
 /**
  * Registers draw-style controls and selection-driven session accessory for a view.
  *
  * Idempotent: safe to call from both measure and markup command registration.
+ * The provider is stored on {@link AcEdBaseView.sessionProviders} under
+ * {@link ACED_DRAW_STYLE_SESSION_PROVIDER_ID}.
  *
  * @param ctx - View and command stack for this document.
  * @returns The view's draw-style session accessory host.
@@ -40,21 +35,21 @@ const installs = new WeakMap<object, DrawStyleInstallRecord>()
 export function acapInstallDrawStyleSessionAccessory(
   ctx: AcApDrawStyleSessionInstallContext
 ): AcUiDrawStyleSessionAccessory {
-  const existing = installs.get(ctx.view)
-  if (existing) return existing.host
+  const existing = ctx.view.sessionProviders.get<AcUiDrawStyleSessionAccessory>(
+    ACED_DRAW_STYLE_SESSION_PROVIDER_ID
+  )
+  if (existing) return existing
 
   const host = new AcUiDrawStyleSessionAccessory(ctx.view)
-  const unsubscribe = bindSelectionSessionAccessory(
-    ctx.view,
-    ctx.commandManager,
-    host
+  host.setSelectionUnsubscribe(
+    bindSelectionSessionAccessory(ctx.view, ctx.commandManager, host)
   )
-  installs.set(ctx.view, { host, unsubscribe })
+  ctx.view.sessionProviders.set(ACED_DRAW_STYLE_SESSION_PROVIDER_ID, host)
   return host
 }
 
 /**
- * Returns the draw-style session accessory installed for a view, if any.
+ * Returns the draw-style session provider installed for a view, if any.
  *
  * @param view - View passed to {@link acapInstallDrawStyleSessionAccessory}.
  * @returns The installed host, or `undefined` when not yet installed.
@@ -62,7 +57,9 @@ export function acapInstallDrawStyleSessionAccessory(
 export function acapGetDrawStyleSessionAccessory(
   view: AcTrView2d
 ): AcUiDrawStyleSessionAccessory | undefined {
-  return installs.get(view)?.host
+  return view.sessionProviders.get<AcUiDrawStyleSessionAccessory>(
+    ACED_DRAW_STYLE_SESSION_PROVIDER_ID
+  )
 }
 
 /**
@@ -77,7 +74,7 @@ export function acapGetDrawStyleSessionAccessory(
 function bindSelectionSessionAccessory(
   view: AcTrView2d,
   commandManager: AcEdCommandStack,
-  host: AcUiDrawStyleSessionAccessory
+  host: AcEdDrawStyleSessionHost
 ): () => void {
   const accessory = host.createSessionAccessory()
 

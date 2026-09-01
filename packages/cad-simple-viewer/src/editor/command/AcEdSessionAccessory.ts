@@ -33,7 +33,19 @@ export interface AcEdSessionAccessoryHostInfo {
 }
 
 /**
- * Optional draw-style controls host attached to a view for session accessories.
+ * Registry id for the draw-style session provider on a view.
+ *
+ * @see {@link AcEdDrawStyleSessionHost}
+ * @see {@link AcEdSessionProviderRegistry}
+ */
+export const ACED_DRAW_STYLE_SESSION_PROVIDER_ID = 'draw-style'
+
+/**
+ * Draw-style controls provider registered under
+ * {@link ACED_DRAW_STYLE_SESSION_PROVIDER_ID}.
+ *
+ * Long-lived owner of color / font-size controls; mints mountable session
+ * accessories via {@link createSessionAccessory}.
  */
 export interface AcEdDrawStyleSessionHost {
   /**
