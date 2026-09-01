@@ -18,12 +18,24 @@ import {
 } from '../src/command/markup/AcApMarkupUtil'
 import {
   acuiBindDrawStyleSessionAccessory,
-  acuiRegisterDrawStyleSessionHost,
   acuiResolveDrawStyleKind,
-  acuiShouldShowDrawStyleToolbar,
-  acuiUnregisterDrawStyleSessionHost
+  acuiShouldShowDrawStyleToolbar
 } from '../src/ui/AcUiDrawStyle'
 import { acapDrawStyleKindForCommand } from '../src/util/AcApCommandUtil'
+
+jest.mock('../src/app/AcApSettingManager', () => ({
+  AcApSettingManager: {
+    instance: {
+      isShowRibbon: false,
+      events: {
+        modified: {
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn()
+        }
+      }
+    }
+  }
+}))
 
 describe('subscribeMarkupDrawStyle', () => {
   it('notifies when markup draw color or font size change', () => {
@@ -188,27 +200,47 @@ describe('isMarkupDoublePointer', () => {
 })
 
 describe('acuiBindDrawStyleSessionAccessory', () => {
-  it('returns the view toolbar accessory, sets kind, and clears after unregister', () => {
-    const view = {}
+  it('assigns a draw-style sessionAccessory that mounts the view host', () => {
+    const container = { parentElement: null } as unknown as HTMLElement
+    const view = {
+      container,
+      drawStyleSessionHost: null as null | {
+        setActiveKind: jest.Mock
+        createSessionAccessory: () => typeof accessory
+      }
+    }
     const accessory = {
       id: 'draw-style',
       mount: jest.fn(),
       unmount: jest.fn()
     }
     const setActiveKind = jest.fn()
-    acuiRegisterDrawStyleSessionHost(view as never, {
+    const host = {
       setActiveKind,
       createSessionAccessory: () => accessory
-    })
+    }
+    view.drawStyleSessionHost = host
+    expect(view.drawStyleSessionHost).toBe(host)
     const command = {
       globalName: 'measuredistance',
-      createSessionAccessory: (_context: unknown) =>
-        null as typeof accessory | null
+      sessionAccessory: null as null | typeof accessory
     }
     acuiBindDrawStyleSessionAccessory(command)
-    expect(command.createSessionAccessory({ view })).toBe(accessory)
+    expect(command.sessionAccessory?.id).toBe('draw-style')
+    command.sessionAccessory!.mount({
+      host: container,
+      type: 'desktop',
+      view: view as never
+    })
     expect(setActiveKind).toHaveBeenCalledWith('measure')
-    acuiUnregisterDrawStyleSessionHost(view as never)
-    expect(command.createSessionAccessory({ view })).toBeNull()
+    expect(accessory.mount).toHaveBeenCalled()
+    view.drawStyleSessionHost = null
+    expect(() =>
+      command.sessionAccessory!.mount({
+        host: container,
+        type: 'desktop',
+        view: view as never
+      })
+    ).toThrow()
   })
 })

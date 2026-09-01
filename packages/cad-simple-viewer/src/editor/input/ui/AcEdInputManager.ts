@@ -1,5 +1,4 @@
 import {
-  AcCmEventManager,
   AcDbEntity,
   acdbHostApplicationServices,
   AcDbSystemVariables,
@@ -11,7 +10,10 @@ import {
 
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
-import type { AcEdSessionAccessory } from '../../command/AcEdSessionAccessory'
+import type {
+  AcEdSessionAccessory,
+  AcEdSessionAccessoryHostInfo
+} from '../../command/AcEdSessionAccessory'
 import {
   acedIsMobileOrPadUi,
   acedShouldHideDesktopCommandLine,
@@ -20,7 +22,7 @@ import {
 import type { AcEdBaseView } from '../../view'
 import { AcEdInputModifiers } from '../AcEdInputModifiers'
 import { AcEdInputToggles } from '../AcEdInputToggles'
-import type { AcEdCommandEventArgs } from '../AcEditor'
+import type { AcEditor } from '../AcEditor'
 import { AcEdSelectionSet } from '../AcEdSelectionSet'
 import {
   AcEdAngleHandler,
@@ -76,7 +78,7 @@ import {
   acedComputeSessionMetrics,
   type AcEdMobileSessionMetrics
 } from './AcEdMobileSessionMetrics'
-import type { AcEdSessionAccessoryCoordinator } from './AcEdSessionAccessoryCoordinator'
+import { AcEdSessionAccessoryController } from './AcEdSessionAccessoryController'
 import {
   acedIsTouchLongPressContextMenu,
   acedShouldIgnoreCompatMouse
@@ -136,8 +138,8 @@ export class AcEdInputManager {
   private _commandLine: AcEdCommandLine
   /** Phone/pad prompt bar + session panel (hidden on desktop). */
   private _mobileChrome: AcEdMobileCommandChrome
-  /** Syncs desktop session accessories with mobile prompt state. */
-  private _sessionAccessoryCoordinator?: AcEdSessionAccessoryCoordinator
+  /** Desktop/mobile session accessory host resolution and selection mounts. */
+  private readonly _sessionAccessoryController: AcEdSessionAccessoryController
   /** Buffered command-line style inputs (each item is one Enter-confirmed value). */
   private _scriptInputs: string[] = []
   /** Current modifier key state during input sessions. */
@@ -174,13 +176,10 @@ export class AcEdInputManager {
    * positioning and live preview updates.
    *
    * @param view - The view associated with the input manager
-   * @param commandEnded - Editor `commandEnded` event; passed in because
-   *   `view.editor` is not assigned until {@link AcEditor} finishes constructing.
+   * @param editorEvents - Editor event bus; passed in because `view.editor` is
+   *   not assigned until {@link AcEditor} finishes constructing.
    */
-  constructor(
-    view: AcEdBaseView,
-    commandEnded: AcCmEventManager<AcEdCommandEventArgs>
-  ) {
+  constructor(view: AcEdBaseView, editorEvents: AcEditor['events']) {
     this.view = view
     this.injectCSS()
     // Newly added UI overlays (command line, previews) are container-local.
@@ -192,6 +191,13 @@ export class AcEdInputManager {
     const commandLine = new AcEdCommandLine(this.view.container)
     this._commandLine = commandLine
     this._mobileChrome = new AcEdMobileCommandChrome(this.view.container)
+    this._sessionAccessoryController = new AcEdSessionAccessoryController({
+      view: this.view,
+      getMobileChrome: () => this._mobileChrome,
+      isMobilePromptOpen: () => this._mobileChrome.isOpen,
+      getEditorEvents: () => editorEvents
+    })
+    this._sessionAccessoryController.bindEditorEvents()
     this.syncDesktopCommandLineVisibility()
     AcApSettingManager.instance.events.modified.addEventListener(() => {
       this.syncDesktopCommandLineVisibility()
@@ -201,10 +207,11 @@ export class AcEdInputManager {
       if (!acedIsMobileOrPadUi() && this._mobileChrome.isOpen) {
         this._mobileChrome.hide()
       }
+      this._sessionAccessoryController.remountActiveSessionAccessory()
     })
     // Safety net: if a prompt failed to clean up, close the mobile session
     // panel when the command finishes so the bottom chrome cannot linger.
-    commandEnded.addEventListener(() => {
+    editorEvents.commandEnded.addEventListener(() => {
       if (this._mobileChrome.isOpen) {
         this.endMobilePrompt()
       }
@@ -218,29 +225,28 @@ export class AcEdInputManager {
     return this._mobileChrome.isOpen
   }
 
-  /** Mobile session panel chrome; accessories are mounted by the coordinator. */
+  /** Mobile session panel chrome. */
   get mobileChrome(): AcEdMobileCommandChrome {
     return this._mobileChrome
   }
 
-  /**
-   * Registers the coordinator that mounts session accessories.
-   *
-   * @param coordinator - Coordinator owned by {@link AcApDocManager}.
-   */
-  setSessionAccessoryCoordinator(
-    coordinator: AcEdSessionAccessoryCoordinator
-  ): void {
-    this._sessionAccessoryCoordinator = coordinator
+  /** Active mount target for session accessories. */
+  get sessionAccessoryHost(): AcEdSessionAccessoryHostInfo {
+    return this._sessionAccessoryController.sessionAccessoryHost
+  }
+
+  /** Selection-driven accessory shown when no command accessory is mounted. */
+  get selectionSessionAccessory(): AcEdSessionAccessory | null {
+    return this._sessionAccessoryController.selectionSessionAccessory
   }
 
   /**
-   * Resolves the session accessory for the current mobile/desktop slot.
+   * Updates the selection-driven accessory on the session accessory controller.
    *
-   * @returns Active accessory, or `null` when none is shown.
+   * @param value - Accessory to show on selection, or `null` to clear.
    */
-  resolveSessionAccessory(): AcEdSessionAccessory | null {
-    return this._sessionAccessoryCoordinator?.resolveForCurrentSlot() ?? null
+  set selectionSessionAccessory(value: AcEdSessionAccessory | null) {
+    this._sessionAccessoryController.selectionSessionAccessory = value
   }
 
   /**
@@ -345,14 +351,14 @@ export class AcEdInputManager {
         onKeyword: args.onKeyword
       }
     )
-    this._sessionAccessoryCoordinator?.refresh()
+    this._sessionAccessoryController.remountActiveSessionAccessory()
   }
 
   /** Closes the mobile command chrome and restores desktop CLI visibility. */
   private endMobilePrompt(): void {
     this._mobileChrome.hide()
     this.syncDesktopCommandLineVisibility()
-    this._sessionAccessoryCoordinator?.refresh()
+    this._sessionAccessoryController.remountActiveSessionAccessory()
   }
 
   /**

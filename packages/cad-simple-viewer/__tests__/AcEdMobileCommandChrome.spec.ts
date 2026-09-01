@@ -251,20 +251,13 @@ describe('AcEdMobileCommandChrome', () => {
       },
       { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
     )
-    chrome.setSessionAccessory({
-      id: 'pointer-child',
-      mount: el => {
-        const child = document.createElement('button')
-        child.type = 'button'
-        child.addEventListener('pointerdown', childHit)
-        el.appendChild(child)
-      },
-      unmount: () => undefined
-    })
+    chrome.prepareAccessory()
+    const mountHost = chrome.accessoryHost
+    const child = document.createElement('button')
+    child.type = 'button'
+    child.addEventListener('pointerdown', childHit)
+    mountHost.appendChild(child)
 
-    const child = host.querySelector(
-      '.ml-mobile-cmd-accessory button'
-    ) as HTMLButtonElement
     child.dispatchEvent(new Event('pointerdown', { bubbles: true }))
 
     expect(childHit).toHaveBeenCalledTimes(1)
@@ -352,14 +345,10 @@ describe('AcEdMobileCommandChrome', () => {
     media.restore()
   })
 
-  it('mounts the accessory as the first panel row and unmounts on hide', () => {
+  it('exposes an accessory host and clears it on hide', () => {
     const media = installMatchMedia(
       query => query === ML_UI_MOBILE_MEDIA_QUERY
     )
-    const mount = jest.fn((host: HTMLElement) => {
-      host.appendChild(document.createElement('span'))
-    })
-    const unmount = jest.fn()
     chrome.show(
       {
         prompt: 'Specify point',
@@ -369,17 +358,13 @@ describe('AcEdMobileCommandChrome', () => {
       },
       { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
     )
-    chrome.setSessionAccessory({ id: 'draw-style', mount, unmount })
-    const accessory = host.querySelector(
-      '.ml-mobile-cmd-accessory'
-    ) as HTMLElement
+    chrome.prepareAccessory()
+    const accessory = chrome.accessoryHost
     expect(accessory.hidden).toBe(false)
-    expect(mount).toHaveBeenCalledTimes(1)
-    expect(mount.mock.calls[0][0]).toBe(accessory)
+    accessory.appendChild(document.createElement('span'))
     expect(accessory.firstElementChild?.tagName).toBe('SPAN')
 
     chrome.hide()
-    expect(unmount).toHaveBeenCalledTimes(1)
     expect(accessory.hidden).toBe(true)
     expect(accessory.childElementCount).toBe(0)
     media.restore()

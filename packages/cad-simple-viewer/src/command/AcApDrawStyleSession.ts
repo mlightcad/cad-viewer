@@ -1,9 +1,14 @@
 import type { AcEdCommand } from '../editor/command/AcEdCommand'
 import type { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
-import type { AcEdSessionAccessoryCoordinator } from '../editor/input/ui/AcEdSessionAccessoryCoordinator'
 import type { AcTrView2d } from '../view'
 
-/** Registers a built-in system command with resolved aliases. */
+/**
+ * Registers a built-in system command with resolved aliases.
+ *
+ * @param cmdGlobalName - Global (English) command name.
+ * @param cmdLocalName - Localized command name.
+ * @param cmd - Command instance to register.
+ */
 export type AcApSystemCommandRegistrar = (
   cmdGlobalName: string,
   cmdLocalName: string,
@@ -12,8 +17,9 @@ export type AcApSystemCommandRegistrar = (
 
 /** Context for one-time draw-style session accessory installation per view. */
 export interface AcApDrawStyleSessionInstallContext {
+  /** View that receives the draw-style controls host. */
   view: AcTrView2d
-  coordinator: AcEdSessionAccessoryCoordinator
+  /** Command stack used to resolve the active draw command kind. */
   commandManager: AcEdCommandStack
 }
 

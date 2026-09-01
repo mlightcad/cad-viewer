@@ -36,9 +36,7 @@ import {
   acuiEnsureAciPaletteStyles
 } from './AcUiAciPaletteUi'
 import {
-  type AcUiDrawStyleKind,
-  acuiRegisterDrawStyleSessionHost,
-  acuiUnregisterDrawStyleSessionHost
+  type AcUiDrawStyleKind
 } from './AcUiDrawStyle'
 
 /** Font-size choices shown in the overlay dropdown, in CSS pixels. */
@@ -151,8 +149,7 @@ function ensureStyles(): void {
 /**
  * Color / font-size session accessory for measurement and markup drawing.
  *
- * Mounted by {@link AcEdSessionAccessoryCoordinator} into the desktop
- * top-center slot or the phone/pad session panel.
+ * Mounted into the desktop top-center slot or the phone/pad session panel.
  */
 export class AcUiDrawStyleSessionAccessory {
   /** Color swatch button that opens the palette or mobile dialog. */
@@ -269,12 +266,12 @@ export class AcUiDrawStyleSessionAccessory {
     }
     document.addEventListener('pointerdown', this.onDocumentPointerDown, true)
 
-    acuiRegisterDrawStyleSessionHost(view, this)
+    this.view.drawStyleSessionHost = this
     this.relabel()
   }
 
   /**
-   * Updates the active session kind before the coordinator mounts this accessory.
+   * Updates the active session kind before controls mount or sync.
    *
    * @param kind - `'measure'`, `'markup'`, or `undefined` when inactive.
    */
@@ -285,7 +282,7 @@ export class AcUiDrawStyleSessionAccessory {
     }
   }
 
-  /** Removes listeners, unmounts controls, and unregisters the session host. */
+  /** Removes listeners, unmounts controls, and clears the view session host. */
   dispose(): void {
     this.hideColorPanel()
     document.removeEventListener(
@@ -294,7 +291,9 @@ export class AcUiDrawStyleSessionAccessory {
       true
     )
     this.unmount()
-    acuiUnregisterDrawStyleSessionHost(this.view)
+    if (this.view.drawStyleSessionHost === this) {
+      this.view.drawStyleSessionHost = null
+    }
     this.aciStacks.dispose()
   }
 
@@ -306,7 +305,7 @@ export class AcUiDrawStyleSessionAccessory {
   createSessionAccessory(): AcEdSessionAccessory {
     return {
       id: 'draw-style',
-      mount: host => this.mount(host),
+      mount: options => this.mount(options.host),
       unmount: () => this.unmount()
     }
   }

@@ -11,7 +11,23 @@ import { acapNotifyUndoStackChanged } from '../../util/AcApDatabaseEdit'
 import { eventBus } from '../global/eventBus'
 import { AcEdMessageType } from '../input/ui/AcEdMessageType'
 import { AcEdOpenMode } from '../view/AcEdOpenMode'
-import type { AcEdSessionAccessory } from './AcEdSessionAccessory'
+import {
+  type AcEdSessionAccessory
+} from './AcEdSessionAccessory'
+
+/**
+ * Thrown from {@link AcEdSessionAccessory.mount} when the accessory declines to
+ * mount (for example when a host ribbon already covers the same UI).
+ * {@link AcEdCommand.trigger} treats this as a successful no-op.
+ */
+export class AcEdSessionAccessoryMountSkippedError extends Error {
+  /** Creates an error with a stable message and `name` for instanceof checks. */
+  constructor() {
+    super('session-accessory-mount-skipped')
+    this.name = 'AcEdSessionAccessoryMountSkippedError'
+  }
+}
+
 
 /**
  * Abstract base class for all CAD commands.
@@ -237,6 +253,8 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
     const tm = db.transactionManager
     const recordUndo = this.shouldRecordUndoStack(context)
     let undoTransactionActive = false
+    let sessionAccessoryMounted = false
+    const accessory = this.sessionAccessory
 
     if (recordUndo) {
       tm.startUndoMark(this.globalName || this.localName)
@@ -247,6 +265,34 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
     try {
       this.onCommandWillStart(context)
       context.view.editor.events.commandWillStart.dispatch({ command: this })
+      if (accessory) {
+        try {
+          const hostInfo = context.view.sessionAccessoryHost
+          const options = {
+            host: hostInfo.host,
+            type: hostInfo.type,
+            view: context.view
+          }
+          const mountArgs = {
+            command: this,
+            accessory,
+            options,
+            source: 'command' as const
+          }
+          context.view.editor.events.beforeMountSessionAccessory.dispatch(
+            mountArgs
+          )
+          accessory.mount(options)
+          context.view.editor.events.afterMountSessionAccessory.dispatch(
+            mountArgs
+          )
+          sessionAccessoryMounted = true
+        } catch (error) {
+          if (!(error instanceof AcEdSessionAccessoryMountSkippedError)) {
+            // Mount failures must not block command execution.
+          }
+        }
+      }
       await this.execute(context)
     } catch (error) {
       if (undoTransactionActive && tm.hasTransaction()) {
@@ -258,6 +304,24 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
       }
       throw error
     } finally {
+      if (sessionAccessoryMounted && accessory) {
+        try {
+          const unmountArgs = {
+            command: this,
+            accessory,
+            source: 'command' as const
+          }
+          context.view.editor.events.beforeUnmountSessionAccessory.dispatch(
+            unmountArgs
+          )
+          accessory.unmount()
+          context.view.editor.events.afterUnmountSessionAccessory.dispatch(
+            unmountArgs
+          )
+        } catch {
+          // Unmount failures must not mask command completion.
+        }
+      }
       if (undoTransactionActive && tm.hasTransaction()) {
         tm.commitTransaction()
         tm.endUndoMark()
@@ -314,14 +378,10 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
   /**
    * Optional widgets for the command session UI. On desktop they mount at the
    * top center of the canvas; on phone/pad they mount at the top of the bottom
-   * session panel. The default returns `null`.
-   *
-   * @param _context - The current application context
-   * @returns Accessory to mount, or `null` to leave the slot empty
+   * session panel. When non-null, {@link trigger} mounts before {@link execute}
+   * and unmounts in `finally`.
    */
-  createSessionAccessory(_context: AcApContext): AcEdSessionAccessory | null {
-    return null
-  }
+  sessionAccessory: AcEdSessionAccessory | null = null
 
   /**
    * Displays a message in the command-line output.

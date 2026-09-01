@@ -1,5 +1,4 @@
 import { AcApI18n } from '../../../i18n/AcApI18n'
-import type { AcEdSessionAccessory } from '../../command/AcEdSessionAccessory'
 import {
   acedIsMobileOrPadUi,
   acedIsMobileUiLayout,
@@ -22,11 +21,17 @@ export interface AcEdMobileKeywordChip {
 
 /** Formatted metric strings ready to display. */
 export interface AcEdMobileMetricTexts {
+  /** Distance from base point. */
   length: string
+  /** Angle from base point. */
   angle: string
+  /** Delta X from base point. */
   dx: string
+  /** Delta Y from base point. */
   dy: string
+  /** Absolute X. */
   x: string
+  /** Absolute Y. */
   y: string
 }
 
@@ -57,8 +62,10 @@ export interface AcEdMobileCommandChromeState {
   showMetrics: boolean
 }
 
+/** DOM id of the injected stylesheet for mobile command chrome. */
 const STYLE_ID = 'ml-mobile-cmd-styles'
 
+/** Zeroed metric texts used when no frozen readout is available. */
 const ZERO_TEXTS: AcEdMobileMetricTexts = {
   length: '0',
   angle: '0',
@@ -74,39 +81,65 @@ const ZERO_TEXTS: AcEdMobileMetricTexts = {
  * and on-screen Confirm / Cancel.
  */
 export class AcEdMobileCommandChrome {
+  /** Whether {@link injectCss} has already run for this document. */
   private static stylesInjected = false
 
+  /** View container that receives the overlay and CSS variables. */
   private readonly host: HTMLElement
+  /** Root overlay element (prompt + panel). */
   private readonly root: HTMLDivElement
+  /** Top prompt status bar. */
   private readonly promptEl: HTMLDivElement
+  /** Bottom session panel. */
   private readonly panel: HTMLDivElement
+  /** Absolute X/Y metric group. */
   private readonly absGroup: HTMLDivElement
+  /** Length/angle metric group. */
   private readonly polarGroup: HTMLDivElement
+  /** Delta X/Y metric group. */
   private readonly deltaGroup: HTMLDivElement
+  /** Stack holding absolute metric buttons. */
   private readonly absStack: HTMLDivElement
+  /** Stack holding polar metric buttons. */
   private readonly polarStack: HTMLDivElement
+  /** Stack holding delta metric buttons. */
   private readonly deltaStack: HTMLDivElement
+  /** Confirm/cancel actions beside absolute metrics (phone). */
   private readonly absActions: HTMLDivElement
+  /** Cancel action beside polar metrics (phone). */
   private readonly polarActions: HTMLDivElement
+  /** Confirm action beside delta metrics (phone). */
   private readonly deltaActions: HTMLDivElement
+  /** Shared confirm/cancel row used on pad layouts. */
   private readonly sharedActions: HTMLDivElement
+  /** Mount row for session accessories at the top of the panel. */
   private readonly accessoryEl: HTMLDivElement
+  /** Keyword chip container. */
   private readonly chipsEl: HTMLDivElement
-  private accessory: AcEdSessionAccessory | null = null
+  /** Panel cancel (Escape) button. */
   private readonly cancelBtn: HTMLButtonElement
+  /** Panel confirm (empty Enter / None) button. */
   private readonly confirmBtn: HTMLButtonElement
+  /** Metric readout buttons keyed by metric id. */
   private readonly metricButtons: Record<
     keyof AcEdMobileMetricTexts,
     HTMLButtonElement
   >
+  /** Active session callbacks, or `null` when hidden. */
   private callbacks: AcEdMobileCommandChromeCallbacks | null = null
+  /** Whether the chrome is currently shown. */
   private open = false
+  /** Whether the metric row should be shown for the current prompt. */
   private showMetrics = false
+  /** Whether the current prompt has a base point (relative metrics). */
   private hasBasePoint = false
   /** Last live readout; restored across hide/show so a lift does not zero values. */
   private frozenTexts: AcEdMobileMetricTexts | null = null
+  /** Base-point flag paired with {@link frozenTexts}. */
   private frozenHasBasePoint = false
+  /** Unsubscribe for locale-change relabeling. */
   private localeUnsub?: () => void
+  /** Unsubscribe for layout-change metric visibility. */
   private layoutUnsub?: () => void
 
   /**
@@ -223,6 +256,7 @@ export class AcEdMobileCommandChrome {
     }
   }
 
+  /** Relabel handler bound for locale-change subscription. */
   private readonly boundRelabel = () => this.relabel()
 
   /** Whether the chrome is currently shown. */
@@ -232,6 +266,9 @@ export class AcEdMobileCommandChrome {
 
   /**
    * Shows the chrome for an input session. No-op on desktop layouts.
+   *
+   * @param state - Prompt, keywords, and metric visibility for the session.
+   * @param callbacks - Confirm / cancel / keyword handlers.
    */
   show(
     state: AcEdMobileCommandChromeState,
@@ -264,7 +301,11 @@ export class AcEdMobileCommandChrome {
     this.relabel()
   }
 
-  /** Updates prompt / keywords / ✓ without tearing down the session. */
+  /**
+   * Updates prompt / keywords / ✓ without tearing down the session.
+   *
+   * @param partial - Fields to update; omitted fields keep their current values.
+   */
   update(partial: Partial<AcEdMobileCommandChromeState>): void {
     if (!this.open) return
     if (partial.prompt != null) {
@@ -285,6 +326,9 @@ export class AcEdMobileCommandChrome {
   /**
    * Pushes live metric values. Phase 1 displays them read-only; the metric
    * buttons stay disabled as a hook for the numeric keypad.
+   *
+   * @param metrics - Live numeric metrics including base-point state.
+   * @param texts - Formatted strings for display.
    */
   setMetrics(metrics: AcEdMobileSessionMetrics, texts: AcEdMobileMetricTexts) {
     if (!this.open) return
@@ -299,7 +343,7 @@ export class AcEdMobileCommandChrome {
   hide(): void {
     this.open = false
     this.callbacks = null
-    this.setSessionAccessory(null)
+    this.clearAccessory()
     this.layoutUnsub?.()
     this.layoutUnsub = undefined
     this.root.hidden = true
@@ -315,6 +359,12 @@ export class AcEdMobileCommandChrome {
     this.root.remove()
   }
 
+  /**
+   * Creates a disabled metric readout button for the keypad hook.
+   *
+   * @param id - Metric identifier stored on `dataset.metric`.
+   * @returns Button with label and value spans.
+   */
   private makeMetricButton(id: keyof AcEdMobileMetricTexts): HTMLButtonElement {
     const btn = document.createElement('button')
     btn.type = 'button'
@@ -331,6 +381,12 @@ export class AcEdMobileCommandChrome {
     return btn
   }
 
+  /**
+   * Writes formatted metric strings into the metric buttons.
+   *
+   * @param texts - Formatted values for each metric.
+   * @param hasBasePoint - Whether relative metrics apply.
+   */
   private setMetricTexts(
     texts: AcEdMobileMetricTexts,
     hasBasePoint: boolean
@@ -356,6 +412,9 @@ export class AcEdMobileCommandChrome {
     this.hasBasePoint = hasBasePoint
   }
 
+  /**
+   * Shows or hides metric groups and places confirm/cancel for phone vs pad.
+   */
   private applyMetricVisibility(): void {
     const relative = this.showMetrics && this.hasBasePoint
     const absolute = this.showMetrics && !this.hasBasePoint
@@ -383,27 +442,27 @@ export class AcEdMobileCommandChrome {
     }
   }
 
-  /**
-   * Mounts or clears widgets at the top of the bottom session panel.
-   * Called by {@link AcEdSessionAccessoryCoordinator}.
-   */
-  setSessionAccessory(next: AcEdSessionAccessory | null): void {
-    this.setAccessory(next)
+  /** Mount row for session accessories at the top of the bottom panel. */
+  get accessoryHost(): HTMLElement {
+    return this.accessoryEl
   }
 
-  private setAccessory(next: AcEdSessionAccessory | null): void {
-    if ((this.accessory?.id ?? null) === (next?.id ?? null)) return
-    this.accessory?.unmount()
+  /** Shows the mobile accessory row. */
+  prepareAccessory(): void {
+    this.accessoryEl.hidden = false
+  }
+
+  /** Hides the accessory row and clears its children. */
+  clearAccessory(): void {
     this.accessoryEl.replaceChildren()
-    this.accessory = next
-    if (next) {
-      this.accessoryEl.hidden = false
-      next.mount(this.accessoryEl)
-    } else {
-      this.accessoryEl.hidden = true
-    }
+    this.accessoryEl.hidden = true
   }
 
+  /**
+   * Rebuilds keyword chips from the current session state.
+   *
+   * @param keywords - Chips to render; empty hides the row.
+   */
   private renderChips(keywords: AcEdMobileKeywordChip[]): void {
     this.chipsEl.replaceChildren()
     this.chipsEl.hidden = keywords.length === 0
@@ -424,6 +483,7 @@ export class AcEdMobileCommandChrome {
     }
   }
 
+  /** Refreshes metric labels and button aria-labels from i18n. */
   private relabel(): void {
     const t = (key: string) => AcApI18n.t(key)
     this.metricButtons.length.querySelector(
@@ -464,6 +524,7 @@ export class AcEdMobileCommandChrome {
     })
   }
 
+  /** Injects mobile command chrome styles once into the document head. */
   private static injectCss(): void {
     if (this.stylesInjected) return
     if (typeof document === 'undefined') return
@@ -475,18 +536,27 @@ export class AcEdMobileCommandChrome {
   }
 }
 
+/**
+ * Strips a trailing colon from prompt text for the mobile prompt bar.
+ *
+ * @param message - Raw prompt message, possibly ending with `:` or `：`.
+ * @returns Trimmed message without a trailing colon.
+ */
 function stripPromptColon(message: string): string {
   return message.trim().replace(/[：:]\s*$/, '')
 }
 
+/** SVG markup for the cancel (×) button. */
 function cancelIcon(): string {
   return '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.42L10.59 12l-4.9 4.89a1 1 0 1 0 1.42 1.42L12 13.41l4.89 4.9a1 1 0 0 0 1.42-1.42L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z"/></svg>'
 }
 
+/** SVG markup for the confirm (✓) button. */
 function confirmIcon(): string {
   return '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9.55 18.2 3.8 12.45l1.4-1.4 4.35 4.36 9.25-9.26 1.4 1.41z"/></svg>'
 }
 
+/** CSS rules for the mobile command prompt and session panel. */
 const MOBILE_CMD_CSS = `
   .ml-mobile-cmd {
     pointer-events: none;

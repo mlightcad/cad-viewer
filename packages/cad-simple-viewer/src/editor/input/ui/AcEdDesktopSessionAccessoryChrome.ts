@@ -1,9 +1,10 @@
-import type { AcEdSessionAccessory } from '../../command/AcEdSessionAccessory'
 import { ML_UI_Z_DRAW_STYLE_TOOLBAR } from '../../global/AcEdUiLayout'
 import { acedApplyUiTheme, resolveUiTheme } from '../../global/AcEdUiTheme'
 
+/** DOM id of the injected stylesheet for desktop session accessory chrome. */
 const STYLE_ID = 'ml-desktop-session-accessory-styles'
 
+/** CSS rules for the top-center desktop accessory shell. */
 const DESKTOP_ACCESSORY_CSS = `
   .ml-desktop-session-accessory {
     position: absolute;
@@ -34,24 +35,26 @@ const DESKTOP_ACCESSORY_CSS = `
 `
 
 /**
- * Top-center slot on the canvas for {@link AcEdSessionAccessory} widgets on
- * desktop layouts.
+ * Top-center slot on the canvas for session accessory widgets on desktop layouts.
+ * Callers mount into {@link host}; this chrome only owns shell visibility.
  */
 export class AcEdDesktopSessionAccessoryChrome {
+  /** Whether {@link injectCss} has already run for this document. */
   private static stylesInjected = false
 
+  /** Outer shell positioned at the top center of the view container. */
   private readonly root: HTMLDivElement
+  /** Inner mount row that receives accessory controls. */
   private readonly slot: HTMLDivElement
-  private accessory: AcEdSessionAccessory | null = null
 
   /**
-   * @param host - View container that receives the accessory overlay.
+   * @param container - View container that receives the accessory overlay.
    */
-  constructor(host: HTMLElement) {
+  constructor(container: HTMLElement) {
     AcEdDesktopSessionAccessoryChrome.injectCss()
 
-    if (getComputedStyle(host).position === 'static') {
-      host.style.position = 'relative'
+    if (getComputedStyle(container).position === 'static') {
+      container.style.position = 'relative'
     }
 
     this.root = document.createElement('div')
@@ -65,51 +68,48 @@ export class AcEdDesktopSessionAccessoryChrome {
     this.sinkPointer(this.root)
     this.sinkPointer(this.slot)
 
-    acedApplyUiTheme(resolveUiTheme(host), this.root)
-    host.appendChild(this.root)
+    acedApplyUiTheme(resolveUiTheme(container), this.root)
+    container.appendChild(this.root)
   }
 
-  /** Whether an accessory is currently mounted. */
-  get hasAccessory(): boolean {
-    return this.accessory != null
+  /** Mount row for session accessories. */
+  get host(): HTMLElement {
+    return this.slot
   }
 
-  /**
-   * Mounts `next`, replacing any prior accessory with the same or different id.
-   *
-   * @param next - Accessory to show, or `null` to clear the slot.
-   */
-  setAccessory(next: AcEdSessionAccessory | null): void {
-    if ((this.accessory?.id ?? null) === (next?.id ?? null) && next != null) {
-      return
-    }
-    this.accessory?.unmount()
+  /** Shows the desktop accessory shell. */
+  prepare(): void {
+    this.root.hidden = false
+    this.root.classList.add('is-visible')
+    this.root.setAttribute('aria-hidden', 'false')
+  }
+
+  /** Hides the shell and clears the mount row. */
+  clear(): void {
     this.slot.replaceChildren()
-    this.accessory = next
-    if (next) {
-      this.root.hidden = false
-      this.root.classList.add('is-visible')
-      this.root.setAttribute('aria-hidden', 'false')
-      next.mount(this.slot)
-    } else {
-      this.root.hidden = true
-      this.root.classList.remove('is-visible')
-      this.root.setAttribute('aria-hidden', 'true')
-    }
+    this.root.hidden = true
+    this.root.classList.remove('is-visible')
+    this.root.setAttribute('aria-hidden', 'true')
   }
 
-  /** Removes DOM and unmounts any active accessory. */
+  /** Removes DOM. */
   dispose(): void {
-    this.setAccessory(null)
+    this.clear()
     this.root.remove()
   }
 
+  /**
+   * Stops `pointerdown` from bubbling to the canvas.
+   *
+   * @param el - Element that should absorb pointer-down events.
+   */
   private sinkPointer(el: HTMLElement): void {
     el.addEventListener('pointerdown', event => {
       event.stopPropagation()
     })
   }
 
+  /** Injects desktop accessory styles once into the document head. */
   private static injectCss(): void {
     if (this.stylesInjected) return
     if (typeof document === 'undefined') return

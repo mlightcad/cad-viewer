@@ -5,10 +5,20 @@ import {
   withMeasureInput
 } from '../src/command/measure/AcApMeasureDrawCmd'
 import { AcEdOpenMode } from '../src/editor/view/AcEdOpenMode'
-import {
-  acuiRegisterDrawStyleSessionHost,
-  acuiUnregisterDrawStyleSessionHost
-} from '../src/ui/AcUiDrawStyle'
+
+jest.mock('../src/app/AcApSettingManager', () => ({
+  AcApSettingManager: {
+    instance: {
+      isShowRibbon: false,
+      events: {
+        modified: {
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn()
+        }
+      }
+    }
+  }
+}))
 
 class MeasureDrawStub extends AcApMeasureDrawCmd {
   async execute(): Promise<void> {
@@ -24,24 +34,31 @@ class MarkupDrawStub extends AcApMarkupDrawCmd {
 
 describe('AcApMeasureDrawCmd', () => {
   it('sets Read mode and binds the draw-style session accessory', () => {
-    const view = {}
+    const container = { parentElement: null } as unknown as HTMLElement
     const accessory = {
       id: 'draw-style',
       mount: jest.fn(),
       unmount: jest.fn()
     }
     const setActiveKind = jest.fn()
-    acuiRegisterDrawStyleSessionHost(view as never, {
-      setActiveKind,
-      createSessionAccessory: () => accessory
-    })
+    const view = {
+      container,
+      drawStyleSessionHost: {
+        setActiveKind,
+        createSessionAccessory: () => accessory
+      }
+    }
     const cmd = new MeasureDrawStub()
     cmd.globalName = 'measuredistance'
     expect(cmd.mode).toBe(AcEdOpenMode.Read)
-    expect(cmd.createSessionAccessory({ view } as AcApContext)).toBe(accessory)
+    expect(cmd.sessionAccessory?.id).toBe('draw-style')
+    cmd.sessionAccessory!.mount({
+      host: container,
+      type: 'desktop',
+      view: view as never
+    })
     expect(setActiveKind).toHaveBeenCalledWith('measure')
-    acuiUnregisterDrawStyleSessionHost(view as never)
-    expect(cmd.createSessionAccessory({ view } as AcApContext)).toBeNull()
+    expect(accessory.mount).toHaveBeenCalled()
   })
 
   it('runs the body in selection mode with a crosshair cursor', async () => {
@@ -67,23 +84,30 @@ describe('AcApMeasureDrawCmd', () => {
 
 describe('AcApMarkupDrawCmd', () => {
   it('sets Review mode, skips empty undo marks, and binds the accessory', () => {
-    const view = {}
+    const container = { parentElement: null } as unknown as HTMLElement
     const accessory = {
       id: 'draw-style',
       mount: jest.fn(),
       unmount: jest.fn()
     }
     const setActiveKind = jest.fn()
-    acuiRegisterDrawStyleSessionHost(view as never, {
-      setActiveKind,
-      createSessionAccessory: () => accessory
-    })
+    const view = {
+      container,
+      drawStyleSessionHost: {
+        setActiveKind,
+        createSessionAccessory: () => accessory
+      }
+    }
     const cmd = new MarkupDrawStub()
     cmd.globalName = 'markuptext'
     expect(cmd.mode).toBe(AcEdOpenMode.Review)
     expect(cmd.recordsUndoStack).toBe(false)
-    expect(cmd.createSessionAccessory({ view } as AcApContext)).toBe(accessory)
+    expect(cmd.sessionAccessory?.id).toBe('draw-style')
+    cmd.sessionAccessory!.mount({
+      host: container,
+      type: 'desktop',
+      view: view as never
+    })
     expect(setActiveKind).toHaveBeenCalledWith('markup')
-    acuiUnregisterDrawStyleSessionHost(view as never)
   })
 })
