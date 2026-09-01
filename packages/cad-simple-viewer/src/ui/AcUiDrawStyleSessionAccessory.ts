@@ -3,10 +3,6 @@ import {
   acdbHostApplicationServices
 } from '@mlightcad/data-model'
 
-import {
-  AcApSettingManager,
-  type AcApSettingManagerEventArgs
-} from '../app/AcApSettingManager'
 import { applyMarkupStyleToSelection } from '../command/markup/AcApMarkupPresenter'
 import { getMarkupStore } from '../command/markup/AcApMarkupStore'
 import {
@@ -19,13 +15,9 @@ import {
 } from '../command/markup/AcApMarkupUtil'
 import {
   applyMeasurementStyleToSelection,
-  getActiveMeasurementStyle,
-  getSelectedMeasurementId,
-  subscribeMeasurementSelection
+  getActiveMeasurementStyle
 } from '../command/measure/AcApMeasurementStore'
-import type { AcEdCommandEventArgs } from '../editor'
 import type { AcEdSessionAccessory } from '../editor/command/AcEdSessionAccessory'
-import { ML_UI_Z_DRAW_STYLE_TOOLBAR } from '../editor/global/AcEdUiLayout'
 import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
 import { AcApI18n } from '../i18n'
 import {
@@ -38,14 +30,10 @@ import {
 } from '../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../view'
 import {
-  type AcApDrawStyleKind,
-  acapDrawStyleKindForCommand,
-  acapRegisterDrawStyleSessionHost,
-  acapResolveDrawStyleKind,
-  acapSetDrawStyleToolbarVisible,
-  acapShouldShowDrawStyleToolbar,
-  acapUnregisterDrawStyleSessionHost
-} from './AcApDrawStyle'
+  type AcUiDrawStyleKind,
+  acuiRegisterDrawStyleSessionHost,
+  acuiUnregisterDrawStyleSessionHost
+} from './AcUiDrawStyle'
 import { AcUiAciColorDialog } from './AcUiAciColorDialog'
 import {
   type AcUiAciPaletteStacks,
@@ -56,32 +44,11 @@ import {
 /** Font-size choices shown in the overlay dropdown, in CSS pixels. */
 const FONT_SIZE_OPTIONS = [10, 12, 13, 14, 16, 18, 20, 24, 28, 32]
 
-/** DOM id of the injected stylesheet for the overlay. */
-const STYLE_ID = 'ml-draw-style-toolbar-styles'
+/** DOM id of the injected stylesheet for draw-style controls. */
+const STYLE_ID = 'ml-draw-style-session-accessory-styles'
 
-/** CSS rules for the overlay, color panel, and ACI swatches. */
-const TOOLBAR_CSS = `
-    .ml-draw-style-toolbar {
-      position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: ${ML_UI_Z_DRAW_STYLE_TOOLBAR};
-      display: none;
-      align-items: center;
-      gap: 8px;
-      padding: 4px 8px;
-      box-sizing: border-box;
-      border: 1px solid var(--ml-ui-border, #dcdfe6);
-      border-radius: 6px;
-      background: var(--ml-ui-bg, rgba(255, 255, 255, 0.96));
-      box-shadow: var(--ml-ui-shadow, 0 2px 6px rgba(0, 0, 0, 0.12));
-      color: var(--ml-ui-text, #303133);
-      pointer-events: auto;
-    }
-    .ml-draw-style-toolbar.is-visible {
-      display: inline-flex;
-    }
+/** CSS rules for draw-style controls and the ACI popover. */
+const CONTROLS_CSS = `
     .ml-draw-style-toolbar__controls {
       display: flex;
       align-items: center;
@@ -142,10 +109,10 @@ const TOOLBAR_CSS = `
   `
 
 /**
- * Builds an ACI indexed color.
+ * Builds an {@link AcCmColor} from a 1-based ACI index.
  *
  * @param index - AutoCAD Color Index (1–255).
- * @returns Color whose `colorIndex` is `index`.
+ * @returns Color object with {@link AcCmColor.colorIndex} set.
  */
 function colorFromAci(index: number): AcCmColor {
   const color = new AcCmColor()
@@ -154,10 +121,10 @@ function colorFromAci(index: number): AcCmColor {
 }
 
 /**
- * ACI index of a color when it is stored as ByACI.
+ * Reads the ACI index from a color when it is stored as ByACI.
  *
  * @param color - Color to inspect.
- * @returns Index ≥ 1, or `undefined` if the color is not ByACI.
+ * @returns 1-based ACI index, or `undefined` if not ByACI.
  */
 function aciIndexOf(color: AcCmColor): number | undefined {
   if (color.isByACI && color.colorIndex != null && color.colorIndex >= 1) {
@@ -167,7 +134,7 @@ function aciIndexOf(color: AcCmColor): number | undefined {
 }
 
 /**
- * Injects overlay CSS into `document.head` once.
+ * Injects draw-style control styles and shared ACI palette styles into the document head.
  */
 function ensureStyles(): void {
   acuiEnsureAciPaletteStyles()
@@ -178,92 +145,62 @@ function ensureStyles(): void {
     style.id = STYLE_ID
     document.head.appendChild(style)
   }
-  style.textContent = TOOLBAR_CSS
+  style.textContent = CONTROLS_CSS
 }
 
 /**
- * Compact color / font-size overlay shown during measurement and markup
- * drawing commands, and while a measurement or markup overlay is selected,
- * when the host ribbon is hidden.
+ * Color / font-size session accessory for measurement and markup drawing.
+ *
+ * Mounted by {@link AcEdSessionAccessoryCoordinator} into the desktop
+ * top-center slot or the phone/pad session panel.
  */
-export class AcApDrawStyleToolbar {
-  /** Root toolbar element appended to the view container. */
-  private readonly root: HTMLDivElement
-
-  /** Button that opens the ACI color panel. */
+export class AcUiDrawStyleSessionAccessory {
+  /** Color swatch button that opens the palette or mobile dialog. */
   private readonly swatch: HTMLButtonElement
 
-  /** Inner disc that shows the current color. */
+  /** Circular fill inside the swatch showing the active color. */
   private readonly swatchFill: HTMLSpanElement
 
-  /** Wrapper around the swatch and popover panel. */
+  /** Wrapper around swatch and inline ACI palette panel. */
   private readonly colorWrap: HTMLDivElement
 
-  /** Popover containing ACI palettes. */
+  /** Inline ACI palette popover (desktop hover/click). */
   private readonly colorPanel: HTMLDivElement
 
-  /** Shared ACI palette stacks mounted in {@link colorPanel}. */
+  /** ACI palette stacks rendered inside {@link colorPanel}. */
   private readonly aciStacks: AcUiAciPaletteStacks
 
-  /** Dropdown of font sizes in CSS pixels. */
+  /** Font-size dropdown for the active session. */
   private readonly fontSizeSelect: HTMLSelectElement
 
-  /** Color swatch + font-size row; reparented into the session panel. */
+  /** Root row reparented into session accessory hosts. */
   private readonly controlsRow: HTMLDivElement
 
-  /** True while controls live in the phone/pad session accessory slot. */
-  private sessionMounted = false
+  /** Active measure/markup session, or `undefined` when inactive. */
+  private kind: AcUiDrawStyleKind | undefined
 
-  /** Active overlay session, or `undefined` when hidden. */
-  private kind: AcApDrawStyleKind | undefined
+  /** True when mounted in the mobile session panel (drop-up palette). */
+  private mobileMounted = false
 
-  /** Kind of the running draw command, if any. */
-  private commandKind: AcApDrawStyleKind | undefined
-
-  /** Whether the ACI popover is open. */
+  /** Whether the inline ACI palette panel is open. */
   private colorPanelOpen = false
 
-  /** True while the session ACI dialog is open. */
+  /** True while the full-screen mobile ACI dialog is open. */
   private colorDialogOpen = false
 
-  /** Timer id used to delay-hide the color panel on mouse leave. */
+  /** Timer that closes the palette after pointer leave. */
   private colorLeaveTimer: number | undefined
 
-  /** Shows the overlay when a measure or markup command starts. */
-  private readonly onCommandWillStart: (args: AcEdCommandEventArgs) => void
-
-  /** Hides the overlay when the current command ends. */
-  private readonly onCommandEnded: () => void
-
-  /** Recomputes visibility when ribbon-show settings change. */
-  private readonly onSettingsModified: (
-    args: AcApSettingManagerEventArgs
-  ) => void
-
-  /** Closes the color panel when the pointer is pressed outside it. */
+  /** Closes the palette when the user clicks outside the color control. */
   private readonly onDocumentPointerDown: (event: PointerEvent) => void
 
-  /** Recomputes overlay kind when markup selection / records change. */
-  private readonly unsubscribeMarkupStore: () => void
-
-  /** Recomputes overlay kind when measurement selection changes. */
-  private readonly unsubscribeMeasurementSelection: () => void
-
   /**
-   * Creates the overlay, injects CSS, and listens for command start/end.
+   * Creates controls, registers as the view's draw-style session host, and wires events.
    *
-   * @param view - 2D view whose container hosts the toolbar.
+   * @param view - 2D view whose container supplies theme and dialog placement.
    */
-  constructor(
-    /** 2D view whose container hosts this overlay. */
-    private readonly view: AcTrView2d
-  ) {
+  constructor(private readonly view: AcTrView2d) {
     ensureStyles()
-
-    this.root = document.createElement('div')
-    this.root.className = 'ml-draw-style-toolbar'
-    this.root.setAttribute('role', 'toolbar')
-    acedApplyUiTheme(resolveUiTheme(view.container), this.root)
 
     this.colorWrap = document.createElement('div')
     this.colorWrap.className = 'ml-draw-style-toolbar__color'
@@ -290,13 +227,14 @@ export class AcApDrawStyleToolbar {
 
     this.controlsRow = document.createElement('div')
     this.controlsRow.className = 'ml-draw-style-toolbar__controls'
+    this.controlsRow.setAttribute('role', 'toolbar')
+    acedApplyUiTheme(resolveUiTheme(view.container), this.controlsRow)
     this.controlsRow.append(this.colorWrap, this.fontSizeSelect)
-    this.root.appendChild(this.controlsRow)
 
     this.swatch.addEventListener('click', event => {
       event.preventDefault()
       event.stopPropagation()
-      if (this.sessionMounted) {
+      if (this.mobileMounted) {
         void this.openSessionColorDialog()
         return
       }
@@ -313,8 +251,6 @@ export class AcApDrawStyleToolbar {
       const size = Number(this.fontSizeSelect.value)
       if (size > 0) this.applyFontSize(size)
     })
-    this.root.addEventListener('pointerdown', event => event.stopPropagation())
-    this.root.addEventListener('mousedown', event => event.stopPropagation())
     this.controlsRow.addEventListener('pointerdown', event =>
       event.stopPropagation()
     )
@@ -333,44 +269,23 @@ export class AcApDrawStyleToolbar {
     }
     document.addEventListener('pointerdown', this.onDocumentPointerDown, true)
 
-    this.onCommandWillStart = (args: AcEdCommandEventArgs) => {
-      this.commandKind = acapDrawStyleKindForCommand(args.command.globalName)
-      this.refreshKindAndVisibility()
-    }
-    this.onCommandEnded = () => {
-      this.commandKind = undefined
-      this.refreshKindAndVisibility()
-    }
-
-    const host = view.container
-    if (getComputedStyle(host).position === 'static') {
-      host.style.position = 'relative'
-    }
-    host.appendChild(this.root)
-    acapRegisterDrawStyleSessionHost(view, this)
-
-    view.editor.events.commandWillStart.addEventListener(
-      this.onCommandWillStart
-    )
-    view.editor.events.commandEnded.addEventListener(this.onCommandEnded)
-    this.onSettingsModified = (args: AcApSettingManagerEventArgs) => {
-      if (args.key === 'isShowRibbon') this.refreshKindAndVisibility()
-    }
-    AcApSettingManager.instance.events.modified.addEventListener(
-      this.onSettingsModified
-    )
-    this.unsubscribeMarkupStore = getMarkupStore().subscribe(() => {
-      this.refreshKindAndVisibility()
-    })
-    this.unsubscribeMeasurementSelection = subscribeMeasurementSelection(() => {
-      this.refreshKindAndVisibility()
-    })
+    acuiRegisterDrawStyleSessionHost(view, this)
     this.relabel()
   }
 
   /**
-   * Detaches DOM, editor, and setting listeners.
+   * Updates the active session kind before the coordinator mounts this accessory.
+   *
+   * @param kind - `'measure'`, `'markup'`, or `undefined` when inactive.
    */
+  setActiveKind(kind: AcUiDrawStyleKind | undefined): void {
+    this.kind = kind
+    if (this.controlsRow.isConnected) {
+      this.syncFromSession()
+    }
+  }
+
+  /** Removes listeners, unmounts controls, and unregisters the session host. */
   dispose(): void {
     this.hideColorPanel()
     document.removeEventListener(
@@ -378,106 +293,63 @@ export class AcApDrawStyleToolbar {
       this.onDocumentPointerDown,
       true
     )
-    this.view.editor.events.commandWillStart.removeEventListener(
-      this.onCommandWillStart
-    )
-    this.view.editor.events.commandEnded.removeEventListener(
-      this.onCommandEnded
-    )
-    AcApSettingManager.instance.events.modified.removeEventListener(
-      this.onSettingsModified
-    )
-    this.unsubscribeMarkupStore()
-    this.unsubscribeMeasurementSelection()
-    this.unmountSession()
-    acapUnregisterDrawStyleSessionHost(this.view)
+    this.unmount()
+    acuiUnregisterDrawStyleSessionHost(this.view)
     this.aciStacks.dispose()
-    this.root.remove()
-    acapSetDrawStyleToolbarVisible(false)
   }
 
   /**
-   * Color / font-size controls for the phone/pad session panel.
+   * Builds the session accessory that reparents draw-style controls into a host slot.
    *
-   * @returns Accessory that reparents {@link controlsRow} into the slot.
+   * @returns Accessory with id `'draw-style'` and mount/unmount delegates.
    */
   createSessionAccessory(): AcEdSessionAccessory {
     return {
       id: 'draw-style',
-      mount: host => this.mountSession(host),
-      unmount: () => this.unmountSession()
+      mount: host => this.mount(host),
+      unmount: () => this.unmount()
     }
   }
 
   /**
-   * Moves the controls into the session panel and hides the canvas overlay.
+   * Appends controls to a session host and syncs state from the active session.
    *
-   * @param host - Accessory row in the bottom session panel.
+   * @param host - Desktop top-center slot or mobile session panel accessory element.
    */
-  private mountSession(host: HTMLElement): void {
-    this.sessionMounted = true
+  private mount(host: HTMLElement): void {
+    this.mobileMounted = host.classList.contains('ml-mobile-cmd-accessory')
     this.hideColorPanel()
-    this.colorPanel.classList.add('ml-draw-style-toolbar__color-panel--drop-up')
+    if (this.mobileMounted) {
+      this.colorPanel.classList.add('ml-draw-style-toolbar__color-panel--drop-up')
+    } else {
+      this.colorPanel.classList.remove(
+        'ml-draw-style-toolbar__color-panel--drop-up'
+      )
+    }
     host.appendChild(this.controlsRow)
-    this.refreshVisibility()
+    this.relabel()
     this.syncFromSession()
   }
 
-  /**
-   * Restores the controls to the canvas overlay.
-   */
-  private unmountSession(): void {
-    if (!this.sessionMounted) return
-    this.sessionMounted = false
+  /** Detaches controls from the current host and resets mobile palette layout. */
+  private unmount(): void {
+    if (!this.controlsRow.isConnected) return
+    this.mobileMounted = false
     this.hideColorPanel()
     this.colorPanel.classList.remove(
       'ml-draw-style-toolbar__color-panel--drop-up'
     )
-    this.root.appendChild(this.controlsRow)
-    this.refreshVisibility()
+    this.controlsRow.remove()
   }
 
-  /**
-   * Resolves command vs selection and shows or hides the overlay.
-   */
-  private refreshKindAndVisibility(): void {
-    this.kind = acapResolveDrawStyleKind({
-      commandKind: this.commandKind,
-      markupSelected: getMarkupStore().selectedId != null,
-      measurementSelected: getSelectedMeasurementId() != null
-    })
-    this.refreshVisibility()
-  }
-
-  /**
-   * Shows or hides the overlay based on {@link acapShouldShowDrawStyleToolbar}.
-   * Hidden while the same controls are mounted in the session panel.
-   */
-  private refreshVisibility(): void {
-    const visible =
-      acapShouldShowDrawStyleToolbar(this.kind) && !this.sessionMounted
-    this.root.classList.toggle('is-visible', visible)
-    acapSetDrawStyleToolbarVisible(
-      visible || (this.sessionMounted && this.kind != null)
-    )
-    if (visible || this.sessionMounted) {
-      this.relabel()
-      this.syncFromSession()
-    } else {
-      this.hideColorPanel()
-    }
-  }
-
-  /**
-   * Applies localized titles to the color and font-size controls.
-   */
+  /** Refreshes control titles from i18n strings. */
   private relabel(): void {
     this.swatch.title = AcApI18n.t('main.drawStyle.color')
     this.fontSizeSelect.title = AcApI18n.t('main.drawStyle.fontSize')
   }
 
   /**
-   * Reads the current session (or selection) style and paints the controls.
+   * Reads color and font size from the active measure/markup session or defaults.
    */
   private syncFromSession(): void {
     if (this.kind === 'measure') {
@@ -502,10 +374,10 @@ export class AcApDrawStyleToolbar {
   }
 
   /**
-   * Updates swatch and font-size controls to match a style.
+   * Updates swatch, ACI selection, and font-size dropdown to match session state.
    *
-   * @param color - Current draw color.
-   * @param fontSize - Current font size in CSS pixels.
+   * @param color - Active draw color.
+   * @param fontSize - Active font size in CSS pixels.
    */
   private paint(color: AcCmColor, fontSize: number): void {
     const css = acapCssColor(color)
@@ -529,9 +401,9 @@ export class AcApDrawStyleToolbar {
   }
 
   /**
-   * Applies a color to the current session and any selected entities.
+   * Persists a new draw color for the active session and updates selection overlays.
    *
-   * @param color - Color chosen from the ACI panel.
+   * @param color - Color chosen from the palette or dialog.
    */
   private applyColor(color: AcCmColor): void {
     this.swatchFill.style.background = acapCssColor(color)
@@ -545,18 +417,14 @@ export class AcApDrawStyleToolbar {
     applyMarkupStyleToSelection(this.view, { color: markupColorToCss(color) })
   }
 
-  /**
-   * Opens the ACI color popover.
-   */
+  /** Opens the inline ACI palette popover below the swatch. */
   private showColorPanel(): void {
     this.clearColorLeaveTimer()
     this.colorPanelOpen = true
     this.colorPanel.classList.add('is-open')
   }
 
-  /**
-   * Closes the ACI color popover.
-   */
+  /** Closes the inline ACI palette popover. */
   private hideColorPanel(): void {
     this.clearColorLeaveTimer()
     this.colorPanelOpen = false
@@ -564,7 +432,7 @@ export class AcApDrawStyleToolbar {
   }
 
   /**
-   * Opens the index-only color dialog used on the phone/pad session panel.
+   * Opens the full ACI color dialog on mobile where the inline panel is impractical.
    */
   private async openSessionColorDialog(): Promise<void> {
     if (this.colorDialogOpen) return
@@ -597,17 +465,13 @@ export class AcApDrawStyleToolbar {
     }
   }
 
-  /**
-   * Starts a short delay before closing the popover after mouse leave.
-   */
+  /** Starts a short delay before closing the palette after pointer leave. */
   private scheduleHideColorPanel(): void {
     this.clearColorLeaveTimer()
     this.colorLeaveTimer = window.setTimeout(() => this.hideColorPanel(), 180)
   }
 
-  /**
-   * Cancels a pending popover hide timer.
-   */
+  /** Cancels a pending palette close timer. */
   private clearColorLeaveTimer(): void {
     if (this.colorLeaveTimer == null) return
     window.clearTimeout(this.colorLeaveTimer)
@@ -615,7 +479,7 @@ export class AcApDrawStyleToolbar {
   }
 
   /**
-   * Applies a font size to the current session and any selected entities.
+   * Persists a new font size for the active session and updates selection overlays.
    *
    * @param size - Font size in CSS pixels.
    */

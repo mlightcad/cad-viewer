@@ -4,7 +4,7 @@ import {
   AcApI18n,
   type AcApLocale,
   AcApPlugin,
-  acapSetDrawStyleHostHasRibbon,
+  AcApSettingManager,
   AcEdCommandStack,
   acedGetUiLayout,
   acedSubscribeUiLayout,
@@ -493,7 +493,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.commandManager = commandManager
     // This shell has no command ribbon; keep the draw-style overlay available
     // without persisting isShowRibbon into shared localStorage.
-    acapSetDrawStyleHostHasRibbon(false)
+    AcApSettingManager.instance.set('isShowRibbon', false, { persist: false })
 
     const resolvedOptions = acuiNormalizePluginOptions(this.options)
     const host =
@@ -1336,7 +1336,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.i18n = undefined
     this.themeSync?.stop()
     this.themeSync = undefined
-    acapSetDrawStyleHostHasRibbon(undefined)
+    AcApSettingManager.instance.clearSessionOverride('isShowRibbon')
 
     acuiRemoveUiStylesIfUnused()
   }

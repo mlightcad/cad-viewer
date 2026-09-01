@@ -104,7 +104,6 @@ import {
   setColorTheme,
   toggleDark,
   useDocument,
-  useDrawStyleToolbarVisible,
   useLocale,
   useNotificationCenter,
   useSettings
@@ -271,13 +270,11 @@ const viewerThemeClass = computed(() =>
 )
 
 const features = useSettings()
-const drawStyleToolbarVisible = useDrawStyleToolbarVisible()
 const {
   beginDocumentOpening,
   endDocumentOpening,
   isDocumentOpening,
-  openMode: docOpenMode,
-  displayName
+  openMode: docOpenMode
 } = useDocument()
 const pendingOpenMode = ref<AcEdOpenMode>()
 const effectiveOpenMode = computed(
@@ -690,19 +687,6 @@ const closeNotificationCenter = () => {
             class="ml-cad-container"
           ></div>
 
-          <!-- Display current filename at the top center -->
-          <div
-            v-if="
-              editorRef &&
-              !features.isShowRibbon &&
-              features.isShowFileName &&
-              !drawStyleToolbarVisible
-            "
-            class="ml-file-name"
-          >
-            {{ displayName }}
-          </div>
-
           <!-- Toolbar with common CAD operations (zoom, pan, select, etc.) -->
           <ml-tool-bars v-if="editorRef" />
 
@@ -803,15 +787,4 @@ const closeNotificationCenter = () => {
   pointer-events: none;
 }
 
-/* Position the filename display at the top center of the viewer */
-.ml-file-name {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  color: var(--el-text-color-regular);
-  transform: translateX(-50%);
-  text-align: center;
-  pointer-events: none; /* Allow mouse events to pass through to container */
-  z-index: 3; /* Ensure it's above canvas but doesn't block events */
-}
 </style>

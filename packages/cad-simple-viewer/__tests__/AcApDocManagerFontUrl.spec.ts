@@ -46,7 +46,12 @@ jest.mock('../src/view', () => ({
     container: {},
     editor: {
       clearScriptInputs: jest.fn(),
-      enqueueScriptInputs: jest.fn()
+      enqueueScriptInputs: jest.fn(),
+      inputManager: {
+        isMobilePromptOpen: false,
+        mobileChrome: { setSessionAccessory: jest.fn() },
+        setSessionAccessoryCoordinator: jest.fn()
+      }
     },
     renderer: {},
     clear: jest.fn(),
@@ -131,8 +136,39 @@ jest.mock('../src/plugin/AcApPluginManager', () => ({
   }))
 }))
 
-jest.mock('../src/ui/AcApDrawStyleToolbar', () => ({
-  AcApDrawStyleToolbar: jest.fn().mockImplementation(() => ({}))
+jest.mock('../src/ui/AcUiDrawStyleSessionAccessory', () => ({
+  AcUiDrawStyleSessionAccessory: jest.fn().mockImplementation(() => ({
+    setActiveKind: jest.fn(),
+    createSessionAccessory: jest.fn(),
+    dispose: jest.fn()
+  }))
+}))
+
+jest.mock('../src/editor/input/ui/AcEdDesktopSessionAccessoryChrome', () => ({
+  AcEdDesktopSessionAccessoryChrome: jest.fn().mockImplementation(() => ({
+    dispose: jest.fn()
+  }))
+}))
+
+jest.mock('../src/command/measure/AcApRegisterMeasureCommands', () => ({
+  registerMeasureCommands: jest.fn()
+}))
+
+jest.mock('../src/command/markup/AcApRegisterMarkupCommands', () => ({
+  registerMarkupCommands: jest.fn()
+}))
+
+jest.mock('../src/command/AcApInstallDrawStyleSessionAccessory', () => ({
+  acapInstallDrawStyleSessionAccessory: jest.fn(),
+  acapGetDrawStyleSessionAccessory: jest.fn()
+}))
+
+jest.mock('../src/editor/input/ui/AcEdSessionAccessoryCoordinator', () => ({
+  AcEdSessionAccessoryCoordinator: jest.fn().mockImplementation(() => ({
+    addSource: jest.fn(() => () => undefined),
+    dispose: jest.fn(),
+    refresh: jest.fn()
+  }))
 }))
 
 jest.mock('../src/editor', () => ({

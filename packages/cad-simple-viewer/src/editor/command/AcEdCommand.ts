@@ -312,8 +312,9 @@ export abstract class AcEdCommand<TUserData extends object = {}> {
   }
 
   /**
-   * Optional widgets for the phone/pad session panel (top row, above chips
-   * and metrics). The default returns `null`.
+   * Optional widgets for the command session UI. On desktop they mount at the
+   * top center of the canvas; on phone/pad they mount at the top of the bottom
+   * session panel. The default returns `null`.
    *
    * @param _context - The current application context
    * @returns Accessory to mount, or `null` to leave the slot empty

@@ -55,8 +55,6 @@ export interface AcEdMobileCommandChromeState {
   allowNone: boolean
   /** When false, the metric row is hidden (typed-only numeric prompts). */
   showMetrics: boolean
-  /** Optional widgets mounted at the top of the bottom panel. */
-  accessory?: AcEdSessionAccessory | null
 }
 
 const STYLE_ID = 'ml-mobile-cmd-styles'
@@ -252,7 +250,6 @@ export class AcEdMobileCommandChrome {
     this.host.style.setProperty('--ml-mobile-cmd-prompt-height', '40px')
     this.promptEl.textContent = stripPromptColon(state.prompt)
     this.confirmBtn.disabled = !state.allowNone
-    this.setAccessory(state.accessory ?? null)
     this.renderChips(state.keywords)
     if (this.frozenTexts) {
       this.setMetricTexts(this.frozenTexts, this.frozenHasBasePoint)
@@ -302,7 +299,7 @@ export class AcEdMobileCommandChrome {
   hide(): void {
     this.open = false
     this.callbacks = null
-    this.setAccessory(null)
+    this.setSessionAccessory(null)
     this.layoutUnsub?.()
     this.layoutUnsub = undefined
     this.root.hidden = true
@@ -384,6 +381,14 @@ export class AcEdMobileCommandChrome {
     } else {
       this.sharedActions.append(this.cancelBtn, this.confirmBtn)
     }
+  }
+
+  /**
+   * Mounts or clears widgets at the top of the bottom session panel.
+   * Called by {@link AcEdSessionAccessoryCoordinator}.
+   */
+  setSessionAccessory(next: AcEdSessionAccessory | null): void {
+    this.setAccessory(next)
   }
 
   private setAccessory(next: AcEdSessionAccessory | null): void {

@@ -578,7 +578,6 @@ export default {
       commandLine: 'Příkazový řádek',
       coordinate: 'Souřadnice',
       entityInfo: 'Informace o objektu',
-      fileName: 'Název souboru',
       languageSelector: 'Volba jazyka',
       ribbon: 'Pás karet',
       toolbar: 'Panel nástrojů',

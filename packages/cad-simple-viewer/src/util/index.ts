@@ -1,4 +1,5 @@
 export * from './AcApAciPalette'
+export * from './AcApCommandUtil'
 export * from './AcApCssColor'
 export * from './AcApDatabaseEdit'
 export * from './AcApGeTransform'

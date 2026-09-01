@@ -18,8 +18,6 @@ import {
   acapBindMarkupSession,
   AcApCacheFontCmd,
   AcApCircleCmd,
-  AcApClearMarkupsCmd,
-  AcApClearMeasurementsCmd,
   AcApCloseCmd,
   AcApConvertToDxfCmd,
   AcApConvertToPngCmd,
@@ -48,27 +46,6 @@ import {
   AcApLayoffCmd,
   AcApLineCmd,
   AcApLogCmd,
-  AcApMarkupArrowCmd,
-  AcApMarkupCalloutCmd,
-  AcApMarkupCircleCmd,
-  AcApMarkupCloudCmd,
-  AcApMarkupExportCmd,
-  AcApMarkupHighlightCmd,
-  AcApMarkupImportCmd,
-  AcApMarkupLineCmd,
-  AcApMarkupRectCmd,
-  AcApMarkupStampCmd,
-  AcApMarkupTextCmd,
-  AcApMarkupVisibilityCmd,
-  AcApMeasureAngleCmd,
-  AcApMeasureArcCmd,
-  AcApMeasureAreaCmd,
-  AcApMeasureContinuousCmd,
-  AcApMeasureDistanceCmd,
-  AcApMeasurementExportCmd,
-  AcApMeasurementImportCmd,
-  AcApMeasurementVisibilityCmd,
-  AcApMeasurePointCmd,
   AcApMLineCmd,
   AcApMoveCmd,
   AcApMTextCmd,
@@ -106,7 +83,13 @@ import {
   AcEdOpenMode
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
-import { AcApDrawStyleToolbar } from '../ui/AcApDrawStyleToolbar'
+import {
+  acapGetDrawStyleSessionAccessory
+} from '../command/AcApDrawStyleSession'
+import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands'
+import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands'
+import { AcEdDesktopSessionAccessoryChrome } from '../editor/input/ui/AcEdDesktopSessionAccessoryChrome'
+import { AcEdSessionAccessoryCoordinator } from '../editor/input/ui/AcEdSessionAccessoryCoordinator'
 import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
 import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 import { AcTrView2d } from '../view'
@@ -416,8 +399,10 @@ export class AcApDocManager {
   private _commandManager: AcEdCommandStack
   /** Plugin manager */
   private _pluginManager: AcApPluginManager
-  /** Overlay for measurement / markup draw color, lineweight, and font size */
-  private readonly _drawStyleToolbar: AcApDrawStyleToolbar
+  /** Desktop top-center slot for command session accessories. */
+  private readonly _desktopSessionAccessory: AcEdDesktopSessionAccessoryChrome
+  /** Mounts session accessories on desktop and mobile slots. */
+  private readonly _sessionAccessoryCoordinator: AcEdSessionAccessoryCoordinator
   /**
    * Alias overrides provided by caller options.
    *
@@ -526,7 +511,6 @@ export class AcApDocManager {
     )
     this._sessions = [this._activeSession]
     acapBindMarkupSession(this._activeSession.id)
-    this._drawStyleToolbar = new AcApDrawStyleToolbar(view)
 
     this._fontLoader = new AcApFontLoader()
     const fontsUrl = this.resolveFontsBaseUrl()
@@ -536,6 +520,20 @@ export class AcApDocManager {
     acdbHostApplicationServices().workingDatabase = doc.database
 
     this._commandManager = new AcEdCommandStack()
+    this._desktopSessionAccessory = new AcEdDesktopSessionAccessoryChrome(
+      view.container
+    )
+    this._sessionAccessoryCoordinator = new AcEdSessionAccessoryCoordinator({
+      view,
+      getContext: () => this.context,
+      commandManager: this._commandManager,
+      desktopChrome: this._desktopSessionAccessory,
+      mobileChrome: view.editor.inputManager.mobileChrome,
+      isMobilePromptOpen: () => view.editor.inputManager.isMobilePromptOpen
+    })
+    view.editor.inputManager?.setSessionAccessoryCoordinator(
+      this._sessionAccessoryCoordinator
+    )
     this.registerCommands()
     this._pluginManager = new AcApPluginManager(
       this.context,
@@ -991,11 +989,10 @@ export class AcApDocManager {
   }
 
   /**
-   * Overlay shown in the filename slot while a measurement or markup
-   * drawing command is active.
+   * Color / font-size session accessory for measurement and markup drawing.
    */
-  get drawStyleToolbar() {
-    return this._drawStyleToolbar
+  get drawStyleSessionAccessory() {
+    return acapGetDrawStyleSessionAccessory(this._mainView)
   }
 
   /**
@@ -1645,40 +1642,11 @@ export class AcApDocManager {
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
     addSystemCommand('hideobjects', 'hideobjects', new AcApHideObjectsCmd())
     addSystemCommand('dimlinear', 'dimlinear', new AcApDimLinearCmd())
-    addSystemCommand(
-      'measuredistance',
-      'measuredistance',
-      new AcApMeasureDistanceCmd()
-    )
-    addSystemCommand(
-      'measurecontinuous',
-      'measurecontinuous',
-      new AcApMeasureContinuousCmd()
-    )
-    addSystemCommand('measurearea', 'measurearea', new AcApMeasureAreaCmd())
-    addSystemCommand('measureangle', 'measureangle', new AcApMeasureAngleCmd())
-    addSystemCommand('measurearc', 'measurearc', new AcApMeasureArcCmd())
-    addSystemCommand('measurepoint', 'measurepoint', new AcApMeasurePointCmd())
-    addSystemCommand(
-      'clearmeasurements',
-      'clearmeasurements',
-      new AcApClearMeasurementsCmd()
-    )
-    addSystemCommand(
-      'measurementvis',
-      'measurementvis',
-      new AcApMeasurementVisibilityCmd()
-    )
-    addSystemCommand(
-      'measurementexport',
-      'measurementexport',
-      new AcApMeasurementExportCmd()
-    )
-    addSystemCommand(
-      'measurementimport',
-      'measurementimport',
-      new AcApMeasurementImportCmd()
-    )
+    registerMeasureCommands(addSystemCommand, {
+      view: this._mainView,
+      coordinator: this._sessionAccessoryCoordinator,
+      commandManager: this._commandManager
+    })
     addSystemCommand('-hatch', '-hatch', new AcApHatchCmd())
     addSystemCommand('imageattach', 'imageattach', new AcApImageAttachCmd())
     addSystemCommand('-insert', '-insert', new AcApInsertCmd())
@@ -1714,27 +1682,11 @@ export class AcApDocManager {
     addSystemCommand('rectang', 'rectang', new AcApRectCmd())
     addSystemCommand('regen', 'regen', new AcApRegenCmd())
     addSystemCommand('revcloud', 'revcloud', new AcApRevCloudCmd())
-    addSystemCommand('markuptext', 'markuptext', new AcApMarkupTextCmd())
-    addSystemCommand('markupline', 'markupline', new AcApMarkupLineCmd())
-    addSystemCommand('markuparrow', 'markuparrow', new AcApMarkupArrowCmd())
-    addSystemCommand('markupcloud', 'markupcloud', new AcApMarkupCloudCmd())
-    addSystemCommand('markuprect', 'markuprect', new AcApMarkupRectCmd())
-    addSystemCommand('markupcircle', 'markupcircle', new AcApMarkupCircleCmd())
-    addSystemCommand(
-      'markuphighlight',
-      'markuphighlight',
-      new AcApMarkupHighlightCmd()
-    )
-    addSystemCommand(
-      'markupcallout',
-      'markupcallout',
-      new AcApMarkupCalloutCmd()
-    )
-    addSystemCommand('markupstamp', 'markupstamp', new AcApMarkupStampCmd())
-    addSystemCommand('markupvis', 'markupvis', new AcApMarkupVisibilityCmd())
-    addSystemCommand('clearmarkups', 'clearmarkups', new AcApClearMarkupsCmd())
-    addSystemCommand('markupexport', 'markupexport', new AcApMarkupExportCmd())
-    addSystemCommand('markupimport', 'markupimport', new AcApMarkupImportCmd())
+    registerMarkupCommands(addSystemCommand, {
+      view: this._mainView,
+      coordinator: this._sessionAccessoryCoordinator,
+      commandManager: this._commandManager
+    })
     addSystemCommand('select', 'select', new AcApSelectCmd())
     addSystemCommand('sketch', 'sketch', new AcApSketchCmd())
     addSystemCommand('spline', 'spline', new AcApSplineCmd())

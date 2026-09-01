@@ -247,20 +247,20 @@ describe('AcEdMobileCommandChrome', () => {
         prompt: 'Specify point',
         keywords: [],
         allowNone: true,
-        showMetrics: false,
-        accessory: {
-          id: 'pointer-child',
-          mount: el => {
-            const child = document.createElement('button')
-            child.type = 'button'
-            child.addEventListener('pointerdown', childHit)
-            el.appendChild(child)
-          },
-          unmount: () => undefined
-        }
+        showMetrics: false
       },
       { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
     )
+    chrome.setSessionAccessory({
+      id: 'pointer-child',
+      mount: el => {
+        const child = document.createElement('button')
+        child.type = 'button'
+        child.addEventListener('pointerdown', childHit)
+        el.appendChild(child)
+      },
+      unmount: () => undefined
+    })
 
     const child = host.querySelector(
       '.ml-mobile-cmd-accessory button'
@@ -365,11 +365,11 @@ describe('AcEdMobileCommandChrome', () => {
         prompt: 'Specify point',
         keywords: [],
         allowNone: true,
-        showMetrics: false,
-        accessory: { id: 'draw-style', mount, unmount }
+        showMetrics: false
       },
       { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
     )
+    chrome.setSessionAccessory({ id: 'draw-style', mount, unmount })
     const accessory = host.querySelector(
       '.ml-mobile-cmd-accessory'
     ) as HTMLElement

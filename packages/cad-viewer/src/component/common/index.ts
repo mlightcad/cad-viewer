@@ -1,6 +1,5 @@
 export { createMlColorIndexPickerToolbarFactory } from './createMlColorIndexPickerToolbarFactory'
 export { default as MlBaseDialog } from './MlBaseDialog.vue'
-export { default as MlBaseDrawStyleToolbar } from './MlBaseDrawStyleToolbar.vue'
 export { default as MlBaseInputNumber } from './MlBaseInputNumber.vue'
 export { default as MlBlockInsertGallery } from './MlBlockInsertGallery.vue'
 export { default as MlColorDropdown } from './MlColorDropdown.vue'

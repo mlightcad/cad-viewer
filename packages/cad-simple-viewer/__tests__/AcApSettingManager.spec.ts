@@ -49,6 +49,15 @@ describe('migrateStoredSettings', () => {
       migrated: false
     })
   })
+
+  it('drops the obsolete isShowFileName key', () => {
+    expect(
+      migrateStoredSettings({ isShowFileName: true, isShowRibbon: true })
+    ).toEqual({
+      settings: { isShowRibbon: true },
+      migrated: true
+    })
+  })
 })
 
 describe('AcApSettingManager layers', () => {
@@ -80,6 +89,18 @@ describe('AcApSettingManager layers', () => {
     settings.set('isShowCommandLine', false, { persist: false })
     expect(settings.isShowCommandLine).toBe(false)
     expect(ls.getItem('settings')).toBeNull()
+  })
+
+  it('clearSessionOverride restores user prefs without touching localStorage', () => {
+    ls.setItem('settings', JSON.stringify({ isShowRibbon: true }))
+    AcApSettingManager.resetInstanceForTesting()
+    const settings = AcApSettingManager.instance
+    settings.set('isShowRibbon', false, { persist: false })
+    expect(settings.isShowRibbon).toBe(false)
+
+    settings.clearSessionOverride('isShowRibbon')
+    expect(settings.isShowRibbon).toBe(true)
+    expect(JSON.parse(ls.getItem('settings')!).isShowRibbon).toBe(true)
   })
 
   it('persist:true writes only the user layer, not session overrides', () => {

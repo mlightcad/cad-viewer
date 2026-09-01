@@ -8,7 +8,7 @@ import {
   AcEdViewMode
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
-import { acapBindDrawStyleSessionAccessory } from '../../ui/AcApDrawStyle'
+import { acuiBindDrawStyleSessionAccessory } from '../../ui/AcUiDrawStyle'
 import type { AcTrView2d } from '../../view'
 import { editMarkupHtmlText } from './AcApMarkupTextEdit'
 import type {
@@ -45,7 +45,7 @@ export function configureMarkupCommand(command: {
  */
 export function configureMarkupDrawCommand(command: AcEdCommand): void {
   configureMarkupCommand(command)
-  acapBindDrawStyleSessionAccessory(command)
+  acuiBindDrawStyleSessionAccessory(command)
 }
 
 /** Create shared metadata fields for a new markup record. */

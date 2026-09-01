@@ -590,7 +590,6 @@ export default {
       commandLine: 'Komut Satırı',
       coordinate: 'Koordinat',
       entityInfo: 'Varlık Bilgisi',
-      fileName: 'Dosya Adı',
       languageSelector: 'Dil Seçici',
       ribbon: 'Şerit',
       toolbar: 'Araç Çubuğu',
