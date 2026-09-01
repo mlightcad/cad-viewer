@@ -6,9 +6,9 @@ import {
 } from '../src/command/measure/AcApMeasureDrawCmd'
 import { AcEdOpenMode } from '../src/editor/view/AcEdOpenMode'
 import {
-  acapRegisterDrawStyleSessionHost,
-  acapUnregisterDrawStyleSessionHost
-} from '../src/ui/AcApDrawStyle'
+  acuiRegisterDrawStyleSessionHost,
+  acuiUnregisterDrawStyleSessionHost
+} from '../src/ui/AcUiDrawStyle'
 
 class MeasureDrawStub extends AcApMeasureDrawCmd {
   async execute(): Promise<void> {
@@ -30,13 +30,17 @@ describe('AcApMeasureDrawCmd', () => {
       mount: jest.fn(),
       unmount: jest.fn()
     }
-    acapRegisterDrawStyleSessionHost(view as never, {
+    const setActiveKind = jest.fn()
+    acuiRegisterDrawStyleSessionHost(view as never, {
+      setActiveKind,
       createSessionAccessory: () => accessory
     })
     const cmd = new MeasureDrawStub()
+    cmd.globalName = 'measuredistance'
     expect(cmd.mode).toBe(AcEdOpenMode.Read)
     expect(cmd.createSessionAccessory({ view } as AcApContext)).toBe(accessory)
-    acapUnregisterDrawStyleSessionHost(view as never)
+    expect(setActiveKind).toHaveBeenCalledWith('measure')
+    acuiUnregisterDrawStyleSessionHost(view as never)
     expect(cmd.createSessionAccessory({ view } as AcApContext)).toBeNull()
   })
 
@@ -69,13 +73,17 @@ describe('AcApMarkupDrawCmd', () => {
       mount: jest.fn(),
       unmount: jest.fn()
     }
-    acapRegisterDrawStyleSessionHost(view as never, {
+    const setActiveKind = jest.fn()
+    acuiRegisterDrawStyleSessionHost(view as never, {
+      setActiveKind,
       createSessionAccessory: () => accessory
     })
     const cmd = new MarkupDrawStub()
+    cmd.globalName = 'markuptext'
     expect(cmd.mode).toBe(AcEdOpenMode.Review)
     expect(cmd.recordsUndoStack).toBe(false)
     expect(cmd.createSessionAccessory({ view } as AcApContext)).toBe(accessory)
-    acapUnregisterDrawStyleSessionHost(view as never)
+    expect(setActiveKind).toHaveBeenCalledWith('markup')
+    acuiUnregisterDrawStyleSessionHost(view as never)
   })
 })

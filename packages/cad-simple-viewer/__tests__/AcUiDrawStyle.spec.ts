@@ -17,17 +17,13 @@ import {
   subscribeMarkupDrawStyle
 } from '../src/command/markup/AcApMarkupUtil'
 import {
-  acapBindDrawStyleSessionAccessory,
-  acapDrawStyleKindForCommand,
-  acapIsDrawStyleToolbarVisible,
-  acapRegisterDrawStyleSessionHost,
-  acapResolveDrawStyleKind,
-  acapSetDrawStyleHostHasRibbon,
-  acapSetDrawStyleToolbarVisible,
-  acapShouldShowDrawStyleToolbar,
-  acapSubscribeDrawStyleToolbarVisibility,
-  acapUnregisterDrawStyleSessionHost
-} from '../src/ui/AcApDrawStyle'
+  acuiBindDrawStyleSessionAccessory,
+  acuiRegisterDrawStyleSessionHost,
+  acuiResolveDrawStyleKind,
+  acuiShouldShowDrawStyleToolbar,
+  acuiUnregisterDrawStyleSessionHost
+} from '../src/ui/AcUiDrawStyle'
+import { acapDrawStyleKindForCommand } from '../src/util/AcApCommandUtil'
 
 describe('subscribeMarkupDrawStyle', () => {
   it('notifies when markup draw color or font size change', () => {
@@ -56,24 +52,24 @@ describe('acapDrawStyleKindForCommand', () => {
   })
 })
 
-describe('acapResolveDrawStyleKind', () => {
+describe('acuiResolveDrawStyleKind', () => {
   it('keeps the overlay kind from overlay selection when no draw command is active', () => {
-    expect(acapResolveDrawStyleKind({ markupSelected: true })).toBe('markup')
-    expect(acapResolveDrawStyleKind({ measurementSelected: true })).toBe(
+    expect(acuiResolveDrawStyleKind({ markupSelected: true })).toBe('markup')
+    expect(acuiResolveDrawStyleKind({ measurementSelected: true })).toBe(
       'measure'
     )
-    expect(acapResolveDrawStyleKind({})).toBeUndefined()
+    expect(acuiResolveDrawStyleKind({})).toBeUndefined()
   })
 
   it('prefers an active draw command over overlay selection', () => {
     expect(
-      acapResolveDrawStyleKind({
+      acuiResolveDrawStyleKind({
         commandKind: 'measure',
         markupSelected: true
       })
     ).toBe('measure')
     expect(
-      acapResolveDrawStyleKind({
+      acuiResolveDrawStyleKind({
         commandKind: 'markup',
         markupSelected: true,
         measurementSelected: true
@@ -83,7 +79,7 @@ describe('acapResolveDrawStyleKind', () => {
 
   it('hides the overlay when markup and measurement are both selected', () => {
     expect(
-      acapResolveDrawStyleKind({
+      acuiResolveDrawStyleKind({
         markupSelected: true,
         measurementSelected: true
       })
@@ -91,50 +87,20 @@ describe('acapResolveDrawStyleKind', () => {
   })
 })
 
-describe('draw style toolbar visibility', () => {
-  afterEach(() => {
-    acapSetDrawStyleToolbarVisible(false)
-  })
-
-  it('notifies subscribers when visibility changes', () => {
-    const seen: boolean[] = []
-    const unsubscribe = acapSubscribeDrawStyleToolbarVisibility(value => {
-      seen.push(value)
-    })
-    acapSetDrawStyleToolbarVisible(true)
-    expect(acapIsDrawStyleToolbarVisible()).toBe(true)
-    acapSetDrawStyleToolbarVisible(true)
-    acapSetDrawStyleToolbarVisible(false)
-    unsubscribe()
-    expect(seen).toEqual([true, false])
-  })
-})
-
-describe('acapShouldShowDrawStyleToolbar', () => {
-  afterEach(() => {
-    acapSetDrawStyleHostHasRibbon(undefined)
-  })
-
+describe('acuiShouldShowDrawStyleToolbar', () => {
   it('shows the overlay when a draw command is active and the ribbon is hidden', () => {
-    expect(acapShouldShowDrawStyleToolbar('measure', false)).toBe(true)
-    expect(acapShouldShowDrawStyleToolbar('markup', false)).toBe(true)
+    expect(acuiShouldShowDrawStyleToolbar('measure', false)).toBe(true)
+    expect(acuiShouldShowDrawStyleToolbar('markup', false)).toBe(true)
   })
 
   it('hides the overlay when the ribbon is visible so ribbon style controls stay usable', () => {
-    expect(acapShouldShowDrawStyleToolbar('measure', true)).toBe(false)
-    expect(acapShouldShowDrawStyleToolbar('markup', true)).toBe(false)
+    expect(acuiShouldShowDrawStyleToolbar('measure', true)).toBe(false)
+    expect(acuiShouldShowDrawStyleToolbar('markup', true)).toBe(false)
   })
 
   it('hides the overlay when no draw command is active', () => {
-    expect(acapShouldShowDrawStyleToolbar(undefined, false)).toBe(false)
-    expect(acapShouldShowDrawStyleToolbar(undefined, true)).toBe(false)
-  })
-
-  it('shows the overlay for hosts without a ribbon without reading persisted settings', () => {
-    acapSetDrawStyleHostHasRibbon(false)
-    expect(acapShouldShowDrawStyleToolbar('measure')).toBe(true)
-    expect(acapShouldShowDrawStyleToolbar('markup')).toBe(true)
-    expect(acapShouldShowDrawStyleToolbar(undefined)).toBe(false)
+    expect(acuiShouldShowDrawStyleToolbar(undefined, false)).toBe(false)
+    expect(acuiShouldShowDrawStyleToolbar(undefined, true)).toBe(false)
   })
 })
 
@@ -221,24 +187,28 @@ describe('isMarkupDoublePointer', () => {
   })
 })
 
-describe('acapBindDrawStyleSessionAccessory', () => {
-  it('returns the view toolbar accessory and clears after unregister', () => {
+describe('acuiBindDrawStyleSessionAccessory', () => {
+  it('returns the view toolbar accessory, sets kind, and clears after unregister', () => {
     const view = {}
     const accessory = {
       id: 'draw-style',
       mount: jest.fn(),
       unmount: jest.fn()
     }
-    acapRegisterDrawStyleSessionHost(view as never, {
+    const setActiveKind = jest.fn()
+    acuiRegisterDrawStyleSessionHost(view as never, {
+      setActiveKind,
       createSessionAccessory: () => accessory
     })
     const command = {
+      globalName: 'measuredistance',
       createSessionAccessory: (_context: unknown) =>
         null as typeof accessory | null
     }
-    acapBindDrawStyleSessionAccessory(command)
+    acuiBindDrawStyleSessionAccessory(command)
     expect(command.createSessionAccessory({ view })).toBe(accessory)
-    acapUnregisterDrawStyleSessionHost(view as never)
+    expect(setActiveKind).toHaveBeenCalledWith('measure')
+    acuiUnregisterDrawStyleSessionHost(view as never)
     expect(command.createSessionAccessory({ view })).toBeNull()
   })
 })

@@ -110,7 +110,12 @@ export class AcEditor {
   constructor(view: AcEdBaseView) {
     this._view = view
     this._cursorManager = new AcEdCursorManager(view)
-    this._inputManager = new AcEdInputManager(view)
+    this._inputManager = new AcEdInputManager(view, this.events.commandEnded)
+  }
+
+  /** Input manager for prompts, mobile chrome, and session accessories. */
+  get inputManager() {
+    return this._inputManager
   }
 
   /**

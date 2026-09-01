@@ -1,4 +1,5 @@
 import {
+  AcCmEventManager,
   AcDbEntity,
   acdbHostApplicationServices,
   AcDbSystemVariables,
@@ -16,9 +17,10 @@ import {
   acedShouldHideDesktopCommandLine,
   acedSubscribeUiLayout
 } from '../../global/AcEdUiLayout'
-import { AcEdBaseView } from '../../view'
+import type { AcEdBaseView } from '../../view'
 import { AcEdInputModifiers } from '../AcEdInputModifiers'
 import { AcEdInputToggles } from '../AcEdInputToggles'
+import type { AcEdCommandEventArgs } from '../AcEditor'
 import { AcEdSelectionSet } from '../AcEdSelectionSet'
 import {
   AcEdAngleHandler,
@@ -74,6 +76,7 @@ import {
   acedComputeSessionMetrics,
   type AcEdMobileSessionMetrics
 } from './AcEdMobileSessionMetrics'
+import type { AcEdSessionAccessoryCoordinator } from './AcEdSessionAccessoryCoordinator'
 import {
   acedIsTouchLongPressContextMenu,
   acedShouldIgnoreCompatMouse
@@ -133,6 +136,8 @@ export class AcEdInputManager {
   private _commandLine: AcEdCommandLine
   /** Phone/pad prompt bar + session panel (hidden on desktop). */
   private _mobileChrome: AcEdMobileCommandChrome
+  /** Syncs desktop session accessories with mobile prompt state. */
+  private _sessionAccessoryCoordinator?: AcEdSessionAccessoryCoordinator
   /** Buffered command-line style inputs (each item is one Enter-confirmed value). */
   private _scriptInputs: string[] = []
   /** Current modifier key state during input sessions. */
@@ -169,8 +174,13 @@ export class AcEdInputManager {
    * positioning and live preview updates.
    *
    * @param view - The view associated with the input manager
+   * @param commandEnded - Editor `commandEnded` event; passed in because
+   *   `view.editor` is not assigned until {@link AcEditor} finishes constructing.
    */
-  constructor(view: AcEdBaseView) {
+  constructor(
+    view: AcEdBaseView,
+    commandEnded: AcCmEventManager<AcEdCommandEventArgs>
+  ) {
     this.view = view
     this.injectCSS()
     // Newly added UI overlays (command line, previews) are container-local.
@@ -192,6 +202,45 @@ export class AcEdInputManager {
         this._mobileChrome.hide()
       }
     })
+    // Safety net: if a prompt failed to clean up, close the mobile session
+    // panel when the command finishes so the bottom chrome cannot linger.
+    commandEnded.addEventListener(() => {
+      if (this._mobileChrome.isOpen) {
+        this.endMobilePrompt()
+      }
+    })
+  }
+
+  /**
+   * Whether the phone/pad bottom session panel is open for the current prompt.
+   */
+  get isMobilePromptOpen(): boolean {
+    return this._mobileChrome.isOpen
+  }
+
+  /** Mobile session panel chrome; accessories are mounted by the coordinator. */
+  get mobileChrome(): AcEdMobileCommandChrome {
+    return this._mobileChrome
+  }
+
+  /**
+   * Registers the coordinator that mounts session accessories.
+   *
+   * @param coordinator - Coordinator owned by {@link AcApDocManager}.
+   */
+  setSessionAccessoryCoordinator(
+    coordinator: AcEdSessionAccessoryCoordinator
+  ): void {
+    this._sessionAccessoryCoordinator = coordinator
+  }
+
+  /**
+   * Resolves the session accessory for the current mobile/desktop slot.
+   *
+   * @returns Active accessory, or `null` when none is shown.
+   */
+  resolveSessionAccessory(): AcEdSessionAccessory | null {
+    return this._sessionAccessoryCoordinator?.resolveForCurrentSlot() ?? null
   }
 
   /**
@@ -288,8 +337,7 @@ export class AcEdInputManager {
         prompt: args.prompt,
         keywords: args.keywords ?? [],
         allowNone: args.allowNone,
-        showMetrics: args.showMetrics,
-        accessory: this.resolveSessionAccessory()
+        showMetrics: args.showMetrics
       },
       {
         onConfirm: args.onConfirm,
@@ -297,24 +345,14 @@ export class AcEdInputManager {
         onKeyword: args.onKeyword
       }
     )
-  }
-
-  /**
-   * Asks the active command for session-panel widgets (color / font size).
-   */
-  private resolveSessionAccessory(): AcEdSessionAccessory | null {
-    const manager = AcApDocManager.instance
-    return (
-      manager.commandManager.activeCommand?.createSessionAccessory(
-        manager.context
-      ) ?? null
-    )
+    this._sessionAccessoryCoordinator?.refresh()
   }
 
   /** Closes the mobile command chrome and restores desktop CLI visibility. */
   private endMobilePrompt(): void {
     this._mobileChrome.hide()
     this.syncDesktopCommandLineVisibility()
+    this._sessionAccessoryCoordinator?.refresh()
   }
 
   /**

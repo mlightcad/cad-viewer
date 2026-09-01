@@ -18,12 +18,6 @@
             {{ t('main.statusBar.setting.commandLine') }}
           </el-dropdown-item>
           <el-dropdown-item
-            :icon="features.isShowFileName ? Check : ''"
-            command="isShowFileName"
-          >
-            {{ t('main.statusBar.setting.fileName') }}
-          </el-dropdown-item>
-          <el-dropdown-item
             :icon="features.isShowEntityInfo ? Check : ''"
             command="isShowEntityInfo"
           >
@@ -87,9 +81,6 @@ const handleCommand = (command: keyof AcApSettings) => {
   } else if (command == 'isShowEntityInfo') {
     features.isShowEntityInfo = !features.isShowEntityInfo
     AcApSettingManager.instance.isShowEntityInfo = features.isShowEntityInfo
-  } else if (command == 'isShowFileName') {
-    features.isShowFileName = !features.isShowFileName
-    AcApSettingManager.instance.isShowFileName = features.isShowFileName
   } else if (command == 'isShowRibbon') {
     features.isShowRibbon = !features.isShowRibbon
     AcApSettingManager.instance.isShowRibbon = features.isShowRibbon

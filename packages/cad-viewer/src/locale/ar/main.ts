@@ -832,7 +832,6 @@ export default {
       commandLine: 'سطر الأوامر',
       coordinate: 'الإحداثيات',
       entityInfo: 'معلومات العنصر',
-      fileName: 'اسم الملف',
       languageSelector: 'اختيار اللغة',
       ribbon: 'الشريط',
       toolbar: 'شريط الأدوات',
