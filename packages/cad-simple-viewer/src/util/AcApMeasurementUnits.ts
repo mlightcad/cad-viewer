@@ -39,9 +39,9 @@ const ACAD_UNIT_TO_MM: Readonly<Record<number, number>> = {
   17: 1000000000000,
   18: 149597870700000,
   19: 9.4607304725808e18,
-  20: 3.0856775814913673e19,
-  21: 304.80060960121924,
-  22: 25.400050800101604,
+  20: 3.085677581491367e19,
+  21: 304.80060960121926,
+  22: 25.400050800101603,
   23: 914.4018288036576,
   24: 1609347.2186944375
 }
@@ -149,7 +149,8 @@ export function getEffectiveMeasurementUnits(
     aunits: measurementUnitOverride.aunits ?? db.aunits,
     auprec: measurementUnitOverride.auprec ?? db.auprec,
     lengthUnit:
-      measurementUnitOverride.lengthUnit ?? MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING
+      measurementUnitOverride.lengthUnit ??
+      MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING
   }
 }
 
@@ -169,7 +170,8 @@ export function setMeasurementUnitOverride(
   if (patch.luprec != null) measurementUnitOverride.luprec = patch.luprec
   if (patch.aunits != null) measurementUnitOverride.aunits = patch.aunits
   if (patch.auprec != null) measurementUnitOverride.auprec = patch.auprec
-  if (patch.lengthUnit != null) measurementUnitOverride.lengthUnit = patch.lengthUnit
+  if (patch.lengthUnit != null)
+    measurementUnitOverride.lengthUnit = patch.lengthUnit
 }
 
 /** Clear session measurement unit overrides (document open / tests). */
@@ -270,10 +272,7 @@ export function formatMeasurementLength(
 }
 
 /** Format an area using effective measurement units (length unit squared). */
-export function formatMeasurementArea(
-  db: AcDbDatabase,
-  value: number
-): string {
+export function formatMeasurementArea(db: AcDbDatabase, value: number): string {
   const target = convertedLengthUnit(db)
   if (target == null) {
     return `${formatMeasurementLengthRaw(
