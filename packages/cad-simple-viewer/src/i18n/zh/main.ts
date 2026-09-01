@@ -67,5 +67,15 @@ export default {
   drawStyle: {
     color: '颜色',
     fontSize: '字号'
+  },
+  colorPicker: {
+    title: '选择颜色',
+    close: '关闭',
+    ok: '确定',
+    cancel: '取消',
+    index: '颜色索引：',
+    rgb: 'RGB：',
+    input: '颜色',
+    inputPlaceholder: '1-255 或 #RRGGBB'
   }
 }

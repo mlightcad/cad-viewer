@@ -5,15 +5,18 @@ import { TextDecoder, TextEncoder } from 'util'
 Object.assign(globalThis, { TextDecoder, TextEncoder })
 
 import {
+  acuiClearAciPanelViewportPin,
+  acuiCreateAciIndexPicker,
+  acuiCreateAciPaletteStacks,
+  acuiParseAciManualInput,
+  acuiPinAciPanelToViewportWidth,
+  ML_ACI_STACKS_FILL_CLASS
+} from '../src/ui/AcUiAciPaletteUi'
+import {
   ACI_GRAY_PALETTE_INDICES,
   ACI_LARGE_PALETTE_INDICES,
   ACI_SMALL_PALETTE_INDICES
 } from '../src/util/AcApAciPalette'
-import {
-  acuiCreateAciIndexPicker,
-  acuiCreateAciPaletteStacks,
-  acuiParseAciManualInput
-} from '../src/ui/AcApAciPaletteUi'
 
 class TestPointerEvent extends MouseEvent {
   readonly pointerId: number
@@ -46,7 +49,7 @@ function dispatchPointer(
   )
 }
 
-describe('AcApAciPaletteUi', () => {
+describe('AcUiAciPaletteUi', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('ml-aci-palette-styles')?.remove()
@@ -177,11 +180,87 @@ describe('AcApAciPaletteUi', () => {
     picker.dispose()
   })
 
+  it('omits ByLayer / ByBlock when showByLayerByBlock is false', () => {
+    const picker = acuiCreateAciIndexPicker({
+      labels: {
+        index: 'Index: ',
+        rgb: 'RGB: ',
+        input: 'Color',
+        inputPlaceholder: '1-255'
+      },
+      initialIndex: 7,
+      showByLayerByBlock: false
+    })
+    document.body.appendChild(picker.root)
+
+    expect(picker.root.classList.contains('ml-aci-picker--no-special')).toBe(
+      true
+    )
+    expect(
+      [...picker.root.querySelectorAll('button')].map(b => b.textContent)
+    ).not.toEqual(expect.arrayContaining(['ByLayer', 'ByBlock']))
+    expect(picker.root.querySelector('.ml-aci-preview-box')).toBeTruthy()
+    expect(picker.root.querySelector('.ml-aci-input-row input')).toBeTruthy()
+
+    picker.dispose()
+  })
+
   it('parses manual ACI input', () => {
     expect(acuiParseAciManualInput('BYLAYER')).toBe(256)
     expect(acuiParseAciManualInput('byblock')).toBe(0)
     expect(acuiParseAciManualInput('42')).toBe(42)
     expect(acuiParseAciManualInput('999')).toBeNull()
     expect(acuiParseAciManualInput('nope')).toBeNull()
+  })
+
+  it('toggles fill layout for even 24-column distribution', () => {
+    const stacks = acuiCreateAciPaletteStacks({
+      onSelect: () => undefined,
+      fill: true
+    })
+    expect(stacks.root.classList.contains(ML_ACI_STACKS_FILL_CLASS)).toBe(true)
+    expect(stacks.root.querySelectorAll('.ml-aci-palette')).toHaveLength(3)
+
+    stacks.setFill(false)
+    expect(stacks.root.classList.contains(ML_ACI_STACKS_FILL_CLASS)).toBe(false)
+    stacks.dispose()
+  })
+
+  it('pins a drop-up popover to the viewport width', () => {
+    const anchor = document.createElement('div')
+    const panel = document.createElement('div')
+    document.body.append(anchor, panel)
+    jest.spyOn(anchor, 'getBoundingClientRect').mockReturnValue({
+      x: 40,
+      y: 400,
+      left: 40,
+      top: 400,
+      width: 28,
+      height: 28,
+      right: 68,
+      bottom: 428,
+      toJSON: () => ({})
+    } as DOMRect)
+    const widthDescriptor = Object.getOwnPropertyDescriptor(window, 'innerWidth')
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390
+    })
+
+    acuiPinAciPanelToViewportWidth(panel, anchor)
+    expect(panel.style.left).toBe('-40px')
+    expect(panel.style.width).toBe('390px')
+    expect(panel.style.bottom).toBe('34px')
+    expect(panel.style.boxSizing).toBe('border-box')
+
+    acuiClearAciPanelViewportPin(panel)
+    expect(panel.style.left).toBe('')
+    expect(panel.style.width).toBe('')
+
+    if (widthDescriptor) {
+      Object.defineProperty(window, 'innerWidth', widthDescriptor)
+    } else {
+      delete (window as { innerWidth?: number }).innerWidth
+    }
   })
 })

@@ -82,6 +82,14 @@ export type AcExHtmlMessageKey =
   | 'settings.polarAngles'
   | 'drawStyle.color'
   | 'drawStyle.fontSize'
+  | 'drawStyle.pickerTitle'
+  | 'drawStyle.close'
+  | 'drawStyle.ok'
+  | 'drawStyle.cancel'
+  | 'drawStyle.index'
+  | 'drawStyle.rgb'
+  | 'drawStyle.input'
+  | 'drawStyle.inputPlaceholder'
   | 'layers.title'
   | 'layers.close'
   | 'layers.showAll'
@@ -252,7 +260,15 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: 'Color',
-      fontSize: 'Text height'
+      fontSize: 'Text height',
+      pickerTitle: 'Select Color',
+      close: 'Close',
+      ok: 'OK',
+      cancel: 'Cancel',
+      index: 'Color Index: ',
+      rgb: 'RGB: ',
+      input: 'Color',
+      inputPlaceholder: '1-255 or #RRGGBB'
     },
     layers: {
       title: 'Layers',
@@ -440,7 +456,15 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: '颜色',
-      fontSize: '字高'
+      fontSize: '字高',
+      pickerTitle: '选择颜色',
+      close: '关闭',
+      ok: '确定',
+      cancel: '取消',
+      index: '颜色索引：',
+      rgb: 'RGB：',
+      input: '颜色',
+      inputPlaceholder: '1-255 或 #RRGGBB'
     },
     layers: {
       title: '图层',
@@ -620,7 +644,15 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: 'Barva',
-      fontSize: 'Výška textu'
+      fontSize: 'Výška textu',
+      pickerTitle: 'Vybrat barvu',
+      close: 'Zavřít',
+      ok: 'OK',
+      cancel: 'Zrušit',
+      index: 'Index barvy: ',
+      rgb: 'RGB: ',
+      input: 'Barva',
+      inputPlaceholder: '1-255 nebo #RRGGBB'
     },
     layers: {
       title: 'Hladiny',
@@ -808,7 +840,15 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: 'Renk',
-      fontSize: 'Yazı yüksekliği'
+      fontSize: 'Yazı yüksekliği',
+      pickerTitle: 'Renk Seç',
+      close: 'Kapat',
+      ok: 'Tamam',
+      cancel: 'İptal',
+      index: 'Renk İndeksi: ',
+      rgb: 'RGB: ',
+      input: 'Renk',
+      inputPlaceholder: '1-255 veya #RRGGBB'
     },
     layers: {
       title: 'Katmanlar',
@@ -1000,7 +1040,15 @@ const AR_MESSAGES: AcExMessageTree = {
   },
   'drawStyle': {
     'color': 'اللون',
-    'fontSize': 'ارتفاع النص'
+    'fontSize': 'ارتفاع النص',
+    'pickerTitle': 'تحديد اللون',
+    'close': 'إغلاق',
+    'ok': 'موافق',
+    'cancel': 'إلغاء',
+    'index': 'فهرس اللون: ',
+    'rgb': 'RGB: ',
+    'input': 'اللون',
+    'inputPlaceholder': '1-255 أو #RRGGBB'
   },
   'layers': {
     'title': 'الطبقات',

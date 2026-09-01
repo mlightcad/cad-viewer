@@ -5,14 +5,11 @@
  * @packageDocumentation
  */
 
-import {
-  acuiCreateAciPaletteStacks,
-  acuiEnsureAciPaletteStyles
-} from '@mlightcad/cad-simple-viewer'
 import { AcCmColor, AcCmColorUtil } from '@mlightcad/data-model'
 
 import type { AcExSessionAccessory } from './AcExCommandSessionPanel'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
+import { AcUiAciColorDialog } from './AcExHtmlSimpleViewerUi'
 
 /** Active drawing session that owns the accessory. */
 export type AcExDrawStyleKind = 'measure' | 'markup'
@@ -82,30 +79,6 @@ const SESSION_STYLE_CSS = `
   font-size: 12px;
   padding: 0 6px;
 }
-.mlcad-session-style__color {
-  position: relative;
-}
-.mlcad-session-style__color-panel {
-  display: none;
-  position: absolute;
-  top: auto;
-  bottom: calc(100% + 6px);
-  left: 0;
-  z-index: 1;
-  padding: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 6px;
-  background: rgba(28, 32, 40, 0.98);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-  --ml-aci-cell-size: 11px;
-  --ml-ui-accent: #08e8de;
-}
-.mlcad-session-style__color-panel.is-open {
-  display: block;
-}
-.mlcad-session-style__color-panel .ml-aci-cell {
-  border-color: #666;
-}
 `
 
 function colorFromAci(index: number): AcCmColor {
@@ -158,7 +131,6 @@ function aciIndexOf(color: AcCmColor): number | undefined {
 }
 
 function ensureStyles(): void {
-  acuiEnsureAciPaletteStyles()
   if (typeof document === 'undefined') return
   let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null
   if (!style) {
@@ -193,9 +165,6 @@ export function setupAcExSessionDrawStyle(
   controlsRow.className = 'mlcad-session-style'
   controlsRow.setAttribute('role', 'toolbar')
 
-  const colorWrap = document.createElement('div')
-  colorWrap.className = 'mlcad-session-style__color'
-
   const swatch = document.createElement('button')
   swatch.type = 'button'
   swatch.className = 'mlcad-session-style__swatch'
@@ -203,60 +172,19 @@ export function setupAcExSessionDrawStyle(
   swatchFill.className = 'mlcad-session-style__swatch-fill'
   swatch.appendChild(swatchFill)
 
-  const colorPanel = document.createElement('div')
-  colorPanel.className = 'mlcad-session-style__color-panel'
-
-  let colorPanelOpen = false
-  let colorLeaveTimer: number | undefined
+  let colorDialogOpen = false
   let currentKind: AcExDrawStyleKind | undefined
   let sessionMounted = false
-
-  const clearColorLeaveTimer = () => {
-    if (colorLeaveTimer == null) return
-    window.clearTimeout(colorLeaveTimer)
-    colorLeaveTimer = undefined
-  }
-
-  const hideColorPanel = () => {
-    clearColorLeaveTimer()
-    colorPanelOpen = false
-    colorPanel.classList.remove('is-open')
-  }
-
-  const showColorPanel = () => {
-    clearColorLeaveTimer()
-    colorPanelOpen = true
-    colorPanel.classList.add('is-open')
-  }
-
-  const scheduleHideColorPanel = () => {
-    clearColorLeaveTimer()
-    colorLeaveTimer = window.setTimeout(() => hideColorPanel(), 220)
-  }
-
-  const aciStacks = acuiCreateAciPaletteStacks({
-    onSelect: index => {
-      if (!currentKind) return
-      const css = cssColor(colorFromAci(index))
-      swatchFill.style.background = css
-      aciStacks.setSelected(index)
-      ctx.applyStyle(currentKind, { color: css })
-      hideColorPanel()
-    }
-  })
-  colorPanel.appendChild(aciStacks.root)
-
-  colorWrap.appendChild(swatch)
-  colorWrap.appendChild(colorPanel)
+  let currentStyle: AcExDrawStyleValues = { color: '#08e8de', fontSize: 12 }
 
   const fontSizeSelect = document.createElement('select')
   fontSizeSelect.className = 'mlcad-session-style__select'
-  controlsRow.append(colorWrap, fontSizeSelect)
+  controlsRow.append(swatch, fontSizeSelect)
 
   const paint = (style: AcExDrawStyleValues) => {
+    currentStyle = style
     const color = cssToColor(style.color)
     swatchFill.style.background = cssColor(color)
-    aciStacks.setSelected(aciIndexOf(color))
 
     const sizes = new Set(FONT_SIZE_OPTIONS)
     if (Number.isFinite(style.fontSize) && style.fontSize > 0) {
@@ -289,10 +217,7 @@ export function setupAcExSessionDrawStyle(
 
   const refresh = () => {
     currentKind = ctx.getKind()
-    if (!currentKind) {
-      hideColorPanel()
-      return
-    }
+    if (!currentKind) return
     paint(ctx.getStyle(currentKind))
     relabel()
   }
@@ -306,31 +231,55 @@ export function setupAcExSessionDrawStyle(
   const unmountSession = () => {
     if (!sessionMounted) return
     sessionMounted = false
-    hideColorPanel()
     controlsRow.remove()
+  }
+
+  const colorDialogLabels = () => ({
+    title: ctx.i18n.t('drawStyle.pickerTitle'),
+    close: ctx.i18n.t('drawStyle.close'),
+    ok: ctx.i18n.t('drawStyle.ok'),
+    cancel: ctx.i18n.t('drawStyle.cancel'),
+    index: ctx.i18n.t('drawStyle.index'),
+    rgb: ctx.i18n.t('drawStyle.rgb'),
+    input: ctx.i18n.t('drawStyle.input'),
+    inputPlaceholder: ctx.i18n.t('drawStyle.inputPlaceholder')
+  })
+
+  const htmlUiTheme = () =>
+    document.documentElement.getAttribute('data-mlcad-theme') === 'light'
+      ? ('light' as const)
+      : ('dark' as const)
+
+  const openSessionColorDialog = async () => {
+    if (colorDialogOpen || !currentKind) return
+    colorDialogOpen = true
+    try {
+      const initial = aciIndexOf(cssToColor(currentStyle.color))
+      const index = await AcUiAciColorDialog.open({
+        host: document.body,
+        theme: htmlUiTheme(),
+        initialIndex: initial ?? null,
+        labels: colorDialogLabels()
+      })
+      if (index == null || !currentKind) return
+      const css = cssColor(colorFromAci(index))
+      swatchFill.style.background = css
+      ctx.applyStyle(currentKind, { color: css })
+    } finally {
+      colorDialogOpen = false
+    }
   }
 
   swatch.addEventListener('click', event => {
     event.preventDefault()
     event.stopPropagation()
-    if (colorPanelOpen) hideColorPanel()
-    else showColorPanel()
+    void openSessionColorDialog()
   })
-  colorWrap.addEventListener('mouseenter', () => clearColorLeaveTimer())
-  colorWrap.addEventListener('mouseleave', () => scheduleHideColorPanel())
   fontSizeSelect.addEventListener('change', () => {
     applyFontSize(Number(fontSizeSelect.value))
   })
   controlsRow.addEventListener('pointerdown', event => event.stopPropagation())
   controlsRow.addEventListener('mousedown', event => event.stopPropagation())
-
-  const onDocumentPointerDown = (event: PointerEvent) => {
-    const target = event.target as Node | null
-    const inColor = !!target && colorWrap.contains(target)
-    if (!colorPanelOpen) return
-    if (!inColor) hideColorPanel()
-  }
-  document.addEventListener('pointerdown', onDocumentPointerDown, true)
 
   relabel()
 
@@ -346,9 +295,6 @@ export function setupAcExSessionDrawStyle(
     }),
     dispose: () => {
       unmountSession()
-      document.removeEventListener('pointerdown', onDocumentPointerDown, true)
-      clearColorLeaveTimer()
-      aciStacks.dispose()
     }
   }
 }

@@ -1088,7 +1088,6 @@ export abstract class AcEdBaseView {
   ): { x: number; y: number } {
     const cursorWcs = { x: cursor.x, y: cursor.y, z: 0 }
     this._overlayGripOsnapMarkers ??= new AcEdMarkerManager(this)
-    this._overlayGripOsnapMarkers.hideMarker()
     const snapPoint = this._osnapResolver.resolve({
       cursorWcs,
       lastPoint: lastPoint
@@ -1102,12 +1101,13 @@ export abstract class AcEdBaseView {
       )
     )
     if (snapPoint) {
-      this._overlayGripOsnapMarkers.showMarker(
+      this._overlayGripOsnapMarkers.showOrRepositionMarker(
         snapPoint,
         AcEdOsnapResolver.osnapModeToMarkerType(snapPoint.type)
       )
       return { x: snapPoint.x, y: snapPoint.y }
     }
+    this._overlayGripOsnapMarkers.hideMarker()
     return { x: cursor.x, y: cursor.y }
   }
 

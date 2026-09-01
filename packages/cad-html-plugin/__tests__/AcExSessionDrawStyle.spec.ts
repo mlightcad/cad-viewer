@@ -6,13 +6,12 @@ import type { AcExHtmlI18n } from '../src/AcExHtmlI18n'
 
 Object.assign(globalThis, { TextDecoder, TextEncoder })
 
-jest.mock('@mlightcad/cad-simple-viewer', () =>
-  jest.requireActual('../../cad-simple-viewer/src/ui/AcApAciPaletteUi.ts')
-)
+jest.mock('../src/AcExHtmlSimpleViewerUi', () => ({
+  ...jest.requireActual('../../cad-simple-viewer/src/ui/AcUiAciColorDialog.ts')
+}))
 
 // Value import after the polyfill: `@mlightcad/data-model` needs TextDecoder in jsdom.
-const { setupAcExSessionDrawStyle } =
-  require('../src/AcExSessionDrawStyle') as typeof import('../src/AcExSessionDrawStyle')
+import { setupAcExSessionDrawStyle } from '../src/AcExSessionDrawStyle'
 
 function fakeI18n(): AcExHtmlI18n {
   return {
@@ -25,6 +24,7 @@ describe('setupAcExSessionDrawStyle', () => {
     document.body.replaceChildren()
     document.getElementById('mlcad-session-style-styles')?.remove()
     document.getElementById('ml-aci-palette-styles')?.remove()
+    document.getElementById('ml-ui-dialog-styles')?.remove()
   })
 
   it('mounts color and font-size controls into the session host, not a canvas overlay', () => {
@@ -48,7 +48,7 @@ describe('setupAcExSessionDrawStyle', () => {
 
     expect(host.querySelector('.mlcad-session-style')).toBeTruthy()
     expect(host.querySelector('.mlcad-session-style__swatch')).toBeTruthy()
-    expect(host.querySelector('.ml-aci-stacks')).toBeTruthy()
+    expect(host.querySelector('.ml-aci-stacks')).toBeNull()
     expect(
       (host.querySelector('.mlcad-session-style__select') as HTMLSelectElement)
         .value
@@ -67,6 +67,55 @@ describe('setupAcExSessionDrawStyle', () => {
     expect(host.querySelector('.mlcad-session-style')).toBeNull()
     expect(canvasRoot.childElementCount).toBe(0)
 
+    controller.dispose()
+  })
+
+  it('opens the shared ACI color dialog when the swatch is clicked', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const applyStyle = jest.fn()
+    const controller = setupAcExSessionDrawStyle({
+      i18n: fakeI18n(),
+      getKind: () => 'measure',
+      getStyle: () => ({ color: '#ff0000', fontSize: 16 }),
+      applyStyle
+    })
+    const accessory = controller.createSessionAccessory()
+    accessory.mount(host)
+
+    const swatch = host.querySelector(
+      '.mlcad-session-style__swatch'
+    ) as HTMLButtonElement
+    swatch.click()
+    await Promise.resolve()
+
+    const dialog = document.querySelector(
+      '.ml-ui-aci-color-dialog'
+    ) as HTMLElement
+    expect(dialog).toBeTruthy()
+    expect(dialog.querySelector('.ml-aci-preview-box')).toBeTruthy()
+    expect(dialog.querySelector('.ml-aci-input-row input')).toBeTruthy()
+    expect(
+      [...dialog.querySelectorAll('button')].map(b => b.textContent)
+    ).not.toEqual(expect.arrayContaining(['ByLayer', 'ByBlock']))
+
+    const cell = dialog.querySelector(
+      '.ml-aci-cell[data-aci="18"]'
+    ) as HTMLButtonElement
+    cell.click()
+    const ok = [...dialog.querySelectorAll('button')].find(
+      b => b.textContent === 'drawStyle.ok'
+    )
+    expect(ok).toBeTruthy()
+    ok?.click()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(applyStyle).toHaveBeenCalledWith(
+      'measure',
+      expect.objectContaining({ color: expect.any(String) })
+    )
+
+    accessory.unmount()
     controller.dispose()
   })
 })

@@ -29,6 +29,36 @@ describe('ACEX_HTML_SHELL_CSS', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain('--ml-ui-accent: var(--mlcad-accent)')
   })
 
+  it('keeps measure and markup overlays below chrome and session UI', () => {
+    expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-z-chrome: 7;')
+    expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-z-measure: 1;')
+    expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-z-markup: 2;')
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      'z-index: var(--mlcad-z-measure);'
+    )
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      'z-index: var(--mlcad-z-markup);'
+    )
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      'z-index: calc(var(--mlcad-z-chrome) + 3);'
+    )
+  })
+
+  it('stacks measure/markup capsules above stroke canvases', () => {
+    expect(ACEX_HTML_SHELL_CSS).toMatch(
+      /\.mlcad-measure-canvas \{[\s\S]*?z-index: 1;/
+    )
+    expect(ACEX_HTML_SHELL_CSS).toMatch(
+      /\.mlcad-measure-badge \{[\s\S]*?z-index: 2;/
+    )
+    expect(ACEX_HTML_SHELL_CSS).toMatch(
+      /\.mlcad-markup-canvas \{[\s\S]*?z-index: 1;/
+    )
+    expect(ACEX_HTML_SHELL_CSS).toMatch(
+      /\.mlcad-markup-badge,\s*\n\s*\.mlcad-markup-stamp \{[\s\S]*?z-index: 2;/
+    )
+  })
+
   it('matches pad/desktop sub-toolbar buttons to the parent toolbar size', () => {
     expect(ACEX_HTML_SHELL_CSS).not.toContain('--mlcad-subtoolbar-btn-width')
     expect(ACEX_HTML_SHELL_CSS).toContain(

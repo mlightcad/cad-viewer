@@ -74,7 +74,10 @@ import {
   acedComputeSessionMetrics,
   type AcEdMobileSessionMetrics
 } from './AcEdMobileSessionMetrics'
-import { acedShouldIgnoreCompatMouse } from './AcEdTouchPointSession'
+import {
+  acedIsTouchLongPressContextMenu,
+  acedShouldIgnoreCompatMouse
+} from './AcEdTouchPointSession'
 
 /**
  * Internal control-flow error used to propagate keyword picks out of
@@ -2282,6 +2285,13 @@ export class AcEdInputManager {
         }
       }
       const contextMenuHandler = (e: MouseEvent) => {
+        // Phone long-press synthesizes contextmenu while the snap loupe is
+        // opening. That is not right-click Enter — swallowing it would
+        // cancel the measure / point prompt as soon as the loupe appears.
+        if (acedIsTouchLongPressContextMenu(e) || acedIsMobileOrPadUi()) {
+          e.preventDefault()
+          return
+        }
         if (!this.shouldUseRightClickEnter()) return
         e.preventDefault()
         noneRejector()

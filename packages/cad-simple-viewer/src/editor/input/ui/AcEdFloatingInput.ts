@@ -5,6 +5,7 @@ import {
   AcGePoint2dLike
 } from '@mlightcad/data-model'
 
+import { acedIsMobileOrPadUi } from '../../global/AcEdUiLayout'
 import { AcEdBaseView } from '../../view'
 import { AcEdOsnapPoint, AcEdOsnapResolver } from '../AcEdOsnapResolver'
 import { constrainToTracking } from '../AcEdPolarTracking'
@@ -24,8 +25,10 @@ import { AcEdFloatingMessage } from './AcEdFloatingMessage'
 import { AcEdRubberBand } from './AcEdRubberBand'
 import { AcEdSnapLoupe } from './AcEdSnapLoupe'
 import {
+  acedArmTouchMouseGuard,
   acedIsGhostClientOrigin,
   acedIsTouchDerivedMouseEvent,
+  acedIsTouchLongPressContextMenu,
   acedShouldIgnoreCompatMouse,
   acedSinkFollowingClick,
   AcEdTouchPointSession
@@ -90,8 +93,16 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   private boundOnPointerMove: (e: PointerEvent) => void
   /** Cached touch `pointerup` handler that commits the pick. */
   private boundOnPointerUp: (e: PointerEvent) => void
-  /** Cached `pointercancel` handler that aborts the pick. */
+  /** Cached `pointercancel` handler that aborts a pan or keeps a long-press. */
   private boundOnPointerCancel: (e: PointerEvent) => void
+  /** Cached one-finger `touchstart` so the OS long-press menu does not win. */
+  private boundOnTouchStart: (e: TouchEvent) => void
+  /** Cached `touchmove` used after `pointercancel` while the finger is down. */
+  private boundOnTouchMove: (e: TouchEvent) => void
+  /** Cached `touchend` that commits when `pointerup` was swallowed. */
+  private boundOnTouchEnd: (e: TouchEvent) => void
+  /** Cached `contextmenu` handler that blocks touch long-press Enter. */
+  private boundOnContextMenu: (e: MouseEvent) => void
   /** Long-press / short-tap state for one-finger point picking. */
   private readonly touchSession = new AcEdTouchPointSession()
   /** Magnifier HUD shown after a long-press on touch. */
@@ -191,15 +202,28 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.boundOnPointerMove = e => this.handlePointerMove(e)
     this.boundOnPointerUp = e => this.handlePointerUp(e)
     this.boundOnPointerCancel = e => this.handlePointerCancel(e)
-    // `preventDefault` on touch `pointerdown` needs a non-passive listener so
-    // the browser does not synthesize a leftover `click` for this gesture.
+    this.boundOnTouchStart = e => this.handleTouchStart(e)
+    this.boundOnTouchMove = e => this.handleTouchMove(e)
+    this.boundOnTouchEnd = e => this.handleTouchEnd(e)
+    this.boundOnContextMenu = e => this.handleContextMenu(e)
+    // Capture + non-passive: run before OrbitControls and keep the browser
+    // from turning a still finger into scroll / context-menu `pointercancel`.
     this.parent.addEventListener('pointerdown', this.boundOnPointerDown, {
-      passive: false
+      passive: false,
+      capture: true
     })
     this.parent.addEventListener('pointermove', this.boundOnPointerMove)
-    // Release can happen off-canvas; listen on window like the HTML viewer.
+    this.parent.addEventListener('touchstart', this.boundOnTouchStart, {
+      passive: false
+    })
+    this.parent.addEventListener('contextmenu', this.boundOnContextMenu, true)
+    // Release / leftover touch tracking can happen off-canvas.
     window.addEventListener('pointerup', this.boundOnPointerUp)
     window.addEventListener('pointercancel', this.boundOnPointerCancel)
+    window.addEventListener('touchmove', this.boundOnTouchMove, {
+      passive: false
+    })
+    window.addEventListener('touchend', this.boundOnTouchEnd)
     this.snapLoupe = new AcEdSnapLoupe(view)
 
     // -----------------------------
@@ -286,10 +310,18 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     super.dispose()
 
     this.parent.removeEventListener('click', this.boundOnClick)
-    this.parent.removeEventListener('pointerdown', this.boundOnPointerDown)
+    this.parent.removeEventListener(
+      'pointerdown',
+      this.boundOnPointerDown,
+      true
+    )
     this.parent.removeEventListener('pointermove', this.boundOnPointerMove)
+    this.parent.removeEventListener('touchstart', this.boundOnTouchStart)
+    this.parent.removeEventListener('contextmenu', this.boundOnContextMenu, true)
     window.removeEventListener('pointerup', this.boundOnPointerUp)
     window.removeEventListener('pointercancel', this.boundOnPointerCancel)
+    window.removeEventListener('touchmove', this.boundOnTouchMove)
+    window.removeEventListener('touchend', this.boundOnTouchEnd)
     this.releaseTouchCapture()
     this.touchSession.cancel()
     this.snapLoupe?.dispose()
@@ -386,6 +418,10 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     }
     e.preventDefault()
     this.mouseClickArmed = false
+    acedArmTouchMouseGuard()
+    // A leftover loupe from a previous pointercancel must not stay on screen
+    // when a new finger-down starts.
+    this.snapLoupe?.hide()
     this.touchSession.start(e.pointerId, e.clientX, e.clientY, () => {
       this.view.setNavigationEnabled(false)
       this.applyClientSample(this.touchSession.x, this.touchSession.y)
@@ -421,28 +457,12 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (e.pointerType !== 'touch') return
     if (this.touchSession.phase === 'idle') return
     if (e.pointerId !== this.touchSession.pointerId) return
-    this.mouseClickArmed = false
-    acedSinkFollowingClick()
-    this.releaseTouchCapture()
-    const action = this.touchSession.end()
-    this.view.setNavigationEnabled(true)
-    this.snapLoupe?.hide()
-    // Finger-up coords must not seed the next prompt's jig preview.
-    this.view.clearCursorPos()
-    if (!this.visible || action !== 'commit') return
-    this.applyClientSample(e.clientX, e.clientY)
-    const wcsPos = this.lastDynamicPoint
-      ? new AcGePoint2d(this.lastDynamicPoint.x, this.lastDynamicPoint.y)
-      : this.getPosition({ x: e.clientX, y: e.clientY })
-    const defaults = this.getDynamicValue(wcsPos)
-    const committed = this.onCommit?.(defaults.value, wcsPos) ?? true
-    if (committed) {
-      this.lastPoint = wcsPos
-    }
+    this.completeTouchPick(e.clientX, e.clientY)
   }
 
   /**
-   * Aborts the touch pick without committing (for example on `pointercancel`).
+   * Aborts a pan-converted gesture. A still-finger OS long-press also fires
+   * `pointercancel`; keep that pick alive so `touchend` can commit.
    *
    * @param e - Pointer event; only `touch` is handled.
    */
@@ -453,10 +473,95 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.mouseClickArmed = false
     acedSinkFollowingClick()
     this.releaseTouchCapture()
+    if (this.touchSession.isPicking) return
     this.touchSession.cancel()
     this.view.setNavigationEnabled(true)
     this.snapLoupe?.hide()
     this.view.clearCursorPos()
+  }
+
+  /**
+   * Blocks the OS long-press callout so it does not scroll the canvas or
+   * synthesize a leftover mouse click.
+   *
+   * @param e - Touch start; one-finger picks only.
+   */
+  private handleTouchStart(e: TouchEvent) {
+    if (!this.visible) return
+    if (e.touches.length !== 1) return
+    e.preventDefault()
+  }
+
+  /**
+   * Continues the pick after `pointercancel` (Chrome/Safari long-press) when
+   * pointer events stop arriving.
+   *
+   * @param e - Window-level touch move.
+   */
+  private handleTouchMove(e: TouchEvent) {
+    if (!this.touchSession.isPicking) return
+    const touch = e.touches[0] ?? e.changedTouches[0]
+    if (!touch) return
+    const moved = this.touchSession.move(touch.clientX, touch.clientY, true)
+    if (moved === 'panning') return
+    e.preventDefault()
+    if (!this.visible) return
+    this.applyClientSample(touch.clientX, touch.clientY)
+    if (this.touchSession.isLoupe) this.refreshLoupe()
+  }
+
+  /**
+   * Commits the pick when `pointerup` was lost after `pointercancel`.
+   *
+   * @param e - Window-level touch end.
+   */
+  private handleTouchEnd(e: TouchEvent) {
+    if (this.touchSession.phase === 'idle') return
+    if (e.touches.length > 0) return
+    const touch = e.changedTouches[0]
+    if (!touch) return
+    this.completeTouchPick(touch.clientX, touch.clientY)
+  }
+
+  /**
+   * Stops touch long-press `contextmenu` from reaching the prompt's
+   * right-click-Enter handler.
+   *
+   * @param e - Context-menu event on the canvas.
+   */
+  private handleContextMenu(e: MouseEvent) {
+    if (!this.visible) return
+    if (!acedIsTouchLongPressContextMenu(e) && !acedIsMobileOrPadUi()) return
+    e.preventDefault()
+    e.stopImmediatePropagation()
+  }
+
+  /**
+   * Ends the active touch session: commit a short tap / loupe release, or
+   * ignore a pan.
+   *
+   * @param clientX - Sample X in client CSS pixels.
+   * @param clientY - Sample Y in client CSS pixels.
+   */
+  private completeTouchPick(clientX: number, clientY: number) {
+    this.mouseClickArmed = false
+    acedSinkFollowingClick()
+    this.releaseTouchCapture()
+    const action = this.touchSession.end()
+    this.view.setNavigationEnabled(true)
+    this.snapLoupe?.hide()
+    // Finger-up coords must not seed the next prompt's jig preview.
+    this.view.clearCursorPos()
+    if (!this.visible || action !== 'commit') return
+    this.applyClientSample(clientX, clientY)
+    const wcsPos = this.lastDynamicPoint
+      ? new AcGePoint2d(this.lastDynamicPoint.x, this.lastDynamicPoint.y)
+      : this.getPosition({ x: clientX, y: clientY })
+    const defaults = this.getDynamicValue(wcsPos)
+    const committed = this.onCommit?.(defaults.value, wcsPos) ?? true
+    if (committed) {
+      this.lastPoint = wcsPos
+    }
   }
 
   /**
@@ -567,7 +672,6 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
     // Apply OSNAP
     if (this.osnapMarkerManager) {
-      this.osnapMarkerManager.hideMarker()
       this.lastOsnapPoint = this.view.osnapResolver.resolve({
         cursorWcs: wcsPos,
         lastPoint: this.lastPoint
@@ -585,10 +689,12 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         wcsPos.x = this.lastOsnapPoint.x
         wcsPos.y = this.lastOsnapPoint.y
 
-        this.osnapMarkerManager.showMarker(
+        this.osnapMarkerManager.showOrRepositionMarker(
           this.lastOsnapPoint,
           AcEdOsnapResolver.osnapModeToMarkerType(this.lastOsnapPoint.type)
         )
+      } else {
+        this.osnapMarkerManager.hideMarker()
       }
     }
 

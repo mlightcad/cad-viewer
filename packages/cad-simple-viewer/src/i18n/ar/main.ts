@@ -67,5 +67,15 @@ export default {
   drawStyle: {
     color: 'اللون',
     fontSize: 'ارتفاع النص'
+  },
+  colorPicker: {
+    title: 'تحديد اللون',
+    close: 'إغلاق',
+    ok: 'موافق',
+    cancel: 'إلغاء',
+    index: 'فهرس اللون: ',
+    rgb: 'RGB: ',
+    input: 'اللون',
+    inputPlaceholder: '1-255 أو #RRGGBB'
   }
 }
